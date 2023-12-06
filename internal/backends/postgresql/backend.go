@@ -38,9 +38,10 @@ type NewBackendParams struct {
 	URI string
 	L   *zap.Logger
 	P   *state.Provider
+	_   struct{} // prevent unkeyed literals
 }
 
-// NewBackend creates a new backend.
+// NewBackend creates a new Backend.
 func NewBackend(params *NewBackendParams) (backends.Backend, error) {
 	r, err := metadata.NewRegistry(params.URI, params.L, params.P)
 	if err != nil {
@@ -55,11 +56,6 @@ func NewBackend(params *NewBackendParams) (backends.Backend, error) {
 // Close implements backends.Backend interface.
 func (b *backend) Close() {
 	b.r.Close()
-}
-
-// Name implements backends.Backend interface.
-func (b *backend) Name() string {
-	return "PostgreSQL"
 }
 
 // Status implements backends.Backend interface.
@@ -81,6 +77,17 @@ func (b *backend) Status(ctx context.Context, params *backends.StatusParams) (*b
 		}
 
 		res.CountCollections += int64(len(cs))
+
+		colls, err := newDatabase(b.r, dbName).ListCollections(ctx, new(backends.ListCollectionsParams))
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		for _, cInfo := range colls.Collections {
+			if cInfo.Capped() {
+				res.CountCappedCollections++
+			}
+		}
 
 		if pingSucceeded {
 			continue
@@ -124,24 +131,8 @@ func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDataba
 	}
 
 	for i, dbName := range list {
-		db, err := b.Database(dbName)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		stats, err := db.Stats(ctx, new(backends.DatabaseStatsParams))
-		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseDoesNotExist) {
-			stats = new(backends.DatabaseStatsResult)
-			err = nil
-		}
-
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
 		res.Databases[i] = backends.DatabaseInfo{
 			Name: dbName,
-			Size: stats.SizeTotal,
 		}
 	}
 

@@ -13,6 +13,14 @@
 // limitations under the License.
 
 // Package cursor provides access to cursor registry.
+//
+// The implementation of the cursor and registry is quite complicated and entangled.
+// That's because there are many cases when cursor / iterator / underlying database connection
+// must be closed to free resources, including when no handler and backend code is running;
+// for example, when the client disconnects between `getMore` commands.
+// At the same time, we want to shift complexity away from the handler and from backend implementations
+// because they are already quite complex.
+// The current design enables ease of use at the expense of the implementation complexity.
 package cursor
 
 import (
@@ -23,14 +31,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
 
-// The implementation of the cursor and registry is quite complicated and entangled.
-// That's because there are many cases when cursor / iterator / underlying database connection
-// must be closed to free resources, including when no handler and backend code is running;
-// for example, when the client disconnects between `getMore` commands.
-// At the same time, we want to shift complexity away from the handler and from backend implementations
-// because they are already quite complex.
-// The current design enables ease of use at the expense of the implementation complexity.
-
 // Cursor allows clients to iterate over a result set.
 //
 // It implements types.DocumentsIterator interface by wrapping another iterator with documents
@@ -40,30 +40,26 @@ import (
 type Cursor struct {
 	// the order of fields is weird to make the struct smaller due to alignment
 
-	created    time.Time
-	iter       types.DocumentsIterator
-	r          *Registry
-	token      *resource.Token
-	closed     chan struct{}
-	DB         string
-	Collection string
-	Username   string
-	ID         int64
-	closeOnce  sync.Once
+	created time.Time
+	iter    types.DocumentsIterator
+	r       *Registry
+	*NewParams
+	token     *resource.Token
+	closed    chan struct{}
+	ID        int64
+	closeOnce sync.Once
 }
 
 // newCursor creates a new cursor.
-func newCursor(id int64, db, collection, username string, iter types.DocumentsIterator, r *Registry) *Cursor {
+func newCursor(id int64, iter types.DocumentsIterator, params *NewParams, r *Registry) *Cursor {
 	c := &Cursor{
-		ID:         id,
-		DB:         db,
-		Collection: collection,
-		Username:   username,
-		iter:       iter,
-		r:          r,
-		created:    time.Now(),
-		closed:     make(chan struct{}),
-		token:      resource.NewToken(),
+		ID:        id,
+		iter:      iter,
+		NewParams: params,
+		r:         r,
+		created:   time.Now(),
+		closed:    make(chan struct{}),
+		token:     resource.NewToken(),
 	}
 
 	resource.Track(c, c.token)
@@ -73,7 +69,14 @@ func newCursor(id int64, db, collection, username string, iter types.DocumentsIt
 
 // Next implements types.DocumentsIterator interface.
 func (c *Cursor) Next() (struct{}, *types.Document, error) {
-	return c.iter.Next()
+	zero, doc, err := c.iter.Next()
+	if doc != nil {
+		if c.ShowRecordID {
+			doc.Set("$recordId", doc.RecordID())
+		}
+	}
+
+	return zero, doc, err
 }
 
 // Close implements types.DocumentsIterator interface.

@@ -1,8 +1,7 @@
 // @ts-check
 // Note: type annotations allow type checking and IDEs autocompletion
 
-const lightCodeTheme = require('prism-react-renderer/themes/github');
-const darkCodeTheme = require('prism-react-renderer/themes/dracula');
+import {themes} from 'prism-react-renderer';
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
@@ -23,7 +22,15 @@ const config = {
     locales: ['en'],
   },
 
-  scripts: [{ src: 'https://plausible.io/js/script.js', defer: true, "data-domain": "blog.ferretdb.io" }],
+  stylesheets: [
+    {href: "/codapi/snippet.css"},
+  ],
+
+  scripts: [
+    {src: 'https://plausible.io/js/script.js', defer: true, "data-domain": "blog.ferretdb.io"},
+    {src: '/codapi/snippet.js', defer: true},
+    {src: '/codapi/init.js', defer: true},
+  ],
 
   plugins: [
     [
@@ -113,8 +120,8 @@ const config = {
             position: 'right',
           },
           {
-            href: 'https://ferretdb.io/',
-            label: 'Go to FerretDB.io',
+            href: 'https://www.ferretdb.com/',
+            label: 'Go to FerretDB.com',
             position: 'right',
           },
         ],
@@ -156,8 +163,8 @@ const config = {
             title: 'More',
             items: [
               {
-                href: 'https://ferretdb.io/',
-                label: 'Go to FerretDB.io',
+                href: 'https://www.ferretdb.com/',
+                label: 'Go to FerretDB.com',
                 position: 'right',
               },
               {
@@ -170,11 +177,18 @@ const config = {
         copyright: `Copyright © ${new Date().getFullYear()} FerretDB Inc. Built with Docusaurus.`,
       },
       prism: {
-        theme: lightCodeTheme,
-        darkTheme: darkCodeTheme,
-        additionalLanguages: ['go', 'json5', 'sql'],
+        theme: themes.github,
+        darkTheme: themes.dracula,
+        additionalLanguages: ['go', 'sql', 'json', 'json5'],
+      },
+      mermaid: {
+        theme: {light: 'default', dark: 'dark'},
       },
     }),
+  markdown: {
+    mermaid: true,
+  },
+  themes: ['@docusaurus/theme-mermaid'],
 };
 
 module.exports = config;

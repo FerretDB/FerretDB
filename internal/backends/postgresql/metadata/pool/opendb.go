@@ -16,13 +16,15 @@ package pool
 
 import (
 	"context"
+	"slices"
 	"strings"
 	"time"
 
+	zapadapter "github.com/jackc/pgx-zap"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/tracelog"
 	"go.uber.org/zap"
-	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/state"
@@ -52,12 +54,13 @@ func openDB(uri string, l *zap.Logger, sp *state.Provider) (*pgxpool.Pool, error
 		ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 		defer cancel()
 
-		if err = conn.QueryRow(ctx, `SHOW server_version`).Scan(&v); err != nil {
+		if err = conn.QueryRow(ctx, `SELECT version()`).Scan(&v); err != nil {
 			return lazyerrors.Error(err)
 		}
 
-		if sp.Get().HandlerVersion != v {
-			if err = sp.Update(func(s *state.State) { s.HandlerVersion = v }); err != nil {
+		n, v, _ := strings.Cut(v, " ")
+		if sp.Get().BackendVersion != v {
+			if err = sp.Update(func(s *state.State) { s.BackendName = n; s.BackendVersion = v }); err != nil {
 				l.Error("openDB: failed to update state", zap.Error(err))
 			}
 		}
@@ -65,7 +68,16 @@ func openDB(uri string, l *zap.Logger, sp *state.Provider) (*pgxpool.Pool, error
 		return nil
 	}
 
-	// TODO port logging, tracing
+	// port tracing, tweak logging
+	// TODO https://github.com/FerretDB/FerretDB/issues/3554
+
+	// try to log everything; logger's configuration will skip extra levels if needed
+	config.ConnConfig.Tracer = &tracelog.TraceLog{
+		Logger:   zapadapter.NewLogger(l),
+		LogLevel: tracelog.LogLevelTrace,
+	}
+
+	config.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeCacheStatement
 
 	// see https://github.com/jackc/pgx/issues/1726#issuecomment-1711612138
 	ctx := context.TODO()

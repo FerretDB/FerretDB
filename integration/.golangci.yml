@@ -8,11 +8,19 @@ linters-settings:
   # asciicheck
   depguard:
     rules:
+      old:
+        files:
+          - $all
+        deny:
+          - pkg: golang.org/x/net/context
+            desc: use `context` package instead
+          - pkg: golang.org/x/exp/slices
+            desc: use `slices` package instead
       commonerrors:
         files:
           - $all
         deny:
-          - pkg: github.com/FerretDB/FerretDB/internal/handlers/commonerrors
+          - pkg: github.com/FerretDB/FerretDB/internal/handler/commonerrors
   exhaustive:
     default-signifies-exhaustive: false
   gci:
@@ -26,7 +34,6 @@ linters-settings:
   godot:
     scope: toplevel
     exclude:
-      - go-sumtype:decl
       - check interfaces
     capital: true
   godox:
@@ -34,6 +41,8 @@ linters-settings:
       - BUG
       - FIXME
       - HACK
+      - lala
+      - lalala
   goheader:
     # Please do not update it, including bumping a year.
     template: |-
@@ -106,6 +115,7 @@ linters:
     - depguard
     - exhaustive
     - gci
+    - gochecksumtype
     - goconst
     - godot
     - godox

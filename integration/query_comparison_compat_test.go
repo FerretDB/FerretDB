@@ -26,6 +26,9 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
+// Replace `1<<XXX` with named constants.
+// TODO https://github.com/FerretDB/FerretDB/issues/3626
+
 func TestQueryComparisonCompatImplicit(t *testing.T) {
 	t.Parallel()
 
@@ -260,7 +263,7 @@ func TestQueryComparisonCompatImplicit(t *testing.T) {
 		},
 		"IDString": {
 			filter:         bson.D{{"_id", "string"}},
-			resultPushdown: pgPushdown,
+			resultPushdown: allPushdown,
 		},
 		"IDObjectID": {
 			filter:         bson.D{{"_id", primitive.NilObjectID}},

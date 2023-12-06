@@ -19,7 +19,8 @@ import (
 	"database/sql"
 	"database/sql/driver"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
+	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/handler/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -31,6 +32,9 @@ const (
 
 	// IDColumn is a PostgreSQL path expression for _id field.
 	IDColumn = DefaultColumn + "->'_id'"
+
+	// RecordIDColumn is a name for RecordID column to store capped collection record id.
+	RecordIDColumn = backends.ReservedPrefix + "record_id"
 )
 
 // Collection represents collection metadata.
@@ -38,9 +42,12 @@ const (
 // Collection value should be immutable to avoid data races.
 // Use [deepCopy] to replace the whole value instead of modifying fields of existing value.
 type Collection struct {
-	Name      string
-	TableName string
-	Indexes   Indexes
+	Name            string
+	UUID            string
+	TableName       string
+	Indexes         Indexes
+	CappedSize      int64
+	CappedDocuments int64
 }
 
 // deepCopy returns a deep copy.
@@ -50,10 +57,18 @@ func (c *Collection) deepCopy() *Collection {
 	}
 
 	return &Collection{
-		Name:      c.Name,
-		TableName: c.TableName,
-		Indexes:   c.Indexes.deepCopy(),
+		Name:            c.Name,
+		UUID:            c.UUID,
+		TableName:       c.TableName,
+		Indexes:         c.Indexes.deepCopy(),
+		CappedSize:      c.CappedSize,
+		CappedDocuments: c.CappedDocuments,
 	}
+}
+
+// Capped returns true if collection is capped.
+func (c Collection) Capped() bool {
+	return c.CappedSize > 0
 }
 
 // Value implements driver.Valuer interface.
@@ -98,8 +113,11 @@ func (c *Collection) Scan(src any) error {
 func (c *Collection) marshal() *types.Document {
 	return must.NotFail(types.NewDocument(
 		"_id", c.Name,
+		"uuid", c.UUID,
 		"table", c.TableName,
 		"indexes", c.Indexes.marshal(),
+		"cappedSize", c.CappedSize,
+		"cappedDocs", c.CappedDocuments,
 	))
 }
 
@@ -128,6 +146,20 @@ func (c *Collection) unmarshal(doc *types.Document) error {
 
 	if err := c.Indexes.unmarshal(i); err != nil {
 		return lazyerrors.Error(err)
+	}
+
+	// those fields do not exist in older versions of FerretDB
+
+	if v, _ := doc.Get("uuid"); v != nil {
+		c.UUID = v.(string)
+	}
+
+	if v, _ := doc.Get("cappedSize"); v != nil {
+		c.CappedSize = v.(int64)
+	}
+
+	if v, _ := doc.Get("cappedDocs"); v != nil {
+		c.CappedDocuments = v.(int64)
 	}
 
 	return nil

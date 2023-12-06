@@ -15,8 +15,11 @@
 package backends
 
 import (
+	"cmp"
 	"context"
+	"slices"
 
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
 
@@ -74,7 +77,9 @@ func (dbc *databaseContract) Collection(name string) (Collection, error) {
 }
 
 // ListCollectionsParams represents the parameters of Database.ListCollections method.
-type ListCollectionsParams struct{}
+type ListCollectionsParams struct {
+	Name string // TODO https://github.com/FerretDB/FerretDB/issues/3601
+}
 
 // ListCollectionsResult represents the results of Database.ListCollections method.
 type ListCollectionsResult struct {
@@ -83,10 +88,22 @@ type ListCollectionsResult struct {
 
 // CollectionInfo represents information about a single collection.
 type CollectionInfo struct {
-	Name string
+	Name            string
+	UUID            string
+	CappedSize      int64
+	CappedDocuments int64
+	_               struct{} // prevent unkeyed literals
 }
 
-// ListCollections returns information about collections in the database.
+// Capped returns true if collection is capped.
+func (ci *CollectionInfo) Capped() bool {
+	return ci.CappedSize > 0 // TODO https://github.com/FerretDB/FerretDB/issues/3631
+}
+
+// ListCollections returns a list collections in the database sorted by name.
+//
+// TODO https://github.com/FerretDB/FerretDB/issues/3601
+// If ListCollectionsParams' Name is not empty, then only the collection with that name should be returned (or an empty list).
 //
 // Database may not exist; that's not an error.
 func (dbc *databaseContract) ListCollections(ctx context.Context, params *ListCollectionsParams) (*ListCollectionsResult, error) {
@@ -95,12 +112,31 @@ func (dbc *databaseContract) ListCollections(ctx context.Context, params *ListCo
 	res, err := dbc.db.ListCollections(ctx, params)
 	checkError(err)
 
+	if res != nil && len(res.Collections) > 0 {
+		must.BeTrue(slices.IsSortedFunc(res.Collections, func(a, b CollectionInfo) int {
+			return cmp.Compare(a.Name, b.Name)
+		}))
+
+		if params != nil && params.Name != "" {
+			must.BeTrue(len(res.Collections) == 1)
+			must.BeTrue(res.Collections[0].Name == params.Name)
+		}
+	}
+
 	return res, err
 }
 
 // CreateCollectionParams represents the parameters of Database.CreateCollection method.
 type CreateCollectionParams struct {
-	Name string
+	Name            string
+	CappedSize      int64
+	CappedDocuments int64
+	_               struct{} // prevent unkeyed literals
+}
+
+// Capped returns true if capped collection creation is requested.
+func (ccp *CreateCollectionParams) Capped() bool {
+	return ccp.CappedSize > 0 // TODO https://github.com/FerretDB/FerretDB/issues/3631
 }
 
 // CreateCollection creates a new collection with valid name in the database; it should not already exist.
@@ -108,6 +144,10 @@ type CreateCollectionParams struct {
 // Database may or may not exist; it should be created automatically if needed.
 func (dbc *databaseContract) CreateCollection(ctx context.Context, params *CreateCollectionParams) error {
 	defer observability.FuncCall(ctx)()
+
+	must.BeTrue(params.CappedSize >= 0)
+	must.BeTrue(params.CappedSize%256 == 0)
+	must.BeTrue(params.CappedDocuments >= 0)
 
 	err := validateCollectionName(params.Name)
 	if err == nil {
@@ -168,23 +208,21 @@ func (dbc *databaseContract) RenameCollection(ctx context.Context, params *Renam
 }
 
 // DatabaseStatsParams represents the parameters of Database.Stats method.
-type DatabaseStatsParams struct{}
-
-// DatabaseStatsResult represents the results of Database.Stats method.
-//
-// CountObjects is an estimate of the number of documents.
-//
-// TODO https://github.com/FerretDB/FerretDB/issues/2447
-type DatabaseStatsResult struct {
-	CountCollections int64
-	CountObjects     int64
-	CountIndexes     int64
-	SizeTotal        int64
-	SizeIndexes      int64
-	SizeCollections  int64
+type DatabaseStatsParams struct {
+	Refresh bool
 }
 
-// Stats returns statistics about the database.
+// DatabaseStatsResult represents the results of Database.Stats method.
+type DatabaseStatsResult struct {
+	CountDocuments  int64
+	SizeTotal       int64
+	SizeIndexes     int64
+	SizeCollections int64
+	SizeFreeStorage int64
+}
+
+// Stats returns statistic estimations about the database.
+// All returned values are not exact, but might be more accurate when Stats is called with `Refresh: true`.
 func (dbc *databaseContract) Stats(ctx context.Context, params *DatabaseStatsParams) (*DatabaseStatsResult, error) {
 	defer observability.FuncCall(ctx)()
 

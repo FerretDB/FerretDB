@@ -34,7 +34,8 @@ const (
 
 // Common interface with types.Document.
 //
-// TODO Remove it.
+// Remove it.
+// TODO https://github.com/FerretDB/FerretDB/issues/260
 type document interface {
 	Keys() []string
 	Values() []any
@@ -56,7 +57,8 @@ type field struct {
 // ConvertDocument converts types.Document to bson.Document and validates it.
 // It references the same data without copying it.
 //
-// TODO Remove it.
+// Remove it.
+// TODO https://github.com/FerretDB/FerretDB/issues/260
 func ConvertDocument(d document) (*Document, error) {
 	keys := d.Keys()
 	values := d.Values()

@@ -12,9 +12,10 @@ ARG LABEL_COMMIT
 
 # build stage
 
-FROM ghcr.io/ferretdb/golang:1.21.1-2 AS production-build
+FROM ghcr.io/ferretdb/golang:1.21.5-1 AS production-build
 
 ARG TARGETARCH
+ARG TARGETVARIANT
 
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
@@ -29,11 +30,11 @@ ENV GOMODCACHE /cache/gomodcache
 # remove ",direct"
 ENV GOPROXY https://proxy.golang.org
 
-# do not raise it from the default value of v1 without providing a separate v1 build
+# do not raise it without providing a separate v1 build
 # because v2+ is problematic for some virtualization platforms and older hardware
-# ENV GOAMD64=v1
+ENV GOAMD64=v1
 
-# leave GOARM unset for autodetection
+# GOARM is set in the script below
 
 ENV CGO_ENABLED=0
 
@@ -45,7 +46,7 @@ RUN --mount=type=cache,target=/cache <<EOF
 set -ex
 
 # copy cached stdlib builds from base image
-flock --verbose /cache/ cp -Rnv /root/.cache/go-build/. /cache/gocache
+flock --verbose /cache/ cp -Rn /root/.cache/go-build/. /cache/gocache
 
 # TODO https://github.com/FerretDB/FerretDB/issues/2170
 # That command could be run only once by using a separate stage;
@@ -54,10 +55,12 @@ flock --verbose /cache/ go mod download
 
 git status
 
+# Set GOARM explicitly due to https://github.com/docker-library/golang/issues/494.
+export GOARM=${TARGETVARIANT#v}
+
 # Do not trim paths to reuse build cache.
 
 # check that stdlib was cached
-# env GODEBUG=gocachehash=1 go install -v std
 go install -v std
 
 go build -v -o=bin/ferretdb ./cmd/ferretdb
@@ -78,9 +81,12 @@ COPY --from=production-build /src/bin/ferretdb /ferretdb
 
 FROM scratch AS production
 
+COPY --from=production-build /src/bin/ferretdb /ferretdb
+
 ENTRYPOINT [ "/ferretdb" ]
 
 WORKDIR /
+VOLUME /state
 EXPOSE 27017 27018 8080
 
 # don't forget to update documentation if you change defaults
@@ -88,6 +94,7 @@ ENV FERRETDB_LISTEN_ADDR=:27017
 # ENV FERRETDB_LISTEN_TLS=:27018
 ENV FERRETDB_DEBUG_ADDR=:8080
 ENV FERRETDB_STATE_DIR=/state
+ENV FERRETDB_SQLITE_URL=file:/state/
 
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
@@ -98,6 +105,6 @@ LABEL org.opencontainers.image.licenses="Apache-2.0"
 LABEL org.opencontainers.image.revision="${LABEL_COMMIT}"
 LABEL org.opencontainers.image.source="https://github.com/FerretDB/FerretDB"
 LABEL org.opencontainers.image.title="FerretDB"
-LABEL org.opencontainers.image.url="https://ferretdb.io/"
+LABEL org.opencontainers.image.url="https://www.ferretdb.com/"
 LABEL org.opencontainers.image.vendor="FerretDB Inc."
 LABEL org.opencontainers.image.version="${LABEL_VERSION}"

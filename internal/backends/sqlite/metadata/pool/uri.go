@@ -80,12 +80,14 @@ func parseURI(u string) (*url.URL, error) {
 }
 
 // setDefaultValue sets default query parameters.
-//
-// Keep it in sync with docs.
 func setDefaultValues(values url.Values) {
-	var busyTimeout, journalMode bool
+	var autoVacuum, busyTimeout, journalMode bool
 
 	for _, v := range values["_pragma"] {
+		if strings.HasPrefix(v, "auto_vacuum") {
+			autoVacuum = true
+		}
+
 		if strings.HasPrefix(v, "busy_timeout") {
 			busyTimeout = true
 		}
@@ -95,11 +97,19 @@ func setDefaultValues(values url.Values) {
 		}
 	}
 
+	// keep it in sync with docs
+
+	// the order is important: busy handler must be set before WAL is enabled
+
 	if !busyTimeout {
 		values.Add("_pragma", "busy_timeout(10000)")
 	}
 
 	if !journalMode {
 		values.Add("_pragma", "journal_mode(wal)")
+	}
+
+	if !autoVacuum {
+		values.Add("_pragma", "auto_vacuum(none)") // TODO https://github.com/FerretDB/FerretDB/issues/3612
 	}
 }

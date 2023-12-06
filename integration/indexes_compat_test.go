@@ -285,7 +285,7 @@ func TestCreateIndexesCompat(tt *testing.T) {
 					targetIndexes := FetchAll(t, ctx, targetCursor)
 					compatIndexes := FetchAll(t, ctx, compatCursor)
 
-					assert.Equal(t, compatIndexes, targetIndexes)
+					assert.ElementsMatch(t, compatIndexes, targetIndexes)
 
 					// List specifications to check they are identical after creation.
 					targetSpec, targetErr := targetCollection.Indexes().ListSpecifications(ctx)
@@ -295,7 +295,7 @@ func TestCreateIndexesCompat(tt *testing.T) {
 					require.NoError(t, targetErr)
 
 					require.NotEmpty(t, compatSpec)
-					assert.Equal(t, compatSpec, targetSpec)
+					assert.ElementsMatch(t, compatSpec, targetSpec)
 				})
 			}
 
@@ -608,6 +608,16 @@ func TestCreateIndexesCompatDuplicates(t *testing.T) {
 			},
 			duplicates: []mongo.IndexModel{
 				{Options: &options.IndexOptions{Name: pointer.To("index_foo")}, Keys: bson.D{{"foo", 1}}},
+			},
+		},
+		"DuplicateAndInvalid": {
+			models: []mongo.IndexModel{
+				{Options: &options.IndexOptions{Name: pointer.To("index_foo")}, Keys: bson.D{{"foo", 1}}},
+			},
+			duplicates: []mongo.IndexModel{
+				{Options: &options.IndexOptions{Name: pointer.To("index_foo")}, Keys: bson.D{{"foo", 1}}}, // duplicate
+				{Options: &options.IndexOptions{Name: pointer.To("index_bar")}, Keys: bson.D{{"foo", 1}}}, // invalid
+				{Options: &options.IndexOptions{Name: pointer.To("index_baz")}, Keys: bson.D{{"baz", 1}}}, // valid
 			},
 		},
 	} {

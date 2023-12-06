@@ -20,8 +20,8 @@ import (
 	"flag"
 	"fmt"
 	"net/url"
-	"path/filepath"
 	"runtime/trace"
+	"slices"
 	"strings"
 
 	"github.com/stretchr/testify/require"
@@ -29,7 +29,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
-	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -47,8 +46,9 @@ var (
 	targetTLSF        = flag.Bool("target-tls", false, "in-process FerretDB: use TLS")
 	targetUnixSocketF = flag.Bool("target-unix-socket", false, "in-process FerretDB: use Unix socket")
 
-	postgreSQLURLF = flag.String("postgresql-url", "", "in-process FerretDB: PostgreSQL URL for 'pg' handler.")
+	postgreSQLURLF = flag.String("postgresql-url", "", "in-process FerretDB: PostgreSQL URL for 'postgresql' handler.")
 	sqliteURLF     = flag.String("sqlite-url", "", "in-process FerretDB: SQLite URI for 'sqlite' handler.")
+	mysqlURLF      = flag.String("mysql-url", "", "in-process FerretDB: MySQL URL for 'mysql' handler.")
 	hanaURLF       = flag.String("hana-url", "", "in-process FerretDB: Hana URL for 'hana' handler.")
 
 	compatURLF = flag.String("compat-url", "", "compat system's (MongoDB) URL for compatibility tests; if empty, they are skipped")
@@ -59,19 +59,12 @@ var (
 	debugSetupF = flag.Bool("debug-setup", false, "enable debug logs for tests setup")
 	logLevelF   = zap.LevelFlag("log-level", zap.DebugLevel, "log level for tests")
 
-	disableFilterPushdownF = flag.Bool("disable-filter-pushdown", false, "disable filter pushdown")
-	enableSortPushdownF    = flag.Bool("enable-sort-pushdown", false, "enable sort pushdown")
-	enableOplogF           = flag.Bool("enable-oplog", false, "enable OpLog")
-
-	useNewPgF   = flag.Bool("use-new-pg", false, "use new PostgreSQL backend")
-	useNewHanaF = flag.Bool("use-new-hana", false, "use new SAP HANA backend")
+	disablePushdownF = flag.Bool("disable-pushdown", false, "disable pushdown")
 )
 
 // Other globals.
 var (
-	allBackends = []string{"ferretdb-pg", "ferretdb-sqlite", "ferretdb-hana", "mongodb"}
-
-	CertsRoot = filepath.Join("..", "build", "certs") // relative to `integration` directory
+	allBackends = []string{"ferretdb-postgresql", "ferretdb-sqlite", "ferretdb-mysql", "ferretdb-hana", "mongodb"}
 )
 
 // SetupOpts represents setup options.
@@ -178,7 +171,7 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 	}
 }
 
-// Setup setups a single collection for all providers, if the are present.
+// Setup setups a single collection for all providers, if they are present.
 func Setup(tb testtb.TB, providers ...shareddata.Provider) (context.Context, *mongo.Collection) {
 	tb.Helper()
 

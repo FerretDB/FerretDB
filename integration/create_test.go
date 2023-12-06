@@ -30,7 +30,7 @@ import (
 )
 
 func TestCreateStress(t *testing.T) {
-	// TODO rewrite using teststress.Stress
+	// It should be rewritten to use teststress.Stress.
 
 	ctx, collection := setup.Setup(t) // no providers there, we will create collections concurrently
 	db := collection.Database()
@@ -93,7 +93,7 @@ func TestCreateStress(t *testing.T) {
 }
 
 func TestCreateOnInsertStressSameCollection(t *testing.T) {
-	// TODO rewrite using teststress.Stress
+	// It should be rewritten to use teststress.Stress.
 
 	ctx, collection := setup.Setup(t)
 	// do not toLower() db name as it may contain uppercase letters
@@ -133,7 +133,7 @@ func TestCreateOnInsertStressSameCollection(t *testing.T) {
 }
 
 func TestCreateOnInsertStressDiffCollection(t *testing.T) {
-	// TODO rewrite using teststress.Stress
+	// It should be rewritten to use teststress.Stress.
 
 	ctx, collection := setup.Setup(t)
 	// do not toLower() db name as it may contain uppercase letters
@@ -174,7 +174,7 @@ func TestCreateOnInsertStressDiffCollection(t *testing.T) {
 }
 
 func TestCreateStressSameCollection(t *testing.T) {
-	// TODO rewrite using teststress.Stress
+	// It should be rewritten to use teststress.Stress.
 
 	ctx, collection := setup.Setup(t) // no providers there, we will create collection from the test
 	db := collection.Database()
@@ -240,4 +240,118 @@ func TestCreateStressSameCollection(t *testing.T) {
 	require.Equal(t, bson.D{{"_id", "foo_1"}, {"v", "bar"}}, doc)
 
 	require.Equal(t, int32(1), created.Load(), "Only one attempt to create a collection should succeed")
+}
+
+// TestCreateCappedCommandInvalidSpec checks that invalid create capped collection commands are handled correctly.
+// For valid test cases see collStats for capped collections tests.
+func TestCreateCappedCommandInvalidSpec(t *testing.T) {
+	t.Parallel()
+
+	unset := struct{}{}
+
+	for name, tc := range map[string]struct { //nolint:vet // used for testing only
+		capped any
+		size   any
+		max    any
+
+		err        *mongo.CommandError // required, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+	}{
+		"ZeroSize": {
+			capped: true,
+			size:   0,
+			err: &mongo.CommandError{
+				Code:    51024,
+				Name:    "Location51024",
+				Message: "BSON field 'size' value must be >= 1, actual value '0'",
+			},
+		},
+		"EmptySize": {
+			capped: true,
+			err: &mongo.CommandError{
+				Code:    72,
+				Name:    "InvalidOptions",
+				Message: "the 'size' field is required when 'capped' is true",
+			},
+		},
+		"MissingSizeField": {
+			capped: true,
+			size:   unset,
+			err: &mongo.CommandError{
+				Code:    72,
+				Name:    "InvalidOptions",
+				Message: "the 'size' field is required when 'capped' is true",
+			},
+		},
+		"EmptySizeWithMax": {
+			capped: true,
+			max:    500,
+			err: &mongo.CommandError{
+				Code:    72,
+				Name:    "InvalidOptions",
+				Message: "the 'size' field is required when 'capped' is true",
+			},
+		},
+		"WrongSizeType": {
+			capped: true,
+			size:   "foo",
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'create.size' is the wrong type 'string', expected types '[long, int, decimal, double']",
+			},
+			altMessage: "BSON field 'create.size' is the wrong type 'string', expected types '[long, int, decimal, double]'",
+		},
+		"WrongMaxType": {
+			capped: true,
+			size:   500,
+			max:    "foo",
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'create.max' is the wrong type 'string', expected types '[long, int, decimal, double']",
+			},
+			altMessage: "BSON field 'create.max' is the wrong type 'string', expected types '[long, int, decimal, double]'",
+		},
+		"WrongCappedType": {
+			capped: "foo",
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'create.capped' is the wrong type 'string', expected types '[bool, long, int, decimal, double']",
+			},
+			altMessage: "BSON field 'capped' is the wrong type 'string', expected types '[bool, long, int, decimal, double]'",
+		},
+		"NegativeSize": {
+			capped: true,
+			size:   -500,
+			err: &mongo.CommandError{
+				Code:    51024,
+				Name:    "Location51024",
+				Message: "BSON field 'size' value must be >= 1, actual value '-500'",
+			},
+		},
+	} {
+		tc, name := tc, name
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			ctx, collection := setup.Setup(t)
+
+			command := bson.D{
+				{"create", collection.Name()},
+				{"capped", tc.capped},
+				{"max", tc.max},
+			}
+
+			if tc.size != unset {
+				command = append(command, bson.E{Key: "size", Value: tc.size})
+			}
+
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, command).Decode(&res)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+			require.Nil(t, res)
+		})
+	}
 }

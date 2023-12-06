@@ -37,19 +37,13 @@ type NewBackendParams struct {
 	P   *state.Provider
 }
 
-// NewBackend creates a new backend.
+// NewBackend creates a new Backend.
 func NewBackend(params *NewBackendParams) (backends.Backend, error) {
 	return nil, lazyerrors.New("not implemented yet")
 }
 
 // Close implements backends.Backend interface.
 func (b *backend) Close() {
-	// TODO
-}
-
-// Name implements backends.Backend interface.
-func (b *backend) Name() string {
-	return "SAP HANA"
 }
 
 // Status implements backends.Backend interface.
@@ -76,12 +70,10 @@ func (b *backend) DropDatabase(ctx context.Context, params *backends.DropDatabas
 
 // Describe implements prometheus.Collector.
 func (b *backend) Describe(ch chan<- *prometheus.Desc) {
-	// TODO
 }
 
 // Collect implements prometheus.Collector.
 func (b *backend) Collect(ch chan<- prometheus.Metric) {
-	// TODO
 }
 
 // check interfaces

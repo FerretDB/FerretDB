@@ -19,15 +19,19 @@ import (
 	"bytes"
 	"context"
 	_ "expvar" // for metrics
+	"fmt"
 	"net"
 	"net/http"
 	_ "net/http/pprof" // for profiling
+	"slices"
 	"text/template"
 	"time"
 
+	"github.com/arl/statsviz"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
+	"golang.org/x/exp/maps"
 
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -45,10 +49,20 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 		}),
 	))
 
-	handlers := []string{
-		"/debug/metrics", // from http.Handle above
-		"/debug/vars",    // from expvar
-		"/debug/pprof",   // from net/http/pprof
+	opts := []statsviz.Option{
+		statsviz.Root("/debug/graphs"),
+		// TODO https://github.com/FerretDB/FerretDB/issues/3600
+	}
+	must.NoError(statsviz.Register(http.DefaultServeMux, opts...))
+
+	handlers := map[string]string{
+		// custom handlers registered above
+		"/debug/graphs":  "Visualize metrics",
+		"/debug/metrics": "Metrics in Prometheus format",
+
+		// stdlib handlers
+		"/debug/vars":  "Expvar package metrics",
+		"/debug/pprof": "Runtime profiling data for pprof",
 	}
 
 	var page bytes.Buffer
@@ -56,8 +70,8 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 	<html>
 	<body>
 	<ul>
-	{{range .}}
-		<li><a href="{{.}}">{{.}}</a></li>
+	{{range $path, $desc := .}}
+		<li><a href="{{$path}}">{{$path}}</a>: {{$desc}}</li>
 	{{end}}
 	</ul>
 	</body>
@@ -83,7 +97,16 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 	go func() {
 		lis := must.NotFail(net.Listen("tcp", addr))
 
-		l.Sugar().Infof("Starting debug server on http://%s/", lis.Addr())
+		root := fmt.Sprintf("http://%s", lis.Addr())
+
+		l.Sugar().Infof("Starting debug server on %s ...", root)
+
+		paths := maps.Keys(handlers)
+		slices.Sort(paths)
+
+		for _, path := range paths {
+			l.Sugar().Infof("%s%s - %s", root, path, handlers[path])
+		}
 
 		if err := s.Serve(lis); err != http.ErrServerClosed {
 			panic(err)

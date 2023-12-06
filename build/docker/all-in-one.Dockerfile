@@ -12,7 +12,7 @@ ARG LABEL_COMMIT
 
 # build stage
 
-FROM ghcr.io/ferretdb/golang:1.21.1-2 AS all-in-one-build
+FROM ghcr.io/ferretdb/golang:1.21.5-1 AS all-in-one-build
 
 ARG TARGETARCH
 
@@ -29,11 +29,11 @@ ENV GOMODCACHE /cache/gomodcache
 # remove ",direct"
 ENV GOPROXY https://proxy.golang.org
 
-# do not raise it from the default value of v1 without providing a separate v1 build
+# do not raise it without providing a separate v1 build
 # because v2+ is problematic for some virtualization platforms and older hardware
-# ENV GOAMD64=v1
+ENV GOAMD64=v1
 
-# leave GOARM unset for autodetection
+# GOARM is not set because it is ignored for arm64
 
 ENV CGO_ENABLED=1
 
@@ -45,7 +45,7 @@ RUN --mount=type=cache,target=/cache <<EOF
 set -ex
 
 # copy cached stdlib builds from base image
-flock --verbose /cache/ cp -Rnv /root/.cache/go-build/. /cache/gocache
+flock --verbose /cache/ cp -Rn /root/.cache/go-build/. /cache/gocache
 
 # TODO https://github.com/FerretDB/FerretDB/issues/2170
 # That command could be run only once by using a separate stage;
@@ -66,7 +66,6 @@ fi
 # Do not trim paths to make debugging with delve easier.
 
 # check that stdlib was cached
-# env GODEBUG=gocachehash=1 go install -v -race=$RACE std
 go install -v -race=$RACE std
 
 go build -v -o=bin/ferretdb -race=$RACE -tags=ferretdb_debug -coverpkg=./... ./cmd/ferretdb
@@ -78,7 +77,7 @@ EOF
 
 # final stage
 
-FROM postgres:16.0 AS all-in-one
+FROM postgres:16.1 AS all-in-one
 
 COPY --from=all-in-one-build /src/bin/ferretdb /ferretdb
 
@@ -93,7 +92,7 @@ COPY --from=all-in-one-build /src/build/docker/all-in-one/ferretdb.sh /etc/servi
 COPY --from=all-in-one-build /src/build/docker/all-in-one/postgresql.sh /etc/service/postgresql/run
 COPY --from=all-in-one-build /src/build/docker/all-in-one/entrypoint.sh /entrypoint.sh
 
-RUN <<EOF
+RUN --mount=type=cache,target=/var/cache/apt <<EOF
 set -ex
 
 apt update
@@ -116,6 +115,7 @@ ENTRYPOINT [ "/entrypoint.sh" ]
 # all-in-one hacks stop there
 
 WORKDIR /
+VOLUME /state
 EXPOSE 27017 27018 8080
 
 # don't forget to update documentation if you change defaults
@@ -123,6 +123,7 @@ ENV FERRETDB_LISTEN_ADDR=:27017
 # ENV FERRETDB_LISTEN_TLS=:27018
 ENV FERRETDB_DEBUG_ADDR=:8080
 ENV FERRETDB_STATE_DIR=/state
+ENV FERRETDB_SQLITE_URL=file:/state/
 
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
@@ -133,6 +134,6 @@ LABEL org.opencontainers.image.licenses="Apache-2.0"
 LABEL org.opencontainers.image.revision="${LABEL_COMMIT}"
 LABEL org.opencontainers.image.source="https://github.com/FerretDB/FerretDB"
 LABEL org.opencontainers.image.title="FerretDB"
-LABEL org.opencontainers.image.url="https://ferretdb.io/"
+LABEL org.opencontainers.image.url="https://www.ferretdb.com/"
 LABEL org.opencontainers.image.vendor="FerretDB Inc."
 LABEL org.opencontainers.image.version="${LABEL_VERSION}"

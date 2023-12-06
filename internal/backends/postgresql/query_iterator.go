@@ -16,14 +16,18 @@ package postgresql
 
 import (
 	"context"
+	"fmt"
+	"slices"
 	"sync"
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
+	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata"
+	"github.com/FerretDB/FerretDB/internal/handler/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
@@ -32,10 +36,11 @@ import (
 type queryIterator struct {
 	// the order of fields is weird to make the struct smaller due to alignment
 
-	ctx   context.Context
-	rows  pgx.Rows // protected by m
-	token *resource.Token
-	m     sync.Mutex
+	ctx           context.Context
+	rows          pgx.Rows // protected by m
+	token         *resource.Token
+	m             sync.Mutex
+	onlyRecordIDs bool
 }
 
 // newQueryIterator returns a new queryIterator for the given Rows.
@@ -47,11 +52,12 @@ type queryIterator struct {
 //
 // Nil rows are possible and return already done iterator.
 // It still should be Close'd.
-func newQueryIterator(ctx context.Context, rows pgx.Rows) types.DocumentsIterator {
+func newQueryIterator(ctx context.Context, rows pgx.Rows, onlyRecordIDs bool) types.DocumentsIterator {
 	iter := &queryIterator{
-		ctx:   ctx,
-		rows:  rows,
-		token: resource.NewToken(),
+		ctx:           ctx,
+		rows:          rows,
+		onlyRecordIDs: onlyRecordIDs,
+		token:         resource.NewToken(),
 	}
 	resource.Track(iter, iter.token)
 
@@ -89,17 +95,42 @@ func (iter *queryIterator) Next() (struct{}, *types.Document, error) {
 		return unused, nil, lazyerrors.Error(err)
 	}
 
+	columns := make([]string, len(iter.rows.FieldDescriptions()))
+	for i, description := range iter.rows.FieldDescriptions() {
+		columns[i] = description.Name
+	}
+
+	var recordID int64
 	var b []byte
-	if err := iter.rows.Scan(&b); err != nil {
+	var dest []any
+
+	switch {
+	case slices.Equal(columns, []string{metadata.RecordIDColumn, metadata.DefaultColumn}):
+		dest = []any{&recordID, &b}
+	case slices.Equal(columns, []string{metadata.RecordIDColumn}):
+		dest = []any{&recordID}
+	case slices.Equal(columns, []string{metadata.DefaultColumn}):
+		dest = []any{&b}
+	default:
+		panic(fmt.Sprintf("cannot scan unknown columns: %v", columns))
+	}
+
+	if err := iter.rows.Scan(dest...); err != nil {
 		iter.close()
 		return unused, nil, lazyerrors.Error(err)
 	}
 
-	doc, err := sjson.Unmarshal(b)
-	if err != nil {
-		iter.close()
-		return unused, nil, lazyerrors.Error(err)
+	var err error
+	doc := must.NotFail(types.NewDocument())
+
+	if !iter.onlyRecordIDs {
+		if doc, err = sjson.Unmarshal(b); err != nil {
+			iter.close()
+			return unused, nil, lazyerrors.Error(err)
+		}
 	}
+
+	doc.SetRecordID(recordID)
 
 	return unused, doc, nil
 }

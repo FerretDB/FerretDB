@@ -18,6 +18,7 @@ import (
 	"context"
 	"os"
 	"runtime"
+	"slices"
 	"strconv"
 	"time"
 
@@ -29,7 +30,6 @@ import (
 	oteltrace "go.opentelemetry.io/otel/sdk/trace"
 	otelsemconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.uber.org/zap"
-	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
@@ -46,7 +46,7 @@ var exporter *otlptrace.Exporter
 
 // Startup initializes things that should be initialized only once.
 func Startup() {
-	logging.Setup(zap.DebugLevel, "")
+	logging.Setup(zap.DebugLevel, "console", "")
 
 	// https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables
 	if t, _ := strconv.ParseBool(os.Getenv("RUNNER_DEBUG")); t {

@@ -17,6 +17,9 @@ package metadata
 import (
 	"context"
 	"fmt"
+	"os/user"
+	"slices"
+	"strings"
 	"sync/atomic"
 	"testing"
 
@@ -24,7 +27,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/util/state"
@@ -32,19 +34,19 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil/teststress"
 )
 
-// testCollection creates, tests, and drops an unique collection in existing database.
-func testCollection(t *testing.T, ctx context.Context, r *Registry, db *pgxpool.Pool, dbName, collectionName string) {
+// testCollection creates, tests, and drops a unique collection in the existing database.
+func testCollection(t *testing.T, ctx context.Context, r *Registry, p *pgxpool.Pool, dbName, collectionName string) {
 	t.Helper()
 
 	c, err := r.CollectionGet(ctx, dbName, collectionName)
 	require.NoError(t, err)
 	require.Nil(t, c)
 
-	created, err := r.CollectionCreate(ctx, dbName, collectionName)
+	created, err := r.CollectionCreate(ctx, &CollectionCreateParams{DBName: dbName, Name: collectionName})
 	require.NoError(t, err)
 	require.True(t, created)
 
-	created, err = r.CollectionCreate(ctx, dbName, collectionName)
+	created, err = r.CollectionCreate(ctx, &CollectionCreateParams{DBName: dbName, Name: collectionName})
 	require.NoError(t, err)
 	require.False(t, created)
 
@@ -63,7 +65,7 @@ func testCollection(t *testing.T, ctx context.Context, r *Registry, db *pgxpool.
 		DefaultColumn,
 	)
 	doc := `{"$s": {"p": {"_id": {"t": "int"}}, "$k": ["_id"]}, "_id": 42}`
-	_, err = db.Exec(ctx, q, doc)
+	_, err = p.Exec(ctx, q, doc)
 	require.NoError(t, err)
 
 	dropped, err := r.CollectionDrop(ctx, dbName, collectionName)
@@ -81,51 +83,56 @@ func testCollection(t *testing.T, ctx context.Context, r *Registry, db *pgxpool.
 
 // createDatabase creates a new provider and registry required for creating a database and
 // returns registry, db pool and created database name.
-func createDatabase(t *testing.T, ctx context.Context) (r *Registry, db *pgxpool.Pool, dbName string) {
+func createDatabase(t *testing.T, ctx context.Context) (*Registry, *pgxpool.Pool, string) {
+	t.Helper()
+
+	u := testutil.TestPostgreSQLURI(t, ctx, "")
+
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
-	u := "postgres://username:password@127.0.0.1:5432/ferretdb?pool_min_conns=1"
-	r, err = NewRegistry(u, testutil.Logger(t), sp)
+	r, err := NewRegistry(u, testutil.Logger(t), sp)
 	require.NoError(t, err)
 	t.Cleanup(r.Close)
 
-	dbName = testutil.DatabaseName(t)
-	db, err = r.DatabaseGetOrCreate(ctx, dbName)
+	dbName := testutil.DatabaseName(t)
+	p, err := r.DatabaseGetOrCreate(ctx, dbName)
 	require.NoError(t, err)
-	require.NotNil(t, db)
+	require.NotNil(t, p)
 
-	t.Cleanup(func() {
-		_, err = r.DatabaseDrop(ctx, dbName)
-		require.NoError(t, err)
-	})
-
-	return r, db, dbName
+	return r, p, dbName
 }
 
-func TestCheckAuth(t *testing.T) {
+func TestAuth(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping in -short mode")
 	}
 
-	connInfo := conninfo.New()
-	ctx := conninfo.Ctx(testutil.Ctx(t), connInfo)
+	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
+
+	var username string
+	if u, _ := user.Current(); u != nil {
+		username = u.Username
+	}
 
 	for name, tc := range map[string]struct {
 		uri string
 		err string
 	}{
-		"Auth": {
-			uri: "postgres://username:password@127.0.0.1:5432/ferretdb?pool_min_conns=1",
-			err: "",
-		},
 		"NoAuth": {
-			uri: "postgres://127.0.0.1:5432/ferretdb?pool_min_conns=1",
-			err: "failed to connect to `host=127.0.0.1 user=", // username is the current user running the test
+			uri: "postgres://127.0.0.1:5432/ferretdb",
+			err: "failed to connect to `host=127.0.0.1 user=" + username + " database=ferretdb`: " +
+				`server error (FATAL: role "` + username + `" does not exist (SQLSTATE 28000))`,
 		},
-		"NonExistingUser": {
-			uri: "postgres://wrong-user:wrong-password@127.0.0.1:5432/ferretdb?pool_min_conns=1",
-			err: "failed to connect to `host=127.0.0.1 user=wrong-user database=ferretdb`",
+		"WrongUser": {
+			uri: "postgres://wrong-user:wrong-password@127.0.0.1:5432/ferretdb",
+			err: "failed to connect to `host=127.0.0.1 user=wrong-user database=ferretdb`: " +
+				`server error (FATAL: role "wrong-user" does not exist (SQLSTATE 28000))`,
+		},
+		"WrongDatabase": {
+			uri: "postgres://username:password@127.0.0.1:5432/wrong-database",
+			err: "failed to connect to `host=127.0.0.1 user=username database=wrong-database`: " +
+				`server error (FATAL: database "wrong-database" does not exist (SQLSTATE 3D000))`,
 		},
 	} {
 		name, tc := name, tc
@@ -138,29 +145,14 @@ func TestCheckAuth(t *testing.T) {
 			t.Cleanup(r.Close)
 
 			_, err = r.getPool(ctx)
-			if tc.err != "" {
-				require.ErrorContains(t, err, tc.err)
-				return
-			}
-
-			require.NoError(t, err)
+			require.ErrorContains(t, err, tc.err)
 		})
 	}
 }
 
 func TestCreateDropStress(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping in -short mode")
-	}
-
-	connInfo := conninfo.New()
-	ctx := conninfo.Ctx(testutil.Ctx(t), connInfo)
-
+	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
 	r, db, dbName := createDatabase(t, ctx)
-
-	t.Cleanup(func() {
-		_, _ = r.DatabaseDrop(ctx, dbName)
-	})
 
 	var i atomic.Int32
 
@@ -175,13 +167,7 @@ func TestCreateDropStress(t *testing.T) {
 }
 
 func TestCreateSameStress(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping in -short mode")
-	}
-
-	connInfo := conninfo.New()
-	ctx := conninfo.Ctx(testutil.Ctx(t), connInfo)
-
+	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
 	r, db, dbName := createDatabase(t, ctx)
 	collectionName := testutil.CollectionName(t)
 
@@ -193,13 +179,13 @@ func TestCreateSameStress(t *testing.T) {
 		ready <- struct{}{}
 		<-start
 
-		created, err := r.CollectionCreate(ctx, dbName, collectionName)
+		created, err := r.CollectionCreate(ctx, &CollectionCreateParams{DBName: dbName, Name: collectionName})
 		require.NoError(t, err)
 		if created {
 			createdTotal.Add(1)
 		}
 
-		created, err = r.CollectionCreate(ctx, dbName, collectionName)
+		created, err = r.CollectionCreate(ctx, &CollectionCreateParams{DBName: dbName, Name: collectionName})
 		require.NoError(t, err)
 		require.False(t, created)
 
@@ -226,16 +212,11 @@ func TestCreateSameStress(t *testing.T) {
 }
 
 func TestDropSameStress(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping in -short mode")
-	}
-
-	connInfo := conninfo.New()
-	ctx := conninfo.Ctx(testutil.Ctx(t), connInfo)
-
+	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
 	r, _, dbName := createDatabase(t, ctx)
 	collectionName := testutil.CollectionName(t)
-	created, err := r.CollectionCreate(ctx, dbName, collectionName)
+
+	created, err := r.CollectionCreate(ctx, &CollectionCreateParams{DBName: dbName, Name: collectionName})
 	require.NoError(t, err)
 	require.True(t, created)
 
@@ -256,15 +237,10 @@ func TestDropSameStress(t *testing.T) {
 }
 
 func TestCreateDropSameStress(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping in -short mode")
-	}
-
-	connInfo := conninfo.New()
-	ctx := conninfo.Ctx(testutil.Ctx(t), connInfo)
-
+	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
 	r, _, dbName := createDatabase(t, ctx)
 	collectionName := testutil.CollectionName(t)
+
 	var i, createdTotal, droppedTotal atomic.Int32
 
 	teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
@@ -274,7 +250,7 @@ func TestCreateDropSameStress(t *testing.T) {
 		<-start
 
 		if id%2 == 0 {
-			created, err := r.CollectionCreate(ctx, dbName, collectionName)
+			created, err := r.CollectionCreate(ctx, &CollectionCreateParams{DBName: dbName, Name: collectionName})
 			require.NoError(t, err)
 			if created {
 				createdTotal.Add(1)
@@ -292,16 +268,29 @@ func TestCreateDropSameStress(t *testing.T) {
 	require.Less(t, int32(1), droppedTotal.Load())
 }
 
-func TestCheckDatabaseUpdated(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping in -short mode")
-	}
-
+func TestDefaultEmptySchema(t *testing.T) {
 	t.Parallel()
 
-	connInfo := conninfo.New()
-	ctx := conninfo.Ctx(testutil.Ctx(t), connInfo)
+	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
+	r, _, dbName := createDatabase(t, ctx)
 
+	list, err := r.DatabaseList(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, []string{dbName}, list)
+
+	created, err := r.CollectionCreate(ctx, &CollectionCreateParams{DBName: "public", Name: testutil.CollectionName(t)})
+	require.NoError(t, err)
+	assert.True(t, created)
+
+	list, err = r.DatabaseList(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, []string{dbName, "public"}, list)
+}
+
+func TestCheckDatabaseUpdated(t *testing.T) {
+	t.Parallel()
+
+	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
 	r, db, dbName := createDatabase(t, ctx)
 
 	var err error
@@ -310,14 +299,14 @@ func TestCheckDatabaseUpdated(t *testing.T) {
 		err = r.initCollections(ctx, dbName, db)
 		require.NoError(t, err)
 
-		var dbPool *pgxpool.Pool
-		dbPool, err = r.DatabaseGetExisting(ctx, dbName)
+		var p *pgxpool.Pool
+		p, err = r.DatabaseGetExisting(ctx, dbName)
 		require.NoError(t, err)
-		require.NotNil(t, dbPool)
+		require.NotNil(t, p)
 	})
 
 	collectionName := testutil.CollectionName(t)
-	created, err := r.CollectionCreate(ctx, dbName, collectionName)
+	created, err := r.CollectionCreate(ctx, &CollectionCreateParams{DBName: dbName, Name: collectionName})
 	require.NoError(t, err)
 	require.True(t, created)
 
@@ -360,23 +349,15 @@ func TestCheckDatabaseUpdated(t *testing.T) {
 }
 
 func TestRenameCollection(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping in -short mode")
-	}
-
-	t.Skip("https://github.com/FerretDB/FerretDB/issues/3409")
-
 	t.Parallel()
 
-	connInfo := conninfo.New()
-	ctx := conninfo.Ctx(testutil.Ctx(t), connInfo)
-
+	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
 	r, db, dbName := createDatabase(t, ctx)
 
 	oldCollectionName := testutil.CollectionName(t)
 	newCollectionName := "new"
 
-	created, err := r.CollectionCreate(ctx, dbName, oldCollectionName)
+	created, err := r.CollectionCreate(ctx, &CollectionCreateParams{DBName: dbName, Name: oldCollectionName})
 	require.NoError(t, err)
 	require.True(t, created)
 
@@ -396,6 +377,7 @@ func TestRenameCollection(t *testing.T) {
 
 		expected := &Collection{
 			Name:      newCollectionName,
+			UUID:      oldCollection.UUID,
 			TableName: oldCollection.TableName,
 			Indexes:   oldCollection.Indexes,
 		}
@@ -406,16 +388,44 @@ func TestRenameCollection(t *testing.T) {
 	})
 }
 
-func TestIndexesCreateDrop(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping in -short mode")
-	}
-
+func TestMetadataIndexes(t *testing.T) {
 	t.Parallel()
 
-	connInfo := conninfo.New()
-	ctx := conninfo.Ctx(testutil.Ctx(t), connInfo)
+	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
+	_, db, dbName := createDatabase(t, ctx)
 
+	var sql string
+	err := db.QueryRow(
+		ctx,
+		"SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2 AND indexname = $3",
+		dbName, metadataTableName, metadataTableName+"_id_idx",
+	).Scan(&sql)
+	require.NoError(t, err)
+
+	expected := fmt.Sprintf(
+		`CREATE UNIQUE INDEX %s ON %q.%s USING btree (((_jsonb -> '_id'::text)))`,
+		metadataTableName+"_id_idx", dbName, metadataTableName,
+	)
+	assert.Equal(t, expected, sql)
+
+	err = db.QueryRow(
+		ctx,
+		"SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2 AND indexname = $3",
+		dbName, metadataTableName, metadataTableName+"_table_idx",
+	).Scan(&sql)
+	assert.NoError(t, err)
+
+	expected = fmt.Sprintf(
+		`CREATE UNIQUE INDEX %s ON %q.%s USING btree (((_jsonb -> 'table'::text)))`,
+		metadataTableName+"_table_idx", dbName, metadataTableName,
+	)
+	assert.Equal(t, expected, sql)
+}
+
+func TestIndexesCreateDrop(t *testing.T) {
+	t.Parallel()
+
+	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
 	r, db, dbName := createDatabase(t, ctx)
 	collectionName := testutil.CollectionName(t)
 
@@ -551,7 +561,8 @@ func TestIndexesCreateDrop(t *testing.T) {
 	})
 
 	t.Run("CheckSettingsAfterCreation", func(t *testing.T) {
-		err := r.initCollections(ctx, dbName, db)
+		// Force DBs and collection initialization to check that indexes metadata is stored correctly in the database.
+		_, err = r.getPool(ctx)
 		require.NoError(t, err)
 
 		var refreshedCollection *Collection
@@ -588,8 +599,8 @@ func TestIndexesCreateDrop(t *testing.T) {
 		require.NoError(t, row.Scan(&count))
 		require.Equal(t, 2, count) // only default index and index_unique should be left
 
-		// check settings after dropping indexes
-		err = r.initCollections(ctx, dbName, db)
+		// Force DBs and collection initialization to check index metadata after deletion.
+		_, err = r.getPool(ctx)
 		require.NoError(t, err)
 
 		collection, err = r.CollectionGet(ctx, dbName, collectionName)
@@ -607,35 +618,102 @@ func TestIndexesCreateDrop(t *testing.T) {
 			}
 		}
 	})
+}
 
-	t.Run("MetadataIndexes", func(t *testing.T) {
-		t.Parallel()
+func TestLongIndexNames(t *testing.T) {
+	t.Parallel()
 
-		var sql string
-		err := db.QueryRow(
-			ctx,
-			"SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2 AND indexname = $3",
-			dbName, metadataTableName, metadataTableName+"_id_idx",
-		).Scan(&sql)
-		require.NoError(t, err)
+	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
+	r, _, dbName := createDatabase(t, ctx)
 
-		expected := fmt.Sprintf(
-			`CREATE UNIQUE INDEX %s ON %q.%s USING btree (((_jsonb -> '_id'::text)))`,
-			metadataTableName+"_id_idx", dbName, metadataTableName,
-		)
-		require.Equal(t, expected, sql)
+	batch1 := []IndexInfo{{
+		Name: strings.Repeat("aB", 75),
+		Key: []IndexKeyPair{{
+			Field:      "foo",
+			Descending: false,
+		}, {
+			Field:      "bar",
+			Descending: true,
+		}},
+	}, {
+		Name: strings.Repeat("aB", 75) + "_unique",
+		Key: []IndexKeyPair{{
+			Field:      "foo",
+			Descending: false,
+		}},
+		Unique: true,
+	}}
 
-		err = db.QueryRow(
-			ctx,
-			"SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2 AND indexname = $3",
-			dbName, metadataTableName, metadataTableName+"_table_idx",
-		).Scan(&sql)
-		assert.NoError(t, err)
+	batch2 := []IndexInfo{{
+		Name: strings.Repeat("aB", 75) + "_bar",
+		Key: []IndexKeyPair{{
+			Field:      "bar",
+			Descending: false,
+		}},
+	}}
 
-		expected = fmt.Sprintf(
-			`CREATE UNIQUE INDEX %s ON %q.%s USING btree (((_jsonb -> 'table'::text)))`,
-			metadataTableName+"_table_idx", dbName, metadataTableName,
-		)
-		assert.Equal(t, expected, sql)
-	})
+	for name, tc := range map[string]struct {
+		collectionName   string
+		tablePartInIndex string
+	}{
+		"ShortCollectionName": {
+			collectionName:   testutil.CollectionName(t),
+			tablePartInIndex: "testlongindexnames_47546aa3",
+		},
+		"LongCollectionName": {
+			collectionName:   "Collection" + strings.Repeat("cD", 75),
+			tablePartInIndex: "collection" + strings.Repeat("cd", 10),
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			err := r.IndexesCreate(ctx, dbName, tc.collectionName, batch1)
+			require.NoError(t, err)
+
+			collection, err := r.CollectionGet(ctx, dbName, tc.collectionName)
+			require.NoError(t, err)
+			require.Equal(t, 3, len(collection.Indexes))
+
+			for _, index := range collection.Indexes {
+				switch index.Name {
+				case "_id_":
+					assert.Equal(t, tc.tablePartInIndex+"__id__67399184_idx", index.PgIndex)
+				case batch1[0].Name:
+					assert.Equal(t, tc.tablePartInIndex+"_ababababababababab_12fa1dfe_idx", index.PgIndex)
+				case batch1[1].Name:
+					assert.Equal(t, tc.tablePartInIndex+"_ababababababababab_ca7ee610_idx", index.PgIndex)
+				default:
+					t.Errorf("unexpected index: %s", index.Name)
+				}
+			}
+
+			err = r.IndexesCreate(ctx, dbName, tc.collectionName, batch2)
+			require.NoError(t, err)
+
+			// Force DBs and collection initialization to check that indexes metadata is stored correctly in the database.
+			_, err = r.getPool(ctx)
+			require.NoError(t, err)
+
+			collection, err = r.CollectionGet(ctx, dbName, tc.collectionName)
+			require.NoError(t, err)
+			require.Equal(t, 4, len(collection.Indexes))
+
+			for _, index := range collection.Indexes {
+				switch index.Name {
+				case "_id_":
+					assert.Equal(t, tc.tablePartInIndex+"__id__67399184_idx", index.PgIndex)
+				case batch1[0].Name:
+					assert.Equal(t, tc.tablePartInIndex+"_ababababababababab_12fa1dfe_idx", index.PgIndex)
+				case batch1[1].Name:
+					assert.Equal(t, tc.tablePartInIndex+"_ababababababababab_ca7ee610_idx", index.PgIndex)
+				case batch2[0].Name:
+					assert.Equal(t, tc.tablePartInIndex+"_ababababababababab_aaf0d99c_idx", index.PgIndex)
+				default:
+					t.Errorf("unexpected index: %s", index.Name)
+				}
+			}
+		})
+	}
 }

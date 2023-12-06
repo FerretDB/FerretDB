@@ -18,14 +18,15 @@ import (
 	"context"
 	"fmt"
 	"hash/fnv"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
 
+	"github.com/google/uuid"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata/pool"
@@ -229,18 +230,32 @@ func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]*Collec
 	return res, nil
 }
 
+// CollectionCreateParams contains parameters for CollectionCreate.
+type CollectionCreateParams struct {
+	DBName          string
+	Name            string
+	CappedSize      int64
+	CappedDocuments int64
+	_               struct{} // prevent unkeyed literals
+}
+
+// Capped returns true if capped collection creation is requested.
+func (ccp *CollectionCreateParams) Capped() bool {
+	return ccp.CappedSize > 0 // TODO https://github.com/FerretDB/FerretDB/issues/3631
+}
+
 // CollectionCreate creates a collection in the database.
 // Database will be created automatically if needed.
 //
 // Returned boolean value indicates whether the collection was created.
 // If collection already exists, (false, nil) is returned.
-func (r *Registry) CollectionCreate(ctx context.Context, dbName, collectionName string) (bool, error) {
+func (r *Registry) CollectionCreate(ctx context.Context, params *CollectionCreateParams) (bool, error) {
 	defer observability.FuncCall(ctx)()
 
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
-	return r.collectionCreate(ctx, dbName, collectionName)
+	return r.collectionCreate(ctx, params)
 }
 
 // collectionCreate creates a collection in the database.
@@ -250,8 +265,10 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName, collectionName 
 // If collection already exists, (false, nil) is returned.
 //
 // It does not hold the lock.
-func (r *Registry) collectionCreate(ctx context.Context, dbName, collectionName string) (bool, error) {
+func (r *Registry) collectionCreate(ctx context.Context, params *CollectionCreateParams) (bool, error) {
 	defer observability.FuncCall(ctx)()
+
+	dbName, collectionName := params.DBName, params.Name
 
 	db, err := r.databaseGetOrCreate(ctx, dbName)
 	if err != nil {
@@ -284,7 +301,14 @@ func (r *Registry) collectionCreate(ctx context.Context, dbName, collectionName 
 		s++
 	}
 
-	q := fmt.Sprintf("CREATE TABLE %[1]q (%[2]s TEXT NOT NULL CHECK(%[2]s != '')) STRICT", tableName, DefaultColumn)
+	q := fmt.Sprintf("CREATE TABLE %q (", tableName)
+
+	if params.Capped() {
+		q += fmt.Sprintf("%s INTEGER PRIMARY KEY, ", RecordIDColumn)
+	}
+
+	q += fmt.Sprintf("%[1]s TEXT NOT NULL CHECK(%[1]s != '')) STRICT", DefaultColumn)
+
 	if _, err = db.ExecContext(ctx, q); err != nil {
 		return false, lazyerrors.Error(err)
 	}
@@ -301,6 +325,11 @@ func (r *Registry) collectionCreate(ctx context.Context, dbName, collectionName 
 	r.colls[dbName][collectionName] = &Collection{
 		Name:      collectionName,
 		TableName: tableName,
+		Settings: Settings{
+			UUID:            uuid.NewString(),
+			CappedSize:      params.CappedSize,
+			CappedDocuments: params.CappedDocuments,
+		},
 	}
 
 	err = r.indexesCreate(ctx, dbName, collectionName, []IndexInfo{{
@@ -445,7 +474,7 @@ func (r *Registry) IndexesCreate(ctx context.Context, dbName, collectionName str
 func (r *Registry) indexesCreate(ctx context.Context, dbName, collectionName string, indexes []IndexInfo) error {
 	defer observability.FuncCall(ctx)()
 
-	_, err := r.collectionCreate(ctx, dbName, collectionName)
+	_, err := r.collectionCreate(ctx, &CollectionCreateParams{DBName: dbName, Name: collectionName})
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -495,8 +524,8 @@ func (r *Registry) indexesCreate(ctx context.Context, dbName, collectionName str
 		c.Settings.Indexes = append(c.Settings.Indexes, index)
 	}
 
-	q := fmt.Sprintf("UPDATE %q SET settings = ?", metadataTableName)
-	if _, err := db.ExecContext(ctx, q, c.Settings); err != nil {
+	q := fmt.Sprintf("UPDATE %q SET settings = ? WHERE table_name = ?", metadataTableName)
+	if _, err := db.ExecContext(ctx, q, c.Settings, c.TableName); err != nil {
 		_ = r.indexesDrop(ctx, dbName, collectionName, created)
 		return lazyerrors.Error(err)
 	}
@@ -554,8 +583,8 @@ func (r *Registry) indexesDrop(ctx context.Context, dbName, collectionName strin
 		c.Settings.Indexes = slices.Delete(c.Settings.Indexes, i, i+1)
 	}
 
-	q := fmt.Sprintf("UPDATE %q SET settings = ?", metadataTableName)
-	if _, err := db.ExecContext(ctx, q, c.Settings); err != nil {
+	q := fmt.Sprintf("UPDATE %q SET settings = ? WHERE table_name = ?", metadataTableName)
+	if _, err := db.ExecContext(ctx, q, c.Settings, c.TableName); err != nil {
 		return lazyerrors.Error(err)
 	}
 

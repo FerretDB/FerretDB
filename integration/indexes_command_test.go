@@ -509,8 +509,7 @@ func TestCreateIndexesCommandInvalidCollection(t *testing.T) {
 
 			t.Parallel()
 
-			provider := shareddata.ArrayDocuments // one provider is enough to check for errors
-			ctx, collection := setup.Setup(t, provider)
+			ctx, collection := setup.Setup(t)
 
 			command := bson.D{
 				{"createIndexes", tc.collectionName},
@@ -583,8 +582,7 @@ func TestDropIndexesCommandInvalidCollection(t *testing.T) {
 
 			t.Parallel()
 
-			provider := shareddata.ArrayDocuments // one provider is enough to check for errors
-			ctx, collection := setup.Setup(t, provider)
+			ctx, collection := setup.Setup(t)
 
 			command := bson.D{
 				{"dropIndexes", tc.collectionName},

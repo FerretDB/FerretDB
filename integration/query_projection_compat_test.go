@@ -235,7 +235,7 @@ func TestQueryProjectionPositionalOperatorCompat(t *testing.T) {
 			// e.g. missing {v: <val>} in the filter.
 			filter:         bson.D{{"_id", "array"}},
 			projection:     bson.D{{"v.$", true}},
-			resultPushdown: pgPushdown,
+			resultPushdown: allPushdown,
 		},
 		"Implicit": {
 			filter:         bson.D{{"v", float64(42)}},
