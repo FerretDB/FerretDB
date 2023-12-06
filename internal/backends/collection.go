@@ -101,6 +101,7 @@ type QueryResult struct {
 // Extra documents will be filtered out by the handler.
 //
 // Sort should have the following form: {"field1": int64(1), "field2": int64(-1), ...}.
+// Instead of a field name, "$natural" can be used to specify sorting by a RecordID.
 // If non-empty, it should be applied entirely.
 //
 // Limit, if non-zero, should be applied.
