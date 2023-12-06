@@ -54,9 +54,7 @@ func prepareOrderByClause(sort *types.Document) string {
 		return ""
 	}
 
-	if sort.Len() != 1 {
-		panic("Sorting multiple fields is not supported yet")
-	}
+	// the following code could be simplified now
 
 	v, err := sort.Get("$natural")
 	if err != nil {
@@ -65,6 +63,7 @@ func prepareOrderByClause(sort *types.Document) string {
 
 	sortOrder := v.(int64)
 	if sortOrder != 1 {
+		// FIXME support -1 for $natural
 		return ""
 	}
 

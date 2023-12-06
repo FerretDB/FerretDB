@@ -236,9 +236,7 @@ func prepareOrderByClause(p *metadata.Placeholder, sort *types.Document) (string
 		return "", nil
 	}
 
-	if sort.Len() != 1 {
-		panic("Sorting multiple fields is not supported yet")
-	}
+	// the following code could be simplified now
 
 	k := sort.Keys()[0]
 	v := sort.Values()[0].(int64)
@@ -248,6 +246,7 @@ func prepareOrderByClause(p *metadata.Placeholder, sort *types.Document) (string
 			return fmt.Sprintf(" ORDER BY %s", metadata.RecordIDColumn), nil
 		}
 
+		// FIXME support -1 for $natural
 		return "", nil
 	}
 
@@ -261,6 +260,7 @@ func prepareOrderByClause(p *metadata.Placeholder, sort *types.Document) (string
 		order = " DESC"
 	}
 
+	// FIXME remove it, it is not safe
 	return fmt.Sprintf(" ORDER BY %s->%s%s", metadata.DefaultColumn, p.Next(), order), []any{k}
 }
 

@@ -100,9 +100,9 @@ type QueryResult struct {
 // Filter may be ignored, or safely applied partially or entirely.
 // Extra documents will be filtered out by the handler.
 //
-// Sort should have the following form: {"field1": int64(1), "field2": int64(-1), ...}.
-// Instead of a field name, "$natural" can be used to specify sorting by a RecordID.
-// If non-empty, it should be applied entirely.
+// Sort should have one of the following forms: nil, {}, {"$natural": int64(1)} or {"$natural": int64(-1)}.
+// Other field names are not supported.
+// If non-empty, it should be applied.
 //
 // Limit, if non-zero, should be applied.
 func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*QueryResult, error) {
@@ -113,24 +113,11 @@ func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*
 	}
 
 	if params.Sort.Len() != 0 {
-		iter := params.Sort.Iterator()
-		defer iter.Close()
+		must.BeTrue(params.Sort.Len() == 1)
+		sortValue := params.Sort.Map()["$natural"].(int64)
 
-		for {
-			_, v, err := iter.Next()
-			if err != nil {
-				if errors.Is(err, iterator.ErrIteratorDone) {
-					break
-				}
-
-				return nil, lazyerrors.Error(err)
-			}
-
-			sortValue := v.(int64)
-
-			if sortValue != -1 && sortValue != 1 {
-				panic("sort key ordering must be 1 (for ascending) or -1 (for descending)")
-			}
+		if sortValue != -1 && sortValue != 1 {
+			panic("sort value must be 1 (for ascending) or -1 (for descending)")
 		}
 	}
 
