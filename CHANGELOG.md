@@ -1142,4 +1142,4 @@ We are delighted to announce the release of FerretDB 1.0 GA!
 
 ## Older Releases
 
-See <https://github.com/FerretDB/FerretDB/blob/v1.0.0/CHANGELOG.md>.
+See https://github.com/FerretDB/FerretDB/blob/v1.0.0/CHANGELOG.md.
