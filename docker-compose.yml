@@ -186,10 +186,13 @@ services:
     ports:
       - 3000:3000
     volumes:
-      - ./website/docs:/workdir/docusaurus-docs/docs:ro
+      - ./website/docs:/workdir/docusaurus-docs/docs:rw
       - ./website/static:/workdir/docusaurus-docs/static:ro
       - ./website/src/components:/workdir/docusaurus-docs/src/components:ro
       - ./website/src/css:/workdir/docusaurus-docs/src/css:ro
+
+      - ./website/versioned_docs:/workdir/docusaurus-docs/versioned_docs:rw
+      - ./website/versioned_sidebars:/workdir/docusaurus-docs/versioned_sidebars:rw
 
       # We copy intro.js to redirect from /intro (old default docs page) to the root docs page.
       - ./website/src/pages/intro.js:/workdir/docusaurus-docs/src/pages/intro.js

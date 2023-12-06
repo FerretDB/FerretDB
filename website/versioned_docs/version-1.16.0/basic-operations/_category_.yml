@@ -1,0 +1,7 @@
+---
+label: Basic CRUD Operations
+position: 4
+link:
+  type: generated-index
+  description: >
+    Perform basic CRUD operations using FerretDB
