@@ -68,6 +68,7 @@ type FindAndModifyParams struct {
 	WriteConcern             *types.Document `ferretdb:"writeConcern,ignored"`
 	BypassDocumentValidation bool            `ferretdb:"bypassDocumentValidation,ignored"`
 	LSID                     any             `ferretdb:"lsid,ignored"`
+	ClusterTime              any             `ferretdb:"$clusterTime,ignored"`
 }
 
 // UpsertParams represents parameters for upsert, if the document exists UpdateParams is set.
