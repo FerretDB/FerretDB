@@ -82,28 +82,6 @@ func run(pass *analysis.Pass) (any, error) {
 		log.Panicf("could not get cache file path: %s", err)
 	}
 
-	var data []byte
-	var cache issueCache
-
-	data, err = lockedfile.Read(cachePath)
-	switch {
-	case err == nil:
-		if err = json.Unmarshal(data, &cache); err != nil {
-			log.Panicf("could not unmarshal cache file: %s", err)
-		}
-
-	case errors.Is(err, os.ErrNotExist):
-		// can't open file, consider the cache empty
-		cache.Issues = make(map[string]issueState)
-
-	default:
-		log.Panicf("could not read cache file: %s", err)
-	}
-
-	if cache.ReachedRateLimit {
-		return nil, nil
-	}
-
 	token := os.Getenv("GITHUB_TOKEN")
 
 	client, err := gh.NewRESTClient(token, nil)
@@ -111,86 +89,39 @@ func run(pass *analysis.Pass) (any, error) {
 		log.Panicf("could not create GitHub client: %s", err)
 	}
 
-	c := todoChecker{
-		pass:     pass,
-		comments: comments,
-		cache:    &cache,
-		client:   client,
-	}
-	c.run(context.Background())
+	if err := lockedfile.Transform(cachePath, func(data []byte) ([]byte, error) {
+		var cache issueCache
 
-	/*data, err := json.Marshal(cache)
-	if err != nil {
-		log.Panicf("could not marshal cache file: %s", err)
-	}
-
-	lockedfile.Transform()*/
-
-	/*	var iCache issueCache
-
-		currentPath, err := os.Getwd()
-		if err != nil {
-			return nil, err
-		}
-
-		cachePath := getCacheFilePath(currentPath)
-
-		// lockedfile is used to coordinate multiple invocations of the same cache file.
-		cf, err := lockedfile.OpenFile(cachePath, os.O_RDWR|os.O_CREATE, 0o666)
-		if err != nil {
-			return nil, err
-		}
-
-		defer func() {
-			if err = cf.Close(); err != nil {
-				log.Println(err)
-			}
-		}()
-
-		stat, err := cf.Stat()
-		if err != nil {
-			return nil, err
-		}
-
-		if stat.Size() > 0 {
-			buffer := make([]byte, stat.Size())
-
-			_, err = cf.Read(buffer)
-			if err != nil {
-				return nil, err
-			}
-
-			err = json.Unmarshal(buffer, &iCache)
-			if err != nil {
-				return nil, err
-			}
+		if len(data) == 0 {
+			cache.Issues = make(map[string]issueState)
 		} else {
-			iCache.Issues = make(map[string]bool)
+			if err = json.Unmarshal(data, &cache); err != nil {
+				log.Panicf("could not unmarshal cache file data: %s", err)
+			}
 		}
 
-		token := os.Getenv("GITHUB_TOKEN")
+		if cache.ReachedRateLimit {
+			return nil, nil
+		}
 
-		client, err := gh.NewRESTClient(token, nil)
+		c := todoChecker{
+			client:   client,
+			pass:     pass,
+			comments: comments,
+			cache:    &cache,
+			mx:       sync.RWMutex{},
+		}
+		c.run(context.Background())
+
+		data, err := json.Marshal(cache)
 		if err != nil {
-			return nil, err
+			log.Panicf("could not marshal cache: %s", err)
 		}
 
-		if err := checkTodoComments(pass, &iCache, client); err != nil {
-			return nil, err
-		}
-
-		if len(iCache.Issues) > 0 {
-			jsonb, err := json.Marshal(iCache)
-			if err != nil {
-				return nil, err
-			}
-
-			_, err = cf.WriteAt(jsonb, 0)
-			if err != nil {
-				return nil, err
-			}
-		}
-	*/
+		return data, nil
+	}); err != nil {
+		log.Panicf("could not save cache file: %s", err)
+	}
 
 	return nil, nil
 }
@@ -241,14 +172,41 @@ func collectTodoComments(pass *analysis.Pass) []*ast.Comment {
 	return comments
 }
 
-// todoChecker is used to gothrough the given comments and reports if TODOs are valid and linked issues are open.
+// todoChecker is used to go through the given comments and reports if TODOs are valid and linked issues are open.
 type todoChecker struct {
+	client   *github.Client
 	pass     *analysis.Pass
 	comments []*ast.Comment
 	cache    *issueCache
-	client   *github.Client
+	mx       sync.RWMutex
 }
 
+// run executes TODO checker.
+func (c *todoChecker) run(ctx context.Context) {
+	done := make(chan struct{})
+
+	wg := sync.WaitGroup{}
+	wg.Add(len(c.comments))
+
+	for _, comment := range c.comments {
+		go func(comment *ast.Comment) {
+			defer wg.Done()
+
+			if c.processComment(ctx, comment) {
+				close(done)
+			}
+		}(comment)
+	}
+
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+
+	<-done
+}
+
+// processComment checks if the given TODO comment is valid and linked issue is open.
 func (c *todoChecker) processComment(ctx context.Context, comment *ast.Comment) bool {
 	match := todoRE.FindStringSubmatch(comment.Text)
 
@@ -278,7 +236,10 @@ func (c *todoChecker) processComment(ctx context.Context, comment *ast.Comment) 
 
 	switch {
 	case errors.As(err, new(*github.RateLimitError)):
+		c.mx.Lock()
 		c.cache.ReachedRateLimit = true
+		c.mx.Unlock()
+
 		msg := "Rate limit reached."
 
 		if os.Getenv("GITHUB_TOKEN") == "" {
@@ -290,7 +251,10 @@ func (c *todoChecker) processComment(ctx context.Context, comment *ast.Comment) 
 		return true
 
 	case errors.As(err, &re) && re.Response.StatusCode == 404:
+		c.mx.Lock()
 		c.cache.Issues[issueLink] = issueNotFound
+		c.mx.Unlock()
+
 		message := fmt.Sprintf("invalid TODO: linked issue %s does not exist", issueLink)
 		c.pass.Reportf(comment.Pos(), message)
 
@@ -300,121 +264,21 @@ func (c *todoChecker) processComment(ctx context.Context, comment *ast.Comment) 
 
 	default:
 		if issue.GetState() == "closed" {
+			c.mx.Lock()
 			c.cache.Issues[issueLink] = issueClosed
+			c.mx.Unlock()
+
 			message := fmt.Sprintf("invalid TODO: linked issue %s is closed", issueLink)
 			c.pass.Reportf(comment.Pos(), message)
 		} else {
+			c.mx.Lock()
 			c.cache.Issues[issueLink] = issueOpen
+			c.mx.Unlock()
 		}
 	}
 
 	return false
 }
-
-// run TODO checker.
-func (c *todoChecker) run(ctx context.Context) {
-	done := make(chan struct{})
-
-	wg := sync.WaitGroup{}
-	wg.Add(len(c.comments))
-
-	for _, comment := range c.comments {
-		go func(comment *ast.Comment) {
-			defer wg.Done()
-
-			if c.processComment(ctx, comment) {
-				close(done)
-			}
-		}(comment)
-	}
-
-	go func() {
-		wg.Wait()
-		close(done)
-	}()
-
-	<-done
-}
-
-/*
-
-// checkTodoComments goes through the given files' comments and checks if TODOs are valid and linked issues are open.
-func checkTodoComments(pass *analysis.Pass, cache *issueCache, client *github.Client) error {
-	for _, f := range pass.Files {
-		for _, cg := range f.Comments {
-			for _, c := range cg.List {
-				line := c.Text
-
-				// the space between `//` and `TODO` is always added by `task fmt`
-				if !strings.HasPrefix(line, "// TODO") {
-					continue
-				}
-
-				if f.Name.Name == "testdata" {
-					line, _, _ = strings.Cut(line, ` // want "`)
-				}
-
-				match := todoRE.FindStringSubmatch(line)
-
-				if match == nil {
-					pass.Reportf(c.Pos(), "invalid TODO: incorrect format")
-					continue
-				}
-
-				num := match[1]
-
-				if isOpen, ok := cache.Issues[num]; ok {
-					if !isOpen {
-						message := fmt.Sprintf("invalid TODO: linked issue %s is closed", num)
-						pass.Reportf(c.Pos(), message)
-					}
-
-					continue
-				}
-
-				number, err := strconv.Atoi(num)
-				if err != nil {
-					return err
-				}
-
-				isOpen, err := isIssueOpen(client, number)
-				var re *github.ErrorResponse
-
-				switch {
-				case errors.As(err, new(*github.RateLimitError)):
-					msg := "Rate limit reached."
-
-					if os.Getenv("GITHUB_TOKEN") == "" {
-						msg += " Please set a GITHUB_TOKEN as described at " +
-							"https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md#setting-a-github_token"
-					}
-
-					log.Println(msg)
-
-					return nil
-
-				case errors.As(err, &re) && re.Response.StatusCode == 404:
-					message := fmt.Sprintf("invalid TODO: linked issue %s does not exist", num)
-					pass.Reportf(c.Pos(), message)
-
-				case err != nil:
-					return err
-
-				default:
-					cache.Issues[num] = isOpen
-
-					if !isOpen {
-						message := fmt.Sprintf("invalid TODO: linked issue %s is closed", num)
-						pass.Reportf(c.Pos(), message)
-					}
-				}
-			}
-		}
-	}
-
-	return nil
-}
-*/
 
 // cacheFilePath returns the path to the cache file.
 //
@@ -439,6 +303,7 @@ func cacheFilePath(p string) (string, error) {
 	return filepath.Join(path, "tmp", "checkcomments", "cache.json"), nil
 }
 
+// issueState represents the state of an issue (open, closed, not found).
 type issueState int
 
 const (
