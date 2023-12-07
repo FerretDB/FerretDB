@@ -47,7 +47,7 @@ type issueCache struct {
 }
 
 // todoRE represents correct // TODO comment format.
-var todoRE = regexp.MustCompile(`^// TODO \Qhttps://github.com/FerretDB/FerretDB/issues/\E(\d+)$`)
+var todoRE = regexp.MustCompile(`^// TODO (\Qhttps://github.com/FerretDB/FerretDB/issues/\E(\d+))$`)
 
 var analyzer = &analysis.Analyzer{
 	Name: "checkcomments",
@@ -212,12 +212,12 @@ func (c *todoChecker) run(ctx context.Context) {
 func (c *todoChecker) processComment(ctx context.Context, comment *ast.Comment) error {
 	match := todoRE.FindStringSubmatch(comment.Text)
 
-	if match == nil {
+	if len(match) != 3 {
 		c.pass.Reportf(comment.Pos(), "invalid TODO: incorrect format")
 		return nil
 	}
 
-	issueLink := match[0]
+	issueLink := match[1]
 
 	if state, ok := c.cache.Issues[issueLink]; ok {
 		if state != issueOpen {
@@ -228,7 +228,7 @@ func (c *todoChecker) processComment(ctx context.Context, comment *ast.Comment) 
 		return nil
 	}
 
-	issueNum, err := strconv.Atoi(match[1])
+	issueNum, err := strconv.Atoi(match[2])
 	if err != nil {
 		log.Panicf("invalid issue number: %s", match[1])
 	}
