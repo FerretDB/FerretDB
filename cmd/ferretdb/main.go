@@ -38,6 +38,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handler/registry"
+	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
@@ -92,9 +93,9 @@ var cli struct {
 	Test struct {
 		RecordsDir string `default:"" help:"Testing: directory for record files."`
 
-		DisableFilterPushdown bool `default:"false" help:"Experimental: disable filter pushdown."`
-		EnableOplog           bool `default:"false" help:"Experimental: enable capped collections, tailable cursors and OpLog." hidden:""`
-		EnableNewAuth         bool `default:"false" help:"Experimental: enable new authentication."                             hidden:""`
+		DisablePushdown bool `default:"false" help:"Experimental: disable pushdown."`
+		EnableOplog     bool `default:"false" help:"Experimental: enable capped collections, tailable cursors and OpLog." hidden:""`
+		EnableNewAuth   bool `default:"false" help:"Experimental: enable new authentication."                             hidden:""`
 
 		//nolint:lll // for readability
 		Telemetry struct {
@@ -339,7 +340,7 @@ func run() {
 		logger.Sugar().Warnf("Failed to set GOMAXPROCS: %s.", err)
 	}
 
-	ctx, stop := notifyAppTermination(context.Background())
+	ctx, stop := ctxutil.SigTerm(context.Background())
 
 	go func() {
 		<-ctx.Done()
@@ -396,9 +397,9 @@ func run() {
 		MySQLURL: mySQLFlags.MySQLURL,
 
 		TestOpts: registry.TestOpts{
-			DisableFilterPushdown: cli.Test.DisableFilterPushdown,
-			EnableOplog:           cli.Test.EnableOplog,
-			EnableNewAuth:         cli.Test.EnableNewAuth,
+			DisablePushdown: cli.Test.DisablePushdown,
+			EnableOplog:     cli.Test.EnableOplog,
+			EnableNewAuth:   cli.Test.EnableNewAuth,
 		},
 	})
 	if err != nil {
