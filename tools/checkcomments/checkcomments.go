@@ -113,7 +113,7 @@ func run(pass *analysis.Pass) (any, error) {
 		}
 		c.run(context.Background())
 
-		data, err := json.Marshal(cache)
+		data, err = json.Marshal(cache)
 		if err != nil {
 			log.Panicf("could not marshal cache: %s", err)
 		}
@@ -238,6 +238,11 @@ func (c *todoChecker) processComment(ctx context.Context, comment *ast.Comment) 
 
 	switch {
 	case errors.As(err, new(*github.RateLimitError)):
+		if c.cache.ReachedRateLimit {
+			// we already printed the error, so we can just return
+			return nil
+		}
+
 		c.mx.Lock()
 		c.cache.ReachedRateLimit = true
 		c.mx.Unlock()
