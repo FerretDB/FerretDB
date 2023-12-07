@@ -108,12 +108,19 @@ func (r *Registry) Close() {
 
 // NewParams represent parameters for NewCursor.
 type NewParams struct {
+	// FIXME
+	Data any
+
+	// those fields are used for limited authorization checks
+	// before we implement proper authz and/or sessions
+	DB         string
+	Collection string
+	Username   string
+
 	Type         Type
-	DB           string
-	Collection   string
-	Username     string
 	ShowRecordID bool
-	_            struct{} // prevent unkeyed literals
+
+	_ struct{} // prevent unkeyed literals
 }
 
 // NewCursor creates and stores a new cursor.

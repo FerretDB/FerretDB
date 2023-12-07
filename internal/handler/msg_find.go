@@ -131,10 +131,11 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	// Combine iterators chain and closer into a cursor to pass around.
 	// The context will be canceled when client disconnects or after maxTimeMS.
 	cursor := h.cursors.NewCursor(ctx, iterator.WithClose(iter, closer.Close), &cursor.NewParams{
-		Type:         cursor.Normal,
+		Data:         params,
 		DB:           params.DB,
 		Collection:   params.Collection,
 		Username:     username,
+		Type:         cursor.Normal,
 		ShowRecordID: params.ShowRecordId,
 	})
 

@@ -52,6 +52,7 @@ linters-settings:
       common:
         files:
           - "**/internal/backends/**/*.go"
+          - "**/internal/clientconn/cursor/*.go"
         deny:
           - pkg: github.com/FerretDB/FerretDB/internal/handler/common
       handlererrors:

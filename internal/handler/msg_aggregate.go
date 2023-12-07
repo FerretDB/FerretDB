@@ -328,10 +328,10 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	closer.Add(iter)
 
 	cursor := h.cursors.NewCursor(ctx, iterator.WithClose(iter, closer.Close), &cursor.NewParams{
-		Type:       cursor.Normal,
 		DB:         dbName,
 		Collection: cName,
 		Username:   username,
+		Type:       cursor.Normal,
 	})
 
 	cursorID := cursor.ID

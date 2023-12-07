@@ -29,6 +29,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
 
@@ -66,6 +67,10 @@ type Cursor struct {
 
 // newCursor creates a new cursor.
 func newCursor(id int64, iter types.DocumentsIterator, params *NewParams, r *Registry) *Cursor {
+	if params.Type == Tailable || params.Type == TailableAwait {
+		must.NotBeZero(params.Data)
+	}
+
 	c := &Cursor{
 		ID:        id,
 		iter:      iter,
