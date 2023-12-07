@@ -23,6 +23,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func TestFindAndModifyCompatSimple(t *testing.T) {
@@ -836,7 +837,12 @@ func testFindAndModifyCompat(t *testing.T, testCases map[string]findAndModifyCom
 					}
 					require.NoError(t, compatErr, "compat error; target returned no error")
 
-					AssertEqualDocuments(t, compatMod, targetMod)
+					compat := ConvertDocument(t, compatMod)
+					compat.Remove("$clusterTime")
+					compat.Remove("operationTime")
+
+					target := ConvertDocument(t, targetMod)
+					testutil.AssertEqual(t, compat, target)
 
 					// To make sure that the results of modification are equal,
 					// find all the documents in target and compat collections and compare that they are the same
