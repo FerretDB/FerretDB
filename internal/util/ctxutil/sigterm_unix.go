@@ -12,17 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package testutil
+//go:build unix
+
+package ctxutil
 
 import (
 	"context"
-	"os"
 	"os/signal"
 
-	"golang.org/x/sys/windows"
+	"golang.org/x/sys/unix"
 )
 
-// notifyTestsTermination installs a signal handler that cancels the context.
-func notifyTestsTermination(parent context.Context) (context.Context, context.CancelFunc) {
-	return signal.NotifyContext(parent, windows.SIGTERM, windows.SIGINT, os.Interrupt)
+// SigTerm returns a copy of the parent context that is marked done
+// (its Done channel is closed) when termination signal arrives,
+// when the returned stop function is called, or when the parent context's
+// Done channel is closed, whichever happens first.
+func SigTerm(parent context.Context) (context.Context, context.CancelFunc) {
+	return signal.NotifyContext(parent, unix.SIGTERM, unix.SIGINT)
 }

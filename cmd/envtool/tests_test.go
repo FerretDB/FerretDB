@@ -187,9 +187,9 @@ func TestRunGoTest(t *testing.T) {
 			"FAIL github.com/FerretDB/FerretDB/cmd/envtool/testdata",
 			"",
 			"Some tests did not finish:",
-			"  TestPanic1",
+			"  github.com/FerretDB/FerretDB/cmd/envtool/testdata.TestPanic1",
 			"",
-			"TestPanic1:",
+			"github.com/FerretDB/FerretDB/cmd/envtool/testdata.TestPanic1:",
 			"=== RUN   TestPanic1",
 			"panic: Panic 1",
 			"",
@@ -228,6 +228,7 @@ func TestShardTestFuncs(t *testing.T) {
 	testFuncs, err := listTestFuncs(filepath.Join("..", "..", "integration"))
 	require.NoError(t, err)
 	assert.Contains(t, testFuncs, "TestQueryCompatLimit")
+	assert.Contains(t, testFuncs, "TestGetMoreCommand")
 
 	t.Run("InvalidIndex", func(t *testing.T) {
 		t.Parallel()

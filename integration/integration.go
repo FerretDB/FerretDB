@@ -428,9 +428,9 @@ func FindAll(t testtb.TB, ctx context.Context, collection *mongo.Collection) []b
 	return FilterAll(t, ctx, collection, bson.D{})
 }
 
-// generateDocuments generates documents with _id ranging from startID to endID.
+// GenerateDocuments generates documents with _id ranging from startID to endID.
 // It returns bson.A and []bson.D both containing same bson.D documents.
-func generateDocuments(startID, endID int32) (bson.A, []bson.D) {
+func GenerateDocuments(startID, endID int32) (bson.A, []bson.D) {
 	var arr bson.A
 	var docs []bson.D
 

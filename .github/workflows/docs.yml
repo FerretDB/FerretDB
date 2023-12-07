@@ -125,7 +125,7 @@ jobs:
 
       - name: Deploy to GitHub Pages
         id: deploy
-        uses: actions/deploy-pages@v2
+        uses: actions/deploy-pages@v3
         with:
           artifact_name: docs
           timeout: 300000 # 5*60*1000 milliseconds

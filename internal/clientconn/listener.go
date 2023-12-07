@@ -92,38 +92,44 @@ func (l *Listener) Run(ctx context.Context) error {
 
 	if l.TCP != "" {
 		var err error
-		if l.tcpListener, err = net.Listen("tcp", l.TCP); err != nil {
-			return err
-		}
+		l.tcpListener, err = net.Listen("tcp", l.TCP)
 
 		close(l.tcpListenerReady)
+
+		if err != nil {
+			return err
+		}
 
 		logger.Sugar().Infof("Listening on TCP %s ...", l.TCPAddr())
 	}
 
 	if l.Unix != "" {
 		var err error
-		if l.unixListener, err = net.Listen("unix", l.Unix); err != nil {
-			return err
-		}
+		l.unixListener, err = net.Listen("unix", l.Unix)
 
 		close(l.unixListenerReady)
+
+		if err != nil {
+			return err
+		}
 
 		logger.Sugar().Infof("Listening on Unix %s ...", l.UnixAddr())
 	}
 
 	if l.TLS != "" {
 		var err error
-		if l.tlsListener, err = setupTLSListener(&setupTLSListenerOpts{
+		l.tlsListener, err = setupTLSListener(&setupTLSListenerOpts{
 			addr:     l.TLS,
 			certFile: l.TLSCertFile,
 			keyFile:  l.TLSKeyFile,
 			caFile:   l.TLSCAFile,
-		}); err != nil {
-			return err
-		}
+		})
 
 		close(l.tlsListenerReady)
+
+		if err != nil {
+			return err
+		}
 
 		logger.Sugar().Infof("Listening on TLS %s ...", l.TLSAddr())
 	}
