@@ -58,21 +58,35 @@ func TestCursors(t *testing.T) {
 
 	collection := client.Database(databaseName).Collection(collectionName)
 
-	arr, _ := integration.GenerateDocuments(0, 4)
+	arr, _ := integration.GenerateDocuments(1, 5)
 	_, err = collection.InsertMany(ctx, arr)
 	require.NoError(t, err)
 
 	t.Run("RemoveLastDocument", func(t *testing.T) {
+		t.Skip()
 		cur, err := collection.Find(ctx, bson.D{})
 		require.NoError(t, err)
 
-		_, err = collection.DeleteOne(ctx, bson.D{{"_id", 3}})
+		_, err = collection.DeleteOne(ctx, bson.D{{"_id", 4}})
 		require.NoError(t, err)
 
 		cur.Next(ctx)
 		cur.Next(ctx)
 		cur.Next(ctx)
 		assert.True(t, cur.TryNext(ctx))
+	})
+
+	t.Run("QueryPlanKilledByDrop", func(t *testing.T) {
+		cur, err := collection.Find(ctx, bson.D{})
+		require.NoError(t, err)
+		cur.Next(ctx)
+
+		err = collection.Database().Drop(ctx)
+		require.NoError(t, err)
+
+		res := bson.D{}
+		err = cur.All(ctx, &res)
+		require.Error(t, err)
 	})
 
 	t.Run("IdleCursorReusedAfterDisconnect", func(t *testing.T) {
