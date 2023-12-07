@@ -59,6 +59,7 @@ type Cursor struct {
 	created time.Time
 	iter    types.DocumentsIterator // protected by m
 	*NewParams
+	r            *Registry
 	l            *zap.Logger
 	token        *resource.Token
 	removed      chan struct{}
@@ -68,12 +69,17 @@ type Cursor struct {
 }
 
 // newCursor creates a new cursor.
-func newCursor(id int64, iter types.DocumentsIterator, params *NewParams, l *zap.Logger) *Cursor {
+func newCursor(id int64, iter types.DocumentsIterator, params *NewParams, r *Registry) *Cursor {
+	if params.Type == 0 {
+		panic("Cursor type must be specified")
+	}
+
 	c := &Cursor{
 		ID:        id,
 		iter:      iter,
 		NewParams: params,
-		l:         l.With(zap.Int64("id", id), zap.Stringer("type", params.Type)),
+		r:         r,
+		l:         r.l.With(zap.Int64("id", id), zap.Stringer("type", params.Type)),
 		created:   time.Now(),
 		removed:   make(chan struct{}),
 		token:     resource.NewToken(),
@@ -135,15 +141,22 @@ func (c *Cursor) Next() (struct{}, *types.Document, error) {
 // Close implements types.DocumentsIterator interface.
 func (c *Cursor) Close() {
 	c.m.Lock()
-	defer c.m.Unlock()
 
 	if c.iter == nil {
+		c.m.Unlock()
 		return
 	}
 
 	c.l.Debug("Closing cursor")
 	c.iter.Close()
 	c.iter = nil
+
+	c.m.Unlock()
+
+	// FIXME
+	if c.Type == Normal {
+		c.r.Remove(c)
+	}
 
 	resource.Untrack(c, c.token)
 }

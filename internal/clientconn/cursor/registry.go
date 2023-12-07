@@ -145,7 +145,7 @@ func (r *Registry) NewCursor(ctx context.Context, iter types.DocumentsIterator, 
 
 	r.created.WithLabelValues(params.Type.String(), params.DB, params.Collection, params.Username).Inc()
 
-	c := newCursor(id, iter, params, r.l)
+	c := newCursor(id, iter, params, r)
 	r.m[id] = c
 
 	r.wg.Add(1)
@@ -186,6 +186,10 @@ func (r *Registry) Remove(c *Cursor) {
 
 	r.rw.Lock()
 	defer r.rw.Unlock()
+
+	if r.m[c.ID] == nil {
+		return
+	}
 
 	d := time.Since(c.created)
 	r.l.Debug(

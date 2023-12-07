@@ -47,7 +47,9 @@ func TestCursor(t *testing.T) {
 	t.Run("Normal", func(t *testing.T) {
 		t.Parallel()
 
-		params := &NewParams{}
+		params := &NewParams{
+			Type: Normal,
+		}
 
 		testiterator.TestIterator(t, func() iterator.Interface[struct{}, *types.Document] {
 			return r.NewCursor(ctx, iterator.Values(iterator.ForSlice(all)), params)
