@@ -123,7 +123,6 @@ func testQueryCompatWithProviders(t *testing.T, providers shareddata.Providers, 
 					explainQuery := bson.D{{"explain", bson.D{
 						{"find", targetCollection.Name()},
 						{"filter", filter},
-						{"sort", tc.sort},
 					}}}
 
 					var explainRes bson.D

@@ -126,10 +126,16 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	case params.Sort.Len() == 0 && cInfo.Capped():
 		// Pushdown default recordID sorting for capped collections
 		qp.Sort = must.NotFail(types.NewDocument("$natural", int64(1)))
-
 	case params.Sort.Len() == 1:
 		if params.Sort.Keys()[0] != "$natural" {
 			break
+		}
+
+		if !cInfo.Capped() {
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrNotImplemented,
+				"$natural sort for non-capped collection is not supported.",
+				"explain")
 		}
 
 		qp.Sort = params.Sort
