@@ -29,6 +29,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 // aggregateStagesCompatTestCase describes aggregation stages compatibility test case.
@@ -145,14 +146,14 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 
 					var msg string
 					// TODO https://github.com/FerretDB/FerretDB/issues/3386
-					if setup.FilterPushdownDisabled() {
+					if setup.PushdownDisabled() {
 						resPushdown = noPushdown
 						msg = "Fitler pushdown is disabled, but target resulted with pushdown"
 					}
 
 					doc := ConvertDocument(t, explainRes)
 					pushdown, _ := doc.Get("filterPushdown")
-					assert.Equal(t, resPushdown.FilterPushdownExpected(t), pushdown, msg)
+					assert.Equal(t, resPushdown.PushdownExpected(t), pushdown, msg)
 				})
 			}
 
@@ -227,7 +228,13 @@ func testAggregateCommandCompat(t *testing.T, testCases map[string]aggregateComm
 					return
 				}
 				require.NoError(t, compatErr, "compat error; target returned no error")
-				AssertEqualDocuments(t, compatRes, targetRes)
+
+				compat := ConvertDocument(t, compatRes)
+				compat.Remove("$clusterTime")
+				compat.Remove("operationTime")
+
+				target := ConvertDocument(t, targetRes)
+				testutil.AssertEqual(t, compat, target)
 
 				if len(targetRes) > 0 || len(compatRes) > 0 {
 					nonEmptyResults = true

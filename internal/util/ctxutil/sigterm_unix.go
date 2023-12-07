@@ -14,7 +14,7 @@
 
 //go:build unix
 
-package main
+package ctxutil
 
 import (
 	"context"
@@ -23,7 +23,10 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-// notifyAppTermination installs a signal handler that cancels the context.
-func notifyAppTermination(parent context.Context) (context.Context, context.CancelFunc) {
+// SigTerm returns a copy of the parent context that is marked done
+// (its Done channel is closed) when termination signal arrives,
+// when the returned stop function is called, or when the parent context's
+// Done channel is closed, whichever happens first.
+func SigTerm(parent context.Context) (context.Context, context.CancelFunc) {
 	return signal.NotifyContext(parent, unix.SIGTERM, unix.SIGINT)
 }
