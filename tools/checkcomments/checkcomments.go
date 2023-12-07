@@ -192,8 +192,8 @@ func (c *todoChecker) run(ctx context.Context) {
 		go func(comment *ast.Comment) {
 			defer wg.Done()
 
-			if c.processComment(ctx, comment) {
-				close(done)
+			if err := c.processComment(ctx, comment); err != nil {
+				done <- struct{}{}
 			}
 		}(comment)
 	}
@@ -207,12 +207,14 @@ func (c *todoChecker) run(ctx context.Context) {
 }
 
 // processComment checks if the given TODO comment is valid and linked issue is open.
-func (c *todoChecker) processComment(ctx context.Context, comment *ast.Comment) bool {
+//
+// If a critical error occurs, it returns an error. In this case the caller should stop the processing and exit.
+func (c *todoChecker) processComment(ctx context.Context, comment *ast.Comment) error {
 	match := todoRE.FindStringSubmatch(comment.Text)
 
 	if match == nil {
 		c.pass.Reportf(comment.Pos(), "invalid TODO: incorrect format")
-		return false
+		return nil
 	}
 
 	issueLink := match[0]
@@ -223,7 +225,7 @@ func (c *todoChecker) processComment(ctx context.Context, comment *ast.Comment) 
 			c.pass.Reportf(comment.Pos(), message)
 		}
 
-		return false
+		return nil
 	}
 
 	issueNum, err := strconv.Atoi(match[1])
@@ -248,7 +250,7 @@ func (c *todoChecker) processComment(ctx context.Context, comment *ast.Comment) 
 		}
 
 		log.Println(msg)
-		return true
+		return errors.New(msg)
 
 	case errors.As(err, &re) && re.Response.StatusCode == 404:
 		c.mx.Lock()
@@ -259,8 +261,9 @@ func (c *todoChecker) processComment(ctx context.Context, comment *ast.Comment) 
 		c.pass.Reportf(comment.Pos(), message)
 
 	case err != nil:
-		log.Printf("could not get issue %d: %s", issueNum, err)
-		return true
+		msg := fmt.Sprintf("could not get issue %d: %s", issueNum, err)
+		log.Println(msg)
+		return errors.New(msg)
 
 	default:
 		if issue.GetState() == "closed" {
@@ -277,7 +280,7 @@ func (c *todoChecker) processComment(ctx context.Context, comment *ast.Comment) 
 		}
 	}
 
-	return false
+	return nil
 }
 
 // cacheFilePath returns the path to the cache file.
