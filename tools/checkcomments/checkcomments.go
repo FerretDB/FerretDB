@@ -61,7 +61,6 @@ func main() {
 // run analyses TODO comments.
 func run(pass *analysis.Pass) (any, error) {
 	if !checkIssueComments {
-		log.Println("checkcomments linter is disabled")
 		return nil, nil
 	}
 
@@ -96,14 +95,14 @@ func run(pass *analysis.Pass) (any, error) {
 		return nil, nil
 	}
 
-	// token := os.Getenv("GITHUB_TOKEN")
+	token := os.Getenv("GITHUB_TOKEN")
 
-	//client, err := gh.NewRESTClient(token, nil)
-	//if err != nil {
-	//	log.Panicf("could not create GitHub client: %s", err)
-	//}
+	client, err := gh.NewRESTClient(token, nil)
+	if err != nil {
+		log.Panicf("could not create GitHub client: %s", err)
+	}
 
-	// checkTodoComments(context.Background(), pass, comments, &cache, client)
+	checkTodoComments(context.Background(), pass, comments, &cache, client)
 
 	//	lockedfile.Transform()
 
@@ -178,26 +177,29 @@ func run(pass *analysis.Pass) (any, error) {
 
 // collectTodoComments returns comments that contain TODO messages and sends them to a channel.
 func collectTodoComments(pass *analysis.Pass) []*ast.Comment {
-	var comments []*ast.Comment
-	var mx sync.Mutex
-
-	wgf := sync.WaitGroup{}
-	wgc := sync.WaitGroup{}
-
+	var (
+		comments []*ast.Comment
+		mx       sync.Mutex
+		wgf      sync.WaitGroup
+		wgc      sync.WaitGroup
+	)
 	wgf.Add(len(pass.Files))
 
 	for _, f := range pass.Files {
 		go func(f *ast.File) {
+			defer wgf.Done()
+
 			for _, cg := range f.Comments {
 				wgc.Add(len(cg.List))
 
-				go func(cg *ast.CommentGroup) {
-					for _, c := range cg.List {
+				for _, c := range cg.List {
+					go func(c *ast.Comment) {
+						defer wgc.Done()
 						line := c.Text
 
 						// the space between `//` and `TODO` is always added by `task fmt`
 						if !strings.HasPrefix(line, "// TODO") {
-							continue
+							return
 						}
 
 						if f.Name.Name == "testdata" {
@@ -207,13 +209,9 @@ func collectTodoComments(pass *analysis.Pass) []*ast.Comment {
 						mx.Lock()
 						comments = append(comments, c)
 						mx.Unlock()
-
-						wgc.Done()
-					}
-				}(cg)
+					}(c)
+				}
 			}
-
-			wgf.Done()
 		}(f)
 	}
 
