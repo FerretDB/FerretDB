@@ -153,11 +153,14 @@ func collectTodoComments(pass *analysis.Pass) []*ast.Comment {
 						}
 
 						if f.Name.Name == "testdata" {
-							c.Text, _, _ = strings.Cut(line, ` // want "`)
+							line, _, _ = strings.Cut(line, ` // want "`)
 						}
 
 						mx.Lock()
-						comments = append(comments, c)
+						comments = append(comments, &ast.Comment{
+							Text:  line,
+							Slash: c.Slash,
+						})
 						mx.Unlock()
 					}(c)
 				}
