@@ -38,6 +38,7 @@ type CountParams struct {
 	ReadConcern *types.Document `ferretdb:"readConcern,ignored"`
 	Comment     string          `ferretdb:"comment,ignored"`
 	LSID        any             `ferretdb:"lsid,ignored"`
+	ClusterTime any             `ferretdb:"$clusterTime,ignored"`
 }
 
 // GetCountParams returns the parameters for the count command.
