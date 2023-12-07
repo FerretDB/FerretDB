@@ -84,9 +84,10 @@ func TestCursors(t *testing.T) {
 		err = collection.Database().Drop(ctx)
 		require.NoError(t, err)
 
-		res := bson.D{}
-		err = cur.All(ctx, &res)
-		require.Error(t, err)
+		cur.Next(ctx)
+		cur.Next(ctx)
+		cur.Next(ctx)
+		assert.False(t, cur.Next(ctx))
 	})
 
 	t.Run("IdleCursorReusedAfterDisconnect", func(t *testing.T) {
