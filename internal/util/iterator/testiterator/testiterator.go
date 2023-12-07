@@ -20,9 +20,10 @@ package testiterator
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/teststress"
-	"github.com/stretchr/testify/assert"
 )
 
 // TestIterator checks that the iterator implementation is correct.

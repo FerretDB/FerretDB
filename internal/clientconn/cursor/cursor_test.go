@@ -66,10 +66,9 @@ func TestCursorNormal(t *testing.T) {
 
 		cancel()
 		<-ctx.Done()
-
 		time.Sleep(time.Second)
 
 		_, _, err := c.Next()
-		assert.Equal(t, context.Canceled, err)
+		assert.ErrorIs(t, err, iterator.ErrIteratorDone)
 	})
 }
