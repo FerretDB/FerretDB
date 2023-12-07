@@ -336,18 +336,18 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	cursorID := cursor.ID
 
-	firstBatchDocs, err := iterator.ConsumeValuesN(cursor, int(batchSize))
+	docs, err := iterator.ConsumeValuesN(cursor, int(batchSize))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	h.L.Debug(
-		"Got first batch", zap.Int64("cursor_id", cursorID), zap.String("type", cursor.Type.String()),
-		zap.Int("count", len(firstBatchDocs)), zap.Int64("batch_size", batchSize),
+		"Got first batch", zap.Int64("cursor_id", cursorID), zap.Stringer("type", cursor.Type),
+		zap.Int("count", len(docs)), zap.Int64("batch_size", batchSize),
 	)
 
-	firstBatch := types.MakeArray(len(firstBatchDocs))
-	for _, doc := range firstBatchDocs {
+	firstBatch := types.MakeArray(len(docs))
+	for _, doc := range docs {
 		firstBatch.Append(doc)
 	}
 
