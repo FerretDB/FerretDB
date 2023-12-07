@@ -89,7 +89,7 @@ func resultKey(packageName, testName string) string {
 }
 
 // runGoTest runs `go test` with given extra args.
-func runGoTest(ctx context.Context, args []string, total int, times bool, logger *zap.SugaredLogger) error {
+func runGoTest(ctx context.Context, args []string, total int, times bool, logger *zap.SugaredLogger, skip string) error {
 	shutdownOtel := observability.SetupOtel("envtool tests")
 
 	defer func() {
@@ -358,7 +358,7 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 
 // testsRun runs tests specified by the shard index and total or by the run regex
 // using `go test` with given extra args.
-func testsRun(ctx context.Context, index, total uint, run string, args []string, logger *zap.SugaredLogger) error {
+func testsRun(ctx context.Context, index, total uint, run, skip string, args []string, logger *zap.SugaredLogger) error {
 	logger.Debugf("testsRun: index=%d, total=%d, run=%q, args=%q", index, total, run, args)
 
 	var totalTest int
@@ -390,7 +390,7 @@ func testsRun(ctx context.Context, index, total uint, run string, args []string,
 		run += ")$"
 	}
 
-	return runGoTest(ctx, append([]string{"-run=" + run}, args...), totalTest, true, logger)
+	return runGoTest(ctx, append([]string{"-run=" + run}, args...), totalTest, true, logger, skip)
 }
 
 // listTestFuncs returns a sorted slice of all top-level test functions (tests, benchmarks, examples, fuzz functions)

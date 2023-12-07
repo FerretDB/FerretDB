@@ -486,7 +486,7 @@ func main() {
 		err = testsRun(
 			ctx,
 			cli.Tests.Run.ShardIndex, cli.Tests.Run.ShardTotal,
-			cli.Tests.Run.Run, cli.Tests.Run.Args,
+			cli.Tests.Run.Run, cli.Tests.Run.Skip, cli.Tests.Run.Args,
 			logger,
 		)
 

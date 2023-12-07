@@ -192,9 +192,6 @@ tasks:
       - test-integration-sqlite
       # no test-integration-hana
       - test-integration-mongodb
-    env:
-      - TEST_SKIP={{.TEST_SKIP}} 
-   
   test-integration-postgresql:
     desc: "Run integration tests for `postgresql` backend"
     deps: [gen-version]
