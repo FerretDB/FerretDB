@@ -36,7 +36,7 @@ func testIncorrectFormatClosed() {
 }
 
 func testCorrectFormatNotExists() {
-	// TODO https://github.com/FerretDB/FerretDB/issues/999999 // want "invalid TODO: linked issue https://github.com/FerretDB/FerretDB/issues/999999  is not found"
+	// TODO https://github.com/FerretDB/FerretDB/issues/999999 // want "invalid TODO: linked issue https://github.com/FerretDB/FerretDB/issues/999999 is not found"
 }
 
 func testIncorrectFormatNotExists() {
