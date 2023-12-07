@@ -101,7 +101,10 @@ func TestCursor(t *testing.T) {
 			assert.Equal(t, two, actual)
 
 			assert.PanicsWithValue(t, "Reset called on non-tailable cursor", func() {
-				c.Reset(iterator.Values(iterator.ForSlice(all)))
+				iter := iterator.Values(iterator.ForSlice(all))
+				t.Cleanup(iter.Close)
+
+				c.Reset(iter)
 			})
 		})
 	})
