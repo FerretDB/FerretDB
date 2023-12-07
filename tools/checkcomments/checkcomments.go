@@ -269,7 +269,7 @@ func (c *todoChecker) processComment(ctx context.Context, comment *ast.Comment) 
 	case errors.As(err, &re) && re.Response.StatusCode == 404:
 		c.mx.Lock()
 		c.cache.Issues[issueLink] = issueNotFound
-		message := fmt.Sprintf("invalid TODO: linked issue %s does not exist", issueLink)
+		message := fmt.Sprintf("invalid TODO: linked issue %s is not found", issueLink)
 		c.pass.Reportf(comment.Pos(), message)
 		c.mx.Unlock()
 
