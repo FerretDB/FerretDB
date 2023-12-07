@@ -103,14 +103,14 @@ func testQueryCommandCompat(t *testing.T, testCases map[string]queryCommandCompa
 					require.NoError(t, targetCollection.Database().RunCommand(ctx, explainQuery).Decode(&explainRes))
 
 					var msg string
-					if setup.FilterPushdownDisabled() {
+					if setup.PushdownDisabled() {
 						tc.filterPushdown = noPushdown
 						msg = "Filter pushdown is disabled, but target resulted with pushdown"
 					}
 
 					doc := ConvertDocument(t, explainRes)
 					pushdown, _ := doc.Get("filterPushdown")
-					assert.Equal(t, tc.filterPushdown.FilterPushdownExpected(t), pushdown, msg)
+					assert.Equal(t, tc.filterPushdown.PushdownExpected(t), pushdown, msg)
 
 					targetCommand := append(
 						bson.D{
