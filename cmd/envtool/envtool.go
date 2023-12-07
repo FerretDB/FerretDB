@@ -206,8 +206,32 @@ func setupMongodb(ctx context.Context, logger *zap.SugaredLogger) error {
 
 // setupMongodbSecured configures `mongodb_secured` container.
 func setupMongodbSecured(ctx context.Context, logger *zap.SugaredLogger) error {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3310
-	return waitForPort(ctx, logger.Named("mongodb_secured"), 47018)
+	if err := waitForPort(ctx, logger.Named("mongodb_secured"), 47018); err != nil {
+		return err
+	}
+
+	eval := `'rs.initiate({_id: "mongodb-rs", members: [{_id: 0, host: "localhost:47018" }]})'`
+	shell := `mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=/etc/certs/client.pem&tlsCaFile=/etc/certs/rootCA-cert.pem` //nolint:lll // for readability
+	args := []string{"compose", "exec", "-T", "mongodb_secured", "mongosh", "--eval", eval, "--shell", shell}
+
+	var buf bytes.Buffer
+	var retry int64
+
+	for ctx.Err() == nil {
+		buf.Reset()
+
+		err := runCommand("docker", args, &buf, logger)
+		if err == nil {
+			break
+		}
+
+		logger.Infof("%s:\n%s", err, buf.String())
+
+		retry++
+		ctxutil.SleepWithJitter(ctx, time.Second, retry)
+	}
+
+	return ctx.Err()
 }
 
 // setup runs all setup commands.
