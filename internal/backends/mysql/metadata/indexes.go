@@ -40,22 +40,6 @@ type IndexKeyPair struct {
 	Descending bool
 }
 
-// deepCopy returns a deep copy.
-func (indexes Indexes) deepCopy() Indexes {
-	res := make([]IndexInfo, len(indexes))
-
-	for i, index := range indexes {
-		res[i] = IndexInfo{
-			Name:   index.Name,
-			Index:  index.Index,
-			Key:    index.Key,
-			Unique: index.Unique,
-		}
-	}
-
-	return res
-}
-
 // marshal returns [*types.Array] for indexes.
 func (indexes Indexes) marshal() *types.Array {
 	res := types.MakeArray(len(indexes))

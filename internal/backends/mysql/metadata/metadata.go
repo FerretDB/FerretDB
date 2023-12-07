@@ -37,21 +37,6 @@ type Collection struct {
 	CappedDocuments int64
 }
 
-// deepCopy returns a deep copy.
-func (c *Collection) deepCopy() *Collection {
-	if c == nil {
-		return nil
-	}
-
-	return &Collection{
-		Name:            c.Name,
-		TableName:       c.TableName,
-		Indexes:         c.Indexes.deepCopy(),
-		CappedSize:      c.CappedSize,
-		CappedDocuments: c.CappedDocuments,
-	}
-}
-
 // Capped returns true if collection is capped.
 func (c Collection) Capped() bool {
 	return c.CappedSize > 0
@@ -106,7 +91,7 @@ func (c *Collection) marshal() *types.Document {
 	))
 }
 
-// unmarahal sets collection metadata from [*types.Document].
+// unmarshal sets collection metadata from [*types.Document].
 func (c *Collection) unmarshal(doc *types.Document) error {
 	v, _ := doc.Get("_id")
 	c.Name, _ = v.(string)

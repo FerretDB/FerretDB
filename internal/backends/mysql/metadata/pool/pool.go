@@ -72,7 +72,48 @@ func (p *Pool) Close() {
 
 // Get returns a pool of connections to MySQL database for that username/password combination.
 func (p *Pool) Get(username, password string) (*fsql.DB, error) {
-	return nil, lazyerrors.New("not yet implemented")
+	// do not log password or full URL
+
+	// replace authentication info only if it is passed
+	uri := p.baseURI
+	if username != "" {
+		uri.User = url.UserPassword(username, password)
+	}
+
+	u := uri.String()
+
+	// fast path
+
+	p.rw.RLock()
+	res := p.dbs[u]
+	p.rw.RUnlock()
+
+	if res != nil {
+		p.l.Debug("Pool: found existing pool", zap.String("username", username))
+		return res, nil
+	}
+
+	// slow path
+
+	p.rw.Lock()
+	defer p.rw.Unlock()
+
+	// a concurrent connectio might have created a pool already; check again
+	if res = p.dbs[u]; res != nil {
+		p.l.Debug("Pool: found existing pool (after acquiring lock)", zap.String("username", username))
+		return res, nil
+	}
+
+	res, err := openDB(u, p.l, p.sp)
+	if err != nil {
+		p.l.Warn("Pool: connection failed", zap.String("username", username), zap.Error(err))
+		return nil, lazyerrors.Error(err)
+	}
+
+	p.l.Info("Pool: connection succeed", zap.String("username", username))
+	p.dbs[u] = res
+
+	return res, nil
 }
 
 // Describe implements Prometheus.Collector.
@@ -89,10 +130,15 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 		prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "size"),
 			"The current number of pools.",
-			nil, nil),
+			nil, nil,
+		),
 		prometheus.GaugeValue,
 		float64(len(p.dbs)),
 	)
+
+	for _, db := range p.dbs {
+		db.Collect(ch)
+	}
 }
 
 // check interfaces
