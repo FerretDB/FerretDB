@@ -315,7 +315,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 				return nil, handlererrors.NewCommandErrorMsgWithArgument(
 					handlererrors.ErrNotImplemented,
 					"$natural sort for non-capped collection is not supported.",
-					"explain")
+					"aggregate")
 			}
 
 			qp.Sort = sort
