@@ -67,7 +67,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
-	c, err := db.Collection(params.Collection)
+	coll, err := db.Collection(params.Collection)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
 			msg := fmt.Sprintf("Invalid collection name: %s", params.Collection)
@@ -145,7 +145,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			}
 		}
 
-		if _, err = c.InsertAll(ctx, &backends.InsertAllParams{Docs: docs}); err == nil {
+		if _, err = coll.InsertAll(ctx, &backends.InsertAllParams{Docs: docs}); err == nil {
 			inserted += int32(len(docs))
 
 			if params.Ordered && len(writeErrors) > 0 {
@@ -157,7 +157,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		// insert doc one by one upon failing on batch insertion
 		for j, doc := range docs {
-			if _, err = c.InsertAll(ctx, &backends.InsertAllParams{
+			if _, err = coll.InsertAll(ctx, &backends.InsertAllParams{
 				Docs: []*types.Document{doc},
 			}); err == nil {
 				inserted++

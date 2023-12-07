@@ -68,7 +68,7 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
-	c, err := db.Collection(collection)
+	coll, err := db.Collection(collection)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
 			msg := fmt.Sprintf("Invalid collection name: %s", collection)
@@ -94,7 +94,7 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		cInfo = collections.Collections[i]
 	}
 
-	indexes, err := c.ListIndexes(ctx, new(backends.ListIndexesParams))
+	indexes, err := coll.ListIndexes(ctx, new(backends.ListIndexesParams))
 	if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
 		indexes = new(backends.ListIndexesResult)
 		err = nil
@@ -104,7 +104,7 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
-	stats, err := c.Stats(ctx, &backends.CollectionStatsParams{Refresh: true})
+	stats, err := coll.Stats(ctx, &backends.CollectionStatsParams{Refresh: true})
 	if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
 		stats = new(backends.CollectionStatsResult)
 		err = nil

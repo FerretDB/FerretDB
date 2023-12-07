@@ -50,7 +50,7 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		return nil, lazyerrors.Error(err)
 	}
 
-	c, err := db.Collection(params.Collection)
+	coll, err := db.Collection(params.Collection)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
 			msg := fmt.Sprintf("Invalid collection name: %s", params.Collection)
@@ -69,7 +69,7 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/3235
-	queryRes, err := c.Query(ctx, &qp)
+	queryRes, err := coll.Query(ctx, &qp)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

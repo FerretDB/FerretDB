@@ -56,7 +56,7 @@ func (h *Handler) MsgListIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		return nil, lazyerrors.Error(err)
 	}
 
-	c, err := db.Collection(collection)
+	coll, err := db.Collection(collection)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
 			msg := fmt.Sprintf("Invalid collection name: %s", collection)
@@ -66,7 +66,7 @@ func (h *Handler) MsgListIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		return nil, lazyerrors.Error(err)
 	}
 
-	res, err := c.ListIndexes(ctx, nil)
+	res, err := coll.ListIndexes(ctx, nil)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
 			msg := fmt.Sprintf("ns does not exist: %s.%s", dbName, collection)

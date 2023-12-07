@@ -60,7 +60,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, lazyerrors.Error(err)
 	}
 
-	c, err := db.Collection(params.Collection)
+	coll, err := db.Collection(params.Collection)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
 			msg := fmt.Sprintf("Invalid collection name: %s", params.Collection)
@@ -117,7 +117,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	// closer accumulates all things that should be closed / canceled.
 	closer := iterator.NewMultiCloser(iterator.CloserFunc(cancel))
 
-	queryRes, err := c.Query(ctx, qp)
+	queryRes, err := coll.Query(ctx, qp)
 	if err != nil {
 		closer.Close()
 		return nil, lazyerrors.Error(err)
@@ -128,10 +128,14 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, lazyerrors.Error(err)
 	}
 
-	// Combine iterators chain and closer into a cursor to pass around.
+	// Combine iterators chain and closer into a c to pass around.
 	// The context will be canceled when client disconnects or after maxTimeMS.
-	cursor := h.cursors.NewCursor(ctx, iterator.WithClose(iter, closer.Close), &cursor.NewParams{
-		Data:         params,
+	c := h.cursors.NewCursor(ctx, iter, &cursor.NewParams{
+		Data: &findCursorData{
+			coll:       coll,
+			qp:         qp,
+			findParams: params,
+		},
 		DB:           params.DB,
 		Collection:   params.Collection,
 		Username:     username,
@@ -139,32 +143,34 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		ShowRecordID: params.ShowRecordId,
 	})
 
-	cursorID := cursor.ID
+	cursorID := c.ID
 
-	docs, err := iterator.ConsumeValuesN(cursor, int(params.BatchSize))
+	docs, err := iterator.ConsumeValuesN(c, int(params.BatchSize))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	h.L.Debug(
-		"Got first batch", zap.Int64("cursor_id", cursorID), zap.Stringer("type", cursor.Type),
+		"Got first batch", zap.Int64("cursor_id", cursorID), zap.Stringer("type", c.Type),
 		zap.Int("count", len(docs)), zap.Int64("batch_size", params.BatchSize),
 		zap.Bool("single_batch", params.SingleBatch),
 	)
 
-	firstBatch := types.MakeArray(len(docs))
-	for _, doc := range docs {
-		firstBatch.Append(doc)
-	}
+	if params.SingleBatch || len(docs) < int(params.BatchSize) {
+		c.Close()
 
-	if params.SingleBatch || firstBatch.Len() < int(params.BatchSize) {
-		// support tailable cursors
-		// TODO https://github.com/FerretDB/FerretDB/issues/2283
+		// FIXME ?
+		if c.Type != cursor.Normal {
+			h.cursors.CloseAndRemove(c)
+		}
 
 		// let the client know that there are no more results
 		cursorID = 0
+	}
 
-		cursor.Close()
+	firstBatch := types.MakeArray(len(docs))
+	for _, doc := range docs {
+		firstBatch.Append(doc)
 	}
 
 	var reply wire.OpMsg
@@ -180,6 +186,12 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}))
 
 	return &reply, nil
+}
+
+type findCursorData struct {
+	coll       backends.Collection
+	qp         *backends.QueryParams
+	findParams *common.FindParams
 }
 
 // makeFindQueryParams creates the backend's query parameters for the find command.
@@ -237,7 +249,8 @@ func (h *Handler) makeFindQueryParams(params *common.FindParams, cInfo *backends
 // makeFindIter creates an iterator chain for the find command.
 //
 // Iter is passed from the backend's query.
-// All iterators, including the initial one, are added to the passed closer.
+// All iterators, including the initial one, are added to the passed closer,
+// and the returned iterator is wrapped with it.
 //
 //nolint:lll // for readability
 func (h *Handler) makeFindIter(iter types.DocumentsIterator, closer *iterator.MultiCloser, params *common.FindParams) (types.DocumentsIterator, error) {
@@ -270,5 +283,5 @@ func (h *Handler) makeFindIter(iter types.DocumentsIterator, closer *iterator.Mu
 		return nil, lazyerrors.Error(err)
 	}
 
-	return iter, nil
+	return iterator.WithClose(iter, closer.Close), nil
 }

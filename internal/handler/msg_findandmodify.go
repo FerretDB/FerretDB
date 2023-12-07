@@ -111,7 +111,7 @@ func (h *Handler) findAndModifyDocument(ctx context.Context, params *common.Find
 		return nil, lazyerrors.Error(err)
 	}
 
-	c, err := db.Collection(params.Collection)
+	coll, err := db.Collection(params.Collection)
 	if err != nil {
 		// TODO https://github.com/FerretDB/FerretDB/issues/2168
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
@@ -137,7 +137,7 @@ func (h *Handler) findAndModifyDocument(ctx context.Context, params *common.Find
 		qp.Filter = params.Query
 	}
 
-	queryRes, err := c.Query(ctx, &qp)
+	queryRes, err := coll.Query(ctx, &qp)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -229,7 +229,7 @@ func (h *Handler) findAndModifyDocument(ctx context.Context, params *common.Find
 			writeErrors.Append(WriteErrorDocument(we))
 		}
 
-		if _, err = c.InsertAll(ctx, &backends.InsertAllParams{
+		if _, err = coll.InsertAll(ctx, &backends.InsertAllParams{
 			Docs: []*types.Document{doc},
 		}); err != nil {
 			if backends.ErrorCodeIs(err, backends.ErrorCodeInsertDuplicateID) {
@@ -266,7 +266,7 @@ func (h *Handler) findAndModifyDocument(ctx context.Context, params *common.Find
 	if params.Remove {
 		var delRes *backends.DeleteAllResult
 
-		if delRes, err = c.DeleteAll(ctx, &backends.DeleteAllParams{IDs: []any{must.NotFail(v.Get("_id"))}}); err != nil {
+		if delRes, err = coll.DeleteAll(ctx, &backends.DeleteAllParams{IDs: []any{must.NotFail(v.Get("_id"))}}); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
@@ -320,7 +320,7 @@ func (h *Handler) findAndModifyDocument(ctx context.Context, params *common.Find
 		writeErrors.Append(WriteErrorDocument(we))
 	}
 
-	updateRes, err := c.UpdateAll(ctx, &backends.UpdateAllParams{Docs: []*types.Document{doc}})
+	updateRes, err := coll.UpdateAll(ctx, &backends.UpdateAllParams{Docs: []*types.Document{doc}})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

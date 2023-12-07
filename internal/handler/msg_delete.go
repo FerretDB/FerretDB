@@ -53,7 +53,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
-	c, err := db.Collection(params.Collection)
+	coll, err := db.Collection(params.Collection)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
 			msg := fmt.Sprintf("Invalid collection name: %s", params.Collection)
@@ -67,7 +67,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	writeErrors := types.MakeArray(0)
 
 	for i, p := range params.Deletes {
-		d, err := h.execDelete(ctx, c, &p)
+		d, err := h.execDelete(ctx, coll, &p)
 
 		deleted += d
 

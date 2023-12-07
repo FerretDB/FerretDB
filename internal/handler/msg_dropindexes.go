@@ -59,7 +59,7 @@ func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		return nil, lazyerrors.Error(err)
 	}
 
-	c, err := db.Collection(collection)
+	coll, err := db.Collection(collection)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
 			msg := fmt.Sprintf("Invalid namespace specified '%s.%s'", dbName, collection)
@@ -78,7 +78,7 @@ func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		)
 	}
 
-	beforeDrop, err := c.ListIndexes(ctx, nil)
+	beforeDrop, err := coll.ListIndexes(ctx, nil)
 	if err != nil {
 		switch {
 		case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist):
@@ -96,7 +96,7 @@ func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		return nil, err
 	}
 
-	_, err = c.DropIndexes(ctx, &backends.DropIndexesParams{Indexes: toDrop})
+	_, err = coll.DropIndexes(ctx, &backends.DropIndexesParams{Indexes: toDrop})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

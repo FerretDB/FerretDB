@@ -53,12 +53,12 @@ func (h *Handler) MsgValidate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		return nil, lazyerrors.Error(err)
 	}
 
-	c, err := db.Collection(collection)
+	coll, err := db.Collection(collection)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	stats, err := c.Stats(ctx, &backends.CollectionStatsParams{Refresh: true})
+	stats, err := coll.Stats(ctx, &backends.CollectionStatsParams{Refresh: true})
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
 			msg := fmt.Sprintf("Collection '%s.%s' does not exist to validate.", dbName, collection)
