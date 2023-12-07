@@ -15,7 +15,7 @@
 // Package cursor provides access to cursor registry.
 //
 // The implementation of the cursor and registry is quite complicated and entangled.
-// That's because there are many cases when cursor / iterator / underlying database connection
+// That's because there are many cases when the iterator (and the underlying database connection)
 // must be closed to free resources, including when no handler and backend code is running;
 // for example, when the client disconnects between `getMore` commands.
 // At the same time, we want to shift complexity away from the handler and from backend implementations
@@ -27,10 +27,11 @@ import (
 	"sync"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
 
@@ -51,34 +52,30 @@ const (
 // It implements types.DocumentsIterator interface by wrapping another iterator with documents
 // with additional metadata and registration in the registry.
 //
-// Closing the cursor removes it from the registry and closes the underlying iterator.
+// FIXME Closing the cursor removes it from the registry and closes the underlying iterator.
 type Cursor struct {
 	// the order of fields is weird to make the struct smaller due to alignment
 
 	created time.Time
 	iter    types.DocumentsIterator // protected by m
 	*NewParams
-	r            *Registry
+	l            *zap.Logger
 	token        *resource.Token
-	closed       chan struct{} // protected by m
+	removed      chan struct{}
 	ID           int64
 	lastRecordID int64 // protected by m
 	m            sync.Mutex
 }
 
 // newCursor creates a new cursor.
-func newCursor(id int64, iter types.DocumentsIterator, params *NewParams, r *Registry) *Cursor {
-	if params.Type == Tailable || params.Type == TailableAwait {
-		must.NotBeZero(params.Data)
-	}
-
+func newCursor(id int64, iter types.DocumentsIterator, params *NewParams, l *zap.Logger) *Cursor {
 	c := &Cursor{
 		ID:        id,
 		iter:      iter,
 		NewParams: params,
-		r:         r,
+		l:         l.With(zap.Int64("id", id), zap.Stringer("type", params.Type)),
 		created:   time.Now(),
-		closed:    make(chan struct{}),
+		removed:   make(chan struct{}),
 		token:     resource.NewToken(),
 	}
 
@@ -94,6 +91,7 @@ func (c *Cursor) Reset(iter types.DocumentsIterator) error {
 
 	c.m.Lock()
 
+	c.l.Debug("Resetting cursor")
 	c.iter = iter
 	recordID := c.lastRecordID
 
@@ -143,12 +141,9 @@ func (c *Cursor) Close() {
 		return
 	}
 
+	c.l.Debug("Closing cursor")
 	c.iter.Close()
 	c.iter = nil
-
-	c.r.delete(c)
-
-	close(c.closed)
 
 	resource.Untrack(c, c.token)
 }

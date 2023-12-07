@@ -29,7 +29,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
-func TestCursorNormal(t *testing.T) {
+func TestCursor(t *testing.T) {
 	t.Parallel()
 
 	r := NewRegistry(testutil.Logger(t))
@@ -41,34 +41,123 @@ func TestCursorNormal(t *testing.T) {
 	doc2 := must.NotFail(types.NewDocument("v", int32(2)))
 	doc3 := must.NotFail(types.NewDocument("v", int32(3)))
 
-	docs := []*types.Document{doc1, doc2, doc3}
-
-	testiterator.TestIterator(t, func() iterator.Interface[struct{}, *types.Document] {
-		return r.NewCursor(ctx, iterator.Values(iterator.ForSlice(docs)), &NewParams{})
-	})
+	two := []*types.Document{doc1, doc2}
+	all := []*types.Document{doc1, doc2, doc3}
 
 	t.Run("Normal", func(t *testing.T) {
 		t.Parallel()
 
-		c := r.NewCursor(ctx, iterator.Values(iterator.ForSlice(docs)), &NewParams{})
+		params := &NewParams{}
 
-		actual, err := iterator.ConsumeValues(c)
-		require.NoError(t, err)
-		assert.Equal(t, docs, actual)
+		testiterator.TestIterator(t, func() iterator.Interface[struct{}, *types.Document] {
+			return r.NewCursor(ctx, iterator.Values(iterator.ForSlice(all)), params)
+		})
+
+		t.Run("Consume", func(t *testing.T) {
+			t.Parallel()
+
+			c := r.NewCursor(ctx, iterator.Values(iterator.ForSlice(all)), params)
+
+			actual, err := iterator.ConsumeValues(c)
+			require.NoError(t, err)
+			assert.Equal(t, all, actual)
+
+			_, _, err = c.Next()
+			assert.ErrorIs(t, err, iterator.ErrIteratorDone)
+
+			assert.Nil(t, r.Get(c.ID), "cursor should be removed")
+		})
+
+		t.Run("Context", func(t *testing.T) {
+			t.Parallel()
+
+			ctx, cancel := context.WithCancel(ctx)
+
+			c := r.NewCursor(ctx, iterator.Values(iterator.ForSlice(all)), params)
+
+			cancel()
+			<-ctx.Done()
+			time.Sleep(time.Second)
+
+			_, _, err := c.Next()
+			assert.ErrorIs(t, err, iterator.ErrIteratorDone)
+
+			assert.Nil(t, r.Get(c.ID), "cursor should be removed")
+		})
+
+		t.Run("Reset", func(t *testing.T) {
+			t.Parallel()
+
+			c := r.NewCursor(ctx, iterator.Values(iterator.ForSlice(two)), params)
+
+			actual, err := iterator.ConsumeValues(c)
+			require.NoError(t, err)
+			assert.Equal(t, two, actual)
+
+			assert.PanicsWithValue(t, "Reset called on non-tailable cursor", func() {
+				c.Reset(iterator.Values(iterator.ForSlice(all)))
+			})
+		})
 	})
 
-	t.Run("ClosedByContext", func(t *testing.T) {
+	t.Run("Tailable", func(t *testing.T) {
+		t.Skip("TODO") // FIXME
+
 		t.Parallel()
 
-		ctx, cancel := context.WithCancel(ctx)
+		params := &NewParams{
+			Type: Tailable,
+		}
 
-		c := r.NewCursor(ctx, iterator.Values(iterator.ForSlice(docs)), &NewParams{})
+		t.Run("Consume", func(t *testing.T) {
+			t.Parallel()
 
-		cancel()
-		<-ctx.Done()
-		time.Sleep(time.Second)
+			c := r.NewCursor(ctx, iterator.Values(iterator.ForSlice(all)), params)
 
-		_, _, err := c.Next()
-		assert.ErrorIs(t, err, iterator.ErrIteratorDone)
+			actual, err := iterator.ConsumeValues(c)
+			require.NoError(t, err)
+			assert.Equal(t, all, actual)
+
+			_, _, err = c.Next()
+			assert.ErrorIs(t, err, iterator.ErrIteratorDone)
+
+			assert.Same(t, c, r.Get(c.ID), "cursor should not be removed")
+		})
+
+		t.Run("Context", func(t *testing.T) {
+			t.Parallel()
+
+			ctx, cancel := context.WithCancel(ctx)
+
+			c := r.NewCursor(ctx, iterator.Values(iterator.ForSlice(all)), params)
+
+			cancel()
+			<-ctx.Done()
+			time.Sleep(time.Second)
+
+			_, _, err := c.Next()
+			assert.ErrorIs(t, err, iterator.ErrIteratorDone)
+
+			assert.Nil(t, r.Get(c.ID), "cursor should be removed")
+		})
+
+		t.Run("Reset", func(t *testing.T) {
+			t.Parallel()
+
+			c := r.NewCursor(ctx, iterator.Values(iterator.ForSlice(two)), params)
+
+			actual, err := iterator.ConsumeValues(c)
+			require.NoError(t, err)
+			assert.Equal(t, two, actual)
+
+			err = c.Reset(iterator.Values(iterator.ForSlice(all)))
+			require.NoError(t, err)
+
+			assert.Same(t, c, r.Get(c.ID), "cursor should not be replaced")
+
+			actual, err = iterator.ConsumeValues(c)
+			require.NoError(t, err)
+			assert.Equal(t, []*types.Document{doc3}, actual)
+		})
 	})
 }

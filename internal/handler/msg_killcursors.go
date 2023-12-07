@@ -92,13 +92,13 @@ func (h *Handler) MsgKillCursors(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 	}
 
 	for _, id := range ids {
-		cursor := h.cursors.Get(id)
-		if cursor == nil || cursor.DB != db || cursor.Collection != collection || cursor.Username != username {
+		c := h.cursors.Get(id)
+		if c == nil || c.DB != db || c.Collection != collection || c.Username != username {
 			cursorsNotFound.Append(id)
 			continue
 		}
 
-		cursor.Close()
+		h.cursors.Remove(c)
 		cursorsKilled.Append(id)
 	}
 
