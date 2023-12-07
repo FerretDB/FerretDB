@@ -3,10 +3,12 @@ module github.com/FerretDB/FerretDB/tools
 go 1.21
 
 require (
+	github.com/FerretDB/gh v0.1.0
 	github.com/go-task/task/v3 v3.32.0
 	github.com/google/go-github/v56 v56.0.0
 	github.com/goreleaser/nfpm/v2 v2.34.0
 	github.com/quasilyte/go-consistent v0.6.0
+	github.com/rogpeppe/go-internal v1.11.0
 	github.com/stretchr/testify v1.8.4
 	golang.org/x/oauth2 v0.15.0
 	golang.org/x/perf v0.0.0-20231127181059-b53752263861
@@ -84,7 +86,6 @@ require (
 	github.com/pjbgf/sha1cd v0.3.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/radovskyb/watcher v1.0.7 // indirect
-	github.com/rogpeppe/go-internal v1.11.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/sajari/fuzzy v1.0.0 // indirect
 	github.com/sergi/go-diff v1.2.0 // indirect

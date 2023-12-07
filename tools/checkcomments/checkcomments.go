@@ -29,11 +29,12 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/rogpeppe/go-internal/lockedfile"
-
 	"github.com/google/go-github/v56/github"
+	"github.com/rogpeppe/go-internal/lockedfile"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/singlechecker"
+
+	"github.com/FerretDB/gh"
 )
 
 // checkIssueComments is used to enable/disable the linter quickly.
@@ -82,13 +83,21 @@ func run(pass *analysis.Pass) (any, error) {
 	}
 
 	var data []byte
-	if data, err = lockedfile.Read(cachePath); err != nil {
-		log.Panicf("could not read cache file: %s", err)
-	}
-
 	var cache issueCache
-	if err = json.Unmarshal(data, &cache); err != nil {
-		log.Panicf("could not unmarshal cache file: %s", err)
+
+	data, err = lockedfile.Read(cachePath)
+	switch {
+	case err == nil:
+		if err = json.Unmarshal(data, &cache); err != nil {
+			log.Panicf("could not unmarshal cache file: %s", err)
+		}
+
+	case errors.Is(err, os.ErrNotExist):
+		// can't open file, consider the cache empty
+		cache.Issues = make(map[string]issueState)
+
+	default:
+		log.Panicf("could not read cache file: %s", err)
 	}
 
 	if cache.ReachedRateLimit {
@@ -102,9 +111,20 @@ func run(pass *analysis.Pass) (any, error) {
 		log.Panicf("could not create GitHub client: %s", err)
 	}
 
-	checkTodoComments(context.Background(), pass, comments, &cache, client)
+	c := todoChecker{
+		pass:     pass,
+		comments: comments,
+		cache:    &cache,
+		client:   client,
+	}
+	c.run(context.Background())
 
-	//	lockedfile.Transform()
+	/*data, err := json.Marshal(cache)
+	if err != nil {
+		log.Panicf("could not marshal cache file: %s", err)
+	}
+
+	lockedfile.Transform()*/
 
 	/*	var iCache issueCache
 
@@ -221,76 +241,91 @@ func collectTodoComments(pass *analysis.Pass) []*ast.Comment {
 	return comments
 }
 
-// checkTodoComments goes through the given comments and reports if TODOs are valid and linked issues are open.
-func checkTodoComments(ctx context.Context, pass *analysis.Pass, comments []*ast.Comment, cache *issueCache, client *github.Client) {
+// todoChecker is used to gothrough the given comments and reports if TODOs are valid and linked issues are open.
+type todoChecker struct {
+	pass     *analysis.Pass
+	comments []*ast.Comment
+	cache    *issueCache
+	client   *github.Client
+}
+
+func (c *todoChecker) processComment(ctx context.Context, comment *ast.Comment) bool {
+	match := todoRE.FindStringSubmatch(comment.Text)
+
+	if match == nil {
+		c.pass.Reportf(comment.Pos(), "invalid TODO: incorrect format")
+		return false
+	}
+
+	issueLink := match[0]
+
+	if state, ok := c.cache.Issues[issueLink]; ok {
+		if state != issueOpen {
+			message := fmt.Sprintf("invalid TODO: linked issue %s is %s", issueLink, state)
+			c.pass.Reportf(comment.Pos(), message)
+		}
+
+		return false
+	}
+
+	issueNum, err := strconv.Atoi(match[1])
+	if err != nil {
+		log.Panicf("invalid issue number: %s", match[1])
+	}
+
+	issue, _, err := c.client.Issues.Get(ctx, "FerretDB", "FerretDB", issueNum)
+	var re *github.ErrorResponse
+
+	switch {
+	case errors.As(err, new(*github.RateLimitError)):
+		c.cache.ReachedRateLimit = true
+		msg := "Rate limit reached."
+
+		if os.Getenv("GITHUB_TOKEN") == "" {
+			msg += " Please set a GITHUB_TOKEN as described at " +
+				"https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md#setting-a-github_token"
+		}
+
+		log.Println(msg)
+		return true
+
+	case errors.As(err, &re) && re.Response.StatusCode == 404:
+		c.cache.Issues[issueLink] = issueNotFound
+		message := fmt.Sprintf("invalid TODO: linked issue %s does not exist", issueLink)
+		c.pass.Reportf(comment.Pos(), message)
+
+	case err != nil:
+		log.Printf("could not get issue %d: %s", issueNum, err)
+		return true
+
+	default:
+		if issue.GetState() == "closed" {
+			c.cache.Issues[issueLink] = issueClosed
+			message := fmt.Sprintf("invalid TODO: linked issue %s is closed", issueLink)
+			c.pass.Reportf(comment.Pos(), message)
+		} else {
+			c.cache.Issues[issueLink] = issueOpen
+		}
+	}
+
+	return false
+}
+
+// run TODO checker.
+func (c *todoChecker) run(ctx context.Context) {
 	done := make(chan struct{})
 
 	wg := sync.WaitGroup{}
-	wg.Add(len(comments))
+	wg.Add(len(c.comments))
 
-	for _, c := range comments {
-		go func(c *ast.Comment) {
+	for _, comment := range c.comments {
+		go func(comment *ast.Comment) {
 			defer wg.Done()
 
-			match := todoRE.FindStringSubmatch(c.Text)
-
-			if match == nil {
-				pass.Reportf(c.Pos(), "invalid TODO: incorrect format")
-				return
-			}
-
-			issueLink := match[0]
-
-			if state, ok := cache.Issues[issueLink]; ok {
-				if state != issueOpen {
-					message := fmt.Sprintf("invalid TODO: linked issue %s is %s", issueLink, state)
-					pass.Reportf(c.Pos(), message)
-				}
-
-				return
-			}
-
-			issueNum, err := strconv.Atoi(match[1])
-			if err != nil {
-				log.Panicf("invalid issue number: %s", match[1])
-			}
-
-			issue, _, err := client.Issues.Get(ctx, "FerretDB", "FerretDB", issueNum)
-			var re *github.ErrorResponse
-
-			switch {
-			case errors.As(err, new(*github.RateLimitError)):
-				cache.ReachedRateLimit = true
-				msg := "Rate limit reached."
-
-				if os.Getenv("GITHUB_TOKEN") == "" {
-					msg += " Please set a GITHUB_TOKEN as described at " +
-						"https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md#setting-a-github_token"
-				}
-
-				log.Println(msg)
-
+			if c.processComment(ctx, comment) {
 				close(done)
-
-			case errors.As(err, &re) && re.Response.StatusCode == 404:
-				cache.Issues[issueLink] = issueNotFound
-				message := fmt.Sprintf("invalid TODO: linked issue %s does not exist", issueLink)
-				pass.Reportf(c.Pos(), message)
-
-			case err != nil:
-				log.Printf("could not get issue %d: %s", issueNum, err)
-				close(done)
-
-			default:
-				if issue.GetState() == "closed" {
-					cache.Issues[issueLink] = issueClosed
-					message := fmt.Sprintf("invalid TODO: linked issue %s is closed", issueLink)
-					pass.Reportf(c.Pos(), message)
-				} else {
-					cache.Issues[issueLink] = issueOpen
-				}
 			}
-		}(c)
+		}(comment)
 	}
 
 	go func() {
