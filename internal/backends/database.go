@@ -92,8 +92,7 @@ type CollectionInfo struct {
 	UUID            string
 	CappedSize      int64
 	CappedDocuments int64
-
-	_ struct{} // prevent unkeyed literals
+	_               struct{} // prevent unkeyed literals
 }
 
 // Capped returns true if collection is capped.
