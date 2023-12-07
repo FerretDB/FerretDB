@@ -173,7 +173,6 @@ func TestSingleBatch(t *testing.T) {
 		cursorClosed bool                // optional, set true for expecting cursor to be closed
 		err          *mongo.CommandError // optional, expected error from MongoDB
 		altMessage   string              // optional, alternative error message for FerretDB, ignored if empty
-		skip         string              // optional, skip test with a specified reason
 	}{
 		"True": {
 			singleBatch:  true,
@@ -198,10 +197,6 @@ func TestSingleBatch(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
-
 			t.Parallel()
 
 			var rest bson.D

@@ -64,7 +64,6 @@ func TestGetMoreCommand(t *testing.T) {
 		nextBatch  []*types.Document   // optional, expected getMore nextBatch
 		err        *mongo.CommandError // optional, expected error from MongoDB
 		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
-		skip       string              // optional, skip test with a specified reason
 	}{
 		"Int": {
 			firstBatchSize:   1,
@@ -300,10 +299,6 @@ func TestGetMoreCommand(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
-
 			// Do not run subtests in t.Parallel() to eliminate the occurrence
 			// of session error.
 			// Supporting session would help us understand fix it
@@ -707,7 +702,6 @@ func TestGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 
 		err        *mongo.CommandError // required, expected error from MongoDB
 		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
-		skip       string              // optional, skip test with a specified reason
 	}{
 		"NegativeLong": {
 			command: bson.D{
@@ -863,10 +857,6 @@ func TestGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
-
 			t.Parallel()
 
 			require.NotNil(t, tc.err, "err must not be nil")
