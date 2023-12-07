@@ -119,7 +119,6 @@ func testQueryCompatWithProviders(t *testing.T, providers shareddata.Providers, 
 					require.NoError(t, compatErr)
 					require.Equal(t, compatIdx, targetIdx)
 
-					// TODO https://github.com/FerretDB/FerretDB/issues/3829
 					// don't add sort, limit, skip, and projection because we don't pushdown them yet
 					explainQuery := bson.D{{"explain", bson.D{
 						{"find", targetCollection.Name()},
