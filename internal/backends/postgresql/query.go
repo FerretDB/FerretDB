@@ -237,14 +237,18 @@ func prepareOrderByClause(p *metadata.Placeholder, sort *types.Document) (string
 	}
 
 	v := must.NotFail(sort.Get("$natural"))
+	var order string
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3638
-	sortOrder := v.(int64)
-	if sortOrder != 1 {
-		return "", nil
+	switch v.(int64) {
+	case 1:
+		// Ascending order
+	case -1:
+		order = " DESC"
+	default:
+		panic("not reachable")
 	}
 
-	return fmt.Sprintf(" ORDER BY %s", metadata.RecordIDColumn), nil
+	return fmt.Sprintf(" ORDER BY %s%s", metadata.RecordIDColumn, order), nil
 }
 
 // filterEqual returns the proper SQL filter with arguments that filters documents
