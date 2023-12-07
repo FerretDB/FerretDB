@@ -33,7 +33,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-func TestGetMoreCommand(t *testing.T) {
+func TestCursorsGetMoreCommand(t *testing.T) {
 	// do not run tests in parallel to avoid using too many backend connections
 
 	// options are applied to create a client that uses single connection pool
@@ -242,8 +242,8 @@ func TestGetMoreCommand(t *testing.T) {
 			err: &mongo.CommandError{
 				Code: 13,
 				Name: "Unauthorized",
-				Message: "Requested getMore on namespace 'TestGetMoreCommand.invalid'," +
-					" but cursor belongs to a different namespace TestGetMoreCommand.TestGetMoreCommand",
+				Message: "Requested getMore on namespace 'TestCursorsGetMoreCommand.invalid'," +
+					" but cursor belongs to a different namespace TestCursorsGetMoreCommand.TestCursorsGetMoreCommand",
 			},
 		},
 		"EmptyCollectionName": {
@@ -435,7 +435,7 @@ func TestGetMoreCommand(t *testing.T) {
 	}
 }
 
-func TestGetMoreBatchSizeCursor(t *testing.T) {
+func TestCursorsGetMoreBatchSizeCursor(t *testing.T) {
 	// do not run tests in parallel to avoid using too many backend connections
 
 	ctx, collection := setup.Setup(t)
@@ -579,7 +579,7 @@ func TestGetMoreBatchSizeCursor(t *testing.T) {
 	})
 }
 
-func TestGetMoreCommandConnection(t *testing.T) {
+func TestCursorsGetMoreCommandConnection(t *testing.T) {
 	// do not run tests in parallel to avoid using too many backend connections
 
 	// options are applied to create a client that uses single connection pool
@@ -692,7 +692,7 @@ func TestGetMoreCommandConnection(t *testing.T) {
 	})
 }
 
-func TestGetMoreCommandMaxTimeMSErrors(t *testing.T) {
+func TestCursorsGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 	// do not run tests in parallel to avoid using too many backend connections
 
 	ctx, collection := setup.Setup(t)
@@ -869,7 +869,7 @@ func TestGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 	}
 }
 
-func TestGetMoreCommandMaxTimeMSCursor(t *testing.T) {
+func TestCursorsGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 	// do not run tests in parallel to avoid using too many backend connections
 
 	// options are applied to create a client that uses single connection pool

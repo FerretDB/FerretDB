@@ -27,7 +27,7 @@ import (
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
-func TestBatchSize(t *testing.T) {
+func TestCursorsBatchSize(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
@@ -158,7 +158,7 @@ func TestBatchSize(t *testing.T) {
 	}
 }
 
-func TestSingleBatch(t *testing.T) {
+func TestCursorsSingleBatch(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 

@@ -27,7 +27,7 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
-func TestTailable(t *testing.T) {
+func TestCursorsTailable(t *testing.T) {
 	t.Parallel()
 
 	t.Run("NonCapped", func(t *testing.T) {
