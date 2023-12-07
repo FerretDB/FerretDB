@@ -22,6 +22,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/teststress"
+	"github.com/stretchr/testify/assert"
 )
 
 // TestIterator checks that the iterator implementation is correct.
@@ -41,6 +42,11 @@ func TestIterator[K, V any](t *testing.T, newIter func() iterator.Interface[K, V
 			<-start
 
 			iter.Close()
+		})
+
+		assert.NotPanics(t, func() {
+			_, _, err := iter.Next()
+			assert.ErrorIs(t, err, iterator.ErrIteratorDone)
 		})
 	})
 }

@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
@@ -115,6 +116,10 @@ func (c *Cursor) Reset(iter types.DocumentsIterator) error {
 func (c *Cursor) Next() (struct{}, *types.Document, error) {
 	c.m.Lock()
 	defer c.m.Unlock()
+
+	if c.iter == nil {
+		return struct{}{}, nil, iterator.ErrIteratorDone
+	}
 
 	zero, doc, err := c.iter.Next()
 	if doc != nil {

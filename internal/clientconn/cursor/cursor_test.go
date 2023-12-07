@@ -24,6 +24,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/iterator/testiterator"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
@@ -41,6 +42,10 @@ func TestCursorNormal(t *testing.T) {
 	doc3 := must.NotFail(types.NewDocument("v", int32(3)))
 
 	docs := []*types.Document{doc1, doc2, doc3}
+
+	testiterator.TestIterator(t, func() iterator.Interface[struct{}, *types.Document] {
+		return r.NewCursor(ctx, iterator.Values(iterator.ForSlice(docs)), &NewParams{})
+	})
 
 	t.Run("Normal", func(t *testing.T) {
 		t.Parallel()
