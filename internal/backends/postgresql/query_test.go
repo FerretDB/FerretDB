@@ -354,9 +354,8 @@ func TestPrepareOrderByClause(t *testing.T) {
 			orderBy: ` ORDER BY _ferretdb_record_id`,
 		},
 		"NaturalDescending": {
-			skip:    "https://github.com/FerretDB/FerretDB/issues/3638",
 			sort:    must.NotFail(types.NewDocument("$natural", int64(-1))),
-			orderBy: "",
+			orderBy: ` ORDER BY _ferretdb_record_id DESC`,
 		},
 	} {
 		name, tc := name, tc
