@@ -25,7 +25,6 @@ package cursor
 
 import (
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -35,6 +34,7 @@ import (
 
 //go:generate ../../../bin/stringer -linecomment -type Type
 
+// Type represents a cursor type.
 type Type int
 
 const (
@@ -44,23 +44,23 @@ const (
 	TailableAwait
 )
 
-// Cursor allows clients to iterate over a result set.
+// Cursor allows clients to iterate over a result set (or multiple sets for tailable cursors).
 //
 // It implements types.DocumentsIterator interface by wrapping another iterator with documents
 // with additional metadata and registration in the registry.
 //
-// Closing the cursor removes it from the registry.
+// Closing the cursor removes it from the registry and closes the underlying iterator.
 type Cursor struct {
 	// the order of fields is weird to make the struct smaller due to alignment
 
 	created time.Time
-	iter    types.DocumentsIterator
+	iter    types.DocumentsIterator // protected by m
 	*NewParams
 	r            *Registry
 	token        *resource.Token
-	closed       chan struct{}
+	closed       chan struct{} // protected by m
 	ID           int64
-	lastRecordID atomic.Int64
+	lastRecordID int64 // protected by m
 	m            sync.Mutex
 }
 
@@ -82,16 +82,17 @@ func newCursor(id int64, iter types.DocumentsIterator, params *NewParams, r *Reg
 }
 
 func (c *Cursor) Reset(iter types.DocumentsIterator) error {
-	c.m.Lock()
-	defer c.m.Unlock()
-
 	if c.Type != Tailable && c.Type != TailableAwait {
 		panic("Reset called on non-tailable cursor")
 	}
 
-	c.iter = iter
+	c.m.Lock()
 
-	recordID := c.lastRecordID.Load()
+	c.iter = iter
+	recordID := c.lastRecordID
+
+	c.m.Unlock()
+
 	for {
 		_, doc, err := c.Next()
 		if err != nil {
@@ -113,7 +114,7 @@ func (c *Cursor) Next() (struct{}, *types.Document, error) {
 	zero, doc, err := c.iter.Next()
 	if doc != nil {
 		recordID := doc.RecordID()
-		c.lastRecordID.Store(recordID)
+		c.lastRecordID = recordID
 
 		if c.ShowRecordID {
 			doc.Set("$recordId", recordID)
