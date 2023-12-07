@@ -89,6 +89,31 @@ func TestCursors(t *testing.T) {
 		assert.ErrorContains(t, err, "QueryPlanKilled")
 	})
 
+	t.Run("QueryPlanKilledByDropIndex", func(t *testing.T) {
+		_, err := collection.Indexes().CreateOne(ctx, mongo.IndexModel{Keys: bson.D{{"a", 1}}})
+		require.NoError(t, err)
+
+		docs := []interface{}{
+			bson.D{{"a", 1}},
+			bson.D{{"a", 1}},
+		}
+
+		_, err = collection.InsertMany(ctx, docs)
+		require.NoError(t, err)
+
+		cur, err := collection.Find(ctx, bson.D{{"a", 1}}, opts)
+		require.NoError(t, err)
+		cur.Next(ctx)
+
+		_, err = collection.Indexes().DropAll(ctx)
+		require.NoError(t, err)
+
+		res := bson.D{}
+		err = cur.All(ctx, &res)
+
+		assert.ErrorContains(t, err, "QueryPlanKilled")
+	})
+
 	t.Run("IdleCursorReusedAfterDisconnect", func(t *testing.T) {
 		t.Skip("needs work")
 		// test that idleCursor can be reused when a client disconnects
