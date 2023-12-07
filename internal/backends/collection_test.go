@@ -73,6 +73,11 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 				must.NotFail(types.NewDocument("_id", types.ObjectID{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})),
 			}
 
+			invertedDocs := make([]*types.Document, len(insertDocs))
+			copy(invertedDocs, insertDocs)
+
+			slices.Reverse(invertedDocs)
+
 			_, err = coll.InsertAll(ctx, &backends.InsertAllParams{Docs: insertDocs})
 			require.NoError(t, err)
 
@@ -114,9 +119,10 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 
 				docs, err := iterator.ConsumeValues[struct{}, *types.Document](queryRes.Iter)
 				require.NoError(t, err)
-				require.Len(t, docs, len(insertDocs))
-				testutil.AssertEqualSlices(t, insertDocs, docs)
-				assertEqualRecordID(t, insertDocs, docs)
+				require.Len(t, docs, len(invertedDocs))
+				testutil.AssertEqualSlices(t, invertedDocs, docs)
+
+				assertEqualRecordID(t, invertedDocs, docs)
 
 				explainRes, err := cappedColl.Explain(ctx, &backends.ExplainParams{
 					Sort: sort,
