@@ -29,12 +29,11 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/FerretDB/gh"
 	"github.com/google/go-github/v56/github"
 	"github.com/rogpeppe/go-internal/lockedfile"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/singlechecker"
-
-	"github.com/FerretDB/gh"
 )
 
 // checkIssueComments is used to enable/disable the linter quickly.
@@ -89,7 +88,7 @@ func run(pass *analysis.Pass) (any, error) {
 		log.Panicf("could not create GitHub client: %s", err)
 	}
 
-	if err := lockedfile.Transform(cachePath, func(data []byte) ([]byte, error) {
+	if err = lockedfile.Transform(cachePath, func(data []byte) ([]byte, error) {
 		var cache issueCache
 
 		if len(data) == 0 {
@@ -176,8 +175,8 @@ func collectTodoComments(pass *analysis.Pass) []*ast.Comment {
 type todoChecker struct {
 	client   *github.Client
 	pass     *analysis.Pass
-	comments []*ast.Comment
 	cache    *issueCache
+	comments []*ast.Comment
 	mx       sync.Mutex
 }
 
@@ -216,6 +215,7 @@ func (c *todoChecker) processComment(ctx context.Context, comment *ast.Comment) 
 		c.mx.Lock()
 		c.pass.Reportf(comment.Pos(), "invalid TODO: incorrect format")
 		c.mx.Unlock()
+
 		return nil
 	}
 
@@ -224,6 +224,7 @@ func (c *todoChecker) processComment(ctx context.Context, comment *ast.Comment) 
 	if state, ok := c.cache.Issues[issueLink]; ok {
 		if state != issueOpen {
 			message := fmt.Sprintf("invalid TODO: linked issue %s is %s", issueLink, state)
+
 			c.mx.Lock()
 			c.pass.Reportf(comment.Pos(), message)
 			c.mx.Unlock()
@@ -259,6 +260,7 @@ func (c *todoChecker) processComment(ctx context.Context, comment *ast.Comment) 
 		}
 
 		log.Println(msg)
+
 		return errors.New(msg)
 
 	case errors.As(err, &re) && re.Response.StatusCode == 404:
@@ -271,6 +273,7 @@ func (c *todoChecker) processComment(ctx context.Context, comment *ast.Comment) 
 	case err != nil:
 		msg := fmt.Sprintf("could not get issue %d: %s", issueNum, err)
 		log.Println(msg)
+
 		return errors.New(msg)
 
 	default:
