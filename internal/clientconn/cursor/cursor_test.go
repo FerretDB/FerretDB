@@ -41,6 +41,10 @@ func TestCursor(t *testing.T) {
 	doc2 := must.NotFail(types.NewDocument("v", int32(2)))
 	doc3 := must.NotFail(types.NewDocument("v", int32(3)))
 
+	doc1.SetRecordID(101)
+	doc2.SetRecordID(102)
+	doc3.SetRecordID(103)
+
 	two := []*types.Document{doc1, doc2}
 	all := []*types.Document{doc1, doc2, doc3}
 
@@ -103,8 +107,6 @@ func TestCursor(t *testing.T) {
 	})
 
 	t.Run("Tailable", func(t *testing.T) {
-		t.Skip("TODO") // FIXME
-
 		t.Parallel()
 
 		params := &NewParams{
