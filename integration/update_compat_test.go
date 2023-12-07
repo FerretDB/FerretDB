@@ -371,7 +371,14 @@ func testUpdateCommandCompat(t *testing.T, testCases map[string]updateCommandCom
 								nonEmptyResults = true
 							}
 
-							assert.Equal(t, compatUpdateRes, targetUpdateRes)
+							compat := ConvertDocument(t, compatUpdateRes)
+							compat.Remove("$clusterTime")
+							compat.Remove("operationTime")
+							compat.Remove("electionId")
+							compat.Remove("opTime")
+
+							target := ConvertDocument(t, targetUpdateRes)
+							testutil.AssertEqual(t, compat, target)
 
 							if isMulti, ok := multi.(bool); ok && isMulti {
 								// if multi == false, an item updated by compat and target are different.
