@@ -109,7 +109,7 @@ func run(pass *analysis.Pass) (any, error) {
 			pass:     pass,
 			comments: comments,
 			cache:    &cache,
-			mx:       sync.RWMutex{},
+			mx:       sync.Mutex{},
 		}
 		c.run(context.Background())
 
@@ -178,7 +178,7 @@ type todoChecker struct {
 	pass     *analysis.Pass
 	comments []*ast.Comment
 	cache    *issueCache
-	mx       sync.RWMutex
+	mx       sync.Mutex
 }
 
 // run executes TODO checker.
@@ -213,7 +213,9 @@ func (c *todoChecker) processComment(ctx context.Context, comment *ast.Comment) 
 	match := todoRE.FindStringSubmatch(comment.Text)
 
 	if len(match) != 3 {
+		c.mx.Lock()
 		c.pass.Reportf(comment.Pos(), "invalid TODO: incorrect format")
+		c.mx.Unlock()
 		return nil
 	}
 
@@ -222,7 +224,9 @@ func (c *todoChecker) processComment(ctx context.Context, comment *ast.Comment) 
 	if state, ok := c.cache.Issues[issueLink]; ok {
 		if state != issueOpen {
 			message := fmt.Sprintf("invalid TODO: linked issue %s is %s", issueLink, state)
+			c.mx.Lock()
 			c.pass.Reportf(comment.Pos(), message)
+			c.mx.Unlock()
 		}
 
 		return nil
@@ -260,10 +264,9 @@ func (c *todoChecker) processComment(ctx context.Context, comment *ast.Comment) 
 	case errors.As(err, &re) && re.Response.StatusCode == 404:
 		c.mx.Lock()
 		c.cache.Issues[issueLink] = issueNotFound
-		c.mx.Unlock()
-
 		message := fmt.Sprintf("invalid TODO: linked issue %s does not exist", issueLink)
 		c.pass.Reportf(comment.Pos(), message)
+		c.mx.Unlock()
 
 	case err != nil:
 		msg := fmt.Sprintf("could not get issue %d: %s", issueNum, err)
@@ -271,18 +274,16 @@ func (c *todoChecker) processComment(ctx context.Context, comment *ast.Comment) 
 		return errors.New(msg)
 
 	default:
+		c.mx.Lock()
 		if issue.GetState() == "closed" {
-			c.mx.Lock()
 			c.cache.Issues[issueLink] = issueClosed
-			c.mx.Unlock()
 
 			message := fmt.Sprintf("invalid TODO: linked issue %s is closed", issueLink)
 			c.pass.Reportf(comment.Pos(), message)
 		} else {
-			c.mx.Lock()
 			c.cache.Issues[issueLink] = issueOpen
-			c.mx.Unlock()
 		}
+		c.mx.Unlock()
 	}
 
 	return nil
