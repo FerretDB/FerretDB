@@ -63,7 +63,6 @@ func TestCursors(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("RemoveLastDocument", func(t *testing.T) {
-		t.Skip()
 		cur, err := collection.Find(ctx, bson.D{})
 		require.NoError(t, err)
 
@@ -77,17 +76,17 @@ func TestCursors(t *testing.T) {
 	})
 
 	t.Run("QueryPlanKilledByDrop", func(t *testing.T) {
-		cur, err := collection.Find(ctx, bson.D{})
+		cur, err := collection.Find(ctx, bson.D{}, opts)
 		require.NoError(t, err)
 		cur.Next(ctx)
 
 		err = collection.Database().Drop(ctx)
 		require.NoError(t, err)
 
-		cur.Next(ctx)
-		cur.Next(ctx)
-		cur.Next(ctx)
-		assert.False(t, cur.Next(ctx))
+		res := bson.D{}
+		err = cur.All(ctx, &res)
+
+		assert.ErrorContains(t, err, "QueryPlanKilled")
 	})
 
 	t.Run("IdleCursorReusedAfterDisconnect", func(t *testing.T) {
