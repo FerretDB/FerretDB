@@ -59,7 +59,7 @@ func TestMySQLURI(tb testtb.TB, ctx context.Context, baseURI string) string {
 
 	// mysql url requires a specified format to work
 	// For example: username:password@tcp(127.0.0.1:3306)/ferretdb
-	cfg := &mysql.Config{
+	cfg := mysql.Config{
 		User:   u.User.Username(),
 		Passwd: password,
 		Addr:   u.Host,
