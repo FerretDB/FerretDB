@@ -135,7 +135,8 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			return nil, handlererrors.NewCommandErrorMsgWithArgument(
 				handlererrors.ErrNotImplemented,
 				"$natural sort for non-capped collection is not supported.",
-				"explain")
+				"explain",
+			)
 		}
 
 		qp.Sort = params.Sort

@@ -225,7 +225,8 @@ func (h *Handler) makeFindQueryParams(params *common.FindParams, cInfo *backends
 			return nil, handlererrors.NewCommandErrorMsgWithArgument(
 				handlererrors.ErrNotImplemented,
 				"$natural sort for non-capped collection is not supported.",
-				"find")
+				"find",
+			)
 		}
 
 		qp.Sort = params.Sort
