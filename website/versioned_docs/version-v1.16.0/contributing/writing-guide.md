@@ -56,6 +56,12 @@ To link to file in a different directory, specify the relative file path.
 
 - `[file in a different directory](../basic-operations/read.md)`.
 
+FIXME `/category/` does not work correctly
+
+To link to category, prefix the directory name with `/category/`.
+
+- [configuration directory](/category/configuration/)
+
 ## Images
 
 Please store all images under `blog` or `docs` in the `static/img` folder.
