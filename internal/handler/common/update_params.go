@@ -38,6 +38,7 @@ type UpdateParams struct {
 	BypassDocumentValidation bool            `ferretdb:"bypassDocumentValidation,ignored"`
 	WriteConcern             *types.Document `ferretdb:"writeConcern,ignored"`
 	LSID                     any             `ferretdb:"lsid,ignored"`
+	ClusterTime              any             `ferretdb:"$clusterTime,ignored"`
 }
 
 // Update represents a single update operation parameters.
