@@ -46,7 +46,7 @@ func (h *Handler) MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	// In that case, we expect the client to wait or to retry the operation.
 	for _, c := range h.cursors.All() {
 		if c.DB == dbName {
-			h.cursors.Remove(c)
+			h.cursors.CloseAndRemove(c)
 		}
 	}
 

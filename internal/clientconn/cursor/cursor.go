@@ -49,10 +49,12 @@ const (
 
 // Cursor allows clients to iterate over a result set (or multiple sets for tailable cursors).
 //
-// It implements types.DocumentsIterator interface by wrapping another iterator with documents
+// It implements types.DocumentsIterator interface by wrapping another iterator
 // with additional metadata and registration in the registry.
 //
-// FIXME Closing the cursor removes it from the registry and closes the underlying iterator.
+// Closing the cursor closes the underlying iterator.
+// For normal cursors, it also removes it from the registry.
+// Tailable cursors are not removed in that case.
 type Cursor struct {
 	// the order of fields is weird to make the struct smaller due to alignment
 
@@ -62,7 +64,7 @@ type Cursor struct {
 	r            *Registry
 	l            *zap.Logger
 	token        *resource.Token
-	removed      chan struct{}
+	removed      chan struct{} // protected by m
 	ID           int64
 	lastRecordID int64 // protected by m
 	m            sync.Mutex
@@ -90,6 +92,10 @@ func newCursor(id int64, iter types.DocumentsIterator, params *NewParams, r *Reg
 	return c
 }
 
+// Reset replaces the underlying iterator with a given one
+// and advanced it until the last known record ID is reached.
+//
+// It should be used only with tailable cursors.
 func (c *Cursor) Reset(iter types.DocumentsIterator) error {
 	if c.Type != Tailable && c.Type != TailableAwait {
 		panic("Reset called on non-tailable cursor")
@@ -106,7 +112,6 @@ func (c *Cursor) Reset(iter types.DocumentsIterator) error {
 	for {
 		_, doc, err := c.Next()
 		if err != nil {
-			// FIXME
 			return lazyerrors.Error(err)
 		}
 
@@ -139,6 +144,9 @@ func (c *Cursor) Next() (struct{}, *types.Document, error) {
 }
 
 // Close implements types.DocumentsIterator interface.
+//
+// It closes the underlying iterator.
+// For normal cursors, it also removes it from the registry.
 func (c *Cursor) Close() {
 	c.m.Lock()
 
@@ -153,9 +161,10 @@ func (c *Cursor) Close() {
 
 	c.m.Unlock()
 
-	// FIXME
+	// it is not entirely clear if we should do that;
+	// more tests are needed
 	if c.Type == Normal {
-		c.r.Remove(c)
+		c.r.CloseAndRemove(c)
 	}
 
 	resource.Untrack(c, c.token)

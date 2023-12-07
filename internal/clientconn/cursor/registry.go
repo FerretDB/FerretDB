@@ -99,7 +99,7 @@ func NewRegistry(l *zap.Logger) *Registry {
 	}
 }
 
-// Close waits for all cursors to be closed.
+// Close waits for all cursors to be closed and removed from the registry.
 func (r *Registry) Close() {
 	// we mainly do that for tests; see https://github.com/uber-go/zap/issues/687
 
@@ -125,7 +125,7 @@ type NewParams struct {
 
 // NewCursor creates and stores a new cursor.
 //
-// The cursor will be closed automatically when a given context is canceled,
+// The cursor of any type will be closed automatically when a given context is canceled,
 // even if the cursor is not being used at that time.
 func (r *Registry) NewCursor(ctx context.Context, iter types.DocumentsIterator, params *NewParams) *Cursor {
 	r.rw.Lock()
@@ -150,15 +150,14 @@ func (r *Registry) NewCursor(ctx context.Context, iter types.DocumentsIterator, 
 
 	r.wg.Add(1)
 	go func() {
-		defer r.wg.Done()
-
 		select {
 		case <-ctx.Done():
-			r.Remove(c)
-		case <-c.removed:
+			r.CloseAndRemove(c)
+		case <-c.removed: // for c.Close() and normal cursors
 		}
 
 		<-c.removed
+		r.wg.Done()
 	}()
 
 	return c
@@ -180,8 +179,8 @@ func (r *Registry) All() []*Cursor {
 	return maps.Values(r.m)
 }
 
-// FIXME
-func (r *Registry) Remove(c *Cursor) {
+// CloseAndRemove closes the given cursors, then removes it from the registry.
+func (r *Registry) CloseAndRemove(c *Cursor) {
 	c.Close()
 
 	r.rw.Lock()
