@@ -27,7 +27,7 @@ import (
 )
 
 // Replace `1<<XXX` with named constants.
-// TODO https://github.com/FerretDB/FerretDB/issues/999999
+// TODO https://github.com/FerretDB/FerretDB/issues/3626
 
 func TestQueryComparisonCompatImplicit(t *testing.T) {
 	t.Parallel()

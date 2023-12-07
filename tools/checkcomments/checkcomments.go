@@ -126,7 +126,7 @@ func run(pass *analysis.Pass) (any, error) {
 	return nil, nil
 }
 
-// collectTodoComments returns comments that contain TODO messages and sends them to a channel.
+// collectTodoComments returns comments that contain TODO messages.
 func collectTodoComments(pass *analysis.Pass) []*ast.Comment {
 	var (
 		comments []*ast.Comment
