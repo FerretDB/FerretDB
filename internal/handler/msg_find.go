@@ -22,6 +22,8 @@ import (
 	"slices"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
@@ -68,29 +70,33 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, lazyerrors.Error(err)
 	}
 
+	var cList *backends.ListCollectionsResult
+
+	if cList, err = db.ListCollections(ctx, nil); err != nil {
+		return nil, err
+	}
+
+	var cInfo backends.CollectionInfo
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/3601
+	if i, found := slices.BinarySearchFunc(cList.Collections, params.Collection, func(e backends.CollectionInfo, t string) int {
+		return cmp.Compare(e.Name, t)
+	}); found {
+		cInfo = cList.Collections[i]
+	}
+
+	capped := cInfo.Capped()
 	if params.Tailable {
-		var cList *backends.ListCollectionsResult
-
-		if cList, err = db.ListCollections(ctx, nil); err != nil {
-			return nil, err
-		}
-
-		var cInfo backends.CollectionInfo
-
-		// TODO https://github.com/FerretDB/FerretDB/issues/3601
-		//nolint:lll // see issue above
-		if i, found := slices.BinarySearchFunc(cList.Collections, params.Collection, func(e backends.CollectionInfo, t string) int {
-			return cmp.Compare(e.Name, t)
-		}); found {
-			cInfo = cList.Collections[i]
-		}
-
-		if !cInfo.Capped() {
+		if !capped {
 			return nil, handlererrors.NewCommandErrorMsgWithArgument(
 				handlererrors.ErrBadValue,
 				"tailable cursor requested on non capped collection",
 				"tailable",
 			)
+		}
+
+		if params.AwaitData {
+			return nil, common.Unimplemented(document, "awaitData")
 		}
 
 		return nil, common.Unimplemented(document, "tailable")
@@ -106,7 +112,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		}
 	}
 
-	if !h.DisableFilterPushdown {
+	if !h.DisablePushdown {
 		qp.Filter = params.Filter
 	}
 
@@ -123,16 +129,20 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
-	// Skip sorting if there are more than one sort parameters
-	if params.Sort.Len() == 1 {
-		qp.Sort = params.Sort
+	switch {
+	case h.DisablePushdown:
+		// Pushdown disabled
+	case params.Sort.Len() == 0 && capped:
+		// Pushdown default recordID sorting for capped collections
+		qp.Sort = must.NotFail(types.NewDocument("$natural", int64(1)))
 	}
 
 	// Limit pushdown is not applied if:
+	//  - pushdown is disabled;
 	//  - `filter` is set, it must fetch all documents to filter them in memory;
 	//  - `sort` is set, it must fetch all documents and sort them in memory;
 	//  - `skip` is non-zero value, skip pushdown is not supported yet.
-	if params.Filter.Len() == 0 && params.Sort.Len() == 0 && params.Skip == 0 {
+	if !h.DisablePushdown && params.Filter.Len() == 0 && params.Sort.Len() == 0 && params.Skip == 0 {
 		qp.Limit = params.Limit
 	}
 
@@ -184,8 +194,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	// Combine iterators chain and closer into a cursor to pass around.
 	// The context will be canceled when client disconnects or after maxTimeMS.
-	cursor := h.cursors.NewCursor(ctx, &cursor.NewParams{
-		Iter:         iterator.WithClose(iterator.Interface[struct{}, *types.Document](iter), closer.Close),
+	cursor := h.cursors.NewCursor(ctx, iterator.WithClose(iter, closer.Close), &cursor.NewParams{
 		DB:           params.DB,
 		Collection:   params.Collection,
 		Username:     username,
@@ -194,18 +203,19 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	cursorID := cursor.ID
 
-	firstBatchDocs, err := iterator.ConsumeValuesN(iterator.Interface[struct{}, *types.Document](cursor), int(params.BatchSize))
+	firstBatchDocs, err := iterator.ConsumeValuesN(cursor, int(params.BatchSize))
 	if err != nil {
-		cursor.Close()
 		return nil, lazyerrors.Error(err)
 	}
 
+	h.L.Debug(
+		"Got first batch", zap.Int64("cursor_id", cursorID),
+		zap.Int("count", len(firstBatchDocs)), zap.Int64("batch_size", params.BatchSize),
+		zap.Bool("single_batch", params.SingleBatch),
+	)
+
 	firstBatch := types.MakeArray(len(firstBatchDocs))
 	for _, doc := range firstBatchDocs {
-		if params.ShowRecordId {
-			doc.Set("$recordId", doc.RecordID())
-		}
-
 		firstBatch.Append(doc)
 	}
 

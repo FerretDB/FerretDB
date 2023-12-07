@@ -12,7 +12,7 @@ ARG LABEL_COMMIT
 
 # build stage
 
-FROM ghcr.io/ferretdb/golang:1.21.4-2 AS all-in-one-build
+FROM ghcr.io/ferretdb/golang:1.21.5-1 AS all-in-one-build
 
 ARG TARGETARCH
 
@@ -29,11 +29,11 @@ ENV GOMODCACHE /cache/gomodcache
 # remove ",direct"
 ENV GOPROXY https://proxy.golang.org
 
-# do not raise it from the default value of v1 without providing a separate v1 build
+# do not raise it without providing a separate v1 build
 # because v2+ is problematic for some virtualization platforms and older hardware
-# ENV GOAMD64=v1
+ENV GOAMD64=v1
 
-# leave GOARM unset for autodetection
+# GOARM is not set because it is ignored for arm64
 
 ENV CGO_ENABLED=1
 
@@ -66,7 +66,6 @@ fi
 # Do not trim paths to make debugging with delve easier.
 
 # check that stdlib was cached
-# env GODEBUG=gocachehash=1 go install -v -race=$RACE std
 go install -v -race=$RACE std
 
 go build -v -o=bin/ferretdb -race=$RACE -tags=ferretdb_debug -coverpkg=./... ./cmd/ferretdb

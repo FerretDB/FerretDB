@@ -8,7 +8,7 @@ env:
 vars:
   SHARD_INDEX: 1
   SHARD_TOTAL: 1
-  DISABLE_FILTER_PUSHDOWN: false
+  DISABLE_PUSHDOWN: false
   TEST_RUN: ""
   TEST_TIMEOUT: 35m
   BENCH_TIME: 5s
@@ -214,12 +214,12 @@ tasks:
         -shuffle=on
         -coverpkg=../...
         -coverprofile=integration-postgresql.txt
-        .
+        ./...
         -target-backend=ferretdb-postgresql
         -target-tls
         -postgresql-url='postgres://username@127.0.0.1:5432/ferretdb?search_path='
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
-        -disable-filter-pushdown={{.DISABLE_FILTER_PUSHDOWN}}
+        -disable-pushdown={{.DISABLE_PUSHDOWN}}
 
   test-integration-sqlite:
     desc: "Run integration tests for `sqlite` backend"
@@ -240,12 +240,12 @@ tasks:
         -shuffle=on
         -coverpkg=../...
         -coverprofile=integration-sqlite.txt
-        .
+        ./...
         -target-backend=ferretdb-sqlite
         -sqlite-url=file:../tmp/sqlite-tests/
         -target-tls
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
-        -disable-filter-pushdown={{.DISABLE_FILTER_PUSHDOWN}}
+        -disable-pushdown={{.DISABLE_PUSHDOWN}}
 
   test-integration-mysql:
     desc: "Run integration tests for `mysql` handler"
@@ -266,12 +266,12 @@ tasks:
         -shuffle=on
         -coverpkg=../...
         -coverprofile=integration-mysql.txt
-        .
+        ./...
         -target-backend=ferretdb-mysql
         -target-tls
         -mysql-url='mysql://username:password@127.0.0.1:3306/ferretdb'
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
-        -disable-filter-pushdown={{.DISABLE_FILTER_PUSHDOWN}}
+        -disable-pushdown={{.DISABLE_PUSHDOWN}}
 
   test-integration-hana:
     desc: "Run integration tests for `hana` handler"
@@ -291,12 +291,12 @@ tasks:
         -shuffle=on
         -coverpkg=../...
         -coverprofile=integration-hana.txt
-        .
+        ./...
         -target-backend=ferretdb-hana
         -target-tls
         -hana-url=$FERRETDB_HANA_URL
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
-        -disable-filter-pushdown={{.DISABLE_FILTER_PUSHDOWN}}
+        -disable-pushdown={{.DISABLE_PUSHDOWN}}
 
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"
@@ -316,7 +316,7 @@ tasks:
         -shuffle=on
         -coverpkg=../...
         -coverprofile=integration-mongodb.txt
-        .
+        ./...
         -target-url='mongodb://127.0.0.1:47017/'
         -target-backend=mongodb
 
@@ -324,8 +324,8 @@ tasks:
     desc: "Run unit benchmarks"
     cmds:
       - go test -list='Benchmark.*' ./...
-      - go test -count=10 -bench=BenchmarkArray    -benchtime={{.BENCH_TIME}} ./internal/bson/           | tee -a new.txt
-      - go test -count=10 -bench=BenchmarkDocument -benchtime={{.BENCH_TIME}} ./internal/bson/           | tee -a new.txt
+      - go test -count=10 -bench=BenchmarkArray    -benchtime={{.BENCH_TIME}} ./internal/bson/          | tee -a new.txt
+      - go test -count=10 -bench=BenchmarkDocument -benchtime={{.BENCH_TIME}} ./internal/bson/          | tee -a new.txt
       - go test -count=10 -bench=BenchmarkArray    -benchtime={{.BENCH_TIME}} ./internal/handler/sjson/ | tee -a new.txt
       - go test -count=10 -bench=BenchmarkDocument -benchtime={{.BENCH_TIME}} ./internal/handler/sjson/ | tee -a new.txt
       - bin/benchstat{{exeExt}} old.txt new.txt
@@ -609,6 +609,8 @@ tasks:
         sh: bin/envtool{{exeExt}} shell read build/version/version.txt
       COMMIT:
         sh: bin/envtool{{exeExt}} shell read build/version/commit.txt
+      requires:
+        vars: [FILE, TARGET, OUTPUT]
 
   build-move-check:
     cmds:

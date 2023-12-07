@@ -40,6 +40,7 @@ type FindParams struct {
 	Comment     string          `ferretdb:"comment,opt"`
 	MaxTimeMS   int64           `ferretdb:"maxTimeMS,opt,wholePositiveNumber"`
 	Tailable    bool            `ferretdb:"tailable,opt"`
+	AwaitData   bool            `ferretdb:"awaitData,opt"`
 
 	Collation *types.Document `ferretdb:"collation,unimplemented"`
 	Let       *types.Document `ferretdb:"let,unimplemented"`
@@ -55,7 +56,6 @@ type FindParams struct {
 	ShowRecordId        bool `ferretdb:"showRecordId,opt"`
 	OplogReplay         bool `ferretdb:"oplogReplay,unimplemented-non-default"`
 	NoCursorTimeout     bool `ferretdb:"noCursorTimeout,unimplemented-non-default"`
-	AwaitData           bool `ferretdb:"awaitData,unimplemented-non-default"`
 	AllowPartialResults bool `ferretdb:"allowPartialResults,unimplemented-non-default"`
 }
 

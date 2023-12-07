@@ -12,9 +12,10 @@ ARG LABEL_COMMIT
 
 # build stage
 
-FROM ghcr.io/ferretdb/golang:1.21.4-2 AS development-build
+FROM ghcr.io/ferretdb/golang:1.21.5-1 AS development-build
 
 ARG TARGETARCH
+ARG TARGETVARIANT
 
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
@@ -29,11 +30,11 @@ ENV GOMODCACHE /cache/gomodcache
 # remove ",direct"
 ENV GOPROXY https://proxy.golang.org
 
-# do not raise it from the default value of v1 without providing a separate v1 build
+# do not raise it without providing a separate v1 build
 # because v2+ is problematic for some virtualization platforms and older hardware
-# ENV GOAMD64=v1
+ENV GOAMD64=v1
 
-# leave GOARM unset for autodetection
+# GOARM is set in the script below
 
 ENV CGO_ENABLED=1
 
@@ -63,10 +64,12 @@ then
     RACE=true
 fi
 
+# Set GOARM explicitly due to https://github.com/docker-library/golang/issues/494.
+export GOARM=${TARGETVARIANT#v}
+
 # Do not trim paths to make debugging with delve easier.
 
 # check that stdlib was cached
-# env GODEBUG=gocachehash=1 go install -v -race=$RACE std
 go install -v -race=$RACE std
 
 go build -v -o=bin/ferretdb -race=$RACE -tags=ferretdb_debug -coverpkg=./... ./cmd/ferretdb
@@ -85,7 +88,7 @@ COPY --from=development-build /src/bin/ferretdb /ferretdb
 
 # final stage
 
-FROM golang:1.21.4 AS development
+FROM golang:1.21.5 AS development
 
 ENV GOCOVERDIR=/tmp/cover
 ENV GORACE=halt_on_error=1,history_size=2

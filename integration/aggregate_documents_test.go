@@ -1150,7 +1150,7 @@ func TestAggregateCommandCursor(t *testing.T) {
 
 	// the number of documents is set above the default batchSize of 101
 	// for testing unset batchSize returning default batchSize
-	arr, _ := generateDocuments(0, 110)
+	arr, _ := GenerateDocuments(0, 110)
 	_, err := collection.InsertMany(ctx, arr)
 	require.NoError(t, err)
 

@@ -12,18 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build unix
-
-package testutil
-
-import (
-	"context"
-	"os/signal"
-
-	"golang.org/x/sys/unix"
-)
-
-// notifyTestsTermination installs a signal handler that cancels the context.
-func notifyTestsTermination(parent context.Context) (context.Context, context.CancelFunc) {
-	return signal.NotifyContext(parent, unix.SIGTERM, unix.SIGINT)
-}
+// Package cursors contains tests for cursors, tailable cursors, `getMore` command, etc.
+//
+// It does not contains tests for simple `find`/`aggregate` cases.
+package cursors

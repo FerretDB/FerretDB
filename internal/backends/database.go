@@ -89,6 +89,7 @@ type ListCollectionsResult struct {
 // CollectionInfo represents information about a single collection.
 type CollectionInfo struct {
 	Name            string
+	UUID            string
 	CappedSize      int64
 	CappedDocuments int64
 	_               struct{} // prevent unkeyed literals

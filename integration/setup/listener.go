@@ -69,11 +69,13 @@ func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath string, tlsAndAut
 	if tlsAndAuth {
 		require.Empty(tb, unixSocketPath, "unixSocketPath cannot be used with TLS")
 
+		certsRoot := filepath.Join(Dir(tb), "..", "..", "build", "certs")
+
 		// we don't separate TLS and auth just for simplicity of our test configurations
 		q = url.Values{
 			"tls":                   []string{"true"},
-			"tlsCertificateKeyFile": []string{filepath.Join(CertsRoot, "client.pem")},
-			"tlsCaFile":             []string{filepath.Join(CertsRoot, "rootCA-cert.pem")},
+			"tlsCertificateKeyFile": []string{filepath.Join(certsRoot, "client.pem")},
+			"tlsCaFile":             []string{filepath.Join(certsRoot, "rootCA-cert.pem")},
 			"authMechanism":         []string{"PLAIN"},
 		}
 		user = url.UserPassword("username", "password")
@@ -177,9 +179,9 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 		HANAURL:       *hanaURLF,
 
 		TestOpts: registry.TestOpts{
-			DisableFilterPushdown: *disableFilterPushdownF,
-			EnableOplog:           true,
-			EnableNewAuth:         false,
+			DisablePushdown: *disablePushdownF,
+			EnableOplog:     true,
+			EnableNewAuth:   false,
 		},
 	}
 	h, closeBackend, err := registry.NewHandler(handler, handlerOpts)
@@ -193,7 +195,7 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 		Metrics:        listenerMetrics,
 		Handler:        h,
 		Logger:         logger,
-		TestRecordsDir: filepath.Join("..", "tmp", "records"),
+		TestRecordsDir: filepath.Join(Dir(tb), "..", "..", "tmp", "records"),
 	}
 
 	if *targetProxyAddrF != "" {
@@ -206,10 +208,11 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 
 	switch {
 	case *targetTLSF:
+		certsRoot := filepath.Join(Dir(tb), "..", "..", "build", "certs")
 		listenerOpts.TLS = "127.0.0.1:0"
-		listenerOpts.TLSCertFile = filepath.Join(CertsRoot, "server-cert.pem")
-		listenerOpts.TLSKeyFile = filepath.Join(CertsRoot, "server-key.pem")
-		listenerOpts.TLSCAFile = filepath.Join(CertsRoot, "rootCA-cert.pem")
+		listenerOpts.TLSCertFile = filepath.Join(certsRoot, "server-cert.pem")
+		listenerOpts.TLSKeyFile = filepath.Join(certsRoot, "server-key.pem")
+		listenerOpts.TLSCAFile = filepath.Join(certsRoot, "rootCA-cert.pem")
 	case *targetUnixSocketF:
 		listenerOpts.Unix = unixSocketPath(tb)
 	default:

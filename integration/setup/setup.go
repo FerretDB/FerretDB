@@ -20,7 +20,6 @@ import (
 	"flag"
 	"fmt"
 	"net/url"
-	"path/filepath"
 	"runtime/trace"
 	"slices"
 	"strings"
@@ -60,14 +59,12 @@ var (
 	debugSetupF = flag.Bool("debug-setup", false, "enable debug logs for tests setup")
 	logLevelF   = zap.LevelFlag("log-level", zap.DebugLevel, "log level for tests")
 
-	disableFilterPushdownF = flag.Bool("disable-filter-pushdown", false, "disable filter pushdown")
+	disablePushdownF = flag.Bool("disable-pushdown", false, "disable pushdown")
 )
 
 // Other globals.
 var (
 	allBackends = []string{"ferretdb-postgresql", "ferretdb-sqlite", "ferretdb-mysql", "ferretdb-hana", "mongodb"}
-
-	CertsRoot = filepath.Join("..", "build", "certs") // relative to `integration` directory
 )
 
 // SetupOpts represents setup options.

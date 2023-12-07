@@ -24,6 +24,8 @@ import (
 	"slices"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
@@ -264,7 +266,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		// only documents stages or no stages - fetch documents from the DB and apply stages to them
 		qp := new(backends.QueryParams)
 
-		if !h.DisableFilterPushdown {
+		if !h.DisablePushdown {
 			qp.Filter = filter
 		}
 
@@ -283,9 +285,29 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			return nil, err
 		}
 
-		// Skip sorting if there are more than one sort parameters
-		if sort.Len() == 1 {
-			qp.Sort = sort
+		var cList *backends.ListCollectionsResult
+
+		if cList, err = db.ListCollections(ctx, nil); err != nil {
+			return nil, err
+		}
+
+		var cInfo backends.CollectionInfo
+
+		// TODO https://github.com/FerretDB/FerretDB/issues/3601
+		if i, found := slices.BinarySearchFunc(cList.Collections, cName, func(e backends.CollectionInfo, t string) int {
+			return cmp.Compare(e.Name, t)
+		}); found {
+			cInfo = cList.Collections[i]
+		}
+
+		capped := cInfo.Capped()
+
+		switch {
+		case h.DisablePushdown:
+			// Pushdown disabled
+		case sort.Len() == 0 && capped:
+			// Pushdown default recordID sorting for capped collections
+			qp.Sort = must.NotFail(types.NewDocument("$natural", int64(1)))
 		}
 
 		iter, err = processStagesDocuments(ctx, closer, &stagesDocumentsParams{c, qp, stagesDocuments})
@@ -305,8 +327,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	closer.Add(iter)
 
-	cursor := h.cursors.NewCursor(ctx, &cursor.NewParams{
-		Iter:       iterator.WithClose(iter, closer.Close),
+	cursor := h.cursors.NewCursor(ctx, iterator.WithClose(iter, closer.Close), &cursor.NewParams{
 		DB:         dbName,
 		Collection: cName,
 		Username:   username,
@@ -314,11 +335,15 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	cursorID := cursor.ID
 
-	firstBatchDocs, err := iterator.ConsumeValuesN(iterator.Interface[struct{}, *types.Document](cursor), int(batchSize))
+	firstBatchDocs, err := iterator.ConsumeValuesN(cursor, int(batchSize))
 	if err != nil {
-		cursor.Close()
 		return nil, lazyerrors.Error(err)
 	}
+
+	h.L.Debug(
+		"Got first batch", zap.Int64("cursor_id", cursorID),
+		zap.Int("count", len(firstBatchDocs)), zap.Int64("batch_size", batchSize),
+	)
 
 	firstBatch := types.MakeArray(len(firstBatchDocs))
 	for _, doc := range firstBatchDocs {
