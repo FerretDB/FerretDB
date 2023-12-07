@@ -266,7 +266,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		// only documents stages or no stages - fetch documents from the DB and apply stages to them
 		qp := new(backends.QueryParams)
 
-		if !h.DisableFilterPushdown {
+		if !h.DisablePushdown {
 			qp.Filter = filter
 		}
 
@@ -285,9 +285,29 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			return nil, err
 		}
 
-		// Skip sorting if there are more than one sort parameters
-		if sort.Len() == 1 {
-			qp.Sort = sort
+		var cList *backends.ListCollectionsResult
+
+		if cList, err = db.ListCollections(ctx, nil); err != nil {
+			return nil, err
+		}
+
+		var cInfo backends.CollectionInfo
+
+		// TODO https://github.com/FerretDB/FerretDB/issues/3601
+		if i, found := slices.BinarySearchFunc(cList.Collections, cName, func(e backends.CollectionInfo, t string) int {
+			return cmp.Compare(e.Name, t)
+		}); found {
+			cInfo = cList.Collections[i]
+		}
+
+		capped := cInfo.Capped()
+
+		switch {
+		case h.DisablePushdown:
+			// Pushdown disabled
+		case sort.Len() == 0 && capped:
+			// Pushdown default recordID sorting for capped collections
+			qp.Sort = must.NotFail(types.NewDocument("$natural", int64(1)))
 		}
 
 		iter, err = processStagesDocuments(ctx, closer, &stagesDocumentsParams{c, qp, stagesDocuments})

@@ -457,9 +457,6 @@ func main() {
 
 	logger := zap.S()
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-	defer cancel()
-
 	cmd := kongCtx.Command()
 	logger.Debugf("Command: %q", cmd)
 
@@ -467,6 +464,9 @@ func main() {
 
 	switch cmd {
 	case "setup":
+		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		defer cancel()
+
 		err = setup(ctx, logger)
 
 	case "package-version":
@@ -480,8 +480,13 @@ func main() {
 		err = shellRead(os.Stdout, cli.Shell.Read.Paths...)
 
 	case "tests run <args>":
+		ctx, stop := ctxutil.SigTerm(context.Background())
+		defer stop()
+
 		err = testsRun(
-			cli.Tests.Run.ShardIndex, cli.Tests.Run.ShardTotal, cli.Tests.Run.Run, cli.Tests.Run.Args,
+			ctx,
+			cli.Tests.Run.ShardIndex, cli.Tests.Run.ShardTotal,
+			cli.Tests.Run.Run, cli.Tests.Run.Args,
 			logger,
 		)
 

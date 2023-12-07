@@ -53,16 +53,15 @@ const (
 type Cursor struct {
 	// the order of fields is weird to make the struct smaller due to alignment
 
-	ID   int64
-	iter types.DocumentsIterator
+	created time.Time
+	iter    types.DocumentsIterator
 	*NewParams
-	r *Registry
-
-	m            sync.Mutex
+	r            *Registry
 	token        *resource.Token
-	created      time.Time
 	closed       chan struct{}
+	ID           int64
 	lastRecordID atomic.Int64
+	m            sync.Mutex
 }
 
 // newCursor creates a new cursor.
@@ -72,9 +71,9 @@ func newCursor(id int64, iter types.DocumentsIterator, params *NewParams, r *Reg
 		iter:      iter,
 		NewParams: params,
 		r:         r,
-		token:     resource.NewToken(),
 		created:   time.Now(),
 		closed:    make(chan struct{}),
+		token:     resource.NewToken(),
 	}
 
 	resource.Track(c, c.token)
