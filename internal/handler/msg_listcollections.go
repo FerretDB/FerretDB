@@ -78,20 +78,33 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 	collections := types.MakeArray(len(res.Collections))
 
 	for _, collection := range res.Collections {
-		options := []any{}
-		info := []any{"readOnly", false}
+		d := must.NotFail(types.NewDocument(
+			"name", collection.Name,
+			"type", "collection",
+			"idIndex", must.NotFail(types.NewDocument(
+				"v", int32(2),
+				"key", must.NotFail(types.NewDocument("_id", int32(1))),
+				"name", "_id_",
+			)),
+		))
+
+		options := must.NotFail(types.NewDocument())
+		info := must.NotFail(types.NewDocument("readOnly", false))
 
 		if collection.Capped() {
-			options = append(options, "capped", true)
+			// capped is not set when it's false as of MongoDB 7
+			options.Set("capped", true)
 		}
 
 		if collection.CappedSize > 0 {
-			options = append(options, "size", collection.CappedSize)
+			options.Set("size", collection.CappedSize)
 		}
 
 		if collection.CappedDocuments > 0 {
-			options = append(options, "max", collection.CappedDocuments)
+			options.Set("max", collection.CappedDocuments)
 		}
+
+		d.Set("options", options)
 
 		if collection.UUID != "" {
 			uuid, err := uuid.Parse(collection.UUID)
@@ -104,20 +117,10 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 				B:       must.NotFail(uuid.MarshalBinary()),
 			}
 
-			info = append(info, "uuid", uuidBinary)
+			info.Set("uuid", uuidBinary)
 		}
 
-		d := must.NotFail(types.NewDocument(
-			"name", collection.Name,
-			"type", "collection",
-			"options", must.NotFail(types.NewDocument(options...)),
-			"info", must.NotFail(types.NewDocument(info...)),
-			"idIndex", must.NotFail(types.NewDocument(
-				"v", int32(2),
-				"key", must.NotFail(types.NewDocument("_id", int32(1))),
-				"name", "_id_",
-			)),
-		))
+		d.Set("info", info)
 
 		matches, err := common.FilterDocument(d, filter)
 		if err != nil {

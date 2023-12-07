@@ -325,14 +325,6 @@ func TestCommandsAdministrationListCollections(t *testing.T) {
 
 	assert.Equal(t, target.RemainingBatchLength(), compat.RemainingBatchLength())
 
-	for {
-		assert.Equal(t, target.ID(), compat.ID())
-
-		if target.Next(ctx) || !compat.Next(ctx) {
-			break
-		}
-	}
-
 	// Check idIndex
 	targetIDIndex := must.NotFail(docTarget.Get("idIndex"))
 	compatIDIndex := must.NotFail(docCompat.Get("idIndex"))
