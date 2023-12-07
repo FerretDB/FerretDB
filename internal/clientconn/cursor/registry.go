@@ -108,7 +108,6 @@ func (r *Registry) Close() {
 
 // NewParams represent parameters for NewCursor.
 type NewParams struct {
-	Iter         types.DocumentsIterator
 	DB           string
 	Collection   string
 	Username     string
@@ -120,7 +119,7 @@ type NewParams struct {
 //
 // The cursor will be closed automatically when a given context is canceled,
 // even if the cursor is not being used at that time.
-func (r *Registry) NewCursor(ctx context.Context, params *NewParams) *Cursor {
+func (r *Registry) NewCursor(ctx context.Context, iter types.DocumentsIterator, params *NewParams) *Cursor {
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
@@ -139,7 +138,7 @@ func (r *Registry) NewCursor(ctx context.Context, params *NewParams) *Cursor {
 
 	r.created.WithLabelValues(params.DB, params.Collection, params.Username).Inc()
 
-	c := newCursor(id, params, r)
+	c := newCursor(id, iter, params, r)
 	r.m[id] = c
 
 	r.wg.Add(1)

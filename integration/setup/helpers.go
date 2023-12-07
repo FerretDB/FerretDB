@@ -84,9 +84,9 @@ func SkipForMongoDB(tb testtb.TB, reason string) {
 	}
 }
 
-// FilterPushdownDisabled returns true if FerretDB filter pushdown is disabled.
-func FilterPushdownDisabled() bool {
-	return *disableFilterPushdownF
+// PushdownDisabled returns true if FerretDB pushdown is disabled.
+func PushdownDisabled() bool {
+	return *disablePushdownF
 }
 
 // Dir returns the absolute directory of this package.
