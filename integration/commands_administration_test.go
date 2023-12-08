@@ -1244,13 +1244,13 @@ func TestCommandsAdministrationDBStatsWithScale(t *testing.T) {
 
 	assert.Equal(t, float64(1), doc.Remove("ok"))
 	assert.Equal(t, collection.Database().Name(), doc.Remove("db"))
-	assert.Equal(t, float64(1000), doc.Remove("scaleFactor"))
+	assert.Equal(t, int64(1000), doc.Remove("scaleFactor"))
 
 	assert.InDelta(t, 1, doc.Remove("collections"), 1)
 	assert.InDelta(t, 35500, doc.Remove("dataSize"), 35500)
 	assert.InDelta(t, 16384, doc.Remove("totalSize"), 16384)
 
-	assert.Equal(t, int32(0), doc.Remove("views"))
+	assert.Equal(t, int64(0), doc.Remove("views"))
 	assert.EqualValues(t, 1, doc.Remove("indexes"))
 	assert.NotZero(t, doc.Remove("indexSize"))
 }

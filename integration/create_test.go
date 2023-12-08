@@ -21,10 +21,12 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/AlekSi/pointer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
@@ -199,19 +201,8 @@ func TestCreateStressSameCollection(t *testing.T) {
 			<-start
 
 			err := db.CreateCollection(ctx, collName)
-			if err == nil {
-				created.Add(1)
-			} else {
-				AssertEqualCommandError(
-					t,
-					mongo.CommandError{
-						Code:    48,
-						Name:    "NamespaceExists",
-						Message: `Collection TestCreateStressSameCollection.stress_same_collection already exists.`,
-					},
-					err,
-				)
-			}
+			require.NoError(t, err)
+			created.Add(1)
 
 			id := fmt.Sprintf("foo_%d", i)
 			_, err = db.Collection(collName).InsertOne(ctx, bson.D{{"_id", id}, {"v", "bar"}})
@@ -239,7 +230,13 @@ func TestCreateStressSameCollection(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, bson.D{{"_id", "foo_1"}, {"v", "bar"}}, doc)
 
-	require.Equal(t, int32(1), created.Load(), "Only one attempt to create a collection should succeed")
+	// Until Mongo 6.0, attempts to create a collection that existed would return a NamespaceExists error.
+	require.Equal(t, int32(120), created.Load(), "All attempts to create a collection should succeed")
+
+	assert.Error(t, db.CreateCollection(ctx, collName, &options.CreateCollectionOptions{
+		Capped:      pointer.ToBool(true),
+		SizeInBytes: pointer.ToInt64(int64(1024)),
+	}))
 }
 
 // TestCreateCappedCommandInvalidSpec checks that invalid create capped collection commands are handled correctly.
