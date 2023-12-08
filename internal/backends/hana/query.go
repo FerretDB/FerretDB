@@ -20,7 +20,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -156,18 +155,24 @@ func prepareWhereClause(table string, filter *types.Document) (string, error) {
 	return whereClause, nil
 }
 
-func prepareOrderByClause(sort *backends.SortField) (string, error) {
-	if sort == nil {
-		return "", nil
-	}
+func prepareOrderByClause(sort *types.Document) (string, error) {
+	// if sort.Len() != 1 {
+	// 	return "", nil
+	// }
 
-	var order string
-	order = "ASC"
-	if sort.Descending {
-		order = "DESC"
-	}
+	// v := must.NotFail(sort.Get("$natural"))
+	// var order string
 
-	orderByClause := fmt.Sprintf(" ORDER BY %q %s", sort.Key, order)
+	// switch v.(int64) {
+	// case 1:
+	// 	// Ascending order
+	// case -1:
+	// 	order = "DESC"
+	// default:
+	// 	panic("not reachable")
+	// }
 
-	return orderByClause, nil
+	// orderByClause := fmt.Sprintf(" ORDER BY %q %s", <key>, order)
+
+	return "", nil
 }

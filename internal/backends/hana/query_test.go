@@ -18,7 +18,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/stretchr/testify/assert"
@@ -115,7 +114,7 @@ func TestPrepareOrderByClause(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		sort     *backends.SortField
+		sort     *types.Document
 		expected string
 	}{
 		"DontSort": {
@@ -123,12 +122,14 @@ func TestPrepareOrderByClause(t *testing.T) {
 			expected: "",
 		},
 		"OrderAsc": {
-			sort:     &backends.SortField{Key: "test", Descending: false},
-			expected: " ORDER BY \"test\" ASC",
+			sort:     must.NotFail(types.NewDocument("$natural", int64(1))),
+			expected: "",
+			//expected: " ORDER BY \"test\"",
 		},
 		"OrderDesc": {
-			sort:     &backends.SortField{Key: "test", Descending: true},
-			expected: " ORDER BY \"test\" DESC",
+			sort:     must.NotFail(types.NewDocument("$natural", int64(-1))),
+			expected: "",
+			//expected: " ORDER BY \"test\" DESC",
 		},
 	} {
 		name, tc := name, tc

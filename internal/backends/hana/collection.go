@@ -290,7 +290,7 @@ func (c *collection) CreateIndexes(ctx context.Context, params *backends.CreateI
 
 	sql := "CREATE HASH INDEX %q.%q ON %q.%q(%q)"
 	var createStmt string
-	// TODO Can we support more than one field for indexes in HANA?
+	// TODO Can we support more than one field for indexes in HANA DocStore?
 	for _, index := range params.Indexes {
 		if !indexExists(existingIndexes.Indexes, index.Name) {
 			createStmt = fmt.Sprintf(sql, c.schema, index.Name, c.schema, c.table, index.Key[0].Field)
