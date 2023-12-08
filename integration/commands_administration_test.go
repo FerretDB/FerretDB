@@ -296,41 +296,86 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 
 func TestCommandsAdministrationListCollections(t *testing.T) {
 	t.Parallel()
-	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
 
-	require.Greater(t, len(targetCollections), 2)
+	ctx, c := setup.Setup(t, shareddata.Scalars)
+	db := c.Database()
 
-	filter := bson.D{{
-		Key: "name", Value: bson.D{{
-			Key: "$in", Value: bson.A{
-				targetCollections[0].Name(),
-				targetCollections[len(targetCollections)-1].Name(),
-			},
-		}},
-	}}
+	for name, tc := range map[string]struct {
+		capped       bool
+		sizeInBytes  int64
+		maxDocuments int64
+	}{
+		"uncapped": {},
+		"Size": {
+			capped:      true,
+			sizeInBytes: 256,
+		},
+		"SizeRounded": {
+			capped:      true,
+			sizeInBytes: 1000,
+		},
+		"MaxDocuments": {
+			capped:       true,
+			sizeInBytes:  100,
+			maxDocuments: 10,
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 
-	target, err := targetCollections[0].Database().ListCollections(ctx, filter)
-	require.NoError(t, err)
-	var targetRes []bson.D
-	err = target.All(ctx, &targetRes)
-	require.NoError(t, err)
-	docTarget := ConvertDocument(t, targetRes[0])
+			cName := testutil.CollectionName(t) + name
+			opts := options.CreateCollection()
 
-	compat, err := compatCollections[0].Database().ListCollections(ctx, filter)
-	require.NoError(t, err)
-	var compatRes []bson.D
-	err = compat.All(ctx, &compatRes)
-	require.NoError(t, err)
-	docCompat := ConvertDocument(t, compatRes[0])
+			if tc.capped {
+				opts.SetCapped(true)
+			}
+			if tc.sizeInBytes > 0 {
+				opts.SetSizeInBytes(tc.sizeInBytes)
+			}
+			if tc.maxDocuments > 0 {
+				opts.SetMaxDocuments(tc.maxDocuments)
+			}
 
-	assert.Equal(t, target.RemainingBatchLength(), compat.RemainingBatchLength())
+			err := db.CreateCollection(ctx, cName, opts)
+			assert.NoError(t, err)
 
-	// Check idIndex
-	targetIDIndex := must.NotFail(docTarget.Get("idIndex"))
-	compatIDIndex := must.NotFail(docCompat.Get("idIndex"))
+			cursor, err := db.ListCollections(ctx, bson.D{
+				{Key: "name", Value: cName},
+			})
+			assert.NoError(t, err)
 
-	assert.NotEmpty(t, targetIDIndex)
-	assert.Equal(t, targetIDIndex, compatIDIndex)
+			var actual []bson.D
+			assert.NoError(t, cursor.All(ctx, &actual))
+			assert.Len(t, actual, 1)
+
+			doc := ConvertDocument(t, actual[0])
+			info := must.NotFail(doc.Get("info")).(*types.Document)
+
+			uuid := must.NotFail(info.Get("uuid"))
+			assert.IsType(t, uuid.(types.Binary).Subtype, types.BinaryUUID)
+
+			options := must.NotFail(doc.Get("options")).(*types.Document)
+
+			if tc.capped {
+				assert.True(t, must.NotFail(options.Get("capped")).(bool))
+			} else {
+				assert.False(t, options.Has("capped"))
+			}
+
+			if tc.sizeInBytes > 0 {
+				// Actual values might be larger depending on backend implementations.
+				//
+				// And of different types:
+				// TODO https://github.com/FerretDB/FerretDB/issues/3582
+				assert.True(t, options.Has("size"), "capped size must exist")
+			}
+
+			if tc.maxDocuments > 0 {
+				assert.EqualValues(t, tc.maxDocuments, must.NotFail(options.Get("max")), "capped documents")
+			}
+		})
+	}
 }
 
 func TestCommandsAdministrationListCollectionNames(t *testing.T) {
