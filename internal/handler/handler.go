@@ -20,9 +20,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
@@ -30,6 +27,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/backends/decorators/oplog"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
@@ -171,7 +170,7 @@ func (h *Handler) CleanupCappedCollections(ctx context.Context, toDrop uint8) er
 				return lazyerrors.Error(err)
 			}
 
-			if _, err := collection.Compact(ctx, nil); err != nil {
+			if _, err := collection.Compact(ctx, &backends.CompactParams{Full: true}); err != nil {
 				return lazyerrors.Error(err)
 			}
 		}

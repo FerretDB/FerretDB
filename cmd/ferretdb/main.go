@@ -408,6 +408,19 @@ func run() {
 
 	defer closeBackend()
 
+	go func() {
+		select {
+		case <-time.Tick(time.Minute):
+			if err := h.CleanupCappedCollections(ctx, 10); err != nil {
+				logger.Error("Failed to cleanup capped collections", zap.Error(err))
+			}
+			// fixme: send a signal top stop everything?
+
+		case <-ctx.Done():
+			return
+		}
+	}()
+
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
 		TCP:  cli.Listen.Addr,
 		Unix: cli.Listen.Unix,
