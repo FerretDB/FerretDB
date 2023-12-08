@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/sjson"
@@ -220,6 +221,21 @@ func (c *collection) Compact(ctx context.Context, params *backends.CompactParams
 	return nil, lazyerrors.New("not implemented yet")
 }
 
+// Prefixes an index with the collection name to store it in hana.
+//
+// Reasoning:
+// Hana DocStore stores indexes on a schema/database level, that may cause
+// confilts for indexes of different collections having the same name (eg. col1.idx and col2.idx).
+func (c *collection) prefixIndexName(indexName string) string {
+	return fmt.Sprintf("%s__%s", c.table, indexName)
+}
+
+// Removes the prefix of an index name
+func (c *collection) removeIndexNamePrefix(prefixedIndex string) string {
+	prefix := fmt.Sprintf("%s__", c.table)
+	return strings.Replace(prefixedIndex, prefix, "", 1)
+}
+
 // ListIndexes implements backends.Collection interface.
 func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndexesParams) (*backends.ListIndexesResult, error) {
 	err := c.checkSchemaAndCollectionExists(ctx)
@@ -252,7 +268,7 @@ func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndex
 		}
 
 		indexes = append(indexes, backends.IndexInfo{
-			Name:   idxName,
+			Name:   c.removeIndexNamePrefix(idxName),
 			Unique: true, // TODO: Is this possible to query from HANA?
 			Key:    []backends.IndexKeyPair{{Field: idxColName, Descending: !ascending}},
 		})
@@ -293,7 +309,7 @@ func (c *collection) CreateIndexes(ctx context.Context, params *backends.CreateI
 	// TODO Can we support more than one field for indexes in HANA DocStore?
 	for _, index := range params.Indexes {
 		if !indexExists(existingIndexes.Indexes, index.Name) {
-			createStmt = fmt.Sprintf(sql, c.schema, index.Name, c.schema, c.table, index.Key[0].Field)
+			createStmt = fmt.Sprintf(sql, c.schema, c.prefixIndexName(index.Name), c.schema, c.table, index.Key[0].Field)
 			_, err := c.hdb.ExecContext(ctx, createStmt)
 			if err != nil {
 				return nil, lazyerrors.Error(err)
@@ -313,10 +329,10 @@ func (c *collection) DropIndexes(ctx context.Context, params *backends.DropIndex
 
 	// TODO Check if index is on this collection.
 
-	sql := "DROP INDEX %q.%s"
+	sql := "DROP INDEX %q.%q"
 	var droptStmt string
 	for _, index := range params.Indexes {
-		droptStmt = fmt.Sprintf(sql, c.schema, index)
+		droptStmt = fmt.Sprintf(sql, c.schema, c.prefixIndexName(index))
 		_, err := c.hdb.ExecContext(ctx, droptStmt)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
