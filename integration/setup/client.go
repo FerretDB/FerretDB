@@ -32,6 +32,8 @@ import (
 func makeClient(ctx context.Context, uri string) (*mongo.Client, error) {
 	clientOpts := options.Client().ApplyURI(uri)
 
+	//zap.S().Fatalf("%s", clientOpts.GetURI())
+
 	clientOpts.SetMonitor(otelmongo.NewMonitor())
 
 	client, err := mongo.Connect(ctx, clientOpts)
