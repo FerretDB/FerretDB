@@ -117,6 +117,10 @@ func (h *Handler) CleanupCappedCollections(ctx context.Context, toDrop uint8) er
 			return lazyerrors.Error(err)
 		}
 
+		if database == nil {
+			continue
+		}
+
 		cols, err := database.ListCollections(ctx, nil)
 		if err != nil {
 			return lazyerrors.Error(err)
@@ -132,8 +136,16 @@ func (h *Handler) CleanupCappedCollections(ctx context.Context, toDrop uint8) er
 				return lazyerrors.Error(err)
 			}
 
+			if collection == nil {
+				continue
+			}
+
 			stats, err := collection.Stats(ctx, &backends.CollectionStatsParams{Refresh: true})
 			if err != nil {
+				if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
+					continue
+				}
+
 				return lazyerrors.Error(err)
 			}
 
@@ -170,7 +182,7 @@ func (h *Handler) CleanupCappedCollections(ctx context.Context, toDrop uint8) er
 				return lazyerrors.Error(err)
 			}
 
-			if _, err := collection.Compact(ctx, &backends.CompactParams{Full: true}); err != nil {
+			if _, err := collection.Compact(ctx, &backends.CompactParams{Full: false}); err != nil {
 				return lazyerrors.Error(err)
 			}
 		}
