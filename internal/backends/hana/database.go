@@ -46,9 +46,9 @@ func (db *database) Collection(name string) (backends.Collection, error) {
 
 // ListCollections implements backends.Database interface.
 func (db *database) ListCollections(ctx context.Context, params *backends.ListCollectionsParams) (*backends.ListCollectionsResult, error) {
-	sqlStmt := "SELECT TABLE_NAME FROM M_TABLES" +
-		" WHERE SCHEMA_NAME = ? AND TABLE_TYPE = 'COLLECTION'"
-	rows, err := db.hdb.QueryContext(ctx, sqlStmt, db.schema)
+	sqlStmt := fmt.Sprintf("SELECT TABLE_NAME FROM M_TABLES"+
+		" WHERE SCHEMA_NAME = '%s' AND TABLE_TYPE = 'COLLECTION'", db.schema)
+	rows, err := db.hdb.QueryContext(ctx, sqlStmt)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -83,7 +83,15 @@ func (db *database) ListCollections(ctx context.Context, params *backends.ListCo
 
 // CreateCollection implements backends.Database interface.
 func (db *database) CreateCollection(ctx context.Context, params *backends.CreateCollectionParams) error {
-	err := CreateCollection(ctx, db.hdb, db.schema, params.Name)
+	exists, err := CollectionExists(ctx, db.hdb, db.schema, params.Name)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+	if exists {
+		return backends.NewError(backends.ErrorCodeCollectionAlreadyExists, err)
+	}
+
+	err = CreateCollection(ctx, db.hdb, db.schema, params.Name)
 	return getHanaErrorIfExists(err)
 }
 

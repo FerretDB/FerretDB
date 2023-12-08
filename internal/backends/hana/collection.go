@@ -48,19 +48,19 @@ func newCollection(hdb *fsql.DB, schema, table string) backends.Collection {
 // Helperfunction to check if database and collection exist on hana.
 func (c *collection) checkSchemaAndCollectionExists(ctx context.Context) error {
 	s, err := SchemaExists(ctx, c.hdb, c.schema)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
 	if !s {
 		return lazyerrors.Errorf("Database %q does not exist!", c.schema)
 	}
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
 
 	col, err := CollectionExists(ctx, c.hdb, c.schema, c.table)
-	if !col {
-		return lazyerrors.Errorf("Collection %q does not exist!", c.table)
-	}
 	if err != nil {
 		return lazyerrors.Error(err)
+	}
+	if !col {
+		return lazyerrors.Errorf("Collection %q does not exist!", c.table)
 	}
 
 	return nil
@@ -70,7 +70,7 @@ func (c *collection) checkSchemaAndCollectionExists(ctx context.Context) error {
 func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*backends.QueryResult, error) {
 	err := c.checkSchemaAndCollectionExists(ctx)
 	if err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
 	selectClause := prepareSelectClause(c.schema, c.table)
@@ -133,10 +133,10 @@ func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllPa
 	var res backends.UpdateAllResult
 	err := c.checkSchemaAndCollectionExists(ctx)
 	if err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
-	updateSql := "UPDATE %q.%q SET %q = (%s) WHERE \"_id\" = %q"
+	updateSql := "UPDATE %q.%q SET %q = parse_json('%s') WHERE \"_id\" = %s"
 
 	for _, doc := range params.Docs {
 		jsonBytes, err := MarshalHana(doc)
@@ -146,6 +146,8 @@ func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllPa
 
 		id, _ := doc.Get("_id")
 		must.NotBeZero(id)
+
+		id = jsonToHanaQueryString(string(must.NotFail(sjson.MarshalSingleValue(id))))
 
 		line := fmt.Sprintf(updateSql, c.schema, c.table, c.table, jsonBytes, id)
 		execResult, err := c.hdb.ExecContext(ctx, line)
@@ -265,6 +267,15 @@ func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndex
 	return &res, nil
 }
 
+func indexExists(indexes []backends.IndexInfo, indexToFind string) bool {
+	for _, idx := range indexes {
+		if idx.Name == indexToFind {
+			return true
+		}
+	}
+	return false
+}
+
 // CreateIndexes implements backends.Collection interface.
 func (c *collection) CreateIndexes(ctx context.Context, params *backends.CreateIndexesParams) (*backends.CreateIndexesResult, error) { //nolint:lll // for readability
 	err := c.checkSchemaAndCollectionExists(ctx)
@@ -272,14 +283,21 @@ func (c *collection) CreateIndexes(ctx context.Context, params *backends.CreateI
 		return nil, err
 	}
 
-	sql := "CREATE HASH INDEX %q.%s ON %q.%q(%q)"
+	existingIndexes, err := c.ListIndexes(ctx, &backends.ListIndexesParams{})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	sql := "CREATE HASH INDEX %q.%q ON %q.%q(%q)"
 	var createStmt string
 	// TODO Can we support more than one field for indexes in HANA?
 	for _, index := range params.Indexes {
-		createStmt = fmt.Sprintf(sql, c.schema, index.Name, c.schema, c.table, index.Key[0].Field)
-		_, err := c.hdb.ExecContext(ctx, createStmt)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
+		if !indexExists(existingIndexes.Indexes, index.Name) {
+			createStmt = fmt.Sprintf(sql, c.schema, index.Name, c.schema, c.table, index.Key[0].Field)
+			_, err := c.hdb.ExecContext(ctx, createStmt)
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
 		}
 	}
 

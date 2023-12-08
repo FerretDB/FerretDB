@@ -71,10 +71,10 @@ func getHanaErrorIfExists(err error) error {
 }
 
 func SchemaExists(ctx context.Context, hdb *fsql.DB, schema string) (bool, error) {
-	sql := "SELECT COUNT(*) FROM \"PUBLIC\".\"SCHEMAS\" WHERE SCHEMA_NAME = ?"
-	var count int
+	sql := fmt.Sprintf("SELECT COUNT(*) FROM \"PUBLIC\".\"SCHEMAS\" WHERE SCHEMA_NAME = '%s'", schema)
 
-	if err := hdb.QueryRowContext(ctx, sql, schema).Scan(&count); err != nil {
+	var count int
+	if err := hdb.QueryRowContext(ctx, sql).Scan(&count); err != nil {
 		return false, lazyerrors.Error(err)
 	}
 
@@ -117,14 +117,17 @@ func DropSchema(ctx context.Context, hdb *fsql.DB, schema string) error {
 }
 
 func CollectionExists(ctx context.Context, hdb *fsql.DB, schema, table string) (bool, error) {
-	sql := "SELECT count(*) FROM M_TABLES WHERE TABLE_TYPE = 'COLLECTION' AND SCHEMA_NAME = ? AND TABLE_NAME = ?"
-	var count int
+	sql := fmt.Sprintf("SELECT count(*) FROM M_TABLES "+
+		"WHERE TABLE_TYPE = 'COLLECTION' AND "+
+		"SCHEMA_NAME = '%s' AND TABLE_NAME = '%s'",
+		schema, table)
 
-	if err := hdb.QueryRowContext(ctx, sql, schema, table).Scan(&count); err != nil {
+	var count int
+	if err := hdb.QueryRowContext(ctx, sql).Scan(&count); err != nil {
 		return false, lazyerrors.Error(err)
 	}
 
-	return count == 1, nil
+	return (count == 1), nil
 }
 
 // CreateCollection creates a new SAP HANA JSON Document Store collection.
