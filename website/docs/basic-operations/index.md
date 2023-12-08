@@ -1,6 +1,6 @@
 ---
 sidebar_position: 1
-slug: intro
+slug: crud-operations/
 ---
 
 # Performing CRUD operations
