@@ -16,6 +16,9 @@
 package handler
 
 import (
+	"context"
+	"fmt"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
@@ -92,4 +95,38 @@ func (h *Handler) Describe(ch chan<- *prometheus.Desc) {
 func (h *Handler) Collect(ch chan<- prometheus.Metric) {
 	h.b.Collect(ch)
 	h.cursors.Collect(ch)
+}
+
+// CleanupCappedCollections drops the given percent of documents from all capped collections.
+func (h *Handler) CleanupCappedCollections(ctx context.Context, toDrop uint8) error {
+	if toDrop == 0 || toDrop > 100 {
+		return fmt.Errorf("invalid percent to drop: %d (must be in range [1, 100])", toDrop)
+	}
+
+	dbs, err := h.b.ListDatabases(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	for _, db := range dbs.Databases {
+		database, err := h.b.Database(db.Name)
+		if err != nil {
+			return err
+		}
+
+		cols, err := database.ListCollections(ctx, nil)
+		if err != nil {
+			return err
+		}
+
+		for _, col := range cols.Collections {
+			if !col.Capped() {
+				continue
+			}
+
+			// fixme: cleanup capped collection
+		}
+	}
+
+	return nil
 }
