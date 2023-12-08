@@ -32,6 +32,12 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
+// Parts of Prometheus metric names.
+const (
+	namespace = "ferretdb"
+	subsystem = "handler"
+)
+
 // Handler provides a set of methods to process clients' requests sent over wire protocol.
 //
 // MsgXXX methods handle OP_MSG commands.
@@ -45,6 +51,8 @@ type Handler struct {
 
 	cursors  *cursor.Registry
 	commands map[string]command
+
+	cleanupedCappedCollections *prometheus.CounterVec
 }
 
 // NewOpts represents handler configuration.
@@ -75,6 +83,16 @@ func New(opts *NewOpts) (*Handler, error) {
 		b:       b,
 		NewOpts: opts,
 		cursors: cursor.NewRegistry(opts.L.Named("cursors")),
+
+		cleanupedCappedCollections: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Namespace: namespace,
+				Subsystem: subsystem,
+				Name:      "cleanuped_capped",
+				Help:      "Total number of documents cleanuped in capped collections.",
+			},
+			[]string{"db", "collection"},
+		),
 	}
 
 	h.initCommands()
@@ -178,9 +196,12 @@ func (h *Handler) CleanupCappedCollections(ctx context.Context, toDrop uint8) er
 				recordIDs = append(recordIDs, doc.RecordID())
 			}
 
-			if _, err = collection.DeleteAll(ctx, &backends.DeleteAllParams{RecordIDs: recordIDs}); err != nil {
+			deleted, err := collection.DeleteAll(ctx, &backends.DeleteAllParams{RecordIDs: recordIDs})
+			if err != nil {
 				return lazyerrors.Error(err)
 			}
+
+			h.cleanupedCappedCollections.WithLabelValues(db.Name, col.Name).Add(float64(deleted.Deleted))
 
 			if _, err := collection.Compact(ctx, &backends.CompactParams{Full: false}); err != nil {
 				return lazyerrors.Error(err)
