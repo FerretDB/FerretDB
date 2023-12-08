@@ -296,6 +296,90 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 
 func TestCommandsAdministrationListCollections(t *testing.T) {
 	t.Parallel()
+
+	ctx, c := setup.Setup(t, shareddata.Scalars)
+	db := c.Database()
+
+	for name, tc := range map[string]struct {
+		capped       bool
+		sizeInBytes  int64
+		maxDocuments int64
+	}{
+		"uncapped": {},
+		"Size": {
+			capped:      true,
+			sizeInBytes: 256,
+		},
+		"SizeRounded": {
+			capped:      true,
+			sizeInBytes: 1000,
+		},
+		"MaxDocuments": {
+			capped:       true,
+			sizeInBytes:  100,
+			maxDocuments: 10,
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			cName := testutil.CollectionName(t) + name
+			opts := options.CreateCollection()
+
+			if tc.capped {
+				opts.SetCapped(true)
+			}
+			if tc.sizeInBytes > 0 {
+				opts.SetSizeInBytes(tc.sizeInBytes)
+			}
+			if tc.maxDocuments > 0 {
+				opts.SetMaxDocuments(tc.maxDocuments)
+			}
+
+			err := db.CreateCollection(ctx, cName, opts)
+			assert.NoError(t, err)
+
+			cursor, err := db.ListCollections(ctx, bson.D{
+				{Key: "name", Value: cName},
+			})
+			assert.NoError(t, err)
+
+			var actual []bson.D
+			assert.NoError(t, cursor.All(ctx, &actual))
+			assert.Len(t, actual, 1)
+
+			doc := ConvertDocument(t, actual[0])
+			info := must.NotFail(doc.Get("info")).(*types.Document)
+
+			uuid := must.NotFail(info.Get("uuid"))
+			assert.IsType(t, uuid.(types.Binary).Subtype, types.BinaryUUID)
+
+			options := must.NotFail(doc.Get("options")).(*types.Document)
+
+			if tc.capped {
+				assert.True(t, must.NotFail(options.Get("capped")).(bool))
+			} else {
+				assert.False(t, options.Has("capped"))
+			}
+
+			if tc.sizeInBytes > 0 {
+				// Actual values might be larger depending on backend implementations.
+				//
+				// And of different types:
+				// TODO https://github.com/FerretDB/FerretDB/issues/3582
+				assert.True(t, options.Has("size"), "capped size must exist")
+			}
+
+			if tc.maxDocuments > 0 {
+				assert.EqualValues(t, tc.maxDocuments, must.NotFail(options.Get("max")), "capped documents")
+			}
+		})
+	}
+}
+
+func TestCommandsAdministrationListCollectionNames(t *testing.T) {
+	t.Parallel()
 	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
 
 	require.Greater(t, len(targetCollections), 2)

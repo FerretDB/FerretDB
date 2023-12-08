@@ -241,6 +241,7 @@ func TestQueryCappedCollectionCompat(t *testing.T) {
 	for name, tc := range map[string]struct {
 		filter bson.D
 		sort   bson.D
+		skip   string
 
 		sortPushdown resultPushdown
 	}{
@@ -264,11 +265,43 @@ func TestQueryCappedCollectionCompat(t *testing.T) {
 			sort:         bson.D{{"v", 1}, {"_id", int32(-1)}},
 			sortPushdown: noPushdown,
 		},
+
+		"SortNaturalAsc": {
+			sort:         bson.D{{"$natural", int32(1)}},
+			sortPushdown: allPushdown,
+		},
+		"SortNaturalDesc": {
+			sort:         bson.D{{"$natural", int32(-1)}},
+			sortPushdown: allPushdown,
+		},
+		"SortNaturalInt64": {
+			sort:         bson.D{{"$natural", int64(1)}},
+			sortPushdown: allPushdown,
+		},
+
+		"SortNaturalZero": {
+			skip:         "https://github.com/FerretDB/FerretDB/issues/3638",
+			sort:         bson.D{{"$natural", int32(0)}},
+			sortPushdown: noPushdown,
+		},
+		"SortNaturalString": {
+			skip:         "https://github.com/FerretDB/FerretDB/issues/3638",
+			sort:         bson.D{{"$natural", "foo"}},
+			sortPushdown: noPushdown,
+		},
+		"SortNaturalMultipleSorts": {
+			sort:         bson.D{{"$natural", int32(1)}, {"v", int32(1)}},
+			sortPushdown: noPushdown,
+		},
 	} {
 		name, tc := name, tc
 
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
+
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
 
 			explainQuery := bson.D{
 				{"find", targetCollection.Name()},
@@ -282,13 +315,6 @@ func TestQueryCappedCollectionCompat(t *testing.T) {
 				explainQuery = append(explainQuery, bson.E{Key: "sort", Value: tc.sort})
 			}
 
-			var explainRes bson.D
-			require.NoError(t, targetCollection.Database().RunCommand(ctx, bson.D{{"explain", explainQuery}}).Decode(&explainRes))
-
-			doc := ConvertDocument(t, explainRes)
-			sortPushdown, _ := doc.Get("sortPushdown")
-			assert.Equal(t, tc.sortPushdown.PushdownExpected(t), sortPushdown)
-
 			findOpts := options.Find()
 			if tc.sort != nil {
 				findOpts.SetSort(tc.sort)
@@ -300,10 +326,17 @@ func TestQueryCappedCollectionCompat(t *testing.T) {
 			}
 
 			targetCursor, targetErr := targetCollection.Find(ctx, filter, findOpts)
-			require.NoError(t, targetErr)
-
 			compatCursor, compatErr := compatCollection.Find(ctx, filter, findOpts)
-			require.NoError(t, compatErr)
+			if targetErr != nil {
+				t.Logf("Target error: %v", targetErr)
+				t.Logf("Compat error: %v", compatErr)
+
+				// error messages are intentionally not compared
+				AssertMatchesCommandError(t, compatErr, targetErr)
+
+				return
+			}
+			require.NoError(t, compatErr, "compat error; target returned no error")
 
 			var targetFindRes []bson.D
 			targetErr = targetCursor.All(ctx, &targetFindRes)
@@ -320,6 +353,13 @@ func TestQueryCappedCollectionCompat(t *testing.T) {
 			for i := range compatFindRes {
 				AssertEqualDocuments(t, compatFindRes[i], targetFindRes[i])
 			}
+
+			var explainRes bson.D
+			require.NoError(t, targetCollection.Database().RunCommand(ctx, bson.D{{"explain", explainQuery}}).Decode(&explainRes))
+
+			doc := ConvertDocument(t, explainRes)
+			sortPushdown, _ := doc.Get("sortPushdown")
+			assert.Equal(t, tc.sortPushdown.PushdownExpected(t), sortPushdown)
 		})
 	}
 }

@@ -300,14 +300,26 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			cInfo = cList.Collections[i]
 		}
 
-		capped := cInfo.Capped()
-
 		switch {
 		case h.DisablePushdown:
 			// Pushdown disabled
-		case sort.Len() == 0 && capped:
+		case sort.Len() == 0 && cInfo.Capped():
 			// Pushdown default recordID sorting for capped collections
 			qp.Sort = must.NotFail(types.NewDocument("$natural", int64(1)))
+		case sort.Len() == 1:
+			if sort.Keys()[0] != "$natural" {
+				break
+			}
+
+			if !cInfo.Capped() {
+				return nil, handlererrors.NewCommandErrorMsgWithArgument(
+					handlererrors.ErrNotImplemented,
+					"$natural sort for non-capped collection is not supported.",
+					"aggregate",
+				)
+			}
+
+			qp.Sort = sort
 		}
 
 		iter, err = processStagesDocuments(ctx, closer, &stagesDocumentsParams{c, qp, stagesDocuments})
