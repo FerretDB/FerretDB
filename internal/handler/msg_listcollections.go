@@ -92,7 +92,6 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 		info := must.NotFail(types.NewDocument("readOnly", false))
 
 		if collection.Capped() {
-			// capped is not set when it's false as of MongoDB 7
 			options.Set("capped", true)
 		}
 
