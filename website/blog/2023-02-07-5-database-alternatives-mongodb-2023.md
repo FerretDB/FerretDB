@@ -134,4 +134,4 @@ For developers or organizations that would love to be part of a growing communit
 An open source database service like FerretDB offers complete vendor independence, offering MongoDB compatibility that helps you to leave MongoDB without rewriting your application.
 
 [FerretDB](https://www.ferretdb.io/) is still under development, with the first developer review version (FerretDB v0.9.0) recently released.
-If you're interested in this drop-in MongoDB alternative, [try it out today](https://docs.ferretdb.io/category/quickstart/).
+If you're interested in this drop-in MongoDB alternative, [try it out today](https://docs.ferretdb.io/quickstart/).
