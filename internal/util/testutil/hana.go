@@ -20,6 +20,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
+// TestHanaURI returns a HANA Database URL for testing.
+// HANATODO Create a Database per test run?
 func TestHanaURI() (string, error) {
 	url, exists := os.LookupEnv("FERRETDB_HANA_URL")
 

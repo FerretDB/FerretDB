@@ -18,10 +18,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 func TestPrepareSelectClause(t *testing.T) {
@@ -124,12 +125,12 @@ func TestPrepareOrderByClause(t *testing.T) {
 		"OrderAsc": {
 			sort:     must.NotFail(types.NewDocument("$natural", int64(1))),
 			expected: "",
-			//expected: " ORDER BY \"test\"",
+			// expected: " ORDER BY \"test\"",
 		},
 		"OrderDesc": {
 			sort:     must.NotFail(types.NewDocument("$natural", int64(-1))),
 			expected: "",
-			//expected: " ORDER BY \"test\" DESC",
+			// expected: " ORDER BY \"test\" DESC",
 		},
 	} {
 		name, tc := name, tc
@@ -142,5 +143,4 @@ func TestPrepareOrderByClause(t *testing.T) {
 			assert.Equal(t, tc.expected, actual)
 		})
 	}
-
 }

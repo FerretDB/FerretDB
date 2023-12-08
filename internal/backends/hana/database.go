@@ -45,17 +45,24 @@ func (db *database) Collection(name string) (backends.Collection, error) {
 }
 
 // ListCollections implements backends.Database interface.
-func (db *database) ListCollections(ctx context.Context, params *backends.ListCollectionsParams) (*backends.ListCollectionsResult, error) {
+func (db *database) ListCollections(
+	ctx context.Context,
+	params *backends.ListCollectionsParams,
+) (*backends.ListCollectionsResult, error) {
 	sqlStmt := fmt.Sprintf("SELECT TABLE_NAME FROM M_TABLES"+
-		" WHERE SCHEMA_NAME = '%s' AND TABLE_TYPE = 'COLLECTION'", db.schema)
+		" WHERE SCHEMA_NAME = '%s' AND TABLE_TYPE = 'COLLECTION'", db.schema,
+	)
+
 	rows, err := db.hdb.QueryContext(ctx, sqlStmt)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
+
 	defer rows.Close()
 
-	// TODO: add propper limits for collection sizes.
+	// HANATODO add proper limits for collection sizes.
 	var res []backends.CollectionInfo
+
 	for rows.Next() {
 		var name string
 		if err = rows.Scan(&name); err != nil {
@@ -83,36 +90,39 @@ func (db *database) ListCollections(ctx context.Context, params *backends.ListCo
 
 // CreateCollection implements backends.Database interface.
 func (db *database) CreateCollection(ctx context.Context, params *backends.CreateCollectionParams) error {
-	exists, err := CollectionExists(ctx, db.hdb, db.schema, params.Name)
+	exists, err := collectionExists(ctx, db.hdb, db.schema, params.Name)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
+
 	if exists {
 		return backends.NewError(backends.ErrorCodeCollectionAlreadyExists, err)
 	}
 
 	err = CreateCollection(ctx, db.hdb, db.schema, params.Name)
+
 	return getHanaErrorIfExists(err)
 }
 
 // DropCollection implements backends.Database interface.
 func (db *database) DropCollection(ctx context.Context, params *backends.DropCollectionParams) error {
-	err := DropCollection(ctx, db.hdb, db.schema, params.Name)
+	err := dropCollection(ctx, db.hdb, db.schema, params.Name)
 	return getHanaErrorIfExists(err)
 }
 
 // RenameCollection implements backends.Database interface.
 func (db *database) RenameCollection(ctx context.Context, params *backends.RenameCollectionParams) error {
-
-	exists, err := CollectionExists(ctx, db.hdb, db.schema, params.OldName)
+	exists, err := collectionExists(ctx, db.hdb, db.schema, params.OldName)
 	if err != nil {
 		return getHanaErrorIfExists(err)
 	}
+
 	if !exists {
 		return lazyerrors.Errorf("old database %q or collection %q does not exist", db.schema, params.OldName)
 	}
 
 	sqlStmt := fmt.Sprintf("RENAME COLLECTION %q.%q to %q", db.schema, params.OldName, params.NewName)
+
 	_, err = db.hdb.ExecContext(ctx, sqlStmt)
 	if err != nil {
 		return lazyerrors.Error(err)
@@ -123,10 +133,6 @@ func (db *database) RenameCollection(ctx context.Context, params *backends.Renam
 
 // Stats implements backends.Database interface.
 func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsParams) (*backends.DatabaseStatsResult, error) {
-	if params == nil {
-		params = new(backends.DatabaseStatsParams)
-	}
-
 	// Todo: should we load unloaded schemas?
 
 	queryCountDocuments := "SELECT COALESCE(SUM(RECORD_COUNT),0) FROM M_TABLES " +
@@ -135,6 +141,7 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 	queryCountDocuments = fmt.Sprintf(queryCountDocuments, db.schema)
 
 	rowCount := db.hdb.QueryRowContext(ctx, queryCountDocuments)
+
 	var countDocuments int64
 	if err := rowCount.Scan(&countDocuments); err != nil {
 		return nil, lazyerrors.Error(err)

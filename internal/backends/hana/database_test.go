@@ -17,11 +17,12 @@ package hana
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
-	"github.com/stretchr/testify/require"
 )
 
 func TestDatabaseStats(t *testing.T) {
@@ -88,8 +89,8 @@ func TestDatabaseStats(t *testing.T) {
 		_, err = db.Stats(ctx, new(backends.DatabaseStatsParams))
 		require.NoError(t, err)
 
-		// TODO: calculate storage
-		//t.Logf("freeStorage size: %d", res.SizeFreeStorage)
-		//require.NotZero(t, res.SizeFreeStorage)
+		// HANATODO calculate storage
+		// t.Logf("freeStorage size: %d", res.SizeFreeStorage)
+		// require.NotZero(t, res.SizeFreeStorage)
 	})
 }

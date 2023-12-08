@@ -86,7 +86,7 @@ func (iter *queryIterator) Next() (struct{}, *types.Document, error) {
 		return unused, nil, lazyerrors.Error(err)
 	}
 
-	doc, err := UnmarshalHana(b.Bytes())
+	doc, err := unmarshalHana(b.Bytes())
 	if err != nil {
 		return unused, nil, lazyerrors.Error(err)
 	}

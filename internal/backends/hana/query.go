@@ -42,10 +42,6 @@ func makeFilter(table, key, op string, value any) string {
 	case *types.Document, *types.Array, types.Binary,
 		types.NullType, types.Regex, types.Timestamp:
 	// type not supported for pushdown
-	case bool:
-		valStr = fmt.Sprintf("TO_JSON_BOOLEAN(%t)", value)
-	case int32, int64:
-		valStr = fmt.Sprintf("%d", value)
 	case float64:
 		// If value is not safe double, fetch all numbers out of safe range.
 		// TODO https://github.com/FerretDB/FerretDB/issues/3626
@@ -59,6 +55,10 @@ func makeFilter(table, key, op string, value any) string {
 			// don't change the default eq query
 		}
 		valStr = fmt.Sprintf("%f", value)
+	case bool:
+		valStr = fmt.Sprintf("TO_JSON_BOOLEAN(%t)", value)
+	case int32, int64:
+		valStr = fmt.Sprintf("%d", value)
 	case nil:
 		valStr = "NULL"
 	case string, types.ObjectID, time.Time:
@@ -114,6 +114,7 @@ func prepareWhereClause(table string, filter *types.Document) (string, error) {
 					if errors.Is(err, iterator.ErrIteratorDone) {
 						break
 					}
+
 					return "", lazyerrors.Error(err)
 				}
 
@@ -159,10 +160,8 @@ func prepareOrderByClause(sort *types.Document) (string, error) {
 	// if sort.Len() != 1 {
 	// 	return "", nil
 	// }
-
 	// v := must.NotFail(sort.Get("$natural"))
 	// var order string
-
 	// switch v.(int64) {
 	// case 1:
 	// 	// Ascending order
@@ -171,8 +170,6 @@ func prepareOrderByClause(sort *types.Document) (string, error) {
 	// default:
 	// 	panic("not reachable")
 	// }
-
 	// orderByClause := fmt.Sprintf(" ORDER BY %q %s", <key>, order)
-
 	return "", nil
 }

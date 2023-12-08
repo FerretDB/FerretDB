@@ -20,10 +20,12 @@ import (
 	"errors"
 	"fmt"
 
+	// Register HANA SQL driver.
+	"github.com/SAP/go-hdb/driver"
+
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/SAP/go-hdb/driver"
-) // register database/sql driver
+)
 
 // Errors are wrapped with lazyerrors.Error,
 // so the caller needs to use errors.Is to check the error,
@@ -70,7 +72,7 @@ func getHanaErrorIfExists(err error) error {
 	return err
 }
 
-func SchemaExists(ctx context.Context, hdb *fsql.DB, schema string) (bool, error) {
+func schemaExists(ctx context.Context, hdb *fsql.DB, schema string) (bool, error) {
 	sql := fmt.Sprintf("SELECT COUNT(*) FROM \"PUBLIC\".\"SCHEMAS\" WHERE SCHEMA_NAME = '%s'", schema)
 
 	var count int
@@ -84,7 +86,7 @@ func SchemaExists(ctx context.Context, hdb *fsql.DB, schema string) (bool, error
 // CreateSchema creates a schema in SAP HANA JSON Document Store.
 //
 // Returns ErrSchemaAlreadyExist if schema already exists.
-func CreateSchema(ctx context.Context, hdb *fsql.DB, schema string) error {
+func createSchema(ctx context.Context, hdb *fsql.DB, schema string) error {
 	sqlStmt := fmt.Sprintf("CREATE SCHEMA %q", schema)
 
 	_, err := hdb.ExecContext(ctx, sqlStmt)
@@ -92,14 +94,14 @@ func CreateSchema(ctx context.Context, hdb *fsql.DB, schema string) error {
 	return getHanaErrorIfExists(err)
 }
 
-// CreateSchema creates a schema in SAP HANA JSON Document Store if it not exists.
-func CreateSchemaIfNotExists(ctx context.Context, hdb *fsql.DB, schema string) error {
-	exists, err := SchemaExists(ctx, hdb, schema)
+func createSchemaIfNotExists(ctx context.Context, hdb *fsql.DB, schema string) error {
+	exists, err := schemaExists(ctx, hdb, schema)
 	if err != nil {
 		return getHanaErrorIfExists(err)
 	}
+
 	if !exists {
-		err = CreateSchema(ctx, hdb, schema)
+		err = createSchema(ctx, hdb, schema)
 	}
 
 	return err
@@ -108,7 +110,7 @@ func CreateSchemaIfNotExists(ctx context.Context, hdb *fsql.DB, schema string) e
 // DropSchema drops database.
 //
 // Returns ErrSchemaNotExist if schema does not exist.
-func DropSchema(ctx context.Context, hdb *fsql.DB, schema string) error {
+func dropSchema(ctx context.Context, hdb *fsql.DB, schema string) error {
 	sql := fmt.Sprintf("DROP SCHEMA %q CASCADE", schema)
 
 	_, err := hdb.ExecContext(ctx, sql)
@@ -116,11 +118,12 @@ func DropSchema(ctx context.Context, hdb *fsql.DB, schema string) error {
 	return getHanaErrorIfExists(err)
 }
 
-func CollectionExists(ctx context.Context, hdb *fsql.DB, schema, table string) (bool, error) {
+func collectionExists(ctx context.Context, hdb *fsql.DB, schema, table string) (bool, error) {
 	sql := fmt.Sprintf("SELECT count(*) FROM M_TABLES "+
 		"WHERE TABLE_TYPE = 'COLLECTION' AND "+
 		"SCHEMA_NAME = '%s' AND TABLE_NAME = '%s'",
-		schema, table)
+		schema, table,
+	)
 
 	var count int
 	if err := hdb.QueryRowContext(ctx, sql).Scan(&count); err != nil {
@@ -135,7 +138,7 @@ func CollectionExists(ctx context.Context, hdb *fsql.DB, schema, table string) (
 //
 // It returns ErrAlreadyExist if collection already exist.
 func CreateCollection(ctx context.Context, hdb *fsql.DB, schema, table string) error {
-	err := CreateSchemaIfNotExists(ctx, hdb, schema)
+	err := createSchemaIfNotExists(ctx, hdb, schema)
 	if err != nil {
 		return err
 	}
@@ -150,11 +153,12 @@ func CreateCollection(ctx context.Context, hdb *fsql.DB, schema, table string) e
 // CreateCollectionIfNotExists creates a new SAP HANA JSON Document Store collection.
 //
 // Returns nil if collection already exist.
-func CreateCollectionIfNotExists(ctx context.Context, hdb *fsql.DB, schema, table string) error {
-	exists, err := CollectionExists(ctx, hdb, schema, table)
+func createCollectionIfNotExists(ctx context.Context, hdb *fsql.DB, schema, table string) error {
+	exists, err := collectionExists(ctx, hdb, schema, table)
 	if err != nil {
 		return getHanaErrorIfExists(err)
 	}
+
 	if !exists {
 		err = CreateCollection(ctx, hdb, schema, table)
 	}
@@ -162,7 +166,7 @@ func CreateCollectionIfNotExists(ctx context.Context, hdb *fsql.DB, schema, tabl
 	return err
 }
 
-func DropCollection(ctx context.Context, hdb *fsql.DB, schema, table string) error {
+func dropCollection(ctx context.Context, hdb *fsql.DB, schema, table string) error {
 	sql := fmt.Sprintf("DROP COLLECTION %q.%q CASCADE", schema, table)
 
 	_, err := hdb.ExecContext(ctx, sql)

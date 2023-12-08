@@ -23,8 +23,7 @@ import (
 
 const hanaSchemaSymbol = "_$"
 
-func UnmarshalHana(data []byte) (*types.Document, error) {
-
+func unmarshalHana(data []byte) (*types.Document, error) {
 	re := regexp.MustCompile(regexp.QuoteMeta(hanaSchemaSymbol) + `([a-z])`)
 	replacedData := re.ReplaceAllString(string(data), "$$$1")
 
@@ -33,7 +32,7 @@ func UnmarshalHana(data []byte) (*types.Document, error) {
 	return doc, err
 }
 
-func MarshalHana(doc *types.Document) ([]byte, error) {
+func marshalHana(doc *types.Document) ([]byte, error) {
 	data, err := sjson.Marshal(doc)
 	if err != nil {
 		return nil, err

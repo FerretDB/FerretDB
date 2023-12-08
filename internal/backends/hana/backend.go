@@ -18,8 +18,6 @@ import (
 	"context"
 	"database/sql"
 
-	_ "github.com/SAP/go-hdb/driver" // register hdb driver
-
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
@@ -61,7 +59,9 @@ func NewBackend(params *NewBackendParams) (backends.Backend, error) {
 
 // Close implements backends.Backend interface.
 func (b *backend) Close() {
-	b.hdb.Close()
+	if b.hdb.Close() != nil {
+		panic("could not close hana db connection")
+	}
 }
 
 // Status implements backends.Backend interface.
@@ -77,8 +77,6 @@ func (b *backend) Status(ctx context.Context, params *backends.StatusParams) (*b
 
 	var res backends.StatusResult
 
-	//var pingSucceeded bool
-
 	for rows.Next() {
 		// db name is schema name from here on out
 		var dbName string
@@ -86,8 +84,8 @@ func (b *backend) Status(ctx context.Context, params *backends.StatusParams) (*b
 			return nil, lazyerrors.Error(err)
 		}
 
-		list, err := newDatabase(b.hdb, dbName).ListCollections(ctx, new(backends.ListCollectionsParams))
-		if err != nil {
+		list, errDB := newDatabase(b.hdb, dbName).ListCollections(ctx, new(backends.ListCollectionsParams))
+		if errDB != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
@@ -98,17 +96,6 @@ func (b *backend) Status(ctx context.Context, params *backends.StatusParams) (*b
 				res.CountCappedCollections++
 			}
 		}
-
-		//TODO: figure out how to ping db.
-		// if pingSucceeded {
-		// 	continue
-		// }
-
-		// if err = b.hdb.PingContext(ctx); err != nil {
-		// 	return nil, lazyerrors.Error(err)
-		// }
-
-		// pingSucceeded = true
 	}
 
 	if err = rows.Err(); err != nil {
@@ -134,6 +121,7 @@ func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDataba
 	defer rows.Close()
 
 	var databases []backends.DatabaseInfo
+
 	for rows.Next() {
 		var dbName string
 		if err := rows.Scan(&dbName); err != nil {
@@ -147,7 +135,7 @@ func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDataba
 
 // DropDatabase implements backends.Backend interface.
 func (b *backend) DropDatabase(ctx context.Context, params *backends.DropDatabaseParams) error {
-	return DropSchema(ctx, b.hdb, params.Name)
+	return dropSchema(ctx, b.hdb, params.Name)
 }
 
 // Describe implements prometheus.Collector.
