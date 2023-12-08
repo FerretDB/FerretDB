@@ -51,6 +51,7 @@ type FindParams struct {
 	Min          *types.Document `ferretdb:"min,ignored"`
 	Hint         any             `ferretdb:"hint,ignored"`
 	LSID         any             `ferretdb:"lsid,ignored"`
+	ClusterTime  any             `ferretdb:"$clusterTime,ignored"`
 
 	ReturnKey           bool `ferretdb:"returnKey,unimplemented-non-default"`
 	ShowRecordId        bool `ferretdb:"showRecordId,opt"`

@@ -43,13 +43,19 @@ func SortDocuments(docs []*types.Document, sortDoc *types.Document) error {
 
 	for i, sortKey := range sortDoc.Keys() {
 		fields := strings.Split(sortKey, ".")
-		for _, field := range fields {
-			if strings.HasPrefix(field, "$") {
-				return handlererrors.NewCommandErrorMsgWithArgument(
-					handlererrors.ErrFieldPathInvalidName,
-					"FieldPath field names may not start with '$'. Consider using $getField or $setField.",
-					"sort",
-				)
+
+		switch {
+		case sortKey == "$natural":
+		default:
+			// TODO https://github.com/FerretDB/FerretDB/issues/3127
+			for _, field := range fields {
+				if strings.HasPrefix(field, "$") {
+					return handlererrors.NewCommandErrorMsgWithArgument(
+						handlererrors.ErrFieldPathInvalidName,
+						"FieldPath field names may not start with '$'. Consider using $getField or $setField.",
+						"sort",
+					)
+				}
 			}
 		}
 
@@ -94,13 +100,19 @@ func ValidateSortDocument(sortDoc *types.Document) (*types.Document, error) {
 
 	for _, sortKey := range sortDoc.Keys() {
 		fields := strings.Split(sortKey, ".")
-		for _, field := range fields {
-			if strings.HasPrefix(field, "$") {
-				return nil, handlererrors.NewCommandErrorMsgWithArgument(
-					handlererrors.ErrFieldPathInvalidName,
-					"FieldPath field names may not start with '$'. Consider using $getField or $setField.",
-					"sort",
-				)
+
+		switch {
+		case sortKey == "$natural":
+		default:
+			// TODO https://github.com/FerretDB/FerretDB/issues/3127
+			for _, field := range fields {
+				if strings.HasPrefix(field, "$") {
+					return nil, handlererrors.NewCommandErrorMsgWithArgument(
+						handlererrors.ErrFieldPathInvalidName,
+						"FieldPath field names may not start with '$'. Consider using $getField or $setField.",
+						"sort",
+					)
+				}
 			}
 		}
 
