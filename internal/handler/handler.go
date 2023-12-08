@@ -17,7 +17,11 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"fmt"
+
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
@@ -105,18 +109,18 @@ func (h *Handler) CleanupCappedCollections(ctx context.Context, toDrop uint8) er
 
 	dbs, err := h.b.ListDatabases(ctx, nil)
 	if err != nil {
-		return err
+		return lazyerrors.Error(err)
 	}
 
 	for _, db := range dbs.Databases {
 		database, err := h.b.Database(db.Name)
 		if err != nil {
-			return err
+			return lazyerrors.Error(err)
 		}
 
 		cols, err := database.ListCollections(ctx, nil)
 		if err != nil {
-			return err
+			return lazyerrors.Error(err)
 		}
 
 		for _, col := range cols.Collections {
@@ -124,7 +128,52 @@ func (h *Handler) CleanupCappedCollections(ctx context.Context, toDrop uint8) er
 				continue
 			}
 
-			// fixme: cleanup capped collection
+			collection, err := database.Collection(col.Name)
+			if err != nil {
+				return lazyerrors.Error(err)
+			}
+
+			stats, err := collection.Stats(ctx, &backends.CollectionStatsParams{Refresh: true})
+			if err != nil {
+				return lazyerrors.Error(err)
+			}
+
+			if stats.SizeCollection < col.CappedSize && stats.CountDocuments < col.CappedDocuments {
+				continue
+			}
+
+			params := backends.QueryParams{
+				Limit:         int64(float64(stats.CountDocuments) * float64(toDrop) / 100),
+				OnlyRecordIDs: true,
+			}
+
+			res, err := collection.Query(ctx, &params)
+			if err != nil {
+				return lazyerrors.Error(err)
+			}
+
+			var recordIDs []int64
+
+			for {
+				_, doc, err := res.Iter.Next()
+				if errors.Is(err, iterator.ErrIteratorDone) {
+					break
+				}
+
+				if err != nil {
+					return lazyerrors.Error(err)
+				}
+
+				recordIDs = append(recordIDs, doc.RecordID())
+			}
+
+			if _, err = collection.DeleteAll(ctx, &backends.DeleteAllParams{RecordIDs: recordIDs}); err != nil {
+				return lazyerrors.Error(err)
+			}
+
+			if _, err := collection.Compact(ctx, nil); err != nil {
+				return lazyerrors.Error(err)
+			}
 		}
 	}
 
