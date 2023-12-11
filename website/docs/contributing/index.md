@@ -1,6 +1,6 @@
 ---
 sidebar_position: 1
-slug: how-to-contribute/
+slug: /how-to-contribute/
 ---
 
 # How to contribute to FerretDB
