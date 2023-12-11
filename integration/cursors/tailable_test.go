@@ -41,7 +41,7 @@ func TestCursorsTailable(t *testing.T) {
 				Code: 2,
 				Name: "BadValue",
 				Message: "error processing query: " +
-					"ns=TestTailable-NonCapped.TestTailable-NonCappedTree: $and\nSort: {}\nProj: {}\n " +
+					"ns=TestCursorsTailable-NonCapped.TestCursorsTailable-NonCappedTree: $and\nSort: {}\nProj: {}\n " +
 					"tailable cursor requested on non capped collection",
 			}
 			integration.AssertEqualAltCommandError(t, expected, "tailable cursor requested on non capped collection", err)
