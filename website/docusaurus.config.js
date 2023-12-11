@@ -44,12 +44,12 @@ const config = {
           sidebarPath: require.resolve('./sidebars.js'),
           editUrl: 'https://github.com/FerretDB/FerretDB/tree/main/website',
 
-          // versions: {
-          //   // the latest minus one minor
-          //   'v1.15': {
-          //     banner: 'none',
-          //   },
-          // },
+          versions: {
+            // the latest minus one minor
+            'v1.15': {
+              banner: 'none',
+            },
+          },
         },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
