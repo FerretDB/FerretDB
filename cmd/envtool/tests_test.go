@@ -228,7 +228,7 @@ func TestShardTestFuncs(t *testing.T) {
 	testFuncs, err := listTestFuncs(filepath.Join("..", "..", "integration"))
 	require.NoError(t, err)
 	assert.Contains(t, testFuncs, "TestQueryCompatLimit")
-	assert.Contains(t, testFuncs, "TestGetMoreCommand")
+	assert.Contains(t, testFuncs, "TestCursorsGetMoreCommand")
 
 	t.Run("InvalidIndex", func(t *testing.T) {
 		t.Parallel()
