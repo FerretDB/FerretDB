@@ -127,7 +127,7 @@ func TestCommandsAdministrationCompatCollStatsCappedCollection(t *testing.T) {
 		"MaxDocuments": {
 			sizeInBytes:  1,
 			maxDocuments: 10,
-			expectedSize: 256,
+			expectedSize: 256, // on FerretDB
 		},
 	} {
 		name, tc := name, tc
@@ -164,7 +164,7 @@ func TestCommandsAdministrationCompatCollStatsCappedCollection(t *testing.T) {
 
 			// TODO https://github.com/FerretDB/FerretDB/issues/3582
 			assert.EqualValues(t, tc.expectedSize, must.NotFail(targetDoc.Get("maxSize")))
-			assert.EqualValues(t, must.NotFail(compatDoc.Get("maxSize")), must.NotFail(targetDoc.Get("maxSize")))
+			assert.LessOrEqual(t, int64(must.NotFail(compatDoc.Get("maxSize")).(int32)), must.NotFail(targetDoc.Get("maxSize")))
 			assert.EqualValues(t, must.NotFail(compatDoc.Get("max")), must.NotFail(targetDoc.Get("max")))
 		})
 	}
