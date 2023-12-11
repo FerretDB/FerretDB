@@ -86,7 +86,9 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 			explainResult := actual.Map()
 
 			assert.Equal(t, float64(1), explainResult["ok"])
-			assert.Equal(t, "1", explainResult["explainVersion"])
+
+			// explainVersion 1 and 2 are in use for different methods on Mongo 7
+			assert.True(t, explainResult["explainVersion"] == "1" || explainResult["explainVersion"] == "2")
 			assert.Equal(t, tc.command, explainResult["command"])
 
 			serverInfo := ConvertDocument(t, explainResult["serverInfo"].(bson.D))
@@ -299,6 +301,7 @@ func TestCommandsDiagnosticValidate(t *testing.T) {
 			"ok", float64(1),
 		))
 
+		actual.Remove("uuid")
 		actual.Remove("keysPerIndex")
 		actual.Remove("indexDetails")
 		actual.Remove("$clusterTime")
@@ -337,6 +340,7 @@ func TestCommandsDiagnosticValidate(t *testing.T) {
 			"ok", float64(1),
 		))
 
+		actual.Remove("uuid")
 		actual.Remove("keysPerIndex")
 		actual.Remove("indexDetails")
 		actual.Remove("$clusterTime")

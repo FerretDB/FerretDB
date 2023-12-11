@@ -30,14 +30,19 @@ func TestDiffDBStatsScale(t *testing.T) {
 
 	ctx, collection := setup.Setup(t)
 
+	// TODO: Fix codes for FerretDB.
 	testCases := map[string]struct {
 		scale               any
-		expectedMongoDBErr  string
+		expectedMongoDBErr  mongo.CommandError
 		expectedFerretDBErr mongo.CommandError
 	}{
 		"Zero": {
-			scale:              int32(0),
-			expectedMongoDBErr: "scale has to be > 0",
+			scale: int32(0),
+			expectedMongoDBErr: mongo.CommandError{
+				Name:    "BadValue",
+				Code:    2,
+				Message: "Scale factor must be greater than zero",
+			},
 			expectedFerretDBErr: mongo.CommandError{
 				Name:    "Location51024",
 				Code:    51024,
@@ -45,8 +50,12 @@ func TestDiffDBStatsScale(t *testing.T) {
 			},
 		},
 		"Negative": {
-			scale:              int32(-100),
-			expectedMongoDBErr: "scale has to be > 0",
+			scale: int32(-100),
+			expectedMongoDBErr: mongo.CommandError{
+				Name:    "BadValue",
+				Code:    2,
+				Message: "Scale factor must be greater than zero",
+			},
 			expectedFerretDBErr: mongo.CommandError{
 				Name:    "Location51024",
 				Code:    51024,
@@ -54,8 +63,12 @@ func TestDiffDBStatsScale(t *testing.T) {
 			},
 		},
 		"MinFloat": {
-			scale:              -math.MaxFloat64,
-			expectedMongoDBErr: "scale has to be > 0",
+			scale: -math.MaxFloat64,
+			expectedMongoDBErr: mongo.CommandError{
+				Name:    "BadValue",
+				Code:    2,
+				Message: "Scale factor must be greater than zero",
+			},
 			expectedFerretDBErr: mongo.CommandError{
 				Name:    "Location51024",
 				Code:    51024,
@@ -63,8 +76,12 @@ func TestDiffDBStatsScale(t *testing.T) {
 			},
 		},
 		"String": {
-			scale:              "1",
-			expectedMongoDBErr: "scale has to be a number > 0",
+			scale: "1",
+			expectedMongoDBErr: mongo.CommandError{
+				Name:    "TypeMismatch",
+				Code:    14,
+				Message: "BSON field 'dbStats.scale' is the wrong type 'string', expected types '[long, int, decimal, double']",
+			},
 			expectedFerretDBErr: mongo.CommandError{
 				Name:    "TypeMismatch",
 				Code:    14,
@@ -72,8 +89,12 @@ func TestDiffDBStatsScale(t *testing.T) {
 			},
 		},
 		"Object": {
-			scale:              bson.D{{"a", 1}},
-			expectedMongoDBErr: "scale has to be a number > 0",
+			scale: bson.D{{"a", 1}},
+			expectedMongoDBErr: mongo.CommandError{
+				Name:    "TypeMismatch",
+				Code:    14,
+				Message: "BSON field 'dbStats.scale' is the wrong type 'object', expected types '[long, int, decimal, double']",
+			},
 			expectedFerretDBErr: mongo.CommandError{
 				Name:    "TypeMismatch",
 				Code:    14,
@@ -91,12 +112,7 @@ func TestDiffDBStatsScale(t *testing.T) {
 			require.Error(t, err)
 
 			if setup.IsMongoDB(t) {
-				expected := mongo.CommandError{
-					Name:    "",
-					Code:    0,
-					Message: tc.expectedMongoDBErr,
-				}
-				AssertEqualCommandError(t, expected, err)
+				AssertEqualCommandError(t, tc.expectedMongoDBErr, err)
 				return
 			}
 
