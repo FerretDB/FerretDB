@@ -30,93 +30,66 @@ func TestDiffDBStatsScale(t *testing.T) {
 
 	ctx, collection := setup.Setup(t)
 
-	// TODO: Fix codes for FerretDB.
 	testCases := map[string]struct {
-		scale               any
-		expectedMongoDBErr  mongo.CommandError
-		expectedFerretDBErr mongo.CommandError
+		scale      any
+		err        mongo.CommandError
+		altMessage string // optional, alternative error message for FerretDB, ignored if empty
 	}{
 		"Zero": {
 			scale: int32(0),
-			expectedMongoDBErr: mongo.CommandError{
+			err: mongo.CommandError{
 				Name:    "BadValue",
 				Code:    2,
 				Message: "Scale factor must be greater than zero",
 			},
-			expectedFerretDBErr: mongo.CommandError{
-				Name:    "Location51024",
-				Code:    51024,
-				Message: "BSON field 'scale' value must be >= 1, actual value '0'",
-			},
+			altMessage: "BSON field 'scale' value must be >= 1, actual value '0'",
 		},
 		"Negative": {
 			scale: int32(-100),
-			expectedMongoDBErr: mongo.CommandError{
+			err: mongo.CommandError{
 				Name:    "BadValue",
 				Code:    2,
 				Message: "Scale factor must be greater than zero",
 			},
-			expectedFerretDBErr: mongo.CommandError{
-				Name:    "Location51024",
-				Code:    51024,
-				Message: "BSON field 'scale' value must be >= 1, actual value '-100'",
-			},
+			altMessage: "BSON field 'scale' value must be >= 1, actual value '-100'",
 		},
 		"MinFloat": {
 			scale: -math.MaxFloat64,
-			expectedMongoDBErr: mongo.CommandError{
+			err: mongo.CommandError{
 				Name:    "BadValue",
 				Code:    2,
 				Message: "Scale factor must be greater than zero",
 			},
-			expectedFerretDBErr: mongo.CommandError{
-				Name:    "Location51024",
-				Code:    51024,
-				Message: "BSON field 'scale' value must be >= 1, actual value '-9223372036854775808'",
-			},
+			altMessage: "BSON field 'scale' value must be >= 1, actual value '-9223372036854775808'",
 		},
 		"String": {
 			scale: "1",
-			expectedMongoDBErr: mongo.CommandError{
+			err: mongo.CommandError{
 				Name:    "TypeMismatch",
 				Code:    14,
 				Message: "BSON field 'dbStats.scale' is the wrong type 'string', expected types '[long, int, decimal, double']",
 			},
-			expectedFerretDBErr: mongo.CommandError{
-				Name:    "TypeMismatch",
-				Code:    14,
-				Message: "BSON field 'dbStats.scale' is the wrong type 'string', expected types '[long, int, decimal, double]'",
-			},
+			altMessage: "BSON field 'dbStats.scale' is the wrong type 'string', expected types '[long, int, decimal, double]'",
 		},
 		"Object": {
 			scale: bson.D{{"a", 1}},
-			expectedMongoDBErr: mongo.CommandError{
+			err: mongo.CommandError{
 				Name:    "TypeMismatch",
 				Code:    14,
 				Message: "BSON field 'dbStats.scale' is the wrong type 'object', expected types '[long, int, decimal, double']",
 			},
-			expectedFerretDBErr: mongo.CommandError{
-				Name:    "TypeMismatch",
-				Code:    14,
-				Message: "BSON field 'dbStats.scale' is the wrong type 'object', expected types '[long, int, decimal, double]'",
-			},
+			altMessage: "BSON field 'dbStats.scale' is the wrong type 'object', expected types '[long, int, decimal, double]'",
 		},
 	}
 
 	for name, tc := range testCases {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
+		t.Run(name, func(tt *testing.T) {
+			tt.Parallel()
 
 			err := collection.Database().RunCommand(ctx, bson.D{{"dbStats", int32(1)}, {"scale", tc.scale}}).Err()
 			require.Error(t, err)
-
-			if setup.IsMongoDB(t) {
-				AssertEqualCommandError(t, tc.expectedMongoDBErr, err)
-				return
-			}
-
-			AssertEqualCommandError(t, tc.expectedFerretDBErr, err)
+			AssertEqualAltCommandError(t, tc.err, tc.altMessage, err)
 		})
 	}
 }
