@@ -1384,8 +1384,8 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 
 	t.Run("FreeMonitoring", func(t *testing.T) {
 		setup.SkipForMongoDB(t, "MongoDB decommissioned free monitoring")
-		freeMonitoring, err := doc.Get("freeMonitoring")
-		require.NoError(t, err)
+		freeMonitoring, fErr := doc.Get("freeMonitoring")
+		require.NoError(t, fErr)
 		assert.NotEmpty(t, must.NotFail(freeMonitoring.(*types.Document).Get("state")))
 	})
 
