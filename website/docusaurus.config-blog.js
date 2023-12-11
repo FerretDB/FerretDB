@@ -111,7 +111,7 @@ const config = {
           },
           {
             href: 'https://docs.ferretdb.io/',
-            position: 'left',
+            position: 'right',
             label: 'Documentation',
           },
           {
@@ -121,7 +121,7 @@ const config = {
           },
           {
             href: 'https://www.ferretdb.com/',
-            label: 'Go to FerretDB.com',
+            label: 'FerretDB.com',
             position: 'right',
           },
         ],
@@ -164,7 +164,7 @@ const config = {
             items: [
               {
                 href: 'https://www.ferretdb.com/',
-                label: 'Go to FerretDB.com',
+                label: 'FerretDB.com',
                 position: 'right',
               },
               {

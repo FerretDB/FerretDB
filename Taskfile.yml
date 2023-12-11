@@ -908,6 +908,13 @@ tasks:
     cmds:
       - docker compose run --rm --service-ports docusaurus-docs start --host=0.0.0.0
 
+  docs-version:
+    desc: "Create new documentation version"
+    cmds:
+      - docker compose run --rm docusaurus-docs docs:version v{{.VERSION}}
+    requires:
+      vars: [VERSION]
+
   docs-cloudflare-preview:
     cmds:
       # for debugging

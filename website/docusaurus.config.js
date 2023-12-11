@@ -5,7 +5,7 @@ import {themes} from 'prism-react-renderer';
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
-  title: 'FerretDB Documentation',
+  title: 'FerretDB',
   tagline: 'A truly Open Source MongoDB alternative',
 
   url: 'https://docs.ferretdb.io',
@@ -43,6 +43,13 @@ const config = {
           routeBasePath: '/',
           sidebarPath: require.resolve('./sidebars.js'),
           editUrl: 'https://github.com/FerretDB/FerretDB/tree/main/website',
+
+          // versions: {
+          //   // the latest minus one minor
+          //   'v1.15': {
+          //     banner: 'none',
+          //   },
+          // },
         },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
@@ -65,12 +72,13 @@ const config = {
           {
             to: '/',
             label: 'Documentation',
-            position: 'left'
+            position: 'right',
+            type: 'docsVersionDropdown'
           },
           {
             href: 'https://blog.ferretdb.io/',
             label: 'Blog',
-            position: 'left'
+            position: 'right'
           },
           {
             href: 'https://github.com/FerretDB/',
@@ -79,7 +87,7 @@ const config = {
           },
           {
             href: 'https://www.ferretdb.com/',
-            label: 'Go to FerretDB.com',
+            label: 'FerretDB.com',
             position: 'right',
           },
         ],
@@ -122,7 +130,7 @@ const config = {
             items: [
               {
                 href: 'https://www.ferretdb.com/',
-                label: 'Go to FerretDB.com',
+                label: 'FerretDB.com',
                 position: 'right',
               },
               {

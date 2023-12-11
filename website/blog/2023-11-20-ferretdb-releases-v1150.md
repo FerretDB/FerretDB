@@ -66,5 +66,5 @@ Aside from this, FerretDB now has:
 
 Your support is greatly appreciated!
 
-Everyone is welcome to contribute to FerretDB via code, bug reports, feature request, or documentation ([see our contribution guide for more](https://docs.ferretdb.io/contributing/)).
+Everyone is welcome to contribute to FerretDB via code, bug reports, feature request, or documentation ([see our contribution guide for more](https://docs.ferretdb.io/contributing/how-to-contribute/)).
 If you have questions or feedback on FerretDB, [contact us on our community channels](https://docs.ferretdb.io/#community).
