@@ -62,7 +62,7 @@ func (h *Handler) MsgCompact(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	coll, err := db.Collection(collection)
+	c, err := db.Collection(collection)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
 			return nil, handlererrors.NewCommandErrorMsgWithArgument(
@@ -83,7 +83,7 @@ func (h *Handler) MsgCompact(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		}
 	}
 
-	statsBefore, err := coll.Stats(ctx, new(backends.CollectionStatsParams))
+	statsBefore, err := c.Stats(ctx, new(backends.CollectionStatsParams))
 	if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
 		return nil, handlererrors.NewCommandErrorMsgWithArgument(
 			handlererrors.ErrNamespaceNotFound,
@@ -96,11 +96,11 @@ func (h *Handler) MsgCompact(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	if _, err = coll.Compact(ctx, &backends.CompactParams{Full: force}); err != nil {
+	if _, err = c.Compact(ctx, &backends.CompactParams{Full: force}); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	statsAfter, err := coll.Stats(ctx, new(backends.CollectionStatsParams))
+	statsAfter, err := c.Stats(ctx, new(backends.CollectionStatsParams))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

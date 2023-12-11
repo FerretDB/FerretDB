@@ -93,7 +93,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
-	coll, err := db.Collection(cName)
+	c, err := db.Collection(cName)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
 			msg := fmt.Sprintf("Invalid collection name: %s", cName)
@@ -322,13 +322,13 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			qp.Sort = sort
 		}
 
-		iter, err = processStagesDocuments(ctx, closer, &stagesDocumentsParams{coll, qp, stagesDocuments})
+		iter, err = processStagesDocuments(ctx, closer, &stagesDocumentsParams{c, qp, stagesDocuments})
 	} else {
 		// TODO https://github.com/FerretDB/FerretDB/issues/2423
 		statistics := stages.GetStatistics(collStatsDocuments)
 
 		iter, err = processStagesStats(ctx, closer, &stagesStatsParams{
-			coll, db, dbName, cName, statistics, collStatsDocuments,
+			c, db, dbName, cName, statistics, collStatsDocuments,
 		})
 	}
 

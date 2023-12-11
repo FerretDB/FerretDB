@@ -64,7 +64,7 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, lazyerrors.Error(err)
 	}
 
-	coll, err := db.Collection(collection)
+	c, err := db.Collection(collection)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
 			return nil, handlererrors.NewCommandErrorMsgWithArgument(
@@ -120,7 +120,7 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 	}
 
 	var createCollection bool
-	beforeCreate, err := coll.ListIndexes(ctx, new(backends.ListIndexesParams))
+	beforeCreate, err := c.ListIndexes(ctx, new(backends.ListIndexesParams))
 	if err != nil {
 		switch {
 		case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist):
@@ -147,7 +147,7 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
-	_, err = coll.CreateIndexes(ctx, &backends.CreateIndexesParams{Indexes: toCreate})
+	_, err = c.CreateIndexes(ctx, &backends.CreateIndexesParams{Indexes: toCreate})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

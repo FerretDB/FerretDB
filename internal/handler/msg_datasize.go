@@ -72,7 +72,7 @@ func (h *Handler) MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		return nil, lazyerrors.Error(err)
 	}
 
-	coll, err := db.Collection(cName)
+	c, err := db.Collection(cName)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
 			msg := fmt.Sprintf("Invalid collection name: %s", cName)
@@ -84,7 +84,7 @@ func (h *Handler) MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 
 	started := time.Now()
 
-	stats, err := coll.Stats(ctx, new(backends.CollectionStatsParams))
+	stats, err := c.Stats(ctx, new(backends.CollectionStatsParams))
 	if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
 		stats = new(backends.CollectionStatsResult)
 		err = nil

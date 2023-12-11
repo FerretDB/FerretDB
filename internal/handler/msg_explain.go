@@ -72,7 +72,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	coll, err := db.Collection(params.Collection)
+	c, err := db.Collection(params.Collection)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
 			msg := fmt.Sprintf("Invalid collection name: %s", params.Collection)
@@ -151,7 +151,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		qp.Limit = params.Limit
 	}
 
-	res, err := coll.Explain(ctx, qp)
+	res, err := c.Explain(ctx, qp)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

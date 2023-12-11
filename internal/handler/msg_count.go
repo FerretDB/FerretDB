@@ -51,7 +51,7 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		return nil, lazyerrors.Error(err)
 	}
 
-	coll, err := db.Collection(params.Collection)
+	c, err := db.Collection(params.Collection)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
 			msg := fmt.Sprintf("Invalid collection name: %s", params.Collection)
@@ -66,7 +66,7 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		qp.Filter = params.Filter
 	}
 
-	queryRes, err := coll.Query(ctx, &qp)
+	queryRes, err := c.Query(ctx, &qp)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

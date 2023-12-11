@@ -119,7 +119,7 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdateParam
 	}
 
 	for _, u := range params.Updates {
-		coll, err := db.Collection(params.Collection)
+		c, err := db.Collection(params.Collection)
 		if err != nil {
 			if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
 				msg := fmt.Sprintf("Invalid collection name: %s", params.Collection)
@@ -134,7 +134,7 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdateParam
 			qp.Filter = u.Filter
 		}
 
-		res, err := coll.Query(ctx, &qp)
+		res, err := c.Query(ctx, &qp)
 		if err != nil {
 			return 0, 0, nil, lazyerrors.Error(err)
 		}
@@ -219,7 +219,7 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdateParam
 
 			// TODO https://github.com/FerretDB/FerretDB/issues/2612
 
-			_, err = coll.InsertAll(ctx, &backends.InsertAllParams{
+			_, err = c.InsertAll(ctx, &backends.InsertAllParams{
 				Docs: []*types.Document{doc},
 			})
 			if err != nil {
@@ -252,7 +252,7 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdateParam
 				return 0, 0, nil, err
 			}
 
-			updateRes, err := coll.UpdateAll(ctx, &backends.UpdateAllParams{Docs: []*types.Document{doc}})
+			updateRes, err := c.UpdateAll(ctx, &backends.UpdateAllParams{Docs: []*types.Document{doc}})
 			if err != nil {
 				return 0, 0, nil, lazyerrors.Error(err)
 			}
