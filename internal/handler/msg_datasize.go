@@ -51,7 +51,7 @@ func (h *Handler) MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	namespace, ok := namespaceParam.(string)
 	if !ok {
 		return nil, handlererrors.NewCommandErrorMsgWithArgument(
-			handlererrors.ErrBadValue,
+			handlererrors.ErrTypeMismatch,
 			fmt.Sprintf("collection name has invalid type %s", handlerparams.AliasFromType(namespaceParam)),
 			document.Command(),
 		)

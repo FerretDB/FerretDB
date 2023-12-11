@@ -147,7 +147,7 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		"totalIndexSize", stats.SizeIndexes/scale,
 		"totalSize", stats.SizeTotal/scale,
 		"indexSizes", indexSizes,
-		"scaleFactor", scale,
+		"scaleFactor", int32(scale),
 		"capped", cInfo.Capped(),
 	)
 
