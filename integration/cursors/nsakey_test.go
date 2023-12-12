@@ -25,34 +25,27 @@ import (
 func TestSomething(t *testing.T) {
 	t.Parallel()
 
-	//	s := setup.SetupWithOpts(t, &setup.SetupOpts{
-	//		Providers: []shareddata.Provider{shareddata.Composites},
-	//		//	ExtraOptions: url.Values{
-	//		//		"minPoolSize":   []string{"1"},
-	//		//		"maxPoolSize":   []string{"1"},
-	//		//		"maxIdleTimeMS": []string{"0"},
-	//		//	},
-	//	})
-	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
-		Providers:                []shareddata.Provider{shareddata.Composites},
-		AddNonExistentCollection: true,
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{
+		Providers: []shareddata.Provider{shareddata.Composites},
+		//	ExtraOptions: url.Values{
+		//		"minPoolSize":   []string{"1"},
+		//		"maxPoolSize":   []string{"1"},
+		//		"maxIdleTimeMS": []string{"0"},
+		//	},
 	})
 
-	// TODO
-	ctx, targetCollection, _ := s.Ctx, s.TargetCollections[0], s.CompatCollections[0]
+	coll, ctx := s.Collection, s.Ctx
 
-	//targetCollection, ctx := s.Collection, s.Ctx
-
-	var targetRes bson.D
-	err := targetCollection.Database().RunCommand(ctx, bson.D{
-		{"find", targetCollection.Name()},
+	var res bson.D
+	err := coll.Database().RunCommand(ctx, bson.D{
+		{"find", coll.Name()},
 		{"sort", bson.D{{"v", 1}}},
 		{"batchSize", 1},
-	}).Decode(&targetRes)
+	}).Decode(&res)
 
 	require.NoError(t, err)
 
-	doc := integration.ConvertDocument(t, targetRes)
+	doc := integration.ConvertDocument(t, res)
 
 	v, _ := doc.Get("cursor")
 	require.NotNil(t, v)
