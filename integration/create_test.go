@@ -176,10 +176,6 @@ func TestCreateOnInsertStressDiffCollection(t *testing.T) {
 }
 
 func TestCreateStressSameCollection(t *testing.T) {
-	if !setup.IsMongoDB(t) {
-		t.Skip("add link to new issue")
-	}
-
 	// It should be rewritten to use teststress.Stress.
 
 	ctx, collection := setup.Setup(t) // no providers there, we will create collection from the test
@@ -235,7 +231,7 @@ func TestCreateStressSameCollection(t *testing.T) {
 	require.Equal(t, bson.D{{"_id", "foo_1"}, {"v", "bar"}}, doc)
 
 	// Until Mongo 6.0, attempts to create a collection that existed would return a NamespaceExists error.
-	require.Equal(t, int32(120), created.Load(), "All attempts to create a collection should succeed")
+	require.Equal(t, int32(collNum), created.Load(), "All attempts to create a collection should succeed")
 
 	assert.Error(t, db.CreateCollection(ctx, collName, &options.CreateCollectionOptions{
 		Capped:      pointer.ToBool(true),
