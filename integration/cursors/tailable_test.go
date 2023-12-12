@@ -64,7 +64,7 @@ func TestTailableGetMore(t *testing.T) {
 
 	collection := db.Collection(t.Name())
 
-	bsonArr, arr := integration.GenerateDocuments(0, 2)
+	bsonArr, arr := integration.GenerateDocuments(0, 3)
 
 	_, err = collection.InsertMany(ctx, bsonArr)
 	require.NoError(t, err)
@@ -72,20 +72,42 @@ func TestTailableGetMore(t *testing.T) {
 	cmd := bson.D{
 		{"find", collection.Name()},
 		{"batchSize", 1},
+		{"tailable", true},
 	}
 
 	var res bson.D
 	err = collection.Database().RunCommand(ctx, cmd).Decode(&res)
 	require.NoError(t, err)
 
-	firstBatch := GetFirstBatch(t, res)
+	firstBatch, cursorID := GetFirstBatch(t, res)
 
 	expectedFirstBatch := integration.ConvertDocuments(t, arr[:1])
 	require.Equal(t, len(expectedFirstBatch), firstBatch.Len())
 	require.Equal(t, expectedFirstBatch[0], must.NotFail(firstBatch.Get(0)))
+
+	getMoreCmd := bson.D{
+		{"getMore", cursorID},
+		{"collection", collection.Name()},
+		{"batchSize", 1},
+	}
+
+	for i := 0; i < 2; i++ {
+		var res bson.D
+		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
+		require.NoError(t, err)
+
+		nextBatch, nextID := GetNextBatch(t, res)
+		t.Log(nextBatch.Get(0))
+		expectedNextBatch := integration.ConvertDocuments(t, arr[1:2])
+
+		assert.Equal(t, cursorID, nextID, res)
+
+		require.Equal(t, len(expectedNextBatch), nextBatch.Len())
+		require.Equal(t, expectedNextBatch[0], must.NotFail(nextBatch.Get(0)))
+	}
 }
 
-func GetFirstBatch(t testing.TB, res bson.D) *types.Array {
+func GetFirstBatch(t testing.TB, res bson.D) (*types.Array, any) {
 	t.Helper()
 
 	doc := integration.ConvertDocument(t, res)
@@ -105,5 +127,28 @@ func GetFirstBatch(t testing.TB, res bson.D) *types.Array {
 	firstBatch, ok := v.(*types.Array)
 	require.True(t, ok)
 
-	return firstBatch
+	return firstBatch, cursorID
+}
+
+func GetNextBatch(t testing.TB, res bson.D) (*types.Array, any) {
+	t.Helper()
+
+	doc := integration.ConvertDocument(t, res)
+
+	v, _ := doc.Get("cursor")
+	require.NotNil(t, v)
+
+	cursor, ok := v.(*types.Document)
+	require.True(t, ok)
+
+	cursorID, _ := cursor.Get("id")
+	assert.NotNil(t, cursorID)
+
+	v, _ = cursor.Get("nextBatch")
+	require.NotNil(t, v)
+
+	firstBatch, ok := v.(*types.Array)
+	require.True(t, ok)
+
+	return firstBatch, cursorID
 }
