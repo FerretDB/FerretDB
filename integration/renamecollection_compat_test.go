@@ -27,8 +27,6 @@ import (
 )
 
 func TestRenameCollectionCompat(t *testing.T) {
-	t.Skip("fix")
-
 	t.Parallel()
 
 	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
