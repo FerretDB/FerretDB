@@ -97,8 +97,7 @@ func TestTailableGetMore(t *testing.T) {
 		require.NoError(t, err)
 
 		nextBatch, nextID := GetNextBatch(t, res)
-		t.Log(nextBatch.Get(0))
-		expectedNextBatch := integration.ConvertDocuments(t, arr[1:2])
+		expectedNextBatch := integration.ConvertDocuments(t, arr[i+1:i+2])
 
 		assert.Equal(t, cursorID, nextID, res)
 
