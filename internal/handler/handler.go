@@ -152,6 +152,9 @@ func (h *Handler) CleanupCappedCollections(ctx context.Context, toDrop uint8) er
 		toDrop = 100
 	}
 
+	h.L.Debug("CleanupCappedCollections: started", zap.Uint8("percentage", toDrop))
+	defer h.L.Debug("CleanupCappedCollections: finished")
+
 	// fixme: conninfo must be set, otherwise backend panics
 	connInfo := conninfo.New()
 	ctx = conninfo.Ctx(ctx, connInfo)
@@ -234,6 +237,10 @@ func (h *Handler) CleanupCappedCollections(ctx context.Context, toDrop uint8) er
 			}
 
 			h.cleanupedCappedCollections.WithLabelValues(db.Name, col.Name).Add(float64(deleted.Deleted))
+			h.L.Debug("CleanupCappedCollections: documents deleted",
+				zap.String("db", db.Name), zap.String("collection", col.Name),
+				zap.Int32("deleted", deleted.Deleted),
+			)
 
 			if _, err := collection.Compact(ctx, &backends.CompactParams{Full: false}); err != nil {
 				return lazyerrors.Error(err)
