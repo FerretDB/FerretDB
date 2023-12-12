@@ -56,8 +56,8 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 
 	oldName, err := common.GetRequiredParam[string](document, command)
 	if err != nil {
-		from, err := document.Get(command)
-		if err != nil || from == types.Null {
+		from, fe := document.Get(command)
+		if fe != nil || from == types.Null {
 			return nil, handlererrors.NewCommandErrorMsgWithArgument(
 				handlererrors.ErrMissingField,
 				"BSON field 'renameCollection.from' is missing but a required field",
@@ -74,7 +74,7 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 
 	newName, err := common.GetRequiredParam[string](document, "to")
 	if err != nil {
-		if to, err := document.Get("to"); err != nil || to == types.Null {
+		if to, te := document.Get("to"); te != nil || to == types.Null {
 			return nil, handlererrors.NewCommandErrorMsgWithArgument(
 				handlererrors.ErrMissingField,
 				"BSON field 'renameCollection.to' is missing but a required field",

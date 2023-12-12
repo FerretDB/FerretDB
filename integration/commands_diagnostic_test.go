@@ -301,6 +301,7 @@ func TestCommandsDiagnosticValidate(t *testing.T) {
 			"ok", float64(1),
 		))
 
+		// TODO https://github.com/FerretDB/FerretDB/issues/3841
 		actual.Remove("uuid")
 		actual.Remove("keysPerIndex")
 		actual.Remove("indexDetails")
