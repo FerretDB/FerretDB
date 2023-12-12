@@ -96,6 +96,13 @@ func (h *Handler) MsgCompact(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
+	/*if collection.Capped() {
+		h.CleanupCappedCollection(collection)
+	} else {
+	}*/
+
+	// fixme: call clean
+
 	if _, err = c.Compact(ctx, &backends.CompactParams{Full: force}); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
