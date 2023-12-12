@@ -101,11 +101,11 @@ func New(opts *NewOpts) (*Handler, error) {
 	h.initCommands()
 
 	// FIXME: how to test
-	// docker compose exec -T mongodb mongosh --port=27017 --eval="db.createCollection('coll', {capped: true, size: 1000, max: 100}" cleanup
+	// mongosh --port=27017 --eval="db.createCollection('coll', {capped: true, size: 1000, max: 100})" cleanup
 	//
-	// for i in {1..100}; do
-	// docker compose exec -T mongodb mongosh --port=27017 --eval="db.coll.insert({data: 'document $i'})" cleanup
-	// done
+	// for in in (seq 100)
+	//   mongosh --port=27017 --eval="db.coll.insert({data: 'document $i'})" cleanup
+	// end
 	go func() {
 		select {
 		case <-time.Tick(time.Minute):
@@ -129,12 +129,14 @@ func (h *Handler) Close() {
 func (h *Handler) Describe(ch chan<- *prometheus.Desc) {
 	h.b.Describe(ch)
 	h.cursors.Describe(ch)
+	h.cleanupedCappedCollections.Describe(ch)
 }
 
 // Collect implements prometheus.Collector interface.
 func (h *Handler) Collect(ch chan<- prometheus.Metric) {
 	h.b.Collect(ch)
 	h.cursors.Collect(ch)
+	h.cleanupedCappedCollections.Collect(ch)
 }
 
 // CleanupCappedCollections drops the given percent of documents from all capped collections.
