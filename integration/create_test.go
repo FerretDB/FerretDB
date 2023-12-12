@@ -175,7 +175,11 @@ func TestCreateOnInsertStressDiffCollection(t *testing.T) {
 	wg.Wait()
 }
 
-func TestCreateStressSameCollection(t *testing.T) {
+func TestCreateStressSameCollection(tt *testing.T) {
+	tt.Parallel()
+
+	t := setup.FailsForFerretDB(tt, "Create issue to handler the logic of creating a collection with the same name")
+
 	// It should be rewritten to use teststress.Stress.
 
 	ctx, collection := setup.Setup(t) // no providers there, we will create collection from the test
@@ -230,7 +234,7 @@ func TestCreateStressSameCollection(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, bson.D{{"_id", "foo_1"}, {"v", "bar"}}, doc)
 
-	// Until Mongo 6.0, attempts to create a collection that existed would return a NamespaceExists error.
+	// Until Mongo 7.0, attempts to create a collection that existed would return a NamespaceExists error.
 	require.Equal(t, int32(collNum), created.Load(), "All attempts to create a collection should succeed")
 
 	assert.Error(t, db.CreateCollection(ctx, collName, &options.CreateCollectionOptions{
