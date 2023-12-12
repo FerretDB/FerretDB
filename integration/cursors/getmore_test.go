@@ -580,10 +580,6 @@ func TestCursorsGetMoreBatchSizeCursor(t *testing.T) {
 }
 
 func TestCursorsGetMoreCommandConnection(t *testing.T) {
-	if !setup.IsMongoDB(t) {
-		t.Skip("add link to new issue")
-	}
-
 	// do not run tests in parallel to avoid using too many backend connections
 
 	// options are applied to create a client that uses single connection pool
