@@ -684,7 +684,7 @@ func TestUpdateCompatMultiFlagCommand(t *testing.T) {
 		"FalseEmptyDocument": {
 			update: bson.D{},
 			multi:  false,
-			skip:   "create in issue",
+			skip:   "https://github.com/FerretDB/FerretDB/issues/3843",
 		},
 	}
 
