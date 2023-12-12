@@ -27,7 +27,7 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
-func TestTailable(t *testing.T) {
+func TestCursorsTailable(t *testing.T) {
 	t.Parallel()
 
 	t.Run("NonCapped", func(t *testing.T) {
@@ -41,7 +41,7 @@ func TestTailable(t *testing.T) {
 				Code: 2,
 				Name: "BadValue",
 				Message: "error processing query: " +
-					"ns=TestTailable-NonCapped.TestTailable-NonCappedTree: $and\nSort: {}\nProj: {}\n " +
+					"ns=TestCursorsTailable-NonCapped.TestCursorsTailable-NonCappedTree: $and\nSort: {}\nProj: {}\n " +
 					"tailable cursor requested on non capped collection",
 			}
 			integration.AssertEqualAltCommandError(t, expected, "tailable cursor requested on non capped collection", err)
