@@ -653,7 +653,6 @@ func TestUpdateCompatArray(t *testing.T) {
 }
 
 func TestUpdateCompatMultiFlagCommand(t *testing.T) {
-	t.Skip("add link to new issue")
 	t.Parallel()
 
 	testCases := map[string]updateCommandCompatTestCase{
@@ -687,6 +686,7 @@ func TestUpdateCompatMultiFlagCommand(t *testing.T) {
 		"FalseEmptyDocument": {
 			update: bson.D{},
 			multi:  false,
+			skip:   "create in issue",
 		},
 	}
 

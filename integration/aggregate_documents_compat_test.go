@@ -1026,7 +1026,6 @@ func TestAggregateCompatLimit(t *testing.T) {
 }
 
 func TestAggregateCompatGroupSum(t *testing.T) {
-	t.Skip("add link")
 	t.Parallel()
 
 	providers := shareddata.AllProviders().

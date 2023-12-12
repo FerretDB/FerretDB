@@ -25,12 +25,10 @@ import (
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
-func TestDiffDBStatsScale(t *testing.T) {
-	if !setup.IsMongoDB(t) {
-		t.Skip("add link to new issue")
-	}
+func TestDiffDBStatsScale(tt *testing.T) {
+	tt.Parallel()
 
-	t.Parallel()
+	t := setup.FailsForFerretDB(tt, "fixme")
 
 	ctx, collection := setup.Setup(t)
 
@@ -88,7 +86,7 @@ func TestDiffDBStatsScale(t *testing.T) {
 
 	for name, tc := range testCases {
 		name, tc := name, tc
-		t.Run(name, func(tt *testing.T) {
+		tt.Run(name, func(tt *testing.T) {
 			tt.Parallel()
 
 			err := collection.Database().RunCommand(ctx, bson.D{{"dbStats", int32(1)}, {"scale", tc.scale}}).Err()
