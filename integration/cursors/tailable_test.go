@@ -111,6 +111,27 @@ func TestTailableGetMore(t *testing.T) {
 	nextBatch, nextID := GetNextBatch(t, res)
 	require.Equal(t, 0, nextBatch.Len())
 	assert.Equal(t, cursorID, nextID, res)
+
+	newDoc := bson.D{{"_id", "new"}}
+	_, err = collection.InsertOne(ctx, newDoc)
+	require.NoError(t, err)
+
+	err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
+	require.NoError(t, err)
+
+	nextBatch, nextID = GetNextBatch(t, res)
+
+	assert.Equal(t, cursorID, nextID, res)
+
+	require.Equal(t, 1, nextBatch.Len())
+	require.Equal(t, integration.ConvertDocument(t, newDoc), must.NotFail(nextBatch.Get(0)))
+
+	err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
+	require.NoError(t, err)
+
+	nextBatch, nextID = GetNextBatch(t, res)
+	require.Equal(t, 0, nextBatch.Len())
+	assert.Equal(t, cursorID, nextID, res)
 }
 
 func GetFirstBatch(t testing.TB, res bson.D) (*types.Array, any) {
