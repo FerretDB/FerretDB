@@ -19,6 +19,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
+
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
@@ -97,6 +100,22 @@ func New(opts *NewOpts) (*Handler, error) {
 
 	h.initCommands()
 
+	// FIXME: how to test
+	// docker compose exec -T mongodb mongosh --port=27017 --eval="db.createCollection('coll', {capped: true, size: 1000, max: 100}" cleanup
+	//
+	// for i in {1..100}; do
+	// docker compose exec -T mongodb mongosh --port=27017 --eval="db.coll.insert({data: 'document $i'})" cleanup
+	// done
+	go func() {
+		select {
+		case <-time.Tick(time.Minute):
+			if err := h.CleanupCappedCollections(context.Background(), 10); err != nil {
+				opts.L.Error("Failed to cleanup capped collections", zap.Error(err))
+			}
+			// fixme: send a signal top stop everything?
+		}
+	}()
+
 	return h, nil
 }
 
@@ -123,6 +142,10 @@ func (h *Handler) CleanupCappedCollections(ctx context.Context, toDrop uint8) er
 	if toDrop == 0 || toDrop > 100 {
 		return fmt.Errorf("invalid percent to drop: %d (must be in range [1, 100])", toDrop)
 	}
+
+	// fixme: conninfo must be set, otherwise backend panics
+	connInfo := conninfo.New()
+	ctx = conninfo.Ctx(ctx, connInfo)
 
 	dbs, err := h.b.ListDatabases(ctx, nil)
 	if err != nil {
