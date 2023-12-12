@@ -121,7 +121,7 @@ func TestRenameCollectionCompat(t *testing.T) {
 }
 
 func TestRenameCollectionCompatErrors(t *testing.T) {
-	t.Skip("fix")
+	// t.Skip("fix")
 
 	t.Parallel()
 
