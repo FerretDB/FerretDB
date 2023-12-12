@@ -95,7 +95,11 @@ var cli struct {
 
 		DisablePushdown bool `default:"false" help:"Experimental: disable pushdown."`
 		EnableOplog     bool `default:"false" help:"Experimental: enable capped collections, tailable cursors and OpLog." hidden:""`
-		EnableNewAuth   bool `default:"false" help:"Experimental: enable new authentication."                             hidden:""`
+		CappedCleanup   struct {
+			Interval   time.Duration `default:"1m" help:"Experimental: capped collections cleanup interval." hidden:""`
+			Percentage uint8         `default:"10" help:"Experimental: percentage of documents to cleanup." hidden:""`
+		} `prefix:"capped-cleanup-"`
+		EnableNewAuth bool `default:"false" help:"Experimental: enable new authentication."                             hidden:""`
 
 		//nolint:lll // for readability
 		Telemetry struct {
@@ -397,9 +401,11 @@ func run() {
 		MySQLURL: mySQLFlags.MySQLURL,
 
 		TestOpts: registry.TestOpts{
-			DisablePushdown: cli.Test.DisablePushdown,
-			EnableOplog:     cli.Test.EnableOplog,
-			EnableNewAuth:   cli.Test.EnableNewAuth,
+			DisablePushdown:         cli.Test.DisablePushdown,
+			EnableOplog:             cli.Test.EnableOplog,
+			CappedCleanupInterval:   cli.Test.CappedCleanup.Interval,
+			CappedCleanupPercentage: cli.Test.CappedCleanup.Percentage,
+			EnableNewAuth:           cli.Test.EnableNewAuth,
 		},
 	})
 	if err != nil {

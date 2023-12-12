@@ -18,16 +18,14 @@ package handler
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
-
-	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/decorators/oplog"
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -69,9 +67,11 @@ type NewOpts struct {
 	StateProvider *state.Provider
 
 	// test options
-	DisablePushdown bool
-	EnableOplog     bool
-	EnableNewAuth   bool
+	DisablePushdown         bool
+	EnableOplog             bool
+	CappedCleanupInterval   time.Duration
+	CappedCleanupPercentage uint8
+	EnableNewAuth           bool
 }
 
 // New returns a new handler.
@@ -100,21 +100,28 @@ func New(opts *NewOpts) (*Handler, error) {
 
 	h.initCommands()
 
-	// FIXME: how to test
-	// mongosh --port=27017 --eval="db.createCollection('coll', {capped: true, size: 1000, max: 100})" cleanup
-	//
-	// for in in (seq 100)
-	//   mongosh --port=27017 --eval="db.coll.insert({data: 'document $i'})" cleanup
-	// end
-	go func() {
-		select {
-		case <-time.Tick(time.Minute):
-			if err := h.CleanupCappedCollections(context.Background(), 10); err != nil {
-				opts.L.Error("Failed to cleanup capped collections", zap.Error(err))
+	if opts.EnableOplog {
+		// FIXME: how to test
+		// mongosh --port=27017 --eval="db.createCollection('coll', {capped: true, size: 1000, max: 100})" cleanup
+		//
+		// for in in (seq 100)
+		//   mongosh --port=27017 --eval="db.coll.insert({data: 'document $i'})" cleanup
+		// end
+		//
+		// Questions:
+		// - Run cleanup in embedded? (flag)
+		// - Run cleanup in tests? (flag)
+		go func() {
+			ticker := time.NewTicker(opts.CappedCleanupInterval)
+			for {
+				<-ticker.C
+				if err := h.CleanupCappedCollections(context.Background(), opts.CappedCleanupPercentage); err != nil {
+					opts.L.Error("Failed to cleanup capped collections", zap.Error(err))
+				}
+				// fixme: send a signal top stop everything?
 			}
-			// fixme: send a signal top stop everything?
-		}
-	}()
+		}()
+	}
 
 	return h, nil
 }
@@ -141,8 +148,8 @@ func (h *Handler) Collect(ch chan<- prometheus.Metric) {
 
 // CleanupCappedCollections drops the given percent of documents from all capped collections.
 func (h *Handler) CleanupCappedCollections(ctx context.Context, toDrop uint8) error {
-	if toDrop == 0 || toDrop > 100 {
-		return fmt.Errorf("invalid percent to drop: %d (must be in range [1, 100])", toDrop)
+	if toDrop > 100 {
+		toDrop = 100
 	}
 
 	// fixme: conninfo must be set, otherwise backend panics
