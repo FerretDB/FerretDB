@@ -69,21 +69,26 @@ func TestTailableGetMore(t *testing.T) {
 	_, err = collection.InsertMany(ctx, bsonArr)
 	require.NoError(t, err)
 
-	cmd := bson.D{
-		{"find", collection.Name()},
-		{"batchSize", 1},
-		{"tailable", true},
-	}
+	var cursorID any
 
-	var res bson.D
-	err = collection.Database().RunCommand(ctx, cmd).Decode(&res)
-	require.NoError(t, err)
+	t.Run("FirstBatch", func(t *testing.T) {
+		cmd := bson.D{
+			{"find", collection.Name()},
+			{"batchSize", 1},
+			{"tailable", true},
+		}
 
-	firstBatch, cursorID := GetFirstBatch(t, res)
+		var res bson.D
+		err = collection.Database().RunCommand(ctx, cmd).Decode(&res)
+		require.NoError(t, err)
 
-	expectedFirstBatch := integration.ConvertDocuments(t, arr[:1])
-	require.Equal(t, len(expectedFirstBatch), firstBatch.Len())
-	require.Equal(t, expectedFirstBatch[0], must.NotFail(firstBatch.Get(0)))
+		var firstBatch *types.Array
+		firstBatch, cursorID = GetFirstBatch(t, res)
+
+		expectedFirstBatch := integration.ConvertDocuments(t, arr[:1])
+		require.Equal(t, len(expectedFirstBatch), firstBatch.Len())
+		require.Equal(t, expectedFirstBatch[0], must.NotFail(firstBatch.Get(0)))
+	})
 
 	getMoreCmd := bson.D{
 		{"getMore", cursorID},
@@ -91,47 +96,58 @@ func TestTailableGetMore(t *testing.T) {
 		{"batchSize", 1},
 	}
 
-	for i := 0; i < 2; i++ {
+	t.Run("GetMore", func(t *testing.T) {
+		for i := 0; i < 2; i++ {
+			var res bson.D
+			err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
+			require.NoError(t, err)
+
+			nextBatch, nextID := GetNextBatch(t, res)
+			expectedNextBatch := integration.ConvertDocuments(t, arr[i+1:i+2])
+
+			assert.Equal(t, cursorID, nextID, res)
+
+			require.Equal(t, len(expectedNextBatch), nextBatch.Len())
+			require.Equal(t, expectedNextBatch[0], must.NotFail(nextBatch.Get(0)))
+		}
+	})
+
+	t.Run("GetMoreEmpty", func(t *testing.T) {
 		var res bson.D
 		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
 		require.NoError(t, err)
 
 		nextBatch, nextID := GetNextBatch(t, res)
-		expectedNextBatch := integration.ConvertDocuments(t, arr[i+1:i+2])
+		require.Equal(t, 0, nextBatch.Len())
+		assert.Equal(t, cursorID, nextID, res)
+	})
+
+	t.Run("GetMoreNewDoc", func(t *testing.T) {
+		newDoc := bson.D{{"_id", "new"}}
+		_, err = collection.InsertOne(ctx, newDoc)
+		require.NoError(t, err)
+
+		var res bson.D
+		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
+		require.NoError(t, err)
+
+		nextBatch, nextID := GetNextBatch(t, res)
 
 		assert.Equal(t, cursorID, nextID, res)
 
-		require.Equal(t, len(expectedNextBatch), nextBatch.Len())
-		require.Equal(t, expectedNextBatch[0], must.NotFail(nextBatch.Get(0)))
-	}
+		require.Equal(t, 1, nextBatch.Len())
+		require.Equal(t, integration.ConvertDocument(t, newDoc), must.NotFail(nextBatch.Get(0)))
+	})
 
-	err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
-	require.NoError(t, err)
+	t.Run("GetMoreEmptyAfterInsertion", func(t *testing.T) {
+		var res bson.D
+		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
+		require.NoError(t, err)
 
-	nextBatch, nextID := GetNextBatch(t, res)
-	require.Equal(t, 0, nextBatch.Len())
-	assert.Equal(t, cursorID, nextID, res)
-
-	newDoc := bson.D{{"_id", "new"}}
-	_, err = collection.InsertOne(ctx, newDoc)
-	require.NoError(t, err)
-
-	err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
-	require.NoError(t, err)
-
-	nextBatch, nextID = GetNextBatch(t, res)
-
-	assert.Equal(t, cursorID, nextID, res)
-
-	require.Equal(t, 1, nextBatch.Len())
-	require.Equal(t, integration.ConvertDocument(t, newDoc), must.NotFail(nextBatch.Get(0)))
-
-	err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
-	require.NoError(t, err)
-
-	nextBatch, nextID = GetNextBatch(t, res)
-	require.Equal(t, 0, nextBatch.Len())
-	assert.Equal(t, cursorID, nextID, res)
+		nextBatch, nextID := GetNextBatch(t, res)
+		require.Equal(t, 0, nextBatch.Len())
+		assert.Equal(t, cursorID, nextID, res)
+	})
 }
 
 func GetFirstBatch(t testing.TB, res bson.D) (*types.Array, any) {
