@@ -595,9 +595,7 @@ func TestUpdateCommandCompat(t *testing.T) {
 }
 
 func TestUpdateCompat(t *testing.T) {
-	if !setup.IsMongoDB(t) {
-		t.Skip("add link to new issue")
-	}
+	// fixmme: failsForFerretDB (only particular test cases)
 
 	t.Parallel()
 
