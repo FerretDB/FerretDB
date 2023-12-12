@@ -15,6 +15,7 @@
 package cursors
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -44,12 +45,81 @@ func TestTailableErrors(t *testing.T) {
 				Code: 2,
 				Name: "BadValue",
 				Message: "error processing query: " +
-					"ns=TestTailable-NonCapped.TestTailable-NonCappedTree: $and\nSort: {}\nProj: {}\n " +
+					"ns=TestTailableErrors-NonCapped.TestTailableErrors-NonCappedTree: $and\nSort: {}\nProj: {}\n " +
 					"tailable cursor requested on non capped collection",
 			}
 			integration.AssertEqualAltCommandError(t, expected, "tailable cursor requested on non capped collection", err)
 			assert.Nil(t, cursor)
 		}
+	})
+
+	t.Run("GetMoreDifferentCollection", func(t *testing.T) {
+		t.Parallel()
+		s := setup.SetupWithOpts(t, &setup.SetupOpts{})
+
+		db, ctx := s.Collection.Database(), s.Ctx
+
+		opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(10000)
+		err := db.CreateCollection(s.Ctx, t.Name(), opts)
+		require.NoError(t, err)
+
+		collection := db.Collection(t.Name())
+
+		bsonArr, arr := integration.GenerateDocuments(0, 3)
+
+		_, err = collection.InsertMany(ctx, bsonArr)
+		require.NoError(t, err)
+
+		var cursorID any
+
+		findCmd := bson.D{
+			{"find", collection.Name()},
+			{"batchSize", 1},
+			{"tailable", true},
+		}
+
+		var res bson.D
+		err = collection.Database().RunCommand(ctx, findCmd).Decode(&res)
+		require.NoError(t, err)
+
+		var firstBatch *types.Array
+		firstBatch, cursorID = GetFirstBatch(t, res)
+
+		expectedFirstBatch := integration.ConvertDocuments(t, arr[:1])
+		require.Equal(t, len(expectedFirstBatch), firstBatch.Len())
+		require.Equal(t, expectedFirstBatch[0], must.NotFail(firstBatch.Get(0)))
+
+		getMoreCmd := bson.D{
+			{"getMore", cursorID},
+			{"collection", "different-collection"},
+			{"batchSize", 1},
+		}
+
+		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
+
+		expected := mongo.CommandError{
+			Code: 13,
+			Name: "Unauthorized",
+			Message: "Requested getMore on namespace 'TestTailableErrors-GetMoreDifferentCollection.different-collection', " +
+				"but cursor belongs to a different namespace " +
+				"TestTailableErrors-GetMoreDifferentCollection.TestTailableErrors/GetMoreDifferentCollection",
+		}
+		integration.AssertEqualCommandError(t, expected, err)
+
+		// Check if cursor is not closed after the error
+		err = collection.Database().RunCommand(ctx, bson.D{
+			{"getMore", cursorID},
+			{"collection", collection.Name()},
+			{"batchSize", 1},
+		}).Decode(&res)
+
+		require.NoError(t, err)
+
+		nextBatch, nextID := GetNextBatch(t, res)
+		require.Equal(t, cursorID, nextID)
+
+		doc, _ := nextBatch.Get(0)
+		require.NotNil(t, doc)
 	})
 }
 
@@ -148,6 +218,24 @@ func TestTailableGetMore(t *testing.T) {
 		require.Equal(t, 0, nextBatch.Len())
 		assert.Equal(t, cursorID, nextID, res)
 	})
+}
+
+func GetMore(t *testing.T, ctx context.Context, collection *mongo.Collection, cursorID any) {
+	t.Helper()
+
+	getMoreCmd := bson.D{
+		{"getMore", cursorID},
+		{"collection", collection.Name()},
+		{"batchSize", 1},
+	}
+
+	var res bson.D
+	err := collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
+	require.NoError(t, err)
+
+	nextBatch, nextID := GetNextBatch(t, res)
+	require.Equal(t, 0, nextBatch.Len())
+	assert.Equal(t, cursorID, nextID, res)
 }
 
 func GetFirstBatch(t testing.TB, res bson.D) (*types.Array, any) {
