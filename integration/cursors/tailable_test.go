@@ -15,7 +15,6 @@
 package cursors
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -220,22 +219,109 @@ func TestTailableGetMore(t *testing.T) {
 	})
 }
 
-func GetMore(t *testing.T, ctx context.Context, collection *mongo.Collection, cursorID any) {
-	t.Helper()
+func TestTailableGetMoreTwoCursorsSameCollection(t *testing.T) {
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{})
 
-	getMoreCmd := bson.D{
-		{"getMore", cursorID},
+	db, ctx := s.Collection.Database(), s.Ctx
+
+	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(10000)
+	err := db.CreateCollection(s.Ctx, t.Name(), opts)
+	require.NoError(t, err)
+
+	collection := db.Collection(t.Name())
+
+	bsonArr, arr := integration.GenerateDocuments(0, 50)
+
+	_, err = collection.InsertMany(ctx, bsonArr)
+	require.NoError(t, err)
+
+	var cursorID1, cursorID2 any
+
+	t.Run("FirstBatch", func(t *testing.T) {
+		cmd := bson.D{
+			{"find", collection.Name()},
+			{"batchSize", 1},
+			{"tailable", true},
+		}
+
+		var res bson.D
+
+		err = collection.Database().RunCommand(ctx, cmd).Decode(&res)
+		require.NoError(t, err)
+
+		var firstBatch1 *types.Array
+		firstBatch1, cursorID1 = GetFirstBatch(t, res)
+
+		err = collection.Database().RunCommand(ctx, cmd).Decode(&res)
+		require.NoError(t, err)
+
+		var firstBatch2 *types.Array
+		firstBatch2, cursorID2 = GetFirstBatch(t, res)
+
+		expectedFirstBatch := integration.ConvertDocuments(t, arr[:1])
+
+		require.Equal(t, len(expectedFirstBatch), firstBatch1.Len())
+		require.Equal(t, expectedFirstBatch[0], must.NotFail(firstBatch1.Get(0)))
+
+		require.Equal(t, len(expectedFirstBatch), firstBatch2.Len())
+		require.Equal(t, expectedFirstBatch[0], must.NotFail(firstBatch2.Get(0)))
+	})
+
+	getMoreCmd1 := bson.D{
+		{"getMore", cursorID1},
 		{"collection", collection.Name()},
 		{"batchSize", 1},
 	}
 
-	var res bson.D
-	err := collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
-	require.NoError(t, err)
+	getMoreCmd2 := bson.D{
+		{"getMore", cursorID2},
+		{"collection", collection.Name()},
+		{"batchSize", 1},
+	}
 
-	nextBatch, nextID := GetNextBatch(t, res)
-	require.Equal(t, 0, nextBatch.Len())
-	assert.Equal(t, cursorID, nextID, res)
+	t.Run("GetMore", func(t *testing.T) {
+		for i := 0; i < 49; i++ {
+			var res bson.D
+			err = collection.Database().RunCommand(ctx, getMoreCmd1).Decode(&res)
+			require.NoError(t, err)
+
+			nextBatch1, nextID1 := GetNextBatch(t, res)
+
+			err = collection.Database().RunCommand(ctx, getMoreCmd2).Decode(&res)
+			require.NoError(t, err)
+
+			nextBatch2, nextID2 := GetNextBatch(t, res)
+
+			expectedNextBatch := integration.ConvertDocuments(t, arr[i+1:i+2])
+
+			assert.Equal(t, cursorID1, nextID1, res)
+			require.Equal(t, len(expectedNextBatch), nextBatch1.Len())
+			require.Equal(t, expectedNextBatch[0], must.NotFail(nextBatch1.Get(0)))
+
+			assert.Equal(t, cursorID2, nextID2, res)
+			require.Equal(t, len(expectedNextBatch), nextBatch2.Len())
+			require.Equal(t, expectedNextBatch[0], must.NotFail(nextBatch2.Get(0)))
+		}
+	})
+
+	t.Run("GetMoreEmpty", func(t *testing.T) {
+		var res bson.D
+		err = collection.Database().RunCommand(ctx, getMoreCmd1).Decode(&res)
+		require.NoError(t, err)
+
+		nextBatch1, nextID1 := GetNextBatch(t, res)
+
+		err = collection.Database().RunCommand(ctx, getMoreCmd2).Decode(&res)
+		require.NoError(t, err)
+
+		nextBatch2, nextID2 := GetNextBatch(t, res)
+
+		require.Equal(t, 0, nextBatch1.Len())
+		assert.Equal(t, cursorID1, nextID1, res)
+
+		require.Equal(t, 0, nextBatch2.Len())
+		assert.Equal(t, cursorID2, nextID2, res)
+	})
 }
 
 func GetFirstBatch(t testing.TB, res bson.D) (*types.Array, any) {
