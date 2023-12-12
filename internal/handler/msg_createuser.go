@@ -17,6 +17,7 @@ package handler
 import (
 	"context"
 
+	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -38,7 +39,7 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 		return nil, err
 	}
 
-	password, err := common.GetRequiredParam[string](document, "pwd")
+	_, err = common.GetRequiredParam[string](document, "pwd")
 	if err != nil {
 		return nil, err
 	}
@@ -50,8 +51,32 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 		return nil, err
 	}
 
-	_ = username
-	_ = password
+	dbName, err := common.GetRequiredParam[string](document, "$db")
+	if err != nil {
+		return nil, err
+	}
+
+	db, err := h.b.Database(dbName)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	collection, err := db.Collection("system.users")
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	_, err = collection.InsertAll(ctx, &backends.InsertAllParams{
+		Docs: []*types.Document{must.NotFail(types.NewDocument(
+			"createdUser", username,
+			"roles", []string{},
+			"pwd", "password", // TODO: hash the password.
+		)),
+		},
+	})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/1491
 	var reply wire.OpMsg
