@@ -18,7 +18,9 @@ import (
 	"context"
 
 	"github.com/FerretDB/FerretDB/internal/handler/common"
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -29,6 +31,35 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 		return nil, lazyerrors.Error(err)
 	}
 
+	// https://www.mongodb.com/docs/manual/reference/command/createUser/
+
+	username, err := common.GetRequiredParam[string](document, document.Command())
+	if err != nil {
+		return nil, err
+	}
+
+	password, err := common.GetRequiredParam[string](document, "pwd")
+	if err != nil {
+		return nil, err
+	}
+
+	if err := common.UnimplementedNonDefault(document, "roles", func(v any) bool {
+		roles, ok := v.(*types.Array)
+		return ok && roles.Len() == 0
+	}); err != nil {
+		return nil, err
+	}
+
+	_ = username
+	_ = password
+
 	// TODO https://github.com/FerretDB/FerretDB/issues/1491
-	return nil, common.Unimplemented(document, document.Command())
+	var reply wire.OpMsg
+	must.NoError(reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"ok", float64(1),
+		))},
+	}))
+
+	return &reply, nil
 }

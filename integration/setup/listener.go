@@ -181,7 +181,7 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 		TestOpts: registry.TestOpts{
 			DisablePushdown: *disablePushdownF,
 			EnableOplog:     true,
-			EnableNewAuth:   false,
+			EnableNewAuth:   *enableNewAuthF,
 		},
 	}
 	h, closeBackend, err := registry.NewHandler(handler, handlerOpts)

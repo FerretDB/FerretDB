@@ -19,6 +19,10 @@ on:
         required: false
         type: boolean
         default: false
+      enable_new_auth:
+        required: false
+        type: boolean
+        default: false
       checkout_ref:
         required: false
         type: string
@@ -88,13 +92,14 @@ jobs:
       - name: >
           Run ${{ inputs.task }} tests
           (${{ inputs.shard_index }}/${{ inputs.shard_total }},
-          pushdown=${{ !inputs.disable_pushdown }})
+          pushdown=${{ !inputs.disable_pushdown }}, new_auth=${{ inputs.enable_new_auth }})
         run: >
           bin/task test-integration-${{ inputs.task }}
           SHARD_INDEX=${{ inputs.shard_index }}
           SHARD_TOTAL=${{ inputs.shard_total }}
           TEST_TIMEOUT=15m
           DISABLE_PUSHDOWN=${{ inputs.disable_pushdown }}
+          ENABLE_NEW_AUTH=${{ inputs.enable_new_auth }}
         env:
           GOFLAGS: ${{ runner.debug == '1' && '-v' || '' }}
           FERRETDB_HANA_URL: ${{ secrets.FERRETDB_HANA_URL }}
@@ -112,7 +117,7 @@ jobs:
         with:
           token: 22159d7c-856d-4fe9-8fdb-5d9ecff35514
           files: ./integration/integration-${{ inputs.task }}.txt
-          flags: integration,${{ inputs.task }}-${{ inputs.shard_index }},filter-${{ !inputs.disable_pushdown }}
+          flags: integration,${{ inputs.task }}-${{ inputs.shard_index }},filter-${{ !inputs.disable_pushdown }},auth-${{ inputs.enable_new_auth }}
           fail_ci_if_error: true
           verbose: true
 
@@ -121,7 +126,7 @@ jobs:
         uses: coverallsapp/github-action@v2
         with:
           file: ./integration/integration-${{ inputs.task }}.txt
-          flag-name: integration-${{ inputs.task }}-${{ inputs.shard_index }}-filter-${{ !inputs.disable_pushdown }}
+          flag-name: integration-${{ inputs.task }}-${{ inputs.shard_index }}-filter-${{ !inputs.disable_pushdown }}-auth-${{ inputs.enable_new_auth }}
           parallel: true
 
       # we don't want them on CI

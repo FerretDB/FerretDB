@@ -9,6 +9,7 @@ vars:
   SHARD_INDEX: 1
   SHARD_TOTAL: 1
   DISABLE_PUSHDOWN: false
+  ENABLE_NEW_AUTH: false
   TEST_RUN: ""
   TEST_TIMEOUT: 35m
   BENCH_TIME: 5s
@@ -217,6 +218,7 @@ tasks:
         -postgresql-url='postgres://username@127.0.0.1:5432/ferretdb?search_path='
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem&replicaSet=mongodb-rs'
         -disable-pushdown={{.DISABLE_PUSHDOWN}}
+        -enable-new-auth={{.ENABLE_NEW_AUTH}}
 
   test-integration-sqlite:
     desc: "Run integration tests for `sqlite` backend"
@@ -242,6 +244,7 @@ tasks:
         -target-tls
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem&replicaSet=mongodb-rs'
         -disable-pushdown={{.DISABLE_PUSHDOWN}}
+        -enable-new-auth={{.ENABLE_NEW_AUTH}}
 
   test-integration-mysql:
     desc: "Run integration tests for `mysql` handler"
@@ -267,6 +270,7 @@ tasks:
         -mysql-url='mysql://username:password@127.0.0.1:3306/ferretdb'
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem&replicaSet=mongodb-rs'
         -disable-pushdown={{.DISABLE_PUSHDOWN}}
+        -enable-new-auth={{.ENABLE_NEW_AUTH}}
 
   test-integration-hana:
     desc: "Run integration tests for `hana` handler"
@@ -292,6 +296,7 @@ tasks:
         -hana-url=$FERRETDB_HANA_URL
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem&replicaSet=mongodb-rs'
         -disable-pushdown={{.DISABLE_PUSHDOWN}}
+        -enable-new-auth={{.ENABLE_NEW_AUTH}}
 
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"
