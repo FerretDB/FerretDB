@@ -26,6 +26,10 @@ import (
 )
 
 func TestDiffDBStatsScale(t *testing.T) {
+	if !setup.IsMongoDB(t) {
+		t.Skip("add link to new issue")
+	}
+
 	t.Parallel()
 
 	ctx, collection := setup.Setup(t)

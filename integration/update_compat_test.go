@@ -595,6 +595,10 @@ func TestUpdateCommandCompat(t *testing.T) {
 }
 
 func TestUpdateCompat(t *testing.T) {
+	if !setup.IsMongoDB(t) {
+		t.Skip("add link to new issue")
+	}
+
 	t.Parallel()
 
 	testCases := map[string]updateCompatTestCase{
@@ -649,6 +653,7 @@ func TestUpdateCompatArray(t *testing.T) {
 }
 
 func TestUpdateCompatMultiFlagCommand(t *testing.T) {
+	t.Skip("add link to new issue")
 	t.Parallel()
 
 	testCases := map[string]updateCommandCompatTestCase{

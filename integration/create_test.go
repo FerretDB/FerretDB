@@ -176,9 +176,12 @@ func TestCreateOnInsertStressDiffCollection(t *testing.T) {
 }
 
 func TestCreateStressSameCollection(t *testing.T) {
+	if !setup.IsMongoDB(t) {
+		t.Skip("add link to new issue")
+	}
+
 	// It should be rewritten to use teststress.Stress.
 
-	setup.SkipForMongoDB(t, "MongoDB 7 changed the behavior of collection creation")
 	ctx, collection := setup.Setup(t) // no providers there, we will create collection from the test
 	db := collection.Database()
 

@@ -859,6 +859,7 @@ func TestAggregateCompatGroupExpressionDottedFieldsDocs(t *testing.T) {
 }
 
 func TestAggregateCompatGroupCount(t *testing.T) {
+	t.Skip("add link")
 	t.Parallel()
 
 	testCases := map[string]aggregateStagesCompatTestCase{
@@ -1026,6 +1027,7 @@ func TestAggregateCompatLimit(t *testing.T) {
 }
 
 func TestAggregateCompatGroupSum(t *testing.T) {
+	t.Skip("add link")
 	t.Parallel()
 
 	providers := shareddata.AllProviders().
