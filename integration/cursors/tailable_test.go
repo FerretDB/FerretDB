@@ -104,6 +104,13 @@ func TestTailableGetMore(t *testing.T) {
 		require.Equal(t, len(expectedNextBatch), nextBatch.Len())
 		require.Equal(t, expectedNextBatch[0], must.NotFail(nextBatch.Get(0)))
 	}
+
+	err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
+	require.NoError(t, err)
+
+	nextBatch, nextID := GetNextBatch(t, res)
+	require.Equal(t, 0, nextBatch.Len())
+	assert.Equal(t, cursorID, nextID, res)
 }
 
 func GetFirstBatch(t testing.TB, res bson.D) (*types.Array, any) {
