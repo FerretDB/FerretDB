@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -25,9 +26,11 @@ import (
 	"github.com/FerretDB/FerretDB/integration"
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-func TestTailable(t *testing.T) {
+func TestTailableErrors(t *testing.T) {
 	t.Parallel()
 
 	t.Run("NonCapped", func(t *testing.T) {
@@ -48,4 +51,59 @@ func TestTailable(t *testing.T) {
 			assert.Nil(t, cursor)
 		}
 	})
+}
+
+func TestTailableGetMore(t *testing.T) {
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{})
+
+	db, ctx := s.Collection.Database(), s.Ctx
+
+	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(10000)
+	err := db.CreateCollection(s.Ctx, t.Name(), opts)
+	require.NoError(t, err)
+
+	collection := db.Collection(t.Name())
+
+	bsonArr, arr := integration.GenerateDocuments(0, 2)
+
+	_, err = collection.InsertMany(ctx, bsonArr)
+	require.NoError(t, err)
+
+	cmd := bson.D{
+		{"find", collection.Name()},
+		{"batchSize", 1},
+	}
+
+	var res bson.D
+	err = collection.Database().RunCommand(ctx, cmd).Decode(&res)
+	require.NoError(t, err)
+
+	firstBatch := GetFirstBatch(t, res)
+
+	expectedFirstBatch := integration.ConvertDocuments(t, arr[:1])
+	require.Equal(t, len(expectedFirstBatch), firstBatch.Len())
+	require.Equal(t, expectedFirstBatch[0], must.NotFail(firstBatch.Get(0)))
+}
+
+func GetFirstBatch(t testing.TB, res bson.D) *types.Array {
+	t.Helper()
+
+	doc := integration.ConvertDocument(t, res)
+
+	v, _ := doc.Get("cursor")
+	require.NotNil(t, v)
+
+	cursor, ok := v.(*types.Document)
+	require.True(t, ok)
+
+	cursorID, _ := cursor.Get("id")
+	assert.NotNil(t, cursorID)
+
+	v, _ = cursor.Get("firstBatch")
+	require.NotNil(t, v)
+
+	firstBatch, ok := v.(*types.Array)
+	require.True(t, ok)
+
+	return firstBatch
 }
