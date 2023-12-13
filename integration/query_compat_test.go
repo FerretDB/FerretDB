@@ -290,7 +290,6 @@ func TestQueryCappedCollectionCompat(t *testing.T) {
 			sortPushdown: noPushdown,
 		},
 		"SortNaturalMultipleSorts": {
-			skip:         "https://github.com/FerretDB/FerretDB/issues/3638",
 			sort:         bson.D{{"$natural", int32(1)}, {"v", int32(1)}},
 			sortPushdown: noPushdown,
 		},

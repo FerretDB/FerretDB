@@ -103,6 +103,13 @@ func ValidateSortDocument(sortDoc *types.Document) (*types.Document, error) {
 
 		switch {
 		case sortKey == "$natural":
+			if sortDoc.Len() != 1 {
+				return nil, handlererrors.NewCommandErrorMsgWithArgument(
+					handlererrors.ErrBadValue,
+					fmt.Sprintf(`Cannot include '$natural' in compound sort: %v`, types.FormatAnyValue(sortDoc)),
+					"sort",
+				)
+			}
 		default:
 			// TODO https://github.com/FerretDB/FerretDB/issues/3127
 			for _, field := range fields {

@@ -429,5 +429,5 @@ Besides that, it also includes how to set up the PostgreSQL backend and connect 
 As a bonus for those interested in experimenting with the SQLite backend, the tutorial includes a basic section on how to set it up.
 You can also check out [how to start FerretDB locally on Docker](https://blog.ferretdb.io/how-to-start-ferretdb-locally-with-docker/).
 
-As an open source project, FerretDB welcomes all [contributions](https://docs.ferretdb.io/contributing/).
+As an open source project, FerretDB welcomes all [contributions](https://docs.ferretdb.io/contributing/how-to-contribute/).
 You can contribute to the development of FerretDB by contributing to code and documentation, submitting bug reports and feature requests, and even a writing a blog post, so if you would like to publish an article on FerretDB, please contact us on [any of our community channels](https://docs.ferretdb.io/#community).
