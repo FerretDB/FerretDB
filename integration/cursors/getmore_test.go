@@ -33,7 +33,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-func TestGetMoreCommand(t *testing.T) {
+func TestCursorsGetMoreCommand(t *testing.T) {
 	// do not run tests in parallel to avoid using too many backend connections
 
 	// options are applied to create a client that uses single connection pool
@@ -64,7 +64,6 @@ func TestGetMoreCommand(t *testing.T) {
 		nextBatch  []*types.Document   // optional, expected getMore nextBatch
 		err        *mongo.CommandError // optional, expected error from MongoDB
 		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
-		skip       string              // optional, skip test with a specified reason
 	}{
 		"Int": {
 			firstBatchSize:   1,
@@ -243,8 +242,8 @@ func TestGetMoreCommand(t *testing.T) {
 			err: &mongo.CommandError{
 				Code: 13,
 				Name: "Unauthorized",
-				Message: "Requested getMore on namespace 'TestGetMoreCommand.invalid'," +
-					" but cursor belongs to a different namespace TestGetMoreCommand.TestGetMoreCommand",
+				Message: "Requested getMore on namespace 'TestCursorsGetMoreCommand.invalid'," +
+					" but cursor belongs to a different namespace TestCursorsGetMoreCommand.TestCursorsGetMoreCommand",
 			},
 		},
 		"EmptyCollectionName": {
@@ -300,10 +299,6 @@ func TestGetMoreCommand(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
-
 			// Do not run subtests in t.Parallel() to eliminate the occurrence
 			// of session error.
 			// Supporting session would help us understand fix it
@@ -440,7 +435,7 @@ func TestGetMoreCommand(t *testing.T) {
 	}
 }
 
-func TestGetMoreBatchSizeCursor(t *testing.T) {
+func TestCursorsGetMoreBatchSizeCursor(t *testing.T) {
 	// do not run tests in parallel to avoid using too many backend connections
 
 	ctx, collection := setup.Setup(t)
@@ -584,7 +579,7 @@ func TestGetMoreBatchSizeCursor(t *testing.T) {
 	})
 }
 
-func TestGetMoreCommandConnection(t *testing.T) {
+func TestCursorsGetMoreCommandConnection(t *testing.T) {
 	// do not run tests in parallel to avoid using too many backend connections
 
 	// options are applied to create a client that uses single connection pool
@@ -697,7 +692,7 @@ func TestGetMoreCommandConnection(t *testing.T) {
 	})
 }
 
-func TestGetMoreCommandMaxTimeMSErrors(t *testing.T) {
+func TestCursorsGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 	// do not run tests in parallel to avoid using too many backend connections
 
 	ctx, collection := setup.Setup(t)
@@ -707,7 +702,6 @@ func TestGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 
 		err        *mongo.CommandError // required, expected error from MongoDB
 		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
-		skip       string              // optional, skip test with a specified reason
 	}{
 		"NegativeLong": {
 			command: bson.D{
@@ -863,10 +857,6 @@ func TestGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
-
 			t.Parallel()
 
 			require.NotNil(t, tc.err, "err must not be nil")
@@ -879,7 +869,7 @@ func TestGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 	}
 }
 
-func TestGetMoreCommandMaxTimeMSCursor(t *testing.T) {
+func TestCursorsGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 	// do not run tests in parallel to avoid using too many backend connections
 
 	// options are applied to create a client that uses single connection pool

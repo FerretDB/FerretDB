@@ -35,7 +35,7 @@ If your package manager doesn't provide it yet,
 please install it from [go.dev](https://go.dev/dl/).
 
 You will also need `git` installed; the version provided by your package manager should do.
-On Windows, the simplest way to install it might be <https://gitforwindows.org>.
+On Windows, the simplest way to install it might be https://gitforwindows.org.
 
 Finally, you will also need [git-lfs](https://git-lfs.github.com) installed and configured (`git lfs install`).
 
@@ -229,13 +229,13 @@ and real objects over mocks.
 (You might disagree with our terminology for "unit" and "integration" tests;
 let's not fight over it.)
 
-We have an additional integration testing system in another repository: <https://github.com/FerretDB/dance>.
+We have an additional integration testing system in another repository: https://github.com/FerretDB/dance.
 
 #### Observability in tests
 
 Integration tests start a debug handler with pprof profiles and execution traces on a random port
 (to allow running multiple test configurations in parallel).
-They also send telemetry traces to the local Jaeger instance that can be accessed at <http://127.0.0.1:16686/>.
+They also send telemetry traces to the local Jaeger instance that can be accessed at http://127.0.0.1:16686/.
 
 ### Code style and conventions
 
@@ -252,8 +252,8 @@ and some other pages such as [Spelling](https://github.com/golang/go/wiki/Spelli
 Some of our idiosyncrasies:
 
 1. We use type switches over BSON types in many places in our code.
-   The order of `case`s follows this order: <https://pkg.go.dev/github.com/FerretDB/FerretDB/internal/types#hdr-Mapping>
-   It may seem random, but it is only pseudo-random and follows BSON spec: <https://bsonspec.org/spec.html>
+   The order of `case`s follows this order: https://pkg.go.dev/github.com/FerretDB/FerretDB/internal/types#hdr-Mapping
+   It may seem random, but it is only pseudo-random and follows BSON spec: https://bsonspec.org/spec.html
 2. We generally pass and return `struct`s by pointers.
    There are some exceptions like `types.Path` that have value semantics, but when in doubt – use pointers.
 3. Code comments:

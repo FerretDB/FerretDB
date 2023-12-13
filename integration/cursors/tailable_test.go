@@ -30,7 +30,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-func TestTailableErrors(t *testing.T) {
+func TestCursorsTailableErrors(t *testing.T) {
 	t.Parallel()
 
 	t.Run("NonCapped", func(t *testing.T) {
@@ -44,7 +44,7 @@ func TestTailableErrors(t *testing.T) {
 				Code: 2,
 				Name: "BadValue",
 				Message: "error processing query: " +
-					"ns=TestTailableErrors-NonCapped.TestTailableErrors-NonCappedTree: $and\nSort: {}\nProj: {}\n " +
+					"ns=TestCursorsTailableErrors-NonCapped.TestCursorsTailableErrors-NonCappedTree: $and\nSort: {}\nProj: {}\n " +
 					"tailable cursor requested on non capped collection",
 			}
 			integration.AssertEqualAltCommandError(t, expected, "tailable cursor requested on non capped collection", err)
@@ -99,7 +99,7 @@ func TestTailableErrors(t *testing.T) {
 		expected := mongo.CommandError{
 			Code: 13,
 			Name: "Unauthorized",
-			Message: "Requested getMore on namespace 'TestTailableErrors-GetMoreDifferentCollection.different-collection', " +
+			Message: "Requested getMore on namespace 'TestCursorsTailableErrors-GetMoreDifferentCollection.different-collection', " +
 				"but cursor belongs to a different namespace " +
 				"TestTailableErrors-GetMoreDifferentCollection.TestTailableErrors/GetMoreDifferentCollection",
 		}
@@ -122,7 +122,7 @@ func TestTailableErrors(t *testing.T) {
 	})
 }
 
-func TestTailableGetMore(t *testing.T) {
+func TestCursorsTailable(t *testing.T) {
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{})
 
 	db, ctx := s.Collection.Database(), s.Ctx
@@ -219,7 +219,7 @@ func TestTailableGetMore(t *testing.T) {
 	})
 }
 
-func TestTailableGetMoreTwoCursorsSameCollection(t *testing.T) {
+func TestCursorsTailableTwoCursorsSameCollection(t *testing.T) {
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{})
 
 	db, ctx := s.Collection.Database(), s.Ctx
