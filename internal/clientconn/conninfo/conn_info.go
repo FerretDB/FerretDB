@@ -28,12 +28,14 @@ var connInfoKey = contextKey{}
 
 // ConnInfo represents connection info.
 type ConnInfo struct {
-	PeerAddr string
+	// the order of fields is weird to make the struct smaller due to alignment
 
+	PeerAddr     string
+	username     string // protected by rw
+	password     string // protected by rw
+	metadataRecv bool   // protected by rw
+	BypassAuth   bool
 	rw           sync.RWMutex
-	username     string
-	password     string
-	metadataRecv bool
 }
 
 // New returns a new ConnInfo.
