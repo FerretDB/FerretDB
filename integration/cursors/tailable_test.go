@@ -317,7 +317,6 @@ func TestCursorsTailableTwoCursorsSameCollection(t *testing.T) {
 	}
 
 	for i := 0; i < 49; i++ {
-		var res bson.D
 		err = collection.Database().RunCommand(ctx, getMoreCmd1).Decode(&res)
 		require.NoError(tt, err)
 
