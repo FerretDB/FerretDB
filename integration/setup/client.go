@@ -20,6 +20,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 	"go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo"
 	"go.opentelemetry.io/otel"
 
@@ -30,7 +31,7 @@ import (
 
 // makeClient returns new client for the given working MongoDB URI.
 func makeClient(ctx context.Context, uri string) (*mongo.Client, error) {
-	clientOpts := options.Client().ApplyURI(uri)
+	clientOpts := options.Client().ApplyURI(uri).SetWriteConcern(writeconcern.W1())
 
 	clientOpts.SetMonitor(otelmongo.NewMonitor())
 

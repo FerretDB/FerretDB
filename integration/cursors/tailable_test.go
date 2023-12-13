@@ -357,5 +357,77 @@ func TestCursorsTailableTwoCursorsSameCollection(t *testing.T) {
 }
 
 func TestTailableStress(t *testing.T) {
-	teststress.Stress()
+	t.Parallel()
+
+	var tt testtb.TB = t
+	if !setup.IsMongoDB(tt) {
+		tt = testfail.Expected(t, "https://github.com/FerretDB/FerretDB/issues/2283")
+	}
+
+	s := setup.SetupWithOpts(tt, nil)
+
+	db, ctx := s.Collection.Database(), s.Ctx
+
+	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(100000)
+	err := db.CreateCollection(s.Ctx, tt.Name(), opts)
+	require.NoError(tt, err)
+
+	collection := db.Collection(tt.Name())
+
+	bsonArr, _ := integration.GenerateDocuments(0, 110)
+
+	_, err = collection.InsertMany(ctx, bsonArr)
+	require.NoError(tt, err)
+
+	teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
+		findCmd := bson.D{
+			{"find", collection.Name()},
+			{"batchSize", 1},
+			{"tailable", true},
+		}
+
+		var res bson.D
+		err := db.RunCommand(ctx, findCmd).Decode(&res)
+		require.NoError(t, err)
+
+		firstBatch, cursorID := getFirstBatch(t, res)
+		require.Equal(t, 1, firstBatch.Len())
+
+		t.Cleanup(func() {
+			killCursorCmd := bson.D{
+				{"killCursors", collection.Name()},
+				{"cursors", bson.A{cursorID}},
+			}
+
+			err = db.RunCommand(ctx, killCursorCmd).Decode(&res)
+			require.NoError(t, err)
+		})
+
+		getMoreCmd := bson.D{
+			{"getMore", cursorID},
+			{"collection", collection.Name()},
+			{"batchSize", 1},
+		}
+
+		ready <- struct{}{}
+		<-start
+
+		for i := 1; i < 110; i++ {
+			var getMoreRes bson.D
+			err := db.RunCommand(ctx, getMoreCmd).Decode(&getMoreRes)
+			require.NoError(t, err)
+
+			nextBatch, nextID := getNextBatch(t, getMoreRes)
+			require.Equal(t, cursorID, nextID)
+			require.Equal(t, 1, nextBatch.Len())
+		}
+
+		err = db.RunCommand(ctx, getMoreCmd).Decode(&res)
+		require.NoError(t, err)
+
+		nextBatch, nextID := getNextBatch(t, res)
+
+		require.Equal(t, cursorID, nextID)
+		require.Equal(t, 0, nextBatch.Len())
+	})
 }
