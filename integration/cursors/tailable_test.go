@@ -28,6 +28,7 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testfail"
 )
 
 func TestCursorsTailableErrors(t *testing.T) {
@@ -56,7 +57,7 @@ func TestCursorsTailableErrors(t *testing.T) {
 		t.Parallel()
 
 		if !setup.IsMongoDB(t) {
-			t.Skip("https://github.com/FerretDB/FerretDB/issues/2283")
+			testfail.Expected(t, "https://github.com/FerretDB/FerretDB/issues/2283")
 		}
 
 		s := setup.SetupWithOpts(t, nil)
@@ -131,7 +132,7 @@ func TestCursorsTailable(t *testing.T) {
 	t.Parallel()
 
 	if !setup.IsMongoDB(t) {
-		t.Skip("https://github.com/FerretDB/FerretDB/issues/2283")
+		testfail.Expected(t, "https://github.com/FerretDB/FerretDB/issues/2283")
 	}
 
 	s := setup.SetupWithOpts(t, nil)
@@ -234,7 +235,7 @@ func TestCursorsTailableTwoCursorsSameCollection(t *testing.T) {
 	t.Parallel()
 
 	if !setup.IsMongoDB(t) {
-		t.Skip("https://github.com/FerretDB/FerretDB/issues/2283")
+		testfail.Expected(t, "https://github.com/FerretDB/FerretDB/issues/2283")
 	}
 
 	s := setup.SetupWithOpts(t, nil)
