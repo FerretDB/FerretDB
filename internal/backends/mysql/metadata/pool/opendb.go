@@ -30,7 +30,7 @@ import (
 // openDB creates a pool of connections to MySQL database
 // and check that it works (authentication passes, settings are okay).
 func openDB(uri string, l *zap.Logger, sp *state.Provider) (*fsql.DB, error) {
-	mysqlURL, err := ParseURI(uri)
+	mysqlURL, err := parseURI(uri)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
