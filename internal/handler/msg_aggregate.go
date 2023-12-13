@@ -286,14 +286,23 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		}
 
 		var cList *backends.ListCollectionsResult
-
-		if cList, err = db.ListCollections(ctx, nil); err != nil {
+		// TODO https://github.com/FerretDB/FerretDB/issues/3601
+		collectionParam := backends.ListCollectionsParams{Name: cName}
+		if cList, err = db.ListCollections(ctx, &collectionParam); err != nil {
 			return nil, err
 		}
 
-		var cInfo backends.CollectionInfo
+		if len(cList.Collections) == 0 {
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrNamespaceNotFound,
+				fmt.Sprintf("collection not found: %s", cName),
+				document.Command(),
+			)
+		}
 
-		// TODO https://github.com/FerretDB/FerretDB/issues/3601
+		var cInfo backends.CollectionInfo
+		cInfo = cList.Collections[0]
+
 		if i, found := slices.BinarySearchFunc(cList.Collections, cName, func(e backends.CollectionInfo, t string) int {
 			return cmp.Compare(e.Name, t)
 		}); found {
@@ -464,17 +473,21 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 		}
 
 		var cList *backends.ListCollectionsResult
-
-		if cList, err = p.db.ListCollections(ctx, new(backends.ListCollectionsParams)); err != nil {
+		collectionParam := backends.ListCollectionsParams{Name: p.cName}
+		if cList, err = p.db.ListCollections(ctx, &collectionParam); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
 		// TODO https://github.com/FerretDB/FerretDB/issues/3601
-		if i, found := slices.BinarySearchFunc(cList.Collections, p.cName, func(e backends.CollectionInfo, t string) int {
-			return cmp.Compare(e.Name, t)
-		}); found {
-			cInfo = cList.Collections[i]
+		if len(cList.Collections) == 0 {
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrNamespaceNotFound,
+				fmt.Sprintf("ns not found: %s.%s", p.dbName, p.cName),
+				"aggregate",
+			)
 		}
+
+		cInfo = cList.Collections[0]
 
 		var iList *backends.ListIndexesResult
 

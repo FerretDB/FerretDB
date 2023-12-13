@@ -15,10 +15,8 @@
 package handler
 
 import (
-	"cmp"
 	"context"
 	"fmt"
-	"slices"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
@@ -78,21 +76,22 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
-	collections, err := db.ListCollections(ctx, new(backends.ListCollectionsParams))
+	collectionParam := backends.ListCollectionsParams{Name: collection}
+	collections, err := db.ListCollections(ctx, &collectionParam)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	var i int
+	// TODO https://github.com/FerretDB/FerretDB/issues/3601
 	var found bool
 	var cInfo backends.CollectionInfo
-
-	// TODO https://github.com/FerretDB/FerretDB/issues/3601
-	if i, found = slices.BinarySearchFunc(collections.Collections, collection, func(e backends.CollectionInfo, t string) int {
-		return cmp.Compare(e.Name, t)
-	}); found {
-		cInfo = collections.Collections[i]
+	found = len(collections.Collections) > 0
+	if !found {
+		msg := fmt.Sprintf("Invalid collection name: %s", collectionParam.Name)
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrInvalidNamespace, msg, document.Command())
 	}
+
+	cInfo = collections.Collections[0]
 
 	indexes, err := c.ListIndexes(ctx, new(backends.ListIndexesParams))
 	if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {

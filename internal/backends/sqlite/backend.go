@@ -15,7 +15,9 @@
 package sqlite
 
 import (
+	"cmp"
 	"context"
+	"slices"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
@@ -102,7 +104,25 @@ func (b *backend) Database(name string) (backends.Database, error) {
 func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDatabasesParams) (*backends.ListDatabasesResult, error) {
 	list := b.r.DatabaseList(ctx)
 
-	res := &backends.ListDatabasesResult{
+	var res *backends.ListDatabasesResult
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/3601
+	if params != nil && len(params.Name) > 0 {
+		res = &backends.ListDatabasesResult{
+			Databases: make([]backends.DatabaseInfo, 1),
+		}
+		_, found := slices.BinarySearchFunc(list, params.Name, func(dbName, t string) int {
+			return cmp.Compare(dbName, t)
+		})
+		if found {
+			res.Databases[0] = backends.DatabaseInfo{
+				Name: params.Name,
+			}
+		}
+		return res, nil
+	}
+
+	res = &backends.ListDatabasesResult{
 		Databases: make([]backends.DatabaseInfo, len(list)),
 	}
 
