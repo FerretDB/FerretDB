@@ -17,8 +17,6 @@ package cursors
 import (
 	"testing"
 
-	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -31,6 +29,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testfail"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 func TestCursorsTailableErrors(t *testing.T) {
