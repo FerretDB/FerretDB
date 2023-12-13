@@ -32,6 +32,7 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 // queryCompatTestCase describes query compatibility test case.
@@ -242,23 +243,22 @@ func TestQueryCappedCollectionCompat(t *testing.T) {
 		filter          bson.D
 		sort            bson.D
 		skip            string
-		skipForFerretDB string
+		skipForFerretDB bool
 
 		sortPushdown resultPushdown
 	}{
 		"NoSortNoFilter": {
 			sortPushdown:    allPushdown,
-			skipForFerretDB: "https://github.com/FerretDB/FerretDB/issues/3842",
+			skipForFerretDB: true,
 		},
 		"Filter": {
-			filter:          bson.D{{"v", int32(42)}},
-			sortPushdown:    allPushdown,
-			skipForFerretDB: "https://github.com/FerretDB/FerretDB/issues/3842",
+			filter:       bson.D{{"v", int32(42)}},
+			sortPushdown: allPushdown,
 		},
 		"Sort": {
 			sort:            bson.D{{"_id", int32(-1)}},
 			sortPushdown:    noPushdown,
-			skipForFerretDB: "https://github.com/FerretDB/FerretDB/issues/3842",
+			skipForFerretDB: true,
 		},
 		"FilterSort": {
 			filter:       bson.D{{"v", int32(42)}},
@@ -268,23 +268,23 @@ func TestQueryCappedCollectionCompat(t *testing.T) {
 		"MultipleSortFields": {
 			sort:            bson.D{{"v", 1}, {"_id", int32(-1)}},
 			sortPushdown:    noPushdown,
-			skipForFerretDB: "https://github.com/FerretDB/FerretDB/issues/3842",
+			skipForFerretDB: true,
 		},
 
 		"SortNaturalAsc": {
 			sort:            bson.D{{"$natural", int32(1)}},
 			sortPushdown:    allPushdown,
-			skipForFerretDB: "https://github.com/FerretDB/FerretDB/issues/3842",
+			skipForFerretDB: true,
 		},
 		"SortNaturalDesc": {
 			sort:            bson.D{{"$natural", int32(-1)}},
 			sortPushdown:    allPushdown,
-			skipForFerretDB: "https://github.com/FerretDB/FerretDB/issues/3842",
+			skipForFerretDB: true,
 		},
 		"SortNaturalInt64": {
 			sort:            bson.D{{"$natural", int64(1)}},
 			sortPushdown:    allPushdown,
-			skipForFerretDB: "https://github.com/FerretDB/FerretDB/issues/3842",
+			skipForFerretDB: true,
 		},
 
 		"SortNaturalZero": {
@@ -304,15 +304,18 @@ func TestQueryCappedCollectionCompat(t *testing.T) {
 	} {
 		name, tc := name, tc
 
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
+		t.Run(name, func(tt *testing.T) {
+			tt.Parallel()
 
 			if tc.skip != "" {
-				t.Skip(tc.skip)
+				tt.Skip(tc.skip)
 			}
 
-			if tc.skipForFerretDB != "" && !setup.IsMongoDB(t) {
-				t.Skipf("Skipping for FerretDB: %s.", tc.skipForFerretDB)
+			var t testtb.TB
+			if tc.skipForFerretDB {
+				t = setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/3842")
+			} else {
+				t = tt
 			}
 
 			explainQuery := bson.D{
