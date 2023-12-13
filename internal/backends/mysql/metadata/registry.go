@@ -405,7 +405,7 @@ func (r *Registry) databaseDrop(ctx context.Context, p *fsql.DB, dbName string) 
 		return false, nil
 	}
 
-	// TODO: fix cascade delete for mysql
+	// fix cascade delete for mysql
 	q := fmt.Sprintf(
 		`DROP DATABASE %s`,
 		dbName,
