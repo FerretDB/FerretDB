@@ -134,6 +134,22 @@ func (p *Pool) Get(username, password string) (*pgxpool.Pool, error) {
 	return res, nil
 }
 
+// GetAny returns a random open pool of connections to PostgreSQL, or nil if none are available.
+func (p *Pool) GetAny() *pgxpool.Pool {
+	p.rw.RLock()
+	defer p.rw.RUnlock()
+
+	for _, pool := range p.pools {
+		p.l.Debug("Pool.GetAny: returning existing pool")
+
+		return pool
+	}
+
+	p.l.Debug("Pool.GetAny: no existing pools")
+
+	return nil
+}
+
 // Describe implements prometheus.Collector.
 func (p *Pool) Describe(ch chan<- *prometheus.Desc) {
 	prometheus.DescribeByCollect(p, ch)
