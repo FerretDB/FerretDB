@@ -54,6 +54,11 @@ func TestCursorsTailableErrors(t *testing.T) {
 
 	t.Run("GetMoreDifferentCollection", func(t *testing.T) {
 		t.Parallel()
+
+		if !setup.IsMongoDB(t) {
+			t.Skip("https://github.com/FerretDB/FerretDB/issues/2283")
+		}
+
 		s := setup.SetupWithOpts(t, nil)
 
 		db, ctx := s.Collection.Database(), s.Ctx
@@ -123,6 +128,12 @@ func TestCursorsTailableErrors(t *testing.T) {
 }
 
 func TestCursorsTailable(t *testing.T) {
+	t.Parallel()
+
+	if !setup.IsMongoDB(t) {
+		t.Skip("https://github.com/FerretDB/FerretDB/issues/2283")
+	}
+
 	s := setup.SetupWithOpts(t, nil)
 
 	db, ctx := s.Collection.Database(), s.Ctx
@@ -220,6 +231,12 @@ func TestCursorsTailable(t *testing.T) {
 }
 
 func TestCursorsTailableTwoCursorsSameCollection(t *testing.T) {
+	t.Parallel()
+
+	if !setup.IsMongoDB(t) {
+		t.Skip("https://github.com/FerretDB/FerretDB/issues/2283")
+	}
+
 	s := setup.SetupWithOpts(t, nil)
 
 	db, ctx := s.Collection.Database(), s.Ctx
