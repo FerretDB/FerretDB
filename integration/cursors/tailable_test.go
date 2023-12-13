@@ -15,6 +15,7 @@
 package cursors
 
 import (
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -56,19 +57,21 @@ func TestCursorsTailableErrors(t *testing.T) {
 	t.Run("GetMoreDifferentCollection", func(t *testing.T) {
 		t.Parallel()
 
+		var tt testtb.TB = t
+
 		if !setup.IsMongoDB(t) {
-			testfail.Expected(t, "https://github.com/FerretDB/FerretDB/issues/2283")
+			tt = testfail.Expected(t, "https://github.com/FerretDB/FerretDB/issues/2283")
 		}
 
-		s := setup.SetupWithOpts(t, nil)
+		s := setup.SetupWithOpts(tt, nil)
 
 		db, ctx := s.Collection.Database(), s.Ctx
 
 		opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(10000)
-		err := db.CreateCollection(s.Ctx, t.Name(), opts)
-		require.NoError(t, err)
+		err := db.CreateCollection(s.Ctx, tt.Name(), opts)
+		require.NoError(tt, err)
 
-		collection := db.Collection(t.Name())
+		collection := db.Collection(tt.Name())
 
 		bsonArr, arr := integration.GenerateDocuments(0, 3)
 
@@ -85,14 +88,14 @@ func TestCursorsTailableErrors(t *testing.T) {
 
 		var res bson.D
 		err = collection.Database().RunCommand(ctx, findCmd).Decode(&res)
-		require.NoError(t, err)
+		require.NoError(tt, err)
 
 		var firstBatch *types.Array
-		firstBatch, cursorID = getFirstBatch(t, res)
+		firstBatch, cursorID = getFirstBatch(tt, res)
 
-		expectedFirstBatch := integration.ConvertDocuments(t, arr[:1])
-		require.Equal(t, len(expectedFirstBatch), firstBatch.Len())
-		require.Equal(t, expectedFirstBatch[0], must.NotFail(firstBatch.Get(0)))
+		expectedFirstBatch := integration.ConvertDocuments(tt, arr[:1])
+		require.Equal(tt, len(expectedFirstBatch), firstBatch.Len())
+		require.Equal(tt, expectedFirstBatch[0], must.NotFail(firstBatch.Get(0)))
 
 		getMoreCmd := bson.D{
 			{"getMore", cursorID},
@@ -109,7 +112,7 @@ func TestCursorsTailableErrors(t *testing.T) {
 				"but cursor belongs to a different namespace " +
 				"TestCursorsTailableErrors-GetMoreDifferentCollection.TestCursorsTailableErrors/GetMoreDifferentCollection",
 		}
-		integration.AssertEqualCommandError(t, expected, err)
+		integration.AssertEqualCommandError(tt, expected, err)
 
 		// Check if cursor is not closed after the error
 		err = collection.Database().RunCommand(ctx, bson.D{
@@ -118,22 +121,18 @@ func TestCursorsTailableErrors(t *testing.T) {
 			{"batchSize", 1},
 		}).Decode(&res)
 
-		require.NoError(t, err)
+		require.NoError(tt, err)
 
-		nextBatch, nextID := getNextBatch(t, res)
-		require.Equal(t, cursorID, nextID)
+		nextBatch, nextID := getNextBatch(tt, res)
+		require.Equal(tt, cursorID, nextID)
 
 		doc, _ := nextBatch.Get(0)
-		require.NotNil(t, doc)
+		require.NotNil(tt, doc)
 	})
 }
 
 func TestCursorsTailable(t *testing.T) {
 	t.Parallel()
-
-	if !setup.IsMongoDB(t) {
-		testfail.Expected(t, "https://github.com/FerretDB/FerretDB/issues/2283")
-	}
 
 	s := setup.SetupWithOpts(t, nil)
 
@@ -153,6 +152,10 @@ func TestCursorsTailable(t *testing.T) {
 	var cursorID any
 
 	t.Run("FirstBatch", func(t *testing.T) {
+		var tt testtb.TB = t
+		if !setup.IsMongoDB(tt) {
+			tt = testfail.Expected(t, "https://github.com/FerretDB/FerretDB/issues/2283")
+		}
 		cmd := bson.D{
 			{"find", collection.Name()},
 			{"batchSize", 1},
@@ -161,14 +164,14 @@ func TestCursorsTailable(t *testing.T) {
 
 		var res bson.D
 		err = collection.Database().RunCommand(ctx, cmd).Decode(&res)
-		require.NoError(t, err)
+		require.NoError(tt, err)
 
 		var firstBatch *types.Array
-		firstBatch, cursorID = getFirstBatch(t, res)
+		firstBatch, cursorID = getFirstBatch(tt, res)
 
-		expectedFirstBatch := integration.ConvertDocuments(t, arr[:1])
-		require.Equal(t, len(expectedFirstBatch), firstBatch.Len())
-		require.Equal(t, expectedFirstBatch[0], must.NotFail(firstBatch.Get(0)))
+		expectedFirstBatch := integration.ConvertDocuments(tt, arr[:1])
+		require.Equal(tt, len(expectedFirstBatch), firstBatch.Len())
+		require.Equal(tt, expectedFirstBatch[0], must.NotFail(firstBatch.Get(0)))
 	})
 
 	getMoreCmd := bson.D{
@@ -178,112 +181,127 @@ func TestCursorsTailable(t *testing.T) {
 	}
 
 	t.Run("GetMore", func(t *testing.T) {
+		var tt testtb.TB = t
+		if !setup.IsMongoDB(t) {
+			tt = testfail.Expected(t, "https://github.com/FerretDB/FerretDB/issues/2283")
+		}
 		for i := 0; i < 2; i++ {
 			var res bson.D
 			err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
-			require.NoError(t, err)
+			require.NoError(tt, err)
 
-			nextBatch, nextID := getNextBatch(t, res)
-			expectedNextBatch := integration.ConvertDocuments(t, arr[i+1:i+2])
+			nextBatch, nextID := getNextBatch(tt, res)
+			expectedNextBatch := integration.ConvertDocuments(tt, arr[i+1:i+2])
 
-			assert.Equal(t, cursorID, nextID)
+			assert.Equal(tt, cursorID, nextID)
 
-			require.Equal(t, len(expectedNextBatch), nextBatch.Len())
-			require.Equal(t, expectedNextBatch[0], must.NotFail(nextBatch.Get(0)))
+			require.Equal(tt, len(expectedNextBatch), nextBatch.Len())
+			require.Equal(tt, expectedNextBatch[0], must.NotFail(nextBatch.Get(0)))
 		}
 	})
 
 	t.Run("GetMoreEmpty", func(t *testing.T) {
+		var tt testtb.TB = t
+		if !setup.IsMongoDB(t) {
+			tt = testfail.Expected(t, "https://github.com/FerretDB/FerretDB/issues/2283")
+		}
 		var res bson.D
 		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
-		require.NoError(t, err)
+		require.NoError(tt, err)
 
-		nextBatch, nextID := getNextBatch(t, res)
-		require.Equal(t, 0, nextBatch.Len())
-		assert.Equal(t, cursorID, nextID)
+		nextBatch, nextID := getNextBatch(tt, res)
+		require.Equal(tt, 0, nextBatch.Len())
+		assert.Equal(tt, cursorID, nextID)
 	})
 
 	t.Run("GetMoreNewDoc", func(t *testing.T) {
+		var tt testtb.TB = t
+		if !setup.IsMongoDB(t) {
+			tt = testfail.Expected(t, "https://github.com/FerretDB/FerretDB/issues/2283")
+		}
 		newDoc := bson.D{{"_id", "new"}}
 		_, err = collection.InsertOne(ctx, newDoc)
-		require.NoError(t, err)
+		require.NoError(tt, err)
 
 		var res bson.D
 		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
-		require.NoError(t, err)
+		require.NoError(tt, err)
 
-		nextBatch, nextID := getNextBatch(t, res)
+		nextBatch, nextID := getNextBatch(tt, res)
 
-		assert.Equal(t, cursorID, nextID)
+		assert.Equal(tt, cursorID, nextID)
 
-		require.Equal(t, 1, nextBatch.Len())
-		require.Equal(t, integration.ConvertDocument(t, newDoc), must.NotFail(nextBatch.Get(0)))
+		require.Equal(tt, 1, nextBatch.Len())
+		require.Equal(tt, integration.ConvertDocument(t, newDoc), must.NotFail(nextBatch.Get(0)))
 	})
 
 	t.Run("GetMoreEmptyAfterInsertion", func(t *testing.T) {
+		var tt testtb.TB = t
+		if !setup.IsMongoDB(t) {
+			tt = testfail.Expected(t, "https://github.com/FerretDB/FerretDB/issues/2283")
+		}
 		var res bson.D
 		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
-		require.NoError(t, err)
+		require.NoError(tt, err)
 
-		nextBatch, nextID := getNextBatch(t, res)
-		require.Equal(t, 0, nextBatch.Len())
-		assert.Equal(t, cursorID, nextID)
+		nextBatch, nextID := getNextBatch(tt, res)
+		require.Equal(tt, 0, nextBatch.Len())
+		assert.Equal(tt, cursorID, nextID)
 	})
 }
 
 func TestCursorsTailableTwoCursorsSameCollection(t *testing.T) {
 	t.Parallel()
 
-	if !setup.IsMongoDB(t) {
-		testfail.Expected(t, "https://github.com/FerretDB/FerretDB/issues/2283")
+	var tt testtb.TB = t
+	if !setup.IsMongoDB(tt) {
+		tt = testfail.Expected(t, "https://github.com/FerretDB/FerretDB/issues/2283")
 	}
 
-	s := setup.SetupWithOpts(t, nil)
+	s := setup.SetupWithOpts(tt, nil)
 
 	db, ctx := s.Collection.Database(), s.Ctx
 
 	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(10000)
-	err := db.CreateCollection(s.Ctx, t.Name(), opts)
-	require.NoError(t, err)
+	err := db.CreateCollection(s.Ctx, tt.Name(), opts)
+	require.NoError(tt, err)
 
-	collection := db.Collection(t.Name())
+	collection := db.Collection(tt.Name())
 
 	bsonArr, arr := integration.GenerateDocuments(0, 50)
 
 	_, err = collection.InsertMany(ctx, bsonArr)
-	require.NoError(t, err)
+	require.NoError(tt, err)
 
 	var cursorID1, cursorID2 any
 
-	t.Run("FirstBatch", func(t *testing.T) {
-		cmd := bson.D{
-			{"find", collection.Name()},
-			{"batchSize", 1},
-			{"tailable", true},
-		}
+	cmd := bson.D{
+		{"find", collection.Name()},
+		{"batchSize", 1},
+		{"tailable", true},
+	}
 
-		var res bson.D
+	var res bson.D
 
-		err = collection.Database().RunCommand(ctx, cmd).Decode(&res)
-		require.NoError(t, err)
+	err = collection.Database().RunCommand(ctx, cmd).Decode(&res)
+	require.NoError(tt, err)
 
-		var firstBatch1 *types.Array
-		firstBatch1, cursorID1 = getFirstBatch(t, res)
+	var firstBatch1 *types.Array
+	firstBatch1, cursorID1 = getFirstBatch(tt, res)
 
-		err = collection.Database().RunCommand(ctx, cmd).Decode(&res)
-		require.NoError(t, err)
+	err = collection.Database().RunCommand(ctx, cmd).Decode(&res)
+	require.NoError(tt, err)
 
-		var firstBatch2 *types.Array
-		firstBatch2, cursorID2 = getFirstBatch(t, res)
+	var firstBatch2 *types.Array
+	firstBatch2, cursorID2 = getFirstBatch(tt, res)
 
-		expectedFirstBatch := integration.ConvertDocuments(t, arr[:1])
+	expectedFirstBatch := integration.ConvertDocuments(tt, arr[:1])
 
-		require.Equal(t, len(expectedFirstBatch), firstBatch1.Len())
-		require.Equal(t, expectedFirstBatch[0], must.NotFail(firstBatch1.Get(0)))
+	require.Equal(tt, len(expectedFirstBatch), firstBatch1.Len())
+	require.Equal(tt, expectedFirstBatch[0], must.NotFail(firstBatch1.Get(0)))
 
-		require.Equal(t, len(expectedFirstBatch), firstBatch2.Len())
-		require.Equal(t, expectedFirstBatch[0], must.NotFail(firstBatch2.Get(0)))
-	})
+	require.Equal(tt, len(expectedFirstBatch), firstBatch2.Len())
+	require.Equal(tt, expectedFirstBatch[0], must.NotFail(firstBatch2.Get(0)))
 
 	getMoreCmd1 := bson.D{
 		{"getMore", cursorID1},
@@ -297,47 +315,42 @@ func TestCursorsTailableTwoCursorsSameCollection(t *testing.T) {
 		{"batchSize", 1},
 	}
 
-	t.Run("GetMore", func(t *testing.T) {
-		for i := 0; i < 49; i++ {
-			var res bson.D
-			err = collection.Database().RunCommand(ctx, getMoreCmd1).Decode(&res)
-			require.NoError(t, err)
-
-			nextBatch1, nextID1 := getNextBatch(t, res)
-
-			err = collection.Database().RunCommand(ctx, getMoreCmd2).Decode(&res)
-			require.NoError(t, err)
-
-			nextBatch2, nextID2 := getNextBatch(t, res)
-
-			expectedNextBatch := integration.ConvertDocuments(t, arr[i+1:i+2])
-
-			assert.Equal(t, cursorID1, nextID1)
-			require.Equal(t, len(expectedNextBatch), nextBatch1.Len())
-			require.Equal(t, expectedNextBatch[0], must.NotFail(nextBatch1.Get(0)))
-
-			assert.Equal(t, cursorID2, nextID2)
-			require.Equal(t, len(expectedNextBatch), nextBatch2.Len())
-			require.Equal(t, expectedNextBatch[0], must.NotFail(nextBatch2.Get(0)))
-		}
-	})
-
-	t.Run("GetMoreEmpty", func(t *testing.T) {
+	for i := 0; i < 49; i++ {
 		var res bson.D
 		err = collection.Database().RunCommand(ctx, getMoreCmd1).Decode(&res)
-		require.NoError(t, err)
+		require.NoError(tt, err)
 
-		nextBatch1, nextID1 := getNextBatch(t, res)
+		nextBatch1, nextID1 := getNextBatch(tt, res)
 
 		err = collection.Database().RunCommand(ctx, getMoreCmd2).Decode(&res)
-		require.NoError(t, err)
+		require.NoError(tt, err)
 
-		nextBatch2, nextID2 := getNextBatch(t, res)
+		nextBatch2, nextID2 := getNextBatch(tt, res)
 
-		require.Equal(t, 0, nextBatch1.Len())
-		assert.Equal(t, cursorID1, nextID1)
+		expectedNextBatch := integration.ConvertDocuments(tt, arr[i+1:i+2])
 
-		require.Equal(t, 0, nextBatch2.Len())
-		assert.Equal(t, cursorID2, nextID2)
-	})
+		assert.Equal(tt, cursorID1, nextID1)
+		require.Equal(tt, len(expectedNextBatch), nextBatch1.Len())
+		require.Equal(tt, expectedNextBatch[0], must.NotFail(nextBatch1.Get(0)))
+
+		assert.Equal(tt, cursorID2, nextID2)
+		require.Equal(tt, len(expectedNextBatch), nextBatch2.Len())
+		require.Equal(tt, expectedNextBatch[0], must.NotFail(nextBatch2.Get(0)))
+	}
+
+	err = collection.Database().RunCommand(ctx, getMoreCmd1).Decode(&res)
+	require.NoError(tt, err)
+
+	nextBatch1, nextID1 := getNextBatch(tt, res)
+
+	err = collection.Database().RunCommand(ctx, getMoreCmd2).Decode(&res)
+	require.NoError(tt, err)
+
+	nextBatch2, nextID2 := getNextBatch(tt, res)
+
+	require.Equal(tt, 0, nextBatch1.Len())
+	assert.Equal(tt, cursorID1, nextID1)
+
+	require.Equal(tt, 0, nextBatch2.Len())
+	assert.Equal(tt, cursorID2, nextID2)
 }

@@ -15,8 +15,7 @@
 package cursors
 
 import (
-	"testing"
-
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -27,7 +26,7 @@ import (
 
 // getFirstBatch takes the response from the query that generates the cursors,
 // validates if it contains cursor.firstBatch, and cursor ID, and returns those.
-func getFirstBatch(t testing.TB, res bson.D) (*types.Array, any) {
+func getFirstBatch(t testtb.TB, res bson.D) (*types.Array, any) {
 	t.Helper()
 
 	doc := integration.ConvertDocument(t, res)
@@ -52,7 +51,7 @@ func getFirstBatch(t testing.TB, res bson.D) (*types.Array, any) {
 
 // getNextBatch takes the response from the getMore query,
 // validates if it contains cursor.nextBatch, and cursor ID, and returns those.
-func getNextBatch(t testing.TB, res bson.D) (*types.Array, any) {
+func getNextBatch(t testtb.TB, res bson.D) (*types.Array, any) {
 	t.Helper()
 
 	doc := integration.ConvertDocument(t, res)
