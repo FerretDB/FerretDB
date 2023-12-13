@@ -82,7 +82,7 @@ func TestCursorsTailableErrors(t *testing.T) {
 		require.NoError(t, err)
 
 		var firstBatch *types.Array
-		firstBatch, cursorID = GetFirstBatch(t, res)
+		firstBatch, cursorID = getFirstBatch(t, res)
 
 		expectedFirstBatch := integration.ConvertDocuments(t, arr[:1])
 		require.Equal(t, len(expectedFirstBatch), firstBatch.Len())
@@ -114,7 +114,7 @@ func TestCursorsTailableErrors(t *testing.T) {
 
 		require.NoError(t, err)
 
-		nextBatch, nextID := GetNextBatch(t, res)
+		nextBatch, nextID := getNextBatch(t, res)
 		require.Equal(t, cursorID, nextID)
 
 		doc, _ := nextBatch.Get(0)
@@ -152,7 +152,7 @@ func TestCursorsTailable(t *testing.T) {
 		require.NoError(t, err)
 
 		var firstBatch *types.Array
-		firstBatch, cursorID = GetFirstBatch(t, res)
+		firstBatch, cursorID = getFirstBatch(t, res)
 
 		expectedFirstBatch := integration.ConvertDocuments(t, arr[:1])
 		require.Equal(t, len(expectedFirstBatch), firstBatch.Len())
@@ -171,7 +171,7 @@ func TestCursorsTailable(t *testing.T) {
 			err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
 			require.NoError(t, err)
 
-			nextBatch, nextID := GetNextBatch(t, res)
+			nextBatch, nextID := getNextBatch(t, res)
 			expectedNextBatch := integration.ConvertDocuments(t, arr[i+1:i+2])
 
 			assert.Equal(t, cursorID, nextID)
@@ -186,7 +186,7 @@ func TestCursorsTailable(t *testing.T) {
 		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
 		require.NoError(t, err)
 
-		nextBatch, nextID := GetNextBatch(t, res)
+		nextBatch, nextID := getNextBatch(t, res)
 		require.Equal(t, 0, nextBatch.Len())
 		assert.Equal(t, cursorID, nextID)
 	})
@@ -200,7 +200,7 @@ func TestCursorsTailable(t *testing.T) {
 		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
 		require.NoError(t, err)
 
-		nextBatch, nextID := GetNextBatch(t, res)
+		nextBatch, nextID := getNextBatch(t, res)
 
 		assert.Equal(t, cursorID, nextID)
 
@@ -213,7 +213,7 @@ func TestCursorsTailable(t *testing.T) {
 		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
 		require.NoError(t, err)
 
-		nextBatch, nextID := GetNextBatch(t, res)
+		nextBatch, nextID := getNextBatch(t, res)
 		require.Equal(t, 0, nextBatch.Len())
 		assert.Equal(t, cursorID, nextID)
 	})
@@ -250,13 +250,13 @@ func TestCursorsTailableTwoCursorsSameCollection(t *testing.T) {
 		require.NoError(t, err)
 
 		var firstBatch1 *types.Array
-		firstBatch1, cursorID1 = GetFirstBatch(t, res)
+		firstBatch1, cursorID1 = getFirstBatch(t, res)
 
 		err = collection.Database().RunCommand(ctx, cmd).Decode(&res)
 		require.NoError(t, err)
 
 		var firstBatch2 *types.Array
-		firstBatch2, cursorID2 = GetFirstBatch(t, res)
+		firstBatch2, cursorID2 = getFirstBatch(t, res)
 
 		expectedFirstBatch := integration.ConvertDocuments(t, arr[:1])
 
@@ -285,12 +285,12 @@ func TestCursorsTailableTwoCursorsSameCollection(t *testing.T) {
 			err = collection.Database().RunCommand(ctx, getMoreCmd1).Decode(&res)
 			require.NoError(t, err)
 
-			nextBatch1, nextID1 := GetNextBatch(t, res)
+			nextBatch1, nextID1 := getNextBatch(t, res)
 
 			err = collection.Database().RunCommand(ctx, getMoreCmd2).Decode(&res)
 			require.NoError(t, err)
 
-			nextBatch2, nextID2 := GetNextBatch(t, res)
+			nextBatch2, nextID2 := getNextBatch(t, res)
 
 			expectedNextBatch := integration.ConvertDocuments(t, arr[i+1:i+2])
 
@@ -309,12 +309,12 @@ func TestCursorsTailableTwoCursorsSameCollection(t *testing.T) {
 		err = collection.Database().RunCommand(ctx, getMoreCmd1).Decode(&res)
 		require.NoError(t, err)
 
-		nextBatch1, nextID1 := GetNextBatch(t, res)
+		nextBatch1, nextID1 := getNextBatch(t, res)
 
 		err = collection.Database().RunCommand(ctx, getMoreCmd2).Decode(&res)
 		require.NoError(t, err)
 
-		nextBatch2, nextID2 := GetNextBatch(t, res)
+		nextBatch2, nextID2 := getNextBatch(t, res)
 
 		require.Equal(t, 0, nextBatch1.Len())
 		assert.Equal(t, cursorID1, nextID1)
@@ -324,7 +324,9 @@ func TestCursorsTailableTwoCursorsSameCollection(t *testing.T) {
 	})
 }
 
-func GetFirstBatch(t testing.TB, res bson.D) (*types.Array, any) {
+// getFirstBatch takes the response from the query that generates the cursors,
+// validates if it contains cursor.firstBatch, and cursor ID, and returns those.
+func getFirstBatch(t testing.TB, res bson.D) (*types.Array, any) {
 	t.Helper()
 
 	doc := integration.ConvertDocument(t, res)
@@ -347,7 +349,9 @@ func GetFirstBatch(t testing.TB, res bson.D) (*types.Array, any) {
 	return firstBatch, cursorID
 }
 
-func GetNextBatch(t testing.TB, res bson.D) (*types.Array, any) {
+// getNextBatch takes the response from the getMore query,
+// validates if it contains cursor.nextBatch, and cursor ID, and returns those.
+func getNextBatch(t testing.TB, res bson.D) (*types.Array, any) {
 	t.Helper()
 
 	doc := integration.ConvertDocument(t, res)
