@@ -389,6 +389,7 @@ func TestTailableStress(t *testing.T) {
 			{"find", collection.Name()},
 			{"batchSize", id},
 			{"tailable", true},
+			{"noCursorTimeout", true},
 		}
 
 		var res bson.D
