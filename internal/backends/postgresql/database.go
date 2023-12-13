@@ -57,25 +57,24 @@ func (db *database) ListCollections(ctx context.Context, params *backends.ListCo
 	// TODO https://github.com/FerretDB/FerretDB/issues/3601
 	if params != nil && len(params.Name) > 0 {
 
-		var nameList []string
-
+		nameList := make([]string, len(list))
 		for i, c := range list {
 			nameList[i] = c.Name
 		}
 
-		res = make([]backends.CollectionInfo, 1)
+		res = make([]backends.CollectionInfo, 0, 1)
 
 		i, found := slices.BinarySearchFunc(nameList, params.Name, func(collectionName, t string) int {
 			return cmp.Compare(collectionName, t)
 		})
 
 		if found {
-			res[0] = backends.CollectionInfo{
+			res = append(res, backends.CollectionInfo{
 				Name:            list[i].Name,
 				UUID:            list[i].UUID,
 				CappedSize:      list[i].CappedSize,
 				CappedDocuments: list[i].CappedDocuments,
-			}
+			})
 		}
 		return &backends.ListCollectionsResult{
 			Collections: res,

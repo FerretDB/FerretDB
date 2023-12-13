@@ -15,6 +15,7 @@
 package postgresql
 
 import (
+	// "strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -46,17 +47,32 @@ func TestListDatabases(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(b.Close)
 
-	dbName := testutil.DatabaseName(t)
-	_, err = b.Database(dbName)
+	dbNames := []string{"testDB1", "testDB2", "testDB3"}
 	require.NoError(t, err)
+	testDB, err := b.Database(dbNames[0])
+	err = testDB.CreateCollection(ctx, &backends.CreateCollectionParams{Name: "testCollection1"})
+	require.NoError(t, err)
+	defer b.DropDatabase(ctx, &backends.DropDatabaseParams{Name: dbNames[0]})
+
+	testDB, err = b.Database(dbNames[1])
+	require.NoError(t, err)
+	err = testDB.CreateCollection(ctx, &backends.CreateCollectionParams{Name: "testCollection1"})
+	require.NoError(t, err)
+	defer b.DropDatabase(ctx, &backends.DropDatabaseParams{Name: dbNames[1]})
+
+	testDB, err = b.Database(dbNames[2])
+	require.NoError(t, err)
+	err = testDB.CreateCollection(ctx, &backends.CreateCollectionParams{Name: "testCollection1"})
+	require.NoError(t, err)
+	defer b.DropDatabase(ctx, &backends.DropDatabaseParams{Name: dbNames[2]})
 
 	t.Run("ListDatabases with specific name", func(t *testing.T) {
 		res, err := b.ListDatabases(ctx, &backends.ListDatabasesParams{
-			Name: dbName,
+			Name: dbNames[0],
 		})
 		require.NoError(t, err)
 		require.Equal(t, 1, len(res.Databases))
-		require.Equal(t, dbName, res.Databases[0].Name)
+		require.Equal(t, dbNames[0], res.Databases[0].Name)
 	})
 
 	t.Run("ListDatabases with wrong name", func(t *testing.T) {
@@ -70,14 +86,18 @@ func TestListDatabases(t *testing.T) {
 	t.Run("ListDatabases with nil param", func(t *testing.T) {
 		res, err := b.ListDatabases(ctx, nil)
 		require.NoError(t, err)
-		require.Equal(t, 1, len(res.Databases))
-		require.Equal(t, dbName, res.Databases[0].Name)
+		require.Equal(t, 3, len(res.Databases))
+		require.Equal(t, dbNames[0], res.Databases[0].Name)
+		require.Equal(t, dbNames[1], res.Databases[1].Name)
+		require.Equal(t, dbNames[2], res.Databases[2].Name)
 	})
 
 	t.Run("ListDatabases with nil param", func(t *testing.T) {
 		res, err := b.ListDatabases(ctx, &backends.ListDatabasesParams{})
 		require.NoError(t, err)
-		require.Equal(t, 1, len(res.Databases))
-		require.Equal(t, dbName, res.Databases[0].Name)
+		require.Equal(t, 3, len(res.Databases))
+		require.Equal(t, dbNames[0], res.Databases[0].Name)
+		require.Equal(t, dbNames[1], res.Databases[1].Name)
+		require.Equal(t, dbNames[2], res.Databases[2].Name)
 	})
 }

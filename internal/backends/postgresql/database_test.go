@@ -163,6 +163,15 @@ func TestListCollections(t *testing.T) {
 		require.Equal(t, param.Name, res.Collections[0].Name)
 	})
 
+	t.Run("ListCollection with wrong collection name", func(t *testing.T) {
+		param := backends.ListCollectionsParams{
+			Name: "wrong-collection",
+		}
+		res, err := db.ListCollections(ctx, &param)
+		require.NoError(t, err)
+		require.Equal(t, 0, len(res.Collections))
+	})
+
 	t.Run("ListCollection with nil params", func(t *testing.T) {
 		res, err := db.ListCollections(ctx, nil)
 		require.NoError(t, err)
