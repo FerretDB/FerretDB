@@ -109,15 +109,15 @@ func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDataba
 	// TODO https://github.com/FerretDB/FerretDB/issues/3601
 	if params != nil && len(params.Name) > 0 {
 		res = &backends.ListDatabasesResult{
-			Databases: make([]backends.DatabaseInfo, 1),
+			Databases: make([]backends.DatabaseInfo, 0, 1),
 		}
 		_, found := slices.BinarySearchFunc(list, params.Name, func(dbName, t string) int {
 			return cmp.Compare(dbName, t)
 		})
 		if found {
-			res.Databases[0] = backends.DatabaseInfo{
+			res.Databases = append(res.Databases, backends.DatabaseInfo{
 				Name: params.Name,
-			}
+			})
 		}
 		return res, nil
 	}
