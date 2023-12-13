@@ -16,10 +16,8 @@
 package handler
 
 import (
-	"cmp"
 	"context"
 	"errors"
-	"slices"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -55,7 +53,7 @@ type Handler struct {
 	cursors  *cursor.Registry
 	commands map[string]command
 
-	cappedCleanupPercentage       uint8
+	cappedCleanupStop             chan struct{}
 	cleanupCappedCollectionsDocs  *prometheus.CounterVec
 	cleanupCappedCollectionsBytes *prometheus.CounterVec
 }
@@ -95,7 +93,7 @@ func New(opts *NewOpts) (*Handler, error) {
 		NewOpts: opts,
 		cursors: cursor.NewRegistry(opts.L.Named("cursors")),
 
-		cappedCleanupPercentage: opts.CappedCleanupPercentage,
+		cappedCleanupStop: make(chan struct{}),
 		cleanupCappedCollectionsDocs: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
 				Namespace: namespace,
@@ -129,13 +127,19 @@ func New(opts *NewOpts) (*Handler, error) {
 		// fixme:
 		// - Run cleanup in embedded?(flag)
 
-		// fixme: stop goroutine if close is called
 		go func() {
 			ticker := time.NewTicker(opts.CappedCleanupInterval)
 			for {
-				<-ticker.C
-				if err := h.cleanupCappedCollections(context.Background()); err != nil {
-					opts.L.Error("Failed to cleanup capped collections", zap.Error(err))
+				select {
+				case <-ticker.C:
+					if err := h.cleanupAllCappedCollections(context.Background()); err != nil {
+						h.L.Error("Failed to cleanup capped collections", zap.Error(err))
+					}
+
+				case <-h.cappedCleanupStop:
+					ticker.Stop()
+					h.L.Debug("The routine to cleanup capped collections is stopped")
+					return
 				}
 			}
 		}()
@@ -148,7 +152,7 @@ func New(opts *NewOpts) (*Handler, error) {
 // It should be called after listener closes all client connections and stops listening.
 func (h *Handler) Close() {
 	h.cursors.Close()
-	// stop goroutine
+	h.cappedCleanupStop <- struct{}{}
 }
 
 // Describe implements prometheus.Collector interface.
@@ -167,171 +171,140 @@ func (h *Handler) Collect(ch chan<- prometheus.Metric) {
 	h.cleanupCappedCollectionsBytes.Collect(ch)
 }
 
-// cleanupCappedCollections drops the given percent of documents from all capped collections.
-func (h *Handler) cleanupCappedCollections(ctx context.Context) error {
-	h.L.Debug("cleanupCappedCollections: started", zap.Uint8("percentage", h.cappedCleanupPercentage))
+// cleanupAllCappedCollections drops the given percent of documents from all capped collections.
+func (h *Handler) cleanupAllCappedCollections(ctx context.Context) error {
+	h.L.Debug("cleanupCappedCollections: started", zap.Uint8("percentage", h.CappedCleanupPercentage))
 	defer h.L.Debug("cleanupCappedCollections: finished")
 
 	connInfo := conninfo.New()
 	connInfo.BypassAuth = true
 	ctx = conninfo.Ctx(ctx, connInfo)
 
-	dbs, err := h.b.ListDatabases(ctx, nil)
+	dbList, err := h.b.ListDatabases(ctx, nil)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	for _, db := range dbs.Databases {
-		database, err := h.b.Database(db.Name)
+	for _, dbInfo := range dbList.Databases {
+		db, err := h.b.Database(dbInfo.Name)
 		if err != nil {
 			return lazyerrors.Error(err)
 		}
 
-		if database == nil {
+		if db == nil {
 			continue
 		}
 
-		freed, err := h.cleanupCappedCollection(ctx, db.Name, "")
-		if err != nil {
+		var cList *backends.ListCollectionsResult
+
+		if cList, err = db.ListCollections(ctx, nil); err != nil {
 			return lazyerrors.Error(err)
 		}
 
-		h.L.Debug("cleanupCappedCollections: bytes freed in the database",
-			zap.String("db", db.Name), zap.Int64("bytes", freed),
-		)
+		for _, cInfo := range cList.Collections {
+			if !cInfo.Capped() {
+				continue
+			}
+
+			deleted, bytesFreed, err := h.cleanupCappedCollection(ctx, db, &cInfo, false)
+			if err != nil {
+				if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) ||
+					backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseDoesNotExist) {
+					continue
+				}
+
+				return lazyerrors.Error(err)
+			}
+
+			h.cleanupCappedCollectionsDocs.WithLabelValues(dbInfo.Name, cInfo.Name).Add(float64(deleted))
+			h.L.Debug("cleanupCappedCollection: documents deleted",
+				zap.String("db", dbInfo.Name), zap.String("collection", cInfo.Name),
+				zap.Int32("deleted", deleted),
+			)
+
+			h.cleanupCappedCollectionsBytes.WithLabelValues(dbInfo.Name, cInfo.Name).Add(float64(bytesFreed))
+			h.L.Debug("cleanupCappedCollection: bytes freed",
+				zap.String("db", dbInfo.Name), zap.String("collection", cInfo.Name),
+				zap.Int64("bytes", bytesFreed),
+			)
+		}
+
+		if err != nil {
+			return lazyerrors.Error(err)
+		}
 	}
 
 	return nil
 }
 
-// cleanupCappedCollection cleanup the given collection in the given database.
-// If collection name is empty, it cleanups all the collections in the given database.
-// It returns the number of bytes freed.
-// If the given database or collection does not exist, it doesn't return an error.
-func (h *Handler) cleanupCappedCollection(ctx context.Context, dbName, collName string) (int64, error) {
-	db, err := h.b.Database(dbName)
+// cleanupCappedCollection drops a percent of documents from the given capped collection and compacts it.
+// If the collection is not capped, it does nothing.
+func (h *Handler) cleanupCappedCollection(ctx context.Context, db backends.Database, cInfo *backends.CollectionInfo, force bool) (int32, int64, error) {
+	if !cInfo.Capped() {
+		return 0, 0, nil
+	}
+
+	collection, err := db.Collection(cInfo.Name)
 	if err != nil {
-		return 0, lazyerrors.Error(err)
+		return 0, 0, lazyerrors.Error(err)
 	}
 
-	if db == nil {
-		return 0, nil
+	statsBefore, err := collection.Stats(ctx, &backends.CollectionStatsParams{Refresh: true})
+	if err != nil {
+		return 0, 0, lazyerrors.Error(err)
 	}
 
-	var cList *backends.ListCollectionsResult
-
-	if cList, err = db.ListCollections(ctx, nil); err != nil {
-		return 0, lazyerrors.Error(err)
+	if statsBefore.SizeCollection < cInfo.CappedSize && statsBefore.CountDocuments < cInfo.CappedDocuments {
+		return 0, 0, nil
 	}
 
-	var collections []backends.CollectionInfo
-
-	if collName == "" {
-		collections = cList.Collections
-	} else {
-		var cInfo backends.CollectionInfo
-
-		// TODO https://github.com/FerretDB/FerretDB/issues/3601
-		if i, found := slices.BinarySearchFunc(cList.Collections, collName, func(e backends.CollectionInfo, t string) int {
-			return cmp.Compare(e.Name, t)
-		}); found {
-			cInfo = cList.Collections[i]
-		}
-
-		collections = []backends.CollectionInfo{cInfo}
+	params := backends.QueryParams{
+		Limit:         int64(float64(statsBefore.CountDocuments) * float64(h.CappedCleanupPercentage) / 100),
+		OnlyRecordIDs: true,
 	}
 
-	var totalBytesFreed int64
-
-	for _, col := range collections {
-		if !col.Capped() {
-			continue
-		}
-
-		collection, err := db.Collection(collName)
-		if err != nil {
-			return 0, lazyerrors.Error(err)
-		}
-
-		statsBefore, err := collection.Stats(ctx, &backends.CollectionStatsParams{Refresh: true})
-		if err != nil {
-			if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
-				continue
-			}
-
-			return 0, lazyerrors.Error(err)
-		}
-
-		if statsBefore.SizeCollection < col.CappedSize && statsBefore.CountDocuments < col.CappedDocuments {
-			continue
-		}
-
-		params := backends.QueryParams{
-			Limit:         int64(float64(statsBefore.CountDocuments) * float64(h.cappedCleanupPercentage) / 100),
-			OnlyRecordIDs: true,
-		}
-
-		res, err := collection.Query(ctx, &params)
-		if err != nil {
-			return 0, lazyerrors.Error(err)
-		}
-
-		var recordIDs []int64
-
-		for {
-			_, doc, err := res.Iter.Next()
-			if errors.Is(err, iterator.ErrIteratorDone) {
-				break
-			}
-
-			if err != nil {
-				return 0, lazyerrors.Error(err)
-			}
-
-			recordIDs = append(recordIDs, doc.RecordID())
-		}
-
-		deleted, err := collection.DeleteAll(ctx, &backends.DeleteAllParams{RecordIDs: recordIDs})
-		if err != nil {
-			return 0, lazyerrors.Error(err)
-		}
-
-		h.cleanupCappedCollectionsDocs.WithLabelValues(dbName, col.Name).Add(float64(deleted.Deleted))
-		h.L.Debug("cleanupCappedCollection: documents deleted",
-			zap.String("db", dbName), zap.String("collection", col.Name),
-			zap.Int32("deleted", deleted.Deleted),
-		)
-
-		if _, err := collection.Compact(ctx, &backends.CompactParams{Full: false}); err != nil {
-			return 0, lazyerrors.Error(err)
-		}
-
-		statsAfter, err := collection.Stats(ctx, &backends.CollectionStatsParams{Refresh: true})
-		if err != nil {
-			if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
-				continue
-			}
-
-			return 0, lazyerrors.Error(err)
-		}
-
-		bytesFreed := statsBefore.SizeTotal - statsAfter.SizeTotal
-
-		// There's a possibility that the size of a collection might be greater at the
-		// end of a compact operation if the collection is being actively written to at
-		// the time of compaction.
-		if bytesFreed < 0 {
-			bytesFreed = 0
-		}
-
-		h.cleanupCappedCollectionsBytes.WithLabelValues(dbName, col.Name).Add(float64(bytesFreed))
-		h.L.Debug("cleanupCappedCollection: bytes freed",
-			zap.String("db", dbName), zap.String("collection", col.Name),
-			zap.Int64("bytes", bytesFreed),
-		)
-
-		totalBytesFreed += bytesFreed
+	res, err := collection.Query(ctx, &params)
+	if err != nil {
+		return 0, 0, lazyerrors.Error(err)
 	}
 
-	return totalBytesFreed, nil
+	var recordIDs []int64
+
+	for {
+		_, doc, err := res.Iter.Next()
+		if errors.Is(err, iterator.ErrIteratorDone) {
+			break
+		}
+
+		if err != nil {
+			return 0, 0, lazyerrors.Error(err)
+		}
+
+		recordIDs = append(recordIDs, doc.RecordID())
+	}
+
+	deleted, err := collection.DeleteAll(ctx, &backends.DeleteAllParams{RecordIDs: recordIDs})
+	if err != nil {
+		return 0, 0, lazyerrors.Error(err)
+	}
+
+	if _, err := collection.Compact(ctx, &backends.CompactParams{Full: force}); err != nil {
+		return 0, 0, lazyerrors.Error(err)
+	}
+
+	statsAfter, err := collection.Stats(ctx, &backends.CollectionStatsParams{Refresh: true})
+	if err != nil {
+		return 0, 0, lazyerrors.Error(err)
+	}
+
+	bytesFreed := statsBefore.SizeTotal - statsAfter.SizeTotal
+
+	// There's a possibility that the size of a collection might be greater at the
+	// end of a compact operation if the collection is being actively written to at
+	// the time of compaction.
+	if bytesFreed < 0 {
+		bytesFreed = 0
+	}
+
+	return deleted.Deleted, bytesFreed, nil
 }

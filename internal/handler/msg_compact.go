@@ -15,8 +15,10 @@
 package handler
 
 import (
+	"cmp"
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
@@ -96,29 +98,44 @@ func (h *Handler) MsgCompact(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	/*if collection.Capped() {
-		h.CleanupCappedCollection(collection)
-	} else {
-	}*/
-
-	// fixme: call clean
-
-	if _, err = c.Compact(ctx, &backends.CompactParams{Full: force}); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	statsAfter, err := c.Stats(ctx, new(backends.CollectionStatsParams))
+	cList, err := db.ListCollections(ctx, nil)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	bytesFreed := statsBefore.SizeTotal - statsAfter.SizeTotal
+	var cInfo backends.CollectionInfo
 
-	// There's a possibility that the size of a collection might be greater at the
-	// end of a compact operation if the collection is being actively written to at
-	// the time of compaction.
-	if bytesFreed < 0 {
-		bytesFreed = 0
+	// TODO https://github.com/FerretDB/FerretDB/issues/3601
+	if i, found := slices.BinarySearchFunc(cList.Collections, collection, func(e backends.CollectionInfo, t string) int {
+		return cmp.Compare(e.Name, t)
+	}); found {
+		cInfo = cList.Collections[i]
+	}
+
+	var bytesFreed int64
+
+	if cInfo.Capped() {
+		if _, bytesFreed, err = h.cleanupCappedCollection(ctx, db, &cInfo, force); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+	} else {
+		if _, err = c.Compact(ctx, &backends.CompactParams{Full: force}); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		statsAfter, err := c.Stats(ctx, new(backends.CollectionStatsParams))
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		bytesFreed = statsBefore.SizeTotal - statsAfter.SizeTotal
+
+		// There's a possibility that the size of a collection might be greater at the
+		// end of a compact operation if the collection is being actively written to at
+		// the time of compaction.
+		if bytesFreed < 0 {
+			bytesFreed = 0
+		}
 	}
 
 	var reply wire.OpMsg
