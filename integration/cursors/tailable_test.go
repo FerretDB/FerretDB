@@ -29,6 +29,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testfail"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/teststress"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
@@ -353,4 +354,8 @@ func TestCursorsTailableTwoCursorsSameCollection(t *testing.T) {
 
 	require.Equal(tt, 0, nextBatch2.Len())
 	assert.Equal(tt, cursorID2, nextID2)
+}
+
+func TestTailableStress(t *testing.T) {
+	teststress.Stress()
 }
