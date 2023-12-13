@@ -33,10 +33,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testfail"
 )
 
-// TODO
-// https://www.mongodb.com/docs/manual/reference/command/getMore/ (maxtTimeMS)
-// stress test
-
 func TestCursorsTailableErrors(t *testing.T) {
 	t.Parallel()
 
