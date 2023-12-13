@@ -162,6 +162,7 @@ func (h *Handler) cleanupCappedCollections(ctx context.Context) error {
 
 	// fixme: conninfo must be set, otherwise backend panics
 	connInfo := conninfo.New()
+	connInfo.BypassAuth = true
 	ctx = conninfo.Ctx(ctx, connInfo)
 
 	dbs, err := h.b.ListDatabases(ctx, nil)
