@@ -225,7 +225,8 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 
 // Compact implements backends.Collection interface.
 func (c *collection) Compact(ctx context.Context, params *backends.CompactParams) (*backends.CompactResult, error) {
-	return nil, lazyerrors.New("not implemented yet")
+	// HANA does not provide compact functionality.
+	return new(backends.CompactResult), nil
 }
 
 // Prefixes an index with the collection name to store it in hana.
