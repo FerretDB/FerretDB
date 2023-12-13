@@ -15,7 +15,9 @@
 package postgresql
 
 import (
+	"cmp"
 	"context"
+	"slices"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata"
@@ -50,7 +52,37 @@ func (db *database) ListCollections(ctx context.Context, params *backends.ListCo
 		return nil, lazyerrors.Error(err)
 	}
 
-	res := make([]backends.CollectionInfo, len(list))
+	var res []backends.CollectionInfo
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/3601
+	if params != nil && len(params.Name) > 0 {
+
+		var nameList []string
+
+		for i, c := range list {
+			nameList[i] = c.Name
+		}
+
+		res = make([]backends.CollectionInfo, 1)
+
+		i, found := slices.BinarySearchFunc(nameList, params.Name, func(collectionName, t string) int {
+			return cmp.Compare(collectionName, t)
+		})
+
+		if found {
+			res[0] = backends.CollectionInfo{
+				Name:            list[i].Name,
+				UUID:            list[i].UUID,
+				CappedSize:      list[i].CappedSize,
+				CappedDocuments: list[i].CappedDocuments,
+			}
+		}
+		return &backends.ListCollectionsResult{
+			Collections: res,
+		}, nil
+	}
+
+	res = make([]backends.CollectionInfo, len(list))
 	for i, c := range list {
 		res[i] = backends.CollectionInfo{
 			Name:            c.Name,

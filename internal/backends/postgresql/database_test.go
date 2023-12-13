@@ -171,7 +171,7 @@ func TestListCollections(t *testing.T) {
 		require.Equal(t, cNames[0], res.Collections[1].Name)
 	})
 
-	t.Run("ListCollection with emoty params", func(t *testing.T) {
+	t.Run("ListCollection with empty params", func(t *testing.T) {
 		res, err := db.ListCollections(ctx, &backends.ListCollectionsParams{})
 		require.NoError(t, err)
 		require.Equal(t, 2, len(res.Collections))
