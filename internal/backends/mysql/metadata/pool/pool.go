@@ -52,7 +52,23 @@ type Pool struct {
 
 // New creates a new Pool.
 func New(u string, l *zap.Logger, sp *state.Provider) (*Pool, error) {
-	return nil, lazyerrors.New("not yet implemented")
+	baseURI, err := url.Parse(u)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	p := &Pool{
+		baseURI: *baseURI,
+		l:       l,
+		sp:      sp,
+		rw:      sync.RWMutex{},
+		dbs:     map[string]*fsql.DB{},
+		token:   resource.NewToken(),
+	}
+
+	resource.Track(p, p.token)
+
+	return p, nil
 }
 
 // Close closes all connections in the pool.
@@ -98,7 +114,7 @@ func (p *Pool) Get(username, password string) (*fsql.DB, error) {
 	p.rw.Lock()
 	defer p.rw.Unlock()
 
-	// a concurrent connectio might have created a pool already; check again
+	// a concurrent connection might have created a pool already; check again
 	if res = p.dbs[u]; res != nil {
 		p.l.Debug("Pool: found existing pool (after acquiring lock)", zap.String("username", username))
 		return res, nil

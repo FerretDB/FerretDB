@@ -132,6 +132,7 @@ func (r *Registry) getPool(ctx context.Context) (*fsql.DB, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
+	r.colls = make(map[string]map[string]*Collection, len(dbNames))
 	for _, db := range dbNames {
 		if err := r.initCollections(ctx, db, p); err != nil {
 			return nil, lazyerrors.Error(err)

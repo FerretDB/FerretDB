@@ -16,18 +16,18 @@ package pool
 
 import (
 	"net/url"
-	"path"
+	"strings"
 
 	"github.com/go-sql-driver/mysql"
 )
 
-// parseURI checks the given MySQL URI and returns a parsed form.
+// ParseURI checks the given MySQL URI and returns a parsed form.
 //
 // URI should contain the protocol with which the connection is being made.
 // For example: <user>:<pwd>@tcp(127.0.0.1/3306)/dbName
 //
 // Returned URL string follows the correct format for use by the database/sql `Open` method.
-func parseURI(uri string) (string, error) {
+func ParseURI(uri string) (string, error) {
 	u, err := url.Parse(uri)
 	if err != nil {
 		return "", err
@@ -35,8 +35,6 @@ func parseURI(uri string) (string, error) {
 
 	username := u.User.Username()
 	password, _ := u.User.Password()
-
-	dbName := path.Clean(u.Path)
 
 	values := u.Query()
 	params := make(map[string]string, len(values))
@@ -52,7 +50,7 @@ func parseURI(uri string) (string, error) {
 		Passwd: password,
 		Net:    "tcp",
 		Addr:   u.Host,
-		DBName: dbName,
+		DBName: strings.TrimPrefix(u.Path, "/"),
 		Params: params,
 	}
 	mysqlURL := cfg.FormatDSN()

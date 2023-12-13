@@ -68,7 +68,7 @@ func TestCheckAuth(t *testing.T) {
 	t.Run("Auth", func(t *testing.T) {
 		t.Parallel()
 
-		r, err := NewRegistry("username:password@tcp(127.0.0.1:3306)/ferretdb", testutil.Logger(t), sp)
+		r, err := NewRegistry("mysql://username:password@127.0.0.1:3306/ferretdb", testutil.Logger(t), sp)
 		require.NoError(t, err)
 		t.Cleanup(r.Close)
 
@@ -79,7 +79,7 @@ func TestCheckAuth(t *testing.T) {
 	t.Run("WrongUser", func(t *testing.T) {
 		t.Parallel()
 
-		r, err := NewRegistry("wrong-user:wrong-password@tcp(127.0.0.1:3306)/ferretdb", testutil.Logger(t), sp)
+		r, err := NewRegistry("mysql://wrong-user:wrong-password@127.0.0.1:3306/ferretdb", testutil.Logger(t), sp)
 		require.NoError(t, err)
 		t.Cleanup(r.Close)
 
@@ -92,7 +92,7 @@ func TestCheckAuth(t *testing.T) {
 	t.Run("WrongDatabase", func(t *testing.T) {
 		t.Parallel()
 
-		r, err := NewRegistry("username:password@tcp(127.0.0.1:3306)/wrong-database", testutil.Logger(t), sp)
+		r, err := NewRegistry("mysql://username:password@127.0.0.1:3306/wrong-database", testutil.Logger(t), sp)
 		require.NoError(t, err)
 		t.Cleanup(r.Close)
 
