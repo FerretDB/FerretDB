@@ -305,7 +305,6 @@ tasks:
         --run='{{.TEST_RUN}}'
         --
         -count=1
-        -v
         -timeout={{.TEST_TIMEOUT}}
         {{.RACE_FLAG}}
         -tags={{.BUILD_TAGS}}
