@@ -101,7 +101,7 @@ func TestCursorsTailableErrors(t *testing.T) {
 			Name: "Unauthorized",
 			Message: "Requested getMore on namespace 'TestCursorsTailableErrors-GetMoreDifferentCollection.different-collection', " +
 				"but cursor belongs to a different namespace " +
-				"TestTailableErrors-GetMoreDifferentCollection.TestTailableErrors/GetMoreDifferentCollection",
+				"TestCursorsTailableErrors-GetMoreDifferentCollection.TestCursorsTailableErrors/GetMoreDifferentCollection",
 		}
 		integration.AssertEqualCommandError(t, expected, err)
 
@@ -174,7 +174,7 @@ func TestCursorsTailable(t *testing.T) {
 			nextBatch, nextID := GetNextBatch(t, res)
 			expectedNextBatch := integration.ConvertDocuments(t, arr[i+1:i+2])
 
-			assert.Equal(t, cursorID, nextID, res)
+			assert.Equal(t, cursorID, nextID)
 
 			require.Equal(t, len(expectedNextBatch), nextBatch.Len())
 			require.Equal(t, expectedNextBatch[0], must.NotFail(nextBatch.Get(0)))
@@ -188,7 +188,7 @@ func TestCursorsTailable(t *testing.T) {
 
 		nextBatch, nextID := GetNextBatch(t, res)
 		require.Equal(t, 0, nextBatch.Len())
-		assert.Equal(t, cursorID, nextID, res)
+		assert.Equal(t, cursorID, nextID)
 	})
 
 	t.Run("GetMoreNewDoc", func(t *testing.T) {
@@ -202,7 +202,7 @@ func TestCursorsTailable(t *testing.T) {
 
 		nextBatch, nextID := GetNextBatch(t, res)
 
-		assert.Equal(t, cursorID, nextID, res)
+		assert.Equal(t, cursorID, nextID)
 
 		require.Equal(t, 1, nextBatch.Len())
 		require.Equal(t, integration.ConvertDocument(t, newDoc), must.NotFail(nextBatch.Get(0)))
@@ -215,7 +215,7 @@ func TestCursorsTailable(t *testing.T) {
 
 		nextBatch, nextID := GetNextBatch(t, res)
 		require.Equal(t, 0, nextBatch.Len())
-		assert.Equal(t, cursorID, nextID, res)
+		assert.Equal(t, cursorID, nextID)
 	})
 }
 
@@ -294,11 +294,11 @@ func TestCursorsTailableTwoCursorsSameCollection(t *testing.T) {
 
 			expectedNextBatch := integration.ConvertDocuments(t, arr[i+1:i+2])
 
-			assert.Equal(t, cursorID1, nextID1, res)
+			assert.Equal(t, cursorID1, nextID1)
 			require.Equal(t, len(expectedNextBatch), nextBatch1.Len())
 			require.Equal(t, expectedNextBatch[0], must.NotFail(nextBatch1.Get(0)))
 
-			assert.Equal(t, cursorID2, nextID2, res)
+			assert.Equal(t, cursorID2, nextID2)
 			require.Equal(t, len(expectedNextBatch), nextBatch2.Len())
 			require.Equal(t, expectedNextBatch[0], must.NotFail(nextBatch2.Get(0)))
 		}
@@ -317,10 +317,10 @@ func TestCursorsTailableTwoCursorsSameCollection(t *testing.T) {
 		nextBatch2, nextID2 := GetNextBatch(t, res)
 
 		require.Equal(t, 0, nextBatch1.Len())
-		assert.Equal(t, cursorID1, nextID1, res)
+		assert.Equal(t, cursorID1, nextID1)
 
 		require.Equal(t, 0, nextBatch2.Len())
-		assert.Equal(t, cursorID2, nextID2, res)
+		assert.Equal(t, cursorID2, nextID2)
 	})
 }
 
