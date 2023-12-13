@@ -335,22 +335,7 @@ func TestCursorsGetMoreCommand(t *testing.T) {
 				err := collection.Database().RunCommand(ctx, command).Decode(&res)
 				require.NoError(t, err)
 
-				doc := integration.ConvertDocument(t, res)
-
-				v, _ := doc.Get("cursor")
-				require.NotNil(t, v)
-
-				cursor, ok := v.(*types.Document)
-				require.True(t, ok)
-
-				cursorID, _ := cursor.Get("id")
-				assert.NotNil(t, cursorID)
-
-				v, _ = cursor.Get("firstBatch")
-				require.NotNil(t, v)
-
-				firstBatch, ok := v.(*types.Array)
-				require.True(t, ok)
+				firstBatch, cursorID := GetFirstBatch(t, res)
 
 				require.Equal(t, len(tc.firstBatch), firstBatch.Len(), "expected: %v, got: %v", tc.firstBatch, firstBatch)
 				for i, elem := range tc.firstBatch {
@@ -382,22 +367,7 @@ func TestCursorsGetMoreCommand(t *testing.T) {
 					integration.AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 
 					// upon error response contains firstBatch field.
-					doc = integration.ConvertDocument(t, res)
-
-					v, _ = doc.Get("cursor")
-					require.NotNil(t, v)
-
-					cursor, ok = v.(*types.Document)
-					require.True(t, ok)
-
-					cursorID, _ = cursor.Get("id")
-					assert.NotNil(t, cursorID)
-
-					v, _ = cursor.Get("firstBatch")
-					require.NotNil(t, v)
-
-					firstBatch, ok = v.(*types.Array)
-					require.True(t, ok)
+					firstBatch, cursorID = GetFirstBatch(t, res)
 
 					require.Equal(t, len(tc.firstBatch), firstBatch.Len(), "expected: %v, got: %v", tc.firstBatch, firstBatch)
 					for i, elem := range tc.firstBatch {
@@ -409,22 +379,7 @@ func TestCursorsGetMoreCommand(t *testing.T) {
 
 				require.NoError(t, err)
 
-				doc = integration.ConvertDocument(t, res)
-
-				v, _ = doc.Get("cursor")
-				require.NotNil(t, v)
-
-				cursor, ok = v.(*types.Document)
-				require.True(t, ok)
-
-				cursorID, _ = cursor.Get("id")
-				assert.NotNil(t, cursorID)
-
-				v, _ = cursor.Get("nextBatch")
-				require.NotNil(t, v)
-
-				nextBatch, ok := v.(*types.Array)
-				require.True(t, ok)
+				nextBatch, cursorID := GetNextBatch(t, res)
 
 				require.Equal(t, len(tc.nextBatch), nextBatch.Len(), "expected: %v, got: %v", tc.nextBatch, nextBatch)
 				for i, elem := range tc.nextBatch {
