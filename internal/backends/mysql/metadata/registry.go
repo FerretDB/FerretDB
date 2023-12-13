@@ -16,25 +16,27 @@ package metadata
 
 import (
 	"context"
+	"fmt"
+	"sort"
+	"strings"
+	"sync"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"go.uber.org/zap"
+	"golang.org/x/exp/maps"
+
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/mysql/metadata/pool"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/prometheus/client_golang/prometheus"
-	"go.uber.org/zap"
-	"sync"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
+	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
 const (
 	// MySQL table name where FerretDB metadata is stored.
 	metadataTableName = backends.ReservedPrefix + "database_metadata"
-
-	// MySQL max table name length.
-	maxTableNameLength = 64
-
-	// MySQL max index name length.
-	maxIndexNameLength = 64
 )
 
 // Parts of Prometheus metric names.
@@ -65,6 +67,21 @@ type Registry struct {
 	// TODO https://github.com/FerretDB/FerretDB/issues/2755
 	rw    sync.RWMutex
 	colls map[string]map[string]*Collection // database name -> collection name -> collection
+}
+
+// NewRegistry creates a registry for the MySQL databases with a given base URI.
+func NewRegistry(u string, l *zap.Logger, sp *state.Provider) (*Registry, error) {
+	p, err := pool.New(u, l, sp)
+	if err != nil {
+		return nil, err
+	}
+
+	r := &Registry{
+		p: p,
+		l: l,
+	}
+
+	return r, nil
 }
 
 // Close closes the registry.
@@ -115,11 +132,323 @@ func (r *Registry) getPool(ctx context.Context) (*fsql.DB, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
+	for _, db := range dbNames {
+		if err := r.initCollections(ctx, db, p); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+	}
+
 	return p, nil
 }
 
-// initDBs returns a list of database names using schema information
-func (r *Registry) initDBs(ctx context, pool *fsql.DB)
+// initDBs returns a list of database names using schema information.
+// It fetches existing schema (excluding ones reserved for MySQL),
+// then finds and returns the schema that contains FerretDB metadata table.
+func (r *Registry) initDBs(ctx context.Context, db *fsql.DB) ([]string, error) {
+	q := strings.TrimSpace(`
+		SELECT schema_name 
+		FROM information_schema.schemata
+	`)
+
+	rows, err := db.QueryContext(ctx, q)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+	defer rows.Close()
+
+	if err := rows.Err(); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	var dbNames []string
+
+	for rows.Next() {
+		var dbName string
+		if err := rows.Scan(&dbName); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		// schema created by MySQL can be used as a FerretDB database,
+		// but if it does not contain FerretDB metadata table, it is not used by FerretDB
+		q := strings.TrimSpace(`
+			SELECT EXISTS (
+				SELECT 1
+				FROM information_schema.columns
+				WHERE table_schema = ? AND table_name = ?
+			)
+		`)
+
+		var exist bool
+		if err := db.QueryRowContext(ctx, q, dbName, metadataTableName).Scan(&exist); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		if exist {
+			dbNames = append(dbNames, dbName)
+		}
+	}
+
+	return dbNames, nil
+}
+
+// initCollection loads collection metadata from the database during initialization.
+func (r *Registry) initCollections(ctx context.Context, dbName string, db *fsql.DB) error {
+	defer observability.FuncCall(ctx)()
+
+	q := fmt.Sprintf(
+		`SELECT %s FROM %s.%s`,
+		DefaultColumn,
+		strings.TrimSpace(dbName),
+		metadataTableName,
+	)
+
+	rows, err := db.QueryContext(ctx, q)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+	defer rows.Close()
+
+	colls := map[string]*Collection{}
+
+	for rows.Next() {
+		var c Collection
+
+		if err = rows.Scan(&c); err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		colls[c.Name] = &c
+	}
+
+	if err = rows.Err(); err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	r.colls[dbName] = colls
+
+	return nil
+}
+
+// DatabaseList returns a sorted list of existing databases.
+//
+// If the user is not authenticated, it returns an error.
+func (r *Registry) DatabaseList(ctx context.Context) ([]string, error) {
+	defer observability.FuncCall(ctx)()
+
+	_, err := r.getPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	r.rw.RLock()
+	defer r.rw.RUnlock()
+
+	res := maps.Keys(r.colls)
+	sort.Strings(res)
+
+	return res, nil
+}
+
+// DatabaseGetExisting returns a connection to existing database or nil if it doesn't exist.
+//
+// If the user is not authenticated, it returns error.
+func (r *Registry) DatabaseGetExisting(ctx context.Context, dbName string) (*fsql.DB, error) {
+	defer observability.FuncCall(ctx)()
+
+	p, err := r.getPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	r.rw.RLock()
+	defer r.rw.RUnlock()
+
+	db := r.colls[dbName]
+	if db == nil {
+		return nil, nil
+	}
+
+	return p, nil
+}
+
+// DatabaseGetOrCreate returns a connection to existing database or newly created database.
+//
+// The dbName must be a validated database name.
+//
+// If the user is not authenticated, it returns error.
+func (r *Registry) DatabaseGetOrCreate(ctx context.Context, dbName string) (*fsql.DB, error) {
+	defer observability.FuncCall(ctx)()
+
+	p, err := r.getPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	r.rw.Lock()
+	defer r.rw.Unlock()
+
+	return r.databaseGetOrCreate(ctx, p, dbName)
+}
+
+// databaseGetOrCreate returns a connection to the existing database or newly created database.
+//
+// The dbName must be a validated database name.
+//
+// It does not hold the lock.
+func (r *Registry) databaseGetOrCreate(ctx context.Context, p *fsql.DB, dbName string) (*fsql.DB, error) {
+	defer observability.FuncCall(ctx)()
+
+	db := r.colls[dbName]
+	if db != nil {
+		return p, nil
+	}
+
+	q := fmt.Sprintf(
+		`CREATE SCHEMA %s`,
+		dbName,
+	)
+
+	var err error
+	if _, err = p.ExecContext(ctx, q); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	q = fmt.Sprintf(
+		`CREATE TABLE %s.%s (%s json)`,
+		dbName,
+		metadataTableName,
+		DefaultColumn,
+	)
+
+	if _, err = p.ExecContext(ctx, q); err != nil {
+		_, _ = r.databaseDrop(ctx, p, dbName)
+		return nil, lazyerrors.Error(err)
+	}
+
+	// json columns cannot be indexed directly in MySQL. A workaround
+	// for this is done by creating a generated column that extracts
+	// information that should be indexed.
+	//
+	// https://dev.mysql.com/doc/refman/5.7/en/create-table-secondary-indexes.html#json-column-indirect-index
+	q = fmt.Sprintf(
+		`ALTER TABLE %s.%s
+		 ADD COLUMN %s VARCHAR(255) GENERATED ALWAYS AS ((%s)) STORED,
+		 ADD UNIQUE INDEX %s (%s)
+		`,
+		dbName,
+		metadataTableName,
+		TableIdxColumn+"_id",
+		IDColumn,
+		metadataTableName+"_id_idx",
+		TableIdxColumn+"_id",
+	)
+
+	if _, err = p.ExecContext(ctx, q); err != nil {
+		_, _ = r.databaseDrop(ctx, p, dbName)
+		return nil, lazyerrors.Error(err)
+	}
+
+	q = fmt.Sprintf(
+		`ALTER TABLE %s.%s
+		 ADD COLUMN %s VARCHAR(255) GENERATED ALWAYS AS ((%s->'table')) STORED,
+		 ADD UNIQUE INDEX %s (%s)
+		`,
+		dbName,
+		metadataTableName,
+		TableIdxColumn,
+		DefaultColumn,
+		metadataTableName+"_table_idx",
+		TableIdxColumn,
+	)
+
+	if _, err = p.ExecContext(ctx, q); err != nil {
+		_, _ = r.databaseDrop(ctx, p, dbName)
+		return nil, lazyerrors.Error(err)
+	}
+
+	r.colls[dbName] = map[string]*Collection{}
+
+	return p, nil
+}
+
+// DatabaseDrop drops the database
+//
+// Returned boolean value indicates whether the database was dropped.
+// If database does not exist, (false, nil) is returned.
+//
+// If user is not authenticated, it returns error.
+func (r *Registry) DatabaseDrop(ctx context.Context, dbName string) (bool, error) {
+	defer observability.FuncCall(ctx)()
+
+	p, err := r.getPool(ctx)
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	r.rw.Lock()
+	defer r.rw.Unlock()
+
+	return r.databaseDrop(ctx, p, dbName)
+}
+
+// DatabaseDrop drops the database
+//
+// Returned boolean value indicates whether the database was dropped.
+// If database does not exist, (false, nil) is returned.
+//
+// It does not hold the lock.
+func (r *Registry) databaseDrop(ctx context.Context, p *fsql.DB, dbName string) (bool, error) {
+	defer observability.FuncCall(ctx)()
+
+	db := r.colls[dbName]
+	if db == nil {
+		return false, nil
+	}
+
+	// TODO: fix cascade delete for mysql
+	q := fmt.Sprintf(
+		`DROP DATABASE %s`,
+		dbName,
+	)
+
+	if _, err := p.ExecContext(ctx, q); err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	delete(r.colls, dbName)
+
+	return true, nil
+}
+
+// CollectionList returns a sorted copy of collections in the database.
+//
+// If database does not exist, no error is returned.
+//
+// If the user is not authenticated, it returns error.
+func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]*Collection, error) {
+	defer observability.FuncCall(ctx)()
+
+	if _, err := r.getPool(ctx); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	r.rw.RLock()
+	defer r.rw.RUnlock()
+
+	db := r.colls[dbName]
+	if db == nil {
+		return nil, nil
+	}
+
+	res := make([]*Collection, 0, len(r.colls[dbName]))
+	for _, c := range r.colls[dbName] {
+		res = append(res, c.deepCopy())
+	}
+
+	sort.Slice(res, func(i, j int) bool { return res[i].Name < res[j].Name })
+
+	return res, nil
+}
 
 // Describe implements prometheus.Collector.
 func (r *Registry) Describe(ch chan<- *prometheus.Desc) {
