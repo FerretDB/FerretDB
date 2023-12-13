@@ -15,8 +15,9 @@
 package cursors
 
 import (
-	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 	"testing"
+
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
