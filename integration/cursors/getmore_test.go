@@ -367,7 +367,7 @@ func TestCursorsGetMoreCommand(t *testing.T) {
 					integration.AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 
 					// upon error response contains firstBatch field.
-					firstBatch, cursorID = GetFirstBatch(t, res)
+					firstBatch, _ = GetFirstBatch(t, res)
 
 					require.Equal(t, len(tc.firstBatch), firstBatch.Len(), "expected: %v, got: %v", tc.firstBatch, firstBatch)
 					for i, elem := range tc.firstBatch {
@@ -379,7 +379,7 @@ func TestCursorsGetMoreCommand(t *testing.T) {
 
 				require.NoError(t, err)
 
-				nextBatch, cursorID := GetNextBatch(t, res)
+				nextBatch, _ := GetNextBatch(t, res)
 
 				require.Equal(t, len(tc.nextBatch), nextBatch.Len(), "expected: %v, got: %v", tc.nextBatch, nextBatch)
 				for i, elem := range tc.nextBatch {

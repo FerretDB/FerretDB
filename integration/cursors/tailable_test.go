@@ -54,7 +54,7 @@ func TestCursorsTailableErrors(t *testing.T) {
 
 	t.Run("GetMoreDifferentCollection", func(t *testing.T) {
 		t.Parallel()
-		s := setup.SetupWithOpts(t, &setup.SetupOpts{})
+		s := setup.SetupWithOpts(t, nil)
 
 		db, ctx := s.Collection.Database(), s.Ctx
 
@@ -123,7 +123,7 @@ func TestCursorsTailableErrors(t *testing.T) {
 }
 
 func TestCursorsTailable(t *testing.T) {
-	s := setup.SetupWithOpts(t, &setup.SetupOpts{})
+	s := setup.SetupWithOpts(t, nil)
 
 	db, ctx := s.Collection.Database(), s.Ctx
 
@@ -220,7 +220,7 @@ func TestCursorsTailable(t *testing.T) {
 }
 
 func TestCursorsTailableTwoCursorsSameCollection(t *testing.T) {
-	s := setup.SetupWithOpts(t, &setup.SetupOpts{})
+	s := setup.SetupWithOpts(t, nil)
 
 	db, ctx := s.Collection.Database(), s.Ctx
 
