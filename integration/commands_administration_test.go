@@ -1720,6 +1720,30 @@ func TestCommandsAdministrationCompactForce(t *testing.T) {
 	}
 }
 
+func TestCommandsAdministrationCompactCapped(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{
+		DatabaseName: "admin",
+		Providers:    []shareddata.Provider{},
+	})
+
+	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(1024).SetMaxDocuments(5)
+	err := s.Collection.Database().CreateCollection(s.Ctx, testutil.CollectionName(t), opts)
+	require.NoError(t, err)
+
+	var res bson.D
+	err = s.Collection.Database().RunCommand(
+		s.Ctx,
+		bson.D{{"compact", testutil.CollectionName(t)}},
+	).Decode(&res)
+	require.NoError(t, err)
+
+	doc := ConvertDocument(t, res)
+	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+	assert.NotNil(t, must.NotFail(doc.Get("bytesFreed")))
+}
+
 func TestCommandsAdministrationCompactErrors(t *testing.T) {
 	t.Parallel()
 

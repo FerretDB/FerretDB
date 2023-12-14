@@ -89,6 +89,10 @@ func New(opts *NewOpts) (*Handler, error) {
 		opts.CappedCleanupPercentage = 100
 	}
 
+	if opts.CappedCleanupInterval == 0 {
+		opts.CappedCleanupInterval = 1 * time.Minute
+	}
+
 	h := &Handler{
 		b:       b,
 		NewOpts: opts,
@@ -119,7 +123,7 @@ func New(opts *NewOpts) (*Handler, error) {
 
 	if opts.EnableOplog {
 		go func() {
-			ticker := time.NewTicker(opts.CappedCleanupInterval)
+			ticker := time.NewTicker(h.CappedCleanupInterval)
 
 			for {
 				select {
