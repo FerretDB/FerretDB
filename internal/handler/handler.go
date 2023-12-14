@@ -124,6 +124,7 @@ func New(opts *NewOpts) (*Handler, error) {
 	h.initCommands()
 
 	h.wg.Add(1)
+
 	go func() {
 		defer h.wg.Done()
 

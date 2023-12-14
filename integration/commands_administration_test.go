@@ -1725,7 +1725,7 @@ func TestCommandsAdministrationCompactCapped(t *testing.T) {
 
 	ctx, coll := setup.Setup(t)
 
-	for name, tc := range map[string]struct {
+	for name, tc := range map[string]struct { //nolint:vet // for readability
 		force             bool
 		maxDocuments      int64
 		sizeInBytes       int64
