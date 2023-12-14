@@ -15,7 +15,9 @@
 package cursors
 
 import (
+	"errors"
 	"net/url"
+	"sync/atomic"
 	"testing"
 
 	"github.com/FerretDB/FerretDB/integration"
@@ -25,6 +27,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -37,8 +40,6 @@ func TestTailableStress(t *testing.T) {
 	}
 
 	urlOpts := url.Values{}
-	urlOpts.Add("minPoolSize", "1")
-	urlOpts.Add("maxPoolSize", "1")
 
 	s := setup.SetupWithOpts(tt, &setup.SetupOpts{
 		ExtraOptions: urlOpts,
@@ -52,13 +53,19 @@ func TestTailableStress(t *testing.T) {
 
 	collection := db.Collection(tt.Name())
 
-	bsonArr, _ := integration.GenerateDocuments(0, 110)
+	bsonArr, _ := integration.GenerateDocuments(0, 50)
 
 	_, err = collection.InsertMany(ctx, bsonArr)
 	require.NoError(tt, err)
 
-	teststress.StressN(t, 2, func(ready chan<- struct{}, start <-chan struct{}) {
+	var passed atomic.Bool
+	//pass := make(chan bool)
+	//go func() {
+	//	<-pass
+	//	return
+	//}()
 
+	teststress.StressN(t, 10, func(ready chan<- struct{}, start <-chan struct{}) {
 		findCmd := bson.D{
 			{"find", collection.Name()},
 			{"batchSize", 1},
@@ -92,16 +99,22 @@ func TestTailableStress(t *testing.T) {
 		ready <- struct{}{}
 		<-start
 
-		for i := 1; i < 110; i++ {
+		for i := 1; i < 50; i++ {
 			t.Log(i)
 			t.Logf("s: %d", db.Client().NumberSessionsInProgress())
 			var getMoreRes bson.D
 			err := db.RunCommand(ctx, getMoreCmd).Decode(&getMoreRes)
-			require.NoError(t, err)
 
-			nextBatch, nextID := getNextBatch(t, getMoreRes)
-			require.Equal(t, cursorID, nextID)
-			require.Equal(t, 1, nextBatch.Len())
+			if err != nil {
+				var ce mongo.CommandError
+
+				require.True(t, errors.As(err, &ce))
+				require.Equal(t, int32(50738), ce.Code)
+				require.Equal(t, "Location50738", ce.Name)
+
+				passed.Store(true)
+				return
+			}
 		}
 
 		err = db.RunCommand(ctx, getMoreCmd).Decode(&res)
@@ -112,4 +125,6 @@ func TestTailableStress(t *testing.T) {
 		require.Equal(t, cursorID, nextID)
 		require.Equal(t, 0, nextBatch.Len())
 	})
+
+	require.True(t, passed.Load(), "Expected cross-session cursor error in at least one goroutine")
 }
