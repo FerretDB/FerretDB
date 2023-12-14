@@ -37,6 +37,7 @@ func TestTailableStress(t *testing.T) {
 	}
 
 	urlOpts := url.Values{}
+	urlOpts.Add("minPoolSize", "1")
 	urlOpts.Add("maxPoolSize", "1")
 
 	s := setup.SetupWithOpts(tt, &setup.SetupOpts{
@@ -56,7 +57,7 @@ func TestTailableStress(t *testing.T) {
 	_, err = collection.InsertMany(ctx, bsonArr)
 	require.NoError(tt, err)
 
-	teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
+	teststress.StressN(t, 2, func(ready chan<- struct{}, start <-chan struct{}) {
 
 		findCmd := bson.D{
 			{"find", collection.Name()},
