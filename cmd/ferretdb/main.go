@@ -97,9 +97,9 @@ var cli struct {
 		EnableOplog     bool `default:"false" help:"Experimental: enable capped collections, tailable cursors and OpLog." hidden:""`
 		CappedCleanup   struct {
 			Interval   time.Duration `default:"1m" help:"Experimental: capped collections cleanup interval." hidden:""`
-			Percentage uint8         `default:"10" help:"Experimental: percentage of documents to cleanup." hidden:""`
+			Percentage uint8         `default:"10" help:"Experimental: percentage of documents to cleanup."  hidden:""`
 		} `embed:"" prefix:"capped-cleanup-"`
-		EnableNewAuth bool `default:"false" help:"Experimental: enable new authentication."                             hidden:""`
+		EnableNewAuth bool `default:"false" help:"Experimental: enable new authentication." hidden:""`
 
 		//nolint:lll // for readability
 		Telemetry struct {

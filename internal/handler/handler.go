@@ -28,6 +28,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/state"
@@ -117,18 +118,9 @@ func New(opts *NewOpts) (*Handler, error) {
 	h.initCommands()
 
 	if opts.EnableOplog {
-		// FIXME: how to test
-		// mongosh --port=27017 --eval="db.createCollection('coll', {capped: true, size: 1000, max: 100})" cleanup
-		//
-		// for in in (seq 100)
-		//   mongosh --port=27017 --eval="db.coll.insert({data: 'document $i'})" cleanup
-		// end
-		//
-		// fixme:
-		// - Run cleanup in embedded?(flag)
-
 		go func() {
 			ticker := time.NewTicker(opts.CappedCleanupInterval)
+
 			for {
 				select {
 				case <-ticker.C:
@@ -139,6 +131,7 @@ func New(opts *NewOpts) (*Handler, error) {
 				case <-h.cappedCleanupStop:
 					ticker.Stop()
 					h.L.Debug("The routine to cleanup capped collections is stopped")
+
 					return
 				}
 			}
@@ -228,10 +221,6 @@ func (h *Handler) cleanupAllCappedCollections(ctx context.Context) error {
 				zap.Int64("bytes", bytesFreed),
 			)
 		}
-
-		if err != nil {
-			return lazyerrors.Error(err)
-		}
 	}
 
 	return nil
@@ -239,7 +228,7 @@ func (h *Handler) cleanupAllCappedCollections(ctx context.Context) error {
 
 // cleanupCappedCollection drops a percent of documents from the given capped collection and compacts it.
 // If the collection is not capped, it does nothing.
-func (h *Handler) cleanupCappedCollection(ctx context.Context, db backends.Database, cInfo *backends.CollectionInfo, force bool) (int32, int64, error) {
+func (h *Handler) cleanupCappedCollection(ctx context.Context, db backends.Database, cInfo *backends.CollectionInfo, force bool) (int32, int64, error) { //nolint:lll // for readability
 	if !cInfo.Capped() {
 		return 0, 0, nil
 	}
@@ -271,12 +260,13 @@ func (h *Handler) cleanupCappedCollection(ctx context.Context, db backends.Datab
 	var recordIDs []int64
 
 	for {
-		_, doc, err := res.Iter.Next()
-		if errors.Is(err, iterator.ErrIteratorDone) {
-			break
-		}
+		var doc *types.Document
 
-		if err != nil {
+		if _, doc, err = res.Iter.Next(); err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+
 			return 0, 0, lazyerrors.Error(err)
 		}
 
@@ -288,7 +278,7 @@ func (h *Handler) cleanupCappedCollection(ctx context.Context, db backends.Datab
 		return 0, 0, lazyerrors.Error(err)
 	}
 
-	if _, err := collection.Compact(ctx, &backends.CompactParams{Full: force}); err != nil {
+	if _, err = collection.Compact(ctx, &backends.CompactParams{Full: force}); err != nil {
 		return 0, 0, lazyerrors.Error(err)
 	}
 
