@@ -19,6 +19,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -39,7 +40,7 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 		return nil, err
 	}
 
-	_, err = common.GetRequiredParam[string](document, "pwd")
+	_, err = common.GetOptionalParam[string](document, "pwd", "")
 	if err != nil {
 		return nil, err
 	}
@@ -51,9 +52,41 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 		return nil, err
 	}
 
+	common.Ignored(document, h.L, "roles", "writeConcern", "authenticationRestrictions", "mechanisms")
+
+	saved := must.NotFail(types.NewDocument(
+		"user", username,
+		"roles", must.NotFail(types.NewArray()), // Non-default value is currently ignored.
+		"pwd", "password", // TODO: hash the password.
+	))
+
+	if document.Has("customData") {
+		customData, err := common.GetOptionalParam[*types.Document](document, "customData", nil)
+		if err != nil {
+			return nil, err
+		}
+		saved.Set("customData", customData)
+	}
+
+	if document.Has("digestPassword") {
+		digestPassword, err := common.GetOptionalParam[bool](document, "digestPassword", true)
+		if err != nil {
+			return nil, err
+		}
+		saved.Set("digestPassword", digestPassword)
+	}
+
+	if document.Has("comment") {
+		saved.Set("comment", must.NotFail(document.Get("comment")))
+	}
+
 	dbName, err := common.GetRequiredParam[string](document, "$db")
 	if err != nil {
 		return nil, err
+	}
+
+	if dbName != "$external" && !document.Has("pwd") {
+		return nil, handlererrors.NewCommandErrorMsg(handlererrors.ErrBadValue, "Must provide a 'pwd' field for all user documents, except those with '$external' as the user's source db")
 	}
 
 	db, err := h.b.Database(dbName)
@@ -67,18 +100,12 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 	}
 
 	_, err = collection.InsertAll(ctx, &backends.InsertAllParams{
-		Docs: []*types.Document{must.NotFail(types.NewDocument(
-			"createdUser", username,
-			"roles", []string{},
-			"pwd", "password", // TODO: hash the password.
-		)),
-		},
+		Docs: []*types.Document{saved},
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/1491
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(

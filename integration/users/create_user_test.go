@@ -15,50 +15,173 @@
 package users
 
 import (
+	"context"
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration"
 	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestCreateUser(t *testing.T) {
 	t.Parallel()
 
 	ctx, collection := setup.Setup(t)
-	// https://www.mongodb.com/docs/manual/reference/command/createUser/
 
 	_ = collection.Database().RunCommand(ctx, bson.D{
 		{"dropAllUsersFromDatabase", 1},
 	})
 
-	var res bson.D
-	err := collection.Database().RunCommand(ctx, bson.D{
-		{"createUser", "testuser"},
-		{"roles", bson.A{}},
-		{"pwd", "password"},
-	}).Decode(&res)
+	db := collection.Database()
 
-	require.NoError(t, err)
+	err := db.RunCommand(ctx, bson.D{
+		{Key: "createUser", Value: "should_already_exist"},
+		{Key: "roles", Value: bson.A{}},
+		{Key: "pwd", Value: "password"},
+	}).Err()
+	assert.NoError(t, err)
 
-	actual := integration.ConvertDocument(t, res)
-	actual.Remove("$clusterTime")
-	actual.Remove("operationTime")
+	testCases := map[string]struct {
+		payload    bson.D
+		err        *mongo.CommandError
+		altMessage string
+		expected   bson.D
+		skip       string
+	}{
+		"MissingRoles": {
+			payload: bson.D{
+				{Key: "createUser", Value: "missing_roles"},
+			},
+			err: &mongo.CommandError{
+				Code:    40414,
+				Name:    "Location40414",
+				Message: "BSON field 'createUser.roles' is missing but a required field",
+			},
+			skip: "not implemented yet", // TODO: implement for FerretDB
+		},
+		"AlreadyExists": {
+			payload: bson.D{
+				{Key: "createUser", Value: "should_already_exist"},
+				{Key: "roles", Value: bson.A{}},
+				{Key: "pwd", Value: "password"},
+			},
+			err: &mongo.CommandError{
+				Code:    51003,
+				Name:    "Location51003",
+				Message: "User \"should_already_exist@TestCreateUser\" already exists",
+			},
+		},
+		"MissingPwdOrExternal": {
+			payload: bson.D{
+				{Key: "createUser", Value: "mising_pwd_or_external"},
+				{Key: "roles", Value: bson.A{}},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "Must provide a 'pwd' field for all user documents, except those with '$external' as the user's source db",
+			},
+		},
+		"Success": {
+			payload: bson.D{
+				{Key: "createUser", Value: "success_user"},
+				{Key: "roles", Value: bson.A{}},
+				{Key: "pwd", Value: "password"},
+			},
+			expected: bson.D{
+				{
+					Key: "ok", Value: float64(1),
+				},
+			},
+		},
+		"WithComment": {
+			payload: bson.D{
+				{Key: "createUser", Value: "with_comment_user"},
+				{Key: "roles", Value: bson.A{}},
+				{Key: "pwd", Value: "password"},
+				{Key: "comment", Value: "test string comment"},
+			},
+			expected: bson.D{
+				{
+					Key: "ok", Value: float64(1),
+				},
+			},
+		},
+		"WithCommentComposite": {
+			payload: bson.D{
+				{Key: "createUser", Value: "with_comment_composite"},
+				{Key: "roles", Value: bson.A{}},
+				{Key: "pwd", Value: "password"},
+				{
+					Key: "comment",
+					Value: bson.D{
+						{Key: "example", Value: "blah"},
+						{
+							Key: "complex",
+							Value: bson.A{
+								bson.D{{Key: "x", Value: "y"}},
+							},
+						},
+					},
+				},
+			},
+			expected: bson.D{
+				{
+					Key: "ok", Value: float64(1),
+				},
+			},
+		},
+	}
+	for name, tc := range testCases {
+		tc := tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+			t.Parallel()
+			var res bson.D
+			err := db.RunCommand(ctx, tc.payload).Decode(&res)
+			if tc.err != nil {
+				integration.AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+				return
+			}
 
-	expected := integration.ConvertDocument(t, bson.D{{"ok", float64(1)}})
+			actual := integration.ConvertDocument(t, res)
+			actual.Remove("$clusterTime")
+			actual.Remove("operationTime")
 
-	testutil.AssertEqual(t, expected, actual)
+			expected := integration.ConvertDocument(t, tc.expected)
+			testutil.AssertEqual(t, expected, actual)
+			assert.NoError(t, err)
+			payload := integration.ConvertDocument(t, tc.payload)
+			assertUserExists(ctx, t, db, payload)
+		})
+	}
+}
 
+func assertUserExists(ctx context.Context, t testing.TB, db *mongo.Database, payload *types.Document) {
+	t.Helper()
 	var rec bson.D
-	err = collection.Database().Collection("system.users").FindOne(ctx, bson.D{{"user", "testuser"}}).Decode(&rec)
-	require.NoError(t, err)
+	err := db.Collection("system.users").FindOne(ctx, bson.D{
+		{Key: "user", Value: must.NotFail(payload.Get("createUser"))},
+	}).Decode(&rec)
+	assert.NoError(t, err)
+
+	var x any
+	t.Error(db.ListCollections(ctx, x))
+	t.Error(rec)
+	err = db.Collection("system.users").FindOne(ctx, bson.D{}).Decode(&rec)
+	assert.NoError(t, err)
 
 	actualRecorded := integration.ConvertDocument(t, rec)
-	expectedRec := integration.ConvertDocument(t, bson.D{{"ok", float64(1)}})
+	expectedRec := integration.ConvertDocument(t, bson.D{{Key: "ok", Value: float64(1)}})
 
 	testutil.AssertEqual(t, expectedRec, actualRecorded)
-
+	// TODO compare other data
 }
