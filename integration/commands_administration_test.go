@@ -1755,8 +1755,7 @@ func TestCommandsAdministrationCompactCapped(t *testing.T) {
 
 			collection := s.Collection.Database().Collection(collName)
 
-			// maxDocuments is set as 10, we insert 11 documents to have one document to compact
-			arr, _ := GenerateDocuments(0, 11)
+			arr, _ := GenerateDocuments(0, max+1)
 			_, err = collection.InsertMany(s.Ctx, arr)
 			require.NoError(t, err)
 
