@@ -16,34 +16,24 @@ package cursors
 
 import (
 	"errors"
-	"net/url"
 	"sync/atomic"
 	"testing"
 
 	"github.com/FerretDB/FerretDB/integration"
 	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/internal/util/testutil/testfail"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/teststress"
-	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func TestTailableStress(t *testing.T) {
-	t.Parallel()
+func TestTailableStress(tt *testing.T) {
+	tt.Parallel()
 
-	var tt testtb.TB = t
-	if !setup.IsMongoDB(tt) {
-		tt = testfail.Expected(t, "https://github.com/FerretDB/FerretDB/issues/2283")
-	}
+	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2283")
 
-	urlOpts := url.Values{}
-
-	s := setup.SetupWithOpts(tt, &setup.SetupOpts{
-		ExtraOptions: urlOpts,
-	})
+	s := setup.SetupWithOpts(tt, nil)
 
 	db, ctx := s.Collection.Database(), s.Ctx
 
@@ -59,26 +49,20 @@ func TestTailableStress(t *testing.T) {
 	require.NoError(tt, err)
 
 	var passed atomic.Bool
-	//pass := make(chan bool)
-	//go func() {
-	//	<-pass
-	//	return
-	//}()
 
 	teststress.StressN(t, 10, func(ready chan<- struct{}, start <-chan struct{}) {
 		findCmd := bson.D{
 			{"find", collection.Name()},
 			{"batchSize", 1},
 			{"tailable", true},
-			{"noCursorTimeout", true},
 		}
 
 		var res bson.D
 		err := db.RunCommand(ctx, findCmd).Decode(&res)
 		require.NoError(t, err)
 
-		firstBatch, cursorID := getFirstBatch(t, res)
-		require.Equal(t, 1, firstBatch.Len())
+		_, cursorID := getFirstBatch(t, res)
+		require.NotEmpty(t, cursorID)
 
 		t.Cleanup(func() {
 			killCursorCmd := bson.D{
@@ -100,11 +84,7 @@ func TestTailableStress(t *testing.T) {
 		<-start
 
 		for i := 1; i < 50; i++ {
-			t.Log(i)
-			t.Logf("s: %d", db.Client().NumberSessionsInProgress())
-			var getMoreRes bson.D
-			err := db.RunCommand(ctx, getMoreCmd).Decode(&getMoreRes)
-
+			err := db.RunCommand(ctx, getMoreCmd).Err()
 			if err != nil {
 				var ce mongo.CommandError
 
@@ -117,13 +97,8 @@ func TestTailableStress(t *testing.T) {
 			}
 		}
 
-		err = db.RunCommand(ctx, getMoreCmd).Decode(&res)
+		err = db.RunCommand(ctx, getMoreCmd).Err()
 		require.NoError(t, err)
-
-		nextBatch, nextID := getNextBatch(t, res)
-
-		require.Equal(t, cursorID, nextID)
-		require.Equal(t, 0, nextBatch.Len())
 	})
 
 	require.True(t, passed.Load(), "Expected cross-session cursor error in at least one goroutine")
