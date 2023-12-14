@@ -126,8 +126,14 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, lazyerrors.Error(err)
 	}
 
-	// Combine iterators chain and closer into a c to pass around.
-	// The context will be canceled when client disconnects or after maxTimeMS.
+	t := cursor.Normal
+	if params.Tailable {
+		t = cursor.Tailable
+	}
+	if params.AwaitData {
+		t = cursor.TailableAwait
+	}
+
 	c := h.cursors.NewCursor(ctx, iter, &cursor.NewParams{
 		Data: &findCursorData{
 			coll:       coll,
@@ -137,7 +143,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		DB:           params.DB,
 		Collection:   params.Collection,
 		Username:     username,
-		Type:         cursor.Normal,
+		Type:         t,
 		ShowRecordID: params.ShowRecordId,
 	})
 
