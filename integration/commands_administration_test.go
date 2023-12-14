@@ -1728,20 +1728,58 @@ func TestCommandsAdministrationCompactCapped(t *testing.T) {
 		Providers:    []shareddata.Provider{},
 	})
 
-	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(1024).SetMaxDocuments(5)
-	err := s.Collection.Database().CreateCollection(s.Ctx, testutil.CollectionName(t), opts)
-	require.NoError(t, err)
+	for name, tc := range map[string]struct {
+		force          bool
+		skipForMongoDB string // optional, skip test for mongoDB with a specific reason
+	}{
+		"ForceTrue": {
+			force: true,
+		},
+		"ForceFalse": {
+			force: false,
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skipForMongoDB != "" {
+				setup.SkipForMongoDB(t, tc.skipForMongoDB)
+			}
 
-	var res bson.D
-	err = s.Collection.Database().RunCommand(
-		s.Ctx,
-		bson.D{{"compact", testutil.CollectionName(t)}},
-	).Decode(&res)
-	require.NoError(t, err)
+			t.Parallel()
 
-	doc := ConvertDocument(t, res)
-	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
-	assert.NotNil(t, must.NotFail(doc.Get("bytesFreed")))
+			collName := testutil.CollectionName(t) + name
+
+			opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(1024).SetMaxDocuments(10)
+			err := s.Collection.Database().CreateCollection(s.Ctx, collName, opts)
+			require.NoError(t, err)
+
+			collection := s.Collection.Database().Collection(collName)
+
+			// maxDocuments is set as 10, we insert 11 documents to have one document to compact
+			arr, _ := GenerateDocuments(0, 11)
+			_, err = collection.InsertMany(s.Ctx, arr)
+			require.NoError(t, err)
+
+			count, err := collection.CountDocuments(s.Ctx, bson.D{})
+			require.NoError(t, err)
+			require.Equal(t, int64(11), count)
+
+			var res bson.D
+			err = collection.Database().RunCommand(s.Ctx,
+				bson.D{{"compact", collection.Name()}, {"force", tc.force}},
+			).Decode(&res)
+			require.NoError(t, err)
+
+			doc := ConvertDocument(t, res)
+			assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+			assert.NotEmpty(t, must.NotFail(doc.Get("bytesFreed")))
+
+			// one document should be removed during compact execution
+			count, err = collection.CountDocuments(s.Ctx, bson.D{})
+			require.NoError(t, err)
+			require.Equal(t, int64(10), count)
+		})
+	}
 }
 
 func TestCommandsAdministrationCompactErrors(t *testing.T) {
