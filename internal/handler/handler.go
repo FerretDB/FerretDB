@@ -89,6 +89,10 @@ func New(opts *NewOpts) (*Handler, error) {
 		opts.CappedCleanupPercentage = 100
 	}
 
+	if opts.CappedCleanupPercentage == 0 {
+		opts.CappedCleanupPercentage = 10
+	}
+
 	if opts.CappedCleanupInterval == 0 {
 		opts.CappedCleanupInterval = 1 * time.Minute
 	}
@@ -253,42 +257,40 @@ func (h *Handler) cleanupCappedCollection(ctx context.Context, db backends.Datab
 
 	var deleted int32
 
-	if h.CappedCleanupPercentage > 0 {
-		params := backends.QueryParams{
-			Limit:         int64(float64(statsBefore.CountDocuments) * float64(h.CappedCleanupPercentage) / 100),
-			OnlyRecordIDs: true,
-		}
+	params := backends.QueryParams{
+		Limit:         int64(float64(statsBefore.CountDocuments) * float64(h.CappedCleanupPercentage) / 100),
+		OnlyRecordIDs: true,
+	}
 
-		var res *backends.QueryResult
+	var res *backends.QueryResult
 
-		if res, err = collection.Query(ctx, &params); err != nil {
-			return 0, 0, lazyerrors.Error(err)
-		}
+	if res, err = collection.Query(ctx, &params); err != nil {
+		return 0, 0, lazyerrors.Error(err)
+	}
 
-		var recordIDs []int64
+	var recordIDs []int64
 
-		for {
-			var doc *types.Document
+	for {
+		var doc *types.Document
 
-			if _, doc, err = res.Iter.Next(); err != nil {
-				if errors.Is(err, iterator.ErrIteratorDone) {
-					break
-				}
-
-				return 0, 0, lazyerrors.Error(err)
+		if _, doc, err = res.Iter.Next(); err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
 			}
 
-			recordIDs = append(recordIDs, doc.RecordID())
-		}
-
-		var deletedRes *backends.DeleteAllResult
-
-		if deletedRes, err = collection.DeleteAll(ctx, &backends.DeleteAllParams{RecordIDs: recordIDs}); err != nil {
 			return 0, 0, lazyerrors.Error(err)
 		}
 
-		deleted = deletedRes.Deleted
+		recordIDs = append(recordIDs, doc.RecordID())
 	}
+
+	var deletedRes *backends.DeleteAllResult
+
+	if deletedRes, err = collection.DeleteAll(ctx, &backends.DeleteAllParams{RecordIDs: recordIDs}); err != nil {
+		return 0, 0, lazyerrors.Error(err)
+	}
+
+	deleted = deletedRes.Deleted
 
 	if _, err = collection.Compact(ctx, &backends.CompactParams{Full: force}); err != nil {
 		return 0, 0, lazyerrors.Error(err)
