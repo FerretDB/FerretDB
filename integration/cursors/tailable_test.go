@@ -143,7 +143,7 @@ func TestCursorsTailable(t *testing.T) {
 
 	var cursorID any
 
-	t.Run("FirstBatch", func(tt *testing.T) {
+	t.Run("FirstBatch", func(t *testing.T) {
 		cmd := bson.D{
 			{"find", collection.Name()},
 			{"batchSize", 1},
@@ -168,7 +168,7 @@ func TestCursorsTailable(t *testing.T) {
 		{"batchSize", 1},
 	}
 
-	t.Run("GetMore", func(tt *testing.T) {
+	t.Run("GetMore", func(t *testing.T) {
 		for i := 0; i < 2; i++ {
 			var res bson.D
 			err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
@@ -212,7 +212,7 @@ func TestCursorsTailable(t *testing.T) {
 		assert.Equal(t, cursorID, nextID)
 
 		require.Equal(t, 1, nextBatch.Len())
-		require.Equal(t, integration.ConvertDocument(tt, newDoc), must.NotFail(nextBatch.Get(0)))
+		require.Equal(t, integration.ConvertDocument(t, newDoc), must.NotFail(nextBatch.Get(0)))
 	})
 
 	t.Run("GetMoreEmptyAfterInsertion", func(tt *testing.T) {
