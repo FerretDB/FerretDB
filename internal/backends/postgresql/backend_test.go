@@ -48,8 +48,8 @@ func TestListDatabases(t *testing.T) {
 	t.Cleanup(b.Close)
 
 	dbNames := []string{"testDB1", "testDB2", "testDB3"}
-	require.NoError(t, err)
 	testDB, err := b.Database(dbNames[0])
+	require.NoError(t, err)
 	err = testDB.CreateCollection(ctx, &backends.CreateCollectionParams{Name: "testCollection1"})
 	require.NoError(t, err)
 	defer b.DropDatabase(ctx, &backends.DropDatabaseParams{Name: dbNames[0]})

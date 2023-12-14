@@ -15,7 +15,9 @@
 package backends
 
 import (
+	// "cmp"
 	"context"
+	// "slices"
 
 	"github.com/prometheus/client_golang/prometheus"
 
@@ -146,6 +148,17 @@ func (bc *backendContract) ListDatabases(ctx context.Context, params *ListDataba
 
 	res, err := bc.b.ListDatabases(ctx, params)
 	checkError(err)
+
+	// if res != nil && len(res.Databases) > 0 {
+	// 	must.BeTrue(slices.IsSortedFunc(res.Databases, func(a, b DatabaseInfo) int {
+	// 		return cmp.Compare(a.Name, b.Name)
+	// 	}))
+
+	// 	if params != nil && params.Name != "" {
+	// 		must.BeTrue(len(res.Databases) == 1)
+	// 		must.BeTrue(res.Databases[0].Name == params.Name)
+	// 	}
+	// }
 
 	return res, err
 }
