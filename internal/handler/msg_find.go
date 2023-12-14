@@ -241,7 +241,7 @@ func (h *Handler) makeFindQueryParams(params *common.FindParams, cInfo *backends
 		qp.Limit = params.Limit
 	}
 
-	h.L.Sugar().Debugf("Converted %+v for %+v to %+v.", params, qp)
+	h.L.Sugar().Debugf("Converted %+v for %+v to %+v.", params, cInfo, qp)
 
 	return qp, nil
 }
