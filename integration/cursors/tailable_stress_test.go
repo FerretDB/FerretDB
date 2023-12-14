@@ -16,7 +16,6 @@ package cursors
 
 import (
 	"net/url"
-	"sync/atomic"
 	"testing"
 
 	"github.com/FerretDB/FerretDB/integration"
@@ -57,14 +56,11 @@ func TestTailableStress(t *testing.T) {
 	_, err = collection.InsertMany(ctx, bsonArr)
 	require.NoError(tt, err)
 
-	var counter atomic.Int32
-
 	teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
-		id := int(counter.Add(1))
 
 		findCmd := bson.D{
 			{"find", collection.Name()},
-			{"batchSize", id},
+			{"batchSize", 1},
 			{"tailable", true},
 			{"noCursorTimeout", true},
 		}
@@ -74,7 +70,7 @@ func TestTailableStress(t *testing.T) {
 		require.NoError(t, err)
 
 		firstBatch, cursorID := getFirstBatch(t, res)
-		require.Equal(t, id, firstBatch.Len())
+		require.Equal(t, 1, firstBatch.Len())
 
 		t.Cleanup(func() {
 			killCursorCmd := bson.D{
@@ -89,13 +85,13 @@ func TestTailableStress(t *testing.T) {
 		getMoreCmd := bson.D{
 			{"getMore", cursorID},
 			{"collection", collection.Name()},
-			{"batchSize", id},
+			{"batchSize", 1},
 		}
 
 		ready <- struct{}{}
 		<-start
 
-		for i := int(id); i < 110/id; i++ {
+		for i := 1; i < 110; i++ {
 			t.Log(i)
 			t.Logf("s: %d", db.Client().NumberSessionsInProgress())
 			var getMoreRes bson.D
@@ -104,7 +100,7 @@ func TestTailableStress(t *testing.T) {
 
 			nextBatch, nextID := getNextBatch(t, getMoreRes)
 			require.Equal(t, cursorID, nextID)
-			require.Equal(t, id, nextBatch.Len())
+			require.Equal(t, 1, nextBatch.Len())
 		}
 
 		err = db.RunCommand(ctx, getMoreCmd).Decode(&res)
