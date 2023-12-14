@@ -28,7 +28,7 @@ import (
 func TestDiffDBStatsScale(tt *testing.T) {
 	tt.Parallel()
 
-	t := setup.FailsForFerretDB(tt, "fixme")
+	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/3852")
 
 	ctx, collection := setup.Setup(t)
 

@@ -595,8 +595,6 @@ func TestUpdateCommandCompat(t *testing.T) {
 }
 
 func TestUpdateCompat(t *testing.T) {
-	// fixmme: failsForFerretDB (only particular test cases)
-
 	t.Parallel()
 
 	testCases := map[string]updateCompatTestCase{
