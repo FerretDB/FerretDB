@@ -251,35 +251,43 @@ func (h *Handler) cleanupCappedCollection(ctx context.Context, db backends.Datab
 		return 0, 0, nil
 	}
 
-	params := backends.QueryParams{
-		Limit:         int64(float64(statsBefore.CountDocuments) * float64(h.CappedCleanupPercentage) / 100),
-		OnlyRecordIDs: true,
-	}
+	var deleted int32
 
-	res, err := collection.Query(ctx, &params)
-	if err != nil {
-		return 0, 0, lazyerrors.Error(err)
-	}
+	if h.CappedCleanupPercentage > 0 {
+		params := backends.QueryParams{
+			Limit:         int64(float64(statsBefore.CountDocuments) * float64(h.CappedCleanupPercentage) / 100),
+			OnlyRecordIDs: true,
+		}
 
-	var recordIDs []int64
+		var res *backends.QueryResult
 
-	for {
-		var doc *types.Document
-
-		if _, doc, err = res.Iter.Next(); err != nil {
-			if errors.Is(err, iterator.ErrIteratorDone) {
-				break
-			}
-
+		if res, err = collection.Query(ctx, &params); err != nil {
 			return 0, 0, lazyerrors.Error(err)
 		}
 
-		recordIDs = append(recordIDs, doc.RecordID())
-	}
+		var recordIDs []int64
 
-	deleted, err := collection.DeleteAll(ctx, &backends.DeleteAllParams{RecordIDs: recordIDs})
-	if err != nil {
-		return 0, 0, lazyerrors.Error(err)
+		for {
+			var doc *types.Document
+
+			if _, doc, err = res.Iter.Next(); err != nil {
+				if errors.Is(err, iterator.ErrIteratorDone) {
+					break
+				}
+
+				return 0, 0, lazyerrors.Error(err)
+			}
+
+			recordIDs = append(recordIDs, doc.RecordID())
+		}
+
+		var deletedRes *backends.DeleteAllResult
+
+		if deletedRes, err = collection.DeleteAll(ctx, &backends.DeleteAllParams{RecordIDs: recordIDs}); err != nil {
+			return 0, 0, lazyerrors.Error(err)
+		}
+
+		deleted = deletedRes.Deleted
 	}
 
 	if _, err = collection.Compact(ctx, &backends.CompactParams{Full: force}); err != nil {
@@ -300,5 +308,5 @@ func (h *Handler) cleanupCappedCollection(ctx context.Context, db backends.Datab
 		bytesFreed = 0
 	}
 
-	return deleted.Deleted, bytesFreed, nil
+	return deleted, bytesFreed, nil
 }

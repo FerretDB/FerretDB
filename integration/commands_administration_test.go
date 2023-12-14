@@ -1774,7 +1774,7 @@ func TestCommandsAdministrationCompactCapped(t *testing.T) {
 			assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
 			assert.NotEmpty(t, must.NotFail(doc.Get("bytesFreed")))
 
-			// one document should be removed during compact execution
+			// 10% of documents (one document) should be removed during compact execution
 			count, err = collection.CountDocuments(s.Ctx, bson.D{})
 			require.NoError(t, err)
 			require.Equal(t, int64(10), count)
