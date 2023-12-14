@@ -18,6 +18,7 @@ package handler
 import (
 	"context"
 	"errors"
+	"sync"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -53,6 +54,7 @@ type Handler struct {
 
 	cursors  *cursor.Registry
 	commands map[string]command
+	wg       sync.WaitGroup
 
 	cappedCleanupStop             chan struct{}
 	cleanupCappedCollectionsDocs  *prometheus.CounterVec
@@ -93,10 +95,6 @@ func New(opts *NewOpts) (*Handler, error) {
 		opts.CappedCleanupPercentage = 10
 	}
 
-	if opts.CappedCleanupInterval == 0 {
-		opts.CappedCleanupInterval = 1 * time.Minute
-	}
-
 	h := &Handler{
 		b:       b,
 		NewOpts: opts,
@@ -125,35 +123,50 @@ func New(opts *NewOpts) (*Handler, error) {
 
 	h.initCommands()
 
-	if opts.EnableOplog {
-		go func() {
-			ticker := time.NewTicker(h.CappedCleanupInterval)
+	h.wg.Add(1)
+	go func() {
+		defer h.wg.Done()
 
-			for {
-				select {
-				case <-ticker.C:
-					if err := h.cleanupAllCappedCollections(context.Background()); err != nil {
-						h.L.Error("Failed to cleanup capped collections", zap.Error(err))
-					}
-
-				case <-h.cappedCleanupStop:
-					ticker.Stop()
-					h.L.Debug("The routine to cleanup capped collections is stopped")
-
-					return
-				}
-			}
-		}()
-	}
+		h.runLala()
+	}()
 
 	return h, nil
+}
+
+func (h *Handler) runLala() {
+	if !h.EnableOplog {
+		return
+	}
+
+	if h.CappedCleanupInterval <= 0 {
+		// FIXME log
+		return
+	}
+
+	ticker := time.NewTicker(h.CappedCleanupInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			if err := h.cleanupAllCappedCollections(context.Background()); err != nil {
+				h.L.Error("Failed to cleanup capped collections", zap.Error(err))
+			}
+
+		case <-h.cappedCleanupStop:
+			h.L.Debug("The routine to cleanup capped collections is stopped")
+
+			return
+		}
+	}
 }
 
 // Close gracefully shutdowns handler.
 // It should be called after listener closes all client connections and stops listening.
 func (h *Handler) Close() {
 	h.cursors.Close()
-	h.cappedCleanupStop <- struct{}{}
+	close(h.cappedCleanupStop)
+	h.wg.Wait()
 }
 
 // Describe implements prometheus.Collector interface.
