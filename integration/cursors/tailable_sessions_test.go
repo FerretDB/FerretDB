@@ -86,7 +86,7 @@ func TestTailableCursorsBetweenSessions(tt *testing.T) {
 		<-start
 
 		for i := 1; i < 50; i++ {
-			err := db.RunCommand(ctx, getMoreCmd).Err()
+			err = db.RunCommand(ctx, getMoreCmd).Err()
 			if err != nil {
 				var ce mongo.CommandError
 
