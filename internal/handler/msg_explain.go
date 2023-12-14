@@ -115,8 +115,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrInvalidNamespace, msg, document.Command())
 	}
 
-	var cInfo backends.CollectionInfo
-	cInfo = cList.Collections[0]
+	cInfo := cList.Collections[0]
 
 	switch {
 	case h.DisablePushdown:
