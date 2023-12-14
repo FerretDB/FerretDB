@@ -54,7 +54,6 @@ func (db *database) ListCollections(ctx context.Context, params *backends.ListCo
 
 	var res []backends.CollectionInfo
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3601
 	if params != nil && len(params.Name) > 0 {
 
 		nameList := make([]string, len(list))

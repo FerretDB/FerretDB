@@ -77,7 +77,6 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	var cInfo backends.CollectionInfo
 
 	if len(cList.Collections) == 0 {
-		// TODO https://github.com/FerretDB/FerretDB/issues/3601
 		msg := fmt.Sprintf("Invalid collection name: %s", collectionParam.Name)
 		return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrInvalidNamespace, msg, document.Command())
 	}

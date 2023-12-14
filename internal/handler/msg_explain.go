@@ -115,7 +115,6 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrInvalidNamespace, msg, document.Command())
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3601
 	var cInfo backends.CollectionInfo
 	cInfo = cList.Collections[0]
 

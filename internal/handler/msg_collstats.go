@@ -82,7 +82,6 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3601
 	var found bool
 	var cInfo backends.CollectionInfo
 	found = len(collections.Collections) > 0

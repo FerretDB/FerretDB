@@ -130,7 +130,6 @@ func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDataba
 
 	var res *backends.ListDatabasesResult
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3601
 	if params != nil && len(params.Name) > 0 {
 		res = &backends.ListDatabasesResult{
 			Databases: make([]backends.DatabaseInfo, 0, 1),

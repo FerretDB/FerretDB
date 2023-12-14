@@ -286,7 +286,6 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		}
 
 		var cList *backends.ListCollectionsResult
-		// TODO https://github.com/FerretDB/FerretDB/issues/3601
 		collectionParam := backends.ListCollectionsParams{Name: cName}
 		if cList, err = db.ListCollections(ctx, &collectionParam); err != nil {
 			return nil, err
@@ -478,7 +477,6 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 			return nil, lazyerrors.Error(err)
 		}
 
-		// TODO https://github.com/FerretDB/FerretDB/issues/3601
 		if len(cList.Collections) == 0 {
 			return nil, handlererrors.NewCommandErrorMsgWithArgument(
 				handlererrors.ErrNamespaceNotFound,
