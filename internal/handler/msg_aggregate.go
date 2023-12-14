@@ -15,13 +15,11 @@
 package handler
 
 import (
-	"cmp"
 	"context"
 	"errors"
 	"fmt"
 	"math"
 	"os"
-	"slices"
 	"time"
 
 	"go.uber.org/zap"
@@ -299,14 +297,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			)
 		}
 
-		var cInfo backends.CollectionInfo
-		cInfo = cList.Collections[0]
-
-		if i, found := slices.BinarySearchFunc(cList.Collections, cName, func(e backends.CollectionInfo, t string) int {
-			return cmp.Compare(e.Name, t)
-		}); found {
-			cInfo = cList.Collections[i]
-		}
+		cInfo := cList.Collections[0]
 
 		switch {
 		case h.DisablePushdown:
