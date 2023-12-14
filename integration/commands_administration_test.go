@@ -1749,19 +1749,21 @@ func TestCommandsAdministrationCompactCapped(t *testing.T) {
 
 			collName := testutil.CollectionName(t) + name
 
-			opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(1024).SetMaxDocuments(10)
+			maxDocuments := 10
+
+			opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(1024).SetMaxDocuments(int64(maxDocuments))
 			err := s.Collection.Database().CreateCollection(s.Ctx, collName, opts)
 			require.NoError(t, err)
 
 			collection := s.Collection.Database().Collection(collName)
 
-			arr, _ := GenerateDocuments(0, max+1)
+			arr, _ := GenerateDocuments(0, int32(maxDocuments+1))
 			_, err = collection.InsertMany(s.Ctx, arr)
 			require.NoError(t, err)
 
 			count, err := collection.CountDocuments(s.Ctx, bson.D{})
 			require.NoError(t, err)
-			require.Equal(t, int64(11), count)
+			require.Equal(t, int64(maxDocuments+1), count)
 
 			var res bson.D
 			err = collection.Database().RunCommand(s.Ctx,
@@ -1771,12 +1773,15 @@ func TestCommandsAdministrationCompactCapped(t *testing.T) {
 
 			doc := ConvertDocument(t, res)
 			assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
-			assert.NotEmpty(t, must.NotFail(doc.Get("bytesFreed")))
+			assert.NotNil(t, must.NotFail(doc.Get("bytesFreed")))
 
-			// 10% of documents (one document) should be removed during compact execution
+			// 20% of documents should be removed from capped collection after the next insertion
+			_, err = collection.InsertOne(s.Ctx, bson.D{{"foo", "bar"}})
+			require.NoError(t, err)
+
 			count, err = collection.CountDocuments(s.Ctx, bson.D{})
 			require.NoError(t, err)
-			require.Equal(t, int64(10), count)
+			require.Equal(t, int64(10), count) // 10 = (maxDocuments+1) - maxDocuments*0.2 + 1
 		})
 	}
 }
