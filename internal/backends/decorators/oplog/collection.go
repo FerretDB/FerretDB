@@ -228,7 +228,6 @@ func (c *collection) oplogCollection(ctx context.Context) backends.Collection {
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/3601
-	// TODO(SP) - Check what to return here
 	return must.NotFail(db.Collection(oplogCollection))
 }
 
