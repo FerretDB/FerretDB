@@ -1723,20 +1723,38 @@ func TestCommandsAdministrationCompactForce(t *testing.T) {
 func TestCommandsAdministrationCompactCapped(t *testing.T) {
 	t.Parallel()
 
-	s := setup.SetupWithOpts(t, &setup.SetupOpts{
-		DatabaseName: "admin",
-		Providers:    []shareddata.Provider{},
-	})
+	ctx, coll := setup.Setup(t)
 
 	for name, tc := range map[string]struct {
-		force          bool
-		skipForMongoDB string // optional, skip test for mongoDB with a specific reason
+		force             bool
+		maxDocuments      int64
+		sizeInBytes       int64
+		insertDocuments   int32
+		expectedDocuments int64 // insertDocuments - insertDocuments*0.2 (cleanup 20%) + 1 (extra insert after compact)
+
+		skipForMongoDB string // optional, skip test for MongoDB backend with a specific reason
 	}{
-		"ForceTrue": {
-			force: true,
+		"OverflowDocs": {
+			force:             true,
+			maxDocuments:      10,
+			sizeInBytes:       100000,
+			insertDocuments:   12, // overflows capped collection max documents
+			expectedDocuments: 11,
+		},
+		"OverflowSize": {
+			force:             true,
+			maxDocuments:      1000,
+			sizeInBytes:       256,
+			insertDocuments:   20, // overflows capped collection size
+			expectedDocuments: 17,
 		},
 		"ForceFalse": {
-			force: false,
+			force:             false,
+			maxDocuments:      10,
+			sizeInBytes:       100000,
+			insertDocuments:   12, // overflows capped collection max documents
+			expectedDocuments: 11,
+			skipForMongoDB:    "Only {force:true} can be run on active replica set primary",
 		},
 	} {
 		name, tc := name, tc
@@ -1749,24 +1767,22 @@ func TestCommandsAdministrationCompactCapped(t *testing.T) {
 
 			collName := testutil.CollectionName(t) + name
 
-			maxDocuments := 10
-
-			opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(1024).SetMaxDocuments(int64(maxDocuments))
-			err := s.Collection.Database().CreateCollection(s.Ctx, collName, opts)
+			opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(tc.sizeInBytes).SetMaxDocuments(tc.maxDocuments)
+			err := coll.Database().CreateCollection(ctx, collName, opts)
 			require.NoError(t, err)
 
-			collection := s.Collection.Database().Collection(collName)
+			collection := coll.Database().Collection(collName)
 
-			arr, _ := GenerateDocuments(0, int32(maxDocuments+1))
-			_, err = collection.InsertMany(s.Ctx, arr)
+			arr, _ := GenerateDocuments(0, tc.insertDocuments)
+			_, err = collection.InsertMany(ctx, arr)
 			require.NoError(t, err)
 
-			count, err := collection.CountDocuments(s.Ctx, bson.D{})
+			count, err := collection.CountDocuments(ctx, bson.D{})
 			require.NoError(t, err)
-			require.Equal(t, int64(maxDocuments+1), count)
+			require.InDelta(t, int64(tc.insertDocuments), count, 2)
 
 			var res bson.D
-			err = collection.Database().RunCommand(s.Ctx,
+			err = collection.Database().RunCommand(ctx,
 				bson.D{{"compact", collection.Name()}, {"force", tc.force}},
 			).Decode(&res)
 			require.NoError(t, err)
@@ -1775,13 +1791,13 @@ func TestCommandsAdministrationCompactCapped(t *testing.T) {
 			assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
 			assert.NotNil(t, must.NotFail(doc.Get("bytesFreed")))
 
-			// 20% of documents should be removed from capped collection after the next insertion
-			_, err = collection.InsertOne(s.Ctx, bson.D{{"foo", "bar"}})
+			// some documents should be removed from capped collection after the insertion
+			_, err = collection.InsertOne(ctx, bson.D{{"foo", "bar"}})
 			require.NoError(t, err)
 
-			count, err = collection.CountDocuments(s.Ctx, bson.D{})
+			count, err = collection.CountDocuments(ctx, bson.D{})
 			require.NoError(t, err)
-			require.Equal(t, int64(10), count) // 10 = (maxDocuments+1) - maxDocuments*0.2 + 1
+			require.InDelta(t, tc.expectedDocuments, count, 1)
 		})
 	}
 }
