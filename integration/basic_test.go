@@ -431,8 +431,9 @@ func TestDatabaseName(t *testing.T) {
 				err: &mongo.CommandError{
 					Name:    "InvalidNamespace",
 					Code:    73,
-					Message: fmt.Sprintf("Invalid namespace specified '%s.TestDatabaseName-Err'", dbName64),
+					Message: "db name must be at most 63 characters, found: 64",
 				},
+				altMessage: fmt.Sprintf("Invalid namespace specified '%s.TestDatabaseName-Err'", dbName64),
 			},
 			"WithASlash": {
 				db: "/",
@@ -473,7 +474,7 @@ func TestDatabaseName(t *testing.T) {
 				err: &mongo.CommandError{
 					Name:    "InvalidNamespace",
 					Code:    73,
-					Message: `'.' is an invalid character in the database name: database.test`,
+					Message: `'.' is an invalid character in a db name: database.test`,
 				},
 				altMessage: `Invalid namespace specified 'database.test.TestDatabaseName-Err'`,
 			},
