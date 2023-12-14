@@ -28,13 +28,14 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func TestTailableStress(tt *testing.T) {
+// TestTailableCursorsBetweenSessions runs multiple cursors in parallel, that should spawn in different sessions,
+// and result in error.
+func TestTailableCursorsBetweenSessions(tt *testing.T) {
 	tt.Parallel()
 
-	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2283")
+	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/153")
 
 	s := setup.SetupWithOpts(tt, nil)
-
 	db, ctx := s.Collection.Database(), s.Ctx
 
 	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(10000)
