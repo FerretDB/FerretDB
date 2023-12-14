@@ -18,6 +18,7 @@ package handler
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -87,12 +88,11 @@ func New(opts *NewOpts) (*Handler, error) {
 		b = oplog.NewBackend(b, opts.L.Named("oplog"))
 	}
 
-	if opts.CappedCleanupPercentage > 100 {
-		opts.CappedCleanupPercentage = 100
-	}
-
-	if opts.CappedCleanupPercentage == 0 {
-		opts.CappedCleanupPercentage = 10
+	if opts.CappedCleanupPercentage >= 100 || opts.CappedCleanupPercentage <= 0 {
+		return nil, fmt.Errorf(
+			"percentage of documents to cleanup must be in range (0, 100), but %d given",
+			opts.CappedCleanupPercentage,
+		)
 	}
 
 	h := &Handler{
@@ -127,19 +127,21 @@ func New(opts *NewOpts) (*Handler, error) {
 	go func() {
 		defer h.wg.Done()
 
-		h.runLala()
+		h.runCappedCleanup()
 	}()
 
 	return h, nil
 }
 
-func (h *Handler) runLala() {
+// runCapppedCleanup calls capped collections cleanup function according to the given interval.
+func (h *Handler) runCappedCleanup() {
 	if !h.EnableOplog {
+		h.L.Info("The routine to cleanup capped collections is disabled because oplog is disabled")
 		return
 	}
 
 	if h.CappedCleanupInterval <= 0 {
-		// FIXME log
+		h.L.Info("The routine to cleanup capped collections is disabled", zap.Duration("interval", h.CappedCleanupInterval))
 		return
 	}
 
