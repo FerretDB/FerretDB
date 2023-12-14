@@ -92,7 +92,7 @@ func TestListDatabases(t *testing.T) {
 		require.Equal(t, dbNames[2], res.Databases[2].Name)
 	})
 
-	t.Run("ListDatabases with nil param", func(t *testing.T) {
+	t.Run("ListDatabases with empty param", func(t *testing.T) {
 		res, err := b.ListDatabases(ctx, &backends.ListDatabasesParams{})
 		require.NoError(t, err)
 		require.Equal(t, 3, len(res.Databases))

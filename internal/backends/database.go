@@ -15,9 +15,9 @@
 package backends
 
 import (
-	// "cmp"
+	"cmp"
 	"context"
-	// "slices"
+	"slices"
 
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
@@ -111,16 +111,16 @@ func (dbc *databaseContract) ListCollections(ctx context.Context, params *ListCo
 	res, err := dbc.db.ListCollections(ctx, params)
 	checkError(err)
 
-	// if res != nil && len(res.Collections) > 0 {
-	// 	must.BeTrue(slices.IsSortedFunc(res.Collections, func(a, b CollectionInfo) int {
-	// 		return cmp.Compare(a.Name, b.Name)
-	// 	}))
+	if res != nil && len(res.Collections) > 0 {
+		must.BeTrue(slices.IsSortedFunc(res.Collections, func(a, b CollectionInfo) int {
+			return cmp.Compare(a.Name, b.Name)
+		}))
 
-	// 	if params != nil && params.Name != "" {
-	// 		must.BeTrue(len(res.Collections) == 1)
-	// 		must.BeTrue(res.Collections[0].Name == params.Name)
-	// 	}
-	// }
+		if params != nil && params.Name != "" {
+			must.BeTrue(len(res.Collections) == 1)
+			must.BeTrue(res.Collections[0].Name == params.Name)
+		}
+	}
 
 	return res, err
 }
