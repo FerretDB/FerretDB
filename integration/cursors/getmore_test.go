@@ -1006,7 +1006,7 @@ func TestCursorsGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 	})
 }
 
-func TestSomething(t *testing.T) {
+func TestCursors(t *testing.T) {
 	t.Parallel()
 
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{
