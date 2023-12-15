@@ -152,6 +152,8 @@ func (r *Registry) NewCursor(ctx context.Context, iter types.DocumentsIterator, 
 
 	r.wg.Add(1)
 	go func() {
+		defer r.wg.Done()
+
 		select {
 		case <-ctx.Done():
 			r.CloseAndRemove(c)
@@ -159,7 +161,6 @@ func (r *Registry) NewCursor(ctx context.Context, iter types.DocumentsIterator, 
 		}
 
 		<-c.removed
-		r.wg.Done()
 	}()
 
 	return c
