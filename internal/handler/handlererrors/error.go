@@ -314,6 +314,9 @@ const (
 
 	// ErrStageCollStatsInvalidArg indicates invalid argument for the aggregation $collStats stage.
 	ErrStageCollStatsInvalidArg = ErrorCode(5447000) // Location5447000
+
+	// ErrStageIndexedStringVectorDuplicate indicates that input to IndexedStringVector contained duplicate values.
+	ErrStageIndexedStringVectorDuplicate = ErrorCode(7582300) // Location7582300
 )
 
 // ErrInfo represents additional optional error information.

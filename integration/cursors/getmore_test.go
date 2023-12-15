@@ -33,7 +33,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-func TestGetMoreCommand(t *testing.T) {
+func TestCursorsGetMoreCommand(t *testing.T) {
 	// do not run tests in parallel to avoid using too many backend connections
 
 	// options are applied to create a client that uses single connection pool
@@ -64,7 +64,6 @@ func TestGetMoreCommand(t *testing.T) {
 		nextBatch  []*types.Document   // optional, expected getMore nextBatch
 		err        *mongo.CommandError // optional, expected error from MongoDB
 		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
-		skip       string              // optional, skip test with a specified reason
 	}{
 		"Int": {
 			firstBatchSize:   1,
@@ -243,8 +242,8 @@ func TestGetMoreCommand(t *testing.T) {
 			err: &mongo.CommandError{
 				Code: 13,
 				Name: "Unauthorized",
-				Message: "Requested getMore on namespace 'TestGetMoreCommand.invalid'," +
-					" but cursor belongs to a different namespace TestGetMoreCommand.TestGetMoreCommand",
+				Message: "Requested getMore on namespace 'TestCursorsGetMoreCommand.invalid'," +
+					" but cursor belongs to a different namespace TestCursorsGetMoreCommand.TestCursorsGetMoreCommand",
 			},
 		},
 		"EmptyCollectionName": {
@@ -300,10 +299,6 @@ func TestGetMoreCommand(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
-
 			// Do not run subtests in t.Parallel() to eliminate the occurrence
 			// of session error.
 			// Supporting session would help us understand fix it
@@ -340,22 +335,7 @@ func TestGetMoreCommand(t *testing.T) {
 				err := collection.Database().RunCommand(ctx, command).Decode(&res)
 				require.NoError(t, err)
 
-				doc := integration.ConvertDocument(t, res)
-
-				v, _ := doc.Get("cursor")
-				require.NotNil(t, v)
-
-				cursor, ok := v.(*types.Document)
-				require.True(t, ok)
-
-				cursorID, _ := cursor.Get("id")
-				assert.NotNil(t, cursorID)
-
-				v, _ = cursor.Get("firstBatch")
-				require.NotNil(t, v)
-
-				firstBatch, ok := v.(*types.Array)
-				require.True(t, ok)
+				firstBatch, cursorID := getFirstBatch(t, res)
 
 				require.Equal(t, len(tc.firstBatch), firstBatch.Len(), "expected: %v, got: %v", tc.firstBatch, firstBatch)
 				for i, elem := range tc.firstBatch {
@@ -387,22 +367,7 @@ func TestGetMoreCommand(t *testing.T) {
 					integration.AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 
 					// upon error response contains firstBatch field.
-					doc = integration.ConvertDocument(t, res)
-
-					v, _ = doc.Get("cursor")
-					require.NotNil(t, v)
-
-					cursor, ok = v.(*types.Document)
-					require.True(t, ok)
-
-					cursorID, _ = cursor.Get("id")
-					assert.NotNil(t, cursorID)
-
-					v, _ = cursor.Get("firstBatch")
-					require.NotNil(t, v)
-
-					firstBatch, ok = v.(*types.Array)
-					require.True(t, ok)
+					firstBatch, _ = getFirstBatch(t, res)
 
 					require.Equal(t, len(tc.firstBatch), firstBatch.Len(), "expected: %v, got: %v", tc.firstBatch, firstBatch)
 					for i, elem := range tc.firstBatch {
@@ -414,22 +379,7 @@ func TestGetMoreCommand(t *testing.T) {
 
 				require.NoError(t, err)
 
-				doc = integration.ConvertDocument(t, res)
-
-				v, _ = doc.Get("cursor")
-				require.NotNil(t, v)
-
-				cursor, ok = v.(*types.Document)
-				require.True(t, ok)
-
-				cursorID, _ = cursor.Get("id")
-				assert.NotNil(t, cursorID)
-
-				v, _ = cursor.Get("nextBatch")
-				require.NotNil(t, v)
-
-				nextBatch, ok := v.(*types.Array)
-				require.True(t, ok)
+				nextBatch, _ := getNextBatch(t, res)
 
 				require.Equal(t, len(tc.nextBatch), nextBatch.Len(), "expected: %v, got: %v", tc.nextBatch, nextBatch)
 				for i, elem := range tc.nextBatch {
@@ -440,7 +390,7 @@ func TestGetMoreCommand(t *testing.T) {
 	}
 }
 
-func TestGetMoreBatchSizeCursor(t *testing.T) {
+func TestCursorsGetMoreBatchSizeCursor(t *testing.T) {
 	// do not run tests in parallel to avoid using too many backend connections
 
 	ctx, collection := setup.Setup(t)
@@ -584,7 +534,7 @@ func TestGetMoreBatchSizeCursor(t *testing.T) {
 	})
 }
 
-func TestGetMoreCommandConnection(t *testing.T) {
+func TestCursorsGetMoreCommandConnection(t *testing.T) {
 	// do not run tests in parallel to avoid using too many backend connections
 
 	// options are applied to create a client that uses single connection pool
@@ -697,7 +647,7 @@ func TestGetMoreCommandConnection(t *testing.T) {
 	})
 }
 
-func TestGetMoreCommandMaxTimeMSErrors(t *testing.T) {
+func TestCursorsGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 	// do not run tests in parallel to avoid using too many backend connections
 
 	ctx, collection := setup.Setup(t)
@@ -707,7 +657,6 @@ func TestGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 
 		err        *mongo.CommandError // required, expected error from MongoDB
 		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
-		skip       string              // optional, skip test with a specified reason
 	}{
 		"NegativeLong": {
 			command: bson.D{
@@ -718,8 +667,9 @@ func TestGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "-1 value for maxTimeMS is out of range",
+				Message: "-1 value for maxTimeMS is out of range " + shareddata.Int32Interval,
 			},
+			altMessage: "-1 value for maxTimeMS is out of range",
 		},
 		"MaxLong": {
 			command: bson.D{
@@ -730,8 +680,9 @@ func TestGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "9223372036854775807 value for maxTimeMS is out of range",
+				Message: "9223372036854775807 value for maxTimeMS is out of range " + shareddata.Int32Interval,
 			},
+			altMessage: "9223372036854775807 value for maxTimeMS is out of range",
 		},
 		"Double": {
 			command: bson.D{
@@ -755,7 +706,7 @@ func TestGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "-14245345234123246 value for maxTimeMS is out of range",
+				Message: "-14245345234123246 value for maxTimeMS is out of range " + shareddata.Int32Interval,
 			},
 			altMessage: "-1.4245345234123246e+16 value for maxTimeMS is out of range",
 		},
@@ -768,7 +719,7 @@ func TestGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "9223372036854775807 value for maxTimeMS is out of range",
+				Message: "9223372036854775807 value for maxTimeMS is out of range " + shareddata.Int32Interval,
 			},
 			altMessage: "1.797693134862316e+308 value for maxTimeMS is out of range",
 		},
@@ -781,7 +732,7 @@ func TestGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "-9223372036854775808 value for maxTimeMS is out of range",
+				Message: "-9223372036854775808 value for maxTimeMS is out of range " + shareddata.Int32Interval,
 			},
 			altMessage: "-1.797693134862316e+308 value for maxTimeMS is out of range",
 		},
@@ -794,8 +745,9 @@ func TestGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "-1123123 value for maxTimeMS is out of range",
+				Message: "-1123123 value for maxTimeMS is out of range " + shareddata.Int32Interval,
 			},
+			altMessage: "-1123123 value for maxTimeMS is out of range",
 		},
 		"MaxInt": {
 			command: bson.D{
@@ -806,8 +758,9 @@ func TestGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "2147483648 value for maxTimeMS is out of range",
+				Message: "2147483648 value for maxTimeMS is out of range " + shareddata.Int32Interval,
 			},
+			altMessage: "2147483648 value for maxTimeMS is out of range",
 		},
 		"Null": {
 			command: bson.D{
@@ -863,10 +816,6 @@ func TestGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
-
 			t.Parallel()
 
 			require.NotNil(t, tc.err, "err must not be nil")
@@ -879,7 +828,7 @@ func TestGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 	}
 }
 
-func TestGetMoreCommandMaxTimeMSCursor(t *testing.T) {
+func TestCursorsGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 	// do not run tests in parallel to avoid using too many backend connections
 
 	// options are applied to create a client that uses single connection pool

@@ -106,7 +106,8 @@ func (r *Registry) Close() {
 }
 
 // getPool returns a pool of connections to PostgreSQL database
-// for the username/password combination in the context using [conninfo].
+// for the username/password combination in the context using [conninfo]
+// (or any pool if authentication is bypassed).
 //
 // It loads metadata if it hasn't been loaded from the database yet.
 //
@@ -115,11 +116,21 @@ func (r *Registry) Close() {
 //
 // All methods should use this method to check authentication and load metadata.
 func (r *Registry) getPool(ctx context.Context) (*pgxpool.Pool, error) {
-	username, password := conninfo.Get(ctx).Auth()
+	connInfo := conninfo.Get(ctx)
 
-	p, err := r.p.Get(username, password)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
+	var p *pgxpool.Pool
+
+	if connInfo.BypassAuth {
+		if p = r.p.GetAny(); p == nil {
+			return nil, lazyerrors.New("no connection pool")
+		}
+	} else {
+		username, password := connInfo.Auth()
+
+		var err error
+		if p, err = r.p.Get(username, password); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 	}
 
 	r.rw.RLock()

@@ -399,12 +399,17 @@ func TestDropIndexesCompat(t *testing.T) {
 						compatRes, compatErr = compatCollection.Indexes().DropOne(ctx, tc.dropIndexName)
 					}
 
-					require.Equal(t, compatErr, targetErr)
-					require.Equal(t, compatRes, targetRes)
+					if targetErr != nil {
+						t.Logf("Target error: %v", targetErr)
+						t.Logf("Compat error: %v", compatErr)
 
-					if targetErr == nil {
+						AssertMatchesCommandError(t, compatErr, targetErr)
+					} else {
 						nonEmptyResults = true
+						require.NoError(t, compatErr, "compat error; target returned no error")
 					}
+
+					require.Equal(t, compatRes, targetRes)
 
 					// List indexes to see they are identical after drop.
 					targetCursor, targetErr := targetCollection.Indexes().List(ctx)

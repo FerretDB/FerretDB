@@ -29,7 +29,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
-func TestKill(t *testing.T) {
+func TestCursorsKill(t *testing.T) {
 	t.Parallel()
 
 	ctx, collection := setup.Setup(t, shareddata.Strings)

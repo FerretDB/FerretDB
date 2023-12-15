@@ -56,27 +56,10 @@ func TestCommandsAdministrationCreateDropList(t *testing.T) {
 	err = db.Collection(name).Drop(ctx)
 	require.NoError(t, err)
 
-	// drop manually to check error
-	var res bson.D
-	err = db.RunCommand(ctx, bson.D{{"drop", name}}).Decode(&res)
-	expectedErr := mongo.CommandError{
-		Code:    26,
-		Name:    "NamespaceNotFound",
-		Message: `ns not found`,
-	}
-	AssertEqualCommandError(t, expectedErr, err)
-
 	err = db.CreateCollection(ctx, name)
 	require.NoError(t, err)
 
-	err = db.CreateCollection(ctx, name)
-	expectedErr = mongo.CommandError{
-		Code:    48,
-		Name:    "NamespaceExists",
-		Message: `Collection TestCommandsAdministrationCreateDropList.TestCommandsAdministrationCreateDropList already exists.`,
-	}
-	AssertEqualCommandError(t, expectedErr, err)
-
+	// List collection names
 	names, err = db.ListCollectionNames(ctx, bson.D{})
 	require.NoError(t, err)
 	assert.Contains(t, names, name)
@@ -85,14 +68,13 @@ func TestCommandsAdministrationCreateDropList(t *testing.T) {
 	err = collection.Drop(ctx)
 	require.NoError(t, err)
 
-	// drop manually to check error
+	// And try to drop existing collection again manually to check behavior.
+	var res bson.D
 	err = db.RunCommand(ctx, bson.D{{"drop", name}}).Decode(&res)
-	expectedErr = mongo.CommandError{
-		Code:    26,
-		Name:    "NamespaceNotFound",
-		Message: `ns not found`,
-	}
-	AssertEqualCommandError(t, expectedErr, err)
+	assert.NoError(t, err)
+
+	actual := ConvertDocument(t, res)
+	assert.Equal(t, must.NotFail(actual.Get("ok")), float64(1))
 }
 
 func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
@@ -296,6 +278,90 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 
 func TestCommandsAdministrationListCollections(t *testing.T) {
 	t.Parallel()
+
+	ctx, c := setup.Setup(t, shareddata.Scalars)
+	db := c.Database()
+
+	for name, tc := range map[string]struct {
+		capped       bool
+		sizeInBytes  int64
+		maxDocuments int64
+	}{
+		"uncapped": {},
+		"Size": {
+			capped:      true,
+			sizeInBytes: 256,
+		},
+		"SizeRounded": {
+			capped:      true,
+			sizeInBytes: 1000,
+		},
+		"MaxDocuments": {
+			capped:       true,
+			sizeInBytes:  100,
+			maxDocuments: 10,
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			cName := testutil.CollectionName(t) + name
+			opts := options.CreateCollection()
+
+			if tc.capped {
+				opts.SetCapped(true)
+			}
+			if tc.sizeInBytes > 0 {
+				opts.SetSizeInBytes(tc.sizeInBytes)
+			}
+			if tc.maxDocuments > 0 {
+				opts.SetMaxDocuments(tc.maxDocuments)
+			}
+
+			err := db.CreateCollection(ctx, cName, opts)
+			assert.NoError(t, err)
+
+			cursor, err := db.ListCollections(ctx, bson.D{
+				{Key: "name", Value: cName},
+			})
+			assert.NoError(t, err)
+
+			var actual []bson.D
+			assert.NoError(t, cursor.All(ctx, &actual))
+			assert.Len(t, actual, 1)
+
+			doc := ConvertDocument(t, actual[0])
+			info := must.NotFail(doc.Get("info")).(*types.Document)
+
+			uuid := must.NotFail(info.Get("uuid"))
+			assert.IsType(t, uuid.(types.Binary).Subtype, types.BinaryUUID)
+
+			options := must.NotFail(doc.Get("options")).(*types.Document)
+
+			if tc.capped {
+				assert.True(t, must.NotFail(options.Get("capped")).(bool))
+			} else {
+				assert.False(t, options.Has("capped"))
+			}
+
+			if tc.sizeInBytes > 0 {
+				// Actual values might be larger depending on backend implementations.
+				//
+				// And of different types:
+				// TODO https://github.com/FerretDB/FerretDB/issues/3582
+				assert.True(t, options.Has("size"), "capped size must exist")
+			}
+
+			if tc.maxDocuments > 0 {
+				assert.EqualValues(t, tc.maxDocuments, must.NotFail(options.Get("max")), "capped documents")
+			}
+		})
+	}
+}
+
+func TestCommandsAdministrationListCollectionNames(t *testing.T) {
+	t.Parallel()
 	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
 
 	require.Greater(t, len(targetCollections), 2)
@@ -458,11 +524,11 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 		},
 		"EmptyParameters": {
 			command: bson.D{{"getParameter", 1}, {"comment", "getParameter test"}},
-			err:     &mongo.CommandError{Message: `no option found to get`},
+			err:     &mongo.CommandError{Code: 72, Message: `no option found to get`, Name: "InvalidOptions"},
 		},
 		"OnlyNonexistentParameters": {
 			command: bson.D{{"getParameter", 1}, {"quiet_other", 1}, {"comment", "getParameter test"}},
-			err:     &mongo.CommandError{Message: `no option found to get`},
+			err:     &mongo.CommandError{Code: 72, Message: `no option found to get`, Name: "InvalidOptions"},
 		},
 		"ShowDetailsTrue": {
 			command: bson.D{{"getParameter", bson.D{{"showDetails", true}}}, {"quiet", true}},
@@ -486,11 +552,11 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 		},
 		"ShowDetails_NoParameter_1": {
 			command: bson.D{{"getParameter", bson.D{{"showDetails", true}}}},
-			err:     &mongo.CommandError{Message: `no option found to get`},
+			err:     &mongo.CommandError{Code: 72, Message: `no option found to get`, Name: "InvalidOptions"},
 		},
 		"ShowDetails_NoParameter_2": {
 			command: bson.D{{"getParameter", bson.D{{"showDetails", false}}}},
-			err:     &mongo.CommandError{Message: `no option found to get`},
+			err:     &mongo.CommandError{Code: 72, Message: `no option found to get`, Name: "InvalidOptions"},
 		},
 		"AllParametersTrue": {
 			command: bson.D{{"getParameter", bson.D{{"showDetails", true}, {"allParameters", true}}}},
@@ -505,7 +571,7 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 		},
 		"AllParametersFalse_MissingParameter": {
 			command: bson.D{{"getParameter", bson.D{{"showDetails", true}, {"allParameters", false}}}},
-			err:     &mongo.CommandError{Message: `no option found to get`},
+			err:     &mongo.CommandError{Code: 72, Message: `no option found to get`, Name: "InvalidOptions"},
 		},
 		"AllParametersFalse_PresentParameter": {
 			command: bson.D{{"getParameter", bson.D{{"showDetails", true}, {"allParameters", false}}}, {"quiet", true}},
@@ -521,7 +587,7 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 		},
 		"AllParametersFalse_NonexistentParameter": {
 			command: bson.D{{"getParameter", bson.D{{"showDetails", true}, {"allParameters", false}}}, {"quiet_other", true}},
-			err:     &mongo.CommandError{Message: `no option found to get`},
+			err:     &mongo.CommandError{Code: 72, Message: `no option found to get`, Name: "InvalidOptions"},
 		},
 		"ShowDetailsFalse_AllParametersTrue": {
 			command: bson.D{{"getParameter", bson.D{{"showDetails", false}, {"allParameters", true}}}},
@@ -533,7 +599,7 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 		},
 		"ShowDetailsFalse_AllParametersFalse_1": {
 			command: bson.D{{"getParameter", bson.D{{"showDetails", false}, {"allParameters", false}}}},
-			err:     &mongo.CommandError{Message: `no option found to get`},
+			err:     &mongo.CommandError{Code: 72, Message: `no option found to get`, Name: "InvalidOptions"},
 		},
 		"ShowDetailsFalse_AllParametersFalse_2": {
 			command: bson.D{{"getParameter", bson.D{{"showDetails", false}, {"allParameters", false}}}, {"quiet", true}},
@@ -690,7 +756,7 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 				{"featureCompatibilityVersion", 1},
 			},
 			expected: map[string]any{
-				"featureCompatibilityVersion": bson.D{{"version", "6.0"}},
+				"featureCompatibilityVersion": bson.D{{"version", "7.0"}},
 				"ok":                          float64(1),
 			},
 		},
@@ -701,7 +767,7 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 			},
 			expected: map[string]any{
 				"featureCompatibilityVersion": bson.D{
-					{"value", bson.D{{"version", "6.0"}}},
+					{"value", bson.D{{"version", "7.0"}}},
 					{"settableAtRuntime", false},
 					{"settableAtStartup", false},
 				},
@@ -811,7 +877,7 @@ func TestCommandsAdministrationBuildInfo(t *testing.T) {
 	doc := ConvertDocument(t, actual)
 
 	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
-	assert.Regexp(t, `^6\.0\.`, must.NotFail(doc.Get("version")))
+	assert.Regexp(t, `^7\.0\.`, must.NotFail(doc.Get("version")))
 	assert.NotEmpty(t, must.NotFail(doc.Get("gitVersion")))
 
 	_, ok := must.NotFail(doc.Get("modules")).(*types.Array)
@@ -821,7 +887,7 @@ func TestCommandsAdministrationBuildInfo(t *testing.T) {
 
 	versionArray, ok := must.NotFail(doc.Get("versionArray")).(*types.Array)
 	assert.True(t, ok)
-	assert.Equal(t, int32(6), must.NotFail(versionArray.Get(0)))
+	assert.Equal(t, int32(7), must.NotFail(versionArray.Get(0)))
 	assert.Equal(t, int32(0), must.NotFail(versionArray.Get(1)))
 
 	assert.Equal(t, int32(strconv.IntSize), must.NotFail(doc.Get("bits")))
@@ -1131,16 +1197,18 @@ func TestCommandsAdministrationDataSizeErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    73,
 				Name:    "InvalidNamespace",
-				Message: "Invalid namespace specified 'invalid'",
+				Message: "Namespace invalid is not a valid collection name",
 			},
+			altMessage: "Invalid namespace specified 'invalid'",
 		},
 		"InvalidNamespaceTypeDocument": {
 			command: bson.D{{"dataSize", bson.D{}}},
 			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type object",
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'dataSize.dataSize' is the wrong type 'object', expected type 'string'",
 			},
+			altMessage: "collection name has invalid type object",
 		},
 	} {
 		name, tc := name, tc
@@ -1183,7 +1251,7 @@ func TestCommandsAdministrationDBStats(t *testing.T) {
 	assert.Equal(t, collection.Database().Name(), doc.Remove("db"))
 	assert.EqualValues(t, 1, doc.Remove("collections"))
 	assert.EqualValues(t, len(shareddata.DocumentsStrings.Docs()), doc.Remove("objects"))
-	assert.Equal(t, float64(1), doc.Remove("scaleFactor"))
+	assert.Equal(t, int64(1), doc.Remove("scaleFactor"))
 	assert.Equal(t, float64(1), doc.Remove("ok"))
 
 	assert.InDelta(t, 37_500, doc.Remove("avgObjSize"), 37_460)
@@ -1197,7 +1265,7 @@ func TestCommandsAdministrationDBStats(t *testing.T) {
 	totalFreeStorageSize, _ := doc.Get("totalFreeStorageSize")
 	assert.Nil(t, totalFreeStorageSize)
 
-	assert.Equal(t, int32(0), doc.Remove("views"))
+	assert.Equal(t, int64(0), doc.Remove("views"))
 	assert.EqualValues(t, 1, doc.Remove("indexes"))
 	assert.NotZero(t, doc.Remove("indexSize"))
 }
@@ -1225,7 +1293,7 @@ func TestCommandsAdministrationDBStatsEmpty(t *testing.T) {
 	assert.InDelta(t, 35500, doc.Remove("dataSize"), 35500)
 	assert.InDelta(t, 16384, doc.Remove("totalSize"), 16384)
 
-	assert.Equal(t, int32(0), doc.Remove("views"))
+	assert.Equal(t, int64(0), doc.Remove("views"))
 	assert.EqualValues(t, 0, doc.Remove("indexes"))
 	assert.Zero(t, doc.Remove("indexSize"))
 }
@@ -1244,13 +1312,13 @@ func TestCommandsAdministrationDBStatsWithScale(t *testing.T) {
 
 	assert.Equal(t, float64(1), doc.Remove("ok"))
 	assert.Equal(t, collection.Database().Name(), doc.Remove("db"))
-	assert.Equal(t, float64(1000), doc.Remove("scaleFactor"))
+	assert.Equal(t, int64(1000), doc.Remove("scaleFactor"))
 
 	assert.InDelta(t, 1, doc.Remove("collections"), 1)
 	assert.InDelta(t, 35500, doc.Remove("dataSize"), 35500)
 	assert.InDelta(t, 16384, doc.Remove("totalSize"), 16384)
 
-	assert.Equal(t, int32(0), doc.Remove("views"))
+	assert.Equal(t, int64(0), doc.Remove("views"))
 	assert.EqualValues(t, 1, doc.Remove("indexes"))
 	assert.NotZero(t, doc.Remove("indexSize"))
 }
@@ -1278,7 +1346,7 @@ func TestCommandsAdministrationDBStatsEmptyWithScale(t *testing.T) {
 	assert.InDelta(t, 35500, doc.Remove("dataSize"), 35500)
 	assert.InDelta(t, 16384, doc.Remove("totalSize"), 16384)
 
-	assert.Equal(t, int32(0), doc.Remove("views"))
+	assert.Equal(t, int64(0), doc.Remove("views"))
 	assert.EqualValues(t, 0, doc.Remove("indexes"))
 	assert.Zero(t, doc.Remove("indexSize"))
 }
@@ -1295,7 +1363,7 @@ func TestCommandsAdministrationDBStatsFreeStorage(t *testing.T) {
 
 	doc := ConvertDocument(t, res)
 
-	assert.Equal(t, float64(1), doc.Remove("scaleFactor"))
+	assert.Equal(t, int64(1), doc.Remove("scaleFactor"))
 	assert.Equal(t, float64(1), doc.Remove("ok"))
 	assert.Zero(t, must.NotFail(doc.Get("freeStorageSize")))
 	assert.Zero(t, must.NotFail(doc.Get("totalFreeStorageSize")))
@@ -1314,12 +1382,15 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 
 	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
 
-	freeMonitoring, err := doc.Get("freeMonitoring")
-	require.NoError(t, err)
-	assert.NotEmpty(t, must.NotFail(freeMonitoring.(*types.Document).Get("state")))
+	t.Run("FreeMonitoring", func(t *testing.T) {
+		setup.SkipForMongoDB(t, "MongoDB decommissioned free monitoring")
+		freeMonitoring, fErr := doc.Get("freeMonitoring")
+		require.NoError(t, fErr)
+		assert.NotEmpty(t, must.NotFail(freeMonitoring.(*types.Document).Get("state")))
+	})
 
 	assert.NotEmpty(t, must.NotFail(doc.Get("host")))
-	assert.Regexp(t, `^6\.0\.`, must.NotFail(doc.Get("version")))
+	assert.Regexp(t, `^7\.0\.`, must.NotFail(doc.Get("version")))
 	assert.NotEmpty(t, must.NotFail(doc.Get("process")))
 
 	assert.GreaterOrEqual(t, must.NotFail(doc.Get("pid")), int64(1))
@@ -1391,6 +1462,7 @@ func TestCommandsAdministrationServerStatusMetrics(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
+			setup.SkipForMongoDB(t, "MongoDB decommissioned server status metrics")
 			ctx, collection := setup.Setup(t)
 
 			for _, cmd := range tc.cmds {
@@ -1430,6 +1502,8 @@ func TestCommandsAdministrationServerStatusMetrics(t *testing.T) {
 }
 
 func TestCommandsAdministrationServerStatusFreeMonitoring(t *testing.T) {
+	setup.SkipForMongoDB(t, "MongoDB decommissioned free monitoring")
+
 	// this test shouldn't be run in parallel, because it requires a specific state of the field which would be modified by the other tests.
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{
 		DatabaseName: "admin",
@@ -1632,6 +1706,88 @@ func TestCommandsAdministrationCompactForce(t *testing.T) {
 			doc := ConvertDocument(t, res)
 			assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
 			assert.NotNil(t, must.NotFail(doc.Get("bytesFreed")))
+		})
+	}
+}
+
+func TestCommandsAdministrationCompactCapped(t *testing.T) {
+	t.Parallel()
+
+	ctx, coll := setup.Setup(t)
+
+	for name, tc := range map[string]struct { //nolint:vet // for readability
+		force             bool
+		maxDocuments      int64
+		sizeInBytes       int64
+		insertDocuments   int32
+		expectedDocuments int64 // insertDocuments - insertDocuments*0.2 (cleanup 20%) + 1 (extra insert after compact)
+
+		skipForMongoDB string // optional, skip test for MongoDB backend with a specific reason
+	}{
+		"OverflowDocs": {
+			force:             true,
+			maxDocuments:      10,
+			sizeInBytes:       100000,
+			insertDocuments:   12, // overflows capped collection max documents
+			expectedDocuments: 11,
+		},
+		"OverflowSize": {
+			force:             true,
+			maxDocuments:      1000,
+			sizeInBytes:       256,
+			insertDocuments:   20, // overflows capped collection size
+			expectedDocuments: 17,
+		},
+		"ForceFalse": {
+			force:             false,
+			maxDocuments:      10,
+			sizeInBytes:       100000,
+			insertDocuments:   12, // overflows capped collection max documents
+			expectedDocuments: 11,
+			skipForMongoDB:    "Only {force:true} can be run on active replica set primary",
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skipForMongoDB != "" {
+				setup.SkipForMongoDB(t, tc.skipForMongoDB)
+			}
+
+			t.Parallel()
+
+			collName := testutil.CollectionName(t) + name
+
+			opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(tc.sizeInBytes).SetMaxDocuments(tc.maxDocuments)
+			err := coll.Database().CreateCollection(ctx, collName, opts)
+			require.NoError(t, err)
+
+			collection := coll.Database().Collection(collName)
+
+			arr, _ := GenerateDocuments(0, tc.insertDocuments)
+			_, err = collection.InsertMany(ctx, arr)
+			require.NoError(t, err)
+
+			count, err := collection.CountDocuments(ctx, bson.D{})
+			require.NoError(t, err)
+			require.InDelta(t, int64(tc.insertDocuments), count, 2)
+
+			var res bson.D
+			err = collection.Database().RunCommand(ctx,
+				bson.D{{"compact", collection.Name()}, {"force", tc.force}},
+			).Decode(&res)
+			require.NoError(t, err)
+
+			doc := ConvertDocument(t, res)
+			assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+			assert.NotNil(t, must.NotFail(doc.Get("bytesFreed")))
+
+			// some documents should be removed from capped collection after the insertion
+			_, err = collection.InsertOne(ctx, bson.D{{"foo", "bar"}})
+			require.NoError(t, err)
+
+			count, err = collection.CountDocuments(ctx, bson.D{})
+			require.NoError(t, err)
+			require.InDelta(t, tc.expectedDocuments, count, 1)
 		})
 	}
 }

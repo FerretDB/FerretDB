@@ -18,6 +18,7 @@ package debug
 import (
 	"bytes"
 	"context"
+	"errors"
 	_ "expvar" // for metrics
 	"fmt"
 	"net"
@@ -108,7 +109,7 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 			l.Sugar().Infof("%s%s - %s", root, path, handlers[path])
 		}
 
-		if err := s.Serve(lis); err != http.ErrServerClosed {
+		if err := s.Serve(lis); !errors.Is(err, http.ErrServerClosed) {
 			panic(err)
 		}
 	}()
