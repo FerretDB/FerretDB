@@ -89,7 +89,7 @@ func resultKey(packageName, testName string) string {
 }
 
 // runGoTest runs `go test` with given extra args.
-func runGoTest(ctx context.Context, args []string, total int, times bool, logger *zap.SugaredLogger, skip string) error {
+func runGoTest(ctx context.Context, args []string, total int, times bool, logger *zap.SugaredLogger) error {
 	shutdownOtel := observability.SetupOtel("envtool tests")
 
 	defer func() {
@@ -102,9 +102,6 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 	}()
 
 	cmd := exec.CommandContext(ctx, "go", append([]string{"test", "-json"}, args...)...)
-	if skip != "" {
-		cmd.Args = append(cmd.Args, "-skip="+skip)
-	}
 
 	logger.Debugf("Running %s", strings.Join(cmd.Args, " "))
 
@@ -390,7 +387,11 @@ func testsRun(ctx context.Context, index, total uint, run, skip string, args []s
 		run += ")$"
 	}
 
-	return runGoTest(ctx, append([]string{"-run=" + run}, args...), totalTest, true, logger, skip)
+	if skip != "" {
+		args = append(args, "-skip="+skip)
+	}
+
+	return runGoTest(ctx, append([]string{"-run=" + run}, args...), totalTest, true, logger)
 }
 
 // listTestFuncs returns a sorted slice of all top-level test functions (tests, benchmarks, examples, fuzz functions)
