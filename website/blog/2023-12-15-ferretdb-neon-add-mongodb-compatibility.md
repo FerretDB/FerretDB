@@ -53,12 +53,12 @@ That means you can take advantage of all the features available in that backend 
 ## Prerequisites
 
 - A Neon project and Postgres URI
-- FerretDB package
+- FerretDB `.deb` package
 - `mongosh`
 
 ## Create a Neon Project
 
-Please refer to the instructions in the [Neon Sign up](https://neon.tech/docs/get-started-with-neon/signing-uphttps://neon.tech/docs/get-started-with-neon/signing-up) docs if this is your first project.
+Please refer to the instructions in the [Neon Sign up](https://neon.tech/docs/get-started-with-neon/signing-up) docs if this is your first project.
 
 Before getting started with FerretDB, you need to create a Neon project.
 When creating the project, you need to select the version of postgres, and also create a `ferretdb` database.
@@ -71,15 +71,11 @@ This URI will serve as the Postgres URI for your FerretDB instance.
 ## Install FerretDB on Linux
 
 For this project, we will be using the FerretDB `arm` package, and you can access them from the [GitHub release page](https://github.com/FerretDB/FerretDB/releases).
-To do this, we'll need to curl the latest FerretDB package and then install it:
+
+To do this, download and install the latest FerretDB release:
 
 ```sh
 curl -LJO https://github.com/FerretDB/FerretDB/releases/download/v1.16.0/ferretdb-linux-arm64.deb
-```
-
-Then install FerretDB with:
-
-```sh
 sudo dpkg -i  ./ferretdb-linux-arm64.deb
 ```
 
