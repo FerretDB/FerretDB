@@ -52,10 +52,8 @@ func TestCursorsTailableErrors(t *testing.T) {
 		}
 	})
 
-	t.Run("GetMoreDifferentCollection", func(tt *testing.T) {
-		tt.Parallel()
-
-		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2283")
+	t.Run("GetMoreDifferentCollection", func(t *testing.T) {
+		t.Parallel()
 
 		s := setup.SetupWithOpts(t, nil)
 
@@ -224,10 +222,8 @@ func TestCursorsTailable(t *testing.T) {
 	})
 }
 
-func TestCursorsTailableTwoCursorsSameCollection(tt *testing.T) {
-	tt.Parallel()
-
-	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2283")
+func TestCursorsTailableTwoCursorsSameCollection(t *testing.T) {
+	t.Parallel()
 
 	s := setup.SetupWithOpts(t, nil)
 
