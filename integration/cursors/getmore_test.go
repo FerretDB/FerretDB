@@ -1113,7 +1113,7 @@ func TestCursorsListAfterExuasted(t *testing.T) {
 	err = collection.Database().RunCommand(ctx, bson.D{
 		{"find", collection.Name()},
 		{"batchSize", 1},
-	}).Err()
+	}).Decode(&res)
 	require.NoError(t, err)
 	_, cursorID := getFirstBatch(t, res)
 
@@ -1128,10 +1128,8 @@ func TestCursorsListAfterExuasted(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
-	require.NoError(t, err)
-
-	_, nextID := getNextBatch(t, res)
-	require.Equal(t, int64(0), nextID)
-
+	err = collection.Database().RunCommand(ctx, getMoreCmd).Err()
+	var ce mongo.CommandError
+	require.True(t, errors.As(err, &ce))
+	require.Equal(t, int32(43), ce.Code, "invalid error: %v", ce)
 }
