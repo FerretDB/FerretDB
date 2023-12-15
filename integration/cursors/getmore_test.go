@@ -1024,7 +1024,9 @@ func TestSomething(t *testing.T) {
 
 	var res bson.D
 
-	t.Run("RemoveLastDocument", func(t *testing.T) {
+	t.Run("RemoveLastDocument", func(tt *testing.T) {
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/3818")
+
 		err = collection.Database().RunCommand(ctx, bson.D{
 			{"find", collection.Name()},
 			{"batchSize", 1},
@@ -1059,7 +1061,9 @@ func TestSomething(t *testing.T) {
 		require.Equal(t, 0, nextBatch.Len())
 	})
 
-	t.Run("QueryPlanKilledByDrop", func(t *testing.T) {
+	t.Run("QueryPlanKilledByDrop", func(tt *testing.T) {
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/3818")
+
 		err = collection.Database().RunCommand(ctx, bson.D{
 			{"find", collection.Name()},
 			{"batchSize", 1},
@@ -1084,6 +1088,6 @@ func TestSomething(t *testing.T) {
 
 		var ce mongo.CommandError
 		require.True(t, errors.As(err, &ce))
-		require.Equal(t, int32(175), ce.Code)
+		require.Equal(t, int32(175), ce.Code, "invalid error: %v", ce)
 	})
 }
