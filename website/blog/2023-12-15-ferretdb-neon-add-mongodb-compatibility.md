@@ -15,26 +15,24 @@ By using FerretDB, developers can [access familiar MongoDB features and tools us
 
 <!--truncate-->
 
-[Neon](https://neon.tech/) is a fully managed serverless Postgres which is open source under the Apache 2.0 license.
+[Neon](https://neon.tech/) is an open source, fully managed serverless Postgres which is licensed under the Apache 2.0 license.
 What makes Neon unique is that it separates storage and compute, which makes it possible to scale up compute based on demand.
 It also supports branching, which allows you to create a copy of your database in seconds for testing and development.
 
-Neon maintains 100% compatibility with any application that uses official Postgres release.
-This means Neon is a good fit to use as a database backend for FerretDB, while leveraging Neon's features to scale and manage your database infrastructure.
+Neon maintains 100% compatibility with any application that uses the official Postgres release.
+That makes Neon a good option to consider as the database backend for FerretDB, while leveraging Neon's native features to scale and manage your database infrastructure easily.
 
 In this blog post, you'll learn about FerretDB and and how you can add MongoDB compatibility to Neon.
 
 ## Advantages of using FerretDB
 
-FerretDB opens up a wealth of possiblilies for many relational databases and MongoDB users.
-
-Let's take a look at some of these benefits:
+Let's take a look at some of these benefits of using FerretDB:
 
 ### MongoDB compatibility
 
-The best advantage to using FerretDB is the access you get the syntax, tools, querying language, and commands available in MongoDB for many use cases.
+The best advantage to using FerretDB is the access you get to the syntax, tools, querying language, and commands available in MongoDB, particularly for many common use cases.
 MongoDB is known for its simple and intuitive NoSQL query language which is widely loved by many developers today.
-By using FerretDB, you can enable relational databases like Neon to run MongoDB workloads.
+By using FerretDB, you can enable Postgres-compatible databases like Neon to run MongoDB workloads.
 
 Read more: [MongoDB Compatibility - What's Really Important?](https://blog.ferretdb.io/mongodb-compatibility-whats-really-important/)
 
@@ -42,9 +40,9 @@ Read more: [MongoDB Compatibility - What's Really Important?](https://blog.ferre
 
 As an open source document database, you won't be at a risk of vendor lock-in.
 Since MongoDB's license change to Server Side Public License (SSPL), there's [been a lot of disappointment and confusion with regards](https://blog.ferretdb.io/open-source-is-in-danger/) to how it affects many users and what it would mean for their applications.
-According to the Open Source Initiative – the steward of open source and the set of rules that define open source software – SSPL is not considered open source by the OSI.
+According to the Open Source Initiative – the steward of open source and the set of rules that define open source software – SSPL is not considered open source.
 
-In that regard, FerretDB, licensed under Apache 2.0, helps to return MongoDB workloads back to open source.
+In that regard, FerretDB, licensed under Apache 2.0, is a good option for users looking for a MongoDB alternative to return MongoDB workloads back to open source.
 
 ### Multiple backend options
 
@@ -95,7 +93,7 @@ We assign the Neon Postgres URI to the `--postgresql-url` flag for FerretDB.
 Use following command will run FerretDB and connect via the Neon connection URI.
 
 ```sh
-ferretdb --postgresql-url=&lt;neon-connection-uri>
+ferretdb --postgresql-url=<neon-connection-uri>
 ```
 
 That's all you need to run FerretDB.
@@ -110,7 +108,7 @@ Use your Neon Postgres credentials to connect to the database.
 So in this case, the MongoDB URI will be:
 
 ```sh
-mongosh 'mongodb://&lt;postgres-username>:&lt;postgres-password>@127.0.0.1:27017/ferretdb?authMechanism=PLAIN'
+mongosh 'mongodb://<postgres-username>:<postgres-password>@127.0.0.1:27017/ferretdb?authMechanism=PLAIN'
 ```
 
 This should connect you directly to the FerretDB instance, and you can go ahead to try out different MongoDB commands.
