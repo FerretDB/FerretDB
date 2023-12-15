@@ -335,22 +335,7 @@ func TestCursorsGetMoreCommand(t *testing.T) {
 				err := collection.Database().RunCommand(ctx, command).Decode(&res)
 				require.NoError(t, err)
 
-				doc := integration.ConvertDocument(t, res)
-
-				v, _ := doc.Get("cursor")
-				require.NotNil(t, v)
-
-				cursor, ok := v.(*types.Document)
-				require.True(t, ok)
-
-				cursorID, _ := cursor.Get("id")
-				assert.NotNil(t, cursorID)
-
-				v, _ = cursor.Get("firstBatch")
-				require.NotNil(t, v)
-
-				firstBatch, ok := v.(*types.Array)
-				require.True(t, ok)
+				firstBatch, cursorID := getFirstBatch(t, res)
 
 				require.Equal(t, len(tc.firstBatch), firstBatch.Len(), "expected: %v, got: %v", tc.firstBatch, firstBatch)
 				for i, elem := range tc.firstBatch {
@@ -382,22 +367,7 @@ func TestCursorsGetMoreCommand(t *testing.T) {
 					integration.AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 
 					// upon error response contains firstBatch field.
-					doc = integration.ConvertDocument(t, res)
-
-					v, _ = doc.Get("cursor")
-					require.NotNil(t, v)
-
-					cursor, ok = v.(*types.Document)
-					require.True(t, ok)
-
-					cursorID, _ = cursor.Get("id")
-					assert.NotNil(t, cursorID)
-
-					v, _ = cursor.Get("firstBatch")
-					require.NotNil(t, v)
-
-					firstBatch, ok = v.(*types.Array)
-					require.True(t, ok)
+					firstBatch, _ = getFirstBatch(t, res)
 
 					require.Equal(t, len(tc.firstBatch), firstBatch.Len(), "expected: %v, got: %v", tc.firstBatch, firstBatch)
 					for i, elem := range tc.firstBatch {
@@ -409,22 +379,7 @@ func TestCursorsGetMoreCommand(t *testing.T) {
 
 				require.NoError(t, err)
 
-				doc = integration.ConvertDocument(t, res)
-
-				v, _ = doc.Get("cursor")
-				require.NotNil(t, v)
-
-				cursor, ok = v.(*types.Document)
-				require.True(t, ok)
-
-				cursorID, _ = cursor.Get("id")
-				assert.NotNil(t, cursorID)
-
-				v, _ = cursor.Get("nextBatch")
-				require.NotNil(t, v)
-
-				nextBatch, ok := v.(*types.Array)
-				require.True(t, ok)
+				nextBatch, _ := getNextBatch(t, res)
 
 				require.Equal(t, len(tc.nextBatch), nextBatch.Len(), "expected: %v, got: %v", tc.nextBatch, nextBatch)
 				for i, elem := range tc.nextBatch {
@@ -712,8 +667,9 @@ func TestCursorsGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "-1 value for maxTimeMS is out of range",
+				Message: "-1 value for maxTimeMS is out of range " + shareddata.Int32Interval,
 			},
+			altMessage: "-1 value for maxTimeMS is out of range",
 		},
 		"MaxLong": {
 			command: bson.D{
@@ -724,8 +680,9 @@ func TestCursorsGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "9223372036854775807 value for maxTimeMS is out of range",
+				Message: "9223372036854775807 value for maxTimeMS is out of range " + shareddata.Int32Interval,
 			},
+			altMessage: "9223372036854775807 value for maxTimeMS is out of range",
 		},
 		"Double": {
 			command: bson.D{
@@ -749,7 +706,7 @@ func TestCursorsGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "-14245345234123246 value for maxTimeMS is out of range",
+				Message: "-14245345234123246 value for maxTimeMS is out of range " + shareddata.Int32Interval,
 			},
 			altMessage: "-1.4245345234123246e+16 value for maxTimeMS is out of range",
 		},
@@ -762,7 +719,7 @@ func TestCursorsGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "9223372036854775807 value for maxTimeMS is out of range",
+				Message: "9223372036854775807 value for maxTimeMS is out of range " + shareddata.Int32Interval,
 			},
 			altMessage: "1.797693134862316e+308 value for maxTimeMS is out of range",
 		},
@@ -775,7 +732,7 @@ func TestCursorsGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "-9223372036854775808 value for maxTimeMS is out of range",
+				Message: "-9223372036854775808 value for maxTimeMS is out of range " + shareddata.Int32Interval,
 			},
 			altMessage: "-1.797693134862316e+308 value for maxTimeMS is out of range",
 		},
@@ -788,8 +745,9 @@ func TestCursorsGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "-1123123 value for maxTimeMS is out of range",
+				Message: "-1123123 value for maxTimeMS is out of range " + shareddata.Int32Interval,
 			},
+			altMessage: "-1123123 value for maxTimeMS is out of range",
 		},
 		"MaxInt": {
 			command: bson.D{
@@ -800,8 +758,9 @@ func TestCursorsGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "2147483648 value for maxTimeMS is out of range",
+				Message: "2147483648 value for maxTimeMS is out of range " + shareddata.Int32Interval,
 			},
+			altMessage: "2147483648 value for maxTimeMS is out of range",
 		},
 		"Null": {
 			command: bson.D{

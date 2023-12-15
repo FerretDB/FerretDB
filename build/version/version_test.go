@@ -29,6 +29,6 @@ func TestGet(t *testing.T) {
 
 	assert.NotEmpty(t, v.Version)
 
-	assert.Equal(t, "6.0.42", v.MongoDBVersion)
-	testutil.AssertEqual(t, must.NotFail(types.NewArray(int32(6), int32(0), int32(42), int32(0))), v.MongoDBVersionArray)
+	assert.Equal(t, "7.0.42", v.MongoDBVersion)
+	testutil.AssertEqual(t, must.NotFail(types.NewArray(int32(7), int32(0), int32(42), int32(0))), v.MongoDBVersionArray)
 }
