@@ -155,7 +155,7 @@ func (c *Cursor) Close() {
 		return
 	}
 
-	c.l.Debug("Closing cursor")
+	c.l.Debug("Closing cursor's iterator")
 	c.iter.Close()
 	c.iter = nil
 

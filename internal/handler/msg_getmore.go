@@ -182,26 +182,23 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		)
 	}
 
-	docs, err := iterator.ConsumeValuesN(c, int(batchSize))
+	nextBatch, err := h.makeNextBatch(c, batchSize)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	h.L.Debug(
-		"Got next batch", zap.Int64("cursor_id", cursorID), zap.Stringer("type", c.Type),
-		zap.Int("count", len(docs)), zap.Int64("batch_size", batchSize),
-	)
-
 	switch c.Type {
 	case cursor.Normal:
-		if len(docs) < int(batchSize) {
+		if nextBatch.Len() < int(batchSize) {
 			// The cursor is already closed and removed;
 			// let the client know that there are no more results.
 			cursorID = 0
 		}
 
 	case cursor.Tailable:
-		if len(docs) < int(batchSize) {
+		if nextBatch.Len() < int(batchSize) {
+			// The previous iterator is already closed there.
+
 			data := c.Data.(*findCursorData)
 
 			queryRes, err := data.coll.Query(ctx, data.qp)
@@ -218,6 +215,13 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			if err = c.Reset(iter); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
+
+			if nextBatch.Len() == 0 {
+				nextBatch, err = h.makeNextBatch(c, batchSize)
+				if err != nil {
+					return nil, lazyerrors.Error(err)
+				}
+			}
 		}
 
 	case cursor.TailableAwait:
@@ -225,11 +229,6 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 	default:
 		panic(fmt.Sprintf("unknown cursor type %s", c.Type))
-	}
-
-	nextBatch := types.MakeArray(len(docs))
-	for _, doc := range docs {
-		nextBatch.Append(doc)
 	}
 
 	var reply wire.OpMsg
@@ -245,4 +244,23 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	}))
 
 	return &reply, nil
+}
+
+func (h *Handler) makeNextBatch(c *cursor.Cursor, batchSize int64) (*types.Array, error) {
+	docs, err := iterator.ConsumeValuesN(c, int(batchSize))
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	h.L.Debug(
+		"Got next batch", zap.Int64("cursor_id", c.ID), zap.Stringer("type", c.Type),
+		zap.Int("count", len(docs)), zap.Int64("batch_size", batchSize),
+	)
+
+	nextBatch := types.MakeArray(len(docs))
+	for _, doc := range docs {
+		nextBatch.Append(doc)
+	}
+
+	return nextBatch, nil
 }
