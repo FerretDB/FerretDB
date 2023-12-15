@@ -27,7 +27,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
-// createDatabse creates a new provider and registry required for creating a database and
+// createDatabase creates a new provider and registry required for creating a database and
 // returns registry, db pool and created database name.
 func createDatabase(t *testing.T, ctx context.Context) (r *Registry, db *fsql.DB, dbName string) {
 	t.Helper()
