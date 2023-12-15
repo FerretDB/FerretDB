@@ -141,7 +141,7 @@ func (g *group) Process(ctx context.Context, iter types.DocumentsIterator, close
 			if doc.Has(accumulation.outputField) {
 				// document has duplicate key
 				return nil, handlererrors.NewCommandErrorMsgWithArgument(
-					handlererrors.ErrDuplicateField,
+					handlererrors.ErrStageIndexedStringVectorDuplicate,
 					fmt.Sprintf("duplicate field: %s", accumulation.outputField),
 					"$group (stage)",
 				)

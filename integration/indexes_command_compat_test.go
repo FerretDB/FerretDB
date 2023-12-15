@@ -297,6 +297,7 @@ func TestCreateIndexesCommandCompatCheckFields(t *testing.T) {
 
 	compatDoc.Remove("$clusterTime")
 	compatDoc.Remove("operationTime")
+	compatDoc.Remove("commitQuorum")
 
 	targetDoc = ConvertDocument(t, targetRes)
 	testutil.AssertEqual(t, compatDoc, targetDoc)
