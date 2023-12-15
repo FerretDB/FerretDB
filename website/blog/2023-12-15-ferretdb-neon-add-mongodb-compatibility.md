@@ -11,7 +11,7 @@ tags: [tutorial, postgresql tools, open source]
 ![Start using with Neon](/img/blog/ferretdb-neon.jpg)
 
 [FerretDB](https://www.ferretdb.com/) is an open source document database that adds MongoDB compatibility to other database backends, such as [Postgres](https://www.postgresql.org/) and [SQLite](https://www.sqlite.org/).
-In that by using FerretDB, developers can [access familiar MongoDB features and tools using the same syntax and commands](https://blog.ferretdb.io/mongodb-crud-operations-with-ferretdb/) for many of their use cases.
+By using FerretDB, developers can [access familiar MongoDB features and tools using the same syntax and commands](https://blog.ferretdb.io/mongodb-crud-operations-with-ferretdb/) for many of their use cases.
 
 <!--truncate-->
 
