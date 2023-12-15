@@ -108,7 +108,9 @@ func (r *Registry) Close() {
 
 // NewParams represent parameters for NewCursor.
 type NewParams struct {
-	// FIXME
+	// Data stored, but not used by this package.
+	// Used to pass *handler.findCursorData between `find` and `getMore` command implementations.
+	// Stored as any to avoid dependency cycle.
 	Data any
 
 	// those fields are used for limited authorization checks

@@ -127,9 +127,11 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	t := cursor.Normal
+
 	if params.Tailable {
 		t = cursor.Tailable
 	}
+
 	if params.AwaitData {
 		t = cursor.TailableAwait
 	}
@@ -163,7 +165,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	if params.SingleBatch || len(docs) < int(params.BatchSize) {
 		c.Close()
 
-		// FIXME ?
+		// It is not entirely clear if we should do that; more tests are needed.
 		if c.Type != cursor.Normal {
 			h.cursors.CloseAndRemove(c)
 		}

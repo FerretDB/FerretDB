@@ -79,5 +79,7 @@ func GetFindParams(doc *types.Document, l *zap.Logger) (*FindParams, error) {
 		return nil, err
 	}
 
+	// check AwaitData=true, Tailable=false?
+
 	return &params, nil
 }

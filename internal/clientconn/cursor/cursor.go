@@ -42,8 +42,14 @@ type Type int
 
 const (
 	_ Type = iota
+
+	// Normal represents a normal cursor.
 	Normal
+
+	// Tailable represents a tailable cursor.
 	Tailable
+
+	// TailableAwait represents a tailable and blocking cursor.
 	TailableAwait
 )
 
@@ -161,8 +167,7 @@ func (c *Cursor) Close() {
 
 	c.m.Unlock()
 
-	// it is not entirely clear if we should do that;
-	// more tests are needed
+	// It is not entirely clear if we should do that; more tests are needed.
 	if c.Type == Normal {
 		c.r.CloseAndRemove(c)
 	}

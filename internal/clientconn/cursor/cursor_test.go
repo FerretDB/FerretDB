@@ -77,12 +77,12 @@ func TestCursor(t *testing.T) {
 		t.Run("Context", func(t *testing.T) {
 			t.Parallel()
 
-			ctx, cancel := context.WithCancel(ctx)
+			testCtx, cancel := context.WithCancel(ctx)
 
-			c := r.NewCursor(ctx, iterator.Values(iterator.ForSlice(all)), params)
+			c := r.NewCursor(testCtx, iterator.Values(iterator.ForSlice(all)), params)
 
 			cancel()
-			<-ctx.Done()
+			<-testCtx.Done()
 			time.Sleep(time.Second)
 
 			_, _, err := c.Next()
@@ -104,7 +104,7 @@ func TestCursor(t *testing.T) {
 				iter := iterator.Values(iterator.ForSlice(all))
 				t.Cleanup(iter.Close)
 
-				c.Reset(iter)
+				_ = c.Reset(iter)
 			})
 		})
 	})
@@ -134,12 +134,12 @@ func TestCursor(t *testing.T) {
 		t.Run("Context", func(t *testing.T) {
 			t.Parallel()
 
-			ctx, cancel := context.WithCancel(ctx)
+			testCtx, cancel := context.WithCancel(ctx)
 
-			c := r.NewCursor(ctx, iterator.Values(iterator.ForSlice(all)), params)
+			c := r.NewCursor(testCtx, iterator.Values(iterator.ForSlice(all)), params)
 
 			cancel()
-			<-ctx.Done()
+			<-testCtx.Done()
 			time.Sleep(time.Second)
 
 			_, _, err := c.Next()
