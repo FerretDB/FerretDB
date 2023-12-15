@@ -145,9 +145,7 @@ func TestCursorsTailable(t *testing.T) {
 
 	var cursorID any
 
-	t.Run("FirstBatch", func(tt *testing.T) {
-		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2283")
-
+	t.Run("FirstBatch", func(t *testing.T) {
 		cmd := bson.D{
 			{"find", collection.Name()},
 			{"batchSize", 1},
@@ -172,9 +170,7 @@ func TestCursorsTailable(t *testing.T) {
 		{"batchSize", 1},
 	}
 
-	t.Run("GetMore", func(tt *testing.T) {
-		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2283")
-
+	t.Run("GetMore", func(t *testing.T) {
 		for i := 0; i < 2; i++ {
 			var res bson.D
 			err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
@@ -190,9 +186,7 @@ func TestCursorsTailable(t *testing.T) {
 		}
 	})
 
-	t.Run("GetMoreEmpty", func(tt *testing.T) {
-		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2283")
-
+	t.Run("GetMoreEmpty", func(t *testing.T) {
 		var res bson.D
 		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
 		require.NoError(t, err)

@@ -201,21 +201,23 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		}
 
 	case cursor.Tailable:
-		data := c.Data.(*findCursorData)
+		if len(docs) < int(batchSize) {
+			data := c.Data.(*findCursorData)
 
-		queryRes, err := data.coll.Query(ctx, data.qp)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
+			queryRes, err := data.coll.Query(ctx, data.qp)
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
 
-		closer := iterator.NewMultiCloser()
-		iter, err := h.makeFindIter(queryRes.Iter, closer, data.findParams)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
+			closer := iterator.NewMultiCloser()
+			iter, err := h.makeFindIter(queryRes.Iter, closer, data.findParams)
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
 
-		if err = c.Reset(iter); err != nil {
-			return nil, lazyerrors.Error(err)
+			if err = c.Reset(iter); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
 		}
 
 	case cursor.TailableAwait:
