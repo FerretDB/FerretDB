@@ -247,6 +247,7 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	return &reply, nil
 }
 
+// makeNextBatch returns the next batch of documents from the cursor.
 func (h *Handler) makeNextBatch(c *cursor.Cursor, batchSize int64) (*types.Array, error) {
 	docs, err := iterator.ConsumeValuesN(c, int(batchSize))
 	if err != nil {

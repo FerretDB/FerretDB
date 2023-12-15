@@ -77,16 +77,16 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	var nIndexes int64
 
 	for _, cInfo := range list.Collections {
-		var coll backends.Collection
+		var c backends.Collection
 
-		coll, err = db.Collection(cInfo.Name)
+		c, err = db.Collection(cInfo.Name)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
 		var iList *backends.ListIndexesResult
 
-		iList, err = coll.ListIndexes(ctx, new(backends.ListIndexesParams))
+		iList, err = c.ListIndexes(ctx, new(backends.ListIndexesParams))
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
 			iList = new(backends.ListIndexesResult)
 			err = nil
