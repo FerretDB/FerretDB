@@ -613,6 +613,7 @@ func TestUpdateCompat(t *testing.T) {
 		},
 		"ReplaceEmptyDocument": {
 			replace: bson.D{},
+			skip:    "https://github.com/FerretDB/FerretDB/issues/3843",
 		},
 		"ReplaceNonExistentUpsert": {
 			filter:      bson.D{{"non-existent", "no-match"}},
@@ -682,6 +683,7 @@ func TestUpdateCompatMultiFlagCommand(t *testing.T) {
 		"FalseEmptyDocument": {
 			update: bson.D{},
 			multi:  false,
+			skip:   "https://github.com/FerretDB/FerretDB/issues/3843",
 		},
 	}
 

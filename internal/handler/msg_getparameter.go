@@ -62,7 +62,7 @@ func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.O
 			"settableAtStartup", true,
 		)),
 		"featureCompatibilityVersion", must.NotFail(types.NewDocument(
-			"value", must.NotFail(types.NewDocument("version", "6.0")),
+			"value", must.NotFail(types.NewDocument("version", "7.0")),
 			"settableAtRuntime", false,
 			"settableAtStartup", false,
 		)),
@@ -81,7 +81,7 @@ func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.O
 
 	if resDoc.Len() < 1 {
 		return nil, handlererrors.NewCommandErrorMsgWithArgument(
-			handlererrors.ErrorCode(0),
+			handlererrors.ErrorCode(72),
 			"no option found to get",
 			document.Command(),
 		)
