@@ -171,7 +171,7 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/78).
 
 | Command                    | Argument                         | Status | Comments                                                  |
 | -------------------------- | -------------------------------- | ------ | --------------------------------------------------------- |
-| `createUser`               |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1491) |
+| `createUser`               |                                  | ✅     | [Issue](https://github.com/FerretDB/FerretDB/issues/1491) |
 |                            | `pwd`                            | ⚠️     |                                                           |
 |                            | `customData`                     | ⚠️     |                                                           |
 |                            | `roles`                          | ⚠️     |                                                           |

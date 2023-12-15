@@ -17,9 +17,10 @@ package handler
 import (
 	"context"
 
+	"github.com/google/uuid"
+
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
-	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -33,6 +34,11 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 		return nil, lazyerrors.Error(err)
 	}
 
+	dbName, err := common.GetRequiredParam[string](document, "$db")
+	if err != nil {
+		return nil, err
+	}
+
 	// https://www.mongodb.com/docs/manual/reference/command/createUser/
 
 	username, err := common.GetRequiredParam[string](document, document.Command())
@@ -40,54 +46,47 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 		return nil, err
 	}
 
-	_, err = common.GetOptionalParam[string](document, "pwd", "")
-	if err != nil {
+	if err := common.UnimplementedNonDefault(document, "customData", func(v any) bool {
+		if v == nil || v == types.Null {
+			return true
+		}
+
+		cd, ok := v.(*types.Document)
+		return ok && cd.Len() == 0
+	}); err != nil {
 		return nil, err
 	}
 
 	if err := common.UnimplementedNonDefault(document, "roles", func(v any) bool {
+		if v == nil || v == types.Null {
+			return true
+		}
+
 		roles, ok := v.(*types.Array)
 		return ok && roles.Len() == 0
 	}); err != nil {
 		return nil, err
 	}
 
-	common.Ignored(document, h.L, "roles", "writeConcern", "authenticationRestrictions", "mechanisms")
-
-	saved := must.NotFail(types.NewDocument(
-		"user", username,
-		"roles", must.NotFail(types.NewArray()), // Non-default value is currently ignored.
-		"pwd", "password", // TODO: hash the password.
-	))
-
-	if document.Has("customData") {
-		customData, err := common.GetOptionalParam[*types.Document](document, "customData", nil)
-		if err != nil {
-			return nil, err
+	if err := common.UnimplementedNonDefault(document, "digestPassword", func(v any) bool {
+		if v == nil || v == types.Null {
+			return true
 		}
-		saved.Set("customData", customData)
-	}
 
-	if document.Has("digestPassword") {
-		digestPassword, err := common.GetOptionalParam[bool](document, "digestPassword", true)
-		if err != nil {
-			return nil, err
-		}
-		saved.Set("digestPassword", digestPassword)
-	}
-
-	if document.Has("comment") {
-		saved.Set("comment", must.NotFail(document.Get("comment")))
-	}
-
-	dbName, err := common.GetRequiredParam[string](document, "$db")
-	if err != nil {
+		dp, ok := v.(bool)
+		return ok && dp
+	}); err != nil {
 		return nil, err
 	}
 
-	if dbName != "$external" && !document.Has("pwd") {
-		return nil, handlererrors.NewCommandErrorMsg(handlererrors.ErrBadValue, "Must provide a 'pwd' field for all user documents, except those with '$external' as the user's source db")
-	}
+	common.Ignored(document, h.L, "pwd", "writeConcern", "authenticationRestrictions", "mechanisms", "comment")
+
+	saved := must.NotFail(types.NewDocument(
+		"_id", dbName+"."+username,
+		"userID", types.Binary{Subtype: types.BinaryUUID, B: []byte(uuid.NewString())},
+		"user", username,
+		"credentials", types.MakeDocument(0),
+	))
 
 	db, err := h.b.Database(dbName)
 	if err != nil {
