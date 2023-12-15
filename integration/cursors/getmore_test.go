@@ -667,8 +667,9 @@ func TestCursorsGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "-1 value for maxTimeMS is out of range",
+				Message: "-1 value for maxTimeMS is out of range " + shareddata.Int32Interval,
 			},
+			altMessage: "-1 value for maxTimeMS is out of range",
 		},
 		"MaxLong": {
 			command: bson.D{
@@ -679,8 +680,9 @@ func TestCursorsGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "9223372036854775807 value for maxTimeMS is out of range",
+				Message: "9223372036854775807 value for maxTimeMS is out of range " + shareddata.Int32Interval,
 			},
+			altMessage: "9223372036854775807 value for maxTimeMS is out of range",
 		},
 		"Double": {
 			command: bson.D{
@@ -704,7 +706,7 @@ func TestCursorsGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "-14245345234123246 value for maxTimeMS is out of range",
+				Message: "-14245345234123246 value for maxTimeMS is out of range " + shareddata.Int32Interval,
 			},
 			altMessage: "-1.4245345234123246e+16 value for maxTimeMS is out of range",
 		},
@@ -717,7 +719,7 @@ func TestCursorsGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "9223372036854775807 value for maxTimeMS is out of range",
+				Message: "9223372036854775807 value for maxTimeMS is out of range " + shareddata.Int32Interval,
 			},
 			altMessage: "1.797693134862316e+308 value for maxTimeMS is out of range",
 		},
@@ -730,7 +732,7 @@ func TestCursorsGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "-9223372036854775808 value for maxTimeMS is out of range",
+				Message: "-9223372036854775808 value for maxTimeMS is out of range " + shareddata.Int32Interval,
 			},
 			altMessage: "-1.797693134862316e+308 value for maxTimeMS is out of range",
 		},
@@ -743,8 +745,9 @@ func TestCursorsGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "-1123123 value for maxTimeMS is out of range",
+				Message: "-1123123 value for maxTimeMS is out of range " + shareddata.Int32Interval,
 			},
+			altMessage: "-1123123 value for maxTimeMS is out of range",
 		},
 		"MaxInt": {
 			command: bson.D{
@@ -755,8 +758,9 @@ func TestCursorsGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "2147483648 value for maxTimeMS is out of range",
+				Message: "2147483648 value for maxTimeMS is out of range " + shareddata.Int32Interval,
 			},
+			altMessage: "2147483648 value for maxTimeMS is out of range",
 		},
 		"Null": {
 			command: bson.D{

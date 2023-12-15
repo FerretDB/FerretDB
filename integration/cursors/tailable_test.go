@@ -52,8 +52,10 @@ func TestCursorsTailableErrors(t *testing.T) {
 		}
 	})
 
-	t.Run("GetMoreDifferentCollection", func(t *testing.T) {
-		t.Parallel()
+	t.Run("GetMoreDifferentCollection", func(tt *testing.T) {
+		tt.Parallel()
+
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2283")
 
 		s := setup.SetupWithOpts(t, nil)
 
@@ -143,7 +145,9 @@ func TestCursorsTailable(t *testing.T) {
 
 	var cursorID any
 
-	t.Run("FirstBatch", func(t *testing.T) {
+	t.Run("FirstBatch", func(tt *testing.T) {
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2283")
+
 		cmd := bson.D{
 			{"find", collection.Name()},
 			{"batchSize", 1},
@@ -168,7 +172,9 @@ func TestCursorsTailable(t *testing.T) {
 		{"batchSize", 1},
 	}
 
-	t.Run("GetMore", func(t *testing.T) {
+	t.Run("GetMore", func(tt *testing.T) {
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2283")
+
 		for i := 0; i < 2; i++ {
 			var res bson.D
 			err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
@@ -229,6 +235,8 @@ func TestCursorsTailable(t *testing.T) {
 }
 
 func TestCursorsTailableTwoCursorsSameCollection(tt *testing.T) {
+	tt.Parallel()
+
 	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2283")
 
 	s := setup.SetupWithOpts(t, nil)

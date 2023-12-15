@@ -98,10 +98,6 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, err
 		}
 
-		if params.CappedSize%256 != 0 {
-			params.CappedSize = (params.CappedSize/256 + 1) * 256
-		}
-
 		if max, _ := document.Get("max"); max != nil {
 			params.CappedDocuments, err = handlerparams.GetValidatedNumberParamWithMinValue(document.Command(), "max", max, 0)
 			if err != nil {
