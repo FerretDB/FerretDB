@@ -1090,5 +1090,4 @@ func TestCursors(t *testing.T) {
 		require.True(t, errors.As(err, &ce))
 		require.Equal(t, int32(175), ce.Code, "invalid error: %v", ce)
 	})
-
 }
