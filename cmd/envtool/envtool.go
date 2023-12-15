@@ -388,11 +388,12 @@ var cli struct {
 
 	Tests struct {
 		Run struct {
-			ShardIndex uint     `help:"Shard index, starting from 1."`
-			ShardTotal uint     `help:"Total number of shards."`
-			Run        string   `help:"Run only tests matching the regexp."`
-			Skip       string   `help:"Skip tests matching the regexp."`
-			Args       []string `arg:"" help:"Other arguments and flags for 'go test'." passthrough:""`
+			ShardIndex uint   `help:"Shard index, starting from 1."`
+			ShardTotal uint   `help:"Total number of shards."`
+			Run        string `help:"Run only tests matching the regexp."`
+			Skip       string `help:"Skip tests matching the regexp."`
+
+			Args []string `arg:"" help:"Other arguments and flags for 'go test'." passthrough:""`
 		} `cmd:"" help:"Run tests."`
 	} `cmd:""`
 
