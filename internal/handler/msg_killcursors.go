@@ -39,7 +39,7 @@ func (h *Handler) MsgKillCursors(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 
 	command := document.Command()
 
-	dbName, err := common.GetRequiredParam[string](document, "$db")
+	db, err := common.GetRequiredParam[string](document, "$db")
 	if err != nil {
 		return nil, err
 	}
@@ -92,13 +92,13 @@ func (h *Handler) MsgKillCursors(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 	}
 
 	for _, id := range ids {
-		c := h.cursors.Get(id)
-		if c == nil || c.DB != dbName || c.Collection != collection || c.Username != username {
+		cursor := h.cursors.Get(id)
+		if cursor == nil || cursor.DB != db || cursor.Collection != collection || cursor.Username != username {
 			cursorsNotFound.Append(id)
 			continue
 		}
 
-		h.cursors.CloseAndRemove(c)
+		h.cursors.CloseAndRemove(cursor)
 		cursorsKilled.Append(id)
 	}
 

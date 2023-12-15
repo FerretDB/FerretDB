@@ -41,7 +41,7 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	dbName, err := common.GetRequiredParam[string](document, "$db")
+	db, err := common.GetRequiredParam[string](document, "$db")
 	if err != nil {
 		return nil, err
 	}
@@ -168,12 +168,12 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, err
 	}
 
-	if c.DB != dbName || c.Collection != collection {
+	if c.DB != db || c.Collection != collection {
 		return nil, handlererrors.NewCommandErrorMsgWithArgument(
 			handlererrors.ErrUnauthorized,
 			fmt.Sprintf(
 				"Requested getMore on namespace '%s.%s', but cursor belongs to a different namespace %s.%s",
-				dbName,
+				db,
 				collection,
 				c.DB,
 				c.Collection,
@@ -238,7 +238,7 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			"cursor", must.NotFail(types.NewDocument(
 				"nextBatch", nextBatch,
 				"id", cursorID,
-				"ns", dbName+"."+collection,
+				"ns", db+"."+collection,
 			)),
 			"ok", float64(1),
 		))},
