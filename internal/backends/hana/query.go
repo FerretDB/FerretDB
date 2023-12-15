@@ -52,7 +52,7 @@ func makeFilter(table, key, op string, value any) string {
 		case v < -types.MaxSafeDouble:
 			value = -types.MaxSafeDouble
 		default:
-			// don't change the default eq query
+			// don't change the default value
 		}
 		valStr = fmt.Sprintf("%f", value)
 	case bool:

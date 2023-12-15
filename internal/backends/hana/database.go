@@ -99,15 +99,23 @@ func (db *database) CreateCollection(ctx context.Context, params *backends.Creat
 		return backends.NewError(backends.ErrorCodeCollectionAlreadyExists, err)
 	}
 
-	err = CreateCollection(ctx, db.hdb, db.schema, params.Name)
+	err = createCollection(ctx, db.hdb, db.schema, params.Name)
 
 	return getHanaErrorIfExists(err)
 }
 
 // DropCollection implements backends.Database interface.
 func (db *database) DropCollection(ctx context.Context, params *backends.DropCollectionParams) error {
-	err := dropCollection(ctx, db.hdb, db.schema, params.Name)
-	return getHanaErrorIfExists(err)
+	dropped, err := dropCollection(ctx, db.hdb, db.schema, params.Name)
+	if err != nil {
+		return getHanaErrorIfExists(err)
+	}
+
+	if !dropped {
+		return backends.NewError(backends.ErrorCodeCollectionDoesNotExist, err)
+	}
+
+	return nil
 }
 
 // RenameCollection implements backends.Database interface.

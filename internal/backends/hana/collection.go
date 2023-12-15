@@ -15,13 +15,18 @@
 package hana
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"sort"
 	"strings"
 
+	"github.com/SAP/go-hdb/driver"
+	"github.com/google/uuid"
+
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/sjson"
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -69,6 +74,26 @@ func (c *collection) checkSchemaAndCollectionExists(ctx context.Context) error {
 	return nil
 }
 
+func (c *collection) generateQuery(filter, sort *types.Document) (string, error) {
+	selectClause := prepareSelectClause(c.schema, c.table)
+
+	whereClause, err := prepareWhereClause(c.table, filter)
+	if err != nil {
+		return "", lazyerrors.Error(err)
+	}
+
+	sql := selectClause + whereClause
+
+	orderByClause, err := prepareOrderByClause(sort)
+	if err != nil {
+		return "", lazyerrors.Error(err)
+	}
+
+	sql += orderByClause
+
+	return sql, nil
+}
+
 // Query implements backends.Collection interface.
 func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*backends.QueryResult, error) {
 	err := c.checkSchemaAndCollectionExists(ctx)
@@ -76,21 +101,10 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		return nil, lazyerrors.Error(err)
 	}
 
-	selectClause := prepareSelectClause(c.schema, c.table)
-
-	whereClause, err := prepareWhereClause(c.table, params.Filter)
+	sql, err := c.generateQuery(params.Filter, params.Sort)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-
-	sql := selectClause + whereClause
-
-	orderByClause, err := prepareOrderByClause(params.Sort)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	sql += orderByClause
 
 	rows, err := c.hdb.QueryContext(ctx, sql)
 	if err != nil {
@@ -206,7 +220,75 @@ func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllPa
 // Explain implements backends.Collection interface.
 func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams) (*backends.ExplainResult, error) {
 	// HANATODO HANA does not provide explain plan in json format. We need a conversion here.
-	return nil, lazyerrors.New("not implemented yet")
+
+	err := c.checkSchemaAndCollectionExists(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	// Generate uuid for explain plan statement name.
+	explainUUID := c.schema + "_" + c.table + "_" + uuid.New().String()
+
+	querySQL, err := c.generateQuery(params.Filter, params.Sort)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	explainSQL := fmt.Sprintf("EXPLAIN PLAN SET STATEMENT_NAME = '%s' FOR %s", explainUUID, querySQL)
+
+	_, err = c.hdb.ExecContext(ctx, explainSQL)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	selectExplainSQL := fmt.Sprintf(
+		"SELECT OPERATOR_NAME, OPERATOR_DETAILS, OPERATOR_ID, COALESCE(PARENT_OPERATOR_ID,0) "+
+			"FROM EXPLAIN_PLAN_TABLE WHERE STATEMENT_NAME = '%s'", explainUUID,
+	)
+
+	rows, err := c.hdb.QueryContext(ctx, selectExplainSQL)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	defer rows.Close()
+
+	// Build a document from the explain plan.
+	var explainDoc types.Document
+
+	for rows.Next() {
+		var operatorName string
+		var lobDetail driver.Lob
+		storageDetails := new(bytes.Buffer)
+
+		lobDetail.SetWriter(storageDetails)
+
+		var operatorID, operatorParentID int32
+
+		err = rows.Scan(&operatorName, &lobDetail, &operatorID, &operatorParentID)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		operatorDetails := storageDetails.String()
+
+		explainDoc.Set(operatorName, must.NotFail(types.NewDocument(
+			"operator_id", operatorID,
+			"parent_operator_id", operatorParentID,
+			"operator_details", operatorDetails,
+		)))
+	}
+
+	cleanupSQL := fmt.Sprintf("DELETE FROM EXPLAIN_PLAN_TABLE WHERE STATEMENT_NAME = '%s'", explainUUID)
+
+	_, err = c.hdb.ExecContext(ctx, cleanupSQL)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &backends.ExplainResult{
+		QueryPlanner: &explainDoc,
+	}, nil
 }
 
 // Stats implements backends.Collection interface.
@@ -278,7 +360,7 @@ func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndex
 
 		indexes = append(indexes, backends.IndexInfo{
 			Name:   c.removeIndexNamePrefix(idxName),
-			Unique: true, // TODO: Is this possible to query from HANA?
+			Unique: true, // HANATODO: Is this possible to query from HANA?
 			Key:    []backends.IndexKeyPair{{Field: idxColName, Descending: !ascending}},
 		})
 	}
@@ -318,7 +400,7 @@ func (c *collection) CreateIndexes(ctx context.Context, params *backends.CreateI
 
 	var createStmt string
 
-	// TODO Can we support more than one field for indexes in HANA DocStore?
+	// HANATODO Can we support more than one field for indexes in HANA DocStore?
 	for _, index := range params.Indexes {
 		if !indexExists(existingIndexes.Indexes, index.Name) {
 			createStmt = fmt.Sprintf(sql, c.schema, c.prefixIndexName(index.Name), c.schema, c.table, index.Key[0].Field)
@@ -340,7 +422,7 @@ func (c *collection) DropIndexes(ctx context.Context, params *backends.DropIndex
 		return nil, err
 	}
 
-	// TODO Check if index is on this collection.
+	// HANATODO Check if index is on this collection.
 
 	sql := "DROP INDEX %q.%q"
 

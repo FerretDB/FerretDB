@@ -72,6 +72,30 @@ func getHanaErrorIfExists(err error) error {
 	return err
 }
 
+// hanaErrorCollectionNotExist checks if the error is about collection not existing.
+//
+// Returns true if the err is collection does not exist.
+func hanaErrorCollectionNotExist(err error) bool {
+	var dbError driver.Error
+	if errors.As(err, &dbError) {
+		return dbError.Code() == 259
+	}
+
+	return false
+}
+
+// hanaErrorSchemaNotExist checks if the error is about collection not existing.
+//
+// Returns true if the err is schema does not exist.
+func hanaErrorSchemaNotExist(err error) bool {
+	var dbError driver.Error
+	if errors.As(err, &dbError) {
+		return dbError.Code() == 362
+	}
+
+	return false
+}
+
 func schemaExists(ctx context.Context, hdb *fsql.DB, schema string) (bool, error) {
 	sql := fmt.Sprintf("SELECT COUNT(*) FROM \"PUBLIC\".\"SCHEMAS\" WHERE SCHEMA_NAME = '%s'", schema)
 
@@ -110,12 +134,19 @@ func createSchemaIfNotExists(ctx context.Context, hdb *fsql.DB, schema string) e
 // DropSchema drops database.
 //
 // Returns ErrSchemaNotExist if schema does not exist.
-func dropSchema(ctx context.Context, hdb *fsql.DB, schema string) error {
+func dropSchema(ctx context.Context, hdb *fsql.DB, schema string) (bool, error) {
 	sql := fmt.Sprintf("DROP SCHEMA %q CASCADE", schema)
 
 	_, err := hdb.ExecContext(ctx, sql)
+	if err != nil {
+		if hanaErrorSchemaNotExist(err) {
+			return false, nil
+		}
 
-	return getHanaErrorIfExists(err)
+		return false, err
+	}
+
+	return true, nil
 }
 
 func collectionExists(ctx context.Context, hdb *fsql.DB, schema, table string) (bool, error) {
@@ -137,7 +168,7 @@ func collectionExists(ctx context.Context, hdb *fsql.DB, schema, table string) (
 // Schema will automatically be created if it does not exist.
 //
 // It returns ErrAlreadyExist if collection already exist.
-func CreateCollection(ctx context.Context, hdb *fsql.DB, schema, table string) error {
+func createCollection(ctx context.Context, hdb *fsql.DB, schema, table string) error {
 	err := createSchemaIfNotExists(ctx, hdb, schema)
 	if err != nil {
 		return err
@@ -160,16 +191,23 @@ func createCollectionIfNotExists(ctx context.Context, hdb *fsql.DB, schema, tabl
 	}
 
 	if !exists {
-		err = CreateCollection(ctx, hdb, schema, table)
+		err = createCollection(ctx, hdb, schema, table)
 	}
 
 	return err
 }
 
-func dropCollection(ctx context.Context, hdb *fsql.DB, schema, table string) error {
+func dropCollection(ctx context.Context, hdb *fsql.DB, schema, table string) (bool, error) {
 	sql := fmt.Sprintf("DROP COLLECTION %q.%q CASCADE", schema, table)
 
 	_, err := hdb.ExecContext(ctx, sql)
+	if err != nil {
+		if hanaErrorCollectionNotExist(err) {
+			return false, nil
+		}
 
-	return getHanaErrorIfExists(err)
+		return false, err
+	}
+
+	return true, nil
 }

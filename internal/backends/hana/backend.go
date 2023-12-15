@@ -135,7 +135,16 @@ func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDataba
 
 // DropDatabase implements backends.Backend interface.
 func (b *backend) DropDatabase(ctx context.Context, params *backends.DropDatabaseParams) error {
-	return dropSchema(ctx, b.hdb, params.Name)
+	dropped, err := dropSchema(ctx, b.hdb, params.Name)
+	if err != nil {
+		return getHanaErrorIfExists(err)
+	}
+
+	if !dropped {
+		return backends.NewError(backends.ErrorCodeDatabaseDoesNotExist, err)
+	}
+
+	return nil
 }
 
 // Describe implements prometheus.Collector.
