@@ -16,11 +16,14 @@ package handler
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/google/uuid"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -39,14 +42,23 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 		return nil, err
 	}
 
+	if dbName != "$external" && !document.Has("pwd") {
+		return nil, handlererrors.NewCommandErrorMsg(
+			handlererrors.ErrBadValue,
+			"Must provide a 'pwd' field for all user documents, except those with '$external' as the user's source db",
+		)
+	}
+
 	// https://www.mongodb.com/docs/manual/reference/command/createUser/
 
-	username, err := common.GetRequiredParam[string](document, document.Command())
+	var username string
+	username, err = common.GetRequiredParam[string](document, document.Command())
+
 	if err != nil {
 		return nil, err
 	}
 
-	if err := common.UnimplementedNonDefault(document, "customData", func(v any) bool {
+	if err = common.UnimplementedNonDefault(document, "customData", func(v any) bool {
 		if v == nil || v == types.Null {
 			return true
 		}
@@ -57,18 +69,30 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 		return nil, err
 	}
 
-	if err := common.UnimplementedNonDefault(document, "roles", func(v any) bool {
-		if v == nil || v == types.Null {
-			return true
+	if _, err = common.GetRequiredParam[*types.Array](document, "roles"); err != nil {
+		var ce *handlererrors.CommandError
+		if errors.As(err, &ce) && ce.Code() == handlererrors.ErrBadValue {
+			return nil, handlererrors.NewCommandErrorMsg(
+				handlererrors.ErrMissingField,
+				"BSON field 'createUser.roles' is missing but a required field",
+			)
 		}
 
-		roles, ok := v.(*types.Array)
-		return ok && roles.Len() == 0
+		return nil, lazyerrors.Error(err)
+	}
+
+	if err = common.UnimplementedNonDefault(document, "roles", func(v any) bool {
+		if v == nil || v == types.Null {
+			return false
+		}
+
+		r, ok := v.(*types.Array)
+		return ok && r.Len() == 0
 	}); err != nil {
 		return nil, err
 	}
 
-	if err := common.UnimplementedNonDefault(document, "digestPassword", func(v any) bool {
+	if err = common.UnimplementedNonDefault(document, "digestPassword", func(v any) bool {
 		if v == nil || v == types.Null {
 			return true
 		}
@@ -79,29 +103,41 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 		return nil, err
 	}
 
+	// NOTE: In MongoDB, the comment field isn't saved in the database, but used for log and profiling.
 	common.Ignored(document, h.L, "pwd", "writeConcern", "authenticationRestrictions", "mechanisms", "comment")
 
+	id := uuid.New()
 	saved := must.NotFail(types.NewDocument(
 		"_id", dbName+"."+username,
-		"userID", types.Binary{Subtype: types.BinaryUUID, B: []byte(uuid.NewString())},
-		"user", username,
 		"credentials", types.MakeDocument(0),
+		"user", username,
+		"db", dbName,
+		"roles", types.MakeArray(0),
+		"userId", types.Binary{Subtype: types.BinaryUUID, B: id[:]},
 	))
 
-	db, err := h.b.Database(dbName)
+	// Users are saved in the "admin" database.
+	adminDB, err := h.b.Database("admin")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	collection, err := db.Collection("system.users")
+	users, err := adminDB.Collection("system.users")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	_, err = collection.InsertAll(ctx, &backends.InsertAllParams{
+	_, err = users.InsertAll(ctx, &backends.InsertAllParams{
 		Docs: []*types.Document{saved},
 	})
 	if err != nil {
+		if backends.ErrorCodeIs(err, backends.ErrorCodeInsertDuplicateID) {
+			return nil, handlererrors.NewCommandErrorMsg(
+				handlererrors.ErrUserAlreadyExists,
+				fmt.Sprintf("User \"%s@%s\" already exists", username, dbName),
+			)
+		}
+
 		return nil, lazyerrors.Error(err)
 	}
 

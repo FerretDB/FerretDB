@@ -16,8 +16,11 @@ package users
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 
@@ -26,29 +29,28 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestCreateUser(t *testing.T) {
 	t.Parallel()
 
 	ctx, collection := setup.Setup(t)
-
-	_ = collection.Database().RunCommand(ctx, bson.D{
-		{"dropAllUsersFromDatabase", 1},
-	})
-
 	db := collection.Database()
+	client := db.Client()
+	users := client.Database("admin").Collection("system.users")
 
-	err := db.RunCommand(ctx, bson.D{
-		{Key: "createUser", Value: "should_already_exist"},
-		{Key: "roles", Value: bson.A{}},
-		{Key: "pwd", Value: "password"},
-	}).Err()
-	assert.NoError(t, err)
+	// TODO https://github.com/FerretDB/FerretDB/issues/1492
+	if setup.IsMongoDB(t) {
+		assert.NoError(t, collection.Database().RunCommand(ctx, bson.D{
+			{"dropAllUsersFromDatabase", 1},
+		}).Err())
+	} else {
+		// Erase any previously saved user in the database.
+		_, err := users.DeleteMany(ctx, bson.D{{"db", db.Name()}})
+		assert.NoError(t, err)
+	}
 
-	testCases := map[string]struct {
+	testCases := map[string]struct { //nolint:vet // for readability
 		payload    bson.D
 		err        *mongo.CommandError
 		altMessage string
@@ -56,12 +58,10 @@ func TestCreateUser(t *testing.T) {
 		skip       string
 	}{
 		"AlreadyExists": {
-			skip: "TODO", // FIXME
-
 			payload: bson.D{
-				{Key: "createUser", Value: "should_already_exist"},
-				{Key: "roles", Value: bson.A{}},
-				{Key: "pwd", Value: "password"},
+				{"createUser", "should_already_exist"},
+				{"roles", bson.A{}},
+				{"pwd", "password"},
 			},
 			err: &mongo.CommandError{
 				Code:    51003,
@@ -70,11 +70,9 @@ func TestCreateUser(t *testing.T) {
 			},
 		},
 		"MissingPwdOrExternal": {
-			skip: "TODO", // FIXME
-
 			payload: bson.D{
-				{Key: "createUser", Value: "mising_pwd_or_external"},
-				{Key: "roles", Value: bson.A{}},
+				{"createUser", "mising_pwd_or_external"},
+				{"roles", bson.A{}},
 			},
 			err: &mongo.CommandError{
 				Code:    2,
@@ -84,60 +82,51 @@ func TestCreateUser(t *testing.T) {
 		},
 		"Success": {
 			payload: bson.D{
-				{Key: "createUser", Value: "success_user"},
-				{Key: "roles", Value: bson.A{}},
-				{Key: "pwd", Value: "password"},
+				{"createUser", "success_user"},
+				{"roles", bson.A{}},
+				{"pwd", "password"},
 			},
 			expected: bson.D{
 				{
-					Key: "ok", Value: float64(1),
+					"ok", float64(1),
 				},
 			},
 		},
 		"WithComment": {
-			skip: "TODO", // FIXME
-
 			payload: bson.D{
-				{Key: "createUser", Value: "with_comment_user"},
-				{Key: "roles", Value: bson.A{}},
-				{Key: "pwd", Value: "password"},
-				{Key: "comment", Value: "test string comment"},
+				{"createUser", "with_comment_user"},
+				{"roles", bson.A{}},
+				{"pwd", "password"},
+				{"comment", "test string comment"},
 			},
 			expected: bson.D{
 				{
-					Key: "ok", Value: float64(1),
+					"ok", float64(1),
 				},
 			},
 		},
-		"WithCommentComposite": {
-			skip: "TODO", // FIXME
-
+		"MissingRoles": {
 			payload: bson.D{
-				{Key: "createUser", Value: "with_comment_composite"},
-				{Key: "roles", Value: bson.A{}},
-				{Key: "pwd", Value: "password"},
-				{
-					Key: "comment",
-					Value: bson.D{
-						{Key: "example", Value: "blah"},
-						{
-							Key: "complex",
-							Value: bson.A{
-								bson.D{{Key: "x", Value: "y"}},
-							},
-						},
-					},
-				},
+				{"createUser", "missing_roles"},
+				{"pwd", "password"},
 			},
-			expected: bson.D{
-				{
-					Key: "ok", Value: float64(1),
-				},
+			err: &mongo.CommandError{
+				Code:    40414,
+				Name:    "Location40414",
+				Message: "BSON field 'createUser.roles' is missing but a required field",
 			},
 		},
 	}
+
+	err := db.RunCommand(ctx, bson.D{
+		{"createUser", "should_already_exist"},
+		{"roles", bson.A{}},
+		{"pwd", "password"},
+	}).Err()
+	assert.NoError(t, err)
+
 	for name, tc := range testCases {
-		tc := tc
+		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
 				t.Skip(tc.skip)
@@ -162,23 +151,35 @@ func TestCreateUser(t *testing.T) {
 			testutil.AssertEqual(t, expected, actual)
 
 			payload := integration.ConvertDocument(t, tc.payload)
-			assertUserExists(ctx, t, db, payload)
+			assertUserExists(ctx, t, users, db.Name(), payload)
 		})
 	}
 }
 
-func assertUserExists(ctx context.Context, t testing.TB, db *mongo.Database, payload *types.Document) {
+// assertUserExists checks it the user was created in the admin.system.users collection.
+// All users are created in the "admin" database.
+func assertUserExists(ctx context.Context, t testing.TB, users *mongo.Collection, dbName string, payload *types.Document) {
 	t.Helper()
 
 	var rec bson.D
-	err := db.Collection("system.users").FindOne(ctx, bson.D{{"user", must.NotFail(payload.Get("createUser"))}}).Decode(&rec)
-	require.NoError(t, err)
+	err := users.FindOne(ctx, bson.D{{"user", must.NotFail(payload.Get("createUser"))}}).Decode(&rec)
+	require.NoError(t, err, "user not found")
 
 	actualRecorded := integration.ConvertDocument(t, rec)
+
+	uuid := must.NotFail(actualRecorded.Get("userId")).(types.Binary)
+	assert.Equal(t, uuid.Subtype.String(), types.BinaryUUID.String(), "uuid subtype")
+	assert.Equal(t, 16, len(uuid.B), "UUID length")
+	actualRecorded.Remove("userId")
+
+	actualRecorded.Remove("credentials")
+
 	expectedRec := integration.ConvertDocument(t, bson.D{
+		{"_id", fmt.Sprintf("%s.%s", dbName, must.NotFail(payload.Get("createUser")))},
 		{"user", must.NotFail(payload.Get("createUser"))},
-	}) // FIXME
+		{"db", dbName},
+		{"roles", bson.A{}},
+	})
 
 	testutil.AssertEqual(t, expectedRec, actualRecorded)
-	// TODO compare other data
 }
