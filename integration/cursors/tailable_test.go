@@ -334,3 +334,114 @@ func TestCursorsTailableTwoCursorsSameCollection(tt *testing.T) {
 	require.Equal(t, 0, nextBatch2.Len())
 	assert.Equal(t, cursorID2, nextID2)
 }
+
+func TestCursorsTailableAwaitData(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupWithOpts(t, nil)
+
+	db, ctx := s.Collection.Database(), s.Ctx
+
+	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(10000)
+	err := db.CreateCollection(s.Ctx, t.Name(), opts)
+	require.NoError(t, err)
+
+	collection := db.Collection(t.Name())
+
+	bsonArr, arr := integration.GenerateDocuments(0, 3)
+
+	_, err = collection.InsertMany(ctx, bsonArr)
+	require.NoError(t, err)
+
+	var cursorID any
+
+	t.Run("FirstBatch", func(tt *testing.T) {
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2283")
+
+		cmd := bson.D{
+			{"find", collection.Name()},
+			{"batchSize", 1},
+			{"tailable", true},
+			{"awaitData", true},
+			{"maxTimeMS", 500000},
+		}
+
+		var res bson.D
+		err = collection.Database().RunCommand(ctx, cmd).Decode(&res)
+		require.NoError(t, err)
+
+		var firstBatch *types.Array
+		firstBatch, cursorID = getFirstBatch(t, res)
+
+		expectedFirstBatch := integration.ConvertDocuments(t, arr[:1])
+		require.Equal(t, len(expectedFirstBatch), firstBatch.Len())
+		require.Equal(t, expectedFirstBatch[0], must.NotFail(firstBatch.Get(0)))
+	})
+
+	getMoreCmd := bson.D{
+		{"getMore", cursorID},
+		{"collection", collection.Name()},
+		{"batchSize", 1},
+	}
+
+	t.Run("GetMore", func(tt *testing.T) {
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2283")
+
+		for i := 0; i < 2; i++ {
+			var res bson.D
+			err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
+			require.NoError(t, err)
+
+			nextBatch, nextID := getNextBatch(t, res)
+			expectedNextBatch := integration.ConvertDocuments(t, arr[i+1:i+2])
+
+			assert.Equal(t, cursorID, nextID)
+
+			require.Equal(t, len(expectedNextBatch), nextBatch.Len())
+			require.Equal(t, expectedNextBatch[0], must.NotFail(nextBatch.Get(0)))
+		}
+	})
+
+	t.Run("GetMoreEmpty", func(tt *testing.T) {
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2283")
+
+		var res bson.D
+		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
+		require.NoError(t, err)
+
+		nextBatch, nextID := getNextBatch(t, res)
+		require.Equal(t, 0, nextBatch.Len())
+		assert.Equal(t, cursorID, nextID)
+	})
+
+	t.Run("GetMoreNewDoc", func(tt *testing.T) {
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2283")
+
+		newDoc := bson.D{{"_id", "new"}}
+		_, err = collection.InsertOne(ctx, newDoc)
+		require.NoError(t, err)
+
+		var res bson.D
+		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
+		require.NoError(t, err)
+
+		nextBatch, nextID := getNextBatch(t, res)
+
+		assert.Equal(t, cursorID, nextID)
+
+		require.Equal(t, 1, nextBatch.Len())
+		require.Equal(t, integration.ConvertDocument(t, newDoc), must.NotFail(nextBatch.Get(0)))
+	})
+
+	t.Run("GetMoreEmptyAfterInsertion", func(tt *testing.T) {
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2283")
+
+		var res bson.D
+		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
+		require.NoError(t, err)
+
+		nextBatch, nextID := getNextBatch(t, res)
+		require.Equal(t, 0, nextBatch.Len())
+		assert.Equal(t, cursorID, nextID)
+	})
+}
