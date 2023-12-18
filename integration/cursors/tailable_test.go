@@ -398,8 +398,9 @@ func TestCursorsTailableAwaitDataTimeout(t *testing.T) {
 		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
 		require.NoError(t, err)
 
+		// there's no documents left in cursor, also maxTimeMS has passed
 		nextBatch, nextID := getNextBatch(t, res)
-		assert.Equal(t, cursorID, nextID)
+		assert.Equal(t, cursorID, nextID) // but cursorID is still the same...
 
 		require.Equal(t, 0, nextBatch.Len())
 	})
@@ -414,8 +415,9 @@ func TestCursorsTailableAwaitDataTimeout(t *testing.T) {
 		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
 		require.NoError(t, err)
 
+		// there's no documents left in cursor, also maxTimeMS has passed twice and we called getmore previously
 		nextBatch, nextID := getNextBatch(t, res)
-		assert.Equal(t, cursorID, nextID)
+		assert.Equal(t, cursorID, nextID) // cursorID is still the same
 
 		require.Equal(t, 0, nextBatch.Len())
 	})
@@ -437,6 +439,7 @@ func TestCursorsTailableAwaitDataTimeout(t *testing.T) {
 		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
 		require.NoError(t, err)
 
+		// and we are still able to insert and fetch new documents from cursor
 		nextBatch, nextID := getNextBatch(t, res)
 		assert.Equal(t, cursorID, nextID)
 
