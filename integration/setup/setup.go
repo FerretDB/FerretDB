@@ -60,7 +60,6 @@ var (
 	logLevelF   = zap.LevelFlag("log-level", zap.DebugLevel, "log level for tests")
 
 	disablePushdownF = flag.Bool("disable-pushdown", false, "disable pushdown")
-	enableNewAuthF   = flag.Bool("enable-new-auth", false, "enable new auth")
 )
 
 // Other globals.

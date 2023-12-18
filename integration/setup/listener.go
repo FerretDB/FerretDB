@@ -183,7 +183,7 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 			EnableOplog:             true,
 			CappedCleanupPercentage: 20,
 			CappedCleanupInterval:   0,
-			EnableNewAuth:           *enableNewAuthF,
+			EnableNewAuth:           true,
 		},
 	}
 	h, closeBackend, err := registry.NewHandler(handler, handlerOpts)
