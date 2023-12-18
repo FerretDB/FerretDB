@@ -39,6 +39,9 @@ const (
 	// ErrFailedToParse indicates user input parsing failure.
 	ErrFailedToParse = ErrorCode(9) // FailedToParse
 
+	// ErrUserNotFound indicates an user was not found for the accessed database.
+	ErrUserNotFound = ErrorCode(11) // UserNotFound
+
 	// ErrUnauthorized indicates that cursor is not authorized to access another namespace.
 	ErrUnauthorized = ErrorCode(13) // Unauthorized
 
