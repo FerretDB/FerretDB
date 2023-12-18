@@ -1011,6 +1011,22 @@ func TestUpdateFieldCompatMixed(t *testing.T) {
 			update:     bson.D{{"$foo", bson.D{{"foo", int32(1)}}}},
 			resultType: emptyResult,
 		},
+		"UpsertQueryOperatorEq": {
+			filter:     bson.D{{"_id", bson.D{{"$eq", "non-existent"}}}},
+			update:     bson.D{{"$set", bson.D{{"new", "val"}}}},
+			updateOpts: options.Update().SetUpsert(true),
+			skip:       "https://github.com/FerretDB/FerretDB/issues/3856",
+		},
+		"UpsertQueryOperatorMixed": {
+			filter: bson.D{
+				{"_id", bson.D{{"$eq", "non-existent"}}},
+				{"v", bson.D{{"$lt", 43}}},
+				{"non_existent", int32(0)},
+			},
+			update:     bson.D{{"$set", bson.D{{"new", "val"}}}},
+			updateOpts: options.Update().SetUpsert(true),
+			skip:       "https://github.com/FerretDB/FerretDB/issues/3856",
+		},
 	}
 
 	testUpdateCompat(t, testCases)
