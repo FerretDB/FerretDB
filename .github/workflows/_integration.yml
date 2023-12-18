@@ -95,7 +95,6 @@ jobs:
           SHARD_TOTAL=${{ inputs.shard_total }}
           TEST_TIMEOUT=15m
           DISABLE_PUSHDOWN=${{ inputs.disable_pushdown }}
-          ENABLE_NEW_AUTH=${{ inputs.enable_new_auth }}
         env:
           GOFLAGS: ${{ runner.debug == '1' && '-v' || '' }}
           FERRETDB_HANA_URL: ${{ secrets.FERRETDB_HANA_URL }}
