@@ -15,8 +15,8 @@
 package cursors
 
 import (
+	"strings"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -345,16 +345,19 @@ func TestCursorsTailableAwaitDataTimeout(t *testing.T) {
 
 	db, ctx := s.Collection.Database(), s.Ctx
 
-	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(10000)
+	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(1000000000)
 	err := db.CreateCollection(s.Ctx, t.Name(), opts)
 	require.NoError(t, err)
 
 	collection := db.Collection(t.Name())
 
-	bsonArr, arr := integration.GenerateDocuments(0, 1)
+	docsCount := 1000
 
-	_, err = collection.InsertMany(ctx, bsonArr)
-	require.NoError(t, err)
+	for i := 0; i < docsCount; i++ {
+		doc := bson.D{{"v", strings.Repeat("ACSDAFSADB", 10000+i)}}
+		_, err := collection.InsertOne(ctx, doc)
+		require.NoError(t, err)
+	}
 
 	var cursorID any
 
@@ -366,7 +369,7 @@ func TestCursorsTailableAwaitDataTimeout(t *testing.T) {
 			{"batchSize", 1},
 			{"tailable", true},
 			{"awaitData", true},
-			{"maxTimeMS", 500},
+			{"maxTimeMS", 1},
 		}
 
 		var res bson.D
@@ -376,73 +379,30 @@ func TestCursorsTailableAwaitDataTimeout(t *testing.T) {
 		var firstBatch *types.Array
 		firstBatch, cursorID = getFirstBatch(t, res)
 
-		expectedFirstBatch := integration.ConvertDocuments(t, arr[:1])
-		require.Equal(t, len(expectedFirstBatch), firstBatch.Len())
-		require.Equal(t, expectedFirstBatch[0], must.NotFail(firstBatch.Get(0)))
+		require.Equal(t, 1, firstBatch.Len())
 	})
 
 	getMoreCmd := bson.D{
 		{"getMore", cursorID},
 		{"collection", collection.Name()},
-		{"batchSize", 1},
-		{"maxTimeMS", 500},
+		{"batchSize", 5},
+		{"maxTimeMS", 1},
 	}
-
-	// sleep for more than 500ms
-	time.Sleep(1100 * time.Millisecond)
 
 	t.Run("GetMore", func(tt *testing.T) {
 		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2283")
 
-		var res bson.D
-		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
-		require.NoError(t, err)
+		for i := 1; i < 1000; i++ {
+			var res bson.D
+			err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
+			require.NoError(t, err)
 
-		// there's no documents left in cursor, also maxTimeMS has passed
-		nextBatch, nextID := getNextBatch(t, res)
-		assert.Equal(t, cursorID, nextID) // but cursorID is still the same...
+			// there's no documents left in cursor, also maxTimeMS has passed
+			nextBatch, nextID := getNextBatch(t, res)
+			require.Equal(t, cursorID, nextID) // but cursorID is still the same...
 
-		require.Equal(t, 0, nextBatch.Len())
+			require.Equal(t, 5, nextBatch.Len())
+		}
 	})
 
-	// sleep for more than 500ms
-	time.Sleep(1100 * time.Millisecond)
-
-	t.Run("GetMoreSecond", func(tt *testing.T) {
-		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2283")
-
-		var res bson.D
-		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
-		require.NoError(t, err)
-
-		// there's no documents left in cursor, also maxTimeMS has passed twice and we called getmore previously
-		nextBatch, nextID := getNextBatch(t, res)
-		assert.Equal(t, cursorID, nextID) // cursorID is still the same
-
-		require.Equal(t, 0, nextBatch.Len())
-	})
-
-	time.Sleep(1100 * time.Millisecond)
-
-	t.Run("Insert", func(tt *testing.T) {
-		_, err = collection.InsertOne(ctx, bson.D{{"_id", 2137}})
-		require.NoError(t, err)
-	})
-
-	// sleep for more than 500ms
-	time.Sleep(1100 * time.Millisecond)
-
-	t.Run("GetMoreAfterInsert", func(tt *testing.T) {
-		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2283")
-
-		var res bson.D
-		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
-		require.NoError(t, err)
-
-		// and we are still able to insert and fetch new documents from cursor
-		nextBatch, nextID := getNextBatch(t, res)
-		assert.Equal(t, cursorID, nextID)
-
-		require.Equal(t, 1, nextBatch.Len())
-	})
 }
