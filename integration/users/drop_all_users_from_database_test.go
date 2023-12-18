@@ -62,7 +62,7 @@ func TestDropAllUsersFromDatabase(t *testing.T) {
 
 	// FIXME: calling assertDropAllUsersFromDatabase a second time with quantity = 0
 	// for FerretDB is triggering a "socket was unexpectedly closed: EOF" error for some reason.
-	// assertDropAllUsersFromDatabase(t, ctx, db, users, 0)
+	assertDropAllUsersFromDatabase(t, ctx, db, users, 0)
 }
 
 func assertDropAllUsersFromDatabase(t *testing.T, ctx context.Context, db *mongo.Database, users *mongo.Collection, quantity int) {

@@ -70,17 +70,23 @@ func (h *Handler) MsgDropAllUsersFromDatabase(ctx context.Context, msg *wire.OpM
 		ids = append(ids, must.NotFail(v.Get("_id")))
 	}
 
-	res, err := users.DeleteAll(ctx, &backends.DeleteAllParams{
-		IDs: ids,
-	})
-	if err != nil {
-		return nil, lazyerrors.Error(err)
+	var deleted int32
+
+	if len(ids) != 0 {
+		res, err := users.DeleteAll(ctx, &backends.DeleteAllParams{
+			IDs: ids,
+		})
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		deleted = res.Deleted
 	}
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"n", res.Deleted,
+			"n", deleted,
 			"ok", float64(1),
 		))},
 	}))
