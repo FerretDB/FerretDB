@@ -88,36 +88,9 @@ services:
 From the same directory as the `docker-compose.yml` file, run `docker-compose up -d` to start the FerretDB instance
 This will also pull the latest FerretDB image and run it in the background.
 
-:::tip
-
-You can also set up FerretDB on Linux using the appropriate FerretDB package for your system
-See the [GitHub release page](https://github.com/FerretDB/FerretDB/releases).
-
-Take for example, if you are using an ARM64 system, download and install the latest FerretDB release:
-
-```sh
-curl -LJO https://github.com/FerretDB/FerretDB/releases/download/v1.17.0/ferretdb-linux-arm64.deb
-sudo dpkg -i  ./ferretdb-linux-arm64.deb
-```
-
-Run `ferretdb --version` just to be sure it's correctly installed.
-
-Next, connect FerretDB to the Neon Postgres instance.
-Do this by assigning the Neon Postgres URI to the `--postgresql-url` flag for FerretDB.
-
-Run and connect FerretDB to the Neon URI:
-
-```sh
-ferretdb --postgresql-url=<neon-connection-uri>
-```
-
-That's all you need to run FerretDB.
-You can also run FerretDB via a `systemd` file, see [here for more details](https://blog.ferretdb.io/install-ferretdb-mongodb-alternative-ubuntu/#start-ferretdb-using-a-systemd-file).
-:::
-
 ### Test via `mongosh`
 
-Once FerretDB is up and running, let's test and see that it works using `mongosh`.
+With FerretDB running, let's test and see that it works using `mongosh`.
 To connect via `mongosh`, you will need a connection string.
 Use your Neon Postgres credentials to connect to the database.
 
