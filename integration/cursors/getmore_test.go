@@ -15,6 +15,7 @@
 package cursors
 
 import (
+	"errors"
 	"math"
 	"net/url"
 	"testing"
@@ -1006,5 +1007,91 @@ func TestCursorsGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 			"",
 			err,
 		)
+	})
+}
+
+func TestCursors(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{
+		ExtraOptions: url.Values{
+			"minPoolSize": []string{"1"},
+			"maxPoolSize": []string{"1"},
+		},
+	})
+
+	collection, ctx := s.Collection, s.Ctx
+
+	arr, _ := integration.GenerateDocuments(1, 5)
+	_, err := collection.InsertMany(ctx, arr)
+	require.NoError(t, err)
+
+	var res bson.D
+
+	t.Run("RemoveLastDocument", func(tt *testing.T) {
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/3818")
+
+		err = collection.Database().RunCommand(ctx, bson.D{
+			{"find", collection.Name()},
+			{"batchSize", 1},
+		}).Decode(&res)
+		require.NoError(t, err)
+
+		firstBatch, cursorID := getFirstBatch(t, res)
+		require.NotNil(t, firstBatch)
+		require.Equal(t, 1, firstBatch.Len())
+
+		_, err = collection.DeleteOne(ctx, bson.D{{"_id", 4}})
+		require.NoError(t, err)
+
+		getMoreCmd := bson.D{
+			{"getMore", cursorID},
+			{"collection", collection.Name()},
+			{"batchSize", 1},
+		}
+
+		for i := 1; i < 3; i++ {
+			err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
+			nextBatch, nextID := getNextBatch(t, res)
+			require.Equal(t, cursorID, nextID)
+			require.Equal(t, 1, nextBatch.Len())
+		}
+
+		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
+		require.NoError(t, err)
+
+		nextBatch, nextID := getNextBatch(t, res)
+		require.Equal(t, int64(0), nextID)
+		require.Equal(t, 0, nextBatch.Len())
+	})
+
+	t.Run("QueryPlanKilledByDrop", func(tt *testing.T) {
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/3818")
+
+		err = collection.Database().RunCommand(ctx, bson.D{
+			{"find", collection.Name()},
+			{"batchSize", 1},
+		}).Decode(&res)
+		require.NoError(t, err)
+
+		firstBatch, cursorID := getFirstBatch(t, res)
+		require.NotNil(t, firstBatch)
+		require.Equal(t, 1, firstBatch.Len())
+
+		err = collection.Database().Drop(ctx)
+		require.NoError(t, err)
+
+		getMoreCmd := bson.D{
+			{"getMore", cursorID},
+			{"collection", collection.Name()},
+			{"batchSize", 1},
+		}
+
+		err = collection.Database().RunCommand(ctx, getMoreCmd).Err()
+		require.Error(t, err)
+
+		var ce mongo.CommandError
+		require.True(t, errors.As(err, &ce))
+		require.Equal(t, int32(175), ce.Code, "invalid error: %v", ce)
 	})
 }
