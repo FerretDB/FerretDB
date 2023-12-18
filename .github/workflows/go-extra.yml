@@ -18,12 +18,12 @@ jobs:
   integration:
     # job name must be unique; make it unique and nice
     name: >
-      ${{ matrix.task }} ${{ matrix.shard_index }}/${{ matrix.shard_total }}
+      ${{ matrix.task }} ${{ matrix.postgres_dockerfile }} ${{ matrix.shard_index }}/${{ matrix.shard_total }}
       (pushdown=${{ matrix.disable_pushdown }})
 
     # To avoid conflict with go.yml.
     concurrency:
-      group: ${{ github.workflow }}-integration-${{ matrix.task }}-${{ matrix.shard_index }}-${{ matrix.disable_pushdown }}-${{ github.head_ref || github.ref_name }}
+      group: ${{ github.workflow }}-integration-${{ matrix.task }}-${{ matrix.postgres_dockerfile }}-${{ matrix.shard_index }}-${{ matrix.disable_pushdown }}-${{ github.head_ref || github.ref_name }}
       cancel-in-progress: true
 
     strategy:
@@ -48,4 +48,5 @@ jobs:
       shard_index: ${{ matrix.shard_index }}
       shard_total: ${{ matrix.shard_total }}
       disable_pushdown: ${{ matrix.disable_pushdown }}
+      postgres_dockerfile: ${{ matrix.postgres_dockerfile }}
       coveralls: false
