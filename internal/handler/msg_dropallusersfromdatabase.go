@@ -16,9 +16,14 @@ package handler
 
 import (
 	"context"
+	"errors"
 
+	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -29,6 +34,56 @@ func (h *Handler) MsgDropAllUsersFromDatabase(ctx context.Context, msg *wire.OpM
 		return nil, lazyerrors.Error(err)
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/1492
-	return nil, common.Unimplemented(document, document.Command())
+	// NOTE: In MongoDB, the comment field isn't saved in the database, but used for log and profiling.
+	common.Ignored(document, h.L, "writeConcern", "comment")
+
+	dbName, err := common.GetRequiredParam[string](document, "$db")
+	if err != nil {
+		return nil, err
+	}
+
+	// Users are saved in the "admin" database.
+	adminDB, err := h.b.Database("admin")
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	users, err := adminDB.Collection("system.users")
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	qr, err := users.Query(ctx, &backends.QueryParams{
+		Filter: must.NotFail(types.NewDocument("db", dbName)),
+	})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	var ids []any
+	defer qr.Iter.Close()
+	for {
+		_, v, err := qr.Iter.Next()
+		if errors.Is(err, iterator.ErrIteratorDone) {
+			break
+		}
+		ids = append(ids, must.NotFail(v.Get("_id")))
+	}
+
+	res, err := users.DeleteAll(ctx, &backends.DeleteAllParams{
+		IDs: ids,
+	})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	var reply wire.OpMsg
+	must.NoError(reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"n", res.Deleted,
+			"ok", float64(1),
+		))},
+	}))
+
+	return &reply, nil
 }
