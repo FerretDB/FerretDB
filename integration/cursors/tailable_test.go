@@ -16,6 +16,7 @@ package cursors
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -335,7 +336,9 @@ func TestCursorsTailableTwoCursorsSameCollection(tt *testing.T) {
 	assert.Equal(t, cursorID2, nextID2)
 }
 
-func TestCursorsTailableAwaitData(t *testing.T) {
+// TODO TestCursorsTailableAwaitDataTimeout Cursor not exhausted
+
+func TestCursorsTailableAwaitDataTimeout(t *testing.T) {
 	t.Parallel()
 
 	s := setup.SetupWithOpts(t, nil)
@@ -348,7 +351,7 @@ func TestCursorsTailableAwaitData(t *testing.T) {
 
 	collection := db.Collection(t.Name())
 
-	bsonArr, arr := integration.GenerateDocuments(0, 3)
+	bsonArr, arr := integration.GenerateDocuments(0, 1)
 
 	_, err = collection.InsertMany(ctx, bsonArr)
 	require.NoError(t, err)
@@ -363,7 +366,7 @@ func TestCursorsTailableAwaitData(t *testing.T) {
 			{"batchSize", 1},
 			{"tailable", true},
 			{"awaitData", true},
-			{"maxTimeMS", 500000},
+			{"maxTimeMS", 500},
 		}
 
 		var res bson.D
@@ -382,66 +385,61 @@ func TestCursorsTailableAwaitData(t *testing.T) {
 		{"getMore", cursorID},
 		{"collection", collection.Name()},
 		{"batchSize", 1},
+		{"maxTimeMS", 500},
 	}
+
+	// sleep for more than 500ms
+	time.Sleep(1100 * time.Millisecond)
 
 	t.Run("GetMore", func(tt *testing.T) {
 		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2283")
 
-		for i := 0; i < 2; i++ {
-			var res bson.D
-			err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
-			require.NoError(t, err)
-
-			nextBatch, nextID := getNextBatch(t, res)
-			expectedNextBatch := integration.ConvertDocuments(t, arr[i+1:i+2])
-
-			assert.Equal(t, cursorID, nextID)
-
-			require.Equal(t, len(expectedNextBatch), nextBatch.Len())
-			require.Equal(t, expectedNextBatch[0], must.NotFail(nextBatch.Get(0)))
-		}
-	})
-
-	t.Run("GetMoreEmpty", func(tt *testing.T) {
-		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2283")
-
 		var res bson.D
 		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
 		require.NoError(t, err)
 
 		nextBatch, nextID := getNextBatch(t, res)
-		require.Equal(t, 0, nextBatch.Len())
 		assert.Equal(t, cursorID, nextID)
+
+		require.Equal(t, 0, nextBatch.Len())
 	})
 
-	t.Run("GetMoreNewDoc", func(tt *testing.T) {
-		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2283")
+	// sleep for more than 500ms
+	time.Sleep(1100 * time.Millisecond)
 
-		newDoc := bson.D{{"_id", "new"}}
-		_, err = collection.InsertOne(ctx, newDoc)
-		require.NoError(t, err)
+	t.Run("GetMoreSecond", func(tt *testing.T) {
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2283")
 
 		var res bson.D
 		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
 		require.NoError(t, err)
 
 		nextBatch, nextID := getNextBatch(t, res)
+		assert.Equal(t, cursorID, nextID)
 
+		require.Equal(t, 0, nextBatch.Len())
+	})
+
+	time.Sleep(1100 * time.Millisecond)
+
+	t.Run("Insert", func(tt *testing.T) {
+		_, err = collection.InsertOne(ctx, bson.D{{"_id", 2137}})
+		require.NoError(t, err)
+	})
+
+	// sleep for more than 500ms
+	time.Sleep(1100 * time.Millisecond)
+
+	t.Run("GetMoreAfterInsert", func(tt *testing.T) {
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2283")
+
+		var res bson.D
+		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
+		require.NoError(t, err)
+
+		nextBatch, nextID := getNextBatch(t, res)
 		assert.Equal(t, cursorID, nextID)
 
 		require.Equal(t, 1, nextBatch.Len())
-		require.Equal(t, integration.ConvertDocument(t, newDoc), must.NotFail(nextBatch.Get(0)))
-	})
-
-	t.Run("GetMoreEmptyAfterInsertion", func(tt *testing.T) {
-		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2283")
-
-		var res bson.D
-		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
-		require.NoError(t, err)
-
-		nextBatch, nextID := getNextBatch(t, res)
-		require.Equal(t, 0, nextBatch.Len())
-		assert.Equal(t, cursorID, nextID)
 	})
 }
