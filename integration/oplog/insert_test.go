@@ -17,10 +17,11 @@ package oplog
 import (
 	"testing"
 
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"github.com/FerretDB/FerretDB/integration"
 
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
@@ -41,5 +42,20 @@ func TestOplogInsert(t *testing.T) {
 	err = local.Collection("oplog.rs").FindOne(ctx, bson.D{}, opts).Decode(&lastOplogEntry)
 	require.NoError(t, err)
 
-	fmt.Println(lastOplogEntry)
+	expectedKeys := []string{"lsid", "txnNumber", "op", "ns", "ui", "o", "o2", "stmId", "ts", "t", "v", "wall", "prevOpTime"}
+
+	actual := integration.ConvertDocument(t, lastOplogEntry)
+	actualKeys := actual.Keys()
+
+	require.ElementsMatch(t, expectedKeys, actualKeys)
+
+	/*
+			expected := types.NewDocument({
+				{"op", "i"}, // operation - i, u, d, n, c
+				{"ns", "test.coll"}, // namespace
+		{"o", types.NewDocument({}),
+		{"o2", types.NewDocument({}),
+		{"v", 2}, // protocol version
+			})
+	*/
 }
