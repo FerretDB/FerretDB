@@ -17,6 +17,12 @@ package oplog
 import (
 	"testing"
 
+	"github.com/FerretDB/FerretDB/internal/util/must"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/FerretDB/FerretDB/internal/types"
+
 	"github.com/FerretDB/FerretDB/integration"
 
 	"github.com/stretchr/testify/require"
@@ -49,6 +55,24 @@ func TestOplogInsert(t *testing.T) {
 
 	require.ElementsMatch(t, expectedKeys, actualKeys)
 
+	// Exact values might vary, so we just check types.
+	assert.IsType(t, types.Document{}, must.NotFail(actual.Get("lsid")))
+	assert.IsType(t, int64(0), must.NotFail(actual.Get("txnNumber")))
+	assert.IsType(t, int32(0), must.NotFail(actual.Get("stmId")))
+	assert.IsType(t, types.Timestamp(0), must.NotFail(actual.Get("ts")))
+	assert.IsType(t, int64(0), must.NotFail(actual.Get("t")))
+	assert.IsType(t, types.Timestamp(0), must.NotFail(actual.Get("wall")))
+	assert.IsType(t, types.Timestamp(0), must.NotFail(actual.Get("prevOpTime")))
+
+	actual.Remove("lsId")
+	actual.Remove("txnNumber")  // transaction number
+	actual.Remove("stmId")      // statement ID within transaction
+	actual.Remove("ts")         // timestamp
+	actual.Remove("t")          // term
+	actual.Remove("wall")       // wall clock time
+	actual.Remove("prevOpTime") // previous operation time
+
+	// Exact values are known, so we check them.
 	/*
 			expected := types.NewDocument({
 				{"op", "i"}, // operation - i, u, d, n, c
