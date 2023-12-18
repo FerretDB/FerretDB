@@ -46,7 +46,7 @@ const config = {
 
           versions: {
             // the latest minus one minor
-            'v1.15': {
+            'v1.16': {
               banner: 'none',
             },
           },
