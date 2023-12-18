@@ -690,6 +690,26 @@ func TestFindAndModifyCompatUpsertSet(t *testing.T) {
 				{"update", bson.D{{"$set", bson.D{{"_id", "int32"}, {"v", int32(2)}}}}},
 			},
 		},
+		"UpsertQueryOperatorEq": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$eq", "non-existent"}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"$set", bson.D{{"new", "val"}}}}},
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/3856",
+		},
+		"UpsertQueryOperatorMixed": {
+			command: bson.D{
+				{"query", bson.D{
+					{"_id", bson.D{{"$eq", "non-existent"}}},
+					{"v", bson.D{{"$lt", 43}}},
+					{"non_existent", int32(0)},
+				}},
+				{"upsert", true},
+				{"update", bson.D{{"$set", bson.D{{"new", "val"}}}}},
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/3856",
+		},
 	}
 
 	testFindAndModifyCompat(t, testCases)
