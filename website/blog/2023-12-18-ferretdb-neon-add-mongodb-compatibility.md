@@ -53,10 +53,10 @@ That means you can take advantage of all the features available in that backend 
 ## Prerequisites
 
 - A Neon project and Postgres URI
-- FerretDB `.deb` package
+- Docker
 - `mongosh`
 
-## Create a Neon Project
+## Create a Neon project
 
 Please refer to the instructions in the [Neon Sign up](https://neon.tech/docs/get-started-with-neon/signing-up) docs if this is your first project.
 
@@ -68,25 +68,44 @@ When creating the project, you need to select the version of postgres, and also 
 Once the project is created, Neon will provide a Postgres connection URI for you.
 This URI will serve as the Postgres URI for your FerretDB instance.
 
-## Install FerretDB on Linux
+## Install and connect FerretDB with Neon via Docker
 
-For this project, we will be using the FerretDB `arm` package, and you can access them from the [GitHub release page](https://github.com/FerretDB/FerretDB/releases).
+To install the latest version of FerretDB, you'll need to create a `docker-compose` YAML file together with the Neon Postgres URI.
 
-To do this, download and install the latest FerretDB release:
+Assign the Neon Postgres URI to the `FERRETDB_POSTGRESQL_URL` environment variable.
+
+```yaml
+services:
+  ferretdb:
+    image: ghcr.io/ferretdb/ferretdb
+    restart: on-failure
+    environment:
+      - FERRETDB_POSTGRESQL_URL=<NEON_URI>
+    ports:
+      - 27017:27017
+```
+
+From the same directory as the `docker-compose.yml` file, run `docker-compose up -d` to start the FerretDB instance
+This will also pull the latest FerretDB image and run it in the background.
+
+:::tip
+
+You can also set up FerretDB on Linux using the appropriate FerretDB package for your system
+See the [GitHub release page](https://github.com/FerretDB/FerretDB/releases).
+
+Take for example, if you are using an ARM64 system, download and install the latest FerretDB release:
 
 ```sh
-curl -LJO https://github.com/FerretDB/FerretDB/releases/download/v1.16.0/ferretdb-linux-arm64.deb
+curl -LJO https://github.com/FerretDB/FerretDB/releases/download/v1.17.0/ferretdb-linux-arm64.deb
 sudo dpkg -i  ./ferretdb-linux-arm64.deb
 ```
 
 Run `ferretdb --version` just to be sure it's correctly installed.
 
-## Connect FerretDB with Neon Postgres
+Next, connect FerretDB to the Neon Postgres instance.
+Do this by assigning the Neon Postgres URI to the `--postgresql-url` flag for FerretDB.
 
-Now that you have FerretDB installed, you need to connect FerretDB to the Neon Postgres instance.
-We assign the Neon Postgres URI to the `--postgresql-url` flag for FerretDB.
-
-Use following command will run FerretDB and connect via the Neon connection URI.
+Run and connect FerretDB to the Neon URI:
 
 ```sh
 ferretdb --postgresql-url=<neon-connection-uri>
@@ -94,6 +113,7 @@ ferretdb --postgresql-url=<neon-connection-uri>
 
 That's all you need to run FerretDB.
 You can also run FerretDB via a `systemd` file, see [here for more details](https://blog.ferretdb.io/install-ferretdb-mongodb-alternative-ubuntu/#start-ferretdb-using-a-systemd-file).
+:::
 
 ### Test via `mongosh`
 
@@ -121,7 +141,7 @@ For mongosh info see: https://docs.mongodb.com/mongodb-shell/
 
 ------
    The server generated these startup warnings when booting
-   2023-12-15T10:19:28.991Z: Powered by FerretDB v1.16.0 and PostgreSQL 15.4 on x86_64-pc-linux-gnu, compiled by gcc.
+   2023-12-15T10:19:28.991Z: Powered by FerretDB v1.17.0 and PostgreSQL 15.4 on x86_64-pc-linux-gnu, compiled by gcc.
    2023-12-15T10:19:28.991Z: Please star us on GitHub: https://github.com/FerretDB/FerretDB.
    2023-12-15T10:19:28.991Z: The telemetry state is undecided.
    2023-12-15T10:19:28.991Z: Read more about FerretDB telemetry and how to opt out at https://beacon.ferretdb.io.
