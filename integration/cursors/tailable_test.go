@@ -15,7 +15,8 @@
 package cursors
 
 import (
-	"strings"
+	"crypto/rand"
+	"math/big"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -345,16 +346,16 @@ func TestCursorsTailableAwaitDataTimeout(t *testing.T) {
 
 	db, ctx := s.Collection.Database(), s.Ctx
 
-	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(1000000000)
+	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(10000000000)
 	err := db.CreateCollection(s.Ctx, t.Name(), opts)
 	require.NoError(t, err)
 
 	collection := db.Collection(t.Name())
 
-	docsCount := 1000
+	docsCount := 100
 
 	for i := 0; i < docsCount; i++ {
-		doc := bson.D{{"v", strings.Repeat("ACSDAFSADB", 10000+i)}}
+		doc := bson.D{{"v", randomValue(t, 100)}}
 		_, err := collection.InsertOne(ctx, doc)
 		require.NoError(t, err)
 	}
@@ -385,14 +386,14 @@ func TestCursorsTailableAwaitDataTimeout(t *testing.T) {
 	getMoreCmd := bson.D{
 		{"getMore", cursorID},
 		{"collection", collection.Name()},
-		{"batchSize", 5},
+		{"batchSize", 1},
 		{"maxTimeMS", 1},
 	}
 
 	t.Run("GetMore", func(tt *testing.T) {
 		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2283")
 
-		for i := 1; i < 1000; i++ {
+		for i := 1; i < 100; i++ {
 			var res bson.D
 			err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
 			require.NoError(t, err)
@@ -401,8 +402,39 @@ func TestCursorsTailableAwaitDataTimeout(t *testing.T) {
 			nextBatch, nextID := getNextBatch(t, res)
 			require.Equal(t, cursorID, nextID) // but cursorID is still the same...
 
-			require.Equal(t, 5, nextBatch.Len())
+			require.Equal(t, 1, nextBatch.Len())
 		}
 	})
 
+	t.Run("GetMoreEmpty", func(tt *testing.T) {
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2283")
+		for i := 1; i < 100; i++ {
+			var res bson.D
+			err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
+			require.NoError(t, err)
+
+			// there's no documents left in cursor, also maxTimeMS has passed
+			nextBatch, nextID := getNextBatch(t, res)
+			require.Equal(t, cursorID, nextID) // but cursorID is still the same...
+
+			require.Equal(t, 0, nextBatch.Len())
+		}
+	})
+
+}
+
+var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+func randomValue(t *testing.T, n int) string {
+	length := big.NewInt(int64(len(letters)))
+	b := make([]rune, n)
+
+	for i := range b {
+		charIndex, err := rand.Int(rand.Reader, length)
+		require.NoError(t, err)
+
+		b[i] = letters[charIndex.Int64()]
+	}
+
+	return string(b)
 }
