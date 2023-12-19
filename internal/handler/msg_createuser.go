@@ -103,7 +103,6 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 		return nil, err
 	}
 
-	// NOTE: In MongoDB, the comment field isn't saved in the database, but used for log and profiling.
 	common.Ignored(document, h.L, "pwd", "writeConcern", "authenticationRestrictions", "mechanisms", "comment")
 
 	id := uuid.New()
