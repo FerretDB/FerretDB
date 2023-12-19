@@ -19,22 +19,20 @@ import (
 	"testing"
 	"time"
 
-	"github.com/FerretDB/FerretDB/internal/util/must"
-
 	"github.com/stretchr/testify/assert"
-
-	"github.com/FerretDB/FerretDB/internal/types"
-
-	"github.com/FerretDB/FerretDB/integration"
-
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
+	"github.com/FerretDB/FerretDB/integration"
 	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 func TestOplogBasic(t *testing.T) {
+	setup.FailsForFerretDB(t, "https://github.com/FerretDB/FerretDB/issues/3556")
+
 	t.Parallel()
 
 	ctx, coll := setup.Setup(t)
