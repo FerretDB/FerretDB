@@ -72,7 +72,7 @@ func TestCursorsTailableAwaitData(tt *testing.T) {
 
 	go func() {
 		time.Sleep(2 * time.Second)
-		_, err := collection.InsertOne(ctx, bson.D{{"v", "bar"}})
+		_, err = collection.InsertOne(ctx, bson.D{{"v", "bar"}})
 		require.NoError(t, err)
 	}()
 
