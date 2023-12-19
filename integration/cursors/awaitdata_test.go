@@ -18,13 +18,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/FerretDB/FerretDB/integration"
-	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"github.com/FerretDB/FerretDB/integration"
+	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/internal/types"
 )
 
 func TestCursorsTailableAwaitData(t *testing.T) {
@@ -78,7 +79,6 @@ func TestCursorsTailableAwaitData(t *testing.T) {
 
 	nextBatch, nextID := getNextBatch(t, res)
 	require.Equal(t, cursorID, nextID)
-
 	require.Equal(t, 1, nextBatch.Len())
 }
 
@@ -112,5 +112,4 @@ func TestCursorsAwaitDataErrors(t *testing.T) {
 		}
 		integration.AssertEqualCommandError(t, expectedErr, err)
 	})
-
 }
