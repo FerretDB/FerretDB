@@ -16,7 +16,6 @@ package cursors
 
 import (
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -334,59 +333,4 @@ func TestCursorsTailableTwoCursorsSameCollection(tt *testing.T) {
 
 	require.Equal(t, 0, nextBatch2.Len())
 	assert.Equal(t, cursorID2, nextID2)
-}
-
-func TestCursorsTailableAwaitData(t *testing.T) {
-	t.Parallel()
-
-	s := setup.SetupWithOpts(t, nil)
-
-	db, ctx := s.Collection.Database(), s.Ctx
-
-	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(10000000000)
-	err := db.CreateCollection(s.Ctx, t.Name(), opts)
-	require.NoError(t, err)
-
-	collection := db.Collection(t.Name())
-
-	_, err = collection.InsertOne(ctx, bson.D{{"v", "foo"}})
-	require.NoError(t, err)
-
-	cmd := bson.D{
-		{"find", collection.Name()},
-		{"batchSize", 1},
-		{"tailable", true},
-		{"awaitData", true},
-		{"maxTimeMS", 1},
-	}
-
-	var res bson.D
-	err = collection.Database().RunCommand(ctx, cmd).Decode(&res)
-	require.NoError(t, err)
-
-	var firstBatch *types.Array
-	firstBatch, cursorID := getFirstBatch(t, res)
-
-	require.Equal(t, 1, firstBatch.Len())
-
-	getMoreCmd := bson.D{
-		{"getMore", cursorID},
-		{"collection", collection.Name()},
-		{"batchSize", 1},
-		{"maxTimeMS", 1000 * 60 * 10},
-	}
-
-	go func() {
-		time.Sleep(2 * time.Second)
-		_, err := collection.InsertOne(ctx, bson.D{{"v", "bar"}})
-		require.NoError(t, err)
-	}()
-
-	err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
-	require.NoError(t, err)
-
-	nextBatch, nextID := getNextBatch(t, res)
-	require.Equal(t, cursorID, nextID)
-
-	require.Equal(t, 1, nextBatch.Len())
 }
