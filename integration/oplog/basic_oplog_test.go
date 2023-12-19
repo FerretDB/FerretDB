@@ -57,30 +57,7 @@ func TestOplogBasic(t *testing.T) {
 		actualKeys := actual.Keys()
 
 		assert.ElementsMatch(t, expectedKeys, actualKeys)
-
-		// Exact values might vary, so we just check types.
-		require.IsType(t, &types.Document{}, must.NotFail(actual.Get("lsid")))
-		lsid := must.NotFail(actual.Get("lsid")).(*types.Document)
-		assert.IsType(t, types.Binary{}, must.NotFail(lsid.Get("id")))
-		assert.IsType(t, types.Binary{}, must.NotFail(lsid.Get("uid")))
-		assert.IsType(t, int64(0), must.NotFail(actual.Get("txnNumber")))
-		assert.IsType(t, int32(0), must.NotFail(actual.Get("stmtId")))
-		assert.IsType(t, types.Timestamp(0), must.NotFail(actual.Get("ts")))
-		assert.IsType(t, int64(0), must.NotFail(actual.Get("t")))
-		assert.IsType(t, time.Time{}, must.NotFail(actual.Get("wall")))
-		assert.IsType(t, &types.Document{}, must.NotFail(actual.Get("prevOpTime")))
-		prevOpsTime := must.NotFail(actual.Get("prevOpTime")).(*types.Document)
-		assert.IsType(t, types.Timestamp(0), must.NotFail(prevOpsTime.Get("ts")))
-		assert.IsType(t, int64(0), must.NotFail(prevOpsTime.Get("t")))
-
-		actual.Remove("lsid")
-		actual.Remove("txnNumber")  // transaction number
-		actual.Remove("ui")         // user ID
-		actual.Remove("stmtId")     // statement ID within transaction
-		actual.Remove("ts")         // timestamp
-		actual.Remove("t")          // term
-		actual.Remove("wall")       // wall clock time
-		actual.Remove("prevOpTime") // previous operation time
+		checkOplogResponseTypes(t, actual)
 
 		// Exact values are known, so we check them.
 		expected, err := types.NewDocument(
@@ -88,11 +65,14 @@ func TestOplogBasic(t *testing.T) {
 			"ns", ns,
 			"o", must.NotFail(types.NewDocument("_id", int64(1), "foo", "bar")),
 			"o2", must.NotFail(types.NewDocument("_id", int64(1))),
+			"stmtId", int32(0),
 			"v", int64(2), // protocol version
 		)
 		require.NoError(t, err)
 		assert.Equal(t, expected, actual)
 	})
+
+	// TODO: multiple inserts
 
 	t.Run("Update", func(t *testing.T) {
 		_, err := coll.UpdateOne(ctx, bson.D{{"_id", int64(1)}}, bson.D{{"$set", bson.D{{"fiz", "baz"}}}})
@@ -108,30 +88,7 @@ func TestOplogBasic(t *testing.T) {
 		actualKeys := actual.Keys()
 
 		assert.ElementsMatch(t, expectedKeys, actualKeys)
-
-		// Exact values might vary, so we just check types.
-		require.IsType(t, &types.Document{}, must.NotFail(actual.Get("lsid")))
-		lsid := must.NotFail(actual.Get("lsid")).(*types.Document)
-		assert.IsType(t, types.Binary{}, must.NotFail(lsid.Get("id")))
-		assert.IsType(t, types.Binary{}, must.NotFail(lsid.Get("uid")))
-		assert.IsType(t, int64(0), must.NotFail(actual.Get("txnNumber")))
-		assert.IsType(t, int32(0), must.NotFail(actual.Get("stmtId")))
-		assert.IsType(t, types.Timestamp(0), must.NotFail(actual.Get("ts")))
-		assert.IsType(t, int64(0), must.NotFail(actual.Get("t")))
-		assert.IsType(t, time.Time{}, must.NotFail(actual.Get("wall")))
-		assert.IsType(t, &types.Document{}, must.NotFail(actual.Get("prevOpTime")))
-		prevOpsTime := must.NotFail(actual.Get("prevOpTime")).(*types.Document)
-		assert.IsType(t, types.Timestamp(0), must.NotFail(prevOpsTime.Get("ts")))
-		assert.IsType(t, int64(0), must.NotFail(prevOpsTime.Get("t")))
-
-		actual.Remove("lsid")
-		actual.Remove("txnNumber")  // transaction number
-		actual.Remove("ui")         // user ID
-		actual.Remove("stmtId")     // statement ID within transaction
-		actual.Remove("ts")         // timestamp
-		actual.Remove("t")          // term
-		actual.Remove("wall")       // wall clock time
-		actual.Remove("prevOpTime") // previous operation time
+		checkOplogResponseTypes(t, actual)
 
 		// Exact values are known, so we check them.
 		expected, err := types.NewDocument(
@@ -142,6 +99,7 @@ func TestOplogBasic(t *testing.T) {
 				"diff", must.NotFail(types.NewDocument("i", must.NotFail(types.NewDocument("fiz", "baz")))),
 			)),
 			"o2", must.NotFail(types.NewDocument("_id", int64(1))),
+			"stmtId", int32(0),
 			"v", int64(2), // protocol version
 		)
 
@@ -162,30 +120,7 @@ func TestOplogBasic(t *testing.T) {
 			actualKeys = actual.Keys()
 
 			assert.ElementsMatch(t, expectedKeys, actualKeys)
-
-			// Exact values might vary, so we just check types.
-			require.IsType(t, &types.Document{}, must.NotFail(actual.Get("lsid")))
-			lsid = must.NotFail(actual.Get("lsid")).(*types.Document)
-			assert.IsType(t, types.Binary{}, must.NotFail(lsid.Get("id")))
-			assert.IsType(t, types.Binary{}, must.NotFail(lsid.Get("uid")))
-			assert.IsType(t, int64(0), must.NotFail(actual.Get("txnNumber")))
-			assert.IsType(t, int32(0), must.NotFail(actual.Get("stmtId")))
-			assert.IsType(t, types.Timestamp(0), must.NotFail(actual.Get("ts")))
-			assert.IsType(t, int64(0), must.NotFail(actual.Get("t")))
-			assert.IsType(t, time.Time{}, must.NotFail(actual.Get("wall")))
-			assert.IsType(t, &types.Document{}, must.NotFail(actual.Get("prevOpTime")))
-			prevOpsTime = must.NotFail(actual.Get("prevOpTime")).(*types.Document)
-			assert.IsType(t, types.Timestamp(0), must.NotFail(prevOpsTime.Get("ts")))
-			assert.IsType(t, int64(0), must.NotFail(prevOpsTime.Get("t")))
-
-			actual.Remove("lsid")
-			actual.Remove("txnNumber")  // transaction number
-			actual.Remove("ui")         // user ID
-			actual.Remove("stmtId")     // statement ID within transaction
-			actual.Remove("ts")         // timestamp
-			actual.Remove("t")          // term
-			actual.Remove("wall")       // wall clock time
-			actual.Remove("prevOpTime") // previous operation time
+			checkOplogResponseTypes(t, actual)
 
 			// Exact values are known, so we check them.
 			expected, err = types.NewDocument(
@@ -196,6 +131,7 @@ func TestOplogBasic(t *testing.T) {
 					"diff", must.NotFail(types.NewDocument("u", must.NotFail(types.NewDocument("foo", "moo")))),
 				)),
 				"o2", must.NotFail(types.NewDocument("_id", int64(1))),
+				"stmtId", int32(0),
 				"v", int64(2), // protocol version
 			)
 
@@ -217,30 +153,7 @@ func TestOplogBasic(t *testing.T) {
 			actualKeys = actual.Keys()
 
 			assert.ElementsMatch(t, expectedKeys, actualKeys)
-
-			// Exact values might vary, so we just check types.
-			require.IsType(t, &types.Document{}, must.NotFail(actual.Get("lsid")))
-			lsid = must.NotFail(actual.Get("lsid")).(*types.Document)
-			assert.IsType(t, types.Binary{}, must.NotFail(lsid.Get("id")))
-			assert.IsType(t, types.Binary{}, must.NotFail(lsid.Get("uid")))
-			assert.IsType(t, int64(0), must.NotFail(actual.Get("txnNumber")))
-			assert.IsType(t, int32(0), must.NotFail(actual.Get("stmtId")))
-			assert.IsType(t, types.Timestamp(0), must.NotFail(actual.Get("ts")))
-			assert.IsType(t, int64(0), must.NotFail(actual.Get("t")))
-			assert.IsType(t, time.Time{}, must.NotFail(actual.Get("wall")))
-			assert.IsType(t, &types.Document{}, must.NotFail(actual.Get("prevOpTime")))
-			prevOpsTime = must.NotFail(actual.Get("prevOpTime")).(*types.Document)
-			assert.IsType(t, types.Timestamp(0), must.NotFail(prevOpsTime.Get("ts")))
-			assert.IsType(t, int64(0), must.NotFail(prevOpsTime.Get("t")))
-
-			actual.Remove("lsid")
-			actual.Remove("txnNumber")  // transaction number
-			actual.Remove("ui")         // user ID
-			actual.Remove("stmtId")     // statement ID within transaction
-			actual.Remove("ts")         // timestamp
-			actual.Remove("t")          // term
-			actual.Remove("wall")       // wall clock time
-			actual.Remove("prevOpTime") // previous operation time
+			checkOplogResponseTypes(t, actual)
 
 			// Exact values are known, so we check them.
 			expected, err = types.NewDocument(
@@ -251,12 +164,16 @@ func TestOplogBasic(t *testing.T) {
 					"diff", must.NotFail(types.NewDocument("d", must.NotFail(types.NewDocument("foo", false)))),
 				)),
 				"o2", must.NotFail(types.NewDocument("_id", int64(1))),
+				"stmtId", int32(0),
 				"v", int64(2), // protocol version
 			)
 
 			require.NoError(t, err)
 			assert.Equal(t, expected, actual)
 		})
+
+		// TODO https://github.com/FerretDB/FerretDB/issues/3861
+		// Add the other types of updates.
 	})
 
 	t.Run("Delete", func(t *testing.T) {
@@ -274,33 +191,14 @@ func TestOplogBasic(t *testing.T) {
 
 		assert.ElementsMatch(t, expectedKeys, actualKeys)
 
-		// Exact values might vary, so we just check types.
-		require.IsType(t, &types.Document{}, must.NotFail(actual.Get("lsid")))
-		lsid := must.NotFail(actual.Get("lsid")).(*types.Document)
-		assert.IsType(t, types.Binary{}, must.NotFail(lsid.Get("id")))
-		assert.IsType(t, types.Binary{}, must.NotFail(lsid.Get("uid")))
-		assert.IsType(t, int64(0), must.NotFail(actual.Get("txnNumber")))
-		assert.IsType(t, types.Timestamp(0), must.NotFail(actual.Get("ts")))
-		assert.IsType(t, time.Time{}, must.NotFail(actual.Get("wall")))
-		require.IsType(t, &types.Document{}, must.NotFail(actual.Get("prevOpTime")))
-		prevOpsTime := must.NotFail(actual.Get("prevOpTime")).(*types.Document)
-		assert.IsType(t, types.Timestamp(0), must.NotFail(prevOpsTime.Get("ts")))
-		assert.IsType(t, int64(0), must.NotFail(prevOpsTime.Get("t")))
-
-		actual.Remove("lsid")
-		actual.Remove("txnNumber")  // transaction number
-		actual.Remove("ui")         // user ID
-		actual.Remove("ts")         // timestamp
-		actual.Remove("wall")       // wall clock time
-		actual.Remove("prevOpTime") // previous operation time
+		checkOplogResponseTypes(t, actual)
 
 		// Exact values are known, so we check them.
 		expected, err := types.NewDocument(
 			"op", "d", // operation - i, u, d, n, c
 			"ns", ns,
 			"o", must.NotFail(types.NewDocument("_id", int64(1))),
-			"stmtId", int32(0), // statement ID within transaction
-			"t", int64(1), // term
+			"stmtId", int32(0),
 			"v", int64(2), // protocol version
 		)
 
@@ -316,4 +214,29 @@ func TestOplogBasic(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, lastOplogEntry, newOplogEntry)
 	})
+}
+
+// oplogResponseTypes check the types of the oplog response and removes checked fields.
+// This could be called to check the types of the oplog response when the exact values are not known.
+func checkOplogResponseTypes(t *testing.T, d *types.Document) {
+	require.IsType(t, &types.Document{}, must.NotFail(d.Get("lsid")))
+	lsid := must.NotFail(d.Get("lsid")).(*types.Document)
+	assert.IsType(t, types.Binary{}, must.NotFail(lsid.Get("id")))
+	assert.IsType(t, types.Binary{}, must.NotFail(lsid.Get("uid")))
+	assert.IsType(t, int64(0), must.NotFail(d.Get("txnNumber")))
+	assert.IsType(t, types.Timestamp(0), must.NotFail(d.Get("ts")))
+	assert.IsType(t, int64(0), must.NotFail(d.Get("t")))
+	assert.IsType(t, time.Time{}, must.NotFail(d.Get("wall")))
+	require.IsType(t, &types.Document{}, must.NotFail(d.Get("prevOpTime")))
+	prevOpsTime := must.NotFail(d.Get("prevOpTime")).(*types.Document)
+	assert.IsType(t, types.Timestamp(0), must.NotFail(prevOpsTime.Get("ts")))
+	assert.IsType(t, int64(0), must.NotFail(prevOpsTime.Get("t")))
+
+	d.Remove("lsid")
+	d.Remove("txnNumber")
+	d.Remove("ui")
+	d.Remove("ts")
+	d.Remove("t")
+	d.Remove("wall")
+	d.Remove("prevOpTime")
 }
