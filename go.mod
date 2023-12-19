@@ -4,20 +4,20 @@ go 1.21
 
 require (
 	github.com/AlekSi/pointer v1.2.0
-	github.com/SAP/go-hdb v1.6.3
+	github.com/SAP/go-hdb v1.6.6
 	github.com/alecthomas/kong v0.8.1
 	github.com/arl/statsviz v0.6.0
 	github.com/go-sql-driver/mysql v1.7.1
-	github.com/google/uuid v1.4.0
+	github.com/google/uuid v1.5.0
 	github.com/jackc/pgerrcode v0.0.0-20220416144525-469b46aa5efa
 	github.com/jackc/pgx-zap v0.0.0-20221202020421-94b1cb2f889f
-	github.com/jackc/pgx/v5 v5.5.0
+	github.com/jackc/pgx/v5 v5.5.1
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/prometheus/client_golang v1.17.0
 	github.com/prometheus/client_model v0.5.0
 	github.com/prometheus/common v0.45.0
 	github.com/stretchr/testify v1.8.4
-	go.mongodb.org/mongo-driver v1.13.0
+	go.mongodb.org/mongo-driver v1.13.1
 	go.opentelemetry.io/otel v1.21.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.21.0
 	go.opentelemetry.io/otel/sdk v1.21.0
@@ -26,9 +26,9 @@ require (
 	go.uber.org/zap v1.26.0
 	golang.org/x/crypto v0.16.0 // indirect; always use @latest
 	golang.org/x/crypto/x509roots/fallback v0.0.0-20231129163542-152cdb1503eb
-	golang.org/x/exp v0.0.0-20231127185646-65229373498e
+	golang.org/x/exp v0.0.0-20231206192017-f3f8817b8deb
 	golang.org/x/sys v0.15.0
-	modernc.org/sqlite v1.27.0
+	modernc.org/sqlite v1.28.0
 )
 
 require (
