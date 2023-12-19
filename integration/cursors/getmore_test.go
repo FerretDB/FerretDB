@@ -18,6 +18,7 @@ import (
 	"errors"
 	"math"
 	"net/url"
+	"sync"
 	"testing"
 
 	"github.com/AlekSi/pointer"
@@ -1093,5 +1094,76 @@ func TestCursors(t *testing.T) {
 		var ce mongo.CommandError
 		require.True(t, errors.As(err, &ce))
 		require.Equal(t, int32(175), ce.Code, "invalid error: %v", ce)
+	})
+}
+
+func TestCursorsStress(t *testing.T) {
+	t.Parallel()
+
+	// use a single connection pool
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{
+		ExtraOptions: url.Values{
+			"minPoolSize": []string{"1"},
+			"maxPoolSize": []string{"1"},
+		},
+	})
+
+	ctx := s.Ctx
+	collection1 := s.Collection
+	databaseName := s.Collection.Database().Name()
+	collectionName := s.Collection.Name()
+
+	u, err := url.Parse(s.MongoDBURI)
+	require.NoError(t, err)
+
+	// client2 uses the same connection pool
+	client2, err := mongo.Connect(ctx, options.Client().ApplyURI(u.String()))
+	require.NoError(t, err)
+
+	collection2 := client2.Database(databaseName).Collection(collectionName)
+
+	arr, _ := integration.GenerateDocuments(0, 2)
+	_, err = collection2.InsertMany(ctx, arr)
+	require.NoError(t, err)
+
+	t.Run("CursorNotFoundAfterDisconnect", func(t *testing.T) {
+		var res bson.D
+		err = collection2.Database().RunCommand(ctx, bson.D{
+			{"find", collection2.Name()},
+			{"batchSize", 1},
+		}).Decode(&res)
+		require.NoError(t, err)
+
+		firstBatch, cursorID := getFirstBatch(t, res)
+		require.NotNil(t, firstBatch)
+		require.Equal(t, 1, firstBatch.Len())
+
+		var wg sync.WaitGroup
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			command := bson.D{
+				{"getMore", cursorID},
+				{"collection", collection1.Name()},
+			}
+
+			for {
+				result := bson.M{}
+				err := collection1.Database().RunCommand(ctx, command).Decode(result)
+				if errors.Is(err, mongo.ErrNoDocuments) {
+					break
+				}
+
+				require.NoError(t, err)
+
+			}
+
+		}()
+
+		err = client2.Disconnect(ctx)
+		require.NoError(t, err)
+
+		wg.Wait()
 	})
 }
