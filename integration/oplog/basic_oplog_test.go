@@ -42,37 +42,68 @@ func TestOplogBasic(t *testing.T) {
 	ns := fmt.Sprintf("%s.%s", coll.Database().Name(), coll.Name())
 	opts := options.FindOne().SetSort(bson.D{{"$natural", -1}})
 
-	// This test uses subtests to group test cases, but subtests can't be run in parallel as we need to ensure oplog order.
+	// This test uses subtests to group different cases, but subtests can't be run in parallel as we need to ensure oplog order.
 	t.Run("Insert", func(t *testing.T) {
-		_, err := coll.InsertOne(ctx, bson.D{{"_id", int64(1)}, {"foo", "bar"}})
-		require.NoError(t, err)
+		t.Run("SingleDocument", func(t *testing.T) {
+			_, err := coll.InsertOne(ctx, bson.D{{"_id", int64(1)}, {"foo", "bar"}})
+			require.NoError(t, err)
 
-		var lastOplogEntry bson.D
-		err = local.Collection("oplog.rs").FindOne(ctx, bson.D{{"ns", ns}}, opts).Decode(&lastOplogEntry)
-		require.NoError(t, err)
+			var lastOplogEntry bson.D
+			err = local.Collection("oplog.rs").FindOne(ctx, bson.D{{"ns", ns}}, opts).Decode(&lastOplogEntry)
+			require.NoError(t, err)
 
-		expectedKeys := []string{"lsid", "txnNumber", "op", "ns", "ui", "o", "o2", "stmtId", "ts", "t", "v", "wall", "prevOpTime"}
+			expectedKeys := []string{"lsid", "txnNumber", "op", "ns", "ui", "o", "o2", "stmtId", "ts", "t", "v", "wall", "prevOpTime"}
 
-		actual := integration.ConvertDocument(t, lastOplogEntry)
-		actualKeys := actual.Keys()
+			actual := integration.ConvertDocument(t, lastOplogEntry)
+			actualKeys := actual.Keys()
 
-		assert.ElementsMatch(t, expectedKeys, actualKeys)
-		checkOplogResponseTypes(t, actual)
+			assert.ElementsMatch(t, expectedKeys, actualKeys)
+			checkOplogResponseTypes(t, actual)
 
-		// Exact values are known, so we check them.
-		expected, err := types.NewDocument(
-			"op", "i", // operation - i, u, d, n, c
-			"ns", ns,
-			"o", must.NotFail(types.NewDocument("_id", int64(1), "foo", "bar")),
-			"o2", must.NotFail(types.NewDocument("_id", int64(1))),
-			"stmtId", int32(0),
-			"v", int64(2), // protocol version
-		)
-		require.NoError(t, err)
-		assert.Equal(t, expected, actual)
+			expected, err := types.NewDocument(
+				"op", "i",
+				"ns", ns,
+				"o", must.NotFail(types.NewDocument("_id", int64(1), "foo", "bar")),
+				"o2", must.NotFail(types.NewDocument("_id", int64(1))),
+				"stmtId", int32(0),
+				"v", int64(2),
+			)
+			require.NoError(t, err)
+			assert.Equal(t, expected, actual)
+		})
+
+		t.Run("MultipleDocuments", func(t *testing.T) {
+			_, err := coll.InsertMany(ctx, []any{
+				bson.D{{"_id", int64(2)}, {"foo2", "bar2"}},
+				bson.D{{"_id", int64(3)}, {"foo3", "bar3"}},
+			})
+			require.NoError(t, err)
+
+			var lastOplogEntry bson.D
+			err = local.Collection("oplog.rs").FindOne(ctx, bson.D{{"ns", ns}}, opts).Decode(&lastOplogEntry)
+			require.NoError(t, err)
+
+			expectedKeys := []string{"lsid", "txnNumber", "op", "ns", "ui", "o", "o2", "stmtId", "ts", "t", "v", "wall", "prevOpTime"}
+
+			actual := integration.ConvertDocument(t, lastOplogEntry)
+			actualKeys := actual.Keys()
+
+			assert.ElementsMatch(t, expectedKeys, actualKeys)
+			checkOplogResponseTypes(t, actual)
+
+			// The last oplog entry should be the last insert.
+			expected, err := types.NewDocument(
+				"op", "i",
+				"ns", ns,
+				"o", must.NotFail(types.NewDocument("_id", int64(3), "foo3", "bar3")),
+				"o2", must.NotFail(types.NewDocument("_id", int64(3))),
+				"stmtId", int32(1), // last statement in the transaction
+				"v", int64(2),
+			)
+			require.NoError(t, err)
+			assert.Equal(t, expected, actual)
+		})
 	})
-
-	// TODO: multiple inserts
 
 	t.Run("Update", func(t *testing.T) {
 		_, err := coll.UpdateOne(ctx, bson.D{{"_id", int64(1)}}, bson.D{{"$set", bson.D{{"fiz", "baz"}}}})
@@ -92,7 +123,7 @@ func TestOplogBasic(t *testing.T) {
 
 		// Exact values are known, so we check them.
 		expected, err := types.NewDocument(
-			"op", "u", // operation - i, u, d, n, c
+			"op", "u",
 			"ns", ns,
 			"o", must.NotFail(types.NewDocument(
 				"$v", int32(2),
@@ -100,7 +131,7 @@ func TestOplogBasic(t *testing.T) {
 			)),
 			"o2", must.NotFail(types.NewDocument("_id", int64(1))),
 			"stmtId", int32(0),
-			"v", int64(2), // protocol version
+			"v", int64(2),
 		)
 
 		require.NoError(t, err)
@@ -124,7 +155,7 @@ func TestOplogBasic(t *testing.T) {
 
 			// Exact values are known, so we check them.
 			expected, err = types.NewDocument(
-				"op", "u", // operation - i, u, d, n, c
+				"op", "u",
 				"ns", ns,
 				"o", must.NotFail(types.NewDocument(
 					"$v", int32(2),
@@ -132,7 +163,7 @@ func TestOplogBasic(t *testing.T) {
 				)),
 				"o2", must.NotFail(types.NewDocument("_id", int64(1))),
 				"stmtId", int32(0),
-				"v", int64(2), // protocol version
+				"v", int64(2),
 			)
 
 			require.NoError(t, err)
@@ -157,7 +188,7 @@ func TestOplogBasic(t *testing.T) {
 
 			// Exact values are known, so we check them.
 			expected, err = types.NewDocument(
-				"op", "u", // operation - i, u, d, n, c
+				"op", "u",
 				"ns", ns,
 				"o", must.NotFail(types.NewDocument(
 					"$v", int32(2),
@@ -165,7 +196,7 @@ func TestOplogBasic(t *testing.T) {
 				)),
 				"o2", must.NotFail(types.NewDocument("_id", int64(1))),
 				"stmtId", int32(0),
-				"v", int64(2), // protocol version
+				"v", int64(2),
 			)
 
 			require.NoError(t, err)
@@ -195,17 +226,17 @@ func TestOplogBasic(t *testing.T) {
 
 		// Exact values are known, so we check them.
 		expected, err := types.NewDocument(
-			"op", "d", // operation - i, u, d, n, c
+			"op", "d",
 			"ns", ns,
 			"o", must.NotFail(types.NewDocument("_id", int64(1))),
 			"stmtId", int32(0),
-			"v", int64(2), // protocol version
+			"v", int64(2),
 		)
 
 		require.NoError(t, err)
 		assert.Equal(t, expected, actual)
 
-		// Attempt to delete a non-existent entry, expect oplog not to be written.
+		// If an entry to delete is not found, expect oplog not to be written.
 		_, err = coll.DeleteOne(ctx, bson.D{{"_id", "non-existent"}})
 		require.NoError(t, err)
 
