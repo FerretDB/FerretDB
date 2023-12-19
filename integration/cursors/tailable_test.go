@@ -15,9 +15,8 @@
 package cursors
 
 import (
-	"crypto/rand"
-	"math/big"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -337,9 +336,7 @@ func TestCursorsTailableTwoCursorsSameCollection(tt *testing.T) {
 	assert.Equal(t, cursorID2, nextID2)
 }
 
-// TODO TestCursorsTailableAwaitDataTimeout Cursor not exhausted
-
-func TestCursorsTailableAwaitDataTimeout(t *testing.T) {
+func TestCursorsTailableAwaitData(t *testing.T) {
 	t.Parallel()
 
 	s := setup.SetupWithOpts(t, nil)
@@ -352,89 +349,44 @@ func TestCursorsTailableAwaitDataTimeout(t *testing.T) {
 
 	collection := db.Collection(t.Name())
 
-	docsCount := 100
+	_, err = collection.InsertOne(ctx, bson.D{{"v", "foo"}})
+	require.NoError(t, err)
 
-	for i := 0; i < docsCount; i++ {
-		doc := bson.D{{"v", randomValue(t, 100)}}
-		_, err := collection.InsertOne(ctx, doc)
-		require.NoError(t, err)
+	cmd := bson.D{
+		{"find", collection.Name()},
+		{"batchSize", 1},
+		{"tailable", true},
+		{"awaitData", true},
+		{"maxTimeMS", 1},
 	}
 
-	var cursorID any
+	var res bson.D
+	err = collection.Database().RunCommand(ctx, cmd).Decode(&res)
+	require.NoError(t, err)
 
-	t.Run("FirstBatch", func(tt *testing.T) {
-		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2283")
+	var firstBatch *types.Array
+	firstBatch, cursorID := getFirstBatch(t, res)
 
-		cmd := bson.D{
-			{"find", collection.Name()},
-			{"batchSize", 1},
-			{"tailable", true},
-			{"awaitData", true},
-			{"maxTimeMS", 1},
-		}
-
-		var res bson.D
-		err = collection.Database().RunCommand(ctx, cmd).Decode(&res)
-		require.NoError(t, err)
-
-		var firstBatch *types.Array
-		firstBatch, cursorID = getFirstBatch(t, res)
-
-		require.Equal(t, 1, firstBatch.Len())
-	})
+	require.Equal(t, 1, firstBatch.Len())
 
 	getMoreCmd := bson.D{
 		{"getMore", cursorID},
 		{"collection", collection.Name()},
 		{"batchSize", 1},
-		{"maxTimeMS", 1},
+		{"maxTimeMS", 1000 * 60 * 10},
 	}
 
-	t.Run("GetMore", func(tt *testing.T) {
-		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2283")
-
-		for i := 1; i < 100; i++ {
-			var res bson.D
-			err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
-			require.NoError(t, err)
-
-			// there's no documents left in cursor, also maxTimeMS has passed
-			nextBatch, nextID := getNextBatch(t, res)
-			require.Equal(t, cursorID, nextID) // but cursorID is still the same...
-
-			require.Equal(t, 1, nextBatch.Len())
-		}
-	})
-
-	t.Run("GetMoreEmpty", func(tt *testing.T) {
-		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2283")
-		for i := 1; i < 100; i++ {
-			var res bson.D
-			err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
-			require.NoError(t, err)
-
-			// there's no documents left in cursor, also maxTimeMS has passed
-			nextBatch, nextID := getNextBatch(t, res)
-			require.Equal(t, cursorID, nextID) // but cursorID is still the same...
-
-			require.Equal(t, 0, nextBatch.Len())
-		}
-	})
-
-}
-
-var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-
-func randomValue(t *testing.T, n int) string {
-	length := big.NewInt(int64(len(letters)))
-	b := make([]rune, n)
-
-	for i := range b {
-		charIndex, err := rand.Int(rand.Reader, length)
+	go func() {
+		time.Sleep(2 * time.Second)
+		_, err := collection.InsertOne(ctx, bson.D{{"v", "bar"}})
 		require.NoError(t, err)
+	}()
 
-		b[i] = letters[charIndex.Int64()]
-	}
+	err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
+	require.NoError(t, err)
 
-	return string(b)
+	nextBatch, nextID := getNextBatch(t, res)
+	require.Equal(t, cursorID, nextID)
+
+	require.Equal(t, 1, nextBatch.Len())
 }
