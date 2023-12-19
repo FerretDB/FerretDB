@@ -45,6 +45,7 @@ func TestOplogBasic(t *testing.T) {
 		require.Contains(t, err.Error(), "Collection local.oplog.rs already exists")
 		err = nil
 	}
+
 	require.NoError(t, err)
 
 	// Keys needed in the oplog response
@@ -67,7 +68,7 @@ func TestOplogBasic(t *testing.T) {
 			require.NoError(t, err)
 
 			actual := integration.ConvertDocument(t, lastOplogEntry)
-			checkOplogResponseTypes(t, actual)
+			unsetUnusedOplogFields(t, actual)
 			actualKeys := actual.Keys()
 			assert.ElementsMatch(t, expectedKeys, actualKeys)
 
@@ -94,7 +95,7 @@ func TestOplogBasic(t *testing.T) {
 			require.NoError(t, err)
 
 			actual := integration.ConvertDocument(t, lastOplogEntry)
-			checkOplogResponseTypes(t, actual)
+			unsetUnusedOplogFields(t, actual)
 			actualKeys := actual.Keys()
 			assert.ElementsMatch(t, expectedKeys, actualKeys)
 
@@ -121,7 +122,7 @@ func TestOplogBasic(t *testing.T) {
 			require.NoError(t, err)
 
 			actual := integration.ConvertDocument(t, lastOplogEntry)
-			checkOplogResponseTypes(t, actual)
+			unsetUnusedOplogFields(t, actual)
 			actualKeys := actual.Keys()
 			assert.ElementsMatch(t, expectedKeys, actualKeys)
 
@@ -154,7 +155,7 @@ func TestOplogBasic(t *testing.T) {
 			require.NoError(t, err)
 
 			actual := integration.ConvertDocument(t, lastOplogEntry)
-			checkOplogResponseTypes(t, actual)
+			unsetUnusedOplogFields(t, actual)
 			actualKeys := actual.Keys()
 			assert.ElementsMatch(t, expectedKeys, actualKeys)
 
@@ -172,9 +173,8 @@ func TestOplogBasic(t *testing.T) {
 	})
 }
 
-// oplogResponseTypes check the types of the oplog response and removes checked fields.
-// This could be called to check the types of the oplog response when the exact values are not known.
-func checkOplogResponseTypes(t *testing.T, d *types.Document) {
+// unsetUnusedOplogFields removes the fields that are not used in the oplog response.
+func unsetUnusedOplogFields(t *testing.T, d *types.Document) {
 	d.Remove("lsid")
 	d.Remove("txnNumber")
 	d.Remove("ui")
