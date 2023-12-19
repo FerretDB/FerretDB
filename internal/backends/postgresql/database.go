@@ -61,8 +61,6 @@ func (db *database) ListCollections(ctx context.Context, params *backends.ListCo
 			nameList[i] = c.Name
 		}
 
-		res = make([]backends.CollectionInfo, 0, 1)
-
 		i, found := slices.BinarySearchFunc(nameList, params.Name, func(collectionName, t string) int {
 			return cmp.Compare(collectionName, t)
 		})
