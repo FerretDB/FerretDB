@@ -5,7 +5,7 @@ services:
   postgres:
     build:
       context: ./build/deps
-      dockerfile: postgres.Dockerfile
+      dockerfile: ${POSTGRES_DOCKERFILE:-postgres}.Dockerfile
     container_name: ferretdb_postgres
     command: >
       postgres

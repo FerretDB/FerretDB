@@ -279,6 +279,9 @@ const (
 	// by command-line or config file.
 	ErrFreeMonitoringDisabled = ErrorCode(50840) // Location50840
 
+	// ErrUserAlreadyExists indicates that user already exists.
+	ErrUserAlreadyExists = ErrorCode(51003) // Location51003
+
 	// ErrValueNegative indicates that value must not be negative.
 	ErrValueNegative = ErrorCode(51024) // Location51024
 
