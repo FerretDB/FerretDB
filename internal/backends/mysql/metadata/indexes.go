@@ -16,6 +16,7 @@ package metadata
 
 import (
 	"errors"
+	"slices"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -38,6 +39,22 @@ type IndexInfo struct {
 type IndexKeyPair struct {
 	Field      string
 	Descending bool
+}
+
+// deepCopy returns a deep copy.
+func (indexes Indexes) deepCopy() Indexes {
+	res := make(Indexes, len(indexes))
+
+	for i, index := range indexes {
+		res[i] = IndexInfo{
+			Name:   index.Name,
+			Index:  index.Index,
+			Key:    slices.Clone(index.Key),
+			Unique: index.Unique,
+		}
+	}
+
+	return res
 }
 
 // marshal returns [*types.Array] for indexes.

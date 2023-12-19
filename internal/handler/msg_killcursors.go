@@ -98,7 +98,7 @@ func (h *Handler) MsgKillCursors(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 			continue
 		}
 
-		cursor.Close()
+		h.cursors.CloseAndRemove(cursor)
 		cursorsKilled.Append(id)
 	}
 
