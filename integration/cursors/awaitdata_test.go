@@ -74,7 +74,7 @@ func TestCursorsTailableAwaitData(tt *testing.T) {
 	insertChan := make(chan error)
 
 	go func() {
-		time.Sleep(2 * time.Second)
+		time.Sleep(1 * time.Second)
 		_, insertErr := collection.InsertOne(ctx, bson.D{{"v", "bar"}})
 		insertChan <- insertErr
 	}()
