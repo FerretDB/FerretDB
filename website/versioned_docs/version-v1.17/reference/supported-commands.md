@@ -544,8 +544,8 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/1917).
 |                                   | `cappedSize`                   |                           | ⚠️     |                                                           |
 |                                   | `cappedMax`                    |                           | ⚠️     |                                                           |
 |                                   | `changeStreamPreAndPostImages` |                           | ⚠️     |                                                           |
-| `compact`                         |                                |                           | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/3466) |
-|                                   | `force`                        |                           | ⚠️     |                                                           |
+| `compact`                         |                                |                           | ✅     |                                                           |
+|                                   | `force`                        |                           | ✅     |                                                           |
 |                                   | `comment`                      |                           | ⚠️     |                                                           |
 | `compactStructuredEncryptionData` |                                |                           | ❌     |                                                           |
 |                                   | `compactionTokens`             |                           | ⚠️     |                                                           |
