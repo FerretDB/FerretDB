@@ -26,6 +26,7 @@ import (
 	"github.com/FerretDB/FerretDB/integration"
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func TestCursorsTailableAwaitData(tt *testing.T) {
@@ -38,10 +39,10 @@ func TestCursorsTailableAwaitData(tt *testing.T) {
 	db, ctx := s.Collection.Database(), s.Ctx
 
 	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(10000000000)
-	err := db.CreateCollection(s.Ctx, t.Name(), opts)
+	err := db.CreateCollection(s.Ctx, testutil.CollectionName(t), opts)
 	require.NoError(t, err)
 
-	collection := db.Collection(t.Name())
+	collection := db.Collection(testutil.CollectionName(t))
 
 	_, err = collection.InsertOne(ctx, bson.D{{"v", "foo"}})
 	require.NoError(t, err)
@@ -67,17 +68,21 @@ func TestCursorsTailableAwaitData(tt *testing.T) {
 		{"getMore", cursorID},
 		{"collection", collection.Name()},
 		{"batchSize", 1},
-		{"maxTimeMS", 1000 * 60 * 10},
+		{"maxTimeMS", (10 * time.Minute).Milliseconds()},
 	}
+
+	insertChan := make(chan error)
 
 	go func() {
 		time.Sleep(2 * time.Second)
-		_, err = collection.InsertOne(ctx, bson.D{{"v", "bar"}})
-		require.NoError(t, err)
+		_, insertErr := collection.InsertOne(ctx, bson.D{{"v", "bar"}})
+		insertChan <- insertErr
 	}()
 
 	err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
 	require.NoError(t, err)
+
+	require.NoError(t, <-insertChan)
 
 	nextBatch, nextID := getNextBatch(t, res)
 	require.Equal(t, cursorID, nextID)
@@ -92,10 +97,10 @@ func TestCursorsAwaitDataErrors(t *testing.T) {
 	db, ctx := s.Collection.Database(), s.Ctx
 
 	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(1000)
-	err := db.CreateCollection(s.Ctx, t.Name(), opts)
+	err := db.CreateCollection(s.Ctx, testutil.CollectionName(t), opts)
 	require.NoError(t, err)
 
-	collection := db.Collection(t.Name())
+	collection := db.Collection(testutil.CollectionName(t))
 
 	_, err = collection.InsertOne(ctx, bson.D{{"v", "foo"}})
 	require.NoError(t, err)
