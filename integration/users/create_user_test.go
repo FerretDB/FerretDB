@@ -15,7 +15,6 @@
 package users
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
@@ -47,7 +46,7 @@ func TestCreateUser(t *testing.T) {
 	} else {
 		// Erase any previously saved user in the database.
 		_, err := users.DeleteMany(ctx, bson.D{{"db", db.Name()}})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	}
 
 	testCases := map[string]struct { //nolint:vet // for readability
@@ -55,8 +54,19 @@ func TestCreateUser(t *testing.T) {
 		err        *mongo.CommandError
 		altMessage string
 		expected   bson.D
-		skip       string
 	}{
+		"Empty": {
+			payload: bson.D{
+				{"createUser", ""},
+				{"roles", bson.A{}},
+				{"pwd", "password"},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "User document needs 'user' field to be non-empty",
+			},
+		},
 		"AlreadyExists": {
 			payload: bson.D{
 				{"createUser", "should_already_exist"},
@@ -87,9 +97,7 @@ func TestCreateUser(t *testing.T) {
 				{"pwd", "password"},
 			},
 			expected: bson.D{
-				{
-					"ok", float64(1),
-				},
+				{"ok", float64(1)},
 			},
 		},
 		"WithComment": {
@@ -100,9 +108,7 @@ func TestCreateUser(t *testing.T) {
 				{"comment", "test string comment"},
 			},
 			expected: bson.D{
-				{
-					"ok", float64(1),
-				},
+				{"ok", float64(1)},
 			},
 		},
 		"MissingRoles": {
@@ -118,20 +124,18 @@ func TestCreateUser(t *testing.T) {
 		},
 	}
 
+	// The subtest "AlreadyExists" tries to create the following user, which should fail with an error that the user already exists.
+	// Here, we create the user for the very first time to populate the database.
 	err := db.RunCommand(ctx, bson.D{
 		{"createUser", "should_already_exist"},
 		{"roles", bson.A{}},
 		{"pwd", "password"},
 	}).Err()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	for name, tc := range testCases {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
-
 			t.Parallel()
 
 			var res bson.D
@@ -151,35 +155,29 @@ func TestCreateUser(t *testing.T) {
 			testutil.AssertEqual(t, expected, actual)
 
 			payload := integration.ConvertDocument(t, tc.payload)
-			assertUserExists(ctx, t, users, db.Name(), payload)
+			// All users are created in the "admin" database.
+
+			var rec bson.D
+			err = users.FindOne(ctx, bson.D{{"user", must.NotFail(payload.Get("createUser"))}}).Decode(&rec)
+			require.NoError(t, err, "user not found")
+
+			actualRecorded := integration.ConvertDocument(t, rec)
+
+			uuid := must.NotFail(actualRecorded.Get("userId")).(types.Binary)
+			assert.Equal(t, uuid.Subtype.String(), types.BinaryUUID.String(), "uuid subtype")
+			assert.Equal(t, 16, len(uuid.B), "UUID length")
+			actualRecorded.Remove("userId")
+
+			actualRecorded.Remove("credentials")
+
+			expectedRec := integration.ConvertDocument(t, bson.D{
+				{"_id", fmt.Sprintf("%s.%s", db.Name(), must.NotFail(payload.Get("createUser")))},
+				{"user", must.NotFail(payload.Get("createUser"))},
+				{"db", db.Name()},
+				{"roles", bson.A{}},
+			})
+
+			testutil.AssertEqual(t, expectedRec, actualRecorded)
 		})
 	}
-}
-
-// assertUserExists checks it the user was created in the admin.system.users collection.
-// All users are created in the "admin" database.
-func assertUserExists(ctx context.Context, t testing.TB, users *mongo.Collection, dbName string, payload *types.Document) {
-	t.Helper()
-
-	var rec bson.D
-	err := users.FindOne(ctx, bson.D{{"user", must.NotFail(payload.Get("createUser"))}}).Decode(&rec)
-	require.NoError(t, err, "user not found")
-
-	actualRecorded := integration.ConvertDocument(t, rec)
-
-	uuid := must.NotFail(actualRecorded.Get("userId")).(types.Binary)
-	assert.Equal(t, uuid.Subtype.String(), types.BinaryUUID.String(), "uuid subtype")
-	assert.Equal(t, 16, len(uuid.B), "UUID length")
-	actualRecorded.Remove("userId")
-
-	actualRecorded.Remove("credentials")
-
-	expectedRec := integration.ConvertDocument(t, bson.D{
-		{"_id", fmt.Sprintf("%s.%s", dbName, must.NotFail(payload.Get("createUser")))},
-		{"user", must.NotFail(payload.Get("createUser"))},
-		{"db", dbName},
-		{"roles", bson.A{}},
-	})
-
-	testutil.AssertEqual(t, expectedRec, actualRecorded)
 }

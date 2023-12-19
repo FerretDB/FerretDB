@@ -18,14 +18,12 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration"
 	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
@@ -40,13 +38,13 @@ func TestDropUser(t *testing.T) {
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/1492
 	if setup.IsMongoDB(t) {
-		assert.NoError(t, collection.Database().RunCommand(ctx, bson.D{
+		require.NoError(t, collection.Database().RunCommand(ctx, bson.D{
 			{"dropAllUsersFromDatabase", 1},
 		}).Err())
 	} else {
 		// Erase any previously saved user in the database.
 		_, err := users.DeleteMany(ctx, bson.D{{"db", db.Name()}})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	}
 
 	err := db.RunCommand(ctx, bson.D{
@@ -54,14 +52,13 @@ func TestDropUser(t *testing.T) {
 		{"roles", bson.A{}},
 		{"pwd", "password"},
 	}).Err()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	testCases := map[string]struct { //nolint:vet // for readability
 		payload    bson.D
 		err        *mongo.CommandError
 		altMessage string
 		expected   bson.D
-		skip       string
 	}{
 		"NotFound": {
 			payload: bson.D{
@@ -78,9 +75,7 @@ func TestDropUser(t *testing.T) {
 				{"dropUser", "a_user"},
 			},
 			expected: bson.D{
-				{
-					"ok", float64(1),
-				},
+				{"ok", float64(1)},
 			},
 		},
 	}
@@ -88,10 +83,6 @@ func TestDropUser(t *testing.T) {
 	for name, tc := range testCases {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
-
 			t.Parallel()
 
 			var res bson.D
@@ -111,14 +102,14 @@ func TestDropUser(t *testing.T) {
 			testutil.AssertEqual(t, expected, actual)
 
 			payload := integration.ConvertDocument(t, tc.payload)
-			assertUserNotFound(ctx, t, users, db.Name(), payload)
+			assertUserNotFound(ctx, t, users, db.Name(), must.NotFail(payload.Get("dropUser")).(string))
 		})
 	}
 }
 
 // assertUserNotFound checks it the user doesn't exist in the admin.system.users collection.
-func assertUserNotFound(ctx context.Context, t testing.TB, users *mongo.Collection, dbName string, payload *types.Document) {
+func assertUserNotFound(ctx context.Context, t testing.TB, users *mongo.Collection, dbName, username string) {
 	t.Helper()
-	err := users.FindOne(ctx, bson.D{{"user", must.NotFail(payload.Get("dropUser"))}}).Err()
+	err := users.FindOne(ctx, bson.D{{"user", username}, {"db", dbName}}).Err()
 	require.Equal(t, mongo.ErrNoDocuments, err, `should return "no documents" error`)
 }
