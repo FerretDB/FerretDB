@@ -68,29 +68,17 @@ When creating the project, you need to select the version of postgres, and also 
 Once the project is created, Neon will provide a Postgres connection URI for you.
 This URI will serve as the Postgres URI for your FerretDB instance.
 
-## Install and connect FerretDB with Neon via Docker
+## Run FerretDB with Neon via Docker
 
-To install the latest version of FerretDB, you'll need to create a `docker-compose` YAML file together with the Neon Postgres URI.
+Run the following command to run FerretDB in a Docker container and connect it to your Neon Postgres database (`NEON_DB`):
 
-Assign the Neon Postgres URI to the `FERRETDB_POSTGRESQL_URL` environment variable.
-
-```yaml
-services:
-  ferretdb:
-    image: ghcr.io/ferretdb/ferretdb
-    restart: on-failure
-    environment:
-      - FERRETDB_POSTGRESQL_URL=<NEON_URI>
-    ports:
-      - 27017:27017
+```sh
+docker run -e FERRETDB_POSTGRESQL_URL=<NEON_DB> ghcr.io/ferretdb/ferretdb
 ```
-
-From the same directory as the `docker-compose.yml` file, run `docker-compose up -d` to start the FerretDB instance
-This will also pull the latest FerretDB image and run it in the background.
 
 ### Test via `mongosh`
 
-With FerretDB running, let's test and see that it works using `mongosh`.
+From another terminal, let's test and see that FerretDB instance is connected to Neon database using `mongosh`.
 To connect via `mongosh`, you will need a connection string.
 Use your Neon Postgres credentials to connect to the database.
 
