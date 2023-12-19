@@ -145,7 +145,6 @@ func (dbc *databaseContract) CreateCollection(ctx context.Context, params *Creat
 	defer observability.FuncCall(ctx)()
 
 	must.BeTrue(params.CappedSize >= 0)
-	must.BeTrue(params.CappedSize%256 == 0)
 	must.BeTrue(params.CappedDocuments >= 0)
 
 	err := validateCollectionName(params.Name)

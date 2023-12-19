@@ -122,12 +122,12 @@ func TestCommandsAdministrationCompatCollStatsCappedCollection(t *testing.T) {
 		},
 		"SizeRounded": {
 			sizeInBytes:  1000,
-			expectedSize: 1024,
+			expectedSize: 1000,
 		},
 		"MaxDocuments": {
 			sizeInBytes:  1,
 			maxDocuments: 10,
-			expectedSize: 256,
+			expectedSize: 1,
 		},
 	} {
 		name, tc := name, tc
