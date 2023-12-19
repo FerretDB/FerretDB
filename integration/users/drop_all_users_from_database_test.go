@@ -48,7 +48,7 @@ func TestDropAllUsersFromDatabase(t *testing.T) {
 		assert.NoError(t, err)
 	}
 
-	quantity := 5
+	quantity := 5 // Add some users to the database.
 	for i := 1; i <= quantity; i++ {
 		err := db.RunCommand(ctx, bson.D{
 			{"createUser", fmt.Sprintf("user_%d", i)},
@@ -60,8 +60,8 @@ func TestDropAllUsersFromDatabase(t *testing.T) {
 
 	assertDropAllUsersFromDatabase(t, ctx, db, users, quantity)
 
-	// FIXME: calling assertDropAllUsersFromDatabase a second time with quantity = 0
-	// for FerretDB is triggering a "socket was unexpectedly closed: EOF" error for some reason.
+	// Run for the second time to check if it still succeeds when there aren't any users remaining,
+	// instead of returning an error.
 	assertDropAllUsersFromDatabase(t, ctx, db, users, 0)
 }
 
