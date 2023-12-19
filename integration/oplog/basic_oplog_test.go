@@ -118,7 +118,7 @@ func TestOplogBasic(t *testing.T) {
 			require.NoError(t, err)
 
 			var lastOplogEntry bson.D
-			err = local.Collection("oplog.rs").FindOne(ctx, bson.D{}, opts).Decode(&lastOplogEntry)
+			err = local.Collection("oplog.rs").FindOne(ctx, bson.D{{"ns", ns}}, opts).Decode(&lastOplogEntry)
 			require.NoError(t, err)
 
 			actual := integration.ConvertDocument(t, lastOplogEntry)
@@ -141,7 +141,7 @@ func TestOplogBasic(t *testing.T) {
 			require.NoError(t, err)
 
 			var newOplogEntry bson.D
-			err = local.Collection("oplog.rs").FindOne(ctx, bson.D{}, opts).Decode(&newOplogEntry)
+			err = local.Collection("oplog.rs").FindOne(ctx, bson.D{{"ns", ns}}, opts).Decode(&newOplogEntry)
 			require.NoError(t, err)
 			assert.Equal(t, lastOplogEntry, newOplogEntry)
 		})
@@ -151,7 +151,7 @@ func TestOplogBasic(t *testing.T) {
 			require.NoError(t, err)
 
 			var lastOplogEntry bson.D
-			err = local.Collection("oplog.rs").FindOne(ctx, bson.D{}, opts).Decode(&lastOplogEntry)
+			err = local.Collection("oplog.rs").FindOne(ctx, bson.D{{"ns", ns}}, opts).Decode(&lastOplogEntry)
 			require.NoError(t, err)
 
 			actual := integration.ConvertDocument(t, lastOplogEntry)
