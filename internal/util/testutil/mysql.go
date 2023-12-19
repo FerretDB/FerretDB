@@ -19,6 +19,7 @@ import (
 	"database/sql"
 	"fmt"
 	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/go-sql-driver/mysql"
@@ -63,7 +64,7 @@ func TestMySQLURI(tb testtb.TB, ctx context.Context, baseURI string) string {
 		User:   u.User.Username(),
 		Passwd: password,
 		Addr:   u.Host,
-		DBName: u.Path,
+		DBName: strings.TrimPrefix(u.Path, "/"),
 		Params: params,
 	}
 	mysqlURL := cfg.FormatDSN()

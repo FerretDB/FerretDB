@@ -144,6 +144,8 @@ linters-settings:
         alias: otelsdktrace
       - pkg: go.opentelemetry.io/otel/semconv/v1.21.0
         alias: otelsemconv
+      - pkg: github.com/FerretDB/FerretDB/internal/backends/mysql/metadata/pool
+        alias: mysqlpool
   # ineffassign
   lll:
     line-length: 130
