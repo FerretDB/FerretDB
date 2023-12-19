@@ -42,6 +42,9 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 		return nil, err
 	}
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/3777
+	// TODO https://github.com/FerretDB/FerretDB/issues/3778
+	// TODO https://github.com/FerretDB/FerretDB/issues/3784
 	if dbName != "$external" && !document.Has("pwd") {
 		return nil, handlererrors.NewCommandErrorMsg(
 			handlererrors.ErrBadValue,
@@ -49,13 +52,18 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 		)
 	}
 
-	// https://www.mongodb.com/docs/manual/reference/command/createUser/
-
 	var username string
 	username, err = common.GetRequiredParam[string](document, document.Command())
 
 	if err != nil {
 		return nil, err
+	}
+
+	if username == "" {
+		return nil, handlererrors.NewCommandErrorMsg(
+			handlererrors.ErrBadValue,
+			"User document needs 'user' field to be non-empty",
+		)
 	}
 
 	if err = common.UnimplementedNonDefault(document, "customData", func(v any) bool {
@@ -82,10 +90,6 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 	}
 
 	if err = common.UnimplementedNonDefault(document, "roles", func(v any) bool {
-		if v == nil || v == types.Null {
-			return false
-		}
-
 		r, ok := v.(*types.Array)
 		return ok && r.Len() == 0
 	}); err != nil {
@@ -103,6 +107,7 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 		return nil, err
 	}
 
+	// NOTE: In MongoDB, the comment field isn't saved in the database, but used for log and profiling.
 	common.Ignored(document, h.L, "pwd", "writeConcern", "authenticationRestrictions", "mechanisms", "comment")
 
 	id := uuid.New()
@@ -112,7 +117,7 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 		"user", username,
 		"db", dbName,
 		"roles", types.MakeArray(0),
-		"userId", types.Binary{Subtype: types.BinaryUUID, B: id[:]},
+		"userId", types.Binary{Subtype: types.BinaryUUID, B: must.NotFail(id.MarshalBinary())},
 	))
 
 	// Users are saved in the "admin" database.
