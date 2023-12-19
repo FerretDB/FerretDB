@@ -30,8 +30,6 @@ import (
 )
 
 func TestOplogBasic(t *testing.T) {
-	setup.FailsForFerretDB(t, "https://github.com/FerretDB/FerretDB/issues/3556")
-
 	t.Parallel()
 
 	ctx, coll := setup.Setup(t)
@@ -58,8 +56,10 @@ func TestOplogBasic(t *testing.T) {
 	}
 
 	// This test uses subtests to group different cases, but subtests can't be run in parallel as we need to ensure oplog order.
-	t.Run("Insert", func(t *testing.T) {
-		t.Run("SingleDocument", func(t *testing.T) {
+	t.Run("Insert", func(tt *testing.T) {
+		tt.Run("SingleDocument", func(tt *testing.T) {
+			t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/3556")
+
 			_, err := coll.InsertOne(ctx, bson.D{{"_id", int64(1)}, {"foo", "bar"}})
 			require.NoError(t, err)
 
@@ -68,7 +68,7 @@ func TestOplogBasic(t *testing.T) {
 			require.NoError(t, err)
 
 			actual := integration.ConvertDocument(t, lastOplogEntry)
-			unsetUnusedOplogFields(t, actual)
+			unsetUnusedOplogFields(actual)
 			actualKeys := actual.Keys()
 			assert.ElementsMatch(t, expectedKeys, actualKeys)
 
@@ -83,7 +83,9 @@ func TestOplogBasic(t *testing.T) {
 			assert.Equal(t, expected, actual)
 		})
 
-		t.Run("MultipleDocuments", func(t *testing.T) {
+		tt.Run("MultipleDocuments", func(tt *testing.T) {
+			t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/3556")
+
 			_, err := coll.InsertMany(ctx, []any{
 				bson.D{{"_id", int64(2)}, {"foo2", "bar2"}},
 				bson.D{{"_id", int64(3)}, {"foo3", "bar3"}},
@@ -95,7 +97,7 @@ func TestOplogBasic(t *testing.T) {
 			require.NoError(t, err)
 
 			actual := integration.ConvertDocument(t, lastOplogEntry)
-			unsetUnusedOplogFields(t, actual)
+			unsetUnusedOplogFields(actual)
 			actualKeys := actual.Keys()
 			assert.ElementsMatch(t, expectedKeys, actualKeys)
 
@@ -112,8 +114,10 @@ func TestOplogBasic(t *testing.T) {
 		})
 	})
 
-	t.Run("Delete", func(t *testing.T) {
-		t.Run("SingleDocument", func(t *testing.T) {
+	t.Run("Delete", func(tt *testing.T) {
+		tt.Run("SingleDocument", func(tt *testing.T) {
+			t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/3556")
+
 			_, err := coll.DeleteOne(ctx, bson.D{{"_id", int64(1)}})
 			require.NoError(t, err)
 
@@ -122,7 +126,7 @@ func TestOplogBasic(t *testing.T) {
 			require.NoError(t, err)
 
 			actual := integration.ConvertDocument(t, lastOplogEntry)
-			unsetUnusedOplogFields(t, actual)
+			unsetUnusedOplogFields(actual)
 			actualKeys := actual.Keys()
 			assert.ElementsMatch(t, expectedKeys, actualKeys)
 
@@ -174,7 +178,7 @@ func TestOplogBasic(t *testing.T) {
 }
 
 // unsetUnusedOplogFields removes the fields that are not used in the oplog response.
-func unsetUnusedOplogFields(t *testing.T, d *types.Document) {
+func unsetUnusedOplogFields(d *types.Document) {
 	d.Remove("lsid")
 	d.Remove("txnNumber")
 	d.Remove("ui")

@@ -88,12 +88,14 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 			oplogDocs[i] = oplogDoc
 		}
 
-		_, err = oplogC.InsertAll(ctx, &backends.InsertAllParams{
+		// TODO https://github.com/FerretDB/FerretDB/issues/3556
+		// This code recursively calls InsertAll again and again. It shouldn't use the oplog decorator's InsertAll method.
+		/*_, err = oplogC.InsertAll(ctx, &backends.InsertAllParams{
 			Docs: oplogDocs,
 		})
 		if err != nil {
 			c.l.Error("Failed to insert documents", zap.Error(err))
-		}
+		}*/
 	}
 
 	return res, nil
