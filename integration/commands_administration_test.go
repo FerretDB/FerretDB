@@ -1407,7 +1407,7 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 	assert.InDelta(t, 632, must.NotFail(catalogStats.Get("collections")), 632)
 	assert.InDelta(t, 19, must.NotFail(catalogStats.Get("internalCollections")), 19)
 
-	assert.LessOrEqual(t, int32(0), must.NotFail(catalogStats.Get("capped")))
+	assert.LessOrEqual(t, int32(2), must.NotFail(catalogStats.Get("capped")))
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("timeseries")))
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("views")))
 	assert.InDelta(t, int32(0), must.NotFail(catalogStats.Get("internalViews")), 1)
