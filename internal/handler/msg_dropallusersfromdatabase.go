@@ -61,7 +61,9 @@ func (h *Handler) MsgDropAllUsersFromDatabase(ctx context.Context, msg *wire.OpM
 	}
 
 	var ids []any
+
 	defer qr.Iter.Close()
+
 	for {
 		_, v, err := qr.Iter.Next()
 		if errors.Is(err, iterator.ErrIteratorDone) {
@@ -72,7 +74,7 @@ func (h *Handler) MsgDropAllUsersFromDatabase(ctx context.Context, msg *wire.OpM
 
 	var deleted int32
 
-	if len(ids) != 0 {
+	if len(ids) > 0 {
 		res, err := users.DeleteAll(ctx, &backends.DeleteAllParams{
 			IDs: ids,
 		})
