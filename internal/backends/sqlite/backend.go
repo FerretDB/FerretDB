@@ -107,18 +107,16 @@ func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDataba
 	var res *backends.ListDatabasesResult
 
 	if params != nil && len(params.Name) > 0 {
-		res = &backends.ListDatabasesResult{
-			Databases: make([]backends.DatabaseInfo, 0, 1),
-		}
-		_, found := slices.BinarySearchFunc(list, params.Name, func(dbName, t string) int {
+		i, found := slices.BinarySearchFunc(list, params.Name, func(dbName, t string) int {
 			return cmp.Compare(dbName, t)
 		})
+		var filteredList []string
+
 		if found {
-			res.Databases = append(res.Databases, backends.DatabaseInfo{
-				Name: params.Name,
-			})
+			filteredList = append(filteredList, list[i])
 		}
-		return res, nil
+
+		list = filteredList
 	}
 
 	res = &backends.ListDatabasesResult{

@@ -66,21 +66,15 @@ func (db *database) ListCollections(ctx context.Context, params *backends.ListCo
 		i, found := slices.BinarySearchFunc(nameList, params.Name, func(collectionName, t string) int {
 			return cmp.Compare(collectionName, t)
 		})
-
+		var filteredList []*metadata.Collection
 		if found {
-			res = append(res, backends.CollectionInfo{
-				Name:            list[i].Name,
-				UUID:            list[i].UUID,
-				CappedSize:      list[i].CappedSize,
-				CappedDocuments: list[i].CappedDocuments,
-			})
+			filteredList = append(filteredList, list[i])
 		}
-		return &backends.ListCollectionsResult{
-			Collections: res,
-		}, nil
+		list = filteredList
 	}
 
 	res = make([]backends.CollectionInfo, len(list))
+
 	for i, c := range list {
 		res[i] = backends.CollectionInfo{
 			Name:            c.Name,
