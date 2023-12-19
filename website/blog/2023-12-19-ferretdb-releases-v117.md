@@ -19,7 +19,7 @@ Our mission is clear – to bring MongoDB workloads back to open source.
 
 We've had numerous new features, the addition of the SQLite backend, and improved architecture to support more backends, including MySQL and SAP Hana.
 
-Throughut the year, we made significant improvements to FerretDB performance, enabled better compatibility for many applications and use cases, and made FerretDB available on managed cloud providers.
+Throughout the year, we made significant improvements to FerretDB performance, enabled better compatibility for many applications and use cases, and made FerretDB available on managed cloud providers.
 The FerretDB documentation has also undergone extensive improvements, and with the new release, we've now enabled versioning.
 
 Our contributor list also keeps expanding as we added 3 new contributors ([@wazir-ahmed](https://github.com/wazir-ahmed), [@anunayasri](https://github.com/anunayasri), and @[hungaikev](https://github.com/hungaikev)), our thanks to you all.
