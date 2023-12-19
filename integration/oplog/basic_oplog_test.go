@@ -42,7 +42,7 @@ func TestOplogBasic(t *testing.T) {
 	// Create capped collection for oplog if needed
 	err := local.CreateCollection(ctx, "oplog.rs", options.CreateCollection().SetCapped(true).SetSizeInBytes(536870912))
 	if err != nil {
-		require.Contains(t, err.Error(), "Collection local.oplog.rs already exists")
+		require.Contains(t, err.Error(), "local.oplog.rs already exists")
 		err = nil
 	}
 
