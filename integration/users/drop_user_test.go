@@ -18,7 +18,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -39,13 +38,13 @@ func TestDropUser(t *testing.T) {
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/1492
 	if setup.IsMongoDB(t) {
-		assert.NoError(t, collection.Database().RunCommand(ctx, bson.D{
+		require.NoError(t, collection.Database().RunCommand(ctx, bson.D{
 			{"dropAllUsersFromDatabase", 1},
 		}).Err())
 	} else {
 		// Erase any previously saved user in the database.
 		_, err := users.DeleteMany(ctx, bson.D{{"db", db.Name()}})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	}
 
 	err := db.RunCommand(ctx, bson.D{
@@ -53,7 +52,7 @@ func TestDropUser(t *testing.T) {
 		{"roles", bson.A{}},
 		{"pwd", "password"},
 	}).Err()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	testCases := map[string]struct { //nolint:vet // for readability
 		payload    bson.D
@@ -111,6 +110,6 @@ func TestDropUser(t *testing.T) {
 // assertUserNotFound checks it the user doesn't exist in the admin.system.users collection.
 func assertUserNotFound(ctx context.Context, t testing.TB, users *mongo.Collection, dbName, username string) {
 	t.Helper()
-	err := users.FindOne(ctx, bson.D{{"user", username}}).Err()
+	err := users.FindOne(ctx, bson.D{{"user", username}, {"db", dbName}}).Err()
 	require.Equal(t, mongo.ErrNoDocuments, err, `should return "no documents" error`)
 }
