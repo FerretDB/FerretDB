@@ -25,7 +25,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration"
 	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
@@ -61,7 +60,6 @@ func TestDropUser(t *testing.T) {
 		err        *mongo.CommandError
 		altMessage string
 		expected   bson.D
-		skip       string
 	}{
 		"NotFound": {
 			payload: bson.D{
@@ -78,9 +76,7 @@ func TestDropUser(t *testing.T) {
 				{"dropUser", "a_user"},
 			},
 			expected: bson.D{
-				{
-					"ok", float64(1),
-				},
+				{"ok", float64(1)},
 			},
 		},
 	}
@@ -88,10 +84,6 @@ func TestDropUser(t *testing.T) {
 	for name, tc := range testCases {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
-
 			t.Parallel()
 
 			var res bson.D
@@ -111,14 +103,14 @@ func TestDropUser(t *testing.T) {
 			testutil.AssertEqual(t, expected, actual)
 
 			payload := integration.ConvertDocument(t, tc.payload)
-			assertUserNotFound(ctx, t, users, db.Name(), payload)
+			assertUserNotFound(ctx, t, users, db.Name(), must.NotFail(payload.Get("dropUser")).(string))
 		})
 	}
 }
 
 // assertUserNotFound checks it the user doesn't exist in the admin.system.users collection.
-func assertUserNotFound(ctx context.Context, t testing.TB, users *mongo.Collection, dbName string, payload *types.Document) {
+func assertUserNotFound(ctx context.Context, t testing.TB, users *mongo.Collection, dbName, username string) {
 	t.Helper()
-	err := users.FindOne(ctx, bson.D{{"user", must.NotFail(payload.Get("dropUser"))}}).Err()
+	err := users.FindOne(ctx, bson.D{{"user", username}}).Err()
 	require.Equal(t, mongo.ErrNoDocuments, err, `should return "no documents" error`)
 }
