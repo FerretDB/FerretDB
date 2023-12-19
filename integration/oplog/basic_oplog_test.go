@@ -40,7 +40,7 @@ func TestOplogBasic(t *testing.T) {
 	opts := options.FindOne().SetSort(bson.D{{"$natural", -1}})
 
 	// Create capped collection for oplog if needed
-	err := local.CreateCollection(ctx, "oplog.rs", options.CreateCollection().SetCapped(true).SetSizeInBytes(1024*1024))
+	err := local.CreateCollection(ctx, "oplog.rs", options.CreateCollection().SetCapped(true).SetSizeInBytes(536870912))
 	if err != nil {
 		require.Contains(t, err.Error(), "Collection local.oplog.rs already exists")
 		err = nil
