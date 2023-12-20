@@ -29,10 +29,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
-func TestCursorsTailableAwaitData(tt *testing.T) {
-	tt.Parallel()
-
-	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2283")
+func TestCursorsTailableAwaitData(t *testing.T) {
+	t.Parallel()
 
 	s := setup.SetupWithOpts(t, nil)
 
@@ -104,9 +102,7 @@ func TestCursorsAwaitDataErrors(t *testing.T) {
 	_, err = collection.InsertOne(ctx, bson.D{{"v", "foo"}})
 	require.NoError(t, err)
 
-	t.Run("NonTailable", func(tt *testing.T) {
-		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2283")
-
+	t.Run("NonTailable", func(t *testing.T) {
 		err = collection.Database().RunCommand(ctx, bson.D{
 			{"find", collection.Name()},
 			{"batchSize", 1},
