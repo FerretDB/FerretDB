@@ -38,16 +38,9 @@ func TestCreateUser(t *testing.T) {
 	client := db.Client()
 	users := client.Database("admin").Collection("system.users")
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/1492
-	if setup.IsMongoDB(t) {
-		assert.NoError(t, collection.Database().RunCommand(ctx, bson.D{
-			{"dropAllUsersFromDatabase", 1},
-		}).Err())
-	} else {
-		// Erase any previously saved user in the database.
-		_, err := users.DeleteMany(ctx, bson.D{{"db", db.Name()}})
-		assert.NoError(t, err)
-	}
+	require.NoError(t, collection.Database().RunCommand(ctx, bson.D{
+		{"dropAllUsersFromDatabase", 1},
+	}).Err())
 
 	testCases := map[string]struct { //nolint:vet // for readability
 		payload    bson.D
@@ -97,9 +90,7 @@ func TestCreateUser(t *testing.T) {
 				{"pwd", "password"},
 			},
 			expected: bson.D{
-				{
-					"ok", float64(1),
-				},
+				{"ok", float64(1)},
 			},
 		},
 		"WithComment": {
@@ -110,9 +101,7 @@ func TestCreateUser(t *testing.T) {
 				{"comment", "test string comment"},
 			},
 			expected: bson.D{
-				{
-					"ok", float64(1),
-				},
+				{"ok", float64(1)},
 			},
 		},
 		"MissingRoles": {
@@ -128,12 +117,14 @@ func TestCreateUser(t *testing.T) {
 		},
 	}
 
+	// The subtest "AlreadyExists" tries to create the following user, which should fail with an error that the user already exists.
+	// Here, we create the user for the very first time to populate the database.
 	err := db.RunCommand(ctx, bson.D{
 		{"createUser", "should_already_exist"},
 		{"roles", bson.A{}},
 		{"pwd", "password"},
 	}).Err()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	for name, tc := range testCases {
 		name, tc := name, tc
