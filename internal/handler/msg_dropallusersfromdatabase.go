@@ -34,7 +34,6 @@ func (h *Handler) MsgDropAllUsersFromDatabase(ctx context.Context, msg *wire.OpM
 		return nil, lazyerrors.Error(err)
 	}
 
-	// NOTE: In MongoDB, the comment field isn't saved in the database, but used for log and profiling.
 	common.Ignored(document, h.L, "writeConcern", "comment")
 
 	dbName, err := common.GetRequiredParam[string](document, "$db")

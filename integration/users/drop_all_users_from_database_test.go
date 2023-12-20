@@ -38,15 +38,9 @@ func TestDropAllUsersFromDatabase(t *testing.T) {
 	client := collection.Database().Client()
 	users := client.Database("admin").Collection("system.users")
 
-	if setup.IsMongoDB(t) {
-		assert.NoError(t, collection.Database().RunCommand(ctx, bson.D{
-			{"dropAllUsersFromDatabase", 1},
-		}).Err())
-	} else {
-		// Erase any previously saved user in the database.
-		_, err := users.DeleteMany(ctx, bson.D{{"db", db.Name()}})
-		assert.NoError(t, err)
-	}
+	assert.NoError(t, collection.Database().RunCommand(ctx, bson.D{
+		{"dropAllUsersFromDatabase", 1},
+	}).Err())
 
 	quantity := 5 // Add some users to the database.
 	for i := 1; i <= quantity; i++ {
