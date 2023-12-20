@@ -38,7 +38,7 @@ func TestCreateUser(t *testing.T) {
 	client := db.Client()
 	users := client.Database("admin").Collection("system.users")
 
-	assert.NoError(t, collection.Database().RunCommand(ctx, bson.D{
+	require.NoError(t, collection.Database().RunCommand(ctx, bson.D{
 		{"dropAllUsersFromDatabase", 1},
 	}).Err())
 
