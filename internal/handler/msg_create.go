@@ -83,10 +83,6 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	if capped {
-		if !h.EnableOplog {
-			return nil, common.Unimplemented(document, "capped")
-		}
-
 		size, _ := document.Get("size")
 		if _, ok := size.(types.NullType); size == nil || ok {
 			msg := "the 'size' field is required when 'capped' is true"
