@@ -16,6 +16,7 @@ package cursors
 
 import (
 	"errors"
+	"fmt"
 	"math"
 	"net/url"
 	"testing"
@@ -830,16 +831,10 @@ func TestCursorsGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 }
 
 func TestCursorsGetMoreExhausted(t *testing.T) {
-	s := setup.SetupWithOpts(t, &setup.SetupOpts{
-		ExtraOptions: url.Values{
-			"minPoolSize":   []string{"1"},
-			"maxPoolSize":   []string{"1"},
-			"maxIdleTimeMS": []string{"0"},
-		},
-		Providers: []shareddata.Provider{shareddata.Composites},
-	})
+	s := setup.SetupWithOpts(t, nil)
 
-	ctx, collection := s.Ctx, s.Collection
+	collection := s.Collection
+	db, ctx := collection.Database(), s.Ctx
 
 	arr, _ := integration.GenerateDocuments(0, 10)
 
@@ -847,19 +842,18 @@ func TestCursorsGetMoreExhausted(t *testing.T) {
 	require.NoError(t, err)
 
 	var res bson.D
-	err = collection.Database().RunCommand(ctx, bson.D{
+	err = db.RunCommand(ctx, bson.D{
 		{"find", collection.Name()},
 		{"batchSize", 1},
-		{"tailable", true},
 	}).Decode(&res)
 
 	require.NoError(t, err)
 
 	firstBatch, cursorID := getFirstBatch(t, res)
-	require.Equal(t, 1, must.NotFail(firstBatch.Get(0)))
+	require.Equal(t, 1, firstBatch.Len())
 	require.NotNil(t, cursorID)
 
-	err = collection.Database().RunCommand(ctx, bson.D{
+	err = db.RunCommand(ctx, bson.D{
 		{"getMore", cursorID},
 		{"collection", collection.Name()},
 		{"batchSize", 9},
@@ -869,9 +863,9 @@ func TestCursorsGetMoreExhausted(t *testing.T) {
 
 	nextBatch, nextID := getNextBatch(t, res)
 	require.Equal(t, 9, nextBatch.Len())
-	assert.Equal(t, 0, nextID)
+	assert.Equal(t, cursorID, nextID)
 
-	err = collection.Database().RunCommand(ctx, bson.D{
+	err = db.RunCommand(ctx, bson.D{
 		{"getMore", cursorID},
 		{"collection", collection.Name()},
 		{"batchSize", 1},
@@ -881,7 +875,21 @@ func TestCursorsGetMoreExhausted(t *testing.T) {
 
 	nextBatch, nextID = getNextBatch(t, res)
 	require.Equal(t, 0, nextBatch.Len())
-	assert.Equal(t, 0, nextID)
+	assert.Equal(t, int64(0), nextID)
+
+	err = db.RunCommand(ctx, bson.D{
+		{"getMore", cursorID},
+		{"collection", collection.Name()},
+		{"batchSize", 1},
+	}).Err()
+
+	expectedErr := mongo.CommandError{
+		Code:    43,
+		Name:    "CursorNotFound",
+		Message: fmt.Sprintf("cursor id %d not found", cursorID),
+	}
+
+	integration.AssertEqualCommandError(t, expectedErr, err)
 }
 
 func TestCursorsGetMoreCommandMaxTimeMSCursor(t *testing.T) {
@@ -1070,8 +1078,9 @@ func TestCursors(t *testing.T) {
 
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{
 		ExtraOptions: url.Values{
-			"minPoolSize": []string{"1"},
-			"maxPoolSize": []string{"1"},
+			"minPoolSize":   []string{"1"},
+			"maxPoolSize":   []string{"1"},
+			"maxIdleTimeMS": []string{"0"},
 		},
 	})
 
