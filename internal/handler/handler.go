@@ -33,6 +33,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
@@ -132,9 +133,11 @@ func New(opts *NewOpts) (*Handler, error) {
 // runCapppedCleanup calls capped collections cleanup function according to the given interval.
 func (h *Handler) runCappedCleanup() {
 	if h.CappedCleanupInterval <= 0 {
-		h.L.Info("The routine to cleanup capped collections is disabled", zap.Duration("interval", h.CappedCleanupInterval))
+		h.L.Info("Capped collections cleanup disabled.")
 		return
 	}
+
+	h.L.Info("Capped collections cleanup enabled.", zap.Duration("interval", h.CappedCleanupInterval))
 
 	ticker := time.NewTicker(h.CappedCleanupInterval)
 	defer ticker.Stop()
@@ -143,12 +146,11 @@ func (h *Handler) runCappedCleanup() {
 		select {
 		case <-ticker.C:
 			if err := h.cleanupAllCappedCollections(context.Background()); err != nil {
-				h.L.Error("Failed to cleanup capped collections", zap.Error(err))
+				h.L.Error("Failed to cleanup capped collections.", zap.Error(err))
 			}
 
 		case <-h.cappedCleanupStop:
-			h.L.Debug("The routine to cleanup capped collections is stopped")
-
+			h.L.Info("Capped collections cleanup stopped.")
 			return
 		}
 	}
@@ -180,8 +182,12 @@ func (h *Handler) Collect(ch chan<- prometheus.Metric) {
 
 // cleanupAllCappedCollections drops the given percent of documents from all capped collections.
 func (h *Handler) cleanupAllCappedCollections(ctx context.Context) error {
-	h.L.Debug("cleanupCappedCollections: started", zap.Uint8("percentage", h.CappedCleanupPercentage))
-	defer h.L.Debug("cleanupCappedCollections: finished")
+	h.L.Debug("cleanupAllCappedCollections: started", zap.Uint8("percentage", h.CappedCleanupPercentage))
+
+	start := time.Now()
+	defer func() {
+		h.L.Debug("cleanupAllCappedCollections: finished", zap.Duration("duration", time.Since(start)))
+	}()
 
 	connInfo := conninfo.New()
 	connInfo.BypassAuth = true
@@ -198,13 +204,8 @@ func (h *Handler) cleanupAllCappedCollections(ctx context.Context) error {
 			return lazyerrors.Error(err)
 		}
 
-		if db == nil {
-			continue
-		}
-
-		var cList *backends.ListCollectionsResult
-
-		if cList, err = db.ListCollections(ctx, nil); err != nil {
+		cList, err := db.ListCollections(ctx, nil)
+		if err != nil {
 			return lazyerrors.Error(err)
 		}
 
@@ -223,17 +224,15 @@ func (h *Handler) cleanupAllCappedCollections(ctx context.Context) error {
 				return lazyerrors.Error(err)
 			}
 
-			h.cleanupCappedCollectionsDocs.WithLabelValues(dbInfo.Name, cInfo.Name).Add(float64(deleted))
-			h.L.Debug("cleanupCappedCollection: documents deleted",
-				zap.String("db", dbInfo.Name), zap.String("collection", cInfo.Name),
-				zap.Int32("deleted", deleted),
-			)
+			if deleted > 0 || bytesFreed > 0 {
+				h.L.Info("Capped collection cleaned up.",
+					zap.String("db", dbInfo.Name), zap.String("collection", cInfo.Name),
+					zap.Int32("deleted", deleted), zap.Int64("bytesFreed", bytesFreed),
+				)
+			}
 
+			h.cleanupCappedCollectionsDocs.WithLabelValues(dbInfo.Name, cInfo.Name).Add(float64(deleted))
 			h.cleanupCappedCollectionsBytes.WithLabelValues(dbInfo.Name, cInfo.Name).Add(float64(bytesFreed))
-			h.L.Debug("cleanupCappedCollection: bytes freed",
-				zap.String("db", dbInfo.Name), zap.String("collection", cInfo.Name),
-				zap.Int64("bytes", bytesFreed),
-			)
 		}
 	}
 
@@ -241,44 +240,39 @@ func (h *Handler) cleanupAllCappedCollections(ctx context.Context) error {
 }
 
 // cleanupCappedCollection drops a percent of documents from the given capped collection and compacts it.
-// If the collection is not capped, it does nothing.
 func (h *Handler) cleanupCappedCollection(ctx context.Context, db backends.Database, cInfo *backends.CollectionInfo, force bool) (int32, int64, error) { //nolint:lll // for readability
-	if !cInfo.Capped() {
-		return 0, 0, nil
-	}
+	must.BeTrue(cInfo.Capped())
 
-	collection, err := db.Collection(cInfo.Name)
+	coll, err := db.Collection(cInfo.Name)
 	if err != nil {
 		return 0, 0, lazyerrors.Error(err)
 	}
 
-	statsBefore, err := collection.Stats(ctx, &backends.CollectionStatsParams{Refresh: true})
+	statsBefore, err := coll.Stats(ctx, &backends.CollectionStatsParams{Refresh: true})
 	if err != nil {
 		return 0, 0, lazyerrors.Error(err)
 	}
+
+	h.L.Debug("cleanupCappedCollection: stats before", zap.Any("stats", statsBefore))
 
 	if statsBefore.SizeCollection < cInfo.CappedSize && statsBefore.CountDocuments < cInfo.CappedDocuments {
 		return 0, 0, nil
 	}
 
-	var deleted int32
-
-	params := backends.QueryParams{
+	res, err := coll.Query(ctx, &backends.QueryParams{
+		Sort:          must.NotFail(types.NewDocument("$natural", int64(1))),
 		Limit:         int64(float64(statsBefore.CountDocuments) * float64(h.CappedCleanupPercentage) / 100),
 		OnlyRecordIDs: true,
-	}
-
-	var res *backends.QueryResult
-
-	if res, err = collection.Query(ctx, &params); err != nil {
+	})
+	if err != nil {
 		return 0, 0, lazyerrors.Error(err)
 	}
 
-	var recordIDs []int64
+	defer res.Iter.Close()
 
+	var recordIDs []int64
 	for {
 		var doc *types.Document
-
 		if _, doc, err = res.Iter.Next(); err != nil {
 			if errors.Is(err, iterator.ErrIteratorDone) {
 				break
@@ -290,22 +284,21 @@ func (h *Handler) cleanupCappedCollection(ctx context.Context, db backends.Datab
 		recordIDs = append(recordIDs, doc.RecordID())
 	}
 
-	var deletedRes *backends.DeleteAllResult
-
-	if deletedRes, err = collection.DeleteAll(ctx, &backends.DeleteAllParams{RecordIDs: recordIDs}); err != nil {
-		return 0, 0, lazyerrors.Error(err)
-	}
-
-	deleted = deletedRes.Deleted
-
-	if _, err = collection.Compact(ctx, &backends.CompactParams{Full: force}); err != nil {
-		return 0, 0, lazyerrors.Error(err)
-	}
-
-	statsAfter, err := collection.Stats(ctx, &backends.CollectionStatsParams{Refresh: true})
+	deleteRes, err := coll.DeleteAll(ctx, &backends.DeleteAllParams{RecordIDs: recordIDs})
 	if err != nil {
 		return 0, 0, lazyerrors.Error(err)
 	}
+
+	if _, err = coll.Compact(ctx, &backends.CompactParams{Full: force}); err != nil {
+		return 0, 0, lazyerrors.Error(err)
+	}
+
+	statsAfter, err := coll.Stats(ctx, &backends.CollectionStatsParams{Refresh: true})
+	if err != nil {
+		return 0, 0, lazyerrors.Error(err)
+	}
+
+	h.L.Debug("cleanupCappedCollection: stats after", zap.Any("stats", statsAfter))
 
 	bytesFreed := statsBefore.SizeTotal - statsAfter.SizeTotal
 
@@ -316,5 +309,5 @@ func (h *Handler) cleanupCappedCollection(ctx context.Context, db backends.Datab
 		bytesFreed = 0
 	}
 
-	return deleted, bytesFreed, nil
+	return deleteRes.Deleted, bytesFreed, nil
 }
