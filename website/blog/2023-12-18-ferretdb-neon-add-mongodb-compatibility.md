@@ -15,7 +15,7 @@ By using FerretDB, developers can [access familiar MongoDB features and tools us
 
 <!--truncate-->
 
-[Neon](https://neon.tech/) is an open source, fully managed serverless Postgres which is licensed under the Apache 2.0 license.
+[Neon](https://bit.ly/48jQL48) is an open source, fully managed serverless Postgres which is licensed under the Apache 2.0 license.
 What makes Neon unique is that it separates storage and compute, which makes it possible to scale up compute based on demand.
 It also supports branching, which allows you to create a copy of your database in seconds for testing and development.
 
@@ -58,7 +58,7 @@ That means you can take advantage of all the features available in that backend 
 
 ## Create a Neon project
 
-Please refer to the instructions in the [Neon Sign up](https://neon.tech/docs/get-started-with-neon/signing-up) docs if this is your first project.
+Please refer to the instructions in the [Neon Sign up](https://bit.ly/3RZ9zRf) docs if this is your first project.
 
 Before getting started with FerretDB, you need to create a Neon project.
 When creating the project, you need to select the version of postgres, and also create a `ferretdb` database.
