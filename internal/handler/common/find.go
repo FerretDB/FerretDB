@@ -79,7 +79,9 @@ func GetFindParams(doc *types.Document, l *zap.Logger) (*FindParams, error) {
 		return nil, err
 	}
 
-	// TODO check AwaitData=true, Tailable=false?
+	if params.AwaitData && !params.Tailable {
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrFailedToParse, "Cannot set 'awaitData' without also setting 'tailable'", "find")
+	}
 
 	return &params, nil
 }
