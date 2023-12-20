@@ -105,6 +105,7 @@ func PlainHash(password string) (*types.Document, error) {
 func plainVerifyParams(password string, doc *types.Document) (*plainParams, error) {
 	v, _ := doc.Get("algo")
 	algo, _ := v.(string)
+
 	if algo != "argon2id" {
 		return nil, lazyerrors.Errorf("invalid algo: %q", algo)
 	}

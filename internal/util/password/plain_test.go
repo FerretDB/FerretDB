@@ -27,6 +27,8 @@ import (
 )
 
 // plainTestCase represents a test case for PLAIN authentication using Argon2id.
+//
+//nolint:vet // for readability
 type plainTestCase struct {
 	params   plainParams
 	password string
