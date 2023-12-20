@@ -150,30 +150,47 @@ func TestOplogBasic(t *testing.T) {
 			assert.Equal(t, lastOplogEntry, newOplogEntry)
 		})
 
-		/*t.Run("MultipleDocuments", func(t *testing.T) {
+		tt.Run("MultipleDocuments", func(tt *testing.T) {
+			t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/3556")
+
 			_, err := coll.DeleteMany(ctx, bson.D{{"_id", bson.D{{"$gte", int64(2)}}}})
 			require.NoError(t, err)
 
 			var lastOplogEntry bson.D
-			err = local.Collection("oplog.rs").FindOne(ctx, bson.D{{"ns", ns}}, opts).Decode(&lastOplogEntry)
+			err = local.Collection("oplog.rs").FindOne(ctx, bson.D{{"o.applyOps.ns", ns}}, opts).Decode(&lastOplogEntry)
 			require.NoError(t, err)
 
 			actual := integration.ConvertDocument(t, lastOplogEntry)
-			unsetUnusedOplogFields(t, actual)
+			unsetUnusedOplogFields(actual)
 			actualKeys := actual.Keys()
 			assert.ElementsMatch(t, expectedKeys, actualKeys)
 
-			// The last oplog entry should be the last delete.
+			ui := must.NotFail(must.NotFail(must.NotFail(must.NotFail(actual.Get("o")).(*types.Document).Get("applyOps")).(*types.Array).Get(0)).(*types.Document).Get("ui")).(types.Binary) //nolint:lll // splitting won't make it more readable
 			expected, err := types.NewDocument(
-				"op", "d",
-				"ns", ns,
-				"o", must.NotFail(types.NewDocument("_id", int64(3))),
+				"op", "c",
+				"ns", "admin.$cmd",
+				"o", must.NotFail(types.NewDocument(
+					"applyOps", must.NotFail(types.NewArray(
+						must.NotFail(types.NewDocument(
+							"op", "d",
+							"ns", ns,
+							"ui", ui,
+							"o", must.NotFail(types.NewDocument("_id", int64(2))),
+						)),
+						must.NotFail(types.NewDocument(
+							"op", "d",
+							"ns", ns,
+							"ui", ui,
+							"o", must.NotFail(types.NewDocument("_id", int64(3))),
+						)),
+					)),
+				)),
 				"ts", must.NotFail(actual.Get("ts")).(types.Timestamp),
 				"v", expectedV,
 			)
 			require.NoError(t, err)
 			assert.Equal(t, expected, actual)
-		})*/
+		})
 	})
 }
 
