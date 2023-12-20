@@ -52,7 +52,6 @@ func TestCursorsTailableAwaitData(tt *testing.T) {
 		{"batchSize", 1},
 		{"tailable", true},
 		{"awaitData", true},
-		{"maxTimeMS", 1},
 	}
 
 	var res bson.D
