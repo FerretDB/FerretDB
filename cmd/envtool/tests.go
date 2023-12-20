@@ -388,10 +388,13 @@ func testsRun(ctx context.Context, index, total uint, run, skip string, args []s
 	}
 
 	if skip != "" {
-		args = append(args, "-skip="+skip)
+		totalTest = 0
+		args = append(args, "-run="+run, "-skip="+skip)
+	} else {
+		args = append(args, "-run="+run)
 	}
 
-	return runGoTest(ctx, append([]string{"-run=" + run}, args...), totalTest, true, logger)
+	return runGoTest(ctx, args, totalTest, true, logger)
 }
 
 // listTestFuncs returns a sorted slice of all top-level test functions (tests, benchmarks, examples, fuzz functions)
