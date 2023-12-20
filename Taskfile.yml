@@ -140,7 +140,7 @@ tasks:
     cmds:
       # those two should always be in sync
       - go generate -x ./build/version
-      - go build -v -o bin/ ./cmd/envtool/
+      - go build -v -o bin/ {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} ./cmd/envtool/
 
   build-host:
     desc: "Build bin/ferretdb{{exeExt}} on the host for development"
