@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 
@@ -38,7 +39,7 @@ func TestDropAllUsersFromDatabase(t *testing.T) {
 	client := collection.Database().Client()
 	users := client.Database("admin").Collection("system.users")
 
-	assert.NoError(t, collection.Database().RunCommand(ctx, bson.D{
+	require.NoError(t, collection.Database().RunCommand(ctx, bson.D{
 		{"dropAllUsersFromDatabase", 1},
 	}).Err())
 
@@ -49,7 +50,7 @@ func TestDropAllUsersFromDatabase(t *testing.T) {
 			{"roles", bson.A{}},
 			{"pwd", "password"},
 		}).Err()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	}
 
 	assertDropAllUsersFromDatabase(t, ctx, db, users, quantity)
@@ -65,7 +66,7 @@ func assertDropAllUsersFromDatabase(t *testing.T, ctx context.Context, db *mongo
 		{"dropAllUsersFromDatabase", 1},
 	}).Decode(&res)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	actual := integration.ConvertDocument(t, res)
 	actual.Remove("$clusterTime")
