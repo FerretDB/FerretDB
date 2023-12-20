@@ -51,8 +51,6 @@ import (
 // It's used for parsing the user input.
 //
 // Keep order in sync with documentation.
-//
-//nolint:lll // some tags are long
 var cli struct {
 	Version  bool   `default:"false"           help:"Print version to stdout and exit." env:"-"`
 	Handler  string `default:"postgresql"      help:"${help_handler}"`
@@ -94,13 +92,14 @@ var cli struct {
 		RecordsDir string `default:"" help:"Testing: directory for record files."`
 
 		DisablePushdown bool `default:"false" help:"Experimental: disable pushdown."`
-		CappedCleanup   struct {
+
+		CappedCleanup struct {
 			Interval   time.Duration `default:"1m" help:"Experimental: capped collections cleanup interval." hidden:""`
 			Percentage uint8         `default:"10" help:"Experimental: percentage of documents to cleanup."  hidden:""`
 		} `embed:"" prefix:"capped-cleanup-"`
+
 		EnableNewAuth bool `default:"false" help:"Experimental: enable new authentication." hidden:""`
 
-		//nolint:lll // for readability
 		Telemetry struct {
 			URL            string        `default:"https://beacon.ferretdb.io/" help:"Telemetry: reporting URL."`
 			UndecidedDelay time.Duration `default:"1h"                          help:"Telemetry: delay for undecided state."`
