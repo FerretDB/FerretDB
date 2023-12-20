@@ -170,9 +170,10 @@ func setupMySQL(ctx context.Context, logger *zap.SugaredLogger) error {
 	for ctx.Err() == nil {
 		db, err := p.Get("root", "password")
 		if err == nil {
-			if _, rowErr := db.QueryContext(ctx, "GRANT ALL PRIVILEGES ON *.* TO 'username'@'%';"); rowErr != nil {
+			if _, err = db.ExecContext(ctx, "GRANT ALL PRIVILEGES ON *.* TO 'username'@'%';"); err != nil {
 				return lazyerrors.Error(err)
 			}
+
 			break
 		}
 

@@ -140,7 +140,7 @@ tasks:
     cmds:
       # those two should always be in sync
       - go generate -x ./build/version
-      - go build -v -o bin/ ./cmd/envtool/
+      - go build -v -o bin/ {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} ./cmd/envtool/
 
   build-host:
     desc: "Build bin/ferretdb{{exeExt}} on the host for development"
@@ -381,7 +381,6 @@ tasks:
         --handler=sqlite
         --sqlite-url=file:tmp/sqlite/
         --test-records-dir=tmp/records
-        --test-enable-oplog
 
   run-mysql:
     desc: "Run FerretDB with `mysql` backend"
@@ -452,7 +451,6 @@ tasks:
         --handler=sqlite
         --sqlite-url=file:tmp/sqlite/
         --test-records-dir=tmp/records
-        --test-enable-oplog
 
   run-proxy-secured:
     desc: "Run FerretDB in diff-proxy mode (TLS, auth required)"
