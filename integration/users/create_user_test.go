@@ -38,16 +38,9 @@ func TestCreateUser(t *testing.T) {
 	client := db.Client()
 	users := client.Database("admin").Collection("system.users")
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/1492
-	if setup.IsMongoDB(t) {
-		assert.NoError(t, collection.Database().RunCommand(ctx, bson.D{
-			{"dropAllUsersFromDatabase", 1},
-		}).Err())
-	} else {
-		// Erase any previously saved user in the database.
-		_, err := users.DeleteMany(ctx, bson.D{{"db", db.Name()}})
-		require.NoError(t, err)
-	}
+	assert.NoError(t, collection.Database().RunCommand(ctx, bson.D{
+		{"dropAllUsersFromDatabase", 1},
+	}).Err())
 
 	testCases := map[string]struct { //nolint:vet // for readability
 		payload    bson.D
