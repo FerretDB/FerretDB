@@ -215,6 +215,8 @@ func (c *collection) DropIndexes(ctx context.Context, params *backends.DropIndex
 }
 
 // oplogCollection returns the OpLog collection if it exist.
+//
+// The returned collection is not wrapped with OpLog functionality to prevent recursive calls.
 func (c *collection) oplogCollection(ctx context.Context) backends.Collection {
 	db := must.NotFail(c.origB.Database(oplogDatabase))
 

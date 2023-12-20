@@ -19,6 +19,10 @@ on:
         required: false
         type: boolean
         default: false
+      postgres_dockerfile:
+        required: false
+        type: string
+        default: "postgres"
       checkout_ref:
         required: false
         type: string
@@ -78,6 +82,8 @@ jobs:
 
       - name: Start environment
         run: bin/task env-up-detach
+        env:
+          POSTGRES_DOCKERFILE: ${{ inputs.postgres_dockerfile }}
 
       - name: Run init
         run: bin/task init

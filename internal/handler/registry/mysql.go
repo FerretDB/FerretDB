@@ -39,7 +39,6 @@ func init() {
 			StateProvider: opts.StateProvider,
 
 			DisablePushdown:         opts.DisablePushdown,
-			EnableOplog:             opts.EnableOplog,
 			CappedCleanupPercentage: opts.CappedCleanupPercentage,
 			CappedCleanupInterval:   opts.CappedCleanupInterval,
 			EnableNewAuth:           opts.EnableNewAuth,
