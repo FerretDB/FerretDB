@@ -204,6 +204,8 @@ func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllPa
 		return &backends.DeleteAllResult{Deleted: 0}, nil
 	}
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/3888
+
 	var column string
 	var placeholders []string
 	var args []any
