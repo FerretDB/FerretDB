@@ -841,7 +841,6 @@ func TestCursorsGetMoreExhausted(t *testing.T) {
 
 	ctx, collection := s.Ctx, s.Collection
 
-	// need large amount of documents for time out to trigger
 	arr, _ := integration.GenerateDocuments(0, 10)
 
 	_, err := collection.InsertMany(ctx, arr)
