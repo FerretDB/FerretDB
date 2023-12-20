@@ -829,6 +829,62 @@ func TestCursorsGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 	}
 }
 
+func TestCursorsGetMoreExhausted(t *testing.T) {
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{
+		ExtraOptions: url.Values{
+			"minPoolSize":   []string{"1"},
+			"maxPoolSize":   []string{"1"},
+			"maxIdleTimeMS": []string{"0"},
+		},
+		Providers: []shareddata.Provider{shareddata.Composites},
+	})
+
+	ctx, collection := s.Ctx, s.Collection
+
+	// need large amount of documents for time out to trigger
+	arr, _ := integration.GenerateDocuments(0, 10)
+
+	_, err := collection.InsertMany(ctx, arr)
+	require.NoError(t, err)
+
+	var res bson.D
+	err = collection.Database().RunCommand(ctx, bson.D{
+		{"find", collection.Name()},
+		{"batchSize", 1},
+		{"tailable", true},
+	}).Decode(&res)
+
+	require.NoError(t, err)
+
+	firstBatch, cursorID := getFirstBatch(t, res)
+	require.Equal(t, 1, must.NotFail(firstBatch.Get(0)))
+	require.NotNil(t, cursorID)
+
+	err = collection.Database().RunCommand(ctx, bson.D{
+		{"getMore", cursorID},
+		{"collection", collection.Name()},
+		{"batchSize", 9},
+	}).Decode(&res)
+
+	require.NoError(t, err)
+
+	nextBatch, nextID := getNextBatch(t, res)
+	require.Equal(t, 9, nextBatch.Len())
+	assert.Equal(t, 0, nextID)
+
+	err = collection.Database().RunCommand(ctx, bson.D{
+		{"getMore", cursorID},
+		{"collection", collection.Name()},
+		{"batchSize", 1},
+	}).Decode(&res)
+
+	require.NoError(t, err)
+
+	nextBatch, nextID = getNextBatch(t, res)
+	require.Equal(t, 0, nextBatch.Len())
+	assert.Equal(t, 0, nextID)
+}
+
 func TestCursorsGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 	// do not run tests in parallel to avoid using too many backend connections
 
