@@ -381,7 +381,6 @@ tasks:
         --handler=sqlite
         --sqlite-url=file:tmp/sqlite/
         --test-records-dir=tmp/records
-        --test-enable-oplog
 
   run-mysql:
     desc: "Run FerretDB with `mysql` backend"
@@ -452,7 +451,6 @@ tasks:
         --handler=sqlite
         --sqlite-url=file:tmp/sqlite/
         --test-records-dir=tmp/records
-        --test-enable-oplog
 
   run-proxy-secured:
     desc: "Run FerretDB in diff-proxy mode (TLS, auth required)"

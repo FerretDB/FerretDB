@@ -74,7 +74,6 @@ type NewOpts struct {
 
 	// test options
 	DisablePushdown         bool
-	EnableOplog             bool
 	CappedCleanupInterval   time.Duration
 	CappedCleanupPercentage uint8
 	EnableNewAuth           bool
@@ -82,11 +81,7 @@ type NewOpts struct {
 
 // New returns a new handler.
 func New(opts *NewOpts) (*Handler, error) {
-	b := opts.Backend
-
-	if opts.EnableOplog {
-		b = oplog.NewBackend(b, opts.L.Named("oplog"))
-	}
+	b := oplog.NewBackend(opts.Backend, opts.L.Named("oplog"))
 
 	if opts.CappedCleanupPercentage >= 100 || opts.CappedCleanupPercentage <= 0 {
 		return nil, fmt.Errorf(
@@ -136,11 +131,6 @@ func New(opts *NewOpts) (*Handler, error) {
 
 // runCapppedCleanup calls capped collections cleanup function according to the given interval.
 func (h *Handler) runCappedCleanup() {
-	if !h.EnableOplog {
-		h.L.Info("The routine to cleanup capped collections is disabled because oplog is disabled")
-		return
-	}
-
 	if h.CappedCleanupInterval <= 0 {
 		h.L.Info("The routine to cleanup capped collections is disabled", zap.Duration("interval", h.CappedCleanupInterval))
 		return
