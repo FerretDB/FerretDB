@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"time"
 
 	"go.uber.org/zap"
 
@@ -28,6 +29,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -226,7 +228,41 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		}
 
 	case cursor.TailableAwait:
-		panic("not supported yet")
+		if nextBatch.Len() < int(batchSize) {
+			// The previous iterator is already closed there.
+
+			data := c.Data.(*findCursorData)
+
+			queryRes, err := data.coll.Query(ctx, data.qp)
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
+			closer := iterator.NewMultiCloser()
+
+			iter, err := h.makeFindIter(queryRes.Iter, closer, data.findParams)
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
+			var done = make(chan struct{})
+
+			go func() {
+				ctxutil.Sleep(ctx, time.Duration(maxTimeMS))
+				done <- struct{}{}
+			}()
+
+			if err = c.Reset(iter); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
+			if nextBatch.Len() == 0 {
+				nextBatch, err = h.makeNextBatch(c, batchSize)
+				if err != nil {
+					return nil, lazyerrors.Error(err)
+				}
+			}
+		}
 
 	default:
 		panic(fmt.Sprintf("unknown cursor type %s", c.Type))
