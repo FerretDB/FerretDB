@@ -42,6 +42,8 @@ type plainParams struct {
 // Some other sources, such as https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html#argon2id
 // or https://www.ietf.org/archive/id/draft-ietf-kitten-password-storage-04.html#name-argon2,
 // recommend lower parameters.
+// We also could automatically tweak parameters based on the available CPU and memory,
+// but let's keep it simple for now.
 var fixedPlainParams = plainParams{
 	t:       3,
 	p:       4,

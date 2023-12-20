@@ -153,3 +153,39 @@ func TestPlain(t *testing.T) {
 		assert.Error(t, err)
 	})
 }
+
+func BenchmarkPlain(b *testing.B) {
+	var err error
+
+	for i, tc := range plainTestCases {
+		b.Run(fmt.Sprintf("%d-%x", i, tc.hash), func(b *testing.B) {
+			b.ReportAllocs()
+
+			tc.params.tagLen = uint32(len(tc.hash))
+			tc.params.saltLen = len(tc.salt)
+
+			var hash []byte
+
+			b.ResetTimer()
+
+			for i := 0; i < b.N; i++ {
+				_, hash, err = plainHashParams(tc.password, tc.salt, &tc.params)
+			}
+
+			b.StopTimer()
+
+			require.NoError(b, err)
+			assert.Equal(b, tc.hash, hash, "hash mismatch")
+		})
+	}
+
+	b.Run("Exported", func(b *testing.B) {
+		b.ReportAllocs()
+
+		for i := 0; i < b.N; i++ {
+			_, err = PlainHash("password")
+		}
+	})
+
+	require.NoError(b, err)
+}
