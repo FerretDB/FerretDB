@@ -63,6 +63,8 @@ func (res resultPushdown) pushdownExpected(t testtb.TB) bool {
 		return res&sqlitePushdown == sqlitePushdown
 	case setup.IsMongoDB(t):
 		return false
+	case setup.IsHana(t):
+		return false
 	default:
 		panic("Unknown backend")
 	}
