@@ -184,6 +184,8 @@ func getArchiveHandler() http.HandlerFunc {
 
 		zipWriter := zip.NewWriter(rw)
 
+		defer zipWriter.Close() //nolint:errcheck // we are only reading it
+
 		for fileName, response := range responses {
 			fileWriter, err := zipWriter.Create(fileName)
 			if err != nil {
@@ -197,11 +199,6 @@ func getArchiveHandler() http.HandlerFunc {
 				http.Error(rw, msg, http.StatusInternalServerError)
 				return
 			}
-		}
-		if err := zipWriter.Flush(); err != nil {
-			msg := fmt.Sprintf("failed to flush zip, (%s)", err.Error())
-			http.Error(rw, msg, http.StatusInternalServerError)
-			return
 		}
 	})
 }
@@ -219,12 +216,7 @@ func performRequest(u url.URL) ([]byte, error) {
 		return nil, err
 	}
 
-	defer func() {
-		errClosing := resp.Body.Close()
-		if err != nil {
-			panic(errClosing)
-		}
-	}()
+	defer resp.Body.Close() //nolint:errcheck // we are only reading it
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

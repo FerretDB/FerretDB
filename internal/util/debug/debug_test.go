@@ -67,7 +67,7 @@ func TestRunHandler(t *testing.T) {
 	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
 
-	defer require.NoError(t, resp.Body.Close())
+	defer resp.Body.Close() //nolint:errcheck // we are only reading it
 
 	require.Equal(t, http.StatusOK, resp.StatusCode, "status code should be 200")
 	require.Equal(t, "application/zip", resp.Header.Get("Content-Type"), "mime type should be zip")
