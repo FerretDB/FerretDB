@@ -71,18 +71,34 @@ func (h *Handler) MsgUsersInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		"showAuthenticationRestrictions", "comment", "filter",
 	)
 
-	var users []usersInfoPair
+	var (
+		users    []usersInfoPair
+		allDBs   bool // allDBs set to true means we want users from all databases
+		singleDB bool // singleDB set to true means we want users from a single database (when usersInfo: 1)
+	)
 
 	switch user := usersInfo.(type) {
-	case *types.Document, string:
+	case *types.Document:
+		if user.Has("forAllDBs") {
+			allDBs = true
+			break
+		}
+
 		var u usersInfoPair
 		if err = u.extract(user, dbName); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
 		users = append(users, u)
-	case int: // {usersInfo: 1 }
-		break
+	case string:
+		var u usersInfoPair
+		if err = u.extract(user, dbName); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		users = append(users, u)
+	case int, int32: // {usersInfo: 1 } // int for MongoDB and int32 for FerretDB
+		singleDB = true
 	case *types.Array:
 		for i := 0; i < user.Len(); i++ {
 			var ui any
@@ -103,8 +119,11 @@ func (h *Handler) MsgUsersInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			}
 		}
 	default:
-		msg := fmt.Sprintf("required parameter %q has unexpected type %T", document.Command(), usersInfo)
-		return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrBadValue, msg, document.Command())
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrBadValue,
+			"UserName must be either a string or an object",
+			document.Command(),
+		)
 	}
 
 	// Users are saved in the "admin" database.
@@ -118,8 +137,15 @@ func (h *Handler) MsgUsersInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
+	var filter *types.Document
+	filter, err = usersInfoQueryFilter(allDBs, singleDB, dbName, users)
+
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	qr, err := usersCol.Query(ctx, &backends.QueryParams{
-		Filter: usersInfoQueryFilter(users),
+		Filter: filter,
 	})
 
 	if err != nil {
@@ -128,16 +154,25 @@ func (h *Handler) MsgUsersInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	defer qr.Iter.Close()
 
-	var res []*types.Document
+	var res *types.Array
+	res, err = types.NewArray()
+
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
 	for {
 		_, v, err := qr.Iter.Next()
+
 		if errors.Is(err, iterator.ErrIteratorDone) {
 			break
-		} else if err != nil {
+		}
+
+		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
-		res = append(res, v)
+
+		res.Append(v)
 	}
 
 	var reply wire.OpMsg
@@ -170,7 +205,17 @@ func (p *usersInfoPair) extract(v any, dbName string) error {
 		p.username, ok = ui.(string)
 
 		if !ok {
-			return lazyerrors.Errorf("unexpected type %T for username", ui)
+			return handlererrors.NewCommandErrorMsg(
+				handlererrors.ErrBadValue,
+				fmt.Sprintf("UserName must contain a string field named: user. But, has type %T", ui),
+			)
+		}
+
+		if !vt.Has("db") {
+			return handlererrors.NewCommandErrorMsg(
+				handlererrors.ErrBadValue,
+				"UserName must contain a string field named: db.",
+			)
 		}
 
 		db, err := vt.Get("db")
@@ -182,7 +227,10 @@ func (p *usersInfoPair) extract(v any, dbName string) error {
 		if db != nil {
 			p.db, ok = db.(string)
 			if !ok {
-				return lazyerrors.Errorf("unexpected type %T for db", db)
+				return handlererrors.NewCommandErrorMsg(
+					handlererrors.ErrBadValue,
+					fmt.Sprintf("UserName must contain a string field named: db. But, has type %T", db),
+				)
 			}
 		}
 
@@ -197,7 +245,28 @@ func (p *usersInfoPair) extract(v any, dbName string) error {
 	}
 }
 
-func usersInfoQueryFilter(u []usersInfoPair) *types.Document {
-	doc := must.NotFail(types.NewDocument())
-	return doc
+// usersInfoQueryFilter returns a filter for usersInfo command.
+//
+// When allDBs is true, it returns a filter for all databases.
+// When singleDB is true, it returns a filter for a single database (case when usersInfo: 1 is invoked).
+// Otherwise, it filters by any pair of user and database.
+func usersInfoQueryFilter(allDBs, singleDB bool, dbName string, pairs []usersInfoPair) (*types.Document, error) {
+	filter := must.NotFail(types.NewDocument())
+
+	if allDBs {
+		return filter, nil
+	}
+
+	if singleDB {
+		filter.Set("db", dbName)
+		return filter, nil
+	}
+
+	ids := types.MakeArray(len(pairs))
+	for i, p := range pairs {
+		ids.Set(i, p.db+"."+p.username)
+	}
+
+	filter.Set("_id", ids)
+	return filter, nil
 }
