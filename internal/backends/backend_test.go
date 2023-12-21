@@ -80,19 +80,19 @@ func TestListDatabases(t *testing.T) {
 			require.NoError(t, err)
 			err = testDB.CreateCollection(ctx, &backends.CreateCollectionParams{Name: collectionName})
 			require.NoError(t, err)
-			defer b.DropDatabase(ctx, &backends.DropDatabaseParams{Name: dbNames[0]})
+			defer require.NoError(t, b.DropDatabase(ctx, &backends.DropDatabaseParams{Name: dbNames[0]}))
 
 			testDB, err = b.Database(dbNames[1])
 			require.NoError(t, err)
 			err = testDB.CreateCollection(ctx, &backends.CreateCollectionParams{Name: collectionName})
 			require.NoError(t, err)
-			defer b.DropDatabase(ctx, &backends.DropDatabaseParams{Name: dbNames[1]})
+			defer require.NoError(t, b.DropDatabase(ctx, &backends.DropDatabaseParams{Name: dbNames[1]}))
 
 			testDB, err = b.Database(dbNames[2])
 			require.NoError(t, err)
 			err = testDB.CreateCollection(ctx, &backends.CreateCollectionParams{Name: collectionName})
 			require.NoError(t, err)
-			defer b.DropDatabase(ctx, &backends.DropDatabaseParams{Name: dbNames[2]})
+			defer require.NoError(t, b.DropDatabase(ctx, &backends.DropDatabaseParams{Name: dbNames[2]}))
 
 			t.Run("TestingListDatabases", func(t *testing.T) {
 				t.Run("ListDatabases with specific name", func(t *testing.T) {

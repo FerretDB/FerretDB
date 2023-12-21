@@ -561,7 +561,7 @@ func TestListCollections(t *testing.T) {
 				err = testDB.CreateCollection(ctx, &backends.CreateCollectionParams{Name: collectionName})
 				require.NoError(t, err)
 			}
-			defer b.DropDatabase(ctx, &backends.DropDatabaseParams{Name: dbName})
+			defer require.NoError(t, b.DropDatabase(ctx, &backends.DropDatabaseParams{Name: dbName}))
 
 			t.Run("TestingListCollections", func(t *testing.T) {
 				// retrieve database details

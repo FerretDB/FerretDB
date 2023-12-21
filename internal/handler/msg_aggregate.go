@@ -466,6 +466,7 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 
 		var cList *backends.ListCollectionsResult
 		collectionParam := backends.ListCollectionsParams{Name: p.cName}
+
 		if cList, err = p.db.ListCollections(ctx, &collectionParam); err != nil {
 			return nil, lazyerrors.Error(err)
 		}

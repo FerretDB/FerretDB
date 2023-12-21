@@ -70,6 +70,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	var cList *backends.ListCollectionsResult
 	collectionParam := backends.ListCollectionsParams{Name: params.Collection}
+
 	if cList, err = db.ListCollections(ctx, &collectionParam); err != nil {
 		return nil, err
 	}

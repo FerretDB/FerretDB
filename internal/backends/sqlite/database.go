@@ -53,8 +53,8 @@ func (db *database) ListCollections(ctx context.Context, params *backends.ListCo
 	}
 
 	var res []backends.CollectionInfo
-	if params != nil && len(params.Name) > 0 {
 
+	if params != nil && len(params.Name) > 0 {
 		nameList := make([]string, len(list))
 		for i, c := range list {
 			nameList[i] = c.Name
