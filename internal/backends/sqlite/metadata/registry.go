@@ -23,6 +23,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/google/uuid"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
@@ -325,6 +326,7 @@ func (r *Registry) collectionCreate(ctx context.Context, params *CollectionCreat
 		Name:      collectionName,
 		TableName: tableName,
 		Settings: Settings{
+			UUID:            uuid.NewString(),
 			CappedSize:      params.CappedSize,
 			CappedDocuments: params.CappedDocuments,
 		},
@@ -522,8 +524,8 @@ func (r *Registry) indexesCreate(ctx context.Context, dbName, collectionName str
 		c.Settings.Indexes = append(c.Settings.Indexes, index)
 	}
 
-	q := fmt.Sprintf("UPDATE %q SET settings = ?", metadataTableName)
-	if _, err := db.ExecContext(ctx, q, c.Settings); err != nil {
+	q := fmt.Sprintf("UPDATE %q SET settings = ? WHERE table_name = ?", metadataTableName)
+	if _, err := db.ExecContext(ctx, q, c.Settings, c.TableName); err != nil {
 		_ = r.indexesDrop(ctx, dbName, collectionName, created)
 		return lazyerrors.Error(err)
 	}
@@ -581,8 +583,8 @@ func (r *Registry) indexesDrop(ctx context.Context, dbName, collectionName strin
 		c.Settings.Indexes = slices.Delete(c.Settings.Indexes, i, i+1)
 	}
 
-	q := fmt.Sprintf("UPDATE %q SET settings = ?", metadataTableName)
-	if _, err := db.ExecContext(ctx, q, c.Settings); err != nil {
+	q := fmt.Sprintf("UPDATE %q SET settings = ? WHERE table_name = ?", metadataTableName)
+	if _, err := db.ExecContext(ctx, q, c.Settings, c.TableName); err != nil {
 		return lazyerrors.Error(err)
 	}
 

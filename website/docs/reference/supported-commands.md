@@ -41,7 +41,7 @@ Use ❌ for commands and arguments that are not implemented at all.
 |                 | `min`                      | ⚠️     | Ignored                                                   |
 |                 | `returnKey`                | ❌     | Unimplemented                                             |
 |                 | `showRecordId`             | ✅     |                                                           |
-|                 | `tailable`                 | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/2283) |
+|                 | `tailable`                 | ✅     |                                                           |
 |                 | `oplogReplay`              | ❌     | Unimplemented                                             |
 |                 | `noCursorTimeout`          | ❌     | Unimplemented                                             |
 |                 | `awaitData`                | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/2283) |
@@ -544,8 +544,8 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/1917).
 |                                   | `cappedSize`                   |                           | ⚠️     |                                                           |
 |                                   | `cappedMax`                    |                           | ⚠️     |                                                           |
 |                                   | `changeStreamPreAndPostImages` |                           | ⚠️     |                                                           |
-| `compact`                         |                                |                           | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/3466) |
-|                                   | `force`                        |                           | ⚠️     |                                                           |
+| `compact`                         |                                |                           | ✅     |                                                           |
+|                                   | `force`                        |                           | ✅     |                                                           |
 |                                   | `comment`                      |                           | ⚠️     |                                                           |
 | `compactStructuredEncryptionData` |                                |                           | ❌     |                                                           |
 |                                   | `compactionTokens`             |                           | ⚠️     |                                                           |
@@ -676,51 +676,52 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/1917).
 
 ## Diagnostic commands
 
-| Command              | Argument         | Status | Comments                         |
-| -------------------- | ---------------- | ------ | -------------------------------- |
-| `buildInfo`          |                  | ✅     | Basic command is fully supported |
-| `collStats`          |                  | ✅     | Basic command is fully supported |
-|                      | `collStats`      | ✅     |                                  |
-|                      | `scale`          | ✅     |                                  |
-| `connPoolStats`      |                  | ❌     | Unimplemented                    |
-| `connectionStatus`   |                  | ✅     | Basic command is fully supported |
-|                      | `showPrivileges` | ✅     |                                  |
-| `dataSize`           |                  | ✅     | Basic command is fully supported |
-|                      | `keyPattern`     | ⚠️     | Unimplemented                    |
-|                      | `min`            | ⚠️     | Unimplemented                    |
-|                      | `max`            | ⚠️     | Unimplemented                    |
-|                      | `estimate`       | ⚠️     | Ignored                          |
-| `dbHash`             |                  | ❌     | Unimplemented                    |
-|                      | `collection`     | ⚠️     |                                  |
-| `dbStats`            |                  | ✅     | Basic command is fully supported |
-|                      | `scale`          | ✅     |                                  |
-|                      | `freeStorage`    | ⚠️     | Unimplemented                    |
-| `driverOIDTest`      |                  | ⚠️     | Unimplemented                    |
-| `explain`            |                  | ✅     | Basic command is fully supported |
-|                      | `verbosity`      | ⚠️     | Ignored                          |
-|                      | `comment`        | ⚠️     | Unimplemented                    |
-| `features`           |                  | ❌     | Unimplemented                    |
-| `getCmdLineOpts`     |                  | ✅     | Basic command is fully supported |
-| `getLog`             |                  | ✅     | Basic command is fully supported |
-| `hostInfo`           |                  | ✅     | Basic command is fully supported |
-| `_isSelf`            |                  | ❌     | Unimplemented                    |
-| `listCommands`       |                  | ✅     | Basic command is fully supported |
-| `lockInfo`           |                  | ❌     | Unimplemented                    |
-| `netstat`            |                  | ❌     | Unimplemented                    |
-| `ping`               |                  | ✅     | Basic command is fully supported |
-| `profile`            |                  | ❌     | Unimplemented                    |
-|                      | `slowms`         | ⚠️     |                                  |
-|                      | `sampleRate`     | ⚠️     |                                  |
-|                      | `filter`         | ⚠️     |                                  |
-| `serverStatus`       |                  | ✅     | Basic command is fully supported |
-| `shardConnPoolStats` |                  | ❌     | Unimplemented                    |
-| `top`                |                  | ❌     | Unimplemented                    |
-| `validate`           |                  | ❌     | Unimplemented                    |
-|                      | `full`           | ⚠️     |                                  |
-|                      | `repair`         | ⚠️     |                                  |
-|                      | `metadata`       | ⚠️     |                                  |
-| `validateDBMetadata` |                  | ❌     | Unimplemented                    |
-|                      | `apiParameters`  | ⚠️     |                                  |
-|                      | `db`             | ⚠️     |                                  |
-|                      | `collections`    | ⚠️     |                                  |
-| `whatsmyuri`         |                  | ✅     | Basic command is fully supported |
+| Command              | Argument               | Status | Comments                         |
+| -------------------- | ---------------------- | ------ | -------------------------------- |
+| `buildInfo`          |                        | ✅     | Basic command is fully supported |
+| `collStats`          |                        | ✅     | Basic command is fully supported |
+|                      | `collStats`            | ✅     |                                  |
+|                      | `scale`                | ✅     |                                  |
+| `connPoolStats`      |                        | ❌     | Unimplemented                    |
+| `connectionStatus`   |                        | ✅     | Basic command is fully supported |
+|                      | `showPrivileges`       | ✅     |                                  |
+| `dataSize`           |                        | ✅     | Basic command is fully supported |
+|                      | `keyPattern`           | ⚠️     | Unimplemented                    |
+|                      | `min`                  | ⚠️     | Unimplemented                    |
+|                      | `max`                  | ⚠️     | Unimplemented                    |
+|                      | `estimate`             | ⚠️     | Ignored                          |
+| `dbHash`             |                        | ❌     | Unimplemented                    |
+|                      | `collection`           | ⚠️     |                                  |
+| `dbStats`            |                        | ✅     | Basic command is fully supported |
+|                      | `scale`                | ✅     |                                  |
+|                      | `freeStorage`          | ⚠️     | Unimplemented                    |
+| `driverOIDTest`      |                        | ⚠️     | Unimplemented                    |
+| `explain`            |                        | ✅     | Basic command is fully supported |
+|                      | `verbosity`            | ⚠️     | Ignored                          |
+|                      | `comment`              | ⚠️     | Unimplemented                    |
+| `features`           |                        | ❌     | Unimplemented                    |
+| `getCmdLineOpts`     |                        | ✅     | Basic command is fully supported |
+| `getLog`             |                        | ✅     | Basic command is fully supported |
+| `hostInfo`           |                        | ✅     | Basic command is fully supported |
+| `_isSelf`            |                        | ❌     | Unimplemented                    |
+| `listCommands`       |                        | ✅     | Basic command is fully supported |
+| `lockInfo`           |                        | ❌     | Unimplemented                    |
+| `netstat`            |                        | ❌     | Unimplemented                    |
+| `ping`               |                        | ✅     | Basic command is fully supported |
+| `profile`            |                        | ❌     | Unimplemented                    |
+|                      | `slowms`               | ⚠️     |                                  |
+|                      | `sampleRate`           | ⚠️     |                                  |
+|                      | `filter`               | ⚠️     |                                  |
+| `serverStatus`       |                        | ✅     | Basic command is fully supported |
+| `shardConnPoolStats` |                        | ❌     | Unimplemented                    |
+| `top`                |                        | ❌     | Unimplemented                    |
+| `validate`           |                        | ✅     | Basic command is fully supported |
+|                      | `full`                 | ⚠️     |                                  |
+|                      | `repair`               | ⚠️     |                                  |
+|                      | `metadata`             | ⚠️     |                                  |
+|                      | `checkBSONConformance` | ⚠️     |                                  |
+| `validateDBMetadata` |                        | ❌     | Unimplemented                    |
+|                      | `apiParameters`        | ⚠️     |                                  |
+|                      | `db`                   | ⚠️     |                                  |
+|                      | `collections`          | ⚠️     |                                  |
+| `whatsmyuri`         |                        | ✅     | Basic command is fully supported |

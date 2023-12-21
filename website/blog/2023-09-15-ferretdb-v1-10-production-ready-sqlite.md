@@ -100,4 +100,4 @@ we are counting on the open-source [community](https://docs.ferretdb.io/#communi
 create support for MySQL and other backends.
 
 You can always see what else we have planned in our [public roadmap](https://github.com/orgs/FerretDB/projects/2/views/1).
-And if you want to contribute – [you are more than welcome](https://docs.ferretdb.io/contributing/)!
+And if you want to contribute – [you are more than welcome](https://docs.ferretdb.io/contributing/how-to-contribute//)!

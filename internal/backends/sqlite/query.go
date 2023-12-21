@@ -20,6 +20,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // prepareSelectClause returns SELECT clause for default column of provided table name.
@@ -45,14 +46,26 @@ func prepareSelectClause(table, comment string, capped, onlyRecordIDs bool) stri
 	return fmt.Sprintf(`SELECT %s %s FROM %q`, comment, metadata.DefaultColumn, table)
 }
 
-// prepareOrderByClause returns ORDER BY clause for given sort document and returns.
+// prepareOrderByClause returns ORDER BY clause for given sort document.
 //
-// For capped collection, it returns ORDER BY recordID only if sort field is nil.
-func prepareOrderByClause(sort *types.Document, capped bool) string {
-	if sort.Len() == 0 && capped {
-		return fmt.Sprintf(` ORDER BY %s`, metadata.RecordIDColumn)
+// The provided sort document should be already validated.
+// Provided document should only contain a single value.
+func prepareOrderByClause(sort *types.Document) string {
+	if sort.Len() != 1 {
+		return ""
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3181
-	return ""
+	v := must.NotFail(sort.Get("$natural"))
+	var order string
+
+	switch v.(int64) {
+	case 1:
+		// Ascending order
+	case -1:
+		order = " DESC"
+	default:
+		panic("not reachable")
+	}
+
+	return fmt.Sprintf(" ORDER BY %s%s", metadata.RecordIDColumn, order)
 }

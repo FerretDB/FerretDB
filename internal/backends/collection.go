@@ -17,13 +17,10 @@ package backends
 import (
 	"cmp"
 	"context"
-	"errors"
 	"slices"
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
@@ -76,9 +73,10 @@ func CollectionContract(c Collection) Collection {
 
 // QueryParams represents the parameters of Collection.Query method.
 type QueryParams struct {
-	Filter        *types.Document
-	Sort          *types.Document
-	Limit         int64
+	Filter *types.Document
+	Sort   *types.Document
+	Limit  int64
+
 	OnlyRecordIDs bool
 	Comment       string
 }
@@ -96,7 +94,14 @@ type QueryResult struct {
 // It also can be used to close the returned iterator and free underlying resources,
 // but doing so is not necessary - the handler will do that anyway.
 //
-// Passed sort document should be already validated. If sort document is invalid, function panics.
+// Filter may be ignored, or safely applied partially or entirely.
+// Extra documents will be filtered out by the handler.
+//
+// Sort should have one of the following forms: nil, {}, {"$natural": int64(1)} or {"$natural": int64(-1)}.
+// Other field names are not supported.
+// If non-empty, it should be applied.
+//
+// Limit, if non-zero, should be applied.
 func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*QueryResult, error) {
 	defer observability.FuncCall(ctx)()
 
@@ -105,24 +110,11 @@ func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*
 	}
 
 	if params.Sort.Len() != 0 {
-		iter := params.Sort.Iterator()
-		defer iter.Close()
+		must.BeTrue(params.Sort.Len() == 1)
+		sortValue := params.Sort.Map()["$natural"].(int64)
 
-		for {
-			_, v, err := iter.Next()
-			if err != nil {
-				if errors.Is(err, iterator.ErrIteratorDone) {
-					break
-				}
-
-				return nil, lazyerrors.Error(err)
-			}
-
-			sortValue := v.(int64)
-
-			if sortValue != -1 && sortValue != 1 {
-				panic("sort key ordering must be 1 (for ascending) or -1 (for descending)")
-			}
+		if sortValue != -1 && sortValue != 1 {
+			panic("sort value must be 1 (for ascending) or -1 (for descending)")
 		}
 	}
 
@@ -166,24 +158,11 @@ func (cc *collectionContract) Explain(ctx context.Context, params *ExplainParams
 	}
 
 	if params.Sort.Len() != 0 {
-		iter := params.Sort.Iterator()
-		defer iter.Close()
+		must.BeTrue(params.Sort.Len() == 1)
+		sortValue := params.Sort.Map()["$natural"].(int64)
 
-		for {
-			_, v, err := iter.Next()
-			if err != nil {
-				if errors.Is(err, iterator.ErrIteratorDone) {
-					break
-				}
-
-				return nil, lazyerrors.Error(err)
-			}
-
-			sortValue := v.(int64)
-
-			if sortValue != -1 && sortValue != 1 {
-				panic("sort key ordering must be 1 (for ascending) or -1 (for descending)")
-			}
+		if sortValue != -1 && sortValue != 1 {
+			panic("sort value must be 1 (for ascending) or -1 (for descending)")
 		}
 	}
 

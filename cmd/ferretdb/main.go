@@ -38,6 +38,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handler/registry"
+	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
@@ -50,8 +51,6 @@ import (
 // It's used for parsing the user input.
 //
 // Keep order in sync with documentation.
-//
-//nolint:lll // some tags are long
 var cli struct {
 	Version  bool   `default:"false"           help:"Print version to stdout and exit." env:"-"`
 	Handler  string `default:"postgresql"      help:"${help_handler}"`
@@ -92,11 +91,15 @@ var cli struct {
 	Test struct {
 		RecordsDir string `default:"" help:"Testing: directory for record files."`
 
-		DisableFilterPushdown bool `default:"false" help:"Experimental: disable filter pushdown."`
-		EnableOplog           bool `default:"false" help:"Experimental: enable capped collections, tailable cursors and OpLog." hidden:""`
-		EnableNewAuth         bool `default:"false" help:"Experimental: enable new authentication."                             hidden:""`
+		DisablePushdown bool `default:"false" help:"Experimental: disable pushdown."`
 
-		//nolint:lll // for readability
+		CappedCleanup struct {
+			Interval   time.Duration `default:"1m" help:"Experimental: capped collections cleanup interval." hidden:""`
+			Percentage uint8         `default:"10" help:"Experimental: percentage of documents to cleanup."  hidden:""`
+		} `embed:"" prefix:"capped-cleanup-"`
+
+		EnableNewAuth bool `default:"false" help:"Experimental: enable new authentication." hidden:""`
+
 		Telemetry struct {
 			URL            string        `default:"https://beacon.ferretdb.io/" help:"Telemetry: reporting URL."`
 			UndecidedDelay time.Duration `default:"1h"                          help:"Telemetry: delay for undecided state."`
@@ -339,7 +342,7 @@ func run() {
 		logger.Sugar().Warnf("Failed to set GOMAXPROCS: %s.", err)
 	}
 
-	ctx, stop := notifyAppTermination(context.Background())
+	ctx, stop := ctxutil.SigTerm(context.Background())
 
 	go func() {
 		<-ctx.Done()
@@ -396,9 +399,10 @@ func run() {
 		MySQLURL: mySQLFlags.MySQLURL,
 
 		TestOpts: registry.TestOpts{
-			DisableFilterPushdown: cli.Test.DisableFilterPushdown,
-			EnableOplog:           cli.Test.EnableOplog,
-			EnableNewAuth:         cli.Test.EnableNewAuth,
+			DisablePushdown:         cli.Test.DisablePushdown,
+			CappedCleanupInterval:   cli.Test.CappedCleanup.Interval,
+			CappedCleanupPercentage: cli.Test.CappedCleanup.Percentage,
+			EnableNewAuth:           cli.Test.EnableNewAuth,
 		},
 	})
 	if err != nil {

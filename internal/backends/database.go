@@ -89,6 +89,7 @@ type ListCollectionsResult struct {
 // CollectionInfo represents information about a single collection.
 type CollectionInfo struct {
 	Name            string
+	UUID            string
 	CappedSize      int64
 	CappedDocuments int64
 	_               struct{} // prevent unkeyed literals
@@ -145,7 +146,6 @@ func (dbc *databaseContract) CreateCollection(ctx context.Context, params *Creat
 	defer observability.FuncCall(ctx)()
 
 	must.BeTrue(params.CappedSize >= 0)
-	must.BeTrue(params.CappedSize%256 == 0)
 	must.BeTrue(params.CappedDocuments >= 0)
 
 	err := validateCollectionName(params.Name)

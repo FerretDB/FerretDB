@@ -23,6 +23,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
@@ -144,8 +145,8 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 	// Use ExtractParam.
 	// TODO https://github.com/FerretDB/FerretDB/issues/2859
-	cursor := h.cursors.Get(cursorID)
-	if cursor == nil || cursor.Username != username {
+	c := h.cursors.Get(cursorID)
+	if c == nil || c.Username != username {
 		return nil, handlererrors.NewCommandErrorMsgWithArgument(
 			handlererrors.ErrCursorNotFound,
 			fmt.Sprintf("cursor id %d not found", cursorID),
@@ -167,39 +168,68 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, err
 	}
 
-	if cursor.DB != db || cursor.Collection != collection {
+	if c.DB != db || c.Collection != collection {
 		return nil, handlererrors.NewCommandErrorMsgWithArgument(
 			handlererrors.ErrUnauthorized,
 			fmt.Sprintf(
 				"Requested getMore on namespace '%s.%s', but cursor belongs to a different namespace %s.%s",
 				db,
 				collection,
-				cursor.DB,
-				cursor.Collection,
+				c.DB,
+				c.Collection,
 			),
 			document.Command(),
 		)
 	}
 
-	nextBatchDocs, err := iterator.ConsumeValuesN(cursor, int(batchSize))
+	nextBatch, err := h.makeNextBatch(c, batchSize)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	h.L.Debug(
-		"Got next batch", zap.Int64("cursor_id", cursorID),
-		zap.Int("count", len(nextBatchDocs)), zap.Int64("batch_size", batchSize),
-	)
+	switch c.Type {
+	case cursor.Normal:
+		if nextBatch.Len() < int(batchSize) {
+			// The cursor is already closed and removed;
+			// let the client know that there are no more results.
+			cursorID = 0
+		}
 
-	nextBatch := types.MakeArray(len(nextBatchDocs))
-	for _, doc := range nextBatchDocs {
-		nextBatch.Append(doc)
-	}
+	case cursor.Tailable:
+		if nextBatch.Len() < int(batchSize) {
+			// The previous iterator is already closed there.
 
-	if nextBatch.Len() < int(batchSize) {
-		// Cursor ID 0 lets the client know that there are no more results.
-		// Cursor is already closed and removed from the registry by this point.
-		cursorID = 0
+			data := c.Data.(*findCursorData)
+
+			queryRes, err := data.coll.Query(ctx, data.qp)
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
+			closer := iterator.NewMultiCloser()
+
+			iter, err := h.makeFindIter(queryRes.Iter, closer, data.findParams)
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
+			if err = c.Reset(iter); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
+			if nextBatch.Len() == 0 {
+				nextBatch, err = h.makeNextBatch(c, batchSize)
+				if err != nil {
+					return nil, lazyerrors.Error(err)
+				}
+			}
+		}
+
+	case cursor.TailableAwait:
+		panic("not supported yet")
+
+	default:
+		panic(fmt.Sprintf("unknown cursor type %s", c.Type))
 	}
 
 	var reply wire.OpMsg
@@ -215,4 +245,24 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	}))
 
 	return &reply, nil
+}
+
+// makeNextBatch returns the next batch of documents from the cursor.
+func (h *Handler) makeNextBatch(c *cursor.Cursor, batchSize int64) (*types.Array, error) {
+	docs, err := iterator.ConsumeValuesN(c, int(batchSize))
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	h.L.Debug(
+		"Got next batch", zap.Int64("cursor_id", c.ID), zap.Stringer("type", c.Type),
+		zap.Int("count", len(docs)), zap.Int64("batch_size", batchSize),
+	)
+
+	nextBatch := types.MakeArray(len(docs))
+	for _, doc := range docs {
+		nextBatch.Append(doc)
+	}
+
+	return nextBatch, nil
 }

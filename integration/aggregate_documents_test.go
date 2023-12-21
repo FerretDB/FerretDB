@@ -986,8 +986,9 @@ func TestAggregateCommandMaxTimeMSErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "9223372036854775807 value for maxTimeMS is out of range",
+				Message: "9223372036854775807 value for maxTimeMS is out of range " + shareddata.Int32Interval,
 			},
+			altMessage: "9223372036854775807 value for maxTimeMS is out of range",
 		},
 		"Double": {
 			command: bson.D{
@@ -1026,7 +1027,7 @@ func TestAggregateCommandMaxTimeMSErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "9223372036854775807 value for maxTimeMS is out of range",
+				Message: "9223372036854775807 value for maxTimeMS is out of range " + shareddata.Int32Interval,
 			},
 			altMessage: "1.797693134862316e+308 value for maxTimeMS is out of range",
 		},
@@ -1067,8 +1068,9 @@ func TestAggregateCommandMaxTimeMSErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "2147483648 value for maxTimeMS is out of range",
+				Message: "2147483648 value for maxTimeMS is out of range " + shareddata.Int32Interval,
 			},
+			altMessage: "2147483648 value for maxTimeMS is out of range",
 		},
 		"Null": {
 			command: bson.D{
@@ -1150,7 +1152,7 @@ func TestAggregateCommandCursor(t *testing.T) {
 
 	// the number of documents is set above the default batchSize of 101
 	// for testing unset batchSize returning default batchSize
-	arr, _ := generateDocuments(0, 110)
+	arr, _ := GenerateDocuments(0, 110)
 	_, err := collection.InsertMany(ctx, arr)
 	require.NoError(t, err)
 

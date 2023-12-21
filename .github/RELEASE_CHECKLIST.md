@@ -13,8 +13,11 @@
    - Sort items within sections according to importance and/or alphabetically.
 6. Update CHANGELOG.md with the same release notes:
    - Check spacing, header levels.
-   - Run `task docs-fmt`.
-7. Commit and push changes, check `git status`.
+7. Run `task docs-version VERSION=X.Y`.
+   Update `versions` in `docusaurus.config.js`.
+   Remove the oldest version from `versioned_docs`, `versioned_sidebars`, `versions.json`.
+8. Run `task docs-fmt`.
+9. Commit and push changes, check `git status`.
 
 ## Git tag
 
@@ -22,8 +25,8 @@
 2. Check `task gen-version; git status` output.
 3. Push it!
 4. Refresh
-   - `env GOPROXY=https://proxy.golang.org go mod download -x github.com/FerretDB/FerretDB@<tag>`
-   - `https://pkg.go.dev/github.com/FerretDB/FerretDB@<tag>` from <https://pkg.go.dev/github.com/FerretDB/FerretDB?tab=versions>
+   - `env GOPROXY=https://proxy.golang.org go mod download -x github.com/FerretDB/FerretDB@<vX.Y.Z>`
+   - `https://pkg.go.dev/github.com/FerretDB/FerretDB@<vX.Y.Z>` from https://pkg.go.dev/github.com/FerretDB/FerretDB?tab=versions.
 
 ## Release
 
@@ -32,15 +35,15 @@
    to finish.
 3. Upload binaries and packages to the draft release.
 4. Check:
-   - <https://hub.docker.com/r/ferretdb/ferretdb/tags>
-   - <https://hub.docker.com/r/ferretdb/ferretdb-dev/tags>
-   - <https://hub.docker.com/r/ferretdb/all-in-one/tags>
-   - <https://github.com/FerretDB/FerretDB/pkgs/container/ferretdb>
-   - <https://github.com/FerretDB/FerretDB/pkgs/container/ferretdb-dev>
-   - <https://github.com/FerretDB/FerretDB/pkgs/container/all-in-one>
-   - <https://quay.io/repository/ferretdb/ferretdb?tab=tags>
-   - <https://quay.io/repository/ferretdb/ferretdb-dev?tab=tags>
-   - <https://quay.io/repository/ferretdb/all-in-one?tab=tags>
+   - https://hub.docker.com/r/ferretdb/ferretdb/tags
+   - https://hub.docker.com/r/ferretdb/ferretdb-dev/tags
+   - https://hub.docker.com/r/ferretdb/all-in-one/tags
+   - https://github.com/FerretDB/FerretDB/pkgs/container/ferretdb
+   - https://github.com/FerretDB/FerretDB/pkgs/container/ferretdb-dev
+   - https://github.com/FerretDB/FerretDB/pkgs/container/all-in-one
+   - https://quay.io/repository/ferretdb/ferretdb?tab=tags
+   - https://quay.io/repository/ferretdb/ferretdb-dev?tab=tags
+   - https://quay.io/repository/ferretdb/all-in-one?tab=tags
 5. Close milestone in issues.
 6. Publish release on GitHub.
 7. Announce it on Slack.
@@ -50,5 +53,5 @@
 1. Bump the latest version on [Beacon](https://beacon.ferretdb.io).
 2. Publish and announce blog post.
 3. Tweet, toot.
-4. Update NixOS package: <https://github.com/NixOS/nixpkgs/tree/master/pkgs/servers/nosql/ferretdb>.
-5. Update Civo package: <https://github.com/civo/kubernetes-marketplace/tree/master/ferretdb>.
+4. Update NixOS package: https://github.com/NixOS/nixpkgs/tree/master/pkgs/servers/nosql/ferretdb.
+5. Update Civo package: https://github.com/civo/kubernetes-marketplace/tree/master/ferretdb.

@@ -17,6 +17,7 @@ package registry
 
 import (
 	"fmt"
+	"time"
 
 	"go.uber.org/zap"
 
@@ -57,13 +58,17 @@ type NewHandlerOpts struct {
 	MySQLURL string
 
 	TestOpts
+
+	_ struct{} // prevent unkeyed literals
 }
 
 // TestOpts represents experimental configuration options.
 type TestOpts struct {
-	DisableFilterPushdown bool
-	EnableOplog           bool
-	EnableNewAuth         bool
+	DisablePushdown         bool
+	CappedCleanupInterval   time.Duration
+	CappedCleanupPercentage uint8
+	EnableNewAuth           bool
+	_                       struct{} // prevent unkeyed literals
 }
 
 // NewHandler constructs a new handler.
