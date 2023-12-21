@@ -40,13 +40,20 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
+var (
+	graphicsPath  = "/debug/graphs"
+	metricsPath   = "/debug/metrics"
+	archivePath   = "/debug/archive"
+	pprofPath     = "/debug/pprof"
+	varsPath      = "/debug/vars"
+	debugFileName = "debug_data.zip"
+)
+
 // RunHandler runs debug handler.
 func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *zap.Logger) {
 	var (
-		responses   map[string][]byte
-		err         error
-		metricsPath = "/debug/metrics"
-		pprofPath   = "/debug/pprof"
+		responses map[string][]byte
+		err       error
 	)
 
 	stdL := must.NotFail(zap.NewStdLogAt(l, zap.WarnLevel))
@@ -66,7 +73,7 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 	}
 	must.NoError(statsviz.Register(http.DefaultServeMux, opts...))
 
-	http.HandleFunc("/debug/archive", func(rw http.ResponseWriter, req *http.Request) {
+	http.HandleFunc(archivePath, func(rw http.ResponseWriter, req *http.Request) {
 		var u url.URL
 		u.Path = metricsPath
 		u.Host = req.Host
@@ -74,6 +81,7 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 
 		responses[metricsPath], err = performRequest(u)
 		if err != nil {
+			l.Error("could not fetch metrics")
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -83,35 +91,38 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 		u.Scheme = req.URL.Scheme
 		responses[pprofPath], err = performRequest(u)
 		if err != nil {
+			l.Error("could not fetch pprof")
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		rw.Header().Set("Content-Type", "application/zip")
-		rw.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", "debug_data.zip"))
+		rw.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", debugFileName))
 
 		zipWriter := zip.NewWriter(rw)
 		defer zipWriter.Close()
 
-		fileWriter, err := zipWriter.Create("my_file.txt") // Set the desired filename
+		fileWriter, err := zipWriter.Create("metrics.txt") // Set the desired filename
 		if err != nil {
+			l.Error("could not create metrics.txt in zip")
 			// Handle error
 		}
-
 		_, err = io.Copy(fileWriter, bytes.NewReader(responses[metricsPath]))
 		if err != nil {
+			l.Error("could not copy metrics.txt in zip")
 			// Handle error
 		}
 	})
 
 	handlers := map[string]string{
 		// custom handlers registered above
-		"/debug/graphs": "Visualize metrics",
-		metricsPath:     "Metrics in Prometheus format",
+		graphicsPath: "Visualize metrics",
+		metricsPath:  "Metrics in Prometheus format",
+		archivePath:  "Metrics and pprof data in zip format",
 
 		// stdlib handlers
-		"/debug/vars": "Expvar package metrics",
-		pprofPath:     "Runtime profiling data for pprof",
+		varsPath:  "Expvar package metrics",
+		pprofPath: "Runtime profiling data for pprof",
 	}
 
 	var page bytes.Buffer
