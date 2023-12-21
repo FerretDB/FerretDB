@@ -170,9 +170,10 @@ func setupMySQL(ctx context.Context, logger *zap.SugaredLogger) error {
 	for ctx.Err() == nil {
 		db, err := p.Get("root", "password")
 		if err == nil {
-			if _, rowErr := db.QueryContext(ctx, "GRANT ALL PRIVILEGES ON *.* TO 'username'@'%';"); rowErr != nil {
+			if _, err = db.ExecContext(ctx, "GRANT ALL PRIVILEGES ON *.* TO 'username'@'%';"); err != nil {
 				return lazyerrors.Error(err)
 			}
+
 			break
 		}
 
@@ -429,6 +430,7 @@ var cli struct {
 			ShardIndex uint   `help:"Shard index, starting from 1."`
 			ShardTotal uint   `help:"Total number of shards."`
 			Run        string `help:"Run only tests matching the regexp."`
+			Skip       string `help:"Skip tests matching the regexp."`
 
 			Args []string `arg:"" help:"Other arguments and flags for 'go test'." passthrough:""`
 		} `cmd:"" help:"Run tests."`
@@ -524,7 +526,7 @@ func main() {
 		err = testsRun(
 			ctx,
 			cli.Tests.Run.ShardIndex, cli.Tests.Run.ShardTotal,
-			cli.Tests.Run.Run, cli.Tests.Run.Args,
+			cli.Tests.Run.Run, cli.Tests.Run.Skip, cli.Tests.Run.Args,
 			logger,
 		)
 

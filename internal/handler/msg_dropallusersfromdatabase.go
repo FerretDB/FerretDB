@@ -34,7 +34,6 @@ func (h *Handler) MsgDropAllUsersFromDatabase(ctx context.Context, msg *wire.OpM
 		return nil, lazyerrors.Error(err)
 	}
 
-	// NOTE: In MongoDB, the comment field isn't saved in the database, but used for log and profiling.
 	common.Ignored(document, h.L, "writeConcern", "comment")
 
 	dbName, err := common.GetRequiredParam[string](document, "$db")
@@ -54,14 +53,13 @@ func (h *Handler) MsgDropAllUsersFromDatabase(ctx context.Context, msg *wire.OpM
 	}
 
 	qr, err := users.Query(ctx, &backends.QueryParams{
-		Filter:        must.NotFail(types.NewDocument("db", dbName)),
-		OnlyRecordIDs: true,
+		Filter: must.NotFail(types.NewDocument("db", dbName)),
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	var ids []int64
+	var ids []any
 
 	defer qr.Iter.Close()
 
@@ -69,17 +67,15 @@ func (h *Handler) MsgDropAllUsersFromDatabase(ctx context.Context, msg *wire.OpM
 		_, v, err := qr.Iter.Next()
 		if errors.Is(err, iterator.ErrIteratorDone) {
 			break
-		} else if err != nil {
-			return nil, lazyerrors.Error(err)
 		}
-		ids = append(ids, v.RecordID())
+		ids = append(ids, must.NotFail(v.Get("_id")))
 	}
 
 	var deleted int32
 
 	if len(ids) > 0 {
 		res, err := users.DeleteAll(ctx, &backends.DeleteAllParams{
-			RecordIDs: ids,
+			IDs: ids,
 		})
 		if err != nil {
 			return nil, lazyerrors.Error(err)
