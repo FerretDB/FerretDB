@@ -16,14 +16,17 @@
 package debug
 
 import (
+	"archive/zip"
 	"bytes"
 	"context"
 	"errors"
 	_ "expvar" // for metrics
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	_ "net/http/pprof" // for profiling
+	"net/url"
 	"slices"
 	"text/template"
 	"time"
@@ -39,9 +42,16 @@ import (
 
 // RunHandler runs debug handler.
 func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *zap.Logger) {
+	var (
+		responses   map[string][]byte
+		err         error
+		metricsPath = "/debug/metrics"
+		pprofPath   = "/debug/pprof"
+	)
+
 	stdL := must.NotFail(zap.NewStdLogAt(l, zap.WarnLevel))
 
-	http.Handle("/debug/metrics", promhttp.InstrumentMetricHandler(
+	http.Handle(metricsPath, promhttp.InstrumentMetricHandler(
 		r, promhttp.HandlerFor(prometheus.DefaultGatherer, promhttp.HandlerOpts{
 			ErrorLog:          stdL,
 			ErrorHandling:     promhttp.ContinueOnError,
@@ -56,14 +66,52 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 	}
 	must.NoError(statsviz.Register(http.DefaultServeMux, opts...))
 
+	http.HandleFunc("/debug/archive", func(rw http.ResponseWriter, req *http.Request) {
+		var u url.URL
+		u.Path = metricsPath
+		u.Host = req.Host
+		u.Scheme = req.URL.Scheme
+
+		responses[metricsPath], err = performRequest(u)
+		if err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		u.Path = pprofPath
+		u.Host = req.Host
+		u.Scheme = req.URL.Scheme
+		responses[pprofPath], err = performRequest(u)
+		if err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		rw.Header().Set("Content-Type", "application/zip")
+		rw.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", "debug_data.zip"))
+
+		zipWriter := zip.NewWriter(rw)
+		defer zipWriter.Close()
+
+		fileWriter, err := zipWriter.Create("my_file.txt") // Set the desired filename
+		if err != nil {
+			// Handle error
+		}
+
+		_, err = io.Copy(fileWriter, bytes.NewReader(responses[metricsPath]))
+		if err != nil {
+			// Handle error
+		}
+	})
+
 	handlers := map[string]string{
 		// custom handlers registered above
-		"/debug/graphs":  "Visualize metrics",
-		"/debug/metrics": "Metrics in Prometheus format",
+		"/debug/graphs": "Visualize metrics",
+		metricsPath:     "Metrics in Prometheus format",
 
 		// stdlib handlers
-		"/debug/vars":  "Expvar package metrics",
-		"/debug/pprof": "Runtime profiling data for pprof",
+		"/debug/vars": "Expvar package metrics",
+		pprofPath:     "Runtime profiling data for pprof",
 	}
 
 	var page bytes.Buffer
@@ -122,4 +170,29 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 
 	s.Close()
 	l.Sugar().Info("Debug server stopped.")
+}
+
+func performRequest(u url.URL) ([]byte, error) {
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Accept", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	// Handle response (e.g., read response body)
+	defer resp.Body.Close() // Close response body
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("Error reading response body:", err)
+		return nil, err
+	}
+	return body, nil
 }
