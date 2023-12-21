@@ -34,5 +34,8 @@
                 }
             ]
         }
+    },
+    "filters": {
+        "comments": true
     }
 }

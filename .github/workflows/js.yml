@@ -92,7 +92,7 @@ jobs:
 
       - name: Upload FerretDB log
         if: failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ferretdb-log
           path: ferretdb-log.zip

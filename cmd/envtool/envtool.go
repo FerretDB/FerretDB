@@ -38,6 +38,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"github.com/FerretDB/FerretDB/build/version"
+	mysqlpool "github.com/FerretDB/FerretDB/internal/backends/mysql/metadata/pool"
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata/pool"
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
@@ -147,32 +148,46 @@ func setupPostgresSecured(ctx context.Context, logger *zap.SugaredLogger) error 
 
 // setupMySQL configures `mysql` container.
 func setupMySQL(ctx context.Context, logger *zap.SugaredLogger) error {
+	uri := "mysql://root:password@127.0.0.1:3306/ferretdb"
+
+	sp, err := state.NewProvider("")
+	if err != nil {
+		return err
+	}
+
 	if err := waitForPort(ctx, logger.Named("mysql"), 3306); err != nil {
 		return err
 	}
 
-	// we should replace with backend code similar to setupAnyPostgres
-	eval := "mysql -u root -ppassword -e \"GRANT ALL PRIVILEGES ON *.* TO 'username'@'%';\""
-	args := []string{"compose", "exec", "-T", "mysql", "bash", "-c", eval}
+	p, err := mysqlpool.New(uri, logger.Desugar(), sp)
+	if err != nil {
+		return err
+	}
 
-	var buf bytes.Buffer
+	defer p.Close()
+
 	var retry int64
-
 	for ctx.Err() == nil {
-		buf.Reset()
-
-		err := runCommand("docker", args, &buf, logger)
+		db, err := p.Get("root", "password")
 		if err == nil {
+			if _, err = db.ExecContext(ctx, "GRANT ALL PRIVILEGES ON *.* TO 'username'@'%';"); err != nil {
+				return lazyerrors.Error(err)
+			}
+
 			break
 		}
 
-		logger.Infof("%s:\n%s", err, buf.String())
+		logger.Infof("%s: %s", uri, err)
 
 		retry++
 		ctxutil.SleepWithJitter(ctx, time.Second, retry)
 	}
 
-	return ctx.Err()
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
+	return nil
 }
 
 // setupMongodb configures `mongodb` container.
@@ -415,6 +430,7 @@ var cli struct {
 			ShardIndex uint   `help:"Shard index, starting from 1."`
 			ShardTotal uint   `help:"Total number of shards."`
 			Run        string `help:"Run only tests matching the regexp."`
+			Skip       string `help:"Skip tests matching the regexp."`
 
 			Args []string `arg:"" help:"Other arguments and flags for 'go test'." passthrough:""`
 		} `cmd:"" help:"Run tests."`
@@ -510,7 +526,7 @@ func main() {
 		err = testsRun(
 			ctx,
 			cli.Tests.Run.ShardIndex, cli.Tests.Run.ShardTotal,
-			cli.Tests.Run.Run, cli.Tests.Run.Args,
+			cli.Tests.Run.Run, cli.Tests.Run.Skip, cli.Tests.Run.Args,
 			logger,
 		)
 

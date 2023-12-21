@@ -288,6 +288,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		var cList *backends.ListCollectionsResult
 
 		if cList, err = db.ListCollections(ctx, nil); err != nil {
+			closer.Close()
 			return nil, err
 		}
 
@@ -312,6 +313,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			}
 
 			if !cInfo.Capped() {
+				closer.Close()
 				return nil, handlererrors.NewCommandErrorMsgWithArgument(
 					handlererrors.ErrNotImplemented,
 					"$natural sort for non-capped collection is not supported.",
@@ -343,22 +345,23 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		DB:         dbName,
 		Collection: cName,
 		Username:   username,
+		Type:       cursor.Normal,
 	})
 
 	cursorID := cursor.ID
 
-	firstBatchDocs, err := iterator.ConsumeValuesN(cursor, int(batchSize))
+	docs, err := iterator.ConsumeValuesN(cursor, int(batchSize))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	h.L.Debug(
-		"Got first batch", zap.Int64("cursor_id", cursorID),
-		zap.Int("count", len(firstBatchDocs)), zap.Int64("batch_size", batchSize),
+		"Got first batch", zap.Int64("cursor_id", cursorID), zap.Stringer("type", cursor.Type),
+		zap.Int("count", len(docs)), zap.Int64("batch_size", batchSize),
 	)
 
-	firstBatch := types.MakeArray(len(firstBatchDocs))
-	for _, doc := range firstBatchDocs {
+	firstBatch := types.MakeArray(len(docs))
+	for _, doc := range docs {
 		firstBatch.Append(doc)
 	}
 

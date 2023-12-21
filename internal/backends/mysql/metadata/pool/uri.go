@@ -16,7 +16,7 @@ package pool
 
 import (
 	"net/url"
-	"path"
+	"strings"
 
 	"github.com/go-sql-driver/mysql"
 )
@@ -36,8 +36,6 @@ func parseURI(uri string) (string, error) {
 	username := u.User.Username()
 	password, _ := u.User.Password()
 
-	dbName := path.Clean(u.Path)
-
 	values := u.Query()
 	params := make(map[string]string, len(values))
 
@@ -52,7 +50,7 @@ func parseURI(uri string) (string, error) {
 		Passwd: password,
 		Net:    "tcp",
 		Addr:   u.Host,
-		DBName: dbName,
+		DBName: strings.TrimPrefix(u.Path, "/"),
 		Params: params,
 	}
 	mysqlURL := cfg.FormatDSN()
