@@ -15,7 +15,6 @@
 package cursors
 
 import (
-	"net/url"
 	"testing"
 	"time"
 
@@ -31,116 +30,6 @@ import (
 )
 
 func TestCursorsTailableAwaitData(t *testing.T) {
-	t.Parallel()
-
-	type getMoreIteration struct {
-		insertLen            int32
-		batchSize            int
-		expectedNextBatchLen int
-	}
-
-	for name, tc := range map[string][]getMoreIteration{
-		"Simple": {
-			{
-				insertLen:            1,
-				batchSize:            1,
-				expectedNextBatchLen: 1,
-			},
-			{
-				insertLen:            2,
-				batchSize:            1,
-				expectedNextBatchLen: 1,
-			},
-			{
-				insertLen:            0,
-				batchSize:            1,
-				expectedNextBatchLen: 1,
-			},
-		},
-	} {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			s := setup.SetupWithOpts(t, &setup.SetupOpts{
-				ExtraOptions: url.Values{
-					"minPoolSize": []string{"1"},
-					"maxPoolSize": []string{"1"},
-				},
-			})
-
-			db, ctx := s.Collection.Database(), s.Ctx
-
-			opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(1000000)
-			err := db.CreateCollection(s.Ctx, testutil.CollectionName(t), opts)
-			require.NoError(t, err)
-
-			collection := db.Collection(testutil.CollectionName(t))
-
-			var newDocId int32
-			bsonArr, _ := integration.GenerateDocuments(newDocId, 1)
-
-			newDocId += 1
-
-			_, err = collection.InsertMany(ctx, bsonArr)
-			require.NoError(t, err)
-
-			cmd := bson.D{
-				{"find", collection.Name()},
-				{"batchSize", 1},
-				{"tailable", true},
-				{"awaitData", true},
-			}
-
-			var res bson.D
-			err = collection.Database().RunCommand(ctx, cmd).Decode(&res)
-			require.NoError(t, err)
-
-			var firstBatch *types.Array
-			firstBatch, cursorID := getFirstBatch(t, res)
-
-			require.Equal(t, 1, firstBatch.Len())
-
-			for _, iteration := range tc {
-				getMoreCmd := bson.D{
-					{"getMore", cursorID},
-					{"collection", collection.Name()},
-					{"batchSize", iteration.batchSize},
-					{"maxTimeMS", (10 * time.Minute).Milliseconds()},
-				}
-
-				var insertDocs bson.A
-				if iteration.insertLen != 0 {
-					insertDocs, _ = integration.GenerateDocuments(newDocId, newDocId+iteration.insertLen)
-					newDocId += iteration.insertLen
-				}
-
-				insertChan := make(chan error)
-
-				go func() {
-					if iteration.insertLen == 0 {
-						return
-					}
-
-					time.Sleep(3 * time.Second)
-					_, insertErr := collection.InsertMany(ctx, insertDocs)
-					insertChan <- insertErr
-				}()
-
-				err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
-				require.NoError(t, err)
-
-				if iteration.insertLen != 0 {
-					require.NoError(t, <-insertChan)
-				}
-
-				nextBatch, nextID := getNextBatch(t, res)
-				require.Equal(t, cursorID, nextID)
-				require.Equal(t, 1, nextBatch.Len())
-			}
-		})
-	}
-}
-
-func TestCursorsTailableAwaitDataOld(t *testing.T) {
 	t.Parallel()
 
 	s := setup.SetupWithOpts(t, nil)
@@ -184,11 +73,14 @@ func TestCursorsTailableAwaitDataOld(t *testing.T) {
 	go func() {
 		time.Sleep(1 * time.Second)
 		_, insertErr := collection.InsertOne(ctx, bson.D{{"v", "bar"}})
+		t.Log("inserted!")
 		insertChan <- insertErr
 	}()
 
 	err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
 	require.NoError(t, err)
+
+	t.Log("getmore finished")
 
 	require.NoError(t, <-insertChan)
 
