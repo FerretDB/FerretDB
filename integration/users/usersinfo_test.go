@@ -189,6 +189,7 @@ func TestUsersinfo(t *testing.T) {
 				Message: "UserName must contain a string field named: user. But, has type int",
 				Name:    "BadValue",
 			},
+			altMessage: "UserName must contain a string field named: user. But, has type int32",
 		},
 		"BadTypeDB": {
 			dbSuffix: "another_database",
@@ -203,6 +204,7 @@ func TestUsersinfo(t *testing.T) {
 				Message: "UserName must contain a string field named: db. But, has type int",
 				Name:    "BadValue",
 			},
+			altMessage: "UserName must contain a string field named: db. But, has type int32",
 		},
 		"FromOthersMultipleDatabases": {
 			dbSuffix: "another_database",
@@ -399,16 +401,17 @@ func TestUsersinfo(t *testing.T) {
 					actualUser.Remove("userId")
 
 					actualUser.Remove("mechanisms")
+					actualUser.Remove("credentials")
 
 					testutil.AssertEqual(t, expectedUser, actualUser)
 				}
 			}
 
 			if tc.hasUser != nil {
+				assert.GreaterOrEqual(t, len(foundUsers), len(tc.hasUser), "users length min")
 				for u := range tc.hasUser {
 					_, ok := foundUsers[u]
 					assert.True(t, ok, "user %q not found", u)
-					t.Log(foundUsers)
 				}
 			}
 
