@@ -283,10 +283,18 @@ func (h *Handler) tailableAwait(ctx context.Context, c *cursor.Cursor, maxTimeMS
 	var done = make(chan struct{})
 
 	go func() {
+		// TODO test this
 		ctxutil.Sleep(ctx, (time.Duration(maxTimeMS) * time.Millisecond))
 		done <- struct{}{}
 	}()
 
+	// TODO tests:
+	// nextBatch 1, ...await... , nextBatch 2, nextbatch 3
+	// - [x] 0, 1
+	// - [ ] 0, 1, 1
+	// - [ ] 1, 1
+	// - [ ] 1, 1, 1
+	// - [ ] 1/2, 1
 	go func() {
 		for {
 			c.Close()
