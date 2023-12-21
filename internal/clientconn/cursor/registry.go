@@ -147,7 +147,7 @@ func (r *Registry) NewCursor(ctx context.Context, iter types.DocumentsIterator, 
 
 	r.created.WithLabelValues(params.Type.String(), params.DB, params.Collection, params.Username).Inc()
 
-	c := newCursor(id, iter, params, r)
+	c := newCursor(ctx, id, iter, params, r)
 	r.m[id] = c
 
 	r.wg.Add(1)
