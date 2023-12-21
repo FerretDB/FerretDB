@@ -26,7 +26,7 @@ type contextKey struct{}
 // Context key for WithConnInfo/Get.
 var connInfoKey = contextKey{}
 
-// ConnInfo represents connection info.
+// ConnInfo represents client connection information.
 type ConnInfo struct {
 	// the order of fields is weird to make the struct smaller due to alignment
 
@@ -41,6 +41,14 @@ type ConnInfo struct {
 // New returns a new ConnInfo.
 func New() *ConnInfo {
 	return new(ConnInfo)
+}
+
+// Username returns stored username.
+func (connInfo *ConnInfo) Username() string {
+	connInfo.rw.RLock()
+	defer connInfo.rw.RUnlock()
+
+	return connInfo.username
 }
 
 // Auth returns stored username and password.
