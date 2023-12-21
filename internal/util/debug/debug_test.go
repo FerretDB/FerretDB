@@ -70,7 +70,7 @@ func TestRunHandler(t *testing.T) {
 	RunHandler(ctx, host, metricsRegisterer, l.Named("debug").Desugar())
 
 	var u url.URL
-	u.Path = "debug/archive"
+	u.Path = archivePath
 	u.Host = host
 	u.Scheme = "http"
 

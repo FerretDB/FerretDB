@@ -27,6 +27,7 @@ import (
 	"net/http"
 	_ "net/http/pprof" // for profiling
 	"net/url"
+	"path/filepath"
 	"slices"
 	"text/template"
 	"time"
@@ -41,20 +42,22 @@ import (
 )
 
 var (
-	graphicsPath  = "/debug/graphs"
-	metricsPath   = "/debug/metrics"
-	archivePath   = "/debug/archive"
-	pprofPath     = "/debug/pprof"
-	varsPath      = "/debug/vars"
-	debugFileName = "debug_data.zip"
+	graphicsPath   = "/debug/graphs"
+	metricsPath    = "/debug/metrics"
+	archivePath    = "/debug/archive"
+	pprofPath      = "/debug/pprof"
+	varsPath       = "/debug/vars"
+	fileNamePrefix = "FerretDB"
+	debugFileName  = "debug.zip"
 )
+
+func generateFileName(filename string) string {
+	return fmt.Sprintf("%s-%s", fileNamePrefix, filename)
+}
 
 // RunHandler runs debug handler.
 func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *zap.Logger) {
-	var (
-		responses map[string][]byte
-		err       error
-	)
+	var err error
 
 	stdL := must.NotFail(zap.NewStdLogAt(l, zap.WarnLevel))
 
@@ -74,43 +77,51 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 	must.NoError(statsviz.Register(http.DefaultServeMux, opts...))
 
 	http.HandleFunc(archivePath, func(rw http.ResponseWriter, req *http.Request) {
-		var u url.URL
+		var (
+			scheme    string
+			u         url.URL
+			responses = make(map[string][]byte, 2)
+		)
+
 		u.Path = metricsPath
 		u.Host = req.Host
-		u.Scheme = req.URL.Scheme
 
-		responses[metricsPath], err = performRequest(u)
+		if req.URL.Scheme == "" {
+			scheme = "http"
+		}
+
+		u.Scheme = scheme
+
+		responses[generateFileName(filepath.Base(metricsPath)+".txt")], err = performRequest(u)
 		if err != nil {
-			l.Error("could not fetch metrics")
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		u.Path = pprofPath
-		u.Host = req.Host
-		u.Scheme = req.URL.Scheme
-		responses[pprofPath], err = performRequest(u)
+		responses[generateFileName(filepath.Base(pprofPath)+".html")], err = performRequest(u)
 		if err != nil {
-			l.Error("could not fetch pprof")
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		rw.Header().Set("Content-Type", "application/zip")
-		rw.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", debugFileName))
+		rw.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", generateFileName(debugFileName)))
 
 		zipWriter := zip.NewWriter(rw)
 		defer zipWriter.Close()
 
-		fileWriter, err := zipWriter.Create("metrics.txt") // Set the desired filename
-		if err != nil {
-			l.Error("could not create metrics.txt in zip")
-			// Handle error
-		}
-		_, err = io.Copy(fileWriter, bytes.NewReader(responses[metricsPath]))
-		if err != nil {
-			l.Error("could not copy metrics.txt in zip")
-			// Handle error
+		for fileName, response := range responses {
+			fileWriter, err := zipWriter.Create(fileName)
+			if err != nil {
+				l.Error("could not create metrics.txt in zip")
+				// Handle error
+			}
+			_, err = io.Copy(fileWriter, bytes.NewReader(response))
+			if err != nil {
+				l.Error("could not copy metrics.txt in zip")
+				// Handle error
+			}
 		}
 	})
 
@@ -191,7 +202,7 @@ func performRequest(u url.URL) ([]byte, error) {
 
 	req.Header.Set("Accept", "application/json")
 
-	client := &http.Client{}
+	client := http.DefaultClient
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
