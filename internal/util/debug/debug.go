@@ -179,28 +179,35 @@ func getArchiveHandler() http.HandlerFunc {
 		}
 
 		rw.Header().Set("Content-Type", "application/zip")
-		rw.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", generateFileName(debugFilePrefix, debugFileName)))
+		zipName := generateFileName(debugFilePrefix, debugFileName)
+		rw.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", zipName))
 
 		zipWriter := zip.NewWriter(rw)
-		defer zipWriter.Close()
 
 		for fileName, response := range responses {
 			fileWriter, err := zipWriter.Create(fileName)
 			if err != nil {
-				http.Error(rw, fmt.Sprintf("fail creating file %s , (%s)", fileName, err.Error()), http.StatusInternalServerError)
+				msg := fmt.Sprintf("fail creating file %s , (%s)", fileName, err.Error())
+				http.Error(rw, msg, http.StatusInternalServerError)
 				return
 			}
 			_, err = io.Copy(fileWriter, bytes.NewReader(response))
 			if err != nil {
-				http.Error(rw, fmt.Sprintf("failed - adding %s to zip , (%s)", fileName, err.Error()), http.StatusInternalServerError)
+				msg := fmt.Sprintf("failed - adding %s to zip , (%s)", fileName, err.Error())
+				http.Error(rw, msg, http.StatusInternalServerError)
 				return
 			}
+		}
+		if err := zipWriter.Flush(); err != nil {
+			msg := fmt.Sprintf("failed to flush zip, (%s)", err.Error())
+			http.Error(rw, msg, http.StatusInternalServerError)
+			return
 		}
 	})
 }
 
 func performRequest(u url.URL) ([]byte, error) {
-	req, err := http.NewRequest("GET", u.String(), nil)
+	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -211,11 +218,18 @@ func performRequest(u url.URL) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+
+	defer func() {
+		errClosing := resp.Body.Close()
+		if err != nil {
+			panic(errClosing)
+		}
+	}()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
+
 	return body, nil
 }

@@ -61,36 +61,35 @@ func TestRunHandler(t *testing.T) {
 	u.Host = host
 	u.Scheme = "http"
 
-	req, err := http.NewRequest("GET", u.String(), nil)
+	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
 	require.NoError(t, err)
 
 	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
 
+	defer require.NoError(t, resp.Body.Close())
+
 	require.Equal(t, http.StatusOK, resp.StatusCode, "status code should be 200")
 	require.Equal(t, "application/zip", resp.Header.Get("Content-Type"), "mime type should be zip")
-	require.Equal(t, fmt.Sprintf("attachment; filename=%s", generateFileName("FerretDB", "debug.zip")), resp.Header.Get("Content-Disposition"), "content-disposition type should be same")
+	expectedHeader := fmt.Sprintf("attachment; filename=%s", generateFileName("FerretDB", "debug.zip"))
+	receivedHeader := resp.Header.Get("Content-Disposition")
+	require.Equal(t, expectedHeader, receivedHeader, "content-disposition type should be same")
 
 	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		// Handle error
-		return
-	}
-	defer resp.Body.Close()
+	require.NoError(t, err)
 
 	zipReader, err := zip.NewReader(bytes.NewReader(body), int64(len(body)))
-	if err != nil {
-		// Handle error
-		return
-	}
-
+	require.NoError(t, err)
 	require.Equal(t, 2, len(zipReader.File), "zip should contain 2 files")
+
 	for _, file := range zipReader.File {
 		err = nil
+
 		if file.FileHeader.Name == "FerretDB-metrics.txt" || file.FileHeader.Name == "FerretDB-pprof.html" {
-			err = errors.New(fmt.Sprintf("file name is not as expected %s", file.FileHeader.Name))
+			msg := fmt.Sprintf("file name is not as expected %s", file.FileHeader.Name)
+			err = errors.New(msg)
 		}
+
 		require.NoError(t, nil, err, "file name fif not match")
 	}
-	return
 }
