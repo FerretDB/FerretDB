@@ -54,13 +54,14 @@ func (h *Handler) MsgDropAllUsersFromDatabase(ctx context.Context, msg *wire.OpM
 	}
 
 	qr, err := users.Query(ctx, &backends.QueryParams{
-		Filter: must.NotFail(types.NewDocument("db", dbName)),
+		Filter:        must.NotFail(types.NewDocument("db", dbName)),
+		OnlyRecordIDs: true,
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	var ids []any
+	var ids []int64
 
 	defer qr.Iter.Close()
 
@@ -68,15 +69,17 @@ func (h *Handler) MsgDropAllUsersFromDatabase(ctx context.Context, msg *wire.OpM
 		_, v, err := qr.Iter.Next()
 		if errors.Is(err, iterator.ErrIteratorDone) {
 			break
+		} else if err != nil {
+			return nil, lazyerrors.Error(err)
 		}
-		ids = append(ids, must.NotFail(v.Get("_id")))
+		ids = append(ids, v.RecordID())
 	}
 
 	var deleted int32
 
 	if len(ids) > 0 {
 		res, err := users.DeleteAll(ctx, &backends.DeleteAllParams{
-			IDs: ids,
+			RecordIDs: ids,
 		})
 		if err != nil {
 			return nil, lazyerrors.Error(err)
