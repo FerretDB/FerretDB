@@ -86,7 +86,7 @@ func TestCursorsTailableAwaitData(t *testing.T) {
 	require.Equal(t, 1, nextBatch.Len())
 }
 
-func TestCursorsTailableAwaitData2(t *testing.T) {
+func TestCursorsTailableAwaitDataNonFullBatch(t *testing.T) {
 	t.Parallel()
 
 	s := setup.SetupWithOpts(t, nil)

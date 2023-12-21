@@ -287,13 +287,6 @@ func (h *Handler) tailableAwait(ctx context.Context, c *cursor.Cursor, maxTimeMS
 		done <- struct{}{}
 	}()
 
-	// TODO tests:
-	// nextBatch 1, ...await... , nextBatch 2, nextbatch 3
-	// - [x] 0, 1
-	// - [ ] 0, 1, 1
-	// - [ ] 1, 1
-	// - [ ] 1, 1, 1
-	// - [ ] 1/2, 1
 	go func() {
 		for {
 			c.Close()
