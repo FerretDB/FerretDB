@@ -42,17 +42,15 @@ import (
 )
 
 var (
-	graphicsPath   = "/debug/graphs"
-	metricsPath    = "/debug/metrics"
-	archivePath    = "/debug/archive"
-	pprofPath      = "/debug/pprof"
-	varsPath       = "/debug/vars"
-	fileNamePrefix = "FerretDB"
-	debugFileName  = "debug.zip"
+	graphicsPath = "/debug/graphs"
+	metricsPath  = "/debug/metrics"
+	archivePath  = "/debug/archive"
+	pprofPath    = "/debug/pprof"
+	varsPath     = "/debug/vars"
 )
 
-func generateFileName(filename string) string {
-	return fmt.Sprintf("%s-%s", fileNamePrefix, filename)
+func generateFileName(prefix, filename string) string {
+	return fmt.Sprintf("%s-%s", prefix, filename)
 }
 
 // RunHandler runs debug handler.
@@ -78,9 +76,11 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 
 	http.HandleFunc(archivePath, func(rw http.ResponseWriter, req *http.Request) {
 		var (
-			scheme    string
-			u         url.URL
-			responses = make(map[string][]byte, 2)
+			scheme          string
+			u               url.URL
+			responses       = make(map[string][]byte, 2)
+			debugFilePrefix = "FerretDB"
+			debugFileName   = "debug.zip"
 		)
 
 		u.Path = metricsPath
@@ -92,21 +92,23 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 
 		u.Scheme = scheme
 
-		responses[generateFileName(filepath.Base(metricsPath)+".txt")], err = performRequest(u)
+		metricsFileName := generateFileName(debugFilePrefix, filepath.Base(metricsPath)+".txt")
+		responses[metricsFileName], err = performRequest(u)
 		if err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		u.Path = pprofPath
-		responses[generateFileName(filepath.Base(pprofPath)+".html")], err = performRequest(u)
+		pprofFileName := generateFileName(debugFilePrefix, filepath.Base(pprofPath)+".html")
+		responses[pprofFileName], err = performRequest(u)
 		if err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		rw.Header().Set("Content-Type", "application/zip")
-		rw.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", generateFileName(debugFileName)))
+		rw.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", generateFileName(debugFilePrefix, debugFileName)))
 
 		zipWriter := zip.NewWriter(rw)
 		defer zipWriter.Close()

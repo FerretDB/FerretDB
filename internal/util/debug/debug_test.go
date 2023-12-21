@@ -15,40 +15,23 @@
 package debug
 
 import (
+	"archive/zip"
+	"bytes"
 	"context"
+	"fmt"
+	"io"
+	"net/http"
 	"net/url"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
-
-type MockCollector struct {
-	mock.Mock
-}
-
-func (mc *MockCollector) Register(prometheus.Collector) error {
-	return nil
-}
-
-func (mc *MockCollector) MustRegister(...prometheus.Collector) {
-}
-
-func (mc *MockCollector) Unregister(prometheus.Collector) bool {
-	return true
-}
-
-type MockZapOption struct {
-	mock.Mock
-}
-
-func (mc *MockCollector) apply(l zap.Logger) {
-}
 
 func TestRunHandler(t *testing.T) {
 	t.Parallel()
@@ -67,16 +50,41 @@ func TestRunHandler(t *testing.T) {
 
 	l := zap.S()
 
-	RunHandler(ctx, host, metricsRegisterer, l.Named("debug").Desugar())
+	go RunHandler(ctx, host, metricsRegisterer, l.Named("debug").Desugar())
+
+	// Wait for the server to start
+	time.Sleep(time.Second)
 
 	var u url.URL
 	u.Path = archivePath
 	u.Host = host
 	u.Scheme = "http"
 
-	stream, err := performRequest(u)
+	req, err := http.NewRequest("GET", u.String(), nil)
 	require.NoError(t, err)
 
-	t.Log("printing bytes", stream)
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+
+	require.Equal(t, http.StatusOK, resp.StatusCode, "status code should be 200")
+	require.Equal(t, "application/zip", resp.Header.Get("Content-Type"), "mime type should be zip")
+	require.Equal(t, fmt.Sprintf("attachment; filename=%s", generateFileName("FerretDB", "debug.zip")), resp.Header.Get("Content-Disposition"), "content-disposition type should be same")
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		// Handle error
+		return
+	}
+	defer resp.Body.Close()
+
+	zipReader, err := zip.NewReader(bytes.NewReader(body), int64(len(body)))
+	if err != nil {
+		// Handle error
+		return
+	}
+
+	require.Equal(t, 2, len(zipReader.File), "zip should contain 2 files")
+	require.Equal(t, "FerretDB-metrics.txt", zipReader.File[0].FileHeader.Name, "first file should be metrics.txt")
+	require.Equal(t, "FerretDB-pprof.html", zipReader.File[1].FileHeader.Name, "first file should be pprof.html")
 	return
 }
