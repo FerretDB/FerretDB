@@ -97,7 +97,6 @@ func TestOplogBasic(t *testing.T) {
 			actualKeys := actual.Keys()
 			assert.ElementsMatch(t, expectedKeys, actualKeys)
 
-			// The last oplog entry should be the last insert.
 			expected, err := types.NewDocument(
 				"op", "i",
 				"ns", ns,
@@ -106,7 +105,7 @@ func TestOplogBasic(t *testing.T) {
 				"v", expectedV,
 			)
 			require.NoError(t, err)
-			assert.Equal(t, expected, actual)
+			assert.Equal(t, expected, actual) // The last oplog entry for multiple inserts only contains the last insert (unlike delete).
 		})
 	})
 
@@ -136,14 +135,13 @@ func TestOplogBasic(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, expected, actual)
 
-			// If an entry to delete is not found, expect oplog not to be written.
 			_, err = coll.DeleteOne(ctx, bson.D{{"_id", "non-existent"}})
 			require.NoError(t, err)
 
 			var newOplogEntry bson.D
 			err = local.Collection("oplog.rs").FindOne(ctx, bson.D{{"ns", ns}}, opts).Decode(&newOplogEntry)
 			require.NoError(t, err)
-			assert.Equal(t, lastOplogEntry, newOplogEntry)
+			assert.Equal(t, lastOplogEntry, newOplogEntry) // If an entry to delete is not found, expect oplog not to be written.
 		})
 
 		tt.Run("MultipleDocuments", func(tt *testing.T) {
@@ -186,7 +184,7 @@ func TestOplogBasic(t *testing.T) {
 				"v", expectedV,
 			)
 			require.NoError(t, err)
-			assert.Equal(t, expected, actual)
+			assert.Equal(t, expected, actual) // The last applyOps oplog entry for multiple deletes contains all the deletes (unlike insert).
 		})
 	})
 }
