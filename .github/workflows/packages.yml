@@ -95,7 +95,6 @@ jobs:
         run: git checkout -b $BRANCH
 
       - name: Setup Go
-        id: setup
         uses: FerretDB/github-actions/setup-go@main
 
       - name: Install Task
