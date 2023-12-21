@@ -73,11 +73,14 @@ func TestCursorsTailableAwaitData(t *testing.T) {
 	go func() {
 		time.Sleep(1 * time.Second)
 		_, insertErr := collection.InsertOne(ctx, bson.D{{"v", "bar"}})
+		t.Log("inserted!")
 		insertChan <- insertErr
 	}()
 
 	err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
 	require.NoError(t, err)
+
+	t.Log("getmore finished")
 
 	require.NoError(t, <-insertChan)
 

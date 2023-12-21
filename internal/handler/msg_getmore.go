@@ -91,7 +91,7 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	// TODO https://github.com/FerretDB/FerretDB/issues/2984
 	v, _ = document.Get("maxTimeMS")
 	if v == nil {
-		v = int64(0)
+		v = int64(1000)
 	}
 
 	// cannot use other existing handlerparams function, they return different error codes
@@ -233,33 +233,46 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 			data := c.Data.(*findCursorData)
 
-			queryRes, err := data.coll.Query(ctx, data.qp)
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
 			closer := iterator.NewMultiCloser()
-
-			iter, err := h.makeFindIter(queryRes.Iter, closer, data.findParams)
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
 
 			var done = make(chan struct{})
 
 			go func() {
-				ctxutil.Sleep(ctx, time.Duration(maxTimeMS))
+				ctxutil.Sleep(ctx, (time.Duration(maxTimeMS) * time.Millisecond))
 				done <- struct{}{}
 			}()
 
-			if err = c.Reset(iter); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
+			for {
+				select {
+				case <-done:
+					break
+				default:
+				}
 
-			if nextBatch.Len() == 0 {
-				nextBatch, err = h.makeNextBatch(c, batchSize)
+				c.Close()
+
+				queryRes, err := data.coll.Query(ctx, data.qp)
 				if err != nil {
 					return nil, lazyerrors.Error(err)
+				}
+
+				iter, err := h.makeFindIter(queryRes.Iter, closer, data.findParams)
+				if err != nil {
+					return nil, lazyerrors.Error(err)
+				}
+
+				if err = c.Reset(iter); err != nil {
+					return nil, lazyerrors.Error(err)
+				}
+
+				switch {
+				case nextBatch.Len() == 0:
+					nextBatch, err = h.makeNextBatch(c, batchSize)
+					if err != nil {
+						return nil, lazyerrors.Error(err)
+					}
+				default:
+					done <- struct{}{}
 				}
 			}
 		}
