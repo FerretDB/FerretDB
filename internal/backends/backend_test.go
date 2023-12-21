@@ -56,6 +56,8 @@ func TestVersion(t *testing.T) {
 				assert.True(t, strings.HasPrefix(s.BackendVersion, "16.1 ("), "%s", s.BackendName)
 			case "SQLite":
 				assert.Equal(t, "3.41.2", s.BackendVersion)
+			case "hana":
+				assert.Equal(t, "4.00.000.00.1693911223", s.BackendVersion)
 			default:
 				t.Fatalf("unknown backend: %s", name)
 			}

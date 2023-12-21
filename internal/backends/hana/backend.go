@@ -16,17 +16,22 @@ package hana
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
 // backend implements backends.Backend interface.
-type backend struct{}
+type backend struct {
+	hdb *fsql.DB
+	l   *zap.Logger
+}
 
 // NewBackendParams represents the parameters of NewBackend function.
 //
@@ -39,33 +44,107 @@ type NewBackendParams struct {
 
 // NewBackend creates a new Backend.
 func NewBackend(params *NewBackendParams) (backends.Backend, error) {
-	return nil, lazyerrors.New("not implemented yet")
+	db, err := sql.Open("hdb", params.URI)
+	if err != nil {
+		return nil, err
+	}
+
+	hdb := fsql.WrapDB(db, "hana", params.L)
+
+	return backends.BackendContract(&backend{
+		hdb: hdb,
+		l:   params.L,
+	}), nil
 }
 
 // Close implements backends.Backend interface.
 func (b *backend) Close() {
+	if b.hdb.Close() != nil {
+		panic("could not close hana db connection")
+	}
 }
 
 // Status implements backends.Backend interface.
 func (b *backend) Status(ctx context.Context, params *backends.StatusParams) (*backends.StatusResult, error) {
-	return nil, lazyerrors.New("not implemented yet")
+	sqlStmt := "SELECT DISTINCT(SCHEMA_NAME) FROM M_TABLES WHERE TABLE_TYPE = 'COLLECTION'"
+
+	// List out all schemas
+	rows, err := b.hdb.QueryContext(ctx, sqlStmt)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+	defer rows.Close()
+
+	var res backends.StatusResult
+
+	for rows.Next() {
+		// db name is schema name from here on out
+		var dbName string
+		if err = rows.Scan(&dbName); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		list, errDB := newDatabase(b.hdb, dbName).ListCollections(ctx, new(backends.ListCollectionsParams))
+		if errDB != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		res.CountCollections += int64(len(list.Collections))
+
+		for _, cInfo := range list.Collections {
+			if cInfo.Capped() {
+				res.CountCappedCollections++
+			}
+		}
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &res, nil
 }
 
 // Database implements backends.Backend interface.
 func (b *backend) Database(name string) (backends.Database, error) {
-	return nil, lazyerrors.New("not implemented yet")
+	return newDatabase(b.hdb, name), nil
 }
 
 // ListDatabases implements backends.Backend interface.
 //
 //nolint:lll // for readability
 func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDatabasesParams) (*backends.ListDatabasesResult, error) {
-	return nil, lazyerrors.New("not implemented yet")
+	rows, err := b.hdb.QueryContext(ctx, "SELECT SCHEMA_NAME FROM SCHEMAS")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var databases []backends.DatabaseInfo
+
+	for rows.Next() {
+		var dbName string
+		if err := rows.Scan(&dbName); err != nil {
+			return nil, err
+		}
+		databases = append(databases, backends.DatabaseInfo{Name: dbName})
+	}
+
+	return &backends.ListDatabasesResult{Databases: databases}, nil
 }
 
 // DropDatabase implements backends.Backend interface.
 func (b *backend) DropDatabase(ctx context.Context, params *backends.DropDatabaseParams) error {
-	return lazyerrors.New("not implemented yet")
+	dropped, err := dropSchema(ctx, b.hdb, params.Name)
+	if err != nil {
+		return getHanaErrorIfExists(err)
+	}
+
+	if !dropped {
+		return backends.NewError(backends.ErrorCodeDatabaseDoesNotExist, err)
+	}
+
+	return nil
 }
 
 // Describe implements prometheus.Collector.
