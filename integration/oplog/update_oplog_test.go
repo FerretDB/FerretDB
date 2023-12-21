@@ -1,7 +1,6 @@
 package oplog
 
 import (
-	"errors"
 	"fmt"
 	"testing"
 
