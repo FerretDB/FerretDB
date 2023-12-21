@@ -30,6 +30,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/pmezard/go-difflib/difflib"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -48,6 +49,9 @@ import (
 
 // Mode represents FerretDB mode of operation.
 type Mode string
+
+// LogicalSessionId represents the associated session in a connection context.
+type LogicalSessionId string
 
 const (
 	// NormalMode only handles requests.
@@ -72,6 +76,7 @@ var AllModes = []string{
 
 // conn represents client connection.
 type conn struct {
+	ctx            context.Context
 	netConn        net.Conn
 	mode           Mode
 	l              *zap.SugaredLogger
@@ -116,6 +121,7 @@ func newConn(opts *newConnOpts) (*conn, error) {
 	}
 
 	return &conn{
+		ctx:            context.WithValue(context.TODO(), LogicalSessionId("lsid"), uuid.New()),
 		netConn:        opts.netConn,
 		mode:           opts.mode,
 		l:              opts.l.Sugar(),

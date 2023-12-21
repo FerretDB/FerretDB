@@ -24,6 +24,7 @@
 package cursor
 
 import (
+	"context"
 	"sync"
 	"time"
 
@@ -33,6 +34,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
+	"github.com/google/uuid"
 )
 
 //go:generate ../../../bin/stringer -linecomment -type Type
@@ -74,10 +76,11 @@ type Cursor struct {
 	ID           int64
 	lastRecordID int64 // protected by m
 	m            sync.Mutex
+	lsid         uuid.UUID
 }
 
 // newCursor creates a new cursor.
-func newCursor(id int64, iter types.DocumentsIterator, params *NewParams, r *Registry) *Cursor {
+func newCursor(ctx context.Context, id int64, iter types.DocumentsIterator, params *NewParams, r *Registry) *Cursor {
 	if params.Type == 0 {
 		panic("Cursor type must be specified")
 	}
@@ -91,6 +94,7 @@ func newCursor(id int64, iter types.DocumentsIterator, params *NewParams, r *Reg
 		created:   time.Now(),
 		removed:   make(chan struct{}),
 		token:     resource.NewToken(),
+		lsid:      ctx.Value("lsid").(uuid.UUID),
 	}
 
 	resource.Track(c, c.token)
