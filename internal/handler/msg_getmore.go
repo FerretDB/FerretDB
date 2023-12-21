@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"math"
 	"time"
 
@@ -228,53 +229,9 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		}
 
 	case cursor.TailableAwait:
-		if nextBatch.Len() < int(batchSize) {
-			// The previous iterator is already closed there.
-
-			data := c.Data.(*findCursorData)
-
-			closer := iterator.NewMultiCloser()
-
-			var done = make(chan struct{})
-
-			go func() {
-				ctxutil.Sleep(ctx, (time.Duration(maxTimeMS) * time.Millisecond))
-				done <- struct{}{}
-			}()
-
-			for {
-				select {
-				case <-done:
-					break
-				default:
-				}
-
-				c.Close()
-
-				queryRes, err := data.coll.Query(ctx, data.qp)
-				if err != nil {
-					return nil, lazyerrors.Error(err)
-				}
-
-				iter, err := h.makeFindIter(queryRes.Iter, closer, data.findParams)
-				if err != nil {
-					return nil, lazyerrors.Error(err)
-				}
-
-				if err = c.Reset(iter); err != nil {
-					return nil, lazyerrors.Error(err)
-				}
-
-				switch {
-				case nextBatch.Len() == 0:
-					nextBatch, err = h.makeNextBatch(c, batchSize)
-					if err != nil {
-						return nil, lazyerrors.Error(err)
-					}
-				default:
-					done <- struct{}{}
-				}
-			}
+		nextBatch, err = h.tailableAwait(ctx, c, nextBatch, maxTimeMS, batchSize)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
 		}
 
 	default:
@@ -311,6 +268,60 @@ func (h *Handler) makeNextBatch(c *cursor.Cursor, batchSize int64) (*types.Array
 	nextBatch := types.MakeArray(len(docs))
 	for _, doc := range docs {
 		nextBatch.Append(doc)
+	}
+
+	return nextBatch, nil
+}
+
+func (h *Handler) tailableAwait(ctx context.Context, c *cursor.Cursor, nextBatch *types.Array, maxTimeMS int64, batchSize int64) (*types.Array, error) {
+	if nextBatch.Len() < int(batchSize) {
+		// The previous iterator is already closed there.
+
+		data := c.Data.(*findCursorData)
+
+		closer := iterator.NewMultiCloser()
+
+		var done = make(chan struct{}, 1)
+
+		go func() {
+			ctxutil.Sleep(ctx, (time.Duration(maxTimeMS) * time.Millisecond))
+			done <- struct{}{}
+		}()
+
+		for {
+			select {
+			case <-done:
+				log.Fatal(1)
+				return nextBatch, nil
+			default:
+			}
+
+			c.Close()
+
+			queryRes, err := data.coll.Query(ctx, data.qp)
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
+			iter, err := h.makeFindIter(queryRes.Iter, closer, data.findParams)
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
+			if err = c.Reset(iter); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
+			switch {
+			case nextBatch.Len() == 0:
+				nextBatch, err = h.makeNextBatch(c, batchSize)
+				if err != nil {
+					return nil, lazyerrors.Error(err)
+				}
+			default:
+				done <- struct{}{}
+			}
+		}
 	}
 
 	return nextBatch, nil
