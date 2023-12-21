@@ -216,7 +216,6 @@ func performRequest(u url.URL) ([]byte, error) {
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("Error reading response body:", err)
 		return nil, err
 	}
 	return body, nil
