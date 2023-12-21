@@ -207,8 +207,7 @@ func performRequest(u url.URL) ([]byte, error) {
 
 	req.Header.Set("Accept", "application/json")
 
-	client := http.DefaultClient
-	resp, err := client.Do(req)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
