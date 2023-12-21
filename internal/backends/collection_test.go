@@ -577,7 +577,7 @@ func TestListCollections(t *testing.T) {
 				t.Run("ListCollection with specified params", func(t *testing.T) {
 					collRes, err := db.ListCollections(ctx, &backends.ListCollectionsParams{Name: collectionNames[2]})
 					require.NoError(t, err)
-					require.Equal(t, 1, len(collRes.Collections), "expected len 1 , since only 1 collection with name testCollection3")
+					require.Equal(t, 1, len(collRes.Collections), "expected len 1 , with name testCollection3")
 					require.Equal(t, collectionNames[2], collRes.Collections[0].Name, "expected name testCollection3")
 				})
 
