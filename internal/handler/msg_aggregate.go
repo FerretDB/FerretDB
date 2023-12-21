@@ -284,8 +284,10 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		}
 
 		var cList *backends.ListCollectionsResult
+
 		collectionParam := backends.ListCollectionsParams{Name: cName}
 		if cList, err = db.ListCollections(ctx, &collectionParam); err != nil {
+			closer.Close()
 			return nil, err
 		}
 
@@ -311,6 +313,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			}
 
 			if !cInfo.Capped() {
+				closer.Close()
 				return nil, handlererrors.NewCommandErrorMsgWithArgument(
 					handlererrors.ErrNotImplemented,
 					"$natural sort for non-capped collection is not supported.",
