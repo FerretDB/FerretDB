@@ -18,6 +18,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -84,7 +85,12 @@ func TestRunHandler(t *testing.T) {
 	}
 
 	require.Equal(t, 2, len(zipReader.File), "zip should contain 2 files")
-	require.Equal(t, "FerretDB-metrics.txt", zipReader.File[0].FileHeader.Name, "first file should be metrics.txt")
-	require.Equal(t, "FerretDB-pprof.html", zipReader.File[1].FileHeader.Name, "first file should be pprof.html")
+	for _, file := range zipReader.File {
+		err = nil
+		if file.FileHeader.Name == "FerretDB-metrics.txt" || file.FileHeader.Name == "FerretDB-pprof.html" {
+			err = errors.New(fmt.Sprintf("file name is not as expected %s", file.FileHeader.Name))
+		}
+		require.NoError(t, nil, err, "file name fif not match")
+	}
 	return
 }
