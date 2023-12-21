@@ -86,6 +86,72 @@ func TestCursorsTailableAwaitData(t *testing.T) {
 	require.Equal(t, 1, nextBatch.Len())
 }
 
+func TestCursorsTailableAwaitData2(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupWithOpts(t, nil)
+
+	db, ctx := s.Collection.Database(), s.Ctx
+
+	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(10000000000)
+	err := db.CreateCollection(s.Ctx, testutil.CollectionName(t), opts)
+	require.NoError(t, err)
+
+	collection := db.Collection(testutil.CollectionName(t))
+
+	bsonArr, _ := integration.GenerateDocuments(0, 2)
+
+	_, err = collection.InsertMany(ctx, bsonArr)
+	require.NoError(t, err)
+
+	cmd := bson.D{
+		{"find", collection.Name()},
+		{"batchSize", 1},
+		{"tailable", true},
+		{"awaitData", true},
+	}
+
+	var res bson.D
+	err = collection.Database().RunCommand(ctx, cmd).Decode(&res)
+	require.NoError(t, err)
+
+	var firstBatch *types.Array
+	firstBatch, cursorID := getFirstBatch(t, res)
+
+	require.Equal(t, 1, firstBatch.Len())
+
+	getMoreCmd := bson.D{
+		{"getMore", cursorID},
+		{"collection", collection.Name()},
+		{"batchSize", 2},
+		{"maxTimeMS", (10 * time.Minute).Milliseconds()},
+	}
+
+	err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
+	require.NoError(t, err)
+
+	nextBatch, nextID := getNextBatch(t, res)
+	require.Equal(t, cursorID, nextID)
+	require.Equal(t, 1, nextBatch.Len())
+
+	insertChan := make(chan error)
+
+	go func() {
+		time.Sleep(1 * time.Second)
+		_, insertErr := collection.InsertOne(ctx, bson.D{{"v", "bar"}})
+		insertChan <- insertErr
+	}()
+
+	err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
+	require.NoError(t, err)
+
+	require.NoError(t, <-insertChan)
+
+	nextBatch, nextID = getNextBatch(t, res)
+	require.Equal(t, cursorID, nextID)
+	require.Equal(t, 1, nextBatch.Len())
+}
+
 func TestCursorsAwaitDataErrors(t *testing.T) {
 	t.Parallel()
 

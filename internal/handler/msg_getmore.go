@@ -228,8 +228,7 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		}
 
 	case cursor.TailableAwait:
-		if nextBatch.Len() < int(batchSize) {
-			// The previous iterator is already closed there.
+		if nextBatch.Len() == 0 {
 			nextBatch, err = h.tailableAwait(ctx, c, maxTimeMS, batchSize)
 			if err != nil {
 				return nil, lazyerrors.Error(err)
