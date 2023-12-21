@@ -37,7 +37,6 @@ func TestOplogBasic(t *testing.T) {
 	ns := fmt.Sprintf("%s.%s", coll.Database().Name(), coll.Name())
 	opts := options.FindOne().SetSort(bson.D{{"$natural", -1}})
 
-	// Create capped collection for oplog if needed
 	err := local.CreateCollection(ctx, "oplog.rs", options.CreateCollection().SetCapped(true).SetSizeInBytes(536870912))
 	if err != nil {
 		require.Contains(t, err.Error(), "local.oplog.rs already exists")
@@ -46,16 +45,13 @@ func TestOplogBasic(t *testing.T) {
 
 	require.NoError(t, err)
 
-	// Keys needed in the oplog response
 	expectedKeys := []string{"op", "ns", "o", "ts", "v"}
 
-	// For FerretDB v is set as 1 (to mark the old format is used)
 	expectedV := int64(1)
 	if setup.IsMongoDB(t) {
 		expectedV = int64(2)
 	}
 
-	// This test uses subtests to group different cases, but subtests can't be run in parallel as we need to ensure oplog order.
 	t.Run("Insert", func(tt *testing.T) {
 		tt.Run("SingleDocument", func(tt *testing.T) {
 			t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/3556")
@@ -165,7 +161,8 @@ func TestOplogBasic(t *testing.T) {
 			actualKeys := actual.Keys()
 			assert.ElementsMatch(t, expectedKeys, actualKeys)
 
-			ui := must.NotFail(must.NotFail(must.NotFail(must.NotFail(actual.Get("o")).(*types.Document).Get("applyOps")).(*types.Array).Get(0)).(*types.Document).Get("ui")).(types.Binary) //nolint:lll // splitting won't make it more readable
+			applyOps := must.NotFail(must.NotFail(actual.Get("o")).(*types.Document).Get("applyOps")).(*types.Array)
+			ui := must.NotFail(must.NotFail(applyOps.Get(0)).(*types.Document).Get("ui")).(types.Binary)
 			expected, err := types.NewDocument(
 				"op", "c",
 				"ns", "admin.$cmd",
