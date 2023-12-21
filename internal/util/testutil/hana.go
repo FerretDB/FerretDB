@@ -16,18 +16,24 @@ package testutil
 
 import (
 	"os"
+	"testing"
 
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 // TestHanaURI returns a HANA Database URL for testing.
 // HANATODO Create a Database per test run?
-func TestHanaURI() (string, error) {
-	url, exists := os.LookupEnv("FERRETDB_HANA_URL")
+func TestHanaURI(tb testtb.TB) string {
+	tb.Helper()
 
-	if !exists {
-		return "", lazyerrors.Errorf("No environment variable FERRETDB_HANA_URL is set.")
+	if testing.Short() {
+		tb.Skip("skipping in -short mode")
 	}
 
-	return url, nil
+	url := os.Getenv("FERRETDB_HANA_URL")
+	if url == "" {
+		tb.Skip("FERRETDB_HANA_URL is not set")
+	}
+
+	return url
 }
