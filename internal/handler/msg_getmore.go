@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"math"
 	"time"
 
@@ -273,56 +272,60 @@ func (h *Handler) makeNextBatch(c *cursor.Cursor, batchSize int64) (*types.Array
 	return nextBatch, nil
 }
 
-func (h *Handler) tailableAwait(ctx context.Context, c *cursor.Cursor, nextBatch *types.Array, maxTimeMS int64, batchSize int64) (*types.Array, error) {
-	if nextBatch.Len() < int(batchSize) {
+func (h *Handler) tailableAwait(ctx context.Context, c *cursor.Cursor, nextBatch *types.Array, maxTimeMS int64, batchSize int64) (resBatch *types.Array, err error) {
+	resBatch = nextBatch
+
+	if resBatch.Len() < int(batchSize) {
 		// The previous iterator is already closed there.
 
 		data := c.Data.(*findCursorData)
 
 		closer := iterator.NewMultiCloser()
 
-		var done = make(chan struct{}, 1)
+		var done = make(chan struct{})
 
 		go func() {
 			ctxutil.Sleep(ctx, (time.Duration(maxTimeMS) * time.Millisecond))
 			done <- struct{}{}
 		}()
 
-		for {
-			select {
-			case <-done:
-				log.Fatal(1)
-				return nextBatch, nil
-			default:
-			}
+		go func() {
+			for {
+				c.Close()
 
-			c.Close()
-
-			queryRes, err := data.coll.Query(ctx, data.qp)
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-			iter, err := h.makeFindIter(queryRes.Iter, closer, data.findParams)
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-			if err = c.Reset(iter); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-			switch {
-			case nextBatch.Len() == 0:
-				nextBatch, err = h.makeNextBatch(c, batchSize)
+				queryRes, err := data.coll.Query(ctx, data.qp)
 				if err != nil {
-					return nil, lazyerrors.Error(err)
+					err = lazyerrors.Error(err)
+					return
 				}
-			default:
-				done <- struct{}{}
+
+				iter, err := h.makeFindIter(queryRes.Iter, closer, data.findParams)
+				if err != nil {
+					err = lazyerrors.Error(err)
+					return
+				}
+
+				if err = c.Reset(iter); err != nil {
+					err = lazyerrors.Error(err)
+					return
+				}
+
+				switch {
+				case resBatch.Len() == 0:
+					resBatch, err = h.makeNextBatch(c, batchSize)
+					if err != nil {
+						err = lazyerrors.Error(err)
+						return
+					}
+				default:
+					done <- struct{}{}
+					return
+				}
 			}
-		}
+		}()
+
+		<-done
 	}
 
-	return nextBatch, nil
+	return
 }
