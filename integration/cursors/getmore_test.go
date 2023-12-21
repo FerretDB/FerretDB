@@ -1078,9 +1078,8 @@ func TestCursors(t *testing.T) {
 
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{
 		ExtraOptions: url.Values{
-			"minPoolSize":   []string{"1"},
-			"maxPoolSize":   []string{"1"},
-			"maxIdleTimeMS": []string{"0"},
+			"minPoolSize": []string{"1"},
+			"maxPoolSize": []string{"1"},
 		},
 	})
 
