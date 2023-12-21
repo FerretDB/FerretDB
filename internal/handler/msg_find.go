@@ -76,12 +76,9 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	var cInfo backends.CollectionInfo
 
-	if len(cList.Collections) == 0 {
-		msg := fmt.Sprintf("Invalid collection name: %s", collectionParam.Name)
-		return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrInvalidNamespace, msg, document.Command())
+	if len(cList.Collections) > 0 {
+		cInfo = cList.Collections[0]
 	}
-
-	cInfo = cList.Collections[0]
 
 	capped := cInfo.Capped()
 	if params.Tailable {

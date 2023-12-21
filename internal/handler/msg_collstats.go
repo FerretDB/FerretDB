@@ -83,13 +83,12 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	var found bool
-	found = len(collections.Collections) > 0
-	if !found {
-		msg := fmt.Sprintf("Invalid collection name: %s", collectionParam.Name)
-		return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrInvalidNamespace, msg, document.Command())
-	}
+	var cInfo backends.CollectionInfo
 
-	cInfo := collections.Collections[0]
+	found = len(collections.Collections) > 0
+	if found {
+		cInfo = collections.Collections[0]
+	}
 
 	indexes, err := c.ListIndexes(ctx, new(backends.ListIndexesParams))
 	if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {

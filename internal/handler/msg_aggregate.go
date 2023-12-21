@@ -291,15 +291,11 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			return nil, err
 		}
 
-		if len(cList.Collections) == 0 {
-			return nil, handlererrors.NewCommandErrorMsgWithArgument(
-				handlererrors.ErrNamespaceNotFound,
-				fmt.Sprintf("collection not found: %s", cName),
-				document.Command(),
-			)
-		}
+		var cInfo backends.CollectionInfo
 
-		cInfo := cList.Collections[0]
+		if len(cList.Collections) > 0 {
+			cInfo = cList.Collections[0]
+		}
 
 		switch {
 		case h.DisablePushdown:
@@ -448,9 +444,11 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 		"localTime", time.Now().UTC().Format(time.RFC3339),
 	))
 
-	var collStats *backends.CollectionStatsResult
-	var cInfo backends.CollectionInfo
-	var nIndexes int64
+	var (
+		collStats *backends.CollectionStatsResult
+		cInfo     backends.CollectionInfo
+		nIndexes  int64
+	)
 
 	if hasCount || hasStorage {
 		collStats, err = p.c.Stats(ctx, new(backends.CollectionStatsParams))
@@ -472,15 +470,9 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 			return nil, lazyerrors.Error(err)
 		}
 
-		if len(cList.Collections) == 0 {
-			return nil, handlererrors.NewCommandErrorMsgWithArgument(
-				handlererrors.ErrNamespaceNotFound,
-				fmt.Sprintf("ns not found: %s.%s", p.dbName, p.cName),
-				"aggregate",
-			)
+		if len(cList.Collections) > 0 {
+			cInfo = cList.Collections[0]
 		}
-
-		cInfo = cList.Collections[0]
 
 		var iList *backends.ListIndexesResult
 

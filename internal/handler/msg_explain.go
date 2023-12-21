@@ -110,12 +110,11 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, err
 	}
 
-	if len(cList.Collections) == 0 {
-		msg := fmt.Sprintf("Invalid collection name: %s", collectionParam.Name)
-		return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrInvalidNamespace, msg, document.Command())
-	}
+	var cInfo backends.CollectionInfo
 
-	cInfo := cList.Collections[0]
+	if len(cList.Collections) > 0 {
+		cInfo = cList.Collections[0]
+	}
 
 	switch {
 	case h.DisablePushdown:
