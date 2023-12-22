@@ -214,7 +214,7 @@ func (p *usersInfoPair) extract(v any, dbName string) error {
 		if !vt.Has("db") {
 			return handlererrors.NewCommandErrorMsg(
 				handlererrors.ErrBadValue,
-				"UserName must contain a string field named: db.",
+				"UserName must contain a field named: db",
 			)
 		}
 
