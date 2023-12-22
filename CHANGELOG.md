@@ -2,6 +2,64 @@
 
 <!-- markdownlint-disable MD024 MD034 -->
 
+## [v1.17.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.17.0) (2023-12-18)
+
+### New Features 🎉
+
+- Allow building without PostgreSQL or SQLite backend by @anunayasri in https://github.com/FerretDB/FerretDB/pull/3803
+- Allow sorting by `$natural` by @noisersup in https://github.com/FerretDB/FerretDB/pull/3822
+- Disallow `$natural` in compound sort by @noisersup in https://github.com/FerretDB/FerretDB/pull/3832
+- Generate collection UUIDs by @wazir-ahmed in https://github.com/FerretDB/FerretDB/pull/3791
+- Support capped collection cleanup by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/3831
+
+### Fixed Bugs 🐛
+
+- Fix `listDatabases` filtering when using `nameOnly` by @henvic in https://github.com/FerretDB/FerretDB/pull/3788
+
+### Enhancements 🛠
+
+- Improve `validate` diagnostic command by @b1ron in https://github.com/FerretDB/FerretDB/pull/3804
+- Add fields to `listCollections.cursor` response by @henvic in https://github.com/FerretDB/FerretDB/pull/3809
+
+### Documentation 📄
+
+- Add new release FerretDB v1.16.0 blog post by @Fashander in https://github.com/FerretDB/FerretDB/pull/3808
+- Change release blogpost image by @Fashander in https://github.com/FerretDB/FerretDB/pull/3825
+- Enable versioning on documentation by @Fashander in https://github.com/FerretDB/FerretDB/pull/3821
+- Add documentation for older versions by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3834
+
+### Other Changes 🤖
+
+- Support subdirectories for integration tests by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3810
+- Move tests for tailbable cursors by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3811
+- Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3817
+- Refactor cursor creation by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3820
+- Use single flag to disable all pushdowns by @noisersup in https://github.com/FerretDB/FerretDB/pull/3793
+- Add tracing to `envtool tests run` by @hungaikev in https://github.com/FerretDB/FerretDB/pull/3695
+- Extract `find` helper functions by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3826
+- Fix tests for MongoDB with enabled replica set by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/3807
+- Ignore `$clusterTime` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3830
+- Add MySQL backend metadata by @adetunjii in https://github.com/FerretDB/FerretDB/pull/3828
+- Clean-up tests a bit by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3835
+- Allow bypassing authentication by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3840
+- Add tests for tailable cursors by @noisersup in https://github.com/FerretDB/FerretDB/pull/3833
+- Add missing logging parameter by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3847
+- Test cross-session cursors by @noisersup in https://github.com/FerretDB/FerretDB/pull/3849
+- Use MongoDB 7 by @henvic in https://github.com/FerretDB/FerretDB/pull/3824
+- Simplify tailable cursor tests by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3854
+- Add `upsert` tests by @wazir-ahmed in https://github.com/FerretDB/FerretDB/pull/3864
+- Add cursor tests by @noisersup in https://github.com/FerretDB/FerretDB/pull/3859
+
+### New Contributors
+
+- @wazir-ahmed made their first contribution in https://github.com/FerretDB/FerretDB/pull/3791
+- @henvic made their first contribution in https://github.com/FerretDB/FerretDB/pull/3788
+- @anunayasri made their first contribution in https://github.com/FerretDB/FerretDB/pull/3803
+- @hungaikev made their first contribution in https://github.com/FerretDB/FerretDB/pull/3695
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/59?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v1.16.0...v1.17.0).
+
 ## [v1.16.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.16.0) (2023-12-04)
 
 ### Documentation 📄
@@ -1142,4 +1200,4 @@ We are delighted to announce the release of FerretDB 1.0 GA!
 
 ## Older Releases
 
-See <https://github.com/FerretDB/FerretDB/blob/v1.0.0/CHANGELOG.md>.
+See https://github.com/FerretDB/FerretDB/blob/v1.0.0/CHANGELOG.md.

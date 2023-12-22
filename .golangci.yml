@@ -46,12 +46,15 @@ linters-settings:
           - "!**/internal/backends/sqlite/*.go"
           - "!**/internal/backends/postgresql/*.go"
           - "!**/internal/backends/postgresql/metadata/*.go"
+          - "!**/internal/backends/mysql/*.go"
+          - "!**/internal/backends/mysql/metadata/*.go"
           - "!**/internal/backends/hana/*.go"
         deny:
           - pkg: github.com/FerretDB/FerretDB/internal/handler/sjson
       common:
         files:
           - "**/internal/backends/**/*.go"
+          - "**/internal/clientconn/cursor/*.go"
         deny:
           - pkg: github.com/FerretDB/FerretDB/internal/handler/common
       handlererrors:
@@ -141,6 +144,8 @@ linters-settings:
         alias: otelsdktrace
       - pkg: go.opentelemetry.io/otel/semconv/v1.21.0
         alias: otelsemconv
+      - pkg: github.com/FerretDB/FerretDB/internal/backends/mysql/metadata/pool
+        alias: mysqlpool
   # ineffassign
   lll:
     line-length: 130

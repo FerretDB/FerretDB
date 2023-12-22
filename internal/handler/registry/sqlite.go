@@ -40,9 +40,10 @@ func init() {
 			ConnMetrics:   opts.ConnMetrics,
 			StateProvider: opts.StateProvider,
 
-			DisablePushdown: opts.DisablePushdown,
-			EnableOplog:     opts.EnableOplog,
-			EnableNewAuth:   opts.EnableNewAuth,
+			DisablePushdown:         opts.DisablePushdown,
+			CappedCleanupPercentage: opts.CappedCleanupPercentage,
+			CappedCleanupInterval:   opts.CappedCleanupInterval,
+			EnableNewAuth:           opts.EnableNewAuth,
 		}
 
 		h, err := handler.New(handlerOpts)

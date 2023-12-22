@@ -140,7 +140,7 @@ tasks:
     cmds:
       # those two should always be in sync
       - go generate -x ./build/version
-      - go build -v -o bin/ ./cmd/envtool/
+      - go build -v -o bin/ {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} ./cmd/envtool/
 
   build-host:
     desc: "Build bin/ferretdb{{exeExt}} on the host for development"
@@ -203,6 +203,7 @@ tasks:
         --shard-index={{.SHARD_INDEX}}
         --shard-total={{.SHARD_TOTAL}}
         --run='{{.TEST_RUN}}'
+        --skip='{{.TEST_SKIP}}'
         --
         -count=1
         -timeout={{.TEST_TIMEOUT}}
@@ -228,6 +229,7 @@ tasks:
         --shard-index={{.SHARD_INDEX}}
         --shard-total={{.SHARD_TOTAL}}
         --run='{{.TEST_RUN}}'
+        --skip='{{.TEST_SKIP}}'
         --
         -count=1
         -timeout={{.TEST_TIMEOUT}}
@@ -253,6 +255,7 @@ tasks:
         --shard-index={{.SHARD_INDEX}}
         --shard-total={{.SHARD_TOTAL}}
         --run='{{.TEST_RUN}}'
+        --skip='{{.TEST_SKIP}}'
         --
         -count=1
         -timeout={{.TEST_TIMEOUT}}
@@ -278,6 +281,7 @@ tasks:
         --shard-index={{.SHARD_INDEX}}
         --shard-total={{.SHARD_TOTAL}}
         --run='{{.TEST_RUN}}'
+        --skip='{{.TEST_SKIP}}'
         --
         -count=1
         -timeout={{.TEST_TIMEOUT}}
@@ -303,6 +307,7 @@ tasks:
         --shard-index={{.SHARD_INDEX}}
         --shard-total={{.SHARD_TOTAL}}
         --run='{{.TEST_RUN}}'
+        --skip='{{.TEST_SKIP}}'
         --
         -count=1
         -timeout={{.TEST_TIMEOUT}}
@@ -381,7 +386,6 @@ tasks:
         --handler=sqlite
         --sqlite-url=file:tmp/sqlite/
         --test-records-dir=tmp/records
-        --test-enable-oplog
 
   run-mysql:
     desc: "Run FerretDB with `mysql` backend"
@@ -398,7 +402,7 @@ tasks:
 
   # set FERRETDB_HANA_URL environment variable to use it
   run-hana:
-    desc: "Run FerretDB with `hana` handler"
+    desc: "Run FerretDB with `hana` backend"
     deps: [build-host]
     cmds:
       - >
@@ -452,7 +456,6 @@ tasks:
         --handler=sqlite
         --sqlite-url=file:tmp/sqlite/
         --test-records-dir=tmp/records
-        --test-enable-oplog
 
   run-proxy-secured:
     desc: "Run FerretDB in diff-proxy mode (TLS, auth required)"
@@ -907,6 +910,13 @@ tasks:
     desc: "Start documentation development server"
     cmds:
       - docker compose run --rm --service-ports docusaurus-docs start --host=0.0.0.0
+
+  docs-version:
+    desc: "Create new documentation version"
+    cmds:
+      - docker compose run --rm docusaurus-docs docs:version v{{.VERSION}}
+    requires:
+      vars: [VERSION]
 
   docs-cloudflare-preview:
     cmds:
