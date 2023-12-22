@@ -544,14 +544,22 @@ tasks:
         docker compose exec mongodb mongosh
         --verbose --eval 'disableTelemetry()' --shell
         'mongodb://host.docker.internal:27017/?heartbeatFrequencyMS=300000'
-
-  mongosh-secured:
+  
+  mongosh-secured-plain:
     desc: "Run MongoDB shell (`mongosh`) with TLS and auth"
     cmds:
       - >
         docker compose exec mongodb mongosh
         --verbose --eval 'disableTelemetry()' --shell
         'mongodb://username:password@host.docker.internal:27018/?authMechanism=PLAIN&tls=true&tlsCertificateKeyFile=/etc/certs/client.pem&tlsCaFile=/etc/certs/rootCA-cert.pem'
+
+  mongosh-secured-scram:
+    desc: "Run MongoDB shell (`mongosh`) with TLS and auth"
+    cmds:
+      - >
+        docker compose exec mongodb mongosh
+        --verbose --eval 'disableTelemetry()' --shell
+        'mongodb://username:password@host.docker.internal:27018/?authMechanism=SCRAM-SHA-256&tls=true&tlsCertificateKeyFile=/etc/certs/client.pem&tlsCaFile=/etc/certs/rootCA-cert.pem'
 
   testjs:
     desc: "Run legacy MongoDB shell (`mongo`) with test.js script"
