@@ -19,6 +19,8 @@ import (
 	"errors"
 	"fmt"
 
+	"go.mongodb.org/mongo-driver/bson"
+
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
@@ -27,7 +29,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
-	"go.mongodb.org/mongo-driver/bson"
 )
 
 // MsgUsersInfo implements `usersInfo` command.
@@ -265,9 +266,12 @@ func usersInfoQueryFilter(allDBs, singleDB bool, dbName string, pairs []usersInf
 
 	ids := types.MakeArray(len(pairs))
 	for i, p := range pairs {
-		ids.Set(i, p.db+"."+p.username)
+		if err := ids.Set(i, p.db+"."+p.username); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 	}
 
-	filter.Set("_id", bson.D{{"$eq", ids}})
+	filter.Set("_id", bson.D{{Key: "$eq", Value: ids}})
+
 	return filter, nil
 }
