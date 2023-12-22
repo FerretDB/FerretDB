@@ -16,6 +16,7 @@ package cursors
 
 import (
 	"errors"
+	"fmt"
 	"math"
 	"net/url"
 	"testing"
@@ -827,6 +828,68 @@ func TestCursorsGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 			require.Nil(t, res)
 		})
 	}
+}
+
+func TestCursorsGetMoreExhausted(t *testing.T) {
+	s := setup.SetupWithOpts(t, nil)
+
+	collection := s.Collection
+	db, ctx := collection.Database(), s.Ctx
+
+	arr, _ := integration.GenerateDocuments(0, 10)
+
+	_, err := collection.InsertMany(ctx, arr)
+	require.NoError(t, err)
+
+	var res bson.D
+	err = db.RunCommand(ctx, bson.D{
+		{"find", collection.Name()},
+		{"batchSize", 1},
+	}).Decode(&res)
+
+	require.NoError(t, err)
+
+	firstBatch, cursorID := getFirstBatch(t, res)
+	require.Equal(t, 1, firstBatch.Len())
+	require.NotNil(t, cursorID)
+
+	err = db.RunCommand(ctx, bson.D{
+		{"getMore", cursorID},
+		{"collection", collection.Name()},
+		{"batchSize", 9},
+	}).Decode(&res)
+
+	require.NoError(t, err)
+
+	nextBatch, nextID := getNextBatch(t, res)
+	require.Equal(t, 9, nextBatch.Len())
+	assert.Equal(t, cursorID, nextID)
+
+	err = db.RunCommand(ctx, bson.D{
+		{"getMore", cursorID},
+		{"collection", collection.Name()},
+		{"batchSize", 1},
+	}).Decode(&res)
+
+	require.NoError(t, err)
+
+	nextBatch, nextID = getNextBatch(t, res)
+	require.Equal(t, 0, nextBatch.Len())
+	assert.Equal(t, int64(0), nextID)
+
+	err = db.RunCommand(ctx, bson.D{
+		{"getMore", cursorID},
+		{"collection", collection.Name()},
+		{"batchSize", 1},
+	}).Err()
+
+	expectedErr := mongo.CommandError{
+		Code:    43,
+		Name:    "CursorNotFound",
+		Message: fmt.Sprintf("cursor id %d not found", cursorID),
+	}
+
+	integration.AssertEqualCommandError(t, expectedErr, err)
 }
 
 func TestCursorsGetMoreCommandMaxTimeMSCursor(t *testing.T) {

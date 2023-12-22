@@ -27,7 +27,7 @@ import (
 func (h *Handler) MsgConnectionStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	users := types.MakeArray(1)
 
-	if username, _ := conninfo.Get(ctx).Auth(); username != "" {
+	if username := conninfo.Get(ctx).Username(); username != "" {
 		users.Append(must.NotFail(types.NewDocument(
 			"user", username,
 		)))
