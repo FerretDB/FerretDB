@@ -33,14 +33,19 @@ func TestOplogUpdate(t *testing.T) {
 	require.NoError(t, err)
 
 	for name, tc := range map[string]struct {
-		update        bson.D
-		expectedOplog *types.Document
+		update         bson.D
+		expectedDiffV1 *types.Document
+		expectedDiffV2 *types.Document
 	}{
 		"set": {
-			update: bson.D{{"$set", bson.D{{"a", 1}}}},
+			update:         bson.D{{"$set", bson.D{{"a", 1}}}},
+			expectedDiffV1: must.NotFail(types.NewDocument("$set", must.NotFail(types.NewDocument("a", int64(1))))),
+			expectedDiffV2: must.NotFail(types.NewDocument("i", must.NotFail(types.NewDocument("a", int64(1))))),
 		},
 		"unset": {
-			update: bson.D{{"$unset", bson.D{{"a", 1}}}},
+			update:         bson.D{{"$unset", bson.D{{"a", 1}}}},
+			expectedDiffV1: must.NotFail(types.NewDocument("$unset", must.NotFail(types.NewDocument("a", int64(1))))),
+			expectedDiffV2: must.NotFail(types.NewDocument("d", must.NotFail(types.NewDocument("a", int64(1))))),
 		},
 		"inc": {
 			update: bson.D{{"$inc", bson.D{{"a", 1}}}},
@@ -71,50 +76,29 @@ func TestOplogUpdate(t *testing.T) {
 
 				actual := integration.ConvertDocument(t, lastOplogEntry)
 
-				if must.NotFail(actual.Get("v")).(int64) == 2 {
-					_ = convertDiff(t, must.NotFail(actual.Get("o")).(*types.Document))
+				version := must.NotFail(actual.Get("v")).(int64)
+				if version == 2 {
+					diff := must.NotFail(must.NotFail(actual.Get("o")).(*types.Document).Get("diff")).(*types.Document)
+					assert.Equal(t, tc.expectedDiffV2, diff)
+				} else {
+					diff := must.NotFail(actual.Get("o")).(*types.Document)
+					assert.Equal(t, tc.expectedDiffV1, diff)
 				}
 
-				assert.Equal(t, tc.expectedOplog, actual)
+				unsetUnusedOplogFields(actual)
+				actual.Remove("o")
+				expected, err := types.NewDocument(
+					"op", "d",
+					"ns", ns,
+					"ts", must.NotFail(actual.Get("ts")).(types.Timestamp),
+					"v", version,
+				)
+				require.NoError(t, err)
+				assert.Equal(t, expected, actual)
 			})
 
-			t.Run("UpdateMany", func(t *testing.T) {
-			})
+			//t.Run("UpdateMany", func(t *testing.T) {
+			//})
 		})
 	}
-}
-
-// convertDiff converts V2 oplog diff document to V1 format.
-func convertDiff(t *testing.T, v2 *types.Document) *types.Document {
-	v1 := must.NotFail(types.NewDocument())
-
-	switch must.NotFail(v2.Get("op")).(string) {
-	case "i":
-		v1.Set("$set", must.NotFail(v2.Get("o")).(*types.Document))
-	case "u":
-		v1.Set("$set", must.NotFail(v2.Get("o2")).(*types.Document))
-		v1.Set("$set", must.NotFail(v2.Get("o")).(*types.Document))
-	case "d":
-		v1.Set("$unset", must.NotFail(v2.Get("o")).(*types.Document))
-
-	}
-
-	/*
-		iter := v2.Iterator()
-
-		for {
-			k, v, err := iter.Next()
-			if errors.Is(err, iterator.ErrIteratorDone) {
-				break
-			}
-
-			require.NoError(t, err)
-
-			switch k {
-			case "":
-			}
-		}
-	*/
-
-	return v1
 }
