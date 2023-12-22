@@ -174,7 +174,7 @@ func saslStartSCRAM(doc *types.Document) (string, error) {
 		return "", err
 	}
 
-	// 2. the server sends a "server-first-message" containing the salt, iteration
+	// 2. the server sends a "server-first-message" containing the salt, iteration, StoredKey, and ServerKey
 	// 3. the client responds with the "client-final-message" containing the ClientProof
 	// 4. the server verifies the nonce and the proof
 
