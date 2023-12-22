@@ -282,8 +282,15 @@ func (h *Handler) awaitData(ctx context.Context, c *cursor.Cursor, maxTimeMS, ba
 	closer := iterator.NewMultiCloser()
 	done := make(chan struct{})
 
+	startTime := time.Now()
+	sleepDur := time.Duration(maxTimeMS) * time.Millisecond
+
 	go func() {
-		ctxutil.Sleep(ctx, (time.Duration(maxTimeMS) * time.Millisecond))
+		ctxutil.Sleep(ctx, sleepDur)
+		h.L.Debug(
+			"awaitData: maxTimeMS has passed, returning batch", zap.Int64("cursor_id", c.ID), zap.Stringer("type", c.Type),
+			zap.Duration("max_time_ms", sleepDur), zap.Int("count", resBatch.Len()), zap.Int64("batch_size", batchSize),
+		)
 		done <- struct{}{}
 	}()
 
@@ -310,6 +317,11 @@ func (h *Handler) awaitData(ctx context.Context, c *cursor.Cursor, maxTimeMS, ba
 
 			switch {
 			case resBatch.Len() == 0:
+				h.L.Debug(
+					"awaitData: Waiting for new documents", zap.Int64("cursor_id", c.ID), zap.Stringer("type", c.Type),
+					zap.Duration("time_left", sleepDur-time.Since(startTime)),
+				)
+
 				resBatch, err = h.makeNextBatch(c, batchSize)
 				if err != nil {
 					err = lazyerrors.Error(err)
@@ -317,7 +329,10 @@ func (h *Handler) awaitData(ctx context.Context, c *cursor.Cursor, maxTimeMS, ba
 				}
 
 			default:
-				// got new documents; return the batch
+				h.L.Debug(
+					"awaitData: Got new documents, returning batch", zap.Int64("cursor_id", c.ID), zap.Stringer("type", c.Type),
+					zap.Int("count", resBatch.Len()), zap.Int64("batch_size", batchSize),
+				)
 				c.Close()
 				done <- struct{}{}
 				return
