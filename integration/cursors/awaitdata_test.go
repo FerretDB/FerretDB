@@ -186,7 +186,7 @@ func TestCursorsAwaitDataErrors(t *testing.T) {
 	})
 }
 
-func TestCursorsTailable(t *testing.T) {
+func TestCursorsTailableAwaitDataTODO(t *testing.T) {
 	t.Parallel()
 
 	s := setup.SetupWithOpts(t, nil)
@@ -286,7 +286,7 @@ func TestCursorsTailable(t *testing.T) {
 	})
 }
 
-func TestCursorsTailableTwoCursorsSameCollection(t *testing.T) {
+func TestCursorsTailableAwaitDataTwoCursorsSameCollection(t *testing.T) {
 	t.Parallel()
 
 	s := setup.SetupWithOpts(t, nil)
