@@ -54,13 +54,20 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	var username, password string
 
-	switch mechanism {
-	case "PLAIN":
+	switch {
+	case mechanism == "PLAIN":
 		username, password, err = saslStartPlain(document)
 		if err != nil {
 			return nil, err
 		}
 
+	case mechanism == "SCRAM-SHA-256":
+		// TODO SCRAM negotiation
+		return nil, nil
+	// to reduce connection overhead time, clients may use a hello command to complete their authentication exchange
+	// if so, the saslStart command may be embedded under the speculativeAuthenticate field
+	case document.Has("speculativeAuthenticate"):
+		// TODO SCRAM negotiation
 	default:
 		msg := fmt.Sprintf("Unsupported authentication mechanism %q.\n", mechanism) +
 			"See https://docs.ferretdb.io/security/authentication/ for more details."
