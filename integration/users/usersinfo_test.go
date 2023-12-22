@@ -29,6 +29,15 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
+// createUser creates a bson.D command payload to create an user with the given username and password.
+func createUser(username, password string) bson.D {
+	return bson.D{
+		{"createUser", username},
+		{"roles", bson.A{}},
+		{"pwd", password},
+	}
+}
+
 func TestUsersinfo(t *testing.T) {
 	t.Parallel()
 
@@ -38,25 +47,25 @@ func TestUsersinfo(t *testing.T) {
 	// Map of users per database suffix
 	dbToUsers := map[string][]bson.D{
 		"": {
-			{{"createUser", "one"}, {"roles", bson.A{}}, {"pwd", "pwd1"}},
-			{{"createUser", "two"}, {"roles", bson.A{}}, {"pwd", "pwd2"}},
+			createUser("one", "pwd1"),
+			createUser("two", "pwd2"),
 		},
 		"_example": {
-			{{"createUser", "a"}, {"roles", bson.A{}}, {"pwd", "password1"}},
-			{{"createUser", "b"}, {"roles", bson.A{}}, {"pwd", "password2"}},
-			{{"createUser", "c"}, {"roles", bson.A{}}, {"pwd", "password3"}},
+			createUser("a", "password1"),
+			createUser("b", "password2"),
+			createUser("c", "password3"),
 		},
 		"_few": {
-			{{"createUser", "i"}, {"roles", bson.A{}}, {"pwd", "password1"}},
-			{{"createUser", "j"}, {"roles", bson.A{}}, {"pwd", "password2"}},
+			createUser("i", "password1"),
+			createUser("j", "password2"),
 		},
 		"_another": {
-			{{"createUser", "singleuser"}, {"roles", bson.A{}}, {"pwd", "123456"}},
+			createUser("singleuser", "123456"),
 		},
 	}
-	// allInsertedUsers is a list of all users inserted in the database that you want to verify
+	// allCreatedUsers is a list of all users created in the database that you want to verify
 	// are returned by the usersInfo command.
-	allInsertedUsers := map[string]struct{}{
+	allCreatedUsers := map[string]struct{}{
 		"TestUsersinfo.one":                {},
 		"TestUsersinfo.two":                {},
 		"TestUsersinfo_example.a":          {},
@@ -69,7 +78,7 @@ func TestUsersinfo(t *testing.T) {
 
 	dbPrefix := t.Name()
 
-	// Insert users into the database to test userInfo.
+	// Create users into the database to test userInfo.
 	for dbSuffix, payloads := range dbToUsers {
 		dbName := t.Name() + dbSuffix
 		db := client.Database(dbName)
@@ -342,7 +351,7 @@ func TestUsersinfo(t *testing.T) {
 					{"forAllDBs", true},
 				},
 			}},
-			hasUser: allInsertedUsers,
+			hasUser: allCreatedUsers,
 		},
 	}
 
@@ -384,9 +393,7 @@ func TestUsersinfo(t *testing.T) {
 				require.NoError(t, err)
 				actualUser := au.(*types.Document)
 
-				if tc.hasUser == nil && tc.expected == nil {
-					t.Errorf("set at least one expectation for %q", name)
-				}
+				assert.False(t, tc.hasUser == nil && tc.expected == nil, "set at least one expectation for %q", name)
 
 				foundUsers[must.NotFail(actualUser.Get("_id")).(string)] = struct{}{}
 

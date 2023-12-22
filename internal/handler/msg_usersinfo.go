@@ -92,15 +92,6 @@ func (h *Handler) MsgUsersInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		}
 
 		users = append(users, u)
-	case string:
-		var u usersInfoPair
-		if err = u.extract(user, dbName); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		users = append(users, u)
-	case int, int32: // {usersInfo: 1 } // int for MongoDB and int32 for FerretDB
-		singleDB = true
 	case *types.Array:
 		for i := 0; i < user.Len(); i++ {
 			var ui any
@@ -120,6 +111,15 @@ func (h *Handler) MsgUsersInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 				users = append(users, u)
 			}
 		}
+	case string:
+		var u usersInfoPair
+		if err = u.extract(user, dbName); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		users = append(users, u)
+	case int32: // {usersInfo: 1 }
+		singleDB = true
 	default:
 		return nil, handlererrors.NewCommandErrorMsgWithArgument(
 			handlererrors.ErrBadValue,
@@ -149,7 +149,6 @@ func (h *Handler) MsgUsersInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	qr, err := usersCol.Query(ctx, &backends.QueryParams{
 		Filter: filter,
 	})
-
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -221,7 +220,6 @@ func (p *usersInfoPair) extract(v any, dbName string) error {
 		}
 
 		db, err := vt.Get("db")
-
 		if err != nil {
 			return lazyerrors.Error(err)
 		}
