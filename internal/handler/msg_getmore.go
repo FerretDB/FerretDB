@@ -280,7 +280,7 @@ func (h *Handler) awaitData(ctx context.Context, c *cursor.Cursor, maxTimeMS, ba
 	data := c.Data.(*findCursorData)
 
 	closer := iterator.NewMultiCloser()
-	var done = make(chan struct{})
+	done := make(chan struct{})
 
 	go func() {
 		ctxutil.Sleep(ctx, (time.Duration(maxTimeMS) * time.Millisecond))
