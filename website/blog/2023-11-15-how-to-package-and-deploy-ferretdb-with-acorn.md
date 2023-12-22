@@ -150,7 +150,7 @@ Our Acornfile abstracts the database URI and name in this Python file by specify
 Next, we'll, we'll create a functional UI for these actions using the `templates/templates.html` file.
 
 ```html
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />

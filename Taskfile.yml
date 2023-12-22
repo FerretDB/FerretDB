@@ -203,6 +203,7 @@ tasks:
         --shard-index={{.SHARD_INDEX}}
         --shard-total={{.SHARD_TOTAL}}
         --run='{{.TEST_RUN}}'
+        --skip='{{.TEST_SKIP}}'
         --
         -count=1
         -timeout={{.TEST_TIMEOUT}}
@@ -228,6 +229,7 @@ tasks:
         --shard-index={{.SHARD_INDEX}}
         --shard-total={{.SHARD_TOTAL}}
         --run='{{.TEST_RUN}}'
+        --skip='{{.TEST_SKIP}}'
         --
         -count=1
         -timeout={{.TEST_TIMEOUT}}
@@ -253,6 +255,7 @@ tasks:
         --shard-index={{.SHARD_INDEX}}
         --shard-total={{.SHARD_TOTAL}}
         --run='{{.TEST_RUN}}'
+        --skip='{{.TEST_SKIP}}'
         --
         -count=1
         -timeout={{.TEST_TIMEOUT}}
@@ -278,6 +281,7 @@ tasks:
         --shard-index={{.SHARD_INDEX}}
         --shard-total={{.SHARD_TOTAL}}
         --run='{{.TEST_RUN}}'
+        --skip='{{.TEST_SKIP}}'
         --
         -count=1
         -timeout={{.TEST_TIMEOUT}}
@@ -303,6 +307,7 @@ tasks:
         --shard-index={{.SHARD_INDEX}}
         --shard-total={{.SHARD_TOTAL}}
         --run='{{.TEST_RUN}}'
+        --skip='{{.TEST_SKIP}}'
         --
         -count=1
         -timeout={{.TEST_TIMEOUT}}
@@ -397,7 +402,7 @@ tasks:
 
   # set FERRETDB_HANA_URL environment variable to use it
   run-hana:
-    desc: "Run FerretDB with `hana` handler"
+    desc: "Run FerretDB with `hana` backend"
     deps: [build-host]
     cmds:
       - >
