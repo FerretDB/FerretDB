@@ -326,6 +326,13 @@ func (h *Handler) awaitData(ctx context.Context, c *cursor.Cursor, maxTimeMS, ba
 				if err != nil {
 					err = lazyerrors.Error(err)
 					return
+
+				}
+
+				c.Close()
+
+				if resBatch.Len() != 0 {
+					return
 				}
 
 			default:

@@ -227,14 +227,13 @@ func TestCursorsTailableAwaitDataTODO(t *testing.T) {
 		require.Equal(t, expectedFirstBatch[0], must.NotFail(firstBatch.Get(0)))
 	})
 
-	getMoreCmd := bson.D{
-		{"getMore", cursorID},
-		{"collection", collection.Name()},
-		{"maxTimeMS", 1000},
-		{"batchSize", 1},
-	}
-
 	t.Run("GetMore", func(t *testing.T) {
+		getMoreCmd := bson.D{
+			{"getMore", cursorID},
+			{"collection", collection.Name()},
+			{"batchSize", 1},
+		}
+
 		for i := 0; i < 2; i++ {
 			var res bson.D
 			err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
@@ -251,6 +250,12 @@ func TestCursorsTailableAwaitDataTODO(t *testing.T) {
 	})
 
 	t.Run("GetMoreEmpty", func(t *testing.T) {
+		getMoreCmd := bson.D{
+			{"getMore", cursorID},
+			{"collection", collection.Name()},
+			{"batchSize", 1},
+		}
+
 		var res bson.D
 		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
 		require.NoError(t, err)
@@ -261,6 +266,13 @@ func TestCursorsTailableAwaitDataTODO(t *testing.T) {
 	})
 
 	t.Run("GetMoreNewDoc", func(t *testing.T) {
+		getMoreCmd := bson.D{
+			{"getMore", cursorID},
+			{"collection", collection.Name()},
+			{"batchSize", 1},
+			{"maxTimeMS", 2000},
+		}
+
 		newDoc := bson.D{{"_id", "new"}}
 		_, err = collection.InsertOne(ctx, newDoc)
 		require.NoError(t, err)
@@ -278,6 +290,12 @@ func TestCursorsTailableAwaitDataTODO(t *testing.T) {
 	})
 
 	t.Run("GetMoreEmptyAfterInsertion", func(t *testing.T) {
+		getMoreCmd := bson.D{
+			{"getMore", cursorID},
+			{"collection", collection.Name()},
+			{"batchSize", 1},
+		}
+
 		var res bson.D
 		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
 		require.NoError(t, err)
