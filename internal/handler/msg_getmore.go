@@ -228,7 +228,7 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		}
 
 	case cursor.TailableAwait:
-		if nextBatch.Len() == 0 {
+		if nextBatch.Len() < int(batchSize) {
 			nextBatch, err = h.awaitData(ctx, c, maxTimeMS, batchSize)
 			if err != nil {
 				return nil, lazyerrors.Error(err)
@@ -289,7 +289,6 @@ func (h *Handler) awaitData(ctx context.Context, c *cursor.Cursor, maxTimeMS, ba
 
 	go func() {
 		for {
-			c.Close()
 
 			queryRes, err := data.coll.Query(ctx, data.qp)
 			if err != nil {
@@ -315,6 +314,7 @@ func (h *Handler) awaitData(ctx context.Context, c *cursor.Cursor, maxTimeMS, ba
 					err = lazyerrors.Error(err)
 					return
 				}
+
 			default:
 				// got new documents; return the batch
 				done <- struct{}{}

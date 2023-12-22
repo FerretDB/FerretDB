@@ -210,6 +210,7 @@ func TestCursorsTailableAwaitDataTODO(t *testing.T) {
 		cmd := bson.D{
 			{"find", collection.Name()},
 			{"batchSize", 1},
+			{"maxTimeMS", 1000000},
 			{"tailable", true},
 			{"awaitData", true},
 		}
@@ -229,6 +230,7 @@ func TestCursorsTailableAwaitDataTODO(t *testing.T) {
 	getMoreCmd := bson.D{
 		{"getMore", cursorID},
 		{"collection", collection.Name()},
+		{"maxTimeMS", 1000},
 		{"batchSize", 1},
 	}
 
