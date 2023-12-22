@@ -205,6 +205,10 @@ func (h *Handler) initCommands() {
 			Handler: h.MsgRenameCollection,
 			Help:    "Changes the name of an existing collection.",
 		},
+		"saslContinue": {
+			Handler: h.MsgSASLContinue,
+			Help:    "Continue a SASL based authentication session.",
+		},
 		"saslStart": {
 			Handler: h.MsgSASLStart,
 			Help:    "Starts a SASL conversation.",
