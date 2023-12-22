@@ -21,7 +21,7 @@ We set a mission for ourselves – to create a true open source alternative to M
 All of this, however, would not be possible without the open source community.
 From the very first day, we've had tremendous support – code contributors, bug reports, feature requets, partner blog posts, early adopters, and many more.
 
-We were also part of many events: the UK, Portugal, Morocco, Serbia, Turkey, and the US.
+We were also part of many events across many countries, including the UK, Portugal, Morocco, and the US.
 There's just so many highlights!
 
 So as we head into 2024, we are going through all the highlights of the year at FerretDB.
