@@ -18,5 +18,5 @@ import (
 	"testing"
 )
 
-func TestSaslStartSCRAMSHA256(t *testing.T) {
+func TestSaslStartSCRAM(t *testing.T) {
 }

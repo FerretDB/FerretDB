@@ -136,3 +136,7 @@ func saslStartPlain(doc *types.Document) (string, string, error) {
 
 	return string(authcid), string(passwd), nil
 }
+
+func saslStartSCRAM() {
+	// TODO
+}
