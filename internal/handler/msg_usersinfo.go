@@ -262,11 +262,14 @@ func usersInfoQueryFilter(allDBs, singleDB bool, dbName string, pairs []usersInf
 		return filter, nil
 	}
 
-	ids := types.MakeArray(len(pairs))
-	for i, p := range pairs {
-		if err := ids.Set(i, p.db+"."+p.username); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
+	ps := []any{}
+	for _, p := range pairs {
+		ps = append(ps, p.db+"."+p.username)
+	}
+
+	ids, err := types.NewArray(ps...)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
 	filter.Set("_id", bson.D{{Key: "$eq", Value: ids}})
