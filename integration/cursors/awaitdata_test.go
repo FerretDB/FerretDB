@@ -210,7 +210,7 @@ func TestCursorsTailableAwaitDataTODO(t *testing.T) {
 		cmd := bson.D{
 			{"find", collection.Name()},
 			{"batchSize", 1},
-			{"maxTimeMS", 1000000},
+			//{"maxTimeMS", 1000000},
 			{"tailable", true},
 			{"awaitData", true},
 		}

@@ -289,6 +289,7 @@ func (h *Handler) awaitData(ctx context.Context, c *cursor.Cursor, maxTimeMS, ba
 
 	go func() {
 		for {
+			c.Close()
 
 			queryRes, err := data.coll.Query(ctx, data.qp)
 			if err != nil {
@@ -317,6 +318,7 @@ func (h *Handler) awaitData(ctx context.Context, c *cursor.Cursor, maxTimeMS, ba
 
 			default:
 				// got new documents; return the batch
+				c.Close()
 				done <- struct{}{}
 				return
 			}
