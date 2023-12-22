@@ -289,7 +289,7 @@ func (h *Handler) awaitData(ctx context.Context, c *cursor.Cursor, maxTimeMS, ba
 		ctxutil.Sleep(ctx, sleepDur)
 		h.L.Debug(
 			"awaitData: maxTimeMS has passed, returning batch", zap.Int64("cursor_id", c.ID), zap.Stringer("type", c.Type),
-			zap.Duration("max_time_ms", sleepDur), zap.Int("count", resBatch.Len()), zap.Int64("batch_size", batchSize),
+			zap.Duration("max_time", sleepDur), zap.Int("count", resBatch.Len()), zap.Int64("batch_size", batchSize),
 		)
 		done <- struct{}{}
 	}()
@@ -341,5 +341,9 @@ func (h *Handler) awaitData(ctx context.Context, c *cursor.Cursor, maxTimeMS, ba
 	}()
 
 	<-done
+	h.L.Debug(
+		"awaitData: Returning batch", zap.Int64("cursor_id", c.ID), zap.Stringer("type", c.Type),
+		zap.Int("count", resBatch.Len()), zap.Int64("batch_size", batchSize),
+	)
 	return resBatch, err
 }
