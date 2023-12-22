@@ -168,7 +168,7 @@ func saslStartSCRAM(doc *types.Document) (string, error) {
 		return "", err
 	}
 
-	// 1. "client-first-message"
+	// 1. "client-first-message" the client sends the username for lookup
 	firstMsg, err := client.NewConversation().Step(string(payload))
 	if err != nil {
 		return "", err
