@@ -546,7 +546,7 @@ tasks:
         'mongodb://host.docker.internal:27017/?heartbeatFrequencyMS=300000'
   
   mongosh-secured-plain:
-    desc: "Run MongoDB shell (`mongosh`) with TLS and auth"
+    desc: "Run MongoDB shell (`mongosh`) with TLS and PLAIN auth"
     cmds:
       - >
         docker compose exec mongodb mongosh
@@ -554,7 +554,7 @@ tasks:
         'mongodb://username:password@host.docker.internal:27018/?authMechanism=PLAIN&tls=true&tlsCertificateKeyFile=/etc/certs/client.pem&tlsCaFile=/etc/certs/rootCA-cert.pem'
 
   mongosh-secured-scram:
-    desc: "Run MongoDB shell (`mongosh`) with TLS and auth"
+    desc: "Run MongoDB shell (`mongosh`) with TLS and SCRAM-SHA-256 auth"
     cmds:
       - >
         docker compose exec mongodb mongosh
