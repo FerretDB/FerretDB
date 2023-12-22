@@ -8,7 +8,7 @@ image: /img/blog/ferretdb-2023-recap.jpg
 tags: [community, product, open source]
 ---
 
-![Start using with Neon](/img/blog/ferretdb-2023-recap.jpg)
+![Our 2023 Recap: Highlights of the Year](/img/blog/ferretdb-2023-recap.jpg)
 
 <!--truncate-->
 
