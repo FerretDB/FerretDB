@@ -229,7 +229,7 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 	case cursor.TailableAwait:
 		if nextBatch.Len() == 0 {
-			nextBatch, err = h.tailableAwait(ctx, c, maxTimeMS, batchSize)
+			nextBatch, err = h.awaitData(ctx, c, maxTimeMS, batchSize)
 			if err != nil {
 				return nil, lazyerrors.Error(err)
 			}
@@ -274,15 +274,15 @@ func (h *Handler) makeNextBatch(c *cursor.Cursor, batchSize int64) (*types.Array
 	return nextBatch, nil
 }
 
-func (h *Handler) tailableAwait(ctx context.Context, c *cursor.Cursor, maxTimeMS int64, batchSize int64) (resBatch *types.Array, err error) {
+// awaitData stops the goroutine, and waits for a new data for the cursor.
+// If there's a new document, or the maxTimeMS have passed it returns the nextBatch.
+func (h *Handler) awaitData(ctx context.Context, c *cursor.Cursor, maxTimeMS, batchSize int64) (resBatch *types.Array, err error) {
 	data := c.Data.(*findCursorData)
 
 	closer := iterator.NewMultiCloser()
-
 	var done = make(chan struct{})
 
 	go func() {
-		// TODO test this
 		ctxutil.Sleep(ctx, (time.Duration(maxTimeMS) * time.Millisecond))
 		done <- struct{}{}
 	}()
@@ -316,6 +316,7 @@ func (h *Handler) tailableAwait(ctx context.Context, c *cursor.Cursor, maxTimeMS
 					return
 				}
 			default:
+				// got new documents; return the batch
 				done <- struct{}{}
 				return
 			}
