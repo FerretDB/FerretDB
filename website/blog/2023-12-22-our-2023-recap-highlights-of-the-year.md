@@ -31,8 +31,8 @@ So let's get started!
 ## Our very first production release of FerretDB
 
 We are starting with the biggest one – the very first production release of FerretDB.
-Back in April, we released the the FerretDB v1.0 to lots of excitement and support from the open source community.
-We instantly got many early adopters who were eager to try out FerretDB in their applications; we also got lots of feedback and bug reports, and a host of contributors that were super helpful in making FerretDB better.
+Back in April, we released FerretDB v1.0 to lots of excitement and support from the open source community.
+We instantly got many early adopters who were eager to try out FerretDB for their applications; we also got lots of feedback, feature requests, bug reports, and a host of contributors that were super helpful in making FerretDB better.
 
 ## New architecture, more backends
 
@@ -45,11 +45,6 @@ Work is also ongoing to support SAP Hana.
 
 ## Community stats
 
-From the start of this project, we've had a host of contributors to FerretDB, and we're super grateful for all the support we've received, especially from the open source community.
-This was very evident in the number of contributors we had during the last Hacktoberfest event.
-Your contributions to code, documentation, bug reports, and feature requests have been super helpful.
-Many people also wrote about FerretDB and its usage within their application – it's just amazing to see all the possibilies a truly open source MongoDB alternative can bring to the community.
-
 A key highlight of our year was the ever-increasing number of FerretDB downloads on [gchr.io](https://github.com/FerretDB/FerretDB/pkgs/container/ferretdb) (24.8k) and [Docker](https://hub.docker.com/r/ferretdb/ferretdb/tags) (600+).
 And if you're interested in running a managed FerretDB service, it is also possible with [Scaleway](https://www.scaleway.com/en/betas/#managed-document-database), [Civo](https://www.civo.com/marketplace/FerretDB), and [Vultr](https://www.vultr.com/docs/ferretdb-managed-database-guide/).
 We are excited to see more people try FerretDB and let us know what they think.
@@ -57,17 +52,23 @@ We are excited to see more people try FerretDB and let us know what they think.
 We also crossed 8000 stars on GitHub, and we can't wait to see the community grow to even greater numbers next year.
 [Star us here if you haven't already](https://www.github.com/ferretdb/ferretdb).
 
+From the start of this project, we've had a host of contributors to FerretDB, and we're grateful for all the support we've received, especially from the open source community.
+This was evident in the high number of contributors we had during the last Hacktoberfest event.
+Your contributions to code, documentation, bug reports, and feature requests have been very significant.
+
+Many people also wrote about FerretDB and its usage within their application – it's just amazing to see all the possibilies a truly open source MongoDB alternative can bring to the community.
+
 ## Events and conferences across the world
 
 Community is at the center of everything we do, and this year, we've been a part of some truly amazing conferences and open source gatherings across many countries.
 We've been to the UK, Portugal, Morocco, Serbia, Turkey, and the US, and we've met many amazing people and made new friends.
 
-Civo Navigate 2023 in London, Postgres Ibiza 2023, Percona University, ATO 2023, are just a few of them.
+We were at Civo Navigate 2023 in London, Postgres Ibiza 2023, Percona University, ATO 2023, just to name a few.
 
 ## What's to come in 2024
 
 Our mission is clear – to bring MongoDB workloads back to open source.
-We've made significant progress towards this goal, and we're super excited about what's to come in 2024.
+We've made significant progress towards this goal, and we're very excited about what's to come in 2024.
 
 FerretDB is the driving force behind the creation of an open standard for document databases.
 
