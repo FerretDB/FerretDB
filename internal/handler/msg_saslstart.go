@@ -100,7 +100,7 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	conninfo.Get(ctx).SetAuth(username, password)
 
-	var emptyPayload string
+	var emptyPayload types.Binary
 	var reply wire.OpMsg
 	d := must.NotFail(types.NewDocument(
 		"conversationId", int32(1),
