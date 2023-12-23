@@ -16,11 +16,11 @@ package handler
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handler/common"
-	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 	"go.uber.org/zap"
 )
@@ -43,40 +43,29 @@ func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	// we can't use it to query the database
 	_ = dbName
 
-	mechanism, err := common.GetRequiredParam[string](document, "mechanism")
-	if err != nil {
-		return nil, lazyerrors.Error(err)
+	var payload []byte
+
+	binaryPayload, err := common.GetRequiredParam[types.Binary](document, "payload")
+	if err == nil {
+		payload = binaryPayload.B
 	}
 
-	var response string
-
-	switch {
-	case mechanism == "SCRAM-SHA-256":
-		// TODO SCRAM negotiation
-		response, err = saslStartSCRAM(document)
-		if err != nil {
-			return nil, err
-		}
-
-	// to reduce connection overhead time, clients may use a hello command to complete their authentication exchange
-	// if so, the saslStart command may be embedded under the speculativeAuthenticate field
-	case document.Has("speculativeAuthenticate"):
-		// TODO SCRAM negotiation
-		response, err = saslStartSCRAM(document)
-		if err != nil {
-			return nil, err
-		}
-
-	default:
-		msg := fmt.Sprintf("Unsupported authentication mechanism %q.\n", mechanism) +
-			"See https://docs.ferretdb.io/security/authentication/ for more details."
-		return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrAuthenticationFailed, msg, "mechanism")
-	}
+	// 2. the server sends a "server-first-message" containing the salt, iteration, StoredKey, and ServerKey
 
 	// {"payload": "n,,n=username,r=xv/n+51PvakMHhHjIa8va/hXQnzZ/n3W"}
 	h.L.Debug(
-		"SCRAM", zap.String("response", response),
+		"SCRAM", zap.String("saslContinue", string(payload)),
 	)
 
-	return nil, nil
+	var reply wire.OpMsg
+	must.NoError(reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"conversationId", int32(1),
+			"done", true,
+			"payload", string(payload),
+			"ok", float64(1),
+		))},
+	}))
+
+	return &reply, nil
 }

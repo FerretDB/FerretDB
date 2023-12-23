@@ -58,6 +58,8 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	var response string
 
+	plain := true
+
 	switch {
 	case mechanism == "PLAIN":
 		username, password, err = saslStartPlain(document)
@@ -66,20 +68,24 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		}
 
 	case mechanism == "SCRAM-SHA-256":
-		// TODO SCRAM negotiation
+		// TODO finish SCRAM negotiation
 		response, err = saslStartSCRAM(document)
 		if err != nil {
 			return nil, err
 		}
 
+		plain = false
+
 	// to reduce connection overhead time, clients may use a hello command to complete their authentication exchange
 	// if so, the saslStart command may be embedded under the speculativeAuthenticate field
 	case document.Has("speculativeAuthenticate"):
-		// TODO SCRAM negotiation
+		// TODO finish SCRAM negotiation
 		response, err = saslStartSCRAM(document)
 		if err != nil {
 			return nil, err
 		}
+
+		plain = false
 
 	default:
 		msg := fmt.Sprintf("Unsupported authentication mechanism %q.\n", mechanism) +
@@ -94,15 +100,21 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	conninfo.Get(ctx).SetAuth(username, password)
 
-	var emptyPayload types.Binary
+	var emptyPayload string
 	var reply wire.OpMsg
+	d := must.NotFail(types.NewDocument(
+		"conversationId", int32(1),
+		"done", true,
+		"payload", emptyPayload,
+		"ok", float64(1),
+	))
+
+	if !plain {
+		d.Set("payload", response)
+	}
+
 	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"conversationId", int32(1),
-			"done", true,
-			"payload", emptyPayload,
-			"ok", float64(1),
-		))},
+		Documents: []*types.Document{d},
 	}))
 
 	return &reply, nil
