@@ -3,7 +3,7 @@ module github.com/FerretDB/FerretDB/tools
 go 1.21
 
 require (
-	github.com/FerretDB/gh v0.1.1
+	github.com/FerretDB/gh v0.1.3
 	github.com/go-task/task/v3 v3.32.0
 	github.com/google/go-github/v57 v57.0.0
 	github.com/goreleaser/nfpm/v2 v2.34.0
