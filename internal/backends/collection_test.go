@@ -561,7 +561,7 @@ func TestListCollections(t *testing.T) {
 				err = testDB.CreateCollection(ctx, &backends.CreateCollectionParams{Name: collectionName})
 				require.NoError(t, err)
 			}
-			defer require.NoError(t, b.DropDatabase(ctx, &backends.DropDatabaseParams{Name: dbName}))
+			defer b.DropDatabase(ctx, &backends.DropDatabaseParams{Name: dbName}) //nolint:errcheck // safe to ignore
 
 			t.Run("TestingListCollections", func(t *testing.T) {
 				// retrieve database details
@@ -597,7 +597,8 @@ func TestListCollections(t *testing.T) {
 				})
 
 				t.Run("ListCollection with empty params", func(t *testing.T) {
-					collRes, err := db.ListCollections(ctx, &backends.ListCollectionsParams{})
+					var param backends.ListCollectionsParams
+					collRes, err := db.ListCollections(ctx, &param)
 					require.NoError(t, err)
 					require.Equal(t, 3, len(collRes.Collections), "expected full list len 3")
 					require.Equal(t, collectionNames[1], collRes.Collections[0].Name, "expected name testCollection1")
