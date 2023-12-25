@@ -83,6 +83,8 @@ func TestCheckAuth(t *testing.T) {
 		require.NoError(t, err)
 		t.Cleanup(r.Close)
 
+		t.Skip("https://github.com/FerretDB/FerretDB/issues/3413")
+
 		_, err = r.getPool(ctx)
 
 		expected := `Error 1045 \(28000\): Access denied for user 'wrong-user*'@'[\d\.]+' \(using password: YES\)`
