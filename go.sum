@@ -1,5 +1,5 @@
-github.com/AlekSi/bson v0.0.6-0.20231223205253-cd93130abe00 h1:W1meX+AKxobyOnx55c25GdcW8unjQVCtsJm9J+1Z5Ig=
-github.com/AlekSi/bson v0.0.6-0.20231223205253-cd93130abe00/go.mod h1:oMahOeK6u+O0cAC7ZAuxYvFatYqEcl6XRp3FZ51j5dA=
+github.com/AlekSi/bson v0.0.6-0.20231226144624-135efa10b496 h1:jOai00N6wz0ec3+zYzK3vcFFJAGdUkhXtjDbpS+xkgE=
+github.com/AlekSi/bson v0.0.6-0.20231226144624-135efa10b496/go.mod h1:oMahOeK6u+O0cAC7ZAuxYvFatYqEcl6XRp3FZ51j5dA=
 github.com/AlekSi/pointer v1.2.0 h1:glcy/gc4h8HnG2Z3ZECSzZ1IX1x2JxRVuDzaJwQE0+w=
 github.com/AlekSi/pointer v1.2.0/go.mod h1:gZGfd3dpW4vEc/UlyfKKi1roIqcCgwOIvb0tSNSBle0=
 github.com/SAP/go-hdb v1.6.6 h1:n0uqv+omYcz01sLXQ4bK7vDj76x5ELU0qJ/8PPgri08=
