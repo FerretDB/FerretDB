@@ -71,6 +71,7 @@ func (h *Handler) MsgHello(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		"ok", float64(1),
 	))
 
+	// TODO speculativeAuthenticate is key
 	if speculativeAuthenticate {
 		// TODO d.Set("saslSupportedMechs", must.NotFail(types.NewArray()))
 		d.Set("conversationId", int32(1))
