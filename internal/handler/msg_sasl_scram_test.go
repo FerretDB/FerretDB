@@ -19,4 +19,10 @@ import (
 )
 
 func TestSaslStartSCRAM(t *testing.T) {
+
+	// non-ASCII codepoints
+	// var (
+	// 	acuteAccent           = 0x00B4 // ´ ACUTE ACCENT (symbol)
+	// 	vulgarFractionOneHalf = 0x00BD // ½ Vulgar Fraction One Half (symbol)
+	// )
 }

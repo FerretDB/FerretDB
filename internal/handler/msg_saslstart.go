@@ -27,7 +27,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
-	"github.com/xdg-go/scram"
 	"go.uber.org/zap"
 )
 
@@ -68,7 +67,7 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		}
 
 	case mechanism == "SCRAM-SHA-256":
-		// TODO finish SCRAM negotiation
+		// TODO finish SCRAM conversation
 		response, err = saslStartSCRAM(document)
 		if err != nil {
 			return nil, err
@@ -79,7 +78,7 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	// to reduce connection overhead time, clients may use a hello command to complete their authentication exchange
 	// if so, the saslStart command may be embedded under the speculativeAuthenticate field
 	case document.Has("speculativeAuthenticate"):
-		// TODO finish SCRAM negotiation
+		// TODO finish SCRAM conversation
 		response, err = saslStartSCRAM(document)
 		if err != nil {
 			return nil, err
@@ -93,7 +92,6 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrAuthenticationFailed, msg, "mechanism")
 	}
 
-	// {"payload": "n,,n=username,r=xv/n+51PvakMHhHjIa8va/hXQnzZ/n3W"}
 	h.L.Debug(
 		"SCRAM", zap.String("response", response),
 	)
@@ -111,6 +109,7 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	if !plain {
 		d.Set("payload", response)
+		d.Set("done", false)
 	}
 
 	must.NoError(reply.SetSections(wire.OpMsgSection{
@@ -167,6 +166,10 @@ func saslStartPlain(doc *types.Document) (string, string, error) {
 	return string(authcid), string(passwd), nil
 }
 
+// 1. "client-first-message" the client sends the username for lookup
+// 2. the server sends a "server-first-message" containing the salt, iteration, StoredKey, and ServerKey
+// 3. the client responds with the "client-final-message" containing the ClientProof
+// 4. the server verifies the nonce and the proof
 func saslStartSCRAM(doc *types.Document) (string, error) {
 	var payload []byte
 
@@ -175,20 +178,9 @@ func saslStartSCRAM(doc *types.Document) (string, error) {
 		payload = binaryPayload.B
 	}
 
-	client, err := scram.SHA256.NewClient("", "", "")
-	if err != nil {
-		return "", err
-	}
+	// parse the client-first-message of the form n,a=authzid,n=encoded-username,r=client-nonce
 
-	// 1. "client-first-message" the client sends the username for lookup
-	firstMsg, err := client.NewConversation().Step(string(payload))
-	if err != nil {
-		return "", err
-	}
+	// store the credentials in 'admin.system.users' namespace
 
-	// 2. the server sends a "server-first-message" containing the salt, iteration, StoredKey, and ServerKey
-	// 3. the client responds with the "client-final-message" containing the ClientProof
-	// 4. the server verifies the nonce and the proof
-
-	return firstMsg, nil
+	return string(payload), nil
 }
