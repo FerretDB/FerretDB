@@ -272,7 +272,7 @@ func usersInfoQueryFilter(allDBs, singleDB bool, dbName string, pairs []usersInf
 		return nil, lazyerrors.Error(err)
 	}
 
-	filter.Set("_id", bson.D{{Key: "$eq", Value: ids}})
+	filter.Set("_id", must.NotFail(types.NewDocument(bson.D{{Key: "$eq", Value: ids}})))
 
 	return filter, nil
 }
