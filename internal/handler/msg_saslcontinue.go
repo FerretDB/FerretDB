@@ -50,11 +50,8 @@ func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.O
 		payload = binaryPayload.B
 	}
 
-	// 2. the server sends a "server-first-message" containing the salt, iteration, StoredKey, and ServerKey
-
-	// {"payload": "n,,n=username,r=xv/n+51PvakMHhHjIa8va/hXQnzZ/n3W"}
 	h.L.Debug(
-		"SCRAM", zap.String("saslContinue", string(payload)),
+		"saslContinue", zap.String("payload", string(payload)),
 	)
 
 	var reply wire.OpMsg

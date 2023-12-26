@@ -23,6 +23,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
+	"go.uber.org/zap"
 )
 
 // MsgHello implements `hello` command.
@@ -32,25 +33,50 @@ func (h *Handler) MsgHello(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		return nil, err
 	}
 
+	var payload string
+
+	speculativeAuthenticate := false
+
+	// to reduce connection overhead time, clients may use a hello command to complete their authentication exchange
+	// if so, the saslStart command may be embedded under the speculativeAuthenticate field
+	if doc.Has("speculativeAuthenticate") {
+		// TODO finish SCRAM conversation
+		payload, err = saslStartSCRAM(doc)
+		if err != nil {
+			return nil, err
+		}
+
+		speculativeAuthenticate = true
+
+		h.L.Debug(
+			"saslStart", zap.String("payload", string(payload)),
+		)
+	}
+
 	if err := common.CheckClientMetadata(ctx, doc); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"isWritablePrimary", true,
-			"maxBsonObjectSize", int32(types.MaxDocumentLen),
-			"maxMessageSizeBytes", int32(wire.MaxMsgLen),
-			"maxWriteBatchSize", int32(100000),
-			"localTime", time.Now(),
-			"connectionId", int32(42),
-			"minWireVersion", common.MinWireVersion,
-			"maxWireVersion", common.MaxWireVersion,
-			"readOnly", false,
-			"ok", float64(1),
-		))},
-	}))
+	d := must.NotFail(types.NewDocument(
+		"isWritablePrimary", true,
+		"maxBsonObjectSize", int32(types.MaxDocumentLen),
+		"maxMessageSizeBytes", int32(wire.MaxMsgLen),
+		"maxWriteBatchSize", int32(100000),
+		"localTime", time.Now(),
+		"connectionId", int32(42),
+		"minWireVersion", common.MinWireVersion,
+		"maxWireVersion", common.MaxWireVersion,
+		"readOnly", false,
+		"ok", float64(1),
+	))
+
+	if speculativeAuthenticate {
+		// TODO d.Set("saslSupportedMechs", must.NotFail(types.NewArray()))
+		d.Set("conversationId", int32(1))
+		d.Set("payload", payload)
+		d.Set("done", false)
+	}
 
 	return &reply, nil
 }

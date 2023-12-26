@@ -55,7 +55,7 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	var username, password string
 
-	var response string
+	var payload string
 
 	plain := true
 
@@ -68,18 +68,7 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	case mechanism == "SCRAM-SHA-256":
 		// TODO finish SCRAM conversation
-		response, err = saslStartSCRAM(document)
-		if err != nil {
-			return nil, err
-		}
-
-		plain = false
-
-	// to reduce connection overhead time, clients may use a hello command to complete their authentication exchange
-	// if so, the saslStart command may be embedded under the speculativeAuthenticate field
-	case document.Has("speculativeAuthenticate"):
-		// TODO finish SCRAM conversation
-		response, err = saslStartSCRAM(document)
+		payload, err = saslStartSCRAM(document)
 		if err != nil {
 			return nil, err
 		}
@@ -93,7 +82,7 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	h.L.Debug(
-		"SCRAM", zap.String("response", response),
+		"saslStart", zap.String("payload", string(payload)),
 	)
 
 	conninfo.Get(ctx).SetAuth(username, password)
@@ -102,13 +91,13 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	var reply wire.OpMsg
 	d := must.NotFail(types.NewDocument(
 		"conversationId", int32(1),
-		"done", true,
+		"done", false,
 		"payload", emptyPayload,
 		"ok", float64(1),
 	))
 
 	if !plain {
-		d.Set("payload", response)
+		d.Set("payload", payload)
 		d.Set("done", false)
 	}
 
@@ -179,7 +168,6 @@ func saslStartSCRAM(doc *types.Document) (string, error) {
 	}
 
 	// parse the client-first-message of the form n,a=authzid,n=encoded-username,r=client-nonce
-
 	// store the credentials in 'admin.system.users' namespace
 
 	return string(payload), nil
