@@ -201,7 +201,13 @@ func saslStartSCRAM(doc *types.Document) ([]byte, *scram.ServerConversation, err
 			Salt:  string(salt),
 			Iters: 4096,
 		}
-		return scram.StoredCredentials{KeyFactors: kf}, nil
+		// TODO generate the StoredKey and ServerKey
+		// https://github.com/xdg-go/scram/blob/17629a50d5ce12875d83f9095809ae43b765c303/server_conv.go#L143 the hashes are not equal
+		return scram.StoredCredentials{
+			KeyFactors: kf,
+			StoredKey:  nil,
+			ServerKey:  nil,
+		}, nil
 	})
 
 	ss, err := scram.SHA256.NewServer(cl)
