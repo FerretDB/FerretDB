@@ -26,7 +26,8 @@ import (
 type document struct {
 	o  *types.Document
 	ns string
-	op string // i, d
+	op string // i, d, u
+	v  int64
 }
 
 // marshal returns the BSON document representation with a given timestamp.
@@ -38,7 +39,7 @@ func (d *document) marshal(t time.Time) (*types.Document, error) {
 		"op", d.op,
 		"o", d.o,
 		"t", int64(1),
-		"v", int64(2),
+		"v", d.v,
 		"wall", t,
 	)
 	if err != nil {
