@@ -24,6 +24,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
+	"go.uber.org/zap"
 )
 
 // CmdQuery implements deprecated OP_QUERY message handling.
@@ -40,17 +41,55 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 
 	// database name typically is either "$external" or "admin"
 
+	queryDocument := query.Query
+
+	var emptyPayload types.Binary
+	replyDocument := &wire.OpReply{
+		NumberReturned: 1,
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"conversationId", int32(1),
+			"done", true,
+			"payload", emptyPayload,
+			"ok", float64(1),
+		))},
+	}
+
+	speculativeAuthenticate := false
+
+	// to reduce connection overhead time, clients may use a hello command to complete their authentication exchange
+	// if so, the saslStart command may be embedded under the speculativeAuthenticate field
+	if queryDocument.Has("speculativeAuthenticate") {
+		// TODO finish SCRAM conversation
+		username, cnonce, err := saslStartSCRAM(queryDocument)
+		if err != nil {
+			return nil, err
+		}
+
+		speculativeAuthenticate = true
+
+		h.L.Debug(
+			"saslStart speculativeAuthenticate",
+			zap.String("encoded-username", username),
+			zap.String("client-nonce", cnonce),
+		)
+	}
+
+	if speculativeAuthenticate {
+		replyDocument.Documents[0].Set("saslSupportedMechs", must.NotFail(types.NewArray(
+			"PLAIN",
+			"SCRAM-SHA-256",
+		)))
+
+		replyDocument.Documents[0].Set("speculativeAuthenticate", must.NotFail(
+			types.NewDocument(
+				"payload", emptyPayload, // TODO
+				"done", false,
+			),
+		))
+	}
+
 	if cmd == "saslStart" && strings.HasSuffix(collection, ".$cmd") {
-		var emptyPayload types.Binary
-		return &wire.OpReply{
-			NumberReturned: 1,
-			Documents: []*types.Document{must.NotFail(types.NewDocument(
-				"conversationId", int32(1),
-				"done", true,
-				"payload", emptyPayload,
-				"ok", float64(1),
-			))},
-		}, nil
+		return replyDocument, nil
 	}
 
 	return nil, handlererrors.NewCommandErrorMsgWithArgument(

@@ -19,6 +19,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
@@ -55,35 +56,37 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	var username, password string
 
-	var payload string
+	var payload []byte
 
 	plain := true
 
-	switch {
-	case mechanism == "PLAIN":
+	switch mechanism {
+	case "PLAIN":
 		username, password, err = saslStartPlain(document)
 		if err != nil {
 			return nil, err
 		}
 
-	case mechanism == "SCRAM-SHA-256":
+	case "SCRAM-SHA-256":
 		// TODO finish SCRAM conversation
-		payload, err = saslStartSCRAM(document)
+		username, cnonce, err := saslStartSCRAM(document)
 		if err != nil {
 			return nil, err
 		}
 
 		plain = false
 
+		h.L.Debug(
+			"saslStart",
+			zap.String("encoded-username", username),
+			zap.String("client-nonce", cnonce),
+		)
+
 	default:
 		msg := fmt.Sprintf("Unsupported authentication mechanism %q.\n", mechanism) +
 			"See https://docs.ferretdb.io/security/authentication/ for more details."
 		return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrAuthenticationFailed, msg, "mechanism")
 	}
-
-	h.L.Debug(
-		"saslStart", zap.String("payload", string(payload)),
-	)
 
 	conninfo.Get(ctx).SetAuth(username, password)
 
@@ -135,8 +138,8 @@ func saslStartPlain(doc *types.Document) (string, string, error) {
 		return "", "", err
 	}
 
-	parts := bytes.Split(payload, []byte{0})
-	if l := len(parts); l != 3 {
+	fields := bytes.Split(payload, []byte{0})
+	if l := len(fields); l != 3 {
 		return "", "", handlererrors.NewCommandErrorMsgWithArgument(
 			handlererrors.ErrTypeMismatch,
 			fmt.Sprintf("Invalid payload: expected 3 parts, got %d", l),
@@ -144,7 +147,7 @@ func saslStartPlain(doc *types.Document) (string, string, error) {
 		)
 	}
 
-	authzid, authcid, passwd := parts[0], parts[1], parts[2]
+	authzid, authcid, passwd := fields[0], fields[1], fields[2]
 
 	// Some drivers (Go) send empty authorization identity (authzid),
 	// while others (Java) set it to the same value as authentication identity (authcid)
@@ -155,11 +158,7 @@ func saslStartPlain(doc *types.Document) (string, string, error) {
 	return string(authcid), string(passwd), nil
 }
 
-// 1. "client-first-message" the client sends the username for lookup
-// 2. the server sends a "server-first-message" containing the salt, iteration, StoredKey, and ServerKey
-// 3. the client responds with the "client-final-message" containing the ClientProof
-// 4. the server verifies the nonce and the proof
-func saslStartSCRAM(doc *types.Document) (string, error) {
+func saslStartSCRAM(doc *types.Document) (string, string, error) {
 	var payload []byte
 
 	binaryPayload, err := common.GetRequiredParam[types.Binary](doc, "payload")
@@ -168,7 +167,26 @@ func saslStartSCRAM(doc *types.Document) (string, error) {
 	}
 
 	// parse the client-first-message of the form n,a=authzid,n=encoded-username,r=client-nonce
-	// store the credentials in 'admin.system.users' namespace
+	fields := strings.Split(string(payload), ",")
+	if l := len(fields); l < 3 {
+		return "", "", handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrBadValue,
+			fmt.Sprintf("Incorrect number of arguments for first SCRAM client message, got %d expected at least 3", l),
+			"payload",
+		)
+	}
 
-	return string(payload), nil
+	username, cnonce := fields[2], fields[3]
+
+	// TODO store the credentials in the 'admin.system.users' namespace eventually
+	// 'SCRAM-SHA-256': {
+	//     iterationCount: 15000, or at least 4096
+	//     salt: '/EWnFeM5z6vZbsviI9N+DpThFxjrDhryf47cTA==',
+	//     storedKey: 'jQGI8FtQZjfe/MyyaiYT8m0GlF7KxqvH5+EHhxYtXyo=',
+	//     serverKey: 'I9O3QjHz++JGp4vrD79P7m+af1oXPPziZ8sTlauQEwI='
+	// }
+
+	// generate server-first-message of the form r=client-nonce|server-nonce,s=user-salt,i=iteration-count
+
+	return username, cnonce, nil
 }
