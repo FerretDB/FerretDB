@@ -69,7 +69,6 @@ func (connInfo *ConnInfo) Username() string {
 	defer connInfo.rw.RUnlock()
 
 	return connInfo.username
-
 }
 
 // Auth returns stored username and password.
