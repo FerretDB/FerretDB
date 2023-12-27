@@ -59,7 +59,7 @@ func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.O
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"conversationId", int32(1),
 			"done", true,
-			"payload", string(payload),
+			"payload", binaryPayload,
 			"ok", float64(1),
 		))},
 	}))

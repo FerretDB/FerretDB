@@ -71,7 +71,7 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 
 		h.L.Debug(
 			"saslStart speculativeAuthenticate",
-			zap.String("response", response),
+			zap.String("response", string(response)),
 		)
 	}
 

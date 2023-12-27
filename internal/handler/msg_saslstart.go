@@ -58,7 +58,7 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	var username, password string
 
-	var response string
+	var response []byte
 
 	plain := true
 
@@ -80,7 +80,7 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 		h.L.Debug(
 			"saslStart",
-			zap.String("response", response),
+			zap.String("response", string(response)),
 		)
 
 	default:
@@ -101,7 +101,10 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	))
 
 	if !plain {
-		d.Set("payload", response)
+		d.Set("payload", types.Binary{
+			Subtype: types.BinarySubtype(0),
+			B:       response,
+		})
 		d.Set("done", false)
 	}
 
@@ -159,7 +162,7 @@ func saslStartPlain(doc *types.Document) (string, string, error) {
 	return string(authcid), string(passwd), nil
 }
 
-func saslStartSCRAM(doc *types.Document) (string, error) {
+func saslStartSCRAM(doc *types.Document) ([]byte, error) {
 	var payload []byte
 
 	binaryPayload, err := common.GetRequiredParam[types.Binary](doc, "payload")
@@ -180,7 +183,7 @@ func saslStartSCRAM(doc *types.Document) (string, error) {
 	// generate server-first-message of the form r=client-nonce|server-nonce,s=user-salt,i=iteration-count
 	salt := make([]byte, 16)
 	if _, err := io.ReadFull(rand.Reader, salt); err != nil {
-		return "", err
+		return nil, err
 	}
 
 	cl := scram.CredentialLookup(func(s string) (scram.StoredCredentials, error) {
@@ -198,5 +201,5 @@ func saslStartSCRAM(doc *types.Document) (string, error) {
 	response, err = conv.Step(string(payload))
 	must.NoError(err)
 
-	return response, nil
+	return []byte(response), nil
 }
