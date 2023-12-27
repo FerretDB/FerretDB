@@ -285,6 +285,7 @@ func (h *Handler) cleanupCappedCollection(ctx context.Context, db backends.Datab
 	}
 
 	if len(recordIDs) == 0 {
+		h.L.Debug("cleanupCappedCollection: no documents to delete")
 		return 0, 0, nil
 	}
 
