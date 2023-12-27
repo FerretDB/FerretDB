@@ -228,7 +228,7 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		}
 
 	case cursor.TailableAwait:
-		if nextBatch.Len() == 0 { // TODO
+		if nextBatch.Len() == 0 {
 			nextBatch, err = h.awaitData(ctx, c, maxTimeMS, batchSize)
 			if err != nil {
 				return nil, lazyerrors.Error(err)
