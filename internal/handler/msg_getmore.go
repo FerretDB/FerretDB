@@ -349,5 +349,7 @@ func (h *Handler) awaitData(ctx context.Context, c *cursor.Cursor, maxTimeMS, ba
 
 			return
 		}
+
+		time.Sleep(1 * time.Second)
 	}
 }
