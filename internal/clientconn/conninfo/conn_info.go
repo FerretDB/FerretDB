@@ -39,7 +39,7 @@ type ConnInfo struct {
 	BypassAuth   bool
 	rw           sync.RWMutex
 
-	conv *scram.ServerConversation
+	sc *scram.ServerConversation
 }
 
 // New returns a new ConnInfo.
@@ -47,21 +47,21 @@ func New() *ConnInfo {
 	return new(ConnInfo)
 }
 
-
 // Conv returns stored SCRAM server conversation.
 func (connInfo *ConnInfo) Conv() *scram.ServerConversation {
 	connInfo.rw.RLock()
 	defer connInfo.rw.RUnlock()
 
-	return connInfo.conv
+	return connInfo.sc
 }
 
 // SetConv stores the SCRAM server conversation.
-func (connInfo *ConnInfo) SetConv(conv *scram.ServerConversation) {
+func (connInfo *ConnInfo) SetConv(sc *scram.ServerConversation) {
 	connInfo.rw.RLock()
 	defer connInfo.rw.RUnlock()
 
-	connInfo.conv = conv
+	connInfo.sc = sc
+}
 
 // Username returns stored username.
 func (connInfo *ConnInfo) Username() string {
