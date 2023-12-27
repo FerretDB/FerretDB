@@ -79,7 +79,6 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 				o:  doc,
 				ns: c.dbName + "." + c.name,
 				op: "i",
-				v:  int64(2),
 			}
 			if oplogDoc, err = d.marshal(now); err != nil {
 				c.l.Error("Failed to create document", zap.Error(err))
@@ -117,10 +116,12 @@ func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllPa
 
 		for i, doc := range params.Docs {
 			d := &document{
-				o:  doc,
+				o: must.NotFail(types.NewDocument(
+					"$v", int64(1),
+					"$set", doc,
+				)),
 				ns: c.dbName + "." + c.name,
 				op: "u",
-				v:  int64(1),
 			}
 			if oplogDoc, err = d.marshal(now); err != nil {
 				c.l.Error("Failed to create document", zap.Error(err))
@@ -166,7 +167,6 @@ func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllPa
 				o:  oplogDoc,
 				ns: c.dbName + "." + c.name,
 				op: "d",
-				v:  int64(2),
 			}
 			if oplogDoc, err = d.marshal(now); err != nil {
 				c.l.Error("Failed to create document", zap.Error(err))
