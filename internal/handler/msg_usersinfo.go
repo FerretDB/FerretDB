@@ -18,8 +18,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 
-	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -138,15 +138,15 @@ func (h *Handler) MsgUsersInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	var filter *types.Document
-	filter, err = usersInfoQueryFilter(allDBs, singleDB, dbName, users)
+	filter, err = usersInfoFilter(allDBs, singleDB, dbName, users)
 
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	qr, err := usersCol.Query(ctx, &backends.QueryParams{
-		Filter: filter,
-	})
+	// Filter isn't being passed to the query as we are filtering after retrieving all data
+	// from the database due to limitations of the internal/backends filters.
+	qr, err := usersCol.Query(ctx, nil)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -160,6 +160,8 @@ func (h *Handler) MsgUsersInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
+	var data []*types.Document
+
 	for {
 		_, v, err := qr.Iter.Next()
 
@@ -171,6 +173,32 @@ func (h *Handler) MsgUsersInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			return nil, lazyerrors.Error(err)
 		}
 
+		matches, err := common.FilterDocument(v, filter)
+
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		if matches {
+			data = append(data, v)
+		}
+	}
+
+	// Sort slice to make output more deterministic.
+	// FIXME: This is trying to replicate what appears to be the logic used by MongoDB,
+	// but maybe this isn't replicating it exactly.
+	sort.SliceStable(data, func(i, j int) bool {
+		dbi, _ := data[i].Get("db")
+		dbj, _ := data[j].Get("db")
+		if dbi != "" && dbi != dbj {
+			return dbi.(string) > dbj.(string)
+		}
+		idi, _ := data[i].Get("_id")
+		idj, _ := data[j].Get("_id")
+		return idi.(string) <= idj.(string)
+	})
+
+	for _, v := range data {
 		res.Append(v)
 	}
 
@@ -243,12 +271,12 @@ func (p *usersInfoPair) extract(v any, dbName string) error {
 	}
 }
 
-// usersInfoQueryFilter returns a filter for usersInfo command.
+// usersInfoFilter returns a filter for usersInfo command.
 //
 // When allDBs is true, it returns a filter for all databases.
 // When singleDB is true, it returns a filter for a single database (case when usersInfo: 1 is invoked).
 // Otherwise, it filters by any pair of user and database.
-func usersInfoQueryFilter(allDBs, singleDB bool, dbName string, pairs []usersInfoPair) (*types.Document, error) {
+func usersInfoFilter(allDBs, singleDB bool, dbName string, pairs []usersInfoPair) (*types.Document, error) {
 	filter := must.NotFail(types.NewDocument())
 
 	if allDBs {
@@ -256,7 +284,7 @@ func usersInfoQueryFilter(allDBs, singleDB bool, dbName string, pairs []usersInf
 	}
 
 	if singleDB {
-		filter.Set("db", dbName)
+		filter.Set("db", must.NotFail(types.NewDocument("$eq", dbName)))
 		return filter, nil
 	}
 
@@ -270,7 +298,7 @@ func usersInfoQueryFilter(allDBs, singleDB bool, dbName string, pairs []usersInf
 		return nil, lazyerrors.Error(err)
 	}
 
-	filter.Set("_id", must.NotFail(types.NewDocument("$eq", ids)))
+	filter.Set("_id", must.NotFail(types.NewDocument("$in", ids)))
 
 	return filter, nil
 }
