@@ -274,7 +274,6 @@ func (h *Handler) makeNextBatch(c *cursor.Cursor, batchSize int64) (*types.Array
 	return nextBatch, nil
 }
 
-// TODO
 // awaitData stops the goroutine, and waits for a new data for the cursor.
 // If there's a new document, or the maxTimeMS have passed it returns the nextBatch.
 func (h *Handler) awaitData(ctx context.Context, c *cursor.Cursor, maxTimeMS, batchSize int64) (resBatch *types.Array, err error) {
