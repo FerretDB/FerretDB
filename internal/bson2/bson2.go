@@ -44,20 +44,26 @@ import (
 	"time"
 
 	"github.com/cristalhq/bson/bsonproto"
+
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 type (
 	ScalarType = bsonproto.ScalarType
-	Binary     = bsonproto.Binary
-	ObjectID   = bsonproto.ObjectID
-	NullType   = bsonproto.NullType
-	Regex      = bsonproto.Regex
-	Timestamp  = bsonproto.Timestamp
+
+	Binary    = bsonproto.Binary
+	ObjectID  = bsonproto.ObjectID
+	NullType  = bsonproto.NullType
+	Regex     = bsonproto.Regex
+	Timestamp = bsonproto.Timestamp
 )
 
 var (
 	ErrDecodeShortInput   = bsonproto.ErrDecodeShortInput
 	ErrDecodeInvalidInput = bsonproto.ErrDecodeInvalidInput
+
+	Null = bsonproto.Null
 )
 
 // Type represents a BSON type.
@@ -77,6 +83,16 @@ func validType(v any) bool {
 	case RawDocument:
 	case *Array:
 	case RawArray:
+
+	default:
+		return validScalarType(v)
+	}
+
+	return true
+}
+
+func validScalarType(v any) bool {
+	switch v.(type) {
 	case float64:
 	case string:
 	case Binary:
@@ -96,30 +112,27 @@ func validType(v any) bool {
 	return true
 }
 
-//go:generate ../../bin/stringer -linecomment -type tag
+func convertScalar(v any) any {
+	must.BeTrue(validScalarType(v))
 
-type tag byte
-
-const (
-	tagFloat64         = tag(0x01) // Float64
-	tagString          = tag(0x02) // String
-	tagDocument        = tag(0x03) // Document
-	tagArray           = tag(0x04) // Array
-	tagBinary          = tag(0x05) // Binary
-	tagUndefined       = tag(0x06) // Undefined
-	tagObjectID        = tag(0x07) // ObjectID
-	tagBool            = tag(0x08) // Bool
-	tagTime            = tag(0x09) // Time
-	tagNull            = tag(0x0a) // Null
-	tagRegex           = tag(0x0b) // Regex
-	tagDBPointer       = tag(0x0c) // DBPointer
-	tagJavaScript      = tag(0x0d) // JavaScript
-	tagSymbol          = tag(0x0e) // Symbol
-	tagJavaScriptScope = tag(0x0f) // JavaScriptScope
-	tagInt32           = tag(0x10) // Int32
-	tagTimestamp       = tag(0x11) // Timestamp
-	tagInt64           = tag(0x12) // Int64
-	tagDecimal         = tag(0x13) // Decimal
-	tagMinKey          = tag(0xff) // MinKey
-	tagMaxKey          = tag(0x7f) // MaxKey
-)
+	switch v := v.(type) {
+	case Binary:
+		return types.Binary{
+			B:       v.B,
+			Subtype: types.BinarySubtype(v.Subtype),
+		}
+	case ObjectID:
+		return types.ObjectID(v)
+	case NullType:
+		return types.Null
+	case Regex:
+		return types.Regex{
+			Pattern: v.Pattern,
+			Options: v.Options,
+		}
+	case Timestamp:
+		return types.Timestamp(v)
+	default: // float64, string, bool, int32, int64
+		return v
+	}
+}

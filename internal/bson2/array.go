@@ -14,10 +14,53 @@
 
 package bson2
 
+import (
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+)
+
 // RawArray represents a BSON array in the binary encoded form.
 type RawArray []byte
 
 // Array represents a BSON array in the (partially) decoded form.
 type Array struct {
 	elements []any
+}
+
+func (arr *Array) Convert() (*types.Array, error) {
+	values := make([]any, len(arr.elements))
+
+	for i, f := range arr.elements {
+		switch v := f.(type) {
+		case *Document:
+			d, err := v.Convert()
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+			values[i] = d
+
+		case RawDocument:
+			panic("Convert RawDocument")
+
+		case *Array:
+			a, err := v.Convert()
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+			values[i] = a
+
+		case RawArray:
+			panic("Convert RawArray")
+
+		default:
+			values[i] = convertScalar(v)
+		}
+	}
+
+	res, err := types.NewArray(values...)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return res, nil
 }

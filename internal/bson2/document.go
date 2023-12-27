@@ -89,13 +89,17 @@ func (doc *Document) Convert() (*types.Document, error) {
 			panic("Convert RawDocument")
 
 		case *Array:
-			panic("Convert *Array")
+			a, err := v.Convert()
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+			pairs = append(pairs, f.name, a)
 
 		case RawArray:
 			panic("Convert RawArray")
 
 		default:
-			pairs = append(pairs, f.name, v)
+			pairs = append(pairs, f.name, convertScalar(v))
 		}
 	}
 

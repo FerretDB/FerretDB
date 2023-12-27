@@ -16,6 +16,7 @@ package bson2
 
 import (
 	"encoding/binary"
+	"strconv"
 
 	"github.com/cristalhq/bson/bsonproto"
 
@@ -74,17 +75,21 @@ func DecodeDocument(b RawDocument) (*Document, error) {
 			v = s
 
 		case tagDocument:
-			l := int(binary.LittleEndian.Uint32(b))
+			l := int(binary.LittleEndian.Uint32(b[offset:]))
 			var doc *Document
 			doc, err = DecodeDocument(b[offset : offset+l])
 			offset += l
 			v = doc
 
 		case tagArray:
-			panic("Decode TagArray")
+			l := int(binary.LittleEndian.Uint32(b[offset:]))
+			var arr *Array
+			arr, err = DecodeArray(RawArray(b[offset : offset+l]))
+			offset += l
+			v = arr
 
 		case tagBinary:
-			var s bsonproto.Binary
+			var s Binary
 			s, err = bsonproto.DecodeBinary(b[offset:])
 			offset += bsonproto.SizeBinary(s)
 			v = s
@@ -102,10 +107,10 @@ func DecodeDocument(b RawDocument) (*Document, error) {
 			offset += bsonproto.SizeTime
 
 		case tagNull:
-			v = bsonproto.Null
+			v = Null
 
 		case tagRegex:
-			var s bsonproto.Regex
+			var s Regex
 			s, err = bsonproto.DecodeRegex(b[offset:])
 			offset += bsonproto.SizeRegex(s)
 			v = s
@@ -131,6 +136,27 @@ func DecodeDocument(b RawDocument) (*Document, error) {
 		}
 
 		must.NoError(res.add(name, v))
+	}
+
+	return res, nil
+}
+
+func DecodeArray(b RawArray) (*Array, error) {
+	doc, err := DecodeDocument(RawDocument(b))
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	res := &Array{
+		elements: make([]any, len(doc.fields)),
+	}
+
+	for i, f := range doc.fields {
+		if f.name != strconv.Itoa(i) {
+			return nil, lazyerrors.Errorf("invalid array index: %s", f.name)
+		}
+
+		res.elements[i] = f.value
 	}
 
 	return res, nil
