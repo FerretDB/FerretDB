@@ -60,18 +60,28 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	var response []byte
 
+	var conv *scram.ServerConversation
+
 	plain := true
 
-	switch mechanism {
-	case "PLAIN":
+	switch {
+	case mechanism == "PLAIN":
 		username, password, err = saslStartPlain(document)
 		if err != nil {
 			return nil, err
 		}
 
-	case "SCRAM-SHA-256":
+		_ = username // hack to check that we share the ctx
+
+	case document.Has("speculativeAuthenticate"):
+		h.L.Debug(
+			"speculativeAuthenticate",
+			zap.String("command", document.Command()),
+		)
+
+	case mechanism == "SCRAM-SHA-256":
 		// TODO finish SCRAM conversation
-		response, err = saslStartSCRAM(document)
+		response, conv, err = saslStartSCRAM(document)
 		if err != nil {
 			return nil, err
 		}
@@ -89,7 +99,15 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrAuthenticationFailed, msg, "mechanism")
 	}
 
-	conninfo.Get(ctx).SetAuth(username, password)
+	conninfo.Get(ctx).SetAuth("bob", password)
+	conninfo.Get(ctx).SetConv(conv)
+
+	h.L.Debug(
+		"conninfo",
+		zap.Bool("valid", conninfo.Get(ctx).Conv().Valid()),
+		zap.Bool("done", conninfo.Get(ctx).Conv().Done()),
+		zap.String("username", conninfo.Get(ctx).Conv().Username()),
+	)
 
 	var emptyPayload types.Binary
 	var reply wire.OpMsg
@@ -162,7 +180,7 @@ func saslStartPlain(doc *types.Document) (string, string, error) {
 	return string(authcid), string(passwd), nil
 }
 
-func saslStartSCRAM(doc *types.Document) ([]byte, error) {
+func saslStartSCRAM(doc *types.Document) ([]byte, *scram.ServerConversation, error) {
 	var payload []byte
 
 	binaryPayload, err := common.GetRequiredParam[types.Binary](doc, "payload")
@@ -183,7 +201,7 @@ func saslStartSCRAM(doc *types.Document) ([]byte, error) {
 	// generate server-first-message of the form r=client-nonce|server-nonce,s=user-salt,i=iteration-count
 	salt := make([]byte, 16)
 	if _, err := io.ReadFull(rand.Reader, salt); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	cl := scram.CredentialLookup(func(s string) (scram.StoredCredentials, error) {
@@ -201,5 +219,5 @@ func saslStartSCRAM(doc *types.Document) ([]byte, error) {
 	response, err = conv.Step(string(payload))
 	must.NoError(err)
 
-	return []byte(response), nil
+	return []byte(response), conv, nil
 }

@@ -17,6 +17,7 @@ package handler
 import (
 	"context"
 
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -50,8 +51,15 @@ func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.O
 		payload = binaryPayload.B
 	}
 
+	conv := conninfo.Get(ctx).Conv()
+
+	response, err := conv.Step(string(payload))
 	h.L.Debug(
-		"saslContinue", zap.String("payload", string(payload)),
+		"saslContinue",
+		zap.String("payload", string(payload)),
+		zap.String("response", response),
+		zap.Error(err),
+		zap.String("username", conv.Username()),
 	)
 
 	var reply wire.OpMsg

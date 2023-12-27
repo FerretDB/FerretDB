@@ -42,7 +42,7 @@ func TestSaslStartSCRAM(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			// TODO actually test it if posssible...
-			_, err := saslStartSCRAM(tc.doc)
+			_, _, err := saslStartSCRAM(tc.doc)
 			assert.Equal(t, tc.err, err)
 		})
 	}

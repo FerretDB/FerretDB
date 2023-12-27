@@ -62,7 +62,7 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 	// if so, the saslStart command may be embedded under the speculativeAuthenticate field
 	if queryDocument.Has("speculativeAuthenticate") {
 		// TODO finish SCRAM conversation
-		response, err := saslStartSCRAM(queryDocument)
+		response, _, err := saslStartSCRAM(queryDocument)
 		if err != nil {
 			return nil, err
 		}
