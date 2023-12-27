@@ -29,7 +29,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -276,81 +275,65 @@ func (h *Handler) makeNextBatch(c *cursor.Cursor, batchSize int64) (*types.Array
 
 // awaitData stops the goroutine, and waits for a new data for the cursor.
 // If there's a new document, or the maxTimeMS have passed it returns the nextBatch.
-func (h *Handler) awaitData(ctx context.Context, c *cursor.Cursor, maxTimeMS, batchSize int64) (resBatch *types.Array, err error) {
+func (h *Handler) awaitData(ctx context.Context, c *cursor.Cursor, maxTimeMS, batchSize int64) (*types.Array, error) {
 	data := c.Data.(*findCursorData)
 
 	closer := iterator.NewMultiCloser()
-	done := make(chan struct{})
 
 	startTime := time.Now()
 	sleepDur := time.Duration(maxTimeMS) * time.Millisecond
 
-	go func() {
-		ctxutil.Sleep(ctx, sleepDur)
-		h.L.Debug(
-			"awaitData: maxTimeMS has passed, returning batch", zap.Int64("cursor_id", c.ID), zap.Stringer("type", c.Type),
-			zap.Duration("max_time", sleepDur), zap.Int("count", resBatch.Len()), zap.Int64("batch_size", batchSize),
-		)
-		done <- struct{}{}
-	}()
+	var resBatch *types.Array
 
-	go func() {
-		for {
+	ctx, cancel := context.WithTimeout(ctx, sleepDur)
+	defer cancel()
+
+	for {
+		c.Close()
+
+		queryRes, err := data.coll.Query(ctx, data.qp)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		iter, err := h.makeFindIter(queryRes.Iter, closer, data.findParams)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		if err = c.Reset(iter); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		switch {
+		case resBatch.Len() == 0:
+			h.L.Debug(
+				"awaitData: Waiting for new documents", zap.Int64("cursor_id", c.ID), zap.Stringer("type", c.Type),
+				zap.Duration("time_left", sleepDur-time.Since(startTime)),
+			)
+
+			resBatch, err = h.makeNextBatch(c, batchSize)
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
 			c.Close()
 
-			queryRes, err := data.coll.Query(ctx, data.qp)
-			if err != nil {
-				err = lazyerrors.Error(err)
-				return
+			if resBatch.Len() != 0 {
+				return nil, lazyerrors.Error(err)
 			}
 
-			iter, err := h.makeFindIter(queryRes.Iter, closer, data.findParams)
-			if err != nil {
-				err = lazyerrors.Error(err)
-				return
-			}
-
-			if err = c.Reset(iter); err != nil {
-				err = lazyerrors.Error(err)
-				return
-			}
-
-			switch {
-			case resBatch.Len() == 0:
-				h.L.Debug(
-					"awaitData: Waiting for new documents", zap.Int64("cursor_id", c.ID), zap.Stringer("type", c.Type),
-					zap.Duration("time_left", sleepDur-time.Since(startTime)),
-				)
-
-				resBatch, err = h.makeNextBatch(c, batchSize)
-				if err != nil {
-					err = lazyerrors.Error(err)
-					return
-
-				}
-
-				c.Close()
-
-				if resBatch.Len() != 0 {
-					return
-				}
-
-			default:
-				h.L.Debug(
-					"awaitData: Got new documents, returning batch", zap.Int64("cursor_id", c.ID), zap.Stringer("type", c.Type),
-					zap.Int("count", resBatch.Len()), zap.Int64("batch_size", batchSize),
-				)
-				c.Close()
-				done <- struct{}{}
-				return
-			}
+		default:
+			h.L.Debug(
+				"awaitData: Got new documents, returning batch", zap.Int64("cursor_id", c.ID), zap.Stringer("type", c.Type),
+				zap.Int("count", resBatch.Len()), zap.Int64("batch_size", batchSize),
+			)
+			c.Close()
+			h.L.Debug(
+				"awaitData: Returning batch", zap.Int64("cursor_id", c.ID), zap.Stringer("type", c.Type),
+				zap.Int("count", resBatch.Len()), zap.Int64("batch_size", batchSize),
+			)
+			return resBatch, err
 		}
-	}()
-
-	<-done
-	h.L.Debug(
-		"awaitData: Returning batch", zap.Int64("cursor_id", c.ID), zap.Stringer("type", c.Type),
-		zap.Int("count", resBatch.Len()), zap.Int64("batch_size", batchSize),
-	)
-	return resBatch, err
+	}
 }
