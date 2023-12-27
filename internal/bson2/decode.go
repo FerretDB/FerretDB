@@ -75,7 +75,7 @@ func DecodeDocument(b RawDocument) (*Document, error) {
 			return nil, lazyerrors.Error(err)
 		}
 
-		must.NoError(res.Add(name, v))
+		must.NoError(res.add(name, v))
 	}
 
 	return res, nil

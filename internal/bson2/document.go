@@ -16,6 +16,9 @@ package bson2
 
 import (
 	"fmt"
+
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // RawDocument represents a BSON document a.k.a object in the binary encoded form.
@@ -70,7 +73,41 @@ func MakeDocument(cap int) *Document {
 	}
 }
 
-func (doc *Document) Add(name string, value any) error {
+func (doc *Document) Convert() (*types.Document, error) {
+	pairs := make([]any, 0, len(doc.fields)*2)
+
+	for _, f := range doc.fields {
+		switch v := f.value.(type) {
+		case *Document:
+			d, err := v.Convert()
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+			pairs = append(pairs, f.name, d)
+
+		case RawDocument:
+			panic("TODO")
+
+		case *Array:
+			panic("TODO")
+
+		case RawArray:
+			panic("TODO")
+
+		default:
+			pairs = append(pairs, f.name, v)
+		}
+	}
+
+	res, err := types.NewDocument(pairs...)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return res, nil
+}
+
+func (doc *Document) add(name string, value any) error {
 	if !validType(value) {
 		return fmt.Errorf("invalid field value type: %T", value)
 	}
@@ -83,7 +120,7 @@ func (doc *Document) Add(name string, value any) error {
 	return nil
 }
 
-func (doc *Document) All(yield func(name string, value any) bool) bool {
+func (doc *Document) all(yield func(name string, value any) bool) bool {
 	for _, f := range doc.fields {
 		if !yield(f.name, f.value) {
 			return false
