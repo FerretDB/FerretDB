@@ -322,7 +322,7 @@ func (h *Handler) awaitData(ctx context.Context, c *cursor.Cursor, maxTimeMS, ba
 			return
 		}
 
-		if resBatch.Len() == 0 {
+		if resBatch.Len() != 0 {
 			// TODO
 			c.Close()
 
