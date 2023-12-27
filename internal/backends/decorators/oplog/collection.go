@@ -116,7 +116,10 @@ func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllPa
 
 		for i, doc := range params.Docs {
 			d := &document{
-				o:  doc,
+				o: must.NotFail(types.NewDocument(
+					"$v", int64(1),
+					"$set", doc,
+				)),
 				ns: c.dbName + "." + c.name,
 				op: "u",
 			}
