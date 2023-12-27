@@ -69,7 +69,7 @@ func TestSaslStartPlain(t *testing.T) {
 			doc: must.NotFail(types.NewDocument("payload", types.Binary{B: []byte("ABC")})),
 			err: handlererrors.NewCommandErrorMsgWithArgument(
 				handlererrors.ErrTypeMismatch,
-				"Invalid payload: expected 3 parts, got 1",
+				"Invalid payload: expected 3 fields, got 1",
 				"payload",
 			),
 		},

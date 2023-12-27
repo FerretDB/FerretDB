@@ -143,7 +143,7 @@ func saslStartPlain(doc *types.Document) (string, string, error) {
 	if l := len(fields); l != 3 {
 		return "", "", handlererrors.NewCommandErrorMsgWithArgument(
 			handlererrors.ErrTypeMismatch,
-			fmt.Sprintf("Invalid payload: expected 3 parts, got %d", l),
+			fmt.Sprintf("Invalid payload: expected 3 fields, got %d", l),
 			"payload",
 		)
 	}
