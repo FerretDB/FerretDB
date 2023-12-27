@@ -56,8 +56,6 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	var username, password string
 
-	var payload []byte
-
 	plain := true
 
 	switch mechanism {
@@ -100,7 +98,7 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	))
 
 	if !plain {
-		d.Set("payload", payload)
+		d.Set("payload", emptyPayload) // TODO
 		d.Set("done", false)
 	}
 
