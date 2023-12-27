@@ -28,7 +28,7 @@ type contextKey struct{}
 // Context key for WithConnInfo/Get.
 var connInfoKey = contextKey{}
 
-// ConnInfo represents connection info.
+// ConnInfo represents client connection information.
 type ConnInfo struct {
 	// the order of fields is weird to make the struct smaller due to alignment
 
@@ -47,6 +47,7 @@ func New() *ConnInfo {
 	return new(ConnInfo)
 }
 
+
 // Conv returns stored SCRAM server conversation.
 func (connInfo *ConnInfo) Conv() *scram.ServerConversation {
 	connInfo.rw.RLock()
@@ -61,6 +62,14 @@ func (connInfo *ConnInfo) SetConv(conv *scram.ServerConversation) {
 	defer connInfo.rw.RUnlock()
 
 	connInfo.conv = conv
+
+// Username returns stored username.
+func (connInfo *ConnInfo) Username() string {
+	connInfo.rw.RLock()
+	defer connInfo.rw.RUnlock()
+
+	return connInfo.username
+
 }
 
 // Auth returns stored username and password.
