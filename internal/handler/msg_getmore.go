@@ -228,7 +228,7 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		}
 
 	case cursor.TailableAwait:
-		if nextBatch.Len() == 0 {
+		if nextBatch.Len() == 0 { // TODO
 			nextBatch, err = h.awaitData(ctx, c, maxTimeMS, batchSize)
 			if err != nil {
 				return nil, lazyerrors.Error(err)
@@ -281,6 +281,7 @@ func (h *Handler) awaitData(ctx context.Context, c *cursor.Cursor, maxTimeMS, ba
 
 	closer := iterator.NewMultiCloser()
 
+	// TODO
 	startTime := time.Now()
 	sleepDur := time.Duration(maxTimeMS) * time.Millisecond
 
@@ -299,10 +300,10 @@ func (h *Handler) awaitData(ctx context.Context, c *cursor.Cursor, maxTimeMS, ba
 
 		err = lazyerrors.Error(err)
 		resBatch = nil
-		return
 	}()
 
 	for {
+		// TODO
 		c.Close()
 
 		var queryRes *backends.QueryResult
@@ -333,6 +334,7 @@ func (h *Handler) awaitData(ctx context.Context, c *cursor.Cursor, maxTimeMS, ba
 				return
 			}
 
+			// TODO
 			c.Close()
 
 			//if resBatch.Len() != 0 {
@@ -340,14 +342,14 @@ func (h *Handler) awaitData(ctx context.Context, c *cursor.Cursor, maxTimeMS, ba
 			//}
 
 		default:
+			// TODO
 			c.Close()
 
+			// TODO
 			h.L.Debug(
 				"awaitData: Returning batch", zap.Int64("cursor_id", c.ID), zap.Stringer("type", c.Type),
 				zap.Int("count", resBatch.Len()), zap.Int64("batch_size", batchSize),
 			)
-
-			return
 		}
 	}
 }
