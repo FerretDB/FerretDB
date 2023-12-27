@@ -50,25 +50,76 @@ func DecodeDocument(b RawDocument) (*Document, error) {
 
 	res := MakeDocument(1)
 
-	i := 4
-	for i != len(b)-1 {
-		tag := b[i]
-		i++
+	offset := 4
+	for offset != len(b)-1 {
+		t := tag(b[offset])
+		offset++
 
-		name, err := decodeCString(b[i:])
-		i += len(name) + 1
+		name, err := decodeCString(b[offset:])
+		offset += len(name) + 1
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
 		var v any
-		switch tag {
-		case TagFloat64:
-			v, err = bsonproto.DecodeFloat64(b[i:])
-			i += bsonproto.SizeFloat64
+		switch t {
+		case tagFloat64:
+			v, err = bsonproto.DecodeFloat64(b[offset:])
+			offset += bsonproto.SizeFloat64
+
+		case tagString:
+			var s string
+			s, err = bsonproto.DecodeString(b[offset:])
+			offset += bsonproto.SizeString(s)
+			v = s
+
+		case tagDocument:
+			panic("TagDocument")
+
+		case tagArray:
+			panic("TagArray")
+
+		case tagBinary:
+			var s bsonproto.Binary
+			s, err = bsonproto.DecodeBinary(b[offset:])
+			offset += bsonproto.SizeBinary(s)
+			v = s
+
+		case tagObjectID:
+			v, err = bsonproto.DecodeObjectID(b[offset:])
+			offset += bsonproto.SizeObjectID
+
+		case tagBool:
+			v, err = bsonproto.DecodeBool(b[offset:])
+			offset += bsonproto.SizeBool
+
+		case tagTime:
+			v, err = bsonproto.DecodeTime(b[offset:])
+			offset += bsonproto.SizeTime
+
+		case tagNull:
+			v = bsonproto.Null
+
+		case tagRegex:
+			var s bsonproto.Regex
+			s, err = bsonproto.DecodeRegex(b[offset:])
+			offset += bsonproto.SizeRegex(s)
+			v = s
+
+		case tagInt32:
+			v, err = bsonproto.DecodeInt32(b[offset:])
+			offset += bsonproto.SizeInt32
+
+		case tagTimestamp:
+			v, err = bsonproto.DecodeTimestamp(b[offset:])
+			offset += bsonproto.SizeTimestamp
+
+		case tagInt64:
+			v, err = bsonproto.DecodeInt64(b[offset:])
+			offset += bsonproto.SizeInt64
 
 		default:
-			return nil, lazyerrors.Errorf("unsupported tag: %d", tag)
+			return nil, lazyerrors.Errorf("unsupported tag: %d", t)
 		}
 
 		if err != nil {

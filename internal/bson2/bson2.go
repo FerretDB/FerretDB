@@ -96,18 +96,30 @@ func validType(v any) bool {
 	return true
 }
 
+//go:generate ../../bin/stringer -linecomment -type tag
+
+type tag byte
+
 const (
-	TagFloat64   = byte(0x01)
-	TagString    = byte(0x02)
-	TagDocument  = byte(0x03)
-	TagArray     = byte(0x04)
-	TagBinary    = byte(0x05)
-	TagObjectID  = byte(0x07)
-	TagBool      = byte(0x08)
-	TagTime      = byte(0x09)
-	TagNullType  = byte(0x0a)
-	TagRegex     = byte(0x0b)
-	TagInt32     = byte(0x10)
-	TagTimestamp = byte(0x11)
-	TagInt64     = byte(0x12)
+	tagFloat64         = tag(0x01) // Float64
+	tagString          = tag(0x02) // String
+	tagDocument        = tag(0x03) // Document
+	tagArray           = tag(0x04) // Array
+	tagBinary          = tag(0x05) // Binary
+	tagUndefined       = tag(0x06) // Undefined
+	tagObjectID        = tag(0x07) // ObjectID
+	tagBool            = tag(0x08) // Bool
+	tagTime            = tag(0x09) // Time
+	tagNull            = tag(0x0a) // Null
+	tagRegex           = tag(0x0b) // Regex
+	tagDBPointer       = tag(0x0c) // DBPointer
+	tagJavaScript      = tag(0x0d) // JavaScript
+	tagSymbol          = tag(0x0e) // Symbol
+	tagJavaScriptScope = tag(0x0f) // JavaScriptScope
+	tagInt32           = tag(0x10) // Int32
+	tagTimestamp       = tag(0x11) // Timestamp
+	tagInt64           = tag(0x12) // Int64
+	tagDecimal         = tag(0x13) // Decimal
+	tagMinKey          = tag(0xff) // MinKey
+	tagMaxKey          = tag(0x7f) // MaxKey
 )
