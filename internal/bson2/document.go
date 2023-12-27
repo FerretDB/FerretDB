@@ -86,13 +86,13 @@ func (doc *Document) Convert() (*types.Document, error) {
 			pairs = append(pairs, f.name, d)
 
 		case RawDocument:
-			panic("TODO")
+			panic("Convert RawDocument")
 
 		case *Array:
-			panic("TODO")
+			panic("Convert *Array")
 
 		case RawArray:
-			panic("TODO")
+			panic("Convert RawArray")
 
 		default:
 			pairs = append(pairs, f.name, v)

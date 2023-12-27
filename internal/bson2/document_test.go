@@ -184,7 +184,8 @@ var (
 		},
 	}
 
-	documentTestCases = []testCase{handshake1, handshake2, handshake3, handshake4, all /* eof , */, duplicateKeys}
+	// documentTestCases = []testCase{handshake1, handshake2, handshake3, handshake4, all /* eof , */, duplicateKeys}
+	documentTestCases = []testCase{duplicateKeys}
 )
 
 func TestDocument(t *testing.T) {

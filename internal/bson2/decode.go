@@ -40,12 +40,12 @@ func decodeCString(b []byte) (string, error) {
 }
 
 func DecodeDocument(b RawDocument) (*Document, error) {
-	l := binary.LittleEndian.Uint32(b)
-	if len(b) != int(l) {
-		return nil, lazyerrors.Error(ErrDecodeInvalidInput)
+	bl := len(b)
+	if dl := int(binary.LittleEndian.Uint32(b)); bl != dl {
+		return nil, lazyerrors.Errorf("bl = %d, dl = %d: %w", bl, dl, ErrDecodeInvalidInput)
 	}
-	if b[len(b)-1] != 0 {
-		return nil, lazyerrors.Error(ErrDecodeInvalidInput)
+	if last := b[bl-1]; last != 0 {
+		return nil, lazyerrors.Errorf("last = %d: %w", last, ErrDecodeInvalidInput)
 	}
 
 	res := MakeDocument(1)
@@ -74,10 +74,14 @@ func DecodeDocument(b RawDocument) (*Document, error) {
 			v = s
 
 		case tagDocument:
-			panic("TagDocument")
+			l := int(binary.LittleEndian.Uint32(b))
+			var doc *Document
+			doc, err = DecodeDocument(b[offset : offset+l])
+			offset += l
+			v = doc
 
 		case tagArray:
-			panic("TagArray")
+			panic("Decode TagArray")
 
 		case tagBinary:
 			var s bsonproto.Binary
@@ -119,7 +123,7 @@ func DecodeDocument(b RawDocument) (*Document, error) {
 			offset += bsonproto.SizeInt64
 
 		default:
-			return nil, lazyerrors.Errorf("unsupported tag: %d", t)
+			return nil, lazyerrors.Errorf("unsupported tag: %s", t)
 		}
 
 		if err != nil {
