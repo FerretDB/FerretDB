@@ -2,7 +2,7 @@ module github.com/FerretDB/FerretDB
 
 go 1.21
 
-replace github.com/cristalhq/bson => github.com/AlekSi/bson v0.0.6-0.20231226144624-135efa10b496
+replace github.com/cristalhq/bson => github.com/AlekSi/bson v0.0.6-0.20231227145948-ed6a013a4cb2
 
 require (
 	github.com/AlekSi/pointer v1.2.0
