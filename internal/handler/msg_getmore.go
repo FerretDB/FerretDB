@@ -286,9 +286,11 @@ func (h *Handler) awaitData(ctx context.Context, c *cursor.Cursor, maxTimeMS, ba
 	sleepDur := time.Duration(maxTimeMS) * time.Millisecond
 
 	ctx, cancel := context.WithTimeout(ctx, sleepDur)
-	defer cancel()
 
 	defer func() {
+		cancel()
+		c.Close()
+
 		if err == nil {
 			return
 		}
@@ -303,9 +305,6 @@ func (h *Handler) awaitData(ctx context.Context, c *cursor.Cursor, maxTimeMS, ba
 	}()
 
 	for {
-		// TODO
-		c.Close()
-
 		var queryRes *backends.QueryResult
 		queryRes, err = data.coll.Query(ctx, data.qp)
 		if err != nil {
@@ -324,7 +323,7 @@ func (h *Handler) awaitData(ctx context.Context, c *cursor.Cursor, maxTimeMS, ba
 
 		if resBatch.Len() != 0 {
 			// TODO
-			c.Close()
+			//c.Close()
 
 			// TODO
 			h.L.Debug(
@@ -345,11 +344,8 @@ func (h *Handler) awaitData(ctx context.Context, c *cursor.Cursor, maxTimeMS, ba
 			return
 		}
 
-		// TODO
-		c.Close()
-
-		//if resBatch.Len() != 0 {
-		//	return nil, lazyerrors.Error(err)
-		//}
+		if maxTimeMS > 10 {
+			time.Sleep(10 * time.Millisecond)
+		}
 	}
 }
