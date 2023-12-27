@@ -55,7 +55,7 @@ func (connInfo *ConnInfo) Conv() *scram.ServerConversation {
 	return connInfo.conv
 }
 
-// Auth stores the SCRAM server conversation.
+// SetConv stores the SCRAM server conversation.
 func (connInfo *ConnInfo) SetConv(conv *scram.ServerConversation) {
 	connInfo.rw.RLock()
 	defer connInfo.rw.RUnlock()
