@@ -274,6 +274,7 @@ func (h *Handler) makeNextBatch(c *cursor.Cursor, batchSize int64) (*types.Array
 	return nextBatch, nil
 }
 
+// TODO
 // awaitData stops the goroutine, and waits for a new data for the cursor.
 // If there's a new document, or the maxTimeMS have passed it returns the nextBatch.
 func (h *Handler) awaitData(ctx context.Context, c *cursor.Cursor, maxTimeMS, batchSize int64) (resBatch *types.Array, err error) {
@@ -281,15 +282,12 @@ func (h *Handler) awaitData(ctx context.Context, c *cursor.Cursor, maxTimeMS, ba
 
 	closer := iterator.NewMultiCloser()
 
-	// TODO
-	startTime := time.Now()
 	sleepDur := time.Duration(maxTimeMS) * time.Millisecond
-
 	ctx, cancel := context.WithTimeout(ctx, sleepDur)
 
 	defer func() {
-		cancel()
 		c.Close()
+		cancel()
 
 		if err == nil {
 			return
@@ -322,22 +320,8 @@ func (h *Handler) awaitData(ctx context.Context, c *cursor.Cursor, maxTimeMS, ba
 		}
 
 		if resBatch.Len() != 0 {
-			// TODO
-			//c.Close()
-
-			// TODO
-			h.L.Debug(
-				"awaitData: Returning batch", zap.Int64("cursor_id", c.ID), zap.Stringer("type", c.Type),
-				zap.Int("count", resBatch.Len()), zap.Int64("batch_size", batchSize),
-			)
-
 			return
 		}
-
-		h.L.Debug(
-			"awaitData: Waiting for new documents", zap.Int64("cursor_id", c.ID), zap.Stringer("type", c.Type),
-			zap.Duration("time_left", sleepDur-time.Since(startTime)),
-		)
 
 		resBatch, err = h.makeNextBatch(c, batchSize)
 		if err != nil {

@@ -321,8 +321,8 @@ func TestCursorsTailableTwoCursorsSameCollection(t *testing.T) {
 	assert.Equal(t, cursorID2, nextID2)
 }
 
+// TODO
 func TestCursorsTailableTODO(t *testing.T) {
-	t.Skip("todo")
 	t.Parallel()
 
 	s := setup.SetupWithOpts(t, nil)
