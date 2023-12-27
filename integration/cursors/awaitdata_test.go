@@ -31,14 +31,14 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
-func TestCursorsTailableAwaitData(t *testing.T) {
+func TestCursorsTailableAwaitDataGetMoreMaxTimeMS(t *testing.T) {
 	t.Parallel()
 
 	s := setup.SetupWithOpts(t, nil)
 
 	db, ctx := s.Collection.Database(), s.Ctx
 
-	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(10000000000)
+	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(10000)
 	err := db.CreateCollection(s.Ctx, testutil.CollectionName(t), opts)
 	require.NoError(t, err)
 
@@ -95,7 +95,7 @@ func TestCursorsTailableAwaitDataNonFullBatch(t *testing.T) {
 
 	db, ctx := s.Collection.Database(), s.Ctx
 
-	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(10000000000)
+	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(1000)
 	err := db.CreateCollection(s.Ctx, testutil.CollectionName(t), opts)
 	require.NoError(t, err)
 
@@ -126,7 +126,7 @@ func TestCursorsTailableAwaitDataNonFullBatch(t *testing.T) {
 		{"getMore", cursorID},
 		{"collection", collection.Name()},
 		{"batchSize", 2},
-		{"maxTimeMS", (10 * time.Minute).Milliseconds()},
+		{"maxTimeMS", (30 * time.Second).Milliseconds()},
 	}
 
 	err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
@@ -186,7 +186,7 @@ func TestCursorsAwaitDataErrors(t *testing.T) {
 	})
 }
 
-func TestCursorsTailableAwaitDataTODO(t *testing.T) {
+func TestCursorsTailableAwaitData(t *testing.T) {
 	t.Parallel()
 
 	s := setup.SetupWithOpts(t, nil)
@@ -194,7 +194,7 @@ func TestCursorsTailableAwaitDataTODO(t *testing.T) {
 	db, ctx := s.Collection.Database(), s.Ctx
 
 	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(10000)
-	err := db.CreateCollection(s.Ctx, t.Name(), opts)
+	err := db.CreateCollection(s.Ctx, testutil.CollectionName(t), opts)
 	require.NoError(t, err)
 
 	collection := db.Collection(t.Name())
