@@ -276,7 +276,11 @@ func (h *Handler) makeNextBatch(c *cursor.Cursor, batchSize int64) (*types.Array
 
 // awaitData stops the goroutine, and waits for a new data for the cursor.
 // If there's a new document, or the maxTimeMS have passed it returns the nextBatch.
-func (h *Handler) awaitData(ctx context.Context, c *cursor.Cursor, maxTimeMS, batchSize int64) (resBatch *types.Array, err error) {
+func (h *Handler) awaitData(
+	ctx context.Context,
+	c *cursor.Cursor,
+	maxTimeMS, batchSize int64,
+) (resBatch *types.Array, err error) {
 	data := c.Data.(*findCursorData)
 
 	closer := iterator.NewMultiCloser()
@@ -303,12 +307,14 @@ func (h *Handler) awaitData(ctx context.Context, c *cursor.Cursor, maxTimeMS, ba
 
 	for {
 		var queryRes *backends.QueryResult
+
 		queryRes, err = data.coll.Query(ctx, data.qp)
 		if err != nil {
 			return
 		}
 
 		var iter types.DocumentsIterator
+
 		iter, err = h.makeFindIter(queryRes.Iter, closer, data.findParams)
 		if err != nil {
 			return
