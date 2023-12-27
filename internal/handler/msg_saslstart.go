@@ -64,15 +64,15 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	plain := true
 
-	switch {
-	case mechanism == "PLAIN":
+	switch mechanism {
+	case "PLAIN":
 		username, password, err = saslStartPlain(document)
 		if err != nil {
 			return nil, err
 		}
 
-	case mechanism == "SCRAM-SHA-256":
-		// TODO finish SCRAM conversation
+	case "SCRAM-SHA-256":
+		// TODO fix invalid-proof in SCRAM conversation
 		response, conv, err = saslStartSCRAM(document)
 		if err != nil {
 			return nil, err
@@ -92,14 +92,6 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	conninfo.Get(ctx).SetAuth(username, password)
-	conninfo.Get(ctx).SetConv(conv)
-
-	h.L.Debug(
-		"conninfo",
-		zap.Bool("valid", conninfo.Get(ctx).Conv().Valid()),
-		zap.Bool("done", conninfo.Get(ctx).Conv().Done()),
-		zap.String("username", conninfo.Get(ctx).Conv().Username()),
-	)
 
 	var emptyPayload types.Binary
 	var reply wire.OpMsg
@@ -111,6 +103,14 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	))
 
 	if !plain {
+		conninfo.Get(ctx).SetConv(conv)
+		h.L.Debug(
+			"conninfo",
+			zap.Bool("valid", conninfo.Get(ctx).Conv().Valid()),
+			zap.Bool("done", conninfo.Get(ctx).Conv().Done()),
+			zap.String("username", conninfo.Get(ctx).Conv().Username()),
+		)
+
 		d.Set("payload", types.Binary{
 			Subtype: types.BinarySubtype(0),
 			B:       response,
@@ -191,7 +191,7 @@ func saslStartSCRAM(doc *types.Document) ([]byte, *scram.ServerConversation, err
 	var response string
 
 	// generate server-first-message of the form r=client-nonce|server-nonce,s=user-salt,i=iteration-count
-	salt := make([]byte, 16)
+	salt := make([]byte, 28)
 	if _, err := io.ReadFull(rand.Reader, salt); err != nil {
 		return nil, nil, err
 	}
@@ -201,13 +201,9 @@ func saslStartSCRAM(doc *types.Document) ([]byte, *scram.ServerConversation, err
 			Salt:  string(salt),
 			Iters: 4096,
 		}
-		// TODO generate the StoredKey and ServerKey
+
 		// https://github.com/xdg-go/scram/blob/17629a50d5ce12875d83f9095809ae43b765c303/server_conv.go#L143 the hashes are not equal
-		return scram.StoredCredentials{
-			KeyFactors: kf,
-			StoredKey:  nil,
-			ServerKey:  nil,
-		}, nil
+		return scram.StoredCredentials{KeyFactors: kf}, nil
 	})
 
 	ss, err := scram.SHA256.NewServer(cl)

@@ -33,17 +33,6 @@ func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.O
 		return nil, lazyerrors.Error(err)
 	}
 
-	dbName, err := common.GetRequiredParam[string](document, "$db")
-	if err != nil {
-		return nil, err
-	}
-
-	// TODO https://github.com/FerretDB/FerretDB/issues/3008
-
-	// database name typically is either "$external" or "admin"
-	// we can't use it to query the database
-	_ = dbName
-
 	var payload []byte
 
 	binaryPayload, err := common.GetRequiredParam[types.Binary](document, "payload")
@@ -51,15 +40,14 @@ func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.O
 		payload = binaryPayload.B
 	}
 
+	// c=biws,r=F68dvyilmZIMEFz+3CisPp1HxZ32mqLt66Rcm4+X1R+wPNI0xhXAEayWgwSapNbT,p=N/8JIXLonwJz2i6yNKGX3lZLMGTvf8PAfNmmVrQGxis=
 	conv := conninfo.Get(ctx).Conv()
-
 	response, err := conv.Step(string(payload))
 	h.L.Debug(
 		"saslContinue",
 		zap.String("payload", string(payload)),
 		zap.String("response", response),
 		zap.Error(err),
-		zap.String("username", conv.Username()),
 	)
 
 	var reply wire.OpMsg
@@ -67,7 +55,7 @@ func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.O
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"conversationId", int32(1),
 			"done", true,
-			"payload", binaryPayload,
+			"payload", string(payload),
 			"ok", float64(1),
 		))},
 	}))
