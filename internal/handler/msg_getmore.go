@@ -322,26 +322,7 @@ func (h *Handler) awaitData(ctx context.Context, c *cursor.Cursor, maxTimeMS, ba
 			return
 		}
 
-		switch {
-		case resBatch.Len() == 0:
-			h.L.Debug(
-				"awaitData: Waiting for new documents", zap.Int64("cursor_id", c.ID), zap.Stringer("type", c.Type),
-				zap.Duration("time_left", sleepDur-time.Since(startTime)),
-			)
-
-			resBatch, err = h.makeNextBatch(c, batchSize)
-			if err != nil {
-				return
-			}
-
-			// TODO
-			c.Close()
-
-			//if resBatch.Len() != 0 {
-			//	return nil, lazyerrors.Error(err)
-			//}
-
-		default:
+		if resBatch.Len() == 0 {
 			// TODO
 			c.Close()
 
@@ -350,6 +331,25 @@ func (h *Handler) awaitData(ctx context.Context, c *cursor.Cursor, maxTimeMS, ba
 				"awaitData: Returning batch", zap.Int64("cursor_id", c.ID), zap.Stringer("type", c.Type),
 				zap.Int("count", resBatch.Len()), zap.Int64("batch_size", batchSize),
 			)
+
+			return
 		}
+
+		h.L.Debug(
+			"awaitData: Waiting for new documents", zap.Int64("cursor_id", c.ID), zap.Stringer("type", c.Type),
+			zap.Duration("time_left", sleepDur-time.Since(startTime)),
+		)
+
+		resBatch, err = h.makeNextBatch(c, batchSize)
+		if err != nil {
+			return
+		}
+
+		// TODO
+		c.Close()
+
+		//if resBatch.Len() != 0 {
+		//	return nil, lazyerrors.Error(err)
+		//}
 	}
 }
