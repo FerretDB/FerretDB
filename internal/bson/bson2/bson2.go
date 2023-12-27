@@ -21,30 +21,48 @@
 //
 //	BSON                Go
 //
-//	Object              *bson.Object or RawObject
-//	Array               *bson.Array  or RawArray
+//	Document            *bson2.Document or bson2.RawDocument
+//	Array               *bson2.Array    or bson2.RawArray
 //
 //	Double              float64
 //	String              string
-//	Binary data         bson.Binary
-//	ObjectId            bson.ObjectID
+//	Binary data         bson2.Binary
+//	ObjectId            bson2.ObjectID
 //	Boolean             bool
 //	Date                time.Time
-//	Null                bson.NullType
-//	Regular Expression  bson.Regex
+//	Null                bson2.NullType
+//	Regular Expression  bson2.Regex
 //	32-bit integer      int32
-//	Timestamp           bson.Timestamp
+//	Timestamp           bson2.Timestamp
 //	64-bit integer      int64
 //
-// Composite types (Object and Array) are passed by pointers.
+// Composite types (Document and Array) are passed by pointers.
 // Raw composite type and scalars are passed by values.
 package bson2
 
-import "github.com/cristalhq/bson/bsonproto"
+import (
+	"time"
+
+	"github.com/cristalhq/bson/bsonproto"
+)
+
+type (
+	ScalarType = bsonproto.ScalarType
+	Binary     = bsonproto.Binary
+	ObjectID   = bsonproto.ObjectID
+	NullType   = bsonproto.NullType
+	Regex      = bsonproto.Regex
+	Timestamp  = bsonproto.Timestamp
+)
+
+var (
+	ErrDecodeShortInput   = bsonproto.ErrDecodeShortInput
+	ErrDecodeInvalidInput = bsonproto.ErrDecodeInvalidInput
+)
 
 // Type represents a BSON type.
 type Type interface {
-	bsonproto.ScalarType | CompositeType
+	ScalarType | CompositeType
 }
 
 // CompositeType represents a BSON composite type (including raw types).
@@ -61,8 +79,16 @@ func validType(v any) bool {
 	case RawArray:
 	case float64:
 	case string:
+	case Binary:
+	case ObjectID:
+	case bool:
+	case time.Time:
+	case NullType:
+	case Regex:
 	case int32:
+	case Timestamp:
 	case int64:
+
 	default:
 		return false
 	}
@@ -73,7 +99,7 @@ func validType(v any) bool {
 const (
 	TagFloat64   = byte(0x01)
 	TagString    = byte(0x02)
-	TagObject    = byte(0x03)
+	TagDocument  = byte(0x03)
 	TagArray     = byte(0x04)
 	TagBinary    = byte(0x05)
 	TagObjectID  = byte(0x07)

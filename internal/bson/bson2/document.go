@@ -64,8 +64,27 @@ func NewDocument(pairs ...any) (*Document, error) {
 	return res, nil
 }
 
-func (o *Document) All(yield func(name string, value any) bool) bool {
-	for _, f := range o.fields {
+func MakeDocument(cap int) *Document {
+	return &Document{
+		fields: make([]field, 0, cap),
+	}
+}
+
+func (doc *Document) Add(name string, value any) error {
+	if !validType(value) {
+		return fmt.Errorf("invalid field value type: %T", value)
+	}
+
+	doc.fields = append(doc.fields, field{
+		name:  name,
+		value: value,
+	})
+
+	return nil
+}
+
+func (doc *Document) All(yield func(name string, value any) bool) bool {
+	for _, f := range doc.fields {
 		if !yield(f.name, f.value) {
 			return false
 		}
