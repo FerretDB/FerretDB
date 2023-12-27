@@ -1,5 +1,3 @@
-github.com/AlekSi/bson v0.0.6-0.20231227145948-ed6a013a4cb2 h1:geQLD24ULjW8IK7uSt12jMoaCoRNjoLAHhO+Bmjfafc=
-github.com/AlekSi/bson v0.0.6-0.20231227145948-ed6a013a4cb2/go.mod h1:oMahOeK6u+O0cAC7ZAuxYvFatYqEcl6XRp3FZ51j5dA=
 github.com/AlekSi/pointer v1.2.0 h1:glcy/gc4h8HnG2Z3ZECSzZ1IX1x2JxRVuDzaJwQE0+w=
 github.com/AlekSi/pointer v1.2.0/go.mod h1:gZGfd3dpW4vEc/UlyfKKi1roIqcCgwOIvb0tSNSBle0=
 github.com/SAP/go-hdb v1.6.6 h1:n0uqv+omYcz01sLXQ4bK7vDj76x5ELU0qJ/8PPgri08=
@@ -18,6 +16,8 @@ github.com/cenkalti/backoff/v4 v4.2.1 h1:y4OZtCnogmCPw98Zjyt5a6+QwPLGkiQsYW5oUqy
 github.com/cenkalti/backoff/v4 v4.2.1/go.mod h1:Y3VNntkOUPxTVeUxJ/G5vcM//AlwfmyYozVcomhLiZE=
 github.com/cespare/xxhash/v2 v2.2.0 h1:DC2CZ1Ep5Y4k3ZQ899DldepgrayRUGE6BBZ/cd9Cj44=
 github.com/cespare/xxhash/v2 v2.2.0/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
+github.com/cristalhq/bson v0.0.7 h1:B07IGNcDDA/B7aaMPeqgqykwBKyDdqUvJow9CVoG8t0=
+github.com/cristalhq/bson v0.0.7/go.mod h1:oMahOeK6u+O0cAC7ZAuxYvFatYqEcl6XRp3FZ51j5dA=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
