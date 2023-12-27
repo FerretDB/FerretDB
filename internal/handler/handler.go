@@ -248,6 +248,10 @@ func (h *Handler) cleanupCappedCollection(ctx context.Context, db backends.Datab
 		return 0, 0, lazyerrors.Error(err)
 	}
 
+	if coll == nil {
+		return 0, 0, nil
+	}
+
 	statsBefore, err := coll.Stats(ctx, &backends.CollectionStatsParams{Refresh: true})
 	if err != nil {
 		return 0, 0, lazyerrors.Error(err)
