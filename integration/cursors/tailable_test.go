@@ -321,8 +321,7 @@ func TestCursorsTailableTwoCursorsSameCollection(t *testing.T) {
 	assert.Equal(t, cursorID2, nextID2)
 }
 
-// TODO
-func TestCursorsTailableTODO(t *testing.T) {
+func TestCursorsTailableFirstBatchMaxTimeMS(t *testing.T) {
 	t.Parallel()
 
 	s := setup.SetupWithOpts(t, nil)
@@ -394,7 +393,9 @@ func TestCursorsTailableTODO(t *testing.T) {
 		assert.Equal(t, cursorID, nextID)
 	})
 
-	t.Run("GetMoreNewDoc", func(t *testing.T) {
+	t.Run("GetMoreNewDoc", func(tt *testing.T) {
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2984")
+
 		newDoc := bson.D{{"_id", "new"}}
 		_, err = collection.InsertOne(ctx, newDoc)
 		require.NoError(t, err)
@@ -411,7 +412,9 @@ func TestCursorsTailableTODO(t *testing.T) {
 		require.Equal(t, integration.ConvertDocument(t, newDoc), must.NotFail(nextBatch.Get(0)))
 	})
 
-	t.Run("GetMoreEmptyAfterInsertion", func(t *testing.T) {
+	t.Run("GetMoreEmptyAfterInsertion", func(tt *testing.T) {
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2984")
+
 		var res bson.D
 		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
 		require.NoError(t, err)
