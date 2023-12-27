@@ -17,9 +17,10 @@ package bson2
 import (
 	"encoding/binary"
 
+	"github.com/cristalhq/bson/bsonproto"
+
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/cristalhq/bson/bsonproto"
 )
 
 func decodeCString(b []byte) (string, error) {
@@ -41,10 +42,10 @@ func decodeCString(b []byte) (string, error) {
 func DecodeDocument(b RawDocument) (*Document, error) {
 	l := binary.LittleEndian.Uint32(b)
 	if len(b) != int(l) {
-		return nil, ErrDecodeInvalidInput
+		return nil, lazyerrors.Error(ErrDecodeInvalidInput)
 	}
 	if b[len(b)-1] != 0 {
-		return nil, ErrDecodeInvalidInput
+		return nil, lazyerrors.Error(ErrDecodeInvalidInput)
 	}
 
 	res := MakeDocument(1)
