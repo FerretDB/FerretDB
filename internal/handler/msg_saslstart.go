@@ -71,14 +71,6 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			return nil, err
 		}
 
-		_ = username // hack to check that we share the ctx
-
-	case document.Has("speculativeAuthenticate"):
-		h.L.Debug(
-			"speculativeAuthenticate",
-			zap.String("command", document.Command()),
-		)
-
 	case mechanism == "SCRAM-SHA-256":
 		// TODO finish SCRAM conversation
 		response, conv, err = saslStartSCRAM(document)
@@ -99,7 +91,7 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrAuthenticationFailed, msg, "mechanism")
 	}
 
-	conninfo.Get(ctx).SetAuth("bob", password)
+	conninfo.Get(ctx).SetAuth(username, password)
 	conninfo.Get(ctx).SetConv(conv)
 
 	h.L.Debug(
