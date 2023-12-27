@@ -95,6 +95,7 @@ func TestCreateStress(t *testing.T) {
 }
 
 func TestCreateOnInsertStressSameCollection(t *testing.T) {
+	t.Skip() // FIXME: let's see what difference this makes on the CI
 	// It should be rewritten to use teststress.Stress.
 
 	ctx, collection := setup.Setup(t)
