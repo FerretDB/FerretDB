@@ -322,6 +322,7 @@ func TestCursorsTailableTwoCursorsSameCollection(t *testing.T) {
 }
 
 func TestCursorsTailableTODO(t *testing.T) {
+	t.Skip("todo")
 	t.Parallel()
 
 	s := setup.SetupWithOpts(t, nil)

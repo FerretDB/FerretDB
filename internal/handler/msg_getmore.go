@@ -23,6 +23,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
@@ -227,7 +228,7 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		}
 
 	case cursor.TailableAwait:
-		if nextBatch.Len() < int(batchSize) {
+		if nextBatch.Len() == 0 {
 			nextBatch, err = h.awaitData(ctx, c, maxTimeMS, batchSize)
 			if err != nil {
 				return nil, lazyerrors.Error(err)
@@ -275,7 +276,7 @@ func (h *Handler) makeNextBatch(c *cursor.Cursor, batchSize int64) (*types.Array
 
 // awaitData stops the goroutine, and waits for a new data for the cursor.
 // If there's a new document, or the maxTimeMS have passed it returns the nextBatch.
-func (h *Handler) awaitData(ctx context.Context, c *cursor.Cursor, maxTimeMS, batchSize int64) (*types.Array, error) {
+func (h *Handler) awaitData(ctx context.Context, c *cursor.Cursor, maxTimeMS, batchSize int64) (resBatch *types.Array, err error) {
 	data := c.Data.(*findCursorData)
 
 	closer := iterator.NewMultiCloser()
@@ -283,26 +284,41 @@ func (h *Handler) awaitData(ctx context.Context, c *cursor.Cursor, maxTimeMS, ba
 	startTime := time.Now()
 	sleepDur := time.Duration(maxTimeMS) * time.Millisecond
 
-	var resBatch *types.Array
-
 	ctx, cancel := context.WithTimeout(ctx, sleepDur)
 	defer cancel()
+
+	defer func() {
+		if err == nil {
+			return
+		}
+
+		if errors.Is(err, context.DeadlineExceeded) {
+			err = nil
+			return
+		}
+
+		err = lazyerrors.Error(err)
+		resBatch = nil
+		return
+	}()
 
 	for {
 		c.Close()
 
-		queryRes, err := data.coll.Query(ctx, data.qp)
+		var queryRes *backends.QueryResult
+		queryRes, err = data.coll.Query(ctx, data.qp)
 		if err != nil {
-			return nil, lazyerrors.Error(err)
+			return
 		}
 
-		iter, err := h.makeFindIter(queryRes.Iter, closer, data.findParams)
+		var iter types.DocumentsIterator
+		iter, err = h.makeFindIter(queryRes.Iter, closer, data.findParams)
 		if err != nil {
-			return nil, lazyerrors.Error(err)
+			return
 		}
 
 		if err = c.Reset(iter); err != nil {
-			return nil, lazyerrors.Error(err)
+			return
 		}
 
 		switch {
@@ -314,26 +330,24 @@ func (h *Handler) awaitData(ctx context.Context, c *cursor.Cursor, maxTimeMS, ba
 
 			resBatch, err = h.makeNextBatch(c, batchSize)
 			if err != nil {
-				return nil, lazyerrors.Error(err)
+				return
 			}
 
 			c.Close()
 
-			if resBatch.Len() != 0 {
-				return nil, lazyerrors.Error(err)
-			}
+			//if resBatch.Len() != 0 {
+			//	return nil, lazyerrors.Error(err)
+			//}
 
 		default:
-			h.L.Debug(
-				"awaitData: Got new documents, returning batch", zap.Int64("cursor_id", c.ID), zap.Stringer("type", c.Type),
-				zap.Int("count", resBatch.Len()), zap.Int64("batch_size", batchSize),
-			)
 			c.Close()
+
 			h.L.Debug(
 				"awaitData: Returning batch", zap.Int64("cursor_id", c.ID), zap.Stringer("type", c.Type),
 				zap.Int("count", resBatch.Len()), zap.Int64("batch_size", batchSize),
 			)
-			return resBatch, err
+
+			return
 		}
 	}
 }

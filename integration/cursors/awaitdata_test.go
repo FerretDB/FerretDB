@@ -359,12 +359,14 @@ func TestCursorsTailableAwaitDataTwoCursorsSameCollection(t *testing.T) {
 		{"getMore", cursorID1},
 		{"collection", collection.Name()},
 		{"batchSize", 1},
+		{"maxTimeMS", (2 * time.Second).Milliseconds()},
 	}
 
 	getMoreCmd2 := bson.D{
 		{"getMore", cursorID2},
 		{"collection", collection.Name()},
 		{"batchSize", 1},
+		{"maxTimeMS", (2 * time.Second).Milliseconds()},
 	}
 
 	for i := 0; i < 49; i++ {
