@@ -284,6 +284,10 @@ func (h *Handler) cleanupCappedCollection(ctx context.Context, db backends.Datab
 		recordIDs = append(recordIDs, doc.RecordID())
 	}
 
+	if len(recordIDs) == 0 {
+		return 0, 0, nil
+	}
+
 	deleteRes, err := coll.DeleteAll(ctx, &backends.DeleteAllParams{RecordIDs: recordIDs})
 	if err != nil {
 		return 0, 0, lazyerrors.Error(err)
