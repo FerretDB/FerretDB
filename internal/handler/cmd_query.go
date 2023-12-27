@@ -54,13 +54,15 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 		))},
 	}
 
+	var response string
+
 	speculativeAuthenticate := false
 
 	// to reduce connection overhead time, clients may use a hello command to complete their authentication exchange
 	// if so, the saslStart command may be embedded under the speculativeAuthenticate field
 	if queryDocument.Has("speculativeAuthenticate") {
 		// TODO finish SCRAM conversation
-		username, cnonce, err := saslStartSCRAM(queryDocument)
+		response, err := saslStartSCRAM(queryDocument)
 		if err != nil {
 			return nil, err
 		}
@@ -69,8 +71,7 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 
 		h.L.Debug(
 			"saslStart speculativeAuthenticate",
-			zap.String("encoded-username", username),
-			zap.String("client-nonce", cnonce),
+			zap.String("response", response),
 		)
 	}
 
@@ -82,7 +83,7 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 
 		replyDocument.Documents[0].Set("speculativeAuthenticate", must.NotFail(
 			types.NewDocument(
-				"payload", emptyPayload, // TODO
+				"payload", response, // TODO
 				"done", false,
 			),
 		))

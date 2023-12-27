@@ -17,9 +17,10 @@ package handler
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"encoding/base64"
 	"fmt"
-	"strings"
+	"io"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
@@ -28,6 +29,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
+	"github.com/xdg-go/scram"
 	"go.uber.org/zap"
 )
 
@@ -56,6 +58,8 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	var username, password string
 
+	var response string
+
 	plain := true
 
 	switch mechanism {
@@ -67,7 +71,7 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	case "SCRAM-SHA-256":
 		// TODO finish SCRAM conversation
-		username, cnonce, err := saslStartSCRAM(document)
+		response, err = saslStartSCRAM(document)
 		if err != nil {
 			return nil, err
 		}
@@ -76,8 +80,7 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 		h.L.Debug(
 			"saslStart",
-			zap.String("encoded-username", username),
-			zap.String("client-nonce", cnonce),
+			zap.String("response", response),
 		)
 
 	default:
@@ -98,7 +101,7 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	))
 
 	if !plain {
-		d.Set("payload", emptyPayload) // TODO
+		d.Set("payload", response)
 		d.Set("done", false)
 	}
 
@@ -156,25 +159,13 @@ func saslStartPlain(doc *types.Document) (string, string, error) {
 	return string(authcid), string(passwd), nil
 }
 
-func saslStartSCRAM(doc *types.Document) (string, string, error) {
+func saslStartSCRAM(doc *types.Document) (string, error) {
 	var payload []byte
 
 	binaryPayload, err := common.GetRequiredParam[types.Binary](doc, "payload")
 	if err == nil {
 		payload = binaryPayload.B
 	}
-
-	// parse the client-first-message of the form n,a=authzid,n=encoded-username,r=client-nonce
-	fields := strings.Split(string(payload), ",")
-	if l := len(fields); l < 3 {
-		return "", "", handlererrors.NewCommandErrorMsgWithArgument(
-			handlererrors.ErrBadValue,
-			fmt.Sprintf("Incorrect number of arguments for first SCRAM client message, got %d expected at least 3", l),
-			"payload",
-		)
-	}
-
-	username, cnonce := fields[2], fields[3]
 
 	// TODO store the credentials in the 'admin.system.users' namespace eventually
 	// 'SCRAM-SHA-256': {
@@ -184,7 +175,28 @@ func saslStartSCRAM(doc *types.Document) (string, string, error) {
 	//     serverKey: 'I9O3QjHz++JGp4vrD79P7m+af1oXPPziZ8sTlauQEwI='
 	// }
 
-	// generate server-first-message of the form r=client-nonce|server-nonce,s=user-salt,i=iteration-count
+	var response string
 
-	return username, cnonce, nil
+	// generate server-first-message of the form r=client-nonce|server-nonce,s=user-salt,i=iteration-count
+	salt := make([]byte, 16)
+	if _, err := io.ReadFull(rand.Reader, salt); err != nil {
+		return "", err
+	}
+
+	cl := scram.CredentialLookup(func(s string) (scram.StoredCredentials, error) {
+		kf := scram.KeyFactors{
+			Salt:  string(salt),
+			Iters: 4096,
+		}
+		return scram.StoredCredentials{KeyFactors: kf}, nil
+	})
+
+	ss, err := scram.SHA256.NewServer(cl)
+	must.NoError(err)
+
+	conv := ss.NewConversation()
+	response, err = conv.Step(string(payload))
+	must.NoError(err)
+
+	return response, nil
 }
