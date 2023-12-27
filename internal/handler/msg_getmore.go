@@ -141,7 +141,7 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	// Handle comment.
 	// TODO https://github.com/FerretDB/FerretDB/issues/2986
 
-	username, _ := conninfo.Get(ctx).Auth()
+	username := conninfo.Get(ctx).Username()
 
 	// Use ExtractParam.
 	// TODO https://github.com/FerretDB/FerretDB/issues/2859
