@@ -40,7 +40,7 @@ func IsMaster(ctx context.Context, query *types.Document, host, name string) (*w
 func IsMasterDocuments(host, name string) []*types.Document {
 	return []*types.Document{must.NotFail(types.NewDocument(
 		// topologyVersion
-		"hosts", must.NotFail(types.NewArray(host)),
+		//	"hosts", must.NotFail(types.NewArray(host)),
 		"setName", name,
 		"ismaster", true, // only lowercase
 		"maxBsonObjectSize", int32(types.MaxDocumentLen),
