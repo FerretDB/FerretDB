@@ -70,13 +70,13 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		}
 
 	case "SCRAM-SHA-256":
-		// TODO fix invalid-proof in SCRAM conversation
+		// FIXME fix first server message in SCRAM conversation when sent in an OP_QUERY message
 		response, conv, err = saslStartSCRAM(document)
 		if err != nil {
 			return nil, err
 		}
 
-		// plain = false
+		plain = false
 
 		h.L.Debug(
 			"saslStart",
@@ -100,6 +100,7 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		"ok", float64(1),
 	))
 
+	// TODO confirm if this is even needed or if speculativeAuthenticate is always used and is sent in an OP_QUERY
 	if !plain {
 		conninfo.Get(ctx).SetConv(conv)
 		h.L.Debug(

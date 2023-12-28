@@ -26,6 +26,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 	"github.com/xdg-go/scram"
+	"go.uber.org/zap"
 )
 
 // CmdQuery implements deprecated OP_QUERY message handling.
@@ -41,12 +42,18 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 
 	// to reduce connection overhead time, clients may use a hello command to complete their authentication exchange
 	// if so, the saslStart command may be embedded under the speculativeAuthenticate field
-	if (cmd == "ismaster" || cmd == "helloOk") && doc.Has("speculativeAuthenticate") {
-		reply, err := common.IsMaster(ctx, query.Query)
+	if (cmd == "ismaster" || cmd == "hello") && doc.Has("speculativeAuthenticate") {
+
+		h.L.Debug(
+			"speculativeAuthenticate",
+			zap.String("command", cmd),
+			zap.Any("doc", doc.Keys()),
+		)
+
+		reply, err := common.IsMaster(ctx, doc)
 		must.NoError(err)
 
-		reply.Documents[0].Set("helloOk", true)
-
+		// TODO fix first server message in SCRAM conversation when sent in an OP_QUERY message
 		response, conv, err = saslStartSCRAM(doc)
 		must.NoError(err)
 
@@ -54,6 +61,7 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 
 		// create a speculative conversation document for SCRAM authentication
 		reply.Documents[0].Set("speculativeAuthenticate", must.NotFail(types.NewDocument(
+			"helloOk", true,
 			"conversationId", int32(1),
 			"done", false,
 			"payload", response,
