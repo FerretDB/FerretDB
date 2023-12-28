@@ -98,7 +98,7 @@ func ConvertDocument(doc *types.Document) (*Document, error) {
 			return nil, lazyerrors.Error(err)
 		}
 
-		v, err = convertToTypes(v)
+		v, err = convertFromTypes(v)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}

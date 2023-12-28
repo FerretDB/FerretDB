@@ -15,9 +15,11 @@
 package bson2
 
 import (
+	"encoding/hex"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -204,7 +206,11 @@ func TestDocument(t *testing.T) {
 			t.Run("Encode", func(t *testing.T) {
 				t.Parallel()
 
-				t.Skip("TODO")
+				doc, err := ConvertDocument(tc.doc)
+				require.NoError(t, err)
+
+				b := EncodeDocument(doc)
+				assert.Equal(t, tc.b, b, "actual:\n%s", hex.Dump(b))
 			})
 
 			t.Run("Decode", func(t *testing.T) {
