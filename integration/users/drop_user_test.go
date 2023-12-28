@@ -36,10 +36,6 @@ func TestDropUser(t *testing.T) {
 	client := db.Client()
 	users := client.Database("admin").Collection("system.users")
 
-	require.NoError(t, collection.Database().RunCommand(ctx, bson.D{
-		{"dropAllUsersFromDatabase", 1},
-	}).Err())
-
 	err := db.RunCommand(ctx, bson.D{
 		{"createUser", "a_user"},
 		{"roles", bson.A{}},
