@@ -56,7 +56,7 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	var username, password string
 
-	var response []byte
+	var response string
 
 	var conv *scram.ServerConversation
 
@@ -80,7 +80,7 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 		h.L.Debug(
 			"saslStart",
-			zap.String("response", string(response)),
+			zap.String("response", response),
 		)
 
 	default:
@@ -109,10 +109,7 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			zap.String("username", conninfo.Get(ctx).Conv().Username()),
 		)
 
-		d.Set("payload", types.Binary{
-			Subtype: types.BinarySubtype(0),
-			B:       response,
-		})
+		d.Set("payload", response)
 		d.Set("done", false)
 	}
 
@@ -170,7 +167,7 @@ func saslStartPlain(doc *types.Document) (string, string, error) {
 	return string(authcid), string(passwd), nil
 }
 
-func saslStartSCRAM(doc *types.Document) ([]byte, *scram.ServerConversation, error) {
+func saslStartSCRAM(doc *types.Document) (string, *scram.ServerConversation, error) {
 	var payload []byte
 
 	binaryPayload, err := common.GetRequiredParam[types.Binary](doc, "payload")
@@ -220,5 +217,5 @@ func saslStartSCRAM(doc *types.Document) ([]byte, *scram.ServerConversation, err
 	response, err = conv.Step(string(payload))
 	must.NoError(err)
 
-	return []byte(response), conv, nil
+	return response, conv, nil
 }
