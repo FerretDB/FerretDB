@@ -15,6 +15,7 @@
 package handler
 
 import (
+	"encoding/base64"
 	"testing"
 
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -23,9 +24,11 @@ import (
 	"github.com/xdg-go/scram"
 )
 
+// for user 'username:password'
 const (
-	nonce = "rOprNGfwEbeRWgbNEkqO"
-	salt  = "W22ZaJ0SNY7soEsUEjb6gQ"
+	salt      = "7jW5ZOczj05P4wyNc21OikIuSliPN9rw4sEoGQ=="
+	storedKey = "F8hTLrnZscuuszfrh+4nupyjPA40cp+gfzy1Hsc3O3c="
+	serverKey = "d4P+d81D31XHwvfQA3jwgTmkivZfXTD/nBASm77Dwv0="
 )
 
 func TestSaslStartSCRAM(t *testing.T) {
@@ -50,13 +53,26 @@ func TestSaslStartSCRAM(t *testing.T) {
 			client, err := scram.SHA256.NewClient(tc.username, tc.password, "")
 			assert.NoError(t, err)
 
+			// log the crendentials for the user created by the mongo shell
 			cf := scram.KeyFactors{
 				Salt:  salt,
 				Iters: 4096,
 			}
 			cred := client.GetStoredCredentials(cf)
-			t.Log(string(cred.StoredKey))
-			t.Log(string(cred.ServerKey))
+			t.Log(base64.StdEncoding.EncodeToString(cred.StoredKey))
+			t.Log(base64.StdEncoding.EncodeToString(cred.ServerKey))
+
+			b, err := base64.StdEncoding.DecodeString(salt)
+			assert.NoError(t, err)
+			t.Log(b)
+
+			b, err = base64.StdEncoding.DecodeString(storedKey)
+			assert.NoError(t, err)
+			t.Log(b)
+
+			b, err = base64.StdEncoding.DecodeString(serverKey)
+			assert.NoError(t, err)
+			t.Log(b)
 		})
 	}
 }

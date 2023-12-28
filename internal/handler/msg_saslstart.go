@@ -76,7 +76,7 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			return nil, err
 		}
 
-		plain = false
+		// plain = false
 
 		h.L.Debug(
 			"saslStart",
@@ -111,6 +111,22 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 		d.Set("payload", response)
 		d.Set("done", false)
+
+		if document.Has("speculativeAuthenticate") {
+			d.Remove("conversationId")
+			d.Remove("done")
+			d.Remove("payload")
+
+			// create a speculative conversation document for SCRAM authentication
+			d.Set("speculativeAuthenticate", must.NotFail(
+				types.NewDocument(
+					"conversationId", int32(1),
+					"done", false,
+					"payload", response,
+					"ok", float64(1),
+				),
+			))
+		}
 	}
 
 	must.NoError(reply.SetSections(wire.OpMsgSection{
@@ -176,16 +192,17 @@ func saslStartSCRAM(doc *types.Document) (string, *scram.ServerConversation, err
 	}
 
 	// TODO store the credentials in the 'admin.system.users' namespace eventually
-	// 'SCRAM-SHA-256': {
-	//     iterationCount: 15000, or at least 4096
-	//     salt: '/EWnFeM5z6vZbsviI9N+DpThFxjrDhryf47cTA==',
-	//     storedKey: 'jQGI8FtQZjfe/MyyaiYT8m0GlF7KxqvH5+EHhxYtXyo=',
-	//     serverKey: 'I9O3QjHz++JGp4vrD79P7m+af1oXPPziZ8sTlauQEwI='
+	// "SCRAM-SHA-256" : {
+	// 	"iterationCount" : 15000,
+	// 	"salt" : "0KPzHubY95siEZZQC6jYuupOqlkUjlqBFGK24w==",
+	// 	"storedKey" : "tTiad1PQvXqtOWTgxwF1/Cks7niAzRLzP91vGd4VWuQ=",
+	// 	"serverKey" : "h8hefOPW7nRxDNrrCGvYU9PdAEx/1oKEcCRdg3LGGRo="
 	// }
 
-	const (
-		nonce = "rOprNGfwEbeRWgbNEkqO"
-		salt  = "W22ZaJ0SNY7soEsUEjb6gQ"
+	var (
+		salt      = []byte{238, 53, 185, 100, 231, 51, 143, 78, 79, 227, 12, 141, 115, 109, 78, 138, 66, 46, 74, 88, 143, 55, 218, 240, 226, 193, 40, 25}
+		storedKey = []byte{23, 200, 83, 46, 185, 217, 177, 203, 174, 179, 55, 235, 135, 238, 39, 186, 156, 163, 60, 14, 52, 114, 159, 160, 127, 60, 181, 30, 199, 55, 59, 119}
+		serverKey = []byte{119, 131, 254, 119, 205, 67, 223, 85, 199, 194, 247, 208, 3, 120, 240, 129, 57, 164, 138, 246, 95, 93, 48, 255, 156, 16, 18, 155, 190, 195, 194, 253}
 	)
 
 	var response string
@@ -202,11 +219,10 @@ func saslStartSCRAM(doc *types.Document) (string, *scram.ServerConversation, err
 			Iters: 4096,
 		}
 
-		// https://github.com/xdg-go/scram/blob/17629a50d5ce12875d83f9095809ae43b765c303/server_conv.go#L143 the hashes are not equal
 		return scram.StoredCredentials{
 			KeyFactors: kf,
-			StoredKey:  []byte{97, 183, 143, 155, 166, 235, 67, 100, 14, 1, 193, 92, 130, 181, 167, 228, 84, 175, 113, 75, 3, 42, 80, 251, 21, 1, 235, 37, 43, 10, 129, 196},
-			ServerKey:  []byte{239, 244, 34, 25, 216, 250, 105, 13, 87, 206, 254, 148, 50, 19, 154, 152, 206, 188, 136, 62, 79, 26, 22, 95, 217, 253, 229, 25, 161, 139, 183, 173},
+			StoredKey:  storedKey,
+			ServerKey:  serverKey,
 		}, nil
 	})
 
