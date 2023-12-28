@@ -40,6 +40,11 @@ func decodeCString(b []byte) (string, error) {
 	return string(b[:i]), nil
 }
 
+// DecodeDocument decodes a BSON document.
+//
+// Only first-level fields are decoded;
+// nested documents and arrays are converted to RawDocument and RawArray respectively,
+// using b subslices without copying.
 func DecodeDocument(b RawDocument) (*Document, error) {
 	bl := len(b)
 	if dl := int(binary.LittleEndian.Uint32(b)); bl != dl {
@@ -137,6 +142,11 @@ func DecodeDocument(b RawDocument) (*Document, error) {
 	return res, nil
 }
 
+// DecodeArray decodes a BSON array.
+//
+// Only first-level elements are decoded;
+// nested documents and arrays are converted to RawDocument and RawArray respectively,
+// using b subslices without copying.
 func DecodeArray(b RawArray) (*Array, error) {
 	doc, err := DecodeDocument(RawDocument(b))
 	if err != nil {
@@ -149,7 +159,7 @@ func DecodeArray(b RawArray) (*Array, error) {
 
 	for i, f := range doc.fields {
 		if f.name != strconv.Itoa(i) {
-			return nil, lazyerrors.Errorf("invalid array index: %s", f.name)
+			return nil, lazyerrors.Errorf("invalid array index: %q", f.name)
 		}
 
 		res.elements[i] = f.value

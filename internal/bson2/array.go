@@ -20,6 +20,8 @@ import (
 )
 
 // RawArray represents a BSON array in the binary encoded form.
+//
+// It generally references a part of a larger slice, not a copy.
 type RawArray []byte
 
 // Array represents a BSON array in the (partially) decoded form.
@@ -27,6 +29,7 @@ type Array struct {
 	elements []any
 }
 
+// Convert converts the Array to the *types.Array, decoding raw documents and arrays on the fly.
 func (arr *Array) Convert() (*types.Array, error) {
 	values := make([]any, len(arr.elements))
 

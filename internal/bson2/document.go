@@ -22,6 +22,8 @@ import (
 )
 
 // RawDocument represents a BSON document a.k.a object in the binary encoded form.
+//
+// It generally references a part of a larger slice, not a copy.
 type RawDocument []byte
 
 // field represents a single Document field in the (partially) decoded form.
@@ -73,6 +75,7 @@ func MakeDocument(cap int) *Document {
 	}
 }
 
+// Convert converts the Document to the *types.Document, decoding raw documents and arrays on the fly.
 func (doc *Document) Convert() (*types.Document, error) {
 	pairs := make([]any, 0, len(doc.fields)*2)
 
