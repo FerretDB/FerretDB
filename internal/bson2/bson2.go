@@ -53,11 +53,12 @@ import (
 type (
 	ScalarType = bsonproto.ScalarType
 
-	Binary    = bsonproto.Binary
-	ObjectID  = bsonproto.ObjectID
-	NullType  = bsonproto.NullType
-	Regex     = bsonproto.Regex
-	Timestamp = bsonproto.Timestamp
+	Binary        = bsonproto.Binary
+	BinarySubtype = bsonproto.BinarySubtype
+	NullType      = bsonproto.NullType
+	ObjectID      = bsonproto.ObjectID
+	Regex         = bsonproto.Regex
+	Timestamp     = bsonproto.Timestamp
 )
 
 var (
@@ -185,37 +186,52 @@ func convertToTypes(v any) (any, error) {
 	}
 }
 
-func scalarFromTypes(v any) any {
+func convertFromTypes(v any) (any, error) {
 	switch v := v.(type) {
+	case *types.Document:
+		doc, err := ConvertDocument(v)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+		return doc, nil
+
+	case *types.Array:
+		arr, err := ConvertArray(v)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+		return arr, nil
+
 	case float64:
-		return v
+		return v, nil
 	case string:
-		return v
+		return v, nil
 	case types.Binary:
 		return Binary{
 			B:       v.B,
-			Subtype: bsonproto.BinarySubtype(v.Subtype),
-		}
+			Subtype: BinarySubtype(v.Subtype),
+		}, nil
 	case types.ObjectID:
-		return ObjectID(v)
+		return ObjectID(v), nil
 	case bool:
-		return v
+		return v, nil
 	case time.Time:
-		return v
+		return v, nil
 	case types.NullType:
-		return Null
+		return Null, nil
 	case types.Regex:
 		return Regex{
 			Pattern: v.Pattern,
 			Options: v.Options,
-		}
+		}, nil
 	case int32:
-		return v
+		return v, nil
 	case types.Timestamp:
-		return Timestamp(v)
+		return Timestamp(v), nil
 	case int64:
-		return v
-	}
+		return v, nil
 
-	return nil
+	default:
+		panic(fmt.Sprintf("invalid type %T", v))
+	}
 }

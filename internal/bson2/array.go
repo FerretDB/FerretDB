@@ -15,7 +15,10 @@
 package bson2
 
 import (
+	"errors"
+
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
@@ -27,6 +30,33 @@ type RawArray []byte
 // Array represents a BSON array in the (partially) decoded form.
 type Array struct {
 	elements []any
+}
+
+func ConvertArray(arr *types.Array) (*Array, error) {
+	iter := arr.Iterator()
+	defer iter.Close()
+
+	elements := make([]any, 0, arr.Len())
+
+	for {
+		_, v, err := iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				return &Array{
+					elements: elements,
+				}, nil
+			}
+
+			return nil, lazyerrors.Error(err)
+		}
+
+		v, err = convertToTypes(v)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		elements = append(elements, v)
+	}
 }
 
 // Convert converts the Array to the *types.Array, decoding raw documents and arrays on the fly.

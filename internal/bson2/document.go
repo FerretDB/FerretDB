@@ -15,9 +15,11 @@
 package bson2
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
@@ -75,8 +77,34 @@ func MakeDocument(cap int) *Document {
 	}
 }
 
-func ConvertDocument(doc *types.Document) *Document {
-	return nil
+func ConvertDocument(doc *types.Document) (*Document, error) {
+	iter := doc.Iterator()
+	defer iter.Close()
+
+	pairs := make([]any, 0, doc.Len()*2)
+
+	for {
+		k, v, err := iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				res, err := NewDocument(pairs...)
+				if err != nil {
+					return nil, lazyerrors.Error(err)
+				}
+
+				return res, nil
+			}
+
+			return nil, lazyerrors.Error(err)
+		}
+
+		v, err = convertToTypes(v)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		pairs = append(pairs, k, v)
+	}
 }
 
 // Convert converts the Document to the *types.Document, decoding raw documents and arrays on the fly.
