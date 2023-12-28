@@ -38,10 +38,6 @@ func TestCreateUser(t *testing.T) {
 	client := db.Client()
 	users := client.Database("admin").Collection("system.users")
 
-	require.NoError(t, collection.Database().RunCommand(ctx, bson.D{
-		{"dropAllUsersFromDatabase", 1},
-	}).Err())
-
 	testCases := map[string]struct { //nolint:vet // for readability
 		payload    bson.D
 		err        *mongo.CommandError
