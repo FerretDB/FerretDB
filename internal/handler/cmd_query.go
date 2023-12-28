@@ -19,11 +19,13 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
+	"github.com/xdg-go/scram"
 )
 
 // CmdQuery implements deprecated OP_QUERY message handling.
@@ -35,13 +37,20 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 
 	var response string
 
+	var conv *scram.ServerConversation
+
+	// to reduce connection overhead time, clients may use a hello command to complete their authentication exchange
+	// if so, the saslStart command may be embedded under the speculativeAuthenticate field
 	if (cmd == "ismaster" || cmd == "helloOk") && doc.Has("speculativeAuthenticate") {
-		// to reduce connection overhead time, clients may use a hello command to complete their authentication exchange
-		// if so, the saslStart command may be embedded under the speculativeAuthenticate field
 		reply, err := common.IsMaster(ctx, query.Query)
 		must.NoError(err)
 
 		reply.Documents[0].Set("helloOk", true)
+
+		response, conv, err = saslStartSCRAM(doc)
+		must.NoError(err)
+
+		conninfo.Get(ctx).SetConv(conv)
 
 		// create a speculative conversation document for SCRAM authentication
 		reply.Documents[0].Set("speculativeAuthenticate", must.NotFail(types.NewDocument(
