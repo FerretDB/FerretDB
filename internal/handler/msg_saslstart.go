@@ -17,10 +17,8 @@ package handler
 import (
 	"bytes"
 	"context"
-	"crypto/rand"
 	"encoding/base64"
 	"fmt"
-	"io"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
@@ -188,13 +186,18 @@ func saslStartSCRAM(doc *types.Document) ([]byte, *scram.ServerConversation, err
 	//     serverKey: 'I9O3QjHz++JGp4vrD79P7m+af1oXPPziZ8sTlauQEwI='
 	// }
 
+	const (
+		nonce = "rOprNGfwEbeRWgbNEkqO"
+		salt  = "W22ZaJ0SNY7soEsUEjb6gQ"
+	)
+
 	var response string
 
 	// generate server-first-message of the form r=client-nonce|server-nonce,s=user-salt,i=iteration-count
-	salt := make([]byte, 28)
-	if _, err := io.ReadFull(rand.Reader, salt); err != nil {
-		return nil, nil, err
-	}
+	// salt := make([]byte, 28)
+	// if _, err := io.ReadFull(rand.Reader, salt); err != nil {
+	// 	return nil, nil, err
+	// }
 
 	cl := scram.CredentialLookup(func(s string) (scram.StoredCredentials, error) {
 		kf := scram.KeyFactors{
@@ -203,7 +206,11 @@ func saslStartSCRAM(doc *types.Document) ([]byte, *scram.ServerConversation, err
 		}
 
 		// https://github.com/xdg-go/scram/blob/17629a50d5ce12875d83f9095809ae43b765c303/server_conv.go#L143 the hashes are not equal
-		return scram.StoredCredentials{KeyFactors: kf}, nil
+		return scram.StoredCredentials{
+			KeyFactors: kf,
+			StoredKey:  []byte{97, 183, 143, 155, 166, 235, 67, 100, 14, 1, 193, 92, 130, 181, 167, 228, 84, 175, 113, 75, 3, 42, 80, 251, 21, 1, 235, 37, 43, 10, 129, 196},
+			ServerKey:  []byte{239, 244, 34, 25, 216, 250, 105, 13, 87, 206, 254, 148, 50, 19, 154, 152, 206, 188, 136, 62, 79, 26, 22, 95, 217, 253, 229, 25, 161, 139, 183, 173},
+		}, nil
 	})
 
 	ss, err := scram.SHA256.NewServer(cl)

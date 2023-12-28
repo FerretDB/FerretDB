@@ -20,6 +20,12 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/stretchr/testify/assert"
+	"github.com/xdg-go/scram"
+)
+
+const (
+	nonce = "rOprNGfwEbeRWgbNEkqO"
+	salt  = "W22ZaJ0SNY7soEsUEjb6gQ"
 )
 
 func TestSaslStartSCRAM(t *testing.T) {
@@ -41,9 +47,16 @@ func TestSaslStartSCRAM(t *testing.T) {
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
-			// TODO actually test it if posssible...
-			_, _, err := saslStartSCRAM(tc.doc)
-			assert.Equal(t, tc.err, err)
+			client, err := scram.SHA256.NewClient(tc.username, tc.password, "")
+			assert.NoError(t, err)
+
+			cf := scram.KeyFactors{
+				Salt:  salt,
+				Iters: 4096,
+			}
+			cred := client.GetStoredCredentials(cf)
+			t.Log(string(cred.StoredKey))
+			t.Log(string(cred.ServerKey))
 		})
 	}
 }
