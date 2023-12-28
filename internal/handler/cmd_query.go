@@ -46,16 +46,18 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 		reply, err := common.IsMaster(ctx, doc)
 		must.NoError(err)
 
+		v, _ := doc.Get("speculativeAuthenticate")
+		d := v.(*types.Document)
+		payload, _ := d.Get("payload")
+
 		h.L.Debug(
 			"speculativeAuthenticate",
 			zap.String("command", cmd),
-			zap.Bool("has speculativeAuthenticate key", doc.Has("speculativeAuthenticate")),
-			zap.Any("query.Query", doc),
-			zap.Any("query.String()", query.String()),
+			zap.Any("payload", payload),
 		)
 
-		// FIXME fix first server message in SCRAM conversation when sent in an OP_QUERY message
-		response, conv, err = saslStartSCRAM(doc)
+		// FIXME nonce received did not match nonce sent
+		response, conv, err = saslStartSCRAM(d)
 		must.NoError(err)
 
 		conninfo.Get(ctx).SetConv(conv)
