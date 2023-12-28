@@ -50,9 +50,5 @@ func (d *document) marshal(t time.Time) (*types.Document, error) {
 		res.Set("o2", d.o2)
 	}
 
-	if err = res.ValidateData(); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
 	return res, nil
 }
