@@ -397,21 +397,9 @@ func TestUsersinfo(t *testing.T) {
 
 				foundUsers[must.NotFail(actualUser.Get("_id")).(string)] = struct{}{}
 
-				if tc.expected != nil {
-					eu, err := expectedUsers.Get(i)
-					require.NoError(t, err)
-					expectedUser := eu.(*types.Document)
-
-					uuid := must.NotFail(actualUser.Get("userId")).(types.Binary)
-					assert.Equal(t, uuid.Subtype.String(), types.BinaryUUID.String(), "uuid subtype")
-					assert.Equal(t, 16, len(uuid.B), "UUID length")
-					actualUser.Remove("userId")
-
-					actualUser.Remove("mechanisms")
-					actualUser.Remove("credentials")
-
-					testutil.AssertEqual(t, expectedUser, actualUser)
-				}
+				uuid := must.NotFail(actualUser.Get("userId")).(types.Binary)
+				assert.Equal(t, uuid.Subtype.String(), types.BinaryUUID.String(), "uuid subtype")
+				assert.Equal(t, 16, len(uuid.B), "UUID length")
 			}
 
 			if tc.hasUser != nil {

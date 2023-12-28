@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sort"
 
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
@@ -160,8 +159,6 @@ func (h *Handler) MsgUsersInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
-	var data []*types.Document
-
 	for {
 		_, v, err := qr.Iter.Next()
 
@@ -174,32 +171,13 @@ func (h *Handler) MsgUsersInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		}
 
 		matches, err := common.FilterDocument(v, filter)
-
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
 		if matches {
-			data = append(data, v)
+			res.Append(v)
 		}
-	}
-
-	// Sort slice to make output more deterministic.
-	// FIXME: This is trying to replicate what appears to be the logic used by MongoDB,
-	// but maybe this isn't replicating it exactly.
-	sort.SliceStable(data, func(i, j int) bool {
-		dbi, _ := data[i].Get("db")
-		dbj, _ := data[j].Get("db")
-		if dbi != "" && dbi != dbj {
-			return dbi.(string) > dbj.(string)
-		}
-		idi, _ := data[i].Get("_id")
-		idj, _ := data[j].Get("_id")
-		return idi.(string) <= idj.(string)
-	})
-
-	for _, v := range data {
-		res.Append(v)
 	}
 
 	var reply wire.OpMsg
