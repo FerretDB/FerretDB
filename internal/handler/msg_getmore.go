@@ -30,6 +30,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -342,7 +343,7 @@ func (h *Handler) awaitData(ctx context.Context, params *awaitDataParmas) (resBa
 		}
 
 		if params.maxTimeMS > 10 {
-			time.Sleep(10 * time.Millisecond)
+			ctxutil.Sleep(ctx, 10*time.Millisecond)
 		}
 	}
 }
