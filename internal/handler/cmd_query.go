@@ -68,8 +68,7 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 			"conversationId", int32(1),
 			"done", false,
 			"payload", response,
-			"ok",
-			float64(1),
+			"ok", float64(1),
 		)))
 
 		return reply, nil
