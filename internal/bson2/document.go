@@ -86,7 +86,15 @@ func (doc *Document) Convert() (*types.Document, error) {
 			pairs = append(pairs, f.name, d)
 
 		case RawDocument:
-			panic("Convert RawDocument")
+			doc, err := DecodeDocument(v)
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+			d, err := doc.Convert()
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+			pairs = append(pairs, f.name, d)
 
 		case *Array:
 			a, err := v.Convert()
@@ -96,7 +104,15 @@ func (doc *Document) Convert() (*types.Document, error) {
 			pairs = append(pairs, f.name, a)
 
 		case RawArray:
-			panic("Convert RawArray")
+			arr, err := DecodeArray(v)
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+			a, err := arr.Convert()
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+			pairs = append(pairs, f.name, a)
 
 		default:
 			pairs = append(pairs, f.name, convertScalar(v))

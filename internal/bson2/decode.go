@@ -76,17 +76,13 @@ func DecodeDocument(b RawDocument) (*Document, error) {
 
 		case tagDocument:
 			l := int(binary.LittleEndian.Uint32(b[offset:]))
-			var doc *Document
-			doc, err = DecodeDocument(b[offset : offset+l])
+			v = RawDocument(b[offset : offset+l])
 			offset += l
-			v = doc
 
 		case tagArray:
 			l := int(binary.LittleEndian.Uint32(b[offset:]))
-			var arr *Array
-			arr, err = DecodeArray(RawArray(b[offset : offset+l]))
+			v = RawArray(b[offset : offset+l])
 			offset += l
-			v = arr
 
 		case tagBinary:
 			var s Binary

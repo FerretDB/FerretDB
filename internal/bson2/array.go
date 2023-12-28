@@ -40,7 +40,15 @@ func (arr *Array) Convert() (*types.Array, error) {
 			values[i] = d
 
 		case RawDocument:
-			panic("Convert RawDocument")
+			doc, err := DecodeDocument(v)
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+			d, err := doc.Convert()
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+			values[i] = d
 
 		case *Array:
 			a, err := v.Convert()
@@ -50,7 +58,15 @@ func (arr *Array) Convert() (*types.Array, error) {
 			values[i] = a
 
 		case RawArray:
-			panic("Convert RawArray")
+			arr, err := DecodeArray(v)
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+			a, err := arr.Convert()
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+			values[i] = a
 
 		default:
 			values[i] = convertScalar(v)
