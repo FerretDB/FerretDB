@@ -13,3 +13,7 @@
 // limitations under the License.
 
 package bson2
+
+func EncodeDocument(doc *Document) []byte {
+	return nil
+}

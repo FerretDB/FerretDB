@@ -201,15 +201,23 @@ func TestDocument(t *testing.T) {
 	for _, tc := range documentTestCases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
+			t.Run("Encode", func(t *testing.T) {
+				t.Parallel()
 
-			doc, err := DecodeDocument(tc.b)
-			require.NoError(t, err)
+				t.Skip("TODO")
+			})
 
-			actual, err := doc.Convert()
-			require.NoError(t, err)
+			t.Run("Decode", func(t *testing.T) {
+				t.Parallel()
 
-			testutil.AssertEqual(t, tc.doc, actual)
+				doc, err := DecodeDocument(tc.b)
+				require.NoError(t, err)
+
+				actual, err := doc.Convert()
+				require.NoError(t, err)
+
+				testutil.AssertEqual(t, tc.doc, actual)
+			})
 		})
 	}
 }

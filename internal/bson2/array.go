@@ -34,46 +34,12 @@ func (arr *Array) Convert() (*types.Array, error) {
 	values := make([]any, len(arr.elements))
 
 	for i, f := range arr.elements {
-		switch v := f.(type) {
-		case *Document:
-			d, err := v.Convert()
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-			values[i] = d
-
-		case RawDocument:
-			doc, err := DecodeDocument(v)
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-			d, err := doc.Convert()
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-			values[i] = d
-
-		case *Array:
-			a, err := v.Convert()
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-			values[i] = a
-
-		case RawArray:
-			arr, err := DecodeArray(v)
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-			a, err := arr.Convert()
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-			values[i] = a
-
-		default:
-			values[i] = convertScalar(v)
+		v, err := convertToTypes(f)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
 		}
+
+		values[i] = v
 	}
 
 	res, err := types.NewArray(values...)

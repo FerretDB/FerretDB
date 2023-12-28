@@ -45,7 +45,7 @@ func decodeCString(b []byte) (string, error) {
 // Only first-level fields are decoded;
 // nested documents and arrays are converted to RawDocument and RawArray respectively,
 // using b subslices without copying.
-func DecodeDocument(b RawDocument) (*Document, error) {
+func DecodeDocument(b []byte) (*Document, error) {
 	bl := len(b)
 	if dl := int(binary.LittleEndian.Uint32(b)); bl != dl {
 		return nil, lazyerrors.Errorf("bl = %d, dl = %d: %w", bl, dl, ErrDecodeInvalidInput)
@@ -147,8 +147,8 @@ func DecodeDocument(b RawDocument) (*Document, error) {
 // Only first-level elements are decoded;
 // nested documents and arrays are converted to RawDocument and RawArray respectively,
 // using b subslices without copying.
-func DecodeArray(b RawArray) (*Array, error) {
-	doc, err := DecodeDocument(RawDocument(b))
+func DecodeArray(b []byte) (*Array, error) {
+	doc, err := DecodeDocument(b)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

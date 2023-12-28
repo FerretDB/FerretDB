@@ -41,12 +41,13 @@
 package bson2
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/cristalhq/bson/bsonproto"
 
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 type (
@@ -76,8 +77,8 @@ type CompositeType interface {
 	*Document | *Array | RawDocument | RawArray
 }
 
-// validType checks if v is a valid BSON type (including raw types).
-func validType(v any) bool {
+// validBSONType checks if v is a valid BSON type (including raw types).
+func validBSONType(v any) bool {
 	switch v.(type) {
 	case *Document:
 	case RawDocument:
@@ -85,13 +86,13 @@ func validType(v any) bool {
 	case RawArray:
 
 	default:
-		return validScalarType(v)
+		return validBSONScalarType(v)
 	}
 
 	return true
 }
 
-func validScalarType(v any) bool {
+func validBSONScalarType(v any) bool {
 	switch v.(type) {
 	case float64:
 	case string:
@@ -112,27 +113,109 @@ func validScalarType(v any) bool {
 	return true
 }
 
-func convertScalar(v any) any {
-	must.BeTrue(validScalarType(v))
-
+func convertToTypes(v any) (any, error) {
 	switch v := v.(type) {
+	case *Document:
+		doc, err := v.Convert()
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+		return doc, nil
+
+	case RawDocument:
+		d, err := DecodeDocument(v)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+		doc, err := d.Convert()
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+		return doc, nil
+
+	case *Array:
+		arr, err := v.Convert()
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+		return arr, nil
+
+	case RawArray:
+		a, err := DecodeArray(v)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+		arr, err := a.Convert()
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+		return arr, nil
+
+	case float64:
+		return v, nil
+	case string:
+		return v, nil
 	case Binary:
 		return types.Binary{
 			B:       v.B,
 			Subtype: types.BinarySubtype(v.Subtype),
-		}
+		}, nil
 	case ObjectID:
-		return types.ObjectID(v)
+		return types.ObjectID(v), nil
+	case bool:
+		return v, nil
+	case time.Time:
+		return v, nil
 	case NullType:
-		return types.Null
+		return types.Null, nil
 	case Regex:
 		return types.Regex{
 			Pattern: v.Pattern,
 			Options: v.Options,
-		}
+		}, nil
+	case int32:
+		return v, nil
 	case Timestamp:
-		return types.Timestamp(v)
-	default: // float64, string, bool, int32, int64
+		return types.Timestamp(v), nil
+	case int64:
+		return v, nil
+
+	default:
+		panic(fmt.Sprintf("invalid BSON type %T", v))
+	}
+}
+
+func scalarFromTypes(v any) any {
+	switch v := v.(type) {
+	case float64:
+		return v
+	case string:
+		return v
+	case types.Binary:
+		return Binary{
+			B:       v.B,
+			Subtype: bsonproto.BinarySubtype(v.Subtype),
+		}
+	case types.ObjectID:
+		return ObjectID(v)
+	case bool:
+		return v
+	case time.Time:
+		return v
+	case types.NullType:
+		return Null
+	case types.Regex:
+		return Regex{
+			Pattern: v.Pattern,
+			Options: v.Options,
+		}
+	case int32:
+		return v
+	case types.Timestamp:
+		return Timestamp(v)
+	case int64:
 		return v
 	}
+
+	return nil
 }

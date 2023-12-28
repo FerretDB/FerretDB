@@ -40,6 +40,13 @@ linters-settings:
           - "!**/internal/wire/*.go"
         deny:
           - pkg: github.com/FerretDB/FerretDB/internal/bson
+      bsonproto:
+        files:
+          - $all
+          - "!**/internal/bson2/*.go"
+        deny:
+          - pkg: github.com/cristalhq/bson
+          - pkg: github.com/cristalhq/bson/bsonproto
       sjson:
         files:
           - $all

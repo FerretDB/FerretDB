@@ -56,7 +56,7 @@ func NewDocument(pairs ...any) (*Document, error) {
 		}
 
 		value := pairs[i+1]
-		if !validType(value) {
+		if !validBSONType(value) {
 			return nil, fmt.Errorf("invalid field value type: %T", value)
 		}
 
@@ -75,51 +75,21 @@ func MakeDocument(cap int) *Document {
 	}
 }
 
+func ConvertDocument(doc *types.Document) *Document {
+	return nil
+}
+
 // Convert converts the Document to the *types.Document, decoding raw documents and arrays on the fly.
 func (doc *Document) Convert() (*types.Document, error) {
 	pairs := make([]any, 0, len(doc.fields)*2)
 
 	for _, f := range doc.fields {
-		switch v := f.value.(type) {
-		case *Document:
-			d, err := v.Convert()
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-			pairs = append(pairs, f.name, d)
-
-		case RawDocument:
-			doc, err := DecodeDocument(v)
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-			d, err := doc.Convert()
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-			pairs = append(pairs, f.name, d)
-
-		case *Array:
-			a, err := v.Convert()
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-			pairs = append(pairs, f.name, a)
-
-		case RawArray:
-			arr, err := DecodeArray(v)
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-			a, err := arr.Convert()
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-			pairs = append(pairs, f.name, a)
-
-		default:
-			pairs = append(pairs, f.name, convertScalar(v))
+		v, err := convertToTypes(f.value)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
 		}
+
+		pairs = append(pairs, f.name, v)
 	}
 
 	res, err := types.NewDocument(pairs...)
@@ -131,7 +101,7 @@ func (doc *Document) Convert() (*types.Document, error) {
 }
 
 func (doc *Document) add(name string, value any) error {
-	if !validType(value) {
+	if !validBSONType(value) {
 		return fmt.Errorf("invalid field value type: %T", value)
 	}
 
