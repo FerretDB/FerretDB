@@ -199,7 +199,7 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		}
 
 	case cursor.Tailable:
-		if nextBatch.Len() < int(batchSize) {
+		if nextBatch.Len() == 0 {
 			// The previous iterator is already closed there.
 
 			data := c.Data.(*findCursorData)
@@ -235,6 +235,7 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 				batchSize: batchSize,
 				maxTimeMS: maxTimeMS,
 			})
+
 			if err != nil {
 				return nil, lazyerrors.Error(err)
 			}
