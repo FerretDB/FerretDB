@@ -43,17 +43,18 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 	// to reduce connection overhead time, clients may use a hello command to complete their authentication exchange
 	// if so, the saslStart command may be embedded under the speculativeAuthenticate field
 	if (cmd == "ismaster" || cmd == "hello") && doc.Has("speculativeAuthenticate") {
+		reply, err := common.IsMaster(ctx, doc)
+		must.NoError(err)
 
 		h.L.Debug(
 			"speculativeAuthenticate",
 			zap.String("command", cmd),
-			zap.Any("doc", doc.Keys()),
+			zap.Bool("has speculativeAuthenticate key", doc.Has("speculativeAuthenticate")),
+			zap.Any("query.Query", doc),
+			zap.Any("query.String()", query.String()),
 		)
 
-		reply, err := common.IsMaster(ctx, doc)
-		must.NoError(err)
-
-		// TODO fix first server message in SCRAM conversation when sent in an OP_QUERY message
+		// FIXME fix first server message in SCRAM conversation when sent in an OP_QUERY message
 		response, conv, err = saslStartSCRAM(doc)
 		must.NoError(err)
 
