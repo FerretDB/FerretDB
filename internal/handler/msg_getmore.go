@@ -230,7 +230,7 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 	case cursor.TailableAwait:
 		if nextBatch.Len() == 0 {
-			nextBatch, err = h.awaitData(ctx, &awaitDataParmas{
+			nextBatch, err = h.awaitData(ctx, &awaitDataParams{
 				cursor:    c,
 				batchSize: batchSize,
 				maxTimeMS: maxTimeMS,
@@ -279,8 +279,8 @@ func (h *Handler) makeNextBatch(c *cursor.Cursor, batchSize int64) (*types.Array
 	return nextBatch, nil
 }
 
-// awaitDataParmas contains parameters that can be passed to awaitData function.
-type awaitDataParmas struct {
+// awaitDataParams contains parameters that can be passed to awaitData function.
+type awaitDataParams struct {
 	cursor    *cursor.Cursor
 	maxTimeMS int64
 	batchSize int64
@@ -288,7 +288,7 @@ type awaitDataParmas struct {
 
 // awaitData stops the goroutine, and waits for a new data for the cursor.
 // If there's a new document, or the maxTimeMS have passed it returns the nextBatch.
-func (h *Handler) awaitData(ctx context.Context, params *awaitDataParmas) (resBatch *types.Array, err error) {
+func (h *Handler) awaitData(ctx context.Context, params *awaitDataParams) (resBatch *types.Array, err error) {
 	c := params.cursor
 	data := c.Data.(*findCursorData)
 
