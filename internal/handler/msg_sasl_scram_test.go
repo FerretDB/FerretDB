@@ -56,7 +56,7 @@ func TestSaslStartSCRAM(t *testing.T) {
 			// log the crendentials for the user created by the mongo shell
 			cf := scram.KeyFactors{
 				Salt:  salt,
-				Iters: 4096,
+				Iters: 15000,
 			}
 			cred := client.GetStoredCredentials(cf)
 			t.Log(base64.StdEncoding.EncodeToString(cred.StoredKey))
