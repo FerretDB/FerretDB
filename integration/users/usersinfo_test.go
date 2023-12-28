@@ -358,8 +358,6 @@ func TestUsersinfo(t *testing.T) {
 	for name, tc := range testCases {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-
 			var res bson.D
 			dbName := dbPrefix + tc.dbSuffix
 			err := client.Database(dbName).RunCommand(ctx, tc.payload).Decode(&res)
