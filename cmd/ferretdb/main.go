@@ -64,6 +64,7 @@ var cli struct {
 		TLSCertFile string `default:""                help:"TLS cert file path."`
 		TLSKeyFile  string `default:""                help:"TLS key file path."`
 		TLSCaFile   string `default:""                help:"TLS CA file path."`
+		RSName      string `default:"rs"                help:"Replica set name."`
 	} `embed:"" prefix:"listen-"`
 
 	Proxy struct {
@@ -389,6 +390,8 @@ func run() {
 		Logger:        logger,
 		ConnMetrics:   metrics.ConnMetrics,
 		StateProvider: stateProvider,
+		Host:          cli.Listen.Addr,
+		RSName:        cli.Listen.RSName,
 
 		PostgreSQLURL: postgreSQLFlags.PostgreSQLURL,
 
