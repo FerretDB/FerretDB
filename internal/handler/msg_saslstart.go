@@ -69,11 +69,15 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			return nil, err
 		}
 
+		conninfo.Get(ctx).SetAuth(username, password)
+
 	case "SCRAM-SHA-256":
 		response, conv, err = saslStartSCRAM(document)
 		if err != nil {
 			return nil, err
 		}
+
+		conninfo.Get(ctx).SetConv(conv)
 
 		plain = false
 
@@ -88,8 +92,6 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrAuthenticationFailed, msg, "mechanism")
 	}
 
-	conninfo.Get(ctx).SetAuth(username, password)
-
 	var emptyPayload types.Binary
 	var reply wire.OpMsg
 	d := must.NotFail(types.NewDocument(
@@ -101,32 +103,20 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	// TODO confirm if this is even needed or if speculativeAuthenticate is always used and is sent in an OP_QUERY
 	if !plain {
-		conninfo.Get(ctx).SetConv(conv)
-		h.L.Debug(
-			"conninfo",
-			zap.Bool("valid", conninfo.Get(ctx).Conv().Valid()),
-			zap.Bool("done", conninfo.Get(ctx).Conv().Done()),
-			zap.String("username", conninfo.Get(ctx).Conv().Username()),
-		)
+		// remove top-level fields
+		d.Remove("conversationId")
+		d.Remove("done")
+		d.Remove("payload")
 
-		d.Set("payload", response)
-		d.Set("done", false)
-
-		if document.Has("speculativeAuthenticate") {
-			d.Remove("conversationId")
-			d.Remove("done")
-			d.Remove("payload")
-
-			// create a speculative conversation document for SCRAM authentication
-			d.Set("speculativeAuthenticate", must.NotFail(
-				types.NewDocument(
-					"conversationId", int32(1),
-					"done", false,
-					"payload", response,
-					"ok", float64(1),
-				),
-			))
-		}
+		// create a speculative conversation document for SCRAM authentication
+		d.Set("speculativeAuthenticate", must.NotFail(
+			types.NewDocument(
+				"conversationId", int32(1),
+				"done", false,
+				"payload", response,
+				"ok", float64(1),
+			),
+		))
 	}
 
 	must.NoError(reply.SetSections(wire.OpMsgSection{
@@ -192,12 +182,12 @@ func saslStartSCRAM(doc *types.Document) (string, *scram.ServerConversation, err
 	}
 
 	// TODO store the credentials in the 'admin.system.users' namespace eventually
-	// "SCRAM-SHA-256" : {
-	// 	"iterationCount" : 15000,
-	// 	"salt" : "0KPzHubY95siEZZQC6jYuupOqlkUjlqBFGK24w==",
-	// 	"storedKey" : "tTiad1PQvXqtOWTgxwF1/Cks7niAzRLzP91vGd4VWuQ=",
-	// 	"serverKey" : "h8hefOPW7nRxDNrrCGvYU9PdAEx/1oKEcCRdg3LGGRo="
-	// }
+	// 	"SCRAM-SHA-256" : {
+	// 		"iterationCount" : 15000,
+	// 		"salt" : "7jW5ZOczj05P4wyNc21OikIuSliPN9rw4sEoGQ==",
+	// 		"storedKey" : "F8hTLrnZscuuszfrh+4nupyjPA40cp+gfzy1Hsc3O3c=",
+	// 		"serverKey" : "d4P+d81D31XHwvfQA3jwgTmkivZfXTD/nBASm77Dwv0="
+	// 	}
 
 	var (
 		salt      = []byte{238, 53, 185, 100, 231, 51, 143, 78, 79, 227, 12, 141, 115, 109, 78, 138, 66, 46, 74, 88, 143, 55, 218, 240, 226, 193, 40, 25}
@@ -206,12 +196,6 @@ func saslStartSCRAM(doc *types.Document) (string, *scram.ServerConversation, err
 	)
 
 	var response string
-
-	// generate server-first-message of the form r=client-nonce|server-nonce,s=user-salt,i=iteration-count
-	// salt := make([]byte, 28)
-	// if _, err := io.ReadFull(rand.Reader, salt); err != nil {
-	// 	return nil, nil, err
-	// }
 
 	cl := scram.CredentialLookup(func(s string) (scram.StoredCredentials, error) {
 		kf := scram.KeyFactors{

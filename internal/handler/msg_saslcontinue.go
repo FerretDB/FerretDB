@@ -48,7 +48,7 @@ func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.O
 		"saslContinue",
 		zap.String("payload", string(payload)),
 		zap.String("response", response),
-		zap.Error(err),
+		zap.Bool("conversation complete", conv.Valid()),
 	)
 
 	var reply wire.OpMsg

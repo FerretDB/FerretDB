@@ -50,14 +50,16 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 		d := v.(*types.Document)
 		payload, _ := d.Get("payload")
 
+		response, conv, err = saslStartSCRAM(d)
+		must.NoError(err)
+
 		h.L.Debug(
 			"speculativeAuthenticate",
 			zap.String("command", cmd),
 			zap.Any("payload", payload),
+			zap.String("response", response),
+			zap.Bool("conversation complete", conv.Valid()),
 		)
-
-		response, conv, err = saslStartSCRAM(d)
-		must.NoError(err)
 
 		conninfo.Get(ctx).SetConv(conv)
 
