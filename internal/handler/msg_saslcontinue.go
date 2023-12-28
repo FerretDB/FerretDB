@@ -40,7 +40,6 @@ func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.O
 		payload = binaryPayload.B
 	}
 
-	// c=biws,r=F68dvyilmZIMEFz+3CisPp1HxZ32mqLt66Rcm4+X1R+wPNI0xhXAEayWgwSapNbT,p=N/8JIXLonwJz2i6yNKGX3lZLMGTvf8PAfNmmVrQGxis=
 	conv := conninfo.Get(ctx).Conv()
 	response, err := conv.Step(string(payload))
 	h.L.Debug(
@@ -48,7 +47,6 @@ func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.O
 		zap.String("payload", string(payload)),
 		zap.String("response", response),
 		zap.Error(err),
-		zap.Bool("nil error", err == nil),
 	)
 
 	var reply wire.OpMsg
