@@ -70,7 +70,6 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		}
 
 	case "SCRAM-SHA-256":
-		// FIXME nonce received did not match nonce sent
 		response, conv, err = saslStartSCRAM(document)
 		if err != nil {
 			return nil, err

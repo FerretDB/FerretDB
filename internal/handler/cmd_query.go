@@ -56,7 +56,6 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 			zap.Any("payload", payload),
 		)
 
-		// FIXME nonce received did not match nonce sent
 		response, conv, err = saslStartSCRAM(d)
 		must.NoError(err)
 
