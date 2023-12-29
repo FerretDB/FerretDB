@@ -44,8 +44,6 @@ type NewHandlerOpts struct {
 	Logger        *zap.Logger
 	ConnMetrics   *connmetrics.ConnMetrics
 	StateProvider *state.Provider
-	Host          string
-	RSName        string
 
 	// for `postgresql` handler
 	PostgreSQLURL string

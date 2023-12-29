@@ -37,8 +37,6 @@ func init() {
 
 		handlerOpts := &handler.NewOpts{
 			Backend: b,
-			Host:    opts.Host,
-			RSName:  opts.RSName,
 
 			L:             opts.Logger.Named("hana"),
 			ConnMetrics:   opts.ConnMetrics,
