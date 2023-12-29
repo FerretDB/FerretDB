@@ -45,50 +45,54 @@ func TestUsersinfo(t *testing.T) {
 	client := collection.Database().Client()
 
 	// Map of users per database suffix
-	dbToUsers := map[string][]bson.D{
-		"": {
-			createUser("one", "pwd1"),
-			createUser("two", "pwd2"),
+	dbToUsers := []struct {
+		dbSuffix string
+		payloads []bson.D
+	}{
+		{
+			dbSuffix: "",
+			payloads: []bson.D{
+				createUser("one", "pwd1"),
+				createUser("two", "pwd2"),
+			},
 		},
-		"_example": {
-			createUser("a", "password1"),
-			createUser("b", "password2"),
-			createUser("c", "password3"),
+		{
+			dbSuffix: "_example",
+			payloads: []bson.D{
+				createUser("a", "password1"),
+				createUser("b", "password2"),
+				createUser("c", "password3"),
+			},
 		},
-		"_few": {
-			createUser("i", "password1"),
-			createUser("j", "password2"),
+		{
+			dbSuffix: "_few",
+			payloads: []bson.D{
+				createUser("i", "password1"),
+				createUser("j", "password2"),
+			},
 		},
-		"_another": {
-			createUser("singleuser", "123456"),
+		{
+			dbSuffix: "_another",
+			payloads: []bson.D{
+				createUser("singleuser", "123456"),
+			},
 		},
-	}
-	// allCreatedUsers is a list of all users created in the database that you want to verify
-	// are returned by the usersInfo command.
-	allCreatedUsers := map[string]struct{}{
-		"TestUsersinfo.one":                {},
-		"TestUsersinfo.two":                {},
-		"TestUsersinfo_example.a":          {},
-		"TestUsersinfo_example.b":          {},
-		"TestUsersinfo_example.c":          {},
-		"TestUsersinfo_few.i":              {},
-		"TestUsersinfo_few.j":              {},
-		"TestUsersinfo_another.singleuser": {},
 	}
 
-	dbPrefix := t.Name()
+	dbPrefix := testutil.DatabaseName(t)
 
 	// Create users into the database to test userInfo.
-	for dbSuffix, payloads := range dbToUsers {
-		dbName := t.Name() + dbSuffix
+	for _, inserted := range dbToUsers {
+		dbName := testutil.DatabaseName(t) + inserted.dbSuffix
 		db := client.Database(dbName)
 
 		// Clear any residual database users before recreating them.
-		assert.NoError(t, db.RunCommand(ctx, bson.D{
+
+		require.NoError(t, db.RunCommand(ctx, bson.D{
 			{"dropAllUsersFromDatabase", 1},
 		}).Err())
 
-		for _, payload := range payloads {
+		for _, payload := range inserted.payloads {
 			err := db.RunCommand(ctx, payload).Err()
 			require.NoErrorf(t, err, "cannot create user on database %q: %q", dbName, payload)
 		}
@@ -351,13 +355,24 @@ func TestUsersinfo(t *testing.T) {
 					{"forAllDBs", true},
 				},
 			}},
-			hasUser: allCreatedUsers,
+			hasUser: map[string]struct{}{
+				"TestUsersinfo.one":                {},
+				"TestUsersinfo.two":                {},
+				"TestUsersinfo_example.a":          {},
+				"TestUsersinfo_example.b":          {},
+				"TestUsersinfo_example.c":          {},
+				"TestUsersinfo_few.i":              {},
+				"TestUsersinfo_few.j":              {},
+				"TestUsersinfo_another.singleuser": {},
+			},
 		},
 	}
 
 	for name, tc := range testCases {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			var res bson.D
 			dbName := dbPrefix + tc.dbSuffix
 			err := client.Database(dbName).RunCommand(ctx, tc.payload).Decode(&res)
