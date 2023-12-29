@@ -94,10 +94,6 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 				"tailable",
 			)
 		}
-
-		if params.AwaitData {
-			return nil, common.Unimplemented(document, "awaitData")
-		}
 	}
 
 	qp, err := h.makeFindQueryParams(params, &cInfo)
