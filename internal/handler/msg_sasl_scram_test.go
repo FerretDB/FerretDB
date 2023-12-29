@@ -15,7 +15,6 @@
 package handler
 
 import (
-	"encoding/base64"
 	"testing"
 
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -24,7 +23,7 @@ import (
 	"github.com/xdg-go/scram"
 )
 
-// for user 'username:password'
+// credentials for user 'username' with password 'password'
 const (
 	salt      = "7jW5ZOczj05P4wyNc21OikIuSliPN9rw4sEoGQ=="
 	storedKey = "F8hTLrnZscuuszfrh+4nupyjPA40cp+gfzy1Hsc3O3c="
@@ -32,10 +31,11 @@ const (
 )
 
 func TestSaslStartSCRAM(t *testing.T) {
-	validPayload := []byte("biwsbj11c2VybmFtZSxyPTRFSkNKcmVNejV1cDhnME5oa0E1L3UyTDdSRXVpOUFs")
+	validPayload := []byte("biwsbj11c2VybmFtZSxyPWZLMldtdTFHZmczUkpxeEx4Mk82OWw2bmVSd2Jnd3VN")
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
-		doc *types.Document
+		doc     *types.Document
+		payload []byte
 
 		// expected results
 		username string
@@ -43,7 +43,8 @@ func TestSaslStartSCRAM(t *testing.T) {
 		err      error
 	}{
 		"binaryPayload": {
-			doc:      must.NotFail(types.NewDocument("payload", types.Binary{B: validPayload})),
+			doc:      must.NotFail(types.NewDocument("payload", types.Binary{Subtype: 0, B: validPayload})),
+			payload:  validPayload,
 			username: "username",
 			password: "password",
 			err:      nil,
@@ -53,26 +54,14 @@ func TestSaslStartSCRAM(t *testing.T) {
 			client, err := scram.SHA256.NewClient(tc.username, tc.password, "")
 			assert.NoError(t, err)
 
-			// log the crendentials for the user created by the mongo shell
-			cf := scram.KeyFactors{
-				Salt:  salt,
-				Iters: 15000,
-			}
-			cred := client.GetStoredCredentials(cf)
-			t.Log(base64.StdEncoding.EncodeToString(cred.StoredKey))
-			t.Log(base64.StdEncoding.EncodeToString(cred.ServerKey))
+			conv := client.NewConversation()
 
-			b, err := base64.StdEncoding.DecodeString(salt)
+			expected, err := conv.Step(string(tc.payload))
 			assert.NoError(t, err)
-			t.Log(b)
 
-			b, err = base64.StdEncoding.DecodeString(storedKey)
+			response, _, err := saslStartSCRAM(tc.doc)
 			assert.NoError(t, err)
-			t.Log(b)
-
-			b, err = base64.StdEncoding.DecodeString(serverKey)
-			assert.NoError(t, err)
-			t.Log(b)
+			t.Log(response, expected)
 		})
 	}
 }
