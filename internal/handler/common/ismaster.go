@@ -41,7 +41,7 @@ func IsMasterDocuments(host, name string) []*types.Document {
 	return []*types.Document{must.NotFail(types.NewDocument(
 		// topologyVersion
 		//	"hosts", must.NotFail(types.NewArray(host)),
-		"setName", name,
+		//"setName", name,
 		"ismaster", true, // only lowercase
 		"maxBsonObjectSize", int32(types.MaxDocumentLen),
 		"maxMessageSizeBytes", int32(wire.MaxMsgLen),

@@ -37,86 +37,65 @@ func TestOplogUpdate(t *testing.T) {
 		filter         bson.D
 		expectedDiffV1 *types.Document
 		expectedDiffV2 *types.Document
+		expectedO2     *types.Document
 	}{
 		"set": {
-			update:         bson.D{{"$set", bson.D{{"a", int32(1)}}}},
-			filter:         bson.D{{"_id", "array"}},
-			expectedDiffV1: must.NotFail(types.NewDocument("a", int32(1))),
+			update: bson.D{{"$set", bson.D{{"a", int32(1)}}}},
+			filter: bson.D{{"_id", "array"}},
+			expectedDiffV1: must.NotFail(types.NewDocument(
+				"_id", "array",
+				"v", must.NotFail(types.NewArray(int32(42))),
+				"a", int32(1),
+			)),
 			expectedDiffV2: must.NotFail(types.NewDocument("i", must.NotFail(types.NewDocument("a", int32(1))))),
+			expectedO2:     must.NotFail(types.NewDocument("_id", "array")),
 		},
-		/*"unset": {
-			update:         bson.D{{"$unset", bson.D{{"a", 1}}}},
-			expectedDiffV1: must.NotFail(types.NewDocument("$unset", must.NotFail(types.NewDocument("a", int64(1))))),
-			expectedDiffV2: must.NotFail(types.NewDocument("d", must.NotFail(types.NewDocument("a", int64(1))))),
+		"unset": {
+			update:         bson.D{{"$unset", bson.D{{"v", int32(1)}}}},
+			filter:         bson.D{{"_id", "array-two"}},
+			expectedDiffV1: must.NotFail(types.NewDocument("_id", "array-two")),
+			expectedDiffV2: must.NotFail(types.NewDocument("d", must.NotFail(types.NewDocument("a", int32(1))))),
+			expectedO2:     must.NotFail(types.NewDocument("_id", "array-two")),
 		},
-		"inc": {
-			update: bson.D{{"$inc", bson.D{{"a", 1}}}},
-		},
-		"mul": {
-			update: bson.D{{"$mul", bson.D{{"a", 2}}}},
-		},
-		"rename": {
-			update: bson.D{{"$rename", bson.D{{"a", "b"}}}},
-		},
-		"pull": {
-			update: bson.D{{"$pull", bson.D{{"a", 1}}}},
-		},
-		"push": {
-			update: bson.D{{"$push", bson.D{{"a", 1}}}},
-		},*/
 	} {
 		name, tc := name, tc
 
 		t.Run(name, func(t *testing.T) {
-			t.Run("UpdateOne", func(t *testing.T) {
-				_, err = coll.UpdateOne(ctx, tc.filter, tc.update)
-				require.NoError(t, err)
+			t.Parallel()
 
-				var lastOplogEntry bson.D
-				err = local.Collection("oplog.rs").FindOne(ctx, bson.D{{"ns", ns}}, opts).Decode(&lastOplogEntry)
-				require.NoError(t, err)
+			_, err = coll.UpdateOne(ctx, tc.filter, tc.update)
+			require.NoError(t, err)
 
-				actual := integration.ConvertDocument(t, lastOplogEntry)
+			var lastOplogEntry bson.D
+			err = local.Collection("oplog.rs").FindOne(ctx, bson.D{{"ns", ns}}, opts).Decode(&lastOplogEntry)
+			require.NoError(t, err)
 
-				o := must.NotFail(actual.Get("o")).(*types.Document)
-				version := must.NotFail(o.Get("$v")).(int32)
-				if version == 2 {
-					diff := must.NotFail(o.Get("diff")).(*types.Document)
-					assert.Equal(t, tc.expectedDiffV2, diff)
-				} else {
-					diff := must.NotFail(o.Get("$set")).(*types.Document)
-					assert.Equal(t, tc.expectedDiffV1, diff)
+			actual := integration.ConvertDocument(t, lastOplogEntry)
 
-					o2 := must.NotFail(o.Get("o2")).(*types.Document)
-					expectedO2 := must.NotFail(types.NewDocument("_id", must.NotFail(o2.Get("_id"))))
-					assert.Equal(t, expectedO2, o2)
-				}
+			o := must.NotFail(actual.Get("o")).(*types.Document)
+			version := must.NotFail(o.Get("$v")).(int64)
+			if version == 2 {
+				diff := must.NotFail(o.Get("diff")).(*types.Document)
+				assert.Equal(t, tc.expectedDiffV2, diff)
+			} else {
+				diff := must.NotFail(o.Get("$set")).(*types.Document)
+				assert.Equal(t, tc.expectedDiffV1, diff)
 
-				/*	o := must.NotFail(actual.Get("o")).(*types.Document)
-					if o.Has("diff") {
-						diff := must.NotFail(o.Get("diff")).(*types.Document)
-						assert.Equal(t, tc.expectedDiffV2, diff)
-					} else {
-						diff := must.NotFail(o.Get("$set")).(*types.Document)
-						assert.Equal(t, tc.expectedDiffV1, diff)
+				o2 := must.NotFail(actual.Get("o2")).(*types.Document)
+				assert.Equal(t, tc.expectedO2, o2)
+			}
 
-						o2 := must.NotFail(o.Get("o2")).(*types.Document)
-						expectedO2 := must.NotFail(types.NewDocument("_id", must.NotFail(o2.Get("_id"))))
-						assert.Equal(t, expectedO2, o2)
-					}*/
-
-				unsetUnusedOplogFields(actual)
-				actual.Remove("o")
-				actual.Remove("o2")
-				expected, err := types.NewDocument(
-					"op", "u",
-					"ns", ns,
-					"ts", must.NotFail(actual.Get("ts")).(types.Timestamp),
-					"v", int64(2),
-				)
-				require.NoError(t, err)
-				assert.Equal(t, expected, actual)
-			})
+			unsetUnusedOplogFields(actual)
+			actual.Remove("o")
+			actual.Remove("o2")
+			expected, err := types.NewDocument(
+				"ns", ns,
+				"op", "u",
+				"ts", must.NotFail(actual.Get("ts")).(types.Timestamp),
+				"v", int64(2),
+			)
+			require.NoError(t, err)
+			assert.EqualValues(t, expected, actual)
 		})
 	}
 }
