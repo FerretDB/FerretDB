@@ -38,10 +38,8 @@ func IsMaster(ctx context.Context, query *types.Document, host, name string) (*w
 
 // IsMasterDocuments returns isMaster's Documents field (identical for both OP_MSG and OP_QUERY).
 func IsMasterDocuments(host, name string) []*types.Document {
-	return []*types.Document{must.NotFail(types.NewDocument(
+	doc := must.NotFail(types.NewDocument(
 		// topologyVersion
-		//	"hosts", must.NotFail(types.NewArray(host)),
-		//"setName", name,
 		"ismaster", true, // only lowercase
 		"maxBsonObjectSize", int32(types.MaxDocumentLen),
 		"maxMessageSizeBytes", int32(wire.MaxMsgLen),
@@ -53,5 +51,12 @@ func IsMasterDocuments(host, name string) []*types.Document {
 		"maxWireVersion", MaxWireVersion,
 		"readOnly", false,
 		"ok", float64(1),
-	))}
+	))
+
+	if name != "" {
+		doc.Set("setName", name)
+		doc.Set("hosts", must.NotFail(types.NewArray(host)))
+	}
+
+	return []*types.Document{doc}
 }

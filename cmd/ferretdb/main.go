@@ -64,7 +64,7 @@ var cli struct {
 		TLSCertFile string `default:""                help:"TLS cert file path."`
 		TLSKeyFile  string `default:""                help:"TLS key file path."`
 		TLSCaFile   string `default:""                help:"TLS CA file path."`
-		RSName      string `default:"rs"              help:"Replica set name."`
+		RSName      string `default:""                help:"Replica set name for setName field. If empty, setName is not set."`
 	} `embed:"" prefix:"listen-"`
 
 	Proxy struct {

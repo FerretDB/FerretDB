@@ -172,8 +172,8 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 		Logger:        logger,
 		ConnMetrics:   listenerMetrics.ConnMetrics,
 		StateProvider: sp,
-		Host:          "127.0.0.1:0",
-		RSName:        "rs",
+		// Host:          "127.0.0.1:0",
+		// RSName:        "rs",
 
 		PostgreSQLURL: postgreSQLURLF,
 		SQLiteURL:     sqliteURL,
