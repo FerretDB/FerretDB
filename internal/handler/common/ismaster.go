@@ -25,19 +25,19 @@ import (
 )
 
 // IsMaster is a common implementation of the isMaster command used by deprecated OP_QUERY message.
-func IsMaster(ctx context.Context, query *types.Document, host, name string) (*wire.OpReply, error) {
+func IsMaster(ctx context.Context, query *types.Document) (*wire.OpReply, error) {
 	if err := CheckClientMetadata(ctx, query); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	return &wire.OpReply{
 		NumberReturned: 1,
-		Documents:      IsMasterDocuments(host, name),
+		Documents:      IsMasterDocuments(),
 	}, nil
 }
 
 // IsMasterDocuments returns isMaster's Documents field (identical for both OP_MSG and OP_QUERY).
-func IsMasterDocuments(host, name string) []*types.Document {
+func IsMasterDocuments() []*types.Document {
 	doc := must.NotFail(types.NewDocument(
 		// topologyVersion
 		"ismaster", true, // only lowercase
@@ -52,11 +52,6 @@ func IsMasterDocuments(host, name string) []*types.Document {
 		"readOnly", false,
 		"ok", float64(1),
 	))
-
-	if name != "" {
-		doc.Set("setName", name)
-		doc.Set("hosts", must.NotFail(types.NewArray(host)))
-	}
 
 	return []*types.Document{doc}
 }
