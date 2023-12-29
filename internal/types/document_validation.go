@@ -88,7 +88,6 @@ func (d *Document) validateData(isTopLevel bool) error {
 			return newValidationError(ErrValidation, fmt.Errorf("invalid key: %q (not a valid UTF-8 string)", key))
 		}
 
-		// Oplog collection stores data with fields starting with '$'.
 		if strings.HasPrefix(key, "$") {
 			return newValidationError(ErrValidation, fmt.Errorf("invalid key: %q (key must not start with '$' sign)", key))
 		}

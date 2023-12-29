@@ -38,9 +38,9 @@ func IsMaster(ctx context.Context, query *types.Document) (*wire.OpReply, error)
 
 // IsMasterDocuments returns isMaster's Documents field (identical for both OP_MSG and OP_QUERY).
 func IsMasterDocuments() []*types.Document {
-	doc := must.NotFail(types.NewDocument(
-		// topologyVersion
+	return []*types.Document{must.NotFail(types.NewDocument(
 		"ismaster", true, // only lowercase
+		// topologyVersion
 		"maxBsonObjectSize", int32(types.MaxDocumentLen),
 		"maxMessageSizeBytes", int32(wire.MaxMsgLen),
 		"maxWriteBatchSize", int32(100000),
@@ -51,7 +51,5 @@ func IsMasterDocuments() []*types.Document {
 		"maxWireVersion", MaxWireVersion,
 		"readOnly", false,
 		"ok", float64(1),
-	))
-
-	return []*types.Document{doc}
+	))}
 }
