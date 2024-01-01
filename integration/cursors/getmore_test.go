@@ -12,6 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// TODO
+// - maxTimeMS for tailable cursor (done I think)
+// - maxTimeMS for awaitdata cursor
+// - maxTimeMS for standard cursor
+
+// - maxTimeMS for find before tailable cursor
+// - maxTimeMS for find before awaitdata cursor
+// - maxTimeMS for find before standard cursor
+
 package cursors
 
 import (
