@@ -433,6 +433,7 @@ func TestCursorsAwaitDataFirstBatchMaxTimeMS(t *testing.T) {
 			{"batchSize", 1},
 			{"maxTimeMS", 100},
 			{"tailable", true},
+			{"awaitData", true},
 		}
 
 		var res bson.D
