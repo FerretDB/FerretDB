@@ -88,9 +88,6 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		)
 	}
 
-	// Handle comment.
-	// TODO https://github.com/FerretDB/FerretDB/issues/2986
-
 	v, _ = document.Get("maxTimeMS")
 
 	// cannot use other existing handlerparams function, they return different error codes
@@ -138,6 +135,9 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			document.Command(),
 		)
 	}
+
+	// Handle comment.
+	// TODO https://github.com/FerretDB/FerretDB/issues/2986
 
 	username := conninfo.Get(ctx).Username()
 
