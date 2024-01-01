@@ -77,13 +77,13 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			return nil, err
 		}
 
-		conninfo.Get(ctx).SetConv(conv)
-
 		plain = false
 
 		h.L.Debug(
 			"saslStart",
 			zap.String("response", response),
+			zap.String("username", conv.Username()),
+			zap.String("password", password),
 		)
 
 	default:
