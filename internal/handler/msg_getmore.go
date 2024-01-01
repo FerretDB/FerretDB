@@ -91,33 +91,7 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	// Handle comment.
 	// TODO https://github.com/FerretDB/FerretDB/issues/2986
 
-	username := conninfo.Get(ctx).Username()
-
-	// Use ExtractParam.
-	// TODO https://github.com/FerretDB/FerretDB/issues/2859
-	c := h.cursors.Get(cursorID)
-	if c == nil || c.Username != username {
-		return nil, handlererrors.NewCommandErrorMsgWithArgument(
-			handlererrors.ErrCursorNotFound,
-			fmt.Sprintf("cursor id %d not found", cursorID),
-			document.Command(),
-		)
-	}
-
 	v, _ = document.Get("maxTimeMS")
-	if v != nil && c.Type != cursor.TailableAwait {
-		return nil, handlererrors.NewCommandErrorMsgWithArgument(
-			handlererrors.ErrBadValue,
-			"cannot set maxTimeMS on getMore command for a non-awaitData cursor",
-			document.Command(),
-		)
-	}
-
-	// GetOptionalParam cannot be used to set default value, as we need to return error if
-	// maxTimeMS was provided for non-awaitData cursors.
-	if v == nil {
-		v = int64(1000)
-	}
 
 	// cannot use other existing handlerparams function, they return different error codes
 	maxTimeMS, err := handlerparams.GetWholeNumberParam(v)
@@ -163,6 +137,33 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			fmt.Sprintf("%v value for maxTimeMS is out of range", v),
 			document.Command(),
 		)
+	}
+
+	username := conninfo.Get(ctx).Username()
+
+	// Use ExtractParam.
+	// TODO https://github.com/FerretDB/FerretDB/issues/2859
+	c := h.cursors.Get(cursorID)
+	if c == nil || c.Username != username {
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrCursorNotFound,
+			fmt.Sprintf("cursor id %d not found", cursorID),
+			document.Command(),
+		)
+	}
+
+	if v != nil && c.Type != cursor.TailableAwait {
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrBadValue,
+			"cannot set maxTimeMS on getMore command for a non-awaitData cursor",
+			document.Command(),
+		)
+	}
+
+	// GetOptionalParam cannot be used to set default value, as we need to return error if
+	// maxTimeMS was provided for non-awaitData cursors.
+	if v == nil {
+		v = int64(1000)
 	}
 
 	v, _ = document.Get("batchSize")
