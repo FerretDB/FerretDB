@@ -77,6 +77,10 @@ func (h *Handler) initCommands() {
 			Handler: h.MsgCreateIndexes,
 			Help:    "Creates indexes on a collection.",
 		},
+		"createUser": {
+			Handler: h.MsgCreateUser,
+			Help:    "Creates a new user on the database where you run the command.",
+		},
 		"currentOp": {
 			Handler: h.MsgCurrentOp,
 			Help:    "Returns information about operations currently in progress.",
@@ -108,6 +112,14 @@ func (h *Handler) initCommands() {
 		"drop": {
 			Handler: h.MsgDrop,
 			Help:    "Drops the collection.",
+		},
+		"dropAllUsersFromDatabase": {
+			Handler: h.MsgDropAllUsersFromDatabase,
+			Help:    "Removes all users from the database on which you run the command.",
+		},
+		"dropUser": {
+			Handler: h.MsgDropUser,
+			Help:    "Removes the user from the database on which you run the command.",
 		},
 		"dropDatabase": {
 			Handler: h.MsgDropDatabase,
