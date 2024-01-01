@@ -16,6 +16,7 @@ package cursors
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -423,4 +424,56 @@ func TestCursorsTailableFirstBatchMaxTimeMS(t *testing.T) {
 		require.Equal(t, 0, nextBatch.Len())
 		assert.Equal(t, cursorID, nextID)
 	})
+}
+
+func TestCursorsTailableGetMoreMaxTimeMS(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupWithOpts(t, nil)
+
+	db, ctx := s.Collection.Database(), s.Ctx
+
+	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(10000)
+	err := db.CreateCollection(s.Ctx, t.Name(), opts)
+	require.NoError(t, err)
+
+	collection := db.Collection(t.Name())
+
+	bsonArr, _ := integration.GenerateDocuments(0, 3)
+
+	_, err = collection.InsertMany(ctx, bsonArr)
+	require.NoError(t, err)
+
+	cmd := bson.D{
+		{"find", collection.Name()},
+		{"batchSize", 1},
+		{"tailable", true},
+	}
+
+	var res bson.D
+	err = collection.Database().RunCommand(ctx, cmd).Decode(&res)
+	require.NoError(t, err)
+
+	_, cursorID := getFirstBatch(t, res)
+
+	getMoreCmd := bson.D{
+		{"getMore", cursorID},
+		{"collection", collection.Name()},
+		{"batchSize", 1},
+		{"maxTimeMS", (1 * time.Minute).Milliseconds()},
+	}
+
+	for i := 0; i < 2; i++ {
+		var res bson.D
+		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
+		require.NoError(t, err)
+
+		nextBatch, nextID := getNextBatch(t, res)
+
+		assert.Equal(t, cursorID, nextID)
+		require.Equal(t, 1, nextBatch.Len())
+	}
+
+	//err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
+	//require.NoError(t, err)
 }
