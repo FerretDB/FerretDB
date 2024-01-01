@@ -998,44 +998,6 @@ func TestCursorsGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 		)
 	})
 
-	t.Run("FindTailableGetMoreMaxTimeMS", func(tt *testing.T) {
-		var res bson.D
-		err := collection.Database().RunCommand(ctx, bson.D{
-			{"find", collection.Name()},
-			{"tailable", 1},
-			{"batchSize", 0},
-		}).Decode(&res)
-		require.NoError(t, err)
-
-		doc := integration.ConvertDocument(t, res)
-
-		v, _ := doc.Get("cursor")
-		require.NotNil(t, v)
-
-		cursor, ok := v.(*types.Document)
-		require.True(t, ok)
-
-		cursorID, _ := cursor.Get("id")
-		require.NotZero(t, cursorID)
-
-		err = collection.Database().RunCommand(ctx, bson.D{
-			{"getMore", cursorID},
-			{"collection", collection.Name()},
-			{"batchSize", 2000},
-			{"maxTimeMS", 1},
-		}).Decode(&res)
-
-		integration.AssertEqualCommandError(
-			t,
-			mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "cannot set maxTimeMS on getMore command for a non-awaitData cursor",
-			},
-			err,
-		)
-	})
-
 	t.Run("AggregateExpire", func(tt *testing.T) {
 		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2983")
 
@@ -1199,5 +1161,128 @@ func TestCursors(t *testing.T) {
 		var ce mongo.CommandError
 		require.True(t, errors.As(err, &ce))
 		require.Equal(t, int32(175), ce.Code, "invalid error: %v", ce)
+	})
+}
+
+func TestGetMoreNonAwaitDataError(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupWithOpts(t, nil)
+
+	db, ctx := s.Collection.Database(), s.Ctx
+
+	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(10000)
+	err := db.CreateCollection(s.Ctx, t.Name(), opts)
+	require.NoError(t, err)
+
+	collection := db.Collection(t.Name())
+	bsonDocs, _ := integration.GenerateDocuments(0, 1)
+
+	_, err = collection.InsertMany(ctx, bsonDocs)
+	require.NoError(t, err)
+
+	t.Run("Cursor", func(tt *testing.T) {
+		var res bson.D
+		err := collection.Database().RunCommand(ctx, bson.D{
+			{"find", collection.Name()},
+			{"tailable", true},
+			{"batchSize", 0},
+		}).Decode(&res)
+		require.NoError(t, err)
+
+		doc := integration.ConvertDocument(t, res)
+
+		v, _ := doc.Get("cursor")
+		require.NotNil(t, v)
+
+		cursor, ok := v.(*types.Document)
+		require.True(t, ok)
+
+		cursorID, _ := cursor.Get("id")
+		require.NotZero(t, cursorID)
+
+		err = collection.Database().RunCommand(ctx, bson.D{
+			{"getMore", cursorID},
+			{"collection", collection.Name()},
+			{"batchSize", 2000},
+			{"maxTimeMS", 1},
+		}).Err()
+
+		integration.AssertEqualCommandError(
+			t,
+			mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "cannot set maxTimeMS on getMore command for a non-awaitData cursor",
+			},
+			err,
+		)
+	})
+	t.Run("TailableCursor", func(tt *testing.T) {
+		var res bson.D
+		err := collection.Database().RunCommand(ctx, bson.D{
+			{"find", collection.Name()},
+			{"tailable", true},
+			{"batchSize", 0},
+		}).Decode(&res)
+		require.NoError(t, err)
+
+		doc := integration.ConvertDocument(t, res)
+
+		v, _ := doc.Get("cursor")
+		require.NotNil(t, v)
+
+		cursor, ok := v.(*types.Document)
+		require.True(t, ok)
+
+		cursorID, _ := cursor.Get("id")
+		require.NotZero(t, cursorID)
+
+		err = collection.Database().RunCommand(ctx, bson.D{
+			{"getMore", cursorID},
+			{"collection", collection.Name()},
+			{"batchSize", 2000},
+			{"maxTimeMS", 1},
+		}).Err()
+
+		integration.AssertEqualCommandError(
+			t,
+			mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "cannot set maxTimeMS on getMore command for a non-awaitData cursor",
+			},
+			err,
+		)
+	})
+	t.Run("AwaitDataCursor", func(tt *testing.T) {
+		var res bson.D
+		err := collection.Database().RunCommand(ctx, bson.D{
+			{"find", collection.Name()},
+			{"tailable", true},
+			{"awaitData", true},
+			{"batchSize", 0},
+		}).Decode(&res)
+		require.NoError(t, err)
+
+		doc := integration.ConvertDocument(t, res)
+
+		v, _ := doc.Get("cursor")
+		require.NotNil(t, v)
+
+		cursor, ok := v.(*types.Document)
+		require.True(t, ok)
+
+		cursorID, _ := cursor.Get("id")
+		require.NotZero(t, cursorID)
+
+		err = collection.Database().RunCommand(ctx, bson.D{
+			{"getMore", cursorID},
+			{"collection", collection.Name()},
+			{"batchSize", 2000},
+			{"maxTimeMS", 1},
+		}).Err()
+
+		require.NoError(t, err)
 	})
 }
