@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"slices"
-	"time"
 
 	"go.uber.org/zap"
 
@@ -105,7 +104,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	if params.MaxTimeMS != 0 {
 		// It is not clear if maxTimeMS affects only find, or both find and getMore (as the current code does).
 		// TODO https://github.com/FerretDB/FerretDB/issues/2984
-		ctx, cancel = context.WithTimeout(ctx, time.Duration(params.MaxTimeMS)*time.Millisecond)
+		//ctx, cancel = context.WithTimeout(ctx, time.Duration(params.MaxTimeMS)*time.Millisecond)
 	}
 
 	// closer accumulates all things that should be closed / canceled.
@@ -132,7 +131,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		t = cursor.TailableAwait
 	}
 
-	c := h.cursors.NewCursor(ctx, iter, &cursor.NewParams{
+	c := h.cursors.NewCursor(context.Background(), iter, &cursor.NewParams{
 		Data: &findCursorData{
 			coll:       coll,
 			qp:         qp,
