@@ -104,9 +104,7 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		)
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/2984
 	v, _ = document.Get("maxTimeMS")
-
 	if v != nil && c.Type != cursor.TailableAwait {
 		return nil, handlererrors.NewCommandErrorMsgWithArgument(
 			handlererrors.ErrBadValue,
@@ -115,6 +113,8 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		)
 	}
 
+	// GetOptionalParam cannot be used to set default value, as we need to return error if
+	// maxTimeMS was provided for non-awaitData cursors.
 	if v == nil {
 		v = int64(1000)
 	}
