@@ -39,10 +39,6 @@ func TestDropAllUsersFromDatabase(t *testing.T) {
 	client := collection.Database().Client()
 	users := client.Database("admin").Collection("system.users")
 
-	require.NoError(t, collection.Database().RunCommand(ctx, bson.D{
-		{"dropAllUsersFromDatabase", 1},
-	}).Err())
-
 	quantity := 5 // Add some users to the database.
 	for i := 1; i <= quantity; i++ {
 		err := db.RunCommand(ctx, bson.D{
