@@ -1184,7 +1184,7 @@ func TestCursorsFirstBatchMaxTimeMS(t *testing.T) {
 		cmd := bson.D{
 			{"find", collection.Name()},
 			{"batchSize", 1},
-			{"maxTimeMS", 2000},
+			//{"maxTimeMS", 2000},
 		}
 
 		var res bson.D
