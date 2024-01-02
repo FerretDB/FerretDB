@@ -30,7 +30,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -102,31 +101,19 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
+	curCtx := ctx
+
 	cancel := func() {}
 	if params.MaxTimeMS != 0 {
-		ctx, cancel = context.WithCancel(ctx)
-
-		go func() {
-			ctxutil.Sleep(ctx, time.Duration(params.MaxTimeMS)*time.Millisecond)
-			//cancel()
-		}()
-		// TODO context leak?
-
+		// It is not clear if maxTimeMS affects only find, or both find and getMore (as the current code does).
+		// TODO https://github.com/FerretDB/FerretDB/issues/2984
+		ctx, cancel = context.WithTimeout(ctx, time.Duration(params.MaxTimeMS)*time.Millisecond)
 	}
-
-	var ctxKeepAlive bool
-	defer func() {
-		if ctxKeepAlive {
-			return
-		}
-
-		cancel()
-	}()
 
 	// closer accumulates all things that should be closed / canceled.
 	closer := iterator.NewMultiCloser(iterator.CloserFunc(cancel))
 
-	queryRes, err := coll.Query(ctx, qp)
+	queryRes, err := coll.Query(curCtx, qp)
 	if err != nil {
 		closer.Close()
 		return nil, lazyerrors.Error(err)
@@ -147,7 +134,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		t = cursor.TailableAwait
 	}
 
-	c := h.cursors.NewCursor(context.Background(), iter, &cursor.NewParams{
+	c := h.cursors.NewCursor(curCtx, iter, &cursor.NewParams{
 		Data: &findCursorData{
 			coll:       coll,
 			qp:         qp,
@@ -183,10 +170,6 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 		// let the client know that there are no more results
 		cursorID = 0
-	}
-
-	if cursorID != 0 {
-		ctxKeepAlive = true
 	}
 
 	firstBatch := types.MakeArray(len(docs))
