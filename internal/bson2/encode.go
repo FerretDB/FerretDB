@@ -138,13 +138,13 @@ func encodeField(buf *bytes.Buffer, name string, v any) error {
 		}
 
 	default:
-		return encodeScalarField(buf, v)
+		return encodeScalarField(buf, name, v)
 	}
 
 	return nil
 }
 
-func encodeScalarField(buf *bytes.Buffer, v any) error {
+func encodeScalarField(buf *bytes.Buffer, name string, v any) error {
 	switch v.(type) {
 	case float64:
 		buf.WriteByte(byte(tagFloat64))
@@ -172,7 +172,13 @@ func encodeScalarField(buf *bytes.Buffer, v any) error {
 		panic("TODO")
 	}
 
-	b := make([]byte, bsonproto.SizeAny(v))
+	b := make([]byte, bsonproto.SizeCString(name))
+	bsonproto.EncodeCString(b, name)
+	if _, err := buf.Write(b); err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	b = make([]byte, bsonproto.SizeAny(v))
 	bsonproto.EncodeAny(b, v)
 	if _, err := buf.Write(b); err != nil {
 		return lazyerrors.Error(err)
