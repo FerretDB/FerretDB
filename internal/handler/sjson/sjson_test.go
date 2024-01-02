@@ -172,9 +172,7 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() sjsontype) {
 }
 
 func isValidDocumentData(v sjsontype) bool {
-	// This function is a temporary hack, should be removed once we improve our validation.
-	// TODO https://github.com/FerretDB/FerretDB/issues/1273
-	// When sjson functions do validation on their own, this function can go away.
+	// This function can be removed if sjson functions validation is improved.
 
 	if v == nil {
 		return false
