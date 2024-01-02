@@ -102,6 +102,8 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
+	var ctxKeepAlive bool
+
 	cancel := func() {}
 	if params.MaxTimeMS != 0 {
 		ctx, cancel = context.WithCancel(ctx)
@@ -113,11 +115,12 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		// TODO context leak?
 
 		defer func() {
-			if finishedBefore {
+			if ctxKeepAlive {
+				return
 			}
 
 			cancel()
-		}
+		}()
 	}
 
 	// closer accumulates all things that should be closed / canceled.
@@ -180,6 +183,10 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 		// let the client know that there are no more results
 		cursorID = 0
+	}
+
+	if cursorID != 0 {
+		ctxKeepAlive = true
 	}
 
 	firstBatch := types.MakeArray(len(docs))
