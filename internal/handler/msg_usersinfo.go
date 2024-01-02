@@ -45,11 +45,6 @@ func (h *Handler) MsgUsersInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
-	if usersInfo == nil {
-		msg := fmt.Sprintf("required parameter %q is missing", document.Command())
-		return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrBadValue, msg, document.Command())
-	}
-
 	// TODO https://github.com/FerretDB/FerretDB/issues/3784
 	// TODO https://github.com/FerretDB/FerretDB/issues/3777
 	// TODO https://github.com/FerretDB/FerretDB/issues/3785
@@ -203,7 +198,10 @@ func (p *usersInfoPair) extract(v any, dbName string) error {
 	case *types.Document:
 		ui, err := vt.Get("user")
 		if err != nil {
-			return lazyerrors.Error(err)
+			return handlererrors.NewCommandErrorMsg(
+				handlererrors.ErrBadValue,
+				"UserName must contain a field named: user",
+			)
 		}
 
 		var ok bool
@@ -216,16 +214,12 @@ func (p *usersInfoPair) extract(v any, dbName string) error {
 			)
 		}
 
-		if !vt.Has("db") {
+		db, err := vt.Get("db")
+		if err != nil {
 			return handlererrors.NewCommandErrorMsg(
 				handlererrors.ErrBadValue,
 				"UserName must contain a field named: db",
 			)
-		}
-
-		db, err := vt.Get("db")
-		if err != nil {
-			return lazyerrors.Error(err)
 		}
 
 		if db != nil {

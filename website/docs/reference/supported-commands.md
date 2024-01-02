@@ -204,12 +204,12 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/78).
 |                            | `mechanisms`                     | ⚠️     |                                                           |
 |                            | `digestPassword`                 | ⚠️     |                                                           |
 |                            | `comment`                        | ⚠️     |                                                           |
-| `usersInfo`                |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1497) |
+| `usersInfo`                |                                  | ✅     |                                                           |
 |                            | `showCredentials`                | ⚠️     |                                                           |
 |                            | `showCustomData`                 | ⚠️     |                                                           |
 |                            | `showPrivileges`                 | ⚠️     |                                                           |
 |                            | `showAuthenticationRestrictions` | ⚠️     |                                                           |
-|                            | `filter`                         | ⚠️     |                                                           |
+|                            | `filter`                         | ✅     |                                                           |
 |                            | `comment`                        | ⚠️     |                                                           |
 
 ### Authentication Commands

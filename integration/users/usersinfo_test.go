@@ -116,6 +116,30 @@ func TestUsersinfo(t *testing.T) {
 				{"ok", float64(1)},
 			},
 		},
+		"Nil": {
+			dbSuffix: "",
+			payload: bson.D{
+				{"usersInfo", nil},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Message: "UserName must be either a string or an object",
+				Name:    "BadValue",
+			},
+		},
+		"UnknownField": {
+			dbSuffix: "",
+			payload: bson.D{
+				// Note: if user is passed here, this test will fail only on MongoDB.
+				{"usersInfo", bson.D{{"foo", "bar"}}},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Message: "UserName contains an unknown field named: 'foo",
+				Name:    "BadValue",
+			},
+			altMessage: "UserName must contain a field named: user",
+		},
 		"Default": {
 			dbSuffix: "",
 			payload: bson.D{
@@ -138,6 +162,31 @@ func TestUsersinfo(t *testing.T) {
 			payload: bson.D{{
 				"usersInfo", bson.A{
 					"a", "b",
+				},
+			}},
+			expected: bson.D{
+				{"users", bson.A{
+					bson.D{
+						{"_id", "TestUsersinfo_example.a"},
+						{"user", "a"},
+						{"db", "TestUsersinfo_example"},
+						{"roles", bson.A{}},
+					},
+					bson.D{
+						{"_id", "TestUsersinfo_example.b"},
+						{"user", "b"},
+						{"db", "TestUsersinfo_example"},
+						{"roles", bson.A{}},
+					},
+				}},
+				{"ok", float64(1)},
+			},
+		},
+		"FromSameDatabaseWithMissingUser": {
+			dbSuffix: "_example",
+			payload: bson.D{{
+				"usersInfo", bson.A{
+					"a", "b", "missing",
 				},
 			}},
 			expected: bson.D{
@@ -345,6 +394,19 @@ func TestUsersinfo(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Message: "UserName must contain a field named: db",
+				Name:    "BadValue",
+			},
+		},
+		"MissingUserFieldName": {
+			dbSuffix: "_example",
+			payload: bson.D{
+				{"usersInfo", bson.A{
+					bson.D{{"db", "TestUsersinfo_example"}},
+				}},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Message: "UserName must contain a field named: user",
 				Name:    "BadValue",
 			},
 		},
