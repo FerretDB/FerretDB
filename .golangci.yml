@@ -71,6 +71,35 @@ linters-settings:
           - pkg: github.com/FerretDB/FerretDB/internal/backends
   exhaustive:
     default-signifies-exhaustive: false
+  forbidigo:
+    forbid:
+      # integration tests use a different configuration file
+      - p: ^\Qbson.E\E$
+        pkg: ^\Qgo.mongodb.org/mongo-driver/bson\E$
+        msg: Use *types.Document or *types.Array instead.
+      - p: ^\Qprimitive.E\E$
+        pkg: ^\Qgo.mongodb.org/mongo-driver/bson/primitive\E$
+        msg: Use *types.Document or *types.Array instead.
+      - p: ^\Qbson.D\E$
+        pkg: ^\Qgo.mongodb.org/mongo-driver/bson\E$
+        msg: Use *types.Document instead.
+      - p: ^\Qprimitive.D\E$
+        pkg: ^\Qgo.mongodb.org/mongo-driver/bson/primitive\E$
+        msg: Use *types.Document instead.
+      - p: ^\Qbson.M\E$
+        pkg: ^\Qgo.mongodb.org/mongo-driver/bson\E$
+        msg: Use *types.Document instead.
+      - p: ^\Qprimitive.M\E$
+        pkg: ^\Qgo.mongodb.org/mongo-driver/bson/primitive\E$
+        msg: Use *types.Document instead.
+      - p: ^\Qbson.A\E$
+        pkg: ^\Qgo.mongodb.org/mongo-driver/bson\E$
+        msg: Use *types.Array instead.
+      - p: ^\Qprimitive.A\E$
+        pkg: ^\Qgo.mongodb.org/mongo-driver/bson/primitive\E$
+        msg: Use *types.Array instead.
+    exclude-godoc-examples: true
+    analyze-types: true
   gci:
     sections:
       - standard
@@ -178,6 +207,7 @@ linters:
     - asciicheck
     - depguard
     - exhaustive
+    - forbidigo
     - gci
     - gochecksumtype
     - goconst

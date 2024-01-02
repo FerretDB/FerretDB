@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/AlekSi/pointer v1.2.0
-	github.com/SAP/go-hdb v1.6.6
+	github.com/SAP/go-hdb v1.6.7
 	github.com/alecthomas/kong v0.8.1
 	github.com/arl/statsviz v0.6.0
 	github.com/go-sql-driver/mysql v1.7.1
@@ -26,7 +26,7 @@ require (
 	go.uber.org/zap v1.26.0
 	golang.org/x/crypto v0.17.0
 	golang.org/x/crypto/x509roots/fallback v0.0.0-20231218163308-9d2ee975ef9f
-	golang.org/x/exp v0.0.0-20231214170342-aacd6d4b4611
+	golang.org/x/exp v0.0.0-20231226003508-02704c960a9b
 	golang.org/x/sys v0.15.0
 	modernc.org/sqlite v1.28.0
 )
@@ -70,7 +70,7 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20230822172742-b8732ec3820d // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230822172742-b8732ec3820d // indirect
 	google.golang.org/grpc v1.59.0 // indirect
-	google.golang.org/protobuf v1.31.0 // indirect
+	google.golang.org/protobuf v1.32.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	lukechampine.com/uint128 v1.2.0 // indirect
 	modernc.org/cc/v3 v3.40.0 // indirect
