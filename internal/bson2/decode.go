@@ -68,11 +68,17 @@ func DecodeDocument(b []byte) (*Document, error) {
 
 		case tagDocument:
 			l := int(binary.LittleEndian.Uint32(b[offset:]))
+			if offset+l >= bl {
+				return nil, lazyerrors.Errorf("offset = %d, l = %d, bl = %d: %w", offset, l, bl, ErrDecodeShortInput)
+			}
 			v = RawDocument(b[offset : offset+l])
 			offset += l
 
 		case tagArray:
 			l := int(binary.LittleEndian.Uint32(b[offset:]))
+			if offset+l >= bl {
+				return nil, lazyerrors.Errorf("offset = %d, l = %d, bl = %d: %w", offset, l, bl, ErrDecodeShortInput)
+			}
 			v = RawArray(b[offset : offset+l])
 			offset += l
 

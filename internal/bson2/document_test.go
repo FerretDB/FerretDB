@@ -33,9 +33,10 @@ import (
 
 // testCase represents a single test case.
 type testCase struct {
-	name string
-	doc  *types.Document
-	b    []byte
+	name      string
+	doc       *types.Document
+	b         []byte
+	decodeErr error
 }
 
 var (
@@ -155,6 +156,63 @@ var (
 		b: testutil.MustParseDumpFile("testdata", "handshake4.hex"),
 	}
 
+	eof = testCase{
+		name:      "EOF",
+		b:         []byte{0x00},
+		decodeErr: ErrDecodeShortInput,
+	}
+
+	smallDoc = testCase{
+		name: "smallDoc",
+		doc: must.NotFail(types.NewDocument(
+			"foo", must.NotFail(types.NewDocument()),
+		)),
+		b: []byte{
+			0x0f, 0x00, 0x00, 0x00, // document length
+			0x03, 0x66, 0x6f, 0x6f, 0x00, // subdocument "foo"
+			0x05, 0x00, 0x00, 0x00, 0x00, // subdocument length and end of subdocument
+			0x00, // end of document
+		},
+	}
+
+	shortDoc = testCase{
+		name: "shortDoc",
+		b: []byte{
+			0x0f, 0x00, 0x00, 0x00, // document length
+			0x03, 0x66, 0x6f, 0x6f, 0x00, // subdocument "foo"
+			0x06, 0x00, 0x00, 0x00, 0x00, // invalid subdocument length and end of subdocument
+			0x00, // end of document
+		},
+		decodeErr: ErrDecodeShortInput,
+	}
+
+	smallArray = testCase{
+		name: "smallArray",
+		doc: must.NotFail(types.NewDocument(
+			"foo", must.NotFail(types.NewArray()),
+		)),
+		b: []byte{
+			0x0f, 0x00, 0x00, 0x00, // document length
+			0x04, 0x66, 0x6f, 0x6f, 0x00, // subarray "foo"
+			0x05, 0x00, 0x00, 0x00, 0x00, // subarray length and end of subarray
+			0x00, // end of document
+		},
+	}
+
+	shortArray = testCase{
+		name: "shortArray",
+		doc: must.NotFail(types.NewDocument(
+			"foo", must.NotFail(types.NewArray()),
+		)),
+		b: []byte{
+			0x0f, 0x00, 0x00, 0x00, // document length
+			0x04, 0x66, 0x6f, 0x6f, 0x00, // subarray "foo"
+			0x06, 0x00, 0x00, 0x00, 0x00, // invalid subarray length and end of subarray
+			0x00, // end of document
+		},
+		decodeErr: ErrDecodeShortInput,
+	}
+
 	all = testCase{
 		name: "all",
 		doc: must.NotFail(types.NewDocument(
@@ -199,7 +257,10 @@ var (
 		},
 	}
 
-	documentTestCases = []testCase{handshake1, handshake2, handshake3, handshake4, all, duplicateKeys}
+	documentTestCases = []testCase{
+		handshake1, handshake2, handshake3, handshake4,
+		eof, smallDoc, shortDoc, smallArray, shortArray, all, duplicateKeys,
+	}
 )
 
 func TestDocument(t *testing.T) {
@@ -207,6 +268,10 @@ func TestDocument(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Run("Encode", func(t *testing.T) {
+				if tc.decodeErr != nil {
+					t.Skip()
+				}
+
 				t.Run("bson", func(t *testing.T) {
 					doc, err := bson.ConvertDocument(tc.doc)
 					require.NoError(t, err)
@@ -231,6 +296,11 @@ func TestDocument(t *testing.T) {
 					var doc bson.Document
 					buf := bufio.NewReader(bytes.NewReader(tc.b))
 					err := doc.ReadFrom(buf)
+
+					if tc.decodeErr != nil {
+						require.Error(t, err)
+						return
+					}
 					require.NoError(t, err)
 
 					_, err = buf.ReadByte()
@@ -243,6 +313,11 @@ func TestDocument(t *testing.T) {
 
 				t.Run("bson2", func(t *testing.T) {
 					doc, err := DecodeDocument(tc.b)
+
+					if tc.decodeErr != nil {
+						require.ErrorIs(t, err, tc.decodeErr)
+						return
+					}
 					require.NoError(t, err)
 
 					actual, err := doc.Convert()
