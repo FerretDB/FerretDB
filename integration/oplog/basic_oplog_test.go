@@ -199,5 +199,4 @@ func unsetUnusedOplogFields(d *types.Document) {
 	d.Remove("t")
 	d.Remove("wall")
 	d.Remove("prevOpTime")
-	d.Remove("_id")
 }
