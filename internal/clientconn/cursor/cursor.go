@@ -168,9 +168,9 @@ func (c *Cursor) Close() {
 	c.m.Unlock()
 
 	// It is not entirely clear if we should do that; more tests are needed.
-	if c.Type == Normal {
-		c.r.CloseAndRemove(c)
-	}
+	//if c.Type == Normal {
+	//	c.r.CloseAndRemove(c)
+	//}
 
 	resource.Untrack(c, c.token)
 }
