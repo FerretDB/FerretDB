@@ -45,7 +45,7 @@ func DecodeDocument(b []byte) (*Document, error) {
 		t := tag(b[offset])
 		offset++
 
-		name, err := decodeCString(b[offset:])
+		name, err := bsonproto.DecodeCString(b[offset:])
 		offset += len(name) + 1
 		if err != nil {
 			return nil, lazyerrors.Error(err)

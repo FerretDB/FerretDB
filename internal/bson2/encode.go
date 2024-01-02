@@ -40,8 +40,8 @@ func encodeDocument(doc *Document) ([]byte, error) {
 				return nil, lazyerrors.Error(err)
 			}
 
-			b := make([]byte, sizeCString(f.name))
-			encodeCString(b, f.name)
+			b := make([]byte, bsonproto.SizeCString(f.name))
+			bsonproto.EncodeCString(b, f.name)
 			if _, err := buf.Write(b); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
@@ -59,8 +59,8 @@ func encodeDocument(doc *Document) ([]byte, error) {
 				return nil, lazyerrors.Error(err)
 			}
 
-			b := make([]byte, sizeCString(f.name))
-			encodeCString(b, f.name)
+			b := make([]byte, bsonproto.SizeCString(f.name))
+			bsonproto.EncodeCString(b, f.name)
 			if _, err := buf.Write(b); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
@@ -74,8 +74,8 @@ func encodeDocument(doc *Document) ([]byte, error) {
 				return nil, lazyerrors.Error(err)
 			}
 
-			b := make([]byte, sizeCString(f.name))
-			encodeCString(b, f.name)
+			b := make([]byte, bsonproto.SizeCString(f.name))
+			bsonproto.EncodeCString(b, f.name)
 			if _, err := buf.Write(b); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
@@ -93,8 +93,8 @@ func encodeDocument(doc *Document) ([]byte, error) {
 				return nil, lazyerrors.Error(err)
 			}
 
-			b := make([]byte, sizeCString(f.name))
-			encodeCString(b, f.name)
+			b := make([]byte, bsonproto.SizeCString(f.name))
+			bsonproto.EncodeCString(b, f.name)
 			if _, err := buf.Write(b); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
@@ -132,8 +132,8 @@ func encodeArray(arr *Array) ([]byte, error) {
 				return nil, lazyerrors.Error(err)
 			}
 
-			b := make([]byte, sizeCString(name))
-			encodeCString(b, name)
+			b := make([]byte, bsonproto.SizeCString(name))
+			bsonproto.EncodeCString(b, name)
 			if _, err := buf.Write(b); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
@@ -151,8 +151,8 @@ func encodeArray(arr *Array) ([]byte, error) {
 				return nil, lazyerrors.Error(err)
 			}
 
-			b := make([]byte, sizeCString(name))
-			encodeCString(b, name)
+			b := make([]byte, bsonproto.SizeCString(name))
+			bsonproto.EncodeCString(b, name)
 			if _, err := buf.Write(b); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
@@ -166,8 +166,8 @@ func encodeArray(arr *Array) ([]byte, error) {
 				return nil, lazyerrors.Error(err)
 			}
 
-			b := make([]byte, sizeCString(name))
-			encodeCString(b, name)
+			b := make([]byte, bsonproto.SizeCString(name))
+			bsonproto.EncodeCString(b, name)
 			if _, err := buf.Write(b); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
@@ -185,8 +185,8 @@ func encodeArray(arr *Array) ([]byte, error) {
 				return nil, lazyerrors.Error(err)
 			}
 
-			b := make([]byte, sizeCString(name))
-			encodeCString(b, name)
+			b := make([]byte, bsonproto.SizeCString(name))
+			bsonproto.EncodeCString(b, name)
 			if _, err := buf.Write(b); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
