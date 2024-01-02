@@ -1201,21 +1201,18 @@ func TestCursorsGetMoreAfterInsert(t *testing.T) {
 		{"batchSize", 1},
 	}
 
-	t.Run("GetMore", func(t *testing.T) {
-		for i := 0; i < 2; i++ {
-			var res bson.D
-			err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
-			require.NoError(t, err)
+	for i := 0; i < 2; i++ {
+		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
+		require.NoError(t, err)
 
-			nextBatch, nextID := getNextBatch(t, res)
-			expectedNextBatch := integration.ConvertDocuments(t, arr[i+1:i+2])
+		nextBatch, nextID := getNextBatch(t, res)
+		expectedNextBatch := integration.ConvertDocuments(t, arr[i+1:i+2])
 
-			assert.Equal(t, cursorID, nextID)
+		assert.Equal(t, cursorID, nextID)
 
-			require.Equal(t, len(expectedNextBatch), nextBatch.Len())
-			require.Equal(t, expectedNextBatch[0], must.NotFail(nextBatch.Get(0)))
-		}
-	})
+		require.Equal(t, len(expectedNextBatch), nextBatch.Len())
+		require.Equal(t, expectedNextBatch[0], must.NotFail(nextBatch.Get(0)))
+	}
 
 	newDoc := bson.D{{"_id", "new"}}
 	_, err = collection.InsertOne(ctx, newDoc)
