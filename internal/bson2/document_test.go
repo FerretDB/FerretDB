@@ -15,17 +15,28 @@
 package bson2
 
 import (
+	"bufio"
+	"bytes"
 	"encoding/hex"
+	"io"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
+
+// testCase represents a single test case.
+type testCase struct {
+	name string
+	doc  *types.Document
+	b    []byte
+}
 
 var (
 	handshake1 = testCase{
@@ -198,32 +209,52 @@ var (
 )
 
 func TestDocument(t *testing.T) {
-	t.Parallel()
-
 	for _, tc := range documentTestCases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Run("Encode", func(t *testing.T) {
-				t.Parallel()
+				t.Run("bson", func(t *testing.T) {
+					doc, err := bson.ConvertDocument(tc.doc)
+					require.NoError(t, err)
 
-				doc, err := ConvertDocument(tc.doc)
-				require.NoError(t, err)
+					actual, err := doc.MarshalBinary()
+					require.NoError(t, err)
+					assert.Equal(t, tc.b, actual, "actual:\n%s", hex.Dump(actual))
+				})
 
-				actual, err := encodeDocument(doc)
-				require.NoError(t, err)
-				assert.Equal(t, tc.b, actual, "actual:\n%s", hex.Dump(actual))
+				t.Run("bson2", func(t *testing.T) {
+					doc, err := ConvertDocument(tc.doc)
+					require.NoError(t, err)
+
+					actual, err := encodeDocument(doc)
+					require.NoError(t, err)
+					assert.Equal(t, tc.b, actual, "actual:\n%s", hex.Dump(actual))
+				})
 			})
 
 			t.Run("Decode", func(t *testing.T) {
-				t.Parallel()
+				t.Run("bson", func(t *testing.T) {
+					var doc bson.Document
+					buf := bufio.NewReader(bytes.NewReader(tc.b))
+					err := doc.ReadFrom(buf)
+					require.NoError(t, err)
 
-				doc, err := DecodeDocument(tc.b)
-				require.NoError(t, err)
+					_, err = buf.ReadByte()
+					assert.Equal(t, err, io.EOF)
 
-				actual, err := doc.Convert()
-				require.NoError(t, err)
+					actual, err := types.ConvertDocument(&doc)
+					require.NoError(t, err)
+					testutil.AssertEqual(t, tc.doc, actual)
+				})
 
-				testutil.AssertEqual(t, tc.doc, actual)
+				t.Run("bson2", func(t *testing.T) {
+					doc, err := DecodeDocument(tc.b)
+					require.NoError(t, err)
+
+					actual, err := doc.Convert()
+					require.NoError(t, err)
+					testutil.AssertEqual(t, tc.doc, actual)
+				})
 			})
 		})
 	}

@@ -13,14 +13,3 @@
 // limitations under the License.
 
 package bson2
-
-import (
-	"github.com/FerretDB/FerretDB/internal/types"
-)
-
-// testCase represents a single test case.
-type testCase struct {
-	name string
-	doc  *types.Document
-	b    []byte
-}
