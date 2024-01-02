@@ -69,15 +69,14 @@ func TestOplogUpdate(t *testing.T) {
 			filter:         bson.D{{"_id", "array-two"}},
 			expectedDiffV1: must.NotFail(types.NewDocument("_id", "array-two")),
 			expectedO2:     must.NotFail(types.NewDocument("_id", "array-two")),
-			expectedDiffV2: must.NotFail(types.NewDocument("d", must.NotFail(types.NewDocument("a", int32(1))))),
+			expectedDiffV2: must.NotFail(types.NewDocument("d", must.NotFail(types.NewDocument("v", false)))),
 		},
 	} {
 		name, tc := name, tc
-
 		t.Run(name, func(t *testing.T) {
-			t.Parallel()
+			// Subtests are not run in parallel because we need to preserve oplog entries.
 
-			_, err = coll.UpdateOne(ctx, tc.filter, tc.update)
+			_, err := coll.UpdateOne(ctx, tc.filter, tc.update)
 			require.NoError(t, err)
 
 			var lastOplogEntry bson.D
@@ -87,7 +86,7 @@ func TestOplogUpdate(t *testing.T) {
 			actual := integration.ConvertDocument(t, lastOplogEntry)
 
 			o := must.NotFail(actual.Get("o")).(*types.Document)
-			version := must.NotFail(o.Get("$v")).(int64)
+			version := must.NotFail(o.Get("$v")).(int32)
 			switch version {
 			case 1:
 				diff := must.NotFail(o.Get("$set")).(*types.Document)
@@ -106,8 +105,8 @@ func TestOplogUpdate(t *testing.T) {
 			actual.Remove("o")
 			actual.Remove("o2")
 			expected, err := types.NewDocument(
-				"ns", ns,
 				"op", "u",
+				"ns", ns,
 				"ts", must.NotFail(actual.Get("ts")).(types.Timestamp),
 				"v", int64(2),
 			)
