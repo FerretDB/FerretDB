@@ -31,6 +31,9 @@ import (
 // using b subslices without copying.
 func DecodeDocument(b []byte) (*Document, error) {
 	bl := len(b)
+	if bl < 5 {
+		return nil, lazyerrors.Errorf("bl = %d: %w", bl, ErrDecodeShortInput)
+	}
 	if dl := int(binary.LittleEndian.Uint32(b)); bl != dl {
 		return nil, lazyerrors.Errorf("bl = %d, dl = %d: %w", bl, dl, ErrDecodeInvalidInput)
 	}

@@ -185,12 +185,6 @@ var (
 		b: testutil.MustParseDumpFile("testdata", "all.hex"),
 	}
 
-	// eof = testCase{
-	// 	name: "EOF",
-	// 	b:    []byte{0x00},
-	// 	bErr: `unexpected EOF`,
-	// }
-
 	duplicateKeys = testCase{
 		name: "duplicateKeys",
 		doc: must.NotFail(types.NewDocument(
@@ -205,7 +199,7 @@ var (
 		},
 	}
 
-	documentTestCases = []testCase{handshake1, handshake2, handshake3, handshake4, all /* eof , */, duplicateKeys}
+	documentTestCases = []testCase{handshake1, handshake2, handshake3, handshake4, all, duplicateKeys}
 )
 
 func TestDocument(t *testing.T) {
@@ -258,4 +252,27 @@ func TestDocument(t *testing.T) {
 			})
 		})
 	}
+}
+
+func FuzzDocument(f *testing.F) {
+	for _, tc := range documentTestCases {
+		f.Add(tc.b)
+	}
+
+	f.Fuzz(func(t *testing.T, b []byte) {
+		t.Parallel()
+
+		t.Run("bson2", func(t *testing.T) {
+			t.Parallel()
+
+			doc, err := DecodeDocument(b)
+			if err != nil {
+				t.Skip()
+			}
+
+			actual, err := encodeDocument(doc)
+			require.NoError(t, err)
+			assert.Equal(t, b, actual, "actual:\n%s", hex.Dump(actual))
+		})
+	})
 }
