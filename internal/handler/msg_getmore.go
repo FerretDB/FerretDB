@@ -30,6 +30,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -198,7 +199,7 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		}
 
 	case cursor.Tailable:
-		if nextBatch.Len() < int(batchSize) {
+		if nextBatch.Len() == 0 {
 			// The previous iterator is already closed there.
 
 			data := c.Data.(*findCursorData)
@@ -229,7 +230,12 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 	case cursor.TailableAwait:
 		if nextBatch.Len() == 0 {
-			nextBatch, err = h.awaitData(ctx, c, maxTimeMS, batchSize)
+			nextBatch, err = h.awaitData(ctx, &awaitDataParams{
+				cursor:    c,
+				batchSize: batchSize,
+				maxTimeMS: maxTimeMS,
+			})
+
 			if err != nil {
 				return nil, lazyerrors.Error(err)
 			}
@@ -274,18 +280,22 @@ func (h *Handler) makeNextBatch(c *cursor.Cursor, batchSize int64) (*types.Array
 	return nextBatch, nil
 }
 
+// awaitDataParams contains parameters that can be passed to awaitData function.
+type awaitDataParams struct {
+	cursor    *cursor.Cursor
+	maxTimeMS int64
+	batchSize int64
+}
+
 // awaitData stops the goroutine, and waits for a new data for the cursor.
 // If there's a new document, or the maxTimeMS have passed it returns the nextBatch.
-func (h *Handler) awaitData(
-	ctx context.Context,
-	c *cursor.Cursor,
-	maxTimeMS, batchSize int64,
-) (resBatch *types.Array, err error) {
+func (h *Handler) awaitData(ctx context.Context, params *awaitDataParams) (resBatch *types.Array, err error) {
+	c := params.cursor
 	data := c.Data.(*findCursorData)
 
 	closer := iterator.NewMultiCloser()
 
-	sleepDur := time.Duration(maxTimeMS) * time.Millisecond
+	sleepDur := time.Duration(params.maxTimeMS) * time.Millisecond
 	ctx, cancel := context.WithTimeout(ctx, sleepDur)
 
 	defer func() {
@@ -328,13 +338,13 @@ func (h *Handler) awaitData(
 			return
 		}
 
-		resBatch, err = h.makeNextBatch(c, batchSize)
+		resBatch, err = h.makeNextBatch(c, params.batchSize)
 		if err != nil {
 			return
 		}
 
-		if maxTimeMS > 10 {
-			time.Sleep(10 * time.Millisecond)
+		if params.maxTimeMS > 10 {
+			ctxutil.Sleep(ctx, 10*time.Millisecond)
 		}
 	}
 }
