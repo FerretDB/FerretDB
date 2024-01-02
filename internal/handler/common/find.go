@@ -55,7 +55,7 @@ type FindParams struct {
 	ClusterTime  any             `ferretdb:"$clusterTime,ignored"`
 
 	ReturnKey           bool `ferretdb:"returnKey,unimplemented-non-default"`
-	OplogReplay         bool `ferretdb:"oplogReplay,ignored"`
+	OplogReplay         bool `ferretdb:"oplogReplay,unimplemented-non-default"`
 	NoCursorTimeout     bool `ferretdb:"noCursorTimeout,unimplemented-non-default"`
 	AllowPartialResults bool `ferretdb:"allowPartialResults,unimplemented-non-default"`
 }

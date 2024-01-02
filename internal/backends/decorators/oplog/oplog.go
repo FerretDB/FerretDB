@@ -33,10 +33,10 @@ type document struct {
 // marshal returns the BSON document representation with a given timestamp.
 func (d *document) marshal(t time.Time) (*types.Document, error) {
 	res, err := types.NewDocument(
-		"_id", types.NewObjectID(), // TODO: why do we need _id at all?
+		"_id", types.NewObjectID(),
+		"ts", types.NextTimestamp(t),
 		"ns", d.ns,
 		"op", d.op,
-		"ts", types.NextTimestamp(t),
 		"o", d.o,
 		"t", int64(1),
 		"v", int64(2),
@@ -46,8 +46,8 @@ func (d *document) marshal(t time.Time) (*types.Document, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
-	if d.o2 != nil {
-		res.Set("o2", d.o2)
+	if err = res.ValidateData(); err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
 	return res, nil
