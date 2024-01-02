@@ -86,15 +86,6 @@ func validBSONType(v any) bool {
 	case *Array:
 	case RawArray:
 
-	default:
-		return validBSONScalarType(v)
-	}
-
-	return true
-}
-
-func validBSONScalarType(v any) bool {
-	switch v.(type) {
 	case float64:
 	case string:
 	case Binary:

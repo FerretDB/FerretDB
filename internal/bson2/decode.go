@@ -24,23 +24,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-func decodeCString(b []byte) (string, error) {
-	var i int
-	var v byte
-	for i, v = range b {
-		if v == 0 {
-			break
-		}
-	}
-
-	if v != 0 {
-		return "", lazyerrors.Error(ErrDecodeInvalidInput)
-	}
-
-	return string(b[:i]), nil
-}
-
-// DecodeDocument decodes a BSON document.
+// DecodeDocument decodes a single BSON document that takes the whole b slice.
 //
 // Only first-level fields are decoded;
 // nested documents and arrays are converted to RawDocument and RawArray respectively,
