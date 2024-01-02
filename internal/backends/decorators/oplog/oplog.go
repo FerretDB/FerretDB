@@ -26,8 +26,7 @@ import (
 type document struct {
 	o  *types.Document
 	ns string
-	op string // i, d, u
-	o2 *types.Document
+	op string // i, d
 }
 
 // marshal returns the BSON document representation with a given timestamp.
