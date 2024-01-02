@@ -34,9 +34,9 @@ type document struct {
 func (d *document) marshal(t time.Time) (*types.Document, error) {
 	res, err := types.NewDocument(
 		"_id", types.NewObjectID(),
-		"ts", types.NextTimestamp(t),
-		"ns", d.ns,
 		"op", d.op,
+		"ns", d.ns,
+		"ts", types.NextTimestamp(t),
 		"o", d.o,
 		"t", int64(1),
 		"v", int64(2),
