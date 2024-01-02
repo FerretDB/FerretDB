@@ -20,9 +20,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/cristalhq/bson/bsonproto"
+
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 func encodeDocument(doc *Document) ([]byte, error) {
@@ -34,77 +34,8 @@ func encodeDocument(doc *Document) ([]byte, error) {
 	}
 
 	for _, f := range doc.fields {
-		switch v := f.value.(type) {
-		case *Document:
-			if err := buf.WriteByte(byte(tagDocument)); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-			b := make([]byte, bsonproto.SizeCString(f.name))
-			bsonproto.EncodeCString(b, f.name)
-			if _, err := buf.Write(b); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-			b, err := encodeDocument(v)
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-			if _, err := buf.Write(b); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-		case RawDocument:
-			if err := buf.WriteByte(byte(tagDocument)); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-			b := make([]byte, bsonproto.SizeCString(f.name))
-			bsonproto.EncodeCString(b, f.name)
-			if _, err := buf.Write(b); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-			if _, err := buf.Write(v); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-		case *Array:
-			if err := buf.WriteByte(byte(tagArray)); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-			b := make([]byte, bsonproto.SizeCString(f.name))
-			bsonproto.EncodeCString(b, f.name)
-			if _, err := buf.Write(b); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-			b, err := encodeArray(v)
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-			if _, err := buf.Write(b); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-		case RawArray:
-			if err := buf.WriteByte(byte(tagArray)); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-			b := make([]byte, bsonproto.SizeCString(f.name))
-			bsonproto.EncodeCString(b, f.name)
-			if _, err := buf.Write(b); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-			if _, err := buf.Write(v); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-		default:
-			encodeScalarField(buf, v)
+		if err := encodeField(buf, f.name, f.value); err != nil {
+			return nil, lazyerrors.Error(err)
 		}
 	}
 
@@ -124,79 +55,8 @@ func encodeArray(arr *Array) ([]byte, error) {
 	}
 
 	for i, v := range arr.elements {
-		name := strconv.Itoa(i)
-
-		switch v := v.(type) {
-		case *Document:
-			if err := buf.WriteByte(byte(tagDocument)); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-			b := make([]byte, bsonproto.SizeCString(name))
-			bsonproto.EncodeCString(b, name)
-			if _, err := buf.Write(b); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-			b, err := encodeDocument(v)
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-			if _, err := buf.Write(b); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-		case RawDocument:
-			if err := buf.WriteByte(byte(tagDocument)); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-			b := make([]byte, bsonproto.SizeCString(name))
-			bsonproto.EncodeCString(b, name)
-			if _, err := buf.Write(b); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-			if _, err := buf.Write(v); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-		case *Array:
-			if err := buf.WriteByte(byte(tagArray)); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-			b := make([]byte, bsonproto.SizeCString(name))
-			bsonproto.EncodeCString(b, name)
-			if _, err := buf.Write(b); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-			b, err := encodeArray(v)
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-			if _, err := buf.Write(b); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-		case RawArray:
-			if err := buf.WriteByte(byte(tagArray)); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-			b := make([]byte, bsonproto.SizeCString(name))
-			bsonproto.EncodeCString(b, name)
-			if _, err := buf.Write(b); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-			if _, err := buf.Write(v); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-		default:
-			encodeScalarField(buf, v)
+		if err := encodeField(buf, strconv.Itoa(i), v); err != nil {
+			return nil, lazyerrors.Error(err)
 		}
 	}
 
@@ -207,7 +67,84 @@ func encodeArray(arr *Array) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func encodeScalarField(buf *bytes.Buffer, v any) {
+func encodeField(buf *bytes.Buffer, name string, v any) error {
+	switch v := v.(type) {
+	case *Document:
+		if err := buf.WriteByte(byte(tagDocument)); err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		b := make([]byte, bsonproto.SizeCString(name))
+		bsonproto.EncodeCString(b, name)
+		if _, err := buf.Write(b); err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		b, err := encodeDocument(v)
+		if err != nil {
+			return lazyerrors.Error(err)
+		}
+		if _, err := buf.Write(b); err != nil {
+			return lazyerrors.Error(err)
+		}
+
+	case RawDocument:
+		if err := buf.WriteByte(byte(tagDocument)); err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		b := make([]byte, bsonproto.SizeCString(name))
+		bsonproto.EncodeCString(b, name)
+		if _, err := buf.Write(b); err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		if _, err := buf.Write(v); err != nil {
+			return lazyerrors.Error(err)
+		}
+
+	case *Array:
+		if err := buf.WriteByte(byte(tagArray)); err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		b := make([]byte, bsonproto.SizeCString(name))
+		bsonproto.EncodeCString(b, name)
+		if _, err := buf.Write(b); err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		b, err := encodeArray(v)
+		if err != nil {
+			return lazyerrors.Error(err)
+		}
+		if _, err := buf.Write(b); err != nil {
+			return lazyerrors.Error(err)
+		}
+
+	case RawArray:
+		if err := buf.WriteByte(byte(tagArray)); err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		b := make([]byte, bsonproto.SizeCString(name))
+		bsonproto.EncodeCString(b, name)
+		if _, err := buf.Write(b); err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		if _, err := buf.Write(v); err != nil {
+			return lazyerrors.Error(err)
+		}
+
+	default:
+		return encodeScalarField(buf, v)
+	}
+
+	return nil
+}
+
+func encodeScalarField(buf *bytes.Buffer, v any) error {
 	switch v.(type) {
 	case float64:
 		buf.WriteByte(byte(tagFloat64))
@@ -237,7 +174,11 @@ func encodeScalarField(buf *bytes.Buffer, v any) {
 
 	b := make([]byte, bsonproto.SizeAny(v))
 	bsonproto.EncodeAny(b, v)
-	must.NotFail(buf.Write(b))
+	if _, err := buf.Write(b); err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	return nil
 }
 
 func sizeAny(v any) int {
