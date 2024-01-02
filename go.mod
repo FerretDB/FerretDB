@@ -2,14 +2,12 @@ module github.com/FerretDB/FerretDB
 
 go 1.21
 
-replace github.com/cristalhq/bson => github.com/AlekSi/bson v0.0.6-0.20240102121321-105fe8a989dc
-
 require (
 	github.com/AlekSi/pointer v1.2.0
 	github.com/SAP/go-hdb v1.6.7
 	github.com/alecthomas/kong v0.8.1
 	github.com/arl/statsviz v0.6.0
-	github.com/cristalhq/bson v0.0.7
+	github.com/cristalhq/bson v0.0.8-0.20240102124511-ad00c9874d78
 	github.com/go-sql-driver/mysql v1.7.1
 	github.com/google/uuid v1.5.0
 	github.com/jackc/pgerrcode v0.0.0-20220416144525-469b46aa5efa
