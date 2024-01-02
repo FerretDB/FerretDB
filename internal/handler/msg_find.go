@@ -102,26 +102,26 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
-	var ctxKeepAlive bool
-
 	cancel := func() {}
 	if params.MaxTimeMS != 0 {
 		ctx, cancel = context.WithCancel(ctx)
 
 		go func() {
 			ctxutil.Sleep(ctx, time.Duration(params.MaxTimeMS)*time.Millisecond)
-			cancel()
+			//cancel()
 		}()
 		// TODO context leak?
 
-		defer func() {
-			if ctxKeepAlive {
-				return
-			}
-
-			cancel()
-		}()
 	}
+
+	var ctxKeepAlive bool
+	defer func() {
+		if ctxKeepAlive {
+			return
+		}
+
+		cancel()
+	}()
 
 	// closer accumulates all things that should be closed / canceled.
 	closer := iterator.NewMultiCloser(iterator.CloserFunc(cancel))
