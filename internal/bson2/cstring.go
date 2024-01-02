@@ -16,14 +16,17 @@ package bson2
 
 import (
 	"fmt"
-
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
+// sizeCString returns a size of the encoding of v cstring in bytes.
 func sizeCString(v string) int {
 	return len(v) + 1
 }
 
+// encodeCString encodes cstring value v into b.
+//
+// b must be at least len(v)+1 ([sizeCString]) bytes long; otherwise, encodeCString will panic.
+// Only b[0:len(v)+1] bytes are modified.
 func encodeCString(b []byte, s string) {
 	// ensure b length early
 	b[len(s)] = 0
@@ -31,6 +34,10 @@ func encodeCString(b []byte, s string) {
 	copy(b, s)
 }
 
+// decodeCString decodes cstring value from b.
+//
+// If there is not enough bytes, decodeCString will return a wrapped [ErrDecodeShortInput].
+// If the input is otherwise invalid, a wrapped [ErrDecodeInvalidInput] is returned.
 func decodeCString(b []byte) (string, error) {
 	if len(b) < 1 {
 		return "", fmt.Errorf("decodeCString: expected at least 1 byte, got %d: %w", len(b), ErrDecodeShortInput)
@@ -45,7 +52,7 @@ func decodeCString(b []byte) (string, error) {
 	}
 
 	if v != 0 {
-		return "", lazyerrors.Error(ErrDecodeInvalidInput)
+		return "", fmt.Errorf("decodeCString: expected the last byte to be 0: %w", ErrDecodeInvalidInput)
 	}
 
 	return string(b[:i]), nil
