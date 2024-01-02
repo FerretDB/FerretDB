@@ -103,9 +103,9 @@ func newCursor(id int64, iter types.DocumentsIterator, params *NewParams, r *Reg
 //
 // It should be used only with tailable cursors.
 func (c *Cursor) Reset(iter types.DocumentsIterator) error {
-	if c.Type != Tailable && c.Type != TailableAwait {
-		panic("Reset called on non-tailable cursor")
-	}
+	//if c.Type != Tailable && c.Type != TailableAwait {
+	//	panic("Reset called on non-tailable cursor")
+	//}
 
 	c.m.Lock()
 

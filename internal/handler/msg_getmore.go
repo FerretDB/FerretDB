@@ -193,9 +193,46 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	switch c.Type {
 	case cursor.Normal:
 		if nextBatch.Len() < int(batchSize) {
-			// The cursor is already closed and removed;
-			// let the client know that there are no more results.
-			cursorID = 0
+			data := c.Data.(*findCursorData)
+
+			queryRes, err := data.coll.Query(ctx, data.qp)
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
+			closer := iterator.NewMultiCloser()
+
+			iter, err := h.makeFindIter(queryRes.Iter, closer, data.findParams)
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
+			if err = c.Reset(iter); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
+			var newBatch *types.Array
+			newBatch, err = h.makeNextBatch(c, batchSize)
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
+			// TODO
+			if newBatch.Len() == 0 {
+				// The cursor is already closed and removed;
+				// let the client know that there are no more results.
+				cursorID = 0
+			}
+
+			newIter := newBatch.Iterator()
+			defer newIter.Close()
+
+			docs, err := iterator.ConsumeValues(newIter)
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
+			nextBatch.Append(docs...)
 		}
 
 	case cursor.Tailable:
@@ -220,6 +257,7 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 				return nil, lazyerrors.Error(err)
 			}
 
+			// TODO
 			if nextBatch.Len() == 0 {
 				nextBatch, err = h.makeNextBatch(c, batchSize)
 				if err != nil {
