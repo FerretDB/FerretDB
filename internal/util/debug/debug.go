@@ -16,18 +16,14 @@
 package debug
 
 import (
-	"archive/zip"
 	"bytes"
 	"context"
 	"errors"
 	_ "expvar" // for metrics
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	_ "net/http/pprof" // for profiling
-	"net/url"
-	"path/filepath"
 	"slices"
 	"text/template"
 	"time"
@@ -49,10 +45,6 @@ var (
 	varsPath     = "/debug/vars"
 )
 
-func generateFileName(prefix, filename string) string {
-	return fmt.Sprintf("%s-%s", prefix, filename)
-}
-
 // RunHandler runs debug handler.
 func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *zap.Logger) {
 	stdL := must.NotFail(zap.NewStdLogAt(l, zap.WarnLevel))
@@ -72,7 +64,7 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 	}
 	must.NoError(statsviz.Register(http.DefaultServeMux, opts...))
 
-	http.HandleFunc(archivePath, getArchiveHandler())
+	http.HandleFunc(archivePath, archiveHandler)
 
 	handlers := map[string]string{
 		// custom handlers registered above
@@ -141,87 +133,4 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 
 	s.Close()
 	l.Sugar().Info("Debug server stopped.")
-}
-
-func getArchiveHandler() http.HandlerFunc {
-	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		var (
-			scheme          string
-			u               url.URL
-			responses       = make(map[string][]byte, 2)
-			debugFilePrefix = "FerretDB"
-			debugFileName   = "debug.zip"
-			err             error
-		)
-
-		u.Path = metricsPath
-		u.Host = req.Host
-
-		if req.URL.Scheme == "" {
-			scheme = "http"
-		}
-
-		u.Scheme = scheme
-
-		metricsFileName := generateFileName(debugFilePrefix, filepath.Base(metricsPath)+".txt")
-		responses[metricsFileName], err = performRequest(u)
-		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		u.Path = pprofPath
-		pprofFileName := generateFileName(debugFilePrefix, filepath.Base(pprofPath)+".html")
-		responses[pprofFileName], err = performRequest(u)
-		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		rw.Header().Set("Content-Type", "application/zip")
-		zipName := generateFileName(debugFilePrefix, debugFileName)
-		rw.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", zipName))
-
-		zipWriter := zip.NewWriter(rw)
-
-		defer zipWriter.Close() //nolint:errcheck // we are only reading it
-
-		for fileName, response := range responses {
-			fileWriter, err := zipWriter.Create(fileName)
-			if err != nil {
-				msg := fmt.Sprintf("fail creating file %s , (%s)", fileName, err.Error())
-				http.Error(rw, msg, http.StatusInternalServerError)
-				return
-			}
-			_, err = io.Copy(fileWriter, bytes.NewReader(response))
-			if err != nil {
-				msg := fmt.Sprintf("failed - adding %s to zip , (%s)", fileName, err.Error())
-				http.Error(rw, msg, http.StatusInternalServerError)
-				return
-			}
-		}
-	})
-}
-
-func performRequest(u url.URL) ([]byte, error) {
-	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("Accept", "application/json")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	defer resp.Body.Close() //nolint:errcheck // we are only reading it
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	return body, nil
 }
