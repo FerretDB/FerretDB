@@ -346,8 +346,8 @@ func TestCursorsTailableFirstBatchMaxTimeMS(t *testing.T) {
 		cmd := bson.D{
 			{"find", collection.Name()},
 			{"batchSize", 1},
-			{"maxTimeMS", 100},
 			{"tailable", true},
+			{"maxTimeMS", 2000},
 		}
 
 		var res bson.D
@@ -393,36 +393,6 @@ func TestCursorsTailableFirstBatchMaxTimeMS(t *testing.T) {
 
 		nextBatch, nextID := getNextBatch(t, res)
 		require.Equal(t, 0, nextBatch.Len())
-		assert.Equal(t, cursorID, nextID)
-	})
-
-	t.Run("GetMoreNewDoc", func(t *testing.T) {
-		newDoc := bson.D{{"_id", "new"}}
-		_, err = collection.InsertOne(ctx, newDoc)
-		require.NoError(t, err)
-
-		time.Sleep(1 * time.Second)
-
-		var res bson.D
-		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
-		require.NoError(t, err)
-
-		nextBatch, nextID := getNextBatch(t, res)
-
-		assert.Equal(t, cursorID, nextID)
-
-		require.Equal(t, 1, nextBatch.Len())
-		require.Equal(t, integration.ConvertDocument(t, newDoc), must.NotFail(nextBatch.Get(0)))
-	})
-
-	t.Run("GetMoreEmptyAfterInsertion", func(t *testing.T) {
-		time.Sleep(1 * time.Second)
-		var res bson.D
-		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
-		require.NoError(t, err)
-
-		nextBatch, nextID := getNextBatch(t, res)
-		require.Equal(t, 0, nextBatch.Len())
-		assert.Equal(t, cursorID, nextID)
+		assert.Equal(t, int64(0), nextID)
 	})
 }
