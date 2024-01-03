@@ -218,12 +218,13 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			}
 
 			var newBatch *types.Array
-			newBatch, err = h.makeNextBatch(c, batchSize)
+			newBatch, err = h.makeNextBatch(c, batchSize-int64(nextBatch.Len()))
 			if err != nil {
 				return nil, lazyerrors.Error(err)
 			}
 
 			// TODO
+			// If new iterator doesnt return any documents we can close the cursor
 			if newBatch.Len() == 0 {
 				// The cursor is already closed and removed;
 				// let the client know that there are no more results.
