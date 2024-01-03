@@ -16,6 +16,7 @@ package handler
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
@@ -43,7 +44,7 @@ func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.O
 		payload = binaryPayload.B
 	}
 
-	conv := conninfo.Get(ctx).Conv()
+	sconv := conninfo.Get(ctx).Conv()
 
 	adminDB, err := h.b.Database("admin")
 	must.NoError(err)
@@ -53,13 +54,13 @@ func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.O
 
 	q, err := users.Query(ctx, &backends.QueryParams{
 		Filter: must.NotFail(types.NewDocument(
-			"user", conv.Username(),
+			"user", sconv.Conv.Username(),
 		)),
 		Limit: int64(1), // assume there's only 'test.username' user for now
 	})
 	must.NoError(err)
 
-	var credentials *types.Document
+	var credentialsDocument *types.Document
 
 	defer q.Iter.Close()
 
@@ -69,20 +70,29 @@ func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.O
 			break
 		}
 
-		credentials = doc
+		credentialsDocument = doc
 	}
 
 	// TODO compare stored credentials
-	_ = credentials
+	path := types.Path{}.Append("credentials").Append("SCRAM-SHA-256")
+	credentials, err := credentialsDocument.GetByPath(path)
+	must.NoError(err)
 
-	response, err := conv.Step(string(payload))
+	storedCredentials := credentials.(*types.Document)
+
+	salt, _ := storedCredentials.Get("salt")
+	saltBytes, _ := base64.RawStdEncoding.DecodeString(salt.(string))
+
+	response, err := sconv.Conv.Step(string(payload))
 	must.NoError(err)
 
 	h.L.Debug(
 		"saslContinue",
+		zap.Binary("sconv.Salt", sconv.Salt), // 7jW5ZOczj05P4wyNc21OikIuSliPN9rw4sEoGQ==
+		zap.Binary("saltBytes", saltBytes),   // 7jW5ZOczj05P4wyNc21OikIuSliPN9rw4sEo
 		zap.String("payload", string(payload)),
 		zap.String("response", response),
-		zap.Bool("conversation complete", conv.Valid()),
+		zap.Bool("conversation complete", sconv.Conv.Valid()),
 	)
 
 	var reply wire.OpMsg

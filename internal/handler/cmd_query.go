@@ -25,7 +25,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
-	"github.com/xdg-go/scram"
 	"go.uber.org/zap"
 )
 
@@ -38,7 +37,7 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 
 	var response string
 
-	var conv *scram.ServerConversation
+	var sconv *types.ScramConv
 
 	// to reduce connection overhead time, clients may use a hello command to complete their authentication exchange
 	// if so, the saslStart command may be embedded under the speculativeAuthenticate field
@@ -50,19 +49,19 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 		d := v.(*types.Document)
 		payload, _ := d.Get("payload")
 
-		response, conv, err = saslStartSCRAM(d)
+		response, sconv, err = saslStartSCRAM(d)
 		must.NoError(err)
 
-		conninfo.Get(ctx).SetConv(conv)
-		conninfo.Get(ctx).SetAuth(conv.Username(), "password")
+		conninfo.Get(ctx).SetConv(sconv)
+		conninfo.Get(ctx).SetAuth(sconv.Conv.Username(), "password")
 
 		h.L.Debug(
 			"speculativeAuthenticate",
 			zap.String("command", cmd),
 			zap.Any("payload", payload),
 			zap.String("response", response),
-			zap.String("username", conv.Username()),
-			zap.Bool("conversation complete", conv.Valid()),
+			zap.String("username", sconv.Conv.Username()),
+			zap.Bool("conversation complete", sconv.Conv.Valid()),
 		)
 
 		// create a speculative conversation document for SCRAM authentication

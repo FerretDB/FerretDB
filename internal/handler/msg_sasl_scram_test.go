@@ -30,6 +30,14 @@ const (
 	serverKey = "d4P+d81D31XHwvfQA3jwgTmkivZfXTD/nBASm77Dwv0="
 )
 
+// TODO store the credentials in the 'admin.system.users' namespace eventually
+// 	"SCRAM-SHA-256" : {
+// 		"iterationCount" : 15000,
+// 		"salt" : "7jW5ZOczj05P4wyNc21OikIuSliPN9rw4sEoGQ==",
+// 		"storedKey" : "F8hTLrnZscuuszfrh+4nupyjPA40cp+gfzy1Hsc3O3c=",
+// 		"serverKey" : "d4P+d81D31XHwvfQA3jwgTmkivZfXTD/nBASm77Dwv0="
+// 	}
+
 func TestSaslStartSCRAM(t *testing.T) {
 	validPayload := []byte("biwsbj11c2VybmFtZSxyPWZLMldtdTFHZmczUkpxeEx4Mk82OWw2bmVSd2Jnd3VN")
 

@@ -58,7 +58,7 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	var response string
 
-	var conv *scram.ServerConversation
+	var sconv *types.ScramConv
 
 	plain := true
 
@@ -72,7 +72,7 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		conninfo.Get(ctx).SetAuth(username, password)
 
 	case "SCRAM-SHA-256":
-		response, conv, err = saslStartSCRAM(document)
+		response, sconv, err = saslStartSCRAM(document)
 		if err != nil {
 			return nil, err
 		}
@@ -82,7 +82,7 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		h.L.Debug(
 			"saslStart",
 			zap.String("response", response),
-			zap.String("username", conv.Username()),
+			zap.String("username", sconv.Conv.Username()),
 			zap.String("password", password),
 		)
 
@@ -173,7 +173,7 @@ func saslStartPlain(doc *types.Document) (string, string, error) {
 	return string(authcid), string(passwd), nil
 }
 
-func saslStartSCRAM(doc *types.Document) (string, *scram.ServerConversation, error) {
+func saslStartSCRAM(doc *types.Document) (string, *types.ScramConv, error) {
 	var payload []byte
 
 	binaryPayload, err := common.GetRequiredParam[types.Binary](doc, "payload")
@@ -209,5 +209,12 @@ func saslStartSCRAM(doc *types.Document) (string, *scram.ServerConversation, err
 	response, err = conv.Step(string(payload))
 	must.NoError(err)
 
-	return response, conv, nil
+	sconv := &types.ScramConv{
+		Salt:      salt,
+		StoredKey: storedKey,
+		ServerKey: serverKey,
+		Conv:      conv,
+	}
+
+	return response, sconv, nil
 }

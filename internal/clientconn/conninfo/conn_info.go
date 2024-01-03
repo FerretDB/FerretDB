@@ -19,7 +19,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/xdg-go/scram"
+	"github.com/FerretDB/FerretDB/internal/types"
 )
 
 // contextKey is a named unexported type for the safe use of context.WithValue.
@@ -39,7 +39,7 @@ type ConnInfo struct {
 	BypassAuth   bool
 	rw           sync.RWMutex
 
-	sc *scram.ServerConversation
+	sc *types.ScramConv
 }
 
 // New returns a new ConnInfo.
@@ -48,7 +48,7 @@ func New() *ConnInfo {
 }
 
 // Conv returns stored SCRAM server conversation.
-func (connInfo *ConnInfo) Conv() *scram.ServerConversation {
+func (connInfo *ConnInfo) Conv() *types.ScramConv {
 	connInfo.rw.RLock()
 	defer connInfo.rw.RUnlock()
 
@@ -56,7 +56,7 @@ func (connInfo *ConnInfo) Conv() *scram.ServerConversation {
 }
 
 // SetConv stores the SCRAM server conversation.
-func (connInfo *ConnInfo) SetConv(sc *scram.ServerConversation) {
+func (connInfo *ConnInfo) SetConv(sc *types.ScramConv) {
 	connInfo.rw.RLock()
 	defer connInfo.rw.RUnlock()
 
