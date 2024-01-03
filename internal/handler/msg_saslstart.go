@@ -181,14 +181,6 @@ func saslStartSCRAM(doc *types.Document) (string, *scram.ServerConversation, err
 		payload = binaryPayload.B
 	}
 
-	// TODO store the credentials in the 'admin.system.users' namespace eventually
-	// 	"SCRAM-SHA-256" : {
-	// 		"iterationCount" : 15000,
-	// 		"salt" : "7jW5ZOczj05P4wyNc21OikIuSliPN9rw4sEoGQ==",
-	// 		"storedKey" : "F8hTLrnZscuuszfrh+4nupyjPA40cp+gfzy1Hsc3O3c=",
-	// 		"serverKey" : "d4P+d81D31XHwvfQA3jwgTmkivZfXTD/nBASm77Dwv0="
-	// 	}
-
 	var (
 		salt      = []byte{238, 53, 185, 100, 231, 51, 143, 78, 79, 227, 12, 141, 115, 109, 78, 138, 66, 46, 74, 88, 143, 55, 218, 240, 226, 193, 40, 25}
 		storedKey = []byte{23, 200, 83, 46, 185, 217, 177, 203, 174, 179, 55, 235, 135, 238, 39, 186, 156, 163, 60, 14, 52, 114, 159, 160, 127, 60, 181, 30, 199, 55, 59, 119}
