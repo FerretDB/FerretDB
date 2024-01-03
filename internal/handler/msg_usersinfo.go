@@ -47,7 +47,6 @@ func (h *Handler) MsgUsersInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/3784
 	// TODO https://github.com/FerretDB/FerretDB/issues/3777
-	// TODO https://github.com/FerretDB/FerretDB/issues/3785
 	if err = common.UnimplementedNonDefault(document, "filter", func(v any) bool {
 		if v == nil || v == types.Null {
 			return true
@@ -61,7 +60,7 @@ func (h *Handler) MsgUsersInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	common.Ignored(
 		document, h.L,
-		"showCredentials", "showCustomData", "showPrivileges",
+		"showCustomData", "showPrivileges",
 		"showAuthenticationRestrictions", "comment", "filter",
 	)
 
@@ -70,6 +69,11 @@ func (h *Handler) MsgUsersInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		allDBs   bool // allDBs set to true means we want users from all databases
 		singleDB bool // singleDB set to true means we want users from a single database (when usersInfo: 1)
 	)
+
+	showCredentials, err := common.GetOptionalParam(document, "showCredentials", false)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
 	switch user := usersInfo.(type) {
 	case *types.Document:
@@ -168,6 +172,10 @@ func (h *Handler) MsgUsersInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		matches, err := common.FilterDocument(v, filter)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
+		}
+
+		if !showCredentials {
+			v.Remove("credentials")
 		}
 
 		if matches {

@@ -35,6 +35,7 @@ func createUser(username, password string) bson.D {
 		{"createUser", username},
 		{"roles", bson.A{}},
 		{"pwd", password},
+		{"mechanisms", bson.A{"PLAIN"}},
 	}
 }
 
@@ -99,12 +100,13 @@ func TestUsersinfo(t *testing.T) {
 	}
 
 	testCases := map[string]struct { //nolint:vet // for readability
-		dbSuffix   string
-		payload    bson.D
-		err        *mongo.CommandError
-		altMessage string
-		expected   bson.D
-		hasUser    map[string]struct{}
+		dbSuffix        string
+		showCredentials bool // showCredentials should also be set on the payload
+		payload         bson.D
+		err             *mongo.CommandError
+		altMessage      string
+		expected        bson.D
+		hasUser         map[string]struct{}
 	}{
 		"NoUserFound": {
 			dbSuffix: "no_users",
@@ -144,6 +146,25 @@ func TestUsersinfo(t *testing.T) {
 			dbSuffix: "",
 			payload: bson.D{
 				{"usersInfo", "one"},
+			},
+			expected: bson.D{
+				{"users", bson.A{
+					bson.D{
+						{"_id", "TestUsersinfo.one"},
+						{"user", "one"},
+						{"db", "TestUsersinfo"},
+						{"roles", bson.A{}},
+					},
+				}},
+				{"ok", float64(1)},
+			},
+		},
+		"WithCredentials": {
+			dbSuffix:        "",
+			showCredentials: true,
+			payload: bson.D{
+				{"usersInfo", "one"},
+				{"showCredentials", true},
 			},
 			expected: bson.D{
 				{"users", bson.A{
@@ -469,6 +490,14 @@ func TestUsersinfo(t *testing.T) {
 				actualUser := au.(*types.Document)
 
 				assert.False(t, tc.hasUser == nil && tc.expected == nil, "set at least one expectation for %q", name)
+
+				if tc.showCredentials {
+					cred, ok := actualUser.Get("credentials")
+					assert.Nil(t, ok, "credentials not found")
+					assertPlainCredentials(t, "PLAIN", cred.(*types.Document))
+				} else {
+					assert.False(t, actualUser.Has("credentials"))
+				}
 
 				foundUsers[must.NotFail(actualUser.Get("_id")).(string)] = struct{}{}
 

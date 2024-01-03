@@ -40,6 +40,7 @@ func TestCreateUser(t *testing.T) {
 
 	testCases := map[string]struct { //nolint:vet // for readability
 		payload    bson.D
+		hasCred    bool
 		err        *mongo.CommandError
 		altMessage string
 		expected   bson.D
@@ -68,6 +69,19 @@ func TestCreateUser(t *testing.T) {
 				Message: "User \"should_already_exist@TestCreateUser\" already exists",
 			},
 		},
+		"BadAuthMechanism": {
+			payload: bson.D{
+				{"createUser", "success_user_with_plain"},
+				{"roles", bson.A{}},
+				{"pwd", "password"},
+				{"mechanisms", bson.A{"PLAIN", "BAD"}},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "Unknown auth mechanism 'BAD'",
+			},
+		},
 		"MissingPwdOrExternal": {
 			payload: bson.D{
 				{"createUser", "mising_pwd_or_external"},
@@ -85,6 +99,18 @@ func TestCreateUser(t *testing.T) {
 				{"roles", bson.A{}},
 				{"pwd", "password"},
 			},
+			expected: bson.D{
+				{"ok", float64(1)},
+			},
+		},
+		"SuccessWithPLAIN": {
+			payload: bson.D{
+				{"createUser", "success_user_with_plain"},
+				{"roles", bson.A{}},
+				{"pwd", "password"},
+				{"mechanisms", bson.A{"PLAIN"}},
+			},
+			hasCred: true,
 			expected: bson.D{
 				{"ok", float64(1)},
 			},
@@ -125,6 +151,10 @@ func TestCreateUser(t *testing.T) {
 	for name, tc := range testCases {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			if tc.hasCred && setup.IsMongoDB(t) {
+				t.Skip("PLAIN credentials are only supported via LAP (PLAIN) by MongoDB Enterprise")
+			}
+
 			t.Parallel()
 
 			var res bson.D
@@ -157,6 +187,10 @@ func TestCreateUser(t *testing.T) {
 			assert.Equal(t, 16, len(uuid.B), "UUID length")
 			actualRecorded.Remove("userId")
 
+			if tc.hasCred {
+				assertPlainCredentials(t, "PLAIN", must.NotFail(actualRecorded.Get("credentials")).(*types.Document))
+			}
+
 			actualRecorded.Remove("credentials")
 
 			expectedRec := integration.ConvertDocument(t, bson.D{
@@ -169,4 +203,18 @@ func TestCreateUser(t *testing.T) {
 			testutil.AssertEqual(t, expectedRec, actualRecorded)
 		})
 	}
+}
+
+// assertPlainCredentials checks if the credential is a valid PLAIN credential.
+func assertPlainCredentials(t testing.TB, key string, cred *types.Document) {
+	assert.Truef(t, cred.Has(key), "missing credential %q", key)
+
+	c := must.NotFail(cred.Get(key)).(*types.Document)
+
+	assert.Equal(t, must.NotFail(c.Get("algo")), "argon2id")
+	assert.NotEmpty(t, must.NotFail(c.Get("t")))
+	assert.NotEmpty(t, must.NotFail(c.Get("p")))
+	assert.NotEmpty(t, must.NotFail(c.Get("m")))
+	assert.NotEmpty(t, must.NotFail(c.Get("hash")))
+	assert.NotEmpty(t, must.NotFail(c.Get("salt")))
 }
