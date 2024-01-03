@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	_ "net/http/pprof" // for profiling
 	"net/url"
 	"path/filepath"
 	"testing"
@@ -30,18 +31,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/util/resource"
 	"github.com/FerretDB/FerretDB/internal/util/state"
-	_ "net/http/pprof" // for profiling
 )
-
-type testObjOne struct {
-	token *resource.Token
-}
-
-type testObjTwo struct {
-	token *resource.Token
-}
 
 func findInStringsArray(findStr string, list []string) bool {
 	for _, str := range list {
@@ -49,13 +40,18 @@ func findInStringsArray(findStr string, list []string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
 func TestArchiveHandler(t *testing.T) {
 	t.Parallel()
 
-	fileList := []string{"allocs", "block", "cmdline", "goroutine", "heap", "metrics", "mutex", "profile", "threadcreate", "trace"}
+	fileList := []string{
+		"allocs", "block", "cmdline", "goroutine",
+		"heap", "metrics", "mutex", "profile",
+		"threadcreate", "trace",
+	}
 
 	host := "127.0.0.1:5454"
 

@@ -79,8 +79,8 @@ func archiveHandler(rw http.ResponseWriter, req *http.Request) {
 	defer zipWriter.Close() //nolint:errcheck // we are only reading it
 
 	for _, fileUrl := range urlList {
-
 		fileName := filepath.Base(fileUrl.Path)
+
 		resp, err := performRequest(&fileUrl)
 		if err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
@@ -92,7 +92,6 @@ func archiveHandler(rw http.ResponseWriter, req *http.Request) {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return
 		}
-
 	}
 }
 
@@ -104,11 +103,13 @@ func addFileToArchive(fileName string, resp *http.Response, zipWriter *zip.Write
 		err = fmt.Errorf("fail creating file %s (error: %s)", fileName, err.Error())
 		return err
 	}
+
 	_, err = io.Copy(fileWriter, resp.Body)
 	if err != nil {
 		err = fmt.Errorf("failed - adding %s to zip (error: %s)", fileName, err.Error())
 		return err
 	}
+
 	return nil
 }
 
@@ -140,6 +141,7 @@ func populateArchiveFileListFromPProfHTML(pprofUrl *url.URL, urlList *archiveUrl
 				}
 			}
 		}
+
 		for c := n.FirstChild; c != nil; c = c.NextSibling {
 			findAnchors(c)
 		}
@@ -152,6 +154,7 @@ func populateArchiveFileListFromPProfHTML(pprofUrl *url.URL, urlList *archiveUrl
 			// Table found, now look for <a> elements inside it
 			findAnchors(n)
 		}
+
 		for c := n.FirstChild; c != nil; c = c.NextSibling {
 			findTable(c)
 		}
@@ -161,7 +164,6 @@ func populateArchiveFileListFromPProfHTML(pprofUrl *url.URL, urlList *archiveUrl
 	findTable(doc)
 
 	for _, urlStr := range hrefs {
-
 		finalUrl, err := url.Parse(pprofUrl.Path)
 		if err != nil {
 			return err
@@ -180,7 +182,7 @@ func populateArchiveFileListFromPProfHTML(pprofUrl *url.URL, urlList *archiveUrl
 	return nil
 }
 
-// performRequest - performs the requests and return response
+// performRequest - performs the requests and return response.
 func performRequest(u *url.URL) (*http.Response, error) {
 	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
 	if err != nil {
