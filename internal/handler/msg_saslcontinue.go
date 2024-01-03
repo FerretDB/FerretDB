@@ -44,8 +44,6 @@ func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	}
 
 	conv := conninfo.Get(ctx).Conv()
-	response, err := conv.Step(string(payload))
-	must.NoError(err)
 
 	adminDB, err := h.b.Database("admin")
 	must.NoError(err)
@@ -76,6 +74,9 @@ func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.O
 
 	// TODO compare stored credentials
 	_ = credentials
+
+	response, err := conv.Step(string(payload))
+	must.NoError(err)
 
 	h.L.Debug(
 		"saslContinue",
