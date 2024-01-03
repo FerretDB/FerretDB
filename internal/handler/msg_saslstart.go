@@ -174,6 +174,31 @@ func saslStartPlain(doc *types.Document) (string, string, error) {
 }
 
 func saslStartSCRAM(doc *types.Document) (string, *types.ScramConv, error) {
+	// TODO store the SCRAM-SHA-1 and SCRAM-SHA-256 credentials in the 'admin.system.users' namespace
+	// when a user is initially created
+	// credentials: {
+	//   'PLAIN': {
+	//     algo: 'argon2id',
+	//     t: int32(3),
+	//     p: int32(4),
+	//     m: int32(65536),
+	//     hash: types.Binary{…},
+	//     salt: types.Binary{…},
+	//   },
+	//   'SCRAM-SHA-1': {
+	//     iterationCount: 10000,
+	//     salt: 'HABkWd1LV6tLbXNsqrXc5w==',
+	//     storedKey: 'BkeR3SlFOm3xxER4qtGDgFu4imw=',
+	//     serverKey: 'WNDA6r92qAKZvMr0J6mbxRJGuQo='
+	//   },
+	//   'SCRAM-SHA-256': {
+	// 		"iterationCount" : 15000,
+	// 		"salt" : "7jW5ZOczj05P4wyNc21OikIuSliPN9rw4sEoGQ==",
+	// 		"storedKey" : "F8hTLrnZscuuszfrh+4nupyjPA40cp+gfzy1Hsc3O3c=",
+	// 		"serverKey" : "d4P+d81D31XHwvfQA3jwgTmkivZfXTD/nBASm77Dwv0="
+	//   }
+	// }
+
 	var payload []byte
 
 	binaryPayload, err := common.GetRequiredParam[types.Binary](doc, "payload")
