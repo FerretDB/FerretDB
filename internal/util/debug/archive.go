@@ -22,34 +22,19 @@ import (
 	"net/http"
 	"net/url"
 	"path/filepath"
-	"strings"
 
 	"golang.org/x/net/html"
 )
 
 type archiveUrlList []url.URL
 
-func fileNameFromUrl(u url.URL) string {
-	base := filepath.Base(u.Path)
-	postfix := strings.Replace(u.RawQuery, "=", "_", -1)
-	postfix = strings.Replace(postfix, "&&", "_", -1)
-
-	fileName := base
-	if len(u.RawQuery) > 0 {
-		fileName = fmt.Sprintf("%s_%s", fileName, postfix)
-	}
-
-	return fileName
-}
-
+// archiveHandler - is a handler for creating the archive containing all the debug and metrics info.
 func archiveHandler(rw http.ResponseWriter, req *http.Request) {
 	var (
-		scheme          string
-		pprofUrl        url.URL
-		urlList         archiveUrlList
-		debugFilePrefix = "FerretDB"
-		debugFileName   = "debug.zip"
-		err             error
+		scheme   string
+		pprofUrl url.URL
+		urlList  archiveUrlList
+		err      error
 	)
 
 	urlList = make(archiveUrlList, 0)
@@ -82,6 +67,11 @@ func archiveHandler(rw http.ResponseWriter, req *http.Request) {
 
 	rw.Header().Set("Content-Type", "application/zip")
 
+	var (
+		debugFilePrefix = "FerretDB"
+		debugFileName   = "debug.zip"
+	)
+
 	zipName := fmt.Sprintf("%s-%s", debugFilePrefix, debugFileName)
 	rw.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", zipName))
 
@@ -90,7 +80,7 @@ func archiveHandler(rw http.ResponseWriter, req *http.Request) {
 
 	for _, fileUrl := range urlList {
 
-		fileName := fileNameFromUrl(fileUrl)
+		fileName := filepath.Base(fileUrl.Path)
 		resp, err := performRequest(&fileUrl)
 		if err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
@@ -190,6 +180,7 @@ func populateArchiveFileListFromPProfHTML(pprofUrl *url.URL, urlList *archiveUrl
 	return nil
 }
 
+// performRequest - performs the requests and return response
 func performRequest(u *url.URL) (*http.Response, error) {
 	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
 	if err != nil {

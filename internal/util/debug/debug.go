@@ -38,11 +38,11 @@ import (
 )
 
 var (
-	graphicsPath = "/debug/graphs"
-	metricsPath  = "/debug/metrics"
-	archivePath  = "/debug/archive"
-	pprofPath    = "/debug/pprof"
-	varsPath     = "/debug/vars"
+	graphsPath  = "/debug/graphs"
+	metricsPath = "/debug/metrics"
+	archivePath = "/debug/archive"
+	pprofPath   = "/debug/pprof"
+	varsPath    = "/debug/vars"
 )
 
 // RunHandler runs debug handler.
@@ -68,9 +68,9 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 
 	handlers := map[string]string{
 		// custom handlers registered above
-		graphicsPath: "Visualize metrics",
-		metricsPath:  "Metrics in Prometheus format",
-		archivePath:  "Metrics and pprof data in zip format",
+		graphsPath:  "Visualize metrics",
+		metricsPath: "Metrics in Prometheus format",
+		archivePath: "Metrics and pprof data in zip format",
 
 		// stdlib handlers
 		varsPath:  "Expvar package metrics",

@@ -18,7 +18,6 @@ import (
 	"archive/zip"
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -44,8 +43,19 @@ type testObjTwo struct {
 	token *resource.Token
 }
 
-func TestRunHandler(t *testing.T) {
+func findInStringsArray(findStr string, list []string) bool {
+	for _, str := range list {
+		if findStr == str {
+			return true
+		}
+	}
+	return false
+}
+
+func TestArchiveHandler(t *testing.T) {
 	t.Parallel()
+
+	fileList := []string{"allocs", "block", "cmdline", "goroutine", "heap", "metrics", "mutex", "profile", "threadcreate", "trace"}
 
 	host := "127.0.0.1:5454"
 
@@ -62,21 +72,6 @@ func TestRunHandler(t *testing.T) {
 	l := zap.S()
 
 	go RunHandler(ctx, host, metricsRegisterer, l.Named("debug").Desugar())
-
-	// for i := 0; i <= 14; i++ {
-	// 	obj := new(testObjOne)
-	// 	obj.token = resource.NewToken()
-	// 	resource.Track(obj, obj.token)
-	// }
-
-	// for i := 0; i <= 14; i++ {
-	// 	obj := new(testObjTwo)
-	// 	obj.token = resource.NewToken()
-	// 	resource.Track(obj, obj.token)
-	// }
-
-	var halt chan int
-	<-halt
 
 	// Wait for the server to start
 	time.Sleep(time.Second)
@@ -105,16 +100,10 @@ func TestRunHandler(t *testing.T) {
 
 	zipReader, err := zip.NewReader(bytes.NewReader(body), int64(len(body)))
 	require.NoError(t, err)
-	require.Equal(t, 2, len(zipReader.File), "zip should contain 2 files")
+	require.Equal(t, 10, len(zipReader.File), "zip should contain 10 files")
 
 	for _, file := range zipReader.File {
-		err = nil
-
-		if file.FileHeader.Name == "FerretDB-metrics.txt" || file.FileHeader.Name == "FerretDB-pprof.html" {
-			msg := fmt.Sprintf("file name is not as expected %s", file.FileHeader.Name)
-			err = errors.New(msg)
-		}
-
-		require.NoError(t, nil, err, "file name fif not match")
+		t.Logf("\nverifying file : %s", file.Name)
+		require.Equal(t, true, findInStringsArray(file.FileHeader.Name, fileList), "file should be present in archive")
 	}
 }
