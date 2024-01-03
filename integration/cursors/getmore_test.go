@@ -1258,7 +1258,6 @@ func TestCursorsGetMoreAfterInsertion(t *testing.T) {
 		cmd := bson.D{
 			{"find", collection.Name()},
 			{"batchSize", 1},
-			{"maxTimeMS", 100},
 		}
 
 		var res bson.D
@@ -1281,7 +1280,6 @@ func TestCursorsGetMoreAfterInsertion(t *testing.T) {
 
 	t.Run("GetMore", func(t *testing.T) {
 		for i := 0; i < 2; i++ {
-			time.Sleep(1 * time.Second)
 			var res bson.D
 			err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
 			require.NoError(t, err)
@@ -1297,7 +1295,6 @@ func TestCursorsGetMoreAfterInsertion(t *testing.T) {
 	})
 
 	t.Run("GetMoreEmpty", func(t *testing.T) {
-		time.Sleep(1 * time.Second)
 		var res bson.D
 		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
 		require.NoError(t, err)
@@ -1312,8 +1309,6 @@ func TestCursorsGetMoreAfterInsertion(t *testing.T) {
 		_, err = collection.InsertOne(ctx, newDoc)
 		require.NoError(t, err)
 
-		time.Sleep(1 * time.Second)
-
 		var res bson.D
 		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
 		require.NoError(t, err)
@@ -1327,7 +1322,6 @@ func TestCursorsGetMoreAfterInsertion(t *testing.T) {
 	})
 
 	t.Run("GetMoreEmptyAfterInsertion", func(t *testing.T) {
-		time.Sleep(1 * time.Second)
 		var res bson.D
 		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
 		require.NoError(t, err)
