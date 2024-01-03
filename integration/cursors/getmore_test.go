@@ -1312,8 +1312,16 @@ func TestCursorsGetMoreAfterInsertion(t *testing.T) {
 		require.NoError(t, err)
 
 		var res bson.D
+
 		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
-		//TODO
-		require.NoError(t, err)
+		integration.AssertEqualCommandError(
+			t,
+			mongo.CommandError{
+				Code:    43,
+				Name:    "CursorNotFound",
+				Message: fmt.Sprintf("cursor id %d not found", cursorID),
+			},
+			err,
+		)
 	})
 }
