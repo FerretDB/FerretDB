@@ -431,6 +431,8 @@ func TestCursorsAwaitDataFirstBatchMaxTimeMS(t *testing.T) {
 		cmd := bson.D{
 			{"find", collection.Name()},
 			{"batchSize", 1},
+			{"tailable", true},
+			{"awaitData", true},
 			{"maxTimeMS", 2000},
 		}
 
