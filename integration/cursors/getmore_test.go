@@ -1305,8 +1305,6 @@ func TestCursorsGetMoreAfterInsertion(t *testing.T) {
 	})
 
 	t.Run("GetMoreNewDoc", func(tt *testing.T) {
-		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/3930")
-
 		newDoc := bson.D{{"_id", "new"}}
 		_, err = collection.InsertOne(ctx, newDoc)
 		require.NoError(t, err)
