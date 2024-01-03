@@ -479,7 +479,7 @@ func TestCursorsAwaitDataFirstBatchMaxTimeMS(t *testing.T) {
 
 		nextBatch, nextID := getNextBatch(t, res)
 		require.Equal(t, 0, nextBatch.Len())
-		assert.Equal(t, int64(0), nextID)
+		assert.Equal(t, cursorID, nextID)
 	})
 }
 
@@ -506,6 +506,8 @@ func TestCursorsAwaitDataGetMoreAfterInsertion(t *testing.T) {
 	t.Run("FirstBatch", func(t *testing.T) {
 		cmd := bson.D{
 			{"find", collection.Name()},
+			{"tailable", true},
+			{"awaitData", true},
 			{"batchSize", 1},
 		}
 

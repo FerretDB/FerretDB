@@ -393,6 +393,6 @@ func TestCursorsTailableFirstBatchMaxTimeMS(t *testing.T) {
 
 		nextBatch, nextID := getNextBatch(t, res)
 		require.Equal(t, 0, nextBatch.Len())
-		assert.Equal(t, int64(0), nextID)
+		assert.Equal(t, cursorID, nextID)
 	})
 }
