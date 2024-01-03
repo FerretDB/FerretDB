@@ -1295,8 +1295,6 @@ func TestCursorsGetMoreAfterInsertion(t *testing.T) {
 	})
 
 	t.Run("GetMoreEmpty", func(tt *testing.T) {
-		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/3930")
-
 		var res bson.D
 		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
 		require.NoError(t, err)
