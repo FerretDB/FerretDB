@@ -16,10 +16,13 @@ package handler
 
 import (
 	"context"
+	"errors"
 
+	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -43,6 +46,36 @@ func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	conv := conninfo.Get(ctx).Conv()
 	response, err := conv.Step(string(payload))
 	must.NoError(err)
+
+	adminDB, err := h.b.Database("admin")
+	must.NoError(err)
+
+	users, err := adminDB.Collection("system.users")
+	must.NoError(err)
+
+	q, err := users.Query(ctx, &backends.QueryParams{
+		Filter: must.NotFail(types.NewDocument(
+			"user", conv.Username(),
+		)),
+		Limit: int64(1), // assume there's only 'test.username' user for now
+	})
+	must.NoError(err)
+
+	var credentials *types.Document
+
+	defer q.Iter.Close()
+
+	for {
+		_, doc, err := q.Iter.Next()
+		if errors.Is(err, iterator.ErrIteratorDone) {
+			break
+		}
+
+		credentials = doc
+	}
+
+	// TODO compare stored credentials
+	_ = credentials
 
 	h.L.Debug(
 		"saslContinue",
