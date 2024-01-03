@@ -185,13 +185,19 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		)
 	}
 
+	// takes nextBatch from previously created cursor (if it's the first getMore call for example - it'll use iterator left from find query)
 	nextBatch, err := h.makeNextBatch(c, batchSize)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
+	// NOTE: to simplify comments let's assume that this is the first getMore call for some cursor
 	switch c.Type {
 	case cursor.Normal:
+		// If find created a cursor with 10 documents but the batchsize of find query was only 6, there're 4 documents left that can be returned with getMore
+		// although if the getMore batchsize is for example 5, we still can fit 1 more document.
+		// There's a chance that between find query and getMore query, some documents were actually inserted so we try to create another iterator to possibly append
+		// 1 more document
 		if nextBatch.Len() < int(batchSize) {
 			data := c.Data.(*findCursorData)
 
