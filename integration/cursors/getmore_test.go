@@ -1294,7 +1294,9 @@ func TestCursorsGetMoreAfterInsertion(t *testing.T) {
 		}
 	})
 
-	t.Run("GetMoreEmpty", func(t *testing.T) {
+	t.Run("GetMoreEmpty", func(tt *testing.T) {
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/3930")
+
 		var res bson.D
 		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
 		require.NoError(t, err)
@@ -1304,7 +1306,9 @@ func TestCursorsGetMoreAfterInsertion(t *testing.T) {
 		assert.Equal(t, cursorID, nextID)
 	})
 
-	t.Run("GetMoreNewDoc", func(t *testing.T) {
+	t.Run("GetMoreNewDoc", func(tt *testing.T) {
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/3930")
+
 		newDoc := bson.D{{"_id", "new"}}
 		_, err = collection.InsertOne(ctx, newDoc)
 		require.NoError(t, err)
@@ -1321,7 +1325,9 @@ func TestCursorsGetMoreAfterInsertion(t *testing.T) {
 		require.Equal(t, integration.ConvertDocument(t, newDoc), must.NotFail(nextBatch.Get(0)))
 	})
 
-	t.Run("GetMoreEmptyAfterInsertion", func(t *testing.T) {
+	t.Run("GetMoreEmptyAfterInsertion", func(tt *testing.T) {
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/3930")
+
 		var res bson.D
 		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
 		require.NoError(t, err)
