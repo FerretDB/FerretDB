@@ -526,6 +526,11 @@ tasks:
     desc: "Run psql"
     cmds:
       - docker compose exec -e PGPASSWORD=password postgres psql -U username -d ferretdb
+  
+  psql-secured:
+    desc: "Run psql"
+    cmds:
+      - docker compose exec -e PGPASSWORD=password postgres_secured psql -U username -d ferretdb
 
   sqlite3:
     desc: "Run sqlite3"
