@@ -82,8 +82,8 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		h.L.Debug(
 			"saslStart",
 			zap.String("response", response),
-			zap.String("username", sconv.Conv.Username()),
-			zap.String("password", password),
+			zap.String("user", sconv.Conv.Username()),
+			zap.Bool("authenticated", sconv.Conv.Valid()),
 		)
 
 	default:

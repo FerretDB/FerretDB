@@ -15,6 +15,7 @@
 package handler
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"errors"
@@ -22,6 +23,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -73,26 +75,34 @@ func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.O
 		credentialsDocument = doc
 	}
 
-	// TODO compare stored credentials
 	path := types.Path{}.Append("credentials").Append("SCRAM-SHA-256")
 	credentials, err := credentialsDocument.GetByPath(path)
 	must.NoError(err)
 
 	storedCredentials := credentials.(*types.Document)
+	storedKey := must.NotFail(storedCredentials.Get("storedKey")).(string)
 
-	salt, _ := storedCredentials.Get("salt")
-	saltBytes, _ := base64.RawStdEncoding.DecodeString(salt.(string))
+	decodedStoredKey, err := base64.StdEncoding.DecodeString(storedKey)
+	must.NoError(err)
+
+	// just match storedKey for now
+	if !bytes.Equal(sconv.StoredKey, decodedStoredKey) {
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrAuthenticationFailed,
+			"SCRAM authentication failed, storedKey mismatch",
+			"storedKey",
+		)
+	}
 
 	response, err := sconv.Conv.Step(string(payload))
 	must.NoError(err)
 
 	h.L.Debug(
 		"saslContinue",
-		zap.Binary("sconv.Salt", sconv.Salt), // 7jW5ZOczj05P4wyNc21OikIuSliPN9rw4sEoGQ==
-		zap.Binary("saltBytes", saltBytes),   // 7jW5ZOczj05P4wyNc21OikIuSliPN9rw4sEo
 		zap.String("payload", string(payload)),
 		zap.String("response", response),
-		zap.Bool("conversation complete", sconv.Conv.Valid()),
+		zap.String("user", sconv.Conv.Username()),
+		zap.Bool("authenticated", sconv.Conv.Valid()),
 	)
 
 	var reply wire.OpMsg

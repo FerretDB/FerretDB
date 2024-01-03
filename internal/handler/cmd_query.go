@@ -56,12 +56,12 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 		conninfo.Get(ctx).SetAuth(sconv.Conv.Username(), "password")
 
 		h.L.Debug(
-			"speculativeAuthenticate",
+			"OP_QUERY speculativeAuthenticate",
 			zap.String("command", cmd),
 			zap.Any("payload", payload),
 			zap.String("response", response),
-			zap.String("username", sconv.Conv.Username()),
-			zap.Bool("conversation complete", sconv.Conv.Valid()),
+			zap.String("user", sconv.Conv.Username()),
+			zap.Bool("authenticated", sconv.Conv.Valid()),
 		)
 
 		// create a speculative conversation document for SCRAM authentication
