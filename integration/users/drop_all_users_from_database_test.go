@@ -75,5 +75,13 @@ func assertDropAllUsersFromDatabase(t *testing.T, ctx context.Context, db *mongo
 	expected := must.NotFail(types.NewDocument("n", int32(quantity), "ok", float64(1)))
 	testutil.AssertEqual(t, expected, actual)
 
-	assert.Equal(t, mongo.ErrNoDocuments, users.FindOne(ctx, bson.D{{"db", db.Name()}}).Err())
+	var usersInfo bson.D
+	err = db.RunCommand(ctx, bson.D{{"usersInfo", 1}}).Decode(&usersInfo)
+	assert.NoError(t, err)
+
+	expectedUsersInfo := must.NotFail(types.NewDocument(
+		"users", &types.Array{},
+		"ok", float64(1),
+	))
+	testutil.AssertEqual(t, expectedUsersInfo, integration.ConvertDocument(t, usersInfo))
 }
