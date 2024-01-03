@@ -243,6 +243,7 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		}
 
 	case cursor.Tailable:
+		// TODO This might be still untrue
 		if nextBatch.Len() == 0 {
 			// The previous iterator is already closed there.
 
