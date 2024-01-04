@@ -108,6 +108,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	if params.MaxTimeMS != 0 {
 		ctx, cancel = context.WithCancel(ctx)
+
 		go func() {
 			select {
 			case <-timeout.C:
