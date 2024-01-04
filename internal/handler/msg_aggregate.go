@@ -379,7 +379,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		cursor.Close()
 	}
 
-	findDone.Store(true)
+	findDone <- struct{}{}
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
