@@ -354,7 +354,11 @@ func processIndex(command string, indexDoc *types.Document) (*backends.IndexInfo
 		case "background":
 			// ignore deprecated options
 
-		case "sparse", "partialFilterExpression", "expireAfterSeconds", "hidden", "storageEngine",
+		case "sparse":
+			// Ignore for now to make Meteor apps work.
+			// TODO https://github.com/FerretDB/FerretDB/issues/2448
+
+		case "partialFilterExpression", "expireAfterSeconds", "hidden", "storageEngine",
 			"weights", "default_language", "language_override", "textIndexVersion", "2dsphereIndexVersion",
 			"bits", "min", "max", "bucketSize", "collation", "wildcardProjection":
 			return nil, handlererrors.NewCommandErrorMsgWithArgument(

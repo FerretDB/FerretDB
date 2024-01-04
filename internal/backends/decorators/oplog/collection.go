@@ -15,9 +15,7 @@
 package oplog
 
 import (
-	"cmp"
 	"context"
-	"slices"
 	"time"
 
 	"go.uber.org/zap"
@@ -224,17 +222,13 @@ func (c *collection) DropIndexes(ctx context.Context, params *backends.DropIndex
 func (c *collection) oplogCollection(ctx context.Context) backends.Collection {
 	db := must.NotFail(c.origB.Database(oplogDatabase))
 
-	cList, err := db.ListCollections(ctx, nil)
+	cList, err := db.ListCollections(ctx, &backends.ListCollectionsParams{Name: oplogCollection})
 	if err != nil {
 		c.l.Error("Failed to list collections", zap.Error(err))
 		return nil
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3601
-	_, found := slices.BinarySearchFunc(cList.Collections, oplogCollection, func(e backends.CollectionInfo, t string) int {
-		return cmp.Compare(e.Name, t)
-	})
-	if !found {
+	if len(cList.Collections) == 0 {
 		c.l.Debug("Collection not found")
 		return nil
 	}

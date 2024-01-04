@@ -15,11 +15,9 @@
 package handler
 
 import (
-	"cmp"
 	"context"
 	"errors"
 	"fmt"
-	"slices"
 	"time"
 
 	"go.uber.org/zap"
@@ -71,18 +69,16 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	var cList *backends.ListCollectionsResult
+	collectionParam := backends.ListCollectionsParams{Name: params.Collection}
 
-	if cList, err = db.ListCollections(ctx, nil); err != nil {
+	if cList, err = db.ListCollections(ctx, &collectionParam); err != nil {
 		return nil, err
 	}
 
 	var cInfo backends.CollectionInfo
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3601
-	if i, found := slices.BinarySearchFunc(cList.Collections, params.Collection, func(e backends.CollectionInfo, t string) int {
-		return cmp.Compare(e.Name, t)
-	}); found {
-		cInfo = cList.Collections[i]
+	if len(cList.Collections) > 0 {
+		cInfo = cList.Collections[0]
 	}
 
 	capped := cInfo.Capped()

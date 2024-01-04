@@ -15,13 +15,11 @@
 package handler
 
 import (
-	"cmp"
 	"context"
 	"errors"
 	"fmt"
 	"math"
 	"os"
-	"slices"
 	"sync/atomic"
 	"time"
 
@@ -298,18 +296,16 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 		var cList *backends.ListCollectionsResult
 
-		if cList, err = db.ListCollections(ctx, nil); err != nil {
+		collectionParam := backends.ListCollectionsParams{Name: cName}
+		if cList, err = db.ListCollections(ctx, &collectionParam); err != nil {
 			closer.Close()
 			return nil, err
 		}
 
 		var cInfo backends.CollectionInfo
 
-		// TODO https://github.com/FerretDB/FerretDB/issues/3601
-		if i, found := slices.BinarySearchFunc(cList.Collections, cName, func(e backends.CollectionInfo, t string) int {
-			return cmp.Compare(e.Name, t)
-		}); found {
-			cInfo = cList.Collections[i]
+		if len(cList.Collections) > 0 {
+			cInfo = cList.Collections[0]
 		}
 
 		switch {
@@ -461,9 +457,11 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 		"localTime", time.Now().UTC().Format(time.RFC3339),
 	))
 
-	var collStats *backends.CollectionStatsResult
-	var cInfo backends.CollectionInfo
-	var nIndexes int64
+	var (
+		collStats *backends.CollectionStatsResult
+		cInfo     backends.CollectionInfo
+		nIndexes  int64
+	)
 
 	if hasCount || hasStorage {
 		collStats, err = p.c.Stats(ctx, new(backends.CollectionStatsParams))
@@ -480,16 +478,14 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 		}
 
 		var cList *backends.ListCollectionsResult
+		collectionParam := backends.ListCollectionsParams{Name: p.cName}
 
-		if cList, err = p.db.ListCollections(ctx, new(backends.ListCollectionsParams)); err != nil {
+		if cList, err = p.db.ListCollections(ctx, &collectionParam); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
-		// TODO https://github.com/FerretDB/FerretDB/issues/3601
-		if i, found := slices.BinarySearchFunc(cList.Collections, p.cName, func(e backends.CollectionInfo, t string) int {
-			return cmp.Compare(e.Name, t)
-		}); found {
-			cInfo = cList.Collections[i]
+		if len(cList.Collections) > 0 {
+			cInfo = cList.Collections[0]
 		}
 
 		var iList *backends.ListIndexesResult

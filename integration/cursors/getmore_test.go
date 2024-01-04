@@ -953,45 +953,6 @@ func TestCursorsGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 		integration.AssertMatchesCommandError(t, mongo.CommandError{Code: 50, Name: "MaxTimeMSExpired"}, cursor.Err())
 	})
 
-	t.Run("FindGetMoreMaxTimeMS", func(tt *testing.T) {
-		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2983")
-
-		var res bson.D
-		err := collection.Database().RunCommand(ctx, bson.D{
-			{"find", collection.Name()},
-			{"batchSize", 0},
-		}).Decode(&res)
-		require.NoError(t, err)
-
-		doc := integration.ConvertDocument(t, res)
-
-		v, _ := doc.Get("cursor")
-		require.NotNil(t, v)
-
-		cursor, ok := v.(*types.Document)
-		require.True(t, ok)
-
-		cursorID, _ := cursor.Get("id")
-		require.NotZero(t, cursorID)
-
-		err = collection.Database().RunCommand(ctx, bson.D{
-			{"getMore", cursorID},
-			{"collection", collection.Name()},
-			{"batchSize", 2000},
-			{"maxTimeMS", 1},
-		}).Decode(&res)
-
-		integration.AssertEqualCommandError(
-			t,
-			mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "cannot set maxTimeMS on getMore command for a non-awaitData cursor",
-			},
-			err,
-		)
-	})
-
 	t.Run("AggregateExpire", func(tt *testing.T) {
 		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2983")
 
@@ -1030,47 +991,6 @@ func TestCursorsGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 		assert.False(t, ok)
 
 		integration.AssertMatchesCommandError(t, mongo.CommandError{Code: 50, Name: "MaxTimeMSExpired"}, cursor.Err())
-	})
-
-	t.Run("AggregateGetMoreMaxTimeMS", func(tt *testing.T) {
-		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2983")
-
-		var res bson.D
-		err := collection.Database().RunCommand(ctx, bson.D{
-			{"aggregate", collection.Name()},
-			{"pipeline", bson.A{}},
-			{"cursor", bson.D{{"batchSize", 0}}},
-		}).Decode(&res)
-		require.NoError(t, err)
-
-		doc := integration.ConvertDocument(t, res)
-
-		v, _ := doc.Get("cursor")
-		require.NotNil(t, v)
-
-		cursor, ok := v.(*types.Document)
-		require.True(t, ok)
-
-		cursorID, _ := cursor.Get("id")
-		require.NotZero(t, cursorID)
-
-		err = collection.Database().RunCommand(ctx, bson.D{
-			{"getMore", cursorID},
-			{"collection", collection.Name()},
-			{"batchSize", 2000},
-			{"maxTimeMS", 1},
-		}).Decode(&res)
-
-		integration.AssertEqualAltCommandError(
-			t,
-			mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "cannot set maxTimeMS on getMore command for a non-awaitData cursor",
-			},
-			"",
-			err,
-		)
 	})
 }
 
@@ -1231,6 +1151,61 @@ func TestCursorsFirstBatchMaxTimeMS(t *testing.T) {
 		nextBatch, nextID := getNextBatch(t, res)
 		require.Equal(t, 0, nextBatch.Len())
 		assert.Equal(t, int64(0), nextID)
+	})
+}
+
+func TestGetMoreNonAwaitDataError(t *testing.T) {
+	s := setup.SetupWithOpts(t, nil)
+
+	db, ctx := s.Collection.Database(), s.Ctx
+
+	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(10000)
+	err := db.CreateCollection(s.Ctx, t.Name(), opts)
+	require.NoError(t, err)
+
+	collection := db.Collection(t.Name())
+
+	bsonDocs, _ := integration.GenerateDocuments(0, 1)
+
+	_, err = collection.InsertMany(ctx, bsonDocs)
+	require.NoError(t, err)
+
+	t.Run("Cursor", func(tt *testing.T) {
+		var res bson.D
+		err := collection.Database().RunCommand(ctx, bson.D{
+			{"find", collection.Name()},
+			{"tailable", true},
+			{"batchSize", 0},
+		}).Decode(&res)
+		require.NoError(t, err)
+
+		doc := integration.ConvertDocument(t, res)
+
+		v, _ := doc.Get("cursor")
+		require.NotNil(t, v)
+
+		cursor, ok := v.(*types.Document)
+		require.True(t, ok)
+
+		cursorID, _ := cursor.Get("id")
+		require.NotZero(t, cursorID)
+
+		err = collection.Database().RunCommand(ctx, bson.D{
+			{"getMore", cursorID},
+			{"collection", collection.Name()},
+			{"batchSize", 2000},
+			{"maxTimeMS", 1},
+		}).Err()
+
+		integration.AssertEqualCommandError(
+			t,
+			mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "cannot set maxTimeMS on getMore command for a non-awaitData cursor",
+			},
+			err,
+		)
 	})
 }
 
