@@ -1164,7 +1164,6 @@ func TestGetMoreNonAwaitDataError(t *testing.T) {
 	require.NoError(t, err)
 
 	collection := db.Collection(t.Name())
-
 	bsonDocs, _ := integration.GenerateDocuments(0, 1)
 
 	_, err = collection.InsertMany(ctx, bsonDocs)
@@ -1206,6 +1205,73 @@ func TestGetMoreNonAwaitDataError(t *testing.T) {
 			},
 			err,
 		)
+	})
+	t.Run("TailableCursor", func(tt *testing.T) {
+		var res bson.D
+		err := collection.Database().RunCommand(ctx, bson.D{
+			{"find", collection.Name()},
+			{"tailable", true},
+			{"batchSize", 0},
+		}).Decode(&res)
+		require.NoError(t, err)
+
+		doc := integration.ConvertDocument(t, res)
+
+		v, _ := doc.Get("cursor")
+		require.NotNil(t, v)
+
+		cursor, ok := v.(*types.Document)
+		require.True(t, ok)
+
+		cursorID, _ := cursor.Get("id")
+		require.NotZero(t, cursorID)
+
+		err = collection.Database().RunCommand(ctx, bson.D{
+			{"getMore", cursorID},
+			{"collection", collection.Name()},
+			{"batchSize", 2000},
+			{"maxTimeMS", 1},
+		}).Err()
+
+		integration.AssertEqualCommandError(
+			t,
+			mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "cannot set maxTimeMS on getMore command for a non-awaitData cursor",
+			},
+			err,
+		)
+	})
+	t.Run("AwaitDataCursor", func(tt *testing.T) {
+		var res bson.D
+		err := collection.Database().RunCommand(ctx, bson.D{
+			{"find", collection.Name()},
+			{"tailable", true},
+			{"awaitData", true},
+			{"batchSize", 0},
+		}).Decode(&res)
+		require.NoError(t, err)
+
+		doc := integration.ConvertDocument(t, res)
+
+		v, _ := doc.Get("cursor")
+		require.NotNil(t, v)
+
+		cursor, ok := v.(*types.Document)
+		require.True(t, ok)
+
+		cursorID, _ := cursor.Get("id")
+		require.NotZero(t, cursorID)
+
+		err = collection.Database().RunCommand(ctx, bson.D{
+			{"getMore", cursorID},
+			{"collection", collection.Name()},
+			{"batchSize", 2000},
+			{"maxTimeMS", 1},
+		}).Err()
+
+		require.NoError(t, err)
 	})
 }
 
