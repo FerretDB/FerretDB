@@ -108,9 +108,6 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	var findDone atomic.Bool
 
 	if params.MaxTimeMS != 0 {
-		// It is not clear if maxTimeMS affects only find, or both find and getMore (as the current code does).
-		// TODO https://github.com/FerretDB/FerretDB/issues/2984
-		//ctx, cancel = context.WithTimeout(ctx, time.Duration(params.MaxTimeMS)*time.Millisecond)
 		ctx, cancel = context.WithCancel(ctx)
 		go func() {
 			ctxutil.Sleep(ctx, time.Duration(params.MaxTimeMS)*time.Millisecond)
