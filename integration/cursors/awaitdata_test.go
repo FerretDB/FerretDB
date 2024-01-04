@@ -430,6 +430,7 @@ func TestCursorsTailableAwaitDataStress(t *testing.T) {
 
 		opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(10000)
 		err := db.CreateCollection(s.Ctx, collName, opts)
+		require.NoError(t, err)
 
 		collection := db.Collection(collName)
 

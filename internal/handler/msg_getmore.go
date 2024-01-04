@@ -290,18 +290,20 @@ type awaitDataParams struct {
 // awaitData stops the goroutine, and waits for a new data for the cursor.
 // If there's a new document, or the maxTimeMS have passed it returns the nextBatch.
 func (h *Handler) awaitData(ctx context.Context, params *awaitDataParams) (resBatch *types.Array, err error) {
-	c := params.cursor
-	data := c.Data.(*findCursorData)
-
 	resBatch = types.MakeArray(0)
+
 	closer := iterator.NewMultiCloser()
 	defer closer.Close()
+
+	c := params.cursor
+	closer.Add(c)
+
+	data := c.Data.(*findCursorData)
 
 	sleepDur := time.Duration(params.maxTimeMS) * time.Millisecond
 	ctx, cancel := context.WithTimeout(ctx, sleepDur)
 
 	defer func() {
-		c.Close()
 		cancel()
 
 		if err == nil {
