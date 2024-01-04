@@ -16,6 +16,7 @@ package common
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -54,6 +55,10 @@ func IsMasterDocuments(host, name string) []*types.Document {
 	))
 
 	if name != "" {
+		if strings.HasPrefix(host, ":") {
+			host = "localhost" + host
+		}
+
 		doc.Set("setName", name)
 		doc.Set("hosts", must.NotFail(types.NewArray(host)))
 	}
