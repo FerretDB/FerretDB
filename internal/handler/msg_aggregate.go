@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"math"
 	"os"
-	"sync/atomic"
 	"time"
 
 	"go.uber.org/zap"
@@ -34,7 +33,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -250,18 +248,20 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	cancel := func() {}
-	var findDone atomic.Bool
+
+	timeout := time.NewTicker(time.Duration(maxTimeMS) * time.Millisecond)
+	findDone := make(chan struct{})
 
 	if maxTimeMS != 0 {
 		ctx, cancel = context.WithCancel(ctx)
-		go func() {
-			ctxutil.Sleep(ctx, time.Duration(maxTimeMS)*time.Millisecond)
 
-			if findDone.Load() {
+		go func() {
+			select {
+			case <-timeout.C:
+				cancel()
+			case <-findDone:
 				return
 			}
-
-			cancel()
 		}()
 	}
 
