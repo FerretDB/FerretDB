@@ -312,7 +312,7 @@ func (h *Handler) awaitData(ctx context.Context, params *awaitDataParams) (resBa
 		}
 
 		err = lazyerrors.Error(err)
-		resBatch = nil
+		resBatch = types.MakeArray(0)
 	}()
 
 	for {
