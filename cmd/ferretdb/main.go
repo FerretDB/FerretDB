@@ -52,10 +52,11 @@ import (
 //
 // Keep order in sync with documentation.
 var cli struct {
-	Version  bool   `default:"false"           help:"Print version to stdout and exit." env:"-"`
-	Handler  string `default:"postgresql"      help:"${help_handler}"`
-	Mode     string `default:"${default_mode}" help:"${help_mode}" enum:"${enum_mode}"`
-	StateDir string `default:"."               help:"Process state directory."`
+	Version     bool   `default:"false"           help:"Print version to stdout and exit." env:"-"`
+	Handler     string `default:"postgresql"      help:"${help_handler}"`
+	Mode        string `default:"${default_mode}" help:"${help_mode}" enum:"${enum_mode}"`
+	StateDir    string `default:"."               help:"Process state directory."`
+	ReplSetName string `default:""                help:"Replica set name."`
 
 	Listen struct {
 		Addr        string `default:"127.0.0.1:27017" help:"Listen TCP address."`
@@ -64,7 +65,6 @@ var cli struct {
 		TLSCertFile string `default:""                help:"TLS cert file path."`
 		TLSKeyFile  string `default:""                help:"TLS key file path."`
 		TLSCaFile   string `default:""                help:"TLS CA file path."`
-		RSName      string `default:""                help:"Replica set name for setName field. If empty, setName is not set."`
 	} `embed:"" prefix:"listen-"`
 
 	Proxy struct {
@@ -391,7 +391,7 @@ func run() {
 		ConnMetrics:   metrics.ConnMetrics,
 		StateProvider: stateProvider,
 		Host:          cli.Listen.Addr,
-		RSName:        cli.Listen.RSName,
+		ReplSetName:   cli.ReplSetName,
 
 		PostgreSQLURL: postgreSQLFlags.PostgreSQLURL,
 

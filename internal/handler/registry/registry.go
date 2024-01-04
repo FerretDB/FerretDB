@@ -45,7 +45,7 @@ type NewHandlerOpts struct {
 	ConnMetrics   *connmetrics.ConnMetrics
 	StateProvider *state.Provider
 	Host          string
-	RSName        string
+	ReplSetName   string
 
 	// for `postgresql` handler
 	PostgreSQLURL string
