@@ -17,6 +17,7 @@ package bson2
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -25,6 +26,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
+// encodeDocument encodes BSON document.
 func encodeDocument(doc *Document) ([]byte, error) {
 	size := sizeAny(doc)
 	buf := bytes.NewBuffer(make([]byte, 0, size))
@@ -46,6 +48,7 @@ func encodeDocument(doc *Document) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// encodeArray encodes BSON array.
 func encodeArray(arr *Array) ([]byte, error) {
 	size := sizeAny(arr)
 	buf := bytes.NewBuffer(make([]byte, 0, size))
@@ -67,6 +70,9 @@ func encodeArray(arr *Array) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// encodeField encodes document field.
+//
+// It panics if v is not a valid type.
 func encodeField(buf *bytes.Buffer, name string, v any) error {
 	switch v := v.(type) {
 	case *Document:
@@ -144,6 +150,9 @@ func encodeField(buf *bytes.Buffer, name string, v any) error {
 	return nil
 }
 
+// encodeScalarField encodes scalar document field.
+//
+// It panics if v is not a scalar value.
 func encodeScalarField(buf *bytes.Buffer, name string, v any) error {
 	switch v.(type) {
 	case float64:
@@ -169,7 +178,7 @@ func encodeScalarField(buf *bytes.Buffer, name string, v any) error {
 	case int64:
 		buf.WriteByte(byte(tagInt64))
 	default:
-		panic("TODO")
+		panic(fmt.Sprintf("invalid type %T", v))
 	}
 
 	b := make([]byte, bsonproto.SizeCString(name))

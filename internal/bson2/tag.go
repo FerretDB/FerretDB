@@ -16,6 +16,7 @@ package bson2
 
 //go:generate ../../bin/stringer -linecomment -type tag
 
+// tag represents type identifier of the document/array field.
 type tag byte
 
 const (
