@@ -89,7 +89,7 @@ func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	if scramCredentials == nil {
 		return nil, handlererrors.NewCommandErrorMsgWithArgument(
 			handlererrors.ErrMechanismUnavailable,
-			fmt.Sprintf("Unable to use %s based authentication for user without any %s credentials registered", sconv.Mechanism, sconv.Conv.Username()),
+			fmt.Sprintf("Unable to use %s based authentication for user without any %s credentials registered", sconv.Mechanism, sconv.Mechanism),
 			sconv.Conv.Username(),
 		)
 	}
