@@ -108,7 +108,7 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 		return nil, err
 	}
 
-	common.Ignored(document, h.L, "pwd", "writeConcern", "authenticationRestrictions", "comment")
+	common.Ignored(document, h.L, "writeConcern", "authenticationRestrictions", "comment")
 
 	mechanisms, err := document.Get("mechanisms")
 	must.NoError(err)
