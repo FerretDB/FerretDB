@@ -210,6 +210,7 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			}
 
 			closer := iterator.NewMultiCloser()
+			defer closer.Close()
 
 			iter, err := h.makeFindIter(queryRes.Iter, closer, data.findParams)
 			if err != nil {
