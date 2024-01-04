@@ -140,13 +140,3 @@ func (doc *Document) add(name string, value any) error {
 
 	return nil
 }
-
-func (doc *Document) all(yield func(name string, value any) bool) bool {
-	for _, f := range doc.fields {
-		if !yield(f.name, f.value) {
-			return false
-		}
-	}
-
-	return true
-}

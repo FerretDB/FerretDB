@@ -142,8 +142,11 @@ func DecodeDocument(b []byte) (*Document, error) {
 			v, err = bsonproto.DecodeInt64(b[offset:])
 			offset += bsonproto.SizeInt64
 
-		default:
+		case tagUndefined, tagDBPointer, tagJavaScript, tagSymbol, tagJavaScriptScope, tagDecimal, tagMinKey, tagMaxKey:
 			return nil, lazyerrors.Errorf("unsupported tag: %s", t)
+
+		default:
+			return nil, lazyerrors.Errorf("unexpected tag: %s", t)
 		}
 
 		if err != nil {
