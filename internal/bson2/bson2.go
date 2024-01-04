@@ -21,7 +21,7 @@
 //
 //	BSON                Go
 //
-//	Document            *bson2.Document or bson2.RawDocument
+//	Document/Object     *bson2.Document or bson2.RawDocument
 //	Array               *bson2.Array    or bson2.RawArray
 //
 //	Double              float64
@@ -123,6 +123,10 @@ func validBSONType(v any) bool {
 	return true
 }
 
+// convertToTypes converts valid BSON value of that package to types package type.
+//
+// Conversions of composite types (including raw types) may cause errors.
+// Invalid types cause panics.
 func convertToTypes(v any) (any, error) {
 	switch v := v.(type) {
 	case *Document:
@@ -195,6 +199,10 @@ func convertToTypes(v any) (any, error) {
 	}
 }
 
+// convertFromTypes converts valid types package values to BSON values of that package.
+//
+// Conversions of composite types may cause errors.
+// Invalid types cause panics.
 func convertFromTypes(v any) (any, error) {
 	switch v := v.(type) {
 	case *types.Document:

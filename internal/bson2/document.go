@@ -41,6 +41,7 @@ type Document struct {
 	fields []field
 }
 
+// NewDocument creates a new Document from the given pairs of field names and values.
 func NewDocument(pairs ...any) (*Document, error) {
 	l := len(pairs)
 	if l%2 != 0 {
@@ -71,12 +72,14 @@ func NewDocument(pairs ...any) (*Document, error) {
 	return res, nil
 }
 
+// MakeDocument creates a new empty Document with the given capacity.
 func MakeDocument(cap int) *Document {
 	return &Document{
 		fields: make([]field, 0, cap),
 	}
 }
 
+// ConvertDocument converts [*types.Document] to Document.
 func ConvertDocument(doc *types.Document) (*Document, error) {
 	iter := doc.Iterator()
 	defer iter.Close()
@@ -107,7 +110,7 @@ func ConvertDocument(doc *types.Document) (*Document, error) {
 	}
 }
 
-// Convert converts the Document to the *types.Document, decoding raw documents and arrays on the fly.
+// Convert converts Document to [*types.Document], decoding raw documents and arrays on the fly.
 func (doc *Document) Convert() (*types.Document, error) {
 	pairs := make([]any, 0, len(doc.fields)*2)
 
@@ -128,6 +131,7 @@ func (doc *Document) Convert() (*types.Document, error) {
 	return res, nil
 }
 
+// add adds a new field to the Document.
 func (doc *Document) add(name string, value any) error {
 	if !validBSONType(value) {
 		return fmt.Errorf("invalid field value type: %T", value)

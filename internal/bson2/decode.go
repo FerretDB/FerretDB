@@ -185,6 +185,7 @@ func DecodeArray(b []byte) (*Array, error) {
 	return res, nil
 }
 
+// decodeCheckOffset checks that b has enough bytes to decode size bytes starting from offset.
 func decodeCheckOffset(b []byte, offset, size int) error {
 	if len(b[offset:]) < size+1 {
 		return lazyerrors.Errorf("offset = %d, size = %d: %w", offset, size, ErrDecodeShortInput)

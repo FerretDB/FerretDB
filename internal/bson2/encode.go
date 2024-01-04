@@ -186,38 +186,3 @@ func encodeScalarField(buf *bytes.Buffer, name string, v any) error {
 
 	return nil
 }
-
-func sizeAny(v any) int {
-	switch v := v.(type) {
-	case *Document:
-		return sizeDocument(v)
-	case RawDocument:
-		return len(v)
-	case *Array:
-		return sizeArray(v)
-	case RawArray:
-		return len(v)
-	default:
-		return bsonproto.SizeAny(v)
-	}
-}
-
-func sizeDocument(doc *Document) int {
-	size := 5
-
-	for _, f := range doc.fields {
-		size += 1 + len(f.name) + 1 + sizeAny(f.value)
-	}
-
-	return size
-}
-
-func sizeArray(arr *Array) int {
-	size := 5
-
-	for i, v := range arr.elements {
-		size += 1 + len(strconv.Itoa(i)) + 1 + sizeAny(v)
-	}
-
-	return size
-}

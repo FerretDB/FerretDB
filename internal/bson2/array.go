@@ -32,6 +32,7 @@ type Array struct {
 	elements []any
 }
 
+// ConvertArray converts [*types.Array] to Array.
 func ConvertArray(arr *types.Array) (*Array, error) {
 	iter := arr.Iterator()
 	defer iter.Close()
@@ -59,7 +60,7 @@ func ConvertArray(arr *types.Array) (*Array, error) {
 	}
 }
 
-// Convert converts the Array to the *types.Array, decoding raw documents and arrays on the fly.
+// Convert converts Array to [*types.Array], decoding raw documents and arrays on the fly.
 func (arr *Array) Convert() (*types.Array, error) {
 	values := make([]any, len(arr.elements))
 
