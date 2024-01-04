@@ -44,7 +44,6 @@ func TestUsersinfo(t *testing.T) {
 	ctx, collection := setup.Setup(t)
 	client := collection.Database().Client()
 
-	// Map of users per database suffix
 	dbToUsers := []struct {
 		dbSuffix string
 		payloads []bson.D
@@ -81,16 +80,9 @@ func TestUsersinfo(t *testing.T) {
 
 	dbPrefix := testutil.DatabaseName(t)
 
-	// Create users into the database to test userInfo.
 	for _, inserted := range dbToUsers {
 		dbName := testutil.DatabaseName(t) + inserted.dbSuffix
 		db := client.Database(dbName)
-
-		// Clear any residual database users before recreating them.
-
-		require.NoError(t, db.RunCommand(ctx, bson.D{
-			{"dropAllUsersFromDatabase", 1},
-		}).Err())
 
 		for _, payload := range inserted.payloads {
 			err := db.RunCommand(ctx, payload).Err()
@@ -468,7 +460,7 @@ func TestUsersinfo(t *testing.T) {
 				require.NoError(t, err)
 				actualUser := au.(*types.Document)
 
-				assert.False(t, tc.hasUser == nil && tc.expected == nil, "set at least one expectation for %q", name)
+				require.True(t, (tc.hasUser == nil) != (tc.expected == nil))
 
 				foundUsers[must.NotFail(actualUser.Get("_id")).(string)] = struct{}{}
 
