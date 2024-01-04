@@ -305,7 +305,7 @@ func (h *Handler) awaitData(ctx context.Context, params *awaitDataParams) (resBa
 		cancel()
 
 		if resBatch == nil {
-			resBatch = types.MakeArray(0)
+			//		resBatch = types.MakeArray(0)
 		}
 
 		if err == nil {

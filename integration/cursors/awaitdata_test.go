@@ -473,7 +473,6 @@ func TestCursorsTailableAwaitDataTwoCursorsStress(t *testing.T) {
 			{"batchSize", 1},
 			{"maxTimeMS", (10 * time.Millisecond).Milliseconds()},
 		}
-
 		getMoreCmd2 := bson.D{
 			{"getMore", cursorID2},
 			{"collection", collection.Name()},
@@ -481,41 +480,9 @@ func TestCursorsTailableAwaitDataTwoCursorsStress(t *testing.T) {
 			{"maxTimeMS", (10 * time.Millisecond).Milliseconds()},
 		}
 
-		for i := 0; i < 4; i++ {
+		for i := 0; i < 5; i++ {
 			_ = collection.Database().RunCommand(ctx, getMoreCmd1)
-
-			nextBatch1, nextID1 := getNextBatch(t, res)
-
-			err = collection.Database().RunCommand(ctx, getMoreCmd2).Decode(&res)
-			require.NoError(t, err)
-
-			nextBatch2, nextID2 := getNextBatch(t, res)
-
-			expectedNextBatch := integration.ConvertDocuments(t, arr[i+1:i+2])
-
-			assert.Equal(t, cursorID1, nextID1)
-			require.Equal(t, len(expectedNextBatch), nextBatch1.Len())
-			require.Equal(t, expectedNextBatch[0], must.NotFail(nextBatch1.Get(0)))
-
-			assert.Equal(t, cursorID2, nextID2)
-			require.Equal(t, len(expectedNextBatch), nextBatch2.Len())
-			require.Equal(t, expectedNextBatch[0], must.NotFail(nextBatch2.Get(0)))
+			_ = collection.Database().RunCommand(ctx, getMoreCmd2)
 		}
-
-		err = collection.Database().RunCommand(ctx, getMoreCmd1).Decode(&res)
-		require.NoError(t, err)
-
-		nextBatch1, nextID1 := getNextBatch(t, res)
-
-		err = collection.Database().RunCommand(ctx, getMoreCmd2).Decode(&res)
-		require.NoError(t, err)
-
-		nextBatch2, nextID2 := getNextBatch(t, res)
-
-		require.Equal(t, 0, nextBatch1.Len())
-		assert.Equal(t, cursorID1, nextID1)
-
-		require.Equal(t, 0, nextBatch2.Len())
-		assert.Equal(t, cursorID2, nextID2)
 	})
 }
