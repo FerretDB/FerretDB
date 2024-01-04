@@ -51,21 +51,39 @@ import (
 )
 
 type (
+	// ScalarType represents a BSON scalar type.
+	//
+	// CString is not included as it is not a real BSON type.
 	ScalarType = bsonproto.ScalarType
 
-	Binary        = bsonproto.Binary
+	// Binary represents BSON scalar type binary.
+	Binary = bsonproto.Binary
+
+	// BinarySubtype represents BSON Binary's subtype.
 	BinarySubtype = bsonproto.BinarySubtype
-	NullType      = bsonproto.NullType
-	ObjectID      = bsonproto.ObjectID
-	Regex         = bsonproto.Regex
-	Timestamp     = bsonproto.Timestamp
+
+	// NullType represents BSON scalar type null.
+	NullType = bsonproto.NullType
+
+	// ObjectID represents BSON scalar type ObjectID.
+	ObjectID = bsonproto.ObjectID
+
+	// Regex represents BSON scalar type regular expression.
+	Regex = bsonproto.Regex
+
+	// Timestamp represents BSON scalar type timestamp.
+	Timestamp = bsonproto.Timestamp
 )
 
-var (
-	ErrDecodeShortInput   = bsonproto.ErrDecodeShortInput
-	ErrDecodeInvalidInput = bsonproto.ErrDecodeInvalidInput
+// Null represents BSON scalar value null.
+var Null = bsonproto.Null
 
-	Null = bsonproto.Null
+var (
+	// ErrDecodeShortInput is returned wrapped by Decode functions if the input bytes slice is too short.
+	ErrDecodeShortInput = bsonproto.ErrDecodeShortInput
+
+	// ErrDecodeInvalidInput is returned wrapped by Decode functions if the input bytes slice is invalid.
+	ErrDecodeInvalidInput = bsonproto.ErrDecodeInvalidInput
 )
 
 // Type represents a BSON type.
