@@ -172,8 +172,6 @@ func testJSON(t *testing.T, testCases []testCase, newFunc func() sjsontype) {
 }
 
 func isValidDocumentData(v sjsontype) bool {
-	// This function can be removed if sjson functions validation is improved.
-
 	if v == nil {
 		return false
 	}
