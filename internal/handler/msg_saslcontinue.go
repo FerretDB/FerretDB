@@ -19,6 +19,7 @@ import (
 	"context"
 	"encoding/base64"
 	"errors"
+	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
@@ -62,35 +63,54 @@ func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	})
 	must.NoError(err)
 
-	var credentialsDocument *types.Document
+	var doc *types.Document
 
 	defer q.Iter.Close()
 
 	for {
-		_, doc, err := q.Iter.Next()
+		_, v, err := q.Iter.Next()
 		if errors.Is(err, iterator.ErrIteratorDone) {
 			break
 		}
 
-		credentialsDocument = doc
+		doc = v
 	}
 
-	path := types.Path{}.Append("credentials").Append("SCRAM-SHA-256")
-	credentials, err := credentialsDocument.GetByPath(path)
-	must.NoError(err)
+	// FIXME
+	h.L.Debug(
+		"saslContinue",
+		zap.String("Mechanism", sconv.Mechanism),
+	)
 
-	storedCredentials := credentials.(*types.Document)
-	storedKey := must.NotFail(storedCredentials.Get("storedKey")).(string)
+	scramCredentials, err := doc.GetByPath(
+		types.Path{}.Append("credentials").Append(sconv.Mechanism),
+	)
 
-	decodedStoredKey, err := base64.StdEncoding.DecodeString(storedKey)
+	if scramCredentials == nil {
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrMechanismUnavailable,
+			fmt.Sprintf("Unable to use %s based authentication for user without any %s credentials registered", sconv.Mechanism, sconv.Conv.Username()),
+			sconv.Conv.Username(),
+		)
+	}
+
+	if err != nil {
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrAuthenticationFailed,
+			fmt.Sprintf("Unable to validate %s authentication due to corrupted stored credentials", sconv.Mechanism),
+			sconv.Mechanism,
+		)
+	}
+
+	storedKey := must.NotFail(scramCredentials.(*types.Document).Get("storedKey"))
+	decodedStoredKey, err := base64.StdEncoding.DecodeString(storedKey.(string))
 	must.NoError(err)
 
 	// just match storedKey for now
 	if !bytes.Equal(sconv.StoredKey, decodedStoredKey) {
-		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+		return nil, handlererrors.NewCommandErrorMsg(
 			handlererrors.ErrAuthenticationFailed,
 			"SCRAM authentication failed, storedKey mismatch",
-			"storedKey",
 		)
 	}
 

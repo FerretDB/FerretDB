@@ -207,9 +207,6 @@ func saslStartSCRAM(doc *types.Document) (string, *scramutil.ScramConversation, 
 	response, err = conv.Step(string(payload))
 	must.NoError(err)
 
-	// ClientKey       := HMAC(SaltedPassword, "Client Key")
-	// StoredKey       := H(ClientKey)
-	// ServerKey       := HMAC(SaltedPassword, "Server Key")
 	sconv := &scramutil.ScramConversation{
 		Salt:      salt,
 		StoredKey: nil,

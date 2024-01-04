@@ -28,6 +28,7 @@ type ScramConversation struct {
 	StoredKey []byte
 	ServerKey []byte
 	Conv      *scram.ServerConversation
+	Mechanism string
 }
 
 func GenerateNonce() string {
