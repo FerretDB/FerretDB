@@ -46,8 +46,10 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 		reply, err := common.IsMaster(ctx, doc)
 		must.NoError(err)
 
-		v, _ := doc.Get("speculativeAuthenticate")
-		d := v.(*types.Document)
+		speculativeAuthenticate, err := doc.Get("speculativeAuthenticate")
+		must.NoError(err)
+
+		d := speculativeAuthenticate.(*types.Document)
 		payload, _ := d.Get("payload")
 
 		response, sconv, err = saslStartSCRAM(d)
@@ -62,7 +64,7 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 		conninfo.Get(ctx).SetAuth(sconv.Conv.Username(), "password") // hack
 
 		h.L.Debug(
-			"OP_QUERY",
+			"speculativeAuthenticate",
 			zap.String("command", cmd),
 			zap.Any("payload", payload),
 			zap.String("response", response),
