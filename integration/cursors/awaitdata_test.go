@@ -411,8 +411,6 @@ func TestCursorsTailableAwaitDataTwoCursorsSameCollection(t *testing.T) {
 }
 
 func TestCursorsTailableAwaitDataStress(t *testing.T) {
-	t.Parallel()
-
 	s := setup.SetupWithOpts(t, nil)
 
 	db, ctx := s.Collection.Database(), s.Ctx
