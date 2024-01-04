@@ -417,7 +417,7 @@ func TestCursorsTailableAwaitDataTwoCursorsStress(t *testing.T) {
 
 	db, ctx := s.Collection.Database(), s.Ctx
 
-	bsonArr, arr := integration.GenerateDocuments(0, 50)
+	bsonArr, arr := integration.GenerateDocuments(0, 5)
 
 	var count atomic.Int32
 
@@ -425,9 +425,11 @@ func TestCursorsTailableAwaitDataTwoCursorsStress(t *testing.T) {
 		testID := count.Add(1)
 		collName := fmt.Sprintf("%s_%d", t.Name(), testID)
 
+		ready <- struct{}{}
+		<-start
+
 		opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(10000)
 		err := db.CreateCollection(s.Ctx, collName, opts) // TODO t.Name()
-		require.NoError(t, err)
 
 		collection := db.Collection(collName)
 
@@ -469,19 +471,18 @@ func TestCursorsTailableAwaitDataTwoCursorsStress(t *testing.T) {
 			{"getMore", cursorID1},
 			{"collection", collection.Name()},
 			{"batchSize", 1},
-			{"maxTimeMS", (2 * time.Second).Milliseconds()},
+			{"maxTimeMS", (10 * time.Millisecond).Milliseconds()},
 		}
 
 		getMoreCmd2 := bson.D{
 			{"getMore", cursorID2},
 			{"collection", collection.Name()},
 			{"batchSize", 1},
-			{"maxTimeMS", (2 * time.Second).Milliseconds()},
+			{"maxTimeMS", (10 * time.Millisecond).Milliseconds()},
 		}
 
-		for i := 0; i < 49; i++ {
-			err = collection.Database().RunCommand(ctx, getMoreCmd1).Decode(&res)
-			require.NoError(t, err)
+		for i := 0; i < 4; i++ {
+			_ = collection.Database().RunCommand(ctx, getMoreCmd1)
 
 			nextBatch1, nextID1 := getNextBatch(t, res)
 

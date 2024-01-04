@@ -295,6 +295,7 @@ func (h *Handler) awaitData(ctx context.Context, params *awaitDataParams) (resBa
 
 	resBatch = types.MakeArray(0)
 	closer := iterator.NewMultiCloser()
+	defer closer.Close()
 
 	sleepDur := time.Duration(params.maxTimeMS) * time.Millisecond
 	ctx, cancel := context.WithTimeout(ctx, sleepDur)
@@ -302,6 +303,10 @@ func (h *Handler) awaitData(ctx context.Context, params *awaitDataParams) (resBa
 	defer func() {
 		c.Close()
 		cancel()
+
+		if resBatch == nil {
+			resBatch = types.MakeArray(0)
+		}
 
 		if err == nil {
 			return
@@ -313,7 +318,6 @@ func (h *Handler) awaitData(ctx context.Context, params *awaitDataParams) (resBa
 		}
 
 		err = lazyerrors.Error(err)
-		resBatch = types.MakeArray(0)
 	}()
 
 	for {
