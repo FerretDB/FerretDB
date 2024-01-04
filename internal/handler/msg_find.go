@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"slices"
-	"sync/atomic"
 	"time"
 
 	"go.uber.org/zap"
@@ -31,7 +30,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -104,18 +102,19 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	cancel := func() {}
-	var findDone atomic.Bool
+
+	timeout := time.NewTicker(time.Duration(params.MaxTimeMS) * time.Millisecond)
+	findDone := make(chan struct{})
 
 	if params.MaxTimeMS != 0 {
 		ctx, cancel = context.WithCancel(ctx)
 		go func() {
-			ctxutil.Sleep(ctx, time.Duration(params.MaxTimeMS)*time.Millisecond)
-
-			if findDone.Load() {
+			select {
+			case <-timeout.C:
+				cancel()
+			case <-findDone:
 				return
 			}
-
-			cancel()
 		}()
 	}
 
@@ -186,7 +185,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		firstBatch.Append(doc)
 	}
 
-	findDone.Store(true)
+	findDone <- struct{}{}
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
