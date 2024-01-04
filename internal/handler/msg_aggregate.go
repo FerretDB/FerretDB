@@ -22,6 +22,7 @@ import (
 	"math"
 	"os"
 	"slices"
+	"sync/atomic"
 	"time"
 
 	"go.uber.org/zap"
@@ -35,6 +36,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -250,10 +252,19 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	cancel := func() {}
+	var findDone atomic.Bool
+
 	if maxTimeMS != 0 {
-		// It is not clear if maxTimeMS affects only aggregate, or both aggregate and getMore (as the current code does).
-		// TODO https://github.com/FerretDB/FerretDB/issues/2983
-		ctx, cancel = context.WithTimeout(ctx, time.Duration(maxTimeMS)*time.Millisecond)
+		ctx, cancel = context.WithCancel(ctx)
+		go func() {
+			ctxutil.Sleep(ctx, time.Duration(maxTimeMS)*time.Millisecond)
+
+			if findDone.Load() {
+				return
+			}
+
+			cancel()
+		}()
 	}
 
 	closer := iterator.NewMultiCloser(iterator.CloserFunc(cancel))
@@ -371,6 +382,8 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 		cursor.Close()
 	}
+
+	findDone.Store(true)
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{

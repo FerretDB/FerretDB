@@ -104,7 +104,6 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	cancel := func() {}
-
 	var findDone atomic.Bool
 
 	if params.MaxTimeMS != 0 {
