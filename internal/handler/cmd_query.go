@@ -38,7 +38,7 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 
 	var response string
 
-	var sconv = &scramutil.ScramConversation{}
+	var sconv *scramutil.ScramConversation
 
 	// to reduce connection overhead time, clients may use a hello command to complete their authentication exchange
 	// if so, the saslStart command may be embedded under the speculativeAuthenticate field
@@ -49,13 +49,14 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 		v, _ := doc.Get("speculativeAuthenticate")
 		d := v.(*types.Document)
 		payload, _ := d.Get("payload")
+
+		response, sconv, err = saslStartSCRAM(d)
+		must.NoError(err)
+
 		mechanism, err := d.Get("mechanism")
 		must.NoError(err)
 
 		sconv.Mechanism = mechanism.(string)
-
-		response, sconv, err = saslStartSCRAM(d)
-		must.NoError(err)
 
 		conninfo.Get(ctx).SetConv(sconv)
 		conninfo.Get(ctx).SetAuth(sconv.Conv.Username(), "password") // hack

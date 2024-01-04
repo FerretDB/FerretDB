@@ -76,12 +76,6 @@ func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.O
 		doc = v
 	}
 
-	// FIXME
-	h.L.Debug(
-		"saslContinue",
-		zap.String("Mechanism", sconv.Mechanism),
-	)
-
 	scramCredentials, err := doc.GetByPath(
 		types.Path{}.Append("credentials").Append(sconv.Mechanism),
 	)
