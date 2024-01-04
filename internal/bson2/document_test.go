@@ -412,9 +412,9 @@ func FuzzDocument(f *testing.F) {
 			}
 
 			// remove extra tail
-			b = b[:len(b)-bufr.Buffered()-br.Len()]
+			cb := b[:len(b)-bufr.Buffered()-br.Len()]
 
-			doc2, err2 := DecodeDocument(b)
+			doc2, err2 := DecodeDocument(cb)
 			require.NoError(t, err2)
 
 			d1, err := types.ConvertDocument(&doc1)
