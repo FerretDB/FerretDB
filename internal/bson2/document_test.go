@@ -156,6 +156,36 @@ var (
 		b: testutil.MustParseDumpFile("testdata", "handshake4.hex"),
 	}
 
+	all = testCase{
+		name: "all",
+		doc: must.NotFail(types.NewDocument(
+			"array", must.NotFail(types.NewArray(
+				must.NotFail(types.NewArray("")),
+				must.NotFail(types.NewArray("foo")),
+			)),
+			"binary", must.NotFail(types.NewArray(
+				types.Binary{Subtype: types.BinaryUser, B: []byte{0x42}},
+				types.Binary{Subtype: types.BinaryGeneric, B: []byte{}},
+			)),
+			"bool", must.NotFail(types.NewArray(true, false)),
+			"datetime", must.NotFail(types.NewArray(
+				time.Date(2021, 7, 27, 9, 35, 42, 123000000, time.UTC).Local(),
+				time.Time{}.Local(),
+			)),
+			"document", must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument("foo", "")),
+				must.NotFail(types.NewDocument("", "foo")),
+			)),
+			"double", must.NotFail(types.NewArray(42.13, 0.0)),
+			"int32", must.NotFail(types.NewArray(int32(42), int32(0))),
+			"int64", must.NotFail(types.NewArray(int64(42), int64(0))),
+			"objectID", must.NotFail(types.NewArray(types.ObjectID{0x42}, types.ObjectID{})),
+			"string", must.NotFail(types.NewArray("foo", "")),
+			"timestamp", must.NotFail(types.NewArray(types.Timestamp(42), types.Timestamp(0))),
+		)),
+		b: testutil.MustParseDumpFile("testdata", "all.hex"),
+	}
+
 	eof = testCase{
 		name:      "EOF",
 		b:         []byte{0x00},
@@ -201,9 +231,6 @@ var (
 
 	shortArray = testCase{
 		name: "shortArray",
-		doc: must.NotFail(types.NewDocument(
-			"foo", must.NotFail(types.NewArray()),
-		)),
 		b: []byte{
 			0x0f, 0x00, 0x00, 0x00, // document length
 			0x04, 0x66, 0x6f, 0x6f, 0x00, // subarray "foo"
@@ -211,36 +238,6 @@ var (
 			0x00, // end of document
 		},
 		decodeErr: ErrDecodeShortInput,
-	}
-
-	all = testCase{
-		name: "all",
-		doc: must.NotFail(types.NewDocument(
-			"array", must.NotFail(types.NewArray(
-				must.NotFail(types.NewArray("")),
-				must.NotFail(types.NewArray("foo")),
-			)),
-			"binary", must.NotFail(types.NewArray(
-				types.Binary{Subtype: types.BinaryUser, B: []byte{0x42}},
-				types.Binary{Subtype: types.BinaryGeneric, B: []byte{}},
-			)),
-			"bool", must.NotFail(types.NewArray(true, false)),
-			"datetime", must.NotFail(types.NewArray(
-				time.Date(2021, 7, 27, 9, 35, 42, 123000000, time.UTC).Local(),
-				time.Time{}.Local(),
-			)),
-			"document", must.NotFail(types.NewArray(
-				must.NotFail(types.NewDocument("foo", "")),
-				must.NotFail(types.NewDocument("", "foo")),
-			)),
-			"double", must.NotFail(types.NewArray(42.13, 0.0)),
-			"int32", must.NotFail(types.NewArray(int32(42), int32(0))),
-			"int64", must.NotFail(types.NewArray(int64(42), int64(0))),
-			"objectID", must.NotFail(types.NewArray(types.ObjectID{0x42}, types.ObjectID{})),
-			"string", must.NotFail(types.NewArray("foo", "")),
-			"timestamp", must.NotFail(types.NewArray(types.Timestamp(42), types.Timestamp(0))),
-		)),
-		b: testutil.MustParseDumpFile("testdata", "all.hex"),
 	}
 
 	duplicateKeys = testCase{
@@ -257,16 +254,62 @@ var (
 		},
 	}
 
+	fuzz1 = testCase{
+		name:      "fuzz1-3f48641130f5c5c9",
+		b:         []byte("\x0f\x00\x00\x00\x04000000000\x00"),
+		decodeErr: ErrDecodeShortInput,
+	}
+
+	fuzz2 = testCase{
+		name: "fuzz2-702a93bb4d6e1425",
+		b: []byte{
+			0x4d, 0x01, 0x00, 0x00, // document length
+			0x08,                                                 // bool
+			0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x00, // "00000000"
+			0x01,                   // true
+			0x03,                   // nested document
+			0x30, 0x30, 0x30, 0x30, // nested document length
+			0x30, 0x30, 0x00, // "00"
+			0x26, 0x01, 0x00, 0x00, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30,
+			0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30,
+			0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30,
+			0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30,
+			0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30,
+			0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30,
+			0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30,
+			0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30,
+			0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30,
+			0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30,
+			0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30,
+			0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30,
+			0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30,
+			0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30,
+			0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30,
+			0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30,
+			0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x08, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30,
+			0x30, 0x00, 0x00, 0x00,
+		},
+		decodeErr: ErrDecodeShortInput,
+	}
+
 	documentTestCases = []testCase{
-		handshake1, handshake2, handshake3, handshake4,
-		eof, smallDoc, shortDoc, smallArray, shortArray, all, duplicateKeys,
+		handshake1, handshake2, handshake3, handshake4, all,
+		eof, smallDoc, shortDoc, smallArray, shortArray, duplicateKeys,
+		fuzz1, fuzz2,
 	}
 )
 
 func TestDocument(t *testing.T) {
 	for _, tc := range documentTestCases {
 		tc := tc
+
 		t.Run(tc.name, func(t *testing.T) {
+			if tc.doc == nil {
+				require.NotNil(t, tc.decodeErr)
+			} else {
+				require.Nil(t, tc.decodeErr)
+			}
+
 			t.Run("Encode", func(t *testing.T) {
 				if tc.decodeErr != nil {
 					t.Skip()
@@ -315,6 +358,7 @@ func TestDocument(t *testing.T) {
 					doc, err := DecodeDocument(tc.b)
 
 					if tc.decodeErr != nil {
+						require.Error(t, err, "b:\n\n%s\n%#v", hex.Dump(tc.b), tc.b)
 						require.ErrorIs(t, err, tc.decodeErr)
 						return
 					}
@@ -348,6 +392,36 @@ func FuzzDocument(f *testing.F) {
 			actual, err := encodeDocument(doc)
 			require.NoError(t, err)
 			assert.Equal(t, b, actual, "actual:\n%s", hex.Dump(actual))
+		})
+
+		t.Run("cross", func(t *testing.T) {
+			t.Parallel()
+
+			br := bytes.NewReader(b)
+			bufr := bufio.NewReader(br)
+
+			var doc1 bson.Document
+			err1 := doc1.ReadFrom(bufr)
+
+			if err1 != nil {
+				_, err2 := DecodeDocument(b)
+				require.Error(t, err2, "bson1 err = %v", err1)
+				return
+			}
+
+			// remove extra tail
+			b = b[:len(b)-bufr.Buffered()-br.Len()]
+
+			doc2, err2 := DecodeDocument(b)
+			require.NoError(t, err2)
+
+			d1, err := types.ConvertDocument(&doc1)
+			require.NoError(t, err)
+
+			d2, err := doc2.Convert()
+			require.NoError(t, err)
+
+			testutil.AssertEqual(t, d1, d2)
 		})
 	})
 }
