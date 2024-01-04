@@ -114,7 +114,11 @@ func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllPa
 
 		for i, doc := range params.Docs {
 			d := &document{
-				o:  doc,
+				o: must.NotFail(types.NewDocument(
+					"$v", int32(1),
+					"$set", doc,
+				)),
+				o2: must.NotFail(types.NewDocument("_id", must.NotFail(doc.Get("_id")))),
 				ns: c.dbName + "." + c.name,
 				op: "u",
 			}
