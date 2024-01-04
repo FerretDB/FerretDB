@@ -55,28 +55,28 @@ func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	users, err := adminDB.Collection("system.users")
 	must.NoError(err)
 
-	q, err := users.Query(ctx, &backends.QueryParams{
+	qr, err := users.Query(ctx, &backends.QueryParams{
 		Filter: must.NotFail(types.NewDocument(
 			"user", sconv.Conv.Username(),
 		)),
-		Limit: int64(1), // assume there's only 'test.username' user for now
+		Limit: int64(1), // assume there's only one 'test.username' user for now
 	})
 	must.NoError(err)
 
-	var doc *types.Document
+	document = &types.Document{}
 
-	defer q.Iter.Close()
+	defer qr.Iter.Close()
 
 	for {
-		_, v, err := q.Iter.Next()
+		_, doc, err := qr.Iter.Next()
 		if errors.Is(err, iterator.ErrIteratorDone) {
 			break
 		}
 
-		doc = v
+		document = doc
 	}
 
-	scramCredentials, err := doc.GetByPath(
+	scramCredentials, err := document.GetByPath(
 		types.Path{}.Append("credentials").Append(sconv.Mechanism),
 	)
 
@@ -84,7 +84,7 @@ func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.O
 		return nil, handlererrors.NewCommandErrorMsgWithArgument(
 			handlererrors.ErrMechanismUnavailable,
 			fmt.Sprintf("Unable to use %s based authentication for user without any %s credentials registered", sconv.Mechanism, sconv.Mechanism),
-			sconv.Conv.Username(),
+			sconv.Mechanism,
 		)
 	}
 
