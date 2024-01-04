@@ -54,7 +54,7 @@ import (
 var cli struct {
 	Version     bool   `default:"false"           help:"Print version to stdout and exit." env:"-"`
 	Handler     string `default:"postgresql"      help:"${help_handler}"`
-	Mode        string `default:"${default_mode}" help:"${help_mode}" enum:"${enum_mode}"`
+	Mode        string `default:"${default_mode}" help:"${help_mode}"                      enum:"${enum_mode}"`
 	StateDir    string `default:"."               help:"Process state directory."`
 	ReplSetName string `default:""                help:"Replica set name."`
 
@@ -390,7 +390,7 @@ func run() {
 		Logger:        logger,
 		ConnMetrics:   metrics.ConnMetrics,
 		StateProvider: stateProvider,
-		Host:          cli.Listen.Addr,
+		TCPHost:       cli.Listen.Addr,
 		ReplSetName:   cli.ReplSetName,
 
 		PostgreSQLURL: postgreSQLFlags.PostgreSQLURL,

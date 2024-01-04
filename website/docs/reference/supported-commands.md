@@ -265,6 +265,12 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/78).
 |                            | `writeConcern`               | ⚠️     |                                                           |
 |                            | `comment`                    | ⚠️     |                                                           |
 
+### Replication Commands
+
+| Command           | Argument | Status | Comments                                                  |
+| ----------------- | -------- | ------ | --------------------------------------------------------- |
+| `replSetInitiate` |          | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/3936) |
+
 ## Session Commands
 
 Related [issue](https://github.com/FerretDB/FerretDB/issues/8).

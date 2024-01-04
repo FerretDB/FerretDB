@@ -44,7 +44,7 @@ type NewHandlerOpts struct {
 	Logger        *zap.Logger
 	ConnMetrics   *connmetrics.ConnMetrics
 	StateProvider *state.Provider
-	Host          string
+	TCPHost       string
 	ReplSetName   string
 
 	// for `postgresql` handler

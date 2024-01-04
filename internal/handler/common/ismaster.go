@@ -26,22 +26,22 @@ import (
 )
 
 // IsMaster is a common implementation of the isMaster command used by deprecated OP_QUERY message.
-func IsMaster(ctx context.Context, query *types.Document, host, name string) (*wire.OpReply, error) {
+func IsMaster(ctx context.Context, query *types.Document, tcpHost, name string) (*wire.OpReply, error) {
 	if err := CheckClientMetadata(ctx, query); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	return &wire.OpReply{
 		NumberReturned: 1,
-		Documents:      IsMasterDocuments(host, name),
+		Documents:      IsMasterDocuments(tcpHost, name),
 	}, nil
 }
 
 // IsMasterDocuments returns isMaster's Documents field (identical for both OP_MSG and OP_QUERY).
-func IsMasterDocuments(host, name string) []*types.Document {
+func IsMasterDocuments(tcpHost, name string) []*types.Document {
 	doc := must.NotFail(types.NewDocument(
-		// topologyVersion
 		"ismaster", true, // only lowercase
+		// topologyVersion
 		"maxBsonObjectSize", int32(types.MaxDocumentLen),
 		"maxMessageSizeBytes", int32(wire.MaxMsgLen),
 		"maxWriteBatchSize", int32(100000),
@@ -55,12 +55,15 @@ func IsMasterDocuments(host, name string) []*types.Document {
 	))
 
 	if name != "" {
-		if strings.HasPrefix(host, ":") {
-			host = "localhost" + host
+		// That does not work for TLS-only setups, IPv6 addresses, etc.
+		// The proper solution is to support `replSetInitiate` command.
+		// TODO https://github.com/FerretDB/FerretDB/issues/3936
+		if strings.HasPrefix(tcpHost, ":") {
+			tcpHost = "localhost" + tcpHost
 		}
 
 		doc.Set("setName", name)
-		doc.Set("hosts", must.NotFail(types.NewArray(host)))
+		doc.Set("hosts", must.NotFail(types.NewArray(tcpHost)))
 	}
 
 	return []*types.Document{doc}

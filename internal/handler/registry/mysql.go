@@ -33,7 +33,7 @@ func init() {
 
 		handlerOpts := &handler.NewOpts{
 			Backend:     b,
-			Host:        opts.Host,
+			TCPHost:     opts.TCPHost,
 			ReplSetName: opts.ReplSetName,
 
 			L:             opts.Logger.Named("mysql"),
