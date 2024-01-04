@@ -293,6 +293,7 @@ func (h *Handler) awaitData(ctx context.Context, params *awaitDataParams) (resBa
 	c := params.cursor
 	data := c.Data.(*findCursorData)
 
+	resBatch = types.MakeArray(0)
 	closer := iterator.NewMultiCloser()
 
 	sleepDur := time.Duration(params.maxTimeMS) * time.Millisecond
