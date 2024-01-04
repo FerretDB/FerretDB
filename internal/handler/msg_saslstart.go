@@ -190,7 +190,7 @@ func saslStartSCRAM(doc *types.Document) (string, *scramutil.ScramConversation, 
 	cl := scram.CredentialLookup(func(s string) (scram.StoredCredentials, error) {
 		kf := scram.KeyFactors{
 			Salt:  salt,
-			Iters: 15000,
+			Iters: scramutil.IterationCount,
 		}
 
 		return scram.StoredCredentials{
