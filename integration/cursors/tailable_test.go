@@ -347,7 +347,7 @@ func TestCursorsTailableFirstBatchMaxTimeMS(t *testing.T) {
 			{"find", collection.Name()},
 			{"batchSize", 1},
 			{"tailable", true},
-			{"maxTimeMS", 2000},
+			{"maxTimeMS", 200},
 		}
 
 		var res bson.D
@@ -370,7 +370,7 @@ func TestCursorsTailableFirstBatchMaxTimeMS(t *testing.T) {
 
 	t.Run("GetMore", func(t *testing.T) {
 		for i := 0; i < 2; i++ {
-			time.Sleep(1 * time.Second)
+			time.Sleep(100 * time.Millisecond)
 			var res bson.D
 			err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
 			require.NoError(t, err)
@@ -386,7 +386,7 @@ func TestCursorsTailableFirstBatchMaxTimeMS(t *testing.T) {
 	})
 
 	t.Run("GetMoreEmpty", func(t *testing.T) {
-		time.Sleep(1 * time.Second)
+		time.Sleep(100 * time.Millisecond)
 		var res bson.D
 		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
 		require.NoError(t, err)

@@ -73,7 +73,7 @@ func TestCursorsTailableAwaitDataGetMoreMaxTimeMS(t *testing.T) {
 	insertChan := make(chan error)
 
 	go func() {
-		time.Sleep(1 * time.Second)
+		time.Sleep(100 * time.Millisecond)
 		_, insertErr := collection.InsertOne(ctx, bson.D{{"v", "bar"}})
 		insertChan <- insertErr
 	}()
@@ -433,7 +433,7 @@ func TestCursorsAwaitDataFirstBatchMaxTimeMS(t *testing.T) {
 			{"batchSize", 1},
 			{"tailable", true},
 			{"awaitData", true},
-			{"maxTimeMS", 2000},
+			{"maxTimeMS", 200},
 		}
 
 		var res bson.D
@@ -456,7 +456,7 @@ func TestCursorsAwaitDataFirstBatchMaxTimeMS(t *testing.T) {
 
 	t.Run("GetMore", func(t *testing.T) {
 		for i := 0; i < 2; i++ {
-			time.Sleep(1 * time.Second)
+			time.Sleep(100 * time.Millisecond)
 			var res bson.D
 			err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
 			require.NoError(t, err)
@@ -472,7 +472,7 @@ func TestCursorsAwaitDataFirstBatchMaxTimeMS(t *testing.T) {
 	})
 
 	t.Run("GetMoreEmpty", func(t *testing.T) {
-		time.Sleep(1 * time.Second)
+		time.Sleep(150 * time.Millisecond)
 		var res bson.D
 		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
 		require.NoError(t, err)
