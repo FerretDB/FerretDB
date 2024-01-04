@@ -15,7 +15,9 @@
 package postgresql
 
 import (
+	"cmp"
 	"context"
+	"slices"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
@@ -126,16 +128,31 @@ func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDataba
 		return nil, err
 	}
 
-	res := &backends.ListDatabasesResult{
-		Databases: make([]backends.DatabaseInfo, len(list)),
-	}
+	var res *backends.ListDatabasesResult
 
-	for i, dbName := range list {
-		res.Databases[i] = backends.DatabaseInfo{
-			Name: dbName,
+	if params != nil && len(params.Name) > 0 {
+		i, found := slices.BinarySearchFunc(list, params.Name, func(dbName, t string) int {
+			return cmp.Compare(dbName, t)
+		})
+
+		var filteredList []string
+
+		if found {
+			filteredList = append(filteredList, list[i])
 		}
+
+		list = filteredList
 	}
 
+	res = &backends.ListDatabasesResult{
+		Databases: make([]backends.DatabaseInfo, 0, len(list)),
+	}
+
+	for _, dbName := range list {
+		res.Databases = append(res.Databases, backends.DatabaseInfo{
+			Name: dbName,
+		})
+	}
 	return res, nil
 }
 
