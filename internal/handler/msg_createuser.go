@@ -124,11 +124,11 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 		}
 	}
 
-	pwd, err := document.Get("pwd")
+	password, err := document.Get("pwd")
 	must.NoError(err)
 
 	// ignore the authzID
-	scramClient, err := scram.SHA256.NewClient(username, pwd.(string), "")
+	scramClient, err := scram.SHA256.NewClient(username, password.(string), "")
 	must.NoError(err)
 
 	// XXX local authorization stores users and their respective roles in the database
