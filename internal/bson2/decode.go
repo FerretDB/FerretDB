@@ -34,9 +34,11 @@ func DecodeDocument(b []byte) (*Document, error) {
 	if bl < 5 {
 		return nil, lazyerrors.Errorf("len(b) = %d: %w", bl, ErrDecodeShortInput)
 	}
+
 	if dl := int(binary.LittleEndian.Uint32(b)); bl != dl {
 		return nil, lazyerrors.Errorf("len(b) = %d, document length = %d: %w", bl, dl, ErrDecodeInvalidInput)
 	}
+
 	if last := b[bl-1]; last != 0 {
 		return nil, lazyerrors.Errorf("last = %d: %w", last, ErrDecodeInvalidInput)
 	}
@@ -64,6 +66,7 @@ func DecodeDocument(b []byte) (*Document, error) {
 		offset += len(name) + 1
 
 		var v any
+
 		switch t {
 		case tagFloat64:
 			v, err = bsonproto.DecodeFloat64(b[offset:])
@@ -76,13 +79,13 @@ func DecodeDocument(b []byte) (*Document, error) {
 			v = s
 
 		case tagDocument:
-			if err := decodeCheckOffset(b, offset, 4); err != nil {
+			if err = decodeCheckOffset(b, offset, 4); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
 
 			l := int(binary.LittleEndian.Uint32(b[offset:]))
 
-			if err := decodeCheckOffset(b, offset, l); err != nil {
+			if err = decodeCheckOffset(b, offset, l); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
 
@@ -90,13 +93,13 @@ func DecodeDocument(b []byte) (*Document, error) {
 			offset += l
 
 		case tagArray:
-			if err := decodeCheckOffset(b, offset, 4); err != nil {
+			if err = decodeCheckOffset(b, offset, 4); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
 
 			l := int(binary.LittleEndian.Uint32(b[offset:]))
 
-			if err := decodeCheckOffset(b, offset, l); err != nil {
+			if err = decodeCheckOffset(b, offset, l); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
 

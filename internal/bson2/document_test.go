@@ -32,6 +32,8 @@ import (
 )
 
 // testCase represents a single test case.
+//
+//nolint:vet // for readability
 type testCase struct {
 	name      string
 	doc       *types.Document

@@ -90,8 +90,9 @@ func ConvertDocument(doc *types.Document) (*Document, error) {
 		k, v, err := iter.Next()
 		if err != nil {
 			if errors.Is(err, iterator.ErrIteratorDone) {
-				res, err := NewDocument(pairs...)
-				if err != nil {
+				var res *Document
+
+				if res, err = NewDocument(pairs...); err != nil {
 					return nil, lazyerrors.Error(err)
 				}
 

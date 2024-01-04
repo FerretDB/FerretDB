@@ -134,6 +134,7 @@ func convertToTypes(v any) (any, error) {
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
+
 		return doc, nil
 
 	case RawDocument:
@@ -141,10 +142,12 @@ func convertToTypes(v any) (any, error) {
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
+
 		doc, err := d.Convert()
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
+
 		return doc, nil
 
 	case *Array:
@@ -152,6 +155,7 @@ func convertToTypes(v any) (any, error) {
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
+
 		return arr, nil
 
 	case RawArray:
@@ -159,10 +163,12 @@ func convertToTypes(v any) (any, error) {
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
+
 		arr, err := a.Convert()
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
+
 		return arr, nil
 
 	case float64:
@@ -210,6 +216,7 @@ func convertFromTypes(v any) (any, error) {
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
+
 		return doc, nil
 
 	case *types.Array:
@@ -217,6 +224,7 @@ func convertFromTypes(v any) (any, error) {
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
+
 		return arr, nil
 
 	case float64:

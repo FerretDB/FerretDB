@@ -82,6 +82,7 @@ func encodeField(buf *bytes.Buffer, name string, v any) error {
 
 		b := make([]byte, bsonproto.SizeCString(name))
 		bsonproto.EncodeCString(b, name)
+
 		if _, err := buf.Write(b); err != nil {
 			return lazyerrors.Error(err)
 		}
@@ -90,6 +91,7 @@ func encodeField(buf *bytes.Buffer, name string, v any) error {
 		if err != nil {
 			return lazyerrors.Error(err)
 		}
+
 		if _, err := buf.Write(b); err != nil {
 			return lazyerrors.Error(err)
 		}
@@ -101,6 +103,7 @@ func encodeField(buf *bytes.Buffer, name string, v any) error {
 
 		b := make([]byte, bsonproto.SizeCString(name))
 		bsonproto.EncodeCString(b, name)
+
 		if _, err := buf.Write(b); err != nil {
 			return lazyerrors.Error(err)
 		}
@@ -116,6 +119,7 @@ func encodeField(buf *bytes.Buffer, name string, v any) error {
 
 		b := make([]byte, bsonproto.SizeCString(name))
 		bsonproto.EncodeCString(b, name)
+
 		if _, err := buf.Write(b); err != nil {
 			return lazyerrors.Error(err)
 		}
@@ -124,6 +128,7 @@ func encodeField(buf *bytes.Buffer, name string, v any) error {
 		if err != nil {
 			return lazyerrors.Error(err)
 		}
+
 		if _, err := buf.Write(b); err != nil {
 			return lazyerrors.Error(err)
 		}
@@ -135,6 +140,7 @@ func encodeField(buf *bytes.Buffer, name string, v any) error {
 
 		b := make([]byte, bsonproto.SizeCString(name))
 		bsonproto.EncodeCString(b, name)
+
 		if _, err := buf.Write(b); err != nil {
 			return lazyerrors.Error(err)
 		}
@@ -183,12 +189,14 @@ func encodeScalarField(buf *bytes.Buffer, name string, v any) error {
 
 	b := make([]byte, bsonproto.SizeCString(name))
 	bsonproto.EncodeCString(b, name)
+
 	if _, err := buf.Write(b); err != nil {
 		return lazyerrors.Error(err)
 	}
 
 	b = make([]byte, bsonproto.SizeAny(v))
 	bsonproto.EncodeAny(b, v)
+
 	if _, err := buf.Write(b); err != nil {
 		return lazyerrors.Error(err)
 	}
