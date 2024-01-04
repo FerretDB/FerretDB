@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/xdg-go/scram"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
@@ -107,7 +108,33 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 		return nil, err
 	}
 
-	common.Ignored(document, h.L, "pwd", "writeConcern", "authenticationRestrictions", "mechanisms", "comment")
+	common.Ignored(document, h.L, "pwd", "writeConcern", "authenticationRestrictions", "comment")
+
+	mechanisms, err := document.Get("mechanisms")
+	must.NoError(err)
+
+	supportedMechanisms := map[string]struct{}{
+		"PLAIN":         {},
+		"SCRAM-SHA-256": {},
+	}
+
+	for _, mechanism := range mechanisms.([]string) {
+		if _, ok := supportedMechanisms[mechanism]; !ok {
+			return nil, lazyerrors.Errorf("unsupported mechanism %s", mechanism)
+		}
+	}
+
+	pwd, err := document.Get("pwd")
+	must.NoError(err)
+
+	// ignore the authzID
+	scramClient, err := scram.SHA256.NewClient(username, pwd.(string), "")
+	must.NoError(err)
+
+	// XXX local authorization stores users and their respective roles in the database
+	// we most likely need to generate the SHA-1 and SHA-256 credentials using our own implementation
+	// instead of relying on an authentication exchange
+	_ = scramClient
 
 	id := uuid.New()
 	saved := must.NotFail(types.NewDocument(

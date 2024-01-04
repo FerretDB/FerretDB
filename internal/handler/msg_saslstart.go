@@ -200,10 +200,10 @@ func saslStartSCRAM(doc *types.Document) (string, *scramutil.ScramConversation, 
 		}, nil
 	})
 
-	ss, err := scram.SHA256.NewServer(cl)
+	scramServer, err := scram.SHA256.NewServer(cl)
 	must.NoError(err)
 
-	conv := ss.NewConversation()
+	conv := scramServer.NewConversation()
 	response, err = conv.Step(string(payload))
 	must.NoError(err)
 
