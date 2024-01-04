@@ -24,6 +24,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	scramutil "github.com/FerretDB/FerretDB/internal/util/scram"
 	"github.com/FerretDB/FerretDB/internal/wire"
 	"go.uber.org/zap"
 )
@@ -37,7 +38,7 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 
 	var response string
 
-	var sconv *types.ScramConv
+	var sconv *scramutil.ScramConveration
 
 	// to reduce connection overhead time, clients may use a hello command to complete their authentication exchange
 	// if so, the saslStart command may be embedded under the speculativeAuthenticate field
@@ -53,10 +54,10 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 		must.NoError(err)
 
 		conninfo.Get(ctx).SetConv(sconv)
-		conninfo.Get(ctx).SetAuth(sconv.Conv.Username(), "password")
+		conninfo.Get(ctx).SetAuth(sconv.Conv.Username(), "password") // hack
 
 		h.L.Debug(
-			"OP_QUERY speculativeAuthenticate",
+			"OP_QUERY",
 			zap.String("command", cmd),
 			zap.Any("payload", payload),
 			zap.String("response", response),

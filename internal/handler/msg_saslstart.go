@@ -29,6 +29,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 	"github.com/xdg-go/scram"
 	"go.uber.org/zap"
+
+	scramutil "github.com/FerretDB/FerretDB/internal/util/scram"
 )
 
 // MsgSASLStart implements `saslStart` command.
@@ -58,7 +60,7 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	var response string
 
-	var sconv *types.ScramConv
+	var sconv *scramutil.ScramConveration
 
 	plain := true
 
@@ -173,32 +175,7 @@ func saslStartPlain(doc *types.Document) (string, string, error) {
 	return string(authcid), string(passwd), nil
 }
 
-func saslStartSCRAM(doc *types.Document) (string, *types.ScramConv, error) {
-	// TODO store the SCRAM-SHA-1 and SCRAM-SHA-256 credentials in the 'admin.system.users' namespace
-	// when a user is initially created
-	// credentials: {
-	//   'PLAIN': {
-	//     algo: 'argon2id',
-	//     t: int32(3),
-	//     p: int32(4),
-	//     m: int32(65536),
-	//     hash: types.Binary{…},
-	//     salt: types.Binary{…},
-	//   },
-	//   'SCRAM-SHA-1': {
-	//     iterationCount: 10000,
-	//     salt: 'HABkWd1LV6tLbXNsqrXc5w==',
-	//     storedKey: 'BkeR3SlFOm3xxER4qtGDgFu4imw=',
-	//     serverKey: 'WNDA6r92qAKZvMr0J6mbxRJGuQo='
-	//   },
-	//   'SCRAM-SHA-256': {
-	//     iterationCount: 15000,
-	//     salt: '7jW5ZOczj05P4wyNc21OikIuSliPN9rw4sEoGQ==',
-	//     storedKey: 'F8hTLrnZscuuszfrh+4nupyjPA40cp+gfzy1Hsc3O3c=',
-	//     serverKey: 'd4P+d81D31XHwvfQA3jwgTmkivZfXTD/nBASm77Dwv0='
-	//   }
-	// }
-
+func saslStartSCRAM(doc *types.Document) (string, *scramutil.ScramConveration, error) {
 	var payload []byte
 
 	binaryPayload, err := common.GetRequiredParam[types.Binary](doc, "payload")
@@ -206,24 +183,20 @@ func saslStartSCRAM(doc *types.Document) (string, *types.ScramConv, error) {
 		payload = binaryPayload.B
 	}
 
-	var (
-		salt      = []byte{238, 53, 185, 100, 231, 51, 143, 78, 79, 227, 12, 141, 115, 109, 78, 138, 66, 46, 74, 88, 143, 55, 218, 240, 226, 193, 40, 25}
-		storedKey = []byte{23, 200, 83, 46, 185, 217, 177, 203, 174, 179, 55, 235, 135, 238, 39, 186, 156, 163, 60, 14, 52, 114, 159, 160, 127, 60, 181, 30, 199, 55, 59, 119}
-		serverKey = []byte{119, 131, 254, 119, 205, 67, 223, 85, 199, 194, 247, 208, 3, 120, 240, 129, 57, 164, 138, 246, 95, 93, 48, 255, 156, 16, 18, 155, 190, 195, 194, 253}
-	)
-
 	var response string
+
+	salt := scramutil.GenerateNonce()
 
 	cl := scram.CredentialLookup(func(s string) (scram.StoredCredentials, error) {
 		kf := scram.KeyFactors{
-			Salt:  string(salt),
+			Salt:  salt,
 			Iters: 15000,
 		}
 
 		return scram.StoredCredentials{
 			KeyFactors: kf,
-			StoredKey:  storedKey,
-			ServerKey:  serverKey,
+			StoredKey:  nil,
+			ServerKey:  nil,
 		}, nil
 	})
 
@@ -234,10 +207,13 @@ func saslStartSCRAM(doc *types.Document) (string, *types.ScramConv, error) {
 	response, err = conv.Step(string(payload))
 	must.NoError(err)
 
-	sconv := &types.ScramConv{
+	// ClientKey       := HMAC(SaltedPassword, "Client Key")
+	// StoredKey       := H(ClientKey)
+	// ServerKey       := HMAC(SaltedPassword, "Server Key")
+	sconv := &scramutil.ScramConveration{
 		Salt:      salt,
-		StoredKey: storedKey,
-		ServerKey: serverKey,
+		StoredKey: nil,
+		ServerKey: nil,
 		Conv:      conv,
 	}
 

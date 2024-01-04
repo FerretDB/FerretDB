@@ -12,15 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package types
+package util
 
 import (
+	"crypto/rand"
+	"encoding/base64"
+
 	"github.com/xdg-go/scram"
 )
 
-type ScramConv struct {
-	Salt      []byte
+const IterationCount = 15000
+
+type ScramConveration struct {
+	Salt      string
 	StoredKey []byte
 	ServerKey []byte
 	Conv      *scram.ServerConversation
+}
+
+func GenerateNonce() string {
+	b := make([]byte, 24)
+	rand.Read(b)
+	nonce := make([]byte, base64.StdEncoding.EncodedLen(len(b)))
+	base64.StdEncoding.Encode(nonce, b)
+	return string(nonce)
 }
