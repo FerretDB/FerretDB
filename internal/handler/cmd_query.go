@@ -49,11 +49,11 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 		speculativeAuthenticate, err := doc.Get("speculativeAuthenticate")
 		must.NoError(err)
 
+		response, sconv, err = saslStartSCRAM(speculativeAuthenticate.(*types.Document))
+		must.NoError(err)
+
 		d := speculativeAuthenticate.(*types.Document)
 		payload, _ := d.Get("payload")
-
-		response, sconv, err = saslStartSCRAM(d)
-		must.NoError(err)
 
 		mechanism, err := d.Get("mechanism")
 		must.NoError(err)
