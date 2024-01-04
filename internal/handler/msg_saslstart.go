@@ -60,7 +60,7 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	var response string
 
-	var sconv *scramutil.ScramConveration
+	var sconv *scramutil.ScramConversation
 
 	plain := true
 
@@ -175,7 +175,7 @@ func saslStartPlain(doc *types.Document) (string, string, error) {
 	return string(authcid), string(passwd), nil
 }
 
-func saslStartSCRAM(doc *types.Document) (string, *scramutil.ScramConveration, error) {
+func saslStartSCRAM(doc *types.Document) (string, *scramutil.ScramConversation, error) {
 	var payload []byte
 
 	binaryPayload, err := common.GetRequiredParam[types.Binary](doc, "payload")
@@ -210,7 +210,7 @@ func saslStartSCRAM(doc *types.Document) (string, *scramutil.ScramConveration, e
 	// ClientKey       := HMAC(SaltedPassword, "Client Key")
 	// StoredKey       := H(ClientKey)
 	// ServerKey       := HMAC(SaltedPassword, "Server Key")
-	sconv := &scramutil.ScramConveration{
+	sconv := &scramutil.ScramConversation{
 		Salt:      salt,
 		StoredKey: nil,
 		ServerKey: nil,

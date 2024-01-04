@@ -23,7 +23,7 @@ import (
 
 const IterationCount = 15000
 
-type ScramConveration struct {
+type ScramConversation struct {
 	Salt      string
 	StoredKey []byte
 	ServerKey []byte
