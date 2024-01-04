@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"sync/atomic"
 	"time"
 
 	"go.uber.org/zap"
@@ -103,7 +104,8 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	cancel := func() {}
-	var findDone bool
+
+	var findDone atomic.Bool
 
 	if params.MaxTimeMS != 0 {
 		// It is not clear if maxTimeMS affects only find, or both find and getMore (as the current code does).
@@ -113,7 +115,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		go func() {
 			ctxutil.Sleep(ctx, time.Duration(params.MaxTimeMS)*time.Millisecond)
 
-			if findDone {
+			if findDone.Load() {
 				return
 			}
 
@@ -188,7 +190,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		firstBatch.Append(doc)
 	}
 
-	findDone = true
+	findDone.Store(true)
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
