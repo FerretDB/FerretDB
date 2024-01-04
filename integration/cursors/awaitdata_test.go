@@ -316,7 +316,7 @@ func TestCursorsTailableAwaitDataTwoCursorsSameCollection(t *testing.T) {
 	db, ctx := s.Collection.Database(), s.Ctx
 
 	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(10000)
-	err := db.CreateCollection(s.Ctx, t.Name(), opts)
+	err := db.CreateCollection(s.Ctx, testutil.CollectionName(t), opts)
 	require.NoError(t, err)
 
 	collection := db.Collection(t.Name())
@@ -410,7 +410,7 @@ func TestCursorsTailableAwaitDataTwoCursorsSameCollection(t *testing.T) {
 	assert.Equal(t, cursorID2, nextID2)
 }
 
-func TestCursorsTailableAwaitDataTwoCursorsStress(t *testing.T) {
+func TestCursorsTailableAwaitDataStress(t *testing.T) {
 	t.Parallel()
 
 	s := setup.SetupWithOpts(t, nil)
@@ -423,13 +423,13 @@ func TestCursorsTailableAwaitDataTwoCursorsStress(t *testing.T) {
 
 	teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
 		testID := count.Add(1)
-		collName := fmt.Sprintf("%s_%d", t.Name(), testID)
+		collName := fmt.Sprintf("%s_%d", testutil.CollectionName(t), testID)
 
 		ready <- struct{}{}
 		<-start
 
 		opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(10000)
-		err := db.CreateCollection(s.Ctx, collName, opts) // TODO t.Name()
+		err := db.CreateCollection(s.Ctx, collName, opts)
 
 		collection := db.Collection(collName)
 

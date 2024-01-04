@@ -304,16 +304,15 @@ func (h *Handler) awaitData(ctx context.Context, params *awaitDataParams) (resBa
 		c.Close()
 		cancel()
 
-		if resBatch == nil {
-			//		resBatch = types.MakeArray(0)
-		}
-
 		if err == nil {
 			return
 		}
 
+		// Return empty batch and no error if context timeout exceeded
 		if errors.Is(err, context.DeadlineExceeded) {
+			resBatch = types.MakeArray(0)
 			err = nil
+
 			return
 		}
 
