@@ -297,8 +297,6 @@ func (h *Handler) awaitData(ctx context.Context, params *awaitDataParams) (resBa
 	defer closer.Close()
 
 	c := params.cursor
-	closer.Add(c)
-
 	data := c.Data.(*findCursorData)
 
 	sleepDur := time.Duration(params.maxTimeMS) * time.Millisecond
