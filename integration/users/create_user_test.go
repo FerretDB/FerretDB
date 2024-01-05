@@ -79,8 +79,9 @@ func TestCreateUser(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "Unknown auth mechanism 'BAD'",
+				Message: "Unknown auth mechanism 'PLAIN'",
 			},
+			altMessage: "Unknown auth mechanism 'BAD'",
 		},
 		"MissingPwdOrExternal": {
 			payload: bson.D{
