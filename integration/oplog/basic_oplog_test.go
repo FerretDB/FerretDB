@@ -37,13 +37,9 @@ func TestOplogBasic(t *testing.T) {
 	ns := fmt.Sprintf("%s.%s", coll.Database().Name(), coll.Name())
 	opts := options.FindOne().SetSort(bson.D{{"$natural", -1}})
 
-	err := local.CreateCollection(ctx, "oplog.rs", options.CreateCollection().SetCapped(true).SetSizeInBytes(536870912))
-	if err != nil {
+	if err := local.CreateCollection(ctx, "oplog.rs", options.CreateCollection().SetCapped(true).SetSizeInBytes(536870912)); err != nil {
 		require.Contains(t, err.Error(), "local.oplog.rs already exists")
-		err = nil
 	}
-
-	require.NoError(t, err)
 
 	expectedKeys := []string{"op", "ns", "o", "ts", "v"}
 
@@ -199,4 +195,5 @@ func unsetUnusedOplogFields(d *types.Document) {
 	d.Remove("t")
 	d.Remove("wall")
 	d.Remove("prevOpTime")
+	d.Remove("_id")
 }

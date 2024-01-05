@@ -60,7 +60,7 @@ func (h *Handler) MsgUsersInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	common.Ignored(
 		document, h.L,
-		"showCustomData", "showPrivileges",
+		"showCredentials", "showCustomData", "showPrivileges",
 		"showAuthenticationRestrictions", "comment", "filter",
 	)
 
@@ -124,7 +124,6 @@ func (h *Handler) MsgUsersInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		)
 	}
 
-	// Users are saved in the "admin" database.
 	adminDB, err := h.b.Database("admin")
 	if err != nil {
 		return nil, lazyerrors.Error(err)

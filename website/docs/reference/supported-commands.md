@@ -42,7 +42,7 @@ Use ❌ for commands and arguments that are not implemented at all.
 |                 | `returnKey`                | ❌     | Unimplemented                                             |
 |                 | `showRecordId`             | ✅     |                                                           |
 |                 | `tailable`                 | ✅     |                                                           |
-|                 | `oplogReplay`              | ❌     | Unimplemented                                             |
+|                 | `oplogReplay`              | ⚠️     | Ignored                                                   |
 |                 | `noCursorTimeout`          | ❌     | Unimplemented                                             |
 |                 | `awaitData`                | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/2283) |
 |                 | `allowPartialResults`      | ❌     | Unimplemented                                             |
@@ -264,6 +264,12 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/78).
 |                            | `authenticationRestrictions` | ⚠️     |                                                           |
 |                            | `writeConcern`               | ⚠️     |                                                           |
 |                            | `comment`                    | ⚠️     |                                                           |
+
+### Replication Commands
+
+| Command           | Argument | Status | Comments                                                  |
+| ----------------- | -------- | ------ | --------------------------------------------------------- |
+| `replSetInitiate` |          | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/3936) |
 
 ## Session Commands
 

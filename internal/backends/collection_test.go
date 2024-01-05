@@ -541,3 +541,72 @@ func TestCollectionCompact(t *testing.T) {
 		})
 	}
 }
+
+func TestListCollections(t *testing.T) {
+	t.Parallel()
+
+	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
+
+	for name, b := range testBackends(t) {
+		name, b := name, b
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			// setup 1 DB with 3 collections respectively
+			dbName := "testDB"
+			collectionNames := []string{"testCollection2", "testCollection1", "testCollection3"}
+
+			testDB, err := b.Database(dbName)
+			require.NoError(t, err)
+			for _, collectionName := range collectionNames {
+				err = testDB.CreateCollection(ctx, &backends.CreateCollectionParams{Name: collectionName})
+				require.NoError(t, err)
+			}
+
+			// retrieve database details
+			dbRes, err := b.ListDatabases(ctx, &backends.ListDatabasesParams{Name: dbName})
+			require.NoError(t, err)
+			require.Equal(t, 1, len(dbRes.Databases), "expected len 1 , since only 1 db with name testDB")
+			require.Equal(t, dbName, dbRes.Databases[0].Name, "expected name testDB")
+
+			db, err := b.Database(dbRes.Databases[0].Name)
+			require.NoError(t, err)
+
+			// test ListCollections with 4 different params
+			t.Run("ListCollectionWithGivenName", func(t *testing.T) {
+				t.Parallel()
+				collRes, err := db.ListCollections(ctx, &backends.ListCollectionsParams{Name: collectionNames[2]})
+				require.NoError(t, err)
+				require.Equal(t, 1, len(collRes.Collections), "expected len 1 , with name testCollection3")
+				require.Equal(t, collectionNames[2], collRes.Collections[0].Name, "expected name testCollection3")
+			})
+
+			t.Run("ListCollectionWithDummyName", func(t *testing.T) {
+				t.Parallel()
+				collRes, err := db.ListCollections(ctx, &backends.ListCollectionsParams{Name: "dummy"})
+				require.NoError(t, err)
+				require.Equal(t, 0, len(collRes.Collections), "expected len 0 since no collection with name dummy")
+			})
+
+			t.Run("ListCollectionWithNilParams", func(t *testing.T) {
+				t.Parallel()
+				collRes, err := db.ListCollections(ctx, nil)
+				require.NoError(t, err)
+				require.Equal(t, 3, len(collRes.Collections), "expected full list len 3")
+				require.Equal(t, collectionNames[1], collRes.Collections[0].Name, "expected name testCollection1")
+				require.Equal(t, collectionNames[0], collRes.Collections[1].Name, "expected name testCollection2")
+				require.Equal(t, collectionNames[2], collRes.Collections[2].Name, "expected name testCollection3")
+			})
+
+			t.Run("ListCollectionWithEMptyParams", func(t *testing.T) {
+				t.Parallel()
+				var param backends.ListCollectionsParams
+				collRes, err := db.ListCollections(ctx, &param)
+				require.NoError(t, err)
+				require.Equal(t, 3, len(collRes.Collections), "expected full list len 3")
+				require.Equal(t, collectionNames[1], collRes.Collections[0].Name, "expected name testCollection1")
+				require.Equal(t, collectionNames[0], collRes.Collections[1].Name, "expected name testCollection2")
+				require.Equal(t, collectionNames[2], collRes.Collections[2].Name, "expected name testCollection3")
+			})
+		})
+	}
+}

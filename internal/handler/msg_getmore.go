@@ -89,8 +89,12 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		)
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/2984
 	v, _ = document.Get("maxTimeMS")
+
+	maxTimeMSPresent := v != nil
+
+	// GetOptionalParam cannot be used to set default value, as we need to return error if
+	// maxTimeMS was provided for non-awaitData cursors.
 	if v == nil {
 		v = int64(1000)
 	}
@@ -157,6 +161,14 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		)
 	}
 
+	if maxTimeMSPresent && c.Type != cursor.TailableAwait {
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrBadValue,
+			"cannot set maxTimeMS on getMore command for a non-awaitData cursor",
+			document.Command(),
+		)
+	}
+
 	v, _ = document.Get("batchSize")
 	if v == nil || types.Compare(v, int32(0)) == types.Equal {
 		// Use 16MB batchSize limit.
@@ -210,6 +222,7 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			}
 
 			closer := iterator.NewMultiCloser()
+			defer closer.Close()
 
 			iter, err := h.makeFindIter(queryRes.Iter, closer, data.findParams)
 			if err != nil {
@@ -290,29 +303,33 @@ type awaitDataParams struct {
 // awaitData stops the goroutine, and waits for a new data for the cursor.
 // If there's a new document, or the maxTimeMS have passed it returns the nextBatch.
 func (h *Handler) awaitData(ctx context.Context, params *awaitDataParams) (resBatch *types.Array, err error) {
-	c := params.cursor
-	data := c.Data.(*findCursorData)
+	resBatch = types.MakeArray(0)
 
 	closer := iterator.NewMultiCloser()
+	defer closer.Close()
+
+	c := params.cursor
+	data := c.Data.(*findCursorData)
 
 	sleepDur := time.Duration(params.maxTimeMS) * time.Millisecond
 	ctx, cancel := context.WithTimeout(ctx, sleepDur)
 
 	defer func() {
-		c.Close()
 		cancel()
 
 		if err == nil {
 			return
 		}
 
+		// Return empty batch and no error if context timeout exceeded
 		if errors.Is(err, context.DeadlineExceeded) {
+			resBatch = types.MakeArray(0)
 			err = nil
+
 			return
 		}
 
 		err = lazyerrors.Error(err)
-		resBatch = nil
 	}()
 
 	for {
