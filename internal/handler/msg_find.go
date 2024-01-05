@@ -99,11 +99,12 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	cancel := func() {}
 
-	timeout := time.NewTicker(time.Duration(params.MaxTimeMS) * time.Millisecond)
 	findDone := make(chan struct{})
 
 	if params.MaxTimeMS != 0 {
 		ctx, cancel = context.WithCancel(ctx)
+
+		timeout := time.NewTicker(time.Duration(params.MaxTimeMS) * time.Millisecond)
 
 		go func() {
 			select {
