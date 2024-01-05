@@ -63,20 +63,20 @@ func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	})
 	must.NoError(err)
 
-	document = &types.Document{}
+	var doc *types.Document
 
 	defer qr.Iter.Close()
 
 	for {
-		_, doc, err := qr.Iter.Next()
+		_, user, err := qr.Iter.Next()
 		if errors.Is(err, iterator.ErrIteratorDone) {
 			break
 		}
 
-		document = doc
+		doc = user
 	}
 
-	scramCredentials, err := document.GetByPath(
+	scramCredentials, err := doc.GetByPath(
 		types.Path{}.Append("credentials").Append(sconv.Mechanism),
 	)
 
