@@ -124,7 +124,7 @@ func (bc *backendContract) Database(name string) (Database, error) {
 
 // ListDatabasesParams represents the parameters of Backend.ListDatabases method.
 type ListDatabasesParams struct {
-	Name string // TODO https://github.com/FerretDB/FerretDB/issues/3601
+	Name string
 }
 
 // ListDatabasesResult represents the results of Backend.ListDatabases method.
@@ -139,7 +139,6 @@ type DatabaseInfo struct {
 
 // ListDatabases returns a list of databases sorted by name.
 //
-// TODO https://github.com/FerretDB/FerretDB/issues/3601
 // If ListDatabasesParams' Name is not empty, then only the database with that name should be returned (or an empty list).
 //
 // Database may not exist; that's not an error.
