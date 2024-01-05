@@ -251,11 +251,11 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	findDone := make(chan struct{})
 
-	timeout := time.NewTicker(time.Duration(maxTimeMS) * time.Millisecond)
-	defer timeout.Stop()
-
 	if maxTimeMS != 0 {
 		ctx, cancel = context.WithCancel(ctx)
+
+		timeout := time.NewTicker(time.Duration(maxTimeMS) * time.Millisecond)
+		defer timeout.Stop()
 
 		go func() {
 			select {
