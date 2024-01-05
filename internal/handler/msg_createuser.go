@@ -133,7 +133,7 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 
 	// XXX local authorization stores users and their respective roles in the database
 	// we most likely need to generate the SHA-1 and SHA-256 credentials ourselves
-	// instead of relying on an authentication exchange
+	// instead of relying on a full authentication exchange
 	_ = scramClient
 
 	id := uuid.New()
