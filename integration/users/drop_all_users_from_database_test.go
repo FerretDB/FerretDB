@@ -83,5 +83,8 @@ func assertDropAllUsersFromDatabase(t *testing.T, ctx context.Context, db *mongo
 		"users", &types.Array{},
 		"ok", float64(1),
 	))
-	testutil.AssertEqual(t, expectedUsersInfo, integration.ConvertDocument(t, usersInfo))
+	actualUsersInfo := integration.ConvertDocument(t, usersInfo)
+	actualUsersInfo.Remove("$clusterTime")
+	actualUsersInfo.Remove("operationTime")
+	testutil.AssertEqual(t, expectedUsersInfo, actualUsersInfo)
 }
