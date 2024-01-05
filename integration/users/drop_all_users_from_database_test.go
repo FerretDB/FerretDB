@@ -49,6 +49,10 @@ func TestDropAllUsersFromDatabase(t *testing.T) {
 		require.NoError(t, err)
 	}
 
+	// Dropping all users from another database shouldn't influence on the number of users remaining on the current database.
+	// So this call should remove zero users as the database doesn't exist. The next one, "quantity" users.
+	assertDropAllUsersFromDatabase(t, ctx, client.Database(t.Name()+"_another_database"), users, 0)
+
 	assertDropAllUsersFromDatabase(t, ctx, db, users, quantity)
 
 	// Run for the second time to check if it still succeeds when there aren't any users remaining,
