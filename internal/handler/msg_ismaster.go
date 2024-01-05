@@ -36,7 +36,7 @@ func (h *Handler) MsgIsMaster(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: common.IsMasterDocuments(),
+		Documents: common.IsMasterDocuments(h.TCPHost, h.ReplSetName),
 	}))
 
 	return &reply, nil

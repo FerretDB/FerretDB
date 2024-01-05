@@ -16,6 +16,7 @@ package common
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -25,20 +26,20 @@ import (
 )
 
 // IsMaster is a common implementation of the isMaster command used by deprecated OP_QUERY message.
-func IsMaster(ctx context.Context, query *types.Document) (*wire.OpReply, error) {
+func IsMaster(ctx context.Context, query *types.Document, tcpHost, name string) (*wire.OpReply, error) {
 	if err := CheckClientMetadata(ctx, query); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	return &wire.OpReply{
 		NumberReturned: 1,
-		Documents:      IsMasterDocuments(),
+		Documents:      IsMasterDocuments(tcpHost, name),
 	}, nil
 }
 
 // IsMasterDocuments returns isMaster's Documents field (identical for both OP_MSG and OP_QUERY).
-func IsMasterDocuments() []*types.Document {
-	return []*types.Document{must.NotFail(types.NewDocument(
+func IsMasterDocuments(tcpHost, name string) []*types.Document {
+	doc := must.NotFail(types.NewDocument(
 		"ismaster", true, // only lowercase
 		// topologyVersion
 		"maxBsonObjectSize", int32(types.MaxDocumentLen),
@@ -51,5 +52,19 @@ func IsMasterDocuments() []*types.Document {
 		"maxWireVersion", MaxWireVersion,
 		"readOnly", false,
 		"ok", float64(1),
-	))}
+	))
+
+	if name != "" {
+		// That does not work for TLS-only setups, IPv6 addresses, etc.
+		// The proper solution is to support `replSetInitiate` command.
+		// TODO https://github.com/FerretDB/FerretDB/issues/3936
+		if strings.HasPrefix(tcpHost, ":") {
+			tcpHost = "localhost" + tcpHost
+		}
+
+		doc.Set("setName", name)
+		doc.Set("hosts", must.NotFail(types.NewArray(tcpHost)))
+	}
+
+	return []*types.Document{doc}
 }

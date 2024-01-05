@@ -67,7 +67,9 @@ type Handler struct {
 //
 //nolint:vet // for readability
 type NewOpts struct {
-	Backend backends.Backend
+	Backend     backends.Backend
+	TCPHost     string
+	ReplSetName string
 
 	L             *zap.Logger
 	ConnMetrics   *connmetrics.ConnMetrics
