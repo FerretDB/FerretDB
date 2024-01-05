@@ -103,7 +103,7 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		"ok", float64(1),
 	))
 
-	// TODO confirm if this is even needed or if speculativeAuthenticate is always used and is sent in an OP_QUERY
+	// TODO confirm if this is needed or if speculativeAuthenticate is always used and is sent in an OP_QUERY
 	if !plain {
 		// remove top-level fields
 		d.Remove("conversationId")
@@ -116,7 +116,6 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 				"conversationId", int32(1),
 				"done", false,
 				"payload", response,
-				"ok", float64(1),
 			),
 		))
 	}
