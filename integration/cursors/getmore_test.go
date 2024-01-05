@@ -914,8 +914,6 @@ func TestCursorsGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("FindExpire", func(tt *testing.T) {
-		//t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2983")
-
 		opts := options.Find().
 			// set batchSize big enough to hit maxTimeMS
 			SetBatchSize(2000).
@@ -932,7 +930,6 @@ func TestCursorsGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 	t.Run("FindGetMorePropagateMaxTimeMS", func(t *testing.T) {
 		// this test case is not stable and frequently fails because
 		// `Find` unexpectedly timeout or `cursor.Next()` does not timeout expectedly
-		//t.Skip("https://github.com/FerretDB/FerretDB/issues/2983")
 
 		opts := options.Find().
 			// setting zero on find sets nextBatch on getMore to unlimited
@@ -955,8 +952,6 @@ func TestCursorsGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 	})
 
 	t.Run("AggregateExpire", func(tt *testing.T) {
-		//t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2983")
-
 		opts := options.Aggregate().
 			// set batchSize big enough to hit maxTimeMS
 			SetBatchSize(2000).
@@ -972,8 +967,6 @@ func TestCursorsGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 	t.Run("AggregateGetMorePropagateMaxTimeMS", func(t *testing.T) {
 		// this test case is not stable and frequently fails because
 		// `Aggregate` unexpectedly timeout or `cursor.Next()` does not timeout expectedly
-		//t.Skip("https://github.com/FerretDB/FerretDB/issues/2983")
-
 		opts := options.Aggregate().
 			// setting zero on aggregate sets nextBatch on getMore to unlimited
 			SetBatchSize(0).
