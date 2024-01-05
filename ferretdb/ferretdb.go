@@ -117,6 +117,7 @@ func New(config *Config) (*FerretDB, error) {
 		Logger:        logger,
 		ConnMetrics:   metrics.ConnMetrics,
 		StateProvider: sp,
+		TCPHost:       config.Listener.TCP,
 
 		PostgreSQLURL: config.PostgreSQLURL,
 
