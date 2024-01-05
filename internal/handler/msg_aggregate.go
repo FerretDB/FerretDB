@@ -248,10 +248,23 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	cancel := func() {}
+
+	findDone := make(chan struct{})
+
 	if maxTimeMS != 0 {
-		// It is not clear if maxTimeMS affects only aggregate, or both aggregate and getMore (as the current code does).
-		// TODO https://github.com/FerretDB/FerretDB/issues/2983
-		ctx, cancel = context.WithTimeout(ctx, time.Duration(maxTimeMS)*time.Millisecond)
+		ctx, cancel = context.WithCancel(ctx)
+
+		timeout := time.NewTicker(time.Duration(maxTimeMS) * time.Millisecond)
+		defer timeout.Stop()
+
+		go func() {
+			select {
+			case <-timeout.C:
+				cancel()
+			case <-findDone:
+				return
+			}
+		}()
 	}
 
 	closer := iterator.NewMultiCloser(iterator.CloserFunc(cancel))
@@ -366,6 +379,10 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		cursorID = 0
 
 		cursor.Close()
+	}
+
+	if maxTimeMS != 0 {
+		findDone <- struct{}{}
 	}
 
 	var reply wire.OpMsg

@@ -98,10 +98,23 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	cancel := func() {}
+
+	findDone := make(chan struct{})
+
 	if params.MaxTimeMS != 0 {
-		// It is not clear if maxTimeMS affects only find, or both find and getMore (as the current code does).
-		// TODO https://github.com/FerretDB/FerretDB/issues/2984
-		ctx, cancel = context.WithTimeout(ctx, time.Duration(params.MaxTimeMS)*time.Millisecond)
+		ctx, cancel = context.WithCancel(ctx)
+
+		timeout := time.NewTicker(time.Duration(params.MaxTimeMS) * time.Millisecond)
+		defer timeout.Stop()
+
+		go func() {
+			select {
+			case <-timeout.C:
+				cancel()
+			case <-findDone:
+				return
+			}
+		}()
 	}
 
 	// closer accumulates all things that should be closed / canceled.
@@ -169,6 +182,10 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	firstBatch := types.MakeArray(len(docs))
 	for _, doc := range docs {
 		firstBatch.Append(doc)
+	}
+
+	if params.MaxTimeMS != 0 {
+		findDone <- struct{}{}
 	}
 
 	var reply wire.OpMsg

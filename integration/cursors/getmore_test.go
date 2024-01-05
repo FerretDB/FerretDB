@@ -20,6 +20,7 @@ import (
 	"math"
 	"net/url"
 	"testing"
+	"time"
 
 	"github.com/AlekSi/pointer"
 	"github.com/stretchr/testify/assert"
@@ -1027,6 +1028,80 @@ func TestCursors(t *testing.T) {
 	})
 }
 
+func TestCursorsFirstBatchMaxTimeMS(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupWithOpts(t, nil)
+
+	db, ctx := s.Collection.Database(), s.Ctx
+
+	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(10000)
+	err := db.CreateCollection(s.Ctx, t.Name(), opts)
+	require.NoError(t, err)
+
+	collection := db.Collection(t.Name())
+
+	bsonArr, arr := integration.GenerateDocuments(0, 3)
+
+	_, err = collection.InsertMany(ctx, bsonArr)
+	require.NoError(t, err)
+
+	var cursorID any
+
+	t.Run("FirstBatch", func(t *testing.T) {
+		cmd := bson.D{
+			{"find", collection.Name()},
+			{"batchSize", 1},
+			{"maxTimeMS", 200},
+		}
+
+		var res bson.D
+		err = collection.Database().RunCommand(ctx, cmd).Decode(&res)
+		require.NoError(t, err)
+
+		var firstBatch *types.Array
+		firstBatch, cursorID = getFirstBatch(t, res)
+
+		expectedFirstBatch := integration.ConvertDocuments(t, arr[:1])
+		require.Equal(t, len(expectedFirstBatch), firstBatch.Len())
+		require.Equal(t, expectedFirstBatch[0], must.NotFail(firstBatch.Get(0)))
+	})
+
+	getMoreCmd := bson.D{
+		{"getMore", cursorID},
+		{"collection", collection.Name()},
+		{"batchSize", 1},
+	}
+
+	t.Run("GetMore", func(t *testing.T) {
+		for i := 0; i < 2; i++ {
+			time.Sleep(100 * time.Millisecond)
+			var res bson.D
+			err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
+			require.NoError(t, err)
+
+			nextBatch, nextID := getNextBatch(t, res)
+			expectedNextBatch := integration.ConvertDocuments(t, arr[i+1:i+2])
+
+			assert.Equal(t, cursorID, nextID)
+
+			require.Equal(t, len(expectedNextBatch), nextBatch.Len())
+			require.Equal(t, expectedNextBatch[0], must.NotFail(nextBatch.Get(0)))
+		}
+	})
+
+	t.Run("GetMoreEmpty", func(t *testing.T) {
+		time.Sleep(100 * time.Millisecond)
+		var res bson.D
+		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
+		require.NoError(t, err)
+
+		nextBatch, nextID := getNextBatch(t, res)
+		require.Equal(t, 0, nextBatch.Len())
+		assert.Equal(t, int64(0), nextID)
+	})
+}
+
 func TestGetMoreNonAwaitDataError(t *testing.T) {
 	s := setup.SetupWithOpts(t, nil)
 
@@ -1145,5 +1220,95 @@ func TestGetMoreNonAwaitDataError(t *testing.T) {
 		}).Err()
 
 		require.NoError(t, err)
+	})
+}
+
+func TestCursorsGetMoreAfterInsertion(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupWithOpts(t, nil)
+
+	db, ctx := s.Collection.Database(), s.Ctx
+
+	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(10000)
+	err := db.CreateCollection(s.Ctx, t.Name(), opts)
+	require.NoError(t, err)
+
+	collection := db.Collection(t.Name())
+
+	bsonArr, arr := integration.GenerateDocuments(0, 3)
+
+	_, err = collection.InsertMany(ctx, bsonArr)
+	require.NoError(t, err)
+
+	var cursorID any
+
+	t.Run("FirstBatch", func(t *testing.T) {
+		cmd := bson.D{
+			{"find", collection.Name()},
+			{"batchSize", 1},
+		}
+
+		var res bson.D
+		err = collection.Database().RunCommand(ctx, cmd).Decode(&res)
+		require.NoError(t, err)
+
+		var firstBatch *types.Array
+		firstBatch, cursorID = getFirstBatch(t, res)
+
+		expectedFirstBatch := integration.ConvertDocuments(t, arr[:1])
+		require.Equal(t, len(expectedFirstBatch), firstBatch.Len())
+		require.Equal(t, expectedFirstBatch[0], must.NotFail(firstBatch.Get(0)))
+	})
+
+	getMoreCmd := bson.D{
+		{"getMore", cursorID},
+		{"collection", collection.Name()},
+		{"batchSize", 1},
+	}
+
+	t.Run("GetMore", func(t *testing.T) {
+		for i := 0; i < 2; i++ {
+			var res bson.D
+			err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
+			require.NoError(t, err)
+
+			nextBatch, nextID := getNextBatch(t, res)
+			expectedNextBatch := integration.ConvertDocuments(t, arr[i+1:i+2])
+
+			assert.Equal(t, cursorID, nextID)
+
+			require.Equal(t, len(expectedNextBatch), nextBatch.Len())
+			require.Equal(t, expectedNextBatch[0], must.NotFail(nextBatch.Get(0)))
+		}
+	})
+
+	t.Run("GetMoreEmpty", func(tt *testing.T) {
+		var res bson.D
+		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
+		require.NoError(t, err)
+
+		nextBatch, nextID := getNextBatch(t, res)
+		require.Equal(t, 0, nextBatch.Len())
+		assert.Equal(t, int64(0), nextID)
+	})
+
+	t.Run("GetMoreNewDoc", func(tt *testing.T) {
+		newDoc := bson.D{{"_id", "new"}}
+		_, err = collection.InsertOne(ctx, newDoc)
+		require.NoError(t, err)
+
+		var res bson.D
+
+		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
+		integration.AssertEqualCommandError(
+			t,
+			mongo.CommandError{
+				Code:    43,
+				Name:    "CursorNotFound",
+				Message: fmt.Sprintf("cursor id %d not found", cursorID),
+			},
+			err,
+		)
 	})
 }
