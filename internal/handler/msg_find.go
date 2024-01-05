@@ -105,6 +105,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		ctx, cancel = context.WithCancel(ctx)
 
 		timeout := time.NewTicker(time.Duration(params.MaxTimeMS) * time.Millisecond)
+		defer timeout.Stop()
 
 		go func() {
 			select {
@@ -183,7 +184,9 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		firstBatch.Append(doc)
 	}
 
-	findDone <- struct{}{}
+	if params.MaxTimeMS != 0 {
+		findDone <- struct{}{}
+	}
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
