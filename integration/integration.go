@@ -187,6 +187,23 @@ func AssertEqualWriteError(t testtb.TB, expected mongo.WriteError, actual error)
 	return assert.Equal(t, expected, a)
 }
 
+// AssertMatchesError asserts that both errors are of same type and
+// are equal in value, except the message and Raw part.
+func AssertMatchesError(t testtb.TB, expected, actual error) {
+	t.Helper()
+
+	switch expected := expected.(type) {
+	case mongo.CommandError:
+		AssertMatchesCommandError(t, expected, actual)
+	case mongo.WriteException:
+		AssertMatchesWriteError(t, expected, actual)
+	case mongo.BulkWriteException:
+		AssertMatchesBulkException(t, expected, actual)
+	default:
+		t.Fatalf("unknown error type %T, expected one of [CommandError, WriteException, BulkWriteException]", expected)
+	}
+}
+
 // AssertMatchesCommandError asserts that both errors are equal CommandErrors,
 // except messages (and ignoring the Raw part).
 func AssertMatchesCommandError(t testtb.TB, expected, actual error) {

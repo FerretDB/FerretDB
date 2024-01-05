@@ -15,6 +15,7 @@
 package common
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"math"
@@ -23,6 +24,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -31,28 +33,168 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// UpdateDocument updates the given document with a series of update operators.
-// Returns true if document was changed.
-// To validate update document, must call ValidateUpdateOperators before calling UpdateDocument.
-// UpdateDocument returns CommandError for findAndModify case-insensitive command name,
-// WriteError for other commands.
-// TODO https://github.com/FerretDB/FerretDB/issues/3013
-func UpdateDocument(command string, doc, update *types.Document, insert bool) (bool, error) {
-	var docUpdated bool
-	var err error
+// UpdateDocument iterates through documents from iter and processes them sequentially based on param.
+// Returns UpdateResult if all operations (update/upsert) are successful.
+//
+// In case of updating multiple documents, UpdateDocument returns an error immediately after one of the
+// operation fails. The rest of the documents are not processed.
+// TODO https://github.com/FerretDB/FerretDB/issues/2612
+func UpdateDocument(ctx context.Context, c backends.Collection, cmd string, iter types.DocumentsIterator, param *Update) (*UpdateResult, error) {
+	result := new(UpdateResult)
 
-	if update.Len() == 0 {
-		// replace to empty doc
-		for _, key := range doc.Keys() {
-			docUpdated = true
+	docs, err := iterator.ConsumeValues(iter)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
-			if key != "_id" {
-				doc.Remove(key)
+	result.Matched.Count = int32(len(docs))
+
+	var upsert bool
+
+	if len(docs) == 0 {
+		if !param.Upsert {
+			return result, nil
+		}
+
+		upsert = true
+		docs = append(docs, must.NotFail(types.NewDocument()))
+	}
+
+	for _, doc := range docs {
+		var modified bool
+
+		result.Matched.Doc = doc.DeepCopy()
+
+		if upsert {
+			if err = processFilterEqualityCondition(doc, param.Filter); err != nil {
+				return nil, lazyerrors.Error(err)
 			}
 		}
 
-		return docUpdated, nil
+		if !param.HasUpdateOperators {
+			modified, err = processReplacementDoc(cmd, doc, param.Update)
+		} else {
+			modified, err = processUpdateOperator(cmd, doc, param.Update, upsert)
+		}
+
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		if !doc.Has("_id") {
+			doc.Set("_id", types.NewObjectID())
+		}
+
+		// TODO https://github.com/FerretDB/FerretDB/issues/3454
+		if err = doc.ValidateData(); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		if upsert {
+			_, err = c.InsertAll(ctx, &backends.InsertAllParams{Docs: []*types.Document{doc}})
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
+			result.Upserted.Doc = doc
+		} else if modified {
+			_, err := c.UpdateAll(ctx, &backends.UpdateAllParams{Docs: []*types.Document{doc}})
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
+			result.Modified.Doc = doc
+			result.Modified.Count++
+		}
 	}
+
+	return result, nil
+}
+
+// processFilterEqualityCondition copies the fields with equality condition from filter to doc.
+func processFilterEqualityCondition(doc, filter *types.Document) error {
+	iter := filter.Iterator()
+	defer iter.Close()
+
+	for {
+		key, val, err := iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				return nil
+			}
+			return lazyerrors.Error(err)
+		}
+
+		if key[0] == '$' {
+			continue
+		}
+
+		if valDoc, ok := val.(*types.Document); ok {
+			if valDoc.Len() == 1 {
+				valEq, _ := valDoc.Get("$eq")
+				if valEq == nil {
+					continue
+				}
+				val = valEq
+			} else {
+				val = valDoc
+			}
+		}
+
+		path, err := types.NewPathFromString(key)
+		if err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		doc.SetByPath(path, val)
+	}
+}
+
+// processReplacementDoc replaces the given document with a new document while retaining its
+// original _id.
+// Returns true if the document is changed. Returns error when _id is attempted to be changed.
+func processReplacementDoc(command string, doc, update *types.Document) (bool, error) {
+	if types.Compare(doc, update) == types.Equal {
+		return false, nil
+	}
+
+	docId, _ := doc.Get("_id")
+	updatedId, _ := update.Get("_id")
+
+	if docId != nil && updatedId != nil && types.Compare(docId, updatedId) != types.Equal {
+		return false, newUpdateError(
+			handlererrors.ErrImmutableField,
+			"Performing an update on the path '_id' would modify the immutable field '_id'",
+			command,
+		)
+	}
+
+	var changed bool
+
+	for _, key := range doc.Keys() {
+		if key != "_id" {
+			doc.Remove(key)
+			changed = true
+		}
+	}
+
+	for _, key := range update.Keys() {
+		doc.Set(key, must.NotFail(update.Get(key)))
+		changed = true
+	}
+
+	return changed, nil
+}
+
+// processUpdateOperator updates the given document with a series of update operators.
+// Returns true if the document is changed.
+// Returns CommandError if the command is findAndModify, otherwise returns WriteError.
+// TODO https://github.com/FerretDB/FerretDB/issues/3044
+func processUpdateOperator(command string, doc, update *types.Document, upsert bool) (bool, error) {
+	var docUpdated bool
+	var err error
+
+	docId, _ := doc.Get("_id")
 
 	for _, updateOp := range update.Keys() {
 		updateV := must.NotFail(update.Get(updateOp))
@@ -73,7 +215,7 @@ func UpdateDocument(command string, doc, update *types.Document, insert bool) (b
 			}
 
 		case "$setOnInsert":
-			if !insert {
+			if !upsert {
 				continue
 			}
 
@@ -168,30 +310,24 @@ func UpdateDocument(command string, doc, update *types.Document, insert bool) (b
 
 		default:
 			if strings.HasPrefix(updateOp, "$") {
-				return false, handlererrors.NewCommandErrorMsg(
+				return false, newUpdateError(
 					handlererrors.ErrNotImplemented,
 					fmt.Sprintf("UpdateDocument: unhandled operation %q", updateOp),
+					command,
 				)
 			}
-
-			// Treats the update as a Replacement object.
-			setDoc := update
-
-			for _, setKey := range doc.Keys() {
-				if !setDoc.Has(setKey) && setKey != "_id" {
-					doc.Remove(setKey)
-				}
-			}
-
-			for _, setKey := range setDoc.Keys() {
-				setValue := must.NotFail(setDoc.Get(setKey))
-				doc.Set(setKey, setValue)
-			}
-
-			updated = true
 		}
 
 		docUpdated = docUpdated || updated
+	}
+
+	updatedId, _ := doc.Get("_id")
+	if types.Compare(docId, updatedId) != types.Equal {
+		return false, newUpdateError(
+			handlererrors.ErrImmutableField,
+			"Performing an update on the path '_id' would modify the immutable field '_id'",
+			command,
+		)
 	}
 
 	return docUpdated, nil
@@ -207,9 +343,6 @@ func processSetFieldExpression(command string, doc, setDoc *types.Document, setO
 
 	for _, setKey := range setDocKeys {
 		setValue := must.NotFail(setDoc.Get(setKey))
-
-		// validate immutable _id
-		// TODO https://github.com/FerretDB/FerretDB/issues/3017
 
 		if setOnInsert {
 			// $setOnInsert do not set null and empty array value.
@@ -858,9 +991,6 @@ func processBitFieldExpression(command string, doc *types.Document, updateV any)
 // WriteError for other commands.
 func ValidateUpdateOperators(command string, update *types.Document) error {
 	var err error
-	if _, err = HasSupportedUpdateModifiers(command, update); err != nil {
-		return err
-	}
 
 	currentDate, err := extractValueFromUpdateOperator(command, "$currentDate", update)
 	if err != nil {
@@ -968,12 +1098,15 @@ func ValidateUpdateOperators(command string, update *types.Document) error {
 	return nil
 }
 
-// HasSupportedUpdateModifiers checks that update document contains supported update operators.
-// If no update operators are found it returns false.
-// If update document contains unsupported update operators it returns an error.
+// HasSupportedUpdateModifiers checks if the update document contains supported update operators.
+//
+// Returns false when no update operators are found. Returns an error when the document contains
+// unsupported operators or when there is a mix of operators and non-$-prefixed fields.
 func HasSupportedUpdateModifiers(command string, update *types.Document) (bool, error) {
-	for _, updateOp := range update.Keys() {
-		switch updateOp {
+	var updateOps int
+
+	for _, operator := range update.Keys() {
+		switch operator {
 		case // field update operators:
 			"$currentDate",
 			"$inc", "$min", "$max", "$mul",
@@ -983,24 +1116,33 @@ func HasSupportedUpdateModifiers(command string, update *types.Document) (bool, 
 
 			// array update operators:
 			"$pop", "$push", "$addToSet", "$pullAll", "$pull":
-			return true, nil
+			updateOps++
 		default:
-			if strings.HasPrefix(updateOp, "$") {
+			if strings.HasPrefix(operator, "$") {
 				return false, newUpdateError(
 					handlererrors.ErrFailedToParse,
 					fmt.Sprintf(
 						"Unknown modifier: %s. Expected a valid update modifier or pipeline-style "+
-							"update specified as an array", updateOp,
+							"update specified as an array", operator,
 					),
 					command,
 				)
 			}
 
-			// In case the operator doesn't start with $, treats the update as a Replacement object
+			// In case the operator doesn't start with $, treat the update as a replacement document
 		}
 	}
 
-	return false, nil
+	if updateOps > 0 && updateOps != update.Len() {
+		// update contains a mix of non-$-prefixed fields (replacement document) and operators
+		return false, newUpdateError(
+			handlererrors.ErrDollarPrefixedFieldName,
+			"The dollar ($) prefixed field is not allowed in the context of an update's replacement document.",
+			command,
+		)
+	}
+
+	return (updateOps > 0), nil
 }
 
 // newUpdateError returns CommandError for findAndModify command, WriteError for other commands.

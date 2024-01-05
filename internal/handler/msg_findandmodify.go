@@ -37,7 +37,6 @@ type findAndModifyResult struct {
 	updateExisting any
 	upserted       any
 	value          any
-	writeErrors    *types.Array
 	modified       int32
 }
 
@@ -59,30 +58,38 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		}
 	}
 
+	var we *mongo.WriteError
+	var resDoc *types.Document
+
 	res, err := h.findAndModifyDocument(ctx, params)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+		we, err = handleUpdateError(params.DB, params.Collection, err)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 
-	lastError := must.NotFail(types.NewDocument(
-		"n", res.modified,
-	))
+		resDoc = must.NotFail(types.NewDocument(
+			"lastErrorObject", must.NotFail(types.NewDocument("n", int32(0))),
+			"value", types.Null,
+			"writeErrors", must.NotFail(types.NewArray(WriteErrorDocument(we))),
+		))
+	} else {
+		lastError := must.NotFail(types.NewDocument(
+			"n", res.modified,
+		))
 
-	if res.updateExisting != nil {
-		lastError.Set("updatedExisting", res.updateExisting)
-	}
+		if res.updateExisting != nil {
+			lastError.Set("updatedExisting", res.updateExisting)
+		}
 
-	if res.upserted != nil {
-		lastError.Set("upserted", res.upserted)
-	}
+		if res.upserted != nil {
+			lastError.Set("upserted", res.upserted)
+		}
 
-	resDoc := must.NotFail(types.NewDocument(
-		"lastErrorObject", lastError,
-		"value", res.value,
-	))
-
-	if res.writeErrors.Len() > 0 {
-		resDoc.Set("writeErrors", res.writeErrors)
+		resDoc = must.NotFail(types.NewDocument(
+			"lastErrorObject", lastError,
+			"value", res.value,
+		))
 	}
 
 	resDoc.Set("ok", float64(1))
@@ -163,187 +170,90 @@ func (h *Handler) findAndModifyDocument(ctx context.Context, params *common.Find
 	// findAndModify modifies a single document
 	iter = common.LimitIterator(iter, closer, 1)
 
-	_, v, err := iter.Next()
-	if errors.Is(err, iterator.ErrIteratorDone) {
-		// iterator did not find any document, upsert inserts a document, otherwise nothing to do
-		if params.Remove {
-			return &findAndModifyResult{
-				modified: int32(0),
-				value:    types.Null,
-			}, nil
-		}
-
-		if !params.Upsert {
-			return &findAndModifyResult{
-				modified:       int32(0),
-				updateExisting: false,
-				value:          types.Null,
-			}, nil
-		}
-
-		doc := params.Update
-		if params.HasUpdateOperators {
-			doc = must.NotFail(types.NewDocument())
-			if _, err = common.UpdateDocument("findAndModify", doc, params.Update, true); err != nil {
-				// TODO https://github.com/FerretDB/FerretDB/issues/2168
-				return nil, err
-			}
-		}
-
-		upserted, _ := doc.Get("_id")
-		if upserted == nil {
-			upserted, err = params.Query.Get("_id")
-			if err != nil {
-				upserted = types.NewObjectID()
-			}
-
-			idDoc, ok := upserted.(*types.Document)
-			if ok {
-				var hasOp bool
-
-				if hasOp, err = common.HasQueryOperator(idDoc); err != nil {
-					// TODO https://github.com/FerretDB/FerretDB/issues/2168
-					return nil, err
-				}
-
-				if hasOp {
-					upserted = types.NewObjectID()
-				}
-			}
-
-			doc.Set("_id", upserted)
-		}
-
-		writeErrors := types.MakeArray(0)
-
-		// ValidateData also moves _id field to the first index
-		// TODO https://github.com/FerretDB/FerretDB/issues/3454
-		if err = doc.ValidateData(); err != nil {
-			// TODO https://github.com/FerretDB/FerretDB/issues/2168
-			var we *mongo.WriteError
-
-			if we, err = handleValidationError(err); err != nil {
-				return nil, err
-			}
-
-			writeErrors.Append(WriteErrorDocument(we))
-		}
-
-		if _, err = c.InsertAll(ctx, &backends.InsertAllParams{
-			Docs: []*types.Document{doc},
-		}); err != nil {
-			if backends.ErrorCodeIs(err, backends.ErrorCodeInsertDuplicateID) {
-				// TODO https://github.com/FerretDB/FerretDB/issues/2168
-				we := &mongo.WriteError{
-					Index:   0,
-					Code:    int(handlererrors.ErrDuplicateKeyInsert),
-					Message: fmt.Sprintf(`E11000 duplicate key error collection: %s.%s`, params.DB, params.Collection),
-				}
-				writeErrors.Append(WriteErrorDocument(we))
-			}
-
-			return nil, lazyerrors.Error(err)
-		}
-
-		var value any = types.Null
-		if params.ReturnNewDocument {
-			value = doc
-		}
-
-		return &findAndModifyResult{
-			modified:       int32(1),
-			updateExisting: false,
-			upserted:       upserted,
-			value:          value,
-			writeErrors:    writeErrors,
-		}, nil
-	}
-
-	if err != nil {
-		return nil, lazyerrors.Error(err)
+	result := &findAndModifyResult{
+		value: types.Null,
 	}
 
 	if params.Remove {
-		var delRes *backends.DeleteAllResult
-
-		if delRes, err = c.DeleteAll(ctx, &backends.DeleteAllParams{IDs: []any{must.NotFail(v.Get("_id"))}}); err != nil {
+		_, doc, err := iter.Next()
+		if err != nil && !errors.Is(err, iterator.ErrIteratorDone) {
 			return nil, lazyerrors.Error(err)
 		}
 
-		return &findAndModifyResult{
-			modified: delRes.Deleted,
-			value:    v,
-		}, nil
-	}
-
-	// TODO https://github.com/FerretDB/FerretDB/issues/3040
-	doc := params.Update
-	if params.HasUpdateOperators {
-		doc = v.DeepCopy()
-		if _, err = common.UpdateDocument("findAndModify", doc, params.Update, false); err != nil {
-			return nil, err
-		}
-	}
-
-	id := must.NotFail(v.Get("_id"))
-
-	updateID, _ := doc.Get("_id")
-	if updateID == nil {
-		doc.Set("_id", id)
-	}
-
-	if updateID != nil && updateID != id {
-		return nil, handlererrors.NewCommandErrorMsgWithArgument(
-			handlererrors.ErrImmutableField,
-			fmt.Sprintf(
-				`Plan executor error during findAndModify :: caused `+
-					`by :: After applying the update, the (immutable) field `+
-					`'_id' was found to have been altered to _id: "%s"`,
-				updateID,
-			),
-			"findAndModify",
-		)
-	}
-
-	writeErrors := types.MakeArray(0)
-
-	// ValidateData also moves _id field to the first index
-	// TODO https://github.com/FerretDB/FerretDB/issues/3454
-	if err = doc.ValidateData(); err != nil {
-		// TODO https://github.com/FerretDB/FerretDB/issues/2168
-		var we *mongo.WriteError
-
-		if we, err = handleValidationError(err); err != nil {
-			return nil, err
+		if doc != nil {
+			if _, err = c.DeleteAll(ctx, &backends.DeleteAllParams{IDs: []any{must.NotFail(doc.Get("_id"))}}); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+			result.modified = 1
+			result.value = doc
 		}
 
-		writeErrors.Append(WriteErrorDocument(we))
+		return result, nil
 	}
 
-	updateRes, err := c.UpdateAll(ctx, &backends.UpdateAllParams{Docs: []*types.Document{doc}})
+	// handle update and upsert
+
+	update := &common.Update{
+		Filter:             params.Query,
+		Update:             params.Update,
+		Upsert:             params.Upsert,
+		HasUpdateOperators: params.HasUpdateOperators,
+	}
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/2168
+	updateRes, err := common.UpdateDocument(ctx, c, "findAndModify", iter, update)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	value := v
-	if params.ReturnNewDocument {
-		value = doc
+	result.updateExisting = false
+
+	if updateRes.Upserted.Doc != nil {
+		doc := updateRes.Upserted.Doc
+		result.modified = 1
+		result.upserted = must.NotFail(doc.Get("_id"))
+		if params.ReturnNewDocument {
+			result.value = doc
+		}
+	} else if updateRes.Matched.Count > 0 {
+		result.modified = 1
+		result.updateExisting = true
+		result.value = updateRes.Matched.Doc
+		if params.ReturnNewDocument && updateRes.Modified.Doc != nil {
+			result.value = updateRes.Modified.Doc
+		}
 	}
 
-	return &findAndModifyResult{
-		modified:       updateRes.Updated,
-		updateExisting: true,
-		value:          value,
-		writeErrors:    writeErrors,
-	}, nil
+	return result, nil
 }
 
-// handleValidationError checks validation error code and returns *writeError.
-func handleValidationError(err error) (*mongo.WriteError, error) {
+// handleUpdateError process backend/validation error returned from update operation.
+// It returns *mongo.WriteError if updateErr is an expected error from update operation, otherwise it returns error.
+func handleUpdateError(db, coll string, updateErr error) (*mongo.WriteError, error) {
+	var we *mongo.WriteError
+	var be *backends.Error
 	var ve *types.ValidationError
 
-	if !errors.As(err, &ve) {
-		return nil, lazyerrors.Error(err)
+	if errors.As(updateErr, &be) && be.Code() == backends.ErrorCodeInsertDuplicateID {
+		we = &mongo.WriteError{
+			Index:   0,
+			Code:    int(handlererrors.ErrDuplicateKeyInsert),
+			Message: fmt.Sprintf(`E11000 duplicate key error collection: %s.%s`, db, coll),
+		}
+	} else if errors.As(updateErr, &ve) {
+		we = convertValidationErrToWriteErr(ve)
+	} else {
+		return nil, lazyerrors.Error(updateErr)
+	}
+
+	return we, nil
+}
+
+// convertValidationErrToWriteErr converts validation error and returns *mongo.WriteError.
+func convertValidationErrToWriteErr(err error) *mongo.WriteError {
+	ve, ok := err.(*types.ValidationError)
+	if !ok {
+		panic(fmt.Sprintf("unexpected error type %T", err))
 	}
 
 	var code handlererrors.ErrorCode
@@ -354,12 +264,12 @@ func handleValidationError(err error) (*mongo.WriteError, error) {
 	case types.ErrWrongIDType:
 		code = handlererrors.ErrInvalidID
 	default:
-		panic(fmt.Sprintf("Unknown error code: %v", ve.Code()))
+		panic(fmt.Sprintf("unknown error code: %v", ve.Code()))
 	}
 
 	return &mongo.WriteError{
 		Index:   0,
 		Code:    int(code),
 		Message: ve.Error(),
-	}, nil
+	}
 }

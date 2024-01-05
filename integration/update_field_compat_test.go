@@ -793,11 +793,9 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 		"ID": {
 			update:     bson.D{{"$set", bson.D{{"_id", "non-existent"}}}},
 			resultType: emptyResult,
-			skip:       "https://github.com/FerretDB/FerretDB/issues/3017",
 		},
 		"SetID": {
 			update: bson.D{{"$set", bson.D{{"_id", "int32"}, {"v", int32(2)}}}},
-			skip:   "https://github.com/FerretDB/FerretDB/issues/3017",
 		},
 		"ConflictKey": {
 			update: bson.D{
@@ -817,7 +815,6 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 			filter:     bson.D{{"_id", "int32"}},
 			update:     bson.D{{"$set", bson.D{{"_id", "int32-1"}, {"v", int32(2)}}}},
 			resultType: emptyResult,
-			skip:       "https://github.com/FerretDB/FerretDB/issues/3017",
 		},
 		"SameID": {
 			filter: bson.D{{"_id", "int32"}},
@@ -827,7 +824,6 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 			filter:     bson.D{{"_id", "int32"}},
 			update:     bson.D{{"$set", bson.D{{"_id", "another-id"}, {"v", int32(2)}}}},
 			resultType: emptyResult,
-			skip:       "https://github.com/FerretDB/FerretDB/issues/3017",
 		},
 	}
 
@@ -860,6 +856,7 @@ func TestUpdateFieldCompatSetMulti(t *testing.T) {
 			filter:     bson.D{{"v", bson.D{{"$eq", 4080}}}},
 			update:     bson.D{{"$set", bson.D{}}},
 			updateOpts: options.Update().SetUpsert(false),
+			resultType: emptyResult,
 		},
 	}
 
@@ -977,6 +974,7 @@ func TestUpdateFieldCompatSetOnInsertComplex(t *testing.T) {
 			update:     bson.D{{"$setOnInsert", bson.D{{"new", "val"}}}},
 			updateOpts: options.Update().SetUpsert(true),
 			providers:  []shareddata.Provider{shareddata.Int32s},
+			resultType: emptyResult,
 		},
 		"IDNotExists": {
 			filter:     bson.D{{"_id", "non-existent"}},
@@ -987,6 +985,7 @@ func TestUpdateFieldCompatSetOnInsertComplex(t *testing.T) {
 			filter:     bson.D{{"_id", "non-existent"}},
 			update:     bson.D{{"$setOnInsert", bson.D{{"new", "val"}}}},
 			updateOpts: options.Update().SetUpsert(false),
+			resultType: emptyResult,
 		},
 		"SetWithSetOnInsert": {
 			filter: bson.D{{"_id", "non-existent"}},
@@ -1057,7 +1056,6 @@ func TestUpdateFieldCompatMixed(t *testing.T) {
 			filter:     bson.D{{"_id", bson.D{{"$eq", "non-existent"}}}},
 			update:     bson.D{{"$set", bson.D{{"new", "val"}}}},
 			updateOpts: options.Update().SetUpsert(true),
-			skip:       "https://github.com/FerretDB/FerretDB/issues/3856",
 		},
 		"UpsertQueryOperatorMixed": {
 			filter: bson.D{
@@ -1067,7 +1065,6 @@ func TestUpdateFieldCompatMixed(t *testing.T) {
 			},
 			update:     bson.D{{"$set", bson.D{{"new", "val"}}}},
 			updateOpts: options.Update().SetUpsert(true),
-			skip:       "https://github.com/FerretDB/FerretDB/issues/3856",
 		},
 	}
 

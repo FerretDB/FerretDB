@@ -60,9 +60,9 @@ func FilterDocument(doc, filter *types.Document) (bool, error) {
 	}
 }
 
-// HasQueryOperator recursively checks if filter document contains any operator prefixed with $.
-func HasQueryOperator(filter *types.Document) (bool, error) {
-	iter := filter.Iterator()
+// HasOperator recursively checks if document contains any operator prefixed with $.
+func HasOperator(doc *types.Document) (bool, error) {
+	iter := doc.Iterator()
 	defer iter.Close()
 
 	for {
@@ -79,12 +79,12 @@ func HasQueryOperator(filter *types.Document) (bool, error) {
 			return true, nil
 		}
 
-		doc, ok := v.(*types.Document)
+		nestedDoc, ok := v.(*types.Document)
 		if !ok {
 			continue
 		}
 
-		hasOperator, err := HasQueryOperator(doc)
+		hasOperator, err := HasOperator(nestedDoc)
 		if err != nil {
 			return false, lazyerrors.Error(err)
 		}
