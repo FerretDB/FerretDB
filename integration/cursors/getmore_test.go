@@ -947,6 +947,8 @@ func TestCursorsGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 
 		// getMore uses maxTimeMS set on find
 		ok := cursor.Next(ctx)
+		// That's not a case for mongodb. The ok is always true (apart from cases when find timeouts before),
+		// so the propagation of maxTimeMS from find to getMore doesn't happen here.
 		assert.False(t, ok)
 
 		integration.AssertMatchesCommandError(t, mongo.CommandError{Code: 50, Name: "MaxTimeMSExpired"}, cursor.Err())
@@ -987,6 +989,7 @@ func TestCursorsGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 
 		// getMore uses maxTimeMS set on aggregate
 		ok := cursor.Next(ctx)
+		// The same thing as in Find comment
 		assert.False(t, ok)
 
 		integration.AssertMatchesCommandError(t, mongo.CommandError{Code: 50, Name: "MaxTimeMSExpired"}, cursor.Err())
