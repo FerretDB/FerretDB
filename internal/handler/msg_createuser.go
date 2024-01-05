@@ -131,6 +131,7 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 	scramClient, err := scram.SHA256.NewClient(username, password.(string), "")
 	must.NoError(err)
 
+	// https://datatracker.ietf.org/doc/html/rfc5802#section-3
 	// XXX local authorization stores users and their respective roles in the database
 	// we most likely need to generate the SHA-1 and SHA-256 credentials ourselves
 	// instead of relying on a full authentication exchange
