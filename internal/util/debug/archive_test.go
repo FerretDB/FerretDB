@@ -55,8 +55,6 @@ func TestArchiveHandler(t *testing.T) {
 
 	host := "127.0.0.1:5454"
 
-	ctx := context.Background()
-
 	filename := filepath.Join(t.TempDir(), "state.json")
 	stateProvider, err := state.NewProvider(filename)
 	require.NoError(t, err)
@@ -67,6 +65,7 @@ func TestArchiveHandler(t *testing.T) {
 
 	l := zap.S()
 
+	ctx, cancelCtx := context.WithCancel(context.Background())
 	go RunHandler(ctx, host, metricsRegisterer, l.Named("debug").Desugar())
 
 	// Wait for the server to start
@@ -82,8 +81,9 @@ func TestArchiveHandler(t *testing.T) {
 
 	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
-
 	defer resp.Body.Close() //nolint:errcheck // we are only reading it
+
+	cancelCtx()
 
 	require.Equal(t, http.StatusOK, resp.StatusCode, "status code should be 200")
 	require.Equal(t, "application/zip", resp.Header.Get("Content-Type"), "mime type should be zip")
