@@ -93,13 +93,10 @@ func TestArchiveHandler(t *testing.T) {
 	ctx, cancelCtx := context.WithCancel(context.Background())
 	go RunHandler(ctx, host, metricsRegisterer, l.Named("debug").Desugar())
 
-	// var halt chan int
-	// <-halt
+	trackTestResource()
 
 	// Wait for the server to start
 	time.Sleep(time.Second)
-
-	trackTestResource()
 
 	var u url.URL
 	u.Path = archivePath
