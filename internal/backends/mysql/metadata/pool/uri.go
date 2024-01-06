@@ -51,7 +51,6 @@ func parseURI(uri string) (string, error) {
 		Net:                  "tcp",
 		Addr:                 u.Host,
 		DBName:               strings.TrimPrefix(u.Path, "/"),
-		AllowNativePasswords: false,
 		Params:               params,
 	}
 	mysqlURL := cfg.FormatDSN()
