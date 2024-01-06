@@ -108,6 +108,7 @@ func TestArchiveHandler(t *testing.T) {
 
 	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
+
 	defer resp.Body.Close() //nolint:errcheck // we are only reading it
 
 	cancelCtx()
