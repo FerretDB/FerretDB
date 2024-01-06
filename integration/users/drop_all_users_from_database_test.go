@@ -49,6 +49,10 @@ func TestDropAllUsersFromDatabase(t *testing.T) {
 		require.NoError(t, err)
 	}
 
+	// Dropping all users from another database shouldn't influence on the number of users remaining on the current database.
+	// So this call should remove zero users as the database doesn't exist. The next one, "quantity" users.
+	assertDropAllUsersFromDatabase(t, ctx, client.Database(t.Name()+"_another_database"), users, 0)
+
 	assertDropAllUsersFromDatabase(t, ctx, db, users, quantity)
 
 	// Run for the second time to check if it still succeeds when there aren't any users remaining,
@@ -71,5 +75,16 @@ func assertDropAllUsersFromDatabase(t *testing.T, ctx context.Context, db *mongo
 	expected := must.NotFail(types.NewDocument("n", int32(quantity), "ok", float64(1)))
 	testutil.AssertEqual(t, expected, actual)
 
-	assert.Equal(t, mongo.ErrNoDocuments, users.FindOne(ctx, bson.D{{"db", db.Name()}}).Err())
+	var usersInfo bson.D
+	err = db.RunCommand(ctx, bson.D{{"usersInfo", 1}}).Decode(&usersInfo)
+	assert.NoError(t, err)
+
+	expectedUsersInfo := must.NotFail(types.NewDocument(
+		"users", &types.Array{},
+		"ok", float64(1),
+	))
+	actualUsersInfo := integration.ConvertDocument(t, usersInfo)
+	actualUsersInfo.Remove("$clusterTime")
+	actualUsersInfo.Remove("operationTime")
+	testutil.AssertEqual(t, expectedUsersInfo, actualUsersInfo)
 }

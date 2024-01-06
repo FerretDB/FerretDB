@@ -251,7 +251,7 @@ func (h *Handler) initCommands() {
 			Help:    "Updates user.",
 		}
 		h.commands["usersInfo"] = command{
-			Handler: h.MsgUpdateUser,
+			Handler: h.MsgUsersInfo,
 			Help:    "Returns information about users.",
 		}
 		// please keep sorted alphabetically
