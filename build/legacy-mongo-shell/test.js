@@ -12,9 +12,9 @@
   t.insert({a: 3});
   t.insert({a: 4});
 
-  expected = [1, 2, 3, 4];
+  let expected = [1, 2, 3, 4];
 
-  got = [];
+  let got = [];
   t.find({}).sort({$natural: 1}).forEach(function(d) {
     got.push(d.a);
   })
