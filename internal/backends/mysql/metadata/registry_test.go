@@ -79,7 +79,11 @@ func TestCheckAuth(t *testing.T) {
 	t.Run("WrongUser", func(t *testing.T) {
 		t.Parallel()
 
-		r, err := NewRegistry("mysql://wrong-user:wrong-password@127.0.0.1:3306/ferretdb?allowNativePasswords=true", testutil.Logger(t), sp)
+		r, err := NewRegistry(
+			"mysql://wrong-user:wrong-password@127.0.0.1:3306/ferretdb?allowNativePasswords=true",
+			testutil.Logger(t),
+			sp,
+		)
 		require.NoError(t, err)
 		t.Cleanup(r.Close)
 
