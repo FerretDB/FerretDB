@@ -34,7 +34,9 @@ func init() {
 		}
 
 		handlerOpts := &handler.NewOpts{
-			Backend: b,
+			Backend:     b,
+			TCPHost:     opts.TCPHost,
+			ReplSetName: opts.ReplSetName,
 
 			L:             opts.Logger.Named("postgresql"),
 			ConnMetrics:   opts.ConnMetrics,

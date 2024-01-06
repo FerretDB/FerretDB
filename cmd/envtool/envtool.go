@@ -196,7 +196,7 @@ func setupMongodb(ctx context.Context, logger *zap.SugaredLogger) error {
 		return err
 	}
 
-	eval := `'rs.initiate({_id: "mongodb-rs", members: [{_id: 0, host: "localhost:47017" }]})'`
+	eval := `'rs.initiate({_id: "rs0", members: [{_id: 0, host: "localhost:47017" }]})'`
 	args := []string{"compose", "exec", "-T", "mongodb", "mongosh", "--port=47017", "--eval", eval}
 
 	var buf bytes.Buffer
@@ -225,7 +225,7 @@ func setupMongodbSecured(ctx context.Context, logger *zap.SugaredLogger) error {
 		return err
 	}
 
-	eval := `'rs.initiate({_id: "mongodb-rs", members: [{_id: 0, host: "localhost:47018" }]})'`
+	eval := `'rs.initiate({_id: "rs0", members: [{_id: 0, host: "localhost:47018" }]})'`
 	shell := `mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=/etc/certs/client.pem&tlsCaFile=/etc/certs/rootCA-cert.pem` //nolint:lll // for readability
 	args := []string{"compose", "exec", "-T", "mongodb_secured", "mongosh", "--eval", eval, "--shell", shell}
 
