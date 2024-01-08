@@ -3,7 +3,7 @@ slug: new-ferretdb-v-11180-support-oplog-functionality
 title: FerretDB releases v1.18.0!
 authors: [alex]
 description: >
-  We just released FerretDB v1.18.0, which now supports `OpLog` functionality, capped collections, tailable cursors, among other new features.
+  We just released FerretDB v1.18.0, which now supports OpLog functionality, capped collections, tailable cursors, among other new features.
 image: /img/blog/ferretdb-v1.18.0.jpg
 tags: [release]
 ---
