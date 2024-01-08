@@ -24,6 +24,8 @@ The main supported use case is Meteor's OpLog tailing.
 Replication is not supported yet.
 
 It is not enabled by default; to enable it, create a capped collection `oplog.rs` in the `local` database.
+Setting replica set name using [`--repl-set-name` flag / `FERRETDB_REPL_SET_NAME` environment variable](https://docs.ferretdb.io/configuration/flags/#general)
+might also be needed.
 
 ### New Features 🎉
 
