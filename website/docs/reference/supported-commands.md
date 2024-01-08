@@ -44,7 +44,7 @@ Use ❌ for commands and arguments that are not implemented at all.
 |                 | `tailable`                 | ✅     |                                                           |
 |                 | `oplogReplay`              | ⚠️     | Ignored                                                   |
 |                 | `noCursorTimeout`          | ❌     | Unimplemented                                             |
-|                 | `awaitData`                | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/2283) |
+|                 | `awaitData`                | ✅     |                                                           |
 |                 | `allowPartialResults`      | ❌     | Unimplemented                                             |
 |                 | `collation`                | ❌     | Unimplemented                                             |
 |                 | `allowDiskUse`             | ⚠️     | Ignored                                                   |
