@@ -41,8 +41,8 @@ Use ❌ for commands and arguments that are not implemented at all.
 |                 | `min`                      | ⚠️     | Ignored                                                   |
 |                 | `returnKey`                | ❌     | Unimplemented                                             |
 |                 | `showRecordId`             | ✅     |                                                           |
-|                 | `tailable`                 | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/2283) |
-|                 | `oplogReplay`              | ❌     | Unimplemented                                             |
+|                 | `tailable`                 | ✅     |                                                           |
+|                 | `oplogReplay`              | ⚠️     | Ignored                                                   |
 |                 | `noCursorTimeout`          | ❌     | Unimplemented                                             |
 |                 | `awaitData`                | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/2283) |
 |                 | `allowPartialResults`      | ❌     | Unimplemented                                             |
@@ -171,7 +171,7 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/78).
 
 | Command                    | Argument                         | Status | Comments                                                  |
 | -------------------------- | -------------------------------- | ------ | --------------------------------------------------------- |
-| `createUser`               |                                  | ✅     | [Issue](https://github.com/FerretDB/FerretDB/issues/1491) |
+| `createUser`               |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1491) |
 |                            | `pwd`                            | ⚠️     |                                                           |
 |                            | `customData`                     | ⚠️     |                                                           |
 |                            | `roles`                          | ⚠️     |                                                           |
@@ -204,7 +204,7 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/78).
 |                            | `mechanisms`                     | ⚠️     |                                                           |
 |                            | `digestPassword`                 | ⚠️     |                                                           |
 |                            | `comment`                        | ⚠️     |                                                           |
-| `usersInfo`                |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1497) |
+| `usersInfo`                |                                  | ✅     |                                                           |
 |                            | `showCredentials`                | ⚠️     |                                                           |
 |                            | `showCustomData`                 | ⚠️     |                                                           |
 |                            | `showPrivileges`                 | ⚠️     |                                                           |
@@ -264,6 +264,12 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/78).
 |                            | `authenticationRestrictions` | ⚠️     |                                                           |
 |                            | `writeConcern`               | ⚠️     |                                                           |
 |                            | `comment`                    | ⚠️     |                                                           |
+
+### Replication Commands
+
+| Command           | Argument | Status | Comments                                                  |
+| ----------------- | -------- | ------ | --------------------------------------------------------- |
+| `replSetInitiate` |          | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/3936) |
 
 ## Session Commands
 
@@ -544,8 +550,8 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/1917).
 |                                   | `cappedSize`                   |                           | ⚠️     |                                                           |
 |                                   | `cappedMax`                    |                           | ⚠️     |                                                           |
 |                                   | `changeStreamPreAndPostImages` |                           | ⚠️     |                                                           |
-| `compact`                         |                                |                           | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/3466) |
-|                                   | `force`                        |                           | ⚠️     |                                                           |
+| `compact`                         |                                |                           | ✅     |                                                           |
+|                                   | `force`                        |                           | ✅     |                                                           |
 |                                   | `comment`                      |                           | ⚠️     |                                                           |
 | `compactStructuredEncryptionData` |                                |                           | ❌     |                                                           |
 |                                   | `compactionTokens`             |                           | ⚠️     |                                                           |
