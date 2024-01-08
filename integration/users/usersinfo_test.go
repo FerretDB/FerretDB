@@ -35,7 +35,6 @@ func createUser(username, password string) bson.D {
 		{"createUser", username},
 		{"roles", bson.A{}},
 		{"pwd", password},
-		{"mechanisms", bson.A{"PLAIN"}},
 	}
 }
 
@@ -46,8 +45,9 @@ func TestUsersinfo(t *testing.T) {
 	client := collection.Database().Client()
 
 	dbToUsers := []struct {
-		dbSuffix string
-		payloads []bson.D
+		dbSuffix       string
+		payloads       []bson.D
+		skipForMongoDB bool
 	}{
 		{
 			dbSuffix: "",
@@ -77,11 +77,27 @@ func TestUsersinfo(t *testing.T) {
 				createUser("singleuser", "123456"),
 			},
 		},
+		{
+			dbSuffix: "nomongo",
+			payloads: []bson.D{
+				{
+					{"createUser", "WithPLAIN"},
+					{"roles", bson.A{}},
+					{"pwd", "pwd1"},
+					{"mechanisms", bson.A{"PLAIN"}},
+				},
+			},
+			skipForMongoDB: true,
+		},
 	}
 
 	dbPrefix := testutil.DatabaseName(t)
 
 	for _, inserted := range dbToUsers {
+		if inserted.skipForMongoDB && setup.IsMongoDB(t) {
+			continue
+		}
+
 		dbName := testutil.DatabaseName(t) + inserted.dbSuffix
 		db := client.Database(dbName)
 
@@ -99,6 +115,7 @@ func TestUsersinfo(t *testing.T) {
 		altMessage      string
 		expected        bson.D
 		hasUser         map[string]struct{}
+		skipForMongoDB  string // optional, skip test for MongoDB backend with a specific reason
 	}{
 		"NoUserFound": {
 			dbSuffix: "no_users",
@@ -151,11 +168,11 @@ func TestUsersinfo(t *testing.T) {
 				{"ok", float64(1)},
 			},
 		},
-		"WithCredentials": {
-			dbSuffix:        "",
+		"WithPLAIN": {
+			dbSuffix:        "nomongo",
 			showCredentials: true,
 			payload: bson.D{
-				{"usersInfo", "one"},
+				{"usersInfo", "WithPLAIN"},
 				{"showCredentials", true},
 			},
 			expected: bson.D{
@@ -169,6 +186,7 @@ func TestUsersinfo(t *testing.T) {
 				}},
 				{"ok", float64(1)},
 			},
+			skipForMongoDB: "Only MongoDB Enterprise offers PLAIN",
 		},
 		"FromSameDatabase": {
 			dbSuffix: "_example",
@@ -448,6 +466,10 @@ func TestUsersinfo(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
+			if tc.skipForMongoDB != "" {
+				setup.SkipForMongoDB(t, tc.skipForMongoDB)
+			}
+
 			var res bson.D
 			dbName := dbPrefix + tc.dbSuffix
 			err := client.Database(dbName).RunCommand(ctx, tc.payload).Decode(&res)
@@ -484,9 +506,11 @@ func TestUsersinfo(t *testing.T) {
 				require.True(t, (tc.hasUser == nil) != (tc.expected == nil))
 
 				if tc.showCredentials {
-					cred, ok := actualUser.Get("credentials")
-					assert.Nil(t, ok, "credentials not found")
-					assertPlainCredentials(t, "PLAIN", cred.(*types.Document))
+					if !setup.IsMongoDB(t) {
+						cred, ok := actualUser.Get("credentials")
+						assert.Nil(t, ok, "credentials not found")
+						assertPlainCredentials(t, "PLAIN", cred.(*types.Document))
+					}
 				} else {
 					assert.False(t, actualUser.Has("credentials"))
 				}
