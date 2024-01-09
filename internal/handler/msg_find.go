@@ -104,8 +104,12 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	if params.MaxTimeMS != 0 {
 		ctx, cancel = context.WithCancel(ctx)
 
-		timeout := time.NewTicker(time.Duration(params.MaxTimeMS) * time.Millisecond)
-		defer timeout.Stop()
+		timeout := time.NewTimer(time.Duration(params.MaxTimeMS) * time.Millisecond)
+		defer func() {
+			if !timeout.Stop() {
+				<-timeout.C
+			}
+		}()
 
 		go func() {
 			select {
