@@ -121,23 +121,14 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	closer := iterator.NewMultiCloser(iterator.CloserFunc(cancel))
 
 	queryRes, err := coll.Query(ctx, qp)
-	switch {
-	case err == nil:
-	case params.MaxTimeMS != 0 && errors.Is(err, context.Canceled):
+	if err != nil {
 		closer.Close()
-		return nil, handlererrors.NewCommandErrorMsgWithArgument(2, "foo", "find")
-	default:
-		closer.Close()
-		return nil, lazyerrors.Error(err)
+		return nil, handleMaxTimeMSError(err, params.MaxTimeMS)
 	}
 
 	iter, err := h.makeFindIter(queryRes.Iter, closer, params)
-	switch {
-	case err == nil:
-	case params.MaxTimeMS != 0 && errors.Is(err, context.Canceled):
-		return nil, handlererrors.NewCommandErrorMsgWithArgument(2, "foo", "find")
-	default:
-		return nil, lazyerrors.Error(err)
+	if err != nil {
+		return nil, handleMaxTimeMSError(err, params.MaxTimeMS)
 	}
 
 	t := cursor.Normal
@@ -166,12 +157,8 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	cursorID := c.ID
 
 	docs, err := iterator.ConsumeValuesN(c, int(params.BatchSize))
-	switch {
-	case err == nil:
-	case params.MaxTimeMS != 0 && errors.Is(err, context.Canceled):
-		return nil, handlererrors.NewCommandErrorMsgWithArgument(2, "foo", "find")
-	default:
-		return nil, lazyerrors.Error(err)
+	if err != nil {
+		return nil, handleMaxTimeMSError(err, params.MaxTimeMS)
 	}
 
 	h.L.Debug(
@@ -326,4 +313,15 @@ func (h *Handler) makeFindIter(iter types.DocumentsIterator, closer *iterator.Mu
 	}
 
 	return iterator.WithClose(iter, closer.Close), nil
+}
+
+func handleMaxTimeMSError(err error, maxTimeMS int64) error {
+	switch {
+	case err == nil:
+		return nil
+	case maxTimeMS != 0 && errors.Is(err, context.Canceled):
+		return handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrMaxTimeMSExpired, "foo", "find")
+	default:
+		return lazyerrors.Error(err)
+	}
 }
