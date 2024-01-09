@@ -13,7 +13,7 @@ Please note that the structured log format is not stable yet; field names and fo
 
 ### Docker logs
 
-If Docker was launched with [our quick local setup with Docker Compose](../quickstart-guide/docker.md#setup-with-docker-compose),
+If Docker was launched with [our quick local setup with Docker Compose](../quickstart-guide/docker.md#postgresql-setup-with-docker-compose),
 the following command can be used to fetch the logs.
 
 ```sh

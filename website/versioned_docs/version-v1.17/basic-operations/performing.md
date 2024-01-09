@@ -1,6 +1,5 @@
 ---
 sidebar_position: 1
-slug: /crud-operations/
 ---
 
 # Performing CRUD operations
@@ -32,7 +31,7 @@ The update operation modifies document records in a collection.
 It changes existing documents in a collection according to the query criteria.
 The following update operations are supported:
 
-[`db.collection.updateOne()`](update.md#update-a-single-document), [`db.collection.updateMany()`](update.md#update-many-documents), [`db.collection.replaceOne()`](update#replace-a-document)
+[`db.collection.updateOne()`](update.md#update-a-single-document), [`db.collection.updateMany()`](update.md#update-many-documents), [`db.collection.replaceOne()`](update.md#replace-a-document)
 
 ## Delete operations in FerretDB
 
