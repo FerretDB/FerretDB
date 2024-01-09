@@ -121,13 +121,22 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	closer := iterator.NewMultiCloser(iterator.CloserFunc(cancel))
 
 	queryRes, err := coll.Query(ctx, qp)
-	if err != nil {
+	switch {
+	case err == nil:
+	case errors.Is(err, context.Canceled):
+		closer.Close()
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(2, "foo", "find")
+	default:
 		closer.Close()
 		return nil, lazyerrors.Error(err)
 	}
 
 	iter, err := h.makeFindIter(queryRes.Iter, closer, params)
-	if err != nil {
+	switch {
+	case err == nil:
+	case errors.Is(err, context.Canceled):
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(2, "foo", "find")
+	default:
 		return nil, lazyerrors.Error(err)
 	}
 

@@ -914,7 +914,7 @@ func TestCursorsGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 	_, err := collection.InsertMany(ctx, arr)
 	require.NoError(t, err)
 
-	t.Run("FindExpire", func(tt *testing.T) {
+	t.Run("FindExpire", func(t *testing.T) {
 		opts := options.Find().
 			// set batchSize big enough to hit maxTimeMS
 			SetBatchSize(2000).
@@ -928,7 +928,7 @@ func TestCursorsGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 		integration.AssertMatchesCommandError(t, mongo.CommandError{Code: 50, Name: "MaxTimeMSExpired"}, err)
 	})
 
-	t.Run("AggregateExpire", func(tt *testing.T) {
+	t.Run("AggregateExpire", func(t *testing.T) {
 		opts := options.Aggregate().
 			// set batchSize big enough to hit maxTimeMS
 			SetBatchSize(2000).
