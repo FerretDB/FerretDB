@@ -301,7 +301,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		collectionParam := backends.ListCollectionsParams{Name: cName}
 		if cList, err = db.ListCollections(ctx, &collectionParam); err != nil {
 			closer.Close()
-			return nil, err
+			return nil, handleMaxTimeMSError(err, maxTimeMS, "aggregate")
 		}
 
 		var cInfo backends.CollectionInfo
@@ -345,7 +345,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	if err != nil {
 		closer.Close()
-		return nil, err
+		return nil, handleMaxTimeMSError(err, maxTimeMS, "aggregate")
 	}
 
 	closer.Add(iter)
@@ -361,7 +361,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	docs, err := iterator.ConsumeValuesN(cursor, int(batchSize))
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, handleMaxTimeMSError(err, maxTimeMS, "aggregate")
 	}
 
 	h.L.Debug(

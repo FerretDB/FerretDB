@@ -925,6 +925,8 @@ func TestCursorsGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 
 		_, err := collection.Find(ctx, bson.D{}, opts)
 
+		require.NoError(t, err)
+
 		integration.AssertMatchesCommandError(t, mongo.CommandError{Code: 50, Name: "MaxTimeMSExpired"}, err)
 	})
 
