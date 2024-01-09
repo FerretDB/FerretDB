@@ -13,7 +13,7 @@ require (
 	golang.org/x/crypto v0.17.0 // indirect; always use @latest
 	golang.org/x/oauth2 v0.15.0
 	golang.org/x/perf v0.0.0-20231127181059-b53752263861
-	golang.org/x/pkgsite v0.0.0-20231218221228-b2a01f8bdf45
+	golang.org/x/pkgsite v0.0.0-20240108210435-8b25f917fd1e
 	golang.org/x/tools v0.16.1
 	golang.org/x/vuln v1.0.1
 	mvdan.cc/gofumpt v0.5.0
