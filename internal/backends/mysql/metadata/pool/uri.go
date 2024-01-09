@@ -46,13 +46,12 @@ func parseURI(uri string) (string, error) {
 	// mysql url requires a specified format to work
 	// For example: username:password@tcp(127.0.0.1:3306)/ferretdb
 	cfg := mysql.Config{
-		User:                 username,
-		Passwd:               password,
-		Net:                  "tcp",
-		Addr:                 u.Host,
-		DBName:               strings.TrimPrefix(u.Path, "/"),
-		AllowNativePasswords: false,
-		Params:               params,
+		User:   username,
+		Passwd: password,
+		Net:    "tcp",
+		Addr:   u.Host,
+		DBName: strings.TrimPrefix(u.Path, "/"),
+		Params: params,
 	}
 	mysqlURL := cfg.FormatDSN()
 
