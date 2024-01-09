@@ -6,7 +6,7 @@ require (
 	github.com/FerretDB/gh v0.1.3
 	github.com/go-task/task/v3 v3.33.1
 	github.com/google/go-github/v57 v57.0.0
-	github.com/goreleaser/nfpm/v2 v2.34.0
+	github.com/goreleaser/nfpm/v2 v2.34.0 // https://github.com/go-task/task/pull/1460
 	github.com/quasilyte/go-consistent v0.6.0
 	github.com/rogpeppe/go-internal v1.12.0
 	github.com/stretchr/testify v1.8.4
