@@ -22,8 +22,6 @@ import (
 	"net/http"
 	"net/url"
 	"path/filepath"
-
-	"golang.org/x/net/html"
 )
 
 type archiveUrlList []url.URL
@@ -31,10 +29,8 @@ type archiveUrlList []url.URL
 // archiveHandler - is a handler for creating the archive containing all the debug and metrics info.
 func archiveHandler(rw http.ResponseWriter, req *http.Request) {
 	var (
-		scheme   string
-		pprofUrl url.URL
-		urlList  archiveUrlList
-		err      error
+		scheme  string
+		urlList archiveUrlList
 	)
 
 	urlList = make(archiveUrlList, 0)
@@ -50,20 +46,16 @@ func archiveHandler(rw http.ResponseWriter, req *http.Request) {
 	u.Scheme = scheme
 	urlList = append(urlList, *u)
 
-	pprofUrl.Path = pprofPath
-	pprofUrl.Host = req.Host
+	u = new(url.URL)
+	u.Path = heapPath
+	u.Host = req.Host
 
 	if req.URL.Scheme == "" {
 		scheme = "http"
 	}
 
-	pprofUrl.Scheme = scheme
-
-	err = populateArchiveFileListFromPProfHTML(&pprofUrl, &urlList)
-	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	u.Scheme = scheme
+	urlList = append(urlList, *u)
 
 	rw.Header().Set("Content-Type", "application/zip")
 
@@ -108,75 +100,6 @@ func addFileToArchive(fileName string, resp *http.Response, zipWriter *zip.Write
 	if err != nil {
 		err = fmt.Errorf("failed - adding %s to zip (error: %s)", fileName, err.Error())
 		return err
-	}
-
-	return nil
-}
-
-func populateArchiveFileListFromPProfHTML(pprofUrl *url.URL, urlList *archiveUrlList) error {
-	response, err := performRequest(pprofUrl)
-	if err != nil {
-		return err
-	}
-
-	defer response.Body.Close() //nolint:errcheck // we are only reading it
-
-	// Parse HTML
-	doc, err := html.Parse(response.Body)
-	if err != nil {
-		return err
-	}
-
-	var hrefs []string
-
-	// Find <a> elements inside the table
-	var findAnchors func(*html.Node)
-	findAnchors = func(n *html.Node) {
-		if n.Type == html.ElementNode && n.Data == "a" {
-			// Extract href attribute
-			for _, attr := range n.Attr {
-				if attr.Key == "href" {
-					hrefs = append(hrefs, attr.Val)
-					break
-				}
-			}
-		}
-
-		for c := n.FirstChild; c != nil; c = c.NextSibling {
-			findAnchors(c)
-		}
-	}
-
-	// Find the table element
-	var findTable func(*html.Node)
-	findTable = func(n *html.Node) {
-		if n.Type == html.ElementNode && n.Data == "table" {
-			// Table found, now look for <a> elements inside it
-			findAnchors(n)
-		}
-
-		for c := n.FirstChild; c != nil; c = c.NextSibling {
-			findTable(c)
-		}
-	}
-
-	// Start searching for the table
-	findTable(doc)
-
-	for _, urlStr := range hrefs {
-		finalUrl, err := url.Parse(pprofUrl.Path)
-		if err != nil {
-			return err
-		}
-		finalUrl.Host = pprofUrl.Host
-		finalUrl.Scheme = pprofUrl.Scheme
-
-		u, err := url.Parse(urlStr)
-		if err != nil {
-			return err
-		}
-		finalUrl.RawQuery = u.RawQuery
-		*urlList = append(*urlList, *finalUrl.JoinPath(u.Path))
 	}
 
 	return nil

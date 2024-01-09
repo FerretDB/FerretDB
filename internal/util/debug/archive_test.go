@@ -31,7 +31,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/util/resource"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
@@ -45,37 +44,12 @@ func findInStringsArray(findStr string, list []string) bool {
 	return false
 }
 
-type testTrackObj1 struct {
-	token *resource.Token
-}
-
-type testTrackObj2 struct {
-	token *resource.Token
-}
-
-func trackTestResource() {
-	for i := 0; i <= 15; i++ {
-		obj := new(testTrackObj1)
-		obj.token = resource.NewToken()
-		resource.Track(obj, obj.token)
-		resource.Untrack(obj, obj.token)
-	}
-
-	for i := 0; i <= 15; i++ {
-		obj := new(testTrackObj2)
-		obj.token = resource.NewToken()
-		resource.Track(obj, obj.token)
-		resource.Untrack(obj, obj.token)
-	}
-}
-
 func TestArchiveHandler(t *testing.T) {
 	t.Parallel()
 
 	// during test some of the files from the below list shall be absent
 	fileList := []string{
-		"metrics", "debug.testTrackObj1", "debug.testTrackObj2", "allocs", "block", "cmdline", "goroutine", "heap",
-		"mutex", "profile", "threadcreate", "trace",
+		"metrics", "heap",
 	}
 
 	host := "127.0.0.1:5454"
@@ -92,8 +66,6 @@ func TestArchiveHandler(t *testing.T) {
 
 	ctx, cancelCtx := context.WithCancel(context.Background())
 	go RunHandler(ctx, host, metricsRegisterer, l.Named("debug").Desugar())
-
-	trackTestResource()
 
 	// Wait for the server to start
 	time.Sleep(time.Second)
@@ -124,6 +96,8 @@ func TestArchiveHandler(t *testing.T) {
 
 	zipReader, err := zip.NewReader(bytes.NewReader(body), int64(len(body)))
 	require.NoError(t, err)
+
+	require.Equal(t, len(fileList), len(zipReader.File), "needs to be same as length of fileList")
 
 	for _, file := range zipReader.File {
 		t.Logf("\nverifying file : %s", file.Name)

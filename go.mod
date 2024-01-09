@@ -27,6 +27,7 @@ require (
 	golang.org/x/crypto v0.18.0
 	golang.org/x/crypto/x509roots/fallback v0.0.0-20240108164429-dbb6ec16ecef
 	golang.org/x/exp v0.0.0-20240103183307-be819d1f06fc
+	golang.org/x/net v0.19.0
 	golang.org/x/sys v0.16.0
 	modernc.org/sqlite v1.28.0
 )
@@ -62,7 +63,6 @@ require (
 	go.opentelemetry.io/proto/otlp v1.0.0 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
 	golang.org/x/mod v0.14.0 // indirect
-	golang.org/x/net v0.19.0 // indirect
 	golang.org/x/sync v0.5.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/tools v0.16.0 // indirect
