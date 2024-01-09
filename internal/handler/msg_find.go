@@ -123,7 +123,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	queryRes, err := coll.Query(ctx, qp)
 	switch {
 	case err == nil:
-	case errors.Is(err, context.Canceled):
+	case params.MaxTimeMS != 0 && errors.Is(err, context.Canceled):
 		closer.Close()
 		return nil, handlererrors.NewCommandErrorMsgWithArgument(2, "foo", "find")
 	default:
@@ -134,7 +134,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	iter, err := h.makeFindIter(queryRes.Iter, closer, params)
 	switch {
 	case err == nil:
-	case errors.Is(err, context.Canceled):
+	case params.MaxTimeMS != 0 && errors.Is(err, context.Canceled):
 		return nil, handlererrors.NewCommandErrorMsgWithArgument(2, "foo", "find")
 	default:
 		return nil, lazyerrors.Error(err)
@@ -166,7 +166,11 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	cursorID := c.ID
 
 	docs, err := iterator.ConsumeValuesN(c, int(params.BatchSize))
-	if err != nil {
+	switch {
+	case err == nil:
+	case params.MaxTimeMS != 0 && errors.Is(err, context.Canceled):
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(2, "foo", "find")
+	default:
 		return nil, lazyerrors.Error(err)
 	}
 
