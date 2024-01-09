@@ -42,15 +42,19 @@ At the moment, only basic OpLog tailing is supported.
 Replication is not supported yet.
 :::
 
-The functionality is not created by default.
+The functionality is not available by default.
 To enable it, manually create a capped collection named `oplog.rs` in the `local` database.
 
 ```js
-use local
-db.createCollection("oplog.rs", {capped: true, size: 536870912})
+// use local
+db.createCollection('oplog.rs', { capped: true, size: 536870912 })
 ```
 
-You may also need to set the replica set name using [`--repl-set-name` flag / `FERRETDB_REPL_SET_NAME` environment variable](https://docs.ferretdb.io/configuration/flags/#general).
+You may also need to set the replica set name using [`--repl-set-name` flag / `FERRETDB_REPL_SET_NAME` environment variable](https://docs.ferretdb.io/configuration/flags/#general):
+
+```sh
+docker run -e FERRETDB_REPL_SET_NAME=rs0 ...
+```
 
 To query the OpLog:
 
