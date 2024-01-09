@@ -254,7 +254,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	if maxTimeMS != 0 {
 		ctx, cancel = context.WithCancel(ctx)
 
-		timeout := time.NewTicker(time.Duration(maxTimeMS) * time.Millisecond)
+		timeout := time.NewTimer(time.Duration(maxTimeMS) * time.Millisecond)
 		defer timeout.Stop()
 
 		go func() {
