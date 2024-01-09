@@ -50,7 +50,7 @@ It is comparable to a table in a relational database.
 #### CRUD
 
 The four basic operations of a database: Create, Read, Update, and Delete.
-See [Basic FerretDB CRUD operations here](../basic-operations/index.md).
+See [Basic FerretDB CRUD operations here](../basic-operations/performing.md).
 
 ---
 
