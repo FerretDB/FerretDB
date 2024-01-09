@@ -10,9 +10,9 @@ require (
 	github.com/quasilyte/go-consistent v0.6.0
 	github.com/rogpeppe/go-internal v1.12.0
 	github.com/stretchr/testify v1.8.4
-	golang.org/x/crypto v0.17.0 // indirect; always use @latest
-	golang.org/x/oauth2 v0.15.0
-	golang.org/x/perf v0.0.0-20231127181059-b53752263861
+	golang.org/x/crypto v0.18.0 // indirect; always use @latest
+	golang.org/x/oauth2 v0.16.0
+	golang.org/x/perf v0.0.0-20240108191414-4ad5199aa6b5
 	golang.org/x/pkgsite v0.0.0-20240108210435-8b25f917fd1e
 	golang.org/x/tools v0.16.1
 	golang.org/x/vuln v1.0.1
@@ -99,10 +99,10 @@ require (
 	gitlab.com/digitalxero/go-conventional-commit v1.0.7 // indirect
 	golang.org/x/exp v0.0.0-20230212135524-a684f29349b6 // indirect
 	golang.org/x/mod v0.14.0 // indirect
-	golang.org/x/net v0.19.0 // indirect
+	golang.org/x/net v0.20.0 // indirect
 	golang.org/x/sync v0.5.0 // indirect
-	golang.org/x/sys v0.15.0 // indirect
-	golang.org/x/term v0.15.0 // indirect
+	golang.org/x/sys v0.16.0 // indirect
+	golang.org/x/term v0.16.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
