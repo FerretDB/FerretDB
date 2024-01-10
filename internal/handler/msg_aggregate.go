@@ -247,8 +247,6 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, err
 	}
 
-	cancel := func() {}
-
 	findDone := make(chan struct{})
 	defer close(findDone)
 
