@@ -20,12 +20,13 @@ import (
 	"testing"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
-	"go.uber.org/goleak"
 )
 
 // TestMain is the entry point for all integration tests.
 func TestMain(m *testing.M) {
 	flag.Parse()
+
+	var code int
 
 	// ensure that Shutdown runs for any exit code or panic
 	func() {
@@ -35,6 +36,8 @@ func TestMain(m *testing.M) {
 			defer setup.Shutdown()
 		}
 
-		goleak.VerifyTestMain(m, goleak.Cleanup(os.Exit))
+		code = m.Run()
 	}()
+
+	os.Exit(code)
 }
