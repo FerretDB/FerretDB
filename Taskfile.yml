@@ -608,8 +608,8 @@ tasks:
         sh: bin/envtool{{exeExt}} shell read build/version/version.txt
       COMMIT:
         sh: bin/envtool{{exeExt}} shell read build/version/commit.txt
-      requires:
-        vars: [FILE, TARGET, OUTPUT]
+    requires:
+      vars: [FILE, TARGET, OUTPUT]
 
   build-move-check:
     cmds:
