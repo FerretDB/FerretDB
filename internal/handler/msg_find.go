@@ -98,32 +98,20 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	cancel := func() {}
-
 	if params.MaxTimeMS != 0 {
-		findDone := make(chan struct{})
-		defer close(findDone)
-
-		ctx, cancel = context.WithCancel(ctx)
-
-		go func() {
-			t := time.NewTimer(time.Duration(params.MaxTimeMS) * time.Millisecond)
-			defer t.Stop()
-
-			select {
-			case <-t.C:
-				cancel()
-			case <-findDone:
-			}
-		}()
-	}
-
-	queryRes, err := coll.Query(ctx, qp)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
+		// It is not clear if maxTimeMS affects only find, or both find and getMore (as the current code does).
+		// TODO https://github.com/FerretDB/FerretDB/issues/2984
+		ctx, cancel = context.WithTimeout(ctx, time.Duration(params.MaxTimeMS)*time.Millisecond)
 	}
 
 	// closer accumulates all things that should be closed / canceled.
 	closer := iterator.NewMultiCloser(iterator.CloserFunc(cancel))
+
+	queryRes, err := coll.Query(ctx, qp)
+	if err != nil {
+		closer.Close()
+		return nil, lazyerrors.Error(err)
+	}
 
 	iter, err := h.makeFindIter(queryRes.Iter, closer, params)
 	if err != nil {
