@@ -250,25 +250,21 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	cancel := func() {}
 
 	findDone := make(chan struct{})
-	defer func() {
-		findDone <- struct{}{}
+	defer close(findDone)
+
+	var cancel context.CancelFunc
+	ctx, cancel = context.WithCancel(ctx)
+
+	go func() {
+		t := time.NewTimer(time.Duration(maxTimeMS) * time.Millisecond)
+		defer t.Stop()
+
+		select {
+		case <-t.C:
+			cancel()
+		case <-findDone:
+		}
 	}()
-
-	if maxTimeMS != 0 {
-		ctx, cancel = context.WithCancel(ctx)
-
-		timeout := time.NewTimer(time.Duration(maxTimeMS) * time.Millisecond)
-		defer timeout.Stop()
-
-		go func() {
-			select {
-			case <-timeout.C:
-				cancel()
-			case <-findDone:
-				return
-			}
-		}()
-	}
 
 	closer := iterator.NewMultiCloser(iterator.CloserFunc(cancel))
 

@@ -97,37 +97,30 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
-	cancel := func() {}
-
 	findDone := make(chan struct{})
-	defer func() {
-		findDone <- struct{}{}
+	defer close(findDone)
+
+	var cancel context.CancelFunc
+	ctx, cancel = context.WithCancel(ctx)
+
+	go func() {
+		t := time.NewTimer(time.Duration(params.MaxTimeMS) * time.Millisecond)
+		defer t.Stop()
+
+		select {
+		case <-t.C:
+			cancel()
+		case <-findDone:
+		}
 	}()
 
-	if params.MaxTimeMS != 0 {
-		ctx, cancel = context.WithCancel(ctx)
-
-		timeout := time.NewTimer(time.Duration(params.MaxTimeMS) * time.Millisecond)
-		defer timeout.Stop()
-
-		go func() {
-			select {
-			case <-timeout.C:
-				cancel()
-			case <-findDone:
-				return
-			}
-		}()
+	queryRes, err := coll.Query(ctx, qp)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
 	// closer accumulates all things that should be closed / canceled.
 	closer := iterator.NewMultiCloser(iterator.CloserFunc(cancel))
-
-	queryRes, err := coll.Query(ctx, qp)
-	if err != nil {
-		closer.Close()
-		return nil, lazyerrors.Error(err)
-	}
 
 	iter, err := h.makeFindIter(queryRes.Iter, closer, params)
 	if err != nil {
@@ -186,10 +179,6 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	for _, doc := range docs {
 		firstBatch.Append(doc)
 	}
-
-	//if params.MaxTimeMS != 0 {
-	//	findDone <- struct{}{}
-	//}
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
