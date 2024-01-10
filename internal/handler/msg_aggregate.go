@@ -250,6 +250,9 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	cancel := func() {}
 
 	findDone := make(chan struct{})
+	defer func() {
+		findDone <- struct{}{}
+	}()
 
 	if maxTimeMS != 0 {
 		ctx, cancel = context.WithCancel(ctx)
@@ -379,10 +382,6 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		cursorID = 0
 
 		cursor.Close()
-	}
-
-	if maxTimeMS != 0 {
-		findDone <- struct{}{}
 	}
 
 	var reply wire.OpMsg
