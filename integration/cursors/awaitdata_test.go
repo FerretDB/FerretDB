@@ -368,7 +368,6 @@ func TestCursorsTailableAwaitDataAfterInsertStress(t *testing.T) {
 			}
 
 			for i := 0; i < 2; i++ {
-				var res bson.D
 				err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
 				require.NoError(t, err)
 
