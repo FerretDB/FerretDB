@@ -97,12 +97,12 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
-	findDone := make(chan struct{})
-	defer close(findDone)
-
 	cancel := func() {}
 
 	if params.MaxTimeMS != 0 {
+		findDone := make(chan struct{})
+		defer close(findDone)
+
 		ctx, cancel = context.WithCancel(ctx)
 
 		go func() {

@@ -247,22 +247,25 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, err
 	}
 
-	findDone := make(chan struct{})
-	defer close(findDone)
+	cancel := func() {}
 
-	var cancel context.CancelFunc
-	ctx, cancel = context.WithCancel(ctx)
+	if maxTimeMS != 0 {
+		findDone := make(chan struct{})
+		defer close(findDone)
 
-	go func() {
-		t := time.NewTimer(time.Duration(maxTimeMS) * time.Millisecond)
-		defer t.Stop()
+		ctx, cancel = context.WithCancel(ctx)
 
-		select {
-		case <-t.C:
-			cancel()
-		case <-findDone:
-		}
-	}()
+		go func() {
+			t := time.NewTimer(time.Duration(maxTimeMS) * time.Millisecond)
+			defer t.Stop()
+
+			select {
+			case <-t.C:
+				cancel()
+			case <-findDone:
+			}
+		}()
+	}
 
 	closer := iterator.NewMultiCloser(iterator.CloserFunc(cancel))
 
