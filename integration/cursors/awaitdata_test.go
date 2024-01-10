@@ -189,7 +189,7 @@ func TestCursorsAwaitDataErrors(t *testing.T) {
 	})
 }
 
-func TestCursorsTailableAwaitData(t *testing.T) {
+func TestCursorsTailableAwaitDataAfterInsertStress(t *testing.T) {
 	var count atomic.Int32
 
 	teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
