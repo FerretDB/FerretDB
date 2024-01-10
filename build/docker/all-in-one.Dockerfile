@@ -1,6 +1,8 @@
 # syntax=docker/dockerfile:1
 
-# for all-in-one releases (`all-in-one` image)
+# Dockerfile for all-in-one releases (`all-in-one` image).
+# It always uses native compilation with race detector
+# because packages are only available for amd64 and arm64 anyway.
 
 # While we already know commit and version from commit.txt and version.txt inside image,
 # it is not possible to use them in LABELs for the final image.
@@ -10,16 +12,9 @@ ARG LABEL_VERSION
 ARG LABEL_COMMIT
 
 
-# build stage
+# prepare stage
 
-FROM ghcr.io/ferretdb/golang:1.21.5-1 AS all-in-one-build
-
-ARG TARGETARCH
-
-ARG LABEL_VERSION
-ARG LABEL_COMMIT
-RUN test -n "$LABEL_VERSION"
-RUN test -n "$LABEL_COMMIT"
+FROM --platform=$BUILDPLATFORM golang:1.21.6 AS all-in-one-prepare
 
 # use a single directory for all Go caches to simpliy RUN --mount commands below
 ENV GOPATH /cache/gopath
@@ -29,30 +24,56 @@ ENV GOMODCACHE /cache/gomodcache
 # remove ",direct"
 ENV GOPROXY https://proxy.golang.org
 
-# do not raise it without providing a separate v1 build
-# because v2+ is problematic for some virtualization platforms and older hardware
-ENV GOAMD64=v1
+COPY go.mod go.sum /src/
 
-# GOARM is not set because it is ignored for arm64
+WORKDIR /src
 
-ENV CGO_ENABLED=1
+RUN --mount=type=cache,target=/cache <<EOF
+set -ex
+
+go mod download
+go mod verify
+EOF
+
+
+# build stage
+
+FROM golang:1.21.6 AS all-in-one-build
+
+ARG TARGETARCH
+
+ARG LABEL_VERSION
+ARG LABEL_COMMIT
+RUN test -n "$LABEL_VERSION"
+RUN test -n "$LABEL_COMMIT"
+
+# use the same directories for Go caches as above
+ENV GOPATH /cache/gopath
+ENV GOCACHE /cache/gocache
+ENV GOMODCACHE /cache/gomodcache
+
+# modules are already downloaded
+ENV GOPROXY off
 
 # see .dockerignore
 WORKDIR /src
 COPY . .
 
+# to add a dependency
+COPY --from=all-in-one-prepare /src/go.mod /src/go.sum /src/
+
 RUN --mount=type=cache,target=/cache <<EOF
 set -ex
 
-# copy cached stdlib builds from base image
-flock --verbose /cache/ cp -Rn /root/.cache/go-build/. /cache/gocache
-
-# TODO https://github.com/FerretDB/FerretDB/issues/2170
-# That command could be run only once by using a separate stage;
-# see https://www.docker.com/blog/faster-multi-platform-builds-dockerfile-cross-compilation-guide/
-flock --verbose /cache/ go mod download
-
 git status
+
+# Do not raise it without providing a separate v1 build
+# because v2+ is problematic for some virtualization platforms and older hardware.
+export GOAMD64=v1
+
+# GOARM is not set because it is ignored for arm64
+
+export CGO_ENABLED=1
 
 # Disable race detector on arm64 due to https://github.com/golang/go/issues/29948
 # (and that happens on GitHub-hosted Actions runners).
@@ -63,9 +84,11 @@ then
     RACE=true
 fi
 
+go env
+
 # Do not trim paths to make debugging with delve easier.
 
-# check that stdlib was cached
+# check if stdlib was cached
 go install -v -race=$RACE std
 
 go build -v -o=bin/ferretdb -race=$RACE -tags=ferretdb_debug -coverpkg=./... ./cmd/ferretdb
@@ -92,7 +115,7 @@ COPY --from=all-in-one-build /src/build/docker/all-in-one/ferretdb.sh /etc/servi
 COPY --from=all-in-one-build /src/build/docker/all-in-one/postgresql.sh /etc/service/postgresql/run
 COPY --from=all-in-one-build /src/build/docker/all-in-one/entrypoint.sh /entrypoint.sh
 
-RUN --mount=type=cache,target=/var/cache/apt <<EOF
+RUN --mount=type=cache,sharing=locked,target=/var/cache/apt <<EOF
 set -ex
 
 apt update
