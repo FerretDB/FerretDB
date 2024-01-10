@@ -190,117 +190,122 @@ func TestCursorsAwaitDataErrors(t *testing.T) {
 }
 
 func TestCursorsTailableAwaitData(t *testing.T) {
-	t.Parallel()
-
 	var count atomic.Int32
 
 	teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
-		s := setup.SetupWithOpts(t, nil)
-		db, ctx := s.Collection.Database(), s.Ctx
-
 		testID := count.Add(1)
-		collName := fmt.Sprintf("%s_%d", testutil.CollectionName(t), testID)
 
-		ready <- struct{}{}
-		<-start
+		t.Run(fmt.Sprint(testID), func(t *testing.T) {
 
-		opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(10000)
-		err := db.CreateCollection(s.Ctx, collName, opts)
-		require.NoError(t, err)
+			s := setup.SetupWithOpts(t, &setup.SetupOpts{
+				DatabaseName: fmt.Sprintf("%s_%d", testutil.DatabaseName(t), testID),
+			})
 
-		collection := db.Collection(collName)
+			db, ctx := s.Collection.Database(), s.Ctx
 
-		bsonArr, arr := integration.GenerateDocuments(0, 3)
+			collName := fmt.Sprintf("%s_%d", testutil.CollectionName(t), testID)
 
-		_, err = collection.InsertMany(ctx, bsonArr)
-		require.NoError(t, err)
+			ready <- struct{}{}
+			<-start
 
-		var cursorID any
+			opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(10000)
+			err := db.CreateCollection(s.Ctx, collName, opts)
+			require.NoError(t, err)
 
-		cmd := bson.D{
-			{"find", collection.Name()},
-			{"batchSize", 1},
-			{"tailable", true},
-			{"awaitData", true},
-		}
+			collection := db.Collection(collName)
 
-		var res bson.D
-		err = collection.Database().RunCommand(ctx, cmd).Decode(&res)
-		require.NoError(t, err)
+			bsonArr, arr := integration.GenerateDocuments(0, 3)
 
-		var firstBatch *types.Array
-		firstBatch, cursorID = getFirstBatch(t, res)
+			_, err = collection.InsertMany(ctx, bsonArr)
+			require.NoError(t, err)
 
-		expectedFirstBatch := integration.ConvertDocuments(t, arr[:1])
-		require.Equal(t, len(expectedFirstBatch), firstBatch.Len())
-		require.Equal(t, expectedFirstBatch[0], must.NotFail(firstBatch.Get(0)))
+			var cursorID any
 
-		getMoreCmd := bson.D{
-			{"getMore", cursorID},
-			{"collection", collection.Name()},
-			{"batchSize", 1},
-		}
+			cmd := bson.D{
+				{"find", collection.Name()},
+				{"batchSize", 1},
+				{"tailable", true},
+				{"awaitData", true},
+			}
 
-		for i := 0; i < 2; i++ {
 			var res bson.D
+			err = collection.Database().RunCommand(ctx, cmd).Decode(&res)
+			require.NoError(t, err)
+
+			var firstBatch *types.Array
+			firstBatch, cursorID = getFirstBatch(t, res)
+
+			expectedFirstBatch := integration.ConvertDocuments(t, arr[:1])
+			require.Equal(t, len(expectedFirstBatch), firstBatch.Len())
+			require.Equal(t, expectedFirstBatch[0], must.NotFail(firstBatch.Get(0)))
+
+			getMoreCmd := bson.D{
+				{"getMore", cursorID},
+				{"collection", collection.Name()},
+				{"batchSize", 1},
+			}
+
+			for i := 0; i < 2; i++ {
+				var res bson.D
+				err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
+				require.NoError(t, err)
+
+				nextBatch, nextID := getNextBatch(t, res)
+				expectedNextBatch := integration.ConvertDocuments(t, arr[i+1:i+2])
+
+				assert.Equal(t, cursorID, nextID)
+
+				require.Equal(t, len(expectedNextBatch), nextBatch.Len())
+				require.Equal(t, expectedNextBatch[0], must.NotFail(nextBatch.Get(0)))
+			}
+
+			getMoreCmd = bson.D{
+				{"getMore", cursorID},
+				{"collection", collection.Name()},
+				{"batchSize", 1},
+			}
+
 			err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
 			require.NoError(t, err)
 
 			nextBatch, nextID := getNextBatch(t, res)
-			expectedNextBatch := integration.ConvertDocuments(t, arr[i+1:i+2])
+			require.Equal(t, 0, nextBatch.Len())
+			assert.Equal(t, cursorID, nextID)
+
+			getMoreCmd = bson.D{
+				{"getMore", cursorID},
+				{"collection", collection.Name()},
+				{"batchSize", 1},
+				{"maxTimeMS", 2000},
+			}
+
+			newDoc := bson.D{{"_id", "new"}}
+			_, err = collection.InsertOne(ctx, newDoc)
+			require.NoError(t, err)
+
+			err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
+			require.NoError(t, err)
+
+			nextBatch, nextID = getNextBatch(t, res)
 
 			assert.Equal(t, cursorID, nextID)
 
-			require.Equal(t, len(expectedNextBatch), nextBatch.Len())
-			require.Equal(t, expectedNextBatch[0], must.NotFail(nextBatch.Get(0)))
-		}
+			require.Equal(t, 1, nextBatch.Len())
+			require.Equal(t, integration.ConvertDocument(t, newDoc), must.NotFail(nextBatch.Get(0)))
 
-		getMoreCmd = bson.D{
-			{"getMore", cursorID},
-			{"collection", collection.Name()},
-			{"batchSize", 1},
-		}
+			getMoreCmd = bson.D{
+				{"getMore", cursorID},
+				{"collection", collection.Name()},
+				{"batchSize", 1},
+			}
 
-		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
-		require.NoError(t, err)
+			err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
+			require.NoError(t, err)
 
-		nextBatch, nextID := getNextBatch(t, res)
-		require.Equal(t, 0, nextBatch.Len())
-		assert.Equal(t, cursorID, nextID)
-
-		getMoreCmd = bson.D{
-			{"getMore", cursorID},
-			{"collection", collection.Name()},
-			{"batchSize", 1},
-			{"maxTimeMS", 2000},
-		}
-
-		newDoc := bson.D{{"_id", "new"}}
-		_, err = collection.InsertOne(ctx, newDoc)
-		require.NoError(t, err)
-
-		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
-		require.NoError(t, err)
-
-		nextBatch, nextID = getNextBatch(t, res)
-
-		assert.Equal(t, cursorID, nextID)
-
-		require.Equal(t, 1, nextBatch.Len())
-		require.Equal(t, integration.ConvertDocument(t, newDoc), must.NotFail(nextBatch.Get(0)))
-
-		getMoreCmd = bson.D{
-			{"getMore", cursorID},
-			{"collection", collection.Name()},
-			{"batchSize", 1},
-		}
-
-		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
-		require.NoError(t, err)
-
-		nextBatch, nextID = getNextBatch(t, res)
-		require.Equal(t, 0, nextBatch.Len())
-		assert.Equal(t, cursorID, nextID)
+			nextBatch, nextID = getNextBatch(t, res)
+			require.Equal(t, 0, nextBatch.Len())
+			assert.Equal(t, cursorID, nextID)
+		})
 	})
 }
 
