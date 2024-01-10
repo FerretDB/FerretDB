@@ -100,6 +100,9 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	cancel := func() {}
 
 	findDone := make(chan struct{})
+	defer func() {
+		findDone <- struct{}{}
+	}()
 
 	if params.MaxTimeMS != 0 {
 		ctx, cancel = context.WithCancel(ctx)
@@ -184,9 +187,9 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		firstBatch.Append(doc)
 	}
 
-	if params.MaxTimeMS != 0 {
-		findDone <- struct{}{}
-	}
+	//if params.MaxTimeMS != 0 {
+	//	findDone <- struct{}{}
+	//}
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
