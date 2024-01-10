@@ -25,7 +25,7 @@ require (
 	go.uber.org/automaxprocs v1.5.3
 	go.uber.org/zap v1.26.0
 	golang.org/x/crypto v0.18.0
-	golang.org/x/crypto/x509roots/fallback v0.0.0-20231218163308-9d2ee975ef9f
+	golang.org/x/crypto/x509roots/fallback v0.0.0-20240108164429-dbb6ec16ecef
 	golang.org/x/exp v0.0.0-20240103183307-be819d1f06fc
 	golang.org/x/sys v0.16.0
 	modernc.org/sqlite v1.28.0
