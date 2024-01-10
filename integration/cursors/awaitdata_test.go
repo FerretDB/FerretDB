@@ -192,13 +192,12 @@ func TestCursorsAwaitDataErrors(t *testing.T) {
 func TestCursorsTailableAwaitData(t *testing.T) {
 	t.Parallel()
 
-	s := setup.SetupWithOpts(t, nil)
-
-	db, ctx := s.Collection.Database(), s.Ctx
-
 	var count atomic.Int32
 
 	teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
+		s := setup.SetupWithOpts(t, nil)
+		db, ctx := s.Collection.Database(), s.Ctx
+
 		testID := count.Add(1)
 		collName := fmt.Sprintf("%s_%d", testutil.CollectionName(t), testID)
 
