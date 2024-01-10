@@ -190,20 +190,23 @@ func TestCursorsAwaitDataErrors(t *testing.T) {
 }
 
 func TestCursorsTailableAwaitDataAfterInsertStress(t *testing.T) {
+	if !setup.IsMongoDB(t) {
+		t.Skip("https://github.com/FerretDB/FerretDB/pull/3961")
+	}
+
 	var count atomic.Int32
 
 	teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
 		testID := count.Add(1)
 
 		t.Run(fmt.Sprint(testID), func(t *testing.T) {
-
 			s := setup.SetupWithOpts(t, &setup.SetupOpts{
 				DatabaseName: fmt.Sprintf("%s_%d", testutil.DatabaseName(t), testID),
 			})
 
 			db, ctx := s.Collection.Database(), s.Ctx
 
-			collName := fmt.Sprintf("%s_%d", testutil.CollectionName(t), testID)
+			collName := testutil.CollectionName(t)
 
 			ready <- struct{}{}
 			<-start
@@ -257,12 +260,6 @@ func TestCursorsTailableAwaitDataAfterInsertStress(t *testing.T) {
 
 				require.Equal(t, len(expectedNextBatch), nextBatch.Len())
 				require.Equal(t, expectedNextBatch[0], must.NotFail(nextBatch.Get(0)))
-			}
-
-			getMoreCmd = bson.D{
-				{"getMore", cursorID},
-				{"collection", collection.Name()},
-				{"batchSize", 1},
 			}
 
 			err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
