@@ -100,19 +100,22 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	findDone := make(chan struct{})
 	defer close(findDone)
 
-	var cancel context.CancelFunc
-	ctx, cancel = context.WithCancel(ctx)
+	cancel := func() {}
 
-	go func() {
-		t := time.NewTimer(time.Duration(params.MaxTimeMS) * time.Millisecond)
-		defer t.Stop()
+	if params.MaxTimeMS != 0 {
+		ctx, cancel = context.WithCancel(ctx)
 
-		select {
-		case <-t.C:
-			cancel()
-		case <-findDone:
-		}
-	}()
+		go func() {
+			t := time.NewTimer(time.Duration(params.MaxTimeMS) * time.Millisecond)
+			defer t.Stop()
+
+			select {
+			case <-t.C:
+				cancel()
+			case <-findDone:
+			}
+		}()
+	}
 
 	queryRes, err := coll.Query(ctx, qp)
 	if err != nil {
