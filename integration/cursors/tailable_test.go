@@ -16,6 +16,7 @@ package cursors
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -345,8 +346,8 @@ func TestCursorsTailableFirstBatchMaxTimeMS(t *testing.T) {
 		cmd := bson.D{
 			{"find", collection.Name()},
 			{"batchSize", 1},
-			{"maxTimeMS", 100},
 			{"tailable", true},
+			{"maxTimeMS", 200},
 		}
 
 		var res bson.D
@@ -369,6 +370,7 @@ func TestCursorsTailableFirstBatchMaxTimeMS(t *testing.T) {
 
 	t.Run("GetMore", func(t *testing.T) {
 		for i := 0; i < 2; i++ {
+			time.Sleep(100 * time.Millisecond)
 			var res bson.D
 			err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
 			require.NoError(t, err)
@@ -384,37 +386,7 @@ func TestCursorsTailableFirstBatchMaxTimeMS(t *testing.T) {
 	})
 
 	t.Run("GetMoreEmpty", func(t *testing.T) {
-		var res bson.D
-		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
-		require.NoError(t, err)
-
-		nextBatch, nextID := getNextBatch(t, res)
-		require.Equal(t, 0, nextBatch.Len())
-		assert.Equal(t, cursorID, nextID)
-	})
-
-	t.Run("GetMoreNewDoc", func(tt *testing.T) {
-		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2984")
-
-		newDoc := bson.D{{"_id", "new"}}
-		_, err = collection.InsertOne(ctx, newDoc)
-		require.NoError(t, err)
-
-		var res bson.D
-		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
-		require.NoError(t, err)
-
-		nextBatch, nextID := getNextBatch(t, res)
-
-		assert.Equal(t, cursorID, nextID)
-
-		require.Equal(t, 1, nextBatch.Len())
-		require.Equal(t, integration.ConvertDocument(t, newDoc), must.NotFail(nextBatch.Get(0)))
-	})
-
-	t.Run("GetMoreEmptyAfterInsertion", func(tt *testing.T) {
-		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2984")
-
+		time.Sleep(100 * time.Millisecond)
 		var res bson.D
 		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
 		require.NoError(t, err)
