@@ -468,7 +468,6 @@ type CollectionCreateParams struct {
 	Name            string
 	CappedSize      int64
 	CappedDocuments int64
-	_               struct{} // prevent unkeyed literals
 }
 
 // Capped returns true if capped collection creation is requested.
