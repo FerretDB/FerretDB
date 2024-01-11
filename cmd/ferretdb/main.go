@@ -95,8 +95,8 @@ var cli struct {
 		DisablePushdown bool `default:"false" help:"Experimental: disable pushdown."`
 
 		CappedCleanup struct {
-			Interval   time.Duration `default:"1m" help:"Experimental: capped collections cleanup interval." hidden:""`
-			Percentage uint8         `default:"10" help:"Experimental: percentage of documents to cleanup."  hidden:""`
+			Interval   time.Duration `default:"1m" help:"Experimental: capped collections cleanup interval."`
+			Percentage uint8         `default:"10" help:"Experimental: percentage of documents to cleanup."`
 		} `embed:"" prefix:"capped-cleanup-"`
 
 		EnableNewAuth bool `default:"false" help:"Experimental: enable new authentication." hidden:""`

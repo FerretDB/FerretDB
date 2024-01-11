@@ -249,20 +249,20 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	cancel := func() {}
 
-	findDone := make(chan struct{})
-
 	if maxTimeMS != 0 {
+		findDone := make(chan struct{})
+		defer close(findDone)
+
 		ctx, cancel = context.WithCancel(ctx)
 
-		timeout := time.NewTimer(time.Duration(maxTimeMS) * time.Millisecond)
-		defer timeout.Stop()
-
 		go func() {
+			t := time.NewTimer(time.Duration(maxTimeMS) * time.Millisecond)
+			defer t.Stop()
+
 			select {
-			case <-timeout.C:
+			case <-t.C:
 				cancel()
 			case <-findDone:
-				return
 			}
 		}()
 	}
@@ -379,10 +379,6 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		cursorID = 0
 
 		cursor.Close()
-	}
-
-	if maxTimeMS != 0 {
-		findDone <- struct{}{}
 	}
 
 	var reply wire.OpMsg
