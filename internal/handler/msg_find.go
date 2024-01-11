@@ -319,7 +319,7 @@ func handleMaxTimeMSError(err error, maxTimeMS int64, cmd string) error {
 	case maxTimeMS != 0 && errors.Is(err, context.Canceled):
 		return handlererrors.NewCommandErrorMsgWithArgument(
 			handlererrors.ErrMaxTimeMSExpired,
-			"Executor error during "+cmd+"command :: caused by :: operation exceeded time limit",
+			"Executor error during "+cmd+" command :: caused by :: operation exceeded time limit",
 			cmd,
 		)
 	default:
