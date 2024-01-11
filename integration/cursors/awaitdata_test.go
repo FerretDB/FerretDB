@@ -188,6 +188,36 @@ func TestCursorsAwaitDataErrors(t *testing.T) {
 		integration.AssertEqualCommandError(t, expectedErr, err)
 	})
 }
+func TestCursorsTailableAwaitDataTODO(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupWithOpts(t, nil)
+
+	db, ctx := s.Collection.Database(), s.Ctx
+
+	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(10000)
+	err := db.CreateCollection(s.Ctx, testutil.CollectionName(t), opts)
+	require.NoError(t, err)
+
+	collection := db.Collection(t.Name())
+
+	bsonArr, _ := integration.GenerateDocuments(0, 3)
+
+	_, err = collection.InsertMany(ctx, bsonArr)
+	require.NoError(t, err)
+
+	findOpts := options.Find().SetCursorType(options.TailableAwait).SetMaxAwaitTime(20 * time.Millisecond).SetBatchSize(1)
+
+	cur, err := collection.Find(ctx, bson.D{}, findOpts)
+	require.NoError(t, err)
+
+	for i := 0; i < 3; i++ {
+		require.True(t, cur.Next(ctx))
+	}
+
+	require.False(t, cur.Next(ctx))
+
+}
 
 func TestCursorsTailableAwaitData(t *testing.T) {
 	t.Parallel()
