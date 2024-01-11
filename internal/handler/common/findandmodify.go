@@ -24,21 +24,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
-//go:generate ../../../bin/stringer -linecomment -type UpsertOperation
-
-// UpsertOperation represents operation type of upsert.
-type UpsertOperation uint8
-
-const (
-	_ UpsertOperation = iota
-
-	// UpsertOperationInsert indicates that upsert is an insert operation.
-	UpsertOperationInsert
-
-	// UpsertOperationUpdate indicates that upsert is a update operation.
-	UpsertOperationUpdate
-)
-
 // FindAndModifyParams represent parameters for the findAndModify command.
 type FindAndModifyParams struct {
 	DB                string          `ferretdb:"$db"`
@@ -67,21 +52,6 @@ type FindAndModifyParams struct {
 	BypassDocumentValidation bool            `ferretdb:"bypassDocumentValidation,ignored"`
 	LSID                     any             `ferretdb:"lsid,ignored"`
 	ClusterTime              any             `ferretdb:"$clusterTime,ignored"`
-}
-
-// UpsertParams represents parameters for upsert, if the document exists UpdateParams is set.
-// Otherwise, Insert is set. It returns ReturnValue to return to the client.
-type UpsertParams struct {
-	// ReturnValue is the value set on the command response.
-	// It returns original document for update operation, and null for insert operation.
-	// If FindAndModifyParams.ReturnNewDocument is true, it returns upserted document.
-	ReturnValue any
-
-	// Upsert is a document used for insert or update operation.
-	Upsert *types.Document
-
-	// Operation is the type of upsert to perform.
-	Operation UpsertOperation
 }
 
 // GetFindAndModifyParams returns `findAndModifyParams` command parameters.
