@@ -41,7 +41,6 @@ func (h *Handler) MsgDropAllUsersFromDatabase(ctx context.Context, msg *wire.OpM
 		return nil, err
 	}
 
-	// Users are saved in the "admin" database.
 	adminDB, err := h.b.Database("admin")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -52,9 +51,7 @@ func (h *Handler) MsgDropAllUsersFromDatabase(ctx context.Context, msg *wire.OpM
 		return nil, lazyerrors.Error(err)
 	}
 
-	qr, err := users.Query(ctx, &backends.QueryParams{
-		Filter: must.NotFail(types.NewDocument("db", dbName)),
-	})
+	qr, err := users.Query(ctx, nil)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -63,12 +60,22 @@ func (h *Handler) MsgDropAllUsersFromDatabase(ctx context.Context, msg *wire.OpM
 
 	defer qr.Iter.Close()
 
+	filter := must.NotFail(types.NewDocument("db", dbName))
+
 	for {
 		_, v, err := qr.Iter.Next()
 		if errors.Is(err, iterator.ErrIteratorDone) {
 			break
 		}
-		ids = append(ids, must.NotFail(v.Get("_id")))
+
+		matches, err := common.FilterDocument(v, filter)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		if matches {
+			ids = append(ids, must.NotFail(v.Get("_id")))
+		}
 	}
 
 	var deleted int32

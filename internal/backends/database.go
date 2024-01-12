@@ -78,7 +78,7 @@ func (dbc *databaseContract) Collection(name string) (Collection, error) {
 
 // ListCollectionsParams represents the parameters of Database.ListCollections method.
 type ListCollectionsParams struct {
-	Name string // TODO https://github.com/FerretDB/FerretDB/issues/3601
+	Name string
 }
 
 // ListCollectionsResult represents the results of Database.ListCollections method.
@@ -102,7 +102,6 @@ func (ci *CollectionInfo) Capped() bool {
 
 // ListCollections returns a list collections in the database sorted by name.
 //
-// TODO https://github.com/FerretDB/FerretDB/issues/3601
 // If ListCollectionsParams' Name is not empty, then only the collection with that name should be returned (or an empty list).
 //
 // Database may not exist; that's not an error.

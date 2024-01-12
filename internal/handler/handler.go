@@ -67,7 +67,9 @@ type Handler struct {
 //
 //nolint:vet // for readability
 type NewOpts struct {
-	Backend backends.Backend
+	Backend     backends.Backend
+	TCPHost     string
+	ReplSetName string
 
 	L             *zap.Logger
 	ConnMetrics   *connmetrics.ConnMetrics
@@ -190,7 +192,7 @@ func (h *Handler) cleanupAllCappedCollections(ctx context.Context) error {
 	}()
 
 	connInfo := conninfo.New()
-	connInfo.BypassAuth = true
+	connInfo.BypassBackendAuth = true
 	ctx = conninfo.Ctx(ctx, connInfo)
 
 	dbList, err := h.b.ListDatabases(ctx, nil)

@@ -52,10 +52,11 @@ import (
 //
 // Keep order in sync with documentation.
 var cli struct {
-	Version  bool   `default:"false"           help:"Print version to stdout and exit." env:"-"`
-	Handler  string `default:"postgresql"      help:"${help_handler}"`
-	Mode     string `default:"${default_mode}" help:"${help_mode}" enum:"${enum_mode}"`
-	StateDir string `default:"."               help:"Process state directory."`
+	Version     bool   `default:"false"           help:"Print version to stdout and exit." env:"-"`
+	Handler     string `default:"postgresql"      help:"${help_handler}"`
+	Mode        string `default:"${default_mode}" help:"${help_mode}"                      enum:"${enum_mode}"`
+	StateDir    string `default:"."               help:"Process state directory."`
+	ReplSetName string `default:""                help:"Replica set name."`
 
 	Listen struct {
 		Addr        string `default:"127.0.0.1:27017" help:"Listen TCP address."`
@@ -94,8 +95,8 @@ var cli struct {
 		DisablePushdown bool `default:"false" help:"Experimental: disable pushdown."`
 
 		CappedCleanup struct {
-			Interval   time.Duration `default:"1m" help:"Experimental: capped collections cleanup interval." hidden:""`
-			Percentage uint8         `default:"10" help:"Experimental: percentage of documents to cleanup."  hidden:""`
+			Interval   time.Duration `default:"1m" help:"Experimental: capped collections cleanup interval."`
+			Percentage uint8         `default:"10" help:"Experimental: percentage of documents to cleanup."`
 		} `embed:"" prefix:"capped-cleanup-"`
 
 		EnableNewAuth bool `default:"false" help:"Experimental: enable new authentication." hidden:""`
@@ -389,6 +390,8 @@ func run() {
 		Logger:        logger,
 		ConnMetrics:   metrics.ConnMetrics,
 		StateProvider: stateProvider,
+		TCPHost:       cli.Listen.Addr,
+		ReplSetName:   cli.ReplSetName,
 
 		PostgreSQLURL: postgreSQLFlags.PostgreSQLURL,
 
