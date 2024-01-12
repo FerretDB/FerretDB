@@ -398,7 +398,7 @@ jobs:
         if: failure() || env.KEY == ''
         env:
           KEY: ${{ secrets.FUZZ_CORPUS_DEPLOY_KEY }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: fuzz-corpus
           path: fuzz-corpus.zip
@@ -421,7 +421,7 @@ jobs:
 
       - name: Upload Linux logs
         if: failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: linux-logs
           path: linux-logs.zip

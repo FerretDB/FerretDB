@@ -30,6 +30,8 @@ const (
 
 	doubleMaxOverflow = float64(math.MaxInt64) + 1100.0 // 9223372036854777856.0: double value that is larger than MaxInt64
 	doubleMinOverflow = float64(math.MinInt64) - 1100.0 // -9223372036854777856.0: double value that is smaller than MinInt64
+
+	Int32Interval = "[0, 2147483647]" // Int32Interval is [0, math.MaxInt32]
 )
 
 var doubleMaxVerge = math.Nextafter(math.MaxFloat64, 0) // 1.7976931348623155e+308: double value that is close to the MaxFloat64 (1.7976931348623157e+308)

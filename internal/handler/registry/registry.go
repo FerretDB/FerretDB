@@ -17,6 +17,7 @@ package registry
 
 import (
 	"fmt"
+	"time"
 
 	"go.uber.org/zap"
 
@@ -43,6 +44,8 @@ type NewHandlerOpts struct {
 	Logger        *zap.Logger
 	ConnMetrics   *connmetrics.ConnMetrics
 	StateProvider *state.Provider
+	TCPHost       string
+	ReplSetName   string
 
 	// for `postgresql` handler
 	PostgreSQLURL string
@@ -63,10 +66,11 @@ type NewHandlerOpts struct {
 
 // TestOpts represents experimental configuration options.
 type TestOpts struct {
-	DisablePushdown bool
-	EnableOplog     bool
-	EnableNewAuth   bool
-	_               struct{} // prevent unkeyed literals
+	DisablePushdown         bool
+	CappedCleanupInterval   time.Duration
+	CappedCleanupPercentage uint8
+	EnableNewAuth           bool
+	_                       struct{} // prevent unkeyed literals
 }
 
 // NewHandler constructs a new handler.

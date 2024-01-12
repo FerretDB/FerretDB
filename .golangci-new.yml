@@ -66,6 +66,7 @@ linters:
     - asciicheck
     - depguard
     - exhaustive
+    - forbidigo
     - gci
     - gochecksumtype
     - goconst
@@ -100,7 +101,6 @@ linters:
     - exhaustivestruct
     - exhaustruct
     - exportloopref
-    - forbidigo
     - forcetypeassert
     - funlen
     - gochecknoglobals

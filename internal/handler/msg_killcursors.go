@@ -49,7 +49,7 @@ func (h *Handler) MsgKillCursors(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		return nil, err
 	}
 
-	username, _ := conninfo.Get(ctx).Auth()
+	username := conninfo.Get(ctx).Username()
 
 	cursors, err := common.GetRequiredParam[*types.Array](document, "cursors")
 	if err != nil {
@@ -98,7 +98,7 @@ func (h *Handler) MsgKillCursors(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 			continue
 		}
 
-		cursor.Close()
+		h.cursors.CloseAndRemove(cursor)
 		cursorsKilled.Append(id)
 	}
 
