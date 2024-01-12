@@ -23,6 +23,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
@@ -690,6 +691,83 @@ func TestFindAndModifyCompatUpsertSet(t *testing.T) {
 				{"update", bson.D{{"$set", bson.D{{"_id", "int32"}, {"v", int32(2)}}}}},
 			},
 		},
+		"UpsertQueryOperatorEq": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$eq", "non-existent"}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"$set", bson.D{{"new", "val"}}}}},
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/3856",
+		},
+		"UpsertQueryOperatorMixed": {
+			command: bson.D{
+				{"query", bson.D{
+					{"_id", bson.D{{"$eq", "non-existent"}}},
+					{"v", bson.D{{"$lt", 43}}},
+					{"non_existent", int32(0)},
+				}},
+				{"upsert", true},
+				{"update", bson.D{{"$set", bson.D{{"new", "val"}}}}},
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/3856",
+		},
+	}
+
+	testFindAndModifyCompat(t, testCases)
+}
+
+func TestFindAndModifyCompatSetOnInsert(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]findAndModifyCompatTestCase{
+		"IDExists": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "int32"}}},
+				{"upsert", true},
+				{"new", true},
+				{"update", bson.D{{"$setOnInsert", bson.D{{"new", "val"}}}}},
+			},
+			providers: []shareddata.Provider{shareddata.Int32s},
+		},
+		"IDNotExists": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "non-existent"}}},
+				{"upsert", true},
+				{"new", true},
+				{"update", bson.D{{"$setOnInsert", bson.D{{"new", "val"}}}}},
+			},
+		},
+		"UpsertFalse": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "non-existent"}}},
+				{"upsert", false},
+				{"new", true},
+				{"update", bson.D{{"$setOnInsert", bson.D{{"new", "val"}}}}},
+			},
+		},
+		"SetWithSetOnInsert": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "non-existent"}}},
+				{"upsert", true},
+				{"new", true},
+				{"update", bson.D{
+					{"$set", bson.D{{"new", "val"}}},
+					{"$setOnInsert", bson.D{{"v", int32(42)}}},
+				}},
+			},
+		},
+		"ApplySetSkipSetOnInsert": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "int32"}}},
+				{"upsert", true},
+				{"new", true},
+				{"update", bson.D{
+					{"$set", bson.D{{"new", "val"}}},
+					{"$setOnInsert", bson.D{{"v", int32(43)}}},
+				}},
+			},
+			providers: []shareddata.Provider{shareddata.Int32s},
+		},
 	}
 
 	testFindAndModifyCompat(t, testCases)
@@ -777,11 +855,11 @@ func TestFindAndModifyCompatRemove(t *testing.T) {
 
 // findAndModifyCompatTestCase describes findAndModify compatibility test case.
 type findAndModifyCompatTestCase struct {
-	command bson.D
+	command    bson.D
+	resultType compatTestCaseResultType // defaults to nonEmptyResult
+	providers  []shareddata.Provider    // defaults to shareddata.AllProviders()
 
 	skip string // skips test if non-empty
-
-	resultType compatTestCaseResultType // defaults to nonEmptyResult
 }
 
 // testFindAndModifyCompat tests findAndModify compatibility test cases.
@@ -799,8 +877,14 @@ func testFindAndModifyCompat(t *testing.T, testCases map[string]findAndModifyCom
 
 			t.Parallel()
 
-			// Use per-test setup because findAndModify modifies data set.
-			ctx, targetCollections, compatCollections := setup.SetupCompat(t)
+			providers := shareddata.AllProviders()
+			if tc.providers != nil {
+				providers = tc.providers
+			}
+
+			s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{Providers: providers})
+
+			ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
 
 			var nonEmptyResults bool
 			for i := range targetCollections {

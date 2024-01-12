@@ -45,6 +45,13 @@ func IsMongoDB(tb testtb.TB) bool {
 	return *targetBackendF == "mongodb"
 }
 
+// IsHana returns true if the current test is running for Hana backend.
+//
+// This function should not be used lightly.
+func IsHana(tb testtb.TB) bool {
+	return *targetBackendF == "ferretdb-hana"
+}
+
 // FailsForFerretDB return testtb.TB that expects test to fail for FerretDB and pass for MongoDB.
 //
 // This function should not be used lightly and always with an issue URL.

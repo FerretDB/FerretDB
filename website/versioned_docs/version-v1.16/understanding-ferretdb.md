@@ -27,7 +27,7 @@ Check out our:
 
 - [Installation guide](quickstart-guide/docker.md)
 - [Key differences](diff.md)
-- [Basic CRUD operations](basic-operations/index.md)
+- [Basic CRUD operations](basic-operations/performing.md)
 
 :::
 

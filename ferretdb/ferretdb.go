@@ -117,10 +117,15 @@ func New(config *Config) (*FerretDB, error) {
 		Logger:        logger,
 		ConnMetrics:   metrics.ConnMetrics,
 		StateProvider: sp,
+		TCPHost:       config.Listener.TCP,
 
 		PostgreSQLURL: config.PostgreSQLURL,
 
 		SQLiteURL: config.SQLiteURL,
+
+		TestOpts: registry.TestOpts{
+			CappedCleanupPercentage: 10, // handler expects it to be a non-zero value
+		},
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct handler: %s", err)

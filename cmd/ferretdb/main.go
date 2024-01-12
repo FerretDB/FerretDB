@@ -51,13 +51,12 @@ import (
 // It's used for parsing the user input.
 //
 // Keep order in sync with documentation.
-//
-//nolint:lll // some tags are long
 var cli struct {
-	Version  bool   `default:"false"           help:"Print version to stdout and exit." env:"-"`
-	Handler  string `default:"postgresql"      help:"${help_handler}"`
-	Mode     string `default:"${default_mode}" help:"${help_mode}" enum:"${enum_mode}"`
-	StateDir string `default:"."               help:"Process state directory."`
+	Version     bool   `default:"false"           help:"Print version to stdout and exit." env:"-"`
+	Handler     string `default:"postgresql"      help:"${help_handler}"`
+	Mode        string `default:"${default_mode}" help:"${help_mode}"                      enum:"${enum_mode}"`
+	StateDir    string `default:"."               help:"Process state directory."`
+	ReplSetName string `default:""                help:"Replica set name."`
 
 	Listen struct {
 		Addr        string `default:"127.0.0.1:27017" help:"Listen TCP address."`
@@ -94,10 +93,14 @@ var cli struct {
 		RecordsDir string `default:"" help:"Testing: directory for record files."`
 
 		DisablePushdown bool `default:"false" help:"Experimental: disable pushdown."`
-		EnableOplog     bool `default:"false" help:"Experimental: enable capped collections, tailable cursors and OpLog." hidden:""`
-		EnableNewAuth   bool `default:"false" help:"Experimental: enable new authentication."                             hidden:""`
 
-		//nolint:lll // for readability
+		CappedCleanup struct {
+			Interval   time.Duration `default:"1m" help:"Experimental: capped collections cleanup interval."`
+			Percentage uint8         `default:"10" help:"Experimental: percentage of documents to cleanup."`
+		} `embed:"" prefix:"capped-cleanup-"`
+
+		EnableNewAuth bool `default:"false" help:"Experimental: enable new authentication." hidden:""`
+
 		Telemetry struct {
 			URL            string        `default:"https://beacon.ferretdb.io/" help:"Telemetry: reporting URL."`
 			UndecidedDelay time.Duration `default:"1h"                          help:"Telemetry: delay for undecided state."`
@@ -387,6 +390,8 @@ func run() {
 		Logger:        logger,
 		ConnMetrics:   metrics.ConnMetrics,
 		StateProvider: stateProvider,
+		TCPHost:       cli.Listen.Addr,
+		ReplSetName:   cli.ReplSetName,
 
 		PostgreSQLURL: postgreSQLFlags.PostgreSQLURL,
 
@@ -397,9 +402,10 @@ func run() {
 		MySQLURL: mySQLFlags.MySQLURL,
 
 		TestOpts: registry.TestOpts{
-			DisablePushdown: cli.Test.DisablePushdown,
-			EnableOplog:     cli.Test.EnableOplog,
-			EnableNewAuth:   cli.Test.EnableNewAuth,
+			DisablePushdown:         cli.Test.DisablePushdown,
+			CappedCleanupInterval:   cli.Test.CappedCleanup.Interval,
+			CappedCleanupPercentage: cli.Test.CappedCleanup.Percentage,
+			EnableNewAuth:           cli.Test.EnableNewAuth,
 		},
 	})
 	if err != nil {

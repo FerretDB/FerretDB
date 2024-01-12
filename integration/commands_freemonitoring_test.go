@@ -28,6 +28,7 @@ import (
 
 func TestCommandsFreeMonitoringGetFreeMonitoringStatus(t *testing.T) {
 	t.Parallel()
+	setup.SkipForMongoDB(t, "MongoDB decommissioned enabling free monitoring")
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{
 		DatabaseName: "admin",
 	})
@@ -52,6 +53,7 @@ func TestCommandsFreeMonitoringGetFreeMonitoringStatus(t *testing.T) {
 }
 
 func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
+	setup.SkipForMongoDB(t, "MongoDB decommissioned enabling free monitoring")
 	t.Parallel()
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{
 		DatabaseName: "admin",

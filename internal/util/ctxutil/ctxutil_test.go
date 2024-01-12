@@ -99,8 +99,7 @@ func simulateCompetingClients(clients int) int64 {
 		}
 	}
 
-	wg := sync.WaitGroup{}
-
+	var wg sync.WaitGroup
 	for i := 0; i < clients; i++ {
 		wg.Add(1)
 

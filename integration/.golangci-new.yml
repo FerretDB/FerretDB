@@ -18,6 +18,7 @@ linters-settings:
     exclude-functions:
       - (*database/sql.Rows).Close
       - (*github.com/FerretDB/FerretDB/internal/util/fsql.Rows).Close
+      - (*go.mongodb.org/mongo-driver/mongo.Cursor).Close
   errorlint:
     # see caveats at https://github.com/polyfloyd/go-errorlint#fmterrorf-wrapping-verb
     errorf: false

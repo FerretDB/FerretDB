@@ -15,9 +15,12 @@
 package cursors
 
 import (
+	"errors"
+	"fmt"
 	"math"
 	"net/url"
 	"testing"
+	"time"
 
 	"github.com/AlekSi/pointer"
 	"github.com/stretchr/testify/assert"
@@ -667,8 +670,9 @@ func TestCursorsGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "-1 value for maxTimeMS is out of range",
+				Message: "-1 value for maxTimeMS is out of range " + shareddata.Int32Interval,
 			},
+			altMessage: "-1 value for maxTimeMS is out of range",
 		},
 		"MaxLong": {
 			command: bson.D{
@@ -679,8 +683,9 @@ func TestCursorsGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "9223372036854775807 value for maxTimeMS is out of range",
+				Message: "9223372036854775807 value for maxTimeMS is out of range " + shareddata.Int32Interval,
 			},
+			altMessage: "9223372036854775807 value for maxTimeMS is out of range",
 		},
 		"Double": {
 			command: bson.D{
@@ -704,7 +709,7 @@ func TestCursorsGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "-14245345234123246 value for maxTimeMS is out of range",
+				Message: "-14245345234123246 value for maxTimeMS is out of range " + shareddata.Int32Interval,
 			},
 			altMessage: "-1.4245345234123246e+16 value for maxTimeMS is out of range",
 		},
@@ -717,7 +722,7 @@ func TestCursorsGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "9223372036854775807 value for maxTimeMS is out of range",
+				Message: "9223372036854775807 value for maxTimeMS is out of range " + shareddata.Int32Interval,
 			},
 			altMessage: "1.797693134862316e+308 value for maxTimeMS is out of range",
 		},
@@ -730,7 +735,7 @@ func TestCursorsGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "-9223372036854775808 value for maxTimeMS is out of range",
+				Message: "-9223372036854775808 value for maxTimeMS is out of range " + shareddata.Int32Interval,
 			},
 			altMessage: "-1.797693134862316e+308 value for maxTimeMS is out of range",
 		},
@@ -743,8 +748,9 @@ func TestCursorsGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "-1123123 value for maxTimeMS is out of range",
+				Message: "-1123123 value for maxTimeMS is out of range " + shareddata.Int32Interval,
 			},
+			altMessage: "-1123123 value for maxTimeMS is out of range",
 		},
 		"MaxInt": {
 			command: bson.D{
@@ -755,8 +761,9 @@ func TestCursorsGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "2147483648 value for maxTimeMS is out of range",
+				Message: "2147483648 value for maxTimeMS is out of range " + shareddata.Int32Interval,
 			},
+			altMessage: "2147483648 value for maxTimeMS is out of range",
 		},
 		"Null": {
 			command: bson.D{
@@ -824,6 +831,68 @@ func TestCursorsGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 	}
 }
 
+func TestCursorsGetMoreExhausted(t *testing.T) {
+	s := setup.SetupWithOpts(t, nil)
+
+	collection := s.Collection
+	db, ctx := collection.Database(), s.Ctx
+
+	arr, _ := integration.GenerateDocuments(0, 10)
+
+	_, err := collection.InsertMany(ctx, arr)
+	require.NoError(t, err)
+
+	var res bson.D
+	err = db.RunCommand(ctx, bson.D{
+		{"find", collection.Name()},
+		{"batchSize", 1},
+	}).Decode(&res)
+
+	require.NoError(t, err)
+
+	firstBatch, cursorID := getFirstBatch(t, res)
+	require.Equal(t, 1, firstBatch.Len())
+	require.NotNil(t, cursorID)
+
+	err = db.RunCommand(ctx, bson.D{
+		{"getMore", cursorID},
+		{"collection", collection.Name()},
+		{"batchSize", 9},
+	}).Decode(&res)
+
+	require.NoError(t, err)
+
+	nextBatch, nextID := getNextBatch(t, res)
+	require.Equal(t, 9, nextBatch.Len())
+	assert.Equal(t, cursorID, nextID)
+
+	err = db.RunCommand(ctx, bson.D{
+		{"getMore", cursorID},
+		{"collection", collection.Name()},
+		{"batchSize", 1},
+	}).Decode(&res)
+
+	require.NoError(t, err)
+
+	nextBatch, nextID = getNextBatch(t, res)
+	require.Equal(t, 0, nextBatch.Len())
+	assert.Equal(t, int64(0), nextID)
+
+	err = db.RunCommand(ctx, bson.D{
+		{"getMore", cursorID},
+		{"collection", collection.Name()},
+		{"batchSize", 1},
+	}).Err()
+
+	expectedErr := mongo.CommandError{
+		Code:    43,
+		Name:    "CursorNotFound",
+		Message: fmt.Sprintf("cursor id %d not found", cursorID),
+	}
+
+	integration.AssertEqualCommandError(t, expectedErr, err)
+}
+
 func TestCursorsGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 	// do not run tests in parallel to avoid using too many backend connections
 
@@ -845,9 +914,7 @@ func TestCursorsGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 	_, err := collection.InsertMany(ctx, arr)
 	require.NoError(t, err)
 
-	t.Run("FindExpire", func(tt *testing.T) {
-		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2983")
-
+	t.Run("FindExpire", func(t *testing.T) {
 		opts := options.Find().
 			// set batchSize big enough to hit maxTimeMS
 			SetBatchSize(2000).
@@ -861,35 +928,200 @@ func TestCursorsGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 		integration.AssertMatchesCommandError(t, mongo.CommandError{Code: 50, Name: "MaxTimeMSExpired"}, err)
 	})
 
-	t.Run("FindGetMorePropagateMaxTimeMS", func(t *testing.T) {
-		// this test case is not stable and frequently fails because
-		// `Find` unexpectedly timeout or `cursor.Next()` does not timeout expectedly
-		t.Skip("https://github.com/FerretDB/FerretDB/issues/2983")
-
-		opts := options.Find().
-			// setting zero on find sets nextBatch on getMore to unlimited
-			SetBatchSize(0).
-			// maxTimeMS is 1 but it won't expire because of zero BatchSize
+	t.Run("AggregateExpire", func(t *testing.T) {
+		opts := options.Aggregate().
+			// set batchSize big enough to hit maxTimeMS
+			SetBatchSize(2000).
+			// set maxTimeMS small enough for aggregate to expire
 			SetMaxTime(1)
 
-		cursor, err := collection.Find(ctx, bson.D{}, opts)
-		require.NoError(t, err)
+		// use $sort stage to slow down the query more than 1ms
+		_, err := collection.Aggregate(ctx, bson.A{bson.D{{"$sort", bson.D{{"v", 1}}}}}, opts)
 
-		cursor.SetBatchSize(50000)
+		integration.AssertMatchesCommandError(t, mongo.CommandError{Code: 50, Name: "MaxTimeMSExpired"}, err)
+	})
+}
 
-		// getMore uses maxTimeMS set on find
-		ok := cursor.Next(ctx)
-		assert.False(t, ok)
+func TestCursors(t *testing.T) {
+	t.Parallel()
 
-		integration.AssertMatchesCommandError(t, mongo.CommandError{Code: 50, Name: "MaxTimeMSExpired"}, cursor.Err())
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{
+		ExtraOptions: url.Values{
+			"minPoolSize": []string{"1"},
+			"maxPoolSize": []string{"1"},
+		},
 	})
 
-	t.Run("FindGetMoreMaxTimeMS", func(tt *testing.T) {
-		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2983")
+	collection, ctx := s.Collection, s.Ctx
 
+	arr, _ := integration.GenerateDocuments(1, 5)
+	_, err := collection.InsertMany(ctx, arr)
+	require.NoError(t, err)
+
+	var res bson.D
+
+	t.Run("RemoveLastDocument", func(tt *testing.T) {
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/3818")
+
+		err = collection.Database().RunCommand(ctx, bson.D{
+			{"find", collection.Name()},
+			{"batchSize", 1},
+		}).Decode(&res)
+		require.NoError(t, err)
+
+		firstBatch, cursorID := getFirstBatch(t, res)
+		require.NotNil(t, firstBatch)
+		require.Equal(t, 1, firstBatch.Len())
+
+		_, err = collection.DeleteOne(ctx, bson.D{{"_id", 4}})
+		require.NoError(t, err)
+
+		getMoreCmd := bson.D{
+			{"getMore", cursorID},
+			{"collection", collection.Name()},
+			{"batchSize", 1},
+		}
+
+		for i := 1; i < 3; i++ {
+			err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
+			nextBatch, nextID := getNextBatch(t, res)
+			require.Equal(t, cursorID, nextID)
+			require.Equal(t, 1, nextBatch.Len())
+		}
+
+		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
+		require.NoError(t, err)
+
+		nextBatch, nextID := getNextBatch(t, res)
+		require.Equal(t, int64(0), nextID)
+		require.Equal(t, 0, nextBatch.Len())
+	})
+
+	t.Run("QueryPlanKilledByDrop", func(tt *testing.T) {
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/3818")
+
+		err = collection.Database().RunCommand(ctx, bson.D{
+			{"find", collection.Name()},
+			{"batchSize", 1},
+		}).Decode(&res)
+		require.NoError(t, err)
+
+		firstBatch, cursorID := getFirstBatch(t, res)
+		require.NotNil(t, firstBatch)
+		require.Equal(t, 1, firstBatch.Len())
+
+		err = collection.Database().Drop(ctx)
+		require.NoError(t, err)
+
+		getMoreCmd := bson.D{
+			{"getMore", cursorID},
+			{"collection", collection.Name()},
+			{"batchSize", 1},
+		}
+
+		err = collection.Database().RunCommand(ctx, getMoreCmd).Err()
+		require.Error(t, err)
+
+		var ce mongo.CommandError
+		require.True(t, errors.As(err, &ce))
+		require.Equal(t, int32(175), ce.Code, "invalid error: %v", ce)
+	})
+}
+
+func TestCursorsFirstBatchMaxTimeMS(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupWithOpts(t, nil)
+
+	db, ctx := s.Collection.Database(), s.Ctx
+
+	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(10000)
+	err := db.CreateCollection(s.Ctx, t.Name(), opts)
+	require.NoError(t, err)
+
+	collection := db.Collection(t.Name())
+
+	bsonArr, arr := integration.GenerateDocuments(0, 3)
+
+	_, err = collection.InsertMany(ctx, bsonArr)
+	require.NoError(t, err)
+
+	var cursorID any
+
+	t.Run("FirstBatch", func(t *testing.T) {
+		cmd := bson.D{
+			{"find", collection.Name()},
+			{"batchSize", 1},
+			{"maxTimeMS", 200},
+		}
+
+		var res bson.D
+		err = collection.Database().RunCommand(ctx, cmd).Decode(&res)
+		require.NoError(t, err)
+
+		var firstBatch *types.Array
+		firstBatch, cursorID = getFirstBatch(t, res)
+
+		expectedFirstBatch := integration.ConvertDocuments(t, arr[:1])
+		require.Equal(t, len(expectedFirstBatch), firstBatch.Len())
+		require.Equal(t, expectedFirstBatch[0], must.NotFail(firstBatch.Get(0)))
+	})
+
+	getMoreCmd := bson.D{
+		{"getMore", cursorID},
+		{"collection", collection.Name()},
+		{"batchSize", 1},
+	}
+
+	t.Run("GetMore", func(t *testing.T) {
+		for i := 0; i < 2; i++ {
+			time.Sleep(100 * time.Millisecond)
+			var res bson.D
+			err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
+			require.NoError(t, err)
+
+			nextBatch, nextID := getNextBatch(t, res)
+			expectedNextBatch := integration.ConvertDocuments(t, arr[i+1:i+2])
+
+			assert.Equal(t, cursorID, nextID)
+
+			require.Equal(t, len(expectedNextBatch), nextBatch.Len())
+			require.Equal(t, expectedNextBatch[0], must.NotFail(nextBatch.Get(0)))
+		}
+	})
+
+	t.Run("GetMoreEmpty", func(t *testing.T) {
+		time.Sleep(100 * time.Millisecond)
+		var res bson.D
+		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
+		require.NoError(t, err)
+
+		nextBatch, nextID := getNextBatch(t, res)
+		require.Equal(t, 0, nextBatch.Len())
+		assert.Equal(t, int64(0), nextID)
+	})
+}
+
+func TestGetMoreNonAwaitDataError(t *testing.T) {
+	s := setup.SetupWithOpts(t, nil)
+
+	db, ctx := s.Collection.Database(), s.Ctx
+
+	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(10000)
+	err := db.CreateCollection(s.Ctx, t.Name(), opts)
+	require.NoError(t, err)
+
+	collection := db.Collection(t.Name())
+	bsonDocs, _ := integration.GenerateDocuments(0, 1)
+
+	_, err = collection.InsertMany(ctx, bsonDocs)
+	require.NoError(t, err)
+
+	t.Run("Cursor", func(tt *testing.T) {
 		var res bson.D
 		err := collection.Database().RunCommand(ctx, bson.D{
 			{"find", collection.Name()},
+			{"tailable", true},
 			{"batchSize", 0},
 		}).Decode(&res)
 		require.NoError(t, err)
@@ -910,7 +1142,7 @@ func TestCursorsGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 			{"collection", collection.Name()},
 			{"batchSize", 2000},
 			{"maxTimeMS", 1},
-		}).Decode(&res)
+		}).Err()
 
 		integration.AssertEqualCommandError(
 			t,
@@ -922,55 +1154,12 @@ func TestCursorsGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 			err,
 		)
 	})
-
-	t.Run("AggregateExpire", func(tt *testing.T) {
-		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2983")
-
-		opts := options.Aggregate().
-			// set batchSize big enough to hit maxTimeMS
-			SetBatchSize(2000).
-			// set maxTimeMS small enough for aggregate to expire
-			SetMaxTime(1)
-
-		// use $sort stage to slow down the query more than 1ms
-		_, err := collection.Aggregate(ctx, bson.A{bson.D{{"$sort", bson.D{{"v", 1}}}}}, opts)
-
-		integration.AssertMatchesCommandError(t, mongo.CommandError{Code: 50, Name: "MaxTimeMSExpired"}, err)
-	})
-
-	t.Run("AggregateGetMorePropagateMaxTimeMS", func(t *testing.T) {
-		// this test case is not stable and frequently fails because
-		// `Aggregate` unexpectedly timeout or `cursor.Next()` does not timeout expectedly
-		t.Skip("https://github.com/FerretDB/FerretDB/issues/2983")
-
-		opts := options.Aggregate().
-			// setting zero on aggregate sets nextBatch on getMore to unlimited
-			SetBatchSize(0).
-			// maxTimeMS is 1 but it won't expire on aggregate because of zero BatchSize
-			SetMaxTime(1)
-
-		cursor, err := collection.Aggregate(ctx, bson.A{}, opts)
-		require.NoError(t, err)
-
-		defer cursor.Close(ctx)
-
-		cursor.SetBatchSize(50000)
-
-		// getMore uses maxTimeMS set on aggregate
-		ok := cursor.Next(ctx)
-		assert.False(t, ok)
-
-		integration.AssertMatchesCommandError(t, mongo.CommandError{Code: 50, Name: "MaxTimeMSExpired"}, cursor.Err())
-	})
-
-	t.Run("AggregateGetMoreMaxTimeMS", func(tt *testing.T) {
-		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2983")
-
+	t.Run("TailableCursor", func(tt *testing.T) {
 		var res bson.D
 		err := collection.Database().RunCommand(ctx, bson.D{
-			{"aggregate", collection.Name()},
-			{"pipeline", bson.A{}},
-			{"cursor", bson.D{{"batchSize", 0}}},
+			{"find", collection.Name()},
+			{"tailable", true},
+			{"batchSize", 0},
 		}).Decode(&res)
 		require.NoError(t, err)
 
@@ -990,16 +1179,135 @@ func TestCursorsGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 			{"collection", collection.Name()},
 			{"batchSize", 2000},
 			{"maxTimeMS", 1},
-		}).Decode(&res)
+		}).Err()
 
-		integration.AssertEqualAltCommandError(
+		integration.AssertEqualCommandError(
 			t,
 			mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: "cannot set maxTimeMS on getMore command for a non-awaitData cursor",
 			},
-			"",
+			err,
+		)
+	})
+	t.Run("AwaitDataCursor", func(tt *testing.T) {
+		var res bson.D
+		err := collection.Database().RunCommand(ctx, bson.D{
+			{"find", collection.Name()},
+			{"tailable", true},
+			{"awaitData", true},
+			{"batchSize", 0},
+		}).Decode(&res)
+		require.NoError(t, err)
+
+		doc := integration.ConvertDocument(t, res)
+
+		v, _ := doc.Get("cursor")
+		require.NotNil(t, v)
+
+		cursor, ok := v.(*types.Document)
+		require.True(t, ok)
+
+		cursorID, _ := cursor.Get("id")
+		require.NotZero(t, cursorID)
+
+		err = collection.Database().RunCommand(ctx, bson.D{
+			{"getMore", cursorID},
+			{"collection", collection.Name()},
+			{"batchSize", 2000},
+			{"maxTimeMS", 1},
+		}).Err()
+
+		require.NoError(t, err)
+	})
+}
+
+func TestCursorsGetMoreAfterInsertion(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupWithOpts(t, nil)
+
+	db, ctx := s.Collection.Database(), s.Ctx
+
+	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(10000)
+	err := db.CreateCollection(s.Ctx, t.Name(), opts)
+	require.NoError(t, err)
+
+	collection := db.Collection(t.Name())
+
+	bsonArr, arr := integration.GenerateDocuments(0, 3)
+
+	_, err = collection.InsertMany(ctx, bsonArr)
+	require.NoError(t, err)
+
+	var cursorID any
+
+	t.Run("FirstBatch", func(t *testing.T) {
+		cmd := bson.D{
+			{"find", collection.Name()},
+			{"batchSize", 1},
+		}
+
+		var res bson.D
+		err = collection.Database().RunCommand(ctx, cmd).Decode(&res)
+		require.NoError(t, err)
+
+		var firstBatch *types.Array
+		firstBatch, cursorID = getFirstBatch(t, res)
+
+		expectedFirstBatch := integration.ConvertDocuments(t, arr[:1])
+		require.Equal(t, len(expectedFirstBatch), firstBatch.Len())
+		require.Equal(t, expectedFirstBatch[0], must.NotFail(firstBatch.Get(0)))
+	})
+
+	getMoreCmd := bson.D{
+		{"getMore", cursorID},
+		{"collection", collection.Name()},
+		{"batchSize", 1},
+	}
+
+	t.Run("GetMore", func(t *testing.T) {
+		for i := 0; i < 2; i++ {
+			var res bson.D
+			err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
+			require.NoError(t, err)
+
+			nextBatch, nextID := getNextBatch(t, res)
+			expectedNextBatch := integration.ConvertDocuments(t, arr[i+1:i+2])
+
+			assert.Equal(t, cursorID, nextID)
+
+			require.Equal(t, len(expectedNextBatch), nextBatch.Len())
+			require.Equal(t, expectedNextBatch[0], must.NotFail(nextBatch.Get(0)))
+		}
+	})
+
+	t.Run("GetMoreEmpty", func(tt *testing.T) {
+		var res bson.D
+		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
+		require.NoError(t, err)
+
+		nextBatch, nextID := getNextBatch(t, res)
+		require.Equal(t, 0, nextBatch.Len())
+		assert.Equal(t, int64(0), nextID)
+	})
+
+	t.Run("GetMoreNewDoc", func(tt *testing.T) {
+		newDoc := bson.D{{"_id", "new"}}
+		_, err = collection.InsertOne(ctx, newDoc)
+		require.NoError(t, err)
+
+		var res bson.D
+
+		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
+		integration.AssertEqualCommandError(
+			t,
+			mongo.CommandError{
+				Code:    43,
+				Name:    "CursorNotFound",
+				Message: fmt.Sprintf("cursor id %d not found", cursorID),
+			},
 			err,
 		)
 	})

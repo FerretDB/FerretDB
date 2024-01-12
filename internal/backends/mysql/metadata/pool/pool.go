@@ -52,7 +52,22 @@ type Pool struct {
 
 // New creates a new Pool.
 func New(u string, l *zap.Logger, sp *state.Provider) (*Pool, error) {
-	return nil, lazyerrors.New("not yet implemented")
+	baseURI, err := url.Parse(u)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	p := &Pool{
+		baseURI: *baseURI,
+		l:       l,
+		sp:      sp,
+		dbs:     map[string]*fsql.DB{},
+		token:   resource.NewToken(),
+	}
+
+	resource.Track(p, p.token)
+
+	return p, nil
 }
 
 // Close closes all connections in the pool.
@@ -98,7 +113,7 @@ func (p *Pool) Get(username, password string) (*fsql.DB, error) {
 	p.rw.Lock()
 	defer p.rw.Unlock()
 
-	// a concurrent connectio might have created a pool already; check again
+	// a concurrent connection might have created a pool already; check again
 	if res = p.dbs[u]; res != nil {
 		p.l.Debug("Pool: found existing pool (after acquiring lock)", zap.String("username", username))
 		return res, nil
@@ -114,6 +129,22 @@ func (p *Pool) Get(username, password string) (*fsql.DB, error) {
 	p.dbs[u] = res
 
 	return res, nil
+}
+
+// GetAny returns a random open pool of connections to MySQL, or nil if none are available.
+func (p *Pool) GetAny() *fsql.DB {
+	p.rw.RLock()
+	defer p.rw.RUnlock()
+
+	for _, db := range p.dbs {
+		p.l.Debug("Pool.GetAny: return existing pool")
+
+		return db
+	}
+
+	p.l.Debug("Pool.GetAny: no existing pools")
+
+	return nil
 }
 
 // Describe implements Prometheus.Collector.
