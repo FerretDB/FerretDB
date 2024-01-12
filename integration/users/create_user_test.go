@@ -40,7 +40,6 @@ func TestCreateUser(t *testing.T) {
 
 	testCases := map[string]struct { //nolint:vet // for readability
 		payload    bson.D
-		hasCred    bool
 		err        *mongo.CommandError
 		altMessage string
 		expected   bson.D
@@ -111,7 +110,6 @@ func TestCreateUser(t *testing.T) {
 				{"pwd", "password"},
 				{"mechanisms", bson.A{"PLAIN"}},
 			},
-			hasCred: true,
 			expected: bson.D{
 				{"ok", float64(1)},
 			},
@@ -152,8 +150,9 @@ func TestCreateUser(t *testing.T) {
 	for name, tc := range testCases {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			if tc.hasCred && setup.IsMongoDB(t) {
-				t.Skip("PLAIN credentials are only supported via LAP (PLAIN) by MongoDB Enterprise")
+			payload := integration.ConvertDocument(t, tc.payload)
+			if payload.Has("mechanisms") {
+				setup.SkipForMongoDB(t, "PLAIN credentials are only supported via LDAP (PLAIN) by MongoDB Enterprise")
 			}
 
 			t.Parallel()
@@ -174,7 +173,6 @@ func TestCreateUser(t *testing.T) {
 			expected := integration.ConvertDocument(t, tc.expected)
 			testutil.AssertEqual(t, expected, actual)
 
-			payload := integration.ConvertDocument(t, tc.payload)
 			// All users are created in the "admin" database.
 
 			var rec bson.D
@@ -188,7 +186,7 @@ func TestCreateUser(t *testing.T) {
 			assert.Equal(t, 16, len(uuid.B), "UUID length")
 			actualRecorded.Remove("userId")
 
-			if tc.hasCred {
+			if payload.Has("mechanisms") {
 				assertPlainCredentials(t, "PLAIN", must.NotFail(actualRecorded.Get("credentials")).(*types.Document))
 			}
 
@@ -208,6 +206,8 @@ func TestCreateUser(t *testing.T) {
 
 // assertPlainCredentials checks if the credential is a valid PLAIN credential.
 func assertPlainCredentials(t testing.TB, key string, cred *types.Document) {
+	t.Helper()
+
 	assert.Truef(t, cred.Has(key), "missing credential %q", key)
 
 	c := must.NotFail(cred.Get(key)).(*types.Document)

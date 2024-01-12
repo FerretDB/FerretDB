@@ -114,7 +114,7 @@ func (h *Handler) MsgUsersInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		}
 
 		users = append(users, u)
-	case int32: // {usersInfo: 1 }
+	case int32, int64: // {usersInfo: 1 }
 		singleDB = true
 	default:
 		return nil, handlererrors.NewCommandErrorMsgWithArgument(

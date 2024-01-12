@@ -136,14 +136,14 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 				return nil, lazyerrors.Error(err)
 			}
 
-			if v == "PLAIN" {
-				plainAuth = true
-			} else {
+			if v != "PLAIN" {
 				return nil, handlererrors.NewCommandErrorMsg(
 					handlererrors.ErrBadValue,
 					fmt.Sprintf("Unknown auth mechanism '%s'", v),
 				)
 			}
+
+			plainAuth = true
 		}
 	}
 
