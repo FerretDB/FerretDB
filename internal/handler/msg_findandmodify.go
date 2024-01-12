@@ -184,7 +184,7 @@ func (h *Handler) findAndModifyDocument(ctx context.Context, params *common.Find
 		doc := params.Update
 		if params.HasUpdateOperators {
 			doc = must.NotFail(types.NewDocument())
-			if _, err = common.UpdateDocument("findAndModify", doc, params.Update); err != nil {
+			if _, err = common.UpdateDocument("findAndModify", doc, params.Update, true); err != nil {
 				// TODO https://github.com/FerretDB/FerretDB/issues/2168
 				return nil, err
 			}
@@ -280,7 +280,7 @@ func (h *Handler) findAndModifyDocument(ctx context.Context, params *common.Find
 	doc := params.Update
 	if params.HasUpdateOperators {
 		doc = v.DeepCopy()
-		if _, err = common.UpdateDocument("findAndModify", doc, params.Update); err != nil {
+		if _, err = common.UpdateDocument("findAndModify", doc, params.Update, false); err != nil {
 			return nil, err
 		}
 	}
