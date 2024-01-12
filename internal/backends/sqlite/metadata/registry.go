@@ -508,7 +508,12 @@ func (r *Registry) indexesCreate(ctx context.Context, dbName, collectionName str
 
 		columns := make([]string, len(index.Key))
 		for i, key := range index.Key {
-			columns[i] = fmt.Sprintf("%s->'$.%s'", DefaultColumn, key.Field)
+			fields := strings.Split(key.Field, ".")
+			for j, f := range fields {
+				fields[j] = fmt.Sprintf("%q", f)
+			}
+
+			columns[i] = fmt.Sprintf("%s->%s", DefaultColumn, strings.Join(fields, "->"))
 			if key.Descending {
 				columns[i] += " DESC"
 			}
