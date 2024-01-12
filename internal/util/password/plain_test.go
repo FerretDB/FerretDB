@@ -36,15 +36,6 @@ type plainTestCase struct {
 	hash     []byte
 }
 
-// Tests from the reference implementation at
-// https://github.com/P-H-C/phc-winner-argon2/blob/f57e61e19229e23c4445b85494dbf7c07de721cb/src/test.c#L233-L264
-//
-// void hashtest(
-// uint32_t version, uint32_t t, uint32_t m, uint32_t p, char *pwd,
-// char *salt, char *hexref, char *mcfref, argon2_type type
-// )
-//
-// m there is 2^m, which is the same as 1<<m.
 var plainTestCases = []plainTestCase{{
 	params: plainParams{
 		t: 2,
