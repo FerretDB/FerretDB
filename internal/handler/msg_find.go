@@ -119,7 +119,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	queryRes, err := coll.Query(ctx, qp)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, handleMaxTimeMSError(err, params.MaxTimeMS, "find")
 	}
 
 	// closer accumulates all things that should be closed / canceled.
@@ -127,7 +127,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	iter, err := h.makeFindIter(queryRes.Iter, closer, params)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, handleMaxTimeMSError(err, params.MaxTimeMS, "find")
 	}
 
 	t := cursor.Normal
@@ -157,7 +157,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	docs, err := iterator.ConsumeValuesN(c, int(params.BatchSize))
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, handleMaxTimeMSError(err, params.MaxTimeMS, "find")
 	}
 
 	h.L.Debug(
@@ -308,4 +308,21 @@ func (h *Handler) makeFindIter(iter types.DocumentsIterator, closer *iterator.Mu
 	}
 
 	return iterator.WithClose(iter, closer.Close), nil
+}
+
+// handleMaxTimeMSError returns the MaxTimeMSExpired error if provided error is a result of context cancellation.
+// The MaxTimeMSExpired error won't be returned if maxTimeMS wasn't set.
+func handleMaxTimeMSError(err error, maxTimeMS int64, cmd string) error {
+	switch {
+	case err == nil:
+		return nil
+	case maxTimeMS != 0 && errors.Is(err, context.Canceled):
+		return handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrMaxTimeMSExpired,
+			"Executor error during "+cmd+" command :: caused by :: operation exceeded time limit",
+			cmd,
+		)
+	default:
+		return lazyerrors.Error(err)
+	}
 }
