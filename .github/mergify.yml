@@ -14,7 +14,10 @@ pull_request_rules:
       - "author != dependabot[bot]"
       - "base = main"
       - "branch-protection-review-decision = APPROVED"
+      - "check-success = golangci-lint"
+      - "check-success = Test"
       - "label != 'not ready'"
+      - "#review-threads-unresolved = 0"
     actions:
       update:
 

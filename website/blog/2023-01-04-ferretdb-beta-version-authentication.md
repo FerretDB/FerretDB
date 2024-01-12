@@ -45,7 +45,7 @@ For example, you can follow the following steps:
    - `psql -h 127.0.0.1 -p 5432 -U username postgres`
    - `DROP DATABASE ferretdb`
 
-5. Upgrade FerretDB and run FerretDB 0.8 (Please refer to [our documentation](https://docs.ferretdb.io/category/quickstart/) where we describe how to update and start FerretDB)
+5. Upgrade FerretDB and run FerretDB 0.8 (Please refer to [our documentation](https://docs.ferretdb.io/quickstart/) where we describe how to update and start FerretDB)
 
 6. Restore database using `mongorestore --uri="mongodb://127.0.0.1:27017"`
 

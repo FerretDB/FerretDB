@@ -18,6 +18,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
+
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
@@ -79,7 +81,45 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 		d := must.NotFail(types.NewDocument(
 			"name", collection.Name,
 			"type", "collection",
+			"idIndex", must.NotFail(types.NewDocument(
+				"v", int32(2),
+				"key", must.NotFail(types.NewDocument("_id", int32(1))),
+				"name", "_id_",
+			)),
 		))
+
+		options := must.NotFail(types.NewDocument())
+		info := must.NotFail(types.NewDocument("readOnly", false))
+
+		if collection.Capped() {
+			options.Set("capped", true)
+		}
+
+		if collection.CappedSize > 0 {
+			options.Set("size", collection.CappedSize)
+		}
+
+		if collection.CappedDocuments > 0 {
+			options.Set("max", collection.CappedDocuments)
+		}
+
+		d.Set("options", options)
+
+		if collection.UUID != "" {
+			uuid, err := uuid.Parse(collection.UUID)
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
+			uuidBinary := types.Binary{
+				Subtype: types.BinaryUUID,
+				B:       must.NotFail(uuid.MarshalBinary()),
+			}
+
+			info.Set("uuid", uuidBinary)
+		}
+
+		d.Set("info", info)
 
 		matches, err := common.FilterDocument(d, filter)
 		if err != nil {

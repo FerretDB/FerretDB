@@ -46,12 +46,15 @@ linters-settings:
           - "!**/internal/backends/sqlite/*.go"
           - "!**/internal/backends/postgresql/*.go"
           - "!**/internal/backends/postgresql/metadata/*.go"
+          - "!**/internal/backends/mysql/*.go"
+          - "!**/internal/backends/mysql/metadata/*.go"
           - "!**/internal/backends/hana/*.go"
         deny:
           - pkg: github.com/FerretDB/FerretDB/internal/handler/sjson
       common:
         files:
           - "**/internal/backends/**/*.go"
+          - "**/internal/clientconn/cursor/*.go"
         deny:
           - pkg: github.com/FerretDB/FerretDB/internal/handler/common
       handlererrors:
@@ -68,6 +71,35 @@ linters-settings:
           - pkg: github.com/FerretDB/FerretDB/internal/backends
   exhaustive:
     default-signifies-exhaustive: false
+  forbidigo:
+    forbid:
+      # integration tests use a different configuration file
+      - p: ^\Qbson.E\E$
+        pkg: ^\Qgo.mongodb.org/mongo-driver/bson\E$
+        msg: Use *types.Document or *types.Array instead.
+      - p: ^\Qprimitive.E\E$
+        pkg: ^\Qgo.mongodb.org/mongo-driver/bson/primitive\E$
+        msg: Use *types.Document or *types.Array instead.
+      - p: ^\Qbson.D\E$
+        pkg: ^\Qgo.mongodb.org/mongo-driver/bson\E$
+        msg: Use *types.Document instead.
+      - p: ^\Qprimitive.D\E$
+        pkg: ^\Qgo.mongodb.org/mongo-driver/bson/primitive\E$
+        msg: Use *types.Document instead.
+      - p: ^\Qbson.M\E$
+        pkg: ^\Qgo.mongodb.org/mongo-driver/bson\E$
+        msg: Use *types.Document instead.
+      - p: ^\Qprimitive.M\E$
+        pkg: ^\Qgo.mongodb.org/mongo-driver/bson/primitive\E$
+        msg: Use *types.Document instead.
+      - p: ^\Qbson.A\E$
+        pkg: ^\Qgo.mongodb.org/mongo-driver/bson\E$
+        msg: Use *types.Array instead.
+      - p: ^\Qprimitive.A\E$
+        pkg: ^\Qgo.mongodb.org/mongo-driver/bson/primitive\E$
+        msg: Use *types.Array instead.
+    exclude-godoc-examples: true
+    analyze-types: true
   gci:
     sections:
       - standard
@@ -129,6 +161,20 @@ linters-settings:
         alias: sqlite3
       - pkg: modernc.org/sqlite/lib
         alias: sqlite3lib
+      - pkg: go.opentelemetry.io/otel/attribute
+        alias: otelattribute
+      - pkg: go.opentelemetry.io/otel/codes
+        alias: otelcodes
+      - pkg: go.opentelemetry.io/otel/trace
+        alias: oteltrace
+      - pkg: go.opentelemetry.io/otel/sdk/resource
+        alias: otelsdkresource
+      - pkg: go.opentelemetry.io/otel/sdk/trace
+        alias: otelsdktrace
+      - pkg: go.opentelemetry.io/otel/semconv/v1.21.0
+        alias: otelsemconv
+      - pkg: github.com/FerretDB/FerretDB/internal/backends/mysql/metadata/pool
+        alias: mysqlpool
   # ineffassign
   lll:
     line-length: 130
@@ -161,6 +207,7 @@ linters:
     - asciicheck
     - depguard
     - exhaustive
+    - forbidigo
     - gci
     - gochecksumtype
     - goconst

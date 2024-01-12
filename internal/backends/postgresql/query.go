@@ -230,32 +230,25 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 // prepareOrderByClause returns ORDER BY clause with arguments for given sort document.
 //
 // The provided sort document should be already validated.
-//
-// For capped collection, it returns ORDER BY recordID only if sort document is empty.
-// For more than one sort fields, it sorts only by the first key provided.
-func prepareOrderByClause(p *metadata.Placeholder, sort *types.Document, capped bool) (string, []any) {
-	if sort.Len() == 0 {
-		if capped {
-			return fmt.Sprintf(" ORDER BY %s", metadata.RecordIDColumn), nil
-		}
-
+// Provided document should only contain a single value.
+func prepareOrderByClause(p *metadata.Placeholder, sort *types.Document) (string, []any) {
+	if sort.Len() != 1 {
 		return "", nil
 	}
 
-	k := sort.Keys()[0]
-	v := sort.Values()[0].(int64)
-
-	// Skip sorting dot notation
-	if strings.ContainsRune(k, '.') {
-		return "", nil
-	}
-
+	v := must.NotFail(sort.Get("$natural"))
 	var order string
-	if v == -1 {
+
+	switch v.(int64) {
+	case 1:
+		// Ascending order
+	case -1:
 		order = " DESC"
+	default:
+		panic("not reachable")
 	}
 
-	return fmt.Sprintf(" ORDER BY %s->%s%s", metadata.DefaultColumn, p.Next(), order), []any{k}
+	return fmt.Sprintf(" ORDER BY %s%s", metadata.RecordIDColumn, order), nil
 }
 
 // filterEqual returns the proper SQL filter with arguments that filters documents

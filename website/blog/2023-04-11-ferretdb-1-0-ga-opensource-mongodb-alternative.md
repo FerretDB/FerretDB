@@ -16,7 +16,7 @@ We are excited to announce the general availability of FerretDB, a truly Open So
 <!--truncate-->
 
 MongoDB is [no longer open source](https://blog.opensource.org/the-sspl-is-not-an-open-source-license).
-We want to bring MongoDB database workloads back to its open source roots.
+We want to bring MongoDB database workloads back to its open-source roots.
 We are enabling [PostgreSQL](https://www.postgresql.org/) and other database backends to run MongoDB workloads, retaining the opportunities provided by the existing ecosystem around MongoDB.
 
 - Deploy anywhere + stay in control of your data
@@ -100,7 +100,7 @@ Get started with FerretDB 1.0 GA [here](https://github.com/FerretDB/FerretDB#qui
 ## Where are we headed?
 
 We are creating a new standard for document databases with [MongoDB compatibility](https://blog.ferretdb.io/mongodb-compatibility-whats-really-important/).
-FerretDB is a drop-in replacement for MongoDB, but it also aims to set a new standard which not only brings easy to use document databases back to its open source roots, but also enables different database engines to run document database workloads in using a standardized interface.
+FerretDB is a drop-in replacement for MongoDB, but it also aims to set a new standard which not only brings easy to use document databases back to its open-source roots, but also enables different database engines to run document database workloads in using a standardized interface.
 
 Also, FerretDB will offer the flexibility of document databases, with the possibility to run queries on the same data set using SQL.
 

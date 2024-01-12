@@ -72,7 +72,7 @@ func (h *Handler) MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 				"currentTime", now,
 				"hostname", hostname,
 				"cpuAddrSize", int32(strconv.IntSize),
-				"numCores", int32(runtime.NumCPU()),
+				"numCores", int32(runtime.GOMAXPROCS(-1)),
 				"cpuArch", runtime.GOARCH,
 			)),
 			"os", must.NotFail(types.NewDocument(

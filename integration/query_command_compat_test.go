@@ -24,6 +24,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 // queryCommandCompatTestCase describes query compatibility test case.
@@ -102,14 +103,14 @@ func testQueryCommandCompat(t *testing.T, testCases map[string]queryCommandCompa
 					require.NoError(t, targetCollection.Database().RunCommand(ctx, explainQuery).Decode(&explainRes))
 
 					var msg string
-					if setup.FilterPushdownDisabled() {
+					if setup.PushdownDisabled() {
 						tc.filterPushdown = noPushdown
 						msg = "Filter pushdown is disabled, but target resulted with pushdown"
 					}
 
 					doc := ConvertDocument(t, explainRes)
 					pushdown, _ := doc.Get("filterPushdown")
-					assert.Equal(t, tc.filterPushdown.FilterPushdownExpected(t), pushdown, msg)
+					assert.Equal(t, tc.filterPushdown.PushdownExpected(t), pushdown, msg)
 
 					targetCommand := append(
 						bson.D{
@@ -147,7 +148,12 @@ func testQueryCommandCompat(t *testing.T, testCases map[string]queryCommandCompa
 					require.NoError(t, targetResult.Decode(&targetRes))
 					require.NoError(t, compatResult.Decode(&compatRes))
 
-					AssertEqualDocuments(t, compatRes, targetRes)
+					compatDoc := ConvertDocument(t, compatRes)
+					compatDoc.Remove("$clusterTime")
+					compatDoc.Remove("operationTime")
+
+					targetDoc := ConvertDocument(t, targetRes)
+					testutil.AssertEqual(t, compatDoc, targetDoc)
 
 					targetDocs := targetRes.Map()["cursor"].(bson.D).Map()["firstBatch"].(primitive.A)
 					compatDocs := compatRes.Map()["cursor"].(bson.D).Map()["firstBatch"].(primitive.A)

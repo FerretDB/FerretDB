@@ -71,7 +71,7 @@ func NewRegistry(l *zap.Logger) *Registry {
 				Name:      "created_total",
 				Help:      "Total number of cursors created.",
 			},
-			[]string{"db", "collection", "username"},
+			[]string{"type", "db", "collection", "username"},
 		),
 		duration: prometheus.NewHistogramVec(
 			prometheus.HistogramOpts{
@@ -94,12 +94,12 @@ func NewRegistry(l *zap.Logger) *Registry {
 					(10000 * time.Millisecond).Seconds(),
 				},
 			},
-			[]string{"db", "collection", "username"},
+			[]string{"type", "db", "collection", "username"},
 		),
 	}
 }
 
-// Close waits for all cursors to be closed.
+// Close waits for all cursors to be closed and removed from the registry.
 func (r *Registry) Close() {
 	// we mainly do that for tests; see https://github.com/uber-go/zap/issues/687
 
@@ -108,19 +108,28 @@ func (r *Registry) Close() {
 
 // NewParams represent parameters for NewCursor.
 type NewParams struct {
-	Iter         types.DocumentsIterator
-	DB           string
-	Collection   string
-	Username     string
+	// Data stored, but not used by this package.
+	// Used to pass *handler.findCursorData between `find` and `getMore` command implementations.
+	// Stored as any to avoid dependency cycle.
+	Data any
+
+	// those fields are used for limited authorization checks
+	// before we implement proper authz and/or sessions
+	DB         string
+	Collection string
+	Username   string
+
+	Type         Type
 	ShowRecordID bool
-	_            struct{} // prevent unkeyed literals
+
+	_ struct{} // prevent unkeyed literals
 }
 
 // NewCursor creates and stores a new cursor.
 //
-// The cursor will be closed automatically when a given context is canceled,
+// The cursor of any type will be closed automatically when a given context is canceled,
 // even if the cursor is not being used at that time.
-func (r *Registry) NewCursor(ctx context.Context, params *NewParams) *Cursor {
+func (r *Registry) NewCursor(ctx context.Context, iter types.DocumentsIterator, params *NewParams) *Cursor {
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
@@ -131,27 +140,27 @@ func (r *Registry) NewCursor(ctx context.Context, params *NewParams) *Cursor {
 	}
 
 	r.l.Debug(
-		"Creating",
-		zap.Int64("id", id),
-		zap.String("db", params.DB),
-		zap.String("collection", params.Collection),
+		"Creating cursor",
+		zap.Int64("id", id), zap.Stringer("type", params.Type),
+		zap.String("db", params.DB), zap.String("collection", params.Collection), zap.String("username", params.Username),
 	)
 
-	r.created.WithLabelValues(params.DB, params.Collection, params.Username).Inc()
+	r.created.WithLabelValues(params.Type.String(), params.DB, params.Collection, params.Username).Inc()
 
-	c := newCursor(id, params, r)
+	c := newCursor(id, iter, params, r)
 	r.m[id] = c
 
 	r.wg.Add(1)
-
 	go func() {
 		defer r.wg.Done()
 
 		select {
 		case <-ctx.Done():
-			c.Close()
-		case <-c.closed:
+			r.CloseAndRemove(c)
+		case <-c.removed: // for c.Close() and normal cursors
 		}
+
+		<-c.removed
 	}()
 
 	return c
@@ -173,22 +182,30 @@ func (r *Registry) All() []*Cursor {
 	return maps.Values(r.m)
 }
 
-// This method should be called only from cursor.Close().
-func (r *Registry) delete(c *Cursor) {
+// CloseAndRemove closes the given cursors, then removes it from the registry.
+func (r *Registry) CloseAndRemove(c *Cursor) {
+	c.Close()
+
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
+	if r.m[c.ID] == nil {
+		return
+	}
+
 	d := time.Since(c.created)
 	r.l.Debug(
-		"Deleting",
-		zap.Int("total", len(r.m)),
+		"Removing cursor",
 		zap.Int64("id", c.ID),
+		zap.Stringer("type", c.Type),
+		zap.Int("total", len(r.m)),
 		zap.Duration("duration", d),
 	)
 
-	r.duration.WithLabelValues(c.DB, c.Collection, c.Username).Observe(d.Seconds())
+	r.duration.WithLabelValues(c.Type.String(), c.DB, c.Collection, c.Username).Observe(d.Seconds())
 
 	delete(r.m, c.ID)
+	close(c.removed)
 }
 
 // Describe implements prometheus.Collector.
