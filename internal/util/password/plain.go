@@ -26,20 +26,25 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// plainParams represent parameters for PLAIN authentication.
+const (
+	plainMechanism = "PLAIN"
+	plainAlgo      = "PBKDF2-HMAC-SHA256"
+)
+
+// plainParams represent password parameters for PLAIN authentication.
 type plainParams struct {
-	algo           string
-	iterationCount int64
-	saltLen        int32
+	iterationCount int
+	saltLen        int
+	hashLen        int
 }
 
-// fixedPlainParams represent fixed parameters for PLAIN authentication using PBKDF2-HMAC-SHA256.
+// fixedPlainParams represent fixed password parameters for PLAIN authentication using PBKDF2-HMAC-SHA256.
 //
 // See https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html#pbkdf2.
 var fixedPlainParams = &plainParams{
-	algo:           "PBKDF2-HMAC-SHA256",
 	iterationCount: 600_000,
 	saltLen:        16,
+	hashLen:        32,
 }
 
 // plainHashParams hashes the password with the given salt and parameters,
@@ -49,12 +54,12 @@ func plainHashParams(password string, salt []byte, params *plainParams) (*types.
 		return nil, nil, lazyerrors.Errorf("unexpected salt length: %d", len(salt))
 	}
 
-	hash := pbkdf2.Key([]byte(password), salt, int(params.iterationCount), sha256.Size, sha256.New)
+	hash := pbkdf2.Key([]byte(password), salt, params.iterationCount, params.hashLen, sha256.New)
 
 	doc, err := types.NewDocument(
-		"mechanism", "PLAIN",
-		"algo", params.algo,
-		"iterationCount", params.iterationCount,
+		"mechanism", plainMechanism,
+		"algo", plainAlgo,
+		"iterationCount", int64(params.iterationCount),
 		"hash", types.Binary{
 			B: hash,
 		},
@@ -92,12 +97,16 @@ func plainVerifyParams(password string, doc *types.Document) (*plainParams, erro
 	v, _ := doc.Get("mechanism")
 	mechanism, _ := v.(string)
 
-	if mechanism != "PLAIN" {
+	if mechanism != plainMechanism {
 		return nil, lazyerrors.Errorf("invalid mechanism: %q", mechanism)
 	}
 
 	v, _ = doc.Get("algo")
 	algo, _ := v.(string)
+
+	if algo != plainAlgo {
+		return nil, lazyerrors.Errorf("invalid algorithm: %q", algo)
+	}
 
 	v, _ = doc.Get("iterationCount")
 	iterationCount, _ := v.(int64)
@@ -109,9 +118,9 @@ func plainVerifyParams(password string, doc *types.Document) (*plainParams, erro
 	salt, _ := v.(types.Binary)
 
 	params := &plainParams{
-		algo:           algo,
-		iterationCount: iterationCount,
-		saltLen:        int32(len(salt.B)),
+		iterationCount: int(iterationCount),
+		saltLen:        len(salt.B),
+		hashLen:        len(hash.B),
 	}
 
 	_, expectedHash, err := plainHashParams(password, salt.B, params)

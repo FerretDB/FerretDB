@@ -26,7 +26,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
-// plainTestCase represents a test case for PLAIN authentication using Argon2id.
+// plainTestCase represents a test case for PLAIN authentication.
 //
 //nolint:vet // for readability
 type plainTestCase struct {
@@ -36,85 +36,90 @@ type plainTestCase struct {
 	hash     []byte
 }
 
+// https://github.com/brycx/Test-Vector-Generation/blob/master/PBKDF2/pbkdf2-hmac-sha2-test-vectors.md
+//
+// Test Case 4 is skipped because it takes too long.
 var plainTestCases = []plainTestCase{{
 	params: plainParams{
-		t: 2,
-		m: 1 << 16,
-		p: 1,
+		iterationCount: 1,
+		saltLen:        4,
+		hashLen:        20,
 	},
 	password: "password",
-	salt:     []byte("somesalt"),
-	hash:     must.NotFail(hex.DecodeString("09316115d5cf24ed5a15a31a3ba326e5cf32edc24702987c02b6566f61913cf7")),
+	salt:     []byte("salt"),
+	hash:     must.NotFail(hex.DecodeString("120fb6cffcf8b32c43e7225256c4f837a86548c9")),
 }, {
 	params: plainParams{
-		t: 2,
-		m: 1 << 18,
-		p: 1,
+		iterationCount: 2,
+		saltLen:        4,
+		hashLen:        20,
 	},
 	password: "password",
-	salt:     []byte("somesalt"),
-	hash:     must.NotFail(hex.DecodeString("78fe1ec91fb3aa5657d72e710854e4c3d9b9198c742f9616c2f085bed95b2e8c")),
+	salt:     []byte("salt"),
+	hash:     must.NotFail(hex.DecodeString("ae4d0c95af6b46d32d0adff928f06dd02a303f8e")),
 }, {
 	params: plainParams{
-		t: 2,
-		m: 1 << 8,
-		p: 1,
+		iterationCount: 4096,
+		saltLen:        4,
+		hashLen:        20,
 	},
 	password: "password",
-	salt:     []byte("somesalt"),
-	hash:     must.NotFail(hex.DecodeString("9dfeb910e80bad0311fee20f9c0e2b12c17987b4cac90c2ef54d5b3021c68bfe")),
+	salt:     []byte("salt"),
+	hash:     must.NotFail(hex.DecodeString("c5e478d59288c841aa530db6845c4c8d962893a0")),
 }, {
 	params: plainParams{
-		t: 2,
-		m: 1 << 8,
-		p: 2,
+		iterationCount: 4096,
+		saltLen:        36,
+		hashLen:        25,
 	},
-	password: "password",
-	salt:     []byte("somesalt"),
-	hash:     must.NotFail(hex.DecodeString("6d093c501fd5999645e0ea3bf620d7b8be7fd2db59c20d9fff9539da2bf57037")),
+	password: "passwordPASSWORDpassword",
+	salt:     []byte("saltSALTsaltSALTsaltSALTsaltSALTsalt"),
+	hash:     must.NotFail(hex.DecodeString("348c89dbcbd32b2f32d814b8116e84cf2b17347ebc1800181c")),
 }, {
 	params: plainParams{
-		t: 1,
-		m: 1 << 16,
-		p: 1,
+		iterationCount: 4096,
+		saltLen:        5,
+		hashLen:        16,
 	},
-	password: "password",
-	salt:     []byte("somesalt"),
-	hash:     must.NotFail(hex.DecodeString("f6a5adc1ba723dddef9b5ac1d464e180fcd9dffc9d1cbf76cca2fed795d9ca98")),
+	password: "pass\x00word",
+	salt:     []byte("sa\x00lt"),
+	hash:     must.NotFail(hex.DecodeString("89b69d0516f829893c696226650a8687")),
 }, {
 	params: plainParams{
-		t: 4,
-		m: 1 << 16,
-		p: 1,
+		iterationCount: 1,
+		saltLen:        4,
+		hashLen:        128,
 	},
-	password: "password",
-	salt:     []byte("somesalt"),
-	hash:     must.NotFail(hex.DecodeString("9025d48e68ef7395cca9079da4c4ec3affb3c8911fe4f86d1a2520856f63172c")),
+	password: "passwd",
+	salt:     []byte("salt"),
+	hash:     must.NotFail(hex.DecodeString("55ac046e56e3089fec1691c22544b605f94185216dde0465e68b9d57c20dacbc49ca9cccf179b645991664b39d77ef317c71b845b1e30bd509112041d3a19783c294e850150390e1160c34d62e9665d659ae49d314510fc98274cc79681968104b8f89237e69b2d549111868658be62f59bd715cac44a1147ed5317c9bae6b2a")), //nolint:lll // follows test vectors
 }, {
 	params: plainParams{
-		t: 2,
-		m: 1 << 16,
-		p: 1,
+		iterationCount: 80000,
+		saltLen:        4,
+		hashLen:        128,
 	},
-	password: "differentpassword",
-	salt:     []byte("somesalt"),
-	hash:     must.NotFail(hex.DecodeString("0b84d652cf6b0c4beaef0dfe278ba6a80df6696281d7e0d2891b817d8c458fde")),
+	password: "Password",
+	salt:     []byte("NaCl"),
+	hash:     must.NotFail(hex.DecodeString("4ddcd8f60b98be21830cee5ef22701f9641a4418d04c0414aeff08876b34ab56a1d425a1225833549adb841b51c9b3176a272bdebba1d078478f62b397f33c8d62aae85a11cdde829d89cb6ffd1ab0e63a981f8747d2f2f9fe5874165c83c168d2eed1d2d5ca4052dec2be5715623da019b8c0ec87dc36aa751c38f9893d15c3")), //nolint:lll // follows test vectors
 }, {
 	params: plainParams{
-		t: 2,
-		m: 1 << 16,
-		p: 1,
+		iterationCount: 4096,
+		saltLen:        5,
+		hashLen:        256,
 	},
-	password: "password",
-	salt:     []byte("diffsalt"),
-	hash:     must.NotFail(hex.DecodeString("bdf32b05ccc42eb15d58fd19b1f856b113da1e9a5874fdcc544308565aa8141c")),
+	password: "Password",
+	salt:     []byte("sa\x00lt"),
+	hash:     must.NotFail(hex.DecodeString("436c82c6af9010bb0fdb274791934ac7dee21745dd11fb57bb90112ab187c495ad82df776ad7cefb606f34fedca59baa5922a57f3e91bc0e11960da7ec87ed0471b456a0808b60dff757b7d313d4068bf8d337a99caede24f3248f87d1bf16892b70b076a07dd163a8a09db788ae34300ff2f2d0a92c9e678186183622a636f4cbce15680dfea46f6d224e51c299d4946aa2471133a649288eef3e4227b609cf203dba65e9fa69e63d35b6ff435ff51664cbd6773d72ebc341d239f0084b004388d6afa504eee6719a7ae1bb9daf6b7628d851fab335f1d13948e8ee6f7ab033a32df447f8d0950809a70066605d6960847ed436fa52cdfbcf261b44d2a87061")), //nolint:lll // follows test vectors
 }}
 
 func TestPlain(t *testing.T) {
 	for i, tc := range plainTestCases {
+		i, tc := i, tc
 		t.Run(fmt.Sprintf("%d-%x", i, tc.hash), func(t *testing.T) {
-			tc.params.tagLen = uint32(len(tc.hash))
-			tc.params.saltLen = len(tc.salt)
+			t.Parallel()
+
+			require.Len(t, tc.hash, tc.params.hashLen, "invalid hash length")
 
 			doc, hash, err := plainHashParams(tc.password, tc.salt, &tc.params)
 			require.NoError(t, err)
@@ -149,28 +154,6 @@ func TestPlain(t *testing.T) {
 
 func BenchmarkPlain(b *testing.B) {
 	var err error
-
-	for i, tc := range plainTestCases {
-		b.Run(fmt.Sprintf("%d-%x", i, tc.hash), func(b *testing.B) {
-			b.ReportAllocs()
-
-			tc.params.tagLen = uint32(len(tc.hash))
-			tc.params.saltLen = len(tc.salt)
-
-			var hash []byte
-
-			b.ResetTimer()
-
-			for i := 0; i < b.N; i++ {
-				_, hash, err = plainHashParams(tc.password, tc.salt, &tc.params)
-			}
-
-			b.StopTimer()
-
-			require.NoError(b, err)
-			assert.Equal(b, tc.hash, hash, "hash mismatch")
-		})
-	}
 
 	b.Run("Exported", func(b *testing.B) {
 		b.ReportAllocs()
