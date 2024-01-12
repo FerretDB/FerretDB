@@ -914,9 +914,7 @@ func TestCursorsGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 	_, err := collection.InsertMany(ctx, arr)
 	require.NoError(t, err)
 
-	t.Run("FindExpire", func(tt *testing.T) {
-		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2983")
-
+	t.Run("FindExpire", func(t *testing.T) {
 		opts := options.Find().
 			// set batchSize big enough to hit maxTimeMS
 			SetBatchSize(2000).
@@ -930,32 +928,7 @@ func TestCursorsGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 		integration.AssertMatchesCommandError(t, mongo.CommandError{Code: 50, Name: "MaxTimeMSExpired"}, err)
 	})
 
-	t.Run("FindGetMorePropagateMaxTimeMS", func(t *testing.T) {
-		// this test case is not stable and frequently fails because
-		// `Find` unexpectedly timeout or `cursor.Next()` does not timeout expectedly
-		t.Skip("https://github.com/FerretDB/FerretDB/issues/2983")
-
-		opts := options.Find().
-			// setting zero on find sets nextBatch on getMore to unlimited
-			SetBatchSize(0).
-			// maxTimeMS is 1 but it won't expire because of zero BatchSize
-			SetMaxTime(1)
-
-		cursor, err := collection.Find(ctx, bson.D{}, opts)
-		require.NoError(t, err)
-
-		cursor.SetBatchSize(50000)
-
-		// getMore uses maxTimeMS set on find
-		ok := cursor.Next(ctx)
-		assert.False(t, ok)
-
-		integration.AssertMatchesCommandError(t, mongo.CommandError{Code: 50, Name: "MaxTimeMSExpired"}, cursor.Err())
-	})
-
-	t.Run("AggregateExpire", func(tt *testing.T) {
-		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2983")
-
+	t.Run("AggregateExpire", func(t *testing.T) {
 		opts := options.Aggregate().
 			// set batchSize big enough to hit maxTimeMS
 			SetBatchSize(2000).
@@ -966,31 +939,6 @@ func TestCursorsGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 		_, err := collection.Aggregate(ctx, bson.A{bson.D{{"$sort", bson.D{{"v", 1}}}}}, opts)
 
 		integration.AssertMatchesCommandError(t, mongo.CommandError{Code: 50, Name: "MaxTimeMSExpired"}, err)
-	})
-
-	t.Run("AggregateGetMorePropagateMaxTimeMS", func(t *testing.T) {
-		// this test case is not stable and frequently fails because
-		// `Aggregate` unexpectedly timeout or `cursor.Next()` does not timeout expectedly
-		t.Skip("https://github.com/FerretDB/FerretDB/issues/2983")
-
-		opts := options.Aggregate().
-			// setting zero on aggregate sets nextBatch on getMore to unlimited
-			SetBatchSize(0).
-			// maxTimeMS is 1 but it won't expire on aggregate because of zero BatchSize
-			SetMaxTime(1)
-
-		cursor, err := collection.Aggregate(ctx, bson.A{}, opts)
-		require.NoError(t, err)
-
-		defer cursor.Close(ctx)
-
-		cursor.SetBatchSize(50000)
-
-		// getMore uses maxTimeMS set on aggregate
-		ok := cursor.Next(ctx)
-		assert.False(t, ok)
-
-		integration.AssertMatchesCommandError(t, mongo.CommandError{Code: 50, Name: "MaxTimeMSExpired"}, cursor.Err())
 	})
 }
 

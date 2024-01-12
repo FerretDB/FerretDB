@@ -72,6 +72,9 @@ const (
 	// ErrNamespaceExists indicates that the collection already exists.
 	ErrNamespaceExists = ErrorCode(48) // NamespaceExists
 
+	// ErrMaxTimeMSExpired indicates the MaxTimeMS expired.
+	ErrMaxTimeMSExpired = ErrorCode(50) // MaxTimeMSExpired
+
 	// ErrDollarPrefixedFieldName indicates the field name is prefixed with $.
 	ErrDollarPrefixedFieldName = ErrorCode(52) // DollarPrefixedFieldName
 
