@@ -208,14 +208,12 @@ func TestCreateUser(t *testing.T) {
 func assertPlainCredentials(t testing.TB, key string, cred *types.Document) {
 	t.Helper()
 
-	assert.Truef(t, cred.Has(key), "missing credential %q", key)
+	require.True(t, cred.Has(key), "missing credential %q", key)
 
 	c := must.NotFail(cred.Get(key)).(*types.Document)
 
-	assert.Equal(t, must.NotFail(c.Get("algo")), "argon2id")
-	assert.NotEmpty(t, must.NotFail(c.Get("t")))
-	assert.NotEmpty(t, must.NotFail(c.Get("p")))
-	assert.NotEmpty(t, must.NotFail(c.Get("m")))
+	assert.Equal(t, must.NotFail(c.Get("algo")), "PBKDF2-HMAC-SHA256")
+	assert.NotEmpty(t, must.NotFail(c.Get("iterationCount")))
 	assert.NotEmpty(t, must.NotFail(c.Get("hash")))
 	assert.NotEmpty(t, must.NotFail(c.Get("salt")))
 }
