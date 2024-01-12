@@ -57,6 +57,10 @@ func plainHashParams(password string, salt []byte, params *plainParams) (*types.
 
 	hash := pbkdf2.Key([]byte(password), salt, params.iterationCount, params.hashLen, sha256.New)
 
+	if len(hash) != int(params.hashLen) {
+		return nil, nil, lazyerrors.Errorf("unexpected hash length: %d", len(hash))
+	}
+
 	doc, err := types.NewDocument(
 		"mechanism", plainMechanism,
 		"algo", plainAlgo,
