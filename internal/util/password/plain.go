@@ -26,11 +26,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// The mechanism and the (only) algorithm used for PLAIN authentication.
-const (
-	plainMechanism = "PLAIN"
-	plainAlgo      = "PBKDF2-HMAC-SHA256"
-)
+// plainAlgo is the only algorithm used for PLAIN authentication.
+const plainAlgo = "PBKDF2-HMAC-SHA256"
 
 // plainParams represent password parameters for PLAIN authentication.
 type plainParams struct {
@@ -62,7 +59,6 @@ func plainHashParams(password string, salt []byte, params *plainParams) (*types.
 	}
 
 	doc, err := types.NewDocument(
-		"mechanism", plainMechanism,
 		"algo", plainAlgo,
 		"iterationCount", int64(params.iterationCount),
 		"hash", types.Binary{
@@ -99,14 +95,7 @@ func PlainHash(password string) (*types.Document, error) {
 // Parameters are returned if they could be decoded from the document,
 // even if password is invalid or on any other error.
 func plainVerifyParams(password string, doc *types.Document) (*plainParams, error) {
-	v, _ := doc.Get("mechanism")
-	mechanism, _ := v.(string)
-
-	if mechanism != plainMechanism {
-		return nil, lazyerrors.Errorf("invalid mechanism: %q", mechanism)
-	}
-
-	v, _ = doc.Get("algo")
+	v, _ := doc.Get("algo")
 	algo, _ := v.(string)
 
 	if algo != plainAlgo {
