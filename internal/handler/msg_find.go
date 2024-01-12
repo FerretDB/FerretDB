@@ -15,11 +15,9 @@
 package handler
 
 import (
-	"cmp"
 	"context"
 	"errors"
 	"fmt"
-	"slices"
 	"time"
 
 	"go.uber.org/zap"
@@ -71,18 +69,16 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	var cList *backends.ListCollectionsResult
+	collectionParam := backends.ListCollectionsParams{Name: params.Collection}
 
-	if cList, err = db.ListCollections(ctx, nil); err != nil {
+	if cList, err = db.ListCollections(ctx, &collectionParam); err != nil {
 		return nil, err
 	}
 
 	var cInfo backends.CollectionInfo
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3601
-	if i, found := slices.BinarySearchFunc(cList.Collections, params.Collection, func(e backends.CollectionInfo, t string) int {
-		return cmp.Compare(e.Name, t)
-	}); found {
-		cInfo = cList.Collections[i]
+	if len(cList.Collections) > 0 {
+		cInfo = cList.Collections[0]
 	}
 
 	capped := cInfo.Capped()
@@ -102,24 +98,36 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	cancel := func() {}
+
 	if params.MaxTimeMS != 0 {
-		// It is not clear if maxTimeMS affects only find, or both find and getMore (as the current code does).
-		// TODO https://github.com/FerretDB/FerretDB/issues/2984
-		ctx, cancel = context.WithTimeout(ctx, time.Duration(params.MaxTimeMS)*time.Millisecond)
+		findDone := make(chan struct{})
+		defer close(findDone)
+
+		ctx, cancel = context.WithCancel(ctx)
+
+		go func() {
+			t := time.NewTimer(time.Duration(params.MaxTimeMS) * time.Millisecond)
+			defer t.Stop()
+
+			select {
+			case <-t.C:
+				cancel()
+			case <-findDone:
+			}
+		}()
+	}
+
+	queryRes, err := coll.Query(ctx, qp)
+	if err != nil {
+		return nil, handleMaxTimeMSError(err, params.MaxTimeMS, "find")
 	}
 
 	// closer accumulates all things that should be closed / canceled.
 	closer := iterator.NewMultiCloser(iterator.CloserFunc(cancel))
 
-	queryRes, err := coll.Query(ctx, qp)
-	if err != nil {
-		closer.Close()
-		return nil, lazyerrors.Error(err)
-	}
-
 	iter, err := h.makeFindIter(queryRes.Iter, closer, params)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, handleMaxTimeMSError(err, params.MaxTimeMS, "find")
 	}
 
 	t := cursor.Normal
@@ -149,7 +157,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	docs, err := iterator.ConsumeValuesN(c, int(params.BatchSize))
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, handleMaxTimeMSError(err, params.MaxTimeMS, "find")
 	}
 
 	h.L.Debug(
@@ -300,4 +308,21 @@ func (h *Handler) makeFindIter(iter types.DocumentsIterator, closer *iterator.Mu
 	}
 
 	return iterator.WithClose(iter, closer.Close), nil
+}
+
+// handleMaxTimeMSError returns the MaxTimeMSExpired error if provided error is a result of context cancellation.
+// The MaxTimeMSExpired error won't be returned if maxTimeMS wasn't set.
+func handleMaxTimeMSError(err error, maxTimeMS int64, cmd string) error {
+	switch {
+	case err == nil:
+		return nil
+	case maxTimeMS != 0 && errors.Is(err, context.Canceled):
+		return handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrMaxTimeMSExpired,
+			"Executor error during "+cmd+" command :: caused by :: operation exceeded time limit",
+			cmd,
+		)
+	default:
+		return lazyerrors.Error(err)
+	}
 }

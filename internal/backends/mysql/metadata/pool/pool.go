@@ -61,7 +61,6 @@ func New(u string, l *zap.Logger, sp *state.Provider) (*Pool, error) {
 		baseURI: *baseURI,
 		l:       l,
 		sp:      sp,
-		rw:      sync.RWMutex{},
 		dbs:     map[string]*fsql.DB{},
 		token:   resource.NewToken(),
 	}

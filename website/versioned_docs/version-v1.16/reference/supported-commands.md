@@ -41,10 +41,10 @@ Use ❌ for commands and arguments that are not implemented at all.
 |                 | `min`                      | ⚠️     | Ignored                                                   |
 |                 | `returnKey`                | ❌     | Unimplemented                                             |
 |                 | `showRecordId`             | ✅     |                                                           |
-|                 | `tailable`                 | ✅     |                                                           |
+|                 | `tailable`                 | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/2283) |
 |                 | `oplogReplay`              | ❌     | Unimplemented                                             |
 |                 | `noCursorTimeout`          | ❌     | Unimplemented                                             |
-|                 | `awaitData`                | ✅     |                                                           |
+|                 | `awaitData`                | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/2283) |
 |                 | `allowPartialResults`      | ❌     | Unimplemented                                             |
 |                 | `collation`                | ❌     | Unimplemented                                             |
 |                 | `allowDiskUse`             | ⚠️     | Ignored                                                   |

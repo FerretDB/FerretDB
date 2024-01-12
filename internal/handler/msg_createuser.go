@@ -25,8 +25,10 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/password"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -107,19 +109,70 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 		return nil, err
 	}
 
-	common.Ignored(document, h.L, "pwd", "writeConcern", "authenticationRestrictions", "mechanisms", "comment")
+	common.Ignored(document, h.L, "writeConcern", "authenticationRestrictions", "comment")
+
+	defMechanisms := must.NotFail(types.NewArray())
+
+	mechanisms, err := common.GetOptionalParam(document, "mechanisms", defMechanisms)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	var plainAuth bool
+
+	if mechanisms != nil {
+		iter := mechanisms.Iterator()
+		defer iter.Close()
+
+		for {
+			var v any
+			_, v, err = iter.Next()
+
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
+			if v != "PLAIN" {
+				return nil, handlererrors.NewCommandErrorMsg(
+					handlererrors.ErrBadValue,
+					fmt.Sprintf("Unknown auth mechanism '%s'", v),
+				)
+			}
+
+			plainAuth = true
+		}
+	}
+
+	credentials := types.MakeDocument(0)
+
+	if document.Has("pwd") {
+		pwd, ok := must.NotFail(document.Get("pwd")).(string)
+		if !ok {
+			return nil, handlererrors.NewCommandErrorMsg(
+				handlererrors.ErrBadValue,
+				"BSON field 'createUser.pwd' is the wrong type, expected type 'string'",
+			)
+		}
+
+		if plainAuth {
+			credentials.Set("PLAIN", must.NotFail(password.PlainHash(pwd)))
+		}
+	}
 
 	id := uuid.New()
 	saved := must.NotFail(types.NewDocument(
 		"_id", dbName+"."+username,
-		"credentials", types.MakeDocument(0),
+		"credentials", credentials,
 		"user", username,
 		"db", dbName,
 		"roles", types.MakeArray(0),
 		"userId", types.Binary{Subtype: types.BinaryUUID, B: must.NotFail(id.MarshalBinary())},
 	))
 
-	// Users are saved in the "admin" database.
 	adminDB, err := h.b.Database("admin")
 	if err != nil {
 		return nil, lazyerrors.Error(err)

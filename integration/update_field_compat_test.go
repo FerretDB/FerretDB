@@ -968,6 +968,48 @@ func TestUpdateFieldCompatSetOnInsert(t *testing.T) {
 	testUpdateCompat(t, testCases)
 }
 
+func TestUpdateFieldCompatSetOnInsertComplex(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]testUpdateManyCompatTestCase{
+		"IDExists": {
+			filter:     bson.D{{"_id", "int32"}},
+			update:     bson.D{{"$setOnInsert", bson.D{{"new", "val"}}}},
+			updateOpts: options.Update().SetUpsert(true),
+			providers:  []shareddata.Provider{shareddata.Int32s},
+		},
+		"IDNotExists": {
+			filter:     bson.D{{"_id", "non-existent"}},
+			update:     bson.D{{"$setOnInsert", bson.D{{"new", "val"}}}},
+			updateOpts: options.Update().SetUpsert(true),
+		},
+		"UpsertFalse": {
+			filter:     bson.D{{"_id", "non-existent"}},
+			update:     bson.D{{"$setOnInsert", bson.D{{"new", "val"}}}},
+			updateOpts: options.Update().SetUpsert(false),
+		},
+		"SetWithSetOnInsert": {
+			filter: bson.D{{"_id", "non-existent"}},
+			update: bson.D{
+				{"$set", bson.D{{"new", "val"}}},
+				{"$setOnInsert", bson.D{{"v", int32(42)}}},
+			},
+			updateOpts: options.Update().SetUpsert(true),
+		},
+		"ApplySetSkipSOI": {
+			filter: bson.D{{"_id", "int32"}},
+			update: bson.D{
+				{"$set", bson.D{{"new", "val"}}},
+				{"$setOnInsert", bson.D{{"v", int32(43)}}},
+			},
+			updateOpts: options.Update().SetUpsert(true),
+			providers:  []shareddata.Provider{shareddata.Int32s},
+		},
+	}
+
+	testUpdateManyCompat(t, testCases)
+}
+
 func TestUpdateFieldCompatSetOnInsertArray(t *testing.T) {
 	t.Parallel()
 
