@@ -26,6 +26,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
+// The mechanism and the (only) algorithm used for PLAIN authentication.
 const (
 	plainMechanism = "PLAIN"
 	plainAlgo      = "PBKDF2-HMAC-SHA256"
