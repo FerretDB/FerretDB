@@ -37,41 +37,47 @@ import (
 // UpdateDocument returns CommandError for findAndModify case-insensitive command name,
 // WriteError for other commands.
 // TODO https://github.com/FerretDB/FerretDB/issues/3013
-func UpdateDocument(command string, doc, update *types.Document) (bool, error) {
-	var changed bool
+func UpdateDocument(command string, doc, update *types.Document, insert bool) (bool, error) {
+	var docUpdated bool
 	var err error
 
 	if update.Len() == 0 {
 		// replace to empty doc
 		for _, key := range doc.Keys() {
-			changed = true
+			docUpdated = true
 
 			if key != "_id" {
 				doc.Remove(key)
 			}
 		}
 
-		return changed, nil
+		return docUpdated, nil
 	}
 
 	for _, updateOp := range update.Keys() {
 		updateV := must.NotFail(update.Get(updateOp))
 
+		var updated bool
+
 		switch updateOp {
 		case "$currentDate":
-			changed, err = processCurrentDateFieldExpression(doc, updateV)
+			updated, err = processCurrentDateFieldExpression(doc, updateV)
 			if err != nil {
 				return false, err
 			}
 
 		case "$set":
-			changed, err = processSetFieldExpression(command, doc, updateV.(*types.Document), false)
+			updated, err = processSetFieldExpression(command, doc, updateV.(*types.Document), false)
 			if err != nil {
 				return false, err
 			}
 
 		case "$setOnInsert":
-			changed, err = processSetFieldExpression(command, doc, updateV.(*types.Document), true)
+			if !insert {
+				continue
+			}
+
+			updated, err = processSetFieldExpression(command, doc, updateV.(*types.Document), true)
 			if err != nil {
 				return false, err
 			}
@@ -91,75 +97,71 @@ func UpdateDocument(command string, doc, update *types.Document) (bool, error) {
 
 				if doc.HasByPath(path) {
 					doc.RemoveByPath(path)
-					changed = true
+					updated = true
 				}
 			}
 
 		case "$inc":
-			changed, err = processIncFieldExpression(command, doc, updateV)
+			updated, err = processIncFieldExpression(command, doc, updateV)
 			if err != nil {
 				return false, err
 			}
 
 		case "$max":
-			changed, err = processMaxFieldExpression(command, doc, updateV)
+			updated, err = processMaxFieldExpression(command, doc, updateV)
 			if err != nil {
 				return false, err
 			}
 
 		case "$min":
-			changed, err = processMinFieldExpression(command, doc, updateV)
+			updated, err = processMinFieldExpression(command, doc, updateV)
 			if err != nil {
 				return false, err
 			}
 
 		case "$mul":
-			var mulChanged bool
-
-			if mulChanged, err = processMulFieldExpression(command, doc, updateV); err != nil {
+			if updated, err = processMulFieldExpression(command, doc, updateV); err != nil {
 				return false, err
 			}
 
-			changed = changed || mulChanged
-
 		case "$rename":
-			changed, err = processRenameFieldExpression(command, doc, updateV.(*types.Document))
+			updated, err = processRenameFieldExpression(command, doc, updateV.(*types.Document))
 			if err != nil {
 				return false, err
 			}
 
 		case "$pop":
-			changed, err = processPopArrayUpdateExpression(doc, updateV.(*types.Document))
+			updated, err = processPopArrayUpdateExpression(doc, updateV.(*types.Document))
 			if err != nil {
 				return false, err
 			}
 
 		case "$push":
-			changed, err = processPushArrayUpdateExpression(doc, updateV.(*types.Document))
+			updated, err = processPushArrayUpdateExpression(doc, updateV.(*types.Document))
 			if err != nil {
 				return false, err
 			}
 
 		case "$addToSet":
-			changed, err = processAddToSetArrayUpdateExpression(doc, updateV.(*types.Document))
+			updated, err = processAddToSetArrayUpdateExpression(doc, updateV.(*types.Document))
 			if err != nil {
 				return false, err
 			}
 
 		case "$pullAll":
-			changed, err = processPullAllArrayUpdateExpression(doc, updateV.(*types.Document))
+			updated, err = processPullAllArrayUpdateExpression(doc, updateV.(*types.Document))
 			if err != nil {
 				return false, err
 			}
 
 		case "$pull":
-			changed, err = processPullArrayUpdateExpression(doc, updateV.(*types.Document))
+			updated, err = processPullArrayUpdateExpression(doc, updateV.(*types.Document))
 			if err != nil {
 				return false, err
 			}
 
 		case "$bit":
-			changed, err = processBitFieldExpression(command, doc, updateV.(*types.Document))
+			updated, err = processBitFieldExpression(command, doc, updateV.(*types.Document))
 			if err != nil {
 				return false, err
 			}
@@ -186,11 +188,13 @@ func UpdateDocument(command string, doc, update *types.Document) (bool, error) {
 				doc.Set(setKey, setValue)
 			}
 
-			changed = true
+			updated = true
 		}
+
+		docUpdated = docUpdated || updated
 	}
 
-	return changed, nil
+	return docUpdated, nil
 }
 
 // processSetFieldExpression changes document according to $set and $setOnInsert operators.

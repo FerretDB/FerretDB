@@ -44,7 +44,7 @@ Use ❌ for commands and arguments that are not implemented at all.
 |                 | `tailable`                 | ✅     |                                                           |
 |                 | `oplogReplay`              | ⚠️     | Ignored                                                   |
 |                 | `noCursorTimeout`          | ❌     | Unimplemented                                             |
-|                 | `awaitData`                | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/2283) |
+|                 | `awaitData`                | ✅     |                                                           |
 |                 | `allowPartialResults`      | ❌     | Unimplemented                                             |
 |                 | `collation`                | ❌     | Unimplemented                                             |
 |                 | `allowDiskUse`             | ⚠️     | Ignored                                                   |
@@ -66,7 +66,7 @@ Use ❌ for commands and arguments that are not implemented at all.
 |                 | `let`                      | ⚠️     | Unimplemented                                             |
 | `getMore`       |                            | ✅     | Basic command is fully supported                          |
 |                 | `batchSize`                | ✅     |                                                           |
-|                 | `maxTimeMS`                | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/2984) |
+|                 | `maxTimeMS`                | ✅     |                                                           |
 |                 | `comment`                  | ⚠️     | Unimplemented                                             |
 | `insert`        |                            | ✅     | Basic command is fully supported                          |
 |                 | `documents`                | ✅     |                                                           |
@@ -171,7 +171,7 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/78).
 
 | Command                    | Argument                         | Status | Comments                                                  |
 | -------------------------- | -------------------------------- | ------ | --------------------------------------------------------- |
-| `createUser`               |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1491) |
+| `createUser`               |                                  | ✅     |                                                           |
 |                            | `pwd`                            | ⚠️     |                                                           |
 |                            | `customData`                     | ⚠️     |                                                           |
 |                            | `roles`                          | ⚠️     |                                                           |
@@ -181,10 +181,10 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/78).
 |                            | `mechanisms`                     | ⚠️     |                                                           |
 |                            | `digestPassword`                 | ⚠️     |                                                           |
 |                            | `comment`                        | ⚠️     |                                                           |
-| `dropAllUsersFromDatabase` |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1492) |
+| `dropAllUsersFromDatabase` |                                  | ✅     |                                                           |
 |                            | `writeConcern`                   | ⚠️     |                                                           |
 |                            | `comment`                        | ⚠️     |                                                           |
-| `dropUser`                 |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1493) |
+| `dropUser`                 |                                  | ✅     |                                                           |
 |                            | `writeConcern`                   | ⚠️     |                                                           |
 |                            | `comment`                        | ⚠️     |                                                           |
 | `grantRolesToUser`         |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1494) |

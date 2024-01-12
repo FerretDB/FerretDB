@@ -61,6 +61,8 @@ func TestDropAllUsersFromDatabase(t *testing.T) {
 }
 
 func assertDropAllUsersFromDatabase(t *testing.T, ctx context.Context, db *mongo.Database, users *mongo.Collection, quantity int) {
+	t.Helper()
+
 	var res bson.D
 	err := db.RunCommand(ctx, bson.D{
 		{"dropAllUsersFromDatabase", 1},
@@ -80,7 +82,7 @@ func assertDropAllUsersFromDatabase(t *testing.T, ctx context.Context, db *mongo
 	assert.NoError(t, err)
 
 	expectedUsersInfo := must.NotFail(types.NewDocument(
-		"users", &types.Array{},
+		"users", new(types.Array),
 		"ok", float64(1),
 	))
 	actualUsersInfo := integration.ConvertDocument(t, usersInfo)

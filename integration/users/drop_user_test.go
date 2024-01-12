@@ -99,6 +99,7 @@ func TestDropUser(t *testing.T) {
 // assertUserNotFound checks it the user doesn't exist in the admin.system.users collection.
 func assertUserNotFound(ctx context.Context, t testing.TB, users *mongo.Collection, dbName, username string) {
 	t.Helper()
+
 	err := users.FindOne(ctx, bson.D{{"user", username}, {"db", dbName}}).Err()
 	require.Equal(t, mongo.ErrNoDocuments, err, `should return "no documents" error`)
 }
