@@ -119,7 +119,7 @@ func (r *Registry) getPool(ctx context.Context) (*fsql.DB, error) {
 
 	var p *fsql.DB
 
-	if connInfo.BypassAuth {
+	if connInfo.BypassBackendAuth {
 		if p = r.p.GetAny(); p == nil {
 			return nil, lazyerrors.New("no connection pool")
 		}
@@ -162,7 +162,7 @@ func (r *Registry) getPool(ctx context.Context) (*fsql.DB, error) {
 // then finds and returns the schema that contains FerretDB metadata table.
 func (r *Registry) initDBs(ctx context.Context, db *fsql.DB) ([]string, error) {
 	q := strings.TrimSpace(`
-		SELECT schema_name 
+		SELECT schema_name
 		FROM information_schema.schemata
 	`)
 
