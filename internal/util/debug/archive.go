@@ -24,18 +24,15 @@ import (
 	"path/filepath"
 )
 
-type archiveUrlList []url.URL
+// archiveUrlList type is slice of *url.URL type.
+type archiveUrlList []*url.URL
 
-// archiveHandler - is a handler for creating the archive containing all the debug and metrics info.
+// archiveHandler is a handler for creating the archive containing metrics and heap info.
 func archiveHandler(rw http.ResponseWriter, req *http.Request) {
-	var (
-		scheme  string
-		urlList archiveUrlList
-	)
+	urlList := make(archiveUrlList, 0)
+	scheme := "http"
 
-	urlList = make(archiveUrlList, 0)
-
-	u := new(url.URL)
+	u := &url.URL{}
 	u.Path = metricsPath
 	u.Host = req.Host
 
@@ -44,9 +41,9 @@ func archiveHandler(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	u.Scheme = scheme
-	urlList = append(urlList, *u)
+	urlList = append(urlList, u)
 
-	u = new(url.URL)
+	u = &url.URL{}
 	u.Path = heapPath
 	u.Host = req.Host
 
@@ -55,25 +52,25 @@ func archiveHandler(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	u.Scheme = scheme
-	urlList = append(urlList, *u)
+	urlList = append(urlList, u)
 
 	rw.Header().Set("Content-Type", "application/zip")
 
-	var (
-		debugFilePrefix = "FerretDB"
-		debugFileName   = "debug.zip"
-	)
-
-	zipName := fmt.Sprintf("%s-%s", debugFilePrefix, debugFileName)
+	zipName := "FerretDB-debug.zip"
 	rw.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", zipName))
 
 	zipWriter := zip.NewWriter(rw)
-	defer zipWriter.Close() //nolint:errcheck // we are only reading it
+	defer func() {
+		err := zipWriter.Close()
+		if err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+		}
+	}() //nolint:errcheck //avoid lint error for deferred function.
 
 	for _, fileUrl := range urlList {
 		fileName := filepath.Base(fileUrl.Path)
 
-		resp, err := performRequest(&fileUrl)
+		resp, err := performRequest(fileUrl)
 		if err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return
@@ -87,6 +84,7 @@ func archiveHandler(rw http.ResponseWriter, req *http.Request) {
 	}
 }
 
+// addFileToArchive function responsible for adding content to zip file.
 func addFileToArchive(fileName string, resp *http.Response, zipWriter *zip.Writer) error {
 	defer resp.Body.Close() //nolint:errcheck // we are only reading it
 
@@ -105,7 +103,7 @@ func addFileToArchive(fileName string, resp *http.Response, zipWriter *zip.Write
 	return nil
 }
 
-// performRequest - performs the requests and return response.
+// performRequest performs the requests and return response.
 func performRequest(u *url.URL) (*http.Response, error) {
 	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
 	if err != nil {

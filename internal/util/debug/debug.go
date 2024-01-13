@@ -37,7 +37,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-var (
+const (
 	graphsPath  = "/debug/graphs"
 	metricsPath = "/debug/metrics"
 	archivePath = "/debug/archive"
@@ -60,7 +60,7 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 	))
 
 	opts := []statsviz.Option{
-		statsviz.Root("/debug/graphs"),
+		statsviz.Root(graphsPath),
 		// TODO https://github.com/FerretDB/FerretDB/issues/3600
 	}
 	must.NoError(statsviz.Register(http.DefaultServeMux, opts...))

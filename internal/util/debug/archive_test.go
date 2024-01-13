@@ -21,9 +21,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	_ "net/http/pprof" // for profiling
 	"net/url"
 	"path/filepath"
+	"slices"
 	"testing"
 	"time"
 
@@ -33,16 +33,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
-
-func findInStringsArray(findStr string, list []string) bool {
-	for _, str := range list {
-		if findStr == str {
-			return true
-		}
-	}
-
-	return false
-}
 
 func TestArchiveHandler(t *testing.T) {
 	t.Parallel()
@@ -101,6 +91,6 @@ func TestArchiveHandler(t *testing.T) {
 
 	for _, file := range zipReader.File {
 		t.Logf("\nverifying file : %s", file.Name)
-		require.Equal(t, true, findInStringsArray(file.FileHeader.Name, fileList), "file should be present in archive")
+		require.Equal(t, true, slices.Contains(fileList, file.FileHeader.Name), "file should be present in archive")
 	}
 }
