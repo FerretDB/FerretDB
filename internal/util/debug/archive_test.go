@@ -77,7 +77,8 @@ func TestArchiveHandler(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, resp.StatusCode, "status code should be 200")
 	require.Equal(t, "application/zip", resp.Header.Get("Content-Type"), "mime type should be zip")
-	expectedHeader := fmt.Sprintf("attachment; filename=%s-%s", "FerretDB", "debug.zip")
+
+	expectedHeader := "attachment; filename=FerretDB-debug.zip"
 	receivedHeader := resp.Header.Get("Content-Disposition")
 	require.Equal(t, expectedHeader, receivedHeader, "content-disposition type should be same")
 
