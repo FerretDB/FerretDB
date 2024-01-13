@@ -143,6 +143,10 @@ var (
 	all = testCase{
 		name: "all",
 		v: must.NotFail(ConvertDocument(must.NotFail(types.NewDocument(
+			"array", must.NotFail(types.NewArray(
+				must.NotFail(types.NewArray("")),
+				must.NotFail(types.NewArray("foo")),
+			)),
 			"binary", must.NotFail(types.NewArray(
 				types.Binary{Subtype: types.BinaryUser, B: []byte{0x42}},
 				types.Binary{Subtype: types.BinaryGeneric, B: []byte{}},
@@ -151,6 +155,10 @@ var (
 			"datetime", must.NotFail(types.NewArray(
 				time.Date(2021, 7, 27, 9, 35, 42, 123000000, time.UTC).Local(),
 				time.Time{}.Local(),
+			)),
+			"document", must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument("foo", "")),
+				must.NotFail(types.NewDocument("", "foo")),
 			)),
 			"double", must.NotFail(types.NewArray(42.13, 0.0)),
 			"int32", must.NotFail(types.NewArray(int32(42), int32(0))),
