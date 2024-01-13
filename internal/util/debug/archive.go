@@ -24,12 +24,9 @@ import (
 	"path/filepath"
 )
 
-// archiveUrlList type is slice of *url.URL type.
-type archiveUrlList []*url.URL
-
 // archiveHandler is a handler for creating the archive containing metrics and heap info.
 func archiveHandler(rw http.ResponseWriter, req *http.Request) {
-	urlList := make(archiveUrlList, 0)
+	urlList := make([]*url.URL, 0)
 	scheme := "http"
 
 	u := &url.URL{}
