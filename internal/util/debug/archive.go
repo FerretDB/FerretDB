@@ -65,7 +65,7 @@ func archiveHandler(rw http.ResponseWriter, req *http.Request) {
 		if err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 		}
-	}() //nolint:errcheck //avoid lint error for deferred function.
+	}()
 
 	for _, fileUrl := range urlList {
 		fileName := filepath.Base(fileUrl.Path)
