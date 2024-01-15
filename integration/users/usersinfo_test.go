@@ -76,32 +76,59 @@ func TestUsersinfo(t *testing.T) {
 				createUser("singleuser", "123456"),
 			},
 		},
+		{
+			dbSuffix: "nomongo",
+			payloads: []bson.D{
+				{
+					{"createUser", "WithPLAIN"},
+					{"roles", bson.A{}},
+					{"pwd", "pwd1"},
+					{"mechanisms", bson.A{"PLAIN"}},
+				},
+			},
+		},
 	}
 
 	dbPrefix := testutil.DatabaseName(t)
 
+	// Create users in the databases.
+	// Do not create users that require the PLAIN authentication mechanism when using MongoDB as
+	// only its Enterprise version supports it.
 	for _, inserted := range dbToUsers {
 		dbName := testutil.DatabaseName(t) + inserted.dbSuffix
 		db := client.Database(dbName)
 
+		t.Cleanup(func() {
+			db.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}})
+		})
+
 		for _, payload := range inserted.payloads {
+			payloadDoc := integration.ConvertDocument(t, payload)
+
+			if setup.IsMongoDB(t) && payloadDoc.Has("mechanisms") {
+				mechanisms := must.NotFail(payloadDoc.Get("mechanisms")).(*types.Array)
+				if mechanisms.Contains("PLAIN") {
+					continue
+				}
+			}
 			err := db.RunCommand(ctx, payload).Err()
 			require.NoErrorf(t, err, "cannot create user on database %q: %q", dbName, payload)
 		}
 	}
 
 	testCases := map[string]struct { //nolint:vet // for readability
-		dbSuffix   string
-		payload    bson.D
-		err        *mongo.CommandError
-		altMessage string
-		expected   bson.D
-		hasUser    map[string]struct{}
+		dbSuffix       string
+		payload        bson.D
+		err            *mongo.CommandError
+		altMessage     string
+		expected       bson.D
+		hasUser        map[string]struct{}
+		skipForMongoDB string // optional, skip test for MongoDB backend with a specific reason
 	}{
 		"NoUserFound": {
 			dbSuffix: "no_users",
 			payload: bson.D{
-				{"usersInfo", 1},
+				{"usersInfo", int64(1)},
 			},
 			expected: bson.D{
 				{"users", bson.A{}},
@@ -148,6 +175,25 @@ func TestUsersinfo(t *testing.T) {
 				}},
 				{"ok", float64(1)},
 			},
+		},
+		"WithPLAIN": {
+			dbSuffix: "nomongo",
+			payload: bson.D{
+				{"usersInfo", "WithPLAIN"},
+				{"showCredentials", true},
+			},
+			expected: bson.D{
+				{"users", bson.A{
+					bson.D{
+						{"_id", "TestUsersinfo.one"},
+						{"user", "one"},
+						{"db", "TestUsersinfo"},
+						{"roles", bson.A{}},
+					},
+				}},
+				{"ok", float64(1)},
+			},
+			skipForMongoDB: "Only MongoDB Enterprise offers PLAIN",
 		},
 		"FromSameDatabase": {
 			dbSuffix: "_example",
@@ -324,7 +370,7 @@ func TestUsersinfo(t *testing.T) {
 		"Many": {
 			dbSuffix: "_example",
 			payload: bson.D{
-				{"usersInfo", 1},
+				{"usersInfo", int64(1)},
 			},
 			expected: bson.D{
 				{"users", bson.A{
@@ -427,6 +473,10 @@ func TestUsersinfo(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
+			if tc.skipForMongoDB != "" {
+				setup.SkipForMongoDB(t, tc.skipForMongoDB)
+			}
+
 			var res bson.D
 			dbName := dbPrefix + tc.dbSuffix
 			err := client.Database(dbName).RunCommand(ctx, tc.payload).Decode(&res)
@@ -461,6 +511,22 @@ func TestUsersinfo(t *testing.T) {
 				actualUser := au.(*types.Document)
 
 				require.True(t, (tc.hasUser == nil) != (tc.expected == nil))
+
+				payload := integration.ConvertDocument(t, tc.payload)
+				var showCredentials bool
+
+				if payload.Has("showCredentials") {
+					showCredentials = must.NotFail(payload.Get("showCredentials")).(bool)
+				}
+				if showCredentials {
+					if !setup.IsMongoDB(t) {
+						cred, ok := actualUser.Get("credentials")
+						assert.Nil(t, ok, "credentials not found")
+						assertPlainCredentials(t, "PLAIN", cred.(*types.Document))
+					}
+				} else {
+					assert.False(t, actualUser.Has("credentials"))
+				}
 
 				foundUsers[must.NotFail(actualUser.Get("_id")).(string)] = struct{}{}
 
