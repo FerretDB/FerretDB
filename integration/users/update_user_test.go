@@ -93,6 +93,23 @@ func TestUpdateUser(t *testing.T) {
 			},
 			altMessage: "Password cannot be empty",
 		},
+		"BadPasswordType": {
+			createPayload: bson.D{
+				{"createUser", "a_user_bad_password_type"},
+				{"roles", bson.A{}},
+				{"pwd", "password"},
+			},
+			updatePayload: bson.D{
+				{"updateUser", "a_user_bad_password_type"},
+				{"pwd", true},
+			},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'updateUser.pwd' is the wrong type 'bool', expected type 'string'",
+			},
+			altMessage: "Password cannot be empty",
+		},
 		"SamePassword": {
 			createPayload: bson.D{
 				{"createUser", "same_password_user"},

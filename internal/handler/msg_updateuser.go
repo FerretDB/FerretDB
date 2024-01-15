@@ -22,6 +22,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -126,12 +127,14 @@ func (h *Handler) MsgUpdateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 	var credentials *types.Document
 	if document.Has("pwd") {
 		credentials = types.MakeDocument(0)
-		pwd, ok := must.NotFail(document.Get("pwd")).(string)
+		pwdi := must.NotFail(document.Get("pwd"))
+		pwd, ok := pwdi.(string)
 
 		if !ok {
 			return nil, handlererrors.NewCommandErrorMsg(
-				handlererrors.ErrBadValue,
-				"BSON field 'createUser.pwd' is the wrong type, expected type 'string'",
+				handlererrors.ErrTypeMismatch,
+				fmt.Sprintf("BSON field 'updateUser.pwd' is the wrong type '%s', expected type 'string'",
+					handlerparams.AliasFromType(pwdi)),
 			)
 		}
 
