@@ -56,6 +56,16 @@ func TestCreateUser(t *testing.T) {
 				Message: "User document needs 'user' field to be non-empty",
 			},
 		},
+		"EmptyPassword": {
+			payload: bson.D{
+				{"createUser", "empty_password_user"},
+				{"roles", bson.A{}},
+				{"pwd", ""},
+			},
+			expected: bson.D{
+				{"ok", float64(1)},
+			},
+		},
 		"AlreadyExists": {
 			payload: bson.D{
 				{"createUser", "should_already_exist"},
