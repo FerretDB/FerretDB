@@ -173,7 +173,7 @@ func (doc *Document) readNested(r *bufio.Reader, nesting int) error {
 		if t == 0 {
 			// documented ended
 			if _, err := bufr.Peek(1); err != io.EOF {
-				return lazyerrors.Errorf("unexpected end of the document: %w", err)
+				return lazyerrors.Errorf("unexpected end of the document: %v", err)
 			}
 			break
 		}
