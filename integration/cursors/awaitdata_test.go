@@ -220,6 +220,47 @@ func TestCursorsTailableAwaitDataTODO(t *testing.T) {
 	require.False(t, cur.TryNext(ctx))
 }
 
+func TestCursorsTailableAwaitDataTODO2(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupWithOpts(t, nil)
+
+	db, ctx := s.Collection.Database(), s.Ctx
+
+	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(10000)
+	err := db.CreateCollection(s.Ctx, testutil.CollectionName(t), opts)
+	require.NoError(t, err)
+
+	collection := db.Collection(t.Name())
+
+	bsonArr, _ := integration.GenerateDocuments(0, 3)
+
+	_, err = collection.InsertMany(ctx, bsonArr)
+	require.NoError(t, err)
+
+	findOpts := options.Find().SetCursorType(options.TailableAwait).SetMaxAwaitTime(2000 * time.Second).SetBatchSize(1)
+
+	cur, err := collection.Find(ctx, bson.D{}, findOpts)
+	require.NoError(t, err)
+
+	for i := 0; i < 3; i++ {
+		assert.True(t, cur.TryNext(ctx))
+		require.NoError(t, cur.Err())
+	}
+
+	insertChan := make(chan error)
+
+	go func() {
+		time.Sleep(100 * time.Millisecond)
+		_, insertErr := collection.InsertOne(ctx, bson.D{{"v", "bar"}})
+		insertChan <- insertErr
+	}()
+
+	require.True(t, cur.TryNext(ctx))
+
+	require.NoError(t, <-insertChan)
+}
+
 func TestCursorsTailableAwaitData(t *testing.T) {
 	t.Parallel()
 
