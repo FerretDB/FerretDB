@@ -30,13 +30,23 @@ jobs:
       fail-fast: false
       matrix:
         task: [postgresql, sqlite, mysql]
-        shard_index: [1]
-        shard_total: [1]
+        shard_index: [1, 2, 3]
+        shard_total: [3]
         disable_pushdown: [false, true]
         include:
           - task: postgresql
             shard_index: 1
-            shard_total: 1
+            shard_total: 3
+            disable_pushdown: false
+            postgres_dockerfile: citus
+          - task: postgresql
+            shard_index: 2
+            shard_total: 3
+            disable_pushdown: false
+            postgres_dockerfile: citus
+          - task: postgresql
+            shard_index: 3
+            shard_total: 3
             disable_pushdown: false
             postgres_dockerfile: citus
 
