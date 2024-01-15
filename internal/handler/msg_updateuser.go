@@ -40,14 +40,14 @@ func (h *Handler) MsgUpdateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 
 	dbName, err := common.GetRequiredParam[string](document, "$db")
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, err
 	}
 
 	var username string
 	username, err = common.GetRequiredParam[string](document, document.Command())
 
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, err
 	}
 
 	adminDB, err := h.b.Database("admin")
@@ -134,7 +134,8 @@ func (h *Handler) MsgUpdateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 			return nil, handlererrors.NewCommandErrorMsg(
 				handlererrors.ErrTypeMismatch,
 				fmt.Sprintf("BSON field 'updateUser.pwd' is the wrong type '%s', expected type 'string'",
-					handlerparams.AliasFromType(pwdi)),
+					handlerparams.AliasFromType(pwdi),
+				),
 			)
 		}
 
@@ -197,6 +198,7 @@ func (h *Handler) MsgUpdateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 
 		if matches {
 			saved = v
+			break
 		}
 	}
 

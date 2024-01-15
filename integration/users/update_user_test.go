@@ -76,6 +76,22 @@ func TestUpdateUser(t *testing.T) {
 				Message: "User not_found@TestUpdateUser not found",
 			},
 		},
+		"EmptyUsername": {
+			createPayload: bson.D{
+				{"createUser", "not_empty_username"},
+				{"roles", bson.A{}},
+				{"pwd", "password"},
+			},
+			updatePayload: bson.D{
+				{"updateUser", ""},
+				{"pwd", "anewpassword"},
+			},
+			err: &mongo.CommandError{
+				Code:    11,
+				Name:    "UserNotFound",
+				Message: "User @TestUpdateUser not found",
+			},
+		},
 		"EmptyPassword": {
 			createPayload: bson.D{
 				{"createUser", "a_user_bad_password"},
