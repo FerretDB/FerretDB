@@ -100,6 +100,13 @@ func TestClient(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, issueNotFound, actual)
 
+		// The following tests should use cache and not the client,
+		// but it may be empty if tests above failed for some reason.
+
+		if t.Failed() {
+			return
+		}
+
 		c.c = nil
 
 		actual, err = c.IssueStatus(ctx, 10)
