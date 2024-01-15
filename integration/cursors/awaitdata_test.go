@@ -189,7 +189,7 @@ func TestCursorsAwaitDataErrors(t *testing.T) {
 	})
 }
 
-func TestCursorsTailableAwaitDataTODO(t *testing.T) {
+func TestCursorsTailableMaxAwaitData(t *testing.T) {
 	t.Parallel()
 
 	s := setup.SetupWithOpts(t, nil)
@@ -220,7 +220,7 @@ func TestCursorsTailableAwaitDataTODO(t *testing.T) {
 	require.False(t, cur.TryNext(ctx))
 }
 
-func TestCursorsTailableAwaitDataTODO2(t *testing.T) {
+func TestCursorsTailableMaxAwaitDataInsert(t *testing.T) {
 	t.Parallel()
 
 	s := setup.SetupWithOpts(t, nil)
