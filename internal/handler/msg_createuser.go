@@ -151,10 +151,18 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 
 	if document.Has("pwd") {
 		pwd, ok := must.NotFail(document.Get("pwd")).(string)
+
 		if !ok {
 			return nil, handlererrors.NewCommandErrorMsg(
 				handlererrors.ErrBadValue,
 				"BSON field 'createUser.pwd' is the wrong type, expected type 'string'",
+			)
+		}
+
+		if pwd == "" {
+			return nil, handlererrors.NewCommandErrorMsg(
+				handlererrors.ErrSetEmptyPassword,
+				"Password cannot be empty",
 			)
 		}
 

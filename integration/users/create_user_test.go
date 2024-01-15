@@ -62,9 +62,12 @@ func TestCreateUser(t *testing.T) {
 				{"roles", bson.A{}},
 				{"pwd", ""},
 			},
-			expected: bson.D{
-				{"ok", float64(1)},
+			err: &mongo.CommandError{
+				Code:    50687,
+				Name:    "Location50687",
+				Message: "Error preflighting UTF-8 conversion: U_STRING_NOT_TERMINATED_WARNING",
 			},
+			altMessage: "Password cannot be empty",
 		},
 		"AlreadyExists": {
 			payload: bson.D{

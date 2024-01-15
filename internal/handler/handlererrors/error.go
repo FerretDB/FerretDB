@@ -281,8 +281,8 @@ const (
 	// ErrCollStatsIsNotFirstStage indicates that $collStats must be the first stage in the pipeline.
 	ErrCollStatsIsNotFirstStage = ErrorCode(40602) // Location40602
 
-	// ErrUpdateEmptyPassword indicates that the operation to update to an empty password failed.
-	ErrUpdateEmptyPassword = ErrorCode(50687) // Location50687
+	// ErrSetEmptyPassword indicates that a password must not be empty.
+	ErrSetEmptyPassword = ErrorCode(50687) // Location50687
 
 	// ErrFreeMonitoringDisabled indicates that free monitoring is disabled
 	// by command-line or config file.

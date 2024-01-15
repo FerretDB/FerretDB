@@ -91,7 +91,7 @@ func _() {
 	_ = x[ErrMissingField-40414]
 	_ = x[ErrFailedToParseInput-40415]
 	_ = x[ErrCollStatsIsNotFirstStage-40602]
-	_ = x[ErrUpdateEmptyPassword-50687]
+	_ = x[ErrSetEmptyPassword-50687]
 	_ = x[ErrFreeMonitoringDisabled-50840]
 	_ = x[ErrUserAlreadyExists-51003]
 	_ = x[ErrValueNegative-51024]

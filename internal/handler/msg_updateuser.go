@@ -137,7 +137,7 @@ func (h *Handler) MsgUpdateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 
 		if pwd == "" {
 			return nil, handlererrors.NewCommandErrorMsg(
-				handlererrors.ErrUpdateEmptyPassword,
+				handlererrors.ErrSetEmptyPassword,
 				"Password cannot be empty",
 			)
 		}
