@@ -17,6 +17,7 @@ package cursors
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -999,7 +1000,11 @@ func TestCursorsAwaitDataTimeout(t *testing.T) {
 }
 
 func TestParallelAwaitDataCursorsSingleConn(t *testing.T) {
-	s := setup.SetupWithOpts(t, nil)
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{
+		ExtraOptions: url.Values{
+			"maxPoolSize": []string{"62"},
+		},
+	})
 
 	db, ctx := s.Collection.Database(), s.Ctx
 
@@ -1015,7 +1020,7 @@ func TestParallelAwaitDataCursorsSingleConn(t *testing.T) {
 	// 50 is a limit! afterwards it "blocks"
 	// that because of pool_max_conns which is set in my ide configuration. Although, should we allow it to block?
 	// EDIT: it behaves in exactly same fashion with pool_max_conns
-	teststress.StressN(t, 51, func(ready chan<- struct{}, start <-chan struct{}) {
+	teststress.StressN(t, 50, func(ready chan<- struct{}, start <-chan struct{}) {
 		ready <- struct{}{}
 		<-start
 
