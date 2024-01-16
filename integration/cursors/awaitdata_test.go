@@ -803,7 +803,7 @@ func TestCursorsAwaitDataParallelErr(t *testing.T) {
 			{"batchSize", 1},
 			{"tailable", true},
 			{"awaitData", true},
-			{"maxTimeMS", 1},
+			{"maxTimeMS", 2},
 		}
 
 		expectedErr := mongo.CommandError{
@@ -815,7 +815,7 @@ func TestCursorsAwaitDataParallelErr(t *testing.T) {
 		var res bson.D
 		<-ready
 		err = db.RunCommand(ctx, findCmd).Decode(&res)
-
+		require.NoError(t, err)
 		if err != nil {
 			require.True(t, integration.AssertEqualCommandError(t, expectedErr, err))
 			return
@@ -829,6 +829,9 @@ func TestCursorsAwaitDataParallelErr(t *testing.T) {
 			{"collection", collection.Name()},
 			{"batchSize", 1},
 		}
+
+		err = db.RunCommand(ctx, getMoreCmd).Err()
+		require.NoError(t, err)
 
 		err = db.RunCommand(ctx, getMoreCmd).Err()
 		require.NoError(t, err)
