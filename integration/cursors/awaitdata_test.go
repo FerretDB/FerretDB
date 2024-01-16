@@ -327,9 +327,6 @@ func TestCursorsTailableAwaitDataAfterInsertStress(t *testing.T) {
 
 			collName := testutil.CollectionName(t)
 
-			ready <- struct{}{}
-			<-start
-
 			opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(10000)
 			err := db.CreateCollection(s.Ctx, collName, opts)
 			require.NoError(t, err)
@@ -349,6 +346,9 @@ func TestCursorsTailableAwaitDataAfterInsertStress(t *testing.T) {
 				{"tailable", true},
 				{"awaitData", true},
 			}
+
+			ready <- struct{}{}
+			<-start
 
 			var res bson.D
 			err = collection.Database().RunCommand(ctx, cmd).Decode(&res)
