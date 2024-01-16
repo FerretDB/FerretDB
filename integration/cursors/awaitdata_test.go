@@ -1021,7 +1021,7 @@ func TestParallelAwaitDataCursorsSingleConn(t *testing.T) {
 
 		collection := db.Collection(testutil.CollectionName(t))
 
-		cursorID, err := awaitDataFind(t, ctx, collection)
+		cursorID, err := awaitDataFind(t, ctx, collection, 0)
 		require.NoError(t, err)
 
 		for i := 1; i < 100; i++ {
@@ -1031,29 +1031,41 @@ func TestParallelAwaitDataCursorsSingleConn(t *testing.T) {
 	})
 }
 
-func awaitDataFind(t *testing.T, ctx context.Context, coll *mongo.Collection) (any, error) {
+func awaitDataFind(t *testing.T, ctx context.Context, coll *mongo.Collection, maxTimeMS int) (any, error) {
 	t.Helper()
 
-	db := coll.Database()
 	findCmd := bson.D{
 		{"find", coll.Name()},
 		{"batchSize", 1},
-		//{"tailable", true},
-		//{"awaitData", true},
+		{"tailable", true},
+		{"awaitData", true},
 	}
+
+	if maxTimeMS > 0 {
+		findCmd = bson.D{
+			{"find", coll.Name()},
+			{"batchSize", 1},
+			{"tailable", true},
+			{"awaitData", true},
+			{"maxTimeMS", maxTimeMS},
+		}
+	}
+
+	db := coll.Database()
 
 	var res bson.D
 	err := db.RunCommand(ctx, findCmd).Decode(&res)
-	require.NoError(t, err)
-	//if err != nil {
-	//	expectedErr := mongo.CommandError{
-	//		Code:    50,
-	//		Name:    "MaxTimeMSExpired",
-	//		Message: "Executor error during find command :: caused by :: operation exceeded time limit",
-	//	}
+	//require.NoError(t, err)
+	if err != nil {
+		expectedErr := mongo.CommandError{
+			Code:    50,
+			Name:    "MaxTimeMSExpired",
+			Message: "Executor error during find command :: caused by :: operation exceeded time limit",
+		}
 
-	//	require.True(t, integration.AssertEqualCommandError(t, expectedErr, err))
-	//}
+		require.True(t, integration.AssertEqualCommandError(t, expectedErr, err))
+		return nil, err
+	}
 
 	_, cursorID := getFirstBatch(t, res)
 	require.NotZero(t, cursorID)
@@ -1095,6 +1107,51 @@ func TestParallelAwaitDataCursorsTwoConn(t *testing.T) {
 }
 
 func TestParallelAwaitDataTimeoutCursorsSingleConn(t *testing.T) {
+	s := setup.SetupWithOpts(t, nil)
+
+	db, ctx := s.Collection.Database(), s.Ctx
+
+	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(10000)
+	err := db.CreateCollection(s.Ctx, testutil.CollectionName(t), opts)
+	require.NoError(t, err)
+
+	collection := db.Collection(testutil.CollectionName(t))
+	bsonArr, _ := integration.GenerateDocuments(0, 100) // TODO small and large
+	_, err = collection.InsertMany(ctx, bsonArr)
+	require.NoError(t, err)
+
+	// 50 is a limit! afterwards it "blocks"
+	// that because of pool_max_conns which is set in my ide configuration. Although, should we allow it to block?
+	// EDIT: it behaves in exactly same fashion with pool_max_conns
+	teststress.StressN(t, 50, func(ready chan<- struct{}, start <-chan struct{}) {
+		ready <- struct{}{}
+		<-start
+
+		collection := db.Collection(testutil.CollectionName(t))
+
+		go func() {
+			for i := 1; i < 10; i++ {
+				_, err := awaitDataFind(t, ctx, collection, 1)
+				if err != nil {
+					expectedErr := mongo.CommandError{
+						Code:    50,
+						Name:    "MaxTimeMSExpired",
+						Message: "Executor error during find command :: caused by :: operation exceeded time limit",
+					}
+					require.True(t, integration.AssertEqualCommandError(t, expectedErr, err))
+					return
+				}
+			}
+		}()
+
+		cursorID, err := awaitDataFind(t, ctx, collection, 0)
+		require.NoError(t, err)
+
+		for i := 1; i < 100; i++ {
+			err = awaitDataGetMore(t, ctx, collection, cursorID)
+			require.NoError(t, err)
+		}
+	})
 }
 
 func TestParallelAwaitDataTimeoutCursorsTwoConn(t *testing.T) {
