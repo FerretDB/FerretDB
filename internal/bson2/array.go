@@ -16,6 +16,7 @@ package bson2
 
 import (
 	"errors"
+	"log/slog"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -80,3 +81,13 @@ func (arr *Array) Convert() (*types.Array, error) {
 
 	return res, nil
 }
+
+// LogValue implements slog.LogValuer interface.
+func (arr *Array) LogValue() slog.Value {
+	return slogValue(arr)
+}
+
+// check interfaces
+var (
+	_ slog.LogValuer = (*Array)(nil)
+)
