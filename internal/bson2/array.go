@@ -28,6 +28,11 @@ import (
 // It generally references a part of a larger slice, not a copy.
 type RawArray []byte
 
+// LogValue implements slog.LogValuer interface.
+func (arr *RawArray) LogValue() slog.Value {
+	return slogValue(arr)
+}
+
 // Array represents a BSON array in the (partially) decoded form.
 type Array struct {
 	elements []any
