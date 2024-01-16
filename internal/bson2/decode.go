@@ -89,6 +89,8 @@ func DecodeDocument(b []byte) (*Document, error) {
 				return nil, lazyerrors.Error(err)
 			}
 
+			// Document length and the last byte?
+			// TODO https://github.com/FerretDB/FerretDB/issues/3759
 			v = RawDocument(b[offset : offset+l])
 			offset += l
 
@@ -103,6 +105,8 @@ func DecodeDocument(b []byte) (*Document, error) {
 				return nil, lazyerrors.Error(err)
 			}
 
+			// Document length and the last byte?
+			// TODO https://github.com/FerretDB/FerretDB/issues/3759
 			v = RawArray(b[offset : offset+l])
 			offset += l
 
