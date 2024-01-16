@@ -1013,6 +1013,7 @@ func TestParallelAwaitDataCursorsSingleConn(t *testing.T) {
 	require.NoError(t, err)
 
 	// 50 is a limit! afterwards it "blocks"
+	// that because of pool_max_conns which is set in my ide configuration. Although, should we allow it to block?
 	teststress.StressN(t, 51, func(ready chan<- struct{}, start <-chan struct{}) {
 		ready <- struct{}{}
 		<-start
