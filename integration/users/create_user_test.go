@@ -56,6 +56,31 @@ func TestCreateUser(t *testing.T) {
 				Message: "User document needs 'user' field to be non-empty",
 			},
 		},
+		"EmptyPassword": {
+			payload: bson.D{
+				{"createUser", "empty_password_user"},
+				{"roles", bson.A{}},
+				{"pwd", ""},
+			},
+			err: &mongo.CommandError{
+				Code:    50687,
+				Name:    "Location50687",
+				Message: "Error preflighting UTF-8 conversion: U_STRING_NOT_TERMINATED_WARNING",
+			},
+			altMessage: "Password cannot be empty",
+		},
+		"BadPasswordType": {
+			payload: bson.D{
+				{"createUser", "empty_password_user"},
+				{"roles", bson.A{}},
+				{"pwd", true},
+			},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'createUser.pwd' is the wrong type 'bool', expected type 'string'",
+			},
+		},
 		"AlreadyExists": {
 			payload: bson.D{
 				{"createUser", "should_already_exist"},

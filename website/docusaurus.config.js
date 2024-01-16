@@ -30,6 +30,9 @@ const config = {
       {
         indexBlog: true, // Index blog posts in search engine
         indexDocs: true, // Blog plugin is disabled, blog search needs to be disabled too
+        lunr:{
+          tokenizerSeparator: /[\s\-\$]+/,
+        }
       },
     ],
   ],
