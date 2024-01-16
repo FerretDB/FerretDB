@@ -16,7 +16,6 @@ package bson2
 
 import (
 	"errors"
-	"fmt"
 	"log/slog"
 
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -51,27 +50,21 @@ type Document struct {
 func NewDocument(pairs ...any) (*Document, error) {
 	l := len(pairs)
 	if l%2 != 0 {
-		return nil, fmt.Errorf("invalid number of arguments: %d", l)
+		return nil, lazyerrors.Errorf("invalid number of arguments: %d", l)
 	}
 
-	res := &Document{
-		fields: make([]field, l/2),
-	}
+	res := MakeDocument(l / 2)
 
 	for i := 0; i < l; i += 2 {
 		name, ok := pairs[i].(string)
 		if !ok {
-			return nil, fmt.Errorf("invalid field name type: %T", pairs[i])
+			return nil, lazyerrors.Errorf("invalid field name type: %T", pairs[i])
 		}
 
 		value := pairs[i+1]
-		if !validBSONType(value) {
-			return nil, fmt.Errorf("invalid field value type: %T", value)
-		}
 
-		res.fields[i/2] = field{
-			name:  name,
-			value: value,
+		if err := res.add(name, value); err != nil {
+			return nil, lazyerrors.Error(err)
 		}
 	}
 
@@ -90,18 +83,12 @@ func ConvertDocument(doc *types.Document) (*Document, error) {
 	iter := doc.Iterator()
 	defer iter.Close()
 
-	pairs := make([]any, 0, doc.Len()*2)
+	res := MakeDocument(doc.Len())
 
 	for {
 		k, v, err := iter.Next()
 		if err != nil {
 			if errors.Is(err, iterator.ErrIteratorDone) {
-				var res *Document
-
-				if res, err = NewDocument(pairs...); err != nil {
-					return nil, lazyerrors.Error(err)
-				}
-
 				return res, nil
 			}
 
@@ -113,7 +100,9 @@ func ConvertDocument(doc *types.Document) (*Document, error) {
 			return nil, lazyerrors.Error(err)
 		}
 
-		pairs = append(pairs, k, v)
+		if err = res.add(k, v); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 	}
 }
 
@@ -141,7 +130,7 @@ func (doc *Document) Convert() (*types.Document, error) {
 // add adds a new field to the Document.
 func (doc *Document) add(name string, value any) error {
 	if !validBSONType(value) {
-		return fmt.Errorf("invalid field value type: %T", value)
+		return lazyerrors.Errorf("invalid field value type: %T", value)
 	}
 
 	doc.fields = append(doc.fields, field{

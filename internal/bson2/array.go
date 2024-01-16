@@ -43,10 +43,10 @@ func ConvertArray(arr *types.Array) (*Array, error) {
 	iter := arr.Iterator()
 	defer iter.Close()
 
-	elements := make([]any, 0, arr.Len())
+	elements := make([]any, arr.Len())
 
 	for {
-		_, v, err := iter.Next()
+		i, v, err := iter.Next()
 		if err != nil {
 			if errors.Is(err, iterator.ErrIteratorDone) {
 				return &Array{
@@ -62,7 +62,7 @@ func ConvertArray(arr *types.Array) (*Array, error) {
 			return nil, lazyerrors.Error(err)
 		}
 
-		elements = append(elements, v)
+		elements[i] = v
 	}
 }
 

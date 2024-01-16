@@ -12,8 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package bson2 implements encoding and decoding of BSON as defined by https://bsonspec.org/spec.html
-// and https://www.mongodb.com/docs/manual/reference/bson-types/.
+// Package bson2 implements encoding and decoding of BSON as defined by https://bsonspec.org/spec.html.
 //
 // # Types
 //

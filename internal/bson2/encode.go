@@ -27,6 +27,8 @@ import (
 )
 
 // encodeDocument encodes BSON document.
+//
+// TODO https://github.com/FerretDB/FerretDB/issues/3759
 func encodeDocument(doc *Document) ([]byte, error) {
 	size := sizeAny(doc)
 	buf := bytes.NewBuffer(make([]byte, 0, size))
@@ -49,6 +51,8 @@ func encodeDocument(doc *Document) ([]byte, error) {
 }
 
 // encodeArray encodes BSON array.
+//
+// TODO https://github.com/FerretDB/FerretDB/issues/3759
 func encodeArray(arr *Array) ([]byte, error) {
 	size := sizeAny(arr)
 	buf := bytes.NewBuffer(make([]byte, 0, size))
