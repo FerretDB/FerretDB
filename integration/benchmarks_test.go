@@ -144,6 +144,20 @@ func BenchmarkInsertMany(b *testing.B) {
 			}
 		}
 
+		// TODO insert into different collections concurrently
+		for name, bc := range map[string]struct {
+			batchSize   int
+			collections []string
+			filter      bson.D
+		}{
+			"MultipleCollections": {
+				batchSize:   100,
+				collections: []string{"a", "b", "c", "d"},
+				filter:      bson.D{},
+			},
+		} {
+		}
+
 		for _, batchSize := range batchSizes {
 			b.Run(fmt.Sprintf("%s/Batch%d", provider.Name(), batchSize), func(b *testing.B) {
 				b.StopTimer()
