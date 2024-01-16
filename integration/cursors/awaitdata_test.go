@@ -1014,6 +1014,7 @@ func TestParallelAwaitDataCursorsSingleConn(t *testing.T) {
 
 	// 50 is a limit! afterwards it "blocks"
 	// that because of pool_max_conns which is set in my ide configuration. Although, should we allow it to block?
+	// EDIT: it behaves in exactly same fashion with pool_max_conns
 	teststress.StressN(t, 51, func(ready chan<- struct{}, start <-chan struct{}) {
 		ready <- struct{}{}
 		<-start
