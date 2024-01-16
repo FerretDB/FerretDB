@@ -662,14 +662,14 @@ func TestCursorsAwaitDataGetMoreAfterInsertion(t *testing.T) {
 	})
 }
 
-func TestCursorsAwaitDataStress(t *testing.T) {
+func TestCursorsAwaitDataTimeoutDerivation(t *testing.T) {
 	t.Parallel()
 
 	s := setup.SetupWithOpts(t, nil)
 
 	db, ctx := s.Collection.Database(), s.Ctx
 
-	bsonArr, _ := integration.GenerateDocuments(0, 3)
+	bsonArr, _ := integration.GenerateDocuments(0, 1000)
 
 	var count atomic.Int32
 
@@ -678,7 +678,7 @@ func TestCursorsAwaitDataStress(t *testing.T) {
 
 	collName := fmt.Sprintf("%s_%d", testutil.CollectionName(t), id)
 
-	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(10000)
+	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(100000)
 	err := db.CreateCollection(s.Ctx, collName, opts)
 	require.NoError(t, err)
 
@@ -692,7 +692,7 @@ func TestCursorsAwaitDataStress(t *testing.T) {
 		{"batchSize", 1},
 		{"tailable", true},
 		{"awaitData", true},
-		{"maxTimeMS", 5},
+		{"maxTimeMS", 3},
 	}
 
 	expectedErr := mongo.CommandError{
@@ -712,23 +712,89 @@ func TestCursorsAwaitDataStress(t *testing.T) {
 		return
 	}
 
-	time.Sleep(10 * time.Millisecond)
-
 	_, cursorID := getFirstBatch(t, res)
 	require.NotZero(t, cursorID)
 
 	getMoreCmd := bson.D{
 		{"getMore", cursorID},
 		{"collection", collection.Name()},
-		{"batchSize", 1},
+		{"batchSize", 900},
 	}
 
-	err = db.RunCommand(ctx, getMoreCmd).Err()
+	err = db.RunCommand(ctx, getMoreCmd).Decode(&res)
 	require.NoError(t, err)
 
-	err = db.RunCommand(ctx, getMoreCmd).Err()
-	require.NoError(t, err)
+	nextBatch, _ := getNextBatch(t, res)
+	require.Equal(t, 900, nextBatch.Len())
 	//})
+}
+
+func TestCursorsAwaitDataStress(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupWithOpts(t, nil)
+
+	db, ctx := s.Collection.Database(), s.Ctx
+
+	bsonArr, _ := integration.GenerateDocuments(0, 3)
+
+	var count atomic.Int32
+
+	teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
+		id := count.Add(1)
+
+		collName := fmt.Sprintf("%s_%d", testutil.CollectionName(t), id)
+
+		opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(10000)
+		err := db.CreateCollection(s.Ctx, collName, opts)
+		require.NoError(t, err)
+
+		collection := db.Collection(collName)
+
+		_, err = collection.InsertMany(ctx, bsonArr)
+		require.NoError(t, err)
+
+		findCmd := bson.D{
+			{"find", collection.Name()},
+			{"batchSize", 1},
+			{"tailable", true},
+			{"awaitData", true},
+			{"maxTimeMS", 5},
+		}
+
+		expectedErr := mongo.CommandError{
+			Code:    50,
+			Name:    "MaxTimeMSExpired",
+			Message: "Executor error during find command :: caused by :: operation exceeded time limit",
+		}
+
+		ready <- struct{}{}
+		<-start
+
+		var res bson.D
+		err = db.RunCommand(ctx, findCmd).Decode(&res)
+		if err != nil {
+			require.True(t, integration.AssertEqualCommandError(t, expectedErr, err))
+			return
+		}
+
+		time.Sleep(10 * time.Millisecond)
+
+		_, cursorID := getFirstBatch(t, res)
+		require.NotZero(t, cursorID)
+
+		getMoreCmd := bson.D{
+			{"getMore", cursorID},
+			{"collection", collection.Name()},
+			{"batchSize", 1},
+		}
+
+		err = db.RunCommand(ctx, getMoreCmd).Err()
+		require.NoError(t, err)
+
+		err = db.RunCommand(ctx, getMoreCmd).Err()
+		require.NoError(t, err)
+	})
 }
 
 func TestCursorsAwaitDataTimeout(t *testing.T) {
