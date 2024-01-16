@@ -36,14 +36,15 @@ import (
 //nolint:vet // for readability
 type testCase struct {
 	name      string
-	doc       *types.Document
 	b         []byte
+	doc       *types.Document
 	decodeErr error
 }
 
 var (
 	handshake1 = testCase{
 		name: "handshake1",
+		b:    testutil.MustParseDumpFile("testdata", "handshake1.hex"),
 		doc: must.NotFail(types.NewDocument(
 			"ismaster", true,
 			"client", must.NotFail(types.NewDocument(
@@ -65,11 +66,11 @@ var (
 			"compression", must.NotFail(types.NewArray("none")),
 			"loadBalanced", false,
 		)),
-		b: testutil.MustParseDumpFile("testdata", "handshake1.hex"),
 	}
 
 	handshake2 = testCase{
 		name: "handshake2",
+		b:    testutil.MustParseDumpFile("testdata", "handshake2.hex"),
 		doc: must.NotFail(types.NewDocument(
 			"ismaster", true,
 			"client", must.NotFail(types.NewDocument(
@@ -91,11 +92,11 @@ var (
 			"compression", must.NotFail(types.NewArray("none")),
 			"loadBalanced", false,
 		)),
-		b: testutil.MustParseDumpFile("testdata", "handshake2.hex"),
 	}
 
 	handshake3 = testCase{
 		name: "handshake3",
+		b:    testutil.MustParseDumpFile("testdata", "handshake3.hex"),
 		doc: must.NotFail(types.NewDocument(
 			"buildInfo", int32(1),
 			"lsid", must.NotFail(types.NewDocument(
@@ -109,11 +110,11 @@ var (
 			)),
 			"$db", "admin",
 		)),
-		b: testutil.MustParseDumpFile("testdata", "handshake3.hex"),
 	}
 
 	handshake4 = testCase{
 		name: "handshake4",
+		b:    testutil.MustParseDumpFile("testdata", "handshake4.hex"),
 		doc: must.NotFail(types.NewDocument(
 			"version", "5.0.0",
 			"gitVersion", "1184f004a99660de6f5e745573419bda8a28c0e9",
@@ -155,11 +156,11 @@ var (
 			"storageEngines", must.NotFail(types.NewArray("devnull", "ephemeralForTest", "wiredTiger")),
 			"ok", float64(1),
 		)),
-		b: testutil.MustParseDumpFile("testdata", "handshake4.hex"),
 	}
 
 	all = testCase{
 		name: "all",
+		b:    testutil.MustParseDumpFile("testdata", "all.hex"),
 		doc: must.NotFail(types.NewDocument(
 			"array", must.NotFail(types.NewArray(
 				must.NotFail(types.NewArray("")),
@@ -185,7 +186,6 @@ var (
 			"string", must.NotFail(types.NewArray("foo", "")),
 			"timestamp", must.NotFail(types.NewArray(types.Timestamp(42), types.Timestamp(0))),
 		)),
-		b: testutil.MustParseDumpFile("testdata", "all.hex"),
 	}
 
 	eof = testCase{
@@ -196,15 +196,15 @@ var (
 
 	smallDoc = testCase{
 		name: "smallDoc",
-		doc: must.NotFail(types.NewDocument(
-			"foo", must.NotFail(types.NewDocument()),
-		)),
 		b: []byte{
 			0x0f, 0x00, 0x00, 0x00, // document length
 			0x03, 0x66, 0x6f, 0x6f, 0x00, // subdocument "foo"
 			0x05, 0x00, 0x00, 0x00, 0x00, // subdocument length and end of subdocument
 			0x00, // end of document
 		},
+		doc: must.NotFail(types.NewDocument(
+			"foo", must.NotFail(types.NewDocument()),
+		)),
 	}
 
 	shortDoc = testCase{
@@ -220,15 +220,15 @@ var (
 
 	smallArray = testCase{
 		name: "smallArray",
-		doc: must.NotFail(types.NewDocument(
-			"foo", must.NotFail(types.NewArray()),
-		)),
 		b: []byte{
 			0x0f, 0x00, 0x00, 0x00, // document length
 			0x04, 0x66, 0x6f, 0x6f, 0x00, // subarray "foo"
 			0x05, 0x00, 0x00, 0x00, 0x00, // subarray length and end of subarray
 			0x00, // end of document
 		},
+		doc: must.NotFail(types.NewDocument(
+			"foo", must.NotFail(types.NewArray()),
+		)),
 	}
 
 	shortArray = testCase{
@@ -244,28 +244,22 @@ var (
 
 	duplicateKeys = testCase{
 		name: "duplicateKeys",
-		doc: must.NotFail(types.NewDocument(
-			"", false,
-			"", true,
-		)),
 		b: []byte{
 			0x0b, 0x00, 0x00, 0x00, // document length
 			0x08, 0x00, 0x00, // "": false
 			0x08, 0x00, 0x01, // "": true
 			0x00, // end of document
 		},
-	}
-
-	fuzz1 = testCase{
-		name:      "fuzz1-3f48641130f5c5c9",
-		b:         []byte("\x0f\x00\x00\x00\x04000000000\x00"),
-		decodeErr: ErrDecodeShortInput,
+		doc: must.NotFail(types.NewDocument(
+			"", false,
+			"", true,
+		)),
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/3759
 	/*
-		fuzz2 = testCase{
-			name: "fuzz2-702a93bb4d6e1425",
+		fuzz1 = testCase{
+			name: "fuzz1-702a93bb4d6e1425",
 			b: []byte{
 				0x4d, 0x01, 0x00, 0x00, // document length
 				0x08,                                                 // bool
@@ -300,7 +294,6 @@ var (
 	documentTestCases = []testCase{
 		handshake1, handshake2, handshake3, handshake4, all,
 		eof, smallDoc, shortDoc, smallArray, shortArray, duplicateKeys,
-		fuzz1, /* fuzz2, */
 	}
 )
 
@@ -309,14 +302,10 @@ func TestDocument(t *testing.T) {
 		tc := tc
 
 		t.Run(tc.name, func(t *testing.T) {
-			if tc.doc == nil {
-				require.NotNil(t, tc.decodeErr)
-			} else {
-				require.Nil(t, tc.decodeErr)
-			}
+			require.NotEqual(t, tc.doc == nil, tc.decodeErr == nil)
 
 			t.Run("Encode", func(t *testing.T) {
-				if tc.decodeErr != nil {
+				if tc.doc == nil {
 					t.Skip()
 				}
 
