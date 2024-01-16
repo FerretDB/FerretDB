@@ -17,7 +17,6 @@ package cursors
 import (
 	"context"
 	"fmt"
-	"net/url"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -1000,11 +999,7 @@ func TestCursorsAwaitDataTimeout(t *testing.T) {
 }
 
 func TestParallelAwaitDataCursorsSingleConn(t *testing.T) {
-	s := setup.SetupWithOpts(t, &setup.SetupOpts{
-		ExtraOptions: url.Values{
-			"maxPoolSize": []string{"62"},
-		},
-	})
+	s := setup.SetupWithOpts(t, nil)
 
 	db, ctx := s.Collection.Database(), s.Ctx
 
@@ -1013,14 +1008,14 @@ func TestParallelAwaitDataCursorsSingleConn(t *testing.T) {
 	require.NoError(t, err)
 
 	collection := db.Collection(testutil.CollectionName(t))
-	bsonArr, _ := integration.GenerateDocuments(0, 3) // TODO small and large
+	bsonArr, _ := integration.GenerateDocuments(0, 100) // TODO small and large
 	_, err = collection.InsertMany(ctx, bsonArr)
 	require.NoError(t, err)
 
 	// 50 is a limit! afterwards it "blocks"
 	// that because of pool_max_conns which is set in my ide configuration. Although, should we allow it to block?
 	// EDIT: it behaves in exactly same fashion with pool_max_conns
-	teststress.StressN(t, 51, func(ready chan<- struct{}, start <-chan struct{}) {
+	teststress.StressN(t, 50, func(ready chan<- struct{}, start <-chan struct{}) {
 		ready <- struct{}{}
 		<-start
 
@@ -1029,7 +1024,7 @@ func TestParallelAwaitDataCursorsSingleConn(t *testing.T) {
 		cursorID, err := awaitDataFind(t, ctx, collection)
 		require.NoError(t, err)
 
-		for i := 1; i < 3; i++ {
+		for i := 1; i < 100; i++ {
 			err = awaitDataGetMore(t, ctx, collection, cursorID)
 			require.NoError(t, err)
 		}
