@@ -36,7 +36,7 @@ import (
 //nolint:vet // for readability
 type testCase struct {
 	name      string
-	b         []byte
+	raw       RawDocument
 	doc       *types.Document
 	decodeErr error
 }
@@ -44,7 +44,7 @@ type testCase struct {
 var (
 	handshake1 = testCase{
 		name: "handshake1",
-		b:    testutil.MustParseDumpFile("testdata", "handshake1.hex"),
+		raw:  testutil.MustParseDumpFile("testdata", "handshake1.hex"),
 		doc: must.NotFail(types.NewDocument(
 			"ismaster", true,
 			"client", must.NotFail(types.NewDocument(
@@ -70,7 +70,7 @@ var (
 
 	handshake2 = testCase{
 		name: "handshake2",
-		b:    testutil.MustParseDumpFile("testdata", "handshake2.hex"),
+		raw:  testutil.MustParseDumpFile("testdata", "handshake2.hex"),
 		doc: must.NotFail(types.NewDocument(
 			"ismaster", true,
 			"client", must.NotFail(types.NewDocument(
@@ -96,7 +96,7 @@ var (
 
 	handshake3 = testCase{
 		name: "handshake3",
-		b:    testutil.MustParseDumpFile("testdata", "handshake3.hex"),
+		raw:  testutil.MustParseDumpFile("testdata", "handshake3.hex"),
 		doc: must.NotFail(types.NewDocument(
 			"buildInfo", int32(1),
 			"lsid", must.NotFail(types.NewDocument(
@@ -114,7 +114,7 @@ var (
 
 	handshake4 = testCase{
 		name: "handshake4",
-		b:    testutil.MustParseDumpFile("testdata", "handshake4.hex"),
+		raw:  testutil.MustParseDumpFile("testdata", "handshake4.hex"),
 		doc: must.NotFail(types.NewDocument(
 			"version", "5.0.0",
 			"gitVersion", "1184f004a99660de6f5e745573419bda8a28c0e9",
@@ -160,7 +160,7 @@ var (
 
 	all = testCase{
 		name: "all",
-		b:    testutil.MustParseDumpFile("testdata", "all.hex"),
+		raw:  testutil.MustParseDumpFile("testdata", "all.hex"),
 		doc: must.NotFail(types.NewDocument(
 			"array", must.NotFail(types.NewArray(
 				must.NotFail(types.NewArray("")),
@@ -190,13 +190,13 @@ var (
 
 	eof = testCase{
 		name:      "EOF",
-		b:         []byte{0x00},
+		raw:       RawDocument{0x00},
 		decodeErr: ErrDecodeShortInput,
 	}
 
 	smallDoc = testCase{
 		name: "smallDoc",
-		b: []byte{
+		raw: RawDocument{
 			0x0f, 0x00, 0x00, 0x00, // document length
 			0x03, 0x66, 0x6f, 0x6f, 0x00, // subdocument "foo"
 			0x05, 0x00, 0x00, 0x00, 0x00, // subdocument length and end of subdocument
@@ -209,7 +209,7 @@ var (
 
 	shortDoc = testCase{
 		name: "shortDoc",
-		b: []byte{
+		raw: RawDocument{
 			0x0f, 0x00, 0x00, 0x00, // document length
 			0x03, 0x66, 0x6f, 0x6f, 0x00, // subdocument "foo"
 			0x06, 0x00, 0x00, 0x00, 0x00, // invalid subdocument length and end of subdocument
@@ -220,7 +220,7 @@ var (
 
 	invalidDoc = testCase{
 		name: "invalidDoc",
-		b: []byte{
+		raw: RawDocument{
 			0x0f, 0x00, 0x00, 0x00, // document length
 			0x03, 0x66, 0x6f, 0x6f, 0x00, // subdocument "foo"
 			0x05, 0x00, 0x00, 0x00, // subdocument length
@@ -232,7 +232,7 @@ var (
 
 	smallArray = testCase{
 		name: "smallArray",
-		b: []byte{
+		raw: RawDocument{
 			0x0f, 0x00, 0x00, 0x00, // document length
 			0x04, 0x66, 0x6f, 0x6f, 0x00, // subarray "foo"
 			0x05, 0x00, 0x00, 0x00, 0x00, // subarray length and end of subarray
@@ -245,7 +245,7 @@ var (
 
 	shortArray = testCase{
 		name: "shortArray",
-		b: []byte{
+		raw: RawDocument{
 			0x0f, 0x00, 0x00, 0x00, // document length
 			0x04, 0x66, 0x6f, 0x6f, 0x00, // subarray "foo"
 			0x06, 0x00, 0x00, 0x00, 0x00, // invalid subarray length and end of subarray
@@ -256,7 +256,7 @@ var (
 
 	invalidArray = testCase{
 		name: "invalidArray",
-		b: []byte{
+		raw: RawDocument{
 			0x0f, 0x00, 0x00, 0x00, // document length
 			0x04, 0x66, 0x6f, 0x6f, 0x00, // subarray "foo"
 			0x05, 0x00, 0x00, 0x00, // subarray length
@@ -268,7 +268,7 @@ var (
 
 	duplicateKeys = testCase{
 		name: "duplicateKeys",
-		b: []byte{
+		raw: RawDocument{
 			0x0b, 0x00, 0x00, 0x00, // document length
 			0x08, 0x00, 0x00, // "": false
 			0x08, 0x00, 0x01, // "": true
@@ -304,7 +304,7 @@ func TestDocument(t *testing.T) {
 
 					actual, err := doc.MarshalBinary()
 					require.NoError(t, err)
-					assert.Equal(t, tc.b, actual, "actual:\n%s", hex.Dump(actual))
+					assert.Equal(t, []byte(tc.raw), actual, "actual:\n%s", hex.Dump(actual))
 				})
 
 				t.Run("bson2", func(t *testing.T) {
@@ -313,14 +313,14 @@ func TestDocument(t *testing.T) {
 
 					actual, err := doc.Encode()
 					require.NoError(t, err)
-					assert.Equal(t, tc.b, actual, "actual:\n%s", hex.Dump(actual))
+					assert.Equal(t, tc.raw, actual, "actual:\n%s", hex.Dump(actual))
 				})
 			})
 
 			t.Run("Decode", func(t *testing.T) {
 				t.Run("bson", func(t *testing.T) {
 					var doc bson.Document
-					buf := bufio.NewReader(bytes.NewReader(tc.b))
+					buf := bufio.NewReader(bytes.NewReader(tc.raw))
 					err := doc.ReadFrom(buf)
 
 					if tc.decodeErr != nil {
@@ -338,7 +338,7 @@ func TestDocument(t *testing.T) {
 				})
 
 				t.Run("bson2", func(t *testing.T) {
-					doc, err := RawDocument(tc.b).Decode()
+					doc, err := RawDocument(tc.raw).Decode()
 
 					// errors might be hidden by RawDocument / RawArray
 					// TODO https://github.com/FerretDB/FerretDB/issues/3759
@@ -347,7 +347,7 @@ func TestDocument(t *testing.T) {
 					}
 
 					if tc.decodeErr != nil {
-						require.Error(t, err, "b:\n\n%s\n%#v", hex.Dump(tc.b), tc.b)
+						require.Error(t, err, "b:\n\n%s\n%#v", hex.Dump(tc.raw), tc.raw)
 						require.ErrorIs(t, err, tc.decodeErr)
 						return
 					}
@@ -364,23 +364,25 @@ func TestDocument(t *testing.T) {
 
 func FuzzDocument(f *testing.F) {
 	for _, tc := range documentTestCases {
-		f.Add(tc.b)
+		f.Add([]byte(tc.raw))
 	}
 
 	f.Fuzz(func(t *testing.T, b []byte) {
 		t.Parallel()
 
+		raw := RawDocument(b)
+
 		t.Run("bson2", func(t *testing.T) {
 			t.Parallel()
 
-			doc, err := RawDocument(b).Decode()
+			doc, err := raw.Decode()
 			if err != nil {
 				t.Skip()
 			}
 
 			actual, err := doc.Encode()
 			require.NoError(t, err)
-			assert.Equal(t, b, actual, "actual:\n%s", hex.Dump(actual))
+			assert.Equal(t, raw, actual, "actual:\n%s", hex.Dump(actual))
 		})
 
 		t.Run("cross", func(t *testing.T) {
@@ -393,7 +395,7 @@ func FuzzDocument(f *testing.F) {
 			err1 := doc1.ReadFrom(bufr)
 
 			if err1 != nil {
-				doc2, err2 := RawDocument(b).Decode()
+				doc2, err2 := raw.Decode()
 
 				// errors might be hidden by RawDocument / RawArray
 				// TODO https://github.com/FerretDB/FerretDB/issues/3759
