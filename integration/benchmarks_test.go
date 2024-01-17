@@ -145,7 +145,6 @@ func BenchmarkInsertMany(b *testing.B) {
 
 	for name, bc := range map[string]struct {
 		collections []string
-		filter      bson.D
 	}{
 		"ConcurrentInsertManyAllCollections": {
 			collections: []string{"a", "b", "c", "d"},
