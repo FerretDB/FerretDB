@@ -308,14 +308,13 @@ func TestCursorsTailableAwaitData(t *testing.T) {
 	})
 }
 
-func TestCursorsTailableAwaitDataAfterInsertStress(t *testing.T) {
-
+func TestCursorsTailableAwaitDataAfterInsertStress(tt *testing.T) {
 	var count atomic.Int32
 
-	teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
+	teststress.Stress(tt, func(ready chan<- struct{}, start <-chan struct{}) {
 		testID := count.Add(1)
 
-		t.Run(fmt.Sprint(testID), func(tt *testing.T) {
+		tt.Run(fmt.Sprint(testID), func(tt *testing.T) {
 			tt.Parallel()
 
 			t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/3957")
