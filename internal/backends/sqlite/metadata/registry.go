@@ -422,7 +422,7 @@ func (r *Registry) collectionDrop(ctx context.Context, dbName, collectionName st
 
 // CollectionRename renames a collection in the database.
 //
-// The collection name is update, but original table name is kept.
+// The collection name is updated, but original table name is kept.
 //
 // Returned boolean value indicates whether the collection was renamed.
 // If database or collection did not exist, (false, nil) is returned.
