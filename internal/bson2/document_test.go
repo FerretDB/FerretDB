@@ -188,6 +188,152 @@ var (
 		)),
 	}
 
+	float64Doc = testCase{
+		name: "float64Doc",
+		raw: RawDocument{
+			0x10, 0x00, 0x00, 0x00,
+			0x01, 0x66, 0x00,
+			0x18, 0x2d, 0x44, 0x54, 0xfb, 0x21, 0x09, 0x40,
+			0x00,
+		},
+		doc: must.NotFail(types.NewDocument(
+			"f", float64(3.141592653589793),
+		)),
+	}
+
+	stringDoc = testCase{
+		name: "stringDoc",
+		raw: RawDocument{
+			0x0e, 0x00, 0x00, 0x00,
+			0x02, 0x66, 0x00,
+			0x02, 0x00, 0x00, 0x00,
+			0x76, 0x00,
+			0x00,
+		},
+		doc: must.NotFail(types.NewDocument(
+			"f", "v",
+		)),
+	}
+
+	binaryDoc = testCase{
+		name: "binaryDoc",
+		raw: RawDocument{
+			0x0e, 0x00, 0x00, 0x00,
+			0x05, 0x66, 0x00,
+			0x01, 0x00, 0x00, 0x00,
+			0x80,
+			0x76,
+			0x00,
+		},
+		doc: must.NotFail(types.NewDocument(
+			"f", types.Binary{B: []byte("v"), Subtype: types.BinaryUser},
+		)),
+	}
+
+	objectIDDoc = testCase{
+		name: "objectIDDoc",
+		raw: RawDocument{
+			0x14, 0x00, 0x00, 0x00,
+			0x07, 0x66, 0x00,
+			0x62, 0x56, 0xc5, 0xba, 0x18, 0x2d, 0x44, 0x54, 0xfb, 0x21, 0x09, 0x40,
+			0x00,
+		},
+		doc: must.NotFail(types.NewDocument(
+			"f", types.ObjectID{0x62, 0x56, 0xc5, 0xba, 0x18, 0x2d, 0x44, 0x54, 0xfb, 0x21, 0x09, 0x40},
+		)),
+	}
+
+	boolDoc = testCase{
+		name: "boolDoc",
+		raw: RawDocument{
+			0x09, 0x00, 0x00, 0x00,
+			0x08, 0x66, 0x00,
+			0x01,
+			0x00,
+		},
+		doc: must.NotFail(types.NewDocument(
+			"f", true,
+		)),
+	}
+
+	timeDoc = testCase{
+		name: "timeDoc",
+		raw: RawDocument{
+			0x10, 0x00, 0x00, 0x00,
+			0x09, 0x66, 0x00,
+			0x0b, 0xce, 0x82, 0x18, 0x8d, 0x01, 0x00, 0x00,
+			0x00,
+		},
+		doc: must.NotFail(types.NewDocument(
+			"f", time.Date(2024, 1, 17, 17, 40, 42, 123000000, time.UTC),
+		)),
+	}
+
+	nullDoc = testCase{
+		name: "nullDoc",
+		raw: RawDocument{
+			0x08, 0x00, 0x00, 0x00,
+			0x0a, 0x66, 0x00,
+			0x00,
+		},
+		doc: must.NotFail(types.NewDocument(
+			"f", types.Null,
+		)),
+	}
+
+	regexDoc = testCase{
+		name: "regexDoc",
+		raw: RawDocument{
+			0x0c, 0x00, 0x00, 0x00,
+			0x0b, 0x66, 0x00,
+			0x70, 0x00,
+			0x6f, 0x00,
+			0x00,
+		},
+		doc: must.NotFail(types.NewDocument(
+			"f", types.Regex{Pattern: "p", Options: "o"},
+		)),
+	}
+
+	int32Doc = testCase{
+		name: "int32Doc",
+		raw: RawDocument{
+			0x0c, 0x00, 0x00, 0x00,
+			0x10, 0x66, 0x00,
+			0xa1, 0xb0, 0xb9, 0x12,
+			0x00,
+		},
+		doc: must.NotFail(types.NewDocument(
+			"f", int32(314159265),
+		)),
+	}
+
+	timestampDoc = testCase{
+		name: "timestampDoc",
+		raw: RawDocument{
+			0x10, 0x00, 0x00, 0x00,
+			0x11, 0x66, 0x00,
+			0x2a, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x00,
+		},
+		doc: must.NotFail(types.NewDocument(
+			"f", types.Timestamp(42),
+		)),
+	}
+
+	int64Doc = testCase{
+		name: "int64Doc",
+		raw: RawDocument{
+			0x10, 0x00, 0x00, 0x00,
+			0x12, 0x66, 0x00,
+			0x21, 0x6d, 0x25, 0xa, 0x43, 0x29, 0xb, 0x00,
+			0x00,
+		},
+		doc: must.NotFail(types.NewDocument(
+			"f", int64(3141592653589793),
+		)),
+	}
+
 	eof = testCase{
 		name:      "EOF",
 		raw:       RawDocument{0x00},
@@ -282,6 +428,7 @@ var (
 
 	documentTestCases = []testCase{
 		handshake1, handshake2, handshake3, handshake4, all,
+		float64Doc, stringDoc, binaryDoc, objectIDDoc, boolDoc, timeDoc, nullDoc, regexDoc, int32Doc, timestampDoc, int64Doc,
 		eof, smallDoc, shortDoc, invalidDoc, smallArray, shortArray, invalidArray, duplicateKeys,
 	}
 )
@@ -391,8 +538,8 @@ func FuzzDocument(f *testing.F) {
 			br := bytes.NewReader(b)
 			bufr := bufio.NewReader(br)
 
-			var doc1 bson.Document
-			err1 := doc1.ReadFrom(bufr)
+			var bdoc1 bson.Document
+			err1 := bdoc1.ReadFrom(bufr)
 
 			if err1 != nil {
 				doc2, err2 := raw.Decode()
@@ -410,16 +557,35 @@ func FuzzDocument(f *testing.F) {
 			// remove extra tail
 			cb := b[:len(b)-bufr.Buffered()-br.Len()]
 
-			doc2, err2 := RawDocument(cb).Decode()
+			// decode
+
+			bdoc2, err2 := RawDocument(cb).Decode()
 			require.NoError(t, err2)
 
-			d1, err := types.ConvertDocument(&doc1)
+			doc1, err := types.ConvertDocument(&bdoc1)
 			require.NoError(t, err)
 
-			d2, err := doc2.Convert()
+			doc2, err := bdoc2.Convert()
 			require.NoError(t, err)
 
-			testutil.AssertEqual(t, d1, d2)
+			testutil.AssertEqual(t, doc1, doc2)
+
+			// encode
+
+			bdoc1e, err := bson.ConvertDocument(doc1)
+			require.NoError(t, err)
+
+			bdoc2e, err := ConvertDocument(doc2)
+			require.NoError(t, err)
+
+			b1, err := bdoc1e.MarshalBinary()
+			require.NoError(t, err)
+
+			b2, err := bdoc2e.Encode()
+			require.NoError(t, err)
+
+			assert.Equal(t, b1, []byte(b2))
+			assert.Equal(t, cb, []byte(b2))
 		})
 	})
 }
