@@ -308,17 +308,17 @@ func TestCursorsTailableAwaitData(t *testing.T) {
 	})
 }
 
-func TestCursorsTailableAwaitDataAfterInsertStress(tt *testing.T) {
+func TestCursorsTailableAwaitDataAfterInsertStress(t *testing.T) {
+	if !setup.IsMongoDB(t) {
+		t.Skip("https://github.com/FerretDB/FerretDB/issues/3957")
+	}
+
 	var count atomic.Int32
 
-	teststress.Stress(tt, func(ready chan<- struct{}, start <-chan struct{}) {
+	teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
 		testID := count.Add(1)
 
-		tt.Run(fmt.Sprint(testID), func(tt *testing.T) {
-			tt.Parallel()
-
-			t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/3957")
-
+		t.Run(fmt.Sprint(testID), func(t *testing.T) {
 			s := setup.SetupWithOpts(t, &setup.SetupOpts{
 				DatabaseName: fmt.Sprintf("%s_%d", testutil.DatabaseName(t), testID),
 			})
