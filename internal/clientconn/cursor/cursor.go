@@ -108,20 +108,19 @@ func (c *Cursor) Reset(iter types.DocumentsIterator) error {
 	}
 
 	c.m.Lock()
+	defer c.m.Unlock()
 
 	c.l.Debug("Resetting cursor")
 	c.iter = iter
 	recordID := c.lastRecordID
 
-	c.m.Unlock()
-
 	for {
-		_, doc, err := c.Next()
+		_, doc, err := c.unsafeNext()
 		if err != nil {
 			return lazyerrors.Error(err)
 		}
 
-		if doc.RecordID() == recordID {
+		if doc.RecordID() >= recordID {
 			return nil
 		}
 	}
@@ -131,7 +130,10 @@ func (c *Cursor) Reset(iter types.DocumentsIterator) error {
 func (c *Cursor) Next() (struct{}, *types.Document, error) {
 	c.m.Lock()
 	defer c.m.Unlock()
+	return c.unsafeNext()
+}
 
+func (c *Cursor) unsafeNext() (struct{}, *types.Document, error) {
 	if c.iter == nil {
 		return struct{}{}, nil, iterator.ErrIteratorDone
 	}
