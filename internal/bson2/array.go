@@ -15,23 +15,16 @@
 package bson2
 
 import (
+	"bytes"
+	"encoding/binary"
 	"errors"
 	"log/slog"
+	"strconv"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
-
-// RawArray represents a BSON array in the binary encoded form.
-//
-// It generally references a part of a larger slice, not a copy.
-type RawArray []byte
-
-// LogValue implements slog.LogValuer interface.
-func (arr *RawArray) LogValue() slog.Value {
-	return slogValue(arr)
-}
 
 // Array represents a BSON array in the (partially) decoded form.
 type Array struct {
@@ -85,6 +78,32 @@ func (arr *Array) Convert() (*types.Array, error) {
 	}
 
 	return res, nil
+}
+
+// Encode encodes BSON array.
+//
+// TODO https://github.com/FerretDB/FerretDB/issues/3759
+// This method should accept a slice of bytes, not return it.
+// That would allow to avoid unnecessary allocations.
+func (arr *Array) Encode() (RawArray, error) {
+	size := sizeAny(arr)
+	buf := bytes.NewBuffer(make([]byte, 0, size))
+
+	if err := binary.Write(buf, binary.LittleEndian, uint32(size)); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	for i, v := range arr.elements {
+		if err := encodeField(buf, strconv.Itoa(i), v); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+	}
+
+	if err := binary.Write(buf, binary.LittleEndian, byte(0)); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return buf.Bytes(), nil
 }
 
 // LogValue implements slog.LogValuer interface.

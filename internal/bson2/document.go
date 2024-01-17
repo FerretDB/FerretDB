@@ -15,23 +15,19 @@
 package bson2
 
 import (
+	"bytes"
+	"encoding/binary"
 	"errors"
+	"fmt"
 	"log/slog"
+	"time"
+
+	"github.com/cristalhq/bson/bsonproto"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
-
-// RawDocument represents a BSON document a.k.a object in the binary encoded form.
-//
-// It generally references a part of a larger slice, not a copy.
-type RawDocument []byte
-
-// LogValue implements slog.LogValuer interface.
-func (doc *RawDocument) LogValue() slog.Value {
-	return slogValue(doc)
-}
 
 // field represents a single Document field in the (partially) decoded form.
 type field struct {
@@ -141,9 +137,169 @@ func (doc *Document) add(name string, value any) error {
 	return nil
 }
 
+// Encode encodes BSON document.
+//
+// TODO https://github.com/FerretDB/FerretDB/issues/3759
+// This method should accept a slice of bytes, not return it.
+// That would allow to avoid unnecessary allocations.
+func (doc *Document) Encode() (RawDocument, error) {
+	size := sizeAny(doc)
+	buf := bytes.NewBuffer(make([]byte, 0, size))
+
+	if err := binary.Write(buf, binary.LittleEndian, uint32(size)); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	for _, f := range doc.fields {
+		if err := encodeField(buf, f.name, f.value); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+	}
+
+	if err := binary.Write(buf, binary.LittleEndian, byte(0)); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return buf.Bytes(), nil
+}
+
 // LogValue implements slog.LogValuer interface.
 func (doc *Document) LogValue() slog.Value {
 	return slogValue(doc)
+}
+
+// encodeField encodes document field.
+//
+// It panics if v is not a valid type.
+func encodeField(buf *bytes.Buffer, name string, v any) error {
+	switch v := v.(type) {
+	case *Document:
+		if err := buf.WriteByte(byte(tagDocument)); err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		b := make([]byte, bsonproto.SizeCString(name))
+		bsonproto.EncodeCString(b, name)
+
+		if _, err := buf.Write(b); err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		b, err := v.Encode()
+		if err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		if _, err := buf.Write(b); err != nil {
+			return lazyerrors.Error(err)
+		}
+
+	case RawDocument:
+		if err := buf.WriteByte(byte(tagDocument)); err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		b := make([]byte, bsonproto.SizeCString(name))
+		bsonproto.EncodeCString(b, name)
+
+		if _, err := buf.Write(b); err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		if _, err := buf.Write(v); err != nil {
+			return lazyerrors.Error(err)
+		}
+
+	case *Array:
+		if err := buf.WriteByte(byte(tagArray)); err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		b := make([]byte, bsonproto.SizeCString(name))
+		bsonproto.EncodeCString(b, name)
+
+		if _, err := buf.Write(b); err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		b, err := v.Encode()
+		if err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		if _, err := buf.Write(b); err != nil {
+			return lazyerrors.Error(err)
+		}
+
+	case RawArray:
+		if err := buf.WriteByte(byte(tagArray)); err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		b := make([]byte, bsonproto.SizeCString(name))
+		bsonproto.EncodeCString(b, name)
+
+		if _, err := buf.Write(b); err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		if _, err := buf.Write(v); err != nil {
+			return lazyerrors.Error(err)
+		}
+
+	default:
+		return encodeScalarField(buf, name, v)
+	}
+
+	return nil
+}
+
+// encodeScalarField encodes scalar document field.
+//
+// It panics if v is not a scalar value.
+func encodeScalarField(buf *bytes.Buffer, name string, v any) error {
+	switch v.(type) {
+	case float64:
+		buf.WriteByte(byte(tagFloat64))
+	case string:
+		buf.WriteByte(byte(tagString))
+	case Binary:
+		buf.WriteByte(byte(tagBinary))
+	case ObjectID:
+		buf.WriteByte(byte(tagObjectID))
+	case bool:
+		buf.WriteByte(byte(tagBool))
+	case time.Time:
+		buf.WriteByte(byte(tagTime))
+	case NullType:
+		buf.WriteByte(byte(tagNull))
+	case Regex:
+		buf.WriteByte(byte(tagRegex))
+	case int32:
+		buf.WriteByte(byte(tagInt32))
+	case Timestamp:
+		buf.WriteByte(byte(tagTimestamp))
+	case int64:
+		buf.WriteByte(byte(tagInt64))
+	default:
+		panic(fmt.Sprintf("invalid type %T", v))
+	}
+
+	b := make([]byte, bsonproto.SizeCString(name))
+	bsonproto.EncodeCString(b, name)
+
+	if _, err := buf.Write(b); err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	b = make([]byte, bsonproto.SizeAny(v))
+	bsonproto.EncodeAny(b, v)
+
+	if _, err := buf.Write(b); err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	return nil
 }
 
 // check interfaces
