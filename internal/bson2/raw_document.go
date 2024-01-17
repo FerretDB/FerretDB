@@ -15,7 +15,13 @@
 package bson2
 
 import (
+	"encoding/binary"
 	"log/slog"
+
+	"github.com/cristalhq/bson/bsonproto"
+
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // RawDocument represents a BSON document a.k.a object in the binary encoded form.
@@ -26,4 +32,155 @@ type RawDocument []byte
 // LogValue implements slog.LogValuer interface.
 func (doc *RawDocument) LogValue() slog.Value {
 	return slogValue(doc)
+}
+
+// DecodeDocument decodes a single BSON document that takes the whole b slice.
+//
+// Only first-level fields are decoded;
+// nested documents and arrays are converted to RawDocument and RawArray respectively,
+// using b subslices without copying.
+func DecodeDocument(b []byte) (*Document, error) {
+	bl := len(b)
+	if bl < 5 {
+		return nil, lazyerrors.Errorf("len(b) = %d: %w", bl, ErrDecodeShortInput)
+	}
+
+	if dl := int(binary.LittleEndian.Uint32(b)); bl != dl {
+		return nil, lazyerrors.Errorf("len(b) = %d, document length = %d: %w", bl, dl, ErrDecodeInvalidInput)
+	}
+
+	if last := b[bl-1]; last != 0 {
+		return nil, lazyerrors.Errorf("last = %d: %w", last, ErrDecodeInvalidInput)
+	}
+
+	res := MakeDocument(1)
+
+	offset := 4
+	for offset != len(b)-1 {
+		if err := decodeCheckOffset(b, offset, 1); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		t := tag(b[offset])
+		offset++
+
+		if err := decodeCheckOffset(b, offset, 1); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		name, err := bsonproto.DecodeCString(b[offset:])
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		offset += len(name) + 1
+
+		var v any
+
+		switch t {
+		case tagFloat64:
+			v, err = bsonproto.DecodeFloat64(b[offset:])
+			offset += bsonproto.SizeFloat64
+
+		case tagString:
+			var s string
+			s, err = bsonproto.DecodeString(b[offset:])
+			offset += bsonproto.SizeString(s)
+			v = s
+
+		case tagDocument:
+			if err = decodeCheckOffset(b, offset, 4); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
+			l := int(binary.LittleEndian.Uint32(b[offset:]))
+
+			if err = decodeCheckOffset(b, offset, l); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
+			// Document length and the last byte?
+			// TODO https://github.com/FerretDB/FerretDB/issues/3759
+			v = RawDocument(b[offset : offset+l])
+			offset += l
+
+		case tagArray:
+			if err = decodeCheckOffset(b, offset, 4); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
+			l := int(binary.LittleEndian.Uint32(b[offset:]))
+
+			if err = decodeCheckOffset(b, offset, l); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
+			// Document length and the last byte?
+			// TODO https://github.com/FerretDB/FerretDB/issues/3759
+			v = RawArray(b[offset : offset+l])
+			offset += l
+
+		case tagBinary:
+			var s Binary
+			s, err = bsonproto.DecodeBinary(b[offset:])
+			offset += bsonproto.SizeBinary(s)
+			v = s
+
+		case tagObjectID:
+			v, err = bsonproto.DecodeObjectID(b[offset:])
+			offset += bsonproto.SizeObjectID
+
+		case tagBool:
+			v, err = bsonproto.DecodeBool(b[offset:])
+			offset += bsonproto.SizeBool
+
+		case tagTime:
+			v, err = bsonproto.DecodeTime(b[offset:])
+			offset += bsonproto.SizeTime
+
+		case tagNull:
+			v = Null
+
+		case tagRegex:
+			var s Regex
+			s, err = bsonproto.DecodeRegex(b[offset:])
+			offset += bsonproto.SizeRegex(s)
+			v = s
+
+		case tagInt32:
+			v, err = bsonproto.DecodeInt32(b[offset:])
+			offset += bsonproto.SizeInt32
+
+		case tagTimestamp:
+			v, err = bsonproto.DecodeTimestamp(b[offset:])
+			offset += bsonproto.SizeTimestamp
+
+		case tagInt64:
+			v, err = bsonproto.DecodeInt64(b[offset:])
+			offset += bsonproto.SizeInt64
+
+		case tagUndefined, tagDBPointer, tagJavaScript, tagSymbol, tagJavaScriptScope, tagDecimal, tagMinKey, tagMaxKey:
+			return nil, lazyerrors.Errorf("unsupported tag: %s", t)
+
+		default:
+			return nil, lazyerrors.Errorf("unexpected tag: %s", t)
+		}
+
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		must.NoError(res.add(name, v))
+	}
+
+	return res, nil
+}
+
+// decodeCheckOffset checks that b has enough bytes to decode size bytes starting from offset.
+func decodeCheckOffset(b []byte, offset, size int) error {
+	if len(b[offset:]) < size+1 {
+		return lazyerrors.Errorf("offset = %d, size = %d: %w", offset, size, ErrDecodeShortInput)
+	}
+
+	return nil
 }

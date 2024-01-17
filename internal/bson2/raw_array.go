@@ -16,6 +16,9 @@ package bson2
 
 import (
 	"log/slog"
+	"strconv"
+
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // RawArray represents a BSON array in the binary encoded form.
@@ -26,4 +29,30 @@ type RawArray []byte
 // LogValue implements slog.LogValuer interface.
 func (arr *RawArray) LogValue() slog.Value {
 	return slogValue(arr)
+}
+
+// DecodeArray decodes a BSON array.
+//
+// Only first-level elements are decoded;
+// nested documents and arrays are converted to RawDocument and RawArray respectively,
+// using b subslices without copying.
+func DecodeArray(b []byte) (*Array, error) {
+	doc, err := DecodeDocument(b)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	res := &Array{
+		elements: make([]any, len(doc.fields)),
+	}
+
+	for i, f := range doc.fields {
+		if f.name != strconv.Itoa(i) {
+			return nil, lazyerrors.Errorf("invalid array index: %q", f.name)
+		}
+
+		res.elements[i] = f.value
+	}
+
+	return res, nil
 }

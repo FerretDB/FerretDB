@@ -15,8 +15,11 @@
 package bson2
 
 import (
+	"bytes"
+	"encoding/binary"
 	"errors"
 	"log/slog"
+	"strconv"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -80,6 +83,30 @@ func (arr *Array) Convert() (*types.Array, error) {
 // LogValue implements slog.LogValuer interface.
 func (arr *Array) LogValue() slog.Value {
 	return slogValue(arr)
+}
+
+// encodeArray encodes BSON array.
+//
+// TODO https://github.com/FerretDB/FerretDB/issues/3759
+func encodeArray(arr *Array) ([]byte, error) {
+	size := sizeAny(arr)
+	buf := bytes.NewBuffer(make([]byte, 0, size))
+
+	if err := binary.Write(buf, binary.LittleEndian, uint32(size)); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	for i, v := range arr.elements {
+		if err := encodeField(buf, strconv.Itoa(i), v); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+	}
+
+	if err := binary.Write(buf, binary.LittleEndian, byte(0)); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return buf.Bytes(), nil
 }
 
 // check interfaces
