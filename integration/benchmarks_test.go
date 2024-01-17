@@ -153,10 +153,10 @@ func BenchmarkInsertMany(b *testing.B) {
 		b.Run(name, func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 
-				randomSizedDocuments := make([][]interface{}, len(bc.collections))
-				for i := range randomSizedDocuments {
+				randomBatches := make([][]interface{}, len(bc.collections))
+				for i := range randomBatches {
 					for j := 0; j < rand.Intn(1000); j++ {
-						randomSizedDocuments[i] = append(randomSizedDocuments[i], bson.D{{"a", j}})
+						randomBatches[i] = append(randomBatches[i], bson.D{{"a", j}})
 					}
 				}
 
@@ -164,7 +164,7 @@ func BenchmarkInsertMany(b *testing.B) {
 
 				for i, collection := range collections {
 					go func(i int, collection *mongo.Collection) {
-						_, err := collection.InsertMany(ctx, randomSizedDocuments[i])
+						_, err := collection.InsertMany(ctx, randomBatches[i])
 						require.NoError(b, err)
 					}(i, collection)
 				}
