@@ -23,16 +23,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// RawDocument represents a BSON document a.k.a object in the binary encoded form.
-//
-// It generally references a part of a larger slice, not a copy.
-type RawDocument []byte
-
-// LogValue implements slog.LogValuer interface.
-func (doc *RawDocument) LogValue() slog.Value {
-	return slogValue(doc)
-}
-
 // field represents a single Document field in the (partially) decoded form.
 type field struct {
 	value any
