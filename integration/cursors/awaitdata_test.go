@@ -310,7 +310,7 @@ func TestCursorsTailableAwaitData(t *testing.T) {
 
 func TestCursorsTailableAwaitDataAfterInsertStress(t *testing.T) {
 	if !setup.IsMongoDB(t) {
-		t.Skip("https://github.com/FerretDB/FerretDB/pull/3961")
+		t.Skip("https://github.com/FerretDB/FerretDB/issues/3957")
 	}
 
 	var count atomic.Int32
@@ -319,6 +319,8 @@ func TestCursorsTailableAwaitDataAfterInsertStress(t *testing.T) {
 		testID := count.Add(1)
 
 		t.Run(fmt.Sprint(testID), func(t *testing.T) {
+			t.Parallel()
+
 			s := setup.SetupWithOpts(t, &setup.SetupOpts{
 				DatabaseName: fmt.Sprintf("%s_%d", testutil.DatabaseName(t), testID),
 			})
@@ -354,8 +356,7 @@ func TestCursorsTailableAwaitDataAfterInsertStress(t *testing.T) {
 			err = collection.Database().RunCommand(ctx, cmd).Decode(&res)
 			require.NoError(t, err)
 
-			var firstBatch *types.Array
-			firstBatch, cursorID = getFirstBatch(t, res)
+			firstBatch, cursorID := getFirstBatch(t, res)
 
 			expectedFirstBatch := integration.ConvertDocuments(t, arr[:1])
 			require.Equal(t, len(expectedFirstBatch), firstBatch.Len())
