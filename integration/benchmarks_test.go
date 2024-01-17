@@ -15,7 +15,7 @@
 package integration
 
 import (
-	"fmt"
+	"math/rand"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -24,7 +24,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
 
 func BenchmarkFind(b *testing.B) {
@@ -133,62 +132,47 @@ func BenchmarkReplaceOne(b *testing.B) {
 func BenchmarkInsertMany(b *testing.B) {
 	ctx, collection := setup.Setup(b)
 
-	for _, provider := range shareddata.AllBenchmarkProviders() {
-		total, err := iterator.ConsumeCount(provider.NewIterator())
-		require.NoError(b, err)
+	collections := []*mongo.Collection{}
 
-		var batchSizes []int
-		for _, batchSize := range []int{1, 10, 100, 1000} {
-			if batchSize <= total {
-				batchSizes = append(batchSizes, batchSize)
-			}
-		}
+	// XXX can we use providers instead
+	collNames := []string{"a", "b", "c", "d"}
+	for _, collName := range collNames {
+		res := collection.Database().RunCommand(ctx, bson.D{{"create", collName}})
+		require.NoError(b, res.Err())
 
-		// TODO insert into different collections concurrently
-		for name, bc := range map[string]struct {
-			batchSize   int
-			collections []string
-			filter      bson.D
-		}{
-			"MultipleCollections": {
-				batchSize:   100,
-				collections: []string{"a", "b", "c", "d"},
-				filter:      bson.D{},
-			},
-		} {
-		}
+		collections = append(collections, collection.Database().Collection(collName))
+	}
 
-		for _, batchSize := range batchSizes {
-			b.Run(fmt.Sprintf("%s/Batch%d", provider.Name(), batchSize), func(b *testing.B) {
-				b.StopTimer()
+	for name, bc := range map[string]struct {
+		collections []string
+		filter      bson.D
+	}{
+		"ConcurrentInsertManyAllCollections": {
+			collections: []string{"a", "b", "c", "d"},
+		},
+	} {
+		b.Run(name, func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
 
-				for i := 0; i < b.N; i++ {
-					require.NoError(b, collection.Drop(ctx))
-
-					iter := provider.NewIterator()
-
-					for {
-						docs, err := iterator.ConsumeValuesN(iter, batchSize)
-						require.NoError(b, err)
-
-						if docs == nil {
-							break
-						}
-
-						insertDocs := make([]any, len(docs))
-						for i := range insertDocs {
-							insertDocs[i] = docs[i]
-						}
-
-						b.StartTimer()
-
-						_, err = collection.InsertMany(ctx, insertDocs)
-						require.NoError(b, err)
-
-						b.StopTimer()
+				randomSizedDocuments := make([][]interface{}, len(bc.collections))
+				for i := range randomSizedDocuments {
+					for j := 0; j < rand.Intn(1000); j++ {
+						randomSizedDocuments[i] = append(randomSizedDocuments[i], bson.D{{"a", j}})
 					}
 				}
-			})
-		}
+
+				b.StartTimer()
+
+				for i, collection := range collections {
+					go func(i int, collection *mongo.Collection) {
+						_, err := collection.InsertMany(ctx, randomSizedDocuments[i])
+						require.NoError(b, err)
+
+					}(i, collection)
+				}
+
+				b.StopTimer()
+			}
+		})
 	}
 }
