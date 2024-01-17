@@ -309,17 +309,16 @@ func TestCursorsTailableAwaitData(t *testing.T) {
 }
 
 func TestCursorsTailableAwaitDataAfterInsertStress(t *testing.T) {
-	if !setup.IsMongoDB(t) {
-		t.Skip("https://github.com/FerretDB/FerretDB/issues/3957")
-	}
 
 	var count atomic.Int32
 
 	teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
 		testID := count.Add(1)
 
-		t.Run(fmt.Sprint(testID), func(t *testing.T) {
-			t.Parallel()
+		t.Run(fmt.Sprint(testID), func(tt *testing.T) {
+			tt.Parallel()
+
+			t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/3957")
 
 			s := setup.SetupWithOpts(t, &setup.SetupOpts{
 				DatabaseName: fmt.Sprintf("%s_%d", testutil.DatabaseName(t), testID),
