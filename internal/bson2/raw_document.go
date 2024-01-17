@@ -34,41 +34,41 @@ func (doc *RawDocument) LogValue() slog.Value {
 	return slogValue(doc)
 }
 
-// DecodeDocument decodes a single BSON document that takes the whole b slice.
+// Decode decodes a single BSON document that takes the whole raw slice.
 //
 // Only first-level fields are decoded;
 // nested documents and arrays are converted to RawDocument and RawArray respectively,
-// using b subslices without copying.
-func DecodeDocument(b []byte) (*Document, error) {
-	bl := len(b)
+// using raw's subslices without copying.
+func (raw RawDocument) Decode() (*Document, error) {
+	bl := len(raw)
 	if bl < 5 {
 		return nil, lazyerrors.Errorf("len(b) = %d: %w", bl, ErrDecodeShortInput)
 	}
 
-	if dl := int(binary.LittleEndian.Uint32(b)); bl != dl {
+	if dl := int(binary.LittleEndian.Uint32(raw)); bl != dl {
 		return nil, lazyerrors.Errorf("len(b) = %d, document length = %d: %w", bl, dl, ErrDecodeInvalidInput)
 	}
 
-	if last := b[bl-1]; last != 0 {
+	if last := raw[bl-1]; last != 0 {
 		return nil, lazyerrors.Errorf("last = %d: %w", last, ErrDecodeInvalidInput)
 	}
 
 	res := MakeDocument(1)
 
 	offset := 4
-	for offset != len(b)-1 {
-		if err := decodeCheckOffset(b, offset, 1); err != nil {
+	for offset != len(raw)-1 {
+		if err := decodeCheckOffset(raw, offset, 1); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
-		t := tag(b[offset])
+		t := tag(raw[offset])
 		offset++
 
-		if err := decodeCheckOffset(b, offset, 1); err != nil {
+		if err := decodeCheckOffset(raw, offset, 1); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
-		name, err := bsonproto.DecodeCString(b[offset:])
+		name, err := bsonproto.DecodeCString(raw[offset:])
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -79,63 +79,63 @@ func DecodeDocument(b []byte) (*Document, error) {
 
 		switch t {
 		case tagFloat64:
-			v, err = bsonproto.DecodeFloat64(b[offset:])
+			v, err = bsonproto.DecodeFloat64(raw[offset:])
 			offset += bsonproto.SizeFloat64
 
 		case tagString:
 			var s string
-			s, err = bsonproto.DecodeString(b[offset:])
+			s, err = bsonproto.DecodeString(raw[offset:])
 			offset += bsonproto.SizeString(s)
 			v = s
 
 		case tagDocument:
-			if err = decodeCheckOffset(b, offset, 4); err != nil {
+			if err = decodeCheckOffset(raw, offset, 4); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
 
-			l := int(binary.LittleEndian.Uint32(b[offset:]))
+			l := int(binary.LittleEndian.Uint32(raw[offset:]))
 
-			if err = decodeCheckOffset(b, offset, l); err != nil {
+			if err = decodeCheckOffset(raw, offset, l); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
 
 			// Document length and the last byte?
 			// TODO https://github.com/FerretDB/FerretDB/issues/3759
-			v = RawDocument(b[offset : offset+l])
+			v = RawDocument(raw[offset : offset+l])
 			offset += l
 
 		case tagArray:
-			if err = decodeCheckOffset(b, offset, 4); err != nil {
+			if err = decodeCheckOffset(raw, offset, 4); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
 
-			l := int(binary.LittleEndian.Uint32(b[offset:]))
+			l := int(binary.LittleEndian.Uint32(raw[offset:]))
 
-			if err = decodeCheckOffset(b, offset, l); err != nil {
+			if err = decodeCheckOffset(raw, offset, l); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
 
 			// Document length and the last byte?
 			// TODO https://github.com/FerretDB/FerretDB/issues/3759
-			v = RawArray(b[offset : offset+l])
+			v = RawArray(raw[offset : offset+l])
 			offset += l
 
 		case tagBinary:
 			var s Binary
-			s, err = bsonproto.DecodeBinary(b[offset:])
+			s, err = bsonproto.DecodeBinary(raw[offset:])
 			offset += bsonproto.SizeBinary(s)
 			v = s
 
 		case tagObjectID:
-			v, err = bsonproto.DecodeObjectID(b[offset:])
+			v, err = bsonproto.DecodeObjectID(raw[offset:])
 			offset += bsonproto.SizeObjectID
 
 		case tagBool:
-			v, err = bsonproto.DecodeBool(b[offset:])
+			v, err = bsonproto.DecodeBool(raw[offset:])
 			offset += bsonproto.SizeBool
 
 		case tagTime:
-			v, err = bsonproto.DecodeTime(b[offset:])
+			v, err = bsonproto.DecodeTime(raw[offset:])
 			offset += bsonproto.SizeTime
 
 		case tagNull:
@@ -143,20 +143,20 @@ func DecodeDocument(b []byte) (*Document, error) {
 
 		case tagRegex:
 			var s Regex
-			s, err = bsonproto.DecodeRegex(b[offset:])
+			s, err = bsonproto.DecodeRegex(raw[offset:])
 			offset += bsonproto.SizeRegex(s)
 			v = s
 
 		case tagInt32:
-			v, err = bsonproto.DecodeInt32(b[offset:])
+			v, err = bsonproto.DecodeInt32(raw[offset:])
 			offset += bsonproto.SizeInt32
 
 		case tagTimestamp:
-			v, err = bsonproto.DecodeTimestamp(b[offset:])
+			v, err = bsonproto.DecodeTimestamp(raw[offset:])
 			offset += bsonproto.SizeTimestamp
 
 		case tagInt64:
-			v, err = bsonproto.DecodeInt64(b[offset:])
+			v, err = bsonproto.DecodeInt64(raw[offset:])
 			offset += bsonproto.SizeInt64
 
 		case tagUndefined, tagDBPointer, tagJavaScript, tagSymbol, tagJavaScriptScope, tagDecimal, tagMinKey, tagMaxKey:

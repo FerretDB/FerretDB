@@ -137,15 +137,12 @@ func (doc *Document) add(name string, value any) error {
 	return nil
 }
 
-// LogValue implements slog.LogValuer interface.
-func (doc *Document) LogValue() slog.Value {
-	return slogValue(doc)
-}
-
-// encodeDocument encodes BSON document.
+// Encode encodes BSON document.
 //
 // TODO https://github.com/FerretDB/FerretDB/issues/3759
-func encodeDocument(doc *Document) ([]byte, error) {
+// This method should accept a slice of bytes, not return it.
+// That would allow to avoid unnecessary allocations.
+func (doc *Document) Encode() (RawDocument, error) {
 	size := sizeAny(doc)
 	buf := bytes.NewBuffer(make([]byte, 0, size))
 
@@ -166,6 +163,11 @@ func encodeDocument(doc *Document) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// LogValue implements slog.LogValuer interface.
+func (doc *Document) LogValue() slog.Value {
+	return slogValue(doc)
+}
+
 // encodeField encodes document field.
 //
 // It panics if v is not a valid type.
@@ -183,7 +185,7 @@ func encodeField(buf *bytes.Buffer, name string, v any) error {
 			return lazyerrors.Error(err)
 		}
 
-		b, err := encodeDocument(v)
+		b, err := v.Encode()
 		if err != nil {
 			return lazyerrors.Error(err)
 		}
@@ -220,7 +222,7 @@ func encodeField(buf *bytes.Buffer, name string, v any) error {
 			return lazyerrors.Error(err)
 		}
 
-		b, err := encodeArray(v)
+		b, err := v.Encode()
 		if err != nil {
 			return lazyerrors.Error(err)
 		}

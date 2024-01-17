@@ -31,13 +31,13 @@ func (arr *RawArray) LogValue() slog.Value {
 	return slogValue(arr)
 }
 
-// DecodeArray decodes a BSON array.
+// Decode decodes a single BSON array that takes the whole raw slice.
 //
-// Only first-level elements are decoded;
+// Only first-level fields are decoded;
 // nested documents and arrays are converted to RawDocument and RawArray respectively,
-// using b subslices without copying.
-func DecodeArray(b []byte) (*Array, error) {
-	doc, err := DecodeDocument(b)
+// using raw's subslices without copying.
+func (raw RawArray) Decode() (*Array, error) {
+	doc, err := RawDocument(raw).Decode()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

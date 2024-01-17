@@ -137,7 +137,7 @@ func convertToTypes(v any) (any, error) {
 		return doc, nil
 
 	case RawDocument:
-		d, err := DecodeDocument(v)
+		d, err := v.Decode()
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -158,7 +158,7 @@ func convertToTypes(v any) (any, error) {
 		return arr, nil
 
 	case RawArray:
-		a, err := DecodeArray(v)
+		a, err := v.Decode()
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}

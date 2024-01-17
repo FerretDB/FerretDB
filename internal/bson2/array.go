@@ -80,15 +80,12 @@ func (arr *Array) Convert() (*types.Array, error) {
 	return res, nil
 }
 
-// LogValue implements slog.LogValuer interface.
-func (arr *Array) LogValue() slog.Value {
-	return slogValue(arr)
-}
-
-// encodeArray encodes BSON array.
+// Encode encodes BSON array.
 //
 // TODO https://github.com/FerretDB/FerretDB/issues/3759
-func encodeArray(arr *Array) ([]byte, error) {
+// This method should accept a slice of bytes, not return it.
+// That would allow to avoid unnecessary allocations.
+func (arr *Array) Encode() (RawArray, error) {
 	size := sizeAny(arr)
 	buf := bytes.NewBuffer(make([]byte, 0, size))
 
@@ -107,6 +104,11 @@ func encodeArray(arr *Array) ([]byte, error) {
 	}
 
 	return buf.Bytes(), nil
+}
+
+// LogValue implements slog.LogValuer interface.
+func (arr *Array) LogValue() slog.Value {
+	return slogValue(arr)
 }
 
 // check interfaces

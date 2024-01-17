@@ -311,7 +311,7 @@ func TestDocument(t *testing.T) {
 					doc, err := ConvertDocument(tc.doc)
 					require.NoError(t, err)
 
-					actual, err := encodeDocument(doc)
+					actual, err := doc.Encode()
 					require.NoError(t, err)
 					assert.Equal(t, tc.b, actual, "actual:\n%s", hex.Dump(actual))
 				})
@@ -338,7 +338,7 @@ func TestDocument(t *testing.T) {
 				})
 
 				t.Run("bson2", func(t *testing.T) {
-					doc, err := DecodeDocument(tc.b)
+					doc, err := RawDocument(tc.b).Decode()
 
 					// errors might be hidden by RawDocument / RawArray
 					// TODO https://github.com/FerretDB/FerretDB/issues/3759
@@ -373,12 +373,12 @@ func FuzzDocument(f *testing.F) {
 		t.Run("bson2", func(t *testing.T) {
 			t.Parallel()
 
-			doc, err := DecodeDocument(b)
+			doc, err := RawDocument(b).Decode()
 			if err != nil {
 				t.Skip()
 			}
 
-			actual, err := encodeDocument(doc)
+			actual, err := doc.Encode()
 			require.NoError(t, err)
 			assert.Equal(t, b, actual, "actual:\n%s", hex.Dump(actual))
 		})
@@ -393,7 +393,7 @@ func FuzzDocument(f *testing.F) {
 			err1 := doc1.ReadFrom(bufr)
 
 			if err1 != nil {
-				doc2, err2 := DecodeDocument(b)
+				doc2, err2 := RawDocument(b).Decode()
 
 				// errors might be hidden by RawDocument / RawArray
 				// TODO https://github.com/FerretDB/FerretDB/issues/3759
@@ -408,7 +408,7 @@ func FuzzDocument(f *testing.F) {
 			// remove extra tail
 			cb := b[:len(b)-bufr.Buffered()-br.Len()]
 
-			doc2, err2 := DecodeDocument(cb)
+			doc2, err2 := RawDocument(cb).Decode()
 			require.NoError(t, err2)
 
 			d1, err := types.ConvertDocument(&doc1)
