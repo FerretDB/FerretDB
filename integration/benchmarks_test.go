@@ -134,7 +134,7 @@ func BenchmarkInsertMany(b *testing.B) {
 
 	collections := []*mongo.Collection{}
 
-	// XXX can we use providers instead
+	// TODO use providers instead
 	collNames := []string{"a", "b", "c", "d"}
 	for _, collName := range collNames {
 		res := collection.Database().RunCommand(ctx, bson.D{{"create", collName}})
@@ -167,7 +167,6 @@ func BenchmarkInsertMany(b *testing.B) {
 					go func(i int, collection *mongo.Collection) {
 						_, err := collection.InsertMany(ctx, randomSizedDocuments[i])
 						require.NoError(b, err)
-
 					}(i, collection)
 				}
 
