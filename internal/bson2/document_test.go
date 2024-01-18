@@ -461,6 +461,10 @@ func TestDocument(t *testing.T) {
 					actual, err := doc.Encode()
 					require.NoError(t, err)
 					assert.Equal(t, tc.raw, actual, "actual:\n%s", hex.Dump(actual))
+
+					ls := doc.LogValue().Resolve().String()
+					assert.NotContains(t, ls, "panicked")
+					assert.NotContains(t, ls, "called too many times")
 				})
 			})
 
@@ -503,6 +507,10 @@ func TestDocument(t *testing.T) {
 					actual, err := doc.Convert()
 					require.NoError(t, err)
 					testutil.AssertEqual(t, tc.doc, actual)
+
+					ls := doc.LogValue().Resolve().String()
+					assert.NotContains(t, ls, "panicked")
+					assert.NotContains(t, ls, "called too many times")
 				})
 			})
 		})
@@ -530,6 +538,10 @@ func FuzzDocument(f *testing.F) {
 			actual, err := doc.Encode()
 			require.NoError(t, err)
 			assert.Equal(t, raw, actual, "actual:\n%s", hex.Dump(actual))
+
+			ls := doc.LogValue().Resolve().String()
+			assert.NotContains(t, ls, "panicked")
+			assert.NotContains(t, ls, "called too many times")
 		})
 
 		t.Run("cross", func(t *testing.T) {
@@ -562,6 +574,10 @@ func FuzzDocument(f *testing.F) {
 			bdoc2, err2 := RawDocument(cb).Decode()
 			require.NoError(t, err2)
 
+			ls := bdoc2.LogValue().Resolve().String()
+			assert.NotContains(t, ls, "panicked")
+			assert.NotContains(t, ls, "called too many times")
+
 			doc1, err := types.ConvertDocument(&bdoc1)
 			require.NoError(t, err)
 
@@ -577,6 +593,10 @@ func FuzzDocument(f *testing.F) {
 
 			bdoc2e, err := ConvertDocument(doc2)
 			require.NoError(t, err)
+
+			ls = bdoc2e.LogValue().Resolve().String()
+			assert.NotContains(t, ls, "panicked")
+			assert.NotContains(t, ls, "called too many times")
 
 			b1, err := bdoc1e.MarshalBinary()
 			require.NoError(t, err)
