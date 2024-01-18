@@ -153,7 +153,7 @@ func BenchmarkInsertMany(b *testing.B) {
 		b.Run(name, func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 
-				// batches of random sizes in the interval [0,1000)
+				// batches of random sizes in the interval [1,1000)
 				randomBatches := make([][]interface{}, len(bc.collections))
 				for i := range randomBatches {
 					size := rand.Intn(1000) + 1
