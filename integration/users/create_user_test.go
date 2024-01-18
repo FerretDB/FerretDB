@@ -35,8 +35,6 @@ func TestCreateUser(t *testing.T) {
 
 	ctx, collection := setup.Setup(t)
 	db := collection.Database()
-	client := db.Client()
-	users := client.Database("admin").Collection("system.users")
 
 	testCases := map[string]struct { //nolint:vet // for readability
 		payload    bson.D
@@ -56,6 +54,31 @@ func TestCreateUser(t *testing.T) {
 				Message: "User document needs 'user' field to be non-empty",
 			},
 		},
+		"EmptyPassword": {
+			payload: bson.D{
+				{"createUser", "empty_password_user"},
+				{"roles", bson.A{}},
+				{"pwd", ""},
+			},
+			err: &mongo.CommandError{
+				Code:    50687,
+				Name:    "Location50687",
+				Message: "Error preflighting UTF-8 conversion: U_STRING_NOT_TERMINATED_WARNING",
+			},
+			altMessage: "Password cannot be empty",
+		},
+		"BadPasswordType": {
+			payload: bson.D{
+				{"createUser", "empty_password_user"},
+				{"roles", bson.A{}},
+				{"pwd", true},
+			},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'createUser.pwd' is the wrong type 'bool', expected type 'string'",
+			},
+		},
 		"AlreadyExists": {
 			payload: bson.D{
 				{"createUser", "should_already_exist"},
@@ -67,6 +90,20 @@ func TestCreateUser(t *testing.T) {
 				Name:    "Location51003",
 				Message: "User \"should_already_exist@TestCreateUser\" already exists",
 			},
+		},
+		"BadAuthMechanism": {
+			payload: bson.D{
+				{"createUser", "success_user_with_plain"},
+				{"roles", bson.A{}},
+				{"pwd", "password"},
+				{"mechanisms", bson.A{"PLAIN", "BAD"}},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "Unknown auth mechanism 'PLAIN'",
+			},
+			altMessage: "Unknown auth mechanism 'BAD'",
 		},
 		"MissingPwdOrExternal": {
 			payload: bson.D{
@@ -84,6 +121,17 @@ func TestCreateUser(t *testing.T) {
 				{"createUser", "success_user"},
 				{"roles", bson.A{}},
 				{"pwd", "password"},
+			},
+			expected: bson.D{
+				{"ok", float64(1)},
+			},
+		},
+		"SuccessWithPLAIN": {
+			payload: bson.D{
+				{"createUser", "success_user_with_plain"},
+				{"roles", bson.A{}},
+				{"pwd", "password"},
+				{"mechanisms", bson.A{"PLAIN"}},
 			},
 			expected: bson.D{
 				{"ok", float64(1)},
@@ -125,6 +173,11 @@ func TestCreateUser(t *testing.T) {
 	for name, tc := range testCases {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			payload := integration.ConvertDocument(t, tc.payload)
+			if payload.Has("mechanisms") {
+				setup.SkipForMongoDB(t, "PLAIN credentials are only supported via LDAP (PLAIN) by MongoDB Enterprise")
+			}
+
 			t.Parallel()
 
 			var res bson.D
@@ -143,21 +196,27 @@ func TestCreateUser(t *testing.T) {
 			expected := integration.ConvertDocument(t, tc.expected)
 			testutil.AssertEqual(t, expected, actual)
 
-			payload := integration.ConvertDocument(t, tc.payload)
-			// All users are created in the "admin" database.
+			username := must.NotFail(payload.Get("createUser"))
 
-			var rec bson.D
-			err = users.FindOne(ctx, bson.D{{"user", must.NotFail(payload.Get("createUser"))}}).Decode(&rec)
-			require.NoError(t, err, "user not found")
+			var usersInfo bson.D
+			err = db.RunCommand(ctx, bson.D{{"usersInfo", username}, {"showCredentials", true}}).Decode(&usersInfo)
+			require.NoError(t, err)
 
-			actualRecorded := integration.ConvertDocument(t, rec)
+			actualRecorded := integration.ConvertDocument(t, usersInfo)
+			users := must.NotFail(actualRecorded.Get("users")).(*types.Array)
+			user := must.NotFail(users.Get(0)).(*types.Document)
 
-			uuid := must.NotFail(actualRecorded.Get("userId")).(types.Binary)
+			uuid := must.NotFail(user.Get("userId")).(types.Binary)
 			assert.Equal(t, uuid.Subtype.String(), types.BinaryUUID.String(), "uuid subtype")
 			assert.Equal(t, 16, len(uuid.B), "UUID length")
-			actualRecorded.Remove("userId")
+			user.Remove("userId")
 
-			actualRecorded.Remove("credentials")
+			if payload.Has("mechanisms") {
+				assertPlainCredentials(t, "PLAIN", must.NotFail(user.Get("credentials")).(*types.Document))
+			}
+
+			user.Remove("mechanisms")
+			user.Remove("credentials")
 
 			expectedRec := integration.ConvertDocument(t, bson.D{
 				{"_id", fmt.Sprintf("%s.%s", db.Name(), must.NotFail(payload.Get("createUser")))},
@@ -166,7 +225,21 @@ func TestCreateUser(t *testing.T) {
 				{"roles", bson.A{}},
 			})
 
-			testutil.AssertEqual(t, expectedRec, actualRecorded)
+			testutil.AssertEqual(t, expectedRec, user)
 		})
 	}
+}
+
+// assertPlainCredentials checks if the credential is a valid PLAIN credential.
+func assertPlainCredentials(t testing.TB, key string, cred *types.Document) {
+	t.Helper()
+
+	require.True(t, cred.Has(key), "missing credential %q", key)
+
+	c := must.NotFail(cred.Get(key)).(*types.Document)
+
+	assert.Equal(t, must.NotFail(c.Get("algo")), "PBKDF2-HMAC-SHA256")
+	assert.NotEmpty(t, must.NotFail(c.Get("iterationCount")))
+	assert.NotEmpty(t, must.NotFail(c.Get("hash")))
+	assert.NotEmpty(t, must.NotFail(c.Get("salt")))
 }

@@ -248,10 +248,23 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	cancel := func() {}
+
 	if maxTimeMS != 0 {
-		// It is not clear if maxTimeMS affects only aggregate, or both aggregate and getMore (as the current code does).
-		// TODO https://github.com/FerretDB/FerretDB/issues/2983
-		ctx, cancel = context.WithTimeout(ctx, time.Duration(maxTimeMS)*time.Millisecond)
+		findDone := make(chan struct{})
+		defer close(findDone)
+
+		ctx, cancel = context.WithCancel(ctx)
+
+		go func() {
+			t := time.NewTimer(time.Duration(maxTimeMS) * time.Millisecond)
+			defer t.Stop()
+
+			select {
+			case <-t.C:
+				cancel()
+			case <-findDone:
+			}
+		}()
 	}
 
 	closer := iterator.NewMultiCloser(iterator.CloserFunc(cancel))
@@ -288,7 +301,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		collectionParam := backends.ListCollectionsParams{Name: cName}
 		if cList, err = db.ListCollections(ctx, &collectionParam); err != nil {
 			closer.Close()
-			return nil, err
+			return nil, handleMaxTimeMSError(err, maxTimeMS, "aggregate")
 		}
 
 		var cInfo backends.CollectionInfo
@@ -332,7 +345,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	if err != nil {
 		closer.Close()
-		return nil, err
+		return nil, handleMaxTimeMSError(err, maxTimeMS, "aggregate")
 	}
 
 	closer.Add(iter)
@@ -348,7 +361,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	docs, err := iterator.ConsumeValuesN(cursor, int(batchSize))
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, handleMaxTimeMSError(err, maxTimeMS, "aggregate")
 	}
 
 	h.L.Debug(

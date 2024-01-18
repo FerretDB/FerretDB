@@ -16,60 +16,51 @@ package password
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
 	"crypto/subtle"
 	"io"
 
-	"golang.org/x/crypto/argon2"
+	"golang.org/x/crypto/pbkdf2"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// plainParams represent parameters for PLAIN authentication using Argon2id.
-//
-// See https://www.rfc-editor.org/rfc/rfc9106.html#name-argon2-inputs-and-outputs.
+// plainAlgo is the only algorithm used for PLAIN authentication.
+const plainAlgo = "PBKDF2-HMAC-SHA256"
+
+// plainParams represent password parameters for PLAIN authentication.
 type plainParams struct {
-	t       uint32 // number of passes a.k.a. time
-	p       uint8  // degree of parallelism a.k.a. threads
-	m       uint32 // memory size in KiB
-	tagLen  uint32 // output length a.k.a. key length
-	saltLen int    // salt length
+	iterationCount int
+	saltLen        int
+	hashLen        int
 }
 
-// fixedPlainParams represent fixed parameters for PLAIN authentication using Argon2id.
+// fixedPlainParams represent fixed password parameters for PLAIN authentication using PBKDF2-HMAC-SHA256.
 //
-// We use values recommended by https://www.rfc-editor.org/rfc/rfc9106.html#section-4-6.2.
-// Some other sources, such as https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html#argon2id
-// or https://www.ietf.org/archive/id/draft-ietf-kitten-password-storage-04.html#name-argon2,
-// recommend lower parameters.
-// We also could automatically tweak parameters based on the available CPU and memory,
-// but let's keep it simple for now.
-var fixedPlainParams = plainParams{
-	t:       3,
-	p:       4,
-	m:       64 * 1024,
-	tagLen:  32,
-	saltLen: 16,
+// See https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html#pbkdf2.
+var fixedPlainParams = &plainParams{
+	iterationCount: 600_000,
+	saltLen:        16,
+	hashLen:        32,
 }
 
-// plainHashParams hashes the password using Argon2id with the given salt and parameters,
+// plainHashParams hashes the password with the given salt and parameters,
 // and returns the document that should be stored and the hash.
 func plainHashParams(password string, salt []byte, params *plainParams) (*types.Document, []byte, error) {
 	if len(salt) != int(params.saltLen) {
 		return nil, nil, lazyerrors.Errorf("unexpected salt length: %d", len(salt))
 	}
 
-	hash := argon2.IDKey([]byte(password), salt, params.t, params.m, params.p, params.tagLen)
+	hash := pbkdf2.Key([]byte(password), salt, params.iterationCount, params.hashLen, sha256.New)
 
-	if len(hash) != int(params.tagLen) {
+	if len(hash) != int(params.hashLen) {
 		return nil, nil, lazyerrors.Errorf("unexpected hash length: %d", len(hash))
 	}
 
 	doc, err := types.NewDocument(
-		"algo", "argon2id",
-		"t", int32(params.t),
-		"p", int32(params.p),
-		"m", int32(params.m),
+		"algo", plainAlgo,
+		"iterationCount", int64(params.iterationCount),
 		"hash", types.Binary{
 			B: hash,
 		},
@@ -84,14 +75,14 @@ func plainHashParams(password string, salt []byte, params *plainParams) (*types.
 	return doc, hash, nil
 }
 
-// PlainHash hashes the password using Argon2id and returns the document that should be stored.
+// PlainHash hashes the password and returns the document that should be stored.
 func PlainHash(password string) (*types.Document, error) {
 	salt := make([]byte, fixedPlainParams.saltLen)
 	if _, err := io.ReadFull(rand.Reader, salt); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	doc, _, err := plainHashParams(password, salt, &fixedPlainParams)
+	doc, _, err := plainHashParams(password, salt, fixedPlainParams)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -101,23 +92,18 @@ func PlainHash(password string) (*types.Document, error) {
 
 // plainVerifyParams verifies the password against the document returned by plainHashParams.
 //
-// Parameters are returned if they could be decoded from the document, even on error.
+// Parameters are returned if they could be decoded from the document,
+// even if password is invalid or on any other error.
 func plainVerifyParams(password string, doc *types.Document) (*plainParams, error) {
 	v, _ := doc.Get("algo")
 	algo, _ := v.(string)
 
-	if algo != "argon2id" {
-		return nil, lazyerrors.Errorf("invalid algo: %q", algo)
+	if algo != plainAlgo {
+		return nil, lazyerrors.Errorf("invalid algorithm: %q", algo)
 	}
 
-	v, _ = doc.Get("t")
-	t, _ := v.(int32)
-
-	v, _ = doc.Get("p")
-	p, _ := v.(int32)
-
-	v, _ = doc.Get("m")
-	m, _ := v.(int32)
+	v, _ = doc.Get("iterationCount")
+	iterationCount, _ := v.(int64)
 
 	v, _ = doc.Get("hash")
 	hash, _ := v.(types.Binary)
@@ -126,11 +112,9 @@ func plainVerifyParams(password string, doc *types.Document) (*plainParams, erro
 	salt, _ := v.(types.Binary)
 
 	params := &plainParams{
-		t:       uint32(t),
-		p:       uint8(p),
-		m:       uint32(m),
-		tagLen:  uint32(len(hash.B)),
-		saltLen: len(salt.B),
+		iterationCount: int(iterationCount),
+		saltLen:        len(salt.B),
+		hashLen:        len(hash.B),
 	}
 
 	_, expectedHash, err := plainHashParams(password, salt.B, params)
@@ -150,7 +134,7 @@ func plainVerifyParams(password string, doc *types.Document) (*plainParams, erro
 // The returned error is safe for logging, but should not be exposed to the client.
 func PlainVerify(password string, doc *types.Document) error {
 	params, err := plainVerifyParams(password, doc)
-	if params != nil && *params != fixedPlainParams {
+	if params != nil && *params != *fixedPlainParams {
 		return lazyerrors.Errorf("invalid params: %+v", params)
 	}
 
