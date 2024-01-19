@@ -14,10 +14,13 @@
 
 package bson2
 
-import "log/slog"
+import (
+	"fmt"
+	"log/slog"
+)
 
 // slogValue converts any BSON value to slog.Value.
 func slogValue(v any) slog.Value {
 	// TODO https://github.com/FerretDB/FerretDB/issues/3759
-	return slog.AnyValue(v)
+	return slog.StringValue(fmt.Sprintf("%#v", v))
 }
