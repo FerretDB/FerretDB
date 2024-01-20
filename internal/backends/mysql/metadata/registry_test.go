@@ -16,6 +16,9 @@ package metadata
 
 import (
 	"context"
+	"fmt"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/teststress"
+	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -26,6 +29,53 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
+
+// testCollection creates, tests, and drops a unique collection in the existing database.
+func testCollection(t *testing.T, ctx context.Context, r *Registry, p *fsql.DB, dbName, collectionName string) {
+	t.Helper()
+
+	c, err := r.CollectionGet(ctx, dbName, collectionName)
+	require.NoError(t, err)
+	require.Nil(t, c)
+
+	created, err := r.CollectionCreate(ctx, &CollectionCreateParams{DBName: dbName, Name: collectionName})
+	require.NoError(t, err)
+	require.True(t, created)
+
+	created, err = r.CollectionCreate(ctx, &CollectionCreateParams{DBName: dbName, Name: collectionName})
+	require.NoError(t, err)
+	require.False(t, created)
+
+	c, err = r.CollectionGet(ctx, dbName, collectionName)
+	require.NoError(t, err)
+	require.NotNil(t, c)
+	require.Equal(t, collectionName, c.Name)
+
+	list, err := r.CollectionList(ctx, dbName)
+	require.NoError(t, err)
+	require.Contains(t, list, c)
+
+	q := fmt.Sprintf(
+		`INSERT INTO %s.%s (%s) VALUES (?)`,
+		dbName, c.TableName,
+		DefaultColumn,
+	)
+	doc := `{"$s": {"p": {"_id": {"t": "int"}}, "$k": ["_id"]}, "_id": 42}`
+	_, err = p.ExecContext(ctx, q, doc)
+	require.NoError(t, err)
+
+	dropped, err := r.CollectionDrop(ctx, dbName, collectionName)
+	require.NoError(t, err)
+	require.True(t, dropped)
+
+	dropped, err = r.CollectionDrop(ctx, dbName, collectionName)
+	require.NoError(t, err)
+	require.False(t, dropped)
+
+	c, err = r.CollectionGet(ctx, dbName, collectionName)
+	require.NoError(t, err)
+	require.Nil(t, c)
+}
 
 // createDatabase creates a new provider and registry required for creating a database and
 // returns registry, db pool and created database name.
@@ -117,4 +167,67 @@ func TestDefaultEmptySchema(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, []string{dbName}, list)
+}
+
+func TestCreateDropStress(t *testing.T) {
+	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
+	r, db, dbName := createDatabase(t, ctx)
+
+	var i atomic.Int32
+
+	teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
+		collectionName := fmt.Sprintf("collection_%03d", i.Add(1))
+
+		ready <- struct{}{}
+		<-start
+
+		testCollection(t, ctx, r, db, dbName, collectionName)
+	})
+}
+
+func TestCreateSameStress(t *testing.T) {
+	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
+	r, db, dbName := createDatabase(t, ctx)
+	collectionName := testutil.CollectionName(t)
+
+	var i, createdTotal atomic.Int32
+
+	teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
+		id := i.Add(1)
+
+		ready <- struct{}{}
+		<-start
+
+		created, err := r.CollectionCreate(ctx, &CollectionCreateParams{DBName: dbName, Name: collectionName})
+		require.NoError(t, err)
+		if created {
+			createdTotal.Add(1)
+		}
+
+		t.Log("Collection created successfully::::", created)
+
+		created, err = r.CollectionCreate(ctx, &CollectionCreateParams{DBName: dbName, Name: collectionName})
+		require.NoError(t, err)
+		require.False(t, created)
+
+		c, err := r.CollectionGet(ctx, dbName, collectionName)
+		require.NoError(t, err)
+		require.NotNil(t, c)
+		require.Equal(t, collectionName, c.Name)
+
+		list, err := r.CollectionList(ctx, dbName)
+		require.NoError(t, err)
+		require.Contains(t, list, c)
+
+		q := fmt.Sprintf(
+			`INSERT INTO %s.%s (%s) VALUES(?)`,
+			dbName, c.TableName,
+			DefaultColumn,
+		)
+		doc := fmt.Sprintf(`{"$s": {"p": {"_id": {"t": "int"}}, "$k": ["_id"]}, "_id": %d}`, id)
+		_, err = db.ExecContext(ctx, q, doc)
+		require.NoError(t, err)
+	})
+
+	require.Equal(t, int32(1), createdTotal.Load())
 }

@@ -160,13 +160,13 @@ func (r *Registry) getPool(ctx context.Context) (*fsql.DB, error) {
 // initDBs returns a list of database names using schema information.
 // It fetches existing schema (excluding ones reserved for MySQL),
 // then finds and returns the schema that contains FerretDB metadata table.
-func (r *Registry) initDBs(ctx context.Context, db *fsql.DB) ([]string, error) {
+func (r *Registry) initDBs(ctx context.Context, p *fsql.DB) ([]string, error) {
 	q := strings.TrimSpace(`
 		SELECT schema_name
 		FROM information_schema.schemata
 	`)
 
-	rows, err := db.QueryContext(ctx, q)
+	rows, err := p.QueryContext(ctx, q)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -195,7 +195,7 @@ func (r *Registry) initDBs(ctx context.Context, db *fsql.DB) ([]string, error) {
 		`)
 
 		var exist bool
-		if err := db.QueryRowContext(ctx, q, dbName, metadataTableName).Scan(&exist); err != nil {
+		if err = p.QueryRowContext(ctx, q, dbName, metadataTableName).Scan(&exist); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
@@ -208,17 +208,16 @@ func (r *Registry) initDBs(ctx context.Context, db *fsql.DB) ([]string, error) {
 }
 
 // initCollection loads collection metadata from the database during initialization.
-func (r *Registry) initCollections(ctx context.Context, dbName string, db *fsql.DB) error {
+func (r *Registry) initCollections(ctx context.Context, dbName string, p *fsql.DB) error {
 	defer observability.FuncCall(ctx)()
 
 	q := fmt.Sprintf(
 		`SELECT %s FROM %s.%s`,
 		DefaultColumn,
-		strings.TrimSpace(dbName),
-		metadataTableName,
+		dbName, metadataTableName,
 	)
 
-	rows, err := db.QueryContext(ctx, q)
+	rows, err := p.QueryContext(ctx, q)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -320,7 +319,7 @@ func (r *Registry) databaseGetOrCreate(ctx context.Context, p *fsql.DB, dbName s
 	}
 
 	q := fmt.Sprintf(
-		`CREATE SCHEMA %s`,
+		`CREATE SCHEMA IF NOT EXISTS %s`,
 		dbName,
 	)
 
@@ -363,7 +362,7 @@ func (r *Registry) databaseGetOrCreate(ctx context.Context, p *fsql.DB, dbName s
 
 	q = fmt.Sprintf(
 		`ALTER TABLE %s.%s
-		 ADD COLUMN %s VARCHAR(255) GENERATED ALWAYS AS ((%s->'table')) STORED,
+		 ADD COLUMN %s VARCHAR(255) GENERATED ALWAYS AS ((%s->'$.table')) STORED,
 		 ADD UNIQUE INDEX %s (%s)
 		`,
 		dbName, metadataTableName,
@@ -551,13 +550,13 @@ func (r *Registry) collectionCreate(ctx context.Context, p *fsql.DB, params *Col
 		CappedDocuments: params.CappedDocuments,
 	}
 
-	q := fmt.Sprintf(`CREATE TABLE %s.%s`, dbName, tableName)
+	q := fmt.Sprintf(`CREATE TABLE %s.%s (`, dbName, tableName)
 
 	if params.Capped() {
-		q += fmt.Sprintf(`%s bigint PRIMARY KEY`, RecordIDColumn)
+		q += fmt.Sprintf(`%s bigint PRIMARY KEY, `, RecordIDColumn)
 	}
 
-	q += fmt.Sprintf(`%s json`, DefaultColumn)
+	q += fmt.Sprintf(`%s json)`, DefaultColumn)
 
 	if _, err = p.ExecContext(ctx, q); err != nil {
 		return false, lazyerrors.Error(err)
@@ -572,9 +571,26 @@ func (r *Registry) collectionCreate(ctx context.Context, p *fsql.DB, params *Col
 	if _, err = p.ExecContext(ctx, q, c); err != nil {
 		q = fmt.Sprintf(`DROP TABLE %s.%s`, dbName, tableName)
 		_, _ = p.ExecContext(ctx, q)
+
+		return false, lazyerrors.Error(err)
 	}
 
-	return false, lazyerrors.Error(err)
+	if r.colls[dbName] == nil {
+		r.colls[dbName] = map[string]*Collection{}
+	}
+	r.colls[dbName][collectionName] = c
+
+	err = r.indexesCreate(ctx, p, dbName, collectionName, []IndexInfo{{
+		Name:   "_id_",
+		Key:    []IndexKeyPair{{Field: "_id"}},
+		Unique: true,
+	}})
+	if err != nil {
+		_, _ = r.collectionDrop(ctx, p, dbName, collectionName)
+		return false, lazyerrors.Error(err)
+	}
+
+	return true, nil
 }
 
 // CollectionGet returns a copy of collection metadata.
@@ -838,14 +854,17 @@ func (r *Registry) indexesCreate(ctx context.Context, p *fsql.DB, dbName, collec
 			columnName := strings.ReplaceAll(key.Field, ".", "_")
 
 			q += fmt.Sprintf(
-				`ADD COLUMN %s VARCHAR(255) GENERATED ALWAYS AS (JSON_UNQUOTE(%s)) STORED`,
+				` ADD COLUMN %s VARCHAR(255) GENERATED ALWAYS AS ((%s->%q)) STORED`,
 				columnName,
+				DefaultColumn,
 				"$."+key.Field,
 			)
 
 			if key.Descending {
-				columns[i] += " DESC"
+				q += " DESC"
 			}
+
+			columns[i] = key.Field
 		}
 
 		q = fmt.Sprintf(

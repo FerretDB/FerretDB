@@ -143,6 +143,10 @@ func (c *Collection) unmarshal(doc *types.Document) error {
 	v, _ = doc.Get("indexes")
 	i, _ := v.(*types.Array)
 
+	if i == nil {
+		return lazyerrors.New("indexes are empty")
+	}
+
 	if err := c.Indexes.unmarshal(i); err != nil {
 		return lazyerrors.Error(err)
 	}
