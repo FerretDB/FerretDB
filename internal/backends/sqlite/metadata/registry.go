@@ -519,7 +519,13 @@ func (r *Registry) indexesCreate(ctx context.Context, dbName, collectionName str
 			}
 		}
 
-		q = fmt.Sprintf(q, c.TableName+"_"+index.Name, c.TableName, strings.Join(columns, ", "))
+		q = fmt.Sprintf(
+			q,
+			c.TableName+"_"+index.Name,
+			c.TableName,
+			strings.Join(columns, ", "),
+		)
+
 		if _, err := db.ExecContext(ctx, q); err != nil {
 			_ = r.indexesDrop(ctx, dbName, collectionName, created)
 			return lazyerrors.Error(err)
