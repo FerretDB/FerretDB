@@ -24,6 +24,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"regexp"
 	"slices"
 	"sort"
 	"strconv"
@@ -358,34 +359,49 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 func testsRun(ctx context.Context, index, total uint, run, skip string, args []string, logger *zap.SugaredLogger) error {
 	logger.Debugf("testsRun: index=%d, total=%d, run=%q, args=%q", index, total, run, args)
 
+	if index == 0 || total == 0 {
+		return fmt.Errorf("--shard-index and --shard-total must be specified")
+	}
+
 	var totalTest int
-	if run == "" {
-		if index == 0 || total == 0 {
-			return fmt.Errorf("--shard-index and --shard-total must be specified when --run is not")
-		}
 
-		all, err := listTestFuncs("")
-		if err != nil {
-			return lazyerrors.Error(err)
-		}
+	all, err := listTestFuncs("")
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
 
-		shard, err := shardTestFuncs(index, total, all)
-		if err != nil {
-			return lazyerrors.Error(err)
-		}
+	if run != "" {
+		var res []string
+		for _, pattern := range strings.Split(run, "/") {
+			re, err := regexp.Compile(pattern)
+			if err != nil {
+				return fmt.Errorf("Error compiling regex for -run %s flag %s: %v\n", run, pattern, err)
+			}
 
-		run = "^("
-
-		for i, t := range shard {
-			run += t
-			if i != len(shard)-1 {
-				run += "|"
+			for _, test := range all {
+				if re.MatchString(test) {
+					res = append(res, test)
+				}
 			}
 		}
-
-		totalTest = len(shard)
-		run += ")$"
 	}
+
+	shard, err := shardTestFuncs(index, total, all)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	run = "^("
+
+	for i, t := range shard {
+		run += t
+		if i != len(shard)-1 {
+			run += "|"
+		}
+	}
+
+	totalTest = len(shard)
+	run += ")$"
 
 	if skip != "" {
 		totalTest = 0
