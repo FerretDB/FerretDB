@@ -184,7 +184,7 @@ func TestSchemaMarshalUnmarshal(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			// Schema unmarshalled from json
+			// Schema unmarshaled from json
 			var unm schema
 			err := json.Unmarshal([]byte(tc.json), &unm)
 			require.NoError(t, err)
