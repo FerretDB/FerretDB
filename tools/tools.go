@@ -25,6 +25,7 @@ import (
 	_ "github.com/quasilyte/go-consistent"
 	_ "golang.org/x/perf/cmd/benchstat"
 	_ "golang.org/x/pkgsite/cmd/pkgsite"
+	_ "golang.org/x/tools/cmd/deadcode"
 	_ "golang.org/x/tools/cmd/goimports"
 	_ "golang.org/x/tools/cmd/stringer"
 	_ "golang.org/x/vuln/cmd/govulncheck"
@@ -47,6 +48,7 @@ import (
 //go:generate go build -v -o ../bin/ github.com/quasilyte/go-consistent
 //go:generate go build -v -o ../bin/ golang.org/x/perf/cmd/benchstat
 //go:generate go build -v -o ../bin/ golang.org/x/pkgsite/cmd/pkgsite
+//go:generate go build -v -o ../bin/ golang.org/x/tools/cmd/deadcode
 //go:generate go build -v -o ../bin/ golang.org/x/tools/cmd/goimports
 //go:generate go build -v -o ../bin/ golang.org/x/tools/cmd/stringer
 //go:generate go build -v -o ../bin/ golang.org/x/vuln/cmd/govulncheck
