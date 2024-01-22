@@ -148,8 +148,8 @@ func (r *Registry) getPool(ctx context.Context) (*fsql.DB, error) {
 	}
 
 	r.colls = make(map[string]map[string]*Collection, len(dbNames))
-	for _, db := range dbNames {
-		if err := r.initCollections(ctx, db, p); err != nil {
+	for _, dbName := range dbNames {
+		if err = r.initCollections(ctx, dbName, p); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 	}
@@ -231,7 +231,6 @@ func (r *Registry) initCollections(ctx context.Context, dbName string, p *fsql.D
 		if err = rows.Scan(&c); err != nil {
 			return lazyerrors.Error(err)
 		}
-
 		colls[c.Name] = &c
 	}
 
@@ -346,13 +345,11 @@ func (r *Registry) databaseGetOrCreate(ctx context.Context, p *fsql.DB, dbName s
 	q = fmt.Sprintf(
 		`ALTER TABLE %s.%s
 		 ADD COLUMN %s VARCHAR(255) GENERATED ALWAYS AS ((%s)) STORED,
-		 ADD UNIQUE INDEX %s (%s)
+    	 ADD COLUMN %s VARCHAR(255) GENERATED ALWAYS AS ((%s)) STORED
 		`,
 		dbName, metadataTableName,
-		TableIdxColumn+"_id",
-		IDColumn,
-		metadataTableName+"_id_idx",
-		TableIdxColumn+"_id",
+		IDIndexColumn, IDColumn,
+		TableIndexColumn, DefaultColumn+"->'$.table'",
 	)
 
 	if _, err = p.ExecContext(ctx, q); err != nil {
@@ -361,15 +358,22 @@ func (r *Registry) databaseGetOrCreate(ctx context.Context, p *fsql.DB, dbName s
 	}
 
 	q = fmt.Sprintf(
-		`ALTER TABLE %s.%s
-		 ADD COLUMN %s VARCHAR(255) GENERATED ALWAYS AS ((%s->'$.table')) STORED,
-		 ADD UNIQUE INDEX %s (%s)
-		`,
+		`CREATE UNIQUE INDEX %s ON %s.%s (%s)`,
+		metadataTableName+"_id_idx",
 		dbName, metadataTableName,
-		TableIdxColumn,
-		DefaultColumn,
+		IDIndexColumn,
+	)
+
+	if _, err = p.ExecContext(ctx, q); err != nil {
+		_, _ = r.databaseDrop(ctx, p, dbName)
+		return nil, lazyerrors.Error(err)
+	}
+
+	q = fmt.Sprintf(
+		`CREATE UNIQUE INDEX %s ON %s.%s (%s)`,
 		metadataTableName+"_table_idx",
-		TableIdxColumn,
+		dbName, metadataTableName,
+		TableIndexColumn,
 	)
 
 	if _, err = p.ExecContext(ctx, q); err != nil {
@@ -672,7 +676,7 @@ func (r *Registry) collectionDrop(ctx context.Context, p *fsql.DB, dbName, colle
 	}
 
 	q := fmt.Sprintf(
-		`DROP TABLE %s.%s CASCADE`,
+		`DROP TABLE %s.%s`,
 		dbName, c.TableName,
 	)
 
@@ -683,10 +687,10 @@ func (r *Registry) collectionDrop(ctx context.Context, p *fsql.DB, dbName, colle
 	q = fmt.Sprintf(
 		`DELETE FROM %s.%s WHERE %s IN (?)`,
 		dbName, metadataTableName,
-		IDColumn,
+		IDIndexColumn,
 	)
 
-	if _, err := p.ExecContext(ctx, q, arg); err != nil {
+	if _, err := p.ExecContext(ctx, q, string(arg)); err != nil {
 		return false, lazyerrors.Error(err)
 	}
 
@@ -712,7 +716,7 @@ func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionNa
 	}
 
 	r.rw.Lock()
-	defer r.rw.RUnlock()
+	defer r.rw.Unlock()
 
 	db := r.colls[dbName]
 	if db == nil {
@@ -727,7 +731,7 @@ func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionNa
 	c.Name = newCollectionName
 
 	b, err := sjson.Marshal(c.marshal())
-	if err == nil {
+	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
 
@@ -740,7 +744,7 @@ func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionNa
 		`UPDATE %s.%s SET %s = ? WHERE %s = ?`,
 		dbName, metadataTableName,
 		DefaultColumn,
-		IDColumn,
+		IDIndexColumn,
 	)
 
 	if _, err := p.ExecContext(ctx, q, string(b), arg); err != nil {
@@ -846,25 +850,59 @@ func (r *Registry) indexesCreate(ctx context.Context, p *fsql.DB, dbName, collec
 
 		index.Index = mysqlIndexName
 
-		q := "ALTER TABLE %s.%s"
+		q := `
+			SELECT column_name FROM INFORMATION_SCHEMA.COLUMNS WHERE table_schema = ? AND table_name = ?
+		`
+
+		var allColumns []string
+
+		var rows *fsql.Rows
+
+		rows, err = p.QueryContext(ctx, q, dbName, c.TableName)
+		if err != nil {
+			return lazyerrors.Error(err)
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var c string
+
+			if err = rows.Scan(&c); err != nil {
+				return lazyerrors.Error(err)
+			}
+			allColumns = append(allColumns, c)
+		}
+
+		if err = rows.Err(); err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		q = "ALTER TABLE %s.%s"
 
 		columns := make([]string, len(index.Key))
 
 		for i, key := range index.Key {
 			columnName := strings.ReplaceAll(key.Field, ".", "_")
 
-			q += fmt.Sprintf(
-				` ADD COLUMN %s VARCHAR(255) GENERATED ALWAYS AS ((%s->%q)) STORED`,
-				columnName,
-				DefaultColumn,
-				"$."+key.Field,
-			)
+			// ensure that the column hasn't already been extracted
+			if !slices.Contains(allColumns, columnName) {
+				q += fmt.Sprintf(
+					` ADD COLUMN %s VARCHAR(255) GENERATED ALWAYS AS ((%s->'%s')) STORED`,
+					columnName,
+					DefaultColumn,
+					"$."+key.Field,
+				)
 
-			if key.Descending {
-				q += " DESC"
+				if i != len(index.Key)-1 {
+					q += ","
+				}
 			}
 
 			columns[i] = key.Field
+
+			if key.Descending {
+				columns[i] += " DESC"
+			}
 		}
 
 		q = fmt.Sprintf(
@@ -876,7 +914,7 @@ func (r *Registry) indexesCreate(ctx context.Context, p *fsql.DB, dbName, collec
 			return lazyerrors.Error(err)
 		}
 
-		q = `CREATE `
+		q = "CREATE "
 
 		if index.Unique {
 			q += "UNIQUE "
@@ -916,10 +954,10 @@ func (r *Registry) indexesCreate(ctx context.Context, p *fsql.DB, dbName, collec
 		`UPDATE %s.%s SET %s = ? WHERE %s = ?`,
 		dbName, metadataTableName,
 		DefaultColumn,
-		IDColumn,
+		IDIndexColumn,
 	)
 
-	if _, err := p.ExecContext(ctx, q, string(b), arg); err != nil {
+	if _, err := p.ExecContext(ctx, q, string(b), string(arg)); err != nil {
 		return lazyerrors.Error(err)
 	}
 
@@ -1011,7 +1049,7 @@ func (r *Registry) Describe(ch chan<- *prometheus.Desc) {
 	prometheus.DescribeByCollect(r, ch)
 }
 
-// Collect impements prometheus.Collector.
+// Collect implements prometheus.Collector.
 func (r *Registry) Collect(ch chan<- prometheus.Metric) {
 	r.p.Collect(ch)
 
