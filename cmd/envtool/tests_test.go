@@ -172,6 +172,27 @@ func TestRunGoTest(t *testing.T) {
 		assert.Equal(t, expected, actual, "actual:\n%s", strings.Join(actual, "\n"))
 	})
 
+	t.Run("RunAndSkipNormal", func(t *testing.T) {
+		t.Parallel()
+
+		var actual []string
+		logger, err := makeTestLogger(&actual)
+		require.NoError(t, err)
+
+		err = runGoTest(context.TODO(), []string{"./testdata", "-count=1", "-run=TestNormal1", "-skip=TestNormal2"}, 2, false, logger.Sugar())
+		require.NoError(t, err)
+
+		expected := []string{
+			"PASS TestNormal1 1/2",
+			"PASS",
+			"ok  	github.com/FerretDB/FerretDB/cmd/envtool/testdata	<SEC>s",
+			"PASS github.com/FerretDB/FerretDB/cmd/envtool/testdata",
+		}
+
+		cleanup(actual)
+		assert.Equal(t, expected, actual, "actual:\n%s", strings.Join(actual, "\n"))
+	})
+
 	t.Run("Panic", func(t *testing.T) {
 		t.Parallel()
 
@@ -265,5 +286,30 @@ func TestShardTestFuncs(t *testing.T) {
 		assert.NotEqual(t, testFuncs[0], res[0])
 		assert.NotEqual(t, testFuncs[1], res[0])
 		assert.Equal(t, testFuncs[2], res[0])
+	})
+}
+
+func TestTestsRun(t *testing.T) {
+	t.Parallel()
+
+	t.Run("RunAndSkipNormal", func(t *testing.T) {
+		t.Parallel()
+
+		var actual []string
+		logger, err := makeTestLogger(&actual)
+		require.NoError(t, err)
+
+		err = testsRun(context.TODO(), 1, 1, "TestNormal1", "TestNormal2", []string{"./testdata", "-count=1"}, logger.Sugar())
+		require.NoError(t, err)
+
+		expected := []string{
+			"PASS TestNormal1 1/2",
+			"PASS",
+			"ok  	github.com/FerretDB/FerretDB/cmd/envtool/testdata	<SEC>s",
+			"PASS github.com/FerretDB/FerretDB/cmd/envtool/testdata",
+		}
+
+		cleanup(actual)
+		assert.Equal(t, expected, actual, "actual:\n%s", strings.Join(actual, "\n"))
 	})
 }

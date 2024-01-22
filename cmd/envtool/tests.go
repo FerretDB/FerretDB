@@ -364,6 +364,7 @@ func testsRun(ctx context.Context, index, total uint, run, skip string, args []s
 	}
 
 	var totalTest int
+	var skipRe, runRe *regexp.Regexp
 
 	all, err := listTestFuncs("")
 	if err != nil {
@@ -371,28 +372,35 @@ func testsRun(ctx context.Context, index, total uint, run, skip string, args []s
 	}
 
 	if run != "" {
-		var res []string
-		for _, pattern := range strings.Split(run, "/") {
-			re, err := regexp.Compile(pattern)
-			if err != nil {
-				return fmt.Errorf("Error compiling regex for -run %s flag %s: %v\n", run, pattern, err)
-			}
-
-			for _, test := range all {
-				if re.MatchString(test) {
-					res = append(res, test)
-				}
-			}
+		runRe, err = regexp.Compile(run)
+		if err != nil {
+			return fmt.Errorf("Error compiling regex for -run %s flag: %v\n", runRe, err)
 		}
 	}
 
-	shard, err := shardTestFuncs(index, total, all)
+	if skip != "" {
+		skipRe, err = regexp.Compile(skip)
+		if err != nil {
+			return fmt.Errorf("Error compiling regex for -skip %s flag: %v\n", skipRe, err)
+		}
+	}
+
+	var filtered []string
+	for _, test := range all {
+		if skip != "" && skipRe.MatchString(test) {
+			continue
+		}
+		if run == "" || runRe.MatchString(test) {
+			filtered = append(filtered, test)
+		}
+	}
+
+	shard, err := shardTestFuncs(index, total, filtered)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
 
 	run = "^("
-
 	for i, t := range shard {
 		run += t
 		if i != len(shard)-1 {
