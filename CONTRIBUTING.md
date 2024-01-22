@@ -5,18 +5,18 @@ Thank you for your interest in making FerretDB better!
 ## Finding something to work on
 
 We are interested in all contributions, big or small, in code or documentation.
-But unless you are fixing a very small issue like a typo,
-we kindly ask you first to [create an issue](https://github.com/FerretDB/FerretDB/issues/new/choose),
+But unless you are fixing a tiny issue like a typo,
+we kindly ask you first to [create an issue](https://github.com/FerretDB/FerretDB/issues/new/choose)
 or leave a comment on an existing issue if you want to work on it.
-This way, you will get help from us and avoid wasted efforts if something can't be worked on right now
-or someone is already working on it.
-You can also [join our Slack chat](./README.md#community) and leave a message for us in the `#dev` channel.
+This way, we could assign the issue to you, marking it as being worked on,
+preventing others from wasting efforts working on it at the same time.
+Additionally, you can [join our Slack chat](./README.md#community) and leave a message for us in the `#dev` channel.
 
 You can find a list of good first issues for contributors [there](https://github.com/FerretDB/FerretDB/contribute).
 Once you have some experience with contributing to FerretDB,
 feel free to pick any issue
 [that is not assigned to anyone and doesn't have `not ready` label](https://github.com/FerretDB/FerretDB/issues?q=is%3Aissue+is%3Aopen+no%3Aassignee+-label%3A%22not+ready%22).
-Still, please let us know as described above.
+Still, please leave a comment on it as described above.
 
 ## Setting up the environment
 
