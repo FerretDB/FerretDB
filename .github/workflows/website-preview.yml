@@ -40,10 +40,6 @@ jobs:
       url: ${{ steps.extract.outputs.extracted_url }}
 
     steps:
-      - name: Setup permissions monitoring
-        uses: GitHubSecurityLab/actions-permissions/monitor@v1
-        if: false
-
       # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
         uses: actions/checkout@v4
@@ -109,10 +105,6 @@ jobs:
       # https://github.com/actions/download-artifact/issues/172
       # Just build them again instead.
       # That also allows us to pass branch name, commit hash, etc from git to wrangler.
-
-      - name: Setup permissions monitoring
-        uses: GitHubSecurityLab/actions-permissions/monitor@v1
-        if: false
 
       # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code

@@ -60,10 +60,6 @@ jobs:
       packages: write
 
     steps:
-      - name: Setup permissions monitoring
-        uses: GitHubSecurityLab/actions-permissions/monitor@v1
-        if: false
-
       # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
         if: github.event_name != 'pull_request_target'

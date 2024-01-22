@@ -36,10 +36,6 @@ jobs:
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
 
     steps:
-      - name: Setup permissions monitoring
-        uses: GitHubSecurityLab/actions-permissions/monitor@v1
-        if: false
-
       # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
         uses: actions/checkout@v4
@@ -87,10 +83,6 @@ jobs:
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
 
     steps:
-      - name: Setup permissions monitoring
-        uses: GitHubSecurityLab/actions-permissions/monitor@v1
-        if: false
-
       # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
         uses: actions/checkout@v4
@@ -198,10 +190,6 @@ jobs:
     if: always() && (github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready'))
 
     steps:
-      - name: Setup permissions monitoring
-        uses: GitHubSecurityLab/actions-permissions/monitor@v1
-        if: false
-
       - name: Submit coveralls
         uses: coverallsapp/github-action@v2
         with:
@@ -220,10 +208,6 @@ jobs:
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
 
     steps:
-      - name: Setup permissions monitoring
-        uses: GitHubSecurityLab/actions-permissions/monitor@v1
-        if: false
-
       # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
         uses: actions/checkout@v4
@@ -267,10 +251,6 @@ jobs:
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
 
     steps:
-      - name: Setup permissions monitoring
-        uses: GitHubSecurityLab/actions-permissions/monitor@v1
-        if: false
-
       # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
         uses: actions/checkout@v4
@@ -301,10 +281,6 @@ jobs:
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
 
     steps:
-      - name: Setup permissions monitoring
-        uses: GitHubSecurityLab/actions-permissions/monitor@v1
-        if: false
-
       # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
         uses: actions/checkout@v4
