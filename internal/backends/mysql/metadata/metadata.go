@@ -33,8 +33,11 @@ const (
 	// IDColumn is a MySQL path expression for _id field.
 	IDColumn = DefaultColumn + "->'$._id'"
 
-	// TableIdxColumn is a column name for MySQL generated column.
-	TableIdxColumn = DefaultColumn + "_table"
+	// IDIndexColumn is a column name for MySQL generated column on the field '_id'.
+	IDIndexColumn = DefaultColumn + "_id"
+
+	// TableIndexColumn is a column name for MySQL generated column on the field 'table'.
+	TableIndexColumn = DefaultColumn + "_table"
 
 	// RecordIDColumn is a name for RecordID column to store capped collection record id.
 	RecordIDColumn = backends.ReservedPrefix + "record_id"
@@ -142,6 +145,10 @@ func (c *Collection) unmarshal(doc *types.Document) error {
 
 	v, _ = doc.Get("indexes")
 	i, _ := v.(*types.Array)
+
+	if i == nil {
+		return lazyerrors.New("indexes are empty")
+	}
 
 	if err := c.Indexes.unmarshal(i); err != nil {
 		return lazyerrors.Error(err)
