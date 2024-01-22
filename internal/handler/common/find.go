@@ -46,13 +46,14 @@ type FindParams struct {
 	Collation *types.Document `ferretdb:"collation,unimplemented"`
 	Let       *types.Document `ferretdb:"let,unimplemented"`
 
-	AllowDiskUse bool            `ferretdb:"allowDiskUse,ignored"`
-	ReadConcern  *types.Document `ferretdb:"readConcern,ignored"`
-	Max          *types.Document `ferretdb:"max,ignored"`
-	Min          *types.Document `ferretdb:"min,ignored"`
-	Hint         any             `ferretdb:"hint,ignored"`
-	LSID         any             `ferretdb:"lsid,ignored"`
-	ClusterTime  any             `ferretdb:"$clusterTime,ignored"`
+	AllowDiskUse   bool            `ferretdb:"allowDiskUse,ignored"`
+	ReadConcern    *types.Document `ferretdb:"readConcern,ignored"`
+	Max            *types.Document `ferretdb:"max,ignored"`
+	Min            *types.Document `ferretdb:"min,ignored"`
+	Hint           any             `ferretdb:"hint,ignored"`
+	LSID           any             `ferretdb:"lsid,ignored"`
+	ClusterTime    any             `ferretdb:"$clusterTime,ignored"`
+	ReadPreference *types.Document `ferretdb:"$readPreference,ignored"`
 
 	ReturnKey           bool `ferretdb:"returnKey,unimplemented-non-default"`
 	OplogReplay         bool `ferretdb:"oplogReplay,ignored"`

@@ -34,11 +34,12 @@ type CountParams struct {
 
 	Fields any `ferretdb:"fields,ignored"` // legacy MongoDB shell adds it, but it is never actually used
 
-	Hint        any             `ferretdb:"hint,ignored"`
-	ReadConcern *types.Document `ferretdb:"readConcern,ignored"`
-	Comment     string          `ferretdb:"comment,ignored"`
-	LSID        any             `ferretdb:"lsid,ignored"`
-	ClusterTime any             `ferretdb:"$clusterTime,ignored"`
+	Hint           any             `ferretdb:"hint,ignored"`
+	ReadConcern    *types.Document `ferretdb:"readConcern,ignored"`
+	Comment        string          `ferretdb:"comment,ignored"`
+	LSID           any             `ferretdb:"lsid,ignored"`
+	ClusterTime    any             `ferretdb:"$clusterTime,ignored"`
+	ReadPreference *types.Document `ferretdb:"$readPreference,ignored"`
 }
 
 // GetCountParams returns the parameters for the count command.
