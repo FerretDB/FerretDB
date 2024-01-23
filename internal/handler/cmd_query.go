@@ -45,12 +45,12 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 		reply := wire.OpReply{
 			NumberReturned: 1,
 		}
-		reply.SetDocuments([]*types.Document{must.NotFail(types.NewDocument(
+		reply.SetDocument(must.NotFail(types.NewDocument(
 			"conversationId", int32(1),
 			"done", true,
 			"payload", emptyPayload,
 			"ok", float64(1),
-		))})
+		)))
 
 		return &reply, nil
 	}

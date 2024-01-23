@@ -127,9 +127,9 @@ func (reply *OpReply) Documents() []*types.Document {
 	return reply.documents
 }
 
-// SetDocuments sets reply documents.
-func (reply *OpReply) SetDocuments(docs []*types.Document) {
-	reply.documents = docs
+// SetDocuments sets reply document.
+func (reply *OpReply) SetDocument(doc *types.Document) {
+	reply.documents = []*types.Document{doc}
 }
 
 // String returns a string representation for logging.

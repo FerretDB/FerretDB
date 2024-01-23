@@ -34,7 +34,7 @@ func IsMaster(ctx context.Context, query *types.Document, tcpHost, name string) 
 	reply := wire.OpReply{
 		NumberReturned: 1,
 	}
-	reply.SetDocuments([]*types.Document{IsMasterDocument(tcpHost, name)})
+	reply.SetDocument(IsMasterDocument(tcpHost, name))
 
 	return &reply, nil
 }
