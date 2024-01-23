@@ -82,9 +82,9 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	res.Set("ok", float64(1))
 
 	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{res},
-	}))
+	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+		res,
+	)))
 
 	return &reply, nil
 }

@@ -37,7 +37,7 @@ var queryTestCases = []testCase{{
 		FullCollectionName: "admin.$cmd",
 		NumberToSkip:       0,
 		NumberToReturn:     -1,
-		Query: must.NotFail(types.NewDocument(
+		query: must.NotFail(types.NewDocument(
 			"ismaster", true,
 			"client", must.NotFail(types.NewDocument(
 				"driver", must.NotFail(types.NewDocument(
@@ -58,7 +58,7 @@ var queryTestCases = []testCase{{
 			"compression", must.NotFail(types.NewArray("none")),
 			"loadBalanced", false,
 		)),
-		ReturnFieldsSelector: nil,
+		returnFieldsSelector: nil,
 	},
 }, {
 	name:    "handshake3",
@@ -75,7 +75,7 @@ var queryTestCases = []testCase{{
 		FullCollectionName: "admin.$cmd",
 		NumberToSkip:       0,
 		NumberToReturn:     -1,
-		Query: must.NotFail(types.NewDocument(
+		query: must.NotFail(types.NewDocument(
 			"ismaster", true,
 			"client", must.NotFail(types.NewDocument(
 				"driver", must.NotFail(types.NewDocument(
@@ -96,7 +96,7 @@ var queryTestCases = []testCase{{
 			"compression", must.NotFail(types.NewArray("none")),
 			"loadBalanced", false,
 		)),
-		ReturnFieldsSelector: nil,
+		returnFieldsSelector: nil,
 	},
 }}
 

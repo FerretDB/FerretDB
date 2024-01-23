@@ -76,13 +76,13 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	switch {
 	case err == nil, backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist):
 		var reply wire.OpMsg
-		must.NoError(reply.SetSections(wire.OpMsgSection{
-			Documents: []*types.Document{must.NotFail(types.NewDocument(
+		must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+			must.NotFail(types.NewDocument(
 				"nIndexesWas", int32(1), // TODO https://github.com/FerretDB/FerretDB/issues/2337
 				"ns", dbName+"."+collectionName,
 				"ok", float64(1),
-			))},
-		}))
+			)),
+		)))
 
 		return &reply, nil
 
