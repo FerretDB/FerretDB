@@ -21,6 +21,7 @@ on:
   push:
     branches:
       - main
+      - main/*
       - releases/*
     tags:
       - "*"
@@ -87,7 +88,7 @@ jobs:
           git fetch --tags --force
           git status
 
-      # for branch.txt on pull_request_target; `main` is already checked out on push / schedule
+      # for branch.txt on pull_request_target; the correct branch is already checked out on push / schedule
       - name: Name branch
         if: github.event_name == 'pull_request_target'
         env:
