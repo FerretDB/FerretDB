@@ -102,6 +102,7 @@ COPY --from=production-build /src/bin/ferretdb /ferretdb
 FROM scratch AS production
 
 COPY --from=production-build /src/bin/ferretdb /ferretdb
+COPY --from=production-build /etc/passwd /etc/passwd
 
 USER ferretdb
 ENTRYPOINT [ "/ferretdb" ]
