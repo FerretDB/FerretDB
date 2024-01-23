@@ -125,7 +125,6 @@ func TestCreateIndexesCompat(tt *testing.T) {
 					},
 				},
 			},
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3418",
 		},
 		"SameKey": {
 			models: []mongo.IndexModel{
