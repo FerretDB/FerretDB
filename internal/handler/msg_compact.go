@@ -96,22 +96,43 @@ func (h *Handler) MsgCompact(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	if _, err = c.Compact(ctx, &backends.CompactParams{Full: force}); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	statsAfter, err := c.Stats(ctx, new(backends.CollectionStatsParams))
+	cList, err := db.ListCollections(ctx, &backends.ListCollectionsParams{
+		Name: collection,
+	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	bytesFreed := statsBefore.SizeTotal - statsAfter.SizeTotal
+	var cInfo backends.CollectionInfo
 
-	// There's a possibility that the size of a collection might be greater at the
-	// end of a compact operation if the collection is being actively written to at
-	// the time of compaction.
-	if bytesFreed < 0 {
-		bytesFreed = 0
+	if len(cList.Collections) > 0 {
+		cInfo = cList.Collections[0]
+	}
+
+	var bytesFreed int64
+
+	if cInfo.Capped() {
+		if _, bytesFreed, err = h.cleanupCappedCollection(ctx, db, &cInfo, force); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+	} else {
+		if _, err = c.Compact(ctx, &backends.CompactParams{Full: force}); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		statsAfter, err := c.Stats(ctx, new(backends.CollectionStatsParams))
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		bytesFreed = statsBefore.SizeTotal - statsAfter.SizeTotal
+
+		// There's a possibility that the size of a collection might be greater at the
+		// end of a compact operation if the collection is being actively written to at
+		// the time of compaction.
+		if bytesFreed < 0 {
+			bytesFreed = 0
+		}
 	}
 
 	var reply wire.OpMsg

@@ -84,16 +84,19 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 	var placeholder metadata.Placeholder
 
-	where, args, err := prepareWhereClause(&placeholder, params.Filter)
+	var where string
+	var args []any
+
+	where, args, err = prepareWhereClause(&placeholder, params.Filter)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	q += where
 
-	sort, sortArgs := prepareOrderByClause(&placeholder, params.Sort, meta.Capped())
-	q += sort
+	sort, sortArgs := prepareOrderByClause(&placeholder, params.Sort)
 
+	q += sort
 	args = append(args, sortArgs...)
 
 	if params.Limit != 0 {
@@ -246,6 +249,8 @@ func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllPa
 		return &backends.DeleteAllResult{Deleted: 0}, nil
 	}
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/3888
+
 	var column string
 	var placeholders []string
 	var args []any
@@ -337,11 +342,11 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 
 	q += where
 
-	sort, sortArgs := prepareOrderByClause(&placeholder, params.Sort, meta.Capped())
-	q += sort
-
-	args = append(args, sortArgs...)
+	sort, sortArgs := prepareOrderByClause(&placeholder, params.Sort)
 	res.SortPushdown = sort != ""
+
+	q += sort
+	args = append(args, sortArgs...)
 
 	if params.Limit != 0 {
 		q += fmt.Sprintf(` LIMIT %s`, placeholder.Next())

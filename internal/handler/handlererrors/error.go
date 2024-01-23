@@ -39,6 +39,9 @@ const (
 	// ErrFailedToParse indicates user input parsing failure.
 	ErrFailedToParse = ErrorCode(9) // FailedToParse
 
+	// ErrUserNotFound indicates an user was not found for the accessed database.
+	ErrUserNotFound = ErrorCode(11) // UserNotFound
+
 	// ErrUnauthorized indicates that cursor is not authorized to access another namespace.
 	ErrUnauthorized = ErrorCode(13) // Unauthorized
 
@@ -68,6 +71,9 @@ const (
 
 	// ErrNamespaceExists indicates that the collection already exists.
 	ErrNamespaceExists = ErrorCode(48) // NamespaceExists
+
+	// ErrMaxTimeMSExpired indicates the MaxTimeMS expired.
+	ErrMaxTimeMSExpired = ErrorCode(50) // MaxTimeMSExpired
 
 	// ErrDollarPrefixedFieldName indicates the field name is prefixed with $.
 	ErrDollarPrefixedFieldName = ErrorCode(52) // DollarPrefixedFieldName
@@ -275,9 +281,15 @@ const (
 	// ErrCollStatsIsNotFirstStage indicates that $collStats must be the first stage in the pipeline.
 	ErrCollStatsIsNotFirstStage = ErrorCode(40602) // Location40602
 
+	// ErrSetEmptyPassword indicates that a password must not be empty.
+	ErrSetEmptyPassword = ErrorCode(50687) // Location50687
+
 	// ErrFreeMonitoringDisabled indicates that free monitoring is disabled
 	// by command-line or config file.
 	ErrFreeMonitoringDisabled = ErrorCode(50840) // Location50840
+
+	// ErrUserAlreadyExists indicates that user already exists.
+	ErrUserAlreadyExists = ErrorCode(51003) // Location51003
 
 	// ErrValueNegative indicates that value must not be negative.
 	ErrValueNegative = ErrorCode(51024) // Location51024
@@ -314,6 +326,9 @@ const (
 
 	// ErrStageCollStatsInvalidArg indicates invalid argument for the aggregation $collStats stage.
 	ErrStageCollStatsInvalidArg = ErrorCode(5447000) // Location5447000
+
+	// ErrStageIndexedStringVectorDuplicate indicates that input to IndexedStringVector contained duplicate values.
+	ErrStageIndexedStringVectorDuplicate = ErrorCode(7582300) // Location7582300
 )
 
 // ErrInfo represents additional optional error information.

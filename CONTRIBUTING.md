@@ -5,18 +5,18 @@ Thank you for your interest in making FerretDB better!
 ## Finding something to work on
 
 We are interested in all contributions, big or small, in code or documentation.
-But unless you are fixing a very small issue like a typo,
-we kindly ask you first to [create an issue](https://github.com/FerretDB/FerretDB/issues/new/choose),
+But unless you are fixing a tiny issue like a typo,
+we kindly ask you first to [create an issue](https://github.com/FerretDB/FerretDB/issues/new/choose)
 or leave a comment on an existing issue if you want to work on it.
-This way, you will get help from us and avoid wasted efforts if something can't be worked on right now
-or someone is already working on it.
-You can also [join our Slack chat](./README.md#community) and leave a message for us in the `#dev` channel.
+This way, we could assign the issue to you, marking it as being worked on,
+preventing others from wasting efforts working on it at the same time.
+Additionally, you can [join our Slack chat](./README.md#community) and leave a message for us in the `#dev` channel.
 
 You can find a list of good first issues for contributors [there](https://github.com/FerretDB/FerretDB/contribute).
 Once you have some experience with contributing to FerretDB,
 feel free to pick any issue
 [that is not assigned to anyone and doesn't have `not ready` label](https://github.com/FerretDB/FerretDB/issues?q=is%3Aissue+is%3Aopen+no%3Aassignee+-label%3A%22not+ready%22).
-Still, please let us know as described above.
+Still, please leave a comment on it as described above.
 
 ## Setting up the environment
 
@@ -35,7 +35,7 @@ If your package manager doesn't provide it yet,
 please install it from [go.dev](https://go.dev/dl/).
 
 You will also need `git` installed; the version provided by your package manager should do.
-On Windows, the simplest way to install it might be <https://gitforwindows.org>.
+On Windows, the simplest way to install it might be https://gitforwindows.org.
 
 Finally, you will also need [git-lfs](https://git-lfs.github.com) installed and configured (`git lfs install`).
 
@@ -217,10 +217,13 @@ For example:
   with [Go execution tracer](https://pkg.go.dev/runtime/trace) enabled,
   you may use `env GOFLAGS='-trace=trace.out' task test-integration-sqlite`.
 
-> **Note**
->
+<!-- textlint-disable one-sentence-per-line -->
+
+> [!NOTE]
 > It is not recommended to set `GOFLAGS` and other Go environment variables with `export GOFLAGS=...`
 > or `go env -w GOFLAGS=...` because they are invisible and easy to forget about, leading to confusion.
+
+<!-- textlint-enable one-sentence-per-line -->
 
 In general, we prefer integration tests over unit tests,
 tests using real databases over short tests
@@ -229,13 +232,13 @@ and real objects over mocks.
 (You might disagree with our terminology for "unit" and "integration" tests;
 let's not fight over it.)
 
-We have an additional integration testing system in another repository: <https://github.com/FerretDB/dance>.
+We have an additional integration testing system in another repository: https://github.com/FerretDB/dance.
 
 #### Observability in tests
 
 Integration tests start a debug handler with pprof profiles and execution traces on a random port
 (to allow running multiple test configurations in parallel).
-They also send telemetry traces to the local Jaeger instance that can be accessed at <http://127.0.0.1:16686/>.
+They also send telemetry traces to the local Jaeger instance that can be accessed at http://127.0.0.1:16686/.
 
 ### Code style and conventions
 
@@ -247,13 +250,13 @@ If, on the other hand, you see code that is inconsistent without apparent reason
 please improve it as you work on it.
 
 Our code follows most of the standard Go conventions,
-documented on [CodeReviewComments wiki page](https://github.com/golang/go/wiki/CodeReviewComments)
-and some other pages such as [Spelling](https://github.com/golang/go/wiki/Spelling).
+documented on [CodeReviewComments wiki page](https://go.dev/wiki/CodeReviewComments)
+and some other pages such as [Spelling](https://go.dev/wiki/Spelling).
 Some of our idiosyncrasies:
 
 1. We use type switches over BSON types in many places in our code.
-   The order of `case`s follows this order: <https://pkg.go.dev/github.com/FerretDB/FerretDB/internal/types#hdr-Mapping>
-   It may seem random, but it is only pseudo-random and follows BSON spec: <https://bsonspec.org/spec.html>
+   The order of `case`s follows this order: https://pkg.go.dev/github.com/FerretDB/FerretDB/internal/types#hdr-Mapping
+   It may seem random, but it is only pseudo-random and follows BSON spec: https://bsonspec.org/spec.html
 2. We generally pass and return `struct`s by pointers.
    There are some exceptions like `types.Path` that have value semantics, but when in doubt – use pointers.
 3. Code comments:

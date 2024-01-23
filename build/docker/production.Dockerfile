@@ -10,17 +10,9 @@ ARG LABEL_VERSION
 ARG LABEL_COMMIT
 
 
-# build stage
+# prepare stage
 
-FROM ghcr.io/ferretdb/golang:1.21.4-2 AS production-build
-
-ARG TARGETARCH
-ARG TARGETVARIANT
-
-ARG LABEL_VERSION
-ARG LABEL_COMMIT
-RUN test -n "$LABEL_VERSION"
-RUN test -n "$LABEL_COMMIT"
+FROM --platform=$BUILDPLATFORM golang:1.21.6 AS production-prepare
 
 # use a single directory for all Go caches to simpliy RUN --mount commands below
 ENV GOPATH /cache/gopath
@@ -30,37 +22,64 @@ ENV GOMODCACHE /cache/gomodcache
 # remove ",direct"
 ENV GOPROXY https://proxy.golang.org
 
-# do not raise it without providing a separate v1 build
-# because v2+ is problematic for some virtualization platforms and older hardware
-ENV GOAMD64=v1
+COPY go.mod go.sum /src/
 
-# GOARM is set in the script below
+WORKDIR /src
 
-ENV CGO_ENABLED=0
+RUN --mount=type=cache,target=/cache <<EOF
+set -ex
+
+go mod download
+go mod verify
+EOF
+
+
+# build stage
+
+FROM golang:1.21.6 AS production-build
+
+ARG TARGETARCH
+ARG TARGETVARIANT
+
+ARG LABEL_VERSION
+ARG LABEL_COMMIT
+RUN test -n "$LABEL_VERSION"
+RUN test -n "$LABEL_COMMIT"
+
+# use the same directories for Go caches as above
+ENV GOPATH /cache/gopath
+ENV GOCACHE /cache/gocache
+ENV GOMODCACHE /cache/gomodcache
+
+# modules are already downloaded
+ENV GOPROXY off
 
 # see .dockerignore
 WORKDIR /src
 COPY . .
 
+# to add a dependency
+COPY --from=production-prepare /src/go.mod /src/go.sum /src/
+
 RUN --mount=type=cache,target=/cache <<EOF
 set -ex
 
-# copy cached stdlib builds from base image
-flock --verbose /cache/ cp -Rn /root/.cache/go-build/. /cache/gocache
-
-# TODO https://github.com/FerretDB/FerretDB/issues/2170
-# That command could be run only once by using a separate stage;
-# see https://www.docker.com/blog/faster-multi-platform-builds-dockerfile-cross-compilation-guide/
-flock --verbose /cache/ go mod download
-
 git status
+
+# Do not raise it without providing a separate v1 build
+# because v2+ is problematic for some virtualization platforms and older hardware.
+export GOAMD64=v1
 
 # Set GOARM explicitly due to https://github.com/docker-library/golang/issues/494.
 export GOARM=${TARGETVARIANT#v}
 
+export CGO_ENABLED=0
+
+go env
+
 # Do not trim paths to reuse build cache.
 
-# check that stdlib was cached
+# check if stdlib was cached
 go install -v std
 
 go build -v -o=bin/ferretdb ./cmd/ferretdb

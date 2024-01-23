@@ -297,8 +297,9 @@ func TestQueryMaxTimeMSErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "-14245345234123246 value for maxTimeMS is out of range",
+				Message: "-14245345234123246 value for maxTimeMS is out of range " + shareddata.Int32Interval,
 			},
+			altMessage: "-14245345234123246 value for maxTimeMS is out of range",
 		},
 		"BadMaxTimeMSTypeString": {
 			command: bson.D{
@@ -319,8 +320,9 @@ func TestQueryMaxTimeMSErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "9223372036854775807 value for maxTimeMS is out of range",
+				Message: "9223372036854775807 value for maxTimeMS is out of range " + shareddata.Int32Interval,
 			},
+			altMessage: "9223372036854775807 value for maxTimeMS is out of range",
 		},
 		"BadMaxTimeMSMinInt64": {
 			command: bson.D{
@@ -330,8 +332,9 @@ func TestQueryMaxTimeMSErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "-9223372036854775808 value for maxTimeMS is out of range",
+				Message: "-9223372036854775808 value for maxTimeMS is out of range " + shareddata.Int32Interval,
 			},
+			altMessage: "-9223372036854775808 value for maxTimeMS is out of range",
 		},
 		"BadMaxTimeMSNull": {
 			command: bson.D{
@@ -374,8 +377,9 @@ func TestQueryMaxTimeMSErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "-1123123 value for maxTimeMS is out of range",
+				Message: "-1123123 value for maxTimeMS is out of range " + shareddata.Int32Interval,
 			},
+			altMessage: "-1123123 value for maxTimeMS is out of range",
 		},
 	} {
 		name, tc := name, tc
@@ -774,17 +778,17 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 
 				doc := ConvertDocument(t, res)
 				limitPushdown, _ := doc.Get("limitPushdown")
-				assert.Equal(t, tc.limitPushdown.SortPushdownExpected(t), limitPushdown)
+				assert.Equal(t, tc.limitPushdown.PushdownExpected(t), limitPushdown)
 
 				var msg string
 
-				if setup.FilterPushdownDisabled() {
+				if setup.PushdownDisabled() {
 					tc.filterPushdown = noPushdown
 					msg = "Filter pushdown is disabled, but target resulted with pushdown"
 				}
 
 				filterPushdown, _ := ConvertDocument(t, res).Get("filterPushdown")
-				assert.Equal(t, tc.filterPushdown.FilterPushdownExpected(t), filterPushdown, msg)
+				assert.Equal(t, tc.filterPushdown.PushdownExpected(t), filterPushdown, msg)
 			})
 
 			t.Run("Find", func(t *testing.T) {

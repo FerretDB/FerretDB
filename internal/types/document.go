@@ -206,8 +206,6 @@ func (d *Document) Iterator() iterator.Interface[string, any] {
 // If there are duplicate keys in the document, the last value is set in the corresponding field.
 //
 // It returns nil for nil Document.
-//
-// Deprecated: as Document might have duplicate keys, map is not a good representation of it.
 func (d *Document) Map() map[string]any {
 	if d == nil {
 		return nil

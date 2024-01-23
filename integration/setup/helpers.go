@@ -45,6 +45,13 @@ func IsMongoDB(tb testtb.TB) bool {
 	return *targetBackendF == "mongodb"
 }
 
+// IsHana returns true if the current test is running for Hana backend.
+//
+// This function should not be used lightly.
+func IsHana(tb testtb.TB) bool {
+	return *targetBackendF == "ferretdb-hana"
+}
+
 // FailsForFerretDB return testtb.TB that expects test to fail for FerretDB and pass for MongoDB.
 //
 // This function should not be used lightly and always with an issue URL.
@@ -71,6 +78,19 @@ func FailsForSQLite(tb testtb.TB, reason string) testtb.TB {
 	return tb
 }
 
+// FailsForMongoDB return testtb.TB that expects test to fail for MongoDB and pass for FerretDB.
+//
+// This function should not be used lightly and always with an issue URL.
+func FailsForMongoDB(tb testtb.TB, reason string) testtb.TB {
+	tb.Helper()
+
+	if IsMongoDB(tb) {
+		return testfail.Expected(tb, reason)
+	}
+
+	return tb
+}
+
 // SkipForMongoDB skips the current test for MongoDB.
 //
 // This function should not be used lightly and always with an issue URL.
@@ -84,9 +104,9 @@ func SkipForMongoDB(tb testtb.TB, reason string) {
 	}
 }
 
-// FilterPushdownDisabled returns true if FerretDB filter pushdown is disabled.
-func FilterPushdownDisabled() bool {
-	return *disableFilterPushdownF
+// PushdownDisabled returns true if FerretDB pushdown is disabled.
+func PushdownDisabled() bool {
+	return *disablePushdownF
 }
 
 // Dir returns the absolute directory of this package.

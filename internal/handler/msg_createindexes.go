@@ -354,7 +354,11 @@ func processIndex(command string, indexDoc *types.Document) (*backends.IndexInfo
 		case "background":
 			// ignore deprecated options
 
-		case "sparse", "partialFilterExpression", "expireAfterSeconds", "hidden", "storageEngine",
+		case "sparse":
+			// Ignore for now to make Meteor apps work.
+			// TODO https://github.com/FerretDB/FerretDB/issues/2448
+
+		case "partialFilterExpression", "expireAfterSeconds", "hidden", "storageEngine",
 			"weights", "default_language", "language_override", "textIndexVersion", "2dsphereIndexVersion",
 			"bits", "min", "max", "bucketSize", "collation", "wildcardProjection":
 			return nil, handlererrors.NewCommandErrorMsgWithArgument(
@@ -520,7 +524,7 @@ func validateIndexesForCreation(command string, existing, toCreate []backends.In
 		for _, existingIdx := range existing {
 			existingKey := formatIndexKey(existingIdx.Key)
 
-			if newIdx.Name == existingIdx.Name && newKey == existingKey {
+			if (newIdx.Name == existingIdx.Name && newKey == existingKey) || newKey == "_id: 1" {
 				// Fully identical indexes are ignored, no need to attempt to create them.
 				filteredToCreate = slices.Delete(filteredToCreate, i, i+1)
 				break

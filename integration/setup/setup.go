@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.opentelemetry.io/otel"
@@ -59,7 +60,7 @@ var (
 	debugSetupF = flag.Bool("debug-setup", false, "enable debug logs for tests setup")
 	logLevelF   = zap.LevelFlag("log-level", zap.DebugLevel, "log level for tests")
 
-	disableFilterPushdownF = flag.Bool("disable-filter-pushdown", false, "disable filter pushdown")
+	disablePushdownF = flag.Bool("disable-pushdown", false, "disable pushdown")
 )
 
 // Other globals.
@@ -210,6 +211,7 @@ func setupCollection(tb testtb.TB, ctx context.Context, client *mongo.Client, op
 	// drop remnants of the previous failed run
 	_ = collection.Drop(ctx)
 	if ownDatabase {
+		_ = database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}})
 		_ = database.Drop(ctx)
 	}
 
@@ -241,6 +243,9 @@ func setupCollection(tb testtb.TB, ctx context.Context, client *mongo.Client, op
 			require.NoError(tb, err)
 
 			if ownDatabase {
+				err = database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}}).Err()
+				require.NoError(tb, err)
+
 				err = database.Drop(ctx)
 				require.NoError(tb, err)
 			}

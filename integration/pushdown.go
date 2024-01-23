@@ -44,18 +44,13 @@ func init() {
 	must.BeTrue(allPushdown == 0b11111111)
 }
 
-// FilterPushdownExpected returns true if the filter pushdown is expected for currently running backend.
-// It checks if filter pushdown is disabled by flag.
-func (res resultPushdown) FilterPushdownExpected(t testtb.TB) bool {
-	if setup.FilterPushdownDisabled() {
+// PushdownExpected returns true if pushdown is expected for currently running backend.
+// It checks if pushdown is disabled by flag.
+func (res resultPushdown) PushdownExpected(t testtb.TB) bool {
+	if setup.PushdownDisabled() {
 		res = noPushdown
 	}
 
-	return res.pushdownExpected(t)
-}
-
-// SortPushdownExpected returns true if sort pushdown is expected for currently running backend.
-func (res resultPushdown) SortPushdownExpected(t testtb.TB) bool {
 	return res.pushdownExpected(t)
 }
 
@@ -67,6 +62,8 @@ func (res resultPushdown) pushdownExpected(t testtb.TB) bool {
 	case setup.IsSQLite(t):
 		return res&sqlitePushdown == sqlitePushdown
 	case setup.IsMongoDB(t):
+		return false
+	case setup.IsHana(t):
 		return false
 	default:
 		panic("Unknown backend")

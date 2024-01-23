@@ -158,7 +158,7 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 // testUpdateManyCompatTestCase describes update compatibility test case.
 type testUpdateManyCompatTestCase struct { //nolint:vet // used for testing only
 	update     bson.D                   // required if replace is nil
-	filter     bson.D                   // defaults to bson.D{{"_id", id}}
+	filter     bson.D                   // defaults to bson.D{}
 	updateOpts *options.UpdateOptions   // defaults to nil
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
 	providers  []shareddata.Provider    // defaults to shareddata.AllProviders()
@@ -181,19 +181,26 @@ func testUpdateManyCompat(t *testing.T, testCases map[string]testUpdateManyCompa
 
 			t.Parallel()
 
-			providers := shareddata.AllProviders()
-			if tc.providers != nil {
-				providers = tc.providers
+			setupOpts := &setup.SetupCompatOpts{
+				Providers: tc.providers,
 			}
 
-			s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
-				Providers:                providers,
-				AddNonExistentCollection: true,
-			})
+			if tc.providers == nil {
+				setupOpts.Providers = shareddata.AllProviders()
+				setupOpts.AddNonExistentCollection = true
+			}
+
+			s := setup.SetupCompatWithOpts(t, setupOpts)
+
 			ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
 
 			update := tc.update
 			require.NotNil(t, update, "`update` must be set")
+
+			filter := tc.filter
+			if filter == nil {
+				filter = bson.D{}
+			}
 
 			var nonEmptyResults bool
 			for i := range targetCollections {
@@ -202,66 +209,50 @@ func testUpdateManyCompat(t *testing.T, testCases map[string]testUpdateManyCompa
 				t.Run(targetCollection.Name(), func(t *testing.T) {
 					t.Helper()
 
-					allDocs := FindAll(t, ctx, targetCollection)
+					var targetUpdateRes, compatUpdateRes *mongo.UpdateResult
+					var targetErr, compatErr error
 
-					for _, doc := range allDocs {
-						id, _ := ConvertDocument(t, doc).Get("_id")
-						require.NotNil(t, id)
+					targetUpdateRes, targetErr = targetCollection.UpdateMany(ctx, filter, update, tc.updateOpts)
+					compatUpdateRes, compatErr = compatCollection.UpdateMany(ctx, filter, update, tc.updateOpts)
 
-						t.Run(fmt.Sprint(id), func(t *testing.T) {
-							t.Helper()
+					if targetErr != nil {
+						t.Logf("Target error: %v", targetErr)
+						t.Logf("Compat error: %v", compatErr)
 
-							filter := tc.filter
-							if tc.filter == nil {
-								filter = bson.D{{"_id", id}}
-							}
+						// error messages are intentionally not compared
+						AssertMatchesWriteError(t, compatErr, targetErr)
 
-							var targetUpdateRes, compatUpdateRes *mongo.UpdateResult
-							var targetErr, compatErr error
+						return
+					}
+					require.NoError(t, compatErr, "compat error; target returned no error")
 
-							targetUpdateRes, targetErr = targetCollection.UpdateMany(ctx, filter, update, tc.updateOpts)
-							compatUpdateRes, compatErr = compatCollection.UpdateMany(ctx, filter, update, tc.updateOpts)
+					if pointer.Get(targetUpdateRes).ModifiedCount > 0 || pointer.Get(compatUpdateRes).ModifiedCount > 0 {
+						nonEmptyResults = true
+					}
 
-							if targetErr != nil {
-								t.Logf("Target error: %v", targetErr)
-								t.Logf("Compat error: %v", compatErr)
+					assert.Equal(t, compatUpdateRes, targetUpdateRes)
 
-								// error messages are intentionally not compared
-								AssertMatchesWriteError(t, compatErr, targetErr)
+					opts := options.Find().SetSort(bson.D{{"_id", 1}})
+					targetCursor, targetErr := targetCollection.Find(ctx, bson.D{}, opts)
+					compatCursor, compatErr := compatCollection.Find(ctx, bson.D{}, opts)
 
-								return
-							}
-							require.NoError(t, compatErr, "compat error; target returned no error")
+					if targetCursor != nil {
+						defer targetCursor.Close(ctx)
+					}
+					if compatCursor != nil {
+						defer compatCursor.Close(ctx)
+					}
 
-							if pointer.Get(targetUpdateRes).ModifiedCount > 0 || pointer.Get(compatUpdateRes).ModifiedCount > 0 {
-								nonEmptyResults = true
-							}
+					require.NoError(t, targetErr)
+					require.NoError(t, compatErr)
 
-							assert.Equal(t, compatUpdateRes, targetUpdateRes)
+					targetRes := FetchAll(t, ctx, targetCursor)
+					compatRes := FetchAll(t, ctx, compatCursor)
 
-							opts := options.Find().SetSort(bson.D{{"_id", 1}})
-							targetCursor, targetErr := targetCollection.Find(ctx, bson.D{}, opts)
-							compatCursor, compatErr := compatCollection.Find(ctx, bson.D{}, opts)
+					AssertEqualDocumentsSlice(t, compatRes, targetRes)
 
-							if targetCursor != nil {
-								defer targetCursor.Close(ctx)
-							}
-							if compatCursor != nil {
-								defer compatCursor.Close(ctx)
-							}
-
-							require.NoError(t, targetErr)
-							require.NoError(t, compatErr)
-
-							targetRes := FetchAll(t, ctx, targetCursor)
-							compatRes := FetchAll(t, ctx, compatCursor)
-
-							AssertEqualDocumentsSlice(t, compatRes, targetRes)
-
-							if len(targetRes) > 0 || len(compatRes) > 0 {
-								nonEmptyResults = true
-							}
-						})
+					if len(targetRes) > 0 || len(compatRes) > 0 {
+						nonEmptyResults = true
 					}
 				})
 			}
@@ -371,7 +362,14 @@ func testUpdateCommandCompat(t *testing.T, testCases map[string]updateCommandCom
 								nonEmptyResults = true
 							}
 
-							assert.Equal(t, compatUpdateRes, targetUpdateRes)
+							compat := ConvertDocument(t, compatUpdateRes)
+							compat.Remove("$clusterTime")
+							compat.Remove("operationTime")
+							compat.Remove("electionId")
+							compat.Remove("opTime")
+
+							target := ConvertDocument(t, targetUpdateRes)
+							testutil.AssertEqual(t, compat, target)
 
 							if isMulti, ok := multi.(bool); ok && isMulti {
 								// if multi == false, an item updated by compat and target are different.
@@ -606,6 +604,7 @@ func TestUpdateCompat(t *testing.T) {
 		},
 		"ReplaceEmptyDocument": {
 			replace: bson.D{},
+			skip:    "https://github.com/FerretDB/FerretDB/issues/3843",
 		},
 		"ReplaceNonExistentUpsert": {
 			filter:      bson.D{{"non-existent", "no-match"}},
@@ -675,6 +674,7 @@ func TestUpdateCompatMultiFlagCommand(t *testing.T) {
 		"FalseEmptyDocument": {
 			update: bson.D{},
 			multi:  false,
+			skip:   "https://github.com/FerretDB/FerretDB/issues/3843",
 		},
 	}
 

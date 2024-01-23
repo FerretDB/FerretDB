@@ -32,6 +32,7 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 // queryCompatTestCase describes query compatibility test case.
@@ -131,14 +132,14 @@ func testQueryCompatWithProviders(t *testing.T, providers shareddata.Providers, 
 					resultPushdown := tc.resultPushdown
 
 					var msg string
-					if setup.FilterPushdownDisabled() {
+					if setup.PushdownDisabled() {
 						resultPushdown = noPushdown
 						msg = "Filter pushdown is disabled, but target resulted with pushdown"
 					}
 
 					doc := ConvertDocument(t, explainRes)
 					pushdown, _ := doc.Get("filterPushdown")
-					assert.Equal(t, resultPushdown.FilterPushdownExpected(t), pushdown, msg)
+					assert.Equal(t, resultPushdown.PushdownExpected(t), pushdown, msg)
 
 					targetCursor, targetErr := targetCollection.Find(ctx, filter, opts)
 					compatCursor, compatErr := compatCollection.Find(ctx, filter, opts)
@@ -239,38 +240,83 @@ func TestQueryCappedCollectionCompat(t *testing.T) {
 	require.Equal(t, compatInsertRes, targetInsertRes)
 
 	for name, tc := range map[string]struct {
-		filter bson.D
-		sort   bson.D
+		filter          bson.D
+		sort            bson.D
+		skip            string
+		skipForFerretDB bool
 
 		sortPushdown resultPushdown
 	}{
 		"NoSortNoFilter": {
-			sortPushdown: allPushdown,
+			sortPushdown:    allPushdown,
+			skipForFerretDB: true,
 		},
 		"Filter": {
 			filter:       bson.D{{"v", int32(42)}},
 			sortPushdown: allPushdown,
 		},
 		"Sort": {
-			sort:         bson.D{{"_id", int32(-1)}},
-			sortPushdown: pgPushdown,
+			sort:            bson.D{{"_id", int32(-1)}},
+			sortPushdown:    noPushdown,
+			skipForFerretDB: true,
 		},
 		"FilterSort": {
 			filter:       bson.D{{"v", int32(42)}},
 			sort:         bson.D{{"_id", int32(-1)}},
-			sortPushdown: pgPushdown,
+			sortPushdown: noPushdown,
 		},
 		"MultipleSortFields": {
-			sort: bson.D{{"v", 1}, {"_id", int32(-1)}},
-			// multiple sort fields are skipped by handler and no sort pushdown
-			// is set on handler, so record ID pushdown is done.
-			sortPushdown: allPushdown,
+			sort:            bson.D{{"v", 1}, {"_id", int32(-1)}},
+			sortPushdown:    noPushdown,
+			skipForFerretDB: true,
+		},
+
+		"SortNaturalAsc": {
+			sort:            bson.D{{"$natural", int32(1)}},
+			sortPushdown:    allPushdown,
+			skipForFerretDB: true,
+		},
+		"SortNaturalDesc": {
+			sort:            bson.D{{"$natural", int32(-1)}},
+			sortPushdown:    allPushdown,
+			skipForFerretDB: true,
+		},
+		"SortNaturalInt64": {
+			sort:            bson.D{{"$natural", int64(1)}},
+			sortPushdown:    allPushdown,
+			skipForFerretDB: true,
+		},
+
+		"SortNaturalZero": {
+			skip:         "https://github.com/FerretDB/FerretDB/issues/3638",
+			sort:         bson.D{{"$natural", int32(0)}},
+			sortPushdown: noPushdown,
+		},
+		"SortNaturalString": {
+			skip:         "https://github.com/FerretDB/FerretDB/issues/3638",
+			sort:         bson.D{{"$natural", "foo"}},
+			sortPushdown: noPushdown,
+		},
+		"SortNaturalMultipleSorts": {
+			sort:         bson.D{{"$natural", int32(1)}, {"v", int32(1)}},
+			sortPushdown: noPushdown,
 		},
 	} {
 		name, tc := name, tc
 
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
+		t.Run(name, func(tt *testing.T) {
+			tt.Parallel()
+
+			if tc.skip != "" {
+				tt.Skip(tc.skip)
+			}
+
+			var t testtb.TB
+			if tc.skipForFerretDB {
+				t = setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/3842")
+			} else {
+				t = tt
+			}
 
 			explainQuery := bson.D{
 				{"find", targetCollection.Name()},
@@ -284,13 +330,6 @@ func TestQueryCappedCollectionCompat(t *testing.T) {
 				explainQuery = append(explainQuery, bson.E{Key: "sort", Value: tc.sort})
 			}
 
-			var explainRes bson.D
-			require.NoError(t, targetCollection.Database().RunCommand(ctx, bson.D{{"explain", explainQuery}}).Decode(&explainRes))
-
-			doc := ConvertDocument(t, explainRes)
-			sortPushdown, _ := doc.Get("sortPushdown")
-			assert.Equal(t, tc.sortPushdown.SortPushdownExpected(t), sortPushdown)
-
 			findOpts := options.Find()
 			if tc.sort != nil {
 				findOpts.SetSort(tc.sort)
@@ -302,10 +341,17 @@ func TestQueryCappedCollectionCompat(t *testing.T) {
 			}
 
 			targetCursor, targetErr := targetCollection.Find(ctx, filter, findOpts)
-			require.NoError(t, targetErr)
-
 			compatCursor, compatErr := compatCollection.Find(ctx, filter, findOpts)
-			require.NoError(t, compatErr)
+			if targetErr != nil {
+				t.Logf("Target error: %v", targetErr)
+				t.Logf("Compat error: %v", compatErr)
+
+				// error messages are intentionally not compared
+				AssertMatchesCommandError(t, compatErr, targetErr)
+
+				return
+			}
+			require.NoError(t, compatErr, "compat error; target returned no error")
 
 			var targetFindRes []bson.D
 			targetErr = targetCursor.All(ctx, &targetFindRes)
@@ -322,6 +368,13 @@ func TestQueryCappedCollectionCompat(t *testing.T) {
 			for i := range compatFindRes {
 				AssertEqualDocuments(t, compatFindRes[i], targetFindRes[i])
 			}
+
+			var explainRes bson.D
+			require.NoError(t, targetCollection.Database().RunCommand(ctx, bson.D{{"explain", explainQuery}}).Decode(&explainRes))
+
+			doc := ConvertDocument(t, explainRes)
+			sortPushdown, _ := doc.Get("sortPushdown")
+			assert.Equal(t, tc.sortPushdown.PushdownExpected(t), sortPushdown)
 		})
 	}
 }

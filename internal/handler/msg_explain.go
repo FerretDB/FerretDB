@@ -80,12 +80,14 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	qp := backends.ExplainParams{
-		Filter: params.Filter,
-	}
+	qp := new(backends.ExplainParams)
 
 	if params.Aggregate {
-		qp.Filter, params.Sort = aggregations.GetPushdownQuery(params.StagesDocs)
+		params.Filter, params.Sort = aggregations.GetPushdownQuery(params.StagesDocs)
+	}
+
+	if !h.DisablePushdown {
+		qp.Filter = params.Filter
 	}
 
 	if params.Sort, err = common.ValidateSortDocument(params.Sort); err != nil {
@@ -101,24 +103,51 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, err
 	}
 
-	// Skip sorting if there are more than one sort parameters
-	if params.Sort.Len() == 1 {
+	var cList *backends.ListCollectionsResult
+
+	collectionParam := backends.ListCollectionsParams{Name: params.Collection}
+	if cList, err = db.ListCollections(ctx, &collectionParam); err != nil {
+		return nil, err
+	}
+
+	var cInfo backends.CollectionInfo
+
+	if len(cList.Collections) > 0 {
+		cInfo = cList.Collections[0]
+	}
+
+	switch {
+	case h.DisablePushdown:
+		// Pushdown disabled
+	case params.Sort.Len() == 0 && cInfo.Capped():
+		// Pushdown default recordID sorting for capped collections
+		qp.Sort = must.NotFail(types.NewDocument("$natural", int64(1)))
+	case params.Sort.Len() == 1:
+		if params.Sort.Keys()[0] != "$natural" {
+			break
+		}
+
+		if !cInfo.Capped() {
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrNotImplemented,
+				"$natural sort for non-capped collection is not supported.",
+				"explain",
+			)
+		}
+
 		qp.Sort = params.Sort
 	}
 
 	// Limit pushdown is not applied if:
+	//  - pushdown is disabled;
 	//  - `filter` is set, it must fetch all documents to filter them in memory;
 	//  - `sort` is set, it must fetch all documents and sort them in memory;
 	//  - `skip` is non-zero value, skip pushdown is not supported yet.
-	if params.Filter.Len() == 0 && params.Sort.Len() == 0 && params.Skip == 0 {
+	if !h.DisablePushdown && params.Filter.Len() == 0 && params.Sort.Len() == 0 && params.Skip == 0 {
 		qp.Limit = params.Limit
 	}
 
-	if h.DisableFilterPushdown {
-		qp.Filter = nil
-	}
-
-	res, err := coll.Explain(ctx, &qp)
+	res, err := coll.Explain(ctx, qp)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

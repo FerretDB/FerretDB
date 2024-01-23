@@ -15,11 +15,9 @@
 package handler
 
 import (
-	"cmp"
 	"context"
 	"errors"
 	"fmt"
-	"slices"
 	"time"
 
 	"go.uber.org/zap"
@@ -48,7 +46,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
-	username, _ := conninfo.Get(ctx).Auth()
+	username := conninfo.Get(ctx).Username()
 
 	db, err := h.b.Database(params.DB)
 	if err != nil {
@@ -60,7 +58,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, lazyerrors.Error(err)
 	}
 
-	c, err := db.Collection(params.Collection)
+	coll, err := db.Collection(params.Collection)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
 			msg := fmt.Sprintf("Invalid collection name: %s", params.Collection)
@@ -70,160 +68,119 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, lazyerrors.Error(err)
 	}
 
+	var cList *backends.ListCollectionsResult
+	collectionParam := backends.ListCollectionsParams{Name: params.Collection}
+
+	if cList, err = db.ListCollections(ctx, &collectionParam); err != nil {
+		return nil, err
+	}
+
+	var cInfo backends.CollectionInfo
+
+	if len(cList.Collections) > 0 {
+		cInfo = cList.Collections[0]
+	}
+
+	capped := cInfo.Capped()
 	if params.Tailable {
-		var cList *backends.ListCollectionsResult
-
-		if cList, err = db.ListCollections(ctx, nil); err != nil {
-			return nil, err
-		}
-
-		var cInfo backends.CollectionInfo
-
-		// TODO https://github.com/FerretDB/FerretDB/issues/3601
-		//nolint:lll // see issue above
-		if i, found := slices.BinarySearchFunc(cList.Collections, params.Collection, func(e backends.CollectionInfo, t string) int {
-			return cmp.Compare(e.Name, t)
-		}); found {
-			cInfo = cList.Collections[i]
-		}
-
-		if !cInfo.Capped() {
+		if !capped {
 			return nil, handlererrors.NewCommandErrorMsgWithArgument(
 				handlererrors.ErrBadValue,
 				"tailable cursor requested on non capped collection",
 				"tailable",
 			)
 		}
-
-		if params.AwaitData {
-			return nil, common.Unimplemented(document, "awaitData")
-		}
-
-		return nil, common.Unimplemented(document, "tailable")
 	}
 
-	qp := &backends.QueryParams{
-		Comment: params.Comment,
-	}
-
-	if params.Filter != nil {
-		if qp.Comment, err = common.GetOptionalParam(params.Filter, "$comment", qp.Comment); err != nil {
-			return nil, err
-		}
-	}
-
-	if !h.DisableFilterPushdown {
-		qp.Filter = params.Filter
-	}
-
-	if params.Sort, err = common.ValidateSortDocument(params.Sort); err != nil {
-		var pathErr *types.PathError
-		if errors.As(err, &pathErr) && pathErr.Code() == types.ErrPathElementEmpty {
-			return nil, handlererrors.NewCommandErrorMsgWithArgument(
-				handlererrors.ErrPathContainsEmptyElement,
-				"Empty field names in path are not allowed",
-				document.Command(),
-			)
-		}
-
+	qp, err := h.makeFindQueryParams(params, &cInfo)
+	if err != nil {
 		return nil, err
 	}
 
-	// Skip sorting if there are more than one sort parameters
-	if params.Sort.Len() == 1 {
-		qp.Sort = params.Sort
-	}
-
-	// Limit pushdown is not applied if:
-	//  - `filter` is set, it must fetch all documents to filter them in memory;
-	//  - `sort` is set, it must fetch all documents and sort them in memory;
-	//  - `skip` is non-zero value, skip pushdown is not supported yet.
-	if params.Filter.Len() == 0 && params.Sort.Len() == 0 && params.Skip == 0 {
-		qp.Limit = params.Limit
-	}
-
 	cancel := func() {}
+
 	if params.MaxTimeMS != 0 {
-		// It is not clear if maxTimeMS affects only find, or both find and getMore (as the current code does).
-		// TODO https://github.com/FerretDB/FerretDB/issues/2984
-		ctx, cancel = context.WithTimeout(ctx, time.Duration(params.MaxTimeMS)*time.Millisecond)
+		findDone := make(chan struct{})
+		defer close(findDone)
+
+		ctx, cancel = context.WithCancel(ctx)
+
+		go func() {
+			t := time.NewTimer(time.Duration(params.MaxTimeMS) * time.Millisecond)
+			defer t.Stop()
+
+			select {
+			case <-t.C:
+				cancel()
+			case <-findDone:
+			}
+		}()
+	}
+
+	queryRes, err := coll.Query(ctx, qp)
+	if err != nil {
+		return nil, handleMaxTimeMSError(err, params.MaxTimeMS, "find")
 	}
 
 	// closer accumulates all things that should be closed / canceled.
 	closer := iterator.NewMultiCloser(iterator.CloserFunc(cancel))
 
-	queryRes, err := c.Query(ctx, qp)
+	iter, err := h.makeFindIter(queryRes.Iter, closer, params)
 	if err != nil {
-		closer.Close()
-		return nil, lazyerrors.Error(err)
+		return nil, handleMaxTimeMSError(err, params.MaxTimeMS, "find")
 	}
 
-	closer.Add(queryRes.Iter)
+	t := cursor.Normal
 
-	iter := common.FilterIterator(queryRes.Iter, closer, params.Filter)
-
-	iter, err = common.SortIterator(iter, closer, params.Sort)
-	if err != nil {
-		closer.Close()
-
-		var pathErr *types.PathError
-		if errors.As(err, &pathErr) && pathErr.Code() == types.ErrPathElementEmpty {
-			return nil, handlererrors.NewCommandErrorMsgWithArgument(
-				handlererrors.ErrPathContainsEmptyElement,
-				"Empty field names in path are not allowed",
-				document.Command(),
-			)
-		}
-
-		return nil, lazyerrors.Error(err)
+	if params.Tailable {
+		t = cursor.Tailable
 	}
 
-	iter = common.SkipIterator(iter, closer, params.Skip)
-
-	iter = common.LimitIterator(iter, closer, params.Limit)
-
-	iter, err = common.ProjectionIterator(iter, closer, params.Projection, params.Filter)
-	if err != nil {
-		closer.Close()
-		return nil, lazyerrors.Error(err)
+	if params.AwaitData {
+		t = cursor.TailableAwait
 	}
 
-	// Combine iterators chain and closer into a cursor to pass around.
-	// The context will be canceled when client disconnects or after maxTimeMS.
-	cursor := h.cursors.NewCursor(ctx, &cursor.NewParams{
-		Iter:         iterator.WithClose(iter, closer.Close),
+	c := h.cursors.NewCursor(ctx, iter, &cursor.NewParams{
+		Data: &findCursorData{
+			coll:       coll,
+			qp:         qp,
+			findParams: params,
+		},
 		DB:           params.DB,
 		Collection:   params.Collection,
 		Username:     username,
+		Type:         t,
 		ShowRecordID: params.ShowRecordId,
 	})
 
-	cursorID := cursor.ID
+	cursorID := c.ID
 
-	firstBatchDocs, err := iterator.ConsumeValuesN(cursor, int(params.BatchSize))
+	docs, err := iterator.ConsumeValuesN(c, int(params.BatchSize))
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, handleMaxTimeMSError(err, params.MaxTimeMS, "find")
 	}
 
 	h.L.Debug(
-		"Got first batch", zap.Int64("cursor_id", cursorID),
-		zap.Int("count", len(firstBatchDocs)), zap.Int64("batch_size", params.BatchSize),
+		"Got first batch", zap.Int64("cursor_id", cursorID), zap.Stringer("type", c.Type),
+		zap.Int("count", len(docs)), zap.Int64("batch_size", params.BatchSize),
 		zap.Bool("single_batch", params.SingleBatch),
 	)
 
-	firstBatch := types.MakeArray(len(firstBatchDocs))
-	for _, doc := range firstBatchDocs {
-		firstBatch.Append(doc)
-	}
+	if params.SingleBatch || len(docs) < int(params.BatchSize) {
+		c.Close()
 
-	if params.SingleBatch || firstBatch.Len() < int(params.BatchSize) {
-		// support tailable cursors
-		// TODO https://github.com/FerretDB/FerretDB/issues/2283
+		// It is not entirely clear if we should do that; more tests are needed.
+		if c.Type != cursor.Normal {
+			h.cursors.CloseAndRemove(c)
+		}
 
 		// let the client know that there are no more results
 		cursorID = 0
+	}
 
-		cursor.Close()
+	firstBatch := types.MakeArray(len(docs))
+	for _, doc := range docs {
+		firstBatch.Append(doc)
 	}
 
 	var reply wire.OpMsg
@@ -239,4 +196,133 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}))
 
 	return &reply, nil
+}
+
+type findCursorData struct {
+	coll       backends.Collection
+	qp         *backends.QueryParams
+	findParams *common.FindParams
+}
+
+// makeFindQueryParams creates the backend's query parameters for the find command.
+func (h *Handler) makeFindQueryParams(params *common.FindParams, cInfo *backends.CollectionInfo) (*backends.QueryParams, error) {
+	qp := &backends.QueryParams{
+		Comment: params.Comment,
+	}
+
+	var err error
+	if params.Filter != nil {
+		if qp.Comment, err = common.GetOptionalParam(params.Filter, "$comment", qp.Comment); err != nil {
+			return nil, err
+		}
+	}
+
+	if !h.DisablePushdown {
+		qp.Filter = params.Filter
+	}
+
+	if params.Sort, err = common.ValidateSortDocument(params.Sort); err != nil {
+		var pathErr *types.PathError
+		if errors.As(err, &pathErr) && pathErr.Code() == types.ErrPathElementEmpty {
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrPathContainsEmptyElement,
+				"Empty field names in path are not allowed",
+				"find",
+			)
+		}
+
+		return nil, err
+	}
+
+	switch {
+	case h.DisablePushdown:
+		// Pushdown disabled
+	case params.Sort.Len() == 0 && cInfo.Capped():
+		// Pushdown default recordID sorting for capped collections
+		qp.Sort = must.NotFail(types.NewDocument("$natural", int64(1)))
+	case params.Sort.Len() == 1:
+		if params.Sort.Keys()[0] != "$natural" {
+			break
+		}
+
+		if !cInfo.Capped() {
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrNotImplemented,
+				"$natural sort for non-capped collection is not supported.",
+				"find",
+			)
+		}
+
+		qp.Sort = params.Sort
+	}
+
+	// Limit pushdown is not applied if:
+	//  - pushdown is disabled;
+	//  - `filter` is set, it must fetch all documents to filter them in memory;
+	//  - `sort` is set, it must fetch all documents and sort them in memory;
+	//  - `skip` is non-zero value, skip pushdown is not supported yet.
+	if !h.DisablePushdown && params.Filter.Len() == 0 && params.Sort.Len() == 0 && params.Skip == 0 {
+		qp.Limit = params.Limit
+	}
+
+	h.L.Sugar().Debugf("Converted %+v for %+v to %+v.", params, cInfo, qp)
+
+	return qp, nil
+}
+
+// makeFindIter creates an iterator chain for the find command.
+//
+// Iter is passed from the backend's query.
+// All iterators, including the initial one, are added to the passed closer,
+// and the returned iterator is wrapped with it.
+//
+//nolint:lll // for readability
+func (h *Handler) makeFindIter(iter types.DocumentsIterator, closer *iterator.MultiCloser, params *common.FindParams) (types.DocumentsIterator, error) {
+	closer.Add(iter)
+
+	iter = common.FilterIterator(iter, closer, params.Filter)
+
+	iter, err := common.SortIterator(iter, closer, params.Sort)
+	if err != nil {
+		closer.Close()
+
+		var pathErr *types.PathError
+		if errors.As(err, &pathErr) && pathErr.Code() == types.ErrPathElementEmpty {
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrPathContainsEmptyElement,
+				"Empty field names in path are not allowed",
+				"find",
+			)
+		}
+
+		return nil, lazyerrors.Error(err)
+	}
+
+	iter = common.SkipIterator(iter, closer, params.Skip)
+
+	iter = common.LimitIterator(iter, closer, params.Limit)
+
+	if iter, err = common.ProjectionIterator(iter, closer, params.Projection, params.Filter); err != nil {
+		closer.Close()
+		return nil, lazyerrors.Error(err)
+	}
+
+	return iterator.WithClose(iter, closer.Close), nil
+}
+
+// handleMaxTimeMSError returns the MaxTimeMSExpired error if provided error is a result of context cancellation.
+// The MaxTimeMSExpired error won't be returned if maxTimeMS wasn't set.
+func handleMaxTimeMSError(err error, maxTimeMS int64, cmd string) error {
+	switch {
+	case err == nil:
+		return nil
+	case maxTimeMS != 0 && errors.Is(err, context.Canceled):
+		return handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrMaxTimeMSExpired,
+			"Executor error during "+cmd+" command :: caused by :: operation exceeded time limit",
+			cmd,
+		)
+	default:
+		return lazyerrors.Error(err)
+	}
 }

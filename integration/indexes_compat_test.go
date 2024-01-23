@@ -125,7 +125,6 @@ func TestCreateIndexesCompat(tt *testing.T) {
 					},
 				},
 			},
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3418",
 		},
 		"SameKey": {
 			models: []mongo.IndexModel{
@@ -399,12 +398,17 @@ func TestDropIndexesCompat(t *testing.T) {
 						compatRes, compatErr = compatCollection.Indexes().DropOne(ctx, tc.dropIndexName)
 					}
 
-					require.Equal(t, compatErr, targetErr)
-					require.Equal(t, compatRes, targetRes)
+					if targetErr != nil {
+						t.Logf("Target error: %v", targetErr)
+						t.Logf("Compat error: %v", compatErr)
 
-					if targetErr == nil {
+						AssertMatchesCommandError(t, compatErr, targetErr)
+					} else {
 						nonEmptyResults = true
+						require.NoError(t, compatErr, "compat error; target returned no error")
 					}
+
+					require.Equal(t, compatRes, targetRes)
 
 					// List indexes to see they are identical after drop.
 					targetCursor, targetErr := targetCollection.Indexes().List(ctx)
@@ -599,6 +603,15 @@ func TestCreateIndexesCompatDuplicates(t *testing.T) {
 			},
 			duplicates: []mongo.IndexModel{
 				{Options: &options.IndexOptions{Name: pointer.To("index_not_foo")}, Keys: bson.D{{"foo", 1}}},
+			},
+			resultType: emptyResult,
+		},
+		"DuplicateByPrimaryKey": {
+			models: []mongo.IndexModel{
+				{Options: &options.IndexOptions{}, Keys: bson.D{{"_id", 1}}},
+			},
+			duplicates: []mongo.IndexModel{
+				{Options: &options.IndexOptions{Name: pointer.To("index_foo")}, Keys: bson.D{{"_id", 1}}},
 			},
 			resultType: emptyResult,
 		},
