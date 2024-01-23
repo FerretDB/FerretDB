@@ -35,8 +35,6 @@ func TestCreateUser(t *testing.T) {
 
 	ctx, collection := setup.Setup(t)
 	db := collection.Database()
-	client := db.Client()
-	users := client.Database("admin").Collection("system.users")
 
 	testCases := map[string]struct { //nolint:vet // for readability
 		payload    bson.D
@@ -54,6 +52,31 @@ func TestCreateUser(t *testing.T) {
 				Code:    2,
 				Name:    "BadValue",
 				Message: "User document needs 'user' field to be non-empty",
+			},
+		},
+		"EmptyPassword": {
+			payload: bson.D{
+				{"createUser", "empty_password_user"},
+				{"roles", bson.A{}},
+				{"pwd", ""},
+			},
+			err: &mongo.CommandError{
+				Code:    50687,
+				Name:    "Location50687",
+				Message: "Error preflighting UTF-8 conversion: U_STRING_NOT_TERMINATED_WARNING",
+			},
+			altMessage: "Password cannot be empty",
+		},
+		"BadPasswordType": {
+			payload: bson.D{
+				{"createUser", "empty_password_user"},
+				{"roles", bson.A{}},
+				{"pwd", true},
+			},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'createUser.pwd' is the wrong type 'bool', expected type 'string'",
 			},
 		},
 		"AlreadyExists": {
@@ -173,24 +196,27 @@ func TestCreateUser(t *testing.T) {
 			expected := integration.ConvertDocument(t, tc.expected)
 			testutil.AssertEqual(t, expected, actual)
 
-			// All users are created in the "admin" database.
+			username := must.NotFail(payload.Get("createUser"))
 
-			var rec bson.D
-			err = users.FindOne(ctx, bson.D{{"user", must.NotFail(payload.Get("createUser"))}}).Decode(&rec)
-			require.NoError(t, err, "user not found")
+			var usersInfo bson.D
+			err = db.RunCommand(ctx, bson.D{{"usersInfo", username}, {"showCredentials", true}}).Decode(&usersInfo)
+			require.NoError(t, err)
 
-			actualRecorded := integration.ConvertDocument(t, rec)
+			actualRecorded := integration.ConvertDocument(t, usersInfo)
+			users := must.NotFail(actualRecorded.Get("users")).(*types.Array)
+			user := must.NotFail(users.Get(0)).(*types.Document)
 
-			uuid := must.NotFail(actualRecorded.Get("userId")).(types.Binary)
+			uuid := must.NotFail(user.Get("userId")).(types.Binary)
 			assert.Equal(t, uuid.Subtype.String(), types.BinaryUUID.String(), "uuid subtype")
 			assert.Equal(t, 16, len(uuid.B), "UUID length")
-			actualRecorded.Remove("userId")
+			user.Remove("userId")
 
 			if payload.Has("mechanisms") {
-				assertPlainCredentials(t, "PLAIN", must.NotFail(actualRecorded.Get("credentials")).(*types.Document))
+				assertPlainCredentials(t, "PLAIN", must.NotFail(user.Get("credentials")).(*types.Document))
 			}
 
-			actualRecorded.Remove("credentials")
+			user.Remove("mechanisms")
+			user.Remove("credentials")
 
 			expectedRec := integration.ConvertDocument(t, bson.D{
 				{"_id", fmt.Sprintf("%s.%s", db.Name(), must.NotFail(payload.Get("createUser")))},
@@ -199,7 +225,7 @@ func TestCreateUser(t *testing.T) {
 				{"roles", bson.A{}},
 			})
 
-			testutil.AssertEqual(t, expectedRec, actualRecorded)
+			testutil.AssertEqual(t, expectedRec, user)
 		})
 	}
 }

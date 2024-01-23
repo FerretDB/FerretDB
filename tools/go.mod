@@ -13,9 +13,9 @@ require (
 	golang.org/x/crypto v0.18.0 // indirect; always use @latest
 	golang.org/x/oauth2 v0.16.0
 	golang.org/x/perf v0.0.0-20240108191414-4ad5199aa6b5
-	golang.org/x/pkgsite v0.0.0-20240108210435-8b25f917fd1e
-	golang.org/x/tools v0.16.1
-	golang.org/x/vuln v1.0.1
+	golang.org/x/pkgsite v0.0.0-20240117231634-9bc5594cdf34
+	golang.org/x/tools v0.17.0
+	golang.org/x/vuln v1.0.2
 	mvdan.cc/gofumpt v0.5.0
 )
 
@@ -100,7 +100,7 @@ require (
 	golang.org/x/exp v0.0.0-20230212135524-a684f29349b6 // indirect
 	golang.org/x/mod v0.14.0 // indirect
 	golang.org/x/net v0.20.0 // indirect
-	golang.org/x/sync v0.5.0 // indirect
+	golang.org/x/sync v0.6.0 // indirect
 	golang.org/x/sys v0.16.0 // indirect
 	golang.org/x/term v0.16.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
