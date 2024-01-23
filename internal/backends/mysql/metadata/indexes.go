@@ -92,7 +92,6 @@ func (s *Indexes) unmarshal(a *types.Array) error {
 
 	for {
 		i, v, err := iter.Next()
-
 		if errors.Is(err, iterator.ErrIteratorDone) {
 			break
 		}
@@ -115,10 +114,10 @@ func (s *Indexes) unmarshal(a *types.Array) error {
 				descending = true
 			}
 
-			key = append(key, IndexKeyPair{
+			key[j] = IndexKeyPair{
 				Field:      f,
 				Descending: descending,
-			})
+			}
 		}
 
 		v, _ = index.Get("unique")
