@@ -102,21 +102,21 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	switch {
 	case nameOnly:
-		must.NoError(reply.SetSections(wire.OpMsgSection{
-			Documents: []*types.Document{must.NotFail(types.NewDocument(
+		must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+			must.NotFail(types.NewDocument(
 				"databases", databases,
 				"ok", float64(1),
-			))},
-		}))
+			)),
+		)))
 	default:
-		must.NoError(reply.SetSections(wire.OpMsgSection{
-			Documents: []*types.Document{must.NotFail(types.NewDocument(
+		must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+			must.NotFail(types.NewDocument(
 				"databases", databases,
 				"totalSize", totalSize,
 				"totalSizeMb", totalSize/1024/1024,
 				"ok", float64(1),
-			))},
-		}))
+			)),
+		)))
 	}
 
 	return &reply, nil
