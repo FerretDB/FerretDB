@@ -25,10 +25,13 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 func TestAggregateAddFieldsErrors(t *testing.T) {
 	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
 
 	for name, tc := range map[string]struct { //nolint:vet // used for test only
 		pipeline bson.A // required, aggregation pipeline stages
@@ -70,8 +73,6 @@ func TestAggregateAddFieldsErrors(t *testing.T) {
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
 
-			ctx, collection := setup.Setup(t)
-
 			_, err := collection.Aggregate(ctx, tc.pipeline)
 
 			if tc.altMessage != "" {
@@ -86,6 +87,8 @@ func TestAggregateAddFieldsErrors(t *testing.T) {
 
 func TestAggregateGroupErrors(t *testing.T) {
 	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
 
 	for name, tc := range map[string]struct {
 		pipeline bson.A // required, aggregation pipeline stages
@@ -281,8 +284,6 @@ func TestAggregateGroupErrors(t *testing.T) {
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
 
-			ctx, collection := setup.Setup(t)
-
 			res, err := collection.Aggregate(ctx, tc.pipeline)
 
 			assert.Nil(t, res)
@@ -293,6 +294,8 @@ func TestAggregateGroupErrors(t *testing.T) {
 
 func TestAggregateProjectErrors(t *testing.T) {
 	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
 
 	for name, tc := range map[string]struct {
 		pipeline bson.A // required, aggregation pipeline stages
@@ -602,16 +605,65 @@ func TestAggregateProjectErrors(t *testing.T) {
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
 
-			ctx, collection := setup.Setup(t)
-
 			_, err := collection.Aggregate(ctx, tc.pipeline)
 			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 		})
 	}
 }
 
+func TestAggregateProject(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t, shareddata.Scalars)
+
+	for name, tc := range map[string]struct { //nolint:vet // used for testing only
+		pipeline bson.A // required, aggregation pipeline stages
+
+		res  []bson.D // required, expected response
+		skip string   // optional, skip test with a specified reason
+	}{
+		"IDFalseValueTrue": {
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"_id", "int32"}}}},
+				bson.D{{"$project", bson.D{{"_id", false}, {"v", true}}}},
+			},
+			res: []bson.D{{{"v", int32(42)}}},
+		},
+		"ValueTrueIDFalse": {
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"_id", "int32"}}}},
+				bson.D{{"$project", bson.D{{"v", true}, {"_id", false}}}},
+			},
+			res: []bson.D{{{"v", int32(42)}}},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			t.Parallel()
+
+			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
+			require.NotNil(t, tc.res, "res must not be nil")
+
+			cursor, err := collection.Aggregate(ctx, tc.pipeline)
+			require.NoError(t, err)
+			defer cursor.Close(ctx)
+
+			var res []bson.D
+			err = cursor.All(ctx, &res)
+			require.NoError(t, err)
+			require.Equal(t, tc.res, res)
+		})
+	}
+}
+
 func TestAggregateSetErrors(t *testing.T) {
 	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
 
 	for name, tc := range map[string]struct { //nolint:vet // used for test only
 		pipeline bson.A // required, aggregation pipeline stages
@@ -653,8 +705,6 @@ func TestAggregateSetErrors(t *testing.T) {
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
 
-			ctx, collection := setup.Setup(t)
-
 			_, err := collection.Aggregate(ctx, tc.pipeline)
 			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 		})
@@ -663,6 +713,8 @@ func TestAggregateSetErrors(t *testing.T) {
 
 func TestAggregateUnsetErrors(t *testing.T) {
 	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
 
 	for name, tc := range map[string]struct { //nolint:vet // used for test only
 		pipeline bson.A // required, aggregation pipeline stages
@@ -854,8 +906,6 @@ func TestAggregateUnsetErrors(t *testing.T) {
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
 
-			ctx, collection := setup.Setup(t)
-
 			_, err := collection.Aggregate(ctx, tc.pipeline)
 			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 		})
@@ -864,6 +914,8 @@ func TestAggregateUnsetErrors(t *testing.T) {
 
 func TestAggregateSortErrors(t *testing.T) {
 	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
 
 	for name, tc := range map[string]struct { //nolint:vet // used for test only
 		pipeline bson.A // required, aggregation pipeline stages
@@ -893,8 +945,6 @@ func TestAggregateSortErrors(t *testing.T) {
 
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
-
-			ctx, collection := setup.Setup(t)
 
 			_, err := collection.Aggregate(ctx, tc.pipeline)
 			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
@@ -936,8 +986,9 @@ func TestAggregateCommandMaxTimeMSErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "9223372036854775807 value for maxTimeMS is out of range",
+				Message: "9223372036854775807 value for maxTimeMS is out of range " + shareddata.Int32Interval,
 			},
+			altMessage: "9223372036854775807 value for maxTimeMS is out of range",
 		},
 		"Double": {
 			command: bson.D{
@@ -976,7 +1027,7 @@ func TestAggregateCommandMaxTimeMSErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "9223372036854775807 value for maxTimeMS is out of range",
+				Message: "9223372036854775807 value for maxTimeMS is out of range " + shareddata.Int32Interval,
 			},
 			altMessage: "1.797693134862316e+308 value for maxTimeMS is out of range",
 		},
@@ -1017,8 +1068,9 @@ func TestAggregateCommandMaxTimeMSErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "2147483648 value for maxTimeMS is out of range",
+				Message: "2147483648 value for maxTimeMS is out of range " + shareddata.Int32Interval,
 			},
+			altMessage: "2147483648 value for maxTimeMS is out of range",
 		},
 		"Null": {
 			command: bson.D{
@@ -1100,7 +1152,7 @@ func TestAggregateCommandCursor(t *testing.T) {
 
 	// the number of documents is set above the default batchSize of 101
 	// for testing unset batchSize returning default batchSize
-	arr, _ := generateDocuments(0, 110)
+	arr, _ := GenerateDocuments(0, 110)
 	_, err := collection.InsertMany(ctx, arr)
 	require.NoError(t, err)
 

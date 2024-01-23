@@ -11,6 +11,14 @@ linters-settings:
       - ^lazyerrors\.Errorf$
     use-builtin-exclusions: true
     ignore-test: false
+  errcheck:
+    check-type-assertions: false
+    check-blank: false
+    disable-default-exclusions: false
+    exclude-functions:
+      - (*database/sql.Rows).Close
+      - (*github.com/FerretDB/FerretDB/internal/util/fsql.Rows).Close
+      - (*go.mongodb.org/mongo-driver/mongo.Cursor).Close
   errorlint:
     # see caveats at https://github.com/polyfloyd/go-errorlint#fmterrorf-wrapping-verb
     errorf: false
@@ -52,6 +60,7 @@ linters:
     - depguard
     - exhaustive
     - gci
+    - gochecksumtype
     - goconst
     - godot
     - godox
@@ -78,7 +87,6 @@ linters:
     - dogsled
     - dupl
     - durationcheck
-    - errcheck
     - errchkjson
     - errname
     - execinquery
@@ -102,6 +110,7 @@ linters:
     - gosec
     - grouper
     - ifshort
+    - inamedparam
     - ireturn
     - maintidx
     - makezero
@@ -113,14 +122,18 @@ linters:
     - nonamedreturns
     - nosprintfhostport
     - paralleltest
+    - perfsprint
     - prealloc
     - predeclared
     - promlinter
+    - protogetter
     - rowserrcheck
+    - sloglint
     - sqlclosecheck
     - stylecheck
     - tagliatelle
     - tenv
+    - testifylint
     - thelper
     - tparallel
     - typecheck
@@ -130,6 +143,7 @@ linters:
     - varnamelen
     - wastedassign
     - wrapcheck
+    - zerologlint
 
     # deprecated
     - golint

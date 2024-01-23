@@ -40,7 +40,7 @@ const (
 //
 //nolint:vet // for readability
 type Pool struct {
-	baseURI *url.URL
+	baseURI url.URL
 	l       *zap.Logger
 	sp      *state.Provider
 
@@ -62,7 +62,7 @@ func New(u string, l *zap.Logger, sp *state.Provider) (*Pool, error) {
 	baseURI.RawQuery = values.Encode()
 
 	p := &Pool{
-		baseURI: baseURI,
+		baseURI: *baseURI,
 		l:       l,
 		sp:      sp,
 		pools:   map[string]*pgxpool.Pool{},
@@ -94,7 +94,7 @@ func (p *Pool) Get(username, password string) (*pgxpool.Pool, error) {
 
 	// replace authentication info only if it is passed
 	uri := p.baseURI
-	if username != "" { // TODO `&& password != ""`  ?
+	if username != "" {
 		uri.User = url.UserPassword(username, password)
 	}
 
@@ -132,6 +132,22 @@ func (p *Pool) Get(username, password string) (*pgxpool.Pool, error) {
 	p.pools[u] = res
 
 	return res, nil
+}
+
+// GetAny returns a random open pool of connections to PostgreSQL, or nil if none are available.
+func (p *Pool) GetAny() *pgxpool.Pool {
+	p.rw.RLock()
+	defer p.rw.RUnlock()
+
+	for _, pool := range p.pools {
+		p.l.Debug("Pool.GetAny: returning existing pool")
+
+		return pool
+	}
+
+	p.l.Debug("Pool.GetAny: no existing pools")
+
+	return nil
 }
 
 // Describe implements prometheus.Collector.

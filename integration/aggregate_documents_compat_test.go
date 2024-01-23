@@ -29,6 +29,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 // aggregateStagesCompatTestCase describes aggregation stages compatibility test case.
@@ -36,10 +37,9 @@ type aggregateStagesCompatTestCase struct {
 	pipeline bson.A         // required, unspecified $sort appends bson.D{{"$sort", bson.D{{"_id", 1}}}} for non empty pipeline.
 	maxTime  *time.Duration // optional, leave nil for unset maxTime
 
-	resultType           compatTestCaseResultType // defaults to nonEmptyResult
-	resultPushdown       bool                     // defaults to false
-	resultPushdownSQLite bool                     // TODO https://github.com/FerretDB/FerretDB/issues/3235
-	skip                 string                   // skip test for all handlers, must have issue number mentioned
+	resultType     compatTestCaseResultType // defaults to nonEmptyResult
+	resultPushdown resultPushdown           // defaults to noPushdown
+	skip           string                   // always skip this test case, must have issue number mentioned
 }
 
 // testAggregateStagesCompat tests aggregation stages compatibility test cases with all providers.
@@ -105,29 +105,6 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 				t.Run(targetCollection.Name(), func(t *testing.T) {
 					t.Helper()
 
-					explainCommand := bson.D{{"explain", bson.D{
-						{"aggregate", targetCollection.Name()},
-						{"pipeline", pipeline},
-					}}}
-					var explainRes bson.D
-					require.NoError(t, targetCollection.Database().RunCommand(ctx, explainCommand).Decode(&explainRes))
-
-					resultPushdown := tc.resultPushdown
-					if setup.IsSQLite(t) {
-						// TODO https://github.com/FerretDB/FerretDB/issues/3235
-						resultPushdown = tc.resultPushdownSQLite
-					}
-
-					var msg string
-					if setup.IsPushdownDisabled() {
-						resultPushdown = false
-						msg = "Query pushdown is disabled, but target resulted with pushdown"
-					}
-
-					doc := ConvertDocument(t, explainRes)
-					pushdown, _ := doc.Get("pushdown")
-					assert.Equal(t, resultPushdown, pushdown, msg)
-
 					targetCursor, targetErr := targetCollection.Aggregate(ctx, pipeline, opts)
 					compatCursor, compatErr := compatCollection.Aggregate(ctx, pipeline, opts)
 
@@ -157,6 +134,26 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 					if len(targetRes) > 0 || len(compatRes) > 0 {
 						nonEmptyResults = true
 					}
+
+					explainCommand := bson.D{{"explain", bson.D{
+						{"aggregate", targetCollection.Name()},
+						{"pipeline", pipeline},
+					}}}
+					var explainRes bson.D
+					require.NoError(t, targetCollection.Database().RunCommand(ctx, explainCommand).Decode(&explainRes))
+
+					resPushdown := tc.resultPushdown
+
+					var msg string
+					// TODO https://github.com/FerretDB/FerretDB/issues/3386
+					if setup.PushdownDisabled() {
+						resPushdown = noPushdown
+						msg = "Fitler pushdown is disabled, but target resulted with pushdown"
+					}
+
+					doc := ConvertDocument(t, explainRes)
+					pushdown, _ := doc.Get("filterPushdown")
+					assert.Equal(t, resPushdown.PushdownExpected(t), pushdown, msg)
 				})
 			}
 
@@ -177,7 +174,7 @@ type aggregateCommandCompatTestCase struct {
 	command    bson.D                   // required
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
 
-	skip string // skip test for all handlers, must have issue number mentioned
+	skip string // always skip this test case, must have issue number mentioned
 }
 
 // testAggregateCommandCompat tests aggregate pipeline compatibility test cases using one collection.
@@ -186,7 +183,6 @@ func testAggregateCommandCompat(t *testing.T, testCases map[string]aggregateComm
 	t.Helper()
 
 	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
-		// Use a provider that works for all handlers.
 		Providers: []shareddata.Provider{shareddata.Int32s},
 	})
 
@@ -232,7 +228,13 @@ func testAggregateCommandCompat(t *testing.T, testCases map[string]aggregateComm
 					return
 				}
 				require.NoError(t, compatErr, "compat error; target returned no error")
-				AssertEqualDocuments(t, compatRes, targetRes)
+
+				compat := ConvertDocument(t, compatRes)
+				compat.Remove("$clusterTime")
+				compat.Remove("operationTime")
+
+				target := ConvertDocument(t, targetRes)
+				testutil.AssertEqual(t, compat, target)
 
 				if len(targetRes) > 0 || len(compatRes) > 0 {
 					nonEmptyResults = true
@@ -334,7 +336,7 @@ func TestAggregateCompatStages(t *testing.T) {
 				bson.D{{"$count", "v"}},
 				bson.D{{"$sort", bson.D{{"_id", 1}}}},
 			},
-			resultPushdown: true,
+			resultPushdown: pgPushdown,
 		},
 		"CountAndMatch": {
 			pipeline: bson.A{
@@ -834,9 +836,9 @@ func TestAggregateCompatGroupExpressionDottedFields(t *testing.T) {
 func TestAggregateCompatGroupExpressionDottedFieldsDocs(t *testing.T) {
 	t.Parallel()
 
-	// TODO Merge the current function with TestAggregateCompatGroupExpressionDottedFields
+	// Merge the current function with TestAggregateCompatGroupExpressionDottedFields
 	// and use all providers when $sort problem is fixed:
-	// https://github.com/FerretDB/FerretDB/issues/2276
+	// TODO https://github.com/FerretDB/FerretDB/issues/2276
 
 	providers := []shareddata.Provider{
 		shareddata.DocumentsDeeplyNested,
@@ -995,7 +997,7 @@ func TestAggregateCompatLimit(t *testing.T) {
 				bson.D{{"$match", bson.D{{"v", "foo"}}}},
 				bson.D{{"$limit", 1}},
 			},
-			resultPushdown: true, // $sort and $match are first two stages
+			resultPushdown: pgPushdown, // $sort and $match are first two stages
 		},
 		"BeforeMatch": {
 			pipeline: bson.A{
@@ -1010,7 +1012,7 @@ func TestAggregateCompatLimit(t *testing.T) {
 				bson.D{{"$match", bson.D{{"v", "foo"}}}},
 				bson.D{{"$limit", 100}},
 			},
-			resultPushdown: true,
+			resultPushdown: pgPushdown,
 		},
 		"NoSortBeforeMatch": {
 			pipeline: bson.A{
@@ -1033,8 +1035,8 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 		Remove(shareddata.ArrayInt32s).
 		Remove(shareddata.Mixed).
 		Remove(shareddata.ArrayAndDocuments).
-		// TODO: handle $sum of doubles near max precision.
-		// https://github.com/FerretDB/FerretDB/issues/2300
+		// Handle $sum of doubles near max precision.
+		// TODO https://github.com/FerretDB/FerretDB/issues/2300
 		Remove(shareddata.Doubles).
 		// TODO https://github.com/FerretDB/FerretDB/issues/2616
 		Remove(shareddata.ArrayDocuments)
@@ -1255,19 +1257,19 @@ func TestAggregateCompatMatch(t *testing.T) {
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"ID": {
 			pipeline:       bson.A{bson.D{{"$match", bson.D{{"_id", "string"}}}}},
-			resultPushdown: true,
+			resultPushdown: allPushdown,
 		},
 		"Int": {
 			pipeline: bson.A{
 				bson.D{{"$match", bson.D{{"v", 42}}}},
 			},
-			resultPushdown: true,
+			resultPushdown: pgPushdown,
 		},
 		"String": {
 			pipeline: bson.A{
 				bson.D{{"$match", bson.D{{"v", "foo"}}}},
 			},
-			resultPushdown: true,
+			resultPushdown: pgPushdown,
 		},
 		"Document": {
 			pipeline: bson.A{bson.D{{"$match", bson.D{{"v", bson.D{{"foo", int32(42)}}}}}}},
@@ -1301,7 +1303,6 @@ func TestAggregateCompatMatch(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$match", bson.D{{"$expr", bson.D{{"$sum", "$v"}}}}}},
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/414",
 		},
 	}
 
@@ -1577,7 +1578,7 @@ func TestAggregateCompatSkip(t *testing.T) {
 				bson.D{{"$match", bson.D{{"v", "foo"}}}},
 				bson.D{{"$skip", int32(1)}},
 			},
-			resultPushdown: true, // $match after $sort can be pushed down
+			resultPushdown: pgPushdown, // $match after $sort can be pushed down
 		},
 		"BeforeMatch": {
 			pipeline: bson.A{

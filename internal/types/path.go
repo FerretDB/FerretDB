@@ -17,10 +17,9 @@ package types
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
-
-	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -240,10 +239,9 @@ func getByPath[T CompositeTypeInterface](comp T, path Path) (any, error) {
 	for _, p := range path.Slice() {
 		switch s := next.(type) {
 		case *Document:
-			var err error
-			next, err = s.Get(p)
-			if err != nil {
-				return nil, newPathError(ErrPathKeyNotFound, fmt.Errorf("types.getByPath: %w", err))
+			next, _ = s.Get(p)
+			if next == nil {
+				return nil, newPathError(ErrPathKeyNotFound, fmt.Errorf("types.getByPath: key not found: %q", p))
 			}
 
 		case *Array:

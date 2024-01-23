@@ -26,6 +26,9 @@ var databaseNameRe = regexp.MustCompile("^[a-zA-Z0-9_-]{1,63}$")
 // collectionNameRe validates collection names.
 var collectionNameRe = regexp.MustCompile("^[^\\.$\x00][^$\x00]{0,234}$")
 
+// ReservedPrefix for names: databases, collections, schemas, tables, indexes, columns, etc.
+const ReservedPrefix = "_ferretdb_"
+
 // validateDatabaseName checks that database name is valid for FerretDB.
 //
 // It follows MongoDB restrictions plus
@@ -41,7 +44,7 @@ func validateDatabaseName(name string) error {
 		return NewError(ErrorCodeDatabaseNameIsInvalid, nil)
 	}
 
-	if strings.HasPrefix(name, "_ferretdb_") {
+	if strings.HasPrefix(name, ReservedPrefix) {
 		return NewError(ErrorCodeDatabaseNameIsInvalid, nil)
 	}
 
@@ -52,7 +55,8 @@ func validateDatabaseName(name string) error {
 //
 // It follows MongoDB restrictions plus:
 //   - allows only UTF-8 characters;
-//   - disallows '.' prefix (MongoDB fails to work with such collections correctly too);
+//   - allows `system.` prefix ("system" collections are just regular collections);
+//   - disallows `.` prefix (MongoDB fails to work with such collections correctly too);
 //   - disallows `_ferretdb_` prefix.
 //
 // That validation is quite lax because
@@ -64,7 +68,7 @@ func validateCollectionName(name string) error {
 		return NewError(ErrorCodeCollectionNameIsInvalid, nil)
 	}
 
-	if strings.HasPrefix(name, "_ferretdb_") || strings.HasPrefix(name, "system.") {
+	if strings.HasPrefix(name, ReservedPrefix) {
 		return NewError(ErrorCodeCollectionNameIsInvalid, nil)
 	}
 

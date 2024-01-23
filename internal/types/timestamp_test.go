@@ -43,3 +43,18 @@ func TestNextTimestamp(t *testing.T) {
 		assert.Equal(t, d, NextTimestamp(d).Time())
 	})
 }
+
+func TestNextTimestampSigned(t *testing.T) {
+	// one second before Y2K38
+	now := time.Date(2038, time.January, 19, 3, 14, 6, 0, time.UTC)
+
+	ts1 := NextTimestamp(now)
+	ts2 := NextTimestamp(now.Add(time.Second))
+	ts3 := NextTimestamp(now.Add(2 * time.Second))
+
+	assert.Less(t, ts1, ts2)
+	assert.Less(t, ts2, ts3)
+
+	assert.Less(t, ts1.Signed(), ts2.Signed())
+	assert.Greater(t, ts2.Signed(), ts3.Signed(), "expected Epochalypse")
+}

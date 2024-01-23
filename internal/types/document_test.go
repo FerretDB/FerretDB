@@ -35,8 +35,7 @@ func TestDocument(t *testing.T) {
 		assert.Nil(t, doc.Keys())
 		assert.Equal(t, "", doc.Command())
 
-		value, err := doc.Get("foo")
-		assert.Error(t, err)
+		value, _ := doc.Get("foo")
 		assert.Nil(t, value)
 
 		doc.Freeze()
@@ -47,6 +46,7 @@ func TestDocument(t *testing.T) {
 
 		// to avoid {} != nil in tests
 		assert.Nil(t, must.NotFail(NewDocument()).fields)
+		assert.Nil(t, must.NotFail(NewDocument()).keys)
 
 		var doc Document
 		assert.Equal(t, 0, doc.Len())
@@ -54,8 +54,7 @@ func TestDocument(t *testing.T) {
 		assert.Equal(t, "", doc.Command())
 
 		doc.Set("foo", Null)
-		value, err := doc.Get("foo")
-		assert.NoError(t, err)
+		value, _ := doc.Get("foo")
 		assert.Equal(t, Null, value)
 		assert.Equal(t, "foo", doc.Command())
 
@@ -68,6 +67,14 @@ func TestDocument(t *testing.T) {
 		doc, err := NewDocument(42, 42)
 		assert.Nil(t, doc)
 		assert.EqualError(t, err, `types.NewDocument: invalid key type: int`)
+	})
+
+	t.Run("Invalid", func(t *testing.T) {
+		t.Parallel()
+
+		assert.Panics(t, func() {
+			_, _ = NewDocument("foo", 42)
+		})
 	})
 
 	t.Run("Freeze", func(t *testing.T) {
@@ -93,6 +100,26 @@ func TestDocument(t *testing.T) {
 		a.Set("foo", "bar")
 		assert.NotEqual(t, a, b)
 		assert.Equal(t, int32(42), must.NotFail(b.Get("foo")))
+	})
+
+	t.Run("Duplicates", func(t *testing.T) {
+		t.Parallel()
+
+		doc, err := NewDocument("foo", int32(1), "foo", int32(2))
+		require.NoError(t, err)
+
+		assert.True(t, doc.Has("foo"))
+		assert.False(t, doc.Has("bar"))
+
+		assert.PanicsWithValue(t, "types.Document.Get: key is duplicated: foo", func() {
+			_, _ = doc.Get("foo")
+		})
+		assert.PanicsWithValue(t, "types.Document.Set: key is duplicated: foo", func() {
+			doc.Set("foo", int32(3))
+		})
+		assert.PanicsWithValue(t, "types.Document.Remove: key is duplicated: foo", func() {
+			doc.Remove("foo")
+		})
 	})
 
 	t.Run("SortFieldsByKey", func(t *testing.T) {

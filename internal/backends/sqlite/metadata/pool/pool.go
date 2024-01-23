@@ -52,7 +52,7 @@ const (
 //
 //nolint:vet // for readability
 type Pool struct {
-	uri *url.URL
+	uri url.URL
 	l   *zap.Logger
 	sp  *state.Provider
 
@@ -74,20 +74,25 @@ func New(u string, l *zap.Logger, sp *state.Provider) (*Pool, map[string]*fsql.D
 		return nil, nil, fmt.Errorf("failed to parse SQLite URI %q: %s", u, err)
 	}
 
-	matches, err := filepath.Glob(filepath.Join(uri.Path, "*"+filenameExtension))
-	if err != nil {
-		return nil, nil, lazyerrors.Error(err)
-	}
-
 	p := &Pool{
-		uri:   uri,
+		uri:   *uri,
 		l:     l,
 		sp:    sp,
-		dbs:   make(map[string]*fsql.DB, len(matches)),
+		dbs:   map[string]*fsql.DB{},
 		token: resource.NewToken(),
 	}
 
 	resource.Track(p, p.token)
+
+	if p.memory() {
+		return p, p.dbs, nil
+	}
+
+	matches, err := filepath.Glob(filepath.Join(uri.Path, "*"+filenameExtension))
+	if err != nil {
+		p.Close()
+		return nil, nil, lazyerrors.Error(err)
+	}
 
 	for _, f := range matches {
 		name := p.databaseName(f)
@@ -114,12 +119,17 @@ func (p *Pool) memory() bool {
 
 // databaseName returns database name for given database file path.
 func (p *Pool) databaseName(databaseFile string) string {
+	if p.memory() {
+		panic("should not be called for in-memory database")
+	}
+
 	return strings.TrimSuffix(filepath.Base(databaseFile), filenameExtension)
 }
 
-// databaseURI returns SQLite URI for the given database name.
+// databaseURI returns SQLite URI for the given database name,
+// even for in-memory database.
 func (p *Pool) databaseURI(databaseName string) string {
-	dbURI := *p.uri
+	dbURI := p.uri
 	dbURI.Path = path.Join(dbURI.Path, databaseName+filenameExtension)
 	dbURI.Opaque = dbURI.Path
 

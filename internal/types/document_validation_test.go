@@ -78,11 +78,9 @@ func TestDocumentValidateData(t *testing.T) {
 			},
 			"ArrayValid": {
 				doc: must.NotFail(NewDocument(
-					"_id", 1,
+					"_id", int32(1),
 					"v", must.NotFail(NewDocument("_id", must.NotFail(NewArray("foo", "bar")))),
 				)),
-				// TODO https://github.com/FerretDB/FerretDB/issues/2804
-				reason: errors.New("The '_id' value cannot be of type array"),
 			},
 			"Regex": {
 				doc:    must.NotFail(NewDocument("_id", Regex{Pattern: "regex$"})),
@@ -90,11 +88,9 @@ func TestDocumentValidateData(t *testing.T) {
 			},
 			"RegexValid": {
 				doc: must.NotFail(NewDocument(
-					"_id", 1,
+					"_id", int32(1),
 					"v", must.NotFail(NewDocument("_id", Regex{Pattern: "regex$"})),
 				)),
-				// TODO https://github.com/FerretDB/FerretDB/issues/2804
-				reason: errors.New("The '_id' value cannot be of type regex"),
 			},
 
 			"NestedArray": {

@@ -15,7 +15,9 @@
 package postgresql
 
 import (
+	"cmp"
 	"context"
+	"slices"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
@@ -38,14 +40,11 @@ type NewBackendParams struct {
 	URI string
 	L   *zap.Logger
 	P   *state.Provider
+	_   struct{} // prevent unkeyed literals
 }
 
-// NewBackend creates a new backend for PostgreSQL-compatible database.
+// NewBackend creates a new Backend.
 func NewBackend(params *NewBackendParams) (backends.Backend, error) {
-	if params.P == nil {
-		panic("state provider is required but not set")
-	}
-
 	r, err := metadata.NewRegistry(params.URI, params.L, params.P)
 	if err != nil {
 		return nil, err
@@ -58,21 +57,66 @@ func NewBackend(params *NewBackendParams) (backends.Backend, error) {
 
 // Close implements backends.Backend interface.
 func (b *backend) Close() {
-}
-
-// Name implements backends.Backend interface.
-func (b *backend) Name() string {
-	return "PostgreSQL"
+	b.r.Close()
 }
 
 // Status implements backends.Backend interface.
 func (b *backend) Status(ctx context.Context, params *backends.StatusParams) (*backends.StatusResult, error) {
-	panic("not implemented")
+	dbs, err := b.r.DatabaseList(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	var res backends.StatusResult
+
+	var pingSucceeded bool
+
+	for _, dbName := range dbs {
+		var cs []*metadata.Collection
+
+		if cs, err = b.r.CollectionList(ctx, dbName); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		res.CountCollections += int64(len(cs))
+
+		colls, err := newDatabase(b.r, dbName).ListCollections(ctx, new(backends.ListCollectionsParams))
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		for _, cInfo := range colls.Collections {
+			if cInfo.Capped() {
+				res.CountCappedCollections++
+			}
+		}
+
+		if pingSucceeded {
+			continue
+		}
+
+		p, err := b.r.DatabaseGetExisting(ctx, dbName)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		if p == nil {
+			continue
+		}
+
+		if err = p.Ping(ctx); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		pingSucceeded = true
+	}
+
+	return &res, nil
 }
 
 // Database implements backends.Backend interface.
 func (b *backend) Database(name string) (backends.Database, error) {
-	return newDatabase(name), nil
+	return newDatabase(b.r, name), nil
 }
 
 // ListDatabases implements backends.Backend interface.
@@ -84,48 +128,56 @@ func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDataba
 		return nil, err
 	}
 
-	res := &backends.ListDatabasesResult{
-		Databases: make([]backends.DatabaseInfo, len(list)),
+	var res *backends.ListDatabasesResult
+
+	if params != nil && len(params.Name) > 0 {
+		i, found := slices.BinarySearchFunc(list, params.Name, func(dbName, t string) int {
+			return cmp.Compare(dbName, t)
+		})
+
+		var filteredList []string
+
+		if found {
+			filteredList = append(filteredList, list[i])
+		}
+
+		list = filteredList
 	}
 
-	for i, dbName := range list {
-		db, err := b.Database(dbName)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
+	res = &backends.ListDatabasesResult{
+		Databases: make([]backends.DatabaseInfo, 0, len(list)),
+	}
 
-		stats, err := db.Stats(ctx, new(backends.DatabaseStatsParams))
-		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseDoesNotExist) {
-			stats = new(backends.DatabaseStatsResult)
-			err = nil
-		}
-
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		res.Databases[i] = backends.DatabaseInfo{
+	for _, dbName := range list {
+		res.Databases = append(res.Databases, backends.DatabaseInfo{
 			Name: dbName,
-			Size: stats.SizeTotal,
-		}
+		})
 	}
-
 	return res, nil
 }
 
 // DropDatabase implements backends.Backend interface.
 func (b *backend) DropDatabase(ctx context.Context, params *backends.DropDatabaseParams) error {
-	panic("not implemented")
+	dropped, err := b.r.DatabaseDrop(ctx, params.Name)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	if !dropped {
+		return backends.NewError(backends.ErrorCodeDatabaseDoesNotExist, nil)
+	}
+
+	return nil
 }
 
 // Describe implements prometheus.Collector.
 func (b *backend) Describe(ch chan<- *prometheus.Desc) {
-	panic("not implemented")
+	b.r.Describe(ch)
 }
 
 // Collect implements prometheus.Collector.
 func (b *backend) Collect(ch chan<- prometheus.Metric) {
-	panic("not implemented")
+	b.r.Collect(ch)
 }
 
 // check interfaces

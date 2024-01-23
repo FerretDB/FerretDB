@@ -50,7 +50,7 @@ That has been fixed, and update operations should work correctly now without con
 
 ## Documentation
 
-To improve the ease of use of FerretDB, we've expanded our documentation to include detailed explanations of FerretDB authentication and TLS connections ([See documentation for more](https://docs.ferretdb.io/category/security/)) and basic explanations of aggregation operations.
+To improve the ease of use of FerretDB, we've expanded our documentation to include detailed explanations of FerretDB authentication and TLS connections ([See documentation for more](https://docs.ferretdb.io/security/)) and basic explanations of aggregation operations.
 
 In addition to that, we've added a Markdown formatter which should help format tables and ensure consistency in our documentation.
 

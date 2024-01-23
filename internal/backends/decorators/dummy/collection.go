@@ -25,7 +25,7 @@ type collection struct {
 	c backends.Collection
 }
 
-// newCollection creates a new collection that wraps the given collection.
+// newCollection creates a new Collection that wraps the given collection.
 func newCollection(c backends.Collection) backends.Collection {
 	return &collection{c: c}
 }
@@ -60,6 +60,11 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 	return c.c.Stats(ctx, params)
 }
 
+// Compact implements backends.Collection interface.
+func (c *collection) Compact(ctx context.Context, params *backends.CompactParams) (*backends.CompactResult, error) {
+	return c.c.Compact(ctx, params)
+}
+
 // ListIndexes implements backends.Collection interface.
 func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndexesParams) (*backends.ListIndexesResult, error) {
 	return c.c.ListIndexes(ctx, params)
@@ -68,6 +73,11 @@ func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndex
 // CreateIndexes implements backends.Collection interface.
 func (c *collection) CreateIndexes(ctx context.Context, params *backends.CreateIndexesParams) (*backends.CreateIndexesResult, error) { //nolint:lll // for readability
 	return c.c.CreateIndexes(ctx, params)
+}
+
+// DropIndexes implements backends.Collection interface.
+func (c *collection) DropIndexes(ctx context.Context, params *backends.DropIndexesParams) (*backends.DropIndexesResult, error) {
+	return c.c.DropIndexes(ctx, params)
 }
 
 // check interfaces

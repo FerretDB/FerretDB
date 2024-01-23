@@ -28,6 +28,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func TestMostCommandsAreCaseSensitive(t *testing.T) {
@@ -52,6 +53,14 @@ func TestMostCommandsAreCaseSensitive(t *testing.T) {
 	res = db.RunCommand(ctx, bson.D{{"buildinfo", 1}})
 	assert.NoError(t, res.Err())
 	res = db.RunCommand(ctx, bson.D{{"buildInfo", 1}})
+	assert.NoError(t, res.Err())
+	res = db.RunCommand(ctx, bson.D{{"dbstats", 1}})
+	assert.NoError(t, res.Err())
+	res = db.RunCommand(ctx, bson.D{{"dbStats", 1}})
+	assert.NoError(t, res.Err())
+	res = db.RunCommand(ctx, bson.D{{"findandmodify", collection.Name()}, {"update", bson.D{}}})
+	assert.NoError(t, res.Err())
+	res = db.RunCommand(ctx, bson.D{{"findAndModify", collection.Name()}, {"update", bson.D{}}})
 	assert.NoError(t, res.Err())
 }
 
@@ -422,8 +431,9 @@ func TestDatabaseName(t *testing.T) {
 				err: &mongo.CommandError{
 					Name:    "InvalidNamespace",
 					Code:    73,
-					Message: fmt.Sprintf("Invalid namespace specified '%s.TestDatabaseName-Err'", dbName64),
+					Message: "db name must be at most 63 characters, found: 64",
 				},
+				altMessage: fmt.Sprintf("Invalid namespace specified '%s.TestDatabaseName-Err'", dbName64),
 			},
 			"WithASlash": {
 				db: "/",
@@ -464,7 +474,7 @@ func TestDatabaseName(t *testing.T) {
 				err: &mongo.CommandError{
 					Name:    "InvalidNamespace",
 					Code:    73,
-					Message: `'.' is an invalid character in the database name: database.test`,
+					Message: `'.' is an invalid character in a db name: database.test`,
 				},
 				altMessage: `Invalid namespace specified 'database.test.TestDatabaseName-Err'`,
 			},
@@ -595,7 +605,7 @@ func TestPingCommand(t *testing.T) {
 	ctx, collection := setup.Setup(t)
 	db := collection.Database()
 
-	expectedRes := bson.D{{"ok", float64(1)}}
+	expected := ConvertDocument(t, bson.D{{"ok", float64(1)}})
 
 	t.Run("Multiple", func(t *testing.T) {
 		t.Parallel()
@@ -607,7 +617,11 @@ func TestPingCommand(t *testing.T) {
 			err := res.Decode(&actualRes)
 			require.NoError(t, err)
 
-			assert.Equal(t, expectedRes, actualRes)
+			actual := ConvertDocument(t, actualRes)
+			actual.Remove("$clusterTime")
+			actual.Remove("operationTime")
+
+			testutil.AssertEqual(t, expected, actual)
 		}
 	})
 
@@ -626,7 +640,13 @@ func TestPingCommand(t *testing.T) {
 		err = res.Decode(&actualRes)
 		require.NoError(t, err)
 
-		assert.Equal(t, expectedRes, actualRes)
+		actual := ConvertDocument(t, actualRes)
+		actual.Remove("$clusterTime")
+		actual.Remove("operationTime")
+
+		expected := ConvertDocument(t, bson.D{{"ok", float64(1)}})
+
+		testutil.AssertEqual(t, expected, actual)
 
 		// Ensure that we don't create database on ping
 		// This also means that no collection is created during ping.
@@ -634,4 +654,68 @@ func TestPingCommand(t *testing.T) {
 		require.NoError(t, err)
 		require.Empty(t, actualDatabases.Databases)
 	})
+}
+
+func TestMutatingClientMetadata(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
+	db := collection.Database()
+
+	for name, tc := range map[string]struct { //nolint:vet // used for test only
+		command bson.D
+		err     *mongo.CommandError
+	}{
+		"NoMetadataHello": {
+			command: bson.D{
+				{"hello", int32(1)},
+			},
+		},
+		"NoMetadataIsMaster": {
+			command: bson.D{
+				{"isMaster", int32(1)},
+			},
+		},
+		"SomeMetadataHello": {
+			command: bson.D{
+				{"hello", int32(1)},
+				{"client", bson.D{{"application", "foobar"}}},
+			},
+			err: &mongo.CommandError{
+				Name:    "ClientMetadataCannotBeMutated",
+				Code:    186,
+				Message: "The client metadata document may only be sent in the first hello",
+			},
+		},
+		"SomeMetadataIsMaster": {
+			command: bson.D{
+				{"isMaster", int32(1)},
+				{"client", bson.D{{"application", "foobar"}}},
+			},
+			err: &mongo.CommandError{
+				Name:    "ClientMetadataCannotBeMutated",
+				Code:    186,
+				Message: "The client metadata document may only be sent in the first hello",
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			res := db.RunCommand(ctx, tc.command)
+
+			if tc.err != nil {
+				err := res.Decode(&res)
+				AssertEqualCommandError(t, *tc.err, err)
+				return
+			}
+
+			var actualRes bson.D
+			err := res.Decode(&actualRes)
+
+			require.NoError(t, err)
+			require.NotNil(t, actualRes)
+		})
+	}
 }

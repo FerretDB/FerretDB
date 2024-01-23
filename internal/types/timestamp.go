@@ -44,3 +44,8 @@ func (ts Timestamp) Time() time.Time {
 	sec := int64(ts >> 32)
 	return time.Unix(sec, 0).UTC()
 }
+
+// Signed returns the timestamp as a signed value.
+func (ts Timestamp) Signed() int64 {
+	return int64(ts)
+}

@@ -5,6 +5,8 @@ repository:
   allow_squash_merge: true
   allow_merge_commit: false
   allow_rebase_merge: false
+  allow_auto_merge: true
+  allow_update_branch: true
   delete_branch_on_merge: true
   enable_automated_security_fixes: true
   enable_vulnerability_alerts: true
@@ -12,27 +14,48 @@ repository:
 # https://docs.github.com/en/rest/issues/labels
 labels:
   # area
+  - name: area/admin
+    color: "#2931BF"
+    description: Issues about administration commands
   - name: area/aggregations
     color: "#5319E7"
     description: Issues about aggregation pipelines
+  - name: area/auth
+    color: "#E4012C"
+    description: Issues about authentication and authorization
+  - name: area/build
+    color: "#52D58A"
+    description: Issues about builds and CI
   - name: area/cursors
     color: "#D93F0B"
     description: Issues about cursors
+  - name: area/diag
+    color: "#909BA6"
+    description: Issues about diagnostic commands
   - name: area/fuzz
     color: "#D4C5F9"
     description: Issues about fuzzing and smithing
   - name: area/indexes
     color: "#006B75"
     description: Issues about indexes
+  - name: area/observability
+    color: "#E04D33"
+    description: Issues about metrics, logs, traces, pprof, etc
   - name: area/oplog
     color: "#09D521"
-    description: Issues about OpLog
+    description: Issues about OpLog and capped collections
   - name: area/params
     color: "#FBCA04"
-    description: Issues about parameters extraction
+    description: Issues about command parameters extraction
+  - name: area/performance
+    color: "#D02FE8"
+    description: Issues about performance
   - name: area/pushdown
     color: "#83F7BA"
     description: Issues about query pushdown
+  - name: area/types
+    color: "#0354F4"
+    description: Issues about data types, BSON, etc
 
   # backend
   - name: backend/pg
@@ -41,6 +64,9 @@ labels:
   - name: backend/sqlite
     color: "#2C8FCA"
     description: Issues about SQLite backend
+  - name: backend/hana
+    color: "#2D6AB1"
+    description: Issues about SAP HANA backend
 
   # blog
   - name: blog/engineering
@@ -71,7 +97,11 @@ labels:
 
   - name: badly estimated
     color: "#FF3333"
-    description: Scope, difficulty and/or clarify were different
+    description: Scope, difficulty and/or clarify of the issue were different
+
+  - name: community
+    color: "#297252"
+    description: Issues and PRs assigned to community members
 
   - name: conflict
     color: "#FF0000"
@@ -92,6 +122,11 @@ labels:
   - name: good first issue
     color: "#5319E7"
     description: Good issues for new external contributors
+
+  # until the next time
+  # - name: hacktoberfest
+  #   color: "#FEFBA2"
+  #   description: Good issues for Hacktoberfest
 
   - name: help wanted
     color: "#006B75"

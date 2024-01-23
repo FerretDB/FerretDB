@@ -20,16 +20,16 @@ import (
 	"flag"
 	"fmt"
 	"net/url"
-	"path/filepath"
 	"runtime/trace"
+	"slices"
 	"strings"
 
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
-	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -47,30 +47,25 @@ var (
 	targetTLSF        = flag.Bool("target-tls", false, "in-process FerretDB: use TLS")
 	targetUnixSocketF = flag.Bool("target-unix-socket", false, "in-process FerretDB: use Unix socket")
 
-	postgreSQLURLF = flag.String("postgresql-url", "", "in-process FerretDB: PostgreSQL URL for 'pg' handler.")
+	postgreSQLURLF = flag.String("postgresql-url", "", "in-process FerretDB: PostgreSQL URL for 'postgresql' handler.")
 	sqliteURLF     = flag.String("sqlite-url", "", "in-process FerretDB: SQLite URI for 'sqlite' handler.")
+	mysqlURLF      = flag.String("mysql-url", "", "in-process FerretDB: MySQL URL for 'mysql' handler.")
 	hanaURLF       = flag.String("hana-url", "", "in-process FerretDB: Hana URL for 'hana' handler.")
 
 	compatURLF = flag.String("compat-url", "", "compat system's (MongoDB) URL for compatibility tests; if empty, they are skipped")
 
-	benchDocsF = flag.Int("bench-docs", 0, "benchmarks: number of documents to generate per iteration")
+	benchDocsF = flag.Int("bench-docs", 1000, "benchmarks: number of documents to generate per iteration")
 
 	// Disable noisy setup logs by default.
 	debugSetupF = flag.Bool("debug-setup", false, "enable debug logs for tests setup")
 	logLevelF   = zap.LevelFlag("log-level", zap.DebugLevel, "log level for tests")
 
-	disableFilterPushdownF = flag.Bool("disable-filter-pushdown", false, "disable filter pushdown")
-	enableSortPushdownF    = flag.Bool("enable-sort-pushdown", false, "enable sort pushdown")
-	enableOplogF           = flag.Bool("enable-oplog", false, "enable OpLog")
-
-	useNewPGF = flag.Bool("use-new-pg", false, "use new PostgreSQL backend")
+	disablePushdownF = flag.Bool("disable-pushdown", false, "disable pushdown")
 )
 
 // Other globals.
 var (
-	allBackends = []string{"ferretdb-pg", "ferretdb-sqlite", "ferretdb-hana", "mongodb"}
-
-	CertsRoot = filepath.Join("..", "build", "certs") // relative to `integration` directory
+	allBackends = []string{"ferretdb-postgresql", "ferretdb-sqlite", "ferretdb-mysql", "ferretdb-hana", "mongodb"}
 )
 
 // SetupOpts represents setup options.
@@ -177,7 +172,7 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 	}
 }
 
-// Setup setups a single collection for all providers, if the are present.
+// Setup setups a single collection for all providers, if they are present.
 func Setup(tb testtb.TB, providers ...shareddata.Provider) (context.Context, *mongo.Collection) {
 	tb.Helper()
 
@@ -216,6 +211,7 @@ func setupCollection(tb testtb.TB, ctx context.Context, client *mongo.Client, op
 	// drop remnants of the previous failed run
 	_ = collection.Drop(ctx)
 	if ownDatabase {
+		_ = database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}})
 		_ = database.Drop(ctx)
 	}
 
@@ -247,6 +243,9 @@ func setupCollection(tb testtb.TB, ctx context.Context, client *mongo.Client, op
 			require.NoError(tb, err)
 
 			if ownDatabase {
+				err = database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}}).Err()
+				require.NoError(tb, err)
+
 				err = database.Drop(ctx)
 				require.NoError(tb, err)
 			}

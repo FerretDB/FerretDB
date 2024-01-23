@@ -15,13 +15,12 @@
 package sqlite
 
 import (
+	"cmp"
 	"context"
-	"fmt"
-	"strings"
+	"slices"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
-	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
@@ -29,14 +28,6 @@ import (
 type database struct {
 	r    *metadata.Registry
 	name string
-}
-
-// stats represents information about statistics of tables and indexes.
-type stats struct {
-	countRows    int64
-	countIndexes int64
-	sizeIndexes  int64
-	sizeTables   int64
 }
 
 // newDatabase creates a new Database.
@@ -61,10 +52,32 @@ func (db *database) ListCollections(ctx context.Context, params *backends.ListCo
 		return nil, lazyerrors.Error(err)
 	}
 
-	res := make([]backends.CollectionInfo, len(list))
+	var res []backends.CollectionInfo
+
+	if params != nil && len(params.Name) > 0 {
+		nameList := make([]string, len(list))
+		for i, c := range list {
+			nameList[i] = c.Name
+		}
+
+		i, found := slices.BinarySearchFunc(nameList, params.Name, func(collectionName, t string) int {
+			return cmp.Compare(collectionName, t)
+		})
+
+		var filteredList []*metadata.Collection
+		if found {
+			filteredList = append(filteredList, list[i])
+		}
+		list = filteredList
+	}
+
+	res = make([]backends.CollectionInfo, len(list))
 	for i, c := range list {
 		res[i] = backends.CollectionInfo{
-			Name: c.Name,
+			Name:            c.Name,
+			UUID:            c.Settings.UUID,
+			CappedSize:      c.Settings.CappedSize,
+			CappedDocuments: c.Settings.CappedDocuments,
 		}
 	}
 
@@ -75,7 +88,12 @@ func (db *database) ListCollections(ctx context.Context, params *backends.ListCo
 
 // CreateCollection implements backends.Database interface.
 func (db *database) CreateCollection(ctx context.Context, params *backends.CreateCollectionParams) error {
-	created, err := db.r.CollectionCreate(ctx, db.name, params.Name)
+	created, err := db.r.CollectionCreate(ctx, &metadata.CollectionCreateParams{
+		DBName:          db.name,
+		Name:            params.Name,
+		CappedSize:      params.CappedSize,
+		CappedDocuments: params.CappedDocuments,
+	})
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -103,18 +121,17 @@ func (db *database) DropCollection(ctx context.Context, params *backends.DropCol
 
 // RenameCollection implements backends.Database interface.
 func (db *database) RenameCollection(ctx context.Context, params *backends.RenameCollectionParams) error {
-	// non-existent old collection must be checked before existence of new collection check
 	if c := db.r.CollectionGet(ctx, db.name, params.OldName); c == nil {
 		return backends.NewError(
 			backends.ErrorCodeCollectionDoesNotExist,
-			lazyerrors.Errorf("no ns %s.%s", db.name, params.OldName),
+			lazyerrors.Errorf("old database %q or collection %q does not exist", db.name, params.OldName),
 		)
 	}
 
 	if c := db.r.CollectionGet(ctx, db.name, params.NewName); c != nil {
 		return backends.NewError(
 			backends.ErrorCodeCollectionAlreadyExists,
-			lazyerrors.Errorf("already exists %s.%s", db.name, params.NewName),
+			lazyerrors.Errorf("new database %q and collection %q already exists", db.name, params.NewName),
 		)
 	}
 
@@ -132,6 +149,10 @@ func (db *database) RenameCollection(ctx context.Context, params *backends.Renam
 
 // Stats implements backends.Database interface.
 func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsParams) (*backends.DatabaseStatsResult, error) {
+	if params == nil {
+		params = new(backends.DatabaseStatsParams)
+	}
+
 	d := db.r.DatabaseGetExisting(ctx, db.name)
 	if d == nil {
 		return nil, backends.NewError(backends.ErrorCodeDatabaseDoesNotExist, lazyerrors.Errorf("no database %s", db.name))
@@ -142,7 +163,7 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 		return nil, lazyerrors.Error(err)
 	}
 
-	stats, err := relationStats(ctx, d, list)
+	stats, err := collectionsStats(ctx, d, list, params.Refresh)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -150,9 +171,9 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 	// Total size is the disk space used by the database,
 	// see https://www.sqlite.org/dbstat.html.
 	q := `
-		SELECT
-			SUM(pgsize)
-		FROM dbstat WHERE aggregate = TRUE`
+		SELECT SUM(pgsize)
+		FROM dbstat
+		WHERE aggregate = TRUE`
 
 	var totalSize int64
 	if err = d.QueryRowContext(ctx, q).Scan(&totalSize); err != nil {
@@ -160,57 +181,12 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 	}
 
 	return &backends.DatabaseStatsResult{
-		CountCollections: int64(len(list)),
-		CountObjects:     stats.countRows,
-		CountIndexes:     stats.countIndexes,
-		SizeTotal:        totalSize,
-		SizeIndexes:      stats.sizeIndexes,
-		SizeCollections:  stats.sizeTables,
+		CountDocuments:  stats.countDocuments,
+		SizeTotal:       totalSize,
+		SizeIndexes:     stats.sizeIndexes,
+		SizeCollections: stats.sizeTables,
+		SizeFreeStorage: stats.sizeFreeStorage,
 	}, nil
-}
-
-// relationStats returns statistics about tables and indexes for the given collections.
-func relationStats(ctx context.Context, db *fsql.DB, list []*metadata.Collection) (*stats, error) {
-	var err error
-
-	// Call ANALYZE to update statistics of tables and indexes,
-	// see https://www.sqlite.org/lang_analyze.html.
-	q := `ANALYZE`
-	if _, err = db.ExecContext(ctx, q); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	placeholders := make([]string, len(list))
-	args := make([]any, len(list))
-
-	for i, c := range list {
-		placeholders[i] = "?"
-		args[i] = c.TableName
-	}
-
-	// Use number of cells to approximate total row count,
-	// see https://www.sqlite.org/dbstat.html and https://www.sqlite.org/fileformat.html.
-	q = fmt.Sprintf(`
-		SELECT
-		    SUM(pgsize) AS SizeTables,
-		    SUM(ncell)  AS CountCells
-		FROM dbstat
-		WHERE name IN (%s) AND aggregate = TRUE`,
-		strings.Join(placeholders, ", "),
-	)
-
-	stats := new(stats)
-	if err = db.QueryRowContext(ctx, q, args...).Scan(
-		&stats.sizeTables,
-		&stats.countRows,
-	); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	// TODO https://github.com/FerretDB/FerretDB/issues/3293
-	stats.countIndexes, stats.sizeIndexes = 0, 0
-
-	return stats, nil
 }
 
 // check interfaces

@@ -69,6 +69,14 @@ func TestArray(t *testing.T) {
 		a.Freeze()
 	})
 
+	t.Run("Invalid", func(t *testing.T) {
+		t.Parallel()
+
+		assert.Panics(t, func() {
+			_, _ = NewArray(42)
+		})
+	})
+
 	t.Run("Freeze", func(t *testing.T) {
 		t.Parallel()
 

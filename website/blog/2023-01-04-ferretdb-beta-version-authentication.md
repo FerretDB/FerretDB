@@ -45,7 +45,7 @@ For example, you can follow the following steps:
    - `psql -h 127.0.0.1 -p 5432 -U username postgres`
    - `DROP DATABASE ferretdb`
 
-5. Upgrade FerretDB and run FerretDB 0.8 (Please refer to [our documentation](https://docs.ferretdb.io/category/quickstart/) where we describe how to update and start FerretDB)
+5. Upgrade FerretDB and run FerretDB 0.8 (Please refer to [our documentation](https://docs.ferretdb.io/quickstart/) where we describe how to update and start FerretDB)
 
 6. Restore database using `mongorestore --uri="mongodb://127.0.0.1:27017"`
 
@@ -54,7 +54,8 @@ For example, you can follow the following steps:
    - Delete ferretdb database (repeat step 4)
    - Restore `ferretdb` PostgreSQL db from the dump we created on the step 2: `psql -h 127.0.0.1 -p 5432 -U username ferretdb -f ferretdb.sql`
    - Start ferretdb 0.7.1
-     :::
+
+:::
 
 In this blog post, we'll be sharing detailed information about the FerretDB beta release (0.8.0).
 

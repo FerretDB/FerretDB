@@ -15,11 +15,19 @@
 package backends
 
 import (
+	"cmp"
 	"context"
+	"slices"
+	"time"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
+
+// DefaultIndexName is a name of the index that is created when a collection is created.
+// This index defines document's primary key.
+const DefaultIndexName = "_id_"
 
 // Collection is a generic interface for all backends for accessing collection.
 //
@@ -33,15 +41,17 @@ import (
 // See collectionContract and its methods for additional details.
 type Collection interface {
 	Query(context.Context, *QueryParams) (*QueryResult, error)
+	Explain(context.Context, *ExplainParams) (*ExplainResult, error)
 	InsertAll(context.Context, *InsertAllParams) (*InsertAllResult, error)
 	UpdateAll(context.Context, *UpdateAllParams) (*UpdateAllResult, error)
 	DeleteAll(context.Context, *DeleteAllParams) (*DeleteAllResult, error)
-	Explain(context.Context, *ExplainParams) (*ExplainResult, error)
 
 	Stats(context.Context, *CollectionStatsParams) (*CollectionStatsResult, error)
+	Compact(context.Context, *CompactParams) (*CompactResult, error)
 
 	ListIndexes(context.Context, *ListIndexesParams) (*ListIndexesResult, error)
 	CreateIndexes(context.Context, *CreateIndexesParams) (*CreateIndexesResult, error)
+	DropIndexes(context.Context, *DropIndexesParams) (*DropIndexesResult, error)
 }
 
 // collectionContract implements Collection interface.
@@ -63,8 +73,12 @@ func CollectionContract(c Collection) Collection {
 
 // QueryParams represents the parameters of Collection.Query method.
 type QueryParams struct {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3235
 	Filter *types.Document
+	Sort   *types.Document
+	Limit  int64
+
+	OnlyRecordIDs bool
+	Comment       string
 }
 
 // QueryResult represents the results of Collection.Query method.
@@ -79,10 +93,80 @@ type QueryResult struct {
 // The passed context should be used for canceling the initial query.
 // It also can be used to close the returned iterator and free underlying resources,
 // but doing so is not necessary - the handler will do that anyway.
+//
+// Filter may be ignored, or safely applied partially or entirely.
+// Extra documents will be filtered out by the handler.
+//
+// Sort should have one of the following forms: nil, {}, {"$natural": int64(1)} or {"$natural": int64(-1)}.
+// Other field names are not supported.
+// If non-empty, it should be applied.
+//
+// Limit, if non-zero, should be applied.
 func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*QueryResult, error) {
 	defer observability.FuncCall(ctx)()
 
+	if params == nil {
+		params = new(QueryParams)
+	}
+
+	if params.Sort.Len() != 0 {
+		must.BeTrue(params.Sort.Len() == 1)
+		sortValue := params.Sort.Map()["$natural"].(int64)
+
+		if sortValue != -1 && sortValue != 1 {
+			panic("sort value must be 1 (for ascending) or -1 (for descending)")
+		}
+	}
+
 	res, err := cc.c.Query(ctx, params)
+	checkError(err)
+
+	return res, err
+}
+
+// ExplainParams represents the parameters of Collection.Explain method.
+type ExplainParams struct {
+	Filter *types.Document
+	Sort   *types.Document
+	Limit  int64
+}
+
+// ExplainResult represents the results of Collection.Explain method.
+type ExplainResult struct {
+	QueryPlanner   *types.Document
+	FilterPushdown bool
+	SortPushdown   bool
+	LimitPushdown  bool
+}
+
+// Explain return a backend-specific execution plan for the given query.
+//
+// Database or collection may not exist; that's not an error, it still
+// returns the ExplainResult with QueryPlanner.
+//
+// The ExplainResult's FilterPushdown field is set to true if the backend could have applied the requested filtering
+// partially or completely (but safely in any case).
+// If it wasn't possible to apply it safely at least partially, that field should be set to false.
+//
+// The ExplainResult's SortPushdown field is set to true if the backend could have applied the whole requested sorting.
+// If it was possible to apply it only partially or not at all, that field should be set to false.
+func (cc *collectionContract) Explain(ctx context.Context, params *ExplainParams) (*ExplainResult, error) {
+	defer observability.FuncCall(ctx)()
+
+	if params == nil {
+		params = new(ExplainParams)
+	}
+
+	if params.Sort.Len() != 0 {
+		must.BeTrue(params.Sort.Len() == 1)
+		sortValue := params.Sort.Map()["$natural"].(int64)
+
+		if sortValue != -1 && sortValue != 1 {
+			panic("sort value must be 1 (for ascending) or -1 (for descending)")
+		}
+	}
+
+	res, err := cc.c.Explain(ctx, params)
 	checkError(err)
 
 	return res, err
@@ -106,11 +190,12 @@ type InsertAllResult struct{}
 // They will be frozen.
 //
 // Both database and collection may or may not exist; they should be created automatically if needed.
-// TODO https://github.com/FerretDB/FerretDB/issues/3069
 func (cc *collectionContract) InsertAll(ctx context.Context, params *InsertAllParams) (*InsertAllResult, error) {
 	defer observability.FuncCall(ctx)()
 
+	now := time.Now()
 	for _, doc := range params.Docs {
+		doc.SetRecordID(types.NextTimestamp(now).Signed())
 		doc.Freeze()
 	}
 
@@ -155,7 +240,8 @@ func (cc *collectionContract) UpdateAll(ctx context.Context, params *UpdateAllPa
 
 // DeleteAllParams represents the parameters of Collection.Delete method.
 type DeleteAllParams struct {
-	IDs []any
+	IDs       []any
+	RecordIDs []int64
 }
 
 // DeleteAllResult represents the results of Collection.Delete method.
@@ -175,54 +261,65 @@ type DeleteAllResult struct {
 func (cc *collectionContract) DeleteAll(ctx context.Context, params *DeleteAllParams) (*DeleteAllResult, error) {
 	defer observability.FuncCall(ctx)()
 
+	must.BeTrue((params.IDs == nil) != (params.RecordIDs == nil))
+
 	res, err := cc.c.DeleteAll(ctx, params)
 	checkError(err)
 
 	return res, err
 }
 
-// ExplainParams represents the parameters of Collection.Explain method.
-type ExplainParams struct {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3235
-	Filter *types.Document
-}
-
-// ExplainResult represents the results of Collection.Explain method.
-type ExplainResult struct {
-	QueryPlanner *types.Document
-	// TODO https://github.com/FerretDB/FerretDB/issues/3235
-	QueryPushdown bool
-}
-
-// Explain return a backend-specific execution plan for the given query.
-//
-// Database or collection may not exist; that's not an error.
-func (cc *collectionContract) Explain(ctx context.Context, params *ExplainParams) (*ExplainResult, error) {
-	defer observability.FuncCall(ctx)()
-
-	res, err := cc.c.Explain(ctx, params)
-	checkError(err)
-
-	return res, err
-}
-
 // CollectionStatsParams represents the parameters of Collection.Stats method.
-type CollectionStatsParams struct{}
+type CollectionStatsParams struct {
+	Refresh bool
+}
 
 // CollectionStatsResult represents the results of Collection.Stats method.
 type CollectionStatsResult struct {
-	CountObjects   int64
-	CountIndexes   int64
-	SizeTotal      int64
-	SizeIndexes    int64
-	SizeCollection int64
+	CountDocuments  int64
+	SizeTotal       int64
+	SizeIndexes     int64
+	SizeCollection  int64
+	SizeFreeStorage int64
+	IndexSizes      []IndexSize
 }
 
-// Stats returns statistics about the collection.
+// IndexSize represents the name and the size of an index.
+type IndexSize struct {
+	Name string
+	Size int64
+}
+
+// Stats returns statistic estimations about the collection.
+// All returned values are not exact, but might be more accurate when Stats is called with `Refresh: true`.
+//
+// The errors for non-existing database and non-existing collection are the same.
 func (cc *collectionContract) Stats(ctx context.Context, params *CollectionStatsParams) (*CollectionStatsResult, error) {
 	defer observability.FuncCall(ctx)()
 
 	res, err := cc.c.Stats(ctx, params)
+	checkError(err, ErrorCodeCollectionDoesNotExist)
+
+	return res, err
+}
+
+// CompactParams represents the parameters of Collection.Compact method.
+type CompactParams struct {
+	Full bool
+}
+
+// CompactResult represents the results of Collection.Compact method.
+type CompactResult struct{}
+
+// Compact reduces the disk space collection takes (by defragmenting, removing dead rows, etc)
+// and refreshes its statistics.
+//
+// If full is true, the operation should try to reduce the disk space as much as possible,
+// even if collection or the whole database will be locked for some time.
+func (cc *collectionContract) Compact(ctx context.Context, params *CompactParams) (*CompactResult, error) {
+	defer observability.FuncCall(ctx)()
+
+	res, err := cc.c.Compact(ctx, params)
 	checkError(err, ErrorCodeDatabaseDoesNotExist, ErrorCodeCollectionDoesNotExist)
 
 	return res, err
@@ -249,7 +346,7 @@ type IndexKeyPair struct {
 	Descending bool
 }
 
-// ListIndexes returns information about indexes in the database.
+// ListIndexes returns a list of collection indexes.
 //
 // The errors for non-existing database and non-existing collection are the same.
 func (cc *collectionContract) ListIndexes(ctx context.Context, params *ListIndexesParams) (*ListIndexesResult, error) {
@@ -257,6 +354,12 @@ func (cc *collectionContract) ListIndexes(ctx context.Context, params *ListIndex
 
 	res, err := cc.c.ListIndexes(ctx, params)
 	checkError(err, ErrorCodeCollectionDoesNotExist)
+
+	if res != nil && len(res.Indexes) > 0 {
+		must.BeTrue(slices.IsSortedFunc(res.Indexes, func(a, b IndexInfo) int {
+			return cmp.Compare(a.Name, b.Name)
+		}))
+	}
 
 	return res, err
 }
@@ -280,6 +383,30 @@ func (cc *collectionContract) CreateIndexes(ctx context.Context, params *CreateI
 	defer observability.FuncCall(ctx)()
 
 	res, err := cc.c.CreateIndexes(ctx, params)
+	checkError(err)
+
+	return res, err
+}
+
+// DropIndexesParams represents the parameters of Collection.DropIndexes method.
+type DropIndexesParams struct {
+	Indexes []string
+}
+
+// DropIndexesResult represents the results of Collection.DropIndexes method.
+type DropIndexesResult struct{}
+
+// DropIndexes drops indexes for the collection.
+//
+// The operation should be atomic.
+// If some indexes cannot be dropped, the operation should be rolled back,
+// and the first encountered error should be returned.
+//
+// Database or collection may not exist; that's not an error.
+func (cc *collectionContract) DropIndexes(ctx context.Context, params *DropIndexesParams) (*DropIndexesResult, error) {
+	defer observability.FuncCall(ctx)()
+
+	res, err := cc.c.DropIndexes(ctx, params)
 	checkError(err)
 
 	return res, err

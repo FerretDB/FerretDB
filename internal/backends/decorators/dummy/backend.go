@@ -30,7 +30,7 @@ type backend struct {
 	b backends.Backend
 }
 
-// NewBackend creates a new backend that wraps the given backend.
+// NewBackend creates a new Backend that wraps the given backend.
 func NewBackend(b backends.Backend) backends.Backend {
 	return &backend{b: b}
 }
@@ -38,11 +38,6 @@ func NewBackend(b backends.Backend) backends.Backend {
 // Close implements backends.Backend interface.
 func (b *backend) Close() {
 	b.b.Close()
-}
-
-// Name implements backends.Backend interface.
-func (b *backend) Name() string {
-	return b.b.Name()
 }
 
 // Status implements backends.Backend interface.

@@ -15,7 +15,9 @@
 package sqlite
 
 import (
+	"cmp"
 	"context"
+	"slices"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
@@ -38,14 +40,11 @@ type NewBackendParams struct {
 	URI string
 	L   *zap.Logger
 	P   *state.Provider
+	_   struct{} // prevent unkeyed literals
 }
 
-// NewBackend creates a new SQLite backend.
+// NewBackend creates a new Backend.
 func NewBackend(params *NewBackendParams) (backends.Backend, error) {
-	if params.P == nil {
-		panic("state provider is required but not set")
-	}
-
 	r, err := metadata.NewRegistry(params.URI, params.L, params.P)
 	if err != nil {
 		return nil, err
@@ -59,11 +58,6 @@ func NewBackend(params *NewBackendParams) (backends.Backend, error) {
 // Close implements backends.Backend interface.
 func (b *backend) Close() {
 	b.r.Close()
-}
-
-// Name implements backends.Backend interface.
-func (b *backend) Name() string {
-	return "SQLite"
 }
 
 // Status implements backends.Backend interface.
@@ -83,6 +77,17 @@ func (b *backend) Status(ctx context.Context, params *backends.StatusParams) (*b
 		}
 
 		res.CountCollections += int64(len(cs))
+
+		colls, err := newDatabase(b.r, dbName).ListCollections(ctx, new(backends.ListCollectionsParams))
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		for _, cInfo := range colls.Collections {
+			if cInfo.Capped() {
+				res.CountCappedCollections++
+			}
+		}
 	}
 
 	return &res, nil
@@ -99,29 +104,28 @@ func (b *backend) Database(name string) (backends.Database, error) {
 func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDatabasesParams) (*backends.ListDatabasesResult, error) {
 	list := b.r.DatabaseList(ctx)
 
-	res := &backends.ListDatabasesResult{
+	var res *backends.ListDatabasesResult
+
+	if params != nil && len(params.Name) > 0 {
+		i, found := slices.BinarySearchFunc(list, params.Name, func(dbName, t string) int {
+			return cmp.Compare(dbName, t)
+		})
+		var filteredList []string
+
+		if found {
+			filteredList = append(filteredList, list[i])
+		}
+
+		list = filteredList
+	}
+
+	res = &backends.ListDatabasesResult{
 		Databases: make([]backends.DatabaseInfo, len(list)),
 	}
 
 	for i, dbName := range list {
-		db, err := b.Database(dbName)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		stats, err := db.Stats(ctx, new(backends.DatabaseStatsParams))
-		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseDoesNotExist) {
-			stats = new(backends.DatabaseStatsResult)
-			err = nil
-		}
-
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
 		res.Databases[i] = backends.DatabaseInfo{
 			Name: dbName,
-			Size: stats.SizeTotal,
 		}
 	}
 

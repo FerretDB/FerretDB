@@ -20,8 +20,6 @@ import (
 
 	"github.com/AlekSi/pointer"
 	"github.com/google/uuid"
-
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // State represents FerretDB process state.
@@ -29,12 +27,18 @@ type State struct {
 	UUID      string `json:"uuid"`
 	Telemetry *bool  `json:"telemetry,omitempty"` // nil for undecided
 
-	// never persisted
+	// all following fields are never persisted
+
 	TelemetryLocked bool      `json:"-"`
 	Start           time.Time `json:"-"`
-	HandlerVersion  string    `json:"-"` // may be empty if FerretDB did not connect to the backend yet
-	LatestVersion   string    `json:"-"` // as reported by beacon, if known
-	UpdateAvailable bool      `json:"-"` // as reported by beacon, if known
+
+	// may be empty if FerretDB did not connect to the backend yet
+	BackendName    string `json:"-"`
+	BackendVersion string `json:"-"`
+
+	// as reported by beacon, if known
+	LatestVersion   string `json:"-"`
+	UpdateAvailable bool   `json:"-"`
 }
 
 // TelemetryString returns "enabled", "disabled" or "undecided".
@@ -68,7 +72,7 @@ func (s *State) EnableTelemetry() {
 // fill replaces all unset or invalid values with default.
 func (s *State) fill() {
 	if _, err := uuid.Parse(s.UUID); err != nil {
-		s.UUID = must.NotFail(uuid.NewRandom()).String()
+		s.UUID = uuid.NewString()
 	}
 
 	if s.Start.IsZero() {
@@ -88,7 +92,8 @@ func (s *State) deepCopy() *State {
 		Telemetry:       telemetry,
 		TelemetryLocked: s.TelemetryLocked,
 		Start:           s.Start,
-		HandlerVersion:  s.HandlerVersion,
+		BackendName:     s.BackendName,
+		BackendVersion:  s.BackendVersion,
 		LatestVersion:   s.LatestVersion,
 		UpdateAvailable: s.UpdateAvailable,
 	}
