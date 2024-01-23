@@ -166,9 +166,9 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 	resp.Set("ok", float64(1))
 
 	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{resp},
-	}))
+	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+		resp,
+	)))
 
 	return &reply, nil
 }

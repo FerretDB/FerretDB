@@ -258,9 +258,9 @@ func (c *conn) run(ctx context.Context) (err error) {
 			protoErr := handlererrors.ProtocolError(validationErr)
 
 			var res wire.OpMsg
-			must.NoError(res.SetSections(wire.OpMsgSection{
-				Documents: []*types.Document{protoErr.Document()},
-			}))
+			must.NoError(res.SetSections(wire.MakeOpMsgSection(
+				protoErr.Document(),
+			)))
 
 			b := must.NotFail(res.MarshalBinary())
 
@@ -479,9 +479,9 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 			protoErr := handlererrors.ProtocolError(err)
 
 			var res wire.OpMsg
-			must.NoError(res.SetSections(wire.OpMsgSection{
-				Documents: []*types.Document{protoErr.Document()},
-			}))
+			must.NoError(res.SetSections(wire.MakeOpMsgSection(
+				protoErr.Document(),
+			)))
 			resBody = &res
 
 			switch protoErr := protoErr.(type) {

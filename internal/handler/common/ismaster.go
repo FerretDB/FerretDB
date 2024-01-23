@@ -34,13 +34,13 @@ func IsMaster(ctx context.Context, query *types.Document, tcpHost, name string) 
 	reply := wire.OpReply{
 		NumberReturned: 1,
 	}
-	reply.SetDocuments(IsMasterDocuments(tcpHost, name))
+	reply.SetDocuments([]*types.Document{IsMasterDocument(tcpHost, name)})
 
 	return &reply, nil
 }
 
 // IsMasterDocuments returns isMaster's Documents field (identical for both OP_MSG and OP_QUERY).
-func IsMasterDocuments(tcpHost, name string) []*types.Document {
+func IsMasterDocument(tcpHost, name string) *types.Document {
 	doc := must.NotFail(types.NewDocument(
 		"ismaster", true, // only lowercase
 		// topologyVersion
@@ -68,5 +68,5 @@ func IsMasterDocuments(tcpHost, name string) []*types.Document {
 		doc.Set("hosts", must.NotFail(types.NewArray(tcpHost)))
 	}
 
-	return []*types.Document{doc}
+	return doc
 }
