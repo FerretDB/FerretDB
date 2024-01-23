@@ -137,6 +137,17 @@ func TestCreateUser(t *testing.T) {
 				{"ok", float64(1)},
 			},
 		},
+		"SuccessWithSCRAMSHA256": {
+			payload: bson.D{
+				{"createUser", "success_user_with_scram_sha_256"},
+				{"roles", bson.A{}},
+				{"pwd", "password"},
+				{"mechanisms", bson.A{"SCRAM-SHA-256"}},
+			},
+			expected: bson.D{
+				{"ok", float64(1)},
+			},
+		},
 		"WithComment": {
 			payload: bson.D{
 				{"createUser", "with_comment_user"},
@@ -212,7 +223,15 @@ func TestCreateUser(t *testing.T) {
 			user.Remove("userId")
 
 			if payload.Has("mechanisms") {
-				assertPlainCredentials(t, "PLAIN", must.NotFail(user.Get("credentials")).(*types.Document))
+				payloadMechanisms := must.NotFail(payload.Get("mechanisms")).(*types.Array)
+
+				if payloadMechanisms.Contains("PLAIN") {
+					assertPlainCredentials(t, "PLAIN", must.NotFail(user.Get("credentials")).(*types.Document))
+				}
+
+				if payloadMechanisms.Contains("SCRAM-SHA-256") {
+					assertSCRAMSHA256Credentials(t, "SCRAM-SHA-256", must.NotFail(user.Get("credentials")).(*types.Document))
+				}
 			}
 
 			user.Remove("mechanisms")
@@ -242,4 +261,17 @@ func assertPlainCredentials(t testing.TB, key string, cred *types.Document) {
 	assert.NotEmpty(t, must.NotFail(c.Get("iterationCount")))
 	assert.NotEmpty(t, must.NotFail(c.Get("hash")))
 	assert.NotEmpty(t, must.NotFail(c.Get("salt")))
+}
+
+func assertSCRAMSHA256Credentials(t testing.TB, key string, cred *types.Document) {
+	t.Helper()
+
+	require.True(t, cred.Has(key), "missing credential %q", key)
+
+	c := must.NotFail(cred.Get(key)).(*types.Document)
+
+	assert.Equal(t, must.NotFail(c.Get("iterationCount")), int32(15000))
+	assert.NotEmpty(t, must.NotFail(c.Get("salt")).(string))
+	assert.NotEmpty(t, must.NotFail(c.Get("serverKey")).(string))
+	assert.NotEmpty(t, must.NotFail(c.Get("storedKey")).(string))
 }

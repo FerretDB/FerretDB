@@ -27,7 +27,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/util/password"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -99,34 +98,9 @@ func (h *Handler) MsgUpdateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 		return nil, lazyerrors.Error(err)
 	}
 
-	if mechanisms != nil {
-		iter := mechanisms.Iterator()
-		defer iter.Close()
-
-		for {
-			var v any
-			_, v, err = iter.Next()
-
-			if errors.Is(err, iterator.ErrIteratorDone) {
-				break
-			}
-
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-			if v != "PLAIN" {
-				return nil, handlererrors.NewCommandErrorMsg(
-					handlererrors.ErrBadValue,
-					fmt.Sprintf("Unknown auth mechanism '%s'", v),
-				)
-			}
-		}
-	}
-
 	var credentials *types.Document
+
 	if document.Has("pwd") {
-		credentials = types.MakeDocument(0)
 		pwdi := must.NotFail(document.Get("pwd"))
 		pwd, ok := pwdi.(string)
 
@@ -139,14 +113,10 @@ func (h *Handler) MsgUpdateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 			)
 		}
 
-		if pwd == "" {
-			return nil, handlererrors.NewCommandErrorMsg(
-				handlererrors.ErrSetEmptyPassword,
-				"Password cannot be empty",
-			)
+		credentials, err = makeCredentials(mechanisms, username, pwd)
+		if err != nil {
+			return nil, err
 		}
-
-		credentials.Set("PLAIN", must.NotFail(password.PlainHash(pwd)))
 	}
 
 	usersCol, err := adminDB.Collection("system.users")

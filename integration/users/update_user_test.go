@@ -179,6 +179,25 @@ func TestUpdateUser(t *testing.T) {
 			},
 			skipForMongoDB: "MongoDB decommissioned support to PLAIN auth",
 		},
+		"PasswordChangeWithSCRAMMechanism": {
+			createPayload: bson.D{
+				{"createUser", "a_user_with_scram_mechanism"},
+				{"roles", bson.A{}},
+				{"pwd", "password"},
+				{"mechanisms", bson.A{"SCRAM-SHA-256"}},
+			},
+			updatePayload: bson.D{
+				{"updateUser", "a_user_with_scram_mechanism"},
+				{"pwd", "anewpassword"},
+				{"mechanisms", bson.A{"SCRAM-SHA-256"}},
+			},
+			expected: bson.D{
+				{"_id", "TestUpdateUser.a_user_with_scram_mechanism"},
+				{"user", "a_user_with_scram_mechanism"},
+				{"db", "TestUpdateUser"},
+				{"roles", bson.A{}},
+			},
+		},
 		"PasswordChangeWithBadAuthMechanism": {
 			createPayload: bson.D{
 				{"createUser", "a_user_with_mechanism_bad"},
