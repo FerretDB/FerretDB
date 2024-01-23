@@ -24,6 +24,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -150,11 +151,22 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 	credentials := types.MakeDocument(0)
 
 	if document.Has("pwd") {
-		pwd, ok := must.NotFail(document.Get("pwd")).(string)
+		pwdi := must.NotFail(document.Get("pwd"))
+		pwd, ok := pwdi.(string)
+
 		if !ok {
 			return nil, handlererrors.NewCommandErrorMsg(
-				handlererrors.ErrBadValue,
-				"BSON field 'createUser.pwd' is the wrong type, expected type 'string'",
+				handlererrors.ErrTypeMismatch,
+				fmt.Sprintf("BSON field 'createUser.pwd' is the wrong type '%s', expected type 'string'",
+					handlerparams.AliasFromType(pwdi),
+				),
+			)
+		}
+
+		if pwd == "" {
+			return nil, handlererrors.NewCommandErrorMsg(
+				handlererrors.ErrSetEmptyPassword,
+				"Password cannot be empty",
 			)
 		}
 
@@ -198,11 +210,11 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 	}
 
 	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
+	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+		must.NotFail(types.NewDocument(
 			"ok", float64(1),
-		))},
-	}))
+		)),
+	)))
 
 	return &reply, nil
 }
