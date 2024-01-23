@@ -42,15 +42,17 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 
 	if cmd == "saslStart" && strings.HasSuffix(collection, ".$cmd") {
 		var emptyPayload types.Binary
-		return &wire.OpReply{
+		reply := wire.OpReply{
 			NumberReturned: 1,
-			Documents: []*types.Document{must.NotFail(types.NewDocument(
-				"conversationId", int32(1),
-				"done", true,
-				"payload", emptyPayload,
-				"ok", float64(1),
-			))},
-		}, nil
+		}
+		reply.SetDocuments([]*types.Document{must.NotFail(types.NewDocument(
+			"conversationId", int32(1),
+			"done", true,
+			"payload", emptyPayload,
+			"ok", float64(1),
+		))})
+
+		return &reply, nil
 	}
 
 	return nil, handlererrors.NewCommandErrorMsgWithArgument(

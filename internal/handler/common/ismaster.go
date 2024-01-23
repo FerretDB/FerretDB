@@ -31,10 +31,12 @@ func IsMaster(ctx context.Context, query *types.Document, tcpHost, name string) 
 		return nil, lazyerrors.Error(err)
 	}
 
-	return &wire.OpReply{
+	reply := wire.OpReply{
 		NumberReturned: 1,
-		Documents:      IsMasterDocuments(tcpHost, name),
-	}, nil
+	}
+	reply.SetDocuments(IsMasterDocuments(tcpHost, name))
+
+	return &reply, nil
 }
 
 // IsMasterDocuments returns isMaster's Documents field (identical for both OP_MSG and OP_QUERY).
