@@ -127,7 +127,7 @@ func (reply *OpReply) Documents() []*types.Document {
 	return reply.documents
 }
 
-// SetDocuments sets reply document.
+// SetDocument sets reply document.
 func (reply *OpReply) SetDocument(doc *types.Document) {
 	reply.documents = []*types.Document{doc}
 }
