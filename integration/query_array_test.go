@@ -41,7 +41,8 @@ func TestQueryArrayDotNotation(t *testing.T) {
 		skip       string              // optional, skip test with a specified reason
 	}{
 		"FieldPositionQueryRegex": {
-			// TODO: move to compat https://github.com/FerretDB/FerretDB/issues/1540
+			// Move to compat.
+			// TODO https://github.com/FerretDB/FerretDB/issues/1540
 			filter: bson.D{{"v.array.0", bson.D{{"$lt", primitive.Regex{Pattern: "^$"}}}}},
 			err: &mongo.CommandError{
 				Code:    2,

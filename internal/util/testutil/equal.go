@@ -18,14 +18,15 @@ import (
 	"bytes"
 	"fmt"
 	"math"
+	"slices"
 	"time"
 
 	"github.com/pmezard/go-difflib/difflib"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
@@ -183,14 +184,18 @@ func equalDocuments(tb testtb.TB, v1, v2 *types.Document) bool {
 		return false
 	}
 
-	for _, k := range keys {
-		f1, err := v1.Get(k)
-		require.NoError(tb, err)
+	values1, err := iterator.ConsumeValues(v1.Iterator())
+	require.NoError(tb, err)
 
-		f2, err := v2.Get(k)
-		require.NoError(tb, err)
+	values2, err := iterator.ConsumeValues(v2.Iterator())
+	require.NoError(tb, err)
 
-		if !equal(tb, f1, f2) {
+	if len(values1) != len(values2) {
+		return false
+	}
+
+	for i := range values1 {
+		if !equal(tb, values1[i], values2[i]) {
 			return false
 		}
 	}

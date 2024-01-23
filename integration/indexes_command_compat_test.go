@@ -24,6 +24,8 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 // TestCreateIndexesCommandCompat tests specific behavior for index creation that can be only provided through RunCommand.
@@ -40,7 +42,8 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 		key            any
 		unique         any
 		resultType     compatTestCaseResultType // defaults to nonEmptyResult
-		skip           string                   // optional, skip test with a specified reason
+
+		skip string // optional, skip test with a specified reason
 	}{
 		"InvalidCollectionName": {
 			collectionName: 42,
@@ -162,7 +165,13 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 				require.Nil(t, compatRes)
 			}
 
-			assert.Equal(t, compatRes, targetRes)
+			compatDoc := ConvertDocument(t, compatRes)
+			compatDoc.Remove("$clusterTime")
+			compatDoc.Remove("operationTime")
+			compatDoc.Remove("commitQuorum")
+
+			targetDoc := ConvertDocument(t, targetRes)
+			testutil.AssertEqual(t, compatDoc, targetDoc)
 
 			targetCursor, targetErr := targetCollection.Indexes().List(ctx)
 			compatCursor, compatErr := compatCollection.Indexes().List(ctx)
@@ -227,7 +236,13 @@ func TestCreateIndexesCommandCompatCheckFields(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, createdCollectionAutomatically.(bool)) // must be true because a new collection was created
 
-	AssertEqualDocuments(t, compatRes, targetRes)
+	compat := ConvertDocument(t, compatRes)
+	compat.Remove("$clusterTime")
+	compat.Remove("operationTime")
+	compat.Remove("commitQuorum")
+
+	target := ConvertDocument(t, targetRes)
+	testutil.AssertEqual(t, compat, target)
 
 	// Now this collection exists, so we create another index and expect createdCollectionAutomatically to be false.
 	indexesDoc = bson.D{{"key", bson.D{{"foo", 1}}}, {"name", "foo_1"}}
@@ -250,7 +265,12 @@ func TestCreateIndexesCommandCompatCheckFields(t *testing.T) {
 	require.NoError(t, err)
 	require.False(t, createdCollectionAutomatically.(bool)) // must be false because the collection already exists
 
-	AssertEqualDocuments(t, compatRes, targetRes)
+	compatDoc.Remove("$clusterTime")
+	compatDoc.Remove("operationTime")
+	compatDoc.Remove("commitQuorum")
+
+	targetDoc := ConvertDocument(t, targetRes)
+	testutil.AssertEqual(t, compatDoc, targetDoc)
 
 	// Call index creation for the index that already exists, expect note to be set.
 	indexesDoc = bson.D{{"key", bson.D{{"foo", 1}}}, {"name", "foo_1"}}
@@ -275,18 +295,24 @@ func TestCreateIndexesCommandCompatCheckFields(t *testing.T) {
 	// note must be set because no new indexes were created:
 	require.Equal(t, "all indexes already exist", createdCollectionAutomatically.(string))
 
-	AssertEqualDocuments(t, compatRes, targetRes)
+	compatDoc.Remove("$clusterTime")
+	compatDoc.Remove("operationTime")
+	compatDoc.Remove("commitQuorum")
+
+	targetDoc = ConvertDocument(t, targetRes)
+	testutil.AssertEqual(t, compatDoc, targetDoc)
 }
 
-func TestDropIndexesCommandCompat(t *testing.T) {
-	t.Parallel()
+func TestDropIndexesCommandCompat(tt *testing.T) {
+	tt.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
 		toCreate []mongo.IndexModel // optional, if set, create the given indexes before drop is called
 		toDrop   any                // required, index to drop
 
 		resultType compatTestCaseResultType // optional, defaults to nonEmptyResult
-		skip       string                   // optional, skip test with a specified reason
+
+		skip string // optional, skip test with a specified reason
 	}{
 		"MultipleIndexesByName": {
 			toCreate: []mongo.IndexModel{
@@ -308,6 +334,13 @@ func TestDropIndexesCommandCompat(t *testing.T) {
 			toDrop:     bson.A{"non-existent", "invalid"},
 			resultType: emptyResult,
 		},
+		"MultipleIndexesWithDefault": {
+			toCreate: []mongo.IndexModel{
+				{Keys: bson.D{{"v", 1}}},
+			},
+			toDrop:     bson.A{"v_1", "_id_"},
+			resultType: emptyResult,
+		},
 		"InvalidMultipleIndexType": {
 			toDrop:     bson.A{1},
 			resultType: emptyResult,
@@ -317,6 +350,13 @@ func TestDropIndexesCommandCompat(t *testing.T) {
 				{Keys: bson.D{{"v", -1}}},
 			},
 			toDrop: bson.D{{"v", -1}},
+		},
+		"SimilarIndexes": {
+			toCreate: []mongo.IndexModel{
+				{Keys: bson.D{{"v", 1}, {"foo", 1}}},
+				{Keys: bson.D{{"v", 1}, {"bar", 1}}},
+			},
+			toDrop: bson.D{{"v", 1}, {"bar", 1}},
 		},
 		"DropAllExpression": {
 			toCreate: []mongo.IndexModel{
@@ -350,18 +390,18 @@ func TestDropIndexesCommandCompat(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
+		tt.Run(name, func(tt *testing.T) {
 			if tc.skip != "" {
-				t.Skip(tc.skip)
+				tt.Skip(tc.skip)
 			}
 
-			t.Helper()
-			t.Parallel()
+			tt.Helper()
+			tt.Parallel()
 
-			require.NotNil(t, tc.toDrop, "toDrop must not be nil")
+			require.NotNil(tt, tc.toDrop, "toDrop must not be nil")
 
 			// It's enough to use a single provider for drop indexes test as indexes work the same for different collections.
-			s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
+			s := setup.SetupCompatWithOpts(tt, &setup.SetupCompatOpts{
 				Providers:                []shareddata.Provider{shareddata.Composites},
 				AddNonExistentCollection: true,
 			})
@@ -371,9 +411,10 @@ func TestDropIndexesCommandCompat(t *testing.T) {
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
+				tt.Run(targetCollection.Name(), func(tt *testing.T) {
+					tt.Helper()
 
-				t.Run(targetCollection.Name(), func(t *testing.T) {
-					t.Helper()
+					var t testtb.TB = tt
 
 					if tc.toCreate != nil {
 						_, targetErr := targetCollection.Indexes().CreateMany(ctx, tc.toCreate)
@@ -398,7 +439,7 @@ func TestDropIndexesCommandCompat(t *testing.T) {
 						targetList := FetchAll(t, ctx, targetCursor)
 						compatList := FetchAll(t, ctx, compatCursor)
 
-						require.Equal(t, compatList, targetList)
+						require.ElementsMatch(t, compatList, targetList)
 					}
 
 					targetCommand := bson.D{
@@ -433,7 +474,12 @@ func TestDropIndexesCommandCompat(t *testing.T) {
 						require.Nil(t, compatRes)
 					}
 
-					require.Equal(t, compatRes, targetRes)
+					compatDoc := ConvertDocument(t, compatRes)
+					compatDoc.Remove("$clusterTime")
+					compatDoc.Remove("operationTime")
+
+					targetDoc := ConvertDocument(t, targetRes)
+					testutil.AssertEqual(t, compatDoc, targetDoc)
 
 					if compatErr == nil {
 						nonEmptyResults = true
@@ -456,17 +502,17 @@ func TestDropIndexesCommandCompat(t *testing.T) {
 					targetList := FetchAll(t, ctx, targetCursor)
 					compatList := FetchAll(t, ctx, compatCursor)
 
-					assert.Equal(t, compatList, targetList)
+					assert.ElementsMatch(t, compatList, targetList)
 				})
 			}
 
 			switch tc.resultType {
 			case nonEmptyResult:
-				require.True(t, nonEmptyResults, "expected non-empty results (some indexes should be deleted)")
+				require.True(tt, nonEmptyResults, "expected non-empty results (some indexes should be deleted)")
 			case emptyResult:
-				require.False(t, nonEmptyResults, "expected empty results (no indexes should be deleted)")
+				require.False(tt, nonEmptyResults, "expected empty results (no indexes should be deleted)")
 			default:
-				t.Fatalf("unknown result type %v", tc.resultType)
+				tt.Fatalf("unknown result type %v", tc.resultType)
 			}
 		})
 	}

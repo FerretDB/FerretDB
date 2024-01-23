@@ -1,19 +1,18 @@
-# Please use global .gitignore file for .vscode/, .idea/, etc.
+# Please use global .gitignore file for .vscode/, .idea/, go.work, .envrc, etc.
 # See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files#configuring-ignored-files-for-all-repositories-on-your-computer
 
-# our tools
-bin/
+docker-compose.override.yml
 
-# caches
-.task/
-.cache/
-vendor/
-
-# development and build artifacts, temporary files, etc
-*.out
-*.sqlite
-*.txt
-**/testdata/fuzz/
 state.json
+
+*.out
+*.sqlite*
+*.txt
+
+.task/
+bin/
 tmp/
+vendor/
 website/build/
+
+**/testdata/fuzz/

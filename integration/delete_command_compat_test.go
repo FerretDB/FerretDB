@@ -23,6 +23,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 // deleteCommandCompatTestCase describes delete compatibility test case.
@@ -149,5 +150,12 @@ func TestDeleteCommandCompatNotExistingDatabase(t *testing.T) {
 	assert.NoError(t, targetErr)
 	assert.NoError(t, compatErr)
 
-	assert.Equal(t, compatRes, targetRes)
+	compat := ConvertDocument(t, compatRes)
+	compat.Remove("$clusterTime")
+	compat.Remove("operationTime")
+	compat.Remove("electionId")
+	compat.Remove("opTime")
+
+	target := ConvertDocument(t, targetRes)
+	testutil.AssertEqual(t, compat, target)
 }

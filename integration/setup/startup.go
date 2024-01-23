@@ -16,41 +16,35 @@ package setup
 
 import (
 	"context"
-	"net/http"
-	"net/url"
 	"os"
-	"path/filepath"
 	"runtime"
+	"slices"
+	"strconv"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/jaeger"
-	"go.opentelemetry.io/otel/sdk/resource"
-	oteltrace "go.opentelemetry.io/otel/sdk/trace"
-	otelsemconv "go.opentelemetry.io/otel/semconv/v1.17.0"
 	"go.uber.org/zap"
-	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
 
 // listenerMetrics are shared between tests.
 var listenerMetrics = connmetrics.NewListenerMetrics()
 
-// jaegerExporter is a shared Jaeger exporter for tests.
-var jaegerExporter *jaeger.Exporter
+// shutdownOtel is a function that stops OpenTelemetry provider.
+var shutdownOtel func(context.Context) error
 
 // Startup initializes things that should be initialized only once.
 func Startup() {
-	logging.Setup(zap.DebugLevel, "")
+	logging.Setup(zap.DebugLevel, "console", "")
 
 	// https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables
-	if os.Getenv("RUNNER_DEBUG") == "1" {
+	if t, _ := strconv.ParseBool(os.Getenv("RUNNER_DEBUG")); t {
 		zap.S().Info("Enabling setup debug logging on GitHub Actions.")
 		*debugSetupF = true
 	}
@@ -65,6 +59,10 @@ func Startup() {
 
 	// do basic flags validation earlier, before all tests
 
+	if *benchDocsF <= 0 {
+		zap.S().Fatal("-bench-docs must be > 0.")
+	}
+
 	for _, p := range shareddata.AllBenchmarkProviders() {
 		if g, ok := p.(shareddata.BenchmarkGenerator); ok {
 			g.Init(*benchDocsF)
@@ -77,21 +75,6 @@ func Startup() {
 
 	if !slices.Contains(allBackends, *targetBackendF) {
 		zap.S().Fatalf("Unknown target backend %q.", *targetBackendF)
-	}
-
-	if *sqliteURLF != "" {
-		u, err := url.Parse(*sqliteURLF)
-		if err != nil {
-			zap.S().Fatalf("Failed to parse -sqlite-url %s: %s", u, err)
-		}
-
-		must.BeTrue(u.Path == "")
-		must.BeTrue(u.Opaque != "")
-
-		dir := must.NotFail(filepath.Abs(u.Opaque))
-		zap.S().Infof("Recreating %s", dir)
-		_ = os.Remove(dir)
-		must.NoError(os.MkdirAll(dir, 0o777))
 	}
 
 	if u := *targetURLF; u != "" {
@@ -120,23 +103,7 @@ func Startup() {
 		zap.S().Infof("Compat system: none, compatibility tests will be skipped.")
 	}
 
-	// avoid OTEL_EXPORTER_JAEGER_XXX environment variables effects
-	jaegerExporter = must.NotFail(jaeger.New(jaeger.WithCollectorEndpoint(
-		jaeger.WithEndpoint("http://127.0.0.1:14268/api/traces"),
-		jaeger.WithUsername(""),
-		jaeger.WithPassword(""),
-		jaeger.WithHTTPClient(http.DefaultClient),
-	)))
-
-	tp := oteltrace.NewTracerProvider(
-		oteltrace.WithBatcher(jaegerExporter),
-		oteltrace.WithSampler(oteltrace.AlwaysSample()),
-		oteltrace.WithResource(resource.NewSchemaless(
-			otelsemconv.ServiceNameKey.String("FerretDB"),
-		)),
-	)
-
-	otel.SetTracerProvider(tp)
+	shutdownOtel = observability.SetupOtel("integration")
 }
 
 // Shutdown cleans up after all tests.
@@ -144,7 +111,7 @@ func Shutdown() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	must.NoError(jaegerExporter.Shutdown(ctx))
+	must.NoError(shutdownOtel(ctx))
 
 	// to increase a chance of resource finalizers to spot problems
 	runtime.GC()

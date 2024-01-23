@@ -1,7 +1,7 @@
 ---
 slug: 5-database-alternatives-mongodb-2023
 title: 'MongoDB Alternatives: 5 Database Alternatives to MongoDB for 2023'
-author: Alexander Fashakin
+authors: [alex]
 description: 'The top 5 MongoDB-compatible alternatives to MongoDB include: FerretDB, DocumentDB, CosmosDB, GaussDB(for Mongo), and MariaDB MaxScale.'
 image: /img/blog/mongodb-alternatives.png
 tags: [mongodb compatible, document databases, open source]
@@ -134,4 +134,4 @@ For developers or organizations that would love to be part of a growing communit
 An open source database service like FerretDB offers complete vendor independence, offering MongoDB compatibility that helps you to leave MongoDB without rewriting your application.
 
 [FerretDB](https://www.ferretdb.io/) is still under development, with the first developer review version (FerretDB v0.9.0) recently released.
-If you're interested in this drop-in MongoDB alternative, [try it out today](https://docs.ferretdb.io/category/quickstart/).
+If you're interested in this drop-in MongoDB alternative, [try it out today](https://docs.ferretdb.io/quickstart/).

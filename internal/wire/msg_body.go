@@ -27,16 +27,16 @@ import (
 )
 
 // MsgBody is a wire protocol message body.
+//
+//sumtype:decl
 type MsgBody interface {
+	msgbody() // seal for sumtype
+
 	readFrom(*bufio.Reader) error
 	encoding.BinaryUnmarshaler
 	encoding.BinaryMarshaler
 	fmt.Stringer
-
-	msgbody() // seal for go-sumtype
 }
-
-//go-sumtype:decl MsgBody
 
 // ErrZeroRead is returned when zero bytes was read from connection,
 // indicating that connection was closed by the client.
@@ -153,7 +153,8 @@ func getChecksum(data []byte) (uint32, error) {
 // If the flag bit for checksum presence is not set or the checksum is valid, it returns nil.
 // If the checksum is invalid, it returns an error.
 //
-// TODO The callers of checksum validation should be closer to OP_MSG handling: https://github.com/FerretDB/FerretDB/issues/2690
+// The callers of checksum validation should be closer to OP_MSG handling.
+// TODO https://github.com/FerretDB/FerretDB/issues/2690
 func validateChecksum(header *MsgHeader, body []byte) error {
 	if len(body) < flagsSize {
 		return lazyerrors.New("Message contains illegal flags value")

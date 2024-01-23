@@ -20,6 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
@@ -88,6 +89,37 @@ func TestInsertCommandErrors(t *testing.T) {
 				Message: "BSON field 'insert.documents.1' is the wrong type 'array', expected type 'object'",
 			},
 		},
+		"InsertArrayAsDocumentID": {
+			toInsert: []any{
+				bson.D{{"_id", bson.A{int32(42), int32(42)}}},
+			},
+			ordered: false,
+			werr: &mongo.WriteError{
+				Code:    53,
+				Message: "The '_id' value cannot be of type array",
+			},
+		},
+		"InsertRegexAsDocumentID": {
+			toInsert: []any{
+				bson.D{{"_id", primitive.Regex{Pattern: "foo", Options: "i"}}},
+			},
+			ordered: false,
+			werr: &mongo.WriteError{
+				Code:    53,
+				Message: "The '_id' value cannot be of type regex",
+			},
+		},
+		"InsertDuplicateID": {
+			toInsert: []any{
+				bson.D{{"_id", "foo"}, {"_id", "bar"}},
+			},
+			ordered: false,
+			werr: &mongo.WriteError{
+				Code:    2,
+				Message: "can't have multiple _id fields in one document",
+			},
+			altMessage: `invalid key: "_id" (duplicate keys are not allowed)`,
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -124,4 +156,42 @@ func TestInsertCommandErrors(t *testing.T) {
 			require.NoError(t, err)
 		})
 	}
+}
+
+func TestInsertIDDifferentTypes(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
+
+	_, err := collection.InsertOne(ctx, bson.D{
+		{"_id", int64(1)},
+		{"v", "foo2"},
+	})
+	require.NoError(t, err)
+
+	_, err = collection.InsertOne(ctx, bson.D{
+		{"_id", int32(1)},
+		{"v", "foo1"},
+	})
+
+	AssertEqualAltWriteError(t, mongo.WriteError{
+		Message: "E11000 duplicate key error collection: TestInsertIDDifferentTypes.TestInsertIDDifferentTypes index: _id_ dup key: { _id: 1 }",
+		Code:    11000,
+	},
+		"E11000 duplicate key error collection: TestInsertIDDifferentTypes.TestInsertIDDifferentTypes",
+		err,
+	)
+
+	_, err = collection.InsertOne(ctx, bson.D{
+		{"_id", float32(1)},
+		{"v", "foo3"},
+	})
+
+	AssertEqualAltWriteError(t, mongo.WriteError{
+		Message: "E11000 duplicate key error collection: TestInsertIDDifferentTypes.TestInsertIDDifferentTypes index: _id_ dup key: { _id: 1.0 }",
+		Code:    11000,
+	},
+		"E11000 duplicate key error collection: TestInsertIDDifferentTypes.TestInsertIDDifferentTypes",
+		err,
+	)
 }

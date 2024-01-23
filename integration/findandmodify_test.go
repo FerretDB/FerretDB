@@ -31,10 +31,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
-func TestFindAndModifyEmptyCollectionName(tt *testing.T) {
-	tt.Parallel()
-
-	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3049")
+func TestFindAndModifyEmptyCollectionName(t *testing.T) {
+	t.Parallel()
 
 	ctx, collection := setup.Setup(t, shareddata.Doubles)
 
@@ -54,10 +52,8 @@ func TestFindAndModifyEmptyCollectionName(tt *testing.T) {
 	)
 }
 
-func TestFindAndModifyNonExistingCollection(tt *testing.T) {
-	tt.Parallel()
-
-	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3049")
+func TestFindAndModifyNonExistingCollection(t *testing.T) {
+	t.Parallel()
 
 	ctx, collection := setup.Setup(t)
 
@@ -149,11 +145,11 @@ func TestFindAndModifyCommandErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code: 28,
 				Name: "PathNotViable",
-				Message: "Plan executor error during findAndModify :: caused by :: Cannot create field 'foo' " +
-					"in element {v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
+				Message: `Plan executor error during findAndModify :: caused by :: Cannot create field 'foo' ` +
+					`in element {v: [ { foo: [ { bar: "hello" }, { bar: "world" } ] } ]}`,
 			},
-			altMessage: "Cannot create field 'foo' in element " +
-				"{v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
+			altMessage: `Cannot create field 'foo' in element ` +
+				`{v: [ { foo: [ { bar: "hello" }, { bar: "world" } ] } ]}`,
 		},
 		"SetImmutableID": {
 			command: bson.D{
@@ -198,9 +194,9 @@ func TestFindAndModifyCommandErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code: 28,
 				Name: "PathNotViable",
-				Message: "Plan executor error during findAndModify :: caused by :: " +
-					"cannot use the part (v of v.-1) to traverse the element " +
-					"({v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]})",
+				Message: `Plan executor error during findAndModify :: caused by :: ` +
+					`cannot use the part (v of v.-1) to traverse the element ` +
+					`({v: [ { foo: [ { bar: "hello" }, { bar: "world" } ] } ]})`,
 			},
 			altMessage: "cannot use path 'v.-1' to traverse the document",
 		},
@@ -212,10 +208,10 @@ func TestFindAndModifyCommandErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code: 28,
 				Name: "PathNotViable",
-				Message: "Plan executor error during findAndModify :: caused by :: " +
-					"cannot use the part (bar of v.0.foo.0.bar.z) to traverse the element ({bar: \"hello\"})",
+				Message: `Plan executor error during findAndModify :: caused by :: ` +
+					`cannot use the part (bar of v.0.foo.0.bar.z) to traverse the element ({bar: "hello"})`,
 			},
-			altMessage: "types.getByPath: can't access string by path \"z\"",
+			altMessage: `types.getByPath: can't access string by path "z"`,
 		},
 		"IncTypeMismatch": {
 			command: bson.D{
@@ -225,7 +221,7 @@ func TestFindAndModifyCommandErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    14,
 				Name:    "TypeMismatch",
-				Message: "Cannot increment with non-numeric argument: {v: \"string\"}",
+				Message: `Cannot increment with non-numeric argument: {v: "string"}`,
 			},
 		},
 		"IncUnsuitableValue": {
@@ -236,12 +232,12 @@ func TestFindAndModifyCommandErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code: 28,
 				Name: "PathNotViable",
-				Message: "Plan executor error during findAndModify :: caused by :: " +
-					"Cannot create field 'foo' in element " +
-					"{v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
+				Message: `Plan executor error during findAndModify :: caused by :: ` +
+					`Cannot create field 'foo' in element ` +
+					`{v: [ { foo: [ { bar: "hello" }, { bar: "world" } ] } ]}`,
 			},
-			altMessage: "Cannot create field 'foo' in element " +
-				"{v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
+			altMessage: `Cannot create field 'foo' in element ` +
+				`{v: [ { foo: [ { bar: "hello" }, { bar: "world" } ] } ]}`,
 		},
 		"IncNonNumeric": {
 			command: bson.D{
@@ -251,12 +247,12 @@ func TestFindAndModifyCommandErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code: 14,
 				Name: "TypeMismatch",
-				Message: "Plan executor error during findAndModify :: caused by :: " +
-					"Cannot apply $inc to a value of non-numeric type. " +
-					"{_id: \"array-documents-nested\"} has the field 'bar' of non-numeric type string",
+				Message: `Plan executor error during findAndModify :: caused by :: ` +
+					`Cannot apply $inc to a value of non-numeric type. ` +
+					`{_id: "array-documents-nested"} has the field 'bar' of non-numeric type string`,
 			},
-			altMessage: "Cannot apply $inc to a value of non-numeric type. " +
-				"{_id: \"array-documents-nested\"} has the field 'bar' of non-numeric type string",
+			altMessage: `Cannot apply $inc to a value of non-numeric type. ` +
+				`{_id: "array-documents-nested"} has the field 'bar' of non-numeric type string`,
 		},
 		"IncInt64BadValue": {
 			command: bson.D{
@@ -266,13 +262,13 @@ func TestFindAndModifyCommandErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code: 2,
 				Name: "BadValue",
-				Message: "Plan executor error during findAndModify :: caused by :: " +
-					"Failed to apply $inc operations to current value " +
-					"((NumberLong)9223372036854775807) for document {_id: \"int64-max\"}",
+				Message: `Plan executor error during findAndModify :: caused by :: ` +
+					`Failed to apply $inc operations to current value ` +
+					`((NumberLong)9223372036854775807) for document {_id: "int64-max"}`,
 			},
 			provider: shareddata.Int64s,
-			altMessage: "Failed to apply $inc operations to current value " +
-				"((NumberLong)9223372036854775807) for document {_id: \"int64-max\"}",
+			altMessage: `Failed to apply $inc operations to current value ` +
+				`((NumberLong)9223372036854775807) for document {_id: "int64-max"}`,
 		},
 		"IncInt32BadValue": {
 			command: bson.D{
@@ -282,13 +278,13 @@ func TestFindAndModifyCommandErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code: 2,
 				Name: "BadValue",
-				Message: "Plan executor error during findAndModify :: caused by :: " +
-					"Failed to apply $inc operations to current value " +
-					"((NumberInt)42) for document {_id: \"int32\"}",
+				Message: `Plan executor error during findAndModify :: caused by :: ` +
+					`Failed to apply $inc operations to current value ` +
+					`((NumberInt)42) for document {_id: "int32"}`,
 			},
 			provider: shareddata.Int32s,
-			altMessage: "Failed to apply $inc operations to current value " +
-				"((NumberInt)42) for document {_id: \"int32\"}",
+			altMessage: `Failed to apply $inc operations to current value ` +
+				`((NumberInt)42) for document {_id: "int32"}`,
 		},
 		"MaxUnsuitableValue": {
 			command: bson.D{
@@ -298,12 +294,12 @@ func TestFindAndModifyCommandErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code: 28,
 				Name: "PathNotViable",
-				Message: "Plan executor error during findAndModify :: caused by :: " +
-					"Cannot create field 'foo' in element " +
-					"{v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
+				Message: `Plan executor error during findAndModify :: caused by :: ` +
+					`Cannot create field 'foo' in element ` +
+					`{v: [ { foo: [ { bar: "hello" }, { bar: "world" } ] } ]}`,
 			},
-			altMessage: "Cannot create field 'foo' in element " +
-				"{v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
+			altMessage: `Cannot create field 'foo' in element ` +
+				`{v: [ { foo: [ { bar: "hello" }, { bar: "world" } ] } ]}`,
 		},
 		"MinUnsuitableValue": {
 			command: bson.D{
@@ -313,12 +309,12 @@ func TestFindAndModifyCommandErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code: 28,
 				Name: "PathNotViable",
-				Message: "Plan executor error during findAndModify :: caused by :: " +
-					"Cannot create field 'foo' in element " +
-					"{v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
+				Message: `Plan executor error during findAndModify :: caused by :: ` +
+					`Cannot create field 'foo' in element ` +
+					`{v: [ { foo: [ { bar: "hello" }, { bar: "world" } ] } ]}`,
 			},
-			altMessage: "Cannot create field 'foo' in element " +
-				"{v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
+			altMessage: `Cannot create field 'foo' in element ` +
+				`{v: [ { foo: [ { bar: "hello" }, { bar: "world" } ] } ]}`,
 		},
 		"MulTypeMismatch": {
 			command: bson.D{
@@ -328,7 +324,7 @@ func TestFindAndModifyCommandErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    14,
 				Name:    "TypeMismatch",
-				Message: "Cannot multiply with non-numeric argument: {v: \"string\"}",
+				Message: `Cannot multiply with non-numeric argument: {v: "string"}`,
 			},
 		},
 		"MulTypeMismatchNonExistent": {
@@ -339,7 +335,7 @@ func TestFindAndModifyCommandErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    14,
 				Name:    "TypeMismatch",
-				Message: "Cannot multiply with non-numeric argument: {non-existent: \"string\"}",
+				Message: `Cannot multiply with non-numeric argument: {non-existent: "string"}`,
 			},
 		},
 		"MulUnsuitableValue": {
@@ -350,12 +346,12 @@ func TestFindAndModifyCommandErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code: 28,
 				Name: "PathNotViable",
-				Message: "Plan executor error during findAndModify :: caused by :: " +
-					"Cannot create field 'foo' in element " +
-					"{v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
+				Message: `Plan executor error during findAndModify :: caused by :: ` +
+					`Cannot create field 'foo' in element ` +
+					`{v: [ { foo: [ { bar: "hello" }, { bar: "world" } ] } ]}`,
 			},
-			altMessage: "Cannot create field 'foo' in element " +
-				"{v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
+			altMessage: `Cannot create field 'foo' in element ` +
+				`{v: [ { foo: [ { bar: "hello" }, { bar: "world" } ] } ]}`,
 		},
 		"MulNonNumeric": {
 			command: bson.D{
@@ -365,12 +361,12 @@ func TestFindAndModifyCommandErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code: 14,
 				Name: "TypeMismatch",
-				Message: "Plan executor error during findAndModify :: caused by :: " +
-					"Cannot apply $mul to a value of non-numeric type. " +
-					"{_id: \"array-documents-nested\"} has the field 'bar' of non-numeric type string",
+				Message: `Plan executor error during findAndModify :: caused by :: ` +
+					`Cannot apply $mul to a value of non-numeric type. ` +
+					`{_id: "array-documents-nested"} has the field 'bar' of non-numeric type string`,
 			},
-			altMessage: "Cannot apply $mul to a value of non-numeric type. " +
-				"{_id: \"array-documents-nested\"} has the field 'bar' of non-numeric type string",
+			altMessage: `Cannot apply $mul to a value of non-numeric type. ` +
+				`{_id: "array-documents-nested"} has the field 'bar' of non-numeric type string`,
 		},
 		"MulInt64BadValue": {
 			command: bson.D{
@@ -380,13 +376,13 @@ func TestFindAndModifyCommandErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code: 2,
 				Name: "BadValue",
-				Message: "Failed to apply $mul operations to current value " +
-					"((NumberLong)9223372036854775807) for document {_id: \"int64-max\"}",
+				Message: `Plan executor error during findAndModify :: caused by :: ` +
+					`Failed to apply $mul operations to current value ` +
+					`((NumberLong)9223372036854775807) for document {_id: "int64-max"}`,
 			},
 			provider: shareddata.Int64s,
-			altMessage: "Plan executor error during findAndModify :: caused by :: " +
-				"Failed to apply $mul operations to current value " +
-				"((NumberLong)9223372036854775807) for document {_id: \"int64-max\"}",
+			altMessage: `Failed to apply $mul operations to current value ` +
+				`((NumberLong)9223372036854775807) for document {_id: "int64-max"}`,
 		},
 		"MulInt32BadValue": {
 			command: bson.D{
@@ -396,13 +392,13 @@ func TestFindAndModifyCommandErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code: 2,
 				Name: "BadValue",
-				Message: "Plan executor error during findAndModify :: caused by :: " +
-					"Failed to apply $mul operations to current value " +
-					"((NumberInt)42) for document {_id: \"int32\"}",
+				Message: `Plan executor error during findAndModify :: caused by :: ` +
+					`Failed to apply $mul operations to current value ` +
+					`((NumberInt)42) for document {_id: "int32"}`,
 			},
 			provider: shareddata.Int32s,
-			altMessage: "Failed to apply $mul operations to current value " +
-				"((NumberInt)42) for document {_id: \"int32\"}",
+			altMessage: `Failed to apply $mul operations to current value ` +
+				`((NumberInt)42) for document {_id: "int32"}`,
 		},
 		"MulEmptyPath": {
 			command: bson.D{
@@ -447,14 +443,12 @@ func TestFindAndModifyCommandErrors(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(tt *testing.T) {
+		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
-				tt.Skip(tc.skip)
+				t.Skip(tc.skip)
 			}
 
-			tt.Parallel()
-
-			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3049")
+			t.Parallel()
 
 			require.NotNil(t, tc.command, "command must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
@@ -554,10 +548,8 @@ func TestFindAndModifyCommandUpsert(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(tt *testing.T) {
-			tt.Parallel()
-
-			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3049")
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 
 			require.NotNil(t, tc.command, "command must not be nil")
 
@@ -577,7 +569,6 @@ func TestFindAndModifyCommandUpsert(t *testing.T) {
 				t.Fatal(actual)
 			}
 
-			// TODO: add document comparison here. Skip _id check as it always would different.
 			for _, v := range leb {
 				if v.Key == "upserted" {
 					continue
@@ -588,10 +579,8 @@ func TestFindAndModifyCommandUpsert(t *testing.T) {
 	}
 }
 
-func TestFindAndModifyCommentMethod(tt *testing.T) {
-	tt.Parallel()
-
-	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3049")
+func TestFindAndModifyCommentMethod(t *testing.T) {
+	t.Parallel()
 
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 
@@ -614,10 +603,8 @@ func TestFindAndModifyCommentMethod(tt *testing.T) {
 	assert.Equal(t, expected, res)
 }
 
-func TestFindAndModifyCommentQuery(tt *testing.T) {
-	tt.Parallel()
-
-	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3049")
+func TestFindAndModifyCommentQuery(t *testing.T) {
+	t.Parallel()
 
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 

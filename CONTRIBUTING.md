@@ -5,18 +5,18 @@ Thank you for your interest in making FerretDB better!
 ## Finding something to work on
 
 We are interested in all contributions, big or small, in code or documentation.
-But unless you are fixing a very small issue like a typo,
-we kindly ask you first to [create an issue](https://github.com/FerretDB/FerretDB/issues/new/choose),
-to leave a comment on an existing issue if you want to work on it,
-or to [join our Slack chat](./README.md#community) and leave a message for us in the `#dev` channel.
-This way, you will get help from us and avoid wasted efforts if something can't be worked on right now
-or someone is already working on it.
+But unless you are fixing a tiny issue like a typo,
+we kindly ask you first to [create an issue](https://github.com/FerretDB/FerretDB/issues/new/choose)
+or leave a comment on an existing issue if you want to work on it.
+This way, we could assign the issue to you, marking it as being worked on,
+preventing others from wasting efforts working on it at the same time.
+Additionally, you can [join our Slack chat](./README.md#community) and leave a message for us in the `#dev` channel.
 
 You can find a list of good first issues for contributors [there](https://github.com/FerretDB/FerretDB/contribute).
 Once you have some experience with contributing to FerretDB,
 feel free to pick any issue
 [that is not assigned to anyone and doesn't have `not ready` label](https://github.com/FerretDB/FerretDB/issues?q=is%3Aissue+is%3Aopen+no%3Aassignee+-label%3A%22not+ready%22).
-Still, please let us know as described above.
+Still, please leave a comment on it as described above.
 
 ## Setting up the environment
 
@@ -30,21 +30,19 @@ On macOS and Windows, [Docker Desktop](https://www.docker.com/products/docker-de
 On Windows, it should be [configured to use WSL 2](https://docs.docker.com/desktop/windows/wsl/) without any distro;
 all commands should be run on the host.
 
-You will need Go 1.20 or later on the host.
+You will need Go 1.21 or later on the host.
 If your package manager doesn't provide it yet,
 please install it from [go.dev](https://go.dev/dl/).
 
 You will also need `git` installed; the version provided by your package manager should do.
-On Windows, the simplest way to install it might be <https://gitforwindows.org>.
+On Windows, the simplest way to install it might be https://gitforwindows.org.
 
 Finally, you will also need [git-lfs](https://git-lfs.github.com) installed and configured (`git lfs install`).
 
 ### Making a working copy
 
 Fork the [FerretDB repository on GitHub](https://github.com/FerretDB/FerretDB/fork).
-To have all the tags in the repository and what they point to, copy all branches by removing checkmark for `copy the main branch only` before forking.
-
-After forking FerretDB on GitHub, you can clone the repository and add upstream repository as a remote:
+After that, you can clone the repository and add the upstream repository as a remote:
 
 ```sh
 git clone git@github.com:<YOUR_GITHUB_USERNAME>/FerretDB.git
@@ -52,6 +50,9 @@ cd FerretDB
 git remote add upstream https://github.com/FerretDB/FerretDB.git
 git fetch --all --tags
 ```
+
+The last command would fetch all Git tags from our repository that GitHub won't copy to fork by default.
+`git describe` command uses them to determine the FerretDB version during the build process.
 
 To run development commands, you should first install the [`task`](https://taskfile.dev/) tool.
 You can do this by changing the directory to `tools` (`cd tools`) and running `go generate -x`.
@@ -72,10 +73,49 @@ and download required Docker images with `task env-pull`.
 If something does not work correctly,
 you can reset the environment with `task env-reset`.
 
-### Building a production release binary
+### Building a production release binaries
 
-To build a production release binary, run `task build-release`.
-The result will be saved as `bin/ferretdb`.
+To build a production release binaries, run `task build-production`.
+The results will be saved `tmp/bin`.
+
+### Setting a GITHUB_TOKEN
+
+Some of our development tools require access to public information on GitHub
+at a rate higher than allowed for unauthenticated requests.
+Those tools will report a problem in this case.
+It could be solved by creating a new classic or fine-graned personal access token
+[there](https://github.com/settings/tokens).
+No scopes are needed for classic tokens, not even `public_repo`.
+For fine-graned tokens, only read-only access to public repositories is needed without any additional permissions.
+After generating a token, set the `GITHUB_TOKEN` environment variable:
+
+```sh
+export GITHUB_TOKEN=ghp_XXX
+```
+
+or
+
+```sh
+export GITHUB_TOKEN=github_pat_XXX
+```
+
+## Reporting a bug
+
+We appreciate reporting a bug to us.
+To help us accurately identify the cause, we encourage you to include a pull request with test script.
+Please write the test script in [build/legacy-mongo-shell/test.js](build/legacy-mongo-shell/test.js).
+You can find an overview of the available assertions [here](build/legacy-mongo-shell/README.md).
+Use these assertions to validate your test's assumptions and invariants.
+You can also find an example of how to prepare a test script in
+[build/legacy-mongo-shell/test.example.js](build/legacy-mongo-shell/test.example.js).
+
+With `task` installed (see above), you may test your script using following steps:
+
+1. Start the development environment with `task env-up`.
+2. Start FerretDB with `task run`.
+3. Run the test script with `task testjs`.
+
+Please create a pull request and include the link of the pull request in the bug issue.
 
 ## Contributing code
 
@@ -84,7 +124,7 @@ The result will be saved as `bin/ferretdb`.
 With `task` installed (see above), you may do the following:
 
 1. Start the development environment with `task env-up`.
-2. Run all tests in another terminal window with `task test`.
+2. Run all tests in another terminal window with `task test` (see [below](#running-tests)).
 3. Start FerretDB with `task run`.
    This will start it in a development mode where all requests are handled by FerretDB, but also routed to MongoDB.
    The differences in response are then logged and the FerretDB response is sent back to the client.
@@ -123,18 +163,14 @@ The `internal` subpackages contain most of the FerretDB code:
 - `bson` package provides converters from/to BSON for built-in and `types` types.
 - `wire` package provides wire protocol implementation.
 - `clientconn` package provides client connection implementation.
-  It accepts client connections, reads `wire`/`bson` protocol messages, and passes them to `handlers`.
+  It accepts client connections, reads `wire`/`bson` protocol messages, and passes them to `handler`.
   Responses are then converted to `wire`/`bson` messages and sent back to the client.
-- `handlers` contains a common interface for backend handlers that they should implement.
-  Handlers use `types` and `wire` packages, but `bson` package details are hidden.
-- `handlers/common` contains code shared by different handlers.
-- `handlers/sjson` provides converters from/to SJSON for built-in and `types` types.
+- `handler` contains implementations of command handlers.
+  They use `types` and `wire` packages, but `bson` package details are hidden.
+- `handler/sjson` provides converters from/to SJSON for built-in and `types` types.
   SJSON adds some extensions to JSON for keeping object keys in order,
   preserving BSON type information in the values themselves, etc.
-  It is used by `sqlite` and `pg` handlers.
-- `handlers/sqlite` contains the implementation of the SQLite handler.
-  It is being converted into universal handler for all backends.
-- `handlers/pg` contains the implementation of the PostgreSQL handler.
+  It is used by some backends.
 
 #### Running tests
 
@@ -149,13 +185,13 @@ We also have a set of "integration" tests in the `integration` directory.
 They use the Go MongoDB driver like a regular user application.
 They could test any MongoDB-compatible database (such as FerretDB or MongoDB itself) via a regular TCP or TLS port or Unix socket.
 They also could test in-process FerretDB instances
-(meaning that integration tests start and stop them themselves) with a given handler.
+(meaning that integration tests start and stop them themselves) with a given backend.
 Finally, some integration tests (so-called compatibility or "compat" tests) connect to two systems
 ("target" for FerretDB and "compat" for MongoDB) at the same time,
 send the same queries to both, and compare results.
 You can run them with:
 
-- `task test-integration-pg` for in-process FerretDB with `pg` handler and MongoDB;
+- `task test-integration-postgresql` for in-process FerretDB with PostgreSQL backend and MongoDB;
 - `task test-integration-mongodb` for MongoDB only, skipping compat tests;
 - or `task test-integration` to run all in parallel.
 
@@ -165,8 +201,8 @@ If tests fail and the output is too confusing, try running them sequentially by 
 You can also run `task -C 1` to limit the number of concurrent tasks, which is useful for debugging.
 
 To run a subset of integration tests and test cases, you may use Task variable `TEST_RUN`.
-For example, to run all tests related to the `getMore` command implementation for in-process FerretDB with `pg` handler
-you may use `task test-integration-pg TEST_RUN='(?i)GetMore'`.
+For example, to run all tests related to the `getMore` command implementation for in-process FerretDB with PostgreSQL backend
+you may use `task test-integration-postgresql TEST_RUN='(?i)GetMore'`.
 
 Finally, since all tests just run `go test` with various arguments and flags under the hood
 (for example, `TEST_RUN` just provides the value for the [`-run` flag](https://pkg.go.dev/cmd/go#hdr-Testing_flags)),
@@ -174,17 +210,20 @@ you may also use all standard `go` tool facilities,
 including [`GOFLAGS` environment variable](https://pkg.go.dev/cmd/go#hdr-Environment_variables).
 For example:
 
-- to run all tests related to the `getMore` command implementation for in-process FerretDB with `pg` handler
+- to run all tests related to the `getMore` command implementation in-process FerretDB with PostgreSQL backend
   with all subtests running sequentially,
-  you may use `env GOFLAGS='-parallel=1' task test-integration-pg TEST_RUN='(?i)GetMore'`;
-- to run all tests for in-process FerretDB with `sqlite` handler
+  you may use `env GOFLAGS='-parallel=1' task test-integration-postgresql TEST_RUN='(?i)GetMore'`;
+- to run all tests for in-process FerretDB with SQLite backend
   with [Go execution tracer](https://pkg.go.dev/runtime/trace) enabled,
   you may use `env GOFLAGS='-trace=trace.out' task test-integration-sqlite`.
 
-> **Note**
->
+<!-- textlint-disable one-sentence-per-line -->
+
+> [!NOTE]
 > It is not recommended to set `GOFLAGS` and other Go environment variables with `export GOFLAGS=...`
 > or `go env -w GOFLAGS=...` because they are invisible and easy to forget about, leading to confusion.
+
+<!-- textlint-enable one-sentence-per-line -->
 
 In general, we prefer integration tests over unit tests,
 tests using real databases over short tests
@@ -193,13 +232,13 @@ and real objects over mocks.
 (You might disagree with our terminology for "unit" and "integration" tests;
 let's not fight over it.)
 
-We have an additional integration testing system in another repository: <https://github.com/FerretDB/dance>.
+We have an additional integration testing system in another repository: https://github.com/FerretDB/dance.
 
 #### Observability in tests
 
 Integration tests start a debug handler with pprof profiles and execution traces on a random port
 (to allow running multiple test configurations in parallel).
-They also send telemetry traces to the local Jaeger instance that can be accessed at <http://127.0.0.1:16686/>.
+They also send telemetry traces to the local Jaeger instance that can be accessed at http://127.0.0.1:16686/.
 
 ### Code style and conventions
 
@@ -210,13 +249,14 @@ but please also tell us about it, so we can improve all of it.
 If, on the other hand, you see code that is inconsistent without apparent reason (or comment),
 please improve it as you work on it.
 
-Our code most of the standard Go conventions,
-documented on [CodeReviewComments wiki page](https://github.com/golang/go/wiki/CodeReviewComments).
+Our code follows most of the standard Go conventions,
+documented on [CodeReviewComments wiki page](https://go.dev/wiki/CodeReviewComments)
+and some other pages such as [Spelling](https://go.dev/wiki/Spelling).
 Some of our idiosyncrasies:
 
 1. We use type switches over BSON types in many places in our code.
-   The order of `case`s follows this order: <https://pkg.go.dev/github.com/FerretDB/FerretDB/internal/types#hdr-Mapping>
-   It may seem random, but it is only pseudo-random and follows BSON spec: <https://bsonspec.org/spec.html>
+   The order of `case`s follows this order: https://pkg.go.dev/github.com/FerretDB/FerretDB/internal/types#hdr-Mapping
+   It may seem random, but it is only pseudo-random and follows BSON spec: https://bsonspec.org/spec.html
 2. We generally pass and return `struct`s by pointers.
    There are some exceptions like `types.Path` that have value semantics, but when in doubt – use pointers.
 3. Code comments:
@@ -237,7 +277,7 @@ Some of our idiosyncrasies:
 We prefer our integration tests to be straightforward,
 branchless (with a few, if any, `if` and `switch` statements),
 and backend-independent.
-Ideally, the same test should work for both FerretDB with all handlers and MongoDB.
+Ideally, the same test should work for both FerretDB with all backends and MongoDB.
 If that's impossible without some branching, use helpers exported from the `setup` package,
 such us `FailsForFerretDB`, `SkipForMongoDB`, etc.
 The bar for using other ways of branching, such as checking error codes and messages, is very high.
@@ -280,7 +320,7 @@ const doubleMaxPrec = float64(1<<53 - 1) // 9007199254740991.0:    largest doubl
 8. Avoid including test data in the name to maintain clarity and prevent excessively long names.
 9. Test case names should follow `TitleCase` capitalization style.
    No spaces, dashes or underscores should be used neither for test names nor for test case names.
-10. Keep the concatenation of test name segments (test, subtests, and handler) within 64 characters
+10. Keep the concatenation of test name segments (test, subtests) within 64 characters
     to satisfy the maximum limit for database names.
 
 ### Submitting code changes
@@ -289,65 +329,48 @@ const doubleMaxPrec = float64(1<<53 - 1) // 9007199254740991.0:    largest doubl
 
 Before submitting a pull request, please make sure that:
 
-1. Tests are added or updated for new functionality or fixed bugs.
+1. Your changes are committed to a [new branch](https://docs.github.com/en/get-started/quickstart/github-flow)
+   created from the [current state](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/syncing-a-fork)
+   of our main branch.
+2. Tests are added or updated for new functionality or fixed bugs.
    Typical test cases include:
    - happy paths;
    - dot notation for existing and non-existent paths;
    - edge cases for invalid or unexpected values or types.
-2. Comments are added or updated for all new or changed code.
+3. Comments are added or updated for all new or changed code.
    Please add missing comments for all (both exported and unexported)
    new and changed top-level declarations (`package`, `var`, `const`, `func`, `type`).
    Please also check that formatting is correct in the `task godocs` output.
-3. `task all` passes.
+4. `task all` passes.
 
 #### Submitting PR
 
-1. If the pull request is related to some issues,
-   please mention the issue number in the pull request **description** like `Closes #{issue_number}.`
-   or `Closes org/repo#{issue_number}.`
-   (You can just follow the pull request template).
-   Please do not use URLs like `https://github.com/org/repo/issue/{issue_number}`
-   or paths like `org/repo/issue/{issue_number}` even if they are rendered the same on GitHub.
+1. Please follow the pull request template.
+2. If the pull request is related to some issue,
+   please mention the issue number in the pull request description like `Closes #<issue_number>.`
+   or `Closes FerretDB/<repo>#<issue_number>.`
+   Please do not use URLs like `https://github.com/FerretDB/<repo>/issue/<issue_number>`
+   or paths like `FerretDB/<repo>/issue/<issue_number>` even if they are rendered the same on GitHub.
    If you propose a tiny fix, there is no needed to create a new issue.
-2. There is no need to use draft pull requests.
+3. There is no need to use draft pull requests.
    If you want to get feedback on something you are working on,
    please create a normal pull request, even if it is not "fully" ready yet.
-3. In the pull request review conversations,
+4. In the pull request review conversations,
    please either leave a new comment or resolve (close) the conversation,
-   which ensures the other people can read all comments.
-   But **do not** do that simultaneously.
-4. During your development,
-   commit messages (both titles and bodies) are not important and can be "WIP" or anything else.
-   All commits are always squashed on merge by GitHub,
-   so there is **no need** to squash them manually, amend them, and/or do force pushes.
-   But notice that the autogenerated GitHub's squash commit's body
-   **should be** manually replaced by "Closes #{issue_number}.".
-5. Please don't forget to click
+   which ensures other people can read all comments.
+   But do not do that simultaneously.
+   Conversations should typically be resolved by the conversation starter, not the PR author.
+5. During development in a branch/PR,
+   commit messages (both titles and bodies) are not important and can be anything.
+   All commits are always squashed on merge by GitHub.
+   Please **do not** squash them manually, amend them, and/or force push them -
+   that makes the review process harder.
+6. Please don't forget to click
    ["re-request review" buttons](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/requesting-a-pull-request-review)
    once PR is ready for re-review.
 
 If you have interest in becoming or are a long-term contributor,
 please read [PROCESS.md](.github/PROCESS.md) for more details.
-
-## Reporting a bug
-
-We appreciate reporting a bug to us.
-To help us accurately identify the cause, we encourage
-you to include a pull request with test script.
-Please write the test script in
-[build/legacy-mongo-shell/test.js](build/legacy-mongo-shell/test.js).
-You can find an overview of the available assertions [here](build/legacy-mongo-shell/README.md).
-Use these assertions to validate your test's assumptions and invariants.
-You can also find an example of how to prepare a test script in
-[build/legacy-mongo-shell/test.example.js](build/legacy-mongo-shell/test.example.js).
-
-Test your script using following steps:
-
-1. Start the development environment with `task env-up`.
-2. Start FerretDB with `task run`.
-3. Run the test script with `task testjs`.
-
-Please create a pull request and include the link of the pull request in the bug issue.
 
 ## Contributing documentation
 
@@ -363,5 +386,8 @@ With `task` installed (see above), you may do the following:
 
 Before submitting a pull request, please make sure that:
 
-1. Documentation is formatted, linted, and built with `task docs`.
-2. Documentation is written according to our [writing guide](https://docs.ferretdb.io/contributing/writing-guide/).
+1. Your changes are committed to a [new branch](https://docs.github.com/en/get-started/quickstart/github-flow)
+   created from the [current state](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/syncing-a-fork)
+   of our main branch.
+2. Documentation is formatted, linted, and built with `task docs`.
+3. Documentation is written according to our [writing guide](https://docs.ferretdb.io/contributing/writing-guide/).
