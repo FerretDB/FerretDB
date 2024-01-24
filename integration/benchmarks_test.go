@@ -189,7 +189,7 @@ func BenchmarkInsertManyX(b *testing.B) {
 		batchSizes []int
 	}
 	d := T{}
-	d.batchSizes = []int{1, 10, 100, 1000}
+	d.batchSizes = []int{1, 10, 100, 1000} // TODO use batches
 
 	allInsertDocs := []any{}
 	for _, provider := range shareddata.AllBenchmarkProviders() {
