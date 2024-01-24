@@ -47,10 +47,6 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - name: Setup permissions monitoring
-        uses: GitHubSecurityLab/actions-permissions/monitor@v1
-        if: false
-
       - name: Dump github context
         run: echo "$GITHUB_CONTEXT"
         env:
