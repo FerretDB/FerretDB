@@ -52,6 +52,7 @@ type FindAndModifyParams struct {
 	BypassDocumentValidation bool            `ferretdb:"bypassDocumentValidation,ignored"`
 	LSID                     any             `ferretdb:"lsid,ignored"`
 	ClusterTime              any             `ferretdb:"$clusterTime,ignored"`
+	ReadPreference           *types.Document `ferretdb:"$readPreference,ignored"`
 }
 
 // GetFindAndModifyParams returns `findAndModifyParams` command parameters.

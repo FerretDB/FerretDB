@@ -10,6 +10,7 @@ on:
   push:
     branches:
       - main
+      - main/*
       - releases/*
   schedule:
     - cron: "12 0 * * *"
@@ -102,7 +103,7 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 10
 
-    # deploy only on push to main; exclude pull_request and schedule
+    # exclude pull_request and schedule
     needs: build
     if: github.event_name == 'push'
 

@@ -60,7 +60,7 @@ jobs:
           lfs: false # LFS is used only by website
           ref: ${{ inputs.checkout_ref }}
 
-      # for branch.txt on pull_request_target; `main` is already checked out on push / schedule
+      # for branch.txt on pull_request_target; the correct branch is already checked out on push / schedule
       - name: Name branch
         if: github.event_name == 'pull_request_target'
         env:

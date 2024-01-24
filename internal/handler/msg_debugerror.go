@@ -54,9 +54,9 @@ func (h *Handler) MsgDebugError(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 			"ok", float64(1),
 		))
 
-		must.NoError(reply.SetSections(wire.OpMsgSection{
-			Documents: []*types.Document{replyDoc},
-		}))
+		must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+			replyDoc,
+		)))
 
 		return &reply, nil
 
