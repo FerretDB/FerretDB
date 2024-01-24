@@ -45,7 +45,6 @@ ARG LABEL_VERSION
 ARG LABEL_COMMIT
 RUN test -n "$LABEL_VERSION"
 RUN test -n "$LABEL_COMMIT"
-RUN useradd -u 10001 ferretdb
 
 # use the same directories for Go caches as above
 ENV GOPATH /cache/gopath
@@ -102,7 +101,7 @@ COPY --from=production-build /src/bin/ferretdb /ferretdb
 FROM scratch AS production
 
 COPY --from=production-build /src/bin/ferretdb /ferretdb
-COPY --from=production-build /etc/passwd /etc/passwd
+COPY --from=production-build /src/build/docker/passwd /etc/passwd
 
 USER ferretdb
 ENTRYPOINT [ "/ferretdb" ]
