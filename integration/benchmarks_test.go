@@ -180,7 +180,7 @@ func BenchmarkInsertMany(b *testing.B) {
 	}
 }
 
-// BenchmarkInsertManyX is concurrent over the batchSizes.
+// BenchmarkInsertManyX is concurrent over the batch sizes.
 func BenchmarkInsertManyX(b *testing.B) {
 	ctx, collection := setup.Setup(b)
 
