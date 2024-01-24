@@ -214,9 +214,6 @@ func BenchmarkInsertManyX(b *testing.B) {
 
 	d.D = allInsertDocs
 
-	// partitioning to avoid duplicate key errors, nah?
-	// [1, 2, 3, 4, 5, 6, 7, 8]
-	// [i:k+i] = [0:2+0]
 	var wg sync.WaitGroup
 	for i := 0; i < b.N; i++ {
 		wg.Add(1)
@@ -224,10 +221,12 @@ func BenchmarkInsertManyX(b *testing.B) {
 			defer wg.Done()
 
 			b.StartTimer()
+
 			d.mu.Lock()
 			_, err := collection.InsertMany(ctx, d.D)
 			require.NoError(b, err)
 			d.mu.Unlock()
+
 			b.StopTimer()
 
 			require.NoError(b, collection.Drop(ctx))
