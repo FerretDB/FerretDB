@@ -180,59 +180,60 @@ func BenchmarkInsertMany(b *testing.B) {
 	}
 }
 
+// BenchmarkInsertManyX is concurrent over the batchSizes.
 func BenchmarkInsertManyX(b *testing.B) {
 	ctx, collection := setup.Setup(b)
 
-	type T struct {
-		mu         sync.Mutex // guards D
-		D          []any
+	type D struct {
+		mu         sync.Mutex // guards collection to avoid duplicate key errors
+		collection *mongo.Collection
 		batchSizes []int
 	}
-	d := T{}
-	d.batchSizes = []int{1, 10, 100, 1000} // TODO use batches
+	d := D{}
+	d.batchSizes = []int{10, 100, 250}
+	d.collection = collection
 
-	allInsertDocs := []any{}
+	var wg sync.WaitGroup
 	for _, provider := range shareddata.AllBenchmarkProviders() {
-		iter := provider.NewIterator()
+		for _, batchSize := range d.batchSizes {
+			b.Run(fmt.Sprintf("%s/Batch%d", provider.Name(), batchSize), func(b *testing.B) {
 
-		for {
-			docs, err := iterator.ConsumeValues(iter)
-			require.NoError(b, err)
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
 
-			if docs == nil {
-				break
-			}
+					iter := provider.NewIterator()
 
-			insertDocs := make([]any, len(docs))
-			for i := range insertDocs {
-				insertDocs[i] = docs[i]
-			}
+					for {
+						docs, err := iterator.ConsumeValuesN(iter, batchSize)
+						require.NoError(b, err)
 
-			allInsertDocs = append(allInsertDocs, insertDocs...)
+						if docs == nil {
+							break
+						}
+
+						insertDocs := make([]any, len(docs))
+						for i := range insertDocs {
+							insertDocs[i] = docs[i]
+						}
+
+						b.StartTimer()
+
+						d.mu.Lock()
+						_, err = d.collection.InsertMany(ctx, insertDocs)
+						require.NoError(b, err)
+
+						b.StopTimer()
+
+						// garbage idea
+						_, err = d.collection.DeleteMany(ctx, bson.D{})
+						require.NoError(b, err)
+						d.mu.Unlock()
+					}
+				}()
+			})
 		}
 	}
 
-	d.D = allInsertDocs
-
-	var wg sync.WaitGroup
-	for i := 0; i < b.N; i++ {
-		wg.Add(1)
-		go func(i int) {
-			defer wg.Done()
-
-			b.StartTimer()
-
-			d.mu.Lock()
-			_, err := collection.InsertMany(ctx, d.D)
-			require.NoError(b, err)
-			d.mu.Unlock()
-
-			b.StopTimer()
-
-			require.NoError(b, collection.Drop(ctx))
-		}(i)
-	}
-
 	wg.Wait()
-
 }
