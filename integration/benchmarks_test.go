@@ -15,7 +15,8 @@
 package integration
 
 import (
-	"math/rand"
+	"fmt"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -24,6 +25,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
 
 func BenchmarkFind(b *testing.B) {
@@ -132,47 +134,106 @@ func BenchmarkReplaceOne(b *testing.B) {
 func BenchmarkInsertMany(b *testing.B) {
 	ctx, collection := setup.Setup(b)
 
-	collections := []*mongo.Collection{}
+	for _, provider := range shareddata.AllBenchmarkProviders() {
+		total, err := iterator.ConsumeCount(provider.NewIterator())
+		require.NoError(b, err)
 
-	// TODO use providers instead
-	collNames := []string{"a", "b", "c", "d"}
-	for _, collName := range collNames {
-		res := collection.Database().RunCommand(ctx, bson.D{{"create", collName}})
-		require.NoError(b, res.Err())
+		var batchSizes []int
+		for _, batchSize := range []int{1, 10, 100, 1000} {
+			if batchSize <= total {
+				batchSizes = append(batchSizes, batchSize)
+			}
+		}
 
-		collections = append(collections, collection.Database().Collection(collName))
-	}
+		for _, batchSize := range batchSizes {
+			b.Run(fmt.Sprintf("%s/Batch%d", provider.Name(), batchSize), func(b *testing.B) {
+				b.StopTimer()
 
-	for name, bc := range map[string]struct {
-		collections []string
-	}{
-		"ConcurrentInsertManyAllCollections": {
-			collections: []string{"a", "b", "c", "d"},
-		},
-	} {
-		b.Run(name, func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
+				for i := 0; i < b.N; i++ {
+					require.NoError(b, collection.Drop(ctx))
 
-				// batches of random sizes in the interval [0,1000)
-				randomBatches := make([][]interface{}, len(bc.collections))
-				for i := range randomBatches {
-					size := rand.Intn(1000)
-					for j := 0; j < size; j++ {
-						randomBatches[i] = append(randomBatches[i], bson.D{{"a", j}})
+					iter := provider.NewIterator()
+
+					for {
+						docs, err := iterator.ConsumeValuesN(iter, batchSize)
+						require.NoError(b, err)
+
+						if docs == nil {
+							break
+						}
+
+						insertDocs := make([]any, len(docs))
+						for i := range insertDocs {
+							insertDocs[i] = docs[i]
+						}
+
+						b.StartTimer()
+
+						_, err = collection.InsertMany(ctx, insertDocs)
+						require.NoError(b, err)
+
+						b.StopTimer()
 					}
 				}
-
-				b.StartTimer()
-
-				for i, collection := range collections {
-					go func(i int, collection *mongo.Collection) {
-						_, err := collection.InsertMany(ctx, randomBatches[i])
-						require.NoError(b, err)
-					}(i, collection)
-				}
-
-				b.StopTimer()
-			}
-		})
+			})
+		}
 	}
+}
+
+func BenchmarkInsertManyX(b *testing.B) {
+	ctx, collection := setup.Setup(b)
+
+	type T struct {
+		mu         sync.Mutex // guards D
+		D          []any
+		batchSizes []int
+	}
+	d := T{}
+	d.batchSizes = []int{1, 10, 100, 1000}
+
+	allInsertDocs := []any{}
+	for _, provider := range shareddata.AllBenchmarkProviders() {
+		iter := provider.NewIterator()
+
+		for {
+			docs, err := iterator.ConsumeValues(iter)
+			require.NoError(b, err)
+
+			if docs == nil {
+				break
+			}
+
+			insertDocs := make([]any, len(docs))
+			for i := range insertDocs {
+				insertDocs[i] = docs[i]
+			}
+
+			allInsertDocs = append(allInsertDocs, insertDocs...)
+		}
+	}
+
+	d.D = allInsertDocs
+
+	// partitioning to avoid duplicate key errors, nah?
+	// [1, 2, 3, 4, 5, 6, 7, 8]
+	// [i:k+i] = [0:2+0]
+	var wg sync.WaitGroup
+	for i := 0; i < b.N; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+
+			b.StartTimer()
+			d.mu.Lock()
+			_, err := collection.InsertMany(ctx, d.D)
+			require.NoError(b, err)
+			d.mu.Unlock()
+			b.StopTimer()
+
+			require.NoError(b, collection.Drop(ctx))
+		}(i)
+	}
+
+	wg.Wait()
+
 }
