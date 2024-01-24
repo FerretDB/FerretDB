@@ -489,13 +489,7 @@ func TestDocument(t *testing.T) {
 				})
 
 				t.Run("bson2", func(t *testing.T) {
-					doc, err := RawDocument(tc.raw).Decode()
-
-					// errors might be hidden by RawDocument / RawArray
-					// TODO https://github.com/FerretDB/FerretDB/issues/3759
-					if err == nil {
-						_, err = doc.Convert()
-					}
+					doc, err := RawDocument(tc.raw).DecodeDeep()
 
 					if tc.decodeErr != nil {
 						require.Error(t, err, "b:\n\n%s\n%#v", hex.Dump(tc.raw), tc.raw)
@@ -530,7 +524,7 @@ func FuzzDocument(f *testing.F) {
 		t.Run("bson2", func(t *testing.T) {
 			t.Parallel()
 
-			doc, err := raw.Decode()
+			doc, err := raw.DecodeDeep()
 			if err != nil {
 				t.Skip()
 			}
@@ -554,14 +548,7 @@ func FuzzDocument(f *testing.F) {
 			err1 := bdoc1.ReadFrom(bufr)
 
 			if err1 != nil {
-				doc2, err2 := raw.Decode()
-
-				// errors might be hidden by RawDocument / RawArray
-				// TODO https://github.com/FerretDB/FerretDB/issues/3759
-				if err2 == nil {
-					_, err2 = doc2.Convert()
-				}
-
+				_, err2 := raw.DecodeDeep()
 				require.Error(t, err2, "bson1 err = %v", err1)
 				return
 			}
@@ -571,7 +558,7 @@ func FuzzDocument(f *testing.F) {
 
 			// decode
 
-			bdoc2, err2 := RawDocument(cb).Decode()
+			bdoc2, err2 := RawDocument(cb).DecodeDeep()
 			require.NoError(t, err2)
 
 			ls := bdoc2.LogValue().Resolve().String()
