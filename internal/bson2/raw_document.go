@@ -40,6 +40,28 @@ func (doc *RawDocument) LogValue() slog.Value {
 // nested documents and arrays are converted to RawDocument and RawArray respectively,
 // using raw's subslices without copying.
 func (raw RawDocument) Decode() (*Document, error) {
+	res, err := raw.decode(false)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return res, nil
+}
+
+// DecodeDeep decodes a single BSON document that takes the whole raw slice.
+//
+// All nested documents and arrays are decoded recursively.
+func (raw RawDocument) DecodeDeep() (*Document, error) {
+	res, err := raw.decode(true)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return res, nil
+}
+
+// decode decodes a single BSON document that takes the whole raw slice.
+func (raw RawDocument) decode(deep bool) (*Document, error) {
 	bl := len(raw)
 	if bl < 5 {
 		return nil, lazyerrors.Errorf("len(b) = %d: %w", bl, ErrDecodeShortInput)
@@ -104,6 +126,10 @@ func (raw RawDocument) Decode() (*Document, error) {
 			v = RawDocument(raw[offset : offset+l])
 			offset += l
 
+			if deep {
+				v, err = v.(RawDocument).decode(true)
+			}
+
 		case tagArray:
 			if err = decodeCheckOffset(raw, offset, 4); err != nil {
 				return nil, lazyerrors.Error(err)
@@ -119,6 +145,10 @@ func (raw RawDocument) Decode() (*Document, error) {
 			// TODO https://github.com/FerretDB/FerretDB/issues/3759
 			v = RawArray(raw[offset : offset+l])
 			offset += l
+
+			if deep {
+				v, err = v.(RawArray).decode(true)
+			}
 
 		case tagBinary:
 			var s Binary

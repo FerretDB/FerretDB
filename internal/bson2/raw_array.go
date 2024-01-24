@@ -37,7 +37,29 @@ func (arr *RawArray) LogValue() slog.Value {
 // nested documents and arrays are converted to RawDocument and RawArray respectively,
 // using raw's subslices without copying.
 func (raw RawArray) Decode() (*Array, error) {
-	doc, err := RawDocument(raw).Decode()
+	res, err := raw.decode(false)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return res, nil
+}
+
+// DecodeDeep decodes a single BSON array that takes the whole raw slice.
+//
+// All nested documents and arrays are decoded recursively.
+func (raw RawArray) DecodeDeep() (*Array, error) {
+	res, err := raw.decode(true)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return res, nil
+}
+
+// decode decodes a single BSON array that takes the whole raw slice.
+func (raw RawArray) decode(deep bool) (*Array, error) {
+	doc, err := RawDocument(raw).decode(deep)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
