@@ -190,7 +190,7 @@ func BenchmarkInsertManyX(b *testing.B) {
 		batchSizes []int
 	}
 	d := D{}
-	d.batchSizes = []int{10, 100, 250}
+	d.batchSizes = []int{1, 10, 100, 1000}
 	d.collection = collection
 
 	var wg sync.WaitGroup
@@ -217,15 +217,17 @@ func BenchmarkInsertManyX(b *testing.B) {
 							insertDocs[i] = docs[i]
 						}
 
+						d.mu.Lock()
+
 						b.StartTimer()
 
-						d.mu.Lock()
 						_, err = d.collection.InsertMany(ctx, insertDocs)
 						require.NoError(b, err)
 
 						b.StopTimer()
 
-						// garbage idea
+						// TODO 1. remove duplidate _ids from provider before inserting
+						// TODO OR 2. create a filter to delete what was just inserted
 						_, err = d.collection.DeleteMany(ctx, bson.D{})
 						require.NoError(b, err)
 						d.mu.Unlock()
