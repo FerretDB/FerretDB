@@ -63,13 +63,13 @@ func slogScalarValue(v any) slog.Value {
 	case float64:
 		return slog.StringValue(fmt.Sprintf("%[1]T(%[1]v)", v))
 	case string:
-		return slog.StringValue(fmt.Sprintf("%[1]T(%[1]v)", v))
+		return slog.StringValue(v)
 	case Binary:
 		return slog.AnyValue(v)
 	case ObjectID:
 		return slog.StringValue("ObjectID(" + hex.EncodeToString(v[:]) + ")")
 	case bool:
-		return slog.StringValue(fmt.Sprintf("%[1]T(%[1]v)", v))
+		return slog.BoolValue(v)
 	case time.Time:
 		return slog.StringValue(fmt.Sprintf("%[1]T(%[1]v)", v))
 	case NullType:
