@@ -165,7 +165,7 @@ tasks:
   fmt-go:
     desc: "Format Go code"
     cmds:
-      - bin/goimports{{exeExt}} -format-only -local=github.com/FerretDB/FerretDB -w .
+      - bin/goimports{{exeExt}} -local=github.com/FerretDB/FerretDB -w .
       - bin/gofumpt{{exeExt}} -w .
 
   test:
