@@ -3,12 +3,12 @@ slug: add-mongodb-compatibility-ubicloud-managed-postgres
 title: 'Add MongoDB Compatibility to Ubicloud Managed Postgres'
 authors: [alex]
 description: >
-  In this article, we’ll be describing the steps needed to set up a FerretDB Postgres backend on Ubicloud.
-image: /img/blog/ferretdb-neon.jpg
+  In this blog post, we’ll describe the steps needed to set up a FerretDB Postgres backend on Ubicloud.
+image: /img/blog/ferretdb-ubicloud.jpg
 tags: [tutorial, postgresql tools, open source]
 ---
 
-![Start using with Neon](/img/blog/ferretdb-neon.jpg)
+![Start using with Neon](/img/blog/ferretdb-ubicloud.jpg)
 
 A database infrastructure setup will certainly impact the success of your business, or _any_ business for that matter.
 You _definitely_ don't want to wake up at 2 AM because your database went down, transactions stopped going through, and customers are angry.
@@ -26,7 +26,7 @@ Surely, you don't want that.
 
 Instead, having a simpler, portable, and open cloud as your Postgres backend for FerretDB can save you from these _particular_ problems.
 
-In this article, we'll be describing the steps needed to set up a FerretDB Postgres backend on [Ubicloud](https://www.ubicloud.com/).
+In this article, we'll describe the steps needed to set up a FerretDB Postgres backend on [Ubicloud](https://www.ubicloud.com/) for a Python application.
 
 ## Understanding Managed Postgres on Ubicloud
 
@@ -271,7 +271,6 @@ from bson.objectid import ObjectId
 
 app = Flask(__name__)
 
-# MongoDB setup
 mongo_uri = os.getenv('MONGO_URI', 'mongodb://localhost:27017/')
 client = MongoClient(mongo_uri)
 db = client.ferretdb
@@ -329,7 +328,7 @@ Before running the app, set up the MongoDB connection string as an environment v
 Do that by running:
 
 ```sh
-export MONGO_URI=mongodb://<mongodb URI>
+export MONGO_URI=mongodb://<mongodb-URI>
 ```
 
 In the root directory of the Flask app where you have `app.py`, start the app using:
@@ -348,9 +347,9 @@ Christine Elle  046899553291  christianelle@yahoo.com
 
 <!-- ![image of contact app](link) -->
 
-To showcase the update feature, go ahead to update the name `Desmond Eko` to `Andrew Eko` via the update button.
+![Python contact app](/img/blog/contact-app-ubicloud.png)
 
-<!-- ![gif image of update to landing page]() -->
+To showcase the update feature, go ahead to update the name `Desmond Eko` to `Andrew Eko` via the update button.
 
 You can also try deleting a record in the contact list.
 
