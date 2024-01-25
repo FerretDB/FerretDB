@@ -18,6 +18,8 @@ package conninfo
 import (
 	"context"
 	"sync"
+
+	"github.com/xdg-go/scram"
 )
 
 // contextKey is a named unexported type for the safe use of context.WithValue.
@@ -34,6 +36,8 @@ type ConnInfo struct {
 	username     string // protected by rw
 	password     string // protected by rw
 	metadataRecv bool   // protected by rw
+
+	sc *scram.ServerConversation // protected by rw
 
 	// If true, backend implementations should not perform authentication
 	// by adding username and password to the connection string.
@@ -73,6 +77,23 @@ func (connInfo *ConnInfo) SetAuth(username, password string) {
 
 	connInfo.username = username
 	connInfo.password = password
+}
+
+// Conv returns stored SCRAM server conversation.
+func (connInfo *ConnInfo) Conv() *scram.ServerConversation {
+	connInfo.rw.RLock()
+	defer connInfo.rw.RUnlock()
+
+	return connInfo.sc
+}
+
+// SetConv stores the SCRAM server conversation.
+func (connInfo *ConnInfo) SetConv(sc *scram.ServerConversation) {
+	connInfo.rw.RLock()
+	defer connInfo.rw.RUnlock()
+
+	connInfo.username = sc.Username()
+	connInfo.sc = sc
 }
 
 // MetadataRecv returns whatever client metadata was received already.

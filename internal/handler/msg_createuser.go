@@ -184,7 +184,7 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 	return &reply, nil
 }
 
-// makeCredentials creates a document with credentials for the choosen mechanisms.
+// makeCredentials creates a document with credentials for the chosen mechanisms.
 func makeCredentials(mechanisms *types.Array, username, pwd string) (*types.Document, error) {
 	if mechanisms == nil {
 		return nil, nil

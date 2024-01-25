@@ -180,6 +180,7 @@ func (h *Handler) MsgUsersInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 				for _, k := range credentialsKeys {
 					mechanisms.Append(k)
 				}
+
 				v.Set("mechanisms", mechanisms)
 			}
 		}

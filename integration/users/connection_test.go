@@ -51,13 +51,14 @@ func TestAuthentication(t *testing.T) {
 			username:       "updated",
 			password:       "pass123",
 			updatePassword: "somethingelse",
+			mechanism:      "PLAIN",
 		},
-		"Scramsha256": {
+		"ScramSHA256": {
 			username:  "scramsha256",
 			password:  "password",
 			mechanism: "SCRAM-SHA-256",
 		},
-		"Scramsha256updated": {
+		"ScramSHA256Updated": {
 			username:       "scramsha256updated",
 			password:       "pass123",
 			updatePassword: "anotherpassword",
@@ -143,6 +144,8 @@ func TestAuthentication(t *testing.T) {
 
 			require.NoError(t, err, "cannot ping MongoDB")
 			require.NoError(t, client.Disconnect(context.Background()))
+
+			// TODO: Test another command besides ping.
 		})
 	}
 }

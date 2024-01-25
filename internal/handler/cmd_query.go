@@ -31,9 +31,10 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 	cmd := query.Query.Command()
 	collection := query.FullCollectionName
 
-	// both are valid and are allowed to be run against any database as we don't support authorization yet
+	doc := query.Query
+
 	if (cmd == "ismaster" || cmd == "isMaster") && strings.HasSuffix(collection, ".$cmd") {
-		return common.IsMaster(ctx, query.Query, h.TCPHost, h.ReplSetName)
+		return common.IsMaster(ctx, doc, h.TCPHost, h.ReplSetName)
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/3008
