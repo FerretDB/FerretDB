@@ -107,6 +107,7 @@ func setupSlog(level zapcore.Level, encoding string) {
 	}
 
 	var slogHandler slog.Handler
+
 	switch encoding {
 	case "console":
 		slogHandler = slog.NewTextHandler(os.Stderr, slogOpts)
