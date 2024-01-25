@@ -8,7 +8,7 @@ linters-settings:
   # asciicheck
   depguard:
     rules:
-      old:
+      old-packages:
         files:
           - $all
         deny:
@@ -40,10 +40,11 @@ linters-settings:
           - "!**/internal/wire/*.go"
           - "!**/internal/bson2/*_test.go"
         deny:
-          - pkg: github.com/FerretDB/FerretDB/internal/bson
+          - pkg: github.com/FerretDB/FerretDB/internal/bson$
       bson2:
         files:
           - $all
+          - "!**/internal/wire/*.go"
         deny:
           - pkg: github.com/FerretDB/FerretDB/internal/bson2
       bsonproto:
@@ -66,7 +67,7 @@ linters-settings:
           - pkg: github.com/FerretDB/FerretDB/internal/handler/sjson
       common:
         files:
-          - "**/internal/backends/**/*.go"
+          - "**/internal/backends/**.go"
           - "**/internal/clientconn/cursor/*.go"
         deny:
           - pkg: github.com/FerretDB/FerretDB/internal/handler/common
@@ -86,31 +87,35 @@ linters-settings:
     default-signifies-exhaustive: false
   forbidigo:
     forbid:
+      - p: ^\Qpgxpool.Pool.AcquireFunc\E$
+        pkg: ^\Qgithub.com/jackc/pgx/v5/pgxpool\E$
+        msg: Use `Acquire` with `defer Release()` instead.
+
       # integration tests use a different configuration file
       - p: ^\Qbson.E\E$
         pkg: ^\Qgo.mongodb.org/mongo-driver/bson\E$
-        msg: Use *types.Document or *types.Array instead.
+        msg: Use `*types.Document` or `*types.Array` instead.
       - p: ^\Qprimitive.E\E$
         pkg: ^\Qgo.mongodb.org/mongo-driver/bson/primitive\E$
-        msg: Use *types.Document or *types.Array instead.
+        msg: Use `*types.Document` or `*types.Array` instead.
       - p: ^\Qbson.D\E$
         pkg: ^\Qgo.mongodb.org/mongo-driver/bson\E$
-        msg: Use *types.Document instead.
+        msg: Use `*types.Document` instead.
       - p: ^\Qprimitive.D\E$
         pkg: ^\Qgo.mongodb.org/mongo-driver/bson/primitive\E$
-        msg: Use *types.Document instead.
+        msg: Use `*types.Document` instead.
       - p: ^\Qbson.M\E$
         pkg: ^\Qgo.mongodb.org/mongo-driver/bson\E$
-        msg: Use *types.Document instead.
+        msg: Use `*types.Document` instead.
       - p: ^\Qprimitive.M\E$
         pkg: ^\Qgo.mongodb.org/mongo-driver/bson/primitive\E$
-        msg: Use *types.Document instead.
+        msg: Use `*types.Document` instead.
       - p: ^\Qbson.A\E$
         pkg: ^\Qgo.mongodb.org/mongo-driver/bson\E$
-        msg: Use *types.Array instead.
+        msg: Use `*types.Array` instead.
       - p: ^\Qprimitive.A\E$
         pkg: ^\Qgo.mongodb.org/mongo-driver/bson/primitive\E$
-        msg: Use *types.Array instead.
+        msg: Use `*types.Array` instead.
     exclude-godoc-examples: true
     analyze-types: true
   gci:
