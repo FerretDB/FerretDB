@@ -195,12 +195,12 @@ func (h *Handler) MsgUsersInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
+	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+		must.NotFail(types.NewDocument(
 			"users", res,
 			"ok", float64(1),
-		))},
-	}))
+		)),
+	)))
 
 	return &reply, nil
 }

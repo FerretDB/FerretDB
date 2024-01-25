@@ -33,7 +33,14 @@ import (
 type OpMsgSection struct {
 	Kind       byte
 	Identifier string
-	Documents  []*types.Document // TODO https://github.com/FerretDB/FerretDB/issues/274
+	documents  []*types.Document // TODO https://github.com/FerretDB/FerretDB/issues/274
+}
+
+// MakeOpMsgSection creates [OpMsgSection] with a single document.
+func MakeOpMsgSection(doc *types.Document) OpMsgSection {
+	return OpMsgSection{
+		documents: []*types.Document{doc},
+	}
 }
 
 // OpMsg is an extensible message format designed to subsume the functionality of other opcodes.
@@ -67,11 +74,11 @@ func (msg *OpMsg) Document() (*types.Document, error) {
 			continue
 		}
 
-		if l := len(section.Documents); l != 1 {
+		if l := len(section.documents); l != 1 {
 			return nil, lazyerrors.Errorf("wire.OpMsg.Document: %d documents in kind 0 section", l)
 		}
 
-		docs = append(docs, section.Documents[0])
+		docs = append(docs, section.documents[0])
 	}
 
 	for _, section := range msg.sections {
@@ -87,8 +94,8 @@ func (msg *OpMsg) Document() (*types.Document, error) {
 			return nil, lazyerrors.New("wire.OpMsg.Document: empty section identifier")
 		}
 
-		a := types.MakeArray(len(section.Documents))
-		for _, d := range section.Documents {
+		a := types.MakeArray(len(section.documents))
+		for _, d := range section.documents {
 			a.Append(d)
 		}
 
@@ -144,7 +151,7 @@ func (msg *OpMsg) readFrom(bufr *bufio.Reader) error {
 			if err != nil {
 				return lazyerrors.Error(err)
 			}
-			section.Documents = []*types.Document{d}
+			section.documents = []*types.Document{d}
 
 		case 1:
 			var secSize int32
@@ -183,7 +190,7 @@ func (msg *OpMsg) readFrom(bufr *bufio.Reader) error {
 				if err != nil {
 					return lazyerrors.Error(err)
 				}
-				section.Documents = append(section.Documents, d)
+				section.documents = append(section.documents, d)
 			}
 
 		default:
@@ -248,11 +255,11 @@ func (msg *OpMsg) MarshalBinary() ([]byte, error) {
 
 		switch section.Kind {
 		case 0:
-			if l := len(section.Documents); l != 1 {
+			if l := len(section.documents); l != 1 {
 				panic(fmt.Sprintf("%d documents in section with kind 0", l))
 			}
 
-			d, err := bson.ConvertDocument(section.Documents[0])
+			d, err := bson.ConvertDocument(section.documents[0])
 			if err != nil {
 				return nil, lazyerrors.Error(err)
 			}
@@ -269,7 +276,7 @@ func (msg *OpMsg) MarshalBinary() ([]byte, error) {
 				return nil, lazyerrors.Error(err)
 			}
 
-			for _, doc := range section.Documents {
+			for _, doc := range section.documents {
 				d, err := bson.ConvertDocument(doc)
 				if err != nil {
 					return nil, lazyerrors.Error(err)
@@ -329,15 +336,17 @@ func (msg *OpMsg) String() string {
 		}
 		switch section.Kind {
 		case 0:
-			b := must.NotFail(fjson.Marshal(section.Documents[0]))
+			b := must.NotFail(fjson.Marshal(section.documents[0]))
 			s["Document"] = json.RawMessage(b)
 		case 1:
 			s["Identifier"] = section.Identifier
-			docs := make([]json.RawMessage, len(section.Documents))
-			for j, d := range section.Documents {
+			docs := make([]json.RawMessage, len(section.documents))
+
+			for j, d := range section.documents {
 				b := must.NotFail(fjson.Marshal(d))
 				docs[j] = json.RawMessage(b)
 			}
+
 			s["Documents"] = docs
 		default:
 			panic(fmt.Sprintf("unknown kind %d", section.Kind))

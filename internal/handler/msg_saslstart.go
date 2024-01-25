@@ -68,14 +68,14 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		conninfo.Get(ctx).SetAuth(username, password)
 
 		var emptyPayload types.Binary
-		must.NoError(reply.SetSections(wire.OpMsgSection{
-			Documents: []*types.Document{must.NotFail(types.NewDocument(
+		must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+			must.NotFail(types.NewDocument(
 				"conversationId", int32(1),
 				"done", true,
 				"payload", emptyPayload,
 				"ok", float64(1),
-			))},
-		}))
+			)),
+		)))
 
 	case "SCRAM-SHA-256":
 		response, err := h.saslStartSCRAMSHA256(ctx, document)
@@ -83,16 +83,14 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			return nil, err
 		}
 
-		must.NoError(reply.SetSections(wire.OpMsgSection{
-			Documents: []*types.Document{
-				must.NotFail(types.NewDocument(
-					"ok", float64(1),
-					"conversationId", int32(1),
-					"done", false,
-					"payload", response,
-				)),
-			},
-		}))
+		must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+			must.NotFail(types.NewDocument(
+				"ok", float64(1),
+				"conversationId", int32(1),
+				"done", false,
+				"payload", response,
+			)),
+		)))
 
 	default:
 		msg := fmt.Sprintf("Unsupported authentication mechanism %q.\n", mechanism) +

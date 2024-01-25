@@ -153,8 +153,8 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	}
 
 	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
+	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+		must.NotFail(types.NewDocument(
 			"queryPlanner", res.QueryPlanner,
 			"explainVersion", "1",
 			"command", cmd,
@@ -167,8 +167,8 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			"limitPushdown", res.LimitPushdown,
 
 			"ok", float64(1),
-		))},
-	}))
+		)),
+	)))
 
 	return &reply, nil
 }

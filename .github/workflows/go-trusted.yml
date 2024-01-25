@@ -13,6 +13,7 @@ on:
   push:
     branches:
       - main
+      - main/*
       - releases/*
   schedule:
     - cron: "12 1 * * *" # after Go workflow to reuse "Setup Go" cache

@@ -28,13 +28,11 @@ import (
 
 // CmdQuery implements deprecated OP_QUERY message handling.
 func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpReply, error) {
-	cmd := query.Query.Command()
+	cmd := query.Query().Command()
 	collection := query.FullCollectionName
 
-	doc := query.Query
-
 	if (cmd == "ismaster" || cmd == "isMaster") && strings.HasSuffix(collection, ".$cmd") {
-		return common.IsMaster(ctx, doc, h.TCPHost, h.ReplSetName)
+		return common.IsMaster(ctx, query.Query(), h.TCPHost, h.ReplSetName)
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/3008
@@ -43,15 +41,17 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 
 	if cmd == "saslStart" && strings.HasSuffix(collection, ".$cmd") {
 		var emptyPayload types.Binary
-		return &wire.OpReply{
+		reply := wire.OpReply{
 			NumberReturned: 1,
-			Documents: []*types.Document{must.NotFail(types.NewDocument(
-				"conversationId", int32(1),
-				"done", true,
-				"payload", emptyPayload,
-				"ok", float64(1),
-			))},
-		}, nil
+		}
+		reply.SetDocument(must.NotFail(types.NewDocument(
+			"conversationId", int32(1),
+			"done", true,
+			"payload", emptyPayload,
+			"ok", float64(1),
+		)))
+
+		return &reply, nil
 	}
 
 	return nil, handlererrors.NewCommandErrorMsgWithArgument(
