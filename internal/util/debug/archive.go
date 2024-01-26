@@ -93,22 +93,3 @@ func addFileToArchive(fileName string, resp *http.Response, zipWriter *zip.Write
 
 	return nil
 }
-
-// performRequest performs the requests and return response.
-func performRequest(u *url.URL) (*http.Response, error) {
-	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
-	if err != nil {
-		err = fmt.Errorf("request creation failed for URL %s (error: %s)", u.String(), err.Error())
-		return nil, err
-	}
-
-	req.Header.Set("Accept", "application/json")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		err = fmt.Errorf("request fetch failed for URL %s (error: %s)", u.String(), err.Error())
-		return nil, err
-	}
-
-	return resp, nil
-}
