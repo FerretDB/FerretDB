@@ -195,13 +195,21 @@ func (h *Handler) credentialLookup(ctx context.Context, username, dbName string)
 
 		if matches {
 			if !v.Has("credentials") {
-				return scram.StoredCredentials{}, errors.New("user has no credentials")
+				return scram.StoredCredentials{}, handlererrors.NewCommandErrorMsgWithArgument(
+					handlererrors.ErrMechanismUnavailable,
+					"User has no authentication credentials registered",
+					"credentials",
+				)
 			}
 
 			credentials := must.NotFail(v.Get("credentials")).(*types.Document)
 
 			if !credentials.Has("SCRAM-SHA-256") {
-				return scram.StoredCredentials{}, errors.New("user has no SCRAM-SHA-256 credentials")
+				return scram.StoredCredentials{}, handlererrors.NewCommandErrorMsgWithArgument(
+					handlererrors.ErrMechanismUnavailable,
+					"User has no SCRAM-SHA-256 based authentication credentials registered",
+					"SCRAM-SHA-256",
+				)
 			}
 
 			cred := must.NotFail(credentials.Get("SCRAM-SHA-256")).(*types.Document)

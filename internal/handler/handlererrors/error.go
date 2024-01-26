@@ -126,6 +126,9 @@ const (
 	// ErrNotImplemented indicates that a flag or command is not implemented.
 	ErrNotImplemented = ErrorCode(238) // NotImplemented
 
+	// ErrNotImplemented indicates that the authentication mechanism is unavailable.
+	ErrMechanismUnavailable = ErrorCode(334)
+
 	// ErrIndexesWrongType indicates that indexes parameter has wrong type.
 	ErrIndexesWrongType = ErrorCode(10065) // Location10065
 
