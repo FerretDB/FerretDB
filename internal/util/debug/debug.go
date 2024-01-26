@@ -42,7 +42,6 @@ const (
 	graphsPath  = "/debug/graphs"
 	metricsPath = "/debug/metrics"
 	pprofPath   = "/debug/pprof"
-	heapPath    = "/debug/pprof/heap"
 	varsPath    = "/debug/vars"
 )
 

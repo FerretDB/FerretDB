@@ -36,7 +36,7 @@ func archiveHandler(rw http.ResponseWriter, req *http.Request) {
 
 	for _, path := range []string{
 		metricsPath,
-		heapPath,
+		pprofPath + "/heap",
 	} {
 
 		u := url.URL{
