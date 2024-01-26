@@ -25,7 +25,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// NewSCRAMSHA256 authentication.
+// NewSCRAMSHA256 computes SCRAM-SHA-256 credentials and returns the document that should be stored.
 func NewSCRAMSHA256(username, password string) (*types.Document, error) {
 	client, err := scram.SHA256.NewClient(username, password, "")
 	if err != nil {
@@ -38,7 +38,7 @@ func NewSCRAMSHA256(username, password string) (*types.Document, error) {
 	}
 
 	kf := scram.KeyFactors{
-		Salt:  base64.StdEncoding.EncodeToString(salt),
+		Salt:  string(salt),
 		Iters: 15000,
 	}
 
@@ -47,7 +47,7 @@ func NewSCRAMSHA256(username, password string) (*types.Document, error) {
 	doc := must.NotFail(types.NewDocument())
 	doc.Set("storedKey", base64.StdEncoding.EncodeToString(cred.StoredKey))
 	doc.Set("iterationCount", int32(kf.Iters))
-	doc.Set("salt", kf.Salt)
+	doc.Set("salt", base64.StdEncoding.EncodeToString(salt))
 	doc.Set("serverKey", base64.StdEncoding.EncodeToString(cred.ServerKey))
 
 	return doc, nil
