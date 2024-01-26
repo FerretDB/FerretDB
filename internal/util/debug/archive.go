@@ -61,7 +61,7 @@ func archiveHandler(rw http.ResponseWriter, req *http.Request) {
 
 		fileName := filepath.Base(path)
 
-		err = addFileToArchive(fileName, resp, zipWriter)
+		err = addFileToArchive(fileName, resp.Body, zipWriter)
 		if err != nil {
 			http.Error(rw, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 			return
@@ -73,15 +73,15 @@ func archiveHandler(rw http.ResponseWriter, req *http.Request) {
 }
 
 // addFileToArchive function responsible for adding content to zip file.
-func addFileToArchive(fileName string, resp *http.Response, zipWriter *zip.Writer) error {
-	defer resp.Body.Close() //nolint:errcheck // we are only reading it
+func addFileToArchive(fileName string, fileReader io.ReadCloser, zipWriter *zip.Writer) error {
+	defer fileReader.Close() //nolint:errcheck // we are only reading it
 
 	fileWriter, err := zipWriter.Create(fileName)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	_, err = io.Copy(fileWriter, resp.Body)
+	_, err = io.Copy(fileWriter, fileReader)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
