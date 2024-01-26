@@ -38,9 +38,9 @@ import (
 )
 
 const (
+	archivePath = "/debug/archive"
 	graphsPath  = "/debug/graphs"
 	metricsPath = "/debug/metrics"
-	archivePath = "/debug/archive"
 	pprofPath   = "/debug/pprof"
 	heapPath    = "/debug/pprof/heap"
 	varsPath    = "/debug/vars"
