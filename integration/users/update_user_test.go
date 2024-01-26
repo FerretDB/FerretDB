@@ -27,6 +27,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 func TestUpdateUser(t *testing.T) {
@@ -43,7 +44,8 @@ func TestUpdateUser(t *testing.T) {
 		err        *mongo.CommandError
 		altMessage string
 
-		skipForMongoDB string
+		skipForMongoDB   string
+		failsForFerretDB bool
 	}{
 		"MissingFields": {
 			createPayload: bson.D{
@@ -197,6 +199,7 @@ func TestUpdateUser(t *testing.T) {
 				{"db", "TestUpdateUser"},
 				{"roles", bson.A{}},
 			},
+			failsForFerretDB: true,
 		},
 		"PasswordChangeWithBadAuthMechanism": {
 			createPayload: bson.D{
@@ -256,12 +259,18 @@ func TestUpdateUser(t *testing.T) {
 
 	for name, tc := range testCases {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
+		t.Run(name, func(tt *testing.T) {
 			if tc.skipForMongoDB != "" {
 				setup.SkipForMongoDB(t, tc.skipForMongoDB)
 			}
 
-			t.Parallel()
+			tt.Parallel()
+
+			var t testtb.TB = tt
+
+			if tc.failsForFerretDB {
+				t = setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/3784")
+			}
 
 			createPayloadDoc := integration.ConvertDocument(t, tc.createPayload)
 

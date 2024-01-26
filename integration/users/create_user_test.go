@@ -28,6 +28,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 func TestCreateUser(t *testing.T) {
@@ -41,6 +42,8 @@ func TestCreateUser(t *testing.T) {
 		err        *mongo.CommandError
 		altMessage string
 		expected   bson.D
+
+		failsForFerretDB bool
 	}{
 		"Empty": {
 			payload: bson.D{
@@ -147,6 +150,7 @@ func TestCreateUser(t *testing.T) {
 			expected: bson.D{
 				{"ok", float64(1)},
 			},
+			failsForFerretDB: true,
 		},
 		"WithComment": {
 			payload: bson.D{
@@ -183,13 +187,19 @@ func TestCreateUser(t *testing.T) {
 
 	for name, tc := range testCases {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
+		t.Run(name, func(tt *testing.T) {
+			tt.Parallel()
+
+			var t testtb.TB = tt
+
+			if tc.failsForFerretDB {
+				t = setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/3784")
+			}
+
 			payload := integration.ConvertDocument(t, tc.payload)
 			if payload.Has("mechanisms") {
 				setup.SkipForMongoDB(t, "PLAIN credentials are only supported via LDAP (PLAIN) by MongoDB Enterprise")
 			}
-
-			t.Parallel()
 
 			var res bson.D
 			err := db.RunCommand(ctx, tc.payload).Decode(&res)
@@ -250,7 +260,7 @@ func TestCreateUser(t *testing.T) {
 }
 
 // assertPlainCredentials checks if the credential is a valid PLAIN credential.
-func assertPlainCredentials(t testing.TB, key string, cred *types.Document) {
+func assertPlainCredentials(t testtb.TB, key string, cred *types.Document) {
 	t.Helper()
 
 	require.True(t, cred.Has(key), "missing credential %q", key)
@@ -263,7 +273,7 @@ func assertPlainCredentials(t testing.TB, key string, cred *types.Document) {
 	assert.NotEmpty(t, must.NotFail(c.Get("salt")))
 }
 
-func assertSCRAMSHA256Credentials(t testing.TB, key string, cred *types.Document) {
+func assertSCRAMSHA256Credentials(t testtb.TB, key string, cred *types.Document) {
 	t.Helper()
 
 	require.True(t, cred.Has(key), "missing credential %q", key)
