@@ -184,58 +184,53 @@ func BenchmarkInsertMany(b *testing.B) {
 func BenchmarkInsertManyX(b *testing.B) {
 	ctx, collection := setup.Setup(b)
 
-	type D struct {
-		mu         sync.Mutex // guards collection to avoid duplicate key errors
-		collection *mongo.Collection
-		batchSizes []int
-	}
-	d := D{}
-	d.batchSizes = []int{1, 10, 100, 1000}
-	d.collection = collection
+	batchSizes := []int{1, 10, 100, 1000}
 
-	var wg sync.WaitGroup
+	const routines = 100
+
 	for _, provider := range shareddata.AllBenchmarkProviders() {
-		for _, batchSize := range d.batchSizes {
+		for _, batchSize := range batchSizes {
 			b.Run(fmt.Sprintf("%s/Batch%d", provider.Name(), batchSize), func(b *testing.B) {
+				b.StopTimer()
 
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
+				start := make(chan struct{})
 
-					iter := provider.NewIterator()
+				var wg sync.WaitGroup
+				wg.Add(routines)
+				for i := 0; i < routines; i++ {
 
-					for {
-						docs, err := iterator.ConsumeValuesN(iter, batchSize)
-						require.NoError(b, err)
+					go func() {
+						<-start
 
-						if docs == nil {
-							break
+						iter := provider.NewIterator()
+
+						defer iter.Close()
+
+						for {
+							docs, err := iterator.ConsumeValuesN(iter, batchSize)
+							require.NoError(b, err)
+
+							if docs == nil {
+								break
+							}
+
+							insertDocs := make([]any, len(docs))
+							for i := range insertDocs {
+								insertDocs[i] = docs[i]
+							}
+
+							b.StartTimer()
+							_, err = collection.InsertMany(ctx, insertDocs)
+							require.NoError(b, err)
+							b.StopTimer()
+
+							wg.Done()
 						}
-
-						insertDocs := make([]any, len(docs))
-						for i := range insertDocs {
-							insertDocs[i] = docs[i]
-						}
-
-						d.mu.Lock()
-
-						b.StartTimer()
-
-						_, err = d.collection.InsertMany(ctx, insertDocs)
-						require.NoError(b, err)
-
-						b.StopTimer()
-
-						// TODO 1. remove duplidate _ids from provider before inserting
-						// TODO OR 2. create a filter to delete what was just inserted
-						_, err = d.collection.DeleteMany(ctx, bson.D{})
-						require.NoError(b, err)
-						d.mu.Unlock()
-					}
-				}()
+					}()
+				}
+				close(start)
+				wg.Wait()
 			})
 		}
 	}
-
-	wg.Wait()
 }
