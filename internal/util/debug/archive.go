@@ -22,20 +22,45 @@ import (
 	"net/http"
 	"net/url"
 	"path/filepath"
+
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // archiveHandler is a handler for creating the archive containing metrics and heap info.
 func archiveHandler(rw http.ResponseWriter, req *http.Request) {
-	urlList := make([]*url.URL, 0)
-	scheme := "http"
+	urlList := []*url.URL{}
+
+	for _, path := range []string{
+		metricsPath,
+		heapPath,
+	} {
+		u := must.NotFail(url.JoinPath(req.Host, path))
+
+		req, err := http.NewRequest(http.MethodGet, u, nil)
+		if err != nil {
+			http.Error(rw, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+			return
+		}
+
+		req.Header.Set("Accept", "application/json")
+
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			http.Error(rw, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+			return
+		}
+
+		fileName := filepath.Base(path)
+
+		err = addFileToArchive(fileName, resp, zipWriter)
+		if err != nil {
+			http.Error(rw, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+			return
+		}
+	}
 
 	u := &url.URL{}
-	u.Path = metricsPath
-	u.Host = req.Host
-
-	if req.URL.Scheme == "" {
-		scheme = "http"
-	}
 
 	u.Scheme = scheme
 	urlList = append(urlList, u)
@@ -43,10 +68,6 @@ func archiveHandler(rw http.ResponseWriter, req *http.Request) {
 	u = &url.URL{}
 	u.Path = heapPath
 	u.Host = req.Host
-
-	if req.URL.Scheme == "" {
-		scheme = "http"
-	}
 
 	u.Scheme = scheme
 	urlList = append(urlList, u)
@@ -63,6 +84,8 @@ func archiveHandler(rw http.ResponseWriter, req *http.Request) {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 		}
 	}()
+
+	//log.Fatal(urlList)
 
 	for _, fileUrl := range urlList {
 		fileName := filepath.Base(fileUrl.Path)
