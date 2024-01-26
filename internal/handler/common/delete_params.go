@@ -34,9 +34,10 @@ type DeleteParams struct {
 
 	Let *types.Document `ferretdb:"let,unimplemented"`
 
-	WriteConcern *types.Document `ferretdb:"writeConcern,ignored"`
-	LSID         any             `ferretdb:"lsid,ignored"`
-	ClusterTime  any             `ferretdb:"$clusterTime,ignored"`
+	WriteConcern   *types.Document `ferretdb:"writeConcern,ignored"`
+	LSID           any             `ferretdb:"lsid,ignored"`
+	ClusterTime    any             `ferretdb:"$clusterTime,ignored"`
+	ReadPreference *types.Document `ferretdb:"$readPreference,ignored"`
 }
 
 // Delete represents single delete operation parameters.

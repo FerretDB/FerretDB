@@ -134,6 +134,7 @@ func init() {
 		return
 	}
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/4001
 	if buildInfo.Main.Path != "github.com/FerretDB/FerretDB" {
 		return
 	}

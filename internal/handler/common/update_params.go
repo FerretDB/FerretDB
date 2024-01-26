@@ -39,6 +39,7 @@ type UpdateParams struct {
 	WriteConcern             *types.Document `ferretdb:"writeConcern,ignored"`
 	LSID                     any             `ferretdb:"lsid,ignored"`
 	ClusterTime              any             `ferretdb:"$clusterTime,ignored"`
+	ReadPreference           *types.Document `ferretdb:"$readPreference,ignored"`
 }
 
 // Update represents a single update operation parameters.

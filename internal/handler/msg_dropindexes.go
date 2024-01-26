@@ -114,9 +114,9 @@ func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 	)
 
 	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{replyDoc},
-	}))
+	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+		replyDoc,
+	)))
 
 	return &reply, nil
 }

@@ -125,7 +125,6 @@ func TestCreateIndexesCompat(tt *testing.T) {
 					},
 				},
 			},
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3418",
 		},
 		"SameKey": {
 			models: []mongo.IndexModel{
@@ -604,6 +603,15 @@ func TestCreateIndexesCompatDuplicates(t *testing.T) {
 			},
 			duplicates: []mongo.IndexModel{
 				{Options: &options.IndexOptions{Name: pointer.To("index_not_foo")}, Keys: bson.D{{"foo", 1}}},
+			},
+			resultType: emptyResult,
+		},
+		"DuplicateByPrimaryKey": {
+			models: []mongo.IndexModel{
+				{Options: &options.IndexOptions{}, Keys: bson.D{{"_id", 1}}},
+			},
+			duplicates: []mongo.IndexModel{
+				{Options: &options.IndexOptions{Name: pointer.To("index_foo")}, Keys: bson.D{{"_id", 1}}},
 			},
 			resultType: emptyResult,
 		},

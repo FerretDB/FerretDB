@@ -105,16 +105,16 @@ func (h *Handler) MsgListIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 	}
 
 	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
+	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+		must.NotFail(types.NewDocument(
 			"cursor", must.NotFail(types.NewDocument(
 				"id", int64(0),
 				"ns", fmt.Sprintf("%s.%s", dbName, collection),
 				"firstBatch", firstBatch,
 			)),
 			"ok", float64(1),
-		))},
-	}))
+		)),
+	)))
 
 	return &reply, nil
 }

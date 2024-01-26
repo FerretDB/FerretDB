@@ -15,10 +15,8 @@
 package handler
 
 import (
-	"cmp"
 	"context"
 	"fmt"
-	"slices"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
@@ -98,18 +96,17 @@ func (h *Handler) MsgCompact(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	cList, err := db.ListCollections(ctx, nil)
+	cList, err := db.ListCollections(ctx, &backends.ListCollectionsParams{
+		Name: collection,
+	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	var cInfo backends.CollectionInfo
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3601
-	if i, found := slices.BinarySearchFunc(cList.Collections, collection, func(e backends.CollectionInfo, t string) int {
-		return cmp.Compare(e.Name, t)
-	}); found {
-		cInfo = cList.Collections[i]
+	if len(cList.Collections) > 0 {
+		cInfo = cList.Collections[0]
 	}
 
 	var bytesFreed int64
@@ -139,12 +136,12 @@ func (h *Handler) MsgCompact(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	}
 
 	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
+	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+		must.NotFail(types.NewDocument(
 			"bytesFreed", float64(bytesFreed),
 			"ok", float64(1),
-		))},
-	}))
+		)),
+	)))
 
 	return &reply, nil
 }

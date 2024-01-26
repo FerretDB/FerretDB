@@ -35,8 +35,8 @@ type OpQuery struct {
 	FullCollectionName   string
 	NumberToSkip         int32
 	NumberToReturn       int32
-	Query                *types.Document
-	ReturnFieldsSelector *types.Document // may be nil
+	query                *types.Document
+	returnFieldsSelector *types.Document // may be nil
 }
 
 func (query *OpQuery) msgbody() {}
@@ -73,7 +73,7 @@ func (query *OpQuery) readFrom(bufr *bufio.Reader) error {
 		return newValidationError(fmt.Errorf("wire.OpQuery.ReadFrom: validation failed for %v with: %v", doc, err))
 	}
 
-	query.Query = doc
+	query.query = doc
 
 	if _, err := bufr.Peek(1); err == nil {
 		var r bson.Document
@@ -82,7 +82,7 @@ func (query *OpQuery) readFrom(bufr *bufio.Reader) error {
 		}
 
 		tr := must.NotFail(types.ConvertDocument(&r))
-		query.ReturnFieldsSelector = tr
+		query.returnFieldsSelector = tr
 	}
 
 	return nil
@@ -124,12 +124,12 @@ func (query *OpQuery) MarshalBinary() ([]byte, error) {
 		return nil, err
 	}
 
-	if err := must.NotFail(bson.ConvertDocument(query.Query)).WriteTo(bufw); err != nil {
+	if err := must.NotFail(bson.ConvertDocument(query.query)).WriteTo(bufw); err != nil {
 		return nil, err
 	}
 
-	if query.ReturnFieldsSelector != nil {
-		if err := must.NotFail(bson.ConvertDocument(query.ReturnFieldsSelector)).WriteTo(bufw); err != nil {
+	if query.returnFieldsSelector != nil {
+		if err := must.NotFail(bson.ConvertDocument(query.returnFieldsSelector)).WriteTo(bufw); err != nil {
 			return nil, err
 		}
 	}
@@ -139,6 +139,16 @@ func (query *OpQuery) MarshalBinary() ([]byte, error) {
 	}
 
 	return buf.Bytes(), nil
+}
+
+// Query returns the query document.
+func (query *OpQuery) Query() *types.Document {
+	return query.query
+}
+
+// ReturnFieldsSelector returns the fields selector document (that may be nil).
+func (query *OpQuery) ReturnFieldsSelector() *types.Document {
+	return query.returnFieldsSelector
 }
 
 // String returns a string representation for logging.
@@ -152,10 +162,10 @@ func (query *OpQuery) String() string {
 		"FullCollectionName": query.FullCollectionName,
 		"NumberToSkip":       query.NumberToSkip,
 		"NumberToReturn":     query.NumberToReturn,
-		"Query":              json.RawMessage(must.NotFail(fjson.Marshal(query.Query))),
+		"Query":              json.RawMessage(must.NotFail(fjson.Marshal(query.query))),
 	}
-	if query.ReturnFieldsSelector != nil {
-		m["ReturnFieldsSelector"] = json.RawMessage(must.NotFail(fjson.Marshal(query.ReturnFieldsSelector)))
+	if query.returnFieldsSelector != nil {
+		m["ReturnFieldsSelector"] = json.RawMessage(must.NotFail(fjson.Marshal(query.returnFieldsSelector)))
 	}
 
 	return string(must.NotFail(json.MarshalIndent(m, "", "  ")))
