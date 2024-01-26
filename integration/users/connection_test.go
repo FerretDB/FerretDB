@@ -18,8 +18,10 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/x/mongo/driver/topology"
@@ -41,6 +43,7 @@ func TestAuthentication(t *testing.T) {
 		updatePassword string // if true, the password will be updated to this one after the user is created.
 		mechanism      string
 
+		userNotFound  bool
 		wrongPassword bool
 	}{
 		"Success": {
@@ -70,6 +73,12 @@ func TestAuthentication(t *testing.T) {
 			mechanism:     "SCRAM-SHA-256",
 			wrongPassword: true,
 		},
+		"NotFoundUser": {
+			username:     "notfound",
+			password:     "something",
+			mechanism:    "SCRAM-SHA-256",
+			userNotFound: true,
+		},
 	}
 
 	for name, tc := range testCases {
@@ -81,34 +90,36 @@ func TestAuthentication(t *testing.T) {
 				setup.SkipForMongoDB(t, "PLAIN credentials are only supported via LDAP (PLAIN) by MongoDB Enterprise")
 			}
 
-			createPayload := bson.D{
-				{"createUser", tc.username},
-				{"roles", bson.A{}},
-				{"pwd", tc.password},
-			}
-
-			switch tc.mechanism {
-			case "": // Use default mechanism for MongoDB and SCRAM-SHA-256 for FerretDB as SHA-1 won't be supported as it's deprecated.
-				if !setup.IsMongoDB(t) {
-					createPayload = append(createPayload, bson.E{"mechanisms", bson.A{"SCRAM-SHA-256"}})
-				}
-			case "SCRAM-SHA-256", "PLAIN":
-				createPayload = append(createPayload, bson.E{"mechanisms", bson.A{tc.mechanism}})
-			default:
-				t.Fatalf("unimplemented mechanism %s", tc.mechanism)
-			}
-
-			err := db.RunCommand(ctx, createPayload).Err()
-			require.NoErrorf(t, err, "cannot create user")
-
-			if tc.updatePassword != "" {
-				updatePayload := bson.D{
-					{"updateUser", tc.username},
-					{"pwd", tc.updatePassword},
+			if !tc.userNotFound {
+				createPayload := bson.D{
+					{"createUser", tc.username},
+					{"roles", bson.A{}},
+					{"pwd", tc.password},
 				}
 
-				err = db.RunCommand(ctx, updatePayload).Err()
-				require.NoErrorf(t, err, "cannot update user")
+				switch tc.mechanism {
+				case "": // Use default mechanism for MongoDB and SCRAM-SHA-256 for FerretDB as SHA-1 won't be supported as it's deprecated.
+					if !setup.IsMongoDB(t) {
+						createPayload = append(createPayload, bson.E{"mechanisms", bson.A{"SCRAM-SHA-256"}})
+					}
+				case "SCRAM-SHA-256", "PLAIN":
+					createPayload = append(createPayload, bson.E{"mechanisms", bson.A{tc.mechanism}})
+				default:
+					t.Fatalf("unimplemented mechanism %s", tc.mechanism)
+				}
+
+				err := db.RunCommand(ctx, createPayload).Err()
+				require.NoErrorf(t, err, "cannot create user")
+
+				if tc.updatePassword != "" {
+					updatePayload := bson.D{
+						{"updateUser", tc.username},
+						{"pwd", tc.updatePassword},
+					}
+
+					err := db.RunCommand(ctx, updatePayload).Err()
+					require.NoErrorf(t, err, "cannot update user")
+				}
 			}
 
 			serverAPI := options.ServerAPI(options.ServerAPIVersion1)
@@ -136,16 +147,29 @@ func TestAuthentication(t *testing.T) {
 			// Ping to force connection to be established and tested.
 			err = client.Ping(ctx, nil)
 
-			if tc.wrongPassword {
+			if tc.wrongPassword || tc.userNotFound {
 				var ce topology.ConnectionError
 				require.ErrorAs(t, err, &ce, "expected a connection error")
 				return
 			}
 
 			require.NoError(t, err, "cannot ping MongoDB")
-			require.NoError(t, client.Disconnect(context.Background()))
 
-			// TODO: Test another command besides ping.
+			connCollection := client.Database(db.Name()).Collection(collection.Name())
+			r, err := connCollection.InsertOne(ctx, bson.D{{"ping", "pong"}})
+			require.NoError(t, err, "cannot insert document")
+			id := r.InsertedID.(primitive.ObjectID)
+			require.NotEmpty(t, id)
+
+			var result bson.D
+			err = connCollection.FindOne(ctx, bson.D{{"_id", id}}).Decode(&result)
+			require.NoError(t, err, "cannot find document")
+			assert.Equal(t, bson.D{
+				{"_id", id},
+				{"ping", "pong"},
+			}, result)
+
+			require.NoError(t, client.Disconnect(context.Background()))
 		})
 	}
 }
