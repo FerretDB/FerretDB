@@ -27,7 +27,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
-	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 func TestUpdateUser(t *testing.T) {
@@ -238,14 +237,10 @@ func TestUpdateUser(t *testing.T) {
 
 	for name, tc := range testCases {
 		name, tc := name, tc
-		t.Run(name, func(tt *testing.T) {
+		t.Run(name, func(t *testing.T) {
 			if tc.skipForMongoDB != "" {
 				setup.SkipForMongoDB(t, tc.skipForMongoDB)
 			}
-
-			tt.Parallel()
-
-			var t testtb.TB = tt
 
 			createPayloadDoc := integration.ConvertDocument(t, tc.createPayload)
 
