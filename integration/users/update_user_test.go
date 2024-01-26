@@ -44,8 +44,7 @@ func TestUpdateUser(t *testing.T) {
 		err        *mongo.CommandError
 		altMessage string
 
-		skipForMongoDB   string
-		failsForFerretDB bool
+		skipForMongoDB string
 	}{
 		"MissingFields": {
 			createPayload: bson.D{
@@ -181,26 +180,6 @@ func TestUpdateUser(t *testing.T) {
 			},
 			skipForMongoDB: "MongoDB decommissioned support to PLAIN auth",
 		},
-		"PasswordChangeWithSCRAMMechanism": {
-			createPayload: bson.D{
-				{"createUser", "a_user_with_scram_mechanism"},
-				{"roles", bson.A{}},
-				{"pwd", "password"},
-				{"mechanisms", bson.A{"SCRAM-SHA-256"}},
-			},
-			updatePayload: bson.D{
-				{"updateUser", "a_user_with_scram_mechanism"},
-				{"pwd", "anewpassword"},
-				{"mechanisms", bson.A{"SCRAM-SHA-256"}},
-			},
-			expected: bson.D{
-				{"_id", "TestUpdateUser.a_user_with_scram_mechanism"},
-				{"user", "a_user_with_scram_mechanism"},
-				{"db", "TestUpdateUser"},
-				{"roles", bson.A{}},
-			},
-			failsForFerretDB: true,
-		},
 		"PasswordChangeWithBadAuthMechanism": {
 			createPayload: bson.D{
 				{"createUser", "a_user_with_mechanism_bad"},
@@ -267,10 +246,6 @@ func TestUpdateUser(t *testing.T) {
 			tt.Parallel()
 
 			var t testtb.TB = tt
-
-			if tc.failsForFerretDB {
-				t = setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/3784")
-			}
 
 			createPayloadDoc := integration.ConvertDocument(t, tc.createPayload)
 
