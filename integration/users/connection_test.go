@@ -27,6 +27,7 @@ import (
 	"go.mongodb.org/mongo-driver/x/mongo/driver/topology"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 func TestAuthentication(t *testing.T) {
@@ -45,21 +46,32 @@ func TestAuthentication(t *testing.T) {
 
 		userNotFound  bool
 		wrongPassword bool
+
+		failsForFerretDB bool
 	}{
 		"Success": {
-			username: "common",
-			password: "password",
+			username:         "common",
+			password:         "password",
+			failsForFerretDB: true,
+		},
+		"Updated": {
+			username:         "updated",
+			password:         "pass123",
+			updatePassword:   "somethingelse",
+			failsForFerretDB: true,
 		},
 		"ScramSHA256": {
-			username:  "scramsha256",
-			password:  "password",
-			mechanism: "SCRAM-SHA-256",
+			username:         "scramsha256",
+			password:         "password",
+			mechanism:        "SCRAM-SHA-256",
+			failsForFerretDB: true,
 		},
 		"ScramSHA256Updated": {
-			username:       "scramsha256updated",
-			password:       "pass123",
-			updatePassword: "anotherpassword",
-			mechanism:      "SCRAM-SHA-256",
+			username:         "scramsha256updated",
+			password:         "pass123",
+			updatePassword:   "anotherpassword",
+			mechanism:        "SCRAM-SHA-256",
+			failsForFerretDB: true,
 		},
 		"NotFoundUser": {
 			username:     "notfound",
@@ -68,10 +80,11 @@ func TestAuthentication(t *testing.T) {
 			userNotFound: true,
 		},
 		"BadPassword": {
-			username:      "baduser",
-			password:      "something",
-			mechanism:     "SCRAM-SHA-256",
-			wrongPassword: true,
+			username:         "baduser",
+			password:         "something",
+			mechanism:        "SCRAM-SHA-256",
+			wrongPassword:    true,
+			failsForFerretDB: true,
 		},
 	}
 
@@ -80,7 +93,11 @@ func TestAuthentication(t *testing.T) {
 		t.Run(name, func(tt *testing.T) {
 			tt.Parallel()
 
-			t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/3784")
+			var t testtb.TB = tt
+
+			if tc.failsForFerretDB {
+				t = setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/3784")
+			}
 
 			if !tc.userNotFound {
 				createPayload := bson.D{
@@ -147,14 +164,14 @@ func TestAuthentication(t *testing.T) {
 
 			require.NoError(t, err, "cannot ping MongoDB")
 
-			collection := client.Database(db.Name()).Collection(collection.Name())
-			r, err := collection.InsertOne(ctx, bson.D{{"ping", "pong"}})
+			connCollection := client.Database(db.Name()).Collection(collection.Name())
+			r, err := connCollection.InsertOne(ctx, bson.D{{"ping", "pong"}})
 			require.NoError(t, err, "cannot insert document")
 			id := r.InsertedID.(primitive.ObjectID)
 			require.NotEmpty(t, id)
 
 			var result bson.D
-			err = collection.FindOne(ctx, bson.D{{"_id", id}}).Decode(&result)
+			err = connCollection.FindOne(ctx, bson.D{{"_id", id}}).Decode(&result)
 			require.NoError(t, err, "cannot find document")
 			assert.Equal(t, bson.D{
 				{"_id", id},
