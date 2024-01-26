@@ -17,7 +17,6 @@ package debug
 
 import (
 	"archive/zip"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -30,9 +29,8 @@ import (
 func archiveHandler(rw http.ResponseWriter, req *http.Request) {
 	zipWriter := zip.NewWriter(rw)
 	defer func() {
-		err := zipWriter.Close()
-		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
+		if err := zipWriter.Close(); err != nil {
+			http.Error(rw, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		}
 	}()
 
@@ -61,7 +59,6 @@ func archiveHandler(rw http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		// TODO or resp...
 		fileName := filepath.Base(path)
 
 		err = addFileToArchive(fileName, resp, zipWriter)
@@ -81,14 +78,12 @@ func addFileToArchive(fileName string, resp *http.Response, zipWriter *zip.Write
 
 	fileWriter, err := zipWriter.Create(fileName)
 	if err != nil {
-		err = fmt.Errorf("fail creating file %s (error: %s)", fileName, err.Error())
-		return err
+		return lazyerrors.Error(err)
 	}
 
 	_, err = io.Copy(fileWriter, resp.Body)
 	if err != nil {
-		err = fmt.Errorf("failed - adding %s to zip (error: %s)", fileName, err.Error())
-		return err
+		return lazyerrors.Error(err)
 	}
 
 	return nil
