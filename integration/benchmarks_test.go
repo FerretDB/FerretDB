@@ -186,7 +186,7 @@ func BenchmarkInsertManyX(b *testing.B) {
 
 	batchSizes := []int{1, 10, 100, 1000}
 
-	const routines = 100
+	const workers = 100
 
 	for _, provider := range shareddata.AllBenchmarkProviders() {
 		for _, batchSize := range batchSizes {
@@ -196,8 +196,8 @@ func BenchmarkInsertManyX(b *testing.B) {
 				start := make(chan struct{})
 
 				var wg sync.WaitGroup
-				wg.Add(routines)
-				for i := 0; i < routines; i++ {
+				wg.Add(workers)
+				for i := 0; i < workers; i++ {
 
 					go func() {
 						<-start
@@ -228,6 +228,7 @@ func BenchmarkInsertManyX(b *testing.B) {
 						}
 					}()
 				}
+
 				close(start)
 				wg.Wait()
 			})
