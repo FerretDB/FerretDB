@@ -37,7 +37,6 @@ func TestDropAllUsersFromDatabase(t *testing.T) {
 	ctx, collection := setup.Setup(t)
 	db := collection.Database()
 	client := collection.Database().Client()
-	users := client.Database("admin").Collection("system.users")
 
 	quantity := 5 // Add some users to the database.
 	for i := 1; i <= quantity; i++ {
@@ -51,16 +50,16 @@ func TestDropAllUsersFromDatabase(t *testing.T) {
 
 	// Dropping all users from another database shouldn't influence on the number of users remaining on the current database.
 	// So this call should remove zero users as the database doesn't exist. The next one, "quantity" users.
-	assertDropAllUsersFromDatabase(t, ctx, client.Database(t.Name()+"_another_database"), users, 0)
+	assertDropAllUsersFromDatabase(t, ctx, client.Database(t.Name()+"_another_database"), 0)
 
-	assertDropAllUsersFromDatabase(t, ctx, db, users, quantity)
+	assertDropAllUsersFromDatabase(t, ctx, db, quantity)
 
 	// Run for the second time to check if it still succeeds when there aren't any users remaining,
 	// instead of returning an error.
-	assertDropAllUsersFromDatabase(t, ctx, db, users, 0)
+	assertDropAllUsersFromDatabase(t, ctx, db, 0)
 }
 
-func assertDropAllUsersFromDatabase(t *testing.T, ctx context.Context, db *mongo.Database, users *mongo.Collection, quantity int) {
+func assertDropAllUsersFromDatabase(t *testing.T, ctx context.Context, db *mongo.Database, quantity int) {
 	t.Helper()
 
 	var res bson.D
