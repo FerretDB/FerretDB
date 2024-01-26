@@ -24,20 +24,30 @@ import (
 	"path/filepath"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // archiveHandler is a handler for creating the archive containing metrics and heap info.
 func archiveHandler(rw http.ResponseWriter, req *http.Request) {
-	urlList := []*url.URL{}
+	zipWriter := zip.NewWriter(rw)
+	defer func() {
+		err := zipWriter.Close()
+		if err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+		}
+	}()
 
 	for _, path := range []string{
 		metricsPath,
 		heapPath,
 	} {
-		u := must.NotFail(url.JoinPath(req.Host, path))
 
-		req, err := http.NewRequest(http.MethodGet, u, nil)
+		u := url.URL{
+			Scheme: "http",
+			Host:   req.Host,
+			Path:   path,
+		}
+
+		req, err := http.NewRequest(http.MethodGet, u.String(), nil)
 		if err != nil {
 			http.Error(rw, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 			return
@@ -51,6 +61,7 @@ func archiveHandler(rw http.ResponseWriter, req *http.Request) {
 			return
 		}
 
+		// TODO or resp...
 		fileName := filepath.Base(path)
 
 		err = addFileToArchive(fileName, resp, zipWriter)
@@ -60,48 +71,8 @@ func archiveHandler(rw http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	u := &url.URL{}
-
-	u.Scheme = scheme
-	urlList = append(urlList, u)
-
-	u = &url.URL{}
-	u.Path = heapPath
-	u.Host = req.Host
-
-	u.Scheme = scheme
-	urlList = append(urlList, u)
-
 	rw.Header().Set("Content-Type", "application/zip")
-
-	zipName := "FerretDB-debug.zip"
-	rw.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", zipName))
-
-	zipWriter := zip.NewWriter(rw)
-	defer func() {
-		err := zipWriter.Close()
-		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-		}
-	}()
-
-	//log.Fatal(urlList)
-
-	for _, fileUrl := range urlList {
-		fileName := filepath.Base(fileUrl.Path)
-
-		resp, err := performRequest(fileUrl)
-		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		err = addFileToArchive(fileName, resp, zipWriter)
-		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	}
+	rw.Header().Set("Content-Disposition", "attachment; filename=FerretDB-debug.zip")
 }
 
 // addFileToArchive function responsible for adding content to zip file.
