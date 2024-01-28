@@ -38,22 +38,21 @@ func archiveHandler(rw http.ResponseWriter, req *http.Request) {
 		metricsPath,
 		pprofPath + "/heap",
 	} {
+		values := url.Values{}
+		values.Add("debug", "1")
 
 		u := url.URL{
-			Scheme: "http",
-			Host:   req.Host,
-			Path:   path,
+			Scheme:   "http",
+			Host:     req.Host,
+			Path:     path,
+			RawQuery: values.Encode(),
 		}
-
-		u.Query().Add("debug", "1")
 
 		req, err := http.NewRequest(http.MethodGet, u.String(), nil)
 		if err != nil {
 			http.Error(rw, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 			return
 		}
-
-		//req.Header.Set("Accept", "application/json")
 
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
