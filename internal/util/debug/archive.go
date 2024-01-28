@@ -45,13 +45,15 @@ func archiveHandler(rw http.ResponseWriter, req *http.Request) {
 			Path:   path,
 		}
 
+		u.Query().Add("debug", "1")
+
 		req, err := http.NewRequest(http.MethodGet, u.String(), nil)
 		if err != nil {
 			http.Error(rw, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 			return
 		}
 
-		req.Header.Set("Accept", "application/json")
+		//req.Header.Set("Accept", "application/json")
 
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
