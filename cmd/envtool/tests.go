@@ -464,7 +464,7 @@ func listTestFuncsWithRegex(dir, run, skip string) ([]string, error) {
 }
 
 func filterStringsByRegex(tests []string, include, exclude *regexp.Regexp) []string {
-	res := make([]string, 0)
+	res := []string{}
 
 	for _, test := range tests {
 		if exclude != nil && exclude.MatchString(test) {
