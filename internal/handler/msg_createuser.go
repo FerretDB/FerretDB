@@ -47,7 +47,6 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/3777
 	// TODO https://github.com/FerretDB/FerretDB/issues/3778
-	// TODO https://github.com/FerretDB/FerretDB/issues/3784
 	if dbName != "$external" && !document.Has("pwd") {
 		return nil, handlererrors.NewCommandErrorMsg(
 			handlererrors.ErrBadValue,
