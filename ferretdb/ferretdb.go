@@ -157,7 +157,7 @@ func New(config *Config) (*FerretDB, error) {
 //
 // When this method returns, listener and all connections, as well as handler are closed.
 //
-// It is required to run this method in order to initialise the listeners with their respective
+// It is required to run this method in order to initialize the listeners with their respective
 // IP address and port. Calling methods which require the listener's address (eg: [*FerretDB.MongoDBURI]
 // requires it for configuring its Host URL) before calling this method might result in a deadlock.
 func (f *FerretDB) Run(ctx context.Context) error {
@@ -216,11 +216,13 @@ func (f *FerretDB) MongoDBURI() string {
 
 // logger is a global logger used by FerretDB.
 //
-// If it is a problem for you, please create an issue.
+// TODO https://github.com/FerretDB/FerretDB/issues/4014
 var logger *zap.Logger
 
 // Initialize the global logger there to avoid creating too many issues for zap users that initialize it in their
 // `main()` functions. It is still not a full solution; eventually, we should remove the usage of the global logger.
+//
+// TODO https://github.com/FerretDB/FerretDB/issues/4014
 func init() {
 	l := zap.ErrorLevel
 	if version.Get().DebugBuild {

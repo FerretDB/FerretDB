@@ -93,6 +93,7 @@ func setupSlog(level zapcore.Level, encoding string) {
 	// We either should replace zap with slog everywhere,
 	// or use zap's handler for slog,
 	// See https://github.com/uber-go/zap/issues/1270 and https://github.com/uber-go/zap/issues/1333.
+	// TODO https://github.com/FerretDB/FerretDB/issues/4013
 	//
 	// For now, just setup slog in parallel.
 
