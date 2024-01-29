@@ -193,7 +193,7 @@ func TestCreateUser(t *testing.T) {
 			var t testtb.TB = tt
 
 			if tc.failsForFerretDB {
-				t = setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/3784")
+				t = setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/1877")
 			}
 
 			payload := integration.ConvertDocument(t, tc.payload)
