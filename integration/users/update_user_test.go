@@ -242,6 +242,8 @@ func TestUpdateUser(t *testing.T) {
 				setup.SkipForMongoDB(t, tc.skipForMongoDB)
 			}
 
+			t.Parallel()
+
 			createPayloadDoc := integration.ConvertDocument(t, tc.createPayload)
 
 			err := db.RunCommand(ctx, tc.createPayload).Err()

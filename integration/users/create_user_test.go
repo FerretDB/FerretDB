@@ -273,6 +273,7 @@ func assertPlainCredentials(t testtb.TB, key string, cred *types.Document) {
 	assert.NotEmpty(t, must.NotFail(c.Get("salt")))
 }
 
+// assertSCRAMSHA256Credentials checks if the credential is a valid SCRAM-SHA-256 credential.
 func assertSCRAMSHA256Credentials(t testtb.TB, key string, cred *types.Document) {
 	t.Helper()
 
