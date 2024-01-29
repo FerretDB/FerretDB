@@ -42,7 +42,6 @@ func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	conv := conninfo.Get(ctx).Conv()
 
 	resp, err := conv.Step(string(payload))
-
 	if err != nil {
 		return nil, err
 	}
