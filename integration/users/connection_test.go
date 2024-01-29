@@ -27,6 +27,7 @@ import (
 	"go.mongodb.org/mongo-driver/x/mongo/driver/topology"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 func TestAuthentication(t *testing.T) {
@@ -45,33 +46,32 @@ func TestAuthentication(t *testing.T) {
 
 		userNotFound  bool
 		wrongPassword bool
+
+		failsForFerretDB bool
 	}{
 		"Success": {
-			username: "common",
-			password: "password",
+			username:         "common",
+			password:         "password",
+			failsForFerretDB: true,
 		},
 		"Updated": {
-			username:       "updated",
-			password:       "pass123",
-			updatePassword: "somethingelse",
-			mechanism:      "PLAIN",
+			username:         "updated",
+			password:         "pass123",
+			updatePassword:   "somethingelse",
+			failsForFerretDB: true,
 		},
 		"ScramSHA256": {
-			username:  "scramsha256",
-			password:  "password",
-			mechanism: "SCRAM-SHA-256",
+			username:         "scramsha256",
+			password:         "password",
+			mechanism:        "SCRAM-SHA-256",
+			failsForFerretDB: true,
 		},
 		"ScramSHA256Updated": {
-			username:       "scramsha256updated",
-			password:       "pass123",
-			updatePassword: "anotherpassword",
-			mechanism:      "SCRAM-SHA-256",
-		},
-		"BadPassword": {
-			username:      "baduser",
-			password:      "something",
-			mechanism:     "SCRAM-SHA-256",
-			wrongPassword: true,
+			username:         "scramsha256updated",
+			password:         "pass123",
+			updatePassword:   "anotherpassword",
+			mechanism:        "SCRAM-SHA-256",
+			failsForFerretDB: true,
 		},
 		"NotFoundUser": {
 			username:     "notfound",
@@ -79,15 +79,24 @@ func TestAuthentication(t *testing.T) {
 			mechanism:    "SCRAM-SHA-256",
 			userNotFound: true,
 		},
+		"BadPassword": {
+			username:         "baduser",
+			password:         "something",
+			mechanism:        "SCRAM-SHA-256",
+			wrongPassword:    true,
+			failsForFerretDB: true,
+		},
 	}
 
 	for name, tc := range testCases {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
+		t.Run(name, func(tt *testing.T) {
+			tt.Parallel()
 
-			if tc.mechanism == "PLAIN" {
-				setup.SkipForMongoDB(t, "PLAIN credentials are only supported via LDAP (PLAIN) by MongoDB Enterprise")
+			var t testtb.TB = tt
+
+			if tc.failsForFerretDB {
+				t = setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/3784")
 			}
 
 			if !tc.userNotFound {
@@ -110,16 +119,16 @@ func TestAuthentication(t *testing.T) {
 
 				err := db.RunCommand(ctx, createPayload).Err()
 				require.NoErrorf(t, err, "cannot create user")
+			}
 
-				if tc.updatePassword != "" {
-					updatePayload := bson.D{
-						{"updateUser", tc.username},
-						{"pwd", tc.updatePassword},
-					}
-
-					err := db.RunCommand(ctx, updatePayload).Err()
-					require.NoErrorf(t, err, "cannot update user")
+			if tc.updatePassword != "" {
+				updatePayload := bson.D{
+					{"updateUser", tc.username},
+					{"pwd", tc.updatePassword},
 				}
+
+				err := db.RunCommand(ctx, updatePayload).Err()
+				require.NoErrorf(t, err, "cannot update user")
 			}
 
 			serverAPI := options.ServerAPI(options.ServerAPIVersion1)
