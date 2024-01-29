@@ -45,7 +45,7 @@
 - Add deep `bson2` decoding by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3997
 - Expose raw documents in the `wire` package by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4011
 
-## New Contributors
+### New Contributors
 
 - @fadyat made their first contribution in https://github.com/FerretDB/FerretDB/pull/3972
 
