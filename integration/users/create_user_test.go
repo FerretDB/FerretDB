@@ -42,8 +42,6 @@ func TestCreateUser(t *testing.T) {
 		err        *mongo.CommandError
 		altMessage string
 		expected   bson.D
-
-		failsForFerretDB bool
 	}{
 		"Empty": {
 			payload: bson.D{
@@ -150,7 +148,6 @@ func TestCreateUser(t *testing.T) {
 			expected: bson.D{
 				{"ok", float64(1)},
 			},
-			failsForFerretDB: true,
 		},
 		"WithComment": {
 			payload: bson.D{
@@ -187,14 +184,8 @@ func TestCreateUser(t *testing.T) {
 
 	for name, tc := range testCases {
 		name, tc := name, tc
-		t.Run(name, func(tt *testing.T) {
-			tt.Parallel()
-
-			var t testtb.TB = tt
-
-			if tc.failsForFerretDB {
-				t = setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/3784")
-			}
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 
 			payload := integration.ConvertDocument(t, tc.payload)
 			if payload.Has("mechanisms") {

@@ -80,11 +80,10 @@ func TestAuthentication(t *testing.T) {
 			userNotFound: true,
 		},
 		"BadPassword": {
-			username:         "baduser",
-			password:         "something",
-			mechanism:        "SCRAM-SHA-256",
-			wrongPassword:    true,
-			failsForFerretDB: true,
+			username:      "baduser",
+			password:      "something",
+			mechanism:     "SCRAM-SHA-256",
+			wrongPassword: true,
 		},
 	}
 
