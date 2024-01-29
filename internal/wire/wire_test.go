@@ -109,6 +109,10 @@ func testMessages(t *testing.T, testCases []testCase) {
 					d, err := msg.Document()
 					require.NoError(t, err)
 					assert.Equal(t, tc.command, d.Command())
+
+					assert.NotPanics(t, func() {
+						_, _ = msg.RawDocument()
+					})
 				}
 			})
 
@@ -182,7 +186,10 @@ func fuzzMessages(f *testing.F, testCases []testCase) {
 			assert.NotPanics(t, func() { _ = msgBody.String() })
 
 			if msg, ok := msgBody.(*OpMsg); ok {
-				assert.NotPanics(t, func() { msg.Document() })
+				assert.NotPanics(t, func() {
+					_, _ = msg.Document()
+					_, _ = msg.RawDocument()
+				})
 			}
 
 			// remove random tail

@@ -36,7 +36,7 @@ type OpReply struct {
 	CursorID       int64
 	StartingFrom   int32
 	NumberReturned int32
-	Documents      []*types.Document
+	documents      []*types.Document
 }
 
 func (reply *OpReply) msgbody() {}
@@ -59,13 +59,13 @@ func (reply *OpReply) readFrom(bufr *bufio.Reader) error {
 		return lazyerrors.Errorf("wire.OpReply.ReadFrom: invalid NumberReturned %d", n)
 	}
 
-	reply.Documents = make([]*types.Document, reply.NumberReturned)
+	reply.documents = make([]*types.Document, reply.NumberReturned)
 	for i := int32(0); i < reply.NumberReturned; i++ {
 		var doc bson.Document
 		if err := doc.ReadFrom(bufr); err != nil {
 			return lazyerrors.Errorf("wire.OpReply.ReadFrom: %w", err)
 		}
-		reply.Documents[i] = must.NotFail(types.ConvertDocument(&doc))
+		reply.documents[i] = must.NotFail(types.ConvertDocument(&doc))
 	}
 
 	return nil
@@ -89,7 +89,7 @@ func (reply *OpReply) UnmarshalBinary(b []byte) error {
 
 // MarshalBinary writes an OpReply to a byte array.
 func (reply *OpReply) MarshalBinary() ([]byte, error) {
-	if l := len(reply.Documents); int32(l) != reply.NumberReturned {
+	if l := len(reply.documents); int32(l) != reply.NumberReturned {
 		return nil, lazyerrors.Errorf("wire.OpReply.MarshalBinary: len(Documents)=%d, NumberReturned=%d", l, reply.NumberReturned)
 	}
 
@@ -109,7 +109,7 @@ func (reply *OpReply) MarshalBinary() ([]byte, error) {
 		return nil, lazyerrors.Errorf("wire.OpReply.UnmarshalBinary (binary.Write): %w", err)
 	}
 
-	for _, doc := range reply.Documents {
+	for _, doc := range reply.documents {
 		if err := must.NotFail(bson.ConvertDocument(doc)).WriteTo(bufw); err != nil {
 			return nil, lazyerrors.Errorf("wire.OpReply.MarshalBinary: %w", err)
 		}
@@ -120,6 +120,16 @@ func (reply *OpReply) MarshalBinary() ([]byte, error) {
 	}
 
 	return buf.Bytes(), nil
+}
+
+// Documents returns reply documents.
+func (reply *OpReply) Documents() []*types.Document {
+	return reply.documents
+}
+
+// SetDocument sets reply document.
+func (reply *OpReply) SetDocument(doc *types.Document) {
+	reply.documents = []*types.Document{doc}
 }
 
 // String returns a string representation for logging.
@@ -135,8 +145,8 @@ func (reply *OpReply) String() string {
 		"NumberReturned": reply.NumberReturned,
 	}
 
-	docs := make([]json.RawMessage, len(reply.Documents))
-	for i, d := range reply.Documents {
+	docs := make([]json.RawMessage, len(reply.documents))
+	for i, d := range reply.documents {
 		docs[i] = json.RawMessage(must.NotFail(fjson.Marshal(d)))
 	}
 
