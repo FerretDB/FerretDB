@@ -214,7 +214,7 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 		}
 	}()
 
-	const numCollections = 25
+	const numCollections = 5
 	collections := [numCollections]*mongo.Collection{}
 
 	b.StopTimer()
