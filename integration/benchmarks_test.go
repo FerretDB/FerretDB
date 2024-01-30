@@ -17,6 +17,7 @@ package integration
 import (
 	"errors"
 	"fmt"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -181,11 +182,9 @@ func BenchmarkInsertMany(b *testing.B) {
 }
 
 func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
-	const numCollections = 25
+	const numCollections = 10
 
 	ctx, collection := setup.Setup(b)
-
-	b.Log("got here 1")
 
 	provider := shareddata.BenchmarkSettingsDocuments
 	iter := provider.NewIterator()
@@ -194,7 +193,7 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 
 	for {
 		docs, err := iterator.ConsumeValues(iter)
-		if errors.Is(err, iterator.ErrIteratorDone) || docs == nil { // why nil?
+		if errors.Is(err, iterator.ErrIteratorDone) || docs == nil {
 			break
 		}
 
@@ -205,19 +204,23 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 		}
 	}
 
-	b.Log("got here 2")
-
-	// TODO insert concurrently into each collection when it's working
-	// var wg sync.WaitGroup
-	// wg.Add(numCollections)
+	var wg sync.WaitGroup
+	wg.Add(numCollections)
 	for i := 0; i < numCollections; i++ {
-		r := rune('a' + i)
-		name := string(r)
-		err := collection.Database().CreateCollection(ctx, name)
-		require.NoError(b, err)
 
-		b.StartTimer()
-		collection.Database().Collection(name).InsertMany(ctx, insertDocs)
-		b.StopTimer()
+		go func(i int) {
+			r := rune('a' + i)
+			name := string(r)
+			err := collection.Database().CreateCollection(ctx, name)
+			require.NoError(b, err)
+
+			b.StartTimer()
+			collection.Database().Collection(name).InsertMany(ctx, insertDocs)
+			b.StopTimer()
+
+			wg.Done()
+		}(i)
 	}
+
+	wg.Wait()
 }
