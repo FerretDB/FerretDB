@@ -17,10 +17,8 @@ package integration
 import (
 	"errors"
 	"fmt"
-	"runtime"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -204,35 +202,31 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 		}
 	}
 
-	go func() {
-		fmt.Println()
-		elapsed := time.Now()
-		for {
-			time.Sleep(time.Second * 10)
-			fmt.Printf("number of active goroutines: %d running for: %.2f seconds\n",
-				runtime.NumGoroutine(), time.Since(elapsed).Seconds())
-		}
-	}()
+	createCollection := func(i int) *mongo.Collection {
+		codepoint := rune('a' + i)
+		name := string(codepoint)
+		err := collection.Database().CreateCollection(ctx, name)
+		require.NoError(b, err)
+
+		return collection.Database().Collection(name)
+	}
 
 	const numCollections = 5
 	collections := [numCollections]*mongo.Collection{}
 
 	b.StopTimer()
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		for i := 0; i < numCollections; i++ {
-			codepoint := rune('a' + i)
-			name := string(codepoint)
-			err := collection.Database().CreateCollection(ctx, name)
-			require.NoError(b, err)
-
-			collections[i] = collection.Database().Collection(name)
+			collections[i] = createCollection(i)
 		}
 
 		var wg sync.WaitGroup
 		wg.Add(numCollections)
 
 		b.StartTimer()
+
 		for i := 0; i < numCollections; i++ {
 			go func(i int) {
 				_, err := collections[i].InsertMany(ctx, insertDocs)
