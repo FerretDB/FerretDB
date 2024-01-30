@@ -182,8 +182,6 @@ func BenchmarkInsertMany(b *testing.B) {
 }
 
 func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
-	const numCollections = 25
-
 	ctx, collection := setup.Setup(b)
 
 	provider := shareddata.BenchmarkSmallDocuments
@@ -204,29 +202,42 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 		}
 	}
 
-	for i := 0; i < b.N; i++ {
+	const numCollections = 25
 
+	b.StopTimer()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		// 1. create all necessary collections
+		collections := make([]*mongo.Collection, numCollections)
+
+		for i := 0; i < numCollections; i++ {
+			codepoint := rune('a' + i)
+			name := string(codepoint)
+			err := collection.Database().CreateCollection(ctx, name)
+			require.NoError(b, err)
+
+			collections = append(collections, collection.Database().Collection(name))
+		}
+
+		// 2. insert data into all collections
 		var wg sync.WaitGroup
 		wg.Add(numCollections)
-		for ii := 0; ii < numCollections; ii++ {
+
+		b.StartTimer()
+		for i := 0; i < numCollections; i++ {
 			go func(i int) {
-				r := rune('a' + i)
-				name := string(r)
-
-				err := collection.Database().CreateCollection(ctx, name)
+				_, err := collections[i].InsertMany(ctx, insertDocs)
 				require.NoError(b, err)
-
-				b.StartTimer()
-				collection.Database().Collection(name).InsertMany(ctx, insertDocs)
-				b.StopTimer()
-
-				err = collection.Database().Collection(name).Drop(ctx)
-				require.NoError(b, err)
-
 				wg.Done()
-			}(ii)
-
+			}(i)
 		}
+		b.StopTimer()
 		wg.Wait()
+
+		// 3. drop all collections
+		for i := 0; i < numCollections; i++ {
+			err := collections[i].Drop(ctx)
+			require.NoError(b, err)
+		}
 	}
 }
