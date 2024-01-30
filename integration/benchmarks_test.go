@@ -15,8 +15,8 @@
 package integration
 
 import (
+	"errors"
 	"fmt"
-	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -180,58 +180,44 @@ func BenchmarkInsertMany(b *testing.B) {
 	}
 }
 
-// BenchmarkInsertManyX is concurrent over the batch sizes.
-func BenchmarkInsertManyX(b *testing.B) {
+func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
+	const numCollections = 25
+
 	ctx, collection := setup.Setup(b)
 
-	batchSizes := []int{1, 10, 100, 1000}
+	b.Log("got here 1")
 
-	const workers = 100
+	provider := shareddata.BenchmarkSettingsDocuments
+	iter := provider.NewIterator()
 
-	for _, provider := range shareddata.AllBenchmarkProviders() {
-		for _, batchSize := range batchSizes {
-			b.Run(fmt.Sprintf("%s/Batch%d", provider.Name(), batchSize), func(b *testing.B) {
-				b.StopTimer()
+	insertDocs := []any{}
 
-				start := make(chan struct{})
-
-				var wg sync.WaitGroup
-				wg.Add(workers)
-				for i := 0; i < workers; i++ {
-
-					go func() {
-						<-start
-
-						iter := provider.NewIterator()
-
-						defer iter.Close()
-
-						for {
-							docs, err := iterator.ConsumeValuesN(iter, batchSize)
-							require.NoError(b, err)
-
-							if docs == nil {
-								break
-							}
-
-							insertDocs := make([]any, len(docs))
-							for i := range insertDocs {
-								insertDocs[i] = docs[i]
-							}
-
-							b.StartTimer()
-							_, err = collection.InsertMany(ctx, insertDocs)
-							require.NoError(b, err)
-							b.StopTimer()
-
-							wg.Done()
-						}
-					}()
-				}
-
-				close(start)
-				wg.Wait()
-			})
+	for {
+		docs, err := iterator.ConsumeValues(iter)
+		if errors.Is(err, iterator.ErrIteratorDone) || docs == nil { // why nil?
+			break
 		}
+
+		require.NoError(b, err)
+
+		for _, doc := range docs {
+			insertDocs = append(insertDocs, doc)
+		}
+	}
+
+	b.Log("got here 2")
+
+	// TODO insert concurrently into each collection when it's working
+	// var wg sync.WaitGroup
+	// wg.Add(numCollections)
+	for i := 0; i < numCollections; i++ {
+		r := rune('a' + i)
+		name := string(r)
+		err := collection.Database().CreateCollection(ctx, name)
+		require.NoError(b, err)
+
+		b.StartTimer()
+		collection.Database().Collection(name).InsertMany(ctx, insertDocs)
+		b.StopTimer()
 	}
 }
