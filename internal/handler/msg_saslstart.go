@@ -253,7 +253,6 @@ func (h *Handler) saslStartSCRAMSHA256(ctx context.Context, doc *types.Document)
 	conv := scramServer.NewConversation()
 
 	resp, err := conv.Step(string(payload))
-
 	if err != nil {
 		return "", err
 	}
