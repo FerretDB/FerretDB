@@ -17,8 +17,10 @@ package integration
 import (
 	"errors"
 	"fmt"
+	"runtime"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -202,13 +204,23 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 		}
 	}
 
+	go func() {
+		fmt.Println()
+		elapsed := time.Now()
+		for {
+			time.Sleep(time.Second * 10)
+			fmt.Printf("number of active goroutines: %d running for: %.2f seconds\n",
+				runtime.NumGoroutine(), time.Since(elapsed).Seconds())
+		}
+	}()
+
 	const numCollections = 25
 
 	b.StopTimer()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		// 1. create all necessary collections
-		collections := make([]*mongo.Collection, numCollections)
+
+		collections := [numCollections]*mongo.Collection{}
 
 		for i := 0; i < numCollections; i++ {
 			codepoint := rune('a' + i)
@@ -219,7 +231,6 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 			collections[i] = collection.Database().Collection(name)
 		}
 
-		// 2. insert data into all collections
 		var wg sync.WaitGroup
 		wg.Add(numCollections)
 
@@ -234,7 +245,6 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 		b.StopTimer()
 		wg.Wait()
 
-		// 3. drop all collections
 		for i := 0; i < numCollections; i++ {
 			err := collections[i].Drop(ctx)
 			require.NoError(b, err)
