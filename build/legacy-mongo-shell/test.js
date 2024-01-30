@@ -35,7 +35,7 @@
 
   const totalCount = Math.floor(maxSize / docSize);
   t.insert({_id: totalCount, x: 1});
-  assert.eq(totalCount, t.count());
+  assert.eq(totalCount, t.count(), 'oldest entry should be overwritten');
 
   print('test.js passed!');
 })();
