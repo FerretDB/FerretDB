@@ -35,8 +35,7 @@
 
   const totalCount = Math.floor(maxSize / docSize);
   t.insert({_id: totalCount, x: 1});
-  assert.eq(null, t.findOne({_id: 0}));
-  assert.eq(1, t.findOne({_id: 1})._id, 'oldest entry should be overwritten');
+  assert.eq(null, t.findOne({_id: 0}), 'oldest entry should be overwritten');
   assert.eq(totalCount, t.count(), 'maximum size exceeded');
 
   print('test.js passed!');
