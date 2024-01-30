@@ -216,7 +216,7 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 			err := collection.Database().CreateCollection(ctx, name)
 			require.NoError(b, err)
 
-			collections = append(collections, collection.Database().Collection(name))
+			collections[i] = collection.Database().Collection(name)
 		}
 
 		// 2. insert data into all collections
