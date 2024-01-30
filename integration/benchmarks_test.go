@@ -215,13 +215,11 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 	}()
 
 	const numCollections = 25
+	collections := [numCollections]*mongo.Collection{}
 
 	b.StopTimer()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-
-		collections := [numCollections]*mongo.Collection{}
-
 		for i := 0; i < numCollections; i++ {
 			codepoint := rune('a' + i)
 			name := string(codepoint)
