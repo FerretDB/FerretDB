@@ -28,6 +28,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 func TestCreateUser(t *testing.T) {
@@ -41,6 +42,8 @@ func TestCreateUser(t *testing.T) {
 		err        *mongo.CommandError
 		altMessage string
 		expected   bson.D
+
+		failsForFerretDB bool
 	}{
 		"Empty": {
 			payload: bson.D{
@@ -137,6 +140,18 @@ func TestCreateUser(t *testing.T) {
 				{"ok", float64(1)},
 			},
 		},
+		"SuccessWithSCRAMSHA256": {
+			payload: bson.D{
+				{"createUser", "success_user_with_scram_sha_256"},
+				{"roles", bson.A{}},
+				{"pwd", "password"},
+				{"mechanisms", bson.A{"SCRAM-SHA-256"}},
+			},
+			expected: bson.D{
+				{"ok", float64(1)},
+			},
+			failsForFerretDB: true,
+		},
 		"WithComment": {
 			payload: bson.D{
 				{"createUser", "with_comment_user"},
@@ -172,13 +187,19 @@ func TestCreateUser(t *testing.T) {
 
 	for name, tc := range testCases {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
+		t.Run(name, func(tt *testing.T) {
+			tt.Parallel()
+
+			var t testtb.TB = tt
+
+			if tc.failsForFerretDB {
+				t = setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/3784")
+			}
+
 			payload := integration.ConvertDocument(t, tc.payload)
 			if payload.Has("mechanisms") {
 				setup.SkipForMongoDB(t, "PLAIN credentials are only supported via LDAP (PLAIN) by MongoDB Enterprise")
 			}
-
-			t.Parallel()
 
 			var res bson.D
 			err := db.RunCommand(ctx, tc.payload).Decode(&res)
@@ -212,7 +233,15 @@ func TestCreateUser(t *testing.T) {
 			user.Remove("userId")
 
 			if payload.Has("mechanisms") {
-				assertPlainCredentials(t, "PLAIN", must.NotFail(user.Get("credentials")).(*types.Document))
+				payloadMechanisms := must.NotFail(payload.Get("mechanisms")).(*types.Array)
+
+				if payloadMechanisms.Contains("PLAIN") {
+					assertPlainCredentials(t, "PLAIN", must.NotFail(user.Get("credentials")).(*types.Document))
+				}
+
+				if payloadMechanisms.Contains("SCRAM-SHA-256") {
+					assertSCRAMSHA256Credentials(t, "SCRAM-SHA-256", must.NotFail(user.Get("credentials")).(*types.Document))
+				}
 			}
 
 			user.Remove("mechanisms")
@@ -231,7 +260,7 @@ func TestCreateUser(t *testing.T) {
 }
 
 // assertPlainCredentials checks if the credential is a valid PLAIN credential.
-func assertPlainCredentials(t testing.TB, key string, cred *types.Document) {
+func assertPlainCredentials(t testtb.TB, key string, cred *types.Document) {
 	t.Helper()
 
 	require.True(t, cred.Has(key), "missing credential %q", key)
@@ -242,4 +271,18 @@ func assertPlainCredentials(t testing.TB, key string, cred *types.Document) {
 	assert.NotEmpty(t, must.NotFail(c.Get("iterationCount")))
 	assert.NotEmpty(t, must.NotFail(c.Get("hash")))
 	assert.NotEmpty(t, must.NotFail(c.Get("salt")))
+}
+
+// assertSCRAMSHA256Credentials checks if the credential is a valid SCRAM-SHA-256 credential.
+func assertSCRAMSHA256Credentials(t testtb.TB, key string, cred *types.Document) {
+	t.Helper()
+
+	require.True(t, cred.Has(key), "missing credential %q", key)
+
+	c := must.NotFail(cred.Get(key)).(*types.Document)
+
+	assert.Equal(t, must.NotFail(c.Get("iterationCount")), int32(15000))
+	assert.NotEmpty(t, must.NotFail(c.Get("salt")).(string))
+	assert.NotEmpty(t, must.NotFail(c.Get("serverKey")).(string))
+	assert.NotEmpty(t, must.NotFail(c.Get("storedKey")).(string))
 }
