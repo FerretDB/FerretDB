@@ -215,13 +215,12 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 	collections := [numCollections]*mongo.Collection{}
 
 	type mapping struct {
-		mu         sync.Mutex // guards m
+		// mu         sync.Mutex // guards m
 		m          map[*mongo.Collection][][]any
 		batchSizes []int
 	}
 
 	m := mapping{
-		mu:         sync.Mutex{},
 		m:          make(map[*mongo.Collection][][]any),
 		batchSizes: []int{1, 10, 50, 100},
 	}
@@ -229,14 +228,15 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 	b.StopTimer()
 	b.ResetTimer()
 
-	batchSize := len(m.batchSizes) - 1
+	batchN := len(m.batchSizes) - 1
+
 	for i := 0; i < b.N; i++ {
 		for i := 0; i < numCollections; i++ {
 			coll := createCollection(i)
 			collections[i] = coll
 
-			// [[b1], [b2], [b3], ..., [bK]] batches
-			k := m.batchSizes[batchSize]
+			// make [[b1], [b2], [b3], ..., [bN]] batches
+			k := m.batchSizes[batchN]
 			for i := 0; i < len(insertDocs); i = i + k {
 				if i+k > len(insertDocs) {
 					break
@@ -244,13 +244,13 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 				m.m[coll] = append(m.m[coll], insertDocs[i:i+k])
 			}
 
-			if batchSize == 0 {
-				batchSize = len(m.batchSizes)
+			if batchN == 0 {
+				batchN = len(m.batchSizes)
 			}
+			batchN--
 
-			batchSize--
-
-			// TODO insert it
+			// TODO insert each batch, make locking more granular as we only need to acquire a lock per collection to avoid duplicate key errors
+			// TODO do not use the collections array
 			fmt.Println(len(m.m[coll]))
 		}
 
