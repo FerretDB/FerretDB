@@ -40,8 +40,6 @@ func TestArchiveHandler(t *testing.T) {
 		"metrics", "heap",
 	}
 
-	host := "0.0.0.0:0"
-
 	filename := filepath.Join(t.TempDir(), "state.json")
 	stateProvider, err := state.NewProvider(filename)
 	require.NoError(t, err)
@@ -55,7 +53,7 @@ func TestArchiveHandler(t *testing.T) {
 	ctx, cancelCtx := context.WithCancel(context.Background())
 	defer cancelCtx()
 
-	go RunHandler(ctx, host, metricsRegisterer, l.Named("debug"))
+	go RunHandler(ctx, "0.0.0.0:0", metricsRegisterer, l.Named("debug"))
 
 	srv := httptest.NewServer(http.DefaultServeMux)
 	defer srv.Close()
