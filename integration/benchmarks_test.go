@@ -270,6 +270,8 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 		var wg sync.WaitGroup
 		wg.Add(numCollections)
 
+		batchN = len(m.batchSizes) - 1
+
 		// TODO try to make locking more granular as we only need
 		// to acquire a lock per collection to avoid duplicate key errors
 		// TODO add sub-benchmarks for batch sizes
@@ -281,12 +283,23 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 				coll := collections[i]
 
 				for batch := m.m[coll].Front(); batch != nil; batch = batch.Next() {
-					for _, documents := range batch.Value.([][]any) {
+					for i, documents := range batch.Value.([][]any) {
+
+						k := m.batchSizes[batchN]
+						if i+k > len(documents) {
+							break
+						}
+
 						b.StartTimer()
-						_, err := coll.InsertMany(ctx, documents)
+						_, err := coll.InsertMany(ctx, documents[i:i+k])
 						require.NoError(b, err)
 						b.StopTimer()
 					}
+					if batchN == 0 {
+						break
+					}
+
+					batchN--
 					err := coll.Drop(ctx)
 					require.NoError(b, err)
 
@@ -297,5 +310,10 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 			}(i)
 		}
 		wg.Wait()
+
+		for i := 0; i < numCollections; i++ {
+			err := collections[i].Drop(ctx)
+			require.NoError(b, err)
+		}
 	}
 }
