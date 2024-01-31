@@ -45,19 +45,6 @@ const (
 	varsPath    = "/debug/vars"
 )
 
-func handlersList() map[string]string {
-	return map[string]string{
-		// custom handlers registered above
-		graphsPath:  "Visualize metrics",
-		metricsPath: "Metrics in Prometheus format",
-		archivePath: "Metrics and pprof data in zip format",
-
-		// stdlib handlers
-		varsPath:  "Expvar package metrics",
-		pprofPath: "Runtime profiling data for pprof",
-	}
-}
-
 // RunHandler runs debug handler.
 func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *zap.Logger) {
 	stdL := must.NotFail(zap.NewStdLogAt(l, zap.WarnLevel))
@@ -146,4 +133,18 @@ func debugHandler(ctx context.Context, r prometheus.Registerer, l *zap.Logger) h
 	})
 
 	return http.DefaultServeMux
+}
+
+// handlersList returns the map of handler paths and their descriptions.
+func handlersList() map[string]string {
+	return map[string]string{
+		// custom handlers registered above
+		graphsPath:  "Visualize metrics",
+		metricsPath: "Metrics in Prometheus format",
+		archivePath: "Metrics and pprof data in zip format",
+
+		// stdlib handlers
+		varsPath:  "Expvar package metrics",
+		pprofPath: "Runtime profiling data for pprof",
+	}
 }
