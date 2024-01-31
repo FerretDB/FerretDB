@@ -211,15 +211,46 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 		return collection.Database().Collection(name)
 	}
 
-	const numCollections = 3
+	const numCollections = 4
 	collections := [numCollections]*mongo.Collection{}
+
+	type mapping struct {
+		mu         sync.Mutex // guards m
+		m          map[*mongo.Collection][][]any
+		batchSizes []int
+	}
+
+	m := mapping{
+		mu:         sync.Mutex{},
+		m:          make(map[*mongo.Collection][][]any),
+		batchSizes: []int{1, 10, 50, 100},
+	}
 
 	b.StopTimer()
 	b.ResetTimer()
 
+	batchSize := len(m.batchSizes) - 1
 	for i := 0; i < b.N; i++ {
 		for i := 0; i < numCollections; i++ {
-			collections[i] = createCollection(i)
+			coll := createCollection(i)
+			collections[i] = coll
+
+			// [[b1], [b2], [b3], ..., [bK]] batches
+			k := m.batchSizes[batchSize]
+			for i := 0; i < len(insertDocs); i = i + k {
+				if i+k > len(insertDocs) {
+					break
+				}
+				m.m[coll] = append(m.m[coll], insertDocs[i:i+k])
+			}
+
+			if batchSize == 0 {
+				batchSize = len(m.batchSizes)
+			}
+
+			batchSize--
+
+			fmt.Println(len(m.m[coll]))
 		}
 
 		var wg sync.WaitGroup
