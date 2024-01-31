@@ -100,10 +100,9 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 
 // debugHandler returns the main handler for debugging endpoints.
 func debugHandler(ctx context.Context, handlersList map[string]string, r prometheus.Registerer, l *zap.Logger) http.Handler {
-	mux := http.NewServeMux()
 	stdL := must.NotFail(zap.NewStdLogAt(l, zap.WarnLevel))
 
-	mux.Handle(metricsPath, promhttp.InstrumentMetricHandler(
+	http.Handle(metricsPath, promhttp.InstrumentMetricHandler(
 		r, promhttp.HandlerFor(prometheus.DefaultGatherer, promhttp.HandlerOpts{
 			ErrorLog:          stdL,
 			ErrorHandling:     promhttp.ContinueOnError,
@@ -117,9 +116,9 @@ func debugHandler(ctx context.Context, handlersList map[string]string, r prometh
 		// TODO https://github.com/FerretDB/FerretDB/issues/3600
 	}
 
-	must.NoError(statsviz.Register(mux, opts...))
+	must.NoError(statsviz.Register(http.DefaultServeMux, opts...))
 
-	mux.HandleFunc(archivePath, archiveHandler)
+	http.HandleFunc(archivePath, archiveHandler)
 
 	var page bytes.Buffer
 	must.NoError(template.Must(template.New("debug").Parse(`
@@ -134,13 +133,13 @@ func debugHandler(ctx context.Context, handlersList map[string]string, r prometh
 	</html>
 	`)).Execute(&page, handlersList))
 
-	mux.HandleFunc("/debug", func(rw http.ResponseWriter, _ *http.Request) {
+	http.HandleFunc("/debug", func(rw http.ResponseWriter, _ *http.Request) {
 		rw.Write(page.Bytes())
 	})
 
-	mux.HandleFunc("/", func(rw http.ResponseWriter, req *http.Request) {
+	http.HandleFunc("/", func(rw http.ResponseWriter, req *http.Request) {
 		http.Redirect(rw, req, "/debug", http.StatusSeeOther)
 	})
 
-	return mux
+	return http.DefaultServeMux
 }

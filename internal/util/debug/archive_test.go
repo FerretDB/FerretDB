@@ -18,20 +18,17 @@ import (
 	"archive/zip"
 	"bytes"
 	"context"
-	"fmt"
 	"io"
-	"net"
 	"net/http"
+	"net/http/httptest"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
@@ -60,31 +57,10 @@ func TestArchiveHandler(t *testing.T) {
 
 	go RunHandler(ctx, host, metricsRegisterer, l.Named("debug"))
 
-	d := net.Dialer{
-		Timeout: time.Second,
-	}
+	srv := httptest.NewServer(http.DefaultServeMux)
+	defer srv.Close()
 
-	var pong bool
-	for i := 0; i < 3; i++ {
-		var conn net.Conn
-
-		conn, err = d.DialContext(ctx, "tcp", host)
-		if err == nil {
-			pong = true
-			conn.Close()
-			break
-		}
-
-		attempt := int64(i) + 1
-		t.Logf("attempt %d: %s", attempt, err.Error())
-
-		ctxutil.SleepWithJitter(ctx, 500*time.Millisecond, attempt)
-	}
-
-	require.True(t, pong, fmt.Sprintf("connection with debug handler could not be established: %s", err.Error()))
-
-	uri := fmt.Sprintf("http://%s%s", host, archivePath)
-	res, err := http.Get(uri)
+	res, err := http.Get(srv.URL + archivePath)
 	require.NoError(t, err)
 
 	defer res.Body.Close() //nolint:errcheck // we are only reading it
