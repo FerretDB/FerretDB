@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
@@ -92,5 +93,16 @@ func TestArchiveHandler(t *testing.T) {
 	for _, file := range zipReader.File {
 		t.Logf("\nverifying file : %s", file.Name)
 		require.Equal(t, true, slices.Contains(fileList, file.FileHeader.Name), "file should be present in archive")
+
+		f, err := file.Open()
+		require.NoError(t, err)
+
+		content := make([]byte, 1)
+		n, err := f.Read(content)
+		require.NoError(t, err)
+
+		assert.Equal(t, 1, n, "file should contain any data, but was empty")
+
+		require.NoError(t, f.Close())
 	}
 }
