@@ -23,7 +23,6 @@ import (
 	"net"
 	"net/http"
 	"path/filepath"
-	"slices"
 	"testing"
 	"time"
 
@@ -108,10 +107,11 @@ func TestArchiveHandler(t *testing.T) {
 	require.Equal(t, len(fileList), len(zipReader.File), "needs to be same as length of fileList")
 
 	for _, file := range zipReader.File {
-		t.Logf("\nverifying file : %s", file.Name)
-		require.Equal(t, true, slices.Contains(fileList, file.FileHeader.Name), "file should be present in archive")
+		require.Contains(t, fileList, file.FileHeader.Name)
 
 		f, err := file.Open()
+		defer f.Close()
+
 		require.NoError(t, err)
 
 		content := make([]byte, 1)
@@ -120,6 +120,6 @@ func TestArchiveHandler(t *testing.T) {
 
 		assert.Equal(t, 1, n, "file should contain any data, but was empty")
 
-		require.NoError(t, f.Close())
+		f.Close()
 	}
 }
