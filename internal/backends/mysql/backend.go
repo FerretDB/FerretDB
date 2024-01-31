@@ -21,12 +21,15 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/backends/mysql/metadata"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
 // backend implements backends.Backend interface.
-type backend struct{}
+type backend struct {
+	r *metadata.Registry
+}
 
 // NewBackendParams represents the parameters of NewBackend function.
 //
@@ -45,7 +48,7 @@ func NewBackend(params *NewBackendParams) (backends.Backend, error) {
 
 // Close implements backends.Backend interface.
 func (b *backend) Close() {
-	// b.r.Close()
+	b.r.Close()
 }
 
 // Status implements backends.Backend interface.
@@ -55,7 +58,7 @@ func (b *backend) Status(ctx context.Context, params *backends.StatusParams) (*b
 
 // Database implements backends.Backend interface.
 func (b *backend) Database(name string) (backends.Database, error) {
-	return nil, lazyerrors.New("not yet implemented.")
+	return newDatabase(b.r, name), nil
 }
 
 // ListDatabases implements backends.Database interface.

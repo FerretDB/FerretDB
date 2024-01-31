@@ -38,6 +38,9 @@ func slogValue(v any) slog.Value {
 		return slog.GroupValue(attrs...)
 
 	case RawDocument:
+		if v == nil {
+			return slog.StringValue("RawDocument(nil)")
+		}
 		return slog.StringValue("RawDocument(" + strconv.Itoa(len(v)) + " bytes)")
 
 	case *Array:
@@ -50,6 +53,9 @@ func slogValue(v any) slog.Value {
 		return slog.GroupValue(attrs...)
 
 	case RawArray:
+		if v == nil {
+			return slog.StringValue("RawArray(nil)")
+		}
 		return slog.StringValue("RawArray(" + strconv.Itoa(len(v)) + " bytes)")
 
 	default:
