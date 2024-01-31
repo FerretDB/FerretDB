@@ -209,6 +209,8 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 
 	// batches is a mapping of collections to a list where each element is a slice
 	// of documents of various batch sizes, it is safe for concurrent use by multiple goroutines.
+	//
+	//nolint:vet // we don't care about alignment there
 	type batches struct {
 		mu         sync.Mutex // guards m
 		m          map[*mongo.Collection]*list.List
@@ -244,14 +246,14 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 					}
 
 					// ugly hack to avoid duplicate key errors
-					withNewObjectID := make([]any, k)
+					withNewObjectIDs := make([]any, k)
 					for i := range insertDocs[i : i+k] {
-						withNewObjectID[i] = bson.D{{
+						withNewObjectIDs[i] = bson.D{{
 							"_id", types.NewObjectID(),
 						}}
 					}
 
-					batch[batchN] = append(batch[batchN], withNewObjectID...)
+					batch[batchN] = append(batch[batchN], withNewObjectIDs...)
 				}
 
 				if m.m[coll] == nil {
@@ -268,7 +270,7 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 		var wg sync.WaitGroup
 		wg.Add(numCollections)
 
-		// TODO try to make locking more granular as we only need
+		// XXX try to make locking more granular as we only need
 		// to acquire a lock per collection to avoid duplicate key errors
 		for i := 0; i < numCollections; i++ {
 			go func(i int) {
@@ -276,6 +278,7 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 				defer m.mu.Unlock()
 
 				coll := collections[i]
+
 				for batch := m.m[coll].Front(); batch != nil; batch = batch.Next() {
 					for _, documents := range batch.Value.([][]any) {
 						b.StartTimer()
