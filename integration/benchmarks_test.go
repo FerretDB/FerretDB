@@ -249,9 +249,23 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 			}
 			batchN--
 
-			// TODO insert each batch, make locking more granular as we only need to acquire a lock per collection to avoid duplicate key errors
+			// TODO fix the map so that every collection key can have multiple batch sizes, resolve to a hash or similar
+			// b 20
+			// c 100
+			// d 1000
+			// a 10
+			// b 20
+			// c 100
+			// d 1000
+			// a 10
+			// b 20
+			// c 100
+			// d 1000
+			// wrong ^
+			// TODO insert each batch, make locking more granular as we only need to acquire a
+			// lock per collection to avoid duplicate key errors
 			// TODO do not use the collections array
-			fmt.Println(len(m.m[coll]))
+			fmt.Println(coll.Name(), len(m.m[coll]))
 		}
 
 		var wg sync.WaitGroup
