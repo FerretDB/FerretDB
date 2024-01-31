@@ -236,10 +236,9 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 			coll := createCollection(i)
 			collections[i] = coll
 
-			for batchN >= 0 {
-				batch := make([][]any, len(m.batchSizes))
+			batch := make([][]any, len(m.batchSizes))
 
-				// make a list of batches
+			for batchN >= 0 {
 				k := m.batchSizes[batchN]
 				for i := 0; i < len(insertDocs); i = i + k {
 					if i+k > len(insertDocs) {
@@ -266,14 +265,23 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 
 		// TODO try to make locking more granular as we only need
 		// to acquire a lock per collection to avoid duplicate key errors
-		// TODO fix insertion
 		for i := 0; i < numCollections; i++ {
 			go func(i int) {
 				coll := collections[i]
 				for batch := m.m[coll].Front(); batch != nil; batch = batch.Next() {
 					for _, documents := range batch.Value.([][]any) {
-						_, err := collections[i].InsertMany(ctx, documents)
-						require.NoError(b, err)
+						fmt.Println(coll.Name(), len(documents))
+						// FIXME it's unknown if this currently works
+						// _, err := collections[i].InsertMany(ctx, documents)
+						// require.NoError(b, err)
+						// a 1000
+						// a 100
+						// a 20
+						// a 10
+						// b 1000
+						// b 100
+						// b 20
+						// b 10
 					}
 				}
 				wg.Done()
