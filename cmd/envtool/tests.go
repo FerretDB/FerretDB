@@ -463,6 +463,8 @@ func listTestFuncsWithRegex(dir, run, skip string) ([]string, error) {
 	return filterStringsByRegex(tests, includeRegex, excludeRegex), nil
 }
 
+// filterStringsByRegex filters a slice of strings based on inclusion and exclusion
+// criteria defined by regular expressions.
 func filterStringsByRegex(tests []string, include, exclude *regexp.Regexp) []string {
 	res := []string{}
 
@@ -481,6 +483,7 @@ func filterStringsByRegex(tests []string, include, exclude *regexp.Regexp) []str
 	return res
 }
 
+// buildGoTestRunRegex builds a regex for `go test -run` from the given test names.
 func buildGoTestRunRegex(tests []string) string {
 	var sb strings.Builder
 	sb.WriteString("^(")
