@@ -50,7 +50,7 @@ Before, our documentation search wasn't able to handle queries that involved ope
 
 ## Other changes
 
-Many of the changes in recent releases focus on enabling support for new authentication mechanism, such as `SCRAM-256`.
+Many of the changes in recent releases focus on enabling support for new authentication mechanisms, such as `SCRAM-SHA-256`.
 Among other things needed to make this possible, FerretDB should manage users by itself and support more user management commands.
 So far, we've added basic support for the following user management commands: `createUser`, `dropAllUsersFromDatabase`, `dropUser`, `updateUser`, and `usersInfo`.
 
