@@ -69,12 +69,12 @@ func archiveHandler(rw http.ResponseWriter, req *http.Request) {
 func addFileToArchive(fileName string, fileReader io.ReadCloser, zipWriter *zip.Writer) error {
 	defer fileReader.Close() //nolint:errcheck // we are only reading it
 
-	fileWriter, err := zipWriter.Create(fileName)
+	f, err := zipWriter.Create(fileName)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	_, err = io.Copy(fileWriter, fileReader)
+	_, err = io.Copy(f, fileReader)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}

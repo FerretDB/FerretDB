@@ -18,9 +18,10 @@ import (
 	"archive/zip"
 	"bytes"
 	"context"
+	"fmt"
 	"io"
+	"net"
 	"net/http"
-	"net/url"
 	"path/filepath"
 	"slices"
 	"testing"
@@ -31,6 +32,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
@@ -42,7 +44,7 @@ func TestArchiveHandler(t *testing.T) {
 		"metrics", "heap",
 	}
 
-	host := "127.0.0.1:5454"
+	host := "0.0.0.0:0"
 
 	filename := filepath.Join(t.TempDir(), "state.json")
 	stateProvider, err := state.NewProvider(filename)
@@ -57,32 +59,45 @@ func TestArchiveHandler(t *testing.T) {
 	ctx, cancelCtx := context.WithCancel(context.Background())
 	go RunHandler(ctx, host, metricsRegisterer, l.Named("debug").Desugar())
 
-	// Wait for the server to start
-	time.Sleep(time.Second)
+	d := net.Dialer{
+		Timeout: time.Second,
+	}
 
-	var u url.URL
-	u.Path = archivePath
-	u.Host = host
-	u.Scheme = "http"
+	var pong bool
+	for i := 0; i < 3; i++ {
+		var conn net.Conn
 
-	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
+		conn, err = d.DialContext(ctx, "tcp", host)
+		if err == nil {
+			pong = true
+			conn.Close()
+			break
+		}
+
+		attempt := int64(i) + 1
+		t.Logf("attempt %d: %s", attempt, err.Error())
+
+		ctxutil.SleepWithJitter(ctx, 500*time.Millisecond, attempt)
+	}
+
+	require.True(t, pong, fmt.Sprintf("connection with debug handler could not be established: %s", err.Error()))
+
+	uri := fmt.Sprintf("http://%s%s", host, archivePath)
+	res, err := http.Get(uri)
 	require.NoError(t, err)
 
-	resp, err := http.DefaultClient.Do(req)
-	require.NoError(t, err)
-
-	defer resp.Body.Close() //nolint:errcheck // we are only reading it
+	defer res.Body.Close() //nolint:errcheck // we are only reading it
 
 	cancelCtx()
 
-	require.Equal(t, http.StatusOK, resp.StatusCode, "status code should be 200")
-	require.Equal(t, "application/zip", resp.Header.Get("Content-Type"), "mime type should be zip")
+	require.Equal(t, http.StatusOK, res.StatusCode, "status code should be 200")
+	require.Equal(t, "application/zip", res.Header.Get("Content-Type"), "mime type should be zip")
 
 	expectedHeader := "attachment; filename=FerretDB-debug.zip"
-	receivedHeader := resp.Header.Get("Content-Disposition")
+	receivedHeader := res.Header.Get("Content-Disposition")
 	require.Equal(t, expectedHeader, receivedHeader, "content-disposition type should be same")
 
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(res.Body)
 	require.NoError(t, err)
 
 	zipReader, err := zip.NewReader(bytes.NewReader(body), int64(len(body)))
