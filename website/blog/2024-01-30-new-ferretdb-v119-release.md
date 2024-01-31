@@ -54,7 +54,7 @@ Many of the changes in recent releases focus on enabling support for new authent
 Among other things needed to make this possible, FerretDB should manage users by itself and support more user management commands.
 So far, we've added basic support for the following user management commands: `createUser`, `dropAllUsersFromDatabase`, `dropUser`, `updateUser`, and `usersInfo`.
 
-For now, they are only accessible for testing purposes by running FerretDB with the `EnableNewAuth` flag/`FERRETDB_TEST_ENABLE_NEW_AUTH` environment variable.
+For now, they are only accessible for testing purposes by running FerretDB with the hidden flag `--test-enable-new-auth`/`FERRETDB_TEST_ENABLE_NEW_AUTH` environment variable (not currently be visible from the help output).
 
 Then you can create a user with the `createUser` command:
 
