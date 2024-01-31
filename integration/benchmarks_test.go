@@ -250,6 +250,7 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 
 			batchSize--
 
+			// TODO insert it
 			fmt.Println(len(m.m[coll]))
 		}
 
