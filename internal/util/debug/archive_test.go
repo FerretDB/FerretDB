@@ -54,10 +54,10 @@ func TestArchiveHandler(t *testing.T) {
 	metricsProvider := stateProvider.MetricsCollector(true)
 	metricsRegisterer.MustRegister(metricsProvider)
 
-	l := zap.S()
+	l := zap.L()
 
 	ctx, cancelCtx := context.WithCancel(context.Background())
-	go RunHandler(ctx, host, metricsRegisterer, l.Named("debug").Desugar())
+	go RunHandler(ctx, host, metricsRegisterer, l.Named("debug"))
 
 	d := net.Dialer{
 		Timeout: time.Second,
