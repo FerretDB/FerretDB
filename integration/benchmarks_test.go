@@ -215,7 +215,7 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 	collections := [numCollections]*mongo.Collection{}
 
 	type mapping struct {
-		// mu         sync.Mutex // guards m
+		mu         sync.Mutex // guards m
 		m          map[*mongo.Collection][][]any
 		batchSizes []int
 	}
