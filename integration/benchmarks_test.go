@@ -208,7 +208,7 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 	collections := [numCollections]*mongo.Collection{}
 
 	// batches is a mapping of collections to a list where each element is a slice
-	// of documents at various batch sizes, it is safe for concurrent use by multiple goroutines.
+	// of documents of various batch sizes, it is safe for concurrent use by multiple goroutines.
 	type batches struct {
 		mu         sync.Mutex // guards m
 		m          map[*mongo.Collection]*list.List
