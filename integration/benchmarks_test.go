@@ -27,6 +27,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
 
@@ -203,25 +204,18 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 		}
 	}
 
-	createCollection := func(i int) *mongo.Collection {
-		codepoint := rune('a' + i)
-		name := string(codepoint)
-		err := collection.Database().CreateCollection(ctx, name)
-		require.NoError(b, err)
-
-		return collection.Database().Collection(name)
-	}
-
 	const numCollections = 4
 	collections := [numCollections]*mongo.Collection{}
 
-	type mapping struct {
+	// batches is a mapping of collections to a list where each element is a slice
+	// of documents at various batch sizes, it is safe for concurrent use by multiple goroutines.
+	type batches struct {
 		mu         sync.Mutex // guards m
 		m          map[*mongo.Collection]*list.List
 		batchSizes []int
 	}
 
-	m := mapping{
+	m := batches{
 		m:          make(map[*mongo.Collection]*list.List),
 		batchSizes: []int{1, 10, 50, 100},
 	}
@@ -233,7 +227,11 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		for i := 0; i < numCollections; i++ {
-			coll := createCollection(i)
+			name := fmt.Sprintf("%c", 'a'+i)
+			err := collection.Database().CreateCollection(ctx, name)
+			require.NoError(b, err)
+
+			coll := collection.Database().Collection(name)
 			collections[i] = coll
 
 			batch := make([][]any, len(m.batchSizes))
@@ -245,7 +243,15 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 						break
 					}
 
-					batch[batchN] = append(batch[batchN], insertDocs[i:i+k]...)
+					// ugly hack to avoid duplicate key errors
+					withNewObjectID := make([]any, k)
+					for i := range insertDocs[i : i+k] {
+						withNewObjectID[i] = bson.D{{
+							"_id", types.NewObjectID(),
+						}}
+					}
+
+					batch[batchN] = append(batch[batchN], withNewObjectID...)
 				}
 
 				if m.m[coll] == nil {
@@ -262,32 +268,30 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 		var wg sync.WaitGroup
 		wg.Add(numCollections)
 
-		b.StartTimer()
-
 		// TODO try to make locking more granular as we only need
 		// to acquire a lock per collection to avoid duplicate key errors
 		for i := 0; i < numCollections; i++ {
 			go func(i int) {
+				m.mu.Lock()
+				defer m.mu.Unlock()
+
 				coll := collections[i]
 				for batch := m.m[coll].Front(); batch != nil; batch = batch.Next() {
 					for _, documents := range batch.Value.([][]any) {
-						// FIXME duplicate key errors
+						b.StartTimer()
 						_, err := coll.InsertMany(ctx, documents)
 						require.NoError(b, err)
-						// a 1000
-						// a 100
-						// a 20
-						// a 10
-						// b 1000
-						// b 100
-						// b 20
-						// b 10
+						b.StopTimer()
 					}
+					err := coll.Drop(ctx)
+					require.NoError(b, err)
+
+					err = collection.Database().CreateCollection(ctx, coll.Name())
+					require.NoError(b, err)
 				}
 				wg.Done()
 			}(i)
 		}
-		b.StopTimer()
 		wg.Wait()
 
 		for i := 0; i < numCollections; i++ {
