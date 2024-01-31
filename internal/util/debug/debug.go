@@ -83,9 +83,17 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 
 	stopCtx, stopCancel := context.WithTimeout(context.Background(), time.Second)
 	defer stopCancel()
-	s.Shutdown(stopCtx) //nolint:contextcheck // use new context for cancellation
 
-	s.Close()
+	err := s.Shutdown(stopCtx) //nolint:contextcheck // use new context for cancellation
+	if err != nil {
+		l.Sugar().Error(err)
+	}
+
+	err = s.Close()
+	if err != nil {
+		l.Sugar().Error(err)
+	}
+
 	l.Sugar().Info("Debug server stopped.")
 }
 

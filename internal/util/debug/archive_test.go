@@ -82,9 +82,9 @@ func TestArchiveHandler(t *testing.T) {
 		require.Contains(t, fileList, file.FileHeader.Name)
 
 		f, err := file.Open()
-		defer f.Close()
-
 		require.NoError(t, err)
+
+		defer f.Close() //nolint:errcheck // we are only reading it
 
 		content := make([]byte, 1)
 		n, err := f.Read(content)
@@ -92,6 +92,6 @@ func TestArchiveHandler(t *testing.T) {
 
 		assert.Equal(t, 1, n, "file should contain any data, but was empty")
 
-		f.Close()
+		require.NoError(t, f.Close())
 	}
 }
