@@ -49,6 +49,23 @@ const (
 func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *zap.Logger) {
 	stdL := must.NotFail(zap.NewStdLogAt(l, zap.WarnLevel))
 
+	http.Handle(metricsPath, promhttp.InstrumentMetricHandler(
+		r, promhttp.HandlerFor(prometheus.DefaultGatherer, promhttp.HandlerOpts{
+			ErrorLog:          stdL,
+			ErrorHandling:     promhttp.ContinueOnError,
+			Registry:          r,
+			EnableOpenMetrics: true,
+		}),
+	))
+
+	opts := []statsviz.Option{
+		statsviz.Root(graphsPath),
+		// TODO https://github.com/FerretDB/FerretDB/issues/3600
+	}
+	must.NoError(statsviz.Register(http.DefaultServeMux, opts...))
+
+	http.HandleFunc(archivePath, archiveHandler)
+
 	handlers := map[string]string{
 		// custom handlers registered above
 		graphsPath:  "Visualize metrics",
@@ -60,13 +77,33 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 		pprofPath: "Runtime profiling data for pprof",
 	}
 
+	var page bytes.Buffer
+	must.NoError(template.Must(template.New("debug").Parse(`
+	<html>
+	<body>
+	<ul>
+	{{range $path, $desc := .}}
+		<li><a href="{{$path}}">{{$path}}</a>: {{$desc}}</li>
+	{{end}}
+	</ul>
+	</body>
+	</html>
+	`)).Execute(&page, handlers))
+
+	http.HandleFunc("/debug", func(rw http.ResponseWriter, _ *http.Request) {
+		rw.Write(page.Bytes())
+	})
+
+	http.HandleFunc("/", func(rw http.ResponseWriter, req *http.Request) {
+		http.Redirect(rw, req, "/debug", http.StatusSeeOther)
+	})
+
 	s := http.Server{
 		Addr:     addr,
 		ErrorLog: stdL,
 		BaseContext: func(_ net.Listener) context.Context {
 			return ctx
 		},
-		Handler: debugHandler(ctx, handlers, r, l),
 	}
 
 	go func() {
@@ -96,50 +133,4 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 
 	s.Close()
 	l.Sugar().Info("Debug server stopped.")
-}
-
-// debugHandler returns the main handler for debugging endpoints.
-func debugHandler(ctx context.Context, handlersList map[string]string, r prometheus.Registerer, l *zap.Logger) http.Handler {
-	stdL := must.NotFail(zap.NewStdLogAt(l, zap.WarnLevel))
-
-	http.Handle(metricsPath, promhttp.InstrumentMetricHandler(
-		r, promhttp.HandlerFor(prometheus.DefaultGatherer, promhttp.HandlerOpts{
-			ErrorLog:          stdL,
-			ErrorHandling:     promhttp.ContinueOnError,
-			Registry:          r,
-			EnableOpenMetrics: true,
-		}),
-	))
-
-	opts := []statsviz.Option{
-		statsviz.Root(graphsPath),
-		// TODO https://github.com/FerretDB/FerretDB/issues/3600
-	}
-
-	must.NoError(statsviz.Register(http.DefaultServeMux, opts...))
-
-	http.HandleFunc(archivePath, archiveHandler)
-
-	var page bytes.Buffer
-	must.NoError(template.Must(template.New("debug").Parse(`
-	<html>
-	<body>
-	<ul>
-	{{range $path, $desc := .}}
-		<li><a href="{{$path}}">{{$path}}</a>: {{$desc}}</li>
-	{{end}}
-	</ul>
-	</body>
-	</html>
-	`)).Execute(&page, handlersList))
-
-	http.HandleFunc("/debug", func(rw http.ResponseWriter, _ *http.Request) {
-		rw.Write(page.Bytes())
-	})
-
-	http.HandleFunc("/", func(rw http.ResponseWriter, req *http.Request) {
-		http.Redirect(rw, req, "/debug", http.StatusSeeOther)
-	})
-
-	return http.DefaultServeMux
 }
