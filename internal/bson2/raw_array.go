@@ -18,6 +18,7 @@ import (
 	"log/slog"
 	"strconv"
 
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
@@ -27,7 +28,7 @@ import (
 type RawArray []byte
 
 // LogValue implements slog.LogValuer interface.
-func (arr *RawArray) LogValue() slog.Value {
+func (arr RawArray) LogValue() slog.Value {
 	return slogValue(arr)
 }
 
@@ -50,6 +51,21 @@ func (raw RawArray) Decode() (*Array, error) {
 // All nested documents and arrays are decoded recursively.
 func (raw RawArray) DecodeDeep() (*Array, error) {
 	res, err := raw.decode(true)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return res, nil
+}
+
+// Convert converts a single BSON array that takes the whole raw slice into [*types.Array].
+func (raw RawArray) Convert() (*types.Array, error) {
+	arr, err := raw.decode(false)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	res, err := arr.Convert()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
