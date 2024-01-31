@@ -12,12 +12,10 @@ tags: [release]
 
 We just released FerretDB v1.19.0, which includes support for creating an index on nested fields in SQLite and some important bug fixes.
 
-In recent weeks, we've been working on enabling support for authentication.
-That way, [FerretDB](https://www.ferretdb.com/) can manage users by itself and not rely on the backend to do so.
+In recent weeks, we've been working on improving authentication and enabling support for more user management commands.
 
 Our goal is to make FerretDB the truly open source MongoDB alternative, and performance is also a key part of that.
-We have been focusing on improving the performance of FerretDB, and this might be noticeable already in some of the latest releases.
-We should have some exciting changes and performance improvements in future releases.
+We have been focusing on improving the performance of FerretDB, and should have some exciting updates and improvements in future releases.
 
 ## New features
 
@@ -49,10 +47,8 @@ Before, our documentation search wasn't able to handle queries that involved ope
 
 ## Other changes
 
-Many of the recent changes have gone into enabling support for authentication on FerretDB.
+Many of the recent changes have gone into enabling better support for authentication on FerretDB.
 To make that possible, we've recently added support for more user management commands, such as the `updateUser` command.
-
-We hope to have support for authentication available in future releases.
 
 For other changes in this release, see the [release note here](https://github.com/FerretDB/FerretDB/releases/tag/v1.19.0).
 
