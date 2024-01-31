@@ -17,9 +17,9 @@ package debug
 
 import (
 	"archive/zip"
+	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"path/filepath"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -38,17 +38,9 @@ func archiveHandler(rw http.ResponseWriter, req *http.Request) {
 		metricsPath,
 		pprofPath + "/heap",
 	} {
-		values := url.Values{}
-		values.Add("debug", "1")
+		uri := fmt.Sprintf("http://%s%s", req.Host, path)
 
-		u := url.URL{
-			Scheme:   "http",
-			Host:     req.Host,
-			Path:     path,
-			RawQuery: values.Encode(),
-		}
-
-		req, err := http.NewRequest(http.MethodGet, u.String(), nil)
+		req, err := http.NewRequest(http.MethodGet, uri, nil)
 		if err != nil {
 			http.Error(rw, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 			return
