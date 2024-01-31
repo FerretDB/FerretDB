@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"container/list"
 	"errors"
 	"fmt"
 	"sync"
@@ -216,12 +217,12 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 
 	type mapping struct {
 		mu         sync.Mutex // guards m
-		m          map[*mongo.Collection][][]any
+		m          map[*mongo.Collection]*list.List
 		batchSizes []int
 	}
 
 	m := mapping{
-		m:          make(map[*mongo.Collection][][]any),
+		m:          make(map[*mongo.Collection]*list.List),
 		batchSizes: []int{1, 10, 50, 100},
 	}
 
@@ -235,37 +236,31 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 			coll := createCollection(i)
 			collections[i] = coll
 
-			// make [[b1], [b2], [b3], ..., [bN]] batches
-			k := m.batchSizes[batchN]
-			for i := 0; i < len(insertDocs); i = i + k {
-				if i+k > len(insertDocs) {
-					break
+			for batchN > 0 {
+				batch := []any{}
+
+				// make [[b1], [b2], [b3], ..., [bN]] batches
+				k := m.batchSizes[batchN]
+				for i := 0; i < len(insertDocs); i = i + k {
+					if i+k > len(insertDocs) {
+						break
+					}
+
+					batch = append(batch, insertDocs[i:i+k])
 				}
-				m.m[coll] = append(m.m[coll], insertDocs[i:i+k])
+
+				if m.m[coll] == nil {
+					m.m[coll] = list.New()
+				}
+
+				m.m[coll].PushFront(batch)
+				batchN--
 			}
 
-			if batchN == 0 {
-				batchN = len(m.batchSizes)
-			}
-			batchN--
+			batchN = len(m.batchSizes) - 1
 
-			// TODO fix the map so that every collection key can have multiple batch sizes, resolve to a hash or similar
-			// b 20
-			// c 100
-			// d 1000
-			// a 10
-			// b 20
-			// c 100
-			// d 1000
-			// a 10
-			// b 20
-			// c 100
-			// d 1000
-			// wrong ^
-			// TODO insert each batch, make locking more granular as we only need to acquire a
-			// lock per collection to avoid duplicate key errors
-			// TODO do not use the collections array
-			fmt.Println(coll.Name(), len(m.m[coll]))
+			// TODO try to make locking more granular as we only need
+			// to acquire a lock per collection to avoid duplicate key errors
 		}
 
 		var wg sync.WaitGroup
@@ -275,8 +270,11 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 
 		for i := 0; i < numCollections; i++ {
 			go func(i int) {
-				_, err := collections[i].InsertMany(ctx, insertDocs)
-				require.NoError(b, err)
+				coll := collections[i]
+				for documents := m.m[coll].Front(); documents != nil; documents = documents.Next() {
+					_, err := collections[i].InsertMany(ctx, documents.Value.([]any))
+					require.NoError(b, err)
+				}
 				wg.Done()
 			}(i)
 		}
