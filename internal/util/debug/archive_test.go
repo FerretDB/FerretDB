@@ -57,6 +57,8 @@ func TestArchiveHandler(t *testing.T) {
 	l := zap.L()
 
 	ctx, cancelCtx := context.WithCancel(context.Background())
+	defer cancelCtx()
+
 	go RunHandler(ctx, host, metricsRegisterer, l.Named("debug"))
 
 	d := net.Dialer{
