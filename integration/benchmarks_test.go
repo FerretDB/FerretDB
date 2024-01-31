@@ -237,7 +237,7 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 			collections[i] = coll
 
 			for batchN > 0 {
-				batch := []any{}
+				batch := make([][]any, len(m.batchSizes))
 
 				// make [[b1], [b2], [b3], ..., [bN]] batches
 				k := m.batchSizes[batchN]
@@ -246,6 +246,7 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 						break
 					}
 
+					//
 					batch = append(batch, insertDocs[i:i+k])
 				}
 
@@ -261,6 +262,7 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 
 			// TODO try to make locking more granular as we only need
 			// to acquire a lock per collection to avoid duplicate key errors
+			// TODO fix the list
 		}
 
 		var wg sync.WaitGroup
