@@ -40,13 +40,7 @@ func archiveHandler(rw http.ResponseWriter, req *http.Request) {
 	} {
 		uri := fmt.Sprintf("http://%s%s", req.Host, path)
 
-		req, err := http.NewRequest(http.MethodGet, uri, nil)
-		if err != nil {
-			http.Error(rw, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
-			return
-		}
-
-		resp, err := http.DefaultClient.Do(req)
+		resp, err := http.Get(uri)
 		if err != nil {
 			http.Error(rw, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 			return
