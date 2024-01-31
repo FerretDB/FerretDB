@@ -244,7 +244,8 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 					if i+k > len(insertDocs) {
 						break
 					}
-					batch[batchN] = append(batch[batchN], insertDocs[i:i+k])
+
+					batch[batchN] = append(batch[batchN], insertDocs[i:i+k]...)
 				}
 
 				if m.m[coll] == nil {
@@ -270,10 +271,9 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 				coll := collections[i]
 				for batch := m.m[coll].Front(); batch != nil; batch = batch.Next() {
 					for _, documents := range batch.Value.([][]any) {
-						fmt.Println(coll.Name(), len(documents))
-						// FIXME it's unknown if this currently works
-						// _, err := collections[i].InsertMany(ctx, documents)
-						// require.NoError(b, err)
+						// FIXME duplicate key errors
+						_, err := coll.InsertMany(ctx, documents)
+						require.NoError(b, err)
 						// a 1000
 						// a 100
 						// a 20
