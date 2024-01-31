@@ -53,8 +53,6 @@ func TestArchiveHandler(t *testing.T) {
 	ctx, cancelCtx := context.WithCancel(context.Background())
 	defer cancelCtx()
 
-	//	go RunHandler(ctx, "0.0.0.0:0", metricsRegisterer, l.Named("debug"))
-
 	srv := httptest.NewServer(debugHandler(ctx, metricsRegisterer, l.Named("debug")))
 	defer srv.Close()
 
