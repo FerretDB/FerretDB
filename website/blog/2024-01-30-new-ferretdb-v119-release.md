@@ -53,6 +53,6 @@ To make that possible, we've recently added support for more user management com
 For other changes in this release, see the [release note here](https://github.com/FerretDB/FerretDB/releases/tag/v1.19.0).
 
 Many thanks to all our contributors, your support means a lot to us, and we value it greatly.
-We had many open-source contributors to this release, with @fadyat making a first contribution – thank you!
+We had many open-source contributors to this release, with [@fadyat](https://github.com/fadyat) making a first contribution – thank you!
 
 If you have any questions or comments about this release or FerretDB, [reach out to us on any of our channels](https://docs.ferretdb.io/#community).
