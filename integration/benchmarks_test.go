@@ -253,10 +253,17 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 
 					// ugly hack to avoid duplicate key errors across batches
 					withNewObjectIDs := make([]any, batchSize)
+
 					for i := range insertDocs[i : i+batchSize] {
-						d := insertDocs[i].(bson.D).Map()
-						d["_id"] = types.NewObjectID()
-						withNewObjectIDs[i] = d
+						data, err := bson.Marshal(insertDocs[i])
+						require.NoError(b, err)
+
+						var val map[string]interface{}
+						err = bson.Unmarshal(data, &val)
+						require.NoError(b, err)
+
+						val["_id"] = types.NewObjectID()
+						withNewObjectIDs[i] = val
 					}
 
 					size--
