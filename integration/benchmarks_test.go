@@ -204,6 +204,7 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 		}
 	}
 
+	const totalCount = 1000
 	const numCollections = 4
 	collections := [numCollections]*mongo.Collection{}
 
@@ -236,7 +237,7 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 			coll := collection.Database().Collection(name)
 			collections[i] = coll
 
-			batch := make([][]any, len(m.batchSizes))
+			batches := make([][][]any, len(m.batchSizes))
 
 			for batchN >= 0 {
 				k := m.batchSizes[batchN]
@@ -245,22 +246,27 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 						break
 					}
 
+					batches[batchN] = make([][]any, totalCount/k)
+
 					// ugly hack to avoid duplicate key errors
 					withNewObjectIDs := make([]any, k)
 					for i := range insertDocs[i : i+k] {
 						withNewObjectIDs[i] = bson.D{{
-							"_id", types.NewObjectID(),
+							Key: "_id", Value: types.NewObjectID(),
 						}}
 					}
 
-					batch[batchN] = append(batch[batchN], withNewObjectIDs...)
+					for i, batch := range withNewObjectIDs {
+						batches[batchN][i] = batch // FIXME
+					}
+					// batches[batchN] = append(batches[batchN], withNewObjectIDs...)
 				}
 
 				if m.m[coll] == nil {
 					m.m[coll] = list.New()
 				}
 
-				m.m[coll].PushFront(batch)
+				m.m[coll].PushFront(batches)
 				batchN--
 			}
 
@@ -272,8 +278,6 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 
 		batchN = len(m.batchSizes) - 1
 
-		// TODO try to make locking more granular as we only need
-		// to acquire a lock per collection to avoid duplicate key errors
 		// TODO add sub-benchmarks for batch sizes
 		for i := 0; i < numCollections; i++ {
 			go func(i int) {
@@ -283,23 +287,13 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 				coll := collections[i]
 
 				for batch := m.m[coll].Front(); batch != nil; batch = batch.Next() {
-					for i, documents := range batch.Value.([][]any) {
-
-						k := m.batchSizes[batchN]
-						if i+k > len(documents) {
-							break
-						}
-
+					for _, documents := range batch.Value.([][]any) {
 						b.StartTimer()
-						_, err := coll.InsertMany(ctx, documents[i:i+k])
+						_, err := coll.InsertMany(ctx, documents)
 						require.NoError(b, err)
 						b.StopTimer()
 					}
-					if batchN == 0 {
-						break
-					}
 
-					batchN--
 					err := coll.Drop(ctx)
 					require.NoError(b, err)
 
