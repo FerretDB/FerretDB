@@ -56,7 +56,7 @@ func run(pass *analysis.Pass) (any, error) {
 	var client *client
 
 	if !pass.Analyzer.Flags.Lookup("offline").Value.(flag.Getter).Get().(bool) {
-		cacheFilePath, err := cacheFilePath()
+		p, err := cacheFilePath()
 		if err != nil {
 			log.Panic(err)
 		}
@@ -71,7 +71,7 @@ func run(pass *analysis.Pass) (any, error) {
 			clientDebugF = log.New(log.Writer(), "client-debug: ", log.Flags()).Printf
 		}
 
-		if client, err = newClient(cacheFilePath, log.Printf, cacheDebugF, clientDebugF); err != nil {
+		if client, err = newClient(p, log.Printf, cacheDebugF, clientDebugF); err != nil {
 			log.Panic(err)
 		}
 	}
