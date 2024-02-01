@@ -240,33 +240,34 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 			batches := make([][][]any, len(m.batchSizes))
 
 			for batchN >= 0 {
-				k := m.batchSizes[batchN]
-				for i := 0; i < len(insertDocs); i = i + k {
-					if i+k > len(insertDocs) {
+
+				batchSize := m.batchSizes[batchN]
+				size := totalCount / batchSize
+				batches[batchN] = make([][]any, size)
+
+				for i := 0; i < len(insertDocs); i = i + batchSize {
+					if i+batchSize > len(insertDocs) {
 						break
 					}
 
-					batches[batchN] = make([][]any, totalCount/k)
-
 					// ugly hack to avoid duplicate key errors
-					withNewObjectIDs := make([]any, k)
-					for i := range insertDocs[i : i+k] {
+					// FIXME use BenchmarkSmallDocuments fields
+					withNewObjectIDs := make([]any, batchSize)
+					for i := range insertDocs[i : i+batchSize] {
 						withNewObjectIDs[i] = bson.D{{
 							Key: "_id", Value: types.NewObjectID(),
 						}}
 					}
 
-					for i, batch := range withNewObjectIDs {
-						batches[batchN][i] = batch // FIXME
-					}
-					// batches[batchN] = append(batches[batchN], withNewObjectIDs...)
+					size--
+					batches[batchN][size] = withNewObjectIDs
 				}
 
 				if m.m[coll] == nil {
 					m.m[coll] = list.New()
 				}
 
-				m.m[coll].PushFront(batches)
+				m.m[coll].PushFront(batches[batchN])
 				batchN--
 			}
 
