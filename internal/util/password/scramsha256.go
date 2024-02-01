@@ -18,9 +18,10 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 
+	"github.com/xdg-go/scram"
+
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/xdg-go/scram"
 )
 
 // scramSHA256Params represent password parameters for SCRAM-SHA-256 authentication.

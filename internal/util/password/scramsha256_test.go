@@ -18,11 +18,13 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"github.com/xdg-go/scram"
+
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // scramSHA256TestCase represents a test case for SCRAM-SHA-256 authentication.
@@ -171,6 +173,34 @@ func TestSCRAMSHA256(t *testing.T) {
 
 			require.NoError(t, err)
 			testutil.AssertEqual(t, tc.want, doc)
+
+			scramServer, err := scram.SHA256.NewServer(func(username string) (scram.StoredCredentials, error) {
+				return scram.StoredCredentials{
+					KeyFactors: scram.KeyFactors{
+						Salt:  string(tc.salt),
+						Iters: tc.params.iterationCount,
+					},
+					StoredKey: []byte(must.NotFail(doc.Get("storedKey")).(string)),
+					ServerKey: []byte(must.NotFail(doc.Get("serverKey")).(string)),
+				}, nil
+			})
+			must.NoError(err)
+
+			// Check if the generated authentication is valid by simulating a conversation.
+			conv := scramServer.NewConversation()
+
+			client, err := scram.SHA256.NewClient(tc.username, tc.password, "")
+			require.NoError(t, err)
+
+			resp, err := client.NewConversation().Step("")
+			require.NoError(t, err)
+
+			resp, err = conv.Step(resp)
+			require.NoError(t, err)
+			assert.NotEmpty(t, resp)
+
+			_, err = conv.Step("wrong")
+			assert.NotNil(t, err)
 		})
 	}
 
