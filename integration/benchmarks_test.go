@@ -287,7 +287,6 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 		// TODO add sub-benchmarks for batch sizes
 		for i := 0; i < numCollections; i++ {
 			go func(i int) {
-
 				coll := collections[i]
 
 				for batch := m.m[coll].Front(); batch != nil; batch = batch.Next() {
@@ -297,12 +296,6 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 						require.NoError(b, err)
 						b.StopTimer()
 					}
-
-					err := coll.Drop(ctx)
-					require.NoError(b, err)
-
-					err = collection.Database().CreateCollection(ctx, coll.Name())
-					require.NoError(b, err)
 				}
 				wg.Done()
 			}(i)
