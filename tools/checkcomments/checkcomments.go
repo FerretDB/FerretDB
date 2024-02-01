@@ -42,7 +42,8 @@ var analyzer = &analysis.Analyzer{
 // init initializes the analyzer flags.
 func init() {
 	analyzer.Flags.Bool("offline", false, "do not check issues open/closed status")
-	analyzer.Flags.Bool("client-debug", false, "log GitHub API requests/responses and cache hit/misses")
+	analyzer.Flags.Bool("cache-debug", false, "log cache hits/misses")
+	analyzer.Flags.Bool("client-debug", false, "log GitHub API requests/responses")
 }
 
 // main runs the analyzer.
@@ -55,17 +56,22 @@ func run(pass *analysis.Pass) (any, error) {
 	var client *client
 
 	if !pass.Analyzer.Flags.Lookup("offline").Value.(flag.Getter).Get().(bool) {
-		p, err := cacheFilePath()
+		cacheFilePath, err := cacheFilePath()
 		if err != nil {
 			log.Panic(err)
 		}
 
-		debugf := gh.NoopPrintf
-		if pass.Analyzer.Flags.Lookup("client-debug").Value.(flag.Getter).Get().(bool) {
-			debugf = log.New(log.Writer(), "client-debug: ", log.Flags()).Printf
+		cacheDebugF := gh.NoopPrintf
+		if pass.Analyzer.Flags.Lookup("cache-debug").Value.(flag.Getter).Get().(bool) {
+			cacheDebugF = log.New(log.Writer(), "", log.Flags()).Printf
 		}
 
-		if client, err = newClient(p, log.Printf, debugf); err != nil {
+		clientDebugF := gh.NoopPrintf
+		if pass.Analyzer.Flags.Lookup("client-debug").Value.(flag.Getter).Get().(bool) {
+			clientDebugF = log.New(log.Writer(), "client-debug: ", log.Flags()).Printf
+		}
+
+		if client, err = newClient(cacheFilePath, log.Printf, cacheDebugF, clientDebugF); err != nil {
 			log.Panic(err)
 		}
 	}

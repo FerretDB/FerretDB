@@ -57,23 +57,28 @@ type client struct {
 	c             *github.Client
 	cacheFilePath string
 	logf          gh.Printf
-	debugf        gh.Printf
+	cacheDebugF   gh.Printf
+	clientDebugF  gh.Printf
 	token         string
 }
 
 // newClient creates a new client for the given cache file path and logging functions.
-func newClient(cacheFilePath string, logf, debugf gh.Printf) (*client, error) {
+func newClient(cacheFilePath string, logf, cacheDebugF, clientDebugf gh.Printf) (*client, error) {
 	token := os.Getenv("GITHUB_TOKEN")
 
 	if logf == nil {
 		panic("logf must be set")
 	}
 
-	if debugf == nil {
+	if cacheDebugF == nil {
+		panic("vf must be set")
+	}
+
+	if clientDebugf == nil {
 		panic("debugf must be set")
 	}
 
-	c, err := gh.NewRESTClient(token, debugf)
+	c, err := gh.NewRESTClient(token, clientDebugf)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +88,8 @@ func newClient(cacheFilePath string, logf, debugf gh.Printf) (*client, error) {
 		cacheFilePath: cacheFilePath,
 		token:         token,
 		logf:          logf,
-		debugf:        debugf,
+		cacheDebugF:   cacheDebugF,
+		clientDebugF:  clientDebugf,
 	}, nil
 }
 
@@ -93,8 +99,11 @@ func newClient(cacheFilePath string, logf, debugf gh.Printf) (*client, error) {
 // Returned error is something fatal.
 // On rate limit, the error is logged once and (issueOpen, nil) is returned.
 func (c *client) IssueStatus(ctx context.Context, num int) (issueStatus, error) {
+	start := time.Now()
+
 	var res issueStatus
 	noUpdate := fmt.Errorf("no need to update the cache file")
+	url := fmt.Sprintf("https://github.com/FerretDB/FerretDB/issues/%d", num)
 
 	err := lockedfile.Transform(c.cacheFilePath, func(data []byte) ([]byte, error) {
 		cache := &cacheFile{
@@ -107,10 +116,7 @@ func (c *client) IssueStatus(ctx context.Context, num int) (issueStatus, error) 
 			}
 		}
 
-		url := fmt.Sprintf("https://github.com/FerretDB/FerretDB/issues/%d", num)
-
 		if res = cache.Issues[url].Status; res != "" {
-			c.debugf("Cache hit for %s: %s", url, res)
 			return nil, noUpdate
 		}
 
@@ -122,7 +128,7 @@ func (c *client) IssueStatus(ctx context.Context, num int) (issueStatus, error) 
 			}
 
 			if cache.RateLimitReached {
-				c.debugf("Rate limit already reached: %s", url)
+				c.clientDebugF("Rate limit already reached: %s", url)
 				return nil, noUpdate
 			}
 
@@ -138,7 +144,6 @@ func (c *client) IssueStatus(ctx context.Context, num int) (issueStatus, error) 
 
 		// unless rate limited
 		if res != "" {
-			c.debugf("Cache miss for %s: %s", url, res)
 			cache.Issues[url] = issue{
 				RefreshedAt: time.Now(),
 				Status:      res,
@@ -148,9 +153,13 @@ func (c *client) IssueStatus(ctx context.Context, num int) (issueStatus, error) 
 		return json.MarshalIndent(cache, "", "  ")
 	})
 
+	cacheRes := "miss"
 	if errors.Is(err, noUpdate) {
+		cacheRes = "hit"
 		err = nil
 	}
+
+	c.cacheDebugF("%s: %s (%dms, %s)", url, res, time.Since(start).Milliseconds(), cacheRes)
 
 	// when rate limited
 	if err == nil && res == "" {
