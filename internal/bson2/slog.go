@@ -38,6 +38,9 @@ func slogValue(v any) slog.Value {
 		return slog.GroupValue(attrs...)
 
 	case RawDocument:
+		if v == nil {
+			return slog.StringValue("RawDocument(nil)")
+		}
 		return slog.StringValue("RawDocument(" + strconv.Itoa(len(v)) + " bytes)")
 
 	case *Array:
@@ -50,6 +53,9 @@ func slogValue(v any) slog.Value {
 		return slog.GroupValue(attrs...)
 
 	case RawArray:
+		if v == nil {
+			return slog.StringValue("RawArray(nil)")
+		}
 		return slog.StringValue("RawArray(" + strconv.Itoa(len(v)) + " bytes)")
 
 	default:
@@ -63,13 +69,13 @@ func slogScalarValue(v any) slog.Value {
 	case float64:
 		return slog.StringValue(fmt.Sprintf("%[1]T(%[1]v)", v))
 	case string:
-		return slog.StringValue(fmt.Sprintf("%[1]T(%[1]v)", v))
+		return slog.StringValue(v)
 	case Binary:
 		return slog.AnyValue(v)
 	case ObjectID:
 		return slog.StringValue("ObjectID(" + hex.EncodeToString(v[:]) + ")")
 	case bool:
-		return slog.StringValue(fmt.Sprintf("%[1]T(%[1]v)", v))
+		return slog.BoolValue(v)
 	case time.Time:
 		return slog.StringValue(fmt.Sprintf("%[1]T(%[1]v)", v))
 	case NullType:

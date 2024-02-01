@@ -49,7 +49,7 @@ const config = {
 
           versions: {
             // the latest minus one minor
-            'v1.17': {
+            'v1.18': {
               banner: 'none',
             },
           },

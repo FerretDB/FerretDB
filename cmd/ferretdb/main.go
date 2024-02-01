@@ -99,7 +99,7 @@ var cli struct {
 			Percentage uint8         `default:"10" help:"Experimental: percentage of documents to cleanup."`
 		} `embed:"" prefix:"capped-cleanup-"`
 
-		EnableNewAuth bool `default:"false" help:"Experimental: enable new authentication." hidden:""`
+		EnableNewAuth bool `default:"false" help:"Experimental: enable new authentication."`
 
 		Telemetry struct {
 			URL            string        `default:"https://beacon.ferretdb.io/" help:"Telemetry: reporting URL."`

@@ -259,7 +259,9 @@ Some of our idiosyncrasies:
    It may seem random, but it is only pseudo-random and follows BSON spec: https://bsonspec.org/spec.html
 2. We generally pass and return `struct`s by pointers.
    There are some exceptions like `types.Path` that have value semantics, but when in doubt – use pointers.
-3. Code comments:
+3. Log messages should not end with punctuation.
+   Log field names use `snake_case`.
+4. Code comments:
    - All top-level declarations, even unexported, should have documentation comments.
    - In documentation comments do not describe the name in terms of the name itself (`// Registry is a registry of …`).
      Use other words instead; often, they could add additional information and make reading more pleasant (`// Registry stores …`).
