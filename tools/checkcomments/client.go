@@ -101,62 +101,79 @@ func newClient(cacheFilePath string, logf, cacheDebugF, clientDebugf gh.Printf) 
 func (c *client) IssueStatus(ctx context.Context, num int) (issueStatus, error) {
 	start := time.Now()
 
-	var res issueStatus
-	noUpdate := fmt.Errorf("no need to update the cache file")
 	url := fmt.Sprintf("https://github.com/FerretDB/FerretDB/issues/%d", num)
 
-	err := lockedfile.Transform(c.cacheFilePath, func(data []byte) ([]byte, error) {
-		cache := &cacheFile{
-			Issues: make(map[string]issue),
-		}
+	cache := &cacheFile{
+		Issues: make(map[string]issue),
+	}
+	cacheRes := "miss"
 
-		if len(data) != 0 {
-			if err := json.Unmarshal(data, cache); err != nil {
-				return nil, err
+	var res issueStatus
+
+	// fast path without any locks
+
+	data, err := os.ReadFile(c.cacheFilePath)
+	if err == nil {
+		_ = json.Unmarshal(data, cache)
+		res = cache.Issues[url].Status
+	}
+
+	if res != "" {
+		cacheRes = "fast hit"
+	} else {
+		// slow path
+
+		noUpdate := fmt.Errorf("no need to update the cache file")
+
+		err = lockedfile.Transform(c.cacheFilePath, func(data []byte) ([]byte, error) {
+			cache.Issues = make(map[string]issue)
+
+			if len(data) != 0 {
+				if err = json.Unmarshal(data, cache); err != nil {
+					return nil, err
+				}
 			}
-		}
 
-		if res = cache.Issues[url].Status; res != "" {
-			return nil, noUpdate
-		}
-
-		var err error
-		if res, err = c.checkIssueStatus(ctx, num); err != nil {
-			var rle *github.RateLimitError
-			if !errors.As(err, &rle) {
-				return nil, fmt.Errorf("%s: %s", url, err)
-			}
-
-			if cache.RateLimitReached {
-				c.clientDebugF("Rate limit already reached: %s", url)
+			if res = cache.Issues[url].Status; res != "" {
 				return nil, noUpdate
 			}
 
-			cache.RateLimitReached = true
+			if res, err = c.checkIssueStatus(ctx, num); err != nil {
+				var rle *github.RateLimitError
+				if !errors.As(err, &rle) {
+					return nil, fmt.Errorf("%s: %s", url, err)
+				}
 
-			msg := "Rate limit reached: " + err.Error()
-			if c.token == "" {
-				msg += "\nPlease set a GITHUB_TOKEN as described at " +
-					"https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md#setting-a-github_token"
+				if cache.RateLimitReached {
+					c.clientDebugF("Rate limit already reached: %s", url)
+					return nil, noUpdate
+				}
+
+				cache.RateLimitReached = true
+
+				msg := "Rate limit reached: " + err.Error()
+				if c.token == "" {
+					msg += "\nPlease set a GITHUB_TOKEN as described at " +
+						"https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md#setting-a-github_token"
+				}
+				c.logf("%s", msg)
 			}
-			c.logf("%s", msg)
-		}
 
-		// unless rate limited
-		if res != "" {
-			cache.Issues[url] = issue{
-				RefreshedAt: time.Now(),
-				Status:      res,
+			// unless rate limited
+			if res != "" {
+				cache.Issues[url] = issue{
+					RefreshedAt: time.Now(),
+					Status:      res,
+				}
 			}
+
+			return json.MarshalIndent(cache, "", "  ")
+		})
+
+		if errors.Is(err, noUpdate) {
+			cacheRes = "slow hit"
+			err = nil
 		}
-
-		return json.MarshalIndent(cache, "", "  ")
-	})
-
-	cacheRes := "miss"
-	if errors.Is(err, noUpdate) {
-		cacheRes = "hit"
-		err = nil
 	}
 
 	c.cacheDebugF("%s: %s (%dms, %s)", url, res, time.Since(start).Milliseconds(), cacheRes)
