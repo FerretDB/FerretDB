@@ -224,10 +224,10 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 		batchSizes: []int{1, 10, 50, 100},
 	}
 
+	batchN := len(m.batchSizes) - 1
+
 	b.StopTimer()
 	b.ResetTimer()
-
-	batchN := len(m.batchSizes) - 1
 
 	for i := 0; i < b.N; i++ {
 		for i := 0; i < numCollections; i++ {
