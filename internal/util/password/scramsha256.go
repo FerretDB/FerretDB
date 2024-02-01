@@ -64,7 +64,6 @@ func scramSHA256HashParams(username, password string, salt []byte, params *scram
 		"salt", base64.StdEncoding.EncodeToString(salt),
 		"serverKey", serverKey,
 	)
-
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
