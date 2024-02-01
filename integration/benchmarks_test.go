@@ -211,7 +211,7 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 
 	// batchMap is a mapping of collections to a list where each element is a slice
 	// of documents pre-batched at different batch sizes, it is safe for concurrent use by multiple goroutines
-	// as no data is modified.
+	// as no data is modified concurrently.
 	//
 	//nolint:vet // we don't care about alignment there
 	type batchMap struct {
