@@ -608,7 +608,7 @@ func TestCreateIndexesCompatDuplicates(t *testing.T) {
 		},
 		"DuplicateByPrimaryKey": {
 			models: []mongo.IndexModel{
-				{Options: &options.IndexOptions{}, Keys: bson.D{{"_id", 1}}},
+				{Options: new(options.IndexOptions), Keys: bson.D{{"_id", 1}}},
 			},
 			duplicates: []mongo.IndexModel{
 				{Options: &options.IndexOptions{Name: pointer.To("index_foo")}, Keys: bson.D{{"_id", 1}}},
