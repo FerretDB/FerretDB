@@ -204,21 +204,22 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 		}
 	}
 
-	const totalCount = 1000
+	const numDocuments = 1000
 	const numCollections = 4
+
 	collections := [numCollections]*mongo.Collection{}
 
-	// batches is a mapping of collections to a list where each element is a slice
-	// of documents of various batch sizes, it is safe for concurrent use by multiple goroutines.
+	// batchMap is a mapping of collections to a list where each element is a slice
+	// of documents pre-batched at different batch sizes, it is safe for concurrent use by multiple goroutines.
 	//
 	//nolint:vet // we don't care about alignment there
-	type batches struct {
+	type batchMap struct {
 		mu         sync.Mutex // guards m
 		m          map[*mongo.Collection]*list.List
 		batchSizes []int
 	}
 
-	m := batches{
+	m := batchMap{
 		m:          make(map[*mongo.Collection]*list.List),
 		batchSizes: []int{1, 10, 50, 100},
 	}
@@ -240,9 +241,9 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 			batches := make([][][]any, len(m.batchSizes))
 
 			for batchN >= 0 {
-
 				batchSize := m.batchSizes[batchN]
-				size := totalCount / batchSize
+				size := numDocuments / batchSize
+
 				batches[batchN] = make([][]any, size)
 
 				for i := 0; i < len(insertDocs); i = i + batchSize {
