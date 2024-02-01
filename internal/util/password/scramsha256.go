@@ -27,16 +27,12 @@ import (
 type scramSHA256Params struct {
 	iterationCount int
 	saltLen        int
-	serverKeyLen   int
-	storedKeyLen   int
 }
 
 // fixedScramSHA256Params represent fixed password parameters for SCRAM-SHA-256 authentication.
 var fixedScramSHA256Params = &scramSHA256Params{
 	iterationCount: 15_000,
 	saltLen:        45,
-	serverKeyLen:   32,
-	storedKeyLen:   32,
 }
 
 // scramSHA256HashParams hashes the password with the given salt and parameters,
@@ -57,14 +53,6 @@ func scramSHA256HashParams(username, password string, salt []byte, params *scram
 	}
 
 	cred := client.GetStoredCredentials(kf)
-
-	if len(cred.StoredKey) != int(params.storedKeyLen) {
-		return nil, lazyerrors.Errorf("unexpected stored key length: %d", len(cred.StoredKey))
-	}
-
-	if len(cred.ServerKey) != int(params.serverKeyLen) {
-		return nil, lazyerrors.Errorf("unexpected server key length: %d", len(cred.ServerKey))
-	}
 
 	storedKey := base64.StdEncoding.EncodeToString(cred.StoredKey)
 	serverKey := base64.StdEncoding.EncodeToString(cred.ServerKey)
