@@ -251,13 +251,12 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 						break
 					}
 
-					// ugly hack to avoid duplicate key errors
-					// FIXME use BenchmarkSmallDocuments fields
+					// ugly hack to avoid duplicate key errors across batches
 					withNewObjectIDs := make([]any, batchSize)
 					for i := range insertDocs[i : i+batchSize] {
-						withNewObjectIDs[i] = bson.D{{
-							Key: "_id", Value: types.NewObjectID(),
-						}}
+						d := insertDocs[i].(bson.D).Map()
+						d["_id"] = types.NewObjectID()
+						withNewObjectIDs[i] = d
 					}
 
 					size--
