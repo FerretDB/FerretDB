@@ -19,6 +19,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -46,7 +47,10 @@ func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.O
 
 	resp, err := conv.Step(string(payload))
 	if err != nil {
-		return nil, err
+		return nil, handlererrors.NewCommandErrorMsg(
+			handlererrors.ErrAuthenticationFailed,
+			"Authentication failed.",
+		)
 	}
 
 	var reply wire.OpMsg

@@ -160,10 +160,10 @@ func (h *Handler) credentialLookup(ctx context.Context, username, dbName string)
 	}
 
 	var filter *types.Document
+
 	filter, err = usersInfoFilter(false, false, "", []usersInfoPair{
 		{username: username, db: dbName},
 	})
-
 	if err != nil {
 		return scram.StoredCredentials{}, lazyerrors.Error(err)
 	}
