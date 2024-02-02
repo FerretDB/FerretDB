@@ -41,9 +41,7 @@ func (h *Handler) MsgDropUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		return nil, err
 	}
 
-	var username string
-	username, err = common.GetRequiredParam[string](document, document.Command())
-
+	username, err := common.GetRequiredParam[string](document, document.Command())
 	if err != nil {
 		return nil, err
 	}

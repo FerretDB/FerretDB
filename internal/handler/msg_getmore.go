@@ -248,7 +248,6 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 				batchSize: batchSize,
 				maxTimeMS: maxTimeMS,
 			})
-
 			if err != nil {
 				return nil, lazyerrors.Error(err)
 			}
