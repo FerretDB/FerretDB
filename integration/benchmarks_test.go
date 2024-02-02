@@ -284,7 +284,7 @@ func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
 		var wg sync.WaitGroup
 		wg.Add(numCollections)
 
-		// TODO add sub-benchmarks for batch sizes
+		// XXX add sub-benchmarks for batch sizes
 		for i := 0; i < numCollections; i++ {
 			go func(i int) {
 				coll := collections[i]
