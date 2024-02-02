@@ -17,38 +17,71 @@ package password
 import (
 	"crypto/rand"
 	"encoding/base64"
-	"fmt"
 
 	"github.com/xdg-go/scram"
 
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// NewSCRAMSHA256 computes SCRAM-SHA-256 credentials and returns the document that should be stored.
-func NewSCRAMSHA256(username, password string) (*types.Document, error) {
-	client, err := scram.SHA256.NewClient(username, password, "")
-	if err != nil {
-		return nil, err
+// scramSHA256Params represent password parameters for SCRAM-SHA-256 authentication.
+type scramSHA256Params struct {
+	iterationCount int
+	saltLen        int
+}
+
+// fixedScramSHA256Params represent fixed password parameters for SCRAM-SHA-256 authentication.
+var fixedScramSHA256Params = &scramSHA256Params{
+	iterationCount: 15_000,
+	saltLen:        45,
+}
+
+// scramSHA256HashParams hashes the password with the given salt and parameters,
+// and returns the document that should be stored.
+func scramSHA256HashParams(username, password string, salt []byte, params *scramSHA256Params) (*types.Document, error) {
+	if len(salt) != int(params.saltLen) {
+		return nil, lazyerrors.Errorf("unexpected salt length: %d", len(salt))
 	}
 
-	salt := make([]byte, 45)
-	if _, err := rand.Read(salt); err != nil {
-		return nil, fmt.Errorf("failed to generate salt: %w", err)
+	client, err := scram.SHA256.NewClient(username, password, "")
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
 	kf := scram.KeyFactors{
 		Salt:  string(salt),
-		Iters: 15000,
+		Iters: params.iterationCount,
 	}
 
 	cred := client.GetStoredCredentials(kf)
 
-	doc := must.NotFail(types.NewDocument())
-	doc.Set("storedKey", base64.StdEncoding.EncodeToString(cred.StoredKey))
-	doc.Set("iterationCount", int32(kf.Iters))
-	doc.Set("salt", base64.StdEncoding.EncodeToString(salt))
-	doc.Set("serverKey", base64.StdEncoding.EncodeToString(cred.ServerKey))
+	storedKey := base64.StdEncoding.EncodeToString(cred.StoredKey)
+	serverKey := base64.StdEncoding.EncodeToString(cred.ServerKey)
+
+	doc, err := types.NewDocument(
+		"storedKey", storedKey,
+		"iterationCount", int32(kf.Iters),
+		"salt", base64.StdEncoding.EncodeToString(salt),
+		"serverKey", serverKey,
+	)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return doc, nil
+}
+
+// SCRAMSHA256Hash computes SCRAM-SHA-256 credentials and returns the document that should be stored.
+func SCRAMSHA256Hash(username, password string) (*types.Document, error) {
+	salt := make([]byte, fixedScramSHA256Params.saltLen)
+	if _, err := rand.Read(salt); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	doc, err := scramSHA256HashParams(username, password, salt, fixedScramSHA256Params)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
 	return doc, nil
 }
