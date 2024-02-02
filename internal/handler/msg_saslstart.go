@@ -151,12 +151,12 @@ func saslStartPlain(doc *types.Document) (string, string, error) {
 func (h *Handler) credentialLookup(ctx context.Context, username, dbName string) (scram.StoredCredentials, error) {
 	adminDB, err := h.b.Database("admin")
 	if err != nil {
-		return scram.StoredCredentials{}, err
+		return scram.StoredCredentials{}, lazyerrors.Error(err)
 	}
 
 	usersCol, err := adminDB.Collection("system.users")
 	if err != nil {
-		return scram.StoredCredentials{}, err
+		return scram.StoredCredentials{}, lazyerrors.Error(err)
 	}
 
 	var filter *types.Document
@@ -165,14 +165,14 @@ func (h *Handler) credentialLookup(ctx context.Context, username, dbName string)
 	})
 
 	if err != nil {
-		return scram.StoredCredentials{}, err
+		return scram.StoredCredentials{}, lazyerrors.Error(err)
 	}
 
 	// Filter isn't being passed to the query as we are filtering after retrieving all data
 	// from the database due to limitations of the internal/backends filters.
 	qr, err := usersCol.Query(ctx, nil)
 	if err != nil {
-		return scram.StoredCredentials{}, err
+		return scram.StoredCredentials{}, lazyerrors.Error(err)
 	}
 
 	defer qr.Iter.Close()
@@ -248,7 +248,9 @@ func (h *Handler) saslStartSCRAMSHA256(ctx context.Context, doc *types.Document)
 	scramServer, err := scram.SHA256.NewServer(func(username string) (scram.StoredCredentials, error) {
 		return h.credentialLookup(ctx, username, dbName)
 	})
-	must.NoError(err)
+	if err != nil {
+		return "", err
+	}
 
 	conv := scramServer.NewConversation()
 

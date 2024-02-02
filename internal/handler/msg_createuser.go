@@ -112,7 +112,7 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 
 	common.Ignored(document, h.L, "writeConcern", "authenticationRestrictions", "comment")
 
-	defMechanisms := must.NotFail(types.NewArray())
+	defMechanisms := must.NotFail(types.NewArray("SCRAM-SHA-256"))
 
 	mechanisms, err := common.GetOptionalParam(document, "mechanisms", defMechanisms)
 	if err != nil {
@@ -186,9 +186,7 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 
 // makeCredentials creates a document with credentials for the chosen mechanisms.
 func makeCredentials(mechanisms *types.Array, username, pwd string) (*types.Document, error) {
-	if mechanisms == nil {
-		return nil, nil
-	}
+	credentials := types.MakeDocument(0)
 
 	if pwd == "" {
 		return nil, handlererrors.NewCommandErrorMsg(
@@ -196,8 +194,6 @@ func makeCredentials(mechanisms *types.Array, username, pwd string) (*types.Docu
 			"Password cannot be empty",
 		)
 	}
-
-	credentials := types.MakeDocument(0)
 
 	iter := mechanisms.Iterator()
 	defer iter.Close()
