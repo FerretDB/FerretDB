@@ -38,7 +38,9 @@ import (
 // Config represents FerretDB configuration.
 type Config struct {
 	Listener ListenerConfig
-	Logger   *zap.Logger
+
+	// Logger to use; if nil, it uses the default global logger.
+	Logger *zap.Logger
 
 	// Handler to use; one of `postgresql` or `sqlite`.
 	Handler string
@@ -114,7 +116,11 @@ func New(config *Config) (*FerretDB, error) {
 	}
 
 	metrics := connmetrics.NewListenerMetrics()
-	log := getLoggerOrDefault(config.Logger)
+
+	log := config.Logger
+	if log == nil {
+		log = getGlobalLogger()
+	}
 
 	h, closeBackend, err := registry.NewHandler(config.Handler, &registry.NewHandlerOpts{
 		Logger:        log,
@@ -221,16 +227,6 @@ var (
 	loggerOnce sync.Once
 	logger     *zap.Logger
 )
-
-// getLoggerOrDefault returns the provided logger if it's not nil,
-// otherwise, it returns the global logger.
-func getLoggerOrDefault(l *zap.Logger) *zap.Logger {
-	if l != nil {
-		return l
-	}
-
-	return getGlobalLogger()
-}
 
 // getGlobalLogger retrieves or creates a global logger using
 // a loggerOnce to ensure it is created only once.
