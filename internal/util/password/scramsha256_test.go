@@ -15,7 +15,6 @@
 package password
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -40,8 +39,8 @@ type scramSHA256TestCase struct {
 	err  string
 }
 
-var scramSHA256TestCases = []scramSHA256TestCase{
-	{
+var scramSHA256TestCases = map[string]scramSHA256TestCase{
+	"1Iteration": {
 		params: scramSHA256Params{
 			iterationCount: 1,
 			saltLen:        4,
@@ -56,7 +55,7 @@ var scramSHA256TestCases = []scramSHA256TestCase{
 			"serverKey", "cLmYEp4e6nRZDv4vrrpjYSt/FPP/Ekt/XVZVoDlrByw=",
 		)),
 	},
-	{
+	"2Iterations": {
 		params: scramSHA256Params{
 			iterationCount: 2,
 			saltLen:        4,
@@ -71,7 +70,7 @@ var scramSHA256TestCases = []scramSHA256TestCase{
 			"serverKey", "a0OWicFaTNUVr7ZJDEnGc0sn9GLSAUyannq6uYeSJRs=",
 		)),
 	},
-	{
+	"4096Iterations": {
 		params: scramSHA256Params{
 			iterationCount: 4096,
 			saltLen:        4,
@@ -86,7 +85,7 @@ var scramSHA256TestCases = []scramSHA256TestCase{
 			"serverKey", "ub8OgRsftnk2ccDMOt7ffHXNcikRkQkq1lh4xaAqrSw=",
 		)),
 	},
-	{
+	"DifferentSalt": {
 		params: scramSHA256Params{
 			iterationCount: 4096,
 			saltLen:        36,
@@ -101,7 +100,7 @@ var scramSHA256TestCases = []scramSHA256TestCase{
 			"serverKey", "4QTMss7Dzi+pk8C8cyql++OaWqI0y/FyhXJI7W9acHI=",
 		)),
 	},
-	{
+	"ProhibitedCharacter": {
 		params: scramSHA256Params{
 			iterationCount: 4096,
 			saltLen:        5,
@@ -111,7 +110,7 @@ var scramSHA256TestCases = []scramSHA256TestCase{
 		salt:     []byte("sa\x00lt"),
 		err:      "prohibited character",
 	},
-	{
+	"DifferentPassword": {
 		params: scramSHA256Params{
 			iterationCount: 1,
 			saltLen:        4,
@@ -126,7 +125,7 @@ var scramSHA256TestCases = []scramSHA256TestCase{
 			"serverKey", "qFes4m5Z84MaC2hSJqCR2e/FBz7goMVu/RTRNnb5Fj0=",
 		)),
 	},
-	{
+	"NaCl": {
 		params: scramSHA256Params{
 			iterationCount: 80000,
 			saltLen:        4,
@@ -141,7 +140,7 @@ var scramSHA256TestCases = []scramSHA256TestCase{
 			"serverKey", "Wbwo6JsaJrZ/1Bf7F+45jY2VURuezLXxADxUuzWdZ/4=",
 		)),
 	},
-	{
+	"00Salt": {
 		params: scramSHA256Params{
 			iterationCount: 4096,
 			saltLen:        5,
@@ -159,15 +158,17 @@ var scramSHA256TestCases = []scramSHA256TestCase{
 }
 
 func TestSCRAMSHA256(t *testing.T) {
-	for i, tc := range scramSHA256TestCases {
-		i, tc := i, tc
-		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range scramSHA256TestCases {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
 			doc, err := scramSHA256HashParams(tc.username, tc.password, tc.salt, &tc.params)
 
 			if tc.err != "" {
-				assert.Contains(t, err.Error(), tc.err)
+				assert.ErrorContains(t, err, tc.err)
 				return
 			}
 
@@ -184,7 +185,7 @@ func TestSCRAMSHA256(t *testing.T) {
 					ServerKey: []byte(must.NotFail(doc.Get("serverKey")).(string)),
 				}, nil
 			})
-			must.NoError(err)
+			require.NoError(t, err)
 
 			// Check if the generated authentication is valid by simulating a conversation.
 			conv := scramServer.NewConversation()
@@ -200,11 +201,13 @@ func TestSCRAMSHA256(t *testing.T) {
 			assert.NotEmpty(t, resp)
 
 			_, err = conv.Step("wrong")
-			assert.NotNil(t, err)
+			assert.Error(t, err)
 		})
 	}
 
 	t.Run("Exported", func(t *testing.T) {
+		t.Parallel()
+
 		doc1, err := SCRAMSHA256Hash("username", "password")
 		require.NoError(t, err)
 
