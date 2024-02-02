@@ -235,10 +235,13 @@ func (h *Handler) credentialLookup(ctx context.Context, username, dbName string)
 func (h *Handler) saslStartSCRAMSHA256(ctx context.Context, doc *types.Document) (string, error) {
 	var payload []byte
 
+	// most drivers follow spec and send payload as a binary
 	binaryPayload, err := common.GetRequiredParam[types.Binary](doc, "payload")
-	if err == nil {
-		payload = binaryPayload.B
+	if err != nil {
+		return "", err
 	}
+
+	payload = binaryPayload.B
 
 	dbName, err := common.GetRequiredParam[string](doc, "$db")
 	if err != nil {

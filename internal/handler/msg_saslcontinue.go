@@ -34,10 +34,13 @@ func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.O
 
 	var payload []byte
 
+	// most drivers follow spec and send payload as a binary
 	binaryPayload, err := common.GetRequiredParam[types.Binary](doc, "payload")
-	if err == nil {
-		payload = binaryPayload.B
+	if err != nil {
+		return nil, err
 	}
+
+	payload = binaryPayload.B
 
 	conv := conninfo.Get(ctx).Conv()
 

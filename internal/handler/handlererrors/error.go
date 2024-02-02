@@ -287,6 +287,9 @@ const (
 	// ErrSetEmptyPassword indicates that a password must not be empty.
 	ErrSetEmptyPassword = ErrorCode(50687) // Location50687
 
+	// ErrStringProhibited indicates that a password contains prohibited runes.
+	ErrStringProhibited = ErrorCode(50692) // Location50692
+
 	// ErrFreeMonitoringDisabled indicates that free monitoring is disabled
 	// by command-line or config file.
 	ErrFreeMonitoringDisabled = ErrorCode(50840) // Location50840

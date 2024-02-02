@@ -68,6 +68,18 @@ func TestCreateUser(t *testing.T) {
 			},
 			altMessage: "Password cannot be empty",
 		},
+		"BadPasswordValue": {
+			payload: bson.D{
+				{"createUser", "empty_password_user"},
+				{"roles", bson.A{}},
+				{"pwd", "pass\x00word"},
+			},
+			err: &mongo.CommandError{
+				Code:    50692,
+				Name:    "Location50692",
+				Message: "Error preflighting normalization: U_STRINGPREP_PROHIBITED_ERROR",
+			},
+		},
 		"BadPasswordType": {
 			payload: bson.D{
 				{"createUser", "empty_password_user"},

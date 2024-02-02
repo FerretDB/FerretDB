@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 
@@ -214,7 +215,17 @@ func makeCredentials(mechanisms *types.Array, username, pwd string) (*types.Docu
 		case "PLAIN":
 			credentials.Set("PLAIN", must.NotFail(password.PlainHash(username)))
 		case "SCRAM-SHA-256":
-			credentials.Set("SCRAM-SHA-256", must.NotFail(password.SCRAMSHA256Hash(username, pwd)))
+			hash, err := password.SCRAMSHA256Hash(username, pwd)
+			if err != nil {
+				if strings.Contains(err.Error(), "prohibited character") {
+					return nil, handlererrors.NewCommandErrorMsg(
+						handlererrors.ErrStringProhibited,
+						"Error preflighting normalization: U_STRINGPREP_PROHIBITED_ERROR",
+					)
+				}
+				return nil, err
+			}
+			credentials.Set("SCRAM-SHA-256", hash)
 		default:
 			return nil, handlererrors.NewCommandErrorMsg(
 				handlererrors.ErrBadValue,
