@@ -33,7 +33,7 @@ import (
 func TestAuthentication(t *testing.T) {
 	t.Parallel()
 
-	s := setup.SetupWithOpts(t, &setup.SetupOpts{})
+	s := setup.SetupWithOpts(t, nil)
 	ctx := s.Ctx
 	collection := s.Collection
 	db := collection.Database()
@@ -173,10 +173,7 @@ func TestAuthentication(t *testing.T) {
 			var result bson.D
 			err = connCollection.FindOne(ctx, bson.D{{"_id", id}}).Decode(&result)
 			require.NoError(t, err, "cannot find document")
-			assert.Equal(t, bson.D{
-				{"_id", id},
-				{"ping", "pong"},
-			}, result)
+			assert.Equal(t, bson.D{{"_id", id}, {"ping", "pong"}}, result)
 
 			require.NoError(t, client.Disconnect(context.Background()))
 		})
