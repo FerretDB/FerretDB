@@ -20,6 +20,7 @@ import (
 
 	"github.com/cristalhq/bson/bsonproto"
 
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -30,7 +31,7 @@ import (
 type RawDocument []byte
 
 // LogValue implements slog.LogValuer interface.
-func (doc *RawDocument) LogValue() slog.Value {
+func (doc RawDocument) LogValue() slog.Value {
 	return slogValue(doc)
 }
 
@@ -53,6 +54,21 @@ func (raw RawDocument) Decode() (*Document, error) {
 // All nested documents and arrays are decoded recursively.
 func (raw RawDocument) DecodeDeep() (*Document, error) {
 	res, err := raw.decode(true)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return res, nil
+}
+
+// Convert converts a single BSON document that takes the whole raw slice into [*types.Document].
+func (raw RawDocument) Convert() (*types.Document, error) {
+	doc, err := raw.decode(false)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	res, err := doc.Convert()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
