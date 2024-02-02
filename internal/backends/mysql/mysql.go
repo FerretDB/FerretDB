@@ -68,7 +68,7 @@ func collectionsStats(ctx context.Context, p *fsql.DB, dbName string, list []*me
 	//
 	// The free storage size of each relation is reported in `data_free`.
 	//
-	// The smallest difference in size that `data_length` reports is 16KB.
+	// The smallest difference in size that `data_length` reports appears to be 16KB.
 	// Because of that inserting or deleting a single small object may not change the size.
 	//
 	// See also:
