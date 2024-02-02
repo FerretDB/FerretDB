@@ -221,8 +221,10 @@ func makeCredentials(mechanisms *types.Array, username, pwd string) (*types.Docu
 						"Error preflighting normalization: U_STRINGPREP_PROHIBITED_ERROR",
 					)
 				}
+
 				return nil, err
 			}
+
 			credentials.Set("SCRAM-SHA-256", hash)
 		default:
 			return nil, handlererrors.NewCommandErrorMsg(

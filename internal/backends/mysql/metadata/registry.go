@@ -31,7 +31,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/mysql/metadata/pool"
-	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/sjson"
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -104,9 +103,7 @@ func (r *Registry) Close() {
 	r.p.Close()
 }
 
-// getPool returns a pool of connections to MySQL database
-// for the username/password combination in the context using [conninfo]
-// (or any pool if authentication is bypassed)
+// getPool returns a pool of connections to MySQL database.
 //
 // It loads metadata if it hasn't been loaded from the database yet.
 //
@@ -115,21 +112,9 @@ func (r *Registry) Close() {
 //
 // All methods use this method to check authentication and load metadata.
 func (r *Registry) getPool(ctx context.Context) (*fsql.DB, error) {
-	connInfo := conninfo.Get(ctx)
-
-	var p *fsql.DB
-
-	if connInfo.BypassBackendAuth {
-		if p = r.p.GetAny(); p == nil {
-			return nil, lazyerrors.New("no connection pool")
-		}
-	} else {
-		username, password := connInfo.Auth()
-
-		var err error
-		if p, err = r.p.Get(username, password); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
+	p, err := r.p.Get("username", "password") // TODO: temporary
+	if p == nil {
+		return nil, lazyerrors.Error(err)
 	}
 
 	r.rw.RLock()

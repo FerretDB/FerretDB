@@ -39,13 +39,6 @@ type ConnInfo struct {
 
 	sc *scram.ServerConversation // protected by rw
 
-	// If true, backend implementations should not perform authentication
-	// by adding username and password to the connection string.
-	// It is set to true for background connections (such us capped collections cleanup)
-	// and by the new authentication mechanism.
-	// See where it is used for more details.
-	BypassBackendAuth bool
-
 	rw sync.RWMutex
 }
 

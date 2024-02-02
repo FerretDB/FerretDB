@@ -33,7 +33,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata/pool"
-	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/sjson"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -81,6 +80,7 @@ type Registry struct {
 	// One global lock should be replaced by more granular locks – one per database or even one per collection.
 	// But that requires some redesign.
 	// TODO https://github.com/FerretDB/FerretDB/issues/2755
+	// TODO: discuss alternative to pool initialization / lock.
 	rw    sync.RWMutex
 	colls map[string]map[string]*Collection // database name -> collection name -> collection
 }
@@ -116,21 +116,9 @@ func (r *Registry) Close() {
 //
 // All methods should use this method to check authentication and load metadata.
 func (r *Registry) getPool(ctx context.Context) (*pgxpool.Pool, error) {
-	connInfo := conninfo.Get(ctx)
-
-	var p *pgxpool.Pool
-
-	if connInfo.BypassBackendAuth {
-		if p = r.p.GetAny(); p == nil {
-			return nil, lazyerrors.New("no connection pool")
-		}
-	} else {
-		username, password := connInfo.Auth()
-
-		var err error
-		if p, err = r.p.Get(username, password); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
+	p, err := r.p.Get("username", "password") // TODO: temporary
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
 	r.rw.RLock()
