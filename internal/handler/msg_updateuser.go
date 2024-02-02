@@ -42,9 +42,7 @@ func (h *Handler) MsgUpdateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 		return nil, err
 	}
 
-	var username string
-	username, err = common.GetRequiredParam[string](document, document.Command())
-
+	username, err := common.GetRequiredParam[string](document, document.Command())
 	if err != nil {
 		return nil, err
 	}
@@ -124,14 +122,7 @@ func (h *Handler) MsgUpdateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 		return nil, lazyerrors.Error(err)
 	}
 
-	var filter *types.Document
-	filter, err = usersInfoFilter(false, false, "", []usersInfoPair{
-		{
-			username: username,
-			db:       dbName,
-		},
-	})
-
+	filter, err := usersInfoFilter(false, false, "", []usersInfoPair{{username: username, db: dbName}})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -161,7 +152,6 @@ func (h *Handler) MsgUpdateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 
 		var matches bool
 		matches, err = common.FilterDocument(v, filter)
-
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}

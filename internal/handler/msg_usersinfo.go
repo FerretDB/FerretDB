@@ -92,7 +92,6 @@ func (h *Handler) MsgUsersInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		for i := 0; i < user.Len(); i++ {
 			var ui any
 			ui, err = user.Get(i)
-
 			if err != nil {
 				return nil, lazyerrors.Error(err)
 			}
@@ -134,9 +133,7 @@ func (h *Handler) MsgUsersInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
-	var filter *types.Document
-	filter, err = usersInfoFilter(allDBs, singleDB, dbName, users)
-
+	filter, err := usersInfoFilter(allDBs, singleDB, dbName, users)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -152,7 +149,6 @@ func (h *Handler) MsgUsersInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	var res *types.Array
 	res, err = types.NewArray()
-
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
