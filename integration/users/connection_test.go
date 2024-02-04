@@ -106,6 +106,10 @@ func TestAuthentication(t *testing.T) {
 					t.Fatalf("unimplemented mechanism %s", tc.mechanism)
 				}
 
+				if tc.mechanism == "PLAIN" {
+					setup.SkipForMongoDB(t, "PLAIN mechanism is not supported by MongoDB")
+				}
+
 				err := db.RunCommand(ctx, createPayload).Err()
 				require.NoErrorf(t, err, "cannot create user")
 			}
