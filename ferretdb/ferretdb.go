@@ -120,6 +120,8 @@ func New(config *Config) (*FerretDB, error) {
 	log := config.Logger
 	if log == nil {
 		log = getGlobalLogger()
+	} else {
+		log = logging.WithHooks(log)
 	}
 
 	h, closeBackend, err := registry.NewHandler(config.Handler, &registry.NewHandlerOpts{
