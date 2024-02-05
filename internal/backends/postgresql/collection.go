@@ -164,7 +164,6 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 
 		return nil
 	})
-
 	if err != nil {
 		return nil, err
 	}
