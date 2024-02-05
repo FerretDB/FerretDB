@@ -3,8 +3,9 @@ slug: guide-disaster-recovery-ferretdb-elotl-nova-kubernetes
 title: 'A Guide to Disaster Recovery for FerretDB with Elotl Nova on Kubernetes'
 authors:
   - name: Maciek Urbanski
-    title: Software Engineer at Elotl
+    title: Senior Platform Engineer at Elotl
     url: https://www.linkedin.com/in/maciekurbanski/
+    image_url: /img/blog/maciek-urbanski.jpg
 description: >
   In this blog post, we'll show you how to automate disaster recovery for FerretDB with Percona PostgreSQL and Nova on Kubernetes.
 image: /img/blog/ferretdb-elotl-nova.jpg
@@ -248,3 +249,5 @@ The above steps, process, and execution has resulted in a successful setup of Fe
 This configuration ensures seamless healing in case of unexpected events, greatly improving the resilience of the FerretDB deployment.
 
 To learn more about FerretDB, see the [documentation](https://docs.ferretdb.io/understanding-ferretdb/).
+
+_Thanks to Selvi Kadirvel, Henry Precheur, Janek Baranowski , Pawel Bojanowski, Justin Willoughby, Madhuri Yechuri from Elotl team for reviewing this blog post._
