@@ -222,6 +222,200 @@ func TestListTestFuncs(t *testing.T) {
 	assert.Equal(t, expected, actual)
 }
 
+func TestListTestFuncsWithRegex(t *testing.T) {
+	tests := []struct {
+		wantErr  assert.ErrorAssertionFunc
+		name     string
+		run      string
+		skip     string
+		expected []string
+	}{
+		{
+			name: "NoRunNoSkip",
+			run:  "",
+			skip: "",
+			expected: []string{
+				"TestError1",
+				"TestError2",
+				"TestNormal1",
+				"TestNormal2",
+				"TestPanic1",
+				"TestSkip1",
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "Run",
+			run:  "TestError",
+			skip: "",
+			expected: []string{
+				"TestError1",
+				"TestError2",
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "Skip",
+			run:  "",
+			skip: "TestError",
+			expected: []string{
+				"TestNormal1",
+				"TestNormal2",
+				"TestPanic1",
+				"TestSkip1",
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "RunSkip",
+			run:  "TestError",
+			skip: "TestError2",
+			expected: []string{
+				"TestError1",
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name:     "RunSkipAll",
+			run:      "TestError",
+			skip:     "TestError",
+			expected: []string{},
+			wantErr:  assert.NoError,
+		},
+		{
+			name: "InvalidRun",
+			run:  "[",
+			skip: "",
+			wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
+				return assert.Contains(t, err.Error(), "error parsing regexp")
+			},
+		},
+		{
+			name: "InvalidSkip",
+			run:  "",
+			skip: "[",
+			wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
+				return assert.Contains(t, err.Error(), "error parsing regexp")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			actual, err := listTestFuncsWithRegex("./testdata", tt.run, tt.skip)
+			tt.wantErr(t, err)
+			assert.Equal(t, tt.expected, actual)
+		})
+	}
+}
+
+func TestBuildGoTestRunRegex(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		expected string
+		tests    []string
+	}{
+		{
+			name:     "Empty",
+			tests:    []string{},
+			expected: "^()$",
+		},
+		{
+			name:     "Single",
+			tests:    []string{"Test1"},
+			expected: "^(Test1)$",
+		},
+		{
+			name:     "Multiple",
+			tests:    []string{"Test1", "Test2"},
+			expected: "^(Test1|Test2)$",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			actual := buildGoTestRunRegex(tt.tests)
+			assert.Equal(t, tt.expected, actual)
+		})
+	}
+}
+
+func TestFilterStringsByRegex(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		tests    []string
+		include  *regexp.Regexp
+		exclude  *regexp.Regexp
+		expected []string
+	}{
+		{
+			name:     "Empty",
+			tests:    []string{},
+			include:  nil,
+			exclude:  nil,
+			expected: []string{},
+		},
+		{
+			name:     "Include",
+			tests:    []string{"Test1", "Test2"},
+			include:  regexp.MustCompile("Test1"),
+			exclude:  nil,
+			expected: []string{"Test1"},
+		},
+		{
+			name:     "Exclude",
+			tests:    []string{"Test1", "Test2"},
+			include:  nil,
+			exclude:  regexp.MustCompile("Test1"),
+			expected: []string{"Test2"},
+		},
+		{
+			name:     "IncludeExclude",
+			tests:    []string{"Test1", "Test2"},
+			include:  regexp.MustCompile("Test1"),
+			exclude:  regexp.MustCompile("Test1"),
+			expected: []string{},
+		},
+		{
+			name:     "IncludeExclude2",
+			tests:    []string{"Test1", "Test2"},
+			include:  regexp.MustCompile("Test1"),
+			exclude:  regexp.MustCompile("Test2"),
+			expected: []string{"Test1"},
+		},
+		{
+			name:     "NotMatch",
+			tests:    []string{"Test1", "Test2"},
+			include:  regexp.MustCompile("Test3"),
+			exclude:  regexp.MustCompile("Test3"),
+			expected: []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			actual := filterStringsByRegex(tt.tests, tt.include, tt.exclude)
+			assert.Equal(t, tt.expected, actual)
+		})
+	}
+}
+
 func TestShardTestFuncs(t *testing.T) {
 	t.Parallel()
 

@@ -64,6 +64,6 @@ jobs:
       - name: Check dependencies for PRs
         # if: github.event_name == 'pull_request'
         if: false
-        uses: actions/dependency-review-action@v3
+        uses: actions/dependency-review-action@v4
         with:
           allow-licenses: Apache-2.0, BSD-3-Clause, MIT
