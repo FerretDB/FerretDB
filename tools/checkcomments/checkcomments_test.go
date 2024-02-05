@@ -58,7 +58,7 @@ func TestClient(t *testing.T) {
 	t.Run("CheckIssueStatus", func(t *testing.T) {
 		t.Parallel()
 
-		c, err := newClient(cacheFilePath, t.Logf, t.Logf)
+		c, err := newClient(cacheFilePath, t.Logf, t.Logf, t.Logf)
 		require.NoError(t, err)
 
 		actual, err := c.checkIssueStatus(ctx, 10)
@@ -81,7 +81,7 @@ func TestClient(t *testing.T) {
 	t.Run("IssueStatus", func(t *testing.T) {
 		t.Parallel()
 
-		c, err := newClient(cacheFilePath, t.Logf, t.Logf)
+		c, err := newClient(cacheFilePath, t.Logf, t.Logf, t.Logf)
 		require.NoError(t, err)
 
 		actual, err := c.IssueStatus(ctx, 10)

@@ -55,9 +55,7 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 		)
 	}
 
-	var username string
-	username, err = common.GetRequiredParam[string](document, document.Command())
-
+	username, err := common.GetRequiredParam[string](document, document.Command())
 	if err != nil {
 		return nil, err
 	}
