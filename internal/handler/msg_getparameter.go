@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
@@ -44,37 +45,21 @@ func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.O
 
 	common.Ignored(document, h.L, "comment")
 
-	parameters := must.NotFail(types.NewDocument(
-		// to add a new parameter, fill template and place it in the alphabetical order position
-		//"<name>", must.NotFail(types.NewDocument(
-		//	"value", <value>,
-		//	"settableAtRuntime", <bool>,
-		//	"settableAtStartup", <bool>,
-		//)),
-		"authenticationMechanisms", must.NotFail(types.NewDocument(
-			"value", must.NotFail(types.NewArray("PLAIN")),
-			"settableAtRuntime", false,
-			"settableAtStartup", true,
-		)),
-		"authSchemaVersion", must.NotFail(types.NewDocument(
-			"value", int32(5),
-			"settableAtRuntime", true,
-			"settableAtStartup", true,
-		)),
-		"featureCompatibilityVersion", must.NotFail(types.NewDocument(
-			"value", must.NotFail(types.NewDocument("version", "7.0")),
-			"settableAtRuntime", false,
-			"settableAtStartup", false,
-		)),
-		"quiet", must.NotFail(types.NewDocument(
-			"value", false,
-			"settableAtRuntime", true,
-			"settableAtStartup", true,
-		)),
-		// parameters are alphabetically ordered
-	))
+	conninfo := conninfo.Get(ctx)
+	parameters := conninfo.GetParameterDetails()
 
-	resDoc, err := selectParameters(document, parameters, showDetails, allParameters)
+	paramDoc := &types.Document{}
+
+	// TODO add remaining parameters
+	for k, v := range parameters {
+		switch k {
+		case "authMechanism":
+			paramDoc.Set(k, v.([]string))
+		}
+
+	}
+
+	resDoc, err := selectParameters(document, paramDoc, showDetails, allParameters)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
