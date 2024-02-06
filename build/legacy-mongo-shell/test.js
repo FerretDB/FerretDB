@@ -23,7 +23,7 @@
   // eslint-disable-next-line max-len
   print('⌊number of documents⌋ that can be inserted before theoretical maximum size reached:', Math.floor(numDocsRemaining));
 
-  for (let i = 100 - 1; i < numDocsRemaining + 100; i++) {
+  for (let i = 100; i < numDocsRemaining + 100; i++) {
     t.insert({_id: i, x: 1});
   }
 
