@@ -216,7 +216,7 @@ This operation groups the records by `product_name`, sums up the quantities, and
 These are just a few examples of how FerretDB can run MongoDB workloads for many use cases.
 You can go ahead to try other operations on FerretDB.
 
-### Get started with FerretDB on Tembo
+## Get started with FerretDB on Tembo
 
 Running FerretDB on Tembo gives you access to high-performance, fully extensible managed Postgres service.
 Tembo also provides you with a host of resources and extensions without any complex builds or need to run Docker.
