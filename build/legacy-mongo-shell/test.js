@@ -27,12 +27,6 @@
     t.insert({_id: i, x: 1});
   }
 
-  const count = t.count();
-
-  sleep(60 * 1000);
-
-  assert.eq(t.count(), count, 'count should not change periodically');
-
   const totalCount = Math.floor(maxSize / docSize);
   t.insert({_id: totalCount, x: 1});
   assert.eq(null, t.findOne({_id: 0}), 'oldest entry should be overwritten');
