@@ -53,7 +53,7 @@ func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	// TODO add remaining parameters
 	for k, v := range parameters {
 		switch k {
-		case "authMechanism":
+		case "authenticationMechanisms":
 			paramDoc.Set(k, v.([]string))
 		}
 
