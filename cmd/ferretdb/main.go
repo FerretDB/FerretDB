@@ -438,17 +438,19 @@ func run() {
 
 	metricsRegisterer.MustRegister(l)
 
-	// set parameters for the getParameter command
+	// set parameters for the getParameter command, parameters are alphabetically ordered
 	params := map[string]any{
-		"disablePushdown":         cli.Test.DisablePushdown,
-		"cappedCleanupPercentage": cli.Test.CappedCleanup.Percentage,
-		"cappedCleanupInterval":   cli.Test.CappedCleanup.Interval,
-		"enableNewAuth":           cli.Test.EnableNewAuth,
-		"mode":                    cli.Mode,
-		"handler":                 cli.Handler,
+		"authenticationMechanisms": []string{"PLAIN"},
+		"cappedCleanupPercentage":  cli.Test.CappedCleanup.Percentage,
+		"cappedCleanupInterval":    cli.Test.CappedCleanup.Interval,
+		"disablePushdown":          cli.Test.DisablePushdown,
+		"enableNewAuth":            cli.Test.EnableNewAuth,
+		"handler":                  cli.Handler,
+		"mode":                     cli.Mode,
+		"version":                  info.Version,
 	}
 
-	conninfo := conninfo.Get(ctx)
+	conninfo := conninfo.Get(ctx) // XXX connInfoKey is not set yet
 	conninfo.SetParameterDetails(params)
 
 	err = l.Run(ctx)
