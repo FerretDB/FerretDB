@@ -43,7 +43,7 @@ Select the "Mongo Alternative on Postgres" Stack, as shown below.
 
 ![FerretDB stack on Tembo](/img/blog/ferretdb-tembo-stack.png)
 
-Next, configure your instance with the appropriate cloud provider (only AWS is available for now), instance type, storage size, and region.
+Next, configure your instance with the appropriate cloud provider, instance type, storage size, and region.
 Then click "Create".
 It might take a few minutes to provision the instance.
 
@@ -67,22 +67,22 @@ If you prefer a different directory, replace `$(pwd)`with the path to the certif
 From the directory of the SSL cert you downloaded, connect to the instance directly via `mongosh`.
 
 Let's import a supply records containing into the `ferretdb` database using `mongoimport`.
-This dataset provides a detailed look into our company's supply transactions, offering invaluable insights into customer preferences, product categories, and purchasing trends.
+This dataset provides a detailed look into a purchase record.
 
 [Here is the record for the imported JSON file](https://gist.github.com/Fashander/e57f553ea0f5157958b66ffa67c31dd1)
 
 ```sh
-mongoimport --uri="<mongo-uri>" --db ferretdb --collection supply --file /path/to/exportedFile.json
+mongoimport --uri="<mongodb-connection-string>" --db ferretdb --collection supply --file /path/to/exportedFile.json
 ```
 
-Be sure to update with the correct connection string as well as the exported JSON file path.
+Be sure to update with the correct connection string.
 
 ### Connect to FerretDB instance on Tembo via `mongosh`
 
 Once the import is successful, let's connect to our instance via `mongosh` from the directory containing the SSL Certificate.
 
 ```sh
-mongosh "<connection-string>"
+mongosh "<mongodb-connection-string>"
 ```
 
 We will run some practical examples to showcase FerretDB on Tembo and how you can use it.
@@ -113,8 +113,8 @@ Result:
 }
 ```
 
-Great!
-The record details a purchase made by Jorge Lope, who bought 2 pairs of Adidas Running Shoes for $75.
+Awesome!
+The record shows a purchase made by Jorge Lopez, who bought 2 pairs of Adidas Running Shoes for $75.
 
 #### Example 2: Finding Data for a Specific Period
 
@@ -186,27 +186,6 @@ Result:
 ```
 
 This query filters the records to only include transactions that occurred between the 1st and 3rd of July 2023.
-
-```js
-db.supply.aggregate([
-  { $match: { product_category: 'Books' } },
-  { $group: { _id: '$customer_name', totalQuantity: { $sum: '$quantity' } } },
-  { $sort: { totalQuantity: -1 } },
-  { $limit: 5 }
-])
-```
-
-Result:
-
-```json5
-[
-  { _id: 'Maria Silva', totalQuantity: 5 },
-  { _id: 'Liam Murphy', totalQuantity: 2 },
-  { _id: 'Davide Rossi', totalQuantity: 2 },
-  { _id: 'Mohammed Ali', totalQuantity: 2 },
-  { _id: 'Peter Petrovich', totalQuantity: 1 }
-]
-```
 
 #### Example 3: Identifying the most bought Item
 
