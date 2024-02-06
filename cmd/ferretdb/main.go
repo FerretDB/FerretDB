@@ -450,7 +450,7 @@ func run() {
 		"version":                  info.Version,
 	}
 
-	conninfo := conninfo.Get(ctx) // XXX connInfoKey is not set yet
+	conninfo := conninfo.Get(ctx) // XXX connInfoKey is not set yet so we panic here
 	conninfo.SetParameterDetails(params)
 
 	err = l.Run(ctx)
