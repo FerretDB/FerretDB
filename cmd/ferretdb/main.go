@@ -36,6 +36,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/clientconn"
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handler/registry"
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
@@ -436,6 +437,19 @@ func run() {
 	})
 
 	metricsRegisterer.MustRegister(l)
+
+	// set parameters for the getParameter command
+	params := map[string]any{
+		"disablePushdown":         cli.Test.DisablePushdown,
+		"cappedCleanupPercentage": cli.Test.CappedCleanup.Percentage,
+		"cappedCleanupInterval":   cli.Test.CappedCleanup.Interval,
+		"enableNewAuth":           cli.Test.EnableNewAuth,
+		"mode":                    cli.Mode,
+		"handler":                 cli.Handler,
+	}
+
+	conninfo := conninfo.Get(ctx)
+	conninfo.SetParameterDetails(params)
 
 	err = l.Run(ctx)
 	if err == nil || errors.Is(err, context.Canceled) {

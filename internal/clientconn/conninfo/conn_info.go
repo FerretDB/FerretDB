@@ -31,9 +31,10 @@ type ConnInfo struct {
 	// the order of fields is weird to make the struct smaller due to alignment
 
 	PeerAddr     string
-	username     string // protected by rw
-	password     string // protected by rw
-	metadataRecv bool   // protected by rw
+	username     string         // protected by rw
+	password     string         // protected by rw
+	metadataRecv bool           // protected by rw
+	params       map[string]any // protected by rw
 
 	// If true, backend implementations should not perform authentication
 	// by adding username and password to the connection string.
@@ -89,6 +90,22 @@ func (connInfo *ConnInfo) SetMetadataRecv() {
 	defer connInfo.rw.Unlock()
 
 	connInfo.metadataRecv = true
+}
+
+// SetParameterDetails sets the server parameter details.
+func (connInfo *ConnInfo) SetParameterDetails(params map[string]any) {
+	connInfo.rw.Lock()
+	defer connInfo.rw.Unlock()
+
+	connInfo.params = params
+}
+
+// GetParameterDetails returns parameter details for the getParameter command.
+func (connInfo *ConnInfo) GetParameterDetails() map[string]any {
+	connInfo.rw.Lock()
+	defer connInfo.rw.Unlock()
+
+	return connInfo.params
 }
 
 // Ctx returns a derived context with the given ConnInfo.
