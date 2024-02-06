@@ -223,4 +223,4 @@ Tembo also provides you with a host of resources and extensions without any comp
 
 So if you want to migrate from MongoDB and you are looking to run MongoDB workloads on a managed Postgres service, you can get started with FerretDB on Tembo today.
 
-[Learn more about FerretDB here](https://docs.ferretdb.io).
+If you have any questions or comments, [contact us here](https://docs.ferretdb.io/#community).
