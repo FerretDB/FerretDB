@@ -43,7 +43,7 @@ Use ❌ for commands and arguments that are not implemented at all.
 |                 | `showRecordId`             | ✅     |                                                           |
 |                 | `tailable`                 | ✅     |                                                           |
 |                 | `oplogReplay`              | ⚠️     | Ignored                                                   |
-|                 | `noCursorTimeout`          | ❌     | Unimplemented                                             |
+|                 | `noCursorTimeout`          | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/4035) |
 |                 | `awaitData`                | ✅     |                                                           |
 |                 | `allowPartialResults`      | ❌     | Unimplemented                                             |
 |                 | `collation`                | ❌     | Unimplemented                                             |
