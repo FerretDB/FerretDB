@@ -103,6 +103,10 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 			return "", nil, lazyerrors.Error(err)
 		}
 
+		keyOperator := "->"   // keyOperator is the operator that is used to access the field. (->/#>)
+		var key any = rootKey // key can be either a string '"v"' or PostgreSQL path '{v,foo}'
+		var prefix string     // prefix is the first key in path, if the filter key is not a path - the prefix is empty
+
 		// don't pushdown $comment, as it's attached to query with select clause
 		//
 		// all of the other top-level operators such as `$or` do not support pushdown yet
@@ -119,6 +123,9 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 			// Handle dot notation.
 			// TODO https://github.com/FerretDB/FerretDB/issues/2069
 			if path.Len() > 1 {
+				keyOperator = "#>"
+				key = path.Slice()     // '{v,foo}'
+				prefix = path.Prefix() // 'v'
 				continue
 			}
 		case errors.As(err, &pe):
