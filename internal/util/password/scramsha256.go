@@ -38,12 +38,13 @@ var fixedScramSHA256Params = &scramSHA256Params{
 
 // scramSHA256HashParams hashes the password with the given salt and parameters,
 // and returns the document that should be stored.
-func scramSHA256HashParams(username, password string, salt []byte, params *scramSHA256Params) (*types.Document, error) {
+func scramSHA256HashParams(password string, salt []byte, params *scramSHA256Params) (*types.Document, error) {
 	if len(salt) != int(params.saltLen) {
 		return nil, lazyerrors.Errorf("unexpected salt length: %d", len(salt))
 	}
 
-	client, err := scram.SHA256.NewClient(username, password, "")
+	// username is omitted because it is not used in the hash computation.
+	client, err := scram.SHA256.NewClient("", password, "")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -55,14 +56,11 @@ func scramSHA256HashParams(username, password string, salt []byte, params *scram
 
 	cred := client.GetStoredCredentials(kf)
 
-	storedKey := base64.StdEncoding.EncodeToString(cred.StoredKey)
-	serverKey := base64.StdEncoding.EncodeToString(cred.ServerKey)
-
 	doc, err := types.NewDocument(
-		"storedKey", storedKey,
-		"iterationCount", int32(kf.Iters),
+		"storedKey", base64.StdEncoding.EncodeToString(cred.StoredKey),
+		"iterationCount", int32(params.iterationCount),
 		"salt", base64.StdEncoding.EncodeToString(salt),
-		"serverKey", serverKey,
+		"serverKey", base64.StdEncoding.EncodeToString(cred.ServerKey),
 	)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -72,13 +70,13 @@ func scramSHA256HashParams(username, password string, salt []byte, params *scram
 }
 
 // SCRAMSHA256Hash computes SCRAM-SHA-256 credentials and returns the document that should be stored.
-func SCRAMSHA256Hash(username, password string) (*types.Document, error) {
+func SCRAMSHA256Hash(password string) (*types.Document, error) {
 	salt := make([]byte, fixedScramSHA256Params.saltLen)
 	if _, err := rand.Read(salt); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	doc, err := scramSHA256HashParams(username, password, salt, fixedScramSHA256Params)
+	doc, err := scramSHA256HashParams(password, salt, fixedScramSHA256Params)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
