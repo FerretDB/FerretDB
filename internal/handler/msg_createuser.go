@@ -213,7 +213,7 @@ func makeCredentials(mechanisms *types.Array, username, pwd string) (*types.Docu
 		case "PLAIN":
 			credentials.Set("PLAIN", must.NotFail(password.PlainHash(username)))
 		case "SCRAM-SHA-256":
-			hash, err := password.SCRAMSHA256Hash(username, pwd)
+			hash, err := password.SCRAMSHA256Hash(pwd)
 			if err != nil {
 				if strings.Contains(err.Error(), "prohibited character") {
 					return nil, handlererrors.NewCommandErrorMsg(
