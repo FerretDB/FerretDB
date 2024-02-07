@@ -33,7 +33,7 @@ type scramSHA256Params struct {
 // fixedScramSHA256Params represent fixed password parameters for SCRAM-SHA-256 authentication.
 var fixedScramSHA256Params = &scramSHA256Params{
 	iterationCount: 15_000,
-	saltLen:        45,
+	saltLen:        30,
 }
 
 // scramSHA256HashParams hashes the password with the given salt and parameters,
