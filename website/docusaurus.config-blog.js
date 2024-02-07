@@ -23,7 +23,7 @@ const config = {
   },
 
   stylesheets: [
-    {            href: "https://unpkg.com/@antonz/codapi@0.13.0/dist/snippet.css"},
+    {href: "https://unpkg.com/@antonz/codapi@0.13.0/dist/snippet.css"},
   ],
 
   scripts: [
