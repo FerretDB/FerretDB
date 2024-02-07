@@ -57,8 +57,10 @@ type FindParams struct {
 
 	ReturnKey           bool `ferretdb:"returnKey,unimplemented-non-default"`
 	OplogReplay         bool `ferretdb:"oplogReplay,ignored"`
-	NoCursorTimeout     bool `ferretdb:"noCursorTimeout,unimplemented-non-default"` // TODO https://github.com/FerretDB/FerretDB/issues/4035
 	AllowPartialResults bool `ferretdb:"allowPartialResults,unimplemented-non-default"`
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/4035
+	NoCursorTimeout bool `ferretdb:"noCursorTimeout,unimplemented-non-default"`
 }
 
 // GetFindParams returns `find` command parameters.
