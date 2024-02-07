@@ -26,7 +26,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
-	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 func TestListIndexesCompat(t *testing.T) {
@@ -83,8 +82,7 @@ func TestCreateIndexesCompat(tt *testing.T) {
 		models     []mongo.IndexModel
 		resultType compatTestCaseResultType // defaults to nonEmptyResult
 
-		skip           string // optional, skip test with a specified reason
-		failsForSQLite string // optional, if set, the case is expected to fail for SQLite due to given issue
+		skip string // optional, skip test with a specified reason
 	}{
 		"Empty": {
 			models:     []mongo.IndexModel{},
@@ -239,13 +237,8 @@ func TestCreateIndexesCompat(tt *testing.T) {
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
-				tt.Run(targetCollection.Name(), func(tt *testing.T) {
-					tt.Helper()
-
-					var t testtb.TB = tt
-					if tc.failsForSQLite != "" {
-						t = setup.FailsForSQLite(tt, tc.failsForSQLite)
-					}
+				tt.Run(targetCollection.Name(), func(t *testing.T) {
+					t.Helper()
 
 					targetRes, targetErr := targetCollection.Indexes().CreateMany(ctx, tc.models)
 					compatRes, compatErr := compatCollection.Indexes().CreateMany(ctx, tc.models)
@@ -296,10 +289,6 @@ func TestCreateIndexesCompat(tt *testing.T) {
 					require.NotEmpty(t, compatSpec)
 					assert.ElementsMatch(t, compatSpec, targetSpec)
 				})
-			}
-
-			if tc.failsForSQLite != "" {
-				return
 			}
 
 			switch tc.resultType {
