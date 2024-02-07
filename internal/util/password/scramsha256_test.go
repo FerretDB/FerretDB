@@ -64,6 +64,7 @@ var scramSHA256TestCases = map[string]scramSHA256TestCase{
 			"serverKey", "1m33jRKioBEVpJzDdJeG5SgKPEmhPNx3A0jS4fINVyQ=",
 		)),
 	},
+
 	// Test vector generated with db.runCommand({createUser: "user", pwd: "password", roles: []})
 	"FromMongoDB2": {
 		params: scramSHA256Params{
@@ -79,6 +80,7 @@ var scramSHA256TestCases = map[string]scramSHA256TestCase{
 			"serverKey", "JEbgbKWzWtOJV5qHOXQL3pV5lzhFLzPEtC5wonu+HmU=",
 		)),
 	},
+
 	"BadSaltLength": {
 		params: scramSHA256Params{
 			iterationCount: 15000,
@@ -97,6 +99,7 @@ var scramSHA256TestCases = map[string]scramSHA256TestCase{
 		salt:     []byte("sa\x00lt"),
 		err:      "prohibited character",
 	},
+
 	// The following checks were inspired by the test cases for the PLAIN method in plain_test.go
 	// https://github.com/brycx/Test-Vector-Generation/blob/master/PBKDF2/pbkdf2-hmac-sha2-test-vectors.md
 	"1Iteration": {
