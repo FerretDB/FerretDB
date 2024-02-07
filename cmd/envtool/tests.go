@@ -24,6 +24,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"regexp"
 	"slices"
 	"sort"
 	"strconv"
@@ -358,43 +359,27 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 func testsRun(ctx context.Context, index, total uint, run, skip string, args []string, logger *zap.SugaredLogger) error {
 	logger.Debugf("testsRun: index=%d, total=%d, run=%q, args=%q", index, total, run, args)
 
-	var totalTest int
-	if run == "" {
-		if index == 0 || total == 0 {
-			return fmt.Errorf("--shard-index and --shard-total must be specified when --run is not")
-		}
-
-		all, err := listTestFuncs("")
-		if err != nil {
-			return lazyerrors.Error(err)
-		}
-
-		shard, err := shardTestFuncs(index, total, all)
-		if err != nil {
-			return lazyerrors.Error(err)
-		}
-
-		run = "^("
-
-		for i, t := range shard {
-			run += t
-			if i != len(shard)-1 {
-				run += "|"
-			}
-		}
-
-		totalTest = len(shard)
-		run += ")$"
+	if run == "" && (index == 0 || total == 0) {
+		return fmt.Errorf("--shard-index and --shard-total must be specified when --run is not")
 	}
 
-	if skip != "" {
-		totalTest = 0
-		args = append(args, "-run="+run, "-skip="+skip)
-	} else {
-		args = append(args, "-run="+run)
+	all, err := listTestFuncsWithRegex("", run, skip)
+	if err != nil {
+		return lazyerrors.Error(err)
 	}
 
-	return runGoTest(ctx, args, totalTest, true, logger)
+	if len(all) == 0 {
+		return fmt.Errorf("no tests to run")
+	}
+
+	shard, err := shardTestFuncs(index, total, all)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	args = append(args, "-run="+buildGoTestRunRegex(shard))
+
+	return runGoTest(ctx, args, len(shard), true, logger)
 }
 
 // listTestFuncs returns a sorted slice of all top-level test functions (tests, benchmarks, examples, fuzz functions)
@@ -446,6 +431,74 @@ func listTestFuncs(dir string) ([]string, error) {
 	sort.Strings(res)
 
 	return res, nil
+}
+
+// listTestFuncsWithRegex returns regex-filtered names of all top-level test
+// functions (tests, benchmarks, examples, fuzz functions) in the specified
+// directory and subdirectories.
+func listTestFuncsWithRegex(dir, run, skip string) ([]string, error) {
+	tests, err := listTestFuncs(dir)
+	if err != nil {
+		return nil, err
+	}
+
+	if run == "" && skip == "" {
+		return tests, nil
+	}
+
+	includeRegex, err := regexp.Compile(run)
+	if err != nil {
+		return nil, err
+	}
+
+	if skip == "" {
+		return filterStringsByRegex(tests, includeRegex, nil), nil
+	}
+
+	excludeRegex, err := regexp.Compile(skip)
+	if err != nil {
+		return nil, err
+	}
+
+	return filterStringsByRegex(tests, includeRegex, excludeRegex), nil
+}
+
+// filterStringsByRegex filters a slice of strings based on inclusion and exclusion
+// criteria defined by regular expressions.
+func filterStringsByRegex(tests []string, include, exclude *regexp.Regexp) []string {
+	res := []string{}
+
+	for _, test := range tests {
+		if exclude != nil && exclude.MatchString(test) {
+			continue
+		}
+
+		if include != nil && !include.MatchString(test) {
+			continue
+		}
+
+		res = append(res, test)
+	}
+
+	return res
+}
+
+// buildGoTestRunRegex builds a regex for `go test -run` from the given test names.
+func buildGoTestRunRegex(tests []string) string {
+	var sb strings.Builder
+	sb.WriteString("^(")
+
+	for i, test := range tests {
+		if i != 0 {
+			sb.WriteString("|")
+		}
+
+		sb.WriteString(test)
+	}
+
+	sb.WriteString(")$")
+
+	return sb.String()
 }
 
 // shardTestFuncs shards given top-level test functions.

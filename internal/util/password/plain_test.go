@@ -37,6 +37,8 @@ type plainTestCase struct {
 }
 
 // https://github.com/brycx/Test-Vector-Generation/blob/master/PBKDF2/pbkdf2-hmac-sha2-test-vectors.md
+//
+// Test Case 4 is skipped because it takes too long.
 var plainTestCases = []plainTestCase{{
 	params: plainParams{
 		iterationCount: 1,
