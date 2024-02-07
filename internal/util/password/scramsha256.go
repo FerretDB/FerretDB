@@ -43,7 +43,7 @@ func scramSHA256HashParams(password string, salt []byte, params *scramSHA256Para
 		return nil, lazyerrors.Errorf("unexpected salt length: %d", len(salt))
 	}
 
-	// username is omitted because it is not used in the hash computation.
+	// username is omitted because it is not used in the hash computation
 	client, err := scram.SHA256.NewClient("", password, "")
 	if err != nil {
 		return nil, lazyerrors.Error(err)

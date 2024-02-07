@@ -39,15 +39,7 @@ type scramSHA256TestCase struct {
 	err  string
 }
 
-func decodeBase64(s string) []byte {
-	b, err := base64.StdEncoding.DecodeString(s)
-	if err != nil {
-		panic(err)
-	}
-
-	return b
-}
-
+// scramSHA256TestCases for the SCRAM-SHA-256 authentication.
 var scramSHA256TestCases = map[string]scramSHA256TestCase{
 	// Test vector generated with db.runCommand({createUser: "user", pwd: "pencil", roles: []})
 	"FromMongoDB": {
@@ -56,7 +48,7 @@ var scramSHA256TestCases = map[string]scramSHA256TestCase{
 			saltLen:        28,
 		},
 		password: "pencil",
-		salt:     decodeBase64("vXan6ZbWmm5i+f+mKY598rnIfoAGGp+G9NP0qQ=="),
+		salt:     must.NotFail(base64.StdEncoding.DecodeString("vXan6ZbWmm5i+f+mKY598rnIfoAGGp+G9NP0qQ==")),
 		want: must.NotFail(types.NewDocument(
 			"storedKey", "bNxFkKtMt93v+ha80yJsDG6Xes3GOMh5qsRzwkcF85s=",
 			"iterationCount", int32(15000),
@@ -72,7 +64,7 @@ var scramSHA256TestCases = map[string]scramSHA256TestCase{
 			saltLen:        28,
 		},
 		password: "password",
-		salt:     decodeBase64("4vbrJBkaleBWRqgdXri8Otu1pwLCoX5BCUoa1Q=="),
+		salt:     must.NotFail(base64.StdEncoding.DecodeString("4vbrJBkaleBWRqgdXri8Otu1pwLCoX5BCUoa1Q==")),
 		want: must.NotFail(types.NewDocument(
 			"storedKey", "1442RVPbzP5LhF3i/2Ld19Xj8TGfgK6XPy0KEbTL5so=",
 			"iterationCount", int32(15000),
