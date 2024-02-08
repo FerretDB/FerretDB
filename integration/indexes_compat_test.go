@@ -75,8 +75,8 @@ func TestListIndexesCompat(t *testing.T) {
 	}
 }
 
-func TestCreateIndexesCompat(tt *testing.T) {
-	tt.Parallel()
+func TestCreateIndexesCompat(t *testing.T) {
+	t.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
 		models     []mongo.IndexModel
@@ -217,17 +217,17 @@ func TestCreateIndexesCompat(tt *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		tt.Run(name, func(tt *testing.T) {
+		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
-				tt.Skip(tc.skip)
+				t.Skip(tc.skip)
 			}
 
-			tt.Helper()
-			tt.Parallel()
+			t.Helper()
+			t.Parallel()
 
 			// Use per-test setup because createIndexes modifies collection state,
 			// however, we don't need to run index creation test for all the possible collections.
-			s := setup.SetupCompatWithOpts(tt, &setup.SetupCompatOpts{
+			s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
 				Providers:                []shareddata.Provider{shareddata.Composites},
 				AddNonExistentCollection: true,
 			})
@@ -237,7 +237,8 @@ func TestCreateIndexesCompat(tt *testing.T) {
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
-				tt.Run(targetCollection.Name(), func(t *testing.T) {
+
+				t.Run(targetCollection.Name(), func(t *testing.T) {
 					t.Helper()
 
 					targetRes, targetErr := targetCollection.Indexes().CreateMany(ctx, tc.models)
@@ -293,11 +294,11 @@ func TestCreateIndexesCompat(tt *testing.T) {
 
 			switch tc.resultType {
 			case nonEmptyResult:
-				assert.True(tt, nonEmptyResults, "expected non-empty results (some documents should be modified)")
+				assert.True(t, nonEmptyResults, "expected non-empty results (some documents should be modified)")
 			case emptyResult:
-				assert.False(tt, nonEmptyResults, "expected empty results (no documents should be modified)")
+				assert.False(t, nonEmptyResults, "expected empty results (no documents should be modified)")
 			default:
-				tt.Fatalf("unknown result type %v", tc.resultType)
+				t.Fatalf("unknown result type %v", tc.resultType)
 			}
 		})
 	}
