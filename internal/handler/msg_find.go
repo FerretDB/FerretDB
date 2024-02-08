@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"go.uber.org/zap"
@@ -218,7 +219,17 @@ func (h *Handler) makeFindQueryParams(params *common.FindParams, cInfo *backends
 	}
 
 	if !h.DisablePushdown {
-		qp.Filter = params.Filter
+		qp.Filter = params.Filter.DeepCopy()
+	}
+
+	if !h.EnableExperimentalPushdown {
+		for _, k := range qp.Filter.Keys() {
+			if !strings.ContainsRune(k, '.') {
+				continue
+			}
+
+			qp.Filter.Remove(k)
+		}
 	}
 
 	if params.Sort, err = common.ValidateSortDocument(params.Sort); err != nil {
