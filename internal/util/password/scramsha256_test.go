@@ -39,7 +39,7 @@ type scramSHA256TestCase struct {
 	err  string
 }
 
-// scramSHA256TestCases for the SCRAM-SHA-256 authentication.
+// Test cases for the SCRAM-SHA-256 authentication.
 var scramSHA256TestCases = map[string]scramSHA256TestCase{
 	// Test vector generated with db.runCommand({createUser: "user", pwd: "pencil", roles: []})
 	"FromMongoDB": {

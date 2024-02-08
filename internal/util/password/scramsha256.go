@@ -24,13 +24,28 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// scramSHA256Params represent password parameters for SCRAM-SHA-256 authentication.
+// SCRAMSHA256Hash computes SCRAM-SHA-256 credentials and returns the document that should be stored.
+func SCRAMSHA256Hash(password string) (*types.Document, error) {
+	salt := make([]byte, fixedScramSHA256Params.saltLen)
+	if _, err := rand.Read(salt); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	doc, err := scramSHA256HashParams(password, salt, fixedScramSHA256Params)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return doc, nil
+}
+
+// scramSHA256Params represent password parameters for SCRAM-SHA-256 authentication
 type scramSHA256Params struct {
 	iterationCount int
 	saltLen        int
 }
 
-// fixedScramSHA256Params represent fixed password parameters for SCRAM-SHA-256 authentication.
+// fixedScramSHA256Params represent fixed password parameters for SCRAM-SHA-256 authentication
 var fixedScramSHA256Params = &scramSHA256Params{
 	iterationCount: 15_000,
 	saltLen:        45,
@@ -62,21 +77,6 @@ func scramSHA256HashParams(password string, salt []byte, params *scramSHA256Para
 		"salt", base64.StdEncoding.EncodeToString(salt),
 		"serverKey", base64.StdEncoding.EncodeToString(cred.ServerKey),
 	)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return doc, nil
-}
-
-// SCRAMSHA256Hash computes SCRAM-SHA-256 credentials and returns the document that should be stored.
-func SCRAMSHA256Hash(password string) (*types.Document, error) {
-	salt := make([]byte, fixedScramSHA256Params.saltLen)
-	if _, err := rand.Read(salt); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	doc, err := scramSHA256HashParams(password, salt, fixedScramSHA256Params)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
