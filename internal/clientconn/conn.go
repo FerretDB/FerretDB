@@ -588,6 +588,7 @@ func (c *conn) logResponse(who string, resHeader *wire.MsgHeader, resBody wire.M
 		doc := must.NotFail(resBody.(*wire.OpMsg).Document())
 
 		var ok bool
+
 		v, _ := doc.Get("ok")
 		switch v := v.(type) {
 		case float64:
