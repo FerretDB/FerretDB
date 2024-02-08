@@ -76,10 +76,11 @@ type NewOpts struct {
 	StateProvider *state.Provider
 
 	// test options
-	DisablePushdown         bool
-	CappedCleanupInterval   time.Duration
-	CappedCleanupPercentage uint8
-	EnableNewAuth           bool
+	DisablePushdown            bool
+	EnableExperimentalPushdown bool
+	CappedCleanupInterval      time.Duration
+	CappedCleanupPercentage    uint8
+	EnableNewAuth              bool
 }
 
 // New returns a new handler.
