@@ -38,15 +38,15 @@ func BenchmarkFind(b *testing.B) {
 		for name, bc := range map[string]struct {
 			filter bson.D
 		}{
-			//"Int32ID": {
-			//	filter: bson.D{{"_id", int32(42)}},
-			//},
-			//"Int32One": {
-			//	filter: bson.D{{"id", int32(42)}},
-			//},
-			//"Int32Many": {
-			//	filter: bson.D{{"v", int32(42)}},
-			//},
+			"Int32ID": {
+				filter: bson.D{{"_id", int32(42)}},
+			},
+			"Int32One": {
+				filter: bson.D{{"id", int32(42)}},
+			},
+			"Int32Many": {
+				filter: bson.D{{"v", int32(42)}},
+			},
 			"Int32ManyDotNotation": {
 				filter: bson.D{{"v.foo", int32(42)}},
 			},
