@@ -39,15 +39,7 @@ type scramSHA256TestCase struct {
 	err  string
 }
 
-func decodeBase64(s string) []byte {
-	b, err := base64.StdEncoding.DecodeString(s)
-	if err != nil {
-		panic(err)
-	}
-
-	return b
-}
-
+// Test cases for the SCRAM-SHA-256 authentication.
 var scramSHA256TestCases = map[string]scramSHA256TestCase{
 	// Test vector generated with db.runCommand({createUser: "user", pwd: "pencil", roles: []})
 	"FromMongoDB": {
@@ -56,7 +48,7 @@ var scramSHA256TestCases = map[string]scramSHA256TestCase{
 			saltLen:        28,
 		},
 		password: "pencil",
-		salt:     decodeBase64("vXan6ZbWmm5i+f+mKY598rnIfoAGGp+G9NP0qQ=="),
+		salt:     must.NotFail(base64.StdEncoding.DecodeString("vXan6ZbWmm5i+f+mKY598rnIfoAGGp+G9NP0qQ==")),
 		want: must.NotFail(types.NewDocument(
 			"storedKey", "bNxFkKtMt93v+ha80yJsDG6Xes3GOMh5qsRzwkcF85s=",
 			"iterationCount", int32(15000),
@@ -64,6 +56,7 @@ var scramSHA256TestCases = map[string]scramSHA256TestCase{
 			"serverKey", "1m33jRKioBEVpJzDdJeG5SgKPEmhPNx3A0jS4fINVyQ=",
 		)),
 	},
+
 	// Test vector generated with db.runCommand({createUser: "user", pwd: "password", roles: []})
 	"FromMongoDB2": {
 		params: scramSHA256Params{
@@ -71,7 +64,7 @@ var scramSHA256TestCases = map[string]scramSHA256TestCase{
 			saltLen:        28,
 		},
 		password: "password",
-		salt:     decodeBase64("4vbrJBkaleBWRqgdXri8Otu1pwLCoX5BCUoa1Q=="),
+		salt:     must.NotFail(base64.StdEncoding.DecodeString("4vbrJBkaleBWRqgdXri8Otu1pwLCoX5BCUoa1Q==")),
 		want: must.NotFail(types.NewDocument(
 			"storedKey", "1442RVPbzP5LhF3i/2Ld19Xj8TGfgK6XPy0KEbTL5so=",
 			"iterationCount", int32(15000),
@@ -79,6 +72,7 @@ var scramSHA256TestCases = map[string]scramSHA256TestCase{
 			"serverKey", "JEbgbKWzWtOJV5qHOXQL3pV5lzhFLzPEtC5wonu+HmU=",
 		)),
 	},
+
 	"BadSaltLength": {
 		params: scramSHA256Params{
 			iterationCount: 15000,
@@ -97,6 +91,7 @@ var scramSHA256TestCases = map[string]scramSHA256TestCase{
 		salt:     []byte("sa\x00lt"),
 		err:      "prohibited character",
 	},
+
 	// The following checks were inspired by the test cases for the PLAIN method in plain_test.go
 	// https://github.com/brycx/Test-Vector-Generation/blob/master/PBKDF2/pbkdf2-hmac-sha2-test-vectors.md
 	"1Iteration": {
