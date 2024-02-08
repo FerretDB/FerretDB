@@ -30,7 +30,6 @@ import (
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
-	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 func TestQueryBadFindType(t *testing.T) {
@@ -623,7 +622,6 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 		err            *mongo.CommandError // optional, expected error from MongoDB
 		altMessage     string              // optional, alternative error message for FerretDB, ignored if empty
 		skip           string              // optional, skip test with a specified reason
-		failsForSQLite string              // optional, if set, the case is expected to fail for SQLite due to given issue
 	}{
 		"Simple": {
 			limit:         1,
@@ -757,13 +755,8 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 				rest...,
 			)
 
-			t.Run("Explain", func(tt *testing.T) {
-				setup.SkipForMongoDB(tt, "pushdown is FerretDB specific feature")
-
-				var t testtb.TB = tt
-				if tc.failsForSQLite != "" {
-					t = setup.FailsForSQLite(tt, tc.failsForSQLite)
-				}
+			t.Run("Explain", func(t *testing.T) {
+				setup.SkipForMongoDB(t, "pushdown is FerretDB specific feature")
 
 				var res bson.D
 				err := collection.Database().RunCommand(ctx, bson.D{{"explain", query}}).Decode(&res)
