@@ -88,10 +88,12 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	}
 
 	if !h.DisablePushdown {
-		qp.Filter = params.Filter.DeepCopy()
+		qp.Filter = params.Filter
 	}
 
-	if !h.EnableExperimentalPushdown {
+	if !h.EnableExperimentalPushdown && params.Filter != nil {
+		qp.Filter = params.Filter.DeepCopy()
+
 		for _, k := range qp.Filter.Keys() {
 			if !strings.ContainsRune(k, '.') {
 				continue

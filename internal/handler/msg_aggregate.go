@@ -279,10 +279,12 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		qp := new(backends.QueryParams)
 
 		if !h.DisablePushdown {
-			qp.Filter = filter.DeepCopy()
+			qp.Filter = filter
 		}
 
-		if !h.EnableExperimentalPushdown {
+		if !h.EnableExperimentalPushdown && filter != nil {
+			qp.Filter = filter.DeepCopy()
+
 			for _, k := range qp.Filter.Keys() {
 				if !strings.ContainsRune(k, '.') {
 					continue
