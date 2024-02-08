@@ -15,10 +15,14 @@
 package password
 
 import (
+	"crypto/hmac"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
+	"fmt"
 
-	"github.com/xdg-go/scram"
+	"github.com/xdg-go/stringprep"
+	"golang.org/x/crypto/pbkdf2"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -39,13 +43,13 @@ func SCRAMSHA256Hash(password string) (*types.Document, error) {
 	return doc, nil
 }
 
-// scramSHA256Params represent password parameters for SCRAM-SHA-256 authentication
+// scramSHA256Params represent password parameters for SCRAM-SHA-256 authentication.
 type scramSHA256Params struct {
 	iterationCount int
 	saltLen        int
 }
 
-// fixedScramSHA256Params represent fixed password parameters for SCRAM-SHA-256 authentication
+// fixedScramSHA256Params represent fixed password parameters for SCRAM-SHA-256 authentication.
 var fixedScramSHA256Params = &scramSHA256Params{
 	iterationCount: 15_000,
 	saltLen:        45,
@@ -53,33 +57,53 @@ var fixedScramSHA256Params = &scramSHA256Params{
 
 // scramSHA256HashParams hashes the password with the given salt and parameters,
 // and returns the document that should be stored.
+//
+// https://datatracker.ietf.org/doc/html/rfc5802
 func scramSHA256HashParams(password string, salt []byte, params *scramSHA256Params) (*types.Document, error) {
 	if len(salt) != int(params.saltLen) {
 		return nil, lazyerrors.Errorf("unexpected salt length: %d", len(salt))
 	}
 
-	// username is omitted because it is not used in the hash computation
-	client, err := scram.SHA256.NewClient("", password, "")
+	prepPassword, err := stringprep.SASLprep.Prepare(password)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, fmt.Errorf("cannot SASLprepare password '%s': %v", password, err)
 	}
 
-	kf := scram.KeyFactors{
-		Salt:  string(salt),
-		Iters: params.iterationCount,
-	}
+	saltedPassword := pbkdf2.Key([]byte(prepPassword), salt, params.iterationCount, sha256.Size, sha256.New)
 
-	cred := client.GetStoredCredentials(kf)
+	// Hashing the strings "Client Key" for creating the client key and
+	// "Server Key" for creating the server key, per Section 3 of the RFC 5802
+	// https://datatracker.ietf.org/doc/html/rfc5802#section-3
+	clientKey := computeHMAC(saltedPassword, []byte("Client Key"))
+	serverKey := computeHMAC(saltedPassword, []byte("Server Key"))
+
+	storedKey := computeHash(clientKey)
 
 	doc, err := types.NewDocument(
-		"storedKey", base64.StdEncoding.EncodeToString(cred.StoredKey),
+		"storedKey", base64.StdEncoding.EncodeToString(storedKey),
 		"iterationCount", int32(params.iterationCount),
 		"salt", base64.StdEncoding.EncodeToString(salt),
-		"serverKey", base64.StdEncoding.EncodeToString(cred.ServerKey),
+		"serverKey", base64.StdEncoding.EncodeToString(serverKey),
 	)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	return doc, nil
+}
+
+// Computes the HMAC of the given data using the given key.
+func computeHMAC(key, data []byte) []byte {
+	mac := hmac.New(sha256.New, key)
+	mac.Write(data)
+
+	return mac.Sum(nil)
+}
+
+// Computes the SHA-256 hash of the given data.
+func computeHash(b []byte) []byte {
+	h := sha256.New()
+	h.Write(b)
+
+	return h.Sum(nil)
 }
