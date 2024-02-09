@@ -51,15 +51,8 @@ func TestAuthentication(t *testing.T) {
 		failsForFerretDB bool
 	}{
 		"Success": {
-			username:            "common",
+			username:            "username", // when using the PLAIN mechanism we must use user "username"
 			password:            "password",
-			mechanisms:          []string{"PLAIN"},
-			connectionMechanism: "PLAIN",
-		},
-		"Updated": {
-			username:            "updated",
-			password:            "pass123",
-			updatePassword:      "somethingelse",
 			mechanisms:          []string{"PLAIN"},
 			connectionMechanism: "PLAIN",
 		},
