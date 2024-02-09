@@ -44,10 +44,11 @@ func TestAuthentication(t *testing.T) {
 
 		connectionMechanism string // if set, try to establish connection with this mechanism
 
-		userNotFound  bool
-		wrongPassword bool
-		topologyError bool
-		errorMessage  string
+		userNotFound     bool
+		wrongPassword    bool
+		topologyError    bool
+		errorMessage     string
+		failsForFerretDB bool
 	}{
 		"Success": {
 			username:            "common",
@@ -96,8 +97,9 @@ func TestAuthentication(t *testing.T) {
 			password:            "password",
 			mechanisms:          []string{"SCRAM-SHA-256"},
 			connectionMechanism: "SCRAM-SHA-1",
-			errorMessage:        "Unsupported authentication mechanism",
+			errorMessage:        "Unable to use SCRAM-SHA-1 based authentication for user without any SCRAM-SHA-1 credentials registered",
 			topologyError:       true,
+			failsForFerretDB:    true,
 		},
 	}
 
@@ -107,6 +109,10 @@ func TestAuthentication(t *testing.T) {
 			tt.Parallel()
 
 			var t testtb.TB = tt
+
+			if tc.failsForFerretDB {
+				t = setup.FailsForFerretDB(t, "https://github.com/FerretDB/FerretDB/issues/2012")
+			}
 
 			if !tc.userNotFound {
 				var (
