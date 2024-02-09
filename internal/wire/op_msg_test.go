@@ -25,11 +25,9 @@ import (
 
 // makeOpMsgSection creates [OpMsgSection] with a given kind, identifier, and documents.
 func makeOpMsgSection(kind byte, identifier string, docs ...*types.Document) OpMsgSection {
-	res := OpMsgSection{
-		Kind:       kind,
-		Identifier: identifier,
-	}
-	res.documents = docs
+	res := MakeOpMsgSection(docs...)
+	res.Kind = kind
+	res.Identifier = identifier
 	return res
 }
 
