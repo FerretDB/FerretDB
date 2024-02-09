@@ -103,7 +103,7 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 			return "", nil, lazyerrors.Error(err)
 		}
 
-		keyOperator := "#>" // keyOperator is the operator that is used to access the field. (->/#>)
+		keyOperator := "->" // keyOperator is the operator that is used to access the field. (->/#>)
 
 		// key can be either a string '"v"' or PostgreSQL path '{v,foo}'.
 		// We use path type only for dot notation due to simplicity of SQL queries, and the fact
