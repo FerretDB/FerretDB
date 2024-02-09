@@ -194,6 +194,13 @@ func makeCredentials(mechanisms *types.Array, username, pwd string) (*types.Docu
 		)
 	}
 
+	if mechanisms.Len() == 0 {
+		return nil, handlererrors.NewCommandErrorMsg(
+			handlererrors.ErrBadValue,
+			"mechanisms field must not be empty",
+		)
+	}
+
 	iter := mechanisms.Iterator()
 	defer iter.Close()
 

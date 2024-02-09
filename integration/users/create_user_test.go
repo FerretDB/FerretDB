@@ -104,6 +104,19 @@ func TestCreateUser(t *testing.T) {
 				Message: "User \"should_already_exist@TestCreateUser\" already exists",
 			},
 		},
+		"EmptyMechanism": {
+			payload: bson.D{
+				{"createUser", "empty_mechanism_user"},
+				{"roles", bson.A{}},
+				{"pwd", "password"},
+				{"mechanisms", bson.A{}},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "mechanisms field must not be empty",
+			},
+		},
 		"BadAuthMechanism": {
 			payload: bson.D{
 				{"createUser", "success_user_with_plain"},
