@@ -282,7 +282,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			qp.Filter = filter
 		}
 
-		if !h.EnableExperimentalPushdown && filter != nil {
+		if !h.EnableNestedPushdown && filter != nil {
 			qp.Filter = filter.DeepCopy()
 
 			for _, k := range qp.Filter.Keys() {

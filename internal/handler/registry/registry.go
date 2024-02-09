@@ -66,12 +66,12 @@ type NewHandlerOpts struct {
 
 // TestOpts represents experimental configuration options.
 type TestOpts struct {
-	DisablePushdown            bool
-	EnableExperimentalPushdown bool
-	CappedCleanupInterval      time.Duration
-	CappedCleanupPercentage    uint8
-	EnableNewAuth              bool
-	_                          struct{} // prevent unkeyed literals
+	DisablePushdown         bool
+	EnableNestedPushdown    bool
+	CappedCleanupInterval   time.Duration
+	CappedCleanupPercentage uint8
+	EnableNewAuth           bool
+	_                       struct{} // prevent unkeyed literals
 }
 
 // NewHandler constructs a new handler.

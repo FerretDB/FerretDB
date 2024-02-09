@@ -92,8 +92,8 @@ var cli struct {
 	Test struct {
 		RecordsDir string `default:"" help:"Testing: directory for record files."`
 
-		DisablePushdown            bool `default:"false" help:"Experimental: disable pushdown."`
-		EnableExperimentalPushdown bool `default:"false" help:"Experimental: enable experimental pushdown."`
+		DisablePushdown      bool `default:"false" help:"Experimental: disable pushdown."`
+		EnableNestedPushdown bool `default:"false" help:"Experimental: enable pushdown for dot notation."`
 
 		CappedCleanup struct {
 			Interval   time.Duration `default:"1m" help:"Experimental: capped collections cleanup interval."`
@@ -403,11 +403,11 @@ func run() {
 		MySQLURL: mySQLFlags.MySQLURL,
 
 		TestOpts: registry.TestOpts{
-			DisablePushdown:            cli.Test.DisablePushdown,
-			EnableExperimentalPushdown: cli.Test.EnableExperimentalPushdown,
-			CappedCleanupInterval:      cli.Test.CappedCleanup.Interval,
-			CappedCleanupPercentage:    cli.Test.CappedCleanup.Percentage,
-			EnableNewAuth:              cli.Test.EnableNewAuth,
+			DisablePushdown:         cli.Test.DisablePushdown,
+			EnableNestedPushdown:    cli.Test.EnableNestedPushdown,
+			CappedCleanupInterval:   cli.Test.CappedCleanup.Interval,
+			CappedCleanupPercentage: cli.Test.CappedCleanup.Percentage,
+			EnableNewAuth:           cli.Test.EnableNewAuth,
 		},
 	})
 	if err != nil {

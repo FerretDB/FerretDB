@@ -222,7 +222,7 @@ func (h *Handler) makeFindQueryParams(params *common.FindParams, cInfo *backends
 		qp.Filter = params.Filter
 	}
 
-	if !h.EnableExperimentalPushdown && params.Filter != nil {
+	if !h.EnableNestedPushdown && params.Filter != nil {
 		qp.Filter = params.Filter.DeepCopy()
 
 		for _, k := range qp.Filter.Keys() {

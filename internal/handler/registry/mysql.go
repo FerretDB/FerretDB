@@ -40,11 +40,11 @@ func init() {
 			ConnMetrics:   opts.ConnMetrics,
 			StateProvider: opts.StateProvider,
 
-			DisablePushdown:            opts.DisablePushdown,
-			EnableExperimentalPushdown: opts.EnableExperimentalPushdown,
-			CappedCleanupPercentage:    opts.CappedCleanupPercentage,
-			CappedCleanupInterval:      opts.CappedCleanupInterval,
-			EnableNewAuth:              opts.EnableNewAuth,
+			DisablePushdown:         opts.DisablePushdown,
+			EnableNestedPushdown:    opts.EnableNestedPushdown,
+			CappedCleanupPercentage: opts.CappedCleanupPercentage,
+			CappedCleanupInterval:   opts.CappedCleanupInterval,
+			EnableNewAuth:           opts.EnableNewAuth,
 		}
 
 		h, err := handler.New(handlerOpts)
