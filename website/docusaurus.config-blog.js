@@ -23,12 +23,12 @@ const config = {
   },
 
   stylesheets: [
-    {href: "https://unpkg.com/@antonz/codapi@0.13.0/dist/snippet.css"},
+    {href: "/codapi/snippet.css"},
   ],
 
   scripts: [
-    {src: '/codapi/script.js', defer: true, "data-domain": "blog.ferretdb.io"},
-    {src: "/codapi/snippet.js", defer: true},
+    {src: 'https://plausible.io/js/script.js', defer: true, "data-domain": "blog.ferretdb.io"},
+    {src: '/codapi/snippet.js', defer: true},
     {src: '/codapi/init.js', defer: true},
   ],
 
