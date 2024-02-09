@@ -118,7 +118,6 @@ func (connInfo *ConnInfo) BypassBackendAuth() {
 	defer connInfo.rw.Unlock()
 
 	connInfo.bypassBackendAuth = true
-
 }
 
 // GetBypassBackendAuth returns whether the connection requires backend authentication.
