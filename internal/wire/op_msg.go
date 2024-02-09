@@ -37,10 +37,10 @@ type OpMsgSection struct {
 	documents  []*types.Document // TODO https://github.com/FerretDB/FerretDB/issues/274
 }
 
-// MakeOpMsgSection creates [OpMsgSection] with a single document.
-func MakeOpMsgSection(doc *types.Document) OpMsgSection {
+// MakeOpMsgSection creates [OpMsgSection] with a given documents.
+func MakeOpMsgSection(docs ...*types.Document) OpMsgSection {
 	return OpMsgSection{
-		documents: []*types.Document{doc},
+		documents: docs,
 	}
 }
 

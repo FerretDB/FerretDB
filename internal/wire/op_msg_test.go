@@ -23,6 +23,16 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
+// makeOpMsgSection creates [OpMsgSection] with a given kind, identifier, and documents.
+func makeOpMsgSection(kind byte, identifier string, docs ...*types.Document) OpMsgSection {
+	res := OpMsgSection{
+		Kind:       kind,
+		Identifier: identifier,
+	}
+	res.documents = docs
+	return res
+}
+
 var msgTestCases = []testCase{{
 	name:    "handshake5",
 	headerB: testutil.MustParseDumpFile("testdata", "handshake5_header.hex"),
