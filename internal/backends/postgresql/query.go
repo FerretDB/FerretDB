@@ -103,8 +103,12 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 			return "", nil, lazyerrors.Error(err)
 		}
 
-		keyOperator := "->"   // keyOperator is the operator that is used to access the field. (->/#>)
-		var key any = rootKey // key can be either a string '"v"' or PostgreSQL path '{v,foo}'
+		keyOperator := "#>" // keyOperator is the operator that is used to access the field. (->/#>)
+
+		// key can be either a string '"v"' or PostgreSQL path '{v,foo}'.
+		// We use path type only for dot notation due to simplicity of SQL queries, and the fact
+		// that path doesn't handle empty keys.
+		var key any = rootKey
 
 		// don't pushdown $comment, as it's attached to query with select clause
 		//
@@ -124,6 +128,8 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 				key = path.Slice() // '{v,foo}'
 				//	continue
 			}
+
+			key = path.Slice() // '{v,foo}'
 		case errors.As(err, &pe):
 			// ignore empty key error, otherwise return error
 			if pe.Code() != types.ErrPathElementEmpty {
