@@ -43,8 +43,8 @@ var msgTestCases = []testCase{{
 		OpCode:        OpCodeMsg,
 	},
 	msgBody: &OpMsg{
-		sections: []OpMsgSection{{
-			documents: []*types.Document{must.NotFail(types.NewDocument(
+		sections: []OpMsgSection{
+			makeOpMsgSection(0, "", must.NotFail(types.NewDocument(
 				"buildInfo", int32(1),
 				"lsid", must.NotFail(types.NewDocument(
 					"id", types.Binary{
@@ -56,8 +56,8 @@ var msgTestCases = []testCase{{
 					},
 				)),
 				"$db", "admin",
-			))},
-		}},
+			))),
+		},
 	},
 	command: "buildInfo",
 }, {
@@ -71,8 +71,8 @@ var msgTestCases = []testCase{{
 		OpCode:        OpCodeMsg,
 	},
 	msgBody: &OpMsg{
-		sections: []OpMsgSection{{
-			documents: []*types.Document{must.NotFail(types.NewDocument(
+		sections: []OpMsgSection{
+			makeOpMsgSection(0, "", must.NotFail(types.NewDocument(
 				"version", "5.0.0",
 				"gitVersion", "1184f004a99660de6f5e745573419bda8a28c0e9",
 				"modules", must.NotFail(types.NewArray()),
@@ -113,8 +113,8 @@ var msgTestCases = []testCase{{
 				"maxBsonObjectSize", int32(16777216),
 				"storageEngines", must.NotFail(types.NewArray("devnull", "ephemeralForTest", "wiredTiger")),
 				"ok", float64(1),
-			))},
-		}},
+			))),
+		},
 	},
 	command: "version",
 }, {
@@ -196,8 +196,8 @@ var msgTestCases = []testCase{{
 		OpCode:        OpCodeMsg,
 	},
 	msgBody: &OpMsg{
-		sections: []OpMsgSection{{
-			documents: []*types.Document{must.NotFail(types.NewDocument(
+		sections: []OpMsgSection{
+			makeOpMsgSection(0, "", must.NotFail(types.NewDocument(
 				"insert", "values",
 				"documents", must.NotFail(types.NewArray(
 					must.NotFail(types.NewDocument(
@@ -207,8 +207,8 @@ var msgTestCases = []testCase{{
 				)),
 				"ordered", true,
 				"$db", "test",
-			))},
-		}},
+			))),
+		},
 	},
 	err: `wire.OpMsg.Document: validation failed for { insert: "values", documents: ` +
 		`[ { v: nan.0, _id: ObjectId('6377f213757c0babdebc2f6a') } ], ordered: true, $db: "test" }` +
