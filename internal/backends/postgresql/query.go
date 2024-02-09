@@ -126,10 +126,8 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 			if path.Len() > 1 {
 				keyOperator = "#>"
 				key = path.Slice() // '{v,foo}'
-				//	continue
 			}
 
-			key = path.Slice() // '{v,foo}'
 		case errors.As(err, &pe):
 			// ignore empty key error, otherwise return error
 			if pe.Code() != types.ErrPathElementEmpty {
