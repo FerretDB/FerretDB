@@ -448,7 +448,7 @@ func listTestFuncsWithRegex(dir, run, skip string) ([]string, error) {
 
 	includeRegex, err := regexp.Compile(run)
 	if err != nil {
-		return nil, err
+		return nil, lazyerrors.Errorf("Invalid -run regex: %s; %s", run, err)
 	}
 
 	if skip == "" {
@@ -457,7 +457,7 @@ func listTestFuncsWithRegex(dir, run, skip string) ([]string, error) {
 
 	excludeRegex, err := regexp.Compile(skip)
 	if err != nil {
-		return nil, err
+		return nil, lazyerrors.Errorf("Invalid -skip regex: %s; %s", run, err)
 	}
 
 	return filterStringsByRegex(tests, includeRegex, excludeRegex), nil
