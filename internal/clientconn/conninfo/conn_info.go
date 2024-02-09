@@ -39,6 +39,13 @@ type ConnInfo struct {
 
 	sc *scram.ServerConversation // protected by rw
 
+	// If true, backend implementations should not perform authentication
+	// by adding username and password to the connection string.
+	// It is set to true for background connections (such us capped collections cleanup)
+	// and by the new authentication mechanism.
+	// See where it is used for more details.
+	bypassBackendAuth bool
+
 	rw sync.RWMutex
 }
 
@@ -103,6 +110,23 @@ func (connInfo *ConnInfo) SetMetadataRecv() {
 	defer connInfo.rw.Unlock()
 
 	connInfo.metadataRecv = true
+}
+
+// BypassBackendAuth marks the connection as not requiring backend authentication.
+func (connInfo *ConnInfo) BypassBackendAuth() {
+	connInfo.rw.Lock()
+	defer connInfo.rw.Unlock()
+
+	connInfo.bypassBackendAuth = true
+
+}
+
+// GetBypassBackendAuth returns whether the connection requires backend authentication.
+func (connInfo *ConnInfo) GetBypassBackendAuth() bool {
+	connInfo.rw.RLock()
+	defer connInfo.rw.RUnlock()
+
+	return connInfo.bypassBackendAuth
 }
 
 // Ctx returns a derived context with the given ConnInfo.

@@ -44,8 +44,8 @@ type Pool struct {
 	l       *zap.Logger
 	sp      *state.Provider
 
-	rw   sync.RWMutex
-	pool *pgxpool.Pool
+	rw    sync.RWMutex
+	pools map[string]*pgxpool.Pool // by full URI
 
 	token *resource.Token
 }
@@ -65,6 +65,7 @@ func New(u string, l *zap.Logger, sp *state.Provider) (*Pool, error) {
 		baseURI: *baseURI,
 		l:       l,
 		sp:      sp,
+		pools:   map[string]*pgxpool.Pool{},
 		token:   resource.NewToken(),
 	}
 
@@ -78,7 +79,11 @@ func (p *Pool) Close() {
 	p.rw.Lock()
 	defer p.rw.Unlock()
 
-	p.pool.Close()
+	for _, pool := range p.pools {
+		pool.Close()
+	}
+
+	p.pools = nil
 
 	resource.Untrack(p, p.token)
 }
@@ -95,11 +100,24 @@ func (p *Pool) Get(username, password string) (*pgxpool.Pool, error) {
 
 	u := uri.String()
 
+	// fast path
+
+	p.rw.RLock()
+	res := p.pools[u]
+	p.rw.RUnlock()
+
+	if res != nil {
+		p.l.Debug("Pool: found existing pool", zap.String("username", username))
+		return res, nil
+	}
+
+	// slow path
+
 	p.rw.Lock()
 	defer p.rw.Unlock()
 
-	// a concurrent connection might have created a pool already
-	if res := p.pool; res != nil {
+	// a concurrent connection might have created a pool already; check again
+	if res = p.pools[u]; res != nil {
 		p.l.Debug("Pool: found existing pool (after acquiring lock)", zap.String("username", username))
 		return res, nil
 	}
@@ -111,9 +129,25 @@ func (p *Pool) Get(username, password string) (*pgxpool.Pool, error) {
 	}
 
 	p.l.Info("Pool: connection succeed", zap.String("username", username))
-	p.pool = res
+	p.pools[u] = res
 
 	return res, nil
+}
+
+// GetAny returns a random open pool of connections to PostgreSQL, or nil if none are available.
+func (p *Pool) GetAny() *pgxpool.Pool {
+	p.rw.RLock()
+	defer p.rw.RUnlock()
+
+	for _, pool := range p.pools {
+		p.l.Debug("Pool.GetAny: returning existing pool")
+
+		return pool
+	}
+
+	p.l.Debug("Pool.GetAny: no existing pools")
+
+	return nil
 }
 
 // Describe implements prometheus.Collector.
@@ -126,18 +160,20 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 	p.rw.RLock()
 	defer p.rw.RUnlock()
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3332
-	stat := p.pool.Stat()
-
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "size"),
-			"The current number of pool connections.",
+			"The current number of pools.",
 			nil, nil,
 		),
 		prometheus.GaugeValue,
-		float64(stat.TotalConns()),
+		float64(len(p.pools)),
 	)
+
+	for _, pool := range p.pools {
+		// TODO https://github.com/FerretDB/FerretDB/issues/3332
+		_ = pool.Stat()
+	}
 }
 
 // check interfaces

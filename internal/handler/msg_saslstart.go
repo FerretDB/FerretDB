@@ -83,6 +83,8 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			return nil, err
 		}
 
+		conninfo.Get(ctx).BypassBackendAuth()
+
 		must.NoError(reply.SetSections(wire.MakeOpMsgSection(
 			must.NotFail(types.NewDocument(
 				"ok", float64(1),

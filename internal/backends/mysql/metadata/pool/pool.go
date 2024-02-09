@@ -131,6 +131,22 @@ func (p *Pool) Get(username, password string) (*fsql.DB, error) {
 	return res, nil
 }
 
+// GetAny returns a random open pool of connections to MySQL, or nil if none are available.
+func (p *Pool) GetAny() *fsql.DB {
+	p.rw.RLock()
+	defer p.rw.RUnlock()
+
+	for _, db := range p.dbs {
+		p.l.Debug("Pool.GetAny: return existing pool")
+
+		return db
+	}
+
+	p.l.Debug("Pool.GetAny: no existing pools")
+
+	return nil
+}
+
 // Describe implements Prometheus.Collector.
 func (p *Pool) Describe(ch chan<- *prometheus.Desc) {
 	prometheus.DescribeByCollect(p, ch)
