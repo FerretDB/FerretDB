@@ -354,6 +354,10 @@ func run() {
 
 	var wg sync.WaitGroup
 
+	if cli.Test.DisablePushdown && cli.Test.EnableNestedPushdown {
+		logger.Sugar().Fatal("--test-disable-pushdown and --test-enable-nested-pushdown should not be set at the same time")
+	}
+
 	// https://github.com/alecthomas/kong/issues/389
 	if cli.DebugAddr != "" && cli.DebugAddr != "-" {
 		wg.Add(1)
