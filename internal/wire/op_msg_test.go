@@ -126,19 +126,17 @@ var msgTestCases = []testCase{{
 		OpCode:        OpCodeMsg,
 	},
 	msgBody: &OpMsg{
-		sections: []OpMsgSection{{
-			documents: []*types.Document{must.NotFail(types.NewDocument(
+		sections: []OpMsgSection{
+			makeOpMsgSection(0, "", must.NotFail(types.NewDocument(
 				"insert", "actor",
 				"ordered", true,
 				"writeConcern", must.NotFail(types.NewDocument(
 					"w", "majority",
 				)),
 				"$db", "monila",
-			))},
-		}, {
-			Kind:       1,
-			Identifier: "documents",
-			documents: []*types.Document{
+			))),
+			makeOpMsgSection(
+				1, "documents",
 				must.NotFail(types.NewDocument(
 					"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01},
 					"actor_id", int32(1),
@@ -153,8 +151,8 @@ var msgTestCases = []testCase{{
 					"last_name", "WAHLBERG",
 					"last_update", lastUpdate,
 				)),
-			},
-		}},
+			),
+		},
 	},
 	command: "insert",
 }, {
@@ -246,20 +244,17 @@ var msgTestCases = []testCase{{
 		OpCode:        OpCodeMsg,
 	},
 	msgBody: &OpMsg{
-		sections: []OpMsgSection{{
-			documents: []*types.Document{must.NotFail(types.NewDocument(
+		sections: []OpMsgSection{
+			makeOpMsgSection(0, "", must.NotFail(types.NewDocument(
 				"insert", "TestInsertSimple",
 				"ordered", true,
 				"$db", "testinsertsimple",
-			))},
-		}, {
-			Kind:       1,
-			Identifier: "documents",
-			documents: []*types.Document{must.NotFail(types.NewDocument(
+			))),
+			makeOpMsgSection(1, "documents", must.NotFail(types.NewDocument(
 				"_id", types.ObjectID{0x63, 0x7c, 0xfa, 0xd8, 0x8d, 0xc3, 0xce, 0xcd, 0xe3, 0x8e, 0x1e, 0x6b},
 				"v", math.Copysign(0, -1),
-			))},
-		}},
+			))),
+		},
 	},
 	command: "insert",
 }, {
@@ -302,20 +297,17 @@ var msgTestCases = []testCase{{
 	},
 	msgBody: &OpMsg{
 		FlagBits: OpMsgFlags(OpMsgChecksumPresent),
-		sections: []OpMsgSection{{
-			Kind:       1,
-			Identifier: "documents",
-			documents: []*types.Document{must.NotFail(types.NewDocument(
+		sections: []OpMsgSection{
+			makeOpMsgSection(1, "documents", must.NotFail(types.NewDocument(
 				"_id", types.ObjectID{0x63, 0x8c, 0xec, 0x46, 0xaa, 0x77, 0x8b, 0xf3, 0x70, 0x10, 0x54, 0x29},
 				"a", float64(3),
-			))},
-		}, {
-			documents: []*types.Document{must.NotFail(types.NewDocument(
+			))),
+			makeOpMsgSection(0, "", must.NotFail(types.NewDocument(
 				"insert", "foo",
 				"ordered", true,
 				"$db", "test",
-			))},
-		}},
+			))),
+		},
 		checksum: 1737537506,
 	},
 	command: "insert",
@@ -374,10 +366,8 @@ var msgTestCases = []testCase{{
 	},
 	msgBody: &OpMsg{
 		FlagBits: OpMsgFlags(OpMsgChecksumPresent),
-		sections: []OpMsgSection{{
-			Kind:       1,
-			Identifier: "updates",
-			documents: []*types.Document{must.NotFail(types.NewDocument(
+		sections: []OpMsgSection{
+			makeOpMsgSection(1, "updates", must.NotFail(types.NewDocument(
 				"q", must.NotFail(types.NewDocument(
 					"a", float64(20),
 				)),
@@ -388,14 +378,13 @@ var msgTestCases = []testCase{{
 				)),
 				"multi", false,
 				"upsert", false,
-			))},
-		}, {
-			documents: []*types.Document{must.NotFail(types.NewDocument(
+			))),
+			makeOpMsgSection(0, "", must.NotFail(types.NewDocument(
 				"update", "foo",
 				"ordered", true,
 				"$db", "test",
-			))},
-		}},
+			))),
+		},
 		checksum: 2932997361,
 	},
 	command: "update",
@@ -439,20 +428,17 @@ var msgTestCases = []testCase{{
 	},
 	msgBody: &OpMsg{
 		FlagBits: OpMsgFlags(OpMsgChecksumPresent),
-		sections: []OpMsgSection{{
-			Kind:       1,
-			Identifier: "documents",
-			documents: []*types.Document{must.NotFail(types.NewDocument(
+		sections: []OpMsgSection{
+			makeOpMsgSection(1, "documents", must.NotFail(types.NewDocument(
 				"_id", types.ObjectID{0x63, 0x8c, 0xec, 0x46, 0xaa, 0x77, 0x8b, 0xf3, 0x70, 0x10, 0x54, 0x29},
 				"a", float64(3),
-			))},
-		}, {
-			documents: []*types.Document{must.NotFail(types.NewDocument(
+			))),
+			makeOpMsgSection(0, "", must.NotFail(types.NewDocument(
 				"insert", "fooo",
 				"ordered", true,
 				"$db", "test",
-			))},
-		}},
+			))),
+		},
 		checksum: 1737537506,
 	},
 	err: "OP_MSG checksum does not match contents.",
