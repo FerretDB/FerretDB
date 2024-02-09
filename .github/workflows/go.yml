@@ -18,7 +18,6 @@ on:
 env:
   GOPATH: /home/runner/go
   GOCACHE: /home/runner/go/cache
-  GOLANGCI_LINT_CACHE: /home/runner/go/cache/lint
   GOMODCACHE: /home/runner/go/mod
   GOPROXY: https://proxy.golang.org
   GOTOOLCHAIN: local
