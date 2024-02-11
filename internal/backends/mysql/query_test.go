@@ -15,6 +15,7 @@
 package mysql
 
 import (
+	"fmt"
 	"math"
 	"testing"
 	"time"
@@ -22,18 +23,80 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/FerretDB/FerretDB/internal/backends/mysql/metadata"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
+
+func TestPrepareSelectClause(t *testing.T) {
+	t.Parallel()
+	schema := "schema"
+	table := "table"
+	comment := "*/ 1; DROP SCHEMA " + schema + " CASCADE -- "
+
+	for name, tc := range map[string]struct { //nolint:vet // used for test only
+		capped        bool
+		onlyRecordIDs bool
+
+		expectQuery string
+	}{
+		"CappedRecordID": {
+			capped:        true,
+			onlyRecordIDs: true,
+			expectQuery: fmt.Sprintf(
+				`SELECT %s %s FROM "%s"."%s"`,
+				"/* * / 1; DROP SCHEMA "+schema+" CASCADE --  */",
+				metadata.RecordIDColumn,
+				schema,
+				table,
+			),
+		},
+		"Capped": {
+			capped: true,
+			expectQuery: fmt.Sprintf(
+				`SELECT %s %s, %s FROM "%s"."%s"`,
+				"/* * / 1; DROP SCHEMA "+schema+" CASCADE --  */",
+				metadata.RecordIDColumn,
+				metadata.DefaultColumn,
+				schema,
+				table,
+			),
+		},
+		"FullRecord": {
+			expectQuery: fmt.Sprintf(
+				`SELECT %s %s FROM "%s"."%s"`,
+				"/* * / 1; DROP SCHEMA "+schema+" CASCADE --  */",
+				metadata.DefaultColumn,
+				schema,
+				table,
+			),
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			query := prepareSelectClause(&selectParams{
+				Schema:        schema,
+				Table:         table,
+				Comment:       comment,
+				Capped:        tc.capped,
+				OnlyRecordIDs: tc.onlyRecordIDs,
+			})
+
+			assert.Equal(t, tc.expectQuery, query)
+		})
+	}
+}
 
 func TestPrepareWhereClause(t *testing.T) {
 	t.Parallel()
 	objectID := types.ObjectID{0x62, 0x56, 0xc5, 0xba, 0x0b, 0xad, 0xc0, 0xff, 0xee, 0xff, 0xff, 0xff}
 
 	// WHERE clauses occurring frequently in tests
-	whereContain := " WHERE JSON_CONTAINS(_ferretdb_sjson->?, ?)"
-	whereGt := " WHERE _ferretdb_sjson->? > ?"
-	whereNotEq := ` WHERE NOT ( _jsonb ? $1 AND _jsonb->$1 @> $2 AND _jsonb->'$s'->'p'->$1->'t' = `
+	whereContain := " WHERE JSON_CONTAINS(_ferretdb_sjson->$.?, ?, '$')"
+	whereGt := " WHERE _ferretdb_sjson->$.? > ?"
+	whereNotEq := ` WHERE NOT ( JSON_CONTAINS(_ferretdb_sjson->$.?, ?, '$') AND _ferretdb_sjson->'$.$s.p.?.t' = `
 
 	for name, tc := range map[string]struct {
 		filter   *types.Document
