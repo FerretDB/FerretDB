@@ -366,7 +366,7 @@ func TestPrepareOrderByClause(t *testing.T) {
 				t.Skip(tc.skip)
 			}
 
-			orderBy, args := prepareOrderByClause(new(metadata.Placeholder), tc.sort)
+			orderBy, args := prepareOrderByClause(tc.sort)
 
 			assert.Equal(t, tc.orderBy, orderBy)
 			assert.Equal(t, tc.args, args)
