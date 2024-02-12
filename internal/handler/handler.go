@@ -192,6 +192,7 @@ func (h *Handler) cleanupAllCappedCollections(ctx context.Context) error {
 	}()
 
 	connInfo := conninfo.New()
+	connInfo.BypassBackendAuth()
 	ctx = conninfo.Ctx(ctx, connInfo)
 
 	dbList, err := h.b.ListDatabases(ctx, nil)

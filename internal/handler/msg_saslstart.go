@@ -150,6 +150,7 @@ func saslStartPlain(doc *types.Document) (string, string, error) {
 	return string(authcid), string(passwd), nil
 }
 
+// credentialLookup looks up an user's credentials in the database.
 func (h *Handler) credentialLookup(ctx context.Context, username, dbName string) (scram.StoredCredentials, error) {
 	adminDB, err := h.b.Database("admin")
 	if err != nil {
