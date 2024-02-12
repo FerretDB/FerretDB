@@ -95,6 +95,8 @@ func TestPrepareWhereClause(t *testing.T) {
 
 	// WHERE clauses occurring frequently in tests
 	whereContain := " WHERE _jsonb->$1 @> $2"
+	whereContainDotNotation := " WHERE _jsonb#>$1 @> $2"
+
 	whereGt := " WHERE _jsonb->$1 > $2"
 	whereNotEq := ` WHERE NOT ( _jsonb ? $1 AND _jsonb->$1 @> $2 AND _jsonb->'$s'->'p'->$1->'t' = `
 
@@ -117,14 +119,17 @@ func TestPrepareWhereClause(t *testing.T) {
 			expected: whereContain,
 		},
 		"IDDotNotation": {
-			filter: must.NotFail(types.NewDocument("_id.doc", "foo")),
+			filter:   must.NotFail(types.NewDocument("_id.doc", "foo")),
+			expected: whereContainDotNotation,
 		},
 
 		"DotNotation": {
-			filter: must.NotFail(types.NewDocument("v.doc", "foo")),
+			filter:   must.NotFail(types.NewDocument("v.doc", "foo")),
+			expected: whereContainDotNotation,
 		},
 		"DotNotationArrayIndex": {
-			filter: must.NotFail(types.NewDocument("v.arr.0", "foo")),
+			filter:   must.NotFail(types.NewDocument("v.arr.0", "foo")),
+			expected: whereContainDotNotation,
 		},
 
 		"ImplicitString": {

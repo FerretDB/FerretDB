@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"strings"
 	"time"
 
 	"go.uber.org/zap"
@@ -279,6 +280,18 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 		if !h.DisablePushdown {
 			qp.Filter = filter
+		}
+
+		if !h.EnableNestedPushdown && filter != nil {
+			qp.Filter = filter.DeepCopy()
+
+			for _, k := range qp.Filter.Keys() {
+				if !strings.ContainsRune(k, '.') {
+					continue
+				}
+
+				qp.Filter.Remove(k)
+			}
 		}
 
 		if sort, err = common.ValidateSortDocument(sort); err != nil {

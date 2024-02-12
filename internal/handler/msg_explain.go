@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/backends"
@@ -88,6 +89,18 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 	if !h.DisablePushdown {
 		qp.Filter = params.Filter
+	}
+
+	if !h.EnableNestedPushdown && params.Filter != nil {
+		qp.Filter = params.Filter.DeepCopy()
+
+		for _, k := range qp.Filter.Keys() {
+			if !strings.ContainsRune(k, '.') {
+				continue
+			}
+
+			qp.Filter.Remove(k)
+		}
 	}
 
 	if params.Sort, err = common.ValidateSortDocument(params.Sort); err != nil {
