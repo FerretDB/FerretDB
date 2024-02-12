@@ -224,5 +224,3 @@ Tembo also provides you with a host of resources and extensions without any comp
 So if you want to migrate from MongoDB and you are looking to run MongoDB workloads on a managed Postgres service, you can get started with FerretDB on Tembo today.
 
 If you have any questions or comments about FerretDB, [contact us here](https://docs.ferretdb.io/#community).
-
-To learn more about Nova, [see Nova Documentation and try it for free](https://docs.elotl.co/nova/intro/).
