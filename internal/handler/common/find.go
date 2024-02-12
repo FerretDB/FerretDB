@@ -61,6 +61,11 @@ type FindParams struct {
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/4035
 	NoCursorTimeout bool `ferretdb:"noCursorTimeout,unimplemented-non-default"`
+
+	// StableAPI ignored parameters
+	ApiVersion           string `ferretdb:"apiVersion,ignored"`
+	ApiStrict            bool   `ferretdb:"apiStrict,ignored"`
+	ApiDeprecationErrors bool   `ferretdb:"apiDeprecationErrors,ignored"`
 }
 
 // GetFindParams returns `find` command parameters.

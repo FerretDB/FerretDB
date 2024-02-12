@@ -38,6 +38,11 @@ type DeleteParams struct {
 	LSID           any             `ferretdb:"lsid,ignored"`
 	ClusterTime    any             `ferretdb:"$clusterTime,ignored"`
 	ReadPreference *types.Document `ferretdb:"$readPreference,ignored"`
+
+	// StableAPI ignored parameters
+	ApiVersion           string `ferretdb:"apiVersion,ignored"`
+	ApiStrict            bool   `ferretdb:"apiStrict,ignored"`
+	ApiDeprecationErrors bool   `ferretdb:"apiDeprecationErrors,ignored"`
 }
 
 // Delete represents single delete operation parameters.
