@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -28,12 +29,13 @@ import (
 
 // CmdQuery implements deprecated OP_QUERY message handling.
 func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpReply, error) {
-	cmd := query.Query().Command()
+	body := query.Query()
+	cmd := body.Command()
 	collection := query.FullCollectionName
 
 	// both are valid and are allowed to be run against any database as we don't support authorization yet
 	if (cmd == "ismaster" || cmd == "isMaster") && strings.HasSuffix(collection, ".$cmd") {
-		return common.IsMaster(ctx, query.Query(), h.TCPHost, h.ReplSetName)
+		return common.IsMaster(ctx, body, h.TCPHost, h.ReplSetName)
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/3008
@@ -41,6 +43,16 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 	// database name typically is either "$external" or "admin"
 
 	if cmd == "saslStart" && strings.HasSuffix(collection, ".$cmd") {
+		mechanism, err := common.GetRequiredParam[string](body, "mechanism")
+		if err == nil && mechanism == "PLAIN" {
+			username, password, err := saslStartPlain(body)
+			if err != nil {
+				return nil, err
+			}
+
+			conninfo.Get(ctx).SetAuth(username, password)
+		}
+
 		var emptyPayload types.Binary
 		reply := wire.OpReply{
 			NumberReturned: 1,
