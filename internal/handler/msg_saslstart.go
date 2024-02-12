@@ -235,6 +235,7 @@ func (h *Handler) credentialLookup(ctx context.Context, username, dbName string)
 	return scram.StoredCredentials{}, errors.New("user not found")
 }
 
+// saslStartSCRAMSHA256 extracts the initial challenge and respond the client.
 func (h *Handler) saslStartSCRAMSHA256(ctx context.Context, doc *types.Document) (string, error) {
 	var payload []byte
 
