@@ -104,7 +104,7 @@ COPY --from=production-build /src/bin/ferretdb /ferretdb
 COPY --from=production-build /src/build/docker/passwd /etc/passwd
 COPY --from=production-build /src/build/docker/group /etc/group
 
-USER ferretdb
+USER ferretdb:ferretdb
 ENTRYPOINT [ "/ferretdb" ]
 
 WORKDIR /
