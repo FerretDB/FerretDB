@@ -13,7 +13,7 @@ tags:
   [tutorial, postgresql tools, open source, community, compatible applications]
 ---
 
-![Start using with Neon](/img/blog/ferretdb-elotl-nova.jpg)
+![A Guide to Disaster Recovery for FerretDB with Elotl Nova on Kubernetes](/img/blog/ferretdb-elotl-nova.jpg)
 
 Running a database without a disaster recovery process can result in loss of business continuity, resulting in revenue loss and reputation loss for a modern business.
 
@@ -249,5 +249,7 @@ The above steps, process, and execution has resulted in a successful setup of Fe
 This configuration ensures seamless healing in case of unexpected events, greatly improving the resilience of the FerretDB deployment.
 
 To learn more about FerretDB, see the [documentation](https://docs.ferretdb.io/understanding-ferretdb/).
+
+To learn more about Nova, see [Nova Documentation and try it for free](https://docs.elotl.co/nova/intro/).
 
 _Thanks to Selvi Kadirvel, Henry Precheur, Janek Baranowski , Pawel Bojanowski, Justin Willoughby, Madhuri Yechuri from Elotl team for reviewing this blog post._
