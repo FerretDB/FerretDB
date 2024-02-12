@@ -12,6 +12,8 @@ tags: [release]
 
 We just released FerretDB v1.19.0, which includes support for creating an index on nested fields in SQLite and some important bug fixes.
 
+<!--truncate-->
+
 In recent weeks, we've been working on a new authentication which would make it possible to support `SCRAM-SHA-256` mechanism.
 This is a highly requested feature from several potential users eager to use FerretDB in their applications.
 Once this is in place we'll be able to support more MongoDB workloads and use cases.

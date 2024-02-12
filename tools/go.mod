@@ -13,9 +13,9 @@ require (
 	golang.org/x/crypto v0.18.0 // indirect; always use @latest
 	golang.org/x/oauth2 v0.16.0
 	golang.org/x/perf v0.0.0-20240108191414-4ad5199aa6b5
-	golang.org/x/pkgsite v0.0.0-20240131192110-f26e1ab5cf5b
+	golang.org/x/pkgsite v0.0.0-20240207182209-c85e0a86aff5
 	golang.org/x/tools v0.17.0
-	golang.org/x/vuln v1.0.3
+	golang.org/x/vuln v1.0.4
 	mvdan.cc/gofumpt v0.6.0
 )
 
