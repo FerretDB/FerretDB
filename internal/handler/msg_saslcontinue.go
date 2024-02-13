@@ -52,12 +52,16 @@ func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.O
 		)
 	}
 
+	binResponse := types.Binary{
+		B: []byte(resp),
+	}
+
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
 		must.NotFail(types.NewDocument(
 			"conversationId", int32(1),
 			"done", true,
-			"payload", resp,
+			"payload", binResponse,
 			"ok", float64(1),
 		)),
 	)))

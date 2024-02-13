@@ -85,12 +85,16 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 		conninfo.Get(ctx).BypassBackendAuth()
 
+		binResponse := types.Binary{
+			B: []byte(response),
+		}
+
 		must.NoError(reply.SetSections(wire.MakeOpMsgSection(
 			must.NotFail(types.NewDocument(
 				"ok", float64(1),
 				"conversationId", int32(1),
 				"done", false,
-				"payload", response,
+				"payload", binResponse,
 			)),
 		)))
 
