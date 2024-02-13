@@ -154,8 +154,8 @@ func saslStartPlain(doc *types.Document) (string, string, error) {
 	return string(authcid), string(passwd), nil
 }
 
-// credentialLookup looks up an user's credentials in the database.
-func (h *Handler) credentialLookup(ctx context.Context, username, dbName string) (scram.StoredCredentials, error) {
+// scramCredentialLookup looks up an user's credentials in the database.
+func (h *Handler) scramCredentialLookup(ctx context.Context, username, dbName string) (scram.StoredCredentials, error) {
 	adminDB, err := h.b.Database("admin")
 	if err != nil {
 		return scram.StoredCredentials{}, lazyerrors.Error(err)
@@ -201,14 +201,6 @@ func (h *Handler) credentialLookup(ctx context.Context, username, dbName string)
 		}
 
 		if matches {
-			if !v.Has("credentials") {
-				return scram.StoredCredentials{}, handlererrors.NewCommandErrorMsgWithArgument(
-					handlererrors.ErrMechanismUnavailable,
-					"User has no authentication credentials registered",
-					"credentials",
-				)
-			}
-
 			credentials := must.NotFail(v.Get("credentials")).(*types.Document)
 
 			if !credentials.Has("SCRAM-SHA-256") {
@@ -257,7 +249,7 @@ func (h *Handler) saslStartSCRAMSHA256(ctx context.Context, doc *types.Document)
 	}
 
 	scramServer, err := scram.SHA256.NewServer(func(username string) (scram.StoredCredentials, error) {
-		return h.credentialLookup(ctx, username, dbName)
+		return h.scramCredentialLookup(ctx, username, dbName)
 	})
 	if err != nil {
 		return "", err
