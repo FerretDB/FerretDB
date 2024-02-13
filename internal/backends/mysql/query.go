@@ -135,7 +135,6 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 		switch {
 		case err == nil:
 			// Handle dot notation
-			// TODO https://github.com/FerretDB/FerretDB/issues/2069
 			if path.Len() > 1 {
 				continue
 			}
