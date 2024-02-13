@@ -18,8 +18,10 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/x/mongo/driver/topology"
@@ -160,8 +162,6 @@ func TestAuthentication(t *testing.T) {
 				require.NoErrorf(t, err, "cannot update user")
 			}
 
-			serverAPI := options.ServerAPI(options.ServerAPIVersion1)
-
 			password := tc.password
 			if tc.updatePassword != "" {
 				password = tc.updatePassword
@@ -179,7 +179,7 @@ func TestAuthentication(t *testing.T) {
 				Password:      password,
 			}
 
-			opts := options.Client().ApplyURI(s.MongoDBURI).SetServerAPIOptions(serverAPI).SetAuth(credential)
+			opts := options.Client().ApplyURI(s.MongoDBURI).SetAuth(credential)
 
 			client, err := mongo.Connect(ctx, opts)
 			require.NoError(t, err, "cannot connect to MongoDB")
@@ -203,18 +203,15 @@ func TestAuthentication(t *testing.T) {
 
 			require.NotNil(t, connCollection, "cannot get collection")
 
-			// TODO https://github.com/FerretDB/FerretDB/issues/3121
-			// Uncomment the following lines:
-			//
-			// r, err := connCollection.InsertOne(ctx, bson.D{{"ping", "pong"}})
-			// require.NoError(t, err, "cannot insert document")
-			// id := r.InsertedID.(primitive.ObjectID)
-			// require.NotEmpty(t, id)
-			//
-			// var result bson.D
-			// err = connCollection.FindOne(ctx, bson.D{{"_id", id}}).Decode(&result)
-			// require.NoError(t, err, "cannot find document")
-			// assert.Equal(t, bson.D{{"_id", id}, {"ping", "pong"}}, result)
+			r, err := connCollection.InsertOne(ctx, bson.D{{"ping", "pong"}})
+			require.NoError(t, err, "cannot insert document")
+			id := r.InsertedID.(primitive.ObjectID)
+			require.NotEmpty(t, id)
+
+			var result bson.D
+			err = connCollection.FindOne(ctx, bson.D{{"_id", id}}).Decode(&result)
+			require.NoError(t, err, "cannot find document")
+			assert.Equal(t, bson.D{{"_id", id}, {"ping", "pong"}}, result)
 
 			require.NoError(t, client.Disconnect(context.Background()))
 		})
