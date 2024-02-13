@@ -88,7 +88,7 @@ mongosh "<mongodb-connection-string>"
 
 We will run some practical examples to showcase FerretDB on Tembo and how you can use it.
 
-#### Example 1: Viewing a Single Supply Purchase Record
+#### Example 1: Viewing a single supply purchase record
 
 To understand the structure and type of data in the supply collection, let's check out a single "supply" purchase record.
 This example illustrates the kind of information captured in each transaction.
@@ -117,7 +117,7 @@ Result:
 Awesome!
 The record shows a purchase made by Jorge Lopez, who bought 2 pairs of Adidas Running Shoes for $75.
 
-#### Example 2: Finding Data for a Specific Period
+#### Example 2: Finding data for a specific period
 
 To analyze our supply data over specific periods, we can query the collection record within the desired date ranges.
 This could be useful in understanding the impact of a particular promotional campaign.
@@ -188,7 +188,7 @@ Result:
 
 This query filters the records to only include transactions that occurred between the 1st and 3rd of July 2023.
 
-#### Example 3: Identifying the most bought Item
+#### Example 3: Identifying the most bought item
 
 Say you want insight into the most in-demand item.
 We can aggregate the data to sum the quantities sold by product name.
@@ -219,7 +219,7 @@ You can go ahead to try other operations on FerretDB.
 
 ## Get started with FerretDB on Tembo
 
-Running FerretDB on Tembo gives you access to high-performance, fully extensible managed Postgres service.
+Running FerretDB enables you to run MongoDB workloads on a high-performance, fully extensible managed Postgres service.
 Tembo also provides you with a host of resources and extensions without any complex builds or need to run Docker.
 
 So if you want to migrate from MongoDB and you are looking to run MongoDB workloads on a managed Postgres service, you can get started with FerretDB on Tembo today.
