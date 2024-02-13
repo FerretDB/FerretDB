@@ -34,7 +34,9 @@ This can be an advantage for adopting or managing a new database.
 
 The FerretDB stack is available on Tembo as "[Mongo Alternative on Postgres](https://tembo.io/docs/tembo-stacks/mongo-alternative)".
 The stack has been optimized for document store workloads, and you can still update some of the features or extend it with any of the numerous Postgres extensions on Tembo.
-[Learn more about Tembo stacks](https://tembo.io/docs/tembo-stacks/intro-to-stacks)
+And Tembo not only hosts your managed Postgres instance but also FerretDB in a container next to your database which helps in reducing latency while accessing FerretDB.
+
+[Learn more about Tembo stacks](https://tembo.io/docs/tembo-stacks/intro-to-stacks).
 
 ## Create a FerretDB database on Tembo
 
