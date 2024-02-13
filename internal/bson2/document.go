@@ -123,6 +123,20 @@ func (doc *Document) Convert() (*types.Document, error) {
 	return res, nil
 }
 
+// Get returns a value of the field with the given name.
+//
+// It returns nil if the field is not found.
+// If document contains duplicate field names, it returns the first one.
+func (doc *Document) Get(name string) any {
+	for _, f := range doc.fields {
+		if f.name == name {
+			return f.value
+		}
+	}
+
+	return nil
+}
+
 // add adds a new field to the Document.
 func (doc *Document) add(name string, value any) error {
 	if !validBSONType(value) {

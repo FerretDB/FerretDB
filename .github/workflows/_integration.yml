@@ -43,7 +43,11 @@ jobs:
   run:
     # make it short to fit in GitHub UI; all parameters are already in the caller's name
     name: Run
-    runs-on: 4-cores
+
+    # https://www.ubicloud.com/docs/github-actions-integration/price-performance#usage-pricing
+    # https://docs.github.com/en/billing/managing-billing-for-github-actions/about-billing-for-github-actions#per-minute-rates
+    runs-on: ubicloud-standard-4
+
     timeout-minutes: 20
 
     steps:
@@ -110,7 +114,7 @@ jobs:
       # We also can't use ${{ vars.CODECOV_TOKEN }}: https://github.com/orgs/community/discussions/44322
       - name: Upload coverage information to codecov
         if: always()
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: 22159d7c-856d-4fe9-8fdb-5d9ecff35514
           files: ./integration/integration-${{ inputs.task }}.txt

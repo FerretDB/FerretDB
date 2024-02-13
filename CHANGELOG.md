@@ -2,6 +2,14 @@
 
 <!-- markdownlint-disable MD024 MD034 -->
 
+## v1.20.0 (not released yet)
+
+### What's Changed
+
+#### Docker images changes
+
+Production Docker images now use a non-root user with UID 1000 and GID 1000.
+
 ## [v1.19.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.19.0) (2024-01-29)
 
 ### New Features 🎉
