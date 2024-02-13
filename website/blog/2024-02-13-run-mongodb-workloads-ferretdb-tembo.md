@@ -10,12 +10,11 @@ tags: [tutorial, postgresql tools, open source, cloud]
 
 ![How to Run MongoDB Workloads with FerretDB on Tembo](/img/blog/ferretdb-tembo.jpg)
 
-[FerretDB](https://www.ferretdb.com/) is on a mission to bring MongoDB workloads back to open source; we are adding MongoDB compatibility to relational DBs like [Postgres](https://www.postgresql.org/) and [SQLite](https://www.sqlite.org/).
+[FerretDB](https://www.ferretdb.com/) adds MongoDB compatibility to relational DBs like [Postgres](https://www.postgresql.org/) and [SQLite](https://www.sqlite.org/).
 
 <!--truncate-->
 
 [Tembo](https://www.tembo.io/) is the Postgres developer platform for building every data service; it provides a fully extensible managed Postgres service.
-
 Through Tembo, developers can quickly spin up specialized data services using Stacks and pre-built PostgreSQL configurations and deploy them without complex builds, Docker installations, or additional data teams.
 
 In this blog post, we'll show you how to run FerretDB on Tembo for your production workloads.
