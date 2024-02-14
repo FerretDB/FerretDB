@@ -44,7 +44,7 @@ type ConnInfo struct {
 	// It is set to true for background connections (such us capped collections cleanup)
 	// and by the new authentication mechanism.
 	// See where it is used for more details.
-	bypassBackendAuth bool
+	bypassBackendAuth bool // protected by rw
 
 	rw sync.RWMutex
 }
@@ -112,8 +112,8 @@ func (connInfo *ConnInfo) SetMetadataRecv() {
 	connInfo.metadataRecv = true
 }
 
-// BypassBackendAuth marks the connection as not requiring backend authentication.
-func (connInfo *ConnInfo) BypassBackendAuth() {
+// SetBypassBackendAuth marks the connection as not requiring backend authentication.
+func (connInfo *ConnInfo) SetBypassBackendAuth() {
 	connInfo.rw.Lock()
 	defer connInfo.rw.Unlock()
 

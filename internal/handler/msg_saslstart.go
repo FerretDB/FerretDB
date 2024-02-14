@@ -83,7 +83,7 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			return nil, err
 		}
 
-		conninfo.Get(ctx).BypassBackendAuth()
+		conninfo.Get(ctx).SetBypassBackendAuth()
 
 		binResponse := types.Binary{
 			B: []byte(response),
