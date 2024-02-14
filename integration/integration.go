@@ -192,7 +192,7 @@ func AssertEqualWriteError(t testtb.TB, expected mongo.WriteError, actual error)
 func AssertMatchesError(t testtb.TB, expected, actual error) {
 	t.Helper()
 
-	switch expected := expected.(type) {
+	switch expected := expected.(type) { //nolint:errorlint // do not inspect error chain
 	case mongo.CommandError:
 		AssertMatchesCommandError(t, expected, actual)
 	case mongo.WriteException:

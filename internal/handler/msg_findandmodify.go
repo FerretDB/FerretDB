@@ -175,7 +175,9 @@ func (h *Handler) findAndModifyDocument(ctx context.Context, params *common.Find
 	}
 
 	if params.Remove {
-		_, doc, err := iter.Next()
+		var doc *types.Document
+
+		_, doc, err = iter.Next()
 		if err != nil && !errors.Is(err, iterator.ErrIteratorDone) {
 			return nil, lazyerrors.Error(err)
 		}
@@ -212,12 +214,14 @@ func (h *Handler) findAndModifyDocument(ctx context.Context, params *common.Find
 		doc := updateRes.Upserted.Doc
 		result.modified = 1
 		result.upserted = must.NotFail(doc.Get("_id"))
+
 		if params.ReturnNewDocument {
 			result.value = doc
 		}
 	} else if updateRes.Matched.Count > 0 {
 		result.modified = 1
 		result.updateExisting = true
+
 		result.value = updateRes.Matched.Doc
 		if params.ReturnNewDocument && updateRes.Modified.Doc != nil {
 			result.value = updateRes.Modified.Doc
@@ -250,12 +254,7 @@ func handleUpdateError(db, coll string, updateErr error) (*mongo.WriteError, err
 }
 
 // convertValidationErrToWriteErr converts validation error and returns *mongo.WriteError.
-func convertValidationErrToWriteErr(err error) *mongo.WriteError {
-	ve, ok := err.(*types.ValidationError)
-	if !ok {
-		panic(fmt.Sprintf("unexpected error type %T", err))
-	}
-
+func convertValidationErrToWriteErr(ve *types.ValidationError) *mongo.WriteError {
 	var code handlererrors.ErrorCode
 
 	switch ve.Code() {

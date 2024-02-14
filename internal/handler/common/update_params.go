@@ -66,18 +66,18 @@ type Update struct {
 // In case of upsert or updating a single document, it also contains pointers to the documents.
 type UpdateResult struct {
 	Matched struct {
-		Count int32
 		Doc   *types.Document
+		Count int32
 	}
 
 	Modified struct {
-		Count int32
 		Doc   *types.Document
+		Count int32
 	}
 
 	Upserted struct {
-		Count int32
 		Doc   *types.Document
+		Count int32
 	}
 }
 
@@ -110,9 +110,10 @@ func GetUpdateParams(document *types.Document, l *zap.Logger) (*UpdateParams, er
 					return nil, err
 				}
 			} else if update.Multi {
-				return nil, handlererrors.NewWriteErrorMsg(
+				return nil, newUpdateError(
 					handlererrors.ErrFailedToParse,
 					"multi update is not supported for replacement-style update",
+					"update",
 				)
 			}
 		}

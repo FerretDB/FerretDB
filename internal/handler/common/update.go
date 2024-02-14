@@ -39,7 +39,7 @@ import (
 // In case of updating multiple documents, UpdateDocument returns an error immediately after one of the
 // operation fails. The rest of the documents are not processed.
 // TODO https://github.com/FerretDB/FerretDB/issues/2612
-func UpdateDocument(ctx context.Context, c backends.Collection, cmd string, iter types.DocumentsIterator, param *Update) (*UpdateResult, error) {
+func UpdateDocument(ctx context.Context, c backends.Collection, cmd string, iter types.DocumentsIterator, param *Update) (*UpdateResult, error) { //nolint:lll // for readability
 	result := new(UpdateResult)
 
 	docs, err := iterator.ConsumeValues(iter)
@@ -122,6 +122,7 @@ func processFilterEqualityCondition(doc, filter *types.Document) error {
 			if errors.Is(err, iterator.ErrIteratorDone) {
 				return nil
 			}
+
 			return lazyerrors.Error(err)
 		}
 
@@ -146,7 +147,10 @@ func processFilterEqualityCondition(doc, filter *types.Document) error {
 			return lazyerrors.Error(err)
 		}
 
-		doc.SetByPath(path, val)
+		err = doc.SetByPath(path, val)
+		if err != nil {
+			return lazyerrors.Error(err)
+		}
 	}
 }
 
