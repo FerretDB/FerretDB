@@ -155,15 +155,15 @@ func saslStartPlain(doc *types.Document) (string, string, error) {
 }
 
 // scramCredentialLookup looks up an user's credentials in the database.
-func (h *Handler) scramCredentialLookup(ctx context.Context, username, dbName string) (scram.StoredCredentials, error) {
+func (h *Handler) scramCredentialLookup(ctx context.Context, username, dbName string) (*scram.StoredCredentials, error) {
 	adminDB, err := h.b.Database("admin")
 	if err != nil {
-		return scram.StoredCredentials{}, lazyerrors.Error(err)
+		return nil, lazyerrors.Error(err)
 	}
 
 	usersCol, err := adminDB.Collection("system.users")
 	if err != nil {
-		return scram.StoredCredentials{}, lazyerrors.Error(err)
+		return nil, lazyerrors.Error(err)
 	}
 
 	var filter *types.Document
@@ -172,14 +172,14 @@ func (h *Handler) scramCredentialLookup(ctx context.Context, username, dbName st
 		{username: username, db: dbName},
 	})
 	if err != nil {
-		return scram.StoredCredentials{}, lazyerrors.Error(err)
+		return nil, lazyerrors.Error(err)
 	}
 
 	// Filter isn't being passed to the query as we are filtering after retrieving all data
 	// from the database due to limitations of the internal/backends filters.
 	qr, err := usersCol.Query(ctx, nil)
 	if err != nil {
-		return scram.StoredCredentials{}, lazyerrors.Error(err)
+		return nil, lazyerrors.Error(err)
 	}
 
 	defer qr.Iter.Close()
@@ -192,19 +192,19 @@ func (h *Handler) scramCredentialLookup(ctx context.Context, username, dbName st
 		}
 
 		if err != nil {
-			return scram.StoredCredentials{}, lazyerrors.Error(err)
+			return nil, lazyerrors.Error(err)
 		}
 
 		matches, err := common.FilterDocument(v, filter)
 		if err != nil {
-			return scram.StoredCredentials{}, lazyerrors.Error(err)
+			return nil, lazyerrors.Error(err)
 		}
 
 		if matches {
 			credentials := must.NotFail(v.Get("credentials")).(*types.Document)
 
 			if !credentials.Has("SCRAM-SHA-256") {
-				return scram.StoredCredentials{}, handlererrors.NewCommandErrorMsgWithArgument(
+				return nil, handlererrors.NewCommandErrorMsgWithArgument(
 					handlererrors.ErrMechanismUnavailable,
 					"User has no SCRAM-SHA-256 based authentication credentials registered",
 					"SCRAM-SHA-256",
@@ -217,7 +217,7 @@ func (h *Handler) scramCredentialLookup(ctx context.Context, username, dbName st
 			storedKey := must.NotFail(base64.StdEncoding.DecodeString(must.NotFail(cred.Get("storedKey")).(string)))
 			serverKey := must.NotFail(base64.StdEncoding.DecodeString(must.NotFail(cred.Get("serverKey")).(string)))
 
-			return scram.StoredCredentials{
+			return &scram.StoredCredentials{
 				KeyFactors: scram.KeyFactors{
 					Salt:  string(salt),
 					Iters: int(must.NotFail(cred.Get("iterationCount")).(int32)),
@@ -228,13 +228,14 @@ func (h *Handler) scramCredentialLookup(ctx context.Context, username, dbName st
 		}
 	}
 
-	return scram.StoredCredentials{}, handlererrors.NewCommandErrorMsg(
+	return nil, handlererrors.NewCommandErrorMsg(
 		handlererrors.ErrAuthenticationFailed,
-		"Authentication failed.",
+		"Authentication failed",
 	)
 }
 
-// saslStartSCRAMSHA256 extracts the initial challenge and respond the client.
+// saslStartSCRAMSHA256 extracts the initial challenge and attempts to move the
+// authentication conversation forward returning a challenge response.
 func (h *Handler) saslStartSCRAMSHA256(ctx context.Context, doc *types.Document) (string, error) {
 	var payload []byte
 
@@ -252,7 +253,11 @@ func (h *Handler) saslStartSCRAMSHA256(ctx context.Context, doc *types.Document)
 	}
 
 	scramServer, err := scram.SHA256.NewServer(func(username string) (scram.StoredCredentials, error) {
-		return h.scramCredentialLookup(ctx, username, dbName)
+		cred, err := h.scramCredentialLookup(ctx, username, dbName)
+		if err != nil {
+			return scram.StoredCredentials{}, err
+		}
+		return *cred, nil
 	})
 	if err != nil {
 		return "", err

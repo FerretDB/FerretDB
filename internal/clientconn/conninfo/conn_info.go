@@ -120,8 +120,8 @@ func (connInfo *ConnInfo) SetBypassBackendAuth() {
 	connInfo.bypassBackendAuth = true
 }
 
-// GetBypassBackendAuth returns whether the connection requires backend authentication.
-func (connInfo *ConnInfo) GetBypassBackendAuth() bool {
+// BypassBackendAuth returns whether the connection requires backend authentication.
+func (connInfo *ConnInfo) BypassBackendAuth() bool {
 	connInfo.rw.RLock()
 	defer connInfo.rw.RUnlock()
 

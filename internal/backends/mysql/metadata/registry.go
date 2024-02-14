@@ -119,7 +119,7 @@ func (r *Registry) getPool(ctx context.Context) (*fsql.DB, error) {
 
 	var p *fsql.DB
 
-	if connInfo.GetBypassBackendAuth() {
+	if connInfo.BypassBackendAuth() {
 		if p = r.p.GetAny(); p == nil {
 			return nil, lazyerrors.New("no connection pool")
 		}
