@@ -21,6 +21,7 @@ import (
 	"github.com/cristalhq/bson/bsonproto"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -35,13 +36,15 @@ func (doc RawDocument) LogValue() slog.Value {
 	return slogValue(doc)
 }
 
-// Decode decodes a single BSON document that takes the whole raw slice.
+// Decode decodes a single BSON document that takes the whole byte slice.
 //
-// Only first-level fields are decoded;
+// Only top-level fields are decoded;
 // nested documents and arrays are converted to RawDocument and RawArray respectively,
 // using raw's subslices without copying.
+//
+// In debug builds, it also recursively checks that slice.
 func (raw RawDocument) Decode() (*Document, error) {
-	res, err := raw.decode(false)
+	res, err := raw.decode(decodeShallow)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -49,11 +52,11 @@ func (raw RawDocument) Decode() (*Document, error) {
 	return res, nil
 }
 
-// DecodeDeep decodes a single BSON document that takes the whole raw slice.
+// DecodeDeep decodes a single BSON document that takes the whole byte slice.
 //
 // All nested documents and arrays are decoded recursively.
 func (raw RawDocument) DecodeDeep() (*Document, error) {
-	res, err := raw.decode(true)
+	res, err := raw.decode(decodeDeep)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -61,9 +64,19 @@ func (raw RawDocument) DecodeDeep() (*Document, error) {
 	return res, nil
 }
 
-// Convert converts a single BSON document that takes the whole raw slice into [*types.Document].
+// Check recursively checks that the whole byte slice contains a single valid BSON document.
+func (raw RawDocument) Check() error {
+	_, err := raw.decode(decodeCheckOnly)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	return nil
+}
+
+// Convert converts a single BSON document that takes the whole byte slice into [*types.Document].
 func (raw RawDocument) Convert() (*types.Document, error) {
-	doc, err := raw.decode(false)
+	doc, err := raw.decode(decodeShallow)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -76,8 +89,8 @@ func (raw RawDocument) Convert() (*types.Document, error) {
 	return res, nil
 }
 
-// decode decodes a single BSON document that takes the whole raw slice.
-func (raw RawDocument) decode(deep bool) (*Document, error) {
+// decode decodes a single BSON document that takes the whole byte slice.
+func (raw RawDocument) decode(mode decodeMode) (*Document, error) {
 	bl := len(raw)
 	if bl < 5 {
 		return nil, lazyerrors.Errorf("len(b) = %d: %w", bl, ErrDecodeShortInput)
@@ -91,7 +104,10 @@ func (raw RawDocument) decode(deep bool) (*Document, error) {
 		return nil, lazyerrors.Errorf("last = %d: %w", last, ErrDecodeInvalidInput)
 	}
 
-	res := MakeDocument(1)
+	var res *Document
+	if mode != decodeCheckOnly {
+		res = MakeDocument(1)
+	}
 
 	offset := 4
 	for offset != len(raw)-1 {
@@ -137,13 +153,20 @@ func (raw RawDocument) decode(deep bool) (*Document, error) {
 				return nil, lazyerrors.Error(err)
 			}
 
-			// Document length and the last byte?
-			// TODO https://github.com/FerretDB/FerretDB/issues/3759
-			v = RawDocument(raw[offset : offset+l])
+			doc := RawDocument(raw[offset : offset+l])
 			offset += l
 
-			if deep {
-				v, err = v.(RawDocument).decode(true)
+			switch mode {
+			case decodeShallow:
+				v = doc
+
+				if debugbuild.Enabled {
+					_, err = doc.decode(decodeCheckOnly)
+				}
+			case decodeDeep:
+				v, err = doc.decode(decodeDeep)
+			case decodeCheckOnly:
+				_, err = doc.decode(decodeCheckOnly)
 			}
 
 		case tagArray:
@@ -157,13 +180,20 @@ func (raw RawDocument) decode(deep bool) (*Document, error) {
 				return nil, lazyerrors.Error(err)
 			}
 
-			// Document length and the last byte?
-			// TODO https://github.com/FerretDB/FerretDB/issues/3759
-			v = RawArray(raw[offset : offset+l])
+			raw := RawArray(raw[offset : offset+l])
 			offset += l
 
-			if deep {
-				v, err = v.(RawArray).decode(true)
+			switch mode {
+			case decodeShallow:
+				if debugbuild.Enabled {
+					_, err = raw.decode(decodeCheckOnly)
+				}
+
+				v = raw
+			case decodeDeep:
+				v, err = raw.decode(decodeDeep)
+			case decodeCheckOnly:
+				_, err = raw.decode(decodeCheckOnly)
 			}
 
 		case tagBinary:
@@ -216,7 +246,9 @@ func (raw RawDocument) decode(deep bool) (*Document, error) {
 			return nil, lazyerrors.Error(err)
 		}
 
-		must.NoError(res.add(name, v))
+		if mode != decodeCheckOnly {
+			must.NoError(res.add(name, v))
+		}
 	}
 
 	return res, nil
