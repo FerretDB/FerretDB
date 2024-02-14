@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package postgresql
+package mysql
 
 import (
 	"fmt"
@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata"
+	"github.com/FerretDB/FerretDB/internal/backends/mysql/metadata"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -94,11 +94,9 @@ func TestPrepareWhereClause(t *testing.T) {
 	objectID := types.ObjectID{0x62, 0x56, 0xc5, 0xba, 0x0b, 0xad, 0xc0, 0xff, 0xee, 0xff, 0xff, 0xff}
 
 	// WHERE clauses occurring frequently in tests
-	whereContain := " WHERE _jsonb->$1 @> $2"
-	whereContainDotNotation := " WHERE _jsonb#>$1 @> $2"
-
-	whereGt := " WHERE _jsonb->$1 > $2"
-	whereNotEq := ` WHERE NOT ( _jsonb ? $1 AND _jsonb->$1 @> $2 AND _jsonb->'$s'->'p'->$1->'t' = `
+	whereContain := " WHERE JSON_CONTAINS(_ferretdb_sjson->$.?, ?, '$')"
+	whereGt := " WHERE _ferretdb_sjson->$.? > ?"
+	whereNotEq := ` WHERE NOT ( JSON_CONTAINS(_ferretdb_sjson->$.?, ?, '$') AND _ferretdb_sjson->'$.$s.p.?.t' = `
 
 	for name, tc := range map[string]struct {
 		filter   *types.Document
@@ -119,17 +117,14 @@ func TestPrepareWhereClause(t *testing.T) {
 			expected: whereContain,
 		},
 		"IDDotNotation": {
-			filter:   must.NotFail(types.NewDocument("_id.doc", "foo")),
-			expected: whereContainDotNotation,
+			filter: must.NotFail(types.NewDocument("_id.doc", "foo")),
 		},
 
 		"DotNotation": {
-			filter:   must.NotFail(types.NewDocument("v.doc", "foo")),
-			expected: whereContainDotNotation,
+			filter: must.NotFail(types.NewDocument("v.doc", "foo")),
 		},
 		"DotNotationArrayIndex": {
-			filter:   must.NotFail(types.NewDocument("v.arr.0", "foo")),
-			expected: whereContainDotNotation,
+			filter: must.NotFail(types.NewDocument("v.arr.0", "foo")),
 		},
 
 		"ImplicitString": {
@@ -308,7 +303,7 @@ func TestPrepareWhereClause(t *testing.T) {
 				t.Skip(tc.skip)
 			}
 
-			actual, args, err := prepareWhereClause(new(metadata.Placeholder), tc.filter)
+			actual, args, err := prepareWhereClause(tc.filter)
 			require.NoError(t, err)
 
 			assert.Equal(t, tc.expected, actual)
