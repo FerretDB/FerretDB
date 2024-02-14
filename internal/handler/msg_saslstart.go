@@ -253,10 +253,9 @@ func (h *Handler) saslStartSCRAMSHA256(ctx context.Context, doc *types.Document)
 	}
 
 	scramServer, err := scram.SHA256.NewServer(func(username string) (scram.StoredCredentials, error) {
-		cred, err := h.scramCredentialLookup(ctx, username, dbName)
-
-		if err != nil {
-			return scram.StoredCredentials{}, err
+		cred, lookupErr := h.scramCredentialLookup(ctx, username, dbName)
+		if lookupErr != nil {
+			return scram.StoredCredentials{}, lookupErr
 		}
 
 		return *cred, nil
