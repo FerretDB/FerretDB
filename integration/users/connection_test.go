@@ -16,6 +16,7 @@ package users
 
 import (
 	"context"
+	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -176,6 +177,100 @@ func TestAuthentication(t *testing.T) {
 			assert.Equal(t, bson.D{{"_id", id}, {"ping", "pong"}}, result)
 
 			require.NoError(t, client.Disconnect(context.Background()))
+		})
+	}
+}
+
+func TestAuthenticationURLEnableNewAuth(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupWithOpts(t, nil)
+	ctx := s.Ctx
+	collection := s.Collection
+	db := collection.Database()
+
+	err := db.RunCommand(ctx, bson.D{
+		{"createUser", "scrum-user"},
+		{"roles", bson.A{}},
+		{"pwd", "correct"},
+		{"mechanisms", bson.A{"SCRAM-SHA-256"}},
+	}).Err()
+	require.NoErrorf(t, err, "cannot create user")
+
+	testCases := map[string]struct { //nolint:vet // for readability
+		username       string
+		password       string
+		updatePassword string // if true, the password will be updated to this one after the user is created.
+		mechanism      string
+
+		err           string
+		userNotFound  bool
+		wrongPassword bool
+
+		failsForFerretDB bool
+	}{
+		"PassAuth": {
+			username:  "scram-user",
+			password:  "correct",
+			mechanism: "SCRAM-SHA-256",
+		},
+		"FailAuth": {
+			username:         "scram-user",
+			password:         "wrong",
+			mechanism:        "SCRAM-SHA-256",
+			wrongPassword:    true,
+			failsForFerretDB: true,
+			err:              "AuthenticationFailed",
+		},
+		"NotFoundAuth": {
+			username:         "non-existent",
+			password:         "wrong",
+			mechanism:        "SCRAM-SHA-256",
+			wrongPassword:    true,
+			failsForFerretDB: true,
+			err:              "AuthenticationFailed",
+		},
+	}
+
+	for name, tc := range testCases {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			credential := options.Credential{
+				AuthMechanism: tc.mechanism,
+				AuthSource:    db.Name(),
+				Username:      tc.username,
+				Password:      tc.password,
+			}
+
+			u, err := url.Parse(s.MongoDBURI)
+			require.NoError(t, err)
+
+			urlWithoutUser := url.URL{
+				Scheme:   u.Scheme,
+				Host:     u.Host,
+				Path:     u.Path,
+				RawQuery: u.Query().Encode(),
+			}
+
+			opts := options.Client().ApplyURI(urlWithoutUser.String()).SetAuth(credential)
+
+			client, err := mongo.Connect(ctx, opts)
+			require.NoError(t, err, "cannot connect to MongoDB")
+
+			err = client.Ping(ctx, nil)
+
+			if tc.err != "" {
+				require.ErrorContains(t, err, tc.err)
+				return
+			}
+
+			require.NoError(t, err, "cannot ping MongoDB")
+
+			connCollection := client.Database(db.Name()).Collection(collection.Name())
+			_, err = connCollection.InsertOne(ctx, bson.D{{"ping", "pong"}})
+			require.NoError(t, err, "cannot insert document")
 		})
 	}
 }

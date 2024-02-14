@@ -52,6 +52,12 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
+	if !h.EnableNewAuth && mechanism != "PLAIN" {
+		msg := fmt.Sprintf("Unsupported authentication mechanism %q.\n", mechanism) +
+			"See https://docs.ferretdb.io/security/authentication/ for more details."
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrAuthenticationFailed, msg, "mechanism")
+	}
+
 	var username, password string
 
 	switch mechanism {
