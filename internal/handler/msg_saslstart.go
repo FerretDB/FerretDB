@@ -228,7 +228,10 @@ func (h *Handler) scramCredentialLookup(ctx context.Context, username, dbName st
 		}
 	}
 
-	return scram.StoredCredentials{}, errors.New("user not found")
+	return scram.StoredCredentials{}, handlererrors.NewCommandErrorMsg(
+		handlererrors.ErrAuthenticationFailed,
+		"Authentication failed.",
+	)
 }
 
 // saslStartSCRAMSHA256 extracts the initial challenge and respond the client.
