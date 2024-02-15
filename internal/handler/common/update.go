@@ -326,7 +326,7 @@ func processUpdateOperator(command string, doc, update *types.Document, upsert b
 	}
 
 	updatedId, _ := doc.Get("_id")
-	if types.Compare(docId, updatedId) != types.Equal {
+	if docId != nil && (updatedId == nil || types.Compare(docId, updatedId) != types.Equal) {
 		return false, newUpdateError(
 			handlererrors.ErrImmutableField,
 			"Performing an update on the path '_id' would modify the immutable field '_id'",
