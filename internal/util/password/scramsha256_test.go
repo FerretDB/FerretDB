@@ -252,6 +252,10 @@ func TestSCRAMSHA256(t *testing.T) {
 		require.NoError(t, err)
 
 		testutil.AssertNotEqual(t, doc1, doc2)
+
+		// salt is 30 bytes, but a value length increases ~33% when base64-encoded
+		assert.Len(t, must.NotFail(doc1.Get("salt")), 40)
+		assert.Len(t, must.NotFail(doc2.Get("salt")), 40)
 	})
 }
 

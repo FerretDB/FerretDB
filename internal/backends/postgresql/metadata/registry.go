@@ -120,7 +120,7 @@ func (r *Registry) getPool(ctx context.Context) (*pgxpool.Pool, error) {
 
 	var p *pgxpool.Pool
 
-	if connInfo.BypassBackendAuth {
+	if connInfo.BypassBackendAuth() {
 		if p = r.p.GetAny(); p == nil {
 			return nil, lazyerrors.New("no connection pool")
 		}
