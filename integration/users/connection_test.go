@@ -16,7 +16,6 @@ package users
 
 import (
 	"context"
-	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -181,7 +180,7 @@ func TestAuthentication(t *testing.T) {
 	}
 }
 
-func TestAuthenticationURLEnableNewAuth(t *testing.T) {
+func TestAuthenticationEnableNewAuth(t *testing.T) {
 	t.Parallel()
 
 	s := setup.SetupWithOpts(t, nil)
@@ -189,46 +188,60 @@ func TestAuthenticationURLEnableNewAuth(t *testing.T) {
 	collection := s.Collection
 	db := collection.Database()
 
+	var res bson.D
 	err := db.RunCommand(ctx, bson.D{
-		{"createUser", "scrum-user"},
-		{"roles", bson.A{}},
-		{"pwd", "correct"},
-		{"mechanisms", bson.A{"SCRAM-SHA-256"}},
-	}).Err()
-	require.NoErrorf(t, err, "cannot create user")
+		{"dropAllUsersFromDatabase", 1},
+	}).Decode(&res)
+	require.NoError(t, err)
+
+	//err = db.RunCommand(ctx, bson.D{
+	//	{"createUser", "plain-user"},
+	//	{"roles", bson.A{}},
+	//	{"pwd", "correct"},
+	//	{"mechanisms", bson.A{"PLAIN"}},
+	//}).Err()
+	//require.NoErrorf(t, err, "cannot create user")
 
 	testCases := map[string]struct { //nolint:vet // for readability
-		username       string
-		password       string
-		updatePassword string // if true, the password will be updated to this one after the user is created.
-		mechanism      string
+		username  string
+		password  string
+		mechanism string
 
-		err           string
-		userNotFound  bool
-		wrongPassword bool
-
-		failsForFerretDB bool
+		err string
 	}{
-		"PassAuth": {
+		"PLAIN": {
+			username:  "plain-user",
+			password:  "correct",
+			mechanism: "PLAIN",
+		},
+		"PLAINWrongPassword": {
+			username:  "scram-user",
+			password:  "wrong",
+			mechanism: "SCRAM-SHA-256",
+			err:       "AuthenticationFailed",
+		},
+		"PLAINWrongUser": {
+			username:  "non-existent",
+			password:  "wrong",
+			mechanism: "SCRAM-SHA-256",
+			err:       "AuthenticationFailed",
+		},
+		"SHA256": {
 			username:  "scram-user",
 			password:  "correct",
 			mechanism: "SCRAM-SHA-256",
 		},
-		"FailAuth": {
-			username:         "scram-user",
-			password:         "wrong",
-			mechanism:        "SCRAM-SHA-256",
-			wrongPassword:    true,
-			failsForFerretDB: true,
-			err:              "AuthenticationFailed",
+		"SHA256WrongUser": {
+			username:  "non-existent",
+			password:  "wrong",
+			mechanism: "SCRAM-SHA-256",
+			err:       "AuthenticationFailed",
 		},
-		"NotFoundAuth": {
-			username:         "non-existent",
-			password:         "wrong",
-			mechanism:        "SCRAM-SHA-256",
-			wrongPassword:    true,
-			failsForFerretDB: true,
-			err:              "AuthenticationFailed",
+		"SHA256WrongPassword": {
+			username:  "scram-user",
+			password:  "wrong",
+			mechanism: "SCRAM-SHA-256",
+			err:       "AuthenticationFailed",
 		},
 	}
 
@@ -244,17 +257,7 @@ func TestAuthenticationURLEnableNewAuth(t *testing.T) {
 				Password:      tc.password,
 			}
 
-			u, err := url.Parse(s.MongoDBURI)
-			require.NoError(t, err)
-
-			urlWithoutUser := url.URL{
-				Scheme:   u.Scheme,
-				Host:     u.Host,
-				Path:     u.Path,
-				RawQuery: u.Query().Encode(),
-			}
-
-			opts := options.Client().ApplyURI(urlWithoutUser.String()).SetAuth(credential)
+			opts := options.Client().ApplyURI(s.MongoDBURI).SetAuth(credential)
 
 			client, err := mongo.Connect(ctx, opts)
 			require.NoError(t, err, "cannot connect to MongoDB")
