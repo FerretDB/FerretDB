@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package postgresql
+package mysql
 
 import (
 	"encoding/json"
@@ -25,10 +25,10 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// unmarshalExplain unmarshalls the plan from EXPLAIN postgreSQL command.
+// unmarshalExplain unmarshalls the plan from EXPLAIN MySQL command.
 // EXPLAIN result is not sjson, so it cannot be unmarshalled by sjson.Unmarshal.
 func unmarshalExplain(b []byte) (*types.Document, error) {
-	var plans []map[string]any
+	var plans map[string]any
 	if err := json.Unmarshal(b, &plans); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -37,7 +37,7 @@ func unmarshalExplain(b []byte) (*types.Document, error) {
 		return nil, lazyerrors.Error(errors.New("no execution plan returned"))
 	}
 
-	return convertJSON(plans[0]).(*types.Document), nil
+	return convertJSON(plans).(*types.Document), nil
 }
 
 // convertJSON transforms decoded JSON map[string]any value into *types.Document.
@@ -69,6 +69,6 @@ func convertJSON(value any) any {
 		return value
 
 	default:
-		panic(fmt.Sprintf("unsupported type: %[1]T (%[1]v)", value))
+		panic(fmt.Sprintf("unsupported type: %[1]v (%[1]v)", value))
 	}
 }
