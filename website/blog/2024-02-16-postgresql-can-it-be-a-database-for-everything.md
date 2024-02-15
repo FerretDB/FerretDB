@@ -27,9 +27,10 @@ tags:
 
 [PostgreSQL](https://www.postgresql.org/) is one of the most popular databases around the world.
 A lot of companies have decided to build a business around that.
-There are many PostgreSQL experts around the world, and we can't even count the number of applications powered by this database.
 
 <!--truncate-->
+
+There are many PostgreSQL experts around the world, and we can't even count the number of applications powered by this database.
 
 Why is this possible?
 PostgreSQL is open-source, so anyone can use it and learn easily and without limitations.
