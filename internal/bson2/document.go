@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"math"
 	"time"
 
 	"github.com/cristalhq/bson/bsonproto"
@@ -139,8 +140,8 @@ func (doc *Document) Get(name string) any {
 
 // add adds a new field to the Document.
 func (doc *Document) add(name string, value any) error {
-	if !validBSONType(value) {
-		return lazyerrors.Errorf("invalid field value type: %T", value)
+	if err := validBSON(value); err != nil {
+		return lazyerrors.Errorf("%q: %w", name, err)
 	}
 
 	doc.fields = append(doc.fields, field{
@@ -272,8 +273,11 @@ func encodeField(buf *bytes.Buffer, name string, v any) error {
 //
 // It panics if v is not a scalar value.
 func encodeScalarField(buf *bytes.Buffer, name string, v any) error {
-	switch v.(type) {
+	switch v := v.(type) {
 	case float64:
+		if noNaN && math.IsNaN(v) {
+			return lazyerrors.Errorf("got NaN value")
+		}
 		buf.WriteByte(byte(tagFloat64))
 	case string:
 		buf.WriteByte(byte(tagString))
@@ -296,7 +300,7 @@ func encodeScalarField(buf *bytes.Buffer, name string, v any) error {
 	case int64:
 		buf.WriteByte(byte(tagInt64))
 	default:
-		panic(fmt.Sprintf("invalid type %T", v))
+		panic(fmt.Sprintf("invalid BSON type %T", v))
 	}
 
 	b := make([]byte, bsonproto.SizeCString(name))

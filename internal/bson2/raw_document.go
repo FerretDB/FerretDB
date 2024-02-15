@@ -17,19 +17,43 @@ package bson2
 import (
 	"encoding/binary"
 	"log/slog"
+	"math"
 
 	"github.com/cristalhq/bson/bsonproto"
 
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// RawDocument represents a BSON document a.k.a object in the binary encoded form.
+// RawDocument represents a singe BSON document a.k.a object in the binary encoded form.
 //
 // It generally references a part of a larger slice, not a copy.
 type RawDocument []byte
+
+// FindRawDocument returns the first BSON document in the byte slice.
+// It should start at the first byte.
+//
+// Returned document might not be valid. It is the caller's responsibility to check it.
+//
+// Use RawDocument(b) conversion instead of b contains exactly one document and no extra bytes.
+func FindRawDocument(b []byte) RawDocument {
+	bl := len(b)
+	if bl < 5 {
+		return nil
+	}
+
+	dl := int(binary.LittleEndian.Uint32(b))
+	if bl < dl {
+		return nil
+	}
+
+	if b[dl-1] != 0 {
+		return nil
+	}
+
+	return b[:dl]
+}
 
 // LogValue implements slog.LogValuer interface.
 func (doc RawDocument) LogValue() slog.Value {
@@ -41,8 +65,6 @@ func (doc RawDocument) LogValue() slog.Value {
 // Only top-level fields are decoded;
 // nested documents and arrays are converted to RawDocument and RawArray respectively,
 // using raw's subslices without copying.
-//
-// In debug builds, it also recursively checks that slice.
 func (raw RawDocument) Decode() (*Document, error) {
 	res, err := raw.decode(decodeShallow)
 	if err != nil {
@@ -52,7 +74,7 @@ func (raw RawDocument) Decode() (*Document, error) {
 	return res, nil
 }
 
-// DecodeDeep decodes a single BSON document that takes the whole byte slice.
+// DecodeDeep decodes a single valid BSON document that takes the whole byte slice.
 //
 // All nested documents and arrays are decoded recursively.
 func (raw RawDocument) DecodeDeep() (*Document, error) {
@@ -74,7 +96,7 @@ func (raw RawDocument) Check() error {
 	return nil
 }
 
-// Convert converts a single BSON document that takes the whole byte slice into [*types.Document].
+// Convert converts a single valid BSON document that takes the whole byte slice into [*types.Document].
 func (raw RawDocument) Convert() (*types.Document, error) {
 	doc, err := raw.decode(decodeShallow)
 	if err != nil {
@@ -133,8 +155,14 @@ func (raw RawDocument) decode(mode decodeMode) (*Document, error) {
 
 		switch t {
 		case tagFloat64:
-			v, err = bsonproto.DecodeFloat64(raw[offset:])
+			var f float64
+			f, err = bsonproto.DecodeFloat64(raw[offset:])
 			offset += bsonproto.SizeFloat64
+			v = f
+
+			if noNaN && math.IsNaN(f) {
+				return nil, lazyerrors.Errorf("got NaN value: %w", ErrDecodeInvalidInput)
+			}
 
 		case tagString:
 			var s string
@@ -159,10 +187,6 @@ func (raw RawDocument) decode(mode decodeMode) (*Document, error) {
 			switch mode {
 			case decodeShallow:
 				v = doc
-
-				if debugbuild.Enabled {
-					_, err = doc.decode(decodeCheckOnly)
-				}
 			case decodeDeep:
 				v, err = doc.decode(decodeDeep)
 			case decodeCheckOnly:
@@ -185,10 +209,6 @@ func (raw RawDocument) decode(mode decodeMode) (*Document, error) {
 
 			switch mode {
 			case decodeShallow:
-				if debugbuild.Enabled {
-					_, err = raw.decode(decodeCheckOnly)
-				}
-
 				v = raw
 			case decodeDeep:
 				v, err = raw.decode(decodeDeep)
