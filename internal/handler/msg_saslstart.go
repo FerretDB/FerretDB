@@ -77,6 +77,27 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			)),
 		)))
 
+	case "SCRAM-SHA-1":
+		response, err := h.saslStartSCRAMSHA1(ctx, document)
+		if err != nil {
+			return nil, err
+		}
+
+		conninfo.Get(ctx).BypassBackendAuth()
+
+		binResponse := types.Binary{
+			B: []byte(response),
+		}
+
+		must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+			must.NotFail(types.NewDocument(
+				"ok", float64(1),
+				"conversationId", int32(1),
+				"done", false,
+				"payload", binResponse,
+			)),
+		)))
+
 	case "SCRAM-SHA-256":
 		response, err := h.saslStartSCRAMSHA256(ctx, document)
 		if err != nil {
@@ -155,7 +176,8 @@ func saslStartPlain(doc *types.Document) (string, string, error) {
 }
 
 // scramCredentialLookup looks up an user's credentials in the database.
-func (h *Handler) scramCredentialLookup(ctx context.Context, username, dbName string) (*scram.StoredCredentials, error) {
+func (h *Handler) scramCredentialLookup(ctx context.Context, username, dbName, mechanism string) (
+	*scram.StoredCredentials, error) {
 	adminDB, err := h.b.Database("admin")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -203,15 +225,15 @@ func (h *Handler) scramCredentialLookup(ctx context.Context, username, dbName st
 		if matches {
 			credentials := must.NotFail(v.Get("credentials")).(*types.Document)
 
-			if !credentials.Has("SCRAM-SHA-256") {
+			if !credentials.Has(mechanism) {
 				return nil, handlererrors.NewCommandErrorMsgWithArgument(
 					handlererrors.ErrMechanismUnavailable,
-					"User has no SCRAM-SHA-256 based authentication credentials registered",
-					"SCRAM-SHA-256",
+					fmt.Sprintf("User has no %s based authentication credentials registered", mechanism),
+					mechanism,
 				)
 			}
 
-			cred := must.NotFail(credentials.Get("SCRAM-SHA-256")).(*types.Document)
+			cred := must.NotFail(credentials.Get(mechanism)).(*types.Document)
 
 			salt := must.NotFail(base64.StdEncoding.DecodeString(must.NotFail(cred.Get("salt")).(string)))
 			storedKey := must.NotFail(base64.StdEncoding.DecodeString(must.NotFail(cred.Get("storedKey")).(string)))
@@ -234,8 +256,6 @@ func (h *Handler) scramCredentialLookup(ctx context.Context, username, dbName st
 	)
 }
 
-// saslStartSCRAMSHA256 extracts the initial challenge and attempts to move the
-// authentication conversation forward returning a challenge response.
 func (h *Handler) saslStartSCRAMSHA256(ctx context.Context, doc *types.Document) (string, error) {
 	var payload []byte
 
@@ -253,7 +273,48 @@ func (h *Handler) saslStartSCRAMSHA256(ctx context.Context, doc *types.Document)
 	}
 
 	scramServer, err := scram.SHA256.NewServer(func(username string) (scram.StoredCredentials, error) {
-		cred, lookupErr := h.scramCredentialLookup(ctx, username, dbName)
+		cred, lookupErr := h.scramCredentialLookup(ctx, username, dbName, "SCRAM-SHA-256")
+		if lookupErr != nil {
+			return scram.StoredCredentials{}, lookupErr
+		}
+
+		return *cred, nil
+	})
+	if err != nil {
+		return "", err
+	}
+
+	conv := scramServer.NewConversation()
+
+	resp, err := conv.Step(string(payload))
+	if err != nil {
+		return "", err
+	}
+
+	conninfo.Get(ctx).SetConv(conv)
+
+	return resp, nil
+}
+
+// saslStartSCRAMSHA1 extracts the initial challenge and respond the client.
+func (h *Handler) saslStartSCRAMSHA1(ctx context.Context, doc *types.Document) (string, error) {
+	var payload []byte
+
+	// most drivers follow spec and send payload as a binary
+	binaryPayload, err := common.GetRequiredParam[types.Binary](doc, "payload")
+	if err != nil {
+		return "", err
+	}
+
+	payload = binaryPayload.B
+
+	dbName, err := common.GetRequiredParam[string](doc, "$db")
+	if err != nil {
+		return "", err
+	}
+
+	scramServer, err := scram.SHA1.NewServer(func(username string) (scram.StoredCredentials, error) {
+		cred, lookupErr := h.scramCredentialLookup(ctx, username, dbName, "SCRAM-SHA-1")
 		if lookupErr != nil {
 			return scram.StoredCredentials{}, lookupErr
 		}

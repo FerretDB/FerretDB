@@ -219,6 +219,13 @@ func makeCredentials(mechanisms *types.Array, username, pwd string) (*types.Docu
 		switch v {
 		case "PLAIN":
 			credentials.Set("PLAIN", must.NotFail(password.PlainHash(username)))
+		case "SCRAM-SHA-1":
+			hash, err := password.SCRAMSHA1Hash(username, pwd)
+			if err != nil {
+				return nil, err
+			}
+
+			credentials.Set("SCRAM-SHA-1", hash)
 		case "SCRAM-SHA-256":
 			hash, err := password.SCRAMSHA256Hash(pwd)
 			if err != nil {
