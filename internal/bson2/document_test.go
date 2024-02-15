@@ -27,6 +27,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
@@ -489,22 +490,198 @@ func TestDocument(t *testing.T) {
 				})
 
 				t.Run("bson2", func(t *testing.T) {
-					doc, err := RawDocument(tc.raw).DecodeDeep()
+					raw := RawDocument(tc.raw)
+
+					t.Run("Check", func(t *testing.T) {
+						err := raw.Check()
+
+						if tc.decodeErr != nil {
+							require.Error(t, err, "b:\n\n%s\n%#v", hex.Dump(tc.raw), tc.raw)
+							require.ErrorIs(t, err, tc.decodeErr)
+
+							return
+						}
+
+						require.NoError(t, err)
+					})
+
+					t.Run("Decode", func(t *testing.T) {
+						doc, err := raw.Decode()
+
+						if tc.decodeErr != nil {
+							if debugbuild.Enabled {
+								require.Error(t, err, "b:\n\n%s\n%#v", hex.Dump(tc.raw), tc.raw)
+								require.ErrorIs(t, err, tc.decodeErr)
+							}
+
+							return
+						}
+
+						require.NoError(t, err)
+
+						actual, err := doc.Convert()
+						require.NoError(t, err)
+						testutil.AssertEqual(t, tc.doc, actual)
+					})
+
+					t.Run("DecodeDeep", func(t *testing.T) {
+						doc, err := raw.DecodeDeep()
+
+						if tc.decodeErr != nil {
+							require.Error(t, err, "b:\n\n%s\n%#v", hex.Dump(tc.raw), tc.raw)
+							require.ErrorIs(t, err, tc.decodeErr)
+
+							return
+						}
+
+						require.NoError(t, err)
+
+						actual, err := doc.Convert()
+						require.NoError(t, err)
+						testutil.AssertEqual(t, tc.doc, actual)
+
+						ls := doc.LogValue().Resolve().String()
+						assert.NotContains(t, ls, "panicked")
+						assert.NotContains(t, ls, "called too many times")
+					})
+				})
+			})
+		})
+	}
+}
+
+func BenchmarkDocument(b *testing.B) {
+	b.Logf("debugbuild=%t", debugbuild.Enabled)
+
+	for _, tc := range documentTestCases {
+		tc := tc
+
+		b.Run(tc.name, func(b *testing.B) {
+			b.Run("Encode", func(b *testing.B) {
+				if tc.doc == nil {
+					b.Skip()
+				}
+
+				b.Run("bson", func(b *testing.B) {
+					doc, err := bson.ConvertDocument(tc.doc)
+					require.NoError(b, err)
+
+					var actual []byte
+
+					b.ResetTimer()
+
+					for i := 0; i < b.N; i++ {
+						actual, err = doc.MarshalBinary()
+					}
+
+					b.StopTimer()
+
+					require.NoError(b, err)
+					assert.NotNil(b, actual)
+				})
+
+				b.Run("bson2", func(b *testing.B) {
+					doc, err := ConvertDocument(tc.doc)
+					require.NoError(b, err)
+
+					var actual []byte
+
+					b.ResetTimer()
+
+					for i := 0; i < b.N; i++ {
+						actual, err = doc.Encode()
+					}
+
+					b.StopTimer()
+
+					require.NoError(b, err)
+					assert.NotNil(b, actual)
+				})
+			})
+
+			b.Run("Decode", func(b *testing.B) {
+				b.Run("bson/ReadFrom", func(b *testing.B) {
+					var doc bson.Document
+					var buf *bufio.Reader
+					var err error
+					br := bytes.NewReader(tc.raw)
+
+					b.ResetTimer()
+
+					for i := 0; i < b.N; i++ {
+						_, _ = br.Seek(0, io.SeekStart)
+						buf = bufio.NewReader(br)
+						err = doc.ReadFrom(buf)
+					}
+
+					b.StopTimer()
 
 					if tc.decodeErr != nil {
-						require.Error(t, err, "b:\n\n%s\n%#v", hex.Dump(tc.raw), tc.raw)
-						require.ErrorIs(t, err, tc.decodeErr)
+						require.Error(b, err)
 						return
 					}
-					require.NoError(t, err)
 
-					actual, err := doc.Convert()
-					require.NoError(t, err)
-					testutil.AssertEqual(t, tc.doc, actual)
+					require.NoError(b, err)
+				})
 
-					ls := doc.LogValue().Resolve().String()
-					assert.NotContains(t, ls, "panicked")
-					assert.NotContains(t, ls, "called too many times")
+				b.Run("bson2", func(b *testing.B) {
+					raw := RawDocument(tc.raw)
+
+					var doc *Document
+					var err error
+
+					b.Run("Check", func(b *testing.B) {
+						for i := 0; i < b.N; i++ {
+							err = raw.Check()
+						}
+
+						b.StopTimer()
+
+						if tc.decodeErr != nil {
+							require.Error(b, err)
+							return
+						}
+
+						require.NoError(b, err)
+					})
+
+					b.Run("Decode", func(b *testing.B) {
+						for i := 0; i < b.N; i++ {
+							doc, err = raw.Decode()
+						}
+
+						b.StopTimer()
+
+						if tc.decodeErr != nil {
+							if debugbuild.Enabled {
+								require.Error(b, err)
+								require.Nil(b, doc)
+							}
+
+							return
+						}
+
+						require.NoError(b, err)
+						require.NotNil(b, doc)
+					})
+
+					b.Run("DecodeDeep", func(b *testing.B) {
+						for i := 0; i < b.N; i++ {
+							doc, err = raw.DecodeDeep()
+						}
+
+						b.StopTimer()
+
+						if tc.decodeErr != nil {
+							require.Error(b, err)
+							require.Nil(b, doc)
+
+							return
+						}
+
+						require.NoError(b, err)
+						require.NotNil(b, doc)
+					})
 				})
 			})
 		})
@@ -524,18 +701,41 @@ func FuzzDocument(f *testing.F) {
 		t.Run("bson2", func(t *testing.T) {
 			t.Parallel()
 
-			doc, err := raw.DecodeDeep()
-			if err != nil {
-				t.Skip()
-			}
+			t.Run("Check", func(t *testing.T) {
+				t.Parallel()
 
-			actual, err := doc.Encode()
-			require.NoError(t, err)
-			assert.Equal(t, raw, actual, "actual:\n%s", hex.Dump(actual))
+				_ = raw.Check()
+			})
 
-			ls := doc.LogValue().Resolve().String()
-			assert.NotContains(t, ls, "panicked")
-			assert.NotContains(t, ls, "called too many times")
+			t.Run("Decode", func(t *testing.T) {
+				t.Parallel()
+
+				doc, err := raw.Decode()
+				if err != nil {
+					t.Skip()
+				}
+
+				actual, err := doc.Encode()
+				require.NoError(t, err)
+				assert.Equal(t, raw, actual, "actual:\n%s", hex.Dump(actual))
+			})
+
+			t.Run("DecodeDeep", func(t *testing.T) {
+				t.Parallel()
+
+				doc, err := raw.DecodeDeep()
+				if err != nil {
+					t.Skip()
+				}
+
+				actual, err := doc.Encode()
+				require.NoError(t, err)
+				assert.Equal(t, raw, actual, "actual:\n%s", hex.Dump(actual))
+
+				ls := doc.LogValue().Resolve().String()
+				assert.NotContains(t, ls, "panicked")
+				assert.NotContains(t, ls, "called too many times")
+			})
 		})
 
 		t.Run("cross", func(t *testing.T) {
@@ -557,6 +757,9 @@ func FuzzDocument(f *testing.F) {
 			cb := b[:len(b)-bufr.Buffered()-br.Len()]
 
 			// decode
+
+			checkErr := RawDocument(cb).Check()
+			require.NoError(t, checkErr)
 
 			bdoc2, err2 := RawDocument(cb).DecodeDeep()
 			require.NoError(t, err2)
