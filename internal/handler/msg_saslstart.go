@@ -71,8 +71,11 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	if h.EnableNewAuth {
-		// even if the database does not contain the first user yet
-		// backend authentication is bypassed
+		// If new auth is enabled and the database does not contain any user,
+		// backend authentication is bypassed.
+		//
+		// If a user connects with any credentials or no credentials at all,
+		// the authentication succeeds until the first user is created.
 		conninfo.Get(ctx).BypassBackendAuth = true
 	} else {
 		conninfo.Get(ctx).SetAuth(username, password)

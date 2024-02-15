@@ -180,6 +180,68 @@ func TestAuthentication(t *testing.T) {
 	}
 }
 
+// TestAuthenticationEnableNewAuthNoUser tests that the authentication succeeds
+// with any user until the first user is created.
+func TestAuthenticationEnableNewAuthNoUser(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupWithOpts(t, nil)
+	ctx := s.Ctx
+	collection := s.Collection
+	db := collection.Database()
+
+	testCases := map[string]struct { //nolint:vet // for readability
+		username  string
+		password  string
+		mechanism string
+
+		err string
+	}{
+		"PLAIN": {
+			username:  "plain-user",
+			password:  "whatever",
+			mechanism: "PLAIN",
+		},
+		"PLAINEmpty": {
+			username:  "",
+			password:  "",
+			mechanism: "PLAIN",
+		},
+	}
+
+	for name, tc := range testCases {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			credential := options.Credential{
+				AuthMechanism: tc.mechanism,
+				AuthSource:    db.Name(),
+				Username:      tc.username,
+				Password:      tc.password,
+			}
+
+			opts := options.Client().ApplyURI(s.MongoDBURI).SetAuth(credential)
+
+			client, err := mongo.Connect(ctx, opts)
+			require.NoError(t, err, "cannot connect to MongoDB")
+
+			err = client.Ping(ctx, nil)
+
+			if tc.err != "" {
+				require.ErrorContains(t, err, tc.err)
+				return
+			}
+
+			require.NoError(t, err, "cannot ping MongoDB")
+
+			connCollection := client.Database(db.Name()).Collection(collection.Name())
+			_, err = connCollection.InsertOne(ctx, bson.D{{"ping", "pong"}})
+			require.NoError(t, err, "cannot insert document")
+		})
+	}
+}
+
 func TestAuthenticationEnableNewAuth(t *testing.T) {
 	t.Parallel()
 
@@ -188,19 +250,13 @@ func TestAuthenticationEnableNewAuth(t *testing.T) {
 	collection := s.Collection
 	db := collection.Database()
 
-	var res bson.D
 	err := db.RunCommand(ctx, bson.D{
-		{"dropAllUsersFromDatabase", 1},
-	}).Decode(&res)
-	require.NoError(t, err)
-
-	//err = db.RunCommand(ctx, bson.D{
-	//	{"createUser", "plain-user"},
-	//	{"roles", bson.A{}},
-	//	{"pwd", "correct"},
-	//	{"mechanisms", bson.A{"PLAIN"}},
-	//}).Err()
-	//require.NoErrorf(t, err, "cannot create user")
+		{"createUser", "plain-user"},
+		{"roles", bson.A{}},
+		{"pwd", "correct"},
+		{"mechanisms", bson.A{"PLAIN"}},
+	}).Err()
+	require.NoErrorf(t, err, "cannot create user")
 
 	testCases := map[string]struct { //nolint:vet // for readability
 		username  string

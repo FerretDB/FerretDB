@@ -103,12 +103,23 @@ func (h *Handler) authenticate(ctx context.Context, msg *wire.OpMsg) error {
 	}
 
 	if !hasUser {
-		// an exception where authentication is skipped until the first user is created.
+		// If a user connects with any credentials or no credentials at all,
+		// the authentication succeeds until the first user is created.
 		return nil
 	}
 
+	if storedUser == nil {
+		return handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrAuthenticationFailed,
+			"User not found",
+			"PLAIN",
+		)
+	}
+
 	credentials := must.NotFail(storedUser.Get("credentials")).(*types.Document)
-	if !credentials.Has("PLAIN") {
+
+	v, _ := credentials.Get("PLAIN")
+	if v == nil {
 		return handlererrors.NewCommandErrorMsgWithArgument(
 			handlererrors.ErrAuthenticationFailed,
 			"TODO: wrong authentication mechanism",
@@ -116,7 +127,12 @@ func (h *Handler) authenticate(ctx context.Context, msg *wire.OpMsg) error {
 		)
 	}
 
-	err = password.PlainVerify(pwd, credentials)
+	doc, ok := v.(*types.Document)
+	if !ok {
+		return lazyerrors.Errorf("field 'PLAIN' has type %T, expected Document", v)
+	}
+
+	err = password.PlainVerify(pwd, doc)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
