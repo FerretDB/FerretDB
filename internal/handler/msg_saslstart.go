@@ -177,7 +177,8 @@ func saslStartPlain(doc *types.Document) (string, string, error) {
 
 // scramCredentialLookup looks up an user's credentials in the database.
 func (h *Handler) scramCredentialLookup(ctx context.Context, username, dbName, mechanism string) (
-	*scram.StoredCredentials, error) {
+	*scram.StoredCredentials, error,
+) {
 	adminDB, err := h.b.Database("admin")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
