@@ -77,6 +77,28 @@ type (
 // Null represents BSON scalar value null.
 var Null = bsonproto.Null
 
+//go:generate ../../bin/stringer -linecomment -type decodeMode
+
+// decodeMode represents a mode for decoding BSON.
+type decodeMode int
+
+const (
+	_ decodeMode = iota
+
+	// DecodeShallow represents a mode in which only top-level fields/elements are decoded;
+	// nested documents and arrays are converted to RawDocument and RawArray respectively,
+	// using raw's subslices without copying.
+	decodeShallow
+
+	// DecodeDeep represents a mode in which nested documents and arrays are decoded recursively;
+	// RawDocuments and RawArrays are never returned.
+	decodeDeep
+
+	// DecodeCheckOnly represents a mode in which only validity checks are performed (recursively)
+	// and no decoding happens.
+	decodeCheckOnly
+)
+
 var (
 	// ErrDecodeShortInput is returned wrapped by Decode functions if the input bytes slice is too short.
 	ErrDecodeShortInput = bsonproto.ErrDecodeShortInput

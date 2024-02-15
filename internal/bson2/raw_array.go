@@ -32,13 +32,15 @@ func (arr RawArray) LogValue() slog.Value {
 	return slogValue(arr)
 }
 
-// Decode decodes a single BSON array that takes the whole raw slice.
+// Decode decodes a single BSON array that takes the whole byte slice.
 //
-// Only first-level fields are decoded;
+// Only top-level elements are decoded;
 // nested documents and arrays are converted to RawDocument and RawArray respectively,
 // using raw's subslices without copying.
+//
+// In debug builds, it also recursively checks that slice.
 func (raw RawArray) Decode() (*Array, error) {
-	res, err := raw.decode(false)
+	res, err := raw.decode(decodeShallow)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -46,11 +48,11 @@ func (raw RawArray) Decode() (*Array, error) {
 	return res, nil
 }
 
-// DecodeDeep decodes a single BSON array that takes the whole raw slice.
+// DecodeDeep decodes a single BSON array that takes the whole byte slice.
 //
 // All nested documents and arrays are decoded recursively.
 func (raw RawArray) DecodeDeep() (*Array, error) {
-	res, err := raw.decode(true)
+	res, err := raw.decode(decodeDeep)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -58,9 +60,19 @@ func (raw RawArray) DecodeDeep() (*Array, error) {
 	return res, nil
 }
 
-// Convert converts a single BSON array that takes the whole raw slice into [*types.Array].
+// Check recursively checks that the whole byte slice contains a single valid BSON document.
+func (raw RawArray) Check() error {
+	_, err := raw.decode(decodeCheckOnly)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	return nil
+}
+
+// Convert converts a single BSON array that takes the whole byte slice into [*types.Array].
 func (raw RawArray) Convert() (*types.Array, error) {
-	arr, err := raw.decode(false)
+	arr, err := raw.decode(decodeShallow)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -73,11 +85,15 @@ func (raw RawArray) Convert() (*types.Array, error) {
 	return res, nil
 }
 
-// decode decodes a single BSON array that takes the whole raw slice.
-func (raw RawArray) decode(deep bool) (*Array, error) {
-	doc, err := RawDocument(raw).decode(deep)
+// decode decodes a single BSON array that takes the whole byte slice.
+func (raw RawArray) decode(mode decodeMode) (*Array, error) {
+	doc, err := RawDocument(raw).decode(mode)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
+	}
+
+	if mode == decodeCheckOnly {
+		return nil, nil
 	}
 
 	res := &Array{
