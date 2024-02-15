@@ -41,6 +41,7 @@ package bson2
 
 import (
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/cristalhq/bson/bsonproto"
@@ -48,6 +49,11 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
+
+// If true, the usage of float64 NaN values is disallowed.
+// They mess up many things too much, starting with simple equality tests.
+// But allowing them simplifies fuzzing where we currently compare converted [*types.Document]s.
+var noNaN = true
 
 type (
 	// ScalarType represents a BSON scalar type.
@@ -107,6 +113,27 @@ var (
 	ErrDecodeInvalidInput = bsonproto.ErrDecodeInvalidInput
 )
 
+// SizeCString returns a size of the encoding of v cstring in bytes.
+func SizeCString(s string) int {
+	return bsonproto.SizeCString(s)
+}
+
+// EncodeCString encodes cstring value v into b.
+//
+// Slice must be at least len(v)+1 ([SizeCString]) bytes long; otherwise, EncodeString will panic.
+// Only b[0:len(v)+1] bytes are modified.
+func EncodeCString(b []byte, v string) {
+	bsonproto.EncodeCString(b, v)
+}
+
+// DecodeCString decodes cstring value from b.
+//
+// If there is not enough bytes, DecodeCString will return a wrapped [ErrDecodeShortInput].
+// If the input is otherwise invalid, a wrapped [ErrDecodeInvalidInput] is returned.
+func DecodeCString(b []byte) (string, error) {
+	return bsonproto.DecodeCString(b)
+}
+
 // Type represents a BSON type.
 type Type interface {
 	ScalarType | CompositeType
@@ -117,15 +144,19 @@ type CompositeType interface {
 	*Document | *Array | RawDocument | RawArray
 }
 
-// validBSONType checks if v is a valid BSON type (including raw types).
-func validBSONType(v any) bool {
-	switch v.(type) {
+// validBSON checks if v is a valid BSON value (including values of raw types).
+func validBSON(v any) error {
+	switch v := v.(type) {
 	case *Document:
 	case RawDocument:
 	case *Array:
 	case RawArray:
 
 	case float64:
+		if noNaN && math.IsNaN(v) {
+			return lazyerrors.New("invalid float64 value NaN")
+		}
+
 	case string:
 	case Binary:
 	case ObjectID:
@@ -138,10 +169,10 @@ func validBSONType(v any) bool {
 	case int64:
 
 	default:
-		return false
+		return lazyerrors.Errorf("invalid BSON type %T", v)
 	}
 
-	return true
+	return nil
 }
 
 // convertToTypes converts valid BSON value of that package to types package type.
