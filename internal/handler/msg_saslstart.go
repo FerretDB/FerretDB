@@ -18,17 +18,14 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
-	"errors"
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/util/password"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -74,6 +71,8 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	if h.EnableNewAuth {
+		// even if the database does not contain the first user yet
+		// backend authentication is bypassed
 		conninfo.Get(ctx).BypassBackendAuth = true
 	} else {
 		conninfo.Get(ctx).SetAuth(username, password)
@@ -138,98 +137,4 @@ func saslStartPlain(doc *types.Document) (string, string, error) {
 	_ = authzid
 
 	return string(authcid), string(passwd), nil
-}
-
-// authenticate validates the user's credentials in the connection with the credentials in the database.
-// If the authentication fails, it returns error.
-//
-// An exception where database collection contains no user, it succeeds authentication.
-func (h *Handler) authenticate(ctx context.Context, msg *wire.OpMsg) error {
-	if !h.EnableNewAuth {
-		return nil
-	}
-
-	adminDB, err := h.b.Database("admin")
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	usersCol, err := adminDB.Collection("system.users")
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	document, err := msg.Document()
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	var dbName string
-
-	if dbName, err = common.GetRequiredParam[string](document, "$db"); err != nil {
-		return err
-	}
-
-	username, pwd := conninfo.Get(ctx).Auth()
-
-	// NOTE: how does a user with access to all database look like?
-	filter := must.NotFail(types.NewDocument("_id", dbName+"."+username))
-
-	qr, err := usersCol.Query(ctx, nil)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	defer qr.Iter.Close()
-
-	var storedUser *types.Document
-
-	var hasUser bool
-
-	for {
-		var v *types.Document
-		_, v, err = qr.Iter.Next()
-
-		if errors.Is(err, iterator.ErrIteratorDone) {
-			break
-		}
-
-		if err != nil {
-			return lazyerrors.Error(err)
-		}
-
-		hasUser = true
-
-		var matches bool
-
-		if matches, err = common.FilterDocument(v, filter); err != nil {
-			return lazyerrors.Error(err)
-		}
-
-		if matches {
-			storedUser = v
-			break
-		}
-	}
-
-	if !hasUser {
-		// an exception where authentication is skipped until the first user is created.
-		return nil
-	}
-
-	credentials := must.NotFail(storedUser.Get("credentials")).(*types.Document)
-	if !credentials.Has("PLAIN") {
-		return handlererrors.NewCommandErrorMsgWithArgument(
-			handlererrors.ErrAuthenticationFailed,
-			"TODO: wrong authentication mechanism",
-			"PLAIN",
-		)
-	}
-
-	err = password.PlainVerify(pwd, credentials)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	return nil
 }
