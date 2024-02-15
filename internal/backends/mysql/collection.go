@@ -198,7 +198,8 @@ func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllPa
 	err = p.InTransaction(ctx, func(tx *fsql.Tx) error {
 		for _, doc := range params.Docs {
 			var b []byte
-			if b, err = sjson.Marshal(doc); err != nil {
+			b, err = sjson.Marshal(doc)
+			if err != nil {
 				return lazyerrors.Error(err)
 			}
 
@@ -208,7 +209,8 @@ func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllPa
 			arg := must.NotFail(sjson.MarshalSingleValue(id))
 
 			var stats sql.Result
-			if stats, err = tx.ExecContext(ctx, q, b, arg); err != nil {
+			stats, err = tx.ExecContext(ctx, q, b, arg)
+			if err != nil {
 				return lazyerrors.Error(err)
 			}
 
