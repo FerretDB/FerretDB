@@ -108,7 +108,7 @@ _Next, Postgres can be very performant when configured well for a specific workl
 
 _A key challenge is going to be comparing PostgreSQL to all other databases, so we can prove to our users that Postgres and its ecosystem of extensions is actually enough for most use cases. Once they see the potential of what these stacks can power, there's nothing which will stop them from picking "Postgres for everything"._
 
-**Conclusion:**
+## Conclusion
 
 As we can see, PostgreSQL is a powerful database with limitless capabilities.
 The idea of open source allows us to create new ideas around it, and the whole ecosystem provides the necessary pieces to bring the ideas to life.
@@ -120,9 +120,9 @@ The community may suggest the direction for evolving the project, which is anoth
 And who knows?
 Maybe at one point, PostgreSQL may become one database for everything.
 
-Check out FerretDB on Github (https://github.com/FerretDB/FerretDB)
+[Check out FerretDB on Github](https://github.com/FerretDB/FerretDB).
 
-Check out Tembo on GitHub ([https://github.com/tembo-io/tembo](https://github.com/tembo-io/tembo))
+[Check out Tembo on GitHub](https://github.com/tembo-io/tembo).
 
 ### About speakers
 
