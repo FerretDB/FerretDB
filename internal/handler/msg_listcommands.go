@@ -27,6 +27,10 @@ import (
 
 // MsgListCommands implements `listCommands` command.
 func (h *Handler) MsgListCommands(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	if err := h.authenticate(ctx, msg); err != nil {
+		return nil, err
+	}
+
 	cmdList := must.NotFail(types.NewDocument())
 	names := maps.Keys(h.Commands())
 	sort.Strings(names)

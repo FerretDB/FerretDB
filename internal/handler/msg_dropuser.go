@@ -29,6 +29,10 @@ import (
 
 // MsgDropUser implements `dropUser` command.
 func (h *Handler) MsgDropUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	if err := h.authenticate(ctx, msg); err != nil {
+		return nil, err
+	}
+
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)

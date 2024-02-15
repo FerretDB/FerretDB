@@ -32,6 +32,10 @@ import (
 
 // MsgHostInfo implements `hostInfo` command.
 func (h *Handler) MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	if err := h.authenticate(ctx, msg); err != nil {
+		return nil, err
+	}
+
 	now := time.Now().UTC()
 
 	hostname, err := os.Hostname()

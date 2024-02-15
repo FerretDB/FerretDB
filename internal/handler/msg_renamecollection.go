@@ -30,6 +30,10 @@ import (
 
 // MsgRenameCollection implements `renameCollection` command.
 func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	if err := h.authenticate(ctx, msg); err != nil {
+		return nil, err
+	}
+
 	var err error
 
 	document, err := msg.Document()

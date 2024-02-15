@@ -24,6 +24,10 @@ import (
 
 // MsgGetFreeMonitoringStatus implements `getFreeMonitoringStatus` command.
 func (h *Handler) MsgGetFreeMonitoringStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	if err := h.authenticate(ctx, msg); err != nil {
+		return nil, err
+	}
+
 	state := h.StateProvider.Get().TelemetryString()
 	message := "monitoring is " + state
 

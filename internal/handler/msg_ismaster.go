@@ -25,6 +25,10 @@ import (
 
 // MsgIsMaster implements `isMaster` command.
 func (h *Handler) MsgIsMaster(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	if err := h.authenticate(ctx, msg); err != nil {
+		return nil, err
+	}
+
 	doc, err := msg.Document()
 	if err != nil {
 		return nil, err
