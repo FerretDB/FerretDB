@@ -120,7 +120,7 @@ func TestAuthentication(t *testing.T) {
 			mechanisms:          []string{"SCRAM-SHA-256"},
 			connectionMechanism: "SCRAM-SHA-1",
 			topologyError:       true,
-			errorMessage:        `unable to authenticate using mechanism "SCRAM-SHA-1": (MechanismUnavailable) Unable to use SCRAM-SHA-1 based authentication for user without any SCRAM-SHA-1 credentials registered`,
+			errorMessage:        "Unable to use SCRAM-SHA-1 based authentication for user without any SCRAM-SHA-1 credentials registered",
 		},
 	}
 
