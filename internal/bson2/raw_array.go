@@ -22,7 +22,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// RawArray represents a BSON array in the binary encoded form.
+// RawArray represents a single BSON array in the binary encoded form.
 //
 // It generally references a part of a larger slice, not a copy.
 type RawArray []byte
@@ -37,8 +37,6 @@ func (arr RawArray) LogValue() slog.Value {
 // Only top-level elements are decoded;
 // nested documents and arrays are converted to RawDocument and RawArray respectively,
 // using raw's subslices without copying.
-//
-// In debug builds, it also recursively checks that slice.
 func (raw RawArray) Decode() (*Array, error) {
 	res, err := raw.decode(decodeShallow)
 	if err != nil {
@@ -48,7 +46,7 @@ func (raw RawArray) Decode() (*Array, error) {
 	return res, nil
 }
 
-// DecodeDeep decodes a single BSON array that takes the whole byte slice.
+// DecodeDeep decodes a single valid BSON array that takes the whole byte slice.
 //
 // All nested documents and arrays are decoded recursively.
 func (raw RawArray) DecodeDeep() (*Array, error) {
@@ -70,7 +68,7 @@ func (raw RawArray) Check() error {
 	return nil
 }
 
-// Convert converts a single BSON array that takes the whole byte slice into [*types.Array].
+// Convert converts a single valid BSON array that takes the whole byte slice into [*types.Array].
 func (raw RawArray) Convert() (*types.Array, error) {
 	arr, err := raw.decode(decodeShallow)
 	if err != nil {
