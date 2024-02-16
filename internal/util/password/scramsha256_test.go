@@ -48,12 +48,12 @@ var scramSHA256TestCases = map[string]scramSHA256TestCase{
 			saltLen:        28,
 		},
 		password: "pencil",
-		salt:     must.NotFail(base64.StdEncoding.DecodeString("qhzna/QaH741WENngAzoR1QhHqy9GE/fkyNEMQ==")),
+		salt:     must.NotFail(base64.StdEncoding.DecodeString("vXan6ZbWmm5i+f+mKY598rnIfoAGGp+G9NP0qQ==")),
 		want: must.NotFail(types.NewDocument(
-			"storedKey", "PwtAytvH2feCBa70lRzdg4DOZaeDVHSUrYIYt5dRVog=",
+			"storedKey", "bNxFkKtMt93v+ha80yJsDG6Xes3GOMh5qsRzwkcF85s=",
 			"iterationCount", int32(15000),
-			"salt", "qhzna/QaH741WENngAzoR1QhHqy9GE/fkyNEMQ==",
-			"serverKey", "kZY6FfqXOsAt+qEl6a/R70KoPnEZOtyfkWJzjyiFsmw=",
+			"salt", "vXan6ZbWmm5i+f+mKY598rnIfoAGGp+G9NP0qQ==",
+			"serverKey", "1m33jRKioBEVpJzDdJeG5SgKPEmhPNx3A0jS4fINVyQ=",
 		)),
 	},
 
