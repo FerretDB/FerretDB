@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration"
 	"github.com/FerretDB/FerretDB/integration/setup"
@@ -34,8 +35,10 @@ import (
 func TestCreateUser(t *testing.T) {
 	t.Parallel()
 
-	ctx, collection := setup.Setup(t)
-	db := collection.Database()
+	s := setup.SetupWithOpts(t, nil)
+	ctx := s.Ctx
+
+	db, _ := createUserTestRunnerUser(t, s)
 
 	testCases := map[string]struct { //nolint:vet // for readability
 		payload    bson.D
@@ -301,4 +304,45 @@ func assertSCRAMSHA256Credentials(t testtb.TB, key string, cred *types.Document)
 	assert.NotEmpty(t, must.NotFail(c.Get("salt")).(string))
 	assert.NotEmpty(t, must.NotFail(c.Get("serverKey")).(string))
 	assert.NotEmpty(t, must.NotFail(c.Get("storedKey")).(string))
+}
+
+// createUserTestRunnerUser creates a user with PLAIN mechanism and returns
+// the database and collection connection created by that user.
+// This gives a user to run user creation tests until local exception is implemented for FerretDB.
+// Without this, once the first user is created, the connection to FerretDB fails authentication
+// and cannot do any further operations.
+func createUserTestRunnerUser(tb *testing.T, s *setup.SetupResult) (*mongo.Database, *mongo.Collection) {
+	if setup.IsMongoDB(tb) {
+		return s.Collection.Database(), s.Collection
+	}
+
+	username, pwd, mechanism := "user-test-runner", "password", "PLAIN"
+
+	err := s.Collection.Database().RunCommand(s.Ctx, bson.D{
+		{"createUser", username},
+		{"roles", bson.A{}},
+		{"pwd", pwd},
+		{"mechanisms", bson.A{mechanism}},
+	}).Err()
+	require.NoErrorf(tb, err, "cannot create user")
+
+	// once the first user has been created use that user for any other action
+	// until local exception is implemented
+	opts := options.Client().ApplyURI(s.MongoDBURI).SetAuth(options.Credential{
+		AuthMechanism: mechanism,
+		AuthSource:    s.Collection.Name(),
+		Username:      username,
+		Password:      pwd,
+	})
+	client, err := mongo.Connect(s.Ctx, opts)
+	require.NoError(tb, err, "cannot connect to MongoDB")
+
+	db := client.Database(s.Collection.Database().Name())
+	collection := db.Collection(s.Collection.Name())
+
+	tb.Cleanup(func() {
+		require.NoError(tb, db.RunCommand(s.Ctx, bson.D{{"dropAllUsersFromDatabase", 1}}).Err())
+	})
+
+	return db, collection
 }
