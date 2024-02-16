@@ -27,10 +27,6 @@ import (
 
 // MsgHello implements `hello` command.
 func (h *Handler) MsgHello(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	if err := h.authenticate(ctx, msg); err != nil {
-		return nil, err
-	}
-
 	doc, err := msg.Document()
 	if err != nil {
 		return nil, err

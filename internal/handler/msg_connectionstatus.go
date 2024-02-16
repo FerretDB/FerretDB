@@ -25,10 +25,6 @@ import (
 
 // MsgConnectionStatus implements `connectionStatus` command.
 func (h *Handler) MsgConnectionStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	if err := h.authenticate(ctx, msg); err != nil {
-		return nil, err
-	}
-
 	users := types.MakeArray(1)
 
 	if username := conninfo.Get(ctx).Username(); username != "" {

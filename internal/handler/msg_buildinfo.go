@@ -27,10 +27,6 @@ import (
 
 // MsgBuildInfo implements `buildInfo` command.
 func (h *Handler) MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	if err := h.authenticate(ctx, msg); err != nil {
-		return nil, err
-	}
-
 	aggregationStages := types.MakeArray(len(stages.Stages))
 	for stage := range stages.Stages {
 		aggregationStages.Append(stage)
