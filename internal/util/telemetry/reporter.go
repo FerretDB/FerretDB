@@ -142,7 +142,7 @@ func (r *Reporter) firstReportDelay(ctx context.Context, ch <-chan struct{}) {
 
 	msg := fmt.Sprintf(
 		"The telemetry state is undecided; the first report will be sent in %s. "+
-			"Read more about FerretDB telemetry and how to opt out at https://beacon.ferretdb.io.",
+			"Read more about FerretDB telemetry and how to opt out at https://beacon.ferretdb.com.",
 		r.UndecidedDelay,
 	)
 	r.L.Info(msg)
