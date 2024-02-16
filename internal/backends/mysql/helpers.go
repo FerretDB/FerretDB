@@ -26,7 +26,7 @@ import (
 )
 
 // unmarshalExplain unmarshalls the plan from EXPLAIN MySQL command.
-// EXPLAIN result is not sjson, so it cannot be unmarshalled by sjson.Unmarshal.
+// EXPLAIN result is not sjson, so it cannot be unmarshaled by sjson.Unmarshal.
 func unmarshalExplain(b []byte) (*types.Document, error) {
 	var plans map[string]any
 	if err := json.Unmarshal(b, &plans); err != nil {
