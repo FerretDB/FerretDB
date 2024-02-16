@@ -221,8 +221,10 @@ func TestAuthentication(t *testing.T) {
 }
 
 // TestAuthenticationEnableNewAuthNoUser tests that the authentication succeeds
-// with any user until the first user is created.
-func TestAuthenticationEnableNewAuthNoUser(t *testing.T) {
+// with any PLAIN mechanism user until the first user is created. This is temporary
+// until local exception is implemented.
+// For SCRAM-SHA-256 mechanism users, authentication fails if the user does not exist.
+func TestAuthenticationEnableNewAuthNoUserExists(t *testing.T) {
 	t.Parallel()
 
 	s := setup.SetupWithOpts(t, nil)
@@ -246,6 +248,12 @@ func TestAuthenticationEnableNewAuthNoUser(t *testing.T) {
 			username:  "",
 			password:  "",
 			mechanism: "PLAIN",
+		},
+		"SHA256": {
+			username:  "sha256-user",
+			password:  "whatever",
+			mechanism: "SCRAM-SHA-256",
+			err:       "Authentication failed",
 		},
 	}
 
@@ -286,7 +294,7 @@ func TestAuthenticationEnableNewAuthNoUser(t *testing.T) {
 	}
 }
 
-func TestAuthenticationEnableNewAuthWithUser(t *testing.T) {
+func TestAuthenticationEnableNewAuthWithExistingUser(t *testing.T) {
 	t.Parallel()
 
 	s := setup.SetupWithOpts(t, nil)
@@ -302,9 +310,25 @@ func TestAuthenticationEnableNewAuthWithUser(t *testing.T) {
 	}).Err()
 	require.NoErrorf(t, err, "cannot create user")
 
+	t.Cleanup(func() {
+		// once the first user has been created use that user for any other action
+		// until local exception is implemented
+		opts := options.Client().ApplyURI(s.MongoDBURI).SetAuth(options.Credential{
+			AuthMechanism: "SCRAM-SHA-256",
+			AuthSource:    db.Name(),
+			Username:      "sha256-user",
+			Password:      "correct",
+		})
+
+		client, err := mongo.Connect(ctx, opts)
+		require.NoError(t, err, "cannot connect to MongoDB")
+
+		require.NoError(t, client.Database(db.Name()).RunCommand(ctx, bson.D{{"dropUser", "sha256-user"}}).Err())
+	})
+
 	if !setup.IsMongoDB(t) {
-		// one user has been created so authentication is required now,
-		// use that created user to authenticate
+		// once the first user has been created use that user for any other action
+		// until local exception is implemented
 		opts := options.Client().ApplyURI(s.MongoDBURI).SetAuth(options.Credential{
 			AuthMechanism: "SCRAM-SHA-256",
 			AuthSource:    db.Name(),
@@ -321,6 +345,10 @@ func TestAuthenticationEnableNewAuthWithUser(t *testing.T) {
 			{"mechanisms", bson.A{"PLAIN"}},
 		}).Err()
 		require.NoErrorf(t, err, "cannot create user")
+
+		t.Cleanup(func() {
+			require.NoError(t, client.Database(db.Name()).RunCommand(ctx, bson.D{{"dropUser", "plain-user"}}).Err())
+		})
 	}
 
 	testCases := map[string]struct { //nolint:vet // for readability
