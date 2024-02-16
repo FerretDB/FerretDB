@@ -252,6 +252,10 @@ func TestAuthenticationEnableNewAuthNoUser(t *testing.T) {
 	for name, tc := range testCases {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			if tc.mechanism == "PLAIN" {
+				setup.SkipForMongoDB(t, "PLAIN mechanism is not supported by MongoDB")
+			}
+
 			t.Parallel()
 
 			credential := options.Credential{
@@ -282,7 +286,7 @@ func TestAuthenticationEnableNewAuthNoUser(t *testing.T) {
 	}
 }
 
-func TestAuthenticationEnableNewAuth(t *testing.T) {
+func TestAuthenticationEnableNewAuthWithUser(t *testing.T) {
 	t.Parallel()
 
 	s := setup.SetupWithOpts(t, nil)
@@ -291,12 +295,33 @@ func TestAuthenticationEnableNewAuth(t *testing.T) {
 	db := collection.Database()
 
 	err := db.RunCommand(ctx, bson.D{
-		{"createUser", "plain-user"},
+		{"createUser", "sha256-user"},
 		{"roles", bson.A{}},
 		{"pwd", "correct"},
-		{"mechanisms", bson.A{"PLAIN"}},
+		{"mechanisms", bson.A{"SCRAM-SHA-256"}},
 	}).Err()
 	require.NoErrorf(t, err, "cannot create user")
+
+	if !setup.IsMongoDB(t) {
+		// one user has been created so authentication is required now,
+		// use that created user to authenticate
+		opts := options.Client().ApplyURI(s.MongoDBURI).SetAuth(options.Credential{
+			AuthMechanism: "SCRAM-SHA-256",
+			AuthSource:    db.Name(),
+			Username:      "sha256-user",
+			Password:      "correct",
+		})
+
+		client, err := mongo.Connect(ctx, opts)
+		require.NoError(t, err, "cannot connect to MongoDB")
+		err = client.Database(db.Name()).RunCommand(ctx, bson.D{
+			{"createUser", "plain-user"},
+			{"roles", bson.A{}},
+			{"pwd", "correct"},
+			{"mechanisms", bson.A{"PLAIN"}},
+		}).Err()
+		require.NoErrorf(t, err, "cannot create user")
+	}
 
 	testCases := map[string]struct { //nolint:vet // for readability
 		username  string
@@ -323,7 +348,7 @@ func TestAuthenticationEnableNewAuth(t *testing.T) {
 			err:       "AuthenticationFailed",
 		},
 		"SHA256": {
-			username:  "scram-user",
+			username:  "sha256-user",
 			password:  "correct",
 			mechanism: "SCRAM-SHA-256",
 		},
@@ -334,7 +359,7 @@ func TestAuthenticationEnableNewAuth(t *testing.T) {
 			err:       "AuthenticationFailed",
 		},
 		"SHA256WrongPassword": {
-			username:  "scram-user",
+			username:  "sha256-user",
 			password:  "wrong",
 			mechanism: "SCRAM-SHA-256",
 			err:       "AuthenticationFailed",
@@ -344,6 +369,10 @@ func TestAuthenticationEnableNewAuth(t *testing.T) {
 	for name, tc := range testCases {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			if tc.mechanism == "PLAIN" {
+				setup.SkipForMongoDB(t, "PLAIN mechanism is not supported by MongoDB")
+			}
+
 			t.Parallel()
 
 			credential := options.Credential{
