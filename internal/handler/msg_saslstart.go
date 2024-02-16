@@ -281,12 +281,12 @@ func (h *Handler) saslStartSCRAM(ctx context.Context, mechanism string, doc *typ
 
 	conv := scramServer.NewConversation()
 
-	resp, err := conv.Step(string(payload))
+	response, err := conv.Step(string(payload))
 	if err != nil {
 		return "", err
 	}
 
 	conninfo.Get(ctx).SetConv(conv)
 
-	return resp, nil
+	return response, nil
 }
