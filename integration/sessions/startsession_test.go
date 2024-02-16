@@ -4,15 +4,15 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/FerretDB/FerretDB/internal/types"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration"
 	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -29,7 +29,6 @@ func TestStartSessionCommand(tt *testing.T) {
 	require.NoError(t, err)
 
 	doc := integration.ConvertDocument(t, res)
-
 	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
 	idDoc := must.NotFail(doc.Get("id")).(*types.Document)
 	id := must.NotFail(idDoc.Get("id")).(types.Binary)
@@ -53,6 +52,13 @@ func TestStartSessionCommand(tt *testing.T) {
 		}
 	}
 	assert.True(t, found, "Started session not found in $listLocalSessions results")
+
+	idForFilter := primitive.Binary{Subtype: byte(id.Subtype), Data: id.B}
+	err = collection.Database().RunCommand(ctx, bson.D{{"refreshSessions", bson.A{bson.D{{"id", idForFilter}}}}}).Decode(&res)
+	require.NoError(t, err)
+
+	doc = integration.ConvertDocument(t, res)
+	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
 
 	// TODO: would be nice to check an entry from system.sessions collection, but it's not created immediately
 	// TODO: same about $listSessions (it uses system.sessions collection from the config db)
