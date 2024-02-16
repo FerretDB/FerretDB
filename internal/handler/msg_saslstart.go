@@ -208,9 +208,11 @@ func (h *Handler) scramCredentialLookup(ctx context.Context, username, dbName, m
 			if !credentials.Has(mechanism) {
 				return nil, handlererrors.NewCommandErrorMsgWithArgument(
 					handlererrors.ErrMechanismUnavailable,
-					fmt.Sprintf("Unable to use %s based authentication for user without any %s credentials registered",
+					fmt.Sprintf(
+						"Unable to use %s based authentication for user without any %s credentials registered",
 						mechanism,
-						mechanism),
+						mechanism,
+					),
 					mechanism,
 				)
 			}
