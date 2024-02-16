@@ -41,50 +41,62 @@ func TestAuthentication(t *testing.T) {
 	testCases := map[string]struct { //nolint:vet // for readability
 		username       string
 		password       string
-		updatePassword string // if true, the password will be updated to this one after the user is created.
-		mechanism      string
+		updatePassword string   // if true, the password will be updated to this one after the user is created.
+		mechanisms     []string // mechanisms to use for creating user authentication
 
-		userNotFound  bool
-		wrongPassword bool
+		connectionMechanism string // if set, try to establish connection with this mechanism
 
+		userNotFound     bool
+		wrongPassword    bool
+		topologyError    bool
+		errorMessage     string
 		failsForFerretDB bool
 	}{
 		"Success": {
-			username:         "common",
-			password:         "password",
-			failsForFerretDB: true,
-		},
-		"Updated": {
-			username:         "updated",
-			password:         "pass123",
-			updatePassword:   "somethingelse",
-			failsForFerretDB: true,
+			username:            "username", // when using the PLAIN mechanism we must use user "username"
+			password:            "password",
+			mechanisms:          []string{"PLAIN"},
+			connectionMechanism: "PLAIN",
 		},
 		"ScramSHA256": {
-			username:         "scramsha256",
-			password:         "password",
-			mechanism:        "SCRAM-SHA-256",
-			failsForFerretDB: true,
+			username:            "scramsha256",
+			password:            "password",
+			mechanisms:          []string{"SCRAM-SHA-256"},
+			connectionMechanism: "SCRAM-SHA-256",
 		},
 		"ScramSHA256Updated": {
-			username:         "scramsha256updated",
-			password:         "pass123",
-			updatePassword:   "anotherpassword",
-			mechanism:        "SCRAM-SHA-256",
-			failsForFerretDB: true,
+			username:            "scramsha256updated",
+			password:            "pass123",
+			updatePassword:      "anotherpassword",
+			mechanisms:          []string{"SCRAM-SHA-256"},
+			connectionMechanism: "SCRAM-SHA-256",
 		},
 		"NotFoundUser": {
-			username:     "notfound",
-			password:     "something",
-			mechanism:    "SCRAM-SHA-256",
-			userNotFound: true,
+			username:            "notfound",
+			password:            "something",
+			mechanisms:          []string{"SCRAM-SHA-256"},
+			connectionMechanism: "SCRAM-SHA-256",
+			userNotFound:        true,
+			errorMessage:        "Authentication failed",
+			topologyError:       true,
 		},
 		"BadPassword": {
-			username:         "baduser",
-			password:         "something",
-			mechanism:        "SCRAM-SHA-256",
-			wrongPassword:    true,
-			failsForFerretDB: true,
+			username:            "baduser",
+			password:            "something",
+			mechanisms:          []string{"SCRAM-SHA-256"},
+			connectionMechanism: "SCRAM-SHA-256",
+			wrongPassword:       true,
+			topologyError:       true,
+			errorMessage:        "Authentication failed",
+		},
+		"MechanismNotSet": {
+			username:            "user_mechanism_not_set",
+			password:            "password",
+			mechanisms:          []string{"SCRAM-SHA-256"},
+			connectionMechanism: "SCRAM-SHA-1",
+			errorMessage:        "Unable to use SCRAM-SHA-1 based authentication for user without any SCRAM-SHA-1 credentials registered",
+			topologyError:       true,
+			failsForFerretDB:    true,
 		},
 	}
 
@@ -96,25 +108,46 @@ func TestAuthentication(t *testing.T) {
 			var t testtb.TB = tt
 
 			if tc.failsForFerretDB {
-				t = setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/3784")
+				t = setup.FailsForFerretDB(t, "https://github.com/FerretDB/FerretDB/issues/2012")
 			}
 
 			if !tc.userNotFound {
+				var (
+					// Use default mechanism for MongoDB and SCRAM-SHA-256 for FerretDB as SHA-1 won't be supported as it's deprecated.
+					mechanisms bson.A
+
+					hasPlain bool
+				)
+
+				if tc.mechanisms == nil {
+					if !setup.IsMongoDB(t) {
+						mechanisms = append(mechanisms, "SCRAM-SHA-256")
+					}
+				} else {
+					mechanisms = bson.A{}
+
+					for _, mechanism := range tc.mechanisms {
+						switch mechanism {
+						case "PLAIN":
+							hasPlain = true
+							fallthrough
+						case "SCRAM-SHA-256":
+							mechanisms = append(mechanisms, mechanism)
+						default:
+							t.Fatalf("unimplemented mechanism %s", mechanism)
+						}
+					}
+				}
+
+				if hasPlain {
+					setup.SkipForMongoDB(t, "PLAIN mechanism is not supported by MongoDB")
+				}
+
 				createPayload := bson.D{
 					{"createUser", tc.username},
 					{"roles", bson.A{}},
 					{"pwd", tc.password},
-				}
-
-				switch tc.mechanism {
-				case "": // Use default mechanism for MongoDB and SCRAM-SHA-256 for FerretDB as SHA-1 won't be supported as it's deprecated.
-					if !setup.IsMongoDB(t) {
-						createPayload = append(createPayload, bson.E{"mechanisms", bson.A{"SCRAM-SHA-256"}})
-					}
-				case "SCRAM-SHA-256", "PLAIN":
-					createPayload = append(createPayload, bson.E{"mechanisms", bson.A{tc.mechanism}})
-				default:
-					t.Fatalf("unimplemented mechanism %s", tc.mechanism)
+					{"mechanisms", mechanisms},
 				}
 
 				err := db.RunCommand(ctx, createPayload).Err()
@@ -131,8 +164,6 @@ func TestAuthentication(t *testing.T) {
 				require.NoErrorf(t, err, "cannot update user")
 			}
 
-			serverAPI := options.ServerAPI(options.ServerAPIVersion1)
-
 			password := tc.password
 			if tc.updatePassword != "" {
 				password = tc.updatePassword
@@ -141,14 +172,16 @@ func TestAuthentication(t *testing.T) {
 				password = "wrongpassword"
 			}
 
+			connectionMechanism := tc.connectionMechanism
+
 			credential := options.Credential{
-				AuthMechanism: tc.mechanism,
+				AuthMechanism: connectionMechanism,
 				AuthSource:    db.Name(),
 				Username:      tc.username,
 				Password:      password,
 			}
 
-			opts := options.Client().ApplyURI(s.MongoDBURI).SetServerAPIOptions(serverAPI).SetAuth(credential)
+			opts := options.Client().ApplyURI(s.MongoDBURI).SetAuth(credential)
 
 			client, err := mongo.Connect(ctx, opts)
 			require.NoError(t, err, "cannot connect to MongoDB")
@@ -156,7 +189,11 @@ func TestAuthentication(t *testing.T) {
 			// Ping to force connection to be established and tested.
 			err = client.Ping(ctx, nil)
 
-			if tc.wrongPassword || tc.userNotFound {
+			if tc.errorMessage != "" {
+				require.Contains(t, err.Error(), tc.errorMessage, "expected error message")
+			}
+
+			if tc.topologyError {
 				var ce topology.ConnectionError
 				require.ErrorAs(t, err, &ce, "expected a connection error")
 				return
@@ -165,6 +202,9 @@ func TestAuthentication(t *testing.T) {
 			require.NoError(t, err, "cannot ping MongoDB")
 
 			connCollection := client.Database(db.Name()).Collection(collection.Name())
+
+			require.NotNil(t, connCollection, "cannot get collection")
+
 			r, err := connCollection.InsertOne(ctx, bson.D{{"ping", "pong"}})
 			require.NoError(t, err, "cannot insert document")
 			id := r.InsertedID.(primitive.ObjectID)

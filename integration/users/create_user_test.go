@@ -42,8 +42,6 @@ func TestCreateUser(t *testing.T) {
 		err        *mongo.CommandError
 		altMessage string
 		expected   bson.D
-
-		failsForFerretDB bool
 	}{
 		"Empty": {
 			payload: bson.D{
@@ -70,6 +68,18 @@ func TestCreateUser(t *testing.T) {
 			},
 			altMessage: "Password cannot be empty",
 		},
+		"BadPasswordValue": {
+			payload: bson.D{
+				{"createUser", "empty_password_user"},
+				{"roles", bson.A{}},
+				{"pwd", "pass\x00word"},
+			},
+			err: &mongo.CommandError{
+				Code:    50692,
+				Name:    "Location50692",
+				Message: "Error preflighting normalization: U_STRINGPREP_PROHIBITED_ERROR",
+			},
+		},
 		"BadPasswordType": {
 			payload: bson.D{
 				{"createUser", "empty_password_user"},
@@ -92,6 +102,19 @@ func TestCreateUser(t *testing.T) {
 				Code:    51003,
 				Name:    "Location51003",
 				Message: "User \"should_already_exist@TestCreateUser\" already exists",
+			},
+		},
+		"EmptyMechanism": {
+			payload: bson.D{
+				{"createUser", "empty_mechanism_user"},
+				{"roles", bson.A{}},
+				{"pwd", "password"},
+				{"mechanisms", bson.A{}},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "mechanisms field must not be empty",
 			},
 		},
 		"BadAuthMechanism": {
@@ -150,7 +173,6 @@ func TestCreateUser(t *testing.T) {
 			expected: bson.D{
 				{"ok", float64(1)},
 			},
-			failsForFerretDB: true,
 		},
 		"WithComment": {
 			payload: bson.D{
@@ -187,14 +209,8 @@ func TestCreateUser(t *testing.T) {
 
 	for name, tc := range testCases {
 		name, tc := name, tc
-		t.Run(name, func(tt *testing.T) {
-			tt.Parallel()
-
-			var t testtb.TB = tt
-
-			if tc.failsForFerretDB {
-				t = setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/3784")
-			}
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 
 			payload := integration.ConvertDocument(t, tc.payload)
 			if payload.Has("mechanisms") {

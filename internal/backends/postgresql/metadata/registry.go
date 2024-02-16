@@ -120,7 +120,7 @@ func (r *Registry) getPool(ctx context.Context) (*pgxpool.Pool, error) {
 
 	var p *pgxpool.Pool
 
-	if connInfo.BypassBackendAuth {
+	if connInfo.BypassBackendAuth() {
 		if p = r.p.GetAny(); p == nil {
 			// no connection pool has been created yet and authentication
 			// is bypassed, attempt to use credentials to connect

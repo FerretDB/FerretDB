@@ -173,6 +173,18 @@ func (h *Handler) MsgUsersInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			return nil, lazyerrors.Error(err)
 		}
 
+		if v.Has("credentials") {
+			credentials := must.NotFail(v.Get("credentials")).(*types.Document)
+			if credentialsKeys := credentials.Keys(); len(credentialsKeys) > 0 {
+				mechanisms := must.NotFail(types.NewArray())
+				for _, k := range credentialsKeys {
+					mechanisms.Append(k)
+				}
+
+				v.Set("mechanisms", mechanisms)
+			}
+		}
+
 		if !showCredentials {
 			v.Remove("credentials")
 		}
