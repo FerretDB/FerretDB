@@ -207,7 +207,11 @@ func (h *Handler) initCommands() {
 		},
 		"saslStart": {
 			Handler: h.MsgSASLStart,
-			Help:    "Starts a SASL conversation.",
+			Help:    "", // hidden
+		},
+		"saslContinue": {
+			Handler: h.MsgSASLContinue,
+			Help:    "", // hidden
 		},
 		"serverStatus": {
 			Handler: h.MsgServerStatus,
