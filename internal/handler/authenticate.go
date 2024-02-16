@@ -111,7 +111,7 @@ func (h *Handler) authenticate(ctx context.Context, msg *wire.OpMsg) error {
 	if storedUser == nil {
 		return handlererrors.NewCommandErrorMsgWithArgument(
 			handlererrors.ErrAuthenticationFailed,
-			"User not found",
+			"Authentication failed",
 			"authenticate",
 		)
 	}
@@ -119,18 +119,14 @@ func (h *Handler) authenticate(ctx context.Context, msg *wire.OpMsg) error {
 	credentials := must.NotFail(storedUser.Get("credentials")).(*types.Document)
 
 	switch {
-	case credentials.Has("SCRAM-SHA-256"):
-		// SCRAM-SHA-256 calls back scramCredentialLookup each time Step is called,
+	case credentials.Has("SCRAM-SHA-256"), credentials.Has("SCRAM-SHA-1"):
+		// SCRAM calls back scramCredentialLookup each time Step is called,
 		// and that checks the authentication.
 		return nil
 	case credentials.Has("PLAIN"):
 		break
 	default:
-		return handlererrors.NewCommandErrorMsgWithArgument(
-			handlererrors.ErrAuthenticationFailed,
-			"Unknown authentication mechanism",
-			"authenticate",
-		)
+		panic("credentials does not contain a known mechanism")
 	}
 
 	v := must.NotFail(credentials.Get("PLAIN"))
@@ -141,7 +137,11 @@ func (h *Handler) authenticate(ctx context.Context, msg *wire.OpMsg) error {
 
 	err = password.PlainVerify(pwd, doc)
 	if err != nil {
-		return lazyerrors.New("invalid password")
+		return handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrAuthenticationFailed,
+			"Authentication failed",
+			"authenticate",
+		)
 	}
 
 	return nil
