@@ -31,7 +31,7 @@ func computeHMAC(h func() hash.Hash, key, data []byte) []byte {
 	return mac.Sum(nil)
 }
 
-// Computes the SHA-1 hash of the given data.
+// Computes the hash of the given data.
 func computeHash(h func() hash.Hash, b []byte) []byte {
 	dh := h()
 	dh.Write(b)
