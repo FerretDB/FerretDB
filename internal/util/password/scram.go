@@ -39,7 +39,7 @@ func computeHash(h func() hash.Hash, b []byte) []byte {
 	return dh.Sum(nil)
 }
 
-// scramParams represent password parameters for SCRAM-SHA-1 authentication.
+// scramParams represent password parameters for SCRAM authentication.
 type scramParams struct {
 	iterationCount int
 	saltLen        int
