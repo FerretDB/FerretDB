@@ -60,10 +60,6 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		if err != nil {
 			return nil, err
 		}
-
-		if err = h.authenticate(ctx, msg); err != nil {
-			return nil, err
-		}
 	default:
 		msg := fmt.Sprintf("Unsupported authentication mechanism %q.\n", mechanism) +
 			"See https://docs.ferretdb.io/security/authentication/ for more details."
@@ -73,10 +69,10 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	if h.EnableNewAuth {
 		// If new auth is enabled and the database does not contain any user,
 		// backend authentication is bypassed.
-		//
-		// If a user connects with any credentials or no credentials at all,
-		// the authentication succeeds until the first user is created.
 		conninfo.Get(ctx).BypassBackendAuth = true
+		if err = h.authenticate(ctx, msg); err != nil {
+			return nil, err
+		}
 	} else {
 		conninfo.Get(ctx).SetAuth(username, password)
 	}
