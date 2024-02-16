@@ -46,11 +46,10 @@ func TestAuthentication(t *testing.T) {
 
 		connectionMechanism string // if set, try to establish connection with this mechanism
 
-		userNotFound     bool
-		wrongPassword    bool
-		topologyError    bool
-		errorMessage     string
-		failsForFerretDB bool
+		userNotFound  bool
+		wrongPassword bool
+		topologyError bool
+		errorMessage  string
 	}{
 		"Success": {
 			username:            "username", // when using the PLAIN mechanism we must use user "username"
@@ -130,10 +129,6 @@ func TestAuthentication(t *testing.T) {
 			tt.Parallel()
 
 			var t testtb.TB = tt
-
-			if tc.failsForFerretDB {
-				t = setup.FailsForFerretDB(t, "https://github.com/FerretDB/FerretDB/issues/2012")
-			}
 
 			if !tc.userNotFound {
 				var (

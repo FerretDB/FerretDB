@@ -238,7 +238,8 @@ func (h *Handler) scramCredentialLookup(ctx context.Context, username, dbName, m
 	)
 }
 
-// saslStartSCRAM extracts the initial challenge and respond the client.
+// saslStartSCRAM extracts the initial challenge and attempts to move the
+// authentication conversation forward returning a challenge response.
 func (h *Handler) saslStartSCRAM(ctx context.Context, mechanism string, doc *types.Document) (string, error) {
 	var payload []byte
 
