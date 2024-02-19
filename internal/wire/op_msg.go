@@ -31,6 +31,8 @@ import (
 )
 
 // OpMsgSection is one or more sections contained in an OpMsg.
+//
+//nolint:vet // for readability
 type OpMsgSection struct {
 	Kind       byte
 	Identifier string
@@ -45,6 +47,8 @@ func MakeOpMsgSection(doc *types.Document) OpMsgSection {
 }
 
 // OpMsg is an extensible message format designed to subsume the functionality of other opcodes.
+//
+//nolint:vet // for readability
 type OpMsg struct {
 	FlagBits OpMsgFlags
 
@@ -55,10 +59,11 @@ type OpMsg struct {
 // SetSections of the OpMsg.
 func (msg *OpMsg) SetSections(sections ...OpMsgSection) error {
 	msg.sections = sections
-	_, err := msg.Document()
-	if err != nil {
+
+	if _, err := msg.Document(); err != nil {
 		return lazyerrors.Error(err)
 	}
+
 	return nil
 }
 
@@ -69,7 +74,6 @@ func (msg *OpMsg) Document() (*types.Document, error) {
 	// Sections of kind 1 may come before the section of kind 0,
 	// but the command is defined by the first key in the section of kind 0.
 	// Reorder documents to set keys in the right order.
-
 	docs := make([]*types.Document, 0, len(msg.sections))
 
 	for _, section := range msg.sections {
@@ -116,6 +120,7 @@ func (msg *OpMsg) Document() (*types.Document, error) {
 			if res.Has(k) {
 				return nil, newValidationError(fmt.Errorf("wire.OpMsg.Document: duplicate key %q", k))
 			}
+
 			res.Set(k, values[i])
 		}
 	}
@@ -237,6 +242,7 @@ func (msg *OpMsg) readFrom(bufr *bufio.Reader) error {
 		if msg.FlagBits.FlagSet(OpMsgChecksumPresent) {
 			peekBytes = 5
 		}
+
 		if _, err := bufr.Peek(peekBytes); err == io.EOF {
 			break
 		}
@@ -328,6 +334,7 @@ func (msg *OpMsg) MarshalBinary() ([]byte, error) {
 			if err := binary.Write(bufw, binary.LittleEndian, int32(secBuf.Len()+4)); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
+
 			if _, err := bufw.Write(secBuf.Bytes()); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
@@ -368,6 +375,7 @@ func (msg *OpMsg) String() string {
 		s := map[string]any{
 			"Kind": section.Kind,
 		}
+
 		switch section.Kind {
 		case 0:
 			b := must.NotFail(fjson.Marshal(section.documents[0]))
