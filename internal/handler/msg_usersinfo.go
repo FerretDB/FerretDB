@@ -281,7 +281,7 @@ func usersInfoFilter(allDBs, singleDB bool, dbName string, pairs []usersInfoPair
 
 	ps := []any{}
 	for _, p := range pairs {
-		ps = append(ps, p.username)
+		ps = append(ps, p.db+"."+p.username)
 	}
 
 	ids, err := types.NewArray(ps...)

@@ -61,7 +61,7 @@ func (h *Handler) MsgDropUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	}
 
 	res, err := users.DeleteAll(ctx, &backends.DeleteAllParams{
-		IDs: []any{username},
+		IDs: []any{dbName + "." + username},
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)

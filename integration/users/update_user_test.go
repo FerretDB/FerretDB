@@ -155,7 +155,7 @@ func TestUpdateUser(t *testing.T) {
 				{"pwd", "donotchange"},
 			},
 			expected: bson.D{
-				{"_id", "same_password_user"},
+				{"_id", "TestUpdateUser.same_password_user"},
 				{"user", "same_password_user"},
 				{"db", "TestUpdateUser"},
 				{"roles", bson.A{}},
@@ -172,7 +172,7 @@ func TestUpdateUser(t *testing.T) {
 				{"pwd", "anewpassword"},
 			},
 			expected: bson.D{
-				{"_id", "a_user"},
+				{"_id", "TestUpdateUser.a_user"},
 				{"user", "a_user"},
 				{"db", "TestUpdateUser"},
 				{"roles", bson.A{}},
@@ -190,7 +190,7 @@ func TestUpdateUser(t *testing.T) {
 				{"pwd", "anewpassword"},
 			},
 			expected: bson.D{
-				{"_id", "a_user_with_mechanism"},
+				{"_id", "TestUpdateUser.a_user_with_mechanism"},
 				{"user", "a_user_with_mechanism"},
 				{"db", "TestUpdateUser"},
 				{"roles", bson.A{}},
@@ -210,7 +210,7 @@ func TestUpdateUser(t *testing.T) {
 				{"mechanisms", bson.A{"SCRAM-SHA-256"}},
 			},
 			expected: bson.D{
-				{"_id", "a_user_with_scram_mechanism"},
+				{"_id", "TestUpdateUser.a_user_with_scram_mechanism"},
 				{"user", "a_user_with_scram_mechanism"},
 				{"db", "TestUpdateUser"},
 				{"roles", bson.A{}},
@@ -246,7 +246,7 @@ func TestUpdateUser(t *testing.T) {
 				{"pwd", "anewpassword"},
 			},
 			expected: bson.D{
-				{"_id", "a_user_with_no_roles"},
+				{"_id", "TestUpdateUser.a_user_with_no_roles"},
 				{"user", "a_user_with_no_roles"},
 				{"db", "TestUpdateUser"},
 				{"roles", bson.A{}},
@@ -264,7 +264,7 @@ func TestUpdateUser(t *testing.T) {
 				{"comment", "test string comment"},
 			},
 			expected: bson.D{
-				{"_id", "another_user"},
+				{"_id", "TestUpdateUser.another_user"},
 				{"user", "another_user"},
 				{"db", "TestUpdateUser"},
 				{"roles", bson.A{}},

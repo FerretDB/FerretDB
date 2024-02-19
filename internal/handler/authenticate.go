@@ -54,9 +54,21 @@ func (h *Handler) authenticate(ctx context.Context, msg *wire.OpMsg) error {
 		return lazyerrors.Error(err)
 	}
 
+	document, err := msg.Document()
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	var dbName string
+
+	if dbName, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+		return err
+	}
+
 	username, pwd := conninfo.Get(ctx).Auth()
 
-	filter := must.NotFail(types.NewDocument("_id", username))
+	// NOTE: how does a user with access to all database look like?
+	filter := must.NotFail(types.NewDocument("_id", dbName+"."+username))
 
 	qr, err := usersCol.Query(ctx, nil)
 	if err != nil {
