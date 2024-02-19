@@ -101,10 +101,12 @@ COPY --from=production-build /src/bin/ferretdb /ferretdb
 FROM scratch AS production
 
 COPY --from=production-build /src/bin/ferretdb /ferretdb
-COPY build/docker/passwd /etc/passwd
-COPY build/docker/group  /etc/group
 
-USER ferretdb:ferretdb
+# TODO https://github.com/FerretDB/FerretDB/issues/3992
+# COPY build/docker/passwd /etc/passwd
+# COPY build/docker/group  /etc/group
+# USER ferretdb:ferretdb
+
 ENTRYPOINT [ "/ferretdb" ]
 
 WORKDIR /
