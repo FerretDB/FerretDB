@@ -163,6 +163,17 @@ func TestCreateUser(t *testing.T) {
 				{"ok", float64(1)},
 			},
 		},
+		"SuccessWithSCRAMSHA1": {
+			payload: bson.D{
+				{"createUser", "success_user_with_scram_sha_1"},
+				{"roles", bson.A{}},
+				{"pwd", "password"},
+				{"mechanisms", bson.A{"SCRAM-SHA-1"}},
+			},
+			expected: bson.D{
+				{"ok", float64(1)},
+			},
+		},
 		"SuccessWithSCRAMSHA256": {
 			payload: bson.D{
 				{"createUser", "success_user_with_scram_sha_256"},
@@ -255,6 +266,10 @@ func TestCreateUser(t *testing.T) {
 					assertPlainCredentials(t, "PLAIN", must.NotFail(user.Get("credentials")).(*types.Document))
 				}
 
+				if payloadMechanisms.Contains("SCRAM-SHA-1") {
+					assertSCRAMSHA1Credentials(t, "SCRAM-SHA-1", must.NotFail(user.Get("credentials")).(*types.Document))
+				}
+
 				if payloadMechanisms.Contains("SCRAM-SHA-256") {
 					assertSCRAMSHA256Credentials(t, "SCRAM-SHA-256", must.NotFail(user.Get("credentials")).(*types.Document))
 				}
@@ -287,6 +302,20 @@ func assertPlainCredentials(t testtb.TB, key string, cred *types.Document) {
 	assert.NotEmpty(t, must.NotFail(c.Get("iterationCount")))
 	assert.NotEmpty(t, must.NotFail(c.Get("hash")))
 	assert.NotEmpty(t, must.NotFail(c.Get("salt")))
+}
+
+// assertSCRAMSHA1Credentials checks if the credential is a valid SCRAM-SHA-1 credential.
+func assertSCRAMSHA1Credentials(t testtb.TB, key string, cred *types.Document) {
+	t.Helper()
+
+	require.True(t, cred.Has(key), "missing credential %q", key)
+
+	c := must.NotFail(cred.Get(key)).(*types.Document)
+
+	assert.Equal(t, must.NotFail(c.Get("iterationCount")), int32(10000))
+	assert.NotEmpty(t, must.NotFail(c.Get("salt")).(string))
+	assert.NotEmpty(t, must.NotFail(c.Get("serverKey")).(string))
+	assert.NotEmpty(t, must.NotFail(c.Get("storedKey")).(string))
 }
 
 // assertSCRAMSHA256Credentials checks if the credential is a valid SCRAM-SHA-256 credential.

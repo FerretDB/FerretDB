@@ -77,8 +77,8 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			)),
 		)))
 
-	case "SCRAM-SHA-256":
-		response, err := h.saslStartSCRAMSHA256(ctx, document)
+	case "SCRAM-SHA-1", "SCRAM-SHA-256":
+		response, err := h.saslStartSCRAM(ctx, mechanism, document)
 		if err != nil {
 			return nil, err
 		}
@@ -155,7 +155,9 @@ func saslStartPlain(doc *types.Document) (string, string, error) {
 }
 
 // scramCredentialLookup looks up an user's credentials in the database.
-func (h *Handler) scramCredentialLookup(ctx context.Context, username, dbName string) (*scram.StoredCredentials, error) {
+func (h *Handler) scramCredentialLookup(ctx context.Context, username, dbName, mechanism string) (
+	*scram.StoredCredentials, error,
+) {
 	adminDB, err := h.b.Database("admin")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -203,15 +205,19 @@ func (h *Handler) scramCredentialLookup(ctx context.Context, username, dbName st
 		if matches {
 			credentials := must.NotFail(v.Get("credentials")).(*types.Document)
 
-			if !credentials.Has("SCRAM-SHA-256") {
+			if !credentials.Has(mechanism) {
 				return nil, handlererrors.NewCommandErrorMsgWithArgument(
 					handlererrors.ErrMechanismUnavailable,
-					"User has no SCRAM-SHA-256 based authentication credentials registered",
-					"SCRAM-SHA-256",
+					fmt.Sprintf(
+						"Unable to use %s based authentication for user without any %s credentials registered",
+						mechanism,
+						mechanism,
+					),
+					mechanism,
 				)
 			}
 
-			cred := must.NotFail(credentials.Get("SCRAM-SHA-256")).(*types.Document)
+			cred := must.NotFail(credentials.Get(mechanism)).(*types.Document)
 
 			salt := must.NotFail(base64.StdEncoding.DecodeString(must.NotFail(cred.Get("salt")).(string)))
 			storedKey := must.NotFail(base64.StdEncoding.DecodeString(must.NotFail(cred.Get("storedKey")).(string)))
@@ -234,9 +240,9 @@ func (h *Handler) scramCredentialLookup(ctx context.Context, username, dbName st
 	)
 }
 
-// saslStartSCRAMSHA256 extracts the initial challenge and attempts to move the
+// saslStartSCRAM extracts the initial challenge and attempts to move the
 // authentication conversation forward returning a challenge response.
-func (h *Handler) saslStartSCRAMSHA256(ctx context.Context, doc *types.Document) (string, error) {
+func (h *Handler) saslStartSCRAM(ctx context.Context, mechanism string, doc *types.Document) (string, error) {
 	var payload []byte
 
 	// most drivers follow spec and send payload as a binary
@@ -252,8 +258,19 @@ func (h *Handler) saslStartSCRAMSHA256(ctx context.Context, doc *types.Document)
 		return "", err
 	}
 
-	scramServer, err := scram.SHA256.NewServer(func(username string) (scram.StoredCredentials, error) {
-		cred, lookupErr := h.scramCredentialLookup(ctx, username, dbName)
+	var f scram.HashGeneratorFcn
+
+	switch mechanism {
+	case "SCRAM-SHA-1":
+		f = scram.SHA1
+	case "SCRAM-SHA-256":
+		f = scram.SHA256
+	default:
+		panic("unsupported SCRAM mechanism")
+	}
+
+	scramServer, err := f.NewServer(func(username string) (scram.StoredCredentials, error) {
+		cred, lookupErr := h.scramCredentialLookup(ctx, username, dbName, mechanism)
 		if lookupErr != nil {
 			return scram.StoredCredentials{}, lookupErr
 		}
@@ -266,12 +283,12 @@ func (h *Handler) saslStartSCRAMSHA256(ctx context.Context, doc *types.Document)
 
 	conv := scramServer.NewConversation()
 
-	resp, err := conv.Step(string(payload))
+	response, err := conv.Step(string(payload))
 	if err != nil {
 		return "", err
 	}
 
 	conninfo.Get(ctx).SetConv(conv)
 
-	return resp, nil
+	return response, nil
 }
