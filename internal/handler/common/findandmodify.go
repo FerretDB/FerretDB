@@ -26,35 +26,34 @@ import (
 
 // FindAndModifyParams represent parameters for the findAndModify command.
 type FindAndModifyParams struct {
-	LSID           any             `ferretdb:"lsid,ignored"`
-	ClusterTime    any             `ferretdb:"$clusterTime,ignored"`
-	WriteConcern   *types.Document `ferretdb:"writeConcern,ignored"`
-	ReadPreference *types.Document `ferretdb:"$readPreference,ignored"`
+	DB                string          `ferretdb:"$db"`
+	Collection        string          `ferretdb:"findAndModify,collection"`
+	Comment           string          `ferretdb:"comment,opt"`
+	Query             *types.Document `ferretdb:"query,opt"`
+	Sort              *types.Document `ferretdb:"sort,opt"`
+	UpdateValue       any             `ferretdb:"update,opt"`
+	Remove            bool            `ferretdb:"remove,opt"`
+	Upsert            bool            `ferretdb:"upsert,opt"`
+	ReturnNewDocument bool            `ferretdb:"new,opt,numericBool"`
+	MaxTimeMS         int64           `ferretdb:"maxTimeMS,opt,wholePositiveNumber"`
 
-	UpdateValue any             `ferretdb:"update,opt"`
-	Query       *types.Document `ferretdb:"query,opt"`
-	Sort        *types.Document `ferretdb:"sort,opt"`
 	Update      *types.Document `ferretdb:"-"`
 	Aggregation *types.Array    `ferretdb:"-"`
+
+	HasUpdateOperators bool `ferretdb:"-"`
 
 	Let          *types.Document `ferretdb:"let,unimplemented"`
 	Collation    *types.Document `ferretdb:"collation,unimplemented"`
 	Fields       *types.Document `ferretdb:"fields,unimplemented"`
 	ArrayFilters *types.Array    `ferretdb:"arrayFilters,unimplemented"`
 
-	DB         string `ferretdb:"$db"`
-	Collection string `ferretdb:"findAndModify,collection"`
-	Comment    string `ferretdb:"comment,opt"`
-	Hint       string `ferretdb:"hint,ignored"`
-
-	Remove                   bool `ferretdb:"remove,opt"`
-	Upsert                   bool `ferretdb:"upsert,opt"`
-	ReturnNewDocument        bool `ferretdb:"new,opt,numericBool"`
-	HasUpdateOperators       bool `ferretdb:"-"`
-	BypassDocumentValidation bool `ferretdb:"bypassDocumentValidation,ignored"`
-
-	TxnNumber int64 `ferretdb:"txnNumber,ignored"`
-	MaxTimeMS int64 `ferretdb:"maxTimeMS,opt,wholePositiveNumber"`
+	Hint                     string          `ferretdb:"hint,ignored"`
+	WriteConcern             *types.Document `ferretdb:"writeConcern,ignored"`
+	BypassDocumentValidation bool            `ferretdb:"bypassDocumentValidation,ignored"`
+	LSID                     any             `ferretdb:"lsid,ignored"`
+	TxnNumber                int64           `ferretdb:"txnNumber,ignored"`
+	ClusterTime              any             `ferretdb:"$clusterTime,ignored"`
+	ReadPreference           *types.Document `ferretdb:"$readPreference,ignored"`
 }
 
 // GetFindAndModifyParams returns `findAndModifyParams` command parameters.

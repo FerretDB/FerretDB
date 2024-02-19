@@ -26,6 +26,8 @@ import (
 )
 
 // InsertParams represents the parameters for an insert command.
+//
+//nolint:vet // for readability
 type InsertParams struct {
 	LSID         any `ferretdb:"lsid,ignored"`
 	ClusterTime  any `ferretdb:"$clusterTime,ignored"`
