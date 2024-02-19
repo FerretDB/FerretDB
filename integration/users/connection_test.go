@@ -35,8 +35,7 @@ func TestAuthentication(t *testing.T) {
 
 	s := setup.SetupWithOpts(t, nil)
 	ctx := s.Ctx
-	collection := s.Collection
-	db := collection.Database()
+	db, collection := createUserTestRunnerUser(t, s)
 
 	testCases := map[string]struct { //nolint:vet // for readability
 		username       string
@@ -251,7 +250,7 @@ func TestAuthenticationEnableNewAuthNoUserExists(t *testing.T) {
 			password:  "password",
 			mechanism: "PLAIN",
 		},
-		"SHA256": {
+		"SHA256NonExistingUser": {
 			username:  "sha256-user",
 			password:  "whatever",
 			mechanism: "SCRAM-SHA-256",
@@ -302,7 +301,9 @@ func TestAuthenticationEnableNewAuthNoUserExists(t *testing.T) {
 	}
 }
 
-func TestAuthenticationEnableNewAuthWithExistingUser(t *testing.T) {
+func TestAuthenticationEnableNewAuthPLAIN(t *testing.T) {
+	setup.SkipForMongoDB(t, "PLAIN mechanism is not supported by MongoDB")
+
 	t.Parallel()
 
 	s := setup.SetupWithOpts(t, nil)
@@ -311,53 +312,26 @@ func TestAuthenticationEnableNewAuthWithExistingUser(t *testing.T) {
 	db := collection.Database()
 
 	err := db.RunCommand(ctx, bson.D{
-		{"createUser", "sha256-user"},
+		{"createUser", "plain-user"},
 		{"roles", bson.A{}},
 		{"pwd", "correct"},
-		{"mechanisms", bson.A{"SCRAM-SHA-256"}},
+		{"mechanisms", bson.A{"PLAIN"}},
 	}).Err()
-	require.NoErrorf(t, err, "cannot create user")
+	require.NoError(t, err, "cannot create user")
 
 	t.Cleanup(func() {
-		// once the first user has been created use that user for any other action
-		// until local exception is implemented
 		opts := options.Client().ApplyURI(s.MongoDBURI).SetAuth(options.Credential{
-			AuthMechanism: "SCRAM-SHA-256",
+			AuthMechanism: "PLAIN",
 			AuthSource:    db.Name(),
-			Username:      "sha256-user",
+			Username:      "plain-user",
 			Password:      "correct",
 		})
 
 		client, err := mongo.Connect(ctx, opts)
-		require.NoError(t, err, "cannot connect to MongoDB")
+		require.NoError(t, err)
 
-		require.NoError(t, client.Database(db.Name()).RunCommand(ctx, bson.D{{"dropUser", "sha256-user"}}).Err())
+		require.NoError(t, client.Database(db.Name()).RunCommand(ctx, bson.D{{"dropUser", "plain-user"}}).Err())
 	})
-
-	if !setup.IsMongoDB(t) {
-		// once the first user has been created use that user for any other action
-		// until local exception is implemented
-		opts := options.Client().ApplyURI(s.MongoDBURI).SetAuth(options.Credential{
-			AuthMechanism: "SCRAM-SHA-256",
-			AuthSource:    db.Name(),
-			Username:      "sha256-user",
-			Password:      "correct",
-		})
-
-		client, err := mongo.Connect(ctx, opts)
-		require.NoError(t, err, "cannot connect to MongoDB")
-		err = client.Database(db.Name()).RunCommand(ctx, bson.D{
-			{"createUser", "plain-user"},
-			{"roles", bson.A{}},
-			{"pwd", "correct"},
-			{"mechanisms", bson.A{"PLAIN"}},
-		}).Err()
-		require.NoErrorf(t, err, "cannot create user")
-
-		t.Cleanup(func() {
-			require.NoError(t, client.Database(db.Name()).RunCommand(ctx, bson.D{{"dropUser", "plain-user"}}).Err())
-		})
-	}
 
 	testCases := map[string]struct { //nolint:vet // for readability
 		username  string
@@ -366,38 +340,21 @@ func TestAuthenticationEnableNewAuthWithExistingUser(t *testing.T) {
 
 		err string
 	}{
-		"PLAIN": {
+		"Success": {
 			username:  "plain-user",
 			password:  "correct",
 			mechanism: "PLAIN",
 		},
-		"PLAINWrongPassword": {
-			username:  "scram-user",
+		"BadPassword": {
+			username:  "plain-user",
 			password:  "wrong",
-			mechanism: "SCRAM-SHA-256",
+			mechanism: "PLAIN",
 			err:       "AuthenticationFailed",
 		},
-		"PLAINWrongUser": {
-			username:  "non-existent",
-			password:  "wrong",
-			mechanism: "SCRAM-SHA-256",
-			err:       "AuthenticationFailed",
-		},
-		"SHA256": {
-			username:  "sha256-user",
-			password:  "correct",
-			mechanism: "SCRAM-SHA-256",
-		},
-		"SHA256WrongUser": {
-			username:  "non-existent",
-			password:  "wrong",
-			mechanism: "SCRAM-SHA-256",
-			err:       "AuthenticationFailed",
-		},
-		"SHA256WrongPassword": {
-			username:  "sha256-user",
-			password:  "wrong",
-			mechanism: "SCRAM-SHA-256",
+		"NonExistentUser": {
+			username:  "not-found-user",
+			password:  "something",
+			mechanism: "PLAIN",
 			err:       "AuthenticationFailed",
 		},
 	}
@@ -423,17 +380,14 @@ func TestAuthenticationEnableNewAuthWithExistingUser(t *testing.T) {
 			client, err := mongo.Connect(ctx, opts)
 			require.NoError(t, err, "cannot connect to MongoDB")
 
-			err = client.Ping(ctx, nil)
+			connCollection := client.Database(db.Name()).Collection(collection.Name())
+			_, err = connCollection.InsertOne(ctx, bson.D{{"ping", "pong"}})
 
 			if tc.err != "" {
 				require.ErrorContains(t, err, tc.err)
 				return
 			}
 
-			require.NoError(t, err, "cannot ping MongoDB")
-
-			connCollection := client.Database(db.Name()).Collection(collection.Name())
-			_, err = connCollection.InsertOne(ctx, bson.D{{"ping", "pong"}})
 			require.NoError(t, err, "cannot insert document")
 		})
 	}
