@@ -31,7 +31,7 @@ type UpdateParams struct {
 	Updates []Update `ferretdb:"updates"`
 
 	Comment   string `ferretdb:"comment,opt"`
-	MaxTimeMS int64  `ferretdb:"maxTimeMS,opt,wholePositiveNumber"`
+	MaxTimeMS int64  `ferretdb:"maxTimeMS,ignored"`
 
 	Let *types.Document `ferretdb:"let,unimplemented"`
 
