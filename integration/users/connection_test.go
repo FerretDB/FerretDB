@@ -357,6 +357,12 @@ func TestAuthenticationEnableNewAuthPLAIN(t *testing.T) {
 			mechanism: "PLAIN",
 			err:       "AuthenticationFailed",
 		},
+		"PLAINBackendUser": {
+			username:  "username",
+			password:  "password",
+			mechanism: "PLAIN",
+			err:       "AuthenticationFailed",
+		},
 	}
 
 	for name, tc := range testCases {
