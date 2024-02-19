@@ -65,6 +65,10 @@ type Update struct {
 // It represents the number of documents matched, modified and upserted.
 // In case of findAndModify, it also contains pointers to the documents.
 type UpdateResult struct {
+	Upserted struct {
+		Doc *types.Document
+	}
+
 	Matched struct {
 		Doc   *types.Document
 		Count int32
@@ -73,10 +77,6 @@ type UpdateResult struct {
 	Modified struct {
 		Doc   *types.Document
 		Count int32
-	}
-
-	Upserted struct {
-		Doc *types.Document
 	}
 }
 
