@@ -30,12 +30,17 @@ import (
 )
 
 // authenticate validates the user's credentials in the connection with the
-// credentials in the database. If EnableNewAuth is false, it does nothing.
+// credentials in the database. If EnableNewAuth is false or bypass backend auth
+// is set false, it succeeds authentication.
 //
 // When admin.systems.user contains no user, the authentication succeeds until
 // the first user is created.
 func (h *Handler) authenticate(ctx context.Context, msg *wire.OpMsg) error {
 	if !h.EnableNewAuth {
+		return nil
+	}
+
+	if !conninfo.Get(ctx).BypassBackendAuth() {
 		return nil
 	}
 
