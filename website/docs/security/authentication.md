@@ -6,18 +6,21 @@ description: Learn to use authentication mechanisms
 
 # Authentication
 
-FerretDB does not store authentication information (usernames and passwords) itself but uses the backend's authentication mechanisms.
-The default username and password can be specified in FerretDB's connection string,
-but the client could use a different user by providing a username and password in MongoDB URI.
-For example, if the server was started with `postgres://user1:pass1@postgres:5432/ferretdb`,
-anonymous clients will be authenticated as user1,
-but clients that use `mongodb://user2:pass2@ferretdb:27018/ferretdb?tls=true&authMechanism=PLAIN` MongoDB URI will be authenticated as user2.
+FerretDB supports `PLAIN`, `SCRAM-SHA256` and `SCRAM-SHA1` authentication mechanisms.
+A user with supported mechanism is created by `createUser()` command and authenticated in FerretDB.
+
+The authenticated users connect to PostgreSQL backend by using the credentials used to start the server.
+For example, if the server was started with `postgres://dbuser1:dbpass1@postgres:5432/ferretdb`,
+all authenticated client uses username `dbuser1` and password `dbpass1` for the PostgreSQL connection.
+
+Before the first user is created, the credential passed in the connection string is used to authenticate directly to the postgreSQL backend.
+For example, `dbuser2` and `dbpass2` in `mongodb://dbuser2:dbpass2@ferretdb:27018/ferretdb?tls=true&authMechanism=PLAIN` is used to authenticate to the PostgreSQL.
 Since usernames and passwords are transferred in plain text,
 the use of [TLS](../security/tls-connections.md) is highly recommended.
 
 ## PostgreSQL backend with default username and password
 
-In following examples, default username and password are specified in FerretDB's connection string `user1:pass1`.
+In following examples, username and password are specified in FerretDB's connection string `user1:pass1`.
 Ensure `user1` is a PostgreSQL user with necessary
 [privileges](https://www.postgresql.org/docs/current/sql-grant.html).
 See more about [creating PostgreSQL user](https://www.postgresql.org/docs/current/sql-createuser.html)
