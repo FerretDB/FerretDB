@@ -60,41 +60,6 @@ func FilterDocument(doc, filter *types.Document) (bool, error) {
 	}
 }
 
-// HasOperator recursively checks if document contains any operator prefixed with $.
-func HasOperator(doc *types.Document) (bool, error) {
-	iter := doc.Iterator()
-	defer iter.Close()
-
-	for {
-		k, v, err := iter.Next()
-		if err != nil {
-			if errors.Is(err, iterator.ErrIteratorDone) {
-				return false, nil
-			}
-
-			return false, lazyerrors.Error(err)
-		}
-
-		if strings.HasPrefix(k, "$") {
-			return true, nil
-		}
-
-		nestedDoc, ok := v.(*types.Document)
-		if !ok {
-			continue
-		}
-
-		hasOperator, err := HasOperator(nestedDoc)
-		if err != nil {
-			return false, lazyerrors.Error(err)
-		}
-
-		if hasOperator {
-			return true, nil
-		}
-	}
-}
-
 // filterDocumentPair handles a single filter element key/value pair {filterKey: filterValue}.
 func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) (bool, error) {
 	var vals []any
