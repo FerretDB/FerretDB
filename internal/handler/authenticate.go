@@ -96,8 +96,11 @@ func (h *Handler) authenticate(ctx context.Context, msg *wire.OpMsg) error {
 	}
 
 	if !hasUser {
-		// If a user connects with any credentials or no credentials at all,
-		// the authentication succeeds until the first user is created.
+		// There is no user in the database, let backend check the authentication.
+		// Do not want unauthenticated users accessing the database, while there need
+		// to be a way to access the database until local exception is implemented.
+		conninfo.Get(ctx).UnsetBypassBackendAuth()
+
 		return nil
 	}
 

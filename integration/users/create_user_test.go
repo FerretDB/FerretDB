@@ -318,7 +318,7 @@ func createUserTestRunnerUser(tb *testing.T, s *setup.SetupResult) (*mongo.Datab
 
 	username, pwd, mechanism := "user-test-runner", "password", "PLAIN"
 
-	err := s.Collection.Database().RunCommand(s.Ctx, bson.D{
+	err := s.Collection.Database().Client().Database("admin").RunCommand(s.Ctx, bson.D{
 		{"createUser", username},
 		{"roles", bson.A{}},
 		{"pwd", pwd},
@@ -341,7 +341,7 @@ func createUserTestRunnerUser(tb *testing.T, s *setup.SetupResult) (*mongo.Datab
 	collection := db.Collection(s.Collection.Name())
 
 	tb.Cleanup(func() {
-		require.NoError(tb, db.RunCommand(s.Ctx, bson.D{{"dropAllUsersFromDatabase", 1}}).Err())
+		_ = db.RunCommand(s.Ctx, bson.D{{"dropAllUsersFromDatabase", 1}})
 	})
 
 	return db, collection

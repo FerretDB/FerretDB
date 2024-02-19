@@ -53,16 +53,11 @@ func TestDropAllUsersFromDatabase(t *testing.T) {
 	// So this call should remove zero users as the database doesn't exist. The next one, "quantity" users.
 	assertDropAllUsersFromDatabase(t, ctx, client.Database(t.Name()+"_another_database"), 0)
 
-	if !setup.IsMongoDB(t) {
-		// For non MongoDB, a user created to run the tests is also dropped.
-		quantity++
-	}
-
 	assertDropAllUsersFromDatabase(t, ctx, db, quantity)
 
 	// Run for the second time to check if it still succeeds when there aren't any users remaining,
 	// instead of returning an error.
-	assertDropAllUsersFromDatabase(t, ctx, db, 0)
+	assertDropAllUsersFromDatabase(t, ctx, s.Collection.Database(), 0)
 }
 
 func assertDropAllUsersFromDatabase(t *testing.T, ctx context.Context, db *mongo.Database, quantity int) {

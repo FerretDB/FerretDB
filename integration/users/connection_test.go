@@ -221,8 +221,8 @@ func TestAuthentication(t *testing.T) {
 }
 
 // TestAuthenticationEnableNewAuthNoUser tests that the authentication succeeds
-// with any PLAIN mechanism user until the first user is created. This is temporary
-// until local exception is implemented.
+// with PLAIN mechanism user when there are no users in the database.
+// It uses backend to authenticate the user such case.
 // For SCRAM-SHA-256 mechanism users, authentication fails if the user does not exist.
 func TestAuthenticationEnableNewAuthNoUserExists(t *testing.T) {
 	t.Parallel()
@@ -237,23 +237,25 @@ func TestAuthenticationEnableNewAuthNoUserExists(t *testing.T) {
 		password  string
 		mechanism string
 
-		err string
+		pingErr   string
+		insertErr string
 	}{
-		"PLAIN": {
+		"PLAINNonExistingUser": {
 			username:  "plain-user",
 			password:  "whatever",
 			mechanism: "PLAIN",
+			insertErr: `role "plain-user" does not exist`,
 		},
-		"PLAINEmpty": {
-			username:  "",
-			password:  "",
+		"PLAINBackendUser": {
+			username:  "username",
+			password:  "password",
 			mechanism: "PLAIN",
 		},
 		"SHA256": {
 			username:  "sha256-user",
 			password:  "whatever",
 			mechanism: "SCRAM-SHA-256",
-			err:       "Authentication failed",
+			pingErr:   "Authentication failed",
 		},
 	}
 
@@ -280,8 +282,8 @@ func TestAuthenticationEnableNewAuthNoUserExists(t *testing.T) {
 
 			err = client.Ping(ctx, nil)
 
-			if tc.err != "" {
-				require.ErrorContains(t, err, tc.err)
+			if tc.pingErr != "" {
+				require.ErrorContains(t, err, tc.pingErr)
 				return
 			}
 
@@ -289,6 +291,12 @@ func TestAuthenticationEnableNewAuthNoUserExists(t *testing.T) {
 
 			connCollection := client.Database(db.Name()).Collection(collection.Name())
 			_, err = connCollection.InsertOne(ctx, bson.D{{"ping", "pong"}})
+
+			if tc.insertErr != "" {
+				require.ErrorContains(t, err, tc.insertErr)
+				return
+			}
+
 			require.NoError(t, err, "cannot insert document")
 		})
 	}
