@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"hash/fnv"
+	"net/url"
 	"regexp"
 	"slices"
 	"sort"
@@ -86,6 +87,9 @@ type Registry struct {
 }
 
 // NewRegistry creates a registry for PostgreSQL databases with a given base URI.
+//
+// It gets a pool using the user and password from the base URI, which is later used
+// by connections that by passes backend authentication.
 func NewRegistry(u string, l *zap.Logger, sp *state.Provider) (*Registry, error) {
 	p, err := pool.New(u, l, sp)
 	if err != nil {
@@ -95,6 +99,23 @@ func NewRegistry(u string, l *zap.Logger, sp *state.Provider) (*Registry, error)
 	r := &Registry{
 		p: p,
 		l: l,
+	}
+
+	baseURI, err := url.Parse(u)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	username := baseURI.User.Username()
+	pwd, _ := baseURI.User.Password()
+
+	c := conninfo.New()
+	c.SetAuth(username, pwd)
+
+	ctx := conninfo.Ctx(context.Background(), c)
+	_, err = r.getPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
 	return r, nil
@@ -122,14 +143,7 @@ func (r *Registry) getPool(ctx context.Context) (*pgxpool.Pool, error) {
 
 	if connInfo.BypassBackendAuth() {
 		if p = r.p.GetAny(); p == nil {
-			// no connection pool has been created yet and authentication
-			// is bypassed, attempt to use credentials to connect
-			username, password := connInfo.Auth()
-
-			var err error
-			if p, err = r.p.Get(username, password); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
+			return nil, lazyerrors.New("no connection pool")
 		}
 	} else {
 		username, password := connInfo.Auth()
