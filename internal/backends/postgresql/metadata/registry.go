@@ -111,8 +111,8 @@ func NewRegistry(u string, l *zap.Logger, sp *state.Provider) (*Registry, error)
 
 	c := conninfo.New()
 	c.SetAuth(username, pwd)
-
 	ctx := conninfo.Ctx(context.Background(), c)
+
 	_, err = r.getPool(ctx)
 	if err != nil {
 		return nil, lazyerrors.Error(err)

@@ -123,6 +123,7 @@ func (h *Handler) authenticate(ctx context.Context, msg *wire.OpMsg) error {
 	}
 
 	v := must.NotFail(credentials.Get("PLAIN"))
+
 	doc, ok := v.(*types.Document)
 	if !ok {
 		return lazyerrors.Errorf("field 'PLAIN' has type %T, expected Document", v)
