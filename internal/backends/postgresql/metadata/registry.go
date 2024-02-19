@@ -86,9 +86,6 @@ type Registry struct {
 }
 
 // NewRegistry creates a registry for PostgreSQL databases with a given base URI.
-//
-// It gets a pool using the user and password from the base URI, which is later used
-// by connections that by passes backend authentication.
 func NewRegistry(u string, l *zap.Logger, sp *state.Provider) (*Registry, error) {
 	p, err := pool.New(u, l, sp)
 	if err != nil {
@@ -126,7 +123,7 @@ func (r *Registry) getPool(ctx context.Context) (*pgxpool.Pool, error) {
 	if connInfo.BypassBackendAuth() {
 		if p = r.p.GetAny(); p == nil {
 			var err error
-			// pass no authentication info to use credentials from the base URI
+			// use credential from the base URI by passing empty values
 			if p, err = r.p.Get("", ""); err != nil {
 				return nil, lazyerrors.Error(err)
 			}

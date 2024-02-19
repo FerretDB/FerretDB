@@ -30,11 +30,11 @@ import (
 )
 
 // authenticate validates the user's credentials in the connection with the
-// credentials in the database. If EnableNewAuth is false or bypass backend auth
-// is set false, it succeeds authentication.
+// credentials in admin.systems.user. If EnableNewAuth is false or bypass backend auth
+// is set false, it succeeds authentication and let backend handle it.
 //
-// When admin.systems.user contains no user, the authentication delegates
-// it to the backend. This may change once local exception is implemented.
+// When admin.systems.user contains no user, the authentication is delegated to
+// the backend. This may change once local exception is implemented.
 func (h *Handler) authenticate(ctx context.Context, msg *wire.OpMsg) error {
 	if !h.EnableNewAuth {
 		return nil
@@ -96,9 +96,10 @@ func (h *Handler) authenticate(ctx context.Context, msg *wire.OpMsg) error {
 	}
 
 	if !hasUser {
-		// There is no user in the database, let backend check the authentication.
-		// Do not want unauthenticated users accessing the database, while there need
-		// to be a way to access the database until local exception is implemented.
+		// There is no user in the database, let the backend check the authentication.
+		// We do not want unauthenticated users accessing the database, while allowing
+		// users with valid backend credentials to access the database
+		// until local exception is implemented.
 		conninfo.Get(ctx).UnsetBypassBackendAuth()
 
 		return nil

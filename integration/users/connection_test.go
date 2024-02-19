@@ -309,9 +309,7 @@ func TestAuthenticationEnableNewAuthPLAIN(t *testing.T) {
 	t.Parallel()
 
 	s := setup.SetupWithOpts(t, nil)
-	ctx := s.Ctx
-	collection := s.Collection
-	db := collection.Database()
+	ctx, cName, db := s.Ctx, s.Collection.Name(), s.Collection.Database()
 
 	err := db.RunCommand(ctx, bson.D{
 		{"createUser", "plain-user"},
@@ -320,20 +318,6 @@ func TestAuthenticationEnableNewAuthPLAIN(t *testing.T) {
 		{"mechanisms", bson.A{"PLAIN"}},
 	}).Err()
 	require.NoError(t, err, "cannot create user")
-
-	t.Cleanup(func() {
-		opts := options.Client().ApplyURI(s.MongoDBURI).SetAuth(options.Credential{
-			AuthMechanism: "PLAIN",
-			AuthSource:    db.Name(),
-			Username:      "plain-user",
-			Password:      "correct",
-		})
-
-		client, err := mongo.Connect(ctx, opts)
-		require.NoError(t, err)
-
-		require.NoError(t, client.Database(db.Name()).RunCommand(ctx, bson.D{{"dropUser", "plain-user"}}).Err())
-	})
 
 	testCases := map[string]struct {
 		username  string
@@ -384,8 +368,8 @@ func TestAuthenticationEnableNewAuthPLAIN(t *testing.T) {
 			client, err := mongo.Connect(ctx, opts)
 			require.NoError(t, err, "cannot connect to MongoDB")
 
-			connCollection := client.Database(db.Name()).Collection(collection.Name())
-			_, err = connCollection.InsertOne(ctx, bson.D{{"ping", "pong"}})
+			c := client.Database(db.Name()).Collection(cName)
+			_, err = c.InsertOne(ctx, bson.D{{"ping", "pong"}})
 
 			if tc.err != "" {
 				require.ErrorContains(t, err, tc.err)

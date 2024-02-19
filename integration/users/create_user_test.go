@@ -305,10 +305,9 @@ func assertSCRAMSHA256Credentials(t testtb.TB, key string, cred *types.Document)
 	assert.NotEmpty(t, must.NotFail(c.Get("storedKey")).(string))
 }
 
-// createTestRunnerUser creates a user in admin database with PLAIN mechanism
-// and returns the test database. It uses username/password pair which is
-// the same as database credentials for integration test. This is done to
-// avoid the need to reconnect as different credential in tests.
+// createTestRunnerUser creates a user in admin database with PLAIN mechanism.
+// The user uses username/password credential which is the same as the database
+// credentials. This is done to avoid the need to reconnect as different credential.
 //
 // Without this, once the first user is created, the authentication fails
 // as username/password does not exist in admin.system.users collection.
