@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"hash/fnv"
-	"net/url"
 	"regexp"
 	"slices"
 	"sort"
@@ -101,23 +100,6 @@ func NewRegistry(u string, l *zap.Logger, sp *state.Provider) (*Registry, error)
 		l: l,
 	}
 
-	baseURI, err := url.Parse(u)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	username := baseURI.User.Username()
-	pwd, _ := baseURI.User.Password()
-
-	c := conninfo.New()
-	c.SetAuth(username, pwd)
-	ctx := conninfo.Ctx(context.Background(), c)
-
-	_, err = r.getPool(ctx)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
 	return r, nil
 }
 
@@ -143,7 +125,11 @@ func (r *Registry) getPool(ctx context.Context) (*pgxpool.Pool, error) {
 
 	if connInfo.BypassBackendAuth() {
 		if p = r.p.GetAny(); p == nil {
-			return nil, lazyerrors.New("no connection pool")
+			var err error
+			// pass no authentication info to use credentials from the base URI
+			if p, err = r.p.Get("", ""); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
 		}
 	} else {
 		username, password := connInfo.Auth()
