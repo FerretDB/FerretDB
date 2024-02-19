@@ -42,32 +42,35 @@ import (
 func UpdateDocument(ctx context.Context, c backends.Collection, cmd string, iter types.DocumentsIterator, param *Update) (*UpdateResult, error) { //nolint:lll // for readability
 	result := new(UpdateResult)
 
-	docs, err := iterator.ConsumeValues(iter)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	isFindAndModify := (strings.ToLower(cmd) == "findandmodify")
 
-	result.Matched.Count = int32(len(docs))
+	for {
+		var upsert, modified bool
 
-	var upsert bool
+		_, doc, err := iter.Next()
+		if err != nil {
+			if !errors.Is(err, iterator.ErrIteratorDone) {
+				return nil, lazyerrors.Error(err)
+			}
 
-	if len(docs) == 0 {
-		if !param.Upsert {
-			return result, nil
+			if result.Matched.Count == 0 && param.Upsert {
+				upsert = true
+				doc = must.NotFail(types.NewDocument())
+			}
+
+			if !upsert {
+				return result, nil
+			}
 		}
-
-		upsert = true
-		docs = append(docs, must.NotFail(types.NewDocument()))
-	}
-
-	for _, doc := range docs {
-		var modified bool
-
-		result.Matched.Doc = doc.DeepCopy()
 
 		if upsert {
 			if err = processFilterEqualityCondition(doc, param.Filter); err != nil {
 				return nil, lazyerrors.Error(err)
+			}
+		} else {
+			result.Matched.Count++
+			if isFindAndModify {
+				result.Matched.Doc = doc.DeepCopy()
 			}
 		}
 
@@ -95,20 +98,22 @@ func UpdateDocument(ctx context.Context, c backends.Collection, cmd string, iter
 			if err != nil {
 				return nil, lazyerrors.Error(err)
 			}
-
 			result.Upserted.Doc = doc
+
+			// upsert happens only once, no need to iterate further
+			return result, nil
 		} else if modified {
 			_, err := c.UpdateAll(ctx, &backends.UpdateAllParams{Docs: []*types.Document{doc}})
 			if err != nil {
 				return nil, lazyerrors.Error(err)
 			}
 
-			result.Modified.Doc = doc
 			result.Modified.Count++
+			if isFindAndModify {
+				result.Modified.Doc = doc
+			}
 		}
 	}
-
-	return result, nil
 }
 
 // processFilterEqualityCondition copies the fields with equality condition from filter to doc.
@@ -166,7 +171,7 @@ func processReplacementDoc(command string, doc, update *types.Document) (bool, e
 	updatedId, _ := update.Get("_id")
 
 	if docId != nil && updatedId != nil && types.Compare(docId, updatedId) != types.Equal {
-		return false, newUpdateError(
+		return false, NewUpdateError(
 			handlererrors.ErrImmutableField,
 			"Performing an update on the path '_id' would modify the immutable field '_id'",
 			command,
@@ -314,7 +319,7 @@ func processUpdateOperator(command string, doc, update *types.Document, upsert b
 
 		default:
 			if strings.HasPrefix(updateOp, "$") {
-				return false, newUpdateError(
+				return false, NewUpdateError(
 					handlererrors.ErrNotImplemented,
 					fmt.Sprintf("UpdateDocument: unhandled operation %q", updateOp),
 					command,
@@ -327,7 +332,7 @@ func processUpdateOperator(command string, doc, update *types.Document, upsert b
 
 	updatedId, _ := doc.Get("_id")
 	if docId != nil && (updatedId == nil || types.Compare(docId, updatedId) != types.Equal) {
-		return false, newUpdateError(
+		return false, NewUpdateError(
 			handlererrors.ErrImmutableField,
 			"Performing an update on the path '_id' would modify the immutable field '_id'",
 			command,
@@ -375,7 +380,7 @@ func processSetFieldExpression(command string, doc, setDoc *types.Document, setO
 		}
 
 		if err := doc.SetByPath(path, setValue); err != nil {
-			return false, newUpdateError(handlererrors.ErrUnsuitableValueType, err.Error(), command)
+			return false, NewUpdateError(handlererrors.ErrUnsuitableValueType, err.Error(), command)
 		}
 
 		changed = true
@@ -395,7 +400,7 @@ func processRenameFieldExpression(command string, doc *types.Document, update *t
 		renameRawValue := must.NotFail(update.Get(key))
 
 		if key == "" || renameRawValue == "" {
-			return changed, newUpdateError(
+			return changed, NewUpdateError(
 				handlererrors.ErrEmptyName,
 				"An empty update path is not valid.",
 				command,
@@ -409,7 +414,7 @@ func processRenameFieldExpression(command string, doc *types.Document, update *t
 		if err != nil {
 			var pathErr *types.PathError
 			if errors.As(err, &pathErr) && pathErr.Code() == types.ErrPathElementEmpty {
-				return false, newUpdateError(
+				return false, NewUpdateError(
 					handlererrors.ErrEmptyName,
 					fmt.Sprintf(
 						"The update path '%s' contains an empty field name, which is not allowed.",
@@ -438,14 +443,14 @@ func processRenameFieldExpression(command string, doc *types.Document, update *t
 			}
 
 			if dpe.Code() == types.ErrPathIndexInvalid {
-				return false, newUpdateError(
+				return false, NewUpdateError(
 					handlererrors.ErrUnsuitableValueType,
 					fmt.Sprintf("cannot use path '%s' to traverse the document", sourcePath),
 					command,
 				)
 			}
 
-			return changed, newUpdateError(handlererrors.ErrUnsuitableValueType, dpe.Error(), command)
+			return changed, NewUpdateError(handlererrors.ErrUnsuitableValueType, dpe.Error(), command)
 		}
 
 		// Remove old document
@@ -477,7 +482,7 @@ func processIncFieldExpression(command string, doc *types.Document, updateV any)
 		switch incValue.(type) {
 		case float64, int32, int64:
 		default:
-			return false, newUpdateError(
+			return false, NewUpdateError(
 				handlererrors.ErrTypeMismatch,
 				fmt.Sprintf(`Cannot increment with non-numeric argument: {%s: %#v}`, incKey, incValue),
 				command,
@@ -492,7 +497,7 @@ func processIncFieldExpression(command string, doc *types.Document, updateV any)
 		if !doc.HasByPath(path) {
 			// $inc sets the field if it does not exist.
 			if err := doc.SetByPath(path, incValue); err != nil {
-				return false, newUpdateError(
+				return false, NewUpdateError(
 					handlererrors.ErrUnsuitableValueType,
 					err.Error(),
 					command,
@@ -541,7 +546,7 @@ func processIncFieldExpression(command string, doc *types.Document, updateV any)
 				k = path.Suffix()
 			}
 
-			return false, newUpdateError(
+			return false, NewUpdateError(
 				handlererrors.ErrTypeMismatch,
 				fmt.Sprintf(
 					`Cannot apply $inc to a value of non-numeric type. `+
@@ -553,7 +558,7 @@ func processIncFieldExpression(command string, doc *types.Document, updateV any)
 				command,
 			)
 		case errors.Is(err, handlerparams.ErrLongExceededPositive), errors.Is(err, handlerparams.ErrLongExceededNegative):
-			return false, newUpdateError(
+			return false, NewUpdateError(
 				handlererrors.ErrBadValue,
 				fmt.Sprintf(
 					`Failed to apply $inc operations to current value ((NumberLong)%d) for document {_id: "%s"}`,
@@ -563,7 +568,7 @@ func processIncFieldExpression(command string, doc *types.Document, updateV any)
 				command,
 			)
 		case errors.Is(err, handlerparams.ErrIntExceeded):
-			return false, newUpdateError(
+			return false, NewUpdateError(
 				handlererrors.ErrBadValue,
 				fmt.Sprintf(
 					`Failed to apply $inc operations to current value ((NumberInt)%d) for document {_id: "%s"}`,
@@ -607,7 +612,7 @@ func processMaxFieldExpression(command string, doc *types.Document, updateV any)
 		if !doc.HasByPath(path) {
 			err = doc.SetByPath(path, maxVal)
 			if err != nil {
-				return false, newUpdateError(handlererrors.ErrUnsuitableValueType, err.Error(), command)
+				return false, NewUpdateError(handlererrors.ErrUnsuitableValueType, err.Error(), command)
 			}
 
 			changed = true
@@ -675,7 +680,7 @@ func processMinFieldExpression(command string, doc *types.Document, updateV any)
 		if !doc.HasByPath(path) {
 			err = doc.SetByPath(path, minVal)
 			if err != nil {
-				return false, newUpdateError(handlererrors.ErrUnsuitableValueType, err.Error(), command)
+				return false, NewUpdateError(handlererrors.ErrUnsuitableValueType, err.Error(), command)
 			}
 
 			changed = true
@@ -739,7 +744,7 @@ func processMulFieldExpression(command string, doc *types.Document, updateV any)
 			case int64:
 				mulValue = int64(0)
 			default:
-				return false, newUpdateError(
+				return false, NewUpdateError(
 					handlererrors.ErrTypeMismatch,
 					fmt.Sprintf(`Cannot multiply with non-numeric argument: {%s: %#v}`, mulKey, mulValue),
 					command,
@@ -748,7 +753,7 @@ func processMulFieldExpression(command string, doc *types.Document, updateV any)
 
 			err := doc.SetByPath(path, mulValue)
 			if err != nil {
-				return false, newUpdateError(
+				return false, NewUpdateError(
 					handlererrors.ErrUnsuitableValueType,
 					err.Error(),
 					command,
@@ -797,7 +802,7 @@ func processMulFieldExpression(command string, doc *types.Document, updateV any)
 			continue
 
 		case errors.Is(err, handlerparams.ErrUnexpectedLeftOpType):
-			return false, newUpdateError(
+			return false, NewUpdateError(
 				handlererrors.ErrTypeMismatch,
 				fmt.Sprintf(
 					`Cannot multiply with non-numeric argument: {%s: %#v}`,
@@ -812,7 +817,7 @@ func processMulFieldExpression(command string, doc *types.Document, updateV any)
 				k = path.Suffix()
 			}
 
-			return false, newUpdateError(
+			return false, NewUpdateError(
 				handlererrors.ErrTypeMismatch,
 				fmt.Sprintf(
 					`Cannot apply $mul to a value of non-numeric type. `+
@@ -824,7 +829,7 @@ func processMulFieldExpression(command string, doc *types.Document, updateV any)
 				command,
 			)
 		case errors.Is(err, handlerparams.ErrLongExceededPositive), errors.Is(err, handlerparams.ErrLongExceededNegative):
-			return false, newUpdateError(
+			return false, NewUpdateError(
 				handlererrors.ErrBadValue,
 				fmt.Sprintf(
 					`Failed to apply $mul operations to current value ((NumberLong)%d) for document {_id: "%s"}`,
@@ -834,7 +839,7 @@ func processMulFieldExpression(command string, doc *types.Document, updateV any)
 				command,
 			)
 		case errors.Is(err, handlerparams.ErrIntExceeded):
-			return false, newUpdateError(
+			return false, NewUpdateError(
 				handlererrors.ErrBadValue,
 				fmt.Sprintf(
 					`Failed to apply $mul operations to current value ((NumberInt)%d) for document {_id: "%s"}`,
@@ -903,7 +908,7 @@ func processBitFieldExpression(command string, doc *types.Document, updateV any)
 
 		nestedDoc, ok := bitValue.(*types.Document)
 		if !ok {
-			return false, newUpdateError(
+			return false, NewUpdateError(
 				handlererrors.ErrBadValue,
 				fmt.Sprintf(
 					`The $bit modifier is not compatible with a %s. `+
@@ -915,7 +920,7 @@ func processBitFieldExpression(command string, doc *types.Document, updateV any)
 		}
 
 		if nestedDoc.Len() == 0 {
-			return false, newUpdateError(
+			return false, NewUpdateError(
 				handlererrors.ErrBadValue,
 				fmt.Sprintf(
 					"You must pass in at least one bitwise operation. "+
@@ -944,7 +949,7 @@ func processBitFieldExpression(command string, doc *types.Document, updateV any)
 			switch {
 			case err == nil:
 				if err = doc.SetByPath(path, bitOpResult); err != nil {
-					return false, newUpdateError(handlererrors.ErrUnsuitableValueType, err.Error(), command)
+					return false, NewUpdateError(handlererrors.ErrUnsuitableValueType, err.Error(), command)
 				}
 
 				if docValue == bitOpResult && hasPath {
@@ -956,7 +961,7 @@ func processBitFieldExpression(command string, doc *types.Document, updateV any)
 				continue
 
 			case errors.Is(err, handlerparams.ErrUnexpectedLeftOpType):
-				return false, newUpdateError(
+				return false, NewUpdateError(
 					handlererrors.ErrBadValue,
 					fmt.Sprintf(
 						`The $bit modifier field must be an Integer(32/64 bit); a `+
@@ -969,7 +974,7 @@ func processBitFieldExpression(command string, doc *types.Document, updateV any)
 				)
 
 			case errors.Is(err, handlerparams.ErrUnexpectedRightOpType):
-				return false, newUpdateError(
+				return false, NewUpdateError(
 					handlererrors.ErrBadValue,
 					fmt.Sprintf(
 						`Cannot apply $bit to a value of non-integral type.`+
@@ -982,7 +987,7 @@ func processBitFieldExpression(command string, doc *types.Document, updateV any)
 				)
 
 			default:
-				return false, newUpdateError(handlererrors.ErrBadValue, err.Error(), command)
+				return false, NewUpdateError(handlererrors.ErrBadValue, err.Error(), command)
 			}
 		}
 	}
@@ -1123,7 +1128,7 @@ func HasSupportedUpdateModifiers(command string, update *types.Document) (bool, 
 			updateOps++
 		default:
 			if strings.HasPrefix(operator, "$") {
-				return false, newUpdateError(
+				return false, NewUpdateError(
 					handlererrors.ErrFailedToParse,
 					fmt.Sprintf(
 						"Unknown modifier: %s. Expected a valid update modifier or pipeline-style "+
@@ -1139,7 +1144,7 @@ func HasSupportedUpdateModifiers(command string, update *types.Document) (bool, 
 
 	if updateOps > 0 && updateOps != update.Len() {
 		// update contains a mix of non-$-prefixed fields (replacement document) and operators
-		return false, newUpdateError(
+		return false, NewUpdateError(
 			handlererrors.ErrDollarPrefixedFieldName,
 			"The dollar ($) prefixed field is not allowed in the context of an update's replacement document.",
 			command,
@@ -1149,8 +1154,8 @@ func HasSupportedUpdateModifiers(command string, update *types.Document) (bool, 
 	return (updateOps > 0), nil
 }
 
-// newUpdateError returns CommandError for findAndModify command, WriteError for other commands.
-func newUpdateError(code handlererrors.ErrorCode, msg, command string) error {
+// NewUpdateError returns CommandError for findAndModify command, WriteError for other commands.
+func NewUpdateError(code handlererrors.ErrorCode, msg, command string) error {
 	// Depending on the driver, the command may be camel case or lower case.
 	if strings.ToLower(command) == "findandmodify" {
 		return handlererrors.NewCommandErrorMsgWithArgument(code, msg, command)
@@ -1168,7 +1173,7 @@ func validateOperatorKeys(command string, docs ...*types.Document) error {
 		for _, key := range doc.Keys() {
 			nextPath, err := types.NewPathFromString(key)
 			if err != nil {
-				return newUpdateError(
+				return NewUpdateError(
 					handlererrors.ErrEmptyName,
 					fmt.Sprintf(
 						"The update path '%s' contains an empty field name, which is not allowed.",
@@ -1184,7 +1189,7 @@ func validateOperatorKeys(command string, docs ...*types.Document) error {
 			if errors.As(err, &pathErr) {
 				if pathErr.Code() == types.ErrPathConflictOverwrite ||
 					pathErr.Code() == types.ErrPathConflictCollision {
-					return newUpdateError(
+					return NewUpdateError(
 						handlererrors.ErrConflictingUpdateOperators,
 						fmt.Sprintf(
 							"Updating the path '%[1]s' would create a conflict at '%[1]s'", key,
@@ -1228,7 +1233,7 @@ func extractValueFromUpdateOperator(command, op string, update *types.Document) 
 
 	doc, ok := updateExpression.(*types.Document)
 	if !ok {
-		return nil, newUpdateError(
+		return nil, NewUpdateError(
 			handlererrors.ErrFailedToParse,
 			fmt.Sprintf(`Modifiers operate on fields but we found type %[1]s instead. `+
 				`For example: {$mod: {<field>: ...}} not {%s: %s}`,
@@ -1242,7 +1247,7 @@ func extractValueFromUpdateOperator(command, op string, update *types.Document) 
 
 	duplicate, ok := doc.FindDuplicateKey()
 	if ok {
-		return nil, newUpdateError(
+		return nil, NewUpdateError(
 			handlererrors.ErrConflictingUpdateOperators,
 			fmt.Sprintf(
 				"Updating the path '%[1]s' would create a conflict at '%[1]s'", duplicate,
@@ -1284,7 +1289,7 @@ func validateRenameExpression(command string, update *types.Document) error {
 
 		vStr, ok := v.(string)
 		if !ok {
-			return newUpdateError(
+			return NewUpdateError(
 				handlererrors.ErrBadValue,
 				fmt.Sprintf("The 'to' field for $rename must be a string: %s: %v", k, v),
 				command,
@@ -1293,7 +1298,7 @@ func validateRenameExpression(command string, update *types.Document) error {
 
 		// disallow fields where key is equal to the target
 		if k == vStr {
-			return newUpdateError(
+			return NewUpdateError(
 				handlererrors.ErrBadValue,
 				fmt.Sprintf(`The source and target field for $rename must differ: %s: "%[1]s"`, k, vStr),
 				command,
@@ -1301,7 +1306,7 @@ func validateRenameExpression(command string, update *types.Document) error {
 		}
 
 		if _, ok = keys[k]; ok {
-			return newUpdateError(
+			return NewUpdateError(
 				handlererrors.ErrConflictingUpdateOperators,
 				fmt.Sprintf("Updating the path '%s' would create a conflict at '%s'", k, k),
 				command,
@@ -1311,7 +1316,7 @@ func validateRenameExpression(command string, update *types.Document) error {
 		keys[k] = struct{}{}
 
 		if _, ok = keys[vStr]; ok {
-			return newUpdateError(
+			return NewUpdateError(
 				handlererrors.ErrConflictingUpdateOperators,
 				fmt.Sprintf("Updating the path '%s' would create a conflict at '%s'", vStr, vStr),
 				command,
@@ -1341,7 +1346,7 @@ func validateCurrentDateExpression(command string, update *types.Document) error
 		case *types.Document:
 			for _, k := range setValue.Keys() {
 				if k != "$type" {
-					return newUpdateError(
+					return NewUpdateError(
 						handlererrors.ErrBadValue,
 						fmt.Sprintf("Unrecognized $currentDate option: %s", k),
 						command,
@@ -1355,7 +1360,7 @@ func validateCurrentDateExpression(command string, update *types.Document) error
 
 			currentDateTypeString, ok := currentDateType.(string)
 			if !ok || !slices.Contains([]string{"date", "timestamp"}, currentDateTypeString) {
-				return newUpdateError(
+				return NewUpdateError(
 					handlererrors.ErrBadValue,
 					"The '$type' string field is required to be 'date' or 'timestamp': "+
 						"{$currentDate: {field : {$type: 'date'}}}",
@@ -1367,7 +1372,7 @@ func validateCurrentDateExpression(command string, update *types.Document) error
 			continue
 
 		default:
-			return newUpdateError(
+			return NewUpdateError(
 				handlererrors.ErrBadValue,
 				fmt.Sprintf("%s is not valid type for $currentDate. Please use a boolean ('true') "+
 					"or a $type expression ({$type: 'timestamp/date'}).", handlerparams.AliasFromType(setValue),
