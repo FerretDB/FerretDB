@@ -31,7 +31,7 @@ require (
 	golang.org/x/crypto/x509roots/fallback v0.0.0-20240218022100-5bead598a0d4
 	golang.org/x/exp v0.0.0-20240213143201-ec583247a57a
 	golang.org/x/sys v0.17.0
-	modernc.org/sqlite v1.28.0
+	modernc.org/sqlite v1.28.0 // https://gitlab.com/cznic/sqlite/-/issues/173
 )
 
 require (
