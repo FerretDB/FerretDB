@@ -33,8 +33,8 @@ import (
 // credentials in the database. If EnableNewAuth is false or bypass backend auth
 // is set false, it succeeds authentication.
 //
-// When admin.systems.user contains no user, the authentication succeeds until
-// the first user is created.
+// When admin.systems.user contains no user, the authentication delegates
+// it to the backend. This may change once local exception is implemented.
 func (h *Handler) authenticate(ctx context.Context, msg *wire.OpMsg) error {
 	if !h.EnableNewAuth {
 		return nil

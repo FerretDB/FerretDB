@@ -307,10 +307,12 @@ func assertSCRAMSHA256Credentials(t testtb.TB, key string, cred *types.Document)
 }
 
 // createUserTestRunnerUser creates a user with PLAIN mechanism and returns
-// the database and collection connection created by that user.
-// This gives a user to run user creation tests until local exception is implemented for FerretDB.
-// Without this, once the first user is created, the connection to FerretDB fails authentication
-// and cannot do any further operations.
+// the database and collection connection of that user. It registers cleanup
+// of deleting all users of that database.
+// For mongoDB it does nothing.
+//
+// Without this, once the first user is created, the authentication fails
+// and further tests fails.
 func createUserTestRunnerUser(tb *testing.T, s *setup.SetupResult) (*mongo.Database, *mongo.Collection) {
 	if setup.IsMongoDB(tb) {
 		return s.Collection.Database(), s.Collection
@@ -326,8 +328,7 @@ func createUserTestRunnerUser(tb *testing.T, s *setup.SetupResult) (*mongo.Datab
 	}).Err()
 	require.NoErrorf(tb, err, "cannot create user")
 
-	// once the first user has been created use that user for any other action
-	// until local exception is implemented
+	// once the first user has been created use that user for running test
 	opts := options.Client().ApplyURI(s.MongoDBURI).SetAuth(options.Credential{
 		AuthMechanism: mechanism,
 		AuthSource:    s.Collection.Name(),
