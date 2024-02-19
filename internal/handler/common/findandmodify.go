@@ -25,6 +25,8 @@ import (
 )
 
 // FindAndModifyParams represent parameters for the findAndModify command.
+//
+//nolint:vet // for readability
 type FindAndModifyParams struct {
 	DB                string          `ferretdb:"$db"`
 	Collection        string          `ferretdb:"findAndModify,collection"`

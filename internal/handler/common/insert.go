@@ -29,19 +29,18 @@ import (
 //
 //nolint:vet // for readability
 type InsertParams struct {
-	LSID         any `ferretdb:"lsid,ignored"`
-	ClusterTime  any `ferretdb:"$clusterTime,ignored"`
-	WriteConcern any `ferretdb:"writeConcern,ignored"`
-
 	Docs       *types.Array `ferretdb:"documents,opt"`
 	DB         string       `ferretdb:"$db"`
 	Collection string       `ferretdb:"insert,collection"`
-	Comment    string       `ferretdb:"comment,ignored"`
+	Ordered    bool         `ferretdb:"ordered,opt"`
 
-	Ordered                  bool `ferretdb:"ordered,opt"`
-	BypassDocumentValidation bool `ferretdb:"bypassDocumentValidation,ignored"`
+	WriteConcern             any    `ferretdb:"writeConcern,ignored"`
+	BypassDocumentValidation bool   `ferretdb:"bypassDocumentValidation,ignored"`
+	Comment                  string `ferretdb:"comment,ignored"`
+	LSID                     any    `ferretdb:"lsid,ignored"`
 
-	TxnNumber int64 `ferretdb:"txnNumber,ignored"`
+	TxnNumber   int64 `ferretdb:"txnNumber,ignored"`
+	ClusterTime any   `ferretdb:"$clusterTime,ignored"`
 }
 
 // GetInsertParams returns the parameters for an insert command.
