@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"hash/fnv"
+	"net/url"
 	"regexp"
 	"slices"
 	"sort"
