@@ -65,7 +65,10 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			return nil, err
 		}
 
-		conninfo.Get(ctx).SetBypassBackendAuth()
+		if h.EnableNewAuth {
+			conninfo.Get(ctx).SetBypassBackendAuth()
+		}
+
 		conninfo.Get(ctx).SetAuth(username, password)
 
 		var emptyPayload types.Binary

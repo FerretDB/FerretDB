@@ -26,16 +26,15 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/password"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// authenticate validates the user's credentials in the connection with the
-// credentials in admin.systems.user. If EnableNewAuth is false or bypass backend auth
-// is set false, it succeeds authentication and let backend handle it.
+// authenticate validates users with stored credentials in admin.systems.user.
+// If EnableNewAuth is false or bypass backend auth is set false, it succeeds
+// authentication and let backend handle it.
 //
 // When admin.systems.user contains no user, the authentication is delegated to
 // the backend. This may change once local exception is implemented.
-func (h *Handler) authenticate(ctx context.Context, msg *wire.OpMsg) error {
+func (h *Handler) authenticate(ctx context.Context) error {
 	if !h.EnableNewAuth {
 		return nil
 	}

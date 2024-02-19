@@ -24,7 +24,7 @@ import (
 
 // MsgGetCmdLineOpts implements `getCmdLineOpts` command.
 func (h *Handler) MsgGetCmdLineOpts(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	if err := h.authenticate(ctx, msg); err != nil {
+	if err := h.authenticate(ctx); err != nil {
 		return nil, err
 	}
 

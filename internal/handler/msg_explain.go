@@ -34,7 +34,7 @@ import (
 
 // MsgExplain implements `explain` command.
 func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	if err := h.authenticate(ctx, msg); err != nil {
+	if err := h.authenticate(ctx); err != nil {
 		return nil, err
 	}
 

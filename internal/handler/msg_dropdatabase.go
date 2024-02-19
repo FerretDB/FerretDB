@@ -27,7 +27,7 @@ import (
 
 // MsgDropDatabase implements `dropDatabase` command.
 func (h *Handler) MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	if err := h.authenticate(ctx, msg); err != nil {
+	if err := h.authenticate(ctx); err != nil {
 		return nil, err
 	}
 

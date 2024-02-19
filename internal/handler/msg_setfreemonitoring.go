@@ -29,7 +29,7 @@ import (
 
 // MsgSetFreeMonitoring implements `setFreeMonitoring` command.
 func (h *Handler) MsgSetFreeMonitoring(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	if err := h.authenticate(ctx, msg); err != nil {
+	if err := h.authenticate(ctx); err != nil {
 		return nil, err
 	}
 
