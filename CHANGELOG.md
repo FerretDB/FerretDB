@@ -2,13 +2,52 @@
 
 <!-- markdownlint-disable MD024 MD034 -->
 
-## v1.20.0 (not released yet)
+## [v1.20.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.20.0) (2024-02-19)
 
 ### What's Changed
 
 #### Docker images changes
 
 Production Docker images now use a non-root user with UID 1000 and GID 1000.
+
+### Documentation 📄
+
+- Add blog post on Ubicloud managed postgres by @Fashander in https://github.com/FerretDB/FerretDB/pull/4010
+- Add release blog post for v1.19.0 by @Fashander in https://github.com/FerretDB/FerretDB/pull/4020
+- Truncate release blog post by @Fashander in https://github.com/FerretDB/FerretDB/pull/4047
+- Add blog post on Disaster Recovery for FerretDB with Elotl Nova by @Fashander in https://github.com/FerretDB/FerretDB/pull/4038
+- Update Codapi by @Fashander in https://github.com/FerretDB/FerretDB/pull/4039
+- Add blogpost on FerretDB stack on Tembo by @Fashander in https://github.com/FerretDB/FerretDB/pull/4037
+
+### Other Changes 🤖
+
+- Add tests for new SCRAM-SHA-256 authentication support by @henvic in https://github.com/FerretDB/FerretDB/pull/4012
+- Add `TODO` comments for logging by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4015
+- Add `bson2` helpers for conversions and logging by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4019
+- Setup MySQL backend by @adetunjii in https://github.com/FerretDB/FerretDB/pull/4003
+- Expose new authentication enabling flag by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4029
+- Bump deps and speed-up `checkcomments` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4030
+- Display `envtool run test` progress with run and/or skip flags by @fadyat in https://github.com/FerretDB/FerretDB/pull/3999
+- Use Ubicloud for CI runners by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4027
+- Implement `database.Stats` for MySQL backend by @adetunjii in https://github.com/FerretDB/FerretDB/pull/4034
+- Minor cleanups by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4046
+- Add experimental pushdown for dot notation by @noisersup in https://github.com/FerretDB/FerretDB/pull/4049
+- Bump Go to 1.21.7 by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4059
+- Add utility for hashing SCRAM-SHA-256 password by @henvic in https://github.com/FerretDB/FerretDB/pull/4031
+- Use rootless `scratch` containers for production Docker images by @ahmethakanbesel in https://github.com/FerretDB/FerretDB/pull/4004
+- Prepare query statements for MySQL by @adetunjii in https://github.com/FerretDB/FerretDB/pull/4064
+- Implement `bson2.RawDocument` checking by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4076
+- Add helper for decoding document sequences by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4080
+- Add SCRAM-SHA-256 authentication support by @henvic in https://github.com/FerretDB/FerretDB/pull/3989
+- Remove SCRAM-SHA-256 implementation TODO links by @henvic in https://github.com/FerretDB/FerretDB/pull/4086
+- Update telemetry host by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4085
+
+### New Contributors
+
+- @ahmethakanbesel made their first contribution in https://github.com/FerretDB/FerretDB/pull/4004
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/62?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v1.19.0...v1.20.0).
 
 ## [v1.19.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.19.0) (2024-01-29)
 
