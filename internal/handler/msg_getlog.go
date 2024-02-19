@@ -111,7 +111,7 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			startupWarnings = append(
 				startupWarnings,
 				"The telemetry state is undecided.",
-				"Read more about FerretDB telemetry and how to opt out at https://beacon.ferretdb.io.",
+				"Read more about FerretDB telemetry and how to opt out at https://beacon.ferretdb.com.",
 			)
 		case state.UpdateAvailable:
 			startupWarnings = append(
