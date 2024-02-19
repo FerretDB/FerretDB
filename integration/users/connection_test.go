@@ -294,7 +294,12 @@ func TestAuthenticationEnableNewAuthNoUserExists(t *testing.T) {
 			_, err = connCollection.InsertOne(ctx, bson.D{{"ping", "pong"}})
 
 			if tc.insertErr != "" {
+				if setup.IsSQLite(t) {
+					t.Skip("SQLite does not have backend authentication")
+				}
+
 				require.ErrorContains(t, err, tc.insertErr)
+
 				return
 			}
 
