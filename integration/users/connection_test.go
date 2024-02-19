@@ -35,7 +35,10 @@ func TestAuthentication(t *testing.T) {
 
 	s := setup.SetupWithOpts(t, nil)
 	ctx := s.Ctx
-	db, collection := createUserTestRunnerUser(t, s)
+	collection := s.Collection
+	db := collection.Database()
+
+	createTestRunnerUser(t, ctx, s.Collection.Database())
 
 	testCases := map[string]struct { //nolint:vet // for readability
 		username       string
@@ -219,10 +222,9 @@ func TestAuthentication(t *testing.T) {
 	}
 }
 
-// TestAuthenticationEnableNewAuthNoUser tests that the authentication succeeds
-// with PLAIN mechanism user when there are no users in the database.
-// It uses backend to authenticate the user such case.
-// For SCRAM-SHA-256 mechanism users, authentication fails if the user does not exist.
+// TestAuthenticationEnableNewAuthNoUser tests that the backend authentication
+// is used when there is no user in the database. This ensures that there is
+// some form of authentication even if there is no user.
 func TestAuthenticationEnableNewAuthNoUserExists(t *testing.T) {
 	t.Parallel()
 
@@ -231,7 +233,7 @@ func TestAuthenticationEnableNewAuthNoUserExists(t *testing.T) {
 	collection := s.Collection
 	db := collection.Database()
 
-	testCases := map[string]struct { //nolint:vet // for readability
+	testCases := map[string]struct {
 		username  string
 		password  string
 		mechanism string
@@ -333,7 +335,7 @@ func TestAuthenticationEnableNewAuthPLAIN(t *testing.T) {
 		require.NoError(t, client.Database(db.Name()).RunCommand(ctx, bson.D{{"dropUser", "plain-user"}}).Err())
 	})
 
-	testCases := map[string]struct { //nolint:vet // for readability
+	testCases := map[string]struct {
 		username  string
 		password  string
 		mechanism string
@@ -368,10 +370,6 @@ func TestAuthenticationEnableNewAuthPLAIN(t *testing.T) {
 	for name, tc := range testCases {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			if tc.mechanism == "PLAIN" {
-				setup.SkipForMongoDB(t, "PLAIN mechanism is not supported by MongoDB")
-			}
-
 			t.Parallel()
 
 			credential := options.Credential{

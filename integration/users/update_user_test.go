@@ -32,10 +32,9 @@ import (
 func TestUpdateUser(t *testing.T) {
 	t.Parallel()
 
-	s := setup.SetupWithOpts(t, nil)
-	ctx := s.Ctx
-
-	db, _ := createUserTestRunnerUser(t, s)
+	ctx, collection := setup.Setup(t)
+	db := collection.Database()
+	createTestRunnerUser(t, ctx, db)
 
 	testCases := map[string]struct { //nolint:vet // for readability
 		createPayload bson.D

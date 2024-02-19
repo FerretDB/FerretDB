@@ -31,10 +31,9 @@ import (
 func TestDropUser(t *testing.T) {
 	t.Parallel()
 
-	s := setup.SetupWithOpts(t, nil)
-	ctx := s.Ctx
-
-	db, _ := createUserTestRunnerUser(t, s)
+	ctx, collection := setup.Setup(t)
+	db := collection.Database()
+	createTestRunnerUser(t, ctx, db)
 
 	err := db.RunCommand(ctx, bson.D{
 		{"createUser", "a_user"},

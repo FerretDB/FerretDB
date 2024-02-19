@@ -34,9 +34,9 @@ import (
 func TestDropAllUsersFromDatabase(t *testing.T) {
 	t.Parallel()
 
-	s := setup.SetupWithOpts(t, nil)
-	ctx := s.Ctx
-	db, collection := createUserTestRunnerUser(t, s)
+	ctx, collection := setup.Setup(t)
+	db := collection.Database()
+	createTestRunnerUser(t, ctx, db)
 	client := collection.Database().Client()
 
 	quantity := 5 // Add some users to the database.
@@ -57,7 +57,7 @@ func TestDropAllUsersFromDatabase(t *testing.T) {
 
 	// Run for the second time to check if it still succeeds when there aren't any users remaining,
 	// instead of returning an error.
-	assertDropAllUsersFromDatabase(t, ctx, s.Collection.Database(), 0)
+	assertDropAllUsersFromDatabase(t, ctx, db, 0)
 }
 
 func assertDropAllUsersFromDatabase(t *testing.T, ctx context.Context, db *mongo.Database, quantity int) {

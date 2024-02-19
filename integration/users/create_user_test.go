@@ -15,6 +15,7 @@
 package users
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -22,7 +23,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration"
 	"github.com/FerretDB/FerretDB/integration/setup"
@@ -35,10 +35,9 @@ import (
 func TestCreateUser(t *testing.T) {
 	t.Parallel()
 
-	s := setup.SetupWithOpts(t, nil)
-	ctx := s.Ctx
-
-	db, _ := createUserTestRunnerUser(t, s)
+	ctx, collection := setup.Setup(t)
+	db := collection.Database()
+	createTestRunnerUser(t, ctx, collection.Database())
 
 	testCases := map[string]struct { //nolint:vet // for readability
 		payload    bson.D
@@ -306,44 +305,25 @@ func assertSCRAMSHA256Credentials(t testtb.TB, key string, cred *types.Document)
 	assert.NotEmpty(t, must.NotFail(c.Get("storedKey")).(string))
 }
 
-// createUserTestRunnerUser creates a user with PLAIN mechanism and returns
-// the database and collection connection of that user. It registers cleanup
-// of deleting all users of that database.
-// For mongoDB it does nothing.
+// createTestRunnerUser creates a user in admin database with PLAIN mechanism
+// and returns the test database. It uses username/password pair which is
+// the same as database credentials for integration test. This is done to
+// avoid the need to reconnect as different credential in tests.
 //
 // Without this, once the first user is created, the authentication fails
-// and further tests fails.
-func createUserTestRunnerUser(tb *testing.T, s *setup.SetupResult) (*mongo.Database, *mongo.Collection) {
+// as username/password does not exist in admin.system.users collection.
+func createTestRunnerUser(tb *testing.T, ctx context.Context, db *mongo.Database) {
 	if setup.IsMongoDB(tb) {
-		return s.Collection.Database(), s.Collection
+		return
 	}
 
-	username, pwd, mechanism := "user-test-runner", "password", "PLAIN"
+	username, pwd, mechanism := "username", "password", "PLAIN"
 
-	err := s.Collection.Database().Client().Database("admin").RunCommand(s.Ctx, bson.D{
+	err := db.Client().Database("admin").RunCommand(ctx, bson.D{
 		{"createUser", username},
 		{"roles", bson.A{}},
 		{"pwd", pwd},
 		{"mechanisms", bson.A{mechanism}},
 	}).Err()
 	require.NoErrorf(tb, err, "cannot create user")
-
-	// once the first user has been created use that user for running test
-	opts := options.Client().ApplyURI(s.MongoDBURI).SetAuth(options.Credential{
-		AuthMechanism: mechanism,
-		AuthSource:    s.Collection.Name(),
-		Username:      username,
-		Password:      pwd,
-	})
-	client, err := mongo.Connect(s.Ctx, opts)
-	require.NoError(tb, err, "cannot connect to MongoDB")
-
-	db := client.Database(s.Collection.Database().Name())
-	collection := db.Collection(s.Collection.Name())
-
-	tb.Cleanup(func() {
-		_ = db.RunCommand(s.Ctx, bson.D{{"dropAllUsersFromDatabase", 1}})
-	})
-
-	return db, collection
 }
