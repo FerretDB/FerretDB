@@ -2,9 +2,9 @@
 
 module github.com/FerretDB/FerretDB/tools/golangci
 
-go 1.21
+go 1.22
 
-require github.com/golangci/golangci-lint v1.56.0
+require github.com/golangci/golangci-lint v1.56.2
 
 require (
 	4d63.com/gocheckcompilerdirectives v1.2.1 // indirect
@@ -13,7 +13,7 @@ require (
 	github.com/Abirdcfly/dupword v0.0.13 // indirect
 	github.com/Antonboom/errname v0.1.12 // indirect
 	github.com/Antonboom/nilnil v0.1.7 // indirect
-	github.com/Antonboom/testifylint v1.1.0 // indirect
+	github.com/Antonboom/testifylint v1.1.2 // indirect
 	github.com/BurntSushi/toml v1.3.2 // indirect
 	github.com/Djarvur/go-err113 v0.0.0-20210108212216-aea10b59be24 // indirect
 	github.com/GaijinEntertainment/go-exhaustruct/v3 v3.2.0 // indirect
@@ -28,13 +28,13 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bkielbasa/cyclop v1.2.1 // indirect
 	github.com/blizzy78/varnamelen v0.8.0 // indirect
-	github.com/bombsimon/wsl/v4 v4.2.0 // indirect
+	github.com/bombsimon/wsl/v4 v4.2.1 // indirect
 	github.com/breml/bidichk v0.2.7 // indirect
 	github.com/breml/errchkjson v0.3.6 // indirect
 	github.com/butuzov/ireturn v0.3.0 // indirect
 	github.com/butuzov/mirror v1.1.0 // indirect
 	github.com/catenacyber/perfsprint v0.6.0 // indirect
-	github.com/ccojocar/zxcvbn-go v1.0.1 // indirect
+	github.com/ccojocar/zxcvbn-go v1.0.2 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/charithe/durationcheck v0.0.10 // indirect
 	github.com/chavacava/garif v0.1.0 // indirect
@@ -50,10 +50,10 @@ require (
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/fzipp/gocyclo v0.6.0 // indirect
 	github.com/ghostiam/protogetter v0.3.4 // indirect
-	github.com/go-critic/go-critic v0.11.0 // indirect
+	github.com/go-critic/go-critic v0.11.1 // indirect
 	github.com/go-toolsmith/astcast v1.1.0 // indirect
 	github.com/go-toolsmith/astcopy v1.1.0 // indirect
-	github.com/go-toolsmith/astequal v1.1.0 // indirect
+	github.com/go-toolsmith/astequal v1.2.0 // indirect
 	github.com/go-toolsmith/astfmt v1.1.0 // indirect
 	github.com/go-toolsmith/astp v1.1.0 // indirect
 	github.com/go-toolsmith/strparse v1.1.0 // indirect
@@ -87,7 +87,7 @@ require (
 	github.com/jirfag/go-printf-func-name v0.0.0-20200119135958-7558a9eaa5af // indirect
 	github.com/jjti/go-spancheck v0.5.2 // indirect
 	github.com/julz/importas v0.1.0 // indirect
-	github.com/kisielk/errcheck v1.6.3 // indirect
+	github.com/kisielk/errcheck v1.7.0 // indirect
 	github.com/kisielk/gotool v1.0.0 // indirect
 	github.com/kkHAIKE/contextcheck v1.1.4 // indirect
 	github.com/kulti/thelper v0.6.3 // indirect
@@ -107,7 +107,7 @@ require (
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/mbilski/exhaustivestruct v1.2.0 // indirect
-	github.com/mgechev/revive v1.3.6 // indirect
+	github.com/mgechev/revive v1.3.7 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/moricho/tparallel v0.3.1 // indirect
@@ -132,8 +132,8 @@ require (
 	github.com/ryanrolds/sqlclosecheck v0.5.1 // indirect
 	github.com/sanposhiho/wastedassign/v2 v2.0.7 // indirect
 	github.com/sashamelentyev/interfacebloat v1.1.0 // indirect
-	github.com/sashamelentyev/usestdlibvars v1.24.0 // indirect
-	github.com/securego/gosec/v2 v2.18.2 // indirect
+	github.com/sashamelentyev/usestdlibvars v1.25.0 // indirect
+	github.com/securego/gosec/v2 v2.19.0 // indirect
 	github.com/shazow/go-diff v0.0.0-20160112020656-b6b7b6733b8c // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/sivchari/containedctx v1.0.3 // indirect
@@ -174,11 +174,11 @@ require (
 	go.uber.org/zap v1.24.0 // indirect
 	golang.org/x/exp v0.0.0-20240103183307-be819d1f06fc // indirect
 	golang.org/x/exp/typeparams v0.0.0-20231219180239-dc181d75b848 // indirect
-	golang.org/x/mod v0.14.0 // indirect
+	golang.org/x/mod v0.15.0 // indirect
 	golang.org/x/sync v0.6.0 // indirect
-	golang.org/x/sys v0.16.0 // indirect
+	golang.org/x/sys v0.17.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
-	golang.org/x/tools v0.17.0 // indirect
+	golang.org/x/tools v0.18.0 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

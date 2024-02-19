@@ -126,6 +126,9 @@ const (
 	// ErrNotImplemented indicates that a flag or command is not implemented.
 	ErrNotImplemented = ErrorCode(238) // NotImplemented
 
+	// ErrMechanismUnavailable indicates that the authentication mechanism is unavailable.
+	ErrMechanismUnavailable = ErrorCode(334)
+
 	// ErrIndexesWrongType indicates that indexes parameter has wrong type.
 	ErrIndexesWrongType = ErrorCode(10065) // Location10065
 
@@ -283,6 +286,9 @@ const (
 
 	// ErrSetEmptyPassword indicates that a password must not be empty.
 	ErrSetEmptyPassword = ErrorCode(50687) // Location50687
+
+	// ErrStringProhibited indicates that a password contains prohibited runes.
+	ErrStringProhibited = ErrorCode(50692) // Location50692
 
 	// ErrFreeMonitoringDisabled indicates that free monitoring is disabled
 	// by command-line or config file.

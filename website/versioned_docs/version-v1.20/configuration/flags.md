@@ -21,13 +21,14 @@ Some default values are overridden in [our Docker image](../quickstart-guide/doc
 
 ## General
 
-| Flag           | Description                                                       | Environment Variable | Default Value                  |
-| -------------- | ----------------------------------------------------------------- | -------------------- | ------------------------------ |
-| `-h`, `--help` | Show context-sensitive help                                       |                      | false                          |
-| `--version`    | Print version to stdout and exit                                  |                      | false                          |
-| `--handler`    | Backend handler                                                   | `FERRETDB_HANDLER`   | `pg` (PostgreSQL)              |
-| `--mode`       | [Operation mode](operation-modes.md)                              | `FERRETDB_MODE`      | `normal`                       |
-| `--state-dir`  | Path to the FerretDB state directory<br />(set to `-` to disable) | `FERRETDB_STATE_DIR` | `.`<br />(`/state` for Docker) |
+| Flag              | Description                                                       | Environment Variable     | Default Value                  |
+| ----------------- | ----------------------------------------------------------------- | ------------------------ | ------------------------------ |
+| `-h`, `--help`    | Show context-sensitive help                                       |                          | false                          |
+| `--version`       | Print version to stdout and exit                                  |                          | false                          |
+| `--handler`       | Backend handler                                                   | `FERRETDB_HANDLER`       | `pg` (PostgreSQL)              |
+| `--mode`          | [Operation mode](operation-modes.md)                              | `FERRETDB_MODE`          | `normal`                       |
+| `--state-dir`     | Path to the FerretDB state directory<br />(set to `-` to disable) | `FERRETDB_STATE_DIR`     | `.`<br />(`/state` for Docker) |
+| `--repl-set-name` | Replica set name<br />(should be set for OpLog to work correctly) | `FERRETDB_REPL_SET_NAME` | empty                          |
 
 ## Interfaces
 
