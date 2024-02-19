@@ -34,8 +34,9 @@ import (
 func TestDropAllUsersFromDatabase(t *testing.T) {
 	t.Parallel()
 
-	ctx, collection := setup.Setup(t)
-	db := collection.Database()
+	s := setup.SetupWithOpts(t, nil)
+	ctx := s.Ctx
+	db, collection := createUserTestRunnerUser(t, s)
 	client := collection.Database().Client()
 
 	quantity := 5 // Add some users to the database.

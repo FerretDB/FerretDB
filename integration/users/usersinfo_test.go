@@ -41,8 +41,11 @@ func createUser(username, password string) bson.D {
 func TestUsersinfo(t *testing.T) {
 	t.Parallel()
 
-	ctx, collection := setup.Setup(t)
-	client := collection.Database().Client()
+	s := setup.SetupWithOpts(t, nil)
+	ctx := s.Ctx
+
+	db, _ := createUserTestRunnerUser(t, s)
+	client := db.Client()
 
 	dbToUsers := []struct {
 		dbSuffix string
@@ -456,14 +459,14 @@ func TestUsersinfo(t *testing.T) {
 				},
 			}},
 			hasUser: map[string]struct{}{
-				"TestUsersinfo.one":                {},
-				"TestUsersinfo.two":                {},
-				"TestUsersinfo_example.a":          {},
-				"TestUsersinfo_example.b":          {},
-				"TestUsersinfo_example.c":          {},
-				"TestUsersinfo_few.i":              {},
-				"TestUsersinfo_few.j":              {},
-				"TestUsersinfo_another.singleuser": {},
+				"one":        {},
+				"two":        {},
+				"a":          {},
+				"b":          {},
+				"c":          {},
+				"i":          {},
+				"j":          {},
+				"singleuser": {},
 			},
 		},
 	}

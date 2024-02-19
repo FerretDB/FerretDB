@@ -145,7 +145,7 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 
 	id := uuid.New()
 	saved := must.NotFail(types.NewDocument(
-		"_id", dbName+"."+username,
+		"_id", username,
 		"credentials", credentials,
 		"user", username,
 		"db", dbName,

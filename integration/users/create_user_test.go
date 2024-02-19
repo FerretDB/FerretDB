@@ -15,7 +15,6 @@
 package users
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -267,7 +266,7 @@ func TestCreateUser(t *testing.T) {
 			user.Remove("credentials")
 
 			expectedRec := integration.ConvertDocument(t, bson.D{
-				{"_id", fmt.Sprintf("%s.%s", db.Name(), must.NotFail(payload.Get("createUser")))},
+				{"_id", must.NotFail(payload.Get("createUser"))},
 				{"user", must.NotFail(payload.Get("createUser"))},
 				{"db", db.Name()},
 				{"roles", bson.A{}},
@@ -317,8 +316,7 @@ func createUserTestRunnerUser(tb *testing.T, s *setup.SetupResult) (*mongo.Datab
 	}
 
 	username, pwd, mechanism := "user-test-runner", "password", "PLAIN"
-
-	err := s.Collection.Database().RunCommand(s.Ctx, bson.D{
+	err := s.Collection.Database().Client().Database("admin").RunCommand(s.Ctx, bson.D{
 		{"createUser", username},
 		{"roles", bson.A{}},
 		{"pwd", pwd},
@@ -342,6 +340,7 @@ func createUserTestRunnerUser(tb *testing.T, s *setup.SetupResult) (*mongo.Datab
 
 	tb.Cleanup(func() {
 		require.NoError(tb, db.RunCommand(s.Ctx, bson.D{{"dropAllUsersFromDatabase", 1}}).Err())
+		require.NoError(tb, client.Database("admin").RunCommand(s.Ctx, bson.D{{"dropAllUsersFromDatabase", 1}}).Err())
 	})
 
 	return db, collection
