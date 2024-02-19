@@ -18,8 +18,6 @@ import (
 	"context"
 	"fmt"
 
-	"go.mongodb.org/mongo-driver/mongo"
-
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
@@ -45,23 +43,14 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	// TODO https://github.com/FerretDB/FerretDB/issues/2612
 	_ = params.Ordered
 
-	var we *mongo.WriteError
-
 	matched, modified, upserted, err := h.updateDocument(ctx, params)
 	if err != nil {
-		we, err = handleUpdateError(params.DB, params.Collection, err)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
+		return nil, handleUpdateError(params.DB, params.Collection, "update", err)
 	}
 
 	res := must.NotFail(types.NewDocument(
 		"n", matched,
 	))
-
-	if we != nil {
-		res.Set("writeErrors", must.NotFail(types.NewArray(WriteErrorDocument(we))))
-	}
 
 	if upserted.Len() != 0 {
 		res.Set("upserted", upserted)

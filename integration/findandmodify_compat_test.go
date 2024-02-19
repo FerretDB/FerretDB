@@ -20,6 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
@@ -117,6 +118,24 @@ func TestFindAndModifyCompatErrors(t *testing.T) {
 			command: bson.D{
 				{"maxTimeMS", "string"},
 			},
+			resultType: emptyResult,
+		},
+		"DuplicateID": {
+			command: bson.D{
+				{"query", bson.D{{"non-existent", "val"}}},
+				{"update", bson.D{{"_id", "int32"}, {"v", int32(43)}}},
+				{"upsert", true},
+			},
+			providers:  []shareddata.Provider{shareddata.Int32s},
+			resultType: emptyResult,
+		},
+		"InvalidID": {
+			command: bson.D{
+				{"query", bson.D{{"non-existent", "val"}}},
+				{"update", bson.D{{"_id", primitive.Regex{Pattern: "[a-z]*[0-9]"}}, {"v", int32(43)}}},
+				{"upsert", true},
+			},
+			providers:  []shareddata.Provider{shareddata.Int32s},
 			resultType: emptyResult,
 		},
 	}
@@ -704,6 +723,13 @@ func TestFindAndModifyCompatUpsertSet(t *testing.T) {
 				{"update", bson.D{{"$set", bson.D{{"new", "val"}}}}},
 			},
 		},
+		"UpsertQueryCompareObject": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "non-existent"}, {"v", bson.D{{"k1", "v1"}, {"k2", bson.D{{"k21", "v21"}}}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"$set", bson.D{{"new", "val"}}}}},
+			},
+		},
 	}
 
 	testFindAndModifyCompat(t, testCases)
@@ -952,7 +978,7 @@ func testFindAndModifyCompat(t *testing.T, testCases map[string]findAndModifyCom
 						t.Logf("Compat error: %v", compatErr)
 
 						// error messages are intentionally not compared
-						AssertMatchesCommandError(t, compatErr, targetErr)
+						AssertMatchesError(t, compatErr, targetErr)
 
 						return
 					}

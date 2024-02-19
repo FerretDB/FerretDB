@@ -63,7 +63,7 @@ type Update struct {
 
 // UpdateResult is the result type returned from common.UpdateDocument.
 // It represents the number of documents matched, modified and upserted.
-// In case of upsert or updating a single document, it also contains pointers to the documents.
+// In case of findAndModify, it also contains pointers to the documents.
 type UpdateResult struct {
 	Matched struct {
 		Doc   *types.Document
@@ -76,8 +76,7 @@ type UpdateResult struct {
 	}
 
 	Upserted struct {
-		Doc   *types.Document
-		Count int32
+		Doc *types.Document
 	}
 }
 
@@ -110,7 +109,7 @@ func GetUpdateParams(document *types.Document, l *zap.Logger) (*UpdateParams, er
 					return nil, err
 				}
 			} else if update.Multi {
-				return nil, newUpdateError(
+				return nil, NewUpdateError(
 					handlererrors.ErrFailedToParse,
 					"multi update is not supported for replacement-style update",
 					"update",

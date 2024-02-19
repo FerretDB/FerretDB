@@ -20,8 +20,6 @@ import (
 	"fmt"
 	"time"
 
-	"go.mongodb.org/mongo-driver/mongo"
-
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
@@ -58,39 +56,29 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		}
 	}
 
-	var we *mongo.WriteError
 	var resDoc *types.Document
 
 	res, err := h.findAndModifyDocument(ctx, params)
 	if err != nil {
-		we, err = handleUpdateError(params.DB, params.Collection, err)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		resDoc = must.NotFail(types.NewDocument(
-			"lastErrorObject", must.NotFail(types.NewDocument("n", int32(0))),
-			"value", types.Null,
-			"writeErrors", must.NotFail(types.NewArray(WriteErrorDocument(we))),
-		))
-	} else {
-		lastError := must.NotFail(types.NewDocument(
-			"n", res.modified,
-		))
-
-		if res.updateExisting != nil {
-			lastError.Set("updatedExisting", res.updateExisting)
-		}
-
-		if res.upserted != nil {
-			lastError.Set("upserted", res.upserted)
-		}
-
-		resDoc = must.NotFail(types.NewDocument(
-			"lastErrorObject", lastError,
-			"value", res.value,
-		))
+		return nil, handleUpdateError(params.DB, params.Collection, "findAndModify", err)
 	}
+
+	lastError := must.NotFail(types.NewDocument(
+		"n", res.modified,
+	))
+
+	if res.updateExisting != nil {
+		lastError.Set("updatedExisting", res.updateExisting)
+	}
+
+	if res.upserted != nil {
+		lastError.Set("upserted", res.upserted)
+	}
+
+	resDoc = must.NotFail(types.NewDocument(
+		"lastErrorObject", lastError,
+		"value", res.value,
+	))
 
 	resDoc.Set("ok", float64(1))
 
@@ -231,30 +219,27 @@ func (h *Handler) findAndModifyDocument(ctx context.Context, params *common.Find
 	return result, nil
 }
 
-// handleUpdateError process backend/validation error returned from update operation.
-// It returns *mongo.WriteError if updateErr is an expected error from update operation, otherwise it returns error.
-func handleUpdateError(db, coll string, updateErr error) (*mongo.WriteError, error) {
-	var we *mongo.WriteError
+// handleUpdateError coverts backend/validation error returned from update operation
+// into CommandError or WriteError based on the command.
+func handleUpdateError(db, coll, command string, err error) error {
 	var be *backends.Error
 	var ve *types.ValidationError
 
-	if errors.As(updateErr, &be) && be.Code() == backends.ErrorCodeInsertDuplicateID {
-		we = &mongo.WriteError{
-			Index:   0,
-			Code:    int(handlererrors.ErrDuplicateKeyInsert),
-			Message: fmt.Sprintf(`E11000 duplicate key error collection: %s.%s`, db, coll),
-		}
-	} else if errors.As(updateErr, &ve) {
-		we = convertValidationErrToWriteErr(ve)
-	} else {
-		return nil, lazyerrors.Error(updateErr)
+	if errors.As(err, &be) && be.Code() == backends.ErrorCodeInsertDuplicateID {
+		err = common.NewUpdateError(
+			handlererrors.ErrDuplicateKeyInsert,
+			fmt.Sprintf(`E11000 duplicate key error collection: %s.%s`, db, coll),
+			command,
+		)
+	} else if errors.As(err, &ve) {
+		err = validationErrToUpdateErr(command, ve)
 	}
 
-	return we, nil
+	return err
 }
 
-// convertValidationErrToWriteErr converts validation error and returns *mongo.WriteError.
-func convertValidationErrToWriteErr(ve *types.ValidationError) *mongo.WriteError {
+// validationErrToUpdateErr converts validation error into CommandError or WriteError based on the command.
+func validationErrToUpdateErr(command string, ve *types.ValidationError) error {
 	var code handlererrors.ErrorCode
 
 	switch ve.Code() {
@@ -266,9 +251,5 @@ func convertValidationErrToWriteErr(ve *types.ValidationError) *mongo.WriteError
 		panic(fmt.Sprintf("unknown error code: %v", ve.Code()))
 	}
 
-	return &mongo.WriteError{
-		Index:   0,
-		Code:    int(code),
-		Message: ve.Error(),
-	}
+	return common.NewUpdateError(code, ve.Error(), command)
 }

@@ -1,0 +1,934 @@
+diff --git a/integration/findandmodify_compat_test.go b/integration/findandmodify_compat_test.go
+index f2cf83ed..83a6c315 100644
+--- a/integration/findandmodify_compat_test.go
++++ b/integration/findandmodify_compat_test.go
+@@ -20,6 +20,7 @@ import (
+ 	"github.com/stretchr/testify/assert"
+ 	"github.com/stretchr/testify/require"
+ 	"go.mongodb.org/mongo-driver/bson"
++	"go.mongodb.org/mongo-driver/bson/primitive"
+ 	"go.mongodb.org/mongo-driver/mongo/options"
+ 
+ 	"github.com/FerretDB/FerretDB/integration/setup"
+@@ -119,6 +120,24 @@ func TestFindAndModifyCompatErrors(t *testing.T) {
+ 			},
+ 			resultType: emptyResult,
+ 		},
++		"DuplicateID": {
++			command: bson.D{
++				{"query", bson.D{{"non-existent", "val"}}},
++				{"update", bson.D{{"_id", "int32"}, {"v", int32(43)}}},
++				{"upsert", true},
++			},
++			providers:  []shareddata.Provider{shareddata.Int32s},
++			resultType: emptyResult,
++		},
++		"InvalidID": {
++			command: bson.D{
++				{"query", bson.D{{"non-existent", "val"}}},
++				{"update", bson.D{{"_id", primitive.Regex{Pattern: "[a-z]*[0-9]"}}, {"v", int32(43)}}},
++				{"upsert", true},
++			},
++			providers:  []shareddata.Provider{shareddata.Int32s},
++			resultType: emptyResult,
++		},
+ 	}
+ 
+ 	testFindAndModifyCompat(t, testCases)
+@@ -704,6 +723,13 @@ func TestFindAndModifyCompatUpsertSet(t *testing.T) {
+ 				{"update", bson.D{{"$set", bson.D{{"new", "val"}}}}},
+ 			},
+ 		},
++		"UpsertQueryCompareObject": {
++			command: bson.D{
++				{"query", bson.D{{"_id", "non-existent"}, {"v", bson.D{{"k1", "v1"}, {"k2", bson.D{{"k21", "v21"}}}}}}},
++				{"upsert", true},
++				{"update", bson.D{{"$set", bson.D{{"new", "val"}}}}},
++			},
++		},
+ 	}
+ 
+ 	testFindAndModifyCompat(t, testCases)
+@@ -952,7 +978,7 @@ func testFindAndModifyCompat(t *testing.T, testCases map[string]findAndModifyCom
+ 						t.Logf("Compat error: %v", compatErr)
+ 
+ 						// error messages are intentionally not compared
+-						AssertMatchesCommandError(t, compatErr, targetErr)
++						AssertMatchesError(t, compatErr, targetErr)
+ 
+ 						return
+ 					}
+diff --git a/integration/update_field_compat_test.go b/integration/update_field_compat_test.go
+index 6319efe5..1632fb0f 100644
+--- a/integration/update_field_compat_test.go
++++ b/integration/update_field_compat_test.go
+@@ -1066,6 +1066,11 @@ func TestUpdateFieldCompatMixed(t *testing.T) {
+ 			update:     bson.D{{"$set", bson.D{{"new", "val"}}}},
+ 			updateOpts: options.Update().SetUpsert(true),
+ 		},
++		"UpsertQueryCompareObject": {
++			filter:     bson.D{{"_id", "non-existent"}, {"v", bson.D{{"k1", "v1"}, {"k2", bson.D{{"k21", "v21"}}}}}},
++			update:     bson.D{{"$set", bson.D{{"new", "val"}}}},
++			updateOpts: options.Update().SetUpsert(true),
++		},
+ 	}
+ 
+ 	testUpdateCompat(t, testCases)
+diff --git a/internal/handler/common/update.go b/internal/handler/common/update.go
+index 4c18e091..2260daf3 100644
+--- a/internal/handler/common/update.go
++++ b/internal/handler/common/update.go
+@@ -42,33 +42,36 @@ import (
+ func UpdateDocument(ctx context.Context, c backends.Collection, cmd string, iter types.DocumentsIterator, param *Update) (*UpdateResult, error) { //nolint:lll // for readability
+ 	result := new(UpdateResult)
+ 
+-	docs, err := iterator.ConsumeValues(iter)
+-	if err != nil {
+-		return nil, lazyerrors.Error(err)
+-	}
+-
+-	result.Matched.Count = int32(len(docs))
++	isFindAndModify := (strings.ToLower(cmd) == "findandmodify")
+ 
+-	var upsert bool
+-
+-	if len(docs) == 0 {
+-		if !param.Upsert {
+-			return result, nil
+-		}
++	for {
++		var upsert, modified bool
+ 
+-		upsert = true
+-		docs = append(docs, must.NotFail(types.NewDocument()))
+-	}
++		_, doc, err := iter.Next()
++		if err != nil {
++			if !errors.Is(err, iterator.ErrIteratorDone) {
++				return nil, lazyerrors.Error(err)
++			}
+ 
+-	for _, doc := range docs {
+-		var modified bool
++			if result.Matched.Count == 0 && param.Upsert {
++				upsert = true
++				doc = must.NotFail(types.NewDocument())
++			}
+ 
+-		result.Matched.Doc = doc.DeepCopy()
++			if !upsert {
++				return result, nil
++			}
++		}
+ 
+ 		if upsert {
+ 			if err = processFilterEqualityCondition(doc, param.Filter); err != nil {
+ 				return nil, lazyerrors.Error(err)
+ 			}
++		} else {
++			result.Matched.Count++
++			if isFindAndModify {
++				result.Matched.Doc = doc.DeepCopy()
++			}
+ 		}
+ 
+ 		if !param.HasUpdateOperators {
+@@ -95,20 +98,22 @@ func UpdateDocument(ctx context.Context, c backends.Collection, cmd string, iter
+ 			if err != nil {
+ 				return nil, lazyerrors.Error(err)
+ 			}
+-
+ 			result.Upserted.Doc = doc
++
++			// upsert happens only once, no need to iterate further
++			return result, nil
+ 		} else if modified {
+ 			_, err := c.UpdateAll(ctx, &backends.UpdateAllParams{Docs: []*types.Document{doc}})
+ 			if err != nil {
+ 				return nil, lazyerrors.Error(err)
+ 			}
+ 
+-			result.Modified.Doc = doc
+ 			result.Modified.Count++
++			if isFindAndModify {
++				result.Modified.Doc = doc
++			}
+ 		}
+ 	}
+-
+-	return result, nil
+ }
+ 
+ // processFilterEqualityCondition copies the fields with equality condition from filter to doc.
+@@ -166,7 +171,7 @@ func processReplacementDoc(command string, doc, update *types.Document) (bool, e
+ 	updatedId, _ := update.Get("_id")
+ 
+ 	if docId != nil && updatedId != nil && types.Compare(docId, updatedId) != types.Equal {
+-		return false, newUpdateError(
++		return false, NewUpdateError(
+ 			handlererrors.ErrImmutableField,
+ 			"Performing an update on the path '_id' would modify the immutable field '_id'",
+ 			command,
+@@ -314,7 +319,7 @@ func processUpdateOperator(command string, doc, update *types.Document, upsert b
+ 
+ 		default:
+ 			if strings.HasPrefix(updateOp, "$") {
+-				return false, newUpdateError(
++				return false, NewUpdateError(
+ 					handlererrors.ErrNotImplemented,
+ 					fmt.Sprintf("UpdateDocument: unhandled operation %q", updateOp),
+ 					command,
+@@ -327,7 +332,7 @@ func processUpdateOperator(command string, doc, update *types.Document, upsert b
+ 
+ 	updatedId, _ := doc.Get("_id")
+ 	if docId != nil && (updatedId == nil || types.Compare(docId, updatedId) != types.Equal) {
+-		return false, newUpdateError(
++		return false, NewUpdateError(
+ 			handlererrors.ErrImmutableField,
+ 			"Performing an update on the path '_id' would modify the immutable field '_id'",
+ 			command,
+@@ -375,7 +380,7 @@ func processSetFieldExpression(command string, doc, setDoc *types.Document, setO
+ 		}
+ 
+ 		if err := doc.SetByPath(path, setValue); err != nil {
+-			return false, newUpdateError(handlererrors.ErrUnsuitableValueType, err.Error(), command)
++			return false, NewUpdateError(handlererrors.ErrUnsuitableValueType, err.Error(), command)
+ 		}
+ 
+ 		changed = true
+@@ -395,7 +400,7 @@ func processRenameFieldExpression(command string, doc *types.Document, update *t
+ 		renameRawValue := must.NotFail(update.Get(key))
+ 
+ 		if key == "" || renameRawValue == "" {
+-			return changed, newUpdateError(
++			return changed, NewUpdateError(
+ 				handlererrors.ErrEmptyName,
+ 				"An empty update path is not valid.",
+ 				command,
+@@ -409,7 +414,7 @@ func processRenameFieldExpression(command string, doc *types.Document, update *t
+ 		if err != nil {
+ 			var pathErr *types.PathError
+ 			if errors.As(err, &pathErr) && pathErr.Code() == types.ErrPathElementEmpty {
+-				return false, newUpdateError(
++				return false, NewUpdateError(
+ 					handlererrors.ErrEmptyName,
+ 					fmt.Sprintf(
+ 						"The update path '%s' contains an empty field name, which is not allowed.",
+@@ -438,14 +443,14 @@ func processRenameFieldExpression(command string, doc *types.Document, update *t
+ 			}
+ 
+ 			if dpe.Code() == types.ErrPathIndexInvalid {
+-				return false, newUpdateError(
++				return false, NewUpdateError(
+ 					handlererrors.ErrUnsuitableValueType,
+ 					fmt.Sprintf("cannot use path '%s' to traverse the document", sourcePath),
+ 					command,
+ 				)
+ 			}
+ 
+-			return changed, newUpdateError(handlererrors.ErrUnsuitableValueType, dpe.Error(), command)
++			return changed, NewUpdateError(handlererrors.ErrUnsuitableValueType, dpe.Error(), command)
+ 		}
+ 
+ 		// Remove old document
+@@ -477,7 +482,7 @@ func processIncFieldExpression(command string, doc *types.Document, updateV any)
+ 		switch incValue.(type) {
+ 		case float64, int32, int64:
+ 		default:
+-			return false, newUpdateError(
++			return false, NewUpdateError(
+ 				handlererrors.ErrTypeMismatch,
+ 				fmt.Sprintf(`Cannot increment with non-numeric argument: {%s: %#v}`, incKey, incValue),
+ 				command,
+@@ -492,7 +497,7 @@ func processIncFieldExpression(command string, doc *types.Document, updateV any)
+ 		if !doc.HasByPath(path) {
+ 			// $inc sets the field if it does not exist.
+ 			if err := doc.SetByPath(path, incValue); err != nil {
+-				return false, newUpdateError(
++				return false, NewUpdateError(
+ 					handlererrors.ErrUnsuitableValueType,
+ 					err.Error(),
+ 					command,
+@@ -541,7 +546,7 @@ func processIncFieldExpression(command string, doc *types.Document, updateV any)
+ 				k = path.Suffix()
+ 			}
+ 
+-			return false, newUpdateError(
++			return false, NewUpdateError(
+ 				handlererrors.ErrTypeMismatch,
+ 				fmt.Sprintf(
+ 					`Cannot apply $inc to a value of non-numeric type. `+
+@@ -553,7 +558,7 @@ func processIncFieldExpression(command string, doc *types.Document, updateV any)
+ 				command,
+ 			)
+ 		case errors.Is(err, handlerparams.ErrLongExceededPositive), errors.Is(err, handlerparams.ErrLongExceededNegative):
+-			return false, newUpdateError(
++			return false, NewUpdateError(
+ 				handlererrors.ErrBadValue,
+ 				fmt.Sprintf(
+ 					`Failed to apply $inc operations to current value ((NumberLong)%d) for document {_id: "%s"}`,
+@@ -563,7 +568,7 @@ func processIncFieldExpression(command string, doc *types.Document, updateV any)
+ 				command,
+ 			)
+ 		case errors.Is(err, handlerparams.ErrIntExceeded):
+-			return false, newUpdateError(
++			return false, NewUpdateError(
+ 				handlererrors.ErrBadValue,
+ 				fmt.Sprintf(
+ 					`Failed to apply $inc operations to current value ((NumberInt)%d) for document {_id: "%s"}`,
+@@ -607,7 +612,7 @@ func processMaxFieldExpression(command string, doc *types.Document, updateV any)
+ 		if !doc.HasByPath(path) {
+ 			err = doc.SetByPath(path, maxVal)
+ 			if err != nil {
+-				return false, newUpdateError(handlererrors.ErrUnsuitableValueType, err.Error(), command)
++				return false, NewUpdateError(handlererrors.ErrUnsuitableValueType, err.Error(), command)
+ 			}
+ 
+ 			changed = true
+@@ -675,7 +680,7 @@ func processMinFieldExpression(command string, doc *types.Document, updateV any)
+ 		if !doc.HasByPath(path) {
+ 			err = doc.SetByPath(path, minVal)
+ 			if err != nil {
+-				return false, newUpdateError(handlererrors.ErrUnsuitableValueType, err.Error(), command)
++				return false, NewUpdateError(handlererrors.ErrUnsuitableValueType, err.Error(), command)
+ 			}
+ 
+ 			changed = true
+@@ -739,7 +744,7 @@ func processMulFieldExpression(command string, doc *types.Document, updateV any)
+ 			case int64:
+ 				mulValue = int64(0)
+ 			default:
+-				return false, newUpdateError(
++				return false, NewUpdateError(
+ 					handlererrors.ErrTypeMismatch,
+ 					fmt.Sprintf(`Cannot multiply with non-numeric argument: {%s: %#v}`, mulKey, mulValue),
+ 					command,
+@@ -748,7 +753,7 @@ func processMulFieldExpression(command string, doc *types.Document, updateV any)
+ 
+ 			err := doc.SetByPath(path, mulValue)
+ 			if err != nil {
+-				return false, newUpdateError(
++				return false, NewUpdateError(
+ 					handlererrors.ErrUnsuitableValueType,
+ 					err.Error(),
+ 					command,
+@@ -797,7 +802,7 @@ func processMulFieldExpression(command string, doc *types.Document, updateV any)
+ 			continue
+ 
+ 		case errors.Is(err, handlerparams.ErrUnexpectedLeftOpType):
+-			return false, newUpdateError(
++			return false, NewUpdateError(
+ 				handlererrors.ErrTypeMismatch,
+ 				fmt.Sprintf(
+ 					`Cannot multiply with non-numeric argument: {%s: %#v}`,
+@@ -812,7 +817,7 @@ func processMulFieldExpression(command string, doc *types.Document, updateV any)
+ 				k = path.Suffix()
+ 			}
+ 
+-			return false, newUpdateError(
++			return false, NewUpdateError(
+ 				handlererrors.ErrTypeMismatch,
+ 				fmt.Sprintf(
+ 					`Cannot apply $mul to a value of non-numeric type. `+
+@@ -824,7 +829,7 @@ func processMulFieldExpression(command string, doc *types.Document, updateV any)
+ 				command,
+ 			)
+ 		case errors.Is(err, handlerparams.ErrLongExceededPositive), errors.Is(err, handlerparams.ErrLongExceededNegative):
+-			return false, newUpdateError(
++			return false, NewUpdateError(
+ 				handlererrors.ErrBadValue,
+ 				fmt.Sprintf(
+ 					`Failed to apply $mul operations to current value ((NumberLong)%d) for document {_id: "%s"}`,
+@@ -834,7 +839,7 @@ func processMulFieldExpression(command string, doc *types.Document, updateV any)
+ 				command,
+ 			)
+ 		case errors.Is(err, handlerparams.ErrIntExceeded):
+-			return false, newUpdateError(
++			return false, NewUpdateError(
+ 				handlererrors.ErrBadValue,
+ 				fmt.Sprintf(
+ 					`Failed to apply $mul operations to current value ((NumberInt)%d) for document {_id: "%s"}`,
+@@ -903,7 +908,7 @@ func processBitFieldExpression(command string, doc *types.Document, updateV any)
+ 
+ 		nestedDoc, ok := bitValue.(*types.Document)
+ 		if !ok {
+-			return false, newUpdateError(
++			return false, NewUpdateError(
+ 				handlererrors.ErrBadValue,
+ 				fmt.Sprintf(
+ 					`The $bit modifier is not compatible with a %s. `+
+@@ -915,7 +920,7 @@ func processBitFieldExpression(command string, doc *types.Document, updateV any)
+ 		}
+ 
+ 		if nestedDoc.Len() == 0 {
+-			return false, newUpdateError(
++			return false, NewUpdateError(
+ 				handlererrors.ErrBadValue,
+ 				fmt.Sprintf(
+ 					"You must pass in at least one bitwise operation. "+
+@@ -944,7 +949,7 @@ func processBitFieldExpression(command string, doc *types.Document, updateV any)
+ 			switch {
+ 			case err == nil:
+ 				if err = doc.SetByPath(path, bitOpResult); err != nil {
+-					return false, newUpdateError(handlererrors.ErrUnsuitableValueType, err.Error(), command)
++					return false, NewUpdateError(handlererrors.ErrUnsuitableValueType, err.Error(), command)
+ 				}
+ 
+ 				if docValue == bitOpResult && hasPath {
+@@ -956,7 +961,7 @@ func processBitFieldExpression(command string, doc *types.Document, updateV any)
+ 				continue
+ 
+ 			case errors.Is(err, handlerparams.ErrUnexpectedLeftOpType):
+-				return false, newUpdateError(
++				return false, NewUpdateError(
+ 					handlererrors.ErrBadValue,
+ 					fmt.Sprintf(
+ 						`The $bit modifier field must be an Integer(32/64 bit); a `+
+@@ -969,7 +974,7 @@ func processBitFieldExpression(command string, doc *types.Document, updateV any)
+ 				)
+ 
+ 			case errors.Is(err, handlerparams.ErrUnexpectedRightOpType):
+-				return false, newUpdateError(
++				return false, NewUpdateError(
+ 					handlererrors.ErrBadValue,
+ 					fmt.Sprintf(
+ 						`Cannot apply $bit to a value of non-integral type.`+
+@@ -982,7 +987,7 @@ func processBitFieldExpression(command string, doc *types.Document, updateV any)
+ 				)
+ 
+ 			default:
+-				return false, newUpdateError(handlererrors.ErrBadValue, err.Error(), command)
++				return false, NewUpdateError(handlererrors.ErrBadValue, err.Error(), command)
+ 			}
+ 		}
+ 	}
+@@ -1123,7 +1128,7 @@ func HasSupportedUpdateModifiers(command string, update *types.Document) (bool,
+ 			updateOps++
+ 		default:
+ 			if strings.HasPrefix(operator, "$") {
+-				return false, newUpdateError(
++				return false, NewUpdateError(
+ 					handlererrors.ErrFailedToParse,
+ 					fmt.Sprintf(
+ 						"Unknown modifier: %s. Expected a valid update modifier or pipeline-style "+
+@@ -1139,7 +1144,7 @@ func HasSupportedUpdateModifiers(command string, update *types.Document) (bool,
+ 
+ 	if updateOps > 0 && updateOps != update.Len() {
+ 		// update contains a mix of non-$-prefixed fields (replacement document) and operators
+-		return false, newUpdateError(
++		return false, NewUpdateError(
+ 			handlererrors.ErrDollarPrefixedFieldName,
+ 			"The dollar ($) prefixed field is not allowed in the context of an update's replacement document.",
+ 			command,
+@@ -1149,8 +1154,8 @@ func HasSupportedUpdateModifiers(command string, update *types.Document) (bool,
+ 	return (updateOps > 0), nil
+ }
+ 
+-// newUpdateError returns CommandError for findAndModify command, WriteError for other commands.
+-func newUpdateError(code handlererrors.ErrorCode, msg, command string) error {
++// NewUpdateError returns CommandError for findAndModify command, WriteError for other commands.
++func NewUpdateError(code handlererrors.ErrorCode, msg, command string) error {
+ 	// Depending on the driver, the command may be camel case or lower case.
+ 	if strings.ToLower(command) == "findandmodify" {
+ 		return handlererrors.NewCommandErrorMsgWithArgument(code, msg, command)
+@@ -1168,7 +1173,7 @@ func validateOperatorKeys(command string, docs ...*types.Document) error {
+ 		for _, key := range doc.Keys() {
+ 			nextPath, err := types.NewPathFromString(key)
+ 			if err != nil {
+-				return newUpdateError(
++				return NewUpdateError(
+ 					handlererrors.ErrEmptyName,
+ 					fmt.Sprintf(
+ 						"The update path '%s' contains an empty field name, which is not allowed.",
+@@ -1184,7 +1189,7 @@ func validateOperatorKeys(command string, docs ...*types.Document) error {
+ 			if errors.As(err, &pathErr) {
+ 				if pathErr.Code() == types.ErrPathConflictOverwrite ||
+ 					pathErr.Code() == types.ErrPathConflictCollision {
+-					return newUpdateError(
++					return NewUpdateError(
+ 						handlererrors.ErrConflictingUpdateOperators,
+ 						fmt.Sprintf(
+ 							"Updating the path '%[1]s' would create a conflict at '%[1]s'", key,
+@@ -1228,7 +1233,7 @@ func extractValueFromUpdateOperator(command, op string, update *types.Document)
+ 
+ 	doc, ok := updateExpression.(*types.Document)
+ 	if !ok {
+-		return nil, newUpdateError(
++		return nil, NewUpdateError(
+ 			handlererrors.ErrFailedToParse,
+ 			fmt.Sprintf(`Modifiers operate on fields but we found type %[1]s instead. `+
+ 				`For example: {$mod: {<field>: ...}} not {%s: %s}`,
+@@ -1242,7 +1247,7 @@ func extractValueFromUpdateOperator(command, op string, update *types.Document)
+ 
+ 	duplicate, ok := doc.FindDuplicateKey()
+ 	if ok {
+-		return nil, newUpdateError(
++		return nil, NewUpdateError(
+ 			handlererrors.ErrConflictingUpdateOperators,
+ 			fmt.Sprintf(
+ 				"Updating the path '%[1]s' would create a conflict at '%[1]s'", duplicate,
+@@ -1284,7 +1289,7 @@ func validateRenameExpression(command string, update *types.Document) error {
+ 
+ 		vStr, ok := v.(string)
+ 		if !ok {
+-			return newUpdateError(
++			return NewUpdateError(
+ 				handlererrors.ErrBadValue,
+ 				fmt.Sprintf("The 'to' field for $rename must be a string: %s: %v", k, v),
+ 				command,
+@@ -1293,7 +1298,7 @@ func validateRenameExpression(command string, update *types.Document) error {
+ 
+ 		// disallow fields where key is equal to the target
+ 		if k == vStr {
+-			return newUpdateError(
++			return NewUpdateError(
+ 				handlererrors.ErrBadValue,
+ 				fmt.Sprintf(`The source and target field for $rename must differ: %s: "%[1]s"`, k, vStr),
+ 				command,
+@@ -1301,7 +1306,7 @@ func validateRenameExpression(command string, update *types.Document) error {
+ 		}
+ 
+ 		if _, ok = keys[k]; ok {
+-			return newUpdateError(
++			return NewUpdateError(
+ 				handlererrors.ErrConflictingUpdateOperators,
+ 				fmt.Sprintf("Updating the path '%s' would create a conflict at '%s'", k, k),
+ 				command,
+@@ -1311,7 +1316,7 @@ func validateRenameExpression(command string, update *types.Document) error {
+ 		keys[k] = struct{}{}
+ 
+ 		if _, ok = keys[vStr]; ok {
+-			return newUpdateError(
++			return NewUpdateError(
+ 				handlererrors.ErrConflictingUpdateOperators,
+ 				fmt.Sprintf("Updating the path '%s' would create a conflict at '%s'", vStr, vStr),
+ 				command,
+@@ -1341,7 +1346,7 @@ func validateCurrentDateExpression(command string, update *types.Document) error
+ 		case *types.Document:
+ 			for _, k := range setValue.Keys() {
+ 				if k != "$type" {
+-					return newUpdateError(
++					return NewUpdateError(
+ 						handlererrors.ErrBadValue,
+ 						fmt.Sprintf("Unrecognized $currentDate option: %s", k),
+ 						command,
+@@ -1355,7 +1360,7 @@ func validateCurrentDateExpression(command string, update *types.Document) error
+ 
+ 			currentDateTypeString, ok := currentDateType.(string)
+ 			if !ok || !slices.Contains([]string{"date", "timestamp"}, currentDateTypeString) {
+-				return newUpdateError(
++				return NewUpdateError(
+ 					handlererrors.ErrBadValue,
+ 					"The '$type' string field is required to be 'date' or 'timestamp': "+
+ 						"{$currentDate: {field : {$type: 'date'}}}",
+@@ -1367,7 +1372,7 @@ func validateCurrentDateExpression(command string, update *types.Document) error
+ 			continue
+ 
+ 		default:
+-			return newUpdateError(
++			return NewUpdateError(
+ 				handlererrors.ErrBadValue,
+ 				fmt.Sprintf("%s is not valid type for $currentDate. Please use a boolean ('true') "+
+ 					"or a $type expression ({$type: 'timestamp/date'}).", handlerparams.AliasFromType(setValue),
+diff --git a/internal/handler/common/update_params.go b/internal/handler/common/update_params.go
+index 5768f20f..180c298a 100644
+--- a/internal/handler/common/update_params.go
++++ b/internal/handler/common/update_params.go
+@@ -63,7 +63,7 @@ type Update struct {
+ 
+ // UpdateResult is the result type returned from common.UpdateDocument.
+ // It represents the number of documents matched, modified and upserted.
+-// In case of upsert or updating a single document, it also contains pointers to the documents.
++// In case of findAndModify, it also contains pointers to the documents.
+ type UpdateResult struct {
+ 	Matched struct {
+ 		Doc   *types.Document
+@@ -76,8 +76,7 @@ type UpdateResult struct {
+ 	}
+ 
+ 	Upserted struct {
+-		Doc   *types.Document
+-		Count int32
++		Doc *types.Document
+ 	}
+ }
+ 
+@@ -110,7 +109,7 @@ func GetUpdateParams(document *types.Document, l *zap.Logger) (*UpdateParams, er
+ 					return nil, err
+ 				}
+ 			} else if update.Multi {
+-				return nil, newUpdateError(
++				return nil, NewUpdateError(
+ 					handlererrors.ErrFailedToParse,
+ 					"multi update is not supported for replacement-style update",
+ 					"update",
+diff --git a/internal/handler/handlererrors/error.go b/internal/handler/handlererrors/error.go
+index 07178c28..5097315a 100644
+--- a/internal/handler/handlererrors/error.go
++++ b/internal/handler/handlererrors/error.go
+@@ -79,7 +79,7 @@ const (
+ 	ErrDollarPrefixedFieldName = ErrorCode(52) // DollarPrefixedFieldName
+ 
+ 	// ErrInvalidID indicates that _id field is invalid.
+-	ErrInvalidID = ErrorCode(53) // InvalidID
++	ErrInvalidID = ErrorCode(53) // InvalidIdField
+ 
+ 	// ErrEmptyName indicates that the field name is empty.
+ 	ErrEmptyName = ErrorCode(56) // EmptyFieldName
+@@ -130,7 +130,7 @@ const (
+ 	ErrIndexesWrongType = ErrorCode(10065) // Location10065
+ 
+ 	// ErrDuplicateKeyInsert indicates duplicate key violation on inserting document.
+-	ErrDuplicateKeyInsert = ErrorCode(11000) // Location11000
++	ErrDuplicateKeyInsert = ErrorCode(11000) // DuplicateKey
+ 
+ 	// ErrSetBadExpression indicates set expression is not object.
+ 	ErrSetBadExpression = ErrorCode(40272) // Location40272
+diff --git a/internal/handler/handlererrors/errorcode_string.go b/internal/handler/handlererrors/errorcode_string.go
+index 8a00d56c..6dc92982 100644
+--- a/internal/handler/handlererrors/errorcode_string.go
++++ b/internal/handler/handlererrors/errorcode_string.go
+@@ -109,7 +109,7 @@ func _() {
+ 	_ = x[ErrStageIndexedStringVectorDuplicate-7582300]
+ }
+ 
+-const _ErrorCode_name = "UnsetInternalErrorBadValueFailedToParseUserNotFoundUnauthorizedTypeMismatchAuthenticationFailedIllegalOperationNamespaceNotFoundIndexNotFoundPathNotViableConflictingUpdateOperatorsCursorNotFoundNamespaceExistsMaxTimeMSExpiredDollarPrefixedFieldNameInvalidIDEmptyFieldNameCommandNotFoundImmutableFieldCannotCreateIndexIndexAlreadyExistsInvalidOptionsInvalidNamespaceIndexOptionsConflictIndexKeySpecsConflictOperationFailedDocumentValidationFailureInvalidPipelineOperatorClientMetadataCannotBeMutatedInvalidIndexSpecificationOptionNotImplementedLocation10065Location11000Location15947Location15948Location15955Location15958Location15959Location15969Location15973Location15974Location15975Location15976Location15981Location15983Location15998Location16020Location16406Location16410Location16872Location17276Location28667Location28724Location28812Location28818Location31002Location31119Location31120Location31249Location31250Location31253Location31254Location31324Location31325Location31394Location31395Location40156Location40157Location40158Location40160Location40181Location40234Location40237Location40238Location40272Location40323Location40352Location40353Location40414Location40415Location40602Location50687Location50840Location51003Location51024Location51075Location51091Location51108Location51246Location51247Location51270Location51272Location4822819Location5107200Location5107201Location5447000Location7582300"
++const _ErrorCode_name = "UnsetInternalErrorBadValueFailedToParseUserNotFoundUnauthorizedTypeMismatchAuthenticationFailedIllegalOperationNamespaceNotFoundIndexNotFoundPathNotViableConflictingUpdateOperatorsCursorNotFoundNamespaceExistsMaxTimeMSExpiredDollarPrefixedFieldNameInvalidIdFieldEmptyFieldNameCommandNotFoundImmutableFieldCannotCreateIndexIndexAlreadyExistsInvalidOptionsInvalidNamespaceIndexOptionsConflictIndexKeySpecsConflictOperationFailedDocumentValidationFailureInvalidPipelineOperatorClientMetadataCannotBeMutatedInvalidIndexSpecificationOptionNotImplementedLocation10065DuplicateKeyLocation15947Location15948Location15955Location15958Location15959Location15969Location15973Location15974Location15975Location15976Location15981Location15983Location15998Location16020Location16406Location16410Location16872Location17276Location28667Location28724Location28812Location28818Location31002Location31119Location31120Location31249Location31250Location31253Location31254Location31324Location31325Location31394Location31395Location40156Location40157Location40158Location40160Location40181Location40234Location40237Location40238Location40272Location40323Location40352Location40353Location40414Location40415Location40602Location50687Location50840Location51003Location51024Location51075Location51091Location51108Location51246Location51247Location51270Location51272Location4822819Location5107200Location5107201Location5447000Location7582300"
+ 
+ var _ErrorCode_map = map[ErrorCode]string{
+ 	0:       _ErrorCode_name[0:5],
+@@ -129,88 +129,88 @@ var _ErrorCode_map = map[ErrorCode]string{
+ 	48:      _ErrorCode_name[194:209],
+ 	50:      _ErrorCode_name[209:225],
+ 	52:      _ErrorCode_name[225:248],
+-	53:      _ErrorCode_name[248:257],
+-	56:      _ErrorCode_name[257:271],
+-	59:      _ErrorCode_name[271:286],
+-	66:      _ErrorCode_name[286:300],
+-	67:      _ErrorCode_name[300:317],
+-	68:      _ErrorCode_name[317:335],
+-	72:      _ErrorCode_name[335:349],
+-	73:      _ErrorCode_name[349:365],
+-	85:      _ErrorCode_name[365:385],
+-	86:      _ErrorCode_name[385:406],
+-	96:      _ErrorCode_name[406:421],
+-	121:     _ErrorCode_name[421:446],
+-	168:     _ErrorCode_name[446:469],
+-	186:     _ErrorCode_name[469:498],
+-	197:     _ErrorCode_name[498:529],
+-	238:     _ErrorCode_name[529:543],
+-	10065:   _ErrorCode_name[543:556],
+-	11000:   _ErrorCode_name[556:569],
+-	15947:   _ErrorCode_name[569:582],
+-	15948:   _ErrorCode_name[582:595],
+-	15955:   _ErrorCode_name[595:608],
+-	15958:   _ErrorCode_name[608:621],
+-	15959:   _ErrorCode_name[621:634],
+-	15969:   _ErrorCode_name[634:647],
+-	15973:   _ErrorCode_name[647:660],
+-	15974:   _ErrorCode_name[660:673],
+-	15975:   _ErrorCode_name[673:686],
+-	15976:   _ErrorCode_name[686:699],
+-	15981:   _ErrorCode_name[699:712],
+-	15983:   _ErrorCode_name[712:725],
+-	15998:   _ErrorCode_name[725:738],
+-	16020:   _ErrorCode_name[738:751],
+-	16406:   _ErrorCode_name[751:764],
+-	16410:   _ErrorCode_name[764:777],
+-	16872:   _ErrorCode_name[777:790],
+-	17276:   _ErrorCode_name[790:803],
+-	28667:   _ErrorCode_name[803:816],
+-	28724:   _ErrorCode_name[816:829],
+-	28812:   _ErrorCode_name[829:842],
+-	28818:   _ErrorCode_name[842:855],
+-	31002:   _ErrorCode_name[855:868],
+-	31119:   _ErrorCode_name[868:881],
+-	31120:   _ErrorCode_name[881:894],
+-	31249:   _ErrorCode_name[894:907],
+-	31250:   _ErrorCode_name[907:920],
+-	31253:   _ErrorCode_name[920:933],
+-	31254:   _ErrorCode_name[933:946],
+-	31324:   _ErrorCode_name[946:959],
+-	31325:   _ErrorCode_name[959:972],
+-	31394:   _ErrorCode_name[972:985],
+-	31395:   _ErrorCode_name[985:998],
+-	40156:   _ErrorCode_name[998:1011],
+-	40157:   _ErrorCode_name[1011:1024],
+-	40158:   _ErrorCode_name[1024:1037],
+-	40160:   _ErrorCode_name[1037:1050],
+-	40181:   _ErrorCode_name[1050:1063],
+-	40234:   _ErrorCode_name[1063:1076],
+-	40237:   _ErrorCode_name[1076:1089],
+-	40238:   _ErrorCode_name[1089:1102],
+-	40272:   _ErrorCode_name[1102:1115],
+-	40323:   _ErrorCode_name[1115:1128],
+-	40352:   _ErrorCode_name[1128:1141],
+-	40353:   _ErrorCode_name[1141:1154],
+-	40414:   _ErrorCode_name[1154:1167],
+-	40415:   _ErrorCode_name[1167:1180],
+-	40602:   _ErrorCode_name[1180:1193],
+-	50687:   _ErrorCode_name[1193:1206],
+-	50840:   _ErrorCode_name[1206:1219],
+-	51003:   _ErrorCode_name[1219:1232],
+-	51024:   _ErrorCode_name[1232:1245],
+-	51075:   _ErrorCode_name[1245:1258],
+-	51091:   _ErrorCode_name[1258:1271],
+-	51108:   _ErrorCode_name[1271:1284],
+-	51246:   _ErrorCode_name[1284:1297],
+-	51247:   _ErrorCode_name[1297:1310],
+-	51270:   _ErrorCode_name[1310:1323],
+-	51272:   _ErrorCode_name[1323:1336],
+-	4822819: _ErrorCode_name[1336:1351],
+-	5107200: _ErrorCode_name[1351:1366],
+-	5107201: _ErrorCode_name[1366:1381],
+-	5447000: _ErrorCode_name[1381:1396],
+-	7582300: _ErrorCode_name[1396:1411],
++	53:      _ErrorCode_name[248:262],
++	56:      _ErrorCode_name[262:276],
++	59:      _ErrorCode_name[276:291],
++	66:      _ErrorCode_name[291:305],
++	67:      _ErrorCode_name[305:322],
++	68:      _ErrorCode_name[322:340],
++	72:      _ErrorCode_name[340:354],
++	73:      _ErrorCode_name[354:370],
++	85:      _ErrorCode_name[370:390],
++	86:      _ErrorCode_name[390:411],
++	96:      _ErrorCode_name[411:426],
++	121:     _ErrorCode_name[426:451],
++	168:     _ErrorCode_name[451:474],
++	186:     _ErrorCode_name[474:503],
++	197:     _ErrorCode_name[503:534],
++	238:     _ErrorCode_name[534:548],
++	10065:   _ErrorCode_name[548:561],
++	11000:   _ErrorCode_name[561:573],
++	15947:   _ErrorCode_name[573:586],
++	15948:   _ErrorCode_name[586:599],
++	15955:   _ErrorCode_name[599:612],
++	15958:   _ErrorCode_name[612:625],
++	15959:   _ErrorCode_name[625:638],
++	15969:   _ErrorCode_name[638:651],
++	15973:   _ErrorCode_name[651:664],
++	15974:   _ErrorCode_name[664:677],
++	15975:   _ErrorCode_name[677:690],
++	15976:   _ErrorCode_name[690:703],
++	15981:   _ErrorCode_name[703:716],
++	15983:   _ErrorCode_name[716:729],
++	15998:   _ErrorCode_name[729:742],
++	16020:   _ErrorCode_name[742:755],
++	16406:   _ErrorCode_name[755:768],
++	16410:   _ErrorCode_name[768:781],
++	16872:   _ErrorCode_name[781:794],
++	17276:   _ErrorCode_name[794:807],
++	28667:   _ErrorCode_name[807:820],
++	28724:   _ErrorCode_name[820:833],
++	28812:   _ErrorCode_name[833:846],
++	28818:   _ErrorCode_name[846:859],
++	31002:   _ErrorCode_name[859:872],
++	31119:   _ErrorCode_name[872:885],
++	31120:   _ErrorCode_name[885:898],
++	31249:   _ErrorCode_name[898:911],
++	31250:   _ErrorCode_name[911:924],
++	31253:   _ErrorCode_name[924:937],
++	31254:   _ErrorCode_name[937:950],
++	31324:   _ErrorCode_name[950:963],
++	31325:   _ErrorCode_name[963:976],
++	31394:   _ErrorCode_name[976:989],
++	31395:   _ErrorCode_name[989:1002],
++	40156:   _ErrorCode_name[1002:1015],
++	40157:   _ErrorCode_name[1015:1028],
++	40158:   _ErrorCode_name[1028:1041],
++	40160:   _ErrorCode_name[1041:1054],
++	40181:   _ErrorCode_name[1054:1067],
++	40234:   _ErrorCode_name[1067:1080],
++	40237:   _ErrorCode_name[1080:1093],
++	40238:   _ErrorCode_name[1093:1106],
++	40272:   _ErrorCode_name[1106:1119],
++	40323:   _ErrorCode_name[1119:1132],
++	40352:   _ErrorCode_name[1132:1145],
++	40353:   _ErrorCode_name[1145:1158],
++	40414:   _ErrorCode_name[1158:1171],
++	40415:   _ErrorCode_name[1171:1184],
++	40602:   _ErrorCode_name[1184:1197],
++	50687:   _ErrorCode_name[1197:1210],
++	50840:   _ErrorCode_name[1210:1223],
++	51003:   _ErrorCode_name[1223:1236],
++	51024:   _ErrorCode_name[1236:1249],
++	51075:   _ErrorCode_name[1249:1262],
++	51091:   _ErrorCode_name[1262:1275],
++	51108:   _ErrorCode_name[1275:1288],
++	51246:   _ErrorCode_name[1288:1301],
++	51247:   _ErrorCode_name[1301:1314],
++	51270:   _ErrorCode_name[1314:1327],
++	51272:   _ErrorCode_name[1327:1340],
++	4822819: _ErrorCode_name[1340:1355],
++	5107200: _ErrorCode_name[1355:1370],
++	5107201: _ErrorCode_name[1370:1385],
++	5447000: _ErrorCode_name[1385:1400],
++	7582300: _ErrorCode_name[1400:1415],
+ }
+ 
+ func (i ErrorCode) String() string {
+diff --git a/internal/handler/msg_findandmodify.go b/internal/handler/msg_findandmodify.go
+index 8b0ae1f0..5cbddc30 100644
+--- a/internal/handler/msg_findandmodify.go
++++ b/internal/handler/msg_findandmodify.go
+@@ -20,8 +20,6 @@ import (
+ 	"fmt"
+ 	"time"
+ 
+-	"go.mongodb.org/mongo-driver/mongo"
+-
+ 	"github.com/FerretDB/FerretDB/internal/backends"
+ 	"github.com/FerretDB/FerretDB/internal/handler/common"
+ 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
+@@ -58,40 +56,30 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
+ 		}
+ 	}
+ 
+-	var we *mongo.WriteError
+ 	var resDoc *types.Document
+ 
+ 	res, err := h.findAndModifyDocument(ctx, params)
+ 	if err != nil {
+-		we, err = handleUpdateError(params.DB, params.Collection, err)
+-		if err != nil {
+-			return nil, lazyerrors.Error(err)
+-		}
++		return nil, handleUpdateError(params.DB, params.Collection, "findAndModify", err)
++	}
+ 
+-		resDoc = must.NotFail(types.NewDocument(
+-			"lastErrorObject", must.NotFail(types.NewDocument("n", int32(0))),
+-			"value", types.Null,
+-			"writeErrors", must.NotFail(types.NewArray(WriteErrorDocument(we))),
+-		))
+-	} else {
+-		lastError := must.NotFail(types.NewDocument(
+-			"n", res.modified,
+-		))
+-
+-		if res.updateExisting != nil {
+-			lastError.Set("updatedExisting", res.updateExisting)
+-		}
++	lastError := must.NotFail(types.NewDocument(
++		"n", res.modified,
++	))
+ 
+-		if res.upserted != nil {
+-			lastError.Set("upserted", res.upserted)
+-		}
++	if res.updateExisting != nil {
++		lastError.Set("updatedExisting", res.updateExisting)
++	}
+ 
+-		resDoc = must.NotFail(types.NewDocument(
+-			"lastErrorObject", lastError,
+-			"value", res.value,
+-		))
++	if res.upserted != nil {
++		lastError.Set("upserted", res.upserted)
+ 	}
+ 
++	resDoc = must.NotFail(types.NewDocument(
++		"lastErrorObject", lastError,
++		"value", res.value,
++	))
++
+ 	resDoc.Set("ok", float64(1))
+ 
+ 	var reply wire.OpMsg
+@@ -231,30 +219,27 @@ func (h *Handler) findAndModifyDocument(ctx context.Context, params *common.Find
+ 	return result, nil
+ }
+ 
+-// handleUpdateError process backend/validation error returned from update operation.
+-// It returns *mongo.WriteError if updateErr is an expected error from update operation, otherwise it returns error.
+-func handleUpdateError(db, coll string, updateErr error) (*mongo.WriteError, error) {
+-	var we *mongo.WriteError
++// handleUpdateError coverts backend/validation error returned from update operation
++// into CommandError or WriteError based on the command.
++func handleUpdateError(db, coll, command string, err error) error {
+ 	var be *backends.Error
+ 	var ve *types.ValidationError
+ 
+-	if errors.As(updateErr, &be) && be.Code() == backends.ErrorCodeInsertDuplicateID {
+-		we = &mongo.WriteError{
+-			Index:   0,
+-			Code:    int(handlererrors.ErrDuplicateKeyInsert),
+-			Message: fmt.Sprintf(`E11000 duplicate key error collection: %s.%s`, db, coll),
+-		}
+-	} else if errors.As(updateErr, &ve) {
+-		we = convertValidationErrToWriteErr(ve)
+-	} else {
+-		return nil, lazyerrors.Error(updateErr)
++	if errors.As(err, &be) && be.Code() == backends.ErrorCodeInsertDuplicateID {
++		err = common.NewUpdateError(
++			handlererrors.ErrDuplicateKeyInsert,
++			fmt.Sprintf(`E11000 duplicate key error collection: %s.%s`, db, coll),
++			command,
++		)
++	} else if errors.As(err, &ve) {
++		err = validationErrToUpdateErr(command, ve)
+ 	}
+ 
+-	return we, nil
++	return err
+ }
+ 
+-// convertValidationErrToWriteErr converts validation error and returns *mongo.WriteError.
+-func convertValidationErrToWriteErr(ve *types.ValidationError) *mongo.WriteError {
++// validationErrToUpdateErr converts validation error into CommandError or WriteError based on the command.
++func validationErrToUpdateErr(command string, ve *types.ValidationError) error {
+ 	var code handlererrors.ErrorCode
+ 
+ 	switch ve.Code() {
+@@ -266,9 +251,5 @@ func convertValidationErrToWriteErr(ve *types.ValidationError) *mongo.WriteError
+ 		panic(fmt.Sprintf("unknown error code: %v", ve.Code()))
+ 	}
+ 
+-	return &mongo.WriteError{
+-		Index:   0,
+-		Code:    int(code),
+-		Message: ve.Error(),
+-	}
++	return common.NewUpdateError(code, ve.Error(), command)
+ }
+diff --git a/internal/handler/msg_update.go b/internal/handler/msg_update.go
+index 80c3d23e..f6ce3db8 100644
+--- a/internal/handler/msg_update.go
++++ b/internal/handler/msg_update.go
+@@ -18,8 +18,6 @@ import (
+ 	"context"
+ 	"fmt"
+ 
+-	"go.mongodb.org/mongo-driver/mongo"
+-
+ 	"github.com/FerretDB/FerretDB/internal/backends"
+ 	"github.com/FerretDB/FerretDB/internal/handler/common"
+ 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
+@@ -45,24 +43,15 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
+ 	// TODO https://github.com/FerretDB/FerretDB/issues/2612
+ 	_ = params.Ordered
+ 
+-	var we *mongo.WriteError
+-
+ 	matched, modified, upserted, err := h.updateDocument(ctx, params)
+ 	if err != nil {
+-		we, err = handleUpdateError(params.DB, params.Collection, err)
+-		if err != nil {
+-			return nil, lazyerrors.Error(err)
+-		}
++		return nil, handleUpdateError(params.DB, params.Collection, "update", err)
+ 	}
+ 
+ 	res := must.NotFail(types.NewDocument(
+ 		"n", matched,
+ 	))
+ 
+-	if we != nil {
+-		res.Set("writeErrors", must.NotFail(types.NewArray(WriteErrorDocument(we))))
+-	}
+-
+ 	if upserted.Len() != 0 {
+ 		res.Set("upserted", upserted)
+ 	}
