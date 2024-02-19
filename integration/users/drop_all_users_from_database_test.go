@@ -34,8 +34,9 @@ import (
 func TestDropAllUsersFromDatabase(t *testing.T) {
 	t.Parallel()
 
-	ctx, collection := setup.Setup(t)
-	db := collection.Database()
+	s := setup.SetupWithOpts(t, nil)
+	ctx := s.Ctx
+	db, collection := createUserTestRunnerUser(t, s)
 	client := collection.Database().Client()
 
 	quantity := 5 // Add some users to the database.
@@ -51,6 +52,11 @@ func TestDropAllUsersFromDatabase(t *testing.T) {
 	// Dropping all users from another database shouldn't influence on the number of users remaining on the current database.
 	// So this call should remove zero users as the database doesn't exist. The next one, "quantity" users.
 	assertDropAllUsersFromDatabase(t, ctx, client.Database(t.Name()+"_another_database"), 0)
+
+	if !setup.IsMongoDB(t) {
+		// For non MongoDB, a user created to run the tests is also dropped.
+		quantity++
+	}
 
 	assertDropAllUsersFromDatabase(t, ctx, db, quantity)
 

@@ -41,8 +41,10 @@ func createUser(username, password string) bson.D {
 func TestUsersinfo(t *testing.T) {
 	t.Parallel()
 
-	ctx, collection := setup.Setup(t)
-	client := collection.Database().Client()
+	s := setup.SetupWithOpts(t, nil)
+	ctx := s.Ctx
+	db, _ := createUserTestRunnerUser(t, s)
+	client := db.Client()
 
 	dbToUsers := []struct {
 		dbSuffix string
