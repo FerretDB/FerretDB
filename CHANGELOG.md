@@ -2,13 +2,15 @@
 
 <!-- markdownlint-disable MD024 MD034 -->
 
-## [v1.20.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.20.0) (2024-02-19)
+## [v1.20.1](https://github.com/FerretDB/FerretDB/releases/tag/v1.20.1) (2024-02-19)
 
 ### What's Changed
 
 #### Docker images changes
 
-Production Docker images now use a non-root user with UID 1000 and GID 1000.
+~~Production Docker images now use a non-root user with UID 1000 and GID 1000.~~
+
+That change was reverted in v1.20.1 and will be re-introduced in a future release.
 
 ### Documentation 📄
 
