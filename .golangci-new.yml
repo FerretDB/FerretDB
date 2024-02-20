@@ -168,6 +168,6 @@ issues:
   max-same-issues: 0
 
   new-from-rev: origin/main
-  whole-files: true
+  # whole-files: true
 
   exclude-use-default: false
