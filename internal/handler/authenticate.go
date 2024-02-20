@@ -34,6 +34,7 @@ import (
 //
 // When admin.systems.user contains no user, the authentication is delegated to
 // the backend. This may change once local exception is implemented.
+// TODO https://github.com/FerretDB/FerretDB/issues/4100
 func (h *Handler) authenticate(ctx context.Context) error {
 	if !h.EnableNewAuth {
 		return nil
@@ -99,6 +100,7 @@ func (h *Handler) authenticate(ctx context.Context) error {
 		// We do not want unauthenticated users accessing the database, while allowing
 		// users with valid backend credentials to access the database
 		// until local exception is implemented.
+		// TODO https://github.com/FerretDB/FerretDB/issues/4100
 		conninfo.Get(ctx).UnsetBypassBackendAuth()
 
 		return nil
