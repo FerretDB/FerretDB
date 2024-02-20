@@ -12,7 +12,7 @@ ARG LABEL_COMMIT
 
 # prepare stage
 
-FROM --platform=$BUILDPLATFORM golang:1.21.7 AS production-prepare
+FROM --platform=$BUILDPLATFORM golang:1.22.0 AS production-prepare
 
 # use a single directory for all Go caches to simpliy RUN --mount commands below
 ENV GOPATH /cache/gopath
@@ -36,7 +36,7 @@ EOF
 
 # build stage
 
-FROM golang:1.21.7 AS production-build
+FROM golang:1.22.0 AS production-build
 
 ARG TARGETARCH
 ARG TARGETVARIANT
@@ -101,10 +101,12 @@ COPY --from=production-build /src/bin/ferretdb /ferretdb
 FROM scratch AS production
 
 COPY --from=production-build /src/bin/ferretdb /ferretdb
-COPY build/docker/passwd /etc/passwd
-COPY build/docker/group  /etc/group
 
-USER ferretdb:ferretdb
+# TODO https://github.com/FerretDB/FerretDB/issues/3992
+# COPY build/docker/passwd /etc/passwd
+# COPY build/docker/group  /etc/group
+# USER ferretdb:ferretdb
+
 ENTRYPOINT [ "/ferretdb" ]
 
 WORKDIR /

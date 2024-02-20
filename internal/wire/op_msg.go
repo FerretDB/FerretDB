@@ -121,6 +121,7 @@ func (msg *OpMsg) Document() (*types.Document, error) {
 	}
 
 	if err := validateValue(res); err != nil {
+		res.Remove("lsid") // to simplify error message
 		return nil, newValidationError(fmt.Errorf("wire.OpMsg.Document: validation failed for %v with: %v",
 			types.FormatAnyValue(res),
 			err,
