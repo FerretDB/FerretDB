@@ -723,7 +723,14 @@ func TestFindAndModifyCompatUpsertSet(t *testing.T) {
 				{"update", bson.D{{"$set", bson.D{{"new", "val"}}}}},
 			},
 		},
-		"UpsertQueryCompareObject": {
+		"UpsertQueryObject": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "non-existent"}, {"v", bson.D{{"k1", "v1"}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"$set", bson.D{{"new", "val"}}}}},
+			},
+		},
+		"UpsertQueryObjectNested": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "non-existent"}, {"v", bson.D{{"k1", "v1"}, {"k2", bson.D{{"k21", "v21"}}}}}}},
 				{"upsert", true},

@@ -131,18 +131,26 @@ func processFilterEqualityCondition(doc, filter *types.Document) error {
 			return lazyerrors.Error(err)
 		}
 
-		if key[0] == '$' {
+		if key[0] == '$' { // logical operators like $and, $or, $not
 			continue
 		}
 
 		if valDoc, ok := val.(*types.Document); ok {
 			if valDoc.Len() == 1 {
-				valEq, _ := valDoc.Get("$eq")
-				if valEq == nil {
+				innerKey := valDoc.Keys()[0]
+
+				if innerKey[0] != '$' {
+					// valDoc does not contain an operator
+					val = valDoc
+				} else if innerKey == "$eq" {
+					// valDoc has $eq operator, so extract the inner value
+					val, _ = valDoc.Get("$eq")
+				} else {
+					// valDoc has operators like $lt, $gt, $ne, $in, $exists, $regex
 					continue
 				}
-				val = valEq
 			} else {
+				// valDoc is a sub-document with many key/val pairs, without any operators
 				val = valDoc
 			}
 		}

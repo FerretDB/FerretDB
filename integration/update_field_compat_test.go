@@ -1066,7 +1066,12 @@ func TestUpdateFieldCompatMixed(t *testing.T) {
 			update:     bson.D{{"$set", bson.D{{"new", "val"}}}},
 			updateOpts: options.Update().SetUpsert(true),
 		},
-		"UpsertQueryCompareObject": {
+		"UpsertQueryObject": {
+			filter:     bson.D{{"_id", "non-existent"}, {"v", bson.D{{"k1", "v1"}}}},
+			update:     bson.D{{"$set", bson.D{{"new", "val"}}}},
+			updateOpts: options.Update().SetUpsert(true),
+		},
+		"UpsertQueryObjectNested": {
 			filter:     bson.D{{"_id", "non-existent"}, {"v", bson.D{{"k1", "v1"}, {"k2", bson.D{{"k21", "v21"}}}}}},
 			update:     bson.D{{"$set", bson.D{{"new", "val"}}}},
 			updateOpts: options.Update().SetUpsert(true),
