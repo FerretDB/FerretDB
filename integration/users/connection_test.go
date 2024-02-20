@@ -48,11 +48,10 @@ func TestAuthentication(t *testing.T) {
 
 		connectionMechanism string // if set, try to establish connection with this mechanism
 
-		userNotFound     bool
-		wrongPassword    bool
-		topologyError    bool
-		errorMessage     string
-		failsForFerretDB bool
+		userNotFound  bool
+		wrongPassword bool
+		topologyError bool
+		errorMessage  string
 	}{
 		"Success": {
 			username:            "username", // when using the PLAIN mechanism we must use user "username"
@@ -60,11 +59,36 @@ func TestAuthentication(t *testing.T) {
 			mechanisms:          []string{"PLAIN"},
 			connectionMechanism: "PLAIN",
 		},
+		"ScramSHA1": {
+			username:            "scramsha1",
+			password:            "password",
+			mechanisms:          []string{"SCRAM-SHA-1"},
+			connectionMechanism: "SCRAM-SHA-1",
+		},
 		"ScramSHA256": {
 			username:            "scramsha256",
 			password:            "password",
 			mechanisms:          []string{"SCRAM-SHA-256"},
 			connectionMechanism: "SCRAM-SHA-256",
+		},
+		"MultipleScramSHA1": {
+			username:            "scramsha1multi",
+			password:            "password",
+			mechanisms:          []string{"SCRAM-SHA-1", "SCRAM-SHA-256"},
+			connectionMechanism: "SCRAM-SHA-1",
+		},
+		"MultipleScramSHA256": {
+			username:            "scramsha256multi",
+			password:            "password",
+			mechanisms:          []string{"SCRAM-SHA-1", "SCRAM-SHA-256"},
+			connectionMechanism: "SCRAM-SHA-256",
+		},
+		"ScramSHA1Updated": {
+			username:            "scramsha1updated",
+			password:            "pass123",
+			updatePassword:      "anotherpassword",
+			mechanisms:          []string{"SCRAM-SHA-1"},
+			connectionMechanism: "SCRAM-SHA-1",
 		},
 		"ScramSHA256Updated": {
 			username:            "scramsha256updated",
@@ -96,9 +120,8 @@ func TestAuthentication(t *testing.T) {
 			password:            "password",
 			mechanisms:          []string{"SCRAM-SHA-256"},
 			connectionMechanism: "SCRAM-SHA-1",
-			errorMessage:        "Unable to use SCRAM-SHA-1 based authentication for user without any SCRAM-SHA-1 credentials registered",
 			topologyError:       true,
-			failsForFerretDB:    true,
+			errorMessage:        "Unable to use SCRAM-SHA-1 based authentication for user without any SCRAM-SHA-1 credentials registered",
 		},
 	}
 
@@ -108,10 +131,6 @@ func TestAuthentication(t *testing.T) {
 			tt.Parallel()
 
 			var t testtb.TB = tt
-
-			if tc.failsForFerretDB {
-				t = setup.FailsForFerretDB(t, "https://github.com/FerretDB/FerretDB/issues/2012")
-			}
 
 			if !tc.userNotFound {
 				var (
@@ -123,7 +142,7 @@ func TestAuthentication(t *testing.T) {
 
 				if tc.mechanisms == nil {
 					if !setup.IsMongoDB(t) {
-						mechanisms = append(mechanisms, "SCRAM-SHA-256")
+						mechanisms = append(mechanisms, "SCRAM-SHA-1", "SCRAM-SHA-256")
 					}
 				} else {
 					mechanisms = bson.A{}
@@ -133,7 +152,7 @@ func TestAuthentication(t *testing.T) {
 						case "PLAIN":
 							hasPlain = true
 							fallthrough
-						case "SCRAM-SHA-256":
+						case "SCRAM-SHA-1", "SCRAM-SHA-256":
 							mechanisms = append(mechanisms, mechanism)
 						default:
 							t.Fatalf("unimplemented mechanism %s", mechanism)

@@ -110,7 +110,7 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 
 	common.Ignored(document, h.L, "writeConcern", "authenticationRestrictions", "comment")
 
-	defMechanisms := must.NotFail(types.NewArray("SCRAM-SHA-256"))
+	defMechanisms := must.NotFail(types.NewArray("SCRAM-SHA-1", "SCRAM-SHA-256"))
 
 	mechanisms, err := common.GetOptionalParam(document, "mechanisms", defMechanisms)
 	if err != nil {
@@ -218,6 +218,13 @@ func makeCredentials(mechanisms *types.Array, username, pwd string) (*types.Docu
 		switch v {
 		case "PLAIN":
 			credentials.Set("PLAIN", must.NotFail(password.PlainHash(pwd)))
+		case "SCRAM-SHA-1":
+			hash, err := password.SCRAMSHA1Hash(username, pwd)
+			if err != nil {
+				return nil, err
+			}
+
+			credentials.Set("SCRAM-SHA-1", hash)
 		case "SCRAM-SHA-256":
 			hash, err := password.SCRAMSHA256Hash(pwd)
 			if err != nil {

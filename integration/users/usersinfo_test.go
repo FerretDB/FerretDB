@@ -536,6 +536,10 @@ func TestUsersinfo(t *testing.T) {
 						assertPlainCredentials(t, "PLAIN", must.NotFail(actualUser.Get("credentials")).(*types.Document))
 					}
 
+					if payloadMechanisms.Contains("SCRAM-SHA-1") {
+						assertSCRAMSHA1Credentials(t, "SCRAM-SHA-1", must.NotFail(actualUser.Get("credentials")).(*types.Document))
+					}
+
 					if payloadMechanisms.Contains("SCRAM-SHA-256") {
 						assertSCRAMSHA256Credentials(t, "SCRAM-SHA-256", must.NotFail(actualUser.Get("credentials")).(*types.Document))
 					}
