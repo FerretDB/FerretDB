@@ -31,7 +31,8 @@ type UpdateParams struct {
 
 	Updates []Update `ferretdb:"updates"`
 
-	Comment string `ferretdb:"comment,opt"`
+	Comment   string `ferretdb:"comment,opt"`
+	MaxTimeMS int64  `ferretdb:"maxTimeMS,ignored"`
 
 	Let *types.Document `ferretdb:"let,unimplemented"`
 
@@ -39,6 +40,8 @@ type UpdateParams struct {
 	BypassDocumentValidation bool            `ferretdb:"bypassDocumentValidation,ignored"`
 	WriteConcern             *types.Document `ferretdb:"writeConcern,ignored"`
 	LSID                     any             `ferretdb:"lsid,ignored"`
+	TxnNumber                int64           `ferretdb:"txnNumber,ignored"`
+	Autocommit               bool            `ferretdb:"autocommit,ignored"`
 	ClusterTime              any             `ferretdb:"$clusterTime,ignored"`
 	ReadPreference           *types.Document `ferretdb:"$readPreference,ignored"`
 }
