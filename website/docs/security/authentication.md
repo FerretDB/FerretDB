@@ -6,16 +6,20 @@ description: Learn to use authentication mechanisms
 
 # Authentication
 
-FerretDB supports `PLAIN`, `SCRAM-SHA256` and `SCRAM-SHA1` authentication mechanisms.
-A user with supported mechanism is created by `createUser()` command and authenticated in FerretDB.
+FerretDB supports `PLAIN`, `SCRAM-SHA-256` and `SCRAM-SHA-1` authentication mechanisms.
+A user with supported mechanism is created by `createUser()` command and stored in `admin.system` database `users` collection.
 
-The authenticated users connect to PostgreSQL backend by using the credentials used to start the server.
-For example, if the server was started with `postgres://dbuser1:dbpass1@postgres:5432/ferretdb`,
-all authenticated client uses username `dbuser1` and password `dbpass1` for the PostgreSQL connection.
+FerretDB uses passed username and password to authenticate against stored credentials.
+For example, if a client connects as `mongodb://user1:pass1@ferretdb:27018/ferretdb?tls=true&authMechanism=PLAIN`,
+`user1` is authenticated against its record in `admin.system` database `users` collection.
 
 Before the first user is created, the credential passed in the connection string is used to authenticate directly to the postgreSQL backend.
-For example, `dbuser2` and `dbpass2` in `mongodb://dbuser2:dbpass2@ferretdb:27018/ferretdb?tls=true&authMechanism=PLAIN` is used to authenticate to the PostgreSQL.
-Since usernames and passwords are transferred in plain text,
+For example, when `admin.system` database `users` collection is empty and
+a client connects as `mongodb://dbuser1:dbpass1@ferretdb:27018/ferretdb?tls=true&authMechanism=PLAIN`,
+it uses `dbuser1` to authenticate directly to the postgreSQL backend.
+Please note this exception no longer applies once the first user is created.
+
+When usernames and passwords are transferred in plain text,
 the use of [TLS](../security/tls-connections.md) is highly recommended.
 
 ## PostgreSQL backend with default username and password
