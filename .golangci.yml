@@ -3,6 +3,8 @@
 
 run:
   timeout: 3m
+  skip-dirs:
+    - cmd/envtool/internal/testmatch # due to files match.go and match_test.go from the Go standard library
 
 linters-settings:
   # asciicheck

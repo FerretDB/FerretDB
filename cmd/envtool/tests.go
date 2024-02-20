@@ -24,7 +24,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"regexp"
 	"slices"
 	"sort"
 	"strconv"
@@ -38,6 +37,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 
+	"github.com/FerretDB/FerretDB/cmd/envtool/internal/testmatch"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
@@ -363,7 +363,7 @@ func testsRun(ctx context.Context, index, total uint, run, skip string, args []s
 		return fmt.Errorf("--shard-index and --shard-total must be specified when --run is not")
 	}
 
-	all, err := listTestFuncsWithRegex("", run, skip)
+	all, err := listTestFuncs("")
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -372,12 +372,35 @@ func testsRun(ctx context.Context, index, total uint, run, skip string, args []s
 		return fmt.Errorf("no tests to run")
 	}
 
-	shard, err := shardTestFuncs(index, total, all)
+	var tests []string
+
+	// Filter what top-level functions we want to test using the same logic as "go test".
+	m := testmatch.New(run, skip)
+	for _, t := range all {
+		if m.Match(t) {
+			tests = append(tests, t)
+		}
+	}
+
+	// Then, shard all the tests but only run the ones that match the regex and that should
+	// be run on the specific shard.
+	shard, skipShard, err := shardTestFuncs(index, total, tests)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	args = append(args, "-run="+buildGoTestRunRegex(shard))
+	args = append(args, "-run="+run)
+
+	if len(skipShard) > 0 {
+		if skip != "" {
+			skip += "|"
+		}
+		skip += "^(" + strings.Join(skipShard, "|") + ")$"
+	}
+
+	if skip != "" {
+		args = append(args, "-skip="+skip)
+	}
 
 	return runGoTest(ctx, args, len(shard), true, logger)
 }
@@ -433,104 +456,40 @@ func listTestFuncs(dir string) ([]string, error) {
 	return res, nil
 }
 
-// listTestFuncsWithRegex returns regex-filtered names of all top-level test
-// functions (tests, benchmarks, examples, fuzz functions) in the specified
-// directory and subdirectories.
-func listTestFuncsWithRegex(dir, run, skip string) ([]string, error) {
-	tests, err := listTestFuncs(dir)
-	if err != nil {
-		return nil, err
-	}
-
-	if run == "" && skip == "" {
-		return tests, nil
-	}
-
-	includeRegex, err := regexp.Compile(run)
-	if err != nil {
-		return nil, err
-	}
-
-	if skip == "" {
-		return filterStringsByRegex(tests, includeRegex, nil), nil
-	}
-
-	excludeRegex, err := regexp.Compile(skip)
-	if err != nil {
-		return nil, err
-	}
-
-	return filterStringsByRegex(tests, includeRegex, excludeRegex), nil
-}
-
-// filterStringsByRegex filters a slice of strings based on inclusion and exclusion
-// criteria defined by regular expressions.
-func filterStringsByRegex(tests []string, include, exclude *regexp.Regexp) []string {
-	res := []string{}
-
-	for _, test := range tests {
-		if exclude != nil && exclude.MatchString(test) {
-			continue
-		}
-
-		if include != nil && !include.MatchString(test) {
-			continue
-		}
-
-		res = append(res, test)
-	}
-
-	return res
-}
-
-// buildGoTestRunRegex builds a regex for `go test -run` from the given test names.
-func buildGoTestRunRegex(tests []string) string {
-	var sb strings.Builder
-	sb.WriteString("^(")
-
-	for i, test := range tests {
-		if i != 0 {
-			sb.WriteString("|")
-		}
-
-		sb.WriteString(test)
-	}
-
-	sb.WriteString(")$")
-
-	return sb.String()
-}
-
 // shardTestFuncs shards given top-level test functions.
-func shardTestFuncs(index, total uint, testFuncs []string) ([]string, error) {
+// It returns a slice of test functions to run and what test functions to skip for the given shard.
+func shardTestFuncs(index, total uint, testFuncs []string) (run, skip []string, err error) {
 	if index == 0 {
-		return nil, fmt.Errorf("index must be greater than 0")
+		return nil, nil, fmt.Errorf("index must be greater than 0")
 	}
 
 	if total == 0 {
-		return nil, fmt.Errorf("total must be greater than 0")
+		return nil, nil, fmt.Errorf("total must be greater than 0")
 	}
 
 	if index > total {
-		return nil, fmt.Errorf("cannot shard when index is greater than total (%d > %d)", index, total)
+		return nil, nil, fmt.Errorf("cannot shard when index is greater than total (%d > %d)", index, total)
 	}
 
 	l := uint(len(testFuncs))
 	if total > l {
-		return nil, fmt.Errorf("cannot shard when total is greater than a number of test functions (%d > %d)", total, l)
+		return nil, nil, fmt.Errorf("cannot shard when total is greater than a number of test functions (%d > %d)", total, l)
 	}
 
-	res := make([]string, 0, l/total+1)
+	run = make([]string, 0, l/total+1)
+	skip = make([]string, 0, len(testFuncs)-len(run))
 	shard := uint(1)
 
 	// use different shards for tests with similar names for better load balancing
 	for _, test := range testFuncs {
 		if index == shard {
-			res = append(res, test)
+			run = append(run, test)
+		} else {
+			skip = append(skip, test)
 		}
 
 		shard = shard%total + 1
 	}
 
-	return res, nil
+	return run, skip, nil
 }
