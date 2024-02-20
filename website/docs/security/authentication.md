@@ -13,46 +13,41 @@ FerretDB uses passed username and password to authenticate against stored creden
 For example, if a client connects as `mongodb://user1:pass1@ferretdb:27018/ferretdb?tls=true&authMechanism=PLAIN`,
 `user1` is authenticated against its record in `admin.system` database `users` collection.
 
-Before the first user is created, the credential passed in the connection string is used to authenticate directly to the postgreSQL backend.
+Before the first user is created, the `PLAIN` mechanism credential passed in the connection string is used to connect directly to the postgreSQL backend.
 For example, when `admin.system` database `users` collection is empty and
-a client connects as `mongodb://dbuser1:dbpass1@ferretdb:27018/ferretdb?tls=true&authMechanism=PLAIN`,
-it uses `dbuser1` to authenticate directly to the postgreSQL backend.
+a client connects as `mongodb://pguser1:pgpass1@ferretdb:27018/ferretdb?tls=true&authMechanism=PLAIN`,
+it uses `pguser1` to connect to the postgreSQL backend.
 Please note this exception no longer applies once the first user is created.
 
 When usernames and passwords are transferred in plain text,
 the use of [TLS](../security/tls-connections.md) is highly recommended.
 
-## PostgreSQL backend with default username and password
+## PostgreSQL backend
 
-In following examples, username and password are specified in FerretDB's connection string `user1:pass1`.
-Ensure `user1` is a PostgreSQL user with necessary
+In following examples, username and password are specified in FerretDB's connection string `pguser1:pgpass1`.
+Ensure `pguser1` is a PostgreSQL user with necessary
 [privileges](https://www.postgresql.org/docs/current/sql-grant.html).
 See more about [creating PostgreSQL user](https://www.postgresql.org/docs/current/sql-createuser.html)
 and [PostgreSQL authentication methods](https://www.postgresql.org/docs/current/auth-methods.html).
 
 ### Using `ferretdb` package
 
-Start `ferretdb` by specifying `--postgresql-url` with default username and password.
+Start `ferretdb` by specifying `--postgresql-url` with username and password.
+All authenticated clients use `pguser1` user to query PostgreSQL backend.
 
 ```sh
-ferretdb --postgresql-url=postgres://user1:pass1@localhost:5432/ferretdb
+ferretdb --postgresql-url=postgres://pguser1:pgpass1@localhost:5432/ferretdb
 ```
 
-An anonymous client is authenticated with default `user1` from `--postgresql-url`.
+A client connects as user `user1` that is authenticated using credentials stored in `admin.system` database `users` collection.
 
 ```sh
-mongosh 'mongodb://127.0.0.1/ferretdb'
-```
-
-A client that specify username and password in MongoDB URI as below is authenticated as `user2`.
-
-```sh
-mongosh 'mongodb://user2:pass2@127.0.0.1/ferretdb?authMechanism=PLAIN'
+mongosh 'mongodb://user1:pass1@127.0.0.1/ferretdb?authMechanism=PLAIN'
 ```
 
 ### Using Docker
 
-For Docker, specify `FERRETDB_POSTGRESQL_URL` with default username and password.
+For Docker, specify `FERRETDB_POSTGRESQL_URL` with username and password.
 
 ```yaml
 services:
@@ -71,7 +66,7 @@ services:
     ports:
       - 27017:27017
     environment:
-      - FERRETDB_POSTGRESQL_URL=postgres://user1:pass1@postgres:5432/ferretdb
+      - FERRETDB_POSTGRESQL_URL=postgres://pguser1:pgpass1@postgres:5432/ferretdb
 
 networks:
   default:
@@ -84,20 +79,11 @@ To start `ferretdb`, use docker compose.
 docker compose up
 ```
 
-An anonymous client is authenticated with `user1` from `FERRETDB_POSTGRESQL_URL`.
-Use following command to run `mongosh` inside the temporary MongoDB container,
-attached to the same Docker network.
+A client connects as user `user1` that is authenticated using credentials stored in `admin.system` database `users` collection.
 
 ```sh
 docker run --rm -it --network=ferretdb --entrypoint=mongosh \
-  mongo 'mongodb://ferretdb/ferretdb'
-```
-
-A client that specify username and password in MongoDB URI as below is authenticated as `user2`.
-
-```sh
-docker run --rm -it --network=ferretdb --entrypoint=mongosh \
-  mongo 'mongodb://user2:pass2@ferretdb/ferretdb?authMechanism=PLAIN'
+  mongo 'mongodb://user1:pass1@ferretdb/ferretdb?authMechanism=PLAIN'
 ```
 
 ## Authentication Handshake
