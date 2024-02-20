@@ -30,10 +30,6 @@ import (
 
 // MsgServerStatus implements `serverStatus` command.
 func (h *Handler) MsgServerStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	if err := h.authenticate(ctx); err != nil {
-		return nil, err
-	}
-
 	host, err := os.Hostname()
 	if err != nil {
 		return nil, lazyerrors.Error(err)

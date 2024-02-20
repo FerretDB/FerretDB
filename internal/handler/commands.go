@@ -27,6 +27,9 @@ type command struct {
 	// The passed context is canceled when the client disconnects.
 	Handler func(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
 
+	// Unsafe indicates that the command does not require authentication.
+	Unsafe bool
+
 	// Help is shown in the `listCommands` command output.
 	// If empty, that command is hidden, but still can be used.
 	Help string
@@ -42,10 +45,12 @@ func (h *Handler) initCommands() {
 		},
 		"buildInfo": {
 			Handler: h.MsgBuildInfo,
+			Unsafe:  true,
 			Help:    "Returns a summary of the build information.",
 		},
 		"buildinfo": { // old lowercase variant
 			Handler: h.MsgBuildInfo,
+			Unsafe:  true,
 			Help:    "", // hidden
 		},
 		"collMod": {
@@ -62,6 +67,7 @@ func (h *Handler) initCommands() {
 		},
 		"connectionStatus": {
 			Handler: h.MsgConnectionStatus,
+			Unsafe:  true,
 			Help: "Returns information about the current connection, " +
 				"specifically the state of authenticated users and their available permissions.",
 		},
@@ -155,6 +161,7 @@ func (h *Handler) initCommands() {
 		},
 		"hello": {
 			Handler: h.MsgHello,
+			Unsafe:  true,
 			Help:    "Returns the role of the FerretDB instance.",
 		},
 		"hostInfo": {
@@ -167,10 +174,12 @@ func (h *Handler) initCommands() {
 		},
 		"isMaster": {
 			Handler: h.MsgIsMaster,
+			Unsafe:  true,
 			Help:    "Returns the role of the FerretDB instance.",
 		},
 		"ismaster": { // old lowercase variant
 			Handler: h.MsgIsMaster,
+			Unsafe:  true,
 			Help:    "", // hidden
 		},
 		"killCursors": {
@@ -199,6 +208,7 @@ func (h *Handler) initCommands() {
 		},
 		"ping": {
 			Handler: h.MsgPing,
+			Unsafe:  true,
 			Help:    "Returns a pong response.",
 		},
 		"renameCollection": {
@@ -207,10 +217,12 @@ func (h *Handler) initCommands() {
 		},
 		"saslStart": {
 			Handler: h.MsgSASLStart,
+			Unsafe:  true,
 			Help:    "", // hidden
 		},
 		"saslContinue": {
 			Handler: h.MsgSASLContinue,
+			Unsafe:  true,
 			Help:    "", // hidden
 		},
 		"serverStatus": {
@@ -231,6 +243,7 @@ func (h *Handler) initCommands() {
 		},
 		"whatsmyuri": {
 			Handler: h.MsgWhatsMyURI,
+			Unsafe:  true,
 			Help:    "Returns peer information.",
 		},
 		// please keep sorted alphabetically
@@ -260,9 +273,32 @@ func (h *Handler) initCommands() {
 		}
 		// please keep sorted alphabetically
 	}
+
+	for name, cmd := range h.commands {
+		h.commands[name] = command{
+			Handler: h.authenticateHandler(cmd),
+			Unsafe:  cmd.Unsafe,
+			Help:    cmd.Help,
+		}
+	}
 }
 
 // Commands returns a map of enabled commands.
 func (h *Handler) Commands() map[string]command {
 	return h.commands
+}
+
+// authenticateHandler wraps the command handler with the authentication check.
+func (h *Handler) authenticateHandler(cmd command) func(context.Context, *wire.OpMsg) (*wire.OpMsg, error) {
+	return func(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+		if cmd.Unsafe {
+			return cmd.Handler(ctx, msg)
+		}
+
+		if err := h.authenticate(ctx); err != nil {
+			return nil, err
+		}
+
+		return cmd.Handler(ctx, msg)
+	}
 }

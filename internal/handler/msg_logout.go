@@ -25,10 +25,6 @@ import (
 
 // MsgLogout implements `logout` command.
 func (h *Handler) MsgLogout(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	if err := h.authenticate(ctx); err != nil {
-		return nil, err
-	}
-
 	conninfo.Get(ctx).SetAuth("", "")
 
 	var reply wire.OpMsg

@@ -43,10 +43,6 @@ type findAndModifyResult struct {
 
 // MsgFindAndModify implements `findAndModify` command.
 func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	if err := h.authenticate(ctx); err != nil {
-		return nil, err
-	}
-
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)

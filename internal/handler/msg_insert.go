@@ -47,10 +47,6 @@ func WriteErrorDocument(we *mongo.WriteError) *types.Document {
 
 // MsgInsert implements `insert` command.
 func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	if err := h.authenticate(ctx); err != nil {
-		return nil, err
-	}
-
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)

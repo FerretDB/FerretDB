@@ -24,10 +24,6 @@ import (
 
 // MsgGetCmdLineOpts implements `getCmdLineOpts` command.
 func (h *Handler) MsgGetCmdLineOpts(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	if err := h.authenticate(ctx); err != nil {
-		return nil, err
-	}
-
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
 		must.NotFail(types.NewDocument(

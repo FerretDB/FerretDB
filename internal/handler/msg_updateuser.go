@@ -32,10 +32,6 @@ import (
 
 // MsgUpdateUser implements `updateUser` command.
 func (h *Handler) MsgUpdateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	if err := h.authenticate(ctx); err != nil {
-		return nil, err
-	}
-
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)

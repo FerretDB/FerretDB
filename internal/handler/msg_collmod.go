@@ -23,10 +23,6 @@ import (
 
 // MsgCollMod implements `collMod` command.
 func (h *Handler) MsgCollMod(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	if err := h.authenticate(ctx); err != nil {
-		return nil, err
-	}
-
 	return nil, handlererrors.NewCommandErrorMsg(
 		handlererrors.ErrNotImplemented,
 		"`collMod` command is not implemented yet",
