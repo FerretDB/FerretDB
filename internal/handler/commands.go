@@ -22,13 +22,13 @@ import (
 
 // command represents a handler for single command.
 type command struct {
+	// Unsafe indicates that the command does not require authentication.
+	Unsafe bool
+
 	// Handler processes this command.
 	//
 	// The passed context is canceled when the client disconnects.
 	Handler func(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
-
-	// Unsafe indicates that the command does not require authentication.
-	Unsafe bool
 
 	// Help is shown in the `listCommands` command output.
 	// If empty, that command is hidden, but still can be used.
@@ -276,7 +276,7 @@ func (h *Handler) initCommands() {
 
 	for name, cmd := range h.commands {
 		h.commands[name] = command{
-			Handler: h.authenticateHandler(cmd),
+			Handler: h.authenticateWrapper(cmd),
 			Unsafe:  cmd.Unsafe,
 			Help:    cmd.Help,
 		}
@@ -288,8 +288,9 @@ func (h *Handler) Commands() map[string]command {
 	return h.commands
 }
 
-// authenticateHandler wraps the command handler with the authentication check.
-func (h *Handler) authenticateHandler(cmd command) func(context.Context, *wire.OpMsg) (*wire.OpMsg, error) {
+// authenticateWrapper wraps the command handler with the authentication check.
+// If Unsafe is true, the command handler is executed without authentication.
+func (h *Handler) authenticateWrapper(cmd command) func(context.Context, *wire.OpMsg) (*wire.OpMsg, error) {
 	return func(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 		if cmd.Unsafe {
 			return cmd.Handler(ctx, msg)
