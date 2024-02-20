@@ -36,6 +36,7 @@ type DeleteParams struct {
 
 	WriteConcern   *types.Document `ferretdb:"writeConcern,ignored"`
 	LSID           any             `ferretdb:"lsid,ignored"`
+	TxnNumber      int64           `ferretdb:"txnNumber,ignored"`
 	ClusterTime    any             `ferretdb:"$clusterTime,ignored"`
 	ReadPreference *types.Document `ferretdb:"$readPreference,ignored"`
 }

@@ -48,7 +48,7 @@ func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	if err != nil {
 		return nil, handlererrors.NewCommandErrorMsg(
 			handlererrors.ErrAuthenticationFailed,
-			"Authentication failed.",
+			"Authentication failed",
 		)
 	}
 
