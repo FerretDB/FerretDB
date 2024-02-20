@@ -39,7 +39,7 @@ func IsMaster(ctx context.Context, query *types.Document, tcpHost, name string) 
 	return &reply, nil
 }
 
-// IsMasterDocuments returns isMaster's Documents field (identical for both OP_MSG and OP_QUERY).
+// IsMasterDocument returns isMaster's Documents field (identical for both OP_MSG and OP_QUERY).
 func IsMasterDocument(tcpHost, name string) *types.Document {
 	doc := must.NotFail(types.NewDocument(
 		"ismaster", true, // only lowercase
@@ -48,7 +48,7 @@ func IsMasterDocument(tcpHost, name string) *types.Document {
 		"maxMessageSizeBytes", int32(wire.MaxMsgLen),
 		"maxWriteBatchSize", int32(100000),
 		"localTime", time.Now(),
-		// logicalSessionTimeoutMinutes
+		"logicalSessionTimeoutMinutes", int32(30),
 		"connectionId", int32(42),
 		"minWireVersion", MinWireVersion,
 		"maxWireVersion", MaxWireVersion,
