@@ -7,16 +7,16 @@ description: Learn to use authentication mechanisms
 # Authentication
 
 FerretDB supports `PLAIN`, `SCRAM-SHA-256` and `SCRAM-SHA-1` authentication mechanisms.
-A user with supported mechanism is created by `createUser()` command and stored in `admin.system` database `users` collection.
+A user with supported mechanism is created by `createUser()` command and stored in the `admin.system` database `users` collection.
 
 FerretDB uses passed username and password to authenticate against stored credentials.
 For example, if a client connects as `mongodb://user1:pass1@ferretdb:27018/ferretdb?tls=true&authMechanism=PLAIN`,
-`user1` is authenticated against its record in `admin.system` database `users` collection.
+`user1` is authenticated against its credential in `admin.system` database `users` collection.
 
-Before the first user is created, the `PLAIN` mechanism credential passed in the connection string is used to connect directly to the postgreSQL backend.
+Before the first user is created, the credential passed in the connection string is used to connect directly to the postgreSQL backend.
 For example, when `admin.system` database `users` collection is empty and
 a client connects as `mongodb://pguser1:pgpass1@ferretdb:27018/ferretdb?tls=true&authMechanism=PLAIN`,
-it uses `pguser1` to connect to the postgreSQL backend.
+it uses `pguser1` to connect to the postgreSQL backend. The `PLAIN` mechanism is used for this case.
 Please note this exception no longer applies once the first user is created.
 
 When usernames and passwords are transferred in plain text,
@@ -24,7 +24,7 @@ the use of [TLS](../security/tls-connections.md) is highly recommended.
 
 ## PostgreSQL backend
 
-In following examples, username and password are specified in FerretDB's connection string `pguser1:pgpass1`.
+In the following examples, username and password are specified in FerretDB's connection string `pguser1:pgpass1`.
 Ensure `pguser1` is a PostgreSQL user with necessary
 [privileges](https://www.postgresql.org/docs/current/sql-grant.html).
 See more about [creating PostgreSQL user](https://www.postgresql.org/docs/current/sql-createuser.html)
