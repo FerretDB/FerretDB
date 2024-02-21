@@ -10,12 +10,11 @@ func _() {
 	var x [1]struct{}
 	_ = x[decodeShallow-1]
 	_ = x[decodeDeep-2]
-	_ = x[decodeCheckOnly-3]
 }
 
-const _decodeMode_name = "decodeShallowdecodeDeepdecodeCheckOnly"
+const _decodeMode_name = "decodeShallowdecodeDeep"
 
-var _decodeMode_index = [...]uint8{0, 13, 23, 38}
+var _decodeMode_index = [...]uint8{0, 13, 23}
 
 func (i decodeMode) String() string {
 	i -= 1
