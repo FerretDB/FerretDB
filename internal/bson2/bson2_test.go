@@ -794,6 +794,7 @@ func testRawDocument(t *testing.T, rawDoc RawDocument) {
 		if err1 != nil {
 			_, err2 := rawDoc.DecodeDeep()
 			require.Error(t, err2, "bson1 err = %v", err1)
+
 			return
 		}
 
