@@ -22,8 +22,8 @@ import (
 
 // command represents a handler for single command.
 type command struct {
-	// Unsafe indicates that the command does not require authentication.
-	Unsafe bool
+	// anonymous indicates that the command does not require authentication.
+	anonymous bool
 
 	// Handler processes this command.
 	//
@@ -44,14 +44,14 @@ func (h *Handler) initCommands() {
 			Help:    "Returns aggregated data.",
 		},
 		"buildInfo": {
-			Handler: h.MsgBuildInfo,
-			Unsafe:  true,
-			Help:    "Returns a summary of the build information.",
+			Handler:   h.MsgBuildInfo,
+			anonymous: true,
+			Help:      "Returns a summary of the build information.",
 		},
 		"buildinfo": { // old lowercase variant
-			Handler: h.MsgBuildInfo,
-			Unsafe:  true,
-			Help:    "", // hidden
+			Handler:   h.MsgBuildInfo,
+			anonymous: true,
+			Help:      "", // hidden
 		},
 		"collMod": {
 			Handler: h.MsgCollMod,
@@ -66,8 +66,8 @@ func (h *Handler) initCommands() {
 			Help:    "Reduces the disk space collection takes and refreshes its statistics.",
 		},
 		"connectionStatus": {
-			Handler: h.MsgConnectionStatus,
-			Unsafe:  true,
+			Handler:   h.MsgConnectionStatus,
+			anonymous: true,
 			Help: "Returns information about the current connection, " +
 				"specifically the state of authenticated users and their available permissions.",
 		},
@@ -160,9 +160,9 @@ func (h *Handler) initCommands() {
 			Help:    "Returns the value of the parameter.",
 		},
 		"hello": {
-			Handler: h.MsgHello,
-			Unsafe:  true,
-			Help:    "Returns the role of the FerretDB instance.",
+			Handler:   h.MsgHello,
+			anonymous: true,
+			Help:      "Returns the role of the FerretDB instance.",
 		},
 		"hostInfo": {
 			Handler: h.MsgHostInfo,
@@ -173,14 +173,14 @@ func (h *Handler) initCommands() {
 			Help:    "Inserts documents into the database.",
 		},
 		"isMaster": {
-			Handler: h.MsgIsMaster,
-			Unsafe:  true,
-			Help:    "Returns the role of the FerretDB instance.",
+			Handler:   h.MsgIsMaster,
+			anonymous: true,
+			Help:      "Returns the role of the FerretDB instance.",
 		},
 		"ismaster": { // old lowercase variant
-			Handler: h.MsgIsMaster,
-			Unsafe:  true,
-			Help:    "", // hidden
+			Handler:   h.MsgIsMaster,
+			anonymous: true,
+			Help:      "", // hidden
 		},
 		"killCursors": {
 			Handler: h.MsgKillCursors,
@@ -207,23 +207,23 @@ func (h *Handler) initCommands() {
 			Help:    "Logs out from the current session.",
 		},
 		"ping": {
-			Handler: h.MsgPing,
-			Unsafe:  true,
-			Help:    "Returns a pong response.",
+			Handler:   h.MsgPing,
+			anonymous: true,
+			Help:      "Returns a pong response.",
 		},
 		"renameCollection": {
 			Handler: h.MsgRenameCollection,
 			Help:    "Changes the name of an existing collection.",
 		},
 		"saslStart": {
-			Handler: h.MsgSASLStart,
-			Unsafe:  true,
-			Help:    "", // hidden
+			Handler:   h.MsgSASLStart,
+			anonymous: true,
+			Help:      "", // hidden
 		},
 		"saslContinue": {
-			Handler: h.MsgSASLContinue,
-			Unsafe:  true,
-			Help:    "", // hidden
+			Handler:   h.MsgSASLContinue,
+			anonymous: true,
+			Help:      "", // hidden
 		},
 		"serverStatus": {
 			Handler: h.MsgServerStatus,
@@ -242,9 +242,9 @@ func (h *Handler) initCommands() {
 			Help:    "Validates collection.",
 		},
 		"whatsmyuri": {
-			Handler: h.MsgWhatsMyURI,
-			Unsafe:  true,
-			Help:    "Returns peer information.",
+			Handler:   h.MsgWhatsMyURI,
+			anonymous: true,
+			Help:      "Returns peer information.",
 		},
 		// please keep sorted alphabetically
 	}
@@ -276,9 +276,9 @@ func (h *Handler) initCommands() {
 
 	for name, cmd := range h.commands {
 		h.commands[name] = command{
-			Handler: h.authenticateWrapper(cmd),
-			Unsafe:  cmd.Unsafe,
-			Help:    cmd.Help,
+			Handler:   h.authenticateWrapper(cmd),
+			anonymous: cmd.anonymous,
+			Help:      cmd.Help,
 		}
 	}
 }
@@ -289,10 +289,10 @@ func (h *Handler) Commands() map[string]command {
 }
 
 // authenticateWrapper wraps the command handler with the authentication check.
-// If Unsafe is true, the command handler is executed without authentication.
+// If anonymous is true, the command handler is executed without authentication.
 func (h *Handler) authenticateWrapper(cmd command) func(context.Context, *wire.OpMsg) (*wire.OpMsg, error) {
 	return func(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-		if cmd.Unsafe {
+		if cmd.anonymous {
 			return cmd.Handler(ctx, msg)
 		}
 

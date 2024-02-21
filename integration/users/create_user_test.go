@@ -345,12 +345,12 @@ func createTestRunnerUser(tb *testing.T, ctx context.Context, db *mongo.Database
 		return
 	}
 
-	username, pwd, mechanism := "username", "password", "PLAIN"
+	username, password, mechanism := "username", "password", "PLAIN"
 
 	err := db.Client().Database("admin").RunCommand(ctx, bson.D{
 		{"createUser", username},
 		{"roles", bson.A{}},
-		{"pwd", pwd},
+		{"pwd", password},
 		{"mechanisms", bson.A{mechanism}},
 	}).Err()
 	require.NoErrorf(tb, err, "cannot create user")

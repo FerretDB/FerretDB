@@ -102,6 +102,7 @@ func (h *Handler) authenticate(ctx context.Context) error {
 		// until local exception is implemented.
 		// TODO https://github.com/FerretDB/FerretDB/issues/4100
 		conninfo.Get(ctx).UnsetBypassBackendAuth()
+		h.L.DPanic("backend is used for authentication - no user in admin.system.users collection")
 
 		return nil
 	}
