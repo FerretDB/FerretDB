@@ -32,7 +32,7 @@ import (
 //nolint:vet // for readability
 type scramSHA256TestCase struct {
 	params   scramParams
-	password string
+	password Password
 	salt     []byte
 
 	want *types.Document
@@ -47,7 +47,7 @@ var scramSHA256TestCases = map[string]scramSHA256TestCase{
 			iterationCount: 15000,
 			saltLen:        28,
 		},
-		password: "pencil",
+		password: WrapPassword("pencil"),
 		salt:     must.NotFail(base64.StdEncoding.DecodeString("vXan6ZbWmm5i+f+mKY598rnIfoAGGp+G9NP0qQ==")),
 		want: must.NotFail(types.NewDocument(
 			"storedKey", "bNxFkKtMt93v+ha80yJsDG6Xes3GOMh5qsRzwkcF85s=",
@@ -63,7 +63,7 @@ var scramSHA256TestCases = map[string]scramSHA256TestCase{
 			iterationCount: 15000,
 			saltLen:        28,
 		},
-		password: "password",
+		password: WrapPassword("password"),
 		salt:     must.NotFail(base64.StdEncoding.DecodeString("4vbrJBkaleBWRqgdXri8Otu1pwLCoX5BCUoa1Q==")),
 		want: must.NotFail(types.NewDocument(
 			"storedKey", "1442RVPbzP5LhF3i/2Ld19Xj8TGfgK6XPy0KEbTL5so=",
@@ -78,7 +78,7 @@ var scramSHA256TestCases = map[string]scramSHA256TestCase{
 			iterationCount: 15000,
 			saltLen:        28,
 		},
-		password: "password",
+		password: WrapPassword("password"),
 		salt:     []byte("short"),
 		err:      "unexpected salt length: 5",
 	},
@@ -87,7 +87,7 @@ var scramSHA256TestCases = map[string]scramSHA256TestCase{
 			iterationCount: 4096,
 			saltLen:        5,
 		},
-		password: "pass\x00word",
+		password: WrapPassword("pass\x00word"),
 		salt:     []byte("sa\x00lt"),
 		err:      "prohibited character",
 	},
@@ -99,7 +99,7 @@ var scramSHA256TestCases = map[string]scramSHA256TestCase{
 			iterationCount: 1,
 			saltLen:        4,
 		},
-		password: "password",
+		password: WrapPassword("password"),
 		salt:     []byte("salt"),
 		want: must.NotFail(types.NewDocument(
 			"storedKey", "tWgTq9QWqLI2SkBpZeZSmGl7RzeuMuU3vWYYEpOFTvk=",
@@ -113,7 +113,7 @@ var scramSHA256TestCases = map[string]scramSHA256TestCase{
 			iterationCount: 2,
 			saltLen:        4,
 		},
-		password: "password",
+		password: WrapPassword("password"),
 		salt:     []byte("salt"),
 		want: must.NotFail(types.NewDocument(
 			"storedKey", "db2Cdby2HHY1enQpujvJPfRJNlLyQ95MIEMwybJdFcI=",
@@ -127,7 +127,7 @@ var scramSHA256TestCases = map[string]scramSHA256TestCase{
 			iterationCount: 4096,
 			saltLen:        4,
 		},
-		password: "password",
+		password: WrapPassword("password"),
 		salt:     []byte("salt"),
 		want: must.NotFail(types.NewDocument(
 			"storedKey", "lF4cRm/Jky763CN4HtxdHnjV4Q8AWTNlKvGmEFFU8IQ=",
@@ -141,7 +141,7 @@ var scramSHA256TestCases = map[string]scramSHA256TestCase{
 			iterationCount: 4096,
 			saltLen:        36,
 		},
-		password: "passwordPASSWORDpassword",
+		password: WrapPassword("passwordPASSWORDpassword"),
 		salt:     []byte("saltSALTsaltSALTsaltSALTsaltSALTsalt"),
 		want: must.NotFail(types.NewDocument(
 			"storedKey", "kl1yVUP4s3BJMFrtaC4zLJycbv6k5yMBhVgocYmsYsU=",
@@ -155,7 +155,7 @@ var scramSHA256TestCases = map[string]scramSHA256TestCase{
 			iterationCount: 1,
 			saltLen:        4,
 		},
-		password: "passwd",
+		password: WrapPassword("passwd"),
 		salt:     []byte("salt"),
 		want: must.NotFail(types.NewDocument(
 			"storedKey", "dcwmgrDYICpRpKjwHLKxZ/21/go62U106s5V4i9v+Q8=",
@@ -169,7 +169,7 @@ var scramSHA256TestCases = map[string]scramSHA256TestCase{
 			iterationCount: 80000,
 			saltLen:        4,
 		},
-		password: "Password",
+		password: WrapPassword("Password"),
 		salt:     []byte("NaCl"),
 		want: must.NotFail(types.NewDocument(
 			"storedKey", "EI8wmB+eWKGZ8k+dln75YQnX8lj+MBoG6+eH9AzR1e4=",
@@ -183,7 +183,7 @@ var scramSHA256TestCases = map[string]scramSHA256TestCase{
 			iterationCount: 4096,
 			saltLen:        5,
 		},
-		password: "Password",
+		password: WrapPassword("Password"),
 		salt:     []byte("sa\x00lt"),
 		want: must.NotFail(types.NewDocument(
 			"storedKey", "BHJbwIZ9YCvb+dFApByBLe4jR7gquvBm3kPApnWCylk=",
@@ -227,7 +227,7 @@ func TestSCRAMSHA256(t *testing.T) {
 			// Check if the generated authentication is valid by simulating a conversation.
 			conv := scramServer.NewConversation()
 
-			client, err := scram.SHA256.NewClient("user", tc.password, "")
+			client, err := scram.SHA256.NewClient("user", tc.password.Password(), "")
 			require.NoError(t, err)
 
 			resp, err := client.NewConversation().Step("")
@@ -245,10 +245,10 @@ func TestSCRAMSHA256(t *testing.T) {
 	t.Run("Exported", func(t *testing.T) {
 		t.Parallel()
 
-		doc1, err := SCRAMSHA256Hash("password")
+		doc1, err := SCRAMSHA256Hash(WrapPassword("password"))
 		require.NoError(t, err)
 
-		doc2, err := SCRAMSHA256Hash("password")
+		doc2, err := SCRAMSHA256Hash(WrapPassword("password"))
 		require.NoError(t, err)
 
 		testutil.AssertNotEqual(t, doc1, doc2)
@@ -266,7 +266,7 @@ func BenchmarkSCRAMSHA256(b *testing.B) {
 		b.ReportAllocs()
 
 		for i := 0; i < b.N; i++ {
-			_, err = SCRAMSHA256Hash("password")
+			_, err = SCRAMSHA256Hash(WrapPassword("password"))
 		}
 	})
 

@@ -34,7 +34,7 @@ import (
 type scramSHA1TestCase struct {
 	params   scramParams
 	username string
-	password string
+	password Password
 	salt     []byte
 
 	want *types.Document
@@ -50,7 +50,7 @@ var scramSHA1TestCases = map[string]scramSHA1TestCase{
 			saltLen:        16,
 		},
 		username: "user",
-		password: "pencil",
+		password: WrapPassword("pencil"),
 		salt:     must.NotFail(base64.StdEncoding.DecodeString("55hyMPh69qfbfXPueAsr6g==")),
 		want: must.NotFail(types.NewDocument(
 			"storedKey", "W+jN9/MwzC8uhAIOOViZOUiSt14=",
@@ -67,7 +67,7 @@ var scramSHA1TestCases = map[string]scramSHA1TestCase{
 			saltLen:        16,
 		},
 		username: "user",
-		password: "password",
+		password: WrapPassword("password"),
 		salt:     must.NotFail(base64.StdEncoding.DecodeString("OjPS7S2yaYBaJsRTCzahWQ==")),
 		want: must.NotFail(types.NewDocument(
 			"storedKey", "fvtSnYGbBxKrXwbh4nAaUyiYMgg=",
@@ -82,7 +82,7 @@ var scramSHA1TestCases = map[string]scramSHA1TestCase{
 			iterationCount: 15000,
 			saltLen:        16,
 		},
-		password: "password",
+		password: WrapPassword("password"),
 		salt:     []byte("short"),
 		err:      "unexpected salt length: 5",
 	},
@@ -121,7 +121,7 @@ func TestSCRAMSHA1(t *testing.T) {
 			// Check if the generated authentication is valid by simulating a conversation.
 			conv := scramServer.NewConversation()
 
-			client, err := scram.SHA1.NewClient(tc.username, tc.password, "")
+			client, err := scram.SHA1.NewClient(tc.username, tc.password.Password(), "")
 			require.NoError(t, err)
 
 			resp, err := client.NewConversation().Step("")
@@ -139,10 +139,10 @@ func TestSCRAMSHA1(t *testing.T) {
 	t.Run("Exported", func(t *testing.T) {
 		t.Parallel()
 
-		doc1, err := SCRAMSHA1Hash("user", "password")
+		doc1, err := SCRAMSHA1Hash("user", WrapPassword("password"))
 		require.NoError(t, err)
 
-		doc2, err := SCRAMSHA1Hash("user", "password")
+		doc2, err := SCRAMSHA1Hash("user", WrapPassword("password"))
 		require.NoError(t, err)
 
 		testutil.AssertNotEqual(t, doc1, doc2)
@@ -160,7 +160,7 @@ func BenchmarkSCRAMSHA1(b *testing.B) {
 		b.ReportAllocs()
 
 		for i := 0; i < b.N; i++ {
-			_, err = SCRAMSHA1Hash(fmt.Sprintf("user%d", i), "password")
+			_, err = SCRAMSHA1Hash(fmt.Sprintf("user%d", i), WrapPassword("password"))
 		}
 	})
 
