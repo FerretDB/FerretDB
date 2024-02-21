@@ -27,7 +27,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
@@ -435,11 +434,33 @@ var (
 )
 
 func TestDocument(t *testing.T) {
+	prev := noNaN
+	noNaN = false
+
+	t.Cleanup(func() { noNaN = prev })
+
 	for _, tc := range documentTestCases {
 		tc := tc
 
 		t.Run(tc.name, func(t *testing.T) {
 			require.NotEqual(t, tc.doc == nil, tc.decodeErr == nil)
+
+			t.Run("FindRawDocument", func(t *testing.T) {
+				assert.Nil(t, FindRawDocument(nil))
+				assert.Nil(t, FindRawDocument(tc.raw[:0]))
+				assert.Nil(t, FindRawDocument(tc.raw[:1]))
+
+				if tc.name != "EOF" {
+					assert.Nil(t, FindRawDocument(tc.raw[:5]))
+					assert.Nil(t, FindRawDocument(tc.raw[:len(tc.raw)-1]))
+
+					assert.Equal(t, tc.raw, FindRawDocument(tc.raw))
+
+					b := append([]byte(nil), tc.raw...)
+					b = append(b, 0)
+					assert.Equal(t, tc.raw, FindRawDocument(b))
+				}
+			})
 
 			t.Run("Encode", func(t *testing.T) {
 				if tc.doc == nil {
@@ -509,11 +530,6 @@ func TestDocument(t *testing.T) {
 						doc, err := raw.Decode()
 
 						if tc.decodeErr != nil {
-							if debugbuild.Enabled {
-								require.Error(t, err, "b:\n\n%s\n%#v", hex.Dump(tc.raw), tc.raw)
-								require.ErrorIs(t, err, tc.decodeErr)
-							}
-
 							return
 						}
 
@@ -551,7 +567,10 @@ func TestDocument(t *testing.T) {
 }
 
 func BenchmarkDocument(b *testing.B) {
-	b.Logf("debugbuild=%t", debugbuild.Enabled)
+	prev := noNaN
+	noNaN = false
+
+	b.Cleanup(func() { noNaN = prev })
 
 	for _, tc := range documentTestCases {
 		tc := tc
@@ -653,11 +672,6 @@ func BenchmarkDocument(b *testing.B) {
 						b.StopTimer()
 
 						if tc.decodeErr != nil {
-							if debugbuild.Enabled {
-								require.Error(b, err)
-								require.Nil(b, doc)
-							}
-
 							return
 						}
 
@@ -689,6 +703,8 @@ func BenchmarkDocument(b *testing.B) {
 }
 
 func FuzzDocument(f *testing.F) {
+	noNaN = false
+
 	for _, tc := range documentTestCases {
 		f.Add([]byte(tc.raw))
 	}
@@ -755,6 +771,7 @@ func FuzzDocument(f *testing.F) {
 
 			// remove extra tail
 			cb := b[:len(b)-bufr.Buffered()-br.Len()]
+			assert.Equal(t, cb, []byte(FindRawDocument(b)))
 
 			// decode
 
