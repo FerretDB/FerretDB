@@ -28,7 +28,7 @@ import (
 
 // SCRAMSHA256Hash computes SCRAM-SHA-256 credentials and returns the document that should be stored.
 func SCRAMSHA256Hash(password string) (*types.Document, error) {
-	salt := make([]byte, fixedScramSHA256Params.saltLen-4) // minus 4 to base64 length to 40 bytes.
+	salt := make([]byte, fixedScramSHA256Params.saltLen-4) // minus 4 is needed here to encode to 40 bytes.
 	if _, err := rand.Read(salt); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
