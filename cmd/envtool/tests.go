@@ -363,36 +363,10 @@ func testsRun(ctx context.Context, index, total uint, run, skip string, args []s
 		return fmt.Errorf("--shard-index and --shard-total must be specified when --run is not")
 	}
 
-	all, err := listTestFuncs("")
+	tests, err := listTestFuncsWithRegex("", run, skip)
+
 	if err != nil {
 		return lazyerrors.Error(err)
-	}
-
-	if len(all) == 0 {
-		return fmt.Errorf("no tests to run")
-	}
-
-	var tests []string
-
-	// Filter what top-level functions we want to test using the same logic as "go test".
-	var (
-		rxRun  *regexp.Regexp
-		rxSkip *regexp.Regexp
-	)
-
-	if run != "" {
-		rxRun = regexp.MustCompile(run)
-	}
-
-	if skip != "" {
-		rxSkip = regexp.MustCompile(skip)
-	}
-
-	for _, t := range all {
-		if (skip == "" || !rxSkip.MatchString(t)) &&
-			(run == "" || rxRun.MatchString(t)) {
-			tests = append(tests, t)
-		}
 	}
 
 	// Then, shard all the tests but only run the ones that match the regex and that should
@@ -467,6 +441,57 @@ func listTestFuncs(dir string) ([]string, error) {
 	sort.Strings(res)
 
 	return res, nil
+}
+
+// listTestFuncsWithRegex returns regex-filtered names of all top-level test
+// functions (tests, benchmarks, examples, fuzz functions) in the specified
+// directory and subdirectories.
+func listTestFuncsWithRegex(dir, run, skip string) ([]string, error) {
+	all, err := listTestFuncs(dir)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(all) == 0 {
+		return nil, fmt.Errorf("no tests to run")
+	}
+
+	// Filter what top-level functions we want to test using the same logic as "go test".
+	var (
+		rxRun  *regexp.Regexp
+		rxSkip *regexp.Regexp
+	)
+
+	if run != "" {
+		rxRun, err = regexp.Compile(run)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if skip != "" {
+		rxSkip, err = regexp.Compile(skip)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return filterStringsByRegex(all, rxRun, rxSkip), nil
+}
+
+// filterStringsByRegex filters a slice of strings based on inclusion and exclusion
+// criteria defined by regular expressions.
+func filterStringsByRegex(tests []string, include, exclude *regexp.Regexp) []string {
+	res := []string{}
+
+	for _, t := range tests {
+		if (exclude == nil || !exclude.MatchString(t)) &&
+			(include == nil || include.MatchString(t)) {
+			res = append(res, t)
+		}
+	}
+
+	return res
 }
 
 // shardTestFuncs shards given top-level test functions.
