@@ -163,6 +163,8 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 
 	collection := setupCollection(tb, setupCtx, client, opts)
 
+	setupUser(tb, setupCtx, client)
+
 	level.SetLevel(*logLevelF)
 
 	return &SetupResult{
@@ -321,4 +323,28 @@ func insertBenchmarkProvider(tb testtb.TB, ctx context.Context, collection *mong
 	span.End()
 
 	return
+}
+
+// setupUser creates a user in admin database with PLAIN mechanism.
+// The user uses username/password credential which is the same as the database
+// credentials. This is done to avoid the need to reconnect as different credential.
+//
+// Without this, once the first user is created, the authentication fails
+// as username/password does not exist in admin.system.users collection.
+func setupUser(tb testtb.TB, ctx context.Context, client *mongo.Client) {
+	tb.Helper()
+
+	if IsMongoDB(tb) {
+		return
+	}
+
+	username, password, mechanism := "username", "password", "PLAIN"
+
+	err := client.Database("admin").RunCommand(ctx, bson.D{
+		{"createUser", username},
+		{"roles", bson.A{}},
+		{"pwd", password},
+		{"mechanisms", bson.A{mechanism}},
+	}).Err()
+	require.NoErrorf(tb, err, "cannot create user")
 }

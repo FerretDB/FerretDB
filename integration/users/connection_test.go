@@ -38,8 +38,6 @@ func TestAuthentication(t *testing.T) {
 	collection := s.Collection
 	db := collection.Database()
 
-	createTestRunnerUser(t, ctx, s.Collection.Database())
-
 	testCases := map[string]struct { //nolint:vet // for readability
 		username       string
 		password       string
@@ -252,6 +250,12 @@ func TestAuthenticationEnableNewAuthNoUserExists(t *testing.T) {
 	collection := s.Collection
 	db := collection.Database()
 
+	// drop the user created in the setup
+	err := db.Client().Database("admin").RunCommand(ctx, bson.D{
+		{"dropUser", "username"},
+	}).Err()
+	require.NoError(t, err, "cannot drop user")
+
 	testCases := map[string]struct {
 		username  string
 		password  string
@@ -364,12 +368,6 @@ func TestAuthenticationEnableNewAuthPLAIN(t *testing.T) {
 		"NonExistentUser": {
 			username:  "not-found-user",
 			password:  "something",
-			mechanism: "PLAIN",
-			err:       "AuthenticationFailed",
-		},
-		"PLAINBackendUser": {
-			username:  "username",
-			password:  "password",
 			mechanism: "PLAIN",
 			err:       "AuthenticationFailed",
 		},

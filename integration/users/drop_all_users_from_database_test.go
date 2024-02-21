@@ -36,7 +36,6 @@ func TestDropAllUsersFromDatabase(t *testing.T) {
 
 	ctx, collection := setup.Setup(t)
 	db := collection.Database()
-	createTestRunnerUser(t, ctx, db)
 	client := collection.Database().Client()
 
 	quantity := 5 // Add some users to the database.

@@ -15,7 +15,6 @@
 package users
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
@@ -37,7 +36,6 @@ func TestCreateUser(t *testing.T) {
 
 	ctx, collection := setup.Setup(t)
 	db := collection.Database()
-	createTestRunnerUser(t, ctx, collection.Database())
 
 	testCases := map[string]struct { //nolint:vet // for readability
 		payload    bson.D
@@ -332,26 +330,4 @@ func assertSCRAMSHA256Credentials(t testtb.TB, key string, cred *types.Document)
 	assert.NotEmpty(t, must.NotFail(c.Get("salt")).(string))
 	assert.NotEmpty(t, must.NotFail(c.Get("serverKey")).(string))
 	assert.NotEmpty(t, must.NotFail(c.Get("storedKey")).(string))
-}
-
-// createTestRunnerUser creates a user in admin database with PLAIN mechanism.
-// The user uses username/password credential which is the same as the database
-// credentials. This is done to avoid the need to reconnect as different credential.
-//
-// Without this, once the first user is created, the authentication fails
-// as username/password does not exist in admin.system.users collection.
-func createTestRunnerUser(tb *testing.T, ctx context.Context, db *mongo.Database) {
-	if setup.IsMongoDB(tb) {
-		return
-	}
-
-	username, password, mechanism := "username", "password", "PLAIN"
-
-	err := db.Client().Database("admin").RunCommand(ctx, bson.D{
-		{"createUser", username},
-		{"roles", bson.A{}},
-		{"pwd", password},
-		{"mechanisms", bson.A{mechanism}},
-	}).Err()
-	require.NoErrorf(tb, err, "cannot create user")
 }

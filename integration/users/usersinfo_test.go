@@ -42,7 +42,6 @@ func TestUsersinfo(t *testing.T) {
 	t.Parallel()
 
 	ctx, collection := setup.Setup(t)
-	createTestRunnerUser(t, ctx, collection.Database())
 	client := collection.Database().Client()
 
 	dbToUsers := []struct {

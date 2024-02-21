@@ -34,7 +34,6 @@ func TestUpdateUser(t *testing.T) {
 
 	ctx, collection := setup.Setup(t)
 	db := collection.Database()
-	createTestRunnerUser(t, ctx, db)
 
 	testCases := map[string]struct { //nolint:vet // for readability
 		createPayload bson.D
