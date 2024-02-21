@@ -7,13 +7,13 @@ description: Learn to use authentication mechanisms
 # Authentication
 
 FerretDB supports `PLAIN`, `SCRAM-SHA-256` and `SCRAM-SHA-1` authentication mechanisms.
-A user is created using the `createUser` command and stored in the `admin.system` database `users` collection.
+A user is created using the `createUser` command and stored in the `admin` database `system.users` collection.
 
-FerretDB uses the passed username and password to authenticate against the stored credentials.
+FerretDB uses the provided username and password to authenticate against the stored credentials.
 For example, if a client connects as `mongodb://user1:pass1@ferretdb:27018/ferretdb?tls=true&authMechanism=PLAIN`,
-`user1` is authenticated against its credential stored in `admin.system` database in the `users` collection.
+`user1` is authenticated against its credential stored in `admin` database in the `system.users` collection.
 
-Before the first user is created in FerretDB, the credential passed in the MongoDB connection string is used to connect directly to the PostgreSQL backend via passthrough.
+Before the first user is created in FerretDB, the credentials provided in the MongoDB connection string are used to connect directly to the PostgreSQL backend via passthrough.
 For instance, when the `admin.system.users` collection is empty and
 a client connects as `mongodb://pguser1:pgpass1@ferretdb:27018/ferretdb?tls=true&authMechanism=PLAIN`,
 it uses `pguser1` to connect to the postgreSQL backend.
@@ -81,6 +81,9 @@ docker compose up
 ```
 
 A client connects as the user `user1`, and authenticated using credentials stored in the `admin.system.users` collection.
+
+Use following command to run `mongosh` inside the temporary MongoDB container,
+attached to the same Docker network.
 
 ```sh
 docker run --rm -it --network=ferretdb --entrypoint=mongosh \
