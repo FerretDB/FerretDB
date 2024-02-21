@@ -41,7 +41,6 @@ package bson2
 
 import (
 	"fmt"
-	"math"
 	"time"
 
 	"github.com/cristalhq/bson/bsonproto"
@@ -99,10 +98,6 @@ const (
 	// DecodeDeep represents a mode in which nested documents and arrays are decoded recursively;
 	// RawDocuments and RawArrays are never returned.
 	decodeDeep
-
-	// DecodeCheckOnly represents a mode in which only validity checks are performed (recursively)
-	// and no decoding happens.
-	decodeCheckOnly
 )
 
 var (
@@ -144,19 +139,14 @@ type CompositeType interface {
 	*Document | *Array | RawDocument | RawArray
 }
 
-// validBSON checks if v is a valid BSON value (including values of raw types).
-func validBSON(v any) error {
+// validBSONType checks if v is a valid BSON type (including raw types).
+func validBSONType(v any) error {
 	switch v := v.(type) {
 	case *Document:
 	case RawDocument:
 	case *Array:
 	case RawArray:
-
 	case float64:
-		if noNaN && math.IsNaN(v) {
-			return lazyerrors.New("invalid float64 value NaN")
-		}
-
 	case string:
 	case Binary:
 	case ObjectID:
