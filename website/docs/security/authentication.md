@@ -11,7 +11,7 @@ A user is created using the `createUser` command and stored in the `admin` datab
 
 FerretDB uses the provided username and password to authenticate against the stored credentials.
 For example, if a client connects as `mongodb://user1:pass1@ferretdb:27018/ferretdb?tls=true&authMechanism=PLAIN`,
-`user1` is authenticated against its credential stored in `admin` database in the `system.users` collection.
+`user1` is authenticated against its credential stored in the `admin.system.users` collection.
 
 Before the first user is created in FerretDB, the credentials provided in the MongoDB connection string are used to connect directly to the PostgreSQL backend via passthrough.
 For instance, when the `admin.system.users` collection is empty and
@@ -40,7 +40,7 @@ All authenticated clients use `pguser1` user to query PostgreSQL backend.
 ferretdb --postgresql-url=postgres://pguser1:pgpass1@localhost:5432/ferretdb
 ```
 
-A client connects as user `user1` that is authenticated using credentials stored in `admin.system` database `users` collection.
+A client connects as the user `user1`, and authenticated using credentials stored in the `admin.system.users` collection.
 
 ```sh
 mongosh 'mongodb://user1:pass1@127.0.0.1/ferretdb?authMechanism=PLAIN'
