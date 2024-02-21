@@ -24,6 +24,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"regexp"
 	"slices"
 	"sort"
 	"strconv"
@@ -37,7 +38,6 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 
-	"github.com/FerretDB/FerretDB/cmd/envtool/internal/testmatch"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
@@ -375,9 +375,22 @@ func testsRun(ctx context.Context, index, total uint, run, skip string, args []s
 	var tests []string
 
 	// Filter what top-level functions we want to test using the same logic as "go test".
-	m := testmatch.New(run, skip)
+	var (
+		rxRun  *regexp.Regexp
+		rxSkip *regexp.Regexp
+	)
+
+	if run != "" {
+		rxRun = regexp.MustCompile(run)
+	}
+
+	if skip != "" {
+		rxSkip = regexp.MustCompile(skip)
+	}
+
 	for _, t := range all {
-		if m.Match(t) {
+		if (skip == "" || !rxSkip.MatchString(t)) &&
+			(run == "" || rxRun.MatchString(t)) {
 			tests = append(tests, t)
 		}
 	}

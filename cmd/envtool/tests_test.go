@@ -253,12 +253,13 @@ func TestShardTestFuncs(t *testing.T) {
 	t.Run("Valid", func(t *testing.T) {
 		t.Parallel()
 
-		res, _, err := shardTestFuncs(1, 3, testFuncs)
+		res, skip, err := shardTestFuncs(1, 3, testFuncs)
 		require.NoError(t, err)
 		assert.Equal(t, testFuncs[0], res[0])
 		assert.NotEqual(t, testFuncs[1], res[1])
 		assert.NotEqual(t, testFuncs[2], res[1])
 		assert.Equal(t, testFuncs[3], res[1])
+		assert.NotEmpty(t, skip)
 
 		res, _, err = shardTestFuncs(3, 3, testFuncs)
 		require.NoError(t, err)
