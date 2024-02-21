@@ -418,10 +418,14 @@ func TestShardTestFuncs(t *testing.T) {
 		assert.Equal(t, testFuncs[3], res[1])
 		assert.NotEmpty(t, skip)
 
-		res, _, err = shardTestFuncs(3, 3, testFuncs)
+		lastRes, lastSkip, err := shardTestFuncs(3, 3, testFuncs)
 		require.NoError(t, err)
-		assert.NotEqual(t, testFuncs[0], res[0])
-		assert.NotEqual(t, testFuncs[1], res[0])
-		assert.Equal(t, testFuncs[2], res[0])
+		assert.NotEqual(t, testFuncs[0], lastRes[0])
+		assert.NotEqual(t, testFuncs[1], lastRes[0])
+		assert.Equal(t, testFuncs[2], lastRes[0])
+		assert.NotEmpty(t, lastSkip)
+
+		assert.NotEqual(t, res, lastRes)
+		assert.NotEqual(t, skip, lastSkip)
 	})
 }
