@@ -71,7 +71,5 @@ func scramSHA256HashParams(password string, salt []byte, params *scramParams) (*
 
 	saltedPassword := pbkdf2.Key([]byte(prepPassword), salt, params.iterationCount, sha256.Size, sha256.New)
 
-	fmt.Println(len(saltedPassword))
-
 	return scramDoc(sha256.New, saltedPassword, salt, params)
 }
