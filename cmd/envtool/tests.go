@@ -446,16 +446,15 @@ func listTestFuncs(dir string) ([]string, error) {
 // functions (tests, benchmarks, examples, fuzz functions) in the specified
 // directory and subdirectories.
 func listTestFuncsWithRegex(dir, run, skip string) ([]string, error) {
-	all, err := listTestFuncs(dir)
+	tests, err := listTestFuncs(dir)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(all) == 0 {
+	if len(tests) == 0 {
 		return nil, fmt.Errorf("no tests to run")
 	}
 
-	// Filter what top-level functions we want to test using the same logic as "go test".
 	var (
 		rxRun  *regexp.Regexp
 		rxSkip *regexp.Regexp
@@ -475,7 +474,7 @@ func listTestFuncsWithRegex(dir, run, skip string) ([]string, error) {
 		}
 	}
 
-	return filterStringsByRegex(all, rxRun, rxSkip), nil
+	return filterStringsByRegex(tests, rxRun, rxSkip), nil
 }
 
 // filterStringsByRegex filters a slice of strings based on inclusion and exclusion
@@ -483,11 +482,16 @@ func listTestFuncsWithRegex(dir, run, skip string) ([]string, error) {
 func filterStringsByRegex(tests []string, include, exclude *regexp.Regexp) []string {
 	res := []string{}
 
-	for _, t := range tests {
-		if (exclude == nil || !exclude.MatchString(t)) &&
-			(include == nil || include.MatchString(t)) {
-			res = append(res, t)
+	for _, test := range tests {
+		if exclude != nil && exclude.MatchString(test) {
+			continue
 		}
+
+		if include != nil && !include.MatchString(test) {
+			continue
+		}
+
+		res = append(res, test)
 	}
 
 	return res
