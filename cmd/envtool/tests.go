@@ -364,7 +364,6 @@ func testsRun(ctx context.Context, index, total uint, run, skip string, args []s
 	}
 
 	tests, err := listTestFuncsWithRegex("", run, skip)
-
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
