@@ -389,6 +389,15 @@ var decodeTestCases = []decodeTestCase{
 		decodeErr:  ErrDecodeInvalidInput,
 	},
 	{
+		name: "missingByte",
+		raw: RawDocument{
+			0x06, 0x00, 0x00, 0x00, // document length
+			0x00, // end of document
+		},
+		findRawErr: ErrDecodeShortInput,
+		decodeErr:  ErrDecodeShortInput,
+	},
+	{
 		name: "extraByte",
 		raw: RawDocument{
 			0x05, 0x00, 0x00, 0x00, // document length
