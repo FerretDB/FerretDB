@@ -28,10 +28,18 @@ import (
 
 // SCRAMSHA1Hash computes SCRAM-SHA-1 credentials and returns the document that should be stored.
 func SCRAMSHA1Hash(username, password string) (*types.Document, error) {
-	salt := make([]byte, fixedScramSHA1Params.saltLen)
+	salt := make([]byte, fixedScramSHA1Params.saltLen-4) // minus 4 is needed here to encode to 24 bytes.
 	if _, err := rand.Read(salt); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
+
+	suffix := make([]byte, 4)
+	suffix[0] = 0
+	suffix[1] = 0
+	suffix[2] = 0
+	suffix[3] = 1
+
+	salt = append(salt, suffix...)
 
 	doc, err := scramSHA1HashParams(username, password, salt, fixedScramSHA1Params)
 	if err != nil {
@@ -44,7 +52,7 @@ func SCRAMSHA1Hash(username, password string) (*types.Document, error) {
 // fixedScramSHA1Params represent fixed password parameters for SCRAM-SHA-1 authentication.
 var fixedScramSHA1Params = &scramParams{
 	iterationCount: 10_000,
-	saltLen:        18,
+	saltLen:        16, // 20 byte SHA-1 block size minus 4 bytes for suffix.
 }
 
 // scramSHA1HashParams hashes the password with the given salt and parameters,

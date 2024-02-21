@@ -28,10 +28,18 @@ import (
 
 // SCRAMSHA256Hash computes SCRAM-SHA-256 credentials and returns the document that should be stored.
 func SCRAMSHA256Hash(password string) (*types.Document, error) {
-	salt := make([]byte, fixedScramSHA256Params.saltLen)
+	salt := make([]byte, fixedScramSHA256Params.saltLen-4) // minus 4 to base64 length to 40 bytes.
 	if _, err := rand.Read(salt); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
+
+	suffix := make([]byte, 4)
+	suffix[0] = 0
+	suffix[1] = 0
+	suffix[2] = 0
+	suffix[3] = 1
+
+	salt = append(salt, suffix...)
 
 	doc, err := scramSHA256HashParams(password, salt, fixedScramSHA256Params)
 	if err != nil {
@@ -44,7 +52,7 @@ func SCRAMSHA256Hash(password string) (*types.Document, error) {
 // fixedScramSHA256Params represent fixed password parameters for SCRAM-SHA-256 authentication.
 var fixedScramSHA256Params = &scramParams{
 	iterationCount: 15_000,
-	saltLen:        30,
+	saltLen:        28, // 32 byte SHA-256 block size minus 4 bytes for suffix.
 }
 
 // scramSHA256HashParams hashes the password with the given salt and parameters,
@@ -62,6 +70,8 @@ func scramSHA256HashParams(password string, salt []byte, params *scramParams) (*
 	}
 
 	saltedPassword := pbkdf2.Key([]byte(prepPassword), salt, params.iterationCount, sha256.Size, sha256.New)
+
+	fmt.Println(len(saltedPassword))
 
 	return scramDoc(sha256.New, saltedPassword, salt, params)
 }
