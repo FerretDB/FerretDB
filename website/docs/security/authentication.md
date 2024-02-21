@@ -13,7 +13,7 @@ FerretDB uses passed username and password to authenticate against stored creden
 For example, if a client connects as `mongodb://user1:pass1@ferretdb:27018/ferretdb?tls=true&authMechanism=PLAIN`,
 `user1` is authenticated against its credential in `admin.system` database `users` collection.
 
-Before the first user is created, the credential passed in the connection string is used to connect directly to the postgreSQL backend.
+Before the first user is created in FerretDB, the credential passed in the MongoDB connection string is used to connect directly to the PostgreSQL backend via passthrough.
 For example, when `admin.system` database `users` collection is empty and
 a client connects as `mongodb://pguser1:pgpass1@ferretdb:27018/ferretdb?tls=true&authMechanism=PLAIN`,
 it uses `pguser1` to connect to the postgreSQL backend. The `PLAIN` mechanism is used for this case.
