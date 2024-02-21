@@ -9,7 +9,7 @@ description: Learn to use authentication mechanisms
 FerretDB supports `PLAIN`, `SCRAM-SHA-256` and `SCRAM-SHA-1` authentication mechanisms.
 A user is created using the `createUser` command and stored in the `admin.system` database `users` collection.
 
-FerretDB uses passed username and password to authenticate against stored credentials.
+FerretDB uses the passed username and password to authenticate against the stored credentials.
 For example, if a client connects as `mongodb://user1:pass1@ferretdb:27018/ferretdb?tls=true&authMechanism=PLAIN`,
 `user1` is authenticated against its credential in `admin.system` database `users` collection.
 
