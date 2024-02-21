@@ -79,7 +79,7 @@ const (
 	ErrDollarPrefixedFieldName = ErrorCode(52) // DollarPrefixedFieldName
 
 	// ErrInvalidID indicates that _id field is invalid.
-	ErrInvalidID = ErrorCode(53) // InvalidID
+	ErrInvalidID = ErrorCode(53) // InvalidIdField
 
 	// ErrEmptyName indicates that the field name is empty.
 	ErrEmptyName = ErrorCode(56) // EmptyFieldName
@@ -133,7 +133,7 @@ const (
 	ErrIndexesWrongType = ErrorCode(10065) // Location10065
 
 	// ErrDuplicateKeyInsert indicates duplicate key violation on inserting document.
-	ErrDuplicateKeyInsert = ErrorCode(11000) // Location11000
+	ErrDuplicateKeyInsert = ErrorCode(11000) // DuplicateKey
 
 	// ErrSetBadExpression indicates set expression is not object.
 	ErrSetBadExpression = ErrorCode(40272) // Location40272

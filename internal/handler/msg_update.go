@@ -16,10 +16,7 @@ package handler
 
 import (
 	"context"
-	"errors"
 	"fmt"
-
-	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
@@ -46,33 +43,14 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	// TODO https://github.com/FerretDB/FerretDB/issues/2612
 	_ = params.Ordered
 
-	var we *mongo.WriteError
-
 	matched, modified, upserted, err := h.updateDocument(ctx, params)
 	if err != nil {
-		switch {
-		case backends.ErrorCodeIs(err, backends.ErrorCodeInsertDuplicateID):
-			// TODO https://github.com/FerretDB/FerretDB/issues/3263
-			we = &mongo.WriteError{
-				Index:   0,
-				Code:    int(handlererrors.ErrDuplicateKeyInsert),
-				Message: fmt.Sprintf(`E11000 duplicate key error collection: %s.%s`, params.DB, params.Collection),
-			}
-
-		default:
-			if we, err = handleValidationError(err); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-		}
+		return nil, handleUpdateError(params.DB, params.Collection, "update", err)
 	}
 
 	res := must.NotFail(types.NewDocument(
 		"n", matched,
 	))
-
-	if we != nil {
-		res.Set("writeErrors", must.NotFail(types.NewArray(WriteErrorDocument(we))))
-	}
 
 	if upserted.Len() != 0 {
 		res.Set("upserted", upserted)
@@ -139,125 +117,34 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdateParam
 			return 0, 0, nil, lazyerrors.Error(err)
 		}
 
-		var resDocs []*types.Document
+		closer := iterator.NewMultiCloser()
+		defer closer.Close()
 
-		defer res.Iter.Close()
+		closer.Add(res.Iter)
 
-		for {
-			var doc *types.Document
+		iter := common.FilterIterator(res.Iter, closer, u.Filter)
 
-			_, doc, err = res.Iter.Next()
-			if err != nil {
-				if errors.Is(err, iterator.ErrIteratorDone) {
-					break
-				}
-
-				return 0, 0, nil, lazyerrors.Error(err)
-			}
-
-			var matches bool
-
-			matches, err = common.FilterDocument(doc, u.Filter)
-			if err != nil {
-				return 0, 0, nil, lazyerrors.Error(err)
-			}
-
-			if !matches {
-				continue
-			}
-
-			resDocs = append(resDocs, doc)
+		if !u.Multi {
+			iter = common.LimitIterator(iter, closer, 1)
 		}
 
-		res.Iter.Close()
+		result, err := common.UpdateDocument(ctx, c, "update", iter, &u)
+		if err != nil {
+			return 0, 0, nil, lazyerrors.Error(err)
+		}
 
-		if len(resDocs) == 0 {
-			if !u.Upsert {
-				// nothing to do, continue to the next update operation
-				continue
-			}
+		matched += result.Matched.Count
+		modified += result.Modified.Count
 
-			// TODO https://github.com/FerretDB/FerretDB/issues/3040
-			hasQueryOperators, err := common.HasQueryOperator(u.Filter)
-			if err != nil {
-				return 0, 0, nil, lazyerrors.Error(err)
-			}
-
-			var doc *types.Document
-			if hasQueryOperators {
-				doc = must.NotFail(types.NewDocument())
-			} else {
-				doc = u.Filter
-			}
-
-			hasUpdateOperators, err := common.HasSupportedUpdateModifiers("update", u.Update)
-			if err != nil {
-				return 0, 0, nil, err
-			}
-
-			if hasUpdateOperators {
-				// TODO https://github.com/FerretDB/FerretDB/issues/3044
-				if _, err = common.UpdateDocument("update", doc, u.Update, true); err != nil {
-					return 0, 0, nil, err
-				}
-			} else {
-				doc = u.Update
-			}
-
-			if !doc.Has("_id") {
-				doc.Set("_id", types.NewObjectID())
-			}
+		if result.Upserted.Doc != nil {
+			doc := result.Upserted.Doc
 			upserted.Append(must.NotFail(types.NewDocument(
 				"index", int32(upserted.Len()),
 				"_id", must.NotFail(doc.Get("_id")),
 			)))
 
-			// TODO https://github.com/FerretDB/FerretDB/issues/3454
-			if err = doc.ValidateData(); err != nil {
-				return 0, 0, nil, err
-			}
-
-			// TODO https://github.com/FerretDB/FerretDB/issues/2612
-
-			_, err = c.InsertAll(ctx, &backends.InsertAllParams{
-				Docs: []*types.Document{doc},
-			})
-			if err != nil {
-				return 0, 0, nil, err
-			}
-
+			// in case of upsert, MongoDB sets the matched count to 1
 			matched++
-
-			continue
-		}
-
-		if len(resDocs) > 1 && !u.Multi {
-			resDocs = resDocs[:1]
-		}
-
-		matched += int32(len(resDocs))
-
-		for _, doc := range resDocs {
-			changed, err := common.UpdateDocument("update", doc, u.Update, false)
-			if err != nil {
-				return 0, 0, nil, lazyerrors.Error(err)
-			}
-
-			if !changed {
-				continue
-			}
-
-			// TODO https://github.com/FerretDB/FerretDB/issues/3454
-			if err = doc.ValidateData(); err != nil {
-				return 0, 0, nil, err
-			}
-
-			updateRes, err := c.UpdateAll(ctx, &backends.UpdateAllParams{Docs: []*types.Document{doc}})
-			if err != nil {
-				return 0, 0, nil, lazyerrors.Error(err)
-			}
-
-			modified += int32(updateRes.Updated)
 		}
 	}
 
