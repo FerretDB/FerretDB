@@ -31,9 +31,7 @@ func IsMaster(ctx context.Context, query *types.Document, tcpHost, name string) 
 		return nil, lazyerrors.Error(err)
 	}
 
-	reply := wire.OpReply{
-		NumberReturned: 1,
-	}
+	var reply wire.OpReply
 	reply.SetDocument(IsMasterDocument(tcpHost, name))
 
 	return &reply, nil

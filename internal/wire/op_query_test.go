@@ -22,83 +22,86 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
-var queryTestCases = []testCase{{
-	name:    "handshake1",
-	headerB: testutil.MustParseDumpFile("testdata", "handshake1_header.hex"),
-	bodyB:   testutil.MustParseDumpFile("testdata", "handshake1_body.hex"),
-	msgHeader: &MsgHeader{
-		MessageLength: 372,
-		RequestID:     1,
-		ResponseTo:    0,
-		OpCode:        OpCodeQuery,
+var queryTestCases = []testCase{
+	{
+		name:    "handshake1",
+		headerB: testutil.MustParseDumpFile("testdata", "handshake1_header.hex"),
+		bodyB:   testutil.MustParseDumpFile("testdata", "handshake1_body.hex"),
+		msgHeader: &MsgHeader{
+			MessageLength: 372,
+			RequestID:     1,
+			ResponseTo:    0,
+			OpCode:        OpCodeQuery,
+		},
+		msgBody: &OpQuery{
+			Flags:              0,
+			FullCollectionName: "admin.$cmd",
+			NumberToSkip:       0,
+			NumberToReturn:     -1,
+			query: convertDocument(must.NotFail(types.NewDocument(
+				"ismaster", true,
+				"client", must.NotFail(types.NewDocument(
+					"driver", must.NotFail(types.NewDocument(
+						"name", "nodejs",
+						"version", "4.0.0-beta.6",
+					)),
+					"os", must.NotFail(types.NewDocument(
+						"type", "Darwin",
+						"name", "darwin",
+						"architecture", "x64",
+						"version", "20.6.0",
+					)),
+					"platform", "Node.js v14.17.3, LE (unified)|Node.js v14.17.3, LE (unified)",
+					"application", must.NotFail(types.NewDocument(
+						"name", "mongosh 1.0.1",
+					)),
+				)),
+				"compression", must.NotFail(types.NewArray("none")),
+				"loadBalanced", false,
+			))),
+			returnFieldsSelector: nil,
+		},
 	},
-	msgBody: &OpQuery{
-		Flags:              0,
-		FullCollectionName: "admin.$cmd",
-		NumberToSkip:       0,
-		NumberToReturn:     -1,
-		query: must.NotFail(types.NewDocument(
-			"ismaster", true,
-			"client", must.NotFail(types.NewDocument(
-				"driver", must.NotFail(types.NewDocument(
-					"name", "nodejs",
-					"version", "4.0.0-beta.6",
+	{
+		name:    "handshake3",
+		headerB: testutil.MustParseDumpFile("testdata", "handshake3_header.hex"),
+		bodyB:   testutil.MustParseDumpFile("testdata", "handshake3_body.hex"),
+		msgHeader: &MsgHeader{
+			MessageLength: 372,
+			RequestID:     2,
+			ResponseTo:    0,
+			OpCode:        OpCodeQuery,
+		},
+		msgBody: &OpQuery{
+			Flags:              0,
+			FullCollectionName: "admin.$cmd",
+			NumberToSkip:       0,
+			NumberToReturn:     -1,
+			query: convertDocument(must.NotFail(types.NewDocument(
+				"ismaster", true,
+				"client", must.NotFail(types.NewDocument(
+					"driver", must.NotFail(types.NewDocument(
+						"name", "nodejs",
+						"version", "4.0.0-beta.6",
+					)),
+					"os", must.NotFail(types.NewDocument(
+						"type", "Darwin",
+						"name", "darwin",
+						"architecture", "x64",
+						"version", "20.6.0",
+					)),
+					"platform", "Node.js v14.17.3, LE (unified)|Node.js v14.17.3, LE (unified)",
+					"application", must.NotFail(types.NewDocument(
+						"name", "mongosh 1.0.1",
+					)),
 				)),
-				"os", must.NotFail(types.NewDocument(
-					"type", "Darwin",
-					"name", "darwin",
-					"architecture", "x64",
-					"version", "20.6.0",
-				)),
-				"platform", "Node.js v14.17.3, LE (unified)|Node.js v14.17.3, LE (unified)",
-				"application", must.NotFail(types.NewDocument(
-					"name", "mongosh 1.0.1",
-				)),
-			)),
-			"compression", must.NotFail(types.NewArray("none")),
-			"loadBalanced", false,
-		)),
-		returnFieldsSelector: nil,
+				"compression", must.NotFail(types.NewArray("none")),
+				"loadBalanced", false,
+			))),
+			returnFieldsSelector: nil,
+		},
 	},
-}, {
-	name:    "handshake3",
-	headerB: testutil.MustParseDumpFile("testdata", "handshake3_header.hex"),
-	bodyB:   testutil.MustParseDumpFile("testdata", "handshake3_body.hex"),
-	msgHeader: &MsgHeader{
-		MessageLength: 372,
-		RequestID:     2,
-		ResponseTo:    0,
-		OpCode:        OpCodeQuery,
-	},
-	msgBody: &OpQuery{
-		Flags:              0,
-		FullCollectionName: "admin.$cmd",
-		NumberToSkip:       0,
-		NumberToReturn:     -1,
-		query: must.NotFail(types.NewDocument(
-			"ismaster", true,
-			"client", must.NotFail(types.NewDocument(
-				"driver", must.NotFail(types.NewDocument(
-					"name", "nodejs",
-					"version", "4.0.0-beta.6",
-				)),
-				"os", must.NotFail(types.NewDocument(
-					"type", "Darwin",
-					"name", "darwin",
-					"architecture", "x64",
-					"version", "20.6.0",
-				)),
-				"platform", "Node.js v14.17.3, LE (unified)|Node.js v14.17.3, LE (unified)",
-				"application", must.NotFail(types.NewDocument(
-					"name", "mongosh 1.0.1",
-				)),
-			)),
-			"compression", must.NotFail(types.NewArray("none")),
-			"loadBalanced", false,
-		)),
-		returnFieldsSelector: nil,
-	},
-}}
+}
 
 func TestQuery(t *testing.T) {
 	t.Parallel()
