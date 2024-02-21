@@ -80,7 +80,7 @@ To start `ferretdb`, use docker compose.
 docker compose up
 ```
 
-A client connects as user `user1` that is authenticated using credentials stored in `admin.system` database `users` collection.
+A client connects as the user `user1`, and authenticated using credentials stored in the `admin.system.users` collection.
 
 ```sh
 docker run --rm -it --network=ferretdb --entrypoint=mongosh \
