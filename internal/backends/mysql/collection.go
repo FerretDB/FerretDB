@@ -119,7 +119,7 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 	}); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-	
+
 	p, err := c.r.DatabaseGetExisting(ctx, c.dbName)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
