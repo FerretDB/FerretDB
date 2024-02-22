@@ -107,7 +107,7 @@ If this does not resolve your issue please file a bug report [here](https://gith
 ## Experimental authentication
 
 FerretDB supports experimental `SCRAM-SHA-256` and `SCRAM-SHA-1` authentication mechanisms.
-It is enabled by the flag `--test-enable-new-auth` or the environment variable `EnableNewAuth`.
+It is enabled by the flag `--test-enable-new-auth` or the environment variable `TestEnableNewAuth`.
 A user is created using the `createUser` command and stored in the `admin` database `system.users` collection.
 
 FerretDB uses the provided username and password to authenticate against the stored credentials.
