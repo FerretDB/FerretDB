@@ -38,12 +38,8 @@ type OpQuery struct {
 
 func (query *OpQuery) msgbody() {}
 
-// check checks if the query is valid.
+// check implements [MsgBody] interface.
 func (query *OpQuery) check() error {
-	if !debugbuild.Enabled {
-		return nil
-	}
-
 	if d := query.query; d != nil {
 		if _, err := d.DecodeDeep(); err != nil {
 			return lazyerrors.Error(err)
@@ -101,8 +97,10 @@ func (query *OpQuery) UnmarshalBinaryNocopy(b []byte) error {
 		query.returnFieldsSelector = b[selectorLow:]
 	}
 
-	if err := query.check(); err != nil {
-		return lazyerrors.Error(err)
+	if debugbuild.Enabled {
+		if err := query.check(); err != nil {
+			return lazyerrors.Error(err)
+		}
 	}
 
 	return nil
@@ -110,8 +108,10 @@ func (query *OpQuery) UnmarshalBinaryNocopy(b []byte) error {
 
 // MarshalBinary implements [MsgBody] interface.
 func (query *OpQuery) MarshalBinary() ([]byte, error) {
-	if err := query.check(); err != nil {
-		return nil, lazyerrors.Error(err)
+	if debugbuild.Enabled {
+		if err := query.check(); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 	}
 
 	nameSize := bson2.SizeCString(query.FullCollectionName)

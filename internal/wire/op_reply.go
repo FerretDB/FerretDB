@@ -38,12 +38,8 @@ type OpReply struct {
 
 func (reply *OpReply) msgbody() {}
 
-// check checks if the reply is valid.
+// check implements [MsgBody] interface.
 func (reply *OpReply) check() error {
-	if !debugbuild.Enabled {
-		return nil
-	}
-
 	if d := reply.document; d != nil {
 		if _, err := d.DecodeDeep(); err != nil {
 			return lazyerrors.Error(err)
@@ -77,8 +73,10 @@ func (reply *OpReply) UnmarshalBinaryNocopy(b []byte) error {
 		return lazyerrors.Errorf("numberReturned=%d, document=%v", numberReturned, reply.document)
 	}
 
-	if err := reply.check(); err != nil {
-		return lazyerrors.Error(err)
+	if debugbuild.Enabled {
+		if err := reply.check(); err != nil {
+			return lazyerrors.Error(err)
+		}
 	}
 
 	return nil
@@ -86,8 +84,10 @@ func (reply *OpReply) UnmarshalBinaryNocopy(b []byte) error {
 
 // MarshalBinary implements [MsgBody] interface.
 func (reply *OpReply) MarshalBinary() ([]byte, error) {
-	if err := reply.check(); err != nil {
-		return nil, lazyerrors.Error(err)
+	if debugbuild.Enabled {
+		if err := reply.check(); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 	}
 
 	b := make([]byte, 20+len(reply.document))

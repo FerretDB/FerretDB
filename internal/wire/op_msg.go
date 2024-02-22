@@ -44,7 +44,7 @@ func MakeOpMsgSection(doc *types.Document) OpMsgSection {
 	}
 }
 
-// OpMsg is an extensible message format designed to subsume the functionality of other opcodes.
+// OpMsg is the main wire protocol message type.
 type OpMsg struct {
 	FlagBits OpMsgFlags
 
@@ -150,6 +150,13 @@ func (msg *OpMsg) RawDocument() (bson2.RawDocument, error) {
 }
 
 func (msg *OpMsg) msgbody() {}
+
+// check implements [MsgBody] interface.
+func (msg *OpMsg) check() error {
+	// TODO
+
+	return nil
+}
 
 // UnmarshalBinaryNocopy implements [MsgBody] interface.
 func (msg *OpMsg) UnmarshalBinaryNocopy(b []byte) error {
