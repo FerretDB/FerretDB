@@ -16,10 +16,14 @@ package handler
 
 import (
 	"context"
+	"errors"
+	"strings"
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/handler/common"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -36,21 +40,115 @@ func (h *Handler) MsgHello(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		return nil, lazyerrors.Error(err)
 	}
 
+	saslSupportedMechs, err := common.GetOptionalParam(doc, "saslSupportedMechs", "")
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	var saslSupportedMechsResp *types.Array
+
+	if saslSupportedMechs != "" {
+		db, username, ok := strings.Cut(saslSupportedMechs, ".")
+		if !ok {
+			return nil, handlererrors.NewCommandErrorMsg(
+				handlererrors.ErrBadValue,
+				"UserName must contain a '.' separated database.user pair",
+			)
+		}
+		// If username is empty, MongoDB doesn't send back a saslSupportedMechs property but
+		// still sends the response normally.
+		if username != "" {
+			mechs, err := h.getUserSupportedMechs(ctx, db, username)
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
+			if len(mechs) > 0 {
+				saslSupportedMechsResp = must.NotFail(types.NewArray())
+				for _, k := range mechs {
+					saslSupportedMechsResp.Append(k)
+				}
+			}
+		}
+	}
+
+	resp := must.NotFail(types.NewDocument(
+		"isWritablePrimary", true,
+		"maxBsonObjectSize", int32(types.MaxDocumentLen),
+		"maxMessageSizeBytes", int32(wire.MaxMsgLen),
+		"maxWriteBatchSize", int32(100000),
+		"localTime", time.Now(),
+		"connectionId", int32(42),
+		"minWireVersion", common.MinWireVersion,
+		"maxWireVersion", common.MaxWireVersion,
+		"readOnly", false,
+	))
+
+	if saslSupportedMechsResp != nil {
+		resp.Set("saslSupportedMechs", saslSupportedMechsResp)
+	}
+
+	resp.Set("ok", float64(1))
+
 	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
-		must.NotFail(types.NewDocument(
-			"isWritablePrimary", true,
-			"maxBsonObjectSize", int32(types.MaxDocumentLen),
-			"maxMessageSizeBytes", int32(wire.MaxMsgLen),
-			"maxWriteBatchSize", int32(100000),
-			"localTime", time.Now(),
-			"connectionId", int32(42),
-			"minWireVersion", common.MinWireVersion,
-			"maxWireVersion", common.MaxWireVersion,
-			"readOnly", false,
-			"ok", float64(1),
-		)),
-	)))
+	must.NoError(reply.SetSections(wire.MakeOpMsgSection(resp)))
 
 	return &reply, nil
+}
+
+// getUserSupportedMechs for a given user.
+func (h *Handler) getUserSupportedMechs(ctx context.Context, db, username string) ([]string, error) {
+	adminDB, err := h.b.Database("admin")
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	usersCol, err := adminDB.Collection("system.users")
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	filter, err := usersInfoFilter(false, true, db, []usersInfoPair{
+		{username: username, db: db},
+	})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	// Filter isn't being passed to the query as we are filtering after retrieving all data
+	// from the database due to limitations of the internal/backends filters.
+	qr, err := usersCol.Query(ctx, nil)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	defer qr.Iter.Close()
+
+	for {
+		_, v, err := qr.Iter.Next()
+
+		if errors.Is(err, iterator.ErrIteratorDone) {
+			break
+		}
+
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		matches, err := common.FilterDocument(v, filter)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		if !matches {
+			continue
+		}
+
+		if v.Has("credentials") {
+			credentials := must.NotFail(v.Get("credentials")).(*types.Document)
+			return credentials.Keys(), nil
+		}
+	}
+
+	return nil, nil
 }
