@@ -306,6 +306,10 @@ func TestAuthenticationEnableNewAuthNoUserExists(t *testing.T) {
 			client, err := mongo.Connect(ctx, opts)
 			require.NoError(t, err, "cannot connect to MongoDB")
 
+			t.Cleanup(func() {
+				require.NoError(t, client.Disconnect(ctx))
+			})
+
 			err = client.Ping(ctx, nil)
 
 			if tc.pingErr != "" {
@@ -391,6 +395,10 @@ func TestAuthenticationEnableNewAuthPLAIN(t *testing.T) {
 
 			client, err := mongo.Connect(ctx, opts)
 			require.NoError(t, err, "cannot connect to MongoDB")
+
+			t.Cleanup(func() {
+				require.NoError(t, client.Disconnect(ctx))
+			})
 
 			c := client.Database(db.Name()).Collection(cName)
 			_, err = c.InsertOne(ctx, bson.D{{"ping", "pong"}})

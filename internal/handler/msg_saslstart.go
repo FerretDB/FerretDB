@@ -172,14 +172,12 @@ func (h *Handler) scramCredentialLookup(ctx context.Context, username, dbName, m
 		return nil, lazyerrors.Error(err)
 	}
 
-	var filter *types.Document
-
-	filter, err = usersInfoFilter(false, false, "", []usersInfoPair{
-		{username: username, db: dbName},
-	})
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	// For `PLAIN` mechanism $db field is always `$external` upon saslStart.
+	// For `SCRAM-SHA-1` and `SCRAM-SHA-256` mechanisms $db field contains
+	// authSource option of the client.
+	// Let authorization handle the database access right.
+	// TODO https://github.com/FerretDB/FerretDB/issues/174
+	filter := must.NotFail(types.NewDocument("user", username))
 
 	// Filter isn't being passed to the query as we are filtering after retrieving all data
 	// from the database due to limitations of the internal/backends filters.

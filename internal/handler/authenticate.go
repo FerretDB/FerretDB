@@ -59,8 +59,8 @@ func (h *Handler) authenticate(ctx context.Context) error {
 	// For `PLAIN` mechanism $db field is always `$external` upon saslStart.
 	// For `SCRAM-SHA-1` and `SCRAM-SHA-256` mechanisms $db field contains
 	// authSource option of the client.
-	// Since _id field compromises of `dbName.username`, and dbName cannot be
-	// passed by client for `PLAIN` mechanism, it does not use _id for the filter.
+	// Let authorization handle the database access right.
+	// TODO https://github.com/FerretDB/FerretDB/issues/174
 	filter := must.NotFail(types.NewDocument("user", username))
 
 	qr, err := usersCol.Query(ctx, nil)
