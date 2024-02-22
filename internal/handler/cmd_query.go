@@ -41,9 +41,7 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 
 	if cmd == "saslStart" && strings.HasSuffix(collection, ".$cmd") {
 		var emptyPayload types.Binary
-		reply := wire.OpReply{
-			NumberReturned: 1,
-		}
+		var reply wire.OpReply
 		reply.SetDocument(must.NotFail(types.NewDocument(
 			"conversationId", int32(1),
 			"done", true,
