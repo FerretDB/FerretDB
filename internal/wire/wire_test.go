@@ -99,6 +99,7 @@ func testMessages(t *testing.T, testCases []testCase) {
 				bufr := bufio.NewReader(br)
 				msgHeader, msgBody, err := ReadMessage(bufr)
 				if tc.err != "" {
+					require.Error(t, err)
 					require.Equal(t, tc.err, lastErr(err).Error())
 					return
 				}
@@ -135,7 +136,8 @@ func testMessages(t *testing.T, testCases []testCase) {
 				var buf bytes.Buffer
 				bufw := bufio.NewWriter(&buf)
 				err := WriteMessage(bufw, tc.msgHeader, tc.msgBody)
-				if err != nil {
+				if tc.err != "" {
+					require.Error(t, err)
 					require.Equal(t, tc.err, lastErr(err).Error())
 					return
 				}

@@ -110,22 +110,9 @@ func (msg *OpMsg) Document() (*types.Document, error) {
 	for _, doc := range docs {
 		values := doc.Values()
 
-		// move that check to validateValue?
-		// TODO https://github.com/FerretDB/FerretDB/issues/2412
 		for i, k := range doc.Keys() {
-			if res.Has(k) {
-				return nil, newValidationError(fmt.Errorf("wire.OpMsg.Document: duplicate key %q", k))
-			}
 			res.Set(k, values[i])
 		}
-	}
-
-	if err := validateValue(res); err != nil {
-		res.Remove("lsid") // to simplify error message
-		return nil, newValidationError(fmt.Errorf("wire.OpMsg.Document: validation failed for %v with: %v",
-			types.FormatAnyValue(res),
-			err,
-		))
 	}
 
 	return res, nil
