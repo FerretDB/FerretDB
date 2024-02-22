@@ -23,7 +23,6 @@ import (
 	"io"
 
 	"github.com/FerretDB/FerretDB/internal/bson"
-	"github.com/FerretDB/FerretDB/internal/bson2"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/types/fjson"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -52,7 +51,12 @@ type OpMsg struct {
 	checksum uint32
 }
 
-// SetSections of the OpMsg.
+// Sections returns the sections of the OpMsg.
+func (msg *OpMsg) Sections() []OpMsgSection {
+	return msg.sections
+}
+
+// SetSections sets sections of the OpMsg.
 func (msg *OpMsg) SetSections(sections ...OpMsgSection) error {
 	msg.sections = sections
 	_, err := msg.Document()
@@ -116,37 +120,6 @@ func (msg *OpMsg) Document() (*types.Document, error) {
 	}
 
 	return res, nil
-}
-
-// RawDocument returns the value of msg as a [bson2.RawDocument].
-//
-// The error is returned if msg contains anything other than a single section of kind 0
-// with a single document.
-func (msg *OpMsg) RawDocument() (bson2.RawDocument, error) {
-	if len(msg.sections) != 1 {
-		return nil, lazyerrors.Errorf("wire.OpMsg.RawDocument: expected 1 section, got %d", len(msg.sections))
-	}
-
-	s := msg.sections[0]
-	if s.Kind != 0 || s.Identifier != "" {
-		return nil, lazyerrors.Errorf(`wire.OpMsg.RawDocument: expected section 0/"", got %d/%q`, s.Kind, s.Identifier)
-	}
-
-	if len(s.documents) != 1 {
-		return nil, lazyerrors.Errorf("wire.OpMsg.RawDocument: expected 1 document, got %d", len(s.documents))
-	}
-
-	doc, err := bson2.ConvertDocument(s.documents[0])
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	raw, err := doc.Encode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return raw, nil
 }
 
 func (msg *OpMsg) msgbody() {}

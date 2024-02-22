@@ -55,7 +55,7 @@ labels:
     description: Issues about query pushdown
   - name: area/types
     color: "#0354F4"
-    description: Issues about data types, BSON, etc
+    description: Issues about data types, BSON, wire protocol, etc
 
   # backend
   - name: backend/pg
