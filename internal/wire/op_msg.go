@@ -121,6 +121,7 @@ func (msg *OpMsg) Document() (*types.Document, error) {
 	}
 
 	if err := validateValue(res); err != nil {
+		res.Remove("lsid") // to simplify error message
 		return nil, newValidationError(fmt.Errorf("wire.OpMsg.Document: validation failed for %v with: %v",
 			types.FormatAnyValue(res),
 			err,
@@ -163,7 +164,11 @@ func (msg *OpMsg) RawDocument() (bson2.RawDocument, error) {
 
 func (msg *OpMsg) msgbody() {}
 
-func (msg *OpMsg) readFrom(bufr *bufio.Reader) error {
+// UnmarshalBinaryNocopy implements [MsgBody] interface.
+func (msg *OpMsg) UnmarshalBinaryNocopy(b []byte) error {
+	br := bytes.NewReader(b)
+	bufr := bufio.NewReader(br)
+
 	if err := binary.Read(bufr, binary.LittleEndian, &msg.FlagBits); err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -252,18 +257,6 @@ func (msg *OpMsg) readFrom(bufr *bufio.Reader) error {
 
 	if _, err := msg.Document(); err != nil {
 		return err
-	}
-
-	return nil
-}
-
-// UnmarshalBinary reads an OpMsg from a byte array.
-func (msg *OpMsg) UnmarshalBinary(b []byte) error {
-	br := bytes.NewReader(b)
-	bufr := bufio.NewReader(br)
-
-	if err := msg.readFrom(bufr); err != nil {
-		return lazyerrors.Error(err)
 	}
 
 	if _, err := bufr.Peek(1); err != io.EOF {

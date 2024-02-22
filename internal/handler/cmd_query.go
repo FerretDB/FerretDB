@@ -31,7 +31,6 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 	cmd := query.Query().Command()
 	collection := query.FullCollectionName
 
-	// both are valid and are allowed to be run against any database as we don't support authorization yet
 	if (cmd == "ismaster" || cmd == "isMaster") && strings.HasSuffix(collection, ".$cmd") {
 		return common.IsMaster(ctx, query.Query(), h.TCPHost, h.ReplSetName)
 	}
@@ -42,9 +41,7 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 
 	if cmd == "saslStart" && strings.HasSuffix(collection, ".$cmd") {
 		var emptyPayload types.Binary
-		reply := wire.OpReply{
-			NumberReturned: 1,
-		}
+		var reply wire.OpReply
 		reply.SetDocument(must.NotFail(types.NewDocument(
 			"conversationId", int32(1),
 			"done", true,

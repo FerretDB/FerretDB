@@ -49,6 +49,11 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
+// If true, the usage of float64 NaN values is disallowed.
+// They mess up many things too much, starting with simple equality tests.
+// But allowing them simplifies fuzzing where we currently compare converted [*types.Document]s.
+var noNaN = true
+
 type (
 	// ScalarType represents a BSON scalar type.
 	//
@@ -77,6 +82,24 @@ type (
 // Null represents BSON scalar value null.
 var Null = bsonproto.Null
 
+//go:generate ../../bin/stringer -linecomment -type decodeMode
+
+// decodeMode represents a mode for decoding BSON.
+type decodeMode int
+
+const (
+	_ decodeMode = iota
+
+	// DecodeShallow represents a mode in which only top-level fields/elements are decoded;
+	// nested documents and arrays are converted to RawDocument and RawArray respectively,
+	// using raw's subslices without copying.
+	decodeShallow
+
+	// DecodeDeep represents a mode in which nested documents and arrays are decoded recursively;
+	// RawDocuments and RawArrays are never returned.
+	decodeDeep
+)
+
 var (
 	// ErrDecodeShortInput is returned wrapped by Decode functions if the input bytes slice is too short.
 	ErrDecodeShortInput = bsonproto.ErrDecodeShortInput
@@ -84,6 +107,27 @@ var (
 	// ErrDecodeInvalidInput is returned wrapped by Decode functions if the input bytes slice is invalid.
 	ErrDecodeInvalidInput = bsonproto.ErrDecodeInvalidInput
 )
+
+// SizeCString returns a size of the encoding of v cstring in bytes.
+func SizeCString(s string) int {
+	return bsonproto.SizeCString(s)
+}
+
+// EncodeCString encodes cstring value v into b.
+//
+// Slice must be at least len(v)+1 ([SizeCString]) bytes long; otherwise, EncodeString will panic.
+// Only b[0:len(v)+1] bytes are modified.
+func EncodeCString(b []byte, v string) {
+	bsonproto.EncodeCString(b, v)
+}
+
+// DecodeCString decodes cstring value from b.
+//
+// If there is not enough bytes, DecodeCString will return a wrapped [ErrDecodeShortInput].
+// If the input is otherwise invalid, a wrapped [ErrDecodeInvalidInput] is returned.
+func DecodeCString(b []byte) (string, error) {
+	return bsonproto.DecodeCString(b)
+}
 
 // Type represents a BSON type.
 type Type interface {
@@ -96,13 +140,12 @@ type CompositeType interface {
 }
 
 // validBSONType checks if v is a valid BSON type (including raw types).
-func validBSONType(v any) bool {
-	switch v.(type) {
+func validBSONType(v any) error {
+	switch v := v.(type) {
 	case *Document:
 	case RawDocument:
 	case *Array:
 	case RawArray:
-
 	case float64:
 	case string:
 	case Binary:
@@ -116,10 +159,10 @@ func validBSONType(v any) bool {
 	case int64:
 
 	default:
-		return false
+		return lazyerrors.Errorf("invalid BSON type %T", v)
 	}
 
-	return true
+	return nil
 }
 
 // convertToTypes converts valid BSON value of that package to types package type.

@@ -238,7 +238,7 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 //
 // The provided sort document should be already validated.
 // Provided document should only contain a single value.
-func prepareOrderByClause(p *metadata.Placeholder, sort *types.Document) (string, []any) {
+func prepareOrderByClause(sort *types.Document) (string, []any) {
 	if sort.Len() != 1 {
 		return "", nil
 	}

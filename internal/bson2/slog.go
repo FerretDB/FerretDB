@@ -91,6 +91,6 @@ func slogScalarValue(v any) slog.Value {
 	case int64:
 		return slog.StringValue(fmt.Sprintf("%[1]T(%[1]v)", v))
 	default:
-		panic(fmt.Sprintf("invalid type %T", v))
+		panic(fmt.Sprintf("invalid BSON type %T", v))
 	}
 }

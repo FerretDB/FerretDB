@@ -20,6 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
@@ -117,6 +118,24 @@ func TestFindAndModifyCompatErrors(t *testing.T) {
 			command: bson.D{
 				{"maxTimeMS", "string"},
 			},
+			resultType: emptyResult,
+		},
+		"DuplicateID": {
+			command: bson.D{
+				{"query", bson.D{{"non-existent", "val"}}},
+				{"update", bson.D{{"_id", "int32"}, {"v", int32(43)}}},
+				{"upsert", true},
+			},
+			providers:  []shareddata.Provider{shareddata.Int32s},
+			resultType: emptyResult,
+		},
+		"InvalidID": {
+			command: bson.D{
+				{"query", bson.D{{"non-existent", "val"}}},
+				{"update", bson.D{{"_id", primitive.Regex{Pattern: "[a-z]*[0-9]"}}, {"v", int32(43)}}},
+				{"upsert", true},
+			},
+			providers:  []shareddata.Provider{shareddata.Int32s},
 			resultType: emptyResult,
 		},
 	}
@@ -337,14 +356,12 @@ func TestFindAndModifyCompatUpdateSet(t *testing.T) {
 			command: bson.D{
 				{"update", bson.D{{"$set", bson.D{{"_id", "int32"}}}}},
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/3017",
 		},
 		"UpdateExistingID": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "int32"}}},
 				{"update", bson.D{{"$set", bson.D{{"_id", "int32-1"}}}}},
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/3017",
 		},
 		"UpdateSameID": {
 			command: bson.D{
@@ -666,14 +683,12 @@ func TestFindAndModifyCompatUpsertSet(t *testing.T) {
 				{"update", bson.D{{"$set", bson.D{{"_id", "double"}}}}},
 			},
 			resultType: emptyResult, // _id must be an immutable field
-			skip:       "https://github.com/FerretDB/FerretDB/issues/3017",
 		},
 		"UpsertIDNoQuery": {
 			command: bson.D{
 				{"upsert", true},
 				{"update", bson.D{{"$set", bson.D{{"_id", "int32"}, {"v", int32(2)}}}}},
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/3017",
 		},
 		"UpsertExistingID": {
 			command: bson.D{
@@ -682,7 +697,6 @@ func TestFindAndModifyCompatUpsertSet(t *testing.T) {
 				{"update", bson.D{{"$set", bson.D{{"_id", "int32-1"}, {"v", int32(2)}}}}},
 			},
 			resultType: emptyResult,
-			skip:       "https://github.com/FerretDB/FerretDB/issues/3017",
 		},
 		"UpsertSameID": {
 			command: bson.D{
@@ -697,7 +711,6 @@ func TestFindAndModifyCompatUpsertSet(t *testing.T) {
 				{"upsert", true},
 				{"update", bson.D{{"$set", bson.D{{"new", "val"}}}}},
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/3856",
 		},
 		"UpsertQueryOperatorMixed": {
 			command: bson.D{
@@ -709,7 +722,20 @@ func TestFindAndModifyCompatUpsertSet(t *testing.T) {
 				{"upsert", true},
 				{"update", bson.D{{"$set", bson.D{{"new", "val"}}}}},
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/3856",
+		},
+		"UpsertQueryObject": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "non-existent"}, {"v", bson.D{{"k1", "v1"}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"$set", bson.D{{"new", "val"}}}}},
+			},
+		},
+		"UpsertQueryObjectNested": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "non-existent"}, {"v", bson.D{{"k1", "v1"}, {"k2", bson.D{{"k21", "v21"}}}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"$set", bson.D{{"new", "val"}}}}},
+			},
 		},
 	}
 
@@ -853,6 +879,50 @@ func TestFindAndModifyCompatRemove(t *testing.T) {
 	testFindAndModifyCompat(t, testCases)
 }
 
+func TestFindAndModifyCompatReplacementDoc(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]findAndModifyCompatTestCase{
+		"Basic": {
+			command: bson.D{
+				{"update", bson.D{{"v", int32(43)}}},
+			},
+		},
+		"EmptyDoc": {
+			command: bson.D{
+				{"update", bson.D{}},
+			},
+		},
+		"FilterAndUpsertTrue": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "non-existent"}}},
+				{"update", bson.D{{"v", int32(43)}}},
+				{"upsert", true},
+			},
+		},
+		"WithUpdateOp": {
+			command: bson.D{
+				{"update", bson.D{{"v", int32(43)}, {"$set", bson.D{{"test", int32(0)}}}}},
+			},
+			resultType: emptyResult,
+		},
+		"SameId": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "int32"}}},
+				{"update", bson.D{{"_id", "int32"}, {"v", int32(43)}}},
+			},
+		},
+		"DifferentId": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "int32"}}},
+				{"update", bson.D{{"_id", "non-existent"}, {"v", int32(43)}}},
+			},
+		},
+	}
+
+	testFindAndModifyCompat(t, testCases)
+}
+
 // findAndModifyCompatTestCase describes findAndModify compatibility test case.
 type findAndModifyCompatTestCase struct {
 	command    bson.D
@@ -915,7 +985,7 @@ func testFindAndModifyCompat(t *testing.T, testCases map[string]findAndModifyCom
 						t.Logf("Compat error: %v", compatErr)
 
 						// error messages are intentionally not compared
-						AssertMatchesCommandError(t, compatErr, targetErr)
+						AssertMatchesError(t, compatErr, targetErr)
 
 						return
 					}
