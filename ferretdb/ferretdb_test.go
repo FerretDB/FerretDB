@@ -28,7 +28,7 @@ func Example_tcp() {
 		Listener: ferretdb.ListenerConfig{
 			TCP: "127.0.0.1:17027",
 		},
-		Handler:       "pg",
+		Handler:       "postgresql",
 		PostgreSQLURL: "postgres://127.0.0.1:5432/ferretdb",
 	})
 	if err != nil {
@@ -66,7 +66,7 @@ func Example_unix() {
 		Listener: ferretdb.ListenerConfig{
 			Unix: "/tmp/ferretdb.sock",
 		},
-		Handler:       "pg",
+		Handler:       "postgresql",
 		PostgreSQLURL: "postgres://127.0.0.1:5432/ferretdb",
 	})
 	if err != nil {
@@ -105,7 +105,7 @@ func Example_tls() {
 			TLSKeyFile:  keyPath,
 			TLSCAFile:   caPath,
 		},
-		Handler:       "pg",
+		Handler:       "postgresql",
 		PostgreSQLURL: "postgres://127.0.0.1:5432/ferretdb",
 	})
 	if err != nil {

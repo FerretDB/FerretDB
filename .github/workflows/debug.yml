@@ -5,25 +5,46 @@ name: Debug
 on:
   pull_request:
     types:
-      - unlabeled # if GitHub Actions stuck, add and remove "no ci" label to force rebuild
+      - labeled
+      - unlabeled # if GitHub Actions stuck, add and remove "not ready" label to force rebuild
       - opened
       - reopened
       - synchronize
   push:
     branches:
       - main
+      - main/*
+      - releases/*
+    tags:
+      - "*"
   schedule:
-    - cron: "12 2 * * *"
+    - cron: "12 0 * * *"
+
+# Do not run this workflow in parallel for any PR change.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
 
 jobs:
   contexts:
     name: Contexts
     runs-on: ubuntu-22.04
+    timeout-minutes: 5
 
     # comment out to enable this job
     if: false
 
     steps:
+      # TODO https://github.com/FerretDB/github-actions/issues/211
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: false
+
+      - name: Debug git status
+        run: git status
+
       - name: Dump github context
         run: echo "$GITHUB_CONTEXT"
         env:
@@ -41,3 +62,8 @@ jobs:
 
       - name: Dump environment variables
         run: env
+
+      - name: Show current directory
+        run: |
+          pwd
+          ls -al

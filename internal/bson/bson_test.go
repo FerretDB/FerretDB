@@ -27,6 +27,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/types/fjson"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 type testCase struct {
@@ -37,7 +38,7 @@ type testCase struct {
 }
 
 // assertEqual is assert.Equal that also can compare NaNs and ±0.
-func assertEqual(tb testing.TB, expected, actual any, msgAndArgs ...any) bool {
+func assertEqual(tb testtb.TB, expected, actual any, msgAndArgs ...any) bool {
 	tb.Helper()
 
 	switch expected := expected.(type) {
@@ -117,7 +118,7 @@ func testBinary(t *testing.T, testCases []testCase, newFunc func() bsontype) {
 					err := v.ReadFrom(bufr)
 					assert.NoError(t, err)
 					if assertEqual(t, tc.v, v, "expected: %s\nactual  : %s", tc.v, v) {
-						t.Log("values are equal after unmarshalling")
+						t.Log("values are equal after unmarshaling")
 					}
 					assert.Zero(t, br.Len(), "not all br bytes were consumed")
 					assert.Zero(t, bufr.Buffered(), "not all bufr bytes were consumed")
@@ -179,7 +180,7 @@ func fuzzBinary(f *testing.F, testCases []testCase, newFunc func() bsontype) {
 				err = v2.ReadFrom(bufr2)
 				assert.NoError(t, err)
 				if assertEqual(t, v, v2, "expected: %s\nactual  : %s", v, v2) {
-					t.Log("values are equal after unmarshalling")
+					t.Log("values are equal after unmarshaling")
 				}
 				assert.Zero(t, br2.Len(), "not all br bytes were consumed")
 				assert.Zero(t, bufr2.Buffered(), "not all bufr bytes were consumed")

@@ -22,6 +22,7 @@ import (
 	"github.com/FerretDB/FerretDB/build/version"
 )
 
+// Parts of Prometheus metric names.
 const (
 	namespace = "ferretdb"
 	subsystem = ""
@@ -63,16 +64,23 @@ func (mc *metricsCollector) Collect(ch chan<- prometheus.Metric) {
 	s := mc.p.Get()
 
 	constLabels["telemetry"] = s.TelemetryString()
-	constLabels["update_available"] = strconv.FormatBool(s.UpdateAvailable())
+	constLabels["update_available"] = strconv.FormatBool(s.UpdateAvailable)
 
 	if mc.addUUIDToMetric {
 		constLabels["uuid"] = s.UUID
 	}
 
 	ch <- prometheus.MustNewConstMetric(
-		prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "up"), "FerretDB instance state.", nil, constLabels),
+		prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, subsystem, "up"),
+			"FerretDB instance state.",
+			[]string{"backend_name", "backend_version"},
+			constLabels,
+		),
 		prometheus.GaugeValue,
 		1,
+		s.BackendName,
+		s.BackendVersion,
 	)
 }
 

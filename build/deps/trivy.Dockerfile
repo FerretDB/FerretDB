@@ -1,2 +1,2 @@
-FROM aquasec/trivy:0.37.3
+FROM aquasec/trivy:0.49.1
 WORKDIR /workdir

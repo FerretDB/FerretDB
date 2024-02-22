@@ -20,6 +20,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -33,7 +34,7 @@ const ObjectIDLen = 12
 
 // NewObjectID returns a new ObjectID.
 func NewObjectID() ObjectID {
-	return newObjectIDTime(time.Now())
+	return newObjectIDTime(time.Now()) // https://github.com/FerretDB/FerretDB/issues/3486
 }
 
 // newObjectIDTime returns a new ObjectID with given time.
@@ -59,8 +60,10 @@ var (
 )
 
 func init() {
-	// TODO remove for Go 1.20
-	rand.Seed(time.Now().UnixNano())
+	// to make debugging easier
+	if debugbuild.Enabled {
+		return
+	}
 
 	must.NotFail(rand.Read(objectIDProcess[:]))
 	objectIDCounter.Store(rand.Uint32())

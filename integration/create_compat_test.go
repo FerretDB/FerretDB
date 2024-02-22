@@ -15,12 +15,10 @@
 package integration
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
@@ -28,7 +26,7 @@ import (
 
 // TestCreateCompat tests collection creation compatibility for the cases that are not covered by tests setup.
 func TestCreateCompat(t *testing.T) {
-	t.Helper()
+	t.Parallel()
 
 	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
 		Providers:                []shareddata.Provider{}, // collections are not needed for this test
@@ -51,24 +49,7 @@ func TestCreateCompat(t *testing.T) {
 
 	collName := "in-non-existent-db"
 
-	// schema in case of Tigris.
-	schema := fmt.Sprintf(`{
-				"title": "%s",
-				"description": "Create Collection In Non-Existent Database",
-				"primary_key": ["_id"],
-				"properties": {
-					"_id": {"type": "string"}
-				}
-			}`, collName,
-	)
-
-	// Set $tigrisSchemaString for tigris only.
-	var opts options.CreateCollectionOptions
-	if setup.IsTigris(t) {
-		opts.Validator = bson.D{{"$tigrisSchemaString", schema}}
-	}
-
-	targetErr := targetDB.CreateCollection(s.Ctx, collName, &opts)
+	targetErr := targetDB.CreateCollection(s.Ctx, collName)
 	compatErr := compatDB.CreateCollection(s.Ctx, collName)
 	require.Equal(t, targetErr, compatErr)
 

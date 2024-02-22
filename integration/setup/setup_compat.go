@@ -18,30 +18,33 @@ import (
 	"context"
 	"fmt"
 	"runtime/trace"
-	"testing"
+	"strings"
 
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
-	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 // SetupCompatOpts represents setup options for compatibility test.
 //
-// TODO Add option to use read-only user. https://github.com/FerretDB/FerretDB/issues/1025
+// Add option to use read-only user.
+// TODO https://github.com/FerretDB/FerretDB/issues/1025
 type SetupCompatOpts struct {
 	// Data providers.
 	Providers []shareddata.Provider
 
 	// If true, a non-existent collection will be added to the list of collections.
 	// This is useful to test the behavior when a collection is not found.
-	// TODO This flag is not needed, always add a non-existent collection https://github.com/FerretDB/FerretDB/issues/1545
+	//
+	// This flag is not needed, always add a non-existent collection.
+	// TODO https://github.com/FerretDB/FerretDB/issues/1545
 	AddNonExistentCollection bool
 
 	databaseName       string
@@ -56,7 +59,7 @@ type SetupCompatResult struct {
 }
 
 // SetupCompatWithOpts setups the compatibility test according to given options.
-func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResult {
+func SetupCompatWithOpts(tb testtb.TB, opts *SetupCompatOpts) *SetupCompatResult {
 	tb.Helper()
 
 	if *compatURLF == "" {
@@ -74,10 +77,21 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 		opts = new(SetupCompatOpts)
 	}
 
-	// When we use `task all` to run `pg` and `tigris` compat tests in parallel,
+	// When we use `task test-integration` to run `postgresql` and `sqlite` compat tests in parallel,
 	// they both use the same MongoDB instance.
-	// Add the handler's name to prevent the usage of the same database.
-	opts.databaseName = testutil.DatabaseName(tb) + "_" + getHandler()
+	// Add suffix to prevent the usage of the same database.
+	suffix := strings.TrimPrefix(*targetBackendF, "ferretdb-")
+	switch suffix {
+	case "postgresql":
+		suffix = "pg"
+	case "sqlite":
+		suffix = "sl"
+	}
+	opts.databaseName = testutil.DatabaseName(tb) + "_" + suffix
+
+	// When database name is too long, database is created but inserting documents
+	// fail with InvalidNamespace error.
+	require.Less(tb, len(opts.databaseName), 64, "database name %q is too long", opts.databaseName)
 
 	opts.baseCollectionName = testutil.CollectionName(tb)
 
@@ -85,11 +99,12 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 	if *debugSetupF {
 		level = zap.NewAtomicLevelAt(zap.DebugLevel)
 	}
-	logger := testutil.Logger(tb, level)
+	logger := testutil.LevelLogger(tb, level)
 
 	var targetClient *mongo.Client
 	if *targetURLF == "" {
-		targetClient, _ = setupListener(tb, setupCtx, logger)
+		uri := setupListener(tb, setupCtx, logger)
+		targetClient = setupClient(tb, setupCtx, uri)
 	} else {
 		targetClient = setupClient(tb, setupCtx, *targetURLF)
 	}
@@ -97,10 +112,10 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
 
-	targetCollections := setupCompatCollections(tb, setupCtx, targetClient, opts, true)
+	targetCollections := setupCompatCollections(tb, setupCtx, targetClient, opts, *targetBackendF)
 
 	compatClient := setupClient(tb, setupCtx, *compatURLF)
-	compatCollections := setupCompatCollections(tb, setupCtx, compatClient, opts, false)
+	compatCollections := setupCompatCollections(tb, setupCtx, compatClient, opts, "mongodb")
 
 	level.SetLevel(*logLevelF)
 
@@ -112,7 +127,7 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 }
 
 // SetupCompat setups compatibility test.
-func SetupCompat(tb testing.TB) (context.Context, []*mongo.Collection, []*mongo.Collection) {
+func SetupCompat(tb testtb.TB) (context.Context, []*mongo.Collection, []*mongo.Collection) {
 	tb.Helper()
 
 	s := SetupCompatWithOpts(tb, &SetupCompatOpts{
@@ -122,17 +137,18 @@ func SetupCompat(tb testing.TB) (context.Context, []*mongo.Collection, []*mongo.
 }
 
 // setupCompatCollections setups a single database with one collection per provider for compatibility tests.
-func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Client, opts *SetupCompatOpts, isTarget bool) []*mongo.Collection {
+func setupCompatCollections(tb testtb.TB, ctx context.Context, client *mongo.Client, opts *SetupCompatOpts, backend string) []*mongo.Collection {
 	tb.Helper()
 
 	ctx, span := otel.Tracer("").Start(ctx, "setupCompatCollections")
 	defer span.End()
 
-	defer trace.StartRegion(ctx, "setupCompatCollections").End()
+	defer observability.FuncCall(ctx)()
 
 	database := client.Database(opts.databaseName)
 
 	// drop remnants of the previous failed run
+	_ = database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}})
 	_ = database.Drop(ctx)
 
 	// delete database unless test failed
@@ -141,7 +157,10 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 			return
 		}
 
-		err := database.Drop(ctx)
+		err := database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}}).Err()
+		require.NoError(tb, err)
+
+		err = database.Drop(ctx)
 		require.NoError(tb, err)
 	})
 
@@ -149,14 +168,6 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 	for _, provider := range opts.Providers {
 		collectionName := opts.baseCollectionName + "_" + provider.Name()
 		fullName := opts.databaseName + "." + collectionName
-
-		if *targetURLF == "" && !slices.Contains(provider.Handlers(), getHandler()) {
-			tb.Logf(
-				"Provider %q is not compatible with handler %q, skipping creating %q.",
-				provider.Name(), getHandler(), fullName,
-			)
-			continue
-		}
 
 		spanName := fmt.Sprintf("setupCompatCollections/%s", collectionName)
 		collCtx, span := otel.Tracer("").Start(ctx, spanName)
@@ -167,25 +178,11 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 		// drop remnants of the previous failed run
 		_ = collection.Drop(collCtx)
 
-		// Validators are only applied to target. Compat is compatible with all provider.
-		if isTarget {
-			// if validators are set, create collection with them (otherwise collection will be created on first insert)
-			if validators := provider.Validators(getHandler(), collectionName); len(validators) > 0 {
-				var opts options.CreateCollectionOptions
-				for key, value := range validators {
-					opts.SetValidator(bson.D{{key, value}})
-				}
-
-				err := database.CreateCollection(ctx, collectionName, &opts)
-				require.NoError(tb, err)
-			}
-		}
-
 		docs := shareddata.Docs(provider)
 		require.NotEmpty(tb, docs)
 
 		res, err := collection.InsertMany(collCtx, docs)
-		require.NoError(tb, err, "%s: handler %q, collection %s", provider.Name(), getHandler(), fullName)
+		require.NoError(tb, err, "%s: backend %q, collection %s", provider.Name(), backend, fullName)
 		require.Len(tb, res.InsertedIDs, len(docs))
 
 		// delete collection unless test failed
@@ -205,14 +202,14 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 		span.End()
 	}
 
-	// TODO opts.AddNonExistentCollection is not needed, always add a non-existent collection
-	// https://github.com/FerretDB/FerretDB/issues/1545
+	// opts.AddNonExistentCollection is not needed, always add a non-existent collection
+	// TODO https://github.com/FerretDB/FerretDB/issues/1545
 	if opts.AddNonExistentCollection {
 		nonExistedCollectionName := opts.baseCollectionName + "-non-existent"
 		collection := database.Collection(nonExistedCollectionName)
 		collections = append(collections, collection)
 	}
 
-	require.NotEmpty(tb, collections, "all providers were not compatible")
+	require.NotEmpty(tb, collections)
 	return collections
 }
