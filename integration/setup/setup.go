@@ -325,7 +325,7 @@ func insertBenchmarkProvider(tb testtb.TB, ctx context.Context, collection *mong
 	return
 }
 
-// setupUser creates a user in admin database with PLAIN mechanism.
+// setupUser creates a user in admin database with supported mechanisms.
 // The user uses username/password credential which is the same as the database
 // credentials. This is done to avoid the need to reconnect as different credential.
 //
@@ -338,13 +338,13 @@ func setupUser(tb testtb.TB, ctx context.Context, client *mongo.Client) {
 		return
 	}
 
-	username, password, mechanism := "username", "password", "PLAIN"
+	username, password := "username", "password"
 
 	err := client.Database("admin").RunCommand(ctx, bson.D{
 		{"createUser", username},
 		{"roles", bson.A{}},
 		{"pwd", password},
-		{"mechanisms", bson.A{mechanism}},
+		{"mechanisms", bson.A{"PLAIN", "SCRAM-SHA-1", "SCRAM-SHA-256"}},
 	}).Err()
 	require.NoErrorf(tb, err, "cannot create user")
 }
