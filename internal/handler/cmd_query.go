@@ -19,17 +19,58 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // CmdQuery implements deprecated OP_QUERY message handling.
 func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpReply, error) {
-	cmd := query.Query().Command()
+	q := query.Query()
+	cmd := q.Command()
 	collection := query.FullCollectionName
+
+	v, _ := q.Get("speculativeAuthenticate")
+	if v != nil {
+		doc := v.(*types.Document)
+
+		mechanism, err := common.GetRequiredParam[string](doc, "mechanism")
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		response, err := h.saslStartSCRAM(ctx, mechanism, doc)
+		if err != nil {
+			return nil, err
+		}
+
+		conninfo.Get(ctx).SetBypassBackendAuth()
+
+		binResponse := types.Binary{
+			B: []byte(response),
+		}
+
+		switch cmd {
+		case "ismaster", "isMaster":
+			reply, err := common.IsMaster(ctx, query.Query(), h.TCPHost, h.ReplSetName)
+			if err != nil {
+				return nil, err
+			}
+
+			// NOTE what is correct document content?
+			reply.SetDocument(must.NotFail(types.NewDocument(
+				"ok", float64(1),
+				"conversationId", int32(1),
+				"done", false,
+				"payload", binResponse,
+			)))
+		case "hello":
+		}
+	}
 
 	if (cmd == "ismaster" || cmd == "isMaster") && strings.HasSuffix(collection, ".$cmd") {
 		return common.IsMaster(ctx, query.Query(), h.TCPHost, h.ReplSetName)
