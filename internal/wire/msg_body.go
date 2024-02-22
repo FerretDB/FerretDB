@@ -17,24 +17,27 @@ package wire
 import (
 	"bufio"
 	"encoding"
+	"encoding/binary"
 	"errors"
 	"fmt"
+	"hash/crc32"
 	"io"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // MsgBody is a wire protocol message body.
+//
+//sumtype:decl
 type MsgBody interface {
-	readFrom(*bufio.Reader) error
-	encoding.BinaryUnmarshaler
+	msgbody() // seal for sumtype
+
+	// UnmarshalBinaryNocopy is a variant of [encoding.BinaryUnmarshaler] that does not have to copy the data.
+	UnmarshalBinaryNocopy([]byte) error
+
 	encoding.BinaryMarshaler
 	fmt.Stringer
-
-	msgbody() // seal for go-sumtype
 }
-
-//go-sumtype:decl MsgBody
 
 // ErrZeroRead is returned when zero bytes was read from connection,
 // indicating that connection was closed by the client.
@@ -57,15 +60,19 @@ func ReadMessage(r *bufio.Reader) (*MsgHeader, MsgBody, error) {
 	switch header.OpCode {
 	case OpCodeReply: // not sent by clients, but we should be able to read replies from a proxy
 		var reply OpReply
-		if err := reply.UnmarshalBinary(b); err != nil {
+		if err := reply.UnmarshalBinaryNocopy(b); err != nil {
 			return nil, nil, lazyerrors.Error(err)
 		}
 
 		return &header, &reply, nil
 
 	case OpCodeMsg:
+		if err := validateChecksum(&header, b); err != nil {
+			return &header, nil, lazyerrors.Error(err)
+		}
+
 		var msg OpMsg
-		if err := msg.UnmarshalBinary(b); err != nil {
+		if err := msg.UnmarshalBinaryNocopy(b); err != nil {
 			return &header, nil, lazyerrors.Error(err)
 		}
 
@@ -73,7 +80,7 @@ func ReadMessage(r *bufio.Reader) (*MsgHeader, MsgBody, error) {
 
 	case OpCodeQuery:
 		var query OpQuery
-		if err := query.UnmarshalBinary(b); err != nil {
+		if err := query.UnmarshalBinaryNocopy(b); err != nil {
 			return nil, nil, lazyerrors.Error(err)
 		}
 
@@ -113,12 +120,72 @@ func WriteMessage(w *bufio.Writer, header *MsgHeader, msg MsgBody) error {
 		))
 	}
 
+	if header.OpCode == OpCodeMsg {
+		if err := validateChecksum(header, b); err != nil {
+			return lazyerrors.Error(err)
+		}
+	}
+
 	if err := header.writeTo(w); err != nil {
 		return lazyerrors.Error(err)
 	}
 
 	if _, err := w.Write(b); err != nil {
 		return lazyerrors.Error(err)
+	}
+
+	return nil
+}
+
+// getChecksum returns the checksum attached to an OP_MSG.
+func getChecksum(data []byte) (uint32, error) {
+	// ensure that the length of the body is at least the size of a flagbit
+	// and a crc32 checksum
+	n := len(data)
+	if n < crc32.Size+flagsSize {
+		return 0, lazyerrors.New("Invalid message size for an OpMsg containing a checksum")
+	}
+
+	return binary.LittleEndian.Uint32(data[n-crc32.Size:]), nil
+}
+
+// validateChecksum calculates checksum of the message (header + body)
+// and compares it with the checksum from the last bytes of the message.
+// If the flag bit for checksum presence is not set or the checksum is valid, it returns nil.
+// If the checksum is invalid, it returns an error.
+//
+// The callers of checksum validation should be closer to OP_MSG handling.
+// TODO https://github.com/FerretDB/FerretDB/issues/2690
+func validateChecksum(header *MsgHeader, body []byte) error {
+	if len(body) < flagsSize {
+		return lazyerrors.New("Message contains illegal flags value")
+	}
+
+	flagBit := OpMsgFlags(binary.LittleEndian.Uint32(body[:flagsSize]))
+	if !flagBit.FlagSet(OpMsgChecksumPresent) {
+		return nil
+	}
+
+	want, err := getChecksum(body)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	// https://datatracker.ietf.org/doc/html/rfc4960#appendix-B
+	hasher := crc32.New(crc32.MakeTable(crc32.Castagnoli))
+
+	if err := binary.Write(hasher, binary.LittleEndian, header); err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	offset := len(body) - crc32.Size
+	if err := binary.Write(hasher, binary.LittleEndian, body[:offset]); err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	got := hasher.Sum32()
+	if want != got {
+		return lazyerrors.New("OP_MSG checksum does not match contents.")
 	}
 
 	return nil

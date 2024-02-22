@@ -16,12 +16,16 @@ package integration
 
 import (
 	"math"
+	"runtime"
+	"testing"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func testQueryEvaluationCompatRegexErrors() map[string]queryCompatTestCase {
+func TestQueryEvaluationCompatRegexErrors(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]queryCompatTestCase{
 		"MissingClosingParen": {
 			filter:     bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: "g(-z]+ng  wrong regex"}}}}},
@@ -93,10 +97,16 @@ func testQueryEvaluationCompatRegexErrors() map[string]queryCompatTestCase {
 		},
 	}
 
-	return testCases
+	testQueryCompat(t, testCases)
 }
 
-func testQueryEvaluationCompatMod() map[string]queryCompatTestCase {
+func TestQueryEvaluationCompatMod(t *testing.T) {
+	if runtime.GOARCH == "arm64" {
+		t.Skip("TODO https://github.com/FerretDB/FerretDB/issues/491")
+	}
+
+	t.Parallel()
+
 	testCases := map[string]queryCompatTestCase{
 		"Int32": {
 			filter: bson.D{{"v", bson.D{{"$mod", bson.A{4000, 80}}}}},
@@ -292,5 +302,95 @@ func testQueryEvaluationCompatMod() map[string]queryCompatTestCase {
 		},
 	}
 
-	return testCases
+	testQueryCompat(t, testCases)
+}
+
+func TestQueryEvaluationCompatExpr(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]queryCompatTestCase{
+		"Expression": {
+			filter: bson.D{{"$expr", "$v"}},
+		},
+		"ExpressionDotNotation": {
+			filter: bson.D{{"$expr", "$v.foo"}},
+		},
+		"ExpressionIndexDotNotation": {
+			filter: bson.D{{"$expr", "$v.0.foo"}},
+		},
+		"Document": {
+			filter: bson.D{{"$expr", bson.D{{"v", "foo"}}}},
+		},
+		"DocumentExpression": {
+			filter: bson.D{{"$expr", bson.D{{"v", "$v"}}}},
+		},
+		"DocumentNestedExpr": {
+			filter:     bson.D{{"$expr", bson.D{{"v", bson.D{{"$expr", int32(1)}}}}}},
+			resultType: emptyResult,
+		},
+		"DocumentInvalid": {
+			filter:     bson.D{{"$expr", bson.D{{"v", "$"}}}},
+			resultType: emptyResult,
+		},
+		"Array": {
+			filter: bson.D{{"$expr", bson.A{"$v"}}},
+		},
+		"ArrayMany": {
+			filter: bson.D{{"$expr", bson.A{nil, "foo", int32(42)}}},
+		},
+		"ArrayInvalid": {
+			filter:     bson.D{{"$expr", bson.A{"$"}}},
+			resultType: emptyResult,
+		},
+		"String": {
+			filter: bson.D{{"$expr", "v"}},
+		},
+		"True": {
+			filter: bson.D{{"$expr", true}},
+		},
+		"False": {
+			filter:     bson.D{{"$expr", false}},
+			resultType: emptyResult,
+		},
+		"IntZero": {
+			filter:     bson.D{{"$expr", int32(0)}},
+			resultType: emptyResult,
+		},
+		"Int": {
+			filter: bson.D{{"$expr", int32(1)}},
+		},
+		"LongZero": {
+			filter:     bson.D{{"$expr", int64(0)}},
+			resultType: emptyResult,
+		},
+		"Long": {
+			filter: bson.D{{"$expr", int64(42)}},
+		},
+		"DoubleZero": {
+			filter:     bson.D{{"$expr", float64(0)}},
+			resultType: emptyResult,
+		},
+		"Double": {
+			filter: bson.D{{"$expr", float64(-1)}},
+		},
+		"NonExistent": {
+			filter:     bson.D{{"$expr", "$non-existent"}},
+			resultType: emptyResult,
+		},
+		"Type": {
+			filter: bson.D{{"$expr", bson.D{{"$type", "$v"}}}},
+		},
+		"Sum": {
+			filter: bson.D{{"$expr", bson.D{{"$sum", "$v"}}}},
+		},
+		"SumType": {
+			filter: bson.D{{"$expr", bson.D{{"$type", bson.D{{"$sum", "$v"}}}}}},
+		},
+		"Gt": {
+			filter: bson.D{{"$expr", bson.D{{"$gt", bson.A{"$v", 2}}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/1456",
+		},
+	}
+
+	testQueryCompat(t, testCases)
 }

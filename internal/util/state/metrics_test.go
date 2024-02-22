@@ -19,7 +19,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/AlekSi/pointer"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -33,7 +32,11 @@ func TestMetrics(t *testing.T) {
 	p, err := NewProvider("")
 	require.NoError(t, err)
 
-	err = p.Update(func(s *State) { s.Telemetry = pointer.ToBool(true) })
+	err = p.Update(func(s *State) {
+		s.BackendName = "Test"
+		s.BackendVersion = "0.0.1"
+		s.EnableTelemetry()
+	})
 	require.NoError(t, err)
 
 	info := version.Get()
@@ -53,7 +56,7 @@ func TestMetrics(t *testing.T) {
 			`
 				# HELP ferretdb_up FerretDB instance state.
 				# TYPE ferretdb_up gauge
-				ferretdb_up{branch=%q,commit=%q,debug="%t",dirty="%t",package="unknown",telemetry="enabled",update_available="false",uuid=%q,version=%q} 1
+				ferretdb_up{backend_name="Test",backend_version="0.0.1",branch=%q,commit=%q,debug="%t",dirty="%t",package="unknown",telemetry="enabled",update_available="false",uuid=%q,version=%q} 1
 			`,
 			info.Branch, info.Commit, info.DebugBuild, info.Dirty, uuid, info.Version,
 		)
@@ -73,7 +76,7 @@ func TestMetrics(t *testing.T) {
 			`
 				# HELP ferretdb_up FerretDB instance state.
 				# TYPE ferretdb_up gauge
-				ferretdb_up{branch=%q,commit=%q,debug="%t",dirty="%t",package="unknown",telemetry="enabled",update_available="false",version=%q} 1
+				ferretdb_up{backend_name="Test",backend_version="0.0.1",branch=%q,commit=%q,debug="%t",dirty="%t",package="unknown",telemetry="enabled",update_available="false",version=%q} 1
 			`,
 			info.Branch, info.Commit, info.DebugBuild, info.Dirty, info.Version,
 		)

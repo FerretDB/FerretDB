@@ -21,11 +21,16 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/iterator/testiterator"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 func TestDocumentIterator(t *testing.T) {
 	t.Parallel()
+
+	testiterator.TestIterator(t, func() iterator.Interface[string, any] {
+		return must.NotFail(NewDocument("foo", "bar", "baz", "qux")).Iterator()
+	})
 
 	t.Run("Normal", func(t *testing.T) {
 		t.Parallel()
@@ -79,6 +84,26 @@ func TestDocumentIterator(t *testing.T) {
 		t.Parallel()
 
 		iter := must.NotFail(NewDocument()).Iterator()
+		defer iter.Close()
+
+		k, v, err := iter.Next()
+		require.Equal(t, iterator.ErrIteratorDone, err)
+		assert.Zero(t, k)
+		assert.Nil(t, v)
+
+		iter.Close()
+
+		// still done after Close()
+		k, v, err = iter.Next()
+		require.Equal(t, iterator.ErrIteratorDone, err)
+		assert.Zero(t, k)
+		assert.Nil(t, v)
+	})
+
+	t.Run("Nil", func(t *testing.T) {
+		t.Parallel()
+
+		iter := (*Document)(nil).Iterator()
 		defer iter.Close()
 
 		k, v, err := iter.Next()

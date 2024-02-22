@@ -16,7 +16,7 @@
 //
 // # Required files
 //
-// The following generated text files may be present in this (build/version) directory during building:
+// The following generated text files may be present in this (`build/version`) directory during building:
 //   - version.txt (required) contains information about the FerretDB version in a format
 //     similar to `git describe` output: `v<major>.<minor>.<patch>`.
 //   - commit.txt (optional) contains information about the source git commit.
@@ -28,10 +28,10 @@
 // The following Go build tags (also known as build constraints) affect all builds of FerretDB,
 // including embedded usage:
 //
-//	ferretdb_debug     - enables debug build (see below; implied by ferretdb_testcover tag and builds with race detector)
-//	ferretdb_testcover - enables test coverage instrumentation
-//	ferretdb_tigris    - enables Tigris backend handler (beta)
-//	ferretdb_hana      - enables Hana backend handler (alpha)
+//	ferretdb_debug			- enables debug build (see below; implied by builds with race detector)
+//	ferretdb_hana			- enables Hana backend (alpha)
+//	ferretdb_no_postgresql	- disables PostgreSQL backend
+//	ferretdb_no_sqlite		- disables SQLite backend
 //
 // # Debug builds
 //
@@ -41,6 +41,12 @@
 //   - Stack traces are collected more liberally.
 //   - Metrics are written to stderr on exit.
 //   - The default logging level is set to debug.
+//
+// Debug builds are orthogonal to production releases, development releases, and local/host builds.
+// For example, the host build could be made non-debug, and the production release, in theory, could be a debug build.
+//
+// Currently, our production releases are non-debug builds,
+// and all other builds and releases (development releases, all-in-one releases, local builds, etc.) are debug builds.
 package version
 
 import (
@@ -73,7 +79,7 @@ type Info struct {
 	Commit           string
 	Branch           string
 	Dirty            bool
-	Package          string // TODO https://github.com/FerretDB/FerretDB/issues/1805
+	Package          string
 	DebugBuild       bool
 	BuildEnvironment *types.Document
 
@@ -102,9 +108,9 @@ func init() {
 	if len(parts) != 4 {
 		panic("invalid mongodb.txt")
 	}
-	major := must.NotFail(strconv.Atoi(parts[1]))
-	minor := must.NotFail(strconv.Atoi(parts[2]))
-	patch := must.NotFail(strconv.Atoi(parts[3]))
+	major := must.NotFail(strconv.ParseInt(parts[1], 10, 32))
+	minor := must.NotFail(strconv.ParseInt(parts[2], 10, 32))
+	patch := must.NotFail(strconv.ParseInt(parts[3], 10, 32))
 	mongoDBVersion := fmt.Sprintf("%d.%d.%d", major, minor, patch)
 	mongoDBVersionArray := must.NotFail(types.NewArray(int32(major), int32(minor), int32(patch), int32(0)))
 
@@ -113,7 +119,7 @@ func init() {
 		Commit:              unknown,
 		Branch:              unknown,
 		Dirty:               false,
-		Package:             unknown, // TODO https://github.com/FerretDB/FerretDB/issues/1805
+		Package:             unknown,
 		DebugBuild:          debugbuild.Enabled,
 		BuildEnvironment:    must.NotFail(types.NewDocument()),
 		MongoDBVersion:      mongoDBVersion,
@@ -128,6 +134,7 @@ func init() {
 		return
 	}
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/4001
 	if buildInfo.Main.Path != "github.com/FerretDB/FerretDB" {
 		return
 	}
@@ -151,6 +158,8 @@ func init() {
 		panic(msg)
 	}
 
+	info.BuildEnvironment.Set("go.version", buildInfo.GoVersion)
+
 	for _, s := range buildInfo.Settings {
 		switch s.Key {
 		case "vcs.revision":
@@ -168,18 +177,6 @@ func init() {
 
 		case "vcs.modified":
 			info.Dirty = must.NotFail(strconv.ParseBool(s.Value))
-
-		case "-compiler":
-			info.BuildEnvironment.Set("compiler", s.Value)
-
-		case "-race":
-			info.BuildEnvironment.Set("race", s.Value)
-
-		case "-tags":
-			info.BuildEnvironment.Set("buildtags", s.Value)
-
-		case "-trimpath":
-			info.BuildEnvironment.Set("trimpath", s.Value)
 
 		default:
 			info.BuildEnvironment.Set(s.Key, s.Value)

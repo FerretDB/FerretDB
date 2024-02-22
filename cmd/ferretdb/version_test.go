@@ -12,9 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// To prevent fork bomb.
-//go:build !ferretdb_testcover
-
 package main
 
 import (
@@ -41,7 +38,7 @@ func TestVersion(t *testing.T) {
 	ctx, cancel := context.WithTimeout(testutil.Ctx(t), 5*time.Second)
 	t.Cleanup(cancel)
 
-	bin := filepath.Join("..", "..", "bin", "ferretdb-local")
+	bin := filepath.Join("..", "..", "bin", "ferretdb")
 
 	cmd := exec.CommandContext(ctx, bin, "--version")
 	b, err := cmd.Output()
@@ -50,8 +47,6 @@ func TestVersion(t *testing.T) {
 	assert.Regexp(t, `branch: \w+`, string(b))
 	commit := regexp.MustCompile(`commit: ([0-9a-f]{40})`).FindStringSubmatch(string(b))
 	require.Len(t, commit, 2)
-
-	t.Skip("https://github.com/FerretDB/FerretDB/issues/2102")
 
 	cmd = exec.CommandContext(ctx, "go", "version", "-m", bin)
 	b, err = cmd.Output()

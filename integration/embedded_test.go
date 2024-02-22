@@ -16,7 +16,6 @@ package integration
 
 import (
 	"context"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -27,7 +26,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/ferretdb"
-	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
@@ -44,20 +42,32 @@ func TestEmbedded(t *testing.T) {
 				Listener: ferretdb.ListenerConfig{
 					TCP: "127.0.0.1:37027",
 				},
-				Handler:       "pg",
-				PostgreSQLURL: testutil.PostgreSQLURL(t, nil),
+				Handler:       "postgresql",
+				PostgreSQLURL: "postgres://username:password@127.0.0.1:5432/ferretdb",
 			},
 		},
 		"TLS": {
 			config: &ferretdb.Config{
 				Listener: ferretdb.ListenerConfig{
-					TLS:         "127.0.0.1:37028",
-					TLSCertFile: filepath.Join(setup.CertsRoot, "server-cert.pem"),
-					TLSKeyFile:  filepath.Join(setup.CertsRoot, "server-key.pem"),
-					TLSCAFile:   filepath.Join(setup.CertsRoot, "rootCA-cert.pem"),
+					TLS: "127.0.0.1:37028",
+
+					// Use `setup.Dir`.
+					// TODO https://github.com/FerretDB/FerretDB/issues/2062
+					TLSCertFile: "",
+					TLSKeyFile:  "",
+					TLSCAFile:   "",
+				},
+				Handler:       "postgresql",
+				PostgreSQLURL: "postgres://username:password@127.0.0.1:5432/ferretdb",
+			},
+		},
+		"OldName": {
+			config: &ferretdb.Config{
+				Listener: ferretdb.ListenerConfig{
+					TCP: "127.0.0.1:37029",
 				},
 				Handler:       "pg",
-				PostgreSQLURL: testutil.PostgreSQLURL(t, nil),
+				PostgreSQLURL: "postgres://username:password@127.0.0.1:5432/ferretdb",
 			},
 		},
 	} {

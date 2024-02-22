@@ -12,36 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package shareddata provides data for tests and benchmarks.
 package shareddata
 
-import (
-	"fmt"
-	"strings"
-
-	"go.mongodb.org/mongo-driver/bson"
-	"golang.org/x/exp/maps"
-)
+import "golang.org/x/exp/maps"
 
 // unset represents a field that should not be set.
 var unset = struct{}{}
-
-// Provider is implemented by shared data sets that provide documents.
-type Provider interface {
-	// Name returns provider name.
-	Name() string
-
-	// Handlers returns handlers compatible with this provider.
-	Handlers() []string
-
-	// Validators returns validators for the given handler and collection.
-	// For example, for Tigris it should return a map with they key $tigrisSchemaString
-	// and the value containing Tigris' JSON schema string.
-	Validators(handler, collection string) map[string]any
-
-	// Docs returns shared data documents.
-	// All calls should return the same set of documents, but may do so in different order.
-	Docs() []bson.D
-}
 
 // AllProviders returns all providers in random order.
 func AllProviders() Providers {
@@ -49,7 +26,8 @@ func AllProviders() Providers {
 		Scalars,
 
 		Doubles,
-		BigDoubles,
+		OverflowVergeDoubles,
+		SmallDoubles,
 		Strings,
 		Binaries,
 		ObjectIDs,
@@ -69,12 +47,16 @@ func AllProviders() Providers {
 		DocumentsDoubles,
 		DocumentsStrings,
 		DocumentsDocuments,
+		DocumentsDeeplyNested,
 
 		ArrayStrings,
 		ArrayDoubles,
 		ArrayInt32s,
 		ArrayRegexes,
 		ArrayDocuments,
+
+		Mixed,
+		ArrayAndDocuments,
 	}
 
 	// check that names are unique and randomize order
@@ -95,14 +77,14 @@ func AllProviders() Providers {
 type Providers []Provider
 
 // Remove specified providers and return remaining providers.
-func (ps Providers) Remove(removeProviderNames ...string) Providers {
+func (ps Providers) Remove(removeProviders ...Provider) Providers {
 	res := make([]Provider, 0, len(ps))
 
 	for _, p := range ps {
 		keep := true
 
-		for _, name := range removeProviderNames {
-			if p.Name() == name {
+		for _, removeProvider := range removeProviders {
+			if p == removeProvider {
 				keep = false
 				break
 			}
@@ -126,73 +108,3 @@ func Docs(providers ...Provider) []any {
 	}
 	return res
 }
-
-// IDs returns all document's _id values (that must be present in each document) from given providers.
-func IDs(providers ...Provider) []any {
-	var res []any
-	for _, p := range providers {
-		for _, doc := range p.Docs() {
-			id, ok := doc.Map()["_id"]
-			if !ok {
-				panic(fmt.Sprintf("no _id in %+v", doc))
-			}
-			res = append(res, id)
-		}
-	}
-	return res
-}
-
-// Values stores shared data documents as {"_id": key, "v": value} documents.
-type Values[idType comparable] struct {
-	name       string
-	handlers   []string
-	validators map[string]map[string]any // handler -> validator name -> validator
-	data       map[idType]any
-}
-
-// Name implement Provider interface.
-func (values *Values[idType]) Name() string {
-	return values.name
-}
-
-// Handlers implement Provider interface.
-func (values *Values[idType]) Handlers() []string {
-	return values.handlers
-}
-
-// Validators implement Provider interface.
-func (values *Values[idType]) Validators(handler, collection string) map[string]any {
-	switch handler {
-	case "tigris":
-		validators := make(map[string]any, len(values.validators[handler]))
-		for key, value := range values.validators[handler] {
-			validators[key] = strings.ReplaceAll(value.(string), "%%collection%%", collection)
-		}
-		return validators
-
-	default:
-		return values.validators[handler]
-	}
-}
-
-// Docs implement Provider interface.
-func (values *Values[idType]) Docs() []bson.D {
-	ids := maps.Keys(values.data)
-
-	res := make([]bson.D, 0, len(values.data))
-	for _, id := range ids {
-		doc := bson.D{{"_id", id}}
-		v := values.data[id]
-		if v != unset {
-			doc = append(doc, bson.E{"v", v})
-		}
-		res = append(res, doc)
-	}
-
-	return res
-}
-
-// check interfaces
-var (
-	_ Provider = (*Values[string])(nil)
-)

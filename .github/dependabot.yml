@@ -1,30 +1,42 @@
 ---
 # Runs on Wednesday after deps repo.
-# Apply the "no ci" label to prevent cascaded CI runs on each auto-merge.
+# Apply the "not ready" label to prevent cascaded CI runs on each auto-merge.
 
 version: 2
 updates:
   - package-ecosystem: "github-actions"
     directory: "/"
-    labels: ["deps", "no ci"]
+    labels: ["deps", "not ready"]
+    assignees: [AlekSi]
     open-pull-requests-limit: 20
+    groups:
+      github-actions:
+        patterns: ["*"]
     schedule:
       interval: "weekly"
       day: "wednesday"
       time: "01:42"
 
   - package-ecosystem: "docker"
-    directory: "/"
-    labels: ["deps", "no ci"]
+    directory: "/build/docker"
+    labels: ["deps", "not ready"]
+    assignees: [AlekSi]
     open-pull-requests-limit: 20
+    groups:
+      build-docker:
+        patterns: ["*"]
     schedule:
       interval: "weekly"
       day: "wednesday"
       time: "01:42"
   - package-ecosystem: "docker"
     directory: "/build/deps"
-    labels: ["deps", "no ci"]
+    labels: ["deps", "not ready"]
+    assignees: [AlekSi]
     open-pull-requests-limit: 20
+    groups:
+      build-deps:
+        patterns: ["*"]
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -32,24 +44,48 @@ updates:
 
   - package-ecosystem: "gomod"
     directory: "/"
-    labels: ["deps", "no ci"]
+    labels: ["deps", "not ready"]
+    assignees: [AlekSi]
     open-pull-requests-limit: 20
+    groups:
+      ferretdb:
+        patterns: ["*"]
     schedule:
       interval: "weekly"
       day: "wednesday"
       time: "01:42"
   - package-ecosystem: "gomod"
     directory: "/integration"
-    labels: ["deps", "no ci"]
+    labels: ["deps", "not ready"]
+    assignees: [AlekSi]
     open-pull-requests-limit: 20
+    groups:
+      integration:
+        patterns: ["*"]
     schedule:
       interval: "weekly"
       day: "wednesday"
       time: "01:42"
   - package-ecosystem: "gomod"
     directory: "/tools"
-    labels: ["deps", "no ci"]
+    labels: ["deps", "not ready"]
+    assignees: [AlekSi]
     open-pull-requests-limit: 20
+    groups:
+      tools:
+        patterns: ["*"]
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+      time: "01:42"
+  - package-ecosystem: "gomod"
+    directory: "/tools/golangci"
+    labels: ["deps", "not ready"]
+    assignees: [AlekSi]
+    open-pull-requests-limit: 20
+    groups:
+      golangci:
+        patterns: ["*"]
     schedule:
       interval: "weekly"
       day: "wednesday"

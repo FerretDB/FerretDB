@@ -16,12 +16,15 @@ package integration
 
 import (
 	"math"
+	"testing"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func testQueryArrayCompatSize() map[string]queryCompatTestCase {
+func TestQueryArrayCompatSize(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]queryCompatTestCase{
 		"float64": {
 			filter: bson.D{{"v", bson.D{{"$size", float64(2)}}}},
@@ -61,10 +64,12 @@ func testQueryArrayCompatSize() map[string]queryCompatTestCase {
 		},
 	}
 
-	return testCases
+	testQueryCompat(t, testCases)
 }
 
-func testQueryArrayCompatDotNotation() map[string]queryCompatTestCase {
+func TestQueryArrayCompatDotNotation(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]queryCompatTestCase{
 		"PositionIndexGreaterThanArrayLength": {
 			filter:     bson.D{{"v.5", bson.D{{"$type", "double"}}}},
@@ -84,24 +89,20 @@ func testQueryArrayCompatDotNotation() map[string]queryCompatTestCase {
 			resultType: emptyResult,
 		},
 		"Field": {
-			filter:        bson.D{{"v.array", int32(42)}},
-			skipForTigris: "Tigris does not support language keyword 'array' as field name",
+			filter: bson.D{{"v.array", int32(42)}},
 		},
 		"FieldPosition": {
-			filter:        bson.D{{"v.array.0", int32(42)}},
-			skipForTigris: "Tigris does not support language keyword 'array' as field name",
+			filter: bson.D{{"v.array.0", int32(42)}},
 		},
 		"FieldPositionQuery": {
-			filter:        bson.D{{"v.array.0", bson.D{{"$gte", int32(42)}}}},
-			skipForTigris: "Tigris does not support language keyword 'array' as field name",
+			filter: bson.D{{"v.array.0", bson.D{{"$gte", int32(42)}}}},
 		},
 		"FieldPositionQueryNonArray": {
 			filter:     bson.D{{"v.document.0", bson.D{{"$lt", int32(42)}}}},
 			resultType: emptyResult,
 		},
 		"DocumentDotNotationArrayDocument": {
-			filter:        bson.D{{"v.0.foo.0.bar", "hello"}},
-			skipForTigris: "No suitable Tigris-compatible provider to test this data",
+			filter: bson.D{{"v.0.foo.0.bar", "hello"}},
 		},
 		"DocumentDotNotationArrayDocumentNoIndexNin": {
 			filter: bson.D{
@@ -112,31 +113,28 @@ func testQueryArrayCompatDotNotation() map[string]queryCompatTestCase {
 			filter: bson.D{{"v.foo.bar", "hello"}},
 		},
 		"FieldArrayIndex": {
-			filter:        bson.D{{"v.foo[0]", int32(42)}},
-			skipForTigris: "Tigris does not support characters as field name",
+			filter: bson.D{{"v.foo[0]", int32(42)}},
 		},
 		"FieldArrayAsterix": {
-			filter:        bson.D{{"v.foo[*]", int32(42)}},
-			skipForTigris: "Tigris does not support characters as field name",
+			filter: bson.D{{"v.foo[*]", int32(42)}},
 		},
 		"FieldAsterix": {
-			filter:        bson.D{{"v.*", int32(42)}},
-			skipForTigris: "Tigris does not support characters as field name",
+			filter: bson.D{{"v.*", int32(42)}},
 		},
 		"FieldAt": {
-			filter:        bson.D{{"v.@", int32(42)}},
-			skipForTigris: "Tigris does not support characters as field name",
+			filter: bson.D{{"v.@", int32(42)}},
 		},
 		"FieldComma": {
-			filter:        bson.D{{"v.f,oo", int32(42)}},
-			skipForTigris: "Tigris does not support characters as field name",
+			filter: bson.D{{"v.f,oo", int32(42)}},
 		},
 	}
 
-	return testCases
+	testQueryCompat(t, testCases)
 }
 
-func testQueryArrayCompatElemMatch() map[string]queryCompatTestCase {
+func TestQueryArrayCompatElemMatch(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]queryCompatTestCase{
 		"DoubleTarget": {
 			filter: bson.D{
@@ -144,7 +142,7 @@ func testQueryArrayCompatElemMatch() map[string]queryCompatTestCase {
 				{"v", bson.D{{"$elemMatch", bson.D{{"$gt", int32(0)}}}}},
 			},
 			resultType:     emptyResult,
-			resultPushdown: true,
+			resultPushdown: pgPushdown,
 		},
 		"GtZero": {
 			filter: bson.D{{"v", bson.D{{"$elemMatch", bson.D{{"$gt", int32(0)}}}}}},
@@ -169,7 +167,6 @@ func testQueryArrayCompatElemMatch() map[string]queryCompatTestCase {
 					{"$type", "string"},
 				}},
 			},
-			skipForTigris: "Tigris does not support mixed types in arrays",
 		},
 		"GtLt": {
 			filter: bson.D{
@@ -207,10 +204,12 @@ func testQueryArrayCompatElemMatch() map[string]queryCompatTestCase {
 		},
 	}
 
-	return testCases
+	testQueryCompat(t, testCases)
 }
 
-func testQueryArrayCompatEquality() map[string]queryCompatTestCase {
+func TestQueryArrayCompatEquality(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]queryCompatTestCase{
 		"One": {
 			filter: bson.D{{"v", bson.A{int32(42)}}},
@@ -220,12 +219,10 @@ func testQueryArrayCompatEquality() map[string]queryCompatTestCase {
 			resultType: emptyResult,
 		},
 		"Three": {
-			filter:        bson.D{{"v", bson.A{int32(42), "foo", nil}}},
-			skipForTigris: "Tigris does not support mixed types in arrays",
+			filter: bson.D{{"v", bson.A{int32(42), "foo", nil}}},
 		},
 		"Three-reverse": {
-			filter:        bson.D{{"v", bson.A{nil, "foo", int32(42)}}},
-			skipForTigris: "Tigris does not support mixed types in arrays",
+			filter: bson.D{{"v", bson.A{nil, "foo", int32(42)}}},
 		},
 		"Empty": {
 			filter: bson.D{{"v", bson.A{}}},
@@ -235,10 +232,12 @@ func testQueryArrayCompatEquality() map[string]queryCompatTestCase {
 		},
 	}
 
-	return testCases
+	testQueryCompat(t, testCases)
 }
 
-func testQueryArrayCompatAll() map[string]queryCompatTestCase {
+func TestQueryArrayCompatAll(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]queryCompatTestCase{
 		"String": {
 			filter: bson.D{{"v", bson.D{{"$all", bson.A{"foo"}}}}},
@@ -269,8 +268,7 @@ func testQueryArrayCompatAll() map[string]queryCompatTestCase {
 			filter: bson.D{{"v", bson.D{{"$all", bson.A{math.SmallestNonzeroFloat64}}}}},
 		},
 		"MultiAll": {
-			filter:        bson.D{{"v", bson.D{{"$all", bson.A{"foo", 42}}}}},
-			skipForTigris: "Tigris does not support mixed types in arrays",
+			filter: bson.D{{"v", bson.D{{"$all", bson.A{"foo", 42}}}}},
 		},
 		"MultiAllWithNil": {
 			filter: bson.D{{"v", bson.D{{"$all", bson.A{"foo", nil}}}}},
@@ -305,5 +303,5 @@ func testQueryArrayCompatAll() map[string]queryCompatTestCase {
 		},
 	}
 
-	return testCases
+	testQueryCompat(t, testCases)
 }
