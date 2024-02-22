@@ -10,47 +10,52 @@ tags: [tutorial, community, postgresql tools, open source, cloud]
 
 ![How to run and deploy FerretDB in Kubernetes using Pulumi](/img/blog/ferretdb-pulumi.jpg)
 
-Setting up a scalable, reliable, and highly performant database application is essential for all production environments. But before then, you still need testing environments for your operations and teams.
+Setting up a scalable, reliable, and highly performant database application is essential for all production environments.
+But before then, you still need robust testing environments for your operations and teams.
 
 <!--truncate-->
 
 Running your databases on Kubernetes can be a way to quickly provision, test, and drop databases using a CI/CD pipeline.
 
 [Pulumi](https://www.pulumi.com/), an Infrastructure as Code (IaC) platform, can be quite useful in building, managing, and deploying infrastructure in your favorite programming language and on numerous public clouds or cloud-native platforms, including Kubernetes.
+That also means you can use Pulumi to deploy and manage your FerretDB databases.
 
-[FerretDB](https://www.ferretdb.com/) is an open-source document database that adds MongoDB compatibility to relational databases like Postgres and SQLite. With Postgres as your database backend, you can run FerretDB on top of StackGres, which provides a fully-featured platform for running Postgres on Kubernetes. And finally put them all together using Pulumi.
+[FerretDB](https://www.ferretdb.com/) is an open-source document database that adds MongoDB compatibility to relational databases like Postgres and SQLite.
+With Postgres as your backend, you can run FerretDB on top of StackGres — a fully-featured platform for running Postgres on Kubernetes.
+And finally set them up together using Pulumi.
 
-In this guide, you’ll learn to set up FerretDB with StackGres on Kubernetes using Pulumi.
+In this guide, you'll learn to set up FerretDB with StackGres on Kubernetes using Pulumi.
 
-This is based on a previous blog post on [how to run FerretDB on top of StackGres](https://blog.ferretdb.io/run-ferretdb-on-stackgres/).
+_This is based on a previous blog post on [how to run FerretDB on top of StackGres](https://blog.ferretdb.io/run-ferretdb-on-stackgres/)._
 
 ## Pulumi as your IaC tool
 
-Pulumi empowers DevOps professionals and developers to manage infrastructure using different programming languages. Let’s take a look at some of the key benefits of Pulumi.
+Pulumi empowers DevOps professionals and developers to manage infrastructure using different programming languages.
+Let's take a look at some of the key benefits of Pulumi.
 
-
-
-* **Language support:** Perhaps, this is the best advantage of Pulumi. Rather than learn a new vendor-specific language with its own strict schema and syntax, Pulumi lets you use manage infrastructure with programming languages like Python, JavaScript, Go, Java, and C#, among others.
-* **Multi-cloud support:** Pulumi supports multiple cloud providers and SaaS offerings, including AWS, Google Cloud, Microsoft Azure, DigitalOcean, Kubernetes, Docker, ConfluentCloud, and DataDog.
-* **Open source:** Pulumi is fully open source under the Apache 2.0 license. Being open-source means the community is a huge part of Pulumi. They help in building and supporting Pulumi providers, components, and configurations while also creating educational resources about Pulumi.
-
+- **Language support:** Perhaps, this is the best advantage of Pulumi.
+  Rather than learn a new vendor-specific language with its own strict schema and syntax, Pulumi lets you use manage infrastructure with programming languages like Python, JavaScript, Go, Java, and C#, among others.
+- **Multi-cloud support:** Pulumi supports multiple cloud providers and SaaS offerings, including AWS, Google Cloud, Microsoft Azure, DigitalOcean, Kubernetes, Docker, ConfluentCloud, and DataDog.
+- **Open source:** Pulumi is fully open source under the Apache 2.0 license.
+  Being open-source means the community is a huge part of Pulumi.
+  They help in building and supporting Pulumi providers, components, and configurations while also creating educational resources about Pulumi.
 
 ## Prerequisites
 
-
-
-* minikube installation
-* Pulumi installation
-* Stackgres Installation
-* `mongosh`
-* kubectl
-
+- minikube installation
+- Pulumi installation
+- Stackgres Installation
+- `mongosh`
+- kubectl
 
 ## Set up a Kubernetes Cluster
 
-Before deploying FerretDB using Pulumi, you need to have a Kubernetes cluster running, along with command line tools `kubectl`. If these tools are not installed, please see their respective documentation.
+Before deploying FerretDB using Pulumi, you need to have a Kubernetes cluster running, along with command line tools `kubectl`.
+If these tools are not installed, please see their respective documentation.
 
-This guide uses minikube to create a cluster. minikube is a local Kubernetes setup that makes it easy to learn, experiment, and develop for Kubernetes. Check out the minikube [setup on how to get started and create a cluster](https://minikube.sigs.k8s.io/docs/start/).
+This guide uses minikube to create a cluster.
+minikube is a local Kubernetes setup that makes it easy to learn, experiment, and develop for Kubernetes.
+Check out the minikube [setup on how to get started and create a cluster](https://minikube.sigs.k8s.io/docs/start/).
 
 Please also ensure that your cluster is set as the current context.
 
@@ -60,13 +65,15 @@ To list all available contexts available to `kubectl`:
 kubectl config get-contexts
 ```
 
-The current context is marked with an asterisk (*) in the output. Use the `kubectl config use-context` command with the name of your desired context to switch the current context to the specified cluster.
+The current context is marked with an asterisk (\*) in the output.
+Use the `kubectl config use-context` command with the name of your desired context to switch the current context to the specified cluster.
 
 ```sh
 kubectl config use-context <your-desired-context>
 ```
 
-Start the setup by creating a namespace within the cluster. That way, you can isolate, group, and manage your resources, access controls, and other configurations.
+Start the setup by creating a namespace within the cluster.
+That way, you can isolate, group, and manage your resources, access controls, and other configurations.
 
 ```sh
 kubectl create namespace ferretdb
@@ -74,7 +81,8 @@ kubectl create namespace ferretdb
 
 ## Installing the StackGres Operator
 
-Here, you will need to install the StackGres operator on a Kubernetes cluster. To do that,
+Here, you will need to install the StackGres operator on a Kubernetes cluster.
+To do that,
 
 Install the operator with the following command:
 
@@ -84,7 +92,8 @@ kubectl create -f https://stackgres.io/downloads/stackgres-k8s/stackgres/1.7.0/s
 
 This will install all the necessary resources, and also add the operator to a new namespace `stackgres`.
 
-It may take some time for the operator to be ready. If you want to wait until the operator is ready, run the following command:
+It may take some time for the operator to be ready.
+If you want to wait until the operator is ready, run the following command:
 
 ```sh
 kubectl wait -n stackgres deployment -l group=stackgres.io --for=condition=Available
@@ -99,7 +108,8 @@ stackgres-operator-6f7c75bff4-mwchl   1/1     Running   1 (6m38s ago)   8m28s
 stackgres-restapi-77c978b5dc-2lzm6    2/2     Running   0               6m17s
 ```
 
-The next to do is to create a `Secret` in the `ferretdb` namespace. The `Secret` will contain a random password generated using the SQL command in the following script.
+The next to do is to create a `Secret` in the `ferretdb` namespace.
+The `Secret` will contain a random password generated using the SQL command in the following script.
 
 ```sh
 #!/bin/bash
@@ -115,7 +125,8 @@ kubectl -n $NAMESPACE create secret generic $SECRET_NAME --from-literal=sql="CRE
 
 ```
 
-Save the script as `create_secret.sh` or whatever you prefer. Make this executable by running this in the directory terminal:
+Save the script as `create_secret.sh` or whatever you prefer.
+Make this executable by running this in the directory terminal:
 
 ```sh
 chmod +x ./create_secret.sh
@@ -129,28 +140,35 @@ Then execute the script and create a unique password.
 
 ## Create Pulumi project
 
-Pulumi will be used to orchestrate our entire setup. With our cluster now available, let’s go ahead to set up the Pulumi project. But before setting up the project, ensure to install Pulumi ([find the installation guide here](https://www.pulumi.com/docs/clouds/kubernetes/get-started/begin/)).
+Pulumi will be used to orchestrate our entire setup.
+With our cluster now available, let's go ahead to set up the Pulumi project.
+But before setting up the project, ensure to install Pulumi ([find the installation guide here](https://www.pulumi.com/docs/clouds/kubernetes/get-started/begin/)).
 
-Create a directory for the project. This will hold the configuration and particular project details for Pulumi. Since you already have `kubectl` configured, Pulumi will use the same configuration settings.
+Create a directory for the project.
+This will hold the configuration and particular project details for Pulumi.
+Since you already have `kubectl` configured, Pulumi will use the same configuration settings.
 
 ```sh
 mkdir ferretdb-pulumi && cd ferretdb-pulumi
 pulumi new kubernetes-python
 ```
 
-You will be prompted to enter a project name, description, and stack. Go ahead and press ENTER to confirm the default values, or you can specify your own.
+You will be prompted to enter a project name, description, and stack.
+Go ahead and press ENTER to confirm the default values, or you can specify your own.
 
 Once this is complete, the project will initialize a new Pulumi project using the Kubernetes Python template and this will generate a couple of files:
 
-* Pulumi.yaml contains the project definition.
-* Pulumi.dev.yaml contains the initialized stack configuration values.
-* `__main__.py` is the main Pulumi program that defines the resources in your stack.
+- Pulumi.yaml contains the project definition.
+- Pulumi.dev.yaml contains the initialized stack configuration values.
+- `__main__.py` is the main Pulumi program that defines the resources in your stack.
 
 ## Deploy StackGres Cluster with FerretDB on Kubernetes using Pulumi
 
-Here, you’ll use Pulumi to provision and orchestrate all the resources. This will include setting up the connection pooling, creating the Postgres database, deploying the Stackgres, and finally, setting up FerretDB.
+Here, you'll use Pulumi to provision and orchestrate all the resources.
+This will include setting up the connection pooling, creating the Postgres database, deploying the Stackgres, and finally, setting up FerretDB.
 
-Start by deleting the existing content in the `__main__.py` file. Then add the following to the `__main__.py` file.
+Start by deleting the existing content in the `__main__.py` file.
+Then add the following to the `__main__.py` file.
 
 ```py
 import pulumi
@@ -289,13 +307,18 @@ pulumi.export('ferretdb_service_ip', ferretdb_service.metadata.apply(lambda meta
 
 The resources:
 
-
-
-* **SGPoolingConfig:** Defines a CustomResource config for connection pooling, particularly to customize PgBouncer settings. Normally, FerretDB will attempt to configure the `search_path` parameter in PostgreSQL during startup. However, PgBouncer does not support this. So this will customize PgBouncer behavior to ignore this parameter.
-* **SGScript:** Creates a StackGres script resource for initializing the user and the `ferretdb` database. The user password is sourced from the `Secret` created earlier.
-* **Stackgres Cluster:** Deploys a PostgreSQL database cluster managed by StackGres. This will help to deploy, scale, and manage Postgres clusters and also apply the custom resource for SGPoolingConfig and SGScript.
-* **FerretDB deployment and service:** There are two additional resources. One contains the deployment specifications for FerretDB and configures it to connect to a `ferretdb` database created with StackGres. It specifies the `FERRETDB_POSTGRESQL_URL` environment variable, which points to the Postgres database defined by the StackGres cluster.
-* **FerretDB Service:** This exposes the FerretDB deployment within the cluster on port 27017, making it accessible to other services within the same cluster.
+- **SGPoolingConfig:** Defines a CustomResource config for connection pooling, particularly to customize PgBouncer settings.
+  Normally, FerretDB will attempt to configure the `search_path` parameter in PostgreSQL during startup.
+  However, PgBouncer does not support this.
+  So this will customize PgBouncer behavior to ignore this parameter.
+- **SGScript:** Creates a StackGres script resource for initializing the user and the `ferretdb` database.
+  The user password is sourced from the `Secret` created earlier.
+- **Stackgres Cluster:** Deploys a PostgreSQL database cluster managed by StackGres.
+  This will help to deploy, scale, and manage Postgres clusters and also apply the custom resource for SGPoolingConfig and SGScript.
+- **FerretDB deployment and service:** There are two additional resources.
+  One contains the deployment specifications for FerretDB and configures it to connect to a `ferretdb` database created with StackGres.
+  It specifies the `FERRETDB_POSTGRESQL_URL` environment variable, which points to the Postgres database defined by the StackGres cluster.
+- **FerretDB Service:** This exposes the FerretDB deployment within the cluster on port 27017, making it accessible to other services within the same cluster.
 
 This setup should provide us with a fully managed, scalable FerretDB deployment in Kubernetes environments.
 
@@ -343,7 +366,8 @@ Resources:
 Duration: 44s
 ```
 
-The postgres pods might take a few minutes to be ready. To be sure the pods are running, run `kubectl get pods -n ferretdb`.
+The postgres pods might take a few minutes to be ready.
+To be sure the pods are running, run `kubectl get pods -n ferretdb`.
 
 ```text
 % kubectl get pods -n ferretdb
@@ -354,7 +378,7 @@ postgres-0                             6/6     Running   0          2m5s
 
 ### Connect via mongosh
 
-Let’s launch a temporary `mongosh` pod in the ferretdb namespace.
+Let's launch a temporary `mongosh` pod in the `ferretdb` namespace.
 
 ```sh
 kubectl -n ferretdb run mongosh --image=rtsp/mongosh --rm -it -- bash
@@ -390,10 +414,10 @@ Connect to FerretDB:
 
 ```text
 # mongosh 'mongodb://ferretdb:<password>@<host-address>:27017/ferretdb?authMechanism=PLAIN'
-Current Mongosh Log ID:	65d02c968660cd7b3c7ad89e
-Connecting to:		mongodb://<credentials>@10.106.153.95:27017/ferretdb?authMechanism=PLAIN&directConnection=true&appName=mongosh+2.1.4
-Using MongoDB:		7.0.42
-Using Mongosh:		2.1.4
+Current Mongosh Log ID: 65d02c968660cd7b3c7ad89e
+Connecting to:    mongodb://<credentials>@10.106.153.95:27017/ferretdb?authMechanism=PLAIN&directConnection=true&appName=mongosh+2.1.4
+Using MongoDB:    7.0.42
+Using Mongosh:    2.1.4
 For mongosh info see: https://docs.mongodb.com/mongodb-shell/
 ------
    The server generated these startup warnings when booting
@@ -405,45 +429,47 @@ For mongosh info see: https://docs.mongodb.com/mongodb-shell/
 ferretdb>
 ```
 
-Awesome! With Pulumi, you’ve been able to run and deploy FerretDB in a Kubernetes cluster. So you can just go right ahead to run a couple of MongoDB operations.
+Awesome!
+With Pulumi, you've been able to run and deploy FerretDB in a Kubernetes cluster.
+So you can just go right ahead to run a couple of MongoDB operations.
 
 #### Insert documents
 
-Let’s insert documents showing single-day stock data for a fictional company.
+Let's insert documents showing single-day stock data for a fictional company.
 
 ```js
 db.stocks.insertMany([
- {
- symbol: "ZTI",
- date: new Date("2024-02-17"),
- tradingData: {
- open: 250.75,
- high: 255.50,
- low: 248.25,
- close: 254.10,
- volume: 1200000
- },
- metadata: {
- analystRating: "Buy",
- sector: "Technology"
- }
- },
- {
- symbol: "ZTI",
- date: new Date("2024-02-18"),
- tradingData: {
- open: 254.10,
- high: 260.00,
- low: 253.00,
- close: 258.45,
- volume: 1500000
- },
- metadata: {
- analystRating: "Strong Buy",
- sector: "Technology"
- }
- }
-]);
+  {
+    symbol: 'ZTI',
+    date: new Date('2024-02-17'),
+    tradingData: {
+      open: 250.75,
+      high: 255.5,
+      low: 248.25,
+      close: 254.1,
+      volume: 1200000
+    },
+    metadata: {
+      analystRating: 'Buy',
+      sector: 'Technology'
+    }
+  },
+  {
+    symbol: 'ZTI',
+    date: new Date('2024-02-18'),
+    tradingData: {
+      open: 254.1,
+      high: 260.0,
+      low: 253.0,
+      close: 258.45,
+      volume: 1500000
+    },
+    metadata: {
+      analystRating: 'Strong Buy',
+      sector: 'Technology'
+    }
+  }
+])
 ```
 
 Run `db.stocks.find()` to see the documents.
@@ -453,7 +479,7 @@ Run `db.stocks.find()` to see the documents.
 Find stock data indicating where the volume was greater than 1,200,000.
 
 ```js
-db.stocks.find({ "symbol": "ZTI", "tradingData.volume": { $gt: 1200000 } });
+db.stocks.find({ symbol: 'ZTI', 'tradingData.volume': { $gt: 1200000 } })
 ```
 
 Result:
@@ -488,7 +514,8 @@ Connect to Postgres by running this command:
 kubectl -n ferretdb exec -it postgres-0 -c postgres-util -- psql ferretdb
 ```
 
-Once you’re in, set the `search_path` to the `ferretdb` database and then check out the tables in the database. FerretDB stores the data as JSONB.
+Once you're in, set the `search_path` to the `ferretdb` database and then check out the tables in the database.
+FerretDB stores the data as JSONB.
 
 ```psql
 ferretdb=# SET SEARCH_PATH TO ferretdb;
@@ -511,7 +538,8 @@ ferretdb=# SELECT * from stocks_5fb3a312;
 
 ## Clean up
 
-Pulumi provides a way to clean up and de-provision all the resources created with Pulumi from your project’s directory. Then delete the cluster along with other resources created and managed outside of Pulumi.
+Pulumi provides a way to clean up and de-provision all the resources created with Pulumi from your project's directory.
+Then delete the cluster along with other resources created and managed outside of Pulumi.
 
 ```sh
 pulumi destroy
@@ -520,7 +548,9 @@ minikube delete
 
 ## Conclusion
 
-So far, you’ve been able to leverage the power of Pulumi for infrastructure as code, to run, deploy, and manage a scalable FerretDB database in Kubernetes. Pulumi orchestrates all the resources using Python, deploys a Postgres database using StackGres, and adds MongoDB compatibility to it with FerretDB. But you can still choose to use any other language of your choice.
+So far, you've been able to leverage the power of Pulumi for infrastructure as code, to run, deploy, and manage a scalable FerretDB database in Kubernetes.
+Pulumi orchestrates all the resources using Python, deploys a Postgres database using StackGres, and adds MongoDB compatibility to it with FerretDB.
+But you can still choose to use any other language of your choice.
 
 FerretDB, due to its open-source nature, offers complete control over your data without any fear of vendor lock-in.
 
