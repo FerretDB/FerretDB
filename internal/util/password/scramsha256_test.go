@@ -31,7 +31,7 @@ import (
 //
 //nolint:vet // for readability
 type scramSHA256TestCase struct {
-	params   scramSHA256Params
+	params   scramParams
 	password string
 	salt     []byte
 
@@ -43,7 +43,7 @@ type scramSHA256TestCase struct {
 var scramSHA256TestCases = map[string]scramSHA256TestCase{
 	// Test vector generated with db.runCommand({createUser: "user", pwd: "pencil", roles: []})
 	"FromMongoDB": {
-		params: scramSHA256Params{
+		params: scramParams{
 			iterationCount: 15000,
 			saltLen:        28,
 		},
@@ -59,7 +59,7 @@ var scramSHA256TestCases = map[string]scramSHA256TestCase{
 
 	// Test vector generated with db.runCommand({createUser: "user", pwd: "password", roles: []})
 	"FromMongoDB2": {
-		params: scramSHA256Params{
+		params: scramParams{
 			iterationCount: 15000,
 			saltLen:        28,
 		},
@@ -74,7 +74,7 @@ var scramSHA256TestCases = map[string]scramSHA256TestCase{
 	},
 
 	"BadSaltLength": {
-		params: scramSHA256Params{
+		params: scramParams{
 			iterationCount: 15000,
 			saltLen:        28,
 		},
@@ -83,7 +83,7 @@ var scramSHA256TestCases = map[string]scramSHA256TestCase{
 		err:      "unexpected salt length: 5",
 	},
 	"ProhibitedCharacter": {
-		params: scramSHA256Params{
+		params: scramParams{
 			iterationCount: 4096,
 			saltLen:        5,
 		},
@@ -95,7 +95,7 @@ var scramSHA256TestCases = map[string]scramSHA256TestCase{
 	// The following checks were inspired by the test cases for the PLAIN method in plain_test.go
 	// https://github.com/brycx/Test-Vector-Generation/blob/master/PBKDF2/pbkdf2-hmac-sha2-test-vectors.md
 	"1Iteration": {
-		params: scramSHA256Params{
+		params: scramParams{
 			iterationCount: 1,
 			saltLen:        4,
 		},
@@ -109,7 +109,7 @@ var scramSHA256TestCases = map[string]scramSHA256TestCase{
 		)),
 	},
 	"2Iterations": {
-		params: scramSHA256Params{
+		params: scramParams{
 			iterationCount: 2,
 			saltLen:        4,
 		},
@@ -123,7 +123,7 @@ var scramSHA256TestCases = map[string]scramSHA256TestCase{
 		)),
 	},
 	"4096Iterations": {
-		params: scramSHA256Params{
+		params: scramParams{
 			iterationCount: 4096,
 			saltLen:        4,
 		},
@@ -137,7 +137,7 @@ var scramSHA256TestCases = map[string]scramSHA256TestCase{
 		)),
 	},
 	"DifferentSalt": {
-		params: scramSHA256Params{
+		params: scramParams{
 			iterationCount: 4096,
 			saltLen:        36,
 		},
@@ -151,7 +151,7 @@ var scramSHA256TestCases = map[string]scramSHA256TestCase{
 		)),
 	},
 	"DifferentPassword": {
-		params: scramSHA256Params{
+		params: scramParams{
 			iterationCount: 1,
 			saltLen:        4,
 		},
@@ -165,7 +165,7 @@ var scramSHA256TestCases = map[string]scramSHA256TestCase{
 		)),
 	},
 	"NaCl": {
-		params: scramSHA256Params{
+		params: scramParams{
 			iterationCount: 80000,
 			saltLen:        4,
 		},
@@ -179,7 +179,7 @@ var scramSHA256TestCases = map[string]scramSHA256TestCase{
 		)),
 	},
 	"00Salt": {
-		params: scramSHA256Params{
+		params: scramParams{
 			iterationCount: 4096,
 			saltLen:        5,
 		},

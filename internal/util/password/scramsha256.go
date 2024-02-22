@@ -15,10 +15,8 @@
 package password
 
 import (
-	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
-	"encoding/base64"
 	"fmt"
 
 	"github.com/xdg-go/stringprep"
@@ -43,14 +41,8 @@ func SCRAMSHA256Hash(password string) (*types.Document, error) {
 	return doc, nil
 }
 
-// scramSHA256Params represent password parameters for SCRAM-SHA-256 authentication.
-type scramSHA256Params struct {
-	iterationCount int
-	saltLen        int
-}
-
 // fixedScramSHA256Params represent fixed password parameters for SCRAM-SHA-256 authentication.
-var fixedScramSHA256Params = &scramSHA256Params{
+var fixedScramSHA256Params = &scramParams{
 	iterationCount: 15_000,
 	saltLen:        30,
 }
@@ -59,7 +51,7 @@ var fixedScramSHA256Params = &scramSHA256Params{
 // and returns the document that should be stored.
 //
 // https://datatracker.ietf.org/doc/html/rfc5802
-func scramSHA256HashParams(password string, salt []byte, params *scramSHA256Params) (*types.Document, error) {
+func scramSHA256HashParams(password string, salt []byte, params *scramParams) (*types.Document, error) {
 	if len(salt) != int(params.saltLen) {
 		return nil, lazyerrors.Errorf("unexpected salt length: %d", len(salt))
 	}
@@ -71,39 +63,5 @@ func scramSHA256HashParams(password string, salt []byte, params *scramSHA256Para
 
 	saltedPassword := pbkdf2.Key([]byte(prepPassword), salt, params.iterationCount, sha256.Size, sha256.New)
 
-	// Hashing the strings "Client Key" for creating the client key and
-	// "Server Key" for creating the server key, per Section 3 of the RFC 5802
-	// https://datatracker.ietf.org/doc/html/rfc5802#section-3
-	clientKey := computeHMAC(saltedPassword, []byte("Client Key"))
-	serverKey := computeHMAC(saltedPassword, []byte("Server Key"))
-
-	storedKey := computeHash(clientKey)
-
-	doc, err := types.NewDocument(
-		"storedKey", base64.StdEncoding.EncodeToString(storedKey),
-		"iterationCount", int32(params.iterationCount),
-		"salt", base64.StdEncoding.EncodeToString(salt),
-		"serverKey", base64.StdEncoding.EncodeToString(serverKey),
-	)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return doc, nil
-}
-
-// Computes the HMAC of the given data using the given key.
-func computeHMAC(key, data []byte) []byte {
-	mac := hmac.New(sha256.New, key)
-	mac.Write(data)
-
-	return mac.Sum(nil)
-}
-
-// Computes the SHA-256 hash of the given data.
-func computeHash(b []byte) []byte {
-	h := sha256.New()
-	h.Write(b)
-
-	return h.Sum(nil)
+	return scramDoc(sha256.New, saltedPassword, salt, params)
 }
