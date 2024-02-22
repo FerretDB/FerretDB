@@ -32,8 +32,9 @@ import (
 type MsgBody interface {
 	msgbody() // seal for sumtype
 
-	readFrom(*bufio.Reader) error
-	encoding.BinaryUnmarshaler
+	// UnmarshalBinaryNocopy is a variant of [encoding.BinaryUnmarshaler] that does not have to copy the data.
+	UnmarshalBinaryNocopy([]byte) error
+
 	encoding.BinaryMarshaler
 	fmt.Stringer
 }
@@ -59,7 +60,7 @@ func ReadMessage(r *bufio.Reader) (*MsgHeader, MsgBody, error) {
 	switch header.OpCode {
 	case OpCodeReply: // not sent by clients, but we should be able to read replies from a proxy
 		var reply OpReply
-		if err := reply.UnmarshalBinary(b); err != nil {
+		if err := reply.UnmarshalBinaryNocopy(b); err != nil {
 			return nil, nil, lazyerrors.Error(err)
 		}
 
@@ -71,7 +72,7 @@ func ReadMessage(r *bufio.Reader) (*MsgHeader, MsgBody, error) {
 		}
 
 		var msg OpMsg
-		if err := msg.UnmarshalBinary(b); err != nil {
+		if err := msg.UnmarshalBinaryNocopy(b); err != nil {
 			return &header, nil, lazyerrors.Error(err)
 		}
 
@@ -79,7 +80,7 @@ func ReadMessage(r *bufio.Reader) (*MsgHeader, MsgBody, error) {
 
 	case OpCodeQuery:
 		var query OpQuery
-		if err := query.UnmarshalBinary(b); err != nil {
+		if err := query.UnmarshalBinaryNocopy(b); err != nil {
 			return nil, nil, lazyerrors.Error(err)
 		}
 
