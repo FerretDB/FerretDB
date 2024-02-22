@@ -216,7 +216,12 @@ func addRecordedFuzzDocs(f *testing.F, needDocument, needSchema bool) int {
 			}
 
 		case *wire.OpReply:
-			docs = append(docs, b.Documents()...)
+			doc, err := b.Document()
+			require.NoError(f, err)
+
+			if doc != nil {
+				docs = append(docs, doc)
+			}
 		}
 
 		for _, doc := range docs {
