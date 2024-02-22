@@ -143,7 +143,7 @@ func (msg *OpMsg) check() error {
 	for _, s := range msg.sections {
 		for _, d := range s.documents {
 			if _, err := d.DecodeDeep(); err != nil {
-				lazyerrors.Error(err)
+				return lazyerrors.Error(err)
 			}
 		}
 	}
