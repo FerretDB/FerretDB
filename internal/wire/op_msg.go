@@ -169,7 +169,7 @@ func (msg *OpMsg) UnmarshalBinaryNocopy(b []byte) error {
 	msg.Flags = OpMsgFlags(binary.LittleEndian.Uint32(b[0:4]))
 
 	offset := 4
-	for len(b) != offset {
+	for {
 		var section OpMsgSection
 		section.Kind = b[offset]
 		offset++
@@ -229,22 +229,23 @@ func (msg *OpMsg) UnmarshalBinaryNocopy(b []byte) error {
 
 		msg.sections = append(msg.sections, section)
 
-		// FIXME check offset
-		peekBytes := 1
 		if msg.Flags.FlagSet(OpMsgChecksumPresent) {
-			peekBytes = 5
+			if offset == len(b)-4 {
+				break
+			}
+		} else {
+			if offset == len(b) {
+				break
+			}
 		}
-		_ = peekBytes
 	}
 
-	// FIXME
-	// if msg.Flags.FlagSet(OpMsgChecksumPresent) {
-	// 	if err := binary.Read(bufr, binary.LittleEndian, &msg.checksum); err != nil {
-	// 		// Move checksum validation here. It needs header data to be available.
-	// 		// TODO https://github.com/FerretDB/FerretDB/issues/2690
-	// 		return lazyerrors.Error(err)
-	// 	}
-	// }
+	if msg.Flags.FlagSet(OpMsgChecksumPresent) {
+		// Move checksum validation here. It needs header data to be available.
+		// TODO https://github.com/FerretDB/FerretDB/issues/2690
+
+		msg.checksum = binary.LittleEndian.Uint32(b[offset:])
+	}
 
 	if _, err := msg.Document(); err != nil {
 		return err
