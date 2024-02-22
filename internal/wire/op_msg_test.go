@@ -18,6 +18,7 @@ import (
 	"math"
 	"testing"
 
+	"github.com/FerretDB/FerretDB/internal/bson2"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
@@ -35,7 +36,7 @@ var msgTestCases = []testCase{
 		},
 		msgBody: &OpMsg{
 			sections: []OpMsgSection{{
-				documents: []*types.Document{must.NotFail(types.NewDocument(
+				documents: []bson2.RawDocument{makeRawDocument(
 					"buildInfo", int32(1),
 					"lsid", must.NotFail(types.NewDocument(
 						"id", types.Binary{
@@ -47,7 +48,7 @@ var msgTestCases = []testCase{
 						},
 					)),
 					"$db", "admin",
-				))},
+				)},
 			}},
 		},
 		command: "buildInfo",
@@ -64,7 +65,7 @@ var msgTestCases = []testCase{
 		},
 		msgBody: &OpMsg{
 			sections: []OpMsgSection{{
-				documents: []*types.Document{must.NotFail(types.NewDocument(
+				documents: []bson2.RawDocument{makeRawDocument(
 					"version", "5.0.0",
 					"gitVersion", "1184f004a99660de6f5e745573419bda8a28c0e9",
 					"modules", must.NotFail(types.NewArray()),
@@ -105,7 +106,7 @@ var msgTestCases = []testCase{
 					"maxBsonObjectSize", int32(16777216),
 					"storageEngines", must.NotFail(types.NewArray("devnull", "ephemeralForTest", "wiredTiger")),
 					"ok", float64(1),
-				))},
+				)},
 			}},
 		},
 		command: "version",
@@ -121,33 +122,33 @@ var msgTestCases = []testCase{
 		msgBody: &OpMsg{
 			sections: []OpMsgSection{
 				{
-					documents: []*types.Document{must.NotFail(types.NewDocument(
+					documents: []bson2.RawDocument{makeRawDocument(
 						"insert", "actor",
 						"ordered", true,
 						"writeConcern", must.NotFail(types.NewDocument(
 							"w", "majority",
 						)),
 						"$db", "monila",
-					))},
+					)},
 				},
 				{
 					Kind:       1,
 					Identifier: "documents",
-					documents: []*types.Document{
-						must.NotFail(types.NewDocument(
+					documents: []bson2.RawDocument{
+						makeRawDocument(
 							"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01},
 							"actor_id", int32(1),
 							"first_name", "PENELOPE",
 							"last_name", "GUINESS",
 							"last_update", lastUpdate,
-						)),
-						must.NotFail(types.NewDocument(
+						),
+						makeRawDocument(
 							"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x02},
 							"actor_id", int32(2),
 							"first_name", "NICK",
 							"last_name", "WAHLBERG",
 							"last_update", lastUpdate,
-						)),
+						),
 					},
 				},
 			},
@@ -197,7 +198,7 @@ var msgTestCases = []testCase{
 			},
 			msgBody: &OpMsg{
 				sections: []OpMsgSection{{
-					documents: []*types.Document{must.NotFail(types.NewDocument(
+					documents: []bson2.RawDocument{makeRawDocument(
 						"insert", "values",
 						"documents", must.NotFail(types.NewArray(
 							must.NotFail(types.NewDocument(
@@ -248,19 +249,19 @@ var msgTestCases = []testCase{
 		msgBody: &OpMsg{
 			sections: []OpMsgSection{
 				{
-					documents: []*types.Document{must.NotFail(types.NewDocument(
+					documents: []bson2.RawDocument{makeRawDocument(
 						"insert", "TestInsertSimple",
 						"ordered", true,
 						"$db", "testinsertsimple",
-					))},
+					)},
 				},
 				{
 					Kind:       1,
 					Identifier: "documents",
-					documents: []*types.Document{must.NotFail(types.NewDocument(
+					documents: []bson2.RawDocument{makeRawDocument(
 						"_id", types.ObjectID{0x63, 0x7c, 0xfa, 0xd8, 0x8d, 0xc3, 0xce, 0xcd, 0xe3, 0x8e, 0x1e, 0x6b},
 						"v", math.Copysign(0, -1),
-					))},
+					)},
 				},
 			},
 		},
@@ -305,22 +306,22 @@ var msgTestCases = []testCase{
 			OpCode:        OpCodeMsg,
 		},
 		msgBody: &OpMsg{
-			FlagBits: OpMsgFlags(OpMsgChecksumPresent),
+			Flags: OpMsgFlags(OpMsgChecksumPresent),
 			sections: []OpMsgSection{
 				{
 					Kind:       1,
 					Identifier: "documents",
-					documents: []*types.Document{must.NotFail(types.NewDocument(
+					documents: []bson2.RawDocument{makeRawDocument(
 						"_id", types.ObjectID{0x63, 0x8c, 0xec, 0x46, 0xaa, 0x77, 0x8b, 0xf3, 0x70, 0x10, 0x54, 0x29},
 						"a", float64(3),
-					))},
+					)},
 				},
 				{
-					documents: []*types.Document{must.NotFail(types.NewDocument(
+					documents: []bson2.RawDocument{makeRawDocument(
 						"insert", "foo",
 						"ordered", true,
 						"$db", "test",
-					))},
+					)},
 				},
 			},
 			checksum: 1737537506,
@@ -381,12 +382,12 @@ var msgTestCases = []testCase{
 			OpCode:        OpCodeMsg,
 		},
 		msgBody: &OpMsg{
-			FlagBits: OpMsgFlags(OpMsgChecksumPresent),
+			Flags: OpMsgFlags(OpMsgChecksumPresent),
 			sections: []OpMsgSection{
 				{
 					Kind:       1,
 					Identifier: "updates",
-					documents: []*types.Document{must.NotFail(types.NewDocument(
+					documents: []bson2.RawDocument{makeRawDocument(
 						"q", must.NotFail(types.NewDocument(
 							"a", float64(20),
 						)),
@@ -397,14 +398,14 @@ var msgTestCases = []testCase{
 						)),
 						"multi", false,
 						"upsert", false,
-					))},
+					)},
 				},
 				{
-					documents: []*types.Document{must.NotFail(types.NewDocument(
+					documents: []bson2.RawDocument{makeRawDocument(
 						"update", "foo",
 						"ordered", true,
 						"$db", "test",
-					))},
+					)},
 				},
 			},
 			checksum: 2932997361,
@@ -450,22 +451,22 @@ var msgTestCases = []testCase{
 			OpCode:        OpCodeMsg,
 		},
 		msgBody: &OpMsg{
-			FlagBits: OpMsgFlags(OpMsgChecksumPresent),
+			Flags: OpMsgFlags(OpMsgChecksumPresent),
 			sections: []OpMsgSection{
 				{
 					Kind:       1,
 					Identifier: "documents",
-					documents: []*types.Document{must.NotFail(types.NewDocument(
+					documents: []bson2.RawDocument{makeRawDocument(
 						"_id", types.ObjectID{0x63, 0x8c, 0xec, 0x46, 0xaa, 0x77, 0x8b, 0xf3, 0x70, 0x10, 0x54, 0x29},
 						"a", float64(3),
-					))},
+					)},
 				},
 				{
-					documents: []*types.Document{must.NotFail(types.NewDocument(
+					documents: []bson2.RawDocument{makeRawDocument(
 						"insert", "fooo",
 						"ordered", true,
 						"$db", "test",
-					))},
+					)},
 				},
 			},
 			checksum: 1737537506,

@@ -20,12 +20,12 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"io"
 
 	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/bson2"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/types/fjson"
+	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -52,7 +52,7 @@ func (s *OpMsgSection) RawDocuments() []bson2.RawDocument {
 
 // OpMsg is the main wire protocol message type.
 type OpMsg struct {
-	FlagBits OpMsgFlags
+	Flags OpMsgFlags
 
 	sections []OpMsgSection
 	checksum uint32
@@ -92,7 +92,17 @@ func (msg *OpMsg) Document() (*types.Document, error) {
 			return nil, lazyerrors.Errorf("wire.OpMsg.Document: %d documents in kind 0 section", l)
 		}
 
-		docs = append(docs, section.documents[0])
+		d, err := section.documents[0].DecodeDeep()
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		doc, err := d.Convert()
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		docs = append(docs, doc)
 	}
 
 	for _, section := range msg.sections {
@@ -133,77 +143,66 @@ func (msg *OpMsg) msgbody() {}
 
 // check implements [MsgBody] interface.
 func (msg *OpMsg) check() error {
-	// TODO
+	for _, s := range msg.sections {
+		for _, d := range s.documents {
+			if _, err := d.DecodeDeep(); err != nil {
+				lazyerrors.Error(err)
+			}
+		}
+	}
 
 	return nil
 }
 
 // UnmarshalBinaryNocopy implements [MsgBody] interface.
 func (msg *OpMsg) UnmarshalBinaryNocopy(b []byte) error {
-	br := bytes.NewReader(b)
-	bufr := bufio.NewReader(br)
-
-	if err := binary.Read(bufr, binary.LittleEndian, &msg.FlagBits); err != nil {
-		return lazyerrors.Error(err)
+	if len(b) < 6 {
+		return lazyerrors.Errorf("len=%d", len(b))
 	}
 
+	msg.Flags = OpMsgFlags(binary.LittleEndian.Uint32(b[0:4]))
+
+	offset := 4
 	for {
 		var section OpMsgSection
-		if err := binary.Read(bufr, binary.LittleEndian, &section.Kind); err != nil {
-			return lazyerrors.Error(err)
-		}
+		section.Kind = b[offset]
+		offset++
 
 		switch section.Kind {
 		case 0:
-			var doc bson.Document
-			if err := doc.ReadFrom(bufr); err != nil {
-				return lazyerrors.Error(err)
-			}
-
-			d, err := types.ConvertDocument(&doc)
+			l, err := bson2.FindRaw(b[offset:])
 			if err != nil {
 				return lazyerrors.Error(err)
 			}
-			section.documents = []*types.Document{d}
+
+			section.documents = []bson2.RawDocument{b[offset : offset+l]}
+			offset += l
 
 		case 1:
-			var secSize int32
-			if err := binary.Read(bufr, binary.LittleEndian, &secSize); err != nil {
+			// FIXME offsets are not checked
+
+			size := int(binary.LittleEndian.Uint32(b[offset : offset+4]))
+			offset += 4
+
+			var err error
+
+			section.Identifier, err = bson2.DecodeCString(b[offset:])
+			if err != nil {
 				return lazyerrors.Error(err)
 			}
+			offset += bson2.SizeCString(section.Identifier)
 
-			if secSize < 5 {
-				return lazyerrors.Errorf("wire.OpMsg.readFrom: invalid kind 1 section length %d", secSize)
-			}
+			size -= 4 + bson2.SizeCString(section.Identifier)
 
-			sec := make([]byte, secSize-4)
-			if n, err := io.ReadFull(bufr, sec); err != nil {
-				return lazyerrors.Errorf("expected %d, read %d: %w", len(sec), n, err)
-			}
-
-			secr := bufio.NewReader(bytes.NewReader(sec))
-
-			var id bson.CString
-			if err := id.ReadFrom(secr); err != nil {
-				return lazyerrors.Error(err)
-			}
-			section.Identifier = string(id)
-
-			for {
-				if _, err := secr.Peek(1); err == io.EOF {
-					break
-				}
-
-				var doc bson.Document
-				if err := doc.ReadFrom(secr); err != nil {
-					return lazyerrors.Error(err)
-				}
-
-				d, err := types.ConvertDocument(&doc)
+			for size > 0 {
+				l, err := bson2.FindRaw(b[offset:])
 				if err != nil {
 					return lazyerrors.Error(err)
 				}
-				section.documents = append(section.documents, d)
+
+				section.documents = append(section.documents, b[offset:offset+l])
+				offset += l
+				size -= l
 			}
 
 		default:
@@ -212,30 +211,36 @@ func (msg *OpMsg) UnmarshalBinaryNocopy(b []byte) error {
 
 		msg.sections = append(msg.sections, section)
 
+		// FIXME check offset
 		peekBytes := 1
-		if msg.FlagBits.FlagSet(OpMsgChecksumPresent) {
+		if msg.Flags.FlagSet(OpMsgChecksumPresent) {
 			peekBytes = 5
 		}
-		if _, err := bufr.Peek(peekBytes); err == io.EOF {
-			break
-		}
+		_ = peekBytes
 	}
 
-	if msg.FlagBits.FlagSet(OpMsgChecksumPresent) {
-		if err := binary.Read(bufr, binary.LittleEndian, &msg.checksum); err != nil {
-			// Move checksum validation here. It needs header data to be available.
-			// TODO https://github.com/FerretDB/FerretDB/issues/2690
-			return lazyerrors.Error(err)
-		}
-	}
+	// FIXME
+	// if msg.Flags.FlagSet(OpMsgChecksumPresent) {
+	// 	if err := binary.Read(bufr, binary.LittleEndian, &msg.checksum); err != nil {
+	// 		// Move checksum validation here. It needs header data to be available.
+	// 		// TODO https://github.com/FerretDB/FerretDB/issues/2690
+	// 		return lazyerrors.Error(err)
+	// 	}
+	// }
 
 	if _, err := msg.Document(); err != nil {
 		return err
 	}
 
-	if _, err := bufr.Peek(1); err != io.EOF {
-		return lazyerrors.Errorf("unexpected end of the OpMsg: %v", err)
+	if debugbuild.Enabled {
+		if err := msg.check(); err != nil {
+			return lazyerrors.Error(err)
+		}
 	}
+
+	// if _, err := bufr.Peek(1); err != io.EOF {
+	// 	return lazyerrors.Errorf("unexpected end of the OpMsg: %v", err)
+	// }
 
 	return nil
 }
@@ -245,7 +250,7 @@ func (msg *OpMsg) MarshalBinary() ([]byte, error) {
 	var buf bytes.Buffer
 	bufw := bufio.NewWriter(&buf)
 
-	if err := binary.Write(bufw, binary.LittleEndian, msg.FlagBits); err != nil {
+	if err := binary.Write(bufw, binary.LittleEndian, msg.Flags); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
@@ -294,7 +299,7 @@ func (msg *OpMsg) MarshalBinary() ([]byte, error) {
 		}
 	}
 
-	if msg.FlagBits.FlagSet(OpMsgChecksumPresent) {
+	if msg.Flags.FlagSet(OpMsgChecksumPresent) {
 		// Calculate checksum before writing it. It needs header data to be ready and available here.
 		// TODO https://github.com/FerretDB/FerretDB/issues/2690
 		if err := binary.Write(bufw, binary.LittleEndian, msg.checksum); err != nil {
@@ -316,7 +321,7 @@ func (msg *OpMsg) String() string {
 	}
 
 	m := map[string]any{
-		"FlagBits": msg.FlagBits,
+		"FlagBits": msg.Flags,
 		"Checksum": msg.checksum,
 	}
 

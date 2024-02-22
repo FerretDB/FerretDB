@@ -30,10 +30,10 @@ import (
 //
 // Only up to one returned document is supported.
 type OpReply struct {
-	ResponseFlags OpReplyFlags
-	CursorID      int64
-	StartingFrom  int32
-	document      bson2.RawDocument
+	Flags        OpReplyFlags
+	CursorID     int64
+	StartingFrom int32
+	document     bson2.RawDocument
 }
 
 func (reply *OpReply) msgbody() {}
@@ -55,7 +55,7 @@ func (reply *OpReply) UnmarshalBinaryNocopy(b []byte) error {
 		return lazyerrors.Errorf("len=%d", len(b))
 	}
 
-	reply.ResponseFlags = OpReplyFlags(binary.LittleEndian.Uint32(b[0:4]))
+	reply.Flags = OpReplyFlags(binary.LittleEndian.Uint32(b[0:4]))
 	reply.CursorID = int64(binary.LittleEndian.Uint64(b[4:12]))
 	reply.StartingFrom = int32(binary.LittleEndian.Uint32(b[12:16]))
 	numberReturned := int32(binary.LittleEndian.Uint32(b[16:20]))
@@ -92,7 +92,7 @@ func (reply *OpReply) MarshalBinary() ([]byte, error) {
 
 	b := make([]byte, 20+len(reply.document))
 
-	binary.LittleEndian.PutUint32(b[0:4], uint32(reply.ResponseFlags))
+	binary.LittleEndian.PutUint32(b[0:4], uint32(reply.Flags))
 	binary.LittleEndian.PutUint64(b[4:12], uint64(reply.CursorID))
 	binary.LittleEndian.PutUint32(b[12:16], uint32(reply.StartingFrom))
 
@@ -128,7 +128,7 @@ func (reply *OpReply) String() string {
 	}
 
 	m := map[string]any{
-		"ResponseFlags": reply.ResponseFlags,
+		"ResponseFlags": reply.Flags,
 		"CursorID":      reply.CursorID,
 		"StartingFrom":  reply.StartingFrom,
 	}

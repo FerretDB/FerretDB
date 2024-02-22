@@ -31,8 +31,9 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
-// convertDocument converts [*types.Document] to [bson2.RawDocument].
-func convertDocument(doc *types.Document) bson2.RawDocument {
+// makeRawDocument converts [*types.Document] to [bson2.RawDocument].
+func makeRawDocument(pairs ...any) bson2.RawDocument {
+	doc := must.NotFail(types.NewDocument(pairs...))
 	d := must.NotFail(bson2.ConvertDocument(doc))
 	return must.NotFail(d.Encode())
 }
