@@ -158,7 +158,7 @@ var msgTestCases = []testCase{
 	{
 		name:      "msg_fuzz1",
 		expectedB: testutil.MustParseDumpFile("testdata", "msg_fuzz1.hex"),
-		err:       `wire.OpMsg.readFrom: invalid kind 1 section length -13619152`,
+		err:       bson2.ErrDecodeInvalidInput.Error(),
 	},
 	// FIXME
 	/*
