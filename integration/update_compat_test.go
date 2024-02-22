@@ -128,11 +128,11 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 								require.NoError(t, compatErr, "compat error; target returned no error")
 							}
 
-							if pointer.Get(targetUpdateRes).ModifiedCount > 0 || pointer.Get(compatUpdateRes).ModifiedCount > 0 {
+							assert.Equal(t, compatUpdateRes, targetUpdateRes)
+
+							if pointer.Get(targetUpdateRes).ModifiedCount > 0 || pointer.Get(targetUpdateRes).UpsertedCount > 0 {
 								nonEmptyResults = true
 							}
-
-							assert.Equal(t, compatUpdateRes, targetUpdateRes)
 
 							var targetFindRes, compatFindRes bson.D
 							require.NoError(t, targetCollection.FindOne(ctx, bson.D{{"_id", id}}).Decode(&targetFindRes))
@@ -226,11 +226,11 @@ func testUpdateManyCompat(t *testing.T, testCases map[string]testUpdateManyCompa
 					}
 					require.NoError(t, compatErr, "compat error; target returned no error")
 
-					if pointer.Get(targetUpdateRes).ModifiedCount > 0 || pointer.Get(compatUpdateRes).ModifiedCount > 0 {
+					assert.Equal(t, compatUpdateRes, targetUpdateRes)
+
+					if pointer.Get(targetUpdateRes).ModifiedCount > 0 || pointer.Get(targetUpdateRes).UpsertedCount > 0 {
 						nonEmptyResults = true
 					}
-
-					assert.Equal(t, compatUpdateRes, targetUpdateRes)
 
 					opts := options.Find().SetSort(bson.D{{"_id", 1}})
 					targetCursor, targetErr := targetCollection.Find(ctx, bson.D{}, opts)
@@ -250,10 +250,6 @@ func testUpdateManyCompat(t *testing.T, testCases map[string]testUpdateManyCompa
 					compatRes := FetchAll(t, ctx, compatCursor)
 
 					AssertEqualDocumentsSlice(t, compatRes, targetRes)
-
-					if len(targetRes) > 0 || len(compatRes) > 0 {
-						nonEmptyResults = true
-					}
 				})
 			}
 
@@ -272,6 +268,7 @@ func testUpdateManyCompat(t *testing.T, testCases map[string]testUpdateManyCompa
 // updateCommandCompatTestCase describes update command compatibility test case.
 type updateCommandCompatTestCase struct {
 	multi      any                      // defaults to false, if true updates multiple documents
+	upsert     bool                     // defaults to false
 	update     bson.D                   // required
 	filter     bson.D                   // defaults to bson.D{{"_id", id}}
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
@@ -302,6 +299,9 @@ func testUpdateCommandCompat(t *testing.T, testCases map[string]updateCommandCom
 			require.NotNil(t, update, "`update` must be set")
 
 			multi := tc.multi
+			if multi == nil {
+				multi = false
+			}
 
 			var nonEmptyResults bool
 			for i := range targetCollections {
@@ -330,6 +330,7 @@ func testUpdateCommandCompat(t *testing.T, testCases map[string]updateCommandCom
 									{"q", filter},
 									{"u", update},
 									{"multi", multi},
+									{"upsert", tc.upsert},
 								}}},
 							}
 
@@ -339,6 +340,7 @@ func testUpdateCommandCompat(t *testing.T, testCases map[string]updateCommandCom
 									{"q", filter},
 									{"u", update},
 									{"multi", multi},
+									{"upsert", tc.upsert},
 								}}},
 							}
 
@@ -352,8 +354,8 @@ func testUpdateCommandCompat(t *testing.T, testCases map[string]updateCommandCom
 								t.Logf("Target error: %v", targetErr)
 								t.Logf("Compat error: %v", compatErr)
 
-								// error messages are intentionally not compared
-								AssertMatchesCommandError(t, compatErr, targetErr)
+								// compare error type and error code
+								AssertMatchesError(t, compatErr, targetErr)
 							} else {
 								require.NoError(t, compatErr, "compat error; target returned no error")
 							}
@@ -610,13 +612,11 @@ func TestUpdateCompat(t *testing.T) {
 			filter:      bson.D{{"non-existent", "no-match"}},
 			replace:     bson.D{{"_id", "new"}},
 			replaceOpts: options.Replace().SetUpsert(true),
-			resultType:  emptyResult,
 		},
 		"UpdateNonExistentUpsert": {
 			filter:     bson.D{{"_id", "non-existent"}},
 			update:     bson.D{{"$set", bson.D{{"v", int32(42)}}}},
 			updateOpts: options.Update().SetUpsert(true),
-			resultType: emptyResult,
 		},
 	}
 
@@ -667,14 +667,13 @@ func TestUpdateCompatMultiFlagCommand(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"TrueEmptyDocument": {
-			update: bson.D{},
-			multi:  true,
-			skip:   "https://github.com/FerretDB/FerretDB/issues/2630",
+			update:     bson.D{},
+			multi:      true,
+			resultType: emptyResult,
 		},
 		"FalseEmptyDocument": {
 			update: bson.D{},
 			multi:  false,
-			skip:   "https://github.com/FerretDB/FerretDB/issues/3843",
 		},
 	}
 
@@ -715,4 +714,36 @@ func TestReplaceKeepOrderCompat(t *testing.T) {
 	require.NoError(t, compatResult.Decode(&compatDoc))
 
 	assert.Equal(t, compatDoc, targetDoc)
+}
+
+func TestUpdateCompatReplacementDoc(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]updateCommandCompatTestCase{
+		"Basic": {
+			update: bson.D{{"v", int32(43)}},
+		},
+		"EmptyDoc": {
+			update: bson.D{},
+		},
+		"FilterAndUpsertTrue": {
+			filter: bson.D{{"_id", "non-existent"}},
+			update: bson.D{{"v", int32(43)}},
+			upsert: true,
+		},
+		"WithUpdateOp": {
+			update:     bson.D{{"v", int32(43)}, {"$set", bson.D{{"test", int32(0)}}}},
+			resultType: emptyResult,
+		},
+		"SameId": {
+			filter: bson.D{{"_id", "int32"}},
+			update: bson.D{{"_id", "int32"}, {"v", int32(43)}},
+		},
+		"DifferentId": {
+			filter: bson.D{{"_id", "int32"}},
+			update: bson.D{{"_id", "non-existent"}, {"v", int32(43)}},
+		},
+	}
+
+	testUpdateCommandCompat(t, testCases)
 }
