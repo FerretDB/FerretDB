@@ -250,11 +250,13 @@ func TestAuthenticationEnableNewAuthNoUserExists(t *testing.T) {
 	collection := s.Collection
 	db := collection.Database()
 
-	// drop the user created in the setup
-	err := db.Client().Database("admin").RunCommand(ctx, bson.D{
-		{"dropUser", "username"},
-	}).Err()
-	require.NoError(t, err, "cannot drop user")
+	if !setup.IsMongoDB(t) {
+		// drop the user created in the setup
+		err := db.Client().Database("admin").RunCommand(ctx, bson.D{
+			{"dropUser", "username"},
+		}).Err()
+		require.NoError(t, err, "cannot drop user")
+	}
 
 	testCases := map[string]struct {
 		username  string
