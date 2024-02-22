@@ -58,16 +58,6 @@ func (raw RawArray) DecodeDeep() (*Array, error) {
 	return res, nil
 }
 
-// Check recursively checks that the whole byte slice contains a single valid BSON document.
-func (raw RawArray) Check() error {
-	_, err := raw.decode(decodeCheckOnly)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	return nil
-}
-
 // Convert converts a single valid BSON array that takes the whole byte slice into [*types.Array].
 func (raw RawArray) Convert() (*types.Array, error) {
 	arr, err := raw.decode(decodeShallow)
@@ -88,10 +78,6 @@ func (raw RawArray) decode(mode decodeMode) (*Array, error) {
 	doc, err := RawDocument(raw).decode(mode)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
-	}
-
-	if mode == decodeCheckOnly {
-		return nil, nil
 	}
 
 	res := &Array{
