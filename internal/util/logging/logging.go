@@ -80,12 +80,15 @@ func Setup(level zapcore.Level, encoding, uuid string) {
 		log.Fatal(err)
 	}
 
-	logger = logger.WithOptions(zap.Hooks(func(entry zapcore.Entry) error {
+	SetupWithZapLogger(WithHooks(logger))
+}
+
+// WithHooks returns a logger with recent entries hooks.
+func WithHooks(logger *zap.Logger) *zap.Logger {
+	return logger.WithOptions(zap.Hooks(func(entry zapcore.Entry) error {
 		RecentEntries.append(&entry)
 		return nil
 	}))
-
-	SetupWithZapLogger(logger)
 }
 
 // setupSlog initializes slog logging with a given level.
