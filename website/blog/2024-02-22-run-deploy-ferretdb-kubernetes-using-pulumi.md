@@ -20,8 +20,8 @@ Running your databases on Kubernetes can be a way to quickly provision, test, an
 [Pulumi](https://www.pulumi.com/), an Infrastructure as Code (IaC) platform, can be quite useful in building, managing, and deploying infrastructure in your favorite programming language and on numerous public clouds or cloud-native platforms, including Kubernetes.
 That also means you can use Pulumi to deploy and manage your FerretDB databases.
 
-[FerretDB](https://www.ferretdb.com/) is an open-source document database that adds MongoDB compatibility to relational databases like Postgres and SQLite.
-With Postgres as your backend, you can run FerretDB on top of StackGres — a fully-featured platform for running Postgres on Kubernetes.
+[FerretDB](https://www.ferretdb.com/) is an open-source [document database](https://blog.ferretdb.io/5-database-alternatives-mongodb-2023/) that adds MongoDB compatibility to relational databases like [Postgres](https://www.postgresql.org/) and [SQLite](https://www.sqlite.org/).
+With Postgres as your backend, you can run FerretDB on top of [StackGres](https://stackgres.io/) — a fully-featured platform for running Postgres on Kubernetes.
 And finally set them up together using Pulumi.
 
 In this guide, you'll learn to set up FerretDB with StackGres on Kubernetes using Pulumi.
@@ -42,11 +42,11 @@ Let's take a look at some of the key benefits of Pulumi.
 
 ## Prerequisites
 
-- minikube installation
-- Pulumi installation
-- Stackgres Installation
+- [minikube](https://minikube.sigs.k8s.io/docs/start/)
+- [Pulumi](https://www.pulumi.com/docs/install/)
+- [Stackgres](https://stackgres.io/install)
 - `mongosh`
-- kubectl
+- [kubectl](https://kubernetes.io/docs/reference/kubectl/)
 
 ## Set up a Kubernetes Cluster
 
@@ -72,7 +72,7 @@ Use the `kubectl config use-context` command with the name of your desired conte
 kubectl config use-context <your-desired-context>
 ```
 
-Start the setup by creating a namespace within the cluster.
+Start the setup by creating a `ferretdb` namespace within the cluster.
 That way, you can isolate, group, and manage your resources, access controls, and other configurations.
 
 ```sh
