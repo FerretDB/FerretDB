@@ -25,8 +25,6 @@ With Postgres as your backend, you can use Pulumi to [set up FerretDB on top of 
 
 In this guide, you'll learn to set up FerretDB with [StackGres](https://stackgres.io/) on Kubernetes using Pulumi.
 
-_This is based on a previous blog post on [how to run FerretDB on top of StackGres](https://blog.ferretdb.io/run-ferretdb-on-stackgres/)._
-
 ## Pulumi as your IaC tool
 
 Pulumi empowers DevOps professionals and developers to manage infrastructure using different programming languages.
