@@ -151,15 +151,6 @@ func (msg *OpMsg) check() error {
 	return nil
 }
 
-// decodeCheckOffset checks that b has enough bytes to decode size bytes starting from offset.
-func decodeCheckOffset(b []byte, offset, size int) error {
-	if l := len(b); l < offset+size {
-		return lazyerrors.Errorf("len(b) = %d, offset = %d, size = %d", l, offset, size)
-	}
-
-	return nil
-}
-
 // UnmarshalBinaryNocopy implements [MsgBody] interface.
 func (msg *OpMsg) UnmarshalBinaryNocopy(b []byte) error {
 	if len(b) < 6 {
@@ -185,32 +176,38 @@ func (msg *OpMsg) UnmarshalBinaryNocopy(b []byte) error {
 			offset += l
 
 		case 1:
-			// FIXME offsets are not checked
-
-			if err := decodeCheckOffset(b, offset, 4); err != nil {
-				return lazyerrors.Error(err)
+			if len(b) < offset+4 {
+				return lazyerrors.Errorf("len(b) = %d, offset = %d", len(b), offset)
 			}
 
-			size := int(binary.LittleEndian.Uint32(b[offset : offset+4]))
+			secSize := int(binary.LittleEndian.Uint32(b[offset:offset+4])) - 4
+			if secSize < 5 {
+				return lazyerrors.Errorf("size = %d", secSize)
+			}
+
 			offset += 4
 
 			var err error
 
-			if err := decodeCheckOffset(b, offset, 0); err != nil {
-				return lazyerrors.Error(err)
+			if len(b) < offset {
+				return lazyerrors.Errorf("len(b) = %d, offset = %d", len(b), offset)
 			}
 
 			section.Identifier, err = bson2.DecodeCString(b[offset:])
 			if err != nil {
 				return lazyerrors.Error(err)
 			}
+
 			offset += bson2.SizeCString(section.Identifier)
+			secSize -= bson2.SizeCString(section.Identifier)
 
-			size -= 4 + bson2.SizeCString(section.Identifier)
+			for secSize != 0 {
+				if secSize < 0 {
+					return lazyerrors.Errorf("size = %d", secSize)
+				}
 
-			for size > 0 {
-				if err := decodeCheckOffset(b, offset, 0); err != nil {
-					return lazyerrors.Error(err)
+				if len(b) < offset {
+					return lazyerrors.Errorf("len(b) = %d, offset = %d", len(b), offset)
 				}
 
 				l, err := bson2.FindRaw(b[offset:])
@@ -220,7 +217,7 @@ func (msg *OpMsg) UnmarshalBinaryNocopy(b []byte) error {
 
 				section.documents = append(section.documents, b[offset:offset+l])
 				offset += l
-				size -= l
+				secSize -= l
 			}
 
 		default:
@@ -247,19 +244,11 @@ func (msg *OpMsg) UnmarshalBinaryNocopy(b []byte) error {
 		msg.checksum = binary.LittleEndian.Uint32(b[offset:])
 	}
 
-	if _, err := msg.Document(); err != nil {
-		return err
-	}
-
 	if debugbuild.Enabled {
 		if err := msg.check(); err != nil {
 			return lazyerrors.Error(err)
 		}
 	}
-
-	// if _, err := bufr.Peek(1); err != io.EOF {
-	// 	return lazyerrors.Errorf("unexpected end of the OpMsg: %v", err)
-	// }
 
 	return nil
 }
