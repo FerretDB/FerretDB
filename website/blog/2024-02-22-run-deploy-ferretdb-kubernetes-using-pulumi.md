@@ -21,10 +21,9 @@ Running your databases on Kubernetes can be a way to quickly provision, test, an
 That also means you can use Pulumi to deploy and manage your FerretDB databases.
 
 [FerretDB](https://www.ferretdb.com/) is an open-source [document database](https://blog.ferretdb.io/5-database-alternatives-mongodb-2023/) that adds MongoDB compatibility to relational databases like [Postgres](https://www.postgresql.org/) and [SQLite](https://www.sqlite.org/).
-With Postgres as your backend, you can run FerretDB on top of [StackGres](https://stackgres.io/) — a fully-featured platform for running Postgres on Kubernetes.
-And finally set them up together using Pulumi.
+With Postgres as your backend, you can use Pulumi to [set up FerretDB on top of StackGres](https://blog.ferretdb.io/run-ferretdb-on-stackgres/) — a fully-featured platform for running Postgres on Kubernetes.
 
-In this guide, you'll learn to set up FerretDB with StackGres on Kubernetes using Pulumi.
+In this guide, you'll learn to set up FerretDB with [StackGres](https://stackgres.io/) on Kubernetes using Pulumi.
 
 _This is based on a previous blog post on [how to run FerretDB on top of StackGres](https://blog.ferretdb.io/run-ferretdb-on-stackgres/)._
 
