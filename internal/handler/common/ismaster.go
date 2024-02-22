@@ -31,14 +31,14 @@ func IsMaster(ctx context.Context, query *types.Document, tcpHost, name string) 
 		return nil, lazyerrors.Error(err)
 	}
 
-	return &wire.OpReply{
-		NumberReturned: 1,
-		Documents:      IsMasterDocuments(tcpHost, name),
-	}, nil
+	var reply wire.OpReply
+	reply.SetDocument(IsMasterDocument(tcpHost, name))
+
+	return &reply, nil
 }
 
-// IsMasterDocuments returns isMaster's Documents field (identical for both OP_MSG and OP_QUERY).
-func IsMasterDocuments(tcpHost, name string) []*types.Document {
+// IsMasterDocument returns isMaster's Documents field (identical for both OP_MSG and OP_QUERY).
+func IsMasterDocument(tcpHost, name string) *types.Document {
 	doc := must.NotFail(types.NewDocument(
 		"ismaster", true, // only lowercase
 		// topologyVersion
@@ -46,7 +46,7 @@ func IsMasterDocuments(tcpHost, name string) []*types.Document {
 		"maxMessageSizeBytes", int32(wire.MaxMsgLen),
 		"maxWriteBatchSize", int32(100000),
 		"localTime", time.Now(),
-		// logicalSessionTimeoutMinutes
+		"logicalSessionTimeoutMinutes", int32(30),
 		"connectionId", int32(42),
 		"minWireVersion", MinWireVersion,
 		"maxWireVersion", MaxWireVersion,
@@ -66,5 +66,5 @@ func IsMasterDocuments(tcpHost, name string) []*types.Document {
 		doc.Set("hosts", must.NotFail(types.NewArray(tcpHost)))
 	}
 
-	return []*types.Document{doc}
+	return doc
 }

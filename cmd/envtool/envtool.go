@@ -493,7 +493,7 @@ func main() {
 		level = zap.DebugLevel
 	}
 
-	logging.SetupWithLogger(must.NotFail(makeLogger(level, []string{"stderr"})))
+	logging.SetupWithZapLogger(must.NotFail(makeLogger(level, []string{"stderr"})))
 
 	logger := zap.S()
 

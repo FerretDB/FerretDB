@@ -5,18 +5,18 @@ Thank you for your interest in making FerretDB better!
 ## Finding something to work on
 
 We are interested in all contributions, big or small, in code or documentation.
-But unless you are fixing a very small issue like a typo,
-we kindly ask you first to [create an issue](https://github.com/FerretDB/FerretDB/issues/new/choose),
+But unless you are fixing a tiny issue like a typo,
+we kindly ask you first to [create an issue](https://github.com/FerretDB/FerretDB/issues/new/choose)
 or leave a comment on an existing issue if you want to work on it.
-This way, you will get help from us and avoid wasted efforts if something can't be worked on right now
-or someone is already working on it.
-You can also [join our Slack chat](./README.md#community) and leave a message for us in the `#dev` channel.
+This way, we could assign the issue to you, marking it as being worked on,
+preventing others from wasting efforts working on it at the same time.
+Additionally, you can [join our Slack chat](./README.md#community) and leave a message for us in the `#dev` channel.
 
 You can find a list of good first issues for contributors [there](https://github.com/FerretDB/FerretDB/contribute).
 Once you have some experience with contributing to FerretDB,
 feel free to pick any issue
 [that is not assigned to anyone and doesn't have `not ready` label](https://github.com/FerretDB/FerretDB/issues?q=is%3Aissue+is%3Aopen+no%3Aassignee+-label%3A%22not+ready%22).
-Still, please let us know as described above.
+Still, please leave a comment on it as described above.
 
 ## Setting up the environment
 
@@ -30,7 +30,7 @@ On macOS and Windows, [Docker Desktop](https://www.docker.com/products/docker-de
 On Windows, it should be [configured to use WSL 2](https://docs.docker.com/desktop/windows/wsl/) without any distro;
 all commands should be run on the host.
 
-You will need Go 1.21 or later on the host.
+You will need Go 1.22 or later on the host.
 If your package manager doesn't provide it yet,
 please install it from [go.dev](https://go.dev/dl/).
 
@@ -250,8 +250,8 @@ If, on the other hand, you see code that is inconsistent without apparent reason
 please improve it as you work on it.
 
 Our code follows most of the standard Go conventions,
-documented on [CodeReviewComments wiki page](https://github.com/golang/go/wiki/CodeReviewComments)
-and some other pages such as [Spelling](https://github.com/golang/go/wiki/Spelling).
+documented on [CodeReviewComments wiki page](https://go.dev/wiki/CodeReviewComments)
+and some other pages such as [Spelling](https://go.dev/wiki/Spelling).
 Some of our idiosyncrasies:
 
 1. We use type switches over BSON types in many places in our code.
@@ -259,7 +259,9 @@ Some of our idiosyncrasies:
    It may seem random, but it is only pseudo-random and follows BSON spec: https://bsonspec.org/spec.html
 2. We generally pass and return `struct`s by pointers.
    There are some exceptions like `types.Path` that have value semantics, but when in doubt – use pointers.
-3. Code comments:
+3. Log messages should not end with punctuation.
+   Log field names use `snake_case`.
+4. Code comments:
    - All top-level declarations, even unexported, should have documentation comments.
    - In documentation comments do not describe the name in terms of the name itself (`// Registry is a registry of …`).
      Use other words instead; often, they could add additional information and make reading more pleasant (`// Registry stores …`).

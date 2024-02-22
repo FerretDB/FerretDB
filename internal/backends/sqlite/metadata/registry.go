@@ -422,7 +422,7 @@ func (r *Registry) collectionDrop(ctx context.Context, dbName, collectionName st
 
 // CollectionRename renames a collection in the database.
 //
-// The collection name is update, but original table name is kept.
+// The collection name is updated, but original table name is kept.
 //
 // Returned boolean value indicates whether the collection was renamed.
 // If database or collection did not exist, (false, nil) is returned.
@@ -508,13 +508,24 @@ func (r *Registry) indexesCreate(ctx context.Context, dbName, collectionName str
 
 		columns := make([]string, len(index.Key))
 		for i, key := range index.Key {
-			columns[i] = fmt.Sprintf("%s->'$.%s'", DefaultColumn, key.Field)
+			fields := strings.Split(key.Field, ".")
+			for j, f := range fields {
+				fields[j] = fmt.Sprintf("%q", f)
+			}
+
+			columns[i] = fmt.Sprintf("%s->%s", DefaultColumn, strings.Join(fields, "->"))
 			if key.Descending {
 				columns[i] += " DESC"
 			}
 		}
 
-		q = fmt.Sprintf(q, c.TableName+"_"+index.Name, c.TableName, strings.Join(columns, ", "))
+		q = fmt.Sprintf(
+			q,
+			c.TableName+"_"+index.Name,
+			c.TableName,
+			strings.Join(columns, ", "),
+		)
+
 		if _, err := db.ExecContext(ctx, q); err != nil {
 			_ = r.indexesDrop(ctx, dbName, collectionName, created)
 			return lazyerrors.Error(err)

@@ -25,8 +25,17 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/FerretDB/FerretDB/internal/bson2"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
+
+// convertDocument converts [*types.Document] to [bson2.RawDocument].
+func convertDocument(doc *types.Document) bson2.RawDocument {
+	d := must.NotFail(bson2.ConvertDocument(doc))
+	return must.NotFail(d.Encode())
+}
 
 // lastErr returns the last error in error chain.
 func lastErr(err error) error {
@@ -109,6 +118,10 @@ func testMessages(t *testing.T, testCases []testCase) {
 					d, err := msg.Document()
 					require.NoError(t, err)
 					assert.Equal(t, tc.command, d.Command())
+
+					assert.NotPanics(t, func() {
+						_, _ = msg.RawDocument()
+					})
 				}
 			})
 
@@ -182,7 +195,10 @@ func fuzzMessages(f *testing.F, testCases []testCase) {
 			assert.NotPanics(t, func() { _ = msgBody.String() })
 
 			if msg, ok := msgBody.(*OpMsg); ok {
-				assert.NotPanics(t, func() { msg.Document() })
+				assert.NotPanics(t, func() {
+					_, _ = msg.Document()
+					_, _ = msg.RawDocument()
+				})
 			}
 
 			// remove random tail

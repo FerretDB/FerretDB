@@ -10,6 +10,7 @@ on:
   push:
     branches:
       - main
+      - main/*
       - releases/*
   schedule:
     - cron: "12 0 * * *"
@@ -36,10 +37,6 @@ jobs:
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
 
     steps:
-      - name: Setup permissions monitoring
-        uses: GitHubSecurityLab/actions-permissions/monitor@v1
-        if: false
-
       # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
         uses: actions/checkout@v4
@@ -67,6 +64,6 @@ jobs:
       - name: Check dependencies for PRs
         # if: github.event_name == 'pull_request'
         if: false
-        uses: actions/dependency-review-action@v3
+        uses: actions/dependency-review-action@v4
         with:
           allow-licenses: Apache-2.0, BSD-3-Clause, MIT

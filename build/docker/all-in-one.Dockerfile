@@ -14,7 +14,7 @@ ARG LABEL_COMMIT
 
 # prepare stage
 
-FROM --platform=$BUILDPLATFORM golang:1.21.6 AS all-in-one-prepare
+FROM --platform=$BUILDPLATFORM golang:1.22.0 AS all-in-one-prepare
 
 # use a single directory for all Go caches to simpliy RUN --mount commands below
 ENV GOPATH /cache/gopath
@@ -38,7 +38,7 @@ EOF
 
 # build stage
 
-FROM golang:1.21.6 AS all-in-one-build
+FROM golang:1.22.0 AS all-in-one-build
 
 ARG TARGETARCH
 
@@ -100,7 +100,7 @@ EOF
 
 # final stage
 
-FROM postgres:16.1 AS all-in-one
+FROM postgres:16.2 AS all-in-one
 
 COPY --from=all-in-one-build /src/bin/ferretdb /ferretdb
 

@@ -528,6 +528,22 @@ func TestUsersinfo(t *testing.T) {
 					assert.False(t, actualUser.Has("credentials"))
 				}
 
+				if payload.Has("mechanisms") {
+					payloadMechanisms := must.NotFail(payload.Get("mechanisms")).(*types.Array)
+
+					if payloadMechanisms.Contains("PLAIN") {
+						assertPlainCredentials(t, "PLAIN", must.NotFail(actualUser.Get("credentials")).(*types.Document))
+					}
+
+					if payloadMechanisms.Contains("SCRAM-SHA-1") {
+						assertSCRAMSHA1Credentials(t, "SCRAM-SHA-1", must.NotFail(actualUser.Get("credentials")).(*types.Document))
+					}
+
+					if payloadMechanisms.Contains("SCRAM-SHA-256") {
+						assertSCRAMSHA256Credentials(t, "SCRAM-SHA-256", must.NotFail(actualUser.Get("credentials")).(*types.Document))
+					}
+				}
+
 				foundUsers[must.NotFail(actualUser.Get("_id")).(string)] = struct{}{}
 
 				uuid := must.NotFail(actualUser.Get("userId")).(types.Binary)

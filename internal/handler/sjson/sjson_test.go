@@ -207,16 +207,21 @@ func addRecordedFuzzDocs(f *testing.F, needDocument, needSchema bool) int {
 			docs = append(docs, doc)
 
 		case *wire.OpQuery:
-			if doc := b.Query; doc != nil {
+			if doc := b.Query(); doc != nil {
 				docs = append(docs, doc)
 			}
 
-			if doc := b.ReturnFieldsSelector; doc != nil {
+			if doc := b.ReturnFieldsSelector(); doc != nil {
 				docs = append(docs, doc)
 			}
 
 		case *wire.OpReply:
-			docs = append(docs, b.Documents...)
+			doc, err := b.Document()
+			require.NoError(f, err)
+
+			if doc != nil {
+				docs = append(docs, doc)
+			}
 		}
 
 		for _, doc := range docs {

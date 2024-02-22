@@ -58,7 +58,7 @@ func TestClient(t *testing.T) {
 	t.Run("CheckIssueStatus", func(t *testing.T) {
 		t.Parallel()
 
-		c, err := newClient(cacheFilePath, t.Logf, t.Logf)
+		c, err := newClient(cacheFilePath, t.Logf, t.Logf, t.Logf)
 		require.NoError(t, err)
 
 		actual, err := c.checkIssueStatus(ctx, 10)
@@ -81,7 +81,7 @@ func TestClient(t *testing.T) {
 	t.Run("IssueStatus", func(t *testing.T) {
 		t.Parallel()
 
-		c, err := newClient(cacheFilePath, t.Logf, t.Logf)
+		c, err := newClient(cacheFilePath, t.Logf, t.Logf, t.Logf)
 		require.NoError(t, err)
 
 		actual, err := c.IssueStatus(ctx, 10)
@@ -99,6 +99,13 @@ func TestClient(t *testing.T) {
 		actual, err = c.IssueStatus(ctx, -1)
 		require.NoError(t, err)
 		assert.Equal(t, issueNotFound, actual)
+
+		// The following tests should use cache and not the client,
+		// but it may be empty if tests above failed for some reason.
+
+		if t.Failed() {
+			return
+		}
 
 		c.c = nil
 

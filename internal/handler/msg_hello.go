@@ -37,8 +37,8 @@ func (h *Handler) MsgHello(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 	}
 
 	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
+	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+		must.NotFail(types.NewDocument(
 			"isWritablePrimary", true,
 			"maxBsonObjectSize", int32(types.MaxDocumentLen),
 			"maxMessageSizeBytes", int32(wire.MaxMsgLen),
@@ -49,8 +49,8 @@ func (h *Handler) MsgHello(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 			"maxWireVersion", common.MaxWireVersion,
 			"readOnly", false,
 			"ok", float64(1),
-		))},
-	}))
+		)),
+	)))
 
 	return &reply, nil
 }

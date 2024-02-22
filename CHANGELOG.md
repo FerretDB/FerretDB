@@ -2,6 +2,105 @@
 
 <!-- markdownlint-disable MD024 MD034 -->
 
+## [v1.20.1](https://github.com/FerretDB/FerretDB/releases/tag/v1.20.1) (2024-02-19)
+
+### What's Changed
+
+#### Docker images changes
+
+~~Production Docker images now use a non-root user with UID 1000 and GID 1000.~~
+
+That change was made in v1.20.0, reverted in v1.20.1, and will be re-introduced in a future release.
+
+### Documentation 📄
+
+- Add blog post on Ubicloud managed postgres by @Fashander in https://github.com/FerretDB/FerretDB/pull/4010
+- Add release blog post for v1.19.0 by @Fashander in https://github.com/FerretDB/FerretDB/pull/4020
+- Truncate release blog post by @Fashander in https://github.com/FerretDB/FerretDB/pull/4047
+- Add blog post on Disaster Recovery for FerretDB with Elotl Nova by @Fashander in https://github.com/FerretDB/FerretDB/pull/4038
+- Update Codapi by @Fashander in https://github.com/FerretDB/FerretDB/pull/4039
+- Add blogpost on FerretDB stack on Tembo by @Fashander in https://github.com/FerretDB/FerretDB/pull/4037
+
+### Other Changes 🤖
+
+- Add tests for new SCRAM-SHA-256 authentication support by @henvic in https://github.com/FerretDB/FerretDB/pull/4012
+- Add `TODO` comments for logging by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4015
+- Add `bson2` helpers for conversions and logging by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4019
+- Setup MySQL backend by @adetunjii in https://github.com/FerretDB/FerretDB/pull/4003
+- Expose new authentication enabling flag by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4029
+- Bump deps and speed-up `checkcomments` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4030
+- Display `envtool run test` progress with run and/or skip flags by @fadyat in https://github.com/FerretDB/FerretDB/pull/3999
+- Use Ubicloud for CI runners by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4027
+- Implement `database.Stats` for MySQL backend by @adetunjii in https://github.com/FerretDB/FerretDB/pull/4034
+- Minor cleanups by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4046
+- Add experimental pushdown for dot notation by @noisersup in https://github.com/FerretDB/FerretDB/pull/4049
+- Bump Go to 1.21.7 by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4059
+- Add utility for hashing SCRAM-SHA-256 password by @henvic in https://github.com/FerretDB/FerretDB/pull/4031
+- Use rootless `scratch` containers for production Docker images by @ahmethakanbesel in https://github.com/FerretDB/FerretDB/pull/4004
+- Prepare query statements for MySQL by @adetunjii in https://github.com/FerretDB/FerretDB/pull/4064
+- Implement `bson2.RawDocument` checking by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4076
+- Add helper for decoding document sequences by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4080
+- Add SCRAM-SHA-256 authentication support by @henvic in https://github.com/FerretDB/FerretDB/pull/3989
+- Remove SCRAM-SHA-256 implementation TODO links by @henvic in https://github.com/FerretDB/FerretDB/pull/4086
+- Update telemetry host by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4085
+
+### New Contributors
+
+- @ahmethakanbesel made their first contribution in https://github.com/FerretDB/FerretDB/pull/4004
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/62?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v1.19.0...v1.20.0).
+
+## [v1.19.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.19.0) (2024-01-29)
+
+### New Features 🎉
+
+- Support creating an index on nested fields for SQLite by @fadyat in https://github.com/FerretDB/FerretDB/pull/3972
+
+### Fixed Bugs 🐛
+
+- Fix `maxTimeMS` for `getMore` command by @noisersup in https://github.com/FerretDB/FerretDB/pull/3919
+- Fix `upsert` with `$setOnInsert` operator by @wazir-ahmed in https://github.com/FerretDB/FerretDB/pull/3931
+- Fix validation process for creating duplicate `_id` index by @kropidlowsky in https://github.com/FerretDB/FerretDB/pull/3990
+
+### Documentation 📄
+
+- Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3955
+- Add documentation for oplog by @Fashander in https://github.com/FerretDB/FerretDB/pull/3960
+- Fix search queries by @Fashander in https://github.com/FerretDB/FerretDB/pull/3976
+
+### Other Changes 🤖
+
+- Fix Taskfile.yml indentation by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3964
+- Speed-up Docker builds by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3965
+- Run more `maxTimeMS` tests by @noisersup in https://github.com/FerretDB/FerretDB/pull/3940
+- Store passwords for PLAIN authentication mechanism by @henvic in https://github.com/FerretDB/FerretDB/pull/3928
+- Use PBKDF2 for storing `PLAIN` passwords by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3970
+- Shard extra CI configurations by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3946
+- Small fixes and tweaks by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3971
+- Implement `updateUser` command by @henvic in https://github.com/FerretDB/FerretDB/pull/3973
+- Small assorted tweaks by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3979
+- Add MySQL backend Registry by @adetunjii in https://github.com/FerretDB/FerretDB/pull/3967
+- Add new BSON decoding package by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3905
+- Refactor `bson2` encoding/decoding by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3987
+- Use `usersInfo` for `createUser` and `dropUser` integration tests by @henvic in https://github.com/FerretDB/FerretDB/pull/3980
+- Improve `bson2` fuzzing by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3988
+- Update contributing documentation by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3994
+- Use `ListCollection` with a filter by @sachinpuranik in https://github.com/FerretDB/FerretDB/pull/3995
+- Add tests for MySQL registry by @adetunjii in https://github.com/FerretDB/FerretDB/pull/3993
+- Prepare CI to having multiple main branches by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4002
+- Ignore `$readPreference` field by @b1ron in https://github.com/FerretDB/FerretDB/pull/3996
+- Hide `*types.Document` from `wire` struct fields by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4000
+- Add deep `bson2` decoding by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3997
+- Expose raw documents in the `wire` package by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4011
+
+### New Contributors
+
+- @fadyat made their first contribution in https://github.com/FerretDB/FerretDB/pull/3972
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/61?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v1.18.0...v1.19.0).
+
 ## [v1.18.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.18.0) (2024-01-08)
 
 ### What's Changed

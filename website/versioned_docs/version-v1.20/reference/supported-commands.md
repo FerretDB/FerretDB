@@ -41,10 +41,10 @@ Use ❌ for commands and arguments that are not implemented at all.
 |                 | `min`                      | ⚠️     | Ignored                                                   |
 |                 | `returnKey`                | ❌     | Unimplemented                                             |
 |                 | `showRecordId`             | ✅     |                                                           |
-|                 | `tailable`                 | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/2283) |
-|                 | `oplogReplay`              | ❌     | Unimplemented                                             |
-|                 | `noCursorTimeout`          | ❌     | Unimplemented                                             |
-|                 | `awaitData`                | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/2283) |
+|                 | `tailable`                 | ✅     |                                                           |
+|                 | `oplogReplay`              | ⚠️     | Ignored                                                   |
+|                 | `noCursorTimeout`          | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/4035) |
+|                 | `awaitData`                | ✅     |                                                           |
 |                 | `allowPartialResults`      | ❌     | Unimplemented                                             |
 |                 | `collation`                | ❌     | Unimplemented                                             |
 |                 | `allowDiskUse`             | ⚠️     | Ignored                                                   |
@@ -66,7 +66,7 @@ Use ❌ for commands and arguments that are not implemented at all.
 |                 | `let`                      | ⚠️     | Unimplemented                                             |
 | `getMore`       |                            | ✅     | Basic command is fully supported                          |
 |                 | `batchSize`                | ✅     |                                                           |
-|                 | `maxTimeMS`                | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/2984) |
+|                 | `maxTimeMS`                | ✅     |                                                           |
 |                 | `comment`                  | ⚠️     | Unimplemented                                             |
 | `insert`        |                            | ✅     | Basic command is fully supported                          |
 |                 | `documents`                | ✅     |                                                           |
@@ -171,7 +171,7 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/78).
 
 | Command                    | Argument                         | Status | Comments                                                  |
 | -------------------------- | -------------------------------- | ------ | --------------------------------------------------------- |
-| `createUser`               |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1491) |
+| `createUser`               |                                  | ✅     |                                                           |
 |                            | `pwd`                            | ⚠️     |                                                           |
 |                            | `customData`                     | ⚠️     |                                                           |
 |                            | `roles`                          | ⚠️     |                                                           |
@@ -181,10 +181,10 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/78).
 |                            | `mechanisms`                     | ⚠️     |                                                           |
 |                            | `digestPassword`                 | ⚠️     |                                                           |
 |                            | `comment`                        | ⚠️     |                                                           |
-| `dropAllUsersFromDatabase` |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1492) |
+| `dropAllUsersFromDatabase` |                                  | ✅     |                                                           |
 |                            | `writeConcern`                   | ⚠️     |                                                           |
 |                            | `comment`                        | ⚠️     |                                                           |
-| `dropUser`                 |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1493) |
+| `dropUser`                 |                                  | ✅     |                                                           |
 |                            | `writeConcern`                   | ⚠️     |                                                           |
 |                            | `comment`                        | ⚠️     |                                                           |
 | `grantRolesToUser`         |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1494) |
@@ -204,7 +204,7 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/78).
 |                            | `mechanisms`                     | ⚠️     |                                                           |
 |                            | `digestPassword`                 | ⚠️     |                                                           |
 |                            | `comment`                        | ⚠️     |                                                           |
-| `usersInfo`                |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1497) |
+| `usersInfo`                |                                  | ✅     |                                                           |
 |                            | `showCredentials`                | ⚠️     |                                                           |
 |                            | `showCustomData`                 | ⚠️     |                                                           |
 |                            | `showPrivileges`                 | ⚠️     |                                                           |
@@ -264,6 +264,12 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/78).
 |                            | `authenticationRestrictions` | ⚠️     |                                                           |
 |                            | `writeConcern`               | ⚠️     |                                                           |
 |                            | `comment`                    | ⚠️     |                                                           |
+
+### Replication Commands
+
+| Command           | Argument | Status | Comments                                                  |
+| ----------------- | -------- | ------ | --------------------------------------------------------- |
+| `replSetInitiate` |          | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/3936) |
 
 ## Session Commands
 
@@ -544,8 +550,8 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/1917).
 |                                   | `cappedSize`                   |                           | ⚠️     |                                                           |
 |                                   | `cappedMax`                    |                           | ⚠️     |                                                           |
 |                                   | `changeStreamPreAndPostImages` |                           | ⚠️     |                                                           |
-| `compact`                         |                                |                           | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/3466) |
-|                                   | `force`                        |                           | ⚠️     |                                                           |
+| `compact`                         |                                |                           | ✅     |                                                           |
+|                                   | `force`                        |                           | ✅     |                                                           |
 |                                   | `comment`                      |                           | ⚠️     |                                                           |
 | `compactStructuredEncryptionData` |                                |                           | ❌     |                                                           |
 |                                   | `compactionTokens`             |                           | ⚠️     |                                                           |
@@ -562,7 +568,7 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/1917).
 |                                   | `expireAfterSeconds`           |                           | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/2415) |
 |                                   | `clusteredIndex`               |                           | ⚠️     |                                                           |
 |                                   | `changeStreamPreAndPostImages` |                           | ⚠️     |                                                           |
-|                                   | `autoIndexId`                  |                           | ⚠️     | Ignored                                                   |
+|                                   | `autoIndexId`                  |                           | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/3922) |
 |                                   | `size`                         |                           | ✅️    |                                                           |
 |                                   | `max`                          |                           | ✅     |                                                           |
 |                                   | `storageEngine`                |                           | ⚠️     | Ignored                                                   |
