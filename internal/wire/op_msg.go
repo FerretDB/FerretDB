@@ -23,6 +23,7 @@ import (
 	"io"
 
 	"github.com/FerretDB/FerretDB/internal/bson"
+	"github.com/FerretDB/FerretDB/internal/bson2"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/types/fjson"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -33,14 +34,20 @@ import (
 type OpMsgSection struct {
 	Kind       byte
 	Identifier string
-	documents  []*types.Document // TODO https://github.com/FerretDB/FerretDB/issues/274
+	documents  []bson2.RawDocument
 }
 
 // MakeOpMsgSection creates [OpMsgSection] with a single document.
 func MakeOpMsgSection(doc *types.Document) OpMsgSection {
+	raw := must.NotFail(must.NotFail(bson2.ConvertDocument(doc)).Encode())
 	return OpMsgSection{
-		documents: []*types.Document{doc},
+		documents: []bson2.RawDocument{raw},
 	}
+}
+
+// RawDocuments returns raw documents of the section.
+func (s *OpMsgSection) RawDocuments() []bson2.RawDocument {
+	return s.documents
 }
 
 // OpMsg is the main wire protocol message type.
@@ -253,12 +260,7 @@ func (msg *OpMsg) MarshalBinary() ([]byte, error) {
 				panic(fmt.Sprintf("%d documents in section with kind 0", l))
 			}
 
-			d, err := bson.ConvertDocument(section.documents[0])
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-			if err := d.WriteTo(bufw); err != nil {
+			if _, err := bufw.Write(section.documents[0]); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
 
@@ -271,12 +273,7 @@ func (msg *OpMsg) MarshalBinary() ([]byte, error) {
 			}
 
 			for _, doc := range section.documents {
-				d, err := bson.ConvertDocument(doc)
-				if err != nil {
-					return nil, lazyerrors.Error(err)
-				}
-
-				if err := d.WriteTo(secw); err != nil {
+				if _, err := bufw.Write(doc); err != nil {
 					return nil, lazyerrors.Error(err)
 				}
 			}
