@@ -11,7 +11,7 @@
     return new Mongo(uri);
   }
 
-  const uri = 'mongodb://username:password@localhost:27019/?authMechanism=SCRAM-SHA-1';
+  const uri = 'mongodb://username:password@localhost:27017/?authMechanism=SCRAM-SHA-1';
 
   try {
     mongoClient(uri);
