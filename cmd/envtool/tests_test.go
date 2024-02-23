@@ -106,7 +106,11 @@ func TestRunGoTest(t *testing.T) {
 		logger, err := makeTestLogger(&actual)
 		require.NoError(t, err)
 
-		err = runGoTest(context.TODO(), []string{"./testdata", "-count=1", "-run=TestWithSubtest/Third"}, 1, false, logger.Sugar())
+		err = runGoTest(context.TODO(), []string{
+			"./testdata",
+			"-count=1",
+			"-run=TestWithSubtest/Third",
+		}, 1, false, logger.Sugar())
 		require.NoError(t, err)
 
 		expected := []string{
@@ -494,7 +498,7 @@ func TestListTestFuncsWithSkip(t *testing.T) {
 	assert.Nil(t, err)
 
 	lastRes, lastSkip, err := shardTestFuncs(3, 3, testFuncs)
-	assert.Equal(t, []string{"TestNormal1", "TestSubtest]"}, lastRes)
+	assert.Equal(t, []string{"TestNormal1", "TestWithSubtest"}, lastRes)
 	assert.Equal(t, []string{"TestError1", "TestError2", "TestNormal2", "TestPanic1"}, lastSkip)
 	require.NoError(t, err)
 }
