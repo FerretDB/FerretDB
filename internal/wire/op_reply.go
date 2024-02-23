@@ -140,7 +140,7 @@ func (reply *OpReply) String() string {
 
 		doc, err := reply.document.Convert()
 		if err == nil {
-			m["Documents"] = json.RawMessage(must.NotFail(fjson.Marshal(doc)))
+			m["Document"] = json.RawMessage(must.NotFail(fjson.Marshal(doc)))
 		} else {
 			m["DocumentError"] = err.Error()
 		}

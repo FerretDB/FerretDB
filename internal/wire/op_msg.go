@@ -324,18 +324,24 @@ func (msg *OpMsg) String() string {
 		}
 		switch section.Kind {
 		case 0:
-			doc := must.NotFail(section.documents[0].Convert())
-			b := must.NotFail(fjson.Marshal(doc))
-			s["Document"] = json.RawMessage(b)
+			doc, err := section.documents[0].Convert()
+			if err == nil {
+				m["Document"] = json.RawMessage(must.NotFail(fjson.Marshal(doc)))
+			} else {
+				m["DocumentError"] = err.Error()
+			}
 
 		case 1:
 			s["Identifier"] = section.Identifier
 			docs := make([]json.RawMessage, len(section.documents))
 
 			for j, d := range section.documents {
-				doc := must.NotFail(d.Convert())
-				b := must.NotFail(fjson.Marshal(doc))
-				docs[j] = json.RawMessage(b)
+				doc, err := d.Convert()
+				if err == nil {
+					docs[j] = json.RawMessage(must.NotFail(fjson.Marshal(doc)))
+				} else {
+					docs[j] = must.NotFail(json.Marshal(map[string]string{"error": err.Error()}))
+				}
 			}
 
 			s["Documents"] = docs
