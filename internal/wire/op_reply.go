@@ -30,10 +30,13 @@ import (
 //
 // Only up to one returned document is supported.
 type OpReply struct {
-	Flags        OpReplyFlags
-	CursorID     int64
-	StartingFrom int32
+	// The order of fields is weird to make the struct smaller due to alignment.
+	// The wire order is: flags, cursor ID, starting from, documents.
+
 	document     bson2.RawDocument
+	CursorID     int64
+	Flags        OpReplyFlags
+	StartingFrom int32
 }
 
 func (reply *OpReply) msgbody() {}

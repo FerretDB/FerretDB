@@ -35,6 +35,7 @@ import (
 func makeRawDocument(pairs ...any) bson2.RawDocument {
 	doc := must.NotFail(types.NewDocument(pairs...))
 	d := must.NotFail(bson2.ConvertDocument(doc))
+
 	return must.NotFail(d.Encode())
 }
 
@@ -51,6 +52,7 @@ func lastErr(err error) error {
 
 var lastUpdate = time.Date(2020, 2, 15, 9, 34, 33, 0, time.UTC).Local()
 
+//nolint:vet // for readability
 type testCase struct {
 	name      string
 	headerB   []byte
@@ -98,10 +100,12 @@ func testMessages(t *testing.T, testCases []testCase) {
 
 				br := bytes.NewReader(tc.expectedB)
 				bufr := bufio.NewReader(br)
+
 				msgHeader, msgBody, err := ReadMessage(bufr)
 				if tc.err != "" {
 					require.Error(t, err)
 					require.Equal(t, tc.err, lastErr(err).Error())
+
 					return
 				}
 
@@ -134,10 +138,12 @@ func testMessages(t *testing.T, testCases []testCase) {
 
 				var buf bytes.Buffer
 				bufw := bufio.NewWriter(&buf)
+
 				err := WriteMessage(bufw, tc.msgHeader, tc.msgBody)
 				if tc.err != "" {
 					require.Error(t, err)
 					require.Equal(t, tc.err, lastErr(err).Error())
+
 					return
 				}
 
@@ -180,13 +186,14 @@ func fuzzMessages(f *testing.F, testCases []testCase) {
 
 		var msgHeader *MsgHeader
 		var msgBody MsgBody
+		var err error
 		var expectedB []byte
 
 		// test ReadMessage
 		{
 			br := bytes.NewReader(b)
 			bufr := bufio.NewReader(br)
-			var err error
+
 			msgHeader, msgBody, err = ReadMessage(bufr)
 			if err != nil {
 				t.Skip()
@@ -211,7 +218,7 @@ func fuzzMessages(f *testing.F, testCases []testCase) {
 		{
 			var bw bytes.Buffer
 			bufw := bufio.NewWriter(&bw)
-			err := WriteMessage(bufw, msgHeader, msgBody)
+			err = WriteMessage(bufw, msgHeader, msgBody)
 			require.NoError(t, err)
 			err = bufw.Flush()
 			require.NoError(t, err)

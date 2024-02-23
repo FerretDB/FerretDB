@@ -29,14 +29,18 @@ import (
 
 // OpMsgSection is one or more sections contained in an OpMsg.
 type OpMsgSection struct {
-	Kind       byte
+	// The order of fields is weird to make the struct smaller due to alignment.
+	// The wire order is: kind, identifier, documents.
+
 	Identifier string
 	documents  []bson2.RawDocument
+	Kind       byte
 }
 
 // MakeOpMsgSection creates [OpMsgSection] with a single document.
 func MakeOpMsgSection(doc *types.Document) OpMsgSection {
 	raw := must.NotFail(must.NotFail(bson2.ConvertDocument(doc)).Encode())
+
 	return OpMsgSection{
 		documents: []bson2.RawDocument{raw},
 	}
@@ -49,9 +53,11 @@ func (s *OpMsgSection) RawDocuments() []bson2.RawDocument {
 
 // OpMsg is the main wire protocol message type.
 type OpMsg struct {
-	Flags OpMsgFlags
+	// The order of fields is weird to make the struct smaller due to alignment.
+	// The wire order is: flags, sections, optional checksum.
 
 	sections []OpMsgSection
+	Flags    OpMsgFlags
 	checksum uint32
 }
 
@@ -63,10 +69,12 @@ func (msg *OpMsg) Sections() []OpMsgSection {
 // SetSections sets sections of the OpMsg.
 func (msg *OpMsg) SetSections(sections ...OpMsgSection) error {
 	msg.sections = sections
+
 	_, err := msg.Document()
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
+
 	return nil
 }
 
@@ -74,11 +82,11 @@ func (msg *OpMsg) SetSections(sections ...OpMsgSection) error {
 //
 // All sections are merged together.
 func (msg *OpMsg) Document() (*types.Document, error) {
+	docs := make([]*types.Document, 0, len(msg.sections))
+
 	// Sections of kind 1 may come before the section of kind 0,
 	// but the command is defined by the first key in the section of kind 0.
 	// Reorder documents to set keys in the right order.
-
-	docs := make([]*types.Document, 0, len(msg.sections))
 
 	for _, section := range msg.sections {
 		if section.Kind != 0 {
@@ -111,6 +119,7 @@ func (msg *OpMsg) Document() (*types.Document, error) {
 		}
 
 		a := types.MakeArray(len(section.documents))
+
 		for _, d := range section.documents {
 			doc, err := d.Convert()
 			if err != nil {
@@ -160,6 +169,7 @@ func (msg *OpMsg) UnmarshalBinaryNocopy(b []byte) error {
 	msg.Flags = OpMsgFlags(binary.LittleEndian.Uint32(b[0:4]))
 
 	offset := 4
+
 	for {
 		var section OpMsgSection
 		section.Kind = b[offset]
@@ -240,7 +250,6 @@ func (msg *OpMsg) UnmarshalBinaryNocopy(b []byte) error {
 	if msg.Flags.FlagSet(OpMsgChecksumPresent) {
 		// Move checksum validation here. It needs header data to be available.
 		// TODO https://github.com/FerretDB/FerretDB/issues/2690
-
 		msg.checksum = binary.LittleEndian.Uint32(b[offset:])
 	}
 
@@ -297,7 +306,6 @@ func (msg *OpMsg) MarshalBinary() ([]byte, error) {
 	if msg.Flags.FlagSet(OpMsgChecksumPresent) {
 		// Calculate checksum before writing it. It needs header data to be ready and available here.
 		// TODO https://github.com/FerretDB/FerretDB/issues/2690
-
 		var checksum [4]byte
 		binary.LittleEndian.PutUint32(checksum[:], msg.checksum)
 		b = append(b, checksum[:]...)
@@ -322,6 +330,7 @@ func (msg *OpMsg) String() string {
 		s := map[string]any{
 			"Kind": section.Kind,
 		}
+
 		switch section.Kind {
 		case 0:
 			doc, err := section.documents[0].Convert()

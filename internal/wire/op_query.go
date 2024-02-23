@@ -28,12 +28,15 @@ import (
 
 // OpQuery is a deprecated request message type.
 type OpQuery struct {
-	Flags                OpQueryFlags
+	// The order of fields is weird to make the struct smaller due to alignment.
+	// The wire order is: flags, collection name, number to skip, number to return, query, fields selector.
+
 	FullCollectionName   string
+	query                bson2.RawDocument
+	returnFieldsSelector bson2.RawDocument
+	Flags                OpQueryFlags
 	NumberToSkip         int32
 	NumberToReturn       int32
-	query                bson2.RawDocument
-	returnFieldsSelector bson2.RawDocument // may be nil
 }
 
 func (query *OpQuery) msgbody() {}
