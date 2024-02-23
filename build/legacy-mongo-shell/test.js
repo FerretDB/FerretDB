@@ -20,7 +20,7 @@
     return new Mongo(uri);
   }
 
-  const uri = 'mongodb://username:password@localhost:' + port + '/?authMechanism=SCRAM-SHA-1';
+  const uri = 'mongodb://username:password@host.docker.internal:' + port + '/?authMechanism=SCRAM-SHA-1';
 
   try {
     mongoClient(uri);
