@@ -1,6 +1,6 @@
 ---
 slug: ferretdb-announces-v120-release
-title: FerretDB announces v1.20.0 release
+title: FerretDB announces v1.20 release
 authors: [alex]
 description: >
   We have released FerretDB v1.20, and it includes a couple of changes that will be crucial to enable and build further increased compatibility, performance, and security for FerretDB.
