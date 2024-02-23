@@ -322,18 +322,3 @@ func insertBenchmarkProvider(tb testtb.TB, ctx context.Context, collection *mong
 
 	return
 }
-
-// from https://github.com/FerretDB/FerretDB/pull/4075/files
-func setupUser(tb testtb.TB, ctx context.Context, client *mongo.Client) {
-	tb.Helper()
-
-	username, password, mechanism := "username", "password", "SCRAM-SHA-256"
-
-	err := client.Database("admin").RunCommand(ctx, bson.D{
-		{"createUser", username},
-		{"roles", bson.A{}},
-		{"pwd", password},
-		{"mechanisms", bson.A{mechanism}},
-	}).Err()
-	require.NoErrorf(tb, err, "cannot create user")
-}
