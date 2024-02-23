@@ -28,7 +28,7 @@ They are currently available for experimental purposes and can be enabled using 
 
 At the moment, you can experiment with any of the supported user management commands.
 A user is created using the `createUser` command and its details are stored in the `system.users` collection of the`admin` database.
-Once the new authentication mechanisms are available, FerretDB will use the provided username and password to authenticate against the stored credentials of the user.
+Then FerretDB will use the provided username and password to authenticate against the stored credentials of the user.
 
 In addition, we have been working on enabling support for Compass UI; it should be available in the next release.
 This is an exciting development as it will make FerretDB available to more users who have been asking about Compass support for quite some time.
