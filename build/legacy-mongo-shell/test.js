@@ -3,9 +3,15 @@
 (function() {
   'use strict';
 
+  let roles = [];
+
+  if (db.getSiblingDB('admin').runCommand({getParameter: '*'}).wiredTigerConcurrentReadTransactions !== undefined) {
+    roles.push({role: 'read', db: 'admin'});
+  };
+
   db.getSiblingDB('admin').system.users.remove({});
 
-  db.getSiblingDB('admin').createUser({user: 'username', pwd: 'password', roles: []});
+  db.getSiblingDB('admin').createUser({user: 'username', pwd: 'password', roles: roles});
 
   mongoClient = function(uri) {
     return new Mongo(uri);
