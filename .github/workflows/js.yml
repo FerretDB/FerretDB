@@ -75,13 +75,14 @@ jobs:
           --mode=diff-normal
           --handler=pg
           --postgresql-url='postgres://username@127.0.0.1:5432/ferretdb'
+          --test-enable-new-auth=true
           2> ferretdb.log &
 
       - name: Run testjs for MongoDB
         run: bin/task testjs TESTJS_PORT=47017
 
       - name: Run testjs for FerretDB
-        run: bin/task testjs
+        run: bin/task testjs-auth
 
       - name: Compress FerretDB log before upload
         if: failure()

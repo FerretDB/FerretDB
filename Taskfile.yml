@@ -556,6 +556,14 @@ tasks:
         'mongodb://host.docker.internal:{{.TESTJS_PORT}}/'
         /legacy-mongo-shell/test.js
 
+  testjs-auth:
+    desc: "Run legacy MongoDB shell (`mongo`) with test.js script using PLAIN authentication mechanism"
+    cmds:
+      - >
+        docker compose run --rm legacy-mongo-shell
+        'mongodb://username:password@host.docker.internal:{{.TESTJS_PORT}}/?authMechanism=PLAIN'
+        /legacy-mongo-shell/test.js
+
   docker-init:
     run: once
     cmds:
