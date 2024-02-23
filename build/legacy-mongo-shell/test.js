@@ -3,27 +3,29 @@
 (function() {
   'use strict';
 
+  let port = 27017;
+
   let roles = [];
 
   if (db.getSiblingDB('admin').runCommand({getParameter: '*'}).wiredTigerConcurrentReadTransactions !== undefined) {
     roles.push({role: 'read', db: 'admin'});
+    port = 47017;
   };
 
   db.getSiblingDB('admin').system.users.remove({});
 
   db.getSiblingDB('admin').createUser({user: 'username', pwd: 'password', roles: roles});
 
-  mongoClient = function(uri) {
+  const mongoClient = function(uri) {
     return new Mongo(uri);
   }
 
-  const uri = 'mongodb://username:password@localhost:27017/?authMechanism=SCRAM-SHA-1';
+  const uri = 'mongodb://username:password@localhost:' + port + '/?authMechanism=SCRAM-SHA-1';
 
   try {
     mongoClient(uri);
   } catch (e) {
-    print('test.js failed: ' + e);
-    return;
+    throw new Error('test.js failed: ' + e);
   }
 
   print('test.js passed!');
