@@ -258,13 +258,19 @@ func (h *Handler) cleanupCappedCollection(ctx context.Context, db backends.Datab
 
 	h.L.Debug("cleanupCappedCollection: stats before", zap.Any("stats", statsBefore))
 
-	if statsBefore.SizeCollection < cInfo.CappedSize && statsBefore.CountDocuments < cInfo.CappedDocuments {
+	if cInfo.CappedSize >= statsBefore.SizeCollection &&
+		(cInfo.CappedDocuments == 0 || cInfo.CappedDocuments >= statsBefore.CountDocuments) {
+		return 0, 0, nil
+	}
+
+	cleanupCount := int64(float64(statsBefore.CountDocuments) * float64(h.CappedCleanupPercentage) / 100)
+	if cleanupCount == 0 {
 		return 0, 0, nil
 	}
 
 	res, err := coll.Query(ctx, &backends.QueryParams{
 		Sort:          must.NotFail(types.NewDocument("$natural", int64(1))),
-		Limit:         int64(float64(statsBefore.CountDocuments) * float64(h.CappedCleanupPercentage) / 100),
+		Limit:         cleanupCount,
 		OnlyRecordIDs: true,
 	})
 	if err != nil {
