@@ -356,9 +356,9 @@ func (msg *OpMsg) String() string {
 		case 0:
 			doc, err := section.documents[0].Convert()
 			if err == nil {
-				m["Document"] = json.RawMessage(must.NotFail(fjson.Marshal(doc)))
+				s["Document"] = json.RawMessage(must.NotFail(fjson.Marshal(doc)))
 			} else {
-				m["DocumentError"] = err.Error()
+				s["DocumentError"] = err.Error()
 			}
 
 		case 1:
