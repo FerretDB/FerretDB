@@ -41,6 +41,7 @@ func slogValue(v any) slog.Value {
 		if v == nil {
 			return slog.StringValue("RawDocument(nil)")
 		}
+
 		return slog.StringValue("RawDocument(" + strconv.Itoa(len(v)) + " bytes)")
 
 	case *Array:
@@ -56,6 +57,7 @@ func slogValue(v any) slog.Value {
 		if v == nil {
 			return slog.StringValue("RawArray(nil)")
 		}
+
 		return slog.StringValue("RawArray(" + strconv.Itoa(len(v)) + " bytes)")
 
 	default:
