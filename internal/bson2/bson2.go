@@ -52,7 +52,7 @@ import (
 // If true, the usage of float64 NaN values is disallowed.
 // They mess up many things too much, starting with simple equality tests.
 // But allowing them simplifies fuzzing where we currently compare converted [*types.Document]s.
-var noNaN = true
+var noNaN = false
 
 type (
 	// ScalarType represents a BSON scalar type.

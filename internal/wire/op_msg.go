@@ -142,6 +142,14 @@ func (msg *OpMsg) Document() (*types.Document, error) {
 		}
 	}
 
+	if err := validateValue(res); err != nil {
+		res.Remove("lsid") // to simplify error message
+		return nil, newValidationError(fmt.Errorf("wire.OpMsg.Document: validation failed for %v with: %v",
+			types.FormatAnyValue(res),
+			err,
+		))
+	}
+
 	return res, nil
 }
 
@@ -280,6 +288,11 @@ func (msg *OpMsg) UnmarshalBinaryNocopy(b []byte) error {
 		}
 	}
 
+	// for validation
+	if _, err := msg.Document(); err != nil {
+		return lazyerrors.Error(err)
+	}
+
 	return nil
 }
 
@@ -289,6 +302,11 @@ func (msg *OpMsg) MarshalBinary() ([]byte, error) {
 		if err := msg.check(); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
+	}
+
+	// for validation
+	if _, err := msg.Document(); err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
 	b := make([]byte, 4, 16)
