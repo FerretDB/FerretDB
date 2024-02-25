@@ -19,6 +19,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"log/slog"
+	"math"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -137,6 +138,12 @@ func (doc *Document) Get(name string) any {
 func (doc *Document) add(name string, value any) error {
 	if err := validBSONType(value); err != nil {
 		return lazyerrors.Errorf("%q: %w", name, err)
+	}
+
+	if f, ok := value.(float64); ok {
+		if noNaN && math.IsNaN(f) {
+			return lazyerrors.New("invalid float64 value NaN")
+		}
 	}
 
 	doc.fields = append(doc.fields, field{

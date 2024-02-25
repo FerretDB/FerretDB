@@ -17,6 +17,7 @@ package bson2
 import (
 	"bytes"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/cristalhq/bson/bsonproto"
@@ -116,6 +117,10 @@ func encodeField(buf *bytes.Buffer, name string, v any) error {
 func encodeScalarField(buf *bytes.Buffer, name string, v any) error {
 	switch v := v.(type) {
 	case float64:
+		if noNaN && math.IsNaN(v) {
+			return lazyerrors.Errorf("got NaN value")
+		}
+
 		buf.WriteByte(byte(tagFloat64))
 	case string:
 		buf.WriteByte(byte(tagString))
