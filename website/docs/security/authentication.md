@@ -6,8 +6,21 @@ description: Learn to use authentication mechanisms
 
 # Authentication
 
-FerretDB does not store authentication information (usernames and passwords) itself but uses the backend's authentication mechanisms.
-The default username and password can be specified in FerretDB's connection string,
+The authentication is used to verify the identity of the client connecting to FerretDB using username and password.
+It blocks the access if the client does not have the valid credentials.
+
+FerretDB provides authentication by relying on the [backend's authentication](#postgresql-backend-authentication) mechanisms by default.
+However, there is an [experimental authentication](#experimental-authentication) feature that allows managing and authenticating users within FerretDB.
+
+Having user management within FerretDB allows creation and deletions of users via command and hides the necessity to have the knowledge of the specific backend to manage users.
+However, FerretDB does not support authorization yet which means fine-grained access control is not yet possible.
+
+## PostgreSQL backend authentication
+
+For a postgreSQL backend, it uses provided username and password to connect to the postgreSQL backend directly.
+The supported mechanism is `PLAIN` which passes the password in a plain text.
+
+When starting FerretDB, the default username and password can be specified in FerretDB's connection string,
 but the client could use a different user by providing a username and password in MongoDB URI.
 For example, if the server was started with `postgres://user1:pass1@postgres:5432/ferretdb`,
 anonymous clients will be authenticated as user1,
@@ -106,35 +119,38 @@ If this does not resolve your issue please file a bug report [here](https://gith
 
 ## Experimental authentication
 
-FerretDB supports experimental `SCRAM-SHA-256` and `SCRAM-SHA-1` authentication mechanisms.
-It is enabled by the flag `--test-enable-new-auth` or the environment variable `TestEnableNewAuth`.
-A user is created using the `createUser` command and stored in the `admin` database `system.users` collection.
+Upon enabling the flag `--test-enable-new-auth` or the environment variable `TEST_ENABLE_NEW_AUTH`,
+FerretDB enables user management and authentication against the stored credentials in the `admin` database `system.users` collection.
+The users are managed using the `usersInfo`, `createUser`, `updateUser`, `dropUser` and `dropAllUsersFromDatabase` commands.
+The users may be created and authenticated using `SCRAM-SHA-256`, `SCRAM-SHA-1` and `PLAIN` mechanisms.
+The `SCRAM` mechanisms are the algorithms used to store hashed passwords as opposed to plain text used in the `PLAIN` mechanism.
 
-FerretDB uses the provided username and password to authenticate against the stored credentials.
-For example, if a client connects as `mongodb://user1:pass1@ferretdb:27018/ferretdb?tls=true&authMechanism=PLAIN`,
-`user1` is authenticated against its credential stored in the `admin.system.users` collection.
+Please note that FerretDB does not support authorization yet, also created users currently have access to all databases.
+
+To connect to FerretDB, if a client use `mongodb://user:pass@ferretdb:27018/ferretdb?tls=true&authMechanism=SCRAM-SHA-256`,
+`user` is authenticated against its credential stored in the `admin.system.users` collection using `SCRAM-SHA-256` authentication mechanism.
 
 Before the first user is created in FerretDB, the credentials provided in the MongoDB connection string are used to connect directly to the PostgreSQL backend via passthrough.
 For instance, when the `admin.system.users` collection is empty and
-a client connects as `mongodb://pguser1:pgpass1@ferretdb:27018/ferretdb?tls=true&authMechanism=PLAIN`,
-it uses `pguser1` to connect to the postgreSQL backend.
-The `PLAIN` mechanism is used for this case.
+a client connects as `mongodb://pguser:pgpass@ferretdb:27018/ferretdb?tls=true&authMechanism=PLAIN`,
+it uses `pguser` to connect to the postgreSQL backend.
+When authenticating directly to the backend, only `PLAIN` mechanism is supported.
 Please note this exception no longer applies once the first user is created.
 
 When usernames and passwords are transferred in plain text or on an unsecured network,
 the use of [TLS](../security/tls-connections.md) is highly recommended.
 
-#### Example using experimental authentication
+## Example using experimental authentication
 
 Start `ferretdb` by specifying `--postgresql-url` with username and password.
-All authenticated clients use `pguser1` user to query PostgreSQL backend.
+All authenticated clients use `pguser` user to query PostgreSQL backend.
 
 ```sh
-ferretdb --postgresql-url=postgres://pguser1:pgpass1@localhost:5432/ferretdb
+ferretdb --postgresql-url=postgres://pguser:pgpass@localhost:5432/ferretdb
 ```
 
-A client connects as the user `user1`, and authenticated using credentials stored in the `admin.system.users` collection.
+A client connects as the user `user`, and authenticated using credentials stored in the `admin.system.users` collection.
 
 ```sh
-mongosh 'mongodb://user1:pass1@127.0.0.1/ferretdb?authMechanism=PLAIN'
+mongosh 'mongodb://user:pass@127.0.0.1/ferretdb?authMechanism=PLAIN'
 ```
