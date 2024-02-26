@@ -1,6 +1,6 @@
 module github.com/FerretDB/FerretDB/tools
 
-go 1.22
+go 1.22.0
 
 require (
 	github.com/FerretDB/gh v0.1.3

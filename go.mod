@@ -1,6 +1,6 @@
 module github.com/FerretDB/FerretDB
 
-go 1.22
+go 1.22.0
 
 require (
 	github.com/AlekSi/pointer v1.2.0
