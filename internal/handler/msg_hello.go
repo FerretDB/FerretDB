@@ -108,7 +108,7 @@ func (h *Handler) getUserSupportedMechs(ctx context.Context, db, username string
 		return nil, lazyerrors.Error(err)
 	}
 
-	filter, err := usersInfoFilter(false, true, db, []usersInfoPair{
+	filter, err := usersInfoFilter(false, false, db, []usersInfoPair{
 		{username: username, db: db},
 	})
 	if err != nil {
