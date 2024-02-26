@@ -103,7 +103,8 @@ type QueryResult struct {
 //
 // Limit, if non-zero, should be applied.
 func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*QueryResult, error) {
-	defer observability.FuncCall(ctx)()
+	ctx, leave := observability.FuncCall(ctx)
+	defer leave()
 
 	if params == nil {
 		params = new(QueryParams)
@@ -151,7 +152,8 @@ type ExplainResult struct {
 // The ExplainResult's SortPushdown field is set to true if the backend could have applied the whole requested sorting.
 // If it was possible to apply it only partially or not at all, that field should be set to false.
 func (cc *collectionContract) Explain(ctx context.Context, params *ExplainParams) (*ExplainResult, error) {
-	defer observability.FuncCall(ctx)()
+	ctx, leave := observability.FuncCall(ctx)
+	defer leave()
 
 	if params == nil {
 		params = new(ExplainParams)
@@ -191,7 +193,8 @@ type InsertAllResult struct{}
 //
 // Both database and collection may or may not exist; they should be created automatically if needed.
 func (cc *collectionContract) InsertAll(ctx context.Context, params *InsertAllParams) (*InsertAllResult, error) {
-	defer observability.FuncCall(ctx)()
+	ctx, leave := observability.FuncCall(ctx)
+	defer leave()
 
 	now := time.Now()
 	for _, doc := range params.Docs {
@@ -226,7 +229,8 @@ type UpdateAllResult struct {
 //
 // Database or collection may not exist; that's not an error.
 func (cc *collectionContract) UpdateAll(ctx context.Context, params *UpdateAllParams) (*UpdateAllResult, error) {
-	defer observability.FuncCall(ctx)()
+	ctx, leave := observability.FuncCall(ctx)
+	defer leave()
 
 	for _, doc := range params.Docs {
 		doc.Freeze()
@@ -259,7 +263,8 @@ type DeleteAllResult struct {
 //
 // Database or collection may not exist; that's not an error.
 func (cc *collectionContract) DeleteAll(ctx context.Context, params *DeleteAllParams) (*DeleteAllResult, error) {
-	defer observability.FuncCall(ctx)()
+	ctx, leave := observability.FuncCall(ctx)
+	defer leave()
 
 	must.BeTrue((params.IDs == nil) != (params.RecordIDs == nil))
 
@@ -295,7 +300,8 @@ type IndexSize struct {
 //
 // The errors for non-existing database and non-existing collection are the same.
 func (cc *collectionContract) Stats(ctx context.Context, params *CollectionStatsParams) (*CollectionStatsResult, error) {
-	defer observability.FuncCall(ctx)()
+	ctx, leave := observability.FuncCall(ctx)
+	defer leave()
 
 	res, err := cc.c.Stats(ctx, params)
 	checkError(err, ErrorCodeCollectionDoesNotExist)
@@ -317,7 +323,8 @@ type CompactResult struct{}
 // If full is true, the operation should try to reduce the disk space as much as possible,
 // even if collection or the whole database will be locked for some time.
 func (cc *collectionContract) Compact(ctx context.Context, params *CompactParams) (*CompactResult, error) {
-	defer observability.FuncCall(ctx)()
+	ctx, leave := observability.FuncCall(ctx)
+	defer leave()
 
 	res, err := cc.c.Compact(ctx, params)
 	checkError(err, ErrorCodeDatabaseDoesNotExist, ErrorCodeCollectionDoesNotExist)
@@ -350,7 +357,8 @@ type IndexKeyPair struct {
 //
 // The errors for non-existing database and non-existing collection are the same.
 func (cc *collectionContract) ListIndexes(ctx context.Context, params *ListIndexesParams) (*ListIndexesResult, error) {
-	defer observability.FuncCall(ctx)()
+	ctx, leave := observability.FuncCall(ctx)
+	defer leave()
 
 	res, err := cc.c.ListIndexes(ctx, params)
 	checkError(err, ErrorCodeCollectionDoesNotExist)
@@ -380,7 +388,8 @@ type CreateIndexesResult struct{}
 //
 // Database or collection may not exist; that's not an error.
 func (cc *collectionContract) CreateIndexes(ctx context.Context, params *CreateIndexesParams) (*CreateIndexesResult, error) {
-	defer observability.FuncCall(ctx)()
+	ctx, leave := observability.FuncCall(ctx)
+	defer leave()
 
 	res, err := cc.c.CreateIndexes(ctx, params)
 	checkError(err)
@@ -404,7 +413,8 @@ type DropIndexesResult struct{}
 //
 // Database or collection may not exist; that's not an error.
 func (cc *collectionContract) DropIndexes(ctx context.Context, params *DropIndexesParams) (*DropIndexesResult, error) {
-	defer observability.FuncCall(ctx)()
+	ctx, leave := observability.FuncCall(ctx)
+	defer leave()
 
 	res, err := cc.c.DropIndexes(ctx, params)
 	checkError(err)

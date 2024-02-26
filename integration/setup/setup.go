@@ -186,10 +186,8 @@ func Setup(tb testtb.TB, providers ...shareddata.Provider) (context.Context, *mo
 func setupCollection(tb testtb.TB, ctx context.Context, client *mongo.Client, opts *SetupOpts) *mongo.Collection {
 	tb.Helper()
 
-	ctx, span := otel.Tracer("").Start(ctx, "setupCollection")
-	defer span.End()
-
-	defer observability.FuncCall(ctx)()
+	ctx, leave := observability.FuncCall(ctx)
+	defer leave()
 
 	var ownDatabase bool
 	databaseName := opts.DatabaseName
