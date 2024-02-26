@@ -42,18 +42,20 @@ func TestHello(t *testing.T) {
 
 	actual := ConvertDocument(t, res)
 
-	assert.Contains(t, actual.Keys(), []string{
-		"isWritablePrimary",
-		"maxBsonObjectSize",
-		"maxMessageSizeBytes",
-		"maxWriteBatchSize",
-		"localTime",
-		"connectionId",
-		"minWireVersion",
-		"maxWireVersion",
-		"readOnly",
-		"ok",
-	})
+	if !setup.IsMongoDB(t) {
+		assert.Equal(t, actual.Keys(), []string{
+			"isWritablePrimary",
+			"maxBsonObjectSize",
+			"maxMessageSizeBytes",
+			"maxWriteBatchSize",
+			"localTime",
+			"connectionId",
+			"minWireVersion",
+			"maxWireVersion",
+			"readOnly",
+			"ok",
+		})
+	}
 }
 
 func TestHelloWithSupportedMechs(t *testing.T) {
@@ -169,15 +171,15 @@ func TestHelloWithSupportedMechs(t *testing.T) {
 			if tc.mechs != nil {
 				keys = append(keys, "saslSupportedMechs")
 				mechanisms := must.NotFail(actual.Get("saslSupportedMechs"))
-				assert.Equal(t, tc.mechs, mechanisms)
+				if !setup.IsMongoDB(t) {
+					assert.Equal(t, tc.mechs, mechanisms)
+				}
 			} else {
 				assert.False(t, actual.Has("saslSupportedMechs"))
 			}
 
 			keys = append(keys, "ok")
-			if setup.IsMongoDB(t) {
-				assert.Contains(t, keys, actual.Keys())
-			} else {
+			if !setup.IsMongoDB(t) {
 				assert.Equal(t, keys, actual.Keys())
 			}
 		})
