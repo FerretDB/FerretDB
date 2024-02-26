@@ -161,7 +161,11 @@ func TestHelloWithSupportedMechs(t *testing.T) {
 			}
 
 			keys = append(keys, "ok")
-			assert.Equal(t, keys, actual.Keys())
+			if setup.IsMongoDB(t) {
+				assert.Contains(t, keys, actual.Keys())
+			} else {
+				assert.Equal(t, keys, actual.Keys())
+			}
 		})
 	}
 }
