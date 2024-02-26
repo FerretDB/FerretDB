@@ -19,6 +19,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"testing"
 
@@ -95,6 +96,55 @@ func TestRunGoTest(t *testing.T) {
 		}
 
 		cleanup(actual)
+		assert.Equal(t, expected, actual, "actual:\n%s", strings.Join(actual, "\n"))
+	})
+
+	t.Run("SubtestsPartial", func(t *testing.T) {
+		t.Parallel()
+
+		var actual []string
+		logger, err := makeTestLogger(&actual)
+		require.NoError(t, err)
+
+		err = runGoTest(context.TODO(), []string{
+			"./testdata",
+			"-count=1",
+			"-run=TestWithSubtest/Third",
+		}, 1, false, logger.Sugar())
+		require.NoError(t, err)
+
+		expected := []string{
+			"PASS TestWithSubtest 1/1",
+			"PASS",
+			"ok  	github.com/FerretDB/FerretDB/cmd/envtool/testdata	<SEC>s",
+			"PASS github.com/FerretDB/FerretDB/cmd/envtool/testdata",
+		}
+
+		cleanup(actual)
+
+		assert.Equal(t, expected, actual, "actual:\n%s", strings.Join(actual, "\n"))
+	})
+
+	t.Run("SubtestsNotFound", func(t *testing.T) {
+		t.Parallel()
+
+		var actual []string
+		logger, err := makeTestLogger(&actual)
+		require.NoError(t, err)
+
+		err = runGoTest(context.TODO(), []string{"./testdata", "-count=1", "-run=TestWithSubtest/None"}, 1, false, logger.Sugar())
+		require.NoError(t, err)
+
+		expected := []string{
+			"PASS TestWithSubtest 1/1",
+			"testing: warning: no tests to run",
+			"PASS",
+			"ok  	github.com/FerretDB/FerretDB/cmd/envtool/testdata	<SEC>s [no tests to run]",
+			"PASS github.com/FerretDB/FerretDB/cmd/envtool/testdata",
+		}
+
+		cleanup(actual)
+
 		assert.Equal(t, expected, actual, "actual:\n%s", strings.Join(actual, "\n"))
 	})
 
@@ -218,6 +268,7 @@ func TestListTestFuncs(t *testing.T) {
 		"TestNormal2",
 		"TestPanic1",
 		"TestSkip1",
+		"TestWithSubtest",
 	}
 	assert.Equal(t, expected, actual)
 }
@@ -241,6 +292,7 @@ func TestListTestFuncsWithRegex(t *testing.T) {
 				"TestNormal2",
 				"TestPanic1",
 				"TestSkip1",
+				"TestWithSubtest",
 			},
 			wantErr: assert.NoError,
 		},
@@ -263,6 +315,7 @@ func TestListTestFuncsWithRegex(t *testing.T) {
 				"TestNormal2",
 				"TestPanic1",
 				"TestSkip1",
+				"TestWithSubtest",
 			},
 			wantErr: assert.NoError,
 		},
@@ -308,43 +361,6 @@ func TestListTestFuncsWithRegex(t *testing.T) {
 
 			actual, err := listTestFuncsWithRegex("./testdata", tt.run, tt.skip)
 			tt.wantErr(t, err)
-			assert.Equal(t, tt.expected, actual)
-		})
-	}
-}
-
-func TestBuildGoTestRunRegex(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name     string
-		expected string
-		tests    []string
-	}{
-		{
-			name:     "Empty",
-			tests:    []string{},
-			expected: "^()$",
-		},
-		{
-			name:     "Single",
-			tests:    []string{"Test1"},
-			expected: "^(Test1)$",
-		},
-		{
-			name:     "Multiple",
-			tests:    []string{"Test1", "Test2"},
-			expected: "^(Test1|Test2)$",
-		},
-	}
-
-	for _, tt := range tests {
-		tt := tt
-
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			actual := buildGoTestRunRegex(tt.tests)
 			assert.Equal(t, tt.expected, actual)
 		})
 	}
@@ -427,37 +443,62 @@ func TestShardTestFuncs(t *testing.T) {
 	t.Run("InvalidIndex", func(t *testing.T) {
 		t.Parallel()
 
-		_, err := shardTestFuncs(0, 3, testFuncs)
+		_, _, err := shardTestFuncs(0, 3, testFuncs)
 		assert.EqualError(t, err, "index must be greater than 0")
 
-		_, err = shardTestFuncs(3, 3, testFuncs)
+		_, _, err = shardTestFuncs(3, 3, testFuncs)
 		assert.NoError(t, err)
 
-		_, err = shardTestFuncs(4, 3, testFuncs)
+		_, _, err = shardTestFuncs(4, 3, testFuncs)
 		assert.EqualError(t, err, "cannot shard when index is greater than total (4 > 3)")
 	})
 
 	t.Run("InvalidTotal", func(t *testing.T) {
 		t.Parallel()
 
-		_, err := shardTestFuncs(3, 1000, testFuncs[:42])
+		_, _, err := shardTestFuncs(3, 1000, testFuncs[:42])
 		assert.EqualError(t, err, "cannot shard when total is greater than a number of test functions (1000 > 42)")
 	})
 
 	t.Run("Valid", func(t *testing.T) {
 		t.Parallel()
 
-		res, err := shardTestFuncs(1, 3, testFuncs)
+		res, skip, err := shardTestFuncs(1, 3, testFuncs)
 		require.NoError(t, err)
 		assert.Equal(t, testFuncs[0], res[0])
 		assert.NotEqual(t, testFuncs[1], res[1])
 		assert.NotEqual(t, testFuncs[2], res[1])
 		assert.Equal(t, testFuncs[3], res[1])
+		assert.NotEmpty(t, skip)
 
-		res, err = shardTestFuncs(3, 3, testFuncs)
+		lastRes, lastSkip, err := shardTestFuncs(3, 3, testFuncs)
 		require.NoError(t, err)
-		assert.NotEqual(t, testFuncs[0], res[0])
-		assert.NotEqual(t, testFuncs[1], res[0])
-		assert.Equal(t, testFuncs[2], res[0])
+		assert.NotEqual(t, testFuncs[0], lastRes[0])
+		assert.NotEqual(t, testFuncs[1], lastRes[0])
+		assert.Equal(t, testFuncs[2], lastRes[0])
+		assert.NotEmpty(t, lastSkip)
+
+		assert.NotEqual(t, res, lastRes)
+		assert.NotEqual(t, skip, lastSkip)
 	})
+}
+
+func TestListTestFuncsWithSkip(t *testing.T) {
+	t.Parallel()
+
+	testFuncs, err := listTestFuncsWithRegex(filepath.Join("testdata"), "", "Skip")
+	require.NoError(t, err)
+
+	sort.Strings(testFuncs)
+
+	res, skip, err := shardTestFuncs(1, 2, testFuncs)
+
+	assert.Equal(t, []string{"TestError2", "TestNormal2", "TestWithSubtest"}, skip)
+	assert.Equal(t, []string{"TestError1", "TestNormal1", "TestPanic1"}, res)
+	assert.Nil(t, err)
+
+	lastRes, lastSkip, err := shardTestFuncs(3, 3, testFuncs)
+	assert.Equal(t, []string{"TestNormal1", "TestWithSubtest"}, lastRes)
+	assert.Equal(t, []string{"TestError1", "TestError2", "TestNormal2", "TestPanic1"}, lastSkip)
+	require.NoError(t, err)
 }
