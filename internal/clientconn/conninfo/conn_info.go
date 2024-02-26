@@ -122,8 +122,7 @@ func (connInfo *ConnInfo) SetBypassBackendAuth() {
 
 // UnsetBypassBackendAuth marks the connection as requiring backend authentication.
 //
-// This is a temporary workaround to use backend authentication until local exception
-// is implemented.
+// This is a workaround to use backend authentication.
 // TODO https://github.com/FerretDB/FerretDB/issues/4100
 func (connInfo *ConnInfo) UnsetBypassBackendAuth() {
 	connInfo.rw.Lock()
