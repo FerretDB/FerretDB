@@ -171,6 +171,7 @@ func TestHelloWithSupportedMechs(t *testing.T) {
 			if tc.mechs != nil {
 				keys = append(keys, "saslSupportedMechs")
 				mechanisms := must.NotFail(actual.Get("saslSupportedMechs"))
+
 				if !setup.IsMongoDB(t) {
 					assert.Equal(t, tc.mechs, mechanisms)
 				}
@@ -179,6 +180,7 @@ func TestHelloWithSupportedMechs(t *testing.T) {
 			}
 
 			keys = append(keys, "ok")
+
 			if !setup.IsMongoDB(t) {
 				assert.Equal(t, keys, actual.Keys())
 			}
