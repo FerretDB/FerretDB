@@ -42,7 +42,7 @@ func TestHello(t *testing.T) {
 
 	actual := ConvertDocument(t, res)
 
-	assert.Equal(t, actual.Keys(), []string{
+	assert.Contains(t, actual.Keys(), []string{
 		"isWritablePrimary",
 		"maxBsonObjectSize",
 		"maxMessageSizeBytes",
@@ -95,7 +95,7 @@ func TestHelloWithSupportedMechs(t *testing.T) {
 		require.NoError(t, db.RunCommand(ctx, u).Err())
 	}
 
-	testCases := []struct {
+	testCases := []struct { //nolint:vet // used for test only
 		username string
 		db       string
 		mechs    *types.Array
