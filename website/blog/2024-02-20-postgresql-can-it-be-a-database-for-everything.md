@@ -11,7 +11,7 @@ authors:
     image_url: /img/blog/samay-sharma.jpeg
 description: >
   We recently had the opportunity to speak with the Tembo team and ask about their thoughts on the PostgreSQL ecosystem, how it can be a database for everything, and how FerretDB can be used with Tembo.
-image: /img/blog/ferretdb-vultr.jpg
+image: /img/blog/ferretdb-tembo-qa.jpg
 tags:
   [
     open source,
