@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
@@ -54,12 +55,6 @@ func TestHelloWithSupportedMechs(t *testing.T) {
 			{"pwd", "hello_password"},
 		},
 		{
-			{"createUser", "hello_user_plain"},
-			{"roles", bson.A{}},
-			{"pwd", "hello_password"},
-			{"mechanisms", bson.A{"PLAIN"}},
-		},
-		{
 			{"createUser", "hello_user_scram1"},
 			{"roles", bson.A{}},
 			{"pwd", "hello_password"},
@@ -71,6 +66,15 @@ func TestHelloWithSupportedMechs(t *testing.T) {
 			{"pwd", "hello_password"},
 			{"mechanisms", bson.A{"SCRAM-SHA-256"}},
 		},
+	}
+
+	if !setup.IsMongoDB(t) {
+		usersPayload = append(usersPayload, primitive.D{
+			{"createUser", "hello_user_plain"},
+			{"roles", bson.A{}},
+			{"pwd", "hello_password"},
+			{"mechanisms", bson.A{"PLAIN"}},
+		})
 	}
 
 	for _, u := range usersPayload {
@@ -120,6 +124,10 @@ func TestHelloWithSupportedMechs(t *testing.T) {
 			t.Parallel()
 
 			var res bson.D
+
+			if tc.mechs != nil && tc.mechs.Contains("PLAIN") {
+				setup.SkipForMongoDB(t, "PLAIN authentication mechanism is not support by MongoDB")
+			}
 
 			err := db.RunCommand(ctx, bson.D{
 				{"hello", "1"},
