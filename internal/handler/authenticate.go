@@ -54,7 +54,7 @@ func (h *Handler) authenticate(ctx context.Context) error {
 		return lazyerrors.Error(err)
 	}
 
-	username, pwd := conninfo.Get(ctx).Auth()
+	username, userPassword := conninfo.Get(ctx).Auth()
 
 	// For `PLAIN` mechanism $db field is always `$external` upon saslStart.
 	// For `SCRAM-SHA-1` and `SCRAM-SHA-256` mechanisms $db field contains
@@ -140,7 +140,7 @@ func (h *Handler) authenticate(ctx context.Context) error {
 		return lazyerrors.Errorf("field 'PLAIN' has type %T, expected Document", v)
 	}
 
-	err = password.PlainVerify(pwd, doc)
+	err = password.PlainVerify(userPassword, doc)
 	if err != nil {
 		return handlererrors.NewCommandErrorMsgWithArgument(
 			handlererrors.ErrAuthenticationFailed,
