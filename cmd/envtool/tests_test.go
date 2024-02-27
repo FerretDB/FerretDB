@@ -77,6 +77,8 @@ func cleanup(lines []string) {
 func TestRunGoTest(t *testing.T) {
 	t.Parallel()
 
+	ctx := context.TODO()
+
 	t.Run("Normal", func(t *testing.T) {
 		t.Parallel()
 
@@ -84,7 +86,7 @@ func TestRunGoTest(t *testing.T) {
 		logger, err := makeTestLogger(&actual)
 		require.NoError(t, err)
 
-		err = runGoTest(context.TODO(), []string{"./testdata", "-count=1", "-run=TestNormal"}, 2, false, logger.Sugar())
+		err = runGoTest(ctx, []string{"./testdata", "-count=1", "-run=TestNormal"}, 2, false, logger.Sugar())
 		require.NoError(t, err)
 
 		expected := []string{
@@ -106,11 +108,7 @@ func TestRunGoTest(t *testing.T) {
 		logger, err := makeTestLogger(&actual)
 		require.NoError(t, err)
 
-		err = runGoTest(context.TODO(), []string{
-			"./testdata",
-			"-count=1",
-			"-run=TestWithSubtest/Third",
-		}, 1, false, logger.Sugar())
+		err = runGoTest(ctx, []string{"./testdata", "-count=1", "-run=TestWithSubtest/Third"}, 1, false, logger.Sugar())
 		require.NoError(t, err)
 
 		expected := []string{
@@ -132,7 +130,7 @@ func TestRunGoTest(t *testing.T) {
 		logger, err := makeTestLogger(&actual)
 		require.NoError(t, err)
 
-		err = runGoTest(context.TODO(), []string{"./testdata", "-count=1", "-run=TestWithSubtest/None"}, 1, false, logger.Sugar())
+		err = runGoTest(ctx, []string{"./testdata", "-count=1", "-run=TestWithSubtest/None"}, 1, false, logger.Sugar())
 		require.NoError(t, err)
 
 		expected := []string{
@@ -155,7 +153,7 @@ func TestRunGoTest(t *testing.T) {
 		logger, err := makeTestLogger(&actual)
 		require.NoError(t, err)
 
-		err = runGoTest(context.TODO(), []string{"./testdata", "-count=1", "-run=TestError"}, 2, false, logger.Sugar())
+		err = runGoTest(ctx, []string{"./testdata", "-count=1", "-run=TestError"}, 2, false, logger.Sugar())
 
 		var exitErr *exec.ExitError
 		require.ErrorAs(t, err, &exitErr)
@@ -203,7 +201,7 @@ func TestRunGoTest(t *testing.T) {
 		logger, err := makeTestLogger(&actual)
 		require.NoError(t, err)
 
-		err = runGoTest(context.TODO(), []string{"./testdata", "-count=1", "-run=TestSkip"}, 1, false, logger.Sugar())
+		err = runGoTest(ctx, []string{"./testdata", "-count=1", "-run=TestSkip"}, 1, false, logger.Sugar())
 		require.NoError(t, err)
 
 		expected := []string{
@@ -229,7 +227,7 @@ func TestRunGoTest(t *testing.T) {
 		logger, err := makeTestLogger(&actual)
 		require.NoError(t, err)
 
-		err = runGoTest(context.TODO(), []string{"./testdata", "-count=1", "-run=TestPanic"}, 1, false, logger.Sugar())
+		err = runGoTest(ctx, []string{"./testdata", "-count=1", "-run=TestPanic"}, 1, false, logger.Sugar())
 		require.Error(t, err)
 
 		expected := []string{
