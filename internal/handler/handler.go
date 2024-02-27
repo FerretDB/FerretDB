@@ -81,6 +81,7 @@ type NewOpts struct {
 	CappedCleanupInterval   time.Duration
 	CappedCleanupPercentage uint8
 	EnableNewAuth           bool
+	BatchSize               int
 }
 
 // New returns a new handler.

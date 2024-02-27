@@ -48,6 +48,7 @@ func init() {
 			CappedCleanupPercentage: opts.CappedCleanupPercentage,
 			CappedCleanupInterval:   opts.CappedCleanupInterval,
 			EnableNewAuth:           opts.EnableNewAuth,
+			BatchSize: opts.BatchSize
 		}
 
 		h, err := handler.New(handlerOpts)
