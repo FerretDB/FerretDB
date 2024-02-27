@@ -38,7 +38,7 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 	if v != nil && (cmd == "ismaster" || cmd == "isMaster" || cmd == "hello") {
 		reply, err := common.IsMaster(ctx, q, h.TCPHost, h.ReplSetName)
 		if err != nil {
-			return nil, err
+			return nil, lazyerrors.Error(err)
 		}
 
 		replyDoc := must.NotFail(reply.Document())
