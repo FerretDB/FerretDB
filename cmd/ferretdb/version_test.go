@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
@@ -39,6 +40,10 @@ func TestVersion(t *testing.T) {
 	t.Cleanup(cancel)
 
 	bin := filepath.Join("..", "..", "bin", "ferretdb")
+	if _, err := os.Stat(bin); err != nil {
+		t.Logf("Build %s using `task build-host`", bin)
+		t.Fatal(err)
+	}
 
 	cmd := exec.CommandContext(ctx, bin, "--version")
 	b, err := cmd.Output()
