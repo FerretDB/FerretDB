@@ -86,7 +86,7 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 }
 
 // speculativeAuthenticate uses db and mechanism to authenticate and returns the document
-// to assign for op query speculativeAuthenticate field if the authentication is successful.
+// to assign for op query speculativeAuthenticate response field if the authentication is successful.
 func (h *Handler) speculativeAuthenticate(ctx context.Context, document *types.Document) (*types.Document, error) {
 	dbName, err := common.GetRequiredParam[string](document, "db")
 	if err != nil {
