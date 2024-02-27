@@ -119,6 +119,13 @@ func (h *Handler) speculativeAuthenticate(ctx context.Context, document *types.D
 			"payload", emptyPayload,
 		)), nil
 	case "SCRAM-SHA-1", "SCRAM-SHA-256":
+		if !h.EnableNewAuth {
+			return nil, handlererrors.NewCommandErrorMsg(
+				handlererrors.ErrAuthenticationFailed,
+				"SCRAM authentication is not enabled",
+			)
+		}
+
 		response, err := h.saslStartSCRAM(ctx, dbName, mechanism, document)
 		if err != nil {
 			return nil, err
