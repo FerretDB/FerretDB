@@ -12,7 +12,7 @@ It blocks the access if the client does not have the valid credentials.
 FerretDB provides authentication by relying on the [backend's authentication](#postgresql-backend-authentication) mechanisms by default.
 However, there is an [experimental authentication](#experimental-authentication) feature that allows managing and authenticating users within FerretDB.
 
-Having user management within FerretDB allows creation and deletions of users via command and hides the necessity to have the knowledge of the specific backend to manage users.
+Having user management within FerretDB allows creations and deletions of users via command and hides the necessity to have the knowledge of the specific backend to manage users.
 However, FerretDB does not support authorization yet which means fine-grained access control is not yet possible.
 
 ## PostgreSQL backend authentication
@@ -125,7 +125,7 @@ The users are managed using the `usersInfo`, `createUser`, `updateUser`, `dropUs
 The users may be created and authenticated using `SCRAM-SHA-256`, `SCRAM-SHA-1` and `PLAIN` mechanisms.
 The `SCRAM` mechanisms are the algorithms used to store hashed passwords. FerretDB also stores hashed password using `PLAIN` mechanism.
 
-Please note that FerretDB does not support authorization yet, also created users currently have access to all databases.
+Please note that FerretDB does not support authorization yet, so created users currently have access to all databases.
 
 To connect to FerretDB, if a client use `mongodb://user:pass@ferretdb:27018/ferretdb?tls=true&authMechanism=SCRAM-SHA-256`,
 `user` is authenticated against its credential stored in the `admin.system.users` collection using `SCRAM-SHA-256` authentication mechanism.
@@ -152,5 +152,5 @@ ferretdb --postgresql-url=postgres://pguser:pgpass@localhost:5432/ferretdb
 A client connects as the user `user`, and authenticated using credentials stored in the `admin.system.users` collection.
 
 ```sh
-mongosh 'mongodb://user:pass@127.0.0.1/ferretdb?authMechanism=PLAIN'
+mongosh 'mongodb://user:pass@127.0.0.1/ferretdb?authMechanism=SCRAM-SHA-256'
 ```
