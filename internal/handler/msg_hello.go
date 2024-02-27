@@ -55,8 +55,7 @@ func (h *Handler) MsgHello(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 				"UserName must contain a '.' separated database.user pair",
 			)
 		}
-		// If username is empty, MongoDB doesn't send back a saslSupportedMechs property but
-		// still sends the response normally.
+
 		if username != "" {
 			mechs, err := h.getUserSupportedMechs(ctx, db, username)
 			if err != nil {
@@ -115,8 +114,6 @@ func (h *Handler) getUserSupportedMechs(ctx context.Context, db, username string
 		return nil, lazyerrors.Error(err)
 	}
 
-	// Filter isn't being passed to the query as we are filtering after retrieving all data
-	// from the database due to limitations of the internal/backends filters.
 	qr, err := usersCol.Query(ctx, nil)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
