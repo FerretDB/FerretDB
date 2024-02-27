@@ -82,6 +82,13 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		)))
 
 	case "SCRAM-SHA-1", "SCRAM-SHA-256":
+		if !h.EnableNewAuth {
+			return nil, handlererrors.NewCommandErrorMsg(
+				handlererrors.ErrAuthenticationFailed,
+				"SCRAM authentication is not enabled",
+			)
+		}
+
 		response, err := h.saslStartSCRAM(ctx, mechanism, document)
 		if err != nil {
 			return nil, err
