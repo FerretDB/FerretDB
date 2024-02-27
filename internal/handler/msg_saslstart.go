@@ -40,7 +40,7 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
-	_, err = common.GetRequiredParam[string](document, "$db")
+	dbName, err := common.GetRequiredParam[string](document, "$db")
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +78,7 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		)))
 
 	case "SCRAM-SHA-1", "SCRAM-SHA-256":
-		response, err := h.saslStartSCRAM(ctx, mechanism, document)
+		response, err := h.saslStartSCRAM(ctx, dbName, mechanism, document)
 		if err != nil {
 			return nil, err
 		}
@@ -242,7 +242,7 @@ func (h *Handler) scramCredentialLookup(ctx context.Context, username, dbName, m
 
 // saslStartSCRAM extracts the initial challenge and attempts to move the
 // authentication conversation forward returning a challenge response.
-func (h *Handler) saslStartSCRAM(ctx context.Context, mechanism string, doc *types.Document) (string, error) {
+func (h *Handler) saslStartSCRAM(ctx context.Context, dbName, mechanism string, doc *types.Document) (string, error) {
 	var payload []byte
 
 	// most drivers follow spec and send payload as a binary
@@ -252,11 +252,6 @@ func (h *Handler) saslStartSCRAM(ctx context.Context, mechanism string, doc *typ
 	}
 
 	payload = binaryPayload.B
-
-	dbName, err := common.GetRequiredParam[string](doc, "$db")
-	if err != nil {
-		return "", err
-	}
 
 	var f scram.HashGeneratorFcn
 

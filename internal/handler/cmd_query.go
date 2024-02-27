@@ -35,41 +35,26 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 	collection := query.FullCollectionName
 
 	v, _ := q.Get("speculativeAuthenticate")
-	if v != nil {
-		doc := v.(*types.Document)
-
-		mechanism, err := common.GetRequiredParam[string](doc, "mechanism")
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		response, err := h.saslStartSCRAM(ctx, mechanism, doc)
+	if v != nil && (cmd == "ismaster" || cmd == "isMaster" || cmd == "hello") {
+		reply, err := common.IsMaster(ctx, q, h.TCPHost, h.ReplSetName)
 		if err != nil {
 			return nil, err
 		}
 
-		conninfo.Get(ctx).SetBypassBackendAuth()
+		replyDoc := must.NotFail(reply.Document())
 
-		binResponse := types.Binary{
-			B: []byte(response),
+		document := v.(*types.Document)
+
+		doc, err := h.speculativeAuthenticate(ctx, document)
+		if err == nil {
+			// speculative authenticate response field is only set if the authentication is successful,
+			// for an unsuccessful authentication, saslStart will return an error
+			replyDoc.Set("speculativeAuthenticate", doc)
 		}
 
-		switch cmd {
-		case "ismaster", "isMaster":
-			reply, err := common.IsMaster(ctx, query.Query(), h.TCPHost, h.ReplSetName)
-			if err != nil {
-				return nil, err
-			}
+		reply.SetDocument(replyDoc)
 
-			// NOTE what is correct document content?
-			reply.SetDocument(must.NotFail(types.NewDocument(
-				"ok", float64(1),
-				"conversationId", int32(1),
-				"done", false,
-				"payload", binResponse,
-			)))
-		case "hello":
-		}
+		return reply, nil
 	}
 
 	if (cmd == "ismaster" || cmd == "isMaster") && strings.HasSuffix(collection, ".$cmd") {
@@ -98,4 +83,59 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 		fmt.Sprintf("CmdQuery: unhandled command %q for collection %q", cmd, collection),
 		"OpQuery: "+cmd,
 	)
+}
+
+// speculativeAuthenticate uses db and mechanism to authenticate and returns the document
+// to assign for op query speculativeAuthenticate field if the authentication is successful.
+func (h *Handler) speculativeAuthenticate(ctx context.Context, document *types.Document) (*types.Document, error) {
+	dbName, err := common.GetRequiredParam[string](document, "db")
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	mechanism, err := common.GetRequiredParam[string](document, "mechanism")
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	switch mechanism {
+	case "PLAIN":
+		username, password, err := saslStartPlain(document)
+		if err != nil {
+			return nil, err
+		}
+
+		if h.EnableNewAuth {
+			conninfo.Get(ctx).SetBypassBackendAuth()
+		}
+
+		conninfo.Get(ctx).SetAuth(username, password)
+
+		var emptyPayload types.Binary
+
+		return must.NotFail(types.NewDocument(
+			"conversationId", int32(1),
+			"done", true,
+			"payload", emptyPayload,
+		)), nil
+	case "SCRAM-SHA-1", "SCRAM-SHA-256":
+		response, err := h.saslStartSCRAM(ctx, dbName, mechanism, document)
+		if err != nil {
+			return nil, err
+		}
+
+		conninfo.Get(ctx).SetBypassBackendAuth()
+
+		binResponse := types.Binary{
+			B: []byte(response),
+		}
+
+		return must.NotFail(types.NewDocument(
+			"conversationId", int32(1),
+			"done", false,
+			"payload", binResponse,
+		)), nil
+	default:
+		return nil, fmt.Errorf("unsupported mechanism %s", mechanism)
+	}
 }
