@@ -143,6 +143,6 @@ func (h *Handler) speculativeAuthenticate(ctx context.Context, document *types.D
 			"payload", binResponse,
 		)), nil
 	default:
-		return nil, fmt.Errorf("unsupported mechanism %s", mechanism)
+		return nil, lazyerrors.Errorf("unsupported mechanism %s", mechanism)
 	}
 }
