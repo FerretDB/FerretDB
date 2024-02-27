@@ -34,6 +34,7 @@ type DeleteParams struct {
 
 	Let *types.Document `ferretdb:"let,unimplemented"`
 
+	MaxTimeMS      int64           `ferretdb:"maxTimeMS,ignored"`
 	WriteConcern   *types.Document `ferretdb:"writeConcern,ignored"`
 	LSID           any             `ferretdb:"lsid,ignored"`
 	TxnNumber      int64           `ferretdb:"txnNumber,ignored"`

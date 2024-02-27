@@ -44,7 +44,7 @@ func SCRAMSHA256Hash(password string) (*types.Document, error) {
 // fixedScramSHA256Params represent fixed password parameters for SCRAM-SHA-256 authentication.
 var fixedScramSHA256Params = &scramParams{
 	iterationCount: 15_000,
-	saltLen:        30,
+	saltLen:        28,
 }
 
 // scramSHA256HashParams hashes the password with the given salt and parameters,
