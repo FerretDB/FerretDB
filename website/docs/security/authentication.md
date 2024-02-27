@@ -123,7 +123,8 @@ Upon enabling the flag `--test-enable-new-auth` or the environment variable `TES
 FerretDB enables user management and authentication against the stored credentials in the `admin` database `system.users` collection.
 The users are managed using the `usersInfo`, `createUser`, `updateUser`, `dropUser` and `dropAllUsersFromDatabase` commands.
 The users may be created and authenticated using `SCRAM-SHA-256`, `SCRAM-SHA-1` and `PLAIN` mechanisms.
-The `SCRAM` mechanisms are the algorithms used to store hashed passwords. FerretDB also stores hashed password using `PLAIN` mechanism.
+The `SCRAM` mechanisms are the algorithms used to store hashed passwords.
+FerretDB also stores hashed password using `PLAIN` mechanism.
 
 Please note that FerretDB does not support authorization yet, so created users currently have access to all databases.
 
