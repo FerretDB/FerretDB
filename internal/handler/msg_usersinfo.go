@@ -168,10 +168,6 @@ func (h *Handler) MsgUsersInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			return nil, lazyerrors.Error(err)
 		}
 
-		if matches {
-			res.Append(v)
-		}
-
 		if v.Has("credentials") {
 			credentials := must.NotFail(v.Get("credentials")).(*types.Document)
 			if credentialsKeys := credentials.Keys(); len(credentialsKeys) > 0 {
@@ -186,6 +182,10 @@ func (h *Handler) MsgUsersInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 		if !showCredentials {
 			v.Remove("credentials")
+		}
+
+		if matches {
+			res.Append(v)
 		}
 	}
 

@@ -42,19 +42,27 @@ func TestHello(t *testing.T) {
 
 	actual := ConvertDocument(t, res)
 
+	keys := []string{
+		"isWritablePrimary",
+		"maxBsonObjectSize",
+		"maxMessageSizeBytes",
+		"maxWriteBatchSize",
+		"localTime",
+		"connectionId",
+		"minWireVersion",
+		"maxWireVersion",
+		"readOnly",
+		"ok",
+	}
+
 	if !setup.IsMongoDB(t) {
-		assert.Equal(t, actual.Keys(), []string{
-			"isWritablePrimary",
-			"maxBsonObjectSize",
-			"maxMessageSizeBytes",
-			"maxWriteBatchSize",
-			"localTime",
-			"connectionId",
-			"minWireVersion",
-			"maxWireVersion",
-			"readOnly",
-			"ok",
-		})
+		assert.Equal(t, actual.Keys(), keys)
+	} else {
+		// MongoDB have additional keys,
+		// so just check if the keys exists on it.
+		for _, wantKey := range keys {
+			assert.Contains(t, actual.Keys(), wantKey)
+		}
 	}
 }
 
@@ -182,7 +190,13 @@ func TestHelloWithSupportedMechs(t *testing.T) {
 			keys = append(keys, "ok")
 
 			if !setup.IsMongoDB(t) {
-				assert.Equal(t, keys, actual.Keys())
+				assert.Equal(t, actual.Keys(), keys)
+			} else {
+				// MongoDB have additional keys,
+				// so just check if the keys exists on it.
+				for _, wantKey := range keys {
+					assert.Contains(t, actual.Keys(), wantKey)
+				}
 			}
 		})
 	}
