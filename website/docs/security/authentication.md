@@ -12,13 +12,12 @@ It blocks the access if the client does not have the valid credentials.
 FerretDB provides authentication by relying on the [backend's authentication](#postgresql-backend-authentication) mechanisms by default.
 However, there is an [experimental authentication](#experimental-authentication) feature that allows managing and authenticating users within FerretDB.
 
-Having user management within FerretDB allows creations and deletions of users via command and hides the necessity to have the knowledge of the specific backend to manage users.
-However, FerretDB does not support authorization yet which means fine-grained access control is not yet possible.
+Having user management within FerretDB allows creations and deletions of users via normal MongoDB commands and hides the necessity to have the knowledge of the specific backend to manage users.
 
 ## PostgreSQL backend authentication
 
-For a postgreSQL backend, it uses provided username and password to connect to the postgreSQL backend directly.
-The supported mechanism is `PLAIN` which passes the password in a plain text.
+PostgreSQL backend connects by the provided username and password from the FerretDB's connection string or the MongoDB URI.
+Only the `PLAIN` mechanism is supported for the backend authentication.
 
 When starting FerretDB, the default username and password can be specified in FerretDB's connection string,
 but the client could use a different user by providing a username and password in MongoDB URI.
@@ -28,7 +27,7 @@ but clients that use `mongodb://user2:pass2@ferretdb:27018/ferretdb?tls=true&aut
 Since usernames and passwords are transferred in plain text,
 the use of [TLS](../security/tls-connections.md) is highly recommended.
 
-## PostgreSQL backend with default username and password
+### PostgreSQL backend with default username and password
 
 In following examples, default username and password are specified in FerretDB's connection string `user1:pass1`.
 Ensure `user1` is a PostgreSQL user with necessary
@@ -36,7 +35,7 @@ Ensure `user1` is a PostgreSQL user with necessary
 See more about [creating PostgreSQL user](https://www.postgresql.org/docs/current/sql-createuser.html)
 and [PostgreSQL authentication methods](https://www.postgresql.org/docs/current/auth-methods.html).
 
-### Using `ferretdb` package
+#### Using `ferretdb` package
 
 Start `ferretdb` by specifying `--postgresql-url` with default username and password.
 
@@ -56,7 +55,7 @@ A client that specify username and password in MongoDB URI as below is authentic
 mongosh 'mongodb://user2:pass2@127.0.0.1/ferretdb?authMechanism=PLAIN'
 ```
 
-### Using Docker
+#### Using Docker
 
 For Docker, specify `FERRETDB_POSTGRESQL_URL` with default username and password.
 
@@ -106,45 +105,19 @@ docker run --rm -it --network=ferretdb --entrypoint=mongosh \
   mongo 'mongodb://user2:pass2@ferretdb/ferretdb?authMechanism=PLAIN'
 ```
 
-## Authentication Handshake
-
-:::note
-Some drivers may still use the legacy `hello` command to complete a handshake.
-:::
-
-If you encounter any issues while authenticating with FerretDB, try setting the Stable API version to V1 on the client as this may prevent legacy commands from being used.
-Please refer to your specific driver documentation on how to set this field.
-
-If this does not resolve your issue please file a bug report [here](https://github.com/FerretDB/FerretDB/issues/new?assignees=ferretdb-bot&labels=code%2Fbug%2Cnot+ready&projects=&template=bug.yml).
-
 ## Experimental authentication
 
-Upon enabling the flag `--test-enable-new-auth` or the environment variable `TEST_ENABLE_NEW_AUTH`,
+Upon enabling the experimental authentication by the flag `--test-enable-new-auth` or the environment variable `TEST_ENABLE_NEW_AUTH`,
 FerretDB enables user management and authentication against the stored credentials in the `admin` database `system.users` collection.
 The users are managed using the `usersInfo`, `createUser`, `updateUser`, `dropUser` and `dropAllUsersFromDatabase` commands.
 The users may be created and authenticated using `SCRAM-SHA-256`, `SCRAM-SHA-1` and `PLAIN` mechanisms.
-The `SCRAM` mechanisms are the algorithms used to store hashed passwords.
-FerretDB also stores hashed password using `PLAIN` mechanism.
 
-Please note that FerretDB does not support authorization yet, so created users currently have access to all databases.
-
-To connect to FerretDB, if a client use `mongodb://user:pass@ferretdb:27018/ferretdb?tls=true&authMechanism=SCRAM-SHA-256`,
+For example, if a client uses `mongodb://user:pass@ferretdb:27018/ferretdb?tls=true&authMechanism=SCRAM-SHA-256`,
 `user` is authenticated against its credential stored in the `admin.system.users` collection using `SCRAM-SHA-256` authentication mechanism.
 
-Before the first user is created in FerretDB, the credentials provided in the MongoDB connection string are used to connect directly to the PostgreSQL backend via passthrough.
-For instance, when the `admin.system.users` collection is empty and
-a client connects as `mongodb://pguser:pgpass@ferretdb:27018/ferretdb?tls=true&authMechanism=PLAIN`,
-it uses `pguser` to connect to the postgreSQL backend.
-When authenticating directly to the backend, only `PLAIN` mechanism is supported.
-Please note this exception no longer applies once the first user is created.
+### Example using experimental authentication
 
-When usernames and passwords are transferred in plain text or on an unsecured network,
-the use of [TLS](../security/tls-connections.md) is highly recommended.
-
-## Example using experimental authentication
-
-Start `ferretdb` by specifying `--postgresql-url` with username and password.
-All authenticated clients use `pguser` user to query PostgreSQL backend.
+Start `ferretdb` by specifying `--postgresql-url`.
 
 ```sh
 ferretdb --postgresql-url=postgres://pguser:pgpass@localhost:5432/ferretdb
@@ -155,3 +128,14 @@ A client connects as the user `user`, and authenticated using credentials stored
 ```sh
 mongosh 'mongodb://user:pass@127.0.0.1/ferretdb?authMechanism=SCRAM-SHA-256'
 ```
+
+## Authentication Handshake
+
+:::note
+Some drivers may still use the legacy `hello` command to complete a handshake.
+:::
+
+If you encounter any issues while authenticating with FerretDB, try setting the Stable API version to V1 on the client as this may prevent legacy commands from being used.
+Please refer to your specific driver documentation on how to set this field.
+
+If this does not resolve your issue please file a bug report [here](https://github.com/FerretDB/FerretDB/issues/new?assignees=ferretdb-bot&labels=code%2Fbug%2Cnot+ready&projects=&template=bug.yml).
