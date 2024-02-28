@@ -156,10 +156,7 @@ func TestHelloWithSupportedMechs(t *testing.T) {
 
 			if tc.mechs != nil {
 				mechanisms := must.NotFail(actual.Get("saslSupportedMechs"))
-
-				if !setup.IsMongoDB(t) {
-					assert.Equal(t, tc.mechs, mechanisms)
-				}
+				assert.Equal(t, tc.mechs, mechanisms)
 			} else {
 				assert.False(t, actual.Has("saslSupportedMechs"))
 			}
