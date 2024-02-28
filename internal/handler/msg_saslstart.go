@@ -236,7 +236,7 @@ func (h *Handler) scramCredentialLookup(ctx context.Context, username, dbName, m
 
 	return nil, handlererrors.NewCommandErrorMsg(
 		handlererrors.ErrAuthenticationFailed,
-		"Authentication failed",
+		"Authentication failed.",
 	)
 }
 
