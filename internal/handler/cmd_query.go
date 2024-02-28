@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -45,7 +44,12 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 
 		document := v.(*types.Document)
 
-		doc, err := h.speculativeAuthenticate(ctx, document)
+		dbName, err := common.GetRequiredParam[string](document, "db")
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		doc, err := h.saslStart(ctx, dbName, document)
 		if err == nil {
 			// speculative authenticate response field is only set if the authentication is successful,
 			// for an unsuccessful authentication, saslStart will return an error
@@ -83,66 +87,4 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 		fmt.Sprintf("CmdQuery: unhandled command %q for collection %q", cmd, collection),
 		"OpQuery: "+cmd,
 	)
-}
-
-// speculativeAuthenticate uses db and mechanism to authenticate and returns the document
-// to assign for op query speculativeAuthenticate response field if the authentication is successful.
-func (h *Handler) speculativeAuthenticate(ctx context.Context, document *types.Document) (*types.Document, error) {
-	dbName, err := common.GetRequiredParam[string](document, "db")
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	mechanism, err := common.GetRequiredParam[string](document, "mechanism")
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	switch mechanism {
-	case "PLAIN":
-		username, password, err := saslStartPlain(document)
-		if err != nil {
-			return nil, err
-		}
-
-		if h.EnableNewAuth {
-			conninfo.Get(ctx).SetBypassBackendAuth()
-		}
-
-		conninfo.Get(ctx).SetAuth(username, password)
-
-		var emptyPayload types.Binary
-
-		return must.NotFail(types.NewDocument(
-			"conversationId", int32(1),
-			"done", true,
-			"payload", emptyPayload,
-		)), nil
-	case "SCRAM-SHA-1", "SCRAM-SHA-256":
-		if !h.EnableNewAuth {
-			return nil, handlererrors.NewCommandErrorMsg(
-				handlererrors.ErrAuthenticationFailed,
-				"SCRAM authentication is not enabled",
-			)
-		}
-
-		response, err := h.saslStartSCRAM(ctx, dbName, mechanism, document)
-		if err != nil {
-			return nil, err
-		}
-
-		conninfo.Get(ctx).SetBypassBackendAuth()
-
-		binResponse := types.Binary{
-			B: []byte(response),
-		}
-
-		return must.NotFail(types.NewDocument(
-			"conversationId", int32(1),
-			"done", false,
-			"payload", binResponse,
-		)), nil
-	default:
-		return nil, lazyerrors.Errorf("unsupported mechanism %s", mechanism)
-	}
 }
