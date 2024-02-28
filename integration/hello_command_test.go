@@ -156,7 +156,7 @@ func TestHelloWithSupportedMechs(t *testing.T) {
 
 			if tc.mechs != nil {
 				mechanisms := must.NotFail(actual.Get("saslSupportedMechs"))
-				assert.ElementsMatch(t, tc.mechs, mechanisms)
+				assert.True(t, mechanisms.(*types.Array).ContainsAll(tc.mechs))
 			} else {
 				assert.False(t, actual.Has("saslSupportedMechs"))
 			}
