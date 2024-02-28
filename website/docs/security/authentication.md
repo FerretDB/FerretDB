@@ -16,7 +16,7 @@ Having user management within FerretDB allows creations and deletions of users v
 
 ## PostgreSQL backend authentication
 
-PostgreSQL backend connects by the provided username and password from the FerretDB's connection string or the MongoDB URI.
+A client connects to the PostgreSQL backend by the provided username and password from the FerretDB's connection string or the MongoDB URI.
 Only the `PLAIN` mechanism is supported for the backend authentication.
 
 When starting FerretDB, the default username and password can be specified in FerretDB's connection string,
@@ -115,6 +115,8 @@ The users may be created and authenticated using `SCRAM-SHA-256`, `SCRAM-SHA-1` 
 For example, if a client uses `mongodb://user:pass@ferretdb:27018/ferretdb?tls=true&authMechanism=SCRAM-SHA-256`,
 `user` is authenticated against its credential stored in the `admin.system.users` collection using `SCRAM-SHA-256` authentication mechanism.
 
+If the `PLAIN` mechanism is used, the use of [TLS](../security/tls-connections.md) is highly recommended since the password is transferred in plain text.
+
 ### Example using experimental authentication
 
 Start `ferretdb` by specifying `--postgresql-url`.
@@ -123,7 +125,7 @@ Start `ferretdb` by specifying `--postgresql-url`.
 ferretdb --postgresql-url=postgres://pguser:pgpass@localhost:5432/ferretdb
 ```
 
-A client connects as the user `user`, and authenticated using credentials stored in the `admin.system.users` collection.
+A client connects as the user `user`, and authenticates using credentials stored in the `admin.system.users` collection.
 
 ```sh
 mongosh 'mongodb://user:pass@127.0.0.1/ferretdb?authMechanism=SCRAM-SHA-256'
