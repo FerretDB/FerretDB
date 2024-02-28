@@ -49,11 +49,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// If true, the usage of float64 NaN values is disallowed.
-// They mess up many things too much, starting with simple equality tests.
-// But allowing them simplifies fuzzing where we currently compare converted [*types.Document]s.
-var noNaN = true
-
 type (
 	// ScalarType represents a BSON scalar type.
 	//
@@ -218,6 +213,12 @@ func convertToTypes(v any) (any, error) {
 	case string:
 		return v, nil
 	case Binary:
+		// Special case to prevent it from being stored as null in sjson / logged as null in fjson.
+		// TODO https://github.com/FerretDB/FerretDB/issues/260
+		if v.B == nil {
+			v.B = []byte{}
+		}
+
 		return types.Binary{
 			B:       v.B,
 			Subtype: types.BinarySubtype(v.Subtype),
