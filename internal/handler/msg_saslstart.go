@@ -65,6 +65,10 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			return nil, err
 		}
 
+		if h.EnableNewAuth {
+			conninfo.Get(ctx).SetBypassBackendAuth()
+		}
+
 		conninfo.Get(ctx).SetAuth(username, password)
 
 		var emptyPayload types.Binary
@@ -78,6 +82,13 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		)))
 
 	case "SCRAM-SHA-1", "SCRAM-SHA-256":
+		if !h.EnableNewAuth {
+			return nil, handlererrors.NewCommandErrorMsg(
+				handlererrors.ErrAuthenticationFailed,
+				"SCRAM authentication is not enabled",
+			)
+		}
+
 		response, err := h.saslStartSCRAM(ctx, mechanism, document)
 		if err != nil {
 			return nil, err
@@ -168,14 +179,12 @@ func (h *Handler) scramCredentialLookup(ctx context.Context, username, dbName, m
 		return nil, lazyerrors.Error(err)
 	}
 
-	var filter *types.Document
-
-	filter, err = usersInfoFilter(false, false, "", []usersInfoPair{
-		{username: username, db: dbName},
-	})
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	// For `PLAIN` mechanism $db field is always `$external` upon saslStart.
+	// For `SCRAM-SHA-1` and `SCRAM-SHA-256` mechanisms $db field contains
+	// authSource option of the client.
+	// Let authorization handle the database access right.
+	// TODO https://github.com/FerretDB/FerretDB/issues/174
+	filter := must.NotFail(types.NewDocument("user", username))
 
 	// Filter isn't being passed to the query as we are filtering after retrieving all data
 	// from the database due to limitations of the internal/backends filters.
