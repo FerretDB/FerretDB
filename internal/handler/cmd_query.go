@@ -22,14 +22,44 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // CmdQuery implements deprecated OP_QUERY message handling.
 func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpReply, error) {
-	cmd := query.Query().Command()
+	q := query.Query()
+	cmd := q.Command()
 	collection := query.FullCollectionName
+
+	v, _ := q.Get("speculativeAuthenticate")
+	if v != nil && (cmd == "ismaster" || cmd == "isMaster" || cmd == "hello") {
+		reply, err := common.IsMaster(ctx, q, h.TCPHost, h.ReplSetName)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		replyDoc := must.NotFail(reply.Document())
+
+		document := v.(*types.Document)
+
+		dbName, err := common.GetRequiredParam[string](document, "db")
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		doc, err := h.saslStart(ctx, dbName, document)
+		if err == nil {
+			// speculative authenticate response field is only set if the authentication is successful,
+			// for an unsuccessful authentication, saslStart will return an error
+			replyDoc.Set("speculativeAuthenticate", doc)
+		}
+
+		reply.SetDocument(replyDoc)
+
+		return reply, nil
+	}
 
 	if (cmd == "ismaster" || cmd == "isMaster") && strings.HasSuffix(collection, ".$cmd") {
 		return common.IsMaster(ctx, query.Query(), h.TCPHost, h.ReplSetName)

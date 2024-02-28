@@ -48,7 +48,7 @@ jobs:
     # https://docs.github.com/en/billing/managing-billing-for-github-actions/about-billing-for-github-actions#per-minute-rates
     runs-on: ubicloud-standard-4
 
-    timeout-minutes: 20
+    timeout-minutes: 25
 
     steps:
       - name: Dump github context
@@ -99,7 +99,7 @@ jobs:
           bin/task test-integration-${{ inputs.task }}
           SHARD_INDEX=${{ inputs.shard_index }}
           SHARD_TOTAL=${{ inputs.shard_total }}
-          TEST_TIMEOUT=15m
+          TEST_TIMEOUT=20m
           DISABLE_PUSHDOWN=${{ inputs.disable_pushdown }}
         env:
           GOFLAGS: ${{ runner.debug == '1' && '-v' || '' }}
