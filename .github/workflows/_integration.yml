@@ -46,7 +46,7 @@ jobs:
 
     # https://www.ubicloud.com/docs/github-actions-integration/price-performance#usage-pricing
     # https://docs.github.com/en/billing/managing-billing-for-github-actions/about-billing-for-github-actions#per-minute-rates
-    runs-on: ubicloud-standard-4
+    runs-on: ubicloud-standard-8
 
     timeout-minutes: 20
 
