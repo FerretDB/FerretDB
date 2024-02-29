@@ -107,10 +107,13 @@ func TestSetupUser(t *testing.T) {
 
 	l := testutil.Logger(t).Sugar()
 
-	err := setupUser(ctx, l, "postgres://username@localhost:5432/ferretdb")
+	err := setupUser(ctx, l, 5432)
 	require.NoError(t, err)
 
 	// if the user already exists, it should not fail
-	err = setupUser(ctx, l, "postgres://username@localhost:5432/ferretdb")
+	err = setupUser(ctx, l, 5432)
+	require.NoError(t, err)
+
+	err = setupUser(ctx, l, 5433)
 	require.NoError(t, err)
 }

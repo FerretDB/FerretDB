@@ -228,8 +228,8 @@ func setupMongodb(ctx context.Context, logger *zap.SugaredLogger) error {
 //
 // Without this, once the first user is created, the authentication fails
 // as username/password does not exist in admin.system.users collection.
-func setupUser(ctx context.Context, logger *zap.SugaredLogger, postgreSQlURL string) error {
-	if err := waitForPort(ctx, logger.Named("postgreSQL"), 5432); err != nil {
+func setupUser(ctx context.Context, logger *zap.SugaredLogger, postgreSQLPort uint16) error {
+	if err := waitForPort(ctx, logger.Named("postgreSQL"), postgreSQLPort); err != nil {
 		return err
 	}
 
@@ -237,7 +237,7 @@ func setupUser(ctx context.Context, logger *zap.SugaredLogger, postgreSQlURL str
 	if err != nil {
 		return err
 	}
-
+	postgreSQlURL := fmt.Sprintf("postgres://username:password@localhost:%d/ferretdb", postgreSQLPort)
 	listenerMetrics := connmetrics.NewListenerMetrics()
 	handlerOpts := &registry.NewHandlerOpts{
 		Logger:        logger.Desugar(),
@@ -378,11 +378,11 @@ func setup(ctx context.Context, logger *zap.SugaredLogger) error {
 		}
 	}
 
-	if err := setupUser(ctx, logger, "postgres://username:password@localhost:5432/ferretdb"); err != nil {
+	if err := setupUser(ctx, logger, 5432); err != nil {
 		return err
 	}
 
-	if err := setupUser(ctx, logger, "postgres://username:password@localhost:5433/ferretdb"); err != nil {
+	if err := setupUser(ctx, logger, 5433); err != nil {
 		return err
 	}
 
