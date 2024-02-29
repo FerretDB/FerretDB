@@ -28,22 +28,21 @@ import (
 
 // OpQuery is a deprecated request message type.
 type OpQuery struct {
-	Flags                OpQueryFlags
+	// The order of fields is weird to make the struct smaller due to alignment.
+	// The wire order is: flags, collection name, number to skip, number to return, query, fields selector.
+
 	FullCollectionName   string
+	query                bson2.RawDocument
+	returnFieldsSelector bson2.RawDocument
+	Flags                OpQueryFlags
 	NumberToSkip         int32
 	NumberToReturn       int32
-	query                bson2.RawDocument
-	returnFieldsSelector bson2.RawDocument // may be nil
 }
 
 func (query *OpQuery) msgbody() {}
 
-// check checks if the query is valid.
+// check implements [MsgBody] interface.
 func (query *OpQuery) check() error {
-	if !debugbuild.Enabled {
-		return nil
-	}
-
 	if d := query.query; d != nil {
 		if _, err := d.DecodeDeep(); err != nil {
 			return lazyerrors.Error(err)
@@ -101,8 +100,10 @@ func (query *OpQuery) UnmarshalBinaryNocopy(b []byte) error {
 		query.returnFieldsSelector = b[selectorLow:]
 	}
 
-	if err := query.check(); err != nil {
-		return lazyerrors.Error(err)
+	if debugbuild.Enabled {
+		if err := query.check(); err != nil {
+			return lazyerrors.Error(err)
+		}
 	}
 
 	return nil
@@ -110,8 +111,10 @@ func (query *OpQuery) UnmarshalBinaryNocopy(b []byte) error {
 
 // MarshalBinary implements [MsgBody] interface.
 func (query *OpQuery) MarshalBinary() ([]byte, error) {
-	if err := query.check(); err != nil {
-		return nil, lazyerrors.Error(err)
+	if debugbuild.Enabled {
+		if err := query.check(); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 	}
 
 	nameSize := bson2.SizeCString(query.FullCollectionName)

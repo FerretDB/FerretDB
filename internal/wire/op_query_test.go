@@ -38,7 +38,7 @@ var queryTestCases = []testCase{
 			FullCollectionName: "admin.$cmd",
 			NumberToSkip:       0,
 			NumberToReturn:     -1,
-			query: convertDocument(must.NotFail(types.NewDocument(
+			query: makeRawDocument(
 				"ismaster", true,
 				"client", must.NotFail(types.NewDocument(
 					"driver", must.NotFail(types.NewDocument(
@@ -58,7 +58,7 @@ var queryTestCases = []testCase{
 				)),
 				"compression", must.NotFail(types.NewArray("none")),
 				"loadBalanced", false,
-			))),
+			),
 			returnFieldsSelector: nil,
 		},
 	},
@@ -77,7 +77,7 @@ var queryTestCases = []testCase{
 			FullCollectionName: "admin.$cmd",
 			NumberToSkip:       0,
 			NumberToReturn:     -1,
-			query: convertDocument(must.NotFail(types.NewDocument(
+			query: makeRawDocument(
 				"ismaster", true,
 				"client", must.NotFail(types.NewDocument(
 					"driver", must.NotFail(types.NewDocument(
@@ -97,7 +97,7 @@ var queryTestCases = []testCase{
 				)),
 				"compression", must.NotFail(types.NewArray("none")),
 				"loadBalanced", false,
-			))),
+			),
 			returnFieldsSelector: nil,
 		},
 	},
