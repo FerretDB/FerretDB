@@ -44,7 +44,7 @@ func SCRAMSHA1Hash(username, password string) (*types.Document, error) {
 // fixedScramSHA1Params represent fixed password parameters for SCRAM-SHA-1 authentication.
 var fixedScramSHA1Params = &scramParams{
 	iterationCount: 10_000,
-	saltLen:        18,
+	saltLen:        16,
 }
 
 // scramSHA1HashParams hashes the password with the given salt and parameters,

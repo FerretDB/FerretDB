@@ -469,11 +469,6 @@ var decodeTestCases = []decodeTestCase{
 }
 
 func TestNormal(t *testing.T) {
-	prev := noNaN
-	noNaN = false
-
-	t.Cleanup(func() { noNaN = prev })
-
 	for _, tc := range normalTestCases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Run("bson", func(t *testing.T) {
@@ -560,11 +555,6 @@ func TestNormal(t *testing.T) {
 }
 
 func TestDecode(t *testing.T) {
-	prev := noNaN
-	noNaN = false
-
-	t.Cleanup(func() { noNaN = prev })
-
 	for _, tc := range decodeTestCases {
 		if tc.decodeDeepErr == nil {
 			tc.decodeDeepErr = tc.decodeErr
@@ -622,11 +612,6 @@ func TestDecode(t *testing.T) {
 }
 
 func BenchmarkDocument(b *testing.B) {
-	prev := noNaN
-	noNaN = false
-
-	b.Cleanup(func() { noNaN = prev })
-
 	for _, tc := range normalTestCases {
 		b.Run(tc.name, func(b *testing.B) {
 			b.Run("bson", func(b *testing.B) {
@@ -854,11 +839,6 @@ func testRawDocument(t *testing.T, rawDoc RawDocument) {
 }
 
 func FuzzDocument(f *testing.F) {
-	prev := noNaN
-	noNaN = false
-
-	f.Cleanup(func() { noNaN = prev })
-
 	for _, tc := range normalTestCases {
 		f.Add([]byte(tc.raw))
 	}

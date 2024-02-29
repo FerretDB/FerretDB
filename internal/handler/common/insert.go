@@ -34,6 +34,7 @@ type InsertParams struct {
 	Collection string       `ferretdb:"insert,collection"`
 	Ordered    bool         `ferretdb:"ordered,opt"`
 
+	MaxTimeMS                int64  `ferretdb:"maxTimeMS,ignored"`
 	WriteConcern             any    `ferretdb:"writeConcern,ignored"`
 	BypassDocumentValidation bool   `ferretdb:"bypassDocumentValidation,ignored"`
 	Comment                  string `ferretdb:"comment,ignored"`
