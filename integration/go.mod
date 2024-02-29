@@ -7,12 +7,12 @@ replace github.com/FerretDB/FerretDB => ../
 require (
 	github.com/AlekSi/pointer v1.2.0
 	github.com/FerretDB/FerretDB v0.0.0-00010101000000-000000000000
-	github.com/prometheus/client_golang v1.18.0
+	github.com/prometheus/client_golang v1.19.0
 	github.com/stretchr/testify v1.8.4
 	go.mongodb.org/mongo-driver v1.14.0
-	go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo v0.48.0
-	go.opentelemetry.io/otel v1.23.1
-	go.uber.org/zap v1.26.0
+	go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo v0.49.0
+	go.opentelemetry.io/otel v1.24.0
+	go.uber.org/zap v1.27.0
 	golang.org/x/exp v0.0.0-20240213143201-ec583247a57a
 )
 
@@ -46,7 +46,7 @@ require (
 	github.com/neilotoole/slogt v1.1.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_model v0.6.0 // indirect
-	github.com/prometheus/common v0.47.0 // indirect
+	github.com/prometheus/common v0.48.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
@@ -55,9 +55,9 @@ require (
 	github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.23.1 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.23.1 // indirect
-	go.opentelemetry.io/otel/metric v1.23.1 // indirect
+	go.opentelemetry.io/otel/metric v1.24.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.23.1 // indirect
-	go.opentelemetry.io/otel/trace v1.23.1 // indirect
+	go.opentelemetry.io/otel/trace v1.24.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.1.0 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
 	golang.org/x/crypto v0.19.0 // indirect
