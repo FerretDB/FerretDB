@@ -266,16 +266,15 @@ func setupUser(ctx context.Context, logger *zap.SugaredLogger) error {
 
 	l := clientconn.NewListener(&listenerOpts)
 
-	runDone := make(chan struct{})
+	runDone := make(chan error)
 
 	go func() {
 		defer close(runDone)
 
-		err := l.Run(ctx)
-		if err == nil || errors.Is(err, context.Canceled) {
-			logger.Info("Listener stopped without error")
-		} else {
-			logger.Error("Listener stopped", zap.Error(err))
+		if err := l.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
+			runDone <- err
+
+			return
 		}
 	}()
 
@@ -283,9 +282,16 @@ func setupUser(ctx context.Context, logger *zap.SugaredLogger) error {
 		<-runDone
 	}()
 
+	select {
+	case err := <-runDone:
+		if err != nil {
+			return err
+		}
+	case <-time.After(time.Millisecond):
+	}
+
 	port := l.TCPAddr().(*net.TCPAddr).Port
 
-	var buf1 bytes.Buffer
 	var retry int64
 
 	eval := `'
@@ -307,19 +313,22 @@ func setupUser(ctx context.Context, logger *zap.SugaredLogger) error {
 		eval,
 	}
 
+	var buf bytes.Buffer
 	for ctx.Err() == nil {
-		buf1.Reset()
+		buf.Reset()
 
-		err := runCommand("docker", args, &buf1, logger)
+		err := runCommand("docker", args, &buf, logger)
 		if err == nil {
 			break
 		}
 
-		logger.Infof("%s:\n%s", err, buf1.String())
+		logger.Infof("%s:\n%s", err, buf.String())
 
 		retry++
 		ctxutil.SleepWithJitter(ctx, time.Second, retry)
 	}
+
+	close(runDone)
 
 	return ctx.Err()
 }
