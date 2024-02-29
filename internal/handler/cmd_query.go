@@ -34,7 +34,7 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 	collection := query.FullCollectionName
 
 	v, _ := q.Get("speculativeAuthenticate")
-	if v != nil && (cmd == "ismaster" || cmd == "isMaster" || cmd == "hello") {
+	if v != nil && (cmd == "ismaster" || cmd == "isMaster") {
 		reply, err := common.IsMaster(ctx, q, h.TCPHost, h.ReplSetName)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
