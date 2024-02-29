@@ -40,6 +40,9 @@ import (
 	"github.com/FerretDB/FerretDB/build/version"
 	mysqlpool "github.com/FerretDB/FerretDB/internal/backends/mysql/metadata/pool"
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata/pool"
+	"github.com/FerretDB/FerretDB/internal/clientconn"
+	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
+	"github.com/FerretDB/FerretDB/internal/handler/registry"
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -211,6 +214,108 @@ func setupMongodb(ctx context.Context, logger *zap.SugaredLogger) error {
 		}
 
 		logger.Infof("%s:\n%s", err, buf.String())
+
+		retry++
+		ctxutil.SleepWithJitter(ctx, time.Second, retry)
+	}
+
+	return ctx.Err()
+}
+
+// setupUser creates a default user username/password for PostgreSQL backend.
+// If the user already exists, it does nothing.
+func setupUser(ctx context.Context, logger *zap.SugaredLogger) error {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	if err := waitForPort(ctx, logger.Named("postgreSQL"), 5432); err != nil {
+		return err
+	}
+
+	sp, err := state.NewProvider("")
+	if err != nil {
+		return err
+	}
+
+	listenerMetrics := connmetrics.NewListenerMetrics()
+	handlerOpts := &registry.NewHandlerOpts{
+		Logger:        logger.Desugar(),
+		ConnMetrics:   listenerMetrics.ConnMetrics,
+		StateProvider: sp,
+		PostgreSQLURL: "postgres://username:password@127.0.0.1:5432/ferretdb?search_path=",
+		TestOpts: registry.TestOpts{
+			CappedCleanupPercentage: 20,
+			EnableNewAuth:           true,
+		},
+	}
+
+	h, closeBackend, err := registry.NewHandler("postgresql", handlerOpts)
+	if err != nil {
+		return err
+	}
+
+	defer closeBackend()
+
+	listenerOpts := clientconn.NewListenerOpts{
+		Mode:    clientconn.NormalMode,
+		Metrics: listenerMetrics,
+		Handler: h,
+		Logger:  logger.Desugar(),
+		TCP:     ":27017",
+	}
+
+	l := clientconn.NewListener(&listenerOpts)
+
+	runDone := make(chan struct{})
+
+	go func() {
+		defer close(runDone)
+
+		err := l.Run(ctx)
+		if err == nil || errors.Is(err, context.Canceled) {
+			logger.Info("Listener stopped without error")
+		} else {
+			logger.Error("Listener stopped", zap.Error(err))
+		}
+	}()
+
+	defer func() {
+		<-runDone
+	}()
+
+	port := l.TCPAddr().(*net.TCPAddr).Port
+
+	var buf1 bytes.Buffer
+	var retry int64
+
+	eval := `'
+	if (db.getSiblingDB("admin").getUser("username") == null){
+		db.getSiblingDB("admin").createUser(
+			{user: "username", pwd: "password", roles: [], mechanisms: ["SCRAM-SHA-1","SCRAM-SHA-256","PLAIN"]}
+		)
+	}
+'`
+	args := []string{
+		"compose",
+		"exec",
+		"-T",
+		"mongodb",
+		"mongosh",
+		"--host=host.docker.internal",
+		fmt.Sprintf("--port=%d", port),
+		"--eval",
+		eval,
+	}
+
+	for ctx.Err() == nil {
+		buf1.Reset()
+
+		err := runCommand("docker", args, &buf1, logger)
+		if err == nil {
+			break
+		}
+
+		logger.Infof("%s:\n%s", err, buf1.String())
 
 		retry++
 		ctxutil.SleepWithJitter(ctx, time.Second, retry)
