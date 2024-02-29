@@ -135,7 +135,7 @@ func setupAnyPostgres(ctx context.Context, logger *zap.SugaredLogger, uri string
 		return ctx.Err()
 	}
 
-	return nil
+	return setupUser(ctx, logger, uint16(port))
 }
 
 // setupPostgres configures `postgres` container.
@@ -237,6 +237,7 @@ func setupUser(ctx context.Context, logger *zap.SugaredLogger, postgreSQLPort ui
 	if err != nil {
 		return err
 	}
+
 	postgreSQlURL := fmt.Sprintf("postgres://username:password@localhost:%d/ferretdb", postgreSQLPort)
 	listenerMetrics := connmetrics.NewListenerMetrics()
 	handlerOpts := &registry.NewHandlerOpts{
@@ -267,22 +268,20 @@ func setupUser(ctx context.Context, logger *zap.SugaredLogger, postgreSQLPort ui
 
 	l := clientconn.NewListener(&listenerOpts)
 
-	runDone := make(chan error)
+	runErr := make(chan error)
 
 	go func() {
-		defer close(runDone)
+		if err := l.Run(ctx); err != nil && !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
+			runErr <- err
 
-		if err := l.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
-			runDone <- err
+			return
 		}
 	}()
 
-	defer func() {
-		<-runDone
-	}()
+	defer close(runErr)
 
 	select {
-	case err := <-runDone:
+	case err := <-runErr:
 		if err != nil {
 			return err
 		}
@@ -313,10 +312,11 @@ func setupUser(ctx context.Context, logger *zap.SugaredLogger, postgreSQLPort ui
 	}
 
 	var buf bytes.Buffer
+
 	for ctx.Err() == nil {
 		buf.Reset()
 
-		err := runCommand("docker", args, &buf, logger)
+		err = runCommand("docker", args, &buf, logger)
 		if err == nil {
 			break
 		}
@@ -327,7 +327,9 @@ func setupUser(ctx context.Context, logger *zap.SugaredLogger, postgreSQLPort ui
 		ctxutil.SleepWithJitter(ctx, time.Second, retry)
 	}
 
-	close(runDone)
+	if err != nil {
+		return err
+	}
 
 	return ctx.Err()
 }
@@ -376,14 +378,6 @@ func setup(ctx context.Context, logger *zap.SugaredLogger) error {
 		if err := f(ctx, logger); err != nil {
 			return err
 		}
-	}
-
-	if err := setupUser(ctx, logger, 5432); err != nil {
-		return err
-	}
-
-	if err := setupUser(ctx, logger, 5433); err != nil {
-		return err
 	}
 
 	logger.Info("Done.")
