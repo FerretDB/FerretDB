@@ -222,12 +222,13 @@ func setupMongodb(ctx context.Context, logger *zap.SugaredLogger) error {
 	return ctx.Err()
 }
 
-// setupUser creates a default user username/password for PostgreSQL backend.
-// If the user already exists, it does nothing.
-func setupUser(ctx context.Context, logger *zap.SugaredLogger) error {
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-
+// setupUser creates a user in admin database with supported mechanisms.
+// The user uses username/password credential which is the same as the PostgreSQL
+// credentials.
+//
+// Without this, once the first user is created, the authentication fails
+// as username/password does not exist in admin.system.users collection.
+func setupUser(ctx context.Context, logger *zap.SugaredLogger, postgreSQlURL string) error {
 	if err := waitForPort(ctx, logger.Named("postgreSQL"), 5432); err != nil {
 		return err
 	}
@@ -242,7 +243,7 @@ func setupUser(ctx context.Context, logger *zap.SugaredLogger) error {
 		Logger:        logger.Desugar(),
 		ConnMetrics:   listenerMetrics.ConnMetrics,
 		StateProvider: sp,
-		PostgreSQLURL: "postgres://username:password@127.0.0.1:5432/ferretdb?search_path=",
+		PostgreSQLURL: postgreSQlURL,
 		TestOpts: registry.TestOpts{
 			CappedCleanupPercentage: 20,
 			EnableNewAuth:           true,
@@ -261,7 +262,7 @@ func setupUser(ctx context.Context, logger *zap.SugaredLogger) error {
 		Metrics: listenerMetrics,
 		Handler: h,
 		Logger:  logger.Desugar(),
-		TCP:     ":27017",
+		TCP:     "127.0.0.1:0",
 	}
 
 	l := clientconn.NewListener(&listenerOpts)
@@ -273,8 +274,6 @@ func setupUser(ctx context.Context, logger *zap.SugaredLogger) error {
 
 		if err := l.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
 			runDone <- err
-
-			return
 		}
 	}()
 
@@ -377,6 +376,14 @@ func setup(ctx context.Context, logger *zap.SugaredLogger) error {
 		if err := f(ctx, logger); err != nil {
 			return err
 		}
+	}
+
+	if err := setupUser(ctx, logger, "postgres://username:password@localhost:5432/ferretdb"); err != nil {
+		return err
+	}
+
+	if err := setupUser(ctx, logger, "postgres://username:password@localhost:5433/ferretdb"); err != nil {
+		return err
 	}
 
 	logger.Info("Done.")

@@ -16,8 +16,10 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -91,4 +93,24 @@ func TestPackageVersion(t *testing.T) {
 	err = packageVersion(&output, f.Name())
 	assert.NoError(t, err)
 	assert.Equal(t, "1.0.0", output.String())
+}
+
+func TestSetupUser(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in -short mode")
+	}
+
+	t.Parallel()
+
+	ctx, cancel := context.WithTimeout(testutil.Ctx(t), 5*time.Second)
+	t.Cleanup(cancel)
+
+	l := testutil.Logger(t).Sugar()
+
+	err := setupUser(ctx, l, "postgres://username@localhost:5432/ferretdb")
+	require.NoError(t, err)
+
+	// if the user already exists, it should not fail
+	err = setupUser(ctx, l, "postgres://username@localhost:5432/ferretdb")
+	require.NoError(t, err)
 }
