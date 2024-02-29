@@ -419,7 +419,7 @@ tasks:
         --proxy-addr=127.0.0.1:47017
         --mode=diff-normal
         --handler=pg
-        --postgresql-url='postgres://127.0.0.1:5433/ferretdb?search_path='
+        --postgresql-url='postgres://username:password@127.0.0.1:5433/ferretdb?search_path='
         --test-records-dir=tmp/records
 
   run-proxy:
