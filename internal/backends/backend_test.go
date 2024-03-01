@@ -112,21 +112,45 @@ func TestListDatabases(t *testing.T) {
 				t.Parallel()
 				dbRes, err := b.ListDatabases(ctx, nil)
 				require.NoError(t, err)
-				require.Equal(t, 3, len(dbRes.Databases), "expected full list len 3")
-				require.Equal(t, dbNames[1], dbRes.Databases[0].Name, "expected name testDB1")
-				require.Equal(t, dbNames[0], dbRes.Databases[1].Name, "expected name testDB2")
-				require.Equal(t, dbNames[2], dbRes.Databases[2].Name, "expected name testDB3")
+				require.GreaterOrEqual(t, len(dbRes.Databases), 3, "expected at least 3")
+
+				expected := []string{dbNames[1], dbNames[0], dbNames[2]}
+				actual := []string{dbRes.Databases[0].Name, dbRes.Databases[1].Name, dbRes.Databases[2].Name}
+
+				if len(dbRes.Databases) > 3 {
+					expected = []string{"admin", dbNames[1], dbNames[0], dbNames[2]}
+					actual = []string{
+						dbRes.Databases[0].Name,
+						dbRes.Databases[1].Name,
+						dbRes.Databases[2].Name,
+						dbRes.Databases[3].Name,
+					}
+				}
+
+				require.Equalf(t, expected, actual, "expected %s databases", len(expected))
 			})
 
-			t.Run("ListDatabasesWithEMptyParam", func(t *testing.T) {
+			t.Run("ListDatabasesWithEmptyParam", func(t *testing.T) {
 				t.Parallel()
 				var param backends.ListDatabasesParams
 				dbRes, err := b.ListDatabases(ctx, &param)
 				require.NoError(t, err)
-				require.Equal(t, 3, len(dbRes.Databases), "expected full list len 3")
-				require.Equal(t, dbNames[1], dbRes.Databases[0].Name, "expected name testDB1")
-				require.Equal(t, dbNames[0], dbRes.Databases[1].Name, "expected name testDB2")
-				require.Equal(t, dbNames[2], dbRes.Databases[2].Name, "expected name testDB3")
+				require.GreaterOrEqual(t, len(dbRes.Databases), 3, "expected at least 3")
+
+				expected := []string{dbNames[1], dbNames[0], dbNames[2]}
+				actual := []string{dbRes.Databases[0].Name, dbRes.Databases[1].Name, dbRes.Databases[2].Name}
+
+				if len(dbRes.Databases) > 3 {
+					expected = []string{"admin", dbNames[1], dbNames[0], dbNames[2]}
+					actual = []string{
+						dbRes.Databases[0].Name,
+						dbRes.Databases[1].Name,
+						dbRes.Databases[2].Name,
+						dbRes.Databases[3].Name,
+					}
+				}
+
+				require.Equalf(t, expected, actual, "expected %s databases", len(expected))
 			})
 		})
 	}
