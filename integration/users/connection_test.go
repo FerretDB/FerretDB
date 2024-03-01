@@ -17,6 +17,7 @@ package users
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -26,6 +27,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/x/mongo/driver/topology"
 
+	"github.com/FerretDB/FerretDB/integration"
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
@@ -411,4 +413,50 @@ func TestAuthenticationEnableNewAuthPLAIN(t *testing.T) {
 			require.NoError(t, err, "cannot insert document")
 		})
 	}
+}
+
+func TestAuthenticationSASLContinueFailure(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupWithOpts(t, nil)
+	collection := s.Collection
+	db := collection.Database()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	require.NoError(t, db.RunCommand(ctx, bson.D{
+		{"createUser", "pencil"},
+		{"roles", bson.A{}},
+		{"pwd", "password"},
+	}).Err())
+
+	credential := options.Credential{
+		AuthMechanism: "SCRAM-SHA-1",
+		AuthSource:    db.Name(),
+		Username:      "pencil",
+		Password:      "password",
+	}
+
+	opts := options.Client().ApplyURI(s.MongoDBURI).SetAuth(credential)
+
+	client, err := mongo.Connect(ctx, opts)
+	require.NoError(t, err, "cannot connect to MongoDB")
+
+	dbNew := client.Database(db.Name())
+
+	err = dbNew.Client().Ping(context.Background(), nil)
+	require.NoError(t, err)
+
+	err = dbNew.RunCommand(ctx, bson.D{
+		{"saslContinue", int32(1)},
+		{"conversationId", int32(1)},
+		{"payload", []byte("Yz1iaXdzLHI9UnVBWkJSQVpnL1JlZ1FSamF2d2ZqNmhVRDBSUXRJL2VaUTQvemdBUU9NZk83dDdDUGRsR3hnQW9JQkpEODYrMixwPU52VTFQWW1GcldUT1N2ZVBFb05SdDVuMkplNHc2aVBMS2phL2phSC9XZmc9")},
+	}).Err()
+
+	integration.AssertEqualCommandError(t, mongo.CommandError{
+		Name:    "AuthenticationFailed",
+		Code:    18,
+		Message: "Authentication failed.",
+	}, err)
 }
