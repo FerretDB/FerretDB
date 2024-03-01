@@ -34,6 +34,9 @@ import (
 
 	"github.com/alecthomas/kong"
 	"github.com/prometheus/client_golang/prometheus"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -271,7 +274,7 @@ func setupUser(ctx context.Context, logger *zap.SugaredLogger, postgreSQLPort ui
 	runErr := make(chan error)
 
 	go func() {
-		if err := l.Run(ctx); err != nil && !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
+		if err = l.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
 			runErr <- err
 
 			return
@@ -281,7 +284,7 @@ func setupUser(ctx context.Context, logger *zap.SugaredLogger, postgreSQLPort ui
 	defer close(runErr)
 
 	select {
-	case err := <-runErr:
+	case err = <-runErr:
 		if err != nil {
 			return err
 		}
@@ -289,45 +292,26 @@ func setupUser(ctx context.Context, logger *zap.SugaredLogger, postgreSQLPort ui
 	}
 
 	port := l.TCPAddr().(*net.TCPAddr).Port
+	uri := fmt.Sprintf("mongodb://username:password@localhost:%d/", port)
+	clientOpts := options.Client().ApplyURI(uri)
 
-	var retry int64
-
-	eval := `'
-	if (db.getSiblingDB("admin").getUser("username") == null){
-		db.getSiblingDB("admin").createUser(
-			{user: "username", pwd: "password", roles: [], mechanisms: ["SCRAM-SHA-1","SCRAM-SHA-256","PLAIN"]}
-		)
-	}
-'`
-	args := []string{
-		"compose",
-		"exec",
-		"-T",
-		"mongodb",
-		"mongosh",
-		"--host=host.docker.internal",
-		fmt.Sprintf("--port=%d", port),
-		"--eval",
-		eval,
+	client, err := mongo.Connect(ctx, clientOpts)
+	if err != nil {
+		return err
 	}
 
-	var buf bytes.Buffer
-
-	for ctx.Err() == nil {
-		buf.Reset()
-
-		err = runCommand("docker", args, &buf, logger)
-		if err == nil {
-			break
+	//nolint:forbidigo // allow usage of bson for setup dev and test environment
+	if err = client.Database("admin").RunCommand(ctx, bson.D{
+		bson.E{Key: "createUser", Value: "username"},
+		bson.E{Key: "roles", Value: bson.A{}},
+		bson.E{Key: "pwd", Value: "password"},
+		bson.E{Key: "mechanisms", Value: bson.A{"PLAIN", "SCRAM-SHA-1", "SCRAM-SHA-256"}},
+	}).Err(); err != nil {
+		var cmdErr mongo.CommandError
+		if errors.As(err, &cmdErr) && cmdErr.Code == 51003 {
+			return nil
 		}
 
-		logger.Infof("%s:\n%s", err, buf.String())
-
-		retry++
-		ctxutil.SleepWithJitter(ctx, time.Second, retry)
-	}
-
-	if err != nil {
 		return err
 	}
 
