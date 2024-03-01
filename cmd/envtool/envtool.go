@@ -310,6 +310,10 @@ func setupUser(ctx context.Context, logger *zap.SugaredLogger, postgreSQLPort ui
 		return err
 	}
 
+	defer func() {
+		err = client.Disconnect(ctx)
+	}()
+
 	//nolint:forbidigo // allow usage of bson for setup dev and test environment
 	if err = client.Database("admin").RunCommand(ctx, bson.D{
 		bson.E{Key: "createUser", Value: "username"},
