@@ -283,11 +283,12 @@ func setupUser(ctx context.Context, logger *zap.SugaredLogger, postgreSQLPort ui
 
 	runErr := make(chan error)
 
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	go func() {
 		if err = l.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
 			runErr <- err
-
-			return
 		}
 	}()
 
@@ -327,6 +328,10 @@ func setupUser(ctx context.Context, logger *zap.SugaredLogger, postgreSQLPort ui
 		}
 
 		return err
+	}
+
+	if ctx.Err() == context.Canceled {
+		return nil
 	}
 
 	return ctx.Err()

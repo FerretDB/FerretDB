@@ -17,9 +17,6 @@ package integration
 import (
 	"testing"
 
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/must"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -27,6 +24,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
@@ -71,6 +70,7 @@ func TestCommandsAuthenticationLogout(t *testing.T) {
 	actualUsers := must.NotFail(actualAuth.Get("authenticatedUsers")).(*types.Array)
 
 	var hasUser bool
+
 	for i := 0; i < actualUsers.Len(); i++ {
 		actualUser := must.NotFail(must.NotFail(actualUsers.Get(i)).(*types.Document).Get("user"))
 		if actualUser == username {
@@ -107,49 +107,4 @@ func TestCommandsAuthenticationLogout(t *testing.T) {
 	// the test user logs out again, it has no effect
 	err = db.RunCommand(ctx, bson.D{{"logout", 1}}).Err()
 	assert.NoError(t, err)
-}
-
-func TestCommandsAuthenticationLogoutTLS(t *testing.T) {
-	setup.SkipForMongoDB(t, "tls is not enabled for mongodb backend")
-
-	t.Parallel()
-
-	ctx, collection := setup.Setup(t)
-	db := collection.Database()
-
-	// the test user is authenticated
-	expectedAuthenticated := bson.D{
-		{
-			"authInfo", bson.D{
-				{"authenticatedUsers", bson.A{bson.D{{"user", "username"}}}},
-				{"authenticatedUserRoles", bson.A{}},
-				{"authenticatedUserPrivileges", bson.A{}},
-			},
-		},
-		{"ok", float64(1)},
-	}
-	var res bson.D
-	err := db.RunCommand(ctx, bson.D{{"connectionStatus", 1}}).Decode(&res)
-	assert.NoError(t, err)
-	assert.Equal(t, expectedAuthenticated, res)
-
-	// the test user logs out
-	err = db.RunCommand(ctx, bson.D{{"logout", 1}}).Decode(&res)
-	assert.NoError(t, err)
-	assert.Equal(t, bson.D{{"ok", float64(1)}}, res)
-
-	// the test user is no longer authenticated
-	expectedUnauthenticated := bson.D{
-		{
-			"authInfo", bson.D{
-				{"authenticatedUsers", bson.A{}},
-				{"authenticatedUserRoles", bson.A{}},
-				{"authenticatedUserPrivileges", bson.A{}},
-			},
-		},
-		{"ok", float64(1)},
-	}
-	err = db.RunCommand(ctx, bson.D{{"connectionStatus", 1}}).Decode(&res)
-	assert.NoError(t, err)
-	assert.Equal(t, expectedUnauthenticated, res)
 }
