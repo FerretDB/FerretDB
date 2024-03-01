@@ -88,6 +88,10 @@ func waitForPort(ctx context.Context, logger *zap.SugaredLogger, port uint16) er
 }
 
 // setupAnyPostgres configures given PostgreSQL.
+//
+// It also creates a user in ferretdb and template1 databases so all subsequent
+// databases created from template1 have the user.
+// See also https://www.postgresql.org/docs/current/manage-ag-templatedbs.html.
 func setupAnyPostgres(ctx context.Context, logger *zap.SugaredLogger, uri string) error {
 	u, err := url.Parse(uri)
 	if err != nil {
@@ -138,7 +142,14 @@ func setupAnyPostgres(ctx context.Context, logger *zap.SugaredLogger, uri string
 		return ctx.Err()
 	}
 
-	return setupUser(ctx, logger, uint16(port))
+	dbName := strings.Trim(u.Path, "/")
+
+	err = setupUser(ctx, logger, uint16(port), dbName)
+	if err != nil {
+		return err
+	}
+
+	return setupUser(ctx, logger, uint16(port), "template1")
 }
 
 // setupPostgres configures `postgres` container.
@@ -226,12 +237,11 @@ func setupMongodb(ctx context.Context, logger *zap.SugaredLogger) error {
 }
 
 // setupUser creates a user in admin database with supported mechanisms.
-// The user uses username/password credential which is the same as the PostgreSQL
-// credentials.
+// The user uses username/password credential which is the same as the PostgreSQL credentials.
 //
 // Without this, once the first user is created, the authentication fails
 // as username/password does not exist in admin.system.users collection.
-func setupUser(ctx context.Context, logger *zap.SugaredLogger, postgreSQLPort uint16) error {
+func setupUser(ctx context.Context, logger *zap.SugaredLogger, postgreSQLPort uint16, dbName string) error {
 	if err := waitForPort(ctx, logger.Named("postgreSQL"), postgreSQLPort); err != nil {
 		return err
 	}
@@ -241,7 +251,7 @@ func setupUser(ctx context.Context, logger *zap.SugaredLogger, postgreSQLPort ui
 		return err
 	}
 
-	postgreSQlURL := fmt.Sprintf("postgres://username:password@localhost:%d/ferretdb", postgreSQLPort)
+	postgreSQlURL := fmt.Sprintf("postgres://username:password@localhost:%d/%s", postgreSQLPort, dbName)
 	listenerMetrics := connmetrics.NewListenerMetrics()
 	handlerOpts := &registry.NewHandlerOpts{
 		Logger:        logger.Desugar(),
@@ -292,7 +302,7 @@ func setupUser(ctx context.Context, logger *zap.SugaredLogger, postgreSQLPort ui
 	}
 
 	port := l.TCPAddr().(*net.TCPAddr).Port
-	uri := fmt.Sprintf("mongodb://username:password@localhost:%d/", port)
+	uri := fmt.Sprintf("mongodb://username:password@localhost:%d/?authMechanism=PLAIN", port)
 	clientOpts := options.Client().ApplyURI(uri)
 
 	client, err := mongo.Connect(ctx, clientOpts)

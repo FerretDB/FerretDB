@@ -17,10 +17,15 @@ package main
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"os"
 	"testing"
 	"time"
 
+	zapadapter "github.com/jackc/pgx-zap"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/tracelog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -105,15 +110,40 @@ func TestSetupUser(t *testing.T) {
 	ctx, cancel := context.WithTimeout(testutil.Ctx(t), 5*time.Second)
 	t.Cleanup(cancel)
 
-	l := testutil.Logger(t).Sugar()
+	baseURI := "postgres://username@127.0.0.1:5432/ferretdb"
+	l := testutil.Logger(t)
+	cfg, err := pgxpool.ParseConfig(baseURI)
+	require.NoError(t, err)
 
-	err := setupUser(ctx, l, 5432)
+	cfg.MinConns = 0
+	cfg.MaxConns = 1
+	cfg.ConnConfig.Tracer = &tracelog.TraceLog{
+		Logger:   zapadapter.NewLogger(l),
+		LogLevel: tracelog.LogLevelTrace,
+	}
+
+	p, err := pgxpool.NewWithConfig(ctx, cfg)
+	require.NoError(t, err)
+
+	dbName := testutil.DatabaseName(t)
+
+	// use template0 because template1 may already have the user created
+	q := fmt.Sprintf("CREATE DATABASE %s TEMPLATE template0", pgx.Identifier{dbName}.Sanitize())
+	_, err = p.Exec(ctx, q)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		defer p.Close()
+
+		q = fmt.Sprintf("DROP DATABASE %s", pgx.Identifier{dbName}.Sanitize())
+		_, err = p.Exec(context.Background(), q)
+		require.NoError(t, err)
+	})
+
+	err = setupUser(ctx, l.Sugar(), 5432, dbName)
 	require.NoError(t, err)
 
 	// if the user already exists, it should not fail
-	err = setupUser(ctx, l, 5432)
-	require.NoError(t, err)
-
-	err = setupUser(ctx, l, 5433)
+	err = setupUser(ctx, l.Sugar(), 5432, dbName)
 	require.NoError(t, err)
 }
