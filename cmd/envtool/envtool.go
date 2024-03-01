@@ -251,13 +251,13 @@ func setupUser(ctx context.Context, logger *zap.SugaredLogger, postgreSQLPort ui
 		return err
 	}
 
-	postgreSQlURL := fmt.Sprintf("postgres://username:password@localhost:%d/%s", postgreSQLPort, dbName)
+	postgreSQLURL := fmt.Sprintf("postgres://username:password@localhost:%d/%s", postgreSQLPort, dbName)
 	listenerMetrics := connmetrics.NewListenerMetrics()
 	handlerOpts := &registry.NewHandlerOpts{
 		Logger:        logger.Desugar(),
 		ConnMetrics:   listenerMetrics.ConnMetrics,
 		StateProvider: sp,
-		PostgreSQLURL: postgreSQlURL,
+		PostgreSQLURL: postgreSQLURL,
 		TestOpts: registry.TestOpts{
 			CappedCleanupPercentage: 20,
 			EnableNewAuth:           true,
