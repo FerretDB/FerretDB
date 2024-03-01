@@ -153,6 +153,7 @@ func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDataba
 			Name: dbName,
 		})
 	}
+
 	return res, nil
 }
 
