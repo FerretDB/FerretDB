@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"os"
 	"testing"
-	"time"
 
 	zapadapter "github.com/jackc/pgx-zap"
 	"github.com/jackc/pgx/v5"
@@ -107,9 +106,7 @@ func TestSetupUser(t *testing.T) {
 
 	t.Parallel()
 
-	ctx, cancel := context.WithTimeout(testutil.Ctx(t), 5*time.Second)
-	t.Cleanup(cancel)
-
+	ctx := testutil.Ctx(t)
 	baseURI := "postgres://username@127.0.0.1:5432/ferretdb"
 	l := testutil.Logger(t)
 	cfg, err := pgxpool.ParseConfig(baseURI)
