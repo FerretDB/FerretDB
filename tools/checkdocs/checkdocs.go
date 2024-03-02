@@ -68,11 +68,25 @@ func checkFiles(files []string, logf, fatalf func(string, ...any)) {
 			logf("%q: %s", file, err)
 			failed = true
 		}
+
+		// Check for the truncate string
+		if err = verifyTruncateString(b); err != nil {
+			logf("%q: %s", file, err)
+			failed = true
+		}
 	}
 
 	if failed {
 		fatalf("One or more blog posts are not correctly formatted")
 	}
+}
+
+// verifyTruncateString checks that the truncate string is present.
+func verifyTruncateString(b []byte) error {
+    if !bytes.Contains(b, []byte("<!--truncate-->")) {
+        return fmt.Errorf("truncate string not found")
+    }
+    return nil
 }
 
 // extractFrontMatter returns the front matter of a blog post.

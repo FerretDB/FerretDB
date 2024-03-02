@@ -62,3 +62,15 @@ func TestVerifyTags(t *testing.T) {
 	err := verifyTags(fm)
 	assert.EqualError(t, err, `tag "documents databases" is not in the allowed list`)
 }
+
+func TestVerifyTruncateString(t *testing.T) {
+	// Test case where truncate string is present
+	b := []byte("This is a blog post. <!--truncate--> The rest of the post...")
+	err := verifyTruncateString(b)
+	assert.NoError(t, err)
+
+	// Test case where truncate string is not present
+	b = []byte("This is a blog post without a truncate string.")
+	err = verifyTruncateString(b)
+	assert.EqualError(t, err, "truncate string not found")
+}
