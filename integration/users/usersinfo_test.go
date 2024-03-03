@@ -87,6 +87,28 @@ func TestUsersinfo(t *testing.T) {
 				},
 			},
 		},
+		{
+			dbSuffix: "allbackends",
+			payloads: []bson.D{
+				{
+					{"createUser", "WithSCRAMSHA1"},
+					{"roles", bson.A{}},
+					{"pwd", "pwd1"},
+					{"mechanisms", bson.A{"SCRAM-SHA-1"}},
+				},
+			},
+		},
+		{
+			dbSuffix: "allbackends",
+			payloads: []bson.D{
+				{
+					{"createUser", "WithSCRAMSHA256"},
+					{"roles", bson.A{}},
+					{"pwd", "pwd1"},
+					{"mechanisms", bson.A{"SCRAM-SHA-256"}},
+				},
+			},
+		},
 	}
 
 	dbPrefix := testutil.DatabaseName(t)
@@ -117,13 +139,15 @@ func TestUsersinfo(t *testing.T) {
 	}
 
 	testCases := map[string]struct { //nolint:vet // for readability
-		dbSuffix       string
-		payload        bson.D
-		err            *mongo.CommandError
-		altMessage     string
-		expected       bson.D
-		hasUser        map[string]struct{}
-		skipForMongoDB string // optional, skip test for MongoDB backend with a specific reason
+		dbSuffix   string
+		payload    bson.D
+		err        *mongo.CommandError
+		altMessage string
+		expected   bson.D
+		hasUser    map[string]struct{}
+
+		showCredentials []string // showCredentials list the credentials types expected to be returned
+		skipForMongoDB  string   // optional, skip test for MongoDB backend with a specific reason
 	}{
 		"NoUserFound": {
 			dbSuffix: "no_users",
@@ -182,6 +206,7 @@ func TestUsersinfo(t *testing.T) {
 				{"usersInfo", "WithPLAIN"},
 				{"showCredentials", true},
 			},
+			showCredentials: []string{"PLAIN"},
 			expected: bson.D{
 				{"users", bson.A{
 					bson.D{
@@ -194,6 +219,44 @@ func TestUsersinfo(t *testing.T) {
 				{"ok", float64(1)},
 			},
 			skipForMongoDB: "Only MongoDB Enterprise offers PLAIN",
+		},
+		"WithSCRAMSHA1": {
+			dbSuffix: "allbackends",
+			payload: bson.D{
+				{"usersInfo", "WithSCRAMSHA1"},
+				{"showCredentials", true},
+			},
+			showCredentials: []string{"SCRAM-SHA-1"},
+			expected: bson.D{
+				{"users", bson.A{
+					bson.D{
+						{"_id", "TestUsersinfo.WithSCRAMSHA1"},
+						{"user", "scramsha1"},
+						{"db", "TestUsersinfo"},
+						{"roles", bson.A{}},
+					},
+				}},
+				{"ok", float64(1)},
+			},
+		},
+		"WithSCRAMSHA256": {
+			dbSuffix: "allbackends",
+			payload: bson.D{
+				{"usersInfo", "WithSCRAMSHA256"},
+				{"showCredentials", true},
+			},
+			showCredentials: []string{"SCRAM-SHA-256"},
+			expected: bson.D{
+				{"users", bson.A{
+					bson.D{
+						{"_id", "TestUsersinfo.WithSCRAMSHA256"},
+						{"user", "scramsha256"},
+						{"db", "TestUsersinfo"},
+						{"roles", bson.A{}},
+					},
+				}},
+				{"ok", float64(1)},
+			},
 		},
 		"FromSameDatabase": {
 			dbSuffix: "_example",
@@ -513,35 +576,27 @@ func TestUsersinfo(t *testing.T) {
 				require.True(t, (tc.hasUser == nil) != (tc.expected == nil))
 
 				payload := integration.ConvertDocument(t, tc.payload)
-				var showCredentials bool
 
-				if payload.Has("showCredentials") {
-					showCredentials = must.NotFail(payload.Get("showCredentials")).(bool)
-				}
-				if showCredentials {
-					if !setup.IsMongoDB(t) {
-						cred, ok := actualUser.Get("credentials")
-						assert.Nil(t, ok, "credentials not found")
-						assertPlainCredentials(t, "PLAIN", cred.(*types.Document))
+				if tc.showCredentials != nil {
+					cred, ok := actualUser.Get("credentials")
+					assert.Nil(t, ok, "credentials not found")
+
+					for _, typ := range tc.showCredentials {
+						switch typ {
+						case "PLAIN":
+							assertPlainCredentials(t, "PLAIN", cred.(*types.Document))
+						case "SCRAM-SHA-1":
+							assertSCRAMSHA1Credentials(t, "SCRAM-SHA-1", cred.(*types.Document))
+						case "SCRAM-SHA-256":
+							assertSCRAMSHA256Credentials(t, "SCRAM-SHA-256", cred.(*types.Document))
+						}
 					}
 				} else {
 					assert.False(t, actualUser.Has("credentials"))
 				}
 
 				if payload.Has("mechanisms") {
-					payloadMechanisms := must.NotFail(payload.Get("mechanisms")).(*types.Array)
-
-					if payloadMechanisms.Contains("PLAIN") {
-						assertPlainCredentials(t, "PLAIN", must.NotFail(actualUser.Get("credentials")).(*types.Document))
-					}
-
-					if payloadMechanisms.Contains("SCRAM-SHA-1") {
-						assertSCRAMSHA1Credentials(t, "SCRAM-SHA-1", must.NotFail(actualUser.Get("credentials")).(*types.Document))
-					}
-
-					if payloadMechanisms.Contains("SCRAM-SHA-256") {
-						assertSCRAMSHA256Credentials(t, "SCRAM-SHA-256", must.NotFail(actualUser.Get("credentials")).(*types.Document))
-					}
+					assertUsersinfoMechanisms(t, payload, actualUser)
 				}
 
 				foundUsers[must.NotFail(actualUser.Get("_id")).(string)] = struct{}{}
@@ -566,5 +621,21 @@ func TestUsersinfo(t *testing.T) {
 				testutil.AssertEqual(t, expected, actual)
 			}
 		})
+	}
+}
+
+func assertUsersinfoMechanisms(t *testing.T, payload, user *types.Document) {
+	payloadMechanisms := must.NotFail(payload.Get("mechanisms")).(*types.Array)
+
+	if payloadMechanisms.Contains("PLAIN") {
+		assertPlainCredentials(t, "PLAIN", must.NotFail(user.Get("credentials")).(*types.Document))
+	}
+
+	if payloadMechanisms.Contains("SCRAM-SHA-1") {
+		assertSCRAMSHA1Credentials(t, "SCRAM-SHA-1", must.NotFail(user.Get("credentials")).(*types.Document))
+	}
+
+	if payloadMechanisms.Contains("SCRAM-SHA-256") {
+		assertSCRAMSHA256Credentials(t, "SCRAM-SHA-256", must.NotFail(user.Get("credentials")).(*types.Document))
 	}
 }

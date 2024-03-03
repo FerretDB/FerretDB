@@ -205,7 +205,7 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/78).
 |                            | `digestPassword`                 | ⚠️     |                                                           |
 |                            | `comment`                        | ⚠️     |                                                           |
 | `usersInfo`                |                                  | ✅     |                                                           |
-|                            | `showCredentials`                | ⚠️     |                                                           |
+|                            | `showCredentials`                | ✅     |                                                           |
 |                            | `showCustomData`                 | ⚠️     |                                                           |
 |                            | `showPrivileges`                 | ⚠️     |                                                           |
 |                            | `showAuthenticationRestrictions` | ⚠️     |                                                           |

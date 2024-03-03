@@ -95,46 +95,47 @@ func TestHelloWithSupportedMechs(t *testing.T) {
 		require.NoError(t, db.RunCommand(ctx, u).Err())
 	}
 
-	testCases := []struct { //nolint:vet // used for test only
-		username string
-		db       string
-		mechs    *types.Array
-		err      bool
+	testCases := map[string]struct { //nolint:vet // used for test only
+		user  string
+		mechs *types.Array
+		err   string
 	}{
-		{
-			username: "not_found",
-			db:       db.Name(),
+		"NotFound": {
+			user: db.Name() + ".not_found",
 		},
-		{
-			username: "another_db",
-			db:       db.Name() + "_not_found",
+		"AnotherDB": {
+			user: db.Name() + "_not_found.another_db",
 		},
-		{
-			username: "hello_user",
-			db:       db.Name(),
-			mechs:    must.NotFail(types.NewArray("SCRAM-SHA-1", "SCRAM-SHA-256")),
+		"HelloUser": {
+			user:  db.Name() + ".hello_user",
+			mechs: must.NotFail(types.NewArray("SCRAM-SHA-1", "SCRAM-SHA-256")),
 		},
-		{
-			username: "hello_user_plain",
-			db:       db.Name(),
-			mechs:    must.NotFail(types.NewArray("PLAIN")),
+		"HelloUserPlain": {
+			user:  db.Name() + ".hello_user_plain",
+			mechs: must.NotFail(types.NewArray("PLAIN")),
 		},
-		{
-			username: "hello_user_scram1",
-			db:       db.Name(),
-			mechs:    must.NotFail(types.NewArray("SCRAM-SHA-1")),
+		"HelloUserSCRAM1": {
+			user:  db.Name() + ".hello_user_scram1",
+			mechs: must.NotFail(types.NewArray("SCRAM-SHA-1")),
 		},
-		{
-			username: "hello_user_scram256",
-			db:       db.Name(),
-			mechs:    must.NotFail(types.NewArray("SCRAM-SHA-256")),
+		"HelloUserSCRAM256": {
+			user:  db.Name() + ".hello_user_scram256",
+			mechs: must.NotFail(types.NewArray("SCRAM-SHA-256")),
+		},
+		"EmptyUsername": {
+			user:  db.Name() + ".",
+			mechs: nil,
+		},
+		"MissingSeparator": {
+			user: db.Name(),
+			err:  "UserName must contain a '.' separated database.user pair",
 		},
 	}
 
-	for _, tc := range testCases {
-		tc := tc
+	for name, tc := range testCases {
+		tc, name := tc, name
 
-		t.Run(tc.username, func(t *testing.T) {
+		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
 			var res bson.D
@@ -145,11 +146,12 @@ func TestHelloWithSupportedMechs(t *testing.T) {
 
 			err := db.RunCommand(ctx, bson.D{
 				{"hello", "1"},
-				{"saslSupportedMechs", tc.db + "." + tc.username},
+				{"saslSupportedMechs", tc.user},
 			}).Decode(&res)
 
-			if tc.err {
-				require.Error(t, err)
+			if tc.err != "" {
+				require.ErrorContains(t, err, tc.err)
+				return
 			}
 
 			actual := ConvertDocument(t, res)
