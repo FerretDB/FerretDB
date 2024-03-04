@@ -29,7 +29,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-func TestEndSessionsCommand(tt *testing.T) {
+func TestKillSessionsCommand(tt *testing.T) {
 	tt.Parallel()
 
 	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/1554")

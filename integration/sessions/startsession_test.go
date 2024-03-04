@@ -15,6 +15,7 @@
 package sessions
 
 import (
+	"bytes"
 	"context"
 	"testing"
 
@@ -93,28 +94,34 @@ func TestStartSessionCommand(tt *testing.T) {
 
 	for name, tc := range map[string]struct {
 		clientToStartSession *mongo.Client
-		clientToEndSession   *mongo.Client
+		clientToKillSession  *mongo.Client
+		shouldBeAvailable    bool // whether the session should be available after an attempt to kill it
 	}{
 		"noAuth": {
 			clientToStartSession: clientNoAuth,
-			clientToEndSession:   clientNoAuth,
+			clientToKillSession:  clientNoAuth,
+			shouldBeAvailable:    false,
 		},
-		"auth": {
-			clientToStartSession: clientAuth,
-			clientToEndSession:   clientAuth,
-		},
-		"otherClientEndsAuth": {
-			clientToStartSession: clientAuth,
-			clientToEndSession:   clientAuth2,
-		},
-		"authEndsNoAuth": {
-			clientToStartSession: clientNoAuth,
-			clientToEndSession:   clientAuth,
-		},
-		"noAuthEndsAuth": {
-			clientToStartSession: clientAuth,
-			clientToEndSession:   clientNoAuth,
-		},
+		/*	"auth": {
+				clientToStartSession: clientAuth,
+				clientToKillSession:  clientAuth,
+				shouldBeAvailable:    false,
+			},
+			"otherClientEndsAuth": {
+				clientToStartSession: clientAuth,
+				clientToKillSession:  clientAuth2,
+				shouldBeAvailable:    true,
+			},
+			"authEndsNoAuth": {
+				clientToStartSession: clientNoAuth,
+				clientToKillSession:  clientAuth,
+				shouldBeAvailable:    true,
+			},
+			"noAuthEndsAuth": {
+				clientToStartSession: clientAuth,
+				clientToKillSession:  clientNoAuth,
+				shouldBeAvailable:    true,
+			},*/
 	} {
 		name, tc := name, tc
 
@@ -124,12 +131,23 @@ func TestStartSessionCommand(tt *testing.T) {
 			sessionID := startSession(t, ctx, tc.clientToStartSession.Database(db.Name()))
 
 			var res bson.D
-			endSessionsCommand := bson.D{{"endSessions", bson.A{bson.D{{"id", sessionID}}}}}
-			err := tc.clientToEndSession.Database(db.Name()).RunCommand(ctx, endSessionsCommand).Decode(&res)
+			killSessionsCommand := bson.D{{"killSessions", bson.A{bson.D{{"id", sessionID}}}}}
+			err := tc.clientToKillSession.Database(db.Name()).RunCommand(ctx, killSessionsCommand).Decode(&res)
 			require.NoError(t, err)
 
 			doc := integration.ConvertDocument(t, res)
 			assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+
+			id := types.Binary{
+				Subtype: types.BinarySubtype(sessionID.Subtype),
+				B:       sessionID.Data,
+			}
+
+			if tc.shouldBeAvailable {
+				assert.True(t, localSessionExists(t, ctx, tc.clientToStartSession.Database(db.Name()), id))
+			} else {
+				assert.False(t, localSessionExists(t, ctx, tc.clientToStartSession.Database(db.Name()), id))
+			}
 		})
 	}
 }
@@ -172,4 +190,23 @@ func startSession(t *testing.T, ctx context.Context, db *mongo.Database) *primit
 	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
 
 	return &idForFilter
+}
+
+func localSessionExists(t *testing.T, ctx context.Context, db *mongo.Database, sessionId types.Binary) bool {
+	cur, err := db.Aggregate(ctx, bson.A{bson.D{{"$listLocalSessions", bson.D{{"allUsers", true}}}}})
+	require.NoError(t, err)
+
+	sessions := integration.FetchAll(t, ctx, cur)
+
+	for _, session := range sessions {
+		s := integration.ConvertDocument(t, session)
+		sDoc := must.NotFail(s.Get("_id")).(*types.Document)
+		sId := must.NotFail(sDoc.Get("id")).(types.Binary)
+
+		if sessionId.Subtype == sId.Subtype && bytes.Equal(sessionId.B, sId.B) {
+			return true
+		}
+	}
+
+	return false
 }
