@@ -25,9 +25,10 @@ import (
 func init() {
 	registry["sqlite"] = func(opts *NewHandlerOpts) (*handler.Handler, CloseBackendFunc, error) {
 		b, err := sqlite.NewBackend(&sqlite.NewBackendParams{
-			URI: opts.SQLiteURL,
-			L:   opts.Logger.Named("sqlite"),
-			P:   opts.StateProvider,
+			URI:       opts.SQLiteURL,
+			L:         opts.Logger.Named("sqlite"),
+			P:         opts.StateProvider,
+			BatchSize: opts.BatchSize,
 		})
 		if err != nil {
 			return nil, nil, err

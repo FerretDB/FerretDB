@@ -81,20 +81,22 @@ type Registry struct {
 	// One global lock should be replaced by more granular locks – one per database or even one per collection.
 	// But that requires some redesign.
 	// TODO https://github.com/FerretDB/FerretDB/issues/2755
-	rw    sync.RWMutex
-	colls map[string]map[string]*Collection // database name -> collection name -> collection
+	rw        sync.RWMutex
+	colls     map[string]map[string]*Collection // database name -> collection name -> collection
+	batchSize int
 }
 
 // NewRegistry creates a registry for PostgreSQL databases with a given base URI.
-func NewRegistry(u string, l *zap.Logger, sp *state.Provider) (*Registry, error) {
+func NewRegistry(u string, batchSize int, l *zap.Logger, sp *state.Provider) (*Registry, error) {
 	p, err := pool.New(u, l, sp)
 	if err != nil {
 		return nil, err
 	}
 
 	r := &Registry{
-		p: p,
-		l: l,
+		p:         p,
+		l:         l,
+		batchSize: batchSize,
 	}
 
 	return r, nil
@@ -1030,6 +1032,14 @@ func (r *Registry) Collect(ch chan<- prometheus.Metric) {
 			db,
 		)
 	}
+}
+
+// BatchSize returns number of maximum size of query parameters.
+func (r *Registry) BatchSize() int {
+	r.rw.RLock()
+	batchSize := r.batchSize
+	r.rw.RUnlock()
+	return batchSize
 }
 
 // check interfaces

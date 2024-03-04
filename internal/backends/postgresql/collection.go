@@ -134,8 +134,7 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 	}
 
 	err = pool.InTransaction(ctx, p, func(tx pgx.Tx) error {
-		// TODO https://github.com/FerretDB/FerretDB/issues/3708
-		const batchSize = 100
+		batchSize := c.r.BatchSize()
 
 		var batch []*types.Document
 		docs := params.Docs
