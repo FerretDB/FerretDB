@@ -70,7 +70,7 @@ func TestStartSessionCommand(tt *testing.T) {
 		AuthMechanism: "SCRAM-SHA-256",
 		AuthSource:    db.Name(),
 		Username:      username2,
-		Password:      "password",
+		Password:      "password2",
 	}
 	optsAuth2 := options.Client().ApplyURI(s.MongoDBURI).SetAuth(credential)
 	clientAuth2, err := mongo.Connect(ctx, optsAuth2)
@@ -116,7 +116,7 @@ func TestStartSessionCommand(tt *testing.T) {
 	}
 }
 
-func startSession(t *testing.T, ctx context.Context, db *mongo.Database) *types.Binary {
+func startSession(t *testing.T, ctx context.Context, db *mongo.Database) *primitive.Binary {
 	var res bson.D
 	err := db.RunCommand(ctx, bson.D{{"startSession", 1}}).Decode(&res)
 	require.NoError(t, err)
@@ -153,5 +153,5 @@ func startSession(t *testing.T, ctx context.Context, db *mongo.Database) *types.
 	doc = integration.ConvertDocument(t, res)
 	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
 
-	return &id
+	return &idForFilter
 }
