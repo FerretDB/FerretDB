@@ -30,20 +30,19 @@ import (
 //
 // Only up to one returned document is supported.
 type OpReply struct {
-	ResponseFlags OpReplyFlags
-	CursorID      int64
-	StartingFrom  int32
-	document      bson2.RawDocument
+	// The order of fields is weird to make the struct smaller due to alignment.
+	// The wire order is: flags, cursor ID, starting from, documents.
+
+	document     bson2.RawDocument
+	CursorID     int64
+	Flags        OpReplyFlags
+	StartingFrom int32
 }
 
 func (reply *OpReply) msgbody() {}
 
-// check checks if the reply is valid.
+// check implements [MsgBody] interface.
 func (reply *OpReply) check() error {
-	if !debugbuild.Enabled {
-		return nil
-	}
-
 	if d := reply.document; d != nil {
 		if _, err := d.DecodeDeep(); err != nil {
 			return lazyerrors.Error(err)
@@ -59,7 +58,7 @@ func (reply *OpReply) UnmarshalBinaryNocopy(b []byte) error {
 		return lazyerrors.Errorf("len=%d", len(b))
 	}
 
-	reply.ResponseFlags = OpReplyFlags(binary.LittleEndian.Uint32(b[0:4]))
+	reply.Flags = OpReplyFlags(binary.LittleEndian.Uint32(b[0:4]))
 	reply.CursorID = int64(binary.LittleEndian.Uint64(b[4:12]))
 	reply.StartingFrom = int32(binary.LittleEndian.Uint32(b[12:16]))
 	numberReturned := int32(binary.LittleEndian.Uint32(b[16:20]))
@@ -77,8 +76,10 @@ func (reply *OpReply) UnmarshalBinaryNocopy(b []byte) error {
 		return lazyerrors.Errorf("numberReturned=%d, document=%v", numberReturned, reply.document)
 	}
 
-	if err := reply.check(); err != nil {
-		return lazyerrors.Error(err)
+	if debugbuild.Enabled {
+		if err := reply.check(); err != nil {
+			return lazyerrors.Error(err)
+		}
 	}
 
 	return nil
@@ -86,13 +87,15 @@ func (reply *OpReply) UnmarshalBinaryNocopy(b []byte) error {
 
 // MarshalBinary implements [MsgBody] interface.
 func (reply *OpReply) MarshalBinary() ([]byte, error) {
-	if err := reply.check(); err != nil {
-		return nil, lazyerrors.Error(err)
+	if debugbuild.Enabled {
+		if err := reply.check(); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 	}
 
 	b := make([]byte, 20+len(reply.document))
 
-	binary.LittleEndian.PutUint32(b[0:4], uint32(reply.ResponseFlags))
+	binary.LittleEndian.PutUint32(b[0:4], uint32(reply.Flags))
 	binary.LittleEndian.PutUint64(b[4:12], uint64(reply.CursorID))
 	binary.LittleEndian.PutUint32(b[12:16], uint32(reply.StartingFrom))
 
@@ -128,7 +131,7 @@ func (reply *OpReply) String() string {
 	}
 
 	m := map[string]any{
-		"ResponseFlags": reply.ResponseFlags,
+		"ResponseFlags": reply.Flags,
 		"CursorID":      reply.CursorID,
 		"StartingFrom":  reply.StartingFrom,
 	}
@@ -140,7 +143,7 @@ func (reply *OpReply) String() string {
 
 		doc, err := reply.document.Convert()
 		if err == nil {
-			m["Documents"] = json.RawMessage(must.NotFail(fjson.Marshal(doc)))
+			m["Document"] = json.RawMessage(must.NotFail(fjson.Marshal(doc)))
 		} else {
 			m["DocumentError"] = err.Error()
 		}

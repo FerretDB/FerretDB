@@ -95,8 +95,6 @@ func (h *Handler) saslStart(ctx context.Context, dbName string, document *types.
 			)
 		}
 
-		conninfo.Get(ctx).SetBypassBackendAuth()
-
 		response, err := h.saslStartSCRAM(ctx, dbName, mechanism, document)
 		if err != nil {
 			return nil, err
