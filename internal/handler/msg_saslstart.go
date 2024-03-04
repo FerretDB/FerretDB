@@ -100,6 +100,8 @@ func (h *Handler) saslStart(ctx context.Context, dbName string, document *types.
 			return nil, err
 		}
 
+		conninfo.Get(ctx).SetBypassBackendAuth()
+
 		binResponse := types.Binary{
 			B: []byte(response),
 		}
