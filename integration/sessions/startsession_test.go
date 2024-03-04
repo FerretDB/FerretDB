@@ -64,7 +64,7 @@ func TestStartSessionCommand(tt *testing.T) {
 	optsAuth := options.Client().ApplyURI(s.MongoDBURI).SetAuth(credential)
 	clientAuth, err := mongo.Connect(ctx, optsAuth)
 	require.NoError(t, err)
-	require.NoError(t, clientNoAuth.Ping(ctx, nil))
+	require.NoError(t, clientAuth.Ping(ctx, nil))
 
 	credential = options.Credential{
 		AuthMechanism: "SCRAM-SHA-256",
@@ -75,65 +75,43 @@ func TestStartSessionCommand(tt *testing.T) {
 	optsAuth2 := options.Client().ApplyURI(s.MongoDBURI).SetAuth(credential)
 	clientAuth2, err := mongo.Connect(ctx, optsAuth2)
 	require.NoError(t, err)
+	require.NoError(t, clientAuth2.Ping(ctx, nil))
 
-	for authName, c := range map[string]struct {
-		client   *mongo.Client
-		usesAuth bool
+	for name, tc := range map[string]struct {
+		clientToStartSession *mongo.Client
+		clientToEndSession   *mongo.Client
 	}{
 		"noAuth": {
-			client:   clientNoAuth,
-			usesAuth: false,
+			clientToStartSession: clientNoAuth,
+			clientToEndSession:   clientNoAuth,
 		},
 		"auth": {
-			client:   clientAuth,
-			usesAuth: true,
+			clientToStartSession: clientAuth,
+			clientToEndSession:   clientAuth,
+		},
+		"otherClientEndsAuth": {
+			clientToStartSession: clientAuth,
+			clientToEndSession:   clientAuth2,
+		},
+		"authEndsNoAuth": {
+			clientToStartSession: clientNoAuth,
+			clientToEndSession:   clientAuth,
+		},
+		"noAuthEndsAuth": {
+			clientToStartSession: clientAuth,
+			clientToEndSession:   clientNoAuth,
 		},
 	} {
-		tt.Run(authName, func(t *testing.T) {
-			client := c.client
-			db := client.Database(db.Name())
+		name, tc := name, tc
 
-			for name, tc := range map[string]struct {
-				command bson.D
-				err     *mongo.CommandError
-			}{
-				"nonExistentSession": {
-					command: bson.D{
-						{"insert", s.Collection.Name()},
-						{"lsid", bson.D{{"id", primitive.Binary{Subtype: 0x04, Data: []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}}}}},
-						{"documents", bson.A{bson.D{{"foo", "bar"}}}},
-					},
-				},
-				/*	"validSession": {
-					command: bson.D{
-						{"insert", s.Collection.Name()},
-						{"lsid", startSession(t, ctx, db)},
-						{"documents", bson.A{bson.D{{"foo", "bar"}}}},
-					},
-				},*/
-			} {
-				t.Run(name, func(t *testing.T) {
-					var res bson.D
-					err := db.RunCommand(ctx, tc.command).Decode(&res)
-					if tc.err == nil {
-						require.NoError(t, err)
-					} else {
-						// assert errors
-					}
+		tt.Run(name, func(t *testing.T) {
+			// Subtests are not run in parallel because MongoDB doesn't guarantee sessions being safe for concurrent use.
+			sessionID := startSession(t, ctx, tc.clientToStartSession.Database(db.Name()))
 
-					err = clientAuth2.Database(db.Name()).RunCommand(ctx, tc.command).Decode(&res)
-					switch {
-					case c.usesAuth:
-						require.Error(t, err)
-						assert.Equal(t, "not authorized on test to execute command { insert: { lsid: BinData(0x04, 01020304) } }", err.Error())
-					case tc.err != nil:
-						require.Error(t, err)
-						assert.Equal(t, tc.err.Code, err.(*mongo.CommandError).Code)
-					default:
-						require.NoError(t, err)
-					}
-				})
-			}
+			var res bson.D
+			endSessionsCommand := bson.D{{"endSessions", bson.A{bson.D{{"id", sessionID}}}}}
+			err := tc.clientToEndSession.Database(db.Name()).RunCommand(ctx, endSessionsCommand).Decode(&res)
+			require.NoError(t, err)
 		})
 	}
 }
