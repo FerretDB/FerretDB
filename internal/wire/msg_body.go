@@ -32,7 +32,7 @@ import (
 type MsgBody interface {
 	msgbody() // seal for sumtype
 
-	// check checks if body is valid.
+	// check performs deep (and slow) validity check.
 	check() error
 
 	// UnmarshalBinaryNocopy is a variant of [encoding.BinaryUnmarshaler] that does not have to copy the data.
