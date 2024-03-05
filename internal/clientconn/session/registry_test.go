@@ -12,29 +12,4 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package session provides access to session registry.
 package session
-
-import (
-	"time"
-
-	"github.com/google/uuid"
-
-	"github.com/FerretDB/FerretDB/internal/types"
-)
-
-// Session represents a session.
-type Session struct {
-	id       types.Binary
-	lastUsed time.Time
-	expired  bool
-}
-
-// newSession returns a new session.
-func newSession(id uuid.UUID) *Session {
-	sessionID := types.Binary{Subtype: types.BinaryUUID, B: id[:]}
-	return &Session{
-		id:       sessionID,
-		lastUsed: time.Now(),
-	}
-}

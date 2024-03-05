@@ -15,11 +15,8 @@
 package session
 
 import (
-	"context"
 	"sync"
 	"time"
-
-	"github.com/FerretDB/FerretDB/internal/types"
 
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -28,9 +25,10 @@ import (
 // timeout is the session timeout.
 const timeout = 30 * time.Minute
 
+// Registry represents a session registry.
 type Registry struct {
 	rw sync.RWMutex
-	m  map[string]map[string]*Session
+	m  map[string]map[string]*Session // username -> sessionID -> session
 
 	l *zap.Logger
 }
@@ -42,54 +40,77 @@ func NewRegistry(l *zap.Logger) *Registry {
 	}
 }
 
-type NewParams struct {
-	DB       string
-	Username string
-}
-
-func (r *Registry) NewSession(ctx context.Context, params *NewParams) *Session {
+// NewSession creates a new session and adds it to the registry.
+func (r *Registry) NewSession(username string) *Session {
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
 	id := uuid.New()
-	sessionID := types.Binary{Subtype: types.BinaryUUID, B: id[:]}
-	session := newSession(sessionID, params.DB)
+	session := newSession(id)
 
-	r.m[params.Username][id.String()] = session
+	r.m[username][id.String()] = session
+	r.l.Debug("New session created explicitly", zap.String("username", username), zap.String("session", id.String()))
 
 	return session
 }
 
-func (r *Registry) GetSession(ctx context.Context, username, db string, sessionID types.Binary) *Session {
+// GetSession returns the session from the registry and updates its lastUsed time.
+// If the session does not exist, it creates a new one and adds it to the registry.
+// If the session ID is not a valid UUID, it returns nil.
+func (r *Registry) GetSession(username, sessionID string) *Session {
 	r.rw.RLock()
 	defer r.rw.RUnlock()
 
-	id := string(sessionID.B)
-
-	if _, ok := r.m[username][id]; !ok {
-		r.m[username][id] = newSession(sessionID, db)
+	id, err := uuid.Parse(sessionID)
+	if err != nil {
+		r.l.Debug("Invalid session ID", zap.String("username", username), zap.String("session", sessionID))
+		return nil
 	}
 
-	r.m[username][id].lastUsed = time.Now()
+	if _, ok := r.m[username][sessionID]; !ok {
+		r.m[username][sessionID] = newSession(id)
+		r.l.Debug("New session created implicitly", zap.String("username", username), zap.String("session", sessionID))
+	}
 
-	return r.m[username][id]
+	r.m[username][sessionID].lastUsed = time.Now()
+
+	return r.m[username][sessionID]
 }
 
-func (r *Registry) KillSession(ctx context.Context, username, sessionID string) {
+// RefreshSession updates the last used time for the session.
+// If the session does not exist, it does nothing.
+func (r *Registry) RefreshSession(username, session string) {
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
-	delete(r.m[username], sessionID)
+	if _, ok := r.m[username][session]; !ok {
+		return
+	}
+	r.l.Debug("Session refreshed", zap.String("username", username), zap.String("session", session))
+
+	r.m[username][session].lastUsed = time.Now()
 }
 
-func (r *Registry) EndSession(ctx context.Context, username, sessionID string) {
+// KillSession removes the session from the registry.
+func (r *Registry) KillSession(username, session string) {
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
-	r.m[username][sessionID].expired = true
+	delete(r.m[username], session)
+	r.l.Debug("Session killed", zap.String("username", username), zap.String("session", session))
 }
 
-func (r *Registry) CleanExpired(ctx context.Context) {
+// EndSession marks the session as expired for the future cleanup.
+func (r *Registry) EndSession(username, session string) {
+	r.rw.Lock()
+	defer r.rw.Unlock()
+
+	r.m[username][session].expired = true
+	r.l.Debug("Session marked as expired", zap.String("username", username), zap.String("session", session))
+}
+
+// CleanExpired removes expired sessions from the registry.
+func (r *Registry) CleanExpired() {
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
@@ -99,13 +120,5 @@ func (r *Registry) CleanExpired(ctx context.Context) {
 				delete(sessions, id)
 			}
 		}
-	}
-}
-
-func newSession(id types.Binary, db string) *Session {
-	return &Session{
-		id:       id,
-		db:       db,
-		lastUsed: time.Now(),
 	}
 }
