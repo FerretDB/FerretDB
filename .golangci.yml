@@ -90,6 +90,10 @@ linters-settings:
         pkg: ^\Qgithub.com/jackc/pgx/v5/pgxpool\E$
         msg: Use `Acquire` with `defer Release()` instead.
 
+      # - p: ^slog\.(Debug|Info|Want|Error|Log)
+      #   pkg: ^\Qlog/slog\E$
+      #   msg: Do not use default slog logger.
+
       # integration tests use a different configuration file
       - p: ^\Qbson.E\E$
         pkg: ^\Qgo.mongodb.org/mongo-driver/bson\E$
@@ -209,6 +213,15 @@ linters-settings:
     ignore-generated-header: true
     severity: error
     rules: []
+  sloglint:
+    no-mixed-args: true
+    kv-only: false
+    attr-only: true
+    context-only: true
+    static-msg: true
+    no-raw-keys: false # TODO https://github.com/FerretDB/FerretDB/issues/3421
+    key-naming-case: snake
+    args-on-sep-lines: false
   staticcheck:
     checks:
       - all
@@ -241,6 +254,7 @@ linters:
     - misspell
     - nolintlint
     - revive
+    - sloglint
     - staticcheck
     - unused
     - whitespace

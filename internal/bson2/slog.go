@@ -22,10 +22,7 @@ import (
 	"time"
 )
 
-// slogValue converts any BSON value to [slog.Value].
-//
-// TODO https://github.com/FerretDB/FerretDB/issues/3759
-// It is not clear if slog.Value represents is a good one and even if it is handler-independent.
+// slogValue returns a compact representation of any BSON value as [slog.Value].
 func slogValue(v any) slog.Value {
 	switch v := v.(type) {
 	case *Document:
@@ -60,36 +57,39 @@ func slogValue(v any) slog.Value {
 
 		return slog.StringValue("RawArray(" + strconv.Itoa(len(v)) + " bytes)")
 
-	default:
-		return slogScalarValue(v)
-	}
-}
-
-// slogScalarValue converts any scalar BSON value to [slog.Value].
-func slogScalarValue(v any) slog.Value {
-	switch v := v.(type) {
 	case float64:
-		return slog.StringValue(fmt.Sprintf("%[1]T(%[1]v)", v))
+		return slog.Float64Value(v)
+
 	case string:
 		return slog.StringValue(v)
+
 	case Binary:
-		return slog.AnyValue(v)
+		return slog.StringValue(fmt.Sprintf("%#v", v))
+
 	case ObjectID:
 		return slog.StringValue("ObjectID(" + hex.EncodeToString(v[:]) + ")")
+
 	case bool:
 		return slog.BoolValue(v)
+
 	case time.Time:
-		return slog.StringValue(fmt.Sprintf("%[1]T(%[1]v)", v))
+		return slog.TimeValue(v)
+
 	case NullType:
-		return slog.StringValue(fmt.Sprintf("%[1]T(%[1]v)", v))
+		return slog.Value{}
+
 	case Regex:
-		return slog.AnyValue(v)
+		return slog.StringValue(fmt.Sprintf("%#v", v))
+
 	case int32:
-		return slog.StringValue(fmt.Sprintf("%[1]T(%[1]v)", v))
+		return slog.StringValue(fmt.Sprintf("%#v", v))
+
 	case Timestamp:
-		return slog.StringValue(fmt.Sprintf("%[1]T(%[1]v)", v))
+		return slog.StringValue(fmt.Sprintf("%#v", v))
+
 	case int64:
-		return slog.StringValue(fmt.Sprintf("%[1]T(%[1]v)", v))
+		return slog.StringValue(fmt.Sprintf("%#v", v))
+
 	default:
 		panic(fmt.Sprintf("invalid BSON type %T", v))
 	}
