@@ -90,10 +90,6 @@ func waitForPort(ctx context.Context, logger *zap.SugaredLogger, port uint16) er
 }
 
 // setupAnyPostgres configures given PostgreSQL.
-//
-// It also creates a user in ferretdb and template1 databases so all subsequent
-// databases created from template1 have the user.
-// See also https://www.postgresql.org/docs/current/manage-ag-templatedbs.html.
 func setupAnyPostgres(ctx context.Context, logger *zap.SugaredLogger, uri string) error {
 	u, err := url.Parse(uri)
 	if err != nil {
@@ -144,6 +140,10 @@ func setupAnyPostgres(ctx context.Context, logger *zap.SugaredLogger, uri string
 }
 
 // setupPostgres configures `postgres` container.
+//
+// It also creates a user in ferretdb and template1 databases so all subsequent
+// databases created from template1 have the user.
+// See also https://www.postgresql.org/docs/current/manage-ag-templatedbs.html.
 func setupPostgres(ctx context.Context, logger *zap.SugaredLogger) error {
 	l := logger.Named("postgres")
 
@@ -153,15 +153,19 @@ func setupPostgres(ctx context.Context, logger *zap.SugaredLogger) error {
 		return err
 	}
 
-	err = setupPostgresUser(ctx, logger, "postgres://username@127.0.0.1:5432/ferretdb")
+	err = setupUser(ctx, logger, "postgres://username@127.0.0.1:5432/ferretdb")
 	if err != nil {
 		return err
 	}
 
-	return setupPostgresUser(ctx, logger, "postgres://username@127.0.0.1:5432/template1")
+	return setupUser(ctx, logger, "postgres://username@127.0.0.1:5432/template1")
 }
 
 // setupPostgresSecured configures `postgres_secured` container.
+//
+// It also creates a user in ferretdb and template1 databases so all subsequent
+// databases created from template1 have the user.
+// See also https://www.postgresql.org/docs/current/manage-ag-templatedbs.html.
 func setupPostgresSecured(ctx context.Context, logger *zap.SugaredLogger) error {
 	l := logger.Named("postgres_secured")
 
@@ -170,12 +174,12 @@ func setupPostgresSecured(ctx context.Context, logger *zap.SugaredLogger) error 
 		return err
 	}
 
-	err = setupPostgresUser(ctx, logger, "postgres://username:password@127.0.0.1:5433/ferretdb")
+	err = setupUser(ctx, logger, "postgres://username:password@127.0.0.1:5433/ferretdb")
 	if err != nil {
 		return err
 	}
 
-	return setupPostgresUser(ctx, logger, "postgres://username:password@127.0.0.1:5433/template1")
+	return setupUser(ctx, logger, "postgres://username:password@127.0.0.1:5433/template1")
 }
 
 // setupMySQL configures `mysql` container.
@@ -251,14 +255,14 @@ func setupMongodb(ctx context.Context, logger *zap.SugaredLogger) error {
 	return ctx.Err()
 }
 
-// setupPostgresUser creates a user with username/password in admin database with supported mechanisms.
-// The user uses the same credential as the PostgreSQL credentials.
+// setupUser creates a user with username/password credential in admin database
+// with supported mechanisms.
 // It creates admin database (PostgreSQL admin schema), if it does not exist.
 // It also creates system.users collection, if it does not exist.
 //
 // Without this, once the first user is created, the authentication fails
 // as username/password does not exist in admin.system.users collection.
-func setupPostgresUser(ctx context.Context, logger *zap.SugaredLogger, uri string) error {
+func setupUser(ctx context.Context, logger *zap.SugaredLogger, uri string) error {
 	sp, err := state.NewProvider("")
 	if err != nil {
 		return err

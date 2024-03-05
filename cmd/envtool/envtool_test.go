@@ -141,10 +141,10 @@ func TestSetupPostgresUser(t *testing.T) {
 
 	uri := fmt.Sprintf("postgres://username@127.0.0.1:5432/%s", dbName)
 
-	err = setupPostgresUser(ctx, l.Sugar(), uri)
+	err = setupUser(ctx, l.Sugar(), uri)
 	require.NoError(t, err)
 
 	// if the user already exists, it should not fail
-	err = setupPostgresUser(ctx, l.Sugar(), uri)
+	err = setupUser(ctx, l.Sugar(), uri)
 	require.NoError(t, err)
 }
