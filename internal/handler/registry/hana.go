@@ -27,9 +27,10 @@ func init() {
 		opts.Logger.Warn("HANA handler is in alpha. It is not supported yet.")
 
 		b, err := hana.NewBackend(&hana.NewBackendParams{
-			URI: opts.HANAURL,
-			L:   opts.Logger.Named("hana"),
-			P:   opts.StateProvider,
+			URI:       opts.HANAURL,
+			L:         opts.Logger.Named("hana"),
+			P:         opts.StateProvider,
+			BatchSize: opts.BatchSize,
 		})
 		if err != nil {
 			return nil, nil, err

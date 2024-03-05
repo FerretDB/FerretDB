@@ -109,7 +109,7 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 	meta := c.r.CollectionGet(ctx, c.dbName, c.name)
 
 	err := db.InTransaction(ctx, func(tx *fsql.Tx) error {
-		batchSize := c.r.BatchSize()
+		batchSize := c.r.BatchSize
 
 		var batch []*types.Document
 		docs := params.Docs

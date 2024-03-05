@@ -73,17 +73,17 @@ var specialCharacters = regexp.MustCompile("[^a-z][^a-z0-9_]*")
 //
 //nolint:vet // for readability
 type Registry struct {
-	p *pool.Pool
-	l *zap.Logger
+	p         *pool.Pool
+	l         *zap.Logger
+	BatchSize int
 
 	// rw protects colls but also acts like a global lock for the whole registry.
 	// The latter effectively replaces transactions (see the postgresql backend package description for more info).
 	// One global lock should be replaced by more granular locks – one per database or even one per collection.
 	// But that requires some redesign.
 	// TODO https://github.com/FerretDB/FerretDB/issues/2755
-	rw        sync.RWMutex
-	colls     map[string]map[string]*Collection // database name -> collection name -> collection
-	batchSize int
+	rw    sync.RWMutex
+	colls map[string]map[string]*Collection // database name -> collection name -> collection
 }
 
 // NewRegistry creates a registry for PostgreSQL databases with a given base URI.
@@ -96,7 +96,7 @@ func NewRegistry(u string, batchSize int, l *zap.Logger, sp *state.Provider) (*R
 	r := &Registry{
 		p:         p,
 		l:         l,
-		batchSize: batchSize,
+		BatchSize: batchSize,
 	}
 
 	return r, nil
@@ -1032,14 +1032,6 @@ func (r *Registry) Collect(ch chan<- prometheus.Metric) {
 			db,
 		)
 	}
-}
-
-// BatchSize returns number of maximum size of query parameters.
-func (r *Registry) BatchSize() int {
-	r.rw.RLock()
-	batchSize := r.batchSize
-	r.rw.RUnlock()
-	return batchSize
 }
 
 // check interfaces

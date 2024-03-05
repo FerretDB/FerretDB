@@ -134,7 +134,7 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 	}
 
 	err = pool.InTransaction(ctx, p, func(tx pgx.Tx) error {
-		batchSize := c.r.BatchSize()
+		batchSize := c.r.BatchSize
 
 		var batch []*types.Document
 		docs := params.Docs

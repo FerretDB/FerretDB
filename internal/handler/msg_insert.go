@@ -85,7 +85,6 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	var done bool
 	for !done {
-
 		docs := make([]*types.Document, 0, h.BatchSize)
 		docsIndexes := make([]int, 0, h.BatchSize)
 
