@@ -27,6 +27,7 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 func TestHello(t *testing.T) {
@@ -133,14 +134,16 @@ func TestHelloWithSupportedMechs(t *testing.T) {
 	}
 
 	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
+		t.Run(name, func(tt *testing.T) {
+			tt.Parallel()
 
-			var res bson.D
+			var t testtb.TB = tt
 
 			if tc.mechs != nil && tc.mechs.Contains("PLAIN") {
-				setup.FailsForMongoDB(t, "PLAIN authentication mechanism is not support by MongoDB")
+				t = setup.FailsForMongoDB(t, "PLAIN authentication mechanism is not support by MongoDB")
 			}
+
+			var res bson.D
 
 			err := db.RunCommand(ctx, bson.D{
 				{"hello", "1"},
