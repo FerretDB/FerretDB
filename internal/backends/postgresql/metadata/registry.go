@@ -218,7 +218,8 @@ func (r *Registry) initDBs(ctx context.Context, p *pgxpool.Pool) ([]string, erro
 
 // initCollections loads collections metadata from the database during initialization.
 func (r *Registry) initCollections(ctx context.Context, dbName string, p *pgxpool.Pool) error {
-	defer observability.FuncCall(ctx)()
+	ctx, leave := observability.FuncCall(ctx)
+	defer leave()
 
 	q := fmt.Sprintf(
 		`SELECT %s FROM %s`,
@@ -256,7 +257,8 @@ func (r *Registry) initCollections(ctx context.Context, dbName string, p *pgxpoo
 //
 // If the user is not authenticated, it returns error.
 func (r *Registry) DatabaseList(ctx context.Context) ([]string, error) {
-	defer observability.FuncCall(ctx)()
+	ctx, leave := observability.FuncCall(ctx)
+	defer leave()
 
 	_, err := r.getPool(ctx)
 	if err != nil {
@@ -276,7 +278,8 @@ func (r *Registry) DatabaseList(ctx context.Context) ([]string, error) {
 //
 // If the user is not authenticated, it returns error.
 func (r *Registry) DatabaseGetExisting(ctx context.Context, dbName string) (*pgxpool.Pool, error) {
-	defer observability.FuncCall(ctx)()
+	ctx, leave := observability.FuncCall(ctx)
+	defer leave()
 
 	p, err := r.getPool(ctx)
 	if err != nil {
@@ -300,7 +303,8 @@ func (r *Registry) DatabaseGetExisting(ctx context.Context, dbName string) (*pgx
 //
 // If the user is not authenticated, it returns error.
 func (r *Registry) DatabaseGetOrCreate(ctx context.Context, dbName string) (*pgxpool.Pool, error) {
-	defer observability.FuncCall(ctx)()
+	ctx, leave := observability.FuncCall(ctx)
+	defer leave()
 
 	p, err := r.getPool(ctx)
 	if err != nil {
@@ -319,7 +323,8 @@ func (r *Registry) DatabaseGetOrCreate(ctx context.Context, dbName string) (*pgx
 //
 // It does not hold the lock.
 func (r *Registry) databaseGetOrCreate(ctx context.Context, p *pgxpool.Pool, dbName string) (*pgxpool.Pool, error) {
-	defer observability.FuncCall(ctx)()
+	ctx, leave := observability.FuncCall(ctx)
+	defer leave()
 
 	db := r.colls[dbName]
 	if db != nil {
@@ -383,7 +388,8 @@ func (r *Registry) databaseGetOrCreate(ctx context.Context, p *pgxpool.Pool, dbN
 //
 // If the user is not authenticated, it returns error.
 func (r *Registry) DatabaseDrop(ctx context.Context, dbName string) (bool, error) {
-	defer observability.FuncCall(ctx)()
+	ctx, leave := observability.FuncCall(ctx)
+	defer leave()
 
 	p, err := r.getPool(ctx)
 	if err != nil {
@@ -403,7 +409,8 @@ func (r *Registry) DatabaseDrop(ctx context.Context, dbName string) (bool, error
 //
 // It does not hold the lock.
 func (r *Registry) databaseDrop(ctx context.Context, p *pgxpool.Pool, dbName string) (bool, error) {
-	defer observability.FuncCall(ctx)()
+	ctx, leave := observability.FuncCall(ctx)
+	defer leave()
 
 	db := r.colls[dbName]
 	if db == nil {
@@ -430,7 +437,8 @@ func (r *Registry) databaseDrop(ctx context.Context, p *pgxpool.Pool, dbName str
 //
 // If the user is not authenticated, it returns error.
 func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]*Collection, error) {
-	defer observability.FuncCall(ctx)()
+	ctx, leave := observability.FuncCall(ctx)
+	defer leave()
 
 	if _, err := r.getPool(ctx); err != nil {
 		return nil, lazyerrors.Error(err)
@@ -476,7 +484,8 @@ func (ccp *CollectionCreateParams) Capped() bool {
 //
 // If the user is not authenticated, it returns error.
 func (r *Registry) CollectionCreate(ctx context.Context, params *CollectionCreateParams) (bool, error) {
-	defer observability.FuncCall(ctx)()
+	ctx, leave := observability.FuncCall(ctx)
+	defer leave()
 
 	p, err := r.getPool(ctx)
 	if err != nil {
@@ -497,7 +506,8 @@ func (r *Registry) CollectionCreate(ctx context.Context, params *CollectionCreat
 //
 // It does not hold the lock.
 func (r *Registry) collectionCreate(ctx context.Context, p *pgxpool.Pool, params *CollectionCreateParams) (bool, error) {
-	defer observability.FuncCall(ctx)()
+	ctx, leave := observability.FuncCall(ctx)
+	defer leave()
 
 	dbName, collectionName := params.DBName, params.Name
 
@@ -593,7 +603,8 @@ func (r *Registry) collectionCreate(ctx context.Context, p *pgxpool.Pool, params
 //
 // If the user is not authenticated, it returns error.
 func (r *Registry) CollectionGet(ctx context.Context, dbName, collectionName string) (*Collection, error) {
-	defer observability.FuncCall(ctx)()
+	ctx, leave := observability.FuncCall(ctx)
+	defer leave()
 
 	if _, err := r.getPool(ctx); err != nil {
 		return nil, lazyerrors.Error(err)
@@ -627,7 +638,8 @@ func (r *Registry) collectionGet(dbName, collectionName string) *Collection {
 //
 // If the user is not authenticated, it returns error.
 func (r *Registry) CollectionDrop(ctx context.Context, dbName, collectionName string) (bool, error) {
-	defer observability.FuncCall(ctx)()
+	ctx, leave := observability.FuncCall(ctx)
+	defer leave()
 
 	p, err := r.getPool(ctx)
 	if err != nil {
@@ -647,7 +659,8 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName, collectionName st
 //
 // It does not hold the lock.
 func (r *Registry) collectionDrop(ctx context.Context, p *pgxpool.Pool, dbName, collectionName string) (bool, error) {
-	defer observability.FuncCall(ctx)()
+	ctx, leave := observability.FuncCall(ctx)
+	defer leave()
 
 	db := r.colls[dbName]
 	if db == nil {
@@ -699,7 +712,8 @@ func (r *Registry) collectionDrop(ctx context.Context, p *pgxpool.Pool, dbName, 
 //
 // If the user is not authenticated, it returns error.
 func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionName, newCollectionName string) (bool, error) {
-	defer observability.FuncCall(ctx)()
+	ctx, leave := observability.FuncCall(ctx)
+	defer leave()
 
 	p, err := r.getPool(ctx)
 	if err != nil {
@@ -754,7 +768,8 @@ func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionNa
 //
 // If the user is not authenticated, it returns error.
 func (r *Registry) IndexesCreate(ctx context.Context, dbName, collectionName string, indexes []IndexInfo) error {
-	defer observability.FuncCall(ctx)()
+	ctx, leave := observability.FuncCall(ctx)
+	defer leave()
 
 	p, err := r.getPool(ctx)
 	if err != nil {
@@ -773,7 +788,8 @@ func (r *Registry) IndexesCreate(ctx context.Context, dbName, collectionName str
 //
 // It does not hold the lock.
 func (r *Registry) indexesCreate(ctx context.Context, p *pgxpool.Pool, dbName, collectionName string, indexes []IndexInfo) error {
-	defer observability.FuncCall(ctx)()
+	ctx, leave := observability.FuncCall(ctx)
+	defer leave()
 
 	_, err := r.collectionCreate(ctx, p, &CollectionCreateParams{DBName: dbName, Name: collectionName})
 	if err != nil {
@@ -920,7 +936,8 @@ func (r *Registry) indexesCreate(ctx context.Context, p *pgxpool.Pool, dbName, c
 //
 // If the user is not authenticated, it returns error.
 func (r *Registry) IndexesDrop(ctx context.Context, dbName, collectionName string, indexNames []string) error {
-	defer observability.FuncCall(ctx)()
+	ctx, leave := observability.FuncCall(ctx)
+	defer leave()
 
 	p, err := r.getPool(ctx)
 	if err != nil {
@@ -941,7 +958,8 @@ func (r *Registry) IndexesDrop(ctx context.Context, dbName, collectionName strin
 //
 // It does not hold the lock.
 func (r *Registry) indexesDrop(ctx context.Context, p *pgxpool.Pool, dbName, collectionName string, indexNames []string) error {
-	defer observability.FuncCall(ctx)()
+	ctx, leave := observability.FuncCall(ctx)
+	defer leave()
 
 	c := r.collectionGet(dbName, collectionName)
 	if c == nil {

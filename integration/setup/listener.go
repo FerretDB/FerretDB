@@ -22,7 +22,6 @@ import (
 	"path/filepath"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
@@ -98,10 +97,8 @@ func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath string, tlsAndAut
 func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string {
 	tb.Helper()
 
-	_, span := otel.Tracer("").Start(ctx, "setupListener")
-	defer span.End()
-
-	defer observability.FuncCall(ctx)()
+	ctx, leave := observability.FuncCall(ctx)
+	defer leave()
 
 	require.Empty(tb, *targetURLF, "-target-url must be empty for in-process FerretDB")
 

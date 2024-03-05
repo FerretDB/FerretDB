@@ -66,7 +66,8 @@ func newQueryIterator(ctx context.Context, rows pgx.Rows, onlyRecordIDs bool) ty
 
 // Next implements iterator.Interface.
 func (iter *queryIterator) Next() (struct{}, *types.Document, error) {
-	defer observability.FuncCall(iter.ctx)()
+	ctx, leave := observability.FuncCall(iter.ctx)
+	defer leave()
 
 	iter.m.Lock()
 	defer iter.m.Unlock()
@@ -78,7 +79,7 @@ func (iter *queryIterator) Next() (struct{}, *types.Document, error) {
 		return unused, nil, iterator.ErrIteratorDone
 	}
 
-	if err := context.Cause(iter.ctx); err != nil {
+	if err := context.Cause(ctx); err != nil {
 		iter.close()
 		return unused, nil, lazyerrors.Error(err)
 	}
@@ -137,7 +138,8 @@ func (iter *queryIterator) Next() (struct{}, *types.Document, error) {
 
 // Close implements iterator.Interface.
 func (iter *queryIterator) Close() {
-	defer observability.FuncCall(iter.ctx)()
+	_, leave := observability.FuncCall(iter.ctx)
+	defer leave()
 
 	iter.m.Lock()
 	defer iter.m.Unlock()
@@ -149,7 +151,8 @@ func (iter *queryIterator) Close() {
 //
 // This should be called only when the caller already holds the mutex.
 func (iter *queryIterator) close() {
-	defer observability.FuncCall(iter.ctx)()
+	_, leave := observability.FuncCall(iter.ctx)
+	defer leave()
 
 	if iter.rows != nil {
 		iter.rows.Close()

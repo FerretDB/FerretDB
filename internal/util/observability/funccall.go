@@ -19,12 +19,16 @@ import (
 	"runtime"
 	"runtime/trace"
 
+	"go.opentelemetry.io/otel"
+	oteltrace "go.opentelemetry.io/otel/trace"
+
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
 
 // funcCall tracks function calls.
 type funcCall struct {
 	token  *resource.Token
+	span   oteltrace.Span
 	region *trace.Region
 }
 
@@ -36,31 +40,39 @@ type funcCall struct {
 // The only valid way to use FuncCall is:
 //
 //	func foo(ctx context.Context) {
-//	    defer FuncCall(ctx)()
-//	    // ...
+//		ctx, leave := FuncCall(ctx)
+//		defer leave()
+//
+//		// ...
+//
+// For OpenTelemetry tracing, FuncCall creates a new span for the function call FIXME.
 //
 // For the Go execution tracer, FuncCall creates a new region for the function call
 // and attaches it to the task in the context (or background task).
-func FuncCall(ctx context.Context) func() {
+func FuncCall(ctx context.Context) (context.Context, func()) {
 	fc := &funcCall{
 		token: resource.NewToken(),
 	}
 	resource.Track(fc, fc.token)
 
-	if trace.IsEnabled() {
-		pc := make([]uintptr, 1)
-		runtime.Callers(1, pc)
-		f, _ := runtime.CallersFrames(pc).Next()
-		funcName := f.Function
+	pc := make([]uintptr, 1)
+	runtime.Callers(1, pc)
+	f, _ := runtime.CallersFrames(pc).Next()
+	funcName := f.Function
 
+	ctx, fc.span = otel.Tracer("").Start(ctx, funcName)
+
+	if trace.IsEnabled() {
 		fc.region = trace.StartRegion(ctx, funcName)
 	}
 
-	return fc.leave
+	return ctx, fc.leave
 }
 
 // leave is called on function exit.
 func (fc *funcCall) leave() {
+	fc.span.End()
+
 	if fc.region != nil {
 		fc.region.End()
 	}

@@ -28,7 +28,6 @@ tasks:
     desc: "Generate, format, build, unit test and lint code and documentation"
     cmds:
       - task: gen
-      - task: build-host
       - task: test-unit
       - task: lint
       - task: security
@@ -180,6 +179,7 @@ tasks:
 
   test-unit:
     desc: "Run all unit tests"
+    deps: [build-host] # version_test.go depends on bin/ferretdb being present
     cmds:
       - go test -count=1 -timeout={{.TEST_TIMEOUT}} {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -coverpkg=./... -coverprofile=cover.txt ./...
       - go test -count=1 -timeout={{.TEST_TIMEOUT}} {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -bench=. -benchtime=1x ./...
