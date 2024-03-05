@@ -1,0 +1,145 @@
+{
+  "$s": {
+    "p": {
+      "_id": {
+        "t": "string"
+      },
+      "credentials": {
+        "t": "object",
+        "$s": {
+          "p": {
+            "SCRAM-SHA-1": {
+              "t": "object",
+              "$s": {
+                "p": {
+                  "storedKey": {
+                    "t": "string"
+                  },
+                  "iterationCount": {
+                    "t": "int"
+                  },
+                  "salt": {
+                    "t": "string"
+                  },
+                  "serverKey": {
+                    "t": "string"
+                  }
+                },
+                "$k": [
+                  "storedKey",
+                  "iterationCount",
+                  "salt",
+                  "serverKey"
+                ]
+              }
+            },
+            "SCRAM-SHA-256": {
+              "t": "object",
+              "$s": {
+                "p": {
+                  "storedKey": {
+                    "t": "string"
+                  },
+                  "iterationCount": {
+                    "t": "int"
+                  },
+                  "salt": {
+                    "t": "string"
+                  },
+                  "serverKey": {
+                    "t": "string"
+                  }
+                },
+                "$k": [
+                  "storedKey",
+                  "iterationCount",
+                  "salt",
+                  "serverKey"
+                ]
+              }
+            },
+            "PLAIN": {
+              "t": "object",
+              "$s": {
+                "p": {
+                  "algo": {
+                    "t": "string"
+                  },
+                  "iterationCount": {
+                    "t": "long"
+                  },
+                  "hash": {
+                    "t": "binData",
+                    "s": 0
+                  },
+                  "salt": {
+                    "t": "binData",
+                    "s": 0
+                  }
+                },
+                "$k": [
+                  "algo",
+                  "iterationCount",
+                  "hash",
+                  "salt"
+                ]
+              }
+            }
+          },
+          "$k": [
+            "SCRAM-SHA-1",
+            "SCRAM-SHA-256",
+            "PLAIN"
+          ]
+        }
+      },
+      "user": {
+        "t": "string"
+      },
+      "db": {
+        "t": "string"
+      },
+      "roles": {
+        "t": "array",
+        "i": []
+      },
+      "userId": {
+        "t": "binData",
+        "s": 4
+      }
+    },
+    "$k": [
+      "_id",
+      "credentials",
+      "user",
+      "db",
+      "roles",
+      "userId"
+    ]
+  },
+  "_id": "admin.username",
+  "credentials": {
+    "SCRAM-SHA-1": {
+      "storedKey": "o+viQ4miKbpHYVuv62ys3qlfcHE=",
+      "iterationCount": 10000,
+      "salt": "a8nzn5BcBhXRhScuRy39cQ==",
+      "serverKey": "xzgG8EYUmN+NQ9vwbQuVLgtyifQ="
+    },
+    "SCRAM-SHA-256": {
+      "storedKey": "ADDyKR9ukJMC2wXQztMbaIrTNZh7RdBSNtQ3ehnAv+U=",
+      "iterationCount": 15000,
+      "salt": "ZSTAnwxr7HEZ44F5+1qOH06asrPR/30CyhgjYw==",
+      "serverKey": "nu1KrJQnTXhLMFBPxv6lVqakf1lEtB8gF/NFpd3aXdc="
+    },
+    "PLAIN": {
+      "algo": "PBKDF2-HMAC-SHA256",
+      "iterationCount": 600000,
+      "hash": "1oHFV6ZG+3eBSMv/HPpfcs50dvdidhArDHmF6pPtU54=",
+      "salt": "sxK4yjYYSss9JmYhfBRzwA=="
+    }
+  },
+  "user": "username",
+  "db": "admin",
+  "roles": [],
+  "userId": "Qi0njDnoRT66fs6AKwtfoA=="
+}

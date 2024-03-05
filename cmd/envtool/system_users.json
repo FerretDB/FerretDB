@@ -1,0 +1,84 @@
+{
+  "$s": {
+    "p": {
+      "_id": {
+        "t": "string"
+      },
+      "uuid": {
+        "t": "string"
+      },
+      "table": {
+        "t": "string"
+      },
+      "indexes": {
+        "t": "array",
+        "i": [
+          {
+            "t": "object",
+            "$s": {
+              "p": {
+                "pgindex": {
+                  "t": "string"
+                },
+                "name": {
+                  "t": "string"
+                },
+                "key": {
+                  "t": "object",
+                  "$s": {
+                    "p": {
+                      "_id": {
+                        "t": "int"
+                      }
+                    },
+                    "$k": [
+                      "_id"
+                    ]
+                  }
+                },
+                "unique": {
+                  "t": "bool"
+                }
+              },
+              "$k": [
+                "pgindex",
+                "name",
+                "key",
+                "unique"
+              ]
+            }
+          }
+        ]
+      },
+      "cappedSize": {
+        "t": "long"
+      },
+      "cappedDocs": {
+        "t": "long"
+      }
+    },
+    "$k": [
+      "_id",
+      "uuid",
+      "table",
+      "indexes",
+      "cappedSize",
+      "cappedDocs"
+    ]
+  },
+  "_id": "system.users",
+  "uuid": "b34c2094-2086-4184-8761-f5692fadb2f2",
+  "table": "system_users_aff2f7ce",
+  "indexes": [
+    {
+      "pgindex": "system_users_aff2f7ce__id__67399184_idx",
+      "name": "_id_",
+      "key": {
+        "_id": 1
+      },
+      "unique": true
+    }
+  ],
+  "cappedSize": 0,
+  "cappedDocs": 0
+}

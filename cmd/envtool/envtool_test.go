@@ -99,19 +99,18 @@ func TestPackageVersion(t *testing.T) {
 	assert.Equal(t, "1.0.0", output.String())
 }
 
-func TestSetupUser(t *testing.T) {
+func TestSetupPostgresUser(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping in -short mode")
 	}
 
 	t.Parallel()
 
-	ctx := testutil.Ctx(t)
-	baseURI := "postgres://username@127.0.0.1:5432/ferretdb"
-	l := testutil.Logger(t)
+	baseURI := "postgres://username@127.0.0.1:5432/ferretdb?search_path="
 	cfg, err := pgxpool.ParseConfig(baseURI)
 	require.NoError(t, err)
 
+	l := testutil.Logger(t)
 	cfg.MinConns = 0
 	cfg.MaxConns = 1
 	cfg.ConnConfig.Tracer = &tracelog.TraceLog{
@@ -119,28 +118,33 @@ func TestSetupUser(t *testing.T) {
 		LogLevel: tracelog.LogLevelTrace,
 	}
 
+	ctx := testutil.Ctx(t)
 	p, err := pgxpool.NewWithConfig(ctx, cfg)
 	require.NoError(t, err)
 
 	dbName := testutil.DatabaseName(t)
+	sanitizedName := pgx.Identifier{dbName}.Sanitize()
+
+	_, err = p.Exec(ctx, fmt.Sprintf("DROP DATABASE IF EXISTS %s", sanitizedName))
+	require.NoError(t, err)
 
 	// use template0 because template1 may already have the user created
-	q := fmt.Sprintf("CREATE DATABASE %s TEMPLATE template0", pgx.Identifier{dbName}.Sanitize())
-	_, err = p.Exec(ctx, q)
+	_, err = p.Exec(ctx, fmt.Sprintf("CREATE DATABASE %s TEMPLATE template0", sanitizedName))
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
 		defer p.Close()
 
-		q = fmt.Sprintf("DROP DATABASE %s", pgx.Identifier{dbName}.Sanitize())
-		_, err = p.Exec(context.Background(), q)
+		_, err = p.Exec(context.Background(), fmt.Sprintf("DROP DATABASE %s", sanitizedName))
 		require.NoError(t, err)
 	})
 
-	err = setupUser(ctx, l.Sugar(), 5432, dbName)
+	uri := fmt.Sprintf("postgres://username@127.0.0.1:5432/%s", dbName)
+
+	err = setupPostgresUser(ctx, l.Sugar(), uri)
 	require.NoError(t, err)
 
 	// if the user already exists, it should not fail
-	err = setupUser(ctx, l.Sugar(), 5432, dbName)
+	err = setupPostgresUser(ctx, l.Sugar(), uri)
 	require.NoError(t, err)
 }

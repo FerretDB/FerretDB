@@ -33,19 +33,15 @@ import (
 	"time"
 
 	"github.com/alecthomas/kong"
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/prometheus/client_golang/prometheus"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/FerretDB/FerretDB/build/version"
 	mysqlpool "github.com/FerretDB/FerretDB/internal/backends/mysql/metadata/pool"
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata/pool"
-	"github.com/FerretDB/FerretDB/internal/clientconn"
-	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
-	"github.com/FerretDB/FerretDB/internal/handler/registry"
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -57,6 +53,12 @@ import (
 var (
 	//go:embed error.tmpl
 	errorTemplateB []byte
+
+	//go:embed user.json
+	user string
+
+	//go:embed system_users.json
+	systemUsers string
 
 	// Parsed error template.
 	errorTemplate = template.Must(template.New("error").Option("missingkey=error").Parse(string(errorTemplateB)))
@@ -138,29 +140,42 @@ func setupAnyPostgres(ctx context.Context, logger *zap.SugaredLogger, uri string
 		ctxutil.SleepWithJitter(ctx, time.Second, retry)
 	}
 
-	if ctx.Err() != nil {
-		return ctx.Err()
-	}
-
-	dbName := strings.Trim(u.Path, "/")
-
-	err = setupUser(ctx, logger, uint16(port), dbName)
-	if err != nil {
-		return err
-	}
-
-	return setupUser(ctx, logger, uint16(port), "template1")
+	return ctx.Err()
 }
 
 // setupPostgres configures `postgres` container.
 func setupPostgres(ctx context.Context, logger *zap.SugaredLogger) error {
+	l := logger.Named("postgres")
+
 	// user `username` must exist, but password may be any, even empty
-	return setupAnyPostgres(ctx, logger.Named("postgres"), "postgres://username@127.0.0.1:5432/ferretdb")
+	err := setupAnyPostgres(ctx, l, "postgres://username@127.0.0.1:5432/ferretdb")
+	if err != nil {
+		return err
+	}
+
+	err = setupPostgresUser(ctx, logger, "postgres://username@127.0.0.1:5432/ferretdb")
+	if err != nil {
+		return err
+	}
+
+	return setupPostgresUser(ctx, logger, "postgres://username@127.0.0.1:5432/template1")
 }
 
 // setupPostgresSecured configures `postgres_secured` container.
 func setupPostgresSecured(ctx context.Context, logger *zap.SugaredLogger) error {
-	return setupAnyPostgres(ctx, logger.Named("postgres_secured"), "postgres://username:password@127.0.0.1:5433/ferretdb")
+	l := logger.Named("postgres_secured")
+
+	err := setupAnyPostgres(ctx, l, "postgres://username:password@127.0.0.1:5433/ferretdb")
+	if err != nil {
+		return err
+	}
+
+	err = setupPostgresUser(ctx, logger, "postgres://username:password@127.0.0.1:5433/ferretdb")
+	if err != nil {
+		return err
+	}
+
+	return setupPostgresUser(ctx, logger, "postgres://username:password@127.0.0.1:5433/template1")
 }
 
 // setupMySQL configures `mysql` container.
@@ -236,105 +251,88 @@ func setupMongodb(ctx context.Context, logger *zap.SugaredLogger) error {
 	return ctx.Err()
 }
 
-// setupUser creates a user in admin database with supported mechanisms.
-// The user uses username/password credential which is the same as the PostgreSQL credentials.
+// setupPostgresUser creates a user with username/password in admin database with supported mechanisms.
+// The user uses the same credential as the PostgreSQL credentials.
+// It creates admin database (PostgreSQL admin schema), if it does not exist.
+// It also creates system.users collection, if it does not exist.
 //
 // Without this, once the first user is created, the authentication fails
 // as username/password does not exist in admin.system.users collection.
-func setupUser(ctx context.Context, logger *zap.SugaredLogger, postgreSQLPort uint16, dbName string) error {
-	if err := waitForPort(ctx, logger.Named("postgreSQL"), postgreSQLPort); err != nil {
-		return err
-	}
-
+func setupPostgresUser(ctx context.Context, logger *zap.SugaredLogger, uri string) error {
 	sp, err := state.NewProvider("")
 	if err != nil {
 		return err
 	}
 
-	postgreSQLURL := fmt.Sprintf("postgres://username:password@localhost:%d/%s", postgreSQLPort, dbName)
-	listenerMetrics := connmetrics.NewListenerMetrics()
-	handlerOpts := &registry.NewHandlerOpts{
-		Logger:        logger.Desugar(),
-		ConnMetrics:   listenerMetrics.ConnMetrics,
-		StateProvider: sp,
-		PostgreSQLURL: postgreSQLURL,
-		TestOpts: registry.TestOpts{
-			CappedCleanupPercentage: 20,
-			EnableNewAuth:           true,
-		},
-	}
-
-	h, closeBackend, err := registry.NewHandler("postgresql", handlerOpts)
+	u, err := url.Parse(uri)
 	if err != nil {
 		return err
 	}
 
-	defer closeBackend()
-
-	listenerOpts := clientconn.NewListenerOpts{
-		Mode:    clientconn.NormalMode,
-		Metrics: listenerMetrics,
-		Handler: h,
-		Logger:  logger.Desugar(),
-		TCP:     "127.0.0.1:0",
+	p, err := pool.New(uri, logger.Desugar(), sp)
+	if err != nil {
+		return err
 	}
 
-	l := clientconn.NewListener(&listenerOpts)
+	defer p.Close()
 
-	runErr := make(chan error)
+	username := u.User.Username()
+	password, _ := u.User.Password()
 
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
+	dbPool, err := p.Get(username, password)
+	if err != nil {
+		return err
+	}
 
-	go func() {
-		if err = l.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
-			runErr <- err
-		}
-	}()
+	defer dbPool.Close()
 
-	defer close(runErr)
+	var pgErr *pgconn.PgError
 
-	select {
-	case err = <-runErr:
-		if err != nil {
+	q := `CREATE SCHEMA admin`
+	if _, err = dbPool.Exec(ctx, q); err != nil && (!errors.As(err, &pgErr) || pgErr.Code != pgerrcode.DuplicateSchema) {
+		return err
+	}
+
+	if err == nil {
+		q = `CREATE TABLE admin._ferretdb_database_metadata (_jsonb jsonb)`
+		if _, err = dbPool.Exec(ctx, q); err != nil {
 			return err
 		}
-	case <-time.After(time.Millisecond):
-	}
 
-	port := l.TCPAddr().(*net.TCPAddr).Port
-	uri := fmt.Sprintf("mongodb://username:password@localhost:%d/?authMechanism=PLAIN", port)
-	clientOpts := options.Client().ApplyURI(uri)
-
-	client, err := mongo.Connect(ctx, clientOpts)
-	if err != nil {
-		return err
-	}
-
-	defer func() {
-		err = client.Disconnect(ctx)
-	}()
-
-	//nolint:forbidigo // allow usage of bson for setup dev and test environment
-	if err = client.Database("admin").RunCommand(ctx, bson.D{
-		bson.E{Key: "createUser", Value: "username"},
-		bson.E{Key: "roles", Value: bson.A{}},
-		bson.E{Key: "pwd", Value: "password"},
-		bson.E{Key: "mechanisms", Value: bson.A{"PLAIN", "SCRAM-SHA-1", "SCRAM-SHA-256"}},
-	}).Err(); err != nil {
-		var cmdErr mongo.CommandError
-		if errors.As(err, &cmdErr) && cmdErr.Code == 51003 {
-			return nil
+		q = `CREATE UNIQUE INDEX _ferretdb_database_metadata_id_idx ON admin._ferretdb_database_metadata (((_jsonb->'_id')))`
+		if _, err = dbPool.Exec(ctx, q); err != nil {
+			return err
 		}
 
+		q = `CREATE UNIQUE INDEX _ferretdb_database_metadata_table_idx ON admin._ferretdb_database_metadata (((_jsonb->'table')))`
+		if _, err = dbPool.Exec(ctx, q); err != nil {
+			return err
+		}
+	}
+
+	q = `CREATE TABLE admin.system_users_aff2f7ce (_jsonb jsonb)`
+	if _, err = dbPool.Exec(ctx, q); err != nil && (!errors.As(err, &pgErr) || pgErr.Code != pgerrcode.DuplicateTable) {
 		return err
 	}
 
-	if ctx.Err() == context.Canceled {
-		return nil
+	if err == nil {
+		q = `CREATE UNIQUE INDEX "system_users_aff2f7ce__id__67399184_idx" ON admin.system_users_aff2f7ce (((_jsonb->'_id')))`
+		if _, err = dbPool.Exec(ctx, q); err != nil {
+			return err
+		}
+
+		q = `INSERT INTO admin._ferretdb_database_metadata (_jsonb) VALUES ($1)`
+		if _, err = dbPool.Exec(ctx, q, systemUsers); err != nil {
+			return err
+		}
 	}
 
-	return ctx.Err()
+	q = `INSERT INTO admin.system_users_aff2f7ce (_jsonb) VALUES ($1)`
+	if _, err = dbPool.Exec(ctx, q, user); err != nil && (!errors.As(err, &pgErr) || pgErr.Code != pgerrcode.UniqueViolation) {
+		return err
+	}
+
+	return nil
 }
 
 // setupMongodbSecured configures `mongodb_secured` container.
