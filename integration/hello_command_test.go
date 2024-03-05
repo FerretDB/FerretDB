@@ -133,8 +133,6 @@ func TestHelloWithSupportedMechs(t *testing.T) {
 	}
 
 	for name, tc := range testCases {
-		tc, name := tc, name
-
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
@@ -156,13 +154,6 @@ func TestHelloWithSupportedMechs(t *testing.T) {
 
 			actual := ConvertDocument(t, res)
 
-			if tc.mechs != nil {
-				mechanisms := must.NotFail(actual.Get("saslSupportedMechs"))
-				assert.True(t, mechanisms.(*types.Array).ContainsAll(tc.mechs))
-			} else {
-				assert.False(t, actual.Has("saslSupportedMechs"))
-			}
-
 			assert.Equal(t, must.NotFail(actual.Get("isWritablePrimary")), true)
 			assert.Equal(t, must.NotFail(actual.Get("maxBsonObjectSize")), int32(16777216))
 			assert.Equal(t, must.NotFail(actual.Get("maxMessageSizeBytes")), int32(48000000))
@@ -174,6 +165,14 @@ func TestHelloWithSupportedMechs(t *testing.T) {
 			assert.Equal(t, must.NotFail(actual.Get("maxWireVersion")), int32(21))
 			assert.Equal(t, must.NotFail(actual.Get("readOnly")), false)
 			assert.Equal(t, must.NotFail(actual.Get("ok")), float64(1))
+
+			if tc.mechs == nil {
+				assert.False(t, actual.Has("saslSupportedMechs"))
+				return
+			}
+
+			mechanisms := must.NotFail(actual.Get("saslSupportedMechs"))
+			assert.True(t, mechanisms.(*types.Array).ContainsAll(tc.mechs))
 		})
 	}
 }

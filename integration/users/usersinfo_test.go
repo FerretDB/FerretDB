@@ -532,7 +532,6 @@ func TestUsersinfo(t *testing.T) {
 	}
 
 	for name, tc := range testCases {
-		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
@@ -575,28 +574,23 @@ func TestUsersinfo(t *testing.T) {
 
 				require.True(t, (tc.hasUser == nil) != (tc.expected == nil))
 
-				payload := integration.ConvertDocument(t, tc.payload)
-
 				if tc.showCredentials != nil {
-					cred, ok := actualUser.Get("credentials")
-					assert.Nil(t, ok, "credentials not found")
+					cred := must.NotFail(actualUser.Get("credentials")).(*types.Document)
 
 					for _, typ := range tc.showCredentials {
 						switch typ {
 						case "PLAIN":
-							assertPlainCredentials(t, "PLAIN", cred.(*types.Document))
+							assertPlainCredentials(t, "PLAIN", cred)
 						case "SCRAM-SHA-1":
-							assertSCRAMSHA1Credentials(t, "SCRAM-SHA-1", cred.(*types.Document))
+							assertSCRAMSHA1Credentials(t, "SCRAM-SHA-1", cred)
 						case "SCRAM-SHA-256":
-							assertSCRAMSHA256Credentials(t, "SCRAM-SHA-256", cred.(*types.Document))
+							assertSCRAMSHA256Credentials(t, "SCRAM-SHA-256", cred)
 						}
 					}
-				} else {
-					assert.False(t, actualUser.Has("credentials"))
 				}
 
-				if payload.Has("mechanisms") {
-					assertUsersinfoMechanisms(t, payload, actualUser)
+				if len(tc.showCredentials) == 0 {
+					assert.False(t, actualUser.Has("credentials"))
 				}
 
 				foundUsers[must.NotFail(actualUser.Get("_id")).(string)] = struct{}{}
@@ -621,21 +615,5 @@ func TestUsersinfo(t *testing.T) {
 				testutil.AssertEqual(t, expected, actual)
 			}
 		})
-	}
-}
-
-func assertUsersinfoMechanisms(t *testing.T, payload, user *types.Document) {
-	payloadMechanisms := must.NotFail(payload.Get("mechanisms")).(*types.Array)
-
-	if payloadMechanisms.Contains("PLAIN") {
-		assertPlainCredentials(t, "PLAIN", must.NotFail(user.Get("credentials")).(*types.Document))
-	}
-
-	if payloadMechanisms.Contains("SCRAM-SHA-1") {
-		assertSCRAMSHA1Credentials(t, "SCRAM-SHA-1", must.NotFail(user.Get("credentials")).(*types.Document))
-	}
-
-	if payloadMechanisms.Contains("SCRAM-SHA-256") {
-		assertSCRAMSHA256Credentials(t, "SCRAM-SHA-256", must.NotFail(user.Get("credentials")).(*types.Document))
 	}
 }
