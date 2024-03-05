@@ -139,7 +139,7 @@ func TestHelloWithSupportedMechs(t *testing.T) {
 			var res bson.D
 
 			if tc.mechs != nil && tc.mechs.Contains("PLAIN") {
-				setup.SkipForMongoDB(t, "PLAIN authentication mechanism is not support by MongoDB")
+				setup.FailsForMongoDB(t, "PLAIN authentication mechanism is not support by MongoDB")
 			}
 
 			err := db.RunCommand(ctx, bson.D{
