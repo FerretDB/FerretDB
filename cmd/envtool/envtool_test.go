@@ -18,7 +18,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"net/url"
 	"os"
+	"path"
+	"path/filepath"
 	"testing"
 
 	zapadapter "github.com/jackc/pgx-zap"
@@ -146,5 +149,34 @@ func TestSetupUserInPostgres(t *testing.T) {
 
 	// if the user already exists, it should not fail
 	err = setupUserInPostgres(ctx, l.Sugar(), uri)
+	require.NoError(t, err)
+}
+
+func TestSetupUserInSQLite(t *testing.T) {
+	t.Parallel()
+
+	dbName := testutil.DatabaseName(t)
+	baseURI := "file:../../tmp/sqlite-tests/"
+	u, err := url.Parse(baseURI)
+	require.NoError(t, err)
+
+	u.Opaque = path.Join(u.Opaque, dbName) + "/"
+	uri := u.String()
+
+	dir, err := filepath.Abs(u.Opaque)
+	require.NoError(t, err)
+	require.NoError(t, os.RemoveAll(dir))
+	require.NoError(t, os.MkdirAll(dir, 0o777))
+
+	t.Cleanup(func() {
+		require.NoError(t, os.RemoveAll(dir))
+	})
+
+	ctx := testutil.Ctx(t)
+	err = setupUserInSQLite(ctx, uri, dbName)
+	require.NoError(t, err)
+
+	// if the user already exists, it should not fail
+	err = setupUserInSQLite(ctx, uri, dbName)
 	require.NoError(t, err)
 }

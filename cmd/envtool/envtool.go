@@ -17,6 +17,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	_ "embed"
 	"errors"
 	"fmt"
@@ -26,6 +27,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -38,6 +40,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	_ "modernc.org/sqlite" // register database/sql driver
+	sqlite3 "modernc.org/sqlite"
+	sqlite3lib "modernc.org/sqlite/lib"
 
 	"github.com/FerretDB/FerretDB/build/version"
 	mysqlpool "github.com/FerretDB/FerretDB/internal/backends/mysql/metadata/pool"
@@ -180,6 +185,11 @@ func setupPostgresSecured(ctx context.Context, logger *zap.SugaredLogger) error 
 	}
 
 	return setupUserInPostgres(ctx, logger, "postgres://username:password@127.0.0.1:5433/template1")
+}
+
+// setupSQLite configures sqlite local file.
+func setupSQLite(ctx context.Context, logger *zap.SugaredLogger) error {
+	return setupUserInSQLite(ctx, "file:../../tmp/sqlite/ferretdb.sqlite", "ferretdb")
 }
 
 // setupMySQL configures `mysql` container.
@@ -341,6 +351,72 @@ func setupUserInPostgres(ctx context.Context, logger *zap.SugaredLogger, uri str
 	return nil
 }
 
+// setupUserInSQLite creates a user with username/password credential in admin database
+// with supported mechanisms.
+// It creates admin database, if it does not exist.
+// It also creates system.users collection, if it does not exist.
+//
+// Without this, once the first user is created, the authentication fails
+// as username/password does not exist in admin.system.users collection.
+func setupUserInSQLite(ctx context.Context, uri string, dbName string) error {
+	dbURI, err := url.Parse(uri)
+	if err != nil {
+		return err
+	}
+
+	dbURI.Path = path.Join(dbURI.Path, dbName+".sqlite")
+	dbURI.Opaque = dbURI.Path
+	db, err := sql.Open("sqlite", dbURI.String())
+	if err != nil {
+		return err
+	}
+
+	db.SetConnMaxIdleTime(0)
+	db.SetConnMaxLifetime(0)
+	db.SetMaxIdleConns(100)
+	db.SetMaxOpenConns(100)
+
+	var se *sqlite3.Error
+
+	q := `
+		CREATE TABLE "_ferretdb_collections"
+		(
+			name TEXT NOT NULL UNIQUE CHECK (name != ''),
+			table_name TEXT NOT NULL UNIQUE CHECK (table_name != ''),
+			settings TEXT NOT NULL CHECK (settings != '')
+		) STRICT`
+	if _, err = db.ExecContext(ctx, q); err != nil && (!errors.As(err, &se) || !strings.Contains(se.Error(), "already exists")) {
+		return err
+	}
+
+	q = `CREATE TABLE "system.users_aff2f7ce" (_ferretdb_sjson TEXT NOT NULL CHECK(_ferretdb_sjson != '')) STRICT`
+	if _, err = db.ExecContext(ctx, q); err != nil && (!errors.As(err, &se) || !strings.Contains(se.Error(), "already exists")) {
+		return err
+	}
+
+	if err == nil {
+		q = `CREATE UNIQUE INDEX "system.users_aff2f7ce__id_" ON "system.users_aff2f7ce" (_ferretdb_sjson->"_id")`
+		if _, err = db.ExecContext(ctx, q); err != nil {
+			return err
+		}
+
+		q = `INSERT INTO "_ferretdb_collections" (name, table_name, settings) VALUES ('system.users', 'system.users_aff2f7ce',?)`
+		arg := `{"uuid":"6f3bdba1-06a5-453b-b71d-c60854a51415","indexes":[{"name":"_id_","key":[{"field":"_id","descending":false}],"unique":true}],"cappedSize":0,"cappedDocuments":0}`
+		if _, err = db.ExecContext(ctx, q, arg); err != nil {
+			return err
+		}
+	}
+
+	q = `INSERT INTO "system.users_aff2f7ce" (_ferretdb_sjson) VALUES (?)`
+
+	_, err = db.ExecContext(ctx, q, testUser)
+	if err != nil && (!errors.As(err, &se) || se.Code() != sqlite3lib.SQLITE_CONSTRAINT_UNIQUE) {
+		return err
+	}
+
+	return nil
+}
+
 // setupMongodbSecured configures `mongodb_secured` container.
 func setupMongodbSecured(ctx context.Context, logger *zap.SugaredLogger) error {
 	if err := waitForPort(ctx, logger.Named("mongodb_secured"), 47018); err != nil {
@@ -378,6 +454,7 @@ func setup(ctx context.Context, logger *zap.SugaredLogger) error {
 	for _, f := range []func(context.Context, *zap.SugaredLogger) error{
 		setupPostgres,
 		setupPostgresSecured,
+		setupSQLite,
 		setupMySQL,
 		setupMongodb,
 		setupMongodbSecured,
