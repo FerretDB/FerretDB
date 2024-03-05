@@ -46,11 +46,6 @@ func MakeOpMsgSection(doc *types.Document) OpMsgSection {
 	}
 }
 
-// RawDocuments returns raw documents of the section.
-func (s *OpMsgSection) RawDocuments() []bson2.RawDocument {
-	return s.documents
-}
-
 // OpMsg is the main wire protocol message type.
 type OpMsg struct {
 	// The order of fields is weird to make the struct smaller due to alignment.
@@ -61,6 +56,43 @@ type OpMsg struct {
 	checksum uint32
 }
 
+// checkSections checks given sections.
+func checkSections(sections []OpMsgSection) error {
+	if len(sections) == 0 {
+		return lazyerrors.New("no sections")
+	}
+
+	var kind0Found bool
+
+	for _, s := range sections {
+		switch s.Kind {
+		case 0:
+			if kind0Found {
+				return lazyerrors.New("multiple kind 0 sections")
+			}
+			kind0Found = true
+
+			if s.Identifier != "" {
+				return lazyerrors.New("kind 0 section has identifier")
+			}
+
+			if len(s.documents) != 1 {
+				return lazyerrors.Errorf("kind 0 section has %d documents", len(s.documents))
+			}
+
+		case 1:
+			if s.Identifier == "" {
+				return lazyerrors.New("kind 1 section has no identifier")
+			}
+
+		default:
+			return lazyerrors.Errorf("unknown kind %d", s.Kind)
+		}
+	}
+
+	return nil
+}
+
 // Sections returns the sections of the OpMsg.
 func (msg *OpMsg) Sections() []OpMsgSection {
 	return msg.sections
@@ -68,8 +100,19 @@ func (msg *OpMsg) Sections() []OpMsgSection {
 
 // SetSections sets sections of the OpMsg.
 func (msg *OpMsg) SetSections(sections ...OpMsgSection) error {
+	if err := checkSections(sections); err != nil {
+		return lazyerrors.Error(err)
+	}
+
 	msg.sections = sections
 
+	if debugbuild.Enabled {
+		if err := msg.check(); err != nil {
+			return lazyerrors.Error(err)
+		}
+	}
+
+	// for validation
 	_, err := msg.Document()
 	if err != nil {
 		return lazyerrors.Error(err)
@@ -82,6 +125,10 @@ func (msg *OpMsg) SetSections(sections ...OpMsgSection) error {
 //
 // All sections are merged together.
 func (msg *OpMsg) Document() (*types.Document, error) {
+	if err := checkSections(msg.sections); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	docs := make([]*types.Document, 0, len(msg.sections))
 
 	// Sections of kind 1 may come before the section of kind 0,
@@ -91,10 +138,6 @@ func (msg *OpMsg) Document() (*types.Document, error) {
 	for _, section := range msg.sections {
 		if section.Kind != 0 {
 			continue
-		}
-
-		if l := len(section.documents); l != 1 {
-			return nil, lazyerrors.Errorf("wire.OpMsg.Document: %d documents in kind 0 section", l)
 		}
 
 		doc, err := section.documents[0].Convert()
@@ -108,14 +151,6 @@ func (msg *OpMsg) Document() (*types.Document, error) {
 	for _, section := range msg.sections {
 		if section.Kind == 0 {
 			continue
-		}
-
-		if section.Kind != 1 {
-			panic(fmt.Sprintf("unknown kind %d", section.Kind))
-		}
-
-		if section.Identifier == "" {
-			return nil, lazyerrors.New("wire.OpMsg.Document: empty section identifier")
 		}
 
 		a := types.MakeArray(len(section.documents))
@@ -158,17 +193,13 @@ func (msg *OpMsg) Document() (*types.Document, error) {
 // The error is returned if msg contains anything other than a single section of kind 0
 // with a single document.
 func (msg *OpMsg) RawDocument() (bson2.RawDocument, error) {
-	if len(msg.sections) != 1 {
-		return nil, lazyerrors.Errorf("wire.OpMsg.RawDocument: expected 1 section, got %d", len(msg.sections))
+	if err := checkSections(msg.sections); err != nil {
+		return nil, err
 	}
 
 	s := msg.sections[0]
 	if s.Kind != 0 || s.Identifier != "" {
-		return nil, lazyerrors.Errorf(`wire.OpMsg.RawDocument: expected section 0/"", got %d/%q`, s.Kind, s.Identifier)
-	}
-
-	if len(s.documents) != 1 {
-		return nil, lazyerrors.Errorf("wire.OpMsg.RawDocument: expected 1 document, got %d", len(s.documents))
+		return nil, lazyerrors.Errorf(`expected section 0/"", got %d/%q`, s.Kind, s.Identifier)
 	}
 
 	return s.documents[0], nil
@@ -282,6 +313,10 @@ func (msg *OpMsg) UnmarshalBinaryNocopy(b []byte) error {
 		msg.checksum = binary.LittleEndian.Uint32(b[offset:])
 	}
 
+	if err := checkSections(msg.sections); err != nil {
+		return lazyerrors.Error(err)
+	}
+
 	if debugbuild.Enabled {
 		if err := msg.check(); err != nil {
 			return lazyerrors.Error(err)
@@ -298,6 +333,10 @@ func (msg *OpMsg) UnmarshalBinaryNocopy(b []byte) error {
 
 // MarshalBinary writes an OpMsg to a byte array.
 func (msg *OpMsg) MarshalBinary() ([]byte, error) {
+	if err := checkSections(msg.sections); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	if debugbuild.Enabled {
 		if err := msg.check(); err != nil {
 			return nil, lazyerrors.Error(err)
@@ -318,10 +357,6 @@ func (msg *OpMsg) MarshalBinary() ([]byte, error) {
 
 		switch section.Kind {
 		case 0:
-			if l := len(section.documents); l != 1 {
-				panic(fmt.Sprintf("%d documents in section with kind 0", l))
-			}
-
 			b = append(b, section.documents[0]...)
 
 		case 1:

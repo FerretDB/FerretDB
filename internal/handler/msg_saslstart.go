@@ -40,27 +40,36 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
-	_, err = common.GetRequiredParam[string](document, "$db")
+	dbName, err := common.GetRequiredParam[string](document, "$db")
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3008
+	replyDoc, err := h.saslStart(ctx, dbName, document)
+	if err != nil {
+		return nil, err
+	}
 
+	replyDoc.Set("ok", float64(1))
+
+	var reply wire.OpMsg
+	must.NoError(reply.SetSections(wire.MakeOpMsgSection(replyDoc)))
+
+	return &reply, nil
+}
+
+// saslStart starts authentication for the supported mechanisms.
+// It returns the document containing authentication payload used for the response.
+func (h *Handler) saslStart(ctx context.Context, dbName string, document *types.Document) (*types.Document, error) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/3008
 	mechanism, err := common.GetRequiredParam[string](document, "mechanism")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	var (
-		reply wire.OpMsg
-
-		username, password string
-	)
-
 	switch mechanism {
 	case "PLAIN":
-		username, password, err = saslStartPlain(document)
+		username, password, err := saslStartPlain(document)
 		if err != nil {
 			return nil, err
 		}
@@ -72,15 +81,12 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		conninfo.Get(ctx).SetAuth(username, password)
 
 		var emptyPayload types.Binary
-		must.NoError(reply.SetSections(wire.MakeOpMsgSection(
-			must.NotFail(types.NewDocument(
-				"conversationId", int32(1),
-				"done", true,
-				"payload", emptyPayload,
-				"ok", float64(1),
-			)),
-		)))
 
+		return must.NotFail(types.NewDocument(
+			"conversationId", int32(1),
+			"done", true,
+			"payload", emptyPayload,
+		)), nil
 	case "SCRAM-SHA-1", "SCRAM-SHA-256":
 		if !h.EnableNewAuth {
 			return nil, handlererrors.NewCommandErrorMsg(
@@ -89,7 +95,7 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			)
 		}
 
-		response, err := h.saslStartSCRAM(ctx, mechanism, document)
+		response, err := h.saslStartSCRAM(ctx, dbName, mechanism, document)
 		if err != nil {
 			return nil, err
 		}
@@ -100,22 +106,16 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			B: []byte(response),
 		}
 
-		must.NoError(reply.SetSections(wire.MakeOpMsgSection(
-			must.NotFail(types.NewDocument(
-				"ok", float64(1),
-				"conversationId", int32(1),
-				"done", false,
-				"payload", binResponse,
-			)),
-		)))
-
+		return must.NotFail(types.NewDocument(
+			"conversationId", int32(1),
+			"done", false,
+			"payload", binResponse,
+		)), nil
 	default:
 		msg := fmt.Sprintf("Unsupported authentication mechanism %q.\n", mechanism) +
 			"See https://docs.ferretdb.io/security/authentication/ for more details."
 		return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrAuthenticationFailed, msg, "mechanism")
 	}
-
-	return &reply, nil
 }
 
 // saslStartPlain extracts username and password from PLAIN `saslStart` payload.
@@ -251,7 +251,7 @@ func (h *Handler) scramCredentialLookup(ctx context.Context, username, dbName, m
 
 // saslStartSCRAM extracts the initial challenge and attempts to move the
 // authentication conversation forward returning a challenge response.
-func (h *Handler) saslStartSCRAM(ctx context.Context, mechanism string, doc *types.Document) (string, error) {
+func (h *Handler) saslStartSCRAM(ctx context.Context, dbName, mechanism string, doc *types.Document) (string, error) {
 	var payload []byte
 
 	// most drivers follow spec and send payload as a binary
@@ -261,11 +261,6 @@ func (h *Handler) saslStartSCRAM(ctx context.Context, mechanism string, doc *typ
 	}
 
 	payload = binaryPayload.B
-
-	dbName, err := common.GetRequiredParam[string](doc, "$db")
-	if err != nil {
-		return "", err
-	}
 
 	var f scram.HashGeneratorFcn
 
