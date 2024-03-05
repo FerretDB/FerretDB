@@ -84,7 +84,7 @@ func collectionsStats(ctx context.Context, p *fsql.DB, dbName string, list []*me
 			COALESCE(SUM(t.data_length), 0),
 			COALESCE(SUM(t.data_free)),
 			COALESCE(SUM(t.index_length), 0),
-			COALESCE(SUM(t.data_length) + SUM(t.index_length), 0)
+			COALESCE(SUM(t.data_length), 0)
 		FROM information_schema.tables
 		WHERE s.schema_name = ? AND t.table_name IN (%s)`,
 		strings.Join(tableNames, ", "),
