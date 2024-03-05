@@ -16,7 +16,6 @@ package bson2
 
 import (
 	"encoding/binary"
-	"math"
 
 	"github.com/cristalhq/bson/bsonproto"
 
@@ -66,10 +65,6 @@ func decodeScalarField(b []byte, t tag) (v any, size int, err error) {
 		f, err = bsonproto.DecodeFloat64(b)
 		v = f
 		size = bsonproto.SizeFloat64
-
-		if noNaN && math.IsNaN(f) {
-			err = lazyerrors.Errorf("got NaN value: %w", ErrDecodeInvalidInput)
-		}
 
 	case tagString:
 		var s string

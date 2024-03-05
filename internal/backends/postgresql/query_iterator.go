@@ -51,7 +51,7 @@ type queryIterator struct {
 // In that case, the iterator's Close method should still be called.
 //
 // Nil rows are possible and return already done iterator.
-// It still should be Close'd.
+// It still should be Closed.
 func newQueryIterator(ctx context.Context, rows pgx.Rows, onlyRecordIDs bool) types.DocumentsIterator {
 	iter := &queryIterator{
 		ctx:           ctx,

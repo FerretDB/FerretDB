@@ -37,7 +37,6 @@ linters-settings:
       bson:
         files:
           - $all
-          - "!**/internal/wire/*.go"
           - "!**/internal/bson2/*_test.go"
         deny:
           - pkg: github.com/FerretDB/FerretDB/internal/bson$
