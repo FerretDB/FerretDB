@@ -54,11 +54,11 @@ var (
 	//go:embed error.tmpl
 	errorTemplateB []byte
 
-	//go:embed user.json
-	user string
+	//go:embed test_user.json
+	testUser string
 
-	//go:embed system_users.json
-	systemUsers string
+	//go:embed test_system_users.json
+	testSystemUsers string
 
 	// Parsed error template.
 	errorTemplate = template.Must(template.New("error").Option("missingkey=error").Parse(string(errorTemplateB)))
@@ -153,12 +153,12 @@ func setupPostgres(ctx context.Context, logger *zap.SugaredLogger) error {
 		return err
 	}
 
-	err = setupUser(ctx, logger, "postgres://username@127.0.0.1:5432/ferretdb")
+	err = setupUserInPostgres(ctx, logger, "postgres://username@127.0.0.1:5432/ferretdb")
 	if err != nil {
 		return err
 	}
 
-	return setupUser(ctx, logger, "postgres://username@127.0.0.1:5432/template1")
+	return setupUserInPostgres(ctx, logger, "postgres://username@127.0.0.1:5432/template1")
 }
 
 // setupPostgresSecured configures `postgres_secured` container.
@@ -174,12 +174,12 @@ func setupPostgresSecured(ctx context.Context, logger *zap.SugaredLogger) error 
 		return err
 	}
 
-	err = setupUser(ctx, logger, "postgres://username:password@127.0.0.1:5433/ferretdb")
+	err = setupUserInPostgres(ctx, logger, "postgres://username:password@127.0.0.1:5433/ferretdb")
 	if err != nil {
 		return err
 	}
 
-	return setupUser(ctx, logger, "postgres://username:password@127.0.0.1:5433/template1")
+	return setupUserInPostgres(ctx, logger, "postgres://username:password@127.0.0.1:5433/template1")
 }
 
 // setupMySQL configures `mysql` container.
@@ -255,14 +255,14 @@ func setupMongodb(ctx context.Context, logger *zap.SugaredLogger) error {
 	return ctx.Err()
 }
 
-// setupUser creates a user with username/password credential in admin database
+// setupUserInPostgres creates a user with username/password credential in admin database
 // with supported mechanisms.
 // It creates admin database (PostgreSQL admin schema), if it does not exist.
 // It also creates system.users collection, if it does not exist.
 //
 // Without this, once the first user is created, the authentication fails
 // as username/password does not exist in admin.system.users collection.
-func setupUser(ctx context.Context, logger *zap.SugaredLogger, uri string) error {
+func setupUserInPostgres(ctx context.Context, logger *zap.SugaredLogger, uri string) error {
 	sp, err := state.NewProvider("")
 	if err != nil {
 		return err
@@ -326,13 +326,15 @@ func setupUser(ctx context.Context, logger *zap.SugaredLogger, uri string) error
 		}
 
 		q = `INSERT INTO admin._ferretdb_database_metadata (_jsonb) VALUES ($1)`
-		if _, err = dbPool.Exec(ctx, q, systemUsers); err != nil {
+		if _, err = dbPool.Exec(ctx, q, testSystemUsers); err != nil {
 			return err
 		}
 	}
 
 	q = `INSERT INTO admin.system_users_aff2f7ce (_jsonb) VALUES ($1)`
-	if _, err = dbPool.Exec(ctx, q, user); err != nil && (!errors.As(err, &pgErr) || pgErr.Code != pgerrcode.UniqueViolation) {
+
+	_, err = dbPool.Exec(ctx, q, testUser)
+	if err != nil && (!errors.As(err, &pgErr) || pgErr.Code != pgerrcode.UniqueViolation) {
 		return err
 	}
 

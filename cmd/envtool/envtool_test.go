@@ -99,7 +99,7 @@ func TestPackageVersion(t *testing.T) {
 	assert.Equal(t, "1.0.0", output.String())
 }
 
-func TestSetupPostgresUser(t *testing.T) {
+func TestSetupUserInPostgres(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping in -short mode")
 	}
@@ -141,10 +141,10 @@ func TestSetupPostgresUser(t *testing.T) {
 
 	uri := fmt.Sprintf("postgres://username@127.0.0.1:5432/%s", dbName)
 
-	err = setupUser(ctx, l.Sugar(), uri)
+	err = setupUserInPostgres(ctx, l.Sugar(), uri)
 	require.NoError(t, err)
 
 	// if the user already exists, it should not fail
-	err = setupUser(ctx, l.Sugar(), uri)
+	err = setupUserInPostgres(ctx, l.Sugar(), uri)
 	require.NoError(t, err)
 }
