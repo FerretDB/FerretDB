@@ -101,7 +101,7 @@ var cli struct {
 		} `embed:"" prefix:"capped-cleanup-"`
 
 		EnableNewAuth bool `default:"false" help:"Experimental: enable new authentication."`
-		BatchSize     int  `default:"100"	help:"number of maximum size of query parameters"`
+		BatchSize     int  `default:"100"   help:"number of maximum size of query parameters"`
 
 		Telemetry struct {
 			URL            string        `default:"https://beacon.ferretdb.com/" help:"Telemetry: reporting URL."`
