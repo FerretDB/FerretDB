@@ -61,8 +61,8 @@ var (
 	//go:embed test_user.json
 	testUser string
 
-	//go:embed test_system_users.json
-	testSystemUsers string
+	//go:embed test_postgresql_system_users.json
+	testPostgreSQLSystemUsers string
 
 	//go:embed test_sqlite_system_users.json
 	testSQLiteSystemUsers string
@@ -189,7 +189,7 @@ func setupPostgresSecured(ctx context.Context, logger *zap.SugaredLogger) error 
 	return setupUserInPostgres(ctx, logger, "postgres://username:password@127.0.0.1:5433/template1")
 }
 
-// setupSQLite configures sqlite local file.
+// setupSQLite configures sqlite database file.
 func setupSQLite(ctx context.Context, logger *zap.SugaredLogger) error {
 	return setupUserInSQLite(ctx, "file:./tmp/sqlite/")
 }
@@ -338,7 +338,7 @@ func setupUserInPostgres(ctx context.Context, logger *zap.SugaredLogger, uri str
 		}
 
 		q = `INSERT INTO admin._ferretdb_database_metadata (_jsonb) VALUES ($1)`
-		if _, err = dbPool.Exec(ctx, q, testSystemUsers); err != nil {
+		if _, err = dbPool.Exec(ctx, q, testPostgreSQLSystemUsers); err != nil {
 			return err
 		}
 	}
@@ -395,6 +395,7 @@ func setupUserInSQLite(ctx context.Context, baseUri string) error {
 			table_name TEXT NOT NULL UNIQUE CHECK (table_name != ''),
 			settings TEXT NOT NULL CHECK (settings != '')
 		) STRICT`
+	// se.Code() for existing table is generic SQLITE_ERROR code, so error message is checked
 	if _, err = db.ExecContext(ctx, q); err != nil && (!errors.As(err, &se) || !strings.Contains(se.Error(), "already exists")) {
 		return err
 	}
