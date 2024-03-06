@@ -27,11 +27,6 @@ import (
 // It generally references a part of a larger slice, not a copy.
 type RawDocument []byte
 
-// LogValue implements slog.LogValuer interface.
-func (doc RawDocument) LogValue() slog.Value {
-	return slogValue(doc)
-}
-
 // Decode decodes a single BSON document that takes the whole byte slice.
 //
 // Only top-level fields are decoded;
@@ -165,3 +160,17 @@ func (raw RawDocument) decode(mode decodeMode) (*Document, error) {
 		must.NoError(res.Add(name, v))
 	}
 }
+
+// LogValue implements slog.LogValuer interface.
+func (doc RawDocument) LogValue() slog.Value {
+	return slogValue(doc)
+}
+
+func (doc RawDocument) LogMessage() string {
+	return slogMessage(doc)
+}
+
+// check interfaces
+var (
+	_ slog.LogValuer = RawDocument(nil)
+)

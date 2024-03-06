@@ -27,11 +27,6 @@ import (
 // It generally references a part of a larger slice, not a copy.
 type RawArray []byte
 
-// LogValue implements slog.LogValuer interface.
-func (arr RawArray) LogValue() slog.Value {
-	return slogValue(arr)
-}
-
 // Decode decodes a single BSON array that takes the whole byte slice.
 //
 // Only top-level elements are decoded;
@@ -94,3 +89,17 @@ func (raw RawArray) decode(mode decodeMode) (*Array, error) {
 
 	return res, nil
 }
+
+// LogValue implements slog.LogValuer interface.
+func (doc RawArray) LogValue() slog.Value {
+	return slogValue(doc)
+}
+
+func (doc RawArray) LogMessage() string {
+	return slogMessage(doc)
+}
+
+// check interfaces
+var (
+	_ slog.LogValuer = RawArray(nil)
+)

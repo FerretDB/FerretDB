@@ -607,6 +607,8 @@ func TestNormal(t *testing.T) {
 					assert.NotContains(t, ls, "panicked")
 					assert.NotContains(t, ls, "called too many times")
 
+					assert.NotEmpty(t, tc.raw.LogMessage())
+
 					l, err := FindRaw(tc.raw)
 					require.NoError(t, err)
 					require.Len(t, tc.raw, l)
@@ -619,6 +621,8 @@ func TestNormal(t *testing.T) {
 					ls := doc.LogValue().Resolve().String()
 					assert.NotContains(t, ls, "panicked")
 					assert.NotContains(t, ls, "called too many times")
+
+					assert.NotEmpty(t, doc.LogMessage())
 
 					tdoc, err := doc.Convert()
 					require.NoError(t, err)
@@ -687,6 +691,12 @@ func TestDecode(t *testing.T) {
 
 			t.Run("bson2", func(t *testing.T) {
 				t.Run("FindRaw", func(t *testing.T) {
+					ls := tc.raw.LogValue().Resolve().String()
+					assert.NotContains(t, ls, "panicked")
+					assert.NotContains(t, ls, "called too many times")
+
+					assert.NotEmpty(t, tc.raw.LogMessage())
+
 					l, err := FindRaw(tc.raw)
 
 					if tc.findRawErr != nil {
@@ -765,6 +775,7 @@ func BenchmarkDocument(b *testing.B) {
 			b.Run("bson2", func(b *testing.B) {
 				var doc *Document
 				var raw []byte
+				var m string
 				var err error
 
 				b.Run("Decode", func(b *testing.B) {
@@ -797,6 +808,22 @@ func BenchmarkDocument(b *testing.B) {
 					assert.NotNil(b, raw)
 				})
 
+				b.Run("LogMessage", func(b *testing.B) {
+					doc, err = tc.raw.Decode()
+					require.NoError(b, err)
+
+					b.ReportAllocs()
+					b.ResetTimer()
+
+					for range b.N {
+						m = doc.LogMessage()
+					}
+
+					b.StopTimer()
+
+					assert.NotEmpty(b, m)
+				})
+
 				b.Run("DecodeDeep", func(b *testing.B) {
 					b.ReportAllocs()
 
@@ -826,6 +853,22 @@ func BenchmarkDocument(b *testing.B) {
 					require.NoError(b, err)
 					assert.NotNil(b, raw)
 				})
+
+				b.Run("LogMessageDeep", func(b *testing.B) {
+					doc, err = tc.raw.DecodeDeep()
+					require.NoError(b, err)
+
+					b.ReportAllocs()
+					b.ResetTimer()
+
+					for range b.N {
+						m = doc.LogMessage()
+					}
+
+					b.StopTimer()
+
+					assert.NotEmpty(b, m)
+				})
 			})
 		})
 	}
@@ -842,6 +885,8 @@ func testRawDocument(t *testing.T, rawDoc RawDocument) {
 			assert.NotContains(t, ls, "panicked")
 			assert.NotContains(t, ls, "called too many times")
 
+			assert.NotEmpty(t, rawDoc.LogMessage())
+
 			_, _ = FindRaw(rawDoc)
 		})
 
@@ -857,6 +902,8 @@ func testRawDocument(t *testing.T, rawDoc RawDocument) {
 			ls := doc.LogValue().Resolve().String()
 			assert.NotContains(t, ls, "panicked")
 			assert.NotContains(t, ls, "called too many times")
+
+			assert.NotEmpty(t, doc.LogMessage())
 
 			_, _ = doc.Convert()
 
@@ -875,6 +922,8 @@ func testRawDocument(t *testing.T, rawDoc RawDocument) {
 			ls := doc.LogValue().Resolve().String()
 			assert.NotContains(t, ls, "panicked")
 			assert.NotContains(t, ls, "called too many times")
+
+			assert.NotEmpty(t, doc.LogMessage())
 
 			_, err = doc.Convert()
 			require.NoError(t, err)
@@ -914,6 +963,8 @@ func testRawDocument(t *testing.T, rawDoc RawDocument) {
 		assert.NotContains(t, ls, "panicked")
 		assert.NotContains(t, ls, "called too many times")
 
+		assert.NotEmpty(t, bdoc2.LogMessage())
+
 		tdoc1, err := types.ConvertDocument(&doc1)
 		require.NoError(t, err)
 
@@ -933,6 +984,8 @@ func testRawDocument(t *testing.T, rawDoc RawDocument) {
 		ls = doc2e.LogValue().Resolve().String()
 		assert.NotContains(t, ls, "panicked")
 		assert.NotContains(t, ls, "called too many times")
+
+		assert.NotEmpty(t, doc2e.LogMessage())
 
 		b1, err := doc1e.MarshalBinary()
 		require.NoError(t, err)
