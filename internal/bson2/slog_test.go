@@ -98,7 +98,7 @@ func TestLogValue(t *testing.T) {
 				"zero": 0.0,
 				"neg_zero": -0.0,
 				"nan": NaN,
-				"i32": int32(42),
+				"i32": 42,
 				"i64": int64(42),
 			}`,
 		},

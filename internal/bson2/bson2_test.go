@@ -173,7 +173,7 @@ var normalTestCases = []normalTestCase{
 		)),
 		m: `
 		{
-			"buildInfo": int32(1),
+			"buildInfo": 1,
 			"lsid": {
 				"id": Binary(uuid:oxnytKF1QMe456OjLsJWvg==),
 			},
@@ -233,10 +233,10 @@ var normalTestCases = []normalTestCase{
 			"javascriptEngine": "mozjs",
 			"sysInfo": "deprecated",
 			"versionArray": [
-				int32(5),
-				int32(0),
-				int32(0),
-				int32(0),
+				5,
+				0,
+				0,
+				0,
 			],
 			"openssl": {
 				"running": "OpenSSL 1.1.1f  31 Mar 2020",
@@ -254,9 +254,9 @@ var normalTestCases = []normalTestCase{
 				"target_os": "linux",
 				"cppdefines": "SAFEINT_USE_INTRINSICS 0 PCRE_STATIC NDEBUG _XOPEN_SOURCE 700 _GNU_SOURCE _REENTRANT 1 _FORTIFY_SOURCE 2 BOOST_THREAD_VERSION 5 BOOST_THREAD_USES_DATETIME BOOST_SYSTEM_NO_DEPRECATED BOOST_MATH_NO_LONG_DOUBLE_MATH_FUNCTIONS BOOST_ENABLE_ASSERT_DEBUG_HANDLER BOOST_LOG_NO_SHORTHAND_NAMES BOOST_LOG_USE_NATIVE_SYSLOG BOOST_LOG_WITHOUT_THREAD_ATTR ABSL_FORCE_ALIGNED_ACCESS",
 			},
-			"bits": int32(64),
+			"bits": 64,
 			"debug": false,
-			"maxBsonObjectSize": int32(16777216),
+			"maxBsonObjectSize": 16777216,
 			"storageEngines": [
 				"devnull",
 				"ephemeralForTest",
@@ -328,8 +328,8 @@ var normalTestCases = []normalTestCase{
 				0.0,
 			],
 			"int32": [
-				int32(42),
-				int32(0),
+				42,
+				0,
 			],
 			"int64": [
 				int64(42),
@@ -493,7 +493,7 @@ var normalTestCases = []normalTestCase{
 		)),
 		m: `
 		{
-			"f": int32(314159265),
+			"f": 314159265,
 		}`,
 	},
 	{

@@ -207,7 +207,7 @@ func slogMessageIndent(v any, indent string) string {
 		return "/" + v.Pattern + "/" + v.Options
 
 	case int32:
-		return "int32(" + strconv.FormatInt(int64(v), 10) + ")"
+		return strconv.FormatInt(int64(v), 10)
 
 	case Timestamp:
 		return "Timestamp(" + strconv.FormatUint(uint64(v), 10) + ")"
