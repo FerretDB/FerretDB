@@ -17,7 +17,6 @@ package integration
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -64,10 +63,15 @@ func TestCommandsAuthenticationLogout(t *testing.T) {
 
 	var res bson.D
 	err = db.RunCommand(ctx, bson.D{{"connectionStatus", 1}}).Decode(&res)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	actualAuth := must.NotFail(ConvertDocument(t, res).Get("authInfo")).(*types.Document)
-	actualUsers := must.NotFail(actualAuth.Get("authenticatedUsers")).(*types.Array)
+	actualAuth, _ := ConvertDocument(t, res).Get("authInfo")
+	require.NotNil(t, actualAuth)
+
+	actualUsersV, _ := actualAuth.(*types.Document).Get("authenticatedUsers")
+	require.NotNil(t, actualUsersV)
+
+	actualUsers := actualUsersV.(*types.Array)
 
 	var hasUser bool
 
@@ -79,10 +83,10 @@ func TestCommandsAuthenticationLogout(t *testing.T) {
 		}
 	}
 
-	assert.True(t, hasUser, res)
+	require.True(t, hasUser, res)
 
 	err = db.RunCommand(ctx, bson.D{{"logout", 1}}).Decode(&res)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	actual := ConvertDocument(t, res)
 	actual.Remove("$clusterTime")
@@ -92,19 +96,24 @@ func TestCommandsAuthenticationLogout(t *testing.T) {
 	testutil.AssertEqual(t, expected, actual)
 
 	err = db.RunCommand(ctx, bson.D{{"connectionStatus", 1}}).Decode(&res)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	actualAuth = must.NotFail(ConvertDocument(t, res).Get("authInfo")).(*types.Document)
-	actualUsers = must.NotFail(actualAuth.Get("authenticatedUsers")).(*types.Array)
+	actualAuth, _ = ConvertDocument(t, res).Get("authInfo")
+	require.NotNil(t, actualAuth)
+
+	actualUsersV, _ = actualAuth.(*types.Document).Get("authenticatedUsers")
+	require.NotNil(t, actualUsersV)
+
+	actualUsers = actualUsersV.(*types.Array)
 
 	for i := 0; i < actualUsers.Len(); i++ {
 		actualUser := must.NotFail(must.NotFail(actualUsers.Get(i)).(*types.Document).Get("user"))
 		if actualUser == username {
-			assert.Fail(t, "user is still authenticated", res)
+			require.Fail(t, "user is still authenticated", res)
 		}
 	}
 
 	// the test user logs out again, it has no effect
 	err = db.RunCommand(ctx, bson.D{{"logout", 1}}).Err()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
