@@ -18,11 +18,19 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log/slog"
+	"math"
 	"strconv"
 	"time"
 )
 
 // slogValue returns a compact representation of any BSON value as [slog.Value].
+//
+// The result is optimized for small values such as function parameters.
+// Some type information is lost;
+// for example, both int32 and int64 values are returned with [slog.KindInt64].
+// More type information is subsequently lost in handlers output;
+// for example, float64(42), int32(42), and int64(42) would all look the same
+// (`f64=42 i32=42 i64=42` or `{"f64":42,"i32":42,"i64":42}`).
 func slogValue(v any) slog.Value {
 	switch v := v.(type) {
 	case *Document:
@@ -58,6 +66,16 @@ func slogValue(v any) slog.Value {
 		return slog.StringValue("RawArray(" + strconv.Itoa(len(v)) + " bytes)")
 
 	case float64:
+		// for JSON handler to work
+		switch {
+		case math.IsNaN(v):
+			return slog.StringValue("NaN")
+		case math.IsInf(v, 1):
+			return slog.StringValue("+Inf")
+		case math.IsInf(v, -1):
+			return slog.StringValue("-Inf")
+		}
+
 		return slog.Float64Value(v)
 
 	case string:
@@ -73,7 +91,7 @@ func slogValue(v any) slog.Value {
 		return slog.BoolValue(v)
 
 	case time.Time:
-		return slog.TimeValue(v)
+		return slog.TimeValue(v.Truncate(time.Millisecond).UTC())
 
 	case NullType:
 		return slog.Value{}
@@ -82,13 +100,13 @@ func slogValue(v any) slog.Value {
 		return slog.StringValue(fmt.Sprintf("%#v", v))
 
 	case int32:
-		return slog.StringValue(fmt.Sprintf("%#v", v))
+		return slog.Int64Value(int64(v))
 
 	case Timestamp:
 		return slog.StringValue(fmt.Sprintf("%#v", v))
 
 	case int64:
-		return slog.StringValue(fmt.Sprintf("%#v", v))
+		return slog.Int64Value(v)
 
 	default:
 		panic(fmt.Sprintf("invalid BSON type %T", v))

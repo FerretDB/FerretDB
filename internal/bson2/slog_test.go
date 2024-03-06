@@ -18,7 +18,9 @@ import (
 	"bytes"
 	"context"
 	"log/slog"
+	"math"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -53,10 +55,30 @@ func TestLogValue(t *testing.T) {
 		j    string
 	}{
 		{
-			name: "SimpleDoc",
-			v:    must.NotFail(NewDocument("foo", "bar")),
-			t:    "v.foo=bar",
-			j:    `{"v":{"foo":"bar"}}`,
+			name: "Numbers",
+			v: must.NotFail(NewDocument(
+				"f64", 42.0,
+				"inf", float64(math.Inf(1)),
+				"neg_inf", float64(math.Inf(-1)),
+				"zero", math.Copysign(0, 1),
+				"neg_zero", math.Copysign(0, -1),
+				"nan", float64(math.NaN()),
+				"i32", int32(42),
+				"i64", int64(42),
+			)),
+			t: "v.f64=42 v.inf=+Inf v.neg_inf=-Inf v.zero=0 v.neg_zero=-0 v.nan=NaN v.i32=42 v.i64=42",
+			j: `{"v":{"f64":42,"inf":"+Inf","neg_inf":"-Inf","zero":0,"neg_zero":-0,"nan":"NaN","i32":42,"i64":42}}`,
+		},
+		{
+			name: "Scalars",
+			v: must.NotFail(NewDocument(
+				"null", Null,
+				"id", ObjectID{0x42},
+				"bool", true,
+				"time", time.Date(2023, 3, 6, 13, 14, 42, 123456789, time.FixedZone("", int(4*time.Hour.Seconds()))),
+			)),
+			t: "v.null=<nil> v.id=ObjectID(420000000000000000000000) v.bool=true v.time=2023-03-06T09:14:42.123Z",
+			j: `{"v":{"null":null,"id":"ObjectID(420000000000000000000000)","bool":true,"time":"2023-03-06T09:14:42.123Z"}}`,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
