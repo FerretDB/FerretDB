@@ -27,7 +27,6 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -64,6 +63,9 @@ var (
 
 	//go:embed test_system_users.json
 	testSystemUsers string
+
+	//go:embed test_sqlite_system_users.json
+	testSQLiteSystemUsers string
 
 	// Parsed error template.
 	errorTemplate = template.Must(template.New("error").Option("missingkey=error").Parse(string(errorTemplateB)))
@@ -189,7 +191,7 @@ func setupPostgresSecured(ctx context.Context, logger *zap.SugaredLogger) error 
 
 // setupSQLite configures sqlite local file.
 func setupSQLite(ctx context.Context, logger *zap.SugaredLogger) error {
-	return setupUserInSQLite(ctx, "file:../../tmp/sqlite/ferretdb.sqlite", "ferretdb")
+	return setupUserInSQLite(ctx, "file:./tmp/sqlite/")
 }
 
 // setupMySQL configures `mysql` container.
@@ -353,20 +355,28 @@ func setupUserInPostgres(ctx context.Context, logger *zap.SugaredLogger, uri str
 
 // setupUserInSQLite creates a user with username/password credential in admin database
 // with supported mechanisms.
-// It creates admin database, if it does not exist.
-// It also creates system.users collection, if it does not exist.
+// It creates `admin.sqlite` database file and system.users collection if they do not exist.
 //
 // Without this, once the first user is created, the authentication fails
 // as username/password does not exist in admin.system.users collection.
-func setupUserInSQLite(ctx context.Context, uri string, dbName string) error {
-	dbURI, err := url.Parse(uri)
+func setupUserInSQLite(ctx context.Context, baseUri string) error {
+	dbUri, err := url.Parse(baseUri)
 	if err != nil {
 		return err
 	}
 
-	dbURI.Path = path.Join(dbURI.Path, dbName+".sqlite")
-	dbURI.Opaque = dbURI.Path
-	db, err := sql.Open("sqlite", dbURI.String())
+	dir, err := filepath.Abs(dbUri.Opaque)
+	if err != nil {
+		return err
+	}
+
+	if err = os.MkdirAll(dir, 0o777); err != nil {
+		return err
+	}
+
+	dbUri.Opaque = filepath.Join(dbUri.Opaque, "admin.sqlite")
+
+	db, err := sql.Open("sqlite", dbUri.String())
 	if err != nil {
 		return err
 	}
@@ -401,8 +411,7 @@ func setupUserInSQLite(ctx context.Context, uri string, dbName string) error {
 		}
 
 		q = `INSERT INTO "_ferretdb_collections" (name, table_name, settings) VALUES ('system.users', 'system.users_aff2f7ce',?)`
-		arg := `{"uuid":"6f3bdba1-06a5-453b-b71d-c60854a51415","indexes":[{"name":"_id_","key":[{"field":"_id","descending":false}],"unique":true}],"cappedSize":0,"cappedDocuments":0}`
-		if _, err = db.ExecContext(ctx, q, arg); err != nil {
+		if _, err = db.ExecContext(ctx, q, testSQLiteSystemUsers); err != nil {
 			return err
 		}
 	}

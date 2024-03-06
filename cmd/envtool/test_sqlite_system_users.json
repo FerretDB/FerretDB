@@ -1,0 +1,17 @@
+{
+  "uuid": "6f3bdba1-06a5-453b-b71d-c60854a51415",
+  "indexes": [
+    {
+      "name": "_id_",
+      "key": [
+        {
+          "field": "_id",
+          "descending": false
+        }
+      ],
+      "unique": true
+    }
+  ],
+  "cappedSize": 0,
+  "cappedDocuments": 0
+}
