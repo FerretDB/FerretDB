@@ -140,15 +140,14 @@ func TestUsersinfo(t *testing.T) {
 	}
 
 	testCases := map[string]struct { //nolint:vet // for readability
-		dbSuffix   string
-		payload    bson.D
-		err        *mongo.CommandError
-		altMessage string
-		expected   bson.D
-		hasUser    map[string]struct{}
-
+		dbSuffix        string
+		payload         bson.D
+		err             *mongo.CommandError
+		altMessage      string
+		expected        bson.D
+		hasUser         map[string]struct{}
 		showCredentials []string // showCredentials list the credentials types expected to be returned
-		failsForMongoDB string   // if set, fails for MongoDB backend
+		failsForMongoDB string
 	}{
 		"NoUserFound": {
 			dbSuffix: "no_users",
@@ -577,33 +576,41 @@ func TestUsersinfo(t *testing.T) {
 
 				require.True(t, (tc.hasUser == nil) != (tc.expected == nil))
 
-				if tc.showCredentials != nil {
-					actualUser, err := actualUser.Get("credentials")
-					require.NoError(t, err)
+				id, err := actualUser.Get("_id")
+				require.NoError(t, err)
 
-					cred := actualUser.(*types.Document)
+				// when `forAllDBs` is set true, it may contain more users from other databases,
+				// so we check expected users were found rather than exact match
+				foundUsers[id.(string)] = struct{}{}
 
-					for _, typ := range tc.showCredentials {
-						switch typ {
-						case "PLAIN":
-							assertPlainCredentials(t, "PLAIN", cred)
-						case "SCRAM-SHA-1":
-							assertSCRAMSHA1Credentials(t, "SCRAM-SHA-1", cred)
-						case "SCRAM-SHA-256":
-							assertSCRAMSHA256Credentials(t, "SCRAM-SHA-256", cred)
-						}
+				userIDV, err := actualUser.Get("userId")
+				require.NoError(t, err)
+
+				userID := userIDV.(types.Binary)
+				assert.Equal(t, userID.Subtype.String(), types.BinaryUUID.String(), "uuid subtype")
+				assert.Equal(t, 16, len(userID.B), "UUID length")
+
+				if tc.showCredentials == nil {
+					assert.False(t, actualUser.Has("credentials"))
+
+					continue
+				}
+
+				credV, err := actualUser.Get("credentials")
+				require.NoError(t, err)
+
+				cred := credV.(*types.Document)
+
+				for _, typ := range tc.showCredentials {
+					switch typ {
+					case "PLAIN":
+						assertPlainCredentials(t, "PLAIN", cred)
+					case "SCRAM-SHA-1":
+						assertSCRAMSHA1Credentials(t, "SCRAM-SHA-1", cred)
+					case "SCRAM-SHA-256":
+						assertSCRAMSHA256Credentials(t, "SCRAM-SHA-256", cred)
 					}
 				}
-
-				if len(tc.showCredentials) == 0 {
-					assert.False(t, actualUser.Has("credentials"))
-				}
-
-				foundUsers[must.NotFail(actualUser.Get("_id")).(string)] = struct{}{}
-
-				uuid := must.NotFail(actualUser.Get("userId")).(types.Binary)
-				assert.Equal(t, uuid.Subtype.String(), types.BinaryUUID.String(), "uuid subtype")
-				assert.Equal(t, 16, len(uuid.B), "UUID length")
 			}
 
 			if tc.hasUser != nil {
