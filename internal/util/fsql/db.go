@@ -68,6 +68,12 @@ func (db *DB) Close() error {
 	return db.sqlDB.Close()
 }
 
+// Ping calls [*sql.DB.Ping].
+func (db *DB) Ping(ctx context.Context) error {
+	defer observability.FuncCall(ctx)()
+	return db.sqlDB.Ping()
+}
+
 // QueryContext calls [*sql.DB.QueryContext].
 func (db *DB) QueryContext(ctx context.Context, query string, args ...any) (*Rows, error) {
 	defer observability.FuncCall(ctx)()

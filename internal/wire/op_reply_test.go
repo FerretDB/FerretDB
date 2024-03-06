@@ -35,10 +35,10 @@ var replyTestCases = []testCase{
 			OpCode:        OpCodeReply,
 		},
 		msgBody: &OpReply{
-			ResponseFlags: OpReplyFlags(OpReplyAwaitCapable),
-			CursorID:      0,
-			StartingFrom:  0,
-			document: convertDocument(must.NotFail(types.NewDocument(
+			Flags:        OpReplyFlags(OpReplyAwaitCapable),
+			CursorID:     0,
+			StartingFrom: 0,
+			document: makeRawDocument(
 				"ismaster", true,
 				"topologyVersion", must.NotFail(types.NewDocument(
 					"processId", types.ObjectID{0x60, 0xfb, 0xed, 0x53, 0x71, 0xfe, 0x1b, 0xae, 0x70, 0x33, 0x95, 0x05},
@@ -54,7 +54,7 @@ var replyTestCases = []testCase{
 				"maxWireVersion", int32(13),
 				"readOnly", false,
 				"ok", float64(1),
-			))),
+			),
 		},
 	},
 	{
@@ -68,10 +68,10 @@ var replyTestCases = []testCase{
 			OpCode:        OpCodeReply,
 		},
 		msgBody: &OpReply{
-			ResponseFlags: OpReplyFlags(OpReplyAwaitCapable),
-			CursorID:      0,
-			StartingFrom:  0,
-			document: convertDocument(must.NotFail(types.NewDocument(
+			Flags:        OpReplyFlags(OpReplyAwaitCapable),
+			CursorID:     0,
+			StartingFrom: 0,
+			document: makeRawDocument(
 				"ismaster", true,
 				"topologyVersion", must.NotFail(types.NewDocument(
 					"processId", types.ObjectID{0x60, 0xfb, 0xed, 0x53, 0x71, 0xfe, 0x1b, 0xae, 0x70, 0x33, 0x95, 0x05},
@@ -87,7 +87,7 @@ var replyTestCases = []testCase{
 				"maxWireVersion", int32(13),
 				"readOnly", false,
 				"ok", float64(1),
-			))),
+			),
 		},
 	},
 }

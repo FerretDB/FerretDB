@@ -84,7 +84,7 @@ func (raw RawDocument) decode(mode decodeMode) (*Document, error) {
 		return nil, lazyerrors.Errorf("len(raw) = %d, l = %d: %w", rl, l, ErrDecodeInvalidInput)
 	}
 
-	res := MakeDocument(1)
+	res := MakeDocument(0)
 
 	offset := 4
 

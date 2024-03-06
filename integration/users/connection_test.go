@@ -101,7 +101,7 @@ func TestAuthentication(t *testing.T) {
 			mechanisms:          []string{"SCRAM-SHA-256"},
 			connectionMechanism: "SCRAM-SHA-256",
 			userNotFound:        true,
-			errorMessage:        "Authentication failed",
+			errorMessage:        "Authentication failed.",
 			topologyError:       true,
 		},
 		"BadPassword": {
@@ -111,7 +111,7 @@ func TestAuthentication(t *testing.T) {
 			connectionMechanism: "SCRAM-SHA-256",
 			wrongPassword:       true,
 			topologyError:       true,
-			errorMessage:        "Authentication failed",
+			errorMessage:        "Authentication failed.",
 		},
 		"MechanismNotSet": {
 			username:            "user_mechanism_not_set",
@@ -235,6 +235,180 @@ func TestAuthentication(t *testing.T) {
 			assert.Equal(t, bson.D{{"_id", id}, {"ping", "pong"}}, result)
 
 			require.NoError(t, client.Disconnect(context.Background()))
+		})
+	}
+}
+
+// TestAuthenticationEnableNewAuthNoUser tests that the backend authentication
+// is used when there is no user in the database. This ensures that there is
+// some form of authentication even if there is no user.
+func TestAuthenticationEnableNewAuthNoUserExists(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupWithOpts(t, nil)
+	ctx := s.Ctx
+	collection := s.Collection
+	db := collection.Database()
+
+	if !setup.IsMongoDB(t) {
+		// drop the user created in the setup
+		err := db.Client().Database("admin").RunCommand(ctx, bson.D{
+			{"dropUser", "username"},
+		}).Err()
+		require.NoError(t, err, "cannot drop user")
+	}
+
+	testCases := map[string]struct {
+		username  string
+		password  string
+		mechanism string
+
+		pingErr   string
+		insertErr string
+	}{
+		"PLAINNonExistingUser": {
+			username:  "plain-user",
+			password:  "whatever",
+			mechanism: "PLAIN",
+			insertErr: `role "plain-user" does not exist`,
+		},
+		"PLAINBackendUser": {
+			username:  "username",
+			password:  "password",
+			mechanism: "PLAIN",
+		},
+		"SHA256NonExistingUser": {
+			username:  "sha256-user",
+			password:  "whatever",
+			mechanism: "SCRAM-SHA-256",
+			pingErr:   "Authentication failed",
+		},
+	}
+
+	for name, tc := range testCases {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.mechanism == "PLAIN" {
+				setup.SkipForMongoDB(t, "PLAIN mechanism is not supported by MongoDB")
+			}
+
+			t.Parallel()
+
+			credential := options.Credential{
+				AuthMechanism: tc.mechanism,
+				AuthSource:    db.Name(),
+				Username:      tc.username,
+				Password:      tc.password,
+			}
+
+			opts := options.Client().ApplyURI(s.MongoDBURI).SetAuth(credential)
+
+			client, err := mongo.Connect(ctx, opts)
+			require.NoError(t, err, "cannot connect to MongoDB")
+
+			t.Cleanup(func() {
+				require.NoError(t, client.Disconnect(ctx))
+			})
+
+			err = client.Ping(ctx, nil)
+
+			if tc.pingErr != "" {
+				require.ErrorContains(t, err, tc.pingErr)
+				return
+			}
+
+			require.NoError(t, err, "cannot ping MongoDB")
+
+			connCollection := client.Database(db.Name()).Collection(collection.Name())
+			_, err = connCollection.InsertOne(ctx, bson.D{{"ping", "pong"}})
+
+			if tc.insertErr != "" {
+				if setup.IsSQLite(t) {
+					t.Skip("SQLite does not have backend authentication")
+				}
+
+				require.ErrorContains(t, err, tc.insertErr)
+
+				return
+			}
+
+			require.NoError(t, err, "cannot insert document")
+		})
+	}
+}
+
+func TestAuthenticationEnableNewAuthPLAIN(t *testing.T) {
+	setup.SkipForMongoDB(t, "PLAIN mechanism is not supported by MongoDB")
+
+	t.Parallel()
+
+	s := setup.SetupWithOpts(t, nil)
+	ctx, cName, db := s.Ctx, s.Collection.Name(), s.Collection.Database()
+
+	err := db.RunCommand(ctx, bson.D{
+		{"createUser", "plain-user"},
+		{"roles", bson.A{}},
+		{"pwd", "correct"},
+		{"mechanisms", bson.A{"PLAIN"}},
+	}).Err()
+	require.NoError(t, err, "cannot create user")
+
+	testCases := map[string]struct {
+		username  string
+		password  string
+		mechanism string
+
+		err string
+	}{
+		"Success": {
+			username:  "plain-user",
+			password:  "correct",
+			mechanism: "PLAIN",
+		},
+		"BadPassword": {
+			username:  "plain-user",
+			password:  "wrong",
+			mechanism: "PLAIN",
+			err:       "AuthenticationFailed",
+		},
+		"NonExistentUser": {
+			username:  "not-found-user",
+			password:  "something",
+			mechanism: "PLAIN",
+			err:       "AuthenticationFailed",
+		},
+	}
+
+	for name, tc := range testCases {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			credential := options.Credential{
+				AuthMechanism: tc.mechanism,
+				AuthSource:    db.Name(),
+				Username:      tc.username,
+				Password:      tc.password,
+			}
+
+			opts := options.Client().ApplyURI(s.MongoDBURI).SetAuth(credential)
+
+			client, err := mongo.Connect(ctx, opts)
+			require.NoError(t, err, "cannot connect to MongoDB")
+
+			t.Cleanup(func() {
+				require.NoError(t, client.Disconnect(ctx))
+			})
+
+			c := client.Database(db.Name()).Collection(cName)
+			_, err = c.InsertOne(ctx, bson.D{{"ping", "pong"}})
+
+			if tc.err != "" {
+				require.ErrorContains(t, err, tc.err)
+				return
+			}
+
+			require.NoError(t, err, "cannot insert document")
 		})
 	}
 }
