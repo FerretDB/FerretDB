@@ -101,7 +101,7 @@ func TestAuthentication(t *testing.T) {
 			mechanisms:          []string{"SCRAM-SHA-256"},
 			connectionMechanism: "SCRAM-SHA-256",
 			userNotFound:        true,
-			errorMessage:        "Authentication failed",
+			errorMessage:        "Authentication failed.",
 			topologyError:       true,
 		},
 		"BadPassword": {
@@ -111,7 +111,7 @@ func TestAuthentication(t *testing.T) {
 			connectionMechanism: "SCRAM-SHA-256",
 			wrongPassword:       true,
 			topologyError:       true,
-			errorMessage:        "Authentication failed",
+			errorMessage:        "Authentication failed.",
 		},
 		"MechanismNotSet": {
 			username:            "user_mechanism_not_set",

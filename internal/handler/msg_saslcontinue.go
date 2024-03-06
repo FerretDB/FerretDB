@@ -44,11 +44,18 @@ func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.O
 
 	conv := conninfo.Get(ctx).Conv()
 
+	if conv == nil {
+		return nil, handlererrors.NewCommandErrorMsg(
+			handlererrors.ErrAuthenticationFailed,
+			"Authentication failed.",
+		)
+	}
+
 	response, err := conv.Step(string(payload))
 	if err != nil {
 		return nil, handlererrors.NewCommandErrorMsg(
 			handlererrors.ErrAuthenticationFailed,
-			"Authentication failed",
+			"Authentication failed.",
 		)
 	}
 
