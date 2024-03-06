@@ -15,6 +15,7 @@
 package bson2
 
 import (
+	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"log/slog"
@@ -160,7 +161,7 @@ func slogMessageIndent(v any, indent string) string {
 		return res
 
 	case RawArray:
-		panic("RawArray is not supported")
+		return "RawArray<" + strconv.FormatInt(int64(len(v)), 10) + ">"
 
 	case float64:
 		switch {
@@ -177,7 +178,7 @@ func slogMessageIndent(v any, indent string) string {
 			return "-Inf"
 		default:
 			res := strconv.FormatFloat(v, 'f', -1, 64)
-			if !strings.HasSuffix(res, ".0") {
+			if !strings.Contains(res, ".") {
 				res += ".0"
 			}
 
@@ -188,7 +189,7 @@ func slogMessageIndent(v any, indent string) string {
 		return strconv.Quote(v)
 
 	case Binary:
-		panic("Binary is not supported")
+		return "Binary(" + v.Subtype.String() + ":" + base64.StdEncoding.EncodeToString(v.B) + ")"
 
 	case ObjectID:
 		return "ObjectID(" + hex.EncodeToString(v[:]) + ")"
@@ -203,13 +204,13 @@ func slogMessageIndent(v any, indent string) string {
 		return "null"
 
 	case Regex:
-		panic("Regex is not supported")
+		return "/" + v.Pattern + "/" + v.Options
 
 	case int32:
 		return "int32(" + strconv.FormatInt(int64(v), 10) + ")"
 
 	case Timestamp:
-		panic("Timestamp is not supported")
+		return "Timestamp(" + strconv.FormatUint(uint64(v), 10) + ")"
 
 	case int64:
 		return "int64(" + strconv.FormatInt(int64(v), 10) + ")"

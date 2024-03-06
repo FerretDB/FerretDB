@@ -38,7 +38,10 @@ func unindent(t *testing.T, s string) string {
 	parts = parts[1:]
 
 	indent := len(parts[0]) - len(strings.TrimLeft(parts[0], "\t"))
+	require.Positive(t, indent)
+
 	for i := range parts {
+		require.Greater(t, len(parts[i]), indent, "line: %q", parts[i])
 		parts[i] = parts[i][indent:]
 	}
 
