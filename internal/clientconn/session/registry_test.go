@@ -13,3 +13,47 @@
 // limitations under the License.
 
 package session
+
+import (
+	"testing"
+
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
+)
+
+func TestCleanExpired(t *testing.T) {
+	t.Parallel()
+
+	l := testutil.Logger(t)
+	r := NewRegistry(l)
+
+	r.NewSession("user1")
+	r.NewSession("user1")
+
+	id := uuid.New().String()
+	require.NotNil(t, r.GetSession("user2", id))
+	r.m["user2"][id].lastUsed = r.m["user2"][id].lastUsed.Add(-timeout)
+
+	require.Nil(t, r.GetSession("user2", "invalid"))
+
+	assert.Equal(t, 2, len(r.m["user1"]))
+	assert.Equal(t, 1, len(r.m["user2"]))
+
+	r.CleanExpired()
+	assert.Equal(t, 2, len(r.m["user1"]))
+	assert.Equal(t, 0, len(r.m["user2"]))
+
+	var sessionID string
+	for sessionID = range r.m["user1"] {
+		break
+	}
+	r.EndSession("user1", sessionID)
+
+	r.CleanExpired()
+	assert.Equal(t, 1, len(r.m["user1"]))
+	_, ok := r.m["user2"]
+	assert.False(t, ok)
+}

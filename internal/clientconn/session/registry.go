@@ -25,7 +25,7 @@ import (
 // timeout is the session timeout.
 const timeout = 30 * time.Minute
 
-// Registry represents a session registry.
+// Registry stores sessions.
 type Registry struct {
 	rw sync.RWMutex
 	m  map[string]map[string]*Session // username -> sessionID -> session
@@ -33,6 +33,7 @@ type Registry struct {
 	l *zap.Logger
 }
 
+// NewRegistry returns a new registry.
 func NewRegistry(l *zap.Logger) *Registry {
 	return &Registry{
 		m: make(map[string]map[string]*Session),
@@ -47,6 +48,10 @@ func (r *Registry) NewSession(username string) *Session {
 
 	id := uuid.New()
 	session := newSession(id)
+
+	if _, ok := r.m[username]; !ok {
+		r.m[username] = make(map[string]*Session)
+	}
 
 	r.m[username][id.String()] = session
 	r.l.Debug("New session created explicitly", zap.String("username", username), zap.String("session", id.String()))
@@ -68,6 +73,10 @@ func (r *Registry) GetSession(username, sessionID string) *Session {
 	}
 
 	if _, ok := r.m[username][sessionID]; !ok {
+		if _, ok := r.m[username]; !ok {
+			r.m[username] = make(map[string]*Session)
+		}
+
 		r.m[username][sessionID] = newSession(id)
 		r.l.Debug("New session created implicitly", zap.String("username", username), zap.String("session", sessionID))
 	}
@@ -114,7 +123,12 @@ func (r *Registry) CleanExpired() {
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
-	for _, sessions := range r.m {
+	for username, sessions := range r.m {
+		if len(sessions) == 0 {
+			delete(r.m, username)
+			continue
+		}
+
 		for id, session := range sessions {
 			if session.expired || time.Since(session.lastUsed) > timeout {
 				delete(sessions, id)
