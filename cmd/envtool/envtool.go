@@ -143,7 +143,11 @@ func setupAnyPostgres(ctx context.Context, logger *zap.SugaredLogger, uri string
 		ctxutil.SleepWithJitter(ctx, time.Second, retry)
 	}
 
-	return ctx.Err()
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
+	return nil
 }
 
 // setupPostgres configures `postgres` container.
