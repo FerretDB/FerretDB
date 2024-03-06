@@ -33,12 +33,13 @@ func unindent(t *testing.T, s string) string {
 	t.Helper()
 
 	parts := strings.Split(s, "\n")
-	require.Greater(t, len(parts), 1)
-	require.Empty(t, parts[0])
-	parts = parts[1:]
+	require.Positive(t, len(parts))
+	if parts[0] == "" {
+		parts = parts[1:]
+	}
 
 	indent := len(parts[0]) - len(strings.TrimLeft(parts[0], "\t"))
-	require.Positive(t, indent)
+	require.GreaterOrEqual(t, indent, 0)
 
 	for i := range parts {
 		require.Greater(t, len(parts[i]), indent, "line: %q", parts[i])
@@ -143,22 +144,10 @@ func TestLogValue(t *testing.T) {
 				`"array":{"0":"foo","1":"bar","2":{"0":"baz","1":"qux"}}}}`,
 			m: `
 			{
-				"doc": {
-					"foo": "bar",
-					"baz": {
-						"qux": "quux",
-					},
-				},
+				"doc": {"foo": "bar", "baz": {"qux": "quux"}},
 				"doc_raw": RawDocument<1>,
 				"doc_empty": {},
-				"array": [
-					"foo",
-					"bar",
-					[
-						"baz",
-						"qux",
-					],
-				],
+				"array": ["foo", "bar", ["baz", "qux"]],
 			}`,
 		},
 	} {

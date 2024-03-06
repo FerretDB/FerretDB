@@ -85,10 +85,7 @@ var normalTestCases = []normalTestCase{
 		{
 			"ismaster": true,
 			"client": {
-				"driver": {
-					"name": "nodejs",
-					"version": "4.0.0-beta.6",
-				},
+				"driver": {"name": "nodejs", "version": "4.0.0-beta.6"},
 				"os": {
 					"type": "Darwin",
 					"name": "darwin",
@@ -96,13 +93,9 @@ var normalTestCases = []normalTestCase{
 					"version": "20.6.0",
 				},
 				"platform": "Node.js v14.17.3, LE (unified)|Node.js v14.17.3, LE (unified)",
-				"application": {
-					"name": "mongosh 1.0.1",
-				},
+				"application": {"name": "mongosh 1.0.1"},
 			},
-			"compression": [
-				"none",
-			],
+			"compression": ["none"],
 			"loadBalanced": false,
 		}`,
 	},
@@ -134,10 +127,7 @@ var normalTestCases = []normalTestCase{
 		{
 			"ismaster": true,
 			"client": {
-				"driver": {
-					"name": "nodejs",
-					"version": "4.0.0-beta.6",
-				},
+				"driver": {"name": "nodejs", "version": "4.0.0-beta.6"},
 				"os": {
 					"type": "Darwin",
 					"name": "darwin",
@@ -145,13 +135,9 @@ var normalTestCases = []normalTestCase{
 					"version": "20.6.0",
 				},
 				"platform": "Node.js v14.17.3, LE (unified)|Node.js v14.17.3, LE (unified)",
-				"application": {
-					"name": "mongosh 1.0.1",
-				},
+				"application": {"name": "mongosh 1.0.1"},
 			},
-			"compression": [
-				"none",
-			],
+			"compression": ["none"],
 			"loadBalanced": false,
 		}`,
 	},
@@ -174,9 +160,7 @@ var normalTestCases = []normalTestCase{
 		m: `
 		{
 			"buildInfo": 1,
-			"lsid": {
-				"id": Binary(uuid:oxnytKF1QMe456OjLsJWvg==),
-			},
+			"lsid": {"id": Binary(uuid:oxnytKF1QMe456OjLsJWvg==)},
 			"$db": "admin",
 		}`,
 	},
@@ -232,12 +216,7 @@ var normalTestCases = []normalTestCase{
 			"allocator": "tcmalloc",
 			"javascriptEngine": "mozjs",
 			"sysInfo": "deprecated",
-			"versionArray": [
-				5,
-				0,
-				0,
-				0,
-			],
+			"versionArray": [5, 0, 0, 0],
 			"openssl": {
 				"running": "OpenSSL 1.1.1f  31 Mar 2020",
 				"compiled": "OpenSSL 1.1.1f  31 Mar 2020",
@@ -257,11 +236,7 @@ var normalTestCases = []normalTestCase{
 			"bits": 64,
 			"debug": false,
 			"maxBsonObjectSize": 16777216,
-			"storageEngines": [
-				"devnull",
-				"ephemeralForTest",
-				"wiredTiger",
-			],
+			"storageEngines": ["devnull", "ephemeralForTest", "wiredTiger"],
 			"ok": 1.0,
 		}`,
 	},
@@ -295,58 +270,20 @@ var normalTestCases = []normalTestCase{
 		)),
 		m: `
 		{
-			"array": [
-				[
-					"",
-				],
-				[
-					"foo",
-				],
-			],
-			"binary": [
-				Binary(user:Qg==),
-				Binary(generic:),
-			],
-			"bool": [
-				true,
-				false,
-			],
-			"datetime": [
-				2021-07-27T09:35:42.123Z,
-				0001-01-01T00:00:00Z,
-			],
-			"document": [
-				{
-					"foo": "",
-				},
-				{
-					"": "foo",
-				},
-			],
-			"double": [
-				42.13,
-				0.0,
-			],
-			"int32": [
-				42,
-				0,
-			],
-			"int64": [
-				int64(42),
-				int64(0),
-			],
+			"array": [[""], ["foo"]],
+			"binary": [Binary(user:Qg==), Binary(generic:)],
+			"bool": [true, false],
+			"datetime": [2021-07-27T09:35:42.123Z, 0001-01-01T00:00:00Z],
+			"document": [{"foo": ""}, {"": "foo"}],
+			"double": [42.13, 0.0],
+			"int32": [42, 0],
+			"int64": [int64(42), int64(0)],
 			"objectID": [
 				ObjectID(420000000000000000000000),
 				ObjectID(000000000000000000000000),
 			],
-			"string": [
-				"foo",
-				"",
-			],
-			"timestamp": [
-				Timestamp(42),
-				Timestamp(0),
-			],
+			"string": ["foo", ""],
+			"timestamp": [Timestamp(42), Timestamp(0)],
 		}`,
 	},
 	{
@@ -360,10 +297,7 @@ var normalTestCases = []normalTestCase{
 		tdoc: must.NotFail(types.NewDocument(
 			"f", float64(3.141592653589793),
 		)),
-		m: `
-		{
-			"f": 3.141592653589793,
-		}`,
+		m: `{"f": 3.141592653589793}`,
 	},
 	{
 		name: "stringDoc",
@@ -377,10 +311,7 @@ var normalTestCases = []normalTestCase{
 		tdoc: must.NotFail(types.NewDocument(
 			"f", "v",
 		)),
-		m: `
-		{
-			"f": "v",
-		}`,
+		m: `{"f": "v"}`,
 	},
 	{
 		name: "binaryDoc",
@@ -395,10 +326,7 @@ var normalTestCases = []normalTestCase{
 		tdoc: must.NotFail(types.NewDocument(
 			"f", types.Binary{B: []byte("v"), Subtype: types.BinaryUser},
 		)),
-		m: `
-		{
-			"f": Binary(user:dg==),
-		}`,
+		m: `{"f": Binary(user:dg==)}`,
 	},
 	{
 		name: "objectIDDoc",
@@ -411,10 +339,7 @@ var normalTestCases = []normalTestCase{
 		tdoc: must.NotFail(types.NewDocument(
 			"f", types.ObjectID{0x62, 0x56, 0xc5, 0xba, 0x18, 0x2d, 0x44, 0x54, 0xfb, 0x21, 0x09, 0x40},
 		)),
-		m: `
-		{
-			"f": ObjectID(6256c5ba182d4454fb210940),
-		}`,
+		m: `{"f": ObjectID(6256c5ba182d4454fb210940)}`,
 	},
 	{
 		name: "boolDoc",
@@ -427,10 +352,7 @@ var normalTestCases = []normalTestCase{
 		tdoc: must.NotFail(types.NewDocument(
 			"f", true,
 		)),
-		m: `
-		{
-			"f": true,
-		}`,
+		m: `{"f": true}`,
 	},
 	{
 		name: "timeDoc",
@@ -443,10 +365,7 @@ var normalTestCases = []normalTestCase{
 		tdoc: must.NotFail(types.NewDocument(
 			"f", time.Date(2024, 1, 17, 17, 40, 42, 123000000, time.UTC),
 		)),
-		m: `
-		{
-			"f": 2024-01-17T17:40:42.123Z,
-		}`,
+		m: `{"f": 2024-01-17T17:40:42.123Z}`,
 	},
 	{
 		name: "nullDoc",
@@ -458,10 +377,7 @@ var normalTestCases = []normalTestCase{
 		tdoc: must.NotFail(types.NewDocument(
 			"f", types.Null,
 		)),
-		m: `
-		{
-			"f": null,
-		}`,
+		m: `{"f": null}`,
 	},
 	{
 		name: "regexDoc",
@@ -475,10 +391,7 @@ var normalTestCases = []normalTestCase{
 		tdoc: must.NotFail(types.NewDocument(
 			"f", types.Regex{Pattern: "p", Options: "o"},
 		)),
-		m: `
-		{
-			"f": /p/o,
-		}`,
+		m: `{"f": /p/o}`,
 	},
 	{
 		name: "int32Doc",
@@ -491,10 +404,7 @@ var normalTestCases = []normalTestCase{
 		tdoc: must.NotFail(types.NewDocument(
 			"f", int32(314159265),
 		)),
-		m: `
-		{
-			"f": 314159265,
-		}`,
+		m: `{"f": 314159265}`,
 	},
 	{
 		name: "timestampDoc",
@@ -507,10 +417,7 @@ var normalTestCases = []normalTestCase{
 		tdoc: must.NotFail(types.NewDocument(
 			"f", types.Timestamp(42),
 		)),
-		m: `
-		{
-			"f": Timestamp(42),
-		}`,
+		m: `{"f": Timestamp(42)}`,
 	},
 	{
 		name: "int64Doc",
@@ -523,10 +430,7 @@ var normalTestCases = []normalTestCase{
 		tdoc: must.NotFail(types.NewDocument(
 			"f", int64(3141592653589793),
 		)),
-		m: `
-		{
-			"f": int64(3141592653589793),
-		}`,
+		m: `{"f": int64(3141592653589793)}`,
 	},
 	{
 		name: "smallDoc",
@@ -539,10 +443,7 @@ var normalTestCases = []normalTestCase{
 		tdoc: must.NotFail(types.NewDocument(
 			"foo", must.NotFail(types.NewDocument()),
 		)),
-		m: `
-		{
-			"foo": {},
-		}`,
+		m: `{"foo": {}}`,
 	},
 	{
 		name: "smallArray",
@@ -555,10 +456,7 @@ var normalTestCases = []normalTestCase{
 		tdoc: must.NotFail(types.NewDocument(
 			"foo", must.NotFail(types.NewArray()),
 		)),
-		m: `
-		{
-			"foo": [],
-		}`,
+		m: `{"foo": []}`,
 	},
 	{
 		name: "duplicateKeys",
@@ -572,11 +470,7 @@ var normalTestCases = []normalTestCase{
 			"", false,
 			"", true,
 		)),
-		m: `
-		{
-			"": false,
-			"": true,
-		}`,
+		m: `{"": false, "": true}`,
 	},
 }
 

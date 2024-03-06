@@ -25,6 +25,8 @@ import (
 	"time"
 )
 
+const flowLimit = 60
+
 var nanBits = math.Float64bits(math.NaN())
 
 // slogValue returns a compact representation of any BSON value as [slog.Value].
@@ -129,6 +131,24 @@ func slogMessageIndent(v any, indent string) string {
 			return "{}"
 		}
 
+		if flowLimit > 0 {
+			res := "{"
+
+			for i, f := range v.fields {
+				res += strconv.Quote(f.name) + `: `
+				res += slogMessageIndent(f.value, "")
+				if i != len(v.fields)-1 {
+					res += ", "
+				}
+			}
+
+			res += `}`
+
+			if len(res) < flowLimit {
+				return res
+			}
+		}
+
 		res := "{\n"
 
 		for _, f := range v.fields {
@@ -147,6 +167,23 @@ func slogMessageIndent(v any, indent string) string {
 	case *Array:
 		if len(v.elements) == 0 {
 			return "[]"
+		}
+
+		if flowLimit > 0 {
+			res := "["
+
+			for i, e := range v.elements {
+				res += slogMessageIndent(e, "")
+				if i != len(v.elements)-1 {
+					res += ", "
+				}
+			}
+
+			res += `]`
+
+			if len(res) < flowLimit {
+				return res
+			}
 		}
 
 		res := "[\n"
