@@ -189,7 +189,7 @@ func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllPa
 	}
 
 	q := fmt.Sprintf(
-		`UPDATE %q.%q SET %s = ? WHERE %s = ?`,
+		`UPDATE %s.%s SET %s = ? WHERE %s = ?`,
 		c.dbName, meta.TableName,
 		metadata.DefaultColumn,
 		metadata.IDColumn,
@@ -261,6 +261,16 @@ func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllPa
 
 	if params.RecordIDs == nil {
 		placeholders = make([]string, len(params.IDs))
+		args = make([]any, len(params.IDs))
+
+		for i, id := range params.IDs {
+			placeholders[i] = "?"
+			args[i] = id
+		}
+
+		column = metadata.IDColumn
+	} else {
+		placeholders = make([]string, len(params.RecordIDs))
 		args = make([]any, len(params.RecordIDs))
 
 		for i, id := range params.RecordIDs {
@@ -272,7 +282,7 @@ func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllPa
 	}
 
 	q := fmt.Sprintf(
-		`DELETE FROM %q.%q WHERE %s IN (%s)`,
+		`DELETE FROM %s.%s WHERE %s IN (%s)`,
 		c.dbName, meta.TableName,
 		column,
 		strings.Join(placeholders, ", "),
@@ -339,6 +349,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 	q += where
 
 	sort, sortArgs := prepareOrderByClause(params.Sort)
+	res.SortPushdown = sort != ""
 
 	q += sort
 	args = append(args, sortArgs...)
@@ -403,11 +414,11 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 	q := `
 		SELECT
 		    s.index_name,
-			t.index_length,
+			t.index_length
 		FROM information_schema.tables t 
 		JOIN information_schema.statistics s
 		ON t.table_schema = s.table_schema AND t.table_name = s.table_name
-		WHERE t.table_schema = ? AND t.table_name IN ?
+		WHERE t.table_schema = ? AND t.table_name IN (?)
 	`
 
 	rows, err := p.QueryContext(ctx, q, c.dbName, coll.TableName)

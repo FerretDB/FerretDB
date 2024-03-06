@@ -125,8 +125,8 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 	case "ferretdb-mysql":
 		require.Empty(tb, *postgreSQLURLF, "-postgresql-url must be empty for %q", *targetBackendF)
 		require.Empty(tb, *sqliteURLF, "-sqlite-url must be empty for %q", *targetBackendF)
-		require.NotEmpty(tb, *mysqlURLF, "-mysql-url must be empty for %q", *targetBackendF)
-		require.Empty(tb, *hanaURLF, "-hana-url must be set for %q", *targetBackendF)
+		require.NotEmpty(tb, *mysqlURLF, "-mysql-url must be set for %q", *targetBackendF)
+		require.Empty(tb, *hanaURLF, "-hana-url must be empty for %q", *targetBackendF)
 		handler = "mysql"
 
 	case "ferretdb-hana":

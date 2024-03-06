@@ -95,7 +95,7 @@ func TestMySQLURI(tb testtb.TB, ctx context.Context, baseURI string) string {
 			return
 		}
 
-		q = fmt.Sprintf("DROP DATABASE %s", name)
+		q := fmt.Sprintf("DROP DATABASE %s", name)
 		_, err = db.ExecContext(ctx, q)
 		require.NoError(tb, err)
 	})

@@ -53,19 +53,26 @@ func collectionsStats(ctx context.Context, p *fsql.DB, dbName string, list []*me
 		return new(stats), nil
 	}
 
-	tableNames := make([]string, len(list))
-	for _, c := range list {
-		tableNames = append(tableNames, c.TableName)
-	}
-
 	if refresh {
-		q := fmt.Sprintf(`ANALYZE TABLE %s`, strings.Join(tableNames, ", "))
+		fields := make([]string, len(list))
+		for i, c := range list {
+			fields[i] = fmt.Sprintf("%s.%s", dbName, c.TableName)
+		}
+
+		q := fmt.Sprintf(`ANALYZE TABLE %s`, strings.Join(fields, ", "))
 		if _, err := p.ExecContext(ctx, q); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 	}
 
 	var s stats
+	placeholders := make([]string, len(list))
+	args := []any{dbName}
+
+	for i, c := range list {
+		placeholders[i] = "?"
+		args = append(args, c.TableName)
+	}
 
 	// The table size is the size used by collection documents. The `data_length` in addition
 	// to the `index_length` is used since MySQL uses clustered indexes, however, these are
@@ -80,17 +87,17 @@ func collectionsStats(ctx context.Context, p *fsql.DB, dbName string, list []*me
 	// Clustered Index: https://dev.mysql.com/doc/refman/8.0/en/innodb-index-types.html
 	q := fmt.Sprintf(`
 		SELECT
-			COALESCE(SUM(t.table_rows), 0),
-			COALESCE(SUM(t.data_length), 0),
-			COALESCE(SUM(t.data_free)),
-			COALESCE(SUM(t.index_length), 0),
-			COALESCE(SUM(t.data_length) + SUM(t.index_length), 0)
+			COALESCE(SUM(table_rows), 0),
+			COALESCE(SUM(data_length), 0),
+			COALESCE(SUM(data_free)),
+			COALESCE(SUM(index_length), 0),
+			COALESCE(SUM(data_length) + SUM(index_length), 0)
 		FROM information_schema.tables
-		WHERE s.schema_name = ? AND t.table_name IN (%s)`,
-		strings.Join(tableNames, ", "),
+		WHERE table_schema = ? AND table_name IN (%s)`,
+		strings.Join(placeholders, ", "),
 	)
 
-	row := p.QueryRowContext(ctx, q, dbName)
+	row := p.QueryRowContext(ctx, q, args...)
 	if err := row.Scan(&s.countDocuments, &s.sizeTables, &s.sizeFreeStorage, &s.sizeIndexes, &s.totalSize); err != nil {
 		return nil, lazyerrors.Error(err)
 	}

@@ -165,9 +165,19 @@ func TestDefaultEmptySchema(t *testing.T) {
 	r, _, dbName := createDatabase(t, ctx)
 
 	list, err := r.DatabaseList(ctx)
-
 	require.NoError(t, err)
 	assert.Equal(t, []string{dbName}, list)
+
+	created, err := r.CollectionCreate(ctx, &CollectionCreateParams{DBName: "public", Name: testutil.CollectionName(t)})
+	require.NoError(t, err)
+	assert.True(t, created)
+
+	list, err = r.DatabaseList(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, []string{dbName, "public"}, list)
+
+	_, err = r.DatabaseDrop(ctx, "public")
+	require.NoError(t, err)
 }
 
 func TestCreateDropStress(t *testing.T) {

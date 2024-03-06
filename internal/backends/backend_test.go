@@ -40,8 +40,14 @@ func TestVersion(t *testing.T) {
 			assert.Empty(t, s.BackendName)
 			assert.Empty(t, s.BackendVersion)
 
-			db, err := b.Database(testutil.DatabaseName(t))
+			dbName := testutil.DatabaseName(t)
+			db, err := b.Database(dbName)
 			require.NoError(t, err)
+
+			t.Cleanup(func() {
+				err := b.DropDatabase(ctx, &backends.DropDatabaseParams{Name: dbName})
+				require.NoError(t, err)
+			})
 
 			err = db.CreateCollection(ctx, &backends.CreateCollectionParams{
 				Name: testutil.CollectionName(t),
@@ -56,6 +62,8 @@ func TestVersion(t *testing.T) {
 				assert.True(t, strings.HasPrefix(s.BackendVersion, "16.2 ("), "%s", s.BackendName)
 			case "SQLite":
 				assert.Equal(t, "3.41.2", s.BackendVersion)
+			case "MySQL":
+				assert.Equal(t, "8.3.0", s.BackendVersion)
 			case "hana":
 				assert.Equal(t, "4.00.000.00.1693911223", s.BackendVersion)
 			default:
@@ -118,7 +126,7 @@ func TestListDatabases(t *testing.T) {
 				require.Equal(t, dbNames[2], dbRes.Databases[2].Name, "expected name testDB3")
 			})
 
-			t.Run("ListDatabasesWithEMptyParam", func(t *testing.T) {
+			t.Run("ListDatabasesWithEmptyParam", func(t *testing.T) {
 				t.Parallel()
 				var param backends.ListDatabasesParams
 				dbRes, err := b.ListDatabases(ctx, &param)
@@ -127,6 +135,13 @@ func TestListDatabases(t *testing.T) {
 				require.Equal(t, dbNames[1], dbRes.Databases[0].Name, "expected name testDB1")
 				require.Equal(t, dbNames[0], dbRes.Databases[1].Name, "expected name testDB2")
 				require.Equal(t, dbNames[2], dbRes.Databases[2].Name, "expected name testDB3")
+			})
+
+			t.Cleanup(func() {
+				for _, name := range dbNames {
+					err := b.DropDatabase(ctx, &backends.DropDatabaseParams{Name: name})
+					require.NoError(t, err)
+				}
 			})
 		})
 	}
