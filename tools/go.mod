@@ -2,6 +2,8 @@ module github.com/FerretDB/FerretDB/tools
 
 go 1.22
 
+toolchain go1.22.1
+
 require (
 	github.com/FerretDB/gh v0.1.3
 	github.com/go-task/task/v3 v3.34.1
