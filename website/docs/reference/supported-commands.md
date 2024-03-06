@@ -209,7 +209,7 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/78).
 |                            | `showCustomData`                 | ⚠️     |                                                           |
 |                            | `showPrivileges`                 | ⚠️     |                                                           |
 |                            | `showAuthenticationRestrictions` | ⚠️     |                                                           |
-|                            | `filter`                         | ⚠️     |                                                           |
+|                            | `filter`                         | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/4141) |
 |                            | `comment`                        | ⚠️     |                                                           |
 
 ### Authentication Commands
