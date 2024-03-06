@@ -152,9 +152,9 @@ func slogMessageIndent(v any, indent string) string {
 		res := "{\n"
 
 		for _, f := range v.fields {
-			res += indent + "\t"
+			res += indent + "  "
 			res += strconv.Quote(f.name) + `: `
-			res += slogMessageIndent(f.value, indent+"\t") + ",\n"
+			res += slogMessageIndent(f.value, indent+"  ") + ",\n"
 		}
 
 		res += indent + `}`
@@ -189,8 +189,8 @@ func slogMessageIndent(v any, indent string) string {
 		res := "[\n"
 
 		for _, e := range v.elements {
-			res += indent + "\t"
-			res += slogMessageIndent(e, indent+"\t") + ",\n"
+			res += indent + "  "
+			res += slogMessageIndent(e, indent+"  ") + ",\n"
 		}
 
 		res += indent + `]`

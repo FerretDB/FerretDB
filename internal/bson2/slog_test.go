@@ -93,14 +93,14 @@ func TestLogValue(t *testing.T) {
 			j: `{"v":{"f64":42,"inf":"+Inf","neg_inf":"-Inf","zero":0,"neg_zero":-0,"nan":"NaN","i32":42,"i64":42}}`,
 			m: `
 			{
-				"f64": 42.0,
-				"inf": +Inf,
-				"neg_inf": -Inf,
-				"zero": 0.0,
-				"neg_zero": -0.0,
-				"nan": NaN,
-				"i32": 42,
-				"i64": int64(42),
+			  "f64": 42.0,
+			  "inf": +Inf,
+			  "neg_inf": -Inf,
+			  "zero": 0.0,
+			  "neg_zero": -0.0,
+			  "nan": NaN,
+			  "i32": 42,
+			  "i64": int64(42),
 			}`,
 		},
 		{
@@ -115,10 +115,10 @@ func TestLogValue(t *testing.T) {
 			j: `{"v":{"null":null,"id":"ObjectID(420000000000000000000000)","bool":true,"time":"2023-03-06T09:14:42.123Z"}}`,
 			m: `
 			{
-				"null": null,
-				"id": ObjectID(420000000000000000000000),
-				"bool": true,
-				"time": 2023-03-06T09:14:42.123Z,
+			  "null": null,
+			  "id": ObjectID(420000000000000000000000),
+			  "bool": true,
+			  "time": 2023-03-06T09:14:42.123Z,
 			}`,
 		},
 		{
@@ -144,10 +144,10 @@ func TestLogValue(t *testing.T) {
 				`"array":{"0":"foo","1":"bar","2":{"0":"baz","1":"qux"}}}}`,
 			m: `
 			{
-				"doc": {"foo": "bar", "baz": {"qux": "quux"}},
-				"doc_raw": RawDocument<1>,
-				"doc_empty": {},
-				"array": ["foo", "bar", ["baz", "qux"]],
+			  "doc": {"foo": "bar", "baz": {"qux": "quux"}},
+			  "doc_raw": RawDocument<1>,
+			  "doc_empty": {},
+			  "array": ["foo", "bar", ["baz", "qux"]],
 			}`,
 		},
 	} {
