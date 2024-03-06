@@ -418,7 +418,7 @@ func setupUserInSQLite(ctx context.Context, baseUri string) error {
 
 	q = `INSERT INTO "system.users_aff2f7ce" (_ferretdb_sjson) VALUES (?)`
 
-	_, err = db.ExecContext(ctx, q, testUser)
+	_, err = db.ExecContext(ctx, q, strings.TrimSpace(testUser))
 	if err != nil && (!errors.As(err, &se) || se.Code() != sqlite3lib.SQLITE_CONSTRAINT_UNIQUE) {
 		return err
 	}
