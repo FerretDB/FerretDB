@@ -118,18 +118,26 @@ func slogValue(v any) slog.Value {
 }
 
 func slogMessage(v any) string {
+	return slogMessageIndent(v, "")
+}
+
+func slogMessageIndent(v any, indent string) string {
 	switch v := v.(type) {
 	case *Document:
-		res := `{`
-
-		for i, f := range v.fields {
-			res += strconv.Quote(f.name) + `:` + slogMessage(f.value)
-			if i != len(v.fields)-1 {
-				res += `,`
-			}
+		if len(v.fields) == 0 {
+			return "{}"
 		}
 
-		res += `}`
+		res := "{\n"
+
+		for _, f := range v.fields {
+			res += indent + "\t"
+			res += strconv.Quote(f.name) + `: `
+			res += slogMessageIndent(f.value, indent+"\t") + ",\n"
+		}
+
+		res += indent + `}`
+
 		return res
 
 	case RawDocument:

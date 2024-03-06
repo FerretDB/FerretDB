@@ -19,13 +19,31 @@ import (
 	"context"
 	"log/slog"
 	"math"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
+
+func unindent(t *testing.T, s string) string {
+	t.Helper()
+
+	parts := strings.Split(s, "\n")
+	require.Greater(t, len(parts), 1)
+	require.Empty(t, parts[0])
+	parts = parts[1:]
+
+	indent := len(parts[0]) - len(strings.TrimLeft(parts[0], "\t"))
+	for i := range parts {
+		parts[i] = parts[i][indent:]
+	}
+
+	return strings.Join(parts, "\n")
+}
 
 func TestLogValue(t *testing.T) {
 	opts := &slog.HandlerOptions{
@@ -69,7 +87,17 @@ func TestLogValue(t *testing.T) {
 			)),
 			t: `v.f64=42 v.inf=+Inf v.neg_inf=-Inf v.zero=0 v.neg_zero=-0 v.nan=NaN v.i32=42 v.i64=42`,
 			j: `{"v":{"f64":42,"inf":"+Inf","neg_inf":"-Inf","zero":0,"neg_zero":-0,"nan":"NaN","i32":42,"i64":42}}`,
-			m: `{"f64":42.0,"inf":+Inf,"neg_inf":-Inf,"zero":0.0,"neg_zero":-0.0,"nan":NaN,"i32":int32(42),"i64":int64(42)}`,
+			m: `
+			{
+				"f64": 42.0,
+				"inf": +Inf,
+				"neg_inf": -Inf,
+				"zero": 0.0,
+				"neg_zero": -0.0,
+				"nan": NaN,
+				"i32": int32(42),
+				"i64": int64(42),
+			}`,
 		},
 		{
 			name: "Scalars",
@@ -81,18 +109,39 @@ func TestLogValue(t *testing.T) {
 			)),
 			t: `v.null=<nil> v.id=ObjectID(420000000000000000000000) v.bool=true v.time=2023-03-06T09:14:42.123Z`,
 			j: `{"v":{"null":null,"id":"ObjectID(420000000000000000000000)","bool":true,"time":"2023-03-06T09:14:42.123Z"}}`,
-			m: `{"null":null,"id":ObjectID(420000000000000000000000),"bool":true,"time":2023-03-06T09:14:42.123Z}`,
+			m: `
+			{
+				"null": null,
+				"id": ObjectID(420000000000000000000000),
+				"bool": true,
+				"time": 2023-03-06T09:14:42.123Z,
+			}`,
 		},
 		{
 			name: "Composites",
 			v: must.NotFail(NewDocument(
-				"doc", must.NotFail(NewDocument("foo", "bar")),
+				"doc", must.NotFail(NewDocument(
+					"foo", "bar",
+					"baz", must.NotFail(NewDocument(
+						"qux", "quux",
+					)),
+				)),
 				"doc_raw", RawDocument{0x42},
 				"doc_empty", must.NotFail(NewDocument()),
 			)),
-			t: `v.doc.foo=bar v.doc_raw=RawDocument<1>`,
-			j: `{"v":{"doc":{"foo":"bar"},"doc_raw":"RawDocument<1>"}}`,
-			m: `{"doc":{"foo":"bar"},"doc_raw":RawDocument<1>,"doc_empty":{}}`,
+			t: `v.doc.foo=bar v.doc.baz.qux=quux v.doc_raw=RawDocument<1>`,
+			j: `{"v":{"doc":{"foo":"bar","baz":{"qux":"quux"}},"doc_raw":"RawDocument<1>"}}`,
+			m: `
+			{
+				"doc": {
+					"foo": "bar",
+					"baz": {
+						"qux": "quux",
+					},
+				},
+				"doc_raw": RawDocument<1>,
+				"doc_empty": {},
+			}`,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -104,7 +153,7 @@ func TestLogValue(t *testing.T) {
 			assert.Equal(t, tc.j+"\n", jbuf.String())
 			jbuf.Reset()
 
-			assert.Equal(t, tc.m, slogMessage(tc.v))
+			assert.Equal(t, unindent(t, tc.m), slogMessage(tc.v))
 		})
 	}
 }
