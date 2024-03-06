@@ -2,6 +2,8 @@ module github.com/FerretDB/FerretDB/integration
 
 go 1.22
 
+toolchain go1.22.1
+
 replace github.com/FerretDB/FerretDB => ../
 
 require (
