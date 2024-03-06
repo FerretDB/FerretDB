@@ -56,6 +56,8 @@ type decodeTestCase struct {
 }
 
 // normalTestCases represents test cases for successful decoding/encoding.
+//
+//nolint:lll // for readability
 var normalTestCases = []normalTestCase{
 	{
 		name: "handshake1",

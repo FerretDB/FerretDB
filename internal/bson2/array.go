@@ -31,19 +31,26 @@ type Array struct {
 	elements []any
 }
 
-// newArray creates a new Array from the given values.
-func newArray(values ...any) (*Array, error) {
+// NewArray creates a new Array from the given values.
+func NewArray(values ...any) (*Array, error) {
 	res := &Array{
 		elements: make([]any, 0, len(values)),
 	}
 
 	for i, v := range values {
-		if err := res.add(v); err != nil {
+		if err := res.Add(v); err != nil {
 			return nil, lazyerrors.Errorf("%d: %w", i, err)
 		}
 	}
 
 	return res, nil
+}
+
+// MakeArray creates a new empty Array with the given capacity.
+func MakeArray(cap int) *Array {
+	return &Array{
+		elements: make([]any, 0, cap),
+	}
 }
 
 // ConvertArray converts [*types.Array] to Array.
@@ -95,8 +102,8 @@ func (arr *Array) Convert() (*types.Array, error) {
 	return res, nil
 }
 
-// add adds a new element to the Array.
-func (arr *Array) add(value any) error {
+// Add adds a new element to the Array.
+func (arr *Array) Add(value any) error {
 	if err := validBSONType(value); err != nil {
 		return lazyerrors.Error(err)
 	}

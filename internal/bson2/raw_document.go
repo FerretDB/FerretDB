@@ -162,6 +162,6 @@ func (raw RawDocument) decode(mode decodeMode) (*Document, error) {
 			return nil, lazyerrors.Error(err)
 		}
 
-		must.NoError(res.add(name, v))
+		must.NoError(res.Add(name, v))
 	}
 }

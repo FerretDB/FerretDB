@@ -16,12 +16,10 @@ package wire
 
 import (
 	"encoding/binary"
-	"encoding/json"
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/bson2"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/types/fjson"
 	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -394,51 +392,51 @@ func (msg *OpMsg) String() string {
 		return "<nil>"
 	}
 
-	m := map[string]any{
-		"FlagBits": msg.Flags,
-		"Checksum": msg.checksum,
-	}
+	m := must.NotFail(bson2.NewDocument(
+		"FlagBits", msg.Flags.String(),
+		"Checksum", int64(msg.checksum),
+	))
 
-	sections := make([]map[string]any, len(msg.sections))
-	for i, section := range msg.sections {
-		s := map[string]any{
-			"Kind": section.Kind,
-		}
+	sections := bson2.MakeArray(len(msg.sections))
+	for _, section := range msg.sections {
+		s := must.NotFail(bson2.NewDocument(
+			"Kind", int32(section.Kind),
+		))
 
 		switch section.Kind {
 		case 0:
-			doc, err := section.documents[0].Convert()
+			doc, err := section.documents[0].DecodeDeep()
 			if err == nil {
-				s["Document"] = json.RawMessage(must.NotFail(fjson.Marshal(doc)))
+				s.Add("Document", doc)
 			} else {
-				s["DocumentError"] = err.Error()
+				s.Add("DocumentError", err.Error())
 			}
 
 		case 1:
-			s["Identifier"] = section.Identifier
-			docs := make([]json.RawMessage, len(section.documents))
+			s.Add("Identifier", section.Identifier)
+			docs := bson2.MakeArray(len(section.documents))
 
-			for j, d := range section.documents {
-				doc, err := d.Convert()
+			for _, d := range section.documents {
+				doc, err := d.DecodeDeep()
 				if err == nil {
-					docs[j] = json.RawMessage(must.NotFail(fjson.Marshal(doc)))
+					docs.Add(doc)
 				} else {
-					docs[j] = must.NotFail(json.Marshal(map[string]string{"error": err.Error()}))
+					docs.Add(must.NotFail(bson2.NewDocument("error", err.Error())))
 				}
 			}
 
-			s["Documents"] = docs
+			s.Add("Documents", docs)
 
 		default:
 			panic(fmt.Sprintf("unknown kind %d", section.Kind))
 		}
 
-		sections[i] = s
+		sections.Add(s)
 	}
 
-	m["Sections"] = sections
+	m.Add("Sections", sections)
 
-	return string(must.NotFail(json.MarshalIndent(m, "", "  ")))
+	return m.LogMessage()
 }
 
 // check interfaces

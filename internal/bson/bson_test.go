@@ -206,6 +206,7 @@ func fuzzBinary(f *testing.F, testCases []testCase, newFunc func() bsontype) {
 				t.Skip()
 			}
 
+			// TODO https://github.com/FerretDB/FerretDB/issues/4157
 			mB, err := fjson.Marshal(fromBSON(v))
 			require.NoError(t, err)
 			assert.NotEmpty(t, mB)

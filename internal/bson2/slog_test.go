@@ -132,10 +132,10 @@ func TestLogValue(t *testing.T) {
 				)),
 				"doc_raw", RawDocument{0x42},
 				"doc_empty", must.NotFail(NewDocument()),
-				"array", must.NotFail(newArray(
+				"array", must.NotFail(NewArray(
 					"foo",
 					"bar",
-					must.NotFail(newArray("baz", "qux")),
+					must.NotFail(NewArray("baz", "qux")),
 				)),
 			)),
 			t: `v.doc.foo=bar v.doc.baz.qux=quux v.doc_raw=RawDocument<1> ` +
