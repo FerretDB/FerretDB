@@ -31,6 +31,21 @@ type Array struct {
 	elements []any
 }
 
+// newArray creates a new Array from the given values.
+func newArray(values ...any) (*Array, error) {
+	res := &Array{
+		elements: make([]any, 0, len(values)),
+	}
+
+	for i, v := range values {
+		if err := res.add(v); err != nil {
+			return nil, lazyerrors.Errorf("%d: %w", i, err)
+		}
+	}
+
+	return res, nil
+}
+
 // ConvertArray converts [*types.Array] to Array.
 func ConvertArray(arr *types.Array) (*Array, error) {
 	iter := arr.Iterator()
@@ -78,6 +93,17 @@ func (arr *Array) Convert() (*types.Array, error) {
 	}
 
 	return res, nil
+}
+
+// add adds a new element to the Array.
+func (arr *Array) add(value any) error {
+	if err := validBSONType(value); err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	arr.elements = append(arr.elements, value)
+
+	return nil
 }
 
 // Encode encodes BSON array.

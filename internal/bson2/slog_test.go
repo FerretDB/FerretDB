@@ -128,9 +128,16 @@ func TestLogValue(t *testing.T) {
 				)),
 				"doc_raw", RawDocument{0x42},
 				"doc_empty", must.NotFail(NewDocument()),
+				"array", must.NotFail(newArray(
+					"foo",
+					"bar",
+					must.NotFail(newArray("baz", "qux")),
+				)),
 			)),
-			t: `v.doc.foo=bar v.doc.baz.qux=quux v.doc_raw=RawDocument<1>`,
-			j: `{"v":{"doc":{"foo":"bar","baz":{"qux":"quux"}},"doc_raw":"RawDocument<1>"}}`,
+			t: `v.doc.foo=bar v.doc.baz.qux=quux v.doc_raw=RawDocument<1> ` +
+				`v.array.0=foo v.array.1=bar v.array.2.0=baz v.array.2.1=qux`,
+			j: `{"v":{"doc":{"foo":"bar","baz":{"qux":"quux"}},"doc_raw":"RawDocument<1>",` +
+				`"array":{"0":"foo","1":"bar","2":{"0":"baz","1":"qux"}}}}`,
 			m: `
 			{
 				"doc": {
@@ -141,6 +148,14 @@ func TestLogValue(t *testing.T) {
 				},
 				"doc_raw": RawDocument<1>,
 				"doc_empty": {},
+				"array": [
+					"foo",
+					"bar",
+					[
+						"baz",
+						"qux",
+					],
+				],
 			}`,
 		},
 	} {

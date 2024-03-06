@@ -31,7 +31,7 @@ var nanBits = math.Float64bits(math.NaN())
 // The result is optimized for small values such as function parameters.
 // Some information is lost;
 // for example, both int32 and int64 values are returned with [slog.KindInt64],
-// and empty documents and arrays are omitted.
+// arrays are treated as documents, and empty documents are omitted.
 // More information is subsequently lost in handlers output;
 // for example, float64(42), int32(42), and int64(42) values would all look the same
 // (`f64=42 i32=42 i64=42` or `{"f64":42,"i32":42,"i64":42}`).
@@ -144,7 +144,20 @@ func slogMessageIndent(v any, indent string) string {
 		return "RawDocument<" + strconv.FormatInt(int64(len(v)), 10) + ">"
 
 	case *Array:
-		panic("Array is not supported")
+		if len(v.elements) == 0 {
+			return "[]"
+		}
+
+		res := "[\n"
+
+		for _, e := range v.elements {
+			res += indent + "\t"
+			res += slogMessageIndent(e, indent+"\t") + ",\n"
+		}
+
+		res += indent + `]`
+
+		return res
 
 	case RawArray:
 		panic("RawArray is not supported")
