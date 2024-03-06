@@ -83,10 +83,11 @@ func checkFiles(files []string, logf, fatalf func(string, ...any)) {
 
 // verifyTruncateString checks that the truncate string is present.
 func verifyTruncateString(b []byte) error {
-    if !bytes.Contains(b, []byte("<!--truncate-->")) {
-        return fmt.Errorf("truncate string not found")
-    }
-    return nil
+	if !bytes.Contains(b, []byte("<!--truncate-->")) {
+		return fmt.Errorf("<!--truncate--> must be included to have \"Read more\" link on the homepage")
+	}
+
+	return nil
 }
 
 // extractFrontMatter returns the front matter of a blog post.
