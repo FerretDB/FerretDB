@@ -182,7 +182,8 @@ func TestHelloWithSupportedMechs(t *testing.T) {
 				return
 			}
 
-			mechanisms := must.NotFail(actual.Get("saslSupportedMechs"))
+			mechanisms, err := actual.Get("saslSupportedMechs")
+			require.NoError(t, err)
 			assert.True(t, mechanisms.(*types.Array).ContainsAll(tc.mechs))
 		})
 	}
