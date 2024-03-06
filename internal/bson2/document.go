@@ -178,6 +178,10 @@ func (doc *Document) LogValue() slog.Value {
 	return slogValue(doc)
 }
 
+func (doc *Document) LogMessage() string {
+	return slogMessage(doc)
+}
+
 // check interfaces
 var (
 	_ slog.LogValuer = (*Document)(nil)

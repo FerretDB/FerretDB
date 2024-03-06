@@ -37,6 +37,7 @@ type normalTestCase struct {
 	name string
 	raw  RawDocument
 	tdoc *types.Document
+	m    string
 }
 
 // decodeTestCase represents a single test case for unsuccessful decoding.
@@ -514,6 +515,8 @@ func TestNormal(t *testing.T) {
 					ls := doc.LogValue().Resolve().String()
 					assert.NotContains(t, ls, "panicked")
 					assert.NotContains(t, ls, "called too many times")
+
+					// assert.Equal(t, unindent(t, tc.m), doc.LogMessage())
 
 					tdoc, err := doc.Convert()
 					require.NoError(t, err)

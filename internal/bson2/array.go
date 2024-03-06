@@ -137,6 +137,10 @@ func (arr *Array) LogValue() slog.Value {
 	return slogValue(arr)
 }
 
+func (arr *Array) LogMessage() string {
+	return slogMessage(arr)
+}
+
 // check interfaces
 var (
 	_ slog.LogValuer = (*Array)(nil)
