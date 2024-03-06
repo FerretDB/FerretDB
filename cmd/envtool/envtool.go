@@ -411,13 +411,15 @@ func setupUserInSQLite(ctx context.Context, baseUri string) error {
 		}
 
 		q = `INSERT INTO "_ferretdb_collections" (name, table_name, settings) VALUES ('system.users', 'system.users_aff2f7ce',?)`
-		if _, err = db.ExecContext(ctx, q, testSQLiteSystemUsers); err != nil {
+		if _, err = db.ExecContext(ctx, q, strings.TrimSpace(testSQLiteSystemUsers)); err != nil {
 			return err
 		}
 	}
 
 	q = `INSERT INTO "system.users_aff2f7ce" (_ferretdb_sjson) VALUES (?)`
 
+	// use TrimSpace to avoid `1 bytes remains in the decoder: \n` error from sjson.Unmarshal
+	// because test_user.json has a new line before EOF
 	_, err = db.ExecContext(ctx, q, strings.TrimSpace(testUser))
 	if err != nil && (!errors.As(err, &se) || se.Code() != sqlite3lib.SQLITE_CONSTRAINT_UNIQUE) {
 		return err
