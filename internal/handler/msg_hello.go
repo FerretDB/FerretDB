@@ -45,32 +45,7 @@ func (h *Handler) MsgHello(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		return nil, lazyerrors.Error(err)
 	}
 
-	var saslSupportedMechsResp *types.Array
-
-	if saslSupportedMechs != "" {
-		db, username, ok := strings.Cut(saslSupportedMechs, ".")
-		if !ok {
-			return nil, handlererrors.NewCommandErrorMsg(
-				handlererrors.ErrBadValue,
-				"UserName must contain a '.' separated database.user pair",
-			)
-		}
-
-		if username != "" {
-			mechs, err := h.getUserSupportedMechs(ctx, db, username)
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-			if len(mechs) > 0 {
-				saslSupportedMechsResp = must.NotFail(types.NewArray())
-				for _, k := range mechs {
-					saslSupportedMechsResp.Append(k)
-				}
-			}
-		}
-	}
-
+	var reply wire.OpMsg
 	resp := must.NotFail(types.NewDocument(
 		"isWritablePrimary", true,
 		"maxBsonObjectSize", int32(types.MaxDocumentLen),
@@ -83,13 +58,36 @@ func (h *Handler) MsgHello(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		"readOnly", false,
 	))
 
-	if saslSupportedMechsResp != nil {
+	if saslSupportedMechs == "" {
+		resp.Set("ok", float64(1))
+		must.NoError(reply.SetSections(wire.MakeOpMsgSection(resp)))
+
+		return &reply, nil
+	}
+
+	db, username, ok := strings.Cut(saslSupportedMechs, ".")
+	if !ok {
+		return nil, handlererrors.NewCommandErrorMsg(
+			handlererrors.ErrBadValue,
+			"UserName must contain a '.' separated database.user pair",
+		)
+	}
+
+	mechs, err := h.getUserSupportedMechs(ctx, db, username)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	saslSupportedMechsResp := must.NotFail(types.NewArray())
+	for _, k := range mechs {
+		saslSupportedMechsResp.Append(k)
+	}
+
+	if saslSupportedMechsResp.Len() != 0 {
 		resp.Set("saslSupportedMechs", saslSupportedMechsResp)
 	}
 
 	resp.Set("ok", float64(1))
-
-	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.MakeOpMsgSection(resp)))
 
 	return &reply, nil
