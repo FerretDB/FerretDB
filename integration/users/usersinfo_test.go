@@ -27,6 +27,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 // createUser creates a bson.D command payload to create an user with the given username and password.
@@ -147,7 +148,7 @@ func TestUsersinfo(t *testing.T) {
 		hasUser    map[string]struct{}
 
 		showCredentials []string // showCredentials list the credentials types expected to be returned
-		skipForMongoDB  string   // optional, skip test for MongoDB backend with a specific reason
+		failsForMongoDB string   // if set, fails for MongoDB backend
 	}{
 		"NoUserFound": {
 			dbSuffix: "no_users",
@@ -218,7 +219,7 @@ func TestUsersinfo(t *testing.T) {
 				}},
 				{"ok", float64(1)},
 			},
-			skipForMongoDB: "Only MongoDB Enterprise offers PLAIN",
+			failsForMongoDB: "Only MongoDB Enterprise offers PLAIN",
 		},
 		"WithSCRAMSHA1": {
 			dbSuffix: "allbackends",
@@ -532,11 +533,13 @@ func TestUsersinfo(t *testing.T) {
 	}
 
 	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
+		t.Run(name, func(tt *testing.T) {
+			tt.Parallel()
 
-			if tc.skipForMongoDB != "" {
-				setup.SkipForMongoDB(t, tc.skipForMongoDB)
+			var t testtb.TB = tt
+
+			if tc.failsForMongoDB != "" {
+				t = setup.FailsForMongoDB(t, tc.failsForMongoDB)
 			}
 
 			var res bson.D
@@ -575,7 +578,10 @@ func TestUsersinfo(t *testing.T) {
 				require.True(t, (tc.hasUser == nil) != (tc.expected == nil))
 
 				if tc.showCredentials != nil {
-					cred := must.NotFail(actualUser.Get("credentials")).(*types.Document)
+					actualUser, err := actualUser.Get("credentials")
+					require.NoError(t, err)
+
+					cred := actualUser.(*types.Document)
 
 					for _, typ := range tc.showCredentials {
 						switch typ {

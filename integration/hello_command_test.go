@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
@@ -99,7 +100,9 @@ func TestHelloWithSupportedMechs(t *testing.T) {
 	testCases := map[string]struct { //nolint:vet // used for test only
 		user  string
 		mechs *types.Array
-		err   string
+
+		err             *mongo.CommandError
+		failsForMongoDB string
 	}{
 		"NotFound": {
 			user: db.Name() + ".not_found",
@@ -112,8 +115,9 @@ func TestHelloWithSupportedMechs(t *testing.T) {
 			mechs: must.NotFail(types.NewArray("SCRAM-SHA-1", "SCRAM-SHA-256")),
 		},
 		"HelloUserPlain": {
-			user:  db.Name() + ".hello_user_plain",
-			mechs: must.NotFail(types.NewArray("PLAIN")),
+			user:            db.Name() + ".hello_user_plain",
+			mechs:           must.NotFail(types.NewArray("PLAIN")),
+			failsForMongoDB: "PLAIN authentication mechanism is not support by MongoDB",
 		},
 		"HelloUserSCRAM1": {
 			user:  db.Name() + ".hello_user_scram1",
@@ -129,7 +133,11 @@ func TestHelloWithSupportedMechs(t *testing.T) {
 		},
 		"MissingSeparator": {
 			user: db.Name(),
-			err:  "UserName must contain a '.' separated database.user pair",
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "UserName must contain a '.' separated database.user pair",
+			},
 		},
 	}
 
@@ -139,8 +147,8 @@ func TestHelloWithSupportedMechs(t *testing.T) {
 
 			var t testtb.TB = tt
 
-			if tc.mechs != nil && tc.mechs.Contains("PLAIN") {
-				t = setup.FailsForMongoDB(t, "PLAIN authentication mechanism is not support by MongoDB")
+			if tc.failsForMongoDB != "" {
+				t = setup.FailsForMongoDB(t, tc.failsForMongoDB)
 			}
 
 			var res bson.D
@@ -150,8 +158,8 @@ func TestHelloWithSupportedMechs(t *testing.T) {
 				{"saslSupportedMechs", tc.user},
 			}).Decode(&res)
 
-			if tc.err != "" {
-				require.ErrorContains(t, err, tc.err)
+			if tc.err != nil {
+				AssertEqualCommandError(t, *tc.err, err)
 				return
 			}
 
