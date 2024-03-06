@@ -53,6 +53,7 @@ func TestLogValue(t *testing.T) {
 		v    slog.LogValuer
 		t    string
 		j    string
+		m    string
 	}{
 		{
 			name: "Numbers",
@@ -66,8 +67,9 @@ func TestLogValue(t *testing.T) {
 				"i32", int32(42),
 				"i64", int64(42),
 			)),
-			t: "v.f64=42 v.inf=+Inf v.neg_inf=-Inf v.zero=0 v.neg_zero=-0 v.nan=NaN v.i32=42 v.i64=42",
+			t: `v.f64=42 v.inf=+Inf v.neg_inf=-Inf v.zero=0 v.neg_zero=-0 v.nan=NaN v.i32=42 v.i64=42`,
 			j: `{"v":{"f64":42,"inf":"+Inf","neg_inf":"-Inf","zero":0,"neg_zero":-0,"nan":"NaN","i32":42,"i64":42}}`,
+			m: `{"f64":42.0,"inf":+Inf,"neg_inf":-Inf,"zero":0.0,"neg_zero":-0.0,"nan":NaN,"i32":int32(42),"i64":int64(42)}`,
 		},
 		{
 			name: "Scalars",
@@ -77,8 +79,20 @@ func TestLogValue(t *testing.T) {
 				"bool", true,
 				"time", time.Date(2023, 3, 6, 13, 14, 42, 123456789, time.FixedZone("", int(4*time.Hour.Seconds()))),
 			)),
-			t: "v.null=<nil> v.id=ObjectID(420000000000000000000000) v.bool=true v.time=2023-03-06T09:14:42.123Z",
+			t: `v.null=<nil> v.id=ObjectID(420000000000000000000000) v.bool=true v.time=2023-03-06T09:14:42.123Z`,
 			j: `{"v":{"null":null,"id":"ObjectID(420000000000000000000000)","bool":true,"time":"2023-03-06T09:14:42.123Z"}}`,
+			m: `{"null":null,"id":ObjectID(420000000000000000000000),"bool":true,"time":2023-03-06T09:14:42.123Z}`,
+		},
+		{
+			name: "Composites",
+			v: must.NotFail(NewDocument(
+				"doc", must.NotFail(NewDocument("foo", "bar")),
+				"doc_raw", RawDocument{0x42},
+				"doc_empty", must.NotFail(NewDocument()),
+			)),
+			t: `v.doc.foo=bar v.doc_raw=RawDocument<1>`,
+			j: `{"v":{"doc":{"foo":"bar"},"doc_raw":"RawDocument<1>"}}`,
+			m: `{"doc":{"foo":"bar"},"doc_raw":RawDocument<1>,"doc_empty":{}}`,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -89,6 +103,8 @@ func TestLogValue(t *testing.T) {
 			jlog.InfoContext(ctx, "", slog.Any("v", tc.v))
 			assert.Equal(t, tc.j+"\n", jbuf.String())
 			jbuf.Reset()
+
+			assert.Equal(t, tc.m, slogMessage(tc.v))
 		})
 	}
 }

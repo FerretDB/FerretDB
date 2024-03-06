@@ -20,16 +20,20 @@ import (
 	"log/slog"
 	"math"
 	"strconv"
+	"strings"
 	"time"
 )
+
+var nanBits = math.Float64bits(math.NaN())
 
 // slogValue returns a compact representation of any BSON value as [slog.Value].
 //
 // The result is optimized for small values such as function parameters.
-// Some type information is lost;
-// for example, both int32 and int64 values are returned with [slog.KindInt64].
-// More type information is subsequently lost in handlers output;
-// for example, float64(42), int32(42), and int64(42) would all look the same
+// Some information is lost;
+// for example, both int32 and int64 values are returned with [slog.KindInt64],
+// and empty documents and arrays are omitted.
+// More information is subsequently lost in handlers output;
+// for example, float64(42), int32(42), and int64(42) values would all look the same
 // (`f64=42 i32=42 i64=42` or `{"f64":42,"i32":42,"i64":42}`).
 func slogValue(v any) slog.Value {
 	switch v := v.(type) {
@@ -44,10 +48,10 @@ func slogValue(v any) slog.Value {
 
 	case RawDocument:
 		if v == nil {
-			return slog.StringValue("RawDocument(nil)")
+			return slog.StringValue("RawDocument<nil>")
 		}
 
-		return slog.StringValue("RawDocument(" + strconv.Itoa(len(v)) + " bytes)")
+		return slog.StringValue("RawDocument<" + strconv.Itoa(len(v)) + ">")
 
 	case *Array:
 		var attrs []slog.Attr
@@ -60,10 +64,10 @@ func slogValue(v any) slog.Value {
 
 	case RawArray:
 		if v == nil {
-			return slog.StringValue("RawArray(nil)")
+			return slog.StringValue("RawArray<nil>")
 		}
 
-		return slog.StringValue("RawArray(" + strconv.Itoa(len(v)) + " bytes)")
+		return slog.StringValue("RawArray<" + strconv.Itoa(len(v)) + ">")
 
 	case float64:
 		// for JSON handler to work
@@ -107,6 +111,87 @@ func slogValue(v any) slog.Value {
 
 	case int64:
 		return slog.Int64Value(v)
+
+	default:
+		panic(fmt.Sprintf("invalid BSON type %T", v))
+	}
+}
+
+func slogMessage(v any) string {
+	switch v := v.(type) {
+	case *Document:
+		res := `{`
+
+		for i, f := range v.fields {
+			res += strconv.Quote(f.name) + `:` + slogMessage(f.value)
+			if i != len(v.fields)-1 {
+				res += `,`
+			}
+		}
+
+		res += `}`
+		return res
+
+	case RawDocument:
+		return "RawDocument<" + strconv.FormatInt(int64(len(v)), 10) + ">"
+
+	case *Array:
+		panic("Array is not supported")
+
+	case RawArray:
+		panic("RawArray is not supported")
+
+	case float64:
+		switch {
+		case math.IsNaN(v):
+			if bits := math.Float64bits(v); bits != nanBits {
+				return fmt.Sprintf("NaN(%b)", bits)
+			}
+
+			return "NaN"
+
+		case math.IsInf(v, 1):
+			return "+Inf"
+		case math.IsInf(v, -1):
+			return "-Inf"
+		default:
+			res := strconv.FormatFloat(v, 'f', -1, 64)
+			if !strings.HasSuffix(res, ".0") {
+				res += ".0"
+			}
+
+			return res
+		}
+
+	case string:
+		return strconv.Quote(v)
+
+	case Binary:
+		panic("Binary is not supported")
+
+	case ObjectID:
+		return "ObjectID(" + hex.EncodeToString(v[:]) + ")"
+
+	case bool:
+		return strconv.FormatBool(v)
+
+	case time.Time:
+		return v.Truncate(time.Millisecond).UTC().Format(time.RFC3339Nano)
+
+	case NullType:
+		return "null"
+
+	case Regex:
+		panic("Regex is not supported")
+
+	case int32:
+		return "int32(" + strconv.FormatInt(int64(v), 10) + ")"
+
+	case Timestamp:
+		panic("Timestamp is not supported")
+
+	case int64:
+		return "int64(" + strconv.FormatInt(int64(v), 10) + ")"
 
 	default:
 		panic(fmt.Sprintf("invalid BSON type %T", v))
