@@ -33,6 +33,44 @@ func TestCommandsAuthenticationLogout(t *testing.T) {
 
 	s := setup.SetupWithOpts(t, nil)
 	ctx, db := s.Ctx, s.Collection.Database()
+
+	opts := options.Client().ApplyURI(s.MongoDBURI)
+	client, err := mongo.Connect(ctx, opts)
+	require.NoError(t, err, "cannot connect to MongoDB")
+
+	t.Cleanup(func() {
+		require.NoError(t, client.Disconnect(ctx))
+	})
+
+	db = client.Database(db.Name())
+
+	var res bson.D
+	err = db.RunCommand(ctx, bson.D{{"logout", 1}}).Decode(&res)
+	require.NoError(t, err)
+
+	actual := ConvertDocument(t, res)
+	actual.Remove("$clusterTime")
+	actual.Remove("operationTime")
+
+	expected := ConvertDocument(t, bson.D{{"ok", float64(1)}})
+	testutil.AssertEqual(t, expected, actual)
+
+	// the test user logs out again, it has no effect
+	err = db.RunCommand(ctx, bson.D{{"logout", 1}}).Err()
+	require.NoError(t, err)
+
+	actual = ConvertDocument(t, res)
+	actual.Remove("$clusterTime")
+	actual.Remove("operationTime")
+
+	testutil.AssertEqual(t, expected, actual)
+}
+
+func TestCommandsAuthenticationLogoutAuthenticatedUser(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupWithOpts(t, nil)
+	ctx, db := s.Ctx, s.Collection.Database()
 	username, password, mechanism := "testuser", "testpass", "SCRAM-SHA-256"
 
 	err := db.RunCommand(ctx, bson.D{
@@ -51,7 +89,6 @@ func TestCommandsAuthenticationLogout(t *testing.T) {
 	}
 
 	opts := options.Client().ApplyURI(s.MongoDBURI).SetAuth(credential)
-
 	client, err := mongo.Connect(ctx, opts)
 	require.NoError(t, err, "cannot connect to MongoDB")
 
@@ -65,11 +102,11 @@ func TestCommandsAuthenticationLogout(t *testing.T) {
 	err = db.RunCommand(ctx, bson.D{{"connectionStatus", 1}}).Decode(&res)
 	require.NoError(t, err)
 
-	actualAuth, _ := ConvertDocument(t, res).Get("authInfo")
-	require.NotNil(t, actualAuth)
+	actualAuth, err := ConvertDocument(t, res).Get("authInfo")
+	require.NoError(t, err)
 
-	actualUsersV, _ := actualAuth.(*types.Document).Get("authenticatedUsers")
-	require.NotNil(t, actualUsersV)
+	actualUsersV, err := actualAuth.(*types.Document).Get("authenticatedUsers")
+	require.NoError(t, err)
 
 	actualUsers := actualUsersV.(*types.Array)
 
@@ -98,11 +135,11 @@ func TestCommandsAuthenticationLogout(t *testing.T) {
 	err = db.RunCommand(ctx, bson.D{{"connectionStatus", 1}}).Decode(&res)
 	require.NoError(t, err)
 
-	actualAuth, _ = ConvertDocument(t, res).Get("authInfo")
-	require.NotNil(t, actualAuth)
+	actualAuth, err = ConvertDocument(t, res).Get("authInfo")
+	require.NoError(t, err)
 
-	actualUsersV, _ = actualAuth.(*types.Document).Get("authenticatedUsers")
-	require.NotNil(t, actualUsersV)
+	actualUsersV, err = actualAuth.(*types.Document).Get("authenticatedUsers")
+	require.NoError(t, err)
 
 	actualUsers = actualUsersV.(*types.Array)
 
