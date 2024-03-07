@@ -108,19 +108,8 @@ func TestCommandsAuthenticationLogoutAuthenticatedUser(t *testing.T) {
 	actualUsersV, err := actualAuth.(*types.Document).Get("authenticatedUsers")
 	require.NoError(t, err)
 
-	actualUsers := actualUsersV.(*types.Array)
-
-	var hasUser bool
-
-	for i := 0; i < actualUsers.Len(); i++ {
-		actualUser := must.NotFail(must.NotFail(actualUsers.Get(i)).(*types.Document).Get("user"))
-		if actualUser == username {
-			hasUser = true
-			break
-		}
-	}
-
-	require.True(t, hasUser, res)
+	expectedUsers := must.NotFail(types.NewArray(must.NotFail(types.NewDocument("user", username, "db", db.Name()))))
+	require.Equal(t, expectedUsers, actualUsersV.(*types.Array))
 
 	err = db.RunCommand(ctx, bson.D{{"logout", 1}}).Decode(&res)
 	require.NoError(t, err)
@@ -140,13 +129,5 @@ func TestCommandsAuthenticationLogoutAuthenticatedUser(t *testing.T) {
 
 	actualUsersV, err = actualAuth.(*types.Document).Get("authenticatedUsers")
 	require.NoError(t, err)
-
-	actualUsers = actualUsersV.(*types.Array)
-
-	for i := 0; i < actualUsers.Len(); i++ {
-		actualUser := must.NotFail(must.NotFail(actualUsers.Get(i)).(*types.Document).Get("user"))
-		if actualUser == username {
-			require.Fail(t, "user is still authenticated", res)
-		}
-	}
+	require.Empty(t, actualUsersV)
 }
