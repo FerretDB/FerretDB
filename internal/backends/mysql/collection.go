@@ -189,7 +189,7 @@ func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllPa
 	}
 
 	q := fmt.Sprintf(
-		`UPDATE %s.%s SET %s = ? WHERE %s = ?`,
+		`UPDATE %q.%q SET %s = ? WHERE %s = ?`,
 		c.dbName, meta.TableName,
 		metadata.DefaultColumn,
 		metadata.IDColumn,
@@ -272,7 +272,7 @@ func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllPa
 	}
 
 	q := fmt.Sprintf(
-		`DELETE FROM %s.%s WHERE %s IN (%s)`,
+		`DELETE FROM %q.%q WHERE %s IN (%s)`,
 		c.dbName, meta.TableName,
 		column,
 		strings.Join(placeholders, ", "),
@@ -366,7 +366,93 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 
 // Stats implements backends.Collection interface.
 func (c *collection) Stats(ctx context.Context, params *backends.CollectionStatsParams) (*backends.CollectionStatsResult, error) {
-	return nil, lazyerrors.New("not yet implemented")
+	p, err := c.r.DatabaseGetExisting(ctx, c.dbName)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if p == nil {
+		return nil, backends.NewError(
+			backends.ErrorCodeCollectionDoesNotExist,
+			lazyerrors.Errorf("no ns %s.%s", c.dbName, c.name),
+		)
+	}
+
+	coll, err := c.r.CollectionGet(ctx, c.dbName, c.name)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if coll == nil {
+		return nil, backends.NewError(
+			backends.ErrorCodeCollectionDoesNotExist,
+			lazyerrors.Errorf("no ns %s.%s", c.dbName, c.name),
+		)
+	}
+
+	stats, err := collectionsStats(ctx, p, c.dbName, []*metadata.Collection{coll}, params.Refresh)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	indexMap := map[string]string{}
+	for _, index := range coll.Indexes {
+		indexMap[index.Index] = index.Name
+	}
+
+	q := `
+		SELECT
+		    s.index_name,
+			t.index_length,
+		FROM information_schema.tables t 
+		JOIN information_schema.statistics s
+		ON t.table_schema = s.table_schema AND t.table_name = s.table_name
+		WHERE t.table_schema = ? AND t.table_name IN ?
+	`
+
+	rows, err := p.QueryContext(ctx, q, c.dbName, coll.TableName)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	defer rows.Close()
+
+	indexSizes := make([]backends.IndexSize, len(indexMap))
+	var i int
+
+	for rows.Next() {
+		var name string
+		var size int64
+
+		if err := rows.Scan(&name, &size); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		indexName, ok := indexMap[name]
+		if !ok {
+			// new indexes have been created since metadata was last fetched
+			continue
+		}
+
+		indexSizes[i] = backends.IndexSize{
+			Name: indexName,
+			Size: size,
+		}
+		i++
+	}
+
+	if rows.Err() != nil {
+		return nil, lazyerrors.Error(rows.Err())
+	}
+
+	return &backends.CollectionStatsResult{
+		CountDocuments:  stats.countDocuments,
+		SizeTotal:       stats.sizeTables + stats.sizeIndexes,
+		SizeIndexes:     stats.sizeIndexes,
+		SizeCollection:  stats.sizeTables,
+		SizeFreeStorage: stats.sizeFreeStorage,
+		IndexSizes:      indexSizes,
+	}, nil
 }
 
 // Compact implements backends.Collection interface.
@@ -396,7 +482,7 @@ func (c *collection) Compact(ctx context.Context, params *backends.CompactParams
 	}
 
 	q := "OPTIMIZE TABLE "
-	q += fmt.Sprintf("%s.%s", c.dbName, coll.TableName)
+	q += fmt.Sprintf("%q.%q", c.dbName, coll.TableName)
 
 	if _, err = p.ExecContext(ctx, q); err != nil {
 		return nil, lazyerrors.Error(err)
