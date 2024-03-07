@@ -333,7 +333,6 @@ func TestCreateCappedCommandInvalidSpec(t *testing.T) {
 			},
 		},
 	} {
-		tc, name := tc, name
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 

@@ -59,7 +59,7 @@ func (h *Handler) MsgUsersInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	common.Ignored(
 		document, h.L,
-		"showCredentials", "showCustomData", "showPrivileges",
+		"showCustomData", "showPrivileges",
 		"showAuthenticationRestrictions", "comment", "filter",
 	)
 
