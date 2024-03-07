@@ -14,7 +14,7 @@ ARG LABEL_COMMIT
 
 # prepare stage
 
-FROM --platform=$BUILDPLATFORM golang:1.22.0 AS all-in-one-prepare
+FROM --platform=$BUILDPLATFORM golang:1.22.1 AS all-in-one-prepare
 
 # use a single directory for all Go caches to simpliy RUN --mount commands below
 ENV GOPATH /cache/gopath
@@ -38,7 +38,7 @@ EOF
 
 # build stage
 
-FROM golang:1.22.0 AS all-in-one-build
+FROM golang:1.22.1 AS all-in-one-build
 
 ARG TARGETARCH
 

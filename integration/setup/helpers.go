@@ -89,7 +89,7 @@ func FailsForMongoDB(tb testtb.TB, reason string) testtb.TB {
 
 // SkipForMongoDB skips the current test for MongoDB.
 //
-// Use [FailsForMongoDB] in new code.
+// Deprecated: Use [FailsForMongoDB] in new code.
 func SkipForMongoDB(tb testtb.TB, reason string) {
 	tb.Helper()
 
