@@ -41,7 +41,7 @@ func (h *Handler) authenticate(ctx context.Context) error {
 		return nil
 	}
 
-	conninfo.Get(ctx).BypassBackendAuth()
+	conninfo.Get(ctx).SetBypassBackendAuth()
 
 	adminDB, err := h.b.Database("admin")
 	if err != nil {
@@ -100,7 +100,8 @@ func (h *Handler) authenticate(ctx context.Context) error {
 	}
 
 	if !hasUser {
-		host, _, err := net.SplitHostPort(conninfo.Get(ctx).PeerAddr)
+		var host string
+		host, _, err = net.SplitHostPort(conninfo.Get(ctx).PeerAddr)
 		if err != nil {
 			return lazyerrors.Error(err)
 		}

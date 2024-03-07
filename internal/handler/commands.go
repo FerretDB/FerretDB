@@ -203,8 +203,9 @@ func (h *Handler) initCommands() {
 			Help:    "Returns a summary of indexes of the specified collection.",
 		},
 		"logout": {
-			Handler: h.MsgLogout,
-			Help:    "Logs out from the current session.",
+			Handler:   h.MsgLogout,
+			anonymous: true,
+			Help:      "Logs out from the current session.",
 		},
 		"ping": {
 			Handler:   h.MsgPing,
