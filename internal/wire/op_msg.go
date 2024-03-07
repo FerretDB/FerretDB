@@ -54,6 +54,16 @@ type OpMsg struct {
 	checksum uint32
 }
 
+// NewOpMsg creates a message with a single section of kind 0 with a single raw document.
+func NewOpMsg(raw bson2.RawDocument) (*OpMsg, error) {
+	var msg OpMsg
+	if err := msg.SetSections(OpMsgSection{documents: []bson2.RawDocument{raw}}); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &msg, nil
+}
+
 // checkSections checks given sections.
 func checkSections(sections []OpMsgSection) error {
 	if len(sections) == 0 {
@@ -184,6 +194,26 @@ func (msg *OpMsg) Document() (*types.Document, error) {
 	}
 
 	return res, nil
+}
+
+// RawSections returns the value of section with kind 0 and the value of all sections with kind 1.
+func (msg *OpMsg) RawSections() (bson2.RawDocument, []byte) {
+	var spec bson2.RawDocument
+	var seq []byte
+
+	for _, s := range msg.Sections() {
+		switch s.Kind {
+		case 0:
+			spec = s.documents[0]
+
+		case 1:
+			for _, d := range s.documents {
+				seq = append(seq, d...)
+			}
+		}
+	}
+
+	return spec, seq
 }
 
 // RawDocument returns the value of msg as a [bson2.RawDocument].
