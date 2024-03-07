@@ -101,6 +101,7 @@ func (h *Handler) authenticate(ctx context.Context) error {
 
 	if !hasUser {
 		var host string
+
 		host, _, err = net.SplitHostPort(conninfo.Get(ctx).PeerAddr)
 		if err != nil {
 			return lazyerrors.Error(err)
