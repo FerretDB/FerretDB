@@ -42,7 +42,8 @@ func Dump[T types.Type](tb testtb.TB, o T) string {
 func DumpSlice[T types.Type](tb testtb.TB, s []T) string {
 	tb.Helper()
 
-	// We might switch to go-spew or something else later.
+	// We should switch to bson2's format.
+	// TODO https://github.com/FerretDB/FerretDB/issues/4157
 
 	res := []byte("[")
 
