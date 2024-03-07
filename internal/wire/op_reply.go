@@ -135,9 +135,9 @@ func (reply *OpReply) String() string {
 	))
 
 	if reply.document == nil {
-		must.NoError(m.Add("NumberReturned", 0))
+		must.NoError(m.Add("NumberReturned", int32(0)))
 	} else {
-		must.NoError(m.Add("NumberReturned", 1))
+		must.NoError(m.Add("NumberReturned", int32(1)))
 
 		doc, err := reply.document.DecodeDeep()
 		if err == nil {

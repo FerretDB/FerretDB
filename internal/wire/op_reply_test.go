@@ -61,6 +61,7 @@ var replyTestCases = []testCase{
 		  "ResponseFlags": "[AwaitCapable]",
 		  "CursorID": int64(0),
 		  "StartingFrom": 0,
+		  "NumberReturned": 1,
 		  "Document": {
 		    "ismaster": true,
 		    "topologyVersion": {"processId": ObjectID(60fbed5371fe1bae70339505), "counter": int64(0)},
@@ -114,6 +115,7 @@ var replyTestCases = []testCase{
 		  "ResponseFlags": "[AwaitCapable]",
 		  "CursorID": int64(0),
 		  "StartingFrom": 0,
+		  "NumberReturned": 1,
 		  "Document": {
 		    "ismaster": true,
 		    "topologyVersion": {"processId": ObjectID(60fbed5371fe1bae70339505), "counter": int64(0)},
