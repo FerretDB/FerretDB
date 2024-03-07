@@ -56,7 +56,7 @@ func TestCommandsAuthenticationLogout(t *testing.T) {
 	testutil.AssertEqual(t, expected, actual)
 
 	// the test user logs out again, it has no effect
-	err = db.RunCommand(ctx, bson.D{{"logout", 1}}).Err()
+	err = db.RunCommand(ctx, bson.D{{"logout", 1}}).Decode(&res)
 	require.NoError(t, err)
 
 	actual = ConvertDocument(t, res)
@@ -149,8 +149,4 @@ func TestCommandsAuthenticationLogoutAuthenticatedUser(t *testing.T) {
 			require.Fail(t, "user is still authenticated", res)
 		}
 	}
-
-	// the test user logs out again, it has no effect
-	err = db.RunCommand(ctx, bson.D{{"logout", 1}}).Err()
-	require.NoError(t, err)
 }
