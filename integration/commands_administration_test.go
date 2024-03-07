@@ -252,7 +252,6 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 	}
 
 	for name, tc := range testCases {
-		tc, name := tc, name
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
@@ -858,7 +857,7 @@ func TestGetParameterCommandAuthenticationMechanisms(t *testing.T) {
 		require.NoError(t, err)
 
 		expected := bson.D{
-			{"authenticationMechanisms", bson.A{"PLAIN"}},
+			{"authenticationMechanisms", bson.A{"SCRAM-SHA-1", "SCRAM-SHA-256", "PLAIN"}},
 			{"ok", float64(1)},
 		}
 		require.Equal(t, expected, res)
