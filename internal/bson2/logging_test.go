@@ -19,36 +19,14 @@ import (
 	"context"
 	"log/slog"
 	"math"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
-
-// unindent removes the common number of leading tabs from all lines in s.
-func unindent(t *testing.T, s string) string {
-	t.Helper()
-
-	parts := strings.Split(s, "\n")
-	require.Positive(t, len(parts))
-	if parts[0] == "" {
-		parts = parts[1:]
-	}
-
-	indent := len(parts[0]) - len(strings.TrimLeft(parts[0], "\t"))
-	require.GreaterOrEqual(t, indent, 0)
-
-	for i := range parts {
-		require.Greater(t, len(parts[i]), indent, "line: %q", parts[i])
-		parts[i] = parts[i][indent:]
-	}
-
-	return strings.Join(parts, "\n")
-}
 
 func TestLogging(t *testing.T) {
 	opts := &slog.HandlerOptions{
@@ -161,7 +139,7 @@ func TestLogging(t *testing.T) {
 			assert.Equal(t, tc.j+"\n", jbuf.String())
 			jbuf.Reset()
 
-			assert.Equal(t, unindent(t, tc.m), logMessage(tc.v))
+			assert.Equal(t, testutil.Unindent(t, tc.m), logMessage(tc.v))
 		})
 	}
 }

@@ -638,7 +638,7 @@ func TestNormal(t *testing.T) {
 					assert.NotContains(t, ls, "panicked")
 					assert.NotContains(t, ls, "called too many times")
 
-					assert.Equal(t, unindent(t, tc.m), doc.LogMessage())
+					assert.Equal(t, testutil.Unindent(t, tc.m), doc.LogMessage())
 
 					tdoc, err := doc.Convert()
 					require.NoError(t, err)
