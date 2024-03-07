@@ -29,6 +29,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
+// unindent removes the common number of leading tabs from all lines in s.
 func unindent(t *testing.T, s string) string {
 	t.Helper()
 
@@ -49,7 +50,7 @@ func unindent(t *testing.T, s string) string {
 	return strings.Join(parts, "\n")
 }
 
-func TestLogValue(t *testing.T) {
+func TestLogging(t *testing.T) {
 	opts := &slog.HandlerOptions{
 		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
 			if groups != nil {

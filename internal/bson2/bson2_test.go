@@ -280,10 +280,7 @@ var normalTestCases = []normalTestCase{
 		  "double": [42.13, 0.0],
 		  "int32": [42, 0],
 		  "int64": [int64(42), int64(0)],
-		  "objectID": [
-		    ObjectID(420000000000000000000000),
-		    ObjectID(000000000000000000000000),
-		  ],
+		  "objectID": [ObjectID(420000000000000000000000), ObjectID(000000000000000000000000)],
 		  "string": ["foo", ""],
 		  "timestamp": [Timestamp(42), Timestamp(0)],
 		}`,
