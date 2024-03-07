@@ -45,12 +45,13 @@ func checkFiles(files []string, logf, fatalf func(string, ...any)) {
 	var failed bool
 
 	for _, file := range files {
-		b, err := os.ReadFile(file)
+		fileInBytes, err := os.ReadFile(file)
 		if err != nil {
 			fatalf("Couldn't read file %s: %s", file, err)
 		}
 
-		if b, err = extractFrontMatter(b); err != nil {
+		b, err := extractFrontMatter(fileInBytes)
+		if err != nil {
 			fatalf("Couldn't extract front matter from %s: %s", file, err)
 		}
 
@@ -70,7 +71,7 @@ func checkFiles(files []string, logf, fatalf func(string, ...any)) {
 		}
 
 		// Check for the truncate string
-		if err = verifyTruncateString(b); err != nil {
+		if err = verifyTruncateString(fileInBytes); err != nil {
 			logf("%q: %s", file, err)
 			failed = true
 		}
