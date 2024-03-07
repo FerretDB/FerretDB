@@ -20,6 +20,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel"
@@ -95,7 +96,7 @@ func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath string, tlsAndAut
 
 // setupListener starts in-process FerretDB server that runs until ctx is canceled.
 // It returns basic MongoDB URI for that listener.
-func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string {
+func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *SetupOpts) string {
 	tb.Helper()
 
 	_, span := otel.Tracer("").Start(ctx, "setupListener")
@@ -165,6 +166,18 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 		mysqlURL = testutil.TestMySQLURI(tb, ctx, mysqlURL)
 	}
 
+	cappedCleanupInterval := time.Duration(0)
+	cappedCleanupPercentage := uint8(10)
+
+	if opts != nil {
+		cappedCleanupPercentage := opts.CappedCleanupPercentage
+		if cappedCleanupPercentage == 0 {
+			cappedCleanupPercentage = 10
+		}
+
+		cappedCleanupInterval = opts.CappedCleanupInterval
+	}
+
 	sp, err := state.NewProvider("")
 	require.NoError(tb, err)
 
@@ -180,8 +193,8 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 
 		TestOpts: registry.TestOpts{
 			DisablePushdown:         *disablePushdownF,
-			CappedCleanupPercentage: 20,
-			CappedCleanupInterval:   0,
+			CappedCleanupPercentage: cappedCleanupPercentage,
+			CappedCleanupInterval:   cappedCleanupInterval,
 			EnableNewAuth:           true,
 		},
 	}

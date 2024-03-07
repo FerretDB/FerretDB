@@ -23,6 +23,7 @@ import (
 	"runtime/trace"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -86,6 +87,12 @@ type SetupOpts struct {
 	// Benchmark data provider. If empty, collection is not created.
 	BenchmarkProvider shareddata.BenchmarkProvider
 
+	// Capped collections cleanup interval.
+	CappedCleanupInterval time.Duration
+
+	// Percentage of documents to cleanup for capped collections.
+	CappedCleanupPercentage uint8
+
 	// ExtraOptions sets the options in MongoDB URI, when the option exists it overwrites that option.
 	ExtraOptions url.Values
 }
@@ -136,7 +143,7 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 
 	uri := *targetURLF
 	if uri == "" {
-		uri = setupListener(tb, setupCtx, logger)
+		uri = setupListener(tb, setupCtx, logger, opts)
 	}
 
 	if opts.ExtraOptions != nil {
