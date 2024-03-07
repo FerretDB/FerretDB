@@ -160,7 +160,7 @@ func TestLogValue(t *testing.T) {
 			assert.Equal(t, tc.j+"\n", jbuf.String())
 			jbuf.Reset()
 
-			assert.Equal(t, unindent(t, tc.m), slogMessage(tc.v))
+			assert.Equal(t, unindent(t, tc.m), logMessage(tc.v))
 		})
 	}
 }

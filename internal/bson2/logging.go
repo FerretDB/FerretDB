@@ -25,11 +25,15 @@ import (
 	"time"
 )
 
-const flowLimit = 60
+// flowLimit is the maximum length of a flow/inline/compact representation of a BSON value.
+// It may be set to 0 to disable flow representation.
+const flowLimit = 80
 
-var nanBits = math.Float64bits(math.NaN())
+// nanBits is the most common pattern of a NaN float64 value, the same as math.Float64bits(math.NaN()).
+const nanBits = 0b111111111111000000000000000000000000000000000000000000000000001
 
 // slogValue returns a compact representation of any BSON value as [slog.Value].
+// It may change over time.
 //
 // The result is optimized for small values such as function parameters.
 // Some information is lost;
@@ -120,14 +124,22 @@ func slogValue(v any) slog.Value {
 	}
 }
 
-func slogMessage(v any) string {
-	return slogMessageIndent(v, "")
+// logMessage returns an indented representation of any BSON value as a string,
+// somewhat similar (but not identical) to JSON or Go syntax.
+// It may change over time.
+//
+// The result is optimized for large values such as full request documents.
+// All information is preserved.
+func logMessage(v any) string {
+	return logMessageIndent(v, "")
 }
 
-func slogMessageIndent(v any, indent string) string {
+// logMessageIndent is a variant of [slogMessage] with an indentation for recursive calls.
+func logMessageIndent(v any, indent string) string {
 	switch v := v.(type) {
 	case *Document:
-		if len(v.fields) == 0 {
+		l := len(v.fields)
+		if l == 0 {
 			return "{}"
 		}
 
@@ -136,8 +148,8 @@ func slogMessageIndent(v any, indent string) string {
 
 			for i, f := range v.fields {
 				res += strconv.Quote(f.name) + `: `
-				res += slogMessageIndent(f.value, "")
-				if i != len(v.fields)-1 {
+				res += logMessageIndent(f.value, "")
+				if i != l-1 {
 					res += ", "
 				}
 			}
@@ -154,7 +166,7 @@ func slogMessageIndent(v any, indent string) string {
 		for _, f := range v.fields {
 			res += indent + "  "
 			res += strconv.Quote(f.name) + `: `
-			res += slogMessageIndent(f.value, indent+"  ") + ",\n"
+			res += logMessageIndent(f.value, indent+"  ") + ",\n"
 		}
 
 		res += indent + `}`
@@ -165,7 +177,8 @@ func slogMessageIndent(v any, indent string) string {
 		return "RawDocument<" + strconv.FormatInt(int64(len(v)), 10) + ">"
 
 	case *Array:
-		if len(v.elements) == 0 {
+		l := len(v.elements)
+		if l == 0 {
 			return "[]"
 		}
 
@@ -173,8 +186,8 @@ func slogMessageIndent(v any, indent string) string {
 			res := "["
 
 			for i, e := range v.elements {
-				res += slogMessageIndent(e, "")
-				if i != len(v.elements)-1 {
+				res += logMessageIndent(e, "")
+				if i != l-1 {
 					res += ", "
 				}
 			}
@@ -190,7 +203,7 @@ func slogMessageIndent(v any, indent string) string {
 
 		for _, e := range v.elements {
 			res += indent + "  "
-			res += slogMessageIndent(e, indent+"  ") + ",\n"
+			res += logMessageIndent(e, indent+"  ") + ",\n"
 		}
 
 		res += indent + `]`

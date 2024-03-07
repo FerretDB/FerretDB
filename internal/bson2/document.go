@@ -178,8 +178,11 @@ func (doc *Document) LogValue() slog.Value {
 	return slogValue(doc)
 }
 
+// LogMessage returns an indented representation as a string,
+// somewhat similar (but not identical) to JSON or Go syntax.
+// It may change over time.
 func (doc *Document) LogMessage() string {
-	return slogMessage(doc)
+	return logMessage(doc)
 }
 
 // check interfaces

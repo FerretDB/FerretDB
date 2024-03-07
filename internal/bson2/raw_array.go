@@ -95,8 +95,10 @@ func (doc RawArray) LogValue() slog.Value {
 	return slogValue(doc)
 }
 
+// LogMessage returns a representation as a string.
+// It may change over time.
 func (doc RawArray) LogMessage() string {
-	return slogMessage(doc)
+	return logMessage(doc)
 }
 
 // check interfaces

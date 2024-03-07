@@ -144,8 +144,11 @@ func (arr *Array) LogValue() slog.Value {
 	return slogValue(arr)
 }
 
+// LogMessage returns an indented representation as a string,
+// somewhat similar (but not identical) to JSON or Go syntax.
+// It may change over time.
 func (arr *Array) LogMessage() string {
-	return slogMessage(arr)
+	return logMessage(arr)
 }
 
 // check interfaces

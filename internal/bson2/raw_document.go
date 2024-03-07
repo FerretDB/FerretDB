@@ -166,8 +166,10 @@ func (doc RawDocument) LogValue() slog.Value {
 	return slogValue(doc)
 }
 
+// LogMessage returns a representation as a string.
+// It may change over time.
 func (doc RawDocument) LogMessage() string {
-	return slogMessage(doc)
+	return logMessage(doc)
 }
 
 // check interfaces
