@@ -166,17 +166,17 @@ func (query *OpQuery) String() string {
 
 	doc, err := query.query.DecodeDeep()
 	if err == nil {
-		m.Add("Query", doc)
+		must.NoError(m.Add("Query", doc))
 	} else {
-		m.Add("QueryError", err.Error())
+		must.NoError(m.Add("QueryError", err.Error()))
 	}
 
 	if query.returnFieldsSelector != nil {
 		doc, err = query.returnFieldsSelector.DecodeDeep()
 		if err == nil {
-			m.Add("ReturnFieldsSelector", doc)
+			must.NoError(m.Add("ReturnFieldsSelector", doc))
 		} else {
-			m.Add("ReturnFieldsSelectorError", err.Error())
+			must.NoError(m.Add("ReturnFieldsSelectorError", err.Error()))
 		}
 	}
 

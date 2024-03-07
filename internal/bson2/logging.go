@@ -149,6 +149,7 @@ func logMessageIndent(v any, indent string) string {
 			for i, f := range v.fields {
 				res += strconv.Quote(f.name) + `: `
 				res += logMessageIndent(f.value, "")
+
 				if i != l-1 {
 					res += ", "
 				}
@@ -187,6 +188,7 @@ func logMessageIndent(v any, indent string) string {
 
 			for i, e := range v.elements {
 				res += logMessageIndent(e, "")
+
 				if i != l-1 {
 					res += ", "
 				}

@@ -24,6 +24,9 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
+// msgTestCases represents test cases for OP_MSG decoding/encoding.
+//
+//nolint:lll // for readability
 var msgTestCases = []testCase{
 	{
 		name:    "handshake5",

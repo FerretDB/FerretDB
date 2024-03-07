@@ -79,6 +79,7 @@ func Unindent(tb testtb.TB, s string) string {
 
 	parts := strings.Split(s, "\n")
 	require.Positive(tb, len(parts))
+
 	if parts[0] == "" {
 		parts = parts[1:]
 	}

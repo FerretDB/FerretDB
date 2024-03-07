@@ -437,34 +437,34 @@ func (msg *OpMsg) String() string {
 		case 0:
 			doc, err := section.documents[0].DecodeDeep()
 			if err == nil {
-				s.Add("Document", doc)
+				must.NoError(s.Add("Document", doc))
 			} else {
-				s.Add("DocumentError", err.Error())
+				must.NoError(s.Add("DocumentError", err.Error()))
 			}
 
 		case 1:
-			s.Add("Identifier", section.Identifier)
+			must.NoError(s.Add("Identifier", section.Identifier))
 			docs := bson2.MakeArray(len(section.documents))
 
 			for _, d := range section.documents {
 				doc, err := d.DecodeDeep()
 				if err == nil {
-					docs.Add(doc)
+					must.NoError(docs.Add(doc))
 				} else {
-					docs.Add(must.NotFail(bson2.NewDocument("error", err.Error())))
+					must.NoError(docs.Add(must.NotFail(bson2.NewDocument("error", err.Error()))))
 				}
 			}
 
-			s.Add("Documents", docs)
+			must.NoError(s.Add("Documents", docs))
 
 		default:
 			panic(fmt.Sprintf("unknown kind %d", section.Kind))
 		}
 
-		sections.Add(s)
+		must.NoError(sections.Add(s))
 	}
 
-	m.Add("Sections", sections)
+	must.NoError(m.Add("Sections", sections))
 
 	return m.LogMessage()
 }

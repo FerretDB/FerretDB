@@ -135,15 +135,15 @@ func (reply *OpReply) String() string {
 	))
 
 	if reply.document == nil {
-		m.Add("NumberReturned", 0)
+		must.NoError(m.Add("NumberReturned", 0))
 	} else {
-		m.Add("NumberReturned", 1)
+		must.NoError(m.Add("NumberReturned", 1))
 
 		doc, err := reply.document.DecodeDeep()
 		if err == nil {
-			m.Add("Document", doc)
+			must.NoError(m.Add("Document", doc))
 		} else {
-			m.Add("DocumentError", err.Error())
+			must.NoError(m.Add("DocumentError", err.Error()))
 		}
 	}
 
