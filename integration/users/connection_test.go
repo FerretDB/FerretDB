@@ -266,11 +266,10 @@ func TestAuthenticationEnableNewAuthNoUserExists(t *testing.T) {
 		pingErr   string
 		insertErr string
 	}{
-		"PLAINNonExistingUser": {
+		"LocalhostException": {
 			username:  "plain-user",
 			password:  "whatever",
 			mechanism: "PLAIN",
-			insertErr: `role "plain-user" does not exist`,
 		},
 		"PLAINBackendUser": {
 			username:  "username",

@@ -17,6 +17,8 @@ package handler
 import (
 	"context"
 	"errors"
+	"net"
+	"net/netip"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
@@ -32,17 +34,14 @@ import (
 // If EnableNewAuth is false or bypass backend auth is set false, it succeeds
 // authentication and let backend handle it.
 //
-// When admin.systems.user contains no user, the authentication is delegated to
-// the backend.
-// TODO https://github.com/FerretDB/FerretDB/issues/4100
+// When admin.systems.user contains no user, and the client is connected from
+// the localhost, it bypasses credentials check.
 func (h *Handler) authenticate(ctx context.Context) error {
 	if !h.EnableNewAuth {
 		return nil
 	}
 
-	if !conninfo.Get(ctx).BypassBackendAuth() {
-		return nil
-	}
+	conninfo.Get(ctx).BypassBackendAuth()
 
 	adminDB, err := h.b.Database("admin")
 	if err != nil {
@@ -101,14 +100,15 @@ func (h *Handler) authenticate(ctx context.Context) error {
 	}
 
 	if !hasUser {
-		// There is no user in the database, let the backend check the authentication.
-		// We do not want unauthenticated users accessing the database, while allowing
-		// users with valid backend credentials to access the database.
-		// TODO https://github.com/FerretDB/FerretDB/issues/4100
-		conninfo.Get(ctx).UnsetBypassBackendAuth()
-		h.L.Error("backend is used for authentication - no user in admin.system.users collection")
+		host, _, err := net.SplitHostPort(conninfo.Get(ctx).PeerAddr)
+		if err != nil {
+			return lazyerrors.Error(err)
+		}
 
-		return nil
+		if netip.MustParseAddr(host).IsLoopback() {
+			// bypass credentials check when no user is found and the client is connected from the localhost
+			return nil
+		}
 	}
 
 	if storedUser == nil {

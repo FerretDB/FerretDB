@@ -54,8 +54,6 @@ func IsMasterDocument(tcpHost, name string) *types.Document {
 		"ok", float64(1),
 	))
 
-	// use tcpHost to check for loopback
-
 	if name != "" {
 		// That does not work for TLS-only setups, IPv6 addresses, etc.
 		// The proper solution is to support `replSetInitiate` command.
