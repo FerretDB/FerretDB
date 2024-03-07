@@ -728,7 +728,6 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 			limitPushdown: noPushdown,
 		},
 	} {
-		tc, name := tc, name
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 

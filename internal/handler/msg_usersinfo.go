@@ -45,7 +45,7 @@ func (h *Handler) MsgUsersInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3777
+	// TODO https://github.com/FerretDB/FerretDB/issues/4141
 	if err = common.UnimplementedNonDefault(document, "filter", func(v any) bool {
 		if v == nil || v == types.Null {
 			return true
@@ -59,7 +59,7 @@ func (h *Handler) MsgUsersInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	common.Ignored(
 		document, h.L,
-		"showCredentials", "showCustomData", "showPrivileges",
+		"showCustomData", "showPrivileges",
 		"showAuthenticationRestrictions", "comment", "filter",
 	)
 

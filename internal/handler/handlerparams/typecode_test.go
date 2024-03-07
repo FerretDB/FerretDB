@@ -51,7 +51,6 @@ func TestHasSameTypeElements(t *testing.T) {
 			same:  true,
 		},
 	} {
-		tc, name := tc, name
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
