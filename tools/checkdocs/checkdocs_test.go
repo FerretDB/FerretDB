@@ -64,7 +64,6 @@ func TestVerifyTags(t *testing.T) {
 }
 
 func TestVerifyTruncateString(t *testing.T) {
-	// Test case where truncate string is not present
 	err := verifyTruncateString(fm)
 	assert.EqualError(t, err, "<!--truncate--> must be included to have \"Read more\" link on the homepage")
 }
