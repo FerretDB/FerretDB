@@ -17,9 +17,6 @@ package handler
 import (
 	"context"
 	"errors"
-	"net"
-	"net/netip"
-
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
@@ -99,18 +96,8 @@ func (h *Handler) authenticate(ctx context.Context) error {
 		}
 	}
 
-	if !hasUser {
-		var host string
-
-		host, _, err = net.SplitHostPort(conninfo.Get(ctx).PeerAddr)
-		if err != nil {
-			return lazyerrors.Error(err)
-		}
-
-		if netip.MustParseAddr(host).IsLoopback() {
-			// bypass credentials check when no user is found and the client is connected from the localhost
-			return nil
-		}
+	if !hasUser && conninfo.Get(ctx).LocalPeer() {
+		return nil
 	}
 
 	if storedUser == nil {
