@@ -267,7 +267,7 @@ tasks:
         ./...
         -target-backend=ferretdb-mysql
         -target-tls
-        -mysql-url='mysql://root:password@127.0.0.1:3306/ferretdb'
+        -mysql-url='mysql://username:password@127.0.0.1:3306/ferretdb'
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem&replicaSet=rs0'
         -disable-pushdown={{.DISABLE_PUSHDOWN}}
 

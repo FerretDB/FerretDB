@@ -73,6 +73,8 @@ func TestMySQLURI(tb testtb.TB, ctx context.Context, baseURI string) string {
 	u.Path = name
 	res := u.String()
 
+	tb.Logf("directory name is %s", name)
+
 	db, err := sql.Open("mysql", mysqlURL)
 	require.NoError(tb, err)
 
@@ -94,6 +96,26 @@ func TestMySQLURI(tb testtb.TB, ctx context.Context, baseURI string) string {
 			tb.Logf("Keeping database %s (%s) for debugging.", name, res)
 			return
 		}
+
+		// we should also cleanup lingering databases
+		//q = fmt.Sprintf(`
+		//			SELECT DISTINCT table_schema
+		//			FROM information_schema.columns
+		//			WHERE table_name = '_ferretdb_database_metadata'
+		//`)
+		//rows, err := db.QueryContext(ctx, q)
+		//require.NoError(tb, err)
+		//
+		//for rows.Next() {
+		//	var dbName string
+		//	err = rows.Scan(&dbName)
+		//	require.NoError(tb, err)
+		//
+		//	// drop the database
+		//	q = fmt.Sprintf("DROP DATABASE IF EXISTS %s", dbName)
+		//	_, err = db.ExecContext(ctx, q)
+		//	require.NoError(tb, err)
+		//}
 
 		q := fmt.Sprintf("DROP DATABASE %s", name)
 		_, err = db.ExecContext(ctx, q)

@@ -54,10 +54,6 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 
 			db, err := b.Database(dbName)
 			require.NoError(t, err)
-			t.Cleanup(func() {
-				err := b.DropDatabase(ctx, &backends.DropDatabaseParams{Name: dbName})
-				require.NoError(t, err)
-			})
 
 			coll, err := db.Collection(collName)
 			require.NoError(t, err)
@@ -265,10 +261,6 @@ func TestCappedCollectionInsertAllDeleteAll(t *testing.T) {
 
 			db, err := b.Database(dbName)
 			require.NoError(t, err)
-			t.Cleanup(func() {
-				err := b.DropDatabase(ctx, &backends.DropDatabaseParams{Name: dbName})
-				require.NoError(t, err)
-			})
 
 			err = db.CreateCollection(ctx, &backends.CreateCollectionParams{
 				Name:       collName,
@@ -367,10 +359,6 @@ func TestCollectionUpdateAll(t *testing.T) {
 
 				db, err := b.Database(dbName)
 				require.NoError(t, err)
-				t.Cleanup(func() {
-					err := b.DropDatabase(ctx, &backends.DropDatabaseParams{Name: dbName})
-					require.NoError(t, err)
-				})
 
 				// to create database
 				err = db.CreateCollection(ctx, &backends.CreateCollectionParams{
@@ -401,7 +389,7 @@ func TestCollectionUpdateAll(t *testing.T) {
 
 				collRes, err := db.ListCollections(ctx, nil)
 				require.NoError(t, err)
-				require.NotNil(t, dbRes)
+				require.NotNil(t, collRes)
 
 				present = slices.ContainsFunc(collRes.Collections, func(ci backends.CollectionInfo) bool {
 					return ci.Name == collName
@@ -450,10 +438,6 @@ func TestCollectionStats(t *testing.T) {
 
 				db, err := b.Database(dbName)
 				require.NoError(t, err)
-				t.Cleanup(func() {
-					err := b.DropDatabase(ctx, &backends.DropDatabaseParams{Name: dbName})
-					require.NoError(t, err)
-				})
 
 				// to create database
 				err = db.CreateCollection(ctx, &backends.CreateCollectionParams{
@@ -473,10 +457,6 @@ func TestCollectionStats(t *testing.T) {
 
 				db, err := b.Database(dbName)
 				require.NoError(t, err)
-				t.Cleanup(func() {
-					err := b.DropDatabase(ctx, &backends.DropDatabaseParams{Name: dbName})
-					require.NoError(t, err)
-				})
 
 				var c backends.Collection
 				cNames := []string{"collectionOne", "collectionTwo"}
@@ -545,10 +525,6 @@ func TestCollectionCompact(t *testing.T) {
 
 				db, err := b.Database(dbName)
 				require.NoError(t, err)
-				t.Cleanup(func() {
-					err := b.DropDatabase(ctx, &backends.DropDatabaseParams{Name: dbName})
-					require.NoError(t, err)
-				})
 
 				// to create database
 				err = db.CreateCollection(ctx, &backends.CreateCollectionParams{
@@ -631,11 +607,6 @@ func TestListCollections(t *testing.T) {
 				require.Equal(t, collectionNames[1], collRes.Collections[0].Name, "expected name testCollection1")
 				require.Equal(t, collectionNames[0], collRes.Collections[1].Name, "expected name testCollection2")
 				require.Equal(t, collectionNames[2], collRes.Collections[2].Name, "expected name testCollection3")
-			})
-
-			t.Cleanup(func() {
-				err := b.DropDatabase(ctx, &backends.DropDatabaseParams{Name: dbName})
-				require.NoError(t, err)
 			})
 		})
 	}
