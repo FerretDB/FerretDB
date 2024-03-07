@@ -70,7 +70,6 @@ func checkFiles(files []string, logf, fatalf func(string, ...any)) {
 			failed = true
 		}
 
-		// Check for the truncate string
 		if err = verifyTruncateString(fileInBytes); err != nil {
 			logf("%q: %s", file, err)
 			failed = true
