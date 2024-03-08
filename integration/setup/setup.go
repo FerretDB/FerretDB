@@ -88,6 +88,9 @@ type SetupOpts struct {
 
 	// ExtraOptions sets the options in MongoDB URI, when the option exists it overwrites that option.
 	ExtraOptions url.Values
+
+	// SetupUser true creates a user in admin database and connects as an authenticated client.
+	SetupUser bool
 }
 
 // SetupResult represents setup results.
@@ -161,9 +164,11 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
 
-	collection := setupCollection(tb, setupCtx, client, opts)
+	if opts.SetupUser {
+		client = setupUser(tb, ctx, client, uri)
+	}
 
-	setupUser(tb, setupCtx, client)
+	collection := setupCollection(tb, setupCtx, client, opts)
 
 	level.SetLevel(*logLevelF)
 
@@ -325,26 +330,40 @@ func insertBenchmarkProvider(tb testtb.TB, ctx context.Context, collection *mong
 	return
 }
 
-// setupUser creates a user in admin database with supported mechanisms.
-// The user uses username/password credential which is the same as the database
-// credentials. This is done to avoid the need to reconnect as different credential.
+// setupUser creates a user in admin database with SCRAM-SHA-256 and SCRAM-SHA-1 mechanisms.
+// It registers dropUser cleanup function and returns a client connected as newly created user.
 //
-// Without this, once the first user is created, the authentication fails
-// as username/password does not exist in admin.system.users collection.
-func setupUser(tb testtb.TB, ctx context.Context, client *mongo.Client) {
+// Without this, once the first user is created, the authentication fails as local exception no longer applies.
+func setupUser(tb testtb.TB, ctx context.Context, client *mongo.Client, uri string) *mongo.Client {
 	tb.Helper()
 
-	if IsMongoDB(tb) {
-		return
-	}
+	username, password, db := "username", "password", "admin"
 
-	username, password := "username", "password"
-
-	err := client.Database("admin").RunCommand(ctx, bson.D{
+	err := client.Database(db).RunCommand(ctx, bson.D{
 		{"createUser", username},
 		{"roles", bson.A{}},
 		{"pwd", password},
-		{"mechanisms", bson.A{"PLAIN", "SCRAM-SHA-1", "SCRAM-SHA-256"}},
+		{"mechanisms", bson.A{"SCRAM-SHA-1", "SCRAM-SHA-256"}},
 	}).Err()
-	require.NoErrorf(tb, err, "cannot create user")
+	require.NoError(tb, err)
+
+	credential := options.Credential{
+		AuthMechanism: "SCRAM-SHA-256",
+		AuthSource:    db,
+		Username:      username,
+		Password:      password,
+	}
+
+	opts := options.Client().ApplyURI(uri).SetAuth(credential)
+	client, err = mongo.Connect(ctx, opts)
+	require.NoError(tb, err, "cannot connect to MongoDB")
+
+	tb.Cleanup(func() {
+		err := client.Database("admin").RunCommand(ctx, bson.D{
+			{"dropUser", username},
+		}).Err()
+		require.NoError(tb, err, "cannot drop user")
+	})
+
+	return client
 }
