@@ -40,6 +40,10 @@ func TestGet(t *testing.T) {
 			peer:  netip.MustParseAddrPort("192.168.0.1:1234"),
 			local: false,
 		},
+		"LocalIPv6": {
+			peer:  netip.MustParseAddrPort("[::1]:1234"),
+			local: true,
+		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			ctx := context.Background()
