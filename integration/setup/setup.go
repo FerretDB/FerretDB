@@ -336,17 +336,13 @@ func insertBenchmarkProvider(tb testtb.TB, ctx context.Context, collection *mong
 func setupUser(tb testtb.TB, ctx context.Context, client *mongo.Client) {
 	tb.Helper()
 
-	if IsMongoDB(tb) {
-		return
-	}
-
 	username, password := "username", "password"
 
 	err := client.Database("admin").RunCommand(ctx, bson.D{
 		{"createUser", username},
 		{"roles", bson.A{}},
 		{"pwd", password},
-		{"mechanisms", bson.A{"PLAIN", "SCRAM-SHA-1", "SCRAM-SHA-256"}},
+		{"mechanisms", bson.A{"SCRAM-SHA-1", "SCRAM-SHA-256"}},
 	}).Err()
 	require.NoErrorf(tb, err, "cannot create user")
 }
