@@ -337,9 +337,13 @@ func insertBenchmarkProvider(tb testtb.TB, ctx context.Context, collection *mong
 func setupUser(tb testtb.TB, ctx context.Context, client *mongo.Client, uri string) *mongo.Client {
 	tb.Helper()
 
-	username, password, db := "username", "password", "admin"
+	if IsMongoDB(tb) {
+		return client
+	}
 
-	err := client.Database(db).RunCommand(ctx, bson.D{
+	username, password, dbName := "username", "password", "admin"
+
+	err := client.Database(dbName).RunCommand(ctx, bson.D{
 		{"createUser", username},
 		{"roles", bson.A{}},
 		{"pwd", password},
@@ -349,7 +353,7 @@ func setupUser(tb testtb.TB, ctx context.Context, client *mongo.Client, uri stri
 
 	credential := options.Credential{
 		AuthMechanism: "SCRAM-SHA-256",
-		AuthSource:    db,
+		AuthSource:    dbName,
 		Username:      username,
 		Password:      password,
 	}
@@ -357,13 +361,6 @@ func setupUser(tb testtb.TB, ctx context.Context, client *mongo.Client, uri stri
 	opts := options.Client().ApplyURI(uri).SetAuth(credential)
 	client, err = mongo.Connect(ctx, opts)
 	require.NoError(tb, err, "cannot connect to MongoDB")
-
-	tb.Cleanup(func() {
-		err := client.Database("admin").RunCommand(ctx, bson.D{
-			{"dropUser", username},
-		}).Err()
-		require.NoError(tb, err, "cannot drop user")
-	})
 
 	return client
 }
