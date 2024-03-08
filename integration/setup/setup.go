@@ -89,7 +89,7 @@ type SetupOpts struct {
 	// ExtraOptions sets the options in MongoDB URI, when the option exists it overwrites that option.
 	ExtraOptions url.Values
 
-	// SetupUser true creates a user in admin database and connects as an authenticated client.
+	// SetupUser true creates a user.
 	SetupUser bool
 }
 
@@ -164,11 +164,11 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
 
-	if opts.SetupUser {
-		client = setupUser(tb, ctx, client, uri)
-	}
-
 	collection := setupCollection(tb, setupCtx, client, opts)
+
+	if opts.SetupUser {
+		setupUser(tb, ctx, client)
+	}
 
 	level.SetLevel(*logLevelF)
 
@@ -330,37 +330,23 @@ func insertBenchmarkProvider(tb testtb.TB, ctx context.Context, collection *mong
 	return
 }
 
-// setupUser creates a user in admin database with SCRAM-SHA-256 and SCRAM-SHA-1 mechanisms.
-// It registers dropUser cleanup function and returns a client connected as newly created user.
+// setupUser creates a user in admin database with supported mechanisms.
 //
 // Without this, once the first user is created, the authentication fails as local exception no longer applies.
-func setupUser(tb testtb.TB, ctx context.Context, client *mongo.Client, uri string) *mongo.Client {
+func setupUser(tb testtb.TB, ctx context.Context, client *mongo.Client) {
 	tb.Helper()
 
 	if IsMongoDB(tb) {
-		return client
+		return
 	}
 
-	username, password, dbName := "username", "password", "admin"
+	username, password := "username", "password"
 
-	err := client.Database(dbName).RunCommand(ctx, bson.D{
+	err := client.Database("admin").RunCommand(ctx, bson.D{
 		{"createUser", username},
 		{"roles", bson.A{}},
 		{"pwd", password},
-		{"mechanisms", bson.A{"SCRAM-SHA-1", "SCRAM-SHA-256"}},
+		{"mechanisms", bson.A{"PLAIN", "SCRAM-SHA-1", "SCRAM-SHA-256"}},
 	}).Err()
-	require.NoError(tb, err)
-
-	credential := options.Credential{
-		AuthMechanism: "SCRAM-SHA-256",
-		AuthSource:    dbName,
-		Username:      username,
-		Password:      password,
-	}
-
-	opts := options.Client().ApplyURI(uri).SetAuth(credential)
-	client, err = mongo.Connect(ctx, opts)
-	require.NoError(tb, err, "cannot connect to MongoDB")
-
-	return client
+	require.NoErrorf(tb, err, "cannot create user")
 }
