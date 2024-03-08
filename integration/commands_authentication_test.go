@@ -69,7 +69,7 @@ func TestCommandsAuthenticationLogout(t *testing.T) {
 func TestCommandsAuthenticationLogoutAuthenticatedUser(t *testing.T) {
 	t.Parallel()
 
-	s := setup.SetupWithOpts(t, nil)
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{SetupUser: true})
 	ctx, db := s.Ctx, s.Collection.Database()
 	username, password, mechanism := "testuser", "testpass", "SCRAM-SHA-256"
 
