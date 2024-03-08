@@ -167,7 +167,7 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 	collection := setupCollection(tb, setupCtx, client, opts)
 
 	if opts.SetupUser {
-		setupUser(tb, ctx, client)
+		setupUser(tb, ctx, client, uri)
 	}
 
 	level.SetLevel(*logLevelF)
@@ -333,7 +333,7 @@ func insertBenchmarkProvider(tb testtb.TB, ctx context.Context, collection *mong
 // setupUser creates a user in admin database with supported mechanisms.
 //
 // Without this, once the first user is created, the authentication fails as local exception no longer applies.
-func setupUser(tb testtb.TB, ctx context.Context, client *mongo.Client) {
+func setupUser(tb testtb.TB, ctx context.Context, client *mongo.Client, uri string) {
 	tb.Helper()
 
 	username, password := "username", "password"
@@ -345,4 +345,22 @@ func setupUser(tb testtb.TB, ctx context.Context, client *mongo.Client) {
 		{"mechanisms", bson.A{"SCRAM-SHA-1", "SCRAM-SHA-256"}},
 	}).Err()
 	require.NoErrorf(tb, err, "cannot create user")
+
+	credential := options.Credential{
+		AuthMechanism: "SCRAM-SHA-256",
+		AuthSource:    "admin",
+		Username:      username,
+		Password:      password,
+	}
+
+	opts := options.Client().ApplyURI(uri).SetAuth(credential)
+	clientAuthenticated, err := mongo.Connect(ctx, opts)
+	require.NoError(tb, err, "cannot connect to MongoDB")
+
+	tb.Cleanup(func() {
+		err = clientAuthenticated.Database("admin").RunCommand(ctx, bson.D{
+			{"dropUser", username},
+		}).Err()
+		require.NoError(tb, err, "cannot drop user")
+	})
 }
