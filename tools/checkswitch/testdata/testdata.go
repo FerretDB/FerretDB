@@ -57,3 +57,40 @@ func testIncorrectMultiple(v any) {
 	case float64, int64, int32:
 	}
 }
+
+func testCorrectOrderSwitch() {
+	tag := "tag1"
+	switch tag {
+	case "tag1":
+	case "tag2":
+	}
+}
+
+func testSkipFirstOrderSwitch() {
+    tag := "tag1"
+    switch tag {
+    case "tag2":
+    case "tag1":
+    }
+}
+
+func testMultipleCasesSwitch() {
+	tag := "tag1"
+	switch tag {
+	case "tag2", "tag3":
+	case "tag1":
+	}
+}
+
+func testNoCasesSwitch() {
+	tag := "tag1"
+	switch tag {
+	}
+}
+
+func testOneCaseSwitch() {
+	tag := "tag1"
+	switch tag {
+	case "tag1":
+	}
+}
