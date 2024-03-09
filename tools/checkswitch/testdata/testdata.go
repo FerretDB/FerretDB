@@ -67,11 +67,11 @@ func testCorrectOrderSwitch() {
 }
 
 func testSkipFirstOrderSwitch() {
-    tag := "tag1"
-    switch tag {
-    case "tag2":
-    case "tag1":
-    }
+	tag := "tag1"
+	switch tag {
+	case "tag2":
+	case "tag1":
+	}
 }
 
 func testMultipleCasesSwitch() {
