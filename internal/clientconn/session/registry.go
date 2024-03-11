@@ -28,7 +28,7 @@ const timeout = 30 * time.Minute
 // Registry stores sessions.
 type Registry struct {
 	rw sync.RWMutex
-	m  map[string]map[string]*Session // username -> sessionID -> session
+	m  map[string]map[string]*Session // user -> sessionID -> session
 
 	l *zap.Logger
 }
@@ -88,7 +88,7 @@ func (r *Registry) GetSession(username, sessionID string) *Session {
 
 // RefreshSession updates the last used time for the session.
 // If the session does not exist, it does nothing.
-func (r *Registry) RefreshSession(username, session string) {
+func (r *Registry) Refres hSession(username, session string) {
 	r.rw.Lock()
 	defer r.rw.Unlock()
 

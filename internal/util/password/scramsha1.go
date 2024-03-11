@@ -19,6 +19,8 @@ import (
 	"crypto/rand"
 	"crypto/sha1"
 	"encoding/hex"
+	"fmt"
+	"io"
 
 	"golang.org/x/crypto/pbkdf2"
 
@@ -67,4 +69,12 @@ func scramSHA1HashParams(username, password string, salt []byte, params *scramPa
 	saltedPassword := pbkdf2.Key(dst, salt, params.iterationCount, sha1.Size, sha1.New)
 
 	return scramDoc(sha1.New, saltedPassword, salt, params)
+}
+
+func UID(username, password string) string {
+	h := md5.New()
+	_, _ = io.WriteString(h, username)
+	_, _ = io.WriteString(h, ":mongo:")
+	_, _ = io.WriteString(h, password)
+	return fmt.Sprintf("%x", h.Sum(nil))
 }

@@ -15,7 +15,10 @@
 package session
 
 import (
+	"fmt"
 	"testing"
+
+	"github.com/FerretDB/FerretDB/internal/util/password"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -26,6 +29,9 @@ import (
 
 func TestCleanExpired(t *testing.T) {
 	t.Parallel()
+
+	hash := password.UID("user1", "password")
+	fmt.Println(hash)
 
 	l := testutil.Logger(t)
 	r := NewRegistry(l)
