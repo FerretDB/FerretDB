@@ -353,6 +353,14 @@ func TestAuthenticationEnableNewAuthPLAIN(t *testing.T) {
 	}).Err()
 	require.NoError(t, err, "cannot create user")
 
+	err = db.RunCommand(ctx, bson.D{
+		{"createUser", "scram-user"},
+		{"roles", bson.A{}},
+		{"pwd", "correct"},
+		{"mechanisms", bson.A{"SCRAM-SHA-1", "SCRAM-SHA-256"}},
+	}).Err()
+	require.NoError(t, err, "cannot create user")
+
 	testCases := map[string]struct {
 		username  string
 		password  string
@@ -374,6 +382,12 @@ func TestAuthenticationEnableNewAuthPLAIN(t *testing.T) {
 		"NonExistentUser": {
 			username:  "not-found-user",
 			password:  "something",
+			mechanism: "PLAIN",
+			err:       "AuthenticationFailed",
+		},
+		"NonPLAINUser": {
+			username:  "scram-user",
+			password:  "correct",
 			mechanism: "PLAIN",
 			err:       "AuthenticationFailed",
 		},

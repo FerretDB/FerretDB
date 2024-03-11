@@ -54,6 +54,13 @@ func (h *Handler) authenticate(ctx context.Context) error {
 		return lazyerrors.Error(err)
 	}
 
+	mechanism := conninfo.Get(ctx).Mechanism()
+	if mechanism == "SCRAM-SHA-256" || mechanism == "SCRAM-SHA-1" {
+		// SCRAM calls back scramCredentialLookup each time Step is called,
+		// and that checks the authentication.
+		return nil
+	}
+
 	username, userPassword := conninfo.Get(ctx).Auth()
 
 	// For `PLAIN` mechanism $db field is always `$external` upon saslStart.
@@ -121,18 +128,15 @@ func (h *Handler) authenticate(ctx context.Context) error {
 
 	credentials := must.NotFail(storedUser.Get("credentials")).(*types.Document)
 
-	switch {
-	case credentials.Has("SCRAM-SHA-256"), credentials.Has("SCRAM-SHA-1"):
-		// SCRAM calls back scramCredentialLookup each time Step is called,
-		// and that checks the authentication.
-		return nil
-	case credentials.Has("PLAIN"):
-		break
-	default:
-		panic("credentials does not contain a known mechanism")
+	v, _ := credentials.Get("PLAIN")
+	if v == nil {
+		// unsupported mechanism
+		return handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrAuthenticationFailed,
+			"Authentication failed",
+			"authenticate",
+		)
 	}
-
-	v := must.NotFail(credentials.Get("PLAIN"))
 
 	doc, ok := v.(*types.Document)
 	if !ok {
