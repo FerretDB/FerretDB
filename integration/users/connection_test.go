@@ -26,6 +26,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/x/mongo/driver/topology"
 
+	"github.com/FerretDB/FerretDB/integration"
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
@@ -366,7 +367,7 @@ func TestAuthenticationEnableNewAuthPLAIN(t *testing.T) {
 		password  string
 		mechanism string
 
-		err string
+		err *mongo.CommandError
 	}{
 		"Success": {
 			username:  "plain-user",
@@ -377,19 +378,31 @@ func TestAuthenticationEnableNewAuthPLAIN(t *testing.T) {
 			username:  "plain-user",
 			password:  "wrong",
 			mechanism: "PLAIN",
-			err:       "AuthenticationFailed",
+			err: &mongo.CommandError{
+				Code:    18,
+				Name:    "AuthenticationFailed",
+				Message: "Authentication failed",
+			},
 		},
 		"NonExistentUser": {
 			username:  "not-found-user",
 			password:  "something",
 			mechanism: "PLAIN",
-			err:       "AuthenticationFailed",
+			err: &mongo.CommandError{
+				Code:    18,
+				Name:    "AuthenticationFailed",
+				Message: "Authentication failed",
+			},
 		},
 		"NonPLAINUser": {
 			username:  "scram-user",
 			password:  "correct",
 			mechanism: "PLAIN",
-			err:       "AuthenticationFailed",
+			err: &mongo.CommandError{
+				Code:    334,
+				Name:    "ErrMechanismUnavailable",
+				Message: "Unable to use PLAIN based authentication for user without any PLAIN credentials registered",
+			},
 		},
 	}
 
@@ -417,8 +430,8 @@ func TestAuthenticationEnableNewAuthPLAIN(t *testing.T) {
 			c := client.Database(db.Name()).Collection(cName)
 			_, err = c.InsertOne(ctx, bson.D{{"ping", "pong"}})
 
-			if tc.err != "" {
-				require.ErrorContains(t, err, tc.err)
+			if tc.err != nil {
+				integration.AssertEqualCommandError(t, *tc.err, err)
 				return
 			}
 

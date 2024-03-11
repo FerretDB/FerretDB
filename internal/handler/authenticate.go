@@ -137,8 +137,8 @@ func (h *Handler) authenticate(ctx context.Context) error {
 	v, _ := credentials.Get("PLAIN")
 	if v == nil {
 		return handlererrors.NewCommandErrorMsgWithArgument(
-			handlererrors.ErrAuthenticationFailed,
-			"Authentication failed",
+			handlererrors.ErrMechanismUnavailable,
+			"Unable to use PLAIN based authentication for user without any PLAIN credentials registered",
 			"authenticate",
 		)
 	}
