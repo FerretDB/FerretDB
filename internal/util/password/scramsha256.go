@@ -27,7 +27,7 @@ import (
 )
 
 // SCRAMSHA256Hash computes SCRAM-SHA-256 credentials and returns the document that should be stored.
-func SCRAMSHA256Hash(password string) (*types.Document, error) {
+func SCRAMSHA256Hash(password Password) (*types.Document, error) {
 	salt := make([]byte, fixedScramSHA256Params.saltLen)
 	if _, err := rand.Read(salt); err != nil {
 		return nil, lazyerrors.Error(err)
@@ -51,12 +51,12 @@ var fixedScramSHA256Params = &scramParams{
 // and returns the document that should be stored.
 //
 // https://datatracker.ietf.org/doc/html/rfc5802
-func scramSHA256HashParams(password string, salt []byte, params *scramParams) (*types.Document, error) {
+func scramSHA256HashParams(password Password, salt []byte, params *scramParams) (*types.Document, error) {
 	if len(salt) != int(params.saltLen) {
 		return nil, lazyerrors.Errorf("unexpected salt length: %d", len(salt))
 	}
 
-	prepPassword, err := stringprep.SASLprep.Prepare(password)
+	prepPassword, err := stringprep.SASLprep.Prepare(password.Password())
 	if err != nil {
 		return nil, fmt.Errorf("cannot SASLprepare password '%s': %v", password, err)
 	}

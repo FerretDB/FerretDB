@@ -27,7 +27,7 @@ import (
 )
 
 // SCRAMSHA1Hash computes SCRAM-SHA-1 credentials and returns the document that should be stored.
-func SCRAMSHA1Hash(username, password string) (*types.Document, error) {
+func SCRAMSHA1Hash(username string, password Password) (*types.Document, error) {
 	salt := make([]byte, fixedScramSHA1Params.saltLen)
 	if _, err := rand.Read(salt); err != nil {
 		return nil, lazyerrors.Error(err)
@@ -50,13 +50,13 @@ var fixedScramSHA1Params = &scramParams{
 // scramSHA1HashParams hashes the password with the given salt and parameters,
 // and returns the document that should be stored using a variation of the SCRAM-SHA-1 algorithm
 // used by MongoDB.
-func scramSHA1HashParams(username, password string, salt []byte, params *scramParams) (*types.Document, error) {
+func scramSHA1HashParams(username string, password Password, salt []byte, params *scramParams) (*types.Document, error) {
 	if len(salt) != int(params.saltLen) {
 		return nil, lazyerrors.Errorf("unexpected salt length: %d", len(salt))
 	}
 
 	md5sum := md5.New()
-	if _, err := md5sum.Write([]byte(username + ":mongo:" + password)); err != nil {
+	if _, err := md5sum.Write([]byte(username + ":mongo:" + password.Password())); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 

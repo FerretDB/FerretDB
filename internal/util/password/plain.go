@@ -47,12 +47,12 @@ var fixedPlainParams = &plainParams{
 
 // plainHashParams hashes the password with the given salt and parameters,
 // and returns the document that should be stored and the hash.
-func plainHashParams(password string, salt []byte, params *plainParams) (*types.Document, []byte, error) {
+func plainHashParams(password Password, salt []byte, params *plainParams) (*types.Document, []byte, error) {
 	if len(salt) != int(params.saltLen) {
 		return nil, nil, lazyerrors.Errorf("unexpected salt length: %d", len(salt))
 	}
 
-	hash := pbkdf2.Key([]byte(password), salt, params.iterationCount, params.hashLen, sha256.New)
+	hash := pbkdf2.Key([]byte(password.Password()), salt, params.iterationCount, params.hashLen, sha256.New)
 
 	if len(hash) != int(params.hashLen) {
 		return nil, nil, lazyerrors.Errorf("unexpected hash length: %d", len(hash))
@@ -76,7 +76,7 @@ func plainHashParams(password string, salt []byte, params *plainParams) (*types.
 }
 
 // PlainHash hashes the password and returns the document that should be stored.
-func PlainHash(password string) (*types.Document, error) {
+func PlainHash(password Password) (*types.Document, error) {
 	salt := make([]byte, fixedPlainParams.saltLen)
 	if _, err := io.ReadFull(rand.Reader, salt); err != nil {
 		return nil, lazyerrors.Error(err)
@@ -94,7 +94,7 @@ func PlainHash(password string) (*types.Document, error) {
 //
 // Parameters are returned if they could be decoded from the document,
 // even if password is invalid or on any other error.
-func plainVerifyParams(password string, doc *types.Document) (*plainParams, error) {
+func plainVerifyParams(password Password, doc *types.Document) (*plainParams, error) {
 	v, _ := doc.Get("algo")
 	algo, _ := v.(string)
 
@@ -132,7 +132,7 @@ func plainVerifyParams(password string, doc *types.Document) (*plainParams, erro
 // PlainVerify verifies the password against the document returned by PlainHash.
 //
 // The returned error is safe for logging, but should not be exposed to the client.
-func PlainVerify(password string, doc *types.Document) error {
+func PlainVerify(password Password, doc *types.Document) error {
 	params, err := plainVerifyParams(password, doc)
 	if params != nil && *params != *fixedPlainParams {
 		return lazyerrors.Errorf("invalid params: %+v", params)
