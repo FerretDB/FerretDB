@@ -134,7 +134,14 @@ func (h *Handler) authenticate(ctx context.Context) error {
 
 	credentials := must.NotFail(storedUser.Get("credentials")).(*types.Document)
 
-	v := must.NotFail(credentials.Get("PLAIN"))
+	v, _ := credentials.Get("PLAIN")
+	if v == nil {
+		return handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrAuthenticationFailed,
+			"Authentication failed",
+			"authenticate",
+		)
+	}
 
 	doc, ok := v.(*types.Document)
 	if !ok {
