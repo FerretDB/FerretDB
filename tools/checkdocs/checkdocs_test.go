@@ -62,3 +62,8 @@ func TestVerifyTags(t *testing.T) {
 	err := verifyTags(fm)
 	assert.EqualError(t, err, `tag "documents databases" is not in the allowed list`)
 }
+
+func TestVerifyTruncateString(t *testing.T) {
+	err := verifyTruncateString(fm)
+	assert.EqualError(t, err, "<!--truncate--> must be included to have \"Read more\" link on the homepage")
+}

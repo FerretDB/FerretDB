@@ -131,7 +131,7 @@ func (r *Registry) getPool(ctx context.Context) (*pgxpool.Pool, error) {
 			}
 		}
 	} else {
-		username, password := connInfo.Auth()
+		username, password, _ := connInfo.Auth()
 
 		var err error
 		if p, err = r.p.Get(username, password); err != nil {
