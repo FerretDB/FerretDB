@@ -17,6 +17,7 @@ package setup
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"net/url"
@@ -32,6 +33,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
@@ -89,7 +91,7 @@ type SetupOpts struct {
 	// ExtraOptions sets the options in MongoDB URI, when the option exists it overwrites that option.
 	ExtraOptions url.Values
 
-	// SetupUser true creates a user.
+	// SetupUser true creates a user and returns authenticated client.
 	SetupUser bool
 }
 
@@ -164,11 +166,12 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
 
-	collection := setupCollection(tb, setupCtx, client, opts)
-
 	if opts.SetupUser {
-		setupUser(tb, ctx, client, uri)
+		// user is created before the collection so that user can run collection cleanup
+		client = setupUser(tb, ctx, client, uri)
 	}
+
+	collection := setupCollection(tb, setupCtx, client, opts)
 
 	level.SetLevel(*logLevelF)
 
@@ -330,21 +333,30 @@ func insertBenchmarkProvider(tb testtb.TB, ctx context.Context, collection *mong
 	return
 }
 
-// setupUser creates a user in admin database with supported mechanisms.
+// setupUser creates a user in admin database with supported mechanisms. It returns authenticated client.
 //
 // Without this, once the first user is created, the authentication fails as local exception no longer applies.
-func setupUser(tb testtb.TB, ctx context.Context, client *mongo.Client, uri string) {
+func setupUser(tb testtb.TB, ctx context.Context, client *mongo.Client, uri string) *mongo.Client {
 	tb.Helper()
 
-	username, password := "username", "password"
-
+	// username is unique per test so the user is deleted after the test
+	username, password := "username"+tb.Name(), "password"
 	err := client.Database("admin").RunCommand(ctx, bson.D{
+		{"dropUser", username},
+	}).Err()
+
+	var ce mongo.CommandError
+	if errors.As(err, &ce) && ce.Code != int32(handlererrors.ErrUserNotFound) {
+		require.NoError(tb, err, "cannot drop user")
+	}
+
+	err = client.Database("admin").RunCommand(ctx, bson.D{
 		{"createUser", username},
 		{"roles", bson.A{}},
 		{"pwd", password},
 		{"mechanisms", bson.A{"SCRAM-SHA-1", "SCRAM-SHA-256"}},
 	}).Err()
-	require.NoErrorf(tb, err, "cannot create user")
+	require.NoError(tb, err, "cannot create user")
 
 	credential := options.Credential{
 		AuthMechanism: "SCRAM-SHA-256",
@@ -354,13 +366,15 @@ func setupUser(tb testtb.TB, ctx context.Context, client *mongo.Client, uri stri
 	}
 
 	opts := options.Client().ApplyURI(uri).SetAuth(credential)
-	clientAuthenticated, err := mongo.Connect(ctx, opts)
+	authenticatedClient, err := mongo.Connect(ctx, opts)
 	require.NoError(tb, err, "cannot connect to MongoDB")
 
 	tb.Cleanup(func() {
-		err = clientAuthenticated.Database("admin").RunCommand(ctx, bson.D{
+		err = authenticatedClient.Database("admin").RunCommand(ctx, bson.D{
 			{"dropUser", username},
 		}).Err()
 		require.NoError(tb, err, "cannot drop user")
 	})
+
+	return authenticatedClient
 }
