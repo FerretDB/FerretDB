@@ -346,9 +346,11 @@ func setupUser(tb testtb.TB, ctx context.Context, client *mongo.Client, uri stri
 	}).Err()
 
 	var ce mongo.CommandError
-	if errors.As(err, &ce) && ce.Code != int32(handlererrors.ErrUserNotFound) {
-		require.NoError(tb, err, "cannot drop user")
+	if errors.As(err, &ce) && ce.Code == int32(handlererrors.ErrUserNotFound) {
+		err = nil
 	}
+
+	require.NoError(tb, err, "cannot drop user")
 
 	err = client.Database("admin").RunCommand(ctx, bson.D{
 		{"createUser", username},
