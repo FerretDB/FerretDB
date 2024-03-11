@@ -63,36 +63,21 @@ func (connInfo *ConnInfo) Username() string {
 	return connInfo.username
 }
 
-// Auth returns stored username and password.
-func (connInfo *ConnInfo) Auth() (username, password string) {
+// Auth returns stored username, password and mechanism.
+func (connInfo *ConnInfo) Auth() (username, password, mechanism string) {
 	connInfo.rw.RLock()
 	defer connInfo.rw.RUnlock()
 
-	return connInfo.username, connInfo.password
+	return connInfo.username, connInfo.password, connInfo.mechanism
 }
 
-// SetAuth stores username and password.
-func (connInfo *ConnInfo) SetAuth(username, password string) {
+// SetAuth stores username, password.
+func (connInfo *ConnInfo) SetAuth(username, password, mechanism string) {
 	connInfo.rw.Lock()
 	defer connInfo.rw.Unlock()
 
 	connInfo.username = username
 	connInfo.password = password
-}
-
-// Mechanism returns stored mechanism.
-func (connInfo *ConnInfo) Mechanism() (mechanism string) {
-	connInfo.rw.RLock()
-	defer connInfo.rw.RUnlock()
-
-	return connInfo.mechanism
-}
-
-// SetMechanism stores mechanism.
-func (connInfo *ConnInfo) SetMechanism(mechanism string) {
-	connInfo.rw.Lock()
-	defer connInfo.rw.Unlock()
-
 	connInfo.mechanism = mechanism
 }
 

@@ -67,8 +67,6 @@ func (h *Handler) saslStart(ctx context.Context, dbName string, document *types.
 		return nil, lazyerrors.Error(err)
 	}
 
-	conninfo.Get(ctx).SetMechanism(mechanism)
-
 	switch mechanism {
 	case "PLAIN":
 		username, password, err := saslStartPlain(document)
@@ -80,7 +78,7 @@ func (h *Handler) saslStart(ctx context.Context, dbName string, document *types.
 			conninfo.Get(ctx).SetBypassBackendAuth()
 		}
 
-		conninfo.Get(ctx).SetAuth(username, password)
+		conninfo.Get(ctx).SetAuth(username, password, mechanism)
 
 		var emptyPayload types.Binary
 
@@ -96,6 +94,8 @@ func (h *Handler) saslStart(ctx context.Context, dbName string, document *types.
 				"SCRAM authentication is not enabled",
 			)
 		}
+
+		conninfo.Get(ctx).SetAuth("", "", mechanism)
 
 		response, err := h.saslStartSCRAM(ctx, dbName, mechanism, document)
 		if err != nil {

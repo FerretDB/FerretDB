@@ -54,7 +54,7 @@ func (h *Handler) authenticate(ctx context.Context) error {
 		return lazyerrors.Error(err)
 	}
 
-	mechanism := conninfo.Get(ctx).Mechanism()
+	username, userPassword, mechanism := conninfo.Get(ctx).Auth()
 
 	switch mechanism {
 	case "SCRAM-SHA-256", "SCRAM-SHA-1":
@@ -66,8 +66,6 @@ func (h *Handler) authenticate(ctx context.Context) error {
 	default:
 		return lazyerrors.Errorf("Unsupported authentication mechanism %q", mechanism)
 	}
-
-	username, userPassword := conninfo.Get(ctx).Auth()
 
 	// For `PLAIN` mechanism $db field is always `$external` upon saslStart.
 	// For `SCRAM-SHA-1` and `SCRAM-SHA-256` mechanisms $db field contains
