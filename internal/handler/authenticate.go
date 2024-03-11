@@ -55,10 +55,16 @@ func (h *Handler) authenticate(ctx context.Context) error {
 	}
 
 	mechanism := conninfo.Get(ctx).Mechanism()
-	if mechanism == "SCRAM-SHA-256" || mechanism == "SCRAM-SHA-1" {
+
+	switch mechanism {
+	case "SCRAM-SHA-256", "SCRAM-SHA-1":
 		// SCRAM calls back scramCredentialLookup each time Step is called,
 		// and that checks the authentication.
 		return nil
+	case "PLAIN":
+		break
+	default:
+		return lazyerrors.Errorf("Unsupported authentication mechanism %q", mechanism)
 	}
 
 	username, userPassword := conninfo.Get(ctx).Auth()
@@ -128,15 +134,7 @@ func (h *Handler) authenticate(ctx context.Context) error {
 
 	credentials := must.NotFail(storedUser.Get("credentials")).(*types.Document)
 
-	v, _ := credentials.Get("PLAIN")
-	if v == nil {
-		// unsupported mechanism
-		return handlererrors.NewCommandErrorMsgWithArgument(
-			handlererrors.ErrAuthenticationFailed,
-			"Authentication failed",
-			"authenticate",
-		)
-	}
+	v := must.NotFail(credentials.Get("PLAIN"))
 
 	doc, ok := v.(*types.Document)
 	if !ok {
