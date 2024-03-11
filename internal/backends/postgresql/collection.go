@@ -135,6 +135,9 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 
 	err = pool.InTransaction(ctx, p, func(tx pgx.Tx) error {
 		batchSize := c.r.BatchSize
+		if batchSize < 1 {
+			panic("batch-size should be greater than 1")
+		}
 
 		var batch []*types.Document
 		docs := params.Docs
