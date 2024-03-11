@@ -88,7 +88,7 @@ func (r *Registry) GetSession(username, sessionID string) *Session {
 
 // RefreshSession updates the last used time for the session.
 // If the session does not exist, it does nothing.
-func (r *Registry) Refres hSession(username, session string) {
+func (r *Registry) RefreshSession(username, session string) {
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
