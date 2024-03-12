@@ -73,6 +73,7 @@ linters:
     - lll
     - misspell
     - nolintlint
+    - sloglint
     - unused
     - whitespace
 

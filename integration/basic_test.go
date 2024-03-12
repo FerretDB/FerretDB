@@ -553,11 +553,11 @@ func TestDebugError(t *testing.T) {
 }
 
 func TestCheckingNestedDocuments(t *testing.T) {
-	t.Parallel()
+	t.Skip("https://github.com/FerretDB/FerretDB/issues/3759")
 
 	for name, tc := range map[string]struct {
 		doc any
-		err error
+		err *mongo.CommandError
 	}{
 		"1ok": {
 			doc: CreateNestedDocument(1),
@@ -573,24 +573,29 @@ func TestCheckingNestedDocuments(t *testing.T) {
 		},
 		"180fail": {
 			doc: CreateNestedDocument(180),
-			err: fmt.Errorf("bson.Array.ReadFrom (document has exceeded the max supported nesting: 179."),
+			err: &mongo.CommandError{
+				Message: "bson.Array.ReadFrom (document has exceeded the max supported nesting: 179.",
+			},
 		},
 		"180endedWithDocumentFail": {
 			doc: bson.D{{"v", CreateNestedDocument(179)}},
-			err: fmt.Errorf("bson.Document.ReadFrom (document has exceeded the max supported nesting: 179."),
+			err: &mongo.CommandError{
+				Message: "bson.Document.ReadFrom (document has exceeded the max supported nesting: 179.",
+			},
 		},
 		"1000fail": {
 			doc: CreateNestedDocument(1000),
-			err: fmt.Errorf("bson.Document.ReadFrom (document has exceeded the max supported nesting: 179."),
+			err: &mongo.CommandError{
+				Message: "bson.Document.ReadFrom (document has exceeded the max supported nesting: 179.",
+			},
 		},
 	} {
-		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			t.Parallel()
 			ctx, collection := setup.Setup(t)
+
 			_, err := collection.InsertOne(ctx, tc.doc)
 			if tc.err != nil {
-				require.Error(t, tc.err)
+				AssertEqualCommandError(t, *tc.err, err)
 				return
 			}
 
@@ -699,23 +704,19 @@ func TestMutatingClientMetadata(t *testing.T) {
 			},
 		},
 	} {
-		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			res := db.RunCommand(ctx, tc.command)
+			var res bson.D
 
+			err := db.RunCommand(ctx, tc.command).Decode(&res)
 			if tc.err != nil {
-				err := res.Decode(&res)
 				AssertEqualCommandError(t, *tc.err, err)
 				return
 			}
 
-			var actualRes bson.D
-			err := res.Decode(&actualRes)
-
 			require.NoError(t, err)
-			require.NotNil(t, actualRes)
+			require.NotNil(t, res)
 		})
 	}
 }

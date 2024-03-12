@@ -61,6 +61,29 @@ var queryTestCases = []testCase{
 			),
 			returnFieldsSelector: nil,
 		},
+		m: `
+		{
+		  "Flags": "[]",
+		  "FullCollectionName": "admin.$cmd",
+		  "NumberToSkip": 0,
+		  "NumberToReturn": -1,
+		  "Query": {
+		    "ismaster": true,
+		    "client": {
+		      "driver": {"name": "nodejs", "version": "4.0.0-beta.6"},
+		      "os": {
+		        "type": "Darwin",
+		        "name": "darwin",
+		        "architecture": "x64",
+		        "version": "20.6.0",
+		      },
+		      "platform": "Node.js v14.17.3, LE (unified)|Node.js v14.17.3, LE (unified)",
+		      "application": {"name": "mongosh 1.0.1"},
+		    },
+		    "compression": ["none"],
+		    "loadBalanced": false,
+		  },
+		}`,
 	},
 	{
 		name:    "handshake3",
@@ -100,6 +123,29 @@ var queryTestCases = []testCase{
 			),
 			returnFieldsSelector: nil,
 		},
+		m: `
+		{
+		  "Flags": "[]",
+		  "FullCollectionName": "admin.$cmd",
+		  "NumberToSkip": 0,
+		  "NumberToReturn": -1,
+		  "Query": {
+		    "ismaster": true,
+		    "client": {
+		      "driver": {"name": "nodejs", "version": "4.0.0-beta.6"},
+		      "os": {
+		        "type": "Darwin",
+		        "name": "darwin",
+		        "architecture": "x64",
+		        "version": "20.6.0",
+		      },
+		      "platform": "Node.js v14.17.3, LE (unified)|Node.js v14.17.3, LE (unified)",
+		      "application": {"name": "mongosh 1.0.1"},
+		    },
+		    "compression": ["none"],
+		    "loadBalanced": false,
+		  },
+		}`,
 	},
 }
 

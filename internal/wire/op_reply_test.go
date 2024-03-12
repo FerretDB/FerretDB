@@ -56,6 +56,27 @@ var replyTestCases = []testCase{
 				"ok", float64(1),
 			),
 		},
+		m: `
+		{
+		  "ResponseFlags": "[AwaitCapable]",
+		  "CursorID": int64(0),
+		  "StartingFrom": 0,
+		  "NumberReturned": 1,
+		  "Document": {
+		    "ismaster": true,
+		    "topologyVersion": {"processId": ObjectID(60fbed5371fe1bae70339505), "counter": int64(0)},
+		    "maxBsonObjectSize": 16777216,
+		    "maxMessageSizeBytes": 48000000,
+		    "maxWriteBatchSize": 100000,
+		    "localTime": 2021-07-24T12:54:41.571Z,
+		    "logicalSessionTimeoutMinutes": 30,
+		    "connectionId": 28,
+		    "minWireVersion": 0,
+		    "maxWireVersion": 13,
+		    "readOnly": false,
+		    "ok": 1.0,
+		  },
+		}`,
 	},
 	{
 		name:    "handshake4",
@@ -89,6 +110,27 @@ var replyTestCases = []testCase{
 				"ok", float64(1),
 			),
 		},
+		m: `
+		{
+		  "ResponseFlags": "[AwaitCapable]",
+		  "CursorID": int64(0),
+		  "StartingFrom": 0,
+		  "NumberReturned": 1,
+		  "Document": {
+		    "ismaster": true,
+		    "topologyVersion": {"processId": ObjectID(60fbed5371fe1bae70339505), "counter": int64(0)},
+		    "maxBsonObjectSize": 16777216,
+		    "maxMessageSizeBytes": 48000000,
+		    "maxWriteBatchSize": 100000,
+		    "localTime": 2021-07-24T12:54:41.592Z,
+		    "logicalSessionTimeoutMinutes": 30,
+		    "connectionId": 29,
+		    "minWireVersion": 0,
+		    "maxWireVersion": 13,
+		    "readOnly": false,
+		    "ok": 1.0,
+		  },
+		}`,
 	},
 }
 

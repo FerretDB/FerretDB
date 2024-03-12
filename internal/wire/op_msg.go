@@ -16,12 +16,10 @@ package wire
 
 import (
 	"encoding/binary"
-	"encoding/json"
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/bson2"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/types/fjson"
 	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -54,6 +52,16 @@ type OpMsg struct {
 	sections []OpMsgSection
 	Flags    OpMsgFlags
 	checksum uint32
+}
+
+// NewOpMsg creates a message with a single section of kind 0 with a single raw document.
+func NewOpMsg(raw bson2.RawDocument) (*OpMsg, error) {
+	var msg OpMsg
+	if err := msg.SetSections(OpMsgSection{documents: []bson2.RawDocument{raw}}); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &msg, nil
 }
 
 // checkSections checks given sections.
@@ -186,6 +194,26 @@ func (msg *OpMsg) Document() (*types.Document, error) {
 	}
 
 	return res, nil
+}
+
+// RawSections returns the value of section with kind 0 and the value of all sections with kind 1.
+func (msg *OpMsg) RawSections() (bson2.RawDocument, []byte) {
+	var spec bson2.RawDocument
+	var seq []byte
+
+	for _, s := range msg.Sections() {
+		switch s.Kind {
+		case 0:
+			spec = s.documents[0]
+
+		case 1:
+			for _, d := range s.documents {
+				seq = append(seq, d...)
+			}
+		}
+	}
+
+	return spec, seq
 }
 
 // RawDocument returns the value of msg as a [bson2.RawDocument].
@@ -394,51 +422,51 @@ func (msg *OpMsg) String() string {
 		return "<nil>"
 	}
 
-	m := map[string]any{
-		"FlagBits": msg.Flags,
-		"Checksum": msg.checksum,
-	}
+	m := must.NotFail(bson2.NewDocument(
+		"FlagBits", msg.Flags.String(),
+		"Checksum", int64(msg.checksum),
+	))
 
-	sections := make([]map[string]any, len(msg.sections))
-	for i, section := range msg.sections {
-		s := map[string]any{
-			"Kind": section.Kind,
-		}
+	sections := bson2.MakeArray(len(msg.sections))
+	for _, section := range msg.sections {
+		s := must.NotFail(bson2.NewDocument(
+			"Kind", int32(section.Kind),
+		))
 
 		switch section.Kind {
 		case 0:
-			doc, err := section.documents[0].Convert()
+			doc, err := section.documents[0].DecodeDeep()
 			if err == nil {
-				s["Document"] = json.RawMessage(must.NotFail(fjson.Marshal(doc)))
+				must.NoError(s.Add("Document", doc))
 			} else {
-				s["DocumentError"] = err.Error()
+				must.NoError(s.Add("DocumentError", err.Error()))
 			}
 
 		case 1:
-			s["Identifier"] = section.Identifier
-			docs := make([]json.RawMessage, len(section.documents))
+			must.NoError(s.Add("Identifier", section.Identifier))
+			docs := bson2.MakeArray(len(section.documents))
 
-			for j, d := range section.documents {
-				doc, err := d.Convert()
+			for _, d := range section.documents {
+				doc, err := d.DecodeDeep()
 				if err == nil {
-					docs[j] = json.RawMessage(must.NotFail(fjson.Marshal(doc)))
+					must.NoError(docs.Add(doc))
 				} else {
-					docs[j] = must.NotFail(json.Marshal(map[string]string{"error": err.Error()}))
+					must.NoError(docs.Add(must.NotFail(bson2.NewDocument("error", err.Error()))))
 				}
 			}
 
-			s["Documents"] = docs
+			must.NoError(s.Add("Documents", docs))
 
 		default:
 			panic(fmt.Sprintf("unknown kind %d", section.Kind))
 		}
 
-		sections[i] = s
+		must.NoError(sections.Add(s))
 	}
 
-	m["Sections"] = sections
+	must.NoError(m.Add("Sections", sections))
 
-	return string(must.NotFail(json.MarshalIndent(m, "", "  ")))
+	return m.LogMessage()
 }
 
 // check interfaces

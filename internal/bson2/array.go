@@ -31,6 +31,28 @@ type Array struct {
 	elements []any
 }
 
+// NewArray creates a new Array from the given values.
+func NewArray(values ...any) (*Array, error) {
+	res := &Array{
+		elements: make([]any, 0, len(values)),
+	}
+
+	for i, v := range values {
+		if err := res.Add(v); err != nil {
+			return nil, lazyerrors.Errorf("%d: %w", i, err)
+		}
+	}
+
+	return res, nil
+}
+
+// MakeArray creates a new empty Array with the given capacity.
+func MakeArray(cap int) *Array {
+	return &Array{
+		elements: make([]any, 0, cap),
+	}
+}
+
 // ConvertArray converts [*types.Array] to Array.
 func ConvertArray(arr *types.Array) (*Array, error) {
 	iter := arr.Iterator()
@@ -80,6 +102,17 @@ func (arr *Array) Convert() (*types.Array, error) {
 	return res, nil
 }
 
+// Add adds a new element to the Array.
+func (arr *Array) Add(value any) error {
+	if err := validBSONType(value); err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	arr.elements = append(arr.elements, value)
+
+	return nil
+}
+
 // Encode encodes BSON array.
 //
 // TODO https://github.com/FerretDB/FerretDB/issues/3759
@@ -109,6 +142,13 @@ func (arr *Array) Encode() (RawArray, error) {
 // LogValue implements slog.LogValuer interface.
 func (arr *Array) LogValue() slog.Value {
 	return slogValue(arr)
+}
+
+// LogMessage returns an indented representation as a string,
+// somewhat similar (but not identical) to JSON or Go syntax.
+// It may change over time.
+func (arr *Array) LogMessage() string {
+	return logMessage(arr)
 }
 
 // check interfaces
