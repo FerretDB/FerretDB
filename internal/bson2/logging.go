@@ -134,7 +134,7 @@ func logMessage(v any) string {
 	return logMessageIndent(v, "")
 }
 
-// logMessageIndent is a variant of [slogMessage] with an indentation for recursive calls.
+// logMessageIndent is a variant of [logMessage] with an indentation for recursive calls.
 func logMessageIndent(v any, indent string) string {
 	switch v := v.(type) {
 	case *Document:
