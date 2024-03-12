@@ -12,33 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package integration
+package driver
 
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson"
+	"github.com/stretchr/testify/require"
+
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
-func TestCreateNestedDocument(t *testing.T) {
-	t.Parallel()
+func TestDriver(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in -short mode")
+	}
 
-	t.Run("0", func(t *testing.T) {
-		expected := bson.D{{"v", nil}}
-		actual := CreateNestedDocument(0)
-		assert.Equal(t, expected, actual)
-	})
+	ctx := testutil.Ctx(t)
 
-	t.Run("1", func(t *testing.T) {
-		expected := bson.D{{"v", bson.A{nil}}}
-		actual := CreateNestedDocument(1)
-		assert.Equal(t, expected, actual)
-	})
+	c, err := Connect(ctx, "mongodb://127.0.0.1:47017/", testutil.SLogger(t))
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, c.Close()) })
 
-	t.Run("2", func(t *testing.T) {
-		expected := bson.D{{"v", bson.A{bson.D{{"v", nil}}}}}
-		actual := CreateNestedDocument(2)
-		assert.Equal(t, expected, actual)
-	})
+	// TODO https://github.com/FerretDB/FerretDB/issues/4146
+	_ = c
 }

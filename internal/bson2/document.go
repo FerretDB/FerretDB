@@ -55,7 +55,7 @@ func NewDocument(pairs ...any) (*Document, error) {
 
 		value := pairs[i+1]
 
-		if err := res.add(name, value); err != nil {
+		if err := res.Add(name, value); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 	}
@@ -92,7 +92,7 @@ func ConvertDocument(doc *types.Document) (*Document, error) {
 			return nil, lazyerrors.Error(err)
 		}
 
-		if err = res.add(k, v); err != nil {
+		if err = res.Add(k, v); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 	}
@@ -133,8 +133,8 @@ func (doc *Document) Get(name string) any {
 	return nil
 }
 
-// add adds a new field to the Document.
-func (doc *Document) add(name string, value any) error {
+// Add adds a new field to the Document.
+func (doc *Document) Add(name string, value any) error {
 	if err := validBSONType(value); err != nil {
 		return lazyerrors.Errorf("%q: %w", name, err)
 	}
@@ -175,7 +175,14 @@ func (doc *Document) Encode() (RawDocument, error) {
 
 // LogValue implements slog.LogValuer interface.
 func (doc *Document) LogValue() slog.Value {
-	return slogValue(doc)
+	return slogValue(doc, 1)
+}
+
+// LogMessage returns an indented representation as a string,
+// somewhat similar (but not identical) to JSON or Go syntax.
+// It may change over time.
+func (doc *Document) LogMessage() string {
+	return logMessage(doc)
 }
 
 // check interfaces

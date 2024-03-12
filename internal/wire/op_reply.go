@@ -16,11 +16,9 @@ package wire
 
 import (
 	"encoding/binary"
-	"encoding/json"
 
 	"github.com/FerretDB/FerretDB/internal/bson2"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/types/fjson"
 	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -130,26 +128,26 @@ func (reply *OpReply) String() string {
 		return "<nil>"
 	}
 
-	m := map[string]any{
-		"ResponseFlags": reply.Flags,
-		"CursorID":      reply.CursorID,
-		"StartingFrom":  reply.StartingFrom,
-	}
+	m := must.NotFail(bson2.NewDocument(
+		"ResponseFlags", reply.Flags.String(),
+		"CursorID", reply.CursorID,
+		"StartingFrom", reply.StartingFrom,
+	))
 
 	if reply.document == nil {
-		m["NumberReturned"] = 0
+		must.NoError(m.Add("NumberReturned", int32(0)))
 	} else {
-		m["NumberReturned"] = 1
+		must.NoError(m.Add("NumberReturned", int32(1)))
 
-		doc, err := reply.document.Convert()
+		doc, err := reply.document.DecodeDeep()
 		if err == nil {
-			m["Document"] = json.RawMessage(must.NotFail(fjson.Marshal(doc)))
+			must.NoError(m.Add("Document", doc))
 		} else {
-			m["DocumentError"] = err.Error()
+			must.NoError(m.Add("DocumentError", err.Error()))
 		}
 	}
 
-	return string(must.NotFail(json.MarshalIndent(m, "", "  ")))
+	return m.LogMessage()
 }
 
 // check interfaces
