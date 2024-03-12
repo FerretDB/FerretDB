@@ -553,8 +553,6 @@ func TestDebugError(t *testing.T) {
 }
 
 func TestCheckingNestedDocuments(t *testing.T) {
-	t.Skip("https://github.com/FerretDB/FerretDB/issues/3759")
-
 	for name, tc := range map[string]struct {
 		doc any
 		err *mongo.CommandError
