@@ -30,6 +30,7 @@ type Session struct {
 	id       types.Binary
 	user     string
 	database string
+	hash     string
 	lastUsed time.Time
 	expired  bool
 }
@@ -41,6 +42,7 @@ func newSession(user, db string, id uuid.UUID) *Session {
 		id:       sessionID,
 		user:     user,
 		database: db,
+		hash:     hash(user, db),
 		lastUsed: time.Now(),
 	}
 }
