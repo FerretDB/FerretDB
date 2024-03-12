@@ -552,58 +552,6 @@ func TestDebugError(t *testing.T) {
 	})
 }
 
-func TestCheckingNestedDocuments(t *testing.T) {
-	t.Skip("https://github.com/FerretDB/FerretDB/issues/3759")
-
-	for name, tc := range map[string]struct {
-		doc any
-		err *mongo.CommandError
-	}{
-		"1ok": {
-			doc: CreateNestedDocument(1),
-		},
-		"10ok": {
-			doc: CreateNestedDocument(10),
-		},
-		"100ok": {
-			doc: CreateNestedDocument(100),
-		},
-		"179ok": {
-			doc: CreateNestedDocument(179),
-		},
-		"180fail": {
-			doc: CreateNestedDocument(180),
-			err: &mongo.CommandError{
-				Message: "bson.Array.ReadFrom (document has exceeded the max supported nesting: 179.",
-			},
-		},
-		"180endedWithDocumentFail": {
-			doc: bson.D{{"v", CreateNestedDocument(179)}},
-			err: &mongo.CommandError{
-				Message: "bson.Document.ReadFrom (document has exceeded the max supported nesting: 179.",
-			},
-		},
-		"1000fail": {
-			doc: CreateNestedDocument(1000),
-			err: &mongo.CommandError{
-				Message: "bson.Document.ReadFrom (document has exceeded the max supported nesting: 179.",
-			},
-		},
-	} {
-		t.Run(name, func(t *testing.T) {
-			ctx, collection := setup.Setup(t)
-
-			_, err := collection.InsertOne(ctx, tc.doc)
-			if tc.err != nil {
-				AssertEqualCommandError(t, *tc.err, err)
-				return
-			}
-
-			require.NoError(t, err)
-		})
-	}
-}
-
 func TestPingCommand(t *testing.T) {
 	t.Parallel()
 

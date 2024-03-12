@@ -286,6 +286,19 @@ var normalTestCases = []normalTestCase{
 		}`,
 	},
 	{
+		name: "nested",
+		raw:  testutil.MustParseDumpFile("testdata", "nested.hex"),
+		tdoc: must.NotFail(makeNested(false, 150).(*Document).Convert()),
+		m: `
+		{
+		  "f": [
+		    {
+		      "f": [{"f": [{"f": [{"f": [{"f": [{"f": [{"f": [{"f": [{"f": [{...}]}]}]}]}]}]}]}]}],
+		    },
+		  ],
+		}`,
+	},
+	{
 		name: "float64Doc",
 		raw: RawDocument{
 			0x10, 0x00, 0x00, 0x00,

@@ -25,9 +25,12 @@ import (
 	"time"
 )
 
-// flowLimit is the maximum length of a flow/inline/compact representation of a BSON value.
+// logMaxFlowLength is the maximum length of a flow/inline/compact representation of a BSON value.
 // It may be set to 0 to disable flow representation.
-const flowLimit = 80
+const logMaxFlowLength = 80
+
+// logMaxDepth is the maximum depth of a recursive representation of a BSON value.
+const logMaxDepth = 20
 
 // nanBits is the most common pattern of a NaN float64 value, the same as math.Float64bits(math.NaN()).
 const nanBits = 0b111111111111000000000000000000000000000000000000000000000000001
@@ -42,13 +45,17 @@ const nanBits = 0b11111111111100000000000000000000000000000000000000000000000000
 // More information is subsequently lost in handlers output;
 // for example, float64(42), int32(42), and int64(42) values would all look the same
 // (`f64=42 i32=42 i64=42` or `{"f64":42,"i32":42,"i64":42}`).
-func slogValue(v any) slog.Value {
+func slogValue(v any, depth int) slog.Value {
 	switch v := v.(type) {
 	case *Document:
+		if depth > logMaxDepth {
+			return slog.StringValue("Document<...>")
+		}
+
 		var attrs []slog.Attr
 
 		for _, f := range v.fields {
-			attrs = append(attrs, slog.Attr{Key: f.name, Value: slogValue(f.value)})
+			attrs = append(attrs, slog.Attr{Key: f.name, Value: slogValue(f.value, depth+1)})
 		}
 
 		return slog.GroupValue(attrs...)
@@ -61,10 +68,14 @@ func slogValue(v any) slog.Value {
 		return slog.StringValue("RawDocument<" + strconv.Itoa(len(v)) + ">")
 
 	case *Array:
+		if depth > logMaxDepth {
+			return slog.StringValue("Array<...>")
+		}
+
 		var attrs []slog.Attr
 
 		for i, v := range v.elements {
-			attrs = append(attrs, slog.Attr{Key: strconv.Itoa(i), Value: slogValue(v)})
+			attrs = append(attrs, slog.Attr{Key: strconv.Itoa(i), Value: slogValue(v, depth+1)})
 		}
 
 		return slog.GroupValue(attrs...)
@@ -131,11 +142,11 @@ func slogValue(v any) slog.Value {
 // The result is optimized for large values such as full request documents.
 // All information is preserved.
 func logMessage(v any) string {
-	return logMessageIndent(v, "")
+	return logMessageIndent(v, "", 1)
 }
 
-// logMessageIndent is a variant of [logMessage] with an indentation for recursive calls.
-func logMessageIndent(v any, indent string) string {
+// logMessageIndent is a variant of [logMessage] with an indentation and depth for recursive calls.
+func logMessageIndent(v any, indent string, depth int) string {
 	switch v := v.(type) {
 	case *Document:
 		l := len(v.fields)
@@ -143,12 +154,16 @@ func logMessageIndent(v any, indent string) string {
 			return "{}"
 		}
 
-		if flowLimit > 0 {
+		if depth > logMaxDepth {
+			return "{...}"
+		}
+
+		if logMaxFlowLength > 0 {
 			res := "{"
 
 			for i, f := range v.fields {
 				res += strconv.Quote(f.name) + `: `
-				res += logMessageIndent(f.value, "")
+				res += logMessageIndent(f.value, "", depth+1)
 
 				if i != l-1 {
 					res += ", "
@@ -157,7 +172,7 @@ func logMessageIndent(v any, indent string) string {
 
 			res += `}`
 
-			if len(res) < flowLimit {
+			if len(res) < logMaxFlowLength {
 				return res
 			}
 		}
@@ -167,7 +182,7 @@ func logMessageIndent(v any, indent string) string {
 		for _, f := range v.fields {
 			res += indent + "  "
 			res += strconv.Quote(f.name) + `: `
-			res += logMessageIndent(f.value, indent+"  ") + ",\n"
+			res += logMessageIndent(f.value, indent+"  ", depth+1) + ",\n"
 		}
 
 		res += indent + `}`
@@ -183,11 +198,15 @@ func logMessageIndent(v any, indent string) string {
 			return "[]"
 		}
 
-		if flowLimit > 0 {
+		if depth > logMaxDepth {
+			return "[...]"
+		}
+
+		if logMaxFlowLength > 0 {
 			res := "["
 
 			for i, e := range v.elements {
-				res += logMessageIndent(e, "")
+				res += logMessageIndent(e, "", depth+1)
 
 				if i != l-1 {
 					res += ", "
@@ -196,7 +215,7 @@ func logMessageIndent(v any, indent string) string {
 
 			res += `]`
 
-			if len(res) < flowLimit {
+			if len(res) < logMaxFlowLength {
 				return res
 			}
 		}
@@ -205,7 +224,7 @@ func logMessageIndent(v any, indent string) string {
 
 		for _, e := range v.elements {
 			res += indent + "  "
-			res += logMessageIndent(e, indent+"  ") + ",\n"
+			res += logMessageIndent(e, indent+"  ", depth+1) + ",\n"
 		}
 
 		res += indent + `]`
