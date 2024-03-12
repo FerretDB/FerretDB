@@ -98,10 +98,8 @@ func newClient(cacheFilePath string, logf, cacheDebugF, clientDebugf gh.Printf) 
 //
 // Returned error is something fatal.
 // On rate limit, the error is logged once and (issueOpen, nil) is returned.
-func (c *client) IssueStatus(ctx context.Context, num int) (issueStatus, error) {
+func (c *client) IssueStatus(ctx context.Context, url, repo string, num int) (issueStatus, error) {
 	start := time.Now()
-
-	url := fmt.Sprintf("https://github.com/FerretDB/FerretDB/issues/%d", num)
 
 	cache := &cacheFile{
 		Issues: make(map[string]issue),
@@ -138,7 +136,7 @@ func (c *client) IssueStatus(ctx context.Context, num int) (issueStatus, error) 
 				return nil, noUpdate
 			}
 
-			if res, err = c.checkIssueStatus(ctx, num); err != nil {
+			if res, err = c.checkIssueStatus(ctx, repo, num); err != nil {
 				var rle *github.RateLimitError
 				if !errors.As(err, &rle) {
 					return nil, fmt.Errorf("%s: %s", url, err)
@@ -188,8 +186,8 @@ func (c *client) IssueStatus(ctx context.Context, num int) (issueStatus, error) 
 
 // checkIssueStatus checks issue status via GitHub API.
 // It does not use cache.
-func (c *client) checkIssueStatus(ctx context.Context, num int) (issueStatus, error) {
-	issue, resp, err := c.c.Issues.Get(ctx, "FerretDB", "FerretDB", num)
+func (c *client) checkIssueStatus(ctx context.Context, repo string, num int) (issueStatus, error) {
+	issue, resp, err := c.c.Issues.Get(ctx, "FerretDB", repo, num)
 	if err != nil {
 		if resp.StatusCode == http.StatusNotFound {
 			return issueNotFound, nil
