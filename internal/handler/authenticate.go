@@ -58,7 +58,8 @@ func (h *Handler) authenticate(ctx context.Context) error {
 		// SCRAM calls back scramCredentialLookup each time Step is called,
 		// and that checks the authentication.
 		return nil
-	case "PLAIN":
+	case "PLAIN", "":
+		// mechanism may be empty for local host exception
 		break
 	default:
 		return lazyerrors.Errorf("Unsupported authentication mechanism %q", mechanism)
