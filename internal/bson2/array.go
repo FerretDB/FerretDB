@@ -141,7 +141,7 @@ func (arr *Array) Encode() (RawArray, error) {
 
 // LogValue implements slog.LogValuer interface.
 func (arr *Array) LogValue() slog.Value {
-	return slogValue(arr)
+	return slogValue(arr, 1)
 }
 
 // LogMessage returns an indented representation as a string,

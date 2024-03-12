@@ -288,8 +288,15 @@ var normalTestCases = []normalTestCase{
 	{
 		name: "nested",
 		raw:  testutil.MustParseDumpFile("testdata", "nested.hex"),
-		tdoc: must.NotFail(makeNested(false, 200).(*Document).Convert()),
-		m:    `FIXME`, // FIXME
+		tdoc: must.NotFail(makeNested(false, 150).(*Document).Convert()),
+		m: `
+		{
+		  "f": [
+		    {
+		      "f": [{"f": [{"f": [{"f": [{"f": [{"f": [{"f": [{"f": [{"f": [{...}]}]}]}]}]}]}]}]}],
+		    },
+		  ],
+		}`,
 	},
 	{
 		name: "float64Doc",
