@@ -17,6 +17,7 @@ package handler
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
@@ -62,7 +63,9 @@ func (h *Handler) authenticate(ctx context.Context) error {
 		// mechanism may be empty for local host exception
 		break
 	default:
-		return lazyerrors.Errorf("Unsupported authentication mechanism %q", mechanism)
+		msg := fmt.Sprintf("Unsupported authentication mechanism %q.\n", mechanism) +
+			"See https://docs.ferretdb.io/security/authentication/ for more details."
+		return handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrAuthenticationFailed, msg, mechanism)
 	}
 
 	// For `PLAIN` mechanism $db field is always `$external` upon saslStart.
