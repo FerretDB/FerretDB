@@ -18,30 +18,18 @@ import (
 	"context"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
-	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgConnectionStatus implements `connectionStatus` command.
 func (h *Handler) MsgConnectionStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := msg.Document()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	dbName, err := common.GetRequiredParam[string](document, "$db")
-	if err != nil {
-		return nil, err
-	}
-
 	users := types.MakeArray(1)
+
 	if username := conninfo.Get(ctx).Username(); username != "" {
 		users.Append(must.NotFail(types.NewDocument(
 			"user", username,
-			"db", dbName,
 		)))
 	}
 
