@@ -45,7 +45,7 @@ var (
 
 	targetProxyAddrF  = flag.String("target-proxy-addr", "", "in-process FerretDB: use given proxy")
 	targetTLSF        = flag.Bool("target-tls", false, "in-process FerretDB: use TLS")
-	targetUnixSocketF = flag.Bool("target-unix-socket", false, "in-process FerretDB: use Unix socket")
+	targetUnixSocketF = flag.Bool("target-unix-socket", false, "in-process FerretDB: use Unix domain socket")
 
 	postgreSQLURLF = flag.String("postgresql-url", "", "in-process FerretDB: PostgreSQL URL for 'postgresql' handler.")
 	sqliteURLF     = flag.String("sqlite-url", "", "in-process FerretDB: SQLite URI for 'sqlite' handler.")
@@ -88,6 +88,9 @@ type SetupOpts struct {
 
 	// ExtraOptions sets the options in MongoDB URI, when the option exists it overwrites that option.
 	ExtraOptions url.Values
+
+	// SetupUser true creates a user.
+	SetupUser bool
 }
 
 // SetupResult represents setup results.
@@ -97,12 +100,12 @@ type SetupResult struct {
 	MongoDBURI string
 }
 
-// IsUnixSocket returns true if MongoDB URI is a Unix socket.
+// IsUnixSocket returns true if MongoDB URI is a Unix domain socket.
 func (s *SetupResult) IsUnixSocket(tb testtb.TB) bool {
 	tb.Helper()
 
 	// we can't use a regular url.Parse because
-	// MongoDB really wants Unix socket path in the host part of the URI
+	// MongoDB really wants Unix domain socket path in the host part of the URI
 	opts := options.Client().ApplyURI(s.MongoDBURI)
 	res := slices.ContainsFunc(opts.Hosts, func(host string) bool {
 		return strings.Contains(host, "/")
@@ -163,7 +166,9 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 
 	collection := setupCollection(tb, setupCtx, client, opts)
 
-	setupUser(tb, setupCtx, client)
+	if opts.SetupUser {
+		setupUser(tb, ctx, client)
+	}
 
 	level.SetLevel(*logLevelF)
 
@@ -326,11 +331,8 @@ func insertBenchmarkProvider(tb testtb.TB, ctx context.Context, collection *mong
 }
 
 // setupUser creates a user in admin database with supported mechanisms.
-// The user uses username/password credential which is the same as the database
-// credentials. This is done to avoid the need to reconnect as different credential.
 //
-// Without this, once the first user is created, the authentication fails
-// as username/password does not exist in admin.system.users collection.
+// Without this, once the first user is created, the authentication fails as local exception no longer applies.
 func setupUser(tb testtb.TB, ctx context.Context, client *mongo.Client) {
 	tb.Helper()
 

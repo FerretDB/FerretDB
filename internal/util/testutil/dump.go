@@ -17,6 +17,7 @@ package testutil
 import (
 	"bytes"
 	"encoding/json"
+	"strings"
 
 	"github.com/stretchr/testify/require"
 
@@ -29,7 +30,8 @@ import (
 func Dump[T types.Type](tb testtb.TB, o T) string {
 	tb.Helper()
 
-	// We might switch to go-spew or something else later.
+	// We should switch to bson2's format.
+	// TODO https://github.com/FerretDB/FerretDB/issues/4157
 	b, err := fjson.Marshal(o)
 	require.NoError(tb, err)
 
@@ -40,7 +42,8 @@ func Dump[T types.Type](tb testtb.TB, o T) string {
 func DumpSlice[T types.Type](tb testtb.TB, s []T) string {
 	tb.Helper()
 
-	// We might switch to go-spew or something else later.
+	// We should switch to bson2's format.
+	// TODO https://github.com/FerretDB/FerretDB/issues/4157
 
 	res := []byte("[")
 
@@ -67,4 +70,28 @@ func IndentJSON(tb testtb.TB, b []byte) []byte {
 	err := json.Indent(dst, b, "", "  ")
 	require.NoError(tb, err)
 	return dst.Bytes()
+}
+
+// Unindent removes the common number of leading tabs from all lines in s.
+func Unindent(tb testtb.TB, s string) string {
+	tb.Helper()
+
+	require.NotEmpty(tb, s)
+
+	parts := strings.Split(s, "\n")
+	require.Positive(tb, len(parts))
+
+	if parts[0] == "" {
+		parts = parts[1:]
+	}
+
+	indent := len(parts[0]) - len(strings.TrimLeft(parts[0], "\t"))
+	require.GreaterOrEqual(tb, indent, 0)
+
+	for i := range parts {
+		require.Greater(tb, len(parts[i]), indent, "line: %q", parts[i])
+		parts[i] = parts[i][indent:]
+	}
+
+	return strings.Join(parts, "\n")
 }

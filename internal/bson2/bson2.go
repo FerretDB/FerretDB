@@ -213,7 +213,7 @@ func convertToTypes(v any) (any, error) {
 	case string:
 		return v, nil
 	case Binary:
-		// Special case to prevent it from being stored as null in sjson / logged as null in fjson.
+		// Special case to prevent it from being stored as null in sjson.
 		// TODO https://github.com/FerretDB/FerretDB/issues/260
 		if v.B == nil {
 			v.B = []byte{}

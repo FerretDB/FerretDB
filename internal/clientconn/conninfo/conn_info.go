@@ -17,6 +17,7 @@ package conninfo
 
 import (
 	"context"
+	"net/netip"
 	"sync"
 
 	"github.com/xdg-go/scram"
@@ -32,13 +33,17 @@ var connInfoKey = contextKey{}
 type ConnInfo struct {
 	// the order of fields is weird to make the struct smaller due to alignment
 
-	PeerAddr     string
-	username     string // protected by rw
-	password     string // protected by rw
-	mechanism    string // protected by rw
-	metadataRecv bool   // protected by rw
-
 	sc *scram.ServerConversation // protected by rw
+
+	Peer netip.AddrPort // invalid for Unix domain sockets
+
+	username  string // protected by rw
+	password  string // protected by rw
+	mechanism string // protected by rw
+
+	rw sync.RWMutex
+
+	metadataRecv bool // protected by rw
 
 	// If true, backend implementations should not perform authentication
 	// by adding username and password to the connection string.
@@ -46,13 +51,16 @@ type ConnInfo struct {
 	// and by the new authentication mechanism.
 	// See where it is used for more details.
 	bypassBackendAuth bool // protected by rw
-
-	rw sync.RWMutex
 }
 
 // New returns a new ConnInfo.
 func New() *ConnInfo {
 	return new(ConnInfo)
+}
+
+// LocalPeer returns whether the peer is considered local (using Unix domain socket or loopback IP).
+func (connInfo *ConnInfo) LocalPeer() bool {
+	return !connInfo.Peer.IsValid() || connInfo.Peer.Addr().IsLoopback()
 }
 
 // Username returns stored username.
@@ -91,8 +99,8 @@ func (connInfo *ConnInfo) Conv() *scram.ServerConversation {
 
 // SetConv stores the SCRAM server conversation.
 func (connInfo *ConnInfo) SetConv(sc *scram.ServerConversation) {
-	connInfo.rw.RLock()
-	defer connInfo.rw.RUnlock()
+	connInfo.rw.Lock()
+	defer connInfo.rw.Unlock()
 
 	connInfo.username = sc.Username()
 	connInfo.sc = sc
@@ -120,17 +128,6 @@ func (connInfo *ConnInfo) SetBypassBackendAuth() {
 	defer connInfo.rw.Unlock()
 
 	connInfo.bypassBackendAuth = true
-}
-
-// UnsetBypassBackendAuth marks the connection as requiring backend authentication.
-//
-// This is a workaround to use backend authentication.
-// TODO https://github.com/FerretDB/FerretDB/issues/4100
-func (connInfo *ConnInfo) UnsetBypassBackendAuth() {
-	connInfo.rw.Lock()
-	defer connInfo.rw.Unlock()
-
-	connInfo.bypassBackendAuth = false
 }
 
 // BypassBackendAuth returns whether the connection requires backend authentication.

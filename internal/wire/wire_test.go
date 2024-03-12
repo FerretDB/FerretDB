@@ -28,6 +28,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/bson2"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
@@ -61,6 +62,7 @@ type testCase struct {
 	msgHeader *MsgHeader
 	msgBody   MsgBody
 	command   string // only for OpMsg
+	m         string
 	err       string // unwrapped
 }
 
@@ -87,7 +89,6 @@ func (tc *testCase) setExpectedB(tb testtb.TB) {
 
 func testMessages(t *testing.T, testCases []testCase) {
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -118,7 +119,7 @@ func testMessages(t *testing.T, testCases []testCase) {
 				require.NotNil(t, msgHeader)
 				require.NotNil(t, msgBody)
 				assert.NotPanics(t, func() { _ = msgHeader.String() })
-				assert.NotPanics(t, func() { _ = msgBody.String() })
+				assert.Equal(t, testutil.Unindent(t, tc.m), msgBody.String())
 
 				require.NoError(t, msgBody.check())
 
@@ -127,7 +128,10 @@ func testMessages(t *testing.T, testCases []testCase) {
 					require.NoError(t, err)
 					assert.Equal(t, tc.command, d.Command())
 
-					assert.NotPanics(t, func() { _, _ = msg.RawDocument() })
+					assert.NotPanics(t, func() {
+						_, _ = msg.RawSections()
+						_, _ = msg.RawDocument()
+					})
 				}
 			})
 
@@ -208,6 +212,7 @@ func fuzzMessages(f *testing.F, testCases []testCase) {
 				if msg, ok := msgBody.(*OpMsg); ok {
 					assert.NotPanics(t, func() {
 						_, _ = msg.Document()
+						_, _ = msg.RawSections()
 						_, _ = msg.RawDocument()
 					})
 				}

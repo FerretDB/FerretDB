@@ -206,6 +206,7 @@ func fuzzBinary(f *testing.F, testCases []testCase, newFunc func() bsontype) {
 				t.Skip()
 			}
 
+			// TODO https://github.com/FerretDB/FerretDB/issues/4157
 			mB, err := fjson.Marshal(fromBSON(v))
 			require.NoError(t, err)
 			assert.NotEmpty(t, mB)
@@ -227,7 +228,7 @@ func benchmark(b *testing.B, testCases []testCase, newFunc func() bsontype) {
 				b.SetBytes(br.Size())
 				b.ResetTimer()
 
-				for i := 0; i < b.N; i++ {
+				for range b.N {
 					_, seekErr = br.Seek(0, io.SeekStart)
 
 					v = newFunc()
