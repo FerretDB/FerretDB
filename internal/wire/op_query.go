@@ -151,8 +151,8 @@ func (query *OpQuery) ReturnFieldsSelector() *types.Document {
 	return must.NotFail(query.returnFieldsSelector.Convert())
 }
 
-// String returns a string representation for logging.
-func (query *OpQuery) String() string {
+// logMessage returns a string representation for logging.
+func (query *OpQuery) logMessage(block bool) string {
 	if query == nil {
 		return "<nil>"
 	}
@@ -180,7 +180,21 @@ func (query *OpQuery) String() string {
 		}
 	}
 
+	if block {
+		return m.LogMessageBlock()
+	}
+
 	return m.LogMessage()
+}
+
+// String returns a string representation for logging.
+func (query *OpQuery) String() string {
+	return query.logMessage(false)
+}
+
+// StringBlock returns an indented string representation for logging.
+func (query *OpQuery) StringBlock() string {
+	return query.logMessage(true)
 }
 
 // check interfaces

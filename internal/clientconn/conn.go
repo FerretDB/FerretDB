@@ -340,11 +340,11 @@ func (c *conn) run(ctx context.Context) (err error) {
 			var resBodyString, proxyBodyString string
 
 			if resBody != nil {
-				resBodyString = resBody.String()
+				resBodyString = resBody.StringBlock()
 			}
 
 			if proxyBody != nil {
-				proxyBodyString = proxyBody.String()
+				proxyBodyString = proxyBody.StringBlock()
 			}
 
 			var diffBody string

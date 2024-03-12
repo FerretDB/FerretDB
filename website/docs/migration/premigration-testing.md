@@ -121,66 +121,37 @@ Continuing with the same example above, we can further examine the diff output w
 In the diff output below, however, we have discovered that the query cannot be serviced by our application because the `$first` accumulator operator is not implemented in FerretDB.
 
 ```diff
-2023-08-29T13:25:09.048+0200  WARN  // 127.0.0.1:33522 -> 127.0.0.1:27017  clientconn/conn.go:360 Header diff:
+Header diff:
 --- res header
 +++ proxy header
 @@ -1 +1 @@
--length:   140, id:    2, response_to:  156, opcode: OP_MSG
-+length:   181, id:  360, response_to:  156, opcode: OP_MSG
+-length:   140, id:    8, response_to:   19, opcode: OP_MSG
++length:   306, id:  128, response_to:   19, opcode: OP_MSG
 
 Body diff:
 --- res body
 +++ proxy body
-@@ -7,13 +7,41 @@
-         "$k": [
--          "ok",
--          "errmsg",
--          "code",
--          "codeName"
-+          "cursor",
-+          "ok"
-         ],
-+        "cursor": {
-+          "$k": [
-+            "firstBatch",
-+            "id",
-+            "ns"
-+          ],
-+          "firstBatch": [
-+            {
-+              "$k": [
-+                "_id",
-+                "firstPost"
-+              ],
-+              "_id": "Alice",
-+              "firstPost": {
-+                "$d": 1692527603134
-+              }
-+            },
-+            {
-+              "$k": [
-+                "_id",
-+                "firstPost"
-+              ],
-+              "_id": "Bob",
-+              "firstPost": {
-+                "$d": 1693218803134
-+              }
-+            }
-+          ],
-+          "id": {
-+            "$l": "0"
-+          },
-+          "ns": "test.posts"
-+        },
-         "ok": {
--          "$f": 0
--        },
+@@ -7,6 +7,25 @@
+       "Document": {
+-        "ok": 0.0,
 -        "errmsg": "$group accumulator \"$first\" is not implemented yet",
 -        "code": 238,
--        "codeName": "NotImplemented"
-+          "$f": 1
-+        }
+-        "codeName": "NotImplemented",
++        "cursor": {
++          "firstBatch": [
++            {
++              "_id": "Bob",
++              "firstPost": 2023-08-28T10:33:23.134Z,
++            },
++            {
++              "_id": "Alice",
++              "firstPost": 2023-08-20T10:33:23.134Z,
++            },
++          ],
++          "id": int64(0),
++          "ns": "test.posts",
++        },
++        "ok": 1.0,
        },
 ```
 

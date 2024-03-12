@@ -51,14 +51,15 @@ func TestLogging(t *testing.T) {
 
 	for _, tc := range []struct {
 		name string
-		v    slog.LogValuer
+		doc  *Document
 		t    string
 		j    string
 		m    string
+		b    string
 	}{
 		{
 			name: "Numbers",
-			v: must.NotFail(NewDocument(
+			doc: must.NotFail(NewDocument(
 				"f64", 42.0,
 				"inf", float64(math.Inf(1)),
 				"neg_inf", float64(math.Inf(-1)),
@@ -81,10 +82,21 @@ func TestLogging(t *testing.T) {
 			  "i32": 42,
 			  "i64": int64(42),
 			}`,
+			b: `
+			{
+			  "f64": 42.0,
+			  "inf": +Inf,
+			  "neg_inf": -Inf,
+			  "zero": 0.0,
+			  "neg_zero": -0.0,
+			  "nan": NaN,
+			  "i32": 42,
+			  "i64": int64(42),
+			}`,
 		},
 		{
 			name: "Scalars",
-			v: must.NotFail(NewDocument(
+			doc: must.NotFail(NewDocument(
 				"null", Null,
 				"id", ObjectID{0x42},
 				"bool", true,
@@ -99,10 +111,17 @@ func TestLogging(t *testing.T) {
 			  "bool": true,
 			  "time": 2023-03-06T09:14:42.123Z,
 			}`,
+			b: `
+			{
+			  "null": null,
+			  "id": ObjectID(420000000000000000000000),
+			  "bool": true,
+			  "time": 2023-03-06T09:14:42.123Z,
+			}`,
 		},
 		{
 			name: "Composites",
-			v: must.NotFail(NewDocument(
+			doc: must.NotFail(NewDocument(
 				"doc", must.NotFail(NewDocument(
 					"foo", "bar",
 					"baz", must.NotFail(NewDocument(
@@ -128,10 +147,29 @@ func TestLogging(t *testing.T) {
 			  "doc_empty": {},
 			  "array": ["foo", "bar", ["baz", "qux"]],
 			}`,
+			b: `
+			{
+			  "doc": {
+			    "foo": "bar",
+			    "baz": {
+			      "qux": "quux",
+			    },
+			  },
+			  "doc_raw": RawDocument<1>,
+			  "doc_empty": {},
+			  "array": [
+			    "foo",
+			    "bar",
+			    [
+			      "baz",
+			      "qux",
+			    ],
+			  ],
+			}`,
 		},
 		{
 			name: "Nested",
-			v:    makeNested(false, 20).(*Document),
+			doc:  makeNested(false, 20).(*Document),
 			t:    `v.f.0.f.0.f.0.f.0.f.0.f.0.f.0.f.0.f.0.f.0=<nil>`,
 			j: `{"v":{"f":{"0":{"f":{"0":{"f":{"0":{"f":{"0":{"f":{"0":{"f":{"0":` +
 				`{"f":{"0":{"f":{"0":{"f":{"0":{"f":{"0":null}}}}}}}}}}}}}}}}}}}}}`,
@@ -143,18 +181,64 @@ func TestLogging(t *testing.T) {
 			    },
 			  ],
 			}`,
+			b: `
+			{
+			  "f": [
+			    {
+			      "f": [
+			        {
+			          "f": [
+			            {
+			              "f": [
+			                {
+			                  "f": [
+			                    {
+			                      "f": [
+			                        {
+			                          "f": [
+			                            {
+			                              "f": [
+			                                {
+			                                  "f": [
+			                                    {
+			                                      "f": [
+			                                        null,
+			                                      ],
+			                                    },
+			                                  ],
+			                                },
+			                              ],
+			                            },
+			                          ],
+			                        },
+			                      ],
+			                    },
+			                  ],
+			                },
+			              ],
+			            },
+			          ],
+			        },
+			      ],
+			    },
+			  ],
+			}`,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			tlog.InfoContext(ctx, "", slog.Any("v", tc.v))
+			tlog.InfoContext(ctx, "", slog.Any("v", tc.doc))
 			assert.Equal(t, tc.t+"\n", tbuf.String())
 			tbuf.Reset()
 
-			jlog.InfoContext(ctx, "", slog.Any("v", tc.v))
+			jlog.InfoContext(ctx, "", slog.Any("v", tc.doc))
 			assert.Equal(t, tc.j+"\n", jbuf.String())
 			jbuf.Reset()
 
-			assert.Equal(t, testutil.Unindent(t, tc.m), logMessage(tc.v))
+			m := tc.doc.LogMessage()
+			assert.Equal(t, testutil.Unindent(t, tc.m), m, "actual:\n%s", m)
+
+			b := tc.doc.LogMessageBlock()
+			assert.Equal(t, testutil.Unindent(t, tc.b), b, "actual:\n%s", b)
 		})
 	}
 }
