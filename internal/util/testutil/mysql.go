@@ -95,6 +95,42 @@ func TestMySQLURI(tb testtb.TB, ctx context.Context, baseURI string) string {
 			return
 		}
 
+		// tests are grouped using a directory name, and subtests are prefixed with
+		// the directory name which in essence provide a logical grouping of similar tests.
+		// The databases are dropped in a similar fashion by matching the prefix for the subtests.
+		prefix := name + "_%"
+		q = fmt.Sprintf(
+			`SELECT COUNT(schema_name)
+					FROM information_schema.schemata
+					WHERE LOWER(schema_name) LIKE %q;
+					`,
+			prefix,
+		)
+
+		var count int
+		err = db.QueryRowContext(ctx, q).Scan(&count)
+		require.NoError(tb, err)
+
+		if count != 0 {
+			q = fmt.Sprintf(
+				`SELECT GROUP_CONCAT('DROP DATABASE ', schema_name, ';') INTO @dropstmt
+					FROM information_schema.schemata
+					WHERE LOWER(schema_name) LIKE %q
+					`,
+				prefix,
+			)
+			_, err = db.ExecContext(ctx, q)
+			require.NoError(tb, err)
+
+			q = fmt.Sprintf("PREPARE stmt FROM @dropstmt")
+			_, err = db.ExecContext(ctx, q)
+			require.NoError(tb, err)
+
+			q = fmt.Sprintf("EXECUTE stmt")
+			_, err = db.ExecContext(ctx, q)
+			require.NoError(tb, err)
+		}
+
 		q = fmt.Sprintf("DROP DATABASE %s", name)
 		_, err = db.ExecContext(ctx, q)
 		require.NoError(tb, err)
