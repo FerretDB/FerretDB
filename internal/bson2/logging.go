@@ -25,11 +25,12 @@ import (
 	"time"
 )
 
-// logFlowLimit is the maximum length of a flow/inline/compact representation of a BSON value.
+// logMaxFlowLength is the maximum length of a flow/inline/compact representation of a BSON value.
 // It may be set to 0 to disable flow representation.
-const logFlowLimit = 80
+const logMaxFlowLength = 80
 
-const logDepthLimit = 20
+// logMaxDepth is the maximum depth of a recursive representation of a BSON value.
+const logMaxDepth = 20
 
 // nanBits is the most common pattern of a NaN float64 value, the same as math.Float64bits(math.NaN()).
 const nanBits = 0b111111111111000000000000000000000000000000000000000000000000001
@@ -47,7 +48,7 @@ const nanBits = 0b11111111111100000000000000000000000000000000000000000000000000
 func slogValue(v any, depth int) slog.Value {
 	switch v := v.(type) {
 	case *Document:
-		if depth > logDepthLimit {
+		if depth > logMaxDepth {
 			return slog.StringValue("Document<...>")
 		}
 
@@ -67,7 +68,7 @@ func slogValue(v any, depth int) slog.Value {
 		return slog.StringValue("RawDocument<" + strconv.Itoa(len(v)) + ">")
 
 	case *Array:
-		if depth > logDepthLimit {
+		if depth > logMaxDepth {
 			return slog.StringValue("Array<...>")
 		}
 
@@ -153,11 +154,11 @@ func logMessageIndent(v any, indent string, depth int) string {
 			return "{}"
 		}
 
-		if depth > logDepthLimit {
+		if depth > logMaxDepth {
 			return "{...}"
 		}
 
-		if logFlowLimit > 0 {
+		if logMaxFlowLength > 0 {
 			res := "{"
 
 			for i, f := range v.fields {
@@ -171,7 +172,7 @@ func logMessageIndent(v any, indent string, depth int) string {
 
 			res += `}`
 
-			if len(res) < logFlowLimit {
+			if len(res) < logMaxFlowLength {
 				return res
 			}
 		}
@@ -197,11 +198,11 @@ func logMessageIndent(v any, indent string, depth int) string {
 			return "[]"
 		}
 
-		if depth > logDepthLimit {
+		if depth > logMaxDepth {
 			return "[...]"
 		}
 
-		if logFlowLimit > 0 {
+		if logMaxFlowLength > 0 {
 			res := "["
 
 			for i, e := range v.elements {
@@ -214,7 +215,7 @@ func logMessageIndent(v any, indent string, depth int) string {
 
 			res += `]`
 
-			if len(res) < logFlowLimit {
+			if len(res) < logMaxFlowLength {
 				return res
 			}
 		}
