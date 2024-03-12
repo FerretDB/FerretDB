@@ -129,6 +129,21 @@ func TestLogging(t *testing.T) {
 			  "array": ["foo", "bar", ["baz", "qux"]],
 			}`,
 		},
+		{
+			name: "Nested",
+			v:    makeNested(false, 20).(*Document),
+			t:    `v.f.0.f.0.f.0.f.0.f.0.f.0.f.0.f.0.f.0.f.0=<nil>`,
+			j: `{"v":{"f":{"0":{"f":{"0":{"f":{"0":{"f":{"0":{"f":{"0":{"f":{"0":` +
+				`{"f":{"0":{"f":{"0":{"f":{"0":{"f":{"0":null}}}}}}}}}}}}}}}}}}}}}`,
+			m: `
+			{
+			  "f": [
+			    {
+			      "f": [{"f": [{"f": [{"f": [{"f": [{"f": [{"f": [{"f": [{"f": [null]}]}]}]}]}]}]}]}],
+			    },
+			  ],
+			}`,
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			tlog.InfoContext(ctx, "", slog.Any("v", tc.v))
@@ -142,4 +157,23 @@ func TestLogging(t *testing.T) {
 			assert.Equal(t, testutil.Unindent(t, tc.m), logMessage(tc.v))
 		})
 	}
+}
+
+// makeNested creates a nested document or array with the given depth.
+func makeNested(array bool, depth int) any {
+	if depth < 1 {
+		panic("depth must be at least 1")
+	}
+
+	var child any = Null
+
+	if depth > 1 {
+		child = makeNested(!array, depth-1)
+	}
+
+	if array {
+		return must.NotFail(NewArray(child))
+	}
+
+	return must.NotFail(NewDocument("f", child))
 }

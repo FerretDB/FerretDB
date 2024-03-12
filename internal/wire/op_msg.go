@@ -25,13 +25,16 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
+// typesValidation, when true, enables validation of types in wire messages.
+const typesValidation = true
+
 // OpMsgSection is one or more sections contained in an OpMsg.
 type OpMsgSection struct {
 	// The order of fields is weird to make the struct smaller due to alignment.
 	// The wire order is: kind, identifier, documents.
 
 	Identifier string
-	documents  []bson2.RawDocument
+	Documents  []bson2.RawDocument
 	Kind       byte
 }
 
@@ -40,7 +43,7 @@ func MakeOpMsgSection(doc *types.Document) OpMsgSection {
 	raw := must.NotFail(must.NotFail(bson2.ConvertDocument(doc)).Encode())
 
 	return OpMsgSection{
-		documents: []bson2.RawDocument{raw},
+		Documents: []bson2.RawDocument{raw},
 	}
 }
 
@@ -57,7 +60,7 @@ type OpMsg struct {
 // NewOpMsg creates a message with a single section of kind 0 with a single raw document.
 func NewOpMsg(raw bson2.RawDocument) (*OpMsg, error) {
 	var msg OpMsg
-	if err := msg.SetSections(OpMsgSection{documents: []bson2.RawDocument{raw}}); err != nil {
+	if err := msg.SetSections(OpMsgSection{Documents: []bson2.RawDocument{raw}}); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
@@ -84,8 +87,8 @@ func checkSections(sections []OpMsgSection) error {
 				return lazyerrors.New("kind 0 section has identifier")
 			}
 
-			if len(s.documents) != 1 {
-				return lazyerrors.Errorf("kind 0 section has %d documents", len(s.documents))
+			if len(s.Documents) != 1 {
+				return lazyerrors.Errorf("kind 0 section has %d documents", len(s.Documents))
 			}
 
 		case 1:
@@ -120,10 +123,10 @@ func (msg *OpMsg) SetSections(sections ...OpMsgSection) error {
 		}
 	}
 
-	// for validation
-	_, err := msg.Document()
-	if err != nil {
-		return lazyerrors.Error(err)
+	if typesValidation {
+		if _, err := msg.Document(); err != nil {
+			return lazyerrors.Error(err)
+		}
 	}
 
 	return nil
@@ -148,7 +151,7 @@ func (msg *OpMsg) Document() (*types.Document, error) {
 			continue
 		}
 
-		doc, err := section.documents[0].Convert()
+		doc, err := section.Documents[0].Convert()
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -161,9 +164,9 @@ func (msg *OpMsg) Document() (*types.Document, error) {
 			continue
 		}
 
-		a := types.MakeArray(len(section.documents))
+		a := types.MakeArray(len(section.Documents))
 
-		for _, d := range section.documents {
+		for _, d := range section.Documents {
 			doc, err := d.Convert()
 			if err != nil {
 				return nil, lazyerrors.Error(err)
@@ -204,10 +207,10 @@ func (msg *OpMsg) RawSections() (bson2.RawDocument, []byte) {
 	for _, s := range msg.Sections() {
 		switch s.Kind {
 		case 0:
-			spec = s.documents[0]
+			spec = s.Documents[0]
 
 		case 1:
-			for _, d := range s.documents {
+			for _, d := range s.Documents {
 				seq = append(seq, d...)
 			}
 		}
@@ -230,7 +233,7 @@ func (msg *OpMsg) RawDocument() (bson2.RawDocument, error) {
 		return nil, lazyerrors.Errorf(`expected section 0/"", got %d/%q`, s.Kind, s.Identifier)
 	}
 
-	return s.documents[0], nil
+	return s.Documents[0], nil
 }
 
 func (msg *OpMsg) msgbody() {}
@@ -238,7 +241,7 @@ func (msg *OpMsg) msgbody() {}
 // check implements [MsgBody] interface.
 func (msg *OpMsg) check() error {
 	for _, s := range msg.sections {
-		for _, d := range s.documents {
+		for _, d := range s.Documents {
 			if _, err := d.DecodeDeep(); err != nil {
 				return lazyerrors.Error(err)
 			}
@@ -270,7 +273,7 @@ func (msg *OpMsg) UnmarshalBinaryNocopy(b []byte) error {
 				return lazyerrors.Error(err)
 			}
 
-			section.documents = []bson2.RawDocument{b[offset : offset+l]}
+			section.Documents = []bson2.RawDocument{b[offset : offset+l]}
 			offset += l
 
 		case 1:
@@ -313,7 +316,7 @@ func (msg *OpMsg) UnmarshalBinaryNocopy(b []byte) error {
 					return lazyerrors.Error(err)
 				}
 
-				section.documents = append(section.documents, b[offset:offset+l])
+				section.Documents = append(section.Documents, b[offset:offset+l])
 				offset += l
 				secSize -= l
 			}
@@ -351,9 +354,10 @@ func (msg *OpMsg) UnmarshalBinaryNocopy(b []byte) error {
 		}
 	}
 
-	// for validation
-	if _, err := msg.Document(); err != nil {
-		return lazyerrors.Error(err)
+	if typesValidation {
+		if _, err := msg.Document(); err != nil {
+			return lazyerrors.Error(err)
+		}
 	}
 
 	return nil
@@ -371,9 +375,10 @@ func (msg *OpMsg) MarshalBinary() ([]byte, error) {
 		}
 	}
 
-	// for validation
-	if _, err := msg.Document(); err != nil {
-		return nil, lazyerrors.Error(err)
+	if typesValidation {
+		if _, err := msg.Document(); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 	}
 
 	b := make([]byte, 4, 16)
@@ -385,13 +390,13 @@ func (msg *OpMsg) MarshalBinary() ([]byte, error) {
 
 		switch section.Kind {
 		case 0:
-			b = append(b, section.documents[0]...)
+			b = append(b, section.Documents[0]...)
 
 		case 1:
 			sec := make([]byte, bson2.SizeCString(section.Identifier))
 			bson2.EncodeCString(sec, section.Identifier)
 
-			for _, doc := range section.documents {
+			for _, doc := range section.Documents {
 				sec = append(sec, doc...)
 			}
 
@@ -435,7 +440,7 @@ func (msg *OpMsg) String() string {
 
 		switch section.Kind {
 		case 0:
-			doc, err := section.documents[0].DecodeDeep()
+			doc, err := section.Documents[0].DecodeDeep()
 			if err == nil {
 				must.NoError(s.Add("Document", doc))
 			} else {
@@ -444,9 +449,9 @@ func (msg *OpMsg) String() string {
 
 		case 1:
 			must.NoError(s.Add("Identifier", section.Identifier))
-			docs := bson2.MakeArray(len(section.documents))
+			docs := bson2.MakeArray(len(section.Documents))
 
-			for _, d := range section.documents {
+			for _, d := range section.Documents {
 				doc, err := d.DecodeDeep()
 				if err == nil {
 					must.NoError(docs.Add(doc))

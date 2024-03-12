@@ -267,7 +267,7 @@ func BenchmarkSCRAMSHA256(b *testing.B) {
 	b.Run("Exported", func(b *testing.B) {
 		b.ReportAllocs()
 
-		for i := 0; i < b.N; i++ {
+		for range b.N {
 			_, err = SCRAMSHA256Hash("password")
 		}
 	})

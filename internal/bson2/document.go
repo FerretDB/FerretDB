@@ -175,7 +175,7 @@ func (doc *Document) Encode() (RawDocument, error) {
 
 // LogValue implements slog.LogValuer interface.
 func (doc *Document) LogValue() slog.Value {
-	return slogValue(doc)
+	return slogValue(doc, 1)
 }
 
 // LogMessage returns an indented representation as a string,
