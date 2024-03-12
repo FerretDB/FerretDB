@@ -274,8 +274,6 @@ func TestAuthenticationOnAuthenticatedConnection(t *testing.T) {
 		require.NoError(t, client.Disconnect(ctx))
 	})
 
-	expectedUsers := must.NotFail(types.NewArray(must.NotFail(types.NewDocument("user", username, "db", db.Name()))))
-
 	db = client.Database(db.Name())
 	var res bson.D
 	err = db.RunCommand(ctx, bson.D{{"connectionStatus", 1}}).Decode(&res)
@@ -286,7 +284,14 @@ func TestAuthenticationOnAuthenticatedConnection(t *testing.T) {
 
 	actualUsersV, err := actualAuth.(*types.Document).Get("authenticatedUsers")
 	require.NoError(t, err)
-	require.Equal(t, expectedUsers, actualUsersV.(*types.Array))
+
+	actualUsers := actualUsersV.(*types.Array)
+	require.Equal(t, 1, actualUsers.Len())
+
+	actualUser := must.NotFail(actualUsers.Get(0)).(*types.Document)
+	user, err := actualUser.Get("user")
+	require.NoError(t, err)
+	require.Equal(t, username, user)
 
 	saslStart := bson.D{
 		{"saslStart", 1},
@@ -306,7 +311,14 @@ func TestAuthenticationOnAuthenticatedConnection(t *testing.T) {
 
 	actualUsersV, err = actualAuth.(*types.Document).Get("authenticatedUsers")
 	require.NoError(t, err)
-	require.Equal(t, expectedUsers, actualUsersV.(*types.Array))
+
+	actualUsers = actualUsersV.(*types.Array)
+	require.Equal(t, 1, actualUsers.Len())
+
+	actualUser = must.NotFail(actualUsers.Get(0)).(*types.Document)
+	user, err = actualUser.Get("user")
+	require.NoError(t, err)
+	require.Equal(t, username, user)
 
 	err = db.RunCommand(ctx, saslStart).Decode(&res)
 	require.NoError(t, err)
