@@ -61,8 +61,11 @@ func TestHello(t *testing.T) {
 func TestHelloWithSupportedMechs(t *testing.T) {
 	t.Parallel()
 
-	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
-	db := collection.Database()
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{
+		SetupUser: true,
+		Providers: []shareddata.Provider{shareddata.Scalars, shareddata.Composites},
+	})
+	ctx, db := s.Ctx, s.Collection.Database()
 
 	usersPayload := []bson.D{
 		{

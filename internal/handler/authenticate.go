@@ -17,6 +17,7 @@ package handler
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
@@ -32,17 +33,14 @@ import (
 // If EnableNewAuth is false or bypass backend auth is set false, it succeeds
 // authentication and let backend handle it.
 //
-// When admin.systems.user contains no user, the authentication is delegated to
-// the backend.
-// TODO https://github.com/FerretDB/FerretDB/issues/4100
+// When admin.systems.user contains no user, and the client is connected from
+// the localhost, it bypasses credentials check.
 func (h *Handler) authenticate(ctx context.Context) error {
 	if !h.EnableNewAuth {
 		return nil
 	}
 
-	if !conninfo.Get(ctx).BypassBackendAuth() {
-		return nil
-	}
+	conninfo.Get(ctx).SetBypassBackendAuth()
 
 	adminDB, err := h.b.Database("admin")
 	if err != nil {
@@ -61,10 +59,13 @@ func (h *Handler) authenticate(ctx context.Context) error {
 		// SCRAM calls back scramCredentialLookup each time Step is called,
 		// and that checks the authentication.
 		return nil
-	case "PLAIN":
+	case "PLAIN", "":
+		// mechanism may be empty for local host exception
 		break
 	default:
-		return lazyerrors.Errorf("Unsupported authentication mechanism %q", mechanism)
+		msg := fmt.Sprintf("Unsupported authentication mechanism %q.\n", mechanism) +
+			"See https://docs.ferretdb.io/security/authentication/ for more details."
+		return handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrAuthenticationFailed, msg, mechanism)
 	}
 
 	// For `PLAIN` mechanism $db field is always `$external` upon saslStart.
@@ -111,14 +112,7 @@ func (h *Handler) authenticate(ctx context.Context) error {
 		}
 	}
 
-	if !hasUser {
-		// There is no user in the database, let the backend check the authentication.
-		// We do not want unauthenticated users accessing the database, while allowing
-		// users with valid backend credentials to access the database.
-		// TODO https://github.com/FerretDB/FerretDB/issues/4100
-		conninfo.Get(ctx).UnsetBypassBackendAuth()
-		h.L.Error("backend is used for authentication - no user in admin.system.users collection")
-
+	if !hasUser && conninfo.Get(ctx).LocalPeer() {
 		return nil
 	}
 
