@@ -462,20 +462,20 @@ func GenerateDocuments(startID, endID int32) (bson.A, []bson.D) {
 // CreateNestedDocument creates a mock BSON document that consists of nested arrays and documents.
 // The nesting level is based on integer parameter.
 func CreateNestedDocument(n int) bson.D {
-	return createNestedDocument(n, false).(bson.D)
+	return createNested(n, false).(bson.D)
 }
 
-// createNestedDocument creates the nested n times object that consists of
+// createNested creates the nested n times object that consists of
 // documents and arrays. If the arr is true, the root value will be array.
 //
 // This function should be used only internally.
 // To generate values for tests please use
 // exported CreateNestedDocument function.
-func createNestedDocument(n int, arr bool) any {
+func createNested(n int, arr bool) any {
 	var child any
 
 	if n > 0 {
-		child = createNestedDocument(n-1, !arr)
+		child = createNested(n-1, !arr)
 	}
 
 	if arr {

@@ -16,7 +16,6 @@ package password
 
 import (
 	"encoding/base64"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -161,8 +160,8 @@ func BenchmarkSCRAMSHA1(b *testing.B) {
 	b.Run("Exported", func(b *testing.B) {
 		b.ReportAllocs()
 
-		for i := 0; i < b.N; i++ {
-			_, err = SCRAMSHA1Hash(fmt.Sprintf("user%d", i), "password")
+		for range b.N {
+			_, err = SCRAMSHA1Hash("user", "password")
 		}
 	})
 

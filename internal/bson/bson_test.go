@@ -228,7 +228,7 @@ func benchmark(b *testing.B, testCases []testCase, newFunc func() bsontype) {
 				b.SetBytes(br.Size())
 				b.ResetTimer()
 
-				for i := 0; i < b.N; i++ {
+				for range b.N {
 					_, seekErr = br.Seek(0, io.SeekStart)
 
 					v = newFunc()
