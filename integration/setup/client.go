@@ -16,6 +16,9 @@ package setup
 
 import (
 	"context"
+	"net/url"
+	"os"
+	"path/filepath"
 
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -63,6 +66,8 @@ func setupClient(tb testtb.TB, ctx context.Context, uri string) *mongo.Client {
 
 	defer observability.FuncCall(ctx)()
 
+	uri = toAbsolutePathUri(tb, uri)
+
 	client, err := makeClient(ctx, uri)
 	if err != nil {
 		tb.Error(err)
@@ -75,4 +80,36 @@ func setupClient(tb testtb.TB, ctx context.Context, uri string) *mongo.Client {
 	})
 
 	return client
+}
+
+// toAbsolutePathUri replaces tlsCertificateKeyFile and tlsCaFile path to an absolute path.
+// If the test is run from subdirectory such as `integration/user/`, the absolute path
+// is found by looking for the file in the parent directory.
+func toAbsolutePathUri(tb testtb.TB, uri string) string {
+	u, err := url.Parse(uri)
+	require.NoError(tb, err)
+
+	values := url.Values{}
+
+	for k, v := range u.Query() {
+		require.Len(tb, v, 1)
+
+		switch k {
+		case "tlsCertificateKeyFile", "tlsCaFile":
+			file := filepath.Join(Dir(tb), v[0])
+
+			_, err := os.Stat(file)
+			if os.IsNotExist(err) {
+				file = filepath.Join(Dir(tb), "..", v[0])
+			}
+
+			values[k] = []string{file}
+		default:
+			values[k] = v
+		}
+	}
+
+	u.RawQuery = values.Encode()
+
+	return u.String()
 }

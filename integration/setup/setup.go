@@ -350,15 +350,22 @@ func setupUser(tb testtb.TB, ctx context.Context, client *mongo.Client, uri stri
 		err = nil
 	}
 
-	require.NoError(tb, err, "cannot drop user")
+	require.NoError(tb, err)
+
+	roles := bson.A{}
+	if IsMongoDB(tb) {
+		// use root role for FerretDB once authorization is implemented
+		// TODO https://github.com/FerretDB/FerretDB/issues/3974
+		roles = bson.A{"root"}
+	}
 
 	err = client.Database("admin").RunCommand(ctx, bson.D{
 		{"createUser", username},
-		{"roles", bson.A{}},
+		{"roles", roles},
 		{"pwd", password},
 		{"mechanisms", bson.A{"SCRAM-SHA-1", "SCRAM-SHA-256"}},
 	}).Err()
-	require.NoError(tb, err, "cannot create user")
+	require.NoError(tb, err)
 
 	credential := options.Credential{
 		AuthMechanism: "SCRAM-SHA-256",
@@ -367,15 +374,17 @@ func setupUser(tb testtb.TB, ctx context.Context, client *mongo.Client, uri stri
 		Password:      password,
 	}
 
+	uri = toAbsolutePathUri(tb, uri)
 	opts := options.Client().ApplyURI(uri).SetAuth(credential)
+
 	authenticatedClient, err := mongo.Connect(ctx, opts)
-	require.NoError(tb, err, "cannot connect to MongoDB")
+	require.NoError(tb, err)
 
 	tb.Cleanup(func() {
 		err = authenticatedClient.Database("admin").RunCommand(ctx, bson.D{
 			{"dropUser", username},
 		}).Err()
-		require.NoError(tb, err, "cannot drop user")
+		require.NoError(tb, err)
 	})
 
 	return authenticatedClient
