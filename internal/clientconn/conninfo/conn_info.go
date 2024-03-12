@@ -35,6 +35,7 @@ type ConnInfo struct {
 	PeerAddr     string
 	username     string // protected by rw
 	password     string // protected by rw
+	mechanism    string // protected by rw
 	metadataRecv bool   // protected by rw
 
 	sc *scram.ServerConversation // protected by rw
@@ -62,21 +63,22 @@ func (connInfo *ConnInfo) Username() string {
 	return connInfo.username
 }
 
-// Auth returns stored username and password.
-func (connInfo *ConnInfo) Auth() (username, password string) {
+// Auth returns stored username, password and mechanism.
+func (connInfo *ConnInfo) Auth() (username, password, mechanism string) {
 	connInfo.rw.RLock()
 	defer connInfo.rw.RUnlock()
 
-	return connInfo.username, connInfo.password
+	return connInfo.username, connInfo.password, connInfo.mechanism
 }
 
-// SetAuth stores username and password.
-func (connInfo *ConnInfo) SetAuth(username, password string) {
+// SetAuth stores username, password.
+func (connInfo *ConnInfo) SetAuth(username, password, mechanism string) {
 	connInfo.rw.Lock()
 	defer connInfo.rw.Unlock()
 
 	connInfo.username = username
 	connInfo.password = password
+	connInfo.mechanism = mechanism
 }
 
 // Conv returns stored SCRAM server conversation.
