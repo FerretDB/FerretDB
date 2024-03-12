@@ -207,7 +207,7 @@ func TestAuthentication(t *testing.T) {
 			opts := options.Client().ApplyURI(s.MongoDBURI).SetAuth(credential)
 
 			client, err := mongo.Connect(ctx, opts)
-			require.NoError(t, err, "cannot connect to MongoDB")
+			require.NoError(t, err)
 
 			// Ping to force connection to be established and tested.
 			err = client.Ping(ctx, nil)
@@ -222,7 +222,7 @@ func TestAuthentication(t *testing.T) {
 				return
 			}
 
-			require.NoError(t, err, "cannot ping MongoDB")
+			require.NoError(t, err)
 
 			connCollection := client.Database(db.Name()).Collection(collection.Name())
 
@@ -268,7 +268,7 @@ func TestAuthenticationOnAuthenticatedConnection(t *testing.T) {
 	opts := options.Client().ApplyURI(s.MongoDBURI).SetAuth(credential)
 
 	client, err := mongo.Connect(ctx, opts)
-	require.NoError(t, err, "cannot connect to MongoDB")
+	require.NoError(t, err)
 
 	t.Cleanup(func() {
 		require.NoError(t, client.Disconnect(ctx))
@@ -336,7 +336,7 @@ func TestAuthenticationLocalhostException(tt *testing.T) {
 
 	opts := options.Client().ApplyURI(s.MongoDBURI)
 	clientNoAuth, err := mongo.Connect(ctx, opts)
-	require.NoError(t, err, "cannot connect to MongoDB")
+	require.NoError(t, err)
 
 	t.Cleanup(func() {
 		require.NoError(t, clientNoAuth.Disconnect(ctx))
@@ -377,7 +377,7 @@ func TestAuthenticationLocalhostException(tt *testing.T) {
 	opts = options.Client().ApplyURI(s.MongoDBURI).SetAuth(credential)
 
 	client, err := mongo.Connect(ctx, opts)
-	require.NoError(t, err, "cannot connect to MongoDB")
+	require.NoError(t, err)
 
 	t.Cleanup(func() {
 		require.NoError(t, client.Disconnect(ctx))
@@ -471,7 +471,7 @@ func TestAuthenticationEnableNewAuthPLAIN(tt *testing.T) {
 			opts := options.Client().ApplyURI(s.MongoDBURI).SetAuth(credential)
 
 			client, err := mongo.Connect(ctx, opts)
-			require.NoError(t, err, "cannot connect to MongoDB")
+			require.NoError(t, err)
 
 			t.Cleanup(func() {
 				require.NoError(t, client.Disconnect(ctx))

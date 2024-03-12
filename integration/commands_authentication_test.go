@@ -36,7 +36,7 @@ func TestCommandsAuthenticationLogout(t *testing.T) {
 
 	opts := options.Client().ApplyURI(s.MongoDBURI)
 	client, err := mongo.Connect(ctx, opts)
-	require.NoError(t, err, "cannot connect to MongoDB")
+	require.NoError(t, err)
 
 	t.Cleanup(func() {
 		require.NoError(t, client.Disconnect(ctx))
@@ -90,7 +90,7 @@ func TestCommandsAuthenticationLogoutAuthenticatedUser(t *testing.T) {
 
 	opts := options.Client().ApplyURI(s.MongoDBURI).SetAuth(credential)
 	client, err := mongo.Connect(ctx, opts)
-	require.NoError(t, err, "cannot connect to MongoDB")
+	require.NoError(t, err)
 
 	t.Cleanup(func() {
 		require.NoError(t, client.Disconnect(ctx))
