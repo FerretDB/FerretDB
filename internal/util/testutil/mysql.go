@@ -122,11 +122,11 @@ func TestMySQLURI(tb testtb.TB, ctx context.Context, baseURI string) string {
 			_, err = db.ExecContext(ctx, q)
 			require.NoError(tb, err)
 
-			q = fmt.Sprintf("PREPARE stmt FROM @dropstmt")
+			q = "PREPARE stmt FROM @dropstmt"
 			_, err = db.ExecContext(ctx, q)
 			require.NoError(tb, err)
 
-			q = fmt.Sprintf("EXECUTE stmt")
+			q = "EXECUTE stmt"
 			_, err = db.ExecContext(ctx, q)
 			require.NoError(tb, err)
 		}
