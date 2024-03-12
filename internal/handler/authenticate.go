@@ -17,6 +17,7 @@ package handler
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
@@ -51,7 +52,21 @@ func (h *Handler) authenticate(ctx context.Context) error {
 		return lazyerrors.Error(err)
 	}
 
-	username, userPassword := conninfo.Get(ctx).Auth()
+	username, userPassword, mechanism := conninfo.Get(ctx).Auth()
+
+	switch mechanism {
+	case "SCRAM-SHA-256", "SCRAM-SHA-1":
+		// SCRAM calls back scramCredentialLookup each time Step is called,
+		// and that checks the authentication.
+		return nil
+	case "PLAIN", "":
+		// mechanism may be empty for local host exception
+		break
+	default:
+		msg := fmt.Sprintf("Unsupported authentication mechanism %q.\n", mechanism) +
+			"See https://docs.ferretdb.io/security/authentication/ for more details."
+		return handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrAuthenticationFailed, msg, mechanism)
+	}
 
 	// For `PLAIN` mechanism $db field is always `$external` upon saslStart.
 	// For `SCRAM-SHA-1` and `SCRAM-SHA-256` mechanisms $db field contains
@@ -111,18 +126,14 @@ func (h *Handler) authenticate(ctx context.Context) error {
 
 	credentials := must.NotFail(storedUser.Get("credentials")).(*types.Document)
 
-	switch {
-	case credentials.Has("SCRAM-SHA-256"), credentials.Has("SCRAM-SHA-1"):
-		// SCRAM calls back scramCredentialLookup each time Step is called,
-		// and that checks the authentication.
-		return nil
-	case credentials.Has("PLAIN"):
-		break
-	default:
-		panic("credentials does not contain a known mechanism")
+	v, _ := credentials.Get("PLAIN")
+	if v == nil {
+		return handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrMechanismUnavailable,
+			"Unable to use PLAIN based authentication for user without any PLAIN credentials registered",
+			"authenticate",
+		)
 	}
-
-	v := must.NotFail(credentials.Get("PLAIN"))
 
 	doc, ok := v.(*types.Document)
 	if !ok {

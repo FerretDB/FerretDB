@@ -108,8 +108,13 @@ func TestCommandsAuthenticationLogoutAuthenticatedUser(t *testing.T) {
 	actualUsersV, err := actualAuth.(*types.Document).Get("authenticatedUsers")
 	require.NoError(t, err)
 
-	expectedUsers := must.NotFail(types.NewArray(must.NotFail(types.NewDocument("user", username, "db", db.Name()))))
-	require.Equal(t, expectedUsers, actualUsersV.(*types.Array))
+	actualUsers := actualUsersV.(*types.Array)
+	require.Equal(t, 1, actualUsers.Len())
+
+	actualUser := must.NotFail(actualUsers.Get(0)).(*types.Document)
+	user, err := actualUser.Get("user")
+	require.NoError(t, err)
+	require.Equal(t, username, user)
 
 	err = db.RunCommand(ctx, bson.D{{"logout", 1}}).Decode(&res)
 	require.NoError(t, err)

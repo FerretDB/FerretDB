@@ -45,12 +45,13 @@ func checkFiles(files []string, logf, fatalf func(string, ...any)) {
 	var failed bool
 
 	for _, file := range files {
-		b, err := os.ReadFile(file)
+		fileInBytes, err := os.ReadFile(file)
 		if err != nil {
 			fatalf("Couldn't read file %s: %s", file, err)
 		}
 
-		if b, err = extractFrontMatter(b); err != nil {
+		b, err := extractFrontMatter(fileInBytes)
+		if err != nil {
 			fatalf("Couldn't extract front matter from %s: %s", file, err)
 		}
 
@@ -68,11 +69,25 @@ func checkFiles(files []string, logf, fatalf func(string, ...any)) {
 			logf("%q: %s", file, err)
 			failed = true
 		}
+
+		if err = verifyTruncateString(fileInBytes); err != nil {
+			logf("%q: %s", file, err)
+			failed = true
+		}
 	}
 
 	if failed {
 		fatalf("One or more blog posts are not correctly formatted")
 	}
+}
+
+// verifyTruncateString checks that the truncate string is present.
+func verifyTruncateString(b []byte) error {
+	if !bytes.Contains(b, []byte("<!--truncate-->")) {
+		return fmt.Errorf("<!--truncate--> must be included to have \"Read more\" link on the homepage")
+	}
+
+	return nil
 }
 
 // extractFrontMatter returns the front matter of a blog post.
