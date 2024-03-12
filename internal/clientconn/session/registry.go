@@ -28,7 +28,7 @@ const timeout = 30 * time.Minute
 // Registry stores sessions.
 type Registry struct {
 	rw sync.RWMutex
-	m  map[string]map[string]*Session // user -> sessionID -> session
+	m  map[string]map[string]*Session // hash -> sessionID -> session
 
 	l *zap.Logger
 }
@@ -42,19 +42,23 @@ func NewRegistry(l *zap.Logger) *Registry {
 }
 
 // NewSession creates a new session and adds it to the registry.
-func (r *Registry) NewSession(username string) *Session {
+func (r *Registry) NewSession(user, db string) *Session {
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
 	id := uuid.New()
-	session := newSession(id)
+	session := newSession(user, db, id)
+	hash := hash(user, db)
 
-	if _, ok := r.m[username]; !ok {
-		r.m[username] = make(map[string]*Session)
+	if _, ok := r.m[hash]; !ok {
+		r.m[hash] = make(map[string]*Session)
 	}
 
-	r.m[username][id.String()] = session
-	r.l.Debug("New session created explicitly", zap.String("username", username), zap.String("session", id.String()))
+	r.m[hash][id.String()] = session
+	r.l.Debug(
+		"New session created explicitly",
+		zap.String("user", user), zap.String("db", db), zap.String("session", id.String()),
+	)
 
 	return session
 }
@@ -62,60 +66,83 @@ func (r *Registry) NewSession(username string) *Session {
 // GetSession returns the session from the registry and updates its lastUsed time.
 // If the session does not exist, it creates a new one and adds it to the registry.
 // If the session ID is not a valid UUID, it returns nil.
-func (r *Registry) GetSession(username, sessionID string) *Session {
+func (r *Registry) GetSession(user, db string, sessionID string) *Session {
 	r.rw.RLock()
 	defer r.rw.RUnlock()
 
 	id, err := uuid.Parse(sessionID)
 	if err != nil {
-		r.l.Debug("Invalid session ID", zap.String("username", username), zap.String("session", sessionID))
+		r.l.Debug(
+			"Invalid session ID",
+			zap.String("user", user), zap.String("db", db), zap.String("session", id.String()),
+		)
 		return nil
 	}
 
-	if _, ok := r.m[username][sessionID]; !ok {
-		if _, ok := r.m[username]; !ok {
-			r.m[username] = make(map[string]*Session)
+	hash := hash(user, db)
+
+	if _, ok := r.m[hash][sessionID]; !ok {
+		if _, ok := r.m[hash]; !ok {
+			r.m[hash] = make(map[string]*Session)
 		}
 
-		r.m[username][sessionID] = newSession(id)
-		r.l.Debug("New session created implicitly", zap.String("username", username), zap.String("session", sessionID))
+		r.m[hash][sessionID] = newSession(user, db, id)
+		r.l.Debug(
+			"New session created implicitly",
+			zap.String("user", user), zap.String("db", db), zap.String("session", id.String()),
+		)
 	}
 
-	r.m[username][sessionID].lastUsed = time.Now()
+	r.m[hash][sessionID].lastUsed = time.Now()
 
-	return r.m[username][sessionID]
+	return r.m[hash][sessionID]
 }
 
 // RefreshSession updates the last used time for the session.
 // If the session does not exist, it does nothing.
-func (r *Registry) RefreshSession(username, session string) {
+func (r *Registry) RefreshSession(user, db, session string) {
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
-	if _, ok := r.m[username][session]; !ok {
+	hash := hash(user, db)
+
+	if _, ok := r.m[hash][session]; !ok {
 		return
 	}
-	r.l.Debug("Session refreshed", zap.String("username", username), zap.String("session", session))
+	r.l.Debug(
+		"Session refreshed",
+		zap.String("user", user), zap.String("db", db), zap.String("session", session),
+	)
 
-	r.m[username][session].lastUsed = time.Now()
+	r.m[hash][session].lastUsed = time.Now()
 }
 
 // KillSession removes the session from the registry.
-func (r *Registry) KillSession(username, session string) {
+func (r *Registry) KillSession(user, db, session string) {
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
-	delete(r.m[username], session)
-	r.l.Debug("Session killed", zap.String("username", username), zap.String("session", session))
+	hash := hash(user, db)
+
+	delete(r.m[hash], session)
+	r.l.Debug(
+		"Session killed",
+		zap.String("user", user), zap.String("db", db), zap.String("session", session),
+	)
 }
 
 // EndSession marks the session as expired for the future cleanup.
-func (r *Registry) EndSession(username, session string) {
+func (r *Registry) EndSession(user, db, session string) {
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
-	r.m[username][session].expired = true
-	r.l.Debug("Session marked as expired", zap.String("username", username), zap.String("session", session))
+	hash := hash(user, db)
+
+	r.m[hash][session].expired = true
+	r.l.Debug(
+		"Session marked as expired",
+		zap.String("user", user), zap.String("db", db), zap.String("session", session),
+	)
 }
 
 // CleanExpired removes expired sessions from the registry.

@@ -30,30 +30,33 @@ func TestCleanExpired(t *testing.T) {
 	l := testutil.Logger(t)
 	r := NewRegistry(l)
 
-	r.NewSession("user1")
-	r.NewSession("user1")
+	r.NewSession("user1", "mydb")
+	r.NewSession("user1", "mydb")
+
+	hash1 := hash("user1", "mydb")
+	hash2 := hash("user2", "mydb")
 
 	id := uuid.New().String()
-	require.NotNil(t, r.GetSession("user2", id))
-	r.m["user2"][id].lastUsed = r.m["user2"][id].lastUsed.Add(-timeout)
+	require.NotNil(t, r.GetSession("user2", "mydb", id))
+	r.m[hash2][id].lastUsed = r.m[hash2][id].lastUsed.Add(-timeout)
 
-	require.Nil(t, r.GetSession("user2", "invalid"))
+	require.Nil(t, r.GetSession("user2", "mydb", "invalid"))
 
-	assert.Equal(t, 2, len(r.m["user1"]))
-	assert.Equal(t, 1, len(r.m["user2"]))
+	assert.Equal(t, 2, len(r.m[hash1]))
+	assert.Equal(t, 1, len(r.m[hash2]))
 
 	r.CleanExpired()
-	assert.Equal(t, 2, len(r.m["user1"]))
-	assert.Equal(t, 0, len(r.m["user2"]))
+	assert.Equal(t, 2, len(r.m[hash1]))
+	assert.Equal(t, 0, len(r.m[hash2]))
 
 	var sessionID string
-	for sessionID = range r.m["user1"] {
+	for sessionID = range r.m[hash1] {
 		break
 	}
-	r.EndSession("user1", sessionID)
+	r.EndSession("user1", "mydb", sessionID)
 
 	r.CleanExpired()
-	assert.Equal(t, 1, len(r.m["user1"]))
-	_, ok := r.m["user2"]
+	assert.Equal(t, 1, len(r.m[hash1]))
+	_, ok := r.m[hash2]
 	assert.False(t, ok)
 }

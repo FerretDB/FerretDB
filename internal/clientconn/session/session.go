@@ -16,6 +16,8 @@
 package session
 
 import (
+	"crypto/sha256"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -26,15 +28,32 @@ import (
 // Session represents a session.
 type Session struct {
 	id       types.Binary
+	user     string
+	database string
 	lastUsed time.Time
 	expired  bool
 }
 
 // newSession returns a new session.
-func newSession(id uuid.UUID) *Session {
+func newSession(user, db string, id uuid.UUID) *Session {
 	sessionID := types.Binary{Subtype: types.BinaryUUID, B: id[:]}
 	return &Session{
 		id:       sessionID,
+		user:     user,
+		database: db,
 		lastUsed: time.Now(),
 	}
+}
+
+// hash returns a sha256 hash of user and database.
+func hash(user, db string) string {
+	str := user
+
+	if db != "" {
+		str += "@" + db
+	}
+
+	hash := sha256.Sum256([]byte(str))
+
+	return fmt.Sprintf("%x", hash)
 }
