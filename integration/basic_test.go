@@ -553,8 +553,6 @@ func TestDebugError(t *testing.T) {
 }
 
 func TestCheckingNestedDocuments(t *testing.T) {
-	t.Parallel()
-
 	for name, tc := range map[string]struct {
 		doc any
 		err error
