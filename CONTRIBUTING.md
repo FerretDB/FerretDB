@@ -158,8 +158,6 @@ The `internal` subpackages contain most of the FerretDB code:
 
 - `types` package provides Go types matching BSON types that don't have built-in Go equivalents:
   we use `int32` for BSON's int32, but `types.ObjectID` for BSON's ObjectId.
-- `types/fjson` provides converters from/to FJSON for built-in and `types` types.
-  It is used for logging of BSON values and wire protocol messages.
 - `bson` package provides converters from/to BSON for built-in and `types` types.
 - `wire` package provides wire protocol implementation.
 - `clientconn` package provides client connection implementation.
