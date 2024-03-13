@@ -14,7 +14,7 @@
 
 package oldbson
 
-//go:generate ../../bin/stringer -linecomment -type tag
+//go:generate ../../../bin/stringer -linecomment -type tag
 
 type tag byte
 
