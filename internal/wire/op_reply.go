@@ -148,10 +148,10 @@ func (reply *OpReply) logMessage(block bool) string {
 	}
 
 	if block {
-		return m.LogMessageBlock()
+		return bson2.LogMessageBlock(m)
 	}
 
-	return m.LogMessage()
+	return bson2.LogMessage(m)
 }
 
 // String returns a string representation for logging.

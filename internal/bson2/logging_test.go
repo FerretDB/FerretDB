@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bson2
+package bson2_test // to avoid import cycle
 
 import (
 	"bytes"
@@ -24,6 +24,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/FerretDB/FerretDB/internal/bson2"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
@@ -51,7 +52,7 @@ func TestLogging(t *testing.T) {
 
 	for _, tc := range []struct {
 		name string
-		doc  *Document
+		doc  *bson2.Document
 		t    string
 		j    string
 		m    string
@@ -59,7 +60,7 @@ func TestLogging(t *testing.T) {
 	}{
 		{
 			name: "Numbers",
-			doc: must.NotFail(NewDocument(
+			doc: must.NotFail(bson2.NewDocument(
 				"f64", 42.0,
 				"inf", float64(math.Inf(1)),
 				"neg_inf", float64(math.Inf(-1)),
@@ -96,9 +97,9 @@ func TestLogging(t *testing.T) {
 		},
 		{
 			name: "Scalars",
-			doc: must.NotFail(NewDocument(
-				"null", Null,
-				"id", ObjectID{0x42},
+			doc: must.NotFail(bson2.NewDocument(
+				"null", bson2.Null,
+				"id", bson2.ObjectID{0x42},
 				"bool", true,
 				"time", time.Date(2023, 3, 6, 13, 14, 42, 123456789, time.FixedZone("", int(4*time.Hour.Seconds()))),
 			)),
@@ -121,19 +122,19 @@ func TestLogging(t *testing.T) {
 		},
 		{
 			name: "Composites",
-			doc: must.NotFail(NewDocument(
-				"doc", must.NotFail(NewDocument(
+			doc: must.NotFail(bson2.NewDocument(
+				"doc", must.NotFail(bson2.NewDocument(
 					"foo", "bar",
-					"baz", must.NotFail(NewDocument(
+					"baz", must.NotFail(bson2.NewDocument(
 						"qux", "quux",
 					)),
 				)),
-				"doc_raw", RawDocument{0x42},
-				"doc_empty", must.NotFail(NewDocument()),
-				"array", must.NotFail(NewArray(
+				"doc_raw", bson2.RawDocument{0x42},
+				"doc_empty", must.NotFail(bson2.NewDocument()),
+				"array", must.NotFail(bson2.NewArray(
 					"foo",
 					"bar",
-					must.NotFail(NewArray("baz", "qux")),
+					must.NotFail(bson2.NewArray("baz", "qux")),
 				)),
 			)),
 			t: `v.doc.foo=bar v.doc.baz.qux=quux v.doc_raw=RawDocument<1> ` +
@@ -169,7 +170,7 @@ func TestLogging(t *testing.T) {
 		},
 		{
 			name: "Nested",
-			doc:  makeNested(false, 20).(*Document),
+			doc:  makeNested(false, 20).(*bson2.Document),
 			t:    `v.f.0.f.0.f.0.f.0.f.0.f.0.f.0.f.0.f.0.f.0=<nil>`,
 			j: `{"v":{"f":{"0":{"f":{"0":{"f":{"0":{"f":{"0":{"f":{"0":{"f":{"0":` +
 				`{"f":{"0":{"f":{"0":{"f":{"0":{"f":{"0":null}}}}}}}}}}}}}}}}}}}}}`,
@@ -234,10 +235,10 @@ func TestLogging(t *testing.T) {
 			assert.Equal(t, tc.j+"\n", jbuf.String())
 			jbuf.Reset()
 
-			m := tc.doc.LogMessage()
+			m := bson2.LogMessage(tc.doc)
 			assert.Equal(t, testutil.Unindent(t, tc.m), m, "actual:\n%s", m)
 
-			b := tc.doc.LogMessageBlock()
+			b := bson2.LogMessageBlock(tc.doc)
 			assert.Equal(t, testutil.Unindent(t, tc.b), b, "actual:\n%s", b)
 		})
 	}
@@ -249,15 +250,15 @@ func makeNested(array bool, depth int) any {
 		panic("depth must be at least 1")
 	}
 
-	var child any = Null
+	var child any = bson2.Null
 
 	if depth > 1 {
 		child = makeNested(!array, depth-1)
 	}
 
 	if array {
-		return must.NotFail(NewArray(child))
+		return must.NotFail(bson2.NewArray(child))
 	}
 
-	return must.NotFail(NewDocument("f", child))
+	return must.NotFail(bson2.NewDocument("f", child))
 }

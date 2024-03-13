@@ -472,10 +472,10 @@ func (msg *OpMsg) logMessage(block bool) string {
 	must.NoError(m.Add("Sections", sections))
 
 	if block {
-		return m.LogMessageBlock()
+		return bson2.LogMessageBlock(m)
 	}
 
-	return m.LogMessage()
+	return bson2.LogMessage(m)
 }
 
 // String returns a string representation for logging.
