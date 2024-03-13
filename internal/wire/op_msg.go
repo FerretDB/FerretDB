@@ -18,7 +18,7 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	"github.com/FerretDB/FerretDB/internal/bson2"
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -34,16 +34,16 @@ type OpMsgSection struct {
 	// The wire order is: kind, identifier, documents.
 
 	Identifier string
-	Documents  []bson2.RawDocument
+	Documents  []bson.RawDocument
 	Kind       byte
 }
 
 // MakeOpMsgSection creates [OpMsgSection] with a single document.
 func MakeOpMsgSection(doc *types.Document) OpMsgSection {
-	raw := must.NotFail(must.NotFail(bson2.ConvertDocument(doc)).Encode())
+	raw := must.NotFail(must.NotFail(bson.ConvertDocument(doc)).Encode())
 
 	return OpMsgSection{
-		Documents: []bson2.RawDocument{raw},
+		Documents: []bson.RawDocument{raw},
 	}
 }
 
@@ -58,9 +58,9 @@ type OpMsg struct {
 }
 
 // NewOpMsg creates a message with a single section of kind 0 with a single raw document.
-func NewOpMsg(raw bson2.RawDocument) (*OpMsg, error) {
+func NewOpMsg(raw bson.RawDocument) (*OpMsg, error) {
 	var msg OpMsg
-	if err := msg.SetSections(OpMsgSection{Documents: []bson2.RawDocument{raw}}); err != nil {
+	if err := msg.SetSections(OpMsgSection{Documents: []bson.RawDocument{raw}}); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
@@ -200,8 +200,8 @@ func (msg *OpMsg) Document() (*types.Document, error) {
 }
 
 // RawSections returns the value of section with kind 0 and the value of all sections with kind 1.
-func (msg *OpMsg) RawSections() (bson2.RawDocument, []byte) {
-	var spec bson2.RawDocument
+func (msg *OpMsg) RawSections() (bson.RawDocument, []byte) {
+	var spec bson.RawDocument
 	var seq []byte
 
 	for _, s := range msg.Sections() {
@@ -219,11 +219,11 @@ func (msg *OpMsg) RawSections() (bson2.RawDocument, []byte) {
 	return spec, seq
 }
 
-// RawDocument returns the value of msg as a [bson2.RawDocument].
+// RawDocument returns the value of msg as a [bson.RawDocument].
 //
 // The error is returned if msg contains anything other than a single section of kind 0
 // with a single document.
-func (msg *OpMsg) RawDocument() (bson2.RawDocument, error) {
+func (msg *OpMsg) RawDocument() (bson.RawDocument, error) {
 	if err := checkSections(msg.sections); err != nil {
 		return nil, err
 	}
@@ -268,12 +268,12 @@ func (msg *OpMsg) UnmarshalBinaryNocopy(b []byte) error {
 
 		switch section.Kind {
 		case 0:
-			l, err := bson2.FindRaw(b[offset:])
+			l, err := bson.FindRaw(b[offset:])
 			if err != nil {
 				return lazyerrors.Error(err)
 			}
 
-			section.Documents = []bson2.RawDocument{b[offset : offset+l]}
+			section.Documents = []bson.RawDocument{b[offset : offset+l]}
 			offset += l
 
 		case 1:
@@ -294,13 +294,13 @@ func (msg *OpMsg) UnmarshalBinaryNocopy(b []byte) error {
 				return lazyerrors.Errorf("len(b) = %d, offset = %d", len(b), offset)
 			}
 
-			section.Identifier, err = bson2.DecodeCString(b[offset:])
+			section.Identifier, err = bson.DecodeCString(b[offset:])
 			if err != nil {
 				return lazyerrors.Error(err)
 			}
 
-			offset += bson2.SizeCString(section.Identifier)
-			secSize -= bson2.SizeCString(section.Identifier)
+			offset += bson.SizeCString(section.Identifier)
+			secSize -= bson.SizeCString(section.Identifier)
 
 			for secSize != 0 {
 				if secSize < 0 {
@@ -311,7 +311,7 @@ func (msg *OpMsg) UnmarshalBinaryNocopy(b []byte) error {
 					return lazyerrors.Errorf("len(b) = %d, offset = %d", len(b), offset)
 				}
 
-				l, err := bson2.FindRaw(b[offset:])
+				l, err := bson.FindRaw(b[offset:])
 				if err != nil {
 					return lazyerrors.Error(err)
 				}
@@ -393,8 +393,8 @@ func (msg *OpMsg) MarshalBinary() ([]byte, error) {
 			b = append(b, section.Documents[0]...)
 
 		case 1:
-			sec := make([]byte, bson2.SizeCString(section.Identifier))
-			bson2.EncodeCString(sec, section.Identifier)
+			sec := make([]byte, bson.SizeCString(section.Identifier))
+			bson.EncodeCString(sec, section.Identifier)
 
 			for _, doc := range section.Documents {
 				sec = append(sec, doc...)
@@ -427,14 +427,14 @@ func (msg *OpMsg) logMessage(block bool) string {
 		return "<nil>"
 	}
 
-	m := must.NotFail(bson2.NewDocument(
+	m := must.NotFail(bson.NewDocument(
 		"FlagBits", msg.Flags.String(),
 		"Checksum", int64(msg.checksum),
 	))
 
-	sections := bson2.MakeArray(len(msg.sections))
+	sections := bson.MakeArray(len(msg.sections))
 	for _, section := range msg.sections {
-		s := must.NotFail(bson2.NewDocument(
+		s := must.NotFail(bson.NewDocument(
 			"Kind", int32(section.Kind),
 		))
 
@@ -449,14 +449,14 @@ func (msg *OpMsg) logMessage(block bool) string {
 
 		case 1:
 			must.NoError(s.Add("Identifier", section.Identifier))
-			docs := bson2.MakeArray(len(section.Documents))
+			docs := bson.MakeArray(len(section.Documents))
 
 			for _, d := range section.Documents {
 				doc, err := d.DecodeDeep()
 				if err == nil {
 					must.NoError(docs.Add(doc))
 				} else {
-					must.NoError(docs.Add(must.NotFail(bson2.NewDocument("error", err.Error()))))
+					must.NoError(docs.Add(must.NotFail(bson.NewDocument("error", err.Error()))))
 				}
 			}
 
@@ -472,10 +472,10 @@ func (msg *OpMsg) logMessage(block bool) string {
 	must.NoError(m.Add("Sections", sections))
 
 	if block {
-		return bson2.LogMessageBlock(m)
+		return bson.LogMessageBlock(m)
 	}
 
-	return bson2.LogMessage(m)
+	return bson.LogMessage(m)
 }
 
 // String returns a string representation for logging.
