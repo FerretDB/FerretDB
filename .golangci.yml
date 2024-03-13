@@ -26,12 +26,12 @@ linters-settings:
             desc: use `github.com/jackc/pgx/v5` package instead
           - pkg: github.com/jackc/pgx/v4
             desc: use `github.com/jackc/pgx/v5` package instead
-      bson:
+      oldbson:
         files:
           - $all
-          - "!**/internal/bson2/*_test.go"
+          - "!**/internal/bson2/bson2_test.go"
         deny:
-          - pkg: github.com/FerretDB/FerretDB/internal/bson$
+          - pkg: github.com/FerretDB/FerretDB/internal/bson/oldbson$
       bson2:
         files:
           - $all
