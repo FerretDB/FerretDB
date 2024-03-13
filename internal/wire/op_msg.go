@@ -421,8 +421,8 @@ func (msg *OpMsg) MarshalBinary() ([]byte, error) {
 	return b, nil
 }
 
-// String returns a string representation for logging.
-func (msg *OpMsg) String() string {
+// logMessage returns a string representation for logging.
+func (msg *OpMsg) logMessage(block bool) string {
 	if msg == nil {
 		return "<nil>"
 	}
@@ -471,7 +471,21 @@ func (msg *OpMsg) String() string {
 
 	must.NoError(m.Add("Sections", sections))
 
+	if block {
+		return m.LogMessageBlock()
+	}
+
 	return m.LogMessage()
+}
+
+// String returns a string representation for logging.
+func (msg *OpMsg) String() string {
+	return msg.logMessage(false)
+}
+
+// StringBlock returns an indented string representation for logging.
+func (msg *OpMsg) StringBlock() string {
+	return msg.logMessage(true)
 }
 
 // check interfaces

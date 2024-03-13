@@ -182,7 +182,12 @@ func (doc *Document) LogValue() slog.Value {
 // somewhat similar (but not identical) to JSON or Go syntax.
 // It may change over time.
 func (doc *Document) LogMessage() string {
-	return logMessage(doc)
+	return logMessage(doc, logMaxFlowLength, "", 1)
+}
+
+// LogMessageBlock is a variant of [Document.LogMessage] that never uses a flow style.
+func (doc *Document) LogMessageBlock() string {
+	return logMessage(doc, 0, "", 1)
 }
 
 // check interfaces

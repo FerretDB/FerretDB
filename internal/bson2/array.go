@@ -148,7 +148,12 @@ func (arr *Array) LogValue() slog.Value {
 // somewhat similar (but not identical) to JSON or Go syntax.
 // It may change over time.
 func (arr *Array) LogMessage() string {
-	return logMessage(arr)
+	return logMessage(arr, logMaxFlowLength, "", 1)
+}
+
+// LogMessageBlock is a variant of [Array.LogMessage] that never uses a flow style.
+func (arr *Array) LogMessageBlock() string {
+	return logMessage(arr, 0, "", 1)
 }
 
 // check interfaces
