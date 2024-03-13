@@ -26,14 +26,6 @@ linters-settings:
             desc: use `github.com/jackc/pgx/v5` package instead
           - pkg: github.com/jackc/pgx/v4
             desc: use `github.com/jackc/pgx/v5` package instead
-      fjson:
-        # TODO https://github.com/FerretDB/FerretDB/issues/4157
-        files:
-          - $all
-          - "!**/internal/bson/*_test.go"
-          - "!**/internal/util/testutil/*.go"
-        deny:
-          - pkg: github.com/FerretDB/FerretDB/internal/types/fjson
       bson:
         files:
           - $all

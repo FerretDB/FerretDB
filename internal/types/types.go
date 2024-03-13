@@ -14,12 +14,11 @@
 
 // Package types provides Go types matching BSON types that don't have built-in Go equivalents.
 //
-// All BSON types have four representations in FerretDB:
+// All BSON types have three representations in FerretDB:
 //
 //  1. As they are used in "business logic" / handlers - `types` package.
-//  2. As they are used for logging - `fjson` package.
-//  3. As they are used in the wire protocol implementation - `bson` package.
-//  4. As they are used to store data in SQL based databases - `sjson` package.
+//  2. As they are used in the wire protocol implementation and for logging - `bson` package.
+//  3. As they are used to store data in SQL based databases - `sjson` package.
 //
 // The reason for that is a separation of concerns: to avoid method names clashes, to simplify type asserts,
 // to make refactorings and optimizations easier, etc.
