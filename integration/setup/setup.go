@@ -91,7 +91,7 @@ type SetupOpts struct {
 	// ExtraOptions sets the options in MongoDB URI, when the option exists it overwrites that option.
 	ExtraOptions url.Values
 
-	// SetupUser true creates a user and returns authenticated client.
+	// SetupUser true creates a user and returns an authenticated client.
 	SetupUser bool
 }
 
@@ -142,6 +142,8 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 	uri := *targetURLF
 	if uri == "" {
 		uri = setupListener(tb, setupCtx, logger)
+	} else {
+		uri = toAbsolutePathUri(tb, *targetURLF)
 	}
 
 	if opts.ExtraOptions != nil {
@@ -374,7 +376,6 @@ func setupUser(tb testtb.TB, ctx context.Context, client *mongo.Client, uri stri
 		Password:      password,
 	}
 
-	uri = toAbsolutePathUri(tb, uri)
 	opts := options.Client().ApplyURI(uri).SetAuth(credential)
 
 	authenticatedClient, err := mongo.Connect(ctx, opts)

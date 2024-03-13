@@ -66,8 +66,6 @@ func setupClient(tb testtb.TB, ctx context.Context, uri string) *mongo.Client {
 
 	defer observability.FuncCall(ctx)()
 
-	uri = toAbsolutePathUri(tb, uri)
-
 	client, err := makeClient(ctx, uri)
 	if err != nil {
 		tb.Error(err)
@@ -96,7 +94,11 @@ func toAbsolutePathUri(tb testtb.TB, uri string) string {
 
 		switch k {
 		case "tlsCertificateKeyFile", "tlsCaFile":
-			file := filepath.Join(Dir(tb), v[0])
+			file := v[0]
+
+			if !filepath.IsAbs(file) {
+				file = filepath.Join(Dir(tb), v[0])
+			}
 
 			_, err := os.Stat(file)
 			if os.IsNotExist(err) {
