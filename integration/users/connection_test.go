@@ -375,11 +375,13 @@ func TestAuthenticationLocalhostException(tt *testing.T) {
 		{"mechanisms", bson.A{mechanism}},
 	}
 	err = db.RunCommand(ctx, secondUser).Err()
-	integration.AssertEqualCommandError(t, mongo.CommandError{
+
+	expectedErr := mongo.CommandError{
 		Code:    18,
 		Name:    "AuthenticationFailed",
 		Message: "Authentication failed",
-	}, err)
+	}
+	integration.AssertEqualCommandError(t, expectedErr, err)
 
 	credential := options.Credential{
 		AuthMechanism: mechanism,
