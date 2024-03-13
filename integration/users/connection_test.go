@@ -166,10 +166,11 @@ func TestAuthentication(t *testing.T) {
 					setup.SkipForMongoDB(t, "PLAIN mechanism is not supported by MongoDB")
 				}
 
-				roles := bson.A{}
-				if setup.IsMongoDB(t) {
+				// root role is only available in admin database, a role with sufficient privilege is used
+				roles := bson.A{"readWrite"}
+				if !setup.IsMongoDB(t) {
 					// TODO https://github.com/FerretDB/FerretDB/issues/3974
-					roles = bson.A{"readWrite"}
+					roles = bson.A{}
 				}
 
 				createPayload := bson.D{
@@ -352,10 +353,10 @@ func TestAuthenticationLocalhostException(tt *testing.T) {
 
 	username, password, mechanism := "testuser", "testpass", "SCRAM-SHA-256"
 
-	roles := bson.A{}
-	if setup.IsMongoDB(t) {
+	roles := bson.A{"userAdmin"}
+	if !setup.IsMongoDB(t) {
 		// TODO https://github.com/FerretDB/FerretDB/issues/3974
-		roles = bson.A{"userAdmin"}
+		roles = bson.A{}
 	}
 
 	firstUser := bson.D{

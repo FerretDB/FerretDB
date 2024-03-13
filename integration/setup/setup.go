@@ -25,6 +25,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -335,7 +336,7 @@ func insertBenchmarkProvider(tb testtb.TB, ctx context.Context, collection *mong
 	return
 }
 
-// setupUser creates a user in admin database with supported mechanisms. It returns authenticated client.
+// setupUser creates a user in admin database with supported mechanisms. It returns an authenticated client.
 //
 // Without this, once the first user is created, the authentication fails as local exception no longer applies.
 func setupUser(tb testtb.TB, ctx context.Context, client *mongo.Client, uri string) *mongo.Client {
@@ -354,11 +355,11 @@ func setupUser(tb testtb.TB, ctx context.Context, client *mongo.Client, uri stri
 
 	require.NoError(tb, err)
 
-	roles := bson.A{}
-	if IsMongoDB(tb) {
+	roles := bson.A{"root"}
+	if !IsMongoDB(tb) {
 		// use root role for FerretDB once authorization is implemented
 		// TODO https://github.com/FerretDB/FerretDB/issues/3974
-		roles = bson.A{"root"}
+		roles = bson.A{}
 	}
 
 	err = client.Database("admin").RunCommand(ctx, bson.D{
@@ -385,7 +386,9 @@ func setupUser(tb testtb.TB, ctx context.Context, client *mongo.Client, uri stri
 		err = authenticatedClient.Database("admin").RunCommand(ctx, bson.D{
 			{"dropUser", username},
 		}).Err()
-		require.NoError(tb, err)
+		assert.NoError(tb, err)
+
+		require.NoError(tb, authenticatedClient.Disconnect(ctx))
 	})
 
 	return authenticatedClient
