@@ -118,8 +118,9 @@ func testMessages(t *testing.T, testCases []testCase) {
 
 				require.NotNil(t, msgHeader)
 				require.NotNil(t, msgBody)
-				assert.NotPanics(t, func() { _ = msgHeader.String() })
+				assert.NotEmpty(t, msgHeader.String())
 				assert.Equal(t, testutil.Unindent(t, tc.m), msgBody.String())
+				assert.NotEmpty(t, msgBody.StringBlock())
 
 				require.NoError(t, msgBody.check())
 
@@ -206,8 +207,9 @@ func fuzzMessages(f *testing.F, testCases []testCase) {
 			}
 
 			if msgBody.check() != nil {
-				assert.NotPanics(t, func() { _ = msgHeader.String() })
-				assert.NotPanics(t, func() { _ = msgBody.String() })
+				assert.NotEmpty(t, msgHeader.String())
+				assert.NotEmpty(t, msgBody.String())
+				assert.NotEmpty(t, msgBody.StringBlock())
 
 				if msg, ok := msgBody.(*OpMsg); ok {
 					assert.NotPanics(t, func() {

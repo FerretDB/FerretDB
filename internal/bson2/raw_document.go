@@ -162,14 +162,8 @@ func (raw RawDocument) decode(mode decodeMode) (*Document, error) {
 }
 
 // LogValue implements slog.LogValuer interface.
-func (doc RawDocument) LogValue() slog.Value {
-	return slogValue(doc, 1)
-}
-
-// LogMessage returns a representation as a string.
-// It may change over time.
-func (doc RawDocument) LogMessage() string {
-	return logMessage(doc)
+func (raw RawDocument) LogValue() slog.Value {
+	return slogValue(raw, 1)
 }
 
 // check interfaces

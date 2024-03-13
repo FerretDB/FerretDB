@@ -122,8 +122,8 @@ func (reply *OpReply) SetDocument(doc *types.Document) {
 	reply.document = must.NotFail(d.Encode())
 }
 
-// String returns a string representation for logging.
-func (reply *OpReply) String() string {
+// logMessage returns a string representation for logging.
+func (reply *OpReply) logMessage(block bool) string {
 	if reply == nil {
 		return "<nil>"
 	}
@@ -147,7 +147,21 @@ func (reply *OpReply) String() string {
 		}
 	}
 
-	return m.LogMessage()
+	if block {
+		return bson2.LogMessageBlock(m)
+	}
+
+	return bson2.LogMessage(m)
+}
+
+// String returns a string representation for logging.
+func (reply *OpReply) String() string {
+	return reply.logMessage(false)
+}
+
+// StringBlock returns an indented string representation for logging.
+func (reply *OpReply) StringBlock() string {
+	return reply.logMessage(true)
 }
 
 // check interfaces

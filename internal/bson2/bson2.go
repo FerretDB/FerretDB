@@ -248,9 +248,15 @@ func convertToTypes(v any) (any, error) {
 	}
 }
 
-// convertFromTypes converts valid types package values to BSON values of that package.
+// Convert converts valid types package values to BSON values of that package.
 //
 // Conversions of composite types may cause errors.
+func Convert[T types.Type](v T) (any, error) {
+	return convertFromTypes(v)
+}
+
+// convertFromTypes is a variant of [Convert] without type parameters (generics).
+//
 // Invalid types cause panics.
 func convertFromTypes(v any) (any, error) {
 	switch v := v.(type) {
