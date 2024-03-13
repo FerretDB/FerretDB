@@ -171,7 +171,7 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 		client = setupUser(tb, ctx, client, uri)
 	}
 
-	collection := setupCollection(tb, setupCtx, client, opts)
+	collection := setupCollection(tb, ctx, client, opts)
 
 	level.SetLevel(*logLevelF)
 

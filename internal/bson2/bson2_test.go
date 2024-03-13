@@ -37,6 +37,7 @@ type normalTestCase struct {
 	name string
 	raw  RawDocument
 	tdoc *types.Document
+	m    string
 }
 
 // decodeTestCase represents a single test case for unsuccessful decoding.
@@ -55,6 +56,8 @@ type decodeTestCase struct {
 }
 
 // normalTestCases represents test cases for successful decoding/encoding.
+//
+//nolint:lll // for readability
 var normalTestCases = []normalTestCase{
 	{
 		name: "handshake1",
@@ -80,6 +83,23 @@ var normalTestCases = []normalTestCase{
 			"compression", must.NotFail(types.NewArray("none")),
 			"loadBalanced", false,
 		)),
+		m: `
+		{
+		  "ismaster": true,
+		  "client": {
+		    "driver": {"name": "nodejs", "version": "4.0.0-beta.6"},
+		    "os": {
+		      "type": "Darwin",
+		      "name": "darwin",
+		      "architecture": "x64",
+		      "version": "20.6.0",
+		    },
+		    "platform": "Node.js v14.17.3, LE (unified)|Node.js v14.17.3, LE (unified)",
+		    "application": {"name": "mongosh 1.0.1"},
+		  },
+		  "compression": ["none"],
+		  "loadBalanced": false,
+		}`,
 	},
 	{
 		name: "handshake2",
@@ -105,6 +125,23 @@ var normalTestCases = []normalTestCase{
 			"compression", must.NotFail(types.NewArray("none")),
 			"loadBalanced", false,
 		)),
+		m: `
+		{
+		  "ismaster": true,
+		  "client": {
+		    "driver": {"name": "nodejs", "version": "4.0.0-beta.6"},
+		    "os": {
+		      "type": "Darwin",
+		      "name": "darwin",
+		      "architecture": "x64",
+		      "version": "20.6.0",
+		    },
+		    "platform": "Node.js v14.17.3, LE (unified)|Node.js v14.17.3, LE (unified)",
+		    "application": {"name": "mongosh 1.0.1"},
+		  },
+		  "compression": ["none"],
+		  "loadBalanced": false,
+		}`,
 	},
 	{
 		name: "handshake3",
@@ -122,6 +159,12 @@ var normalTestCases = []normalTestCase{
 			)),
 			"$db", "admin",
 		)),
+		m: `
+		{
+		  "buildInfo": 1,
+		  "lsid": {"id": Binary(uuid:oxnytKF1QMe456OjLsJWvg==)},
+		  "$db": "admin",
+		}`,
 	},
 	{
 		name: "handshake4",
@@ -167,6 +210,37 @@ var normalTestCases = []normalTestCase{
 			"storageEngines", must.NotFail(types.NewArray("devnull", "ephemeralForTest", "wiredTiger")),
 			"ok", float64(1),
 		)),
+		m: `
+		{
+		  "version": "5.0.0",
+		  "gitVersion": "1184f004a99660de6f5e745573419bda8a28c0e9",
+		  "modules": [],
+		  "allocator": "tcmalloc",
+		  "javascriptEngine": "mozjs",
+		  "sysInfo": "deprecated",
+		  "versionArray": [5, 0, 0, 0],
+		  "openssl": {
+		    "running": "OpenSSL 1.1.1f  31 Mar 2020",
+		    "compiled": "OpenSSL 1.1.1f  31 Mar 2020",
+		  },
+		  "buildEnvironment": {
+		    "distmod": "ubuntu2004",
+		    "distarch": "x86_64",
+		    "cc": "/opt/mongodbtoolchain/v3/bin/gcc: gcc (GCC) 8.5.0",
+		    "ccflags": "-Werror -include mongo/platform/basic.h -fasynchronous-unwind-tables -ggdb -Wall -Wsign-compare -Wno-unknown-pragmas -Winvalid-pch -fno-omit-frame-pointer -fno-strict-aliasing -O2 -march=sandybridge -mtune=generic -mprefer-vector-width=128 -Wno-unused-local-typedefs -Wno-unused-function -Wno-deprecated-declarations -Wno-unused-const-variable -Wno-unused-but-set-variable -Wno-missing-braces -fstack-protector-strong -Wa,--nocompress-debug-sections -fno-builtin-memcmp",
+		    "cxx": "/opt/mongodbtoolchain/v3/bin/g++: g++ (GCC) 8.5.0",
+		    "cxxflags": "-Woverloaded-virtual -Wno-maybe-uninitialized -fsized-deallocation -std=c++17",
+		    "linkflags": "-Wl,--fatal-warnings -pthread -Wl,-z,now -fuse-ld=gold -fstack-protector-strong -Wl,--no-threads -Wl,--build-id -Wl,--hash-style=gnu -Wl,-z,noexecstack -Wl,--warn-execstack -Wl,-z,relro -Wl,--compress-debug-sections=none -Wl,-z,origin -Wl,--enable-new-dtags",
+		    "target_arch": "x86_64",
+		    "target_os": "linux",
+		    "cppdefines": "SAFEINT_USE_INTRINSICS 0 PCRE_STATIC NDEBUG _XOPEN_SOURCE 700 _GNU_SOURCE _REENTRANT 1 _FORTIFY_SOURCE 2 BOOST_THREAD_VERSION 5 BOOST_THREAD_USES_DATETIME BOOST_SYSTEM_NO_DEPRECATED BOOST_MATH_NO_LONG_DOUBLE_MATH_FUNCTIONS BOOST_ENABLE_ASSERT_DEBUG_HANDLER BOOST_LOG_NO_SHORTHAND_NAMES BOOST_LOG_USE_NATIVE_SYSLOG BOOST_LOG_WITHOUT_THREAD_ATTR ABSL_FORCE_ALIGNED_ACCESS",
+		  },
+		  "bits": 64,
+		  "debug": false,
+		  "maxBsonObjectSize": 16777216,
+		  "storageEngines": ["devnull", "ephemeralForTest", "wiredTiger"],
+		  "ok": 1.0,
+		}`,
 	},
 	{
 		name: "all",
@@ -196,6 +270,33 @@ var normalTestCases = []normalTestCase{
 			"string", must.NotFail(types.NewArray("foo", "")),
 			"timestamp", must.NotFail(types.NewArray(types.Timestamp(42), types.Timestamp(0))),
 		)),
+		m: `
+		{
+		  "array": [[""], ["foo"]],
+		  "binary": [Binary(user:Qg==), Binary(generic:)],
+		  "bool": [true, false],
+		  "datetime": [2021-07-27T09:35:42.123Z, 0001-01-01T00:00:00Z],
+		  "document": [{"foo": ""}, {"": "foo"}],
+		  "double": [42.13, 0.0],
+		  "int32": [42, 0],
+		  "int64": [int64(42), int64(0)],
+		  "objectID": [ObjectID(420000000000000000000000), ObjectID(000000000000000000000000)],
+		  "string": ["foo", ""],
+		  "timestamp": [Timestamp(42), Timestamp(0)],
+		}`,
+	},
+	{
+		name: "nested",
+		raw:  testutil.MustParseDumpFile("testdata", "nested.hex"),
+		tdoc: must.NotFail(makeNested(false, 150).(*Document).Convert()),
+		m: `
+		{
+		  "f": [
+		    {
+		      "f": [{"f": [{"f": [{"f": [{"f": [{"f": [{"f": [{"f": [{"f": [{...}]}]}]}]}]}]}]}]}],
+		    },
+		  ],
+		}`,
 	},
 	{
 		name: "float64Doc",
@@ -208,6 +309,7 @@ var normalTestCases = []normalTestCase{
 		tdoc: must.NotFail(types.NewDocument(
 			"f", float64(3.141592653589793),
 		)),
+		m: `{"f": 3.141592653589793}`,
 	},
 	{
 		name: "stringDoc",
@@ -221,6 +323,7 @@ var normalTestCases = []normalTestCase{
 		tdoc: must.NotFail(types.NewDocument(
 			"f", "v",
 		)),
+		m: `{"f": "v"}`,
 	},
 	{
 		name: "binaryDoc",
@@ -235,6 +338,7 @@ var normalTestCases = []normalTestCase{
 		tdoc: must.NotFail(types.NewDocument(
 			"f", types.Binary{B: []byte("v"), Subtype: types.BinaryUser},
 		)),
+		m: `{"f": Binary(user:dg==)}`,
 	},
 	{
 		name: "objectIDDoc",
@@ -247,6 +351,7 @@ var normalTestCases = []normalTestCase{
 		tdoc: must.NotFail(types.NewDocument(
 			"f", types.ObjectID{0x62, 0x56, 0xc5, 0xba, 0x18, 0x2d, 0x44, 0x54, 0xfb, 0x21, 0x09, 0x40},
 		)),
+		m: `{"f": ObjectID(6256c5ba182d4454fb210940)}`,
 	},
 	{
 		name: "boolDoc",
@@ -259,6 +364,7 @@ var normalTestCases = []normalTestCase{
 		tdoc: must.NotFail(types.NewDocument(
 			"f", true,
 		)),
+		m: `{"f": true}`,
 	},
 	{
 		name: "timeDoc",
@@ -271,6 +377,7 @@ var normalTestCases = []normalTestCase{
 		tdoc: must.NotFail(types.NewDocument(
 			"f", time.Date(2024, 1, 17, 17, 40, 42, 123000000, time.UTC),
 		)),
+		m: `{"f": 2024-01-17T17:40:42.123Z}`,
 	},
 	{
 		name: "nullDoc",
@@ -282,6 +389,7 @@ var normalTestCases = []normalTestCase{
 		tdoc: must.NotFail(types.NewDocument(
 			"f", types.Null,
 		)),
+		m: `{"f": null}`,
 	},
 	{
 		name: "regexDoc",
@@ -295,6 +403,7 @@ var normalTestCases = []normalTestCase{
 		tdoc: must.NotFail(types.NewDocument(
 			"f", types.Regex{Pattern: "p", Options: "o"},
 		)),
+		m: `{"f": /p/o}`,
 	},
 	{
 		name: "int32Doc",
@@ -307,6 +416,7 @@ var normalTestCases = []normalTestCase{
 		tdoc: must.NotFail(types.NewDocument(
 			"f", int32(314159265),
 		)),
+		m: `{"f": 314159265}`,
 	},
 	{
 		name: "timestampDoc",
@@ -319,6 +429,7 @@ var normalTestCases = []normalTestCase{
 		tdoc: must.NotFail(types.NewDocument(
 			"f", types.Timestamp(42),
 		)),
+		m: `{"f": Timestamp(42)}`,
 	},
 	{
 		name: "int64Doc",
@@ -331,6 +442,7 @@ var normalTestCases = []normalTestCase{
 		tdoc: must.NotFail(types.NewDocument(
 			"f", int64(3141592653589793),
 		)),
+		m: `{"f": int64(3141592653589793)}`,
 	},
 	{
 		name: "smallDoc",
@@ -343,6 +455,7 @@ var normalTestCases = []normalTestCase{
 		tdoc: must.NotFail(types.NewDocument(
 			"foo", must.NotFail(types.NewDocument()),
 		)),
+		m: `{"foo": {}}`,
 	},
 	{
 		name: "smallArray",
@@ -355,6 +468,7 @@ var normalTestCases = []normalTestCase{
 		tdoc: must.NotFail(types.NewDocument(
 			"foo", must.NotFail(types.NewArray()),
 		)),
+		m: `{"foo": []}`,
 	},
 	{
 		name: "duplicateKeys",
@@ -368,6 +482,7 @@ var normalTestCases = []normalTestCase{
 			"", false,
 			"", true,
 		)),
+		m: `{"": false, "": true}`,
 	},
 }
 
@@ -502,6 +617,8 @@ func TestNormal(t *testing.T) {
 					assert.NotContains(t, ls, "panicked")
 					assert.NotContains(t, ls, "called too many times")
 
+					assert.NotEmpty(t, tc.raw.LogMessage())
+
 					l, err := FindRaw(tc.raw)
 					require.NoError(t, err)
 					require.Len(t, tc.raw, l)
@@ -514,6 +631,8 @@ func TestNormal(t *testing.T) {
 					ls := doc.LogValue().Resolve().String()
 					assert.NotContains(t, ls, "panicked")
 					assert.NotContains(t, ls, "called too many times")
+
+					assert.NotEmpty(t, doc.LogMessage())
 
 					tdoc, err := doc.Convert()
 					require.NoError(t, err)
@@ -531,6 +650,8 @@ func TestNormal(t *testing.T) {
 					ls := doc.LogValue().Resolve().String()
 					assert.NotContains(t, ls, "panicked")
 					assert.NotContains(t, ls, "called too many times")
+
+					assert.Equal(t, testutil.Unindent(t, tc.m), doc.LogMessage())
 
 					tdoc, err := doc.Convert()
 					require.NoError(t, err)
@@ -580,6 +701,12 @@ func TestDecode(t *testing.T) {
 
 			t.Run("bson2", func(t *testing.T) {
 				t.Run("FindRaw", func(t *testing.T) {
+					ls := tc.raw.LogValue().Resolve().String()
+					assert.NotContains(t, ls, "panicked")
+					assert.NotContains(t, ls, "called too many times")
+
+					assert.NotEmpty(t, tc.raw.LogMessage())
+
 					l, err := FindRaw(tc.raw)
 
 					if tc.findRawErr != nil {
@@ -658,6 +785,7 @@ func BenchmarkDocument(b *testing.B) {
 			b.Run("bson2", func(b *testing.B) {
 				var doc *Document
 				var raw []byte
+				var m string
 				var err error
 
 				b.Run("Decode", func(b *testing.B) {
@@ -690,6 +818,22 @@ func BenchmarkDocument(b *testing.B) {
 					assert.NotNil(b, raw)
 				})
 
+				b.Run("LogMessage", func(b *testing.B) {
+					doc, err = tc.raw.Decode()
+					require.NoError(b, err)
+
+					b.ReportAllocs()
+					b.ResetTimer()
+
+					for range b.N {
+						m = doc.LogMessage()
+					}
+
+					b.StopTimer()
+
+					assert.NotEmpty(b, m)
+				})
+
 				b.Run("DecodeDeep", func(b *testing.B) {
 					b.ReportAllocs()
 
@@ -719,6 +863,22 @@ func BenchmarkDocument(b *testing.B) {
 					require.NoError(b, err)
 					assert.NotNil(b, raw)
 				})
+
+				b.Run("LogMessageDeep", func(b *testing.B) {
+					doc, err = tc.raw.DecodeDeep()
+					require.NoError(b, err)
+
+					b.ReportAllocs()
+					b.ResetTimer()
+
+					for range b.N {
+						m = doc.LogMessage()
+					}
+
+					b.StopTimer()
+
+					assert.NotEmpty(b, m)
+				})
 			})
 		})
 	}
@@ -735,6 +895,8 @@ func testRawDocument(t *testing.T, rawDoc RawDocument) {
 			assert.NotContains(t, ls, "panicked")
 			assert.NotContains(t, ls, "called too many times")
 
+			assert.NotEmpty(t, rawDoc.LogMessage())
+
 			_, _ = FindRaw(rawDoc)
 		})
 
@@ -750,6 +912,8 @@ func testRawDocument(t *testing.T, rawDoc RawDocument) {
 			ls := doc.LogValue().Resolve().String()
 			assert.NotContains(t, ls, "panicked")
 			assert.NotContains(t, ls, "called too many times")
+
+			assert.NotEmpty(t, doc.LogMessage())
 
 			_, _ = doc.Convert()
 
@@ -768,6 +932,8 @@ func testRawDocument(t *testing.T, rawDoc RawDocument) {
 			ls := doc.LogValue().Resolve().String()
 			assert.NotContains(t, ls, "panicked")
 			assert.NotContains(t, ls, "called too many times")
+
+			assert.NotEmpty(t, doc.LogMessage())
 
 			_, err = doc.Convert()
 			require.NoError(t, err)
@@ -807,6 +973,8 @@ func testRawDocument(t *testing.T, rawDoc RawDocument) {
 		assert.NotContains(t, ls, "panicked")
 		assert.NotContains(t, ls, "called too many times")
 
+		assert.NotEmpty(t, bdoc2.LogMessage())
+
 		tdoc1, err := types.ConvertDocument(&doc1)
 		require.NoError(t, err)
 
@@ -826,6 +994,8 @@ func testRawDocument(t *testing.T, rawDoc RawDocument) {
 		ls = doc2e.LogValue().Resolve().String()
 		assert.NotContains(t, ls, "panicked")
 		assert.NotContains(t, ls, "called too many times")
+
+		assert.NotEmpty(t, doc2e.LogMessage())
 
 		b1, err := doc1e.MarshalBinary()
 		require.NoError(t, err)

@@ -16,11 +16,9 @@ package wire
 
 import (
 	"encoding/binary"
-	"encoding/json"
 
 	"github.com/FerretDB/FerretDB/internal/bson2"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/types/fjson"
 	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -159,30 +157,30 @@ func (query *OpQuery) String() string {
 		return "<nil>"
 	}
 
-	m := map[string]any{
-		"Flags":              query.Flags,
-		"FullCollectionName": query.FullCollectionName,
-		"NumberToSkip":       query.NumberToSkip,
-		"NumberToReturn":     query.NumberToReturn,
-	}
+	m := must.NotFail(bson2.NewDocument(
+		"Flags", query.Flags.String(),
+		"FullCollectionName", query.FullCollectionName,
+		"NumberToSkip", query.NumberToSkip,
+		"NumberToReturn", query.NumberToReturn,
+	))
 
-	doc, err := query.query.Convert()
+	doc, err := query.query.DecodeDeep()
 	if err == nil {
-		m["Query"] = json.RawMessage(must.NotFail(fjson.Marshal(doc)))
+		must.NoError(m.Add("Query", doc))
 	} else {
-		m["QueryError"] = err.Error()
+		must.NoError(m.Add("QueryError", err.Error()))
 	}
 
 	if query.returnFieldsSelector != nil {
-		doc, err = query.returnFieldsSelector.Convert()
+		doc, err = query.returnFieldsSelector.DecodeDeep()
 		if err == nil {
-			m["ReturnFieldsSelector"] = json.RawMessage(must.NotFail(fjson.Marshal(doc)))
+			must.NoError(m.Add("ReturnFieldsSelector", doc))
 		} else {
-			m["ReturnFieldsSelectorError"] = err.Error()
+			must.NoError(m.Add("ReturnFieldsSelectorError", err.Error()))
 		}
 	}
 
-	return string(must.NotFail(json.MarshalIndent(m, "", "  ")))
+	return m.LogMessage()
 }
 
 // check interfaces

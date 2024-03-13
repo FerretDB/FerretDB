@@ -54,7 +54,7 @@ func BenchmarkFind(b *testing.B) {
 			b.Run(name, func(b *testing.B) {
 				var firstDocs, docs int
 
-				for i := 0; i < b.N; i++ {
+				for range b.N {
 					cursor, err := s.Collection.Find(s.Ctx, bc.filter)
 					require.NoError(b, err)
 
@@ -112,7 +112,7 @@ func BenchmarkReplaceOne(b *testing.B) {
 		filter := bson.D{{"_id", doc[0].Value}}
 		var res *mongo.UpdateResult
 
-		for i := 0; i < b.N; i++ {
+		for i := range b.N {
 			doc[1].Value = int64(i + 1)
 
 			res, err = collection.ReplaceOne(ctx, filter, doc)
@@ -148,7 +148,7 @@ func BenchmarkInsertMany(b *testing.B) {
 			b.Run(fmt.Sprintf("%s/Batch%d", provider.Name(), batchSize), func(b *testing.B) {
 				b.StopTimer()
 
-				for i := 0; i < b.N; i++ {
+				for range b.N {
 					require.NoError(b, collection.Drop(ctx))
 
 					iter := provider.NewIterator()

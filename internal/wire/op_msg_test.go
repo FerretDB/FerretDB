@@ -24,6 +24,9 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
+// msgTestCases represents test cases for OP_MSG decoding/encoding.
+//
+//nolint:lll // for readability
 var msgTestCases = []testCase{
 	{
 		name:    "handshake5",
@@ -36,7 +39,7 @@ var msgTestCases = []testCase{
 		},
 		msgBody: &OpMsg{
 			sections: []OpMsgSection{{
-				documents: []bson2.RawDocument{makeRawDocument(
+				Documents: []bson2.RawDocument{makeRawDocument(
 					"buildInfo", int32(1),
 					"lsid", must.NotFail(types.NewDocument(
 						"id", types.Binary{
@@ -52,6 +55,21 @@ var msgTestCases = []testCase{
 			}},
 		},
 		command: "buildInfo",
+		m: `
+		{
+		  "FlagBits": "[]",
+		  "Checksum": int64(0),
+		  "Sections": [
+		    {
+		      "Kind": 0,
+		      "Document": {
+		        "buildInfo": 1,
+		        "lsid": {"id": Binary(uuid:oxnytKF1QMe456OjLsJWvg==)},
+		        "$db": "admin",
+		      },
+		    },
+		  ],
+		}`,
 	},
 	{
 		name:    "handshake6",
@@ -65,7 +83,7 @@ var msgTestCases = []testCase{
 		},
 		msgBody: &OpMsg{
 			sections: []OpMsgSection{{
-				documents: []bson2.RawDocument{makeRawDocument(
+				Documents: []bson2.RawDocument{makeRawDocument(
 					"version", "5.0.0",
 					"gitVersion", "1184f004a99660de6f5e745573419bda8a28c0e9",
 					"modules", must.NotFail(types.NewArray()),
@@ -110,6 +128,46 @@ var msgTestCases = []testCase{
 			}},
 		},
 		command: "version",
+		m: `
+		{
+		  "FlagBits": "[]",
+		  "Checksum": int64(0),
+		  "Sections": [
+		    {
+		      "Kind": 0,
+		      "Document": {
+		        "version": "5.0.0",
+		        "gitVersion": "1184f004a99660de6f5e745573419bda8a28c0e9",
+		        "modules": [],
+		        "allocator": "tcmalloc",
+		        "javascriptEngine": "mozjs",
+		        "sysInfo": "deprecated",
+		        "versionArray": [5, 0, 0, 0],
+		        "openssl": {
+		          "running": "OpenSSL 1.1.1f  31 Mar 2020",
+		          "compiled": "OpenSSL 1.1.1f  31 Mar 2020",
+		        },
+		        "buildEnvironment": {
+		          "distmod": "ubuntu2004",
+		          "distarch": "x86_64",
+		          "cc": "/opt/mongodbtoolchain/v3/bin/gcc: gcc (GCC) 8.5.0",
+		          "ccflags": "-Werror -include mongo/platform/basic.h -fasynchronous-unwind-tables -ggdb -Wall -Wsign-compare -Wno-unknown-pragmas -Winvalid-pch -fno-omit-frame-pointer -fno-strict-aliasing -O2 -march=sandybridge -mtune=generic -mprefer-vector-width=128 -Wno-unused-local-typedefs -Wno-unused-function -Wno-deprecated-declarations -Wno-unused-const-variable -Wno-unused-but-set-variable -Wno-missing-braces -fstack-protector-strong -Wa,--nocompress-debug-sections -fno-builtin-memcmp",
+		          "cxx": "/opt/mongodbtoolchain/v3/bin/g++: g++ (GCC) 8.5.0",
+		          "cxxflags": "-Woverloaded-virtual -Wno-maybe-uninitialized -fsized-deallocation -std=c++17",
+		          "linkflags": "-Wl,--fatal-warnings -pthread -Wl,-z,now -fuse-ld=gold -fstack-protector-strong -Wl,--no-threads -Wl,--build-id -Wl,--hash-style=gnu -Wl,-z,noexecstack -Wl,--warn-execstack -Wl,-z,relro -Wl,--compress-debug-sections=none -Wl,-z,origin -Wl,--enable-new-dtags",
+		          "target_arch": "x86_64",
+		          "target_os": "linux",
+		          "cppdefines": "SAFEINT_USE_INTRINSICS 0 PCRE_STATIC NDEBUG _XOPEN_SOURCE 700 _GNU_SOURCE _REENTRANT 1 _FORTIFY_SOURCE 2 BOOST_THREAD_VERSION 5 BOOST_THREAD_USES_DATETIME BOOST_SYSTEM_NO_DEPRECATED BOOST_MATH_NO_LONG_DOUBLE_MATH_FUNCTIONS BOOST_ENABLE_ASSERT_DEBUG_HANDLER BOOST_LOG_NO_SHORTHAND_NAMES BOOST_LOG_USE_NATIVE_SYSLOG BOOST_LOG_WITHOUT_THREAD_ATTR ABSL_FORCE_ALIGNED_ACCESS",
+		        },
+		        "bits": 64,
+		        "debug": false,
+		        "maxBsonObjectSize": 16777216,
+		        "storageEngines": ["devnull", "ephemeralForTest", "wiredTiger"],
+		        "ok": 1.0,
+		      },
+		    },
+		  ],
+		}`,
 	},
 	{
 		name:      "import",
@@ -122,7 +180,7 @@ var msgTestCases = []testCase{
 		msgBody: &OpMsg{
 			sections: []OpMsgSection{
 				{
-					documents: []bson2.RawDocument{makeRawDocument(
+					Documents: []bson2.RawDocument{makeRawDocument(
 						"insert", "actor",
 						"ordered", true,
 						"writeConcern", must.NotFail(types.NewDocument(
@@ -134,7 +192,7 @@ var msgTestCases = []testCase{
 				{
 					Kind:       1,
 					Identifier: "documents",
-					documents: []bson2.RawDocument{
+					Documents: []bson2.RawDocument{
 						makeRawDocument(
 							"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01},
 							"actor_id", int32(1),
@@ -154,6 +212,42 @@ var msgTestCases = []testCase{
 			},
 		},
 		command: "insert",
+		m: `
+		{
+		  "FlagBits": "[]",
+		  "Checksum": int64(0),
+		  "Sections": [
+		    {
+		      "Kind": 0,
+		      "Document": {
+		        "insert": "actor",
+		        "ordered": true,
+		        "writeConcern": {"w": "majority"},
+		        "$db": "monila",
+		      },
+		    },
+		    {
+		      "Kind": 1,
+		      "Identifier": "documents",
+		      "Documents": [
+		        {
+		          "_id": ObjectID(612ec2800000000100000001),
+		          "actor_id": 1,
+		          "first_name": "PENELOPE",
+		          "last_name": "GUINESS",
+		          "last_update": 2020-02-15T09:34:33Z,
+		        },
+		        {
+		          "_id": ObjectID(612ec2800000000200000002),
+		          "actor_id": 2,
+		          "first_name": "NICK",
+		          "last_name": "WAHLBERG",
+		          "last_update": 2020-02-15T09:34:33Z,
+		        },
+		      ],
+		    },
+		  ],
+		}`,
 	},
 	{
 		name:      "msg_fuzz1",
@@ -196,7 +290,7 @@ var msgTestCases = []testCase{
 		},
 		msgBody: &OpMsg{
 			sections: []OpMsgSection{{
-				documents: []bson2.RawDocument{makeRawDocument(
+				Documents: []bson2.RawDocument{makeRawDocument(
 					"insert", "values",
 					"documents", must.NotFail(types.NewArray(
 						must.NotFail(types.NewDocument(
@@ -249,7 +343,7 @@ var msgTestCases = []testCase{
 		msgBody: &OpMsg{
 			sections: []OpMsgSection{
 				{
-					documents: []bson2.RawDocument{makeRawDocument(
+					Documents: []bson2.RawDocument{makeRawDocument(
 						"insert", "TestInsertSimple",
 						"ordered", true,
 						"$db", "testinsertsimple",
@@ -258,7 +352,7 @@ var msgTestCases = []testCase{
 				{
 					Kind:       1,
 					Identifier: "documents",
-					documents: []bson2.RawDocument{makeRawDocument(
+					Documents: []bson2.RawDocument{makeRawDocument(
 						"_id", types.ObjectID{0x63, 0x7c, 0xfa, 0xd8, 0x8d, 0xc3, 0xce, 0xcd, 0xe3, 0x8e, 0x1e, 0x6b},
 						"v", math.Copysign(0, -1),
 					)},
@@ -266,6 +360,22 @@ var msgTestCases = []testCase{
 			},
 		},
 		command: "insert",
+		m: `
+		{
+		  "FlagBits": "[]",
+		  "Checksum": int64(0),
+		  "Sections": [
+		    {
+		      "Kind": 0,
+		      "Document": {"insert": "TestInsertSimple", "ordered": true, "$db": "testinsertsimple"},
+		    },
+		    {
+		      "Kind": 1,
+		      "Identifier": "documents",
+		      "Documents": [{"_id": ObjectID(637cfad88dc3cecde38e1e6b), "v": -0.0}],
+		    },
+		  ],
+		}`,
 	},
 	{
 		name: "MultiSectionInsert",
@@ -311,13 +421,13 @@ var msgTestCases = []testCase{
 				{
 					Kind:       1,
 					Identifier: "documents",
-					documents: []bson2.RawDocument{makeRawDocument(
+					Documents: []bson2.RawDocument{makeRawDocument(
 						"_id", types.ObjectID{0x63, 0x8c, 0xec, 0x46, 0xaa, 0x77, 0x8b, 0xf3, 0x70, 0x10, 0x54, 0x29},
 						"a", float64(3),
 					)},
 				},
 				{
-					documents: []bson2.RawDocument{makeRawDocument(
+					Documents: []bson2.RawDocument{makeRawDocument(
 						"insert", "foo",
 						"ordered", true,
 						"$db", "test",
@@ -327,6 +437,19 @@ var msgTestCases = []testCase{
 			checksum: 1737537506,
 		},
 		command: "insert",
+		m: `
+		{
+		  "FlagBits": "[checksumPresent]",
+		  "Checksum": int64(1737537506),
+		  "Sections": [
+		    {
+		      "Kind": 1,
+		      "Identifier": "documents",
+		      "Documents": [{"_id": ObjectID(638cec46aa778bf370105429), "a": 3.0}],
+		    },
+		    {"Kind": 0, "Document": {"insert": "foo", "ordered": true, "$db": "test"}},
+		  ],
+		}`,
 	},
 	{
 		name: "MultiSectionUpdate",
@@ -387,7 +510,7 @@ var msgTestCases = []testCase{
 				{
 					Kind:       1,
 					Identifier: "updates",
-					documents: []bson2.RawDocument{makeRawDocument(
+					Documents: []bson2.RawDocument{makeRawDocument(
 						"q", must.NotFail(types.NewDocument(
 							"a", float64(20),
 						)),
@@ -401,7 +524,7 @@ var msgTestCases = []testCase{
 					)},
 				},
 				{
-					documents: []bson2.RawDocument{makeRawDocument(
+					Documents: []bson2.RawDocument{makeRawDocument(
 						"update", "foo",
 						"ordered", true,
 						"$db", "test",
@@ -411,6 +534,21 @@ var msgTestCases = []testCase{
 			checksum: 2932997361,
 		},
 		command: "update",
+		m: `
+		{
+		  "FlagBits": "[checksumPresent]",
+		  "Checksum": int64(2932997361),
+		  "Sections": [
+		    {
+		      "Kind": 1,
+		      "Identifier": "updates",
+		      "Documents": [
+		        {"q": {"a": 20.0}, "u": {"$inc": {"a": 1.0}}, "multi": false, "upsert": false},
+		      ],
+		    },
+		    {"Kind": 0, "Document": {"update": "foo", "ordered": true, "$db": "test"}},
+		  ],
+		}`,
 	},
 	{
 		name: "InvalidChecksum",
@@ -456,13 +594,13 @@ var msgTestCases = []testCase{
 				{
 					Kind:       1,
 					Identifier: "documents",
-					documents: []bson2.RawDocument{makeRawDocument(
+					Documents: []bson2.RawDocument{makeRawDocument(
 						"_id", types.ObjectID{0x63, 0x8c, 0xec, 0x46, 0xaa, 0x77, 0x8b, 0xf3, 0x70, 0x10, 0x54, 0x29},
 						"a", float64(3),
 					)},
 				},
 				{
-					documents: []bson2.RawDocument{makeRawDocument(
+					Documents: []bson2.RawDocument{makeRawDocument(
 						"insert", "fooo",
 						"ordered", true,
 						"$db", "test",
