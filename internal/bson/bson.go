@@ -66,42 +66,6 @@ type bsontype interface {
 }
 
 // TODO https://github.com/FerretDB/FerretDB/issues/260
-func fromBSON(v bsontype) any {
-	switch v := v.(type) {
-	case *Document:
-		return must.NotFail(types.ConvertDocument(v))
-	case *arrayType:
-		return pointer.To(types.Array(*v))
-	case *doubleType:
-		return float64(*v)
-	case *stringType:
-		return string(*v)
-	case *binaryType:
-		return types.Binary(*v)
-	case *objectIDType:
-		return types.ObjectID(*v)
-	case *boolType:
-		return bool(*v)
-	case *dateTimeType:
-		return time.Time(*v)
-	case *nullType:
-		return types.Null
-	case *regexType:
-		return types.Regex(*v)
-	case *int32Type:
-		return int32(*v)
-	case *timestampType:
-		return types.Timestamp(*v)
-	case *int64Type:
-		return int64(*v)
-	case *CString:
-		panic("CString should not be there")
-	}
-
-	panic(fmt.Sprintf("not reached: %T", v)) // for sumtype to work
-}
-
-// TODO https://github.com/FerretDB/FerretDB/issues/260
 //
 //nolint:deadcode,unused // remove later if it is not needed
 func toBSON(v any) bsontype {
