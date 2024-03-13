@@ -25,7 +25,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/bson2"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/types/fjson"
 	"github.com/FerretDB/FerretDB/internal/util/hex"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
@@ -37,38 +36,25 @@ func dump[T types.Type](tb testtb.TB, o T) string {
 
 	v, err := bson2.Convert(o)
 	require.NoError(tb, err)
-	_ = v
 
-	// We should switch to bson2's format.
-	// TODO https://github.com/FerretDB/FerretDB/issues/4157
-	b, err := fjson.Marshal(o)
-	require.NoError(tb, err)
-
-	return string(IndentJSON(tb, b))
+	return bson2.LogMessageBlock(v)
 }
 
 // dumpSlice returns string representation for debugging.
 func dumpSlice[T types.Type](tb testtb.TB, s []T) string {
 	tb.Helper()
 
-	// We should switch to bson2's format.
-	// TODO https://github.com/FerretDB/FerretDB/issues/4157
+	arr := bson2.MakeArray(len(s))
 
-	res := []byte("[")
-
-	for i, o := range s {
-		b, err := fjson.Marshal(o)
+	for _, o := range s {
+		v, err := bson2.Convert(o)
 		require.NoError(tb, err)
 
-		res = append(res, b...)
-		if i < len(s)-1 {
-			res = append(res, ',')
-		}
+		err = arr.Add(v)
+		require.NoError(tb, err)
 	}
 
-	res = append(res, ']')
-
-	return string(IndentJSON(tb, res))
+	return bson2.LogMessageBlock(arr)
 }
 
 // MustParseDumpFile panics if fails to parse file input to byte array.
