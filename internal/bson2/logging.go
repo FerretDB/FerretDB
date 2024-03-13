@@ -135,6 +135,17 @@ func slogValue(v any, depth int) slog.Value {
 	}
 }
 
+// LogMessage returns a representation as a string.
+// It may change over time.
+func LogMessage(v any) string {
+	return logMessage(v, logMaxFlowLength, "", 1)
+}
+
+// LogMessageBlock is a variant of [RawArray.LogMessage] that never uses a flow style.
+func LogMessageBlock(v any) string {
+	return logMessage(v, 0, "", 1)
+}
+
 // logMessage returns an indented representation of any BSON value as a string,
 // somewhat similar (but not identical) to JSON or Go syntax.
 // It may change over time.

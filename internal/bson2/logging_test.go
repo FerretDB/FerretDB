@@ -235,10 +235,10 @@ func TestLogging(t *testing.T) {
 			assert.Equal(t, tc.j+"\n", jbuf.String())
 			jbuf.Reset()
 
-			m := tc.doc.LogMessage()
+			m := bson2.LogMessage(tc.doc)
 			assert.Equal(t, testutil.Unindent(t, tc.m), m, "actual:\n%s", m)
 
-			b := tc.doc.LogMessageBlock()
+			b := bson2.LogMessageBlock(tc.doc)
 			assert.Equal(t, testutil.Unindent(t, tc.b), b, "actual:\n%s", b)
 		})
 	}

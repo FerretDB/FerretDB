@@ -166,17 +166,6 @@ func (raw RawDocument) LogValue() slog.Value {
 	return slogValue(raw, 1)
 }
 
-// LogMessage returns a representation as a string.
-// It may change over time.
-func (raw RawDocument) LogMessage() string {
-	return logMessage(raw, logMaxFlowLength, "", 1)
-}
-
-// LogMessageBlock is a variant of [RawDocument.LogMessage] that never uses a flow style.
-func (raw RawDocument) LogMessageBlock() string {
-	return logMessage(raw, 0, "", 1)
-}
-
 // check interfaces
 var (
 	_ slog.LogValuer = RawDocument(nil)
