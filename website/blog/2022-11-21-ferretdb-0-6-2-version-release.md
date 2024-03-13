@@ -33,7 +33,7 @@ In the latest release, we have published our commands parity guide with MongoDB,
 
 ## Bug Fixes
 
-We've fixed issues with Unix socket listeners, where you get internal errors or panic when running FerretDB with a Unix socket listener.
+We've fixed issues with Unix domain socket listeners, where you get internal errors or panic when running FerretDB with a Unix domain socket listener.
 
 ## Other changes and enhancements
 

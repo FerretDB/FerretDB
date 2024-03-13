@@ -32,8 +32,8 @@ import (
 func TestUpdateUser(t *testing.T) {
 	t.Parallel()
 
-	ctx, collection := setup.Setup(t)
-	db := collection.Database()
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{SetupUser: true})
+	ctx, db := s.Ctx, s.Collection.Database()
 
 	testCases := map[string]struct { //nolint:vet // for readability
 		createPayload bson.D
