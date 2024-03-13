@@ -606,11 +606,7 @@ func TestCursorsGetMoreCommandConnection(t *testing.T) {
 		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/153")
 
 		// do not run subtest in parallel to avoid breaking another parallel subtest
-
-		u, err := url.Parse(s.MongoDBURI)
-		require.NoError(t, err)
-
-		client2, err := mongo.Connect(ctx, options.Client().ApplyURI(u.String()))
+		client2, err := mongo.Connect(ctx, options.Client().ApplyURI(s.MongoDBURI))
 		require.NoError(t, err)
 
 		defer client2.Disconnect(ctx)
@@ -646,7 +642,7 @@ func TestCursorsGetMoreCommandConnection(t *testing.T) {
 			},
 		).Decode(&res)
 
-		integration.AssertMatchesCommandError(t, mongo.CommandError{Code: 50738, Name: "Location50738"}, err)
+		integration.AssertMatchesCommandError(t, mongo.CommandError{Code: 13, Name: "Unauthorized"}, err)
 	})
 }
 
