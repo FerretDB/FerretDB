@@ -12,245 +12,1029 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bson
+package bson_test // to avoid import cycle
 
 import (
 	"bufio"
 	"bytes"
-	"encoding/hex"
-	"errors"
 	"io"
-	"math"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/FerretDB/FerretDB/internal/types/fjson"
-	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
+	"github.com/FerretDB/FerretDB/internal/bson"
+	"github.com/FerretDB/FerretDB/internal/bson/oldbson"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
-type testCase struct {
+// normalTestCase represents a single test case for successful decoding/encoding.
+//
+//nolint:vet // for readability
+type normalTestCase struct {
 	name string
-	v    bsontype
-	b    []byte
-	bErr string // unwrapped
+	raw  bson.RawDocument
+	tdoc *types.Document
+	m    string
 }
 
-// assertEqual is assert.Equal that also can compare NaNs and ±0.
-func assertEqual(tb testtb.TB, expected, actual any, msgAndArgs ...any) bool {
-	tb.Helper()
+// decodeTestCase represents a single test case for unsuccessful decoding.
+//
+//nolint:vet // for readability
+type decodeTestCase struct {
+	name string
+	raw  bson.RawDocument
 
-	switch expected := expected.(type) {
-	// should not be possible, check just in case
-	case doubleType, float64:
-		tb.Fatalf("unexpected type %[1]T: %[1]v", expected)
+	oldOk bool
 
-	case *doubleType:
-		require.IsType(tb, expected, actual, msgAndArgs...)
-		e := float64(*expected)
-		a := float64(*actual.(*doubleType))
-		if math.IsNaN(e) || math.IsNaN(a) {
-			return assert.Equal(tb, math.IsNaN(e), math.IsNaN(a), msgAndArgs...)
-		}
-		if e == 0 && a == 0 {
-			return assert.Equal(tb, math.Signbit(e), math.Signbit(a), msgAndArgs...)
-		}
-		// fallthrough to regular assert.Equal below
-	}
-
-	return assert.Equal(tb, expected, actual, msgAndArgs...)
+	findRawErr    error
+	findRawL      int
+	decodeErr     error
+	decodeDeepErr error // defaults to decodeErr
 }
 
-// lastErr returns the last error in error chain.
-func lastErr(err error) error {
-	for {
-		e := errors.Unwrap(err)
-		if e == nil {
-			return err
-		}
-		err = e
-	}
+// normalTestCases represents test cases for successful decoding/encoding.
+//
+//nolint:lll // for readability
+var normalTestCases = []normalTestCase{
+	{
+		name: "handshake1",
+		raw:  testutil.MustParseDumpFile("testdata", "handshake1.hex"),
+		tdoc: must.NotFail(types.NewDocument(
+			"ismaster", true,
+			"client", must.NotFail(types.NewDocument(
+				"driver", must.NotFail(types.NewDocument(
+					"name", "nodejs",
+					"version", "4.0.0-beta.6",
+				)),
+				"os", must.NotFail(types.NewDocument(
+					"type", "Darwin",
+					"name", "darwin",
+					"architecture", "x64",
+					"version", "20.6.0",
+				)),
+				"platform", "Node.js v14.17.3, LE (unified)|Node.js v14.17.3, LE (unified)",
+				"application", must.NotFail(types.NewDocument(
+					"name", "mongosh 1.0.1",
+				)),
+			)),
+			"compression", must.NotFail(types.NewArray("none")),
+			"loadBalanced", false,
+		)),
+		m: `
+		{
+		  "ismaster": true,
+		  "client": {
+		    "driver": {"name": "nodejs", "version": "4.0.0-beta.6"},
+		    "os": {
+		      "type": "Darwin",
+		      "name": "darwin",
+		      "architecture": "x64",
+		      "version": "20.6.0",
+		    },
+		    "platform": "Node.js v14.17.3, LE (unified)|Node.js v14.17.3, LE (unified)",
+		    "application": {"name": "mongosh 1.0.1"},
+		  },
+		  "compression": ["none"],
+		  "loadBalanced": false,
+		}`,
+	},
+	{
+		name: "handshake2",
+		raw:  testutil.MustParseDumpFile("testdata", "handshake2.hex"),
+		tdoc: must.NotFail(types.NewDocument(
+			"ismaster", true,
+			"client", must.NotFail(types.NewDocument(
+				"driver", must.NotFail(types.NewDocument(
+					"name", "nodejs",
+					"version", "4.0.0-beta.6",
+				)),
+				"os", must.NotFail(types.NewDocument(
+					"type", "Darwin",
+					"name", "darwin",
+					"architecture", "x64",
+					"version", "20.6.0",
+				)),
+				"platform", "Node.js v14.17.3, LE (unified)|Node.js v14.17.3, LE (unified)",
+				"application", must.NotFail(types.NewDocument(
+					"name", "mongosh 1.0.1",
+				)),
+			)),
+			"compression", must.NotFail(types.NewArray("none")),
+			"loadBalanced", false,
+		)),
+		m: `
+		{
+		  "ismaster": true,
+		  "client": {
+		    "driver": {"name": "nodejs", "version": "4.0.0-beta.6"},
+		    "os": {
+		      "type": "Darwin",
+		      "name": "darwin",
+		      "architecture": "x64",
+		      "version": "20.6.0",
+		    },
+		    "platform": "Node.js v14.17.3, LE (unified)|Node.js v14.17.3, LE (unified)",
+		    "application": {"name": "mongosh 1.0.1"},
+		  },
+		  "compression": ["none"],
+		  "loadBalanced": false,
+		}`,
+	},
+	{
+		name: "handshake3",
+		raw:  testutil.MustParseDumpFile("testdata", "handshake3.hex"),
+		tdoc: must.NotFail(types.NewDocument(
+			"buildInfo", int32(1),
+			"lsid", must.NotFail(types.NewDocument(
+				"id", types.Binary{
+					Subtype: types.BinaryUUID,
+					B: []byte{
+						0xa3, 0x19, 0xf2, 0xb4, 0xa1, 0x75, 0x40, 0xc7,
+						0xb8, 0xe7, 0xa3, 0xa3, 0x2e, 0xc2, 0x56, 0xbe,
+					},
+				},
+			)),
+			"$db", "admin",
+		)),
+		m: `
+		{
+		  "buildInfo": 1,
+		  "lsid": {"id": Binary(uuid:oxnytKF1QMe456OjLsJWvg==)},
+		  "$db": "admin",
+		}`,
+	},
+	{
+		name: "handshake4",
+		raw:  testutil.MustParseDumpFile("testdata", "handshake4.hex"),
+		tdoc: must.NotFail(types.NewDocument(
+			"version", "5.0.0",
+			"gitVersion", "1184f004a99660de6f5e745573419bda8a28c0e9",
+			"modules", must.NotFail(types.NewArray()),
+			"allocator", "tcmalloc",
+			"javascriptEngine", "mozjs",
+			"sysInfo", "deprecated",
+			"versionArray", must.NotFail(types.NewArray(int32(5), int32(0), int32(0), int32(0))),
+			"openssl", must.NotFail(types.NewDocument(
+				"running", "OpenSSL 1.1.1f  31 Mar 2020",
+				"compiled", "OpenSSL 1.1.1f  31 Mar 2020",
+			)),
+			"buildEnvironment", must.NotFail(types.NewDocument(
+				"distmod", "ubuntu2004",
+				"distarch", "x86_64",
+				"cc", "/opt/mongodbtoolchain/v3/bin/gcc: gcc (GCC) 8.5.0",
+				"ccflags", "-Werror -include mongo/platform/basic.h -fasynchronous-unwind-tables -ggdb "+
+					"-Wall -Wsign-compare -Wno-unknown-pragmas -Winvalid-pch -fno-omit-frame-pointer "+
+					"-fno-strict-aliasing -O2 -march=sandybridge -mtune=generic -mprefer-vector-width=128 "+
+					"-Wno-unused-local-typedefs -Wno-unused-function -Wno-deprecated-declarations "+
+					"-Wno-unused-const-variable -Wno-unused-but-set-variable -Wno-missing-braces "+
+					"-fstack-protector-strong -Wa,--nocompress-debug-sections -fno-builtin-memcmp",
+				"cxx", "/opt/mongodbtoolchain/v3/bin/g++: g++ (GCC) 8.5.0",
+				"cxxflags", "-Woverloaded-virtual -Wno-maybe-uninitialized -fsized-deallocation -std=c++17",
+				"linkflags", "-Wl,--fatal-warnings -pthread -Wl,-z,now -fuse-ld=gold -fstack-protector-strong "+
+					"-Wl,--no-threads -Wl,--build-id -Wl,--hash-style=gnu -Wl,-z,noexecstack -Wl,--warn-execstack "+
+					"-Wl,-z,relro -Wl,--compress-debug-sections=none -Wl,-z,origin -Wl,--enable-new-dtags",
+				"target_arch", "x86_64",
+				"target_os", "linux",
+				"cppdefines", "SAFEINT_USE_INTRINSICS 0 PCRE_STATIC NDEBUG _XOPEN_SOURCE 700 _GNU_SOURCE "+
+					"_REENTRANT 1 _FORTIFY_SOURCE 2 BOOST_THREAD_VERSION 5 BOOST_THREAD_USES_DATETIME "+
+					"BOOST_SYSTEM_NO_DEPRECATED BOOST_MATH_NO_LONG_DOUBLE_MATH_FUNCTIONS "+
+					"BOOST_ENABLE_ASSERT_DEBUG_HANDLER BOOST_LOG_NO_SHORTHAND_NAMES BOOST_LOG_USE_NATIVE_SYSLOG "+
+					"BOOST_LOG_WITHOUT_THREAD_ATTR ABSL_FORCE_ALIGNED_ACCESS",
+			)),
+			"bits", int32(64),
+			"debug", false,
+			"maxBsonObjectSize", int32(16777216),
+			"storageEngines", must.NotFail(types.NewArray("devnull", "ephemeralForTest", "wiredTiger")),
+			"ok", float64(1),
+		)),
+		m: `
+		{
+		  "version": "5.0.0",
+		  "gitVersion": "1184f004a99660de6f5e745573419bda8a28c0e9",
+		  "modules": [],
+		  "allocator": "tcmalloc",
+		  "javascriptEngine": "mozjs",
+		  "sysInfo": "deprecated",
+		  "versionArray": [5, 0, 0, 0],
+		  "openssl": {
+		    "running": "OpenSSL 1.1.1f  31 Mar 2020",
+		    "compiled": "OpenSSL 1.1.1f  31 Mar 2020",
+		  },
+		  "buildEnvironment": {
+		    "distmod": "ubuntu2004",
+		    "distarch": "x86_64",
+		    "cc": "/opt/mongodbtoolchain/v3/bin/gcc: gcc (GCC) 8.5.0",
+		    "ccflags": "-Werror -include mongo/platform/basic.h -fasynchronous-unwind-tables -ggdb -Wall -Wsign-compare -Wno-unknown-pragmas -Winvalid-pch -fno-omit-frame-pointer -fno-strict-aliasing -O2 -march=sandybridge -mtune=generic -mprefer-vector-width=128 -Wno-unused-local-typedefs -Wno-unused-function -Wno-deprecated-declarations -Wno-unused-const-variable -Wno-unused-but-set-variable -Wno-missing-braces -fstack-protector-strong -Wa,--nocompress-debug-sections -fno-builtin-memcmp",
+		    "cxx": "/opt/mongodbtoolchain/v3/bin/g++: g++ (GCC) 8.5.0",
+		    "cxxflags": "-Woverloaded-virtual -Wno-maybe-uninitialized -fsized-deallocation -std=c++17",
+		    "linkflags": "-Wl,--fatal-warnings -pthread -Wl,-z,now -fuse-ld=gold -fstack-protector-strong -Wl,--no-threads -Wl,--build-id -Wl,--hash-style=gnu -Wl,-z,noexecstack -Wl,--warn-execstack -Wl,-z,relro -Wl,--compress-debug-sections=none -Wl,-z,origin -Wl,--enable-new-dtags",
+		    "target_arch": "x86_64",
+		    "target_os": "linux",
+		    "cppdefines": "SAFEINT_USE_INTRINSICS 0 PCRE_STATIC NDEBUG _XOPEN_SOURCE 700 _GNU_SOURCE _REENTRANT 1 _FORTIFY_SOURCE 2 BOOST_THREAD_VERSION 5 BOOST_THREAD_USES_DATETIME BOOST_SYSTEM_NO_DEPRECATED BOOST_MATH_NO_LONG_DOUBLE_MATH_FUNCTIONS BOOST_ENABLE_ASSERT_DEBUG_HANDLER BOOST_LOG_NO_SHORTHAND_NAMES BOOST_LOG_USE_NATIVE_SYSLOG BOOST_LOG_WITHOUT_THREAD_ATTR ABSL_FORCE_ALIGNED_ACCESS",
+		  },
+		  "bits": 64,
+		  "debug": false,
+		  "maxBsonObjectSize": 16777216,
+		  "storageEngines": ["devnull", "ephemeralForTest", "wiredTiger"],
+		  "ok": 1.0,
+		}`,
+	},
+	{
+		name: "all",
+		raw:  testutil.MustParseDumpFile("testdata", "all.hex"),
+		tdoc: must.NotFail(types.NewDocument(
+			"array", must.NotFail(types.NewArray(
+				must.NotFail(types.NewArray("")),
+				must.NotFail(types.NewArray("foo")),
+			)),
+			"binary", must.NotFail(types.NewArray(
+				types.Binary{Subtype: types.BinaryUser, B: []byte{0x42}},
+				types.Binary{Subtype: types.BinaryGeneric, B: []byte{}},
+			)),
+			"bool", must.NotFail(types.NewArray(true, false)),
+			"datetime", must.NotFail(types.NewArray(
+				time.Date(2021, 7, 27, 9, 35, 42, 123000000, time.UTC).Local(),
+				time.Time{}.Local(),
+			)),
+			"document", must.NotFail(types.NewArray(
+				must.NotFail(types.NewDocument("foo", "")),
+				must.NotFail(types.NewDocument("", "foo")),
+			)),
+			"double", must.NotFail(types.NewArray(42.13, 0.0)),
+			"int32", must.NotFail(types.NewArray(int32(42), int32(0))),
+			"int64", must.NotFail(types.NewArray(int64(42), int64(0))),
+			"objectID", must.NotFail(types.NewArray(types.ObjectID{0x42}, types.ObjectID{})),
+			"string", must.NotFail(types.NewArray("foo", "")),
+			"timestamp", must.NotFail(types.NewArray(types.Timestamp(42), types.Timestamp(0))),
+		)),
+		m: `
+		{
+		  "array": [[""], ["foo"]],
+		  "binary": [Binary(user:Qg==), Binary(generic:)],
+		  "bool": [true, false],
+		  "datetime": [2021-07-27T09:35:42.123Z, 0001-01-01T00:00:00Z],
+		  "document": [{"foo": ""}, {"": "foo"}],
+		  "double": [42.13, 0.0],
+		  "int32": [42, 0],
+		  "int64": [int64(42), int64(0)],
+		  "objectID": [ObjectID(420000000000000000000000), ObjectID(000000000000000000000000)],
+		  "string": ["foo", ""],
+		  "timestamp": [Timestamp(42), Timestamp(0)],
+		}`,
+	},
+	{
+		name: "nested",
+		raw:  testutil.MustParseDumpFile("testdata", "nested.hex"),
+		tdoc: must.NotFail(makeNested(false, 150).(*bson.Document).Convert()),
+		m: `
+		{
+		  "f": [
+		    {
+		      "f": [{"f": [{"f": [{"f": [{"f": [{"f": [{"f": [{"f": [{"f": [{...}]}]}]}]}]}]}]}]}],
+		    },
+		  ],
+		}`,
+	},
+	{
+		name: "float64Doc",
+		raw: bson.RawDocument{
+			0x10, 0x00, 0x00, 0x00,
+			0x01, 0x66, 0x00,
+			0x18, 0x2d, 0x44, 0x54, 0xfb, 0x21, 0x09, 0x40,
+			0x00,
+		},
+		tdoc: must.NotFail(types.NewDocument(
+			"f", float64(3.141592653589793),
+		)),
+		m: `{"f": 3.141592653589793}`,
+	},
+	{
+		name: "stringDoc",
+		raw: bson.RawDocument{
+			0x0e, 0x00, 0x00, 0x00,
+			0x02, 0x66, 0x00,
+			0x02, 0x00, 0x00, 0x00,
+			0x76, 0x00,
+			0x00,
+		},
+		tdoc: must.NotFail(types.NewDocument(
+			"f", "v",
+		)),
+		m: `{"f": "v"}`,
+	},
+	{
+		name: "binaryDoc",
+		raw: bson.RawDocument{
+			0x0e, 0x00, 0x00, 0x00,
+			0x05, 0x66, 0x00,
+			0x01, 0x00, 0x00, 0x00,
+			0x80,
+			0x76,
+			0x00,
+		},
+		tdoc: must.NotFail(types.NewDocument(
+			"f", types.Binary{B: []byte("v"), Subtype: types.BinaryUser},
+		)),
+		m: `{"f": Binary(user:dg==)}`,
+	},
+	{
+		name: "objectIDDoc",
+		raw: bson.RawDocument{
+			0x14, 0x00, 0x00, 0x00,
+			0x07, 0x66, 0x00,
+			0x62, 0x56, 0xc5, 0xba, 0x18, 0x2d, 0x44, 0x54, 0xfb, 0x21, 0x09, 0x40,
+			0x00,
+		},
+		tdoc: must.NotFail(types.NewDocument(
+			"f", types.ObjectID{0x62, 0x56, 0xc5, 0xba, 0x18, 0x2d, 0x44, 0x54, 0xfb, 0x21, 0x09, 0x40},
+		)),
+		m: `{"f": ObjectID(6256c5ba182d4454fb210940)}`,
+	},
+	{
+		name: "boolDoc",
+		raw: bson.RawDocument{
+			0x09, 0x00, 0x00, 0x00,
+			0x08, 0x66, 0x00,
+			0x01,
+			0x00,
+		},
+		tdoc: must.NotFail(types.NewDocument(
+			"f", true,
+		)),
+		m: `{"f": true}`,
+	},
+	{
+		name: "timeDoc",
+		raw: bson.RawDocument{
+			0x10, 0x00, 0x00, 0x00,
+			0x09, 0x66, 0x00,
+			0x0b, 0xce, 0x82, 0x18, 0x8d, 0x01, 0x00, 0x00,
+			0x00,
+		},
+		tdoc: must.NotFail(types.NewDocument(
+			"f", time.Date(2024, 1, 17, 17, 40, 42, 123000000, time.UTC),
+		)),
+		m: `{"f": 2024-01-17T17:40:42.123Z}`,
+	},
+	{
+		name: "nullDoc",
+		raw: bson.RawDocument{
+			0x08, 0x00, 0x00, 0x00,
+			0x0a, 0x66, 0x00,
+			0x00,
+		},
+		tdoc: must.NotFail(types.NewDocument(
+			"f", types.Null,
+		)),
+		m: `{"f": null}`,
+	},
+	{
+		name: "regexDoc",
+		raw: bson.RawDocument{
+			0x0c, 0x00, 0x00, 0x00,
+			0x0b, 0x66, 0x00,
+			0x70, 0x00,
+			0x6f, 0x00,
+			0x00,
+		},
+		tdoc: must.NotFail(types.NewDocument(
+			"f", types.Regex{Pattern: "p", Options: "o"},
+		)),
+		m: `{"f": /p/o}`,
+	},
+	{
+		name: "int32Doc",
+		raw: bson.RawDocument{
+			0x0c, 0x00, 0x00, 0x00,
+			0x10, 0x66, 0x00,
+			0xa1, 0xb0, 0xb9, 0x12,
+			0x00,
+		},
+		tdoc: must.NotFail(types.NewDocument(
+			"f", int32(314159265),
+		)),
+		m: `{"f": 314159265}`,
+	},
+	{
+		name: "timestampDoc",
+		raw: bson.RawDocument{
+			0x10, 0x00, 0x00, 0x00,
+			0x11, 0x66, 0x00,
+			0x2a, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x00,
+		},
+		tdoc: must.NotFail(types.NewDocument(
+			"f", types.Timestamp(42),
+		)),
+		m: `{"f": Timestamp(42)}`,
+	},
+	{
+		name: "int64Doc",
+		raw: bson.RawDocument{
+			0x10, 0x00, 0x00, 0x00,
+			0x12, 0x66, 0x00,
+			0x21, 0x6d, 0x25, 0xa, 0x43, 0x29, 0xb, 0x00,
+			0x00,
+		},
+		tdoc: must.NotFail(types.NewDocument(
+			"f", int64(3141592653589793),
+		)),
+		m: `{"f": int64(3141592653589793)}`,
+	},
+	{
+		name: "smallDoc",
+		raw: bson.RawDocument{
+			0x0f, 0x00, 0x00, 0x00, // document length
+			0x03, 0x66, 0x6f, 0x6f, 0x00, // subdocument "foo"
+			0x05, 0x00, 0x00, 0x00, 0x00, // subdocument length and end of subdocument
+			0x00, // end of document
+		},
+		tdoc: must.NotFail(types.NewDocument(
+			"foo", must.NotFail(types.NewDocument()),
+		)),
+		m: `{"foo": {}}`,
+	},
+	{
+		name: "smallArray",
+		raw: bson.RawDocument{
+			0x0f, 0x00, 0x00, 0x00, // document length
+			0x04, 0x66, 0x6f, 0x6f, 0x00, // subarray "foo"
+			0x05, 0x00, 0x00, 0x00, 0x00, // subarray length and end of subarray
+			0x00, // end of document
+		},
+		tdoc: must.NotFail(types.NewDocument(
+			"foo", must.NotFail(types.NewArray()),
+		)),
+		m: `{"foo": []}`,
+	},
+	{
+		name: "duplicateKeys",
+		raw: bson.RawDocument{
+			0x0b, 0x00, 0x00, 0x00, // document length
+			0x08, 0x00, 0x00, // "": false
+			0x08, 0x00, 0x01, // "": true
+			0x00, // end of document
+		},
+		tdoc: must.NotFail(types.NewDocument(
+			"", false,
+			"", true,
+		)),
+		m: `{"": false, "": true}`,
+	},
 }
 
-func testBinary(t *testing.T, testCases []testCase, newFunc func() bsontype) {
-	for _, tc := range testCases {
-		tc := tc
+// decodeTestCases represents test cases for unsuccessful decoding.
+var decodeTestCases = []decodeTestCase{
+	{
+		name:       "EOF",
+		raw:        bson.RawDocument{0x00},
+		findRawErr: bson.ErrDecodeShortInput,
+		decodeErr:  bson.ErrDecodeShortInput,
+	},
+	{
+		name: "invalidLength",
+		raw: bson.RawDocument{
+			0x00, 0x00, 0x00, 0x00, // invalid document length
+			0x00, // end of document
+		},
+		findRawErr: bson.ErrDecodeInvalidInput,
+		decodeErr:  bson.ErrDecodeInvalidInput,
+	},
+	{
+		name: "missingByte",
+		raw: bson.RawDocument{
+			0x06, 0x00, 0x00, 0x00, // document length
+			0x00, // end of document
+		},
+		findRawErr: bson.ErrDecodeShortInput,
+		decodeErr:  bson.ErrDecodeShortInput,
+	},
+	{
+		name: "extraByte",
+		raw: bson.RawDocument{
+			0x05, 0x00, 0x00, 0x00, // document length
+			0x00, // end of document
+			0x00, // extra byte
+		},
+		oldOk:     true,
+		findRawL:  5,
+		decodeErr: bson.ErrDecodeInvalidInput,
+	},
+	{
+		name: "unexpectedTag",
+		raw: bson.RawDocument{
+			0x06, 0x00, 0x00, 0x00, // document length
+			0xdd, // unexpected tag
+			0x00, // end of document
+		},
+		findRawL:  6,
+		decodeErr: bson.ErrDecodeInvalidInput,
+	},
+	{
+		name: "invalidTag",
+		raw: bson.RawDocument{
+			0x06, 0x00, 0x00, 0x00, // document length
+			0x00, // invalid tag
+			0x00, // end of document
+		},
+		findRawL:  6,
+		decodeErr: bson.ErrDecodeInvalidInput,
+	},
+	{
+		name: "shortDoc",
+		raw: bson.RawDocument{
+			0x0f, 0x00, 0x00, 0x00, // document length
+			0x03, 0x66, 0x6f, 0x6f, 0x00, // subdocument "foo"
+			0x06, 0x00, 0x00, 0x00, // invalid subdocument length
+			0x00, // end of subdocument
+			0x00, // end of document
+		},
+		findRawL:      15,
+		decodeErr:     bson.ErrDecodeShortInput,
+		decodeDeepErr: bson.ErrDecodeInvalidInput,
+	},
+	{
+		name: "invalidDoc",
+		raw: bson.RawDocument{
+			0x0f, 0x00, 0x00, 0x00, // document length
+			0x03, 0x66, 0x6f, 0x6f, 0x00, // subdocument "foo"
+			0x05, 0x00, 0x00, 0x00, // subdocument length
+			0x30, // invalid end of subdocument
+			0x00, // end of document
+		},
+		findRawL:  15,
+		decodeErr: bson.ErrDecodeInvalidInput,
+	},
+	{
+		name: "invalidDocTag",
+		raw: bson.RawDocument{
+			0x10, 0x00, 0x00, 0x00, // document length
+			0x03, 0x66, 0x6f, 0x6f, 0x00, // subdocument "foo"
+			0x06, 0x00, 0x00, 0x00, // subdocument length
+			0x00, // invalid tag
+			0x00, // end of subdocument
+			0x00, // end of document
+		},
+		findRawL:      16,
+		decodeDeepErr: bson.ErrDecodeInvalidInput,
+	},
+}
+
+func TestNormal(t *testing.T) {
+	for _, tc := range normalTestCases {
 		t.Run(tc.name, func(t *testing.T) {
-			require.NotEmpty(t, tc.name, "name should not be empty")
-			require.NotEmpty(t, tc.b, "b should not be empty")
+			t.Run("oldbson", func(t *testing.T) {
+				t.Run("ReadFrom", func(t *testing.T) {
+					var doc oldbson.Document
+					buf := bufio.NewReader(bytes.NewReader(tc.raw))
+					err := doc.ReadFrom(buf)
+					require.NoError(t, err)
 
-			t.Parallel()
+					_, err = buf.ReadByte()
+					assert.Equal(t, err, io.EOF)
 
-			t.Run("ReadFrom", func(t *testing.T) {
-				t.Parallel()
+					tdoc, err := types.ConvertDocument(&doc)
+					require.NoError(t, err)
+					testutil.AssertEqual(t, tc.tdoc, tdoc)
+				})
 
-				v := newFunc()
-				br := bytes.NewReader(tc.b)
-				bufr := bufio.NewReader(br)
-				err := v.ReadFrom(bufr)
-				if tc.bErr == "" {
-					assert.NoError(t, err)
-					assertEqual(t, tc.v, v)
-					assert.Zero(t, br.Len(), "not all br bytes were consumed")
-					assert.Zero(t, bufr.Buffered(), "not all bufr bytes were consumed")
-					return
-				}
+				t.Run("MarshalBinary", func(t *testing.T) {
+					doc, err := oldbson.ConvertDocument(tc.tdoc)
+					require.NoError(t, err)
 
-				require.Error(t, err)
-				require.Equal(t, tc.bErr, lastErr(err).Error())
+					raw, err := doc.MarshalBinary()
+					require.NoError(t, err)
+					assert.Equal(t, []byte(tc.raw), raw)
+				})
 			})
 
-			t.Run("MarshalBinary", func(t *testing.T) {
-				if tc.v == nil {
-					t.Skip("v is nil")
-				}
+			t.Run("bson", func(t *testing.T) {
+				t.Run("FindRaw", func(t *testing.T) {
+					ls := tc.raw.LogValue().Resolve().String()
+					assert.NotContains(t, ls, "panicked")
+					assert.NotContains(t, ls, "called too many times")
 
-				t.Parallel()
+					assert.NotEmpty(t, bson.LogMessage(tc.raw))
+					assert.NotEmpty(t, bson.LogMessageBlock(tc.raw))
 
-				actualB, err := tc.v.MarshalBinary()
-				require.NoError(t, err)
-				if !assertEqual(t, tc.b, actualB, "actual:\n%s", hex.Dump(actualB)) {
-					// unmarshal again to compare values
-					v := newFunc()
-					br := bytes.NewReader(actualB)
-					bufr := bufio.NewReader(br)
-					err := v.ReadFrom(bufr)
-					assert.NoError(t, err)
-					if assertEqual(t, tc.v, v, "expected: %s\nactual  : %s", tc.v, v) {
-						t.Log("values are equal after unmarshaling")
-					}
-					assert.Zero(t, br.Len(), "not all br bytes were consumed")
-					assert.Zero(t, bufr.Buffered(), "not all bufr bytes were consumed")
-				}
-			})
+					l, err := bson.FindRaw(tc.raw)
+					require.NoError(t, err)
+					require.Len(t, tc.raw, l)
+				})
 
-			t.Run("WriteTo", func(t *testing.T) {
-				if tc.v == nil {
-					t.Skip("v is nil")
-				}
+				t.Run("DecodeEncode", func(t *testing.T) {
+					doc, err := tc.raw.Decode()
+					require.NoError(t, err)
 
-				t.Parallel()
+					ls := doc.LogValue().Resolve().String()
+					assert.NotContains(t, ls, "panicked")
+					assert.NotContains(t, ls, "called too many times")
 
-				var buf bytes.Buffer
-				bufw := bufio.NewWriter(&buf)
-				err := tc.v.WriteTo(bufw)
-				require.NoError(t, err)
-				err = bufw.Flush()
-				require.NoError(t, err)
-				assert.Equal(t, tc.b, buf.Bytes(), "actual:\n%s", hex.Dump(buf.Bytes()))
+					assert.NotEmpty(t, bson.LogMessage(doc))
+					assert.NotEmpty(t, bson.LogMessageBlock(doc))
+
+					tdoc, err := doc.Convert()
+					require.NoError(t, err)
+					testutil.AssertEqual(t, tc.tdoc, tdoc)
+
+					raw, err := doc.Encode()
+					require.NoError(t, err)
+					assert.Equal(t, tc.raw, raw)
+				})
+
+				t.Run("DecodeDeepEncode", func(t *testing.T) {
+					doc, err := tc.raw.DecodeDeep()
+					require.NoError(t, err)
+
+					ls := doc.LogValue().Resolve().String()
+					assert.NotContains(t, ls, "panicked")
+					assert.NotContains(t, ls, "called too many times")
+
+					assert.Equal(t, testutil.Unindent(t, tc.m), bson.LogMessage(doc))
+					assert.NotEmpty(t, bson.LogMessageBlock(doc))
+
+					tdoc, err := doc.Convert()
+					require.NoError(t, err)
+					testutil.AssertEqual(t, tc.tdoc, tdoc)
+
+					raw, err := doc.Encode()
+					require.NoError(t, err)
+					assert.Equal(t, tc.raw, raw)
+				})
+
+				t.Run("ConvertEncode", func(t *testing.T) {
+					doc, err := bson.ConvertDocument(tc.tdoc)
+					require.NoError(t, err)
+
+					raw, err := doc.Encode()
+					require.NoError(t, err)
+					assert.Equal(t, tc.raw, raw)
+				})
 			})
 		})
 	}
 }
 
-func fuzzBinary(f *testing.F, testCases []testCase, newFunc func() bsontype) {
-	for _, tc := range testCases {
-		f.Add(tc.b)
+func TestDecode(t *testing.T) {
+	for _, tc := range decodeTestCases {
+		if tc.decodeDeepErr == nil {
+			tc.decodeDeepErr = tc.decodeErr
+		}
+
+		require.NotNil(t, tc.decodeDeepErr, "invalid test case %q", tc.name)
+
+		t.Run(tc.name, func(t *testing.T) {
+			t.Run("oldbson", func(t *testing.T) {
+				t.Run("ReadFrom", func(t *testing.T) {
+					var doc oldbson.Document
+					buf := bufio.NewReader(bytes.NewReader(tc.raw))
+					err := doc.ReadFrom(buf)
+
+					if tc.oldOk {
+						require.NoError(t, err)
+						return
+					}
+
+					require.Error(t, err)
+				})
+			})
+
+			t.Run("bson", func(t *testing.T) {
+				t.Run("FindRaw", func(t *testing.T) {
+					ls := tc.raw.LogValue().Resolve().String()
+					assert.NotContains(t, ls, "panicked")
+					assert.NotContains(t, ls, "called too many times")
+
+					assert.NotEmpty(t, bson.LogMessage(tc.raw))
+					assert.NotEmpty(t, bson.LogMessageBlock(tc.raw))
+
+					l, err := bson.FindRaw(tc.raw)
+
+					if tc.findRawErr != nil {
+						require.ErrorIs(t, err, tc.findRawErr)
+						return
+					}
+
+					require.NoError(t, err)
+					require.Equal(t, tc.findRawL, l)
+				})
+
+				t.Run("Decode", func(t *testing.T) {
+					_, err := tc.raw.Decode()
+
+					if tc.decodeErr != nil {
+						require.ErrorIs(t, err, tc.decodeErr)
+						return
+					}
+
+					require.NoError(t, err)
+				})
+
+				t.Run("DecodeDeep", func(t *testing.T) {
+					_, err := tc.raw.DecodeDeep()
+					require.ErrorIs(t, err, tc.decodeDeepErr)
+				})
+			})
+		})
+	}
+}
+
+func BenchmarkDocument(b *testing.B) {
+	for _, tc := range normalTestCases {
+		b.Run(tc.name, func(b *testing.B) {
+			b.Run("oldbson", func(b *testing.B) {
+				b.Run("ReadFrom", func(b *testing.B) {
+					var doc oldbson.Document
+					var buf *bufio.Reader
+					var err error
+					br := bytes.NewReader(tc.raw)
+
+					b.ReportAllocs()
+					b.ResetTimer()
+
+					for range b.N {
+						_, _ = br.Seek(0, io.SeekStart)
+						buf = bufio.NewReader(br)
+						err = doc.ReadFrom(buf)
+					}
+
+					b.StopTimer()
+
+					require.NoError(b, err)
+				})
+
+				b.Run("MarshalBinary", func(b *testing.B) {
+					doc, err := oldbson.ConvertDocument(tc.tdoc)
+					require.NoError(b, err)
+
+					var raw []byte
+
+					b.ReportAllocs()
+					b.ResetTimer()
+
+					for range b.N {
+						raw, err = doc.MarshalBinary()
+					}
+
+					b.StopTimer()
+
+					require.NoError(b, err)
+					assert.NotNil(b, raw)
+				})
+			})
+
+			b.Run("bson", func(b *testing.B) {
+				var doc *bson.Document
+				var raw []byte
+				var m string
+				var err error
+
+				b.Run("Decode", func(b *testing.B) {
+					b.ReportAllocs()
+
+					for range b.N {
+						doc, err = tc.raw.Decode()
+					}
+
+					b.StopTimer()
+
+					require.NoError(b, err)
+					require.NotNil(b, doc)
+				})
+
+				b.Run("Encode", func(b *testing.B) {
+					doc, err = tc.raw.Decode()
+					require.NoError(b, err)
+
+					b.ReportAllocs()
+					b.ResetTimer()
+
+					for range b.N {
+						raw, err = doc.Encode()
+					}
+
+					b.StopTimer()
+
+					require.NoError(b, err)
+					assert.NotNil(b, raw)
+				})
+
+				b.Run("LogMessage", func(b *testing.B) {
+					doc, err = tc.raw.Decode()
+					require.NoError(b, err)
+
+					b.ReportAllocs()
+					b.ResetTimer()
+
+					for range b.N {
+						m = bson.LogMessage(doc)
+					}
+
+					b.StopTimer()
+
+					assert.NotEmpty(b, m)
+				})
+
+				b.Run("DecodeDeep", func(b *testing.B) {
+					b.ReportAllocs()
+
+					for range b.N {
+						doc, err = tc.raw.DecodeDeep()
+					}
+
+					b.StopTimer()
+
+					require.NoError(b, err)
+					require.NotNil(b, doc)
+				})
+
+				b.Run("EncodeDeep", func(b *testing.B) {
+					doc, err = tc.raw.DecodeDeep()
+					require.NoError(b, err)
+
+					b.ReportAllocs()
+					b.ResetTimer()
+
+					for range b.N {
+						raw, err = doc.Encode()
+					}
+
+					b.StopTimer()
+
+					require.NoError(b, err)
+					assert.NotNil(b, raw)
+				})
+
+				b.Run("LogMessageDeep", func(b *testing.B) {
+					doc, err = tc.raw.DecodeDeep()
+					require.NoError(b, err)
+
+					b.ReportAllocs()
+					b.ResetTimer()
+
+					for range b.N {
+						m = bson.LogMessage(doc)
+					}
+
+					b.StopTimer()
+
+					assert.NotEmpty(b, m)
+				})
+			})
+		})
+	}
+}
+
+// testRawDocument tests a single RawDocument (that might or might not be valid).
+// It is adapted from tests above.
+func testRawDocument(t *testing.T, rawDoc bson.RawDocument) {
+	t.Helper()
+
+	t.Run("bson", func(t *testing.T) {
+		t.Run("FindRaw", func(t *testing.T) {
+			ls := rawDoc.LogValue().Resolve().String()
+			assert.NotContains(t, ls, "panicked")
+			assert.NotContains(t, ls, "called too many times")
+
+			assert.NotEmpty(t, bson.LogMessage(rawDoc))
+			assert.NotEmpty(t, bson.LogMessageBlock(rawDoc))
+
+			_, _ = bson.FindRaw(rawDoc)
+		})
+
+		t.Run("DecodeEncode", func(t *testing.T) {
+			doc, err := rawDoc.Decode()
+			if err != nil {
+				_, err = rawDoc.DecodeDeep()
+				assert.Error(t, err) // it might be different
+
+				return
+			}
+
+			ls := doc.LogValue().Resolve().String()
+			assert.NotContains(t, ls, "panicked")
+			assert.NotContains(t, ls, "called too many times")
+
+			assert.NotEmpty(t, bson.LogMessage(doc))
+			assert.NotEmpty(t, bson.LogMessageBlock(doc))
+
+			_, _ = doc.Convert()
+
+			raw, err := doc.Encode()
+			if err == nil {
+				assert.Equal(t, rawDoc, raw)
+			}
+		})
+
+		t.Run("DecodeDeepEncode", func(t *testing.T) {
+			doc, err := rawDoc.DecodeDeep()
+			if err != nil {
+				return
+			}
+
+			ls := doc.LogValue().Resolve().String()
+			assert.NotContains(t, ls, "panicked")
+			assert.NotContains(t, ls, "called too many times")
+
+			assert.NotEmpty(t, bson.LogMessage(doc))
+			assert.NotEmpty(t, bson.LogMessageBlock(doc))
+
+			_, err = doc.Convert()
+			require.NoError(t, err)
+
+			raw, err := doc.Encode()
+			require.NoError(t, err)
+			assert.Equal(t, rawDoc, raw)
+		})
+	})
+
+	t.Run("cross", func(t *testing.T) {
+		br := bytes.NewReader(rawDoc)
+		bufr := bufio.NewReader(br)
+
+		var doc1 oldbson.Document
+		err1 := doc1.ReadFrom(bufr)
+
+		if err1 != nil {
+			_, err2 := rawDoc.DecodeDeep()
+			require.Error(t, err2, "bson1 err = %v", err1)
+
+			return
+		}
+
+		// remove extra tail
+		b := []byte(rawDoc[:len(rawDoc)-bufr.Buffered()-br.Len()])
+		l, err := bson.FindRaw(rawDoc)
+		require.NoError(t, err)
+		require.Equal(t, b, []byte(rawDoc[:l]))
+
+		// decode
+
+		bdoc2, err2 := bson.RawDocument(b).DecodeDeep()
+		require.NoError(t, err2)
+
+		ls := bdoc2.LogValue().Resolve().String()
+		assert.NotContains(t, ls, "panicked")
+		assert.NotContains(t, ls, "called too many times")
+
+		assert.NotEmpty(t, bson.LogMessage(bdoc2))
+		assert.NotEmpty(t, bson.LogMessageBlock(bdoc2))
+
+		tdoc1, err := types.ConvertDocument(&doc1)
+		require.NoError(t, err)
+
+		tdoc2, err := bdoc2.Convert()
+		require.NoError(t, err)
+
+		testutil.AssertEqual(t, tdoc1, tdoc2)
+
+		// encode
+
+		doc1e, err := oldbson.ConvertDocument(tdoc1)
+		require.NoError(t, err)
+
+		doc2e, err := bson.ConvertDocument(tdoc2)
+		require.NoError(t, err)
+
+		ls = doc2e.LogValue().Resolve().String()
+		assert.NotContains(t, ls, "panicked")
+		assert.NotContains(t, ls, "called too many times")
+
+		assert.NotEmpty(t, bson.LogMessage(doc2e))
+		assert.NotEmpty(t, bson.LogMessageBlock(doc2e))
+
+		b1, err := doc1e.MarshalBinary()
+		require.NoError(t, err)
+
+		b2, err := doc2e.Encode()
+		require.NoError(t, err)
+
+		assert.Equal(t, b1, []byte(b2))
+		assert.Equal(t, b, []byte(b2))
+	})
+}
+
+func FuzzDocument(f *testing.F) {
+	for _, tc := range normalTestCases {
+		f.Add([]byte(tc.raw))
+	}
+
+	for _, tc := range decodeTestCases {
+		f.Add([]byte(tc.raw))
 	}
 
 	f.Fuzz(func(t *testing.T, b []byte) {
 		t.Parallel()
 
-		var v bsontype
-		var expectedB []byte
+		testRawDocument(t, bson.RawDocument(b))
 
-		// test ReadFrom
-		{
-			v = newFunc()
-			br := bytes.NewReader(b)
-			bufr := bufio.NewReader(br)
-			if err := v.ReadFrom(bufr); err != nil {
-				t.Skip()
-			}
-
-			// remove random tail
-			expectedB = b[:len(b)-bufr.Buffered()-br.Len()]
-		}
-
-		// test MarshalBinary
-		{
-			actualB, err := v.MarshalBinary()
-			require.NoError(t, err)
-			if !assert.Equal(t, expectedB, actualB, "MarshalBinary results differ") {
-				// unmarshal again to compare values
-				v2 := newFunc()
-				br2 := bytes.NewReader(actualB)
-				bufr2 := bufio.NewReader(br2)
-				err = v2.ReadFrom(bufr2)
-				assert.NoError(t, err)
-				if assertEqual(t, v, v2, "expected: %s\nactual  : %s", v, v2) {
-					t.Log("values are equal after unmarshaling")
-				}
-				assert.Zero(t, br2.Len(), "not all br bytes were consumed")
-				assert.Zero(t, bufr2.Buffered(), "not all bufr bytes were consumed")
-			}
-		}
-
-		// test WriteTo
-		{
-			var bw bytes.Buffer
-			bufw := bufio.NewWriter(&bw)
-			err := v.WriteTo(bufw)
-			require.NoError(t, err)
-			err = bufw.Flush()
-			require.NoError(t, err)
-			assert.Equal(t, expectedB, bw.Bytes(), "WriteTo results differ")
-		}
-
-		// Test that generated value can be marshaled for logging.
-		// Currently, that seems to be the best place to check it since generating values from BSON bytes is very easy.
-		{
-			// not a "real" type
-			if _, ok := v.(*CString); ok {
-				t.Skip()
-			}
-
-			// TODO https://github.com/FerretDB/FerretDB/issues/4157
-			mB, err := fjson.Marshal(fromBSON(v))
-			require.NoError(t, err)
-			assert.NotEmpty(t, mB)
+		l, err := bson.FindRaw(b)
+		if err == nil {
+			testRawDocument(t, bson.RawDocument(b[:l]))
 		}
 	})
-}
-
-func benchmark(b *testing.B, testCases []testCase, newFunc func() bsontype) {
-	for _, tc := range testCases {
-		tc := tc
-		b.Run(tc.name, func(b *testing.B) {
-			b.Run("ReadFrom", func(b *testing.B) {
-				br := bytes.NewReader(tc.b)
-				var bufr *bufio.Reader
-				var v bsontype
-				var readErr, seekErr error
-
-				b.ReportAllocs()
-				b.SetBytes(br.Size())
-				b.ResetTimer()
-
-				for range b.N {
-					_, seekErr = br.Seek(0, io.SeekStart)
-
-					v = newFunc()
-					bufr = bufio.NewReader(br)
-					readErr = v.ReadFrom(bufr)
-				}
-
-				b.StopTimer()
-
-				require.NoError(b, seekErr)
-
-				if tc.bErr == "" {
-					assert.NoError(b, readErr)
-					assertEqual(b, tc.v, v)
-					assert.Zero(b, br.Len(), "not all br bytes were consumed")
-					assert.Zero(b, bufr.Buffered(), "not all bufr bytes were consumed")
-					return
-				}
-
-				require.Error(b, readErr)
-				require.Equal(b, tc.bErr, lastErr(readErr).Error())
-			})
-		})
-	}
 }

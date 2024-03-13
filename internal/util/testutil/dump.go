@@ -17,49 +17,50 @@ package testutil
 import (
 	"bytes"
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/types/fjson"
+	"github.com/FerretDB/FerretDB/internal/util/hex"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
-// Dump returns string representation for debugging.
-func Dump[T types.Type](tb testtb.TB, o T) string {
+// dump returns string representation for debugging.
+func dump[T types.Type](tb testtb.TB, o T) string {
 	tb.Helper()
 
-	// We should switch to bson2's format.
-	// TODO https://github.com/FerretDB/FerretDB/issues/4157
-	b, err := fjson.Marshal(o)
+	v, err := bson.Convert(o)
 	require.NoError(tb, err)
 
-	return string(IndentJSON(tb, b))
+	return bson.LogMessageBlock(v)
 }
 
-// DumpSlice returns string representation for debugging.
-func DumpSlice[T types.Type](tb testtb.TB, s []T) string {
+// dumpSlice returns string representation for debugging.
+func dumpSlice[T types.Type](tb testtb.TB, s []T) string {
 	tb.Helper()
 
-	// We should switch to bson2's format.
-	// TODO https://github.com/FerretDB/FerretDB/issues/4157
+	arr := bson.MakeArray(len(s))
 
-	res := []byte("[")
-
-	for i, o := range s {
-		b, err := fjson.Marshal(o)
+	for _, o := range s {
+		v, err := bson.Convert(o)
 		require.NoError(tb, err)
 
-		res = append(res, b...)
-		if i < len(s)-1 {
-			res = append(res, ',')
-		}
+		err = arr.Add(v)
+		require.NoError(tb, err)
 	}
 
-	res = append(res, ']')
+	return bson.LogMessageBlock(arr)
+}
 
-	return string(IndentJSON(tb, res))
+// MustParseDumpFile panics if fails to parse file input to byte array.
+func MustParseDumpFile(path ...string) []byte {
+	b := must.NotFail(os.ReadFile(filepath.Join(path...)))
+	return must.NotFail(hex.ParseDump(string(b)))
 }
 
 // IndentJSON returns an indented form of the JSON input.

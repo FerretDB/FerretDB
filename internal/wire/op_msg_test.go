@@ -18,7 +18,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/FerretDB/FerretDB/internal/bson2"
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
@@ -39,7 +39,7 @@ var msgTestCases = []testCase{
 		},
 		msgBody: &OpMsg{
 			sections: []OpMsgSection{{
-				Documents: []bson2.RawDocument{makeRawDocument(
+				Documents: []bson.RawDocument{makeRawDocument(
 					"buildInfo", int32(1),
 					"lsid", must.NotFail(types.NewDocument(
 						"id", types.Binary{
@@ -83,7 +83,7 @@ var msgTestCases = []testCase{
 		},
 		msgBody: &OpMsg{
 			sections: []OpMsgSection{{
-				Documents: []bson2.RawDocument{makeRawDocument(
+				Documents: []bson.RawDocument{makeRawDocument(
 					"version", "5.0.0",
 					"gitVersion", "1184f004a99660de6f5e745573419bda8a28c0e9",
 					"modules", must.NotFail(types.NewArray()),
@@ -180,7 +180,7 @@ var msgTestCases = []testCase{
 		msgBody: &OpMsg{
 			sections: []OpMsgSection{
 				{
-					Documents: []bson2.RawDocument{makeRawDocument(
+					Documents: []bson.RawDocument{makeRawDocument(
 						"insert", "actor",
 						"ordered", true,
 						"writeConcern", must.NotFail(types.NewDocument(
@@ -192,7 +192,7 @@ var msgTestCases = []testCase{
 				{
 					Kind:       1,
 					Identifier: "documents",
-					Documents: []bson2.RawDocument{
+					Documents: []bson.RawDocument{
 						makeRawDocument(
 							"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01},
 							"actor_id", int32(1),
@@ -252,7 +252,7 @@ var msgTestCases = []testCase{
 	{
 		name:      "msg_fuzz1",
 		expectedB: testutil.MustParseDumpFile("testdata", "msg_fuzz1.hex"),
-		err:       bson2.ErrDecodeInvalidInput.Error(),
+		err:       bson.ErrDecodeInvalidInput.Error(),
 	},
 	{
 		name: "NaN",
@@ -290,7 +290,7 @@ var msgTestCases = []testCase{
 		},
 		msgBody: &OpMsg{
 			sections: []OpMsgSection{{
-				Documents: []bson2.RawDocument{makeRawDocument(
+				Documents: []bson.RawDocument{makeRawDocument(
 					"insert", "values",
 					"documents", must.NotFail(types.NewArray(
 						must.NotFail(types.NewDocument(
@@ -343,7 +343,7 @@ var msgTestCases = []testCase{
 		msgBody: &OpMsg{
 			sections: []OpMsgSection{
 				{
-					Documents: []bson2.RawDocument{makeRawDocument(
+					Documents: []bson.RawDocument{makeRawDocument(
 						"insert", "TestInsertSimple",
 						"ordered", true,
 						"$db", "testinsertsimple",
@@ -352,7 +352,7 @@ var msgTestCases = []testCase{
 				{
 					Kind:       1,
 					Identifier: "documents",
-					Documents: []bson2.RawDocument{makeRawDocument(
+					Documents: []bson.RawDocument{makeRawDocument(
 						"_id", types.ObjectID{0x63, 0x7c, 0xfa, 0xd8, 0x8d, 0xc3, 0xce, 0xcd, 0xe3, 0x8e, 0x1e, 0x6b},
 						"v", math.Copysign(0, -1),
 					)},
@@ -421,13 +421,13 @@ var msgTestCases = []testCase{
 				{
 					Kind:       1,
 					Identifier: "documents",
-					Documents: []bson2.RawDocument{makeRawDocument(
+					Documents: []bson.RawDocument{makeRawDocument(
 						"_id", types.ObjectID{0x63, 0x8c, 0xec, 0x46, 0xaa, 0x77, 0x8b, 0xf3, 0x70, 0x10, 0x54, 0x29},
 						"a", float64(3),
 					)},
 				},
 				{
-					Documents: []bson2.RawDocument{makeRawDocument(
+					Documents: []bson.RawDocument{makeRawDocument(
 						"insert", "foo",
 						"ordered", true,
 						"$db", "test",
@@ -510,7 +510,7 @@ var msgTestCases = []testCase{
 				{
 					Kind:       1,
 					Identifier: "updates",
-					Documents: []bson2.RawDocument{makeRawDocument(
+					Documents: []bson.RawDocument{makeRawDocument(
 						"q", must.NotFail(types.NewDocument(
 							"a", float64(20),
 						)),
@@ -524,7 +524,7 @@ var msgTestCases = []testCase{
 					)},
 				},
 				{
-					Documents: []bson2.RawDocument{makeRawDocument(
+					Documents: []bson.RawDocument{makeRawDocument(
 						"update", "foo",
 						"ordered", true,
 						"$db", "test",
@@ -594,13 +594,13 @@ var msgTestCases = []testCase{
 				{
 					Kind:       1,
 					Identifier: "documents",
-					Documents: []bson2.RawDocument{makeRawDocument(
+					Documents: []bson.RawDocument{makeRawDocument(
 						"_id", types.ObjectID{0x63, 0x8c, 0xec, 0x46, 0xaa, 0x77, 0x8b, 0xf3, 0x70, 0x10, 0x54, 0x29},
 						"a", float64(3),
 					)},
 				},
 				{
-					Documents: []bson2.RawDocument{makeRawDocument(
+					Documents: []bson.RawDocument{makeRawDocument(
 						"insert", "fooo",
 						"ordered", true,
 						"$db", "test",
