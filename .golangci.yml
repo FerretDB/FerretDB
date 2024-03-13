@@ -29,21 +29,21 @@ linters-settings:
       oldbson:
         files:
           - $all
-          - "!**/internal/bson2/bson2_test.go"
+          - "!**/internal/bson/bson_test.go"
         deny:
           - pkg: github.com/FerretDB/FerretDB/internal/bson/oldbson$
-      bson2:
+      bson:
         files:
           - $all
-          - "!**/internal/bson2/*_test.go"
+          - "!**/internal/bson/*_test.go"
           - "!**/internal/util/testutil/*.go"
           - "!**/internal/wire/*.go"
         deny:
-          - pkg: github.com/FerretDB/FerretDB/internal/bson2
+          - pkg: github.com/FerretDB/FerretDB/internal/bson
       bsonproto:
         files:
           - $all
-          - "!**/internal/bson2/*.go"
+          - "!**/internal/bson/*.go"
         deny:
           - pkg: github.com/cristalhq/bson
           - pkg: github.com/cristalhq/bson/bsonproto

@@ -324,7 +324,7 @@ tasks:
     desc: "Run unit benchmarks"
     cmds:
       - go test -list='Benchmark.*' ./...
-      - go test -count=10 -bench=BenchmarkDocument -benchtime={{.BENCH_TIME}} ./internal/bson2/         | tee -a new.txt
+      - go test -count=10 -bench=BenchmarkDocument -benchtime={{.BENCH_TIME}} ./internal/bson/ | tee -a new.txt
       - bin/benchstat{{exeExt}} old.txt new.txt
 
   # That's not quite correct: https://github.com/golang/go/issues/15513
@@ -338,7 +338,7 @@ tasks:
     desc: "Fuzz for about 1 minute (with default FUZZ_TIME)"
     cmds:
       - go test -list='Fuzz.*' ./...
-      - go test -run=XXX -fuzz=FuzzDocument -fuzztime={{.FUZZ_TIME}} ./internal/bson2/
+      - go test -run=XXX -fuzz=FuzzDocument -fuzztime={{.FUZZ_TIME}} ./internal/bson/
       - go test -run=XXX -fuzz=FuzzMsg      -fuzztime={{.FUZZ_TIME}} ./internal/wire/
       - go test -run=XXX -fuzz=FuzzQuery    -fuzztime={{.FUZZ_TIME}} ./internal/wire/
       - go test -run=XXX -fuzz=FuzzReply    -fuzztime={{.FUZZ_TIME}} ./internal/wire/

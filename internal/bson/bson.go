@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package bson2 implements encoding and decoding of BSON as defined by https://bsonspec.org/spec.html.
+// Package bson implements encoding and decoding of BSON as defined by https://bsonspec.org/spec.html.
 //
 // # Types
 //
@@ -20,24 +20,24 @@
 //
 //	BSON                Go
 //
-//	Document/Object     *bson2.Document or bson2.RawDocument
-//	Array               *bson2.Array    or bson2.RawArray
+//	Document/Object     *bson.Document or bson.RawDocument
+//	Array               *bson.Array    or bson.RawArray
 //
 //	Double              float64
 //	String              string
-//	Binary data         bson2.Binary
-//	ObjectId            bson2.ObjectID
+//	Binary data         bson.Binary
+//	ObjectId            bson.ObjectID
 //	Boolean             bool
 //	Date                time.Time
-//	Null                bson2.NullType
-//	Regular Expression  bson2.Regex
+//	Null                bson.NullType
+//	Regular Expression  bson.Regex
 //	32-bit integer      int32
-//	Timestamp           bson2.Timestamp
+//	Timestamp           bson.Timestamp
 //	64-bit integer      int64
 //
 // Composite types (Document and Array) are passed by pointers.
 // Raw composite type and scalars are passed by values.
-package bson2
+package bson
 
 import (
 	"fmt"
