@@ -46,7 +46,9 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 
 		dbName, err := common.GetRequiredParam[string](document, "db")
 		if err != nil {
-			return nil, lazyerrors.Error(err)
+			reply.SetDocument(replyDoc)
+
+			return reply, nil
 		}
 
 		doc, err := h.saslStart(ctx, dbName, document)
