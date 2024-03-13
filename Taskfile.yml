@@ -218,6 +218,7 @@ tasks:
         -postgresql-url='postgres://username@127.0.0.1:5432/ferretdb?search_path='
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem&replicaSet=rs0'
         -disable-pushdown={{.DISABLE_PUSHDOWN}}
+        -batch-size=100
 
   test-integration-sqlite:
     desc: "Run integration tests for `sqlite` backend"
@@ -244,6 +245,7 @@ tasks:
         -target-tls
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem&replicaSet=rs0'
         -disable-pushdown={{.DISABLE_PUSHDOWN}}
+        -batch-size=1000
 
   test-integration-mysql:
     desc: "Run integration tests for `mysql` handler"
@@ -364,6 +366,7 @@ tasks:
         --handler=pg
         --postgresql-url='postgres://username@127.0.0.1:5432/ferretdb?search_path='
         --test-records-dir=tmp/records
+        --test-batch-size=100
 
   run-sqlite:
     desc: "Run FerretDB with `sqlite` backend"
