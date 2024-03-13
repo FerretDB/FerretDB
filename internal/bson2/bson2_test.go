@@ -24,8 +24,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/bson2"
+	"github.com/FerretDB/FerretDB/internal/bson2/oldbson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
@@ -587,9 +587,9 @@ var decodeTestCases = []decodeTestCase{
 func TestNormal(t *testing.T) {
 	for _, tc := range normalTestCases {
 		t.Run(tc.name, func(t *testing.T) {
-			t.Run("bson", func(t *testing.T) {
+			t.Run("oldbson", func(t *testing.T) {
 				t.Run("ReadFrom", func(t *testing.T) {
-					var doc bson.Document
+					var doc oldbson.Document
 					buf := bufio.NewReader(bytes.NewReader(tc.raw))
 					err := doc.ReadFrom(buf)
 					require.NoError(t, err)
@@ -603,7 +603,7 @@ func TestNormal(t *testing.T) {
 				})
 
 				t.Run("MarshalBinary", func(t *testing.T) {
-					doc, err := bson.ConvertDocument(tc.tdoc)
+					doc, err := oldbson.ConvertDocument(tc.tdoc)
 					require.NoError(t, err)
 
 					raw, err := doc.MarshalBinary()
@@ -688,9 +688,9 @@ func TestDecode(t *testing.T) {
 		require.NotNil(t, tc.decodeDeepErr, "invalid test case %q", tc.name)
 
 		t.Run(tc.name, func(t *testing.T) {
-			t.Run("bson", func(t *testing.T) {
+			t.Run("oldbson", func(t *testing.T) {
 				t.Run("ReadFrom", func(t *testing.T) {
-					var doc bson.Document
+					var doc oldbson.Document
 					buf := bufio.NewReader(bytes.NewReader(tc.raw))
 					err := doc.ReadFrom(buf)
 
@@ -746,9 +746,9 @@ func TestDecode(t *testing.T) {
 func BenchmarkDocument(b *testing.B) {
 	for _, tc := range normalTestCases {
 		b.Run(tc.name, func(b *testing.B) {
-			b.Run("bson", func(b *testing.B) {
+			b.Run("oldbson", func(b *testing.B) {
 				b.Run("ReadFrom", func(b *testing.B) {
-					var doc bson.Document
+					var doc oldbson.Document
 					var buf *bufio.Reader
 					var err error
 					br := bytes.NewReader(tc.raw)
@@ -768,7 +768,7 @@ func BenchmarkDocument(b *testing.B) {
 				})
 
 				b.Run("MarshalBinary", func(b *testing.B) {
-					doc, err := bson.ConvertDocument(tc.tdoc)
+					doc, err := oldbson.ConvertDocument(tc.tdoc)
 					require.NoError(b, err)
 
 					var raw []byte
@@ -956,7 +956,7 @@ func testRawDocument(t *testing.T, rawDoc bson2.RawDocument) {
 		br := bytes.NewReader(rawDoc)
 		bufr := bufio.NewReader(br)
 
-		var doc1 bson.Document
+		var doc1 oldbson.Document
 		err1 := doc1.ReadFrom(bufr)
 
 		if err1 != nil {
@@ -994,7 +994,7 @@ func testRawDocument(t *testing.T, rawDoc bson2.RawDocument) {
 
 		// encode
 
-		doc1e, err := bson.ConvertDocument(tdoc1)
+		doc1e, err := oldbson.ConvertDocument(tdoc1)
 		require.NoError(t, err)
 
 		doc2e, err := bson2.ConvertDocument(tdoc2)
