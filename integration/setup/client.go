@@ -80,9 +80,9 @@ func setupClient(tb testtb.TB, ctx context.Context, uri string) *mongo.Client {
 	return client
 }
 
-// toAbsolutePathUri replaces tlsCertificateKeyFile and tlsCaFile path to an absolute path.
-// If the test is run from subdirectory such as `integration/user/`, the absolute path
-// is found by looking for the file in the parent directory.
+// toAbsolutePathUri replaces the relative path of tlsCertificateKeyFile and tlsCaFile path
+// to an absolute path. If the file is not found because the test is in subdirectory
+// such as`integration/user/`, the parent directory is looked.
 func toAbsolutePathUri(tb testtb.TB, uri string) string {
 	u, err := url.Parse(uri)
 	require.NoError(tb, err)
@@ -96,12 +96,14 @@ func toAbsolutePathUri(tb testtb.TB, uri string) string {
 		case "tlsCertificateKeyFile", "tlsCaFile":
 			file := v[0]
 
-			if !filepath.IsAbs(file) {
-				file = filepath.Join(Dir(tb), v[0])
+			if filepath.IsAbs(file) {
+				values[k] = []string{file}
+
+				continue
 			}
 
-			_, err := os.Stat(file)
-			if os.IsNotExist(err) {
+			file = filepath.Join(Dir(tb), v[0])
+			if _, err = os.Stat(file); os.IsNotExist(err) {
 				file = filepath.Join(Dir(tb), "..", v[0])
 			}
 
