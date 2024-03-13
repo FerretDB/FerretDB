@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bson2
+package bson2_test // to avoid import cycle
 
 import (
 	"bufio"
@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/bson"
+	"github.com/FerretDB/FerretDB/internal/bson2"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
@@ -35,7 +36,7 @@ import (
 //nolint:vet // for readability
 type normalTestCase struct {
 	name string
-	raw  RawDocument
+	raw  bson2.RawDocument
 	tdoc *types.Document
 	m    string
 }
@@ -45,7 +46,7 @@ type normalTestCase struct {
 //nolint:vet // for readability
 type decodeTestCase struct {
 	name string
-	raw  RawDocument
+	raw  bson2.RawDocument
 
 	oldOk bool
 
@@ -288,7 +289,7 @@ var normalTestCases = []normalTestCase{
 	{
 		name: "nested",
 		raw:  testutil.MustParseDumpFile("testdata", "nested.hex"),
-		tdoc: must.NotFail(makeNested(false, 150).(*Document).Convert()),
+		tdoc: must.NotFail(makeNested(false, 150).(*bson2.Document).Convert()),
 		m: `
 		{
 		  "f": [
@@ -300,7 +301,7 @@ var normalTestCases = []normalTestCase{
 	},
 	{
 		name: "float64Doc",
-		raw: RawDocument{
+		raw: bson2.RawDocument{
 			0x10, 0x00, 0x00, 0x00,
 			0x01, 0x66, 0x00,
 			0x18, 0x2d, 0x44, 0x54, 0xfb, 0x21, 0x09, 0x40,
@@ -313,7 +314,7 @@ var normalTestCases = []normalTestCase{
 	},
 	{
 		name: "stringDoc",
-		raw: RawDocument{
+		raw: bson2.RawDocument{
 			0x0e, 0x00, 0x00, 0x00,
 			0x02, 0x66, 0x00,
 			0x02, 0x00, 0x00, 0x00,
@@ -327,7 +328,7 @@ var normalTestCases = []normalTestCase{
 	},
 	{
 		name: "binaryDoc",
-		raw: RawDocument{
+		raw: bson2.RawDocument{
 			0x0e, 0x00, 0x00, 0x00,
 			0x05, 0x66, 0x00,
 			0x01, 0x00, 0x00, 0x00,
@@ -342,7 +343,7 @@ var normalTestCases = []normalTestCase{
 	},
 	{
 		name: "objectIDDoc",
-		raw: RawDocument{
+		raw: bson2.RawDocument{
 			0x14, 0x00, 0x00, 0x00,
 			0x07, 0x66, 0x00,
 			0x62, 0x56, 0xc5, 0xba, 0x18, 0x2d, 0x44, 0x54, 0xfb, 0x21, 0x09, 0x40,
@@ -355,7 +356,7 @@ var normalTestCases = []normalTestCase{
 	},
 	{
 		name: "boolDoc",
-		raw: RawDocument{
+		raw: bson2.RawDocument{
 			0x09, 0x00, 0x00, 0x00,
 			0x08, 0x66, 0x00,
 			0x01,
@@ -368,7 +369,7 @@ var normalTestCases = []normalTestCase{
 	},
 	{
 		name: "timeDoc",
-		raw: RawDocument{
+		raw: bson2.RawDocument{
 			0x10, 0x00, 0x00, 0x00,
 			0x09, 0x66, 0x00,
 			0x0b, 0xce, 0x82, 0x18, 0x8d, 0x01, 0x00, 0x00,
@@ -381,7 +382,7 @@ var normalTestCases = []normalTestCase{
 	},
 	{
 		name: "nullDoc",
-		raw: RawDocument{
+		raw: bson2.RawDocument{
 			0x08, 0x00, 0x00, 0x00,
 			0x0a, 0x66, 0x00,
 			0x00,
@@ -393,7 +394,7 @@ var normalTestCases = []normalTestCase{
 	},
 	{
 		name: "regexDoc",
-		raw: RawDocument{
+		raw: bson2.RawDocument{
 			0x0c, 0x00, 0x00, 0x00,
 			0x0b, 0x66, 0x00,
 			0x70, 0x00,
@@ -407,7 +408,7 @@ var normalTestCases = []normalTestCase{
 	},
 	{
 		name: "int32Doc",
-		raw: RawDocument{
+		raw: bson2.RawDocument{
 			0x0c, 0x00, 0x00, 0x00,
 			0x10, 0x66, 0x00,
 			0xa1, 0xb0, 0xb9, 0x12,
@@ -420,7 +421,7 @@ var normalTestCases = []normalTestCase{
 	},
 	{
 		name: "timestampDoc",
-		raw: RawDocument{
+		raw: bson2.RawDocument{
 			0x10, 0x00, 0x00, 0x00,
 			0x11, 0x66, 0x00,
 			0x2a, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -433,7 +434,7 @@ var normalTestCases = []normalTestCase{
 	},
 	{
 		name: "int64Doc",
-		raw: RawDocument{
+		raw: bson2.RawDocument{
 			0x10, 0x00, 0x00, 0x00,
 			0x12, 0x66, 0x00,
 			0x21, 0x6d, 0x25, 0xa, 0x43, 0x29, 0xb, 0x00,
@@ -446,7 +447,7 @@ var normalTestCases = []normalTestCase{
 	},
 	{
 		name: "smallDoc",
-		raw: RawDocument{
+		raw: bson2.RawDocument{
 			0x0f, 0x00, 0x00, 0x00, // document length
 			0x03, 0x66, 0x6f, 0x6f, 0x00, // subdocument "foo"
 			0x05, 0x00, 0x00, 0x00, 0x00, // subdocument length and end of subdocument
@@ -459,7 +460,7 @@ var normalTestCases = []normalTestCase{
 	},
 	{
 		name: "smallArray",
-		raw: RawDocument{
+		raw: bson2.RawDocument{
 			0x0f, 0x00, 0x00, 0x00, // document length
 			0x04, 0x66, 0x6f, 0x6f, 0x00, // subarray "foo"
 			0x05, 0x00, 0x00, 0x00, 0x00, // subarray length and end of subarray
@@ -472,7 +473,7 @@ var normalTestCases = []normalTestCase{
 	},
 	{
 		name: "duplicateKeys",
-		raw: RawDocument{
+		raw: bson2.RawDocument{
 			0x0b, 0x00, 0x00, 0x00, // document length
 			0x08, 0x00, 0x00, // "": false
 			0x08, 0x00, 0x01, // "": true
@@ -490,62 +491,62 @@ var normalTestCases = []normalTestCase{
 var decodeTestCases = []decodeTestCase{
 	{
 		name:       "EOF",
-		raw:        RawDocument{0x00},
-		findRawErr: ErrDecodeShortInput,
-		decodeErr:  ErrDecodeShortInput,
+		raw:        bson2.RawDocument{0x00},
+		findRawErr: bson2.ErrDecodeShortInput,
+		decodeErr:  bson2.ErrDecodeShortInput,
 	},
 	{
 		name: "invalidLength",
-		raw: RawDocument{
+		raw: bson2.RawDocument{
 			0x00, 0x00, 0x00, 0x00, // invalid document length
 			0x00, // end of document
 		},
-		findRawErr: ErrDecodeInvalidInput,
-		decodeErr:  ErrDecodeInvalidInput,
+		findRawErr: bson2.ErrDecodeInvalidInput,
+		decodeErr:  bson2.ErrDecodeInvalidInput,
 	},
 	{
 		name: "missingByte",
-		raw: RawDocument{
+		raw: bson2.RawDocument{
 			0x06, 0x00, 0x00, 0x00, // document length
 			0x00, // end of document
 		},
-		findRawErr: ErrDecodeShortInput,
-		decodeErr:  ErrDecodeShortInput,
+		findRawErr: bson2.ErrDecodeShortInput,
+		decodeErr:  bson2.ErrDecodeShortInput,
 	},
 	{
 		name: "extraByte",
-		raw: RawDocument{
+		raw: bson2.RawDocument{
 			0x05, 0x00, 0x00, 0x00, // document length
 			0x00, // end of document
 			0x00, // extra byte
 		},
 		oldOk:     true,
 		findRawL:  5,
-		decodeErr: ErrDecodeInvalidInput,
+		decodeErr: bson2.ErrDecodeInvalidInput,
 	},
 	{
 		name: "unexpectedTag",
-		raw: RawDocument{
+		raw: bson2.RawDocument{
 			0x06, 0x00, 0x00, 0x00, // document length
 			0xdd, // unexpected tag
 			0x00, // end of document
 		},
 		findRawL:  6,
-		decodeErr: ErrDecodeInvalidInput,
+		decodeErr: bson2.ErrDecodeInvalidInput,
 	},
 	{
 		name: "invalidTag",
-		raw: RawDocument{
+		raw: bson2.RawDocument{
 			0x06, 0x00, 0x00, 0x00, // document length
 			0x00, // invalid tag
 			0x00, // end of document
 		},
 		findRawL:  6,
-		decodeErr: ErrDecodeInvalidInput,
+		decodeErr: bson2.ErrDecodeInvalidInput,
 	},
 	{
 		name: "shortDoc",
-		raw: RawDocument{
+		raw: bson2.RawDocument{
 			0x0f, 0x00, 0x00, 0x00, // document length
 			0x03, 0x66, 0x6f, 0x6f, 0x00, // subdocument "foo"
 			0x06, 0x00, 0x00, 0x00, // invalid subdocument length
@@ -553,12 +554,12 @@ var decodeTestCases = []decodeTestCase{
 			0x00, // end of document
 		},
 		findRawL:      15,
-		decodeErr:     ErrDecodeShortInput,
-		decodeDeepErr: ErrDecodeInvalidInput,
+		decodeErr:     bson2.ErrDecodeShortInput,
+		decodeDeepErr: bson2.ErrDecodeInvalidInput,
 	},
 	{
 		name: "invalidDoc",
-		raw: RawDocument{
+		raw: bson2.RawDocument{
 			0x0f, 0x00, 0x00, 0x00, // document length
 			0x03, 0x66, 0x6f, 0x6f, 0x00, // subdocument "foo"
 			0x05, 0x00, 0x00, 0x00, // subdocument length
@@ -566,11 +567,11 @@ var decodeTestCases = []decodeTestCase{
 			0x00, // end of document
 		},
 		findRawL:  15,
-		decodeErr: ErrDecodeInvalidInput,
+		decodeErr: bson2.ErrDecodeInvalidInput,
 	},
 	{
 		name: "invalidDocTag",
-		raw: RawDocument{
+		raw: bson2.RawDocument{
 			0x10, 0x00, 0x00, 0x00, // document length
 			0x03, 0x66, 0x6f, 0x6f, 0x00, // subdocument "foo"
 			0x06, 0x00, 0x00, 0x00, // subdocument length
@@ -579,7 +580,7 @@ var decodeTestCases = []decodeTestCase{
 			0x00, // end of document
 		},
 		findRawL:      16,
-		decodeDeepErr: ErrDecodeInvalidInput,
+		decodeDeepErr: bson2.ErrDecodeInvalidInput,
 	},
 }
 
@@ -619,7 +620,7 @@ func TestNormal(t *testing.T) {
 
 					assert.NotEmpty(t, tc.raw.LogMessage())
 
-					l, err := FindRaw(tc.raw)
+					l, err := bson2.FindRaw(tc.raw)
 					require.NoError(t, err)
 					require.Len(t, tc.raw, l)
 				})
@@ -663,7 +664,7 @@ func TestNormal(t *testing.T) {
 				})
 
 				t.Run("ConvertEncode", func(t *testing.T) {
-					doc, err := ConvertDocument(tc.tdoc)
+					doc, err := bson2.ConvertDocument(tc.tdoc)
 					require.NoError(t, err)
 
 					raw, err := doc.Encode()
@@ -707,7 +708,7 @@ func TestDecode(t *testing.T) {
 
 					assert.NotEmpty(t, tc.raw.LogMessage())
 
-					l, err := FindRaw(tc.raw)
+					l, err := bson2.FindRaw(tc.raw)
 
 					if tc.findRawErr != nil {
 						require.ErrorIs(t, err, tc.findRawErr)
@@ -783,7 +784,7 @@ func BenchmarkDocument(b *testing.B) {
 			})
 
 			b.Run("bson2", func(b *testing.B) {
-				var doc *Document
+				var doc *bson2.Document
 				var raw []byte
 				var m string
 				var err error
@@ -886,7 +887,7 @@ func BenchmarkDocument(b *testing.B) {
 
 // testRawDocument tests a single RawDocument (that might or might not be valid).
 // It is adapted from tests above.
-func testRawDocument(t *testing.T, rawDoc RawDocument) {
+func testRawDocument(t *testing.T, rawDoc bson2.RawDocument) {
 	t.Helper()
 
 	t.Run("bson2", func(t *testing.T) {
@@ -897,7 +898,7 @@ func testRawDocument(t *testing.T, rawDoc RawDocument) {
 
 			assert.NotEmpty(t, rawDoc.LogMessage())
 
-			_, _ = FindRaw(rawDoc)
+			_, _ = bson2.FindRaw(rawDoc)
 		})
 
 		t.Run("DecodeEncode", func(t *testing.T) {
@@ -960,13 +961,13 @@ func testRawDocument(t *testing.T, rawDoc RawDocument) {
 
 		// remove extra tail
 		b := []byte(rawDoc[:len(rawDoc)-bufr.Buffered()-br.Len()])
-		l, err := FindRaw(rawDoc)
+		l, err := bson2.FindRaw(rawDoc)
 		require.NoError(t, err)
 		require.Equal(t, b, []byte(rawDoc[:l]))
 
 		// decode
 
-		bdoc2, err2 := RawDocument(b).DecodeDeep()
+		bdoc2, err2 := bson2.RawDocument(b).DecodeDeep()
 		require.NoError(t, err2)
 
 		ls := bdoc2.LogValue().Resolve().String()
@@ -988,7 +989,7 @@ func testRawDocument(t *testing.T, rawDoc RawDocument) {
 		doc1e, err := bson.ConvertDocument(tdoc1)
 		require.NoError(t, err)
 
-		doc2e, err := ConvertDocument(tdoc2)
+		doc2e, err := bson2.ConvertDocument(tdoc2)
 		require.NoError(t, err)
 
 		ls = doc2e.LogValue().Resolve().String()
@@ -1020,11 +1021,11 @@ func FuzzDocument(f *testing.F) {
 	f.Fuzz(func(t *testing.T, b []byte) {
 		t.Parallel()
 
-		testRawDocument(t, RawDocument(b))
+		testRawDocument(t, bson2.RawDocument(b))
 
-		l, err := FindRaw(b)
+		l, err := bson2.FindRaw(b)
 		if err == nil {
-			testRawDocument(t, RawDocument(b[:l]))
+			testRawDocument(t, bson2.RawDocument(b[:l]))
 		}
 	})
 }
