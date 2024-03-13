@@ -29,7 +29,7 @@ func testIncorrectFormat() {
 
 // For https://github.com/github/codeql/issues/15894.
 func testIncorrectDomain() {
-	// TODO: https://githubbcom/FerretDB/FerretDB/issues/3413 // want "invalid TODO: incorrect format"
+	// TODO https://githubbcom/FerretDB/FerretDB/issues/3413 // want "invalid TODO: incorrect format"
 }
 
 func testCorrectFormatClosed() {
