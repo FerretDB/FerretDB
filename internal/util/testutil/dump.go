@@ -23,7 +23,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/FerretDB/FerretDB/internal/bson2"
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/hex"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -34,27 +34,27 @@ import (
 func dump[T types.Type](tb testtb.TB, o T) string {
 	tb.Helper()
 
-	v, err := bson2.Convert(o)
+	v, err := bson.Convert(o)
 	require.NoError(tb, err)
 
-	return bson2.LogMessageBlock(v)
+	return bson.LogMessageBlock(v)
 }
 
 // dumpSlice returns string representation for debugging.
 func dumpSlice[T types.Type](tb testtb.TB, s []T) string {
 	tb.Helper()
 
-	arr := bson2.MakeArray(len(s))
+	arr := bson.MakeArray(len(s))
 
 	for _, o := range s {
-		v, err := bson2.Convert(o)
+		v, err := bson.Convert(o)
 		require.NoError(tb, err)
 
 		err = arr.Add(v)
 		require.NoError(tb, err)
 	}
 
-	return bson2.LogMessageBlock(arr)
+	return bson.LogMessageBlock(arr)
 }
 
 // MustParseDumpFile panics if fails to parse file input to byte array.
