@@ -144,7 +144,7 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 	if uri == "" {
 		uri = setupListener(tb, setupCtx, logger)
 	} else {
-		uri = toAbsolutePathUri(tb, *targetURLF)
+		uri = toAbsolutePathURI(tb, *targetURLF)
 	}
 
 	if opts.ExtraOptions != nil {
