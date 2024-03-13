@@ -103,8 +103,8 @@ FROM scratch AS production
 COPY --from=production-build /src/bin/ferretdb /ferretdb
 
 # TODO https://github.com/FerretDB/FerretDB/issues/3992
-# COPY build/docker/passwd /etc/passwd
-# COPY build/docker/group  /etc/group
+# COPY build/ferretdb/passwd /etc/passwd
+# COPY build/ferretdb/group  /etc/group
 # USER ferretdb:ferretdb
 
 ENTRYPOINT [ "/ferretdb" ]
