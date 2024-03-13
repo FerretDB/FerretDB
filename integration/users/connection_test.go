@@ -166,9 +166,15 @@ func TestAuthentication(t *testing.T) {
 					setup.SkipForMongoDB(t, "PLAIN mechanism is not supported by MongoDB")
 				}
 
+				roles := bson.A{}
+				if setup.IsMongoDB(t) {
+					// TODO https://github.com/FerretDB/FerretDB/issues/3974
+					roles = bson.A{"readWrite"}
+				}
+
 				createPayload := bson.D{
 					{"createUser", tc.username},
-					{"roles", bson.A{}},
+					{"roles", roles},
 					{"pwd", tc.password},
 					{"mechanisms", mechanisms},
 				}
@@ -345,9 +351,16 @@ func TestAuthenticationLocalhostException(tt *testing.T) {
 	db = clientNoAuth.Database(db.Name())
 
 	username, password, mechanism := "testuser", "testpass", "SCRAM-SHA-256"
+
+	roles := bson.A{}
+	if setup.IsMongoDB(t) {
+		// TODO https://github.com/FerretDB/FerretDB/issues/3974
+		roles = bson.A{"userAdmin"}
+	}
+
 	firstUser := bson.D{
 		{"createUser", username},
-		{"roles", bson.A{}},
+		{"roles", roles},
 		{"pwd", password},
 		{"mechanisms", bson.A{mechanism}},
 	}
@@ -356,7 +369,7 @@ func TestAuthenticationLocalhostException(tt *testing.T) {
 
 	secondUser := bson.D{
 		{"createUser", "anotheruser"},
-		{"roles", bson.A{}},
+		{"roles", roles},
 		{"pwd", "anotherpass"},
 		{"mechanisms", bson.A{mechanism}},
 	}
