@@ -17,18 +17,27 @@ package testutil
 import (
 	"bytes"
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/FerretDB/FerretDB/internal/bson2"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/types/fjson"
+	"github.com/FerretDB/FerretDB/internal/util/hex"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
-// Dump returns string representation for debugging.
-func Dump[T types.Type](tb testtb.TB, o T) string {
+// dump returns string representation for debugging.
+func dump[T types.Type](tb testtb.TB, o T) string {
 	tb.Helper()
+
+	v, err := bson2.Convert(o)
+	require.NoError(tb, err)
+	_ = v
 
 	// We should switch to bson2's format.
 	// TODO https://github.com/FerretDB/FerretDB/issues/4157
@@ -38,8 +47,8 @@ func Dump[T types.Type](tb testtb.TB, o T) string {
 	return string(IndentJSON(tb, b))
 }
 
-// DumpSlice returns string representation for debugging.
-func DumpSlice[T types.Type](tb testtb.TB, s []T) string {
+// dumpSlice returns string representation for debugging.
+func dumpSlice[T types.Type](tb testtb.TB, s []T) string {
 	tb.Helper()
 
 	// We should switch to bson2's format.
@@ -60,6 +69,12 @@ func DumpSlice[T types.Type](tb testtb.TB, s []T) string {
 	res = append(res, ']')
 
 	return string(IndentJSON(tb, res))
+}
+
+// MustParseDumpFile panics if fails to parse file input to byte array.
+func MustParseDumpFile(path ...string) []byte {
+	b := must.NotFail(os.ReadFile(filepath.Join(path...)))
+	return must.NotFail(hex.ParseDump(string(b)))
 }
 
 // IndentJSON returns an indented form of the JSON input.

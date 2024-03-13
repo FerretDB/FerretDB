@@ -107,8 +107,8 @@ func AssertNotEqualSlices[T types.Type](tb testtb.TB, expected, actual []T) bool
 
 // diffValues returns a readable form of given values and the difference between them.
 func diffValues[T types.Type](tb testtb.TB, expected, actual T) (expectedS string, actualS string, diff string) {
-	expectedS = Dump(tb, expected)
-	actualS = Dump(tb, actual)
+	expectedS = dump(tb, expected)
+	actualS = dump(tb, actual)
 
 	var err error
 	diff, err = difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
@@ -125,8 +125,8 @@ func diffValues[T types.Type](tb testtb.TB, expected, actual T) (expectedS strin
 
 // diffSlices returns a readable form of given slices and the difference between them.
 func diffSlices[T types.Type](tb testtb.TB, expected, actual []T) (expectedS string, actualS string, diff string) {
-	expectedS = DumpSlice(tb, expected)
-	actualS = DumpSlice(tb, actual)
+	expectedS = dumpSlice(tb, expected)
+	actualS = dumpSlice(tb, actual)
 
 	var err error
 	diff, err = difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
