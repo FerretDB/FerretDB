@@ -319,7 +319,7 @@ tasks:
         -coverpkg=../...
         -coverprofile=integration-mongodb.txt
         ./...
-        -target-url='mongodb://127.0.0.1:47017/'
+        -target-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem&replicaSet=rs0'
         -target-backend=mongodb
 
   bench-unit:
@@ -509,7 +509,7 @@ tasks:
       - >
         docker compose run --rm trivy filesystem .
         --secret-config=./build/trivy-secret.yml
-        --ignorefile=./build/.trivyignore
+        --ignorefile=./build/trivy-ignore.yml
         --cache-dir=./tmp/trivy
         --exit-code=1
 
