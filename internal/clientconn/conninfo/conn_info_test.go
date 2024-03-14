@@ -16,6 +16,7 @@ package conninfo
 
 import (
 	"context"
+	"net/netip"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,26 +26,34 @@ func TestGet(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		peerAddr string
+		peer  netip.AddrPort
+		local bool
 	}{
-		"EmptyPeerAddr": {
-			peerAddr: "",
+		"Unix": {
+			local: true,
 		},
-		"NonEmptyPeerAddr": {
-			peerAddr: "127.0.0.8:1234",
+		"Local": {
+			peer:  netip.MustParseAddrPort("127.42.7.1:1234"),
+			local: true,
+		},
+		"NonLocal": {
+			peer:  netip.MustParseAddrPort("192.168.0.1:1234"),
+			local: false,
+		},
+		"LocalIPv6": {
+			peer:  netip.MustParseAddrPort("[::1]:1234"),
+			local: true,
 		},
 	} {
-		tc := tc
 		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-
 			ctx := context.Background()
 			connInfo := &ConnInfo{
-				PeerAddr: tc.peerAddr,
+				Peer: tc.peer,
 			}
 			ctx = Ctx(ctx, connInfo)
 			actual := Get(ctx)
 			assert.Equal(t, connInfo, actual)
+			assert.Equal(t, tc.local, actual.LocalPeer())
 		})
 	}
 

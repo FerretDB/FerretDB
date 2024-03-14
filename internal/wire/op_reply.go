@@ -16,11 +16,9 @@ package wire
 
 import (
 	"encoding/binary"
-	"encoding/json"
 
-	"github.com/FerretDB/FerretDB/internal/bson2"
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/types/fjson"
 	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -33,7 +31,7 @@ type OpReply struct {
 	// The order of fields is weird to make the struct smaller due to alignment.
 	// The wire order is: flags, cursor ID, starting from, documents.
 
-	document     bson2.RawDocument
+	document     bson.RawDocument
 	CursorID     int64
 	Flags        OpReplyFlags
 	StartingFrom int32
@@ -120,36 +118,50 @@ func (reply *OpReply) Document() (*types.Document, error) {
 
 // SetDocument sets reply document.
 func (reply *OpReply) SetDocument(doc *types.Document) {
-	d := must.NotFail(bson2.ConvertDocument(doc))
+	d := must.NotFail(bson.ConvertDocument(doc))
 	reply.document = must.NotFail(d.Encode())
 }
 
-// String returns a string representation for logging.
-func (reply *OpReply) String() string {
+// logMessage returns a string representation for logging.
+func (reply *OpReply) logMessage(block bool) string {
 	if reply == nil {
 		return "<nil>"
 	}
 
-	m := map[string]any{
-		"ResponseFlags": reply.Flags,
-		"CursorID":      reply.CursorID,
-		"StartingFrom":  reply.StartingFrom,
-	}
+	m := must.NotFail(bson.NewDocument(
+		"ResponseFlags", reply.Flags.String(),
+		"CursorID", reply.CursorID,
+		"StartingFrom", reply.StartingFrom,
+	))
 
 	if reply.document == nil {
-		m["NumberReturned"] = 0
+		must.NoError(m.Add("NumberReturned", int32(0)))
 	} else {
-		m["NumberReturned"] = 1
+		must.NoError(m.Add("NumberReturned", int32(1)))
 
-		doc, err := reply.document.Convert()
+		doc, err := reply.document.DecodeDeep()
 		if err == nil {
-			m["Document"] = json.RawMessage(must.NotFail(fjson.Marshal(doc)))
+			must.NoError(m.Add("Document", doc))
 		} else {
-			m["DocumentError"] = err.Error()
+			must.NoError(m.Add("DocumentError", err.Error()))
 		}
 	}
 
-	return string(must.NotFail(json.MarshalIndent(m, "", "  ")))
+	if block {
+		return bson.LogMessageBlock(m)
+	}
+
+	return bson.LogMessage(m)
+}
+
+// String returns a string representation for logging.
+func (reply *OpReply) String() string {
+	return reply.logMessage(false)
+}
+
+// StringBlock returns an indented string representation for logging.
+func (reply *OpReply) StringBlock() string {
+	return reply.logMessage(true)
 }
 
 // check interfaces

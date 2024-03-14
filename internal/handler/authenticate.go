@@ -17,6 +17,7 @@ package handler
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
@@ -32,17 +33,14 @@ import (
 // If EnableNewAuth is false or bypass backend auth is set false, it succeeds
 // authentication and let backend handle it.
 //
-// When admin.systems.user contains no user, the authentication is delegated to
-// the backend.
-// TODO https://github.com/FerretDB/FerretDB/issues/4100
+// When admin.systems.user contains no user, and the client is connected from
+// the localhost, it bypasses credentials check.
 func (h *Handler) authenticate(ctx context.Context) error {
 	if !h.EnableNewAuth {
 		return nil
 	}
 
-	if !conninfo.Get(ctx).BypassBackendAuth() {
-		return nil
-	}
+	conninfo.Get(ctx).SetBypassBackendAuth()
 
 	adminDB, err := h.b.Database("admin")
 	if err != nil {
@@ -54,7 +52,21 @@ func (h *Handler) authenticate(ctx context.Context) error {
 		return lazyerrors.Error(err)
 	}
 
-	username, userPassword := conninfo.Get(ctx).Auth()
+	username, userPassword, mechanism := conninfo.Get(ctx).Auth()
+
+	switch mechanism {
+	case "SCRAM-SHA-256", "SCRAM-SHA-1":
+		// SCRAM calls back scramCredentialLookup each time Step is called,
+		// and that checks the authentication.
+		return nil
+	case "PLAIN", "":
+		// mechanism may be empty for local host exception
+		break
+	default:
+		msg := fmt.Sprintf("Unsupported authentication mechanism %q.\n", mechanism) +
+			"See https://docs.ferretdb.io/security/authentication/ for more details."
+		return handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrAuthenticationFailed, msg, mechanism)
+	}
 
 	// For `PLAIN` mechanism $db field is always `$external` upon saslStart.
 	// For `SCRAM-SHA-1` and `SCRAM-SHA-256` mechanisms $db field contains
@@ -100,14 +112,7 @@ func (h *Handler) authenticate(ctx context.Context) error {
 		}
 	}
 
-	if !hasUser {
-		// There is no user in the database, let the backend check the authentication.
-		// We do not want unauthenticated users accessing the database, while allowing
-		// users with valid backend credentials to access the database.
-		// TODO https://github.com/FerretDB/FerretDB/issues/4100
-		conninfo.Get(ctx).UnsetBypassBackendAuth()
-		h.L.Error("backend is used for authentication - no user in admin.system.users collection")
-
+	if !hasUser && conninfo.Get(ctx).LocalPeer() {
 		return nil
 	}
 
@@ -121,18 +126,14 @@ func (h *Handler) authenticate(ctx context.Context) error {
 
 	credentials := must.NotFail(storedUser.Get("credentials")).(*types.Document)
 
-	switch {
-	case credentials.Has("SCRAM-SHA-256"), credentials.Has("SCRAM-SHA-1"):
-		// SCRAM calls back scramCredentialLookup each time Step is called,
-		// and that checks the authentication.
-		return nil
-	case credentials.Has("PLAIN"):
-		break
-	default:
-		panic("credentials does not contain a known mechanism")
+	v, _ := credentials.Get("PLAIN")
+	if v == nil {
+		return handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrMechanismUnavailable,
+			"Unable to use PLAIN based authentication for user without any PLAIN credentials registered",
+			"authenticate",
+		)
 	}
-
-	v := must.NotFail(credentials.Get("PLAIN"))
 
 	doc, ok := v.(*types.Document)
 	if !ok {

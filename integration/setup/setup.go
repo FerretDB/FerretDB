@@ -17,6 +17,7 @@ package setup
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"net/url"
@@ -25,6 +26,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -33,6 +35,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
@@ -46,7 +49,7 @@ var (
 
 	targetProxyAddrF  = flag.String("target-proxy-addr", "", "in-process FerretDB: use given proxy")
 	targetTLSF        = flag.Bool("target-tls", false, "in-process FerretDB: use TLS")
-	targetUnixSocketF = flag.Bool("target-unix-socket", false, "in-process FerretDB: use Unix socket")
+	targetUnixSocketF = flag.Bool("target-unix-socket", false, "in-process FerretDB: use Unix domain socket")
 
 	postgreSQLURLF = flag.String("postgresql-url", "", "in-process FerretDB: PostgreSQL URL for 'postgresql' handler.")
 	sqliteURLF     = flag.String("sqlite-url", "", "in-process FerretDB: SQLite URI for 'sqlite' handler.")
@@ -90,6 +93,9 @@ type SetupOpts struct {
 	// ExtraOptions sets the options in MongoDB URI, when the option exists it overwrites that option.
 	ExtraOptions url.Values
 
+	// SetupUser true creates a user and returns an authenticated client.
+	SetupUser bool
+
 	// Options to override default backend configuration.
 	BackendOptions *BackendOpts
 }
@@ -110,12 +116,12 @@ type SetupResult struct {
 	MongoDBURI string
 }
 
-// IsUnixSocket returns true if MongoDB URI is a Unix socket.
+// IsUnixSocket returns true if MongoDB URI is a Unix domain socket.
 func (s *SetupResult) IsUnixSocket(tb testtb.TB) bool {
 	tb.Helper()
 
 	// we can't use a regular url.Parse because
-	// MongoDB really wants Unix socket path in the host part of the URI
+	// MongoDB really wants Unix domain socket path in the host part of the URI
 	opts := options.Client().ApplyURI(s.MongoDBURI)
 	res := slices.ContainsFunc(opts.Hosts, func(host string) bool {
 		return strings.Contains(host, "/")
@@ -150,6 +156,8 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 	uri := *targetURLF
 	if uri == "" {
 		uri = setupListener(tb, setupCtx, logger, opts.BackendOptions)
+	} else {
+		uri = toAbsolutePathURI(tb, *targetURLF)
 	}
 
 	if opts.ExtraOptions != nil {
@@ -174,9 +182,12 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
 
-	collection := setupCollection(tb, setupCtx, client, opts)
+	if opts.SetupUser {
+		// user is created before the collection so that user can run collection cleanup
+		client = setupUser(tb, ctx, client, uri)
+	}
 
-	setupUser(tb, setupCtx, client)
+	collection := setupCollection(tb, ctx, client, opts)
 
 	level.SetLevel(*logLevelF)
 
@@ -338,26 +349,60 @@ func insertBenchmarkProvider(tb testtb.TB, ctx context.Context, collection *mong
 	return
 }
 
-// setupUser creates a user in admin database with supported mechanisms.
-// The user uses username/password credential which is the same as the database
-// credentials. This is done to avoid the need to reconnect as different credential.
+// setupUser creates a user in admin database with supported mechanisms. It returns an authenticated client.
 //
-// Without this, once the first user is created, the authentication fails
-// as username/password does not exist in admin.system.users collection.
-func setupUser(tb testtb.TB, ctx context.Context, client *mongo.Client) {
+// Without this, once the first user is created, the authentication fails as local exception no longer applies.
+func setupUser(tb testtb.TB, ctx context.Context, client *mongo.Client, uri string) *mongo.Client {
 	tb.Helper()
 
-	if IsMongoDB(tb) {
-		return
+	// username is unique per test so the user is deleted after the test
+	username, password := "username"+tb.Name(), "password"
+	err := client.Database("admin").RunCommand(ctx, bson.D{
+		{"dropUser", username},
+	}).Err()
+
+	var ce mongo.CommandError
+	if errors.As(err, &ce) && ce.Code == int32(handlererrors.ErrUserNotFound) {
+		err = nil
 	}
 
-	username, password := "username", "password"
+	require.NoError(tb, err)
 
-	err := client.Database("admin").RunCommand(ctx, bson.D{
+	roles := bson.A{"root"}
+	if !IsMongoDB(tb) {
+		// use root role for FerretDB once authorization is implemented
+		// TODO https://github.com/FerretDB/FerretDB/issues/3974
+		roles = bson.A{}
+	}
+
+	err = client.Database("admin").RunCommand(ctx, bson.D{
 		{"createUser", username},
-		{"roles", bson.A{}},
+		{"roles", roles},
 		{"pwd", password},
-		{"mechanisms", bson.A{"PLAIN", "SCRAM-SHA-1", "SCRAM-SHA-256"}},
+		{"mechanisms", bson.A{"SCRAM-SHA-1", "SCRAM-SHA-256"}},
 	}).Err()
-	require.NoErrorf(tb, err, "cannot create user")
+	require.NoError(tb, err)
+
+	credential := options.Credential{
+		AuthMechanism: "SCRAM-SHA-256",
+		AuthSource:    "admin",
+		Username:      username,
+		Password:      password,
+	}
+
+	opts := options.Client().ApplyURI(uri).SetAuth(credential)
+
+	authenticatedClient, err := mongo.Connect(ctx, opts)
+	require.NoError(tb, err)
+
+	tb.Cleanup(func() {
+		err = authenticatedClient.Database("admin").RunCommand(ctx, bson.D{
+			{"dropUser", username},
+		}).Err()
+		assert.NoError(tb, err)
+
+		require.NoError(tb, authenticatedClient.Disconnect(ctx))
+	})
+
+	return authenticatedClient
 }
