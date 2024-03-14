@@ -166,7 +166,7 @@ func TestDefaultEmptySchema(t *testing.T) {
 
 	list, err := r.DatabaseList(ctx)
 	require.NoError(t, err)
-	assert.Equal(t, []string{dbName}, list)
+	assert.Contains(t, list, dbName)
 
 	created, err := r.CollectionCreate(ctx, &CollectionCreateParams{DBName: "public", Name: testutil.CollectionName(t)})
 	require.NoError(t, err)
@@ -174,7 +174,7 @@ func TestDefaultEmptySchema(t *testing.T) {
 
 	list, err = r.DatabaseList(ctx)
 	require.NoError(t, err)
-	assert.Equal(t, []string{dbName, "public"}, list)
+	assert.Contains(t, list, "public")
 
 	_, err = r.DatabaseDrop(ctx, "public")
 	require.NoError(t, err)

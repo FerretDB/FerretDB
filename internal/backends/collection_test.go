@@ -557,6 +557,10 @@ func TestListCollections(t *testing.T) {
 
 			testDB, err := b.Database(dbName)
 			require.NoError(t, err)
+			t.Cleanup(func() {
+				err := b.DropDatabase(ctx, &backends.DropDatabaseParams{Name: dbName})
+				require.NoError(t, err)
+			})
 
 			for _, collectionName := range collectionNames {
 				err = testDB.CreateCollection(ctx, &backends.CreateCollectionParams{Name: collectionName})

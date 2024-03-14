@@ -73,8 +73,6 @@ func TestMySQLURI(tb testtb.TB, ctx context.Context, baseURI string) string {
 	u.Path = name
 	res := u.String()
 
-	tb.Logf("directory name is %s", name)
-
 	db, err := sql.Open("mysql", mysqlURL)
 	require.NoError(tb, err)
 
@@ -97,27 +95,43 @@ func TestMySQLURI(tb testtb.TB, ctx context.Context, baseURI string) string {
 			return
 		}
 
-		// we should also cleanup lingering databases
-		//q = fmt.Sprintf(`
-		//			SELECT DISTINCT table_schema
-		//			FROM information_schema.columns
-		//			WHERE table_name = '_ferretdb_database_metadata'
-		//`)
-		//rows, err := db.QueryContext(ctx, q)
-		//require.NoError(tb, err)
-		//
-		//for rows.Next() {
-		//	var dbName string
-		//	err = rows.Scan(&dbName)
-		//	require.NoError(tb, err)
-		//
-		//	// drop the database
-		//	q = fmt.Sprintf("DROP DATABASE IF EXISTS %s", dbName)
-		//	_, err = db.ExecContext(ctx, q)
-		//	require.NoError(tb, err)
-		//}
+		// tests are grouped using a directory name, and subtests are prefixed with
+		// the directory name which in essence provide a logical grouping of similar tests.
+		// The databases are dropped in a similar fashion by matching the prefix for the subtests.
+		prefix := name + "_%"
+		q = fmt.Sprintf(
+			`SELECT COUNT(schema_name)
+					FROM information_schema.schemata
+					WHERE LOWER(schema_name) LIKE %q;
+					`,
+			prefix,
+		)
 
-		q := fmt.Sprintf("DROP DATABASE %s", name)
+		var count int
+		err = db.QueryRowContext(ctx, q).Scan(&count)
+		require.NoError(tb, err)
+
+		if count != 0 {
+			q = fmt.Sprintf(
+				`SELECT GROUP_CONCAT('DROP DATABASE ', schema_name, ';') INTO @dropstmt
+					FROM information_schema.schemata
+					WHERE LOWER(schema_name) LIKE %q
+					`,
+				prefix,
+			)
+			_, err = db.ExecContext(ctx, q)
+			require.NoError(tb, err)
+
+			q = "PREPARE stmt FROM @dropstmt"
+			_, err = db.ExecContext(ctx, q)
+			require.NoError(tb, err)
+
+			q = "EXECUTE stmt"
+			_, err = db.ExecContext(ctx, q)
+			require.NoError(tb, err)
+		}
+
+		q = fmt.Sprintf("DROP DATABASE %s", name)
 		_, err = db.ExecContext(ctx, q)
 		require.NoError(tb, err)
 	})

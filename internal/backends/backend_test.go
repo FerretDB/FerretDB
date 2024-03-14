@@ -69,14 +69,13 @@ func TestVersion(t *testing.T) {
 }
 
 func TestListDatabases(t *testing.T) {
-	t.Parallel()
 
 	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
 
 	for name, b := range testBackends(t) {
 		name, b := name, b
 		t.Run(name, func(t *testing.T) {
-			t.Parallel()
+			//t.Parallel()
 			// setup 3 DB with 1 collections each. random order of db name also ensure sorting test.
 			dbNames := []string{"testDB2", "testDB1", "testDB3"}
 			collectionName := "testCollection"
@@ -111,24 +110,31 @@ func TestListDatabases(t *testing.T) {
 				require.Equal(t, 0, len(dbRes.Databases), "expected len 0 since no db with name dummy")
 			})
 
-			//t.Run("ListDatabasesWithNilParam", func(t *testing.T) {
-			//	t.Parallel()
-			//	dbRes, err := b.ListDatabases(ctx, nil)
-			//	require.NoError(t, err)
-			//	require.Equal(t, dbNames[1], dbRes.Databases[0].Name, "expected name testDB1")
-			//	require.Equal(t, dbNames[0], dbRes.Databases[1].Name, "expected name testDB2")
-			//	require.Equal(t, dbNames[2], dbRes.Databases[2].Name, "expected name testDB3")
-			//})
+			t.Run("ListDatabasesWithNilParam", func(t *testing.T) {
+				t.Parallel()
+				dbRes, err := b.ListDatabases(ctx, nil)
+				require.NoError(t, err)
+				require.Equal(t, dbNames[1], dbRes.Databases, "expected name testDB1")
+				require.Equal(t, dbNames[0], dbRes.Databases[1].Name, "expected name testDB2")
+				require.Equal(t, dbNames[2], dbRes.Databases[2].Name, "expected name testDB3")
+			})
 
-			//t.Run("ListDatabasesWithEmptyParam", func(t *testing.T) {
-			//	t.Parallel()
-			//	var param backends.ListDatabasesParams
-			//	dbRes, err := b.ListDatabases(ctx, &param)
-			//	require.NoError(t, err)
-			//	require.Equal(t, dbNames[1], dbRes.Databases[0].Name, "expected name testDB1")
-			//	require.Equal(t, dbNames[0], dbRes.Databases[1].Name, "expected name testDB2")
-			//	require.Equal(t, dbNames[2], dbRes.Databases[2].Name, "expected name testDB3")
-			//})
+			t.Run("ListDatabasesWithEmptyParam", func(t *testing.T) {
+				t.Parallel()
+				var param backends.ListDatabasesParams
+				dbRes, err := b.ListDatabases(ctx, &param)
+				require.NoError(t, err)
+				require.Equal(t, dbNames[1], dbRes.Databases[0].Name, "expected name testDB1")
+				require.Equal(t, dbNames[0], dbRes.Databases[1].Name, "expected name testDB2")
+				require.Equal(t, dbNames[2], dbRes.Databases[2].Name, "expected name testDB3")
+			})
+
+			t.Cleanup(func() {
+				for _, name := range dbNames {
+					err := b.DropDatabase(ctx, &backends.DropDatabaseParams{Name: name})
+					require.NoError(t, err)
+				}
+			})
 		})
 	}
 }
