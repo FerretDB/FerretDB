@@ -166,6 +166,5 @@ func (c *Conn) WriteRaw(b []byte) error {
 
 // Request sends the given request to the connection and returns the response.
 func (c *Conn) Request(ctx context.Context, header *wire.MsgHeader, body wire.MsgBody) (*wire.MsgHeader, wire.MsgBody, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/4146
 	panic("not implemented")
 }
