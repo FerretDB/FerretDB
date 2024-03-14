@@ -80,6 +80,10 @@ func (h *Handler) saslStart(ctx context.Context, dbName string, document *types.
 
 		conninfo.Get(ctx).SetAuth(username, password, mechanism)
 
+		if err = h.authenticate(ctx); err != nil {
+			return nil, err
+		}
+
 		var emptyPayload types.Binary
 
 		return must.NotFail(types.NewDocument(

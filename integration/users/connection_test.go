@@ -421,7 +421,7 @@ func TestAuthenticationEnableNewAuthPLAIN(tt *testing.T) {
 		password  string
 		mechanism string
 
-		err *mongo.CommandError
+		topologyErr bool
 	}{
 		"Success": {
 			username:  "plain-user",
@@ -429,34 +429,22 @@ func TestAuthenticationEnableNewAuthPLAIN(tt *testing.T) {
 			mechanism: "PLAIN",
 		},
 		"BadPassword": {
-			username:  "plain-user",
-			password:  "wrong",
-			mechanism: "PLAIN",
-			err: &mongo.CommandError{
-				Code:    18,
-				Name:    "AuthenticationFailed",
-				Message: "Authentication failed",
-			},
+			username:    "plain-user",
+			password:    "wrong",
+			mechanism:   "PLAIN",
+			topologyErr: true,
 		},
 		"NonExistentUser": {
-			username:  "not-found-user",
-			password:  "something",
-			mechanism: "PLAIN",
-			err: &mongo.CommandError{
-				Code:    18,
-				Name:    "AuthenticationFailed",
-				Message: "Authentication failed",
-			},
+			username:    "not-found-user",
+			password:    "something",
+			mechanism:   "PLAIN",
+			topologyErr: true,
 		},
 		"NonPLAINUser": {
-			username:  "scram-user",
-			password:  "correct",
-			mechanism: "PLAIN",
-			err: &mongo.CommandError{
-				Code:    334,
-				Name:    "ErrMechanismUnavailable",
-				Message: "Unable to use PLAIN based authentication for user without any PLAIN credentials registered",
-			},
+			username:    "scram-user",
+			password:    "correct",
+			mechanism:   "PLAIN",
+			topologyErr: true,
 		},
 	}
 
@@ -484,8 +472,9 @@ func TestAuthenticationEnableNewAuthPLAIN(tt *testing.T) {
 			c := client.Database(db.Name()).Collection(cName)
 			_, err = c.InsertOne(ctx, bson.D{{"ping", "pong"}})
 
-			if tc.err != nil {
-				integration.AssertEqualCommandError(t, *tc.err, err)
+			if tc.topologyErr {
+				var ce topology.ConnectionError
+				require.ErrorAs(t, err, &ce, "expected a connection error")
 				return
 			}
 
