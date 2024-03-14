@@ -262,7 +262,7 @@ func (h *Handler) cleanupCappedCollection(ctx context.Context, db backends.Datab
 	h.L.Debug("cleanupCappedCollection: stats before", zap.Any("stats", statsBefore))
 
 	if count := getDocCleanupCount(cInfo, statsBefore); count > 0 {
-		err := deleteFirstNDocuments(ctx, coll, count)
+		err = deleteFirstNDocuments(ctx, coll, count)
 		if err != nil {
 			return 0, 0, lazyerrors.Error(err)
 		}
@@ -281,25 +281,26 @@ func (h *Handler) cleanupCappedCollection(ctx context.Context, db backends.Datab
 	}
 
 	if count := getSizeCleanupCount(cInfo, statsBefore, h.CappedCleanupPercentage); count > 0 {
-		err := deleteFirstNDocuments(ctx, coll, count)
+		err = deleteFirstNDocuments(ctx, coll, count)
 		if err != nil {
 			return 0, 0, lazyerrors.Error(err)
 		}
-
-		if _, err = coll.Compact(ctx, &backends.CompactParams{Full: force}); err != nil {
-			return 0, 0, lazyerrors.Error(err)
-		}
-
-		statsAfter, err = coll.Stats(ctx, &backends.CollectionStatsParams{Refresh: true})
-		if err != nil {
-			return 0, 0, lazyerrors.Error(err)
-		}
-
-		h.L.Debug("cleanupCappedCollection: stats after collection size reduction", zap.Any("stats", statsAfter))
 
 		docsDeleted += int32(count)
-		bytesFreed += (statsBefore.SizeTotal - statsAfter.SizeTotal)
 	}
+
+	if _, err = coll.Compact(ctx, &backends.CompactParams{Full: force}); err != nil {
+		return 0, 0, lazyerrors.Error(err)
+	}
+
+	statsAfter, err = coll.Stats(ctx, &backends.CollectionStatsParams{Refresh: true})
+	if err != nil {
+		return 0, 0, lazyerrors.Error(err)
+	}
+
+	h.L.Debug("cleanupCappedCollection: stats after compact", zap.Any("stats", statsAfter))
+
+	bytesFreed += (statsBefore.SizeTotal - statsAfter.SizeTotal)
 
 	// There's a possibility that the size of a collection might be greater at the
 	// end of a compact operation if the collection is being actively written to at
@@ -344,15 +345,19 @@ func deleteFirstNDocuments(ctx context.Context, coll backends.Collection, n int6
 	defer res.Iter.Close()
 
 	var recordIDs []int64
+
 	for {
 		var doc *types.Document
-		if _, doc, err = res.Iter.Next(); err != nil {
+
+		_, doc, err = res.Iter.Next()
+		if err != nil {
 			if errors.Is(err, iterator.ErrIteratorDone) {
 				break
 			}
 
 			return lazyerrors.Error(err)
 		}
+
 		recordIDs = append(recordIDs, doc.RecordID())
 	}
 

@@ -87,14 +87,20 @@ type SetupOpts struct {
 	// Benchmark data provider. If empty, collection is not created.
 	BenchmarkProvider shareddata.BenchmarkProvider
 
+	// ExtraOptions sets the options in MongoDB URI, when the option exists it overwrites that option.
+	ExtraOptions url.Values
+
+	// Options to override default backend configuration.
+	BackendOptions *BackendOpts
+}
+
+// BackendOpts represents backend configuration used for test setup.
+type BackendOpts struct {
 	// Capped collections cleanup interval.
 	CappedCleanupInterval time.Duration
 
 	// Percentage of documents to cleanup for capped collections.
 	CappedCleanupPercentage uint8
-
-	// ExtraOptions sets the options in MongoDB URI, when the option exists it overwrites that option.
-	ExtraOptions url.Values
 }
 
 // SetupResult represents setup results.
@@ -143,7 +149,7 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 
 	uri := *targetURLF
 	if uri == "" {
-		uri = setupListener(tb, setupCtx, logger, opts)
+		uri = setupListener(tb, setupCtx, logger, opts.BackendOptions)
 	}
 
 	if opts.ExtraOptions != nil {
