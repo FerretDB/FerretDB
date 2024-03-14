@@ -33,6 +33,8 @@ func TestDriver(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, c.Close()) })
 
+	c.Write()
+
 	// TODO https://github.com/FerretDB/FerretDB/issues/4146
 	_ = c
 }

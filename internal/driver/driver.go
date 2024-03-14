@@ -166,5 +166,14 @@ func (c *Conn) WriteRaw(b []byte) error {
 
 // Request sends the given request to the connection and returns the response.
 func (c *Conn) Request(ctx context.Context, header *wire.MsgHeader, body wire.MsgBody) (*wire.MsgHeader, wire.MsgBody, error) {
-	panic("not implemented")
+	if err := c.Write(header, body); err != nil {
+		return nil, nil, lazyerrors.Error(err)
+	}
+
+	header, body, err := c.Read()
+	if err != nil {
+		return nil, nil, lazyerrors.Error(err)
+	}
+
+	return header, body, nil
 }
