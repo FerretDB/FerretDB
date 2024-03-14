@@ -12,91 +12,300 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package bson provides converters from/to BSON for built-in and `types` types.
+// Package bson implements encoding and decoding of BSON as defined by https://bsonspec.org/spec.html.
 //
-// See contributing guidelines and documentation for package `types` for details.
+// # Types
 //
-// # Mapping
+// The following BSON types are supported:
 //
-// Composite types
+//	BSON                Go
 //
-//	Alias      types package    bson package
+//	Document/Object     *bson.Document or bson.RawDocument
+//	Array               *bson.Array    or bson.RawArray
 //
-//	object     *types.Document  *bson.Document
-//	array      *types.Array     *bson.arrayType
+//	Double              float64
+//	String              string
+//	Binary data         bson.Binary
+//	ObjectId            bson.ObjectID
+//	Boolean             bool
+//	Date                time.Time
+//	Null                bson.NullType
+//	Regular Expression  bson.Regex
+//	32-bit integer      int32
+//	Timestamp           bson.Timestamp
+//	64-bit integer      int64
 //
-// Scalar types
-//
-//	Alias      types package    bson package
-//
-//	double     float64          *bson.doubleType
-//	string     string           *bson.stringType
-//	binData    types.Binary     *bson.binaryType
-//	objectId   types.ObjectID   *bson.objectIDType
-//	bool       bool             *bson.boolType
-//	date       time.Time        *bson.dateTimeType
-//	null       types.NullType   *bson.nullType
-//	regex      types.Regex      *bson.regexType
-//	int        int32            *bson.int32Type
-//	timestamp  types.Timestamp  *bson.timestampType
-//	long       int64            *bson.int64Type
-//
-//nolint:dupword // false positive
+// Composite types (Document and Array) are passed by pointers.
+// Raw composite type and scalars are passed by values.
 package bson
 
 import (
-	"bufio"
-	"encoding"
 	"fmt"
 	"time"
 
-	"github.com/AlekSi/pointer"
+	"github.com/cristalhq/bson/bsonproto"
 
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-//sumtype:decl
-type bsontype interface {
-	bsontype() // seal for sumtype
+type (
+	// ScalarType represents a BSON scalar type.
+	//
+	// CString is not included as it is not a real BSON type.
+	ScalarType = bsonproto.ScalarType
 
-	ReadFrom(*bufio.Reader) error
-	WriteTo(*bufio.Writer) error
-	encoding.BinaryMarshaler
+	// Binary represents BSON scalar type binary.
+	Binary = bsonproto.Binary
+
+	// BinarySubtype represents BSON Binary's subtype.
+	BinarySubtype = bsonproto.BinarySubtype
+
+	// NullType represents BSON scalar type null.
+	NullType = bsonproto.NullType
+
+	// ObjectID represents BSON scalar type ObjectID.
+	ObjectID = bsonproto.ObjectID
+
+	// Regex represents BSON scalar type regular expression.
+	Regex = bsonproto.Regex
+
+	// Timestamp represents BSON scalar type timestamp.
+	Timestamp = bsonproto.Timestamp
+)
+
+// Null represents BSON scalar value null.
+var Null = bsonproto.Null
+
+//go:generate ../../bin/stringer -linecomment -type decodeMode
+
+// decodeMode represents a mode for decoding BSON.
+type decodeMode int
+
+const (
+	_ decodeMode = iota
+
+	// DecodeShallow represents a mode in which only top-level fields/elements are decoded;
+	// nested documents and arrays are converted to RawDocument and RawArray respectively,
+	// using raw's subslices without copying.
+	decodeShallow
+
+	// DecodeDeep represents a mode in which nested documents and arrays are decoded recursively;
+	// RawDocuments and RawArrays are never returned.
+	decodeDeep
+)
+
+var (
+	// ErrDecodeShortInput is returned wrapped by Decode functions if the input bytes slice is too short.
+	ErrDecodeShortInput = bsonproto.ErrDecodeShortInput
+
+	// ErrDecodeInvalidInput is returned wrapped by Decode functions if the input bytes slice is invalid.
+	ErrDecodeInvalidInput = bsonproto.ErrDecodeInvalidInput
+)
+
+// SizeCString returns a size of the encoding of v cstring in bytes.
+func SizeCString(s string) int {
+	return bsonproto.SizeCString(s)
 }
 
-// TODO https://github.com/FerretDB/FerretDB/issues/260
+// EncodeCString encodes cstring value v into b.
 //
-//nolint:deadcode,unused // remove later if it is not needed
-func toBSON(v any) bsontype {
+// Slice must be at least len(v)+1 ([SizeCString]) bytes long; otherwise, EncodeString will panic.
+// Only b[0:len(v)+1] bytes are modified.
+func EncodeCString(b []byte, v string) {
+	bsonproto.EncodeCString(b, v)
+}
+
+// DecodeCString decodes cstring value from b.
+//
+// If there is not enough bytes, DecodeCString will return a wrapped [ErrDecodeShortInput].
+// If the input is otherwise invalid, a wrapped [ErrDecodeInvalidInput] is returned.
+func DecodeCString(b []byte) (string, error) {
+	return bsonproto.DecodeCString(b)
+}
+
+// Type represents a BSON type.
+type Type interface {
+	ScalarType | CompositeType
+}
+
+// CompositeType represents a BSON composite type (including raw types).
+type CompositeType interface {
+	*Document | *Array | RawDocument | RawArray
+}
+
+// validBSONType checks if v is a valid BSON type (including raw types).
+func validBSONType(v any) error {
 	switch v := v.(type) {
-	case *types.Document:
-		return must.NotFail(ConvertDocument(v))
-	case *types.Array:
-		return pointer.To(arrayType(*v))
+	case *Document:
+	case RawDocument:
+	case *Array:
+	case RawArray:
 	case float64:
-		return pointer.To(doubleType(v))
 	case string:
-		return pointer.To(stringType(v))
-	case types.Binary:
-		return pointer.To(binaryType(v))
-	case types.ObjectID:
-		return pointer.To(objectIDType(v))
+	case Binary:
+	case ObjectID:
 	case bool:
-		return pointer.To(boolType(v))
 	case time.Time:
-		return pointer.To(dateTimeType(v))
-	case types.NullType:
-		return pointer.To(nullType(v))
-	case types.Regex:
-		return pointer.To(regexType(v))
+	case NullType:
+	case Regex:
 	case int32:
-		return pointer.To(int32Type(v))
-	case types.Timestamp:
-		return pointer.To(timestampType(v))
+	case Timestamp:
 	case int64:
-		return pointer.To(int64Type(v))
+
+	default:
+		return lazyerrors.Errorf("invalid BSON type %T", v)
 	}
 
-	panic(fmt.Sprintf("not reached: %T", v)) // for sumtype to work
+	return nil
+}
+
+// convertToTypes converts valid BSON value of that package to types package type.
+//
+// Conversions of composite types (including raw types) may cause errors.
+// Invalid types cause panics.
+func convertToTypes(v any) (any, error) {
+	switch v := v.(type) {
+	case *Document:
+		doc, err := v.Convert()
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		return doc, nil
+
+	case RawDocument:
+		d, err := v.Decode()
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		doc, err := d.Convert()
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		return doc, nil
+
+	case *Array:
+		arr, err := v.Convert()
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		return arr, nil
+
+	case RawArray:
+		a, err := v.Decode()
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		arr, err := a.Convert()
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		return arr, nil
+
+	case float64:
+		return v, nil
+	case string:
+		return v, nil
+	case Binary:
+		// Special case to prevent it from being stored as null in sjson.
+		// TODO https://github.com/FerretDB/FerretDB/issues/260
+		if v.B == nil {
+			v.B = []byte{}
+		}
+
+		return types.Binary{
+			B:       v.B,
+			Subtype: types.BinarySubtype(v.Subtype),
+		}, nil
+	case ObjectID:
+		return types.ObjectID(v), nil
+	case bool:
+		return v, nil
+	case time.Time:
+		return v, nil
+	case NullType:
+		return types.Null, nil
+	case Regex:
+		return types.Regex{
+			Pattern: v.Pattern,
+			Options: v.Options,
+		}, nil
+	case int32:
+		return v, nil
+	case Timestamp:
+		return types.Timestamp(v), nil
+	case int64:
+		return v, nil
+
+	default:
+		panic(fmt.Sprintf("invalid BSON type %T", v))
+	}
+}
+
+// Convert converts valid types package values to BSON values of that package.
+//
+// Conversions of composite types may cause errors.
+func Convert[T types.Type](v T) (any, error) {
+	return convertFromTypes(v)
+}
+
+// convertFromTypes is a variant of [Convert] without type parameters (generics).
+//
+// Invalid types cause panics.
+func convertFromTypes(v any) (any, error) {
+	switch v := v.(type) {
+	case *types.Document:
+		doc, err := ConvertDocument(v)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		return doc, nil
+
+	case *types.Array:
+		arr, err := ConvertArray(v)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		return arr, nil
+
+	case float64:
+		return v, nil
+	case string:
+		return v, nil
+	case types.Binary:
+		return Binary{
+			B:       v.B,
+			Subtype: BinarySubtype(v.Subtype),
+		}, nil
+	case types.ObjectID:
+		return ObjectID(v), nil
+	case bool:
+		return v, nil
+	case time.Time:
+		return v, nil
+	case types.NullType:
+		return Null, nil
+	case types.Regex:
+		return Regex{
+			Pattern: v.Pattern,
+			Options: v.Options,
+		}, nil
+	case int32:
+		return v, nil
+	case types.Timestamp:
+		return Timestamp(v), nil
+	case int64:
+		return v, nil
+
+	default:
+		panic(fmt.Sprintf("invalid type %T", v))
+	}
 }

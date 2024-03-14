@@ -17,7 +17,7 @@ package wire
 import (
 	"encoding/binary"
 
-	"github.com/FerretDB/FerretDB/internal/bson2"
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -30,8 +30,8 @@ type OpQuery struct {
 	// The wire order is: flags, collection name, number to skip, number to return, query, fields selector.
 
 	FullCollectionName   string
-	query                bson2.RawDocument
-	returnFieldsSelector bson2.RawDocument
+	query                bson.RawDocument
+	returnFieldsSelector bson.RawDocument
 	Flags                OpQueryFlags
 	NumberToSkip         int32
 	NumberToReturn       int32
@@ -66,12 +66,12 @@ func (query *OpQuery) UnmarshalBinaryNocopy(b []byte) error {
 
 	var err error
 
-	query.FullCollectionName, err = bson2.DecodeCString(b[4:])
+	query.FullCollectionName, err = bson.DecodeCString(b[4:])
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	numberLow := 4 + bson2.SizeCString(query.FullCollectionName)
+	numberLow := 4 + bson.SizeCString(query.FullCollectionName)
 	if len(b) < numberLow+8 {
 		return lazyerrors.Errorf("len=%d, can't unmarshal numbers", len(b))
 	}
@@ -79,7 +79,7 @@ func (query *OpQuery) UnmarshalBinaryNocopy(b []byte) error {
 	query.NumberToSkip = int32(binary.LittleEndian.Uint32(b[numberLow : numberLow+4]))
 	query.NumberToReturn = int32(binary.LittleEndian.Uint32(b[numberLow+4 : numberLow+8]))
 
-	l, err := bson2.FindRaw(b[numberLow+8:])
+	l, err := bson.FindRaw(b[numberLow+8:])
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -87,7 +87,7 @@ func (query *OpQuery) UnmarshalBinaryNocopy(b []byte) error {
 
 	selectorLow := numberLow + 8 + l
 	if len(b) != selectorLow {
-		l, err = bson2.FindRaw(b[selectorLow:])
+		l, err = bson.FindRaw(b[selectorLow:])
 		if err != nil {
 			return lazyerrors.Error(err)
 		}
@@ -115,13 +115,13 @@ func (query *OpQuery) MarshalBinary() ([]byte, error) {
 		}
 	}
 
-	nameSize := bson2.SizeCString(query.FullCollectionName)
+	nameSize := bson.SizeCString(query.FullCollectionName)
 	b := make([]byte, 12+nameSize+len(query.query)+len(query.returnFieldsSelector))
 
 	binary.LittleEndian.PutUint32(b[0:4], uint32(query.Flags))
 
 	nameHigh := 4 + nameSize
-	bson2.EncodeCString(b[4:nameHigh], query.FullCollectionName)
+	bson.EncodeCString(b[4:nameHigh], query.FullCollectionName)
 
 	binary.LittleEndian.PutUint32(b[nameHigh:nameHigh+4], uint32(query.NumberToSkip))
 	binary.LittleEndian.PutUint32(b[nameHigh+4:nameHigh+8], uint32(query.NumberToReturn))
@@ -157,7 +157,7 @@ func (query *OpQuery) logMessage(block bool) string {
 		return "<nil>"
 	}
 
-	m := must.NotFail(bson2.NewDocument(
+	m := must.NotFail(bson.NewDocument(
 		"Flags", query.Flags.String(),
 		"FullCollectionName", query.FullCollectionName,
 		"NumberToSkip", query.NumberToSkip,
@@ -181,10 +181,10 @@ func (query *OpQuery) logMessage(block bool) string {
 	}
 
 	if block {
-		return bson2.LogMessageBlock(m)
+		return bson.LogMessageBlock(m)
 	}
 
-	return bson2.LogMessage(m)
+	return bson.LogMessage(m)
 }
 
 // String returns a string representation for logging.
