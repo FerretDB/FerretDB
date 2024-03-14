@@ -500,7 +500,7 @@ tasks:
       - >
         docker compose run --rm trivy filesystem .
         --secret-config=./build/trivy-secret.yml
-        --ignorefile=./build/.trivyignore
+        --ignorefile=./build/trivy-ignore.yml
         --cache-dir=./tmp/trivy
         --exit-code=1
 
