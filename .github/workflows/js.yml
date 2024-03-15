@@ -78,11 +78,11 @@ jobs:
           --test-enable-new-auth=true
           2> ferretdb.log &
 
-      - name: Run testjs for MongoDB
-        run: bin/task testjs TESTJS_PORT=47017
-
       - name: Run testjs for FerretDB
         run: bin/task testjs-auth
+
+      - name: Run testjs for MongoDB
+        run: bin/task testjs TESTJS_PORT=47017
 
       - name: Compress FerretDB log before upload
         if: failure()
