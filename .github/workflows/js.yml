@@ -82,7 +82,7 @@ jobs:
         run: bin/task testjs TESTJS_PORT=47017
 
       - name: Run testjs for FerretDB
-        run: bin/task testjs TESTJS_PORT=27017
+        run: bin/task testjs
 
       - name: Compress FerretDB log before upload
         if: failure()
