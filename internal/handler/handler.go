@@ -261,6 +261,14 @@ func (h *Handler) cleanupCappedCollection(ctx context.Context, db backends.Datab
 	}
 	h.L.Debug("cleanupCappedCollection: stats before", zap.Any("stats", statsBefore))
 
+	// In order to be more precise w.r.t number of documents getting dropped and to avoid
+	// deleting too many documents unnecessarily,
+	//
+	// - First, drop the surplus documents, if document count exceeds capped configuration.
+	// - Collect stats again.
+	// - If collection size still exceeds the capped size, then drop the documents based on
+	//   CappedCleanupPercentage.
+
 	if count := getDocCleanupCount(cInfo, statsBefore); count > 0 {
 		err = deleteFirstNDocuments(ctx, coll, count)
 		if err != nil {
@@ -312,6 +320,8 @@ func (h *Handler) cleanupCappedCollection(ctx context.Context, db backends.Datab
 	return docsDeleted, bytesFreed, nil
 }
 
+// getDocCleanupCount returns the number of documents to be deleted during capped collection cleanup
+// based on document count of the collection and capped configuration.
 func getDocCleanupCount(cInfo *backends.CollectionInfo, cStats *backends.CollectionStatsResult) int64 {
 	if cInfo.CappedDocuments == 0 || cInfo.CappedDocuments >= cStats.CountDocuments {
 		return 0
@@ -320,6 +330,8 @@ func getDocCleanupCount(cInfo *backends.CollectionInfo, cStats *backends.Collect
 	return (cStats.CountDocuments - cInfo.CappedDocuments)
 }
 
+// getSizeCleanupCount returns the number of documents to be deleted during capped collection cleanup
+// based collection size, capped configuration and cleanup percentage.
 func getSizeCleanupCount(cInfo *backends.CollectionInfo, cStats *backends.CollectionStatsResult, cleanupPercent uint8) int64 {
 	if cInfo.CappedSize >= cStats.SizeCollection {
 		return 0
@@ -328,6 +340,7 @@ func getSizeCleanupCount(cInfo *backends.CollectionInfo, cStats *backends.Collec
 	return int64(float64(cStats.CountDocuments) * float64(cleanupPercent) / 100)
 }
 
+// deleteFirstNDocuments drops first n documents (based on order of insertion) from the collection.
 func deleteFirstNDocuments(ctx context.Context, coll backends.Collection, n int64) error {
 	if n == 0 {
 		return nil

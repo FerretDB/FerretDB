@@ -105,7 +105,7 @@ type BackendOpts struct {
 	// Capped collections cleanup interval.
 	CappedCleanupInterval time.Duration
 
-	// Percentage of documents to cleanup for capped collections.
+	// Percentage of documents to cleanup for capped collections. If not set, defaults to 20.
 	CappedCleanupPercentage uint8
 }
 
@@ -114,6 +114,14 @@ type SetupResult struct {
 	Ctx        context.Context
 	Collection *mongo.Collection
 	MongoDBURI string
+}
+
+// NewBackendOpts returns BackendOpts with default values set.
+func NewBackendOpts() *BackendOpts {
+	return &BackendOpts{
+		CappedCleanupInterval:   time.Duration(0),
+		CappedCleanupPercentage: uint8(20),
+	}
 }
 
 // IsUnixSocket returns true if MongoDB URI is a Unix domain socket.
@@ -155,6 +163,10 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 
 	uri := *targetURLF
 	if uri == "" {
+		if opts.BackendOptions == nil {
+			opts.BackendOptions = NewBackendOpts()
+		}
+
 		uri = setupListener(tb, setupCtx, logger, opts.BackendOptions)
 	} else {
 		uri = toAbsolutePathURI(tb, *targetURLF)

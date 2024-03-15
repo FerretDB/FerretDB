@@ -20,7 +20,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel"
@@ -166,19 +165,10 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 		mysqlURL = testutil.TestMySQLURI(tb, ctx, mysqlURL)
 	}
 
-	cappedCleanupInterval := time.Duration(0)
-	cappedCleanupPercentage := uint8(20)
-
-	if opts != nil {
-		cappedCleanupInterval = opts.CappedCleanupInterval
-
-		if opts.CappedCleanupPercentage != 0 {
-			cappedCleanupPercentage = opts.CappedCleanupPercentage
-		}
-	}
-
 	sp, err := state.NewProvider("")
 	require.NoError(tb, err)
+
+	require.NotNil(tb, opts)
 
 	handlerOpts := &registry.NewHandlerOpts{
 		Logger:        logger,
@@ -192,8 +182,8 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 
 		TestOpts: registry.TestOpts{
 			DisablePushdown:         *disablePushdownF,
-			CappedCleanupPercentage: cappedCleanupPercentage,
-			CappedCleanupInterval:   cappedCleanupInterval,
+			CappedCleanupPercentage: opts.CappedCleanupPercentage,
+			CappedCleanupInterval:   opts.CappedCleanupInterval,
 			EnableNewAuth:           true,
 		},
 	}

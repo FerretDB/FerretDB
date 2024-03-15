@@ -1765,13 +1765,13 @@ func TestCommandsAdministrationCompactCapped(t *testing.T) {
 				setup.SkipForMongoDB(t, tc.skipForMongoDB)
 			}
 
-			s := setup.SetupWithOpts(t, &setup.SetupOpts{
-				BackendOptions: &setup.BackendOpts{
-					CappedCleanupPercentage: tc.cleanupPercentage,
-				},
-			})
+			beOpts := setup.NewBackendOpts()
+			if tc.cleanupPercentage != 0 {
+				beOpts.CappedCleanupPercentage = tc.cleanupPercentage
+			}
 
-			coll, ctx := s.Collection, s.Ctx
+			s := setup.SetupWithOpts(t, &setup.SetupOpts{BackendOptions: beOpts})
+			ctx, coll := s.Ctx, s.Collection
 
 			collName := testutil.CollectionName(t) + name
 
