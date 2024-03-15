@@ -14,13 +14,13 @@
 
   db.getSiblingDB('admin').system.users.remove({});
 
-  db.getSiblingDB('admin').createUser({user: 'username', pwd: 'password', roles: roles});
+  db.getSiblingDB('admin').createUser({user: 'username2', pwd: 'password2', roles: roles});
 
   const mongoClient = function(uri) {
     return new Mongo(uri);
   }
 
-  const uri = 'mongodb://username:password@host.docker.internal:' + port + '/?authMechanism=SCRAM-SHA-1';
+  const uri = 'mongodb://username2:password2@host.docker.internal:' + port + '/?authMechanism=SCRAM-SHA-1';
 
   try {
     mongoClient(uri);
