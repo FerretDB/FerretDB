@@ -22,21 +22,21 @@
     port = 47017;
   };
 
-  // db.getSiblingDB('admin').system.users.remove({});
-
-  db.getSiblingDB('admin').createUser({user: 'username2', pwd: 'password2', roles: roles});
+  db.getSiblingDB('admin').createUser({user: 'user', pwd: '1234', roles: roles});
 
   const mongoClient = function(uri) {
     return new Mongo(uri);
   };
 
-  const uri = 'mongodb://username2:password2@host.docker.internal:' + port + '/?authMechanism=SCRAM-SHA-1';
+  const uri = 'mongodb://user:1234@host.docker.internal:' + port + '/?authMechanism=SCRAM-SHA-1';
 
   try {
     mongoClient(uri);
   } catch (e) {
     throw new Error('test.js failed: ' + e);
   }
+
+  print('connected to: ' + db.runCommand({whatsmyuri: 1}).you);
 
   print('test.js passed!');
 })();
