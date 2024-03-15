@@ -32,11 +32,17 @@ import (
 type MsgBody interface {
 	msgbody() // seal for sumtype
 
+	// check performs deep (and slow) validity check.
+	check() error
+
 	// UnmarshalBinaryNocopy is a variant of [encoding.BinaryUnmarshaler] that does not have to copy the data.
 	UnmarshalBinaryNocopy([]byte) error
 
 	encoding.BinaryMarshaler
 	fmt.Stringer
+
+	// StringBlock returns an indented string representation for logging.
+	StringBlock() string
 }
 
 // ErrZeroRead is returned when zero bytes was read from connection,

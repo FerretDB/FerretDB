@@ -39,104 +39,117 @@ func TestQueryBadFindType(t *testing.T) {
 	ctx, collection := s.Ctx, s.Collection
 
 	for name, tc := range map[string]struct {
-		value any
-		err   *mongo.CommandError
+		value      any
+		err        *mongo.CommandError
+		altMessage string
 	}{
 		"Document": {
 			value: bson.D{},
 			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type object",
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "Failed to parse namespace element",
 			},
+			altMessage: "collection name has invalid type object",
 		},
 		"Array": {
 			value: primitive.A{},
 			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type array",
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "Failed to parse namespace element",
 			},
+			altMessage: "collection name has invalid type array",
 		},
 		"Double": {
 			value: 3.14,
 			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type double",
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "Failed to parse namespace element",
 			},
+			altMessage: "collection name has invalid type double",
 		},
 		"Binary": {
 			value: primitive.Binary{},
 			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type binData",
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "Failed to parse namespace element",
 			},
+			altMessage: "collection name has invalid type binData",
 		},
 		"ObjectID": {
 			value: primitive.ObjectID{},
 			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type objectId",
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "Failed to parse namespace element",
 			},
+			altMessage: "collection name has invalid type objectId",
 		},
 		"Bool": {
 			value: true,
 			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type bool",
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "Failed to parse namespace element",
 			},
+			altMessage: "collection name has invalid type bool",
 		},
 		"Date": {
 			value: time.Now(),
 			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type date",
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "Failed to parse namespace element",
 			},
+			altMessage: "collection name has invalid type date",
 		},
 		"Null": {
 			value: nil,
 			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type null",
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "Failed to parse namespace element",
 			},
+			altMessage: "collection name has invalid type null",
 		},
 		"Regex": {
 			value: primitive.Regex{Pattern: "/foo/"},
 			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type regex",
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "Failed to parse namespace element",
 			},
+			altMessage: "collection name has invalid type regex",
 		},
 		"Int": {
 			value: int32(42),
 			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type int",
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "Failed to parse namespace element",
 			},
+			altMessage: "collection name has invalid type int",
 		},
 		"Timestamp": {
 			value: primitive.Timestamp{},
 			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type timestamp",
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "Failed to parse namespace element",
 			},
+			altMessage: "collection name has invalid type timestamp",
 		},
 		"Long": {
 			value: int64(42),
 			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type long",
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "Failed to parse namespace element",
 			},
+			altMessage: "collection name has invalid type long",
 		},
 	} {
 		name, tc := name, tc
@@ -153,7 +166,7 @@ func TestQueryBadFindType(t *testing.T) {
 			err := collection.Database().RunCommand(ctx, cmd).Decode(&res)
 
 			require.Nil(t, res)
-			AssertEqualCommandError(t, *tc.err, err)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 		})
 	}
 }
@@ -728,7 +741,6 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 			limitPushdown: noPushdown,
 		},
 	} {
-		tc, name := tc, name
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 

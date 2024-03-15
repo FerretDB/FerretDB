@@ -253,9 +253,11 @@ func TestSCRAMSHA256(t *testing.T) {
 
 		testutil.AssertNotEqual(t, doc1, doc2)
 
-		// salt is 30 bytes, but a value length increases ~33% when base64-encoded
-		assert.Len(t, must.NotFail(doc1.Get("salt")), 40)
-		assert.Len(t, must.NotFail(doc2.Get("salt")), 40)
+		salt := must.NotFail(doc1.Get("salt")).(string)
+		assert.Len(t, must.NotFail(base64.StdEncoding.DecodeString(salt)), 28)
+
+		salt = must.NotFail(doc2.Get("salt")).(string)
+		assert.Len(t, must.NotFail(base64.StdEncoding.DecodeString(salt)), 28)
 	})
 }
 
@@ -265,7 +267,7 @@ func BenchmarkSCRAMSHA256(b *testing.B) {
 	b.Run("Exported", func(b *testing.B) {
 		b.ReportAllocs()
 
-		for i := 0; i < b.N; i++ {
+		for range b.N {
 			_, err = SCRAMSHA256Hash("password")
 		}
 	})

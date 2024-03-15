@@ -46,8 +46,6 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 		return nil, err
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3777
-	// TODO https://github.com/FerretDB/FerretDB/issues/3778
 	if dbName != "$external" && !document.Has("pwd") {
 		return nil, handlererrors.NewCommandErrorMsg(
 			handlererrors.ErrBadValue,
@@ -183,10 +181,10 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 }
 
 // makeCredentials creates a document with credentials for the chosen mechanisms.
-func makeCredentials(mechanisms *types.Array, username, pwd string) (*types.Document, error) {
+func makeCredentials(mechanisms *types.Array, username, userPassword string) (*types.Document, error) {
 	credentials := types.MakeDocument(0)
 
-	if pwd == "" {
+	if userPassword == "" {
 		return nil, handlererrors.NewCommandErrorMsg(
 			handlererrors.ErrSetEmptyPassword,
 			"Password cannot be empty",
@@ -217,16 +215,16 @@ func makeCredentials(mechanisms *types.Array, username, pwd string) (*types.Docu
 
 		switch v {
 		case "PLAIN":
-			credentials.Set("PLAIN", must.NotFail(password.PlainHash(username)))
+			credentials.Set("PLAIN", must.NotFail(password.PlainHash(userPassword)))
 		case "SCRAM-SHA-1":
-			hash, err := password.SCRAMSHA1Hash(username, pwd)
+			hash, err := password.SCRAMSHA1Hash(username, userPassword)
 			if err != nil {
 				return nil, err
 			}
 
 			credentials.Set("SCRAM-SHA-1", hash)
 		case "SCRAM-SHA-256":
-			hash, err := password.SCRAMSHA256Hash(pwd)
+			hash, err := password.SCRAMSHA256Hash(userPassword)
 			if err != nil {
 				if strings.Contains(err.Error(), "prohibited character") {
 					return nil, handlererrors.NewCommandErrorMsg(

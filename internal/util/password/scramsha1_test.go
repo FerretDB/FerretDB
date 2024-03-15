@@ -16,7 +16,6 @@ package password
 
 import (
 	"encoding/base64"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -147,9 +146,11 @@ func TestSCRAMSHA1(t *testing.T) {
 
 		testutil.AssertNotEqual(t, doc1, doc2)
 
-		// salt is 18 bytes, but a value length increases ~33% when base64-encoded
-		assert.Len(t, must.NotFail(doc1.Get("salt")), 24)
-		assert.Len(t, must.NotFail(doc2.Get("salt")), 24)
+		salt := must.NotFail(doc1.Get("salt")).(string)
+		assert.Len(t, must.NotFail(base64.StdEncoding.DecodeString(salt)), 16)
+
+		salt = must.NotFail(doc2.Get("salt")).(string)
+		assert.Len(t, must.NotFail(base64.StdEncoding.DecodeString(salt)), 16)
 	})
 }
 
@@ -159,8 +160,8 @@ func BenchmarkSCRAMSHA1(b *testing.B) {
 	b.Run("Exported", func(b *testing.B) {
 		b.ReportAllocs()
 
-		for i := 0; i < b.N; i++ {
-			_, err = SCRAMSHA1Hash(fmt.Sprintf("user%d", i), "password")
+		for range b.N {
+			_, err = SCRAMSHA1Hash("user", "password")
 		}
 	})
 

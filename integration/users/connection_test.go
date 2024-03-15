@@ -26,14 +26,18 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/x/mongo/driver/topology"
 
+	"github.com/FerretDB/FerretDB/integration"
 	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 func TestAuthentication(t *testing.T) {
 	t.Parallel()
 
-	s := setup.SetupWithOpts(t, nil)
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{SetupUser: true})
 	ctx := s.Ctx
 	collection := s.Collection
 	db := collection.Database()
@@ -101,7 +105,7 @@ func TestAuthentication(t *testing.T) {
 			mechanisms:          []string{"SCRAM-SHA-256"},
 			connectionMechanism: "SCRAM-SHA-256",
 			userNotFound:        true,
-			errorMessage:        "Authentication failed",
+			errorMessage:        "Authentication failed.",
 			topologyError:       true,
 		},
 		"BadPassword": {
@@ -111,7 +115,7 @@ func TestAuthentication(t *testing.T) {
 			connectionMechanism: "SCRAM-SHA-256",
 			wrongPassword:       true,
 			topologyError:       true,
-			errorMessage:        "Authentication failed",
+			errorMessage:        "Authentication failed.",
 		},
 		"MechanismNotSet": {
 			username:            "user_mechanism_not_set",
@@ -162,9 +166,16 @@ func TestAuthentication(t *testing.T) {
 					setup.SkipForMongoDB(t, "PLAIN mechanism is not supported by MongoDB")
 				}
 
+				// root role is only available in admin database, a role with sufficient privilege is used
+				roles := bson.A{"readWrite"}
+				if !setup.IsMongoDB(t) {
+					// TODO https://github.com/FerretDB/FerretDB/issues/3974
+					roles = bson.A{}
+				}
+
 				createPayload := bson.D{
 					{"createUser", tc.username},
-					{"roles", bson.A{}},
+					{"roles", roles},
 					{"pwd", tc.password},
 					{"mechanisms", mechanisms},
 				}
@@ -203,7 +214,7 @@ func TestAuthentication(t *testing.T) {
 			opts := options.Client().ApplyURI(s.MongoDBURI).SetAuth(credential)
 
 			client, err := mongo.Connect(ctx, opts)
-			require.NoError(t, err, "cannot connect to MongoDB")
+			require.NoError(t, err)
 
 			// Ping to force connection to be established and tested.
 			err = client.Ping(ctx, nil)
@@ -218,7 +229,7 @@ func TestAuthentication(t *testing.T) {
 				return
 			}
 
-			require.NoError(t, err, "cannot ping MongoDB")
+			require.NoError(t, err)
 
 			connCollection := client.Database(db.Name()).Collection(collection.Name())
 
@@ -235,6 +246,264 @@ func TestAuthentication(t *testing.T) {
 			assert.Equal(t, bson.D{{"_id", id}, {"ping", "pong"}}, result)
 
 			require.NoError(t, client.Disconnect(context.Background()))
+		})
+	}
+}
+
+func TestAuthenticationOnAuthenticatedConnection(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{SetupUser: true})
+	ctx, db := s.Ctx, s.Collection.Database()
+	username, password, mechanism := "testuser", "testpass", "SCRAM-SHA-256"
+
+	err := db.RunCommand(ctx, bson.D{
+		{"createUser", username},
+		{"roles", bson.A{}},
+		{"pwd", password},
+		{"mechanisms", bson.A{mechanism}},
+	}).Err()
+	require.NoError(t, err, "cannot create user")
+
+	credential := options.Credential{
+		AuthMechanism: mechanism,
+		AuthSource:    db.Name(),
+		Username:      username,
+		Password:      password,
+	}
+
+	opts := options.Client().ApplyURI(s.MongoDBURI).SetAuth(credential)
+
+	client, err := mongo.Connect(ctx, opts)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		require.NoError(t, client.Disconnect(ctx))
+	})
+
+	db = client.Database(db.Name())
+	var res bson.D
+	err = db.RunCommand(ctx, bson.D{{"connectionStatus", 1}}).Decode(&res)
+	require.NoError(t, err)
+
+	actualAuth, err := integration.ConvertDocument(t, res).Get("authInfo")
+	require.NoError(t, err)
+
+	actualUsersV, err := actualAuth.(*types.Document).Get("authenticatedUsers")
+	require.NoError(t, err)
+
+	actualUsers := actualUsersV.(*types.Array)
+	require.Equal(t, 1, actualUsers.Len())
+
+	actualUser := must.NotFail(actualUsers.Get(0)).(*types.Document)
+	user, err := actualUser.Get("user")
+	require.NoError(t, err)
+	require.Equal(t, username, user)
+
+	saslStart := bson.D{
+		{"saslStart", 1},
+		{"mechanism", mechanism},
+		{"payload", []byte("n,,n=testuser,r=Y0iJqJu58tGDrUdtqS7+m0oMe4sau3f6")},
+		{"autoAuthorize", 1},
+		{"options", bson.D{{"skipEmptyExchange", true}}},
+	}
+	err = db.RunCommand(ctx, saslStart).Decode(&res)
+	require.NoError(t, err)
+
+	err = db.RunCommand(ctx, bson.D{{"connectionStatus", 1}}).Decode(&res)
+	require.NoError(t, err)
+
+	actualAuth, err = integration.ConvertDocument(t, res).Get("authInfo")
+	require.NoError(t, err)
+
+	actualUsersV, err = actualAuth.(*types.Document).Get("authenticatedUsers")
+	require.NoError(t, err)
+
+	actualUsers = actualUsersV.(*types.Array)
+	require.Equal(t, 1, actualUsers.Len())
+
+	actualUser = must.NotFail(actualUsers.Get(0)).(*types.Document)
+	user, err = actualUser.Get("user")
+	require.NoError(t, err)
+	require.Equal(t, username, user)
+
+	err = db.RunCommand(ctx, saslStart).Decode(&res)
+	require.NoError(t, err)
+}
+
+func TestAuthenticationLocalhostException(tt *testing.T) {
+	tt.Parallel()
+
+	t := setup.FailsForMongoDB(tt, "MongoDB is not connected via localhost")
+
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{CollectionName: testutil.CollectionName(t)})
+	ctx := s.Ctx
+	collection := s.Collection
+	db := collection.Database()
+
+	opts := options.Client().ApplyURI(s.MongoDBURI)
+	clientNoAuth, err := mongo.Connect(ctx, opts)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		require.NoError(t, clientNoAuth.Disconnect(ctx))
+	})
+
+	db = clientNoAuth.Database(db.Name())
+
+	username, password, mechanism := "testuser", "testpass", "SCRAM-SHA-256"
+
+	roles := bson.A{"userAdmin"}
+	if !setup.IsMongoDB(t) {
+		// TODO https://github.com/FerretDB/FerretDB/issues/3974
+		roles = bson.A{}
+	}
+
+	firstUser := bson.D{
+		{"createUser", username},
+		{"roles", roles},
+		{"pwd", password},
+		{"mechanisms", bson.A{mechanism}},
+	}
+	err = db.RunCommand(ctx, firstUser).Err()
+	require.NoError(t, err, "cannot create user")
+
+	secondUser := bson.D{
+		{"createUser", "anotheruser"},
+		{"roles", roles},
+		{"pwd", "anotherpass"},
+		{"mechanisms", bson.A{mechanism}},
+	}
+	err = db.RunCommand(ctx, secondUser).Err()
+	integration.AssertEqualCommandError(
+		t,
+		mongo.CommandError{
+			Code:    18,
+			Name:    "AuthenticationFailed",
+			Message: "Authentication failed",
+		},
+		err,
+	)
+
+	credential := options.Credential{
+		AuthMechanism: mechanism,
+		AuthSource:    db.Name(),
+		Username:      username,
+		Password:      password,
+	}
+
+	opts = options.Client().ApplyURI(s.MongoDBURI).SetAuth(credential)
+
+	client, err := mongo.Connect(ctx, opts)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		require.NoError(t, client.Disconnect(ctx))
+	})
+
+	db = client.Database(db.Name())
+	err = db.RunCommand(ctx, secondUser).Err()
+	require.NoError(t, err, "cannot create user")
+}
+
+func TestAuthenticationEnableNewAuthPLAIN(tt *testing.T) {
+	tt.Parallel()
+
+	t := setup.FailsForMongoDB(tt, "PLAIN mechanism is not supported by MongoDB")
+
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{SetupUser: true})
+	ctx, cName, db := s.Ctx, s.Collection.Name(), s.Collection.Database()
+
+	err := db.RunCommand(ctx, bson.D{
+		{"createUser", "plain-user"},
+		{"roles", bson.A{}},
+		{"pwd", "correct"},
+		{"mechanisms", bson.A{"PLAIN"}},
+	}).Err()
+	require.NoError(t, err, "cannot create user")
+
+	err = db.RunCommand(ctx, bson.D{
+		{"createUser", "scram-user"},
+		{"roles", bson.A{}},
+		{"pwd", "correct"},
+		{"mechanisms", bson.A{"SCRAM-SHA-1", "SCRAM-SHA-256"}},
+	}).Err()
+	require.NoError(t, err, "cannot create user")
+
+	testCases := map[string]struct {
+		username  string
+		password  string
+		mechanism string
+
+		err *mongo.CommandError
+	}{
+		"Success": {
+			username:  "plain-user",
+			password:  "correct",
+			mechanism: "PLAIN",
+		},
+		"BadPassword": {
+			username:  "plain-user",
+			password:  "wrong",
+			mechanism: "PLAIN",
+			err: &mongo.CommandError{
+				Code:    18,
+				Name:    "AuthenticationFailed",
+				Message: "Authentication failed",
+			},
+		},
+		"NonExistentUser": {
+			username:  "not-found-user",
+			password:  "something",
+			mechanism: "PLAIN",
+			err: &mongo.CommandError{
+				Code:    18,
+				Name:    "AuthenticationFailed",
+				Message: "Authentication failed",
+			},
+		},
+		"NonPLAINUser": {
+			username:  "scram-user",
+			password:  "correct",
+			mechanism: "PLAIN",
+			err: &mongo.CommandError{
+				Code:    334,
+				Name:    "ErrMechanismUnavailable",
+				Message: "Unable to use PLAIN based authentication for user without any PLAIN credentials registered",
+			},
+		},
+	}
+
+	for name, tc := range testCases {
+		name, tc := name, tc
+		tt.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			credential := options.Credential{
+				AuthMechanism: tc.mechanism,
+				AuthSource:    db.Name(),
+				Username:      tc.username,
+				Password:      tc.password,
+			}
+
+			opts := options.Client().ApplyURI(s.MongoDBURI).SetAuth(credential)
+
+			client, err := mongo.Connect(ctx, opts)
+			require.NoError(t, err)
+
+			t.Cleanup(func() {
+				require.NoError(t, client.Disconnect(ctx))
+			})
+
+			c := client.Database(db.Name()).Collection(cName)
+			_, err = c.InsertOne(ctx, bson.D{{"ping", "pong"}})
+
+			if tc.err != nil {
+				integration.AssertEqualCommandError(t, *tc.err, err)
+				return
+			}
+
+			require.NoError(t, err, "cannot insert document")
 		})
 	}
 }

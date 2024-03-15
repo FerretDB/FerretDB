@@ -122,10 +122,14 @@ func (r *Registry) getPool(ctx context.Context) (*pgxpool.Pool, error) {
 
 	if connInfo.BypassBackendAuth() {
 		if p = r.p.GetAny(); p == nil {
-			return nil, lazyerrors.New("no connection pool")
+			var err error
+			// use credential from the base URI by passing empty values
+			if p, err = r.p.Get("", ""); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
 		}
 	} else {
-		username, password := connInfo.Auth()
+		username, password, _ := connInfo.Auth()
 
 		var err error
 		if p, err = r.p.Get(username, password); err != nil {

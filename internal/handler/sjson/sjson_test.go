@@ -380,7 +380,7 @@ func benchmark(b *testing.B, testCases []testCase, newFunc func() sjsontype) {
 				b.SetBytes(int64(len(data)))
 				b.ResetTimer()
 
-				for i := 0; i < b.N; i++ {
+				for range b.N {
 					v = newFunc()
 					err = unmarshalJSON(v, &tc)
 				}

@@ -16,11 +16,9 @@ package wire
 
 import (
 	"encoding/binary"
-	"encoding/json"
 
-	"github.com/FerretDB/FerretDB/internal/bson2"
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/types/fjson"
 	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -30,20 +28,19 @@ import (
 //
 // Only up to one returned document is supported.
 type OpReply struct {
-	ResponseFlags OpReplyFlags
-	CursorID      int64
-	StartingFrom  int32
-	document      bson2.RawDocument
+	// The order of fields is weird to make the struct smaller due to alignment.
+	// The wire order is: flags, cursor ID, starting from, documents.
+
+	document     bson.RawDocument
+	CursorID     int64
+	Flags        OpReplyFlags
+	StartingFrom int32
 }
 
 func (reply *OpReply) msgbody() {}
 
-// check checks if the reply is valid.
+// check implements [MsgBody] interface.
 func (reply *OpReply) check() error {
-	if !debugbuild.Enabled {
-		return nil
-	}
-
 	if d := reply.document; d != nil {
 		if _, err := d.DecodeDeep(); err != nil {
 			return lazyerrors.Error(err)
@@ -59,7 +56,7 @@ func (reply *OpReply) UnmarshalBinaryNocopy(b []byte) error {
 		return lazyerrors.Errorf("len=%d", len(b))
 	}
 
-	reply.ResponseFlags = OpReplyFlags(binary.LittleEndian.Uint32(b[0:4]))
+	reply.Flags = OpReplyFlags(binary.LittleEndian.Uint32(b[0:4]))
 	reply.CursorID = int64(binary.LittleEndian.Uint64(b[4:12]))
 	reply.StartingFrom = int32(binary.LittleEndian.Uint32(b[12:16]))
 	numberReturned := int32(binary.LittleEndian.Uint32(b[16:20]))
@@ -77,8 +74,10 @@ func (reply *OpReply) UnmarshalBinaryNocopy(b []byte) error {
 		return lazyerrors.Errorf("numberReturned=%d, document=%v", numberReturned, reply.document)
 	}
 
-	if err := reply.check(); err != nil {
-		return lazyerrors.Error(err)
+	if debugbuild.Enabled {
+		if err := reply.check(); err != nil {
+			return lazyerrors.Error(err)
+		}
 	}
 
 	return nil
@@ -86,13 +85,15 @@ func (reply *OpReply) UnmarshalBinaryNocopy(b []byte) error {
 
 // MarshalBinary implements [MsgBody] interface.
 func (reply *OpReply) MarshalBinary() ([]byte, error) {
-	if err := reply.check(); err != nil {
-		return nil, lazyerrors.Error(err)
+	if debugbuild.Enabled {
+		if err := reply.check(); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 	}
 
 	b := make([]byte, 20+len(reply.document))
 
-	binary.LittleEndian.PutUint32(b[0:4], uint32(reply.ResponseFlags))
+	binary.LittleEndian.PutUint32(b[0:4], uint32(reply.Flags))
 	binary.LittleEndian.PutUint64(b[4:12], uint64(reply.CursorID))
 	binary.LittleEndian.PutUint32(b[12:16], uint32(reply.StartingFrom))
 
@@ -117,36 +118,50 @@ func (reply *OpReply) Document() (*types.Document, error) {
 
 // SetDocument sets reply document.
 func (reply *OpReply) SetDocument(doc *types.Document) {
-	d := must.NotFail(bson2.ConvertDocument(doc))
+	d := must.NotFail(bson.ConvertDocument(doc))
 	reply.document = must.NotFail(d.Encode())
 }
 
-// String returns a string representation for logging.
-func (reply *OpReply) String() string {
+// logMessage returns a string representation for logging.
+func (reply *OpReply) logMessage(block bool) string {
 	if reply == nil {
 		return "<nil>"
 	}
 
-	m := map[string]any{
-		"ResponseFlags": reply.ResponseFlags,
-		"CursorID":      reply.CursorID,
-		"StartingFrom":  reply.StartingFrom,
-	}
+	m := must.NotFail(bson.NewDocument(
+		"ResponseFlags", reply.Flags.String(),
+		"CursorID", reply.CursorID,
+		"StartingFrom", reply.StartingFrom,
+	))
 
 	if reply.document == nil {
-		m["NumberReturned"] = 0
+		must.NoError(m.Add("NumberReturned", int32(0)))
 	} else {
-		m["NumberReturned"] = 1
+		must.NoError(m.Add("NumberReturned", int32(1)))
 
-		doc, err := reply.document.Convert()
+		doc, err := reply.document.DecodeDeep()
 		if err == nil {
-			m["Documents"] = json.RawMessage(must.NotFail(fjson.Marshal(doc)))
+			must.NoError(m.Add("Document", doc))
 		} else {
-			m["DocumentError"] = err.Error()
+			must.NoError(m.Add("DocumentError", err.Error()))
 		}
 	}
 
-	return string(must.NotFail(json.MarshalIndent(m, "", "  ")))
+	if block {
+		return bson.LogMessageBlock(m)
+	}
+
+	return bson.LogMessage(m)
+}
+
+// String returns a string representation for logging.
+func (reply *OpReply) String() string {
+	return reply.logMessage(false)
+}
+
+// StringBlock returns an indented string representation for logging.
+func (reply *OpReply) StringBlock() string {
+	return reply.logMessage(true)
 }
 
 // check interfaces

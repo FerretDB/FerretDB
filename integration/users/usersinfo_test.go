@@ -27,6 +27,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 // createUser creates a bson.D command payload to create an user with the given username and password.
@@ -41,7 +42,8 @@ func createUser(username, password string) bson.D {
 func TestUsersinfo(t *testing.T) {
 	t.Parallel()
 
-	ctx, collection := setup.Setup(t)
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{SetupUser: true})
+	ctx, collection := s.Ctx, s.Collection
 	client := collection.Database().Client()
 
 	dbToUsers := []struct {
@@ -87,6 +89,28 @@ func TestUsersinfo(t *testing.T) {
 				},
 			},
 		},
+		{
+			dbSuffix: "allbackends",
+			payloads: []bson.D{
+				{
+					{"createUser", "WithSCRAMSHA1"},
+					{"roles", bson.A{}},
+					{"pwd", "pwd1"},
+					{"mechanisms", bson.A{"SCRAM-SHA-1"}},
+				},
+			},
+		},
+		{
+			dbSuffix: "allbackends",
+			payloads: []bson.D{
+				{
+					{"createUser", "WithSCRAMSHA256"},
+					{"roles", bson.A{}},
+					{"pwd", "pwd1"},
+					{"mechanisms", bson.A{"SCRAM-SHA-256"}},
+				},
+			},
+		},
 	}
 
 	dbPrefix := testutil.DatabaseName(t)
@@ -117,13 +141,14 @@ func TestUsersinfo(t *testing.T) {
 	}
 
 	testCases := map[string]struct { //nolint:vet // for readability
-		dbSuffix       string
-		payload        bson.D
-		err            *mongo.CommandError
-		altMessage     string
-		expected       bson.D
-		hasUser        map[string]struct{}
-		skipForMongoDB string // optional, skip test for MongoDB backend with a specific reason
+		dbSuffix        string
+		payload         bson.D
+		err             *mongo.CommandError
+		altMessage      string
+		expected        bson.D
+		hasUser         map[string]struct{}
+		showCredentials []string // showCredentials list the credentials types expected to be returned
+		failsForMongoDB string
 	}{
 		"NoUserFound": {
 			dbSuffix: "no_users",
@@ -182,6 +207,7 @@ func TestUsersinfo(t *testing.T) {
 				{"usersInfo", "WithPLAIN"},
 				{"showCredentials", true},
 			},
+			showCredentials: []string{"PLAIN"},
 			expected: bson.D{
 				{"users", bson.A{
 					bson.D{
@@ -193,7 +219,45 @@ func TestUsersinfo(t *testing.T) {
 				}},
 				{"ok", float64(1)},
 			},
-			skipForMongoDB: "Only MongoDB Enterprise offers PLAIN",
+			failsForMongoDB: "Only MongoDB Enterprise offers PLAIN",
+		},
+		"WithSCRAMSHA1": {
+			dbSuffix: "allbackends",
+			payload: bson.D{
+				{"usersInfo", "WithSCRAMSHA1"},
+				{"showCredentials", true},
+			},
+			showCredentials: []string{"SCRAM-SHA-1"},
+			expected: bson.D{
+				{"users", bson.A{
+					bson.D{
+						{"_id", "TestUsersinfo.WithSCRAMSHA1"},
+						{"user", "scramsha1"},
+						{"db", "TestUsersinfo"},
+						{"roles", bson.A{}},
+					},
+				}},
+				{"ok", float64(1)},
+			},
+		},
+		"WithSCRAMSHA256": {
+			dbSuffix: "allbackends",
+			payload: bson.D{
+				{"usersInfo", "WithSCRAMSHA256"},
+				{"showCredentials", true},
+			},
+			showCredentials: []string{"SCRAM-SHA-256"},
+			expected: bson.D{
+				{"users", bson.A{
+					bson.D{
+						{"_id", "TestUsersinfo.WithSCRAMSHA256"},
+						{"user", "scramsha256"},
+						{"db", "TestUsersinfo"},
+						{"roles", bson.A{}},
+					},
+				}},
+				{"ok", float64(1)},
+			},
 		},
 		"FromSameDatabase": {
 			dbSuffix: "_example",
@@ -469,12 +533,13 @@ func TestUsersinfo(t *testing.T) {
 	}
 
 	for name, tc := range testCases {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
+		t.Run(name, func(tt *testing.T) {
+			tt.Parallel()
 
-			if tc.skipForMongoDB != "" {
-				setup.SkipForMongoDB(t, tc.skipForMongoDB)
+			var t testtb.TB = tt
+
+			if tc.failsForMongoDB != "" {
+				t = setup.FailsForMongoDB(t, tc.failsForMongoDB)
 			}
 
 			var res bson.D
@@ -512,43 +577,41 @@ func TestUsersinfo(t *testing.T) {
 
 				require.True(t, (tc.hasUser == nil) != (tc.expected == nil))
 
-				payload := integration.ConvertDocument(t, tc.payload)
-				var showCredentials bool
+				id, err := actualUser.Get("_id")
+				require.NoError(t, err)
 
-				if payload.Has("showCredentials") {
-					showCredentials = must.NotFail(payload.Get("showCredentials")).(bool)
-				}
-				if showCredentials {
-					if !setup.IsMongoDB(t) {
-						cred, ok := actualUser.Get("credentials")
-						assert.Nil(t, ok, "credentials not found")
-						assertPlainCredentials(t, "PLAIN", cred.(*types.Document))
-					}
-				} else {
+				// when `forAllDBs` is set true, it may contain more users from other databases,
+				// so we check expected users were found rather than exact match
+				foundUsers[id.(string)] = struct{}{}
+
+				userIDV, err := actualUser.Get("userId")
+				require.NoError(t, err)
+
+				userID := userIDV.(types.Binary)
+				assert.Equal(t, userID.Subtype.String(), types.BinaryUUID.String(), "uuid subtype")
+				assert.Equal(t, 16, len(userID.B), "UUID length")
+
+				if tc.showCredentials == nil {
 					assert.False(t, actualUser.Has("credentials"))
+
+					continue
 				}
 
-				if payload.Has("mechanisms") {
-					payloadMechanisms := must.NotFail(payload.Get("mechanisms")).(*types.Array)
+				credV, err := actualUser.Get("credentials")
+				require.NoError(t, err)
 
-					if payloadMechanisms.Contains("PLAIN") {
-						assertPlainCredentials(t, "PLAIN", must.NotFail(actualUser.Get("credentials")).(*types.Document))
-					}
+				cred := credV.(*types.Document)
 
-					if payloadMechanisms.Contains("SCRAM-SHA-1") {
-						assertSCRAMSHA1Credentials(t, "SCRAM-SHA-1", must.NotFail(actualUser.Get("credentials")).(*types.Document))
-					}
-
-					if payloadMechanisms.Contains("SCRAM-SHA-256") {
-						assertSCRAMSHA256Credentials(t, "SCRAM-SHA-256", must.NotFail(actualUser.Get("credentials")).(*types.Document))
+				for _, typ := range tc.showCredentials {
+					switch typ {
+					case "PLAIN":
+						assertPlainCredentials(t, "PLAIN", cred)
+					case "SCRAM-SHA-1":
+						assertSCRAMSHA1Credentials(t, "SCRAM-SHA-1", cred)
+					case "SCRAM-SHA-256":
+						assertSCRAMSHA256Credentials(t, "SCRAM-SHA-256", cred)
 					}
 				}
-
-				foundUsers[must.NotFail(actualUser.Get("_id")).(string)] = struct{}{}
-
-				uuid := must.NotFail(actualUser.Get("userId")).(types.Binary)
-				assert.Equal(t, uuid.Subtype.String(), types.BinaryUUID.String(), "uuid subtype")
-				assert.Equal(t, 16, len(uuid.B), "UUID length")
 			}
 
 			if tc.hasUser != nil {
