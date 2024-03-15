@@ -7,6 +7,8 @@
   const t = db.foo;
   t.drop();
 
+  const admin = db.getSiblingDB('admin');
+
   let res = db.runCommand({ping: 1});
   assert.eq(res.ok, 1, 'ping failed');
 
@@ -17,12 +19,14 @@
 
   const roles = [];
 
-  if (db.getSiblingDB('admin').runCommand({getParameter: '*'}).wiredTigerConcurrentReadTransactions !== undefined) {
+  if (admin.runCommand({getParameter: '*'}).wiredTigerConcurrentReadTransactions !== undefined) {
     roles.push({role: 'read', db: 'admin'});
     port = 47017;
   };
 
-  db.getSiblingDB('admin').createUser({user: 'user', pwd: '1234', roles: roles});
+
+  admin.system.users.remove({user: 'user'});
+  admin.createUser({user: 'user', pwd: '1234', roles: roles});
 
   const mongoClient = function(uri) {
     return new Mongo(uri);
