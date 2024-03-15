@@ -4,6 +4,10 @@
 (function() {
   'use strict';
 
+  let client = db.runCommand({whatsmyuri: 1}).you;
+
+  print('connected to: ' + client);
+
   const t = db.foo;
   t.drop();
 
@@ -35,12 +39,12 @@
   const uri = 'mongodb://user:1234@host.docker.internal:' + port + '/?authMechanism=SCRAM-SHA-1';
 
   try {
-    mongoClient(uri);
+    client = mongoClient(uri);
   } catch (e) {
     throw new Error('test.js failed: ' + e);
   }
 
-  print('connected to: ' + db.runCommand({whatsmyuri: 1}).you);
+  print('connected to: ' + client.getDB('test').runCommand({whatsmyuri: 1}).you);
 
   print('test.js passed!');
 })();
