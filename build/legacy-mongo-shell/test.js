@@ -12,7 +12,7 @@
     port = 47017;
   };
 
-  db.getSiblingDB('admin').system.users.remove({});
+  // db.getSiblingDB('admin').system.users.remove({});
 
   db.getSiblingDB('admin').createUser({user: 'username2', pwd: 'password2', roles: roles});
 
