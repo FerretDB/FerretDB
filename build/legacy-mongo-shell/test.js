@@ -3,6 +3,9 @@
 (function() {
   'use strict';
 
+  const res = db.runCommand({ping: 1});
+  assert.eq(res.ok, 1, 'ping failed');
+  
   let port = 27017;
 
   let roles = [];
@@ -13,7 +16,7 @@
   };
 
   // db.getSiblingDB('admin').system.users.remove({});
-
+  
   db.getSiblingDB('admin').createUser({user: 'username2', pwd: 'password2', roles: roles});
 
   const mongoClient = function(uri) {
