@@ -403,7 +403,7 @@ func TestCommandsDiagnosticWhatsMyURI(t *testing.T) {
 	databaseName := s.Collection.Database().Name()
 	collectionName := s.Collection.Name()
 
-	// only check port number on TCP connection, no need to check on Unix socket
+	// only check port number on TCP connection, no need to check on Unix domain socket
 	isUnix := s.IsUnixSocket(t)
 
 	// setup second client connection to check that `whatsmyuri` returns different ports

@@ -40,6 +40,9 @@ type MsgBody interface {
 
 	encoding.BinaryMarshaler
 	fmt.Stringer
+
+	// StringBlock returns an indented string representation for logging.
+	StringBlock() string
 }
 
 // ErrZeroRead is returned when zero bytes was read from connection,

@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"net/netip"
 	"os"
 	"path/filepath"
 	"runtime/pprof"
@@ -140,7 +141,10 @@ func (c *conn) run(ctx context.Context) (err error) {
 
 	connInfo := conninfo.New()
 	if c.netConn.RemoteAddr().Network() != "unix" {
-		connInfo.PeerAddr = c.netConn.RemoteAddr().String()
+		connInfo.Peer, err = netip.ParseAddrPort(c.netConn.RemoteAddr().String())
+		if err != nil {
+			return
+		}
 	}
 
 	ctx = conninfo.Ctx(ctx, connInfo)
@@ -340,11 +344,11 @@ func (c *conn) run(ctx context.Context) (err error) {
 			var resBodyString, proxyBodyString string
 
 			if resBody != nil {
-				resBodyString = resBody.String()
+				resBodyString = resBody.StringBlock()
 			}
 
 			if proxyBody != nil {
-				proxyBodyString = proxyBody.String()
+				proxyBodyString = proxyBody.StringBlock()
 			}
 
 			var diffBody string
