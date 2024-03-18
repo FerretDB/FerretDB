@@ -36,12 +36,6 @@ func TestDriver(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, c.Close()) })
 
-	header := wire.MsgHeader{
-		MessageLength: 204,
-		RequestID:     13,
-		OpCode:        wire.OpCodeMsg,
-	}
-
 	doc := must.NotFail(bson.NewDocument(
 		"insert", "values",
 		"documents", must.NotFail(bson.NewArray(
@@ -55,13 +49,26 @@ func TestDriver(t *testing.T) {
 	))
 
 	section, err := must.NotFail(bson.NewDocument(
-		"Kind", 0,
+		"Kind", int32(0),
 		"Document", doc,
 	)).Encode()
 
 	require.NoError(t, err)
 
-	wire.NewOpMsg(section)
+	body, err := wire.NewOpMsg(section)
+	require.NoError(t, err)
 
-	c.Request(ctx, &header, &body)
+	msgBin, err := body.MarshalBinary()
+	require.NoError(t, err)
+
+	header := wire.MsgHeader{
+		MessageLength: int32(len(msgBin) + 16),
+		RequestID:     13,
+		OpCode:        wire.OpCodeMsg,
+	}
+
+	_, resBody, err := c.Request(ctx, &header, body)
+	require.NoError(t, err)
+
+	c.l.Debug(resBody.String())
 }
