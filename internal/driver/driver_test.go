@@ -19,7 +19,10 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/FerretDB/FerretDB/internal/bson"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 func TestDriver(t *testing.T) {
@@ -33,8 +36,32 @@ func TestDriver(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, c.Close()) })
 
-	c.Write()
+	header := wire.MsgHeader{
+		MessageLength: 204,
+		RequestID:     13,
+		OpCode:        wire.OpCodeMsg,
+	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/4146
-	_ = c
+	doc := must.NotFail(bson.NewDocument(
+		"insert", "values",
+		"documents", must.NotFail(bson.NewArray(
+			must.NotFail(bson.NewDocument("v", int32(1), "_id", bson.ObjectID([]byte("65f83bddef2048e47170b641")))),
+			must.NotFail(bson.NewDocument("v", int32(2), "_id", bson.ObjectID([]byte("65f83bddef2048e47170b642")))),
+		)),
+		"ordered", true,
+		"lsid", int32(0),
+		"txnNumber", int64(1),
+		"$db", "test",
+	))
+
+	section, err := must.NotFail(bson.NewDocument(
+		"Kind", 0,
+		"Document", doc,
+	)).Encode()
+
+	require.NoError(t, err)
+
+	wire.NewOpMsg(section)
+
+	c.Request(ctx, &header, &body)
 }
