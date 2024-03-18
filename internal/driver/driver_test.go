@@ -17,6 +17,7 @@ package driver
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/bson"
@@ -62,13 +63,19 @@ func TestDriver(t *testing.T) {
 	require.NoError(t, err)
 
 	header := wire.MsgHeader{
-		MessageLength: int32(len(msgBin) + 16),
+		MessageLength: int32(len(msgBin) + wire.MsgHeaderLen),
 		RequestID:     13,
 		OpCode:        wire.OpCodeMsg,
 	}
 
-	_, resBody, err := c.Request(ctx, &header, body)
+	resHeader, resBody, err := c.Request(ctx, &header, body)
 	require.NoError(t, err)
 
-	c.l.Debug(resBody.String())
+	assert.Equal(t, wire.MsgHeader{
+		RequestID:     368,
+		ResponseTo:    13,
+		OpCode:        2013,
+		MessageLength: 252,
+	}, *resHeader)
+	assert.Equal(t, wire.OpMsg{}, resBody)
 }
