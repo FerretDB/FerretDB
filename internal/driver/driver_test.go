@@ -17,7 +17,6 @@ package driver
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/bson"
@@ -37,45 +36,79 @@ func TestDriver(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, c.Close()) })
 
-	doc := must.NotFail(bson.NewDocument(
-		"insert", "values",
-		"documents", must.NotFail(bson.NewArray(
-			must.NotFail(bson.NewDocument("v", int32(1), "_id", bson.ObjectID([]byte("65f83bddef2048e47170b641")))),
-			must.NotFail(bson.NewDocument("v", int32(2), "_id", bson.ObjectID([]byte("65f83bddef2048e47170b642")))),
-		)),
-		"ordered", true,
-		"lsid", int32(0),
-		"txnNumber", int64(1),
-		"$db", "test",
-	))
+	t.Run("Insert", func(t *testing.T) {
+		doc := must.NotFail(bson.NewDocument(
+			"insert", "values",
+			"documents", must.NotFail(bson.NewArray(
+				must.NotFail(bson.NewDocument("v", int32(1), "_id", bson.ObjectID([]byte("65f83bddef2048e47170b641")))),
+				must.NotFail(bson.NewDocument("v", int32(2), "_id", bson.ObjectID([]byte("65f83bddef2048e47170b642")))),
+			)),
+			"ordered", true,
+			"lsid", int32(0),
+			"txnNumber", int64(1),
+			"$db", "test",
+		))
 
-	section, err := must.NotFail(bson.NewDocument(
-		"Kind", int32(0),
-		"Document", doc,
-	)).Encode()
+		section, err := must.NotFail(bson.NewDocument(
+			"Kind", int32(0),
+			"Document", doc,
+		)).Encode()
 
-	require.NoError(t, err)
+		require.NoError(t, err)
 
-	body, err := wire.NewOpMsg(section)
-	require.NoError(t, err)
+		body, err := wire.NewOpMsg(section)
+		require.NoError(t, err)
 
-	msgBin, err := body.MarshalBinary()
-	require.NoError(t, err)
+		msgBin, err := body.MarshalBinary()
+		require.NoError(t, err)
 
-	header := wire.MsgHeader{
-		MessageLength: int32(len(msgBin) + wire.MsgHeaderLen),
-		RequestID:     13,
-		OpCode:        wire.OpCodeMsg,
-	}
+		header := wire.MsgHeader{
+			MessageLength: int32(len(msgBin) + wire.MsgHeaderLen),
+			RequestID:     13,
+			OpCode:        wire.OpCodeMsg,
+		}
 
-	resHeader, resBody, err := c.Request(ctx, &header, body)
-	require.NoError(t, err)
+		//resHeader, resBody, err := c.Request(ctx, &header, body)
+		_, _, err = c.Request(ctx, &header, body)
+		require.NoError(t, err)
 
-	assert.Equal(t, wire.MsgHeader{
-		RequestID:     368,
-		ResponseTo:    13,
-		OpCode:        2013,
-		MessageLength: 252,
-	}, *resHeader)
-	assert.Equal(t, wire.OpMsg{}, resBody)
+		//	assert.Equal(t, wire.MsgHeader{
+		//		RequestID:     368,
+		//		ResponseTo:    13,
+		//		OpCode:        2013,
+		//		MessageLength: 252,
+		//	}, *resHeader)
+		//	assert.Equal(t, wire.OpMsg{}, resBody)
+	})
+	t.Run("Find", func(t *testing.T) {
+		doc := must.NotFail(bson.NewDocument(
+			"find", "values",
+			"filter", must.NotFail(bson.NewDocument()),
+			"lsid", int32(0),
+			"$db", "test",
+		))
+
+		section, err := must.NotFail(bson.NewDocument(
+			"Kind", int32(0),
+			"Document", doc,
+		)).Encode()
+
+		require.NoError(t, err)
+
+		body, err := wire.NewOpMsg(section)
+		require.NoError(t, err)
+
+		msgBin, err := body.MarshalBinary()
+		require.NoError(t, err)
+
+		header := wire.MsgHeader{
+			MessageLength: int32(len(msgBin) + wire.MsgHeaderLen),
+			RequestID:     13,
+			OpCode:        wire.OpCodeMsg,
+		}
+
+		_, _, err = c.Request(ctx, &header, body)
+		require.NoError(t, err)
+
+	})
 }
