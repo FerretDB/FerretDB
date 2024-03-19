@@ -35,15 +35,16 @@ Header diff:
 --- res header
 +++ proxy header
 @@ -1 +1 @@
--length:    63, id:   14, response_to:   24, opcode: OP_MSG
-+length:    64, id:  229, response_to:   24, opcode: OP_MSG
+-length:    63, id:    4, response_to:   13, opcode: OP_MSG
++length:   191, id:   53, response_to:   13, opcode: OP_MSG
 
 Body diff:
 --- res body
 +++ proxy body
-@@ -10,3 +10,3 @@
-         ],
--        "you": "127.0.0.1:57079",
-+        "you": "172.19.0.1:59824",
-         "ok": {
+@@ -7,4 +7,12 @@
+       "Document": {
+-        "you": "127.0.0.1:64795",
++        "you": "192.168.65.1:21365",
+         "ok": 1.0,
+       },
 ```
