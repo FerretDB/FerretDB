@@ -56,7 +56,7 @@ var (
 	mysqlURLF      = flag.String("mysql-url", "", "in-process FerretDB: MySQL URL for 'mysql' handler.")
 	hanaURLF       = flag.String("hana-url", "", "in-process FerretDB: Hana URL for 'hana' handler.")
 
-	batchSizeF = flag.Int("batch-size", 100, "number of maximum insertion batch size")
+	batchSizeF = flag.Int("batch-size", 100, "maximum insertion batch size")
 
 	compatURLF = flag.String("compat-url", "", "compat system's (MongoDB) URL for compatibility tests; if empty, they are skipped")
 
