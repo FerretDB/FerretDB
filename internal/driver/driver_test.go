@@ -62,6 +62,7 @@ func TestDriver(t *testing.T) {
 		msgBin, err := body.MarshalBinary()
 		require.NoError(t, err)
 
+		// TODO verify header
 		header := wire.MsgHeader{
 			MessageLength: int32(len(msgBin) + wire.MsgHeaderLen),
 			RequestID:     13,
@@ -80,6 +81,7 @@ func TestDriver(t *testing.T) {
 		//	}, *resHeader)
 		//	assert.Equal(t, wire.OpMsg{}, resBody)
 	})
+
 	t.Run("Find", func(t *testing.T) {
 		doc := must.NotFail(bson.NewDocument(
 			"find", "values",
@@ -92,7 +94,6 @@ func TestDriver(t *testing.T) {
 			"Kind", int32(0),
 			"Document", doc,
 		)).Encode()
-
 		require.NoError(t, err)
 
 		body, err := wire.NewOpMsg(section)
@@ -101,13 +102,14 @@ func TestDriver(t *testing.T) {
 		msgBin, err := body.MarshalBinary()
 		require.NoError(t, err)
 
+		// TODO verify header
 		header := wire.MsgHeader{
 			MessageLength: int32(len(msgBin) + wire.MsgHeaderLen),
 			RequestID:     13,
 			OpCode:        wire.OpCodeMsg,
 		}
 
-		_, _, err = c.Request(ctx, &header, body)
+		_, resBody, err := c.Request(ctx, &header, body)
 		require.NoError(t, err)
 
 	})
