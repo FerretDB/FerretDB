@@ -501,8 +501,13 @@ tasks:
     desc: "Run security scanners"
     cmds:
       # don't run them in parallel via `deps` because that breaks terminal output
-      - task: security-trivy
       - task: security-govulncheck
+      - task: security-trivy
+
+  security-govulncheck:
+    cmds:
+      - bin/govulncheck{{exeExt}} -test ./...
+      - bin/task{{exeExt}} -d integration integration-security
 
   security-trivy:
     cmds:
@@ -512,11 +517,6 @@ tasks:
         --ignorefile=./build/trivy-ignore.yml
         --cache-dir=./tmp/trivy
         --exit-code=1
-
-  security-govulncheck:
-    cmds:
-      - bin/govulncheck{{exeExt}} -test ./...
-      - bin/task{{exeExt}} -d integration integration-security
 
   godocs:
     desc: "Serve Go code documentation"
