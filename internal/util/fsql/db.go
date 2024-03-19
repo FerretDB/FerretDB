@@ -35,9 +35,10 @@ import (
 type DB struct {
 	*metricsCollector
 
-	sqlDB *sql.DB
-	l     *zap.Logger
-	token *resource.Token
+	sqlDB     *sql.DB
+	l         *zap.Logger
+	token     *resource.Token
+	BatchSize int
 }
 
 // WrapDB creates a new DB.
