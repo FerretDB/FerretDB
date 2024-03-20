@@ -17,6 +17,7 @@ package driver
 import (
 	"testing"
 
+	"github.com/cristalhq/bson/bsonproto"
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/bson"
@@ -38,10 +39,13 @@ func TestDriver(t *testing.T) {
 
 	var lsid bson.Binary
 
-	//lsid = bsonproto.Binary{
-	//	B:       []byte("oxnytKF1QMe456OjLsJWvg=="),
-	//	Subtype: bsonproto.BinaryUUID,
-	//}
+	lsid = bsonproto.Binary{
+		B: []byte{
+			0xa3, 0x19, 0xf2, 0xb4, 0xa1, 0x75, 0x40, 0xc7,
+			0xb8, 0xe7, 0xa3, 0xa3, 0x2e, 0xc2, 0x56, 0xbe,
+		},
+		Subtype: bsonproto.BinaryUUID,
+	}
 
 	t.Run("Insert", func(t *testing.T) {
 		doc := must.NotFail(bson.NewDocument(
