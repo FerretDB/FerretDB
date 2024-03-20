@@ -85,12 +85,6 @@ func TestDriver(t *testing.T) {
 			"$db", dbName,
 		))
 
-		//section, err := must.NotFail(bson.NewDocument(
-		//	"Kind", int32(0),
-		//	"Document", doc,
-		//)).Encode()
-		//require.NoError(t, err)
-
 		body, err := wire.NewOpMsg(must.NotFail(doc.Encode()))
 		require.NoError(t, err)
 
@@ -153,6 +147,5 @@ func TestDriver(t *testing.T) {
 		firstBatch := cursor.Get("firstBatch")
 
 		require.Equal(t, "", firstBatch)
-
 	})
 }
