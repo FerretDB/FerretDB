@@ -49,14 +49,14 @@ func TestDriver(t *testing.T) {
 			"$db", "test",
 		))
 
-		section, err := must.NotFail(bson.NewDocument(
-			"Kind", int32(0),
-			"Document", doc,
-		)).Encode()
+		//section, err := must.NotFail(bson.NewDocument(
+		//	"Kind", int32(0),
+		//	"Document", doc,
+		//)).Encode()
 
 		require.NoError(t, err)
 
-		body, err := wire.NewOpMsg(section)
+		body, err := wire.NewOpMsg(must.NotFail(doc.Encode()))
 		require.NoError(t, err)
 
 		msgBin, err := body.MarshalBinary()
@@ -112,5 +112,10 @@ func TestDriver(t *testing.T) {
 		_, resBody, err := c.Request(ctx, &header, body)
 		require.NoError(t, err)
 
+		resMsg, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).Decode()
+		require.NoError(t, err)
+
+		firstBatch := resMsg.Get("firstBatch")
+		require.Equal(t, "", firstBatch)
 	})
 }
