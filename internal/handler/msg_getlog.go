@@ -114,7 +114,7 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				"Read more about FerretDB telemetry and how to opt out at https://beacon.ferretdb.com.",
 			)
 
-		case state.UpdateAvailable:
+		case state.UpdateInfo != "", state.UpdateAvailable:
 			msg := state.UpdateInfo
 			if msg == "" {
 				msg = fmt.Sprintf(
