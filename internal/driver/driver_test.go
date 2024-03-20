@@ -47,6 +47,8 @@ func TestDriver(t *testing.T) {
 		Subtype: bsonproto.BinaryUUID,
 	}
 
+	dbName := "TestDriver"
+
 	t.Run("Insert", func(t *testing.T) {
 		doc := must.NotFail(bson.NewDocument(
 			"insert", "values",
@@ -57,7 +59,7 @@ func TestDriver(t *testing.T) {
 			"ordered", true,
 			"lsid", must.NotFail(bson.NewDocument("id", lsid)),
 			"txnNumber", int64(1),
-			"$db", "test",
+			"$db", dbName,
 		))
 
 		//section, err := must.NotFail(bson.NewDocument(
@@ -97,7 +99,7 @@ func TestDriver(t *testing.T) {
 			"find", "values",
 			"filter", must.NotFail(bson.NewDocument()),
 			"lsid", int32(0),
-			"$db", "test",
+			"$db", dbName,
 		))
 
 		section, err := must.NotFail(bson.NewDocument(
