@@ -82,7 +82,6 @@ func TestDriver(t *testing.T) {
 			)),
 			"ordered", true,
 			"lsid", must.NotFail(bson.NewDocument("id", lsid)),
-			"txnNumber", int64(1),
 			"$db", dbName,
 		))
 
@@ -121,18 +120,15 @@ func TestDriver(t *testing.T) {
 	t.Run("Find", func(t *testing.T) {
 		doc := must.NotFail(bson.NewDocument(
 			"find", "values",
-			"filter", must.NotFail(bson.NewDocument()),
-			"lsid", int32(0),
+			"filter", must.NotFail(bson.NewDocument("v", int32(1))),
+			"lsid", must.NotFail(bson.NewDocument("id", lsid)),
+			"batchSize", int32(1),
 			"$db", dbName,
 		))
 
-		section, err := must.NotFail(bson.NewDocument(
-			"Kind", int32(0),
-			"Document", doc,
-		)).Encode()
 		require.NoError(t, err)
 
-		body, err := wire.NewOpMsg(section)
+		body, err := wire.NewOpMsg(must.NotFail(doc.Encode()))
 		require.NoError(t, err)
 
 		msgBin, err := body.MarshalBinary()
@@ -141,7 +137,7 @@ func TestDriver(t *testing.T) {
 		// TODO verify header
 		header := wire.MsgHeader{
 			MessageLength: int32(len(msgBin) + wire.MsgHeaderLen),
-			RequestID:     13,
+			RequestID:     14,
 			OpCode:        wire.OpCodeMsg,
 		}
 
@@ -151,7 +147,12 @@ func TestDriver(t *testing.T) {
 		resMsg, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).Decode()
 		require.NoError(t, err)
 
-		firstBatch := resMsg.Get("firstBatch")
+		cursor, err := resMsg.Get("cursor").(bson.RawDocument).Decode()
+		require.NoError(t, err)
+
+		firstBatch := cursor.Get("firstBatch")
+
 		require.Equal(t, "", firstBatch)
+
 	})
 }
