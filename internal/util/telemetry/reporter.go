@@ -290,9 +290,13 @@ func (r *Reporter) report(ctx context.Context) {
 
 	r.L.Debug("Read telemetry response.", zap.Any("response", response))
 
-	if response.LatestVersion == "" {
-		r.L.Debug("No latest version in telemetry response.")
-		return
+	if response.UpdateInfo != "" || response.UpdateAvailable {
+		msg := response.UpdateInfo
+		if msg == "" {
+			msg = "A new version available!"
+		}
+
+		r.L.Info(msg, zap.String("current_version", request.Version), zap.String("latest_version", response.LatestVersion))
 	}
 
 	if err = r.P.Update(func(s *state.State) {
@@ -302,14 +306,5 @@ func (r *Reporter) report(ctx context.Context) {
 	}); err != nil {
 		r.L.Error("Failed to update state with latest version.", zap.Error(err))
 		return
-	}
-
-	if s.UpdateInfo != "" || s.UpdateAvailable {
-		msg := s.UpdateInfo
-		if msg == "" {
-			msg = "A new version available!"
-		}
-
-		r.L.Info(msg, zap.String("current_version", request.Version), zap.String("latest_version", s.LatestVersion))
 	}
 }
