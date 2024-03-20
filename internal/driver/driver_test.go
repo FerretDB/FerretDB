@@ -17,6 +17,7 @@ package driver
 import (
 	"testing"
 
+	"github.com/cristalhq/bson/bsonproto"
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/bson"
@@ -36,6 +37,9 @@ func TestDriver(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, c.Close()) })
 
+	var lsid bson.Binary
+	lsid = must.NotFail(bsonproto.DecodeBinary([]byte("Hw4IhgF3RdWXE2PzE/9rDg==")))
+
 	t.Run("Insert", func(t *testing.T) {
 		doc := must.NotFail(bson.NewDocument(
 			"insert", "values",
@@ -44,7 +48,7 @@ func TestDriver(t *testing.T) {
 				must.NotFail(bson.NewDocument("v", int32(2), "_id", bson.ObjectID([]byte("65f83bddef2048e47170b642")))),
 			)),
 			"ordered", true,
-			"lsid", int32(0),
+			"lsid", must.NotFail(bson.NewDocument("id", lsid)),
 			"txnNumber", int64(1),
 			"$db", "test",
 		))
@@ -53,8 +57,7 @@ func TestDriver(t *testing.T) {
 		//	"Kind", int32(0),
 		//	"Document", doc,
 		//)).Encode()
-
-		require.NoError(t, err)
+		//require.NoError(t, err)
 
 		body, err := wire.NewOpMsg(must.NotFail(doc.Encode()))
 		require.NoError(t, err)
