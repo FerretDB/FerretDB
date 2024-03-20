@@ -113,14 +113,17 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				"The telemetry state is undecided.",
 				"Read more about FerretDB telemetry and how to opt out at https://beacon.ferretdb.com.",
 			)
+
 		case state.UpdateAvailable:
-			startupWarnings = append(
-				startupWarnings,
-				fmt.Sprintf(
+			msg := state.UpdateInfo
+			if msg == "" {
+				msg = fmt.Sprintf(
 					"A new version available! The latest version: %s. The current version: %s.",
 					state.LatestVersion, info.Version,
-				),
-			)
+				)
+			}
+
+			startupWarnings = append(startupWarnings, msg)
 		}
 
 		var log types.Array
