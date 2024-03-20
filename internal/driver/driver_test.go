@@ -149,5 +149,6 @@ func TestDriver(t *testing.T) {
 
 		firstBatch := cursor.Get("firstBatch")
 		require.Equal(t, must.NotFail(expectedDocs.Encode()), firstBatch)
+		expected := must.NotFail(expectedDocs.Encode())
 	})
 }
