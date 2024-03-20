@@ -37,6 +37,8 @@ func TestDriver(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, c.Close()) })
 
+	dbName := "TestDriver"
+
 	var lsid bson.Binary
 
 	lsid = bsonproto.Binary{
@@ -47,7 +49,29 @@ func TestDriver(t *testing.T) {
 		Subtype: bsonproto.BinaryUUID,
 	}
 
-	dbName := "TestDriver"
+	t.Run("Drop", func(t *testing.T) {
+		doc := must.NotFail(bson.NewDocument(
+			"dropDatabase", int32(1),
+			"lsid", must.NotFail(bson.NewDocument("id", lsid)),
+			"$db", dbName,
+		))
+
+		body, err := wire.NewOpMsg(must.NotFail(doc.Encode()))
+		require.NoError(t, err)
+
+		msgBin, err := body.MarshalBinary()
+		require.NoError(t, err)
+
+		// TODO verify header
+		header := wire.MsgHeader{
+			MessageLength: int32(len(msgBin) + wire.MsgHeaderLen),
+			RequestID:     13,
+			OpCode:        wire.OpCodeMsg,
+		}
+
+		_, _, err = c.Request(ctx, &header, body)
+		require.NoError(t, err)
+	})
 
 	t.Run("Insert", func(t *testing.T) {
 		doc := must.NotFail(bson.NewDocument(
