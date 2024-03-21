@@ -83,7 +83,7 @@ func TestDriver(t *testing.T) {
 	))
 
 	t.Run("Insert", func(t *testing.T) {
-		doc := must.NotFail(bson.NewDocument(
+		insertCmd := must.NotFail(bson.NewDocument(
 			"insert", "values",
 			"documents", insertDocs,
 			"ordered", true,
@@ -91,7 +91,7 @@ func TestDriver(t *testing.T) {
 			"$db", dbName,
 		))
 
-		body, err := wire.NewOpMsg(must.NotFail(doc.Encode()))
+		body, err := wire.NewOpMsg(must.NotFail(insertCmd.Encode()))
 		require.NoError(t, err)
 
 		msgBin, err := body.MarshalBinary()
@@ -120,7 +120,7 @@ func TestDriver(t *testing.T) {
 	var cursorID int64
 
 	t.Run("Find", func(t *testing.T) {
-		doc := must.NotFail(bson.NewDocument(
+		findCmd := must.NotFail(bson.NewDocument(
 			"find", "values",
 			//"filter", must.NotFail(bson.NewDocument("v", int32(1))),
 			"filter", must.NotFail(bson.NewDocument()),
@@ -130,7 +130,7 @@ func TestDriver(t *testing.T) {
 			"$db", dbName,
 		))
 
-		body, err := wire.NewOpMsg(must.NotFail(doc.Encode()))
+		body, err := wire.NewOpMsg(must.NotFail(findCmd.Encode()))
 		require.NoError(t, err)
 
 		msgBin, err := body.MarshalBinary()
@@ -163,16 +163,53 @@ func TestDriver(t *testing.T) {
 		require.NotZero(t, cursorID)
 	})
 
-	t.Run("GetMore", func(t *testing.T) {
-		doc := must.NotFail(bson.NewDocument(
-			"getMore", cursorID,
-			"collection", "values",
-			"lsid", must.NotFail(bson.NewDocument("id", lsid)),
-			"batchSize", int32(1),
-			"$db", dbName,
-		))
+	getMoreCmd := must.NotFail(bson.NewDocument(
+		"getMore", cursorID,
+		"collection", "values",
+		"lsid", must.NotFail(bson.NewDocument("id", lsid)),
+		"batchSize", int32(1),
+		"$db", dbName,
+	))
 
-		body, err := wire.NewOpMsg(must.NotFail(doc.Encode()))
+	t.Run("GetMore", func(t *testing.T) {
+		for i := 0; i < 2; i++ {
+
+			body, err := wire.NewOpMsg(must.NotFail(getMoreCmd.Encode()))
+			require.NoError(t, err)
+
+			msgBin, err := body.MarshalBinary()
+			require.NoError(t, err)
+
+			// TODO verify header
+			header := wire.MsgHeader{
+				MessageLength: int32(len(msgBin) + wire.MsgHeaderLen),
+				RequestID:     14,
+				OpCode:        wire.OpCodeMsg,
+			}
+
+			_, resBody, err := c.Request(ctx, &header, body)
+			require.NoError(t, err)
+
+			resMsg, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).Decode()
+			require.NoError(t, err)
+
+			cursor, err := resMsg.Get("cursor").(bson.RawDocument).Decode()
+			require.NoError(t, err)
+
+			nextBatch := cursor.Get("nextBatch").(bson.RawArray)
+			newCursorID := cursor.Get("id").(int64)
+
+			expectedDocs := must.NotFail(bson.NewArray(
+				must.NotFail(bson.NewDocument("_id", int32(i+1), "v", int32(i+2))),
+			))
+
+			testutil.AssertEqual(t, must.NotFail(expectedDocs.Convert()), must.NotFail(nextBatch.Convert()))
+			assert.Equal(t, cursorID, newCursorID)
+		}
+	})
+
+	t.Run("GetMoreEmpty", func(t *testing.T) {
+		body, err := wire.NewOpMsg(must.NotFail(getMoreCmd.Encode()))
 		require.NoError(t, err)
 
 		msgBin, err := body.MarshalBinary()
@@ -197,24 +234,10 @@ func TestDriver(t *testing.T) {
 		nextBatch := cursor.Get("nextBatch").(bson.RawArray)
 		newCursorID := cursor.Get("id").(int64)
 
-		expectedDocs := must.NotFail(bson.NewArray(
-			must.NotFail(bson.NewDocument("_id", int32(1), "v", int32(2))),
-		))
+		expectedDocs := must.NotFail(bson.NewArray())
 
 		testutil.AssertEqual(t, must.NotFail(expectedDocs.Convert()), must.NotFail(nextBatch.Convert()))
-		require.NotZero(t, cursorID)
-		assert.Equal(t, cursorID, newCursorID)
-	})
-
-	t.Run("GetMoreEmpty", func(t *testing.T) {
-		t.Skip("TODO")
-		// TODO
-		//doc := must.NotFail(bson.NewDocument(
-		//))
-
-		// TODO
-		for {
-		}
+		assert.Zero(t, newCursorID)
 	})
 }
 
