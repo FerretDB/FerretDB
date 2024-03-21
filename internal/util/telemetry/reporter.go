@@ -64,6 +64,7 @@ type request struct {
 // response represents telemetry response.
 type response struct {
 	LatestVersion   string `json:"latest_version"`
+	UpdateInfo      string `json:"update_info"`
 	UpdateAvailable bool   `json:"update_available"`
 }
 
@@ -289,23 +290,21 @@ func (r *Reporter) report(ctx context.Context) {
 
 	r.L.Debug("Read telemetry response.", zap.Any("response", response))
 
-	if response.LatestVersion == "" {
-		r.L.Debug("No latest version in telemetry response.")
-		return
+	if response.UpdateInfo != "" || response.UpdateAvailable {
+		msg := response.UpdateInfo
+		if msg == "" {
+			msg = "A new version available!"
+		}
+
+		r.L.Info(msg, zap.String("current_version", request.Version), zap.String("latest_version", response.LatestVersion))
 	}
 
 	if err = r.P.Update(func(s *state.State) {
 		s.LatestVersion = response.LatestVersion
+		s.UpdateInfo = response.UpdateInfo
 		s.UpdateAvailable = response.UpdateAvailable
 	}); err != nil {
 		r.L.Error("Failed to update state with latest version.", zap.Error(err))
 		return
-	}
-
-	if s.UpdateAvailable {
-		r.L.Info(
-			"A new version available!",
-			zap.String("current_version", request.Version), zap.String("latest_version", s.LatestVersion),
-		)
 	}
 }

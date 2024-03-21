@@ -71,6 +71,7 @@ type TestOpts struct {
 	CappedCleanupInterval   time.Duration
 	CappedCleanupPercentage uint8
 	EnableNewAuth           bool
+	BatchSize               int
 	_                       struct{} // prevent unkeyed literals
 }
 

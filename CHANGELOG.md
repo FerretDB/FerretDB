@@ -2,6 +2,77 @@
 
 <!-- markdownlint-disable MD024 MD034 -->
 
+## [v1.21.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.21.0) (2024-02-20)
+
+### New Features 🎉
+
+- Add experimental `SCRAM-SHA-1`/`SCRAM-SHA-256` authentication support by @henvic in https://github.com/FerretDB/FerretDB/pull/4078
+
+### Fixed Bugs 🐛
+
+- Reorganize and fix `update`/`upsert` logic by @wazir-ahmed in https://github.com/FerretDB/FerretDB/pull/4069
+
+### Enhancements 🛠
+
+- Improve capped collection cleanup by @wazir-ahmed in https://github.com/FerretDB/FerretDB/pull/4118
+- Make batch sizes configurable by @kropidlowsky in https://github.com/FerretDB/FerretDB/pull/4149
+
+### Documentation 📄
+
+- Fix Codapi file error by @Fashander in https://github.com/FerretDB/FerretDB/pull/4077
+- Add Tembo QA blog post by @Fashander in https://github.com/FerretDB/FerretDB/pull/4081
+- Update correct image link by @Fashander in https://github.com/FerretDB/FerretDB/pull/4116
+- Add Pulumi blog post by @Fashander in https://github.com/FerretDB/FerretDB/pull/4102
+- Add Tembo to README by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4168
+- Remove some closed issues from documentation by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4172
+
+### Other Changes 🤖
+
+- Use Go 1.22 and bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4094
+- Add more fields to requests and responses by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/4096
+- Revert SQLite version bump by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4106
+- Refactor `bson2` package by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4105
+- Use `bson2` package for wire queries and replies by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4108
+- Make logger configurable in the embedded `ferretdb` package by @fadyat in https://github.com/FerretDB/FerretDB/pull/4028
+- Fix `envtool run test` `-run` and `-skip` flags by @henvic in https://github.com/FerretDB/FerretDB/pull/4101
+- Add MySQL backend collection by @adetunjii in https://github.com/FerretDB/FerretDB/pull/4083
+- Ignore `maxTimeMS` argument in `count`, `insert`, `update`, `delete` by @farit2000 in https://github.com/FerretDB/FerretDB/pull/4121
+- Use correct salt length by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4126
+- Skip stuck tailable cursor test by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4131
+- Enforce new authentication by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4075
+- Replace `bson` with `bson2` in `wire` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4110
+- Improve `OP_MSG` validity checks by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4135
+- Support speculative authenticate by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4111
+- Add MySQL backend by @adetunjii in https://github.com/FerretDB/FerretDB/pull/4137
+- Fix `saslContinue` crashing due to not found authentication conversation by @henvic in https://github.com/FerretDB/FerretDB/pull/4129
+- Cleanup TODO for speculative authenticate by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4143
+- Fix MySQL collection stats by @adetunjii in https://github.com/FerretDB/FerretDB/pull/4145
+- Use Go 1.22.1 by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4155
+- Advertise SCRAM / SASL support in addition to PLAIN by @henvic in https://github.com/FerretDB/FerretDB/pull/4113
+- Add linter to check truncate tag in blog posts by @sbshah97 in https://github.com/FerretDB/FerretDB/pull/4139
+- Fix PLAIN mechanism authentication incorrectly working by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4163
+- Improve `bson2` and `wire` logging by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4148
+- Fix logging of deeply nested documents by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4167
+- Support localhost exception by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4156
+- Do not use the flow style in the diff output by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4170
+- Do not use `fjson` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4175
+- Remove `fjson` package by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4176
+- Fix `speculativeAuthenticate` panic on empty database by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4178
+- Move old `bson` package by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4177
+- Rename `bson2` to `bson` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4179
+- Move Docker build files by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4180
+- Bump protobuf dependency to make CI happy by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4187
+- Use authentication enabled docker for integration test by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4160
+- Bump `pgx` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4190
+
+### New Contributors
+
+- @farit2000 made their first contribution in https://github.com/FerretDB/FerretDB/pull/4121
+- @sbshah97 made their first contribution in https://github.com/FerretDB/FerretDB/pull/4139
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/63?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v1.20.1...v1.21.0).
+
 ## [v1.20.1](https://github.com/FerretDB/FerretDB/releases/tag/v1.20.1) (2024-02-19)
 
 ### What's Changed
