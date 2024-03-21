@@ -166,6 +166,34 @@ func (c *Conn) WriteRaw(b []byte) error {
 
 // Request sends the given request to the connection and returns the response.
 func (c *Conn) Request(ctx context.Context, header *wire.MsgHeader, body wire.MsgBody) (*wire.MsgHeader, wire.MsgBody, error) {
+	if header.MessageLength == 0 {
+		// TODO
+		//msgBin, err := wire.NewOpMsg(must.NotFail(doc.Encode()))
+		//require.NoError(t, err)
+
+		//msgBin, err := body.MarshalBinary()
+		//require.NoError(t, err)
+
+		// TODO verify header
+		header := wire.MsgHeader{
+			MessageLength: int32(len(msgBin) + wire.MsgHeaderLen),
+		header.MessageLength = 
+	}
+
+	if header.RequestID == 0 {
+		header.RequestID = nextRequestID()
+	}
+
+	if header.ResponseTo != 0 {
+		return nil, nil, lazyerrors.Errorf("response_to is not allowed")
+	}
+
+	if m, ok := body.(*wire.OpMsg); ok {
+		if m.Flags != 0 {
+			return nil, nil, lazyerrors.Errorf("unsupported request flags %s", m.Flags)
+		}
+	}
+
 	if err := c.Write(header, body); err != nil {
 		return nil, nil, lazyerrors.Error(err)
 	}
@@ -183,6 +211,12 @@ func (c *Conn) Request(ctx context.Context, header *wire.MsgHeader, body wire.Ms
 			slog.Int("response_to", int(resHeader.ResponseTo)),
 		)
 		return nil, nil, lazyerrors.Errorf("response_to not equal to request_id (response_to=%d; expected=%d)", resHeader.ResponseTo, header.RequestID)
+	}
+
+	if m, ok := resBody.(*wire.OpMsg); ok {
+		if m.Flags != 0 {
+			return nil, nil, lazyerrors.Errorf("unsupported response flags %s", m.Flags)
+		}
 	}
 
 	return resHeader, resBody, nil
