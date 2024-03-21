@@ -79,11 +79,7 @@ func TestDriver(t *testing.T) {
 	insertDocs := must.NotFail(bson.NewArray(
 		must.NotFail(bson.NewDocument("w", int32(2), "v", int32(1), "_id", int32(0))),
 		must.NotFail(bson.NewDocument("v", int32(2), "_id", int32(1))),
-	))
-
-	expectedDocs := must.NotFail(bson.NewArray(
-		must.NotFail(bson.NewDocument("w", int32(2), "v", int32(1), "_id", int32(0))),
-		must.NotFail(bson.NewDocument("v", int32(2), "_id", int32(1))),
+		must.NotFail(bson.NewDocument("v", int32(3), "_id", int32(2))),
 	))
 
 	t.Run("Insert", func(t *testing.T) {
@@ -128,7 +124,7 @@ func TestDriver(t *testing.T) {
 			"filter", must.NotFail(bson.NewDocument()),
 			//"sort", // TODO
 			"lsid", must.NotFail(bson.NewDocument("id", lsid)),
-			"batchSize", int32(2),
+			"batchSize", int32(1),
 			"$db", dbName,
 		))
 
@@ -157,6 +153,10 @@ func TestDriver(t *testing.T) {
 		require.NoError(t, err)
 
 		firstBatch := cursor.Get("firstBatch")
+
+		expectedDocs := must.NotFail(bson.NewArray(
+			must.NotFail(bson.NewDocument("_id", int32(0), "w", int32(2), "v", int32(1))),
+		))
 
 		testutil.AssertEqual(t, must.NotFail(expectedDocs.Convert()), must.NotFail(firstBatch.(bson.RawArray).Convert()))
 	})

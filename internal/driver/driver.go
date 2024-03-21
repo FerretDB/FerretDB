@@ -167,22 +167,22 @@ func (c *Conn) WriteRaw(b []byte) error {
 // Request sends the given request to the connection and returns the response.
 func (c *Conn) Request(ctx context.Context, header *wire.MsgHeader, body wire.MsgBody) (*wire.MsgHeader, wire.MsgBody, error) {
 	if header.MessageLength == 0 {
-		// TODO
-		//msgBin, err := wire.NewOpMsg(must.NotFail(doc.Encode()))
-		//require.NoError(t, err)
-
-		//msgBin, err := body.MarshalBinary()
-		//require.NoError(t, err)
-
-		// TODO verify header
-		header := wire.MsgHeader{
-			MessageLength: int32(len(msgBin) + wire.MsgHeaderLen),
-		header.MessageLength = 
+		//		// TODO
+		//		//msgBin, err := wire.NewOpMsg(must.NotFail(doc.Encode()))
+		//		//require.NoError(t, err)
+		//
+		//		//msgBin, err := body.MarshalBinary()
+		//		//require.NoError(t, err)
+		//
+		//		// TODO verify header
+		//		header := wire.MsgHeader{
+		//			MessageLength: int32(len(msgBin) + wire.MsgHeaderLen),
+		//		header.MessageLength =
 	}
 
-	if header.RequestID == 0 {
-		header.RequestID = nextRequestID()
-	}
+	//if header.RequestID == 0 {
+	//	header.RequestID = nextRequestID()
+	//}
 
 	if header.ResponseTo != 0 {
 		return nil, nil, lazyerrors.Errorf("response_to is not allowed")
