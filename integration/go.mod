@@ -12,7 +12,7 @@ require (
 	github.com/prometheus/client_golang v1.19.0
 	github.com/stretchr/testify v1.9.0
 	go.mongodb.org/mongo-driver v1.14.0
-	go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo v0.48.0
+	go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo v0.49.0
 	go.opentelemetry.io/otel v1.24.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/exp v0.0.0-20240318143956-a85f2c67cd81
