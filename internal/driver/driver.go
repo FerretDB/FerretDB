@@ -170,10 +170,20 @@ func (c *Conn) Request(ctx context.Context, header *wire.MsgHeader, body wire.Ms
 		return nil, nil, lazyerrors.Error(err)
 	}
 
-	header, body, err := c.Read()
+	resHeader, resBody, err := c.Read()
 	if err != nil {
 		return nil, nil, lazyerrors.Error(err)
 	}
 
-	return header, body, nil
+	if resHeader.ResponseTo != header.RequestID {
+		c.l.Error(
+			fmt.Sprintf("response_to not equal to request_id"),
+			slog.Int("request_id", int(header.RequestID)),
+			slog.Int("response_id", int(resHeader.RequestID)),
+			slog.Int("response_to", int(resHeader.ResponseTo)),
+		)
+		return nil, nil, lazyerrors.Errorf("response_to not equal to request_id (response_to=%d; expected=%d)", resHeader.ResponseTo, header.RequestID)
+	}
+
+	return resHeader, resBody, nil
 }
