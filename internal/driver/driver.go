@@ -167,17 +167,12 @@ func (c *Conn) WriteRaw(b []byte) error {
 // Request sends the given request to the connection and returns the response.
 func (c *Conn) Request(ctx context.Context, header *wire.MsgHeader, body wire.MsgBody) (*wire.MsgHeader, wire.MsgBody, error) {
 	if header.MessageLength == 0 {
-		//		// TODO
-		//		//msgBin, err := wire.NewOpMsg(must.NotFail(doc.Encode()))
-		//		//require.NoError(t, err)
-		//
-		//		//msgBin, err := body.MarshalBinary()
-		//		//require.NoError(t, err)
-		//
-		//		// TODO verify header
-		//		header := wire.MsgHeader{
-		//			MessageLength: int32(len(msgBin) + wire.MsgHeaderLen),
-		//		header.MessageLength =
+		msgBin, err := body.MarshalBinary()
+		if err != nil {
+			return nil, nil, lazyerrors.Error(err)
+		}
+
+		header.MessageLength = int32(len(msgBin) + wire.MsgHeaderLen)
 	}
 
 	//if header.RequestID == 0 {

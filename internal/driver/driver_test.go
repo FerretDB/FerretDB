@@ -62,14 +62,10 @@ func TestDriver(t *testing.T) {
 		body, err := wire.NewOpMsg(must.NotFail(doc.Encode()))
 		require.NoError(t, err)
 
-		msgBin, err := body.MarshalBinary()
-		require.NoError(t, err)
-
 		// TODO verify header
 		header := wire.MsgHeader{
-			MessageLength: int32(len(msgBin) + wire.MsgHeaderLen),
-			RequestID:     13,
-			OpCode:        wire.OpCodeMsg,
+			RequestID: 13,
+			OpCode:    wire.OpCodeMsg,
 		}
 
 		_, _, err = c.Request(ctx, &header, body)
@@ -94,14 +90,10 @@ func TestDriver(t *testing.T) {
 		body, err := wire.NewOpMsg(must.NotFail(insertCmd.Encode()))
 		require.NoError(t, err)
 
-		msgBin, err := body.MarshalBinary()
-		require.NoError(t, err)
-
 		// TODO verify header
 		header := wire.MsgHeader{
-			MessageLength: int32(len(msgBin) + wire.MsgHeaderLen),
-			RequestID:     13,
-			OpCode:        wire.OpCodeMsg,
+			RequestID: 13,
+			OpCode:    wire.OpCodeMsg,
 		}
 
 		//resHeader, resBody, err := c.Request(ctx, &header, body)
@@ -133,14 +125,10 @@ func TestDriver(t *testing.T) {
 		body, err := wire.NewOpMsg(must.NotFail(findCmd.Encode()))
 		require.NoError(t, err)
 
-		msgBin, err := body.MarshalBinary()
-		require.NoError(t, err)
-
 		// TODO verify header
 		header := wire.MsgHeader{
-			MessageLength: int32(len(msgBin) + wire.MsgHeaderLen),
-			RequestID:     14,
-			OpCode:        wire.OpCodeMsg,
+			RequestID: 14,
+			OpCode:    wire.OpCodeMsg,
 		}
 
 		_, resBody, err := c.Request(ctx, &header, body)
@@ -177,14 +165,10 @@ func TestDriver(t *testing.T) {
 			body, err := wire.NewOpMsg(must.NotFail(getMoreCmd.Encode()))
 			require.NoError(t, err)
 
-			msgBin, err := body.MarshalBinary()
-			require.NoError(t, err)
-
 			// TODO verify header
 			header := wire.MsgHeader{
-				MessageLength: int32(len(msgBin) + wire.MsgHeaderLen),
-				RequestID:     14,
-				OpCode:        wire.OpCodeMsg,
+				RequestID: 14,
+				OpCode:    wire.OpCodeMsg,
 			}
 
 			_, resBody, err := c.Request(ctx, &header, body)
@@ -212,14 +196,10 @@ func TestDriver(t *testing.T) {
 		body, err := wire.NewOpMsg(must.NotFail(getMoreCmd.Encode()))
 		require.NoError(t, err)
 
-		msgBin, err := body.MarshalBinary()
-		require.NoError(t, err)
-
 		// TODO verify header
 		header := wire.MsgHeader{
-			MessageLength: int32(len(msgBin) + wire.MsgHeaderLen),
-			RequestID:     14,
-			OpCode:        wire.OpCodeMsg,
+			RequestID: 14,
+			OpCode:    wire.OpCodeMsg,
 		}
 
 		_, resBody, err := c.Request(ctx, &header, body)
