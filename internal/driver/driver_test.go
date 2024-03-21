@@ -44,10 +44,10 @@ func TestDriver(t *testing.T) {
 
 	lsid = bsonproto.Binary{
 		B: []byte{
-			0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-			0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-			// 0xa3, 0x19, 0xf2, 0xb4, 0xa1, 0x75, 0x40, 0xc7,
-			// 0xb8, 0xe7, 0xa3, 0xa3, 0x2e, 0xc2, 0x56, 0xbe,
+			//0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+			//0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+			0xa3, 0x19, 0xf2, 0xb4, 0xa1, 0x75, 0x40, 0xc7,
+			0xb8, 0xe7, 0xa3, 0xa3, 0x2e, 0xc2, 0x56, 0xbe,
 		},
 		Subtype: bsonproto.BinaryUUID,
 	}
@@ -62,12 +62,7 @@ func TestDriver(t *testing.T) {
 		body, err := wire.NewOpMsg(must.NotFail(doc.Encode()))
 		require.NoError(t, err)
 
-		// TODO verify header
-		header := wire.MsgHeader{
-			RequestID: 13,
-		}
-
-		_, _, err = c.Request(ctx, &header, body)
+		_, _, err = c.Request(ctx, new(wire.MsgHeader), body)
 		require.NoError(t, err)
 	})
 
@@ -89,13 +84,7 @@ func TestDriver(t *testing.T) {
 		body, err := wire.NewOpMsg(must.NotFail(insertCmd.Encode()))
 		require.NoError(t, err)
 
-		// TODO verify header
-		header := wire.MsgHeader{
-			RequestID: 13,
-		}
-
-		//resHeader, resBody, err := c.Request(ctx, &header, body)
-		_, _, err = c.Request(ctx, &header, body)
+		_, _, err = c.Request(ctx, new(wire.MsgHeader), body)
 		require.NoError(t, err)
 
 		//	assert.Equal(t, wire.MsgHeader{
@@ -122,12 +111,7 @@ func TestDriver(t *testing.T) {
 		body, err := wire.NewOpMsg(must.NotFail(findCmd.Encode()))
 		require.NoError(t, err)
 
-		// TODO verify header
-		header := wire.MsgHeader{
-			RequestID: 14,
-		}
-
-		_, resBody, err := c.Request(ctx, &header, body)
+		_, resBody, err := c.Request(ctx, new(wire.MsgHeader), body)
 		require.NoError(t, err)
 
 		resMsg, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).Decode()
@@ -161,12 +145,7 @@ func TestDriver(t *testing.T) {
 			body, err := wire.NewOpMsg(must.NotFail(getMoreCmd.Encode()))
 			require.NoError(t, err)
 
-			// TODO verify header
-			header := wire.MsgHeader{
-				RequestID: 14,
-			}
-
-			_, resBody, err := c.Request(ctx, &header, body)
+			_, resBody, err := c.Request(ctx, new(wire.MsgHeader), body)
 			require.NoError(t, err)
 
 			resMsg, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).Decode()
@@ -191,12 +170,7 @@ func TestDriver(t *testing.T) {
 		body, err := wire.NewOpMsg(must.NotFail(getMoreCmd.Encode()))
 		require.NoError(t, err)
 
-		// TODO verify header
-		header := wire.MsgHeader{
-			RequestID: 14,
-		}
-
-		_, resBody, err := c.Request(ctx, &header, body)
+		_, resBody, err := c.Request(ctx, new(wire.MsgHeader), body)
 		require.NoError(t, err)
 
 		resMsg, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).Decode()
