@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/cristalhq/bson/bsonproto"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/bson"
@@ -173,4 +174,13 @@ func TestDriver(t *testing.T) {
 		for {
 		}
 	})
+}
+
+func assertEqualHeader(t testing.TB, expected, actual wire.MsgHeader) (ok bool) {
+	t.Helper()
+
+	ok = ok || assert.Equal(t, expected.ResponseTo, actual.ResponseTo)
+	ok = ok || assert.Equal(t, expected.MessageLength, actual.MessageLength)
+
+	return
 }
