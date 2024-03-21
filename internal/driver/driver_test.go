@@ -148,7 +148,29 @@ func TestDriver(t *testing.T) {
 		require.NoError(t, err)
 
 		firstBatch := cursor.Get("firstBatch")
+		// TODO: ignore order
 		require.Equal(t, must.NotFail(expectedDocs.Encode()), firstBatch)
-		expected := must.NotFail(expectedDocs.Encode())
+	})
+
+	t.Run("GetMore", func(t *testing.T) {
+		t.Skip("TODO")
+		// TODO
+		//doc := must.NotFail(bson.NewDocument(
+		//))
+
+		// TODO
+		for {
+		}
+	})
+
+	t.Run("GetMoreEmpty", func(t *testing.T) {
+		t.Skip("TODO")
+		// TODO
+		//doc := must.NotFail(bson.NewDocument(
+		//))
+
+		// TODO
+		for {
+		}
 	})
 }
