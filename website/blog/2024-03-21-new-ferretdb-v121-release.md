@@ -16,7 +16,7 @@ In the latest [FerretDB](https://www.ferretdb.com/) v1.21 release, we added expe
 
 This release blog post will delve into how the new authentication mechanisms work, and our ongoing efforts to improve FerretDB.
 
-## Experimental support for SCRAM-SHA-1/SCRAM-SHA-256
+## Experimental support for `SCRAM-SHA-1`/`SCRAM-SHA-256`
 
 Earlier this year, we began work on enabling support for the `SCRAM-SHA-1` and `SCRAM-SHA-256` authentication mechanisms, and these are now available for experimental purposes.
 
