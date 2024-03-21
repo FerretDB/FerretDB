@@ -114,9 +114,8 @@ func TestDriver(t *testing.T) {
 	t.Run("Find", func(t *testing.T) {
 		findCmd := must.NotFail(bson.NewDocument(
 			"find", "values",
-			//"filter", must.NotFail(bson.NewDocument("v", int32(1))),
 			"filter", must.NotFail(bson.NewDocument()),
-			//"sort", // TODO
+			"sort", must.NotFail(bson.NewDocument("_id", int32(1))),
 			"lsid", must.NotFail(bson.NewDocument("id", lsid)),
 			"batchSize", int32(1),
 			"$db", dbName,
