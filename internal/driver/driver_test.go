@@ -241,6 +241,7 @@ func TestDriver(t *testing.T) {
 	})
 }
 
+// TODO: we don't need this function if both checks are made within Request function
 func assertEqualHeader(t testing.TB, expected, actual wire.MsgHeader) (ok bool) {
 	t.Helper()
 
