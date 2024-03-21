@@ -65,7 +65,6 @@ func TestDriver(t *testing.T) {
 		// TODO verify header
 		header := wire.MsgHeader{
 			RequestID: 13,
-			OpCode:    wire.OpCodeMsg,
 		}
 
 		_, _, err = c.Request(ctx, &header, body)
@@ -93,7 +92,6 @@ func TestDriver(t *testing.T) {
 		// TODO verify header
 		header := wire.MsgHeader{
 			RequestID: 13,
-			OpCode:    wire.OpCodeMsg,
 		}
 
 		//resHeader, resBody, err := c.Request(ctx, &header, body)
@@ -127,7 +125,6 @@ func TestDriver(t *testing.T) {
 		// TODO verify header
 		header := wire.MsgHeader{
 			RequestID: 14,
-			OpCode:    wire.OpCodeMsg,
 		}
 
 		_, resBody, err := c.Request(ctx, &header, body)
@@ -167,7 +164,6 @@ func TestDriver(t *testing.T) {
 			// TODO verify header
 			header := wire.MsgHeader{
 				RequestID: 14,
-				OpCode:    wire.OpCodeMsg,
 			}
 
 			_, resBody, err := c.Request(ctx, &header, body)
@@ -198,7 +194,6 @@ func TestDriver(t *testing.T) {
 		// TODO verify header
 		header := wire.MsgHeader{
 			RequestID: 14,
-			OpCode:    wire.OpCodeMsg,
 		}
 
 		_, resBody, err := c.Request(ctx, &header, body)

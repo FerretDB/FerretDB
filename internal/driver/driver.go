@@ -165,6 +165,7 @@ func (c *Conn) WriteRaw(b []byte) error {
 }
 
 // Request sends the given request to the connection and returns the response.
+// TODO: comments about defaults
 func (c *Conn) Request(ctx context.Context, header *wire.MsgHeader, body wire.MsgBody) (*wire.MsgHeader, wire.MsgBody, error) {
 	if header.MessageLength == 0 {
 		msgBin, err := body.MarshalBinary()
@@ -173,6 +174,10 @@ func (c *Conn) Request(ctx context.Context, header *wire.MsgHeader, body wire.Ms
 		}
 
 		header.MessageLength = int32(len(msgBin) + wire.MsgHeaderLen)
+	}
+
+	if header.OpCode == 0 {
+		header.OpCode = wire.OpCodeMsg
 	}
 
 	//if header.RequestID == 0 {
