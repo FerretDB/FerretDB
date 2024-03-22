@@ -38,7 +38,7 @@ func TestDriver(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, c.Close()) })
 
-	dbName := "TestDriver"
+	dbName := testutil.DatabaseName(t)
 
 	var lsid bson.Binary
 
