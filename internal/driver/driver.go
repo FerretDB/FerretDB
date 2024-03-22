@@ -171,6 +171,9 @@ var lastRequestID atomic.Int32
 // Request sends the given request to the connection and returns the response.
 // If header MessageLength or RequestID is not specified, it assings the proper values.
 // For header.OpCode the wire.OpCodeMsg is used as default.
+//
+// It returns errors only for request/response parsing issues, or connection issues.
+// All of the driver level errors are stored inside response.
 func (c *Conn) Request(ctx context.Context, header *wire.MsgHeader, body wire.MsgBody) (*wire.MsgHeader, wire.MsgBody, error) {
 	if header.MessageLength == 0 {
 		msgBin, err := body.MarshalBinary()
