@@ -50,9 +50,13 @@ func TestDriver(t *testing.T) {
 	}
 
 	expectedBatches := make([]bson.Array, 3)
-	expectedBatches[0].Add(must.NotFail(bson.NewDocument("_id", int32(0), "w", int32(2), "v", int32(1))))
-	expectedBatches[1].Add(must.NotFail(bson.NewDocument("_id", int32(1), "v", int32(2))))
-	expectedBatches[2].Add(must.NotFail(bson.NewDocument("_id", int32(2), "v", int32(3))))
+
+	err = expectedBatches[0].Add(must.NotFail(bson.NewDocument("_id", int32(0), "w", int32(2), "v", int32(1))))
+	require.NoError(t, err)
+	err = expectedBatches[1].Add(must.NotFail(bson.NewDocument("_id", int32(1), "v", int32(2))))
+	require.NoError(t, err)
+	err = expectedBatches[2].Add(must.NotFail(bson.NewDocument("_id", int32(2), "v", int32(3))))
+	require.NoError(t, err)
 
 	t.Run("Drop", func(t *testing.T) {
 		dropCmd := must.NotFail(bson.NewDocument(
