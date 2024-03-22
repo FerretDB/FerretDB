@@ -73,16 +73,14 @@ func TestDriver(t *testing.T) {
 		require.Equal(t, float64(1), ok)
 	})
 
-	insertDocs := must.NotFail(bson.NewArray(
-		must.NotFail(bson.NewDocument("w", int32(2), "v", int32(1), "_id", int32(0))),
-		must.NotFail(bson.NewDocument("v", int32(2), "_id", int32(1))),
-		must.NotFail(bson.NewDocument("v", int32(3), "_id", int32(2))),
-	))
-
 	t.Run("Insert", func(t *testing.T) {
 		insertCmd := must.NotFail(bson.NewDocument(
 			"insert", "values",
-			"documents", insertDocs,
+			"documents", must.NotFail(bson.NewArray(
+				must.NotFail(bson.NewDocument("w", int32(2), "v", int32(1), "_id", int32(0))),
+				must.NotFail(bson.NewDocument("v", int32(2), "_id", int32(1))),
+				must.NotFail(bson.NewDocument("v", int32(3), "_id", int32(2))),
+			)),
 			"ordered", true,
 			"lsid", must.NotFail(bson.NewDocument("id", lsid)),
 			"$db", dbName,
