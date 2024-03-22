@@ -24,6 +24,7 @@ import (
 	"runtime/trace"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -54,6 +55,8 @@ var (
 	sqliteURLF     = flag.String("sqlite-url", "", "in-process FerretDB: SQLite URI for 'sqlite' handler.")
 	mysqlURLF      = flag.String("mysql-url", "", "in-process FerretDB: MySQL URL for 'mysql' handler.")
 	hanaURLF       = flag.String("hana-url", "", "in-process FerretDB: Hana URL for 'hana' handler.")
+
+	batchSizeF = flag.Int("batch-size", 100, "maximum insertion batch size")
 
 	compatURLF = flag.String("compat-url", "", "compat system's (MongoDB) URL for compatibility tests; if empty, they are skipped")
 
@@ -94,6 +97,18 @@ type SetupOpts struct {
 
 	// SetupUser true creates a user and returns an authenticated client.
 	SetupUser bool
+
+	// Options to override default backend configuration.
+	BackendOptions *BackendOpts
+}
+
+// BackendOpts represents backend configuration used for test setup.
+type BackendOpts struct {
+	// Capped collections cleanup interval.
+	CappedCleanupInterval time.Duration
+
+	// Percentage of documents to cleanup for capped collections. If not set, defaults to 20.
+	CappedCleanupPercentage uint8
 }
 
 // SetupResult represents setup results.
@@ -101,6 +116,14 @@ type SetupResult struct {
 	Ctx        context.Context
 	Collection *mongo.Collection
 	MongoDBURI string
+}
+
+// NewBackendOpts returns BackendOpts with default values set.
+func NewBackendOpts() *BackendOpts {
+	return &BackendOpts{
+		CappedCleanupInterval:   time.Duration(0),
+		CappedCleanupPercentage: uint8(20),
+	}
 }
 
 // IsUnixSocket returns true if MongoDB URI is a Unix domain socket.
@@ -142,7 +165,11 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 
 	uri := *targetURLF
 	if uri == "" {
-		uri = setupListener(tb, setupCtx, logger)
+		if opts.BackendOptions == nil {
+			opts.BackendOptions = NewBackendOpts()
+		}
+
+		uri = setupListener(tb, setupCtx, logger, opts.BackendOptions)
 	} else {
 		uri = toAbsolutePathURI(tb, *targetURLF)
 	}

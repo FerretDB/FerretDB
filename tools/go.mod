@@ -6,18 +6,17 @@ toolchain go1.22.1
 
 require (
 	github.com/FerretDB/gh v0.1.3
-	github.com/go-task/task/v3 v3.34.1
+	github.com/go-task/task/v3 v3.35.1
 	github.com/google/go-github/v57 v57.0.0
 	github.com/goreleaser/nfpm/v2 v2.35.3
 	github.com/quasilyte/go-consistent v0.6.0
 	github.com/rogpeppe/go-internal v1.12.0
-	github.com/stretchr/testify v1.8.4
-	golang.org/x/crypto v0.19.0 // indirect; always use @latest
-	golang.org/x/oauth2 v0.17.0
-	golang.org/x/perf v0.0.0-20240208143119-b26761745961
-	golang.org/x/pkgsite v0.0.0-20240214170749-fa961d12411c
-	golang.org/x/tools v0.18.0 // https://github.com/golang/go/issues/66259
-	golang.org/x/vuln v1.0.4
+	github.com/stretchr/testify v1.9.0
+	golang.org/x/oauth2 v0.18.0
+	golang.org/x/perf v0.0.0-20240305160248-5eefbfdba9dd
+	golang.org/x/pkgsite v0.0.0-20240305194412-ea43129276ed
+	golang.org/x/tools v0.19.0 // https://github.com/golang/go/issues/66259
+	golang.org/x/vuln v1.0.1 // https://github.com/golang/go/issues/66139
 	mvdan.cc/gofumpt v0.6.0
 )
 
@@ -99,18 +98,19 @@ require (
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	gitlab.com/digitalxero/go-conventional-commit v1.0.7 // indirect
-	golang.org/x/exp v0.0.0-20240110193028-0dcbfd608b1e // indirect
-	golang.org/x/mod v0.15.0 // indirect
-	golang.org/x/net v0.21.0 // indirect
+	golang.org/x/crypto v0.21.0 // indirect
+	golang.org/x/exp v0.0.0-20231206192017-f3f8817b8deb // indirect
+	golang.org/x/mod v0.16.0 // indirect
+	golang.org/x/net v0.22.0 // indirect
 	golang.org/x/sync v0.6.0 // indirect
-	golang.org/x/sys v0.17.0 // indirect
-	golang.org/x/telemetry v0.0.0-20240208230135-b75ee8823808 // indirect
-	golang.org/x/term v0.17.0 // indirect
+	golang.org/x/sys v0.18.0 // indirect
+	golang.org/x/telemetry v0.0.0-20240228155512-f48c80bd79b2 // indirect
+	golang.org/x/term v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	mvdan.cc/sh/v3 v3.7.0 // indirect
+	mvdan.cc/sh/v3 v3.8.0 // indirect
 	rsc.io/markdown v0.0.0-20231214224604-88bb533a6020 // indirect
 )
