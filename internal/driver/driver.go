@@ -22,6 +22,7 @@ import (
 	"log/slog"
 	"net"
 	"net/url"
+	"sync/atomic"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -120,7 +121,7 @@ func (c *Conn) Read() (*wire.MsgHeader, wire.MsgBody, error) {
 	c.l.Debug(
 		fmt.Sprintf("<<<\n%s", body.String()),
 		slog.Int("length", int(header.MessageLength)),
-		slog.Int("id", int(header.ResponseTo)),
+		slog.Int("id", int(header.RequestID)),
 		slog.Int("response_to", int(header.ResponseTo)),
 		slog.String("opcode", header.OpCode.String()),
 	)
@@ -133,7 +134,7 @@ func (c *Conn) Write(header *wire.MsgHeader, body wire.MsgBody) error {
 	c.l.Debug(
 		fmt.Sprintf(">>>\n%s", body.String()),
 		slog.Int("length", int(header.MessageLength)),
-		slog.Int("id", int(header.ResponseTo)),
+		slog.Int("id", int(header.RequestID)),
 		slog.Int("response_to", int(header.ResponseTo)),
 		slog.String("opcode", header.OpCode.String()),
 	)
@@ -164,8 +165,72 @@ func (c *Conn) WriteRaw(b []byte) error {
 	return nil
 }
 
+// lastRequestID stores incremented value of last recorded request header ID.
+var lastRequestID atomic.Int32
+
 // Request sends the given request to the connection and returns the response.
+// If header MessageLength or RequestID is not specified, it assings the proper values.
+// For header.OpCode the wire.OpCodeMsg is used as default.
+//
+// It returns errors only for request/response parsing issues, or connection issues.
+// All of the driver level errors are stored inside response.
 func (c *Conn) Request(ctx context.Context, header *wire.MsgHeader, body wire.MsgBody) (*wire.MsgHeader, wire.MsgBody, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/4146
-	panic("not implemented")
+	if header.MessageLength == 0 {
+		msgBin, err := body.MarshalBinary()
+		if err != nil {
+			return nil, nil, lazyerrors.Error(err)
+		}
+
+		header.MessageLength = int32(len(msgBin) + wire.MsgHeaderLen)
+	}
+
+	if header.OpCode == 0 {
+		header.OpCode = wire.OpCodeMsg
+	}
+
+	if header.RequestID == 0 {
+		header.RequestID = lastRequestID.Add(1)
+	}
+
+	if header.ResponseTo != 0 {
+		return nil, nil, lazyerrors.Errorf("setting response_to is not allowed")
+	}
+
+	if m, ok := body.(*wire.OpMsg); ok {
+		if m.Flags != 0 {
+			return nil, nil, lazyerrors.Errorf("unsupported request flags %s", m.Flags)
+		}
+	}
+
+	if err := c.Write(header, body); err != nil {
+		return nil, nil, lazyerrors.Error(err)
+	}
+
+	resHeader, resBody, err := c.Read()
+	if err != nil {
+		return nil, nil, lazyerrors.Error(err)
+	}
+
+	if resHeader.ResponseTo != header.RequestID {
+		c.l.Error(
+			"response_to is not equal to request_id",
+			slog.Int("request_id", int(header.RequestID)),
+			slog.Int("response_id", int(resHeader.RequestID)),
+			slog.Int("response_to", int(resHeader.ResponseTo)),
+		)
+
+		return nil, nil, lazyerrors.Errorf(
+			"response_to is not equal to request_id (response_to=%d; expected=%d)",
+			resHeader.ResponseTo,
+			header.RequestID,
+		)
+	}
+
+	if m, ok := resBody.(*wire.OpMsg); ok {
+		if m.Flags != 0 {
+			return nil, nil, lazyerrors.Errorf("unsupported response flags %s", m.Flags)
+		}
+	}
+
+	return resHeader, resBody, nil
 }
