@@ -22,6 +22,7 @@ import (
 	"log/slog"
 	"net"
 	"net/url"
+	"sync/atomic"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -37,8 +38,6 @@ type Conn struct {
 	r *bufio.Reader
 	w *bufio.Writer
 	l *slog.Logger
-
-	lastRequestID int32
 }
 
 // Connect creates a new connection for the given MongoDB URI and logger.
@@ -166,6 +165,9 @@ func (c *Conn) WriteRaw(b []byte) error {
 	return nil
 }
 
+// lastRequestID stores incremented value of last recorded request header ID.
+var lastRequestID atomic.Int32
+
 // Request sends the given request to the connection and returns the response.
 // If header MessageLength or RequestID is not specified, it assings the proper values.
 // For header.OpCode the wire.OpCodeMsg is used as default.
@@ -184,9 +186,8 @@ func (c *Conn) Request(ctx context.Context, header *wire.MsgHeader, body wire.Ms
 	}
 
 	if header.RequestID == 0 {
-		header.RequestID = c.nextRequestID()
+		header.RequestID = lastRequestID.Add(1)
 	}
-	c.lastRequestID = header.RequestID
 
 	if header.ResponseTo != 0 {
 		return nil, nil, lazyerrors.Errorf("setting response_to is not allowed")
@@ -228,10 +229,4 @@ func (c *Conn) Request(ctx context.Context, header *wire.MsgHeader, body wire.Ms
 	}
 
 	return resHeader, resBody, nil
-}
-
-// nextRequestID returns the incremented value of last recorded request header ID from `Request` function.
-func (c *Conn) nextRequestID() int32 {
-	c.lastRequestID += 1
-	return c.lastRequestID
 }
