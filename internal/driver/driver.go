@@ -185,6 +185,7 @@ func (c *Conn) Request(ctx context.Context, header *wire.MsgHeader, body wire.Ms
 	if header.RequestID == 0 {
 		header.RequestID = c.nextRequestID()
 	}
+	c.lastRequestID = header.RequestID
 
 	if header.ResponseTo != 0 {
 		return nil, nil, lazyerrors.Errorf("response_to is not allowed")
@@ -224,7 +225,7 @@ func (c *Conn) Request(ctx context.Context, header *wire.MsgHeader, body wire.Ms
 	return resHeader, resBody, nil
 }
 
-// TODO: comment
+// nextRequestID returns the incremented value of last recorded request header ID from `Request` function.
 func (c *Conn) nextRequestID() int32 {
 	c.lastRequestID += 1
 	return c.lastRequestID
