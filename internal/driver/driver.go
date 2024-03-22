@@ -167,7 +167,8 @@ func (c *Conn) WriteRaw(b []byte) error {
 }
 
 // Request sends the given request to the connection and returns the response.
-// TODO: comments about defaults
+// If header MessageLength or RequestID is not specified, it assings the proper values.
+// For header.OpCode the wire.OpCodeMsg is used as default.
 func (c *Conn) Request(ctx context.Context, header *wire.MsgHeader, body wire.MsgBody) (*wire.MsgHeader, wire.MsgBody, error) {
 	if header.MessageLength == 0 {
 		msgBin, err := body.MarshalBinary()
