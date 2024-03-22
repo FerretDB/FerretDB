@@ -84,16 +84,10 @@ func TestDriver(t *testing.T) {
 		body, err := wire.NewOpMsg(must.NotFail(insertCmd.Encode()))
 		require.NoError(t, err)
 
-		_, _, err = c.Request(ctx, new(wire.MsgHeader), body)
+		resHeader, _, err := c.Request(ctx, new(wire.MsgHeader), body)
 		require.NoError(t, err)
 
-		//	assert.Equal(t, wire.MsgHeader{
-		//		RequestID:     368,
-		//		ResponseTo:    13,
-		//		OpCode:        2013,
-		//		MessageLength: 252,
-		//	}, *resHeader)
-		//	assert.Equal(t, wire.OpMsg{}, resBody)
+		assert.NotZero(t, resHeader.RequestID)
 	})
 
 	var cursorID int64
@@ -111,8 +105,9 @@ func TestDriver(t *testing.T) {
 		body, err := wire.NewOpMsg(must.NotFail(findCmd.Encode()))
 		require.NoError(t, err)
 
-		_, resBody, err := c.Request(ctx, new(wire.MsgHeader), body)
+		resHeader, resBody, err := c.Request(ctx, new(wire.MsgHeader), body)
 		require.NoError(t, err)
+		assert.NotZero(t, resHeader.RequestID)
 
 		resMsg, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).Decode()
 		require.NoError(t, err)
@@ -141,12 +136,12 @@ func TestDriver(t *testing.T) {
 
 	t.Run("GetMore", func(t *testing.T) {
 		for i := 0; i < 2; i++ {
-
 			body, err := wire.NewOpMsg(must.NotFail(getMoreCmd.Encode()))
 			require.NoError(t, err)
 
-			_, resBody, err := c.Request(ctx, new(wire.MsgHeader), body)
+			resHeader, resBody, err := c.Request(ctx, new(wire.MsgHeader), body)
 			require.NoError(t, err)
+			assert.NotZero(t, resHeader.RequestID)
 
 			resMsg, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).Decode()
 			require.NoError(t, err)
@@ -170,8 +165,9 @@ func TestDriver(t *testing.T) {
 		body, err := wire.NewOpMsg(must.NotFail(getMoreCmd.Encode()))
 		require.NoError(t, err)
 
-		_, resBody, err := c.Request(ctx, new(wire.MsgHeader), body)
+		resHeader, resBody, err := c.Request(ctx, new(wire.MsgHeader), body)
 		require.NoError(t, err)
+		assert.NotZero(t, resHeader.RequestID)
 
 		resMsg, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).Decode()
 		require.NoError(t, err)
