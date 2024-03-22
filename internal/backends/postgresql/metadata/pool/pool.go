@@ -171,7 +171,6 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 	)
 
 	for _, pool := range p.pools {
-		// TODO https://github.com/FerretDB/FerretDB/issues/3332
 		_ = pool.Stat()
 	}
 }
