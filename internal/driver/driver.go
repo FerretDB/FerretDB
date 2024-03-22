@@ -189,7 +189,7 @@ func (c *Conn) Request(ctx context.Context, header *wire.MsgHeader, body wire.Ms
 	c.lastRequestID = header.RequestID
 
 	if header.ResponseTo != 0 {
-		return nil, nil, lazyerrors.Errorf("response_to is not allowed")
+		return nil, nil, lazyerrors.Errorf("setting response_to is not allowed")
 	}
 
 	if m, ok := body.(*wire.OpMsg); ok {
@@ -209,13 +209,13 @@ func (c *Conn) Request(ctx context.Context, header *wire.MsgHeader, body wire.Ms
 
 	if resHeader.ResponseTo != header.RequestID {
 		c.l.Error(
-			fmt.Sprintf("response_to not equal to request_id"),
+			fmt.Sprintf("response_to is not equal to request_id"),
 			slog.Int("request_id", int(header.RequestID)),
 			slog.Int("response_id", int(resHeader.RequestID)),
 			slog.Int("response_to", int(resHeader.ResponseTo)),
 		)
 		return nil, nil, lazyerrors.Errorf(
-			"response_to not equal to request_id (response_to=%d; expected=%d)",
+			"response_to is not equal to request_id (response_to=%d; expected=%d)",
 			resHeader.ResponseTo,
 			header.RequestID,
 		)
