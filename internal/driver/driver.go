@@ -218,6 +218,7 @@ func (c *Conn) Request(ctx context.Context, header *wire.MsgHeader, body wire.Ms
 			slog.Int("response_id", int(resHeader.RequestID)),
 			slog.Int("response_to", int(resHeader.ResponseTo)),
 		)
+
 		return nil, nil, lazyerrors.Errorf(
 			"response_to is not equal to request_id (response_to=%d; expected=%d)",
 			resHeader.ResponseTo,
