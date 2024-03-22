@@ -51,17 +51,26 @@ func TestDriver(t *testing.T) {
 	}
 
 	t.Run("Drop", func(t *testing.T) {
-		doc := must.NotFail(bson.NewDocument(
+		dropCmd := must.NotFail(bson.NewDocument(
 			"dropDatabase", int32(1),
 			"lsid", must.NotFail(bson.NewDocument("id", lsid)),
 			"$db", dbName,
 		))
 
-		body, err := wire.NewOpMsg(must.NotFail(doc.Encode()))
+		body, err := wire.NewOpMsg(must.NotFail(dropCmd.Encode()))
 		require.NoError(t, err)
 
-		_, _, err = c.Request(ctx, new(wire.MsgHeader), body)
+		resHeader, resBody, err := c.Request(ctx, new(wire.MsgHeader), body)
 		require.NoError(t, err)
+		assert.NotZero(t, resHeader.RequestID)
+
+		resMsg, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).Decode()
+		require.NoError(t, err)
+
+		ok := resMsg.Get("ok").(float64)
+		require.NoError(t, err)
+
+		require.Equal(t, float64(1), ok)
 	})
 
 	insertDocs := must.NotFail(bson.NewArray(
