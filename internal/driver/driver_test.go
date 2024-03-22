@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/bson"
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -49,6 +50,11 @@ func TestDriver(t *testing.T) {
 		},
 		Subtype: bsonproto.BinaryUUID,
 	}
+
+	expectedBatches := make([]bson.Array, 3)
+	expectedBatches[0].Add(must.NotFail(bson.NewDocument("_id", int32(0), "w", int32(2), "v", int32(1))))
+	expectedBatches[1].Add(must.NotFail(bson.NewDocument("_id", int32(1), "v", int32(2))))
+	expectedBatches[2].Add(must.NotFail(bson.NewDocument("_id", int32(2), "v", int32(3))))
 
 	t.Run("Drop", func(t *testing.T) {
 		dropCmd := must.NotFail(bson.NewDocument(
@@ -102,7 +108,6 @@ func TestDriver(t *testing.T) {
 		n := resMsg.Get("n").(int32)
 		require.NoError(t, err)
 		require.Equal(t, int32(3), n)
-
 	})
 
 	var cursorID int64
@@ -133,11 +138,7 @@ func TestDriver(t *testing.T) {
 		firstBatch := cursor.Get("firstBatch").(bson.RawArray)
 		cursorID = cursor.Get("id").(int64)
 
-		expectedDocs := must.NotFail(bson.NewArray(
-			must.NotFail(bson.NewDocument("_id", int32(0), "w", int32(2), "v", int32(1))),
-		))
-
-		testutil.AssertEqual(t, must.NotFail(expectedDocs.Convert()), must.NotFail(firstBatch.Convert()))
+		testutil.AssertEqual(t, must.NotFail(expectedBatches[0].Convert()), must.NotFail(firstBatch.Convert()))
 		require.NotZero(t, cursorID)
 	})
 
@@ -150,7 +151,7 @@ func TestDriver(t *testing.T) {
 	))
 
 	t.Run("GetMore", func(t *testing.T) {
-		for i := 0; i < 2; i++ {
+		for i := 1; i < 3; i++ {
 			body, err := wire.NewOpMsg(must.NotFail(getMoreCmd.Encode()))
 			require.NoError(t, err)
 
@@ -167,11 +168,7 @@ func TestDriver(t *testing.T) {
 			nextBatch := cursor.Get("nextBatch").(bson.RawArray)
 			newCursorID := cursor.Get("id").(int64)
 
-			expectedDocs := must.NotFail(bson.NewArray(
-				must.NotFail(bson.NewDocument("_id", int32(i+1), "v", int32(i+2))),
-			))
-
-			testutil.AssertEqual(t, must.NotFail(expectedDocs.Convert()), must.NotFail(nextBatch.Convert()))
+			testutil.AssertEqual(t, must.NotFail(expectedBatches[i].Convert()), must.NotFail(nextBatch.Convert()))
 			assert.Equal(t, cursorID, newCursorID)
 		}
 	})
@@ -193,9 +190,7 @@ func TestDriver(t *testing.T) {
 		nextBatch := cursor.Get("nextBatch").(bson.RawArray)
 		newCursorID := cursor.Get("id").(int64)
 
-		expectedDocs := must.NotFail(bson.NewArray())
-
-		testutil.AssertEqual(t, must.NotFail(expectedDocs.Convert()), must.NotFail(nextBatch.Convert()))
+		testutil.AssertEqual(t, types.MakeArray(0), must.NotFail(nextBatch.Convert()))
 		assert.Zero(t, newCursorID)
 	})
 }
