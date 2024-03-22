@@ -45,8 +45,6 @@ Next, modify the docker compose file and add Postgres with a known user/password
 ```yaml
 postgres-db:
   image: postgres
-  #ports:
-  #  - 5432:5432
   networks:
     - ziti
   volumes:
@@ -63,6 +61,11 @@ ferretdb:
     - ziti
   environment:
     - FERRETDB_POSTGRESQL_URL=postgres://postgres-db/ferretdb
+
+mongo:
+  image: mongo
+  networks:
+    - ziti
 ```
 
 This setup provides a secure, isolated network for your FerretDB instance and Postgres database, ensuring that your database is not exposed to the internet.
@@ -78,18 +81,19 @@ Let's break down the key components:
 - Ziti Console: Provides a web interface for managing the Ziti network.
 
 FerretDB connects to PostgreSQL and is configured to run within the same Ziti network.
+`mongo` service will be used to connect to FerretDB.
 
 ### Initialize Docker Environment
 
-Using the project name 'pg' for Postgres, start the Docker Compose environment:
+Start the Docker Compose environment:
 
 ```sh
-docker compose -p pg up
+docker compose up
 ```
 
 This command sets up several services, including `ziti-controller`, `ziti-edge-router`, `ziti-console`, `postgres-db`, and `ferretdb`, as specified in the Docker Compose YAML.
 
-Run `docker ps` to show that Postgres and FerretDB are not exposed (`5432`/`27017`):
+Run `docker compose ps` to show that Postgres and FerretDB are not exposed (`5432`/`27017`):
 
 ### Testing your network connection
 
@@ -98,7 +102,7 @@ To verify the security and functionality of your setup, follow these steps to te
 To begin, access the running Ziti Controller container using the following command:
 
 ```sh
-docker exec -it pg-ziti-controller-1 bash
+docker compose exec ziti-controller bash
 ```
 
 This should take you into the Ziti CLI.
@@ -116,7 +120,7 @@ Verify that all edge routers are online and properly registered with the Ziti Co
 ziti edge list edge-routers
 ```
 
-You should see your ziti-edge-router listed and marked as ONLINE.
+You should see your `ziti-edge-router` listed and marked as ONLINE.
 
 Test edge router identities:
 
@@ -151,7 +155,7 @@ These tests ensure that your Docker network settings allow for proper communicat
 Once your services are up and running, you can connect to FerretDB using the MongoDB shell (`mongosh`) over the secure network established by OpenZiti.
 
 ```sh
-docker run -it --rm --network pg_ziti mongo mongosh "mongodb://postgres:postgres@pg-ferretdb-1:27017/ferretdb?authMechanism=PLAIN"
+docker compose run mongo mongosh "mongodb://postgres:postgres@ferretdb:27017/ferretdb?authMechanism=PLAIN"
 ```
 
 This should spin up a temporary MongoDB container to use `mongosh` to connect to your FerretDB instance.
