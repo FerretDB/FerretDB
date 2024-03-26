@@ -88,6 +88,11 @@ go version -m bin/ferretdb
 bin/ferretdb --version
 EOF
 
+RUN groupadd -g 1000 ferretdb
+RUN useradd -u 1000 -g 1000 ferretdb
+
+RUN mkdir /state
+RUN chown -R ferretdb:ferretdb /state
 
 # stage for binary only
 
@@ -102,10 +107,11 @@ FROM scratch AS production
 
 COPY --from=production-build /src/bin/ferretdb /ferretdb
 
-# TODO https://github.com/FerretDB/FerretDB/issues/3992
-# COPY build/ferretdb/passwd /etc/passwd
-# COPY build/ferretdb/group  /etc/group
-# USER ferretdb:ferretdb
+COPY build/ferretdb/passwd /etc/passwd
+COPY build/ferretdb/group  /etc/group
+USER ferretdb:ferretdb
+
+COPY --chown=ferretdb:ferretdb --from=production-build /state /state
 
 ENTRYPOINT [ "/ferretdb" ]
 
