@@ -88,11 +88,7 @@ go version -m bin/ferretdb
 bin/ferretdb --version
 EOF
 
-RUN groupadd -g 1000 ferretdb
-RUN useradd -u 1000 -g 1000 ferretdb
-
 RUN mkdir /state
-RUN chown -R ferretdb:ferretdb /state
 
 # stage for binary only
 
