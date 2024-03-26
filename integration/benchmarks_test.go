@@ -15,7 +15,10 @@
 package integration
 
 import (
+	"container/list"
+	"errors"
 	"fmt"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -24,6 +27,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
 
@@ -175,6 +179,132 @@ func BenchmarkInsertMany(b *testing.B) {
 					}
 				}
 			})
+		}
+	}
+}
+
+func BenchmarkInsertManyIntoDifferentCollections(b *testing.B) {
+	ctx, collection := setup.Setup(b)
+
+	provider := shareddata.BenchmarkSmallDocuments
+	iter := provider.NewIterator()
+
+	insertDocs := []any{}
+
+	for {
+		docs, err := iterator.ConsumeValues(iter)
+		if errors.Is(err, iterator.ErrIteratorDone) || docs == nil {
+			break
+		}
+
+		require.NoError(b, err)
+
+		for _, doc := range docs {
+			insertDocs = append(insertDocs, doc)
+		}
+	}
+
+	const numDocuments = 1000
+	const numCollections = 4
+
+	collections := [numCollections]*mongo.Collection{}
+
+	// batchMap is a mapping of collections to a list where each element is a slice
+	// of documents pre-batched at different batch sizes, it is safe for concurrent use by multiple goroutines
+	// as no data is modified concurrently.
+	//
+	//nolint:vet // we don't care about alignment there
+	type batchMap struct {
+		m          map[*mongo.Collection]*list.List
+		batchSizes []int
+	}
+
+	m := batchMap{
+		m:          make(map[*mongo.Collection]*list.List),
+		batchSizes: []int{1, 10, 50, 100},
+	}
+
+	batchN := len(m.batchSizes) - 1
+
+	b.StopTimer()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		for i := 0; i < numCollections; i++ {
+			name := fmt.Sprintf("%c", 'a'+i)
+			err := collection.Database().CreateCollection(ctx, name)
+			require.NoError(b, err)
+
+			coll := collection.Database().Collection(name)
+			collections[i] = coll
+
+			batches := make([][][]any, len(m.batchSizes))
+
+			for batchN >= 0 {
+				batchSize := m.batchSizes[batchN]
+				size := numDocuments / batchSize
+
+				batches[batchN] = make([][]any, size)
+
+				for i := 0; i < len(insertDocs); i = i + batchSize {
+					if i+batchSize > len(insertDocs) {
+						break
+					}
+
+					// ugly hack to avoid duplicate key errors across batches
+					withNewObjectIDs := make([]any, batchSize)
+
+					for i := range insertDocs[i : i+batchSize] {
+						data, err := bson.Marshal(insertDocs[i])
+						require.NoError(b, err)
+
+						var val map[string]interface{}
+						err = bson.Unmarshal(data, &val)
+						require.NoError(b, err)
+
+						val["_id"] = types.NewObjectID()
+						withNewObjectIDs[i] = val
+					}
+
+					size--
+					batches[batchN][size] = withNewObjectIDs
+				}
+
+				if m.m[coll] == nil {
+					m.m[coll] = list.New()
+				}
+
+				m.m[coll].PushFront(batches[batchN])
+				batchN--
+			}
+
+			batchN = len(m.batchSizes) - 1
+		}
+
+		var wg sync.WaitGroup
+		wg.Add(numCollections)
+
+		// XXX add sub-benchmarks for batch sizes
+		for i := 0; i < numCollections; i++ {
+			go func(i int) {
+				coll := collections[i]
+
+				for batch := m.m[coll].Front(); batch != nil; batch = batch.Next() {
+					for _, documents := range batch.Value.([][]any) {
+						b.StartTimer()
+						_, err := coll.InsertMany(ctx, documents)
+						require.NoError(b, err)
+						b.StopTimer()
+					}
+				}
+				wg.Done()
+			}(i)
+		}
+		wg.Wait()
+
+		for i := 0; i < numCollections; i++ {
+			err := collections[i].Drop(ctx)
+			require.NoError(b, err)
 		}
 	}
 }
