@@ -106,7 +106,7 @@ COPY build/ferretdb/group  /etc/group
 USER ferretdb:ferretdb
 
 COPY --from=production-build /src/bin/ferretdb /ferretdb
-COPY --from=production-build  --chown=ferretdb:ferretdb /state /state
+COPY --from=production-build --chown=ferretdb:ferretdb /state /state
 
 ENTRYPOINT [ "/ferretdb" ]
 
