@@ -37,55 +37,17 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
+const (
+	archivePath = "/debug/archive"
+	graphsPath  = "/debug/graphs"
+	metricsPath = "/debug/metrics"
+	pprofPath   = "/debug/pprof"
+	varsPath    = "/debug/vars"
+)
+
 // RunHandler runs debug handler.
 func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *zap.Logger) {
 	stdL := must.NotFail(zap.NewStdLogAt(l, zap.WarnLevel))
-
-	http.Handle("/debug/metrics", promhttp.InstrumentMetricHandler(
-		r, promhttp.HandlerFor(prometheus.DefaultGatherer, promhttp.HandlerOpts{
-			ErrorLog:          stdL,
-			ErrorHandling:     promhttp.ContinueOnError,
-			Registry:          r,
-			EnableOpenMetrics: true,
-		}),
-	))
-
-	opts := []statsviz.Option{
-		statsviz.Root("/debug/graphs"),
-		// TODO https://github.com/FerretDB/FerretDB/issues/3600
-	}
-	must.NoError(statsviz.Register(http.DefaultServeMux, opts...))
-
-	handlers := map[string]string{
-		// custom handlers registered above
-		"/debug/graphs":  "Visualize metrics",
-		"/debug/metrics": "Metrics in Prometheus format",
-
-		// stdlib handlers
-		"/debug/vars":  "Expvar package metrics",
-		"/debug/pprof": "Runtime profiling data for pprof",
-	}
-
-	var page bytes.Buffer
-	must.NoError(template.Must(template.New("debug").Parse(`
-	<html>
-	<body>
-	<ul>
-	{{range $path, $desc := .}}
-		<li><a href="{{$path}}">{{$path}}</a>: {{$desc}}</li>
-	{{end}}
-	</ul>
-	</body>
-	</html>
-	`)).Execute(&page, handlers))
-
-	http.HandleFunc("/debug", func(rw http.ResponseWriter, _ *http.Request) {
-		rw.Write(page.Bytes())
-	})
-
-	http.HandleFunc("/", func(rw http.ResponseWriter, req *http.Request) {
-		http.Redirect(rw, req, "/debug", http.StatusSeeOther)
-	})
 
 	s := http.Server{
 		Addr:     addr,
@@ -93,6 +55,7 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 		BaseContext: func(_ net.Listener) context.Context {
 			return ctx
 		},
+		Handler: debugHandler(ctx, r, l),
 	}
 
 	go func() {
@@ -101,6 +64,8 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 		root := fmt.Sprintf("http://%s", lis.Addr())
 
 		l.Sugar().Infof("Starting debug server on %s ...", root)
+
+		handlers := handlersList()
 
 		paths := maps.Keys(handlers)
 		slices.Sort(paths)
@@ -118,8 +83,76 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 
 	stopCtx, stopCancel := context.WithTimeout(context.Background(), time.Second)
 	defer stopCancel()
-	s.Shutdown(stopCtx) //nolint:contextcheck // use new context for cancellation
 
-	s.Close()
+	err := s.Shutdown(stopCtx) //nolint:contextcheck // use new context for cancellation
+	if err != nil {
+		l.Sugar().Error(err)
+	}
+
+	err = s.Close()
+	if err != nil {
+		l.Sugar().Error(err)
+	}
+
 	l.Sugar().Info("Debug server stopped.")
+}
+
+// debugHandler returns the main handler for debugging endpoints.
+func debugHandler(ctx context.Context, r prometheus.Registerer, l *zap.Logger) http.Handler {
+	stdL := must.NotFail(zap.NewStdLogAt(l, zap.WarnLevel))
+
+	http.Handle(metricsPath, promhttp.InstrumentMetricHandler(
+		r, promhttp.HandlerFor(prometheus.DefaultGatherer, promhttp.HandlerOpts{
+			ErrorLog:          stdL,
+			ErrorHandling:     promhttp.ContinueOnError,
+			Registry:          r,
+			EnableOpenMetrics: true,
+		}),
+	))
+
+	opts := []statsviz.Option{
+		statsviz.Root(graphsPath),
+		// TODO https://github.com/FerretDB/FerretDB/issues/3600
+	}
+
+	must.NoError(statsviz.Register(http.DefaultServeMux, opts...))
+
+	http.HandleFunc(archivePath, archiveHandler)
+
+	var page bytes.Buffer
+	must.NoError(template.Must(template.New("debug").Parse(`
+	<html>
+	<body>
+	<ul>
+	{{range $path, $desc := .}}
+		<li><a href="{{$path}}">{{$path}}</a>: {{$desc}}</li>
+	{{end}}
+	</ul>
+	</body>
+	</html>
+	`)).Execute(&page, handlersList()))
+
+	http.HandleFunc("/debug", func(rw http.ResponseWriter, _ *http.Request) {
+		rw.Write(page.Bytes())
+	})
+
+	http.HandleFunc("/", func(rw http.ResponseWriter, req *http.Request) {
+		http.Redirect(rw, req, "/debug", http.StatusSeeOther)
+	})
+
+	return http.DefaultServeMux
+}
+
+// handlersList returns the map of handler paths and their descriptions.
+func handlersList() map[string]string {
+	return map[string]string{
+		// custom handlers registered above
+		graphsPath:  "Visualize metrics",
+		metricsPath: "Metrics in Prometheus format",
+		archivePath: "Metrics and pprof data in zip format",
+
+		// stdlib handlers
+		varsPath:  "Expvar package metrics",
+		pprofPath: "Runtime profiling data for pprof",
+	}
 }
