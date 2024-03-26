@@ -44,7 +44,7 @@ func TestPrepareSelectClause(t *testing.T) {
 			capped:        true,
 			onlyRecordIDs: true,
 			expectQuery: fmt.Sprintf(
-				`SELECT %s %s FROM "%s"."%s"`,
+				`SELECT %s %s FROM %s.%s`,
 				"/* * / 1; DROP SCHEMA "+schema+" CASCADE --  */",
 				metadata.RecordIDColumn,
 				schema,
@@ -54,7 +54,7 @@ func TestPrepareSelectClause(t *testing.T) {
 		"Capped": {
 			capped: true,
 			expectQuery: fmt.Sprintf(
-				`SELECT %s %s, %s FROM "%s"."%s"`,
+				`SELECT %s %s, %s FROM %s.%s`,
 				"/* * / 1; DROP SCHEMA "+schema+" CASCADE --  */",
 				metadata.RecordIDColumn,
 				metadata.DefaultColumn,
@@ -64,7 +64,7 @@ func TestPrepareSelectClause(t *testing.T) {
 		},
 		"FullRecord": {
 			expectQuery: fmt.Sprintf(
-				`SELECT %s %s FROM "%s"."%s"`,
+				`SELECT %s %s FROM %s.%s`,
 				"/* * / 1; DROP SCHEMA "+schema+" CASCADE --  */",
 				metadata.DefaultColumn,
 				schema,
@@ -94,7 +94,7 @@ func TestPrepareWhereClause(t *testing.T) {
 	objectID := types.ObjectID{0x62, 0x56, 0xc5, 0xba, 0x0b, 0xad, 0xc0, 0xff, 0xee, 0xff, 0xff, 0xff}
 
 	// WHERE clauses occurring frequently in tests
-	whereContain := " WHERE JSON_CONTAINS(_ferretdb_sjson->$.?, ?, '$')"
+	whereContain := " WHERE JSON_CONTAINS(_ferretdb_sjson, ?, ?)"
 	whereGt := " WHERE _ferretdb_sjson->$.? > ?"
 	whereNotEq := ` WHERE NOT ( JSON_CONTAINS(_ferretdb_sjson->$.?, ?, '$') AND _ferretdb_sjson->'$.$s.p.?.t' = `
 
@@ -170,7 +170,7 @@ func TestPrepareWhereClause(t *testing.T) {
 			filter: must.NotFail(types.NewDocument(
 				"v", must.NotFail(types.NewDocument("$eq", "foo")),
 			)),
-			args:     []any{`v`, `"foo"`},
+			args:     []any{`"foo"`, `$.v`},
 			expected: whereContain,
 		},
 		"EqEmptyString": {
@@ -201,7 +201,7 @@ func TestPrepareWhereClause(t *testing.T) {
 			filter: must.NotFail(types.NewDocument(
 				"v", must.NotFail(types.NewDocument("$eq", math.MaxFloat64)),
 			)),
-			args:     []any{`v`, types.MaxSafeDouble},
+			args:     []any{types.MaxSafeDouble, `$.v`},
 			expected: whereGt,
 		},
 		"EqDoubleBigInt64": {
@@ -209,7 +209,7 @@ func TestPrepareWhereClause(t *testing.T) {
 				// TODO https://github.com/FerretDB/FerretDB/issues/3626
 				"v", must.NotFail(types.NewDocument("$eq", float64(2<<61))),
 			)),
-			args:     []any{`v`, types.MaxSafeDouble},
+			args:     []any{types.MaxSafeDouble, `$.v`},
 			expected: whereGt,
 		},
 		"EqBool": {

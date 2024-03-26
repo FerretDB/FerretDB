@@ -69,7 +69,7 @@ func DatabaseName(tb testtb.TB) string {
 	// do not use strings.ToLower because database names can contain uppercase letters
 	name := tb.Name()
 
-	name = strings.ReplaceAll(name, "/", "-")
+	name = strings.ReplaceAll(name, "/", "_")
 	name = strings.ReplaceAll(name, " ", "_")
 	name = strings.ReplaceAll(name, "$", "_")
 
@@ -95,7 +95,7 @@ func CollectionName(tb testtb.TB) string {
 	// do not use strings.ToLower because collection names can contain uppercase letters
 	name := tb.Name()
 
-	name = strings.ReplaceAll(name, "/", "-")
+	name = strings.ReplaceAll(name, "/", "_")
 	name = strings.ReplaceAll(name, " ", "_")
 	name = strings.ReplaceAll(name, "$", "_")
 

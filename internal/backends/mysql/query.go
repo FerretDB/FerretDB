@@ -57,7 +57,7 @@ func prepareSelectClause(params *selectParams) string {
 
 	if params.Capped && params.OnlyRecordIDs {
 		return fmt.Sprintf(
-			`SELECT %s %s FROM %q.%q`,
+			`SELECT %s %s FROM %s.%s`,
 			params.Comment,
 			metadata.RecordIDColumn,
 			params.Schema, params.Table,
@@ -66,7 +66,7 @@ func prepareSelectClause(params *selectParams) string {
 
 	if params.Capped {
 		return fmt.Sprintf(
-			`SELECT %s %s, %s FROM %q.%q`,
+			`SELECT %s %s, %s FROM %s.%s`,
 			params.Comment,
 			metadata.RecordIDColumn,
 			metadata.DefaultColumn,
@@ -75,7 +75,7 @@ func prepareSelectClause(params *selectParams) string {
 	}
 
 	return fmt.Sprintf(
-		`SELECT %s %s FROM %q.%q`,
+		`SELECT %s %s FROM %s.%s`,
 		params.Comment,
 		metadata.DefaultColumn,
 		params.Schema, params.Table,
@@ -237,7 +237,8 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 // where the value under k is equal to v.
 func filterEqual(k string, v any) (filter string, args []any) {
 	// Select if value under the key is equal to provided value.
-	sql := `JSON_CONTAINS(%s->$.?, ?, '$')`
+	sql := `JSON_CONTAINS(%s, ?, ?)`
+	key := "$." + k
 
 	switch v := v.(type) {
 	case *types.Document, *types.Array, types.Binary,
@@ -260,17 +261,17 @@ func filterEqual(k string, v any) (filter string, args []any) {
 		}
 
 		filter = fmt.Sprintf(sql, metadata.DefaultColumn)
-		args = append(args, k, v)
+		args = append(args, v, key)
 
 	case string, types.ObjectID, time.Time:
 		// don't change the default eq query
 		filter = fmt.Sprintf(sql, metadata.DefaultColumn)
-		args = append(args, k, string(must.NotFail(sjson.MarshalSingleValue(v))))
+		args = append(args, string(must.NotFail(sjson.MarshalSingleValue(v))), key)
 
 	case bool, int32:
 		// don't change the default eq query
 		filter = fmt.Sprintf(sql, metadata.DefaultColumn)
-		args = append(args, k, v)
+		args = append(args, v, key)
 
 	case int64:
 		maxSafeDouble := int64(types.MaxSafeDouble)
@@ -289,7 +290,7 @@ func filterEqual(k string, v any) (filter string, args []any) {
 		}
 
 		filter = fmt.Sprintf(sql, metadata.DefaultColumn)
-		args = append(args, k, v)
+		args = append(args, v, key)
 
 	default:
 		panic(fmt.Sprintf("Unexpected type of value: %v", v))

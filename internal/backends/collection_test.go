@@ -389,7 +389,7 @@ func TestCollectionUpdateAll(t *testing.T) {
 
 				collRes, err := db.ListCollections(ctx, nil)
 				require.NoError(t, err)
-				require.NotNil(t, dbRes)
+				require.NotNil(t, collRes)
 
 				present = slices.ContainsFunc(collRes.Collections, func(ci backends.CollectionInfo) bool {
 					return ci.Name == collName
@@ -557,6 +557,11 @@ func TestListCollections(t *testing.T) {
 
 			testDB, err := b.Database(dbName)
 			require.NoError(t, err)
+			t.Cleanup(func() {
+				err := b.DropDatabase(ctx, &backends.DropDatabaseParams{Name: dbName})
+				require.NoError(t, err)
+			})
+
 			for _, collectionName := range collectionNames {
 				err = testDB.CreateCollection(ctx, &backends.CreateCollectionParams{Name: collectionName})
 				require.NoError(t, err)
@@ -597,7 +602,7 @@ func TestListCollections(t *testing.T) {
 				require.Equal(t, collectionNames[2], collRes.Collections[2].Name, "expected name testCollection3")
 			})
 
-			t.Run("ListCollectionWithEMptyParams", func(t *testing.T) {
+			t.Run("ListCollectionWithEmptyParams", func(t *testing.T) {
 				t.Parallel()
 				var param backends.ListCollectionsParams
 				collRes, err := db.ListCollections(ctx, &param)

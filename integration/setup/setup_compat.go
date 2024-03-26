@@ -86,6 +86,8 @@ func SetupCompatWithOpts(tb testtb.TB, opts *SetupCompatOpts) *SetupCompatResult
 		suffix = "pg"
 	case "sqlite":
 		suffix = "sl"
+	case "mysql":
+		suffix = "ms"
 	}
 	opts.databaseName = testutil.DatabaseName(tb) + "_" + suffix
 
