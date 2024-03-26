@@ -86,9 +86,9 @@ go build -v -o=bin/ferretdb ./cmd/ferretdb
 
 go version -m bin/ferretdb
 bin/ferretdb --version
-EOF
 
-RUN mkdir /state
+mkdir /state
+EOF
 
 # stage for binary only
 
@@ -101,13 +101,12 @@ COPY --from=production-build /src/bin/ferretdb /ferretdb
 
 FROM scratch AS production
 
-COPY --from=production-build /src/bin/ferretdb /ferretdb
-
 COPY build/ferretdb/passwd /etc/passwd
 COPY build/ferretdb/group  /etc/group
 USER ferretdb:ferretdb
 
-COPY --chown=ferretdb:ferretdb --from=production-build /state /state
+COPY --from=production-build /src/bin/ferretdb /ferretdb
+COPY --from=production-build  --chown=ferretdb:ferretdb /state /state
 
 ENTRYPOINT [ "/ferretdb" ]
 
