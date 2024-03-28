@@ -18,6 +18,7 @@ package main
 import (
 	"fmt"
 	"go/ast"
+	"go/token"
 
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/singlechecker"
@@ -142,6 +143,69 @@ func run(pass *analysis.Pass) (any, error) {
 							if ok && (subidxSl < subidx) {
 								pass.Reportf(n.Pos(), "%s should go before %s in the switch", name, sublastName)
 							}
+							subidx, sublastName = subidxSl, name
+						}
+					}
+				}
+			// Handle *ast.SwitchStmt, which represents a switch statement in Go.
+			case *ast.SwitchStmt:
+				// Declare a variable to hold the name of the case.
+				var name string
+
+				// Iterate over each case in the switch statement.
+				for _, el := range n.Body.List {
+					// If a case has no expressions (i.e., it's a default case), skip to the next case.
+					if len(el.(*ast.CaseClause).List) < 1 {
+						continue
+					}
+
+					// Get the first expression from the case clause.
+					firstTypeCase := el.(*ast.CaseClause).List[0]
+
+					// Check if the first expression is a basic literal of type string.
+					switch firstTypeCase := firstTypeCase.(type) {
+					case *ast.BasicLit:
+						if firstTypeCase.Kind == token.STRING {
+							// If it is, assign the value of the literal to name.
+							name = firstTypeCase.Value
+						}
+					}
+
+					// Check if the name is in the orderTypes map.
+					idxSl, ok := orderTypes[name]
+					if ok && (idxSl < idx) {
+						// If it is, and the current index is less than the previous index,
+						// report that the current case should go before the last case.
+						pass.Reportf(n.Pos(), "%s should go before %s in the switch", name, lastName)
+					}
+
+					// Update the index and last name to the current index and name.
+					idx, lastName = idxSl, name
+
+					// If a case has more than one expression (e.g., 'case "tag1", "tag2":'),
+					// check the order of each expression.
+					if len(el.(*ast.CaseClause).List) > 1 {
+						// Initialize subindex and sublastname with current index and name.
+						subidx, sublastName := idx, lastName
+						for i := 0; i < len(el.(*ast.CaseClause).List); i++ {
+							cs := el.(*ast.CaseClause).List[i]
+							switch cs := cs.(type) {
+							case *ast.BasicLit:
+								if cs.Kind == token.STRING {
+									// If it is, assign the value of the literal to name.
+									name = cs.Value
+								}
+							}
+
+							// Check if the name is in the orderTypes map.
+							subidxSl, ok := orderTypes[name]
+							if ok && (subidxSl < subidx) {
+								// If it is, and the current subindex is less than the previous subindex,
+								// report that the current case should go before the last case.
+								pass.Reportf(n.Pos(), "%s should go before %s in the switch", name, sublastName)
+							}
+
+							// Update the subindex and sublastname to the current subindex and name.
 							subidx, sublastName = subidxSl, name
 						}
 					}
