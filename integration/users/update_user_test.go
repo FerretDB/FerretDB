@@ -32,8 +32,8 @@ import (
 func TestUpdateUser(t *testing.T) {
 	t.Parallel()
 
-	ctx, collection := setup.Setup(t)
-	db := collection.Database()
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{SetupUser: true})
+	ctx, db := s.Ctx, s.Collection.Database()
 
 	testCases := map[string]struct { //nolint:vet // for readability
 		createPayload bson.D
@@ -109,6 +109,22 @@ func TestUpdateUser(t *testing.T) {
 			},
 			altMessage: "Password cannot be empty",
 		},
+		"BadPasswordValue": {
+			createPayload: bson.D{
+				{"createUser", "b_user_bad_password_value"},
+				{"roles", bson.A{}},
+				{"pwd", "password"},
+			},
+			updatePayload: bson.D{
+				{"updateUser", "b_user_bad_password_value"},
+				{"pwd", true},
+			},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'updateUser.pwd' is the wrong type 'bool', expected type 'string'",
+			},
+		},
 		"BadPasswordType": {
 			createPayload: bson.D{
 				{"createUser", "a_user_bad_password_type"},
@@ -178,6 +194,25 @@ func TestUpdateUser(t *testing.T) {
 				{"roles", bson.A{}},
 			},
 			skipForMongoDB: "MongoDB decommissioned support to PLAIN auth",
+		},
+		"PasswordChangeWithSCRAMMechanism": {
+			createPayload: bson.D{
+				{"createUser", "a_user_with_scram_mechanism"},
+				{"roles", bson.A{}},
+				{"pwd", "password"},
+				{"mechanisms", bson.A{"SCRAM-SHA-256"}},
+			},
+			updatePayload: bson.D{
+				{"updateUser", "a_user_with_scram_mechanism"},
+				{"pwd", "anewpassword"},
+				{"mechanisms", bson.A{"SCRAM-SHA-256"}},
+			},
+			expected: bson.D{
+				{"_id", "TestUpdateUser.a_user_with_scram_mechanism"},
+				{"user", "a_user_with_scram_mechanism"},
+				{"db", "TestUpdateUser"},
+				{"roles", bson.A{}},
+			},
 		},
 		"PasswordChangeWithBadAuthMechanism": {
 			createPayload: bson.D{

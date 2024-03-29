@@ -94,7 +94,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 	q += where
 
-	sort, sortArgs := prepareOrderByClause(&placeholder, params.Sort)
+	sort, sortArgs := prepareOrderByClause(params.Sort)
 
 	q += sort
 	args = append(args, sortArgs...)
@@ -134,8 +134,10 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 	}
 
 	err = pool.InTransaction(ctx, p, func(tx pgx.Tx) error {
-		// TODO https://github.com/FerretDB/FerretDB/issues/3708
-		const batchSize = 100
+		batchSize := c.r.BatchSize
+		if batchSize < 1 {
+			panic("batch-size should be greater or equal to 1")
+		}
 
 		var batch []*types.Document
 		docs := params.Docs
@@ -341,7 +343,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 
 	q += where
 
-	sort, sortArgs := prepareOrderByClause(&placeholder, params.Sort)
+	sort, sortArgs := prepareOrderByClause(params.Sort)
 	res.SortPushdown = sort != ""
 
 	q += sort

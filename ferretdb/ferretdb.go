@@ -23,6 +23,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"sync"
 
 	"go.uber.org/zap"
 
@@ -37,6 +38,9 @@ import (
 // Config represents FerretDB configuration.
 type Config struct {
 	Listener ListenerConfig
+
+	// Logger to use; if nil, it uses the default global logger.
+	Logger *zap.Logger
 
 	// Handler to use; one of `postgresql` or `sqlite`.
 	Handler string
@@ -113,8 +117,15 @@ func New(config *Config) (*FerretDB, error) {
 
 	metrics := connmetrics.NewListenerMetrics()
 
+	log := config.Logger
+	if log == nil {
+		log = getGlobalLogger()
+	} else {
+		log = logging.WithHooks(log)
+	}
+
 	h, closeBackend, err := registry.NewHandler(config.Handler, &registry.NewHandlerOpts{
-		Logger:        logger,
+		Logger:        log,
 		ConnMetrics:   metrics.ConnMetrics,
 		StateProvider: sp,
 		TCPHost:       config.Listener.TCP,
@@ -143,7 +154,7 @@ func New(config *Config) (*FerretDB, error) {
 		Mode:    clientconn.NormalMode,
 		Metrics: metrics,
 		Handler: h,
-		Logger:  logger,
+		Logger:  log,
 	})
 
 	return &FerretDB{
@@ -203,7 +214,7 @@ func (f *FerretDB) MongoDBURI() string {
 			Path:   "/",
 		}
 	case f.config.Listener.Unix != "":
-		// MongoDB really wants Unix socket path in the host part of the URI
+		// MongoDB really wants Unix domain socket path in the host part of the URI
 		u = &url.URL{
 			Scheme: "mongodb",
 			Host:   f.l.UnixAddr().String(),
@@ -214,21 +225,23 @@ func (f *FerretDB) MongoDBURI() string {
 	return u.String()
 }
 
-// logger is a global logger used by FerretDB.
-//
-// TODO https://github.com/FerretDB/FerretDB/issues/4014
-var logger *zap.Logger
+var (
+	loggerOnce sync.Once
+	logger     *zap.Logger
+)
 
-// Initialize the global logger there to avoid creating too many issues for zap users that initialize it in their
-// `main()` functions. It is still not a full solution; eventually, we should remove the usage of the global logger.
-//
-// TODO https://github.com/FerretDB/FerretDB/issues/4014
-func init() {
-	l := zap.ErrorLevel
-	if version.Get().DebugBuild {
-		l = zap.DebugLevel
-	}
+// getGlobalLogger retrieves or creates a global logger using
+// a loggerOnce to ensure it is created only once.
+func getGlobalLogger() *zap.Logger {
+	loggerOnce.Do(func() {
+		level := zap.ErrorLevel
+		if version.Get().DebugBuild {
+			level = zap.DebugLevel
+		}
 
-	logging.Setup(l, "console", "")
-	logger = zap.L()
+		logging.Setup(level, "console", "")
+		logger = zap.L()
+	})
+
+	return logger
 }

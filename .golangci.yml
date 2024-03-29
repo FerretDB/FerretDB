@@ -26,31 +26,26 @@ linters-settings:
             desc: use `github.com/jackc/pgx/v5` package instead
           - pkg: github.com/jackc/pgx/v4
             desc: use `github.com/jackc/pgx/v5` package instead
-      fjson:
+      oldbson:
         files:
           - $all
-          - "!**/internal/bson/*_test.go"
-          - "!**/internal/util/testutil/*.go"
-          - "!**/internal/wire/*.go"
+          - "!**/internal/bson/bson_test.go"
         deny:
-          - pkg: github.com/FerretDB/FerretDB/internal/types/fjson
+          - pkg: github.com/FerretDB/FerretDB/internal/bson/oldbson$
       bson:
         files:
           - $all
-          - "!**/internal/wire/*.go"
-          - "!**/internal/bson2/*_test.go"
-        deny:
-          - pkg: github.com/FerretDB/FerretDB/internal/bson$
-      bson2:
-        files:
-          - $all
+          - "!**/internal/bson/*_test.go"
+          - "!**/internal/driver/*.go"
+          - "!**/internal/util/testutil/*.go"
           - "!**/internal/wire/*.go"
         deny:
-          - pkg: github.com/FerretDB/FerretDB/internal/bson2
+          - pkg: github.com/FerretDB/FerretDB/internal/bson
       bsonproto:
         files:
           - $all
-          - "!**/internal/bson2/*.go"
+          - "!**/internal/bson/*.go"
+          - "!**/internal/driver/*.go"
         deny:
           - pkg: github.com/cristalhq/bson
           - pkg: github.com/cristalhq/bson/bsonproto
@@ -210,6 +205,15 @@ linters-settings:
     ignore-generated-header: true
     severity: error
     rules: []
+  sloglint:
+    no-mixed-args: true
+    kv-only: false
+    attr-only: true
+    context-only: false # https://github.com/go-simpler/sloglint/issues/29
+    static-msg: false # TODO https://github.com/FerretDB/FerretDB/issues/3421
+    no-raw-keys: false # TODO https://github.com/FerretDB/FerretDB/issues/3421
+    key-naming-case: snake
+    args-on-sep-lines: false
   staticcheck:
     checks:
       - all
@@ -242,6 +246,7 @@ linters:
     - misspell
     - nolintlint
     - revive
+    - sloglint
     - staticcheck
     - unused
     - whitespace

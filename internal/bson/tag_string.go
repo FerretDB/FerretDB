@@ -8,7 +8,7 @@ func _() {
 	// An "invalid array index" compiler error signifies that the constant values have changed.
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
-	_ = x[tagDouble-1]
+	_ = x[tagFloat64-1]
 	_ = x[tagString-2]
 	_ = x[tagDocument-3]
 	_ = x[tagArray-4]
@@ -16,7 +16,7 @@ func _() {
 	_ = x[tagUndefined-6]
 	_ = x[tagObjectID-7]
 	_ = x[tagBool-8]
-	_ = x[tagDateTime-9]
+	_ = x[tagTime-9]
 	_ = x[tagNull-10]
 	_ = x[tagRegex-11]
 	_ = x[tagDBPointer-12]
@@ -32,13 +32,13 @@ func _() {
 }
 
 const (
-	_tag_name_0 = "DoubleStringDocumentArrayBinaryUndefinedObjectIDBoolDateTimeNullRegexDBPointerJavaScriptSymbolJavaScriptScopeInt32TimestampInt64Decimal"
+	_tag_name_0 = "Float64StringDocumentArrayBinaryUndefinedObjectIDBoolTimeNullRegexDBPointerJavaScriptSymbolJavaScriptScopeInt32TimestampInt64Decimal"
 	_tag_name_1 = "MaxKey"
 	_tag_name_2 = "MinKey"
 )
 
 var (
-	_tag_index_0 = [...]uint8{0, 6, 12, 20, 25, 31, 40, 48, 52, 60, 64, 69, 78, 88, 94, 109, 114, 123, 128, 135}
+	_tag_index_0 = [...]uint8{0, 7, 13, 21, 26, 32, 41, 49, 53, 57, 61, 66, 75, 85, 91, 106, 111, 120, 125, 132}
 )
 
 func (i tag) String() string {

@@ -28,7 +28,7 @@ func (h *Handler) MsgWhatsMyURI(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
 		must.NotFail(types.NewDocument(
-			"you", conninfo.Get(ctx).PeerAddr,
+			"you", conninfo.Get(ctx).Peer.String(),
 			"ok", float64(1),
 		)),
 	)))

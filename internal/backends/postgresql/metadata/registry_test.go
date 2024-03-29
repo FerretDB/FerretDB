@@ -91,7 +91,7 @@ func createDatabase(t *testing.T, ctx context.Context) (*Registry, *pgxpool.Pool
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
-	r, err := NewRegistry(u, testutil.Logger(t), sp)
+	r, err := NewRegistry(u, 100, testutil.Logger(t), sp)
 	require.NoError(t, err)
 	t.Cleanup(r.Close)
 
@@ -140,7 +140,7 @@ func TestAuth(t *testing.T) {
 			sp, err := state.NewProvider("")
 			require.NoError(t, err)
 
-			r, err := NewRegistry(tc.uri, testutil.Logger(t), sp)
+			r, err := NewRegistry(tc.uri, 100, testutil.Logger(t), sp)
 			require.NoError(t, err)
 			t.Cleanup(r.Close)
 

@@ -45,8 +45,7 @@ func (h *Handler) MsgUsersInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3784
-	// TODO https://github.com/FerretDB/FerretDB/issues/3777
+	// TODO https://github.com/FerretDB/FerretDB/issues/4141
 	if err = common.UnimplementedNonDefault(document, "filter", func(v any) bool {
 		if v == nil || v == types.Null {
 			return true
@@ -60,7 +59,7 @@ func (h *Handler) MsgUsersInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	common.Ignored(
 		document, h.L,
-		"showCredentials", "showCustomData", "showPrivileges",
+		"showCustomData", "showPrivileges",
 		"showAuthenticationRestrictions", "comment", "filter",
 	)
 
@@ -167,6 +166,18 @@ func (h *Handler) MsgUsersInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		matches, err := common.FilterDocument(v, filter)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
+		}
+
+		if v.Has("credentials") {
+			credentials := must.NotFail(v.Get("credentials")).(*types.Document)
+			if credentialsKeys := credentials.Keys(); len(credentialsKeys) > 0 {
+				mechanisms := must.NotFail(types.NewArray())
+				for _, k := range credentialsKeys {
+					mechanisms.Append(k)
+				}
+
+				v.Set("mechanisms", mechanisms)
+			}
 		}
 
 		if !showCredentials {

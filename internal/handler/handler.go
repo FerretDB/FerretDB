@@ -77,9 +77,11 @@ type NewOpts struct {
 
 	// test options
 	DisablePushdown         bool
+	EnableNestedPushdown    bool
 	CappedCleanupInterval   time.Duration
 	CappedCleanupPercentage uint8
 	EnableNewAuth           bool
+	BatchSize               int
 }
 
 // New returns a new handler.
@@ -192,7 +194,7 @@ func (h *Handler) cleanupAllCappedCollections(ctx context.Context) error {
 	}()
 
 	connInfo := conninfo.New()
-	connInfo.BypassBackendAuth = true
+	connInfo.SetBypassBackendAuth()
 	ctx = conninfo.Ctx(ctx, connInfo)
 
 	dbList, err := h.b.ListDatabases(ctx, nil)
@@ -245,69 +247,69 @@ func (h *Handler) cleanupAllCappedCollections(ctx context.Context) error {
 func (h *Handler) cleanupCappedCollection(ctx context.Context, db backends.Database, cInfo *backends.CollectionInfo, force bool) (int32, int64, error) { //nolint:lll // for readability
 	must.BeTrue(cInfo.Capped())
 
+	var docsDeleted int32
+	var bytesFreed int64
+	var statsBefore, statsAfter *backends.CollectionStatsResult
+
 	coll, err := db.Collection(cInfo.Name)
 	if err != nil {
 		return 0, 0, lazyerrors.Error(err)
 	}
 
-	statsBefore, err := coll.Stats(ctx, &backends.CollectionStatsParams{Refresh: true})
+	statsBefore, err = coll.Stats(ctx, &backends.CollectionStatsParams{Refresh: true})
 	if err != nil {
 		return 0, 0, lazyerrors.Error(err)
 	}
-
 	h.L.Debug("cleanupCappedCollection: stats before", zap.Any("stats", statsBefore))
 
-	if statsBefore.SizeCollection < cInfo.CappedSize && statsBefore.CountDocuments < cInfo.CappedDocuments {
-		return 0, 0, nil
-	}
+	// In order to be more precise w.r.t number of documents getting dropped and to avoid
+	// deleting too many documents unnecessarily,
+	//
+	// - First, drop the surplus documents, if document count exceeds capped configuration.
+	// - Collect stats again.
+	// - If collection size still exceeds the capped size, then drop the documents based on
+	//   CappedCleanupPercentage.
 
-	res, err := coll.Query(ctx, &backends.QueryParams{
-		Sort:          must.NotFail(types.NewDocument("$natural", int64(1))),
-		Limit:         int64(float64(statsBefore.CountDocuments) * float64(h.CappedCleanupPercentage) / 100),
-		OnlyRecordIDs: true,
-	})
-	if err != nil {
-		return 0, 0, lazyerrors.Error(err)
-	}
-
-	defer res.Iter.Close()
-
-	var recordIDs []int64
-	for {
-		var doc *types.Document
-		if _, doc, err = res.Iter.Next(); err != nil {
-			if errors.Is(err, iterator.ErrIteratorDone) {
-				break
-			}
-
+	if count := getDocCleanupCount(cInfo, statsBefore); count > 0 {
+		err = deleteFirstNDocuments(ctx, coll, count)
+		if err != nil {
 			return 0, 0, lazyerrors.Error(err)
 		}
 
-		recordIDs = append(recordIDs, doc.RecordID())
+		statsAfter, err = coll.Stats(ctx, &backends.CollectionStatsParams{Refresh: true})
+		if err != nil {
+			return 0, 0, lazyerrors.Error(err)
+		}
+
+		h.L.Debug("cleanupCappedCollection: stats after document count reduction", zap.Any("stats", statsAfter))
+
+		docsDeleted += int32(count)
+		bytesFreed += (statsBefore.SizeTotal - statsAfter.SizeTotal)
+
+		statsBefore = statsAfter
 	}
 
-	if len(recordIDs) == 0 {
-		h.L.Debug("cleanupCappedCollection: no documents to delete")
-		return 0, 0, nil
-	}
+	if count := getSizeCleanupCount(cInfo, statsBefore, h.CappedCleanupPercentage); count > 0 {
+		err = deleteFirstNDocuments(ctx, coll, count)
+		if err != nil {
+			return 0, 0, lazyerrors.Error(err)
+		}
 
-	deleteRes, err := coll.DeleteAll(ctx, &backends.DeleteAllParams{RecordIDs: recordIDs})
-	if err != nil {
-		return 0, 0, lazyerrors.Error(err)
+		docsDeleted += int32(count)
 	}
 
 	if _, err = coll.Compact(ctx, &backends.CompactParams{Full: force}); err != nil {
 		return 0, 0, lazyerrors.Error(err)
 	}
 
-	statsAfter, err := coll.Stats(ctx, &backends.CollectionStatsParams{Refresh: true})
+	statsAfter, err = coll.Stats(ctx, &backends.CollectionStatsParams{Refresh: true})
 	if err != nil {
 		return 0, 0, lazyerrors.Error(err)
 	}
 
-	h.L.Debug("cleanupCappedCollection: stats after", zap.Any("stats", statsAfter))
+	h.L.Debug("cleanupCappedCollection: stats after compact", zap.Any("stats", statsAfter))
 
-	bytesFreed := statsBefore.SizeTotal - statsAfter.SizeTotal
+	bytesFreed += (statsBefore.SizeTotal - statsAfter.SizeTotal)
 
 	// There's a possibility that the size of a collection might be greater at the
 	// end of a compact operation if the collection is being actively written to at
@@ -316,5 +318,69 @@ func (h *Handler) cleanupCappedCollection(ctx context.Context, db backends.Datab
 		bytesFreed = 0
 	}
 
-	return deleteRes.Deleted, bytesFreed, nil
+	return docsDeleted, bytesFreed, nil
+}
+
+// getDocCleanupCount returns the number of documents to be deleted during capped collection cleanup
+// based on document count of the collection and capped configuration.
+func getDocCleanupCount(cInfo *backends.CollectionInfo, cStats *backends.CollectionStatsResult) int64 {
+	if cInfo.CappedDocuments == 0 || cInfo.CappedDocuments >= cStats.CountDocuments {
+		return 0
+	}
+
+	return (cStats.CountDocuments - cInfo.CappedDocuments)
+}
+
+// getSizeCleanupCount returns the number of documents to be deleted during capped collection cleanup
+// based collection size, capped configuration and cleanup percentage.
+func getSizeCleanupCount(cInfo *backends.CollectionInfo, cStats *backends.CollectionStatsResult, cleanupPercent uint8) int64 {
+	if cInfo.CappedSize >= cStats.SizeCollection {
+		return 0
+	}
+
+	return int64(float64(cStats.CountDocuments) * float64(cleanupPercent) / 100)
+}
+
+// deleteFirstNDocuments drops first n documents (based on order of insertion) from the collection.
+func deleteFirstNDocuments(ctx context.Context, coll backends.Collection, n int64) error {
+	if n == 0 {
+		return nil
+	}
+
+	res, err := coll.Query(ctx, &backends.QueryParams{
+		Sort:          must.NotFail(types.NewDocument("$natural", int64(1))),
+		Limit:         n,
+		OnlyRecordIDs: true,
+	})
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	defer res.Iter.Close()
+
+	var recordIDs []int64
+
+	for {
+		var doc *types.Document
+
+		_, doc, err = res.Iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+
+			return lazyerrors.Error(err)
+		}
+
+		recordIDs = append(recordIDs, doc.RecordID())
+	}
+
+	if len(recordIDs) > 0 {
+		_, err := coll.DeleteAll(ctx, &backends.DeleteAllParams{RecordIDs: recordIDs})
+		if err != nil {
+			return lazyerrors.Error(err)
+		}
+	}
+
+	return nil
 }

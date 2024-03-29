@@ -15,160 +15,186 @@
 package wire
 
 import (
-	"bufio"
-	"bytes"
 	"encoding/binary"
-	"encoding/json"
-	"fmt"
-	"io"
 
 	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/types/fjson"
+	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// OpQuery is used to query the database for documents in a collection.
+// OpQuery is a deprecated request message type.
 type OpQuery struct {
-	Flags                OpQueryFlags
+	// The order of fields is weird to make the struct smaller due to alignment.
+	// The wire order is: flags, collection name, number to skip, number to return, query, fields selector.
+
 	FullCollectionName   string
+	query                bson.RawDocument
+	returnFieldsSelector bson.RawDocument
+	Flags                OpQueryFlags
 	NumberToSkip         int32
 	NumberToReturn       int32
-	query                *types.Document
-	returnFieldsSelector *types.Document // may be nil
 }
 
 func (query *OpQuery) msgbody() {}
 
-// readFrom composes an OpQuery from a buffered reader.
-// It may return ValidationError if the document read from bufr is invalid.
-func (query *OpQuery) readFrom(bufr *bufio.Reader) error {
-	if err := binary.Read(bufr, binary.LittleEndian, &query.Flags); err != nil {
-		return lazyerrors.Errorf("wire.OpQuery.ReadFrom (binary.Read): %w", err)
+// check implements [MsgBody] interface.
+func (query *OpQuery) check() error {
+	if d := query.query; d != nil {
+		if _, err := d.DecodeDeep(); err != nil {
+			return lazyerrors.Error(err)
+		}
 	}
 
-	var coll bson.CString
-	if err := coll.ReadFrom(bufr); err != nil {
-		return err
-	}
-	query.FullCollectionName = string(coll)
-
-	if err := binary.Read(bufr, binary.LittleEndian, &query.NumberToSkip); err != nil {
-		return err
-	}
-	if err := binary.Read(bufr, binary.LittleEndian, &query.NumberToReturn); err != nil {
-		return err
+	if s := query.returnFieldsSelector; s != nil {
+		if _, err := s.DecodeDeep(); err != nil {
+			return lazyerrors.Error(err)
+		}
 	}
 
-	var q bson.Document
+	return nil
+}
 
-	if err := q.ReadFrom(bufr); err != nil {
-		return err
+// UnmarshalBinaryNocopy implements [MsgBody] interface.
+func (query *OpQuery) UnmarshalBinaryNocopy(b []byte) error {
+	if len(b) < 4 {
+		return lazyerrors.Errorf("len=%d", len(b))
 	}
 
-	doc := must.NotFail(types.ConvertDocument(&q))
+	query.Flags = OpQueryFlags(binary.LittleEndian.Uint32(b[0:4]))
 
-	if err := validateValue(doc); err != nil {
-		return newValidationError(fmt.Errorf("wire.OpQuery.ReadFrom: validation failed for %v with: %v", doc, err))
+	var err error
+
+	query.FullCollectionName, err = bson.DecodeCString(b[4:])
+	if err != nil {
+		return lazyerrors.Error(err)
 	}
 
-	query.query = doc
+	numberLow := 4 + bson.SizeCString(query.FullCollectionName)
+	if len(b) < numberLow+8 {
+		return lazyerrors.Errorf("len=%d, can't unmarshal numbers", len(b))
+	}
 
-	if _, err := bufr.Peek(1); err == nil {
-		var r bson.Document
-		if err := r.ReadFrom(bufr); err != nil {
-			return err
+	query.NumberToSkip = int32(binary.LittleEndian.Uint32(b[numberLow : numberLow+4]))
+	query.NumberToReturn = int32(binary.LittleEndian.Uint32(b[numberLow+4 : numberLow+8]))
+
+	l, err := bson.FindRaw(b[numberLow+8:])
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+	query.query = b[numberLow+8 : numberLow+8+l]
+
+	selectorLow := numberLow + 8 + l
+	if len(b) != selectorLow {
+		l, err = bson.FindRaw(b[selectorLow:])
+		if err != nil {
+			return lazyerrors.Error(err)
 		}
 
-		tr := must.NotFail(types.ConvertDocument(&r))
-		query.returnFieldsSelector = tr
+		if len(b) != selectorLow+l {
+			return lazyerrors.Errorf("len=%d, expected=%d", len(b), selectorLow+l)
+		}
+		query.returnFieldsSelector = b[selectorLow:]
+	}
+
+	if debugbuild.Enabled {
+		if err := query.check(); err != nil {
+			return lazyerrors.Error(err)
+		}
 	}
 
 	return nil
 }
 
-// UnmarshalBinary reads an OpQuery from a byte array.
-func (query *OpQuery) UnmarshalBinary(b []byte) error {
-	br := bytes.NewReader(b)
-	bufr := bufio.NewReader(br)
-
-	if err := query.readFrom(bufr); err != nil {
-		return lazyerrors.Errorf("wire.OpQuery.UnmarshalBinary: %w", err)
-	}
-
-	if _, err := bufr.Peek(1); err != io.EOF {
-		return lazyerrors.Errorf("unexpected end of the OpQuery: %v", err)
-	}
-
-	return nil
-}
-
-// MarshalBinary writes an OpQuery to a byte array.
+// MarshalBinary implements [MsgBody] interface.
 func (query *OpQuery) MarshalBinary() ([]byte, error) {
-	var buf bytes.Buffer
-	bufw := bufio.NewWriter(&buf)
-
-	if err := binary.Write(bufw, binary.LittleEndian, query.Flags); err != nil {
-		return nil, err
-	}
-
-	if err := bson.CString(query.FullCollectionName).WriteTo(bufw); err != nil {
-		return nil, err
-	}
-
-	if err := binary.Write(bufw, binary.LittleEndian, query.NumberToSkip); err != nil {
-		return nil, err
-	}
-	if err := binary.Write(bufw, binary.LittleEndian, query.NumberToReturn); err != nil {
-		return nil, err
-	}
-
-	if err := must.NotFail(bson.ConvertDocument(query.query)).WriteTo(bufw); err != nil {
-		return nil, err
-	}
-
-	if query.returnFieldsSelector != nil {
-		if err := must.NotFail(bson.ConvertDocument(query.returnFieldsSelector)).WriteTo(bufw); err != nil {
-			return nil, err
+	if debugbuild.Enabled {
+		if err := query.check(); err != nil {
+			return nil, lazyerrors.Error(err)
 		}
 	}
 
-	if err := bufw.Flush(); err != nil {
-		return nil, err
-	}
+	nameSize := bson.SizeCString(query.FullCollectionName)
+	b := make([]byte, 12+nameSize+len(query.query)+len(query.returnFieldsSelector))
 
-	return buf.Bytes(), nil
+	binary.LittleEndian.PutUint32(b[0:4], uint32(query.Flags))
+
+	nameHigh := 4 + nameSize
+	bson.EncodeCString(b[4:nameHigh], query.FullCollectionName)
+
+	binary.LittleEndian.PutUint32(b[nameHigh:nameHigh+4], uint32(query.NumberToSkip))
+	binary.LittleEndian.PutUint32(b[nameHigh+4:nameHigh+8], uint32(query.NumberToReturn))
+
+	queryHigh := nameHigh + 8 + len(query.query)
+	copy(b[nameHigh+8:queryHigh], query.query)
+	copy(b[queryHigh:], query.returnFieldsSelector)
+
+	return b, nil
 }
 
 // Query returns the query document.
 func (query *OpQuery) Query() *types.Document {
-	return query.query
+	if query.query == nil {
+		return nil
+	}
+
+	return must.NotFail(query.query.Convert())
 }
 
 // ReturnFieldsSelector returns the fields selector document (that may be nil).
 func (query *OpQuery) ReturnFieldsSelector() *types.Document {
-	return query.returnFieldsSelector
+	if query.returnFieldsSelector == nil {
+		return nil
+	}
+
+	return must.NotFail(query.returnFieldsSelector.Convert())
 }
 
-// String returns a string representation for logging.
-func (query *OpQuery) String() string {
+// logMessage returns a string representation for logging.
+func (query *OpQuery) logMessage(block bool) string {
 	if query == nil {
 		return "<nil>"
 	}
 
-	m := map[string]any{
-		"Flags":              query.Flags,
-		"FullCollectionName": query.FullCollectionName,
-		"NumberToSkip":       query.NumberToSkip,
-		"NumberToReturn":     query.NumberToReturn,
-		"Query":              json.RawMessage(must.NotFail(fjson.Marshal(query.query))),
-	}
-	if query.returnFieldsSelector != nil {
-		m["ReturnFieldsSelector"] = json.RawMessage(must.NotFail(fjson.Marshal(query.returnFieldsSelector)))
+	m := must.NotFail(bson.NewDocument(
+		"Flags", query.Flags.String(),
+		"FullCollectionName", query.FullCollectionName,
+		"NumberToSkip", query.NumberToSkip,
+		"NumberToReturn", query.NumberToReturn,
+	))
+
+	doc, err := query.query.DecodeDeep()
+	if err == nil {
+		must.NoError(m.Add("Query", doc))
+	} else {
+		must.NoError(m.Add("QueryError", err.Error()))
 	}
 
-	return string(must.NotFail(json.MarshalIndent(m, "", "  ")))
+	if query.returnFieldsSelector != nil {
+		doc, err = query.returnFieldsSelector.DecodeDeep()
+		if err == nil {
+			must.NoError(m.Add("ReturnFieldsSelector", doc))
+		} else {
+			must.NoError(m.Add("ReturnFieldsSelectorError", err.Error()))
+		}
+	}
+
+	if block {
+		return bson.LogMessageBlock(m)
+	}
+
+	return bson.LogMessage(m)
+}
+
+// String returns a string representation for logging.
+func (query *OpQuery) String() string {
+	return query.logMessage(false)
+}
+
+// StringBlock returns an indented string representation for logging.
+func (query *OpQuery) StringBlock() string {
+	return query.logMessage(true)
 }
 
 // check interfaces

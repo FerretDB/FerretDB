@@ -95,7 +95,7 @@ func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath string, tlsAndAut
 
 // setupListener starts in-process FerretDB server that runs until ctx is canceled.
 // It returns basic MongoDB URI for that listener.
-func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string {
+func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *BackendOpts) string {
 	tb.Helper()
 
 	_, span := otel.Tracer("").Start(ctx, "setupListener")
@@ -168,6 +168,8 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 	sp, err := state.NewProvider("")
 	require.NoError(tb, err)
 
+	require.NotNil(tb, opts)
+
 	handlerOpts := &registry.NewHandlerOpts{
 		Logger:        logger,
 		ConnMetrics:   listenerMetrics.ConnMetrics,
@@ -180,9 +182,10 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 
 		TestOpts: registry.TestOpts{
 			DisablePushdown:         *disablePushdownF,
-			CappedCleanupPercentage: 20,
-			CappedCleanupInterval:   0,
+			CappedCleanupPercentage: opts.CappedCleanupPercentage,
+			CappedCleanupInterval:   opts.CappedCleanupInterval,
 			EnableNewAuth:           true,
+			BatchSize:               *batchSizeF,
 		},
 	}
 	h, closeBackend, err := registry.NewHandler(handler, handlerOpts)

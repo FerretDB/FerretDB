@@ -15,50 +15,120 @@
 package wire
 
 import (
-	"bufio"
-	"bytes"
 	"encoding/binary"
-	"encoding/json"
 	"fmt"
-	"io"
 
 	"github.com/FerretDB/FerretDB/internal/bson"
-	"github.com/FerretDB/FerretDB/internal/bson2"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/types/fjson"
+	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
+// typesValidation, when true, enables validation of types in wire messages.
+const typesValidation = true
+
 // OpMsgSection is one or more sections contained in an OpMsg.
 type OpMsgSection struct {
-	Kind       byte
+	// The order of fields is weird to make the struct smaller due to alignment.
+	// The wire order is: kind, identifier, documents.
+
 	Identifier string
-	documents  []*types.Document // TODO https://github.com/FerretDB/FerretDB/issues/274
+	Documents  []bson.RawDocument
+	Kind       byte
 }
 
 // MakeOpMsgSection creates [OpMsgSection] with a single document.
 func MakeOpMsgSection(doc *types.Document) OpMsgSection {
+	raw := must.NotFail(must.NotFail(bson.ConvertDocument(doc)).Encode())
+
 	return OpMsgSection{
-		documents: []*types.Document{doc},
+		Documents: []bson.RawDocument{raw},
 	}
 }
 
-// OpMsg is an extensible message format designed to subsume the functionality of other opcodes.
+// OpMsg is the main wire protocol message type.
 type OpMsg struct {
-	FlagBits OpMsgFlags
+	// The order of fields is weird to make the struct smaller due to alignment.
+	// The wire order is: flags, sections, optional checksum.
 
 	sections []OpMsgSection
+	Flags    OpMsgFlags
 	checksum uint32
 }
 
-// SetSections of the OpMsg.
+// NewOpMsg creates a message with a single section of kind 0 with a single raw document.
+func NewOpMsg(raw bson.RawDocument) (*OpMsg, error) {
+	var msg OpMsg
+	if err := msg.SetSections(OpMsgSection{Documents: []bson.RawDocument{raw}}); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &msg, nil
+}
+
+// checkSections checks given sections.
+func checkSections(sections []OpMsgSection) error {
+	if len(sections) == 0 {
+		return lazyerrors.New("no sections")
+	}
+
+	var kind0Found bool
+
+	for _, s := range sections {
+		switch s.Kind {
+		case 0:
+			if kind0Found {
+				return lazyerrors.New("multiple kind 0 sections")
+			}
+			kind0Found = true
+
+			if s.Identifier != "" {
+				return lazyerrors.New("kind 0 section has identifier")
+			}
+
+			if len(s.Documents) != 1 {
+				return lazyerrors.Errorf("kind 0 section has %d documents", len(s.Documents))
+			}
+
+		case 1:
+			if s.Identifier == "" {
+				return lazyerrors.New("kind 1 section has no identifier")
+			}
+
+		default:
+			return lazyerrors.Errorf("unknown kind %d", s.Kind)
+		}
+	}
+
+	return nil
+}
+
+// Sections returns the sections of the OpMsg.
+func (msg *OpMsg) Sections() []OpMsgSection {
+	return msg.sections
+}
+
+// SetSections sets sections of the OpMsg.
 func (msg *OpMsg) SetSections(sections ...OpMsgSection) error {
-	msg.sections = sections
-	_, err := msg.Document()
-	if err != nil {
+	if err := checkSections(sections); err != nil {
 		return lazyerrors.Error(err)
 	}
+
+	msg.sections = sections
+
+	if debugbuild.Enabled {
+		if err := msg.check(); err != nil {
+			return lazyerrors.Error(err)
+		}
+	}
+
+	if typesValidation {
+		if _, err := msg.Document(); err != nil {
+			return lazyerrors.Error(err)
+		}
+	}
+
 	return nil
 }
 
@@ -66,22 +136,27 @@ func (msg *OpMsg) SetSections(sections ...OpMsgSection) error {
 //
 // All sections are merged together.
 func (msg *OpMsg) Document() (*types.Document, error) {
+	if err := checkSections(msg.sections); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	docs := make([]*types.Document, 0, len(msg.sections))
+
 	// Sections of kind 1 may come before the section of kind 0,
 	// but the command is defined by the first key in the section of kind 0.
 	// Reorder documents to set keys in the right order.
-
-	docs := make([]*types.Document, 0, len(msg.sections))
 
 	for _, section := range msg.sections {
 		if section.Kind != 0 {
 			continue
 		}
 
-		if l := len(section.documents); l != 1 {
-			return nil, lazyerrors.Errorf("wire.OpMsg.Document: %d documents in kind 0 section", l)
+		doc, err := section.Documents[0].Convert()
+		if err != nil {
+			return nil, lazyerrors.Error(err)
 		}
 
-		docs = append(docs, section.documents[0])
+		docs = append(docs, doc)
 	}
 
 	for _, section := range msg.sections {
@@ -89,17 +164,15 @@ func (msg *OpMsg) Document() (*types.Document, error) {
 			continue
 		}
 
-		if section.Kind != 1 {
-			panic(fmt.Sprintf("unknown kind %d", section.Kind))
-		}
+		a := types.MakeArray(len(section.Documents))
 
-		if section.Identifier == "" {
-			return nil, lazyerrors.New("wire.OpMsg.Document: empty section identifier")
-		}
+		for _, d := range section.Documents {
+			doc, err := d.Convert()
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
 
-		a := types.MakeArray(len(section.documents))
-		for _, d := range section.documents {
-			a.Append(d)
+			a.Append(doc)
 		}
 
 		docs = append(docs, must.NotFail(types.NewDocument(section.Identifier, a)))
@@ -110,17 +183,13 @@ func (msg *OpMsg) Document() (*types.Document, error) {
 	for _, doc := range docs {
 		values := doc.Values()
 
-		// move that check to validateValue?
-		// TODO https://github.com/FerretDB/FerretDB/issues/2412
 		for i, k := range doc.Keys() {
-			if res.Has(k) {
-				return nil, newValidationError(fmt.Errorf("wire.OpMsg.Document: duplicate key %q", k))
-			}
 			res.Set(k, values[i])
 		}
 	}
 
 	if err := validateValue(res); err != nil {
+		res.Remove("lsid") // to simplify error message
 		return nil, newValidationError(fmt.Errorf("wire.OpMsg.Document: validation failed for %v with: %v",
 			types.FormatAnyValue(res),
 			err,
@@ -130,101 +199,126 @@ func (msg *OpMsg) Document() (*types.Document, error) {
 	return res, nil
 }
 
-// RawDocument returns the value of msg as a [bson2.RawDocument].
+// RawSections returns the value of section with kind 0 and the value of all sections with kind 1.
+func (msg *OpMsg) RawSections() (bson.RawDocument, []byte) {
+	var spec bson.RawDocument
+	var seq []byte
+
+	for _, s := range msg.Sections() {
+		switch s.Kind {
+		case 0:
+			spec = s.Documents[0]
+
+		case 1:
+			for _, d := range s.Documents {
+				seq = append(seq, d...)
+			}
+		}
+	}
+
+	return spec, seq
+}
+
+// RawDocument returns the value of msg as a [bson.RawDocument].
 //
 // The error is returned if msg contains anything other than a single section of kind 0
 // with a single document.
-func (msg *OpMsg) RawDocument() (bson2.RawDocument, error) {
-	if len(msg.sections) != 1 {
-		return nil, lazyerrors.Errorf("wire.OpMsg.RawDocument: expected 1 section, got %d", len(msg.sections))
+func (msg *OpMsg) RawDocument() (bson.RawDocument, error) {
+	if err := checkSections(msg.sections); err != nil {
+		return nil, err
 	}
 
 	s := msg.sections[0]
 	if s.Kind != 0 || s.Identifier != "" {
-		return nil, lazyerrors.Errorf(`wire.OpMsg.RawDocument: expected section 0/"", got %d/%q`, s.Kind, s.Identifier)
+		return nil, lazyerrors.Errorf(`expected section 0/"", got %d/%q`, s.Kind, s.Identifier)
 	}
 
-	if len(s.documents) != 1 {
-		return nil, lazyerrors.Errorf("wire.OpMsg.RawDocument: expected 1 document, got %d", len(s.documents))
-	}
-
-	doc, err := bson2.ConvertDocument(s.documents[0])
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	raw, err := doc.Encode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return raw, nil
+	return s.Documents[0], nil
 }
 
 func (msg *OpMsg) msgbody() {}
 
-func (msg *OpMsg) readFrom(bufr *bufio.Reader) error {
-	if err := binary.Read(bufr, binary.LittleEndian, &msg.FlagBits); err != nil {
-		return lazyerrors.Error(err)
+// check implements [MsgBody] interface.
+func (msg *OpMsg) check() error {
+	for _, s := range msg.sections {
+		for _, d := range s.Documents {
+			if _, err := d.DecodeDeep(); err != nil {
+				return lazyerrors.Error(err)
+			}
+		}
 	}
+
+	return nil
+}
+
+// UnmarshalBinaryNocopy implements [MsgBody] interface.
+func (msg *OpMsg) UnmarshalBinaryNocopy(b []byte) error {
+	if len(b) < 6 {
+		return lazyerrors.Errorf("len=%d", len(b))
+	}
+
+	msg.Flags = OpMsgFlags(binary.LittleEndian.Uint32(b[0:4]))
+
+	offset := 4
 
 	for {
 		var section OpMsgSection
-		if err := binary.Read(bufr, binary.LittleEndian, &section.Kind); err != nil {
-			return lazyerrors.Error(err)
-		}
+		section.Kind = b[offset]
+		offset++
 
 		switch section.Kind {
 		case 0:
-			var doc bson.Document
-			if err := doc.ReadFrom(bufr); err != nil {
-				return lazyerrors.Error(err)
-			}
-
-			d, err := types.ConvertDocument(&doc)
+			l, err := bson.FindRaw(b[offset:])
 			if err != nil {
 				return lazyerrors.Error(err)
 			}
-			section.documents = []*types.Document{d}
+
+			section.Documents = []bson.RawDocument{b[offset : offset+l]}
+			offset += l
 
 		case 1:
-			var secSize int32
-			if err := binary.Read(bufr, binary.LittleEndian, &secSize); err != nil {
-				return lazyerrors.Error(err)
+			if len(b) < offset+4 {
+				return lazyerrors.Errorf("len(b) = %d, offset = %d", len(b), offset)
 			}
 
+			secSize := int(binary.LittleEndian.Uint32(b[offset:offset+4])) - 4
 			if secSize < 5 {
-				return lazyerrors.Errorf("wire.OpMsg.readFrom: invalid kind 1 section length %d", secSize)
+				return lazyerrors.Errorf("size = %d", secSize)
 			}
 
-			sec := make([]byte, secSize-4)
-			if n, err := io.ReadFull(bufr, sec); err != nil {
-				return lazyerrors.Errorf("expected %d, read %d: %w", len(sec), n, err)
+			offset += 4
+
+			var err error
+
+			if len(b) < offset {
+				return lazyerrors.Errorf("len(b) = %d, offset = %d", len(b), offset)
 			}
 
-			secr := bufio.NewReader(bytes.NewReader(sec))
-
-			var id bson.CString
-			if err := id.ReadFrom(secr); err != nil {
+			section.Identifier, err = bson.DecodeCString(b[offset:])
+			if err != nil {
 				return lazyerrors.Error(err)
 			}
-			section.Identifier = string(id)
 
-			for {
-				if _, err := secr.Peek(1); err == io.EOF {
-					break
+			offset += bson.SizeCString(section.Identifier)
+			secSize -= bson.SizeCString(section.Identifier)
+
+			for secSize != 0 {
+				if secSize < 0 {
+					return lazyerrors.Errorf("size = %d", secSize)
 				}
 
-				var doc bson.Document
-				if err := doc.ReadFrom(secr); err != nil {
-					return lazyerrors.Error(err)
+				if len(b) < offset {
+					return lazyerrors.Errorf("len(b) = %d, offset = %d", len(b), offset)
 				}
 
-				d, err := types.ConvertDocument(&doc)
+				l, err := bson.FindRaw(b[offset:])
 				if err != nil {
 					return lazyerrors.Error(err)
 				}
-				section.documents = append(section.documents, d)
+
+				section.Documents = append(section.Documents, b[offset:offset+l])
+				offset += l
+				secSize -= l
 			}
 
 		default:
@@ -233,41 +327,37 @@ func (msg *OpMsg) readFrom(bufr *bufio.Reader) error {
 
 		msg.sections = append(msg.sections, section)
 
-		peekBytes := 1
-		if msg.FlagBits.FlagSet(OpMsgChecksumPresent) {
-			peekBytes = 5
-		}
-		if _, err := bufr.Peek(peekBytes); err == io.EOF {
-			break
+		if msg.Flags.FlagSet(OpMsgChecksumPresent) {
+			if offset == len(b)-4 {
+				break
+			}
+		} else {
+			if offset == len(b) {
+				break
+			}
 		}
 	}
 
-	if msg.FlagBits.FlagSet(OpMsgChecksumPresent) {
-		if err := binary.Read(bufr, binary.LittleEndian, &msg.checksum); err != nil {
-			// Move checksum validation here. It needs header data to be available.
-			// TODO https://github.com/FerretDB/FerretDB/issues/2690
+	if msg.Flags.FlagSet(OpMsgChecksumPresent) {
+		// Move checksum validation here. It needs header data to be available.
+		// TODO https://github.com/FerretDB/FerretDB/issues/2690
+		msg.checksum = binary.LittleEndian.Uint32(b[offset:])
+	}
+
+	if err := checkSections(msg.sections); err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	if debugbuild.Enabled {
+		if err := msg.check(); err != nil {
 			return lazyerrors.Error(err)
 		}
 	}
 
-	if _, err := msg.Document(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// UnmarshalBinary reads an OpMsg from a byte array.
-func (msg *OpMsg) UnmarshalBinary(b []byte) error {
-	br := bytes.NewReader(b)
-	bufr := bufio.NewReader(br)
-
-	if err := msg.readFrom(bufr); err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	if _, err := bufr.Peek(1); err != io.EOF {
-		return lazyerrors.Errorf("unexpected end of the OpMsg: %v", err)
+	if typesValidation {
+		if _, err := msg.Document(); err != nil {
+			return lazyerrors.Error(err)
+		}
 	}
 
 	return nil
@@ -275,123 +365,127 @@ func (msg *OpMsg) UnmarshalBinary(b []byte) error {
 
 // MarshalBinary writes an OpMsg to a byte array.
 func (msg *OpMsg) MarshalBinary() ([]byte, error) {
-	var buf bytes.Buffer
-	bufw := bufio.NewWriter(&buf)
-
-	if err := binary.Write(bufw, binary.LittleEndian, msg.FlagBits); err != nil {
+	if err := checkSections(msg.sections); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	for _, section := range msg.sections {
-		if err := bufw.WriteByte(section.Kind); err != nil {
+	if debugbuild.Enabled {
+		if err := msg.check(); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
+	}
+
+	if typesValidation {
+		if _, err := msg.Document(); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+	}
+
+	b := make([]byte, 4, 16)
+
+	binary.LittleEndian.PutUint32(b, uint32(msg.Flags))
+
+	for _, section := range msg.sections {
+		b = append(b, section.Kind)
 
 		switch section.Kind {
 		case 0:
-			if l := len(section.documents); l != 1 {
-				panic(fmt.Sprintf("%d documents in section with kind 0", l))
-			}
-
-			d, err := bson.ConvertDocument(section.documents[0])
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-			if err := d.WriteTo(bufw); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
+			b = append(b, section.Documents[0]...)
 
 		case 1:
-			var secBuf bytes.Buffer
-			secw := bufio.NewWriter(&secBuf)
+			sec := make([]byte, bson.SizeCString(section.Identifier))
+			bson.EncodeCString(sec, section.Identifier)
 
-			if err := bson.CString(section.Identifier).WriteTo(secw); err != nil {
-				return nil, lazyerrors.Error(err)
+			for _, doc := range section.Documents {
+				sec = append(sec, doc...)
 			}
 
-			for _, doc := range section.documents {
-				d, err := bson.ConvertDocument(doc)
-				if err != nil {
-					return nil, lazyerrors.Error(err)
-				}
-
-				if err := d.WriteTo(secw); err != nil {
-					return nil, lazyerrors.Error(err)
-				}
-			}
-
-			if err := secw.Flush(); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-			if err := binary.Write(bufw, binary.LittleEndian, int32(secBuf.Len()+4)); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-			if _, err := bufw.Write(secBuf.Bytes()); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
+			var size [4]byte
+			binary.LittleEndian.PutUint32(size[:], uint32(len(sec)+4))
+			b = append(b, size[:]...)
+			b = append(b, sec...)
 
 		default:
 			return nil, lazyerrors.Errorf("kind is %d", section.Kind)
 		}
 	}
 
-	if msg.FlagBits.FlagSet(OpMsgChecksumPresent) {
+	if msg.Flags.FlagSet(OpMsgChecksumPresent) {
 		// Calculate checksum before writing it. It needs header data to be ready and available here.
 		// TODO https://github.com/FerretDB/FerretDB/issues/2690
-		if err := binary.Write(bufw, binary.LittleEndian, msg.checksum); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
+		var checksum [4]byte
+		binary.LittleEndian.PutUint32(checksum[:], msg.checksum)
+		b = append(b, checksum[:]...)
 	}
 
-	if err := bufw.Flush(); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return buf.Bytes(), nil
+	return b, nil
 }
 
-// String returns a string representation for logging.
-func (msg *OpMsg) String() string {
+// logMessage returns a string representation for logging.
+func (msg *OpMsg) logMessage(block bool) string {
 	if msg == nil {
 		return "<nil>"
 	}
 
-	m := map[string]any{
-		"FlagBits": msg.FlagBits,
-		"Checksum": msg.checksum,
-	}
+	m := must.NotFail(bson.NewDocument(
+		"FlagBits", msg.Flags.String(),
+		"Checksum", int64(msg.checksum),
+	))
 
-	sections := make([]map[string]any, len(msg.sections))
-	for i, section := range msg.sections {
-		s := map[string]any{
-			"Kind": section.Kind,
-		}
+	sections := bson.MakeArray(len(msg.sections))
+	for _, section := range msg.sections {
+		s := must.NotFail(bson.NewDocument(
+			"Kind", int32(section.Kind),
+		))
+
 		switch section.Kind {
 		case 0:
-			b := must.NotFail(fjson.Marshal(section.documents[0]))
-			s["Document"] = json.RawMessage(b)
-		case 1:
-			s["Identifier"] = section.Identifier
-			docs := make([]json.RawMessage, len(section.documents))
-
-			for j, d := range section.documents {
-				b := must.NotFail(fjson.Marshal(d))
-				docs[j] = json.RawMessage(b)
+			doc, err := section.Documents[0].DecodeDeep()
+			if err == nil {
+				must.NoError(s.Add("Document", doc))
+			} else {
+				must.NoError(s.Add("DocumentError", err.Error()))
 			}
 
-			s["Documents"] = docs
+		case 1:
+			must.NoError(s.Add("Identifier", section.Identifier))
+			docs := bson.MakeArray(len(section.Documents))
+
+			for _, d := range section.Documents {
+				doc, err := d.DecodeDeep()
+				if err == nil {
+					must.NoError(docs.Add(doc))
+				} else {
+					must.NoError(docs.Add(must.NotFail(bson.NewDocument("error", err.Error()))))
+				}
+			}
+
+			must.NoError(s.Add("Documents", docs))
+
 		default:
 			panic(fmt.Sprintf("unknown kind %d", section.Kind))
 		}
 
-		sections[i] = s
+		must.NoError(sections.Add(s))
 	}
 
-	m["Sections"] = sections
+	must.NoError(m.Add("Sections", sections))
 
-	return string(must.NotFail(json.MarshalIndent(m, "", "  ")))
+	if block {
+		return bson.LogMessageBlock(m)
+	}
+
+	return bson.LogMessage(m)
+}
+
+// String returns a string representation for logging.
+func (msg *OpMsg) String() string {
+	return msg.logMessage(false)
+}
+
+// StringBlock returns an indented string representation for logging.
+func (msg *OpMsg) StringBlock() string {
+	return msg.logMessage(true)
 }
 
 // check interfaces

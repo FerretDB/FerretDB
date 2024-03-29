@@ -61,19 +61,15 @@ func TestClient(t *testing.T) {
 		c, err := newClient(cacheFilePath, t.Logf, t.Logf, t.Logf)
 		require.NoError(t, err)
 
-		actual, err := c.checkIssueStatus(ctx, 10)
+		actual, err := c.checkIssueStatus(ctx, "FerretDB", 10)
 		require.NoError(t, err)
 		assert.Equal(t, issueOpen, actual)
 
-		actual, err = c.checkIssueStatus(ctx, 1)
+		actual, err = c.checkIssueStatus(ctx, "FerretDB", 1)
 		require.NoError(t, err)
 		assert.Equal(t, issueClosed, actual)
 
-		actual, err = c.checkIssueStatus(ctx, 999999)
-		require.NoError(t, err)
-		assert.Equal(t, issueNotFound, actual)
-
-		actual, err = c.checkIssueStatus(ctx, -1)
+		actual, err = c.checkIssueStatus(ctx, "FerretDB", 999999)
 		require.NoError(t, err)
 		assert.Equal(t, issueNotFound, actual)
 	})
@@ -84,19 +80,15 @@ func TestClient(t *testing.T) {
 		c, err := newClient(cacheFilePath, t.Logf, t.Logf, t.Logf)
 		require.NoError(t, err)
 
-		actual, err := c.IssueStatus(ctx, 10)
+		actual, err := c.IssueStatus(ctx, "https://github.com/FerretDB/FerretDB/issues/10", "FerretDB", 10)
 		require.NoError(t, err)
 		assert.Equal(t, issueOpen, actual)
 
-		actual, err = c.IssueStatus(ctx, 1)
+		actual, err = c.IssueStatus(ctx, "https://github.com/FerretDB/FerretDB/issues/1", "FerretDB", 1)
 		require.NoError(t, err)
 		assert.Equal(t, issueClosed, actual)
 
-		actual, err = c.IssueStatus(ctx, 999999)
-		require.NoError(t, err)
-		assert.Equal(t, issueNotFound, actual)
-
-		actual, err = c.IssueStatus(ctx, -1)
+		actual, err = c.IssueStatus(ctx, "https://github.com/FerretDB/FerretDB/issues/999999", "FerretDB", 999999)
 		require.NoError(t, err)
 		assert.Equal(t, issueNotFound, actual)
 
@@ -109,19 +101,15 @@ func TestClient(t *testing.T) {
 
 		c.c = nil
 
-		actual, err = c.IssueStatus(ctx, 10)
+		actual, err = c.IssueStatus(ctx, "https://github.com/FerretDB/FerretDB/issues/10", "FerretDB", 10)
 		require.NoError(t, err)
 		assert.Equal(t, issueOpen, actual)
 
-		actual, err = c.IssueStatus(ctx, 1)
+		actual, err = c.IssueStatus(ctx, "https://github.com/FerretDB/FerretDB/issues/1", "FerretDB", 1)
 		require.NoError(t, err)
 		assert.Equal(t, issueClosed, actual)
 
-		actual, err = c.IssueStatus(ctx, 999999)
-		require.NoError(t, err)
-		assert.Equal(t, issueNotFound, actual)
-
-		actual, err = c.IssueStatus(ctx, -1)
+		actual, err = c.IssueStatus(ctx, "https://github.com/FerretDB/FerretDB/issues/999999", "FerretDB", 999999)
 		require.NoError(t, err)
 		assert.Equal(t, issueNotFound, actual)
 	})

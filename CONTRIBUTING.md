@@ -30,7 +30,7 @@ On macOS and Windows, [Docker Desktop](https://www.docker.com/products/docker-de
 On Windows, it should be [configured to use WSL 2](https://docs.docker.com/desktop/windows/wsl/) without any distro;
 all commands should be run on the host.
 
-You will need Go 1.21 or later on the host.
+You will need Go 1.22 or later on the host.
 If your package manager doesn't provide it yet,
 please install it from [go.dev](https://go.dev/dl/).
 
@@ -158,8 +158,6 @@ The `internal` subpackages contain most of the FerretDB code:
 
 - `types` package provides Go types matching BSON types that don't have built-in Go equivalents:
   we use `int32` for BSON's int32, but `types.ObjectID` for BSON's ObjectId.
-- `types/fjson` provides converters from/to FJSON for built-in and `types` types.
-  It is used for logging of BSON values and wire protocol messages.
 - `bson` package provides converters from/to BSON for built-in and `types` types.
 - `wire` package provides wire protocol implementation.
 - `clientconn` package provides client connection implementation.
@@ -183,7 +181,8 @@ you can run those with `task test-unit` after starting the environment as descri
 
 We also have a set of "integration" tests in the `integration` directory.
 They use the Go MongoDB driver like a regular user application.
-They could test any MongoDB-compatible database (such as FerretDB or MongoDB itself) via a regular TCP or TLS port or Unix socket.
+They could test any MongoDB-compatible database (such as FerretDB or MongoDB itself) via a regular TCP or TLS port
+or Unix domain socket.
 They also could test in-process FerretDB instances
 (meaning that integration tests start and stop them themselves) with a given backend.
 Finally, some integration tests (so-called compatibility or "compat" tests) connect to two systems
