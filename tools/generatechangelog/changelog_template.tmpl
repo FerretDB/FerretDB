@@ -1,0 +1,8 @@
+{{- range .Groups }}
+### {{ .CategoryTitle }}
+{{- "\n" }}
+{{- range .PRs }}
+- {{ .Title }} by @{{ .User.Login }} in {{ .URL }}
+{{- end }}
+{{- "\n" }}
+{{- end }}

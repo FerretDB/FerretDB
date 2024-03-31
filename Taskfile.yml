@@ -932,3 +932,8 @@ tasks:
         --entrypoint='/bin/sh -c "git config --global --add safe.directory /workdir && git status"'
         wrangler
       - docker compose run --rm --service-ports wrangler pages deployment create --project-name=blog website/build
+  
+  changelog:
+    desc: "Generate changelogs locally for the upcoming version."
+    cmds:
+      - bin/generatechangelog
