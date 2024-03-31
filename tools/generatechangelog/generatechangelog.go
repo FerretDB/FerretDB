@@ -22,6 +22,7 @@ const (
 	REPO_NAME     = "FerretDB"
 )
 
+// The PR itself from the Github endpoint
 type PRItem struct {
 	URL    string `json:"html_url"`
 	Number int    `json:"number"`
@@ -34,12 +35,14 @@ type PRItem struct {
 	} `json:"labels"`
 }
 
+// The response from the endpoint
 type PRResponse struct {
 	TotalCount        int      `json:"total_count"`
 	IncompleteResults bool     `json:"incomplete_results"`
 	Items             []PRItem `json:"items"`
 }
 
+// The deconstructed template categories from the given template file
 type ReleaseTemplate struct {
 	Changelog struct {
 		Categories []TemplateCategory `yaml:"categories"`
@@ -51,6 +54,7 @@ type TemplateCategory struct {
 	Labels []string `yaml:"labels"`
 }
 
+// An intermediate struct to group PRs by labels and categories
 type GroupedPRs struct {
 	CategoryTitle string
 	PRs           []PRItem
@@ -60,6 +64,7 @@ type CategorizedPRs struct {
 	Groups []GroupedPRs
 }
 
+// Opens the current repository
 func GetRepository(repoPath string) (*git.Repository, error) {
 	r, err := git.PlainOpen(repoPath)
 	if err != nil {
@@ -69,6 +74,8 @@ func GetRepository(repoPath string) (*git.Repository, error) {
 	return r, nil
 }
 
+// Gets the latest tag available locally. This should correspond with the
+// version.
 func GetLatestTag(repo *git.Repository) (string, time.Time, error) {
 	tagRefs, err := repo.Tags()
 	if err != nil {
@@ -111,10 +118,12 @@ func GetLatestTag(repo *git.Repository) (string, time.Time, error) {
 	return latestTagName, latestTagCommitTime, nil
 }
 
+// Get the endpoint, with param to obtain PRs merged past input date
 func GetGithubPRUrl(orgName, repoName, date string) string {
 	return fmt.Sprintf("https://api.github.com/search/issues?q=repo:%s/%s+is:pr+is:merged+merged:>=%s", orgName, repoName, date)
 }
 
+// Fetches the PRs and unmarshals into a PRResponse
 func FetchPRs(client *http.Client, prUrl string) (*PRResponse, error) {
 	req, err := http.NewRequest("GET", prUrl, nil)
 
@@ -144,6 +153,7 @@ func FetchPRs(client *http.Client, prUrl string) (*PRResponse, error) {
 	return &prResponse, nil
 }
 
+// Loads the given release template
 func LoadReleaseTemplate(filePath string) (*ReleaseTemplate, error) {
 	bytes, err := os.ReadFile(filePath)
 	if err != nil {
@@ -159,6 +169,7 @@ func LoadReleaseTemplate(filePath string) (*ReleaseTemplate, error) {
 	return template, nil
 }
 
+// Helper function that generates slice of PRItems with input slice of PRs and set of labels
 func collectPRItemsWithLabels(prItems []PRItem, labelSet map[string]struct{}) []PRItem {
 	res := []PRItem{}
 
@@ -174,6 +185,7 @@ func collectPRItemsWithLabels(prItems []PRItem, labelSet map[string]struct{}) []
 	return res
 }
 
+// Generating a Group of PRs based on the template category
 func groupPRsByTemplateCategory(prItems []PRItem, templateCategory TemplateCategory) *GroupedPRs {
 	labelSet := make(map[string]struct{})
 
@@ -187,6 +199,7 @@ func groupPRsByTemplateCategory(prItems []PRItem, templateCategory TemplateCateg
 	}
 }
 
+// Iterating throught the categories and generating Groups of PRs
 func GroupPRsByCategories(prItems []PRItem, categories []TemplateCategory) CategorizedPRs {
 	var categorizedPRs CategorizedPRs
 
@@ -200,6 +213,7 @@ func GroupPRsByCategories(prItems []PRItem, categories []TemplateCategory) Categ
 	return categorizedPRs
 }
 
+// Rendering markdown based on template to stdout
 func RenderMarkdownFromFile(categorizedPRs CategorizedPRs, templatePath string) error {
 	tmpl, err := template.ParseFiles(templatePath)
 	if err != nil {
