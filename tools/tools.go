@@ -15,7 +15,6 @@
 package tools
 
 import (
-	_ "github.com/FerretDB/FerretDB/tools/generatechangelog"
 	_ "github.com/go-task/task/v3/cmd/task"
 	_ "github.com/goreleaser/nfpm/v2/cmd/nfpm"
 	_ "github.com/quasilyte/go-consistent"
@@ -26,6 +25,8 @@ import (
 	_ "golang.org/x/tools/cmd/stringer"
 	_ "golang.org/x/vuln/cmd/govulncheck"
 	_ "mvdan.cc/gofumpt"
+
+	_ "github.com/FerretDB/FerretDB/tools/generatechangelog"
 )
 
 //go:generate go build -v -o ../bin/ ./checkdocs

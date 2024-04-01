@@ -1,25 +1,21 @@
 package main
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
-	"io"
 	"log"
-	"net/http"
 	"os"
 	"path/filepath"
 	"text/template"
 	"time"
 
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/google/go-github/v57/github"
 	"gopkg.in/yaml.v3"
 )
 
 const (
-	GITHUB_HEADER = "application/vnd.github+json"
-	ORG_NAME      = "FerretDB"
-	REPO_NAME     = "FerretDB"
+	OrgOwner = "FerretDB"
+	Repo     = "FerretDB"
 )
 
 // The PR itself from the Github endpoint
@@ -33,13 +29,6 @@ type PRItem struct {
 	Labels []struct {
 		Name string `json:"name"`
 	} `json:"labels"`
-}
-
-// The response from the endpoint
-type PRResponse struct {
-	TotalCount        int      `json:"total_count"`
-	IncompleteResults bool     `json:"incomplete_results"`
-	Items             []PRItem `json:"items"`
 }
 
 // The deconstructed template categories from the given template file
@@ -64,94 +53,69 @@ type CategorizedPRs struct {
 	Groups []GroupedPRs
 }
 
-// Opens the current repository
-func GetRepository(repoPath string) (*git.Repository, error) {
-	r, err := git.PlainOpen(repoPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open repository: %w", err)
-	}
-
-	return r, nil
+func NewGitHubClient() *github.Client {
+	return github.NewClient(nil).WithAuthToken(os.Getenv("GITHUB_TOKEN"))
 }
 
-// Gets the latest tag available locally. This should correspond with the
-// version.
-func GetLatestTag(repo *git.Repository) (string, time.Time, error) {
-	tagRefs, err := repo.Tags()
+func GetLatestTag(ctx context.Context, client *github.Client, owner, repo string) (*github.RepositoryTag, error) {
+	tags, _, err := client.Repositories.ListTags(ctx, owner, repo, &github.ListOptions{PerPage: 1})
 	if err != nil {
-		return "", time.Time{}, fmt.Errorf("failed to get tags: %w", err)
+		return nil, fmt.Errorf("failed to list tags: %w", err)
 	}
 
-	var latestTagCommitTime time.Time
-	var latestTagName string
-
-	// iterate through tags to get the latest tag. Alternative: use git log directly
-	err = tagRefs.ForEach(func(t *plumbing.Reference) error {
-		obj, err := repo.TagObject(t.Hash())
-		var commitHash plumbing.Hash
-		if err == nil {
-			commitHash = obj.Target
-		} else {
-			commitHash = t.Hash()
-		}
-
-		commit, err := repo.CommitObject(commitHash)
-		if err != nil {
-			return fmt.Errorf("failed to get commit object: %w", err)
-		}
-
-		if commit.Committer.When.After(latestTagCommitTime) {
-			latestTagCommitTime = commit.Committer.When
-			latestTagName = t.Name().Short()
-		}
-
-		return nil
-	})
-
-	if err != nil {
-		return "", time.Time{}, fmt.Errorf("error iterating tags: %w", err)
+	if len(tags) == 0 {
+		return nil, fmt.Errorf("no tags found in the repository")
 	}
 
-	if latestTagName == "" {
-		return "", time.Time{}, fmt.Errorf("no tags found in the repository")
-	}
-
-	return latestTagName, latestTagCommitTime, nil
+	return tags[0], nil
 }
 
-// Get the endpoint, with param to obtain PRs merged past input date
-func GetGithubPRUrl(orgName, repoName, date string) string {
-	return fmt.Sprintf("https://api.github.com/search/issues?q=repo:%s/%s+is:pr+is:merged+merged:>=%s", orgName, repoName, date)
+func GetCommitDate(ctx context.Context, client *github.Client, owner, repo, commitSHA string) (*time.Time, error) {
+	commit, _, err := client.Git.GetCommit(ctx, owner, repo, commitSHA)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get commit: %w", err)
+	}
+
+	return &commit.Author.Date.Time, nil
 }
 
-// Fetches the PRs and unmarshals into a PRResponse
-func FetchPRs(client *http.Client, prUrl string) (*PRResponse, error) {
-	req, err := http.NewRequest("GET", prUrl, nil)
+func FetchPRs(ctx context.Context, client *github.Client, owner, repo, sinceDate string) ([]PRItem, error) {
+	query := fmt.Sprintf("repo:%s/%s is:pr is:merged merged:>=%s", owner, repo, sinceDate)
+	opts := &github.SearchOptions{Sort: "created", Order: "desc", ListOptions: github.ListOptions{PerPage: 100}}
 
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Add("Accept", GITHUB_HEADER)
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-
+	issues, _, err := client.Search.Issues(ctx, query, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	var prResponse PRResponse
+	res := []PRItem{}
 
-	if err := json.Unmarshal(body, &prResponse); err != nil {
-		return nil, err
+	for _, issue := range issues.Issues {
+		res = append(res, func(i *github.Issue) PRItem {
+			labels := []struct {
+				Name string "json:\"name\""
+			}{}
+
+			for _, label := range i.Labels {
+				labels = append(labels, struct {
+					Name string "json:\"name\""
+				}{Name: *label.Name})
+			}
+			return PRItem{
+				URL:    *i.URL,
+				Number: *i.Number,
+				Title:  *i.Title,
+				User: struct {
+					Login string "json:\"login\""
+				}{
+					Login: *i.User.Login,
+				},
+				Labels: labels,
+			}
+		}(issue))
 	}
 
-	return &prResponse, nil
+	return res, nil
 }
 
 // Loads the given release template
@@ -232,16 +196,13 @@ func RenderMarkdownFromFile(categorizedPRs CategorizedPRs, templatePath string) 
 }
 
 func main() {
+	ctx := context.Background()
+
+	client := NewGitHubClient()
+
 	repoRoot, err := os.Getwd()
 	if err != nil {
 		log.Fatalf("Failed to get current working directory: %v", err)
-	}
-
-	// Load the repository
-	repo, err := GetRepository(repoRoot)
-
-	if err != nil {
-		log.Fatalf("Failed to open repo: %v", err)
 	}
 
 	// Use existing release.yml file in .github
@@ -249,30 +210,31 @@ func main() {
 
 	// Load the release template file
 	template, err := LoadReleaseTemplate(releaseYamlFile)
-
 	if err != nil {
 		log.Fatalf("Failed to read from template yaml file: %v", err)
 	}
 
-	// Get latest tag and date
-	_, latestTagDate, err := GetLatestTag(repo)
+	// Get latest tag
+	latestTag, err := GetLatestTag(ctx, client, OrgOwner, Repo)
 	if err != nil {
 		log.Fatalf("Failed to get latest tag: %v", err)
 	}
 
-	dateString := latestTagDate.Format("2006-01-02")
+	commitDate, err := GetCommitDate(ctx, client, OrgOwner, Repo, *latestTag.Commit.SHA)
+	if err != nil {
+		log.Fatalf("Failed to get commit date of tag: %v", err)
+	}
 
-	prUrl := GetGithubPRUrl(ORG_NAME, REPO_NAME, dateString)
+	sinceDate := commitDate.Format(time.RFC3339)
 
 	// Fetch merged PRs for next version
-	client := &http.Client{}
-	prResponse, err := FetchPRs(client, prUrl)
+	mergedPRs, err := FetchPRs(ctx, client, OrgOwner, Repo, sinceDate)
 	if err != nil {
 		log.Fatalf("Failed to fetch PRs: %v", err)
 	}
 
 	// Group PRs by labels
-	categorizedPRs := GroupPRsByCategories(prResponse.Items, template.Changelog.Categories)
+	categorizedPRs := GroupPRsByCategories(mergedPRs, template.Changelog.Categories)
 
 	// Render to markdown
 	markdownTemplatePath := filepath.Join(repoRoot, "tools", "generatechangelog", "changelog_template.tmpl")
