@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"math"
 	"slices"
-	"sort"
 	"strings"
 	"time"
 
@@ -32,6 +31,13 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
+
+// kvOp represents key-value pair and its associated update operator.
+type kvOp struct {
+	Key      string
+	Value    any
+	Operator string
+}
 
 // UpdateDocument iterates through documents from iter and processes them sequentially based on param.
 // Returns UpdateResult if all operations (update/upsert) are successful.
@@ -213,20 +219,20 @@ func processUpdateOperator(command string, doc, update *types.Document, upsert b
 
 	docId, _ := doc.Get("_id")
 
-	for _, updateOp := range update.Keys() {
-		updateV := must.NotFail(update.Get(updateOp))
-
+	for _, kvOp := range getSortedKVOps(update) {
 		var updated bool
 
-		switch updateOp {
+		key, value := kvOp.Key, kvOp.Value
+
+		switch kvOp.Operator {
 		case "$currentDate":
-			updated, err = processCurrentDateFieldExpression(doc, updateV)
+			updated, err = processCurrentDateFieldExpression(doc, key, value)
 			if err != nil {
 				return false, err
 			}
 
 		case "$set":
-			updated, err = processSetFieldExpression(command, doc, updateV.(*types.Document), false)
+			updated, err = processSetFieldExpression(command, doc, key, value, false)
 			if err != nil {
 				return false, err
 			}
@@ -236,100 +242,95 @@ func processUpdateOperator(command string, doc, update *types.Document, upsert b
 				continue
 			}
 
-			updated, err = processSetFieldExpression(command, doc, updateV.(*types.Document), true)
+			updated, err = processSetFieldExpression(command, doc, key, value, true)
 			if err != nil {
 				return false, err
 			}
 
 		case "$unset":
-			// updateV is document, checked in ValidateUpdateOperators.
-			unsetDoc := updateV.(*types.Document)
+			var path types.Path
 
-			for _, key := range unsetDoc.Keys() {
-				var path types.Path
+			path, err = types.NewPathFromString(key)
+			if err != nil {
+				// ValidateUpdateOperators checked already $unset contains valid path.
+				panic(err)
+			}
 
-				path, err = types.NewPathFromString(key)
-				if err != nil {
-					// ValidateUpdateOperators checked already $unset contains valid path.
-					panic(err)
-				}
-
-				if doc.HasByPath(path) {
-					doc.RemoveByPath(path)
-					updated = true
-				}
+			if doc.HasByPath(path) {
+				doc.RemoveByPath(path)
+				updated = true
 			}
 
 		case "$inc":
-			updated, err = processIncFieldExpression(command, doc, updateV)
+			updated, err = processIncFieldExpression(command, doc, key, value)
 			if err != nil {
 				return false, err
 			}
 
 		case "$max":
-			updated, err = processMaxFieldExpression(command, doc, updateV)
+			updated, err = processMaxFieldExpression(command, doc, key, value)
 			if err != nil {
 				return false, err
 			}
 
 		case "$min":
-			updated, err = processMinFieldExpression(command, doc, updateV)
+			updated, err = processMinFieldExpression(command, doc, key, value)
 			if err != nil {
 				return false, err
 			}
 
 		case "$mul":
-			if updated, err = processMulFieldExpression(command, doc, updateV); err != nil {
+			if updated, err = processMulFieldExpression(command, doc, key, value); err != nil {
 				return false, err
 			}
 
 		case "$rename":
-			updated, err = processRenameFieldExpression(command, doc, updateV.(*types.Document))
+			updated, err = processRenameFieldExpression(command, doc, key, value)
 			if err != nil {
 				return false, err
 			}
 
 		case "$pop":
-			updated, err = processPopArrayUpdateExpression(doc, updateV.(*types.Document))
+			updated, err = processPopArrayUpdateExpression(command, doc, key, value)
 			if err != nil {
 				return false, err
 			}
 
 		case "$push":
-			updated, err = processPushArrayUpdateExpression(doc, updateV.(*types.Document))
+			updated, err = processPushArrayUpdateExpression(command, doc, key, value)
 			if err != nil {
 				return false, err
 			}
 
 		case "$addToSet":
-			updated, err = processAddToSetArrayUpdateExpression(doc, updateV.(*types.Document))
-			if err != nil {
-				return false, err
-			}
-
-		case "$pullAll":
-			updated, err = processPullAllArrayUpdateExpression(doc, updateV.(*types.Document))
+			updated, err = processAddToSetArrayUpdateExpression(command, doc, key, value)
 			if err != nil {
 				return false, err
 			}
 
 		case "$pull":
-			updated, err = processPullArrayUpdateExpression(doc, updateV.(*types.Document))
+			updated, err = processPullArrayUpdateExpression(command, doc, key, value)
+			if err != nil {
+				return false, err
+			}
+
+		case "$pullAll":
+			updated, err = processPullAllArrayUpdateExpression(command, doc, key, value)
 			if err != nil {
 				return false, err
 			}
 
 		case "$bit":
-			updated, err = processBitFieldExpression(command, doc, updateV.(*types.Document))
+			updated, err = processBitFieldExpression(command, doc, key, value)
 			if err != nil {
 				return false, err
 			}
 
 		default:
-			if strings.HasPrefix(updateOp, "$") {
+			if strings.HasPrefix(kvOp.Operator, "$") {
 				return false, NewUpdateError(
 					handlererrors.ErrNotImplemented,
-					fmt.Sprintf("UpdateDocument: unhandled operation %q", updateOp),
+					fmt.Sprintf("UpdateDocument: unhandled operation %q", kvOp.Operator),
 					command,
 				)
 			}
@@ -350,653 +351,570 @@ func processUpdateOperator(command string, doc, update *types.Document, upsert b
 	return docUpdated, nil
 }
 
-// processSetFieldExpression changes document according to $set and $setOnInsert operators.
-// If the document was changed it returns true.
-func processSetFieldExpression(command string, doc, setDoc *types.Document, setOnInsert bool) (bool, error) {
-	var changed bool
+// getSortedKVOps extracts key-value pairs and associated operators from update document
+// and sorts them based on lexicographic order of keys.
+func getSortedKVOps(update *types.Document) []*kvOp {
+	kvOps := []*kvOp{}
 
-	setDocKeys := setDoc.Keys()
-	sort.Strings(setDocKeys)
+	iter := update.Iterator()
+	defer iter.Close()
 
-	for _, setKey := range setDocKeys {
-		setValue := must.NotFail(setDoc.Get(setKey))
+	for {
+		operator, opVal, err := iter.Next()
+		if err == iterator.ErrIteratorDone { //nolint:errorlint // only ErrIteratorDone could be returned
+			break
+		}
 
-		if setOnInsert {
-			// $setOnInsert do not set null and empty array value.
-			if _, ok := setValue.(types.NullType); ok {
-				continue
+		opDoc := opVal.(*types.Document)
+
+		opDocIter := opDoc.Iterator()
+
+		for {
+			key, val, err := opDocIter.Next()
+			if err == iterator.ErrIteratorDone { //nolint:errorlint // only ErrIteratorDone could be returned
+				opDocIter.Close()
+				break
 			}
 
-			if arr, ok := setValue.(*types.Array); ok && arr.Len() == 0 {
-				continue
-			}
+			kvOps = append(kvOps, &kvOp{
+				Key:      key,
+				Value:    val,
+				Operator: operator,
+			})
 		}
 
-		// setKey has valid path, checked in ValidateUpdateOperators.
-		path := must.NotFail(types.NewPathFromString(setKey))
-
-		if doc.HasByPath(path) {
-			docValue := must.NotFail(doc.GetByPath(path))
-			if types.Identical(setValue, docValue) {
-				continue
-			}
-		}
-
-		// we should insert the value if it's a regular key
-		if setOnInsert && path.Len() > 1 {
-			continue
-		}
-
-		if err := doc.SetByPath(path, setValue); err != nil {
-			return false, NewUpdateError(handlererrors.ErrUnsuitableValueType, err.Error(), command)
-		}
-
-		changed = true
+		opDocIter.Close()
 	}
 
-	return changed, nil
+	slices.SortFunc(kvOps, func(a *kvOp, b *kvOp) int {
+		return strings.Compare(a.Key, b.Key)
+	})
+
+	return kvOps
+}
+
+// processSetFieldExpression changes document according to $set and $setOnInsert operators.
+// If the document was changed it returns true.
+func processSetFieldExpression(command string, doc *types.Document, setKey string, setValue any, setOnInsert bool) (bool, error) {
+	if setOnInsert {
+		// $setOnInsert do not set null and empty array value.
+		if _, ok := setValue.(types.NullType); ok {
+			return false, nil
+		}
+
+		if arr, ok := setValue.(*types.Array); ok && arr.Len() == 0 {
+			return false, nil
+		}
+	}
+
+	// setKey has valid path, checked in ValidateUpdateOperators.
+	path := must.NotFail(types.NewPathFromString(setKey))
+
+	if doc.HasByPath(path) {
+		docValue := must.NotFail(doc.GetByPath(path))
+		if types.Identical(setValue, docValue) {
+			return false, nil
+		}
+	}
+
+	// we should insert the value if it's a regular key
+	// if setOnInsert && path.Len() > 1 {
+	// 	return false, nil
+	// }
+
+	if err := doc.SetByPath(path, setValue); err != nil {
+		return false, NewUpdateError(handlererrors.ErrUnsuitableValueType, err.Error(), command)
+	}
+
+	return true, nil
 }
 
 // processRenameFieldExpression changes document according to $rename operator.
 // If the document was changed it returns true.
-func processRenameFieldExpression(command string, doc *types.Document, update *types.Document) (bool, error) {
-	update.SortFieldsByKey()
-
+func processRenameFieldExpression(command string, doc *types.Document, key string, value any) (bool, error) {
 	var changed bool
 
-	for _, key := range update.Keys() {
-		renameRawValue := must.NotFail(update.Get(key))
+	if key == "" || value == "" {
+		return changed, NewUpdateError(
+			handlererrors.ErrEmptyName,
+			"An empty update path is not valid.",
+			command,
+		)
+	}
 
-		if key == "" || renameRawValue == "" {
-			return changed, NewUpdateError(
+	// this is covered in validateRenameExpression
+	newKey := value.(string)
+
+	sourcePath, err := types.NewPathFromString(key)
+	if err != nil {
+		var pathErr *types.PathError
+		if errors.As(err, &pathErr) && pathErr.Code() == types.ErrPathElementEmpty {
+			return false, NewUpdateError(
 				handlererrors.ErrEmptyName,
-				"An empty update path is not valid.",
+				fmt.Sprintf(
+					"The update path '%s' contains an empty field name, which is not allowed.",
+					key,
+				),
+				command,
+			)
+		}
+	}
+
+	targetPath, err := types.NewPathFromString(newKey)
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	// Get value to move
+	val, err := doc.GetByPath(sourcePath)
+	if err != nil {
+		var dpe *types.PathError
+		if !errors.As(err, &dpe) {
+			panic("getByPath returned error with invalid type")
+		}
+
+		if dpe.Code() == types.ErrPathKeyNotFound || dpe.Code() == types.ErrPathIndexOutOfBound {
+			return false, nil
+		}
+
+		if dpe.Code() == types.ErrPathIndexInvalid {
+			return false, NewUpdateError(
+				handlererrors.ErrUnsuitableValueType,
+				fmt.Sprintf("cannot use path '%s' to traverse the document", sourcePath),
 				command,
 			)
 		}
 
-		// this is covered in validateRenameExpression
-		renameValue := renameRawValue.(string)
-
-		sourcePath, err := types.NewPathFromString(key)
-		if err != nil {
-			var pathErr *types.PathError
-			if errors.As(err, &pathErr) && pathErr.Code() == types.ErrPathElementEmpty {
-				return false, NewUpdateError(
-					handlererrors.ErrEmptyName,
-					fmt.Sprintf(
-						"The update path '%s' contains an empty field name, which is not allowed.",
-						key,
-					),
-					command,
-				)
-			}
-		}
-
-		targetPath, err := types.NewPathFromString(renameValue)
-		if err != nil {
-			return changed, lazyerrors.Error(err)
-		}
-
-		// Get value to move
-		val, err := doc.GetByPath(sourcePath)
-		if err != nil {
-			var dpe *types.PathError
-			if !errors.As(err, &dpe) {
-				panic("getByPath returned error with invalid type")
-			}
-
-			if dpe.Code() == types.ErrPathKeyNotFound || dpe.Code() == types.ErrPathIndexOutOfBound {
-				continue
-			}
-
-			if dpe.Code() == types.ErrPathIndexInvalid {
-				return false, NewUpdateError(
-					handlererrors.ErrUnsuitableValueType,
-					fmt.Sprintf("cannot use path '%s' to traverse the document", sourcePath),
-					command,
-				)
-			}
-
-			return changed, NewUpdateError(handlererrors.ErrUnsuitableValueType, dpe.Error(), command)
-		}
-
-		// Remove old document
-		doc.RemoveByPath(sourcePath)
-
-		// Set new path with old value
-		if err := doc.SetByPath(targetPath, val); err != nil {
-			return false, lazyerrors.Error(err)
-		}
-
-		changed = true
+		return false, NewUpdateError(handlererrors.ErrUnsuitableValueType, dpe.Error(), command)
 	}
 
-	return changed, nil
+	// Remove old document
+	doc.RemoveByPath(sourcePath)
+
+	// Set new path with old value
+	if err := doc.SetByPath(targetPath, val); err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	return true, nil
 }
 
 // processIncFieldExpression changes document according to $inc operator.
 // If the document was changed it returns true.
-func processIncFieldExpression(command string, doc *types.Document, updateV any) (bool, error) {
-	// updateV is document, checked in ValidateUpdateOperators.
-	incDoc := updateV.(*types.Document)
-
-	var changed bool
-
-	for _, incKey := range incDoc.Keys() {
-		incValue := must.NotFail(incDoc.Get(incKey))
-
-		// ensure incValue is a valid number type.
-		switch incValue.(type) {
-		case float64, int32, int64:
-		default:
-			return false, NewUpdateError(
-				handlererrors.ErrTypeMismatch,
-				fmt.Sprintf(`Cannot increment with non-numeric argument: {%s: %#v}`, incKey, incValue),
-				command,
-			)
-		}
-
-		var err error
-
-		// incKey has valid path, checked in ValidateUpdateOperators.
-		path := must.NotFail(types.NewPathFromString(incKey))
-
-		if !doc.HasByPath(path) {
-			// $inc sets the field if it does not exist.
-			if err := doc.SetByPath(path, incValue); err != nil {
-				return false, NewUpdateError(
-					handlererrors.ErrUnsuitableValueType,
-					err.Error(),
-					command,
-				)
-			}
-
-			changed = true
-
-			continue
-		}
-
-		path, err = types.NewPathFromString(incKey)
-		if err != nil {
-			return false, lazyerrors.Error(err)
-		}
-
-		docValue, err := doc.GetByPath(path)
-		if err != nil {
-			return false, err
-		}
-
-		incremented, err := addNumbers(incValue, docValue)
-		if err == nil {
-			if err = doc.SetByPath(path, incremented); err != nil {
-				return false, lazyerrors.Error(err)
-			}
-
-			result := types.Compare(docValue, incremented)
-
-			docFloat, ok := docValue.(float64)
-			if result == types.Equal &&
-				// if the document value is NaN we should consider it as changed.
-				(ok && !math.IsNaN(docFloat)) {
-				continue
-			}
-
-			changed = true
-
-			continue
-		}
-
-		switch {
-		case errors.Is(err, handlerparams.ErrUnexpectedRightOpType):
-			k := incKey
-			if path.Len() > 1 {
-				k = path.Suffix()
-			}
-
-			return false, NewUpdateError(
-				handlererrors.ErrTypeMismatch,
-				fmt.Sprintf(
-					`Cannot apply $inc to a value of non-numeric type. `+
-						`{_id: %s} has the field '%s' of non-numeric type %s`,
-					types.FormatAnyValue(must.NotFail(doc.Get("_id"))),
-					k,
-					handlerparams.AliasFromType(docValue),
-				),
-				command,
-			)
-		case errors.Is(err, handlerparams.ErrLongExceededPositive), errors.Is(err, handlerparams.ErrLongExceededNegative):
-			return false, NewUpdateError(
-				handlererrors.ErrBadValue,
-				fmt.Sprintf(
-					`Failed to apply $inc operations to current value ((NumberLong)%d) for document {_id: "%s"}`,
-					docValue,
-					must.NotFail(doc.Get("_id")),
-				),
-				command,
-			)
-		case errors.Is(err, handlerparams.ErrIntExceeded):
-			return false, NewUpdateError(
-				handlererrors.ErrBadValue,
-				fmt.Sprintf(
-					`Failed to apply $inc operations to current value ((NumberInt)%d) for document {_id: "%s"}`,
-					docValue,
-					must.NotFail(doc.Get("_id")),
-				),
-				command,
-			)
-		default:
-			return false, lazyerrors.Error(err)
-		}
+func processIncFieldExpression(command string, doc *types.Document, incKey string, incValue any) (bool, error) {
+	// ensure incValue is a valid number type.
+	switch incValue.(type) {
+	case float64, int32, int64:
+	default:
+		return false, NewUpdateError(
+			handlererrors.ErrTypeMismatch,
+			fmt.Sprintf(`Cannot increment with non-numeric argument: {%s: %#v}`, incKey, incValue),
+			command,
+		)
 	}
 
-	return changed, nil
+	var err error
+
+	// incKey has valid path, checked in ValidateUpdateOperators.
+	path := must.NotFail(types.NewPathFromString(incKey))
+
+	if !doc.HasByPath(path) {
+		// $inc sets the field if it does not exist.
+		if err = doc.SetByPath(path, incValue); err != nil {
+			return false, NewUpdateError(
+				handlererrors.ErrUnsuitableValueType,
+				err.Error(),
+				command,
+			)
+		}
+
+		return true, nil
+	}
+
+	path, err = types.NewPathFromString(incKey)
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	docValue, err := doc.GetByPath(path)
+	if err != nil {
+		return false, err
+	}
+
+	incremented, err := addNumbers(incValue, docValue)
+	if err == nil {
+		if err = doc.SetByPath(path, incremented); err != nil {
+			return false, lazyerrors.Error(err)
+		}
+
+		result := types.Compare(docValue, incremented)
+
+		docFloat, ok := docValue.(float64)
+		if result == types.Equal &&
+			// if the document value is NaN we should consider it as changed.
+			(ok && !math.IsNaN(docFloat)) {
+			return false, nil
+		}
+
+		return true, nil
+	}
+
+	switch {
+	case errors.Is(err, handlerparams.ErrUnexpectedRightOpType):
+		k := incKey
+		if path.Len() > 1 {
+			k = path.Suffix()
+		}
+
+		return false, NewUpdateError(
+			handlererrors.ErrTypeMismatch,
+			fmt.Sprintf(
+				`Cannot apply $inc to a value of non-numeric type. `+
+					`{_id: %s} has the field '%s' of non-numeric type %s`,
+				types.FormatAnyValue(must.NotFail(doc.Get("_id"))),
+				k,
+				handlerparams.AliasFromType(docValue),
+			),
+			command,
+		)
+	case errors.Is(err, handlerparams.ErrLongExceededPositive), errors.Is(err, handlerparams.ErrLongExceededNegative):
+		return false, NewUpdateError(
+			handlererrors.ErrBadValue,
+			fmt.Sprintf(
+				`Failed to apply $inc operations to current value ((NumberLong)%d) for document {_id: "%s"}`,
+				docValue,
+				must.NotFail(doc.Get("_id")),
+			),
+			command,
+		)
+	case errors.Is(err, handlerparams.ErrIntExceeded):
+		return false, NewUpdateError(
+			handlererrors.ErrBadValue,
+			fmt.Sprintf(
+				`Failed to apply $inc operations to current value ((NumberInt)%d) for document {_id: "%s"}`,
+				docValue,
+				must.NotFail(doc.Get("_id")),
+			),
+			command,
+		)
+	default:
+		return false, lazyerrors.Error(err)
+	}
 }
 
 // processMaxFieldExpression changes document according to $max operator.
 // If the document was changed it returns true.
-func processMaxFieldExpression(command string, doc *types.Document, updateV any) (bool, error) {
-	maxExpression := updateV.(*types.Document)
-	maxExpression.SortFieldsByKey()
+func processMaxFieldExpression(command string, doc *types.Document, maxKey string, maxValue any) (bool, error) {
+	// maxKey has valid path, checked in ValidateUpdateOperators.
+	path := must.NotFail(types.NewPathFromString(maxKey))
 
-	var changed bool
-
-	iter := maxExpression.Iterator()
-	defer iter.Close()
-
-	for {
-		maxKey, maxVal, err := iter.Next()
+	if !doc.HasByPath(path) {
+		err := doc.SetByPath(path, maxValue)
 		if err != nil {
-			if errors.Is(err, iterator.ErrIteratorDone) {
-				break
-			}
-
-			return false, lazyerrors.Error(err)
+			return false, NewUpdateError(handlererrors.ErrUnsuitableValueType, err.Error(), command)
 		}
 
-		// maxKey has valid path, checked in ValidateUpdateOperators.
-		path := must.NotFail(types.NewPathFromString(maxKey))
-
-		if !doc.HasByPath(path) {
-			err = doc.SetByPath(path, maxVal)
-			if err != nil {
-				return false, NewUpdateError(handlererrors.ErrUnsuitableValueType, err.Error(), command)
-			}
-
-			changed = true
-			continue
-		}
-
-		val, err := doc.GetByPath(path)
-		if err != nil {
-			return false, lazyerrors.Error(err)
-		}
-
-		// if the document value was found, compare it with max value
-		if val != nil {
-			res := types.CompareOrder(val, maxVal, types.Ascending)
-			switch res {
-			case types.Equal:
-				fallthrough
-			case types.Greater:
-				continue
-			case types.Less:
-				// if document value is less than max value, update the value
-			default:
-				return changed, handlererrors.NewCommandErrorMsgWithArgument(
-					handlererrors.ErrNotImplemented,
-					"document comparison is not implemented",
-					"$max",
-				)
-			}
-		}
-
-		if err = doc.SetByPath(path, maxVal); err != nil {
-			return false, lazyerrors.Error(err)
-		}
-
-		changed = true
+		return true, nil
 	}
 
-	return changed, nil
+	val, err := doc.GetByPath(path)
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	// if the document value was found, compare it with max value
+	if val != nil {
+		res := types.CompareOrder(val, maxValue, types.Ascending)
+		switch res {
+		case types.Equal, types.Greater:
+			return false, nil
+		case types.Less:
+			// if document value is less than max value, update the value
+		default:
+			return false, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrNotImplemented,
+				"document comparison is not implemented",
+				"$max",
+			)
+		}
+	}
+
+	if err = doc.SetByPath(path, maxValue); err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	return true, nil
 }
 
 // processMinFieldExpression changes document according to $min operator.
 // If the document was changed it returns true.
-func processMinFieldExpression(command string, doc *types.Document, updateV any) (bool, error) {
-	minExpression := updateV.(*types.Document)
-	minExpression.SortFieldsByKey()
+func processMinFieldExpression(command string, doc *types.Document, minKey string, minValue any) (bool, error) {
+	// minKey has valid path, checked in ValidateUpdateOperators.
+	path := must.NotFail(types.NewPathFromString(minKey))
 
-	var changed bool
-
-	iter := minExpression.Iterator()
-	defer iter.Close()
-
-	for {
-		minKey, minVal, err := iter.Next()
+	if !doc.HasByPath(path) {
+		err := doc.SetByPath(path, minValue)
 		if err != nil {
-			if errors.Is(err, iterator.ErrIteratorDone) {
-				break
-			}
-
-			return false, lazyerrors.Error(err)
+			return false, NewUpdateError(handlererrors.ErrUnsuitableValueType, err.Error(), command)
 		}
 
-		// minKey has valid path, checked in ValidateUpdateOperators.
-		path := must.NotFail(types.NewPathFromString(minKey))
-
-		if !doc.HasByPath(path) {
-			err = doc.SetByPath(path, minVal)
-			if err != nil {
-				return false, NewUpdateError(handlererrors.ErrUnsuitableValueType, err.Error(), command)
-			}
-
-			changed = true
-			continue
-		}
-
-		val, err := doc.GetByPath(path)
-		if err != nil {
-			return false, lazyerrors.Error(err)
-		}
-
-		// if the document value was found, compare it with min value
-		if val != nil {
-			res := types.CompareOrder(val, minVal, types.Ascending)
-			switch res {
-			case types.Equal:
-				fallthrough
-			case types.Less:
-				continue
-			case types.Greater:
-			}
-		}
-
-		if err = doc.SetByPath(path, minVal); err != nil {
-			return false, lazyerrors.Error(err)
-		}
-
-		changed = true
+		return true, nil
 	}
 
-	return changed, nil
+	val, err := doc.GetByPath(path)
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	// if the document value was found, compare it with min value
+	if val != nil {
+		res := types.CompareOrder(val, minValue, types.Ascending)
+		switch res {
+		case types.Equal, types.Less:
+			return false, nil
+		case types.Greater:
+		}
+	}
+
+	if err = doc.SetByPath(path, minValue); err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	return true, nil
 }
 
 // processMulFieldExpression updates document according to $mul operator.
 // If the document was changed it returns true.
-func processMulFieldExpression(command string, doc *types.Document, updateV any) (bool, error) {
-	// updateV is document, checked in ValidateUpdateOperators.
-	mulDoc := updateV.(*types.Document)
+func processMulFieldExpression(command string, doc *types.Document, mulKey string, mulValue any) (bool, error) {
+	// $mul contains valid path, checked in ValidateUpdateOperators.
+	path := must.NotFail(types.NewPathFromString(mulKey))
 
-	var changed bool
-
-	for _, mulKey := range mulDoc.Keys() {
-		mulValue := must.NotFail(mulDoc.Get(mulKey))
-
-		var path types.Path
-		var err error
-
-		path, err = types.NewPathFromString(mulKey)
-		if err != nil {
-			// ValidateUpdateOperators checked already $mul contains valid path.
-			panic(err)
-		}
-
-		if !doc.HasByPath(path) {
-			// $mul sets the field to zero if the field does not exist.
-			switch mulValue.(type) {
-			case float64:
-				mulValue = float64(0)
-			case int32:
-				mulValue = int32(0)
-			case int64:
-				mulValue = int64(0)
-			default:
-				return false, NewUpdateError(
-					handlererrors.ErrTypeMismatch,
-					fmt.Sprintf(`Cannot multiply with non-numeric argument: {%s: %#v}`, mulKey, mulValue),
-					command,
-				)
-			}
-
-			err := doc.SetByPath(path, mulValue)
-			if err != nil {
-				return false, NewUpdateError(
-					handlererrors.ErrUnsuitableValueType,
-					err.Error(),
-					command,
-				)
-			}
-
-			changed = true
-
-			continue
-		}
-
-		docValue, err := doc.GetByPath(path)
-		if err != nil {
-			return false, err
-		}
-
-		var multiplied any
-		multiplied, err = multiplyNumbers(mulValue, docValue)
-
-		switch {
-		case err == nil:
-			if multiplied, ok := multiplied.(float64); ok && math.IsInf(multiplied, 0) {
-				return false, handlererrors.NewCommandErrorMsg(
-					handlererrors.ErrBadValue,
-					fmt.Sprintf("update produces invalid value: { %q: %f } "+
-						"(update operations that produce infinity values are not allowed)", path, multiplied,
-					),
-				)
-			}
-
-			err = doc.SetByPath(path, multiplied)
-			if err != nil {
-				// after successfully getting value from path, setting it back cannot fail.
-				panic(err)
-			}
-
-			// A change from int32(0) to int64(0) is considered changed.
-			// Hence, do not use types.Compare(docValue, multiplied) because
-			// it will equate int32(0) == int64(0).
-			if docValue == multiplied {
-				continue
-			}
-
-			changed = true
-
-			continue
-
-		case errors.Is(err, handlerparams.ErrUnexpectedLeftOpType):
-			return false, NewUpdateError(
-				handlererrors.ErrTypeMismatch,
-				fmt.Sprintf(
-					`Cannot multiply with non-numeric argument: {%s: %#v}`,
-					mulKey,
-					mulValue,
-				),
-				command,
-			)
-		case errors.Is(err, handlerparams.ErrUnexpectedRightOpType):
-			k := mulKey
-			if path.Len() > 1 {
-				k = path.Suffix()
-			}
-
-			return false, NewUpdateError(
-				handlererrors.ErrTypeMismatch,
-				fmt.Sprintf(
-					`Cannot apply $mul to a value of non-numeric type. `+
-						`{_id: %s} has the field '%s' of non-numeric type %s`,
-					types.FormatAnyValue(must.NotFail(doc.Get("_id"))),
-					k,
-					handlerparams.AliasFromType(docValue),
-				),
-				command,
-			)
-		case errors.Is(err, handlerparams.ErrLongExceededPositive), errors.Is(err, handlerparams.ErrLongExceededNegative):
-			return false, NewUpdateError(
-				handlererrors.ErrBadValue,
-				fmt.Sprintf(
-					`Failed to apply $mul operations to current value ((NumberLong)%d) for document {_id: "%s"}`,
-					docValue,
-					must.NotFail(doc.Get("_id")),
-				),
-				command,
-			)
-		case errors.Is(err, handlerparams.ErrIntExceeded):
-			return false, NewUpdateError(
-				handlererrors.ErrBadValue,
-				fmt.Sprintf(
-					`Failed to apply $mul operations to current value ((NumberInt)%d) for document {_id: "%s"}`,
-					docValue,
-					must.NotFail(doc.Get("_id")),
-				),
-				command,
-			)
+	if !doc.HasByPath(path) {
+		// $mul sets the field to zero if the field does not exist.
+		switch mulValue.(type) {
+		case float64:
+			mulValue = float64(0)
+		case int32:
+			mulValue = int32(0)
+		case int64:
+			mulValue = int64(0)
 		default:
-			return false, err
+			return false, NewUpdateError(
+				handlererrors.ErrTypeMismatch,
+				fmt.Sprintf(`Cannot multiply with non-numeric argument: {%s: %#v}`, mulKey, mulValue),
+				command,
+			)
 		}
+
+		err := doc.SetByPath(path, mulValue)
+		if err != nil {
+			return false, NewUpdateError(
+				handlererrors.ErrUnsuitableValueType,
+				err.Error(),
+				command,
+			)
+		}
+
+		return true, nil
 	}
 
-	return changed, nil
+	docValue, err := doc.GetByPath(path)
+	if err != nil {
+		return false, err
+	}
+
+	var multiplied any
+	multiplied, err = multiplyNumbers(mulValue, docValue)
+
+	switch {
+	case err == nil:
+		if multiplied, ok := multiplied.(float64); ok && math.IsInf(multiplied, 0) {
+			return false, handlererrors.NewCommandErrorMsg(
+				handlererrors.ErrBadValue,
+				fmt.Sprintf("update produces invalid value: { %q: %f } "+
+					"(update operations that produce infinity values are not allowed)", path, multiplied,
+				),
+			)
+		}
+
+		// after successfully getting value from path, setting it back cannot fail.
+		must.NoError(doc.SetByPath(path, multiplied))
+
+		// A change from int32(0) to int64(0) is considered changed.
+		// Hence, do not use types.Compare(docValue, multiplied) because
+		// it will equate int32(0) == int64(0).
+		if docValue == multiplied {
+			return false, nil
+		}
+
+		return true, nil
+
+	case errors.Is(err, handlerparams.ErrUnexpectedLeftOpType):
+		return false, NewUpdateError(
+			handlererrors.ErrTypeMismatch,
+			fmt.Sprintf(
+				`Cannot multiply with non-numeric argument: {%s: %#v}`,
+				mulKey,
+				mulValue,
+			),
+			command,
+		)
+	case errors.Is(err, handlerparams.ErrUnexpectedRightOpType):
+		k := mulKey
+		if path.Len() > 1 {
+			k = path.Suffix()
+		}
+
+		return false, NewUpdateError(
+			handlererrors.ErrTypeMismatch,
+			fmt.Sprintf(
+				`Cannot apply $mul to a value of non-numeric type. `+
+					`{_id: %s} has the field '%s' of non-numeric type %s`,
+				types.FormatAnyValue(must.NotFail(doc.Get("_id"))),
+				k,
+				handlerparams.AliasFromType(docValue),
+			),
+			command,
+		)
+	case errors.Is(err, handlerparams.ErrLongExceededPositive), errors.Is(err, handlerparams.ErrLongExceededNegative):
+		return false, NewUpdateError(
+			handlererrors.ErrBadValue,
+			fmt.Sprintf(
+				`Failed to apply $mul operations to current value ((NumberLong)%d) for document {_id: "%s"}`,
+				docValue,
+				must.NotFail(doc.Get("_id")),
+			),
+			command,
+		)
+	case errors.Is(err, handlerparams.ErrIntExceeded):
+		return false, NewUpdateError(
+			handlererrors.ErrBadValue,
+			fmt.Sprintf(
+				`Failed to apply $mul operations to current value ((NumberInt)%d) for document {_id: "%s"}`,
+				docValue,
+				must.NotFail(doc.Get("_id")),
+			),
+			command,
+		)
+	default:
+		return false, err
+	}
 }
 
 // processCurrentDateFieldExpression changes document according to $currentDate operator.
 // If the document was changed it returns true.
-func processCurrentDateFieldExpression(doc *types.Document, currentDateVal any) (bool, error) {
+func processCurrentDateFieldExpression(doc *types.Document, field string, value any) (bool, error) {
 	var changed bool
-	currentDateExpression := currentDateVal.(*types.Document)
 
 	now := time.Now().UTC()
-	keys := currentDateExpression.Keys()
-	sort.Strings(keys)
 
-	for _, field := range keys {
-		currentDateField := must.NotFail(currentDateExpression.Get(field))
+	var dateType any
 
-		switch currentDateField := currentDateField.(type) {
-		case *types.Document:
-			currentDateType, err := currentDateField.Get("$type")
-			if err != nil { // default is date
-				doc.Set(field, now)
-				changed = true
-				continue
-			}
-
-			currentDateType = currentDateType.(string)
-			switch currentDateType {
-			case "timestamp":
-				doc.Set(field, types.NextTimestamp(now))
-				changed = true
-
-			case "date":
-				doc.Set(field, now)
-				changed = true
-			}
-
-		case bool:
-			doc.Set(field, now)
-			changed = true
-		}
+	switch value := value.(type) {
+	case *types.Document:
+		// ignore error, error cases were validated in validateCurrentDateExpression
+		dateType, _ = value.Get("$type")
+	case bool:
+		dateType = "date"
 	}
+
+	switch dateType {
+	case "date":
+		doc.Set(field, now)
+		changed = true
+	case "timestamp":
+		doc.Set(field, types.NextTimestamp(now))
+		changed = true
+	}
+
 	return changed, nil
 }
 
 // processBitFieldExpression updates document according to $bit operator.
 // If document was changed, it returns true.
-func processBitFieldExpression(command string, doc *types.Document, updateV any) (bool, error) {
+func processBitFieldExpression(command string, doc *types.Document, bitKey string, bitValue any) (bool, error) {
+	bitDoc, ok := bitValue.(*types.Document)
+	if !ok {
+		return false, NewUpdateError(
+			handlererrors.ErrBadValue,
+			fmt.Sprintf(
+				`The $bit modifier is not compatible with a %s. `+
+					`You must pass in an embedded document: {$bit: {field: {and/or/xor: #}}`,
+				handlerparams.AliasFromType(bitValue),
+			),
+			command,
+		)
+	}
+
+	if bitDoc.Len() == 0 {
+		return false, NewUpdateError(
+			handlererrors.ErrBadValue,
+			fmt.Sprintf(
+				"You must pass in at least one bitwise operation. "+
+					`The format is: {$bit: {field: {and/or/xor: #}}`,
+			),
+			command,
+		)
+	}
+
+	// bitKey has valid path, checked in ValidateUpdateOperators
+	path := must.NotFail(types.NewPathFromString(bitKey))
+
+	// $bit sets the field if it does not exist by applying bitwise operat on 0 and operand value.
+	var docValue any = int32(0)
+
+	hasPath := doc.HasByPath(path)
+	if hasPath {
+		docValue = must.NotFail(doc.GetByPath(path))
+	}
+
 	var changed bool
 
-	bitDoc := updateV.(*types.Document)
-	for _, bitKey := range bitDoc.Keys() {
-		bitValue := must.NotFail(bitDoc.Get(bitKey))
+	for _, bitOp := range bitDoc.Keys() {
+		bitOpValue := must.NotFail(bitDoc.Get(bitOp))
 
-		nestedDoc, ok := bitValue.(*types.Document)
-		if !ok {
-			return false, NewUpdateError(
-				handlererrors.ErrBadValue,
-				fmt.Sprintf(
-					`The $bit modifier is not compatible with a %s. `+
-						`You must pass in an embedded document: {$bit: {field: {and/or/xor: #}}`,
-					handlerparams.AliasFromType(bitValue),
-				),
-				command,
-			)
-		}
+		bitOpResult, err := performBitLogic(bitOp, bitOpValue, docValue)
 
-		if nestedDoc.Len() == 0 {
-			return false, NewUpdateError(
-				handlererrors.ErrBadValue,
-				fmt.Sprintf(
-					"You must pass in at least one bitwise operation. "+
-						`The format is: {$bit: {field: {and/or/xor: #}}`,
-				),
-				command,
-			)
-		}
-
-		// bitKey has valid path, checked in ValidateUpdateOperators
-		path := must.NotFail(types.NewPathFromString(bitKey))
-
-		// $bit sets the field if it does not exist by applying bitwise operat on 0 and operand value.
-		var docValue any = int32(0)
-
-		hasPath := doc.HasByPath(path)
-		if hasPath {
-			docValue = must.NotFail(doc.GetByPath(path))
-		}
-
-		for _, bitOp := range nestedDoc.Keys() {
-			bitOpValue := must.NotFail(nestedDoc.Get(bitOp))
-
-			bitOpResult, err := performBitLogic(bitOp, bitOpValue, docValue)
-
-			switch {
-			case err == nil:
-				if err = doc.SetByPath(path, bitOpResult); err != nil {
-					return false, NewUpdateError(handlererrors.ErrUnsuitableValueType, err.Error(), command)
-				}
-
-				if docValue == bitOpResult && hasPath {
-					continue
-				}
-
-				changed = true
-
-				continue
-
-			case errors.Is(err, handlerparams.ErrUnexpectedLeftOpType):
-				return false, NewUpdateError(
-					handlererrors.ErrBadValue,
-					fmt.Sprintf(
-						`The $bit modifier field must be an Integer(32/64 bit); a `+
-							`'%s' is not supported here: {%s: %s}`,
-						handlerparams.AliasFromType(bitOpValue),
-						bitOp,
-						types.FormatAnyValue(bitOpValue),
-					),
-					command,
-				)
-
-			case errors.Is(err, handlerparams.ErrUnexpectedRightOpType):
-				return false, NewUpdateError(
-					handlererrors.ErrBadValue,
-					fmt.Sprintf(
-						`Cannot apply $bit to a value of non-integral type.`+
-							`_id: %s has the field %s of non-integer type %s`,
-						types.FormatAnyValue(must.NotFail(doc.Get("_id"))),
-						path.Suffix(),
-						handlerparams.AliasFromType(docValue),
-					),
-					command,
-				)
-
-			default:
-				return false, NewUpdateError(handlererrors.ErrBadValue, err.Error(), command)
+		switch {
+		case err == nil:
+			if err = doc.SetByPath(path, bitOpResult); err != nil {
+				return false, NewUpdateError(handlererrors.ErrUnsuitableValueType, err.Error(), command)
 			}
+
+			if !hasPath || docValue != bitOpResult {
+				changed = true
+			}
+
+			continue
+
+		case errors.Is(err, handlerparams.ErrUnexpectedLeftOpType):
+			return false, NewUpdateError(
+				handlererrors.ErrBadValue,
+				fmt.Sprintf(
+					`The $bit modifier field must be an Integer(32/64 bit); a `+
+						`'%s' is not supported here: {%s: %s}`,
+					handlerparams.AliasFromType(bitOpValue),
+					bitOp,
+					types.FormatAnyValue(bitOpValue),
+				),
+				command,
+			)
+
+		case errors.Is(err, handlerparams.ErrUnexpectedRightOpType):
+			return false, NewUpdateError(
+				handlererrors.ErrBadValue,
+				fmt.Sprintf(
+					`Cannot apply $bit to a value of non-integral type.`+
+						`_id: %s has the field %s of non-integer type %s`,
+					types.FormatAnyValue(must.NotFail(doc.Get("_id"))),
+					path.Suffix(),
+					handlerparams.AliasFromType(docValue),
+				),
+				command,
+			)
+
+		default:
+			return false, NewUpdateError(handlererrors.ErrBadValue, err.Error(), command)
 		}
 	}
 
@@ -1361,10 +1279,8 @@ func validateCurrentDateExpression(command string, update *types.Document) error
 					)
 				}
 			}
-			currentDateType, err := setValue.Get("$type")
-			if err != nil { // ok, default is date
-				continue
-			}
+
+			currentDateType, _ := setValue.Get("$type")
 
 			currentDateTypeString, ok := currentDateType.(string)
 			if !ok || !slices.Contains([]string{"date", "timestamp"}, currentDateTypeString) {

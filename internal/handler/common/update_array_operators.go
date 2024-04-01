@@ -15,93 +15,76 @@
 package common
 
 import (
-	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // processPopArrayUpdateExpression changes document according to $pop operator.
 // If the document was changed it returns true.
-func processPopArrayUpdateExpression(doc *types.Document, update *types.Document) (bool, error) {
-	var changed bool
-
-	iter := update.Iterator()
-	defer iter.Close()
-
-	for {
-		key, popValueRaw, err := iter.Next()
-		if err != nil {
-			if errors.Is(err, iterator.ErrIteratorDone) {
-				break
-			}
-
-			return false, lazyerrors.Error(err)
-		}
-
-		popValue, err := handlerparams.GetWholeNumberParam(popValueRaw)
-		if err != nil {
-			return false, handlererrors.NewWriteErrorMsg(
-				handlererrors.ErrFailedToParse,
-				fmt.Sprintf(`Expected a number in: %s: "%v"`, key, popValueRaw),
-			)
-		}
-
-		if popValue != 1 && popValue != -1 {
-			return false, handlererrors.NewWriteErrorMsg(
-				handlererrors.ErrFailedToParse,
-				fmt.Sprintf("$pop expects 1 or -1, found: %d", popValue),
-			)
-		}
-
-		path, err := types.NewPathFromString(key)
-		if err != nil {
-			return false, lazyerrors.Error(err)
-		}
-
-		val, err := doc.GetByPath(path)
-		if err != nil {
-			// If any sub path exists in the doc, $pop returns ErrUnsuitableValueType.
-			if err = checkUnsuitableValueError(doc, key, path); err != nil {
-				return false, err
-			}
-
-			// doc does not have a path, nothing to do.
-			continue
-		}
-
-		array, ok := val.(*types.Array)
-		if !ok {
-			return false, handlererrors.NewWriteErrorMsg(
-				handlererrors.ErrTypeMismatch,
-				fmt.Sprintf("Path '%s' contains an element of non-array type '%s'", key, handlerparams.AliasFromType(val)),
-			)
-		}
-
-		if array.Len() == 0 {
-			continue
-		}
-
-		if popValue == -1 {
-			array.Remove(0)
-		} else {
-			array.Remove(array.Len() - 1)
-		}
-
-		err = doc.SetByPath(path, array)
-		if err != nil {
-			return false, lazyerrors.Error(err)
-		}
-
-		changed = true
+func processPopArrayUpdateExpression(command string, doc *types.Document, key string, value any) (bool, error) {
+	popValue, err := handlerparams.GetWholeNumberParam(value)
+	if err != nil {
+		return false, NewUpdateError(
+			handlererrors.ErrFailedToParse,
+			fmt.Sprintf(`Expected a number in: %s: "%v"`, key, value),
+			command,
+		)
 	}
 
-	return changed, nil
+	if popValue != 1 && popValue != -1 {
+		return false, NewUpdateError(
+			handlererrors.ErrFailedToParse,
+			fmt.Sprintf("$pop expects 1 or -1, found: %d", popValue),
+			command,
+		)
+	}
+
+	path, err := types.NewPathFromString(key)
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	oldValue, err := doc.GetByPath(path)
+	if err != nil {
+		// If any sub path exists in the doc, $pop returns ErrUnsuitableValueType.
+		if err = checkUnsuitableValueError(command, doc, key, path); err != nil {
+			return false, err
+		}
+
+		return false, nil
+	}
+
+	array, ok := oldValue.(*types.Array)
+	if !ok {
+		return false, NewUpdateError(
+			handlererrors.ErrTypeMismatch,
+			fmt.Sprintf("Path '%s' contains an element of non-array type '%s'", key, handlerparams.AliasFromType(oldValue)),
+			command,
+		)
+	}
+
+	if array.Len() == 0 {
+		return false, nil
+	}
+
+	if popValue == -1 {
+		array.Remove(0)
+	} else {
+		array.Remove(array.Len() - 1)
+	}
+
+	err = doc.SetByPath(path, array)
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	return true, nil
 }
 
 // checkUnsuitableValueError returns ErrUnsuitableValueType if path contains
@@ -109,7 +92,7 @@ func processPopArrayUpdateExpression(doc *types.Document, update *types.Document
 // For example, if the path is "v.foo" and:
 //   - doc is {v: 42}, it returns ErrUnsuitableValueType, v is used by unsuitable value type;
 //   - doc is {c: 10}, it returns no error since the path does not exist.
-func checkUnsuitableValueError(doc *types.Document, key string, path types.Path) error {
+func checkUnsuitableValueError(command string, doc *types.Document, fullPath string, path types.Path) error {
 	// return no error if path is suffix or key.
 	if path.Len() == 1 {
 		return nil
@@ -120,112 +103,155 @@ func checkUnsuitableValueError(doc *types.Document, key string, path types.Path)
 	// check if part of the path exists in the document.
 	if doc.Has(prefix) {
 		val := must.NotFail(doc.Get(prefix))
-		if prefixDoc, ok := val.(*types.Document); ok {
-			// recursively check if document contains part of the part.
-			return checkUnsuitableValueError(prefixDoc, key, path.TrimPrefix())
+		switch val := val.(type) {
+		case *types.Document:
+			// recursively check if document contains the remaining part.
+			return checkUnsuitableValueError(command, val, fullPath, path.TrimPrefix())
+		case *types.Array:
+			return checkUnsuitableValueInArray(command, val, fullPath, prefix, path.TrimPrefix())
+		default:
+			// ErrUnsuitableValueType is returned if the document contains prefix.
+			return NewUpdateError(
+				handlererrors.ErrUnsuitableValueType,
+				fmt.Sprintf(
+					"Cannot use the part (%s) of (%s) to traverse the element ({%s: %v})",
+					path.Slice()[1],
+					fullPath,
+					prefix,
+					types.FormatAnyValue(val),
+				),
+				command,
+			)
 		}
-
-		// ErrUnsuitableValueType is returned if the document contains prefix.
-		return handlererrors.NewWriteErrorMsg(
-			handlererrors.ErrUnsuitableValueType,
-			fmt.Sprintf(
-				"Cannot use the part (%s) of (%s) to traverse the element ({%s: %v})",
-				path.Slice()[1],
-				key,
-				prefix,
-				types.FormatAnyValue(val),
-			),
-		)
 	}
 
 	// no part of the path exists in the doc.
 	return nil
 }
 
+// checkUnsuitableValueInArray returns ErrUnsuitableValueType if path contains
+// non traversable part. If no element exists on path, it returns nil.
+// For example, if the path is "0.foo" and:
+//   - array is [], it returns no error since index-0 does not exist.
+//   - array is [{bar: 10}], it returns no error since the document at index-0 does not contain 'foo'.
+//   - array is [42, 43], it returns ErrUnsuitableValueType, since element at index-0 is not a document.
+func checkUnsuitableValueInArray(command string, array *types.Array, fullPath, parentKey string, path types.Path) error {
+	prefix := path.Prefix()
+
+	index, err := strconv.Atoi(prefix)
+	if err != nil || index < 0 {
+		return NewUpdateError(
+			handlererrors.ErrUnsuitableValueType,
+			fmt.Sprintf(
+				"Cannot use the part (%s) of (%s) to traverse the element ({%s: %v})",
+				prefix,
+				fullPath,
+				parentKey,
+				types.FormatAnyValue(array),
+			),
+			command,
+		)
+	}
+
+	// return no error if path just contain the index.
+	if path.Len() == 1 {
+		return nil
+	}
+
+	if elem, err := array.Get(index); err == nil {
+		switch elem := elem.(type) {
+		case *types.Document:
+			return checkUnsuitableValueError(command, elem, fullPath, path.TrimPrefix())
+		case *types.Array:
+			return checkUnsuitableValueInArray(command, elem, fullPath, prefix, path.TrimPrefix())
+		default:
+			return NewUpdateError(
+				handlererrors.ErrUnsuitableValueType,
+				fmt.Sprintf(
+					"Cannot use the part (%s) of (%s) to traverse the element ({%d: %v})",
+					path.Slice()[1],
+					fullPath,
+					index,
+					types.FormatAnyValue(elem),
+				),
+				command,
+			)
+		}
+	}
+
+	return nil
+}
+
 // processPushArrayUpdateExpression changes document according to $push array update operator.
 // If the document was changed it returns true.
-func processPushArrayUpdateExpression(doc *types.Document, update *types.Document) (bool, error) {
-	var changed bool
+func processPushArrayUpdateExpression(command string, doc *types.Document, key string, pushVal any) (bool, error) {
+	var each *types.Array
 
-	iter := update.Iterator()
-	defer iter.Close()
+	if pushDoc, ok := pushVal.(*types.Document); ok {
+		if pushDoc.Has("$each") {
+			eachRaw := must.NotFail(pushDoc.Get("$each"))
 
-	for {
-		key, pushValueRaw, err := iter.Next()
-		if err != nil {
-			if errors.Is(err, iterator.ErrIteratorDone) {
-				break
-			}
-
-			return false, lazyerrors.Error(err)
-		}
-
-		var each *types.Array
-
-		if pushValue, ok := pushValueRaw.(*types.Document); ok {
-			if pushValue.Has("$each") {
-				eachRaw := must.NotFail(pushValue.Get("$each"))
-
-				each, ok = eachRaw.(*types.Array)
-				if !ok {
-					return false, handlererrors.NewWriteErrorMsg(
-						handlererrors.ErrBadValue,
-						fmt.Sprintf(
-							"The argument to $each in $push must be an array but it was of type: %s",
-							handlerparams.AliasFromType(eachRaw),
-						),
-					)
-				}
-			}
-		}
-
-		path, err := types.NewPathFromString(key)
-		if err != nil {
-			return false, lazyerrors.Error(err)
-		}
-
-		// If the path does not exist, create a new array and set it.
-		if !doc.HasByPath(path) {
-			changed = true
-
-			if err = doc.SetByPath(path, types.MakeArray(1)); err != nil {
-				return false, handlererrors.NewWriteErrorMsg(
-					handlererrors.ErrUnsuitableValueType,
-					err.Error(),
+			each, ok = eachRaw.(*types.Array)
+			if !ok {
+				return false, NewUpdateError(
+					handlererrors.ErrBadValue,
+					fmt.Sprintf(
+						"The argument to $each in $push must be an array but it was of type: %s",
+						handlerparams.AliasFromType(eachRaw),
+					),
+					command,
 				)
 			}
 		}
+	}
 
-		val, err := doc.GetByPath(path)
-		if err != nil {
-			return false, err
-		}
+	path, err := types.NewPathFromString(key)
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
 
-		array, ok := val.(*types.Array)
-		if !ok {
-			return false, handlererrors.NewWriteErrorMsg(
-				handlererrors.ErrBadValue,
-				fmt.Sprintf(
-					"The field '%s' must be an array but is of type '%s' in document {_id: %s}",
-					key, handlerparams.AliasFromType(val), types.FormatAnyValue(must.NotFail(doc.Get("_id"))),
-				),
+	// If the path does not exist, create a new array and set it.
+	if !doc.HasByPath(path) {
+		if err = doc.SetByPath(path, types.MakeArray(1)); err != nil {
+			return false, NewUpdateError(
+				handlererrors.ErrUnsuitableValueType,
+				err.Error(),
+				command,
 			)
 		}
+	}
 
-		if each == nil {
-			each = types.MakeArray(1)
-			each.Append(pushValueRaw)
-		}
+	value, err := doc.GetByPath(path)
+	if err != nil {
+		return false, err
+	}
 
-		for i := 0; i < each.Len(); i++ {
-			array.Append(must.NotFail(each.Get(i)))
+	array, ok := value.(*types.Array)
+	if !ok {
+		return false, NewUpdateError(
+			handlererrors.ErrBadValue,
+			fmt.Sprintf(
+				"The field '%s' must be an array but is of type '%s' in document {_id: %s}",
+				key, handlerparams.AliasFromType(value), types.FormatAnyValue(must.NotFail(doc.Get("_id"))),
+			),
+			command,
+		)
+	}
 
-			changed = true
-		}
+	if each == nil {
+		each = types.MakeArray(1)
+		each.Append(pushVal)
+	}
 
-		if err = doc.SetByPath(path, array); err != nil {
-			return false, lazyerrors.Error(err)
-		}
+	var changed bool
+
+	for i := range each.Len() {
+		array.Append(must.NotFail(each.Get(i)))
+		changed = true
+	}
+
+	if err = doc.SetByPath(path, array); err != nil {
+		return false, lazyerrors.Error(err)
 	}
 
 	return changed, nil
@@ -233,94 +259,81 @@ func processPushArrayUpdateExpression(doc *types.Document, update *types.Documen
 
 // processAddToSetArrayUpdateExpression changes document according to $addToSet array update operator.
 // If the document was changed it returns true.
-func processAddToSetArrayUpdateExpression(doc, update *types.Document) (bool, error) {
-	var changed bool
+func processAddToSetArrayUpdateExpression(command string, doc *types.Document, key string, setVal any) (bool, error) {
+	var each *types.Array
 
-	iter := update.Iterator()
-	defer iter.Close()
+	if addToSetDoc, ok := setVal.(*types.Document); ok {
+		if addToSetDoc.Has("$each") {
+			eachRaw := must.NotFail(addToSetDoc.Get("$each"))
 
-	for {
-		key, addToSetValueRaw, err := iter.Next()
-		if err != nil {
-			if errors.Is(err, iterator.ErrIteratorDone) {
-				break
-			}
-
-			return false, lazyerrors.Error(err)
-		}
-
-		var each *types.Array
-
-		if addToSetValue, ok := addToSetValueRaw.(*types.Document); ok {
-			if addToSetValue.Has("$each") {
-				eachRaw := must.NotFail(addToSetValue.Get("$each"))
-
-				each, ok = eachRaw.(*types.Array)
-				if !ok {
-					return false, handlererrors.NewWriteErrorMsg(
-						handlererrors.ErrTypeMismatch,
-						fmt.Sprintf(
-							"The argument to $each in $addToSet must be an array but it was of type %s",
-							handlerparams.AliasFromType(eachRaw),
-						),
-					)
-				}
-			}
-		}
-
-		path, err := types.NewPathFromString(key)
-		if err != nil {
-			return false, lazyerrors.Error(err)
-		}
-
-		// If the path does not exist, create a new array and set it.
-		if !doc.HasByPath(path) {
-			changed = true
-
-			if err = doc.SetByPath(path, types.MakeArray(1)); err != nil {
-				return false, handlererrors.NewWriteErrorMsg(
-					handlererrors.ErrUnsuitableValueType,
-					err.Error(),
+			each, ok = eachRaw.(*types.Array)
+			if !ok {
+				return false, NewUpdateError(
+					handlererrors.ErrTypeMismatch,
+					fmt.Sprintf(
+						"The argument to $each in $addToSet must be an array but it was of type %s",
+						handlerparams.AliasFromType(eachRaw),
+					),
+					command,
 				)
 			}
 		}
+	}
 
-		val, err := doc.GetByPath(path)
-		if err != nil {
-			return false, err
-		}
+	path, err := types.NewPathFromString(key)
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
 
-		array, ok := val.(*types.Array)
-		if !ok {
-			return false, handlererrors.NewWriteErrorMsg(
-				handlererrors.ErrBadValue,
-				fmt.Sprintf(
-					"The field '%s' must be an array but is of type '%s' in document {_id: %s}",
-					key, handlerparams.AliasFromType(val), types.FormatAnyValue(must.NotFail(doc.Get("_id"))),
-				),
+	// If the path does not exist, create a new array and set it.
+	if !doc.HasByPath(path) {
+		if err = doc.SetByPath(path, types.MakeArray(1)); err != nil {
+			return false, NewUpdateError(
+				handlererrors.ErrUnsuitableValueType,
+				err.Error(),
+				command,
 			)
 		}
+	}
 
-		if each == nil {
-			each = types.MakeArray(1)
-			each.Append(addToSetValueRaw)
+	value, err := doc.GetByPath(path)
+	if err != nil {
+		return false, err
+	}
+
+	array, ok := value.(*types.Array)
+	if !ok {
+		return false, NewUpdateError(
+			handlererrors.ErrBadValue,
+			fmt.Sprintf(
+				"The field '%s' must be an array but is of type '%s' in document {_id: %s}",
+				key, handlerparams.AliasFromType(value), types.FormatAnyValue(must.NotFail(doc.Get("_id"))),
+			),
+			command,
+		)
+	}
+
+	if each == nil {
+		each = types.MakeArray(1)
+		each.Append(setVal)
+	}
+
+	var changed bool
+
+	for i := range each.Len() {
+		elem := must.NotFail(each.Get(i))
+
+		if array.Contains(elem) {
+			continue
 		}
 
-		for i := 0; i < each.Len(); i++ {
-			value := must.NotFail(each.Get(i))
+		changed = true
 
-			if array.Contains(value) {
-				continue
-			}
+		array.Append(elem)
+	}
 
-			changed = true
-
-			array.Append(value)
-		}
-
-		if err = doc.SetByPath(path, array); err != nil {
-			return false, lazyerrors.Error(err)
-		}
+	if err = doc.SetByPath(path, array); err != nil {
+		return false, lazyerrors.Error(err)
 	}
 
 	return changed, nil
@@ -328,92 +341,67 @@ func processAddToSetArrayUpdateExpression(doc, update *types.Document) (bool, er
 
 // processPullAllArrayUpdateExpression changes document according to $pullAll array update operator.
 // If the document was changed it returns true.
-func processPullAllArrayUpdateExpression(doc, update *types.Document) (bool, error) {
+func processPullAllArrayUpdateExpression(command string, doc *types.Document, key string, pullVal any) (bool, error) {
+	pullArray, ok := pullVal.(*types.Array)
+	if !ok {
+		return false, NewUpdateError(
+			handlererrors.ErrBadValue,
+			fmt.Sprintf(
+				"The field '%s' must be an array but is of type '%s'",
+				key, handlerparams.AliasFromType(pullVal),
+			),
+			command,
+		)
+	}
+
+	path, err := types.NewPathFromString(key)
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	if !doc.HasByPath(path) {
+		if err = checkUnsuitableValueError(command, doc, key, path); err != nil {
+			return false, err
+		}
+
+		return false, nil
+	}
+
+	value, err := doc.GetByPath(path)
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	array, ok := value.(*types.Array)
+	if !ok {
+		return false, NewUpdateError(
+			handlererrors.ErrBadValue,
+			fmt.Sprintf(
+				"The field '%s' must be an array but is of type '%s' in document {_id: %s}",
+				key, handlerparams.AliasFromType(value), types.FormatAnyValue(must.NotFail(doc.Get("_id"))),
+			),
+			command,
+		)
+	}
+
 	var changed bool
 
-	iter := update.Iterator()
-	defer iter.Close()
+	for j := range pullArray.Len() {
+		pullElem := must.NotFail(pullArray.Get(j))
 
-	for {
-		key, pullAllValueRaw, err := iter.Next()
-		if err != nil {
-			if errors.Is(err, iterator.ErrIteratorDone) {
-				break
-			}
+		// we remove all instances of pullElem in array
+		for i := array.Len() - 1; i >= 0; i-- {
+			arrayElem := must.NotFail(array.Get(i))
 
-			return false, lazyerrors.Error(err)
-		}
-
-		path, err := types.NewPathFromString(key)
-		if err != nil {
-			return false, lazyerrors.Error(err)
-		}
-
-		// If the path does not exist, create a new array and set it.
-		if !doc.HasByPath(path) {
-			if err = doc.SetByPath(path, types.MakeArray(1)); err != nil {
-				return false, handlererrors.NewWriteErrorMsg(
-					handlererrors.ErrUnsuitableValueType,
-					err.Error(),
-				)
+			if types.Compare(arrayElem, pullElem) == types.Equal {
+				array.Remove(i)
+				changed = true
 			}
 		}
+	}
 
-		val, err := doc.GetByPath(path)
-		if err != nil {
-			return false, lazyerrors.Error(err)
-		}
-
-		array, ok := val.(*types.Array)
-		if !ok {
-			return false, handlererrors.NewWriteErrorMsg(
-				handlererrors.ErrBadValue,
-				fmt.Sprintf(
-					"The field '%s' must be an array but is of type '%s' in document {_id: %s}",
-					key, handlerparams.AliasFromType(val), types.FormatAnyValue(must.NotFail(doc.Get("_id"))),
-				),
-			)
-		}
-
-		pullAllArray, ok := pullAllValueRaw.(*types.Array)
-		if !ok {
-			return false, handlererrors.NewWriteErrorMsg(
-				handlererrors.ErrBadValue,
-				fmt.Sprintf(
-					"The field '%s' must be an array but is of type '%s'",
-					key, handlerparams.AliasFromType(pullAllValueRaw),
-				),
-			)
-		}
-
-		for j := 0; j < pullAllArray.Len(); j++ {
-			var valueToPull any
-
-			valueToPull, err = pullAllArray.Get(j)
-			if err != nil {
-				return false, lazyerrors.Error(err)
-			}
-
-			// we remove all instances of valueToPull in array
-			for i := array.Len() - 1; i >= 0; i-- {
-				var value any
-
-				value, err = array.Get(i)
-				if err != nil {
-					return false, lazyerrors.Error(err)
-				}
-
-				if types.Compare(value, valueToPull) == types.Equal {
-					array.Remove(i)
-
-					changed = true
-				}
-			}
-		}
-
-		if err = doc.SetByPath(path, array); err != nil {
-			return false, lazyerrors.Error(err)
-		}
+	if err = doc.SetByPath(path, array); err != nil {
+		return false, lazyerrors.Error(err)
 	}
 
 	return changed, nil
@@ -421,65 +409,47 @@ func processPullAllArrayUpdateExpression(doc, update *types.Document) (bool, err
 
 // processPullArrayUpdateExpression changes document according to $pull array update operator.
 // If the document was changed it returns true.
-func processPullArrayUpdateExpression(doc *types.Document, update *types.Document) (bool, error) {
+func processPullArrayUpdateExpression(command string, doc *types.Document, key string, pullVal any) (bool, error) {
+	path, err := types.NewPathFromString(key)
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	if !doc.HasByPath(path) {
+		if err = checkUnsuitableValueError(command, doc, key, path); err != nil {
+			return false, err
+		}
+
+		return false, nil
+	}
+
+	value, err := doc.GetByPath(path)
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	array, ok := value.(*types.Array)
+	if !ok {
+		return false, NewUpdateError(
+			handlererrors.ErrBadValue,
+			"Cannot apply $pull to a non-array value",
+			command,
+		)
+	}
+
 	var changed bool
 
-	iter := update.Iterator()
-	defer iter.Close()
+	for i := array.Len() - 1; i >= 0; i-- {
+		elem := must.NotFail(array.Get(i))
 
-	for {
-		key, pullValueRaw, err := iter.Next()
-		if err != nil {
-			if errors.Is(err, iterator.ErrIteratorDone) {
-				break
-			}
-
-			return false, lazyerrors.Error(err)
+		if types.Compare(elem, pullVal) == types.Equal {
+			array.Remove(i)
+			changed = true
 		}
+	}
 
-		path, err := types.NewPathFromString(key)
-		if err != nil {
-			return false, lazyerrors.Error(err)
-		}
-
-		// If the path does not exist, try to set it.
-		// If it is not possible to set the path return error.
-		// This will deal with cases like $pull on a non-existing field or unset field.
-		if !doc.HasByPath(path) {
-			if err = doc.SetByPath(path, types.MakeArray(1)); err != nil {
-				return false, handlererrors.NewWriteErrorMsg(
-					handlererrors.ErrUnsuitableValueType,
-					err.Error(),
-				)
-			}
-		}
-
-		val, err := doc.GetByPath(path)
-		if err != nil {
-			return false, lazyerrors.Error(err)
-		}
-
-		array, ok := val.(*types.Array)
-		if !ok {
-			return false, handlererrors.NewWriteErrorMsg(
-				handlererrors.ErrBadValue,
-				"Cannot apply $pull to a non-array value",
-			)
-		}
-
-		for i := array.Len() - 1; i >= 0; i-- {
-			value := must.NotFail(array.Get(i))
-
-			if types.Compare(value, pullValueRaw) == types.Equal {
-				array.Remove(i)
-
-				changed = true
-			}
-		}
-
-		if err = doc.SetByPath(path, array); err != nil {
-			return false, lazyerrors.Error(err)
-		}
+	if err = doc.SetByPath(path, array); err != nil {
+		return false, lazyerrors.Error(err)
 	}
 
 	return changed, nil
