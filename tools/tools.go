@@ -15,6 +15,7 @@
 package tools
 
 import (
+	_ "github.com/FerretDB/FerretDB/tools/generatechangelog"
 	_ "github.com/go-task/task/v3/cmd/task"
 	_ "github.com/goreleaser/nfpm/v2/cmd/nfpm"
 	_ "github.com/quasilyte/go-consistent"

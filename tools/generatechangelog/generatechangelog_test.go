@@ -14,10 +14,8 @@ import (
 )
 
 const (
-	ORG_NAME  = "FerretDB"
-	REPO_NAME = "FerretDB"
-	TAG_NAME  = "v1.21.0"
-	TAG_DATE  = "2024-03-20"
+	TAG_NAME = "v1.21.0"
+	TAG_DATE = "2024-03-20"
 )
 
 func TestGetLatestTag(t *testing.T) {
@@ -316,7 +314,7 @@ func TestRenderMarkdownFromFile(t *testing.T) {
 	var buf bytes.Buffer
 	io.Copy(&buf, r)
 
-	expectedOutput := "\n### Features 🎉\n- Add feature X by @dev1 in https://github.com/FerretDB/FerretDB/pull/1\n### Bugs 🐛\n- Fix bug Y by @dev2 in https://github.com/FerretDB/FerretDB/pull/2"
+	expectedOutput := "\n### Features 🎉\n- Add feature X by @dev1 in https://github.com/FerretDB/FerretDB/pull/1\n### Bugs 🐛\n- Fix bug Y by @dev2 in https://github.com/FerretDB/FerretDB/pull/2\n"
 
 	if buf.String() != expectedOutput {
 		t.Errorf("Expected output to be %q, got %q", expectedOutput, buf.String())
