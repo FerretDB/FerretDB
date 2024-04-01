@@ -85,6 +85,7 @@ func GetLatestTag(repo *git.Repository) (string, time.Time, error) {
 	var latestTagCommitTime time.Time
 	var latestTagName string
 
+	// iterate through tags to get the latest tag. Alternative: use git log directly
 	err = tagRefs.ForEach(func(t *plumbing.Reference) error {
 		obj, err := repo.TagObject(t.Hash())
 		var commitHash plumbing.Hash
@@ -189,6 +190,7 @@ func collectPRItemsWithLabels(prItems []PRItem, labelSet map[string]struct{}) []
 func groupPRsByTemplateCategory(prItems []PRItem, templateCategory TemplateCategory) *GroupedPRs {
 	labelSet := make(map[string]struct{})
 
+	// Generate set of labels to check against PR
 	for _, label := range templateCategory.Labels {
 		labelSet[label] = struct{}{}
 	}
@@ -199,7 +201,7 @@ func groupPRsByTemplateCategory(prItems []PRItem, templateCategory TemplateCateg
 	}
 }
 
-// Iterating throught the categories and generating Groups of PRs
+// Iterating through the categories and generating Groups of PRs
 func GroupPRsByCategories(prItems []PRItem, categories []TemplateCategory) CategorizedPRs {
 	var categorizedPRs CategorizedPRs
 
@@ -235,20 +237,24 @@ func main() {
 		log.Fatalf("Failed to get current working directory: %v", err)
 	}
 
+	// Load the repository
 	repo, err := GetRepository(repoRoot)
 
 	if err != nil {
 		log.Fatalf("Failed to open repo: %v", err)
 	}
 
+	// Use existing release.yml file in .github
 	releaseYamlFile := filepath.Join(repoRoot, ".github", "release.yml")
 
+	// Load the release template file
 	template, err := LoadReleaseTemplate(releaseYamlFile)
 
 	if err != nil {
 		log.Fatalf("Failed to read from template yaml file: %v", err)
 	}
 
+	// Get latest tag and date
 	_, latestTagDate, err := GetLatestTag(repo)
 	if err != nil {
 		log.Fatalf("Failed to get latest tag: %v", err)
@@ -258,14 +264,17 @@ func main() {
 
 	prUrl := GetGithubPRUrl(ORG_NAME, REPO_NAME, dateString)
 
+	// Fetch merged PRs for next version
 	client := &http.Client{}
 	prResponse, err := FetchPRs(client, prUrl)
 	if err != nil {
 		log.Fatalf("Failed to fetch PRs: %v", err)
 	}
 
+	// Group PRs by labels
 	categorizedPRs := GroupPRsByCategories(prResponse.Items, template.Changelog.Categories)
 
+	// Render to markdown
 	markdownTemplatePath := filepath.Join(repoRoot, "tools", "generatechangelog", "changelog_template.tmpl")
 	if err := RenderMarkdownFromFile(categorizedPRs, markdownTemplatePath); err != nil {
 		log.Fatalf("Failed to render markdown: %v", err)
