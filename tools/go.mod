@@ -17,9 +17,10 @@ require (
 	golang.org/x/pkgsite v0.0.0-20240305194412-ea43129276ed
 	golang.org/x/tools v0.19.0 // https://github.com/golang/go/issues/66259
 	golang.org/x/vuln v1.0.1 // https://github.com/golang/go/issues/66139
+	gopkg.in/yaml.v3 v3.0.1
 	mvdan.cc/gofumpt v0.6.0
-  gopkg.in/yaml.v3 v3.0.1
 )
+
 require (
 	dario.cat/mergo v1.0.0 // indirect
 	github.com/AlekSi/pointer v1.2.0 // indirect
