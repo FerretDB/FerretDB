@@ -25,8 +25,6 @@ import (
 	_ "golang.org/x/tools/cmd/stringer"
 	_ "golang.org/x/vuln/cmd/govulncheck"
 	_ "mvdan.cc/gofumpt"
-
-	_ "github.com/FerretDB/FerretDB/tools/generatechangelog"
 )
 
 //go:generate go build -v -o ../bin/ ./checkdocs
