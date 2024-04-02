@@ -1,3 +1,4 @@
+// Package main contains script that generates changes for the latest version.
 package main
 
 import (
