@@ -5,10 +5,10 @@ go 1.22
 toolchain go1.22.1
 
 require (
-	github.com/FerretDB/gh v0.1.3
+	github.com/FerretDB/gh v0.1.4
 	github.com/go-task/task/v3 v3.35.1
 	github.com/google/go-github/v57 v57.0.0
-	github.com/goreleaser/nfpm/v2 v2.35.3
+	github.com/goreleaser/nfpm/v2 v2.36.1
 	github.com/quasilyte/go-consistent v0.6.0
 	github.com/rogpeppe/go-internal v1.12.0
 	github.com/stretchr/testify v1.9.0
@@ -16,7 +16,7 @@ require (
 	golang.org/x/perf v0.0.0-20240305160248-5eefbfdba9dd
 	golang.org/x/pkgsite v0.0.0-20240305194412-ea43129276ed
 	golang.org/x/tools v0.19.0 // https://github.com/golang/go/issues/66259
-	golang.org/x/vuln v1.0.1 // https://github.com/golang/go/issues/66139
+	golang.org/x/vuln v1.0.4 // https://github.com/golang/go/issues/66139
 	mvdan.cc/gofumpt v0.6.0
 )
 
@@ -55,7 +55,7 @@ require (
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/licensecheck v0.3.1 // indirect
-	github.com/google/rpmpack v0.5.0 // indirect
+	github.com/google/rpmpack v0.6.0 // indirect
 	github.com/google/safehtml v0.0.3-0.20211026203422-d6f0e11a5516 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/goreleaser/chglog v0.5.0 // indirect
@@ -68,7 +68,7 @@ require (
 	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/kisielk/gotool v1.0.0 // indirect
-	github.com/klauspost/compress v1.17.5 // indirect
+	github.com/klauspost/compress v1.17.7 // indirect
 	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
 	github.com/klauspost/pgzip v1.2.6 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
