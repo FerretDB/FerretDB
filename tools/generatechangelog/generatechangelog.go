@@ -62,7 +62,6 @@ func GetMilestone(ctx context.Context, client *github.Client, milestoneTitle str
 	milestones, _, err := client.Issues.ListMilestones(ctx, "FerretDB", "FerretDB", &github.MilestoneListOptions{
 		State: "all",
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +84,6 @@ func ListMergedPRsOnMilestone(ctx context.Context, client *github.Client, milest
 			State:     "closed",
 			Milestone: strconv.Itoa(milestoneNumber),
 		})
-
 	if err != nil {
 		return nil, err
 	}
