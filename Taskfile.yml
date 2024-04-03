@@ -934,6 +934,6 @@ tasks:
       - docker compose run --rm --service-ports wrangler pages deployment create --project-name=blog website/build
 
   changelog:
-    desc: "Generate changelogs locally for the upcoming version."
+    desc: "Generate changelogs locally for a given milestone."
     cmds:
-      - bin/generatechangelog
+      - bin/generatechangelog {{.MILESTONE_TITLE}}

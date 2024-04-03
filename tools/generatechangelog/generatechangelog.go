@@ -7,8 +7,8 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 	"text/template"
-	"time"
 
 	"github.com/google/go-github/v57/github"
 	"gopkg.in/yaml.v3"
@@ -21,15 +21,15 @@ const (
 
 // The PR itself from the Github endpoint
 type PRItem struct {
-	URL    string `json:"html_url"`
-	Number int    `json:"number"`
-	Title  string `json:"title"`
+	URL    string
+	Number int
+	Title  string
 	User   struct {
-		Login string `json:"login"`
-	} `json:"user"`
+		Login string
+	}
 	Labels []struct {
-		Name string `json:"name"`
-	} `json:"labels"`
+		Name string
+	}
 }
 
 // The deconstructed template categories from the given template file
@@ -58,65 +58,66 @@ func NewGitHubClient() *github.Client {
 	return github.NewClient(nil).WithAuthToken(os.Getenv("GITHUB_TOKEN"))
 }
 
-func GetLatestTag(ctx context.Context, client *github.Client, owner, repo string) (*github.RepositoryTag, error) {
-	tags, _, err := client.Repositories.ListTags(ctx, owner, repo, &github.ListOptions{PerPage: 1})
-	if err != nil {
-		return nil, fmt.Errorf("failed to list tags: %w", err)
-	}
+func GetMilestone(ctx context.Context, client *github.Client, milestoneTitle string) (*github.Milestone, error) {
+	milestones, _, err := client.Issues.ListMilestones(ctx, "FerretDB", "FerretDB", &github.MilestoneListOptions{
+		State: "all",
+	})
 
-	if len(tags) == 0 {
-		return nil, fmt.Errorf("no tags found in the repository")
-	}
-
-	return tags[0], nil
-}
-
-func GetCommitDate(ctx context.Context, client *github.Client, owner, repo, commitSHA string) (*time.Time, error) {
-	commit, _, err := client.Git.GetCommit(ctx, owner, repo, commitSHA)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get commit: %w", err)
-	}
-
-	return &commit.Author.Date.Time, nil
-}
-
-func FetchPRs(ctx context.Context, client *github.Client, owner, repo, sinceDate string) ([]PRItem, error) {
-	query := fmt.Sprintf("repo:%s/%s is:pr is:merged merged:>=%s", owner, repo, sinceDate)
-	opts := &github.SearchOptions{Sort: "created", Order: "desc", ListOptions: github.ListOptions{PerPage: 100}}
-
-	issues, _, err := client.Search.Issues(ctx, query, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	res := []PRItem{}
-
-	for _, issue := range issues.Issues {
-		res = append(res, func(i *github.Issue) PRItem {
-			labels := []struct {
-				Name string "json:\"name\""
-			}{}
-
-			for _, label := range i.Labels {
-				labels = append(labels, struct {
-					Name string "json:\"name\""
-				}{Name: *label.Name})
-			}
-			return PRItem{
-				URL:    *i.URL,
-				Number: *i.Number,
-				Title:  *i.Title,
-				User: struct {
-					Login string "json:\"login\""
-				}{
-					Login: *i.User.Login,
-				},
-				Labels: labels,
-			}
-		}(issue))
+	for _, milestone := range milestones {
+		if *milestone.Title == milestoneTitle {
+			return milestone, nil
+		}
 	}
 
-	return res, nil
+	return nil, fmt.Errorf("no milestone found with the name %s", milestoneTitle)
+}
+
+func ListMergedPRsOnMilestone(ctx context.Context, client *github.Client, milestoneNumber int) ([]PRItem, error) {
+	issues, _, err := client.Issues.ListByRepo(
+		ctx,
+		"FerretDB",
+		"FerretDB",
+		&github.IssueListByRepoOptions{
+			State:     "closed",
+			Milestone: strconv.Itoa(milestoneNumber),
+		})
+
+	if err != nil {
+		return nil, err
+	}
+
+	var prItems []PRItem
+	for _, issue := range issues {
+		if !issue.IsPullRequest() {
+			continue
+		}
+
+		labels := []struct {
+			Name string
+		}{}
+
+		for _, label := range issue.Labels {
+			labels = append(labels, struct{ Name string }{Name: *label.Name})
+		}
+
+		prItem := PRItem{
+			URL:    *issue.URL,
+			Number: *issue.Number,
+			Title:  *issue.Title,
+			User: struct{ Login string }{
+				Login: *issue.User.Login,
+			},
+			Labels: labels,
+		}
+
+		prItems = append(prItems, prItem)
+	}
+
+	return prItems, nil
 }
 
 // Loads the given release template
@@ -126,13 +127,13 @@ func LoadReleaseTemplate(filePath string) (*ReleaseTemplate, error) {
 		return nil, err
 	}
 
-	var template *ReleaseTemplate
+	var template ReleaseTemplate
 	err = yaml.Unmarshal(bytes, &template)
 	if err != nil {
 		return nil, err
 	}
 
-	return template, nil
+	return &template, nil
 }
 
 // Helper function that generates slice of PRItems with input slice of PRs and set of labels
@@ -197,9 +198,11 @@ func RenderMarkdownFromFile(categorizedPRs CategorizedPRs, templatePath string) 
 }
 
 func main() {
-	ctx := context.Background()
-
-	client := NewGitHubClient()
+	if len(os.Args) < 2 {
+		fmt.Println("Usage: generatechangelog MILESTONE_TITLE")
+		os.Exit(1)
+	}
+	milestoneTitle := os.Args[1]
 
 	repoRoot, err := os.Getwd()
 	if err != nil {
@@ -215,21 +218,17 @@ func main() {
 		log.Fatalf("Failed to read from template yaml file: %v", err)
 	}
 
-	// Get latest tag
-	latestTag, err := GetLatestTag(ctx, client, OrgOwner, Repo)
+	ctx := context.Background()
+
+	client := NewGitHubClient()
+
+	milestone, err := GetMilestone(ctx, client, milestoneTitle)
 	if err != nil {
-		log.Fatalf("Failed to get latest tag: %v", err)
+		log.Fatalf("Failed to fetch milestone: %v", err)
 	}
 
-	commitDate, err := GetCommitDate(ctx, client, OrgOwner, Repo, *latestTag.Commit.SHA)
-	if err != nil {
-		log.Fatalf("Failed to get commit date of tag: %v", err)
-	}
-
-	sinceDate := commitDate.Format(time.RFC3339)
-
-	// Fetch merged PRs for next version
-	mergedPRs, err := FetchPRs(ctx, client, OrgOwner, Repo, sinceDate)
+	// Fetch merged PRs for retrieved milestone
+	mergedPRs, err := ListMergedPRsOnMilestone(ctx, client, *milestone.Number)
 	if err != nil {
 		log.Fatalf("Failed to fetch PRs: %v", err)
 	}
