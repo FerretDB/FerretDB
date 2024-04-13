@@ -417,11 +417,6 @@ func processSetFieldExpression(command string, doc *types.Document, setKey strin
 		}
 	}
 
-	// we should insert the value if it's a regular key
-	// if setOnInsert && path.Len() > 1 {
-	// 	return false, nil
-	// }
-
 	if err := doc.SetByPath(path, setValue); err != nil {
 		return false, NewUpdateError(handlererrors.ErrUnsuitableValueType, err.Error(), command)
 	}
@@ -808,17 +803,19 @@ func processCurrentDateFieldExpression(doc *types.Document, field string, value 
 
 	now := time.Now().UTC()
 
-	var dateType any
+	// refers to BSON types, either `Date` or `timestamp`
+	var setValType any
 
 	switch value := value.(type) {
 	case *types.Document:
 		// ignore error, error cases were validated in validateCurrentDateExpression
-		dateType, _ = value.Get("$type")
+		setValType, _ = value.Get("$type")
 	case bool:
-		dateType = "date"
+		// if boolean value is passed, then `Date` type is used for setting current date.
+		setValType = "date"
 	}
 
-	switch dateType {
+	switch setValType {
 	case "date":
 		doc.Set(field, now)
 		changed = true

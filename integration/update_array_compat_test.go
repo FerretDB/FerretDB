@@ -218,7 +218,7 @@ func TestUpdateArrayCompatPullAll(t *testing.T) {
 		},
 		"NonExistentFieldUpsert": {
 			filter:     bson.D{{"_id", "non-existent"}},
-			update:     bson.D{{"$pull", bson.D{{"non-existent-field", int32(42)}}}},
+			update:     bson.D{{"$pullAll", bson.D{{"non-existent-field", bson.A{int32(42)}}}}},
 			updateOpts: options.Update().SetUpsert(true),
 			providers:  []shareddata.Provider{shareddata.Int32s},
 		},
