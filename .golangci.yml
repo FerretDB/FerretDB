@@ -36,6 +36,7 @@ linters-settings:
         files:
           - $all
           - "!**/internal/bson/*_test.go"
+          - "!**/internal/driver/*.go"
           - "!**/internal/util/testutil/*.go"
           - "!**/internal/wire/*.go"
         deny:
@@ -44,6 +45,7 @@ linters-settings:
         files:
           - $all
           - "!**/internal/bson/*.go"
+          - "!**/internal/driver/*.go"
         deny:
           - pkg: github.com/cristalhq/bson
           - pkg: github.com/cristalhq/bson/bsonproto

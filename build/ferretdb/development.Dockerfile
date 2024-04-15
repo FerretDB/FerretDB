@@ -12,7 +12,7 @@ ARG LABEL_COMMIT
 
 # prepare stage
 
-FROM --platform=$BUILDPLATFORM golang:1.22.1 AS development-prepare
+FROM --platform=$BUILDPLATFORM golang:1.22.2 AS development-prepare
 
 # use a single directory for all Go caches to simpliy RUN --mount commands below
 ENV GOPATH /cache/gopath
@@ -36,7 +36,7 @@ EOF
 
 # build stage
 
-FROM golang:1.22.1 AS development-build
+FROM golang:1.22.2 AS development-build
 
 ARG TARGETARCH
 ARG TARGETVARIANT
@@ -107,7 +107,7 @@ COPY --from=development-build /src/bin/ferretdb /ferretdb
 
 # final stage
 
-FROM golang:1.22.1 AS development
+FROM golang:1.22.2 AS development
 
 ENV GOCOVERDIR=/tmp/cover
 ENV GORACE=halt_on_error=1,history_size=2
@@ -120,12 +120,12 @@ ENTRYPOINT [ "/ferretdb" ]
 
 WORKDIR /
 VOLUME /state
-EXPOSE 27017 27018 8080
+EXPOSE 27017 27018 8088
 
 # don't forget to update documentation if you change defaults
 ENV FERRETDB_LISTEN_ADDR=:27017
 # ENV FERRETDB_LISTEN_TLS=:27018
-ENV FERRETDB_DEBUG_ADDR=:8080
+ENV FERRETDB_DEBUG_ADDR=:8088
 ENV FERRETDB_STATE_DIR=/state
 ENV FERRETDB_SQLITE_URL=file:/state/
 

@@ -43,7 +43,7 @@ Use ❌ for commands and arguments that are not implemented at all.
 |                 | `showRecordId`             | ✅     |                                                           |
 |                 | `tailable`                 | ✅     |                                                           |
 |                 | `oplogReplay`              | ⚠️     | Ignored                                                   |
-|                 | `noCursorTimeout`          | ❌     | Unimplemented                                             |
+|                 | `noCursorTimeout`          | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/4035) |
 |                 | `awaitData`                | ✅     |                                                           |
 |                 | `allowPartialResults`      | ❌     | Unimplemented                                             |
 |                 | `collation`                | ❌     | Unimplemented                                             |
@@ -66,7 +66,7 @@ Use ❌ for commands and arguments that are not implemented at all.
 |                 | `let`                      | ⚠️     | Unimplemented                                             |
 | `getMore`       |                            | ✅     | Basic command is fully supported                          |
 |                 | `batchSize`                | ✅     |                                                           |
-|                 | `maxTimeMS`                | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/2984) |
+|                 | `maxTimeMS`                | ✅     |                                                           |
 |                 | `comment`                  | ⚠️     | Unimplemented                                             |
 | `insert`        |                            | ✅     | Basic command is fully supported                          |
 |                 | `documents`                | ✅     |                                                           |
@@ -109,7 +109,7 @@ The following operators and modifiers are available in the `update` and `findAnd
 | `$[<identifier>]` |             | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/824) |
 | `$addToSet`       |             | ✅️    |                                                          |
 | `$pop`            |             | ✅     |                                                          |
-| `$pull`           |             | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/826) |
+| `$pull`           |             | ✅     |                                                          |
 | `$push`           |             | ✅️    |                                                          |
 | `$pullAll`        |             | ✅️    |                                                          |
 |                   | `$each`     | ✅️    |                                                          |
@@ -130,8 +130,6 @@ The following operators are available in the `find` command `projection` argumen
 | `$slice`     | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1711) |
 
 ## Query Plan Cache Commands
-
-Related [issue](https://github.com/FerretDB/FerretDB/issues/78).
 
 | Command                 | Argument     | Status | Comments                                                  |
 | ----------------------- | ------------ | ------ | --------------------------------------------------------- |
@@ -194,22 +192,22 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/78).
 |                            | `roles`                          | ⚠️     |                                                           |
 |                            | `writeConcern`                   | ⚠️     |                                                           |
 |                            | `comment`                        | ⚠️     |                                                           |
-| `updateUser`               |                                  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1496) |
-|                            | `pwd`                            | ⚠️     |                                                           |
-|                            | `customData`                     | ⚠️     |                                                           |
-|                            | `roles`                          | ⚠️     |                                                           |
-|                            | `digestPassword`                 | ⚠️     |                                                           |
-|                            | `writeConcern`                   | ⚠️     |                                                           |
-|                            | `authenticationRestrictions`     | ⚠️     |                                                           |
-|                            | `mechanisms`                     | ⚠️     |                                                           |
-|                            | `digestPassword`                 | ⚠️     |                                                           |
-|                            | `comment`                        | ⚠️     |                                                           |
+| `updateUser`               |                                  | ✅     |                                                           |
+|                            | `pwd`                            |        |                                                           |
+|                            | `customData`                     |        |                                                           |
+|                            | `roles`                          |        |                                                           |
+|                            | `digestPassword`                 |        |                                                           |
+|                            | `writeConcern`                   |        |                                                           |
+|                            | `authenticationRestrictions`     |        |                                                           |
+|                            | `mechanisms`                     |        |                                                           |
+|                            | `digestPassword`                 |        |                                                           |
+|                            | `comment`                        |        |                                                           |
 | `usersInfo`                |                                  | ✅     |                                                           |
-|                            | `showCredentials`                | ⚠️     |                                                           |
+|                            | `showCredentials`                | ✅     |                                                           |
 |                            | `showCustomData`                 | ⚠️     |                                                           |
 |                            | `showPrivileges`                 | ⚠️     |                                                           |
 |                            | `showAuthenticationRestrictions` | ⚠️     |                                                           |
-|                            | `filter`                         | ⚠️     |                                                           |
+|                            | `filter`                         | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/4141) |
 |                            | `comment`                        | ⚠️     |                                                           |
 
 ### Authentication Commands
@@ -499,7 +497,7 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/1917).
 | `$subtract` (arithmetic)  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1453) |
 | `$subtract` (date)        | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1460) |
 | `$sum` (accumulator)      | ✅️    |                                                           |
-| `$sum` (operator)         | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/2680) |
+| `$sum` (operator)         | ✅️    |                                                           |
 | `$switch`                 | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1457) |
 | `$tan`                    | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1465) |
 | `$tanh`                   | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1465) |
@@ -568,7 +566,7 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/1917).
 |                                   | `expireAfterSeconds`           |                           | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/2415) |
 |                                   | `clusteredIndex`               |                           | ⚠️     |                                                           |
 |                                   | `changeStreamPreAndPostImages` |                           | ⚠️     |                                                           |
-|                                   | `autoIndexId`                  |                           | ⚠️     | Ignored                                                   |
+|                                   | `autoIndexId`                  |                           | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/3922) |
 |                                   | `size`                         |                           | ✅️    |                                                           |
 |                                   | `max`                          |                           | ✅     |                                                           |
 |                                   | `storageEngine`                |                           | ⚠️     | Ignored                                                   |
@@ -642,7 +640,7 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/1917).
 |                                   | `comment`                      |                           | ⚠️     |                                                           |
 | `listCollections`                 |                                |                           | ✅     |                                                           |
 |                                   | `filter`                       |                           | ✅     |                                                           |
-|                                   | `nameOnly`                     |                           | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/3624) |
+|                                   | `nameOnly`                     |                           | ✅     |                                                           |
 |                                   | `authorizedCollections`        |                           | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/3770) |
 |                                   | `comment`                      |                           | ⚠️     |                                                           |
 | `listDatabases`                   |                                |                           | ✅     |                                                           |

@@ -101,6 +101,7 @@ var cli struct {
 		} `embed:"" prefix:"capped-cleanup-"`
 
 		EnableNewAuth bool `default:"false" help:"Experimental: enable new authentication."`
+		BatchSize     int  `default:"100"   help:"Experimental: maximum insertion batch size."`
 
 		Telemetry struct {
 			URL            string        `default:"https://beacon.ferretdb.com/" help:"Telemetry: reporting URL."`
@@ -412,6 +413,7 @@ func run() {
 			CappedCleanupInterval:   cli.Test.CappedCleanup.Interval,
 			CappedCleanupPercentage: cli.Test.CappedCleanup.Percentage,
 			EnableNewAuth:           cli.Test.EnableNewAuth,
+			BatchSize:               cli.Test.BatchSize,
 		},
 	})
 	if err != nil {

@@ -12,7 +12,7 @@ ARG LABEL_COMMIT
 
 # prepare stage
 
-FROM --platform=$BUILDPLATFORM golang:1.22.1 AS production-prepare
+FROM --platform=$BUILDPLATFORM golang:1.22.2 AS production-prepare
 
 # use a single directory for all Go caches to simpliy RUN --mount commands below
 ENV GOPATH /cache/gopath
@@ -36,7 +36,7 @@ EOF
 
 # build stage
 
-FROM golang:1.22.1 AS production-build
+FROM golang:1.22.2 AS production-build
 
 ARG TARGETARCH
 ARG TARGETVARIANT
@@ -86,8 +86,9 @@ go build -v -o=bin/ferretdb ./cmd/ferretdb
 
 go version -m bin/ferretdb
 bin/ferretdb --version
-EOF
 
+mkdir /state
+EOF
 
 # stage for binary only
 
@@ -100,23 +101,23 @@ COPY --from=production-build /src/bin/ferretdb /ferretdb
 
 FROM scratch AS production
 
-COPY --from=production-build /src/bin/ferretdb /ferretdb
+COPY build/ferretdb/passwd /etc/passwd
+COPY build/ferretdb/group  /etc/group
+USER ferretdb:ferretdb
 
-# TODO https://github.com/FerretDB/FerretDB/issues/3992
-# COPY build/ferretdb/passwd /etc/passwd
-# COPY build/ferretdb/group  /etc/group
-# USER ferretdb:ferretdb
+COPY --from=production-build /src/bin/ferretdb /ferretdb
+COPY --from=production-build --chown=ferretdb:ferretdb /state /state
 
 ENTRYPOINT [ "/ferretdb" ]
 
 WORKDIR /
 VOLUME /state
-EXPOSE 27017 27018 8080
+EXPOSE 27017 27018 8088
 
 # don't forget to update documentation if you change defaults
 ENV FERRETDB_LISTEN_ADDR=:27017
 # ENV FERRETDB_LISTEN_TLS=:27018
-ENV FERRETDB_DEBUG_ADDR=:8080
+ENV FERRETDB_DEBUG_ADDR=:8088
 ENV FERRETDB_STATE_DIR=/state
 ENV FERRETDB_SQLITE_URL=file:/state/
 
