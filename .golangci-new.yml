@@ -24,8 +24,10 @@ linters-settings:
     asserts: true
     comparison: true
   govet:
-    check-shadowing: true
     enable-all: true
+    settings:
+      shadow:
+        strict: true
   revive:
     ignore-generated-header: true
     severity: warning
