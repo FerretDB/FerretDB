@@ -60,7 +60,7 @@ var cli struct {
 
 	Setup struct {
 		Username string `default:"" help:"Username for setup."`
-	}
+	} `embed:"" prefix:"setup-"`
 
 	Listen struct {
 		Addr        string `default:"127.0.0.1:27017" help:"Listen TCP address."`
@@ -358,6 +358,10 @@ func run() {
 	}()
 
 	var wg sync.WaitGroup
+
+	if cli.Setup.Username != "" && !cli.Test.EnableNewAuth {
+		logger.Sugar().Fatal("--setup-username requires --test-enable-new-auth")
+	}
 
 	if cli.Test.DisablePushdown && cli.Test.EnableNestedPushdown {
 		logger.Sugar().Fatal("--test-disable-pushdown and --test-enable-nested-pushdown should not be set at the same time")
