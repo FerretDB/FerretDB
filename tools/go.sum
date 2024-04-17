@@ -315,8 +315,8 @@ golang.org/x/tools v0.1.12/go.mod h1:hNGJHUnrk76NpqgfD5Aqm5Crs+Hm0VOH/i9J2+nxYbc
 golang.org/x/tools v0.6.0/go.mod h1:Xwgl3UAJ/d3gWutnCtw505GrjyAbvKui8lOU390QaIU=
 golang.org/x/tools v0.20.0 h1:hz/CVckiOxybQvFw6h7b/q80NTr9IUQb4s1IIzW7KNY=
 golang.org/x/tools v0.20.0/go.mod h1:WvitBU7JJf6A4jOdg4S1tviW9bhUxkgeCui/0JHctQg=
-golang.org/x/vuln v1.0.5-0.20240415194721-a7188c690e1d h1:8HJlL1gUNpwBCgjmLGWveeeC9EAytrb1yjewoIVowvw=
-golang.org/x/vuln v1.0.5-0.20240415194721-a7188c690e1d/go.mod h1:HT/Ar8fE34tbxWG2s7PYjVl+iIE4Er36/940Z+K540Y=
+golang.org/x/vuln v1.1.0 h1:ECEdI+aEtjpF90eqEcDL5Q11DWSZAw5PJQWlp0+gWqc=
+golang.org/x/vuln v1.1.0/go.mod h1:HT/Ar8fE34tbxWG2s7PYjVl+iIE4Er36/940Z+K540Y=
 golang.org/x/xerrors v0.0.0-20190717185122-a985d3407aa7/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
 golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
