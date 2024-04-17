@@ -58,6 +58,10 @@ var cli struct {
 	StateDir    string `default:"."               help:"Process state directory."`
 	ReplSetName string `default:""                help:"Replica set name."`
 
+	Setup struct {
+		Username string `default:"" help:"Username for setup."`
+	}
+
 	Listen struct {
 		Addr        string `default:"127.0.0.1:27017" help:"Listen TCP address."`
 		Unix        string `default:""                help:"Listen Unix domain socket path."`
