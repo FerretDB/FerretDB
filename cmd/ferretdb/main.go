@@ -59,9 +59,9 @@ var cli struct {
 	ReplSetName string `default:""                help:"Replica set name."`
 
 	Setup struct {
-		Username string        `default:""   help:"Username for setup."`
-		Password string        `default:""   help:"Password for setup."`
-		Timeout  time.Duration `default:"1m" help:"Timeout for setup."`
+		Username string        `default:""    help:"Username for setup."`
+		Password string        `default:""    help:"Password for setup."`
+		Timeout  time.Duration `default:"30s" help:"Timeout for setup."`
 	} `embed:"" prefix:"setup-"`
 
 	Listen struct {
