@@ -79,6 +79,12 @@ func (bc *backendContract) Close() {
 	resource.Untrack(bc, bc.token)
 }
 
+func CreateUser(ctx context.Context, b Backend, username, password string) error {
+	defer observability.FuncCall(ctx)()
+
+	return nil
+}
+
 // StatusParams represents the parameters of Backend.Status method.
 type StatusParams struct{}
 
