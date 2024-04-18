@@ -147,8 +147,6 @@ func makeCredentials(username, password string) (*types.Document, error) {
 		}
 
 		switch v {
-		case "PLAIN":
-			credentials.Set("PLAIN", must.NotFail(pwd.PlainHash(password)))
 		case "SCRAM-SHA-1":
 			hash, err := pwd.SCRAMSHA1Hash(username, password)
 			if err != nil {
