@@ -17,13 +17,20 @@ package backends
 import (
 	"cmp"
 	"context"
+	"errors"
+	"fmt"
 	"slices"
 
+	"github.com/google/uuid"
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
+	pwd "github.com/FerretDB/FerretDB/internal/util/password"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
 
@@ -82,7 +89,86 @@ func (bc *backendContract) Close() {
 func CreateUser(ctx context.Context, b Backend, username, password string) error {
 	defer observability.FuncCall(ctx)()
 
+	credentials, err := makeCredentials(username, password)
+	if err != nil {
+		return err
+	}
+
+	id := uuid.New()
+	saved := must.NotFail(types.NewDocument(
+		"_id", "test"+"."+username, // TODO: use dbName
+		"credentials", credentials,
+		"user", username,
+		"db", "test",
+		"roles", types.MakeArray(0),
+		"userId", types.Binary{Subtype: types.BinaryUUID, B: must.NotFail(id.MarshalBinary())},
+	))
+
+	adminDB, err := b.Database("admin")
+	if err != nil {
+		return err
+	}
+
+	users, err := adminDB.Collection("users")
+	if err != nil {
+		return err
+	}
+
+	_, err = users.InsertAll(ctx, &InsertAllParams{
+		Docs: []*types.Document{saved},
+	})
+
+	if err != nil {
+		return err
+	}
+
 	return nil
+}
+
+// makeCredentials creates a document with credentials for all supported mechanisms.
+func makeCredentials(username, password string) (*types.Document, error) {
+	credentials := types.MakeDocument(0)
+
+	allMechanisms := must.NotFail(types.NewArray("SCRAM-SHA-1", "SCRAM-SHA-256"))
+
+	iter := allMechanisms.Iterator()
+	defer iter.Close()
+
+	for {
+		var v any
+		_, v, err := iter.Next()
+
+		if errors.Is(err, iterator.ErrIteratorDone) {
+			break
+		}
+
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		switch v {
+		case "PLAIN":
+			credentials.Set("PLAIN", must.NotFail(pwd.PlainHash(password)))
+		case "SCRAM-SHA-1":
+			hash, err := pwd.SCRAMSHA1Hash(username, password)
+			if err != nil {
+				return nil, err
+			}
+
+			credentials.Set("SCRAM-SHA-1", hash)
+		case "SCRAM-SHA-256":
+			hash, err := pwd.SCRAMSHA256Hash(password)
+			if err != nil {
+				return nil, err
+			}
+
+			credentials.Set("SCRAM-SHA-256", hash)
+		default:
+			return nil, fmt.Errorf("uknown auth mechanism '%s'", v)
+		}
+	}
+
+	return credentials, nil
 }
 
 // StatusParams represents the parameters of Backend.Status method.
