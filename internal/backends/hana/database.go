@@ -129,6 +129,17 @@ func (db *database) RenameCollection(ctx context.Context, params *backends.Renam
 		return lazyerrors.Errorf("old database %q or collection %q does not exist", db.schema, params.OldName)
 	}
 
+	col, err := collectionExists(ctx, db.hdb, db.schema, params.NewName)
+	if err != nil {
+		return getHanaErrorIfExists(err)
+	}
+
+	if col {
+		return backends.NewError(backends.ErrorCodeCollectionAlreadyExists,
+			lazyerrors.Errorf("new database %q or collection %q already exists", db.schema, params.NewName),
+		)
+	}
+
 	sqlStmt := fmt.Sprintf("RENAME COLLECTION %q.%q to %q", db.schema, params.OldName, params.NewName)
 
 	_, err = db.hdb.ExecContext(ctx, sqlStmt)
