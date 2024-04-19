@@ -94,7 +94,7 @@ func CreateUser(ctx context.Context, b Backend, dbName, username, password strin
 
 	id := uuid.New()
 	saved := must.NotFail(types.NewDocument(
-		"_id", dbName+"."+username, // TODO: use dbName
+		"_id", dbName+"."+username,
 		"credentials", credentials,
 		"user", username,
 		"db", "test",
