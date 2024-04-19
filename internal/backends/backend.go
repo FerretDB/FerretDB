@@ -136,6 +136,10 @@ func MakeCredentials(mechanisms *types.Array, username, password string) (*types
 func makeCredentials(mechanisms *types.Array, username, password string) (*types.Document, error) {
 	credentials := types.MakeDocument(0)
 
+	if password == "" {
+		return nil, lazyerrors.New("password cannot be empty")
+	}
+
 	// TODO: if the optional field mechanisms is nil, create a user with all SCRAM mechanisms,
 	// this is how it works in MongoDB.
 
