@@ -97,7 +97,7 @@ func CreateUser(ctx context.Context, b Backend, mechanisms *types.Array, dbName,
 		"_id", dbName+"."+username,
 		"credentials", credentials,
 		"user", username,
-		"db", "test",
+		"db", dbName,
 		"roles", types.MakeArray(0),
 		"userId", types.Binary{Subtype: types.BinaryUUID, B: must.NotFail(id.MarshalBinary())},
 	))
