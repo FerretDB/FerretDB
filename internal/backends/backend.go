@@ -118,7 +118,7 @@ func CreateUser(ctx context.Context, b Backend, mechanisms *types.Array, dbName,
 
 	// don't return an error if user already exists
 	if err != nil {
-		if !errors.As(err, ErrorCodeInsertDuplicateID) {
+		if !ErrorCodeIs(err, ErrorCodeInsertDuplicateID) {
 			return err
 		}
 	}
