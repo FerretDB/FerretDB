@@ -30,7 +30,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
-	"github.com/FerretDB/FerretDB/internal/util/password"
+	p "github.com/FerretDB/FerretDB/internal/util/password"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
 
@@ -127,7 +127,7 @@ func CreateUser(ctx context.Context, b Backend, mechanisms *types.Array, dbName,
 }
 
 // makeCredentials creates a document with credentials for the chosen mechanisms.
-func makeCredentials(mechanisms *types.Array, username, userPassword string) (*types.Document, error) {
+func makeCredentials(mechanisms *types.Array, username, password string) (*types.Document, error) {
 	credentials := types.MakeDocument(0)
 
 	iter := mechanisms.Iterator()
@@ -147,16 +147,16 @@ func makeCredentials(mechanisms *types.Array, username, userPassword string) (*t
 
 		switch v {
 		case "PLAIN":
-			credentials.Set("PLAIN", must.NotFail(password.PlainHash(userPassword)))
+			credentials.Set("PLAIN", must.NotFail(p.PlainHash(password)))
 		case "SCRAM-SHA-1":
-			hash, err := password.SCRAMSHA1Hash(username, userPassword)
+			hash, err := p.SCRAMSHA1Hash(username, password)
 			if err != nil {
 				return nil, err
 			}
 
 			credentials.Set("SCRAM-SHA-1", hash)
 		case "SCRAM-SHA-256":
-			hash, err := password.SCRAMSHA256Hash(userPassword)
+			hash, err := p.SCRAMSHA256Hash(password)
 			if err != nil {
 				return nil, err
 			}
