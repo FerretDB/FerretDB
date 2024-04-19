@@ -86,8 +86,8 @@ func (bc *backendContract) Close() {
 	resource.Untrack(bc, bc.token)
 }
 
-func CreateUser(ctx context.Context, b Backend, dbName, username, password string) error {
-	credentials, err := makeCredentials(username, password)
+func CreateUser(ctx context.Context, b Backend, mechanisms *types.Array, dbName, username, password string) error {
+	credentials, err := makeCredentials(mechanisms, username, password)
 	if err != nil {
 		return err
 	}
@@ -107,7 +107,7 @@ func CreateUser(ctx context.Context, b Backend, dbName, username, password strin
 		return err
 	}
 
-	users, err := adminDB.Collection("users")
+	users, err := adminDB.Collection("system.users")
 	if err != nil {
 		return err
 	}
@@ -116,20 +116,19 @@ func CreateUser(ctx context.Context, b Backend, dbName, username, password strin
 		Docs: []*types.Document{saved},
 	})
 
+	// don't return error if user already exists
 	if err != nil {
-		return err
+		checkError(err, ErrorCodeInsertDuplicateID)
 	}
 
 	return nil
 }
 
-// makeCredentials creates a document with credentials for all supported mechanisms.
-func makeCredentials(user, pwd string) (*types.Document, error) {
+// makeCredentials creates a document with credentials for the chosen mechanisms.
+func makeCredentials(mechanisms *types.Array, username, userPassword string) (*types.Document, error) {
 	credentials := types.MakeDocument(0)
 
-	allMechanisms := must.NotFail(types.NewArray("SCRAM-SHA-1", "SCRAM-SHA-256"))
-
-	iter := allMechanisms.Iterator()
+	iter := mechanisms.Iterator()
 	defer iter.Close()
 
 	for {
@@ -145,15 +144,17 @@ func makeCredentials(user, pwd string) (*types.Document, error) {
 		}
 
 		switch v {
+		case "PLAIN":
+			credentials.Set("PLAIN", must.NotFail(password.PlainHash(userPassword)))
 		case "SCRAM-SHA-1":
-			hash, err := password.SCRAMSHA1Hash(user, pwd)
+			hash, err := password.SCRAMSHA1Hash(username, userPassword)
 			if err != nil {
 				return nil, err
 			}
 
 			credentials.Set("SCRAM-SHA-1", hash)
 		case "SCRAM-SHA-256":
-			hash, err := password.SCRAMSHA256Hash(pwd)
+			hash, err := password.SCRAMSHA256Hash(userPassword)
 			if err != nil {
 				return nil, err
 			}

@@ -18,17 +18,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/util/password"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -106,15 +103,14 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 
 	common.Ignored(document, h.L, "writeConcern", "authenticationRestrictions", "comment")
 
-	// defMechanisms := must.NotFail(types.NewArray("SCRAM-SHA-1", "SCRAM-SHA-256"))
+	allMechanisms := must.NotFail(types.NewArray("SCRAM-SHA-1", "SCRAM-SHA-256"))
 
-	// mechanisms, err := common.GetOptionalParam(document, "mechanisms", defMechanisms)
-	// if err != nil {
-	// 	return nil, lazyerrors.Error(err)
-	// }
+	mechanisms, err := common.GetOptionalParam(document, "mechanisms", allMechanisms)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
-	// var credentials *types.Document
-
+	var password string
 	if document.Has("pwd") {
 		pwdi := must.NotFail(document.Get("pwd"))
 		_, ok := pwdi.(string)
@@ -128,47 +124,13 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 			)
 		}
 
-		// credentials, err = makeCredentials(mechanisms, username, pwd)
-		// if err != nil {
-		// 	return nil, err
-		// }
+		password = pwdi.(string)
 	}
 
-	// id := uuid.New()
-	// saved := must.NotFail(types.NewDocument(
-	// 	"_id", dbName+"."+username,
-	// 	"credentials", credentials,
-	// 	"user", username,
-	// 	"db", dbName,
-	// 	"roles", types.MakeArray(0),
-	// 	"userId", types.Binary{Subtype: types.BinaryUUID, B: must.NotFail(id.MarshalBinary())},
-	// ))
-
-	// adminDB, err := h.b.Database("admin")
-	// if err != nil {
-	// 	return nil, lazyerrors.Error(err)
-	// }
-
-	// users, err := adminDB.Collection("system.users")
-	// if err != nil {
-	// 	return nil, lazyerrors.Error(err)
-	// }
-
-	backends.CreateUser(ctx, h.b, dbName, username, "password")
-
-	// _, err = users.InsertAll(ctx, &backends.InsertAllParams{
-	// 	Docs: []*types.Document{saved},
-	// })
-	// if err != nil {
-	// 	if backends.ErrorCodeIs(err, backends.ErrorCodeInsertDuplicateID) {
-	// 		return nil, handlererrors.NewCommandErrorMsg(
-	// 			handlererrors.ErrUserAlreadyExists,
-	// 			fmt.Sprintf("User \"%s@%s\" already exists", username, dbName),
-	// 		)
-	// 	}
-
-	// 	return nil, lazyerrors.Error(err)
-	// }
+	err = backends.CreateUser(ctx, h.b, mechanisms, dbName, username, password)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
@@ -178,72 +140,4 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 	)))
 
 	return &reply, nil
-}
-
-// makeCredentials creates a document with credentials for the chosen mechanisms.
-func makeCredentials(mechanisms *types.Array, username, userPassword string) (*types.Document, error) {
-	credentials := types.MakeDocument(0)
-
-	if userPassword == "" {
-		return nil, handlererrors.NewCommandErrorMsg(
-			handlererrors.ErrSetEmptyPassword,
-			"Password cannot be empty",
-		)
-	}
-
-	if mechanisms.Len() == 0 {
-		return nil, handlererrors.NewCommandErrorMsg(
-			handlererrors.ErrBadValue,
-			"mechanisms field must not be empty",
-		)
-	}
-
-	iter := mechanisms.Iterator()
-	defer iter.Close()
-
-	for {
-		var v any
-		_, v, err := iter.Next()
-
-		if errors.Is(err, iterator.ErrIteratorDone) {
-			break
-		}
-
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		switch v {
-		case "PLAIN":
-			credentials.Set("PLAIN", must.NotFail(password.PlainHash(userPassword)))
-		case "SCRAM-SHA-1":
-			hash, err := password.SCRAMSHA1Hash(username, userPassword)
-			if err != nil {
-				return nil, err
-			}
-
-			credentials.Set("SCRAM-SHA-1", hash)
-		case "SCRAM-SHA-256":
-			hash, err := password.SCRAMSHA256Hash(userPassword)
-			if err != nil {
-				if strings.Contains(err.Error(), "prohibited character") {
-					return nil, handlererrors.NewCommandErrorMsg(
-						handlererrors.ErrStringProhibited,
-						"Error preflighting normalization: U_STRINGPREP_PROHIBITED_ERROR",
-					)
-				}
-
-				return nil, err
-			}
-
-			credentials.Set("SCRAM-SHA-256", hash)
-		default:
-			return nil, handlererrors.NewCommandErrorMsg(
-				handlererrors.ErrBadValue,
-				fmt.Sprintf("Unknown auth mechanism '%s'", v),
-			)
-		}
-	}
-
-	return credentials, nil
 }
