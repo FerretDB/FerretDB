@@ -137,7 +137,7 @@ func makeCredentials(mechanisms *types.Array, username, password string) (*types
 	credentials := types.MakeDocument(0)
 
 	if mechanisms.Len() == 0 {
-		return nil, lazyerrors.New("mechanisms field must not be empty")
+		return nil, lazyerrors.New("mechanisms field cannot be empty")
 	}
 
 	if password == "" {

@@ -113,7 +113,7 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 	if mechanisms.Len() == 0 {
 		return nil, handlererrors.NewCommandErrorMsg(
 			handlererrors.ErrBadValue,
-			"mechanisms field must not be empty",
+			"mechanisms field cannot be empty",
 		)
 	}
 
