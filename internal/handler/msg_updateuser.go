@@ -89,11 +89,18 @@ func (h *Handler) MsgUpdateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 
 	common.Ignored(document, h.L, "writeConcern", "authenticationRestrictions", "comment")
 
-	defMechanisms := must.NotFail(types.NewArray("SCRAM-SHA-1", "SCRAM-SHA-256"))
+	allMechanisms := must.NotFail(types.NewArray("SCRAM-SHA-1", "SCRAM-SHA-256"))
 
-	mechanisms, err := common.GetOptionalParam(document, "mechanisms", defMechanisms)
+	mechanisms, err := common.GetOptionalParam(document, "mechanisms", allMechanisms)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
+	}
+
+	if mechanisms.Len() == 0 {
+		return nil, handlererrors.NewCommandErrorMsg(
+			handlererrors.ErrBadValue,
+			"mechanisms field must not be empty",
+		)
 	}
 
 	var credentials *types.Document

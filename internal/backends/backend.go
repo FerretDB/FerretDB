@@ -136,6 +136,10 @@ func MakeCredentials(mechanisms *types.Array, username, password string) (*types
 func makeCredentials(mechanisms *types.Array, username, password string) (*types.Document, error) {
 	credentials := types.MakeDocument(0)
 
+	if mechanisms.Len() == 0 {
+		return nil, lazyerrors.New("mechanisms field must not be empty")
+	}
+
 	if password == "" {
 		return nil, lazyerrors.New("password cannot be empty")
 	}
