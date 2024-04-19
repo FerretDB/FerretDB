@@ -127,8 +127,8 @@ func CreateUser(ctx context.Context, b Backend, mechanisms *types.Array, dbName,
 	return nil
 }
 
-// makeCredentials creates a document with credentials for the chosen mechanisms.
-func makeCredentials(mechanisms *types.Array, username, password string) (*types.Document, error) {
+// MakeCredentials creates a document with credentials for the chosen mechanisms.
+func MakeCredentials(mechanisms *types.Array, username, password string) (*types.Document, error) {
 	credentials := types.MakeDocument(0)
 
 	// TODO: if the optional field mechanisms is nil, create a user with all SCRAM mechanisms,

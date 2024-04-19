@@ -98,20 +98,23 @@ func (h *Handler) MsgUpdateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 
 	var credentials *types.Document
 
+	var password string
 	if document.Has("pwd") {
-		pwdi := must.NotFail(document.Get("pwd"))
-		pwd, ok := pwdi.(string)
+		pwd := must.NotFail(document.Get("pwd"))
+		_, ok := pwd.(string)
 
 		if !ok {
 			return nil, handlererrors.NewCommandErrorMsg(
 				handlererrors.ErrTypeMismatch,
 				fmt.Sprintf("BSON field 'updateUser.pwd' is the wrong type '%s', expected type 'string'",
-					handlerparams.AliasFromType(pwdi),
+					handlerparams.AliasFromType(pwd),
 				),
 			)
 		}
 
-		credentials, err = makeCredentials(mechanisms, username, pwd)
+		password = pwd.(string)
+
+		credentials, err = backends.MakeCredentials(mechanisms, username, password)
 		if err != nil {
 			return nil, err
 		}
