@@ -86,7 +86,7 @@ func (bc *backendContract) Close() {
 	resource.Untrack(bc, bc.token)
 }
 
-// CreateUser stores a new user in the given database and Backend, ignoring errors if the user already exists.
+// CreateUser stores a new user in the given database and Backend, ignoring error if the user already exists.
 func CreateUser(ctx context.Context, b Backend, mechanisms *types.Array, dbName, username, password string) error {
 	credentials, err := makeCredentials(mechanisms, username, password)
 	if err != nil {
