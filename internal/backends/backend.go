@@ -86,7 +86,7 @@ func (bc *backendContract) Close() {
 	resource.Untrack(bc, bc.token)
 }
 
-// CreateUser creates a new user in the given database and Backend b, ignoring errors if the user already exists.
+// CreateUser stores a new user in the given database and Backend, ignoring errors if the user already exists.
 func CreateUser(ctx context.Context, b Backend, mechanisms *types.Array, dbName, username, password string) error {
 	credentials, err := makeCredentials(mechanisms, username, password)
 	if err != nil {
@@ -129,6 +129,11 @@ func CreateUser(ctx context.Context, b Backend, mechanisms *types.Array, dbName,
 
 // MakeCredentials creates a document with credentials for the chosen mechanisms.
 func MakeCredentials(mechanisms *types.Array, username, password string) (*types.Document, error) {
+	return makeCredentials(mechanisms, username, password)
+}
+
+// makeCredentials creates a document with credentials for the chosen mechanisms.
+func makeCredentials(mechanisms *types.Array, username, password string) (*types.Document, error) {
 	credentials := types.MakeDocument(0)
 
 	// TODO: if the optional field mechanisms is nil, create a user with all SCRAM mechanisms,
