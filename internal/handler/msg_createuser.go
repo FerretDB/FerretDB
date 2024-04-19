@@ -119,19 +119,19 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 
 	var password string
 	if document.Has("pwd") {
-		pwdi := must.NotFail(document.Get("pwd"))
-		_, ok := pwdi.(string)
+		pwd := must.NotFail(document.Get("pwd"))
+		_, ok := pwd.(string)
 
 		if !ok {
 			return nil, handlererrors.NewCommandErrorMsg(
 				handlererrors.ErrTypeMismatch,
 				fmt.Sprintf("BSON field 'createUser.pwd' is the wrong type '%s', expected type 'string'",
-					handlerparams.AliasFromType(pwdi),
+					handlerparams.AliasFromType(pwd),
 				),
 			)
 		}
 
-		password = pwdi.(string)
+		password = pwd.(string)
 	}
 
 	err = backends.CreateUser(ctx, h.b, mechanisms, dbName, username, password)
