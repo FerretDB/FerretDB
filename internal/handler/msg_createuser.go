@@ -20,8 +20,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/google/uuid"
-
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
@@ -108,18 +106,18 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 
 	common.Ignored(document, h.L, "writeConcern", "authenticationRestrictions", "comment")
 
-	defMechanisms := must.NotFail(types.NewArray("SCRAM-SHA-1", "SCRAM-SHA-256"))
+	// defMechanisms := must.NotFail(types.NewArray("SCRAM-SHA-1", "SCRAM-SHA-256"))
 
-	mechanisms, err := common.GetOptionalParam(document, "mechanisms", defMechanisms)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	// mechanisms, err := common.GetOptionalParam(document, "mechanisms", defMechanisms)
+	// if err != nil {
+	// 	return nil, lazyerrors.Error(err)
+	// }
 
-	var credentials *types.Document
+	// var credentials *types.Document
 
 	if document.Has("pwd") {
 		pwdi := must.NotFail(document.Get("pwd"))
-		pwd, ok := pwdi.(string)
+		_, ok := pwdi.(string)
 
 		if !ok {
 			return nil, handlererrors.NewCommandErrorMsg(
@@ -130,45 +128,47 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 			)
 		}
 
-		credentials, err = makeCredentials(mechanisms, username, pwd)
-		if err != nil {
-			return nil, err
-		}
+		// credentials, err = makeCredentials(mechanisms, username, pwd)
+		// if err != nil {
+		// 	return nil, err
+		// }
 	}
 
-	id := uuid.New()
-	saved := must.NotFail(types.NewDocument(
-		"_id", dbName+"."+username,
-		"credentials", credentials,
-		"user", username,
-		"db", dbName,
-		"roles", types.MakeArray(0),
-		"userId", types.Binary{Subtype: types.BinaryUUID, B: must.NotFail(id.MarshalBinary())},
-	))
+	// id := uuid.New()
+	// saved := must.NotFail(types.NewDocument(
+	// 	"_id", dbName+"."+username,
+	// 	"credentials", credentials,
+	// 	"user", username,
+	// 	"db", dbName,
+	// 	"roles", types.MakeArray(0),
+	// 	"userId", types.Binary{Subtype: types.BinaryUUID, B: must.NotFail(id.MarshalBinary())},
+	// ))
 
-	adminDB, err := h.b.Database("admin")
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	// adminDB, err := h.b.Database("admin")
+	// if err != nil {
+	// 	return nil, lazyerrors.Error(err)
+	// }
 
-	users, err := adminDB.Collection("system.users")
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	// users, err := adminDB.Collection("system.users")
+	// if err != nil {
+	// 	return nil, lazyerrors.Error(err)
+	// }
 
-	_, err = users.InsertAll(ctx, &backends.InsertAllParams{
-		Docs: []*types.Document{saved},
-	})
-	if err != nil {
-		if backends.ErrorCodeIs(err, backends.ErrorCodeInsertDuplicateID) {
-			return nil, handlererrors.NewCommandErrorMsg(
-				handlererrors.ErrUserAlreadyExists,
-				fmt.Sprintf("User \"%s@%s\" already exists", username, dbName),
-			)
-		}
+	backends.CreateUser(ctx, h.b, dbName, username, "password")
 
-		return nil, lazyerrors.Error(err)
-	}
+	// _, err = users.InsertAll(ctx, &backends.InsertAllParams{
+	// 	Docs: []*types.Document{saved},
+	// })
+	// if err != nil {
+	// 	if backends.ErrorCodeIs(err, backends.ErrorCodeInsertDuplicateID) {
+	// 		return nil, handlererrors.NewCommandErrorMsg(
+	// 			handlererrors.ErrUserAlreadyExists,
+	// 			fmt.Sprintf("User \"%s@%s\" already exists", username, dbName),
+	// 		)
+	// 	}
+
+	// 	return nil, lazyerrors.Error(err)
+	// }
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.MakeOpMsgSection(

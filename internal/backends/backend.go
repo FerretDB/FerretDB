@@ -86,9 +86,7 @@ func (bc *backendContract) Close() {
 	resource.Untrack(bc, bc.token)
 }
 
-func CreateUser(ctx context.Context, b Backend, username, password string) error {
-	defer observability.FuncCall(ctx)()
-
+func CreateUser(ctx context.Context, b Backend, dbName, username, password string) error {
 	credentials, err := makeCredentials(username, password)
 	if err != nil {
 		return err
@@ -96,7 +94,7 @@ func CreateUser(ctx context.Context, b Backend, username, password string) error
 
 	id := uuid.New()
 	saved := must.NotFail(types.NewDocument(
-		"_id", "test"+"."+username, // TODO: use dbName
+		"_id", dbName+"."+username, // TODO: use dbName
 		"credentials", credentials,
 		"user", username,
 		"db", "test",
