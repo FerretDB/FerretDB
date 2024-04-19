@@ -110,6 +110,13 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 		return nil, lazyerrors.Error(err)
 	}
 
+	if mechanisms.Len() == 0 {
+		return nil, handlererrors.NewCommandErrorMsg(
+			handlererrors.ErrBadValue,
+			"mechanisms field must not be empty",
+		)
+	}
+
 	var password string
 	if document.Has("pwd") {
 		pwdi := must.NotFail(document.Get("pwd"))

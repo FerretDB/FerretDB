@@ -116,9 +116,11 @@ func CreateUser(ctx context.Context, b Backend, mechanisms *types.Array, dbName,
 		Docs: []*types.Document{saved},
 	})
 
-	// don't return error if user already exists
+	// don't return an error if user already exists
 	if err != nil {
-		checkError(err, ErrorCodeInsertDuplicateID)
+		if !errors.As(err, ErrorCodeInsertDuplicateID) {
+			return err
+		}
 	}
 
 	return nil
