@@ -374,10 +374,10 @@ func run() {
 	var b backends.Backend
 	switch cli.Handler {
 	case "postgresql":
-		b, _ = postgresql.NewBackend(&postgresql.NewBackendParams{}) // TODO pass params
+		b, _ = postgresql.NewBackend(nil) // TODO pass NewBackendParams
 	}
 
-	// create the user
+	// TODO create the user
 
 	// https://github.com/alecthomas/kong/issues/389
 	if cli.DebugAddr != "" && cli.DebugAddr != "-" {
