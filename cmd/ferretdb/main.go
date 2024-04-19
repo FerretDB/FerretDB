@@ -367,17 +367,19 @@ func run() {
 		logger.Sugar().Fatal("--setup-username requires --test-enable-new-auth")
 	}
 
-	if cli.Test.DisablePushdown && cli.Test.EnableNestedPushdown {
-		logger.Sugar().Fatal("--test-disable-pushdown and --test-enable-nested-pushdown should not be set at the same time")
-	}
-
 	var b backends.Backend
 	switch cli.Handler {
 	case "postgresql":
 		b, _ = postgresql.NewBackend(nil) // TODO pass NewBackendParams
 	}
 
+	_ = b
+
 	// TODO create the user
+
+	if cli.Test.DisablePushdown && cli.Test.EnableNestedPushdown {
+		logger.Sugar().Fatal("--test-disable-pushdown and --test-enable-nested-pushdown should not be set at the same time")
+	}
 
 	// https://github.com/alecthomas/kong/issues/389
 	if cli.DebugAddr != "" && cli.DebugAddr != "-" {
