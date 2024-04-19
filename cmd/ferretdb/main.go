@@ -35,6 +35,8 @@ import (
 	_ "golang.org/x/crypto/x509roots/fallback" // register root TLS certificates for production Docker image
 
 	"github.com/FerretDB/FerretDB/build/version"
+	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/backends/postgresql"
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handler/registry"
@@ -368,6 +370,14 @@ func run() {
 	if cli.Test.DisablePushdown && cli.Test.EnableNestedPushdown {
 		logger.Sugar().Fatal("--test-disable-pushdown and --test-enable-nested-pushdown should not be set at the same time")
 	}
+
+	var b backends.Backend
+	switch cli.Handler {
+	case "postgresql":
+		b, _ = postgresql.NewBackend(&postgresql.NewBackendParams{}) // TODO pass params
+	}
+
+	// create the user
 
 	// https://github.com/alecthomas/kong/issues/389
 	if cli.DebugAddr != "" && cli.DebugAddr != "-" {
