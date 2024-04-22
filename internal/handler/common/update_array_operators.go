@@ -158,7 +158,9 @@ func checkUnsuitableValueInArray(command string, array *types.Array, fullPath, p
 		return nil
 	}
 
-	if elem, err := array.Get(index); err == nil {
+	var elem any
+
+	if elem, err = array.Get(index); err == nil {
 		switch elem := elem.(type) {
 		case *types.Document:
 			return checkUnsuitableValueError(command, elem, fullPath, path.TrimPrefix())

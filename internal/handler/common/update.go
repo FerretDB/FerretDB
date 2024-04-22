@@ -370,7 +370,10 @@ func getSortedKVOps(update *types.Document) []*kvOp {
 		opDocIter := opDoc.Iterator()
 
 		for {
-			key, val, err := opDocIter.Next()
+			var key string
+			var val any
+
+			key, val, err = opDocIter.Next()
 			if err == iterator.ErrIteratorDone { //nolint:errorlint // only ErrIteratorDone could be returned
 				opDocIter.Close()
 				break
@@ -487,7 +490,7 @@ func processRenameFieldExpression(command string, doc *types.Document, key strin
 	doc.RemoveByPath(sourcePath)
 
 	// Set new path with old value
-	if err := doc.SetByPath(targetPath, val); err != nil {
+	if err = doc.SetByPath(targetPath, val); err != nil {
 		return false, lazyerrors.Error(err)
 	}
 
