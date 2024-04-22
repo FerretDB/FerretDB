@@ -141,7 +141,6 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 		if err != nil {
 			return nil, err
 		}
-
 	}
 
 	var reply wire.OpMsg
