@@ -83,7 +83,7 @@ func (err *Error) Code() ErrorCode {
 
 // Error implements error interface.
 func (err *Error) Error() string {
-	return fmt.Sprintf("%v", err.err)
+	return fmt.Sprintf("%v: %v", err.code, err.err)
 }
 
 // ErrorCodeIs returns true if err is *Error with one of the given error codes.
