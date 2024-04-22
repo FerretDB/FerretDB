@@ -25,6 +25,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -118,6 +119,12 @@ func CreateUser(ctx context.Context, b Backend, mechanisms *types.Array, dbName,
 	})
 
 	if err != nil {
+		if ErrorCodeIs(err, ErrorCodeInsertDuplicateID) {
+			return handlererrors.NewCommandErrorMsg(
+				handlererrors.ErrUserAlreadyExists,
+				fmt.Sprintf(`User "%v@%v" already exists`, username, dbName),
+			)
+		}
 		return err
 	}
 
@@ -168,7 +175,10 @@ func MakeCredentials(mechanisms *types.Array, username, passwordValue string) (*
 
 			credentials.Set("SCRAM-SHA-256", hash)
 		default:
-			return nil, fmt.Errorf("Unknown auth mechanism '%v'", v)
+			return nil, handlererrors.NewCommandErrorMsg(
+				handlererrors.ErrBadValue,
+				fmt.Sprintf("Unknown auth mechanism '%v'", v),
+			)
 		}
 	}
 
