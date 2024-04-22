@@ -58,6 +58,12 @@ var cli struct {
 	StateDir    string `default:"."               help:"Process state directory."`
 	ReplSetName string `default:""                help:"Replica set name."`
 
+	Setup struct {
+		Username string        `default:""    help:"Username for setup."`
+		Password string        `default:""    help:"Password for setup."`
+		Timeout  time.Duration `default:"30s" help:"Timeout for setup."`
+	} `embed:"" prefix:"setup-"`
+
 	Listen struct {
 		Addr        string `default:"127.0.0.1:27017" help:"Listen TCP address."`
 		Unix        string `default:""                help:"Listen Unix domain socket path."`
@@ -354,6 +360,10 @@ func run() {
 	}()
 
 	var wg sync.WaitGroup
+
+	if cli.Setup.Username != "" && !cli.Test.EnableNewAuth {
+		logger.Sugar().Fatal("--setup-username requires --test-enable-new-auth")
+	}
 
 	if cli.Test.DisablePushdown && cli.Test.EnableNestedPushdown {
 		logger.Sugar().Fatal("--test-disable-pushdown and --test-enable-nested-pushdown should not be set at the same time")
