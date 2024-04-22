@@ -101,7 +101,7 @@ func TestCreateUser(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    51003,
 				Name:    "Location51003",
-				Message: "User \"should_already_exist@TestCreateUser\" already exists",
+				Message: `User "should_already_exist@TestCreateUser" already exists`,
 			},
 		},
 		"EmptyMechanism": {
