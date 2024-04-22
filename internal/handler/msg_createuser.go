@@ -113,14 +113,13 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 	if mechanisms.Len() == 0 {
 		return nil, handlererrors.NewCommandErrorMsg(
 			handlererrors.ErrBadValue,
-			"mechanisms field cannot be empty",
+			"mechanisms field must not be empty",
 		)
 	}
 
-	var password string
 	if document.Has("pwd") {
 		pwd := must.NotFail(document.Get("pwd"))
-		_, ok := pwd.(string)
+		passwordValue, ok := pwd.(string)
 
 		if !ok {
 			return nil, handlererrors.NewCommandErrorMsg(
@@ -131,12 +130,18 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 			)
 		}
 
-		password = pwd.(string)
-	}
+		if passwordValue == "" {
+			return nil, handlererrors.NewCommandErrorMsg(
+				handlererrors.ErrSetEmptyPassword,
+				"Password cannot be empty",
+			)
+		}
 
-	err = backends.CreateUser(ctx, h.b, mechanisms, dbName, username, password)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
+		err = backends.CreateUser(ctx, h.b, mechanisms, dbName, username, passwordValue)
+		if err != nil {
+			return nil, err
+		}
+
 	}
 
 	var reply wire.OpMsg

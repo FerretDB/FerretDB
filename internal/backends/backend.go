@@ -30,7 +30,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
-	p "github.com/FerretDB/FerretDB/internal/util/password"
+	"github.com/FerretDB/FerretDB/internal/util/password"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
 
@@ -86,9 +86,9 @@ func (bc *backendContract) Close() {
 	resource.Untrack(bc, bc.token)
 }
 
-// CreateUser stores a new user in the given database and Backend, ignoring error if the user already exists.
+// CreateUser stores a new user in the given database and Backend.
 func CreateUser(ctx context.Context, b Backend, mechanisms *types.Array, dbName, username, password string) error {
-	credentials, err := makeCredentials(mechanisms, username, password)
+	credentials, err := MakeCredentials(mechanisms, username, password)
 	if err != nil {
 		return err
 	}
@@ -117,31 +117,19 @@ func CreateUser(ctx context.Context, b Backend, mechanisms *types.Array, dbName,
 		Docs: []*types.Document{saved},
 	})
 
-	// don't return an error if user already exists
 	if err != nil {
-		if !ErrorCodeIs(err, ErrorCodeInsertDuplicateID) {
-			return err
-		}
+		return err
 	}
 
 	return nil
 }
 
 // MakeCredentials creates a document with credentials for the chosen mechanisms.
-func MakeCredentials(mechanisms *types.Array, username, password string) (*types.Document, error) {
-	return makeCredentials(mechanisms, username, password)
-}
-
-// makeCredentials creates a document with credentials for the chosen mechanisms.
-func makeCredentials(mechanisms *types.Array, username, password string) (*types.Document, error) {
+func MakeCredentials(mechanisms *types.Array, username, passwordValue string) (*types.Document, error) {
 	credentials := types.MakeDocument(0)
 
-	if password == "" {
-		return nil, lazyerrors.New("password cannot be empty")
-	}
-
 	if mechanisms.Len() == 0 {
-		return nil, lazyerrors.New("mechanisms field cannot be empty")
+		return nil, lazyerrors.New("mechanisms field must not be empty")
 	}
 
 	// TODO: if the optional field mechanisms is nil, create a user with all SCRAM mechanisms,
@@ -164,23 +152,23 @@ func makeCredentials(mechanisms *types.Array, username, password string) (*types
 
 		switch v {
 		case "PLAIN":
-			credentials.Set("PLAIN", must.NotFail(p.PlainHash(password)))
+			credentials.Set("PLAIN", must.NotFail(password.PlainHash(passwordValue)))
 		case "SCRAM-SHA-1":
-			hash, err := p.SCRAMSHA1Hash(username, password)
+			hash, err := password.SCRAMSHA1Hash(username, passwordValue)
 			if err != nil {
 				return nil, err
 			}
 
 			credentials.Set("SCRAM-SHA-1", hash)
 		case "SCRAM-SHA-256":
-			hash, err := p.SCRAMSHA256Hash(password)
+			hash, err := password.SCRAMSHA256Hash(passwordValue)
 			if err != nil {
 				return nil, err
 			}
 
 			credentials.Set("SCRAM-SHA-256", hash)
 		default:
-			return nil, fmt.Errorf("uknown auth mechanism '%s'", v)
+			return nil, fmt.Errorf("Unknown auth mechanism '%v'", v)
 		}
 	}
 

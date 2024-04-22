@@ -99,16 +99,15 @@ func (h *Handler) MsgUpdateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 	if mechanisms.Len() == 0 {
 		return nil, handlererrors.NewCommandErrorMsg(
 			handlererrors.ErrBadValue,
-			"mechanisms field cannot be empty",
+			"mechanisms field must not be empty",
 		)
 	}
 
 	var credentials *types.Document
 
-	var password string
 	if document.Has("pwd") {
 		pwd := must.NotFail(document.Get("pwd"))
-		_, ok := pwd.(string)
+		passwordValue, ok := pwd.(string)
 
 		if !ok {
 			return nil, handlererrors.NewCommandErrorMsg(
@@ -119,9 +118,14 @@ func (h *Handler) MsgUpdateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 			)
 		}
 
-		password = pwd.(string)
+		if passwordValue == "" {
+			return nil, handlererrors.NewCommandErrorMsg(
+				handlererrors.ErrSetEmptyPassword,
+				"Password cannot be empty",
+			)
+		}
 
-		credentials, err = backends.MakeCredentials(mechanisms, username, password)
+		credentials, err = backends.MakeCredentials(mechanisms, username, passwordValue)
 		if err != nil {
 			return nil, err
 		}
