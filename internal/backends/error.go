@@ -32,6 +32,7 @@ const (
 	_ ErrorCode = iota
 
 	ErrorCodeDatabaseNameIsInvalid
+	ErrorBadValue
 	ErrorCodeDatabaseDoesNotExist
 
 	ErrorCodeCollectionNameIsInvalid
@@ -39,6 +40,8 @@ const (
 	ErrorCodeCollectionAlreadyExists
 
 	ErrorCodeInsertDuplicateID
+
+	ErrorUserAlreadyExists = 51003
 )
 
 // Error represents a backend error returned by all Backend, Database and Collection methods.
@@ -64,6 +67,13 @@ func NewError(code ErrorCode, err error) *Error {
 	}
 }
 
+// NewErrorMsg creates a new backend error with an error message.
+//
+// Code must not be 0. Msg must not be empty.
+func NewErrorMsg(code ErrorCode, msg string) error {
+	return NewError(code, errors.New(msg))
+}
+
 // Code returns the error code.
 func (err *Error) Code() ErrorCode {
 	return err.code
@@ -73,7 +83,7 @@ func (err *Error) Code() ErrorCode {
 
 // Error implements error interface.
 func (err *Error) Error() string {
-	return fmt.Sprintf("%s: %v", err.code, err.err)
+	return fmt.Sprintf("%v", err.err)
 }
 
 // ErrorCodeIs returns true if err is *Error with one of the given error codes.
