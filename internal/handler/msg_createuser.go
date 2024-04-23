@@ -147,6 +147,12 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 				)
 			}
 
+			if errors.As(err, &bErr) && bErr.Code() == backends.ErrorCodeBadValue {
+				return nil, handlererrors.NewCommandErrorMsg(
+					handlererrors.ErrBadValue,
+					fmt.Sprintf("Unknown auth mechanism '%s'", bErr.Err()),
+				)
+			}
 			return nil, err
 		}
 	}
