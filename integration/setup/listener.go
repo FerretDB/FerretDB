@@ -51,7 +51,7 @@ func unixSocketPath(tb testtb.TB) string {
 }
 
 // listenerMongoDBURI builds MongoDB URI for in-process FerretDB.
-func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath string, tlsAndAuth bool) string {
+func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath string, tls, auth bool) string {
 	tb.Helper()
 
 	var host string
@@ -64,20 +64,20 @@ func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath string, tlsAndAut
 	}
 
 	var user *url.Userinfo
-	var q url.Values
+	q := url.Values{}
 
-	if tlsAndAuth {
+	if tls {
 		require.Empty(tb, unixSocketPath, "unixSocketPath cannot be used with TLS")
 
 		certsRoot := filepath.Join(Dir(tb), "..", "..", "build", "certs")
 
-		// we don't separate TLS and auth just for simplicity of our test configurations
-		q = url.Values{
-			"tls":                   []string{"true"},
-			"tlsCertificateKeyFile": []string{filepath.Join(certsRoot, "client.pem")},
-			"tlsCaFile":             []string{filepath.Join(certsRoot, "rootCA-cert.pem")},
-			"authMechanism":         []string{"PLAIN"},
-		}
+		q.Set("tls", "true")
+		q.Set("tlsCertificateKeyFile", filepath.Join(certsRoot, "client.pem"))
+		q.Set("tlsCaFile", filepath.Join(certsRoot, "rootCA-cert.pem"))
+	}
+
+	if auth {
+		q.Set("authMechanism", "PLAIN")
 		user = url.UserPassword("username", "password")
 	}
 
@@ -244,19 +244,19 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 	})
 
 	var hostPort, unixSocketPath string
-	var tlsAndAuth bool
+	auth := handlerOpts.EnableNewAuth
 
 	switch {
 	case *targetTLSF:
 		hostPort = l.TLSAddr().String()
-		tlsAndAuth = true
+		auth = true
 	case *targetUnixSocketF:
 		unixSocketPath = l.UnixAddr().String()
 	default:
 		hostPort = l.TCPAddr().String()
 	}
 
-	uri := listenerMongoDBURI(tb, hostPort, unixSocketPath, tlsAndAuth)
+	uri := listenerMongoDBURI(tb, hostPort, unixSocketPath, *targetTLSF, auth)
 
 	logger.Info("Listener started", zap.String("handler", handler), zap.String("uri", uri))
 
