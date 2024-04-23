@@ -40,6 +40,8 @@ const (
 	ErrorCodeCollectionAlreadyExists
 
 	ErrorCodeInsertDuplicateID
+
+	ErrorCodeStringProhibited = 50692 // Location50692: string prohibited
 )
 
 // Error represents a backend error returned by all Backend, Database and Collection methods.

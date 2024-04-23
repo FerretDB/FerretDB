@@ -124,7 +124,7 @@ func CreateUser(ctx context.Context, b Backend, mechanisms *types.Array, dbName,
 }
 
 // MakeCredentials creates a document with credentials for the chosen mechanisms.
-func MakeCredentials(mechanisms *types.Array, username, passwordValue string) (*types.Document, error) {
+func MakeCredentials(mechanisms *types.Array, username, userPassword string) (*types.Document, error) {
 	credentials := types.MakeDocument(0)
 
 	if mechanisms.Len() == 0 {
@@ -151,18 +151,18 @@ func MakeCredentials(mechanisms *types.Array, username, passwordValue string) (*
 
 		switch v {
 		case "PLAIN":
-			credentials.Set("PLAIN", must.NotFail(password.PlainHash(passwordValue)))
+			credentials.Set("PLAIN", must.NotFail(password.PlainHash(userPassword)))
 		case "SCRAM-SHA-1":
-			hash, err := password.SCRAMSHA1Hash(username, passwordValue)
+			hash, err := password.SCRAMSHA1Hash(username, userPassword)
 			if err != nil {
 				return nil, err
 			}
 
 			credentials.Set("SCRAM-SHA-1", hash)
 		case "SCRAM-SHA-256":
-			hash, err := password.SCRAMSHA256Hash(passwordValue)
+			hash, err := password.SCRAMSHA256Hash(userPassword)
 			if err != nil {
-				return nil, err
+				return nil, NewError(ErrorCodeStringProhibited, err)
 			}
 
 			credentials.Set("SCRAM-SHA-256", hash)
