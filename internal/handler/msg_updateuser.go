@@ -89,9 +89,9 @@ func (h *Handler) MsgUpdateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 
 	common.Ignored(document, h.L, "writeConcern", "authenticationRestrictions", "comment")
 
-	allMechanisms := must.NotFail(types.NewArray("SCRAM-SHA-1", "SCRAM-SHA-256"))
+	defMechanisms := must.NotFail(types.NewArray("SCRAM-SHA-1", "SCRAM-SHA-256"))
 
-	mechanisms, err := common.GetOptionalParam(document, "mechanisms", allMechanisms)
+	mechanisms, err := common.GetOptionalParam(document, "mechanisms", defMechanisms)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -107,7 +107,7 @@ func (h *Handler) MsgUpdateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 
 	if document.Has("pwd") {
 		pwd := must.NotFail(document.Get("pwd"))
-		passwordValue, ok := pwd.(string)
+		userPasswordV, ok := pwd.(string)
 
 		if !ok {
 			return nil, handlererrors.NewCommandErrorMsg(
@@ -118,14 +118,14 @@ func (h *Handler) MsgUpdateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 			)
 		}
 
-		if passwordValue == "" {
+		if userPasswordV == "" {
 			return nil, handlererrors.NewCommandErrorMsg(
 				handlererrors.ErrSetEmptyPassword,
 				"Password cannot be empty",
 			)
 		}
 
-		credentials, err = backends.MakeCredentials(mechanisms, username, passwordValue)
+		credentials, err = backends.MakeCredentials(mechanisms, username, userPasswordV)
 		if err != nil {
 			var bErr *backends.Error
 			if errors.As(err, &bErr) && bErr.Code() == backends.ErrorCodeBadValue {
