@@ -18,6 +18,7 @@ import (
 	"cmp"
 	"context"
 	"errors"
+	"fmt"
 	"slices"
 
 	"github.com/google/uuid"
@@ -166,7 +167,7 @@ func MakeCredentials(mechanisms *types.Array, username, passwordValue string) (*
 
 			credentials.Set("SCRAM-SHA-256", hash)
 		default:
-			return nil, err
+			return nil, NewError(ErrorCodeBadValue, fmt.Errorf("%v", v))
 		}
 	}
 
