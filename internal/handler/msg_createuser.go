@@ -139,6 +139,14 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 
 		err = backends.CreateUser(ctx, h.b, mechanisms, dbName, username, passwordValue)
 		if err != nil {
+			var bErr *backends.Error
+			if errors.As(err, &bErr) && bErr.Code() == backends.ErrorCodeInsertDuplicateID {
+				return nil, handlererrors.NewCommandErrorMsg(
+					handlererrors.ErrUserAlreadyExists,
+					fmt.Sprintf("User \"%s@%s\" already exists", username, dbName),
+				)
+			}
+
 			return nil, err
 		}
 	}
