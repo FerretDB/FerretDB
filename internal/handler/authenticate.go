@@ -35,7 +35,7 @@ import (
 //
 // When admin.systems.user contains no user, and the client is connected from
 // the localhost, it bypasses credentials check.
-func (h *Handler) authenticate(ctx context.Context) error {
+func (h *Handler) authenticate(ctx context.Context, cmd string) error {
 	if !h.EnableNewAuth {
 		return nil
 	}
@@ -59,9 +59,11 @@ func (h *Handler) authenticate(ctx context.Context) error {
 		// SCRAM calls back scramCredentialLookup each time Step is called,
 		// and that checks the authentication.
 		return nil
-	case "PLAIN", "":
-		// mechanism may be empty for local host exception
+	case "PLAIN":
 		break
+	case "":
+		msg := fmt.Sprintf("Command %s requires authentication", cmd)
+		return handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrUnauthorized, msg, "authenticate")
 	default:
 		msg := fmt.Sprintf("Unsupported authentication mechanism %q.\n", mechanism) +
 			"See https://docs.ferretdb.io/security/authentication/ for more details."
@@ -112,7 +114,11 @@ func (h *Handler) authenticate(ctx context.Context) error {
 		}
 	}
 
-	if !hasUser && conninfo.Get(ctx).LocalPeer() {
+	if !hasUser {
+		h.L.Error("bypassing authentication - no user in admin.system.users collection")
+
+		// remove bypassing authentication
+		// TODO https://github.com/FerretDB/FerretDB/issues/4243
 		return nil
 	}
 
