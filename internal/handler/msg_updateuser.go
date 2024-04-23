@@ -127,6 +127,13 @@ func (h *Handler) MsgUpdateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 
 		credentials, err = backends.MakeCredentials(mechanisms, username, passwordValue)
 		if err != nil {
+			var bErr *backends.Error
+			if errors.As(err, &bErr) && bErr.Code() == backends.ErrorCodeBadValue {
+				return nil, handlererrors.NewCommandErrorMsg(
+					handlererrors.ErrBadValue,
+					fmt.Sprintf("Unknown auth mechanism '%s'", bErr.Err()),
+				)
+			}
 			return nil, err
 		}
 	}
