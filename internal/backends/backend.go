@@ -18,7 +18,6 @@ import (
 	"cmp"
 	"context"
 	"errors"
-	"fmt"
 	"slices"
 
 	"github.com/google/uuid"
@@ -117,10 +116,6 @@ func CreateUser(ctx context.Context, b Backend, mechanisms *types.Array, dbName,
 		Docs: []*types.Document{saved},
 	})
 	if err != nil {
-		if ErrorCodeIs(err, ErrorCodeInsertDuplicateID) {
-			return NewErrorMsg(ErrorUserAlreadyExists,
-				fmt.Sprintf(`User "%s@%s" already exists`, username, dbName))
-		}
 		return err
 	}
 
@@ -171,7 +166,7 @@ func MakeCredentials(mechanisms *types.Array, username, passwordValue string) (*
 
 			credentials.Set("SCRAM-SHA-256", hash)
 		default:
-			return nil, NewErrorMsg(ErrorBadValue, fmt.Sprintf("Unknown auth mechanism '%v'", v))
+			return nil, err
 		}
 	}
 

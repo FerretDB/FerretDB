@@ -9,17 +9,16 @@ func _() {
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
 	_ = x[ErrorCodeDatabaseNameIsInvalid-1]
-	_ = x[ErrorBadValue-2]
-	_ = x[ErrorCodeDatabaseDoesNotExist-3]
-	_ = x[ErrorCodeCollectionNameIsInvalid-4]
-	_ = x[ErrorCodeCollectionDoesNotExist-5]
-	_ = x[ErrorCodeCollectionAlreadyExists-6]
-	_ = x[ErrorCodeInsertDuplicateID-7]
+	_ = x[ErrorCodeDatabaseDoesNotExist-2]
+	_ = x[ErrorCodeCollectionNameIsInvalid-3]
+	_ = x[ErrorCodeCollectionDoesNotExist-4]
+	_ = x[ErrorCodeCollectionAlreadyExists-5]
+	_ = x[ErrorCodeInsertDuplicateID-6]
 }
 
-const _ErrorCode_name = "ErrorCodeDatabaseNameIsInvalidErrorBadValueErrorCodeDatabaseDoesNotExistErrorCodeCollectionNameIsInvalidErrorCodeCollectionDoesNotExistErrorCodeCollectionAlreadyExistsErrorCodeInsertDuplicateID"
+const _ErrorCode_name = "ErrorCodeDatabaseNameIsInvalidErrorCodeDatabaseDoesNotExistErrorCodeCollectionNameIsInvalidErrorCodeCollectionDoesNotExistErrorCodeCollectionAlreadyExistsErrorCodeInsertDuplicateID"
 
-var _ErrorCode_index = [...]uint8{0, 30, 43, 72, 104, 135, 167, 193}
+var _ErrorCode_index = [...]uint8{0, 30, 59, 91, 122, 154, 180}
 
 func (i ErrorCode) String() string {
 	i -= 1
