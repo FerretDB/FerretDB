@@ -16,9 +16,12 @@ package main
 
 import (
 	"bytes"
+	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/FerretDB/FerretDB/tools/github"
+	"github.com/FerretDB/gh"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -66,4 +69,24 @@ func TestVerifyTags(t *testing.T) {
 func TestVerifyTruncateString(t *testing.T) {
 	err := verifyTruncateString(fm)
 	assert.EqualError(t, err, "<!--truncate--> must be included to have \"Read more\" link on the homepage")
+}
+
+func TestVerifyIssues(t *testing.T) {
+	t.Parallel()
+
+	path, err := github.CacheFilePath("checkcomments")
+	require.NoError(t, err)
+
+	err = os.MkdirAll(filepath.Dir(path), 0o777)
+	require.NoError(t, err)
+
+	t.Run("Empty fm", func(t *testing.T) {
+		verifyIssues(nil, gh.NoopPrintf, gh.NoopPrintf)
+	})
+
+	t.Run("Sample row", func(t *testing.T) {
+		fm := []byte("|                 | `noCursorTimeout`          | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/4035) |")
+
+		verifyIssues(fm, gh.NoopPrintf, gh.NoopPrintf)
+	})
 }
