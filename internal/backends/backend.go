@@ -18,7 +18,6 @@ import (
 	"cmp"
 	"context"
 	"errors"
-	"fmt"
 	"slices"
 
 	"github.com/google/uuid"
@@ -127,10 +126,6 @@ func CreateUser(ctx context.Context, b Backend, mechanisms *types.Array, dbName,
 func MakeCredentials(mechanisms *types.Array, username, userPassword string) (*types.Document, error) {
 	credentials := types.MakeDocument(0)
 
-	if mechanisms.Len() == 0 {
-		return nil, lazyerrors.New("mechanisms field must not be empty")
-	}
-
 	// TODO: if the optional field mechanisms is nil, create a user with all SCRAM mechanisms,
 	// this is how it works in MongoDB.
 
@@ -162,12 +157,12 @@ func MakeCredentials(mechanisms *types.Array, username, userPassword string) (*t
 		case "SCRAM-SHA-256":
 			hash, err := password.SCRAMSHA256Hash(userPassword)
 			if err != nil {
-				return nil, NewError(ErrorCodeStringProhibited, err)
+				return nil, err
 			}
 
 			credentials.Set("SCRAM-SHA-256", hash)
 		default:
-			return nil, NewError(ErrorCodeBadValue, fmt.Errorf("%v", v))
+			return nil, err
 		}
 	}
 
