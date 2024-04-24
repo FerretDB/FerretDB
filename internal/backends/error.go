@@ -32,7 +32,6 @@ const (
 	_ ErrorCode = iota
 
 	ErrorCodeDatabaseNameIsInvalid
-	ErrorCodeBadValue
 	ErrorCodeDatabaseDoesNotExist
 
 	ErrorCodeCollectionNameIsInvalid
@@ -40,8 +39,6 @@ const (
 	ErrorCodeCollectionAlreadyExists
 
 	ErrorCodeInsertDuplicateID
-
-	ErrorCodeStringProhibited = 50692 // Location50692: string prohibited
 )
 
 // Error represents a backend error returned by all Backend, Database and Collection methods.
@@ -72,14 +69,11 @@ func (err *Error) Code() ErrorCode {
 	return err.code
 }
 
+// There is intentionally no method to return the internal error.
+
 // Error implements error interface.
 func (err *Error) Error() string {
 	return fmt.Sprintf("%s: %v", err.code, err.err)
-}
-
-// Err returns original error.
-func (err *Error) Err() error {
-	return err.err
 }
 
 // ErrorCodeIs returns true if err is *Error with one of the given error codes.
