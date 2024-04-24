@@ -126,9 +126,6 @@ func CreateUser(ctx context.Context, b Backend, mechanisms *types.Array, dbName,
 func MakeCredentials(mechanisms *types.Array, username, userPassword string) (*types.Document, error) {
 	credentials := types.MakeDocument(0)
 
-	// TODO: if the optional field mechanisms is nil, create a user with all SCRAM mechanisms,
-	// this is how it works in MongoDB.
-
 	// when mechanisms is not specified default is SCRAM-SHA-1
 	if mechanisms == nil {
 		mechanisms = must.NotFail(types.NewArray("SCRAM-SHA-1"))
@@ -149,25 +146,28 @@ func MakeCredentials(mechanisms *types.Array, username, userPassword string) (*t
 			return nil, lazyerrors.Error(err)
 		}
 
+		var pe error
+		var hash *types.Document
+
 		switch v {
 		case "PLAIN":
 			credentials.Set("PLAIN", must.NotFail(password.PlainHash(userPassword)))
 		case "SCRAM-SHA-1":
-			hash, err := password.SCRAMSHA1Hash(username, userPassword)
-			if err != nil {
-				return nil, err
+			hash, pe = password.SCRAMSHA1Hash(username, userPassword)
+			if pe != nil {
+				return nil, pe
 			}
 
 			credentials.Set("SCRAM-SHA-1", hash)
 		case "SCRAM-SHA-256":
-			hash, err := password.SCRAMSHA256Hash(userPassword)
-			if err != nil {
-				return nil, err
+			hash, pe = password.SCRAMSHA256Hash(userPassword)
+			if pe != nil {
+				return nil, pe
 			}
 
 			credentials.Set("SCRAM-SHA-256", hash)
 		default:
-			return nil, err
+			return nil, pe
 		}
 	}
 
