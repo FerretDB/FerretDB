@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
@@ -28,8 +29,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
-
-	"github.com/xdg-go/stringprep"
 )
 
 // MsgCreateUser implements `createUser` command.
@@ -166,21 +165,20 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 			)
 		}
 
-		prepped, err := stringprep.SASLprep.Prepare(userPasswordV)
-		if err != nil {
-			return nil, handlererrors.NewCommandError(
-				handlererrors.ErrStringProhibited,
-				err,
-			)
-		}
-
-		err = backends.CreateUser(ctx, h.b, mechanisms, dbName, username, prepped)
+		err = backends.CreateUser(ctx, h.b, mechanisms, dbName, username, userPasswordV)
 		if err != nil {
 			var bErr *backends.Error
 			if errors.As(err, &bErr) && bErr.Code() == backends.ErrorCodeInsertDuplicateID {
 				return nil, handlererrors.NewCommandErrorMsg(
 					handlererrors.ErrUserAlreadyExists,
 					fmt.Sprintf("User \"%s@%s\" already exists", username, dbName),
+				)
+			}
+
+			if strings.Contains(err.Error(), "prohibited character") {
+				return nil, handlererrors.NewCommandErrorMsg(
+					handlererrors.ErrStringProhibited,
+					"Error preflighting normalization: U_STRINGPREP_PROHIBITED_ERROR",
 				)
 			}
 			return nil, err
