@@ -129,6 +129,11 @@ func MakeCredentials(mechanisms *types.Array, username, userPassword string) (*t
 	// TODO: if the optional field mechanisms is nil, create a user with all SCRAM mechanisms,
 	// this is how it works in MongoDB.
 
+	// when mechanisms is not specified default is SCRAM-SHA-1
+	if mechanisms == nil {
+		mechanisms = must.NotFail(types.NewArray("SCRAM-SHA-1"))
+	}
+
 	iter := mechanisms.Iterator()
 	defer iter.Close()
 
