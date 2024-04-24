@@ -110,6 +110,32 @@ func (h *Handler) MsgUpdateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 		)
 	}
 
+	iter := mechanisms.Iterator()
+	defer iter.Close()
+
+	for {
+		var v any
+		_, v, err := iter.Next()
+
+		if errors.Is(err, iterator.ErrIteratorDone) {
+			break
+		}
+
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		switch v {
+		case "PLAIN", "SCRAM-SHA-1", "SCRAM-SHA-256":
+			// do nothing
+		default:
+			return nil, handlererrors.NewCommandErrorMsg(
+				handlererrors.ErrBadValue,
+				fmt.Sprintf("Unknown auth mechanism '%s'", v),
+			)
+		}
+	}
+
 	var credentials *types.Document
 
 	if document.Has("pwd") {
