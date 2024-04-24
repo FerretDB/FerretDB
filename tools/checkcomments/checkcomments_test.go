@@ -19,9 +19,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/FerretDB/FerretDB/tools/github"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/tools/go/analysis/analysistest"
+
+	"github.com/FerretDB/FerretDB/tools/github"
 )
 
 func TestCheckCommentIssue(t *testing.T) {

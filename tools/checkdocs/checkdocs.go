@@ -18,13 +18,22 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
+
+	"github.com/FerretDB/gh"
+
+	"github.com/FerretDB/FerretDB/tools/github"
 )
+
+// issueRE represents correct {{STATUS}} | (issue)[{{URL}}] format in the markdown files containing tables.
+var issueRE = regexp.MustCompile(`\[(i?)(Issue)]\((\Qhttps://github.com/FerretDB/\E([-\w]+)/issues/(\d+))\)`)
 
 func main() {
 	files, err := filepath.Glob(filepath.Join("website", "blog", "*.md"))
@@ -33,6 +42,13 @@ func main() {
 	}
 
 	checkFiles(files, log.Printf, log.Fatalf)
+
+	tableFile, err := filepath.Abs(filepath.Join("website", "docs", "reference", "supported-commands.md"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	checkTableFile(tableFile, log.Printf, log.Fatalf)
 }
 
 // checkFiles verifies that blog posts are correctly formatted,
@@ -219,4 +235,77 @@ func verifyTags(fm []byte) error {
 	}
 
 	return nil
+}
+
+// checkTableFile verifies that supported-commands.md is correctly formatted,
+// using logf for progress reporting and fatalf for errors.
+func checkTableFile(file string, logf, fatalf func(string, ...any)) {
+	fileInBytes, err := os.ReadFile(file)
+	if err != nil {
+		fatalf("Couldn't read file %s: %s", file, err)
+	}
+
+	verifyIssues(fileInBytes, logf, fatalf)
+}
+
+// verifyIssues checks that listed issues statuses.
+func verifyIssues(fm []byte, logf, fatalf func(string, ...any)) {
+	issueReference := "[issue]({URL})"
+
+	p, err := github.CacheFilePath("checkdocs")
+	if err != nil {
+		log.Panic(err)
+	}
+
+	clientDebugF := gh.NoopPrintf
+
+	client, err := github.NewClient(p, log.Printf, logf, clientDebugF)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	s := bufio.NewScanner(bytes.NewReader(fm))
+	for s.Scan() {
+		line := s.Text()
+
+		match := issueRE.FindStringSubmatch(line)
+		if len(match) == 0 {
+			continue
+		}
+
+		if len(match) != 6 {
+			logf("invalid %s format: %s", issueReference, line)
+			continue
+		}
+
+		url := match[3]
+		repo := match[4]
+
+		num, err := strconv.Atoi(match[5])
+		if err != nil {
+			fatalf(err.Error())
+		}
+
+		if num <= 0 {
+			logf("invalid %s incorrect issue number", issueReference)
+			continue
+		}
+
+		if client == nil {
+			continue
+		}
+
+		status, err := client.IssueStatus(context.TODO(), url, repo, num)
+		if err != nil {
+			fatalf(err.Error())
+		}
+
+		if msg := status.Validate(issueReference, url); msg != "" {
+			logf(msg)
+		}
+	}
+
+	if err := s.Err(); err != nil {
+		fatalf("error reading input: %s", err)
+	}
 }

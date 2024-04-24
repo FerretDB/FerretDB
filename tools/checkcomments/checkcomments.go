@@ -18,6 +18,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"log"
 	"regexp"
 	"strconv"
@@ -26,6 +27,8 @@ import (
 	"github.com/FerretDB/gh"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/singlechecker"
+
+	"github.com/FerretDB/FerretDB/tools/github"
 )
 
 // todoRE represents correct // TODO comment format.
@@ -53,10 +56,11 @@ func main() {
 
 // run analyses TODO comments.
 func run(pass *analysis.Pass) (any, error) {
-	var client *client
+	var client *github.Client
+	issueReference := "// TODO"
 
 	if !pass.Analyzer.Flags.Lookup("offline").Value.(flag.Getter).Get().(bool) {
-		p, err := cacheFilePath()
+		p, err := github.CacheFilePath("checkcomments")
 		if err != nil {
 			log.Panic(err)
 		}
@@ -71,7 +75,7 @@ func run(pass *analysis.Pass) (any, error) {
 			clientDebugF = log.New(log.Writer(), "client-debug: ", log.Flags()).Printf
 		}
 
-		if client, err = newClient(p, log.Printf, cacheDebugF, clientDebugF); err != nil {
+		if client, err = github.NewClient(p, log.Printf, cacheDebugF, clientDebugF); err != nil {
 			log.Panic(err)
 		}
 	}
@@ -82,7 +86,7 @@ func run(pass *analysis.Pass) (any, error) {
 				line := c.Text
 
 				// the space between `//` and `TODO` is always added by `task fmt`
-				if !strings.HasPrefix(line, "// TODO") {
+				if !strings.HasPrefix(line, issueReference) {
 					continue
 				}
 
@@ -93,7 +97,7 @@ func run(pass *analysis.Pass) (any, error) {
 				match := todoRE.FindStringSubmatch(line)
 
 				if len(match) != 4 {
-					pass.Reportf(c.Pos(), "invalid TODO: incorrect format")
+					pass.Reportf(c.Pos(), fmt.Sprintf("invalid %s: incorrect format", issueReference))
 					continue
 				}
 
@@ -105,7 +109,7 @@ func run(pass *analysis.Pass) (any, error) {
 				}
 
 				if num <= 0 {
-					pass.Reportf(c.Pos(), "invalid TODO: incorrect issue number")
+					pass.Reportf(c.Pos(), fmt.Sprintf("invalid %s: incorrect issue number", issueReference))
 					continue
 				}
 
@@ -118,15 +122,8 @@ func run(pass *analysis.Pass) (any, error) {
 					log.Panic(err)
 				}
 
-				switch status {
-				case issueOpen:
-					// nothing
-				case issueClosed:
-					pass.Reportf(c.Pos(), "invalid TODO: linked issue %s is closed", url)
-				case issueNotFound:
-					pass.Reportf(c.Pos(), "invalid TODO: linked issue %s is not found", url)
-				default:
-					log.Panicf("unknown issue status: %s", status)
+				if msg := status.Validate(issueReference, url); msg != "" {
+					log.Print(msg)
 				}
 			}
 		}
