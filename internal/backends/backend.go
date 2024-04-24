@@ -152,7 +152,7 @@ func MakeCredentials(mechanisms *types.Array, username, userPassword string) (*t
 		switch v {
 		case "PLAIN":
 			credentials.Set("PLAIN", must.NotFail(password.PlainHash(userPassword)))
-		case "SCRAM-SHA-1":
+		case "SCRAM-SHA-1": //nolint:goconst // testing test
 			hash, err := password.SCRAMSHA1Hash(username, userPassword)
 			if err != nil {
 				return nil, err
