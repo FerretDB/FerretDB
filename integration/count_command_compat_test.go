@@ -32,7 +32,7 @@ type countCommandCompatTestCase struct {
 	command        bson.D
 }
 
-// testQueryCompat tests query compatibility test cases.
+// testCountCommandCompat tests query compatibility test cases.
 func testCountCommandCompat(t *testing.T, testCases map[string]countCommandCompatTestCase) {
 	t.Helper()
 
