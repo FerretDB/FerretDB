@@ -886,6 +886,8 @@ tasks:
       - docker compose run --rm textlint --fix --config build/.textlintrc "**/*.md" ".github/**/*.md"
       - docker compose run --rm prettier --write --parser markdown --no-semi --single-quote --trailing-comma none "**/*.md"
       - docker compose run --rm markdownlint "build/.markdownlint.yml" "**/*.md"
+      - bin/envtool{{exeExt}} shell rmdir tmp/checkdocs
+      - bin/envtool{{exeExt}} shell mkdir tmp/checkdocs
       - bin/checkdocs
 
   pngcrush:
