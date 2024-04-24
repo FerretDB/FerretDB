@@ -146,20 +146,6 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 					fmt.Sprintf("User \"%s@%s\" already exists", username, dbName),
 				)
 			}
-
-			if errors.As(err, &bErr) && bErr.Code() == backends.ErrorCodeBadValue {
-				return nil, handlererrors.NewCommandErrorMsg(
-					handlererrors.ErrBadValue,
-					fmt.Sprintf("Unknown auth mechanism '%s'", bErr.Err()),
-				)
-			}
-
-			if errors.As(err, &bErr) && bErr.Code() == backends.ErrorCodeStringProhibited {
-				return nil, handlererrors.NewCommandErrorMsg(
-					handlererrors.ErrStringProhibited,
-					"Error preflighting normalization: U_STRINGPREP_PROHIBITED_ERROR",
-				)
-			}
 			return nil, err
 		}
 	}

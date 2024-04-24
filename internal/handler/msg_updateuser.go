@@ -96,6 +96,13 @@ func (h *Handler) MsgUpdateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 		return nil, lazyerrors.Error(err)
 	}
 
+	if mechanisms == nil {
+		return nil, handlererrors.NewCommandErrorMsg(
+			handlererrors.ErrBadValue,
+			"mechanisms field must not be empty",
+		)
+	}
+
 	if mechanisms.Len() == 0 {
 		return nil, handlererrors.NewCommandErrorMsg(
 			handlererrors.ErrBadValue,
@@ -127,13 +134,6 @@ func (h *Handler) MsgUpdateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 
 		credentials, err = backends.MakeCredentials(mechanisms, username, userPasswordV)
 		if err != nil {
-			var bErr *backends.Error
-			if errors.As(err, &bErr) && bErr.Code() == backends.ErrorCodeBadValue {
-				return nil, handlererrors.NewCommandErrorMsg(
-					handlererrors.ErrBadValue,
-					fmt.Sprintf("Unknown auth mechanism '%s'", bErr.Err()),
-				)
-			}
 			return nil, err
 		}
 	}
