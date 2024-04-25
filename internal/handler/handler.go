@@ -134,7 +134,7 @@ func New(opts *NewOpts) (*Handler, error) {
 	return h, nil
 }
 
-// runCapppedCleanup calls capped collections cleanup function according to the given interval.
+// runCappedCleanup calls capped collections cleanup function according to the given interval.
 func (h *Handler) runCappedCleanup() {
 	if h.CappedCleanupInterval <= 0 {
 		h.L.Info("Capped collections cleanup disabled.")
