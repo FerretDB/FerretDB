@@ -80,7 +80,7 @@ func (b *backend) Status(ctx context.Context, params *backends.StatusParams) (*b
 	var res backends.StatusResult
 
 	for rows.Next() {
-		// db name is schema name from here on out
+		// on HANA, dbName is the name of the schema
 		var dbName string
 		if err = rows.Scan(&dbName); err != nil {
 			return nil, lazyerrors.Error(err)
