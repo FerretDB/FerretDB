@@ -115,7 +115,7 @@ func (h *Handler) MsgUpdateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 
 	for {
 		var v any
-		_, v, err := iter.Next()
+		_, v, err = iter.Next()
 
 		if errors.Is(err, iterator.ErrIteratorDone) {
 			break

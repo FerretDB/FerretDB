@@ -181,6 +181,7 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 					"Error preflighting normalization: U_STRINGPREP_PROHIBITED_ERROR",
 				)
 			}
+
 			return nil, err
 		}
 	}
