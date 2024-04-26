@@ -123,7 +123,7 @@ func CreateUser(ctx context.Context, b Backend, mechanisms *types.Array, dbName,
 }
 
 // MakeCredentials creates a document with credentials for the chosen mechanisms.
-// mechanisms must be validated by the caller.
+// The mechanisms array must be validated by the caller.
 func MakeCredentials(mechanisms *types.Array, username, userPassword string) (*types.Document, error) {
 	credentials := types.MakeDocument(0)
 
