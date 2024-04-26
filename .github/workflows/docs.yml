@@ -49,7 +49,7 @@ jobs:
       # See https://github.com/ppremk/lfs-warning/issues/147.
       # But the real issue will be right above that message: a list of files that should be added using Git LFS.
       - name: Check LFS status
-        uses: ppremk/lfs-warning@v3.2
+        uses: ppremk/lfs-warning@v3.3
         with:
           filesizelimit: 102400b
           labelName: use-git-lfs

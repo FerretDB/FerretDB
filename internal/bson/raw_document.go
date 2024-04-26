@@ -22,7 +22,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// RawDocument represents a singe BSON document a.k.a object in the binary encoded form.
+// RawDocument represents a single BSON document a.k.a object in the binary encoded form.
 //
 // It generally references a part of a larger slice, not a copy.
 type RawDocument []byte
