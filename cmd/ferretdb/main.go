@@ -218,7 +218,6 @@ func defaultLogLevel() zapcore.Level {
 func setupState() *state.Provider {
 	var f string
 
-	// https://github.com/alecthomas/kong/issues/389
 	if cli.StateDir != "" && cli.StateDir != "-" {
 		var err error
 		if f, err = filepath.Abs(filepath.Join(cli.StateDir, "state.json")); err != nil {
@@ -228,7 +227,7 @@ func setupState() *state.Provider {
 
 	sp, err := state.NewProvider(f)
 	if err != nil {
-		log.Fatalf("Failed to create state provider: %s.", err)
+		log.Fatal(stateFileProblem(f, err))
 	}
 
 	return sp
@@ -369,7 +368,6 @@ func run() {
 		logger.Sugar().Fatal("--test-disable-pushdown and --test-enable-nested-pushdown should not be set at the same time")
 	}
 
-	// https://github.com/alecthomas/kong/issues/389
 	if cli.DebugAddr != "" && cli.DebugAddr != "-" {
 		wg.Add(1)
 

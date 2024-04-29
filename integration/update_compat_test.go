@@ -437,7 +437,7 @@ type updateCurrentDateCompatTestCase struct {
 	skip string // skips test if non-empty
 }
 
-// testUpdateCompat tests update compatibility test cases for current date.
+// testUpdateCurrentDateCompat tests update compatibility test cases for current date.
 // It checks current date in compat and target are within acceptable difference.
 func testUpdateCurrentDateCompat(t *testing.T, testCases map[string]updateCurrentDateCompatTestCase) {
 	t.Helper()
