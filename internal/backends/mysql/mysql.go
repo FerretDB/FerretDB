@@ -43,7 +43,7 @@ type stats struct {
 	totalSize       int64
 }
 
-// collectionStats returns statistics about tables and indexes for the given collections.
+// collectionsStats returns statistics about tables and indexes for the given collections.
 //
 // If refresh is true, it calls ANALYZE on the tables of the given list of collections.
 //
