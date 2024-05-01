@@ -29,6 +29,7 @@ import (
 // Array represents a BSON array in the (partially) decoded form.
 type Array struct {
 	elements []any
+	frozen   bool
 }
 
 // NewArray creates a new Array from the given values.
@@ -81,6 +82,21 @@ func ConvertArray(arr *types.Array) (*Array, error) {
 	}
 }
 
+// Freeze prevents array from further modifications.
+// Any methods that would modify the array will panic.
+//
+// It is safe to call Freeze multiple times.
+func (arr *Array) Freeze() {
+	arr.frozen = true
+}
+
+// checkFrozen panics if array is frozen.
+func (arr *Array) checkFrozen() {
+	if arr.frozen {
+		panic("array is frozen and can't be modified")
+	}
+}
+
 // Convert converts Array to [*types.Array], decoding raw documents and arrays on the fly.
 func (arr *Array) Convert() (*types.Array, error) {
 	values := make([]any, len(arr.elements))
@@ -102,13 +118,40 @@ func (arr *Array) Convert() (*types.Array, error) {
 	return res, nil
 }
 
+// Len returns the number of elements in the Array.
+func (arr *Array) Len() int {
+	return len(arr.elements)
+}
+
+// Get returns the element at the given index.
+// It panics if index is out of bounds.
+func (arr *Array) Get(index int) any {
+	return arr.elements[index]
+}
+
 // Add adds a new element to the Array.
 func (arr *Array) Add(value any) error {
 	if err := validBSONType(value); err != nil {
 		return lazyerrors.Error(err)
 	}
 
+	arr.checkFrozen()
+
 	arr.elements = append(arr.elements, value)
+
+	return nil
+}
+
+// Replace sets the value of the element at the given index.
+// It panics if index is out of bounds.
+func (arr *Array) Replace(index int, value any) error {
+	if err := validBSONType(value); err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	arr.checkFrozen()
+
+	arr.elements[index] = value
 
 	return nil
 }
@@ -139,6 +182,11 @@ func (arr *Array) Encode() (RawArray, error) {
 	return buf.Bytes(), nil
 }
 
+// Decode returns itself to implement the [AnyArray] interface.
+func (arr *Array) Decode() (*Array, error) {
+	return arr, nil
+}
+
 // LogValue implements slog.LogValuer interface.
 func (arr *Array) LogValue() slog.Value {
 	return slogValue(arr, 1)
@@ -146,5 +194,6 @@ func (arr *Array) LogValue() slog.Value {
 
 // check interfaces
 var (
+	_ AnyArray       = (*Array)(nil)
 	_ slog.LogValuer = (*Array)(nil)
 )
