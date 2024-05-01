@@ -74,6 +74,32 @@ type (
 	Timestamp = bsonproto.Timestamp
 )
 
+const (
+	// BinaryGeneric represents a BSON Binary generic subtype.
+	BinaryGeneric = bsonproto.BinaryGeneric
+
+	// BinaryFunction represents a BSON Binary function subtype.
+	BinaryFunction = bsonproto.BinaryFunction
+
+	// BinaryGenericOld represents a BSON Binary generic-old subtype.
+	BinaryGenericOld = bsonproto.BinaryGenericOld
+
+	// BinaryUUIDOld represents a BSON Binary UUID old subtype.
+	BinaryUUIDOld = bsonproto.BinaryUUIDOld
+
+	// BinaryUUID represents a BSON Binary UUID subtype.
+	BinaryUUID = bsonproto.BinaryUUID
+
+	// BinaryMD5 represents a BSON Binary MD5 subtype.
+	BinaryMD5 = bsonproto.BinaryMD5
+
+	// BinaryEncrypted represents a BSON Binary encrypted subtype.
+	BinaryEncrypted = bsonproto.BinaryEncrypted
+
+	// BinaryUser represents a BSON Binary user-defined subtype.
+	BinaryUser = bsonproto.BinaryUser
+)
+
 // Null represents BSON scalar value null.
 var Null = bsonproto.Null
 
@@ -132,6 +158,25 @@ type Type interface {
 // CompositeType represents a BSON composite type (including raw types).
 type CompositeType interface {
 	*Document | *Array | RawDocument | RawArray
+}
+
+// AnyDocument represents a BSON document type (both [*Document] and [RawDocument]).
+//
+// Note that the Encode and Decode methods could return the receiver itself,
+// so care must be taken when results are modified.
+type AnyDocument interface {
+	Encode() (RawDocument, error)
+	Decode() (*Document, error)
+	Convert() (*types.Document, error)
+}
+
+// AnyArray represents a BSON array type (both [*Array] and [RawArray]).
+//
+// Note that the Encode and Decode methods could return the receiver itself,
+// so care must be taken when results are modified.
+type AnyArray interface {
+	Encode() (RawArray, error)
+	Decode() (*Array, error)
 }
 
 // validBSONType checks if v is a valid BSON type (including raw types).

@@ -591,6 +591,7 @@ func TestNormal(t *testing.T) {
 
 					assert.NotEmpty(t, bson.LogMessage(tc.raw))
 					assert.NotEmpty(t, bson.LogMessageBlock(tc.raw))
+					assert.NotEmpty(t, bson.LogMessageFlow(tc.raw))
 
 					l, err := bson.FindRaw(tc.raw)
 					require.NoError(t, err)
@@ -607,6 +608,7 @@ func TestNormal(t *testing.T) {
 
 					assert.NotEmpty(t, bson.LogMessage(doc))
 					assert.NotEmpty(t, bson.LogMessageBlock(doc))
+					assert.NotEmpty(t, bson.LogMessageFlow(doc))
 
 					tdoc, err := doc.Convert()
 					require.NoError(t, err)
@@ -627,6 +629,7 @@ func TestNormal(t *testing.T) {
 
 					assert.Equal(t, testutil.Unindent(t, tc.m), bson.LogMessage(doc))
 					assert.NotEmpty(t, bson.LogMessageBlock(doc))
+					assert.NotEmpty(t, bson.LogMessageFlow(doc))
 
 					tdoc, err := doc.Convert()
 					require.NoError(t, err)
@@ -667,6 +670,7 @@ func TestDecode(t *testing.T) {
 
 					assert.NotEmpty(t, bson.LogMessage(tc.raw))
 					assert.NotEmpty(t, bson.LogMessageBlock(tc.raw))
+					assert.NotEmpty(t, bson.LogMessageFlow(tc.raw))
 
 					l, err := bson.FindRaw(tc.raw)
 
@@ -817,6 +821,7 @@ func testRawDocument(t *testing.T, rawDoc bson.RawDocument) {
 
 			assert.NotEmpty(t, bson.LogMessage(rawDoc))
 			assert.NotEmpty(t, bson.LogMessageBlock(rawDoc))
+			assert.NotEmpty(t, bson.LogMessageFlow(rawDoc))
 
 			_, _ = bson.FindRaw(rawDoc)
 		})
@@ -836,6 +841,7 @@ func testRawDocument(t *testing.T, rawDoc bson.RawDocument) {
 
 			assert.NotEmpty(t, bson.LogMessage(doc))
 			assert.NotEmpty(t, bson.LogMessageBlock(doc))
+			assert.NotEmpty(t, bson.LogMessageFlow(doc))
 
 			_, _ = doc.Convert()
 
@@ -857,6 +863,7 @@ func testRawDocument(t *testing.T, rawDoc bson.RawDocument) {
 
 			assert.NotEmpty(t, bson.LogMessage(doc))
 			assert.NotEmpty(t, bson.LogMessageBlock(doc))
+			assert.NotEmpty(t, bson.LogMessageFlow(doc))
 
 			_, err = doc.Convert()
 			require.NoError(t, err)

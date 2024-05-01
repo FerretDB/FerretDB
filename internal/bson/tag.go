@@ -38,7 +38,7 @@ const (
 	tagInt32           = tag(0x10) // Int32
 	tagTimestamp       = tag(0x11) // Timestamp
 	tagInt64           = tag(0x12) // Int64
-	tagDecimal         = tag(0x13) // Decimal
+	tagDecimal128      = tag(0x13) // Decimal128
 	tagMinKey          = tag(0xff) // MinKey
 	tagMaxKey          = tag(0x7f) // MaxKey
 )
