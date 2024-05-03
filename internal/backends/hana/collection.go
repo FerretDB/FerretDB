@@ -39,7 +39,6 @@ type collection struct {
 	hdb      *fsql.DB
 	database string
 	name     string
-	// column string
 }
 
 // newCollection creates a new Collection.

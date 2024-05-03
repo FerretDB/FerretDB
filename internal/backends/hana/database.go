@@ -56,7 +56,9 @@ func (db *database) ListCollections(
 
 	var res []backends.CollectionInfo
 	if !d {
-		return nil, nil
+		return &backends.ListCollectionsResult{
+			Collections: res,
+		}, nil
 	}
 
 	sqlStmt := fmt.Sprintf("SELECT TABLE_NAME FROM M_TABLES"+

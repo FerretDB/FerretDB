@@ -32,7 +32,8 @@ func prepareSelectClause(schema, table string) string {
 }
 
 func jsonToHanaQueryString(jsonStr string) string {
-	return strings.ReplaceAll(jsonStr, "\"", "'")
+	hanaString := string(strToHanaJSON([]byte(jsonStr)))
+	return strings.ReplaceAll(hanaString, "\"", "'")
 }
 
 func makeFilter(table, key, op string, value any) string {
