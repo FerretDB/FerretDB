@@ -97,7 +97,7 @@ func run(pass *analysis.Pass) (any, error) {
 				match := todoRE.FindStringSubmatch(line)
 
 				if len(match) != 4 {
-					pass.Reportf(c.Pos(), fmt.Sprintf("invalid %s: incorrect format", issueReference))
+					pass.Reportf(c.Pos(), "invalid %s: incorrect format", issueReference)
 					continue
 				}
 
