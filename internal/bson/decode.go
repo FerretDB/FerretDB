@@ -111,7 +111,7 @@ func decodeScalarField(b []byte, t tag) (v any, size int, err error) {
 		v, err = bsonproto.DecodeInt64(b)
 		size = bsonproto.SizeInt64
 
-	case tagUndefined, tagDBPointer, tagJavaScript, tagSymbol, tagJavaScriptScope, tagDecimal, tagMinKey, tagMaxKey:
+	case tagUndefined, tagDBPointer, tagJavaScript, tagSymbol, tagJavaScriptScope, tagDecimal128, tagMinKey, tagMaxKey:
 		err = lazyerrors.Errorf("unsupported tag %s: %w", t, ErrDecodeInvalidInput)
 
 	case tagDocument, tagArray:

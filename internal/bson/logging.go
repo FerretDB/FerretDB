@@ -48,6 +48,10 @@ const nanBits = 0b11111111111100000000000000000000000000000000000000000000000000
 func slogValue(v any, depth int) slog.Value {
 	switch v := v.(type) {
 	case *Document:
+		if v == nil {
+			return slog.StringValue("Document<nil>")
+		}
+
 		if depth > logMaxDepth {
 			return slog.StringValue("Document<...>")
 		}
@@ -68,6 +72,10 @@ func slogValue(v any, depth int) slog.Value {
 		return slog.StringValue("RawDocument<" + strconv.Itoa(len(v)) + ">")
 
 	case *Array:
+		if v == nil {
+			return slog.StringValue("Array<nil>")
+		}
+
 		if depth > logMaxDepth {
 			return slog.StringValue("Array<...>")
 		}
@@ -146,15 +154,27 @@ func LogMessageBlock(v any) string {
 	return logMessage(v, 0, "", 1)
 }
 
+// LogMessageFlow is a variant of [RawArray.LogMessage] that always uses a flow style.
+func LogMessageFlow(v any) string {
+	return logMessage(v, math.MaxInt, "", 1)
+}
+
 // logMessage returns an indented representation of any BSON value as a string,
 // somewhat similar (but not identical) to JSON or Go syntax.
 // It may change over time.
 //
 // The result is optimized for large values such as full request documents.
 // All information is preserved.
+//
+// TODO https://github.com/FerretDB/FerretDB/issues/3759
+// That function should be benchmarked and optimized.
 func logMessage(v any, maxFlowLength int, indent string, depth int) string {
 	switch v := v.(type) {
 	case *Document:
+		if v == nil {
+			return "{<nil>}"
+		}
+
 		l := len(v.fields)
 		if l == 0 {
 			return "{}"
@@ -173,6 +193,10 @@ func logMessage(v any, maxFlowLength int, indent string, depth int) string {
 
 				if i != l-1 {
 					res += ", "
+				}
+
+				if len(res) >= maxFlowLength {
+					break
 				}
 			}
 
@@ -199,6 +223,10 @@ func logMessage(v any, maxFlowLength int, indent string, depth int) string {
 		return "RawDocument<" + strconv.FormatInt(int64(len(v)), 10) + ">"
 
 	case *Array:
+		if v == nil {
+			return "[<nil>]"
+		}
+
 		l := len(v.elements)
 		if l == 0 {
 			return "[]"
@@ -216,6 +244,10 @@ func logMessage(v any, maxFlowLength int, indent string, depth int) string {
 
 				if i != l-1 {
 					res += ", "
+				}
+
+				if len(res) >= maxFlowLength {
+					break
 				}
 			}
 
