@@ -24,7 +24,6 @@ import (
 
 const (
 	sampleIssueURL = "https://github.com/FerretDB/FerretDB/issues/1"
-	issueReference = "// TODO"
 )
 
 func TestValidate(t *testing.T) {
@@ -32,23 +31,23 @@ func TestValidate(t *testing.T) {
 
 	t.Run("OpenIssue", func(t *testing.T) {
 		openIssue := issueOpen
-		msg := openIssue.Validate(issueReference, sampleIssueURL)
+		msg := openIssue.Validate("TODO", sampleIssueURL)
 		require.Empty(t, msg)
 	})
 
 	t.Run("ClosedIssue", func(t *testing.T) {
 		closedIssue := issueClosed
-		expectedMsg := fmt.Sprintf("invalid %s linked issue %s is closed", issueReference, sampleIssueURL)
+		expectedMsg := fmt.Sprintf("invalid TODO linked issue %s is closed", sampleIssueURL)
 
-		msg := closedIssue.Validate(issueReference, sampleIssueURL)
+		msg := closedIssue.Validate("TODO", sampleIssueURL)
 		assert.Equal(t, expectedMsg, msg)
 	})
 
 	t.Run("NotFoundIssue", func(t *testing.T) {
 		closedIssue := issueNotFound
-		expectedMsg := fmt.Sprintf("invalid %s linked issue %s is not found", issueReference, sampleIssueURL)
+		expectedMsg := fmt.Sprintf("invalid TODO linked issue %s is not found", sampleIssueURL)
 
-		msg := closedIssue.Validate(issueReference, sampleIssueURL)
+		msg := closedIssue.Validate("TODO", sampleIssueURL)
 		assert.Equal(t, expectedMsg, msg)
 	})
 
@@ -56,7 +55,7 @@ func TestValidate(t *testing.T) {
 		var issue issueStatus
 
 		defer func() { _ = recover() }()
-		issue.Validate(issueReference, sampleIssueURL)
+		issue.Validate("TODO", sampleIssueURL)
 
 		t.Errorf("should panic")
 	})

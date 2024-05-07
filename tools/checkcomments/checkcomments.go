@@ -18,7 +18,6 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"log"
 	"regexp"
 	"strconv"
@@ -57,7 +56,6 @@ func main() {
 // run analyses TODO comments.
 func run(pass *analysis.Pass) (any, error) {
 	var client *github.Client
-	issueReference := "// TODO"
 
 	if !pass.Analyzer.Flags.Lookup("offline").Value.(flag.Getter).Get().(bool) {
 		p, err := github.CacheFilePath()
@@ -86,7 +84,7 @@ func run(pass *analysis.Pass) (any, error) {
 				line := c.Text
 
 				// the space between `//` and `TODO` is always added by `task fmt`
-				if !strings.HasPrefix(line, issueReference) {
+				if !strings.HasPrefix(line, "// TODO") {
 					continue
 				}
 
@@ -97,7 +95,7 @@ func run(pass *analysis.Pass) (any, error) {
 				match := todoRE.FindStringSubmatch(line)
 
 				if len(match) != 4 {
-					pass.Reportf(c.Pos(), "invalid %s: incorrect format", issueReference)
+					pass.Reportf(c.Pos(), "invalid TODO: incorrect format")
 					continue
 				}
 
@@ -109,7 +107,7 @@ func run(pass *analysis.Pass) (any, error) {
 				}
 
 				if num <= 0 {
-					pass.Reportf(c.Pos(), fmt.Sprintf("invalid %s: incorrect issue number", issueReference))
+					pass.Reportf(c.Pos(), "invalid TODO: incorrect issue number")
 					continue
 				}
 
@@ -122,7 +120,7 @@ func run(pass *analysis.Pass) (any, error) {
 					log.Panic(err)
 				}
 
-				if msg := status.Validate(issueReference, url); msg != "" {
+				if msg := status.Validate("TODO", url); msg != "" {
 					log.Print(msg)
 				}
 			}

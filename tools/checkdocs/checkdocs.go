@@ -250,8 +250,6 @@ func checkTableFile(file string, logf, fatalf func(string, ...any)) {
 
 // verifyIssues checks that listed issues statuses.
 func verifyIssues(fm []byte, logf, fatalf func(string, ...any)) {
-	issueReference := "[issue]({URL})"
-
 	p, err := github.CacheFilePath()
 	if err != nil {
 		log.Panic(err)
@@ -274,7 +272,7 @@ func verifyIssues(fm []byte, logf, fatalf func(string, ...any)) {
 		}
 
 		if len(match) != 6 {
-			logf("invalid %s format: %s", issueReference, line)
+			logf("invalid [issue]({URL}) format: %s", line)
 			continue
 		}
 
@@ -287,7 +285,7 @@ func verifyIssues(fm []byte, logf, fatalf func(string, ...any)) {
 		}
 
 		if num <= 0 {
-			logf("invalid %s incorrect issue number", issueReference)
+			logf("invalid [issue]({URL}) incorrect issue number")
 			continue
 		}
 
@@ -300,7 +298,7 @@ func verifyIssues(fm []byte, logf, fatalf func(string, ...any)) {
 			fatalf(err.Error())
 		}
 
-		if msg := status.Validate(issueReference, url); msg != "" {
+		if msg := status.Validate("[issue]({URL})", url); msg != "" {
 			logf(msg)
 		}
 	}
