@@ -8,8 +8,8 @@ vars:
 tasks:
   tools-test:
     cmds:
-      - ../bin/envtool{{exeExt}} shell rmdir ../tmp/checkcomments
-      - ../bin/envtool{{exeExt}} shell mkdir ../tmp/checkcomments
+      - ../bin/envtool{{exeExt}} shell rmdir ../tmp/githubcache
+      - ../bin/envtool{{exeExt}} shell mkdir ../tmp/githubcache
       - go test -short {{.RACE_FLAG}} -shuffle=on -coverprofile=cover.txt -coverpkg=./... ./checkcomments/... ./checkdocs/... ./checkswitch/...
 
   lint:
