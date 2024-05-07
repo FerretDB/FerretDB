@@ -15,11 +15,13 @@
 package main
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go-simpler.org/assert"
 	"golang.org/x/tools/go/analysis/analysistest"
 
 	"github.com/FerretDB/FerretDB/tools/github"
@@ -35,4 +37,82 @@ func TestCheckCommentIssue(t *testing.T) {
 	require.NoError(t, err)
 
 	analysistest.Run(t, analysistest.TestData(), analyzer)
+}
+
+func TestCacheFilePath(t *testing.T) {
+	t.Parallel()
+
+	wd, err := os.Getwd()
+	require.NoError(t, err)
+	expected := filepath.Join(wd, "..", "..", "tmp", "githubcache", "cache.json")
+
+	actual, err := cacheFilePath()
+	require.NoError(t, err)
+	assert.Equal(t, expected, actual)
+}
+
+func TestClient(t *testing.T) {
+	t.Parallel()
+
+	cacheFilePath := filepath.Join(t.TempDir(), "cache.json")
+	ctx := context.Background()
+
+	t.Run("CheckIssueStatus", func(t *testing.T) {
+		t.Parallel()
+
+		c, err := newClient(cacheFilePath, t.Logf, t.Logf, t.Logf)
+		require.NoError(t, err)
+
+		actual, err := c.checkIssueStatus(ctx, "FerretDB", 10)
+		require.NoError(t, err)
+		assert.Equal(t, issueOpen, actual)
+
+		actual, err = c.checkIssueStatus(ctx, "FerretDB", 1)
+		require.NoError(t, err)
+		assert.Equal(t, issueClosed, actual)
+
+		actual, err = c.checkIssueStatus(ctx, "FerretDB", 999999)
+		require.NoError(t, err)
+		assert.Equal(t, issueNotFound, actual)
+	})
+
+	t.Run("IssueStatus", func(t *testing.T) {
+		t.Parallel()
+
+		c, err := newClient(cacheFilePath, t.Logf, t.Logf, t.Logf)
+		require.NoError(t, err)
+
+		actual, err := c.IssueStatus(ctx, "https://github.com/FerretDB/FerretDB/issues/10", "FerretDB", 10)
+		require.NoError(t, err)
+		assert.Equal(t, issueOpen, actual)
+
+		actual, err = c.IssueStatus(ctx, "https://github.com/FerretDB/FerretDB/issues/1", "FerretDB", 1)
+		require.NoError(t, err)
+		assert.Equal(t, issueClosed, actual)
+
+		actual, err = c.IssueStatus(ctx, "https://github.com/FerretDB/FerretDB/issues/999999", "FerretDB", 999999)
+		require.NoError(t, err)
+		assert.Equal(t, issueNotFound, actual)
+
+		// The following tests should use cache and not the client,
+		// but it may be empty if tests above failed for some reason.
+
+		if t.Failed() {
+			return
+		}
+
+		c.c = nil
+
+		actual, err = c.IssueStatus(ctx, "https://github.com/FerretDB/FerretDB/issues/10", "FerretDB", 10)
+		require.NoError(t, err)
+		assert.Equal(t, issueOpen, actual)
+
+		actual, err = c.IssueStatus(ctx, "https://github.com/FerretDB/FerretDB/issues/1", "FerretDB", 1)
+		require.NoError(t, err)
+		assert.Equal(t, issueClosed, actual)
+
+		actual, err = c.IssueStatus(ctx, "https://github.com/FerretDB/FerretDB/issues/999999", "FerretDB", 999999)
+		require.NoError(t, err)
+		assert.Equal(t, issueNotFound, actual)
+	})
 }

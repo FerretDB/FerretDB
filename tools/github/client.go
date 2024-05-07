@@ -220,3 +220,34 @@ func (c *Client) checkIssueStatus(ctx context.Context, repo string, num int) (is
 		return "", fmt.Errorf("unknown issue state: %q", s)
 	}
 }
+
+// cacheFilePath returns the path to the cache file.
+func cacheFilePath() (string, error) {
+	// This tool is called for multiple packages in parallel,
+	// with the current working directory set to the package directory.
+	// To use the same cache file path, we first locate the root of the project by the .git directory.
+
+	dir, err := filepath.Abs(".")
+	if err != nil {
+		return "", err
+	}
+
+	for {
+		fi, err := os.Stat(filepath.Join(dir, ".git"))
+		if err == nil {
+			if !fi.IsDir() {
+				return "", fmt.Errorf(".git is not a directory")
+			}
+
+			break
+		}
+
+		if !errors.Is(err, fs.ErrNotExist) {
+			return "", err
+		}
+
+		dir = filepath.Dir(dir)
+	}
+
+	return filepath.Join(dir, "tmp", "githubcache", "cache.json"), nil
+}
