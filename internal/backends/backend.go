@@ -115,11 +115,8 @@ func CreateUser(ctx context.Context, b Backend, mechanisms *types.Array, dbName,
 	_, err = users.InsertAll(ctx, &InsertAllParams{
 		Docs: []*types.Document{saved},
 	})
-	if err != nil {
-		return err
-	}
 
-	return nil
+	return err
 }
 
 // MakeCredentials creates a document with credentials for the chosen mechanisms.
@@ -127,9 +124,9 @@ func CreateUser(ctx context.Context, b Backend, mechanisms *types.Array, dbName,
 func MakeCredentials(mechanisms *types.Array, username, userPassword string) (*types.Document, error) {
 	credentials := types.MakeDocument(0)
 
-	// when mechanisms is not specified default is SCRAM-SHA-1
+	// when mechanisms is not specified create all mechanisms
 	if mechanisms == nil {
-		mechanisms = must.NotFail(types.NewArray("SCRAM-SHA-1"))
+		mechanisms = must.NotFail(types.NewArray("SCRAM-SHA-1", "SCRAM-SHA-256"))
 	}
 
 	iter := mechanisms.Iterator()
