@@ -15,9 +15,6 @@
 package bson_test // to avoid import cycle
 
 import (
-	"bufio"
-	"bytes"
-	"io"
 	"testing"
 	"time"
 
@@ -25,7 +22,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/bson"
-	"github.com/FerretDB/FerretDB/internal/bson/oldbson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
@@ -437,7 +433,7 @@ var normalTestCases = []normalTestCase{
 		raw: bson.RawDocument{
 			0x10, 0x00, 0x00, 0x00,
 			0x12, 0x66, 0x00,
-			0x21, 0x6d, 0x25, 0xa, 0x43, 0x29, 0xb, 0x00,
+			0x21, 0x6d, 0x25, 0x0a, 0x43, 0x29, 0x0b, 0x00,
 			0x00,
 		},
 		tdoc: must.NotFail(types.NewDocument(
@@ -587,31 +583,6 @@ var decodeTestCases = []decodeTestCase{
 func TestNormal(t *testing.T) {
 	for _, tc := range normalTestCases {
 		t.Run(tc.name, func(t *testing.T) {
-			t.Run("oldbson", func(t *testing.T) {
-				t.Run("ReadFrom", func(t *testing.T) {
-					var doc oldbson.Document
-					buf := bufio.NewReader(bytes.NewReader(tc.raw))
-					err := doc.ReadFrom(buf)
-					require.NoError(t, err)
-
-					_, err = buf.ReadByte()
-					assert.Equal(t, err, io.EOF)
-
-					tdoc, err := types.ConvertDocument(&doc)
-					require.NoError(t, err)
-					testutil.AssertEqual(t, tc.tdoc, tdoc)
-				})
-
-				t.Run("MarshalBinary", func(t *testing.T) {
-					doc, err := oldbson.ConvertDocument(tc.tdoc)
-					require.NoError(t, err)
-
-					raw, err := doc.MarshalBinary()
-					require.NoError(t, err)
-					assert.Equal(t, []byte(tc.raw), raw)
-				})
-			})
-
 			t.Run("bson", func(t *testing.T) {
 				t.Run("FindRaw", func(t *testing.T) {
 					ls := tc.raw.LogValue().Resolve().String()
@@ -620,6 +591,7 @@ func TestNormal(t *testing.T) {
 
 					assert.NotEmpty(t, bson.LogMessage(tc.raw))
 					assert.NotEmpty(t, bson.LogMessageBlock(tc.raw))
+					assert.NotEmpty(t, bson.LogMessageFlow(tc.raw))
 
 					l, err := bson.FindRaw(tc.raw)
 					require.NoError(t, err)
@@ -636,6 +608,7 @@ func TestNormal(t *testing.T) {
 
 					assert.NotEmpty(t, bson.LogMessage(doc))
 					assert.NotEmpty(t, bson.LogMessageBlock(doc))
+					assert.NotEmpty(t, bson.LogMessageFlow(doc))
 
 					tdoc, err := doc.Convert()
 					require.NoError(t, err)
@@ -656,6 +629,7 @@ func TestNormal(t *testing.T) {
 
 					assert.Equal(t, testutil.Unindent(t, tc.m), bson.LogMessage(doc))
 					assert.NotEmpty(t, bson.LogMessageBlock(doc))
+					assert.NotEmpty(t, bson.LogMessageFlow(doc))
 
 					tdoc, err := doc.Convert()
 					require.NoError(t, err)
@@ -688,21 +662,6 @@ func TestDecode(t *testing.T) {
 		require.NotNil(t, tc.decodeDeepErr, "invalid test case %q", tc.name)
 
 		t.Run(tc.name, func(t *testing.T) {
-			t.Run("oldbson", func(t *testing.T) {
-				t.Run("ReadFrom", func(t *testing.T) {
-					var doc oldbson.Document
-					buf := bufio.NewReader(bytes.NewReader(tc.raw))
-					err := doc.ReadFrom(buf)
-
-					if tc.oldOk {
-						require.NoError(t, err)
-						return
-					}
-
-					require.Error(t, err)
-				})
-			})
-
 			t.Run("bson", func(t *testing.T) {
 				t.Run("FindRaw", func(t *testing.T) {
 					ls := tc.raw.LogValue().Resolve().String()
@@ -711,6 +670,7 @@ func TestDecode(t *testing.T) {
 
 					assert.NotEmpty(t, bson.LogMessage(tc.raw))
 					assert.NotEmpty(t, bson.LogMessageBlock(tc.raw))
+					assert.NotEmpty(t, bson.LogMessageFlow(tc.raw))
 
 					l, err := bson.FindRaw(tc.raw)
 
@@ -746,47 +706,6 @@ func TestDecode(t *testing.T) {
 func BenchmarkDocument(b *testing.B) {
 	for _, tc := range normalTestCases {
 		b.Run(tc.name, func(b *testing.B) {
-			b.Run("oldbson", func(b *testing.B) {
-				b.Run("ReadFrom", func(b *testing.B) {
-					var doc oldbson.Document
-					var buf *bufio.Reader
-					var err error
-					br := bytes.NewReader(tc.raw)
-
-					b.ReportAllocs()
-					b.ResetTimer()
-
-					for range b.N {
-						_, _ = br.Seek(0, io.SeekStart)
-						buf = bufio.NewReader(br)
-						err = doc.ReadFrom(buf)
-					}
-
-					b.StopTimer()
-
-					require.NoError(b, err)
-				})
-
-				b.Run("MarshalBinary", func(b *testing.B) {
-					doc, err := oldbson.ConvertDocument(tc.tdoc)
-					require.NoError(b, err)
-
-					var raw []byte
-
-					b.ReportAllocs()
-					b.ResetTimer()
-
-					for range b.N {
-						raw, err = doc.MarshalBinary()
-					}
-
-					b.StopTimer()
-
-					require.NoError(b, err)
-					assert.NotNil(b, raw)
-				})
-			})
-
 			b.Run("bson", func(b *testing.B) {
 				var doc *bson.Document
 				var raw []byte
@@ -902,6 +821,7 @@ func testRawDocument(t *testing.T, rawDoc bson.RawDocument) {
 
 			assert.NotEmpty(t, bson.LogMessage(rawDoc))
 			assert.NotEmpty(t, bson.LogMessageBlock(rawDoc))
+			assert.NotEmpty(t, bson.LogMessageFlow(rawDoc))
 
 			_, _ = bson.FindRaw(rawDoc)
 		})
@@ -921,6 +841,7 @@ func testRawDocument(t *testing.T, rawDoc bson.RawDocument) {
 
 			assert.NotEmpty(t, bson.LogMessage(doc))
 			assert.NotEmpty(t, bson.LogMessageBlock(doc))
+			assert.NotEmpty(t, bson.LogMessageFlow(doc))
 
 			_, _ = doc.Convert()
 
@@ -942,6 +863,7 @@ func testRawDocument(t *testing.T, rawDoc bson.RawDocument) {
 
 			assert.NotEmpty(t, bson.LogMessage(doc))
 			assert.NotEmpty(t, bson.LogMessageBlock(doc))
+			assert.NotEmpty(t, bson.LogMessageFlow(doc))
 
 			_, err = doc.Convert()
 			require.NoError(t, err)
@@ -950,71 +872,6 @@ func testRawDocument(t *testing.T, rawDoc bson.RawDocument) {
 			require.NoError(t, err)
 			assert.Equal(t, rawDoc, raw)
 		})
-	})
-
-	t.Run("cross", func(t *testing.T) {
-		br := bytes.NewReader(rawDoc)
-		bufr := bufio.NewReader(br)
-
-		var doc1 oldbson.Document
-		err1 := doc1.ReadFrom(bufr)
-
-		if err1 != nil {
-			_, err2 := rawDoc.DecodeDeep()
-			require.Error(t, err2, "bson1 err = %v", err1)
-
-			return
-		}
-
-		// remove extra tail
-		b := []byte(rawDoc[:len(rawDoc)-bufr.Buffered()-br.Len()])
-		l, err := bson.FindRaw(rawDoc)
-		require.NoError(t, err)
-		require.Equal(t, b, []byte(rawDoc[:l]))
-
-		// decode
-
-		bdoc2, err2 := bson.RawDocument(b).DecodeDeep()
-		require.NoError(t, err2)
-
-		ls := bdoc2.LogValue().Resolve().String()
-		assert.NotContains(t, ls, "panicked")
-		assert.NotContains(t, ls, "called too many times")
-
-		assert.NotEmpty(t, bson.LogMessage(bdoc2))
-		assert.NotEmpty(t, bson.LogMessageBlock(bdoc2))
-
-		tdoc1, err := types.ConvertDocument(&doc1)
-		require.NoError(t, err)
-
-		tdoc2, err := bdoc2.Convert()
-		require.NoError(t, err)
-
-		testutil.AssertEqual(t, tdoc1, tdoc2)
-
-		// encode
-
-		doc1e, err := oldbson.ConvertDocument(tdoc1)
-		require.NoError(t, err)
-
-		doc2e, err := bson.ConvertDocument(tdoc2)
-		require.NoError(t, err)
-
-		ls = doc2e.LogValue().Resolve().String()
-		assert.NotContains(t, ls, "panicked")
-		assert.NotContains(t, ls, "called too many times")
-
-		assert.NotEmpty(t, bson.LogMessage(doc2e))
-		assert.NotEmpty(t, bson.LogMessageBlock(doc2e))
-
-		b1, err := doc1e.MarshalBinary()
-		require.NoError(t, err)
-
-		b2, err := doc2e.Encode()
-		require.NoError(t, err)
-
-		assert.Equal(t, b1, []byte(b2))
-		assert.Equal(t, b, []byte(b2))
 	})
 }
 
