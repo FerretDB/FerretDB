@@ -96,20 +96,6 @@ func (h *Handler) MsgUpdateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 		return nil, lazyerrors.Error(err)
 	}
 
-	if mechanisms == nil {
-		return nil, handlererrors.NewCommandErrorMsg(
-			handlererrors.ErrBadValue,
-			"mechanisms field must not be empty",
-		)
-	}
-
-	if mechanisms.Len() == 0 {
-		return nil, handlererrors.NewCommandErrorMsg(
-			handlererrors.ErrBadValue,
-			"mechanisms field must not be empty",
-		)
-	}
-
 	iter := mechanisms.Iterator()
 	defer iter.Close()
 
