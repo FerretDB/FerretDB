@@ -60,7 +60,7 @@ func run(pass *analysis.Pass) (any, error) {
 	issueReference := "// TODO"
 
 	if !pass.Analyzer.Flags.Lookup("offline").Value.(flag.Getter).Get().(bool) {
-		p, err := github.CacheFilePath("checkcomments")
+		p, err := github.CacheFilePath()
 		if err != nil {
 			log.Panic(err)
 		}

@@ -74,7 +74,7 @@ func TestVerifyTruncateString(t *testing.T) {
 func TestVerifyIssues(t *testing.T) {
 	t.Parallel()
 
-	path, err := github.CacheFilePath("checkcomments")
+	path, err := github.CacheFilePath()
 	require.NoError(t, err)
 
 	err = os.MkdirAll(filepath.Dir(path), 0o777)

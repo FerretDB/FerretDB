@@ -31,7 +31,7 @@ func TestCacheFilePath(t *testing.T) {
 	require.NoError(t, err)
 	expected := filepath.Join(wd, "..", "..", "tmp", "checkcomments", "cache.json")
 
-	actual, err := CacheFilePath("checkcomments")
+	actual, err := CacheFilePath()
 	require.NoError(t, err)
 	assert.Equal(t, expected, actual)
 }

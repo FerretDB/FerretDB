@@ -252,7 +252,7 @@ func checkTableFile(file string, logf, fatalf func(string, ...any)) {
 func verifyIssues(fm []byte, logf, fatalf func(string, ...any)) {
 	issueReference := "[issue]({URL})"
 
-	p, err := github.CacheFilePath("checkdocs")
+	p, err := github.CacheFilePath()
 	if err != nil {
 		log.Panic(err)
 	}
