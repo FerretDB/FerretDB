@@ -181,7 +181,7 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 				)
 			}
 
-			return nil, err
+			return nil, lazyerrors.Error(err)
 		}
 	}
 

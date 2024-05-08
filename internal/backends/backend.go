@@ -124,7 +124,6 @@ func CreateUser(ctx context.Context, b Backend, mechanisms *types.Array, dbName,
 func MakeCredentials(mechanisms *types.Array, username, userPassword string) (*types.Document, error) {
 	credentials := types.MakeDocument(0)
 
-	// when mechanisms is not specified default is all mechanisms
 	if mechanisms == nil {
 		mechanisms = must.NotFail(types.NewArray("SCRAM-SHA-1", "SCRAM-SHA-256"))
 	}
