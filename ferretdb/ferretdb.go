@@ -134,8 +134,8 @@ func New(config *Config) (*FerretDB, error) {
 
 		SQLiteURL: config.SQLiteURL,
 
+		//nolint:mnd // Handler default values
 		TestOpts: registry.TestOpts{
-			// handler expects it to be a non-zero value
 			CappedCleanupPercentage: 10,
 			BatchSize:               100,
 		},
