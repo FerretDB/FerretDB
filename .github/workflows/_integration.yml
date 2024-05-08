@@ -44,8 +44,8 @@ jobs:
     # make it short to fit in GitHub UI; all parameters are already in the caller's name
     name: Run
 
-    # https://www.ubicloud.com/docs/github-actions-integration/price-performance#usage-pricing
-    # https://docs.github.com/en/billing/managing-billing-for-github-actions/about-billing-for-github-actions#per-minute-rates
+    # https://www.ubicloud.com/docs/about/pricing#github-actions
+    # https://docs.github.com/en/billing/managing-billing-for-github-actions/about-billing-for-github-actions#per-minute-rates-for-larger-runners
     runs-on: ubicloud-standard-4
 
     timeout-minutes: 25
