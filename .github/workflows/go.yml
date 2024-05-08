@@ -170,8 +170,8 @@ jobs:
       fail-fast: false
       matrix:
         task: [postgresql, sqlite]
-        shard_index: [1, 2, 3]
-        shard_total: [3]
+        shard_index: [1, 2, 3, 4, 5]
+        shard_total: [5]
         include:
           - { task: "mongodb", shard_index: 1, shard_total: 1 }
 
