@@ -111,7 +111,8 @@ linters-settings:
     no-mixed-args: true
     kv-only: false
     attr-only: true
-    context-only: true
+    no-global: "all"
+    context: "scope"
     static-msg: true
     no-raw-keys: false # TODO https://github.com/FerretDB/FerretDB/issues/3421
     key-naming-case: snake
