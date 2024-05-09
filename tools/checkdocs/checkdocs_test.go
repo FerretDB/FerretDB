@@ -86,7 +86,7 @@ func TestVerifyIssues(t *testing.T) {
 	})
 
 	t.Run("Sample row", func(t *testing.T) {
-		fm := []byte("|                 | `noCursorTimeout`          | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/4035) |")
+		fm := []byte("| ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/4035) |")
 
 		verifyIssues(fm, gh.NoopPrintf, gh.NoopPrintf)
 	})
