@@ -48,7 +48,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	checkTableFile(tableFile, log.Printf, log.Fatalf)
+	if err := checkTableFile(tableFile, log.Printf, log.Fatalf); err != nil {
+		log.Fatal(err)
+	}
 }
 
 // checkFiles verifies that blog posts are correctly formatted,
@@ -239,13 +241,14 @@ func verifyTags(fm []byte) error {
 
 // checkTableFile verifies that supported-commands.md is correctly formatted,
 // using logf for progress reporting and fatalf for errors.
-func checkTableFile(file string, logf, fatalf func(string, ...any)) {
+func checkTableFile(file string, logf, fatalf func(string, ...any)) error {
 	fileInBytes, err := os.ReadFile(file)
 	if err != nil {
-		fatalf("Couldn't read file %s: %s", file, err)
+		return fmt.Errorf("couldn't read file %s: %s", file, err)
 	}
 
 	verifyIssues(fileInBytes, logf, fatalf)
+	return nil
 }
 
 // verifyIssues checks that listed issues statuses.
