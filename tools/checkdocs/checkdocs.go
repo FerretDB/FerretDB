@@ -301,8 +301,15 @@ func verifyIssues(fm []byte, logf, fatalf func(string, ...any)) {
 			fatalf(err.Error())
 		}
 
-		if msg := status.Validate("[issue]({URL})", url); msg != "" {
-			logf(msg)
+		switch status {
+		case github.IssueOpen:
+			// nothing
+		case github.IssueClosed:
+			logf("invalid [issue]({URL}) linked issue %s is closed", url)
+		case github.IssueNotFound:
+			logf("invalid [issue]({URL}) linked issue %s is not found", url)
+		default:
+			log.Panicf("unknown issue status: %s", status)
 		}
 	}
 

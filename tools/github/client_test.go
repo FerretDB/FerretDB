@@ -50,15 +50,15 @@ func TestClient(t *testing.T) {
 
 		actual, err := c.checkIssueStatus(ctx, "FerretDB", 10)
 		require.NoError(t, err)
-		assert.Equal(t, issueOpen, actual)
+		assert.Equal(t, IssueOpen, actual)
 
 		actual, err = c.checkIssueStatus(ctx, "FerretDB", 1)
 		require.NoError(t, err)
-		assert.Equal(t, issueClosed, actual)
+		assert.Equal(t, IssueClosed, actual)
 
 		actual, err = c.checkIssueStatus(ctx, "FerretDB", 999999)
 		require.NoError(t, err)
-		assert.Equal(t, issueNotFound, actual)
+		assert.Equal(t, IssueNotFound, actual)
 	})
 
 	t.Run("IssueStatus", func(t *testing.T) {
@@ -69,15 +69,15 @@ func TestClient(t *testing.T) {
 
 		actual, err := c.IssueStatus(ctx, "https://github.com/FerretDB/FerretDB/issues/10", "FerretDB", 10)
 		require.NoError(t, err)
-		assert.Equal(t, issueOpen, actual)
+		assert.Equal(t, IssueOpen, actual)
 
 		actual, err = c.IssueStatus(ctx, "https://github.com/FerretDB/FerretDB/issues/1", "FerretDB", 1)
 		require.NoError(t, err)
-		assert.Equal(t, issueClosed, actual)
+		assert.Equal(t, IssueClosed, actual)
 
 		actual, err = c.IssueStatus(ctx, "https://github.com/FerretDB/FerretDB/issues/999999", "FerretDB", 999999)
 		require.NoError(t, err)
-		assert.Equal(t, issueNotFound, actual)
+		assert.Equal(t, IssueNotFound, actual)
 
 		// The following tests should use cache and not the client,
 		// but it may be empty if tests above failed for some reason.
@@ -90,14 +90,14 @@ func TestClient(t *testing.T) {
 
 		actual, err = c.IssueStatus(ctx, "https://github.com/FerretDB/FerretDB/issues/10", "FerretDB", 10)
 		require.NoError(t, err)
-		assert.Equal(t, issueOpen, actual)
+		assert.Equal(t, IssueOpen, actual)
 
 		actual, err = c.IssueStatus(ctx, "https://github.com/FerretDB/FerretDB/issues/1", "FerretDB", 1)
 		require.NoError(t, err)
-		assert.Equal(t, issueClosed, actual)
+		assert.Equal(t, IssueClosed, actual)
 
 		actual, err = c.IssueStatus(ctx, "https://github.com/FerretDB/FerretDB/issues/999999", "FerretDB", 999999)
 		require.NoError(t, err)
-		assert.Equal(t, issueNotFound, actual)
+		assert.Equal(t, IssueNotFound, actual)
 	})
 }

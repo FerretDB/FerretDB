@@ -193,7 +193,7 @@ func (c *Client) IssueStatus(ctx context.Context, url, repo string, num int) (is
 
 	// when rate limited
 	if err == nil && res == "" {
-		res = issueOpen
+		res = IssueOpen
 	}
 
 	return res, err
@@ -205,7 +205,7 @@ func (c *Client) checkIssueStatus(ctx context.Context, repo string, num int) (is
 	issue, resp, err := c.c.Issues.Get(ctx, "FerretDB", repo, num)
 	if err != nil {
 		if resp.StatusCode == http.StatusNotFound {
-			return issueNotFound, nil
+			return IssueNotFound, nil
 		}
 
 		return "", err
@@ -213,9 +213,9 @@ func (c *Client) checkIssueStatus(ctx context.Context, repo string, num int) (is
 
 	switch s := issue.GetState(); s {
 	case "open":
-		return issueOpen, nil
+		return IssueOpen, nil
 	case "closed":
-		return issueClosed, nil
+		return IssueClosed, nil
 	default:
 		return "", fmt.Errorf("unknown issue state: %q", s)
 	}

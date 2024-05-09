@@ -15,8 +15,6 @@
 package github
 
 import (
-	"fmt"
-	"log"
 	"time"
 )
 
@@ -25,29 +23,13 @@ type issueStatus string
 
 // Known issue statuses.
 const (
-	issueOpen     issueStatus = "open"
-	issueClosed   issueStatus = "closed"
-	issueNotFound issueStatus = "not found"
+	IssueOpen     issueStatus = "open"
+	IssueClosed   issueStatus = "closed"
+	IssueNotFound issueStatus = "not found"
 )
 
 // issue represents a single cached issue.
 type issue struct {
 	RefreshedAt time.Time   `json:"refreshedAt"`
 	Status      issueStatus `json:"status"`
-}
-
-// Validate checks the issues status and returns its message (if it is not open).
-func (status issueStatus) Validate(issueReference, url string) string {
-	switch status {
-	case issueOpen:
-		// nothing
-	case issueClosed:
-		return fmt.Sprintf("invalid %s linked issue %s is closed", issueReference, url)
-	case issueNotFound:
-		return fmt.Sprintf("invalid %s linked issue %s is not found", issueReference, url)
-	default:
-		log.Panicf("unknown issue status: %s", status)
-	}
-
-	return ""
 }

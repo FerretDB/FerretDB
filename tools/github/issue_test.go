@@ -30,13 +30,13 @@ func TestValidate(t *testing.T) {
 	t.Parallel()
 
 	t.Run("OpenIssue", func(t *testing.T) {
-		openIssue := issueOpen
+		openIssue := IssueOpen
 		msg := openIssue.Validate("TODO", sampleIssueURL)
 		require.Empty(t, msg)
 	})
 
 	t.Run("ClosedIssue", func(t *testing.T) {
-		closedIssue := issueClosed
+		closedIssue := IssueClosed
 		expectedMsg := fmt.Sprintf("invalid TODO linked issue %s is closed", sampleIssueURL)
 
 		msg := closedIssue.Validate("TODO", sampleIssueURL)
@@ -44,7 +44,7 @@ func TestValidate(t *testing.T) {
 	})
 
 	t.Run("NotFoundIssue", func(t *testing.T) {
-		closedIssue := issueNotFound
+		closedIssue := IssueNotFound
 		expectedMsg := fmt.Sprintf("invalid TODO linked issue %s is not found", sampleIssueURL)
 
 		msg := closedIssue.Validate("TODO", sampleIssueURL)

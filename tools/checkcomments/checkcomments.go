@@ -120,8 +120,15 @@ func run(pass *analysis.Pass) (any, error) {
 					log.Panic(err)
 				}
 
-				if msg := status.Validate("TODO", url); msg != "" {
-					log.Print(msg)
+				switch status {
+				case github.IssueOpen:
+					// nothing
+				case github.IssueClosed:
+					pass.Reportf(c.Pos(), "invalid TODO: linked issue %s is closed", url)
+				case github.IssueNotFound:
+					pass.Reportf(c.Pos(), "invalid TODO: linked issue %s is not found", url)
+				default:
+					log.Panicf("unknown issue status: %s", status)
 				}
 			}
 		}
