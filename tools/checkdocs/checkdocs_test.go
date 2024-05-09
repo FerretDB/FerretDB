@@ -20,10 +20,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/FerretDB/FerretDB/tools/github"
 	"github.com/FerretDB/gh"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/FerretDB/FerretDB/tools/github"
 )
 
 func TestReal(t *testing.T) {
