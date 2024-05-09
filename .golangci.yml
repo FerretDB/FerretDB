@@ -203,7 +203,8 @@ linters-settings:
     no-mixed-args: true
     kv-only: false
     attr-only: true
-    context-only: false # https://github.com/go-simpler/sloglint/issues/29
+    no-global: "all"
+    context: "scope"
     static-msg: false # TODO https://github.com/FerretDB/FerretDB/issues/3421
     no-raw-keys: false # TODO https://github.com/FerretDB/FerretDB/issues/3421
     key-naming-case: snake
