@@ -48,7 +48,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if err := checkTableFile(tableFile, log.Printf, log.Fatalf); err != nil {
+	if err = checkTableFile(tableFile, log.Printf, log.Fatalf); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -248,6 +248,7 @@ func checkTableFile(file string, logf, fatalf func(string, ...any)) error {
 	}
 
 	verifyIssues(fileInBytes, logf, fatalf)
+
 	return nil
 }
 
@@ -313,7 +314,7 @@ func verifyIssues(fm []byte, logf, fatalf func(string, ...any)) {
 		}
 	}
 
-	if err := s.Err(); err != nil {
+	if err = s.Err(); err != nil {
 		fatalf("error reading input: %s", err)
 	}
 }

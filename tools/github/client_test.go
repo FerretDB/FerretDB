@@ -29,7 +29,7 @@ func TestCacheFilePath(t *testing.T) {
 
 	wd, err := os.Getwd()
 	require.NoError(t, err)
-	expected := filepath.Join(wd, "..", "..", "tmp", "checkcomments", "cache.json")
+	expected := filepath.Join(wd, "..", "..", "tmp", "githubcache", "cache.json")
 
 	actual, err := CacheFilePath()
 	require.NoError(t, err)
