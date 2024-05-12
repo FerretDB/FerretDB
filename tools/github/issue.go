@@ -18,18 +18,18 @@ import (
 	"time"
 )
 
-// issueStatus represents a known issue status.
-type issueStatus string
+// IssueStatus represents a known issue status.
+type IssueStatus string
 
 // Known issue statuses.
 const (
-	IssueOpen     issueStatus = "open"
-	IssueClosed   issueStatus = "closed"
-	IssueNotFound issueStatus = "not found"
+	IssueOpen     IssueStatus = "open"
+	IssueClosed   IssueStatus = "closed"
+	IssueNotFound IssueStatus = "not found"
 )
 
 // issue represents a single cached issue.
 type issue struct {
 	RefreshedAt time.Time   `json:"refreshedAt"`
-	Status      issueStatus `json:"status"`
+	Status      IssueStatus `json:"status"`
 }

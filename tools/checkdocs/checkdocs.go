@@ -275,7 +275,9 @@ func verifyIssues(fm []byte, logf, fatalf func(string, ...any)) {
 			continue
 		}
 
-		if len(match) != 6 {
+		expectedMatchLen := 6
+
+		if len(match) != expectedMatchLen {
 			logf("invalid [issue]({URL}) format: %s", line)
 			continue
 		}
@@ -283,7 +285,9 @@ func verifyIssues(fm []byte, logf, fatalf func(string, ...any)) {
 		url := match[3]
 		repo := match[4]
 
-		num, err := strconv.Atoi(match[5])
+		var num int
+
+		num, err = strconv.Atoi(match[5])
 		if err != nil {
 			fatalf(err.Error())
 		}
@@ -297,7 +301,9 @@ func verifyIssues(fm []byte, logf, fatalf func(string, ...any)) {
 			continue
 		}
 
-		status, err := client.IssueStatus(context.TODO(), url, repo, num)
+		var status github.IssueStatus
+
+		status, err = client.IssueStatus(context.TODO(), url, repo, num)
 		if err != nil {
 			fatalf(err.Error())
 		}

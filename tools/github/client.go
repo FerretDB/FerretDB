@@ -113,7 +113,7 @@ func CacheFilePath() (string, error) {
 //
 // Returned error is something fatal.
 // On rate limit, the error is logged once and (issueOpen, nil) is returned.
-func (c *Client) IssueStatus(ctx context.Context, url, repo string, num int) (issueStatus, error) {
+func (c *Client) IssueStatus(ctx context.Context, url, repo string, num int) (IssueStatus, error) {
 	start := time.Now()
 
 	cache := &cacheFile{
@@ -121,7 +121,7 @@ func (c *Client) IssueStatus(ctx context.Context, url, repo string, num int) (is
 	}
 	cacheRes := "miss"
 
-	var res issueStatus
+	var res IssueStatus
 
 	// fast path without any locks
 
@@ -201,7 +201,7 @@ func (c *Client) IssueStatus(ctx context.Context, url, repo string, num int) (is
 
 // checkIssueStatus checks issue status via GitHub API.
 // It does not use cache.
-func (c *Client) checkIssueStatus(ctx context.Context, repo string, num int) (issueStatus, error) {
+func (c *Client) checkIssueStatus(ctx context.Context, repo string, num int) (IssueStatus, error) {
 	issue, resp, err := c.c.Issues.Get(ctx, "FerretDB", repo, num)
 	if err != nil {
 		if resp.StatusCode == http.StatusNotFound {
