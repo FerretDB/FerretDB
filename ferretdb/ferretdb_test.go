@@ -145,7 +145,7 @@ func Example_tls() {
 	// Output: mongodb://127.0.0.1:17028/?tls=true
 }
 
-func FerretDBTest(t *testing.T) {
+func TestFerretDB(t *testing.T) {
 	// start server
 	f, err := ferretdb.New(&ferretdb.Config{
 		Listener: ferretdb.ListenerConfig{
@@ -154,7 +154,7 @@ func FerretDBTest(t *testing.T) {
 		Handler:   "sqlite",
 		SQLiteURL: "file:./?mode=memory",
 	})
-	require.Error(t, err)
+	require.NoError(t, err)
 
 	ctx, cancel := context.WithCancel(context.Background())
 
