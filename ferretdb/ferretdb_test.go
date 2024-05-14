@@ -169,7 +169,7 @@ func TestFerretDB(t *testing.T) {
 
 	// start client
 	mongoCli, _ := mongo.Connect(ctx, options.Client().ApplyURI(uri))
-	_, err = mongoCli.Database("test").Collection("test").InsertOne(context.TODO(), bson.M{"foo": "bar"})
+	_, err = mongoCli.Database("test").Collection("test").InsertOne(ctx, bson.M{"foo": "bar"})
 	require.NoError(t, err)
 
 	cancel()
