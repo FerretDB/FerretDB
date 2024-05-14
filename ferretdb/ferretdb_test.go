@@ -21,11 +21,12 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/FerretDB/FerretDB/ferretdb"
 	"github.com/cristalhq/bson"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"github.com/FerretDB/FerretDB/ferretdb"
 )
 
 func Example_tcp() {
