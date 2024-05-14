@@ -19,8 +19,13 @@ import (
 	"fmt"
 	"log"
 	"path/filepath"
+	"testing"
 
 	"github.com/FerretDB/FerretDB/ferretdb"
+	"github.com/cristalhq/bson"
+	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func Example_tcp() {
@@ -138,4 +143,35 @@ func Example_tls() {
 	<-done
 
 	// Output: mongodb://127.0.0.1:17028/?tls=true
+}
+
+func FerretDBTest(t *testing.T) {
+	// start server
+	f, err := ferretdb.New(&ferretdb.Config{
+		Listener: ferretdb.ListenerConfig{
+			TCP: "127.0.0.1:0",
+		},
+		Handler:   "sqlite",
+		SQLiteURL: "file:./?mode=memory",
+	})
+	require.Error(t, err)
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	done := make(chan struct{})
+
+	go func() {
+		require.NoError(t, f.Run(ctx))
+		close(done)
+	}()
+
+	uri := f.MongoDBURI()
+
+	// start client
+	mongoCli, _ := mongo.Connect(ctx, options.Client().ApplyURI(uri))
+	_, err = mongoCli.Database("test").Collection("test").InsertOne(context.TODO(), bson.M{"foo": "bar"})
+	require.NoError(t, err)
+
+	cancel()
+	<-done
 }
