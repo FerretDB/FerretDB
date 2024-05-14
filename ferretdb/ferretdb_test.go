@@ -146,7 +146,6 @@ func Example_tls() {
 }
 
 func TestFerretDB(t *testing.T) {
-	// start server
 	f, err := ferretdb.New(&ferretdb.Config{
 		Listener: ferretdb.ListenerConfig{
 			TCP: "127.0.0.1:0",
@@ -167,9 +166,10 @@ func TestFerretDB(t *testing.T) {
 
 	uri := f.MongoDBURI()
 
-	// start client
-	mongoCli, _ := mongo.Connect(ctx, options.Client().ApplyURI(uri))
-	_, err = mongoCli.Database("test").Collection("test").InsertOne(ctx, bson.M{"foo": "bar"})
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
+	require.NoError(t, err)
+
+	_, err = client.Database("test").Collection("test").InsertOne(ctx, bson.M{"foo": "bar"})
 	require.NoError(t, err)
 
 	cancel()
