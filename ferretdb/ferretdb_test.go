@@ -153,7 +153,7 @@ func TestEmbedded(t *testing.T) {
 			TCP: "127.0.0.1:0",
 		},
 		Handler:       "postgresql",
-		PostgreSQLURL: "postgres://username@127.0.0.1:5432/ferretdb?search_path=",
+		PostgreSQLURL: testutil.TestPostgreSQLURI(tb, ctx, "postgres://username@127.0.0.1:5432/ferretdb?search_path="),
 	})
 	require.NoError(t, err)
 
