@@ -79,6 +79,10 @@ func TestUpdateFieldCompatCurrentDate(t *testing.T) {
 			update: bson.D{{"$currentDate", bson.D{{"v", bson.D{{"$type", "date"}}}}}},
 			paths:  []types.Path{types.NewStaticPath("v")},
 		},
+		"NoType": {
+			update:     bson.D{{"$currentDate", bson.D{{"v", bson.D{}}}}},
+			resultType: emptyResult,
+		},
 		"WrongType": {
 			update:     bson.D{{"$currentDate", bson.D{{"v", bson.D{{"$type", bson.D{{"abcd", int32(1)}}}}}}}},
 			resultType: emptyResult,
@@ -1413,4 +1417,56 @@ func TestUpdateFieldCompatBit(t *testing.T) {
 	}
 
 	testUpdateCompat(t, testCases)
+}
+
+func TestUpdateFieldOrder(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]testUpdateManyCompatTestCase{
+		"MultipleOps": {
+			filter: bson.D{{"_id", "non-existent"}},
+			update: bson.D{
+				{"$set", bson.D{{"b", 2}, {"d", 4}}},
+				{"$setOnInsert", bson.D{{"c", "3"}}},
+				{"$inc", bson.D{{"a", 1}}},
+				{"$min", bson.D{{"f", 5}}},
+				{"$max", bson.D{{"h", 7}}},
+				{"$mul", bson.D{{"g", 6}}},
+				{"$bit", bson.D{{"m", bson.D{{"xor", 1}}}}},
+				{"$push", bson.D{{"i", 8}}},
+				{"$addToSet", bson.D{{"j", 9}}},
+			},
+			updateOpts: options.Update().SetUpsert(true),
+		},
+		"UpsertFalse": {
+			filter: bson.D{{"_id", "int32"}},
+			update: bson.D{
+				{"$set", bson.D{{"b", 2}, {"d", 4}, {"v", int32(43)}}},
+				{"$inc", bson.D{{"a", 1}}},
+				{"$push", bson.D{{"e", 5}}},
+				{"$setOnInsert", bson.D{{"c", "3"}}},
+			},
+			updateOpts: options.Update().SetUpsert(false),
+			providers:  []shareddata.Provider{shareddata.Int32s},
+		},
+		"NestedField": {
+			filter: bson.D{{"_id", "non-existent"}},
+			update: bson.D{
+				{"$set", bson.D{{"x", bson.D{{"c", 3}, {"b", 2}}}}},
+				{"$setOnInsert", bson.D{{"a", "1"}}},
+			},
+			updateOpts: options.Update().SetUpsert(true),
+		},
+		"NestedFieldDotNotation": {
+			filter: bson.D{{"_id", "non-existent"}},
+			update: bson.D{
+				{"$set", bson.D{{"a.y", 2}}},
+				{"$inc", bson.D{{"a.x", 1}}},
+				{"$setOnInsert", bson.D{{"a.z", "3"}}},
+			},
+			updateOpts: options.Update().SetUpsert(true),
+		},
+	}
+
+	testUpdateManyCompat(t, testCases)
 }
