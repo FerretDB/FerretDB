@@ -173,7 +173,7 @@ func TestEmbedded(t *testing.T) {
 
 	dbName, collName := testutil.DatabaseName(t), testutil.CollectionName(t)
 
-	// nolint:forbidigo // bson is required to use the driver
+	//nolint:forbidigo // bson is required to use the driver
 	_, err = client.Database(dbName).Collection(collName).InsertOne(ctx, bson.M{"foo": "bar"})
 	require.NoError(t, err)
 
