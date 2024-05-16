@@ -148,16 +148,16 @@ func Example_tls() {
 }
 
 func TestEmbedded(t *testing.T) {
+	ctx, cancel := context.WithCancel(testutil.Ctx(t))
+
 	f, err := ferretdb.New(&ferretdb.Config{
 		Listener: ferretdb.ListenerConfig{
 			TCP: "127.0.0.1:0",
 		},
 		Handler:       "postgresql",
-		PostgreSQLURL: testutil.TestPostgreSQLURI(tb, ctx, "postgres://username@127.0.0.1:5432/ferretdb?search_path="),
+		PostgreSQLURL: testutil.TestPostgreSQLURI(t, ctx, "postgres://username@127.0.0.1:5432/ferretdb?search_path="),
 	})
 	require.NoError(t, err)
-
-	ctx, cancel := context.WithCancel(context.Background())
 
 	done := make(chan struct{})
 
