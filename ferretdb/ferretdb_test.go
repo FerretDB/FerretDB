@@ -27,6 +27,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/ferretdb"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func Example_tcp() {
@@ -146,13 +147,13 @@ func Example_tls() {
 	// Output: mongodb://127.0.0.1:17028/?tls=true
 }
 
-func TestFerretDB(t *testing.T) {
+func TestEmbedded(t *testing.T) {
 	f, err := ferretdb.New(&ferretdb.Config{
 		Listener: ferretdb.ListenerConfig{
 			TCP: "127.0.0.1:0",
 		},
-		Handler:   "sqlite",
-		SQLiteURL: "file:./?mode=memory",
+		Handler:       "postgresql",
+		PostgreSQLURL: "postgres://username@127.0.0.1:5432/ferretdb?search_path=",
 	})
 	require.NoError(t, err)
 
@@ -170,7 +171,9 @@ func TestFerretDB(t *testing.T) {
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 	require.NoError(t, err)
 
-	_, err = client.Database("test").Collection("test").InsertOne(ctx, bson.M{"foo": "bar"})
+	dbName, collName := testutil.DatabaseName(t), testutil.CollectionName(t)
+
+	_, err = client.Database(dbName).Collection(collName).InsertOne(ctx, bson.M{"foo": "bar"})
 	require.NoError(t, err)
 
 	cancel()
