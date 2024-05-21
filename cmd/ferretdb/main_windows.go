@@ -12,35 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package oldbson
+package main
 
-import (
-	"bufio"
+import "fmt"
 
-	"github.com/FerretDB/FerretDB/internal/types"
-)
-
-// nullType represents BSON Null type.
-type nullType types.NullType
-
-func (*nullType) bsontype() {}
-
-// ReadFrom implements bsontype interface.
-func (*nullType) ReadFrom(r *bufio.Reader) error {
-	return nil
+// stateFileProblem returns the state file access error.
+func stateFileProblem(_ string, err error) string {
+	return fmt.Sprintf("Failed to create state provider: %s.", err)
 }
-
-// WriteTo implements bsontype interface.
-func (nullType) WriteTo(w *bufio.Writer) error {
-	return nil
-}
-
-// MarshalBinary implements bsontype interface.
-func (nullType) MarshalBinary() ([]byte, error) {
-	return nil, nil
-}
-
-// check interfaces
-var (
-	_ bsontype = (*nullType)(nil)
-)

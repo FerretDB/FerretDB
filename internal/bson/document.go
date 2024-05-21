@@ -19,6 +19,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"log/slog"
+	"slices"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -36,6 +37,7 @@ type field struct {
 // It may contain duplicate field names.
 type Document struct {
 	fields []field
+	frozen bool
 }
 
 // NewDocument creates a new Document from the given pairs of field names and values.
@@ -119,10 +121,39 @@ func (doc *Document) Convert() (*types.Document, error) {
 	return res, nil
 }
 
+// Freeze prevents document from further field modifications.
+// Any methods that would modify document fields will panic.
+//
+// It is safe to call Freeze multiple times.
+func (doc *Document) Freeze() {
+	doc.frozen = true
+}
+
+// checkFrozen panics if document is frozen.
+func (doc *Document) checkFrozen() {
+	if doc.frozen {
+		panic("document is frozen and can't be modified")
+	}
+}
+
+// FieldNames returns a slice of field names in the Document.
+//
+// If document contains duplicate field names, the same name may appear multiple times.
+func (doc *Document) FieldNames() []string {
+	fields := make([]string, len(doc.fields))
+	for i, f := range doc.fields {
+		fields[i] = f.name
+	}
+
+	return fields
+}
+
 // Get returns a value of the field with the given name.
 //
 // It returns nil if the field is not found.
 // If document contains duplicate field names, it returns the first one.
+//
+// TODO https://github.com/FerretDB/FerretDB/issues/4208
 func (doc *Document) Get(name string) any {
 	for _, f := range doc.fields {
 		if f.name == name {
@@ -139,12 +170,64 @@ func (doc *Document) Add(name string, value any) error {
 		return lazyerrors.Errorf("%q: %w", name, err)
 	}
 
+	doc.checkFrozen()
+
 	doc.fields = append(doc.fields, field{
 		name:  name,
 		value: value,
 	})
 
 	return nil
+}
+
+// Remove removes the first existing field with the given name.
+// It does nothing if the field with that name does not exist.
+func (doc *Document) Remove(name string) {
+	doc.checkFrozen()
+
+	var found bool
+	doc.fields = slices.DeleteFunc(doc.fields, func(f field) bool {
+		if f.name != name {
+			return false
+		}
+
+		if found {
+			return false
+		}
+
+		found = true
+
+		return true
+	})
+}
+
+// Replace sets the value for the first existing field with the given name.
+// It does nothing if the field with that name does not exist.
+func (doc *Document) Replace(name string, value any) error {
+	if err := validBSONType(value); err != nil {
+		return lazyerrors.Errorf("%q: %w", name, err)
+	}
+
+	doc.checkFrozen()
+
+	for i, f := range doc.fields {
+		if f.name == name {
+			doc.fields[i].value = value
+			return nil
+		}
+	}
+
+	return nil
+}
+
+// Command returns the first field name. This is often used as a command name.
+// It returns an empty string if document is nil or empty.
+func (doc *Document) Command() string {
+	if doc == nil || len(doc.fields) == 0 {
+		return ""
+	}
+
+	return doc.fields[0].name
 }
 
 // Encode encodes BSON document.
@@ -173,6 +256,11 @@ func (doc *Document) Encode() (RawDocument, error) {
 	return buf.Bytes(), nil
 }
 
+// Decode returns itself to implement the [AnyDocument] interface.
+func (doc *Document) Decode() (*Document, error) {
+	return doc, nil
+}
+
 // LogValue implements slog.LogValuer interface.
 func (doc *Document) LogValue() slog.Value {
 	return slogValue(doc, 1)
@@ -180,5 +268,6 @@ func (doc *Document) LogValue() slog.Value {
 
 // check interfaces
 var (
+	_ AnyDocument    = (*Document)(nil)
 	_ slog.LogValuer = (*Document)(nil)
 )

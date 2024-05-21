@@ -26,12 +26,6 @@ linters-settings:
             desc: use `github.com/jackc/pgx/v5` package instead
           - pkg: github.com/jackc/pgx/v4
             desc: use `github.com/jackc/pgx/v5` package instead
-      oldbson:
-        files:
-          - $all
-          - "!**/internal/bson/bson_test.go"
-        deny:
-          - pkg: github.com/FerretDB/FerretDB/internal/bson/oldbson$
       bson:
         files:
           - $all
@@ -209,7 +203,8 @@ linters-settings:
     no-mixed-args: true
     kv-only: false
     attr-only: true
-    context-only: false # https://github.com/go-simpler/sloglint/issues/29
+    no-global: "all"
+    context: "scope"
     static-msg: false # TODO https://github.com/FerretDB/FerretDB/issues/3421
     no-raw-keys: false # TODO https://github.com/FerretDB/FerretDB/issues/3421
     key-naming-case: snake
