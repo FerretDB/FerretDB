@@ -95,7 +95,7 @@ func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath string, tlsAndAut
 
 // setupListener starts in-process FerretDB server that runs until ctx is canceled.
 // It returns basic MongoDB URI for that listener.
-func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *BackendOpts) string {
+func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *BackendOpts, isEnvData bool) string {
 	tb.Helper()
 
 	_, span := otel.Tracer("").Start(ctx, "setupListener")
@@ -147,7 +147,7 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 	// use per-test PostgreSQL database to prevent handler's/backend's metadata registry
 	// read schemas owned by concurrent tests
 	postgreSQLURLF := *postgreSQLURLF
-	if postgreSQLURLF != "" {
+	if postgreSQLURLF != "" && !isEnvData {
 		postgreSQLURLF = testutil.TestPostgreSQLURI(tb, ctx, postgreSQLURLF)
 	}
 

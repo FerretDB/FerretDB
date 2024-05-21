@@ -169,7 +169,8 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 			opts.BackendOptions = NewBackendOpts()
 		}
 
-		uri = setupListener(tb, setupCtx, logger, opts.BackendOptions)
+		isEnvData := opts.DatabaseName == "test"
+		uri = setupListener(tb, setupCtx, logger, opts.BackendOptions, isEnvData)
 	} else {
 		uri = toAbsolutePathURI(tb, *targetURLF)
 	}
