@@ -154,7 +154,7 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 	// use per-test directory to prevent handler's/backend's metadata registry
 	// read databases owned by concurrent tests
 	sqliteURL := *sqliteURLF
-	if sqliteURL != "" {
+	if sqliteURL != "" && !isEnvData {
 		sqliteURL = testutil.TestSQLiteURI(tb, sqliteURL)
 	}
 
