@@ -198,7 +198,9 @@ func TestInsertIDDifferentTypes(t *testing.T) {
 }
 
 func TestInsertTooLargeDocument(t *testing.T) {
-	setup.SkipForMongoDB(t, "using setup.FailsForMongoDB takes 120s to fail by server selection timeout error")
+	if setup.IsMongoDB(t) {
+		t.Skip("Skipping for MongoDB: using setup.FailsForMongoDB takes 120s to fail by server selection timeout error.")
+	}
 
 	t.Parallel()
 

@@ -423,7 +423,7 @@ func run() {
 			CappedCleanupPercentage: cli.Test.CappedCleanup.Percentage,
 			EnableNewAuth:           cli.Test.EnableNewAuth,
 			BatchSize:               cli.Test.BatchSize,
-			MaxBsonObjectSizeBytes:  cli.Test.MaxBsonObjectSizeMiB * 1024 * 1024,
+			MaxBsonObjectSizeBytes:  cli.Test.MaxBsonObjectSizeMiB * 1024 * 1024, //nolint:mnd // converting MiB to bytes
 		},
 	})
 	if err != nil {
