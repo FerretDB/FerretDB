@@ -82,6 +82,7 @@ type NewOpts struct {
 	CappedCleanupPercentage uint8
 	EnableNewAuth           bool
 	BatchSize               int
+	MaxBsonObjectSizeBytes  int
 }
 
 // New returns a new handler.
