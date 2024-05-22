@@ -47,7 +47,9 @@ func TestEnvData(t *testing.T) {
 				Providers:      []shareddata.Provider{p},
 			})
 
-			// envData must persist, ensure the documents from the previous provider are found
+			// envData must persist, other integration tests do not
+			// persist data once the current t.Run() ends, hence check
+			// the collection created by the previous t.Run() persists
 			if previousName != "" {
 				ctx, database := s.Ctx, s.Collection.Database()
 				cursor, err := database.Collection(previousName).Find(ctx, bson.D{})
