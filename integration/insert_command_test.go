@@ -198,14 +198,16 @@ func TestInsertIDDifferentTypes(t *testing.T) {
 }
 
 func TestInsertTooLargeDocument(t *testing.T) {
+	setup.SkipForMongoDB(t, "using setup.FailsForMongoDB takes 120s to fail by server selection timeout error")
+
 	t.Parallel()
+
 	ctx, collection := setup.Setup(t)
 
-	// doc size is 37MB, larger than the default maximum BSON document size of 16MiB
+	// doc size is 17MB, larger than the default maximum BSON document size of 16MiB
 	doc := bson.D{
 		{"_id", "large-key"},
-		{"abc", strings.Repeat("abcdedfghijklmnopqrstuvwxyz", 1000000)},
-		{"123", strings.Repeat("1234567890", 1000000)},
+		{"123", strings.Repeat("1234567890abcdedf", 1000000)},
 	}
 
 	_, err := collection.InsertOne(ctx, doc)
