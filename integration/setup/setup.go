@@ -110,7 +110,7 @@ type BackendOpts struct {
 	// Percentage of documents to cleanup for capped collections. If not set, defaults to 20.
 	CappedCleanupPercentage uint8
 
-	// MaxBsonObjectSizeBytes is the maximum BSON object size.
+	// MaxBsonObjectSizeBytes is the maximum allowed size of a document, if not set FerretDB sets the default.
 	MaxBsonObjectSizeBytes int
 }
 

@@ -197,13 +197,13 @@ func TestInsertIDDifferentTypes(t *testing.T) {
 	)
 }
 
-func TestInsertTooLargeDocument(t *testing.T) {
-	setup.FailsForMongoDB(t, "maximum BSON document size is only configurable for FerretDB")
+func TestInsertTooLargeDocument(tt *testing.T) {
+	t := setup.FailsForMongoDB(tt, "maximum BSON document size is only configurable for FerretDB")
 
-	t.Parallel()
+	tt.Parallel()
 
 	size := 20 * 1024 * 1024
-	s := setup.SetupWithOpts(t, &setup.SetupOpts{BackendOptions: &setup.BackendOpts{MaxBsonObjectSizeBytes: size}})
+	s := setup.SetupWithOpts(tt, &setup.SetupOpts{BackendOptions: &setup.BackendOpts{MaxBsonObjectSizeBytes: size}})
 	ctx, collection := s.Ctx, s.Collection
 
 	var isMasterRes bson.D
