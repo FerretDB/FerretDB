@@ -96,6 +96,10 @@ func New(opts *NewOpts) (*Handler, error) {
 		)
 	}
 
+	if opts.MaxBsonObjectSizeBytes == 0 {
+		opts.MaxBsonObjectSizeBytes = types.MaxDocumentLen
+	}
+
 	h := &Handler{
 		b:       b,
 		NewOpts: opts,
