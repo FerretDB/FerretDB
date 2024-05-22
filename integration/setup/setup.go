@@ -109,6 +109,9 @@ type BackendOpts struct {
 
 	// Percentage of documents to cleanup for capped collections. If not set, defaults to 20.
 	CappedCleanupPercentage uint8
+
+	// MaxBsonObjectSizeBytes is the maximum BSON object size.
+	MaxBsonObjectSizeBytes int
 }
 
 // SetupResult represents setup results.
@@ -167,6 +170,10 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 	if uri == "" {
 		if opts.BackendOptions == nil {
 			opts.BackendOptions = NewBackendOpts()
+		}
+
+		if opts.BackendOptions.CappedCleanupPercentage == 0 {
+			opts.BackendOptions.CappedCleanupPercentage = NewBackendOpts().CappedCleanupPercentage
 		}
 
 		uri = setupListener(tb, setupCtx, logger, opts.BackendOptions)

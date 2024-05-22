@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -194,4 +195,24 @@ func TestInsertIDDifferentTypes(t *testing.T) {
 		"E11000 duplicate key error collection: TestInsertIDDifferentTypes.TestInsertIDDifferentTypes",
 		err,
 	)
+}
+
+func TestInsertTooLargeDocument(t *testing.T) {
+	if setup.IsMongoDB(t) {
+		t.Skip("Skipping for MongoDB: using setup.FailsForMongoDB takes too long, 120s to fail by server selection timeout error.")
+	}
+
+	t.Parallel()
+
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{BackendOptions: &setup.BackendOpts{MaxBsonObjectSizeBytes: 20 * 1024 * 1024}})
+	ctx, collection := s.Ctx, s.Collection
+
+	// doc size is 17MB, larger than the default maximum BSON document size of 16MiB
+	doc := bson.D{
+		{"_id", "large-key"},
+		{"123", strings.Repeat("1234567890abcde", 1000000)},
+	}
+
+	_, err := collection.InsertOne(ctx, doc)
+	require.NoError(t, err)
 }
