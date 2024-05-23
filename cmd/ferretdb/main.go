@@ -106,8 +106,9 @@ var cli struct {
 			Percentage uint8         `default:"10" help:"Experimental: percentage of documents to cleanup."`
 		} `embed:"" prefix:"capped-cleanup-"`
 
-		EnableNewAuth bool `default:"false" help:"Experimental: enable new authentication."`
-		BatchSize     int  `default:"100"   help:"Experimental: maximum insertion batch size."`
+		EnableNewAuth        bool `default:"false" help:"Experimental: enable new authentication."`
+		BatchSize            int  `default:"100"   help:"Experimental: maximum insertion batch size."`
+		MaxBsonObjectSizeMiB int  `default:"16"    help:"Experimental: maximum BSON object size in MiB."`
 
 		Telemetry struct {
 			URL            string        `default:"https://beacon.ferretdb.com/" help:"Telemetry: reporting URL."`
@@ -422,6 +423,7 @@ func run() {
 			CappedCleanupPercentage: cli.Test.CappedCleanup.Percentage,
 			EnableNewAuth:           cli.Test.EnableNewAuth,
 			BatchSize:               cli.Test.BatchSize,
+			MaxBsonObjectSizeBytes:  cli.Test.MaxBsonObjectSizeMiB * 1024 * 1024, //nolint:mnd // converting MiB to bytes
 		},
 	})
 	if err != nil {

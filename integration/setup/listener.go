@@ -186,6 +186,7 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 			CappedCleanupInterval:   opts.CappedCleanupInterval,
 			EnableNewAuth:           true,
 			BatchSize:               *batchSizeF,
+			MaxBsonObjectSizeBytes:  opts.MaxBsonObjectSizeBytes,
 		},
 	}
 	h, closeBackend, err := registry.NewHandler(handler, handlerOpts)
