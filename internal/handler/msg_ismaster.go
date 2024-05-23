@@ -36,7 +36,7 @@ func (h *Handler) MsgIsMaster(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
-		common.IsMasterDocument(h.TCPHost, h.ReplSetName),
+		common.IsMasterDocument(h.TCPHost, h.ReplSetName, h.MaxBsonObjectSizeBytes),
 	)))
 
 	return &reply, nil

@@ -48,7 +48,7 @@ func (h *Handler) MsgHello(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 	var reply wire.OpMsg
 	resp := must.NotFail(types.NewDocument(
 		"isWritablePrimary", true,
-		"maxBsonObjectSize", int32(types.MaxDocumentLen),
+		"maxBsonObjectSize", int32(h.MaxBsonObjectSizeBytes),
 		"maxMessageSizeBytes", int32(wire.MaxMsgLen),
 		"maxWriteBatchSize", int32(100000),
 		"localTime", time.Now(),
