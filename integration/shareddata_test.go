@@ -45,6 +45,7 @@ func TestEnvData(t *testing.T) {
 				DatabaseName:   "test",
 				CollectionName: name,
 				Providers:      []shareddata.Provider{p},
+				PersistData:    true,
 			})
 
 			// envData must persist, other integration tests do not
