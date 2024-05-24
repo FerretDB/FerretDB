@@ -35,15 +35,15 @@ Read the following documentation to learn how to create a Kubernetes cluster in 
 
 - [Create a project](https://taikun.cloud/docs/taikun-project-creation/)
 - [Create Kubernetes Cluster in Taikun](https://taikun.cloud/docs/creating-kubernetes-cluster/)
-- [Access Cluster Kubeconfig](https://taikun.cloud/docs/accessing-cluster-kubeconfig/)
+- [Download Cluster `kubeconfig`](https://taikun.cloud/docs/accessing-cluster-kubeconfig/)
 
-Export your Kubeconfig file to access the Kubernetes cluster:
+Export your `kubeconfig` file to access the Kubernetes cluster:
 
 ```sh
 export KUBECONFIG=/Users/<path>/<to>/kubeconfig.yaml
 ```
 
-Next, create a namespace isolate the workloads and resources in custom namespace.
+Next, create a namespace to isolate the workloads and resources in a custom namespace.
 
 ```sh
 kubectl create namespace ferretdb
@@ -51,12 +51,11 @@ kubectl create namespace ferretdb
 
 ### Install Percona PostgreSQL Operator
 
-In this blog post, we will use [Percona Distribution for PostgreSQL](https://www.percona.com/postgresql/software/postgresql-distribution) as the FerretDB PostgreSQL backend.
-Percona Distribution for PostgreSQL offers consists of several open source components that enable high availability, robust performance, backup, and scalability for enterprise level deployments.
+[Percona Distribution for PostgreSQL](https://www.percona.com/postgresql/software/postgresql-distribution) will be used as the PostgreSQL backend for FerretDB.
+It consists of several open source components that enable high availability, robust performance, backup, and scalability for enterprise level deployments.
+You can set it up on a Kubernetes cluster through the Percona PostgreSQL Operator.
 
-The Percona PostgreSQL Operator enables simplified configuration and management of a Percona Distribution for PostgreSQL cluster in a Kubernetes-based environment on-premises or in the cloud.
-
-You can install the Operator with `kubectl` on the Kubernetes environment setup.
+So start by installing the Operator with `kubectl` on your Kubernetes environment setup.
 
 Apply the Percona PostgreSQL Operator within the `ferretdb` namepace:
 
@@ -75,16 +74,14 @@ serviceaccount/percona-postgresql-operator serverside-applied
 role.rbac.authorization.k8s.io/percona-postgresql-operator serverside-applied
 rolebinding.rbac.authorization.k8s.io/service-account-percona-postgresql-operator serverside-applied
 deployment.apps/percona-postgresql-operator serverside-applied
-alexanderfashakin@Mac-mini percona-postgresql-operator-2.3.1 % kubectl apply -f deploy/cr.yaml -n ferretdb
-perconapgcluster.pgv2.percona.com/cluster1 created
 ```
 
 ### Deploy the PostgreSQL cluster
 
 You need to configure the PostgreSQL database according to FerretDB requirements.
-That means setting up a `ferretdb` database and user credentials with the necessary privileges to the database.
+That means setting up a `ferretdb` database and user credentials with the necessary privileges to it.
 
-With that in mind, let's adjust the `cr.yaml` file to reflect that so it creates the database, user, password and other credentials in `Secret`.
+With that in mind, adjust the `cr.yaml` file to reflect that so it creates the database, user, password and other credentials in `Secret`.
 
 ```yaml
 apiVersion: pgv2.percona.com/v2
@@ -168,7 +165,7 @@ spec:
     serverHost: monitoring-service
 ```
 
-Apply the custom resource (CR) YAML to create the PostgreSQL cluster:
+Apply the custom resource `YAML` to create the PostgreSQL cluster:
 
 ```sh
 kubectl apply -f deploy/cr.yaml -n ferretdb
@@ -195,12 +192,13 @@ NAME       ENDPOINT                          STATUS   POSTGRES   PGBOUNCER   AGE
 cluster1   cluster1-pgbouncer.ferretdb.svc   ready    3          3           5m10s
 ```
 
-Run `kubectl get pods -n ferretdb` to ensure all pods are running – you should see output indicating that the pods are in the `Running` state:
+Run `kubectl get pods -n ferretdb` to ensure all pods are running.
+The output should indicate that the pods are in the `Running` state:
 
 ```text
 NAME                                           READY   STATUS    RESTARTS   AGE
 cluster1-backup-p25l-xh6dm                     1/1     Running   0          52s
-cluster1-instance1-dtj6-0                      3/4     Running   0          97s
+cluster1-instance1-dtj6-0                      4/4     Running   0          97s
 cluster1-instance1-j9jv-0                      4/4     Running   0          97s
 cluster1-instance1-k8tj-0                      4/4     Running   0          97s
 cluster1-pgbouncer-87c4d584d-dj52c             2/2     Running   0          97s
@@ -282,9 +280,10 @@ ferretdb-5f6d9dfd59-szl78                      1/1     Running   0          9s
 
 ### Connect to FerretDB
 
-Before connecting to FerretDB, let's get the MongoDB URI user credentials needed to set up connection.
+Before connecting to FerretDB, get the `MongoDB_URI` user credential needed to set up the connection.
 
-Start by retrieving the password for the `ferretuser` stored in `secret` and the `ferretdb-service` address and port:
+Start by retrieving the password for the `ferretuser` stored in `Secret` and the `ferretdb-service` address and port.
+The `ferretuser` `Secret` object is named as `cluster1-pguser-ferretuser`.
 
 ```sh
 kubectl get secret cluster1-pguser-ferretuser -n ferretdb -o jsonpath="{.data.password}" | base64 --decode
@@ -298,8 +297,7 @@ kubectl get svc -n ferretdb
 
 Example output:
 
-```sh
-NAME                 TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)     AGE
+```text
 kubectl get svc -n ferretdb
 NAME                 TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)     AGE
 cluster1-ha          ClusterIP   10.233.60.147   <none>        5432/TCP    9m49s
@@ -311,9 +309,9 @@ cluster1-replicas    ClusterIP   10.233.48.145   <none>        5432/TCP    9m49s
 ferretdb-service     ClusterIP   10.233.22.188   <none>        27017/TCP   3m36s
 ```
 
-The ferretdb-service acts as the ClusterIP service, and allows you to connect to the FerretDB instance within the Kubernetes cluster (`10.233.22.188:27017`).
+The `ferretdb-service` acts as the `ClusterIP` service, and allows you to connect to the FerretDB instance within the Kubernetes cluster (`10.233.22.188:27017`).
 
-Run a MongoDB shell to connect to FerretDB:
+Run a `mongosh` to connect to FerretDB:
 
 ```sh
 kubectl -n ferretdb run mongosh --image=rtsp/mongosh --rm -it -- bash
@@ -342,10 +340,10 @@ ferretdb> db.test.find()
 ### Check data in PostgreSQL
 
 FerretDB stores all data on PostgreSQL.
-So if you find yourself wondering how that looks in PostgreSQL, you can check it out:
+So if you find yourself wondering how that looks, you can check it out:
 
 ```sh
-FERRETUSER_URI=kubectl get secret cluster1-pguser-ferretuser --namespace ferretdb -o jsonpath='{.data.uri}' | base64 --decode
+FERRETUSER_URI=$(kubectl get secret cluster1-pguser-ferretuser --namespace ferretdb -o jsonpath='{.data.uri}' | base64 --decode)
 kubectl run -i --rm --tty pg-client --image=perconalab/percona-distribution-postgresql:16 --restart=Never -- psql $FERRETUSER_URI
 ```
 
