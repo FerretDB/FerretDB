@@ -12,27 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package github
 
 import (
-	"os"
-	"path/filepath"
-	"testing"
-
-	"github.com/stretchr/testify/require"
-	"golang.org/x/tools/go/analysis/analysistest"
-
-	"github.com/FerretDB/FerretDB/tools/github"
+	"time"
 )
 
-func TestCheckCommentIssue(t *testing.T) {
-	t.Parallel()
+// IssueStatus represents a known issue status.
+type IssueStatus string
 
-	path, err := github.CacheFilePath()
-	require.NoError(t, err)
+// Known issue statuses.
+const (
+	IssueOpen     IssueStatus = "open"
+	IssueClosed   IssueStatus = "closed"
+	IssueNotFound IssueStatus = "not found"
+)
 
-	err = os.MkdirAll(filepath.Dir(path), 0o777)
-	require.NoError(t, err)
-
-	analysistest.Run(t, analysistest.TestData(), analyzer)
+// issue represents a single cached issue.
+type issue struct {
+	RefreshedAt time.Time   `json:"refreshedAt"`
+	Status      IssueStatus `json:"status"`
 }

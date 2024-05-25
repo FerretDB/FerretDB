@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package github
 
 import (
 	"context"
@@ -30,30 +30,14 @@ import (
 	"github.com/rogpeppe/go-internal/lockedfile"
 )
 
-// issueStatus represents a known issue status.
-type issueStatus string
-
-// Known issue statuses.
-const (
-	issueOpen     issueStatus = "open"
-	issueClosed   issueStatus = "closed"
-	issueNotFound issueStatus = "not found"
-)
-
-// issue represents a single cached issue.
-type issue struct {
-	RefreshedAt time.Time   `json:"refreshedAt"`
-	Status      issueStatus `json:"status"`
-}
-
 // cacheFile stores information regarding rate limiting and the status of issues.
 type cacheFile struct {
 	Issues           map[string]issue `json:"issues"`
 	RateLimitReached bool             `json:"rateLimitReached"`
 }
 
-// client represent GitHub API client with shared file cache.
-type client struct {
+// Client represent GitHub API Client with shared file cache.
+type Client struct {
 	c             *github.Client
 	cacheFilePath string
 	logf          gh.Printf
@@ -62,8 +46,8 @@ type client struct {
 	token         string
 }
 
-// newClient creates a new client for the given cache file path and logging functions.
-func newClient(cacheFilePath string, logf, cacheDebugF, clientDebugf gh.Printf) (*client, error) {
+// NewClient creates a new client for the given cache file path and logging functions.
+func NewClient(cacheFilePath string, logf, cacheDebugF, clientDebugf gh.Printf) (*Client, error) {
 	token := os.Getenv("GITHUB_TOKEN")
 
 	if logf == nil {
@@ -83,7 +67,7 @@ func newClient(cacheFilePath string, logf, cacheDebugF, clientDebugf gh.Printf) 
 		return nil, err
 	}
 
-	return &client{
+	return &Client{
 		c:             c,
 		cacheFilePath: cacheFilePath,
 		token:         token,
@@ -93,12 +77,43 @@ func newClient(cacheFilePath string, logf, cacheDebugF, clientDebugf gh.Printf) 
 	}, nil
 }
 
+// CacheFilePath returns the path to the cache file.
+func CacheFilePath() (string, error) {
+	// This tool is called for multiple packages in parallel,
+	// with the current working directory set to the package directory.
+	// To use the same cache file path, we first locate the root of the project by the .git directory.
+
+	dir, err := filepath.Abs(".")
+	if err != nil {
+		return "", err
+	}
+
+	for {
+		fi, err := os.Stat(filepath.Join(dir, ".git"))
+		if err == nil {
+			if !fi.IsDir() {
+				return "", fmt.Errorf(".git is not a directory")
+			}
+
+			break
+		}
+
+		if !errors.Is(err, fs.ErrNotExist) {
+			return "", err
+		}
+
+		dir = filepath.Dir(dir)
+	}
+
+	return filepath.Join(dir, "tmp", "githubcache", "cache.json"), nil
+}
+
 // IssueStatus returns issue status.
 // It uses cache.
 //
 // Returned error is something fatal.
 // On rate limit, the error is logged once and (issueOpen, nil) is returned.
-func (c *client) IssueStatus(ctx context.Context, url, repo string, num int) (issueStatus, error) {
+func (c *Client) IssueStatus(ctx context.Context, url, repo string, num int) (IssueStatus, error) {
 	start := time.Now()
 
 	cache := &cacheFile{
@@ -106,7 +121,7 @@ func (c *client) IssueStatus(ctx context.Context, url, repo string, num int) (is
 	}
 	cacheRes := "miss"
 
-	var res issueStatus
+	var res IssueStatus
 
 	// fast path without any locks
 
@@ -178,7 +193,7 @@ func (c *client) IssueStatus(ctx context.Context, url, repo string, num int) (is
 
 	// when rate limited
 	if err == nil && res == "" {
-		res = issueOpen
+		res = IssueOpen
 	}
 
 	return res, err
@@ -186,11 +201,11 @@ func (c *client) IssueStatus(ctx context.Context, url, repo string, num int) (is
 
 // checkIssueStatus checks issue status via GitHub API.
 // It does not use cache.
-func (c *client) checkIssueStatus(ctx context.Context, repo string, num int) (issueStatus, error) {
+func (c *Client) checkIssueStatus(ctx context.Context, repo string, num int) (IssueStatus, error) {
 	issue, resp, err := c.c.Issues.Get(ctx, "FerretDB", repo, num)
 	if err != nil {
 		if resp.StatusCode == http.StatusNotFound {
-			return issueNotFound, nil
+			return IssueNotFound, nil
 		}
 
 		return "", err
@@ -198,41 +213,10 @@ func (c *client) checkIssueStatus(ctx context.Context, repo string, num int) (is
 
 	switch s := issue.GetState(); s {
 	case "open":
-		return issueOpen, nil
+		return IssueOpen, nil
 	case "closed":
-		return issueClosed, nil
+		return IssueClosed, nil
 	default:
 		return "", fmt.Errorf("unknown issue state: %q", s)
 	}
-}
-
-// cacheFilePath returns the path to the cache file.
-func cacheFilePath() (string, error) {
-	// This tool is called for multiple packages in parallel,
-	// with the current working directory set to the package directory.
-	// To use the same cache file path, we first locate the root of the project by the .git directory.
-
-	dir, err := filepath.Abs(".")
-	if err != nil {
-		return "", err
-	}
-
-	for {
-		fi, err := os.Stat(filepath.Join(dir, ".git"))
-		if err == nil {
-			if !fi.IsDir() {
-				return "", fmt.Errorf(".git is not a directory")
-			}
-
-			break
-		}
-
-		if !errors.Is(err, fs.ErrNotExist) {
-			return "", err
-		}
-
-		dir = filepath.Dir(dir)
-	}
-
-	return filepath.Join(dir, "tmp", "githubcache", "cache.json"), nil
 }
