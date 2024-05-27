@@ -79,6 +79,10 @@ func (h *Handler) initCommands() {
 			Handler: h.MsgCreate,
 			Help:    "Creates the collection.",
 		},
+		"createUser": {
+			Handler: h.MsgCreateUser,
+			Help:    "Creates a new user.",
+		},
 		"createIndexes": {
 			Handler: h.MsgCreateIndexes,
 			Help:    "Creates indexes on a collection.",
@@ -115,6 +119,10 @@ func (h *Handler) initCommands() {
 			Handler: h.MsgDrop,
 			Help:    "Drops the collection.",
 		},
+		"dropAllUsersFromDatabase": {
+			Handler: h.MsgDropAllUsersFromDatabase,
+			Help:    "Drops all user from database.",
+		},
 		"dropDatabase": {
 			Handler: h.MsgDropDatabase,
 			Help:    "Drops production database.",
@@ -122,6 +130,10 @@ func (h *Handler) initCommands() {
 		"dropIndexes": {
 			Handler: h.MsgDropIndexes,
 			Help:    "Drops indexes on a collection.",
+		},
+		"dropUser": {
+			Handler: h.MsgDropUser,
+			Help:    "Drops user.",
 		},
 		"explain": {
 			Handler: h.MsgExplain,
@@ -238,6 +250,14 @@ func (h *Handler) initCommands() {
 			Handler: h.MsgUpdate,
 			Help:    "Updates documents that are matched by the query.",
 		},
+		"updateUser": {
+			Handler: h.MsgUpdateUser,
+			Help:    "Updates user.",
+		},
+		"usersInfo": {
+			Handler: h.MsgUsersInfo,
+			Help:    "Returns information about users.",
+		},
 		"validate": {
 			Handler: h.MsgValidate,
 			Help:    "Validates collection.",
@@ -247,31 +267,6 @@ func (h *Handler) initCommands() {
 			anonymous: true,
 			Help:      "Returns peer information.",
 		},
-		// please keep sorted alphabetically
-	}
-
-	if h.EnableNewAuth {
-		// sorted alphabetically
-		h.commands["createUser"] = command{
-			Handler: h.MsgCreateUser,
-			Help:    "Creates a new user.",
-		}
-		h.commands["dropAllUsersFromDatabase"] = command{
-			Handler: h.MsgDropAllUsersFromDatabase,
-			Help:    "Drops all user from database.",
-		}
-		h.commands["dropUser"] = command{
-			Handler: h.MsgDropUser,
-			Help:    "Drops user.",
-		}
-		h.commands["updateUser"] = command{
-			Handler: h.MsgUpdateUser,
-			Help:    "Updates user.",
-		}
-		h.commands["usersInfo"] = command{
-			Handler: h.MsgUsersInfo,
-			Help:    "Returns information about users.",
-		}
 		// please keep sorted alphabetically
 	}
 

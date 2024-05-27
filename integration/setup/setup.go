@@ -166,6 +166,8 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 	}
 	logger := testutil.LevelLogger(tb, level)
 
+	var credentials *options.Credential
+
 	uri := *targetURLF
 	if uri == "" {
 		if opts.BackendOptions == nil {
@@ -176,7 +178,26 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 			opts.BackendOptions.CappedCleanupPercentage = NewBackendOpts().CappedCleanupPercentage
 		}
 
-		uri = setupListener(tb, setupCtx, logger, opts.BackendOptions)
+		handlerName, handler := setupHandler(tb, setupCtx, logger, NewBackendOpts())
+		handler.EnableNewAuth = false
+		uri = setupListener(tb, setupCtx, logger, handlerName, handler)
+
+		client := setupClient(tb, setupCtx, uri)
+		if opts.SetupUser {
+			credentials = setupUser(tb, ctx, client, uri)
+		}
+
+		handler.EnableNewAuth = true
+		uri = setupListener(tb, setupCtx, logger, handlerName, handler)
+
+		u, err := url.Parse(uri)
+		require.NoError(tb, err)
+
+		u.User = url.UserPassword(credentials.Username, credentials.Password)
+		q := u.Query()
+		q.Set("authMechanism", credentials.AuthMechanism)
+		u.RawQuery = q.Encode()
+		uri = u.String()
 	} else {
 		uri = toAbsolutePathURI(tb, *targetURLF)
 	}
@@ -204,8 +225,12 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 	tb.Cleanup(cancel)
 
 	if opts.SetupUser {
-		// user is created before the collection so that user can run collection cleanup
-		client = setupUser(tb, ctx, client, uri)
+		tb.Cleanup(func() {
+			err := client.Database("admin").RunCommand(ctx, bson.D{
+				{"dropUser", credentials.Username},
+			}).Err()
+			assert.NoError(tb, err)
+		})
 	}
 
 	collection := setupCollection(tb, ctx, client, opts)
@@ -370,10 +395,8 @@ func insertBenchmarkProvider(tb testtb.TB, ctx context.Context, collection *mong
 	return
 }
 
-// setupUser creates a user in admin database with supported mechanisms. It returns an authenticated client.
-//
-// Without this, once the first user is created, the authentication fails as local exception no longer applies.
-func setupUser(tb testtb.TB, ctx context.Context, client *mongo.Client, uri string) *mongo.Client {
+// setupUser creates a user in admin database with supported mechanisms. It returns the credentials.
+func setupUser(tb testtb.TB, ctx context.Context, client *mongo.Client, uri string) *options.Credential {
 	tb.Helper()
 
 	// username is unique per test so the user is deleted after the test
@@ -411,19 +434,5 @@ func setupUser(tb testtb.TB, ctx context.Context, client *mongo.Client, uri stri
 		Password:      password,
 	}
 
-	opts := options.Client().ApplyURI(uri).SetAuth(credential)
-
-	authenticatedClient, err := mongo.Connect(ctx, opts)
-	require.NoError(tb, err)
-
-	tb.Cleanup(func() {
-		err = authenticatedClient.Database("admin").RunCommand(ctx, bson.D{
-			{"dropUser", username},
-		}).Err()
-		assert.NoError(tb, err)
-
-		require.NoError(tb, authenticatedClient.Disconnect(ctx))
-	})
-
-	return authenticatedClient
+	return &credential
 }

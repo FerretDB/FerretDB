@@ -86,8 +86,6 @@ func (h *Handler) authenticate(ctx context.Context, cmd string) error {
 
 	var storedUser *types.Document
 
-	var hasUser bool
-
 	for {
 		var v *types.Document
 		_, v, err = qr.Iter.Next()
@@ -100,8 +98,6 @@ func (h *Handler) authenticate(ctx context.Context, cmd string) error {
 			return lazyerrors.Error(err)
 		}
 
-		hasUser = true
-
 		var matches bool
 
 		if matches, err = common.FilterDocument(v, filter); err != nil {
@@ -112,14 +108,6 @@ func (h *Handler) authenticate(ctx context.Context, cmd string) error {
 			storedUser = v
 			break
 		}
-	}
-
-	if !hasUser {
-		h.L.Error("bypassing authentication - no user in admin.system.users collection")
-
-		// remove bypassing authentication
-		// TODO https://github.com/FerretDB/FerretDB/issues/4243
-		return nil
 	}
 
 	if storedUser == nil {
