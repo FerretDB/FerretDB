@@ -17,9 +17,11 @@ package setup
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"runtime/trace"
 	"strings"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -104,8 +106,31 @@ func SetupCompatWithOpts(tb testtb.TB, opts *SetupCompatOpts) *SetupCompatResult
 	var targetClient *mongo.Client
 	if *targetURLF == "" {
 		handlerName, handler := setupHandler(tb, setupCtx, logger, NewBackendOpts())
+		handler.EnableNewAuth = false
 		uri := setupListener(tb, setupCtx, logger, handlerName, handler)
+
+		client := setupClient(tb, setupCtx, uri)
+		credentials := setupUser(tb, ctx, client, uri)
+
+		handler.EnableNewAuth = true
+		uri = setupListener(tb, setupCtx, logger, handlerName, handler)
+
+		u, err := url.Parse(uri)
+		require.NoError(tb, err)
+
+		u.User = url.UserPassword(credentials.Username, credentials.Password)
+		q := u.Query()
+		q.Set("authMechanism", credentials.AuthMechanism)
+		u.RawQuery = q.Encode()
+		uri = u.String()
+
 		targetClient = setupClient(tb, setupCtx, uri)
+		tb.Cleanup(func() {
+			err = client.Database(credentials.AuthSource).RunCommand(ctx, bson.D{
+				{"dropUser", credentials.Username},
+			}).Err()
+			assert.NoError(tb, err)
+		})
 	} else {
 		targetClient = setupClient(tb, setupCtx, *targetURLF)
 	}

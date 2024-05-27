@@ -183,9 +183,7 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 		uri = setupListener(tb, setupCtx, logger, handlerName, handler)
 
 		client := setupClient(tb, setupCtx, uri)
-		if opts.SetupUser {
-			credentials = setupUser(tb, ctx, client, uri)
-		}
+		credentials = setupUser(tb, ctx, client, uri)
 
 		handler.EnableNewAuth = true
 		uri = setupListener(tb, setupCtx, logger, handlerName, handler)
@@ -224,14 +222,12 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
 
-	if opts.SetupUser {
-		tb.Cleanup(func() {
-			err := client.Database("admin").RunCommand(ctx, bson.D{
-				{"dropUser", credentials.Username},
-			}).Err()
-			assert.NoError(tb, err)
-		})
-	}
+	tb.Cleanup(func() {
+		err := client.Database(credentials.AuthSource).RunCommand(ctx, bson.D{
+			{"dropUser", credentials.Username},
+		}).Err()
+		assert.NoError(tb, err)
+	})
 
 	collection := setupCollection(tb, ctx, client, opts)
 
