@@ -2,21 +2,21 @@ module github.com/FerretDB/FerretDB/tools
 
 go 1.22
 
-toolchain go1.22.2
+toolchain go1.22.3
 
 require (
 	github.com/FerretDB/gh v0.1.4
 	github.com/go-task/task/v3 v3.36.0
 	github.com/google/go-github/v57 v57.0.0
 	github.com/goreleaser/nfpm/v2 v2.36.1
-	github.com/quasilyte/go-consistent v0.6.0
+	github.com/quasilyte/go-consistent v0.6.1
 	github.com/rogpeppe/go-internal v1.12.0
 	github.com/stretchr/testify v1.9.0
-	golang.org/x/oauth2 v0.19.0
-	golang.org/x/perf v0.0.0-20240404204407-f3e401e020e4
-	golang.org/x/pkgsite v0.0.0-20240410165358-493d85e09e7f
-	golang.org/x/tools v0.20.0 // https://github.com/golang/go/issues/66259
-	golang.org/x/vuln v1.0.5-0.20240415194721-a7188c690e1d // https://github.com/golang/go/issues/66139
+	golang.org/x/oauth2 v0.20.0
+	golang.org/x/perf v0.0.0-20240506174028-08c49f3d956f
+	golang.org/x/pkgsite v0.0.0-20240506185756-62f6d87aa959
+	golang.org/x/tools v0.21.0
+	golang.org/x/vuln v1.1.0
 	mvdan.cc/gofumpt v0.6.0
 )
 
@@ -97,15 +97,15 @@ require (
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	gitlab.com/digitalxero/go-conventional-commit v1.0.7 // indirect
-	golang.org/x/crypto v0.22.0 // indirect
+	golang.org/x/crypto v0.23.0 // indirect
 	golang.org/x/exp v0.0.0-20231206192017-f3f8817b8deb // indirect
 	golang.org/x/mod v0.17.0 // indirect
-	golang.org/x/net v0.24.0 // indirect
+	golang.org/x/net v0.25.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect
-	golang.org/x/sys v0.19.0 // indirect
+	golang.org/x/sys v0.20.0 // indirect
 	golang.org/x/telemetry v0.0.0-20240228155512-f48c80bd79b2 // indirect
-	golang.org/x/term v0.19.0 // indirect
-	golang.org/x/text v0.14.0 // indirect
+	golang.org/x/term v0.20.0 // indirect
+	golang.org/x/text v0.15.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	mvdan.cc/sh/v3 v3.8.0 // indirect
