@@ -151,7 +151,6 @@ linters:
     - wrapcheck
     - zerologlint
 
-
     - nlreturn # too annoying
     - testpackage # we test internals
 
