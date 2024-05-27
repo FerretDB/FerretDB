@@ -212,7 +212,8 @@ func (c *Conn) Request(ctx context.Context, header *wire.MsgHeader, body wire.Ms
 	}
 
 	if resHeader.ResponseTo != header.RequestID {
-		c.l.Error(
+		c.l.ErrorContext(
+			ctx,
 			"response_to is not equal to request_id",
 			slog.Int("request_id", int(header.RequestID)),
 			slog.Int("response_id", int(resHeader.RequestID)),

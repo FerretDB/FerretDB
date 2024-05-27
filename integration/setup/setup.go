@@ -100,6 +100,10 @@ type SetupOpts struct {
 
 	// Options to override default backend configuration.
 	BackendOptions *BackendOpts
+
+	// PersistData modifies the database given by backend url directly
+	// instead of creating a backend database that is deleted after this test.
+	PersistData bool
 }
 
 // BackendOpts represents backend configuration used for test setup.
@@ -109,6 +113,9 @@ type BackendOpts struct {
 
 	// Percentage of documents to cleanup for capped collections. If not set, defaults to 20.
 	CappedCleanupPercentage uint8
+
+	// MaxBsonObjectSizeBytes is the maximum allowed size of a document, if not set FerretDB sets the default.
+	MaxBsonObjectSizeBytes int
 }
 
 // SetupResult represents setup results.
@@ -169,7 +176,11 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 			opts.BackendOptions = NewBackendOpts()
 		}
 
-		uri = setupListener(tb, setupCtx, logger, opts.BackendOptions)
+		if opts.BackendOptions.CappedCleanupPercentage == 0 {
+			opts.BackendOptions.CappedCleanupPercentage = NewBackendOpts().CappedCleanupPercentage
+		}
+
+		uri = setupListener(tb, setupCtx, logger, opts.BackendOptions, opts.PersistData)
 	} else {
 		uri = toAbsolutePathURI(tb, *targetURLF)
 	}

@@ -135,6 +135,11 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 							}
 
 							var targetFindRes, compatFindRes bson.D
+
+							if pointer.Get(targetUpdateRes).UpsertedCount > 0 {
+								id = pointer.Get(targetUpdateRes).UpsertedID
+							}
+
 							require.NoError(t, targetCollection.FindOne(ctx, bson.D{{"_id", id}}).Decode(&targetFindRes))
 							require.NoError(t, compatCollection.FindOne(ctx, bson.D{{"_id", id}}).Decode(&compatFindRes))
 							AssertEqualDocuments(t, compatFindRes, targetFindRes)

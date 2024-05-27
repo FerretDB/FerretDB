@@ -23,11 +23,12 @@ tasks:
         -tags=ferretdb_testenvdata .
         -target-backend=ferretdb-postgresql
         -postgresql-url=postgres://username:password@127.0.0.1:5433/ferretdb
+      - ../bin/envtool{{exeExt}} shell mkdir ../tmp/sqlite
       - >
         go test -count=1 {{.RACE_FLAG}} -run=TestEnvData
         -tags=ferretdb_testenvdata .
         -target-backend=ferretdb-sqlite
-        -sqlite-url=file:../tmp/sqlite-tests/
+        -sqlite-url=file:../tmp/sqlite/
       # no hana yet
       - >
         go test -count=1 {{.RACE_FLAG}} -run=TestEnvData
@@ -44,11 +45,7 @@ tasks:
     cmds:
       - ../bin/golangci-lint{{exeExt}} run --config=.golangci.yml
       - ../bin/golangci-lint{{exeExt}} run --config=.golangci-new.yml
-
-      # Stop CI from failing too often; see https://github.com/quasilyte/go-consistent/issues/38.
-      # Still, note the output and fix the issues.
-      - cmd: ../bin/go-consistent{{exeExt}} -pedantic ./...
-        ignore_error: true
+      - ../bin/go-consistent{{exeExt}} -pedantic ./...
 
       - go vet -vettool=../bin/checkswitch{{exeExt}} ./...
       - go vet -vettool=../bin/checkcomments{{exeExt}} ./...

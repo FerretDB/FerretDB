@@ -72,6 +72,7 @@ type TestOpts struct {
 	CappedCleanupPercentage uint8
 	EnableNewAuth           bool
 	BatchSize               int
+	MaxBsonObjectSizeBytes  int
 	_                       struct{} // prevent unkeyed literals
 }
 
