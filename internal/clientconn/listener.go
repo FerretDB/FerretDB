@@ -242,7 +242,6 @@ func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, 
 				retry++
 				ctxutil.SleepWithJitter(ctx, time.Second, retry)
 			}
-			continue
 		}
 
 		wg.Add(1)
