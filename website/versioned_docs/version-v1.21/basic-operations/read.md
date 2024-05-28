@@ -64,7 +64,7 @@ Using the `find()` command, you can also filter a collection for only the docume
 For example, find the document with the field `born` set as 1857.
 
 ```js
-db.scientists.find({ born: 1857 })
+db.scientists.find({ born: 1847 })
 ```
 
 ### Retrieve documents using operator queries
