@@ -31,6 +31,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -152,16 +153,34 @@ func New(opts *NewOpts) (*Handler, error) {
 
 // FIXME
 func (h *Handler) setupFIXME() error {
+	if h.SetupDatabase == "" {
+		return nil
+	}
+
 	ctx, cancel := context.WithTimeout(context.TODO(), h.SetupTimeout)
 	defer cancel()
 
-	db := must.NotFail(h.b.Database("admin"))
-	res, err := db.ListCollections(ctx, nil)
+	info := conninfo.New()
+	info.SetBypassBackendAuth()
+
+	ctx = conninfo.Ctx(ctx, info)
+
+	var retry int64
+	for ctx.Err() == nil {
+		if _, err := h.b.Status(ctx, nil); err == nil {
+			break
+		}
+
+		retry++
+		ctxutil.SleepWithJitter(ctx, time.Second, retry)
+	}
+
+	res, err := h.b.ListDatabases(ctx, &backends.ListDatabasesParams{Name: h.SetupDatabase})
 	if err != nil {
 		return err
 	}
 
-	if len(res.Collections) != 0 {
+	if len(res.Databases) != 0 {
 		return nil
 	}
 

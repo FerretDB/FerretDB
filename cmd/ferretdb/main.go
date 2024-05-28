@@ -297,22 +297,18 @@ func setupLogger(stateProvider *state.Provider, format string) *zap.Logger {
 
 // checkFlags checks that CLI flags are not self-contradictory.
 func checkFlags(logger *zap.Logger) {
-	if cli.Setup.Username != "" {
-		if !cli.Test.EnableNewAuth {
-			logger.Sugar().Fatal("--setup-username requires --test-enable-new-auth")
-		}
+	l := logger.Sugar()
 
-		if cli.Setup.Database == "" {
-			logger.Sugar().Fatal("--setup-username requires --setup-database")
-		}
+	if (cli.Setup.Database == "") != (cli.Setup.Username == "") {
+		l.Fatal("--setup-database should be used together with --setup-username")
 	}
 
-	if cli.Setup.Password != "" && cli.Setup.Username == "" {
-		logger.Sugar().Fatal("--setup-password requires --setup-username")
+	if cli.Setup.Database != "" && !cli.Test.EnableNewAuth {
+		l.Fatal("--setup-database requires --test-enable-new-auth")
 	}
 
 	if cli.Test.DisablePushdown && cli.Test.EnableNestedPushdown {
-		logger.Sugar().Fatal("--test-disable-pushdown and --test-enable-nested-pushdown should not be set at the same time")
+		l.Fatal("--test-disable-pushdown and --test-enable-nested-pushdown should not be set at the same time")
 	}
 }
 
