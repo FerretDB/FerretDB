@@ -60,12 +60,6 @@ var cli struct {
 	StateDir    string `default:"."               help:"Process state directory."`
 	ReplSetName string `default:""                help:"Replica set name."`
 
-	Setup struct {
-		Username string        `default:""    help:"Username for setup."`
-		Password string        `default:""    help:"Password for setup."`
-		Timeout  time.Duration `default:"30s" help:"Timeout for setup."`
-	} `embed:"" prefix:"setup-"`
-
 	Listen struct {
 		Addr        string `default:"127.0.0.1:27017" help:"Listen TCP address."`
 		Unix        string `default:""                help:"Listen Unix domain socket path."`
@@ -86,6 +80,12 @@ var cli struct {
 
 	// see setCLIPlugins
 	kong.Plugins
+
+	Setup struct {
+		Username string        `default:""    help:"Setup user during backend initialization."`
+		Password string        `default:""    help:"Setup user's password."`
+		Timeout  time.Duration `default:"30s" help:"Setup timeout."`
+	} `embed:"" prefix:"setup-"`
 
 	Log struct {
 		Level  string `default:"${default_log_level}" help:"${help_log_level}"`
@@ -109,7 +109,9 @@ var cli struct {
 		} `embed:"" prefix:"capped-cleanup-"`
 
 		EnableNewAuth bool `default:"false" help:"Experimental: enable new authentication."`
-		BatchSize     int  `default:"100"   help:"Experimental: maximum insertion batch size."`
+
+		BatchSize            int `default:"100" help:"Experimental: maximum insertion batch size."`
+		MaxBsonObjectSizeMiB int `default:"16"  help:"Experimental: maximum BSON object size in MiB."`
 
 		Telemetry struct {
 			URL            string        `default:"https://beacon.ferretdb.com/" help:"Telemetry: reporting URL."`
@@ -220,7 +222,6 @@ func defaultLogLevel() zapcore.Level {
 func setupState() *state.Provider {
 	var f string
 
-	// https://github.com/alecthomas/kong/issues/389
 	if cli.StateDir != "" && cli.StateDir != "-" {
 		var err error
 		if f, err = filepath.Abs(filepath.Join(cli.StateDir, "state.json")); err != nil {
@@ -230,7 +231,7 @@ func setupState() *state.Provider {
 
 	sp, err := state.NewProvider(f)
 	if err != nil {
-		log.Fatalf("Failed to create state provider: %s.", err)
+		log.Fatal(stateFileProblem(f, err))
 	}
 
 	return sp
@@ -294,6 +295,21 @@ func setupLogger(stateProvider *state.Provider, format string) *zap.Logger {
 	return l
 }
 
+// checkFlags checks that CLI flags are not self-contradictory.
+func checkFlags(logger *zap.Logger) {
+	if cli.Setup.Username != "" && !cli.Test.EnableNewAuth {
+		logger.Sugar().Fatal("--setup-username requires --test-enable-new-auth")
+	}
+
+	if cli.Setup.Password != "" && cli.Setup.Username == "" {
+		logger.Sugar().Fatal("--setup-password requires --setup-username")
+	}
+
+	if cli.Test.DisablePushdown && cli.Test.EnableNestedPushdown {
+		logger.Sugar().Fatal("--test-disable-pushdown and --test-enable-nested-pushdown should not be set at the same time")
+	}
+}
+
 // runTelemetryReporter runs telemetry reporter until ctx is canceled.
 func runTelemetryReporter(ctx context.Context, opts *telemetry.NewReporterOpts) {
 	r, err := telemetry.NewReporter(opts)
@@ -349,6 +365,8 @@ func run() {
 
 	logger := setupLogger(stateProvider, cli.Log.Format)
 
+	checkFlags(logger)
+
 	if _, err := maxprocs.Set(maxprocs.Logger(logger.Sugar().Debugf)); err != nil {
 		logger.Sugar().Warnf("Failed to set GOMAXPROCS: %s.", err)
 	}
@@ -382,6 +400,7 @@ func run() {
 	}
 
 	// https://github.com/alecthomas/kong/issues/389
+
 	if cli.DebugAddr != "" && cli.DebugAddr != "-" {
 		wg.Add(1)
 
@@ -436,6 +455,7 @@ func run() {
 			CappedCleanupPercentage: cli.Test.CappedCleanup.Percentage,
 			EnableNewAuth:           cli.Test.EnableNewAuth,
 			BatchSize:               cli.Test.BatchSize,
+			MaxBsonObjectSizeBytes:  cli.Test.MaxBsonObjectSizeMiB * 1024 * 1024, //nolint:mnd // converting MiB to bytes
 		},
 	})
 	if err != nil {

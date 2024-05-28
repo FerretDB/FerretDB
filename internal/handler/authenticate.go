@@ -55,7 +55,7 @@ func (h *Handler) authenticate(ctx context.Context) error {
 	username, userPassword, mechanism := conninfo.Get(ctx).Auth()
 
 	switch mechanism {
-	case "SCRAM-SHA-256", "SCRAM-SHA-1":
+	case "SCRAM-SHA-256", "SCRAM-SHA-1": //nolint:goconst // we don't need a constant for this
 		// SCRAM calls back scramCredentialLookup each time Step is called,
 		// and that checks the authentication.
 		return nil

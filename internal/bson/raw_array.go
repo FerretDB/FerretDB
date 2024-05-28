@@ -27,6 +27,11 @@ import (
 // It generally references a part of a larger slice, not a copy.
 type RawArray []byte
 
+// Encode returns itself to implement the [AnyArray] interface.
+func (raw RawArray) Encode() (RawArray, error) {
+	return raw, nil
+}
+
 // Decode decodes a single BSON array that takes the whole byte slice.
 //
 // Only top-level elements are decoded;
@@ -97,5 +102,6 @@ func (raw RawArray) LogValue() slog.Value {
 
 // check interfaces
 var (
+	_ AnyArray       = RawArray(nil)
 	_ slog.LogValuer = RawArray(nil)
 )

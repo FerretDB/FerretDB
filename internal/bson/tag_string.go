@@ -26,19 +26,19 @@ func _() {
 	_ = x[tagInt32-16]
 	_ = x[tagTimestamp-17]
 	_ = x[tagInt64-18]
-	_ = x[tagDecimal-19]
+	_ = x[tagDecimal128-19]
 	_ = x[tagMinKey-255]
 	_ = x[tagMaxKey-127]
 }
 
 const (
-	_tag_name_0 = "Float64StringDocumentArrayBinaryUndefinedObjectIDBoolTimeNullRegexDBPointerJavaScriptSymbolJavaScriptScopeInt32TimestampInt64Decimal"
+	_tag_name_0 = "Float64StringDocumentArrayBinaryUndefinedObjectIDBoolTimeNullRegexDBPointerJavaScriptSymbolJavaScriptScopeInt32TimestampInt64Decimal128"
 	_tag_name_1 = "MaxKey"
 	_tag_name_2 = "MinKey"
 )
 
 var (
-	_tag_index_0 = [...]uint8{0, 7, 13, 21, 26, 32, 41, 49, 53, 57, 61, 66, 75, 85, 91, 106, 111, 120, 125, 132}
+	_tag_index_0 = [...]uint8{0, 7, 13, 21, 26, 32, 41, 49, 53, 57, 61, 66, 75, 85, 91, 106, 111, 120, 125, 135}
 )
 
 func (i tag) String() string {

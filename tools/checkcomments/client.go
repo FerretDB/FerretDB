@@ -234,5 +234,5 @@ func cacheFilePath() (string, error) {
 		dir = filepath.Dir(dir)
 	}
 
-	return filepath.Join(dir, "tmp", "checkcomments", "cache.json"), nil
+	return filepath.Join(dir, "tmp", "githubcache", "cache.json"), nil
 }

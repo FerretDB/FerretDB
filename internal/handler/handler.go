@@ -82,6 +82,7 @@ type NewOpts struct {
 	CappedCleanupPercentage uint8
 	EnableNewAuth           bool
 	BatchSize               int
+	MaxBsonObjectSizeBytes  int
 }
 
 // New returns a new handler.
@@ -93,6 +94,10 @@ func New(opts *NewOpts) (*Handler, error) {
 			"percentage of documents to cleanup must be in range (0, 100), but %d given",
 			opts.CappedCleanupPercentage,
 		)
+	}
+
+	if opts.MaxBsonObjectSizeBytes == 0 {
+		opts.MaxBsonObjectSizeBytes = types.MaxDocumentLen
 	}
 
 	h := &Handler{
@@ -134,7 +139,7 @@ func New(opts *NewOpts) (*Handler, error) {
 	return h, nil
 }
 
-// runCapppedCleanup calls capped collections cleanup function according to the given interval.
+// runCappedCleanup calls capped collections cleanup function according to the given interval.
 func (h *Handler) runCappedCleanup() {
 	if h.CappedCleanupInterval <= 0 {
 		h.L.Info("Capped collections cleanup disabled.")

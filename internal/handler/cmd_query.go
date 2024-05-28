@@ -35,7 +35,7 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 
 	v, _ := q.Get("speculativeAuthenticate")
 	if v != nil && (cmd == "ismaster" || cmd == "isMaster") {
-		reply, err := common.IsMaster(ctx, q, h.TCPHost, h.ReplSetName)
+		reply, err := common.IsMaster(ctx, q, h.TCPHost, h.ReplSetName, h.MaxBsonObjectSizeBytes)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -64,7 +64,7 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 	}
 
 	if (cmd == "ismaster" || cmd == "isMaster") && strings.HasSuffix(collection, ".$cmd") {
-		return common.IsMaster(ctx, query.Query(), h.TCPHost, h.ReplSetName)
+		return common.IsMaster(ctx, query.Query(), h.TCPHost, h.ReplSetName, h.MaxBsonObjectSizeBytes)
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/3008

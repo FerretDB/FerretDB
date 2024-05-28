@@ -135,6 +135,11 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 							}
 
 							var targetFindRes, compatFindRes bson.D
+
+							if pointer.Get(targetUpdateRes).UpsertedCount > 0 {
+								id = pointer.Get(targetUpdateRes).UpsertedID
+							}
+
 							require.NoError(t, targetCollection.FindOne(ctx, bson.D{{"_id", id}}).Decode(&targetFindRes))
 							require.NoError(t, compatCollection.FindOne(ctx, bson.D{{"_id", id}}).Decode(&compatFindRes))
 							AssertEqualDocuments(t, compatFindRes, targetFindRes)
@@ -432,7 +437,7 @@ type updateCurrentDateCompatTestCase struct {
 	skip string // skips test if non-empty
 }
 
-// testUpdateCompat tests update compatibility test cases for current date.
+// testUpdateCurrentDateCompat tests update compatibility test cases for current date.
 // It checks current date in compat and target are within acceptable difference.
 func testUpdateCurrentDateCompat(t *testing.T, testCases map[string]updateCurrentDateCompatTestCase) {
 	t.Helper()
