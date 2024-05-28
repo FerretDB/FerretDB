@@ -58,12 +58,6 @@ var cli struct {
 	StateDir    string `default:"."               help:"Process state directory."`
 	ReplSetName string `default:""                help:"Replica set name."`
 
-	Setup struct {
-		Username string        `default:""    help:"Username for setup."`
-		Password string        `default:""    help:"Password for setup."`
-		Timeout  time.Duration `default:"30s" help:"Timeout for setup."`
-	} `embed:"" prefix:"setup-"`
-
 	Listen struct {
 		Addr        string `default:"127.0.0.1:27017" help:"Listen TCP address."`
 		Unix        string `default:""                help:"Listen Unix domain socket path."`
@@ -84,6 +78,12 @@ var cli struct {
 
 	// see setCLIPlugins
 	kong.Plugins
+
+	Setup struct {
+		Username string        `default:""    help:"Setup user during backend initialization."`
+		Password string        `default:""    help:"Setup user's password."`
+		Timeout  time.Duration `default:"30s" help:"Setup timeout."`
+	} `embed:"" prefix:"setup-"`
 
 	Log struct {
 		Level  string `default:"${default_log_level}" help:"${help_log_level}"`
@@ -106,9 +106,10 @@ var cli struct {
 			Percentage uint8         `default:"10" help:"Experimental: percentage of documents to cleanup."`
 		} `embed:"" prefix:"capped-cleanup-"`
 
-		EnableNewAuth        bool `default:"false" help:"Experimental: enable new authentication."`
-		BatchSize            int  `default:"100"   help:"Experimental: maximum insertion batch size."`
-		MaxBsonObjectSizeMiB int  `default:"16"    help:"Experimental: maximum BSON object size in MiB."`
+		EnableNewAuth bool `default:"false" help:"Experimental: enable new authentication."`
+
+		BatchSize            int `default:"100" help:"Experimental: maximum insertion batch size."`
+		MaxBsonObjectSizeMiB int `default:"16"  help:"Experimental: maximum BSON object size in MiB."`
 
 		Telemetry struct {
 			URL            string        `default:"https://beacon.ferretdb.com/" help:"Telemetry: reporting URL."`

@@ -27,19 +27,31 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/password"
 )
 
+// CreateUserParams represents the parameters of CreateUser function.
+//
+//nolint:vet // for readability
+type CreateUserParams struct {
+	Database   string
+	Username   string
+	Password   password.Password
+	Mechanisms *types.Array
+}
+
 // CreateUser stores a new user in the given database and Backend.
-func CreateUser(ctx context.Context, b Backend, mechanisms *types.Array, dbName, username, password string) error {
-	credentials, err := MakeCredentials(mechanisms, username, password)
+func CreateUser(ctx context.Context, b Backend, params *CreateUserParams) error {
+	must.NotBeZero(params)
+
+	credentials, err := MakeCredentials(params.Username, params.Password, params.Mechanisms)
 	if err != nil {
 		return err
 	}
 
 	id := uuid.New()
 	saved := must.NotFail(types.NewDocument(
-		"_id", dbName+"."+username,
+		"_id", params.Database+"."+params.Username,
 		"credentials", credentials,
-		"user", username,
-		"db", dbName,
+		"user", params.Username,
+		"db", params.Database,
 		"roles", types.MakeArray(0),
 		"userId", types.Binary{Subtype: types.BinaryUUID, B: must.NotFail(id.MarshalBinary())},
 	))
@@ -63,7 +75,7 @@ func CreateUser(ctx context.Context, b Backend, mechanisms *types.Array, dbName,
 
 // MakeCredentials creates a document with credentials for the chosen mechanisms.
 // The mechanisms array must be validated by the caller.
-func MakeCredentials(mechanisms *types.Array, username, userPassword string) (*types.Document, error) {
+func MakeCredentials(username string, userPassword password.Password, mechanisms *types.Array) (*types.Document, error) {
 	credentials := types.MakeDocument(0)
 
 	if mechanisms == nil {
@@ -89,16 +101,16 @@ func MakeCredentials(mechanisms *types.Array, username, userPassword string) (*t
 
 		switch v {
 		case "PLAIN":
-			credentials.Set("PLAIN", must.NotFail(password.PlainHash(userPassword)))
+			credentials.Set("PLAIN", must.NotFail(password.PlainHash(userPassword.Password())))
 		case "SCRAM-SHA-1":
-			hash, err = password.SCRAMSHA1Hash(username, userPassword)
+			hash, err = password.SCRAMSHA1Hash(username, userPassword.Password())
 			if err != nil {
 				return nil, err
 			}
 
 			credentials.Set("SCRAM-SHA-1", hash)
 		case "SCRAM-SHA-256":
-			hash, err = password.SCRAMSHA256Hash(userPassword)
+			hash, err = password.SCRAMSHA256Hash(userPassword.Password())
 			if err != nil {
 				return nil, err
 			}

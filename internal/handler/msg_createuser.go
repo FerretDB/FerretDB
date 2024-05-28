@@ -28,6 +28,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/password"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -146,26 +147,31 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 	}
 
 	if document.Has("pwd") {
-		pwdi := must.NotFail(document.Get("pwd"))
-		userPasswordV, ok := pwdi.(string)
+		pwd, _ := document.Get("pwd")
+		userPassword, ok := pwd.(string)
 
 		if !ok {
 			return nil, handlererrors.NewCommandErrorMsg(
 				handlererrors.ErrTypeMismatch,
 				fmt.Sprintf("BSON field 'createUser.pwd' is the wrong type '%s', expected type 'string'",
-					handlerparams.AliasFromType(pwdi),
+					handlerparams.AliasFromType(pwd),
 				),
 			)
 		}
 
-		if userPasswordV == "" {
+		if userPassword == "" {
 			return nil, handlererrors.NewCommandErrorMsg(
 				handlererrors.ErrSetEmptyPassword,
 				"Password cannot be empty",
 			)
 		}
 
-		err = backends.CreateUser(ctx, h.b, mechanisms, dbName, username, userPasswordV)
+		err = backends.CreateUser(ctx, h.b, &backends.CreateUserParams{
+			Database:   dbName,
+			Username:   username,
+			Password:   password.WrapPassword(userPassword),
+			Mechanisms: mechanisms,
+		})
 		if err != nil {
 			if backends.ErrorCodeIs(err, backends.ErrorCodeInsertDuplicateID) {
 				return nil, handlererrors.NewCommandErrorMsg(
