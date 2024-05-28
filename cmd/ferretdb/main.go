@@ -43,6 +43,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/password"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/telemetry"
 )
@@ -80,6 +81,7 @@ var cli struct {
 	kong.Plugins
 
 	Setup struct {
+		Database string        `default:""    help:"FIXME"` // FIXME
 		Username string        `default:""    help:"Setup user during backend initialization."`
 		Password string        `default:""    help:"Setup user's password."`
 		Timeout  time.Duration `default:"30s" help:"Setup timeout."`
@@ -295,8 +297,14 @@ func setupLogger(stateProvider *state.Provider, format string) *zap.Logger {
 
 // checkFlags checks that CLI flags are not self-contradictory.
 func checkFlags(logger *zap.Logger) {
-	if cli.Setup.Username != "" && !cli.Test.EnableNewAuth {
-		logger.Sugar().Fatal("--setup-username requires --test-enable-new-auth")
+	if cli.Setup.Username != "" {
+		if !cli.Test.EnableNewAuth {
+			logger.Sugar().Fatal("--setup-username requires --test-enable-new-auth")
+		}
+
+		if cli.Setup.Database == "" {
+			logger.Sugar().Fatal("--setup-username requires --setup-database")
+		}
 	}
 
 	if cli.Setup.Password != "" && cli.Setup.Username == "" {
@@ -417,6 +425,11 @@ func run() {
 		StateProvider: stateProvider,
 		TCPHost:       cli.Listen.Addr,
 		ReplSetName:   cli.ReplSetName,
+
+		SetupDatabase: cli.Setup.Database,
+		SetupUsername: cli.Setup.Username,
+		SetupPassword: password.WrapPassword(cli.Setup.Password),
+		SetupTimeout:  cli.Setup.Timeout,
 
 		PostgreSQLURL: postgreSQLFlags.PostgreSQLURL,
 

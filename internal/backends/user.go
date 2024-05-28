@@ -37,7 +37,7 @@ type CreateUserParams struct {
 	Mechanisms *types.Array
 }
 
-// CreateUser stores a new user in the given database and Backend.
+// CreateUser stores a new user in the given backend.
 func CreateUser(ctx context.Context, b Backend, params *CreateUserParams) error {
 	must.NotBeZero(params)
 
@@ -56,17 +56,10 @@ func CreateUser(ctx context.Context, b Backend, params *CreateUserParams) error 
 		"userId", types.Binary{Subtype: types.BinaryUUID, B: must.NotFail(id.MarshalBinary())},
 	))
 
-	adminDB, err := b.Database("admin")
-	if err != nil {
-		return err
-	}
+	db := must.NotFail(b.Database("admin"))
+	coll := must.NotFail(db.Collection("system.users"))
 
-	users, err := adminDB.Collection("system.users")
-	if err != nil {
-		return err
-	}
-
-	_, err = users.InsertAll(ctx, &InsertAllParams{
+	_, err = coll.InsertAll(ctx, &InsertAllParams{
 		Docs: []*types.Document{saved},
 	})
 
