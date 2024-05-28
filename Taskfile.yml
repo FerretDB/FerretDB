@@ -879,9 +879,9 @@ tasks:
     desc: "Format and lint documentation"
     run: once
     cmds:
-      - docker compose run --rm textlint --fix --config build/.textlintrc "**/*.md" ".github/**/*.md"
+      - docker compose run --rm textlint --fix --config build/.textlintrc --ignore-path .prettierignore "**/*.md" ".github/**/*.md"
       - docker compose run --rm prettier --write --parser markdown --no-semi --single-quote --trailing-comma none "**/*.md"
-      - docker compose run --rm markdownlint "build/.markdownlint.yml" "**/*.md"
+      - docker compose run --rm markdownlint --config "build/.markdownlint.yml" "**/*.md"
       - bin/checkdocs
 
   pngcrush:
