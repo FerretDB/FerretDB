@@ -23,12 +23,11 @@ tasks:
         -tags=ferretdb_testenvdata .
         -target-backend=ferretdb-postgresql
         -postgresql-url=postgres://username:password@127.0.0.1:5433/ferretdb
-      - ../bin/envtool{{exeExt}} shell mkdir ../tmp/sqlite
       - >
         go test -count=1 {{.RACE_FLAG}} -run=TestEnvData
         -tags=ferretdb_testenvdata .
         -target-backend=ferretdb-sqlite
-        -sqlite-url=file:../tmp/sqlite/
+        -sqlite-url=file:../tmp/sqlite-tests/
       # no hana yet
       - >
         go test -count=1 {{.RACE_FLAG}} -run=TestEnvData

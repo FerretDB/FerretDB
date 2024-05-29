@@ -25,9 +25,6 @@ package integration
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson"
-
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
@@ -35,34 +32,16 @@ import (
 func TestEnvData(t *testing.T) {
 	t.Parallel()
 
-	var previousName string
-
 	for _, p := range shareddata.AllProviders() {
+		p := p
 		name := p.Name()
 
 		t.Run(name, func(t *testing.T) {
-			s := setup.SetupWithOpts(t, &setup.SetupOpts{
+			setup.SetupWithOpts(t, &setup.SetupOpts{
 				DatabaseName:   "test",
-				CollectionName: name,
+				CollectionName: p.Name(),
 				Providers:      []shareddata.Provider{p},
-				PersistData:    true,
 			})
-
-			// envData must persist, other integration tests do not
-			// persist data once the current t.Run() ends, hence check
-			// the collection created by the previous t.Run() persists
-			if previousName != "" {
-				ctx, database := s.Ctx, s.Collection.Database()
-				cursor, err := database.Collection(previousName).Find(ctx, bson.D{})
-				require.NoError(t, err)
-
-				var res []bson.D
-				err = cursor.All(ctx, &res)
-				require.NoError(t, err)
-				require.NotEmpty(t, res)
-			}
-
-			previousName = name
 		})
 	}
 }

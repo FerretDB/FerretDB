@@ -100,10 +100,6 @@ type SetupOpts struct {
 
 	// Options to override default backend configuration.
 	BackendOptions *BackendOpts
-
-	// PersistData modifies the database given by backend url directly
-	// instead of creating a backend database that is deleted after this test.
-	PersistData bool
 }
 
 // BackendOpts represents backend configuration used for test setup.
@@ -180,7 +176,7 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 			opts.BackendOptions.CappedCleanupPercentage = NewBackendOpts().CappedCleanupPercentage
 		}
 
-		uri = setupListener(tb, setupCtx, logger, opts.BackendOptions, opts.PersistData)
+		uri = setupListener(tb, setupCtx, logger, opts.BackendOptions)
 	} else {
 		uri = toAbsolutePathURI(tb, *targetURLF)
 	}
