@@ -22,10 +22,15 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// RawDocument represents a singe BSON document a.k.a object in the binary encoded form.
+// RawDocument represents a single BSON document a.k.a object in the binary encoded form.
 //
 // It generally references a part of a larger slice, not a copy.
 type RawDocument []byte
+
+// Encode returns itself to implement the [AnyDocument] interface.
+func (raw RawDocument) Encode() (RawDocument, error) {
+	return raw, nil
+}
 
 // Decode decodes a single BSON document that takes the whole byte slice.
 //
@@ -168,5 +173,6 @@ func (raw RawDocument) LogValue() slog.Value {
 
 // check interfaces
 var (
+	_ AnyDocument    = RawDocument(nil)
 	_ slog.LogValuer = RawDocument(nil)
 )

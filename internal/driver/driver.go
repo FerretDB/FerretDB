@@ -169,7 +169,7 @@ func (c *Conn) WriteRaw(b []byte) error {
 var lastRequestID atomic.Int32
 
 // Request sends the given request to the connection and returns the response.
-// If header MessageLength or RequestID is not specified, it assings the proper values.
+// If header MessageLength or RequestID is not specified, it assigns the proper values.
 // For header.OpCode the wire.OpCodeMsg is used as default.
 //
 // It returns errors only for request/response parsing issues, or connection issues.
@@ -212,7 +212,8 @@ func (c *Conn) Request(ctx context.Context, header *wire.MsgHeader, body wire.Ms
 	}
 
 	if resHeader.ResponseTo != header.RequestID {
-		c.l.Error(
+		c.l.ErrorContext(
+			ctx,
 			"response_to is not equal to request_id",
 			slog.Int("request_id", int(header.RequestID)),
 			slog.Int("response_id", int(resHeader.RequestID)),

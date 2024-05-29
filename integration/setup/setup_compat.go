@@ -26,10 +26,11 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
+
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 // SetupCompatOpts represents setup options for compatibility test.
@@ -103,7 +104,7 @@ func SetupCompatWithOpts(tb testtb.TB, opts *SetupCompatOpts) *SetupCompatResult
 
 	var targetClient *mongo.Client
 	if *targetURLF == "" {
-		uri := setupListener(tb, setupCtx, logger, NewBackendOpts())
+		uri := setupListener(tb, setupCtx, logger, NewBackendOpts(), false)
 		targetClient = setupClient(tb, setupCtx, uri)
 	} else {
 		targetClient = setupClient(tb, setupCtx, *targetURLF)

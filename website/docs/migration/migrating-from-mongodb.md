@@ -57,10 +57,8 @@ You can also specify the database and collection (`dump/<database>/<collection>`
 
 To import your database using `mongoimport`, run the command from the terminal directory where you exported your data:
 
-````sh
-
 ```sh
 mongoimport--uri="mongodb://<yourusername>:<yourpassword>@<host>:<port>/?authMechanism=PLAIN" --db=<database-name> --collection=<collection-name> --file=<collection>.json
-````
+```
 
 The command will import the specified collection you exported from your MongoDB instance to FerretDB.
