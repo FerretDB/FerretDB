@@ -23,9 +23,10 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
+
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func TestFindAndModifyCompatSimple(t *testing.T) {
@@ -422,6 +423,7 @@ func TestFindAndModifyCompatUpdateCurrentDate(t *testing.T) {
 				{"query", bson.D{{"_id", "datetime"}}},
 				{"update", bson.D{{"$currentDate", 1}}},
 			},
+			providers:  []shareddata.Provider{shareddata.DateTimes},
 			resultType: emptyResult,
 		},
 		"UnknownOption": {
@@ -429,6 +431,15 @@ func TestFindAndModifyCompatUpdateCurrentDate(t *testing.T) {
 				{"query", bson.D{{"_id", "datetime"}}},
 				{"update", bson.D{{"$currentDate", bson.D{{"v", bson.D{{"foo", int32(1)}}}}}}},
 			},
+			providers:  []shareddata.Provider{shareddata.DateTimes},
+			resultType: emptyResult,
+		},
+		"NoType": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "datetime"}}},
+				{"update", bson.D{{"$currentDate", bson.D{{"v", bson.D{}}}}}},
+			},
+			providers:  []shareddata.Provider{shareddata.DateTimes},
 			resultType: emptyResult,
 		},
 		"InvalidType": {
@@ -436,6 +447,7 @@ func TestFindAndModifyCompatUpdateCurrentDate(t *testing.T) {
 				{"query", bson.D{{"_id", "datetime"}}},
 				{"update", bson.D{{"$currentDate", bson.D{{"v", bson.D{{"$type", int32(1)}}}}}}},
 			},
+			providers:  []shareddata.Provider{shareddata.DateTimes},
 			resultType: emptyResult,
 		},
 		"UnknownType": {
@@ -443,6 +455,7 @@ func TestFindAndModifyCompatUpdateCurrentDate(t *testing.T) {
 				{"query", bson.D{{"_id", "datetime"}}},
 				{"update", bson.D{{"$currentDate", bson.D{{"v", bson.D{{"$type", "unknown"}}}}}}},
 			},
+			providers:  []shareddata.Provider{shareddata.DateTimes},
 			resultType: emptyResult,
 		},
 		"InvalidValue": {
@@ -450,6 +463,7 @@ func TestFindAndModifyCompatUpdateCurrentDate(t *testing.T) {
 				{"query", bson.D{{"_id", "datetime"}}},
 				{"update", bson.D{{"$currentDate", bson.D{{"v", 1}}}}},
 			},
+			providers:  []shareddata.Provider{shareddata.DateTimes},
 			resultType: emptyResult,
 		},
 	}
@@ -916,6 +930,69 @@ func TestFindAndModifyCompatReplacementDoc(t *testing.T) {
 			command: bson.D{
 				{"query", bson.D{{"_id", "int32"}}},
 				{"update", bson.D{{"_id", "non-existent"}, {"v", int32(43)}}},
+			},
+		},
+	}
+
+	testFindAndModifyCompat(t, testCases)
+}
+
+func TestFindAndModifyFieldOrder(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]findAndModifyCompatTestCase{
+		"MultipleOps": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "non-existent"}}},
+				{"update", bson.D{
+					{"$set", bson.D{{"b", 2}, {"d", 4}}},
+					{"$setOnInsert", bson.D{{"c", "3"}}},
+					{"$inc", bson.D{{"a", 1}}},
+					{"$min", bson.D{{"f", 5}}},
+					{"$max", bson.D{{"h", 7}}},
+					{"$mul", bson.D{{"g", 6}}},
+					{"$bit", bson.D{{"m", bson.D{{"xor", 1}}}}},
+					{"$push", bson.D{{"i", 8}}},
+					{"$addToSet", bson.D{{"j", 9}}},
+				}},
+				{"upsert", true},
+				{"new", true},
+			},
+		},
+		"UpsertFalse": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "int32"}}},
+				{"update", bson.D{
+					{"$set", bson.D{{"b", 2}, {"d", 4}, {"v", int32(43)}}},
+					{"$inc", bson.D{{"a", 1}}},
+					{"$push", bson.D{{"e", 5}}},
+					{"$setOnInsert", bson.D{{"c", "3"}}},
+				}},
+				{"upsert", false},
+			},
+			providers: []shareddata.Provider{shareddata.Int32s},
+		},
+		"NestedField": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "non-existent"}}},
+				{"update", bson.D{
+					{"$set", bson.D{{"x", bson.D{{"c", 3}, {"b", 2}}}}},
+					{"$setOnInsert", bson.D{{"a", "1"}}},
+				}},
+				{"upsert", true},
+				{"new", true},
+			},
+		},
+		"NestedFieldDotNotation": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "non-existent"}}},
+				{"update", bson.D{
+					{"$set", bson.D{{"a.y", 2}}},
+					{"$inc", bson.D{{"a.x", 1}}},
+					{"$setOnInsert", bson.D{{"a.z", "3"}}},
+				}},
+				{"upsert", true},
+				{"new", true},
 			},
 		},
 	}

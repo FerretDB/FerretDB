@@ -472,15 +472,11 @@ tasks:
   lint:
     desc: "Run linters"
     cmds:
-      - bin/envtool{{exeExt}} shell rmdir tmp/checkcomments
-      - bin/envtool{{exeExt}} shell mkdir tmp/checkcomments
+      - bin/envtool{{exeExt}} shell rmdir tmp/githubcache
+      - bin/envtool{{exeExt}} shell mkdir tmp/githubcache
       - bin/golangci-lint{{exeExt}} run --config=.golangci.yml
       - bin/golangci-lint{{exeExt}} run --config=.golangci-new.yml
-
-      # Stop CI from failing too often; see https://github.com/quasilyte/go-consistent/issues/38.
-      # Still, note the output and fix the issues.
-      - cmd: bin/go-consistent{{exeExt}} -pedantic ./cmd/... ./internal/... ./build/... ./ferretdb/...
-        ignore_error: true
+      - bin/go-consistent{{exeExt}} -pedantic ./cmd/... ./internal/... ./build/... ./ferretdb/...
 
       - go vet -vettool=bin/checkswitch{{exeExt}} ./...
       - go vet -vettool=bin/checkcomments{{exeExt}} ./...
@@ -883,9 +879,9 @@ tasks:
     desc: "Format and lint documentation"
     run: once
     cmds:
-      - docker compose run --rm textlint --fix --config build/.textlintrc "**/*.md" ".github/**/*.md"
+      - docker compose run --rm textlint --fix --config build/.textlintrc --ignore-path .prettierignore "**/*.md" ".github/**/*.md"
       - docker compose run --rm prettier --write --parser markdown --no-semi --single-quote --trailing-comma none "**/*.md"
-      - docker compose run --rm markdownlint "build/.markdownlint.yml" "**/*.md"
+      - docker compose run --rm markdownlint --config "build/.markdownlint.yml" "**/*.md"
       - bin/checkdocs
 
   pngcrush:

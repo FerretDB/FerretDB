@@ -82,6 +82,7 @@ type NewOpts struct {
 	CappedCleanupPercentage uint8
 	EnableNewAuth           bool
 	BatchSize               int
+	MaxBsonObjectSizeBytes  int
 }
 
 // New returns a new handler.
@@ -93,6 +94,10 @@ func New(opts *NewOpts) (*Handler, error) {
 			"percentage of documents to cleanup must be in range (0, 100), but %d given",
 			opts.CappedCleanupPercentage,
 		)
+	}
+
+	if opts.MaxBsonObjectSizeBytes == 0 {
+		opts.MaxBsonObjectSizeBytes = types.MaxDocumentLen
 	}
 
 	h := &Handler{

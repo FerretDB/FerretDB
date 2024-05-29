@@ -29,14 +29,20 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
+func TestLoggingNil(t *testing.T) {
+	var doc *bson.Document
+	assert.Equal(t, doc.LogValue().String(), "Document<nil>")
+	assert.Equal(t, bson.LogMessage(doc), "{<nil>}")
+
+	var arr *bson.Array
+	assert.Equal(t, arr.LogValue().String(), "Array<nil>")
+	assert.Equal(t, bson.LogMessage(arr), "[<nil>]")
+}
+
 func TestLogging(t *testing.T) {
 	opts := &slog.HandlerOptions{
 		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
-			if groups != nil {
-				return a
-			}
-
-			if a.Key == "v" {
+			if groups != nil || a.Key == "v" {
 				return a
 			}
 

@@ -85,15 +85,14 @@ linters:
     - containedctx
     - contextcheck
     - cyclop
-    - deadcode
     - decorder
     - dogsled
     - dupl
     - durationcheck
+    - err113
     - errchkjson
     - errname
     - execinquery
-    - exhaustivestruct
     - exhaustruct
     - exportloopref
     - forbidigo
@@ -104,7 +103,6 @@ linters:
     - gocognit
     - gocritic
     - gocyclo
-    - goerr113
     - gofmt
     - gofumpt
     - gomnd
@@ -112,7 +110,6 @@ linters:
     - goprintffuncname
     - gosec
     - grouper
-    - ifshort
     - inamedparam
     - ireturn
     - maintidx
@@ -142,19 +139,10 @@ linters:
     - typecheck
     - unconvert
     - unparam
-    - varcheck
     - varnamelen
     - wastedassign
     - wrapcheck
     - zerologlint
-
-    # deprecated
-    - golint
-    - interfacer
-    - maligned
-    - nosnakecase
-    - scopelint
-    - structcheck
 
     - nlreturn # too annoying
     - testpackage # we test internals
