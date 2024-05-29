@@ -21,9 +21,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
+
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 // deleteCommandCompatTestCase describes delete compatibility test case.

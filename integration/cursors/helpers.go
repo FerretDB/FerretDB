@@ -19,9 +19,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 
-	"github.com/FerretDB/FerretDB/integration"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
+
+	"github.com/FerretDB/FerretDB/integration"
 )
 
 // getFirstBatch takes the response from the query that generates the cursors,
