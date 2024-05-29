@@ -29,15 +29,33 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/password"
 )
 
-// authenticate validates users with stored credentials in admin.systems.user.
-// If EnableNewAuth is false or bypass backend auth is set false, it succeeds
-// authentication and let backend handle it.
+// authenticate validates users with stored credentials in admin.system.user collection.
 //
-// When admin.systems.user contains no user, and the client is connected from
+// If EnableNewAuth is false, this method immediately returns nil.
+//
+// SCRAM authentication is handled elsewhere.
+//
+// When admin.system.user contains no user, and the client is connected from
 // the localhost, it bypasses credentials check.
+// TODO https://github.com/FerretDB/FerretDB/issues/4236
 func (h *Handler) authenticate(ctx context.Context) error {
 	if !h.EnableNewAuth {
 		return nil
+	}
+
+	username, userPassword, mechanism := conninfo.Get(ctx).Auth()
+
+	switch mechanism {
+	case "SCRAM-SHA-256", "SCRAM-SHA-1": //nolint:goconst // we don't need a constant for this
+		// SCRAM calls back scramCredentialLookup each time Step is called,
+		// and that checks the authentication.
+		return nil
+	case "PLAIN", "": // mechanism may be empty for local host exception
+		// nothing
+	default:
+		msg := fmt.Sprintf("Unsupported authentication mechanism %q.\n", mechanism) +
+			"See https://docs.ferretdb.io/security/authentication/ for more details."
+		return handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrAuthenticationFailed, msg, mechanism)
 	}
 
 	conninfo.Get(ctx).SetBypassBackendAuth()
@@ -50,22 +68,6 @@ func (h *Handler) authenticate(ctx context.Context) error {
 	usersCol, err := adminDB.Collection("system.users")
 	if err != nil {
 		return lazyerrors.Error(err)
-	}
-
-	username, userPassword, mechanism := conninfo.Get(ctx).Auth()
-
-	switch mechanism {
-	case "SCRAM-SHA-256", "SCRAM-SHA-1": //nolint:goconst // we don't need a constant for this
-		// SCRAM calls back scramCredentialLookup each time Step is called,
-		// and that checks the authentication.
-		return nil
-	case "PLAIN", "":
-		// mechanism may be empty for local host exception
-		break
-	default:
-		msg := fmt.Sprintf("Unsupported authentication mechanism %q.\n", mechanism) +
-			"See https://docs.ferretdb.io/security/authentication/ for more details."
-		return handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrAuthenticationFailed, msg, mechanism)
 	}
 
 	// For `PLAIN` mechanism $db field is always `$external` upon saslStart.

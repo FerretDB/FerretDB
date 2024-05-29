@@ -153,7 +153,10 @@ func New(opts *NewOpts) (*Handler, error) {
 
 // FIXME
 func (h *Handler) setupFIXME() error {
+	l := h.L.Named("setupFIXME")
+
 	if h.SetupDatabase == "" {
+		l.Debug("skipping setupFIXME")
 		return nil
 	}
 
@@ -167,9 +170,12 @@ func (h *Handler) setupFIXME() error {
 
 	var retry int64
 	for ctx.Err() == nil {
-		if _, err := h.b.Status(ctx, nil); err == nil {
+		_, err := h.b.Status(ctx, nil)
+		if err == nil {
 			break
 		}
+
+		l.Debug("setupFIXME", zap.Error(err))
 
 		retry++
 		ctxutil.SleepWithJitter(ctx, time.Second, retry)
@@ -181,7 +187,22 @@ func (h *Handler) setupFIXME() error {
 	}
 
 	if len(res.Databases) != 0 {
+		l.Debug("setupFIXME: database already exists")
 		return nil
+	}
+
+	l.Info("setupFIXME: Setting up database and user", zap.String("database", h.SetupDatabase), zap.String("username", h.SetupUsername))
+
+	db, err := h.b.Database(h.SetupDatabase)
+	if err != nil {
+		return err
+	}
+
+	if err = db.CreateCollection(ctx, &backends.CreateCollectionParams{Name: "setup"}); err != nil {
+		return err
+	}
+	if err = db.DropCollection(ctx, &backends.DropCollectionParams{Name: "setup"}); err != nil {
+		return err
 	}
 
 	return backends.CreateUser(ctx, h.b, &backends.CreateUserParams{
