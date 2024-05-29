@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/backends"
@@ -90,6 +91,18 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		qp.Filter = params.Filter
 	}
 
+	if !h.EnableNestedPushdown && params.Filter != nil {
+		qp.Filter = params.Filter.DeepCopy()
+
+		for _, k := range qp.Filter.Keys() {
+			if !strings.ContainsRune(k, '.') {
+				continue
+			}
+
+			qp.Filter.Remove(k)
+		}
+	}
+
 	if params.Sort, err = common.ValidateSortDocument(params.Sort); err != nil {
 		var pathErr *types.PathError
 		if errors.As(err, &pathErr) && pathErr.Code() == types.ErrPathElementEmpty {
@@ -153,8 +166,8 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	}
 
 	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
+	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+		must.NotFail(types.NewDocument(
 			"queryPlanner", res.QueryPlanner,
 			"explainVersion", "1",
 			"command", cmd,
@@ -167,8 +180,8 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			"limitPushdown", res.LimitPushdown,
 
 			"ok", float64(1),
-		))},
-	}))
+		)),
+	)))
 
 	return &reply, nil
 }

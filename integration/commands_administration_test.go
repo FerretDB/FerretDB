@@ -31,12 +31,13 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
+
+	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 func TestCommandsAdministrationCreateDropList(t *testing.T) {
@@ -252,7 +253,6 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 	}
 
 	for name, tc := range testCases {
-		tc, name := tc, name
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
@@ -858,7 +858,7 @@ func TestGetParameterCommandAuthenticationMechanisms(t *testing.T) {
 		require.NoError(t, err)
 
 		expected := bson.D{
-			{"authenticationMechanisms", bson.A{"PLAIN"}},
+			{"authenticationMechanisms", bson.A{"SCRAM-SHA-1", "SCRAM-SHA-256", "PLAIN"}},
 			{"ok", float64(1)},
 		}
 		require.Equal(t, expected, res)
@@ -1712,30 +1712,42 @@ func TestCommandsAdministrationCompactForce(t *testing.T) {
 func TestCommandsAdministrationCompactCapped(t *testing.T) {
 	t.Parallel()
 
-	ctx, coll := setup.Setup(t)
-
 	for name, tc := range map[string]struct { //nolint:vet // for readability
 		force             bool
+		cleanupPercentage uint8 // optional, default value is 20
 		maxDocuments      int64
 		sizeInBytes       int64
 		insertDocuments   int32
-		expectedDocuments int64 // insertDocuments - insertDocuments*0.2 (cleanup 20%) + 1 (extra insert after compact)
+		expectedDocuments int64
 
 		skipForMongoDB string // optional, skip test for MongoDB backend with a specific reason
 	}{
 		"OverflowDocs": {
-			force:             true,
-			maxDocuments:      10,
-			sizeInBytes:       100000,
-			insertDocuments:   12, // overflows capped collection max documents
+			force:           true,
+			maxDocuments:    10,
+			sizeInBytes:     100000,
+			insertDocuments: 12,
+			// cleanup will be based on max documents
+			// maxDocuments + 1 (extra insert after compact)
 			expectedDocuments: 11,
 		},
 		"OverflowSize": {
-			force:             true,
-			maxDocuments:      1000,
-			sizeInBytes:       256,
-			insertDocuments:   20, // overflows capped collection size
+			force:           true,
+			sizeInBytes:     256,
+			insertDocuments: 20,
+			// cleanup will be based on size
+			// [insertDocuments * 0.2 (cleanup 20%)] + 1 (extra insert after compact)
 			expectedDocuments: 17,
+		},
+		"Cleanup10Percent": {
+			force:             true,
+			cleanupPercentage: 10,
+			sizeInBytes:       50,
+			insertDocuments:   5,
+			// cleanup will be based on size
+			// [insertDocuments * 0.1 (cleanup 10%) ≈ 0] + 1 (extra insert after compact)
+			expectedDocuments: 6,
+			skipForMongoDB:    "MongoDB cleans up collection precisely close to sizeInBytes, not based on percentage",
 		},
 		"ForceFalse": {
 			force:             false,
@@ -1743,16 +1755,24 @@ func TestCommandsAdministrationCompactCapped(t *testing.T) {
 			sizeInBytes:       100000,
 			insertDocuments:   12, // overflows capped collection max documents
 			expectedDocuments: 11,
-			skipForMongoDB:    "Only {force:true} can be run on active replica set primary",
+			skipForMongoDB:    "Compact command with {force:false} cannot be executed on active replica set primary",
 		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			if tc.skipForMongoDB != "" {
 				setup.SkipForMongoDB(t, tc.skipForMongoDB)
 			}
 
-			t.Parallel()
+			beOpts := setup.NewBackendOpts()
+			if tc.cleanupPercentage != 0 {
+				beOpts.CappedCleanupPercentage = tc.cleanupPercentage
+			}
+
+			s := setup.SetupWithOpts(t, &setup.SetupOpts{BackendOptions: beOpts})
+			ctx, coll := s.Ctx, s.Collection
 
 			collName := testutil.CollectionName(t) + name
 

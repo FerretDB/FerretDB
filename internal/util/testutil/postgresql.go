@@ -72,7 +72,7 @@ func TestPostgreSQLURI(tb testtb.TB, ctx context.Context, baseURI string) string
 	_, err = p.Exec(ctx, q)
 	require.NoError(tb, err)
 
-	q = fmt.Sprintf("CREATE DATABASE %s", pgx.Identifier{name}.Sanitize())
+	q = fmt.Sprintf("CREATE DATABASE %s TEMPLATE template1", pgx.Identifier{name}.Sanitize())
 	_, err = p.Exec(ctx, q)
 	require.NoError(tb, err)
 

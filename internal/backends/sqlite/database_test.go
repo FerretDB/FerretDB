@@ -72,7 +72,7 @@ func TestDatabaseStatsFreeStorage(t *testing.T) {
 		name, params := name, params
 		t.Run(name, func(t *testing.T) {
 			uri := testutil.TestSQLiteURI(t, "") + params
-			b, err := NewBackend(&NewBackendParams{URI: uri, L: testutil.Logger(t), P: sp})
+			b, err := NewBackend(&NewBackendParams{URI: uri, L: testutil.Logger(t), P: sp, BatchSize: 100})
 			require.NoError(t, err)
 
 			t.Cleanup(b.Close)

@@ -25,8 +25,20 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/FerretDB/FerretDB/internal/bson"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
+
+// makeRawDocument converts [*types.Document] to [bson.RawDocument].
+func makeRawDocument(pairs ...any) bson.RawDocument {
+	doc := must.NotFail(types.NewDocument(pairs...))
+	d := must.NotFail(bson.ConvertDocument(doc))
+
+	return must.NotFail(d.Encode())
+}
 
 // lastErr returns the last error in error chain.
 func lastErr(err error) error {
@@ -41,6 +53,7 @@ func lastErr(err error) error {
 
 var lastUpdate = time.Date(2020, 2, 15, 9, 34, 33, 0, time.UTC).Local()
 
+//nolint:vet // for readability
 type testCase struct {
 	name      string
 	headerB   []byte
@@ -49,6 +62,7 @@ type testCase struct {
 	msgHeader *MsgHeader
 	msgBody   MsgBody
 	command   string // only for OpMsg
+	m         string
 	err       string // unwrapped
 }
 
@@ -75,7 +89,6 @@ func (tc *testCase) setExpectedB(tb testtb.TB) {
 
 func testMessages(t *testing.T, testCases []testCase) {
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -88,9 +101,12 @@ func testMessages(t *testing.T, testCases []testCase) {
 
 				br := bytes.NewReader(tc.expectedB)
 				bufr := bufio.NewReader(br)
+
 				msgHeader, msgBody, err := ReadMessage(bufr)
 				if tc.err != "" {
+					require.Error(t, err)
 					require.Equal(t, tc.err, lastErr(err).Error())
+
 					return
 				}
 
@@ -102,13 +118,21 @@ func testMessages(t *testing.T, testCases []testCase) {
 
 				require.NotNil(t, msgHeader)
 				require.NotNil(t, msgBody)
-				assert.NotPanics(t, func() { _ = msgHeader.String() })
-				assert.NotPanics(t, func() { _ = msgBody.String() })
+				assert.NotEmpty(t, msgHeader.String())
+				assert.Equal(t, testutil.Unindent(t, tc.m), msgBody.String())
+				assert.NotEmpty(t, msgBody.StringBlock())
+
+				require.NoError(t, msgBody.check())
 
 				if msg, ok := tc.msgBody.(*OpMsg); ok {
 					d, err := msg.Document()
 					require.NoError(t, err)
 					assert.Equal(t, tc.command, d.Command())
+
+					assert.NotPanics(t, func() {
+						_, _ = msg.RawSections()
+						_, _ = msg.RawDocument()
+					})
 				}
 			})
 
@@ -121,9 +145,12 @@ func testMessages(t *testing.T, testCases []testCase) {
 
 				var buf bytes.Buffer
 				bufw := bufio.NewWriter(&buf)
+
 				err := WriteMessage(bufw, tc.msgHeader, tc.msgBody)
-				if err != nil {
+				if tc.err != "" {
+					require.Error(t, err)
 					require.Equal(t, tc.err, lastErr(err).Error())
+
 					return
 				}
 
@@ -166,23 +193,31 @@ func fuzzMessages(f *testing.F, testCases []testCase) {
 
 		var msgHeader *MsgHeader
 		var msgBody MsgBody
+		var err error
 		var expectedB []byte
 
 		// test ReadMessage
 		{
 			br := bytes.NewReader(b)
 			bufr := bufio.NewReader(br)
-			var err error
+
 			msgHeader, msgBody, err = ReadMessage(bufr)
 			if err != nil {
 				t.Skip()
 			}
 
-			assert.NotPanics(t, func() { _ = msgHeader.String() })
-			assert.NotPanics(t, func() { _ = msgBody.String() })
+			if msgBody.check() != nil {
+				assert.NotEmpty(t, msgHeader.String())
+				assert.NotEmpty(t, msgBody.String())
+				assert.NotEmpty(t, msgBody.StringBlock())
 
-			if msg, ok := msgBody.(*OpMsg); ok {
-				assert.NotPanics(t, func() { msg.Document() })
+				if msg, ok := msgBody.(*OpMsg); ok {
+					assert.NotPanics(t, func() {
+						_, _ = msg.Document()
+						_, _ = msg.RawSections()
+						_, _ = msg.RawDocument()
+					})
+				}
 			}
 
 			// remove random tail
@@ -193,7 +228,7 @@ func fuzzMessages(f *testing.F, testCases []testCase) {
 		{
 			var bw bytes.Buffer
 			bufw := bufio.NewWriter(&bw)
-			err := WriteMessage(bufw, msgHeader, msgBody)
+			err = WriteMessage(bufw, msgHeader, msgBody)
 			require.NoError(t, err)
 			err = bufw.Flush()
 			require.NoError(t, err)

@@ -38,6 +38,7 @@ type State struct {
 
 	// as reported by beacon, if known
 	LatestVersion   string `json:"-"`
+	UpdateInfo      string `json:"-"`
 	UpdateAvailable bool   `json:"-"`
 }
 
@@ -56,11 +57,11 @@ func (s *State) TelemetryString() string {
 
 // DisableTelemetry disables telemetry.
 //
-// It also sets LatestVersion and UpdateAvailable to zero values
-// to avoid stale values when telemetry is re-enabled.
+// It also resets other telemetry fields to avoid stale values when telemetry is re-enabled.
 func (s *State) DisableTelemetry() {
 	s.Telemetry = pointer.ToBool(false)
 	s.LatestVersion = ""
+	s.UpdateInfo = ""
 	s.UpdateAvailable = false
 }
 
@@ -95,6 +96,7 @@ func (s *State) deepCopy() *State {
 		BackendName:     s.BackendName,
 		BackendVersion:  s.BackendVersion,
 		LatestVersion:   s.LatestVersion,
+		UpdateInfo:      s.UpdateInfo,
 		UpdateAvailable: s.UpdateAvailable,
 	}
 }

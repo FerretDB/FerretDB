@@ -1,6 +1,8 @@
 # Please use global .gitignore file for .vscode/, .idea/, go.work, .envrc, etc.
 # See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files#configuring-ignored-files-for-all-repositories-on-your-computer
 
+docker-compose.override.yml
+
 state.json
 
 *.out
@@ -14,3 +16,5 @@ vendor/
 website/build/
 
 **/testdata/fuzz/
+
+build/trivy-ignore.yml

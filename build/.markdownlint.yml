@@ -1,6 +1,5 @@
 ---
-# https://github.com/DavidAnson/markdownlint
-# https://github.com/DavidAnson/markdownlint-cli2
+# https://github.com/DavidAnson/markdownlint-cli2#configuration
 # https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md
 
 default: true

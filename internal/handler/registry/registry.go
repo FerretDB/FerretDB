@@ -67,9 +67,12 @@ type NewHandlerOpts struct {
 // TestOpts represents experimental configuration options.
 type TestOpts struct {
 	DisablePushdown         bool
+	EnableNestedPushdown    bool
 	CappedCleanupInterval   time.Duration
 	CappedCleanupPercentage uint8
 	EnableNewAuth           bool
+	BatchSize               int
+	MaxBsonObjectSizeBytes  int
 	_                       struct{} // prevent unkeyed literals
 }
 

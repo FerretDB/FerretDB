@@ -18,6 +18,9 @@ import (
 	"testing"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 func TestUpdateArrayCompatPop(t *testing.T) {
@@ -53,6 +56,18 @@ func TestUpdateArrayCompatPop(t *testing.T) {
 		},
 		"DotNotationNonExistentPath": {
 			update:     bson.D{{"$pop", bson.D{{"non.existent.path", 1}}}},
+			resultType: emptyResult,
+		},
+		"PathNonExistentIndex": {
+			filter:     bson.D{{"_id", "array-documents-nested"}},
+			update:     bson.D{{"$pop", bson.D{{"v.0.foo.2.bar", 1}}}},
+			providers:  []shareddata.Provider{shareddata.ArrayDocuments},
+			resultType: emptyResult,
+		},
+		"PathInvalidIndex": {
+			filter:     bson.D{{"_id", "array-documents-nested"}},
+			update:     bson.D{{"$pop", bson.D{{"v.-1.foo", 1}}}},
+			providers:  []shareddata.Provider{shareddata.ArrayDocuments},
 			resultType: emptyResult,
 		},
 		"PopEmptyValue": {
@@ -201,22 +216,43 @@ func TestUpdateArrayCompatPullAll(t *testing.T) {
 			update:     bson.D{{"$pullAll", bson.D{{"non-existent-field", bson.A{int32(42)}}}}},
 			resultType: emptyResult,
 		},
+		"NonExistentFieldUpsert": {
+			filter:     bson.D{{"_id", "non-existent"}},
+			update:     bson.D{{"$pullAll", bson.D{{"non-existent-field", bson.A{int32(42)}}}}},
+			updateOpts: options.Update().SetUpsert(true),
+			providers:  []shareddata.Provider{shareddata.Int32s},
+		},
 		"NotSuitableField": {
 			filter:     bson.D{{"_id", "int32"}},
 			update:     bson.D{{"$pullAll", bson.D{{"v.foo", bson.A{int32(42)}}}}},
+			providers:  []shareddata.Provider{shareddata.Int32s},
 			resultType: emptyResult,
 		},
 		"DotNotation": {
-			filter: bson.D{{"_id", "array-documents-nested"}},
-			update: bson.D{{"$pullAll", bson.D{{"v.0.foo", bson.A{bson.D{{"bar", "hello"}}}}}}},
+			filter:    bson.D{{"_id", "array-documents-nested"}},
+			update:    bson.D{{"$pullAll", bson.D{{"v.0.foo", bson.A{bson.D{{"bar", "hello"}}}}}}},
+			providers: []shareddata.Provider{shareddata.ArrayDocuments},
 		},
 		"DotNotationNonArray": {
 			filter:     bson.D{{"_id", "array-documents-nested"}},
 			update:     bson.D{{"$pullAll", bson.D{{"v.0.foo.0.bar", bson.A{int32(42)}}}}},
+			providers:  []shareddata.Provider{shareddata.ArrayDocuments},
 			resultType: emptyResult,
 		},
 		"DotNotationNonExistentPath": {
 			update:     bson.D{{"$pullAll", bson.D{{"non.existent.path", bson.A{int32(42)}}}}},
+			resultType: emptyResult,
+		},
+		"PathNonExistentIndex": {
+			filter:     bson.D{{"_id", "array-documents-nested"}},
+			update:     bson.D{{"$pullAll", bson.D{{"v.0.foo.2.bar", bson.A{int32(42)}}}}},
+			providers:  []shareddata.Provider{shareddata.ArrayDocuments},
+			resultType: emptyResult,
+		},
+		"PathInvalidIndex": {
+			filter:     bson.D{{"_id", "array-documents-nested"}},
+			update:     bson.D{{"$pullAll", bson.D{{"v.-1.foo", bson.A{int32(42)}}}}},
+			providers:  []shareddata.Provider{shareddata.ArrayDocuments},
 			resultType: emptyResult,
 		},
 		"EmptyValue": {
@@ -341,6 +377,12 @@ func TestUpdateArrayCompatPull(t *testing.T) {
 			update:     bson.D{{"$pull", bson.D{{"non-existent-field", int32(42)}}}},
 			resultType: emptyResult,
 		},
+		"FieldNotExistUpsert": {
+			filter:     bson.D{{"_id", "non-existent"}},
+			update:     bson.D{{"$pull", bson.D{{"non-existent-field", int32(42)}}}},
+			updateOpts: options.Update().SetUpsert(true),
+			providers:  []shareddata.Provider{shareddata.Int32s},
+		},
 		"Array": {
 			update:     bson.D{{"$pull", bson.D{{"v", bson.A{int32(42)}}}}},
 			resultType: emptyResult,
@@ -357,6 +399,18 @@ func TestUpdateArrayCompatPull(t *testing.T) {
 		},
 		"DotNotationNotArray": {
 			update:     bson.D{{"$pull", bson.D{{"v.0.foo.0.bar", int32(42)}}}},
+			resultType: emptyResult,
+		},
+		"PathNonExistentIndex": {
+			filter:     bson.D{{"_id", "array-documents-nested"}},
+			update:     bson.D{{"$pull", bson.D{{"v.0.foo.2.bar", int32(42)}}}},
+			providers:  []shareddata.Provider{shareddata.ArrayDocuments},
+			resultType: emptyResult,
+		},
+		"PathInvalidIndex": {
+			filter:     bson.D{{"_id", "array-documents-nested"}},
+			update:     bson.D{{"$pull", bson.D{{"v.-1.foo", int32(42)}}}},
+			providers:  []shareddata.Provider{shareddata.ArrayDocuments},
 			resultType: emptyResult,
 		},
 	}
