@@ -37,9 +37,10 @@ type backend struct {
 //
 //nolint:vet // for readability
 type NewBackendParams struct {
-	URI string
-	L   *zap.Logger
-	P   *state.Provider
+	URI       string
+	L         *zap.Logger
+	P         *state.Provider
+	BatchSize int
 }
 
 // NewBackend creates a new Backend.
@@ -50,6 +51,7 @@ func NewBackend(params *NewBackendParams) (backends.Backend, error) {
 	}
 
 	hdb := fsql.WrapDB(db, "hana", params.L)
+	hdb.BatchSize = params.BatchSize
 
 	return backends.BackendContract(&backend{
 		hdb: hdb,

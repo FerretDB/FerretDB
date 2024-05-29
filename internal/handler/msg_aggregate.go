@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"strings"
 	"time"
 
 	"go.uber.org/zap"
@@ -281,6 +282,18 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			qp.Filter = filter
 		}
 
+		if !h.EnableNestedPushdown && filter != nil {
+			qp.Filter = filter.DeepCopy()
+
+			for _, k := range qp.Filter.Keys() {
+				if !strings.ContainsRune(k, '.') {
+					continue
+				}
+
+				qp.Filter.Remove(k)
+			}
+		}
+
 		if sort, err = common.ValidateSortDocument(sort); err != nil {
 			closer.Close()
 
@@ -382,16 +395,16 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
+	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+		must.NotFail(types.NewDocument(
 			"cursor", must.NotFail(types.NewDocument(
 				"firstBatch", firstBatch,
 				"id", cursorID,
 				"ns", dbName+"."+cName,
 			)),
 			"ok", float64(1),
-		))},
-	}))
+		)),
+	)))
 
 	return &reply, nil
 }

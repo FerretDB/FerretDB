@@ -119,12 +119,12 @@ func (r *Registry) getPool(ctx context.Context) (*fsql.DB, error) {
 
 	var p *fsql.DB
 
-	if connInfo.BypassBackendAuth {
+	if connInfo.BypassBackendAuth() {
 		if p = r.p.GetAny(); p == nil {
 			return nil, lazyerrors.New("no connection pool")
 		}
 	} else {
-		username, password := connInfo.Auth()
+		username, password, _ := connInfo.Auth()
 
 		var err error
 		if p, err = r.p.Get(username, password); err != nil {
@@ -172,7 +172,7 @@ func (r *Registry) initDBs(ctx context.Context, p *fsql.DB) ([]string, error) {
 	}
 	defer rows.Close()
 
-	if err := rows.Err(); err != nil {
+	if err = rows.Err(); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
@@ -180,7 +180,7 @@ func (r *Registry) initDBs(ctx context.Context, p *fsql.DB) ([]string, error) {
 
 	for rows.Next() {
 		var dbName string
-		if err := rows.Scan(&dbName); err != nil {
+		if err = rows.Scan(&dbName); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 

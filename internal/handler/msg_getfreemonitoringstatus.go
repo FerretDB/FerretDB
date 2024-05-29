@@ -28,13 +28,13 @@ func (h *Handler) MsgGetFreeMonitoringStatus(ctx context.Context, msg *wire.OpMs
 	message := "monitoring is " + state
 
 	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
+	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+		must.NotFail(types.NewDocument(
 			"state", state,
 			"message", message,
 			"ok", float64(1),
-		))},
-	}))
+		)),
+	)))
 
 	return &reply, nil
 }

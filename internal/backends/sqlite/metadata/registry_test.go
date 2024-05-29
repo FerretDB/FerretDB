@@ -75,7 +75,7 @@ func TestCreateDrop(t *testing.T) {
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
-	r, err := NewRegistry(testutil.TestSQLiteURI(t, ""), testutil.Logger(t), sp)
+	r, err := NewRegistry(testutil.TestSQLiteURI(t, ""), 100, testutil.Logger(t), sp)
 	require.NoError(t, err)
 	t.Cleanup(r.Close)
 
@@ -87,7 +87,7 @@ func TestCreateDrop(t *testing.T) {
 
 	state := sp.Get()
 	require.Equal(t, "SQLite", state.BackendName)
-	require.Equal(t, "3.41.2", state.BackendVersion)
+	require.Equal(t, "3.45.3", state.BackendVersion)
 
 	collectionName := testutil.CollectionName(t)
 
@@ -113,7 +113,7 @@ func TestCreateDropStress(t *testing.T) {
 	} {
 		t.Run(testName, func(t *testing.T) {
 			uri := testutil.TestSQLiteURI(t, "") + params
-			r, err := NewRegistry(uri, testutil.Logger(t), sp)
+			r, err := NewRegistry(uri, 100, testutil.Logger(t), sp)
 			require.NoError(t, err)
 			t.Cleanup(r.Close)
 
@@ -158,7 +158,7 @@ func TestCreateSameStress(t *testing.T) {
 	} {
 		t.Run(testName, func(t *testing.T) {
 			uri := testutil.TestSQLiteURI(t, "") + params
-			r, err := NewRegistry(uri, testutil.Logger(t), sp)
+			r, err := NewRegistry(uri, 100, testutil.Logger(t), sp)
 			require.NoError(t, err)
 			t.Cleanup(r.Close)
 
@@ -227,7 +227,7 @@ func TestDropSameStress(t *testing.T) {
 	} {
 		t.Run(testName, func(t *testing.T) {
 			uri := testutil.TestSQLiteURI(t, "") + params
-			r, err := NewRegistry(uri, testutil.Logger(t), sp)
+			r, err := NewRegistry(uri, 100, testutil.Logger(t), sp)
 			require.NoError(t, err)
 			t.Cleanup(r.Close)
 
@@ -280,7 +280,7 @@ func TestCreateDropSameStress(t *testing.T) {
 	} {
 		t.Run(testName, func(t *testing.T) {
 			uri := testutil.TestSQLiteURI(t, "") + params
-			r, err := NewRegistry(uri, testutil.Logger(t), sp)
+			r, err := NewRegistry(uri, 100, testutil.Logger(t), sp)
 			require.NoError(t, err)
 			t.Cleanup(r.Close)
 
@@ -329,7 +329,7 @@ func TestIndexesCreateDrop(t *testing.T) {
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
-	r, err := NewRegistry(testutil.TestSQLiteURI(t, ""), testutil.Logger(t), sp)
+	r, err := NewRegistry(testutil.TestSQLiteURI(t, ""), 100, testutil.Logger(t), sp)
 	require.NoError(t, err)
 	t.Cleanup(r.Close)
 

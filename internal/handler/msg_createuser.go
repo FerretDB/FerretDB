@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 
@@ -45,9 +46,6 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 		return nil, err
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3777
-	// TODO https://github.com/FerretDB/FerretDB/issues/3778
-	// TODO https://github.com/FerretDB/FerretDB/issues/3784
 	if dbName != "$external" && !document.Has("pwd") {
 		return nil, handlererrors.NewCommandErrorMsg(
 			handlererrors.ErrBadValue,
@@ -55,9 +53,7 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 		)
 	}
 
-	var username string
-	username, err = common.GetRequiredParam[string](document, document.Command())
-
+	username, err := common.GetRequiredParam[string](document, document.Command())
 	if err != nil {
 		return nil, err
 	}
@@ -112,43 +108,14 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 
 	common.Ignored(document, h.L, "writeConcern", "authenticationRestrictions", "comment")
 
-	defMechanisms := must.NotFail(types.NewArray())
+	defMechanisms := must.NotFail(types.NewArray("SCRAM-SHA-1", "SCRAM-SHA-256"))
 
 	mechanisms, err := common.GetOptionalParam(document, "mechanisms", defMechanisms)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	var plainAuth bool
-
-	if mechanisms != nil {
-		iter := mechanisms.Iterator()
-		defer iter.Close()
-
-		for {
-			var v any
-			_, v, err = iter.Next()
-
-			if errors.Is(err, iterator.ErrIteratorDone) {
-				break
-			}
-
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-			if v != "PLAIN" {
-				return nil, handlererrors.NewCommandErrorMsg(
-					handlererrors.ErrBadValue,
-					fmt.Sprintf("Unknown auth mechanism '%s'", v),
-				)
-			}
-
-			plainAuth = true
-		}
-	}
-
-	credentials := types.MakeDocument(0)
+	var credentials *types.Document
 
 	if document.Has("pwd") {
 		pwdi := must.NotFail(document.Get("pwd"))
@@ -163,15 +130,9 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 			)
 		}
 
-		if pwd == "" {
-			return nil, handlererrors.NewCommandErrorMsg(
-				handlererrors.ErrSetEmptyPassword,
-				"Password cannot be empty",
-			)
-		}
-
-		if plainAuth {
-			credentials.Set("PLAIN", must.NotFail(password.PlainHash(pwd)))
+		credentials, err = makeCredentials(mechanisms, username, pwd)
+		if err != nil {
+			return nil, err
 		}
 	}
 
@@ -210,11 +171,79 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 	}
 
 	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
+	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+		must.NotFail(types.NewDocument(
 			"ok", float64(1),
-		))},
-	}))
+		)),
+	)))
 
 	return &reply, nil
+}
+
+// makeCredentials creates a document with credentials for the chosen mechanisms.
+func makeCredentials(mechanisms *types.Array, username, userPassword string) (*types.Document, error) {
+	credentials := types.MakeDocument(0)
+
+	if userPassword == "" {
+		return nil, handlererrors.NewCommandErrorMsg(
+			handlererrors.ErrSetEmptyPassword,
+			"Password cannot be empty",
+		)
+	}
+
+	if mechanisms.Len() == 0 {
+		return nil, handlererrors.NewCommandErrorMsg(
+			handlererrors.ErrBadValue,
+			"mechanisms field must not be empty",
+		)
+	}
+
+	iter := mechanisms.Iterator()
+	defer iter.Close()
+
+	for {
+		var v any
+		_, v, err := iter.Next()
+
+		if errors.Is(err, iterator.ErrIteratorDone) {
+			break
+		}
+
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		switch v {
+		case "PLAIN":
+			credentials.Set("PLAIN", must.NotFail(password.PlainHash(userPassword)))
+		case "SCRAM-SHA-1":
+			hash, err := password.SCRAMSHA1Hash(username, userPassword)
+			if err != nil {
+				return nil, err
+			}
+
+			credentials.Set("SCRAM-SHA-1", hash)
+		case "SCRAM-SHA-256":
+			hash, err := password.SCRAMSHA256Hash(userPassword)
+			if err != nil {
+				if strings.Contains(err.Error(), "prohibited character") {
+					return nil, handlererrors.NewCommandErrorMsg(
+						handlererrors.ErrStringProhibited,
+						"Error preflighting normalization: U_STRINGPREP_PROHIBITED_ERROR",
+					)
+				}
+
+				return nil, err
+			}
+
+			credentials.Set("SCRAM-SHA-256", hash)
+		default:
+			return nil, handlererrors.NewCommandErrorMsg(
+				handlererrors.ErrBadValue,
+				fmt.Sprintf("Unknown auth mechanism '%s'", v),
+			)
+		}
+	}
+
+	return credentials, nil
 }

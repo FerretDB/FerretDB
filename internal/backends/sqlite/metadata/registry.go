@@ -56,8 +56,9 @@ const (
 //
 // Exported methods are safe for concurrent use. Unexported methods are not.
 type Registry struct {
-	p *pool.Pool
-	l *zap.Logger
+	p         *pool.Pool
+	l         *zap.Logger
+	BatchSize int
 
 	// rw protects colls but also acts like a global lock for the whole registry.
 	// The latter effectively replaces transactions (see the sqlite backend package description for more info).
@@ -69,16 +70,17 @@ type Registry struct {
 }
 
 // NewRegistry creates a registry for SQLite databases in the directory specified by SQLite URI.
-func NewRegistry(u string, l *zap.Logger, sp *state.Provider) (*Registry, error) {
+func NewRegistry(u string, batchSize int, l *zap.Logger, sp *state.Provider) (*Registry, error) {
 	p, initDBs, err := pool.New(u, l, sp)
 	if err != nil {
 		return nil, err
 	}
 
 	r := &Registry{
-		p:     p,
-		l:     l,
-		colls: map[string]map[string]*Collection{},
+		p:         p,
+		l:         l,
+		BatchSize: batchSize,
+		colls:     map[string]map[string]*Collection{},
 	}
 
 	for name, db := range initDBs {
@@ -502,8 +504,6 @@ func (r *Registry) indexesCreate(ctx context.Context, dbName, collectionName str
 			q += "UNIQUE "
 		}
 
-		// Find a better way to sanitize identifiers.
-		// TODO https://github.com/FerretDB/FerretDB/issues/3418
 		q += "INDEX %q ON %q (%s)"
 
 		columns := make([]string, len(index.Key))

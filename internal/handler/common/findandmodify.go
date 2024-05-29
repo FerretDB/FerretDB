@@ -25,6 +25,8 @@ import (
 )
 
 // FindAndModifyParams represent parameters for the findAndModify command.
+//
+//nolint:vet // for readability
 type FindAndModifyParams struct {
 	DB                string          `ferretdb:"$db"`
 	Collection        string          `ferretdb:"findAndModify,collection"`
@@ -51,7 +53,9 @@ type FindAndModifyParams struct {
 	WriteConcern             *types.Document `ferretdb:"writeConcern,ignored"`
 	BypassDocumentValidation bool            `ferretdb:"bypassDocumentValidation,ignored"`
 	LSID                     any             `ferretdb:"lsid,ignored"`
+	TxnNumber                int64           `ferretdb:"txnNumber,ignored"`
 	ClusterTime              any             `ferretdb:"$clusterTime,ignored"`
+	ReadPreference           *types.Document `ferretdb:"$readPreference,ignored"`
 }
 
 // GetFindAndModifyParams returns `findAndModifyParams` command parameters.
