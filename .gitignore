@@ -16,3 +16,5 @@ vendor/
 website/build/
 
 **/testdata/fuzz/
+
+build/trivy-ignore.yml

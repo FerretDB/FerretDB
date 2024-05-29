@@ -99,9 +99,9 @@ func (h *Handler) MsgServerStatus(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	)))
 
 	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{res},
-	}))
+	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+		res,
+	)))
 
 	return &reply, nil
 }

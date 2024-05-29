@@ -35,9 +35,10 @@ import (
 type DB struct {
 	*metricsCollector
 
-	sqlDB *sql.DB
-	l     *zap.Logger
-	token *resource.Token
+	sqlDB     *sql.DB
+	l         *zap.Logger
+	token     *resource.Token
+	BatchSize int
 }
 
 // WrapDB creates a new DB.
@@ -65,6 +66,12 @@ func WrapDB(db *sql.DB, name string, l *zap.Logger) *DB {
 func (db *DB) Close() error {
 	resource.Untrack(db, db.token)
 	return db.sqlDB.Close()
+}
+
+// Ping calls [*sql.DB.Ping].
+func (db *DB) Ping(ctx context.Context) error {
+	defer observability.FuncCall(ctx)()
+	return db.sqlDB.Ping()
 }
 
 // QueryContext calls [*sql.DB.QueryContext].
