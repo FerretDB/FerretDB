@@ -16,6 +16,7 @@ package common
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -25,31 +26,45 @@ import (
 )
 
 // IsMaster is a common implementation of the isMaster command used by deprecated OP_QUERY message.
-func IsMaster(ctx context.Context, query *types.Document) (*wire.OpReply, error) {
+func IsMaster(ctx context.Context, query *types.Document, tcpHost, name string, maxBsonObjectSizeBytes int) (*wire.OpReply, error) { //nolint:lll //for readability
 	if err := CheckClientMetadata(ctx, query); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	return &wire.OpReply{
-		NumberReturned: 1,
-		Documents:      IsMasterDocuments(),
-	}, nil
+	var reply wire.OpReply
+	reply.SetDocument(IsMasterDocument(tcpHost, name, maxBsonObjectSizeBytes))
+
+	return &reply, nil
 }
 
-// IsMasterDocuments returns isMaster's Documents field (identical for both OP_MSG and OP_QUERY).
-func IsMasterDocuments() []*types.Document {
-	return []*types.Document{must.NotFail(types.NewDocument(
+// IsMasterDocument returns isMaster's Documents field (identical for both OP_MSG and OP_QUERY).
+func IsMasterDocument(tcpHost, name string, maxBsonObjectSizeBytes int) *types.Document {
+	doc := must.NotFail(types.NewDocument(
 		"ismaster", true, // only lowercase
 		// topologyVersion
-		"maxBsonObjectSize", int32(types.MaxDocumentLen),
+		"maxBsonObjectSize", int32(maxBsonObjectSizeBytes),
 		"maxMessageSizeBytes", int32(wire.MaxMsgLen),
 		"maxWriteBatchSize", int32(100000),
 		"localTime", time.Now(),
-		// logicalSessionTimeoutMinutes
+		"logicalSessionTimeoutMinutes", int32(30),
 		"connectionId", int32(42),
 		"minWireVersion", MinWireVersion,
 		"maxWireVersion", MaxWireVersion,
 		"readOnly", false,
 		"ok", float64(1),
-	))}
+	))
+
+	if name != "" {
+		// That does not work for TLS-only setups, IPv6 addresses, etc.
+		// The proper solution is to support `replSetInitiate` command.
+		// TODO https://github.com/FerretDB/FerretDB/issues/3936
+		if strings.HasPrefix(tcpHost, ":") {
+			tcpHost = "localhost" + tcpHost
+		}
+
+		doc.Set("setName", name)
+		doc.Set("hosts", must.NotFail(types.NewArray(tcpHost)))
+	}
+
+	return doc
 }

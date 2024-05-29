@@ -41,7 +41,7 @@ func TestMarshalUnmarshal(t *testing.T) {
 			"$s": {
 				"p": {"foo": {"t": "string"}},
 				"$k": ["foo"]
-			}, 
+			},
 			"foo": "bar"
 		}`,
 			doc: must.NotFail(types.NewDocument(
@@ -104,7 +104,7 @@ func TestUnmarshalInvalid(t *testing.T) {
 					"p": {"foo": {"t": "string"}},
 					"$k": ["foo"],
 					"unknown": "field"
-				}, 
+				},
 				"foo": "bar"
 			}`,
 			expected: `json: unknown field "unknown"`,
@@ -114,7 +114,7 @@ func TestUnmarshalInvalid(t *testing.T) {
 				"$s": {
 					"p": {"foo": {"t": "string"}},
 					"$k": ["foo"]
-				}, 
+				},
 				"foo": "bar",
 				"fizz": "buzz"
 			}`,
@@ -125,7 +125,7 @@ func TestUnmarshalInvalid(t *testing.T) {
 				"$s": {
 					"p": {"foo": {"t": "string"}},
 					"$k": ["foo"]
-				}, 
+				},
 				"fizz": "buzz"
 			}`,
 			expected: `missing key "foo"`,

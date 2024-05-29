@@ -38,7 +38,7 @@ Similarly, the SQLite backend is now able to return statistics of indexes for bo
 Many of our users have asked about a guide to efficiently migrate their data from MongoDB to FerretDB, and now it's available.
 
 We've created a pre-migration guide that should help you prepare and test your application with FerretDB; we also describe the process and tools for migrating your MongoDB data to FerretDB.
-[See them here](https://docs.ferretdb.io/category/migrating-to-ferretdb/).
+[See them here](https://docs.ferretdb.io/migrating-to-ferretdb/).
 
 ## Other changes
 

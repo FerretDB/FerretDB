@@ -90,9 +90,13 @@ See [our documentation](https://docs.ferretdb.io/quickstart-guide/) for more det
 
 ## Building and packaging
 
-> **Note**
+<!-- textlint-disable one-sentence-per-line -->
+
+> [!NOTE]
 > We strongly advise users not to build FerretDB themselves.
 > Instead, use binaries, Docker images, or packages provided by us.
+
+<!-- textlint-enable one-sentence-per-line -->
 
 FerretDB could be built as any other Go program,
 but a few generated files and build tags could affect it.
@@ -102,6 +106,7 @@ See [there](https://pkg.go.dev/github.com/FerretDB/FerretDB/build/version) for m
 
 - [Civo](https://www.civo.com/marketplace/FerretDB)
 - [Scaleway](https://www.scaleway.com/en/managed-document-database/)
+- [Tembo](https://tembo.io/docs/tembo-stacks/mongo-alternative)
 - [Vultr](https://www.vultr.com/products/managed-databases/ferretdb/)
 
 ## Documentation
@@ -117,7 +122,7 @@ See [there](https://pkg.go.dev/github.com/FerretDB/FerretDB/build/version) for m
 - [Slack chat](https://join.slack.com/t/ferretdb/shared_invite/zt-zqe9hj8g-ZcMG3~5Cs5u9uuOPnZB8~A) for quick questions.
 - [GitHub Discussions](https://github.com/FerretDB/FerretDB/discussions) for longer topics.
 - [GitHub Issues](https://github.com/FerretDB/FerretDB/issues) for bugs and missing features.
-- [Open Office Hours meeting](https://calendar.google.com/event?action=TEMPLATE&tmeid=NjNkdTkyN3VoNW5zdHRiaHZybXFtb2l1OWtfMjAyMTEyMTNUMTgwMDAwWiBjX24zN3RxdW9yZWlsOWIwMm0wNzQwMDA3MjQ0QGc&tmsrc=c_n37tquoreil9b02m0740007244%40group.calendar.google.com&scp=ALL)
-  every Monday at 18:00 UTC at [Google Meet](https://meet.google.com/mcb-arhw-qbq).
+- [Open Office Hours meeting](https://calendar.google.com/calendar/event?action=TEMPLATE&tmeid=NGhrZTA5dXZ0MzQzN2gyaGVtZmx2aWxmN2pfMjAyNDA0MDhUMTcwMDAwWiBjX24zN3RxdW9yZWlsOWIwMm0wNzQwMDA3MjQ0QGc&tmsrc=c_n37tquoreil9b02m0740007244%40group.calendar.google.com&scp=ALL)
+  every Monday at 17:00 UTC at [Google Meet](https://meet.google.com/mcb-arhw-qbq).
 
 If you want to contact FerretDB Inc., please use [this form](https://www.ferretdb.com/contact/).

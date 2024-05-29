@@ -26,12 +26,13 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/teststress"
+
+	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 func TestCommandsDiagnosticConnectionStatus(t *testing.T) {
@@ -86,7 +87,9 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 			explainResult := actual.Map()
 
 			assert.Equal(t, float64(1), explainResult["ok"])
-			assert.Equal(t, "1", explainResult["explainVersion"])
+
+			// explainVersion 1 and 2 are in use for different methods on Mongo 7
+			assert.True(t, explainResult["explainVersion"] == "1" || explainResult["explainVersion"] == "2")
 			assert.Equal(t, tc.command, explainResult["command"])
 
 			serverInfo := ConvertDocument(t, explainResult["serverInfo"].(bson.D))
@@ -111,7 +114,7 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 			assert.NotEmpty(t, host)
 
 			assert.NotEmpty(t, gitVersion)
-			assert.Regexp(t, `^6\.0\.`, version)
+			assert.Regexp(t, `^7\.0\.`, version)
 
 			assert.NotEmpty(t, explainResult["queryPlanner"])
 			assert.IsType(t, bson.D{}, explainResult["queryPlanner"])
@@ -299,6 +302,8 @@ func TestCommandsDiagnosticValidate(t *testing.T) {
 			"ok", float64(1),
 		))
 
+		// TODO https://github.com/FerretDB/FerretDB/issues/3841
+		actual.Remove("uuid")
 		actual.Remove("keysPerIndex")
 		actual.Remove("indexDetails")
 		actual.Remove("$clusterTime")
@@ -337,6 +342,7 @@ func TestCommandsDiagnosticValidate(t *testing.T) {
 			"ok", float64(1),
 		))
 
+		actual.Remove("uuid")
 		actual.Remove("keysPerIndex")
 		actual.Remove("indexDetails")
 		actual.Remove("$clusterTime")
@@ -398,7 +404,7 @@ func TestCommandsDiagnosticWhatsMyURI(t *testing.T) {
 	databaseName := s.Collection.Database().Name()
 	collectionName := s.Collection.Name()
 
-	// only check port number on TCP connection, no need to check on Unix socket
+	// only check port number on TCP connection, no need to check on Unix domain socket
 	isUnix := s.IsUnixSocket(t)
 
 	// setup second client connection to check that `whatsmyuri` returns different ports

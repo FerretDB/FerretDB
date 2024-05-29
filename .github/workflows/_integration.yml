@@ -19,6 +19,10 @@ on:
         required: false
         type: boolean
         default: false
+      postgres_dockerfile:
+        required: false
+        type: string
+        default: "postgres"
       checkout_ref:
         required: false
         type: string
@@ -39,14 +43,14 @@ jobs:
   run:
     # make it short to fit in GitHub UI; all parameters are already in the caller's name
     name: Run
-    runs-on: 4-cores
-    timeout-minutes: 20
+
+    # https://www.ubicloud.com/docs/about/pricing#github-actions
+    # https://docs.github.com/en/billing/managing-billing-for-github-actions/about-billing-for-github-actions#per-minute-rates-for-larger-runners
+    runs-on: ubicloud-standard-4
+
+    timeout-minutes: 25
 
     steps:
-      - name: Setup permissions monitoring
-        uses: GitHubSecurityLab/actions-permissions/monitor@v1
-        if: false
-
       - name: Dump github context
         run: echo "$GITHUB_CONTEXT"
         env:
@@ -60,7 +64,7 @@ jobs:
           lfs: false # LFS is used only by website
           ref: ${{ inputs.checkout_ref }}
 
-      # for branch.txt on pull_request_target; `main` is already checked out on push / schedule
+      # for branch.txt on pull_request_target; the correct branch is already checked out on push / schedule
       - name: Name branch
         if: github.event_name == 'pull_request_target'
         env:
@@ -78,6 +82,8 @@ jobs:
 
       - name: Start environment
         run: bin/task env-up-detach
+        env:
+          POSTGRES_DOCKERFILE: ${{ inputs.postgres_dockerfile }}
 
       - name: Run init
         run: bin/task init
@@ -93,7 +99,7 @@ jobs:
           bin/task test-integration-${{ inputs.task }}
           SHARD_INDEX=${{ inputs.shard_index }}
           SHARD_TOTAL=${{ inputs.shard_total }}
-          TEST_TIMEOUT=15m
+          TEST_TIMEOUT=20m
           DISABLE_PUSHDOWN=${{ inputs.disable_pushdown }}
         env:
           GOFLAGS: ${{ runner.debug == '1' && '-v' || '' }}
@@ -108,7 +114,7 @@ jobs:
       # We also can't use ${{ vars.CODECOV_TOKEN }}: https://github.com/orgs/community/discussions/44322
       - name: Upload coverage information to codecov
         if: always()
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: 22159d7c-856d-4fe9-8fdb-5d9ecff35514
           files: ./integration/integration-${{ inputs.task }}.txt

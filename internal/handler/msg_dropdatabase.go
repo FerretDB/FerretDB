@@ -46,7 +46,7 @@ func (h *Handler) MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	// In that case, we expect the client to wait or to retry the operation.
 	for _, c := range h.cursors.All() {
 		if c.DB == dbName {
-			c.Close()
+			h.cursors.CloseAndRemove(c)
 		}
 	}
 
@@ -70,9 +70,9 @@ func (h *Handler) MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	res.Set("ok", float64(1))
 
 	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{res},
-	}))
+	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+		res,
+	)))
 
 	return &reply, nil
 }

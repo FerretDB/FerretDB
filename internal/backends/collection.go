@@ -17,13 +17,10 @@ package backends
 import (
 	"cmp"
 	"context"
-	"errors"
 	"slices"
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
@@ -161,24 +158,11 @@ func (cc *collectionContract) Explain(ctx context.Context, params *ExplainParams
 	}
 
 	if params.Sort.Len() != 0 {
-		iter := params.Sort.Iterator()
-		defer iter.Close()
+		must.BeTrue(params.Sort.Len() == 1)
+		sortValue := params.Sort.Map()["$natural"].(int64)
 
-		for {
-			_, v, err := iter.Next()
-			if err != nil {
-				if errors.Is(err, iterator.ErrIteratorDone) {
-					break
-				}
-
-				return nil, lazyerrors.Error(err)
-			}
-
-			sortValue := v.(int64)
-
-			if sortValue != -1 && sortValue != 1 {
-				panic("sort key ordering must be 1 (for ascending) or -1 (for descending)")
-			}
+		if sortValue != -1 && sortValue != 1 {
+			panic("sort value must be 1 (for ascending) or -1 (for descending)")
 		}
 	}
 

@@ -15,6 +15,8 @@
 package cursors
 
 import (
+	"errors"
+	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -27,7 +29,7 @@ import (
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
-func TestBatchSize(t *testing.T) {
+func TestCursorsBatchSize(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
@@ -158,7 +160,7 @@ func TestBatchSize(t *testing.T) {
 	}
 }
 
-func TestSingleBatch(t *testing.T) {
+func TestCursorsSingleBatch(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
@@ -173,7 +175,6 @@ func TestSingleBatch(t *testing.T) {
 		cursorClosed bool                // optional, set true for expecting cursor to be closed
 		err          *mongo.CommandError // optional, expected error from MongoDB
 		altMessage   string              // optional, alternative error message for FerretDB, ignored if empty
-		skip         string              // optional, skip test with a specified reason
 	}{
 		"True": {
 			singleBatch:  true,
@@ -198,10 +199,6 @@ func TestSingleBatch(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
-
 			t.Parallel()
 
 			var rest bson.D
@@ -246,4 +243,45 @@ func TestSingleBatch(t *testing.T) {
 			assert.Equal(t, int64(0), cursorID)
 		})
 	}
+}
+
+func TestCursorsFindAfterExhausted(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{
+		ExtraOptions: url.Values{
+			"minPoolSize": []string{"1"},
+			"maxPoolSize": []string{"1"},
+		},
+	})
+
+	collection, ctx := s.Collection, s.Ctx
+
+	arr, _ := integration.GenerateDocuments(1, 3)
+	_, err := collection.InsertMany(ctx, arr)
+	require.NoError(t, err)
+
+	var res bson.D
+	err = collection.Database().RunCommand(ctx, bson.D{
+		{"find", collection.Name()},
+		{"batchSize", 1},
+	}).Decode(&res)
+	require.NoError(t, err)
+	_, cursorID := getFirstBatch(t, res)
+
+	getMoreCmd := bson.D{
+		{"getMore", cursorID},
+		{"collection", collection.Name()},
+		{"batchSize", 1},
+	}
+
+	for i := 1; i < 3; i++ {
+		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
+		require.NoError(t, err)
+	}
+
+	err = collection.Database().RunCommand(ctx, getMoreCmd).Err()
+	var ce mongo.CommandError
+	require.True(t, errors.As(err, &ce))
+	require.Equal(t, int32(43), ce.Code, "invalid error: %v", ce)
 }

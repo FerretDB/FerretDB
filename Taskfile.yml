@@ -140,7 +140,7 @@ tasks:
     cmds:
       # those two should always be in sync
       - go generate -x ./build/version
-      - go build -v -o bin/ ./cmd/envtool/
+      - go build -v -o bin/ {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} ./cmd/envtool/
 
   build-host:
     desc: "Build bin/ferretdb{{exeExt}} on the host for development"
@@ -165,7 +165,7 @@ tasks:
   fmt-go:
     desc: "Format Go code"
     cmds:
-      - bin/goimports{{exeExt}} -format-only -local=github.com/FerretDB/FerretDB -w .
+      - bin/goimports{{exeExt}} -local=github.com/FerretDB/FerretDB -w .
       - bin/gofumpt{{exeExt}} -w .
 
   test:
@@ -203,6 +203,7 @@ tasks:
         --shard-index={{.SHARD_INDEX}}
         --shard-total={{.SHARD_TOTAL}}
         --run='{{.TEST_RUN}}'
+        --skip='{{.TEST_SKIP}}'
         --
         -count=1
         -timeout={{.TEST_TIMEOUT}}
@@ -215,7 +216,7 @@ tasks:
         -target-backend=ferretdb-postgresql
         -target-tls
         -postgresql-url='postgres://username@127.0.0.1:5432/ferretdb?search_path='
-        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
+        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem&replicaSet=rs0'
         -disable-pushdown={{.DISABLE_PUSHDOWN}}
 
   test-integration-sqlite:
@@ -228,6 +229,7 @@ tasks:
         --shard-index={{.SHARD_INDEX}}
         --shard-total={{.SHARD_TOTAL}}
         --run='{{.TEST_RUN}}'
+        --skip='{{.TEST_SKIP}}'
         --
         -count=1
         -timeout={{.TEST_TIMEOUT}}
@@ -240,7 +242,7 @@ tasks:
         -target-backend=ferretdb-sqlite
         -sqlite-url=file:../tmp/sqlite-tests/
         -target-tls
-        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
+        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem&replicaSet=rs0'
         -disable-pushdown={{.DISABLE_PUSHDOWN}}
 
   test-integration-mysql:
@@ -253,6 +255,7 @@ tasks:
         --shard-index={{.SHARD_INDEX}}
         --shard-total={{.SHARD_TOTAL}}
         --run='{{.TEST_RUN}}'
+        --skip='{{.TEST_SKIP}}'
         --
         -count=1
         -timeout={{.TEST_TIMEOUT}}
@@ -265,7 +268,7 @@ tasks:
         -target-backend=ferretdb-mysql
         -target-tls
         -mysql-url='mysql://username:password@127.0.0.1:3306/ferretdb'
-        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
+        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem&replicaSet=rs0'
         -disable-pushdown={{.DISABLE_PUSHDOWN}}
 
   test-integration-hana:
@@ -278,6 +281,7 @@ tasks:
         --shard-index={{.SHARD_INDEX}}
         --shard-total={{.SHARD_TOTAL}}
         --run='{{.TEST_RUN}}'
+        --skip='{{.TEST_SKIP}}'
         --
         -count=1
         -timeout={{.TEST_TIMEOUT}}
@@ -290,7 +294,7 @@ tasks:
         -target-backend=ferretdb-hana
         -target-tls
         -hana-url=$FERRETDB_HANA_URL
-        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
+        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem&replicaSet=rs0'
         -disable-pushdown={{.DISABLE_PUSHDOWN}}
 
   test-integration-mongodb:
@@ -303,6 +307,7 @@ tasks:
         --shard-index={{.SHARD_INDEX}}
         --shard-total={{.SHARD_TOTAL}}
         --run='{{.TEST_RUN}}'
+        --skip='{{.TEST_SKIP}}'
         --
         -count=1
         -timeout={{.TEST_TIMEOUT}}
@@ -312,17 +317,14 @@ tasks:
         -coverpkg=../...
         -coverprofile=integration-mongodb.txt
         ./...
-        -target-url='mongodb://127.0.0.1:47017/'
+        -target-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem&replicaSet=rs0'
         -target-backend=mongodb
 
   bench-unit:
     desc: "Run unit benchmarks"
     cmds:
       - go test -list='Benchmark.*' ./...
-      - go test -count=10 -bench=BenchmarkArray    -benchtime={{.BENCH_TIME}} ./internal/bson/          | tee -a new.txt
-      - go test -count=10 -bench=BenchmarkDocument -benchtime={{.BENCH_TIME}} ./internal/bson/          | tee -a new.txt
-      - go test -count=10 -bench=BenchmarkArray    -benchtime={{.BENCH_TIME}} ./internal/handler/sjson/ | tee -a new.txt
-      - go test -count=10 -bench=BenchmarkDocument -benchtime={{.BENCH_TIME}} ./internal/handler/sjson/ | tee -a new.txt
+      - go test -count=10 -bench=BenchmarkDocument -benchtime={{.BENCH_TIME}} ./internal/bson/ | tee -a new.txt
       - bin/benchstat{{exeExt}} old.txt new.txt
 
   # That's not quite correct: https://github.com/golang/go/issues/15513
@@ -333,15 +335,9 @@ tasks:
       - go test -count=0 ./...
 
   fuzz:
-    desc: "Fuzz for about 3 minutes (with default FUZZ_TIME)"
+    desc: "Fuzz for about 1 minute (with default FUZZ_TIME)"
     cmds:
       - go test -list='Fuzz.*' ./...
-      # TODO https://github.com/FerretDB/FerretDB/issues/1273
-      # - go test -run=XXX -fuzz=FuzzArrayWithFixedSchemas      -fuzztime={{.FUZZ_TIME}} ./internal/handler/sjson/
-      # - go test -run=XXX -fuzz=FuzzArrayWithFixedDocuments    -fuzztime={{.FUZZ_TIME}} ./internal/handler/sjson/
-      # - go test -run=XXX -fuzz=FuzzDocumentWithFixedSchemas   -fuzztime={{.FUZZ_TIME}} ./internal/handler/sjson/
-      # - go test -run=XXX -fuzz=FuzzDocumentWithFixedDocuments -fuzztime={{.FUZZ_TIME}} ./internal/handler/sjson/
-      - go test -run=XXX -fuzz=FuzzArray    -fuzztime={{.FUZZ_TIME}} ./internal/bson/
       - go test -run=XXX -fuzz=FuzzDocument -fuzztime={{.FUZZ_TIME}} ./internal/bson/
       - go test -run=XXX -fuzz=FuzzMsg      -fuzztime={{.FUZZ_TIME}} ./internal/wire/
       - go test -run=XXX -fuzz=FuzzQuery    -fuzztime={{.FUZZ_TIME}} ./internal/wire/
@@ -364,6 +360,7 @@ tasks:
         --listen-addr=:27017
         --proxy-addr=127.0.0.1:47017
         --mode=diff-normal
+        --repl-set-name=rs0
         --handler=pg
         --postgresql-url='postgres://username@127.0.0.1:5432/ferretdb?search_path='
         --test-records-dir=tmp/records
@@ -381,7 +378,6 @@ tasks:
         --handler=sqlite
         --sqlite-url=file:tmp/sqlite/
         --test-records-dir=tmp/records
-        --test-enable-oplog
 
   run-mysql:
     desc: "Run FerretDB with `mysql` backend"
@@ -398,7 +394,7 @@ tasks:
 
   # set FERRETDB_HANA_URL environment variable to use it
   run-hana:
-    desc: "Run FerretDB with `hana` handler"
+    desc: "Run FerretDB with `hana` backend"
     deps: [build-host]
     cmds:
       - >
@@ -452,7 +448,6 @@ tasks:
         --handler=sqlite
         --sqlite-url=file:tmp/sqlite/
         --test-records-dir=tmp/records
-        --test-enable-oplog
 
   run-proxy-secured:
     desc: "Run FerretDB in diff-proxy mode (TLS, auth required)"
@@ -477,15 +472,11 @@ tasks:
   lint:
     desc: "Run linters"
     cmds:
-      - bin/envtool{{exeExt}} shell rmdir tmp/checkcomments
-      - bin/envtool{{exeExt}} shell mkdir tmp/checkcomments
+      - bin/envtool{{exeExt}} shell rmdir tmp/githubcache
+      - bin/envtool{{exeExt}} shell mkdir tmp/githubcache
       - bin/golangci-lint{{exeExt}} run --config=.golangci.yml
       - bin/golangci-lint{{exeExt}} run --config=.golangci-new.yml
-
-      # Stop CI from failing too often; see https://github.com/quasilyte/go-consistent/issues/38.
-      # Still, note the output and fix the issues.
-      - cmd: bin/go-consistent{{exeExt}} -pedantic ./cmd/... ./internal/... ./build/... ./ferretdb/...
-        ignore_error: true
+      - bin/go-consistent{{exeExt}} -pedantic ./cmd/... ./internal/... ./build/... ./ferretdb/...
 
       - go vet -vettool=bin/checkswitch{{exeExt}} ./...
       - go vet -vettool=bin/checkcomments{{exeExt}} ./...
@@ -497,22 +488,22 @@ tasks:
     desc: "Run security scanners"
     cmds:
       # don't run them in parallel via `deps` because that breaks terminal output
-      - task: security-trivy
       - task: security-govulncheck
+      - task: security-trivy
+
+  security-govulncheck:
+    cmds:
+      - bin/govulncheck{{exeExt}} -test ./...
+      - bin/task{{exeExt}} -d integration integration-security
 
   security-trivy:
     cmds:
       - >
         docker compose run --rm trivy filesystem .
         --secret-config=./build/trivy-secret.yml
-        --ignorefile=./build/.trivyignore
+        --ignorefile=./build/trivy-ignore.yml
         --cache-dir=./tmp/trivy
         --exit-code=1
-
-  security-govulncheck:
-    cmds:
-      - bin/govulncheck{{exeExt}} -test ./...
-      - bin/task{{exeExt}} -d integration integration-security
 
   godocs:
     desc: "Serve Go code documentation"
@@ -567,7 +558,7 @@ tasks:
           --name=ferretdb
           --bootstrap=true
           --use=false
-          --config=./build/docker/buildkitd.toml
+          --config=./build/buildkitd.toml
           --driver=docker-container
           --driver-opt network=host
           --driver-opt env.JAEGER_TRACE=127.0.0.1:6831
@@ -591,7 +582,7 @@ tasks:
     cmds:
       - >
         docker buildx build --builder=ferretdb
-        --file=build/docker/{{.FILE}}.Dockerfile
+        --file=build/{{.FILE}}.Dockerfile
         --build-arg=LABEL_VERSION={{.VERSION}}
         --build-arg=LABEL_COMMIT={{.COMMIT}}
         --target={{.TARGET}}
@@ -604,8 +595,8 @@ tasks:
         sh: bin/envtool{{exeExt}} shell read build/version/version.txt
       COMMIT:
         sh: bin/envtool{{exeExt}} shell read build/version/commit.txt
-      requires:
-        vars: [FILE, TARGET, OUTPUT]
+    requires:
+      vars: [FILE, TARGET, OUTPUT]
 
   build-move-check:
     cmds:
@@ -624,7 +615,7 @@ tasks:
       - bin/envtool{{exeExt}} shell mkdir tmp/bin-dev
       - task: docker-build
         vars:
-          FILE: development
+          FILE: ferretdb/development
           TARGET: development-binary
           PLATFORM: linux/amd64,linux/arm64,linux/arm/v7 # TODO https://github.com/FerretDB/FerretDB/issues/3354
           OUTPUT: type=local,dest=tmp/build
@@ -644,7 +635,7 @@ tasks:
       - bin/envtool{{exeExt}} shell mkdir tmp/bin
       - task: docker-build
         vars:
-          FILE: production
+          FILE: ferretdb/production
           TARGET: production-binary
           PLATFORM: linux/amd64,linux/arm64,linux/arm/v7 # TODO https://github.com/FerretDB/FerretDB/issues/3354
           OUTPUT: type=local,dest=tmp/build
@@ -674,7 +665,7 @@ tasks:
       - echo 'docker-all-in-one' > build/version/package.txt
       - task: docker-build
         vars:
-          FILE: all-in-one
+          FILE: ferretdb/all-in-one
           TARGET: all-in-one
           PLATFORM: linux/amd64,linux/arm64 # no mongosh for arm/v6 and arm/v7
           OUTPUT: type=image,push=true
@@ -687,7 +678,7 @@ tasks:
       - echo 'docker-development' > build/version/package.txt
       - task: docker-build
         vars:
-          FILE: development
+          FILE: ferretdb/development
           TARGET: development
           PLATFORM: linux/amd64,linux/arm64,linux/arm/v7 # TODO https://github.com/FerretDB/FerretDB/issues/3354
           OUTPUT: type=image,push=true
@@ -700,7 +691,7 @@ tasks:
       - echo 'docker' > build/version/package.txt
       - task: docker-build
         vars:
-          FILE: production
+          FILE: ferretdb/production
           TARGET: production
           PLATFORM: linux/amd64,linux/arm64,linux/arm/v7 # TODO https://github.com/FerretDB/FerretDB/issues/3354
           OUTPUT: type=image,push=true
@@ -749,7 +740,7 @@ tasks:
       - bin/envtool{{exeExt}} shell mkdir tmp/debs
       - task: docker-build
         vars:
-          FILE: development
+          FILE: ferretdb/development
           TARGET: development-binary
           PLATFORM: linux/amd64,linux/arm64,linux/arm/v7 # TODO https://github.com/FerretDB/FerretDB/issues/3354
           OUTPUT: type=local,dest=tmp/build
@@ -777,7 +768,7 @@ tasks:
       - bin/envtool{{exeExt}} shell mkdir tmp/debs
       - task: docker-build
         vars:
-          FILE: production
+          FILE: ferretdb/production
           TARGET: production-binary
           PLATFORM: linux/amd64,linux/arm64,linux/arm/v7 # TODO https://github.com/FerretDB/FerretDB/issues/3354
           OUTPUT: type=local,dest=tmp/build
@@ -817,7 +808,7 @@ tasks:
       - bin/envtool{{exeExt}} shell mkdir tmp/rpms
       - task: docker-build
         vars:
-          FILE: development
+          FILE: ferretdb/development
           TARGET: development-binary
           PLATFORM: linux/amd64,linux/arm64,linux/arm/v7 # TODO https://github.com/FerretDB/FerretDB/issues/3354
           OUTPUT: type=local,dest=tmp/build
@@ -845,7 +836,7 @@ tasks:
       - bin/envtool{{exeExt}} shell mkdir tmp/rpms
       - task: docker-build
         vars:
-          FILE: production
+          FILE: ferretdb/production
           TARGET: production-binary
           PLATFORM: linux/amd64,linux/arm64,linux/arm/v7 # TODO https://github.com/FerretDB/FerretDB/issues/3354
           OUTPUT: type=local,dest=tmp/build
@@ -888,9 +879,9 @@ tasks:
     desc: "Format and lint documentation"
     run: once
     cmds:
-      - docker compose run --rm textlint --fix --config build/.textlintrc "**/*.md" ".github/**/*.md"
+      - docker compose run --rm textlint --fix --config build/.textlintrc --ignore-path .prettierignore "**/*.md" ".github/**/*.md"
       - docker compose run --rm prettier --write --parser markdown --no-semi --single-quote --trailing-comma none "**/*.md"
-      - docker compose run --rm markdownlint "build/.markdownlint.yml" "**/*.md"
+      - docker compose run --rm markdownlint --config "build/.markdownlint.yml" "**/*.md"
       - bin/checkdocs
 
   pngcrush:
@@ -907,6 +898,13 @@ tasks:
     desc: "Start documentation development server"
     cmds:
       - docker compose run --rm --service-ports docusaurus-docs start --host=0.0.0.0
+
+  docs-version:
+    desc: "Create new documentation version"
+    cmds:
+      - docker compose run --rm docusaurus-docs docs:version v{{.VERSION}}
+    requires:
+      vars: [VERSION]
 
   docs-cloudflare-preview:
     cmds:

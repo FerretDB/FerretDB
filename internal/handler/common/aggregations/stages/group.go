@@ -141,7 +141,7 @@ func (g *group) Process(ctx context.Context, iter types.DocumentsIterator, close
 			if doc.Has(accumulation.outputField) {
 				// document has duplicate key
 				return nil, handlererrors.NewCommandErrorMsgWithArgument(
-					handlererrors.ErrDuplicateField,
+					handlererrors.ErrStageIndexedStringVectorDuplicate,
 					fmt.Sprintf("duplicate field: %s", accumulation.outputField),
 					"$group (stage)",
 				)
@@ -387,7 +387,7 @@ func (m *groupMap) addOrAppend(groupKey any, docs ...*types.Document) {
 	})
 }
 
-// processGroupError takes internal error related to operator evaluation and
+// processGroupStageError takes internal error related to operator evaluation and
 // expression evaluation and returns CommandError that can be returned by $group
 // aggregation stage.
 func processGroupStageError(err error) error {

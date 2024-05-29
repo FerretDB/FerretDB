@@ -27,24 +27,30 @@ func init() {
 		opts.Logger.Warn("HANA handler is in alpha. It is not supported yet.")
 
 		b, err := hana.NewBackend(&hana.NewBackendParams{
-			URI: opts.HANAURL,
-			L:   opts.Logger.Named("hana"),
-			P:   opts.StateProvider,
+			URI:       opts.HANAURL,
+			L:         opts.Logger.Named("hana"),
+			P:         opts.StateProvider,
+			BatchSize: opts.BatchSize,
 		})
 		if err != nil {
 			return nil, nil, err
 		}
 
 		handlerOpts := &handler.NewOpts{
-			Backend: b,
+			Backend:     b,
+			TCPHost:     opts.TCPHost,
+			ReplSetName: opts.ReplSetName,
 
 			L:             opts.Logger.Named("hana"),
 			ConnMetrics:   opts.ConnMetrics,
 			StateProvider: opts.StateProvider,
 
-			DisablePushdown: opts.DisablePushdown,
-			EnableOplog:     opts.EnableOplog,
-			EnableNewAuth:   opts.EnableNewAuth,
+			DisablePushdown:         opts.DisablePushdown,
+			CappedCleanupPercentage: opts.CappedCleanupPercentage,
+			CappedCleanupInterval:   opts.CappedCleanupInterval,
+			EnableNewAuth:           opts.EnableNewAuth,
+			BatchSize:               opts.BatchSize,
+			MaxBsonObjectSizeBytes:  opts.MaxBsonObjectSizeBytes,
 		}
 
 		h, err := handler.New(handlerOpts)

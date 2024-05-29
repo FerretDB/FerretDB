@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
@@ -106,8 +107,8 @@ func AssertNotEqualSlices[T types.Type](tb testtb.TB, expected, actual []T) bool
 
 // diffValues returns a readable form of given values and the difference between them.
 func diffValues[T types.Type](tb testtb.TB, expected, actual T) (expectedS string, actualS string, diff string) {
-	expectedS = Dump(tb, expected)
-	actualS = Dump(tb, actual)
+	expectedS = dump(tb, expected)
+	actualS = dump(tb, actual)
 
 	var err error
 	diff, err = difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
@@ -124,8 +125,8 @@ func diffValues[T types.Type](tb testtb.TB, expected, actual T) (expectedS strin
 
 // diffSlices returns a readable form of given slices and the difference between them.
 func diffSlices[T types.Type](tb testtb.TB, expected, actual []T) (expectedS string, actualS string, diff string) {
-	expectedS = DumpSlice(tb, expected)
-	actualS = DumpSlice(tb, actual)
+	expectedS = dumpSlice(tb, expected)
+	actualS = dumpSlice(tb, actual)
 
 	var err error
 	diff, err = difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
@@ -183,14 +184,18 @@ func equalDocuments(tb testtb.TB, v1, v2 *types.Document) bool {
 		return false
 	}
 
-	for _, k := range keys {
-		f1, _ := v1.Get(k)
-		require.NotNil(tb, f1)
+	values1, err := iterator.ConsumeValues(v1.Iterator())
+	require.NoError(tb, err)
 
-		f2, _ := v2.Get(k)
-		require.NotNil(tb, f2)
+	values2, err := iterator.ConsumeValues(v2.Iterator())
+	require.NoError(tb, err)
 
-		if !equal(tb, f1, f2) {
+	if len(values1) != len(values2) {
+		return false
+	}
+
+	for i := range values1 {
+		if !equal(tb, values1[i], values2[i]) {
 			return false
 		}
 	}

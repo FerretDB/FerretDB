@@ -27,10 +27,10 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
+
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
-	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 func TestQueryBadFindType(t *testing.T) {
@@ -40,104 +40,117 @@ func TestQueryBadFindType(t *testing.T) {
 	ctx, collection := s.Ctx, s.Collection
 
 	for name, tc := range map[string]struct {
-		value any
-		err   *mongo.CommandError
+		value      any
+		err        *mongo.CommandError
+		altMessage string
 	}{
 		"Document": {
 			value: bson.D{},
 			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type object",
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "Failed to parse namespace element",
 			},
+			altMessage: "collection name has invalid type object",
 		},
 		"Array": {
 			value: primitive.A{},
 			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type array",
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "Failed to parse namespace element",
 			},
+			altMessage: "collection name has invalid type array",
 		},
 		"Double": {
 			value: 3.14,
 			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type double",
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "Failed to parse namespace element",
 			},
+			altMessage: "collection name has invalid type double",
 		},
 		"Binary": {
 			value: primitive.Binary{},
 			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type binData",
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "Failed to parse namespace element",
 			},
+			altMessage: "collection name has invalid type binData",
 		},
 		"ObjectID": {
 			value: primitive.ObjectID{},
 			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type objectId",
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "Failed to parse namespace element",
 			},
+			altMessage: "collection name has invalid type objectId",
 		},
 		"Bool": {
 			value: true,
 			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type bool",
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "Failed to parse namespace element",
 			},
+			altMessage: "collection name has invalid type bool",
 		},
 		"Date": {
 			value: time.Now(),
 			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type date",
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "Failed to parse namespace element",
 			},
+			altMessage: "collection name has invalid type date",
 		},
 		"Null": {
 			value: nil,
 			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type null",
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "Failed to parse namespace element",
 			},
+			altMessage: "collection name has invalid type null",
 		},
 		"Regex": {
 			value: primitive.Regex{Pattern: "/foo/"},
 			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type regex",
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "Failed to parse namespace element",
 			},
+			altMessage: "collection name has invalid type regex",
 		},
 		"Int": {
 			value: int32(42),
 			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type int",
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "Failed to parse namespace element",
 			},
+			altMessage: "collection name has invalid type int",
 		},
 		"Timestamp": {
 			value: primitive.Timestamp{},
 			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type timestamp",
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "Failed to parse namespace element",
 			},
+			altMessage: "collection name has invalid type timestamp",
 		},
 		"Long": {
 			value: int64(42),
 			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type long",
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "Failed to parse namespace element",
 			},
+			altMessage: "collection name has invalid type long",
 		},
 	} {
 		name, tc := name, tc
@@ -154,7 +167,7 @@ func TestQueryBadFindType(t *testing.T) {
 			err := collection.Database().RunCommand(ctx, cmd).Decode(&res)
 
 			require.Nil(t, res)
-			AssertEqualCommandError(t, *tc.err, err)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 		})
 	}
 }
@@ -297,8 +310,9 @@ func TestQueryMaxTimeMSErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "-14245345234123246 value for maxTimeMS is out of range",
+				Message: "-14245345234123246 value for maxTimeMS is out of range " + shareddata.Int32Interval,
 			},
+			altMessage: "-14245345234123246 value for maxTimeMS is out of range",
 		},
 		"BadMaxTimeMSTypeString": {
 			command: bson.D{
@@ -319,8 +333,9 @@ func TestQueryMaxTimeMSErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "9223372036854775807 value for maxTimeMS is out of range",
+				Message: "9223372036854775807 value for maxTimeMS is out of range " + shareddata.Int32Interval,
 			},
+			altMessage: "9223372036854775807 value for maxTimeMS is out of range",
 		},
 		"BadMaxTimeMSMinInt64": {
 			command: bson.D{
@@ -330,8 +345,9 @@ func TestQueryMaxTimeMSErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "-9223372036854775808 value for maxTimeMS is out of range",
+				Message: "-9223372036854775808 value for maxTimeMS is out of range " + shareddata.Int32Interval,
 			},
+			altMessage: "-9223372036854775808 value for maxTimeMS is out of range",
 		},
 		"BadMaxTimeMSNull": {
 			command: bson.D{
@@ -374,8 +390,9 @@ func TestQueryMaxTimeMSErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "-1123123 value for maxTimeMS is out of range",
+				Message: "-1123123 value for maxTimeMS is out of range " + shareddata.Int32Interval,
 			},
+			altMessage: "-1123123 value for maxTimeMS is out of range",
 		},
 	} {
 		name, tc := name, tc
@@ -619,7 +636,6 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 		err            *mongo.CommandError // optional, expected error from MongoDB
 		altMessage     string              // optional, alternative error message for FerretDB, ignored if empty
 		skip           string              // optional, skip test with a specified reason
-		failsForSQLite string              // optional, if set, the case is expected to fail for SQLite due to given issue
 	}{
 		"Simple": {
 			limit:         1,
@@ -726,7 +742,6 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 			limitPushdown: noPushdown,
 		},
 	} {
-		tc, name := tc, name
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
@@ -753,13 +768,8 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 				rest...,
 			)
 
-			t.Run("Explain", func(tt *testing.T) {
-				setup.SkipForMongoDB(tt, "pushdown is FerretDB specific feature")
-
-				var t testtb.TB = tt
-				if tc.failsForSQLite != "" {
-					t = setup.FailsForSQLite(tt, tc.failsForSQLite)
-				}
+			t.Run("Explain", func(t *testing.T) {
+				setup.SkipForMongoDB(t, "pushdown is FerretDB specific feature")
 
 				var res bson.D
 				err := collection.Database().RunCommand(ctx, bson.D{{"explain", query}}).Decode(&res)

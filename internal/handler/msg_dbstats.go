@@ -115,7 +115,7 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		"db", dbName,
 		"collections", int64(len(list.Collections)),
 		// TODO https://github.com/FerretDB/FerretDB/issues/176
-		"views", int32(0),
+		"views", int64(0),
 		"objects", stats.CountDocuments,
 	}
 
@@ -153,14 +153,14 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	}
 
 	pairs = append(pairs,
-		"scaleFactor", float64(scale),
+		"scaleFactor", scale,
 		"ok", float64(1),
 	)
 
 	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(pairs...))},
-	}))
+	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+		must.NotFail(types.NewDocument(pairs...)),
+	)))
 
 	return &reply, nil
 }

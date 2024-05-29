@@ -24,17 +24,23 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"regexp"
 	"slices"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/otel"
+	otelattribute "go.opentelemetry.io/otel/attribute"
+	otelcodes "go.opentelemetry.io/otel/codes"
+	oteltrace "go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
 
 // testEvent represents a single even emitted by `go test -json`.
@@ -56,10 +62,11 @@ func (te testEvent) Elapsed() time.Duration {
 
 // testResult represents the outcome of a single test.
 type testResult struct {
+	ctx        context.Context
 	run        time.Time
 	cont       time.Time
-	outputs    []string
 	lastAction string
+	outputs    []string
 }
 
 // parentTest returns parent test name for the given subtest, or empty string.
@@ -71,9 +78,32 @@ func parentTest(testName string) string {
 	return ""
 }
 
+// resultKey returns a key for the given package and test name.
+func resultKey(packageName, testName string) string {
+	must.NotBeZero(packageName)
+
+	if testName == "" {
+		return packageName
+	}
+
+	return packageName + "." + testName
+}
+
 // runGoTest runs `go test` with given extra args.
 func runGoTest(ctx context.Context, args []string, total int, times bool, logger *zap.SugaredLogger) error {
+	shutdownOtel := observability.SetupOtel("envtool tests")
+
+	defer func() {
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer shutdownCancel()
+
+		if err := shutdownOtel(shutdownCtx); err != nil {
+			logger.Error(err)
+		}
+	}()
+
 	cmd := exec.CommandContext(ctx, "go", append([]string{"test", "-json"}, args...)...)
+
 	logger.Debugf("Running %s", strings.Join(cmd.Args, " "))
 
 	cmd.Stderr = os.Stderr
@@ -89,8 +119,15 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 
 	defer cmd.Cancel() //nolint:errcheck // safe to ignore
 
-	var done int
+	// Keys are:
+	// - "package/name"
+	// - "package/name.TestName"
+	// - "package/name.TestName/subtest"
+	//
+	// See [resultKey].
 	results := make(map[string]*testResult, 300)
+
+	var done int
 
 	d := json.NewDecoder(p)
 	d.DisallowUnknownFields()
@@ -99,6 +136,11 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 	if total > 0 {
 		totalTests = strconv.Itoa(total)
 	}
+
+	var root oteltrace.Span
+	ctx, root = otel.Tracer("").Start(ctx, "run")
+
+	defer root.End()
 
 	for {
 		var event testEvent
@@ -112,33 +154,63 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 
 		// logger.Desugar().Info("decoded event", zap.Any("event", event))
 
-		if event.Test != "" {
-			if results[event.Test] == nil {
-				results[event.Test] = &testResult{
-					outputs: make([]string, 0, 2),
-				}
+		must.NotBeZero(event.Package)
+
+		res := results[resultKey(event.Package, event.Test)]
+		if res == nil {
+			res = new(testResult)
+			results[resultKey(event.Package, event.Test)] = res
+
+			attributes := []otelattribute.KeyValue{
+				otelattribute.String("package", event.Package),
+				otelattribute.String("test", event.Test),
 			}
 
-			results[event.Test].lastAction = event.Action
+			var parentCtx context.Context
+			var spanName string
+
+			if event.Test == "" {
+				parentCtx = ctx
+				spanName = event.Package
+			} else {
+				parentCtx = results[resultKey(event.Package, parentTest(event.Test))].ctx
+				spanName = event.Test
+			}
+
+			must.NotBeZero(parentCtx)
+			must.NotBeZero(spanName)
+
+			res.ctx, _ = otel.Tracer("").Start(parentCtx, spanName, oteltrace.WithAttributes(attributes...))
+			res.outputs = make([]string, 0, 2)
 		}
+
+		res.lastAction = event.Action
 
 		switch event.Action {
 		case "start": // the test binary is about to be executed
-			// nothing
+			oteltrace.SpanFromContext(res.ctx).AddEvent(event.Action)
 
 		case "run": // the test has started running
 			must.NotBeZero(event.Test)
-			results[event.Test].run = event.Time
-			results[event.Test].cont = event.Time
+
+			oteltrace.SpanFromContext(res.ctx).AddEvent(event.Action)
+
+			res.run = event.Time
+			res.cont = event.Time
 
 		case "pause": // the test has been paused
-			// nothing
+			oteltrace.SpanFromContext(res.ctx).AddEvent(event.Action)
 
 		case "cont": // the test has continued running
 			must.NotBeZero(event.Test)
-			results[event.Test].cont = event.Time
+
+			oteltrace.SpanFromContext(res.ctx).AddEvent(event.Action)
+
+			res.cont = event.Time
 
 		case "output": // the test printed output
+			// do not add span event
+
 			out := strings.TrimSuffix(event.Output, "\n")
 
 			// initial setup output or early panic
@@ -147,10 +219,10 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 				continue
 			}
 
-			results[event.Test].outputs = append(results[event.Test].outputs, out)
+			res.outputs = append(res.outputs, out)
 
 		case "bench": // the benchmark printed log output but did not fail
-			// nothing
+			// do not add span event
 
 		case "pass": // the test passed
 			fallthrough
@@ -159,6 +231,16 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 			fallthrough
 
 		case "skip": // the test was skipped or the package contained no tests
+			code := otelcodes.Ok
+			if event.Action == "fail" {
+				code = otelcodes.Error
+			}
+
+			testSpan := oteltrace.SpanFromContext(res.ctx)
+			testSpan.AddEvent(event.Action)
+			testSpan.SetStatus(code, event.Action)
+			testSpan.End()
+
 			if event.Test == "" {
 				logger.Info(strings.ToTitle(event.Action) + " " + event.Package)
 				continue
@@ -168,8 +250,6 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 			if !top && event.Action == "pass" {
 				continue
 			}
-
-			res := results[event.Test]
 
 			msg := strings.ToTitle(event.Action) + " " + event.Test
 
@@ -276,39 +356,39 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 
 // testsRun runs tests specified by the shard index and total or by the run regex
 // using `go test` with given extra args.
-func testsRun(index, total uint, run string, args []string, logger *zap.SugaredLogger) error {
+func testsRun(ctx context.Context, index, total uint, run, skip string, args []string, logger *zap.SugaredLogger) error {
 	logger.Debugf("testsRun: index=%d, total=%d, run=%q, args=%q", index, total, run, args)
 
-	var totalTest int
-	if run == "" {
-		if index == 0 || total == 0 {
-			return fmt.Errorf("--shard-index and --shard-total must be specified when --run is not")
-		}
-
-		all, err := listTestFuncs("")
-		if err != nil {
-			return lazyerrors.Error(err)
-		}
-
-		shard, err := shardTestFuncs(index, total, all)
-		if err != nil {
-			return lazyerrors.Error(err)
-		}
-
-		run = "^("
-
-		for i, t := range shard {
-			run += t
-			if i != len(shard)-1 {
-				run += "|"
-			}
-		}
-
-		totalTest = len(shard)
-		run += ")$"
+	if run == "" && (index == 0 || total == 0) {
+		return fmt.Errorf("--shard-index and --shard-total must be specified when --run is not")
 	}
 
-	return runGoTest(context.TODO(), append([]string{"-run=" + run}, args...), totalTest, true, logger)
+	tests, err := listTestFuncsWithRegex("", run, skip)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	// Then, shard all the tests but only run the ones that match the regex and that should
+	// be run on the specific shard.
+	shard, skipShard, err := shardTestFuncs(index, total, tests)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	args = append(args, "-run="+run)
+
+	if len(skipShard) > 0 {
+		if skip != "" {
+			skip += "|"
+		}
+		skip += "^(" + strings.Join(skipShard, "|") + ")$"
+	}
+
+	if skip != "" {
+		args = append(args, "-skip="+skip)
+	}
+
+	return runGoTest(ctx, args, len(shard), true, logger)
 }
 
 // listTestFuncs returns a sorted slice of all top-level test functions (tests, benchmarks, examples, fuzz functions)
@@ -345,6 +425,7 @@ func listTestFuncs(dir string) ([]string, error) {
 		}
 
 		if _, dup := testFuncs[l]; dup {
+			// testutil.DatabaseName and other helpers depend on test names being unique across packages
 			return nil, fmt.Errorf("duplicate test function name %q", l)
 		}
 
@@ -361,36 +442,95 @@ func listTestFuncs(dir string) ([]string, error) {
 	return res, nil
 }
 
+// listTestFuncsWithRegex returns regex-filtered names of all top-level test
+// functions (tests, benchmarks, examples, fuzz functions) in the specified
+// directory and subdirectories.
+func listTestFuncsWithRegex(dir, run, skip string) ([]string, error) {
+	tests, err := listTestFuncs(dir)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(tests) == 0 {
+		return nil, fmt.Errorf("no tests to run")
+	}
+
+	var (
+		rxRun  *regexp.Regexp
+		rxSkip *regexp.Regexp
+	)
+
+	if run != "" {
+		rxRun, err = regexp.Compile(run)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if skip != "" {
+		rxSkip, err = regexp.Compile(skip)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return filterStringsByRegex(tests, rxRun, rxSkip), nil
+}
+
+// filterStringsByRegex filters a slice of strings based on inclusion and exclusion
+// criteria defined by regular expressions.
+func filterStringsByRegex(tests []string, include, exclude *regexp.Regexp) []string {
+	res := []string{}
+
+	for _, test := range tests {
+		if exclude != nil && exclude.MatchString(test) {
+			continue
+		}
+
+		if include != nil && !include.MatchString(test) {
+			continue
+		}
+
+		res = append(res, test)
+	}
+
+	return res
+}
+
 // shardTestFuncs shards given top-level test functions.
-func shardTestFuncs(index, total uint, testFuncs []string) ([]string, error) {
+// It returns a slice of test functions to run and what test functions to skip for the given shard.
+func shardTestFuncs(index, total uint, testFuncs []string) (run, skip []string, err error) {
 	if index == 0 {
-		return nil, fmt.Errorf("index must be greater than 0")
+		return nil, nil, fmt.Errorf("index must be greater than 0")
 	}
 
 	if total == 0 {
-		return nil, fmt.Errorf("total must be greater than 0")
+		return nil, nil, fmt.Errorf("total must be greater than 0")
 	}
 
 	if index > total {
-		return nil, fmt.Errorf("cannot shard when index is greater than total (%d > %d)", index, total)
+		return nil, nil, fmt.Errorf("cannot shard when index is greater than total (%d > %d)", index, total)
 	}
 
 	l := uint(len(testFuncs))
 	if total > l {
-		return nil, fmt.Errorf("cannot shard when total is greater than a number of test functions (%d > %d)", total, l)
+		return nil, nil, fmt.Errorf("cannot shard when total is greater than a number of test functions (%d > %d)", total, l)
 	}
 
-	res := make([]string, 0, l/total+1)
+	run = make([]string, 0, l/total+1)
+	skip = make([]string, 0, len(testFuncs)-len(run))
 	shard := uint(1)
 
 	// use different shards for tests with similar names for better load balancing
 	for _, test := range testFuncs {
 		if index == shard {
-			res = append(res, test)
+			run = append(run, test)
+		} else {
+			skip = append(skip, test)
 		}
 
 		shard = shard%total + 1
 	}
 
-	return res, nil
+	return run, skip, nil
 }

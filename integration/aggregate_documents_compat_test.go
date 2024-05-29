@@ -27,6 +27,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
+
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
@@ -227,7 +229,13 @@ func testAggregateCommandCompat(t *testing.T, testCases map[string]aggregateComm
 					return
 				}
 				require.NoError(t, compatErr, "compat error; target returned no error")
-				AssertEqualDocuments(t, compatRes, targetRes)
+
+				compat := ConvertDocument(t, compatRes)
+				compat.Remove("$clusterTime")
+				compat.Remove("operationTime")
+
+				target := ConvertDocument(t, targetRes)
+				testutil.AssertEqual(t, compat, target)
 
 				if len(targetRes) > 0 || len(compatRes) > 0 {
 					nonEmptyResults = true

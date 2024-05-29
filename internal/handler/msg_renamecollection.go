@@ -56,10 +56,17 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 
 	oldName, err := common.GetRequiredParam[string](document, command)
 	if err != nil {
-		from, _ := document.Get(command)
+		from, fe := document.Get(command)
+		if fe != nil || from == types.Null {
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrMissingField,
+				"BSON field 'renameCollection.from' is missing but a required field",
+				command,
+			)
+		}
 
 		return nil, handlererrors.NewCommandErrorMsgWithArgument(
-			handlererrors.ErrBadValue,
+			handlererrors.ErrTypeMismatch,
 			fmt.Sprintf("collection name has invalid type %s", handlerparams.AliasFromType(from)),
 			command,
 		)
@@ -67,6 +74,14 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 
 	newName, err := common.GetRequiredParam[string](document, "to")
 	if err != nil {
+		if to, te := document.Get("to"); te != nil || to == types.Null {
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrMissingField,
+				"BSON field 'renameCollection.to' is missing but a required field",
+				command,
+			)
+		}
+
 		return nil, handlererrors.NewCommandErrorMsgWithArgument(
 			handlererrors.ErrTypeMismatch,
 			"'to' must be of type String",
@@ -147,11 +162,11 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 	}
 
 	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
+	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+		must.NotFail(types.NewDocument(
 			"ok", float64(1),
-		))},
-	}))
+		)),
+	)))
 
 	return &reply, nil
 }

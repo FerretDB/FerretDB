@@ -55,7 +55,7 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	// In that case, we expect the client to wait or to retry the operation.
 	for _, c := range h.cursors.All() {
 		if c.DB == dbName && c.Collection == collectionName {
-			c.Close()
+			h.cursors.CloseAndRemove(c)
 		}
 	}
 
@@ -74,24 +74,21 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	})
 
 	switch {
-	case err == nil:
+	case err == nil, backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist):
 		var reply wire.OpMsg
-		must.NoError(reply.SetSections(wire.OpMsgSection{
-			Documents: []*types.Document{must.NotFail(types.NewDocument(
+		must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+			must.NotFail(types.NewDocument(
 				"nIndexesWas", int32(1), // TODO https://github.com/FerretDB/FerretDB/issues/2337
 				"ns", dbName+"."+collectionName,
 				"ok", float64(1),
-			))},
-		}))
+			)),
+		)))
 
 		return &reply, nil
 
 	case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid):
 		msg := fmt.Sprintf("Invalid collection name: %s", collectionName)
 		return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrInvalidNamespace, msg, "drop")
-
-	case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist):
-		return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrNamespaceNotFound, "ns not found", "drop")
 
 	default:
 		return nil, lazyerrors.Error(err)

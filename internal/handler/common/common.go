@@ -22,5 +22,5 @@ const (
 	MinWireVersion = int32(0) // needed for some apps and drivers
 
 	// MaxWireVersion is the maximal supported wire protocol version.
-	MaxWireVersion = int32(17)
+	MaxWireVersion = int32(21)
 )

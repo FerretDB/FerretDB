@@ -42,8 +42,10 @@ type DistinctParams struct {
 
 	Collation *types.Document `ferretdb:"collation,unimplemented"`
 
-	ReadConcern *types.Document `ferretdb:"readConcern,ignored"`
-	LSID        any             `ferretdb:"lsid,ignored"`
+	ReadConcern    *types.Document `ferretdb:"readConcern,ignored"`
+	LSID           any             `ferretdb:"lsid,ignored"`
+	ClusterTime    any             `ferretdb:"$clusterTime,ignored"`
+	ReadPreference *types.Document `ferretdb:"$readPreference,ignored"`
 }
 
 // GetDistinctParams returns `distinct` command parameters.

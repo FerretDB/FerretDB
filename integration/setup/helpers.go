@@ -17,9 +17,11 @@ package setup
 import (
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testfail"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
@@ -45,26 +47,40 @@ func IsMongoDB(tb testtb.TB) bool {
 	return *targetBackendF == "mongodb"
 }
 
+// IsHana returns true if the current test is running for Hana backend.
+//
+// This function should not be used lightly.
+func IsHana(tb testtb.TB) bool {
+	return *targetBackendF == "ferretdb-hana"
+}
+
+// ensureIssueURL panics if URL is not a valid FerretDB issue URL.
+func ensureIssueURL(url string) {
+	must.BeTrue(strings.HasPrefix(url, "https://github.com/FerretDB/FerretDB/issues/"))
+}
+
 // FailsForFerretDB return testtb.TB that expects test to fail for FerretDB and pass for MongoDB.
 //
 // This function should not be used lightly and always with an issue URL.
-func FailsForFerretDB(tb testtb.TB, reason string) testtb.TB {
+func FailsForFerretDB(tb testtb.TB, url string) testtb.TB {
 	tb.Helper()
+
+	ensureIssueURL(url)
 
 	if IsMongoDB(tb) {
 		return tb
 	}
 
-	return testfail.Expected(tb, reason)
+	return testfail.Expected(tb, url)
 }
 
-// FailsForSQLite return testtb.TB that expects test to fail for FerretDB with SQLite backend and pass otherwise.
+// FailsForMongoDB return testtb.TB that expects test to fail for MongoDB and pass for FerretDB.
 //
-// This function should not be used lightly and always with an issue URL.
-func FailsForSQLite(tb testtb.TB, reason string) testtb.TB {
+// This function should not be used lightly.
+func FailsForMongoDB(tb testtb.TB, reason string) testtb.TB {
 	tb.Helper()
 
-	if IsSQLite(tb) {
+	if IsMongoDB(tb) {
 		return testfail.Expected(tb, reason)
 	}
 
@@ -73,7 +89,7 @@ func FailsForSQLite(tb testtb.TB, reason string) testtb.TB {
 
 // SkipForMongoDB skips the current test for MongoDB.
 //
-// This function should not be used lightly and always with an issue URL.
+// Deprecated: Use [FailsForMongoDB] in new code.
 func SkipForMongoDB(tb testtb.TB, reason string) {
 	tb.Helper()
 

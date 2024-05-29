@@ -23,10 +23,11 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
+
+	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 func TestCommandsAdministrationCompatCollStatsWithScale(t *testing.T) {
@@ -122,12 +123,12 @@ func TestCommandsAdministrationCompatCollStatsCappedCollection(t *testing.T) {
 		},
 		"SizeRounded": {
 			sizeInBytes:  1000,
-			expectedSize: 1024,
+			expectedSize: 1000,
 		},
 		"MaxDocuments": {
 			sizeInBytes:  1,
 			maxDocuments: 10,
-			expectedSize: 256,
+			expectedSize: 1,
 		},
 	} {
 		name, tc := name, tc
@@ -291,4 +292,43 @@ func TestCommandsAdministrationCompatDBStatsFreeStorage(t *testing.T) {
 			assert.Equal(t, compatDoc.Has("totalFreeStorageSize"), targetDoc.Has("totalFreeStorageSize"))
 		})
 	}
+}
+
+func TestCommandsAdministrationCompatListCollections(t *testing.T) {
+	t.Parallel()
+	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
+
+	require.Greater(t, len(targetCollections), 2)
+
+	filter := bson.D{{
+		Key: "name", Value: bson.D{{
+			Key: "$in", Value: bson.A{
+				targetCollections[0].Name(),
+				targetCollections[len(targetCollections)-1].Name(),
+			},
+		}},
+	}}
+
+	target, err := targetCollections[0].Database().ListCollections(ctx, filter)
+	require.NoError(t, err)
+	var targetRes []bson.D
+	err = target.All(ctx, &targetRes)
+	require.NoError(t, err)
+	docTarget := ConvertDocument(t, targetRes[0])
+
+	compat, err := compatCollections[0].Database().ListCollections(ctx, filter)
+	require.NoError(t, err)
+	var compatRes []bson.D
+	err = compat.All(ctx, &compatRes)
+	require.NoError(t, err)
+	docCompat := ConvertDocument(t, compatRes[0])
+
+	assert.Equal(t, target.RemainingBatchLength(), compat.RemainingBatchLength())
+
+	// Check idIndex
+	targetIDIndex := must.NotFail(docTarget.Get("idIndex"))
+	compatIDIndex := must.NotFail(docCompat.Get("idIndex"))
+
+	assert.NotEmpty(t, targetIDIndex)
+	assert.Equal(t, targetIDIndex, compatIDIndex)
 }

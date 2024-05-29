@@ -10,6 +10,7 @@ on:
   push:
     branches:
       - main
+      - main-*
       - releases/*
   schedule:
     - cron: "12 0 * * *"
@@ -36,10 +37,6 @@ jobs:
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
 
     steps:
-      - name: Setup permissions monitoring
-        uses: GitHubSecurityLab/actions-permissions/monitor@v1
-        if: false
-
       # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
         uses: actions/checkout@v4
@@ -87,10 +84,6 @@ jobs:
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
 
     steps:
-      - name: Setup permissions monitoring
-        uses: GitHubSecurityLab/actions-permissions/monitor@v1
-        if: false
-
       # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
         uses: actions/checkout@v4
@@ -136,7 +129,7 @@ jobs:
       # We also can't use ${{ vars.CODECOV_TOKEN }}: https://github.com/orgs/community/discussions/44322
       - name: Upload coverage information to codecov
         if: always()
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: 22159d7c-856d-4fe9-8fdb-5d9ecff35514
           files: ./cover.txt
@@ -177,8 +170,8 @@ jobs:
       fail-fast: false
       matrix:
         task: [postgresql, sqlite]
-        shard_index: [1, 2, 3]
-        shard_total: [3]
+        shard_index: [1, 2, 3, 4, 5]
+        shard_total: [5]
         include:
           - { task: "mongodb", shard_index: 1, shard_total: 1 }
 
@@ -198,10 +191,6 @@ jobs:
     if: always() && (github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready'))
 
     steps:
-      - name: Setup permissions monitoring
-        uses: GitHubSecurityLab/actions-permissions/monitor@v1
-        if: false
-
       - name: Submit coveralls
         uses: coverallsapp/github-action@v2
         with:
@@ -220,10 +209,6 @@ jobs:
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
 
     steps:
-      - name: Setup permissions monitoring
-        uses: GitHubSecurityLab/actions-permissions/monitor@v1
-        if: false
-
       # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
         uses: actions/checkout@v4
@@ -267,10 +252,6 @@ jobs:
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
 
     steps:
-      - name: Setup permissions monitoring
-        uses: GitHubSecurityLab/actions-permissions/monitor@v1
-        if: false
-
       # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
         uses: actions/checkout@v4
@@ -301,10 +282,6 @@ jobs:
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
 
     steps:
-      - name: Setup permissions monitoring
-        uses: GitHubSecurityLab/actions-permissions/monitor@v1
-        if: false
-
       # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
         uses: actions/checkout@v4
@@ -334,20 +311,8 @@ jobs:
           path: fuzz-corpus
           fetch-depth: 0 # for commit and push to work
 
-      - name: Start environment
-        run: bin/task env-up-detach
-        working-directory: source
-
-      - name: Run init
-        run: bin/task init
-        working-directory: source
-
       - name: Setup corpus
         run: bin/task fuzz-corpus
-        working-directory: source
-
-      - name: Wait for and setup environment
-        run: bin/task env-setup
         working-directory: source
 
       # precompile tests with unset GOMAXPROCS
@@ -357,8 +322,8 @@ jobs:
 
       # TODO https://github.com/FerretDB/FerretDB/issues/238
       # TODO https://github.com/FerretDB/FerretDB/issues/344
-      - name: Run collected fuzzing corpus
-        run: bin/task fuzz FUZZTIME=1s
+      - name: Fuzz
+        run: bin/task fuzz FUZZ_TIME=1m
         working-directory: source
         env:
           GOMAXPROCS: 1 # otherwise, oom-killer kills fuzzer too often
@@ -398,7 +363,7 @@ jobs:
         if: failure() || env.KEY == ''
         env:
           KEY: ${{ secrets.FUZZ_CORPUS_DEPLOY_KEY }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: fuzz-corpus
           path: fuzz-corpus.zip
@@ -421,7 +386,7 @@ jobs:
 
       - name: Upload Linux logs
         if: failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: linux-logs
           path: linux-logs.zip

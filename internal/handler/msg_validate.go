@@ -68,9 +68,10 @@ func (h *Handler) MsgValidate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		return nil, lazyerrors.Error(err)
 	}
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/3841
 	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
+	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+		must.NotFail(types.NewDocument(
 			"ns", dbName+"."+collection,
 			"nInvalidDocuments", int32(0),
 			"nNonCompliantDocuments", int32(0),
@@ -84,8 +85,8 @@ func (h *Handler) MsgValidate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 			"missingIndexEntries", types.MakeArray(0),
 			"corruptRecords", types.MakeArray(0),
 			"ok", float64(1),
-		))},
-	}))
+		)),
+	)))
 
 	return &reply, nil
 }

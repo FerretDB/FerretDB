@@ -109,8 +109,10 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 	meta := c.r.CollectionGet(ctx, c.dbName, c.name)
 
 	err := db.InTransaction(ctx, func(tx *fsql.Tx) error {
-		// TODO https://github.com/FerretDB/FerretDB/issues/3708
-		const batchSize = 100
+		batchSize := c.r.BatchSize
+		if batchSize < 1 {
+			panic("batch-size should be greater or equal to 1")
+		}
 
 		var batch []*types.Document
 		docs := params.Docs
@@ -203,6 +205,8 @@ func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllPa
 	if meta == nil {
 		return &backends.DeleteAllResult{Deleted: 0}, nil
 	}
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/3888
 
 	var column string
 	var placeholders []string

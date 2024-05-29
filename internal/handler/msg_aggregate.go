@@ -15,13 +15,12 @@
 package handler
 
 import (
-	"cmp"
 	"context"
 	"errors"
 	"fmt"
 	"math"
 	"os"
-	"slices"
+	"strings"
 	"time"
 
 	"go.uber.org/zap"
@@ -103,7 +102,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
-	username, _ := conninfo.Get(ctx).Auth()
+	username := conninfo.Get(ctx).Username()
 
 	v, _ := document.Get("maxTimeMS")
 	if v == nil {
@@ -250,10 +249,23 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	cancel := func() {}
+
 	if maxTimeMS != 0 {
-		// It is not clear if maxTimeMS affects only aggregate, or both aggregate and getMore (as the current code does).
-		// TODO https://github.com/FerretDB/FerretDB/issues/2983
-		ctx, cancel = context.WithTimeout(ctx, time.Duration(maxTimeMS)*time.Millisecond)
+		findDone := make(chan struct{})
+		defer close(findDone)
+
+		ctx, cancel = context.WithCancel(ctx)
+
+		go func() {
+			t := time.NewTimer(time.Duration(maxTimeMS) * time.Millisecond)
+			defer t.Stop()
+
+			select {
+			case <-t.C:
+				cancel()
+			case <-findDone:
+			}
+		}()
 	}
 
 	closer := iterator.NewMultiCloser(iterator.CloserFunc(cancel))
@@ -268,6 +280,18 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 		if !h.DisablePushdown {
 			qp.Filter = filter
+		}
+
+		if !h.EnableNestedPushdown && filter != nil {
+			qp.Filter = filter.DeepCopy()
+
+			for _, k := range qp.Filter.Keys() {
+				if !strings.ContainsRune(k, '.') {
+					continue
+				}
+
+				qp.Filter.Remove(k)
+			}
 		}
 
 		if sort, err = common.ValidateSortDocument(sort); err != nil {
@@ -287,27 +311,39 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 		var cList *backends.ListCollectionsResult
 
-		if cList, err = db.ListCollections(ctx, nil); err != nil {
-			return nil, err
+		collectionParam := backends.ListCollectionsParams{Name: cName}
+		if cList, err = db.ListCollections(ctx, &collectionParam); err != nil {
+			closer.Close()
+			return nil, handleMaxTimeMSError(err, maxTimeMS, "aggregate")
 		}
 
 		var cInfo backends.CollectionInfo
 
-		// TODO https://github.com/FerretDB/FerretDB/issues/3601
-		if i, found := slices.BinarySearchFunc(cList.Collections, cName, func(e backends.CollectionInfo, t string) int {
-			return cmp.Compare(e.Name, t)
-		}); found {
-			cInfo = cList.Collections[i]
+		if len(cList.Collections) > 0 {
+			cInfo = cList.Collections[0]
 		}
-
-		capped := cInfo.Capped()
 
 		switch {
 		case h.DisablePushdown:
 			// Pushdown disabled
-		case sort.Len() == 0 && capped:
+		case sort.Len() == 0 && cInfo.Capped():
 			// Pushdown default recordID sorting for capped collections
 			qp.Sort = must.NotFail(types.NewDocument("$natural", int64(1)))
+		case sort.Len() == 1:
+			if sort.Keys()[0] != "$natural" {
+				break
+			}
+
+			if !cInfo.Capped() {
+				closer.Close()
+				return nil, handlererrors.NewCommandErrorMsgWithArgument(
+					handlererrors.ErrNotImplemented,
+					"$natural sort for non-capped collection is not supported.",
+					"aggregate",
+				)
+			}
+
+			qp.Sort = sort
 		}
 
 		iter, err = processStagesDocuments(ctx, closer, &stagesDocumentsParams{c, qp, stagesDocuments})
@@ -322,7 +358,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	if err != nil {
 		closer.Close()
-		return nil, err
+		return nil, handleMaxTimeMSError(err, maxTimeMS, "aggregate")
 	}
 
 	closer.Add(iter)
@@ -331,22 +367,23 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		DB:         dbName,
 		Collection: cName,
 		Username:   username,
+		Type:       cursor.Normal,
 	})
 
 	cursorID := cursor.ID
 
-	firstBatchDocs, err := iterator.ConsumeValuesN(cursor, int(batchSize))
+	docs, err := iterator.ConsumeValuesN(cursor, int(batchSize))
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, handleMaxTimeMSError(err, maxTimeMS, "aggregate")
 	}
 
 	h.L.Debug(
-		"Got first batch", zap.Int64("cursor_id", cursorID),
-		zap.Int("count", len(firstBatchDocs)), zap.Int64("batch_size", batchSize),
+		"Got first batch", zap.Int64("cursor_id", cursorID), zap.Stringer("type", cursor.Type),
+		zap.Int("count", len(docs)), zap.Int64("batch_size", batchSize),
 	)
 
-	firstBatch := types.MakeArray(len(firstBatchDocs))
-	for _, doc := range firstBatchDocs {
+	firstBatch := types.MakeArray(len(docs))
+	for _, doc := range docs {
 		firstBatch.Append(doc)
 	}
 
@@ -358,16 +395,16 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
+	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+		must.NotFail(types.NewDocument(
 			"cursor", must.NotFail(types.NewDocument(
 				"firstBatch", firstBatch,
 				"id", cursorID,
 				"ns", dbName+"."+cName,
 			)),
 			"ok", float64(1),
-		))},
-	}))
+		)),
+	)))
 
 	return &reply, nil
 }
@@ -433,9 +470,11 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 		"localTime", time.Now().UTC().Format(time.RFC3339),
 	))
 
-	var collStats *backends.CollectionStatsResult
-	var cInfo backends.CollectionInfo
-	var nIndexes int64
+	var (
+		collStats *backends.CollectionStatsResult
+		cInfo     backends.CollectionInfo
+		nIndexes  int64
+	)
 
 	if hasCount || hasStorage {
 		collStats, err = p.c.Stats(ctx, new(backends.CollectionStatsParams))
@@ -452,16 +491,14 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 		}
 
 		var cList *backends.ListCollectionsResult
+		collectionParam := backends.ListCollectionsParams{Name: p.cName}
 
-		if cList, err = p.db.ListCollections(ctx, new(backends.ListCollectionsParams)); err != nil {
+		if cList, err = p.db.ListCollections(ctx, &collectionParam); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
-		// TODO https://github.com/FerretDB/FerretDB/issues/3601
-		if i, found := slices.BinarySearchFunc(cList.Collections, p.cName, func(e backends.CollectionInfo, t string) int {
-			return cmp.Compare(e.Name, t)
-		}); found {
-			cInfo = cList.Collections[i]
+		if len(cList.Collections) > 0 {
+			cInfo = cList.Collections[0]
 		}
 
 		var iList *backends.ListIndexesResult

@@ -81,7 +81,29 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 		d := must.NotFail(types.NewDocument(
 			"name", collection.Name,
 			"type", "collection",
+			"idIndex", must.NotFail(types.NewDocument(
+				"v", int32(2),
+				"key", must.NotFail(types.NewDocument("_id", int32(1))),
+				"name", "_id_",
+			)),
 		))
+
+		options := must.NotFail(types.NewDocument())
+		info := must.NotFail(types.NewDocument("readOnly", false))
+
+		if collection.Capped() {
+			options.Set("capped", true)
+		}
+
+		if collection.CappedSize > 0 {
+			options.Set("size", collection.CappedSize)
+		}
+
+		if collection.CappedDocuments > 0 {
+			options.Set("max", collection.CappedDocuments)
+		}
+
+		d.Set("options", options)
 
 		if collection.UUID != "" {
 			uuid, err := uuid.Parse(collection.UUID)
@@ -89,14 +111,15 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 				return nil, lazyerrors.Error(err)
 			}
 
-			path := types.NewStaticPath("info", "uuid")
 			uuidBinary := types.Binary{
 				Subtype: types.BinaryUUID,
 				B:       must.NotFail(uuid.MarshalBinary()),
 			}
 
-			must.NoError(d.SetByPath(path, uuidBinary))
+			info.Set("uuid", uuidBinary)
 		}
+
+		d.Set("info", info)
 
 		matches, err := common.FilterDocument(d, filter)
 		if err != nil {
@@ -117,16 +140,16 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 	}
 
 	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
+	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+		must.NotFail(types.NewDocument(
 			"cursor", must.NotFail(types.NewDocument(
 				"id", int64(0),
 				"ns", dbName+".$cmd.listCollections",
 				"firstBatch", collections,
 			)),
 			"ok", float64(1),
-		))},
-	}))
+		)),
+	)))
 
 	return &reply, nil
 }

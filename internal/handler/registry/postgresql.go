@@ -25,24 +25,31 @@ import (
 func init() {
 	registry["postgresql"] = func(opts *NewHandlerOpts) (*handler.Handler, CloseBackendFunc, error) {
 		b, err := postgresql.NewBackend(&postgresql.NewBackendParams{
-			URI: opts.PostgreSQLURL,
-			L:   opts.Logger.Named("postgresql"),
-			P:   opts.StateProvider,
+			URI:       opts.PostgreSQLURL,
+			L:         opts.Logger.Named("postgresql"),
+			P:         opts.StateProvider,
+			BatchSize: opts.BatchSize,
 		})
 		if err != nil {
 			return nil, nil, err
 		}
 
 		handlerOpts := &handler.NewOpts{
-			Backend: b,
+			Backend:     b,
+			TCPHost:     opts.TCPHost,
+			ReplSetName: opts.ReplSetName,
 
 			L:             opts.Logger.Named("postgresql"),
 			ConnMetrics:   opts.ConnMetrics,
 			StateProvider: opts.StateProvider,
 
-			DisablePushdown: opts.DisablePushdown,
-			EnableOplog:     opts.EnableOplog,
-			EnableNewAuth:   opts.EnableNewAuth,
+			DisablePushdown:         opts.DisablePushdown,
+			EnableNestedPushdown:    opts.EnableNestedPushdown,
+			CappedCleanupPercentage: opts.CappedCleanupPercentage,
+			CappedCleanupInterval:   opts.CappedCleanupInterval,
+			EnableNewAuth:           opts.EnableNewAuth,
+			BatchSize:               opts.BatchSize,
+			MaxBsonObjectSizeBytes:  opts.MaxBsonObjectSizeBytes,
 		}
 
 		h, err := handler.New(handlerOpts)

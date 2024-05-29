@@ -15,12 +15,11 @@
 package handler
 
 import (
-	"cmp"
 	"context"
 	"errors"
 	"fmt"
 	"os"
-	"slices"
+	"strings"
 
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/backends"
@@ -92,6 +91,18 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		qp.Filter = params.Filter
 	}
 
+	if !h.EnableNestedPushdown && params.Filter != nil {
+		qp.Filter = params.Filter.DeepCopy()
+
+		for _, k := range qp.Filter.Keys() {
+			if !strings.ContainsRune(k, '.') {
+				continue
+			}
+
+			qp.Filter.Remove(k)
+		}
+	}
+
 	if params.Sort, err = common.ValidateSortDocument(params.Sort); err != nil {
 		var pathErr *types.PathError
 		if errors.As(err, &pathErr) && pathErr.Code() == types.ErrPathElementEmpty {
@@ -107,27 +118,37 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 	var cList *backends.ListCollectionsResult
 
-	if cList, err = db.ListCollections(ctx, nil); err != nil {
+	collectionParam := backends.ListCollectionsParams{Name: params.Collection}
+	if cList, err = db.ListCollections(ctx, &collectionParam); err != nil {
 		return nil, err
 	}
 
 	var cInfo backends.CollectionInfo
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3601
-	if i, found := slices.BinarySearchFunc(cList.Collections, params.Collection, func(e backends.CollectionInfo, t string) int {
-		return cmp.Compare(e.Name, t)
-	}); found {
-		cInfo = cList.Collections[i]
+	if len(cList.Collections) > 0 {
+		cInfo = cList.Collections[0]
 	}
-
-	capped := cInfo.Capped()
 
 	switch {
 	case h.DisablePushdown:
 		// Pushdown disabled
-	case params.Sort.Len() == 0 && capped:
+	case params.Sort.Len() == 0 && cInfo.Capped():
 		// Pushdown default recordID sorting for capped collections
 		qp.Sort = must.NotFail(types.NewDocument("$natural", int64(1)))
+	case params.Sort.Len() == 1:
+		if params.Sort.Keys()[0] != "$natural" {
+			break
+		}
+
+		if !cInfo.Capped() {
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrNotImplemented,
+				"$natural sort for non-capped collection is not supported.",
+				"explain",
+			)
+		}
+
+		qp.Sort = params.Sort
 	}
 
 	// Limit pushdown is not applied if:
@@ -145,8 +166,8 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	}
 
 	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
+	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+		must.NotFail(types.NewDocument(
 			"queryPlanner", res.QueryPlanner,
 			"explainVersion", "1",
 			"command", cmd,
@@ -159,8 +180,8 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			"limitPushdown", res.LimitPushdown,
 
 			"ok", float64(1),
-		))},
-	}))
+		)),
+	)))
 
 	return &reply, nil
 }

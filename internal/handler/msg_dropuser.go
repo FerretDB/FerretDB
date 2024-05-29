@@ -16,9 +16,14 @@ package handler
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -29,6 +34,48 @@ func (h *Handler) MsgDropUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		return nil, lazyerrors.Error(err)
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/1493
-	return nil, common.Unimplemented(document, document.Command())
+	common.Ignored(document, h.L, "writeConcern", "comment")
+
+	dbName, err := common.GetRequiredParam[string](document, "$db")
+	if err != nil {
+		return nil, err
+	}
+
+	username, err := common.GetRequiredParam[string](document, document.Command())
+	if err != nil {
+		return nil, err
+	}
+
+	adminDB, err := h.b.Database("admin")
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	users, err := adminDB.Collection("system.users")
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	res, err := users.DeleteAll(ctx, &backends.DeleteAllParams{
+		IDs: []any{dbName + "." + username},
+	})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if res.Deleted == 0 {
+		return nil, handlererrors.NewCommandErrorMsg(
+			handlererrors.ErrUserNotFound,
+			fmt.Sprintf("User '%s@%s' not found", username, dbName),
+		)
+	}
+
+	var reply wire.OpMsg
+	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+		must.NotFail(types.NewDocument(
+			"ok", float64(1),
+		)),
+	)))
+
+	return &reply, nil
 }

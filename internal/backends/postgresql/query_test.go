@@ -95,6 +95,8 @@ func TestPrepareWhereClause(t *testing.T) {
 
 	// WHERE clauses occurring frequently in tests
 	whereContain := " WHERE _jsonb->$1 @> $2"
+	whereContainDotNotation := " WHERE _jsonb#>$1 @> $2"
+
 	whereGt := " WHERE _jsonb->$1 > $2"
 	whereNotEq := ` WHERE NOT ( _jsonb ? $1 AND _jsonb->$1 @> $2 AND _jsonb->'$s'->'p'->$1->'t' = `
 
@@ -117,14 +119,17 @@ func TestPrepareWhereClause(t *testing.T) {
 			expected: whereContain,
 		},
 		"IDDotNotation": {
-			filter: must.NotFail(types.NewDocument("_id.doc", "foo")),
+			filter:   must.NotFail(types.NewDocument("_id.doc", "foo")),
+			expected: whereContainDotNotation,
 		},
 
 		"DotNotation": {
-			filter: must.NotFail(types.NewDocument("v.doc", "foo")),
+			filter:   must.NotFail(types.NewDocument("v.doc", "foo")),
+			expected: whereContainDotNotation,
 		},
 		"DotNotationArrayIndex": {
-			filter: must.NotFail(types.NewDocument("v.arr.0", "foo")),
+			filter:   must.NotFail(types.NewDocument("v.arr.0", "foo")),
+			expected: whereContainDotNotation,
 		},
 
 		"ImplicitString": {
@@ -354,9 +359,8 @@ func TestPrepareOrderByClause(t *testing.T) {
 			orderBy: ` ORDER BY _ferretdb_record_id`,
 		},
 		"NaturalDescending": {
-			skip:    "https://github.com/FerretDB/FerretDB/issues/3638",
 			sort:    must.NotFail(types.NewDocument("$natural", int64(-1))),
-			orderBy: "",
+			orderBy: ` ORDER BY _ferretdb_record_id DESC`,
 		},
 	} {
 		name, tc := name, tc
@@ -367,7 +371,7 @@ func TestPrepareOrderByClause(t *testing.T) {
 				t.Skip(tc.skip)
 			}
 
-			orderBy, args := prepareOrderByClause(new(metadata.Placeholder), tc.sort)
+			orderBy, args := prepareOrderByClause(tc.sort)
 
 			assert.Equal(t, tc.orderBy, orderBy)
 			assert.Equal(t, tc.args, args)

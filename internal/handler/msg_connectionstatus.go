@@ -27,23 +27,23 @@ import (
 func (h *Handler) MsgConnectionStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	users := types.MakeArray(1)
 
-	if username, _ := conninfo.Get(ctx).Auth(); username != "" {
+	if username := conninfo.Get(ctx).Username(); username != "" {
 		users.Append(must.NotFail(types.NewDocument(
 			"user", username,
 		)))
 	}
 
 	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
+	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+		must.NotFail(types.NewDocument(
 			"authInfo", must.NotFail(types.NewDocument(
 				"authenticatedUsers", users,
 				"authenticatedUserRoles", must.NotFail(types.NewArray()),
 				"authenticatedUserPrivileges", must.NotFail(types.NewArray()),
 			)),
 			"ok", float64(1),
-		))},
-	}))
+		)),
+	)))
 
 	return &reply, nil
 }

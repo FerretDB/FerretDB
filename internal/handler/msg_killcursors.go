@@ -49,7 +49,7 @@ func (h *Handler) MsgKillCursors(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		return nil, err
 	}
 
-	username, _ := conninfo.Get(ctx).Auth()
+	username := conninfo.Get(ctx).Username()
 
 	cursors, err := common.GetRequiredParam[*types.Array](document, "cursors")
 	if err != nil {
@@ -98,20 +98,20 @@ func (h *Handler) MsgKillCursors(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 			continue
 		}
 
-		cursor.Close()
+		h.cursors.CloseAndRemove(cursor)
 		cursorsKilled.Append(id)
 	}
 
 	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
+	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+		must.NotFail(types.NewDocument(
 			"cursorsKilled", cursorsKilled,
 			"cursorsNotFound", cursorsNotFound,
 			"cursorsAlive", cursorsAlive,
 			"cursorsUnknown", cursorsUnknown,
 			"ok", float64(1),
-		))},
-	}))
+		)),
+	)))
 
 	return &reply, nil
 }

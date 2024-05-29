@@ -17,90 +17,63 @@ package main
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
-	"fmt"
+	"flag"
 	"log"
-	"os"
-	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/FerretDB/gh"
-	"github.com/google/go-github/v56/github"
-	"github.com/rogpeppe/go-internal/lockedfile"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/singlechecker"
 )
 
-// struct used to hold open status of issues, true if open otherwise false.
-type issueCache struct {
-	Issues map[string]bool `json:"Issues"`
-}
-
 // todoRE represents correct // TODO comment format.
-var todoRE = regexp.MustCompile(`^// TODO \Qhttps://github.com/FerretDB/FerretDB/issues/\E(\d+)$`)
+var todoRE = regexp.MustCompile(`^// TODO (\Qhttps://github.com/FerretDB/\E([-\w]+)/issues/(\d+))$`)
 
+// analyzer represents the checkcomments analyzer.
 var analyzer = &analysis.Analyzer{
-	Name: "checkcomments",
-	Doc:  "check TODO comments",
-	Run:  run,
+	Name:  "checkcomments",
+	Doc:   "check TODO comments",
+	Run:   run,
+	Flags: *flag.NewFlagSet("", flag.ExitOnError),
 }
 
+// init initializes the analyzer flags.
+func init() {
+	analyzer.Flags.Bool("offline", false, "do not check issues open/closed status")
+	analyzer.Flags.Bool("cache-debug", false, "log cache hits/misses")
+	analyzer.Flags.Bool("client-debug", false, "log GitHub API requests/responses")
+}
+
+// main runs the analyzer.
 func main() {
 	singlechecker.Main(analyzer)
 }
 
 // run analyses TODO comments.
 func run(pass *analysis.Pass) (any, error) {
-	var iCache issueCache
+	var client *client
 
-	current_path, err := os.Getwd()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	cache_path := getCacheFilePath(current_path)
-
-	cf, err := lockedfile.OpenFile(cache_path, os.O_RDWR|os.O_CREATE, 0o666)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	defer func() {
-		cerr := cf.Close()
-		if cerr != nil {
-			log.Fatal(cerr)
-		}
-	}()
-
-	stat, err := cf.Stat()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if stat.Size() > 0 {
-		buffer := make([]byte, stat.Size())
-
-		_, err = cf.Read(buffer)
+	if !pass.Analyzer.Flags.Lookup("offline").Value.(flag.Getter).Get().(bool) {
+		p, err := cacheFilePath()
 		if err != nil {
-			log.Fatal(err)
+			log.Panic(err)
 		}
 
-		err = json.Unmarshal(buffer, &iCache)
-		if err != nil {
-			log.Fatal(err)
+		cacheDebugF := gh.NoopPrintf
+		if pass.Analyzer.Flags.Lookup("cache-debug").Value.(flag.Getter).Get().(bool) {
+			cacheDebugF = log.New(log.Writer(), "", log.Flags()).Printf
 		}
-	} else {
-		iCache.Issues = make(map[string]bool)
-	}
 
-	token := os.Getenv("GITHUB_TOKEN")
+		clientDebugF := gh.NoopPrintf
+		if pass.Analyzer.Flags.Lookup("client-debug").Value.(flag.Getter).Get().(bool) {
+			clientDebugF = log.New(log.Writer(), "client-debug: ", log.Flags()).Printf
+		}
 
-	client, err := gh.NewRESTClient(token, nil)
-	if err != nil {
-		log.Fatal(err)
+		if client, err = newClient(p, log.Printf, cacheDebugF, clientDebugF); err != nil {
+			log.Panic(err)
+		}
 	}
 
 	for _, f := range pass.Files {
@@ -119,89 +92,45 @@ func run(pass *analysis.Pass) (any, error) {
 
 				match := todoRE.FindStringSubmatch(line)
 
-				if match == nil {
+				if len(match) != 4 {
 					pass.Reportf(c.Pos(), "invalid TODO: incorrect format")
 					continue
 				}
 
-				iNum := match[1]
-
-				_, ok := iCache.Issues[iNum]
-
-				if !ok {
-					n, inErr := strconv.Atoi(iNum)
-					if inErr != nil {
-						log.Fatal(inErr)
-					}
-
-					isOpen, inErr := isIssueOpen(client, n)
-					if err != nil {
-						log.Fatal(inErr)
-					}
-
-					iCache.Issues[iNum] = isOpen
+				url := match[1]
+				repo := match[2]
+				num, err := strconv.Atoi(match[3])
+				if err != nil {
+					log.Panic(err)
 				}
 
-				if !iCache.Issues[iNum] {
-					message := fmt.Sprintf("invalid TODO: linked issue %s is closed", iNum)
-					pass.Reportf(c.Pos(), message)
+				if num <= 0 {
+					pass.Reportf(c.Pos(), "invalid TODO: incorrect issue number")
+					continue
+				}
+
+				if client == nil {
+					continue
+				}
+
+				status, err := client.IssueStatus(context.TODO(), url, repo, num)
+				if err != nil {
+					log.Panic(err)
+				}
+
+				switch status {
+				case issueOpen:
+					// nothing
+				case issueClosed:
+					pass.Reportf(c.Pos(), "invalid TODO: linked issue %s is closed", url)
+				case issueNotFound:
+					pass.Reportf(c.Pos(), "invalid TODO: linked issue %s is not found", url)
+				default:
+					log.Panicf("unknown issue status: %s", status)
 				}
 			}
 		}
 	}
 
-	if len(iCache.Issues) > 0 {
-		jsonb, err := json.Marshal(iCache)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		_, err = cf.WriteAt(jsonb, 0)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-
 	return nil, nil
-}
-
-func isIssueOpen(client *github.Client, n int) (bool, error) {
-	issue, _, err := client.Issues.Get(context.TODO(), "FerretDB", "FerretDB", n)
-	// if error is RateLimitError and token is not set propmt user to provide GITHUB_TOKEN
-	// else consider issue open
-	if err != nil {
-		if errors.As(err, new(*github.RateLimitError)) && os.Getenv("GITHUB_TOKEN") == "" {
-			log.Println(
-				"Rate limit reached. Please set a GITHUB_TOKEN as described at",
-				"https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md#setting-a-github_token",
-			)
-
-			return false, err
-		}
-
-		return true, nil
-	}
-
-	isOpen := issue.GetState() == "open"
-
-	return isOpen, nil
-}
-
-/*
-* Due to analysis tools changing cwd for each go Package
-* we need to find the root of the project in order to get the common cache file.
-* this is done by recursively traversing the Path up until README.md is found.
- */
-func getCacheFilePath(p string) string {
-	path := filepath.Dir(p)
-
-	readmePath := filepath.Join(path, "README.md")
-
-	_, err := os.Stat(readmePath)
-
-	if os.IsNotExist(err) {
-		return getCacheFilePath(path)
-	}
-
-	return filepath.Join(path, "tmp", "checkcomments", "cache.json")
 }

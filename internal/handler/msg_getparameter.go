@@ -52,7 +52,7 @@ func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.O
 		//	"settableAtStartup", <bool>,
 		//)),
 		"authenticationMechanisms", must.NotFail(types.NewDocument(
-			"value", must.NotFail(types.NewArray("PLAIN")),
+			"value", must.NotFail(types.NewArray("SCRAM-SHA-1", "SCRAM-SHA-256", "PLAIN")),
 			"settableAtRuntime", false,
 			"settableAtStartup", true,
 		)),
@@ -62,7 +62,7 @@ func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.O
 			"settableAtStartup", true,
 		)),
 		"featureCompatibilityVersion", must.NotFail(types.NewDocument(
-			"value", must.NotFail(types.NewDocument("version", "6.0")),
+			"value", must.NotFail(types.NewDocument("version", "7.0")),
 			"settableAtRuntime", false,
 			"settableAtStartup", false,
 		)),
@@ -81,7 +81,7 @@ func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.O
 
 	if resDoc.Len() < 1 {
 		return nil, handlererrors.NewCommandErrorMsgWithArgument(
-			handlererrors.ErrorCode(0),
+			handlererrors.ErrorCode(72),
 			"no option found to get",
 			document.Command(),
 		)
@@ -90,9 +90,9 @@ func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	resDoc.Set("ok", float64(1))
 
 	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{resDoc},
-	}))
+	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+		resDoc,
+	)))
 
 	return &reply, nil
 }

@@ -73,8 +73,9 @@ var specialCharacters = regexp.MustCompile("[^a-z][^a-z0-9_]*")
 //
 //nolint:vet // for readability
 type Registry struct {
-	p *pool.Pool
-	l *zap.Logger
+	p         *pool.Pool
+	l         *zap.Logger
+	BatchSize int
 
 	// rw protects colls but also acts like a global lock for the whole registry.
 	// The latter effectively replaces transactions (see the postgresql backend package description for more info).
@@ -86,15 +87,16 @@ type Registry struct {
 }
 
 // NewRegistry creates a registry for PostgreSQL databases with a given base URI.
-func NewRegistry(u string, l *zap.Logger, sp *state.Provider) (*Registry, error) {
+func NewRegistry(u string, batchSize int, l *zap.Logger, sp *state.Provider) (*Registry, error) {
 	p, err := pool.New(u, l, sp)
 	if err != nil {
 		return nil, err
 	}
 
 	r := &Registry{
-		p: p,
-		l: l,
+		p:         p,
+		l:         l,
+		BatchSize: batchSize,
 	}
 
 	return r, nil
@@ -106,7 +108,8 @@ func (r *Registry) Close() {
 }
 
 // getPool returns a pool of connections to PostgreSQL database
-// for the username/password combination in the context using [conninfo].
+// for the username/password combination in the context using [conninfo]
+// (or any pool if authentication is bypassed).
 //
 // It loads metadata if it hasn't been loaded from the database yet.
 //
@@ -115,11 +118,25 @@ func (r *Registry) Close() {
 //
 // All methods should use this method to check authentication and load metadata.
 func (r *Registry) getPool(ctx context.Context) (*pgxpool.Pool, error) {
-	username, password := conninfo.Get(ctx).Auth()
+	connInfo := conninfo.Get(ctx)
 
-	p, err := r.p.Get(username, password)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
+	var p *pgxpool.Pool
+
+	if connInfo.BypassBackendAuth() {
+		if p = r.p.GetAny(); p == nil {
+			var err error
+			// use credential from the base URI by passing empty values
+			if p, err = r.p.Get("", ""); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+		}
+	} else {
+		username, password, _ := connInfo.Auth()
+
+		var err error
+		if p, err = r.p.Get(username, password); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 	}
 
 	r.rw.RLock()
@@ -677,7 +694,7 @@ func (r *Registry) collectionDrop(ctx context.Context, p *pgxpool.Pool, dbName, 
 
 // CollectionRename renames a collection in the database.
 //
-// The collection name is update, but original table name is kept.
+// The collection name is updated, but original table name is kept.
 //
 // Returned boolean value indicates whether the collection was renamed.
 // If database or collection did not exist, (false, nil) is returned.

@@ -15,10 +15,8 @@
 package handler
 
 import (
-	"cmp"
 	"context"
 	"fmt"
-	"slices"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
@@ -78,20 +76,18 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
-	collections, err := db.ListCollections(ctx, new(backends.ListCollectionsParams))
+	collectionParam := backends.ListCollectionsParams{Name: collection}
+	collections, err := db.ListCollections(ctx, &collectionParam)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	var i int
 	var found bool
 	var cInfo backends.CollectionInfo
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3601
-	if i, found = slices.BinarySearchFunc(collections.Collections, collection, func(e backends.CollectionInfo, t string) int {
-		return cmp.Compare(e.Name, t)
-	}); found {
-		cInfo = collections.Collections[i]
+	found = len(collections.Collections) > 0
+	if found {
+		cInfo = collections.Collections[0]
 	}
 
 	indexes, err := c.ListIndexes(ctx, new(backends.ListIndexesParams))
@@ -163,9 +159,9 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	)
 
 	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(pairs...))},
-	}))
+	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+		must.NotFail(types.NewDocument(pairs...)),
+	)))
 
 	return &reply, nil
 }

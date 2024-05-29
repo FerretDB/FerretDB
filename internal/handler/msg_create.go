@@ -83,10 +83,6 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	if capped {
-		if !h.EnableOplog {
-			return nil, common.Unimplemented(document, "capped")
-		}
-
 		size, _ := document.Get("size")
 		if _, ok := size.(types.NullType); size == nil || ok {
 			msg := "the 'size' field is required when 'capped' is true"
@@ -96,10 +92,6 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		params.CappedSize, err = handlerparams.GetValidatedNumberParamWithMinValue(document.Command(), "size", size, 1)
 		if err != nil {
 			return nil, err
-		}
-
-		if params.CappedSize%256 != 0 {
-			params.CappedSize = (params.CappedSize/256 + 1) * 256
 		}
 
 		if max, _ := document.Get("max"); max != nil {
@@ -125,11 +117,11 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	switch {
 	case err == nil:
 		var reply wire.OpMsg
-		must.NoError(reply.SetSections(wire.OpMsgSection{
-			Documents: []*types.Document{must.NotFail(types.NewDocument(
+		must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+			must.NotFail(types.NewDocument(
 				"ok", float64(1),
-			))},
-		}))
+			)),
+		)))
 
 		return &reply, nil
 
