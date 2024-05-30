@@ -34,8 +34,8 @@ body:
       description: |
         For example:
           - **OS**: Ubuntu 22.04 x86_64
-          - **Deployment**: Docker using `ghcr.io/ferretdb/ferretdb:1.0.0` image
-          - **Deployment details**: Docker version 23.0.5
+          - **Deployment**: Docker using `ghcr.io/ferretdb/ferretdb:1.15.0` image
+          - **Deployment details**: Docker version 24.0.6
       value: |
         - OS:
         - Deployment:
@@ -65,6 +65,6 @@ body:
     attributes:
       label: What did you see instead?
       description: >
-        Please include FerretDB [logs](https://docs.ferretdb.io/configuration/logging/).
+        Please include FerretDB [logs](https://docs.ferretdb.io/configuration/observability/).
     validations:
       required: true

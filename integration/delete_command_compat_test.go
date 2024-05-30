@@ -21,6 +21,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
+
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
@@ -55,16 +57,14 @@ func testDeleteCommandCompat(t *testing.T, testCases map[string]deleteCommandCom
 					t.Helper()
 
 					var targetRes, compatRes bson.D
-					targetErr := targetCollection.Database().RunCommand(ctx,
-						bson.D{
-							{"delete", targetCollection.Name()},
-							{"deletes", tc.deletes},
-						}).Decode(&targetRes)
-					compatErr := compatCollection.Database().RunCommand(ctx,
-						bson.D{
-							{"delete", compatCollection.Name()},
-							{"deletes", tc.deletes},
-						}).Decode(&compatRes)
+					targetErr := targetCollection.Database().RunCommand(ctx, bson.D{
+						{"delete", targetCollection.Name()},
+						{"deletes", tc.deletes},
+					}).Decode(&targetRes)
+					compatErr := compatCollection.Database().RunCommand(ctx, bson.D{
+						{"delete", compatCollection.Name()},
+						{"deletes", tc.deletes},
+					}).Decode(&compatRes)
 
 					if targetErr != nil {
 						t.Logf("Target error: %v", targetErr)
@@ -151,5 +151,12 @@ func TestDeleteCommandCompatNotExistingDatabase(t *testing.T) {
 	assert.NoError(t, targetErr)
 	assert.NoError(t, compatErr)
 
-	assert.Equal(t, compatRes, targetRes)
+	compat := ConvertDocument(t, compatRes)
+	compat.Remove("$clusterTime")
+	compat.Remove("operationTime")
+	compat.Remove("electionId")
+	compat.Remove("opTime")
+
+	target := ConvertDocument(t, targetRes)
+	testutil.AssertEqual(t, compat, target)
 }

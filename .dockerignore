@@ -14,4 +14,4 @@
 !.gitignore
 
 # additional files for Docker images
-!build/docker
+!build/ferretdb

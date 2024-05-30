@@ -15,22 +15,213 @@
 package shareddata
 
 import (
-	"fmt"
+	"math"
 	"math/rand"
+	"strconv"
 	"time"
 
-	fakerlib "github.com/jaswdr/faker"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// faker generates stable fake data for tests.
+// words is a list of words used for generating random data.
+var words = [...]string{
+	"access",
+	"additional",
+	"against",
+	"aggregate",
+	"all",
+	"allow",
+	"allowed",
+	"allows",
+	"along",
+	"an",
+	"and",
+	"any",
+	"anyone",
+	"apply",
+	"are",
+	"as",
+	"at",
+	"attached",
+	"author",
+	"away",
+	"be",
+	"being",
+	"build",
+	"built",
+	"business",
+	"by",
+	"carry",
+	"charge",
+	"code",
+	"compiled",
+	"comply",
+	"component",
+	"conjunction",
+	"containing",
+	"cost",
+	"criteria",
+	"deliberately",
+	"depend",
+	"derived",
+	"different",
+	"discriminate",
+	"discrimination",
+	"distributed",
+	"distribution",
+	"doesn",
+	"downloading",
+	"endeavor",
+	"example",
+	"execution",
+	"explicitly",
+	"extracted",
+	"fee",
+	"field",
+	"fields",
+	"files”",
+	"following",
+	"for",
+	"form",
+	"forms",
+	"free",
+	"from",
+	"genetic",
+	"giving",
+	"granted",
+	"group",
+	"groups",
+	"have",
+	"if",
+	"in",
+	"include",
+	"individual",
+	"insist",
+	"integrity",
+	"interface",
+	"intermediate",
+	"internet",
+	"introduction",
+	"is",
+	"it",
+	"just",
+	"license",
+	"licensed",
+	"making",
+	"may",
+	"mean",
+	"means",
+	"medium",
+	"modifications",
+	"modified",
+	"modify",
+	"modifying",
+	"more",
+	"must",
+	"name",
+	"need",
+	"no",
+	"not",
+	"number",
+	"obfuscated",
+	"obtaining",
+	"of",
+	"on",
+	"only",
+	"open",
+	"or",
+	"original",
+	"other",
+	"output",
+	"part",
+	"particular",
+	"parties",
+	"party",
+	"patch",
+	"permit",
+	"person",
+	"persons",
+	"place",
+	"predicated",
+	"preferably",
+	"preferred",
+	"preprocessor",
+	"product",
+	"program",
+	"programmer",
+	"programs",
+	"provision",
+	"purpose",
+	"reasonable",
+	"redistributed",
+	"redistribution",
+	"reproduction",
+	"require",
+	"research",
+	"restrict",
+	"restrictions",
+	"rights",
+	"royalty",
+	"sale",
+	"same",
+	"selling",
+	"several",
+	"shall",
+	"should",
+	"software",
+	"some",
+	"source",
+	"source-code",
+	"sources",
+	"specific",
+	"style",
+	"such",
+	"technology",
+	"technology-neutral",
+	"terms",
+	"than",
+	"that",
+	"the",
+	"them",
+	"there",
+	"those",
+	"time",
+	"to",
+	"translator",
+	"under",
+	"use",
+	"used",
+	"version",
+	"via",
+	"well",
+	"well-publicized",
+	"where",
+	"which",
+	"whom",
+	"with",
+	"within",
+	"without",
+	"works",
+	"would",
+}
+
+// wordsB is words as []byte.
+var wordsB [len(words)][]byte
+
+// init initializes wordsB.
+func init() {
+	for i, w := range words {
+		wordsB[i] = []byte(w)
+	}
+}
+
+// faker generates stable fake data for tests and benchmarks.
 //
 // It is not thread-safe.
 type faker struct {
 	r *rand.Rand
-	f fakerlib.Faker
 }
 
 // newFaker creates a new faker.
@@ -39,16 +230,12 @@ func newFaker() *faker {
 
 	return &faker{
 		r: rand.New(src),
-		f: fakerlib.NewWithSeed(src),
 	}
 }
 
 // FieldName generates a random document field name.
 func (f *faker) FieldName() string {
-	// TODO https://github.com/jaswdr/faker/issues/142
-
-	// somewhat surprisingly, generating "better" field names generates duplicates too often
-	return fmt.Sprintf("field_%d", f.r.Int())
+	return "field_" + strconv.Itoa(f.r.Int())
 }
 
 // ObjectID generates a random non-zero ObjectID.
@@ -66,27 +253,32 @@ func (f *faker) ScalarValue() any {
 	for {
 		switch f.r.Intn(0x13) + 1 {
 		case 0x01: // Double
-			return f.r.Float64()
+			for {
+				f := math.Float64frombits(f.r.Uint64())
+				if !math.IsNaN(f) { // to simplify comparisons
+					return f
+				}
+			}
 		case 0x02: // String
-			return f.f.Lorem().Words(10)
+			return words[f.r.Intn(len(words))]
 		case 0x05: // Binary
-			return primitive.Binary{Subtype: 0x00, Data: f.f.Lorem().Bytes(1000)}
+			return primitive.Binary{Subtype: 0x00, Data: wordsB[f.r.Intn(len(wordsB))]}
 		case 0x07: // ObjectID
 			return f.ObjectID()
 		case 0x08: // Bool
-			return f.f.Bool()
+			return f.r.Intn(2) == 1
 		case 0x09: // DateTime
-			return f.f.Time().Time(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC))
+			return time.UnixMilli(int64(int32(f.r.Uint32())) * 1000) // 1901-2038 to make JSON encoder happy
 		case 0x0a: // Null
 			return nil
 		case 0x0b: // Regex
-			// TODO
+			// not yet
 		case 0x10: // Int32
-			return f.f.Int32()
+			return int32(f.r.Uint32())
 		case 0x11: // Timestamp
-			// TODO
+			// not yet
 		case 0x12: // Int64
-			return f.f.Int64()
+			return int64(f.r.Uint64())
 		case 0x13: // Decimal
 			// TODO https://github.com/FerretDB/FerretDB/issues/66
 		default:

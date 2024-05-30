@@ -16,9 +16,11 @@ package setup
 
 import (
 	"context"
+	"net/url"
+	"os"
+	"path/filepath"
 
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo"
@@ -26,7 +28,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 // makeClient returns new client for the given working MongoDB URI.
@@ -40,11 +42,12 @@ func makeClient(ctx context.Context, uri string) (*mongo.Client, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
-	// make sure that FerretDB-backend connection works
-	_, err = client.ListDatabases(ctx, bson.D{})
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	// When too many connections are open, PostgreSQL returns an error,
+	// but this error is hanging (panic in setupClient doesn't immediately stop the test).
+	// TODO https://github.com/FerretDB/FerretDB/issues/3535
+	// if err = client.Ping(ctx, nil); err != nil {
+	// 	return nil, lazyerrors.Error(err)
+	// }
 
 	return client, nil
 }
@@ -55,7 +58,7 @@ func makeClient(ctx context.Context, uri string) (*mongo.Client, error) {
 //
 // If the connection can't be established, it panics,
 // as it doesn't make sense to proceed with other tests if we couldn't connect in one of them.
-func setupClient(tb testutil.TB, ctx context.Context, uri string) *mongo.Client {
+func setupClient(tb testtb.TB, ctx context.Context, uri string) *mongo.Client {
 	tb.Helper()
 
 	ctx, span := otel.Tracer("").Start(ctx, "setupClient")
@@ -75,4 +78,42 @@ func setupClient(tb testutil.TB, ctx context.Context, uri string) *mongo.Client 
 	})
 
 	return client
+}
+
+// toAbsolutePathURI replaces the relative path of tlsCertificateKeyFile and tlsCaFile path
+// to an absolute path. If the file is not found because the test is in subdirectory
+// such as`integration/user/`, the parent directory is looked.
+func toAbsolutePathURI(tb testtb.TB, uri string) string {
+	u, err := url.Parse(uri)
+	require.NoError(tb, err)
+
+	values := url.Values{}
+
+	for k, v := range u.Query() {
+		require.Len(tb, v, 1)
+
+		switch k {
+		case "tlsCertificateKeyFile", "tlsCaFile":
+			file := v[0]
+
+			if filepath.IsAbs(file) {
+				values[k] = []string{file}
+
+				continue
+			}
+
+			file = filepath.Join(Dir(tb), v[0])
+			if _, err = os.Stat(file); os.IsNotExist(err) {
+				file = filepath.Join(Dir(tb), "..", v[0])
+			}
+
+			values[k] = []string{file}
+		default:
+			values[k] = v
+		}
+	}
+
+	u.RawQuery = values.Encode()
+
+	return u.String()
 }

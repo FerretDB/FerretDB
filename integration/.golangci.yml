@@ -6,6 +6,23 @@ run:
 
 linters-settings:
   # asciicheck
+  depguard:
+    rules:
+      old:
+        files:
+          - $all
+        deny:
+          - pkg: golang.org/x/net/context
+            desc: use `context` package instead
+          - pkg: golang.org/x/exp/slices
+            desc: use `slices` package instead
+          - pkg: maps
+            desc: use `golang.org/x/exp/maps` package instead
+      commonerrors:
+        files:
+          - $all
+        deny:
+          - pkg: github.com/FerretDB/FerretDB/internal/handler/commonerrors
   exhaustive:
     default-signifies-exhaustive: false
   gci:
@@ -13,13 +30,13 @@ linters-settings:
       - standard
       - default
       - prefix(github.com/FerretDB/FerretDB)
+      - prefix(github.com/FerretDB/FerretDB/integration)
   goconst:
     min-occurrences: 5
     ignore-tests: true
   godot:
     scope: toplevel
     exclude:
-      - go-sumtype:decl
       - check interfaces
     capital: true
   godox:
@@ -27,6 +44,8 @@ linters-settings:
       - BUG
       - FIXME
       - HACK
+      - lala
+      - lalala
   goheader:
     # Please do not update it, including bumping a year.
     template: |-
@@ -45,7 +64,9 @@ linters-settings:
       limitations under the License.
   goimports:
     local-prefixes: github.com/FerretDB/FerretDB
-  # gomodguard
+  gomodguard:
+    blocked:
+      modules: []
   gosimple:
     checks: ["all"]
   govet:
@@ -58,16 +79,24 @@ linters-settings:
     no-unaliased: false
     no-extra-aliases: true
     alias:
-      - pkg: github.com/tigrisdata/tigris-client-go/api/server/v1
-        alias: api
+      - pkg: github.com/FerretDB/FerretDB/internal/bson
+        alias: fbson
       - pkg: github.com/prometheus/client_model/go
         alias: dto
-      - pkg: go.opentelemetry.io/otel/semconv/v1.17.0
-        alias: otelsemconv
-      - pkg: go.opentelemetry.io/otel/sdk/trace
-        alias: oteltrace
       - pkg: github.com/jaswdr/faker
         alias: fakerlib
+      - pkg: go.opentelemetry.io/otel/attribute
+        alias: otelattribute
+      - pkg: go.opentelemetry.io/otel/codes
+        alias: otelcodes
+      - pkg: go.opentelemetry.io/otel/trace
+        alias: oteltrace
+      - pkg: go.opentelemetry.io/otel/sdk/resource
+        alias: otelsdkresource
+      - pkg: go.opentelemetry.io/otel/sdk/trace
+        alias: otelsdktrace
+      - pkg: go.opentelemetry.io/otel/semconv/v1.21.0
+        alias: otelsemconv
   # ineffassign
   lll:
     line-length: 175 # TODO reduce it to 130
@@ -75,9 +104,13 @@ linters-settings:
   misspell:
     ignore-words:
       - guiness # present in the test dataset
+    extra-words: # https://go.dev/wiki/Spelling, https://github.com/golangci/misspell/issues/11
+      - typo: "iff"
+        correction: "if"
+      - typo: "cancelation"
+        correction: "cancellation"
   nolintlint:
     allow-unused: false
-    allow-leading-space: false
     allow-no-explanation: []
     require-explanation: true
     require-specific: true
@@ -85,6 +118,16 @@ linters-settings:
     ignore-generated-header: true
     severity: error
     rules: []
+  sloglint:
+    no-mixed-args: true
+    kv-only: false
+    attr-only: true
+    no-global: "all"
+    context: "scope"
+    static-msg: true
+    no-raw-keys: false # TODO https://github.com/FerretDB/FerretDB/issues/3421
+    key-naming-case: snake
+    args-on-sep-lines: false
   staticcheck:
     checks:
       - all
@@ -98,8 +141,10 @@ linters:
   disable-all: true
   enable:
     - asciicheck
+    - depguard
     - exhaustive
     - gci
+    - gochecksumtype
     - goconst
     - godot
     - godox
@@ -114,6 +159,7 @@ linters:
     - misspell
     - nolintlint
     - revive
+    - sloglint
     - staticcheck
     - unused
     - whitespace

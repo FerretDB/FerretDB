@@ -99,8 +99,8 @@ func loadRecordFile(file string) ([]Record, error) {
 			break
 		}
 
-		// TODO we should still set HeaderB and BodyB
-		// https://github.com/FerretDB/FerretDB/issues/1636
+		// we should still set HeaderB and BodyB
+		// TODO https://github.com/FerretDB/FerretDB/issues/1636
 		if err != nil {
 			break
 		}
