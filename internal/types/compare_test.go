@@ -29,7 +29,6 @@ func TestCompare(t *testing.T) {
 	for name, tc := range map[string]struct {
 		a        any
 		b        any
-		skip     string
 		expected CompareResult
 	}{
 		"EmptyArrayCompareNullFieldArray": {
@@ -43,16 +42,14 @@ func TestCompare(t *testing.T) {
 			expected: Less,
 		},
 		"NumberCompareArray": {
-			skip:     "https://github.com/FerretDB/FerretDB/issues/1522",
 			a:        int32(1),
 			b:        must.NotFail(NewArray(int32(2))),
-			expected: Greater,
+			expected: Less,
 		},
 		"NullCompareEmptyArray": {
-			skip:     "https://github.com/FerretDB/FerretDB/issues/1522",
-			a:        NullType{},
 			b:        must.NotFail(NewArray()),
-			expected: Greater,
+			a:        NullType{},
+			expected: Less,
 		},
 		"EmptyDocumentCompareEmptyArrayUsesSortOrder": {
 			a:        must.NotFail(NewDocument()),
@@ -111,10 +108,6 @@ func TestCompare(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
-
 			t.Parallel()
 
 			res := Compare(tc.a, tc.b)

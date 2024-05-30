@@ -5,14 +5,14 @@ services:
   postgres:
     build:
       context: ./build/deps
-      dockerfile: postgres.Dockerfile
+      dockerfile: ${POSTGRES_DOCKERFILE:-postgres}.Dockerfile
     container_name: ferretdb_postgres
     command: >
       postgres
       -c log_min_duration_statement=1000ms
       -c log_min_error_statement=WARNING
       -c log_min_messages=WARNING
-      -c max_connections=200
+      -c max_connections=400
     ports:
       - 5432:5432
     extra_hosts:
@@ -35,7 +35,7 @@ services:
       -c log_min_duration_statement=1000ms
       -c log_min_error_statement=WARNING
       -c log_min_messages=WARNING
-      -c max_connections=200
+      -c max_connections=400
     ports:
       - 5433:5432
     extra_hosts:
@@ -47,64 +47,36 @@ services:
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=ferretdb
 
-  # The main Tigris instance that is used by `task run-tigris`, etc.
-  tigris:
+  mysql:
     build:
       context: ./build/deps
-      dockerfile: ${TIGRIS_DOCKERFILE:-tigris}.Dockerfile
-    container_name: ferretdb_tigris
+      dockerfile: mysql.Dockerfile
+    container_name: ferretdb_mysql
+    command:
+      - --slow_query_log=1
+      - --long_query_time=1
+      - --log_error_verbosity=2
+      - --max_connections=200
     ports:
-      - 8081:8081
+      - 3306:3306
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
-      - TIGRIS_SERVER_LOG_LEVEL=info
-
-  # Additional instances for faster integration tests.
-  # Due to the single-core nature of FoundationDB, that's the easiest way to speed up them.
-  tigris1:
-    build:
-      context: ./build/deps
-      dockerfile: ${TIGRIS_DOCKERFILE:-tigris}.Dockerfile
-    container_name: ferretdb_tigris1
-    ports:
-      - 8091:8081
-    environment:
-      - TIGRIS_SERVER_LOG_LEVEL=info
-  tigris2:
-    build:
-      context: ./build/deps
-      dockerfile: ${TIGRIS_DOCKERFILE:-tigris}.Dockerfile
-    container_name: ferretdb_tigris2
-    ports:
-      - 8092:8081
-    environment:
-      - TIGRIS_SERVER_LOG_LEVEL=info
-  tigris3:
-    build:
-      context: ./build/deps
-      dockerfile: ${TIGRIS_DOCKERFILE:-tigris}.Dockerfile
-    container_name: ferretdb_tigris3
-    ports:
-      - 8093:8081
-    environment:
-      - TIGRIS_SERVER_LOG_LEVEL=info
-  tigris4:
-    build:
-      context: ./build/deps
-      dockerfile: ${TIGRIS_DOCKERFILE:-tigris}.Dockerfile
-    container_name: ferretdb_tigris4
-    ports:
-      - 8094:8081
-    environment:
-      - TIGRIS_SERVER_LOG_LEVEL=info
+      # UTC−03:30/−02:30. Set to catch timezone problems.
+      - TZ=America/St_Johns
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_USER=username
+      - MYSQL_PASSWORD=password
+      - MYSQL_DATABASE=ferretdb
 
   mongodb:
     build:
       context: ./build/deps
-      dockerfile: ${MONGO_DOCKERFILE:-mongo6}.Dockerfile
+      dockerfile: mongo.Dockerfile
     container_name: ferretdb_mongodb
-    command: --config /etc/mongod.conf
+    command: --config /etc/mongodb.conf
     ports:
-      - 47017:27017
+      - 47017:47017
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
@@ -112,16 +84,16 @@ services:
       - TZ=Asia/Kathmandu
     volumes:
       - ./build/certs:/etc/certs
-      - ./build/mongod.conf:/etc/mongod.conf
+      - ./build/mongodb.conf:/etc/mongodb.conf
 
   mongodb_secured:
     build:
       context: ./build/deps
-      dockerfile: ${MONGO_DOCKERFILE:-mongo6}.Dockerfile
+      dockerfile: mongo.Dockerfile
     container_name: ferretdb_mongodb_secured
-    command: --config /etc/mongod.conf
+    command: --config /etc/mongodb.conf
     ports:
-      - 47018:27017
+      - 47018:47018
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
@@ -131,7 +103,7 @@ services:
       - MONGO_INITDB_ROOT_PASSWORD=password
     volumes:
       - ./build/certs:/etc/certs
-      - ./build/mongod_secured.conf:/etc/mongod.conf
+      - ./build/mongodb_secured.conf:/etc/mongodb.conf
 
   # for test scripts
   legacy-mongo-shell:
@@ -153,9 +125,12 @@ services:
       context: ./build/deps
       dockerfile: jaeger.Dockerfile
     container_name: ferretdb_jaeger
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
     ports:
+      - 4318:4318 # OTLP over HTTP
+      - 6831:6831/udp # Compact Thrift from BuildKit
       - 16686:16686 # UI on http://127.0.0.1:16686/
-      - 14268:14268 # to receive spans from clients
 
   trivy:
     build:
@@ -165,23 +140,14 @@ services:
     volumes:
       - .:/workdir
 
-  # for testing .deb and .rpm packages
-  ubuntu:
+  # for YAML files
+  prettier:
     build:
       context: ./build/deps
-      dockerfile: ubuntu2204.Dockerfile
-    container_name: ferretdb_ubuntu
-    platform: linux/amd64
+      dockerfile: ferretdb-prettier.Dockerfile
+    container_name: ferretdb_ferretdb-prettier
     volumes:
-      - ./tmp/debs:/debs
-  ubi:
-    build:
-      context: ./build/deps
-      dockerfile: ubi9.Dockerfile
-    container_name: ferretdb_ubi
-    platform: linux/amd64
-    volumes:
-      - ./tmp/rpms:/rpms
+      - .:/workdir
 
   # for documentation
   textlint:
@@ -209,6 +175,7 @@ services:
       - CLOUDFLARE_ACCOUNT_ID
       - CLOUDFLARE_API_TOKEN
       - WRANGLER_SEND_METRICS=false
+      # - WRANGLER_LOG=debug # TODO https://github.com/cloudflare/workers-sdk/issues/3073
     volumes:
       - .:/workdir # mount everything for wrangler to pick up branch name, commit hash, etc from git
   docusaurus-docs:
@@ -219,19 +186,20 @@ services:
     ports:
       - 3000:3000
     volumes:
-      - ./website/docs:/workdir/docusaurus-docs/docs:ro
-      - ./website/static:/workdir/docusaurus-docs/static:ro
-      - ./website/src/components:/workdir/docusaurus-docs/src/components:ro
-      - ./website/src/css:/workdir/docusaurus-docs/src/css:ro
-
-      # We copy intro.js to redirect from /intro (old default docs page) to the root docs page.
-      - ./website/src/pages/intro.js:/workdir/docusaurus-docs/src/pages/intro.js
-
+      # shared with blog
       - ./website/babel.config.js:/workdir/docusaurus-docs/babel.config.js:ro
-      - ./website/docusaurus.config.js:/workdir/docusaurus-docs/docusaurus.config.js:ro
       - ./website/sidebars.js:/workdir/docusaurus-docs/sidebars.js:ro
-
+      - ./website/src:/workdir/docusaurus-docs/src:ro
+      - ./website/static:/workdir/docusaurus-docs/static:ro
       - ./website/build:/workdir/docusaurus-docs/build:rw
+
+      # docs sources
+      - ./website/docs:/workdir/docusaurus-docs/docs:rw
+      - ./website/docusaurus.config.js:/workdir/docusaurus-docs/docusaurus.config.js:ro
+      - ./website/versioned_docs:/workdir/docusaurus-docs/versioned_docs:rw
+      - ./website/versioned_sidebars:/workdir/docusaurus-docs/versioned_sidebars:rw
+      - ./website/versions.json:/workdir/docusaurus-docs/versions.json:rw
+
   docusaurus-blog:
     build:
       context: ./build/deps
@@ -240,13 +208,17 @@ services:
     ports:
       - 3001:3001
     volumes:
-      - ./website/blog:/workdir/docusaurus-docs/blog:ro
-      - ./website/static:/workdir/docusaurus-docs/static:ro
-      - ./website/src/components:/workdir/docusaurus-docs/src/components:ro
-      - ./website/src/css:/workdir/docusaurus-docs/src/css:ro
-
+      # shared with docs
       - ./website/babel.config.js:/workdir/docusaurus-docs/babel.config.js:ro
-      - ./website/docusaurus.config-blog.js:/workdir/docusaurus-docs/docusaurus.config.js:ro
       - ./website/sidebars.js:/workdir/docusaurus-docs/sidebars.js:ro
-
+      - ./website/src:/workdir/docusaurus-docs/src:ro
+      - ./website/static:/workdir/docusaurus-docs/static:ro
       - ./website/build:/workdir/docusaurus-docs/build:rw
+
+      # blog sources
+      - ./website/blog:/workdir/docusaurus-docs/blog:ro
+      - ./website/docusaurus.config-blog.js:/workdir/docusaurus-docs/docusaurus.config.js:ro
+
+networks:
+  default:
+    name: ferretdb
