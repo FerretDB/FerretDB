@@ -14,3 +14,20 @@
 
 // Package password provides utilities for password hashing and verification.
 package password
+
+// Password wraps a password string.
+//
+// It exist mainly to avoid issues when multiple string parameters are used.
+type Password struct {
+	p string
+}
+
+// WrapPassword returns Password for the given string.
+func WrapPassword(password string) Password {
+	return Password{p: password}
+}
+
+// Password returns the password string.
+func (p Password) Password() string {
+	return p.p
+}
