@@ -144,8 +144,7 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 		panic("not reached")
 	}
 
-	// use per-test PostgreSQL database to prevent handler's/backend's metadata registry
-	// read schemas owned by concurrent tests
+	// use per-test PostgreSQL database to prevent problems with parallel tests
 	postgreSQLURLF := *postgreSQLURLF
 	if postgreSQLURLF != "" {
 		postgreSQLURLF = testutil.TestPostgreSQLURI(tb, ctx, postgreSQLURLF)

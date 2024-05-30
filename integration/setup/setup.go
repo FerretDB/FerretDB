@@ -82,10 +82,6 @@ type SetupOpts struct {
 	// Database to use. If empty, temporary test-specific database is created and dropped after test.
 	DatabaseName string
 
-	// Collection to use. If empty, temporary test-specific collection is created and dropped after test.
-	// Most tests should keep this empty.
-	CollectionName string
-
 	// Data providers. If empty, collection is not created.
 	Providers []shareddata.Provider
 
@@ -118,7 +114,7 @@ type BackendOpts struct {
 type SetupResult struct {
 	Ctx        context.Context
 	Collection *mongo.Collection
-	MongoDBURI string
+	MongoDBURI string // without database name
 }
 
 // NewBackendOpts returns BackendOpts with default values set.
@@ -245,12 +241,7 @@ func setupCollection(tb testtb.TB, ctx context.Context, client *mongo.Client, op
 		ownDatabase = true
 	}
 
-	var ownCollection bool
-	collectionName := opts.CollectionName
-	if collectionName == "" {
-		collectionName = testutil.CollectionName(tb)
-		ownCollection = true
-	}
+	collectionName := testutil.CollectionName(tb)
 
 	database := client.Database(databaseName)
 	collection := database.Collection(collectionName)
@@ -267,7 +258,7 @@ func setupCollection(tb testtb.TB, ctx context.Context, client *mongo.Client, op
 	switch {
 	case len(opts.Providers) > 0:
 		require.Nil(tb, opts.BenchmarkProvider, "Both Providers and BenchmarkProvider were set")
-		inserted = insertProviders(tb, ctx, collection, opts.Providers...)
+		inserted = InsertProviders(tb, ctx, collection, opts.Providers...)
 	case opts.BenchmarkProvider != nil:
 		inserted = insertBenchmarkProvider(tb, ctx, collection, opts.BenchmarkProvider)
 	}
@@ -278,32 +269,30 @@ func setupCollection(tb testtb.TB, ctx context.Context, client *mongo.Client, op
 		require.True(tb, inserted)
 	}
 
-	if ownCollection {
-		// delete collection and (possibly) database unless test failed
-		tb.Cleanup(func() {
-			if tb.Failed() {
-				tb.Logf("Keeping %s.%s for debugging.", databaseName, collectionName)
-				return
-			}
+	// delete collection and (possibly) database unless test failed
+	tb.Cleanup(func() {
+		if tb.Failed() {
+			tb.Logf("Keeping %s.%s for debugging.", databaseName, collectionName)
+			return
+		}
 
-			err := collection.Drop(ctx)
+		err := collection.Drop(ctx)
+		require.NoError(tb, err)
+
+		if ownDatabase {
+			err = database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}}).Err()
 			require.NoError(tb, err)
 
-			if ownDatabase {
-				err = database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}}).Err()
-				require.NoError(tb, err)
-
-				err = database.Drop(ctx)
-				require.NoError(tb, err)
-			}
-		})
-	}
+			err = database.Drop(ctx)
+			require.NoError(tb, err)
+		}
+	})
 
 	return collection
 }
 
-// insertProviders inserts documents from specified Providers into collection. It returns true if any document was inserted.
-func insertProviders(tb testtb.TB, ctx context.Context, collection *mongo.Collection, providers ...shareddata.Provider) (inserted bool) {
+// InsertProviders inserts documents from specified Providers into collection. It returns true if any document was inserted.
+func InsertProviders(tb testtb.TB, ctx context.Context, collection *mongo.Collection, providers ...shareddata.Provider) (inserted bool) {
 	tb.Helper()
 
 	collectionName := collection.Name()
