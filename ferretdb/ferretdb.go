@@ -14,9 +14,8 @@
 
 // Package ferretdb provides embeddable FerretDB implementation.
 //
-// See [build/version package documentation] for information about Go build tags that affect this package.
-//
-// [build/version package documentation]: https://pkg.go.dev/github.com/FerretDB/FerretDB/build/version
+// See [github.com/FerretDB/FerretDB/build/version] package documentation
+// for information about Go build tags that affect this package.
 package ferretdb
 
 import (
@@ -24,13 +23,14 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"sync"
 
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
-	"github.com/FerretDB/FerretDB/internal/handlers/registry"
+	"github.com/FerretDB/FerretDB/internal/handler/registry"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
@@ -39,21 +39,22 @@ import (
 type Config struct {
 	Listener ListenerConfig
 
-	// Handler to use; one of `pg` or `tigris` (if enabled at compile-time).
+	// Logger to use; if nil, it uses the default global logger.
+	Logger *zap.Logger
+
+	// Handler to use; one of `postgresql` or `sqlite`.
 	Handler string
 
-	// PostgreSQL connection string for `pg` handler.
+	// PostgreSQL connection string for `postgresql` handler.
 	// See:
-	// * https://pkg.go.dev/github.com/jackc/pgx/v4/pgxpool#ParseConfig
-	// * https://pkg.go.dev/github.com/jackc/pgx/v4#ParseConfig
-	// * https://pkg.go.dev/github.com/jackc/pgconn#ParseConfig
+	//   - https://pkg.go.dev/github.com/jackc/pgx/v5/pgxpool#ParseConfig
+	//   - https://pkg.go.dev/github.com/jackc/pgx/v5#ParseConfig
+	//   - https://pkg.go.dev/github.com/jackc/pgx/v5/pgconn#ParseConfig
 	PostgreSQLURL string // For example: `postgres://hostname:5432/ferretdb`.
 
-	// Tigris parameters for `tigris` handler.
-	// See https://www.tigrisdata.com/docs/sdkstools/golang/getting-started/
-	TigrisURL          string
-	TigrisClientID     string
-	TigrisClientSecret string
+	// SQLite URI (directory) for `sqlite` handler.
+	// See https://www.sqlite.org/uri.html.
+	SQLiteURL string // For example: `file:data/`.
 }
 
 // ListenerConfig represents listener configuration.
@@ -84,42 +85,69 @@ type ListenerConfig struct {
 type FerretDB struct {
 	config *Config
 
+	closeBackend func()
+
 	l *clientconn.Listener
 }
 
 // New creates a new instance of embeddable FerretDB implementation.
 func New(config *Config) (*FerretDB, error) {
+	version.Get().Package = "embedded"
+
 	if config.Listener.TCP == "" &&
 		config.Listener.Unix == "" &&
 		config.Listener.TLS == "" {
 		return nil, errors.New("Listener TCP, Unix and TLS are empty")
 	}
 
-	p, err := state.NewProvider("")
+	sp, err := state.NewProvider("")
+	if err != nil {
+		return nil, fmt.Errorf("failed to construct handler: %s", err)
+	}
+
+	// Telemetry reporter is not created or running anyway,
+	// but disable telemetry explicitly to disable confusing startupWarnings.
+	err = sp.Update(func(s *state.State) {
+		s.DisableTelemetry()
+		s.TelemetryLocked = true
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct handler: %s", err)
 	}
 
 	metrics := connmetrics.NewListenerMetrics()
 
-	h, err := registry.NewHandler(config.Handler, &registry.NewHandlerOpts{
-		Logger:        logger,
-		Metrics:       metrics.ConnMetrics,
-		StateProvider: p,
+	log := config.Logger
+	if log == nil {
+		log = getGlobalLogger()
+	} else {
+		log = logging.WithHooks(log)
+	}
+
+	h, closeBackend, err := registry.NewHandler(config.Handler, &registry.NewHandlerOpts{
+		Logger:        log,
+		ConnMetrics:   metrics.ConnMetrics,
+		StateProvider: sp,
+		TCPHost:       config.Listener.TCP,
 
 		PostgreSQLURL: config.PostgreSQLURL,
 
-		TigrisURL:          config.TigrisURL,
-		TigrisClientID:     config.TigrisClientID,
-		TigrisClientSecret: config.TigrisClientSecret,
+		SQLiteURL: config.SQLiteURL,
+
+		//nolint:mnd // Command-line default flags
+		TestOpts: registry.TestOpts{
+			CappedCleanupPercentage: 10,
+			BatchSize:               100,
+		},
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct handler: %s", err)
 	}
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
-		TCP:         config.Listener.TCP,
-		Unix:        config.Listener.Unix,
+		TCP:  config.Listener.TCP,
+		Unix: config.Listener.Unix,
+
 		TLS:         config.Listener.TLS,
 		TLSCertFile: config.Listener.TLSCertFile,
 		TLSKeyFile:  config.Listener.TLSKeyFile,
@@ -128,20 +156,25 @@ func New(config *Config) (*FerretDB, error) {
 		Mode:    clientconn.NormalMode,
 		Metrics: metrics,
 		Handler: h,
-		Logger:  logger,
+		Logger:  log,
 	})
 
 	return &FerretDB{
-		config: config,
-		l:      l,
+		config:       config,
+		closeBackend: closeBackend,
+		l:            l,
 	}, nil
 }
 
-// Run runs FerretDB until ctx is done.
+// Run runs FerretDB until ctx is canceled.
 //
-// When this method returns, listener and all connections are closed.
+// When this method returns, listener and all connections, as well as handler are closed.
+//
+// It is required to run this method in order to initialize the listeners with their respective
+// IP address and port. Calling methods which require the listener's address (eg: [*FerretDB.MongoDBURI]
+// requires it for configuring its Host URL) before calling this method might result in a deadlock.
 func (f *FerretDB) Run(ctx context.Context) error {
-	defer f.l.Handler.Close()
+	defer f.closeBackend()
 
 	err := f.l.Run(ctx)
 	if errors.Is(err, context.Canceled) {
@@ -166,9 +199,9 @@ func (f *FerretDB) MongoDBURI() string {
 
 	switch {
 	case f.config.Listener.TLS != "":
-		q := make(url.Values)
-
-		q.Set("tls", "true")
+		q := url.Values{
+			"tls": []string{"true"},
+		}
 
 		u = &url.URL{
 			Scheme:   "mongodb",
@@ -183,7 +216,7 @@ func (f *FerretDB) MongoDBURI() string {
 			Path:   "/",
 		}
 	case f.config.Listener.Unix != "":
-		// MongoDB really wants Unix socket path in the host part of the URI
+		// MongoDB really wants Unix domain socket path in the host part of the URI
 		u = &url.URL{
 			Scheme: "mongodb",
 			Host:   f.l.UnixAddr().String(),
@@ -194,19 +227,23 @@ func (f *FerretDB) MongoDBURI() string {
 	return u.String()
 }
 
-// logger is a global logger used by FerretDB.
-//
-// If it is a problem for you, please create an issue.
-var logger *zap.Logger
+var (
+	loggerOnce sync.Once
+	logger     *zap.Logger
+)
 
-// Initialize the global logger there to avoid creating too many issues for zap users that initialize it in their
-// `main()` functions. It is still not a full solution; eventually, we should remove the usage of the global logger.
-func init() {
-	l := zap.ErrorLevel
-	if version.Get().DebugBuild {
-		l = zap.DebugLevel
-	}
+// getGlobalLogger retrieves or creates a global logger using
+// a loggerOnce to ensure it is created only once.
+func getGlobalLogger() *zap.Logger {
+	loggerOnce.Do(func() {
+		level := zap.ErrorLevel
+		if version.Get().DebugBuild {
+			level = zap.DebugLevel
+		}
 
-	logging.Setup(l, "")
-	logger = zap.L()
+		logging.Setup(level, "console", "")
+		logger = zap.L()
+	})
+
+	return logger
 }

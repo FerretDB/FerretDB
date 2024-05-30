@@ -19,8 +19,15 @@ import (
 	"fmt"
 	"log"
 	"path/filepath"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/ferretdb"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func Example_tcp() {
@@ -28,7 +35,7 @@ func Example_tcp() {
 		Listener: ferretdb.ListenerConfig{
 			TCP: "127.0.0.1:17027",
 		},
-		Handler:       "pg",
+		Handler:       "postgresql",
 		PostgreSQLURL: "postgres://127.0.0.1:5432/ferretdb",
 	})
 	if err != nil {
@@ -66,7 +73,7 @@ func Example_unix() {
 		Listener: ferretdb.ListenerConfig{
 			Unix: "/tmp/ferretdb.sock",
 		},
-		Handler:       "pg",
+		Handler:       "postgresql",
 		PostgreSQLURL: "postgres://127.0.0.1:5432/ferretdb",
 	})
 	if err != nil {
@@ -105,7 +112,7 @@ func Example_tls() {
 			TLSKeyFile:  keyPath,
 			TLSCAFile:   caPath,
 		},
-		Handler:       "pg",
+		Handler:       "postgresql",
 		PostgreSQLURL: "postgres://127.0.0.1:5432/ferretdb",
 	})
 	if err != nil {
@@ -138,4 +145,38 @@ func Example_tls() {
 	<-done
 
 	// Output: mongodb://127.0.0.1:17028/?tls=true
+}
+
+func TestEmbedded(t *testing.T) {
+	ctx, cancel := context.WithCancel(testutil.Ctx(t))
+
+	f, err := ferretdb.New(&ferretdb.Config{
+		Listener: ferretdb.ListenerConfig{
+			TCP: "127.0.0.1:0",
+		},
+		Handler:       "postgresql",
+		PostgreSQLURL: testutil.TestPostgreSQLURI(t, ctx, "postgres://username@127.0.0.1:5432/ferretdb?search_path="),
+	})
+	require.NoError(t, err)
+
+	done := make(chan struct{})
+
+	go func() {
+		require.NoError(t, f.Run(ctx))
+		close(done)
+	}()
+
+	uri := f.MongoDBURI()
+
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
+	require.NoError(t, err)
+
+	dbName, collName := testutil.DatabaseName(t), testutil.CollectionName(t)
+
+	//nolint:forbidigo // bson is required to use the driver
+	_, err = client.Database(dbName).Collection(collName).InsertOne(ctx, bson.M{"foo": "bar"})
+	require.NoError(t, err)
+
+	cancel()
+	<-done
 }

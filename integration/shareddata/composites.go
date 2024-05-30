@@ -26,8 +26,7 @@ import (
 //
 // This shared data set is not frozen yet, but please add to it only if it is really shared.
 var Composites = &Values[string]{
-	name:     "Composites",
-	handlers: []string{"pg"},
+	name: "Composites",
 	data: map[string]any{
 		"document": bson.D{{"foo", int32(42)}},
 		"document-composite": bson.D{
@@ -73,11 +72,46 @@ var Composites = &Values[string]{
 	},
 }
 
+// Mixed contains composite and scalar values for tests. It is used for sorting
+// mixture of array and scalar documents.
+var Mixed = &Values[string]{
+	name: "Mixed",
+	data: map[string]any{
+		"null":        nil,
+		"unset":       unset,
+		"array-empty": bson.A{},
+		"array-null":  bson.A{nil},
+	},
+}
+
+// ArrayAndDocuments contain array and document values for tests. It is used for
+// dot notation to find values from both document and array.
+var ArrayAndDocuments = &Values[string]{
+	name: "ArrayAndDocuments",
+	data: map[string]any{
+		"document": bson.D{{"foo", int32(42)}},
+		"array-documents": bson.A{
+			bson.D{{"field", int32(42)}},
+			bson.D{{"field", int32(44)}},
+			bson.D{{"foo", int32(42)}},
+		},
+		"array-documents-two-fields": bson.A{
+			bson.D{
+				{"field", int32(42)},
+				{"foo", int32(44)},
+			},
+			bson.D{
+				{"field", int32(44)},
+				{"foo", int32(42)},
+			},
+		},
+	},
+}
+
 // PostgresEdgeCases contains documents with keys and values that could be parsed in a wrong way
-// on pg handler.
+// on pg backend.
 var PostgresEdgeCases = &Values[string]{
-	name:     "PostgresEdgeCases",
-	handlers: []string{"pg"},
+	name: "PostgresEdgeCases",
 	data: map[string]any{
 		"document-notations": bson.D{
 			{"foo[0]", int32(42)},
@@ -91,13 +125,7 @@ var PostgresEdgeCases = &Values[string]{
 
 // DocumentsDoubles contains documents with double values for tests.
 var DocumentsDoubles = &Values[string]{
-	name:     "DocumentsDoubles",
-	handlers: []string{"pg", "tigris"},
-	validators: map[string]map[string]any{
-		"tigris": {
-			"$tigrisSchemaString": tigrisSchema(`"type": "object", "properties": {"v": {"type": "number"}}`),
-		},
-	},
+	name: "DocumentsDoubles",
 	data: map[string]any{
 		"document-double":          bson.D{{"v", 42.13}},
 		"document-double-whole":    bson.D{{"v", 42.0}},
@@ -112,13 +140,7 @@ var DocumentsDoubles = &Values[string]{
 
 // DocumentsStrings contains documents with string values for tests.
 var DocumentsStrings = &Values[string]{
-	name:     "DocumentsStrings",
-	handlers: []string{"pg", "tigris"},
-	validators: map[string]map[string]any{
-		"tigris": {
-			"$tigrisSchemaString": tigrisSchema(`"type": "object", "properties": {"v": {"type": "string"}}`),
-		},
-	},
+	name: "DocumentsStrings",
 	data: map[string]any{
 		"document-string":           bson.D{{"v", "foo"}},
 		"document-string-double":    bson.D{{"v", "42.13"}},
@@ -131,51 +153,50 @@ var DocumentsStrings = &Values[string]{
 
 // DocumentsDocuments contains documents with documents for tests.
 var DocumentsDocuments = &Values[primitive.ObjectID]{
-	name:     "DocumentsDocuments",
-	handlers: []string{"pg", "tigris"},
-	validators: map[string]map[string]any{
-		"tigris": {
-			"$tigrisSchemaString": `{
-				"title": "%%collection%%",
-				"primary_key": ["_id"],
-				"properties": {
-					"v": {
-						"type": "object",
-						"properties": {
-							"foo": {"type": "integer", "format": "int32"},
-							"bar": {"type": "object", "properties":{}}
-						}
-					},
-					"_id": {"type": "string", "format": "byte"}
-				}
-			}`,
-		},
-	},
+	name: "DocumentsDocuments",
 	data: map[primitive.ObjectID]any{
 		{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01}: bson.D{{"foo", int32(42)}},
 		{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}: bson.D{{"bar", bson.D{}}},
+		{0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02}: bson.D{{"_id", bson.A{int32(42), int32(42)}}},
+		{0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03}: bson.D{{"_id", bson.D{{"foo", "bar"}}}},
+		{0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04}: bson.D{{"_id", bson.D{{"_id", primitive.Regex{Pattern: "foo", Options: "i"}}}}},
+	},
+}
+
+// DocumentsDeeplyNested contains documents nested in multiple levels for tests.
+var DocumentsDeeplyNested = &Values[string]{
+	name: "DocumentsDeeplyNested",
+	data: map[string]any{
+		"two":   bson.D{{"a", bson.D{{"b", 12}}}},
+		"three": bson.D{{"a", bson.D{{"b", bson.D{{"c", 12}}}}}},
+		"four": bson.D{
+			{"a", bson.D{
+				{"b", bson.D{
+					{"c", bson.D{
+						{"d", 123},
+					}},
+					{"e", 13},
+				}},
+				{"f", 14},
+			}},
+			{"g", 15},
+		},
+		"array": bson.D{
+			{"a", bson.D{
+				{"b", bson.D{
+					{"c", bson.A{1, 2}},
+					{"e", 13},
+				}},
+				{"f", 14},
+			}},
+			{"g", 15},
+		},
 	},
 }
 
 // ArrayStrings contains an array with string values for tests.
-// Tigris JSON schema validator contains extra properties to make it suitable for more tests.
 var ArrayStrings = &Values[string]{
-	name:     "ArrayStrings",
-	handlers: []string{"pg", "tigris"},
-	validators: map[string]map[string]any{
-		"tigris": {
-			"$tigrisSchemaString": `{
-				"title": "%%collection%%",
-				"primary_key": ["_id"],
-				"properties": {
-					"foo": {"type": "integer", "format": "int32"},
-					"bar": {"type": "array", "items": {"type": "string"}},
-					"v": {"type": "array", "items": {"type": "string"}},
-					"_id": {"type": "string"}
-				}
-			}`,
-		},
-	},
+	name: "ArrayStrings",
 	data: map[string]any{
 		"array-string-desc":      bson.A{"c", "b", "a"},
 		"array-string-duplicate": bson.A{nil, "foo", "b", "b", nil},
@@ -188,23 +209,17 @@ var ArrayStrings = &Values[string]{
 
 // ArrayDoubles contains an array with float64 values for tests.
 var ArrayDoubles = &Values[string]{
-	name:     "ArrayDoubles",
-	handlers: []string{"pg", "tigris"},
-	validators: map[string]map[string]any{
-		"tigris": {
-			"$tigrisSchemaString": `{
-				"title": "%%collection%%",
-				"primary_key": ["_id"],
-				"properties": {
-					"v": {"type": "array", "items": {"type": "number"}},
-					"_id": {"type": "string"}
-				}
-			}`,
-		},
-	},
+	name: "ArrayDoubles",
 	data: map[string]any{
 		"array-double-desc":      bson.A{float64(40), float64(15), float64(10)},
 		"array-double-duplicate": bson.A{float64(10), float64(10), float64(20)},
+
+		"array-double-big":      bson.A{doubleBig},
+		"array-double-big-plus": bson.A{doubleBig + 1},
+
+		"array-double-prec-max":      bson.A{doubleMaxPrec},
+		"array-double-prec-max-plus": bson.A{doubleMaxPrec + 1},
+
 		// "array-double-nil":    nil,  TODO: https://github.com/FerretDB/FerretDB/issues/1836
 		"array-double-empty": bson.A{},
 	},
@@ -212,20 +227,7 @@ var ArrayDoubles = &Values[string]{
 
 // ArrayInt32s contains an array with int32 values for tests.
 var ArrayInt32s = &Values[string]{
-	name:     "ArrayInt32s",
-	handlers: []string{"pg", "tigris"},
-	validators: map[string]map[string]any{
-		"tigris": {
-			"$tigrisSchemaString": `{
-				"title": "%%collection%%",
-				"primary_key": ["_id"],
-				"properties": {
-					"v": {"type": "array", "items": {"type": "integer", "format": "int32"}},
-					"_id": {"type": "string"}
-				}
-			}`,
-		},
-	},
+	name: "ArrayInt32s",
 	data: map[string]any{
 		"array-int32-one":   bson.A{int32(42)},
 		"array-int32-two":   bson.A{int32(42), int32(42)},
@@ -238,30 +240,21 @@ var ArrayInt32s = &Values[string]{
 	},
 }
 
+// ArrayInt64s contains an array with int64 values for tests.
+var ArrayInt64s = &Values[string]{
+	name: "ArrayInt64s",
+	data: map[string]any{
+		"array-long-big":      bson.A{int64(doubleBig)},
+		"array-long-big-plus": bson.A{int64(doubleBig) + 1},
+
+		"array-long-prec-max":      bson.A{int64(doubleMaxPrec)},
+		"array-long-prec-max-plus": bson.A{int64(doubleMaxPrec) + 1},
+	},
+}
+
 // ArrayRegexes contains an array with regex values for tests.
 var ArrayRegexes = &Values[string]{
-	name:     "ArrayRegexes",
-	handlers: []string{"pg", "tigris"},
-	validators: map[string]map[string]any{
-		"tigris": {
-			"$tigrisSchemaString": `{
-				"title": "%%collection%%",
-				"primary_key": ["_id"],
-				"properties": {
-					"v": {"type": "array", "items":
-						{
-							"type": "object",
-							"properties": {
-								"$r": {"type": "string"},
-								"o": {"type": "string"}
-							}
-						}
-					},
-					"_id": {"type": "string"}
-				}
-			}`,
-		},
-	},
+	name: "ArrayRegexes",
 	data: map[string]any{
 		"array-regex": bson.A{primitive.Regex{Pattern: "foo", Options: "i"}, primitive.Regex{Pattern: "foo", Options: "i"}},
 	},
@@ -270,27 +263,7 @@ var ArrayRegexes = &Values[string]{
 // ArrayDocuments contains array with documents with arrays: {"v": [{"foo": [{"bar": "hello"}]}, ...]}.
 // This data set is helpful for dot notation tests: v.0.foo.0.bar.
 var ArrayDocuments = &Values[string]{
-	name:     "ArrayDocuments",
-	handlers: []string{"pg", "tigris"},
-	validators: map[string]map[string]any{
-		"tigris": {
-			"$tigrisSchemaString": `{
-				"title": "%%collection%%",
-				"primary_key": ["_id"],
-				"properties": {
-					"v": {
-						"type": "array", "items": {
-							"type": "object",
-							"properties": {
-								"foo": {"type": "array", "items": {"type": "object", "properties": {"bar": {"type": "string"}}}}
-							}
-						}
-					},
-					"_id": {"type": "string"}
-				}
-			}`,
-		},
-	},
+	name: "ArrayDocuments",
 	data: map[string]any{
 		"array-documents-nested": bson.A{
 			bson.D{{
@@ -299,6 +272,39 @@ var ArrayDocuments = &Values[string]{
 					bson.D{{"bar", "hello"}},
 					bson.D{{"bar", "world"}},
 				},
+			}},
+		},
+		"array-documents-nested-duplicate": bson.A{ // duplicate value is needed to test sorting
+			bson.D{{
+				"foo",
+				bson.A{
+					bson.D{{"bar", "hello"}},
+					bson.D{{"bar", "world"}},
+				},
+			}},
+		},
+		"array-two-documents": bson.A{
+			bson.D{{
+				"foo",
+				bson.A{bson.D{{"bar", "hello"}}},
+			}},
+			bson.D{{
+				"foo",
+				bson.A{bson.D{{"bar", "hello"}}},
+			}},
+		},
+		"array-three-documents": bson.A{
+			bson.D{{
+				"bar",
+				bson.A{bson.D{{"a", "b"}}},
+			}},
+			bson.D{{
+				"foo",
+				bson.A{bson.D{{"bar", "hello"}}},
+			}},
+			bson.D{{
+				"foo",
+				bson.A{bson.D{{"bar", "hello"}}},
 			}},
 		},
 	},

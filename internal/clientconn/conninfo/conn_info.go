@@ -17,158 +17,129 @@ package conninfo
 
 import (
 	"context"
-	"math/rand"
-	"runtime"
-	"runtime/pprof"
+	"net/netip"
 	"sync"
-	"sync/atomic"
 
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/xdg-go/scram"
 )
 
-// contextKey is a special type to represent context.WithValue keys a bit more safely.
+// contextKey is a named unexported type for the safe use of context.WithValue.
 type contextKey struct{}
 
-var (
-	// Context key for WithConnInfo/Get.
-	connInfoKey = contextKey{}
+// Context key for WithConnInfo/Get.
+var connInfoKey = contextKey{}
 
-	// Keeps track on all ConnInfo objects.
-	connInfoProfiles = pprof.NewProfile("github.com/FerretDB/FerretDB/internal/clientconn/conninfo.connInfo")
-
-	// Global last cursor ID.
-	lastCursorID atomic.Uint32
-)
-
-func init() {
-	// to make debugging easier
-	if !debugbuild.Enabled {
-		lastCursorID.Store(rand.Uint32())
-	}
-}
-
-// ConnInfo represents connection info.
+// ConnInfo represents client connection information.
 type ConnInfo struct {
-	PeerAddr string
+	// the order of fields is weird to make the struct smaller due to alignment
 
-	rw       sync.RWMutex
-	cursors  map[int64]Cursor
-	username string
-	password string
+	sc *scram.ServerConversation // protected by rw
 
-	stack []byte
+	Peer netip.AddrPort // invalid for Unix domain sockets
+
+	username  string // protected by rw
+	password  string // protected by rw
+	mechanism string // protected by rw
+
+	rw sync.RWMutex
+
+	metadataRecv bool // protected by rw
+
+	// If true, backend implementations should not perform authentication
+	// by adding username and password to the connection string.
+	// It is set to true for background connections (such us capped collections cleanup)
+	// and by the new authentication mechanism.
+	// See where it is used for more details.
+	bypassBackendAuth bool // protected by rw
 }
 
-// NewConnInfo return a new ConnInfo.
-func NewConnInfo() *ConnInfo {
-	connInfo := &ConnInfo{
-		cursors: map[int64]Cursor{},
-		stack:   debugbuild.Stack(),
-	}
-
-	connInfoProfiles.Add(connInfo, 1)
-
-	runtime.SetFinalizer(connInfo, func(connInfo *ConnInfo) {
-		msg := "ConnInfo.Close() has not been called"
-		if connInfo.stack != nil {
-			msg += "\nConnInfo created by " + string(connInfo.stack)
-		}
-
-		panic(msg)
-	})
-
-	return connInfo
+// New returns a new ConnInfo.
+func New() *ConnInfo {
+	return new(ConnInfo)
 }
 
-// Close frees resources.
-func (connInfo *ConnInfo) Close() {
-	connInfo.rw.Lock()
-	defer connInfo.rw.Unlock()
-
-	connInfoProfiles.Remove(connInfo)
-
-	runtime.SetFinalizer(connInfo, nil)
-
-	for _, c := range connInfo.cursors {
-		c.Iter.Close()
-	}
+// LocalPeer returns whether the peer is considered local (using Unix domain socket or loopback IP).
+func (connInfo *ConnInfo) LocalPeer() bool {
+	return !connInfo.Peer.IsValid() || connInfo.Peer.Addr().IsLoopback()
 }
 
-// Cursor allows clients to iterate over a result set.
-type Cursor struct {
-	Iter   iterator.Interface[int, *types.Document]
-	Filter *types.Document
-}
-
-// Cursor returns cursor by ID, or nil.
-func (connInfo *ConnInfo) Cursor(id int64) *Cursor {
+// Username returns stored username.
+func (connInfo *ConnInfo) Username() string {
 	connInfo.rw.RLock()
 	defer connInfo.rw.RUnlock()
 
-	c, ok := connInfo.cursors[id]
-	if !ok {
-		return nil
-	}
-
-	return &c
+	return connInfo.username
 }
 
-// StoreCursor stores cursor and return its ID.
-func (connInfo *ConnInfo) StoreCursor(iter iterator.Interface[int, *types.Document], filter *types.Document) int64 {
-	connInfo.rw.Lock()
-	defer connInfo.rw.Unlock()
-
-	var id int64
-
-	// use global, sequential, positive, short cursor IDs to make debugging easier
-	for {
-		id = int64(lastCursorID.Add(1))
-		if _, ok := connInfo.cursors[id]; id != 0 && !ok {
-			break
-		}
-	}
-
-	connInfo.cursors[id] = Cursor{
-		Iter:   iter,
-		Filter: filter,
-	}
-
-	return id
-}
-
-// DeleteCursor deletes cursor by ID, closing its iterator.
-func (connInfo *ConnInfo) DeleteCursor(id int64) {
-	connInfo.rw.Lock()
-	defer connInfo.rw.Unlock()
-
-	c := connInfo.cursors[id]
-
-	c.Iter.Close()
-
-	delete(connInfo.cursors, id)
-}
-
-// Auth returns stored username and password.
-func (connInfo *ConnInfo) Auth() (username, password string) {
+// Auth returns stored username, password and mechanism.
+func (connInfo *ConnInfo) Auth() (username, password, mechanism string) {
 	connInfo.rw.RLock()
 	defer connInfo.rw.RUnlock()
 
-	return connInfo.username, connInfo.password
+	return connInfo.username, connInfo.password, connInfo.mechanism
 }
 
-// SetAuth stores username and password.
-func (connInfo *ConnInfo) SetAuth(username, password string) {
+// SetAuth stores username, password.
+func (connInfo *ConnInfo) SetAuth(username, password, mechanism string) {
 	connInfo.rw.Lock()
 	defer connInfo.rw.Unlock()
 
 	connInfo.username = username
 	connInfo.password = password
+	connInfo.mechanism = mechanism
 }
 
-// WithConnInfo returns a new context with the given ConnInfo.
-func WithConnInfo(ctx context.Context, connInfo *ConnInfo) context.Context {
+// Conv returns stored SCRAM server conversation.
+func (connInfo *ConnInfo) Conv() *scram.ServerConversation {
+	connInfo.rw.RLock()
+	defer connInfo.rw.RUnlock()
+
+	return connInfo.sc
+}
+
+// SetConv stores the SCRAM server conversation.
+func (connInfo *ConnInfo) SetConv(sc *scram.ServerConversation) {
+	connInfo.rw.Lock()
+	defer connInfo.rw.Unlock()
+
+	connInfo.username = sc.Username()
+	connInfo.sc = sc
+}
+
+// MetadataRecv returns whatever client metadata was received already.
+func (connInfo *ConnInfo) MetadataRecv() bool {
+	connInfo.rw.RLock()
+	defer connInfo.rw.RUnlock()
+
+	return connInfo.metadataRecv
+}
+
+// SetMetadataRecv marks client metadata as received.
+func (connInfo *ConnInfo) SetMetadataRecv() {
+	connInfo.rw.Lock()
+	defer connInfo.rw.Unlock()
+
+	connInfo.metadataRecv = true
+}
+
+// SetBypassBackendAuth marks the connection as not requiring backend authentication.
+func (connInfo *ConnInfo) SetBypassBackendAuth() {
+	connInfo.rw.Lock()
+	defer connInfo.rw.Unlock()
+
+	connInfo.bypassBackendAuth = true
+}
+
+// BypassBackendAuth returns whether the connection requires backend authentication.
+func (connInfo *ConnInfo) BypassBackendAuth() bool {
+	connInfo.rw.RLock()
+	defer connInfo.rw.RUnlock()
+
+	return connInfo.bypassBackendAuth
+}
+
+// Ctx returns a derived context with the given ConnInfo.
+func Ctx(ctx context.Context, connInfo *ConnInfo) context.Context {
 	return context.WithValue(ctx, connInfoKey, connInfo)
 }
 

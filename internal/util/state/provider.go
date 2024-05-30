@@ -53,7 +53,8 @@ func NewProvider(filename string) (*Provider, error) {
 	p.s.fill()
 
 	// Simply overwrite state to handle all errors and edge cases
-	// like missing directory, corrupted file, invalid UUID, etc.
+	// like missing directory, corrupted file, invalid UUID, etc.,
+	// and also to check permissions.
 	if err := persistState(p.s, p.filename); err != nil {
 		return p, fmt.Errorf("failed to persist state: %w", err)
 	}
