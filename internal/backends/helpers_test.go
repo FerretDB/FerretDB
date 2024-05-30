@@ -16,12 +16,14 @@ package backends_test // to avoid import cycle
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/backends/hana"
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite"
 	"github.com/FerretDB/FerretDB/internal/util/state"
@@ -51,9 +53,10 @@ func testBackends(t *testing.T) map[string]*testBackend {
 		require.NoError(t, err)
 
 		b, err := postgresql.NewBackend(&postgresql.NewBackendParams{
-			URI: "postgres://username:password@127.0.0.1:5432/ferretdb",
-			L:   l.Named("postgresql"),
-			P:   sp,
+			URI:       testutil.TestPostgreSQLURI(t, context.TODO(), ""),
+			L:         l.Named("postgresql"),
+			P:         sp,
+			BatchSize: 1000,
 		})
 		require.NoError(t, err)
 		t.Cleanup(b.Close)
@@ -69,9 +72,10 @@ func testBackends(t *testing.T) map[string]*testBackend {
 		require.NoError(t, err)
 
 		b, err := sqlite.NewBackend(&sqlite.NewBackendParams{
-			URI: "file:./?mode=memory",
-			L:   l.Named("sqlite"),
-			P:   sp,
+			URI:       testutil.TestSQLiteURI(t, ""),
+			L:         l.Named("sqlite"),
+			P:         sp,
+			BatchSize: 100,
 		})
 		require.NoError(t, err)
 		t.Cleanup(b.Close)
@@ -82,19 +86,25 @@ func testBackends(t *testing.T) map[string]*testBackend {
 		}
 	}
 
+	if hanaURL := os.Getenv("FERRETDB_HANA_URL"); hanaURL != "" {
+		sp, err := state.NewProvider("")
+		require.NoError(t, err)
+
+		b, err := hana.NewBackend(&hana.NewBackendParams{
+			URI: hanaURL,
+			L:   l.Named("hana"),
+			P:   sp,
+		})
+		require.NoError(t, err)
+		t.Cleanup(b.Close)
+
+		res["hana"] = &testBackend{
+			Backend: b,
+			sp:      sp,
+		}
+	}
+
 	return res
-}
-
-// cleanupDatabase drops the database with the given name before and after the test.
-func cleanupDatabase(t *testing.T, ctx context.Context, b backends.Backend, dbName string) {
-	t.Helper()
-
-	p := &backends.DropDatabaseParams{Name: dbName}
-	_ = b.DropDatabase(ctx, p)
-
-	t.Cleanup(func() {
-		_ = b.DropDatabase(ctx, p)
-	})
 }
 
 // assertErrorCode asserts that err is *Error with one of the given error codes.

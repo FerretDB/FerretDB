@@ -22,72 +22,75 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
+)
+
+// fixed OpLog database and collection names.
+const (
+	oplogDatabase   = "local"
+	oplogCollection = "oplog.rs"
 )
 
 // collection implements backends.Collection interface by adding OpLog functionality to the wrapped collection.
 type collection struct {
-	c    backends.Collection
-	db   *database
-	name string
+	origC  backends.Collection
+	name   string
+	dbName string
+	origB  backends.Backend
+	l      *zap.Logger
 }
 
-// newCollection creates a new collection that wraps the given collection.
-func newCollection(c backends.Collection, name string, db *database) backends.Collection {
+// newCollection creates a new Collection that wraps the given collection.
+func newCollection(origC backends.Collection, name, dbName string, origB backends.Backend, l *zap.Logger) backends.Collection {
 	return &collection{
-		c:    c,
-		db:   db,
-		name: name,
+		origC:  origC,
+		name:   name,
+		dbName: dbName,
+		origB:  origB,
+		l:      l,
 	}
 }
 
 // Query implements backends.Collection interface.
 func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*backends.QueryResult, error) {
-	return c.c.Query(ctx, params)
+	return c.origC.Query(ctx, params)
 }
 
 // InsertAll implements backends.Collection interface.
 func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllParams) (*backends.InsertAllResult, error) {
 	defer observability.FuncCall(ctx)()
 
-	res, err := c.c.InsertAll(ctx, params)
+	res, err := c.origC.InsertAll(ctx, params)
 	if err != nil {
 		return nil, err
 	}
 
-	if c.name != "oplog" {
+	if oplogC := c.oplogCollection(ctx); oplogC != nil {
 		oplogDocs := make([]*types.Document, len(params.Docs))
 
-		for i, doc := range params.Docs {
-			oplogDoc, err := types.NewDocument(
-				"_id", types.NewObjectID(),
-				"ts", types.NextTimestamp(time.Now()),
-				"ns", c.db.name+"."+c.name,
-				"op", "i",
-				"o", doc,
-			)
-			if err == nil {
-				err = oplogDoc.ValidateData()
-			}
+		var oplogDoc *types.Document
+		now := time.Now()
 
-			if err != nil {
-				c.db.l.Error("Failed to create oplog document", zap.Error(err))
+		for i, doc := range params.Docs {
+			d := &document{
+				o:  doc,
+				ns: c.dbName + "." + c.name,
+				op: "i",
+			}
+			if oplogDoc, err = d.marshal(now); err != nil {
+				c.l.Error("Failed to create document", zap.Error(err))
 				return res, nil
 			}
 
 			oplogDocs[i] = oplogDoc
 		}
 
-		oplogC, err := c.db.Collection("oplog")
-		if err == nil {
-			_, err = oplogC.InsertAll(ctx, &backends.InsertAllParams{
-				Docs: oplogDocs,
-			})
-		}
-
+		_, err = oplogC.InsertAll(ctx, &backends.InsertAllParams{
+			Docs: oplogDocs,
+		})
 		if err != nil {
-			c.db.l.Error("Failed to insert oplog documents", zap.Error(err))
-			return res, nil
+			c.l.Error("Failed to insert documents", zap.Error(err))
 		}
 	}
 
@@ -98,13 +101,41 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllParams) (*backends.UpdateAllResult, error) {
 	defer observability.FuncCall(ctx)()
 
-	res, err := c.c.UpdateAll(ctx, params)
+	res, err := c.origC.UpdateAll(ctx, params)
 	if err != nil {
 		return nil, err
 	}
 
-	if c.name != "oplog" {
-		_ = res
+	if oplogC := c.oplogCollection(ctx); oplogC != nil {
+		oplogDocs := make([]*types.Document, len(params.Docs))
+
+		var oplogDoc *types.Document
+		now := time.Now()
+
+		for i, doc := range params.Docs {
+			d := &document{
+				o: must.NotFail(types.NewDocument(
+					"$v", int32(1),
+					"$set", doc,
+				)),
+				o2: must.NotFail(types.NewDocument("_id", must.NotFail(doc.Get("_id")))),
+				ns: c.dbName + "." + c.name,
+				op: "u",
+			}
+			if oplogDoc, err = d.marshal(now); err != nil {
+				c.l.Error("Failed to create document", zap.Error(err))
+				return res, nil
+			}
+
+			oplogDocs[i] = oplogDoc
+		}
+
+		_, err = oplogC.InsertAll(ctx, &backends.InsertAllParams{
+			Docs: oplogDocs,
+		})
+		if err != nil {
+			c.l.Error("Failed to insert documents", zap.Error(err))
+		}
 	}
 
 	return res, nil
@@ -114,50 +145,41 @@ func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllPa
 func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllParams) (*backends.DeleteAllResult, error) {
 	defer observability.FuncCall(ctx)()
 
-	res, err := c.c.DeleteAll(ctx, params)
+	res, err := c.origC.DeleteAll(ctx, params)
 	if err != nil {
 		return nil, err
 	}
 
-	if c.name != "oplog" {
+	if oplogC := c.oplogCollection(ctx); oplogC != nil {
 		oplogDocs := make([]*types.Document, len(params.IDs))
 
+		var oplogDoc *types.Document
+		now := time.Now()
+
 		for i, id := range params.IDs {
-			idDoc, err := types.NewDocument("_id", id)
-			if err != nil {
-				c.db.l.Error("Failed to create oplog _id document", zap.Error(err))
+			if oplogDoc, err = types.NewDocument("_id", id); err != nil {
+				c.l.Error("Failed to create _id document", zap.Error(err))
 				return res, nil
 			}
 
-			oplogDoc, err := types.NewDocument(
-				"_id", types.NewObjectID(),
-				"ts", types.NextTimestamp(time.Now()),
-				"ns", c.db.name+"."+c.name,
-				"op", "d",
-				"o", idDoc,
-			)
-			if err == nil {
-				err = oplogDoc.ValidateData()
+			d := &document{
+				o:  oplogDoc,
+				ns: c.dbName + "." + c.name,
+				op: "d",
 			}
-
-			if err != nil {
-				c.db.l.Error("Failed to create oplog document", zap.Error(err))
+			if oplogDoc, err = d.marshal(now); err != nil {
+				c.l.Error("Failed to create document", zap.Error(err))
 				return res, nil
 			}
 
 			oplogDocs[i] = oplogDoc
 		}
 
-		oplogC, err := c.db.Collection("oplog")
-		if err == nil {
-			_, err = oplogC.InsertAll(ctx, &backends.InsertAllParams{
-				Docs: oplogDocs,
-			})
-		}
-
+		_, err = oplogC.InsertAll(ctx, &backends.InsertAllParams{
+			Docs: oplogDocs,
+		})
 		if err != nil {
-			c.db.l.Error("Failed to insert oplog documents", zap.Error(err))
-			return res, nil
+			c.l.Error("Failed to insert documents", zap.Error(err))
 		}
 	}
 
@@ -166,32 +188,52 @@ func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllPa
 
 // Explain implements backends.Collection interface.
 func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams) (*backends.ExplainResult, error) {
-	return c.c.Explain(ctx, params)
+	return c.origC.Explain(ctx, params)
 }
 
 // Stats implements backends.Collection interface.
 func (c *collection) Stats(ctx context.Context, params *backends.CollectionStatsParams) (*backends.CollectionStatsResult, error) {
-	return c.c.Stats(ctx, params)
+	return c.origC.Stats(ctx, params)
 }
 
 // Compact implements backends.Collection interface.
 func (c *collection) Compact(ctx context.Context, params *backends.CompactParams) (*backends.CompactResult, error) {
-	return c.c.Compact(ctx, params)
+	return c.origC.Compact(ctx, params)
 }
 
 // ListIndexes implements backends.Collection interface.
 func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndexesParams) (*backends.ListIndexesResult, error) {
-	return c.c.ListIndexes(ctx, params)
+	return c.origC.ListIndexes(ctx, params)
 }
 
 // CreateIndexes implements backends.Collection interface.
 func (c *collection) CreateIndexes(ctx context.Context, params *backends.CreateIndexesParams) (*backends.CreateIndexesResult, error) { //nolint:lll // for readability
-	return c.c.CreateIndexes(ctx, params)
+	return c.origC.CreateIndexes(ctx, params)
 }
 
 // DropIndexes implements backends.Collection interface.
 func (c *collection) DropIndexes(ctx context.Context, params *backends.DropIndexesParams) (*backends.DropIndexesResult, error) {
-	return c.c.DropIndexes(ctx, params)
+	return c.origC.DropIndexes(ctx, params)
+}
+
+// oplogCollection returns the OpLog collection if it exist.
+//
+// The returned collection is not wrapped with OpLog functionality to prevent recursive calls.
+func (c *collection) oplogCollection(ctx context.Context) backends.Collection {
+	db := must.NotFail(c.origB.Database(oplogDatabase))
+
+	cList, err := db.ListCollections(ctx, &backends.ListCollectionsParams{Name: oplogCollection})
+	if err != nil {
+		c.l.Error("Failed to list collections", zap.Error(err))
+		return nil
+	}
+
+	if len(cList.Collections) == 0 {
+		c.l.Debug("Collection not found")
+		return nil
+	}
+
+	return must.NotFail(db.Collection(oplogCollection))
 }
 
 // check interfaces

@@ -23,10 +23,11 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
+
+	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 func TestCommandsAdministrationCompatCollStatsWithScale(t *testing.T) {
@@ -100,8 +101,6 @@ func TestCommandsAdministrationCompatCollStatsWithScale(t *testing.T) {
 }
 
 func TestCommandsAdministrationCompatCollStatsCappedCollection(t *testing.T) {
-	t.Skip("https://github.com/FerretDB/FerretDB/issues/2447")
-
 	t.Parallel()
 
 	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
@@ -109,18 +108,27 @@ func TestCommandsAdministrationCompatCollStatsCappedCollection(t *testing.T) {
 		AddNonExistentCollection: true,
 	})
 
-	ctx, targetCollection, compatCollection := s.Ctx, s.TargetCollections[0], s.CompatCollections[0]
+	targetDB := s.TargetCollections[0].Database()
+	compatDB := s.CompatCollections[0].Database()
 
-	for name, tc := range map[string]struct { //nolint:vet // for readability
-		sizeInBytes  int64 // also sets capped true if it is greater than zero
-		maxDocuments int64 // maxDocuments is set if sizeInBytes is greater than zero
+	for name, tc := range map[string]struct {
+		sizeInBytes  int64
+		maxDocuments int64
+
+		expectedSize int64
 	}{
 		"Size": {
-			sizeInBytes: 1000,
+			sizeInBytes:  256,
+			expectedSize: 256,
+		},
+		"SizeRounded": {
+			sizeInBytes:  1000,
+			expectedSize: 1000,
 		},
 		"MaxDocuments": {
-			sizeInBytes:  1000,
+			sizeInBytes:  1,
 			maxDocuments: 10,
+			expectedSize: 1,
 		},
 	} {
 		name, tc := name, tc
@@ -128,40 +136,37 @@ func TestCommandsAdministrationCompatCollStatsCappedCollection(t *testing.T) {
 			t.Parallel()
 
 			cName := testutil.CollectionName(t) + name
-			opts := options.CreateCollection()
+			opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(tc.sizeInBytes)
 
-			if tc.sizeInBytes > 0 {
-				opts.SetCapped(true)
-				opts.SetSizeInBytes(tc.sizeInBytes)
-
-				if tc.maxDocuments > 0 {
-					opts.SetMaxDocuments(tc.maxDocuments)
-				}
+			if tc.maxDocuments > 0 {
+				opts.SetMaxDocuments(tc.maxDocuments)
 			}
 
-			targetErr := targetCollection.Database().CreateCollection(ctx, cName, opts)
+			targetErr := targetDB.CreateCollection(s.Ctx, cName, opts)
 			require.NoError(t, targetErr)
 
-			compatErr := compatCollection.Database().CreateCollection(ctx, cName, opts)
+			compatErr := compatDB.CreateCollection(s.Ctx, cName, opts)
 			require.NoError(t, compatErr)
 
-			require.Equal(t, compatCollection.Name(), targetCollection.Name())
-			command := bson.D{{"collStats", targetCollection.Name()}}
+			command := bson.D{{"collStats", cName}}
 
 			var targetRes bson.D
-			targetErr = targetCollection.Database().RunCommand(ctx, command).Decode(&targetRes)
+			targetErr = targetDB.RunCommand(s.Ctx, command).Decode(&targetRes)
 			require.NoError(t, targetErr)
 
 			var compatRes bson.D
-			targetErr = compatCollection.Database().RunCommand(ctx, command).Decode(&targetRes)
-			require.NoError(t, targetErr)
+			compatErr = compatDB.RunCommand(s.Ctx, command).Decode(&compatRes)
+			require.NoError(t, compatErr)
 
 			targetDoc := ConvertDocument(t, targetRes)
 			compatDoc := ConvertDocument(t, compatRes)
 
 			assert.Equal(t, must.NotFail(compatDoc.Get("capped")), must.NotFail(targetDoc.Get("capped")))
-			assert.Equal(t, must.NotFail(compatDoc.Get("max")), must.NotFail(targetDoc.Get("max")))
-			assert.Equal(t, must.NotFail(compatDoc.Get("maxSize")), must.NotFail(targetDoc.Get("maxSize")))
+
+			// TODO https://github.com/FerretDB/FerretDB/issues/3582
+			assert.EqualValues(t, tc.expectedSize, must.NotFail(targetDoc.Get("maxSize")))
+			assert.EqualValues(t, must.NotFail(compatDoc.Get("maxSize")), must.NotFail(targetDoc.Get("maxSize")))
+			assert.EqualValues(t, must.NotFail(compatDoc.Get("max")), must.NotFail(targetDoc.Get("max")))
 		})
 	}
 }
@@ -287,4 +292,43 @@ func TestCommandsAdministrationCompatDBStatsFreeStorage(t *testing.T) {
 			assert.Equal(t, compatDoc.Has("totalFreeStorageSize"), targetDoc.Has("totalFreeStorageSize"))
 		})
 	}
+}
+
+func TestCommandsAdministrationCompatListCollections(t *testing.T) {
+	t.Parallel()
+	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
+
+	require.Greater(t, len(targetCollections), 2)
+
+	filter := bson.D{{
+		Key: "name", Value: bson.D{{
+			Key: "$in", Value: bson.A{
+				targetCollections[0].Name(),
+				targetCollections[len(targetCollections)-1].Name(),
+			},
+		}},
+	}}
+
+	target, err := targetCollections[0].Database().ListCollections(ctx, filter)
+	require.NoError(t, err)
+	var targetRes []bson.D
+	err = target.All(ctx, &targetRes)
+	require.NoError(t, err)
+	docTarget := ConvertDocument(t, targetRes[0])
+
+	compat, err := compatCollections[0].Database().ListCollections(ctx, filter)
+	require.NoError(t, err)
+	var compatRes []bson.D
+	err = compat.All(ctx, &compatRes)
+	require.NoError(t, err)
+	docCompat := ConvertDocument(t, compatRes[0])
+
+	assert.Equal(t, target.RemainingBatchLength(), compat.RemainingBatchLength())
+
+	// Check idIndex
+	targetIDIndex := must.NotFail(docTarget.Get("idIndex"))
+	compatIDIndex := must.NotFail(docCompat.Get("idIndex"))
+
+	assert.NotEmpty(t, targetIDIndex)
+	assert.Equal(t, targetIDIndex, compatIDIndex)
 }

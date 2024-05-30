@@ -17,20 +17,16 @@ package setup
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/url"
 	"os"
-	"path"
 	"path/filepath"
 
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
-	"github.com/FerretDB/FerretDB/internal/handlers/registry"
+	"github.com/FerretDB/FerretDB/internal/handler/registry"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
@@ -73,11 +69,13 @@ func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath string, tlsAndAut
 	if tlsAndAuth {
 		require.Empty(tb, unixSocketPath, "unixSocketPath cannot be used with TLS")
 
+		certsRoot := filepath.Join(Dir(tb), "..", "..", "build", "certs")
+
 		// we don't separate TLS and auth just for simplicity of our test configurations
 		q = url.Values{
 			"tls":                   []string{"true"},
-			"tlsCertificateKeyFile": []string{filepath.Join(CertsRoot, "client.pem")},
-			"tlsCaFile":             []string{filepath.Join(CertsRoot, "rootCA-cert.pem")},
+			"tlsCertificateKeyFile": []string{filepath.Join(certsRoot, "client.pem")},
+			"tlsCaFile":             []string{filepath.Join(certsRoot, "rootCA-cert.pem")},
 			"authMechanism":         []string{"PLAIN"},
 		}
 		user = url.UserPassword("username", "password")
@@ -97,7 +95,7 @@ func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath string, tlsAndAut
 
 // setupListener starts in-process FerretDB server that runs until ctx is canceled.
 // It returns basic MongoDB URI for that listener.
-func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string {
+func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *BackendOpts, persistData bool) string {
 	tb.Helper()
 
 	_, span := otel.Tracer("").Start(ctx, "setupListener")
@@ -113,18 +111,28 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 	case "ferretdb-postgresql":
 		require.NotEmpty(tb, *postgreSQLURLF, "-postgresql-url must be set for %q", *targetBackendF)
 		require.Empty(tb, *sqliteURLF, "-sqlite-url must be empty for %q", *targetBackendF)
+		require.Empty(tb, *mysqlURLF, "-mysql-url must be empty for %q", *targetBackendF)
 		require.Empty(tb, *hanaURLF, "-hana-url must be empty for %q", *targetBackendF)
 		handler = "postgresql"
 
 	case "ferretdb-sqlite":
 		require.Empty(tb, *postgreSQLURLF, "-postgresql-url must be empty for %q", *targetBackendF)
 		require.NotEmpty(tb, *sqliteURLF, "-sqlite-url must be set for %q", *targetBackendF)
+		require.Empty(tb, *mysqlURLF, "-mysql-url must be empty for %q", *targetBackendF)
 		require.Empty(tb, *hanaURLF, "-hana-url must be empty for %q", *targetBackendF)
 		handler = "sqlite"
+
+	case "ferretdb-mysql":
+		require.Empty(tb, *postgreSQLURLF, "-postgresql-url must be empty for %q", *targetBackendF)
+		require.Empty(tb, *sqliteURLF, "-sqlite-url must be empty for %q", *targetBackendF)
+		require.NotEmpty(tb, *mysqlURLF, "-mysql-url must be empty for %q", *targetBackendF)
+		require.Empty(tb, *hanaURLF, "-hana-url must be set for %q", *targetBackendF)
+		handler = "mysql"
 
 	case "ferretdb-hana":
 		require.Empty(tb, *postgreSQLURLF, "-postgresql-url must be empty for %q", *targetBackendF)
 		require.Empty(tb, *sqliteURLF, "-sqlite-url must be empty for %q", *targetBackendF)
+		require.Empty(tb, *mysqlURLF, "-mysql-url must be empty for %q", *targetBackendF)
 		require.NotEmpty(tb, *hanaURLF, "-hana-url must be set for %q", *targetBackendF)
 		handler = "hana"
 
@@ -139,82 +147,28 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 	// use per-test PostgreSQL database to prevent handler's/backend's metadata registry
 	// read schemas owned by concurrent tests
 	postgreSQLURLF := *postgreSQLURLF
-	if postgreSQLURLF != "" {
-		u, err := url.Parse(postgreSQLURLF)
-		require.NoError(tb, err)
-
-		require.True(tb, u.Path != "")
-		require.True(tb, u.Opaque == "")
-
-		// port logging, tracing; merge with openDB?
-		// TODO https://github.com/FerretDB/FerretDB/issues/3554
-
-		config, err := pgxpool.ParseConfig(postgreSQLURLF)
-		require.NoError(tb, err)
-
-		p, err := pgxpool.NewWithConfig(ctx, config)
-		require.NoError(tb, err)
-
-		name := testutil.DirectoryName(tb)
-		template := "template1"
-
-		q := "DROP DATABASE IF EXISTS " + pgx.Identifier{name}.Sanitize()
-		_, err = p.Exec(ctx, q)
-		require.NoError(tb, err)
-
-		q = fmt.Sprintf("CREATE DATABASE %s TEMPLATE %s", pgx.Identifier{name}.Sanitize(), pgx.Identifier{template}.Sanitize())
-		_, err = p.Exec(ctx, q)
-		require.NoError(tb, err)
-
-		p.Reset()
-
-		u.Path = name
-		postgreSQLURLF = u.String()
-
-		tb.Cleanup(func() {
-			defer p.Close()
-
-			if tb.Failed() {
-				tb.Logf("Keeping %s (%s) for debugging.", name, postgreSQLURLF)
-				return
-			}
-
-			q := "DROP DATABASE " + pgx.Identifier{name}.Sanitize()
-			_, err = p.Exec(context.Background(), q)
-			require.NoError(tb, err)
-		})
+	if postgreSQLURLF != "" && !persistData {
+		postgreSQLURLF = testutil.TestPostgreSQLURI(tb, ctx, postgreSQLURLF)
 	}
 
 	// use per-test directory to prevent handler's/backend's metadata registry
 	// read databases owned by concurrent tests
 	sqliteURL := *sqliteURLF
-	if sqliteURL != "" {
-		u, err := url.Parse(sqliteURL)
-		require.NoError(tb, err)
+	if sqliteURL != "" && !persistData {
+		sqliteURL = testutil.TestSQLiteURI(tb, sqliteURL)
+	}
 
-		require.True(tb, u.Path == "")
-		require.True(tb, u.Opaque != "")
-
-		u.Opaque = path.Join(u.Opaque, testutil.DirectoryName(tb)) + "/"
-		sqliteURL = u.String()
-
-		dir, err := filepath.Abs(u.Opaque)
-		require.NoError(tb, err)
-		require.NoError(tb, os.RemoveAll(dir))
-		require.NoError(tb, os.MkdirAll(dir, 0o777))
-
-		tb.Cleanup(func() {
-			if tb.Failed() {
-				tb.Logf("Keeping %s (%s) for debugging.", dir, sqliteURL)
-				return
-			}
-
-			require.NoError(tb, os.RemoveAll(dir))
-		})
+	// user per-test MySQL database to prevent handler's/backend's metadata registry
+	// read databases owned by concurrent tests
+	mysqlURL := *mysqlURLF
+	if mysqlURL != "" {
+		mysqlURL = testutil.TestMySQLURI(tb, ctx, mysqlURL)
 	}
 
 	sp, err := state.NewProvider("")
 	require.NoError(tb, err)
+
+	require.NotNil(tb, opts)
 
 	handlerOpts := &registry.NewHandlerOpts{
 		Logger:        logger,
@@ -223,18 +177,22 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 
 		PostgreSQLURL: postgreSQLURLF,
 		SQLiteURL:     sqliteURL,
+		MySQLURL:      mysqlURL,
 		HANAURL:       *hanaURLF,
 
 		TestOpts: registry.TestOpts{
-			DisableFilterPushdown: *disableFilterPushdownF,
-			EnableSortPushdown:    *enableSortPushdownF,
-			EnableOplog:           *enableOplogF,
-
-			UseNewHana: *useNewHanaF,
+			DisablePushdown:         *disablePushdownF,
+			CappedCleanupPercentage: opts.CappedCleanupPercentage,
+			CappedCleanupInterval:   opts.CappedCleanupInterval,
+			EnableNewAuth:           true,
+			BatchSize:               *batchSizeF,
+			MaxBsonObjectSizeBytes:  opts.MaxBsonObjectSizeBytes,
 		},
 	}
-	h, err := registry.NewHandler(handler, handlerOpts)
+	h, closeBackend, err := registry.NewHandler(handler, handlerOpts)
 	require.NoError(tb, err)
+
+	tb.Cleanup(closeBackend)
 
 	listenerOpts := clientconn.NewListenerOpts{
 		ProxyAddr:      *targetProxyAddrF,
@@ -242,7 +200,7 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 		Metrics:        listenerMetrics,
 		Handler:        h,
 		Logger:         logger,
-		TestRecordsDir: filepath.Join("..", "tmp", "records"),
+		TestRecordsDir: filepath.Join(Dir(tb), "..", "..", "tmp", "records"),
 	}
 
 	if *targetProxyAddrF != "" {
@@ -255,10 +213,11 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 
 	switch {
 	case *targetTLSF:
+		certsRoot := filepath.Join(Dir(tb), "..", "..", "build", "certs")
 		listenerOpts.TLS = "127.0.0.1:0"
-		listenerOpts.TLSCertFile = filepath.Join(CertsRoot, "server-cert.pem")
-		listenerOpts.TLSKeyFile = filepath.Join(CertsRoot, "server-key.pem")
-		listenerOpts.TLSCAFile = filepath.Join(CertsRoot, "rootCA-cert.pem")
+		listenerOpts.TLSCertFile = filepath.Join(certsRoot, "server-cert.pem")
+		listenerOpts.TLSKeyFile = filepath.Join(certsRoot, "server-key.pem")
+		listenerOpts.TLSCAFile = filepath.Join(certsRoot, "rootCA-cert.pem")
 	case *targetUnixSocketF:
 		listenerOpts.Unix = unixSocketPath(tb)
 	default:

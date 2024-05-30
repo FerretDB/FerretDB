@@ -22,9 +22,10 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
+
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
 
 func BenchmarkFind(b *testing.B) {
@@ -54,7 +55,7 @@ func BenchmarkFind(b *testing.B) {
 			b.Run(name, func(b *testing.B) {
 				var firstDocs, docs int
 
-				for i := 0; i < b.N; i++ {
+				for range b.N {
 					cursor, err := s.Collection.Find(s.Ctx, bc.filter)
 					require.NoError(b, err)
 
@@ -112,7 +113,7 @@ func BenchmarkReplaceOne(b *testing.B) {
 		filter := bson.D{{"_id", doc[0].Value}}
 		var res *mongo.UpdateResult
 
-		for i := 0; i < b.N; i++ {
+		for i := range b.N {
 			doc[1].Value = int64(i + 1)
 
 			res, err = collection.ReplaceOne(ctx, filter, doc)
@@ -134,15 +135,21 @@ func BenchmarkInsertMany(b *testing.B) {
 	ctx, collection := setup.Setup(b)
 
 	for _, provider := range shareddata.AllBenchmarkProviders() {
+		total, err := iterator.ConsumeCount(provider.NewIterator())
+		require.NoError(b, err)
+
+		var batchSizes []int
 		for _, batchSize := range []int{1, 10, 100, 1000} {
+			if batchSize <= total {
+				batchSizes = append(batchSizes, batchSize)
+			}
+		}
+
+		for _, batchSize := range batchSizes {
 			b.Run(fmt.Sprintf("%s/Batch%d", provider.Name(), batchSize), func(b *testing.B) {
 				b.StopTimer()
 
-				total, err := iterator.ConsumeCount(provider.NewIterator())
-				require.NoError(b, err)
-				require.GreaterOrEqual(b, total, batchSize)
-
-				for i := 0; i < b.N; i++ {
+				for range b.N {
 					require.NoError(b, collection.Drop(ctx))
 
 					iter := provider.NewIterator()

@@ -77,7 +77,9 @@ func (dbc *databaseContract) Collection(name string) (Collection, error) {
 }
 
 // ListCollectionsParams represents the parameters of Database.ListCollections method.
-type ListCollectionsParams struct{}
+type ListCollectionsParams struct {
+	Name string
+}
 
 // ListCollectionsResult represents the results of Database.ListCollections method.
 type ListCollectionsResult struct {
@@ -87,20 +89,22 @@ type ListCollectionsResult struct {
 // CollectionInfo represents information about a single collection.
 type CollectionInfo struct {
 	Name            string
-	CappedSize      int64 // TODO https://github.com/FerretDB/FerretDB/issues/3458
-	CappedDocuments int64 // TODO https://github.com/FerretDB/FerretDB/issues/3458
+	UUID            string
+	CappedSize      int64
+	CappedDocuments int64
+	_               struct{} // prevent unkeyed literals
 }
 
 // Capped returns true if collection is capped.
 func (ci *CollectionInfo) Capped() bool {
-	return ci.CappedSize > 0 || ci.CappedDocuments > 0
+	return ci.CappedSize > 0 // TODO https://github.com/FerretDB/FerretDB/issues/3631
 }
 
 // ListCollections returns a list collections in the database sorted by name.
 //
-// Database may not exist; that's not an error.
+// If ListCollectionsParams' Name is not empty, then only the collection with that name should be returned (or an empty list).
 //
-// Contract ensures that returned list is sorted by name.
+// Database may not exist; that's not an error.
 func (dbc *databaseContract) ListCollections(ctx context.Context, params *ListCollectionsParams) (*ListCollectionsResult, error) {
 	defer observability.FuncCall(ctx)()
 
@@ -111,6 +115,11 @@ func (dbc *databaseContract) ListCollections(ctx context.Context, params *ListCo
 		must.BeTrue(slices.IsSortedFunc(res.Collections, func(a, b CollectionInfo) int {
 			return cmp.Compare(a.Name, b.Name)
 		}))
+
+		if params != nil && params.Name != "" {
+			must.BeTrue(len(res.Collections) == 1)
+			must.BeTrue(res.Collections[0].Name == params.Name)
+		}
 	}
 
 	return res, err
@@ -119,13 +128,14 @@ func (dbc *databaseContract) ListCollections(ctx context.Context, params *ListCo
 // CreateCollectionParams represents the parameters of Database.CreateCollection method.
 type CreateCollectionParams struct {
 	Name            string
-	CappedSize      int64 // TODO https://github.com/FerretDB/FerretDB/issues/3458
-	CappedDocuments int64 // TODO https://github.com/FerretDB/FerretDB/issues/3458
+	CappedSize      int64
+	CappedDocuments int64
+	_               struct{} // prevent unkeyed literals
 }
 
 // Capped returns true if capped collection creation is requested.
 func (ccp *CreateCollectionParams) Capped() bool {
-	return ccp.CappedSize > 0 || ccp.CappedDocuments > 0
+	return ccp.CappedSize > 0 // TODO https://github.com/FerretDB/FerretDB/issues/3631
 }
 
 // CreateCollection creates a new collection with valid name in the database; it should not already exist.
@@ -135,7 +145,6 @@ func (dbc *databaseContract) CreateCollection(ctx context.Context, params *Creat
 	defer observability.FuncCall(ctx)()
 
 	must.BeTrue(params.CappedSize >= 0)
-	must.BeTrue(params.CappedSize%256 == 0)
 	must.BeTrue(params.CappedDocuments >= 0)
 
 	err := validateCollectionName(params.Name)

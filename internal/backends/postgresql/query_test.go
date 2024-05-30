@@ -15,6 +15,7 @@
 package postgresql
 
 import (
+	"fmt"
 	"math"
 	"testing"
 	"time"
@@ -27,12 +28,75 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
+func TestPrepareSelectClause(t *testing.T) {
+	t.Parallel()
+	schema := "schema"
+	table := "table"
+	comment := "*/ 1; DROP SCHEMA " + schema + " CASCADE -- "
+
+	for name, tc := range map[string]struct { //nolint:vet // used for test only
+		capped        bool
+		onlyRecordIDs bool
+
+		expectQuery string
+	}{
+		"CappedRecordID": {
+			capped:        true,
+			onlyRecordIDs: true,
+			expectQuery: fmt.Sprintf(
+				`SELECT %s %s FROM "%s"."%s"`,
+				"/* * / 1; DROP SCHEMA "+schema+" CASCADE --  */",
+				metadata.RecordIDColumn,
+				schema,
+				table,
+			),
+		},
+		"Capped": {
+			capped: true,
+			expectQuery: fmt.Sprintf(
+				`SELECT %s %s, %s FROM "%s"."%s"`,
+				"/* * / 1; DROP SCHEMA "+schema+" CASCADE --  */",
+				metadata.RecordIDColumn,
+				metadata.DefaultColumn,
+				schema,
+				table,
+			),
+		},
+		"FullRecord": {
+			expectQuery: fmt.Sprintf(
+				`SELECT %s %s FROM "%s"."%s"`,
+				"/* * / 1; DROP SCHEMA "+schema+" CASCADE --  */",
+				metadata.DefaultColumn,
+				schema,
+				table,
+			),
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			query := prepareSelectClause(&selectParams{
+				Schema:        schema,
+				Table:         table,
+				Comment:       comment,
+				Capped:        tc.capped,
+				OnlyRecordIDs: tc.onlyRecordIDs,
+			})
+
+			assert.Equal(t, tc.expectQuery, query)
+		})
+	}
+}
+
 func TestPrepareWhereClause(t *testing.T) {
 	t.Parallel()
 	objectID := types.ObjectID{0x62, 0x56, 0xc5, 0xba, 0x0b, 0xad, 0xc0, 0xff, 0xee, 0xff, 0xff, 0xff}
 
 	// WHERE clauses occurring frequently in tests
 	whereContain := " WHERE _jsonb->$1 @> $2"
+	whereContainDotNotation := " WHERE _jsonb#>$1 @> $2"
+
 	whereGt := " WHERE _jsonb->$1 > $2"
 	whereNotEq := ` WHERE NOT ( _jsonb ? $1 AND _jsonb->$1 @> $2 AND _jsonb->'$s'->'p'->$1->'t' = `
 
@@ -55,14 +119,17 @@ func TestPrepareWhereClause(t *testing.T) {
 			expected: whereContain,
 		},
 		"IDDotNotation": {
-			filter: must.NotFail(types.NewDocument("_id.doc", "foo")),
+			filter:   must.NotFail(types.NewDocument("_id.doc", "foo")),
+			expected: whereContainDotNotation,
 		},
 
 		"DotNotation": {
-			filter: must.NotFail(types.NewDocument("v.doc", "foo")),
+			filter:   must.NotFail(types.NewDocument("v.doc", "foo")),
+			expected: whereContainDotNotation,
 		},
 		"DotNotationArrayIndex": {
-			filter: must.NotFail(types.NewDocument("v.arr.0", "foo")),
+			filter:   must.NotFail(types.NewDocument("v.arr.0", "foo")),
+			expected: whereContainDotNotation,
 		},
 
 		"ImplicitString": {
@@ -144,6 +211,7 @@ func TestPrepareWhereClause(t *testing.T) {
 		},
 		"EqDoubleBigInt64": {
 			filter: must.NotFail(types.NewDocument(
+				// TODO https://github.com/FerretDB/FerretDB/issues/3626
 				"v", must.NotFail(types.NewDocument("$eq", float64(2<<61))),
 			)),
 			args:     []any{`v`, types.MaxSafeDouble},
@@ -249,6 +317,63 @@ func TestPrepareWhereClause(t *testing.T) {
 				return
 			}
 
+			assert.Equal(t, tc.args, args)
+		})
+	}
+}
+
+func TestPrepareOrderByClause(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct { //nolint:vet // used for test only
+		sort *types.Document
+		skip string
+
+		orderBy string
+		args    []any
+	}{
+		"Ascending": {
+			skip:    "https://github.com/FerretDB/FerretDB/issues/3181",
+			sort:    must.NotFail(types.NewDocument("field", int64(1))),
+			orderBy: ` ORDER BY _jsonb->$1`,
+			args:    []any{"field"},
+		},
+		"Descending": {
+			skip:    "https://github.com/FerretDB/FerretDB/issues/3181",
+			sort:    must.NotFail(types.NewDocument("field", int64(-1))),
+			orderBy: ` ORDER BY _jsonb->$1 DESC`,
+			args:    []any{"field"},
+		},
+		"SortNil": {
+			orderBy: "",
+			args:    nil,
+		},
+		"SortDotNotation": {
+			skip:    "https://github.com/FerretDB/FerretDB/issues/3181",
+			sort:    must.NotFail(types.NewDocument("field.embedded", int64(-1))),
+			orderBy: "",
+			args:    nil,
+		},
+		"NaturalAscending": {
+			sort:    must.NotFail(types.NewDocument("$natural", int64(1))),
+			orderBy: ` ORDER BY _ferretdb_record_id`,
+		},
+		"NaturalDescending": {
+			sort:    must.NotFail(types.NewDocument("$natural", int64(-1))),
+			orderBy: ` ORDER BY _ferretdb_record_id DESC`,
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			orderBy, args := prepareOrderByClause(tc.sort)
+
+			assert.Equal(t, tc.orderBy, orderBy)
 			assert.Equal(t, tc.args, args)
 		})
 	}

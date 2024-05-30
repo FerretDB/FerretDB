@@ -26,6 +26,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
+
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
@@ -430,8 +432,9 @@ func TestDatabaseName(t *testing.T) {
 				err: &mongo.CommandError{
 					Name:    "InvalidNamespace",
 					Code:    73,
-					Message: fmt.Sprintf("Invalid namespace specified '%s.TestDatabaseName-Err'", dbName64),
+					Message: "db name must be at most 63 characters, found: 64",
 				},
+				altMessage: fmt.Sprintf("Invalid namespace specified '%s.TestDatabaseName-Err'", dbName64),
 			},
 			"WithASlash": {
 				db: "/",
@@ -472,7 +475,7 @@ func TestDatabaseName(t *testing.T) {
 				err: &mongo.CommandError{
 					Name:    "InvalidNamespace",
 					Code:    73,
-					Message: `'.' is an invalid character in the database name: database.test`,
+					Message: `'.' is an invalid character in a db name: database.test`,
 				},
 				altMessage: `Invalid namespace specified 'database.test.TestDatabaseName-Err'`,
 			},
@@ -550,60 +553,13 @@ func TestDebugError(t *testing.T) {
 	})
 }
 
-func TestCheckingNestedDocuments(t *testing.T) {
-	t.Parallel()
-
-	for name, tc := range map[string]struct {
-		doc any
-		err error
-	}{
-		"1ok": {
-			doc: CreateNestedDocument(1),
-		},
-		"10ok": {
-			doc: CreateNestedDocument(10),
-		},
-		"100ok": {
-			doc: CreateNestedDocument(100),
-		},
-		"179ok": {
-			doc: CreateNestedDocument(179),
-		},
-		"180fail": {
-			doc: CreateNestedDocument(180),
-			err: fmt.Errorf("bson.Array.ReadFrom (document has exceeded the max supported nesting: 179."),
-		},
-		"180endedWithDocumentFail": {
-			doc: bson.D{{"v", CreateNestedDocument(179)}},
-			err: fmt.Errorf("bson.Document.ReadFrom (document has exceeded the max supported nesting: 179."),
-		},
-		"1000fail": {
-			doc: CreateNestedDocument(1000),
-			err: fmt.Errorf("bson.Document.ReadFrom (document has exceeded the max supported nesting: 179."),
-		},
-	} {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-			ctx, collection := setup.Setup(t)
-			_, err := collection.InsertOne(ctx, tc.doc)
-			if tc.err != nil {
-				require.Error(t, tc.err)
-				return
-			}
-
-			require.NoError(t, err)
-		})
-	}
-}
-
 func TestPingCommand(t *testing.T) {
 	t.Parallel()
 
 	ctx, collection := setup.Setup(t)
 	db := collection.Database()
 
-	expectedRes := bson.D{{"ok", float64(1)}}
+	expected := ConvertDocument(t, bson.D{{"ok", float64(1)}})
 
 	t.Run("Multiple", func(t *testing.T) {
 		t.Parallel()
@@ -615,7 +571,11 @@ func TestPingCommand(t *testing.T) {
 			err := res.Decode(&actualRes)
 			require.NoError(t, err)
 
-			assert.Equal(t, expectedRes, actualRes)
+			actual := ConvertDocument(t, actualRes)
+			actual.Remove("$clusterTime")
+			actual.Remove("operationTime")
+
+			testutil.AssertEqual(t, expected, actual)
 		}
 	})
 
@@ -634,7 +594,13 @@ func TestPingCommand(t *testing.T) {
 		err = res.Decode(&actualRes)
 		require.NoError(t, err)
 
-		assert.Equal(t, expectedRes, actualRes)
+		actual := ConvertDocument(t, actualRes)
+		actual.Remove("$clusterTime")
+		actual.Remove("operationTime")
+
+		expected := ConvertDocument(t, bson.D{{"ok", float64(1)}})
+
+		testutil.AssertEqual(t, expected, actual)
 
 		// Ensure that we don't create database on ping
 		// This also means that no collection is created during ping.
@@ -687,23 +653,19 @@ func TestMutatingClientMetadata(t *testing.T) {
 			},
 		},
 	} {
-		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			res := db.RunCommand(ctx, tc.command)
+			var res bson.D
 
+			err := db.RunCommand(ctx, tc.command).Decode(&res)
 			if tc.err != nil {
-				err := res.Decode(&res)
 				AssertEqualCommandError(t, *tc.err, err)
 				return
 			}
 
-			var actualRes bson.D
-			err := res.Decode(&actualRes)
-
 			require.NoError(t, err)
-			require.NotNil(t, actualRes)
+			require.NotNil(t, res)
 		})
 	}
 }

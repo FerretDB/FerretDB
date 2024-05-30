@@ -10,7 +10,7 @@
 [![Docs](https://github.com/FerretDB/FerretDB/actions/workflows/docs.yml/badge.svg?branch=main)](https://github.com/FerretDB/FerretDB/actions/workflows/docs.yml)
 
 FerretDB was founded to become the de-facto open-source substitute to MongoDB.
-FerretDB is an open-source proxy, converting the MongoDB 6.0+ wire protocol queries to SQL -
+FerretDB is an open-source proxy, converting the MongoDB 5.0+ wire protocol queries to SQL -
 using PostgreSQL or SQLite as a database engine.
 
 ```mermaid
@@ -40,7 +40,7 @@ Recognizing this, FerretDB is here to fill that gap.
 ## Scope and current state
 
 FerretDB is compatible with MongoDB drivers and popular MongoDB tools.
-It functions as a drop-in replacement for MongoDB 6.0+ in many cases.
+It functions as a drop-in replacement for MongoDB 5.0+ in many cases.
 Features are constantly being added to further increase compatibility and performance.
 
 We welcome all contributors.
@@ -90,9 +90,13 @@ See [our documentation](https://docs.ferretdb.io/quickstart-guide/) for more det
 
 ## Building and packaging
 
-> **Note**
+<!-- textlint-disable one-sentence-per-line -->
+
+> [!NOTE]
 > We strongly advise users not to build FerretDB themselves.
 > Instead, use binaries, Docker images, or packages provided by us.
+
+<!-- textlint-enable one-sentence-per-line -->
 
 FerretDB could be built as any other Go program,
 but a few generated files and build tags could affect it.
@@ -100,8 +104,10 @@ See [there](https://pkg.go.dev/github.com/FerretDB/FerretDB/build/version) for m
 
 ## Managed FerretDB at cloud providers
 
-- [Civo](https://www.civo.com) (see [here](https://www.civo.com/marketplace/FerretDB)).
-- [Scaleway](https://www.scaleway.com/) (request access [here](https://www.scaleway.com/en/betas/#managed-document-database)).
+- [Civo](https://www.civo.com/marketplace/FerretDB)
+- [Scaleway](https://www.scaleway.com/en/managed-document-database/)
+- [Tembo](https://tembo.io/docs/tembo-stacks/mongo-alternative)
+- [Vultr](https://www.vultr.com/products/managed-databases/ferretdb/)
 
 ## Documentation
 
@@ -110,13 +116,13 @@ See [there](https://pkg.go.dev/github.com/FerretDB/FerretDB/build/version) for m
 
 ## Community
 
-- Website and blog: [https://ferretdb.io](https://ferretdb.io/).
+- Website and blog: https://www.ferretdb.com/.
 - Twitter: [@ferret_db](https://twitter.com/ferret_db).
 - Mastodon: [@ferretdb@techhub.social](https://techhub.social/@ferretdb).
 - [Slack chat](https://join.slack.com/t/ferretdb/shared_invite/zt-zqe9hj8g-ZcMG3~5Cs5u9uuOPnZB8~A) for quick questions.
 - [GitHub Discussions](https://github.com/FerretDB/FerretDB/discussions) for longer topics.
 - [GitHub Issues](https://github.com/FerretDB/FerretDB/issues) for bugs and missing features.
-- [Open Office Hours meeting](https://calendar.google.com/event?action=TEMPLATE&tmeid=NjNkdTkyN3VoNW5zdHRiaHZybXFtb2l1OWtfMjAyMTEyMTNUMTgwMDAwWiBjX24zN3RxdW9yZWlsOWIwMm0wNzQwMDA3MjQ0QGc&tmsrc=c_n37tquoreil9b02m0740007244%40group.calendar.google.com&scp=ALL)
-  every Monday at 18:00 UTC at [Google Meet](https://meet.google.com/mcb-arhw-qbq).
+- [Open Office Hours meeting](https://calendar.google.com/calendar/event?action=TEMPLATE&tmeid=NGhrZTA5dXZ0MzQzN2gyaGVtZmx2aWxmN2pfMjAyNDA0MDhUMTcwMDAwWiBjX24zN3RxdW9yZWlsOWIwMm0wNzQwMDA3MjQ0QGc&tmsrc=c_n37tquoreil9b02m0740007244%40group.calendar.google.com&scp=ALL)
+  every Monday at 17:00 UTC at [Google Meet](https://meet.google.com/mcb-arhw-qbq).
 
-If you want to contact FerretDB Inc., please use [this form](https://www.ferretdb.io/contact/).
+If you want to contact FerretDB Inc., please use [this form](https://www.ferretdb.com/contact/).

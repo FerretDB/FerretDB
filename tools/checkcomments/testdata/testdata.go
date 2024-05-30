@@ -27,10 +27,23 @@ func testIncorrectFormat() {
 	// TODO: https://github.com/FerretDB/FerretDB/issues/3413 // want "invalid TODO: incorrect format"
 }
 
-func testCorrectForNow() {
-	// TODO https://github.com/FerretDB/FerretDB/issues/1
+// For https://github.com/github/codeql/issues/15894.
+func testIncorrectDomain() {
+	// TODO https://githubbcom/FerretDB/FerretDB/issues/3413 // want "invalid TODO: incorrect format"
+}
+
+func testCorrectFormatClosed() {
+	// TODO https://github.com/FerretDB/FerretDB/issues/1 // want "invalid TODO: linked issue https://github.com/FerretDB/FerretDB/issues/1 is closed"
 }
 
 func testIncorrectFormatClosed() {
 	// TODO: https://github.com/FerretDB/FerretDB/issues/1 // want "invalid TODO: incorrect format"
+}
+
+func testCorrectFormatNotExists() {
+	// TODO https://github.com/FerretDB/FerretDB/issues/999999 // want "invalid TODO: linked issue https://github.com/FerretDB/FerretDB/issues/999999 is not found"
+}
+
+func testIncorrectFormatNotExists() {
+	// TODO: https://github.com/FerretDB/FerretDB/issues/999999 // want "invalid TODO: incorrect format"
 }

@@ -109,8 +109,9 @@ func TestCircularBuffer(t *testing.T) {
 		})
 	}
 
-	Setup(zap.DebugLevel, "")
+	Setup(zap.DebugLevel, "console", "")
 	logger := zap.L()
+
 	for n, tc := range []struct {
 		addMsg   string
 		expected []string

@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/jackc/pgerrcode"
@@ -27,7 +28,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata"
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata/pool"
-	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
+	"github.com/FerretDB/FerretDB/internal/handler/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -56,13 +57,9 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		return nil, lazyerrors.Error(err)
 	}
 
-	if params == nil {
-		params = new(backends.QueryParams)
-	}
-
 	if p == nil {
 		return &backends.QueryResult{
-			Iter: newQueryIterator(ctx, nil),
+			Iter: newQueryIterator(ctx, nil, params.OnlyRecordIDs),
 		}, nil
 	}
 
@@ -73,33 +70,34 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 	if meta == nil {
 		return &backends.QueryResult{
-			Iter: newQueryIterator(ctx, nil),
+			Iter: newQueryIterator(ctx, nil, params.OnlyRecordIDs),
 		}, nil
 	}
 
-	q := prepareSelectClause(c.dbName, meta.TableName)
+	q := prepareSelectClause(&selectParams{
+		Schema:        c.dbName,
+		Table:         meta.TableName,
+		Comment:       params.Comment,
+		Capped:        meta.Capped(),
+		OnlyRecordIDs: params.OnlyRecordIDs,
+	})
 
 	var placeholder metadata.Placeholder
 
-	where, args, err := prepareWhereClause(&placeholder, params.Filter)
+	var where string
+	var args []any
+
+	where, args, err = prepareWhereClause(&placeholder, params.Filter)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	q += where
 
-	if params.Sort != nil {
-		var sort string
-		var sortArgs []any
+	sort, sortArgs := prepareOrderByClause(params.Sort)
 
-		sort, sortArgs, err = prepareOrderByClause(&placeholder, params.Sort.Key, params.Sort.Descending)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		q += sort
-		args = append(args, sortArgs...)
-	}
+	q += sort
+	args = append(args, sortArgs...)
 
 	if params.Limit != 0 {
 		q += fmt.Sprintf(` LIMIT %s`, placeholder.Next())
@@ -112,13 +110,16 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 	}
 
 	return &backends.QueryResult{
-		Iter: newQueryIterator(ctx, rows),
+		Iter: newQueryIterator(ctx, rows, params.OnlyRecordIDs),
 	}, nil
 }
 
 // InsertAll implements backends.Collection interface.
 func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllParams) (*backends.InsertAllResult, error) {
-	if _, err := c.r.CollectionCreate(ctx, c.dbName, c.name); err != nil {
+	if _, err := c.r.CollectionCreate(ctx, &metadata.CollectionCreateParams{
+		DBName: c.dbName,
+		Name:   c.name,
+	}); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
@@ -133,24 +134,27 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 	}
 
 	err = pool.InTransaction(ctx, p, func(tx pgx.Tx) error {
-		for _, doc := range params.Docs {
-			var b []byte
-			b, err = sjson.Marshal(doc)
+		batchSize := c.r.BatchSize
+		if batchSize < 1 {
+			panic("batch-size should be greater or equal to 1")
+		}
+
+		var batch []*types.Document
+		docs := params.Docs
+
+		for len(docs) > 0 {
+			i := min(batchSize, len(docs))
+			batch, docs = docs[:i], docs[i:]
+
+			var q string
+			var args []any
+
+			q, args, err = prepareInsertStatement(c.dbName, meta.TableName, meta.Capped(), batch)
 			if err != nil {
 				return lazyerrors.Error(err)
 			}
 
-			// TODO https://github.com/FerretDB/FerretDB/issues/3490
-
-			// use batches: INSERT INTO %s %s VALUES (?), (?), (?), ... up to, say, 100 documents
-			// TODO https://github.com/FerretDB/FerretDB/issues/3271
-			q := fmt.Sprintf(
-				`INSERT INTO %s (%s) VALUES ($1)`,
-				pgx.Identifier{c.dbName, meta.TableName}.Sanitize(),
-				metadata.DefaultColumn,
-			)
-
-			if _, err = tx.Exec(ctx, q, string(b)); err != nil {
+			if _, err = tx.Exec(ctx, q, args...); err != nil {
 				var pgErr *pgconn.PgError
 				if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
 					return backends.NewError(backends.ErrorCodeInsertDuplicateID, err)
@@ -162,7 +166,6 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 
 		return nil
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -247,21 +250,39 @@ func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllPa
 		return &backends.DeleteAllResult{Deleted: 0}, nil
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3498
-	_ = params.RecordIDs
+	// TODO https://github.com/FerretDB/FerretDB/issues/3888
 
-	var placeholder metadata.Placeholder
-	placeholders := make([]string, len(params.IDs))
-	args := make([]any, len(params.IDs))
+	var column string
+	var placeholders []string
+	var args []any
 
-	for i, id := range params.IDs {
-		placeholders[i] = placeholder.Next()
-		args[i] = string(must.NotFail(sjson.MarshalSingleValue(id)))
+	if params.RecordIDs == nil {
+		var placeholder metadata.Placeholder
+		placeholders = make([]string, len(params.IDs))
+		args = make([]any, len(params.IDs))
+
+		for i, id := range params.IDs {
+			placeholders[i] = placeholder.Next()
+			args[i] = string(must.NotFail(sjson.MarshalSingleValue(id)))
+		}
+
+		column = metadata.IDColumn
+	} else {
+		var placeholder metadata.Placeholder
+		placeholders = make([]string, len(params.RecordIDs))
+		args = make([]any, len(params.RecordIDs))
+
+		for i, id := range params.RecordIDs {
+			placeholders[i] = placeholder.Next()
+			args[i] = id
+		}
+
+		column = metadata.RecordIDColumn
 	}
 
 	q := fmt.Sprintf(`DELETE FROM %s WHERE %s IN (%s)`,
 		pgx.Identifier{c.dbName, meta.TableName}.Sanitize(),
-		metadata.IDColumn,
+		column,
 		strings.Join(placeholders, ", "),
 	)
 
@@ -303,7 +324,13 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 
 	res := new(backends.ExplainResult)
 
-	q := `EXPLAIN (VERBOSE true, FORMAT JSON) ` + prepareSelectClause(c.dbName, meta.TableName)
+	opts := &selectParams{
+		Schema: c.dbName,
+		Table:  meta.TableName,
+		Capped: meta.Capped(),
+	}
+
+	q := `EXPLAIN (VERBOSE true, FORMAT JSON) ` + prepareSelectClause(opts)
 
 	var placeholder metadata.Placeholder
 
@@ -312,24 +339,15 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		return nil, lazyerrors.Error(err)
 	}
 
-	res.QueryPushdown = where != ""
-
-	if params.Sort != nil {
-		var sort string
-		var sortArgs []any
-
-		sort, sortArgs, err = prepareOrderByClause(&placeholder, params.Sort.Key, params.Sort.Descending)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		q += sort
-		args = append(args, sortArgs...)
-
-		res.SortPushdown = sort != ""
-	}
+	res.FilterPushdown = where != ""
 
 	q += where
+
+	sort, sortArgs := prepareOrderByClause(params.Sort)
+	res.SortPushdown = sort != ""
+
+	q += sort
+	args = append(args, sortArgs...)
 
 	if params.Limit != 0 {
 		q += fmt.Sprintf(` LIMIT %s`, placeholder.Next())
@@ -338,9 +356,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 	}
 
 	var b []byte
-	err = p.QueryRow(ctx, q, args...).Scan(&b)
-
-	if err != nil {
+	if err = p.QueryRow(ctx, q, args...).Scan(&b); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
@@ -469,13 +485,11 @@ func (c *collection) Compact(ctx context.Context, params *backends.CompactParams
 		)
 	}
 
-	var full string
-
+	q := "VACUUM ANALYZE "
 	if params != nil && params.Full {
-		full = " FULL"
+		q = "VACUUM FULL ANALYZE "
 	}
-
-	q := fmt.Sprintf(`VACUUM%s ANALYZE %s`, full, pgx.Identifier{c.dbName, coll.TableName}.Sanitize())
+	q += pgx.Identifier{c.dbName, coll.TableName}.Sanitize()
 
 	if _, err = db.Exec(ctx, q); err != nil {
 		return nil, lazyerrors.Error(err)
@@ -529,10 +543,9 @@ func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndex
 		}
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3589
-	// slices.SortFunc(res.Indexes, func(a, b backends.IndexInfo) int {
-	// 	return cmp.Compare(a.Name, b.Name)
-	// })
+	sort.Slice(res.Indexes, func(i, j int) bool {
+		return res.Indexes[i].Name < res.Indexes[j].Name
+	})
 
 	return &res, nil
 }

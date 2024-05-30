@@ -18,7 +18,7 @@ updates:
       time: "01:42"
 
   - package-ecosystem: "docker"
-    directory: "/build/docker"
+    directory: "/build/ferretdb"
     labels: ["deps", "not ready"]
     assignees: [AlekSi]
     open-pull-requests-limit: 20

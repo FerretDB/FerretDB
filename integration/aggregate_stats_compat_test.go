@@ -21,9 +21,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 
+	"github.com/FerretDB/FerretDB/internal/types"
+
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
-	"github.com/FerretDB/FerretDB/internal/types"
 )
 
 func TestAggregateCompatCollStats(t *testing.T) {
@@ -39,7 +40,7 @@ func TestAggregateCompatCollStats(t *testing.T) {
 		pipeline bson.A // required
 
 		resultType compatTestCaseResultType // defaults to nonEmptyResult
-		skip       string                   // skip test for all handlers, must have issue number mentioned
+		skip       string                   // always skip this test case, must have issue number mentioned
 	}{
 		"EmptyCollStats": {
 			pipeline: bson.A{bson.D{{"$collStats", bson.D{}}}},

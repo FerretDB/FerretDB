@@ -15,9 +15,9 @@
 package types
 
 import (
+	"cmp"
 	"fmt"
 	"slices"
-	"sort"
 	"strconv"
 
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -38,11 +38,12 @@ type document interface {
 //
 // Data documents (that are stored in the backend) have a special RecordID property
 // that is not a field and can't be accessed by most methods.
-// It use used to locate the document in the backend.
+// It is used to locate the document in the backend.
 type Document struct {
+	keys     map[string]int
 	fields   []field
 	frozen   bool
-	recordID Timestamp
+	recordID int64
 }
 
 // field represents a field in the document.
@@ -66,25 +67,31 @@ func ConvertDocument(d document) (*Document, error) {
 
 	keys := d.Keys()
 	values := d.Values()
+	l := len(keys)
 
-	if len(keys) != len(values) {
-		panic(fmt.Sprintf("document must have the same number of keys and values (keys: %d, values: %d)", len(keys), len(values)))
+	if lv := len(values); l != lv {
+		panic(fmt.Sprintf("document must have the same number of keys and values (keys: %d, values: %d)", l, lv))
 	}
 
-	// If values are not set, we don't need to allocate memory for fields.
-	if len(values) == 0 {
+	if l == 0 {
 		return new(Document), nil
 	}
 
-	fields := make([]field, len(keys))
-	for i, key := range d.Keys() {
-		fields[i] = field{
+	docKeys := make(map[string]int, l)
+	docFields := make([]field, l)
+
+	for i, key := range keys {
+		docKeys[key]++
+		docFields[i] = field{
 			key:   key,
 			value: values[i],
 		}
 	}
 
-	return &Document{fields: fields}, nil
+	return &Document{
+		keys:   docKeys,
+		fields: docFields,
+	}, nil
 }
 
 // MakeDocument creates an empty document with set capacity.
@@ -94,6 +101,7 @@ func MakeDocument(capacity int) *Document {
 	}
 
 	return &Document{
+		keys:   make(map[string]int, capacity),
 		fields: make([]field, 0, capacity),
 	}
 }
@@ -105,11 +113,12 @@ func NewDocument(pairs ...any) (*Document, error) {
 		return nil, fmt.Errorf("types.NewDocument: invalid number of arguments: %d", l)
 	}
 
-	doc := MakeDocument(l / 2)
-
 	if l == 0 {
-		return doc, nil
+		return new(Document), nil
 	}
+
+	docKeys := make(map[string]int, l/2)
+	docFields := make([]field, l/2)
 
 	for i := 0; i < l; i += 2 {
 		key, ok := pairs[i].(string)
@@ -120,21 +129,28 @@ func NewDocument(pairs ...any) (*Document, error) {
 		value := pairs[i+1]
 		assertType(value)
 
-		doc.fields = append(doc.fields, field{key: key, value: value})
+		docKeys[key]++
+		docFields[i/2] = field{
+			key:   key,
+			value: value,
+		}
 	}
 
-	return doc, nil
+	return &Document{
+		keys:   docKeys,
+		fields: docFields,
+	}, nil
 }
 
 func (*Document) compositeType() {}
 
 // RecordID returns the document's RecordID (that is 0 by default).
-func (d *Document) RecordID() Timestamp {
+func (d *Document) RecordID() int64 {
 	return d.recordID
 }
 
 // SetRecordID sets the document's RecordID.
-func (d *Document) SetRecordID(recordID Timestamp) {
+func (d *Document) SetRecordID(recordID int64) {
 	d.recordID = recordID
 }
 
@@ -190,8 +206,6 @@ func (d *Document) Iterator() iterator.Interface[string, any] {
 // If there are duplicate keys in the document, the last value is set in the corresponding field.
 //
 // It returns nil for nil Document.
-//
-// Deprecated: as Document might have duplicate keys, map is not a good representation of it.
 func (d *Document) Map() map[string]any {
 	if d == nil {
 		return nil
@@ -257,22 +271,17 @@ func (d *Document) FindDuplicateKey() (string, bool) {
 // Command returns the first document's key. This is often used as a command name.
 // It returns an empty string if document is nil or empty.
 func (d *Document) Command() string {
-	keys := d.Keys()
-	if len(keys) == 0 {
+	if d == nil || len(d.fields) == 0 {
 		return ""
 	}
-	return keys[0]
+
+	return d.fields[0].key
 }
 
 // Has returns true if the given key is present in the document.
 func (d *Document) Has(key string) bool {
-	for _, field := range d.fields {
-		if field.key == key {
-			return true
-		}
-	}
-
-	return false
+	_, ok := d.keys[key]
+	return ok
 }
 
 // Get returns a value at the given key.
@@ -325,7 +334,15 @@ func (d *Document) Set(key string, value any) {
 		}
 	}
 
-	d.fields = append(d.fields, field{key: key, value: value})
+	if d.keys == nil {
+		d.keys = make(map[string]int, 1)
+	}
+	d.keys[key]++
+
+	d.fields = append(d.fields, field{
+		key:   key,
+		value: value,
+	})
 }
 
 // Remove the given key and return its value, or nil if the key does not exist.
@@ -339,6 +356,7 @@ func (d *Document) Remove(key string) any {
 
 	for i, field := range d.fields {
 		if field.key == key {
+			delete(d.keys, key)
 			d.fields = slices.Delete(d.fields, i, i+1)
 			return field.value
 		}
@@ -430,25 +448,15 @@ func (d *Document) RemoveByPath(path Path) {
 func (d *Document) SortFieldsByKey() {
 	d.checkFrozen()
 
-	sort.Slice(d.fields, func(i, j int) bool { return d.fields[i].key < d.fields[j].key })
+	slices.SortFunc(d.fields, func(a, b field) int {
+		return cmp.Compare(a.key, b.key)
+	})
 }
 
 // isKeyDuplicate returns true if the target key is duplicated in the document and false otherwise.
 // If the key is not found, it returns false.
 func (d *Document) isKeyDuplicate(targetKey string) bool {
-	var found bool
-
-	for _, key := range d.Keys() {
-		if key == targetKey {
-			if found {
-				return true
-			}
-
-			found = true
-		}
-	}
-
-	return false
+	return d.keys[targetKey] > 1
 }
 
 // moveIDToTheFirstIndex sets the _id field of the document at the first position.
@@ -458,22 +466,25 @@ func (d *Document) moveIDToTheFirstIndex() {
 		return
 	}
 
-	idIdx := 0
+	var idIdx int
 
-	if d.fields[idIdx].key == "_id" {
-		return
-	}
-
-	for i, key := range d.Keys() {
-		if key == "_id" {
+	for i, field := range d.fields {
+		if field.key == "_id" {
 			idIdx = i
 			break
 		}
 	}
 
+	if idIdx == 0 {
+		return
+	}
+
 	d.checkFrozen()
 
-	d.fields = slices.Insert(d.fields, 0, field{key: d.fields[idIdx].key, value: d.fields[idIdx].value})
+	d.fields = slices.Insert(d.fields, 0, field{
+		key:   d.fields[idIdx].key,
+		value: d.fields[idIdx].value,
+	})
 
 	d.fields = slices.Delete(d.fields, idIdx+1, idIdx+2)
 }

@@ -40,10 +40,6 @@ jobs:
       url: ${{ steps.extract.outputs.extracted_url }}
 
     steps:
-      - name: Setup permissions monitoring
-        uses: GitHubSecurityLab/actions-permissions/monitor@v1
-        if: false
-
       # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
         uses: actions/checkout@v4
@@ -58,7 +54,7 @@ jobs:
           BRANCH: ${{ github.head_ref }} # see https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#using-an-intermediate-environment-variable
         run: git checkout -b $BRANCH
 
-      # no actionsdesk/lfs-warning due to https://github.com/ActionsDesk/lfs-warning/issues/150
+      # no ppremk/lfs-warning due to https://github.com/ppremk/lfs-warning/issues/150
 
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
@@ -110,10 +106,6 @@ jobs:
       # Just build them again instead.
       # That also allows us to pass branch name, commit hash, etc from git to wrangler.
 
-      - name: Setup permissions monitoring
-        uses: GitHubSecurityLab/actions-permissions/monitor@v1
-        if: false
-
       # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
         uses: actions/checkout@v4
@@ -128,7 +120,7 @@ jobs:
           BRANCH: ${{ github.head_ref }} # see https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#using-an-intermediate-environment-variable
         run: git checkout -b $BRANCH
 
-      # no actionsdesk/lfs-warning due to https://github.com/ActionsDesk/lfs-warning/issues/150
+      # no ppremk/lfs-warning due to https://github.com/ppremk/lfs-warning/issues/150
 
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main

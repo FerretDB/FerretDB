@@ -30,11 +30,6 @@ func NewTimestamp(t time.Time, c uint32) Timestamp {
 	return Timestamp((uint64(t.Unix()) << 32) | uint64(c))
 }
 
-// NewTimestampSigned returns the timestamp for the given signed value.
-func NewTimestampSigned(i int64) Timestamp {
-	return Timestamp(i)
-}
-
 // NextTimestamp returns the next timestamp for the given time value.
 func NextTimestamp(t time.Time) Timestamp {
 	// Technically, that should be a counter within a second, not a process-wide,

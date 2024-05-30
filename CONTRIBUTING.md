@@ -5,18 +5,18 @@ Thank you for your interest in making FerretDB better!
 ## Finding something to work on
 
 We are interested in all contributions, big or small, in code or documentation.
-But unless you are fixing a very small issue like a typo,
-we kindly ask you first to [create an issue](https://github.com/FerretDB/FerretDB/issues/new/choose),
+But unless you are fixing a tiny issue like a typo,
+we kindly ask you first to [create an issue](https://github.com/FerretDB/FerretDB/issues/new/choose)
 or leave a comment on an existing issue if you want to work on it.
-This way, you will get help from us and avoid wasted efforts if something can't be worked on right now
-or someone is already working on it.
-You can also [join our Slack chat](./README.md#community) and leave a message for us in the `#dev` channel.
+This way, we could assign the issue to you, marking it as being worked on,
+preventing others from wasting efforts working on it at the same time.
+Additionally, you can [join our Slack chat](./README.md#community) and leave a message for us in the `#dev` channel.
 
 You can find a list of good first issues for contributors [there](https://github.com/FerretDB/FerretDB/contribute).
 Once you have some experience with contributing to FerretDB,
 feel free to pick any issue
 [that is not assigned to anyone and doesn't have `not ready` label](https://github.com/FerretDB/FerretDB/issues?q=is%3Aissue+is%3Aopen+no%3Aassignee+-label%3A%22not+ready%22).
-Still, please let us know as described above.
+Still, please leave a comment on it as described above.
 
 ## Setting up the environment
 
@@ -30,12 +30,12 @@ On macOS and Windows, [Docker Desktop](https://www.docker.com/products/docker-de
 On Windows, it should be [configured to use WSL 2](https://docs.docker.com/desktop/windows/wsl/) without any distro;
 all commands should be run on the host.
 
-You will need Go 1.21 or later on the host.
+You will need Go 1.22 or later on the host.
 If your package manager doesn't provide it yet,
 please install it from [go.dev](https://go.dev/dl/).
 
 You will also need `git` installed; the version provided by your package manager should do.
-On Windows, the simplest way to install it might be <https://gitforwindows.org>.
+On Windows, the simplest way to install it might be https://gitforwindows.org.
 
 Finally, you will also need [git-lfs](https://git-lfs.github.com) installed and configured (`git lfs install`).
 
@@ -158,23 +158,17 @@ The `internal` subpackages contain most of the FerretDB code:
 
 - `types` package provides Go types matching BSON types that don't have built-in Go equivalents:
   we use `int32` for BSON's int32, but `types.ObjectID` for BSON's ObjectId.
-- `types/fjson` provides converters from/to FJSON for built-in and `types` types.
-  It is used for logging of BSON values and wire protocol messages.
 - `bson` package provides converters from/to BSON for built-in and `types` types.
 - `wire` package provides wire protocol implementation.
 - `clientconn` package provides client connection implementation.
-  It accepts client connections, reads `wire`/`bson` protocol messages, and passes them to `handlers`.
+  It accepts client connections, reads `wire`/`bson` protocol messages, and passes them to `handler`.
   Responses are then converted to `wire`/`bson` messages and sent back to the client.
-- `handlers` contains a common interface for backend handlers that they should implement.
-  Handlers use `types` and `wire` packages, but `bson` package details are hidden.
-- `handlers/common` contains code shared by different handlers.
-- `handlers/sjson` provides converters from/to SJSON for built-in and `types` types.
+- `handler` contains implementations of command handlers.
+  They use `types` and `wire` packages, but `bson` package details are hidden.
+- `handler/sjson` provides converters from/to SJSON for built-in and `types` types.
   SJSON adds some extensions to JSON for keeping object keys in order,
   preserving BSON type information in the values themselves, etc.
-  It is used by backends and old `pg` handler.
-- `handlers/sqlite` contains the implementation of the SQLite handler.
-  It is being converted into universal handler for all backends.
-- `handlers/pg` contains the implementation of the old PostgreSQL handler.
+  It is used by some backends.
 
 #### Running tests
 
@@ -187,7 +181,8 @@ you can run those with `task test-unit` after starting the environment as descri
 
 We also have a set of "integration" tests in the `integration` directory.
 They use the Go MongoDB driver like a regular user application.
-They could test any MongoDB-compatible database (such as FerretDB or MongoDB itself) via a regular TCP or TLS port or Unix socket.
+They could test any MongoDB-compatible database (such as FerretDB or MongoDB itself) via a regular TCP or TLS port
+or Unix domain socket.
 They also could test in-process FerretDB instances
 (meaning that integration tests start and stop them themselves) with a given backend.
 Finally, some integration tests (so-called compatibility or "compat" tests) connect to two systems
@@ -221,10 +216,13 @@ For example:
   with [Go execution tracer](https://pkg.go.dev/runtime/trace) enabled,
   you may use `env GOFLAGS='-trace=trace.out' task test-integration-sqlite`.
 
-> **Note**
->
+<!-- textlint-disable one-sentence-per-line -->
+
+> [!NOTE]
 > It is not recommended to set `GOFLAGS` and other Go environment variables with `export GOFLAGS=...`
 > or `go env -w GOFLAGS=...` because they are invisible and easy to forget about, leading to confusion.
+
+<!-- textlint-enable one-sentence-per-line -->
 
 In general, we prefer integration tests over unit tests,
 tests using real databases over short tests
@@ -233,13 +231,13 @@ and real objects over mocks.
 (You might disagree with our terminology for "unit" and "integration" tests;
 let's not fight over it.)
 
-We have an additional integration testing system in another repository: <https://github.com/FerretDB/dance>.
+We have an additional integration testing system in another repository: https://github.com/FerretDB/dance.
 
 #### Observability in tests
 
 Integration tests start a debug handler with pprof profiles and execution traces on a random port
 (to allow running multiple test configurations in parallel).
-They also send telemetry traces to the local Jaeger instance that can be accessed at <http://127.0.0.1:16686/>.
+They also send telemetry traces to the local Jaeger instance that can be accessed at http://127.0.0.1:16686/.
 
 ### Code style and conventions
 
@@ -251,16 +249,18 @@ If, on the other hand, you see code that is inconsistent without apparent reason
 please improve it as you work on it.
 
 Our code follows most of the standard Go conventions,
-documented on [CodeReviewComments wiki page](https://github.com/golang/go/wiki/CodeReviewComments)
-and some other pages such as [Spelling](https://github.com/golang/go/wiki/Spelling).
+documented on [CodeReviewComments wiki page](https://go.dev/wiki/CodeReviewComments)
+and some other pages such as [Spelling](https://go.dev/wiki/Spelling).
 Some of our idiosyncrasies:
 
 1. We use type switches over BSON types in many places in our code.
-   The order of `case`s follows this order: <https://pkg.go.dev/github.com/FerretDB/FerretDB/internal/types#hdr-Mapping>
-   It may seem random, but it is only pseudo-random and follows BSON spec: <https://bsonspec.org/spec.html>
+   The order of `case`s follows this order: https://pkg.go.dev/github.com/FerretDB/FerretDB/internal/types#hdr-Mapping
+   It may seem random, but it is only pseudo-random and follows BSON spec: https://bsonspec.org/spec.html
 2. We generally pass and return `struct`s by pointers.
    There are some exceptions like `types.Path` that have value semantics, but when in doubt – use pointers.
-3. Code comments:
+3. Log messages should not end with punctuation.
+   Log field names use `snake_case`.
+4. Code comments:
    - All top-level declarations, even unexported, should have documentation comments.
    - In documentation comments do not describe the name in terms of the name itself (`// Registry is a registry of …`).
      Use other words instead; often, they could add additional information and make reading more pleasant (`// Registry stores …`).
@@ -346,27 +346,27 @@ Before submitting a pull request, please make sure that:
 
 #### Submitting PR
 
-1. If the pull request is related to some issues,
-   please mention the issue number in the pull request **description** like `Closes #{issue_number}.`
-   or `Closes org/repo#{issue_number}.`
-   (You can just follow the pull request template).
-   Please do not use URLs like `https://github.com/org/repo/issue/{issue_number}`
-   or paths like `org/repo/issue/{issue_number}` even if they are rendered the same on GitHub.
+1. Please follow the pull request template.
+2. If the pull request is related to some issue,
+   please mention the issue number in the pull request description like `Closes #<issue_number>.`
+   or `Closes FerretDB/<repo>#<issue_number>.`
+   Please do not use URLs like `https://github.com/FerretDB/<repo>/issue/<issue_number>`
+   or paths like `FerretDB/<repo>/issue/<issue_number>` even if they are rendered the same on GitHub.
    If you propose a tiny fix, there is no needed to create a new issue.
-2. There is no need to use draft pull requests.
+3. There is no need to use draft pull requests.
    If you want to get feedback on something you are working on,
    please create a normal pull request, even if it is not "fully" ready yet.
-3. In the pull request review conversations,
+4. In the pull request review conversations,
    please either leave a new comment or resolve (close) the conversation,
-   which ensures the other people can read all comments.
-   But **do not** do that simultaneously.
-4. During your development,
-   commit messages (both titles and bodies) are not important and can be "WIP" or anything else.
-   All commits are always squashed on merge by GitHub,
-   so there is **no need** to squash them manually, amend them, and/or do force pushes.
-   But notice that the autogenerated GitHub's squash commit's body
-   **should be** manually replaced by "Closes #{issue_number}.".
-5. Please don't forget to click
+   which ensures other people can read all comments.
+   But do not do that simultaneously.
+   Conversations should typically be resolved by the conversation starter, not the PR author.
+5. During development in a branch/PR,
+   commit messages (both titles and bodies) are not important and can be anything.
+   All commits are always squashed on merge by GitHub.
+   Please **do not** squash them manually, amend them, and/or force push them -
+   that makes the review process harder.
+6. Please don't forget to click
    ["re-request review" buttons](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/requesting-a-pull-request-review)
    once PR is ready for re-review.
 

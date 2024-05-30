@@ -1,12 +1,11 @@
 // @ts-check
 // Note: type annotations allow type checking and IDEs autocompletion
 
-const lightCodeTheme = require('prism-react-renderer/themes/github');
-const darkCodeTheme = require('prism-react-renderer/themes/dracula');
+import {themes} from 'prism-react-renderer';
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
-  title: 'FerretDB Documentation',
+  title: 'FerretDB',
   tagline: 'A truly Open Source MongoDB alternative',
 
   url: 'https://docs.ferretdb.io',
@@ -31,6 +30,9 @@ const config = {
       {
         indexBlog: true, // Index blog posts in search engine
         indexDocs: true, // Blog plugin is disabled, blog search needs to be disabled too
+        lunr:{
+          tokenizerSeparator: /[\s\-\$]+/,
+        }
       },
     ],
   ],
@@ -44,6 +46,13 @@ const config = {
           routeBasePath: '/',
           sidebarPath: require.resolve('./sidebars.js'),
           editUrl: 'https://github.com/FerretDB/FerretDB/tree/main/website',
+
+          versions: {
+            // the latest minus one minor
+            'v1.20': {
+              banner: 'none',
+            },
+          },
         },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
@@ -66,12 +75,13 @@ const config = {
           {
             to: '/',
             label: 'Documentation',
-            position: 'left'
+            position: 'right',
+            type: 'docsVersionDropdown'
           },
           {
             href: 'https://blog.ferretdb.io/',
             label: 'Blog',
-            position: 'left'
+            position: 'right'
           },
           {
             href: 'https://github.com/FerretDB/',
@@ -79,8 +89,8 @@ const config = {
             position: 'right',
           },
           {
-            href: 'https://ferretdb.io/',
-            label: 'Go to FerretDB.io',
+            href: 'https://www.ferretdb.com/',
+            label: 'FerretDB.com',
             position: 'right',
           },
         ],
@@ -122,8 +132,8 @@ const config = {
             title: 'More',
             items: [
               {
-                href: 'https://ferretdb.io/',
-                label: 'Go to FerretDB.io',
+                href: 'https://www.ferretdb.com/',
+                label: 'FerretDB.com',
                 position: 'right',
               },
               {
@@ -140,9 +150,9 @@ const config = {
         copyright: `Copyright © ${new Date().getFullYear()} FerretDB Inc. Built with Docusaurus.`,
       },
       prism: {
-        theme: lightCodeTheme,
-        darkTheme: darkCodeTheme,
-        additionalLanguages: ['go', 'json5', 'sql'],
+        theme: themes.github,
+        darkTheme: themes.dracula,
+        additionalLanguages: ['go', 'sql', 'json', 'json5'],
       },
       mermaid: {
         theme: {light: 'default', dark: 'dark'},

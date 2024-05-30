@@ -22,9 +22,11 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
+
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
-	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 // TestCreateIndexesCommandCompat tests specific behavior for index creation that can be only provided through RunCommand.
@@ -164,7 +166,13 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 				require.Nil(t, compatRes)
 			}
 
-			assert.Equal(t, compatRes, targetRes)
+			compatDoc := ConvertDocument(t, compatRes)
+			compatDoc.Remove("$clusterTime")
+			compatDoc.Remove("operationTime")
+			compatDoc.Remove("commitQuorum")
+
+			targetDoc := ConvertDocument(t, targetRes)
+			testutil.AssertEqual(t, compatDoc, targetDoc)
 
 			targetCursor, targetErr := targetCollection.Indexes().List(ctx)
 			compatCursor, compatErr := compatCollection.Indexes().List(ctx)
@@ -229,7 +237,13 @@ func TestCreateIndexesCommandCompatCheckFields(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, createdCollectionAutomatically.(bool)) // must be true because a new collection was created
 
-	AssertEqualDocuments(t, compatRes, targetRes)
+	compat := ConvertDocument(t, compatRes)
+	compat.Remove("$clusterTime")
+	compat.Remove("operationTime")
+	compat.Remove("commitQuorum")
+
+	target := ConvertDocument(t, targetRes)
+	testutil.AssertEqual(t, compat, target)
 
 	// Now this collection exists, so we create another index and expect createdCollectionAutomatically to be false.
 	indexesDoc = bson.D{{"key", bson.D{{"foo", 1}}}, {"name", "foo_1"}}
@@ -252,7 +266,12 @@ func TestCreateIndexesCommandCompatCheckFields(t *testing.T) {
 	require.NoError(t, err)
 	require.False(t, createdCollectionAutomatically.(bool)) // must be false because the collection already exists
 
-	AssertEqualDocuments(t, compatRes, targetRes)
+	compatDoc.Remove("$clusterTime")
+	compatDoc.Remove("operationTime")
+	compatDoc.Remove("commitQuorum")
+
+	targetDoc := ConvertDocument(t, targetRes)
+	testutil.AssertEqual(t, compatDoc, targetDoc)
 
 	// Call index creation for the index that already exists, expect note to be set.
 	indexesDoc = bson.D{{"key", bson.D{{"foo", 1}}}, {"name", "foo_1"}}
@@ -277,7 +296,12 @@ func TestCreateIndexesCommandCompatCheckFields(t *testing.T) {
 	// note must be set because no new indexes were created:
 	require.Equal(t, "all indexes already exist", createdCollectionAutomatically.(string))
 
-	AssertEqualDocuments(t, compatRes, targetRes)
+	compatDoc.Remove("$clusterTime")
+	compatDoc.Remove("operationTime")
+	compatDoc.Remove("commitQuorum")
+
+	targetDoc = ConvertDocument(t, targetRes)
+	testutil.AssertEqual(t, compatDoc, targetDoc)
 }
 
 func TestDropIndexesCommandCompat(tt *testing.T) {
@@ -416,7 +440,7 @@ func TestDropIndexesCommandCompat(tt *testing.T) {
 						targetList := FetchAll(t, ctx, targetCursor)
 						compatList := FetchAll(t, ctx, compatCursor)
 
-						require.Equal(t, compatList, targetList)
+						require.ElementsMatch(t, compatList, targetList)
 					}
 
 					targetCommand := bson.D{
@@ -451,7 +475,12 @@ func TestDropIndexesCommandCompat(tt *testing.T) {
 						require.Nil(t, compatRes)
 					}
 
-					require.Equal(t, compatRes, targetRes)
+					compatDoc := ConvertDocument(t, compatRes)
+					compatDoc.Remove("$clusterTime")
+					compatDoc.Remove("operationTime")
+
+					targetDoc := ConvertDocument(t, targetRes)
+					testutil.AssertEqual(t, compatDoc, targetDoc)
 
 					if compatErr == nil {
 						nonEmptyResults = true
@@ -474,7 +503,7 @@ func TestDropIndexesCommandCompat(tt *testing.T) {
 					targetList := FetchAll(t, ctx, targetCursor)
 					compatList := FetchAll(t, ctx, compatCursor)
 
-					assert.Equal(t, compatList, targetList)
+					assert.ElementsMatch(t, compatList, targetList)
 				})
 			}
 

@@ -24,6 +24,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/prometheus/client_golang/prometheus"
@@ -33,7 +34,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata/pool"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
-	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
+	"github.com/FerretDB/FerretDB/internal/handler/sjson"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
@@ -72,8 +73,9 @@ var specialCharacters = regexp.MustCompile("[^a-z][^a-z0-9_]*")
 //
 //nolint:vet // for readability
 type Registry struct {
-	p *pool.Pool
-	l *zap.Logger
+	p         *pool.Pool
+	l         *zap.Logger
+	BatchSize int
 
 	// rw protects colls but also acts like a global lock for the whole registry.
 	// The latter effectively replaces transactions (see the postgresql backend package description for more info).
@@ -85,15 +87,16 @@ type Registry struct {
 }
 
 // NewRegistry creates a registry for PostgreSQL databases with a given base URI.
-func NewRegistry(u string, l *zap.Logger, sp *state.Provider) (*Registry, error) {
+func NewRegistry(u string, batchSize int, l *zap.Logger, sp *state.Provider) (*Registry, error) {
 	p, err := pool.New(u, l, sp)
 	if err != nil {
 		return nil, err
 	}
 
 	r := &Registry{
-		p: p,
-		l: l,
+		p:         p,
+		l:         l,
+		BatchSize: batchSize,
 	}
 
 	return r, nil
@@ -105,7 +108,8 @@ func (r *Registry) Close() {
 }
 
 // getPool returns a pool of connections to PostgreSQL database
-// for the username/password combination in the context using [conninfo].
+// for the username/password combination in the context using [conninfo]
+// (or any pool if authentication is bypassed).
 //
 // It loads metadata if it hasn't been loaded from the database yet.
 //
@@ -114,11 +118,25 @@ func (r *Registry) Close() {
 //
 // All methods should use this method to check authentication and load metadata.
 func (r *Registry) getPool(ctx context.Context) (*pgxpool.Pool, error) {
-	username, password := conninfo.Get(ctx).Auth()
+	connInfo := conninfo.Get(ctx)
 
-	p, err := r.p.Get(username, password)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
+	var p *pgxpool.Pool
+
+	if connInfo.BypassBackendAuth() {
+		if p = r.p.GetAny(); p == nil {
+			var err error
+			// use credential from the base URI by passing empty values
+			if p, err = r.p.Get("", ""); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+		}
+	} else {
+		username, password, _ := connInfo.Auth()
+
+		var err error
+		if p, err = r.p.Get(username, password); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 	}
 
 	r.rw.RLock()
@@ -311,7 +329,7 @@ func (r *Registry) databaseGetOrCreate(ctx context.Context, p *pgxpool.Pool, dbN
 	}
 
 	q := fmt.Sprintf(
-		`CREATE SCHEMA %s`,
+		`CREATE SCHEMA IF NOT EXISTS %s`,
 		pgx.Identifier{dbName}.Sanitize(),
 	)
 
@@ -438,6 +456,20 @@ func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]*Collec
 	return res, nil
 }
 
+// CollectionCreateParams contains parameters for CollectionCreate.
+type CollectionCreateParams struct {
+	DBName          string
+	Name            string
+	CappedSize      int64
+	CappedDocuments int64
+	_               struct{} // prevent unkeyed literals
+}
+
+// Capped returns true if capped collection creation is requested.
+func (ccp *CollectionCreateParams) Capped() bool {
+	return ccp.CappedSize > 0 // TODO https://github.com/FerretDB/FerretDB/issues/3631
+}
+
 // CollectionCreate creates a collection in the database.
 // Database will be created automatically if needed.
 //
@@ -445,7 +477,7 @@ func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]*Collec
 // If collection already exists, (false, nil) is returned.
 //
 // If the user is not authenticated, it returns error.
-func (r *Registry) CollectionCreate(ctx context.Context, dbName, collectionName string) (bool, error) {
+func (r *Registry) CollectionCreate(ctx context.Context, params *CollectionCreateParams) (bool, error) {
 	defer observability.FuncCall(ctx)()
 
 	p, err := r.getPool(ctx)
@@ -456,7 +488,7 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName, collectionName 
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
-	return r.collectionCreate(ctx, p, dbName, collectionName)
+	return r.collectionCreate(ctx, p, params)
 }
 
 // collectionCreate creates a collection in the database.
@@ -466,8 +498,10 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName, collectionName 
 // If collection already exists, (false, nil) is returned.
 //
 // It does not hold the lock.
-func (r *Registry) collectionCreate(ctx context.Context, p *pgxpool.Pool, dbName, collectionName string) (bool, error) {
+func (r *Registry) collectionCreate(ctx context.Context, p *pgxpool.Pool, params *CollectionCreateParams) (bool, error) {
 	defer observability.FuncCall(ctx)()
+
+	dbName, collectionName := params.DBName, params.Name
 
 	_, err := r.databaseGetOrCreate(ctx, p, dbName)
 	if err != nil {
@@ -505,15 +539,21 @@ func (r *Registry) collectionCreate(ctx context.Context, p *pgxpool.Pool, dbName
 	}
 
 	c := &Collection{
-		Name:      collectionName,
-		TableName: tableName,
+		Name:            collectionName,
+		UUID:            uuid.NewString(),
+		TableName:       tableName,
+		CappedSize:      params.CappedSize,
+		CappedDocuments: params.CappedDocuments,
 	}
 
-	q := fmt.Sprintf(
-		`CREATE TABLE %s (%s jsonb)`,
-		pgx.Identifier{dbName, tableName}.Sanitize(),
-		DefaultColumn,
-	)
+	q := fmt.Sprintf(`CREATE TABLE %s (`, pgx.Identifier{dbName, tableName}.Sanitize())
+
+	if params.Capped() {
+		q += fmt.Sprintf(`%s bigint PRIMARY KEY, `, RecordIDColumn)
+	}
+
+	q += fmt.Sprintf(`%s jsonb)`, DefaultColumn)
+
 	if _, err = p.Exec(ctx, q); err != nil {
 		return false, lazyerrors.Error(err)
 	}
@@ -654,7 +694,7 @@ func (r *Registry) collectionDrop(ctx context.Context, p *pgxpool.Pool, dbName, 
 
 // CollectionRename renames a collection in the database.
 //
-// The collection name is update, but original table name is kept.
+// The collection name is updated, but original table name is kept.
 //
 // Returned boolean value indicates whether the collection was renamed.
 // If database or collection did not exist, (false, nil) is returned.
@@ -737,7 +777,7 @@ func (r *Registry) IndexesCreate(ctx context.Context, dbName, collectionName str
 func (r *Registry) indexesCreate(ctx context.Context, p *pgxpool.Pool, dbName, collectionName string, indexes []IndexInfo) error {
 	defer observability.FuncCall(ctx)()
 
-	_, err := r.collectionCreate(ctx, p, dbName, collectionName)
+	_, err := r.collectionCreate(ctx, p, &CollectionCreateParams{DBName: dbName, Name: collectionName})
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -955,7 +995,7 @@ func (r *Registry) indexesDrop(ctx context.Context, p *pgxpool.Pool, dbName, col
 // Deprecated: Warning! Avoid using this function unless there is no other way.
 // Ideally, use a placeholder and pass the value as a parameter instead of calling this function.
 //
-// This approach is used in github.com/jackc/pgx/v4@v4.18.1/internal/sanitize/sanitize.go.
+// See https://github.com/jackc/pgx/blob/v5.5.0/internal/sanitize/sanitize.go#L90-L92
 func quoteString(str string) string {
 	// We need "standard_conforming_strings=on" and "client_encoding=UTF8" (checked in checkConnection),
 	// otherwise we can't sanitize safely: https://github.com/jackc/pgx/issues/868#issuecomment-725544647

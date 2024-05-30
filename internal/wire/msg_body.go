@@ -27,16 +27,23 @@ import (
 )
 
 // MsgBody is a wire protocol message body.
+//
+//sumtype:decl
 type MsgBody interface {
-	readFrom(*bufio.Reader) error
-	encoding.BinaryUnmarshaler
+	msgbody() // seal for sumtype
+
+	// check performs deep (and slow) validity check.
+	check() error
+
+	// UnmarshalBinaryNocopy is a variant of [encoding.BinaryUnmarshaler] that does not have to copy the data.
+	UnmarshalBinaryNocopy([]byte) error
+
 	encoding.BinaryMarshaler
 	fmt.Stringer
 
-	msgbody() // seal for go-sumtype
+	// StringBlock returns an indented string representation for logging.
+	StringBlock() string
 }
-
-//go-sumtype:decl MsgBody
 
 // ErrZeroRead is returned when zero bytes was read from connection,
 // indicating that connection was closed by the client.
@@ -59,7 +66,7 @@ func ReadMessage(r *bufio.Reader) (*MsgHeader, MsgBody, error) {
 	switch header.OpCode {
 	case OpCodeReply: // not sent by clients, but we should be able to read replies from a proxy
 		var reply OpReply
-		if err := reply.UnmarshalBinary(b); err != nil {
+		if err := reply.UnmarshalBinaryNocopy(b); err != nil {
 			return nil, nil, lazyerrors.Error(err)
 		}
 
@@ -71,7 +78,7 @@ func ReadMessage(r *bufio.Reader) (*MsgHeader, MsgBody, error) {
 		}
 
 		var msg OpMsg
-		if err := msg.UnmarshalBinary(b); err != nil {
+		if err := msg.UnmarshalBinaryNocopy(b); err != nil {
 			return &header, nil, lazyerrors.Error(err)
 		}
 
@@ -79,7 +86,7 @@ func ReadMessage(r *bufio.Reader) (*MsgHeader, MsgBody, error) {
 
 	case OpCodeQuery:
 		var query OpQuery
-		if err := query.UnmarshalBinary(b); err != nil {
+		if err := query.UnmarshalBinaryNocopy(b); err != nil {
 			return nil, nil, lazyerrors.Error(err)
 		}
 

@@ -15,14 +15,14 @@ on:
       coveralls:
         required: true
         type: boolean
-      disable_filter_pushdown:
+      disable_pushdown:
         required: false
         type: boolean
         default: false
-      enable_sort_pushdown:
+      postgres_dockerfile:
         required: false
-        type: boolean
-        default: false
+        type: string
+        default: "postgres"
       checkout_ref:
         required: false
         type: string
@@ -43,14 +43,14 @@ jobs:
   run:
     # make it short to fit in GitHub UI; all parameters are already in the caller's name
     name: Run
-    runs-on: 4-cores
-    timeout-minutes: 20
+
+    # https://www.ubicloud.com/docs/about/pricing#github-actions
+    # https://docs.github.com/en/billing/managing-billing-for-github-actions/about-billing-for-github-actions#per-minute-rates-for-larger-runners
+    runs-on: ubicloud-standard-4
+
+    timeout-minutes: 25
 
     steps:
-      - name: Setup permissions monitoring
-        uses: GitHubSecurityLab/actions-permissions/monitor@v1
-        if: false
-
       - name: Dump github context
         run: echo "$GITHUB_CONTEXT"
         env:
@@ -64,7 +64,7 @@ jobs:
           lfs: false # LFS is used only by website
           ref: ${{ inputs.checkout_ref }}
 
-      # for branch.txt on pull_request_target; `main` is already checked out on push / schedule
+      # for branch.txt on pull_request_target; the correct branch is already checked out on push / schedule
       - name: Name branch
         if: github.event_name == 'pull_request_target'
         env:
@@ -82,6 +82,8 @@ jobs:
 
       - name: Start environment
         run: bin/task env-up-detach
+        env:
+          POSTGRES_DOCKERFILE: ${{ inputs.postgres_dockerfile }}
 
       - name: Run init
         run: bin/task init
@@ -92,14 +94,13 @@ jobs:
       - name: >
           Run ${{ inputs.task }} tests
           (${{ inputs.shard_index }}/${{ inputs.shard_total }},
-          filter=${{ !inputs.disable_filter_pushdown }}, sort=${{ inputs.enable_sort_pushdown }})
+          pushdown=${{ !inputs.disable_pushdown }})
         run: >
           bin/task test-integration-${{ inputs.task }}
           SHARD_INDEX=${{ inputs.shard_index }}
           SHARD_TOTAL=${{ inputs.shard_total }}
-          TEST_TIMEOUT=15m
-          DISABLE_FILTER_PUSHDOWN=${{ inputs.disable_filter_pushdown }}
-          ENABLE_SORT_PUSHDOWN=${{ inputs.enable_sort_pushdown }}
+          TEST_TIMEOUT=20m
+          DISABLE_PUSHDOWN=${{ inputs.disable_pushdown }}
         env:
           GOFLAGS: ${{ runner.debug == '1' && '-v' || '' }}
           FERRETDB_HANA_URL: ${{ secrets.FERRETDB_HANA_URL }}
@@ -113,11 +114,11 @@ jobs:
       # We also can't use ${{ vars.CODECOV_TOKEN }}: https://github.com/orgs/community/discussions/44322
       - name: Upload coverage information to codecov
         if: always()
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: 22159d7c-856d-4fe9-8fdb-5d9ecff35514
           files: ./integration/integration-${{ inputs.task }}.txt
-          flags: integration,${{ inputs.task }}-${{ inputs.shard_index }},filter-${{ !inputs.disable_filter_pushdown }},sort-${{ inputs.enable_sort_pushdown }}
+          flags: integration,${{ inputs.task }}-${{ inputs.shard_index }},filter-${{ !inputs.disable_pushdown }}
           fail_ci_if_error: true
           verbose: true
 
@@ -126,7 +127,7 @@ jobs:
         uses: coverallsapp/github-action@v2
         with:
           file: ./integration/integration-${{ inputs.task }}.txt
-          flag-name: integration-${{ inputs.task }}-${{ inputs.shard_index }}-filter-${{ !inputs.disable_filter_pushdown }}-sort-${{ inputs.enable_sort_pushdown }}
+          flag-name: integration-${{ inputs.task }}-${{ inputs.shard_index }}-filter-${{ !inputs.disable_pushdown }}
           parallel: true
 
       # we don't want them on CI

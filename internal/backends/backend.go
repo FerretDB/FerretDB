@@ -123,7 +123,9 @@ func (bc *backendContract) Database(name string) (Database, error) {
 }
 
 // ListDatabasesParams represents the parameters of Backend.ListDatabases method.
-type ListDatabasesParams struct{}
+type ListDatabasesParams struct {
+	Name string
+}
 
 // ListDatabasesResult represents the results of Backend.ListDatabases method.
 type ListDatabasesResult struct {
@@ -136,6 +138,10 @@ type DatabaseInfo struct {
 }
 
 // ListDatabases returns a list of databases sorted by name.
+//
+// If ListDatabasesParams' Name is not empty, then only the database with that name should be returned (or an empty list).
+//
+// Database may not exist; that's not an error.
 func (bc *backendContract) ListDatabases(ctx context.Context, params *ListDatabasesParams) (*ListDatabasesResult, error) {
 	defer observability.FuncCall(ctx)()
 
@@ -146,6 +152,11 @@ func (bc *backendContract) ListDatabases(ctx context.Context, params *ListDataba
 		must.BeTrue(slices.IsSortedFunc(res.Databases, func(a, b DatabaseInfo) int {
 			return cmp.Compare(a.Name, b.Name)
 		}))
+
+		if params != nil && params.Name != "" {
+			must.BeTrue(len(res.Databases) == 1)
+			must.BeTrue(res.Databases[0].Name == params.Name)
+		}
 	}
 
 	return res, err

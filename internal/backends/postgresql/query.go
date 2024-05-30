@@ -23,21 +23,64 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata"
-	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
+	"github.com/FerretDB/FerretDB/internal/handler/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// prepareSelectClause returns simple SELECT clause for provided db and table name,
-// that can be used to construct the SQL query.
-func prepareSelectClause(db, table string) string {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3573
+// selectParams contains params that specify how prepareSelectClause function will
+// build the SELECT SQL query.
+type selectParams struct {
+	Schema  string
+	Table   string
+	Comment string
+
+	Capped        bool
+	OnlyRecordIDs bool
+}
+
+// prepareSelectClause returns SELECT clause for default column of provided schema and table name.
+//
+// For capped collection with onlyRecordIDs, it returns select clause for recordID column.
+//
+// For capped collection, it returns select clause for recordID column and default column.
+func prepareSelectClause(params *selectParams) string {
+	if params == nil {
+		params = new(selectParams)
+	}
+
+	if params.Comment != "" {
+		params.Comment = strings.ReplaceAll(params.Comment, "/*", "/ *")
+		params.Comment = strings.ReplaceAll(params.Comment, "*/", "* /")
+		params.Comment = `/* ` + params.Comment + ` */`
+	}
+
+	if params.Capped && params.OnlyRecordIDs {
+		return fmt.Sprintf(
+			`SELECT %s %s FROM %s`,
+			params.Comment,
+			metadata.RecordIDColumn,
+			pgx.Identifier{params.Schema, params.Table}.Sanitize(),
+		)
+	}
+
+	if params.Capped {
+		return fmt.Sprintf(
+			`SELECT %s %s, %s FROM %s`,
+			params.Comment,
+			metadata.RecordIDColumn,
+			metadata.DefaultColumn,
+			pgx.Identifier{params.Schema, params.Table}.Sanitize(),
+		)
+	}
+
 	return fmt.Sprintf(
-		`SELECT %s FROM %s`,
+		`SELECT %s %s FROM %s`,
+		params.Comment,
 		metadata.DefaultColumn,
-		pgx.Identifier{db, table}.Sanitize(),
+		pgx.Identifier{params.Schema, params.Table}.Sanitize(),
 	)
 }
 
@@ -60,10 +103,16 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 			return "", nil, lazyerrors.Error(err)
 		}
 
-		// Is the comment below correct? Does it also skip things like $or?
-		// TODO https://github.com/FerretDB/FerretDB/issues/3573
+		keyOperator := "->" // keyOperator is the operator that is used to access the field. (->/#>)
 
-		// don't pushdown $comment, it's attached to query in handlers
+		// key can be either a string '"v"' or PostgreSQL path '{v,foo}'.
+		// We use path type only for dot notation due to simplicity of SQL queries, and the fact
+		// that path doesn't handle empty keys.
+		var key any = rootKey
+
+		// don't pushdown $comment, as it's attached to query with select clause
+		//
+		// all of the other top-level operators such as `$or` do not support pushdown yet
 		if strings.HasPrefix(rootKey, "$") {
 			continue
 		}
@@ -74,11 +123,11 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 
 		switch {
 		case err == nil:
-			// Handle dot notation.
-			// TODO https://github.com/FerretDB/FerretDB/issues/2069
 			if path.Len() > 1 {
-				continue
+				keyOperator = "#>"
+				key = path.Slice() // '{v,foo}'
 			}
+
 		case errors.As(err, &pe):
 			// ignore empty key error, otherwise return error
 			if pe.Code() != types.ErrPathElementEmpty {
@@ -106,7 +155,7 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 
 				switch k {
 				case "$eq":
-					if f, a := filterEqual(p, rootKey, v); f != "" {
+					if f, a := filterEqual(p, key, v, keyOperator); f != "" {
 						filters = append(filters, f)
 						args = append(args, a...)
 					}
@@ -135,6 +184,8 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 							sjson.GetTypeOfValue(v),
 						))
 
+						// merge with the case below?
+						// TODO https://github.com/FerretDB/FerretDB/issues/3626
 						args = append(args, rootKey, v)
 
 					case string, types.ObjectID, time.Time:
@@ -146,6 +197,8 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 							sjson.GetTypeOfValue(v),
 						))
 
+						// merge with the case above?
+						// TODO https://github.com/FerretDB/FerretDB/issues/3626
 						args = append(args, rootKey, string(must.NotFail(sjson.MarshalSingleValue(v))))
 
 					default:
@@ -163,7 +216,7 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 			// type not supported for pushdown
 
 		case float64, string, types.ObjectID, bool, time.Time, int32, int64:
-			if f, a := filterEqual(p, rootKey, v); f != "" {
+			if f, a := filterEqual(p, key, v, keyOperator); f != "" {
 				filters = append(filters, f)
 				args = append(args, a...)
 			}
@@ -181,27 +234,35 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 	return filter, args, nil
 }
 
-// prepareOrderByClause adds ORDER BY clause with given sort document and returns the query and arguments.
-func prepareOrderByClause(p *metadata.Placeholder, key string, descending bool) (string, []any, error) {
-	// Skip sorting dot notation
-	if strings.ContainsRune(key, '.') {
-		return "", nil, nil
+// prepareOrderByClause returns ORDER BY clause with arguments for given sort document.
+//
+// The provided sort document should be already validated.
+// Provided document should only contain a single value.
+func prepareOrderByClause(sort *types.Document) (string, []any) {
+	if sort.Len() != 1 {
+		return "", nil
 	}
 
-	sqlOrder := "ASC"
+	v := must.NotFail(sort.Get("$natural"))
+	var order string
 
-	if descending {
-		sqlOrder = "DESC"
+	switch v.(int64) {
+	case 1:
+		// Ascending order
+	case -1:
+		order = " DESC"
+	default:
+		panic("not reachable")
 	}
 
-	return fmt.Sprintf(" ORDER BY %s->%s %s", metadata.DefaultColumn, p.Next(), sqlOrder), []any{key}, nil
+	return fmt.Sprintf(" ORDER BY %s%s", metadata.RecordIDColumn, order), nil
 }
 
 // filterEqual returns the proper SQL filter with arguments that filters documents
 // where the value under k is equal to v.
-func filterEqual(p *metadata.Placeholder, k string, v any) (filter string, args []any) {
+func filterEqual(p *metadata.Placeholder, k any, v any, operator string) (filter string, args []any) {
 	// Select if value under the key is equal to provided value.
-	sql := `%[1]s->%[2]s @> %[3]s`
+	sql := `%[1]s%[2]s%[3]s @> %[4]s`
 
 	switch v := v.(type) {
 	case *types.Document, *types.Array, types.Binary,
@@ -210,48 +271,56 @@ func filterEqual(p *metadata.Placeholder, k string, v any) (filter string, args 
 
 	case float64:
 		// If value is not safe double, fetch all numbers out of safe range.
+		// TODO https://github.com/FerretDB/FerretDB/issues/3626
 		switch {
 		case v > types.MaxSafeDouble:
-			sql = `%[1]s->%[2]s > %[3]s`
+			sql = `%[1]s%[2]s%[3]s > %[4]s`
 			v = types.MaxSafeDouble
 
 		case v < -types.MaxSafeDouble:
-			sql = `%[1]s->%[2]s < %[3]s`
+			sql = `%[1]s%[2]s%[3]s < %[4]s`
 			v = -types.MaxSafeDouble
 		default:
 			// don't change the default eq query
 		}
 
-		filter = fmt.Sprintf(sql, metadata.DefaultColumn, p.Next(), p.Next())
+		filter = fmt.Sprintf(sql, metadata.DefaultColumn, operator, p.Next(), p.Next())
 		args = append(args, k, v)
 
 	case string, types.ObjectID, time.Time:
+		// merge with the case below?
+		// TODO https://github.com/FerretDB/FerretDB/issues/3626
+
 		// don't change the default eq query
-		filter = fmt.Sprintf(sql, metadata.DefaultColumn, p.Next(), p.Next())
+		filter = fmt.Sprintf(sql, metadata.DefaultColumn, operator, p.Next(), p.Next())
 		args = append(args, k, string(must.NotFail(sjson.MarshalSingleValue(v))))
 
 	case bool, int32:
+		// merge with the case above?
+		// TODO https://github.com/FerretDB/FerretDB/issues/3626
+
 		// don't change the default eq query
-		filter = fmt.Sprintf(sql, metadata.DefaultColumn, p.Next(), p.Next())
+		filter = fmt.Sprintf(sql, metadata.DefaultColumn, operator, p.Next(), p.Next())
 		args = append(args, k, v)
 
 	case int64:
+		// TODO https://github.com/FerretDB/FerretDB/issues/3626
 		maxSafeDouble := int64(types.MaxSafeDouble)
 
 		// If value cannot be safe double, fetch all numbers out of the safe range.
 		switch {
 		case v > maxSafeDouble:
-			sql = `%[1]s->%[2]s > %[3]s`
+			sql = `%[1]s%[2]s%[3]s > %[4]s`
 			v = maxSafeDouble
 
 		case v < -maxSafeDouble:
-			sql = `%[1]s->%[2]s < %[3]s`
+			sql = `%[1]s%[2]s%[3]s < %[4]s`
 			v = -maxSafeDouble
 		default:
 			// don't change the default eq query
 		}
 
-		filter = fmt.Sprintf(sql, metadata.DefaultColumn, p.Next(), p.Next())
+		filter = fmt.Sprintf(sql, metadata.DefaultColumn, operator, p.Next(), p.Next())
 		args = append(args, k, v)
 
 	default:

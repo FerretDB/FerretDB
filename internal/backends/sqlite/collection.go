@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 
 	sqlite3 "modernc.org/sqlite"
@@ -25,7 +26,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
-	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
+	"github.com/FerretDB/FerretDB/internal/handler/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -53,20 +54,18 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 	db := c.r.DatabaseGetExisting(ctx, c.dbName)
 	if db == nil {
 		return &backends.QueryResult{
-			Iter: newQueryIterator(ctx, nil),
+			Iter: newQueryIterator(ctx, nil, params.OnlyRecordIDs),
 		}, nil
 	}
 
 	meta := c.r.CollectionGet(ctx, c.dbName, c.name)
 	if meta == nil {
 		return &backends.QueryResult{
-			Iter: newQueryIterator(ctx, nil),
+			Iter: newQueryIterator(ctx, nil, params.OnlyRecordIDs),
 		}, nil
 	}
 
-	if params == nil {
-		params = new(backends.QueryParams)
-	}
+	q := prepareSelectClause(meta.TableName, params.Comment, meta.Capped(), params.OnlyRecordIDs)
 
 	var whereClause string
 	var args []any
@@ -82,9 +81,8 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3490
-
-	q := fmt.Sprintf(`SELECT %s FROM %q`+whereClause, metadata.DefaultColumn, meta.TableName)
+	q += whereClause
+	q += prepareOrderByClause(params.Sort)
 
 	if params.Limit != 0 {
 		q += ` LIMIT ?`
@@ -97,13 +95,13 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 	}
 
 	return &backends.QueryResult{
-		Iter: newQueryIterator(ctx, rows),
+		Iter: newQueryIterator(ctx, rows, params.OnlyRecordIDs),
 	}, nil
 }
 
 // InsertAll implements backends.Collection interface.
 func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllParams) (*backends.InsertAllResult, error) {
-	if _, err := c.r.CollectionCreate(ctx, c.dbName, c.name); err != nil {
+	if _, err := c.r.CollectionCreate(ctx, &metadata.CollectionCreateParams{DBName: c.dbName, Name: c.name}); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
@@ -111,19 +109,24 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 	meta := c.r.CollectionGet(ctx, c.dbName, c.name)
 
 	err := db.InTransaction(ctx, func(tx *fsql.Tx) error {
-		for _, doc := range params.Docs {
-			b, err := sjson.Marshal(doc)
+		batchSize := c.r.BatchSize
+		if batchSize < 1 {
+			panic("batch-size should be greater or equal to 1")
+		}
+
+		var batch []*types.Document
+		docs := params.Docs
+
+		for len(docs) > 0 {
+			i := min(batchSize, len(docs))
+			batch, docs = docs[:i], docs[i:]
+
+			q, args, err := prepareInsertStatement(meta.TableName, meta.Capped(), batch)
 			if err != nil {
 				return lazyerrors.Error(err)
 			}
 
-			// TODO https://github.com/FerretDB/FerretDB/issues/3490
-
-			// use batches: INSERT INTO %q %s VALUES (?), (?), (?), ... up to, say, 100 documents
-			// TODO https://github.com/FerretDB/FerretDB/issues/3271
-			q := fmt.Sprintf(`INSERT INTO %q (%s) VALUES (?)`, meta.TableName, metadata.DefaultColumn)
-
-			if _, err = tx.ExecContext(ctx, q, string(b)); err != nil {
+			if _, err = tx.ExecContext(ctx, q, args...); err != nil {
 				var se *sqlite3.Error
 				if errors.As(err, &se) && se.Code() == sqlite3lib.SQLITE_CONSTRAINT_UNIQUE {
 					return backends.NewError(backends.ErrorCodeInsertDuplicateID, err)
@@ -203,18 +206,35 @@ func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllPa
 		return &backends.DeleteAllResult{Deleted: 0}, nil
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3498
-	_ = params.RecordIDs
+	// TODO https://github.com/FerretDB/FerretDB/issues/3888
 
-	placeholders := make([]string, len(params.IDs))
-	args := make([]any, len(params.IDs))
+	var column string
+	var placeholders []string
+	var args []any
 
-	for i, id := range params.IDs {
-		placeholders[i] = "?"
-		args[i] = string(must.NotFail(sjson.MarshalSingleValue(id)))
+	if params.RecordIDs == nil {
+		placeholders = make([]string, len(params.IDs))
+		args = make([]any, len(params.IDs))
+
+		for i, id := range params.IDs {
+			placeholders[i] = "?"
+			args[i] = string(must.NotFail(sjson.MarshalSingleValue(id)))
+		}
+
+		column = metadata.IDColumn
+	} else {
+		placeholders = make([]string, len(params.RecordIDs))
+		args = make([]any, len(params.RecordIDs))
+
+		for i, id := range params.RecordIDs {
+			placeholders[i] = "?"
+			args[i] = id
+		}
+
+		column = metadata.RecordIDColumn
 	}
 
-	q := fmt.Sprintf(`DELETE FROM %q WHERE %s IN (%s)`, meta.TableName, metadata.IDColumn, strings.Join(placeholders, ", "))
+	q := fmt.Sprintf(`DELETE FROM %q WHERE %s IN (%s)`, meta.TableName, column, strings.Join(placeholders, ", "))
 
 	res, err := db.ExecContext(ctx, q, args...)
 	if err != nil {
@@ -247,11 +267,9 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		}, nil
 	}
 
-	if params == nil {
-		params = new(backends.ExplainParams)
-	}
+	selectClause := prepareSelectClause(meta.TableName, "", meta.Capped(), false)
 
-	var queryPushdown bool
+	var filterPushdown bool
 	var whereClause string
 	var args []any
 
@@ -261,15 +279,16 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		v, _ := params.Filter.Get("_id")
 		switch v.(type) {
 		case string, types.ObjectID:
-			queryPushdown = true
+			filterPushdown = true
 			whereClause = fmt.Sprintf(` WHERE %s = ?`, metadata.IDColumn)
 			args = []any{string(must.NotFail(sjson.MarshalSingleValue(v)))}
 		}
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3490
+	orderByClause := prepareOrderByClause(params.Sort)
+	sortPushdown := orderByClause != ""
 
-	q := fmt.Sprintf(`EXPLAIN QUERY PLAN SELECT %s FROM %q`+whereClause, metadata.DefaultColumn, meta.TableName)
+	q := `EXPLAIN QUERY PLAN ` + selectClause + whereClause + orderByClause
 
 	var limitPushdown bool
 
@@ -309,9 +328,10 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 	}
 
 	return &backends.ExplainResult{
-		QueryPlanner:  must.NotFail(types.NewDocument("Plan", queryPlan)),
-		QueryPushdown: queryPushdown,
-		LimitPushdown: limitPushdown,
+		QueryPlanner:   must.NotFail(types.NewDocument("Plan", queryPlan)),
+		FilterPushdown: filterPushdown,
+		SortPushdown:   sortPushdown,
+		LimitPushdown:  limitPushdown,
 	}, nil
 }
 
@@ -403,9 +423,6 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 
 // Compact implements backends.Collection interface.
 func (c *collection) Compact(ctx context.Context, params *backends.CompactParams) (*backends.CompactResult, error) {
-	var err error
-	q := `PRAGMA incremental_vacuum`
-
 	db := c.r.DatabaseGetExisting(ctx, c.dbName)
 	if db == nil {
 		return nil, backends.NewError(
@@ -422,11 +439,12 @@ func (c *collection) Compact(ctx context.Context, params *backends.CompactParams
 		)
 	}
 
+	q := `PRAGMA incremental_vacuum`
 	if params != nil && params.Full {
 		q = `VACUUM`
 	}
 
-	if _, err = db.ExecContext(ctx, q); err != nil {
+	if _, err := db.ExecContext(ctx, q); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
@@ -470,10 +488,9 @@ func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndex
 		}
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3589
-	// slices.SortFunc(res.Indexes, func(a, b backends.IndexInfo) int {
-	// 	return cmp.Compare(a.Name, b.Name)
-	// })
+	sort.Slice(res.Indexes, func(i, j int) bool {
+		return res.Indexes[i].Name < res.Indexes[j].Name
+	})
 
 	return &res, nil
 }

@@ -15,9 +15,10 @@
 package integration
 
 import (
-	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
+
+	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
 // resultPushdown stores the information about expected pushdown results for a single or multiple backends.
@@ -44,18 +45,26 @@ func init() {
 	must.BeTrue(allPushdown == 0b11111111)
 }
 
-// PushdownExpected returns true if the pushdown is expected for currently running backend.
+// PushdownExpected returns true if pushdown is expected for currently running backend.
+// It checks if pushdown is disabled by flag.
 func (res resultPushdown) PushdownExpected(t testtb.TB) bool {
-	if setup.IsPushdownDisabled() {
+	if setup.PushdownDisabled() {
 		res = noPushdown
 	}
 
+	return res.pushdownExpected(t)
+}
+
+// pushdownExpected returns true if pushdown is expected for currently running backend.
+func (res resultPushdown) pushdownExpected(t testtb.TB) bool {
 	switch {
 	case setup.IsPostgreSQL(t):
 		return res&pgPushdown == pgPushdown
 	case setup.IsSQLite(t):
 		return res&sqlitePushdown == sqlitePushdown
 	case setup.IsMongoDB(t):
+		return false
+	case setup.IsHana(t):
 		return false
 	default:
 		panic("Unknown backend")

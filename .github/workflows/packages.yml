@@ -21,6 +21,7 @@ on:
   push:
     branches:
       - main
+      - main-*
       - releases/*
     tags:
       - "*"
@@ -60,10 +61,6 @@ jobs:
       packages: write
 
     steps:
-      - name: Setup permissions monitoring
-        uses: GitHubSecurityLab/actions-permissions/monitor@v1
-        if: false
-
       # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
         if: github.event_name != 'pull_request_target'
@@ -87,7 +84,7 @@ jobs:
           git fetch --tags --force
           git status
 
-      # for branch.txt on pull_request_target; `main` is already checked out on push / schedule
+      # for branch.txt on pull_request_target; the correct branch is already checked out on push / schedule
       - name: Name branch
         if: github.event_name == 'pull_request_target'
         env:
@@ -95,7 +92,6 @@ jobs:
         run: git checkout -b $BRANCH
 
       - name: Setup Go
-        id: setup
         uses: FerretDB/github-actions/setup-go@main
 
       - name: Install Task
@@ -151,7 +147,7 @@ jobs:
         run: bin/task build-development
 
       - name: Upload development binaries
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: bin-dev
           path: tmp/bin-dev/
@@ -162,7 +158,7 @@ jobs:
         run: bin/task build-production
 
       - name: Upload production binaries
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: bin
           path: tmp/bin/
@@ -173,7 +169,7 @@ jobs:
         run: bin/task packages
 
       - name: Upload .deb packages
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: debs
           path: tmp/debs/
@@ -181,7 +177,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload .rpm packages
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: rpms
           path: tmp/rpms/

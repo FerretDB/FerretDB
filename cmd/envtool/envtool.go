@@ -35,12 +35,16 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/FerretDB/FerretDB/build/version"
-	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
+	mysqlpool "github.com/FerretDB/FerretDB/internal/backends/mysql/metadata/pool"
+	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata/pool"
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
@@ -89,6 +93,10 @@ func setupAnyPostgres(ctx context.Context, logger *zap.SugaredLogger, uri string
 		return err
 	}
 
+	if u.User == nil {
+		return lazyerrors.New("No username specified")
+	}
+
 	if err = waitForPort(ctx, logger, uint16(port)); err != nil {
 		return err
 	}
@@ -98,13 +106,19 @@ func setupAnyPostgres(ctx context.Context, logger *zap.SugaredLogger, uri string
 		return err
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3452
+	p, err := pool.New(uri, logger.Desugar(), sp)
+	if err != nil {
+		return err
+	}
 
-	var pgPool *pgdb.Pool
+	defer p.Close()
+
+	username := u.User.Username()
+	password, _ := u.User.Password()
 
 	var retry int64
 	for ctx.Err() == nil {
-		if pgPool, err = pgdb.NewPool(ctx, uri, logger.Desugar(), sp); err == nil {
+		if _, err = p.Get(username, password); err == nil {
 			break
 		}
 
@@ -117,8 +131,6 @@ func setupAnyPostgres(ctx context.Context, logger *zap.SugaredLogger, uri string
 	if ctx.Err() != nil {
 		return ctx.Err()
 	}
-
-	defer pgPool.Close()
 
 	return nil
 }
@@ -134,15 +146,57 @@ func setupPostgresSecured(ctx context.Context, logger *zap.SugaredLogger) error 
 	return setupAnyPostgres(ctx, logger.Named("postgres_secured"), "postgres://username:password@127.0.0.1:5433/ferretdb")
 }
 
+// setupMySQL configures `mysql` container.
+func setupMySQL(ctx context.Context, logger *zap.SugaredLogger) error {
+	uri := "mysql://root:password@127.0.0.1:3306/ferretdb"
+
+	sp, err := state.NewProvider("")
+	if err != nil {
+		return err
+	}
+
+	if err := waitForPort(ctx, logger.Named("mysql"), 3306); err != nil {
+		return err
+	}
+
+	p, err := mysqlpool.New(uri, logger.Desugar(), sp)
+	if err != nil {
+		return err
+	}
+
+	defer p.Close()
+
+	var retry int64
+	for ctx.Err() == nil {
+		db, err := p.Get("root", "password")
+		if err == nil {
+			if _, err = db.ExecContext(ctx, "GRANT ALL PRIVILEGES ON *.* TO 'username'@'%';"); err != nil {
+				return lazyerrors.Error(err)
+			}
+
+			break
+		}
+
+		logger.Infof("%s: %s", uri, err)
+
+		retry++
+		ctxutil.SleepWithJitter(ctx, time.Second, retry)
+	}
+
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
+	return nil
+}
+
 // setupMongodb configures `mongodb` container.
 func setupMongodb(ctx context.Context, logger *zap.SugaredLogger) error {
 	if err := waitForPort(ctx, logger.Named("mongodb"), 47017); err != nil {
 		return err
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3310
-	// eval := `'rs.initiate({_id: "mongodb-rs", members: [{_id: 0, host: "localhost:47017" }]})'`
-	eval := `db.serverStatus()`
+	eval := `'rs.initiate({_id: "rs0", members: [{_id: 0, host: "localhost:47017" }]})'`
 	args := []string{"compose", "exec", "-T", "mongodb", "mongosh", "--port=47017", "--eval", eval}
 
 	var buf bytes.Buffer
@@ -167,7 +221,32 @@ func setupMongodb(ctx context.Context, logger *zap.SugaredLogger) error {
 
 // setupMongodbSecured configures `mongodb_secured` container.
 func setupMongodbSecured(ctx context.Context, logger *zap.SugaredLogger) error {
-	return waitForPort(ctx, logger.Named("mongodb_secured"), 47018)
+	if err := waitForPort(ctx, logger.Named("mongodb_secured"), 47018); err != nil {
+		return err
+	}
+
+	eval := `'rs.initiate({_id: "rs0", members: [{_id: 0, host: "localhost:47018" }]})'`
+	shell := `mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=/etc/certs/client.pem&tlsCaFile=/etc/certs/rootCA-cert.pem` //nolint:lll // for readability
+	args := []string{"compose", "exec", "-T", "mongodb_secured", "mongosh", "--eval", eval, "--shell", shell}
+
+	var buf bytes.Buffer
+	var retry int64
+
+	for ctx.Err() == nil {
+		buf.Reset()
+
+		err := runCommand("docker", args, &buf, logger)
+		if err == nil {
+			break
+		}
+
+		logger.Infof("%s:\n%s", err, buf.String())
+
+		retry++
+		ctxutil.SleepWithJitter(ctx, time.Second, retry)
+	}
+
+	return ctx.Err()
 }
 
 // setup runs all setup commands.
@@ -177,6 +256,7 @@ func setup(ctx context.Context, logger *zap.SugaredLogger) error {
 	for _, f := range []func(context.Context, *zap.SugaredLogger) error{
 		setupPostgres,
 		setupPostgresSecured,
+		setupMySQL,
 		setupMongodb,
 		setupMongodbSecured,
 	} {
@@ -209,12 +289,12 @@ func runCommand(command string, args []string, stdout io.Writer, logger *zap.Sug
 }
 
 // printDiagnosticData prints diagnostic data and error template on stdout.
-func printDiagnosticData(setupError error, logger *zap.SugaredLogger) {
-	runCommand("docker", []string{"compose", "logs"}, os.Stdout, logger)
+func printDiagnosticData(w io.Writer, setupError error, logger *zap.SugaredLogger) error {
+	_ = runCommand("docker", []string{"compose", "logs"}, w, logger)
 
-	runCommand("docker", []string{"compose", "ps", "--all"}, os.Stdout, logger)
+	_ = runCommand("docker", []string{"compose", "ps", "--all"}, w, logger)
 
-	runCommand("docker", []string{"stats", "--all", "--no-stream"}, os.Stdout, logger)
+	_ = runCommand("docker", []string{"stats", "--all", "--no-stream"}, w, logger)
 
 	var buf bytes.Buffer
 
@@ -245,7 +325,7 @@ func printDiagnosticData(setupError error, logger *zap.SugaredLogger) {
 
 	info := version.Get()
 
-	errorTemplate.Execute(os.Stdout, map[string]any{
+	return errorTemplate.Execute(w, map[string]any{
 		"Error": setupError,
 
 		"GOOS":   runtime.GOOS,
@@ -350,6 +430,7 @@ var cli struct {
 			ShardIndex uint   `help:"Shard index, starting from 1."`
 			ShardTotal uint   `help:"Total number of shards."`
 			Run        string `help:"Run only tests matching the regexp."`
+			Skip       string `help:"Skip tests matching the regexp."`
 
 			Args []string `arg:"" help:"Other arguments and flags for 'go test'." passthrough:""`
 		} `cmd:"" help:"Run tests."`
@@ -361,6 +442,42 @@ var cli struct {
 			Dst string `arg:"" help:"Destination, one of: 'seed', 'generated', or collected corpus' directory."`
 		} `cmd:"" help:"Sync fuzz corpora."`
 	} `cmd:""`
+}
+
+// makeLogger returns a human-friendly logger.
+func makeLogger(level zapcore.Level, output []string) (*zap.Logger, error) {
+	start := time.Now()
+
+	return zap.Config{
+		Level:             zap.NewAtomicLevelAt(level),
+		Development:       true,
+		DisableCaller:     true,
+		DisableStacktrace: false,
+		Sampling:          nil,
+		Encoding:          "console",
+		EncoderConfig: zapcore.EncoderConfig{
+			MessageKey:    "M",
+			LevelKey:      zapcore.OmitKey,
+			TimeKey:       "T",
+			NameKey:       "N",
+			CallerKey:     zapcore.OmitKey,
+			FunctionKey:   zapcore.OmitKey,
+			StacktraceKey: zapcore.OmitKey,
+			LineEnding:    zapcore.DefaultLineEnding,
+			EncodeLevel:   zapcore.CapitalLevelEncoder,
+			EncodeTime: func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
+				enc.AppendString(fmt.Sprintf("%7.2fs", t.Sub(start).Seconds()))
+			},
+			EncodeDuration:      zapcore.StringDurationEncoder,
+			EncodeCaller:        zapcore.ShortCallerEncoder,
+			EncodeName:          nil,
+			NewReflectedEncoder: nil,
+			ConsoleSeparator:    "  ",
+		},
+		OutputPaths:      output,
+		ErrorOutputPaths: []string{"stderr"},
+		InitialFields:    nil,
+	}.Build()
 }
 
 func main() {
@@ -376,11 +493,9 @@ func main() {
 		level = zap.DebugLevel
 	}
 
-	logging.Setup(level, "")
-	logger := zap.S()
+	logging.SetupWithZapLogger(must.NotFail(makeLogger(level, []string{"stderr"})))
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-	defer cancel()
+	logger := zap.S()
 
 	cmd := kongCtx.Command()
 	logger.Debugf("Command: %q", cmd)
@@ -389,6 +504,9 @@ func main() {
 
 	switch cmd {
 	case "setup":
+		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		defer cancel()
+
 		err = setup(ctx, logger)
 
 	case "package-version":
@@ -402,7 +520,15 @@ func main() {
 		err = shellRead(os.Stdout, cli.Shell.Read.Paths...)
 
 	case "tests run <args>":
-		err = testsRun(os.Stdout, cli.Tests.Run.ShardIndex, cli.Tests.Run.ShardTotal, cli.Tests.Run.Run, cli.Tests.Run.Args)
+		ctx, stop := ctxutil.SigTerm(context.Background())
+		defer stop()
+
+		err = testsRun(
+			ctx,
+			cli.Tests.Run.ShardIndex, cli.Tests.Run.ShardTotal,
+			cli.Tests.Run.Run, cli.Tests.Run.Skip, cli.Tests.Run.Args,
+			logger,
+		)
 
 	case "fuzz corpus <src> <dst>":
 		var seedCorpus, generatedCorpus string
@@ -449,7 +575,13 @@ func main() {
 
 	if err != nil {
 		if cmd == "setup" {
-			printDiagnosticData(err, logger)
+			_ = printDiagnosticData(os.Stderr, err, logger)
+		}
+
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
+			logger.Error(exitErr)
+			os.Exit(exitErr.ExitCode())
 		}
 
 		logger.Fatal(err)

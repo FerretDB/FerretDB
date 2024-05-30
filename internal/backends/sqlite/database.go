@@ -15,7 +15,9 @@
 package sqlite
 
 import (
+	"cmp"
 	"context"
+	"slices"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
@@ -50,10 +52,32 @@ func (db *database) ListCollections(ctx context.Context, params *backends.ListCo
 		return nil, lazyerrors.Error(err)
 	}
 
-	res := make([]backends.CollectionInfo, len(list))
+	var res []backends.CollectionInfo
+
+	if params != nil && len(params.Name) > 0 {
+		nameList := make([]string, len(list))
+		for i, c := range list {
+			nameList[i] = c.Name
+		}
+
+		i, found := slices.BinarySearchFunc(nameList, params.Name, func(collectionName, t string) int {
+			return cmp.Compare(collectionName, t)
+		})
+
+		var filteredList []*metadata.Collection
+		if found {
+			filteredList = append(filteredList, list[i])
+		}
+		list = filteredList
+	}
+
+	res = make([]backends.CollectionInfo, len(list))
 	for i, c := range list {
 		res[i] = backends.CollectionInfo{
-			Name: c.Name,
+			Name:            c.Name,
+			UUID:            c.Settings.UUID,
+			CappedSize:      c.Settings.CappedSize,
+			CappedDocuments: c.Settings.CappedDocuments,
 		}
 	}
 
@@ -64,7 +88,12 @@ func (db *database) ListCollections(ctx context.Context, params *backends.ListCo
 
 // CreateCollection implements backends.Database interface.
 func (db *database) CreateCollection(ctx context.Context, params *backends.CreateCollectionParams) error {
-	created, err := db.r.CollectionCreate(ctx, db.name, params.Name)
+	created, err := db.r.CollectionCreate(ctx, &metadata.CollectionCreateParams{
+		DBName:          db.name,
+		Name:            params.Name,
+		CappedSize:      params.CappedSize,
+		CappedDocuments: params.CappedDocuments,
+	})
 	if err != nil {
 		return lazyerrors.Error(err)
 	}

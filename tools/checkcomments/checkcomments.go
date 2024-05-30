@@ -16,40 +16,65 @@
 package main
 
 import (
+	"context"
+	"flag"
+	"log"
 	"regexp"
+	"strconv"
 	"strings"
 
-	_ "github.com/FerretDB/gh" // TODO https://github.com/FerretDB/FerretDB/issues/2733
+	"github.com/FerretDB/gh"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/singlechecker"
 )
 
 // todoRE represents correct // TODO comment format.
-var todoRE = regexp.MustCompile(`^// TODO \Qhttps://github.com/FerretDB/FerretDB/issues/\E(\d+)$`)
+var todoRE = regexp.MustCompile(`^// TODO (\Qhttps://github.com/FerretDB/\E([-\w]+)/issues/(\d+))$`)
 
+// analyzer represents the checkcomments analyzer.
 var analyzer = &analysis.Analyzer{
-	Name: "checkcomments",
-	Doc:  "check TODO comments",
-	Run:  run,
+	Name:  "checkcomments",
+	Doc:   "check TODO comments",
+	Run:   run,
+	Flags: *flag.NewFlagSet("", flag.ExitOnError),
 }
 
+// init initializes the analyzer flags.
+func init() {
+	analyzer.Flags.Bool("offline", false, "do not check issues open/closed status")
+	analyzer.Flags.Bool("cache-debug", false, "log cache hits/misses")
+	analyzer.Flags.Bool("client-debug", false, "log GitHub API requests/responses")
+}
+
+// main runs the analyzer.
 func main() {
 	singlechecker.Main(analyzer)
 }
 
 // run analyses TODO comments.
 func run(pass *analysis.Pass) (any, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/2733
-	/*
-		token := os.Getenv("GITHUB_TOKEN")
+	var client *client
 
-		client, err := gh.NewRESTClient(token, nil)
+	if !pass.Analyzer.Flags.Lookup("offline").Value.(flag.Getter).Get().(bool) {
+		p, err := cacheFilePath()
 		if err != nil {
-			log.Fatal(err)
+			log.Panic(err)
 		}
 
-		issues := make(map[int]bool)
-	*/
+		cacheDebugF := gh.NoopPrintf
+		if pass.Analyzer.Flags.Lookup("cache-debug").Value.(flag.Getter).Get().(bool) {
+			cacheDebugF = log.New(log.Writer(), "", log.Flags()).Printf
+		}
+
+		clientDebugF := gh.NoopPrintf
+		if pass.Analyzer.Flags.Lookup("client-debug").Value.(flag.Getter).Get().(bool) {
+			clientDebugF = log.New(log.Writer(), "client-debug: ", log.Flags()).Printf
+		}
+
+		if client, err = newClient(p, log.Printf, cacheDebugF, clientDebugF); err != nil {
+			log.Panic(err)
+		}
+	}
 
 	for _, f := range pass.Files {
 		for _, cg := range f.Comments {
@@ -67,47 +92,42 @@ func run(pass *analysis.Pass) (any, error) {
 
 				match := todoRE.FindStringSubmatch(line)
 
-				if match == nil {
+				if len(match) != 4 {
 					pass.Reportf(c.Pos(), "invalid TODO: incorrect format")
 					continue
 				}
 
-				// `go vet -vettool` runs checkcomments once per package.
-				// That causes same issues to be checked multiple times,
-				// and that easily pushes us over the rate limit.
-				// We should cache check results using lockedfile.
-				// TODO https://github.com/FerretDB/FerretDB/issues/2733
+				url := match[1]
+				repo := match[2]
+				num, err := strconv.Atoi(match[3])
+				if err != nil {
+					log.Panic(err)
+				}
 
-				/*
-					n, err := strconv.Atoi(match[1])
-					if err != nil {
-						log.Fatal(err)
-					}
+				if num <= 0 {
+					pass.Reportf(c.Pos(), "invalid TODO: incorrect issue number")
+					continue
+				}
 
-					open, ok := issues[n]
-					if !ok {
-						issue, _, err := client.Issues.Get(context.TODO(), "FerretDB", "FerretDB", n)
-						if err != nil {
-							if errors.As(err, new(*github.RateLimitError)) && token == "" {
-								log.Println(
-									"Rate limit reached. Please set a GITHUB_TOKEN as described at",
-									"https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md#setting-a-github_token",
-								)
+				if client == nil {
+					continue
+				}
 
-								return nil, nil
-							}
+				status, err := client.IssueStatus(context.TODO(), url, repo, num)
+				if err != nil {
+					log.Panic(err)
+				}
 
-							log.Fatalf("%[1]T %[1]s", err)
-						}
-
-						open = issue.GetState() == "open"
-						issues[n] = open
-					}
-
-					if !open {
-						pass.Reportf(c.Pos(), "invalid TODO: linked issue is closed")
-					}
-				*/
+				switch status {
+				case issueOpen:
+					// nothing
+				case issueClosed:
+					pass.Reportf(c.Pos(), "invalid TODO: linked issue %s is closed", url)
+				case issueNotFound:
+					pass.Reportf(c.Pos(), "invalid TODO: linked issue %s is not found", url)
+				default:
+					log.Panicf("unknown issue status: %s", status)
+				}
 			}
 		}
 	}

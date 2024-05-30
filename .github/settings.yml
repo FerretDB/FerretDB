@@ -5,6 +5,8 @@ repository:
   allow_squash_merge: true
   allow_merge_commit: false
   allow_rebase_merge: false
+  allow_auto_merge: true
+  allow_update_branch: true
   delete_branch_on_merge: true
   enable_automated_security_fixes: true
   enable_vulnerability_alerts: true
@@ -18,6 +20,9 @@ labels:
   - name: area/aggregations
     color: "#5319E7"
     description: Issues about aggregation pipelines
+  - name: area/auth
+    color: "#E4012C"
+    description: Issues about authentication and authorization
   - name: area/build
     color: "#52D58A"
     description: Issues about builds and CI
@@ -38,16 +43,19 @@ labels:
     description: Issues about metrics, logs, traces, pprof, etc
   - name: area/oplog
     color: "#09D521"
-    description: Issues about OpLog
+    description: Issues about OpLog and capped collections
   - name: area/params
     color: "#FBCA04"
     description: Issues about command parameters extraction
+  - name: area/performance
+    color: "#D02FE8"
+    description: Issues about performance
   - name: area/pushdown
     color: "#83F7BA"
     description: Issues about query pushdown
   - name: area/types
     color: "#0354F4"
-    description: Issues about data types, BSON, etc
+    description: Issues about data types, BSON, wire protocol, etc
 
   # backend
   - name: backend/pg
@@ -115,9 +123,10 @@ labels:
     color: "#5319E7"
     description: Good issues for new external contributors
 
-  - name: hacktoberfest
-    color: "#FEFBA2"
-    description: Good issues for Hacktoberfest
+  # until the next time
+  # - name: hacktoberfest
+  #   color: "#FEFBA2"
+  #   description: Good issues for Hacktoberfest
 
   - name: help wanted
     color: "#006B75"

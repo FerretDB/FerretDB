@@ -27,6 +27,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
+
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
@@ -38,7 +40,7 @@ type aggregateStagesCompatTestCase struct {
 
 	resultType     compatTestCaseResultType // defaults to nonEmptyResult
 	resultPushdown resultPushdown           // defaults to noPushdown
-	skip           string                   // skip test for all handlers, must have issue number mentioned
+	skip           string                   // always skip this test case, must have issue number mentioned
 }
 
 // testAggregateStagesCompat tests aggregation stages compatibility test cases with all providers.
@@ -104,26 +106,6 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 				t.Run(targetCollection.Name(), func(t *testing.T) {
 					t.Helper()
 
-					explainCommand := bson.D{{"explain", bson.D{
-						{"aggregate", targetCollection.Name()},
-						{"pipeline", pipeline},
-					}}}
-					var explainRes bson.D
-					require.NoError(t, targetCollection.Database().RunCommand(ctx, explainCommand).Decode(&explainRes))
-
-					resultPushdown := tc.resultPushdown
-
-					var msg string
-					// TODO https://github.com/FerretDB/FerretDB/issues/3386
-					if setup.IsPushdownDisabled() {
-						resultPushdown = noPushdown
-						msg = "Query pushdown is disabled, but target resulted with pushdown"
-					}
-
-					doc := ConvertDocument(t, explainRes)
-					pushdown, _ := doc.Get("pushdown")
-					assert.Equal(t, resultPushdown.PushdownExpected(t), pushdown, msg)
-
 					targetCursor, targetErr := targetCollection.Aggregate(ctx, pipeline, opts)
 					compatCursor, compatErr := compatCollection.Aggregate(ctx, pipeline, opts)
 
@@ -153,6 +135,26 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 					if len(targetRes) > 0 || len(compatRes) > 0 {
 						nonEmptyResults = true
 					}
+
+					explainCommand := bson.D{{"explain", bson.D{
+						{"aggregate", targetCollection.Name()},
+						{"pipeline", pipeline},
+					}}}
+					var explainRes bson.D
+					require.NoError(t, targetCollection.Database().RunCommand(ctx, explainCommand).Decode(&explainRes))
+
+					resPushdown := tc.resultPushdown
+
+					var msg string
+					// TODO https://github.com/FerretDB/FerretDB/issues/3386
+					if setup.PushdownDisabled() {
+						resPushdown = noPushdown
+						msg = "Fitler pushdown is disabled, but target resulted with pushdown"
+					}
+
+					doc := ConvertDocument(t, explainRes)
+					pushdown, _ := doc.Get("filterPushdown")
+					assert.Equal(t, resPushdown.PushdownExpected(t), pushdown, msg)
 				})
 			}
 
@@ -173,7 +175,7 @@ type aggregateCommandCompatTestCase struct {
 	command    bson.D                   // required
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
 
-	skip string // skip test for all handlers, must have issue number mentioned
+	skip string // always skip this test case, must have issue number mentioned
 }
 
 // testAggregateCommandCompat tests aggregate pipeline compatibility test cases using one collection.
@@ -182,7 +184,6 @@ func testAggregateCommandCompat(t *testing.T, testCases map[string]aggregateComm
 	t.Helper()
 
 	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
-		// Use a provider that works for all handlers.
 		Providers: []shareddata.Provider{shareddata.Int32s},
 	})
 
@@ -228,7 +229,13 @@ func testAggregateCommandCompat(t *testing.T, testCases map[string]aggregateComm
 					return
 				}
 				require.NoError(t, compatErr, "compat error; target returned no error")
-				AssertEqualDocuments(t, compatRes, targetRes)
+
+				compat := ConvertDocument(t, compatRes)
+				compat.Remove("$clusterTime")
+				compat.Remove("operationTime")
+
+				target := ConvertDocument(t, targetRes)
+				testutil.AssertEqual(t, compat, target)
 
 				if len(targetRes) > 0 || len(compatRes) > 0 {
 					nonEmptyResults = true
@@ -320,8 +327,6 @@ func TestAggregateCompatOptions(t *testing.T) {
 }
 
 func TestAggregateCompatStages(t *testing.T) {
-	setup.SkipForPostgreSQL(t, "https://github.com/FerretDB/FerretDB/issues/3520")
-
 	t.Parallel()
 
 	testCases := map[string]aggregateStagesCompatTestCase{
@@ -904,8 +909,6 @@ func TestAggregateCompatGroupCount(t *testing.T) {
 }
 
 func TestAggregateCompatLimit(t *testing.T) {
-	setup.SkipForPostgreSQL(t, "https://github.com/FerretDB/FerretDB/issues/3520")
-
 	t.Parallel()
 
 	testCases := map[string]aggregateStagesCompatTestCase{
@@ -1247,8 +1250,6 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 }
 
 func TestAggregateCompatMatch(t *testing.T) {
-	setup.SkipForPostgreSQL(t, "https://github.com/FerretDB/FerretDB/issues/3520")
-
 	t.Parallel()
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/2291
@@ -1257,7 +1258,7 @@ func TestAggregateCompatMatch(t *testing.T) {
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"ID": {
 			pipeline:       bson.A{bson.D{{"$match", bson.D{{"_id", "string"}}}}},
-			resultPushdown: pgPushdown,
+			resultPushdown: allPushdown,
 		},
 		"Int": {
 			pipeline: bson.A{
@@ -1510,8 +1511,6 @@ func TestAggregateCompatUnwind(t *testing.T) {
 }
 
 func TestAggregateCompatSkip(t *testing.T) {
-	setup.SkipForPostgreSQL(t, "https://github.com/FerretDB/FerretDB/issues/3520")
-
 	t.Parallel()
 
 	testCases := map[string]aggregateStagesCompatTestCase{
