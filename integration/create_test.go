@@ -21,6 +21,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/AlekSi/pointer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -31,6 +32,8 @@ import (
 )
 
 func TestCreateStress(t *testing.T) {
+	// It should be rewritten to use teststress.Stress.
+
 	ctx, collection := setup.Setup(t) // no providers there, we will create collections concurrently
 	db := collection.Database()
 
@@ -52,24 +55,7 @@ func TestCreateStress(t *testing.T) {
 
 			collName := fmt.Sprintf("stress_%d", i)
 
-			schema := fmt.Sprintf(`{
-				"title": "%s",
-				"description": "Create Collection Stress %d",
-				"primary_key": ["_id"],
-				"properties": {
-					"_id": {"type": "string"},
-					"v": {"type": "string"}
-				}
-			}`, collName, i,
-			)
-
-			// Set $tigrisSchemaString for tigris only.
-			opts := options.CreateCollection()
-			if setup.IsTigris(t) {
-				opts.SetValidator(bson.D{{"$tigrisSchemaString", schema}})
-			}
-
-			err := db.CreateCollection(ctx, collName, opts)
+			err := db.CreateCollection(ctx, collName)
 			assert.NoError(t, err)
 
 			_, err = db.Collection(collName).InsertOne(ctx, bson.D{{"_id", "foo"}, {"v", "bar"}})
@@ -109,7 +95,8 @@ func TestCreateStress(t *testing.T) {
 }
 
 func TestCreateOnInsertStressSameCollection(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1341")
+	// It should be rewritten to use teststress.Stress.
+
 	ctx, collection := setup.Setup(t)
 	// do not toLower() db name as it may contain uppercase letters
 	db := collection.Database().Client().Database(t.Name())
@@ -148,6 +135,8 @@ func TestCreateOnInsertStressSameCollection(t *testing.T) {
 }
 
 func TestCreateOnInsertStressDiffCollection(t *testing.T) {
+	// It should be rewritten to use teststress.Stress.
+
 	ctx, collection := setup.Setup(t)
 	// do not toLower() db name as it may contain uppercase letters
 	db := collection.Database().Client().Database(t.Name())
@@ -186,7 +175,11 @@ func TestCreateOnInsertStressDiffCollection(t *testing.T) {
 	wg.Wait()
 }
 
-func TestCreateStressSameCollection(t *testing.T) {
+func TestCreateStressSameCollection(tt *testing.T) {
+	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/3853")
+
+	// It should be rewritten to use teststress.Stress.
+
 	ctx, collection := setup.Setup(t) // no providers there, we will create collection from the test
 	db := collection.Database()
 
@@ -209,37 +202,9 @@ func TestCreateStressSameCollection(t *testing.T) {
 
 			<-start
 
-			schema := fmt.Sprintf(`{
-				"title": "%s",
-				"description": "Create Collection Stress %d",
-				"primary_key": ["_id"],
-				"properties": {
-					"_id": {"type": "string"},
-					"v": {"type": "string"}
-				}
-			}`, collName, i,
-			)
-
-			// Set $tigrisSchemaString for tigris only.
-			opts := options.CreateCollection()
-			if setup.IsTigris(t) {
-				opts.SetValidator(bson.D{{"$tigrisSchemaString", schema}})
-			}
-
-			err := db.CreateCollection(ctx, collName, opts)
-			if err == nil {
-				created.Add(1)
-			} else {
-				AssertEqualError(
-					t,
-					mongo.CommandError{
-						Code:    48,
-						Name:    "NamespaceExists",
-						Message: `Collection TestCreateStressSameCollection.stress_same_collection already exists.`,
-					},
-					err,
-				)
-			}
+			err := db.CreateCollection(ctx, collName)
+			require.NoError(t, err)
+			created.Add(1)
 
 			id := fmt.Sprintf("foo_%d", i)
 			_, err = db.Collection(collName).InsertOne(ctx, bson.D{{"_id", id}, {"v", "bar"}})
@@ -262,144 +227,129 @@ func TestCreateStressSameCollection(t *testing.T) {
 	require.Len(t, colls, 1)
 
 	// check that the collection was created, and we can query it
-	t.Run("check_stress", func(t *testing.T) {
-		t.Parallel()
+	var doc bson.D
+	err = db.Collection(collName).FindOne(ctx, bson.D{{"_id", "foo_1"}}).Decode(&doc)
+	require.NoError(t, err)
+	require.Equal(t, bson.D{{"_id", "foo_1"}, {"v", "bar"}}, doc)
 
-		var doc bson.D
-		err := db.Collection(collName).FindOne(ctx, bson.D{{"_id", "foo_1"}}).Decode(&doc)
-		require.NoError(t, err)
-		require.Equal(t, bson.D{{"_id", "foo_1"}, {"v", "bar"}}, doc)
-	})
+	// Until Mongo 7.0, attempts to create a collection that existed would return a NamespaceExists error.
+	require.Equal(t, int32(collNum), created.Load(), "All attempts to create a collection should succeed")
 
-	setup.SkipForTigrisWithReason(t, "In case of Tigris, CreateOrUpdate is called, "+
-		"and it's not possible to check the number of creation attempts as some of them might be updates.")
-	require.Equal(t, int32(1), created.Load(), "Only one attempt to create a collection should succeed")
+	assert.Error(t, db.CreateCollection(ctx, collName, &options.CreateCollectionOptions{
+		Capped:      pointer.ToBool(true),
+		SizeInBytes: pointer.ToInt64(int64(1024)),
+	}))
 }
 
-func TestCreateTigris(t *testing.T) {
-	setup.TigrisOnlyWithReason(t, "Tigris-specific schema is used")
-
+// TestCreateCappedCommandInvalidSpec checks that invalid create capped collection commands are handled correctly.
+// For valid test cases see collStats for capped collections tests.
+func TestCreateCappedCommandInvalidSpec(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup.Setup(t) // no providers there
 
-	db := collection.Database()
-	dbName := db.Name()
+	unset := struct{}{}
 
-	for name, tc := range map[string]struct {
-		validator  string
-		schema     string
-		collection string
-		err        *mongo.CommandError
-		doc        bson.D
+	for name, tc := range map[string]struct { //nolint:vet // used for testing only
+		capped any
+		size   any
+		max    any
+
+		err        *mongo.CommandError // required, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
 	}{
-		"BadValidator": {
-			validator:  "$bad",
-			schema:     "{}",
-			collection: collection.Name() + "wrong",
+		"ZeroSize": {
+			capped: true,
+			size:   0,
 			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: `required parameter "$tigrisSchemaString" is missing`,
+				Code:    51024,
+				Name:    "Location51024",
+				Message: "BSON field 'size' value must be >= 1, actual value '0'",
 			},
 		},
-		"EmptySchema": {
-			validator:  "$tigrisSchemaString",
-			schema:     "",
-			collection: collection.Name() + "_empty",
+		"EmptySize": {
+			capped: true,
 			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "empty schema is not allowed",
+				Code:    72,
+				Name:    "InvalidOptions",
+				Message: "the 'size' field is required when 'capped' is true",
 			},
 		},
-		"BadSchema": {
-			validator:  "$tigrisSchemaString",
-			schema:     "bad",
-			collection: collection.Name() + "_bad",
+		"MissingSizeField": {
+			capped: true,
+			size:   unset,
 			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "invalid character 'b' looking for beginning of value",
+				Code:    72,
+				Name:    "InvalidOptions",
+				Message: "the 'size' field is required when 'capped' is true",
 			},
 		},
-		"Valid": {
-			validator: "$tigrisSchemaString",
-			schema: fmt.Sprintf(`{
-				"title": "%s_good",
-				"description": "Foo Bar",
-				"primary_key": ["_id"],
-				"properties": {
-					"balance": {"type": "number"},
-					"age": {"type": "integer", "format": "int32"},
-					"_id": {"type": "string"},
-					"obj": {"type": "object", "properties": {"foo": {"type": "string"}}}
-				}
-			}`, collection.Name(),
-			),
-			collection: collection.Name() + "_good",
-			doc: bson.D{
-				{"_id", "foo"},
-				{"balance", 1.0},
-				{"age", 1},
-				{"obj", bson.D{{"foo", "bar"}}},
+		"EmptySizeWithMax": {
+			capped: true,
+			max:    500,
+			err: &mongo.CommandError{
+				Code:    72,
+				Name:    "InvalidOptions",
+				Message: "the 'size' field is required when 'capped' is true",
 			},
 		},
-		"WrongPKey": {
-			validator: "$tigrisSchemaString",
-			schema: fmt.Sprintf(`{
-				"title": "%s_pkey",
-				"description": "Foo Bar",
-				"primary_key": [1, 2, 3],
-				"properties": {
-					"balance": {"type": "number"},
-					"age": {"type": "integer", "format": "int32"},
-					"_id": {"type": "string", "format": "byte"},
-					"arr": {"type": "array", "items": {"type": "string"}}
-				}
-			}`, collection.Name(),
-			),
-			collection: collection.Name() + "_pkey",
+		"WrongSizeType": {
+			capped: true,
+			size:   "foo",
 			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "json: cannot unmarshal number into Go struct field Schema.primary_key of type string",
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'create.size' is the wrong type 'string', expected types '[long, int, decimal, double']",
 			},
+			altMessage: "BSON field 'create.size' is the wrong type 'string', expected types '[long, int, decimal, double]'",
 		},
-		"WrongProperties": {
-			validator: "$tigrisSchemaString",
-			schema: fmt.Sprintf(`{
-				"title": "%s_wp",
-				"description": "Foo Bar",
-				"primary_key": ["_id"],
-				"properties": "hello"
-			}`, collection.Name(),
-			),
-			collection: collection.Name() + "_wp",
+		"WrongMaxType": {
+			capped: true,
+			size:   500,
+			max:    "foo",
 			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "json: cannot unmarshal string into Go struct field Schema.properties of type map[string]*tjson.Schema",
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'create.max' is the wrong type 'string', expected types '[long, int, decimal, double']",
+			},
+			altMessage: "BSON field 'create.max' is the wrong type 'string', expected types '[long, int, decimal, double]'",
+		},
+		"WrongCappedType": {
+			capped: "foo",
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'create.capped' is the wrong type 'string', expected types '[bool, long, int, decimal, double']",
+			},
+			altMessage: "BSON field 'capped' is the wrong type 'string', expected types '[bool, long, int, decimal, double]'",
+		},
+		"NegativeSize": {
+			capped: true,
+			size:   -500,
+			err: &mongo.CommandError{
+				Code:    51024,
+				Name:    "Location51024",
+				Message: "BSON field 'size' value must be >= 1, actual value '-500'",
 			},
 		},
 	} {
-		name, tc := name, tc
-
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			opts := options.CreateCollection().SetValidator(bson.D{{tc.validator, tc.schema}})
-			err := db.Client().Database(dbName).CreateCollection(ctx, tc.collection, opts)
-			if tc.err != nil {
-				AssertEqualError(t, *tc.err, err)
-			} else {
-				require.NoError(t, err)
+			ctx, collection := setup.Setup(t)
+
+			command := bson.D{
+				{"create", collection.Name()},
+				{"capped", tc.capped},
+				{"max", tc.max},
 			}
 
-			// to make sure that schema is correct, we try to insert a document
-			if tc.doc != nil {
-				_, err = db.Collection(tc.collection).InsertOne(ctx, tc.doc)
-				require.NoError(t, err)
+			if tc.size != unset {
+				command = append(command, bson.E{Key: "size", Value: tc.size})
 			}
+
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, command).Decode(&res)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+			require.Nil(t, res)
 		})
 	}
 }

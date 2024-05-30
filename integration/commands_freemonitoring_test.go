@@ -22,11 +22,14 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
+
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
 func TestCommandsFreeMonitoringGetFreeMonitoringStatus(t *testing.T) {
 	t.Parallel()
+	setup.SkipForMongoDB(t, "MongoDB decommissioned enabling free monitoring")
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{
 		DatabaseName: "admin",
 	})
@@ -51,21 +54,27 @@ func TestCommandsFreeMonitoringGetFreeMonitoringStatus(t *testing.T) {
 }
 
 func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
+	setup.SkipForMongoDB(t, "MongoDB decommissioned enabling free monitoring")
 	t.Parallel()
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{
 		DatabaseName: "admin",
 	})
 
 	for name, tc := range map[string]struct {
-		command        bson.D
-		err            *mongo.CommandError
-		expectedRes    bson.D
-		expectedStatus string
+		command bson.D // required, command to run
+
+		expectedRes    bson.D              // optional, expected response
+		expectedStatus string              // optional, expected status
+		err            *mongo.CommandError // optional, expected error from MongoDB
+		altMessage     string              // optional, alternative error message for FerretDB, ignored if empty
+		skip           string              // optional, skip test with a specified reason
+		skipForMongoDB string              // optional, skip test for MongoDB backend with a specific reason
 	}{
 		"Enable": {
 			command:        bson.D{{"setFreeMonitoring", 1}, {"action", "enable"}},
 			expectedRes:    bson.D{{"ok", float64(1)}},
 			expectedStatus: "enabled",
+			skipForMongoDB: "MongoDB decommissioned enabling free monitoring",
 		},
 		"Disable": {
 			command:        bson.D{{"setFreeMonitoring", 1}, {"action", "disable"}},
@@ -79,6 +88,7 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 				Name:    "BadValue",
 				Message: `Enumeration value 'foobar' for field 'setFreeMonitoring.action' is not a valid value.`,
 			},
+			altMessage: `Enumeration value 'foobar' for field 'setFreeMonitoring.action' is not a valid value.`,
 		},
 		"Empty": {
 			command: bson.D{{"setFreeMonitoring", 1}, {"action", ""}},
@@ -88,23 +98,70 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 				Message: `Enumeration value '' for field 'setFreeMonitoring.action' is not a valid value.`,
 			},
 		},
+		"DocumentCommand": {
+			command:        bson.D{{"setFreeMonitoring", bson.D{}}, {"action", "enable"}},
+			expectedRes:    bson.D{{"ok", float64(1)}},
+			expectedStatus: "enabled",
+			skipForMongoDB: "MongoDB decommissioned enabling free monitoring",
+		},
+		"NilCommand": {
+			command:        bson.D{{"setFreeMonitoring", nil}, {"action", "enable"}},
+			expectedRes:    bson.D{{"ok", float64(1)}},
+			expectedStatus: "enabled",
+			skipForMongoDB: "MongoDB decommissioned enabling free monitoring",
+		},
+		"ActionMissing": {
+			command: bson.D{{"setFreeMonitoring", nil}},
+			err: &mongo.CommandError{
+				Code:    40414,
+				Name:    "Location40414",
+				Message: `BSON field 'setFreeMonitoring.action' is missing but a required field`,
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2704",
+		},
+		"ActionTypeDocument": {
+			command: bson.D{{"setFreeMonitoring", 1}, {"action", bson.D{}}},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'setFreeMonitoring.action' is the wrong type 'object', expected type 'string'",
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2704",
+		},
 	} {
 		name, tc := name, tc
 
 		t.Run(name, func(t *testing.T) {
 			// these tests shouldn't be run in parallel, because they work on the same database
 
-			var actual bson.D
-			err := s.Collection.Database().RunCommand(s.Ctx, tc.command).Decode(&actual)
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
 
+			if tc.skipForMongoDB != "" {
+				setup.SkipForMongoDB(t, tc.skipForMongoDB)
+			}
+
+			require.NotNil(t, tc.command, "command must not be nil")
+
+			var res bson.D
+			err := s.Collection.Database().RunCommand(s.Ctx, tc.command).Decode(&res)
 			if tc.err != nil {
-				AssertEqualError(t, *tc.err, err)
+				assert.Nil(t, res)
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+
 				return
 			}
 
 			require.NoError(t, err)
 
-			AssertEqualDocuments(t, tc.expectedRes, actual)
+			actual := ConvertDocument(t, res)
+			actual.Remove("$clusterTime")
+			actual.Remove("operationTime")
+
+			expected := ConvertDocument(t, tc.expectedRes)
+
+			testutil.AssertEqual(t, expected, actual)
 
 			if tc.expectedStatus != "" {
 				var actual bson.D
@@ -113,6 +170,15 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 
 				actualStatus, ok := actual.Map()["state"]
 				require.True(t, ok)
+
+				if actualStatus == "disabled" {
+					if v, ok := actual.Map()["debug"]; ok {
+						debug, ok := v.(bson.D)
+						require.True(t, ok)
+						actualStatus, ok = debug.Map()["state"]
+						require.True(t, ok)
+					}
+				}
 
 				assert.Equal(t, tc.expectedStatus, actualStatus)
 			}

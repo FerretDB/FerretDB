@@ -15,11 +15,7 @@
 // Package shareddata provides data for tests and benchmarks.
 package shareddata
 
-import (
-	"fmt"
-
-	"golang.org/x/exp/maps"
-)
+import "golang.org/x/exp/maps"
 
 // unset represents a field that should not be set.
 var unset = struct{}{}
@@ -60,8 +56,7 @@ func AllProviders() Providers {
 		ArrayDocuments,
 
 		Mixed,
-		// TODO https://github.com/FerretDB/FerretDB/issues/2291
-		// ArrayAndDocuments,
+		ArrayAndDocuments,
 	}
 
 	// check that names are unique and randomize order
@@ -82,14 +77,14 @@ func AllProviders() Providers {
 type Providers []Provider
 
 // Remove specified providers and return remaining providers.
-func (ps Providers) Remove(removeProviderNames ...string) Providers {
+func (ps Providers) Remove(removeProviders ...Provider) Providers {
 	res := make([]Provider, 0, len(ps))
 
 	for _, p := range ps {
 		keep := true
 
-		for _, name := range removeProviderNames {
-			if p.Name() == name {
+		for _, removeProvider := range removeProviders {
+			if p == removeProvider {
 				keep = false
 				break
 			}
@@ -109,21 +104,6 @@ func Docs(providers ...Provider) []any {
 	for _, p := range providers {
 		for _, doc := range p.Docs() {
 			res = append(res, doc)
-		}
-	}
-	return res
-}
-
-// IDs returns all document's _id values (that must be present in each document) from given providers.
-func IDs(providers ...Provider) []any {
-	var res []any
-	for _, p := range providers {
-		for _, doc := range p.Docs() {
-			id, ok := doc.Map()["_id"]
-			if !ok {
-				panic(fmt.Sprintf("no _id in %+v", doc))
-			}
-			res = append(res, id)
 		}
 	}
 	return res
