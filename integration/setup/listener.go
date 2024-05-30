@@ -17,37 +17,24 @@ package setup
 import (
 	"context"
 	"errors"
+	"net/url"
 	"os"
 	"path/filepath"
-	"runtime/trace"
-	"strings"
-	"sync/atomic"
-	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
-	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
-	"github.com/FerretDB/FerretDB/internal/handlers/registry"
+	"github.com/FerretDB/FerretDB/internal/handler/registry"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/state"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
-// See docker-compose.yml.
-var tigrisURLsIndex atomic.Uint32
-
-// nextTigrisUrl returns the next url for the `tigris` handler.
-func nextTigrisUrl() string {
-	i := int(tigrisURLsIndex.Add(1)) - 1
-	urls := strings.Split(*tigrisURLSF, ",")
-
-	return urls[i%len(urls)]
-}
-
 // unixSocketPath returns temporary Unix domain socket path for that test.
-func unixSocketPath(tb testing.TB) string {
+func unixSocketPath(tb testtb.TB) string {
 	tb.Helper()
 
 	// do not use tb.TempDir() because generated path is too long on macOS
@@ -63,82 +50,157 @@ func unixSocketPath(tb testing.TB) string {
 	return f.Name()
 }
 
-// setupListener starts in-process FerretDB server that runs until ctx is done.
-// It returns client and MongoDB URI of that listener.
-func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mongo.Client, string) {
+// listenerMongoDBURI builds MongoDB URI for in-process FerretDB.
+func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath string, tlsAndAuth bool) string {
+	tb.Helper()
+
+	var host string
+
+	if hostPort != "" {
+		require.Empty(tb, unixSocketPath, "both hostPort and unixSocketPath are set")
+		host = hostPort
+	} else {
+		host = unixSocketPath
+	}
+
+	var user *url.Userinfo
+	var q url.Values
+
+	if tlsAndAuth {
+		require.Empty(tb, unixSocketPath, "unixSocketPath cannot be used with TLS")
+
+		certsRoot := filepath.Join(Dir(tb), "..", "..", "build", "certs")
+
+		// we don't separate TLS and auth just for simplicity of our test configurations
+		q = url.Values{
+			"tls":                   []string{"true"},
+			"tlsCertificateKeyFile": []string{filepath.Join(certsRoot, "client.pem")},
+			"tlsCaFile":             []string{filepath.Join(certsRoot, "rootCA-cert.pem")},
+			"authMechanism":         []string{"PLAIN"},
+		}
+		user = url.UserPassword("username", "password")
+	}
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/1507
+	u := &url.URL{
+		Scheme:   "mongodb",
+		Host:     host,
+		Path:     "/",
+		User:     user,
+		RawQuery: q.Encode(),
+	}
+
+	return u.String()
+}
+
+// setupListener starts in-process FerretDB server that runs until ctx is canceled.
+// It returns basic MongoDB URI for that listener.
+func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *BackendOpts, persistData bool) string {
 	tb.Helper()
 
 	_, span := otel.Tracer("").Start(ctx, "setupListener")
 	defer span.End()
 
-	defer trace.StartRegion(ctx, "setupListener").End()
+	defer observability.FuncCall(ctx)()
 
 	require.Empty(tb, *targetURLF, "-target-url must be empty for in-process FerretDB")
 
 	var handler string
 
 	switch *targetBackendF {
-	case "ferretdb-pg":
+	case "ferretdb-postgresql":
 		require.NotEmpty(tb, *postgreSQLURLF, "-postgresql-url must be set for %q", *targetBackendF)
-		require.Empty(tb, *tigrisURLSF, "-tigris-urls must be empty for %q", *targetBackendF)
+		require.Empty(tb, *sqliteURLF, "-sqlite-url must be empty for %q", *targetBackendF)
+		require.Empty(tb, *mysqlURLF, "-mysql-url must be empty for %q", *targetBackendF)
 		require.Empty(tb, *hanaURLF, "-hana-url must be empty for %q", *targetBackendF)
-		handler = "pg"
+		handler = "postgresql"
+
 	case "ferretdb-sqlite":
 		require.Empty(tb, *postgreSQLURLF, "-postgresql-url must be empty for %q", *targetBackendF)
-		require.Empty(tb, *tigrisURLSF, "-tigris-urls must be empty for %q", *targetBackendF)
+		require.NotEmpty(tb, *sqliteURLF, "-sqlite-url must be set for %q", *targetBackendF)
+		require.Empty(tb, *mysqlURLF, "-mysql-url must be empty for %q", *targetBackendF)
 		require.Empty(tb, *hanaURLF, "-hana-url must be empty for %q", *targetBackendF)
 		handler = "sqlite"
-	case "ferretdb-tigris":
+
+	case "ferretdb-mysql":
 		require.Empty(tb, *postgreSQLURLF, "-postgresql-url must be empty for %q", *targetBackendF)
-		require.NotEmpty(tb, *tigrisURLSF, "-tigris-urls must be set for %q", *targetBackendF)
-		require.Empty(tb, *hanaURLF, "-hana-url must be empty for %q", *targetBackendF)
-		handler = "tigris"
+		require.Empty(tb, *sqliteURLF, "-sqlite-url must be empty for %q", *targetBackendF)
+		require.NotEmpty(tb, *mysqlURLF, "-mysql-url must be empty for %q", *targetBackendF)
+		require.Empty(tb, *hanaURLF, "-hana-url must be set for %q", *targetBackendF)
+		handler = "mysql"
+
 	case "ferretdb-hana":
 		require.Empty(tb, *postgreSQLURLF, "-postgresql-url must be empty for %q", *targetBackendF)
-		require.Empty(tb, *tigrisURLSF, "-tigris-urls must be empty for %q", *targetBackendF)
+		require.Empty(tb, *sqliteURLF, "-sqlite-url must be empty for %q", *targetBackendF)
+		require.Empty(tb, *mysqlURLF, "-mysql-url must be empty for %q", *targetBackendF)
 		require.NotEmpty(tb, *hanaURLF, "-hana-url must be set for %q", *targetBackendF)
 		handler = "hana"
+
 	case "mongodb":
 		tb.Fatal("can't start in-process MongoDB")
+
 	default:
 		// that should be caught by Startup function
 		panic("not reached")
 	}
 
-	p, err := state.NewProvider("")
+	// use per-test PostgreSQL database to prevent handler's/backend's metadata registry
+	// read schemas owned by concurrent tests
+	postgreSQLURLF := *postgreSQLURLF
+	if postgreSQLURLF != "" && !persistData {
+		postgreSQLURLF = testutil.TestPostgreSQLURI(tb, ctx, postgreSQLURLF)
+	}
+
+	// use per-test directory to prevent handler's/backend's metadata registry
+	// read databases owned by concurrent tests
+	sqliteURL := *sqliteURLF
+	if sqliteURL != "" && !persistData {
+		sqliteURL = testutil.TestSQLiteURI(tb, sqliteURL)
+	}
+
+	// user per-test MySQL database to prevent handler's/backend's metadata registry
+	// read databases owned by concurrent tests
+	mysqlURL := *mysqlURLF
+	if mysqlURL != "" {
+		mysqlURL = testutil.TestMySQLURI(tb, ctx, mysqlURL)
+	}
+
+	sp, err := state.NewProvider("")
 	require.NoError(tb, err)
 
-	metrics := connmetrics.NewListenerMetrics()
+	require.NotNil(tb, opts)
 
 	handlerOpts := &registry.NewHandlerOpts{
 		Logger:        logger,
-		Metrics:       metrics.ConnMetrics,
-		StateProvider: p,
+		ConnMetrics:   listenerMetrics.ConnMetrics,
+		StateProvider: sp,
 
-		PostgreSQLURL: *postgreSQLURLF,
-
-		SQLiteURI: filepath.Join("..", "tmp", "sqlite-tests"),
-
-		TigrisURL: nextTigrisUrl(),
-
-		HANAURL: *hanaURLF,
+		PostgreSQLURL: postgreSQLURLF,
+		SQLiteURL:     sqliteURL,
+		MySQLURL:      mysqlURL,
+		HANAURL:       *hanaURLF,
 
 		TestOpts: registry.TestOpts{
-			DisableFilterPushdown: *disableFilterPushdownF,
-			EnableSortPushdown:    *enableSortPushdownF,
-			EnableCursors:         *enableCursorsF,
+			DisablePushdown:         *disablePushdownF,
+			CappedCleanupPercentage: opts.CappedCleanupPercentage,
+			CappedCleanupInterval:   opts.CappedCleanupInterval,
+			EnableNewAuth:           true,
+			BatchSize:               *batchSizeF,
+			MaxBsonObjectSizeBytes:  opts.MaxBsonObjectSizeBytes,
 		},
 	}
-	h, err := registry.NewHandler(handler, handlerOpts)
+	h, closeBackend, err := registry.NewHandler(handler, handlerOpts)
 	require.NoError(tb, err)
+
+	tb.Cleanup(closeBackend)
 
 	listenerOpts := clientconn.NewListenerOpts{
 		ProxyAddr:      *targetProxyAddrF,
 		Mode:           clientconn.NormalMode,
-		Metrics:        metrics,
+		Metrics:        listenerMetrics,
 		Handler:        h,
 		Logger:         logger,
-		TestRecordsDir: filepath.Join("..", "tmp", "records"),
+		TestRecordsDir: filepath.Join(Dir(tb), "..", "..", "tmp", "records"),
 	}
 
 	if *targetProxyAddrF != "" {
@@ -151,10 +213,11 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 
 	switch {
 	case *targetTLSF:
+		certsRoot := filepath.Join(Dir(tb), "..", "..", "build", "certs")
 		listenerOpts.TLS = "127.0.0.1:0"
-		listenerOpts.TLSCertFile = filepath.Join(CertsRoot, "server-cert.pem")
-		listenerOpts.TLSKeyFile = filepath.Join(CertsRoot, "server-key.pem")
-		listenerOpts.TLSCAFile = filepath.Join(CertsRoot, "rootCA-cert.pem")
+		listenerOpts.TLSCertFile = filepath.Join(certsRoot, "server-cert.pem")
+		listenerOpts.TLSKeyFile = filepath.Join(certsRoot, "server-key.pem")
+		listenerOpts.TLSCAFile = filepath.Join(certsRoot, "rootCA-cert.pem")
 	case *targetUnixSocketF:
 		listenerOpts.Unix = unixSocketPath(tb)
 	default:
@@ -163,10 +226,10 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 
 	l := clientconn.NewListener(&listenerOpts)
 
-	done := make(chan struct{})
+	runDone := make(chan struct{})
 
 	go func() {
-		defer close(done)
+		defer close(runDone)
 
 		err := l.Run(ctx)
 		if err == nil || errors.Is(err, context.Canceled) {
@@ -176,28 +239,27 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 		}
 	}()
 
-	// ensure that all listener's logs are written before test ends
+	// ensure that all listener's and handler's logs are written before test ends
 	tb.Cleanup(func() {
-		<-done
-		h.Close()
+		<-runDone
 	})
 
-	var clientOpts mongoDBURIOpts
+	var hostPort, unixSocketPath string
+	var tlsAndAuth bool
 
 	switch {
 	case *targetTLSF:
-		clientOpts.hostPort = l.TLSAddr().String()
-		clientOpts.tlsAndAuth = true
+		hostPort = l.TLSAddr().String()
+		tlsAndAuth = true
 	case *targetUnixSocketF:
-		clientOpts.unixSocketPath = l.UnixAddr().String()
+		unixSocketPath = l.UnixAddr().String()
 	default:
-		clientOpts.hostPort = l.TCPAddr().String()
+		hostPort = l.TCPAddr().String()
 	}
 
-	uri := mongoDBURI(tb, &clientOpts)
-	client := setupClient(tb, ctx, uri)
+	uri := listenerMongoDBURI(tb, hostPort, unixSocketPath, tlsAndAuth)
 
 	logger.Info("Listener started", zap.String("handler", handler), zap.String("uri", uri))
 
-	return client, uri
+	return uri
 }

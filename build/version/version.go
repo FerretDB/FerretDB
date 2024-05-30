@@ -16,7 +16,7 @@
 //
 // # Required files
 //
-// The following generated text files may be present in this (build/version) directory during building:
+// The following generated text files may be present in this (`build/version`) directory during building:
 //   - version.txt (required) contains information about the FerretDB version in a format
 //     similar to `git describe` output: `v<major>.<minor>.<patch>`.
 //   - commit.txt (optional) contains information about the source git commit.
@@ -28,10 +28,10 @@
 // The following Go build tags (also known as build constraints) affect all builds of FerretDB,
 // including embedded usage:
 //
-//	ferretdb_debug     - enables debug build (see below; implied by ferretdb_testcover tag and builds with race detector)
-//	ferretdb_testcover - enables test coverage instrumentation
-//	ferretdb_tigris    - enables Tigris backend handler (beta)
-//	ferretdb_hana      - enables Hana backend handler (alpha)
+//	ferretdb_debug			- enables debug build (see below; implied by builds with race detector)
+//	ferretdb_hana			- enables Hana backend (alpha)
+//	ferretdb_no_postgresql	- disables PostgreSQL backend
+//	ferretdb_no_sqlite		- disables SQLite backend
 //
 // # Debug builds
 //
@@ -134,6 +134,7 @@ func init() {
 		return
 	}
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/4001
 	if buildInfo.Main.Path != "github.com/FerretDB/FerretDB" {
 		return
 	}

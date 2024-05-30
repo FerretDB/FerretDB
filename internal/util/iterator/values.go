@@ -25,6 +25,10 @@ import (
 //
 // It always closes the iterator.
 func ConsumeValues[K, V any](iter Interface[K, V]) ([]V, error) {
+	if iter == nil {
+		panic("iter is nil")
+	}
+
 	defer iter.Close()
 
 	var res []V
@@ -52,6 +56,10 @@ func ConsumeValues[K, V any](iter Interface[K, V]) ([]V, error) {
 // Consuming already done iterator returns (nil, nil).
 // The same result is returned for n = 0.
 func ConsumeValuesN[K, V any](iter Interface[K, V], n int) ([]V, error) {
+	if iter == nil {
+		panic("iter is nil")
+	}
+
 	var res []V
 
 	for i := 0; i < n; i++ {
@@ -81,6 +89,10 @@ func ConsumeValuesN[K, V any](iter Interface[K, V], n int) ([]V, error) {
 // Close method closes the underlying iterator.
 // For that reason, there is no need to track both iterators.
 func Values[K, V any](iter Interface[K, V]) Interface[struct{}, V] {
+	if iter == nil {
+		panic("iter is nil")
+	}
+
 	return &valuesIterator[K, V]{
 		iter: iter,
 	}
@@ -105,6 +117,5 @@ func (iter *valuesIterator[K, V]) Close() {
 // check interfaces
 var (
 	_ Interface[struct{}, any] = (*valuesIterator[any, any])(nil)
-	_ NextFunc[struct{}, any]  = (*valuesIterator[any, any])(nil).Next
 	_ Closer                   = (*valuesIterator[any, any])(nil)
 )
