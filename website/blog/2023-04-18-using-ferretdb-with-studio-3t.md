@@ -5,13 +5,13 @@ authors: [alex]
 description: >
   Discover how to use FerretDB 1.0 with Studio 3T, and explore ways to leverage FerretDB for MongoDB GUI applications.
 image: /img/blog/ferretdb-studio3t.png
-keywords: [FerretDB, Studio 3T, mongodb gui]
 tags:
   [
-    mongodb alternative,
+    tutorial,
     mongodb compatible,
     mongodb gui,
-    compatible applications
+    compatible applications,
+    document databases
   ]
 ---
 

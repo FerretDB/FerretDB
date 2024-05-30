@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,10 +25,13 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 func TestAggregateAddFieldsErrors(t *testing.T) {
 	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
 
 	for name, tc := range map[string]struct { //nolint:vet // used for test only
 		pipeline bson.A // required, aggregation pipeline stages
@@ -69,8 +73,6 @@ func TestAggregateAddFieldsErrors(t *testing.T) {
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
 
-			ctx, collection := setup.Setup(t)
-
 			_, err := collection.Aggregate(ctx, tc.pipeline)
 
 			if tc.altMessage != "" {
@@ -86,6 +88,8 @@ func TestAggregateAddFieldsErrors(t *testing.T) {
 func TestAggregateGroupErrors(t *testing.T) {
 	t.Parallel()
 
+	ctx, collection := setup.Setup(t)
+
 	for name, tc := range map[string]struct {
 		pipeline bson.A // required, aggregation pipeline stages
 
@@ -93,7 +97,7 @@ func TestAggregateGroupErrors(t *testing.T) {
 		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
 		skip       string              // optional, skip test with a specified reason
 	}{
-		"StageGroupUnaryOperatorSum": {
+		"UnaryOperatorSum": {
 			pipeline: bson.A{
 				bson.D{{"$group", bson.D{{"sum", bson.D{{"$sum", bson.A{}}}}}}},
 			},
@@ -103,6 +107,170 @@ func TestAggregateGroupErrors(t *testing.T) {
 				Message: "The $sum accumulator is a unary operator",
 			},
 			altMessage: "The $sum accumulator is a unary operator",
+		},
+		"TypeEmpty": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{{"v", bson.D{}}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    40234,
+				Name:    "Location40234",
+				Message: "The field 'v' must be an accumulator object",
+			},
+		},
+		"TwoOperators": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{{"_id", bson.D{{"$type", int32(42)}, {"$op", int32(42)}}}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    15983,
+				Name:    "Location15983",
+				Message: "An object representing an expression must have exactly one field: { $type: 42, $op: 42 }",
+			},
+			altMessage: "An object representing an expression must have exactly one field",
+		},
+		"TypeInvalidLen": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{{"_id", bson.D{{"$type", bson.A{"foo", "bar"}}}}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    16020,
+				Name:    "Location16020",
+				Message: "Expression $type takes exactly 1 arguments. 2 were passed in.",
+			},
+		},
+		"NonExistentOperator": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{{"_id", bson.D{{"$non-existent", "foo"}}}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    168,
+				Name:    "InvalidPipelineOperator",
+				Message: "Unrecognized expression '$non-existent'",
+			},
+		},
+		"SumEmptyExpression": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{{"$sum", "$"}}},
+				}}},
+			},
+			err: &mongo.CommandError{
+				Code:    16872,
+				Name:    "Location16872",
+				Message: "'$' by itself is not a valid FieldPath",
+			},
+		},
+		"SumEmptyVariable": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{{"$sum", "$$"}}},
+				}}},
+			},
+			err: &mongo.CommandError{
+				Code:    9,
+				Name:    "FailedToParse",
+				Message: "empty variable names are not allowed",
+			},
+		},
+		"SumDollarVariable": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{{"$sum", "$$$"}}},
+				}}},
+			},
+			err: &mongo.CommandError{
+				Code:    9,
+				Name:    "FailedToParse",
+				Message: "'$' starts with an invalid character for a user variable name",
+			},
+		},
+		"RecursiveNonExistentOperator": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{{"_id", bson.D{{"$type", bson.D{{"$non-existent", "foo"}}}}}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    168,
+				Name:    "InvalidPipelineOperator",
+				Message: "Unrecognized expression '$non-existent'",
+			},
+		},
+		"IDExpressionDuplicateFields": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{
+						{"v", "$v"},
+						{"v", "$non-existent"},
+					}},
+				}}},
+			},
+			err: &mongo.CommandError{
+				Code:    16406,
+				Name:    "Location16406",
+				Message: "duplicate field name specified in object literal: { v: \"$v\", v: \"$non-existent\" }",
+			},
+		},
+		"IDExpressionEmptyPath": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{{"v", "$"}}},
+				}}},
+			},
+			err: &mongo.CommandError{
+				Code:    16872,
+				Name:    "Location16872",
+				Message: "'$' by itself is not a valid FieldPath",
+			},
+		},
+		"IDExpressionEmptyVariable": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{{"v", "$$"}}},
+				}}},
+			},
+			err: &mongo.CommandError{
+				Code:    9,
+				Name:    "FailedToParse",
+				Message: "empty variable names are not allowed",
+			},
+		},
+		"IDExpressionInvalidVariable$": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{{"v", "$$$"}}},
+				}}},
+			},
+			err: &mongo.CommandError{
+				Code:    9,
+				Name:    "FailedToParse",
+				Message: "'$' starts with an invalid character for a user variable name",
+			},
+		},
+		"IDExpressionInvalidVariable$s": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{{"v", "$$$s"}}},
+				}}},
+			},
+			err: &mongo.CommandError{
+				Code:    9,
+				Name:    "FailedToParse",
+				Message: "'$s' starts with an invalid character for a user variable name",
+			},
+			altMessage: "'$' starts with an invalid character for a user variable name",
+		},
+		"IDExpressionNonExistingVariable": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{{"v", "$$s"}}},
+				}}},
+			},
+			err: &mongo.CommandError{
+				Code:    17276,
+				Name:    "Location17276",
+				Message: "Use of undefined variable: s",
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2275",
 		},
 	} {
 		name, tc := name, tc
@@ -116,8 +284,6 @@ func TestAggregateGroupErrors(t *testing.T) {
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
 
-			ctx, collection := setup.Setup(t)
-
 			res, err := collection.Aggregate(ctx, tc.pipeline)
 
 			assert.Nil(t, res)
@@ -128,6 +294,8 @@ func TestAggregateGroupErrors(t *testing.T) {
 
 func TestAggregateProjectErrors(t *testing.T) {
 	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
 
 	for name, tc := range map[string]struct {
 		pipeline bson.A // required, aggregation pipeline stages
@@ -389,6 +557,42 @@ func TestAggregateProjectErrors(t *testing.T) {
 				Message: "Invalid $project :: caused by :: Unrecognized expression '$non-existent'",
 			},
 		},
+		"SumEmptyExpression": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sum", bson.D{{"$sum", "$"}}},
+				}}},
+			},
+			err: &mongo.CommandError{
+				Code:    16872,
+				Name:    "Location16872",
+				Message: "Invalid $project :: caused by :: '$' by itself is not a valid FieldPath",
+			},
+		},
+		"SumEmptyVariable": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sum", bson.D{{"$sum", "$$"}}},
+				}}},
+			},
+			err: &mongo.CommandError{
+				Code:    9,
+				Name:    "FailedToParse",
+				Message: "Invalid $project :: caused by :: empty variable names are not allowed",
+			},
+		},
+		"SumDollarVariable": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sum", bson.D{{"$sum", "$$$"}}},
+				}}},
+			},
+			err: &mongo.CommandError{
+				Code:    9,
+				Name:    "FailedToParse",
+				Message: "Invalid $project :: caused by :: '$' starts with an invalid character for a user variable name",
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -401,16 +605,65 @@ func TestAggregateProjectErrors(t *testing.T) {
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
 
-			ctx, collection := setup.Setup(t)
-
 			_, err := collection.Aggregate(ctx, tc.pipeline)
 			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 		})
 	}
 }
 
+func TestAggregateProject(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t, shareddata.Scalars)
+
+	for name, tc := range map[string]struct { //nolint:vet // used for testing only
+		pipeline bson.A // required, aggregation pipeline stages
+
+		res  []bson.D // required, expected response
+		skip string   // optional, skip test with a specified reason
+	}{
+		"IDFalseValueTrue": {
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"_id", "int32"}}}},
+				bson.D{{"$project", bson.D{{"_id", false}, {"v", true}}}},
+			},
+			res: []bson.D{{{"v", int32(42)}}},
+		},
+		"ValueTrueIDFalse": {
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"_id", "int32"}}}},
+				bson.D{{"$project", bson.D{{"v", true}, {"_id", false}}}},
+			},
+			res: []bson.D{{{"v", int32(42)}}},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			t.Parallel()
+
+			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
+			require.NotNil(t, tc.res, "res must not be nil")
+
+			cursor, err := collection.Aggregate(ctx, tc.pipeline)
+			require.NoError(t, err)
+			defer cursor.Close(ctx)
+
+			var res []bson.D
+			err = cursor.All(ctx, &res)
+			require.NoError(t, err)
+			require.Equal(t, tc.res, res)
+		})
+	}
+}
+
 func TestAggregateSetErrors(t *testing.T) {
 	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
 
 	for name, tc := range map[string]struct { //nolint:vet // used for test only
 		pipeline bson.A // required, aggregation pipeline stages
@@ -452,8 +705,6 @@ func TestAggregateSetErrors(t *testing.T) {
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
 
-			ctx, collection := setup.Setup(t)
-
 			_, err := collection.Aggregate(ctx, tc.pipeline)
 			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 		})
@@ -462,6 +713,8 @@ func TestAggregateSetErrors(t *testing.T) {
 
 func TestAggregateUnsetErrors(t *testing.T) {
 	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
 
 	for name, tc := range map[string]struct { //nolint:vet // used for test only
 		pipeline bson.A // required, aggregation pipeline stages
@@ -653,10 +906,242 @@ func TestAggregateUnsetErrors(t *testing.T) {
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
 
-			ctx, collection := setup.Setup(t)
+			_, err := collection.Aggregate(ctx, tc.pipeline)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+		})
+	}
+}
+
+func TestAggregateSortErrors(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
+
+	for name, tc := range map[string]struct { //nolint:vet // used for test only
+		pipeline bson.A // required, aggregation pipeline stages
+
+		err        *mongo.CommandError // required
+		altMessage string              // optional, alternative error message
+		skip       string              // optional, skip test with a specified reason
+	}{
+		"DotNotationMissingField": {
+			pipeline: bson.A{bson.D{{"$sort", bson.D{
+				{"v..foo", 1},
+			}}}},
+			err: &mongo.CommandError{
+				Code:    15998,
+				Name:    "Location15998",
+				Message: "FieldPath field names may not be empty strings.",
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			t.Parallel()
+
+			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
+			require.NotNil(t, tc.err, "err must not be nil")
 
 			_, err := collection.Aggregate(ctx, tc.pipeline)
 			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+		})
+	}
+}
+
+func TestAggregateCommandMaxTimeMSErrors(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup.Setup(t)
+
+	for name, tc := range map[string]struct { //nolint:vet // used for testing only
+		command bson.D // required, command to run
+
+		err        *mongo.CommandError // required, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
+	}{
+		"NegativeLong": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", int64(-1)},
+			},
+			err: &mongo.CommandError{
+				Code:    51024,
+				Name:    "Location51024",
+				Message: "BSON field 'maxTimeMS' value must be >= 0, actual value '-1'",
+			},
+		},
+		"MaxLong": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", math.MaxInt64},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "9223372036854775807 value for maxTimeMS is out of range " + shareddata.Int32Interval,
+			},
+			altMessage: "9223372036854775807 value for maxTimeMS is out of range",
+		},
+		"Double": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", 1000.5},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "maxTimeMS has non-integral value",
+			},
+		},
+		"NegativeDouble": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", -14245345234123245.55},
+			},
+			err: &mongo.CommandError{
+				Code:    51024,
+				Name:    "Location51024",
+				Message: "BSON field 'maxTimeMS' value must be >= 0, actual value '-14245345234123246'",
+			},
+			altMessage: "BSON field 'maxTimeMS' value must be >= 0, actual value '-1.424534523412325e+16'",
+		},
+		"BigDouble": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", math.MaxFloat64},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "9223372036854775807 value for maxTimeMS is out of range " + shareddata.Int32Interval,
+			},
+			altMessage: "1.797693134862316e+308 value for maxTimeMS is out of range",
+		},
+		"BigNegativeDouble": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", -math.MaxFloat64},
+			},
+			err: &mongo.CommandError{
+				Code:    51024,
+				Name:    "Location51024",
+				Message: "BSON field 'maxTimeMS' value must be >= 0, actual value '-9223372036854775808'",
+			},
+			altMessage: "BSON field 'maxTimeMS' value must be >= 0, actual value '-1.797693134862316e+308'",
+		},
+		"NegativeInt32": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", -1123123},
+			},
+			err: &mongo.CommandError{
+				Code:    51024,
+				Name:    "Location51024",
+				Message: "BSON field 'maxTimeMS' value must be >= 0, actual value '-1123123'",
+			},
+		},
+		"MaxIntPlus": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", math.MaxInt32 + 1},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "2147483648 value for maxTimeMS is out of range " + shareddata.Int32Interval,
+			},
+			altMessage: "2147483648 value for maxTimeMS is out of range",
+		},
+		"Null": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", nil},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "maxTimeMS must be a number",
+			},
+		},
+		"String": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", "string"},
+			},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'aggregate.maxTimeMS' is the wrong type 'string', expected types '[long, int, decimal, double']",
+			},
+			altMessage: "BSON field 'aggregate.maxTimeMS' is the wrong type 'string', expected types '[long, int, decimal, double]'",
+		},
+		"Array": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", bson.A{int32(42), "foo", nil}},
+			},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'aggregate.maxTimeMS' is the wrong type 'array', expected types '[long, int, decimal, double']",
+			},
+			altMessage: "BSON field 'aggregate.maxTimeMS' is the wrong type 'array', expected types '[long, int, decimal, double]'",
+		},
+		"Document": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", bson.D{{"foo", int32(42)}}},
+			},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'aggregate.maxTimeMS' is the wrong type 'object', expected types '[long, int, decimal, double']",
+			},
+			altMessage: "BSON field 'aggregate.maxTimeMS' is the wrong type 'object', expected types '[long, int, decimal, double]'",
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			t.Parallel()
+
+			require.NotNil(t, tc.err, "err must not be nil")
+
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, tc.command).Decode(&res)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+			require.Nil(t, res)
 		})
 	}
 }
@@ -667,7 +1152,7 @@ func TestAggregateCommandCursor(t *testing.T) {
 
 	// the number of documents is set above the default batchSize of 101
 	// for testing unset batchSize returning default batchSize
-	arr, _ := generateDocuments(0, 110)
+	arr, _ := GenerateDocuments(0, 110)
 	_, err := collection.InsertMany(ctx, arr)
 	require.NoError(t, err)
 

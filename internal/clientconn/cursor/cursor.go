@@ -13,57 +13,84 @@
 // limitations under the License.
 
 // Package cursor provides access to cursor registry.
+//
+// The implementation of the cursor and registry is quite complicated and entangled.
+// That's because there are many cases when the iterator (and the underlying database connection)
+// must be closed to free resources, including when no handler and backend code is running;
+// for example, when the client disconnects between `getMore` commands.
+// At the same time, we want to shift complexity away from the handler and from backend implementations
+// because they are already quite complex.
+// The current design enables ease of use at the expense of the implementation complexity.
 package cursor
 
 import (
 	"sync"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
 
-// The implementation of the cursor and registry is quite complicated and entangled.
-// That's because there are many cases when cursor / iterator / underlying database connection
-// must be closed to free resources, including when no handler and backend code is running;
-// for example, when the client disconnects between `getMore` commands.
-// At the same time, we want to shift complexity away from the handler and from backend implementations
-// because they are already quite complex.
-// The current design enables ease of use at the expense of the implementation complexity.
+//go:generate ../../../bin/stringer -linecomment -type Type
 
-// Cursor allows clients to iterate over a result set.
+// Type represents a cursor type.
+type Type int
+
+const (
+	_ Type = iota
+
+	// Normal represents a normal cursor.
+	Normal
+
+	// Tailable represents a tailable cursor.
+	Tailable
+
+	// TailableAwait represents a tailable and blocking cursor.
+	TailableAwait
+)
+
+// Cursor allows clients to iterate over a result set (or multiple sets for tailable cursors).
 //
-// It implements types.DocumentsIterator interface by wrapping another iterator with documents
+// It implements types.DocumentsIterator interface by wrapping another iterator
 // with additional metadata and registration in the registry.
 //
-// Closing the cursor removes it from the registry.
+// Closing the cursor closes the underlying iterator.
+// For normal cursors, it also removes it from the registry.
+// Tailable cursors are not removed in that case.
 type Cursor struct {
 	// the order of fields is weird to make the struct smaller due to alignment
 
-	created    time.Time
-	iter       types.DocumentsIterator
-	r          *Registry
-	token      *resource.Token
-	closed     chan struct{}
-	DB         string
-	Collection string
-	Username   string
-	ID         int64
-	closeOnce  sync.Once
+	created time.Time
+	iter    types.DocumentsIterator // protected by m
+	*NewParams
+	r            *Registry
+	l            *zap.Logger
+	token        *resource.Token
+	removed      chan struct{} // protected by m
+	ID           int64
+	lastRecordID int64 // protected by m
+	m            sync.Mutex
 }
 
 // newCursor creates a new cursor.
-func newCursor(id int64, db, collection, username string, iter types.DocumentsIterator, r *Registry) *Cursor {
+func newCursor(id int64, iter types.DocumentsIterator, params *NewParams, r *Registry) *Cursor {
+	if params.Type == 0 {
+		panic("Cursor type must be specified")
+	}
+
 	c := &Cursor{
-		ID:         id,
-		DB:         db,
-		Collection: collection,
-		Username:   username,
-		iter:       iter,
-		r:          r,
-		created:    time.Now(),
-		closed:     make(chan struct{}),
-		token:      resource.NewToken(),
+		ID:        id,
+		iter:      iter,
+		NewParams: params,
+		r:         r,
+		l:         r.l.With(zap.Int64("id", id), zap.Stringer("type", params.Type)),
+		created:   time.Now(),
+		removed:   make(chan struct{}),
+		token:     resource.NewToken(),
 	}
 
 	resource.Track(c, c.token)
@@ -71,23 +98,81 @@ func newCursor(id int64, db, collection, username string, iter types.DocumentsIt
 	return c
 }
 
+// Reset replaces the underlying iterator with a given one
+// and advanced it until the last known record ID is reached.
+//
+// It should be used only with tailable cursors.
+func (c *Cursor) Reset(iter types.DocumentsIterator) error {
+	if c.Type != Tailable && c.Type != TailableAwait {
+		panic("Reset called on non-tailable cursor")
+	}
+
+	c.m.Lock()
+
+	c.l.Debug("Resetting cursor")
+	c.iter = iter
+	recordID := c.lastRecordID
+
+	c.m.Unlock()
+
+	for {
+		_, doc, err := c.Next()
+		if err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		if doc.RecordID() == recordID {
+			return nil
+		}
+	}
+}
+
 // Next implements types.DocumentsIterator interface.
 func (c *Cursor) Next() (struct{}, *types.Document, error) {
-	return c.iter.Next()
+	c.m.Lock()
+	defer c.m.Unlock()
+
+	if c.iter == nil {
+		return struct{}{}, nil, iterator.ErrIteratorDone
+	}
+
+	zero, doc, err := c.iter.Next()
+	if doc != nil {
+		recordID := doc.RecordID()
+		c.lastRecordID = recordID
+
+		if c.ShowRecordID {
+			doc.Set("$recordId", recordID)
+		}
+	}
+
+	return zero, doc, err
 }
 
 // Close implements types.DocumentsIterator interface.
+//
+// It closes the underlying iterator.
+// For normal cursors, it also removes it from the registry.
 func (c *Cursor) Close() {
-	c.closeOnce.Do(func() {
-		c.iter.Close()
-		c.iter = nil
+	c.m.Lock()
 
-		c.r.delete(c)
+	if c.iter == nil {
+		c.m.Unlock()
+		return
+	}
 
-		close(c.closed)
+	c.l.Debug("Closing cursor's iterator")
+	c.iter.Close()
+	c.iter = nil
 
-		resource.Untrack(c, c.token)
-	})
+	c.m.Unlock()
+
+	// It is not entirely clear if we should do that; more tests are needed.
+	if c.Type == Normal {
+		c.r.CloseAndRemove(c)
+	}
+
+	resource.Untrack(c, c.token)
 }
 
 // check interfaces

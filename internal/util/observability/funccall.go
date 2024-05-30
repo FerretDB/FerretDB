@@ -28,15 +28,6 @@ type funcCall struct {
 	region *trace.Region
 }
 
-// leave is called on function exit.
-func (fc *funcCall) leave() {
-	if fc.region != nil {
-		fc.region.End()
-	}
-
-	resource.Untrack(fc, fc.token)
-}
-
 // FuncCall adds observability to a function call.
 //
 // It should be called at the very beginning of the function,
@@ -56,8 +47,6 @@ func FuncCall(ctx context.Context) func() {
 	}
 	resource.Track(fc, fc.token)
 
-	// TODO add pprof labels
-
 	if trace.IsEnabled() {
 		pc := make([]uintptr, 1)
 		runtime.Callers(1, pc)
@@ -68,4 +57,13 @@ func FuncCall(ctx context.Context) func() {
 	}
 
 	return fc.leave
+}
+
+// leave is called on function exit.
+func (fc *funcCall) leave() {
+	if fc.region != nil {
+		fc.region.End()
+	}
+
+	resource.Untrack(fc, fc.token)
 }

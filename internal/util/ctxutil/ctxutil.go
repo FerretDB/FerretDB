@@ -57,17 +57,17 @@ func Sleep(ctx context.Context, d time.Duration) {
 
 // SleepWithJitter pauses the current goroutine until d + jitter has passed or ctx is canceled.
 func SleepWithJitter(ctx context.Context, d time.Duration, attempts int64) {
-	sleepCtx, cancel := context.WithTimeout(ctx, DurationWithJitter(d, attempts))
+	sleepCtx, cancel := context.WithTimeout(ctx, durationWithJitter(d, attempts))
 	defer cancel()
 	<-sleepCtx.Done()
 }
 
-// DurationWithJitter returns an exponential backoff duration based on attempt with random "full jitter".
+// durationWithJitter returns an exponential backoff duration based on attempt with random "full jitter".
 // https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/
 //
 // The maximum sleep is the cap. The minimum sleep is at least 3 milliseconds.
 // Provided cap must be larger than minimum sleep, and attempt number must be a positive number.
-func DurationWithJitter(cap time.Duration, attempt int64) time.Duration {
+func durationWithJitter(cap time.Duration, attempt int64) time.Duration {
 	const base = 100      // ms
 	const minDuration = 3 // ms
 

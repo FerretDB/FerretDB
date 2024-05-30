@@ -19,12 +19,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/AlekSi/pointer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
@@ -37,137 +40,139 @@ func TestQueryBadFindType(t *testing.T) {
 	ctx, collection := s.Ctx, s.Collection
 
 	for name, tc := range map[string]struct {
-		value any // optional, used for find value
-
-		err        *mongo.CommandError // required, expected error from MongoDB
-		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
-		skip       string              // optional, skip test with a specified reason
+		value      any
+		err        *mongo.CommandError
+		altMessage string
 	}{
 		"Document": {
 			value: bson.D{},
 			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type object",
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "Failed to parse namespace element",
 			},
 			altMessage: "collection name has invalid type object",
 		},
 		"Array": {
 			value: primitive.A{},
 			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type array",
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "Failed to parse namespace element",
 			},
+			altMessage: "collection name has invalid type array",
 		},
 		"Double": {
 			value: 3.14,
 			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type double",
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "Failed to parse namespace element",
 			},
+			altMessage: "collection name has invalid type double",
 		},
 		"Binary": {
 			value: primitive.Binary{},
 			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type binData",
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "Failed to parse namespace element",
 			},
+			altMessage: "collection name has invalid type binData",
 		},
 		"ObjectID": {
 			value: primitive.ObjectID{},
 			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type objectId",
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "Failed to parse namespace element",
 			},
+			altMessage: "collection name has invalid type objectId",
 		},
 		"Bool": {
 			value: true,
 			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type bool",
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "Failed to parse namespace element",
 			},
+			altMessage: "collection name has invalid type bool",
 		},
 		"Date": {
 			value: time.Now(),
 			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type date",
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "Failed to parse namespace element",
 			},
+			altMessage: "collection name has invalid type date",
 		},
 		"Null": {
 			value: nil,
 			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type null",
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "Failed to parse namespace element",
 			},
+			altMessage: "collection name has invalid type null",
 		},
 		"Regex": {
 			value: primitive.Regex{Pattern: "/foo/"},
 			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type regex",
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "Failed to parse namespace element",
 			},
+			altMessage: "collection name has invalid type regex",
 		},
 		"Int": {
 			value: int32(42),
 			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type int",
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "Failed to parse namespace element",
 			},
+			altMessage: "collection name has invalid type int",
 		},
 		"Timestamp": {
 			value: primitive.Timestamp{},
 			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type timestamp",
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "Failed to parse namespace element",
 			},
+			altMessage: "collection name has invalid type timestamp",
 		},
 		"Long": {
 			value: int64(42),
 			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type long",
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "Failed to parse namespace element",
 			},
+			altMessage: "collection name has invalid type long",
 		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
-
 			t.Parallel()
 
 			require.NotNil(t, tc.err, "err must not be nil")
 
 			cmd := bson.D{
 				{"find", tc.value},
-				{"projection", bson.D{{"v", "some"}}},
 			}
 
 			var res bson.D
 			err := collection.Database().RunCommand(ctx, cmd).Decode(&res)
 
-			assert.Nil(t, res)
+			require.Nil(t, res)
 			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 		})
 	}
 }
 
 func TestQuerySortErrors(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
@@ -305,8 +310,9 @@ func TestQueryMaxTimeMSErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "-14245345234123246 value for maxTimeMS is out of range",
+				Message: "-14245345234123246 value for maxTimeMS is out of range " + shareddata.Int32Interval,
 			},
+			altMessage: "-14245345234123246 value for maxTimeMS is out of range",
 		},
 		"BadMaxTimeMSTypeString": {
 			command: bson.D{
@@ -327,8 +333,9 @@ func TestQueryMaxTimeMSErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "9223372036854775807 value for maxTimeMS is out of range",
+				Message: "9223372036854775807 value for maxTimeMS is out of range " + shareddata.Int32Interval,
 			},
+			altMessage: "9223372036854775807 value for maxTimeMS is out of range",
 		},
 		"BadMaxTimeMSMinInt64": {
 			command: bson.D{
@@ -338,8 +345,9 @@ func TestQueryMaxTimeMSErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "-9223372036854775808 value for maxTimeMS is out of range",
+				Message: "-9223372036854775808 value for maxTimeMS is out of range " + shareddata.Int32Interval,
 			},
+			altMessage: "-9223372036854775808 value for maxTimeMS is out of range",
 		},
 		"BadMaxTimeMSNull": {
 			command: bson.D{
@@ -382,8 +390,9 @@ func TestQueryMaxTimeMSErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "-1123123 value for maxTimeMS is out of range",
+				Message: "-1123123 value for maxTimeMS is out of range " + shareddata.Int32Interval,
 			},
+			altMessage: "-1123123 value for maxTimeMS is out of range",
 		},
 	} {
 		name, tc := name, tc
@@ -407,8 +416,6 @@ func TestQueryMaxTimeMSErrors(t *testing.T) {
 }
 
 func TestQueryMaxTimeMSAvailableValues(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
@@ -464,8 +471,6 @@ func TestQueryMaxTimeMSAvailableValues(t *testing.T) {
 }
 
 func TestQueryExactMatches(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
@@ -524,8 +529,6 @@ func TestQueryExactMatches(t *testing.T) {
 }
 
 func TestDotNotation(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
@@ -614,223 +617,371 @@ func TestQueryNonExistingCollection(t *testing.T) {
 	require.Len(t, actual, 0)
 }
 
-func TestQueryCommandBatchSize(t *testing.T) {
+func TestQueryCommandLimitPushDown(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup.Setup(t)
 
-	// the number of documents is set above the default batchSize of 101
-	// for testing unset batchSize returning default batchSize
-	arr, _ := generateDocuments(0, 110)
-	_, err := collection.InsertMany(ctx, arr)
-	require.NoError(t, err)
+	// must use a collection of documents which does not support filter pushdown to test limit pushdown
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{Providers: []shareddata.Provider{shareddata.Composites}})
+	ctx, collection := s.Ctx, s.Collection
 
 	for name, tc := range map[string]struct { //nolint:vet // used for testing only
-		filter    any // optional, nil to leave filter unset
-		batchSize any // optional, nil to leave batchSize unset
+		filter  bson.D // optional, defaults to bson.D{}
+		limit   int64  // optional, defaults to zero which is unlimited
+		sort    bson.D // optional, nil to leave sort unset
+		optSkip *int64 // optional, nil to leave optSkip unset
 
-		firstBatch primitive.A         // optional, expected firstBatch
-		err        *mongo.CommandError // optional, expected error from MongoDB
-		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
-		skip       string              // optional, skip test with a specified reason
+		len            int                 // expected length of results
+		filterPushdown resultPushdown      // optional, defaults to noPushdown
+		limitPushdown  resultPushdown      // optional, defaults to noPushdown
+		err            *mongo.CommandError // optional, expected error from MongoDB
+		altMessage     string              // optional, alternative error message for FerretDB, ignored if empty
+		skip           string              // optional, skip test with a specified reason
 	}{
-		"Int": {
-			batchSize:  1,
-			firstBatch: arr[:1],
+		"Simple": {
+			limit:         1,
+			len:           1,
+			limitPushdown: allPushdown,
 		},
-		"Long": {
-			batchSize:  int64(2),
-			firstBatch: arr[:2],
+		"AlmostAll": {
+			limit:         int64(len(shareddata.Composites.Docs()) - 1),
+			len:           len(shareddata.Composites.Docs()) - 1,
+			limitPushdown: allPushdown,
 		},
-		"LongZero": {
-			batchSize:  int64(0),
-			firstBatch: bson.A{},
+		"All": {
+			limit:         int64(len(shareddata.Composites.Docs())),
+			len:           len(shareddata.Composites.Docs()),
+			limitPushdown: allPushdown,
 		},
-		"LongNegative": {
-			batchSize: int64(-1),
-			err: &mongo.CommandError{
-				Code:    51024,
-				Name:    "Location51024",
-				Message: "BSON field 'batchSize' value must be >= 0, actual value '-1'",
-			},
-			altMessage: "BSON field 'batchSize' value must be >= 0, actual value '-1'",
+		"More": {
+			limit:         int64(len(shareddata.Composites.Docs()) + 1),
+			len:           len(shareddata.Composites.Docs()),
+			limitPushdown: allPushdown,
 		},
-		"DoubleZero": {
-			batchSize:  float64(0),
-			firstBatch: bson.A{},
+		"Big": {
+			limit:         1000,
+			len:           len(shareddata.Composites.Docs()),
+			limitPushdown: allPushdown,
 		},
-		"DoubleNegative": {
-			batchSize: -1.1,
-			err: &mongo.CommandError{
-				Code:    51024,
-				Name:    "Location51024",
-				Message: "BSON field 'batchSize' value must be >= 0, actual value '-1'",
-			},
+		"Zero": {
+			limit:         0,
+			len:           len(shareddata.Composites.Docs()),
+			limitPushdown: noPushdown,
 		},
-		"DoubleFloor": {
-			batchSize:  1.9,
-			firstBatch: arr[:1],
+		"IDFilter": {
+			filter:         bson.D{{"_id", "array"}},
+			limit:          3,
+			len:            1,
+			filterPushdown: allPushdown,
+			limitPushdown:  noPushdown,
 		},
-		"Bool": {
-			batchSize:  true,
-			firstBatch: arr[:1],
-			err: &mongo.CommandError{
-				Code:    14,
-				Name:    "TypeMismatch",
-				Message: "BSON field 'FindCommandRequest.batchSize' is the wrong type 'bool', expected types '[long, int, decimal, double']",
-			},
-			altMessage: "BSON field 'find.batchSize' is the wrong type 'bool', expected types '[long, int, decimal, double]'",
+		"ValueFilter": {
+			filter:         bson.D{{"v", 42}},
+			sort:           bson.D{{"_id", 1}},
+			limit:          3,
+			len:            3,
+			filterPushdown: pgPushdown,
+			limitPushdown:  noPushdown,
 		},
-		"Unset": {
-			// default batchSize is 101 when unset
-			batchSize:  nil,
-			firstBatch: arr[:101],
+		"DotNotationFilter": {
+			filter:         bson.D{{"v.foo", 42}},
+			limit:          3,
+			len:            3,
+			filterPushdown: noPushdown,
+			limitPushdown:  noPushdown,
 		},
-		"LargeBatchSize": {
-			batchSize:  102,
-			firstBatch: arr[:102],
+		"ObjectFilter": {
+			filter:         bson.D{{"v", bson.D{{"foo", nil}}}},
+			limit:          3,
+			len:            1,
+			filterPushdown: noPushdown,
+			limitPushdown:  noPushdown,
 		},
-		"LargeBatchSizeFilter": {
-			filter:     bson.D{{"_id", bson.D{{"$in", bson.A{0, 1, 2, 3, 4, 5}}}}},
-			batchSize:  102,
-			firstBatch: arr[:6],
+		"Sort": {
+			sort:           bson.D{{"_id", 1}},
+			limit:          2,
+			len:            2,
+			filterPushdown: noPushdown,
+			limitPushdown:  noPushdown,
+		},
+		"IDFilterSort": {
+			filter:         bson.D{{"_id", "array"}},
+			sort:           bson.D{{"_id", 1}},
+			limit:          3,
+			len:            1,
+			filterPushdown: allPushdown,
+			limitPushdown:  noPushdown,
+		},
+		"ValueFilterSort": {
+			filter:         bson.D{{"v", 42}},
+			sort:           bson.D{{"_id", 1}},
+			limit:          3,
+			len:            3,
+			filterPushdown: pgPushdown,
+			limitPushdown:  noPushdown,
+		},
+		"DotNotationFilterSort": {
+			filter:         bson.D{{"v.foo", 42}},
+			sort:           bson.D{{"_id", 1}},
+			limit:          3,
+			len:            3,
+			filterPushdown: noPushdown,
+			limitPushdown:  noPushdown,
+		},
+		"ObjectFilterSort": {
+			filter:         bson.D{{"v", bson.D{{"foo", nil}}}},
+			sort:           bson.D{{"_id", 1}},
+			limit:          3,
+			len:            1,
+			filterPushdown: noPushdown,
+			limitPushdown:  noPushdown,
+		},
+		"Skip": {
+			optSkip:       pointer.ToInt64(1),
+			limit:         2,
+			len:           2,
+			limitPushdown: noPushdown,
 		},
 	} {
-		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
-
 			t.Parallel()
 
 			var rest bson.D
-			if tc.filter != nil {
-				rest = append(rest, bson.E{Key: "filter", Value: tc.filter})
+			if tc.sort != nil {
+				rest = append(rest, bson.E{Key: "sort", Value: tc.sort})
 			}
 
-			if tc.batchSize != nil {
-				rest = append(rest, bson.E{Key: "batchSize", Value: tc.batchSize})
+			if tc.optSkip != nil {
+				rest = append(rest, bson.E{Key: "skip", Value: tc.optSkip})
 			}
 
-			command := append(
-				bson.D{{"find", collection.Name()}},
+			filter := tc.filter
+			if filter == nil {
+				filter = bson.D{}
+			}
+
+			query := append(
+				bson.D{
+					{"find", collection.Name()},
+					{"filter", filter},
+					{"limit", tc.limit},
+				},
 				rest...,
 			)
 
-			var res bson.D
-			err := collection.Database().RunCommand(ctx, command).Decode(&res)
-			if tc.err != nil {
-				assert.Nil(t, res)
-				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+			t.Run("Explain", func(t *testing.T) {
+				setup.SkipForMongoDB(t, "pushdown is FerretDB specific feature")
 
-				return
-			}
+				var res bson.D
+				err := collection.Database().RunCommand(ctx, bson.D{{"explain", query}}).Decode(&res)
+				if tc.err != nil {
+					assert.Nil(t, res)
+					AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 
-			require.NoError(t, err)
+					return
+				}
 
-			v, ok := res.Map()["cursor"]
-			require.True(t, ok)
+				assert.NoError(t, err)
 
-			cursor, ok := v.(bson.D)
-			require.True(t, ok)
+				doc := ConvertDocument(t, res)
+				limitPushdown, _ := doc.Get("limitPushdown")
+				assert.Equal(t, tc.limitPushdown.PushdownExpected(t), limitPushdown)
 
-			// Do not check the value of cursor id, FerretDB has a different id.
-			cursorID := cursor.Map()["id"]
-			assert.NotNil(t, cursorID)
+				var msg string
 
-			firstBatch, ok := cursor.Map()["firstBatch"]
-			require.True(t, ok)
-			require.Equal(t, tc.firstBatch, firstBatch)
+				if setup.PushdownDisabled() {
+					tc.filterPushdown = noPushdown
+					msg = "Filter pushdown is disabled, but target resulted with pushdown"
+				}
+
+				filterPushdown, _ := ConvertDocument(t, res).Get("filterPushdown")
+				assert.Equal(t, tc.filterPushdown.PushdownExpected(t), filterPushdown, msg)
+			})
+
+			t.Run("Find", func(t *testing.T) {
+				cursor, err := collection.Database().RunCommandCursor(ctx, query)
+				if tc.err != nil {
+					AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+
+					return
+				}
+
+				defer cursor.Close(ctx)
+
+				require.NoError(t, err)
+
+				docs := FetchAll(t, ctx, cursor)
+
+				// do not check the content, limit without sort returns randomly ordered documents
+				require.Len(t, docs, tc.len)
+			})
 		})
 	}
 }
 
-func TestQueryCommandSingleBatch(t *testing.T) {
+// TestQueryIDDoc checks that the order of fields in the _id document matters.
+func TestQueryIDDoc(t *testing.T) {
 	t.Parallel()
+
 	ctx, collection := setup.Setup(t)
 
-	arr, _ := generateDocuments(0, 5)
-	_, err := collection.InsertMany(ctx, arr)
+	_, err := collection.InsertOne(ctx, bson.D{
+		{"_id", bson.D{{"a", int32(1)}, {"z", int32(2)}}},
+		{"v", int32(1)},
+	})
+	require.NoError(t, err)
+	_, err = collection.InsertOne(ctx, bson.D{
+		{"_id", bson.D{{"a", int32(3)}, {"z", int32(4)}}},
+		{"v", int32(2)},
+	})
 	require.NoError(t, err)
 
-	for name, tc := range map[string]struct { //nolint:vet // used for testing only
-		batchSize   any // optional, nil to leave batchSize unset
-		singleBatch any // optional, nil to leave singleBatch unset
+	expected := []bson.D{{
+		{"_id", bson.D{{"a", int32(3)}, {"z", int32(4)}}},
+		{"v", int32(2)},
+	}}
+	actual := FilterAll(t, ctx, collection, bson.D{{"_id", bson.D{{"a", int32(3)}, {"z", int32(4)}}}})
+	AssertEqualDocumentsSlice(t, expected, actual)
 
-		cursorClosed bool                // optional, set true for expecting cursor to be closed
-		err          *mongo.CommandError // optional, expected error from MongoDB
-		altMessage   string              // optional, alternative error message for FerretDB, ignored if empty
-		skip         string              // optional, skip test with a specified reason
+	expected = []bson.D{}
+	actual = FilterAll(t, ctx, collection, bson.D{{"_id", bson.D{{"z", int32(4)}, {"a", int32(3)}}}})
+	AssertEqualDocumentsSlice(t, expected, actual)
+}
+
+func TestQueryShowRecordID(t *testing.T) {
+	t.Parallel()
+
+	provider := shareddata.Scalars
+	ctx, collection := setup.Setup(t, provider)
+
+	cName := testutil.CollectionName(t) + "capped"
+	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(1000)
+
+	err := collection.Database().CreateCollection(ctx, cName, opts)
+	assert.NoError(t, err)
+
+	cappedCollection := collection.Database().Collection(cName)
+
+	res, err := cappedCollection.InsertMany(ctx, shareddata.Docs(provider))
+	require.NoError(t, err)
+	require.Len(t, res.InsertedIDs, len(provider.Docs()))
+
+	for name, tc := range map[string]struct { //nolint:vet // used for testing only
+		collection   *mongo.Collection
+		showRecordID bool
+
+		nonZeroRecordID bool // if true, asserts recordID is not zero
 	}{
-		"True": {
-			singleBatch:  true,
-			batchSize:    3,
-			cursorClosed: true,
+		"CappedCollectionShowRecordID": {
+			showRecordID:    true,
+			collection:      cappedCollection,
+			nonZeroRecordID: true,
 		},
-		"False": {
-			singleBatch:  false,
-			batchSize:    3,
-			cursorClosed: false,
+		"CappedCollectionShowRecordIDFalse": {
+			showRecordID: false,
+			collection:   cappedCollection,
 		},
-		"Int": {
-			singleBatch: int32(1),
-			batchSize:   3,
-			err: &mongo.CommandError{
-				Code:    14,
-				Name:    "TypeMismatch",
-				Message: "Field 'singleBatch' should be a boolean value, but found: int",
-			},
-			altMessage: "BSON field 'find.singleBatch' is the wrong type 'int', expected type 'bool'",
+		"ShowRecordID": {
+			showRecordID: true,
+			collection:   collection,
+		},
+		"ShowRecordIDFalse": {
+			showRecordID: false,
+			collection:   collection,
 		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
-
 			t.Parallel()
 
-			var rest bson.D
-			if tc.batchSize != nil {
-				rest = append(rest, bson.E{Key: "batchSize", Value: tc.batchSize})
-			}
+			require.NotNil(t, tc.collection, "collection must be set")
 
-			if tc.singleBatch != nil {
-				rest = append(rest, bson.E{Key: "singleBatch", Value: tc.singleBatch})
-			}
-
-			command := append(
-				bson.D{{"find", collection.Name()}},
-				rest...,
-			)
-
-			var res bson.D
-			err := collection.Database().RunCommand(ctx, command).Decode(&res)
-			if tc.err != nil {
-				assert.Nil(t, res)
-				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
-
-				return
-			}
-
+			// small batch size is set to ensure getMore sets recordID
+			opts := options.Find().SetShowRecordID(tc.showRecordID).SetBatchSize(2)
+			cursor, err := tc.collection.Find(ctx, bson.D{}, opts)
 			require.NoError(t, err)
 
-			v, ok := res.Map()["cursor"]
-			require.True(t, ok)
+			var res []bson.D
+			err = cursor.All(ctx, &res)
+			require.NoError(t, cursor.Close(ctx))
+			require.NoError(t, err)
 
-			cursor, ok := v.(bson.D)
-			require.True(t, ok)
+			for i, r := range res {
+				doc := ConvertDocument(t, r)
+				recordID, _ := doc.Get("$recordId")
+				t.Logf("%dth document with recordID %v", i, recordID)
 
-			cursorID := cursor.Map()["id"]
-			assert.NotNil(t, cursorID)
+				if !tc.showRecordID {
+					require.Nil(t, recordID)
+					return
+				}
 
-			if !tc.cursorClosed {
-				assert.NotZero(t, cursorID)
-				return
+				require.NotNil(t, recordID)
+				if tc.nonZeroRecordID {
+					require.NotZero(t, recordID)
+				}
 			}
+		})
+	}
+}
 
-			assert.Equal(t, int64(0), cursorID)
+func TestQueryShowRecordIDErrors(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
+
+	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(1000)
+	err := collection.Database().CreateCollection(ctx, testutil.CollectionName(t), opts)
+	assert.NoError(t, err)
+
+	for name, tc := range map[string]struct {
+		showRecordID any
+
+		err        *mongo.CommandError // optional, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
+	}{
+		"Nil": {
+			showRecordID: nil,
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "Field 'showRecordId' should be a boolean value, but found: null",
+			},
+			altMessage: "BSON field 'find.showRecordId' is the wrong type 'null', expected type 'bool'",
+		},
+		"Int32": {
+			showRecordID: int32(0),
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "Field 'showRecordId' should be a boolean value, but found: int",
+			},
+			altMessage: "BSON field 'find.showRecordId' is the wrong type 'int', expected type 'bool'",
+		},
+		"String": {
+			showRecordID: "string",
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "Field 'showRecordId' should be a boolean value, but found: string",
+			},
+			altMessage: "BSON field 'find.showRecordId' is the wrong type 'string', expected type 'bool'",
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			require.NotNil(t, tc.err, "err must not be nil")
+
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, bson.D{
+				{"find", collection.Name()},
+				{"showRecordId", tc.showRecordID},
+			}).Decode(&res)
+
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+			require.Nil(t, res)
 		})
 	}
 }
