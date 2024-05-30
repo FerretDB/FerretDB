@@ -18,27 +18,28 @@ package debug
 import (
 	"bytes"
 	"context"
+	"errors"
 	_ "expvar" // for metrics
+	"fmt"
 	"net"
 	"net/http"
 	_ "net/http/pprof" // for profiling
+	"slices"
 	"text/template"
 	"time"
 
+	"github.com/arl/statsviz"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
-	_ "golang.org/x/net/trace" // for tracing (already used by Tigris' gRPC client)
+	"golang.org/x/exp/maps"
 
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // RunHandler runs debug handler.
 func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *zap.Logger) {
-	stdL, err := zap.NewStdLogAt(l, zap.WarnLevel)
-	if err != nil {
-		panic(err)
-	}
+	stdL := must.NotFail(zap.NewStdLogAt(l, zap.WarnLevel))
 
 	http.Handle("/debug/metrics", promhttp.InstrumentMetricHandler(
 		r, promhttp.HandlerFor(prometheus.DefaultGatherer, promhttp.HandlerOpts{
@@ -49,12 +50,20 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 		}),
 	))
 
-	handlers := []string{
-		"/debug/metrics",  // from http.Handle above
-		"/debug/vars",     // from expvar
-		"/debug/pprof",    // from net/http/pprof
-		"/debug/events",   // from golang.org/x/net/trace
-		"/debug/requests", // from golang.org/x/net/trace
+	opts := []statsviz.Option{
+		statsviz.Root("/debug/graphs"),
+		// TODO https://github.com/FerretDB/FerretDB/issues/3600
+	}
+	must.NoError(statsviz.Register(http.DefaultServeMux, opts...))
+
+	handlers := map[string]string{
+		// custom handlers registered above
+		"/debug/graphs":  "Visualize metrics",
+		"/debug/metrics": "Metrics in Prometheus format",
+
+		// stdlib handlers
+		"/debug/vars":  "Expvar package metrics",
+		"/debug/pprof": "Runtime profiling data for pprof",
 	}
 
 	var page bytes.Buffer
@@ -62,8 +71,8 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 	<html>
 	<body>
 	<ul>
-	{{range .}}
-		<li><a href="{{.}}">{{.}}</a></li>
+	{{range $path, $desc := .}}
+		<li><a href="{{$path}}">{{$path}}</a>: {{$desc}}</li>
 	{{end}}
 	</ul>
 	</body>
@@ -87,14 +96,20 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 	}
 
 	go func() {
-		lis, err := net.Listen("tcp", addr)
-		if err != nil {
-			panic(err)
+		lis := must.NotFail(net.Listen("tcp", addr))
+
+		root := fmt.Sprintf("http://%s", lis.Addr())
+
+		l.Sugar().Infof("Starting debug server on %s ...", root)
+
+		paths := maps.Keys(handlers)
+		slices.Sort(paths)
+
+		for _, path := range paths {
+			l.Sugar().Infof("%s%s - %s", root, path, handlers[path])
 		}
 
-		l.Sugar().Infof("Starting debug server on http://%s/", lis.Addr())
-
-		if err := s.Serve(lis); err != http.ErrServerClosed {
+		if err := s.Serve(lis); !errors.Is(err, http.ErrServerClosed) {
 			panic(err)
 		}
 	}()

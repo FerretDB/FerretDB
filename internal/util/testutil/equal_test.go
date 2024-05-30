@@ -37,6 +37,17 @@ func TestEqual(t *testing.T) {
 		must.NotFail(types.NewDocument("baz", int32(42), "foo", "bar")),
 	)
 
+	AssertEqual(
+		t,
+		must.NotFail(types.NewDocument("foo", true, "foo", false)),
+		must.NotFail(types.NewDocument("foo", true, "foo", false)),
+	)
+	AssertNotEqual(
+		t,
+		must.NotFail(types.NewDocument("foo", true, "foo", false)),
+		must.NotFail(types.NewDocument("foo", false, "foo", true)),
+	)
+
 	AssertEqual(t, math.Inf(+1), math.Inf(+1))
 	AssertNotEqual(t, math.Inf(-1), math.Inf(+1))
 

@@ -27,16 +27,23 @@ import (
 )
 
 // MsgBody is a wire protocol message body.
+//
+//sumtype:decl
 type MsgBody interface {
-	readFrom(*bufio.Reader) error
-	encoding.BinaryUnmarshaler
+	msgbody() // seal for sumtype
+
+	// check performs deep (and slow) validity check.
+	check() error
+
+	// UnmarshalBinaryNocopy is a variant of [encoding.BinaryUnmarshaler] that does not have to copy the data.
+	UnmarshalBinaryNocopy([]byte) error
+
 	encoding.BinaryMarshaler
 	fmt.Stringer
 
-	msgbody() // seal for go-sumtype
+	// StringBlock returns an indented string representation for logging.
+	StringBlock() string
 }
-
-//go-sumtype:decl MsgBody
 
 // ErrZeroRead is returned when zero bytes was read from connection,
 // indicating that connection was closed by the client.
@@ -59,7 +66,7 @@ func ReadMessage(r *bufio.Reader) (*MsgHeader, MsgBody, error) {
 	switch header.OpCode {
 	case OpCodeReply: // not sent by clients, but we should be able to read replies from a proxy
 		var reply OpReply
-		if err := reply.UnmarshalBinary(b); err != nil {
+		if err := reply.UnmarshalBinaryNocopy(b); err != nil {
 			return nil, nil, lazyerrors.Error(err)
 		}
 
@@ -71,7 +78,7 @@ func ReadMessage(r *bufio.Reader) (*MsgHeader, MsgBody, error) {
 		}
 
 		var msg OpMsg
-		if err := msg.UnmarshalBinary(b); err != nil {
+		if err := msg.UnmarshalBinaryNocopy(b); err != nil {
 			return &header, nil, lazyerrors.Error(err)
 		}
 
@@ -79,7 +86,7 @@ func ReadMessage(r *bufio.Reader) (*MsgHeader, MsgBody, error) {
 
 	case OpCodeQuery:
 		var query OpQuery
-		if err := query.UnmarshalBinary(b); err != nil {
+		if err := query.UnmarshalBinaryNocopy(b); err != nil {
 			return nil, nil, lazyerrors.Error(err)
 		}
 
@@ -153,7 +160,8 @@ func getChecksum(data []byte) (uint32, error) {
 // If the flag bit for checksum presence is not set or the checksum is valid, it returns nil.
 // If the checksum is invalid, it returns an error.
 //
-// TODO The callers of checksum validation should be closer to OP_MSG handling: https://github.com/FerretDB/FerretDB/issues/2690
+// The callers of checksum validation should be closer to OP_MSG handling.
+// TODO https://github.com/FerretDB/FerretDB/issues/2690
 func validateChecksum(header *MsgHeader, body []byte) error {
 	if len(body) < flagsSize {
 		return lazyerrors.New("Message contains illegal flags value")
