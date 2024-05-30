@@ -1,0 +1,8 @@
+---
+# Copy to trivy-ignore.yml if you use direnv / .envrc for managing local development environment.
+# https://aquasecurity.github.io/trivy/latest/docs/configuration/filtering/#trivyignoreyaml
+
+secrets:
+  - id: github-pat
+    paths:
+      - .envrc

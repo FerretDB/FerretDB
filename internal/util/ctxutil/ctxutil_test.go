@@ -32,23 +32,23 @@ func TestDurationWithJitter(t *testing.T) {
 	t.Parallel()
 
 	t.Run("OneRetry", func(t *testing.T) {
-		sleep := DurationWithJitter(time.Second, 1)
+		sleep := durationWithJitter(time.Second, 1)
 		assert.GreaterOrEqual(t, sleep, 3*time.Millisecond)
 		assert.LessOrEqual(t, sleep, 1*time.Second)
 	})
 
 	t.Run("ManyRetries", func(t *testing.T) {
-		sleep := DurationWithJitter(time.Second, 100000)
+		sleep := durationWithJitter(time.Second, 100000)
 		assert.GreaterOrEqual(t, sleep, 3*time.Millisecond)
 		assert.LessOrEqual(t, sleep, time.Second)
 	})
 
 	t.Run("TooLowCap", func(t *testing.T) {
 		assert.Panics(t, func() {
-			DurationWithJitter(2*time.Millisecond, 10000)
+			durationWithJitter(2*time.Millisecond, 10000)
 		})
 		assert.Panics(t, func() {
-			DurationWithJitter(3*time.Millisecond, 10000)
+			durationWithJitter(3*time.Millisecond, 10000)
 		})
 	})
 
@@ -87,7 +87,7 @@ func simulateCompetingClients(clients int) int64 {
 		}
 	}()
 
-	totalCalls := atomic.Int64{}
+	var totalCalls atomic.Int64
 
 	call := func() bool {
 		totalCalls.Add(1)
@@ -99,8 +99,7 @@ func simulateCompetingClients(clients int) int64 {
 		}
 	}
 
-	wg := sync.WaitGroup{}
-
+	var wg sync.WaitGroup
 	for i := 0; i < clients; i++ {
 		wg.Add(1)
 
@@ -111,7 +110,7 @@ func simulateCompetingClients(clients int) int64 {
 					return
 				}
 
-				time.Sleep(DurationWithJitter(200*time.Millisecond, int64(retry)))
+				time.Sleep(durationWithJitter(200*time.Millisecond, int64(retry)))
 			}
 		}()
 	}

@@ -15,96 +15,91 @@
 package sqlite
 
 import (
+	"cmp"
 	"context"
-	"fmt"
-	"os"
-	"path/filepath"
+	"slices"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // database implements backends.Database interface.
 type database struct {
-	b    *backend
+	r    *metadata.Registry
 	name string
 }
 
 // newDatabase creates a new Database.
-func newDatabase(b *backend, name string) backends.Database {
+func newDatabase(r *metadata.Registry, name string) backends.Database {
 	return backends.DatabaseContract(&database{
-		b:    b,
+		r:    r,
 		name: name,
 	})
 }
 
-// Close implements backends.Database interface.
-func (db *database) Close() {
-	db.b.pool.CloseDB(db.name) // TODO: Implement
-}
-
 // Collection implements backends.Database interface.
-func (db *database) Collection(name string) backends.Collection {
-	return newCollection(db, name)
+func (db *database) Collection(name string) (backends.Collection, error) {
+	return newCollection(db.r, db.name, name), nil
 }
 
 // ListCollections implements backends.Database interface.
 //
 //nolint:lll // for readability
 func (db *database) ListCollections(ctx context.Context, params *backends.ListCollectionsParams) (*backends.ListCollectionsResult, error) {
-	var result backends.ListCollectionsResult
-
-	exists, err := db.b.metadataStorage.dbExists(db.name)
+	list, err := db.r.CollectionList(ctx, db.name)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	if !exists {
-		return &result, nil
-	}
+	var res []backends.CollectionInfo
 
-	list, err := db.b.metadataStorage.listCollections(ctx, db.name)
-	if err != nil {
-		return nil, err
-	}
+	if params != nil && len(params.Name) > 0 {
+		nameList := make([]string, len(list))
+		for i, c := range list {
+			nameList[i] = c.Name
+		}
 
-	for _, name := range list {
-		result.Collections = append(result.Collections, backends.CollectionInfo{
-			Name: name,
+		i, found := slices.BinarySearchFunc(nameList, params.Name, func(collectionName, t string) int {
+			return cmp.Compare(collectionName, t)
 		})
+
+		var filteredList []*metadata.Collection
+		if found {
+			filteredList = append(filteredList, list[i])
+		}
+		list = filteredList
 	}
 
-	return &result, nil
+	res = make([]backends.CollectionInfo, len(list))
+	for i, c := range list {
+		res[i] = backends.CollectionInfo{
+			Name:            c.Name,
+			UUID:            c.Settings.UUID,
+			CappedSize:      c.Settings.CappedSize,
+			CappedDocuments: c.Settings.CappedDocuments,
+		}
+	}
+
+	return &backends.ListCollectionsResult{
+		Collections: res,
+	}, nil
 }
 
 // CreateCollection implements backends.Database interface.
 func (db *database) CreateCollection(ctx context.Context, params *backends.CreateCollectionParams) error {
-	exists, err := db.b.metadataStorage.dbExists(db.name)
+	created, err := db.r.CollectionCreate(ctx, &metadata.CollectionCreateParams{
+		DBName:          db.name,
+		Name:            params.Name,
+		CappedSize:      params.CappedSize,
+		CappedDocuments: params.CappedDocuments,
+	})
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	if !exists {
-		if err = db.create(ctx); err != nil {
-			return lazyerrors.Error(err)
-		}
-	}
-
-	tableName, err := db.b.metadataStorage.createCollection(ctx, db.name, params.Name)
-	if err != nil {
-		return err
-	}
-
-	conn, err := db.b.pool.DB(db.name)
-	if err != nil {
-		return err
-	}
-
-	query := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" (sjson string)`, tableName)
-
-	_, err = conn.ExecContext(ctx, query)
-	if err != nil {
-		return err
+	if !created {
+		return backends.NewError(backends.ErrorCodeCollectionAlreadyExists, err)
 	}
 
 	return nil
@@ -112,47 +107,86 @@ func (db *database) CreateCollection(ctx context.Context, params *backends.Creat
 
 // DropCollection implements backends.Database interface.
 func (db *database) DropCollection(ctx context.Context, params *backends.DropCollectionParams) error {
-	table, err := db.b.metadataStorage.tableName(ctx, db.name, params.Name)
+	dropped, err := db.r.CollectionDrop(ctx, db.name, params.Name)
 	if err != nil {
-		return err
+		return lazyerrors.Error(err)
 	}
 
-	err = db.b.metadataStorage.removeCollection(ctx, db.name, params.Name)
-	if err != nil {
-		return err
-	}
-
-	conn, err := db.b.pool.DB(db.name)
-	if err != nil {
-		return err
-	}
-
-	query := fmt.Sprintf("DROP TABLE %s", table)
-
-	_, err = conn.ExecContext(ctx, query)
-	if err != nil {
-		return err
+	if !dropped {
+		return backends.NewError(backends.ErrorCodeCollectionDoesNotExist, err)
 	}
 
 	return nil
 }
 
-func (db *database) create(ctx context.Context) error {
-	f, err := os.Create(filepath.Join(db.b.dir, db.name+dbExtension))
-	if err != nil {
-		return err
+// RenameCollection implements backends.Database interface.
+func (db *database) RenameCollection(ctx context.Context, params *backends.RenameCollectionParams) error {
+	if c := db.r.CollectionGet(ctx, db.name, params.OldName); c == nil {
+		return backends.NewError(
+			backends.ErrorCodeCollectionDoesNotExist,
+			lazyerrors.Errorf("old database %q or collection %q does not exist", db.name, params.OldName),
+		)
 	}
 
-	if err = f.Close(); err != nil {
-		return err
+	if c := db.r.CollectionGet(ctx, db.name, params.NewName); c != nil {
+		return backends.NewError(
+			backends.ErrorCodeCollectionAlreadyExists,
+			lazyerrors.Errorf("new database %q and collection %q already exists", db.name, params.NewName),
+		)
 	}
 
-	err = db.b.metadataStorage.createDatabase(ctx, db.name)
+	renamed, err := db.r.CollectionRename(ctx, db.name, params.OldName, params.NewName)
 	if err != nil {
-		return err
+		return lazyerrors.Error(err)
+	}
+
+	if !renamed {
+		return backends.NewError(backends.ErrorCodeCollectionDoesNotExist, err)
 	}
 
 	return nil
+}
+
+// Stats implements backends.Database interface.
+func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsParams) (*backends.DatabaseStatsResult, error) {
+	if params == nil {
+		params = new(backends.DatabaseStatsParams)
+	}
+
+	d := db.r.DatabaseGetExisting(ctx, db.name)
+	if d == nil {
+		return nil, backends.NewError(backends.ErrorCodeDatabaseDoesNotExist, lazyerrors.Errorf("no database %s", db.name))
+	}
+
+	list, err := db.r.CollectionList(ctx, db.name)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	stats, err := collectionsStats(ctx, d, list, params.Refresh)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	// Total size is the disk space used by the database,
+	// see https://www.sqlite.org/dbstat.html.
+	q := `
+		SELECT SUM(pgsize)
+		FROM dbstat
+		WHERE aggregate = TRUE`
+
+	var totalSize int64
+	if err = d.QueryRowContext(ctx, q).Scan(&totalSize); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &backends.DatabaseStatsResult{
+		CountDocuments:  stats.countDocuments,
+		SizeTotal:       totalSize,
+		SizeIndexes:     stats.sizeIndexes,
+		SizeCollections: stats.sizeTables,
+		SizeFreeStorage: stats.sizeFreeStorage,
+	}, nil
 }
 
 // check interfaces

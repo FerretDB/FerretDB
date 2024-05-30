@@ -3,7 +3,6 @@
 codecov:
   require_ci_to_pass: true
   notify:
-    after_n_builds: 2 # 1 for unit tests + at least 1 for integration tests
     wait_for_ci: true
 
 # https://docs.codecov.com/docs/coverage-configuration
