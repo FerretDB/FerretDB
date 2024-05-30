@@ -15,7 +15,6 @@
 package cursors
 
 import (
-	"errors"
 	"sync/atomic"
 	"testing"
 
@@ -24,9 +23,10 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
+	"github.com/FerretDB/FerretDB/internal/util/testutil/teststress"
+
 	"github.com/FerretDB/FerretDB/integration"
 	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/internal/util/testutil/teststress"
 )
 
 // TestTailableCursorsBetweenSessions runs multiple cursors in parallel, that should spawn in different sessions,
@@ -88,11 +88,7 @@ func TestTailableCursorsBetweenSessions(tt *testing.T) {
 		for i := 1; i < 50; i++ {
 			err = db.RunCommand(ctx, getMoreCmd).Err()
 			if err != nil {
-				var ce mongo.CommandError
-
-				require.True(t, errors.As(err, &ce))
-				require.Equal(t, int32(50738), ce.Code)
-				require.Equal(t, "Location50738", ce.Name)
+				integration.AssertMatchesCommandError(t, mongo.CommandError{Code: 13, Name: "Unauthorized"}, err)
 
 				passed.Store(true)
 				return

@@ -53,9 +53,10 @@ func testBackends(t *testing.T) map[string]*testBackend {
 		require.NoError(t, err)
 
 		b, err := postgresql.NewBackend(&postgresql.NewBackendParams{
-			URI: testutil.TestPostgreSQLURI(t, context.TODO(), ""),
-			L:   l.Named("postgresql"),
-			P:   sp,
+			URI:       testutil.TestPostgreSQLURI(t, context.TODO(), ""),
+			L:         l.Named("postgresql"),
+			P:         sp,
+			BatchSize: 1000,
 		})
 		require.NoError(t, err)
 		t.Cleanup(b.Close)
@@ -71,9 +72,10 @@ func testBackends(t *testing.T) map[string]*testBackend {
 		require.NoError(t, err)
 
 		b, err := sqlite.NewBackend(&sqlite.NewBackendParams{
-			URI: testutil.TestSQLiteURI(t, ""),
-			L:   l.Named("sqlite"),
-			P:   sp,
+			URI:       testutil.TestSQLiteURI(t, ""),
+			L:         l.Named("sqlite"),
+			P:         sp,
+			BatchSize: 100,
 		})
 		require.NoError(t, err)
 		t.Cleanup(b.Close)

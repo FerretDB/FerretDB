@@ -26,16 +26,20 @@ import (
 )
 
 // InsertParams represents the parameters for an insert command.
+//
+//nolint:vet // for readability
 type InsertParams struct {
 	Docs       *types.Array `ferretdb:"documents,opt"`
 	DB         string       `ferretdb:"$db"`
 	Collection string       `ferretdb:"insert,collection"`
 	Ordered    bool         `ferretdb:"ordered,opt"`
 
+	MaxTimeMS                int64  `ferretdb:"maxTimeMS,ignored"`
 	WriteConcern             any    `ferretdb:"writeConcern,ignored"`
 	BypassDocumentValidation bool   `ferretdb:"bypassDocumentValidation,ignored"`
 	Comment                  string `ferretdb:"comment,ignored"`
 	LSID                     any    `ferretdb:"lsid,ignored"`
+	TxnNumber                int64  `ferretdb:"txnNumber,ignored"`
 	ClusterTime              any    `ferretdb:"$clusterTime,ignored"`
 }
 

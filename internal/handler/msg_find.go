@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"go.uber.org/zap"
@@ -184,16 +185,16 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
+	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+		must.NotFail(types.NewDocument(
 			"cursor", must.NotFail(types.NewDocument(
 				"firstBatch", firstBatch,
 				"id", cursorID,
 				"ns", params.DB+"."+params.Collection,
 			)),
 			"ok", float64(1),
-		))},
-	}))
+		)),
+	)))
 
 	return &reply, nil
 }
@@ -219,6 +220,18 @@ func (h *Handler) makeFindQueryParams(params *common.FindParams, cInfo *backends
 
 	if !h.DisablePushdown {
 		qp.Filter = params.Filter
+	}
+
+	if !h.EnableNestedPushdown && params.Filter != nil {
+		qp.Filter = params.Filter.DeepCopy()
+
+		for _, k := range qp.Filter.Keys() {
+			if !strings.ContainsRune(k, '.') {
+				continue
+			}
+
+			qp.Filter.Remove(k)
+		}
 	}
 
 	if params.Sort, err = common.ValidateSortDocument(params.Sort); err != nil {

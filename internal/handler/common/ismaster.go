@@ -26,27 +26,27 @@ import (
 )
 
 // IsMaster is a common implementation of the isMaster command used by deprecated OP_QUERY message.
-func IsMaster(ctx context.Context, query *types.Document, tcpHost, name string) (*wire.OpReply, error) {
+func IsMaster(ctx context.Context, query *types.Document, tcpHost, name string, maxBsonObjectSizeBytes int) (*wire.OpReply, error) { //nolint:lll //for readability
 	if err := CheckClientMetadata(ctx, query); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	return &wire.OpReply{
-		NumberReturned: 1,
-		Documents:      IsMasterDocuments(tcpHost, name),
-	}, nil
+	var reply wire.OpReply
+	reply.SetDocument(IsMasterDocument(tcpHost, name, maxBsonObjectSizeBytes))
+
+	return &reply, nil
 }
 
-// IsMasterDocuments returns isMaster's Documents field (identical for both OP_MSG and OP_QUERY).
-func IsMasterDocuments(tcpHost, name string) []*types.Document {
+// IsMasterDocument returns isMaster's Documents field (identical for both OP_MSG and OP_QUERY).
+func IsMasterDocument(tcpHost, name string, maxBsonObjectSizeBytes int) *types.Document {
 	doc := must.NotFail(types.NewDocument(
 		"ismaster", true, // only lowercase
 		// topologyVersion
-		"maxBsonObjectSize", int32(types.MaxDocumentLen),
+		"maxBsonObjectSize", int32(maxBsonObjectSizeBytes),
 		"maxMessageSizeBytes", int32(wire.MaxMsgLen),
 		"maxWriteBatchSize", int32(100000),
 		"localTime", time.Now(),
-		// logicalSessionTimeoutMinutes
+		"logicalSessionTimeoutMinutes", int32(30),
 		"connectionId", int32(42),
 		"minWireVersion", MinWireVersion,
 		"maxWireVersion", MaxWireVersion,
@@ -66,5 +66,5 @@ func IsMasterDocuments(tcpHost, name string) []*types.Document {
 		doc.Set("hosts", must.NotFail(types.NewArray(tcpHost)))
 	}
 
-	return []*types.Document{doc}
+	return doc
 }

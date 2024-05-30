@@ -79,6 +79,12 @@ var cli struct {
 	// see setCLIPlugins
 	kong.Plugins
 
+	Setup struct {
+		Username string        `default:""    help:"Setup user during backend initialization."`
+		Password string        `default:""    help:"Setup user's password."`
+		Timeout  time.Duration `default:"30s" help:"Setup timeout."`
+	} `embed:"" prefix:"setup-"`
+
 	Log struct {
 		Level  string `default:"${default_log_level}" help:"${help_log_level}"`
 		Format string `default:"console"              help:"${help_log_format}"                     enum:"${enum_log_format}"`
@@ -87,26 +93,30 @@ var cli struct {
 
 	MetricsUUID bool `default:"false" help:"Add instance UUID to all metrics." negatable:""`
 
-	Telemetry telemetry.Flag `default:"undecided" help:"Enable or disable basic telemetry. See https://beacon.ferretdb.io."`
+	Telemetry telemetry.Flag `default:"undecided" help:"Enable or disable basic telemetry. See https://beacon.ferretdb.com."`
 
 	Test struct {
 		RecordsDir string `default:"" help:"Testing: directory for record files."`
 
-		DisablePushdown bool `default:"false" help:"Experimental: disable pushdown."`
+		DisablePushdown      bool `default:"false" help:"Experimental: disable pushdown."`
+		EnableNestedPushdown bool `default:"false" help:"Experimental: enable pushdown for dot notation."`
 
 		CappedCleanup struct {
 			Interval   time.Duration `default:"1m" help:"Experimental: capped collections cleanup interval."`
 			Percentage uint8         `default:"10" help:"Experimental: percentage of documents to cleanup."`
 		} `embed:"" prefix:"capped-cleanup-"`
 
-		EnableNewAuth bool `default:"false" help:"Experimental: enable new authentication." hidden:""`
+		EnableNewAuth bool `default:"false" help:"Experimental: enable new authentication."`
+
+		BatchSize            int `default:"100" help:"Experimental: maximum insertion batch size."`
+		MaxBsonObjectSizeMiB int `default:"16"  help:"Experimental: maximum BSON object size in MiB."`
 
 		Telemetry struct {
-			URL            string        `default:"https://beacon.ferretdb.io/" help:"Telemetry: reporting URL."`
-			UndecidedDelay time.Duration `default:"1h"                          help:"Telemetry: delay for undecided state."`
-			ReportInterval time.Duration `default:"24h"                         help:"Telemetry: report interval."`
-			ReportTimeout  time.Duration `default:"5s"                          help:"Telemetry: report timeout."`
-			Package        string        `default:""                            help:"Telemetry: custom package type."`
+			URL            string        `default:"https://beacon.ferretdb.com/" help:"Telemetry: reporting URL."`
+			UndecidedDelay time.Duration `default:"1h"                           help:"Telemetry: delay for undecided state."`
+			ReportInterval time.Duration `default:"24h"                          help:"Telemetry: report interval."`
+			ReportTimeout  time.Duration `default:"5s"                           help:"Telemetry: report timeout."`
+			Package        string        `default:""                             help:"Telemetry: custom package type."`
 		} `embed:"" prefix:"telemetry-"`
 	} `embed:"" prefix:"test-"`
 }
@@ -210,7 +220,6 @@ func defaultLogLevel() zapcore.Level {
 func setupState() *state.Provider {
 	var f string
 
-	// https://github.com/alecthomas/kong/issues/389
 	if cli.StateDir != "" && cli.StateDir != "-" {
 		var err error
 		if f, err = filepath.Abs(filepath.Join(cli.StateDir, "state.json")); err != nil {
@@ -220,7 +229,7 @@ func setupState() *state.Provider {
 
 	sp, err := state.NewProvider(f)
 	if err != nil {
-		log.Fatalf("Failed to create state provider: %s.", err)
+		log.Fatal(stateFileProblem(f, err))
 	}
 
 	return sp
@@ -284,6 +293,21 @@ func setupLogger(stateProvider *state.Provider, format string) *zap.Logger {
 	return l
 }
 
+// checkFlags checks that CLI flags are not self-contradictory.
+func checkFlags(logger *zap.Logger) {
+	if cli.Setup.Username != "" && !cli.Test.EnableNewAuth {
+		logger.Sugar().Fatal("--setup-username requires --test-enable-new-auth")
+	}
+
+	if cli.Setup.Password != "" && cli.Setup.Username == "" {
+		logger.Sugar().Fatal("--setup-password requires --setup-username")
+	}
+
+	if cli.Test.DisablePushdown && cli.Test.EnableNestedPushdown {
+		logger.Sugar().Fatal("--test-disable-pushdown and --test-enable-nested-pushdown should not be set at the same time")
+	}
+}
+
 // runTelemetryReporter runs telemetry reporter until ctx is canceled.
 func runTelemetryReporter(ctx context.Context, opts *telemetry.NewReporterOpts) {
 	r, err := telemetry.NewReporter(opts)
@@ -339,6 +363,8 @@ func run() {
 
 	logger := setupLogger(stateProvider, cli.Log.Format)
 
+	checkFlags(logger)
+
 	if _, err := maxprocs.Set(maxprocs.Logger(logger.Sugar().Debugf)); err != nil {
 		logger.Sugar().Warnf("Failed to set GOMAXPROCS: %s.", err)
 	}
@@ -353,7 +379,6 @@ func run() {
 
 	var wg sync.WaitGroup
 
-	// https://github.com/alecthomas/kong/issues/389
 	if cli.DebugAddr != "" && cli.DebugAddr != "-" {
 		wg.Add(1)
 
@@ -403,9 +428,12 @@ func run() {
 
 		TestOpts: registry.TestOpts{
 			DisablePushdown:         cli.Test.DisablePushdown,
+			EnableNestedPushdown:    cli.Test.EnableNestedPushdown,
 			CappedCleanupInterval:   cli.Test.CappedCleanup.Interval,
 			CappedCleanupPercentage: cli.Test.CappedCleanup.Percentage,
 			EnableNewAuth:           cli.Test.EnableNewAuth,
+			BatchSize:               cli.Test.BatchSize,
+			MaxBsonObjectSizeBytes:  cli.Test.MaxBsonObjectSizeMiB * 1024 * 1024, //nolint:mnd // converting MiB to bytes
 		},
 	})
 	if err != nil {

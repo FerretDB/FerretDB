@@ -33,8 +33,8 @@ func (h *Handler) MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
+	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+		must.NotFail(types.NewDocument(
 			"version", version.Get().MongoDBVersion,
 			"gitVersion", version.Get().Commit,
 			"modules", must.NotFail(types.NewArray()),
@@ -42,7 +42,7 @@ func (h *Handler) MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			"versionArray", version.Get().MongoDBVersionArray,
 			"bits", int32(strconv.IntSize),
 			"debug", version.Get().DebugBuild,
-			"maxBsonObjectSize", int32(types.MaxDocumentLen),
+			"maxBsonObjectSize", int32(h.MaxBsonObjectSizeBytes),
 			"buildEnvironment", version.Get().BuildEnvironment,
 
 			// our extensions
@@ -52,8 +52,8 @@ func (h *Handler) MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			)),
 
 			"ok", float64(1),
-		))},
-	}))
+		)),
+	)))
 
 	return &reply, nil
 }

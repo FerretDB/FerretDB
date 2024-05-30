@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"net/netip"
 	"os"
 	"path/filepath"
 	"runtime/pprof"
@@ -140,7 +141,10 @@ func (c *conn) run(ctx context.Context) (err error) {
 
 	connInfo := conninfo.New()
 	if c.netConn.RemoteAddr().Network() != "unix" {
-		connInfo.PeerAddr = c.netConn.RemoteAddr().String()
+		connInfo.Peer, err = netip.ParseAddrPort(c.netConn.RemoteAddr().String())
+		if err != nil {
+			return
+		}
 	}
 
 	ctx = conninfo.Ctx(ctx, connInfo)
@@ -258,9 +262,9 @@ func (c *conn) run(ctx context.Context) (err error) {
 			protoErr := handlererrors.ProtocolError(validationErr)
 
 			var res wire.OpMsg
-			must.NoError(res.SetSections(wire.OpMsgSection{
-				Documents: []*types.Document{protoErr.Document()},
-			}))
+			must.NoError(res.SetSections(wire.MakeOpMsgSection(
+				protoErr.Document(),
+			)))
 
 			b := must.NotFail(res.MarshalBinary())
 
@@ -340,11 +344,11 @@ func (c *conn) run(ctx context.Context) (err error) {
 			var resBodyString, proxyBodyString string
 
 			if resBody != nil {
-				resBodyString = resBody.String()
+				resBodyString = resBody.StringBlock()
 			}
 
 			if proxyBody != nil {
-				proxyBodyString = proxyBody.String()
+				proxyBodyString = proxyBody.StringBlock()
 			}
 
 			var diffBody string
@@ -479,9 +483,9 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 			protoErr := handlererrors.ProtocolError(err)
 
 			var res wire.OpMsg
-			must.NoError(res.SetSections(wire.OpMsgSection{
-				Documents: []*types.Document{protoErr.Document()},
-			}))
+			must.NoError(res.SetSections(wire.MakeOpMsgSection(
+				protoErr.Document(),
+			)))
 			resBody = &res
 
 			switch protoErr := protoErr.(type) {
@@ -581,26 +585,31 @@ func (c *conn) handleOpMsg(ctx context.Context, msg *wire.OpMsg, command string)
 //
 // The param `who` will be used in logs and should represent the type of the response,
 // for example "Response" or "Proxy Response".
-//
-// If response op code is not `OP_MSG`, it always logs as a debug.
-// For the `OP_MSG` code, the level depends on the type of error.
-// If there is no errors in the response, it will be logged as a debug.
-// If there is an error in the response, and connection is closed, it will be logged as an error.
-// If there is an error in the response, and connection is not closed, it will be logged as a warning.
 func (c *conn) logResponse(who string, resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) zapcore.Level {
 	level := zap.DebugLevel
 
 	if resHeader.OpCode == wire.OpCodeMsg {
 		doc := must.NotFail(resBody.(*wire.OpMsg).Document())
 
-		ok, _ := doc.Get("ok")
-		if f, _ := ok.(float64); f != 1 {
-			if closeConn {
-				level = zap.ErrorLevel
-			} else {
-				level = zap.WarnLevel
-			}
+		var ok bool
+
+		v, _ := doc.Get("ok")
+		switch v := v.(type) {
+		case float64:
+			ok = v == 1
+		case int32:
+			ok = v == 1
+		case int64:
+			ok = v == 1
 		}
+
+		if !ok {
+			level = zap.WarnLevel
+		}
+	}
+
+	if closeConn {
+		level = zap.ErrorLevel
 	}
 
 	c.l.Desugar().Check(level, fmt.Sprintf("%s header: %s", who, resHeader)).Write()

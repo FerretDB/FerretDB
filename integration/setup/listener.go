@@ -95,7 +95,7 @@ func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath string, tlsAndAut
 
 // setupListener starts in-process FerretDB server that runs until ctx is canceled.
 // It returns basic MongoDB URI for that listener.
-func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string {
+func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *BackendOpts, persistData bool) string {
 	tb.Helper()
 
 	_, span := otel.Tracer("").Start(ctx, "setupListener")
@@ -147,14 +147,14 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 	// use per-test PostgreSQL database to prevent handler's/backend's metadata registry
 	// read schemas owned by concurrent tests
 	postgreSQLURLF := *postgreSQLURLF
-	if postgreSQLURLF != "" {
+	if postgreSQLURLF != "" && !persistData {
 		postgreSQLURLF = testutil.TestPostgreSQLURI(tb, ctx, postgreSQLURLF)
 	}
 
 	// use per-test directory to prevent handler's/backend's metadata registry
 	// read databases owned by concurrent tests
 	sqliteURL := *sqliteURLF
-	if sqliteURL != "" {
+	if sqliteURL != "" && !persistData {
 		sqliteURL = testutil.TestSQLiteURI(tb, sqliteURL)
 	}
 
@@ -168,6 +168,8 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 	sp, err := state.NewProvider("")
 	require.NoError(tb, err)
 
+	require.NotNil(tb, opts)
+
 	handlerOpts := &registry.NewHandlerOpts{
 		Logger:        logger,
 		ConnMetrics:   listenerMetrics.ConnMetrics,
@@ -180,9 +182,11 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 
 		TestOpts: registry.TestOpts{
 			DisablePushdown:         *disablePushdownF,
-			CappedCleanupPercentage: 20,
-			CappedCleanupInterval:   0,
+			CappedCleanupPercentage: opts.CappedCleanupPercentage,
+			CappedCleanupInterval:   opts.CappedCleanupInterval,
 			EnableNewAuth:           true,
+			BatchSize:               *batchSizeF,
+			MaxBsonObjectSizeBytes:  opts.MaxBsonObjectSizeBytes,
 		},
 	}
 	h, closeBackend, err := registry.NewHandler(handler, handlerOpts)
