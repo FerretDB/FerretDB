@@ -14,13 +14,11 @@
 
 // Package types provides Go types matching BSON types that don't have built-in Go equivalents.
 //
-// All BSON types have five representations in FerretDB:
+// All BSON types have three representations in FerretDB:
 //
 //  1. As they are used in "business logic" / handlers - `types` package.
-//  2. As they are used for logging - `fjson` package.
-//  3. As they are used in the wire protocol implementation - `bson` package.
-//  4. As they are used to store data in PostgreSQL - `pjson` package.
-//  5. As they are used to store data in Tigris - `tjson` package.
+//  2. As they are used in the wire protocol implementation and for logging - `bson` package.
+//  3. As they are used to store data in SQL based databases - `sjson` package.
 //
 // The reason for that is a separation of concerns: to avoid method names clashes, to simplify type asserts,
 // to make refactorings and optimizations easier, etc.
@@ -56,10 +54,15 @@ package types
 import (
 	"fmt"
 	"time"
+
+	"golang.org/x/exp/maps"
 )
 
 // MaxDocumentLen is the maximum BSON object size.
 const MaxDocumentLen = 16 * 1024 * 1024 // 16 MiB = 16777216 bytes
+
+// MaxSafeDouble is the maximum double value that can be represented precisely.
+const MaxSafeDouble = float64(1<<53 - 1) // 52bit mantissa max value = 9007199254740991
 
 // ScalarType represents scalar type.
 type ScalarType interface {
@@ -77,25 +80,43 @@ type Type interface {
 }
 
 // CompositeTypeInterface consists of Document and Array.
-// TODO remove once we have go-sumtype equivalent?
+//
+//sumtype:decl
 type CompositeTypeInterface interface {
+	compositeType() // seal for sumtype
+
 	CompositeType
 
 	GetByPath(path Path) (any, error)
 	RemoveByPath(path Path)
-
-	compositeType() // seal for go-sumtype
 }
 
-//go-sumtype:decl CompositeTypeInterface
-
-// isScalar check if v is a BSON scalar value.
-func isScalar(v any) bool {
-	if v == nil {
-		panic("v is nil")
+// assertType panics if value is not a BSON type (scalar or composite).
+//
+// It should be used in places where we can't use compile-time check via type parameters (generics).
+// For example, `NewArray(42)` should panic, because `int` is not a BSON type.
+//
+// It should check only type, not value.
+func assertType(value any) {
+	switch value := value.(type) {
+	case *Document, *Array:
+		return
+	case float64, string, Binary, ObjectID, bool, time.Time, NullType, Regex, int32, Timestamp, int64:
+		return
+	case nil:
+		panic("types: unexpected nil type")
+	default:
+		panic(fmt.Sprintf("types: unexpected type %[1]T (%#[1]v)", value))
 	}
+}
 
-	switch v.(type) {
+// isScalar checks if v is a BSON scalar value.
+//
+// It panics if value is not a BSON type.
+func isScalar(value any) bool {
+	assertType(value)
+
+	switch value.(type) {
 	case float64, string, Binary, ObjectID, bool, time.Time, NullType, Regex, int32, Timestamp, int64:
 		return true
 	}
@@ -105,10 +126,6 @@ func isScalar(v any) bool {
 
 // deepCopy returns a deep copy of the given value.
 func deepCopy(value any) any {
-	if value == nil {
-		panic("types.deepCopy: nil value")
-	}
-
 	switch value := value.(type) {
 	case *Document:
 		fields := make([]field, len(value.fields))
@@ -119,7 +136,11 @@ func deepCopy(value any) any {
 			}
 		}
 
-		return &Document{fields}
+		return &Document{
+			fields:   fields,
+			keys:     maps.Clone(value.keys),
+			recordID: value.recordID,
+		}
 
 	case *Array:
 		s := make([]any, len(value.s))

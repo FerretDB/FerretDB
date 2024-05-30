@@ -1,6 +1,6 @@
 ---
 sidebar_position: 2
-unlisted: true
+draft: true
 ---
 
 # Content Creation Guide for FerretDB
@@ -24,9 +24,53 @@ Once the blog post pitch is approved, you can start creating the draft.
 We have provided a template for writing blog posts.
 Please find the [template](YYYY-MM-DD.blog-template.md) here and feel free to start writing the draft with the provided template.
 
-### File name
+### Names and URLs
 
-The file name should be in the format `YYYY-MM-DD-title.md`, where `YYYY-MM-DD` is the date of the post or issue, and `title` is a short, descriptive title of the post or issue.
+The file name should be in the format `YYYY-MM-DD-shortened-article-name.md` or `YYYY-MM-DD-folder-name/article-name.md`,
+where `YYYY-MM-DD` is the date of the post, and `shortened-article-name` is a shortened descriptive title of the post.
+Please do not use underscores or spaces in the file names, directory names, or slugs because URL paths typically use dashes.
+
+### Tags
+
+Tags are an important part of every blog post, and they appear at the top of the front matter.
+They make it easy for readers to search and identify related blog posts based on their categories or subject matter.
+You can view all [currently listed tags here](https://blog.ferretdb.io/tags/).
+
+Please note that all tags must be in small-case, such that `FerretDB` should be written as `ferretdb`.
+
+Hyphens should be disregarded when writing tags, e.g. `mongodb-compatible database` should be written as `mongodb compatible database`.
+
+A blog post can have as many tags as possible, as long as it is relevant to the post.
+Please only include the following tags (and keep them in sync with the `checkdocs` linter):
+
+- cloud
+- community
+- compatible applications
+- demo
+- document databases
+- events
+- hacktoberfest
+- javascript frameworks
+- mongodb compatible
+- mongodb gui
+- open source
+- postgresql tools
+- product
+- release
+- sspl
+- tutorial
+
+This is not an exhaustive list, and the direction of our blog posts can surely expand.
+If a blog post calls for a new tag or you would like to suggest more tags, please ensure to add it to this list.
+This helps to maintain consistency across all blog posts.
+
+### Keywords (optional)
+
+Keywords in the front matter are displayed as meta keywords tag in HTML.
+Meta keywords tag are not so important for SEO anymore, but they can help with focusing the content on specific keywords that should be used (appear at least once) in the blog content, meta description, title, or alt images.
+
+The use of meta keywords is not mandatory, but if you want to add them, please ensure that they are relevant to the blog post.
+All keywords must be in small-case.
 
 ### Writing Guide
 
@@ -35,10 +79,12 @@ Please see our [writing guide](writing-guide.md) for help formatting your blog p
 
 ## Setting Front Matter and Publishing Options
 
-Front matter is the metadata that appears at the top of the markdown file and provides information about the post or issue, such as the title, author, and date.
+Front matter is the metadata that appears at the top of the markdown file and provides information about the post, such as the title and author.
 
-In the front matter, ensure to set the `unlisted: true` in the front matter until it's ready to publish.
-Make sure to include all necessary information in the front matter, such as the title, author, and date.
+In the front matter, `draft: true` keeps the page hidden from the visitors of the site.
+Use this option if you plan to merge the content into `main` branch while keeping the page hidden.
+Other cases, remove `draft: true` to enable CI to build and render the new content during the reviewing.
+Make sure to include all necessary information in the front matter, such as the title and author.
 
 ## Reviewing and Editing Content
 
@@ -55,7 +101,7 @@ Once the content is ready for review, please open a PR and assign it to @Ferretd
 ## Final Approval and Publishing
 
 The final approval for publishing content is given once it has passed through all reviews and approved by the team.
-To publish the content, change the date in the front matter to the proposed published date, and then remove `unlisted: true` from the front matter.
+To publish the content, change the date in file name to the proposed published date, and then remove `draft: true` if set from the front matter.
 
 ## Post Publishing
 

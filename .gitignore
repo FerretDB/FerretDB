@@ -1,24 +1,20 @@
-# Please use global .gitignore file for .vscode/, .idea/, etc.
+# Please use global .gitignore file for .vscode/, .idea/, go.work, .envrc, etc.
 # See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files#configuring-ignored-files-for-all-repositories-on-your-computer
 
-# our tools
-bin/
+docker-compose.override.yml
 
-# caches
-.task/
-.cache/
-vendor/
-
-# packages, build artifacts, temporary files
-*.deb
-*.rpm
-*.tar
-*.txt
-*.out
-**/testdata/fuzz/
 state.json
+
+*.out
+*.sqlite*
+*.txt
+
+.task/
+bin/
 tmp/
+vendor/
 website/build/
 
-# for local Docker Compse changes; see https://docs.docker.com/compose/extends/#multiple-compose-files
-docker-compose.override.yml
+**/testdata/fuzz/
+
+build/trivy-ignore.yml

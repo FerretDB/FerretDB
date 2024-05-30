@@ -23,52 +23,46 @@
 package integration
 
 import (
-	"fmt"
 	"testing"
+
+	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 func TestEnvData(t *testing.T) {
-	notForTigris := []shareddata.Provider{
-		shareddata.Scalars,
-		shareddata.Composites,
-		shareddata.PostgresEdgeCases,
-		shareddata.Nulls,
-		shareddata.ArrayDocuments,
-	}
+	t.Parallel()
 
-	// Setups one collection for each data set for all handlers and MongoDB.
-	t.Run("All", func(t *testing.T) {
-		for _, p := range shareddata.AllProviders() {
-			p := p
-			name := p.Name()
+	var previousName string
 
-			t.Run(name, func(t *testing.T) {
-				for _, skip := range notForTigris {
-					if name == skip.Name() {
-						setup.SkipForTigrisWithReason(t, fmt.Sprintf("%q is not supported by Tigris", name))
-					}
-				}
+	for _, p := range shareddata.AllProviders() {
+		name := p.Name()
 
-				setup.SetupWithOpts(t, &setup.SetupOpts{
-					DatabaseName:   "test",
-					CollectionName: p.Name(),
-					Providers:      []shareddata.Provider{p},
-				})
+		t.Run(name, func(t *testing.T) {
+			s := setup.SetupWithOpts(t, &setup.SetupOpts{
+				DatabaseName:   "test",
+				CollectionName: name,
+				Providers:      []shareddata.Provider{p},
+				PersistData:    true,
 			})
-		}
-	})
 
-	// Setups old `values` collection with mixed types for `pg` handler and MongoDB.
-	t.Run("Values", func(t *testing.T) {
-		setup.SkipForTigris(t)
+			// envData must persist, other integration tests do not
+			// persist data once the current t.Run() ends, hence check
+			// the collection created by the previous t.Run() persists
+			if previousName != "" {
+				ctx, database := s.Ctx, s.Collection.Database()
+				cursor, err := database.Collection(previousName).Find(ctx, bson.D{})
+				require.NoError(t, err)
 
-		setup.SetupWithOpts(t, &setup.SetupOpts{
-			DatabaseName:   "test",
-			CollectionName: "values",
-			Providers:      []shareddata.Provider{shareddata.Scalars, shareddata.Composites},
+				var res []bson.D
+				err = cursor.All(ctx, &res)
+				require.NoError(t, err)
+				require.NotEmpty(t, res)
+			}
+
+			previousName = name
 		})
-	})
+	}
 }

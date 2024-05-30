@@ -21,11 +21,16 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/iterator/testiterator"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 func TestArrayIterator(t *testing.T) {
 	t.Parallel()
+
+	testiterator.TestIterator(t, func() iterator.Interface[int, any] {
+		return must.NotFail(NewArray(int32(1), int32(2))).Iterator()
+	})
 
 	t.Run("Normal", func(t *testing.T) {
 		t.Parallel()
