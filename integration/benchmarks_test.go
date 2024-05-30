@@ -20,13 +20,15 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
 
-func BenchmarkQuerySmallDocuments(b *testing.B) {
+func BenchmarkFind(b *testing.B) {
 	provider := shareddata.BenchmarkSmallDocuments
 
 	b.Run(provider.Name(), func(b *testing.B) {
@@ -51,54 +53,81 @@ func BenchmarkQuerySmallDocuments(b *testing.B) {
 			},
 		} {
 			b.Run(name, func(b *testing.B) {
-				var firstDocs, docs []bson.D
+				var firstDocs, docs int
 
-				for i := 0; i < b.N; i++ {
+				for range b.N {
 					cursor, err := s.Collection.Find(s.Ctx, bc.filter)
 					require.NoError(b, err)
 
-					docs = FetchAll(b, s.Ctx, cursor)
-					require.NotEmpty(b, docs)
+					docs = 0
+					for cursor.Next(s.Ctx) {
+						docs++
+					}
 
-					if firstDocs == nil {
+					require.NoError(b, cursor.Close(s.Ctx))
+					require.NoError(b, cursor.Err())
+					require.Positive(b, docs)
+
+					if firstDocs == 0 {
 						firstDocs = docs
 					}
 				}
 
 				b.StopTimer()
 
-				require.Len(b, docs, len(firstDocs))
+				require.Equal(b, firstDocs, docs)
 
-				b.ReportMetric(float64(len(docs)), "docs-returned")
+				b.ReportMetric(float64(docs), "docs-returned")
 			})
 		}
 	})
 }
 
-func BenchmarkReplaceSettingsDocument(b *testing.B) {
-	ctx, collection := setup.Setup(b)
+func BenchmarkReplaceOne(b *testing.B) {
+	provider := shareddata.BenchmarkSettingsDocuments
 
-	iter := shareddata.BenchmarkSettingsDocuments.NewIterator()
-	_, doc, err := iter.Next()
-	iter.Close()
+	s := setup.SetupWithOpts(b, &setup.SetupOpts{
+		BenchmarkProvider: provider,
+	})
+	ctx, collection := s.Ctx, s.Collection
 
+	// use the last document by the natural order to make non-pushdown path slower
+
+	cursor, err := collection.Find(ctx, bson.D{})
 	require.NoError(b, err)
+
+	var lastRaw bson.Raw
+	for cursor.Next(ctx) {
+		lastRaw = cursor.Current
+	}
+	require.NoError(b, cursor.Err())
+	require.NoError(b, cursor.Close(ctx))
+
+	var doc bson.D
+	require.NoError(b, bson.Unmarshal(lastRaw, &doc))
 	require.Equal(b, "_id", doc[0].Key)
 	require.NotEmpty(b, doc[0].Value)
 	require.NotZero(b, doc[1].Value)
 
-	_, err = collection.InsertOne(ctx, doc)
-	require.NoError(b, err)
+	b.Run(provider.Name(), func(b *testing.B) {
+		filter := bson.D{{"_id", doc[0].Value}}
+		var res *mongo.UpdateResult
 
-	b.Run("Replace", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			doc[1].Value = i + 1
+		for i := range b.N {
+			doc[1].Value = int64(i + 1)
 
-			res, err := collection.ReplaceOne(ctx, bson.D{}, doc)
+			res, err = collection.ReplaceOne(ctx, filter, doc)
 			require.NoError(b, err)
 			require.Equal(b, int64(1), res.MatchedCount)
 			require.Equal(b, int64(1), res.ModifiedCount)
 		}
+
+		b.StopTimer()
+
+		var actual bson.D
+		err = collection.FindOne(ctx, filter).Decode(&actual)
+		require.NoError(b, err)
+		AssertEqualDocuments(b, doc, actual)
 	})
 }
 
@@ -106,15 +135,21 @@ func BenchmarkInsertMany(b *testing.B) {
 	ctx, collection := setup.Setup(b)
 
 	for _, provider := range shareddata.AllBenchmarkProviders() {
+		total, err := iterator.ConsumeCount(provider.NewIterator())
+		require.NoError(b, err)
+
+		var batchSizes []int
 		for _, batchSize := range []int{1, 10, 100, 1000} {
+			if batchSize <= total {
+				batchSizes = append(batchSizes, batchSize)
+			}
+		}
+
+		for _, batchSize := range batchSizes {
 			b.Run(fmt.Sprintf("%s/Batch%d", provider.Name(), batchSize), func(b *testing.B) {
 				b.StopTimer()
 
-				total, err := iterator.ConsumeCount(provider.NewIterator())
-				require.NoError(b, err)
-				require.GreaterOrEqual(b, total, batchSize)
-
-				for i := 0; i < b.N; i++ {
+				for range b.N {
 					require.NoError(b, collection.Drop(ctx))
 
 					iter := provider.NewIterator()

@@ -39,6 +39,7 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 
 	for name, tc := range testCases {
 		name, tc := name, tc
+
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
 			t.Parallel()
@@ -50,7 +51,7 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 				ctx, targetCollections, compatCollections := setup.SetupCompat(t)
 
 				insert := tc.insert
-				require.NotNil(t, insert, "insert should be set")
+				require.NotEmpty(t, insert, "insert should be set")
 
 				for i := range targetCollections {
 					targetCollection := targetCollections[i]
@@ -63,13 +64,8 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 							compatInsertRes, compatErr := compatCollection.InsertOne(ctx, doc)
 
 							if targetErr != nil {
-								switch targetErr := targetErr.(type) { //nolint:errorlint // don't inspect error chain.
+								switch targetErr := targetErr.(type) { //nolint:errorlint // don't inspect error chain
 								case mongo.WriteException:
-									// Skip inserts that could not be performed due to Tigris schema validation.
-									if targetErr.HasErrorCode(documentValidationFailureCode) {
-										setup.SkipForTigrisWithReason(t, targetErr.Error())
-									}
-
 									AssertMatchesWriteError(t, compatErr, targetErr)
 								case mongo.BulkWriteException:
 									AssertMatchesBulkException(t, compatErr, targetErr)
@@ -96,8 +92,6 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 				}
 			})
 
-			// InsertOne and InsertMany might have different response formats,
-			// so both need to be tested.
 			t.Run("InsertMany", func(t *testing.T) {
 				t.Helper()
 				t.Parallel()
@@ -105,7 +99,7 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 				ctx, targetCollections, compatCollections := setup.SetupCompat(t)
 
 				insert := tc.insert
-				require.NotNil(t, insert, "insert should be set")
+				require.NotEmpty(t, insert, "insert should be set")
 
 				var nonEmptyResults bool
 				for i := range targetCollections {
@@ -125,13 +119,8 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 						}
 
 						if targetErr != nil {
-							switch targetErr := targetErr.(type) { //nolint:errorlint // don't inspect error chain.
+							switch targetErr := targetErr.(type) { //nolint:errorlint // don't inspect error chain
 							case mongo.WriteException:
-								// Skip inserts that could not be performed due to Tigris schema validation.
-								if targetErr.HasErrorCode(documentValidationFailureCode) {
-									setup.SkipForTigrisWithReason(t, targetErr.Error())
-								}
-
 								AssertMatchesWriteError(t, compatErr, targetErr)
 							case mongo.BulkWriteException:
 								AssertMatchesBulkException(t, compatErr, targetErr)
@@ -173,16 +162,20 @@ func TestInsertCompat(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]insertCompatTestCase{
-		"InsertIDArray": {
+		"Normal": {
+			insert: []any{bson.D{{"_id", int32(42)}}},
+		},
+
+		"IDArray": {
 			insert:     []any{bson.D{{"_id", bson.A{"foo", "bar"}}}},
 			resultType: emptyResult,
 		},
-		"InsertIDRegex": {
+		"IDRegex": {
 			insert:     []any{bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}}},
 			resultType: emptyResult,
 		},
 
-		"InsertOrderedAllErrors": {
+		"OrderedAllErrors": {
 			insert: []any{
 				bson.D{{"_id", bson.A{"foo", "bar"}}},
 				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
@@ -190,7 +183,7 @@ func TestInsertCompat(t *testing.T) {
 			ordered:    true,
 			resultType: emptyResult,
 		},
-		"InsertUnorderedAllErrors": {
+		"UnorderedAllErrors": {
 			insert: []any{
 				bson.D{{"_id", bson.A{"foo", "bar"}}},
 				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
@@ -199,7 +192,7 @@ func TestInsertCompat(t *testing.T) {
 			resultType: emptyResult,
 		},
 
-		"InsertOrderedOneError": {
+		"OrderedOneError": {
 			insert: []any{
 				bson.D{{"_id", "1"}},
 				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
@@ -207,12 +200,34 @@ func TestInsertCompat(t *testing.T) {
 			},
 			ordered: true,
 		},
-		"InsertUnorderedOneError": {
+		"UnorderedTwoErrors": {
 			insert: []any{
 				bson.D{{"_id", "1"}},
-				bson.D{{"_id", "1"}}, // to test duplicate key error
+				bson.D{{"_id", "1"}},
 				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
 				bson.D{{"_id", "2"}},
+			},
+			ordered: false,
+		},
+		"OrderedThreeErrors": {
+			insert: []any{
+				bson.D{{"_id", "1"}},
+				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
+				bson.D{{"_id", "2"}},
+				bson.D{{"_id", "1"}},
+				bson.D{{"_id", "3"}},
+				bson.D{{"_id", "4"}, {"_id", "4"}},
+			},
+			ordered: true,
+		},
+		"UnorderedThreeErrors": {
+			insert: []any{
+				bson.D{{"_id", "1"}},
+				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
+				bson.D{{"_id", "2"}},
+				bson.D{{"_id", "1"}},
+				bson.D{{"_id", "3"}},
+				bson.D{{"_id", "4"}, {"_id", "4"}},
 			},
 			ordered: false,
 		},

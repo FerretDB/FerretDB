@@ -20,15 +20,18 @@ package testiterator
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
-	"github.com/FerretDB/FerretDB/internal/util/teststress"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/teststress"
 )
 
 // TestIterator checks that the iterator implementation is correct.
 func TestIterator[K, V any](t *testing.T, newIter func() iterator.Interface[K, V]) {
 	t.Helper()
 
-	// TODO more tests https://github.com/FerretDB/FerretDB/issues/2867
+	// more tests
+	// TODO https://github.com/FerretDB/FerretDB/issues/2867
 
 	t.Run("Close", func(t *testing.T) {
 		t.Parallel()
@@ -40,6 +43,11 @@ func TestIterator[K, V any](t *testing.T, newIter func() iterator.Interface[K, V
 			<-start
 
 			iter.Close()
+		})
+
+		assert.NotPanics(t, func() {
+			_, _, err := iter.Next()
+			assert.ErrorIs(t, err, iterator.ErrIteratorDone)
 		})
 	})
 }

@@ -23,6 +23,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
+
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
@@ -37,28 +39,25 @@ type queryCommandCompatTestCase struct {
 	optSkip        any                      // defaults to nil to leave unset
 	limit          *int64                   // defaults to nil to leave unset
 	resultType     compatTestCaseResultType // defaults to nonEmptyResult
-	resultPushdown bool                     // defaults to false
+	filterPushdown resultPushdown           // defaults to noPushdown
 
-	skip          string // skip test for all handlers, must have issue number mentioned
-	skipForTigris string // skip test for Tigris
+	skip string // always skip this test case, must have issue number mentioned
 }
 
-// testQueryCompat tests query compatibility test cases.
+// testQueryCommandCompat tests query compatibility test cases.
 func testQueryCommandCompat(t *testing.T, testCases map[string]queryCommandCompatTestCase) {
 	t.Helper()
 
 	// Use shared setup because find queries can't modify data.
-	// TODO Use read-only user. https://github.com/FerretDB/FerretDB/issues/1025
+	//
+	// Use read-only user.
+	// TODO https://github.com/FerretDB/FerretDB/issues/1025
 	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
 
 	for name, tc := range testCases {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
-
-			if tc.skipForTigris != "" {
-				setup.SkipForTigrisWithReason(t, tc.skipForTigris)
-			}
 
 			if tc.skip != "" {
 				t.Skip(tc.skip)
@@ -105,12 +104,14 @@ func testQueryCommandCompat(t *testing.T, testCases map[string]queryCommandCompa
 					require.NoError(t, targetCollection.Database().RunCommand(ctx, explainQuery).Decode(&explainRes))
 
 					var msg string
-					if setup.IsPushdownDisabled() {
-						tc.resultPushdown = false
-						msg = "Query pushdown is disabled, but target resulted with pushdown"
+					if setup.PushdownDisabled() {
+						tc.filterPushdown = noPushdown
+						msg = "Filter pushdown is disabled, but target resulted with pushdown"
 					}
 
-					assert.Equal(t, tc.resultPushdown, explainRes.Map()["pushdown"], msg)
+					doc := ConvertDocument(t, explainRes)
+					pushdown, _ := doc.Get("filterPushdown")
+					assert.Equal(t, tc.filterPushdown.PushdownExpected(t), pushdown, msg)
 
 					targetCommand := append(
 						bson.D{
@@ -148,7 +149,12 @@ func testQueryCommandCompat(t *testing.T, testCases map[string]queryCommandCompa
 					require.NoError(t, targetResult.Decode(&targetRes))
 					require.NoError(t, compatResult.Decode(&compatRes))
 
-					AssertEqualDocuments(t, compatRes, targetRes)
+					compatDoc := ConvertDocument(t, compatRes)
+					compatDoc.Remove("$clusterTime")
+					compatDoc.Remove("operationTime")
+
+					targetDoc := ConvertDocument(t, targetRes)
+					testutil.AssertEqual(t, compatDoc, targetDoc)
 
 					targetDocs := targetRes.Map()["cursor"].(bson.D).Map()["firstBatch"].(primitive.A)
 					compatDocs := compatRes.Map()["cursor"].(bson.D).Map()["firstBatch"].(primitive.A)

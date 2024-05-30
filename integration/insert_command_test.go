@@ -15,11 +15,13 @@
 package integration
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
@@ -62,6 +64,63 @@ func TestInsertCommandErrors(t *testing.T) {
 			},
 			altMessage: "E11000 duplicate key error collection: TestInsertCommandErrors-InsertDuplicateKey.TestInsertCommandErrors-InsertDuplicateKey",
 		},
+		"InsertDuplicateKeyOrdered": {
+			toInsert: []any{
+				bson.D{{"foo", "bar"}},
+				bson.D{{"_id", "double"}},
+			},
+			ordered: true,
+			werr: &mongo.WriteError{
+				Code:  11000,
+				Index: 1,
+				Message: `E11000 duplicate key error collection: ` +
+					`TestInsertCommandErrors-InsertDuplicateKeyOrdered.TestInsertCommandErrors-InsertDuplicateKeyOrdered index: _id_ dup key: { _id: "double" }`,
+			},
+			altMessage: `E11000 duplicate key error collection: TestInsertCommandErrors-InsertDuplicateKeyOrdered.TestInsertCommandErrors-InsertDuplicateKeyOrdered`,
+		},
+		"InsertArray": {
+			toInsert: []any{
+				bson.D{{"a", int32(1)}},
+				bson.A{},
+			},
+			ordered: true,
+			cerr: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'insert.documents.1' is the wrong type 'array', expected type 'object'",
+			},
+		},
+		"InsertArrayAsDocumentID": {
+			toInsert: []any{
+				bson.D{{"_id", bson.A{int32(42), int32(42)}}},
+			},
+			ordered: false,
+			werr: &mongo.WriteError{
+				Code:    53,
+				Message: "The '_id' value cannot be of type array",
+			},
+		},
+		"InsertRegexAsDocumentID": {
+			toInsert: []any{
+				bson.D{{"_id", primitive.Regex{Pattern: "foo", Options: "i"}}},
+			},
+			ordered: false,
+			werr: &mongo.WriteError{
+				Code:    53,
+				Message: "The '_id' value cannot be of type regex",
+			},
+		},
+		"InsertDuplicateID": {
+			toInsert: []any{
+				bson.D{{"_id", "foo"}, {"_id", "bar"}},
+			},
+			ordered: false,
+			werr: &mongo.WriteError{
+				Code:    2,
+				Message: "can't have multiple _id fields in one document",
+			},
+			altMessage: `invalid key: "_id" (duplicate keys are not allowed)`,
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -87,11 +146,87 @@ func TestInsertCommandErrors(t *testing.T) {
 
 			if tc.cerr != nil {
 				AssertEqualAltCommandError(t, *tc.cerr, tc.altMessage, err)
+				return
 			}
 
 			if tc.werr != nil {
 				AssertEqualAltWriteError(t, *tc.werr, tc.altMessage, err)
+				return
 			}
+
+			require.NoError(t, err)
 		})
 	}
+}
+
+func TestInsertIDDifferentTypes(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
+
+	_, err := collection.InsertOne(ctx, bson.D{
+		{"_id", int64(1)},
+		{"v", "foo2"},
+	})
+	require.NoError(t, err)
+
+	_, err = collection.InsertOne(ctx, bson.D{
+		{"_id", int32(1)},
+		{"v", "foo1"},
+	})
+
+	AssertEqualAltWriteError(t, mongo.WriteError{
+		Message: "E11000 duplicate key error collection: TestInsertIDDifferentTypes.TestInsertIDDifferentTypes index: _id_ dup key: { _id: 1 }",
+		Code:    11000,
+	},
+		"E11000 duplicate key error collection: TestInsertIDDifferentTypes.TestInsertIDDifferentTypes",
+		err,
+	)
+
+	_, err = collection.InsertOne(ctx, bson.D{
+		{"_id", float32(1)},
+		{"v", "foo3"},
+	})
+
+	AssertEqualAltWriteError(t, mongo.WriteError{
+		Message: "E11000 duplicate key error collection: TestInsertIDDifferentTypes.TestInsertIDDifferentTypes index: _id_ dup key: { _id: 1.0 }",
+		Code:    11000,
+	},
+		"E11000 duplicate key error collection: TestInsertIDDifferentTypes.TestInsertIDDifferentTypes",
+		err,
+	)
+}
+
+func TestInsertTooLargeDocument(tt *testing.T) {
+	t := setup.FailsForMongoDB(tt, "maximum BSON document size is only configurable for FerretDB")
+
+	tt.Parallel()
+
+	size := 20 * 1024 * 1024
+	s := setup.SetupWithOpts(tt, &setup.SetupOpts{BackendOptions: &setup.BackendOpts{MaxBsonObjectSizeBytes: size}})
+	ctx, collection := s.Ctx, s.Collection
+
+	var isMasterRes bson.D
+	err := collection.Database().RunCommand(ctx, bson.D{{"isMaster", int32(1)}}).Decode(&isMasterRes)
+	require.NoError(t, err)
+
+	var actual bson.D
+
+	for _, field := range isMasterRes {
+		if field.Key == "maxBsonObjectSize" {
+			actual = append(actual, field)
+		}
+	}
+
+	expected := bson.D{{"maxBsonObjectSize", int32(size)}}
+	require.Equal(t, expected, actual)
+
+	// doc has 17MB size, larger than the default maximum BSON document size of 16MiB
+	doc := bson.D{
+		{"_id", "large-key"},
+		{"123", strings.Repeat("1234567890abcde", 1000000)},
+	}
+
+	_, err = collection.InsertOne(ctx, doc)
+	require.NoError(t, err)
 }

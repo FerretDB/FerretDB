@@ -1,8 +1,7 @@
 // @ts-check
 // Note: type annotations allow type checking and IDEs autocompletion
 
-const lightCodeTheme = require('prism-react-renderer/themes/github');
-const darkCodeTheme = require('prism-react-renderer/themes/dracula');
+import {themes} from 'prism-react-renderer';
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
@@ -23,7 +22,14 @@ const config = {
     locales: ['en'],
   },
 
-  scripts: [{src: 'https://plausible.io/js/script.js', defer: true, "data-domain": "blog.ferretdb.io"}],
+  stylesheets: [
+    {href: "/codapi/snippet.css"},
+  ],
+
+  scripts: [
+    {src: 'https://plausible.io/js/script.js', defer: true, "data-domain": "blog.ferretdb.io"},
+    {src: '/codapi/snippet.js', defer: true},
+  ],
 
   plugins: [
     [
@@ -31,6 +37,9 @@ const config = {
       {
         indexBlog: true, // Index blog posts in search engine
         indexDocs: false, // Docs plugin is disabled, docs search needs to be disabled too
+        lunr:{
+          tokenizerSeparator: /[\s\-\$]+/,
+        }
       },
     ],
   ],
@@ -50,6 +59,34 @@ const config = {
 
           blogSidebarTitle: 'All posts',
           blogSidebarCount: 'ALL',
+          feedOptions: {
+            type: 'all',
+            title: 'FerretDB Blog',
+            description: 'A truly Open Source MongoDB alternative',
+            copyright: `Copyright © ${new Date().getFullYear()} FerretDB Inc.`,
+
+            // override to add images; see https://github.com/facebook/docusaurus/discussions/8321#discussioncomment-7016367
+            createFeedItems: async (params) => {
+              const {
+                blogPosts,
+                defaultCreateFeedItems,
+                siteConfig,
+                outDir
+              } = params;
+
+              const allFeedItems = await defaultCreateFeedItems({
+                blogPosts: blogPosts.slice(0, 10),
+                siteConfig: siteConfig,
+                outDir: outDir
+              });
+
+              return allFeedItems.map((item, index) => ({
+                ...item,
+                image: `${config.url}${blogPosts[index].metadata.frontMatter.image}`,
+              }))
+
+            },
+          },
         },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
@@ -66,17 +103,12 @@ const config = {
         logo: {
           alt: 'FerretDB Logo',
           src: 'img/logo-dark.jpg',
-          srcDark:'img/logo-light.png'
+          srcDark: 'img/logo-light.png'
         },
         items: [
           {
-            to: '/',
-            label: 'Blog',
-            position: 'left'
-          },
-          {
             href: 'https://docs.ferretdb.io/',
-            position: 'left',
+            position: 'right',
             label: 'Documentation',
           },
           {
@@ -85,8 +117,8 @@ const config = {
             position: 'right',
           },
           {
-            href: 'https://ferretdb.io/',
-            label: 'Go to FerretDB.io',
+            href: 'https://www.ferretdb.com/',
+            label: 'FerretDB.com',
             position: 'right',
           },
         ],
@@ -128,9 +160,13 @@ const config = {
             title: 'More',
             items: [
               {
-                href: 'https://ferretdb.io/',
-                label: 'Go to FerretDB.io',
+                href: 'https://www.ferretdb.com/',
+                label: 'FerretDB.com',
                 position: 'right',
+              },
+              {
+                label: 'Blog',
+                to: '/',
               },
               {
                 label: 'GitHub',
@@ -142,11 +178,18 @@ const config = {
         copyright: `Copyright © ${new Date().getFullYear()} FerretDB Inc. Built with Docusaurus.`,
       },
       prism: {
-        theme: lightCodeTheme,
-        darkTheme: darkCodeTheme,
-        additionalLanguages: ['go', 'json5', 'sql'],
+        theme: themes.github,
+        darkTheme: themes.dracula,
+        additionalLanguages: ['go', 'sql', 'json', 'json5'],
+      },
+      mermaid: {
+        theme: {light: 'default', dark: 'dark'},
       },
     }),
+  markdown: {
+    mermaid: true,
+  },
+  themes: ['@docusaurus/theme-mermaid'],
 };
 
 module.exports = config;
