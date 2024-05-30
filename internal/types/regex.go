@@ -71,7 +71,7 @@ func (r Regex) Compile() (*regexp.Regexp, error) {
 		case 'i', 'm', 's':
 			opts += string(o)
 		case 'x':
-			// TODO: https://github.com/FerretDB/FerretDB/issues/592
+			// TODO https://github.com/FerretDB/FerretDB/issues/592
 			return nil, ErrOptionNotImplemented
 		default:
 			continue

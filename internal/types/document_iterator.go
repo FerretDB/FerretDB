@@ -34,7 +34,6 @@ func newDocumentIterator(document *Document) iterator.Interface[string, any] {
 		doc:   document,
 		token: resource.NewToken(),
 	}
-
 	resource.Track(iter, iter.token)
 
 	return iter

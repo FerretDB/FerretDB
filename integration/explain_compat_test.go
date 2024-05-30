@@ -32,7 +32,7 @@ type explainCompatTestCase struct {
 	pipeline   bson.A                   // ignored if nil
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
 
-	skip string // skip test for all handlers, must have issue number mentioned
+	skip string // always skip this test case, must have issue number mentioned
 }
 
 // testExplainCompatError tests explain compatibility test cases.
@@ -45,7 +45,6 @@ func testExplainCompatError(t *testing.T, testCases map[string]explainCompatTest
 	t.Helper()
 
 	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
-		// Use a provider that works for all handlers.
 		Providers: []shareddata.Provider{shareddata.Int32s},
 	})
 
@@ -67,32 +66,34 @@ func testExplainCompatError(t *testing.T, testCases map[string]explainCompatTest
 			t.Run(targetCollection.Name(), func(t *testing.T) {
 				t.Helper()
 
-				explainParams := bson.D{
-					{tc.command, targetCollection.Name()},
-				}
+				explainTarget := bson.D{{tc.command, targetCollection.Name()}}
+				explainCompat := bson.D{{tc.command, compatCollection.Name()}}
 
 				if tc.filter != nil {
-					explainParams = bson.D{
-						{tc.command, targetCollection.Name()},
-						{"filter", tc.filter},
-					}
+					explainTarget = append(explainTarget, bson.E{Key: "filter", Value: tc.filter})
+					explainCompat = append(explainCompat, bson.E{Key: "filter", Value: tc.filter})
 				}
 
 				if tc.pipeline != nil {
-					explainParams = bson.D{
-						{tc.command, targetCollection.Name()},
-						{"pipeline", tc.pipeline},
-					}
+					explainTarget = append(explainTarget, bson.E{Key: "pipeline", Value: tc.pipeline})
+					explainCompat = append(explainCompat, bson.E{Key: "pipeline", Value: tc.pipeline})
 				}
 
-				explainCommand := bson.D{{"explain", explainParams}}
 				var targetRes, compatRes bson.D
-				targetErr := targetCollection.Database().RunCommand(ctx, explainCommand).Decode(&targetRes)
-				compatErr := compatCollection.Database().RunCommand(ctx, explainCommand).Decode(&compatRes)
+				targetErr := targetCollection.Database().RunCommand(
+					ctx,
+					bson.D{{"explain", explainTarget}},
+				).Decode(&targetRes)
+				compatErr := compatCollection.Database().RunCommand(
+					ctx,
+					bson.D{{"explain", explainCompat}},
+				).Decode(&compatRes)
 
 				if targetErr != nil {
 					t.Logf("Target error: %v", targetErr)
 					t.Logf("Compat error: %v", compatErr)
+
+					// error messages are intentionally not compared
 					AssertMatchesCommandError(t, compatErr, targetErr)
 
 					return
@@ -108,7 +109,6 @@ func testExplainCompatError(t *testing.T, testCases map[string]explainCompatTest
 				assert.Equal(t, compatMap["ok"], targetMap["ok"])
 				assert.Equal(t, compatMap["command"], targetMap["command"])
 
-				// check queryPlanner is set
 				assert.NotEmpty(t, targetMap["queryPlanner"])
 
 				var nonEmptyResults bool
@@ -130,6 +130,8 @@ func testExplainCompatError(t *testing.T, testCases map[string]explainCompatTest
 }
 
 func TestExplainCompatError(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]explainCompatTestCase{
 		"AggregateMissingPipeline": {
 			command: "aggregate",
@@ -144,6 +146,10 @@ func TestExplainCompatError(t *testing.T) {
 		"Find": {
 			command: "find",
 			filter:  bson.D{{"v", int32(42)}},
+		},
+		"InvalidCommandGetLog": {
+			command: "create",
+			skip:    "https://github.com/FerretDB/FerretDB/issues/2704",
 		},
 	}
 

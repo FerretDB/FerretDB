@@ -23,42 +23,46 @@
 package integration
 
 import (
-	"fmt"
 	"testing"
+
+	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 func TestEnvData(t *testing.T) {
-	// Setups one collection for each data set for all backends.
-	t.Run("All", func(t *testing.T) {
-		for _, p := range shareddata.AllProviders() {
-			p := p
-			name := p.Name()
+	t.Parallel()
 
-			t.Run(name, func(t *testing.T) {
-				if !p.IsCompatible("ferretdb-tigris") {
-					setup.SkipForTigrisWithReason(t, fmt.Sprintf("%q is not supported by Tigris", name))
-				}
+	var previousName string
 
-				setup.SetupWithOpts(t, &setup.SetupOpts{
-					DatabaseName:   "test",
-					CollectionName: p.Name(),
-					Providers:      []shareddata.Provider{p},
-				})
+	for _, p := range shareddata.AllProviders() {
+		name := p.Name()
+
+		t.Run(name, func(t *testing.T) {
+			s := setup.SetupWithOpts(t, &setup.SetupOpts{
+				DatabaseName:   "test",
+				CollectionName: name,
+				Providers:      []shareddata.Provider{p},
+				PersistData:    true,
 			})
-		}
-	})
 
-	// Setups old `values` collection with mixed types for all backends except `ferretdb-tigris`.
-	t.Run("Values", func(t *testing.T) {
-		setup.SkipForTigris(t)
+			// envData must persist, other integration tests do not
+			// persist data once the current t.Run() ends, hence check
+			// the collection created by the previous t.Run() persists
+			if previousName != "" {
+				ctx, database := s.Ctx, s.Collection.Database()
+				cursor, err := database.Collection(previousName).Find(ctx, bson.D{})
+				require.NoError(t, err)
 
-		setup.SetupWithOpts(t, &setup.SetupOpts{
-			DatabaseName:   "test",
-			CollectionName: "values",
-			Providers:      []shareddata.Provider{shareddata.Scalars, shareddata.Composites},
+				var res []bson.D
+				err = cursor.All(ctx, &res)
+				require.NoError(t, err)
+				require.NotEmpty(t, res)
+			}
+
+			previousName = name
 		})
-	})
+	}
 }

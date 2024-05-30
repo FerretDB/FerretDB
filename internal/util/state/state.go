@@ -20,9 +20,6 @@ import (
 
 	"github.com/AlekSi/pointer"
 	"github.com/google/uuid"
-
-	"github.com/FerretDB/FerretDB/build/version"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // State represents FerretDB process state.
@@ -30,11 +27,19 @@ type State struct {
 	UUID      string `json:"uuid"`
 	Telemetry *bool  `json:"telemetry,omitempty"` // nil for undecided
 
-	// never persisted
+	// all following fields are never persisted
+
 	TelemetryLocked bool      `json:"-"`
 	Start           time.Time `json:"-"`
-	LatestVersion   string    `json:"-"` // may be empty
-	HandlerVersion  string    `json:"-"` // may be empty
+
+	// may be empty if FerretDB did not connect to the backend yet
+	BackendName    string `json:"-"`
+	BackendVersion string `json:"-"`
+
+	// as reported by beacon, if known
+	LatestVersion   string `json:"-"`
+	UpdateInfo      string `json:"-"`
+	UpdateAvailable bool   `json:"-"`
 }
 
 // TelemetryString returns "enabled", "disabled" or "undecided".
@@ -50,25 +55,25 @@ func (s *State) TelemetryString() string {
 	return "disabled"
 }
 
-// UpdateAvailable returns true if there is a newer version available.
-func (s *State) UpdateAvailable() bool {
-	// if telemetry was enabled and then disabled, then LatestVersion will never be updated
-	if s.Telemetry != nil && !*s.Telemetry {
-		return false
-	}
+// DisableTelemetry disables telemetry.
+//
+// It also resets other telemetry fields to avoid stale values when telemetry is re-enabled.
+func (s *State) DisableTelemetry() {
+	s.Telemetry = pointer.ToBool(false)
+	s.LatestVersion = ""
+	s.UpdateInfo = ""
+	s.UpdateAvailable = false
+}
 
-	// if we don't know yet
-	if s.LatestVersion == "" {
-		return false
-	}
-
-	return s.LatestVersion != version.Get().Version
+// EnableTelemetry enables telemetry.
+func (s *State) EnableTelemetry() {
+	s.Telemetry = pointer.ToBool(true)
 }
 
 // fill replaces all unset or invalid values with default.
 func (s *State) fill() {
 	if _, err := uuid.Parse(s.UUID); err != nil {
-		s.UUID = must.NotFail(uuid.NewRandom()).String()
+		s.UUID = uuid.NewString()
 	}
 
 	if s.Start.IsZero() {
@@ -88,7 +93,10 @@ func (s *State) deepCopy() *State {
 		Telemetry:       telemetry,
 		TelemetryLocked: s.TelemetryLocked,
 		Start:           s.Start,
+		BackendName:     s.BackendName,
+		BackendVersion:  s.BackendVersion,
 		LatestVersion:   s.LatestVersion,
-		HandlerVersion:  s.HandlerVersion,
+		UpdateInfo:      s.UpdateInfo,
+		UpdateAvailable: s.UpdateAvailable,
 	}
 }

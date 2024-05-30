@@ -18,18 +18,44 @@ package testutil
 import (
 	"context"
 	"runtime/trace"
-	"testing"
 
 	"go.opentelemetry.io/otel"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest"
+
+	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 // Ctx returns test context.
-func Ctx(tb testing.TB) context.Context {
+// It is canceled when test is finished or interrupted.
+func Ctx(tb testtb.TB) context.Context {
 	tb.Helper()
 
-	ctx, span := otel.Tracer("").Start(context.Background(), tb.Name())
+	signalsCtx, signalsStop := ctxutil.SigTerm(context.Background())
+
+	testDone := make(chan struct{})
+
+	tb.Cleanup(func() {
+		close(testDone)
+	})
+
+	go func() {
+		select {
+		case <-testDone:
+			signalsStop()
+
+		case <-signalsCtx.Done():
+			// There is a weird interaction between terminal's process group/session signal handling,
+			// Task's signal handling,
+			// and this attempt to handle signals gracefully.
+			// It may cause tests to continue running in the background
+			// while terminal shows command-line prompt already.
+			//
+			// Panic to surely stop tests.
+			panic("Stopping everything")
+		}
+	}()
+
+	ctx, span := otel.Tracer("").Start(signalsCtx, tb.Name())
 	tb.Cleanup(func() {
 		span.End()
 	})
@@ -37,32 +63,5 @@ func Ctx(tb testing.TB) context.Context {
 	ctx, task := trace.NewTask(ctx, tb.Name())
 	tb.Cleanup(task.End)
 
-	ctx, stop := notifyTestsTermination(ctx)
-
-	go func() {
-		<-ctx.Done()
-
-		tb.Log("Stopping...")
-		stop()
-
-		// There is a weird interaction between terminal's process group/session,
-		// Task's signal handling, and this attempt to handle signals gracefully fails miserably.
-		// It may cause tests to continue running in the background
-		// while terminal shows command-line prompt already.
-		//
-		// Panic to surely stop tests.
-		panic("Stopping everything")
-	}()
-
 	return ctx
-}
-
-// Logger returns zap test logger with valid configuration.
-func Logger(tb testing.TB, level zap.AtomicLevel) *zap.Logger {
-	opts := []zaptest.LoggerOption{
-		zaptest.Level(level),
-		zaptest.WrapOptions(zap.AddCaller(), zap.Development()),
-	}
-
-	return zaptest.NewLogger(tb, opts...)
 }
