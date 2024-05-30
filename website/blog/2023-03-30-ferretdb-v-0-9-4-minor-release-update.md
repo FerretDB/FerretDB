@@ -3,7 +3,7 @@ slug: ferretdb-v-0-9-4-minor-release-update
 title: FerretDB v.0.9.4 - Minor Release Update
 authors: [alex]
 description: >
-  We’ve just released FerretDB v0.9.4, which includes essential updates, such as support for the `$pull` array update operator and `$each` modifier, among others.
+  We've just released FerretDB v0.9.4, which includes essential updates, such as support for the `$pull` array update operator and `$each` modifier, among others.
 image: /img/blog/ferretdb-v0.9.4.jpg
 tags: [release]
 ---

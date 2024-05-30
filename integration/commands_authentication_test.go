@@ -17,8 +17,14 @@ package integration
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
@@ -26,67 +32,108 @@ import (
 func TestCommandsAuthenticationLogout(t *testing.T) {
 	t.Parallel()
 
-	ctx, collection := setup.Setup(t)
-	db := collection.Database()
+	s := setup.SetupWithOpts(t, nil)
+	ctx, db := s.Ctx, s.Collection.Database()
 
-	// the test user logs out
+	opts := options.Client().ApplyURI(s.MongoDBURI)
+	client, err := mongo.Connect(ctx, opts)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		require.NoError(t, client.Disconnect(ctx))
+	})
+
+	db = client.Database(db.Name())
+
 	var res bson.D
-	err := db.RunCommand(ctx, bson.D{{"logout", 1}}).Decode(&res)
-	assert.NoError(t, err)
-	assert.Equal(t, bson.D{{"ok", float64(1)}}, res)
+	err = db.RunCommand(ctx, bson.D{{"logout", 1}}).Decode(&res)
+	require.NoError(t, err)
+
+	actual := ConvertDocument(t, res)
+	actual.Remove("$clusterTime")
+	actual.Remove("operationTime")
+
+	expected := ConvertDocument(t, bson.D{{"ok", float64(1)}})
+	testutil.AssertEqual(t, expected, actual)
 
 	// the test user logs out again, it has no effect
 	err = db.RunCommand(ctx, bson.D{{"logout", 1}}).Decode(&res)
-	assert.NoError(t, err)
-	assert.Equal(t, bson.D{{"ok", float64(1)}}, res)
+	require.NoError(t, err)
+
+	actual = ConvertDocument(t, res)
+	actual.Remove("$clusterTime")
+	actual.Remove("operationTime")
+
+	testutil.AssertEqual(t, expected, actual)
 }
 
-func TestCommandsAuthenticationLogoutTLS(t *testing.T) {
+func TestCommandsAuthenticationLogoutAuthenticatedUser(t *testing.T) {
 	t.Parallel()
 
-	setup.SkipForMongoDB(t, "tls is not enabled for mongodb backend")
-	setup.SkipForTigrisWithReason(t, "tls is not enabled for tigris backend")
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{SetupUser: true})
+	ctx, db := s.Ctx, s.Collection.Database()
+	username, password, mechanism := "testuser", "testpass", "SCRAM-SHA-256"
 
-	ctx, collection := setup.Setup(t)
-	db := collection.Database()
+	err := db.RunCommand(ctx, bson.D{
+		{"createUser", username},
+		{"roles", bson.A{}},
+		{"pwd", password},
+		{"mechanisms", bson.A{mechanism}},
+	}).Err()
+	require.NoError(t, err, "cannot create user")
 
-	// the test user is authenticated
-	expectedAuthenticated := bson.D{
-		{
-			"authInfo", bson.D{
-				{"authenticatedUsers", bson.A{bson.D{{"user", "username"}}}},
-				{"authenticatedUserRoles", bson.A{}},
-				{"authenticatedUserPrivileges", bson.A{}},
-			},
-		},
-		{"ok", float64(1)},
+	credential := options.Credential{
+		AuthMechanism: mechanism,
+		AuthSource:    db.Name(),
+		Username:      username,
+		Password:      password,
 	}
+
+	opts := options.Client().ApplyURI(s.MongoDBURI).SetAuth(credential)
+	client, err := mongo.Connect(ctx, opts)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		require.NoError(t, client.Disconnect(ctx))
+	})
+
+	db = client.Database(db.Name())
+
 	var res bson.D
-	err := db.RunCommand(ctx, bson.D{{"connectionStatus", 1}}).Decode(&res)
-	assert.NoError(t, err)
-	assert.Equal(t, expectedAuthenticated, res)
-
-	// the test user logs out
-	err = db.RunCommand(ctx, bson.D{{"logout", 1}}).Decode(&res)
-	assert.NoError(t, err)
-	assert.Equal(t, bson.D{{"ok", float64(1)}}, res)
-
-	// the test user is no longer authenticated
-	expectedUnauthenticated := bson.D{
-		{
-			"authInfo", bson.D{
-				{"authenticatedUsers", bson.A{}},
-				{"authenticatedUserRoles", bson.A{}},
-				{"authenticatedUserPrivileges", bson.A{}},
-			},
-		},
-		{"ok", float64(1)},
-	}
 	err = db.RunCommand(ctx, bson.D{{"connectionStatus", 1}}).Decode(&res)
-	assert.NoError(t, err)
-	assert.Equal(t, expectedUnauthenticated, res)
-}
+	require.NoError(t, err)
 
-func TestCommandsAuthenticationSASLStart(t *testing.T) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/1568
+	actualAuth, err := ConvertDocument(t, res).Get("authInfo")
+	require.NoError(t, err)
+
+	actualUsersV, err := actualAuth.(*types.Document).Get("authenticatedUsers")
+	require.NoError(t, err)
+
+	actualUsers := actualUsersV.(*types.Array)
+	require.Equal(t, 1, actualUsers.Len())
+
+	actualUser := must.NotFail(actualUsers.Get(0)).(*types.Document)
+	user, err := actualUser.Get("user")
+	require.NoError(t, err)
+	require.Equal(t, username, user)
+
+	err = db.RunCommand(ctx, bson.D{{"logout", 1}}).Decode(&res)
+	require.NoError(t, err)
+
+	actual := ConvertDocument(t, res)
+	actual.Remove("$clusterTime")
+	actual.Remove("operationTime")
+
+	expected := ConvertDocument(t, bson.D{{"ok", float64(1)}})
+	testutil.AssertEqual(t, expected, actual)
+
+	err = db.RunCommand(ctx, bson.D{{"connectionStatus", 1}}).Decode(&res)
+	require.NoError(t, err)
+
+	actualAuth, err = ConvertDocument(t, res).Get("authInfo")
+	require.NoError(t, err)
+
+	actualUsersV, err = actualAuth.(*types.Document).Get("authenticatedUsers")
+	require.NoError(t, err)
+	require.Empty(t, actualUsersV)
 }
