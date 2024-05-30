@@ -22,7 +22,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
+
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
@@ -37,7 +38,6 @@ type countCompatTestCase struct {
 	optSkip any   // optional, skip option for the query, defaults to nil
 	limit   int64 // optional, limit option for the query, defaults to 0
 
-	altMessage string                   // optional, alternative error message to use in the assertion
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
 }
 
@@ -46,7 +46,9 @@ func testCountCompat(t *testing.T, testCases map[string]countCompatTestCase) {
 	t.Helper()
 
 	// Use shared setup because find queries can't modify data.
-	// TODO Use read-only user. https://github.com/FerretDB/FerretDB/issues/1025
+	//
+	// Use read-only user.
+	// TODO https://github.com/FerretDB/FerretDB/issues/1025
 	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
 		Providers:                shareddata.AllProviders(),
 		AddNonExistentCollection: true,
@@ -88,17 +90,10 @@ func testCountCompat(t *testing.T, testCases map[string]countCompatTestCase) {
 
 					if targetErr != nil {
 						t.Logf("Target error: %v", targetErr)
-						targetErr = UnsetRaw(t, targetErr)
-						compatErr = UnsetRaw(t, compatErr)
+						t.Logf("Compat error: %v", compatErr)
 
-						// TODO https://github.com/FerretDB/FerretDB/issues/2545
-						if tc.altMessage != "" {
-							var expectedErr mongo.CommandError
-							require.ErrorAs(t, compatErr, &expectedErr)
-							AssertEqualAltError(t, expectedErr, tc.altMessage, targetErr)
-						} else {
-							assert.Equal(t, compatErr, targetErr)
-						}
+						// error messages are intentionally not compared
+						AssertMatchesCommandError(t, compatErr, targetErr)
 
 						return
 					}
@@ -106,7 +101,13 @@ func testCountCompat(t *testing.T, testCases map[string]countCompatTestCase) {
 
 					t.Logf("Compat (expected) result: %v", compatRes)
 					t.Logf("Target (actual)   result: %v", targetRes)
-					assert.Equal(t, compatRes, targetRes)
+
+					compatDoc := ConvertDocument(t, compatRes)
+					compatDoc.Remove("$clusterTime")
+					compatDoc.Remove("operationTime")
+
+					targetDoc := ConvertDocument(t, targetRes)
+					testutil.AssertEqual(t, compatDoc, targetDoc)
 
 					if targetRes != nil || compatRes != nil {
 						nonEmptyResults = true
@@ -223,7 +224,6 @@ func TestCountCompat(t *testing.T) {
 			filter:     bson.D{},
 			optSkip:    "foo",
 			resultType: emptyResult,
-			altMessage: `BSON field 'count.skip' is the wrong type 'string', expected types '[long, int, decimal, double]'`,
 		},
 	}
 

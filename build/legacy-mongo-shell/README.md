@@ -52,7 +52,7 @@ true
 >
 ```
 
- The `find()` method will return an object, the properties of which will not be parsed by the various assert functions:
+The `find()` method will return an object, the properties of which will not be parsed by the various assert functions:
 
 ```js
 > const res = db.foo.find({a: 1});

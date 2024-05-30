@@ -16,6 +16,8 @@ package integration
 
 import (
 	"net"
+	"net/url"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,11 +26,13 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/teststress"
+
+	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 func TestCommandsDiagnosticConnectionStatus(t *testing.T) {
@@ -83,7 +87,9 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 			explainResult := actual.Map()
 
 			assert.Equal(t, float64(1), explainResult["ok"])
-			assert.Equal(t, "1", explainResult["explainVersion"])
+
+			// explainVersion 1 and 2 are in use for different methods on Mongo 7
+			assert.True(t, explainResult["explainVersion"] == "1" || explainResult["explainVersion"] == "2")
 			assert.Equal(t, tc.command, explainResult["command"])
 
 			serverInfo := ConvertDocument(t, explainResult["serverInfo"].(bson.D))
@@ -108,7 +114,7 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 			assert.NotEmpty(t, host)
 
 			assert.NotEmpty(t, gitVersion)
-			assert.Regexp(t, `^6\.0\.`, version)
+			assert.Regexp(t, `^7\.0\.`, version)
 
 			assert.NotEmpty(t, explainResult["queryPlanner"])
 			assert.IsType(t, bson.D{}, explainResult["queryPlanner"])
@@ -125,10 +131,12 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 	ctx, collection := res.Ctx, res.Collection
 
 	for name, tc := range map[string]struct {
-		command  bson.D
-		expected map[string]any
-		err      *mongo.CommandError
-		alt      string
+		command bson.D // required, command to run
+
+		expected   map[string]any      // optional, expected keys of response
+		err        *mongo.CommandError // optional, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"Asterisk": {
 			command: bson.D{{"getLog", "*"}},
@@ -160,7 +168,7 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 				Name:    "OperationFailed",
 				Message: `No log named 'nonExistentName'`,
 			},
-			alt: `no RecentEntries named: nonExistentName`,
+			altMessage: `no RecentEntries named: nonExistentName`,
 		},
 		"Nil": {
 			command: bson.D{{"getLog", nil}},
@@ -181,18 +189,27 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
 			t.Parallel()
 
-			var actual bson.D
-			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
-			if err != nil {
-				AssertEqualAltError(t, *tc.err, tc.alt, err)
+			require.NotNil(t, tc.command, "command must not be nil")
+
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, tc.command).Decode(&res)
+			if tc.err != nil {
+				assert.Nil(t, res)
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+
 				return
 			}
+
 			require.NoError(t, err)
 
-			m := actual.Map()
-			k := CollectKeys(t, actual)
+			m := res.Map()
+			k := CollectKeys(t, res)
 
 			for key, item := range tc.expected {
 				assert.Contains(t, k, key)
@@ -208,21 +225,24 @@ func TestCommandsDiagnosticHostInfo(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
-	var actual bson.D
-	err := collection.Database().RunCommand(ctx, bson.D{{"hostInfo", 42}}).Decode(&actual)
+	var a bson.D
+	err := collection.Database().RunCommand(ctx, bson.D{{"hostInfo", 42}}).Decode(&a)
 	require.NoError(t, err)
 
-	m := actual.Map()
-	t.Log(m)
+	actual := ConvertDocument(t, a)
+	assert.Equal(t, float64(1), must.NotFail(actual.Get("ok")))
 
-	assert.Equal(t, float64(1), m["ok"])
-	assert.Equal(t, []string{"system", "os", "extra", "ok"}, CollectKeys(t, actual))
+	keys := actual.Keys()
+	keys = slices.DeleteFunc(keys, func(val string) bool {
+		return val == "$clusterTime" || val == "operationTime"
+	})
+	assert.Equal(t, []string{"system", "os", "extra", "ok"}, keys)
 
-	os := m["os"].(bson.D)
-	assert.Equal(t, []string{"type", "name", "version"}, CollectKeys(t, os))
+	os := must.NotFail(actual.Get("os")).(*types.Document)
+	assert.Equal(t, []string{"type", "name", "version"}, os.Keys())
 
-	system := m["system"].(bson.D)
-	keys := CollectKeys(t, system)
+	system := must.NotFail(actual.Get("system")).(*types.Document)
+	keys = system.Keys()
 	assert.Contains(t, keys, "currentTime")
 	assert.Contains(t, keys, "hostname")
 	assert.Contains(t, keys, "cpuAddrSize")
@@ -234,57 +254,149 @@ func TestCommandsDiagnosticListCommands(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
-	var actual bson.D
-	err := collection.Database().RunCommand(ctx, bson.D{{"listCommands", 42}}).Decode(&actual)
+	var a bson.D
+	err := collection.Database().RunCommand(ctx, bson.D{{"listCommands", 42}}).Decode(&a)
 	require.NoError(t, err)
 
-	m := actual.Map()
-	t.Log(m)
+	actual := ConvertDocument(t, a)
+	assert.Equal(t, float64(1), must.NotFail(actual.Get("ok")))
 
-	assert.Equal(t, float64(1), m["ok"])
-	assert.Equal(t, []string{"commands", "ok"}, CollectKeys(t, actual))
+	keys := actual.Keys()
+	keys = slices.DeleteFunc(keys, func(val string) bool {
+		return val == "$clusterTime" || val == "operationTime"
+	})
+	assert.Equal(t, []string{"commands", "ok"}, keys)
 
-	commands := m["commands"].(bson.D)
-	listCommands := commands.Map()["listCommands"].(bson.D)
-	assert.NotEmpty(t, listCommands.Map()["help"].(string))
+	commands := must.NotFail(actual.Get("commands")).(*types.Document)
+	listCommands := must.NotFail(commands.Get("listCommands")).(*types.Document)
+	assert.NotEmpty(t, must.NotFail(listCommands.Get("help")).(string))
 }
 
 func TestCommandsDiagnosticValidate(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup.Setup(t, shareddata.Doubles)
 
-	var doc bson.D
-	err := collection.Database().RunCommand(ctx, bson.D{{"validate", collection.Name()}}).Decode(&doc)
-	require.NoError(t, err)
+	t.Run("Basic", func(t *testing.T) {
+		t.Parallel()
 
-	t.Log(doc.Map())
+		ctx, collection := setup.Setup(t, shareddata.Doubles)
 
-	actual := ConvertDocument(t, doc)
-	expected := must.NotFail(types.NewDocument(
-		"ns", "TestCommandsDiagnosticValidate.TestCommandsDiagnosticValidate",
-		"nInvalidDocuments", int32(0),
-		"nNonCompliantDocuments", int32(0),
-		"nrecords", int32(0), // replaced below
-		"nIndexes", int32(1),
-		"valid", true,
-		"repaired", false,
-		"warnings", types.MakeArray(0),
-		"errors", types.MakeArray(0),
-		"extraIndexEntries", types.MakeArray(0),
-		"missingIndexEntries", types.MakeArray(0),
-		"corruptRecords", types.MakeArray(0),
-		"ok", float64(1),
-	))
+		var doc bson.D
+		command := bson.D{{"validate", collection.Name()}}
+		err := collection.Database().RunCommand(ctx, command).Decode(&doc)
+		require.NoError(t, err)
 
-	actual.Remove("keysPerIndex")
-	actual.Remove("indexDetails")
-	testutil.CompareAndSetByPathNum(t, expected, actual, 39, types.NewStaticPath("nrecords"))
-	testutil.AssertEqual(t, expected, actual)
+		actual := ConvertDocument(t, doc)
+		expected := must.NotFail(types.NewDocument(
+			"ns", "TestCommandsDiagnosticValidate-Basic.TestCommandsDiagnosticValidate-Basic",
+			"nInvalidDocuments", int32(0),
+			"nNonCompliantDocuments", int32(0),
+			"nrecords", int32(25),
+			"nIndexes", int32(1),
+			"valid", true,
+			"repaired", false,
+			"warnings", types.MakeArray(0),
+			"errors", types.MakeArray(0),
+			"extraIndexEntries", types.MakeArray(0),
+			"missingIndexEntries", types.MakeArray(0),
+			"corruptRecords", types.MakeArray(0),
+			"ok", float64(1),
+		))
+
+		// TODO https://github.com/FerretDB/FerretDB/issues/3841
+		actual.Remove("uuid")
+		actual.Remove("keysPerIndex")
+		actual.Remove("indexDetails")
+		actual.Remove("$clusterTime")
+		actual.Remove("operationTime")
+
+		testutil.AssertEqual(t, expected, actual)
+	})
+
+	t.Run("TwoIndexes", func(t *testing.T) {
+		t.Parallel()
+
+		ctx, collection := setup.Setup(t, shareddata.Doubles)
+
+		_, err := collection.Indexes().CreateOne(ctx, mongo.IndexModel{Keys: bson.D{{"a", 1}}})
+		require.NoError(t, err)
+
+		var doc bson.D
+		command := bson.D{{"validate", collection.Name()}}
+		err = collection.Database().RunCommand(ctx, command).Decode(&doc)
+		require.NoError(t, err)
+
+		actual := ConvertDocument(t, doc)
+		expected := must.NotFail(types.NewDocument(
+			"ns", "TestCommandsDiagnosticValidate-TwoIndexes.TestCommandsDiagnosticValidate-TwoIndexes",
+			"nInvalidDocuments", int32(0),
+			"nNonCompliantDocuments", int32(0),
+			"nrecords", int32(25),
+			"nIndexes", int32(2),
+			"valid", true,
+			"repaired", false,
+			"warnings", types.MakeArray(0),
+			"errors", types.MakeArray(0),
+			"extraIndexEntries", types.MakeArray(0),
+			"missingIndexEntries", types.MakeArray(0),
+			"corruptRecords", types.MakeArray(0),
+			"ok", float64(1),
+		))
+
+		actual.Remove("uuid")
+		actual.Remove("keysPerIndex")
+		actual.Remove("indexDetails")
+		actual.Remove("$clusterTime")
+		actual.Remove("operationTime")
+
+		testutil.AssertEqual(t, expected, actual)
+	})
+}
+
+func TestCommandsDiagnosticValidateError(t *testing.T) {
+	t.Skip("https://github.com/FerretDB/FerretDB/issues/2704")
+
+	t.Parallel()
+
+	for name, tc := range map[string]struct { //nolint:vet // for readability
+		command bson.D
+		err     *mongo.CommandError
+	}{
+		"InvalidTypeDocument": {
+			command: bson.D{{"validate", bson.D{}}},
+			err: &mongo.CommandError{
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "collection name has invalid type object",
+			},
+		},
+		"NonExistentCollection": {
+			command: bson.D{{"validate", "nonExistentCollection"}},
+			err: &mongo.CommandError{
+				Code:    26,
+				Name:    "NamespaceNotFound",
+				Message: "Collection 'TestCommandsDiagnosticValidateError-NonExistentCollection.nonExistentCollection' does not exist to validate.",
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			require.NotNil(t, tc.command, "command must not be nil")
+			require.NotNil(t, tc.err, "err must not be nil")
+
+			ctx, collection := setup.Setup(t, shareddata.Doubles)
+
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, tc.command).Decode(res)
+
+			assert.Nil(t, res)
+			AssertEqualCommandError(t, *tc.err, err)
+		})
+	}
 }
 
 func TestCommandsDiagnosticWhatsMyURI(t *testing.T) {
-	t.Skip("https://github.com/FerretDB/FerretDB/issues/1759")
-
 	t.Parallel()
 
 	s := setup.SetupWithOpts(t, nil)
@@ -292,7 +404,7 @@ func TestCommandsDiagnosticWhatsMyURI(t *testing.T) {
 	databaseName := s.Collection.Database().Name()
 	collectionName := s.Collection.Name()
 
-	// only check port number on TCP connection, no need to check on Unix socket
+	// only check port number on TCP connection, no need to check on Unix domain socket
 	isUnix := s.IsUnixSocket(t)
 
 	// setup second client connection to check that `whatsmyuri` returns different ports
@@ -342,4 +454,102 @@ func TestCommandsDiagnosticWhatsMyURI(t *testing.T) {
 		require.Equal(t, 2, len(ports))
 		assert.NotEqual(t, ports[0], ports[1])
 	}
+}
+
+// TestCommandWhatsMyURIConnection tests that integration test setup applies
+// minPoolSize, maxPoolSize and maxIdleTimeMS correctly to the driver.
+// It also tests that the driver behaves like we think it should.
+func TestCommandWhatsMyURIConnection(t *testing.T) {
+	t.Parallel()
+
+	// options are applied to create a client that uses single connection pool
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{
+		ExtraOptions: url.Values{
+			"minPoolSize":   []string{"1"},
+			"maxPoolSize":   []string{"1"},
+			"maxIdleTimeMS": []string{"0"},
+		},
+	})
+
+	collection1 := s.Collection
+	databaseName := s.Collection.Database().Name()
+	collectionName := s.Collection.Name()
+
+	t.Run("SameClientStress", func(t *testing.T) {
+		t.Parallel()
+
+		ports := make(chan string, 10)
+
+		teststress.StressN(t, len(ports), func(ready chan<- struct{}, start <-chan struct{}) {
+			ready <- struct{}{}
+			<-start
+
+			var res bson.D
+			err := collection1.Database().RunCommand(s.Ctx, bson.D{{"whatsmyuri", int32(1)}}).Decode(&res)
+			require.NoError(t, err)
+
+			doc := ConvertDocument(t, res)
+			v, _ := doc.Get("ok")
+			resOk, ok := v.(float64)
+			require.True(t, ok)
+			assert.Equal(t, float64(1), resOk)
+
+			v, _ = doc.Get("you")
+			you, ok := v.(string)
+			require.True(t, ok)
+
+			_, port, err := net.SplitHostPort(you)
+			require.NoError(t, err)
+			assert.NotEmpty(t, port)
+			ports <- port
+		})
+
+		close(ports)
+
+		firstPort := <-ports
+		for port := range ports {
+			require.Equal(t, firstPort, port, "expected same client to use the same port")
+		}
+	})
+
+	t.Run("DifferentClient", func(t *testing.T) {
+		t.Parallel()
+
+		u, err := url.Parse(s.MongoDBURI)
+		require.NoError(t, err)
+
+		client2, err := mongo.Connect(s.Ctx, options.Client().ApplyURI(u.String()))
+		require.NoError(t, err)
+
+		defer client2.Disconnect(s.Ctx)
+
+		collection2 := client2.Database(databaseName).Collection(collectionName)
+
+		var ports []string
+
+		for _, collection := range []*mongo.Collection{collection1, collection2} {
+			var res bson.D
+			err := collection.Database().RunCommand(s.Ctx, bson.D{{"whatsmyuri", int32(1)}}).Decode(&res)
+			require.NoError(t, err)
+
+			doc := ConvertDocument(t, res)
+			v, _ := doc.Get("ok")
+			resOk, ok := v.(float64)
+			require.True(t, ok)
+			assert.Equal(t, float64(1), resOk)
+
+			v, _ = doc.Get("you")
+			you, ok := v.(string)
+			require.True(t, ok)
+
+			_, port, err := net.SplitHostPort(you)
+			require.NoError(t, err)
+			assert.NotEmpty(t, port)
+
+			ports = append(ports, port)
+		}
+
+		require.Equal(t, 2, len(ports))
+		assert.NotEqual(t, ports[0], ports[1])
+	})
 }

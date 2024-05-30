@@ -27,7 +27,6 @@ func ForSlice[V any](s []V) Interface[int, V] {
 		s:     s,
 		token: resource.NewToken(),
 	}
-
 	resource.Track(res, res.token)
 
 	return res
@@ -72,6 +71,5 @@ func (iter *sliceIterator[V]) Close() {
 // check interfaces
 var (
 	_ Interface[int, any] = (*sliceIterator[any])(nil)
-	_ NextFunc[int, any]  = (*sliceIterator[any])(nil).Next
 	_ Closer              = (*sliceIterator[any])(nil)
 )

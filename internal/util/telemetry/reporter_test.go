@@ -15,7 +15,7 @@
 package telemetry
 
 import (
-	"fmt"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -72,7 +72,7 @@ func TestNewReporterLock(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			provider, err := state.NewProvider("")
+			sp, err := state.NewProvider("")
 			require.NoError(t, err)
 
 			opts := NewReporterOpts{
@@ -80,89 +80,148 @@ func TestNewReporterLock(t *testing.T) {
 				DNT:         tc.dnt,
 				ExecName:    tc.execName,
 				ConnMetrics: connmetrics.NewListenerMetrics().ConnMetrics,
-				P:           provider,
+				P:           sp,
 				L:           zap.L(),
 			}
 
 			_, err = NewReporter(&opts)
 			assert.NoError(t, err)
 
-			s := provider.Get()
+			s := sp.Get()
 			assert.Equal(t, tc.t, s.Telemetry)
 			assert.Equal(t, tc.locked, s.TelemetryLocked)
 		})
 	}
 }
 
+// beaconServer returns a httptest.Server that emulates beacon server.
+func beaconServer(t *testing.T, calls *int, res *response) *httptest.Server {
+	t.Helper()
+
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		*calls++
+
+		w.WriteHeader(http.StatusCreated)
+		require.NoError(t, json.NewEncoder(w).Encode(res))
+	}))
+
+	t.Cleanup(s.Close)
+
+	return s
+}
+
 func TestReporterReport(t *testing.T) {
 	t.Parallel()
 
-	for name, tc := range map[string]struct {
-		f                *Flag
-		telemetryReponse string
-		latestVersion    string
-		updateAvailable  bool
-	}{
-		"UpdateAvailable": {
-			f:                &Flag{v: pointer.ToBool(true)},
-			telemetryReponse: `{"update_available": true, "latest_version": "0.3.4"}`,
-			latestVersion:    "0.3.4",
-			updateAvailable:  true,
-		},
-		"UpdateUnavailable": {
-			f:                &Flag{v: pointer.ToBool(true)},
-			telemetryReponse: `{"update_available": false, "latest_version": "0.3.4"}`,
-			latestVersion:    "",
-			updateAvailable:  false,
-		},
-		"TelemetryDisabled": {
-			f:               &Flag{v: pointer.ToBool(false)},
-			latestVersion:   "",
-			updateAvailable: false,
-		},
-	} {
-		name, tc := name, tc
+	t.Run("TelemetryEnabled", func(t *testing.T) {
+		t.Parallel()
 
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
+		var serverCalled int
+		telemetryResponse := response{
+			LatestVersion:   "v1.2.1",
+			UpdateAvailable: true,
+		}
+		bs := beaconServer(t, &serverCalled, &telemetryResponse)
 
-			// use httptest.NewServer to mock telemetry response for http POST.
-			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				if r.Method == http.MethodPost {
-					w.WriteHeader(http.StatusCreated)
-					fmt.Fprintln(w, tc.telemetryReponse)
-				}
-			}))
-			defer ts.Close()
+		sp, err := state.NewProvider("")
+		require.NoError(t, err)
 
-			provider, err := state.NewProvider("")
-			require.NoError(t, err)
+		opts := NewReporterOpts{
+			URL:           bs.URL,
+			F:             &Flag{v: pointer.ToBool(true)},
+			ConnMetrics:   connmetrics.NewListenerMetrics().ConnMetrics,
+			P:             sp,
+			L:             zap.L(),
+			ReportTimeout: 1 * time.Minute,
+		}
 
-			opts := NewReporterOpts{
-				URL:           ts.URL,
-				F:             tc.f,
-				ConnMetrics:   connmetrics.NewListenerMetrics().ConnMetrics,
-				P:             provider,
-				L:             zap.L(),
-				ReportTimeout: 1 * time.Minute,
-			}
+		r, err := NewReporter(&opts)
+		require.NoError(t, err)
 
-			r, err := NewReporter(&opts)
-			assert.NoError(t, err)
+		s := r.P.Get()
+		assert.False(t, s.UpdateAvailable)
+		assert.Empty(t, s.LatestVersion)
 
-			// check initial state of provider, it has not called telemetry yet,
-			// no update is available and unaware of the latest version.
-			s := r.P.Get()
-			require.False(t, s.UpdateAvailable())
-			require.Equal(t, "", s.LatestVersion)
+		r.report(testutil.Ctx(t))
+		assert.Equal(t, 1, serverCalled)
 
-			// call report to update the state of provider from telemetry.
-			r.report(testutil.Ctx(t))
+		s = r.P.Get()
+		assert.True(t, s.UpdateAvailable)
+		assert.Equal(t, "v1.2.1", s.LatestVersion)
 
-			// get updated the state of provider.
-			s = r.P.Get()
-			require.Equal(t, tc.updateAvailable, s.UpdateAvailable())
-			require.Equal(t, tc.latestVersion, s.LatestVersion)
-		})
-	}
+		telemetryResponse.UpdateAvailable = false
+
+		r.report(testutil.Ctx(t))
+		assert.Equal(t, 2, serverCalled)
+
+		s = r.P.Get()
+		assert.False(t, s.UpdateAvailable)
+		assert.Equal(t, "v1.2.1", s.LatestVersion)
+
+		telemetryResponse.UpdateAvailable = true
+		telemetryResponse.LatestVersion = "v1.2.0"
+
+		r.report(testutil.Ctx(t))
+		assert.Equal(t, 3, serverCalled)
+
+		s = r.P.Get()
+		assert.True(t, s.UpdateAvailable)
+		assert.Equal(t, "v1.2.0", s.LatestVersion)
+
+		require.NoError(t, sp.Update(func(s *state.State) { s.DisableTelemetry() }))
+
+		r.report(testutil.Ctx(t))
+		assert.Equal(t, 3, serverCalled)
+
+		s = r.P.Get()
+		assert.False(t, s.UpdateAvailable)
+		assert.Empty(t, s.LatestVersion)
+
+		require.NoError(t, sp.Update(func(s *state.State) { s.EnableTelemetry() }))
+		telemetryResponse.LatestVersion = "v1.2.2"
+
+		r.report(testutil.Ctx(t))
+		assert.Equal(t, 4, serverCalled)
+
+		s = r.P.Get()
+		assert.True(t, s.UpdateAvailable)
+		assert.Equal(t, "v1.2.2", s.LatestVersion)
+	})
+
+	t.Run("TelemetryDisabled", func(t *testing.T) {
+		t.Parallel()
+
+		var serverCalled int
+		telemetryResponse := response{
+			LatestVersion:   "v1.2.1",
+			UpdateAvailable: true,
+		}
+		bs := beaconServer(t, &serverCalled, &telemetryResponse)
+
+		sp, err := state.NewProvider("")
+		require.NoError(t, err)
+
+		opts := NewReporterOpts{
+			URL:           bs.URL,
+			F:             &Flag{v: pointer.ToBool(false)},
+			ConnMetrics:   connmetrics.NewListenerMetrics().ConnMetrics,
+			P:             sp,
+			L:             zap.L(),
+			ReportTimeout: 1 * time.Minute,
+		}
+
+		r, err := NewReporter(&opts)
+		require.NoError(t, err)
+
+		s := r.P.Get()
+		assert.False(t, s.UpdateAvailable)
+		assert.Empty(t, s.LatestVersion)
+
+		r.report(testutil.Ctx(t))
+		assert.Equal(t, 0, serverCalled)
+
+		s = r.P.Get()
+		assert.False(t, s.UpdateAvailable)
+		assert.Empty(t, s.LatestVersion)
+	})
 }

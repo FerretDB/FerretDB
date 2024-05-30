@@ -1,6 +1,6 @@
 ---
 slug: ferretdb-v-0-9-3-improved-aggregation-pipeline-support
-title: "FerretDB v.0.9.3 - Improved Aggregation Pipeline Support"
+title: FerretDB v.0.9.3 - Improved Aggregation Pipeline Support
 authors: [alex]
 description: >
   We are thrilled to announce the release of FerretDB v.0.9.3, which includes exciting new features and improvements, and we can't wait for you to try it out
@@ -24,17 +24,17 @@ Special appreciation goes to our two new contributors, [@lucboj](https://github.
 Thank you for your continued support.
 Your work is greatly appreciated!
 
-So, without further ado, let’s find out the latest changes to this new version and what you can achieve with them.
+So, without further ado, let's find out the latest changes to this new version and what you can achieve with them.
 
 ## New Features
 
-In FerretDB v0.9.3, we’ve enabled the automatic creation of unique `_id` values for each document inserted into a collection.
-This new feature ensures that you don’t have duplicate `_id` values in the collection, preventing errors that could lead to the same `_id` values being accidentally inserted twice.
+In FerretDB v0.9.3, we've enabled the automatic creation of unique `_id` values for each document inserted into a collection.
+This new feature ensures that you don't have duplicate `_id` values in the collection, preventing errors that could lead to the same `_id` values being accidentally inserted twice.
 
-In recent releases, we’ve worked on improving our support for aggregation pipeline stages and pushed more queries to the backend.
+In recent releases, we've worked on improving our support for aggregation pipeline stages and pushed more queries to the backend.
 FerretDB v0.9.3 improves on this, adding more stages and pushing down more queries, ensuring significantly better database performance.
 
-For instance, we’ve implemented `$sort` and `$group` aggregation pipeline stages.
+For instance, we've implemented `$sort` and `$group` aggregation pipeline stages.
 Suppose you have a collection named `order` that contains the following documents:
 
 ```js
@@ -62,9 +62,7 @@ We can use the `$sort` aggregation pipeline stage to sort the documents in ascen
 For example, to sort the documents in descending order based on the `order_total` field, set the value to `-1`:
 
 ```js
-db.orders.aggregate([
-    { $sort: { order_total: -1 } }
-])
+db.orders.aggregate([{ $sort: { order_total: -1 } }])
 ```
 
 This will return the documents, sorted in descending order based on the `order_total` field.
@@ -74,12 +72,12 @@ For example, the following query groups and counts the total number of documents
 
 ```js
 db.orders.aggregate([
-    {
-        $group: {
-            _id: null,
-            count: { $count: {} }
-        }
+  {
+    $group: {
+      _id: null,
+      count: { $count: {} }
     }
+  }
 ])
 ```
 
@@ -89,28 +87,28 @@ As part of our mission to effectively enable more backends to run MongoDB worklo
 
 FerretDB v.0.9.3 has had several enhancements and bug fixes since the last release, indicating our commitment to building a reliable document database for our users.
 
-We’ve fixed dot notation errors for `$max`, `$min`, and `$mul` update operators.
+We've fixed dot notation errors for `$max`, `$min`, and `$mul` update operators.
 Previously, they were causing issues by failing to return errors when attempting to update paths that were not valid.
 The fixes now ensure that update operation will return an error when attempting to update an invalid path.
 
-We’ve also addressed issues with querying an embedded field in an array, especially with the `$pullAll` operator, which was preventing it from removing all instances from an array.
+We've also addressed issues with querying an embedded field in an array, especially with the `$pullAll` operator, which was preventing it from removing all instances from an array.
 One of our contributors [@yu-re-ka](https://github.com/yu-re-ka) helped fixed `saslStart` for particular clients, which should help improve compatibility with [FastNetMon](https://fastnetmon.com/).
 
 ## Other Changes
 
-As part of the changes in this release, we’ve relaxed validation rules to enable the use of collection names that start with `_` and field names with `$` characters.
-We’ve also allowed pushdown for boolean, date values, and empty strings to the backend.
+As part of the changes in this release, we've relaxed validation rules to enable the use of collection names that start with `_` and field names with `$` characters.
+We've also allowed pushdown for boolean, date values, and empty strings to the backend.
 Thanks to the efforts of [@lucboj](https://github.com/lucboj) in [this issue](https://github.com/FerretDB/FerretDB/pull/2071), we now have an initial setup for HANA handler, which should enable FerretDB to support [SAP HANA](https://www.sap.com/products/technology-platform/hana.html).
 
-We’ve improved our documentation to document how telemetry sharing works explicitly.
-We’ve also updated our supported commands page to reflect all the latest updates and features to FerretDB.
+We've improved our documentation to document how telemetry sharing works explicitly.
+We've also updated our supported commands page to reflect all the latest updates and features to FerretDB.
 See [here for more information](https://docs.ferretdb.io/reference/supported-commands/) about all the supported commands in FerretDB.
 
 Please read our release note for a [complete list of changes in this release](https://github.com/FerretDB/FerretDB/releases/tag/v0.9.3).
 
 ## Looking Ahead: Beyond FerretDB v.0.9.3
 
-We’re getting closer to the release of FerretDB GA, seeing more usages with real-world applications and companies taking advantage of FerretDB's existing capabilities for their projects and applications.
+We're getting closer to the release of FerretDB GA, seeing more usages with real-world applications and companies taking advantage of FerretDB's existing capabilities for their projects and applications.
 This is fantastic news for us and represents a significant stride in our mission to provide a standard and reliable document database to our users.
 
 Once again, we thank everyone that has been a part of our story, and we look forward to your many contributions, feedback, and enthusiastic support.

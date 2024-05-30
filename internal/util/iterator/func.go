@@ -24,7 +24,7 @@ import (
 // NextFunc is a part of Interface for the Next method.
 type NextFunc[K, V any] func() (K, V, error)
 
-// valuesIterator implements iterator.Interface.
+// funcIterator implements iterator.Interface.
 //
 //nolint:vet // for readability
 type funcIterator[K, V any] struct {
@@ -36,11 +36,14 @@ type funcIterator[K, V any] struct {
 
 // ForFunc returns an iterator for the given function.
 func ForFunc[K, V any](f NextFunc[K, V]) Interface[K, V] {
+	if f == nil {
+		panic("f is nil")
+	}
+
 	iter := &funcIterator[K, V]{
 		f:     f,
 		token: resource.NewToken(),
 	}
-
 	resource.Track(iter, iter.token)
 
 	return iter
@@ -55,7 +58,7 @@ func (iter *funcIterator[K, V]) Next() (K, V, error) {
 		var k K
 		var v V
 
-		return k, v, fmt.Errorf("%w (f is nil)", ErrIteratorDone)
+		return k, v, fmt.Errorf("%w (f is set to nil)", ErrIteratorDone)
 	}
 
 	return iter.f()
@@ -74,6 +77,5 @@ func (iter *funcIterator[K, V]) Close() {
 // check interfaces
 var (
 	_ Interface[any, any] = (*funcIterator[any, any])(nil)
-	_ NextFunc[any, any]  = (*funcIterator[any, any])(nil).Next
 	_ Closer              = (*funcIterator[any, any])(nil)
 )

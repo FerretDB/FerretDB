@@ -46,7 +46,9 @@ type request struct {
 	OS               string         `json:"os"`
 	Arch             string         `json:"arch"`
 
-	HandlerVersion string `json:"handler_version"` // PostgreSQL, Tigris, etc version
+	// keep old JSON tags for compatibility
+	BackendName    string `json:"handler"`
+	BackendVersion string `json:"handler_version"`
 
 	UUID   string        `json:"uuid"`
 	Uptime time.Duration `json:"uptime"`
@@ -62,6 +64,7 @@ type request struct {
 // response represents telemetry response.
 type response struct {
 	LatestVersion   string `json:"latest_version"`
+	UpdateInfo      string `json:"update_info"`
 	UpdateAvailable bool   `json:"update_available"`
 }
 
@@ -115,7 +118,7 @@ func (r *Reporter) Run(ctx context.Context) {
 
 	r.firstReportDelay(ctx, ch)
 
-	for ctx.Err() == nil {
+	for context.Cause(ctx) == nil {
 		r.report(ctx)
 
 		ctxutil.Sleep(ctx, r.ReportInterval)
@@ -140,7 +143,7 @@ func (r *Reporter) firstReportDelay(ctx context.Context, ch <-chan struct{}) {
 
 	msg := fmt.Sprintf(
 		"The telemetry state is undecided; the first report will be sent in %s. "+
-			"Read more about FerretDB telemetry and how to opt out at https://beacon.ferretdb.io.",
+			"Read more about FerretDB telemetry and how to opt out at https://beacon.ferretdb.com.",
 		r.UndecidedDelay,
 	)
 	r.L.Info(msg)
@@ -225,7 +228,8 @@ func makeRequest(s *state.State, m *connmetrics.ConnMetrics) *request {
 		OS:               runtime.GOOS,
 		Arch:             runtime.GOARCH,
 
-		HandlerVersion: s.HandlerVersion,
+		BackendName:    s.BackendName,
+		BackendVersion: s.BackendVersion,
 
 		UUID:   s.UUID,
 		Uptime: time.Since(s.Start),
@@ -239,8 +243,10 @@ func makeRequest(s *state.State, m *connmetrics.ConnMetrics) *request {
 // with update available and latest version if any update is available.
 func (r *Reporter) report(ctx context.Context) {
 	s := r.P.Get()
+
 	if s.Telemetry != nil && !*s.Telemetry {
 		r.L.Debug("Telemetry is disabled, skipping reporting.")
+
 		return
 	}
 
@@ -282,26 +288,23 @@ func (r *Reporter) report(ctx context.Context) {
 		return
 	}
 
-	if response.LatestVersion == "" {
-		r.L.Debug("No latest version in telemetry response.")
-		return
-	}
+	r.L.Debug("Read telemetry response.", zap.Any("response", response))
 
-	if !response.UpdateAvailable {
-		return
+	if response.UpdateInfo != "" || response.UpdateAvailable {
+		msg := response.UpdateInfo
+		if msg == "" {
+			msg = "A new version available!"
+		}
+
+		r.L.Info(msg, zap.String("current_version", request.Version), zap.String("latest_version", response.LatestVersion))
 	}
 
 	if err = r.P.Update(func(s *state.State) {
 		s.LatestVersion = response.LatestVersion
-		s.IsUpdateAvailable = response.UpdateAvailable
+		s.UpdateInfo = response.UpdateInfo
+		s.UpdateAvailable = response.UpdateAvailable
 	}); err != nil {
 		r.L.Error("Failed to update state with latest version.", zap.Error(err))
 		return
 	}
-
-	s = r.P.Get()
-	r.L.Info(
-		"A new version available!",
-		zap.String("current_version", request.Version), zap.String("latest_version", s.LatestVersion),
-	)
 }

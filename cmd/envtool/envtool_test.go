@@ -15,10 +15,12 @@
 package main
 
 import (
+	"bytes"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
+	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
@@ -27,34 +29,66 @@ func TestPrintDiagnosticData(t *testing.T) {
 	t.Parallel()
 
 	assert.NotPanics(t, func() {
-		l := testutil.Logger(t, zap.NewAtomicLevelAt(zap.DebugLevel))
-		printDiagnosticData(nil, l.Sugar())
+		var buf bytes.Buffer
+		l := testutil.Logger(t)
+		err := printDiagnosticData(&buf, nil, l.Sugar())
+		require.NoError(t, err)
 	})
 }
 
-func TestRmdirAbsentDir(t *testing.T) {
+func TestShellMkDirRmDir(t *testing.T) {
 	t.Parallel()
 
-	err := rmdir("absent")
-	assert.NoError(t, err)
-}
-
-func TestMkdirAndRmdir(t *testing.T) {
-	t.Parallel()
+	t.Run("Absent", func(t *testing.T) {
+		err := shellRmDir("absent")
+		assert.NoError(t, err)
+	})
 
 	paths := []string{"ab/c", "ab"}
 
-	err := mkdir(paths...)
+	err := shellMkDir(paths...)
 	assert.NoError(t, err)
 
 	for _, path := range paths {
 		assert.DirExists(t, path)
 	}
 
-	err = rmdir(paths...)
+	err = shellRmDir(paths...)
 	assert.NoError(t, err)
 
 	for _, path := range paths {
 		assert.NoDirExists(t, path)
 	}
+}
+
+func TestShellRead(t *testing.T) {
+	t.Parallel()
+
+	f, err := os.CreateTemp("", "test_read")
+	assert.NoError(t, err)
+
+	s := "test string in a file"
+	_, err = f.Write([]byte(s))
+	assert.NoError(t, err)
+
+	var output bytes.Buffer
+	err = shellRead(&output, f.Name())
+	assert.NoError(t, err)
+	assert.Equal(t, s, output.String())
+}
+
+func TestPackageVersion(t *testing.T) {
+	t.Parallel()
+
+	f, err := os.CreateTemp("", "test_print_version")
+	assert.NoError(t, err)
+
+	s := "v1.0.0"
+	_, err = f.Write([]byte(s))
+	assert.NoError(t, err)
+
+	var output bytes.Buffer
+	err = packageVersion(&output, f.Name())
+	assert.NoError(t, err)
+	assert.Equal(t, "1.0.0", output.String())
 }

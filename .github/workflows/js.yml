@@ -12,13 +12,15 @@ on:
   push:
     branches:
       - main
+      - main-*
+      - releases/*
   schedule:
     - cron: "12 0 * * *"
 
 # Do not run this workflow in parallel for any PR change.
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 env:
   GOPATH: /home/runner/go
@@ -26,6 +28,7 @@ env:
   GOLANGCI_LINT_CACHE: /home/runner/go/cache/lint
   GOMODCACHE: /home/runner/go/mod
   GOPROXY: https://proxy.golang.org
+  GOTOOLCHAIN: local
 
 jobs:
   testjs:
@@ -36,8 +39,9 @@ jobs:
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
 
     steps:
+      # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0 # for `git describe` to work
           lfs: false # LFS is used only by website
@@ -70,11 +74,11 @@ jobs:
           --proxy-addr=127.0.0.1:47017
           --mode=diff-normal
           --handler=pg
-          --postgresql-url=postgres://username@127.0.0.1:5432/ferretdb
+          --postgresql-url='postgres://username@127.0.0.1:5432/ferretdb'
           2> ferretdb.log &
 
       - name: Run testjs for MongoDB
-        run: bin/task testjs PORT=47017
+        run: bin/task testjs TESTJS_PORT=47017
 
       - name: Run testjs for FerretDB
         run: bin/task testjs
@@ -85,7 +89,7 @@ jobs:
 
       - name: Upload FerretDB log
         if: failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ferretdb-log
           path: ferretdb-log.zip

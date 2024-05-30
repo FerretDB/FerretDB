@@ -1,0 +1,38 @@
+---
+# https://docs.codecov.com/docs/codecovyml-reference
+codecov:
+  require_ci_to_pass: true
+  notify:
+    wait_for_ci: true
+
+# https://docs.codecov.com/docs/coverage-configuration
+coverage:
+  range: "50...65"
+
+  # https://docs.codecov.com/docs/commit-status
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 1%
+    patch:
+      default:
+        target: 50%
+
+# https://docs.codecov.com/docs/ignoring-paths
+ignore:
+  - cmd
+
+# https://docs.codecov.com/docs/flags#recommended-automatic-flag-management
+flag_management:
+  default_rules:
+    carryforward: false
+
+# https://docs.codecov.com/docs/pull-request-comments
+comment:
+  layout: reach,diff,files,flags
+
+# https://docs.codecov.com/docs/github-checks
+# Annotations may be hidden by pressing the "a" key or by unselecting "Show annotations" in the top right of the file.
+github_checks:
+  annotations: true

@@ -15,45 +15,141 @@
 package sqlite
 
 import (
+	"cmp"
 	"context"
+	"slices"
 
-	_ "modernc.org/sqlite"
+	"github.com/prometheus/client_golang/prometheus"
+	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
 // backend implements backends.Backend interface.
 type backend struct {
-	dir string
+	r *metadata.Registry
 }
 
 // NewBackendParams represents the parameters of NewBackend function.
+//
+//nolint:vet // for readability
 type NewBackendParams struct {
-	Dir string
+	URI       string
+	L         *zap.Logger
+	P         *state.Provider
+	BatchSize int
+	_         struct{} // prevent unkeyed literals
 }
 
-// NewBackend creates a new SQLite backend.
-func NewBackend(params *NewBackendParams) backends.Backend {
+// NewBackend creates a new Backend.
+func NewBackend(params *NewBackendParams) (backends.Backend, error) {
+	r, err := metadata.NewRegistry(params.URI, params.BatchSize, params.L, params.P)
+	if err != nil {
+		return nil, err
+	}
+
 	return backends.BackendContract(&backend{
-		dir: params.Dir,
-	})
+		r: r,
+	}), nil
+}
+
+// Close implements backends.Backend interface.
+func (b *backend) Close() {
+	b.r.Close()
+}
+
+// Status implements backends.Backend interface.
+func (b *backend) Status(ctx context.Context, params *backends.StatusParams) (*backends.StatusResult, error) {
+	// since authentication is not supported yet, and there is no way to not establish an SQLite "connection",
+	// there is no need to use conninfo
+	// TODO https://github.com/FerretDB/FerretDB/issues/3008
+
+	dbs := b.r.DatabaseList(ctx)
+
+	var res backends.StatusResult
+
+	for _, dbName := range dbs {
+		cs, err := b.r.CollectionList(ctx, dbName)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		res.CountCollections += int64(len(cs))
+
+		colls, err := newDatabase(b.r, dbName).ListCollections(ctx, new(backends.ListCollectionsParams))
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		for _, cInfo := range colls.Collections {
+			if cInfo.Capped() {
+				res.CountCappedCollections++
+			}
+		}
+	}
+
+	return &res, nil
 }
 
 // Database implements backends.Backend interface.
-func (b *backend) Database(ctx context.Context, params *backends.DatabaseParams) backends.Database {
-	return newDatabase(b)
+func (b *backend) Database(name string) (backends.Database, error) {
+	return newDatabase(b.r, name), nil
 }
 
 // ListDatabases implements backends.Backend interface.
 //
 //nolint:lll // for readability
 func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDatabasesParams) (*backends.ListDatabasesResult, error) {
-	panic("not implemented") // TODO: Implement
+	list := b.r.DatabaseList(ctx)
+
+	var res *backends.ListDatabasesResult
+
+	if params != nil && len(params.Name) > 0 {
+		i, found := slices.BinarySearchFunc(list, params.Name, func(dbName, t string) int {
+			return cmp.Compare(dbName, t)
+		})
+		var filteredList []string
+
+		if found {
+			filteredList = append(filteredList, list[i])
+		}
+
+		list = filteredList
+	}
+
+	res = &backends.ListDatabasesResult{
+		Databases: make([]backends.DatabaseInfo, len(list)),
+	}
+
+	for i, dbName := range list {
+		res.Databases[i] = backends.DatabaseInfo{
+			Name: dbName,
+		}
+	}
+
+	return res, nil
 }
 
 // DropDatabase implements backends.Backend interface.
 func (b *backend) DropDatabase(ctx context.Context, params *backends.DropDatabaseParams) error {
-	panic("not implemented") // TODO: Implement
+	if dropped := b.r.DatabaseDrop(ctx, params.Name); !dropped {
+		return backends.NewError(backends.ErrorCodeDatabaseDoesNotExist, nil)
+	}
+
+	return nil
+}
+
+// Describe implements prometheus.Collector.
+func (b *backend) Describe(ch chan<- *prometheus.Desc) {
+	b.r.Describe(ch)
+}
+
+// Collect implements prometheus.Collector.
+func (b *backend) Collect(ch chan<- prometheus.Metric) {
+	b.r.Collect(ch)
 }
 
 // check interfaces

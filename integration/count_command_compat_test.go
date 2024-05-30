@@ -22,32 +22,31 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
+
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
-type countCompatCommandTestCase struct {
-	skipForTigris  string
+type countCommandCompatTestCase struct {
 	skip           string
 	collectionName any
 	command        bson.D
 }
 
-// testQueryCompat tests query compatibility test cases.
-func testCountCompatCommand(t *testing.T, testCases map[string]countCompatCommandTestCase) {
+// testCountCommandCompat tests query compatibility test cases.
+func testCountCommandCompat(t *testing.T, testCases map[string]countCommandCompatTestCase) {
 	t.Helper()
 
 	// Use shared setup because count queries can't modify data.
-	// TODO Use read-only user. https://github.com/FerretDB/FerretDB/issues/1025
+	//
+	// Use read-only user.
+	// TODO https://github.com/FerretDB/FerretDB/issues/1025
 	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
 
 	for name, tc := range testCases {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
-
-			if tc.skipForTigris != "" {
-				setup.SkipForTigrisWithReason(t, tc.skipForTigris)
-			}
 
 			if tc.skip != "" {
 				t.Skip(tc.skip)
@@ -89,6 +88,9 @@ func testCountCompatCommand(t *testing.T, testCases map[string]countCompatComman
 
 					if targetErr != nil {
 						t.Logf("Target error: %v", targetErr)
+						t.Logf("Compat error: %v", compatErr)
+
+						// error messages are intentionally not compared
 						AssertMatchesCommandError(t, compatErr, targetErr)
 
 						return
@@ -99,7 +101,12 @@ func testCountCompatCommand(t *testing.T, testCases map[string]countCompatComman
 					require.NoError(t, targetResult.Decode(&targetRes))
 					require.NoError(t, compatResult.Decode(&compatRes))
 
-					AssertEqualDocuments(t, compatRes, targetRes)
+					compatDoc := ConvertDocument(t, compatRes)
+					compatDoc.Remove("$clusterTime")
+					compatDoc.Remove("operationTime")
+
+					targetDoc := ConvertDocument(t, targetRes)
+					testutil.AssertEqual(t, compatDoc, targetDoc)
 
 					targetCount := targetRes.Map()["n"].(int32)
 					compatCount := compatRes.Map()["n"].(int32)
@@ -111,10 +118,10 @@ func testCountCompatCommand(t *testing.T, testCases map[string]countCompatComman
 	}
 }
 
-func TestCountCompatCommandErrors(t *testing.T) {
+func TestCountCommandCompatErrors(t *testing.T) {
 	t.Parallel()
 
-	testCases := map[string]countCompatCommandTestCase{
+	testCases := map[string]countCommandCompatTestCase{
 		"Pass": {
 			command: bson.D{
 				{"query", bson.D{}},
@@ -204,5 +211,5 @@ func TestCountCompatCommandErrors(t *testing.T) {
 		},
 	}
 
-	testCountCompatCommand(t, testCases)
+	testCountCommandCompat(t, testCases)
 }
