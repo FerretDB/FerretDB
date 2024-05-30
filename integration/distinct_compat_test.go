@@ -36,9 +36,11 @@ func testDistinctCompat(t *testing.T, testCases map[string]distinctCompatTestCas
 	t.Helper()
 
 	// Use shared setup because distinct queries can't modify data.
-	// TODO Use read-only user. https://github.com/FerretDB/FerretDB/issues/1025
+	//
+	// Use read-only user.
+	// TODO https://github.com/FerretDB/FerretDB/issues/1025
 	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
-		Providers:                shareddata.AllProviders().Remove("Scalars"), // Remove provider with the same values with different types
+		Providers:                shareddata.AllProviders().Remove(shareddata.Scalars), // Remove provider with the same values with different types
 		AddNonExistentCollection: true,
 	})
 	ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections

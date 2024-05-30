@@ -10,6 +10,7 @@ on:
   push:
     branches:
       - main
+      - main-*
       - releases/*
   schedule:
     - cron: "12 0 * * *"
@@ -26,6 +27,7 @@ env:
   GOLANGCI_LINT_CACHE: /home/runner/go/cache/lint
   GOMODCACHE: /home/runner/go/mod
   GOPROXY: https://proxy.golang.org
+  GOTOOLCHAIN: local
 
 jobs:
   build:
@@ -36,21 +38,18 @@ jobs:
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
 
     steps:
-      - name: Setup permissions monitoring
-        uses: GitHubSecurityLab/actions-permissions/monitor@v1
-        if: false
-
+      # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           lfs: true
 
       # This step will fail with "Error: Resource not accessible by integration"
       # while trying to add label and comment to PR, that is not possible for PRs from forks.
-      # See https://github.com/ActionsDesk/lfs-warning/issues/147.
+      # See https://github.com/ppremk/lfs-warning/issues/147.
       # But the real issue will be right above that message: a list of files that should be added using Git LFS.
       - name: Check LFS status
-        uses: actionsdesk/lfs-warning@v3.2
+        uses: ppremk/lfs-warning@v3.3
         with:
           filesizelimit: 102400b
           labelName: use-git-lfs
@@ -87,7 +86,7 @@ jobs:
 
       # it has to be exactly "docs.tar" for actions/deploy-pages below
       - name: Upload archive artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: docs
           path: tmp/docs.tar
@@ -104,7 +103,7 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 10
 
-    # deploy only on push to main; exclude pull_request and schedule
+    # exclude pull_request and schedule
     needs: build
     if: github.event_name == 'push'
 
@@ -117,13 +116,9 @@ jobs:
       url: ${{ steps.deploy.outputs.page_url }}
 
     steps:
-      - name: Setup permissions monitoring
-        uses: GitHubSecurityLab/actions-permissions/monitor@v1
-        if: false
-
       - name: Deploy to GitHub Pages
         id: deploy
-        uses: actions/deploy-pages@v2
+        uses: actions/deploy-pages@v4
         with:
           artifact_name: docs
           timeout: 300000 # 5*60*1000 milliseconds

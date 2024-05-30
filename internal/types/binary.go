@@ -47,6 +47,6 @@ const (
 
 // Binary represents BSON type Binary.
 type Binary struct {
-	Subtype BinarySubtype
 	B       []byte
+	Subtype BinarySubtype
 }

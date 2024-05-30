@@ -15,170 +15,266 @@
 package pool
 
 import (
-	"net/url"
+	"fmt"
 	"os"
+	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	sqlite3 "modernc.org/sqlite"
+	sqlite3lib "modernc.org/sqlite/lib"
 
+	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/teststress"
 )
 
 func TestCreateDrop(t *testing.T) {
+	t.Parallel()
 	ctx := testutil.Ctx(t)
 
-	p, err := New("file:"+t.TempDir()+"/", testutil.Logger(t))
+	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
-	defer p.Close()
+	// that also tests that query parameters are preserved by using non-writable directory
+	p, _, err := New("file:/?mode=memory&_pragma=journal_mode(wal)", testutil.Logger(t), sp)
+	require.NoError(t, err)
+	t.Cleanup(p.Close)
 
-	db := p.GetExisting(ctx, t.Name())
+	dbName := testutil.DatabaseName(t)
+
+	db := p.GetExisting(ctx, dbName)
 	require.Nil(t, db)
 
-	db, created, err := p.GetOrCreate(ctx, t.Name())
+	db, created, err := p.GetOrCreate(ctx, dbName)
 	require.NoError(t, err)
 	require.NotNil(t, db)
 	require.True(t, created)
 
-	db2, created, err := p.GetOrCreate(ctx, t.Name())
+	db2, created, err := p.GetOrCreate(ctx, dbName)
 	require.NoError(t, err)
 	require.Same(t, db, db2)
 	require.False(t, created)
 
-	db2 = p.GetExisting(ctx, t.Name())
+	db2 = p.GetExisting(ctx, dbName)
 	require.Same(t, db, db2)
 
-	dropped := p.Drop(ctx, t.Name())
+	require.Contains(t, p.List(ctx), dbName)
+
+	_, err = db.ExecContext(ctx, fmt.Sprintf("CREATE TABLE %q (id INT) STRICT", t.Name()))
+	require.NoError(t, err)
+
+	// journal_mode is silently ignored for mode=memory
+	var res string
+	err = db.QueryRowContext(ctx, "PRAGMA journal_mode").Scan(&res)
+	require.NoError(t, err)
+	require.Equal(t, "memory", res)
+
+	dropped := p.Drop(ctx, dbName)
 	require.True(t, dropped)
 
-	dropped = p.Drop(ctx, t.Name())
+	dropped = p.Drop(ctx, dbName)
 	require.False(t, dropped)
 
-	db = p.GetExisting(ctx, t.Name())
+	db = p.GetExisting(ctx, dbName)
 	require.Nil(t, db)
 }
 
-func TestNewBackend(t *testing.T) {
-	t.Parallel()
+func TestCreateDropStress(t *testing.T) {
+	ctx := testutil.Ctx(t)
 
-	err := os.MkdirAll("tmp/dir", 0o777)
+	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
-	_, err = os.Create("tmp/file")
-	require.NoError(t, err)
+	dir := testutil.DirectoryName(t)
+	require.NoError(t, os.RemoveAll(dir))
+	require.NoError(t, os.MkdirAll(dir, 0o777))
 
 	t.Cleanup(func() {
-		err := os.RemoveAll("tmp")
-		require.NoError(t, err)
+		require.NoError(t, os.Remove(dir), "directory should be empty after tests")
 	})
 
-	testCases := map[string]struct {
-		value string
-		uri   *url.URL
-		err   string
-	}{
-		"LocalDirectory": {
-			value: "file:./",
-			uri: &url.URL{
-				Scheme: "file",
-				Opaque: "./",
-				Path:   "./",
-			},
-		},
-		"LocalSubDirectory": {
-			value: "file:./tmp/",
-			uri: &url.URL{
-				Scheme: "file",
-				Opaque: "./tmp/",
-				Path:   "./tmp/",
-			},
-		},
-		"LocalSubSubDirectory": {
-			value: "file:./tmp/dir/",
-			uri: &url.URL{
-				Scheme: "file",
-				Opaque: "./tmp/dir/",
-				Path:   "./tmp/dir/",
-			},
-		},
-		"LocalDirectoryWithParameters": {
-			value: "file:./tmp/?mode=ro",
-			uri: &url.URL{
-				Scheme:   "file",
-				Opaque:   "./tmp/",
-				Path:     "./tmp/",
-				RawQuery: "mode=ro",
-			},
-		},
-		"AbsoluteDirectory": {
-			value: "file:/tmp/",
-			uri: &url.URL{
-				Scheme:   "file",
-				Opaque:   "/tmp/",
-				Path:     "/tmp/",
-				OmitHost: true,
-			},
-		},
-		"WithEmptyAuthority": {
-			value: "file:///tmp/",
-			uri: &url.URL{
-				Scheme: "file",
-				Opaque: "/tmp/",
-				Path:   "/tmp/",
-			},
-		},
-		"WithEmptyAuthorityAndQuery": {
-			value: "file:///tmp/?mode=ro",
-			uri: &url.URL{
-				Scheme:   "file",
-				Opaque:   "/tmp/",
-				Path:     "/tmp/",
-				RawQuery: "mode=ro",
-			},
-		},
-		"HostIsNotEmpty": {
-			value: "file://localhost/./tmp/?mode=ro",
-			err:   `expected empty host, got "localhost"`,
-		},
-		"UserIsNotEmpty": {
-			value: "file://user:pass@./tmp/?mode=ro",
-			err:   `expected empty user info, got "user:pass"`,
-		},
-		"NoDirectory": {
-			value: "file:./nodir/",
-			err:   `"./nodir/" should be an existing directory, got stat ./nodir/: no such file or directory`,
-		},
-		"PathIsNotEndsWithSlash": {
-			value: "file:./tmp/file",
-			err:   `expected path ending with "/", got "./tmp/file"`,
-		},
-		"FileInsteadOfDirectory": {
-			value: "file:./tmp/file/",
-			err:   `"./tmp/file/" should be an existing directory, got stat ./tmp/file/: not a directory`,
-		},
-		"MalformedURI": {
-			value: ":./tmp/",
-			err:   `parse ":./tmp/": missing protocol scheme`,
-		},
-		"NoScheme": {
-			value: "./tmp/",
-			err:   `expected "file:" schema, got ""`,
-		},
-	}
-	for name, tc := range testCases {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-
-			u, err := validateURI(tc.value)
-			if tc.err != "" {
-				assert.EqualError(t, err, tc.err)
-				return
-			}
-
+	for testName, uri := range map[string]string{
+		"dir":              "file:./" + dir + "/",
+		"dir-immediate":    "file:./" + dir + "/?_txlock=immediate",
+		"memory":           "file:./" + dir + "/?mode=memory",
+		"memory-immediate": "file:./" + dir + "/?mode=memory&_txlock=immediate",
+	} {
+		t.Run(testName, func(t *testing.T) {
+			p, _, err := New(uri, testutil.Logger(t), sp)
 			require.NoError(t, err)
-			assert.Equal(t, u, tc.uri)
+			t.Cleanup(p.Close)
+
+			var i atomic.Int32
+
+			n := teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
+				dbName := fmt.Sprintf("db_%03d", i.Add(1))
+
+				t.Cleanup(func() {
+					p.Drop(ctx, dbName)
+				})
+
+				ready <- struct{}{}
+				<-start
+
+				db := p.GetExisting(ctx, dbName)
+				require.Nil(t, db)
+
+				db, created, err := p.GetOrCreate(ctx, dbName)
+				require.NoError(t, err)
+				require.NotNil(t, db)
+				require.True(t, created)
+
+				db2, created, err := p.GetOrCreate(ctx, dbName)
+				require.NoError(t, err)
+				require.Same(t, db, db2)
+				require.False(t, created)
+
+				db2 = p.GetExisting(ctx, dbName)
+				require.Same(t, db, db2)
+
+				require.Contains(t, p.List(ctx), dbName)
+
+				_, err = db.ExecContext(ctx, fmt.Sprintf("CREATE TABLE %q (id INT) STRICT", t.Name()))
+				require.NoError(t, err)
+
+				dropped := p.Drop(ctx, dbName)
+				require.True(t, dropped)
+
+				dropped = p.Drop(ctx, dbName)
+				require.False(t, dropped)
+
+				db = p.GetExisting(ctx, dbName)
+				require.Nil(t, db)
+			})
+
+			require.Equal(t, int32(n), i.Load())
+		})
+	}
+}
+
+func TestMemory(t *testing.T) {
+	t.Parallel()
+	ctx := testutil.Ctx(t)
+
+	sp, err := state.NewProvider("")
+	require.NoError(t, err)
+
+	uri := testutil.TestSQLiteURI(t, "")
+
+	dbName := testutil.DatabaseName(t) + "1"
+
+	p0, dbs, err := New(uri, testutil.Logger(t), sp)
+	require.NoError(t, err)
+	assert.Empty(t, dbs)
+	t.Cleanup(p0.Close)
+
+	_, created, err := p0.GetOrCreate(ctx, dbName)
+	require.NoError(t, err)
+	assert.True(t, created)
+
+	p1, dbs, err := New(uri+"?mode=memory", testutil.Logger(t), sp)
+	require.NoError(t, err)
+	assert.Empty(t, dbs, "dir content should be ignored for mode=memory")
+	t.Cleanup(p1.Close)
+
+	db1, created, err := p1.GetOrCreate(ctx, dbName)
+	require.NoError(t, err)
+	assert.True(t, created)
+
+	_, err = db1.ExecContext(ctx, "CREATE TABLE test (id INT) STRICT")
+	require.NoError(t, err)
+
+	db2, created, err := p1.GetOrCreate(ctx, dbName)
+	require.NoError(t, err)
+	assert.False(t, created, "the same database should be returned for the same name")
+	assert.Same(t, db1, db2)
+
+	_, err = db2.ExecContext(ctx, "CREATE TABLE test (id INT) STRICT")
+	var se *sqlite3.Error
+	require.ErrorAs(t, err, &se)
+	assert.Equal(t, sqlite3lib.SQLITE_ERROR, se.Code())
+
+	db2, created, err = p1.GetOrCreate(ctx, testutil.DatabaseName(t)+"2")
+	require.NoError(t, err)
+	assert.True(t, created, "different database should be returned for different name")
+	assert.NotSame(t, db1, db2)
+
+	_, err = db2.ExecContext(ctx, "CREATE TABLE test (id INT) STRICT")
+	require.NoError(t, err)
+
+	p2, dbs, err := New(uri+"?mode=memory", testutil.Logger(t), sp)
+	require.NoError(t, err)
+	assert.Empty(t, dbs)
+	t.Cleanup(p2.Close)
+
+	db2, created, err = p2.GetOrCreate(ctx, dbName)
+	require.NoError(t, err)
+	assert.True(t, created, "different database should be returned for the same name, but different pool")
+	assert.NotSame(t, db1, db2)
+
+	_, err = db2.ExecContext(ctx, "CREATE TABLE test (id INT) STRICT")
+	require.NoError(t, err)
+}
+
+func TestDefaults(t *testing.T) {
+	t.Parallel()
+	ctx := testutil.Ctx(t)
+
+	sp, err := state.NewProvider("")
+	require.NoError(t, err)
+
+	p, _, err := New(testutil.TestSQLiteURI(t, ""), testutil.Logger(t), sp)
+	require.NoError(t, err)
+	t.Cleanup(p.Close)
+
+	dbName := testutil.DatabaseName(t)
+
+	db, _, err := p.GetOrCreate(ctx, dbName)
+	require.NoError(t, err)
+
+	rows, err := db.QueryContext(ctx, "PRAGMA compile_options")
+	require.NoError(t, err)
+
+	var options []string
+
+	for rows.Next() {
+		var o string
+		require.NoError(t, rows.Scan(&o))
+		t.Logf("option: %s", o)
+		options = append(options, o)
+	}
+	require.NoError(t, rows.Err())
+	require.NoError(t, rows.Close())
+
+	require.Contains(t, options, "ENABLE_DBSTAT_VTAB")  // for dbStats/collStats/etc
+	require.Contains(t, options, "ENABLE_STAT4")        // for ANALYZE
+	require.Contains(t, options, "THREADSAFE=1")        // for it to work with database/sql
+	require.NotContains(t, options, "MAX_SCHEMA_RETRY") // see comments for SQLITE_SCHEMA in tests
+
+	// for capped collections
+	require.Contains(t, options, "DEFAULT_AUTOVACUUM") // implicit 0 value
+	require.NotContains(t, options, "OMIT_AUTOVACUUM")
+	require.NotContains(t, options, "OMIT_VACUUM")
+
+	for q, expected := range map[string]string{
+		"SELECT sqlite_version()":   "3.45.3",
+		"SELECT sqlite_source_id()": "2024-04-15 13:34:05 8653b758870e6ef0c98d46b3ace27849054af85da891eb121e9aaa537f1e8355",
+		"PRAGMA auto_vacuum":        "0",
+		"PRAGMA busy_timeout":       "10000",
+		"PRAGMA encoding":           "UTF-8",
+		"PRAGMA journal_mode":       "wal",
+		"PRAGMA locking_mode":       "normal",
+	} {
+		q, expected := q, expected
+		t.Run(q, func(t *testing.T) {
+			// PRAGMAs can't be checked in parallel
+
+			var actual string
+			err := db.QueryRowContext(ctx, q).Scan(&actual)
+			require.NoError(t, err)
+			require.Equal(t, expected, actual, q)
 		})
 	}
 }

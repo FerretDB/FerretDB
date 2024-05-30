@@ -12,9 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build !ferretdb_no_sqlite
+
 package main
 
-// init adds "sqlite" handler flags.
+// init adds "sqlite" backend flags.
 func init() {
 	handlerFlags["sqlite"] = &sqliteFlags
 }
