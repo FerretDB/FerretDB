@@ -24,7 +24,7 @@ import (
 // NextFunc is a part of Interface for the Next method.
 type NextFunc[K, V any] func() (K, V, error)
 
-// valuesIterator implements iterator.Interface.
+// funcIterator implements iterator.Interface.
 //
 //nolint:vet // for readability
 type funcIterator[K, V any] struct {

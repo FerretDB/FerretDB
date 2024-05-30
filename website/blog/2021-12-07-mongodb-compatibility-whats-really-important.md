@@ -1,10 +1,10 @@
 ---
 slug: mongodb-compatibility-whats-really-important
-title: MongoDB Compatibility - What’s Really Important?
-author: Peter Farkas
+title: MongoDB Compatibility - What's Really Important?
+authors: [peter]
 description: At FerretDB, we are in the business of making sure that there is a 100% Open Source choice for your MongoDB alternative needs.
 image: /img/blog/blog-img.png
-tags: [Ferretdb]
+tags: [open source, document databases, mongodb compatible, community]
 ---
 
 In this recent [TheRegister Article](https://www.theregister.com/2021/12/06/aws_documentdb_not_mongodb_compatible/), there is an interview with MongoDB's CTO, Mark Porter, where the level of compatibility between MongoDB and DocumentDB is discussed.

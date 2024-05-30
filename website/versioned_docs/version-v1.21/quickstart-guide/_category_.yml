@@ -1,0 +1,8 @@
+---
+label: Get Started
+position: 3
+link:
+  type: generated-index
+  slug: /quickstart-guide/ # referenced in README.md
+  description: >
+    Learn to install FerretDB on your local machine

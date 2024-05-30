@@ -13,6 +13,7 @@ on:
   push:
     branches:
       - main
+      - main-*
       - releases/*
     tags:
       - "*"
@@ -22,7 +23,7 @@ on:
 # Do not run this workflow in parallel for any PR change.
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   contexts:
@@ -34,8 +35,9 @@ jobs:
     if: false
 
     steps:
+      # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
           lfs: false

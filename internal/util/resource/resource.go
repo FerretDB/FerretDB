@@ -86,17 +86,22 @@ func Track(obj any, token *Token) {
 			msg += "\nObject created by " + string(stack)
 		}
 
-		// TODO
-		_ = msg
-		// panic(msg)
+		panic(msg)
 	})
 }
 
 // Untrack stops tracking the lifetime of an object.
+//
+// It is safe to call this function multiple times.
 func Untrack(obj any, token *Token) {
 	checkArgs(obj, token)
 
-	pprof.Lookup(profileName(obj)).Remove(token)
+	p := pprof.Lookup(profileName(obj))
+	if p == nil {
+		panic("object is not tracked")
+	}
+
+	p.Remove(token)
 
 	runtime.SetFinalizer(obj, nil)
 }

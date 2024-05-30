@@ -21,6 +21,7 @@ env:
   GOLANGCI_LINT_CACHE: /home/runner/go/cache/lint
   GOMODCACHE: /home/runner/go/mod
   GOPROXY: https://proxy.golang.org
+  GOTOOLCHAIN: local
 
 jobs:
   blog-preview:
@@ -39,8 +40,9 @@ jobs:
       url: ${{ steps.extract.outputs.extracted_url }}
 
     steps:
+      # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0 # for wrangler to work
           lfs: true
@@ -52,7 +54,7 @@ jobs:
           BRANCH: ${{ github.head_ref }} # see https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#using-an-intermediate-environment-variable
         run: git checkout -b $BRANCH
 
-      # no actionsdesk/lfs-warning due to https://github.com/ActionsDesk/lfs-warning/issues/150
+      # no ppremk/lfs-warning due to https://github.com/ppremk/lfs-warning/issues/150
 
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
@@ -75,7 +77,7 @@ jobs:
           git diff --exit-code
 
       - name: Deploy to Cloudflare Pages
-        run: bin/task --exit-code blog-cloudflare-preview | tee deploy.txt
+        run: bin/task blog-cloudflare-preview | tee deploy.txt
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -104,12 +106,13 @@ jobs:
       # Just build them again instead.
       # That also allows us to pass branch name, commit hash, etc from git to wrangler.
 
+      # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0 # for wrangler to work
           lfs: true
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.sha }} # TODO https://github.com/FerretDB/github-actions/issues/211
 
       # for Wrangler / Cloudflare Pages on pull_request_target
       - name: Name branch
@@ -117,7 +120,7 @@ jobs:
           BRANCH: ${{ github.head_ref }} # see https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#using-an-intermediate-environment-variable
         run: git checkout -b $BRANCH
 
-      # no actionsdesk/lfs-warning due to https://github.com/ActionsDesk/lfs-warning/issues/150
+      # no ppremk/lfs-warning due to https://github.com/ppremk/lfs-warning/issues/150
 
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
@@ -140,7 +143,7 @@ jobs:
           git diff --exit-code
 
       - name: Deploy to Cloudflare Pages
-        run: bin/task --exit-code docs-cloudflare-preview | tee deploy.txt
+        run: bin/task docs-cloudflare-preview | tee deploy.txt
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
