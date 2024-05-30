@@ -68,10 +68,7 @@ func hashBenchmarkProvider(bp BenchmarkProvider) string {
 			var v2 bson.D
 
 			_, v2, err = iter2.Next()
-			if err != nil {
-				panic(err)
-			}
-
+			must.NoError(err)
 			must.BeTrue(reflect.DeepEqual(v1, v2))
 
 			b := must.NotFail(json.Marshal(v1))

@@ -29,16 +29,20 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/expfmt"
+	"go.uber.org/automaxprocs/maxprocs"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	_ "golang.org/x/crypto/x509roots/fallback" // register root TLS certificates for production Docker image
 
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
-	"github.com/FerretDB/FerretDB/internal/handlers/registry"
+	"github.com/FerretDB/FerretDB/internal/handler/registry"
+	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/telemetry"
 )
@@ -48,10 +52,11 @@ import (
 //
 // Keep order in sync with documentation.
 var cli struct {
-	Version  bool   `default:"false" help:"Print version to stdout and exit." env:"-"`
-	Handler  string `default:"pg" help:"${help_handler}"`
-	Mode     string `default:"${default_mode}" help:"${help_mode}" enum:"${enum_mode}"`
-	StateDir string `default:"."               help:"Process state directory."`
+	Version     bool   `default:"false"           help:"Print version to stdout and exit." env:"-"`
+	Handler     string `default:"postgresql"      help:"${help_handler}"`
+	Mode        string `default:"${default_mode}" help:"${help_mode}"                      enum:"${enum_mode}"`
+	StateDir    string `default:"."               help:"Process state directory."`
+	ReplSetName string `default:""                help:"Replica set name."`
 
 	Listen struct {
 		Addr        string `default:"127.0.0.1:27017" help:"Listen TCP address."`
@@ -59,61 +64,84 @@ var cli struct {
 		TLS         string `default:""                help:"Listen TLS address."`
 		TLSCertFile string `default:""                help:"TLS cert file path."`
 		TLSKeyFile  string `default:""                help:"TLS key file path."`
-		TLSCAFile   string `default:""                help:"TLS CA file path." name:"tls-ca-file"`
+		TLSCaFile   string `default:""                help:"TLS CA file path."`
 	} `embed:"" prefix:"listen-"`
 
-	ProxyAddr string `default:""                help:"Proxy address."`
-	DebugAddr string `default:"127.0.0.1:8088"  help:"Listen address for HTTP handlers for metrics, pprof, etc."`
+	Proxy struct {
+		Addr        string `default:"" help:"Proxy address."`
+		TLSCertFile string `default:"" help:"Proxy TLS cert file path."`
+		TLSKeyFile  string `default:"" help:"Proxy TLS key file path."`
+		TLSCaFile   string `default:"" help:"Proxy TLS CA file path."`
+	} `embed:"" prefix:"proxy-"`
+
+	DebugAddr string `default:"127.0.0.1:8088" help:"Listen address for HTTP handlers for metrics, pprof, etc."`
 
 	// see setCLIPlugins
 	kong.Plugins
 
+	Setup struct {
+		Username string        `default:""    help:"Setup user during backend initialization."`
+		Password string        `default:""    help:"Setup user's password."`
+		Timeout  time.Duration `default:"30s" help:"Setup timeout."`
+	} `embed:"" prefix:"setup-"`
+
 	Log struct {
-		Level string `default:"${default_log_level}" help:"${help_log_level}"`
-		UUID  bool   `default:"false"                help:"Add instance UUID to all log messages." negatable:""`
+		Level  string `default:"${default_log_level}" help:"${help_log_level}"`
+		Format string `default:"console"              help:"${help_log_format}"                     enum:"${enum_log_format}"`
+		UUID   bool   `default:"false"                help:"Add instance UUID to all log messages." negatable:""`
 	} `embed:"" prefix:"log-"`
 
 	MetricsUUID bool `default:"false" help:"Add instance UUID to all metrics." negatable:""`
 
-	Telemetry telemetry.Flag `default:"undecided" help:"Enable or disable basic telemetry. See https://beacon.ferretdb.io."`
+	Telemetry telemetry.Flag `default:"undecided" help:"Enable or disable basic telemetry. See https://beacon.ferretdb.com."`
 
 	Test struct {
-		RecordsDir            string `default:"" help:"Experimental: directory for record files."`
-		DisableFilterPushdown bool   `default:"false" help:"Experimental: disable filter pushdown."`
-		EnableSortPushdown    bool   `default:"false" help:"Experimental: enable sort pushdown."`
+		RecordsDir string `default:"" help:"Testing: directory for record files."`
 
-		//nolint:lll // for readability
+		DisablePushdown      bool `default:"false" help:"Experimental: disable pushdown."`
+		EnableNestedPushdown bool `default:"false" help:"Experimental: enable pushdown for dot notation."`
+
+		CappedCleanup struct {
+			Interval   time.Duration `default:"1m" help:"Experimental: capped collections cleanup interval."`
+			Percentage uint8         `default:"10" help:"Experimental: percentage of documents to cleanup."`
+		} `embed:"" prefix:"capped-cleanup-"`
+
+		EnableNewAuth bool `default:"false" help:"Experimental: enable new authentication."`
+
+		BatchSize            int `default:"100" help:"Experimental: maximum insertion batch size."`
+		MaxBsonObjectSizeMiB int `default:"16"  help:"Experimental: maximum BSON object size in MiB."`
+
 		Telemetry struct {
-			URL            string        `default:"https://beacon.ferretdb.io/" help:"Experimental: telemetry: reporting URL."`
-			UndecidedDelay time.Duration `default:"1h"                          help:"${help_telemetry_undecided_delay}"`
-			ReportInterval time.Duration `default:"24h"                         help:"Experimental: telemetry: report interval."`
-			ReportTimeout  time.Duration `default:"5s"                          help:"Experimental: telemetry: report timeout."`
-			Package        string        `default:""                            help:"Experimental: telemetry: custom package type."`
+			URL            string        `default:"https://beacon.ferretdb.com/" help:"Telemetry: reporting URL."`
+			UndecidedDelay time.Duration `default:"1h"                           help:"Telemetry: delay for undecided state."`
+			ReportInterval time.Duration `default:"24h"                          help:"Telemetry: report interval."`
+			ReportTimeout  time.Duration `default:"5s"                           help:"Telemetry: report timeout."`
+			Package        string        `default:""                             help:"Telemetry: custom package type."`
 		} `embed:"" prefix:"telemetry-"`
 	} `embed:"" prefix:"test-"`
 }
 
-// The pgFlags struct represents flags that are used by the "pg" handler.
+// The postgreSQLFlags struct represents flags that are used by the "postgresql" backend.
 //
-// See main_pg.go.
-var pgFlags struct {
-	PostgreSQLURL string `name:"postgresql-url" default:"${default_postgresql_url}" help:"PostgreSQL URL for 'pg' handler."`
+// See main_postgresql.go.
+//
+//nolint:lll // some tags are long
+var postgreSQLFlags struct {
+	PostgreSQLURL string `name:"postgresql-url" default:"postgres://127.0.0.1:5432/ferretdb" help:"PostgreSQL URL for 'postgresql' handler."`
 }
 
-// The sqliteFlags struct represents flags that are used by the "sqlite" handler.
+// The sqliteFlags struct represents flags that are used by the "sqlite" backend.
 //
 // See main_sqlite.go.
 var sqliteFlags struct {
 	SQLiteURL string `name:"sqlite-url" default:"file:data/" help:"SQLite URI (directory) for 'sqlite' handler."`
 }
 
-// The tigrisFlags struct represents flags that are used by the "tigris" handler.
+// The mySQLFlags struct represents flags that are used by the "mysql" backend.
 //
-// See main_tigris.go.
-var tigrisFlags struct {
-	TigrisURL          string `default:"127.0.0.1:8081" help:"Tigris URL for 'tigris' handler."`
-	TigrisClientID     string `default:""               help:"Tigris Client ID."`
-	TigrisClientSecret string `default:""               help:"Tigris Client secret."`
+// See main_mysql.go.
+var mySQLFlags struct {
+	MySQLURL string `name:"mysql-url" default:"mysql://127.0.0.1:3306/ferretdb" help:"MySQL URL for 'mysql' handler" hidden:""`
 }
 
 // The hanaFlags struct represents flags that are used by the "hana" handler.
@@ -153,18 +181,20 @@ var (
 		zap.ErrorLevel.String(),
 	}
 
+	logFormats = []string{"console", "json"}
+
 	kongOptions = []kong.Option{
 		kong.Vars{
-			"default_log_level":      defaultLogLevel().String(),
-			"default_mode":           clientconn.AllModes[0],
-			"default_postgresql_url": "postgres://127.0.0.1:5432/ferretdb",
+			"default_log_level": defaultLogLevel().String(),
+			"default_mode":      clientconn.AllModes[0],
 
-			"help_log_level":                 fmt.Sprintf("Log level: '%s'.", strings.Join(logLevels, "', '")),
-			"help_mode":                      fmt.Sprintf("Operation mode: '%s'.", strings.Join(clientconn.AllModes, "', '")),
-			"help_handler":                   fmt.Sprintf("Backend handler: '%s'.", strings.Join(registry.Handlers(), "', '")),
-			"help_telemetry_undecided_delay": "Experimental: telemetry: delay for undecided state.",
+			"enum_log_format": strings.Join(logFormats, ","),
+			"enum_mode":       strings.Join(clientconn.AllModes, ","),
 
-			"enum_mode": strings.Join(clientconn.AllModes, ","),
+			"help_handler":    fmt.Sprintf("Backend handler: '%s'.", strings.Join(registry.Handlers(), "', '")),
+			"help_log_format": fmt.Sprintf("Log format: '%s'.", strings.Join(logFormats, "', '")),
+			"help_log_level":  fmt.Sprintf("Log level: '%s'.", strings.Join(logLevels, "', '")),
+			"help_mode":       fmt.Sprintf("Operation mode: '%s'.", strings.Join(clientconn.AllModes, "', '")),
 		},
 		kong.DefaultEnvars("FERRETDB"),
 	}
@@ -188,17 +218,21 @@ func defaultLogLevel() zapcore.Level {
 
 // setupState setups state provider.
 func setupState() *state.Provider {
-	f, err := filepath.Abs(filepath.Join(cli.StateDir, "state.json"))
-	if err != nil {
-		log.Fatalf("Failed to get path for state file: %s.", err)
+	var f string
+
+	if cli.StateDir != "" && cli.StateDir != "-" {
+		var err error
+		if f, err = filepath.Abs(filepath.Join(cli.StateDir, "state.json")); err != nil {
+			log.Fatalf("Failed to get path for state file: %s.", err)
+		}
 	}
 
-	p, err := state.NewProvider(f)
+	sp, err := state.NewProvider(f)
 	if err != nil {
-		log.Fatalf("Failed to create state provider: %s.", err)
+		log.Fatal(stateFileProblem(f, err))
 	}
 
-	return p
+	return sp
 }
 
 // setupMetrics setups Prometheus metrics registerer with some metrics.
@@ -222,7 +256,7 @@ func setupMetrics(stateProvider *state.Provider) prometheus.Registerer {
 }
 
 // setupLogger setups zap logger.
-func setupLogger(stateProvider *state.Provider) *zap.Logger {
+func setupLogger(stateProvider *state.Provider, format string) *zap.Logger {
 	info := version.Get()
 
 	startupFields := []zap.Field{
@@ -247,12 +281,31 @@ func setupLogger(stateProvider *state.Provider) *zap.Logger {
 		log.Fatal(err)
 	}
 
-	logging.Setup(level, logUUID)
+	logging.Setup(level, format, logUUID)
 	l := zap.L()
 
 	l.Info("Starting FerretDB "+info.Version+"...", startupFields...)
 
+	if debugbuild.Enabled {
+		l.Info("This is debug build. The performance will be affected.")
+	}
+
 	return l
+}
+
+// checkFlags checks that CLI flags are not self-contradictory.
+func checkFlags(logger *zap.Logger) {
+	if cli.Setup.Username != "" && !cli.Test.EnableNewAuth {
+		logger.Sugar().Fatal("--setup-username requires --test-enable-new-auth")
+	}
+
+	if cli.Setup.Password != "" && cli.Setup.Username == "" {
+		logger.Sugar().Fatal("--setup-password requires --setup-username")
+	}
+
+	if cli.Test.DisablePushdown && cli.Test.EnableNestedPushdown {
+		logger.Sugar().Fatal("--test-disable-pushdown and --test-enable-nested-pushdown should not be set at the same time")
+	}
 }
 
 // runTelemetryReporter runs telemetry reporter until ctx is canceled.
@@ -267,15 +320,10 @@ func runTelemetryReporter(ctx context.Context, opts *telemetry.NewReporterOpts) 
 
 // dumpMetrics dumps all Prometheus metrics to stderr.
 func dumpMetrics() {
-	mfs, err := prometheus.DefaultGatherer.Gather()
-	if err != nil {
-		panic(err)
-	}
+	mfs := must.NotFail(prometheus.DefaultGatherer.Gather())
 
 	for _, mf := range mfs {
-		if _, err := expfmt.MetricFamilyToText(os.Stderr, mf); err != nil {
-			panic(err)
-		}
+		must.NotFail(expfmt.MetricFamilyToText(os.Stderr, mf))
 	}
 }
 
@@ -306,13 +354,22 @@ func run() {
 		return
 	}
 
+	// safe to always enable
+	runtime.SetBlockProfileRate(10000)
+
 	stateProvider := setupState()
 
 	metricsRegisterer := setupMetrics(stateProvider)
 
-	logger := setupLogger(stateProvider)
+	logger := setupLogger(stateProvider, cli.Log.Format)
 
-	ctx, stop := notifyAppTermination(context.Background())
+	checkFlags(logger)
+
+	if _, err := maxprocs.Set(maxprocs.Logger(logger.Sugar().Debugf)); err != nil {
+		logger.Sugar().Warnf("Failed to set GOMAXPROCS: %s.", err)
+	}
+
+	ctx, stop := ctxutil.SigTerm(context.Background())
 
 	go func() {
 		<-ctx.Done()
@@ -322,12 +379,14 @@ func run() {
 
 	var wg sync.WaitGroup
 
-	wg.Add(1)
+	if cli.DebugAddr != "" && cli.DebugAddr != "-" {
+		wg.Add(1)
 
-	go func() {
-		defer wg.Done()
-		debug.RunHandler(ctx, cli.DebugAddr, metricsRegisterer, logger.Named("debug"))
-	}()
+		go func() {
+			defer wg.Done()
+			debug.RunHandler(ctx, cli.DebugAddr, metricsRegisterer, logger.Named("debug"))
+		}()
+	}
 
 	metrics := connmetrics.NewListenerMetrics()
 
@@ -345,7 +404,6 @@ func run() {
 				P:              stateProvider,
 				ConnMetrics:    metrics.ConnMetrics,
 				L:              logger.Named("telemetry"),
-				Handler:        cli.Handler,
 				UndecidedDelay: cli.Test.Telemetry.UndecidedDelay,
 				ReportInterval: cli.Test.Telemetry.ReportInterval,
 				ReportTimeout:  cli.Test.Telemetry.ReportTimeout,
@@ -353,39 +411,51 @@ func run() {
 		)
 	}()
 
-	h, err := registry.NewHandler(cli.Handler, &registry.NewHandlerOpts{
+	h, closeBackend, err := registry.NewHandler(cli.Handler, &registry.NewHandlerOpts{
 		Logger:        logger,
 		ConnMetrics:   metrics.ConnMetrics,
 		StateProvider: stateProvider,
+		TCPHost:       cli.Listen.Addr,
+		ReplSetName:   cli.ReplSetName,
 
-		PostgreSQLURL: pgFlags.PostgreSQLURL,
+		PostgreSQLURL: postgreSQLFlags.PostgreSQLURL,
 
 		SQLiteURL: sqliteFlags.SQLiteURL,
 
-		TigrisURL:          tigrisFlags.TigrisURL,
-		TigrisClientID:     tigrisFlags.TigrisClientID,
-		TigrisClientSecret: tigrisFlags.TigrisClientSecret,
-
 		HANAURL: hanaFlags.HANAURL,
 
+		MySQLURL: mySQLFlags.MySQLURL,
+
 		TestOpts: registry.TestOpts{
-			DisableFilterPushdown: cli.Test.DisableFilterPushdown,
-			EnableSortPushdown:    cli.Test.EnableSortPushdown,
+			DisablePushdown:         cli.Test.DisablePushdown,
+			EnableNestedPushdown:    cli.Test.EnableNestedPushdown,
+			CappedCleanupInterval:   cli.Test.CappedCleanup.Interval,
+			CappedCleanupPercentage: cli.Test.CappedCleanup.Percentage,
+			EnableNewAuth:           cli.Test.EnableNewAuth,
+			BatchSize:               cli.Test.BatchSize,
+			MaxBsonObjectSizeBytes:  cli.Test.MaxBsonObjectSizeMiB * 1024 * 1024, //nolint:mnd // converting MiB to bytes
 		},
 	})
 	if err != nil {
 		logger.Sugar().Fatalf("Failed to construct handler: %s.", err)
 	}
 
+	defer closeBackend()
+
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
-		TCP:         cli.Listen.Addr,
-		Unix:        cli.Listen.Unix,
+		TCP:  cli.Listen.Addr,
+		Unix: cli.Listen.Unix,
+
 		TLS:         cli.Listen.TLS,
 		TLSCertFile: cli.Listen.TLSCertFile,
 		TLSKeyFile:  cli.Listen.TLSKeyFile,
-		TLSCAFile:   cli.Listen.TLSCAFile,
+		TLSCAFile:   cli.Listen.TLSCaFile,
 
-		ProxyAddr:      cli.ProxyAddr,
+		ProxyAddr:        cli.Proxy.Addr,
+		ProxyTLSCertFile: cli.Proxy.TLSCertFile,
+		ProxyTLSKeyFile:  cli.Proxy.TLSKeyFile,
+		ProxyTLSCAFile:   cli.Proxy.TLSCaFile,
+
 		Mode:           clientconn.Mode(cli.Mode),
 		Metrics:        metrics,
 		Handler:        h,

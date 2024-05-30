@@ -32,19 +32,6 @@ func TestQueryProjectionCompat(t *testing.T) {
 	topLevelFieldsIntegers := shareddata.NewTopLevelFieldsProvider(
 		"TopLevelFieldsIntegers",
 		nil,
-		map[string]map[string]any{
-			"ferretdb-tigris": {
-				"$tigrisSchemaString": `{
-				"title": "%%collection%%",
-				"primary_key": ["_id"],
-				"properties": {
-					"foo": {"type": "integer", "format": "int32"},
-					"bar": {"type": "integer", "format": "int32"},
-					"_id": {"type": "string"}
-				}
-			}`,
-			},
-		},
 		map[string]shareddata.Fields{
 			"int32-two": {
 				{Key: "foo", Value: int32(1)},
@@ -238,6 +225,9 @@ func TestQueryProjectionCompat(t *testing.T) {
 func TestQueryProjectionPositionalOperatorCompat(t *testing.T) {
 	t.Parallel()
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/3053
+	providers := shareddata.AllProviders().Remove(shareddata.ArrayAndDocuments)
+
 	testCases := map[string]queryCompatTestCase{
 		"IDFilter": {
 			// it returns error only if collection contains a doc that matches the filter
@@ -245,23 +235,23 @@ func TestQueryProjectionPositionalOperatorCompat(t *testing.T) {
 			// e.g. missing {v: <val>} in the filter.
 			filter:         bson.D{{"_id", "array"}},
 			projection:     bson.D{{"v.$", true}},
-			resultPushdown: true,
+			resultPushdown: allPushdown,
 		},
 		"Implicit": {
 			filter:         bson.D{{"v", float64(42)}},
 			projection:     bson.D{{"v.$", true}},
-			resultPushdown: true,
+			resultPushdown: pgPushdown,
 		},
 		"ImplicitNoMatch": {
 			filter:         bson.D{{"v", "non-existent"}},
 			projection:     bson.D{{"v.$", true}},
-			resultPushdown: true,
+			resultPushdown: pgPushdown,
 			resultType:     emptyResult,
 		},
 		"Eq": {
 			filter:         bson.D{{"v", bson.D{{"$eq", 45.5}}}},
 			projection:     bson.D{{"v.$", true}},
-			resultPushdown: true,
+			resultPushdown: pgPushdown,
 		},
 		"Gt": {
 			filter:     bson.D{{"v", bson.D{{"$gt", 42}}}},
@@ -283,12 +273,12 @@ func TestQueryProjectionPositionalOperatorCompat(t *testing.T) {
 		"ImplicitDotNotation": {
 			filter:         bson.D{{"v", float64(42)}},
 			projection:     bson.D{{"v.foo.$", true}},
-			resultPushdown: true,
+			resultPushdown: pgPushdown,
 		},
 		"ImplicitDotNoMatch": {
 			filter:         bson.D{{"v", "non-existent"}},
 			projection:     bson.D{{"v.foo.$", true}},
-			resultPushdown: true,
+			resultPushdown: pgPushdown,
 			resultType:     emptyResult,
 		},
 		"GtDotNotation": {
@@ -309,7 +299,7 @@ func TestQueryProjectionPositionalOperatorCompat(t *testing.T) {
 				{"v", bson.D{{"$gt", 41}}},
 			},
 			projection:     bson.D{{"v.$", true}},
-			resultPushdown: true,
+			resultPushdown: pgPushdown,
 		},
 		"TwoFilter": {
 			filter: bson.D{
@@ -352,7 +342,14 @@ func TestQueryProjectionPositionalOperatorCompat(t *testing.T) {
 			projection: bson.D{{"type", bson.D{{"$type", "$v"}}}},
 			skip:       "https://github.com/FerretDB/FerretDB/issues/2679",
 		},
+		"SumOperatorValue": {
+			filter: bson.D{},
+			projection: bson.D{
+				{"sum", bson.D{{"$sum", "$v"}}},
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/835",
+		},
 	}
 
-	testQueryCompat(t, testCases)
+	testQueryCompatWithProviders(t, providers, testCases)
 }

@@ -13,4 +13,40 @@
 // limitations under the License.
 
 // Package observability provides abstractions for tracing, metrics, etc.
+//
+// TODO https://github.com/FerretDB/FerretDB/issues/3244
 package observability
+
+import (
+	"context"
+	"time"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	otelsdkresource "go.opentelemetry.io/otel/sdk/resource"
+	otelsdktrace "go.opentelemetry.io/otel/sdk/trace"
+	otelsemconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+
+	"github.com/FerretDB/FerretDB/internal/util/must"
+)
+
+// SetupOtel sets up OpenTelemetry exporter with fixed values.
+func SetupOtel(service string) func(context.Context) error {
+	exporter := must.NotFail(otlptracehttp.New(
+		context.TODO(),
+		otlptracehttp.WithEndpoint("127.0.0.1:4318"),
+		otlptracehttp.WithInsecure(),
+	))
+
+	tp := otelsdktrace.NewTracerProvider(
+		otelsdktrace.WithBatcher(exporter, otelsdktrace.WithBatchTimeout(time.Second)),
+		otelsdktrace.WithSampler(otelsdktrace.AlwaysSample()),
+		otelsdktrace.WithResource(otelsdkresource.NewSchemaless(
+			otelsemconv.ServiceNameKey.String(service),
+		)),
+	)
+
+	otel.SetTracerProvider(tp)
+
+	return tp.Shutdown
+}

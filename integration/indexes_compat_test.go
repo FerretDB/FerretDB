@@ -17,6 +17,7 @@ package integration
 import (
 	"testing"
 
+	"github.com/AlekSi/pointer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -75,14 +76,13 @@ func TestListIndexesCompat(t *testing.T) {
 }
 
 func TestCreateIndexesCompat(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "Indexes creation is not supported for Tigris")
-
 	t.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
 		models     []mongo.IndexModel
 		resultType compatTestCaseResultType // defaults to nonEmptyResult
-		skip       string                   // optional, skip test with a specified reason
+
+		skip string // optional, skip test with a specified reason
 	}{
 		"Empty": {
 			models:     []mongo.IndexModel{},
@@ -96,13 +96,6 @@ func TestCreateIndexesCompat(t *testing.T) {
 		"SingleIndexMultiField": {
 			models: []mongo.IndexModel{
 				{Keys: bson.D{{"foo", 1}, {"bar", -1}}},
-			},
-		},
-		"DuplicateID": {
-			models: []mongo.IndexModel{
-				{
-					Keys: bson.D{{"_id", 1}}, // this index is already created by default
-				},
 			},
 		},
 		"DescendingID": {
@@ -285,7 +278,7 @@ func TestCreateIndexesCompat(t *testing.T) {
 					targetIndexes := FetchAll(t, ctx, targetCursor)
 					compatIndexes := FetchAll(t, ctx, compatCursor)
 
-					assert.Equal(t, compatIndexes, targetIndexes)
+					assert.ElementsMatch(t, compatIndexes, targetIndexes)
 
 					// List specifications to check they are identical after creation.
 					targetSpec, targetErr := targetCollection.Indexes().ListSpecifications(ctx)
@@ -295,7 +288,7 @@ func TestCreateIndexesCompat(t *testing.T) {
 					require.NoError(t, targetErr)
 
 					require.NotEmpty(t, compatSpec)
-					assert.Equal(t, compatSpec, targetSpec)
+					assert.ElementsMatch(t, compatSpec, targetSpec)
 				})
 			}
 
@@ -312,8 +305,6 @@ func TestCreateIndexesCompat(t *testing.T) {
 }
 
 func TestDropIndexesCompat(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "Indexes are not supported for Tigris")
-
 	t.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
@@ -347,13 +338,6 @@ func TestDropIndexesCompat(t *testing.T) {
 			},
 			dropIndexName: "v_-1",
 		},
-		"AsteriskWithDropOne": {
-			toCreate: []mongo.IndexModel{
-				{Keys: bson.D{{"v", -1}}},
-			},
-			dropIndexName: "*",
-			resultType:    emptyResult,
-		},
 		"NonExistent": {
 			dropIndexName: "nonexistent_1",
 			resultType:    emptyResult,
@@ -383,7 +367,6 @@ func TestDropIndexesCompat(t *testing.T) {
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
-
 				t.Run(targetCollection.Name(), func(t *testing.T) {
 					t.Helper()
 
@@ -405,12 +388,17 @@ func TestDropIndexesCompat(t *testing.T) {
 						compatRes, compatErr = compatCollection.Indexes().DropOne(ctx, tc.dropIndexName)
 					}
 
-					require.Equal(t, compatErr, targetErr)
-					require.Equal(t, compatRes, targetRes)
+					if targetErr != nil {
+						t.Logf("Target error: %v", targetErr)
+						t.Logf("Compat error: %v", compatErr)
 
-					if targetErr == nil {
+						AssertMatchesCommandError(t, compatErr, targetErr)
+					} else {
 						nonEmptyResults = true
+						require.NoError(t, compatErr, "compat error; target returned no error")
 					}
+
+					require.Equal(t, compatRes, targetRes)
 
 					// List indexes to see they are identical after drop.
 					targetCursor, targetErr := targetCollection.Indexes().List(ctx)
@@ -446,8 +434,6 @@ func TestDropIndexesCompat(t *testing.T) {
 }
 
 func TestCreateIndexesCompatUnique(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "Indexes creation is not supported for Tigris")
-
 	t.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
@@ -504,7 +490,7 @@ func TestCreateIndexesCompatUnique(t *testing.T) {
 			},
 			insertDoc: bson.D{{"v", "baz"}, {"foo", "bar"}},
 		},
-		"ExistingFieldInsertDuplicate": {
+		"ExistingInsertDuplicate": {
 			models: []mongo.IndexModel{
 				{
 					Keys:    bson.D{{"v", 1}},
@@ -580,6 +566,101 @@ func TestCreateIndexesCompatUnique(t *testing.T) {
 			}
 
 			require.NoError(t, compatErr, "compat error; target returned no error")
+		})
+	}
+}
+
+func TestCreateIndexesCompatDuplicates(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct { //nolint:vet // for readability
+		models     []mongo.IndexModel       // normal indexes to create
+		duplicates []mongo.IndexModel       // duplicates to attempt to create
+		resultType compatTestCaseResultType // defaults to nonEmptyResult
+	}{
+		"DuplicateByName": {
+			models: []mongo.IndexModel{
+				{Options: &options.IndexOptions{Name: pointer.To("index_foo")}, Keys: bson.D{{"foo", 1}}},
+			},
+			duplicates: []mongo.IndexModel{
+				{Options: &options.IndexOptions{Name: pointer.To("index_foo")}, Keys: bson.D{{"bar", 1}}},
+			},
+			resultType: emptyResult,
+		},
+		"DuplicateByKey": {
+			models: []mongo.IndexModel{
+				{Options: &options.IndexOptions{Name: pointer.To("index_foo")}, Keys: bson.D{{"foo", 1}}},
+			},
+			duplicates: []mongo.IndexModel{
+				{Options: &options.IndexOptions{Name: pointer.To("index_not_foo")}, Keys: bson.D{{"foo", 1}}},
+			},
+			resultType: emptyResult,
+		},
+		"DuplicateByPrimaryKey": {
+			models: []mongo.IndexModel{
+				{Options: new(options.IndexOptions), Keys: bson.D{{"_id", 1}}},
+			},
+			duplicates: []mongo.IndexModel{
+				{Options: &options.IndexOptions{Name: pointer.To("index_foo")}, Keys: bson.D{{"_id", 1}}},
+			},
+			resultType: emptyResult,
+		},
+		"FullyIdentical": {
+			models: []mongo.IndexModel{
+				{Options: &options.IndexOptions{Name: pointer.To("index_foo")}, Keys: bson.D{{"foo", 1}}},
+			},
+			duplicates: []mongo.IndexModel{
+				{Options: &options.IndexOptions{Name: pointer.To("index_foo")}, Keys: bson.D{{"foo", 1}}},
+			},
+		},
+		"DuplicateAndInvalid": {
+			models: []mongo.IndexModel{
+				{Options: &options.IndexOptions{Name: pointer.To("index_foo")}, Keys: bson.D{{"foo", 1}}},
+			},
+			duplicates: []mongo.IndexModel{
+				{Options: &options.IndexOptions{Name: pointer.To("index_foo")}, Keys: bson.D{{"foo", 1}}}, // duplicate
+				{Options: &options.IndexOptions{Name: pointer.To("index_bar")}, Keys: bson.D{{"foo", 1}}}, // invalid
+				{Options: &options.IndexOptions{Name: pointer.To("index_baz")}, Keys: bson.D{{"baz", 1}}}, // valid
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Helper()
+			t.Parallel()
+
+			res := setup.SetupCompatWithOpts(t,
+				&setup.SetupCompatOpts{
+					Providers: []shareddata.Provider{shareddata.Int32s},
+				})
+
+			ctx, targetCollections, compatCollections := res.Ctx, res.TargetCollections, res.CompatCollections
+
+			targetCollection := targetCollections[0]
+			compatCollection := compatCollections[0]
+
+			targetRes, targetErr := targetCollection.Indexes().CreateMany(ctx, tc.models)
+			compatRes, compatErr := compatCollection.Indexes().CreateMany(ctx, tc.models)
+
+			require.NoError(t, compatErr)
+			require.NoError(t, targetErr)
+			require.Equal(t, compatRes, targetRes)
+
+			targetRes, targetErr = targetCollection.Indexes().CreateMany(ctx, tc.duplicates)
+			compatRes, compatErr = compatCollection.Indexes().CreateMany(ctx, tc.duplicates)
+
+			if targetErr != nil {
+				t.Logf("Target error: %v", targetErr)
+				t.Logf("Compat error: %v", compatErr)
+
+				// error messages are intentionally not compared
+				AssertMatchesCommandError(t, compatErr, targetErr)
+
+				return
+			}
+			require.NoError(t, compatErr, "compat error; target returned no error")
+
+			assert.Equal(t, compatRes, targetRes)
 		})
 	}
 }

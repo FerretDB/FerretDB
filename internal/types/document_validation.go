@@ -68,6 +68,11 @@ func (e *ValidationError) Code() ValidationErrorCode {
 // It replaces negative zero -0 with valid positive zero 0.
 // If the document is not valid it returns *ValidationError.
 func (d *Document) ValidateData() error {
+	return d.validateData(true)
+}
+
+// validateData applies different validation rules to the `_id` field depending on the document level.
+func (d *Document) validateData(isTopLevel bool) error {
 	d.moveIDToTheFirstIndex()
 
 	keys := d.Keys()
@@ -102,9 +107,9 @@ func (d *Document) ValidateData() error {
 
 		value := values[i]
 
-		switch v := value.(type) {
+		switch value := value.(type) {
 		case *Document:
-			err := v.ValidateData()
+			err := value.validateData(false)
 			if err != nil {
 				var vErr *ValidationError
 
@@ -115,16 +120,16 @@ func (d *Document) ValidateData() error {
 				return err
 			}
 		case *Array:
-			if key == "_id" {
+			if isTopLevel && key == "_id" {
 				return newValidationError(ErrWrongIDType, fmt.Errorf("The '_id' value cannot be of type array"))
 			}
 
-			for i := 0; i < v.Len(); i++ {
-				item := must.NotFail(v.Get(i))
+			for i := 0; i < value.Len(); i++ {
+				item := must.NotFail(value.Get(i))
 
 				switch item := item.(type) {
 				case *Document:
-					err := item.ValidateData()
+					err := item.validateData(false)
 					if err != nil {
 						var vErr *ValidationError
 
@@ -136,26 +141,26 @@ func (d *Document) ValidateData() error {
 					}
 				case *Array:
 					return newValidationError(ErrValidation, fmt.Errorf(
-						"invalid value: { %q: %v } (nested arrays are not supported)", key, FormatAnyValue(v),
+						"invalid value: { %q: %v } (nested arrays are not supported)", key, FormatAnyValue(value),
 					))
 				case float64:
 					if item == 0 && math.Signbit(item) {
-						v.Set(i, math.Copysign(0, +1))
+						must.NoError(value.Set(i, math.Copysign(0, +1)))
 					}
 				}
 			}
 		case float64:
-			if math.IsInf(v, 0) {
+			if math.IsInf(value, 0) {
 				return newValidationError(
-					ErrValidation, fmt.Errorf("invalid value: { %q: %f } (infinity values are not allowed)", key, v),
+					ErrValidation, fmt.Errorf("invalid value: { %q: %f } (infinity values are not allowed)", key, value),
 				)
 			}
 
-			if v == 0 && math.Signbit(v) {
+			if value == 0 && math.Signbit(value) {
 				d.Set(key, math.Copysign(0, +1))
 			}
 		case Regex:
-			if key == "_id" {
+			if isTopLevel && key == "_id" {
 				return newValidationError(ErrWrongIDType, fmt.Errorf("The '_id' value cannot be of type regex"))
 			}
 		}

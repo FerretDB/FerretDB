@@ -14,15 +14,9 @@
 
 package main
 
-import (
-	"context"
-	"os"
-	"os/signal"
+import "fmt"
 
-	"golang.org/x/sys/windows"
-)
-
-// notifyAppTermination installs a signal handler that cancels the context.
-func notifyAppTermination(parent context.Context) (context.Context, context.CancelFunc) {
-	return signal.NotifyContext(parent, windows.SIGTERM, windows.SIGINT, os.Interrupt)
+// stateFileProblem returns the state file access error.
+func stateFileProblem(_ string, err error) string {
+	return fmt.Sprintf("Failed to create state provider: %s.", err)
 }
