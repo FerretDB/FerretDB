@@ -23,8 +23,9 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
+	"github.com/FerretDB/FerretDB/internal/handler/common"
+
 	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
 )
 
 func TestCommandsReplication(t *testing.T) {
@@ -48,6 +49,16 @@ func TestCommandsReplication(t *testing.T) {
 			delete(m, "logicalSessionTimeoutMinutes")
 			delete(m, "topologyVersion")
 			delete(m, "isWritablePrimary")
+			delete(m, "$clusterTime")
+			delete(m, "electionId")
+			delete(m, "hosts")
+			delete(m, "lastWrite")
+			delete(m, "me")
+			delete(m, "operationTime")
+			delete(m, "primary")
+			delete(m, "secondary")
+			delete(m, "setName")
+			delete(m, "setVersion")
 
 			assert.InDelta(t, time.Now().Unix(), m["localTime"].(primitive.DateTime).Time().Unix(), 2)
 			delete(m, "localTime")

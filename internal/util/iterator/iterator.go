@@ -31,6 +31,9 @@ type Interface[K, V any] interface {
 	// or Next returned fatal error,
 	// Close method still should be called.
 	//
+	// Next should return either key/value pair or error, not both and not neither.
+	// For example, single-value iterators should not return (key, value, ErrIteratorDone).
+	//
 	// Next should not be called concurrently with other Next calls,
 	// but it can be called concurrently with Close.
 	Next() (K, V, error)

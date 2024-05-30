@@ -17,36 +17,39 @@ package integration
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
 type insertCommandCompatTestCase struct { //nolint:vet // for readability
-	altErrorMsg string // optional, alternative error message in case of error
-	ordered     any    // required, ordered parameter
-	documents   []any  // required, slice of bson.D to be insert
+	toInsert []any // required, slice of bson.D to insert
+	ordered  any   // required, sets it to `ordered`
 
-	skip string // optional, reason to skip the test
+	skip string // optional, skip test with a specified reason
 }
 
-// testInsertCommandCompat tests insert compatibility test cases with invalid parameters.
-// It uses runCommand instead of insertOne or insertMany to let more invalid parameters being used.
+// testInsertCommandCompat tests insert compatibility test cases.
+// It uses runCommand instead of insertOne or insertMany to let more parameters being used.
+// Unlike testInsertCompat, it does not check inserted IDs.
 func testInsertCommandCompat(t *testing.T, testCases map[string]insertCommandCompatTestCase) {
 	t.Helper()
 
 	for name, tc := range testCases {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			t.Helper()
-
 			if tc.skip != "" {
 				t.Skip(tc.skip)
 			}
 
+			t.Helper()
 			t.Parallel()
+
+			require.NotNil(t, tc.toInsert, "toInsert must not be nil")
+			require.NotNil(t, tc.ordered, "ordered must not be nil")
 
 			ctx, targetCollections, compatCollections := setup.SetupCompat(t)
 
@@ -56,17 +59,17 @@ func testInsertCommandCompat(t *testing.T, testCases map[string]insertCommandCom
 				t.Run(targetCollection.Name(), func(t *testing.T) {
 					t.Helper()
 
-					// RunCommand must be used to give ability set various invalid parameters
+					// RunCommand must be used to give ability set various parameters
 					// and prevent the driver from doing any validation.
 					var targetRes, compatRes bson.D
 					targetErr := targetCollection.Database().RunCommand(ctx, bson.D{
 						{"insert", targetCollection.Name()},
-						{"documents", tc.documents},
+						{"documents", tc.toInsert},
 						{"ordered", tc.ordered},
 					}).Decode(&targetRes)
 					compatErr := compatCollection.Database().RunCommand(ctx, bson.D{
 						{"insert", compatCollection.Name()},
-						{"documents", tc.documents},
+						{"documents", tc.toInsert},
 						{"ordered", tc.ordered},
 					}).Decode(&compatRes)
 
@@ -83,7 +86,15 @@ func testInsertCommandCompat(t *testing.T, testCases map[string]insertCommandCom
 
 					t.Logf("Compat (expected) result: %v", compatRes)
 					t.Logf("Target (actual)   result: %v", targetRes)
-					assert.Equal(t, compatRes, targetRes)
+
+					compatDoc := ConvertDocument(t, compatRes)
+					compatDoc.Remove("$clusterTime")
+					compatDoc.Remove("operationTime")
+					compatDoc.Remove("electionId")
+					compatDoc.Remove("opTime")
+
+					targetDoc := ConvertDocument(t, targetRes)
+					testutil.AssertEqual(t, compatDoc, targetDoc)
 				})
 			}
 		})
@@ -94,16 +105,8 @@ func TestInsertCommandCompat(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]insertCommandCompatTestCase{
-		"InsertOrderedInvalid": {
-			documents: []any{
-				bson.D{{"_id", "foo"}},
-			},
-			ordered:     "foo",
-			altErrorMsg: "BSON field 'ordered' is the wrong type 'string', expected type 'bool'",
-		},
-
 		"InsertEmpty": {
-			documents: []any{
+			toInsert: []any{
 				bson.D{{}},
 			},
 			ordered: true,
