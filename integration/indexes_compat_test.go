@@ -26,7 +26,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
-	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 func TestListIndexesCompat(t *testing.T) {
@@ -76,15 +75,14 @@ func TestListIndexesCompat(t *testing.T) {
 	}
 }
 
-func TestCreateIndexesCompat(tt *testing.T) {
-	tt.Parallel()
+func TestCreateIndexesCompat(t *testing.T) {
+	t.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
 		models     []mongo.IndexModel
 		resultType compatTestCaseResultType // defaults to nonEmptyResult
 
-		skip           string // optional, skip test with a specified reason
-		failsForSQLite string // optional, if set, the case is expected to fail for SQLite due to given issue
+		skip string // optional, skip test with a specified reason
 	}{
 		"Empty": {
 			models:     []mongo.IndexModel{},
@@ -219,17 +217,17 @@ func TestCreateIndexesCompat(tt *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		tt.Run(name, func(tt *testing.T) {
+		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
-				tt.Skip(tc.skip)
+				t.Skip(tc.skip)
 			}
 
-			tt.Helper()
-			tt.Parallel()
+			t.Helper()
+			t.Parallel()
 
 			// Use per-test setup because createIndexes modifies collection state,
 			// however, we don't need to run index creation test for all the possible collections.
-			s := setup.SetupCompatWithOpts(tt, &setup.SetupCompatOpts{
+			s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
 				Providers:                []shareddata.Provider{shareddata.Composites},
 				AddNonExistentCollection: true,
 			})
@@ -239,13 +237,9 @@ func TestCreateIndexesCompat(tt *testing.T) {
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
-				tt.Run(targetCollection.Name(), func(tt *testing.T) {
-					tt.Helper()
 
-					var t testtb.TB = tt
-					if tc.failsForSQLite != "" {
-						t = setup.FailsForSQLite(tt, tc.failsForSQLite)
-					}
+				t.Run(targetCollection.Name(), func(t *testing.T) {
+					t.Helper()
 
 					targetRes, targetErr := targetCollection.Indexes().CreateMany(ctx, tc.models)
 					compatRes, compatErr := compatCollection.Indexes().CreateMany(ctx, tc.models)
@@ -298,17 +292,13 @@ func TestCreateIndexesCompat(tt *testing.T) {
 				})
 			}
 
-			if tc.failsForSQLite != "" {
-				return
-			}
-
 			switch tc.resultType {
 			case nonEmptyResult:
-				assert.True(tt, nonEmptyResults, "expected non-empty results (some documents should be modified)")
+				assert.True(t, nonEmptyResults, "expected non-empty results (some documents should be modified)")
 			case emptyResult:
-				assert.False(tt, nonEmptyResults, "expected empty results (no documents should be modified)")
+				assert.False(t, nonEmptyResults, "expected empty results (no documents should be modified)")
 			default:
-				tt.Fatalf("unknown result type %v", tc.resultType)
+				t.Fatalf("unknown result type %v", tc.resultType)
 			}
 		})
 	}
@@ -608,7 +598,7 @@ func TestCreateIndexesCompatDuplicates(t *testing.T) {
 		},
 		"DuplicateByPrimaryKey": {
 			models: []mongo.IndexModel{
-				{Options: &options.IndexOptions{}, Keys: bson.D{{"_id", 1}}},
+				{Options: new(options.IndexOptions), Keys: bson.D{{"_id", 1}}},
 			},
 			duplicates: []mongo.IndexModel{
 				{Options: &options.IndexOptions{Name: pointer.To("index_foo")}, Keys: bson.D{{"_id", 1}}},

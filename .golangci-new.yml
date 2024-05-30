@@ -24,8 +24,10 @@ linters-settings:
     asserts: true
     comparison: true
   govet:
-    check-shadowing: true
     enable-all: true
+    settings:
+      shadow:
+        strict: true
   revive:
     ignore-generated-header: true
     severity: warning
@@ -81,6 +83,7 @@ linters:
     - lll
     - misspell
     - nolintlint
+    - sloglint
     - unused
     - whitespace
 
@@ -90,15 +93,14 @@ linters:
     - containedctx
     - contextcheck
     - cyclop
-    - deadcode
     - decorder
     - dogsled
     - dupl
     - durationcheck
+    - err113
     - errchkjson
     - errname
     - execinquery
-    - exhaustivestruct
     - exhaustruct
     - exportloopref
     - forcetypeassert
@@ -108,7 +110,6 @@ linters:
     - gocognit
     - gocritic
     - gocyclo
-    - goerr113
     - gofmt
     - gofumpt
     - gomnd
@@ -116,7 +117,6 @@ linters:
     - goprintffuncname
     - gosec
     - grouper
-    - ifshort
     - inamedparam
     - ireturn
     - maintidx
@@ -146,19 +146,10 @@ linters:
     - typecheck
     - unconvert
     - unparam
-    - varcheck
     - varnamelen
     - wastedassign
     - wrapcheck
     - zerologlint
-
-    # deprecated
-    - golint
-    - interfacer
-    - maligned
-    - nosnakecase
-    - scopelint
-    - structcheck
 
     - nlreturn # too annoying
     - testpackage # we test internals
@@ -166,5 +157,8 @@ linters:
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
-  exclude-use-default: false
+
   new-from-rev: origin/main
+  # whole-files: true
+
+  exclude-use-default: false

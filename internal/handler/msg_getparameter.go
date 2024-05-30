@@ -52,7 +52,7 @@ func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.O
 		//	"settableAtStartup", <bool>,
 		//)),
 		"authenticationMechanisms", must.NotFail(types.NewDocument(
-			"value", must.NotFail(types.NewArray("PLAIN")),
+			"value", must.NotFail(types.NewArray("SCRAM-SHA-1", "SCRAM-SHA-256", "PLAIN")),
 			"settableAtRuntime", false,
 			"settableAtStartup", true,
 		)),
@@ -90,9 +90,9 @@ func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	resDoc.Set("ok", float64(1))
 
 	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{resDoc},
-	}))
+	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+		resDoc,
+	)))
 
 	return &reply, nil
 }

@@ -8,7 +8,7 @@ linters-settings:
   # asciicheck
   depguard:
     rules:
-      old:
+      old-packages:
         files:
           - $all
         deny:
@@ -16,6 +16,8 @@ linters-settings:
             desc: use `context` package instead
           - pkg: golang.org/x/exp/slices
             desc: use `slices` package instead
+          - pkg: maps
+            desc: use `golang.org/x/exp/maps` package instead
           - pkg: github.com/jackc/pgconn
             desc: use `github.com/jackc/pgx/v5/pgconn` package instead
           - pkg: github.com/jackc/pgproto3
@@ -26,30 +28,20 @@ linters-settings:
             desc: use `github.com/jackc/pgx/v5` package instead
           - pkg: github.com/jackc/pgx/v4
             desc: use `github.com/jackc/pgx/v5` package instead
-      fjson:
-        files:
-          - $all
-          - "!**/internal/bson/*_test.go"
-          - "!**/internal/util/testutil/*.go"
-          - "!**/internal/wire/*.go"
-        deny:
-          - pkg: github.com/FerretDB/FerretDB/internal/types/fjson
       bson:
         files:
           - $all
+          - "!**/internal/bson/*_test.go"
+          - "!**/internal/driver/*.go"
+          - "!**/internal/util/testutil/*.go"
           - "!**/internal/wire/*.go"
-          - "!**/internal/bson2/*_test.go"
         deny:
           - pkg: github.com/FerretDB/FerretDB/internal/bson
-      bson2:
-        files:
-          - $all
-        deny:
-          - pkg: github.com/FerretDB/FerretDB/internal/bson2
       bsonproto:
         files:
           - $all
-          - "!**/internal/bson2/*.go"
+          - "!**/internal/bson/*.go"
+          - "!**/internal/driver/*.go"
         deny:
           - pkg: github.com/cristalhq/bson
           - pkg: github.com/cristalhq/bson/bsonproto
@@ -66,7 +58,7 @@ linters-settings:
           - pkg: github.com/FerretDB/FerretDB/internal/handler/sjson
       common:
         files:
-          - "**/internal/backends/**/*.go"
+          - "**/internal/backends/**.go"
           - "**/internal/clientconn/cursor/*.go"
         deny:
           - pkg: github.com/FerretDB/FerretDB/internal/handler/common
@@ -86,31 +78,35 @@ linters-settings:
     default-signifies-exhaustive: false
   forbidigo:
     forbid:
+      - p: ^\Qpgxpool.Pool.AcquireFunc\E$
+        pkg: ^\Qgithub.com/jackc/pgx/v5/pgxpool\E$
+        msg: Use `Acquire` with `defer Release()` instead.
+
       # integration tests use a different configuration file
       - p: ^\Qbson.E\E$
         pkg: ^\Qgo.mongodb.org/mongo-driver/bson\E$
-        msg: Use *types.Document or *types.Array instead.
+        msg: Use `*types.Document` or `*types.Array` instead.
       - p: ^\Qprimitive.E\E$
         pkg: ^\Qgo.mongodb.org/mongo-driver/bson/primitive\E$
-        msg: Use *types.Document or *types.Array instead.
+        msg: Use `*types.Document` or `*types.Array` instead.
       - p: ^\Qbson.D\E$
         pkg: ^\Qgo.mongodb.org/mongo-driver/bson\E$
-        msg: Use *types.Document instead.
+        msg: Use `*types.Document` instead.
       - p: ^\Qprimitive.D\E$
         pkg: ^\Qgo.mongodb.org/mongo-driver/bson/primitive\E$
-        msg: Use *types.Document instead.
+        msg: Use `*types.Document` instead.
       - p: ^\Qbson.M\E$
         pkg: ^\Qgo.mongodb.org/mongo-driver/bson\E$
-        msg: Use *types.Document instead.
+        msg: Use `*types.Document` instead.
       - p: ^\Qprimitive.M\E$
         pkg: ^\Qgo.mongodb.org/mongo-driver/bson/primitive\E$
-        msg: Use *types.Document instead.
+        msg: Use `*types.Document` instead.
       - p: ^\Qbson.A\E$
         pkg: ^\Qgo.mongodb.org/mongo-driver/bson\E$
-        msg: Use *types.Array instead.
+        msg: Use `*types.Array` instead.
       - p: ^\Qprimitive.A\E$
         pkg: ^\Qgo.mongodb.org/mongo-driver/bson/primitive\E$
-        msg: Use *types.Array instead.
+        msg: Use `*types.Array` instead.
     exclude-godoc-examples: true
     analyze-types: true
   gci:
@@ -188,6 +184,8 @@ linters-settings:
         alias: otelsemconv
       - pkg: github.com/FerretDB/FerretDB/internal/backends/mysql/metadata/pool
         alias: mysqlpool
+      - pkg: golang.org/x/net/trace
+        alias: xnettrace
   # ineffassign
   lll:
     line-length: 130
@@ -195,9 +193,13 @@ linters-settings:
   misspell:
     ignore-words:
       - guiness # present in the test dataset
+    extra-words: # https://go.dev/wiki/Spelling, https://github.com/golangci/misspell/issues/11
+      - typo: "iff"
+        correction: "if"
+      - typo: "cancelation"
+        correction: "cancellation"
   nolintlint:
     allow-unused: false
-    allow-leading-space: false
     allow-no-explanation: []
     require-explanation: true
     require-specific: true
@@ -205,6 +207,16 @@ linters-settings:
     ignore-generated-header: true
     severity: error
     rules: []
+  sloglint:
+    no-mixed-args: true
+    kv-only: false
+    attr-only: true
+    no-global: "all"
+    context: "scope"
+    static-msg: false # TODO https://github.com/FerretDB/FerretDB/issues/3421
+    no-raw-keys: false # TODO https://github.com/FerretDB/FerretDB/issues/3421
+    key-naming-case: snake
+    args-on-sep-lines: false
   staticcheck:
     checks:
       - all
@@ -237,6 +249,7 @@ linters:
     - misspell
     - nolintlint
     - revive
+    - sloglint
     - staticcheck
     - unused
     - whitespace

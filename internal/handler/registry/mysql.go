@@ -41,9 +41,12 @@ func init() {
 			StateProvider: opts.StateProvider,
 
 			DisablePushdown:         opts.DisablePushdown,
+			EnableNestedPushdown:    opts.EnableNestedPushdown,
 			CappedCleanupPercentage: opts.CappedCleanupPercentage,
 			CappedCleanupInterval:   opts.CappedCleanupInterval,
 			EnableNewAuth:           opts.EnableNewAuth,
+			BatchSize:               opts.BatchSize,
+			MaxBsonObjectSizeBytes:  opts.MaxBsonObjectSizeBytes,
 		}
 
 		h, err := handler.New(handlerOpts)

@@ -73,8 +73,9 @@ var specialCharacters = regexp.MustCompile("[^a-z][^a-z0-9_]*")
 //
 //nolint:vet // for readability
 type Registry struct {
-	p *pool.Pool
-	l *zap.Logger
+	p         *pool.Pool
+	l         *zap.Logger
+	BatchSize int
 
 	// rw protects colls but also acts like a global lock for the whole registry.
 	// The latter effectively replaces transactions (see the postgresql backend package description for more info).
@@ -86,15 +87,16 @@ type Registry struct {
 }
 
 // NewRegistry creates a registry for PostgreSQL databases with a given base URI.
-func NewRegistry(u string, l *zap.Logger, sp *state.Provider) (*Registry, error) {
+func NewRegistry(u string, batchSize int, l *zap.Logger, sp *state.Provider) (*Registry, error) {
 	p, err := pool.New(u, l, sp)
 	if err != nil {
 		return nil, err
 	}
 
 	r := &Registry{
-		p: p,
-		l: l,
+		p:         p,
+		l:         l,
+		BatchSize: batchSize,
 	}
 
 	return r, nil
@@ -120,12 +122,16 @@ func (r *Registry) getPool(ctx context.Context) (*pgxpool.Pool, error) {
 
 	var p *pgxpool.Pool
 
-	if connInfo.BypassBackendAuth {
+	if connInfo.BypassBackendAuth() {
 		if p = r.p.GetAny(); p == nil {
-			return nil, lazyerrors.New("no connection pool")
+			var err error
+			// use credential from the base URI by passing empty values
+			if p, err = r.p.Get("", ""); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
 		}
 	} else {
-		username, password := connInfo.Auth()
+		username, password, _ := connInfo.Auth()
 
 		var err error
 		if p, err = r.p.Get(username, password); err != nil {

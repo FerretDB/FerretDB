@@ -43,9 +43,7 @@ func (h *Handler) MsgUpdateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 		return nil, err
 	}
 
-	var username string
-	username, err = common.GetRequiredParam[string](document, document.Command())
-
+	username, err := common.GetRequiredParam[string](document, document.Command())
 	if err != nil {
 		return nil, err
 	}
@@ -92,61 +90,65 @@ func (h *Handler) MsgUpdateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 
 	common.Ignored(document, h.L, "writeConcern", "authenticationRestrictions", "comment")
 
-	defMechanisms := must.NotFail(types.NewArray())
+	defMechanisms := must.NotFail(types.NewArray("SCRAM-SHA-1", "SCRAM-SHA-256"))
 
 	mechanisms, err := common.GetOptionalParam(document, "mechanisms", defMechanisms)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	if mechanisms != nil {
-		iter := mechanisms.Iterator()
-		defer iter.Close()
+	iter := mechanisms.Iterator()
+	defer iter.Close()
 
-		for {
-			var v any
-			_, v, err = iter.Next()
+	for {
+		var v any
+		_, v, err = iter.Next()
 
-			if errors.Is(err, iterator.ErrIteratorDone) {
-				break
-			}
+		if errors.Is(err, iterator.ErrIteratorDone) {
+			break
+		}
 
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 
-			if v != "PLAIN" {
-				return nil, handlererrors.NewCommandErrorMsg(
-					handlererrors.ErrBadValue,
-					fmt.Sprintf("Unknown auth mechanism '%s'", v),
-				)
-			}
+		switch v {
+		case "PLAIN", "SCRAM-SHA-1", "SCRAM-SHA-256":
+			// do nothing
+		default:
+			return nil, handlererrors.NewCommandErrorMsg(
+				handlererrors.ErrBadValue,
+				fmt.Sprintf("Unknown auth mechanism '%s'", v),
+			)
 		}
 	}
 
 	var credentials *types.Document
+
 	if document.Has("pwd") {
-		credentials = types.MakeDocument(0)
-		pwdi := must.NotFail(document.Get("pwd"))
-		pwd, ok := pwdi.(string)
+		pwd, _ := document.Get("pwd")
+		userPassword, ok := pwd.(string)
 
 		if !ok {
 			return nil, handlererrors.NewCommandErrorMsg(
 				handlererrors.ErrTypeMismatch,
 				fmt.Sprintf("BSON field 'updateUser.pwd' is the wrong type '%s', expected type 'string'",
-					handlerparams.AliasFromType(pwdi),
+					handlerparams.AliasFromType(pwd),
 				),
 			)
 		}
 
-		if pwd == "" {
+		if userPassword == "" {
 			return nil, handlererrors.NewCommandErrorMsg(
 				handlererrors.ErrSetEmptyPassword,
 				"Password cannot be empty",
 			)
 		}
 
-		credentials.Set("PLAIN", must.NotFail(password.PlainHash(pwd)))
+		credentials, err = backends.MakeCredentials(username, password.WrapPassword(userPassword), mechanisms)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	usersCol, err := adminDB.Collection("system.users")
@@ -154,14 +156,7 @@ func (h *Handler) MsgUpdateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 		return nil, lazyerrors.Error(err)
 	}
 
-	var filter *types.Document
-	filter, err = usersInfoFilter(false, false, "", []usersInfoPair{
-		{
-			username: username,
-			db:       dbName,
-		},
-	})
-
+	filter, err := usersInfoFilter(false, false, "", []usersInfoPair{{username: username, db: dbName}})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -191,7 +186,6 @@ func (h *Handler) MsgUpdateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 
 		var matches bool
 		matches, err = common.FilterDocument(v, filter)
-
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -230,11 +224,11 @@ func (h *Handler) MsgUpdateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 	}
 
 	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
+	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+		must.NotFail(types.NewDocument(
 			"ok", float64(1),
-		))},
-	}))
+		)),
+	)))
 
 	return &reply, nil
 }

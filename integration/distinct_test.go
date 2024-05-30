@@ -36,7 +36,8 @@ func TestDistinctCommandErrors(t *testing.T) {
 		collName any // optional, defaults to coll.Name()
 		filter   any // required
 
-		err *mongo.CommandError
+		err        *mongo.CommandError
+		altMessage string
 	}{
 		"StringFilter": {
 			command: "a",
@@ -64,8 +65,9 @@ func TestDistinctCommandErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    73,
 				Name:    "InvalidNamespace",
-				Message: "collection name has invalid type object",
+				Message: "Failed to parse namespace element",
 			},
+			altMessage: "collection name has invalid type object",
 		},
 		"WrongTypeObject": {
 			command: bson.D{},
@@ -114,7 +116,7 @@ func TestDistinctCommandErrors(t *testing.T) {
 			err := collection.Database().RunCommand(ctx, command).Decode(res)
 
 			assert.Nil(t, res)
-			AssertEqualCommandError(t, *tc.err, err)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 		})
 	}
 }

@@ -207,16 +207,21 @@ func addRecordedFuzzDocs(f *testing.F, needDocument, needSchema bool) int {
 			docs = append(docs, doc)
 
 		case *wire.OpQuery:
-			if doc := b.Query; doc != nil {
+			if doc := b.Query(); doc != nil {
 				docs = append(docs, doc)
 			}
 
-			if doc := b.ReturnFieldsSelector; doc != nil {
+			if doc := b.ReturnFieldsSelector(); doc != nil {
 				docs = append(docs, doc)
 			}
 
 		case *wire.OpReply:
-			docs = append(docs, b.Documents...)
+			doc, err := b.Document()
+			require.NoError(f, err)
+
+			if doc != nil {
+				docs = append(docs, doc)
+			}
 		}
 
 		for _, doc := range docs {
@@ -375,7 +380,7 @@ func benchmark(b *testing.B, testCases []testCase, newFunc func() sjsontype) {
 				b.SetBytes(int64(len(data)))
 				b.ResetTimer()
 
-				for i := 0; i < b.N; i++ {
+				for range b.N {
 					v = newFunc()
 					err = unmarshalJSON(v, &tc)
 				}

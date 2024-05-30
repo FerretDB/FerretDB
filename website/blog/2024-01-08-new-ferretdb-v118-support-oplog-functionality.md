@@ -13,6 +13,8 @@ tags: [release]
 We are starting the new year with a major feature addition!
 The latest version of FerretDB v1.18.0 has just been released with support for basic OpLog functionality, along with other exciting features.
 
+<!--truncate-->
+
 OpLog (operations log) functionality has been one of our most requested features, and it would make it possible for developers to build real-time applications using the Meteor framework.
 We made this a priority in the last quarter and are super excited that it's now available.
 We can't wait to see what you build with FerretDB!
