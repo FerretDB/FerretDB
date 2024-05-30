@@ -45,12 +45,8 @@ const (
 //
 // Compare and contrast with test helpers in testutil package.
 func Compare(docValue, filterValue any) CompareResult {
-	if docValue == nil {
-		panic("compare: docValue is nil")
-	}
-	if filterValue == nil {
-		panic("compare: filterValue is nil")
-	}
+	assertType(docValue)
+	assertType(filterValue)
 
 	switch docValue := docValue.(type) {
 	case *Document:
@@ -70,13 +66,8 @@ func Compare(docValue, filterValue any) CompareResult {
 // an array and non array would not result in Equal.
 // This is specially used for aggregation grouping comparison.
 func CompareForAggregation(docValue, filterValue any) CompareResult {
-	if docValue == nil {
-		panic("compare: docValue is nil")
-	}
-
-	if filterValue == nil {
-		panic("compare: filterValue is nil")
-	}
+	assertType(docValue)
+	assertType(filterValue)
 
 	switch docValue := docValue.(type) {
 	case *Document:
@@ -98,6 +89,9 @@ func CompareForAggregation(docValue, filterValue any) CompareResult {
 
 // compareScalars compares BSON scalar values.
 func compareScalars(v1, v2 any) CompareResult {
+	assertType(v1)
+	assertType(v2)
+
 	if !isScalar(v1) || !isScalar(v2) {
 		return compareTypeOrder(v1, v2)
 	}
@@ -258,7 +252,6 @@ func compareOrdered[T constraints.Ordered](a, b T) CompareResult {
 
 // compareNumbers compares BSON numbers.
 func compareNumbers(a float64, b int64) CompareResult {
-	// TODO figure out correct precision
 	bigA := new(big.Float).SetFloat64(a).SetPrec(100000)
 	bigB := new(big.Float).SetInt64(b).SetPrec(100000)
 
@@ -362,6 +355,8 @@ func compareDocuments(a, b *Document) CompareResult {
 
 // compareArray compares array to any value.
 func compareArray(as *Array, b any) CompareResult {
+	assertType(b)
+
 	if bs, ok := b.(*Array); ok {
 		return compareArrays(as, bs)
 	}

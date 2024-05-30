@@ -8,9 +8,11 @@
 /integration/               @FerretDB/leads
 /internal/                  @FerretDB/leads
 
-/internal/handlers/hana/    @AlekSi
+/internal/backends/         @AlekSi
 
-/website/                   @FerretDB/doc
+# @AlekSi for engineering, @ptrfarkas for marketing.
+# See also Mergify configuration.
+/website/                   @AlekSi @ptrfarkas
 
 /build/                     @AlekSi
 /build/legacy-mongo-shell/  @FerretDB/specops
