@@ -75,7 +75,7 @@ func TestCreateDrop(t *testing.T) {
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
-	r, err := NewRegistry(testutil.TestSQLiteURI(t, ""), testutil.Logger(t), sp)
+	r, err := NewRegistry(testutil.TestSQLiteURI(t, ""), 100, testutil.Logger(t), sp)
 	require.NoError(t, err)
 	t.Cleanup(r.Close)
 
@@ -87,7 +87,7 @@ func TestCreateDrop(t *testing.T) {
 
 	state := sp.Get()
 	require.Equal(t, "SQLite", state.BackendName)
-	require.Equal(t, "3.41.2", state.BackendVersion)
+	require.Equal(t, "3.45.3", state.BackendVersion)
 
 	collectionName := testutil.CollectionName(t)
 
@@ -113,7 +113,7 @@ func TestCreateDropStress(t *testing.T) {
 	} {
 		t.Run(testName, func(t *testing.T) {
 			uri := testutil.TestSQLiteURI(t, "") + params
-			r, err := NewRegistry(uri, testutil.Logger(t), sp)
+			r, err := NewRegistry(uri, 100, testutil.Logger(t), sp)
 			require.NoError(t, err)
 			t.Cleanup(r.Close)
 
@@ -158,7 +158,7 @@ func TestCreateSameStress(t *testing.T) {
 	} {
 		t.Run(testName, func(t *testing.T) {
 			uri := testutil.TestSQLiteURI(t, "") + params
-			r, err := NewRegistry(uri, testutil.Logger(t), sp)
+			r, err := NewRegistry(uri, 100, testutil.Logger(t), sp)
 			require.NoError(t, err)
 			t.Cleanup(r.Close)
 
@@ -227,7 +227,7 @@ func TestDropSameStress(t *testing.T) {
 	} {
 		t.Run(testName, func(t *testing.T) {
 			uri := testutil.TestSQLiteURI(t, "") + params
-			r, err := NewRegistry(uri, testutil.Logger(t), sp)
+			r, err := NewRegistry(uri, 100, testutil.Logger(t), sp)
 			require.NoError(t, err)
 			t.Cleanup(r.Close)
 
@@ -280,7 +280,7 @@ func TestCreateDropSameStress(t *testing.T) {
 	} {
 		t.Run(testName, func(t *testing.T) {
 			uri := testutil.TestSQLiteURI(t, "") + params
-			r, err := NewRegistry(uri, testutil.Logger(t), sp)
+			r, err := NewRegistry(uri, 100, testutil.Logger(t), sp)
 			require.NoError(t, err)
 			t.Cleanup(r.Close)
 
@@ -329,7 +329,7 @@ func TestIndexesCreateDrop(t *testing.T) {
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
-	r, err := NewRegistry(testutil.TestSQLiteURI(t, ""), testutil.Logger(t), sp)
+	r, err := NewRegistry(testutil.TestSQLiteURI(t, ""), 100, testutil.Logger(t), sp)
 	require.NoError(t, err)
 	t.Cleanup(r.Close)
 
@@ -357,6 +357,12 @@ func TestIndexesCreateDrop(t *testing.T) {
 			Descending: false,
 		}},
 		Unique: true,
+	}, {
+		Name: "nested_index",
+		Key: []IndexKeyPair{{
+			Field:      "foo.bar.baz",
+			Descending: false,
+		}},
 	}}
 
 	err = r.IndexesCreate(ctx, dbName, collectionName, toCreate)
@@ -373,7 +379,7 @@ func TestIndexesCreateDrop(t *testing.T) {
 		require.NoError(t, row.Scan(&sql))
 
 		expected := fmt.Sprintf(
-			`CREATE INDEX "%s" ON "%s" (_ferretdb_sjson->'$.f1', _ferretdb_sjson->'$.f2' DESC)`,
+			`CREATE INDEX "%s" ON "%s" (_ferretdb_sjson->"f1", _ferretdb_sjson->"f2" DESC)`,
 			indexName, collection.TableName,
 		)
 		require.Equal(t, expected, sql)
@@ -388,7 +394,7 @@ func TestIndexesCreateDrop(t *testing.T) {
 		require.NoError(t, row.Scan(&sql))
 
 		expected := fmt.Sprintf(
-			`CREATE UNIQUE INDEX "%s" ON "%s" (_ferretdb_sjson->'$.foo')`,
+			`CREATE UNIQUE INDEX "%s" ON "%s" (_ferretdb_sjson->"foo")`,
 			indexName, collection.TableName,
 		)
 		require.Equal(t, expected, sql)
@@ -403,7 +409,22 @@ func TestIndexesCreateDrop(t *testing.T) {
 		require.NoError(t, row.Scan(&sql))
 
 		expected := fmt.Sprintf(
-			`CREATE UNIQUE INDEX "%s" ON "%s" (_ferretdb_sjson->'$._id')`,
+			`CREATE UNIQUE INDEX "%s" ON "%s" (_ferretdb_sjson->"_id")`,
+			indexName, collection.TableName,
+		)
+		require.Equal(t, expected, sql)
+	})
+
+	t.Run("NestedIndex", func(t *testing.T) {
+		indexName := collection.TableName + "_nested_index"
+		q := "SELECT sql FROM sqlite_master WHERE type = 'index' AND name = ?"
+		row := db.QueryRowContext(ctx, q, indexName)
+
+		var sql string
+		require.NoError(t, row.Scan(&sql))
+
+		expected := fmt.Sprintf(
+			`CREATE INDEX "%s" ON "%s" (_ferretdb_sjson->"foo"->"bar"->"baz")`,
 			indexName, collection.TableName,
 		)
 		require.Equal(t, expected, sql)
@@ -414,11 +435,11 @@ func TestIndexesCreateDrop(t *testing.T) {
 		require.NoError(t, err)
 
 		collection = r.CollectionGet(ctx, dbName, collectionName)
-		require.Equal(t, 3, len(collection.Settings.Indexes))
+		require.Equal(t, 4, len(collection.Settings.Indexes))
 	})
 
 	t.Run("DropIndexes", func(t *testing.T) {
-		toDrop := []string{"index_non_unique", "index_unique"}
+		toDrop := []string{"index_non_unique", "index_unique", "nested_index"}
 		err = r.IndexesDrop(ctx, dbName, collectionName, toDrop)
 		require.NoError(t, err)
 

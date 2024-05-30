@@ -22,19 +22,18 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 
-	"github.com/FerretDB/FerretDB/integration"
-	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
+
+	"github.com/FerretDB/FerretDB/integration"
+	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
 func TestDropUser(t *testing.T) {
 	t.Parallel()
 
-	ctx, collection := setup.Setup(t)
-	db := collection.Database()
-	client := db.Client()
-	users := client.Database("admin").Collection("system.users")
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{SetupUser: true})
+	ctx, db := s.Ctx, s.Collection.Database()
 
 	err := db.RunCommand(ctx, bson.D{
 		{"createUser", "a_user"},
@@ -91,15 +90,33 @@ func TestDropUser(t *testing.T) {
 			testutil.AssertEqual(t, expected, actual)
 
 			payload := integration.ConvertDocument(t, tc.payload)
-			assertUserNotFound(ctx, t, users, db.Name(), must.NotFail(payload.Get("dropUser")).(string))
+			username := must.NotFail(payload.Get("dropUser")).(string)
+			assertUserNotFound(ctx, t, db, username)
 		})
 	}
 }
 
 // assertUserNotFound checks it the user doesn't exist in the admin.system.users collection.
-func assertUserNotFound(ctx context.Context, t testing.TB, users *mongo.Collection, dbName, username string) {
+func assertUserNotFound(ctx context.Context, t testing.TB, db *mongo.Database, username string) {
 	t.Helper()
 
-	err := users.FindOne(ctx, bson.D{{"user", username}, {"db", dbName}}).Err()
-	require.Equal(t, mongo.ErrNoDocuments, err, `should return "no documents" error`)
+	var res bson.D
+	err := db.RunCommand(ctx, bson.D{{"usersInfo", bson.A{
+		bson.D{
+			{"user", username},
+			{"db", db.Name()},
+		},
+	}}}).Decode(&res)
+
+	require.NoError(t, err)
+
+	actual := integration.ConvertDocument(t, res)
+	actual.Remove("$clusterTime")
+	actual.Remove("operationTime")
+
+	expected := integration.ConvertDocument(t, bson.D{
+		{"users", bson.A{}},
+		{"ok", float64(1)},
+	})
+	testutil.AssertEqual(t, expected, actual)
 }

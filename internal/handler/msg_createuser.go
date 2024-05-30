@@ -18,12 +18,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-
-	"github.com/google/uuid"
+	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -44,9 +44,6 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 		return nil, err
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3777
-	// TODO https://github.com/FerretDB/FerretDB/issues/3778
-	// TODO https://github.com/FerretDB/FerretDB/issues/3784
 	if dbName != "$external" && !document.Has("pwd") {
 		return nil, handlererrors.NewCommandErrorMsg(
 			handlererrors.ErrBadValue,
@@ -54,9 +51,7 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 		)
 	}
 
-	var username string
-	username, err = common.GetRequiredParam[string](document, document.Command())
-
+	username, err := common.GetRequiredParam[string](document, document.Command())
 	if err != nil {
 		return nil, err
 	}
@@ -111,98 +106,97 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 
 	common.Ignored(document, h.L, "writeConcern", "authenticationRestrictions", "comment")
 
-	defMechanisms := must.NotFail(types.NewArray())
+	defMechanisms := must.NotFail(types.NewArray("SCRAM-SHA-1", "SCRAM-SHA-256"))
 
 	mechanisms, err := common.GetOptionalParam(document, "mechanisms", defMechanisms)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	var plainAuth bool
+	if mechanisms.Len() == 0 {
+		return nil, handlererrors.NewCommandErrorMsg(
+			handlererrors.ErrBadValue,
+			"mechanisms field must not be empty",
+		)
+	}
 
-	if mechanisms != nil {
-		iter := mechanisms.Iterator()
-		defer iter.Close()
+	iter := mechanisms.Iterator()
+	defer iter.Close()
 
-		for {
-			var v any
-			_, v, err = iter.Next()
+	for {
+		var v any
+		_, v, err := iter.Next()
 
-			if errors.Is(err, iterator.ErrIteratorDone) {
-				break
-			}
+		if errors.Is(err, iterator.ErrIteratorDone) {
+			break
+		}
 
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 
-			if v != "PLAIN" {
+		switch v {
+		case "PLAIN", "SCRAM-SHA-1", "SCRAM-SHA-256":
+			// do nothing
+		default:
+			return nil, handlererrors.NewCommandErrorMsg(
+				handlererrors.ErrBadValue,
+				fmt.Sprintf("Unknown auth mechanism '%s'", v),
+			)
+		}
+	}
+
+	if document.Has("pwd") {
+		pwd, _ := document.Get("pwd")
+		userPassword, ok := pwd.(string)
+
+		if !ok {
+			return nil, handlererrors.NewCommandErrorMsg(
+				handlererrors.ErrTypeMismatch,
+				fmt.Sprintf("BSON field 'createUser.pwd' is the wrong type '%s', expected type 'string'",
+					handlerparams.AliasFromType(pwd),
+				),
+			)
+		}
+
+		if userPassword == "" {
+			return nil, handlererrors.NewCommandErrorMsg(
+				handlererrors.ErrSetEmptyPassword,
+				"Password cannot be empty",
+			)
+		}
+
+		err = backends.CreateUser(ctx, h.b, &backends.CreateUserParams{
+			Database:   dbName,
+			Username:   username,
+			Password:   password.WrapPassword(userPassword),
+			Mechanisms: mechanisms,
+		})
+		if err != nil {
+			if backends.ErrorCodeIs(err, backends.ErrorCodeInsertDuplicateID) {
 				return nil, handlererrors.NewCommandErrorMsg(
-					handlererrors.ErrBadValue,
-					fmt.Sprintf("Unknown auth mechanism '%s'", v),
+					handlererrors.ErrUserAlreadyExists,
+					fmt.Sprintf("User \"%s@%s\" already exists", username, dbName),
 				)
 			}
 
-			plainAuth = true
+			if strings.Contains(err.Error(), "prohibited character") {
+				return nil, handlererrors.NewCommandErrorMsg(
+					handlererrors.ErrStringProhibited,
+					"Error preflighting normalization: U_STRINGPREP_PROHIBITED_ERROR",
+				)
+			}
+
+			return nil, lazyerrors.Error(err)
 		}
-	}
-
-	credentials := types.MakeDocument(0)
-
-	if document.Has("pwd") {
-		pwd, ok := must.NotFail(document.Get("pwd")).(string)
-		if !ok {
-			return nil, handlererrors.NewCommandErrorMsg(
-				handlererrors.ErrBadValue,
-				"BSON field 'createUser.pwd' is the wrong type, expected type 'string'",
-			)
-		}
-
-		if plainAuth {
-			credentials.Set("PLAIN", must.NotFail(password.PlainHash(pwd)))
-		}
-	}
-
-	id := uuid.New()
-	saved := must.NotFail(types.NewDocument(
-		"_id", dbName+"."+username,
-		"credentials", credentials,
-		"user", username,
-		"db", dbName,
-		"roles", types.MakeArray(0),
-		"userId", types.Binary{Subtype: types.BinaryUUID, B: must.NotFail(id.MarshalBinary())},
-	))
-
-	adminDB, err := h.b.Database("admin")
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	users, err := adminDB.Collection("system.users")
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	_, err = users.InsertAll(ctx, &backends.InsertAllParams{
-		Docs: []*types.Document{saved},
-	})
-	if err != nil {
-		if backends.ErrorCodeIs(err, backends.ErrorCodeInsertDuplicateID) {
-			return nil, handlererrors.NewCommandErrorMsg(
-				handlererrors.ErrUserAlreadyExists,
-				fmt.Sprintf("User \"%s@%s\" already exists", username, dbName),
-			)
-		}
-
-		return nil, lazyerrors.Error(err)
 	}
 
 	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
+	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+		must.NotFail(types.NewDocument(
 			"ok", float64(1),
-		))},
-	}))
+		)),
+	)))
 
 	return &reply, nil
 }

@@ -387,7 +387,7 @@ func (m *groupMap) addOrAppend(groupKey any, docs ...*types.Document) {
 	})
 }
 
-// processGroupError takes internal error related to operator evaluation and
+// processGroupStageError takes internal error related to operator evaluation and
 // expression evaluation and returns CommandError that can be returned by $group
 // aggregation stage.
 func processGroupStageError(err error) error {

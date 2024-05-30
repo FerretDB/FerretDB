@@ -79,7 +79,7 @@ const (
 	ErrDollarPrefixedFieldName = ErrorCode(52) // DollarPrefixedFieldName
 
 	// ErrInvalidID indicates that _id field is invalid.
-	ErrInvalidID = ErrorCode(53) // InvalidID
+	ErrInvalidID = ErrorCode(53) // InvalidIdField
 
 	// ErrEmptyName indicates that the field name is empty.
 	ErrEmptyName = ErrorCode(56) // EmptyFieldName
@@ -126,11 +126,14 @@ const (
 	// ErrNotImplemented indicates that a flag or command is not implemented.
 	ErrNotImplemented = ErrorCode(238) // NotImplemented
 
+	// ErrMechanismUnavailable indicates that the authentication mechanism is unavailable.
+	ErrMechanismUnavailable = ErrorCode(334)
+
 	// ErrIndexesWrongType indicates that indexes parameter has wrong type.
 	ErrIndexesWrongType = ErrorCode(10065) // Location10065
 
 	// ErrDuplicateKeyInsert indicates duplicate key violation on inserting document.
-	ErrDuplicateKeyInsert = ErrorCode(11000) // Location11000
+	ErrDuplicateKeyInsert = ErrorCode(11000) // DuplicateKey
 
 	// ErrSetBadExpression indicates set expression is not object.
 	ErrSetBadExpression = ErrorCode(40272) // Location40272
@@ -281,6 +284,12 @@ const (
 	// ErrCollStatsIsNotFirstStage indicates that $collStats must be the first stage in the pipeline.
 	ErrCollStatsIsNotFirstStage = ErrorCode(40602) // Location40602
 
+	// ErrSetEmptyPassword indicates that a password must not be empty.
+	ErrSetEmptyPassword = ErrorCode(50687) // Location50687
+
+	// ErrStringProhibited indicates that a password contains prohibited runes.
+	ErrStringProhibited = ErrorCode(50692) // Location50692
+
 	// ErrFreeMonitoringDisabled indicates that free monitoring is disabled
 	// by command-line or config file.
 	ErrFreeMonitoringDisabled = ErrorCode(50840) // Location50840
@@ -348,8 +357,8 @@ type ProtoErr interface {
 // ProtocolError converts any error to wire protocol error.
 //
 // Nil panics (it never should be passed),
-// *CommandError or *WriteErrors (possibly wrapped) are returned unwrapped,
-// *wire.ValidationError (possibly wrapped) is returned as CommandError with BadValue code,
+// [*CommandError] or [*WriteErrors] (possibly wrapped) are returned unwrapped,
+// [*wire.ValidationError] (possibly wrapped) is returned as CommandError with BadValue code,
 // any other values (including lazy errors) are returned as CommandError with InternalError code.
 func ProtocolError(err error) ProtoErr {
 	if err == nil {

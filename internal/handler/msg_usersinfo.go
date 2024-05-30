@@ -45,8 +45,7 @@ func (h *Handler) MsgUsersInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3784
-	// TODO https://github.com/FerretDB/FerretDB/issues/3777
+	// TODO https://github.com/FerretDB/FerretDB/issues/4141
 	if err = common.UnimplementedNonDefault(document, "filter", func(v any) bool {
 		if v == nil || v == types.Null {
 			return true
@@ -60,7 +59,7 @@ func (h *Handler) MsgUsersInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	common.Ignored(
 		document, h.L,
-		"showCredentials", "showCustomData", "showPrivileges",
+		"showCustomData", "showPrivileges",
 		"showAuthenticationRestrictions", "comment", "filter",
 	)
 
@@ -92,7 +91,6 @@ func (h *Handler) MsgUsersInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		for i := 0; i < user.Len(); i++ {
 			var ui any
 			ui, err = user.Get(i)
-
 			if err != nil {
 				return nil, lazyerrors.Error(err)
 			}
@@ -134,9 +132,7 @@ func (h *Handler) MsgUsersInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
-	var filter *types.Document
-	filter, err = usersInfoFilter(allDBs, singleDB, dbName, users)
-
+	filter, err := usersInfoFilter(allDBs, singleDB, dbName, users)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -152,7 +148,6 @@ func (h *Handler) MsgUsersInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	var res *types.Array
 	res, err = types.NewArray()
-
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -173,6 +168,18 @@ func (h *Handler) MsgUsersInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			return nil, lazyerrors.Error(err)
 		}
 
+		if v.Has("credentials") {
+			credentials := must.NotFail(v.Get("credentials")).(*types.Document)
+			if credentialsKeys := credentials.Keys(); len(credentialsKeys) > 0 {
+				mechanisms := must.NotFail(types.NewArray())
+				for _, k := range credentialsKeys {
+					mechanisms.Append(k)
+				}
+
+				v.Set("mechanisms", mechanisms)
+			}
+		}
+
 		if !showCredentials {
 			v.Remove("credentials")
 		}
@@ -183,12 +190,12 @@ func (h *Handler) MsgUsersInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
+	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+		must.NotFail(types.NewDocument(
 			"users", res,
 			"ok", float64(1),
-		))},
-	}))
+		)),
+	)))
 
 	return &reply, nil
 }

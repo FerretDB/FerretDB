@@ -29,7 +29,6 @@ const config = {
   scripts: [
     {src: 'https://plausible.io/js/script.js', defer: true, "data-domain": "blog.ferretdb.io"},
     {src: '/codapi/snippet.js', defer: true},
-    {src: '/codapi/init.js', defer: true},
   ],
 
   plugins: [
@@ -38,6 +37,9 @@ const config = {
       {
         indexBlog: true, // Index blog posts in search engine
         indexDocs: false, // Docs plugin is disabled, docs search needs to be disabled too
+        lunr:{
+          tokenizerSeparator: /[\s\-\$]+/,
+        }
       },
     ],
   ],

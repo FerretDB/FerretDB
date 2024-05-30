@@ -16,6 +16,8 @@ linters-settings:
             desc: use `context` package instead
           - pkg: golang.org/x/exp/slices
             desc: use `slices` package instead
+          - pkg: maps
+            desc: use `golang.org/x/exp/maps` package instead
       commonerrors:
         files:
           - $all
@@ -28,6 +30,7 @@ linters-settings:
       - standard
       - default
       - prefix(github.com/FerretDB/FerretDB)
+      - prefix(github.com/FerretDB/FerretDB/integration)
   goconst:
     min-occurrences: 5
     ignore-tests: true
@@ -61,7 +64,9 @@ linters-settings:
       limitations under the License.
   goimports:
     local-prefixes: github.com/FerretDB/FerretDB
-  # gomodguard
+  gomodguard:
+    blocked:
+      modules: []
   gosimple:
     checks: ["all"]
   govet:
@@ -74,6 +79,8 @@ linters-settings:
     no-unaliased: false
     no-extra-aliases: true
     alias:
+      - pkg: github.com/FerretDB/FerretDB/internal/bson
+        alias: fbson
       - pkg: github.com/prometheus/client_model/go
         alias: dto
       - pkg: github.com/jaswdr/faker
@@ -97,9 +104,13 @@ linters-settings:
   misspell:
     ignore-words:
       - guiness # present in the test dataset
+    extra-words: # https://go.dev/wiki/Spelling, https://github.com/golangci/misspell/issues/11
+      - typo: "iff"
+        correction: "if"
+      - typo: "cancelation"
+        correction: "cancellation"
   nolintlint:
     allow-unused: false
-    allow-leading-space: false
     allow-no-explanation: []
     require-explanation: true
     require-specific: true
@@ -107,6 +118,16 @@ linters-settings:
     ignore-generated-header: true
     severity: error
     rules: []
+  sloglint:
+    no-mixed-args: true
+    kv-only: false
+    attr-only: true
+    no-global: "all"
+    context: "scope"
+    static-msg: true
+    no-raw-keys: false # TODO https://github.com/FerretDB/FerretDB/issues/3421
+    key-naming-case: snake
+    args-on-sep-lines: false
   staticcheck:
     checks:
       - all
@@ -138,6 +159,7 @@ linters:
     - misspell
     - nolintlint
     - revive
+    - sloglint
     - staticcheck
     - unused
     - whitespace

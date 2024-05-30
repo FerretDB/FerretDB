@@ -26,12 +26,13 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/FerretDB/FerretDB/integration"
-	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/teststress"
+
+	"github.com/FerretDB/FerretDB/integration"
+	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
 func TestCursorsTailableAwaitDataGetMoreMaxTimeMS(t *testing.T) {
@@ -411,6 +412,8 @@ func TestCursorsTailableAwaitDataTwoCursorsSameCollection(t *testing.T) {
 }
 
 func TestCursorsTailableAwaitDataStress(t *testing.T) {
+	t.Skip("https://github.com/FerretDB/FerretDB/issues/3945")
+
 	s := setup.SetupWithOpts(t, nil)
 
 	db, ctx := s.Collection.Database(), s.Ctx

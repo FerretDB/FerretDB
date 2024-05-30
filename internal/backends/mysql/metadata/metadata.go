@@ -33,8 +33,11 @@ const (
 	// IDColumn is a MySQL path expression for _id field.
 	IDColumn = DefaultColumn + "->'$._id'"
 
-	// TableIdxColumn is a column name for MySQL generated column.
-	TableIdxColumn = DefaultColumn + "_table"
+	// IDIndexColumn is a column name for MySQL generated column on the field '_id'.
+	IDIndexColumn = DefaultColumn + "_id"
+
+	// TableIndexColumn is a column name for MySQL generated column on the field 'table'.
+	TableIndexColumn = DefaultColumn + "_table"
 
 	// RecordIDColumn is a name for RecordID column to store capped collection record id.
 	RecordIDColumn = backends.ReservedPrefix + "record_id"
@@ -46,6 +49,7 @@ const (
 // Use [deepCopy] to replace whole value instead of modifying fields of existing value.
 type Collection struct {
 	Name            string
+	UUID            string
 	TableName       string
 	Indexes         Indexes
 	CappedSize      int64
@@ -60,6 +64,7 @@ func (c *Collection) deepCopy() *Collection {
 
 	return &Collection{
 		Name:            c.Name,
+		UUID:            c.UUID,
 		TableName:       c.TableName,
 		Indexes:         c.Indexes.deepCopy(),
 		CappedSize:      c.CappedSize,
@@ -114,6 +119,7 @@ func (c *Collection) Scan(src any) error {
 func (c *Collection) marshal() *types.Document {
 	return must.NotFail(types.NewDocument(
 		"_id", c.Name,
+		"uuid", c.UUID,
 		"table", c.TableName,
 		"indexes", c.Indexes.marshal(),
 		"cappedSize", c.CappedSize,
@@ -140,8 +146,16 @@ func (c *Collection) unmarshal(doc *types.Document) error {
 	v, _ = doc.Get("indexes")
 	i, _ := v.(*types.Array)
 
+	if i == nil {
+		return lazyerrors.New("indexes are empty")
+	}
+
 	if err := c.Indexes.unmarshal(i); err != nil {
 		return lazyerrors.Error(err)
+	}
+
+	if v, _ := doc.Get("uuid"); v != nil {
+		c.UUID = v.(string)
 	}
 
 	if v, _ := doc.Get("cappedSize"); v != nil {

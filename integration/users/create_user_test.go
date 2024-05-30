@@ -23,20 +23,20 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 
-	"github.com/FerretDB/FerretDB/integration"
-	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
+
+	"github.com/FerretDB/FerretDB/integration"
+	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
 func TestCreateUser(t *testing.T) {
 	t.Parallel()
 
-	ctx, collection := setup.Setup(t)
-	db := collection.Database()
-	client := db.Client()
-	users := client.Database("admin").Collection("system.users")
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{SetupUser: true})
+	ctx, db := s.Ctx, s.Collection.Database()
 
 	testCases := map[string]struct { //nolint:vet // for readability
 		payload    bson.D
@@ -56,6 +56,43 @@ func TestCreateUser(t *testing.T) {
 				Message: "User document needs 'user' field to be non-empty",
 			},
 		},
+		"EmptyPassword": {
+			payload: bson.D{
+				{"createUser", "empty_password_user"},
+				{"roles", bson.A{}},
+				{"pwd", ""},
+			},
+			err: &mongo.CommandError{
+				Code:    50687,
+				Name:    "Location50687",
+				Message: "Error preflighting UTF-8 conversion: U_STRING_NOT_TERMINATED_WARNING",
+			},
+			altMessage: "Password cannot be empty",
+		},
+		"BadPasswordValue": {
+			payload: bson.D{
+				{"createUser", "empty_password_user"},
+				{"roles", bson.A{}},
+				{"pwd", "pass\x00word"},
+			},
+			err: &mongo.CommandError{
+				Code:    50692,
+				Name:    "Location50692",
+				Message: "Error preflighting normalization: U_STRINGPREP_PROHIBITED_ERROR",
+			},
+		},
+		"BadPasswordType": {
+			payload: bson.D{
+				{"createUser", "empty_password_user"},
+				{"roles", bson.A{}},
+				{"pwd", true},
+			},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'createUser.pwd' is the wrong type 'bool', expected type 'string'",
+			},
+		},
 		"AlreadyExists": {
 			payload: bson.D{
 				{"createUser", "should_already_exist"},
@@ -66,6 +103,19 @@ func TestCreateUser(t *testing.T) {
 				Code:    51003,
 				Name:    "Location51003",
 				Message: "User \"should_already_exist@TestCreateUser\" already exists",
+			},
+		},
+		"EmptyMechanism": {
+			payload: bson.D{
+				{"createUser", "empty_mechanism_user"},
+				{"roles", bson.A{}},
+				{"pwd", "password"},
+				{"mechanisms", bson.A{}},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "mechanisms field must not be empty",
 			},
 		},
 		"BadAuthMechanism": {
@@ -114,6 +164,28 @@ func TestCreateUser(t *testing.T) {
 				{"ok", float64(1)},
 			},
 		},
+		"SuccessWithSCRAMSHA1": {
+			payload: bson.D{
+				{"createUser", "success_user_with_scram_sha_1"},
+				{"roles", bson.A{}},
+				{"pwd", "password"},
+				{"mechanisms", bson.A{"SCRAM-SHA-1"}},
+			},
+			expected: bson.D{
+				{"ok", float64(1)},
+			},
+		},
+		"SuccessWithSCRAMSHA256": {
+			payload: bson.D{
+				{"createUser", "success_user_with_scram_sha_256"},
+				{"roles", bson.A{}},
+				{"pwd", "password"},
+				{"mechanisms", bson.A{"SCRAM-SHA-256"}},
+			},
+			expected: bson.D{
+				{"ok", float64(1)},
+			},
+		},
 		"WithComment": {
 			payload: bson.D{
 				{"createUser", "with_comment_user"},
@@ -150,12 +222,12 @@ func TestCreateUser(t *testing.T) {
 	for name, tc := range testCases {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			payload := integration.ConvertDocument(t, tc.payload)
 			if payload.Has("mechanisms") {
 				setup.SkipForMongoDB(t, "PLAIN credentials are only supported via LDAP (PLAIN) by MongoDB Enterprise")
 			}
-
-			t.Parallel()
 
 			var res bson.D
 			err := db.RunCommand(ctx, tc.payload).Decode(&res)
@@ -173,24 +245,39 @@ func TestCreateUser(t *testing.T) {
 			expected := integration.ConvertDocument(t, tc.expected)
 			testutil.AssertEqual(t, expected, actual)
 
-			// All users are created in the "admin" database.
+			username := must.NotFail(payload.Get("createUser"))
 
-			var rec bson.D
-			err = users.FindOne(ctx, bson.D{{"user", must.NotFail(payload.Get("createUser"))}}).Decode(&rec)
-			require.NoError(t, err, "user not found")
+			var usersInfo bson.D
+			err = db.RunCommand(ctx, bson.D{{"usersInfo", username}, {"showCredentials", true}}).Decode(&usersInfo)
+			require.NoError(t, err)
 
-			actualRecorded := integration.ConvertDocument(t, rec)
+			actualRecorded := integration.ConvertDocument(t, usersInfo)
+			users := must.NotFail(actualRecorded.Get("users")).(*types.Array)
+			user := must.NotFail(users.Get(0)).(*types.Document)
 
-			uuid := must.NotFail(actualRecorded.Get("userId")).(types.Binary)
+			uuid := must.NotFail(user.Get("userId")).(types.Binary)
 			assert.Equal(t, uuid.Subtype.String(), types.BinaryUUID.String(), "uuid subtype")
 			assert.Equal(t, 16, len(uuid.B), "UUID length")
-			actualRecorded.Remove("userId")
+			user.Remove("userId")
 
 			if payload.Has("mechanisms") {
-				assertPlainCredentials(t, "PLAIN", must.NotFail(actualRecorded.Get("credentials")).(*types.Document))
+				payloadMechanisms := must.NotFail(payload.Get("mechanisms")).(*types.Array)
+
+				if payloadMechanisms.Contains("PLAIN") {
+					assertPlainCredentials(t, "PLAIN", must.NotFail(user.Get("credentials")).(*types.Document))
+				}
+
+				if payloadMechanisms.Contains("SCRAM-SHA-1") {
+					assertSCRAMSHA1Credentials(t, "SCRAM-SHA-1", must.NotFail(user.Get("credentials")).(*types.Document))
+				}
+
+				if payloadMechanisms.Contains("SCRAM-SHA-256") {
+					assertSCRAMSHA256Credentials(t, "SCRAM-SHA-256", must.NotFail(user.Get("credentials")).(*types.Document))
+				}
 			}
 
-			actualRecorded.Remove("credentials")
+			user.Remove("mechanisms")
+			user.Remove("credentials")
 
 			expectedRec := integration.ConvertDocument(t, bson.D{
 				{"_id", fmt.Sprintf("%s.%s", db.Name(), must.NotFail(payload.Get("createUser")))},
@@ -199,13 +286,13 @@ func TestCreateUser(t *testing.T) {
 				{"roles", bson.A{}},
 			})
 
-			testutil.AssertEqual(t, expectedRec, actualRecorded)
+			testutil.AssertEqual(t, expectedRec, user)
 		})
 	}
 }
 
 // assertPlainCredentials checks if the credential is a valid PLAIN credential.
-func assertPlainCredentials(t testing.TB, key string, cred *types.Document) {
+func assertPlainCredentials(t testtb.TB, key string, cred *types.Document) {
 	t.Helper()
 
 	require.True(t, cred.Has(key), "missing credential %q", key)
@@ -216,4 +303,32 @@ func assertPlainCredentials(t testing.TB, key string, cred *types.Document) {
 	assert.NotEmpty(t, must.NotFail(c.Get("iterationCount")))
 	assert.NotEmpty(t, must.NotFail(c.Get("hash")))
 	assert.NotEmpty(t, must.NotFail(c.Get("salt")))
+}
+
+// assertSCRAMSHA1Credentials checks if the credential is a valid SCRAM-SHA-1 credential.
+func assertSCRAMSHA1Credentials(t testtb.TB, key string, cred *types.Document) {
+	t.Helper()
+
+	require.True(t, cred.Has(key), "missing credential %q", key)
+
+	c := must.NotFail(cred.Get(key)).(*types.Document)
+
+	assert.Equal(t, must.NotFail(c.Get("iterationCount")), int32(10000))
+	assert.NotEmpty(t, must.NotFail(c.Get("salt")).(string))
+	assert.NotEmpty(t, must.NotFail(c.Get("serverKey")).(string))
+	assert.NotEmpty(t, must.NotFail(c.Get("storedKey")).(string))
+}
+
+// assertSCRAMSHA256Credentials checks if the credential is a valid SCRAM-SHA-256 credential.
+func assertSCRAMSHA256Credentials(t testtb.TB, key string, cred *types.Document) {
+	t.Helper()
+
+	require.True(t, cred.Has(key), "missing credential %q", key)
+
+	c := must.NotFail(cred.Get(key)).(*types.Document)
+
+	assert.Equal(t, must.NotFail(c.Get("iterationCount")), int32(15000))
+	assert.NotEmpty(t, must.NotFail(c.Get("salt")).(string))
+	assert.NotEmpty(t, must.NotFail(c.Get("serverKey")).(string))
+	assert.NotEmpty(t, must.NotFail(c.Get("storedKey")).(string))
 }

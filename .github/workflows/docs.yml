@@ -10,6 +10,7 @@ on:
   push:
     branches:
       - main
+      - main-*
       - releases/*
   schedule:
     - cron: "12 0 * * *"
@@ -37,10 +38,6 @@ jobs:
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
 
     steps:
-      - name: Setup permissions monitoring
-        uses: GitHubSecurityLab/actions-permissions/monitor@v1
-        if: false
-
       # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
         uses: actions/checkout@v4
@@ -52,7 +49,7 @@ jobs:
       # See https://github.com/ppremk/lfs-warning/issues/147.
       # But the real issue will be right above that message: a list of files that should be added using Git LFS.
       - name: Check LFS status
-        uses: ppremk/lfs-warning@v3.2
+        uses: ppremk/lfs-warning@v3.3
         with:
           filesizelimit: 102400b
           labelName: use-git-lfs
@@ -106,7 +103,7 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 10
 
-    # deploy only on push to main; exclude pull_request and schedule
+    # exclude pull_request and schedule
     needs: build
     if: github.event_name == 'push'
 
@@ -119,10 +116,6 @@ jobs:
       url: ${{ steps.deploy.outputs.page_url }}
 
     steps:
-      - name: Setup permissions monitoring
-        uses: GitHubSecurityLab/actions-permissions/monitor@v1
-        if: false
-
       - name: Deploy to GitHub Pages
         id: deploy
         uses: actions/deploy-pages@v4
