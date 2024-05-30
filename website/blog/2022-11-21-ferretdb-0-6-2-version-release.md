@@ -1,11 +1,10 @@
 ---
 slug: ferretdb-0-6-2-version-release
 title: 'New FerretDB release – 0.6.2: Now runs on Raspberry Pi!'
-author: Alexander Fashakin
+authors: [alex]
 description: FerretDB 0.6.2 contains several upgrades especially support for Raspberry Pi.
 image: /img/blog/ferret-rpi-1-1024x390.png
 tags: [release]
-date: 2022-11-21
 ---
 
 FerretDB 0.6.2 contains several upgrades especially support for Raspberry Pi.
@@ -34,7 +33,7 @@ In the latest release, we have published our commands parity guide with MongoDB,
 
 ## Bug Fixes
 
-We've fixed issues with Unix socket listeners, where you get internal errors or panic when running FerretDB with a Unix socket listener.
+We've fixed issues with Unix domain socket listeners, where you get internal errors or panic when running FerretDB with a Unix domain socket listener.
 
 ## Other changes and enhancements
 

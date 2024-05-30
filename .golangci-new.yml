@@ -17,14 +17,17 @@ linters-settings:
     disable-default-exclusions: false
     exclude-functions:
       - (*database/sql.Rows).Close
+      - (*github.com/FerretDB/FerretDB/internal/util/fsql.Rows).Close
   errorlint:
     # see caveats at https://github.com/polyfloyd/go-errorlint#fmterrorf-wrapping-verb
     errorf: false
     asserts: true
     comparison: true
   govet:
-    check-shadowing: true
     enable-all: true
+    settings:
+      shadow:
+        strict: true
   revive:
     ignore-generated-header: true
     severity: warning
@@ -32,10 +35,18 @@ linters-settings:
     rules:
       # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md
       - name: exported
-        arguments: [checkPrivateReceivers]
+        arguments: [checkPrivateReceivers, disableStutteringCheck]
       - name: package-comments
   staticcheck:
     checks: ["all"]
+  tagalign:
+    sort: true
+    order:
+      - name
+      - cmd
+      - arg
+      - default
+      - help
   wsl:
     # https://github.com/bombsimon/wsl/blob/master/doc/configuration.md
     strict-append: false
@@ -57,7 +68,9 @@ linters:
     - asciicheck
     - depguard
     - exhaustive
+    - forbidigo
     - gci
+    - gochecksumtype
     - goconst
     - godot
     - godox
@@ -70,6 +83,7 @@ linters:
     - lll
     - misspell
     - nolintlint
+    - sloglint
     - unused
     - whitespace
 
@@ -79,18 +93,16 @@ linters:
     - containedctx
     - contextcheck
     - cyclop
-    - deadcode
     - decorder
     - dogsled
     - dupl
     - durationcheck
+    - err113
     - errchkjson
     - errname
     - execinquery
-    - exhaustivestruct
     - exhaustruct
     - exportloopref
-    - forbidigo
     - forcetypeassert
     - funlen
     - gochecknoglobals
@@ -98,7 +110,6 @@ linters:
     - gocognit
     - gocritic
     - gocyclo
-    - goerr113
     - gofmt
     - gofumpt
     - gomnd
@@ -106,7 +117,7 @@ linters:
     - goprintffuncname
     - gosec
     - grouper
-    - ifshort
+    - inamedparam
     - ireturn
     - maintidx
     - makezero
@@ -118,31 +129,27 @@ linters:
     - nonamedreturns
     - nosprintfhostport
     - paralleltest
+    - perfsprint
     - prealloc
     - predeclared
     - promlinter
+    - protogetter
     - rowserrcheck
+    - sloglint
     - sqlclosecheck
     - stylecheck
     - tagliatelle
     - tenv
+    - testifylint
     - thelper
     - tparallel
     - typecheck
     - unconvert
     - unparam
-    - varcheck
     - varnamelen
     - wastedassign
     - wrapcheck
-
-    # deprecated
-    - golint
-    - interfacer
-    - maligned
-    - nosnakecase
-    - scopelint
-    - structcheck
+    - zerologlint
 
     - nlreturn # too annoying
     - testpackage # we test internals
@@ -150,5 +157,8 @@ linters:
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
-  exclude-use-default: false
+
   new-from-rev: origin/main
+  # whole-files: true
+
+  exclude-use-default: false
