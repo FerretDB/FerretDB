@@ -16,36 +16,55 @@
 package logging
 
 import (
+	"fmt"
 	"log"
+	"log/slog"
+	"os"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	"github.com/FerretDB/FerretDB/build/version"
+	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 )
 
+// logLevels maps zap log levels to slog levels.
+var logLevels = map[zapcore.Level]slog.Level{
+	zapcore.DebugLevel:  slog.LevelDebug,
+	zapcore.InfoLevel:   slog.LevelInfo,
+	zapcore.WarnLevel:   slog.LevelWarn,
+	zapcore.ErrorLevel:  slog.LevelError,
+	zapcore.DPanicLevel: slog.LevelError,
+	zapcore.PanicLevel:  slog.LevelError,
+	zapcore.FatalLevel:  slog.LevelError,
+}
+
 // Setup initializes logging with a given level.
-func Setup(level zapcore.Level, uuid string) {
+func Setup(level zapcore.Level, encoding, uuid string) {
+	setupSlog(level, encoding)
+
 	config := zap.Config{
 		Level:             zap.NewAtomicLevelAt(level),
-		Development:       version.Get().DebugBuild,
+		Development:       debugbuild.Enabled,
 		DisableCaller:     false,
 		DisableStacktrace: false,
 		Sampling:          nil,
-		Encoding:          "console",
+		Encoding:          encoding,
 		EncoderConfig: zapcore.EncoderConfig{
-			TimeKey:        "T",
-			LevelKey:       "L",
-			NameKey:        "N",
-			CallerKey:      "C",
-			FunctionKey:    zapcore.OmitKey,
-			MessageKey:     "M",
-			StacktraceKey:  "S",
-			LineEnding:     zapcore.DefaultLineEnding,
-			EncodeLevel:    zapcore.CapitalLevelEncoder,
-			EncodeTime:     zapcore.ISO8601TimeEncoder,
-			EncodeDuration: zapcore.StringDurationEncoder,
-			EncodeCaller:   zapcore.ShortCallerEncoder,
+			MessageKey:          "M",
+			LevelKey:            "L",
+			TimeKey:             "T",
+			NameKey:             "N",
+			CallerKey:           "C",
+			FunctionKey:         zapcore.OmitKey,
+			StacktraceKey:       "S",
+			LineEnding:          zapcore.DefaultLineEnding,
+			EncodeLevel:         zapcore.CapitalLevelEncoder,
+			EncodeTime:          zapcore.ISO8601TimeEncoder,
+			EncodeDuration:      zapcore.StringDurationEncoder,
+			EncodeCaller:        zapcore.ShortCallerEncoder,
+			EncodeName:          nil,
+			NewReflectedEncoder: nil,
+			ConsoleSeparator:    "\t",
 		},
 		OutputPaths:      []string{"stderr"},
 		ErrorOutputPaths: []string{"stderr"},
@@ -61,16 +80,52 @@ func Setup(level zapcore.Level, uuid string) {
 		log.Fatal(err)
 	}
 
-	logger = logger.WithOptions(zap.Hooks(func(entry zapcore.Entry) error {
+	SetupWithZapLogger(WithHooks(logger))
+}
+
+// WithHooks returns a logger with recent entries hooks.
+func WithHooks(logger *zap.Logger) *zap.Logger {
+	return logger.WithOptions(zap.Hooks(func(entry zapcore.Entry) error {
 		RecentEntries.append(&entry)
 		return nil
 	}))
-
-	setupWithLogger(logger)
 }
 
-// setupWithLogger initializes logging with a given logger and its level.
-func setupWithLogger(logger *zap.Logger) {
+// setupSlog initializes slog logging with a given level.
+func setupSlog(level zapcore.Level, encoding string) {
+	// We either should replace zap with slog everywhere,
+	// or use zap's handler for slog,
+	// See https://github.com/uber-go/zap/issues/1270 and https://github.com/uber-go/zap/issues/1333.
+	// TODO https://github.com/FerretDB/FerretDB/issues/4013
+	//
+	// For now, just setup slog in parallel.
+
+	slogLevel, ok := logLevels[level]
+	if !ok {
+		panic(fmt.Sprintf("invalid log level %d", level))
+	}
+
+	slogOpts := &slog.HandlerOptions{
+		AddSource: false,
+		Level:     slogLevel,
+	}
+
+	var slogHandler slog.Handler
+
+	switch encoding {
+	case "console":
+		slogHandler = slog.NewTextHandler(os.Stderr, slogOpts)
+	case "json":
+		slogHandler = slog.NewJSONHandler(os.Stderr, slogOpts)
+	default:
+		panic(fmt.Sprintf("invalid log encoding %q", encoding))
+	}
+
+	slog.SetDefault(slog.New(slogHandler))
+}
+
+// SetupWithZapLogger initializes zap logging with a given logger and its level.
+func SetupWithZapLogger(logger *zap.Logger) {
 	zap.ReplaceGlobals(logger)
 
 	if _, err := zap.RedirectStdLogAt(logger, zap.InfoLevel); err != nil {

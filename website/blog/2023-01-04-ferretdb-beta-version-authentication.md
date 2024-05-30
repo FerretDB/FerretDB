@@ -1,10 +1,10 @@
 ---
 slug: ferretdb-beta-version-authentication
 title: FerretDB v0.8.0 - The Beta Version
-author: Alexander Fashakin
+authors: [alex]
 description: The FerretDB beta version (v.0.8.0) includes exciting new features, including authentication for PostgreSQL, `$min` operator support, and much more.
 image: /img/blog/FerretDB-is-now-Beta.-1-980x551.png
-date: 2023-01-04
+tags: [release]
 ---
 
 The FerretDB beta version (v.0.8.0) includes exciting new features, including authentication for PostgreSQL, `$min` operator support, and much more.
@@ -26,7 +26,7 @@ There are numerous ways to dump and restore your data.
 For example, you can follow the following steps:
 
 1. Backup FerretDB databases with `mongodump`.
-   Set your FerretDB connection string in `-—uri` and run:
+   Set your FerretDB connection string in `--uri` and run:
    `mongodump --uri="mongodb://127.0.0.1:27017"`
    This command will create a directory with dumps for each FerretDB database on the given server.
    Later, we will use this dump to restore the database.
@@ -45,7 +45,7 @@ For example, you can follow the following steps:
    - `psql -h 127.0.0.1 -p 5432 -U username postgres`
    - `DROP DATABASE ferretdb`
 
-5. Upgrade FerretDB and run FerretDB 0.8 (Please refer to [our documentation](https://docs.ferretdb.io/category/quickstart/) where we describe how to update and start FerretDB)
+5. Upgrade FerretDB and run FerretDB 0.8 (Please refer to [our documentation](https://docs.ferretdb.io/quickstart/) where we describe how to update and start FerretDB)
 
 6. Restore database using `mongorestore --uri="mongodb://127.0.0.1:27017"`
 
@@ -54,7 +54,8 @@ For example, you can follow the following steps:
    - Delete ferretdb database (repeat step 4)
    - Restore `ferretdb` PostgreSQL db from the dump we created on the step 2: `psql -h 127.0.0.1 -p 5432 -U username ferretdb -f ferretdb.sql`
    - Start ferretdb 0.7.1
-     :::
+
+:::
 
 In this blog post, we'll be sharing detailed information about the FerretDB beta release (0.8.0).
 

@@ -44,6 +44,5 @@ func (iter *withCloseIterator[K, V]) Close() {
 // check interfaces
 var (
 	_ Interface[any, any] = (*withCloseIterator[any, any])(nil)
-	_ NextFunc[any, any]  = (*withCloseIterator[any, any])(nil).Next
 	_ Closer              = (*withCloseIterator[any, any])(nil)
 )

@@ -17,6 +17,7 @@ package integration
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -25,25 +26,23 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
-func TestDistinctErrors(t *testing.T) {
+func TestDistinctCommandErrors(t *testing.T) {
 	t.Parallel()
 
-	ctx, coll := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
+	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
-		command  any                // required
-		collName any                // optional
-		filter   any                // required
-		err      mongo.CommandError // required
+		command  any // required, command to run
+		collName any // optional, defaults to coll.Name()
+		filter   any // required
+
+		err        *mongo.CommandError
+		altMessage string
 	}{
-		"EmptyFilter": {
-			command: "a",
-			filter:  nil,
-		},
 		"StringFilter": {
 			command: "a",
 			filter:  "a",
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    14,
 				Name:    "TypeMismatch",
 				Message: "BSON field 'distinct.query' is the wrong type 'string', expected type 'object'",
@@ -53,26 +52,27 @@ func TestDistinctErrors(t *testing.T) {
 			command:  "a",
 			filter:   bson.D{},
 			collName: "",
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    73,
 				Name:    "InvalidNamespace",
-				Message: "Invalid namespace specified 'TestDistinctErrors.'",
+				Message: "Invalid namespace specified 'TestDistinctCommandErrors.'",
 			},
 		},
 		"CollectionTypeObject": {
 			command:  "a",
 			filter:   bson.D{},
 			collName: bson.D{},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    73,
 				Name:    "InvalidNamespace",
-				Message: "collection name has invalid type object",
+				Message: "Failed to parse namespace element",
 			},
+			altMessage: "collection name has invalid type object",
 		},
 		"WrongTypeObject": {
 			command: bson.D{},
 			filter:  bson.D{},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    14,
 				Name:    "TypeMismatch",
 				Message: "BSON field 'distinct.key' is the wrong type 'object', expected type 'string'",
@@ -81,7 +81,7 @@ func TestDistinctErrors(t *testing.T) {
 		"WrongTypeArray": {
 			command: bson.A{},
 			filter:  bson.D{},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    14,
 				Name:    "TypeMismatch",
 				Message: "BSON field 'distinct.key' is the wrong type 'array', expected type 'string'",
@@ -90,7 +90,7 @@ func TestDistinctErrors(t *testing.T) {
 		"WrongTypeNumber": {
 			command: int32(1),
 			filter:  bson.D{},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    14,
 				Name:    "TypeMismatch",
 				Message: "BSON field 'distinct.key' is the wrong type 'int', expected type 'string'",
@@ -99,25 +99,51 @@ func TestDistinctErrors(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			t.Helper()
-
 			t.Parallel()
 
-			var collName any = coll.Name()
+			require.NotNil(t, tc.command, "command must not be nil")
+			require.NotNil(t, tc.filter, "filter must not be nil")
+			require.NotNil(t, tc.err, "err must not be nil")
+
+			var collName any = collection.Name()
 			if tc.collName != nil {
 				collName = tc.collName
 			}
 
 			command := bson.D{{"distinct", collName}, {"key", tc.command}, {"query", tc.filter}}
 
-			res := coll.Database().RunCommand(ctx, command)
-			if res.Err() != nil {
-				AssertEqualCommandError(t, tc.err, res.Err())
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, command).Decode(res)
 
-				return
-			}
-
-			require.NoError(t, res.Err(), "expected no error")
+			assert.Nil(t, res)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 		})
 	}
+}
+
+func TestDistinctDuplicates(t *testing.T) {
+	t.Parallel()
+
+	ctx, coll := setup.Setup(t)
+
+	docs := []any{
+		bson.D{{"v", int64(42)}},
+		bson.D{{"v", float64(42)}},
+		bson.D{{"v", "42"}},
+	}
+
+	expected := []any{int64(42), "42"}
+
+	_, err := coll.InsertMany(ctx, docs)
+	require.NoError(t, err)
+
+	distinct, err := coll.Distinct(ctx, "v", bson.D{})
+	require.NoError(t, err)
+
+	// We can't check the exact data types because they might be different.
+	// For example, if expected is [int64(42), "42"] and distinct is [float64(42), "42"],
+	// we consider them equal. If different documents use different types to store the same value
+	// in the same field, it's hard to predict what type will be returned by distinct.
+	// This is why we use assert.EqualValues instead of assert.Equal.
+	assert.EqualValues(t, expected, distinct)
 }
