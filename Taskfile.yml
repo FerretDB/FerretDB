@@ -423,7 +423,7 @@ tasks:
         --test-records-dir=tmp/records
 
   run-proxy:
-    desc: "Run FerretDB in diff-proxy mode"
+    desc: "Run FerretDB in the diff-proxy mode"
     deps: [build-host]
     cmds:
       - >
@@ -436,7 +436,7 @@ tasks:
         --test-records-dir=tmp/records
 
   run-sqlite-proxy:
-    desc: "Run FerretDB with `sqlite` handler in diff-proxy mode"
+    desc: "Run FerretDB with `sqlite` handler in the diff-proxy mode"
     deps: [build-host]
     cmds:
       - bin/envtool{{exeExt}} shell mkdir tmp/sqlite
@@ -450,7 +450,7 @@ tasks:
         --test-records-dir=tmp/records
 
   run-proxy-secured:
-    desc: "Run FerretDB in diff-proxy mode (TLS, auth required)"
+    desc: "Run FerretDB in the diff-proxy mode (TLS, auth required)"
     deps: [build-host]
     cmds:
       - >
