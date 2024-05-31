@@ -231,8 +231,14 @@ jobs:
       - name: Run init
         run: bin/task init
 
+      - name: Build bin/ferretdb
+        run: bin/task build-host
+
       - name: Wait for and setup environment
         run: bin/task env-setup
+
+      - name: Start FerretDB in the background
+        run: bin/task run &
 
       - name: Run env-data
         run: bin/task env-data
