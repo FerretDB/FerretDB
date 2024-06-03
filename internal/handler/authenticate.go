@@ -29,11 +29,11 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/password"
 )
 
-// authenticate validates users with stored credentials in admin.systems.user.
+// authenticate validates users with stored credentials in admin.system.user.
 // If EnableNewAuth is false or bypass backend auth is set false, it succeeds
 // authentication and let backend handle it.
 //
-// When admin.systems.user contains no user, and the client is connected from
+// When admin.system.user contains no user, and the client is connected from
 // the localhost, it bypasses credentials check.
 func (h *Handler) authenticate(ctx context.Context) error {
 	if !h.EnableNewAuth {
@@ -56,8 +56,13 @@ func (h *Handler) authenticate(ctx context.Context) error {
 
 	switch mechanism {
 	case "SCRAM-SHA-256", "SCRAM-SHA-1": //nolint:goconst // we don't need a constant for this
-		// SCRAM calls back scramCredentialLookup each time Step is called,
-		// and that checks the authentication.
+		if conv := conninfo.Get(ctx).Conv(); conv == nil || !conv.Valid() {
+			return handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrAuthenticationFailed,
+				"Authentication failed",
+				"authenticate",
+			)
+		}
 		return nil
 	case "PLAIN", "":
 		// mechanism may be empty for local host exception
@@ -68,9 +73,9 @@ func (h *Handler) authenticate(ctx context.Context) error {
 		return handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrAuthenticationFailed, msg, mechanism)
 	}
 
+	// The rest of the function checks PLAIN authentication for every non-anonymous command.
+
 	// For `PLAIN` mechanism $db field is always `$external` upon saslStart.
-	// For `SCRAM-SHA-1` and `SCRAM-SHA-256` mechanisms $db field contains
-	// authSource option of the client.
 	// Let authorization handle the database access right.
 	// TODO https://github.com/FerretDB/FerretDB/issues/174
 	filter := must.NotFail(types.NewDocument("user", username))
