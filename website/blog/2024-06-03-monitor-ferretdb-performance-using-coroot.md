@@ -69,7 +69,7 @@ vi prometheus.yml
 
 Add the following to the Prometheus configuration file:
 
-```yaml
+```text
 scrape_configs:
   - job_name: 'ferretdb'
     metrics_path: '/debug/metrics'
@@ -133,4 +133,4 @@ It also includes predefined inspections of your system and its components, inclu
 You also get CPU, memory, storage, network, and log management metrics.
 
 To get started with FerretDB, [see our documentation](https://docs.ferretdb.io/).
-And if you want to contact the team for help or have any questions, [contact us on Slack](https://join.slack.com/t/ferretdb/shared_invite/zt-zqe9hj8g-ZcMG3~5Cs5u9uuOPnZB8~A).
+And if you want to contact the team for help or have any questions, [contact us on any of our community channels](https://docs.ferretdb.io/#community).
