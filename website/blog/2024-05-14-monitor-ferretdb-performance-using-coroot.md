@@ -39,141 +39,101 @@ You get deeper and more extensive information on system calls, network functions
 
 ## Setting up Coroot for FerretDB monitoring
 
-Since Coroot uses eBPF, you need the right environment before setting it up.
-The most recent versions of the Linux kernel (v 4.16 and above) should be compatible since they offer at least minimal eBPF support.
-
 [Refer to the Coroot documentation](https://coroot.com/docs) to set up Coroot and all its components on Docker or via Helm.
 
 In this guide, we will set up Coroot to monitor our FerretDB.
+Refer to the [FerretDB Docker installation guide](https://docs.ferretdb.io/quickstart-guide/docker/) to set up FerretDB on your system.
 
-```yaml
-volumes:
-  prometheus_data: {}
-  coroot_data: {}
+Install Coroot with the following command:
 
-services:
-  coroot:
-    image: ghcr.io/coroot/coroot
-    volumes:
-      - coroot_data:/data
-    ports:
-      - 8080:8080
-    command:
-      - '--bootstrap-prometheus-url=http://prometheus:9090'
-      - '--bootstrap-refresh-interval=15s'
-      - '--bootstrap-clickhouse-address=clickhouse:9000'
-    depends_on:
-      - clickhouse
-      - prometheus
-
-  node-agent:
-    image: ghcr.io/coroot/coroot-node-agent
-    privileged: true
-    pid: 'host'
-    volumes:
-      - /sys/kernel/debug:/sys/kernel/debug
-      - /sys/fs/cgroup:/host/sys/fs/cgroup
-    command:
-      - '--collector-endpoint=http://coroot:8080'
-      - '--cgroupfs-root=/host/sys/fs/cgroup'
-
-  prometheus:
-    image: prom/prometheus:v2.45.4
-    volumes:
-      - prometheus_data:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
-      - '--web.console.templates=/usr/share/prometheus/consoles'
-      - '--web.enable-lifecycle'
-      - '--web.enable-remote-write-receiver'
-    ports:
-      - '127.0.0.1:9090:9090'
-
-  clickhouse:
-    image: clickhouse/clickhouse-server:24.3
-    ports:
-      - '127.0.0.1:9000:9000'
-    ulimits:
-      nofile:
-        soft: 262144
-        hard: 262144
-
-  postgres:
-    image: postgres
-    environment:
-      - POSTGRES_USER=username
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=ferretdb
-    volumes:
-      - ./data:/var/lib/postgresql/data
-
-  ferretdb:
-    image: ghcr.io/ferretdb/ferretdb
-    restart: on-failure
-    ports:
-      - 27017:27017
-    environment:
-      - FERRETDB_POSTGRESQL_URL=postgres://postgres:5432/ferretdb
+```sh
+curl -fsS https://raw.githubusercontent.com/coroot/coroot/main/deploy/docker-compose.yaml | docker compose -f - up -d
 ```
 
-The coroot-node-agent is a Prometheus exporter for gathering container metrics running on a particular node.
-It gathers log-based metrics, network latency, JVM metrics, and more.
-
-Coroot offers a distributed tracing approach that allows engineers to visualize request paths across all components.
-This could help to quickly identify latency issues, errors, or bottlenecks in their setup.
-
-Depending on your application setup, you may need to modify the Docker compose `yaml` file and configure the tracing metrics on Coroot by enabling OpenTelemetry locally.
-[Check this docs to learn more](https://coroot.com/docs/coroot-community-edition/tracing/overview).
-
-Once you apply and run the `docker compose up`, Docker starts and runs the entire application defined in the `yaml` file.
-
-Run `docker compose ps` just to be sure it's correctly deployed.
 Since Coroot was deployed locally, you can access it at http://localhost:8080/.
+
+Depending on your setup, you may need to modify the Docker compose `yaml` file and configure Prometheus to pick up FerretDB metrics.
+
+To update the Prometheus container's config file, exec into the running container:
+
+```sh
+docker exec -it <prometheus_container_name> /bin/sh
+```
+
+Then navigate to the config file location:
+
+```sh
+cd /etc/prometheus
+```
+
+You can now edit the config file using a text editor like vi:
+
+```sh
+vi prometheus.yml
+```
+
+Add the following to the Prometheus configuration file:
+
+```yaml
+scrape_configs:
+  - job_name: 'ferretdb'
+    metrics_path: '/debug/metrics'
+    static_configs:
+      - targets: ['<ferretdb-container>:8088']
+```
+
+Ensure to replace `<ferretdb-container>` with the FerretDB container name or IP address and then restart the Prometheus container so it can pick up the new configuration.
+
+```sh
+docker restart <prometheus_container_name>
+```
+
+Comfirm that the FerretDB metrics are being collected by Prometheus by navigating to the Prometheus targets at http://localhost:9090/targets.
+
+![Prometheus Targets](/img/blog/ferretdb-coroot/prometheus-targets.png)
+
+Once the setup is complete, Coroot will start collecting metrics from FerretDB.
 
 ## Monitor FerretDB performance with Coroot
 
 The Coroot dashboard provides the full details on all components.
 
-At first glance, we can see a memory leak on the `ferretdb` and `postgres` databases.
-That suggests that allocated memory is not being efficiently reused or deallocated, causing the total memory usage to grow progressively as the services operate.
+Ensure Prometheus integration is correctly set up to collect metrics from FerretDB.
 
-![Coroot Dashboard](/img/blog/ferretdb-coroot/01-dashboard.png)
+![Coroot prometheus integration](/img/blog/ferretdb-coroot/prometheus-integration.png)
 
-We can also visualize the complete system architecture via the "service map".
-In the image below, you can see how our application is configured.
+From the Coroot dashboard, you can view the FerretDB metrics through Prometheus.
 
-![Service Map](/img/blog/ferretdb-coroot/02-svc-map.png)
+![CPU dashboard 1](/img/blog/ferretdb-coroot/cpu-metrics-1.png)
 
-Through Coroot, we can monitor, visualize, and analyze essential performance metrics for our database.
-It offers essential details on the database performance and other peripherals, including CPU and memory usage metrics, latency/error rates, heatmaps, and more.
+![CPU dashboard 1](/img/blog/ferretdb-coroot/cpu-metrics-2.png)
 
-![CPU metrics](/img/blog/ferretdb-coroot/03-cpu.png)
+In the images, the FerretDB instance indicates a peak Requests Per Second (RPS) of 0.07 with a consistent 2ms latency.
+The error budget remains well within limits, meaning that the system efficiently handles the current load without significant errors.
 
-![Memory metrics](/img/blog/ferretdb-coroot/04-mem.png)
+![memory usage](/img/blog/ferretdb-coroot/memory-metrics.png)
 
-![Network metrics](/img/blog/ferretdb-coroot/05-net.png)
+Memory usage metrics indicates that the system is effectively managing memory resources without any significant performance degradation.
+They show a gradual increase in usage, peaking at around 20MB without any out-of-memory issues or significant leaks.
 
-Coroot also provides log management features.
-It gathers and displays logs from all containers on a node – error/latency rates, notification system, etc.
+We can also monitor the Postgres database metrics and how it interacts and handles all requests from FerretDB.
 
-Below, you can see the FerretDB logs rendered in detail.
+![Postgres dashboard](/img/blog/ferretdb-coroot/postgres-cpu-1.png)
 
-![Log metrics](/img/blog/ferretdb-coroot/06-log.png)
+![Postgres dashboard](/img/blog/ferretdb-coroot/postgres-cpu-2.png)
 
-Using distributed tracing, Coroot provides a heat map showing operation requests, their status, durations, and details.
+The Postgres container indicates a sharp CPU usage spike around 18:00, mirrored by a similar increase in CPU delay.
+Despite the spike, throttled time remains negligible.
+Node CPU usage also show moderate fluctuations but stays within acceptable limits, meaning the system can handle peak loads without significant performance loss.
 
-![Latency](/img/blog/ferretdb-coroot/07-latency.png)
-
-The above image shows how response time for the `ferretdb` increased progressively over time.
-It shows that the system takes a long time to handle queries.
-That should prompt us to take additional measures to improve performance.
+It also demonstrates stable I/O performance with low latency around 0.5ms and consistent I/O utilization peaking at 4%.
+IOPS remains steady at approximately 75-100 and the bandwidth usage stays around 2-3MB/s, ensuring efficient data throughput.
 
 ## Analyze and optimize FerretDB performance with Coroot
 
-The right visualization dashboard and details to effectively and continuously monitor your FerretDB setup are just what Coroot offers.
-You get predefined inspections of your system and its components, including SLO error rate/latency and notifications.
+Coroot provides a comprehensive view of your entire system, including FerretDB and all its components.
+You can monitor and analyze performance metrics in real-time, identify bottlenecks, and optimize your system for better performance.
+It also includes predefined inspections of your system and its components, including SLO error rate/latency and notifications.
 You also get CPU, memory, storage, network, and log management metrics.
 
 To get started with FerretDB, [see our documentation](https://docs.ferretdb.io/).
