@@ -41,8 +41,8 @@ You get deeper and more extensive information on system calls, network functions
 
 [Refer to the Coroot documentation](https://coroot.com/docs) to set up Coroot and all its components on Docker or via Helm.
 
-In this guide, we will set up Coroot to monitor our FerretDB.
-Refer to the [FerretDB Docker installation guide](https://docs.ferretdb.io/quickstart-guide/docker/) to set up FerretDB on your system.
+In this guide, we will set up Coroot to monitor our FerretDB instance.
+If you are yet to setup FerretDB, see the [FerretDB Docker installation guide](https://docs.ferretdb.io/quickstart-guide/docker/).
 
 Install Coroot with the following command:
 
@@ -50,25 +50,20 @@ Install Coroot with the following command:
 curl -fsS https://raw.githubusercontent.com/coroot/coroot/main/deploy/docker-compose.yaml | docker compose -f - up -d
 ```
 
-Since Coroot was deployed locally, you can access it at http://localhost:8080/.
+Since Coroot is deployed locally, you can access it at http://localhost:8080/.
 
 Depending on your setup, you may need to modify the Docker compose `yaml` file and configure Prometheus to pick up FerretDB metrics.
 
-To update the Prometheus container's config file, exec into the running container:
+To update the Prometheus container's configuration file, `exec` into the container:
 
 ```sh
 docker exec -it <prometheus_container_name> /bin/sh
 ```
 
-Then navigate to the config file location:
+Then navigate to the file to edit:
 
 ```sh
 cd /etc/prometheus
-```
-
-You can now edit the config file using a text editor like vi:
-
-```sh
 vi prometheus.yml
 ```
 
@@ -90,7 +85,7 @@ docker restart <prometheus_container_name>
 
 Comfirm that the FerretDB metrics are being collected by Prometheus by navigating to the Prometheus targets at http://localhost:9090/targets.
 
-![Prometheus Targets](/img/blog/ferretdb-coroot/prometheus-targets.png)
+![Prometheus targets](/img/blog/ferretdb-coroot/prometheus-targets.png)
 
 Once the setup is complete, Coroot will start collecting metrics from FerretDB.
 
@@ -109,14 +104,14 @@ From the Coroot dashboard, you can view the FerretDB metrics through Prometheus.
 ![CPU dashboard 1](/img/blog/ferretdb-coroot/cpu-metrics-2.png)
 
 In the images, the FerretDB instance indicates a peak Requests Per Second (RPS) of 0.07 with a consistent 2ms latency.
-The error budget remains well within limits, meaning that the system efficiently handles the current load without significant errors.
 
 ![memory usage](/img/blog/ferretdb-coroot/memory-metrics.png)
 
-Memory usage metrics indicates that the system is effectively managing memory resources without any significant performance degradation.
+Looking at the memory usage metrics.
+you can see that the system is effectively managing memory resources without any significant performance degradation.
 They show a gradual increase in usage, peaking at around 20MB without any out-of-memory issues or significant leaks.
 
-We can also monitor the Postgres database metrics and how it interacts and handles all requests from FerretDB.
+We can also monitor the Postgres database to know how it interacts and handles all requests from FerretDB.
 
 ![Postgres dashboard](/img/blog/ferretdb-coroot/postgres-cpu-1.png)
 
@@ -124,10 +119,11 @@ We can also monitor the Postgres database metrics and how it interacts and handl
 
 The Postgres container indicates a sharp CPU usage spike around 18:00, mirrored by a similar increase in CPU delay.
 Despite the spike, throttled time remains negligible.
-Node CPU usage also show moderate fluctuations but stays within acceptable limits, meaning the system can handle peak loads without significant performance loss.
+Node CPU usage also show moderate fluctuations but stays within acceptable limits.
+So far, we can see that the system can handle peak loads without significant performance loss.
 
 It also demonstrates stable I/O performance with low latency around 0.5ms and consistent I/O utilization peaking at 4%.
-IOPS remains steady at approximately 75-100 and the bandwidth usage stays around 2-3MB/s, ensuring efficient data throughput.
+IOPS remains steady at approximately 75-100 and the bandwidth usage stays around 2-3MB/s.
 
 ## Analyze and optimize FerretDB performance with Coroot
 
