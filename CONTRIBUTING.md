@@ -124,27 +124,12 @@ Please create a pull request and include the link of the pull request in the bug
 With `task` installed (see above), you may do the following:
 
 1. Start the development environment with `task env-up`.
-2. Run all tests in another terminal window with `task test` (see [below](#running-tests)).
-3. Start FerretDB with `task run`.
-   This will start it in a development mode where all requests are handled by FerretDB, but also routed to MongoDB.
-   The differences in response are then logged and the FerretDB response is sent back to the client.
-4. Fill collections in `test` database with data for experiments with `task env-data`.
+2. Run all tests with `task test` (see [below](#running-tests)).
+3. Start FerretDB with `task run`, `task run-sqlite` or `task run-proxy`.
+   (See [Operation modes](https://docs.ferretdb.io/configuration/operation-modes/) page in our documentation.)
+4. Fill collections in the `test` database with data for experiments with `task env-data`.
 5. Run `mongosh` with `task mongosh`.
-   This allows you to run commands against FerretDB.
-   For example, you can see what data was inserted by the previous command with `db.values.find()`.
-
-### Operation modes
-
-FerretDB can run in multiple operation modes.
-Operation mode specify how FerretDB handles incoming requests.
-FerretDB supports four operation modes: `normal`, `proxy`, `diff-normal`, `diff-proxy`,
-see [Operation modes documentation page](https://docs.ferretdb.io/configuration/operation-modes/) for more details.
-
-By running `task run` FerretDB starts on `diff-normal` mode, which routes all of
-the sent requests both to the FerretDB and MongoDB.
-While running, it logs a difference between both returned responses,
-but sends the one from FerretDB to the client.
-If you want to get the MongoDB response, you can run `task run-proxy` to start FerretDB in `diff-proxy` mode.
+   See what collections were created by the previous command with `show collections`.
 
 ### Code overview
 

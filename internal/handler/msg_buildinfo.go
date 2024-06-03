@@ -42,7 +42,7 @@ func (h *Handler) MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			"versionArray", version.Get().MongoDBVersionArray,
 			"bits", int32(strconv.IntSize),
 			"debug", version.Get().DebugBuild,
-			"maxBsonObjectSize", int32(types.MaxDocumentLen),
+			"maxBsonObjectSize", int32(h.MaxBsonObjectSizeBytes),
 			"buildEnvironment", version.Get().BuildEnvironment,
 
 			// our extensions
