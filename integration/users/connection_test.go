@@ -26,12 +26,12 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/x/mongo/driver/topology"
 
-	"github.com/FerretDB/FerretDB/integration"
-	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
+
+	"github.com/FerretDB/FerretDB/integration"
+	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
 func TestAuthentication(t *testing.T) {
@@ -336,7 +336,7 @@ func TestAuthenticationLocalhostException(tt *testing.T) {
 
 	t := setup.FailsForMongoDB(tt, "MongoDB is not connected via localhost")
 
-	s := setup.SetupWithOpts(t, &setup.SetupOpts{CollectionName: testutil.CollectionName(t)})
+	s := setup.SetupWithOpts(t, nil)
 	ctx := s.Ctx
 	collection := s.Collection
 	db := collection.Database()
@@ -368,8 +368,9 @@ func TestAuthenticationLocalhostException(tt *testing.T) {
 	err = db.RunCommand(ctx, firstUser).Err()
 	require.NoError(t, err, "cannot create user")
 
+	anotherUsername := "anotheruser"
 	secondUser := bson.D{
-		{"createUser", "anotheruser"},
+		{"createUser", anotherUsername},
 		{"roles", roles},
 		{"pwd", "anotherpass"},
 		{"mechanisms", bson.A{mechanism}},
@@ -404,6 +405,12 @@ func TestAuthenticationLocalhostException(tt *testing.T) {
 	db = client.Database(db.Name())
 	err = db.RunCommand(ctx, secondUser).Err()
 	require.NoError(t, err, "cannot create user")
+
+	t.Cleanup(func() {
+		// delete all users so collection cleanup does not return an authentication error
+		err = db.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", int32(1)}}).Err()
+		require.NoError(t, err)
+	})
 }
 
 func TestAuthenticationEnableNewAuthPLAIN(tt *testing.T) {
