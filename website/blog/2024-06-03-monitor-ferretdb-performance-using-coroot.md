@@ -15,8 +15,6 @@ Effective real-time monitoring is a critical aspect of any infrastructure.
 
 <!--truncate-->
 
-Effective real-time monitoring is a critical aspect of any infrastructure.
-[Coroot](https://coroot.com/) is an open source observability platform that can provide real-time monitoring and visibility into a [FerretDB](https://www.ferretdb.com/) setup.
 App developers can quickly troubleshoot issues without necessarily becoming experts in infrastructure operations and management.
 
 If you're just finding out about FerretDB, it's the truly open source document database that provides MongoDB compatibility with Postgres as the backend.
