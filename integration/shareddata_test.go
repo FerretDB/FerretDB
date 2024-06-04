@@ -15,7 +15,7 @@
 // This file contains the implementation of `task env-data` command
 // that creates collections in the `test` database for manual experiments.
 // It is not a real test file but wrapped into one
-// because all needed functionality is already available in setup helpers.
+// because some needed functionality is already available in setup helpers.
 // This file is skipped by default; we pass the build tag only in the `task env-data` command.
 
 //go:build ferretdb_testenvdata
@@ -26,7 +26,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
@@ -35,34 +36,33 @@ import (
 func TestEnvData(t *testing.T) {
 	t.Parallel()
 
-	var previousName string
+	database := "test"
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{DatabaseName: database})
+
+	opts := options.Client().ApplyURI(s.MongoDBURI)
+	client, err := mongo.Connect(s.Ctx, opts)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		require.NoError(t, client.Disconnect(s.Ctx))
+	})
+
+	db := client.Database(database)
+	require.NoError(t, db.Drop(s.Ctx))
 
 	for _, p := range shareddata.AllProviders() {
+		p := p
 		name := p.Name()
 
 		t.Run(name, func(t *testing.T) {
-			s := setup.SetupWithOpts(t, &setup.SetupOpts{
-				DatabaseName:   "test",
-				CollectionName: name,
-				Providers:      []shareddata.Provider{p},
-				PersistData:    true,
-			})
-
-			// envData must persist, other integration tests do not
-			// persist data once the current t.Run() ends, hence check
-			// the collection created by the previous t.Run() persists
-			if previousName != "" {
-				ctx, database := s.Ctx, s.Collection.Database()
-				cursor, err := database.Collection(previousName).Find(ctx, bson.D{})
-				require.NoError(t, err)
-
-				var res []bson.D
-				err = cursor.All(ctx, &res)
-				require.NoError(t, err)
-				require.NotEmpty(t, res)
-			}
-
-			previousName = name
+			inserted := setup.InsertProviders(t, s.Ctx, db.Collection(p.Name()), p)
+			require.True(t, inserted)
 		})
 	}
+
+	tb := setup.FailsForFerretDB(t, "https://github.com/FerretDB/FerretDB/issues/4303")
+	tb = setup.FailsForMongoDB(tb, "https://github.com/FerretDB/FerretDB/issues/4303")
+
+	inserted := setup.InsertProviders(tb, s.Ctx, db.Collection("All"), shareddata.AllProviders()...)
+	require.True(tb, inserted)
 }

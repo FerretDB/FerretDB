@@ -23,8 +23,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/teststress"
+
+	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
 func TestRenameCollectionStress(t *testing.T) {
