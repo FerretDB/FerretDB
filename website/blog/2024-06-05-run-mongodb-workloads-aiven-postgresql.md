@@ -10,13 +10,13 @@ tags: [tutorial, postgresql tools, open source, cloud]
 
 ![Run MongoDB Workloads on Aiven for PostgreSQL](/img/blog/ferretdb-aiven.jpg)
 
-Adopting open-source solutions is a strategic move for modern businesses, and [FerretDB](https://www.ferretdb.com/) is a truly open source document database alternative to MongoDB.
-It lets you run MongoDB workloads on [PostgreSQL](https://www.postgresql.org/).
+Adopting open-source solutions is a strategic move for modern businesses.
+For those looking to migrate from MongoDB, [FerretDB](https://www.ferretdb.com/) is a truly open source alternative that lets you run MongoDB workloads on [PostgreSQL](https://www.postgresql.org/).
 
 <!--truncate-->
 
 With [Aiven for PostgreSQL](https://aiven.io/postgresql), you can set up a reliable backend for FerretDB to run your MongoDB workloads.
-Aiven provides a unified, cloud-agnostic platform that lets you tap into its robust set of features, including Postgres extensions and integration into your data infrastructure.
+Aiven provides a unified, cloud-agnostic platform that lets you tap into several robust features, Postgres extensions, and integration into your data infrastructure.
 
 This blog dives into how you can add MongoDB compatibility to your Postgres service on Aiven.
 
@@ -32,34 +32,27 @@ Before you start, ensure you have the following set up:
 ## Set up Aiven for PostgreSQL
 
 First, create an Aiven account if you don't have one.
-From the Aiven dashboard, create a Postgres service.
-Learn more about setting up a Postgres service in the [Aiven documentation](https://aiven.io/docs/products/postgresql).
+From the Aiven dashboard, create a PostgreSQL service.
+Learn more about setting up a PostgreSQL service in the [Aiven documentation](https://aiven.io/docs/products/postgresql).
 
 ![Aiven for PostgreSQL service](/img/blog/aiven-postgres.png)
 
-Once it's set up, your Postgres connection string should look like this:
+Once it's set up, your Aiven for PostgreSQL connection string should look like this:
 
 ```text
 postgres://<username>:<password>@<host>:port/database?sslmode=require
 ```
 
-Connect to the connection string via `psql`, and create a `ferretdb` database that'll hold all our FerretDB records.
+Connect to the connection string via `psql`, and create a `ferretdb` database that'll hold your FerretDB data.
 
 ```text
 defaultdb=> CREATE DATABASE ferretdb owner <username>;
 CREATE DATABASE
-defaultdb=>\c ferretdb
-psql (14.11 (Homebrew), server 15.7)
-WARNING: psql major version 14, server major version 15.
-         Some psql features might not work.
-SSL connection (protocol: TLSv1.3, cipher: TLS_AES_256_GCM_SHA384, bits: 256, compression: off)
-You are now connected to database "ferretdb" as user "avnadmin".
-ferretdb=>
 ```
 
 ## Run FerretDB via Docker
 
-Let's set up our FerretDB instance to connect to the Postgres database.
+Let's set up the FerretDB instance.
 To do that, you need to specify the `FERRETDB_POSTGRESQL_URL` environment variable or `--postgresql-url` flag.
 Along with that, specify the Postgres `username`/`password` credentials for your database.
 
@@ -79,7 +72,7 @@ mongosh 'mongodb://<username>:<password>@127.0.0.1:27017/ferretdb?authMechanism=
 ```
 
 Awesome!
-Now let's attempt a couple of MongoDB operations using FerretDB.
+Now let's go ahead to run a couple of MongoDB operations using FerretDB.
 
 ### Perform MongoDB operations on FerretDB
 
@@ -87,7 +80,7 @@ As a fan of astronomy, let's play around with some arbitrary astronomy data cont
 
 #### Insert data
 
-Start by inserting some data into the `astronomy` collection.
+Start by inserting the following data into the `astronomy` collection.
 
 ```json5
 db.astronomy.insertMany([
@@ -255,10 +248,9 @@ ferretdb> db.astronomy.find({}).sort({ distance_from_earth: 1 });
 ### View data in `psql`
 
 FerretDB lets you perform a wide range of MongoDB operations — from simple queries to complex aggregations — on your Postgres database.
-
 Want to see how this all looks in Postgres?
 
-Connect to your Postgres instance via `psql` to see the records.
+Connect to your Postgres instance via `psql` to see the data.
 
 ```text
 ferretdb=> SET SEARCH_PATH to ferretdb;
