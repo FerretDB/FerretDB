@@ -299,12 +299,12 @@ func setupLogger(stateProvider *state.Provider, format string) *zap.Logger {
 func checkFlags(logger *zap.Logger) {
 	l := logger.Sugar()
 
-	if (cli.Setup.Database == "") != (cli.Setup.Username == "") {
-		l.Fatal("--setup-database should be used together with --setup-username")
-	}
-
 	if cli.Setup.Database != "" && !cli.Test.EnableNewAuth {
 		l.Fatal("--setup-database requires --test-enable-new-auth")
+	}
+
+	if (cli.Setup.Database == "") != (cli.Setup.Username == "") {
+		l.Fatal("--setup-database should be used together with --setup-username")
 	}
 
 	if cli.Test.DisablePushdown && cli.Test.EnableNestedPushdown {
