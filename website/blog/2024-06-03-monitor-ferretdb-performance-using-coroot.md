@@ -42,7 +42,7 @@ You get deeper and more extensive information on system calls, network functions
 In this guide, we will set up Coroot to monitor our FerretDB instance.
 If you are yet to setup FerretDB, see the [FerretDB Docker installation guide](https://docs.ferretdb.io/quickstart-guide/docker/).
 
-Install Coroot with the following command:
+Deploy Coroot with the following command:
 
 ```sh
 curl -fsS https://raw.githubusercontent.com/coroot/coroot/main/deploy/docker-compose.yaml | docker compose -f - up -d
