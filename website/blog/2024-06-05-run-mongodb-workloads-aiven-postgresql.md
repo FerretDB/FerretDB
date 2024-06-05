@@ -247,7 +247,7 @@ ferretdb> db.astronomy.find({}).sort({ distance_from_earth: 1 });
 
 ### View data in `psql`
 
-FerretDB lets you perform a wide range of MongoDB operations — from simple queries to complex aggregations — on your Postgres database.
+FerretDB lets you perform a wide range of MongoDB operations – from simple queries to complex aggregations – on your Postgres database.
 Want to see how this all looks in Postgres?
 
 Connect to your Postgres instance via `psql` to see the data.
