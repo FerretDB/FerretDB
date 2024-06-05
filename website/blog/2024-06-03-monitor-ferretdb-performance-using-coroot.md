@@ -24,9 +24,11 @@ In this blog post, you'll learn about Coroot and how it can help you monitor and
 
 ## Coroot observability for FerretDB
 
-Setting up effective monitoring for your entire system can be resource-intensive, time-consuming, and expensive.
-Imagine a scenario where your FerretDB instance is deployed as a Docker container along with other components and services.
+Imagine a scenario where your FerretDB instance is deployed as a Docker container along with other components and services for your application.
 Observability into all critical areas of the system in as little time is vital.
+However, it can be challenging to monitor all components and services effectively.
+You need to instrument all parts of your application, including the FerretDB, PostgreSQL, and other services and orchestrators connected to it.
+That could be resource-intensive, time-consuming, and even costly to configure, log, and maintain.
 
 With Coroot, you can visualize every aspect of your entire setup.
 That includes all its components, including your applications and their subsystems, databases, and, most importantly, how they all communicate.
