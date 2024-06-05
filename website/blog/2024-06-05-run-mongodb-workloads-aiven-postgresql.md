@@ -16,9 +16,9 @@ For those looking to migrate from MongoDB, [FerretDB](https://www.ferretdb.com/)
 <!--truncate-->
 
 With [Aiven for PostgreSQL](https://aiven.io/postgresql), you can set up a reliable backend for FerretDB to run your MongoDB workloads.
-Aiven provides a unified, cloud-agnostic platform that lets you tap into several robust features, Postgres extensions, and integration into your data infrastructure.
+Aiven provides a unified, cloud-agnostic platform that lets you tap into several critical features, including PostgreSQL extensions, high availability and performance, as well as integration with your existing data infrastructure.
 
-This blog dives into how you can add MongoDB compatibility to your Postgres service on Aiven.
+In this blog, we'll show you how to run MongoDB workloads on Aiven for PostgreSQL using FerretDB.
 
 ## Prerequisites
 
@@ -32,8 +32,7 @@ Before you start, ensure you have the following set up:
 ## Set up Aiven for PostgreSQL
 
 First, create an Aiven account if you don't have one.
-From the Aiven dashboard, create a PostgreSQL service.
-Learn more about setting up a PostgreSQL service in the [Aiven documentation](https://aiven.io/docs/products/postgresql).
+From the Aiven dashboard, [create a PostgreSQL service](https://aiven.io/docs/products/postgresql).
 
 ![Aiven for PostgreSQL service](/img/blog/aiven-postgres.png)
 
@@ -52,9 +51,7 @@ CREATE DATABASE
 
 ## Run FerretDB via Docker
 
-Let's set up the FerretDB instance.
-To do that, you need to specify the `FERRETDB_POSTGRESQL_URL` environment variable or `--postgresql-url` flag.
-Along with that, specify the Postgres `username`/`password` credentials for your database.
+To set up the FerretDB instance, specify the `FERRETDB_POSTGRESQL_URL` environment variable or `--postgresql-url` flag, and include the PostgreSQL `username`/`password` credentials for your Aiven for PostgreSQL database.
 
 Using Docker, run the following command to set it up.
 
@@ -63,7 +60,7 @@ docker run -e FERRETDB_POSTGRESQL_URL='postgres://<username>:<password>@<host>:p
  ghcr.io/ferretdb/ferretdb
 ```
 
-Ensure to replace `<username>`, `<password>`, `<host>`, and `<port>` with your Aiven for PostgreSQL credentials.
+Ensure to replace `<username>`, `<password>`, `<host>`, and `<port>` with the correct credentials.
 
 After that, connect to FerretDB via `mongosh` using the below MongoDB URI format:
 
@@ -72,7 +69,7 @@ mongosh 'mongodb://<username>:<password>@127.0.0.1:27017/ferretdb?authMechanism=
 ```
 
 Awesome!
-Now let's go ahead to run a couple of MongoDB operations using FerretDB.
+Now you can go ahead to run some MongoDB operations on FerretDB.
 
 ### Perform MongoDB operations on FerretDB
 
@@ -80,51 +77,51 @@ As a fan of astronomy, let's play around with some arbitrary astronomy data cont
 
 #### Insert data
 
-Start by inserting the following data into the `astronomy` collection.
+Start by inserting the following data into an `astronomy` collection.
 
-```json5
+```js
 db.astronomy.insertMany([
   {
-    name: "Alpha Centauri A",
-    type: "Star",
+    name: 'Alpha Centauri A',
+    type: 'Star',
     distance_from_earth: 4.37,
     mass: 2.187e30,
     diameter: 1214000,
-    constellation: "Centaurus"
+    constellation: 'Centaurus'
   },
   {
-    name: "Alpha Centauri B",
-    type: "Star",
+    name: 'Alpha Centauri B',
+    type: 'Star',
     distance_from_earth: 4.37,
     mass: 1.804e30,
     diameter: 865000,
-    constellation: "Centaurus"
+    constellation: 'Centaurus'
   },
   {
-    name: "Proxima Centauri",
-    type: "Star",
+    name: 'Proxima Centauri',
+    type: 'Star',
     distance_from_earth: 4.24,
     mass: 2.446e29,
     diameter: 200000,
-    constellation: "Centaurus"
+    constellation: 'Centaurus'
   },
- {
-   name: "Betelgeuse",
-   type: "Star",
-   distance_from_earth: 642.5,
-   mass: 2.78e31,
-   diameter: 1.2e9,
-   constellation: "Orion"
- },
- {
-   name: "Vega",
-   type: "Star",
-   distance_from_earth: 25.04,
-   mass: 4.074e30,
-   diameter: 2440000,
-   constellation: "Lyra"
- }
-]);
+  {
+    name: 'Betelgeuse',
+    type: 'Star',
+    distance_from_earth: 642.5,
+    mass: 2.78e31,
+    diameter: 1.2e9,
+    constellation: 'Orion'
+  },
+  {
+    name: 'Vega',
+    type: 'Star',
+    distance_from_earth: 25.04,
+    mass: 4.074e30,
+    diameter: 2440000,
+    constellation: 'Lyra'
+  }
+])
 ```
 
 So we have an `astronomy` collection containing 5 documents with different star data, including their mass, diameter, and distance from Earth.
@@ -134,7 +131,7 @@ Note that the mass is in kilograms, the diameter in kilometers, and the distance
 
 Let's query the data for the stars in the constellation `Centaurus`.
 
-```text
+```json5
 ferretdb> db.astronomy.find({ constellation: "Centaurus" });
 [
   {
@@ -171,9 +168,9 @@ We got three results back: Alpha Centauri A, Alpha Centauri B, and Proxima Centa
 
 #### Query data with an operator
 
-Next, let's query for stars with a mass of less than `1e30` kg.
+Next, let's find out the stars with less than `1e30` kg of mass.
 
-```text
+```json5
 ferretdb> db.astronomy.find({ mass: { $lt: 1e30 } });
 [
   {
@@ -188,13 +185,13 @@ ferretdb> db.astronomy.find({ mass: { $lt: 1e30 } });
 ]
 ```
 
-Now we know the smallest star in the collection is Proxima Centauri.
+We got only one result back with Promixa Centauri being the only star with less than `1e30` kg of mass.
 
 #### Sort the data
 
 You may also sort the documents by their distance from Earth.
 
-```text
+```json5
 ferretdb> db.astronomy.find({}).sort({ distance_from_earth: 1 });
 [
   {
@@ -247,10 +244,10 @@ ferretdb> db.astronomy.find({}).sort({ distance_from_earth: 1 });
 
 ### View data in `psql`
 
-FerretDB lets you perform a wide range of MongoDB operations – from simple queries to complex aggregations – on your Postgres database.
+FerretDB lets you perform a wide range of MongoDB operations – from simple queries to complex aggregations – on your PostgreSQL database.
 Want to see how this all looks in Postgres?
 
-Connect to your Postgres instance via `psql` to see the data.
+Connect to your PostgreSQL instance via `psql` to see the data.
 
 ```text
 ferretdb=> SET SEARCH_PATH to ferretdb;
