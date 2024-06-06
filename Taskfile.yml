@@ -35,26 +35,6 @@ tasks:
       - task: fmt-yaml
       - task: docs
 
-  ### FIXME
-  run1:
-    deps: [build-host]
-    cmds:
-      - >
-        bin/ferretdb{{exeExt}}
-        --listen-addr=:27017
-        --proxy-addr=127.0.0.1:47017
-        --repl-set-name=rs0
-        --handler=pg
-        --postgresql-url='postgres://username@127.0.0.1:5432/ferretdb?search_path='
-        --test-records-dir=tmp/records
-
-  mongosh1:
-    cmds:
-      - >
-        docker compose exec mongodb mongosh
-        --verbose --eval 'disableTelemetry()' --shell
-        'mongodb://aleksi:secret@host.docker.internal:27017/db'
-
   init-tools:
     dir: tools
     cmds:

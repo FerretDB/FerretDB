@@ -81,7 +81,7 @@ var cli struct {
 	kong.Plugins
 
 	Setup struct {
-		Database string        `default:""    help:"FIXME"` // FIXME
+		Database string        `default:""    help:"Setup database during backend initialization."`
 		Username string        `default:""    help:"Setup user during backend initialization."`
 		Password string        `default:""    help:"Setup user's password."`
 		Timeout  time.Duration `default:"30s" help:"Setup timeout."`

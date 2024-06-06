@@ -133,7 +133,7 @@ func New(opts *NewOpts) (*Handler, error) {
 		),
 	}
 
-	if err := h.setupFIXME(); err != nil {
+	if err := h.setup(); err != nil {
 		h.Close()
 		return nil, err
 	}
@@ -151,12 +151,9 @@ func New(opts *NewOpts) (*Handler, error) {
 	return h, nil
 }
 
-// FIXME
-func (h *Handler) setupFIXME() error {
-	l := h.L.Named("setupFIXME")
-
+// Setup creates initial database and user if needed.
+func (h *Handler) setup() error {
 	if h.SetupDatabase == "" {
-		l.Debug("skipping setupFIXME")
 		return nil
 	}
 
@@ -168,14 +165,17 @@ func (h *Handler) setupFIXME() error {
 
 	ctx = conninfo.Ctx(ctx, info)
 
+	l := h.L.Named("setup")
+
 	var retry int64
+
 	for ctx.Err() == nil {
 		_, err := h.b.Status(ctx, nil)
 		if err == nil {
 			break
 		}
 
-		l.Debug("setupFIXME", zap.Error(err))
+		l.Debug("Status failed", zap.Error(err))
 
 		retry++
 		ctxutil.SleepWithJitter(ctx, time.Second, retry)
@@ -186,21 +186,23 @@ func (h *Handler) setupFIXME() error {
 		return err
 	}
 
-	if len(res.Databases) != 0 {
-		l.Debug("setupFIXME: database already exists")
+	if len(res.Databases) > 0 {
+		l.Debug("Database already exists")
 		return nil
 	}
 
-	l.Info("setupFIXME: Setting up database and user", zap.String("database", h.SetupDatabase), zap.String("username", h.SetupUsername))
+	l.Info("Setting up database and user", zap.String("database", h.SetupDatabase), zap.String("username", h.SetupUsername))
 
 	db, err := h.b.Database(h.SetupDatabase)
 	if err != nil {
 		return err
 	}
 
+	// that's the only way to create a database
 	if err = db.CreateCollection(ctx, &backends.CreateCollectionParams{Name: "setup"}); err != nil {
 		return err
 	}
+
 	if err = db.DropCollection(ctx, &backends.DropCollectionParams{Name: "setup"}); err != nil {
 		return err
 	}
