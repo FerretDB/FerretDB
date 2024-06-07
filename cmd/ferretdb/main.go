@@ -43,6 +43,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/password"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/telemetry"
 )
@@ -80,6 +81,7 @@ var cli struct {
 	kong.Plugins
 
 	Setup struct {
+		Database string        `default:""    help:"Setup database during backend initialization."`
 		Username string        `default:""    help:"Setup user during backend initialization."`
 		Password string        `default:""    help:"Setup user's password."`
 		Timeout  time.Duration `default:"30s" help:"Setup timeout."`
@@ -295,16 +297,18 @@ func setupLogger(stateProvider *state.Provider, format string) *zap.Logger {
 
 // checkFlags checks that CLI flags are not self-contradictory.
 func checkFlags(logger *zap.Logger) {
-	if cli.Setup.Username != "" && !cli.Test.EnableNewAuth {
-		logger.Sugar().Fatal("--setup-username requires --test-enable-new-auth")
+	l := logger.Sugar()
+
+	if cli.Setup.Database != "" && !cli.Test.EnableNewAuth {
+		l.Fatal("--setup-database requires --test-enable-new-auth")
 	}
 
-	if cli.Setup.Password != "" && cli.Setup.Username == "" {
-		logger.Sugar().Fatal("--setup-password requires --setup-username")
+	if (cli.Setup.Database == "") != (cli.Setup.Username == "") {
+		l.Fatal("--setup-database should be used together with --setup-username")
 	}
 
 	if cli.Test.DisablePushdown && cli.Test.EnableNestedPushdown {
-		logger.Sugar().Fatal("--test-disable-pushdown and --test-enable-nested-pushdown should not be set at the same time")
+		l.Fatal("--test-disable-pushdown and --test-enable-nested-pushdown should not be set at the same time")
 	}
 }
 
@@ -417,6 +421,11 @@ func run() {
 		StateProvider: stateProvider,
 		TCPHost:       cli.Listen.Addr,
 		ReplSetName:   cli.ReplSetName,
+
+		SetupDatabase: cli.Setup.Database,
+		SetupUsername: cli.Setup.Username,
+		SetupPassword: password.WrapPassword(cli.Setup.Password),
+		SetupTimeout:  cli.Setup.Timeout,
 
 		PostgreSQLURL: postgreSQLFlags.PostgreSQLURL,
 

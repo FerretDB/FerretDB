@@ -19,6 +19,8 @@ import (
 	"errors"
 	"fmt"
 
+	"go.uber.org/zap"
+
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
@@ -29,12 +31,14 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/password"
 )
 
-// authenticate validates users with stored credentials in admin.systems.user.
+// authenticate validates users with stored credentials in admin.system.user.
 // If EnableNewAuth is false or bypass backend auth is set false, it succeeds
 // authentication and let backend handle it.
 //
-// When admin.systems.user contains no user, and the client is connected from
+// When admin.system.user contains no user, and the client is connected from
 // the localhost, it bypasses credentials check.
+//
+// TODO https://github.com/FerretDB/FerretDB/issues/4236
 func (h *Handler) authenticate(ctx context.Context) error {
 	if !h.EnableNewAuth {
 		return nil
@@ -117,6 +121,8 @@ func (h *Handler) authenticate(ctx context.Context) error {
 	}
 
 	if storedUser == nil {
+		h.L.Warn("User not found", zap.String("user", username))
+
 		return handlererrors.NewCommandErrorMsgWithArgument(
 			handlererrors.ErrAuthenticationFailed,
 			"Authentication failed",
@@ -142,6 +148,13 @@ func (h *Handler) authenticate(ctx context.Context) error {
 
 	err = password.PlainVerify(userPassword, doc)
 	if err != nil {
+		fields := []zap.Field{zap.String("user", username)}
+		if h.L.Level().Enabled(zap.DebugLevel) {
+			fields = append(fields, zap.Error(err))
+		}
+
+		h.L.Warn("PLAIN verification failed", fields...)
+
 		return handlererrors.NewCommandErrorMsgWithArgument(
 			handlererrors.ErrAuthenticationFailed,
 			"Authentication failed",
