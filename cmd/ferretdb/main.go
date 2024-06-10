@@ -53,6 +53,9 @@ import (
 //
 // Keep order in sync with documentation.
 var cli struct {
+	Run  struct{} `cmd:"" default:"1"`
+	Ping struct{} `cmd:""`
+
 	Version     bool   `default:"false"           help:"Print version to stdout and exit." env:"-"`
 	Handler     string `default:"postgresql"      help:"${help_handler}"`
 	Mode        string `default:"${default_mode}" help:"${help_mode}"                      enum:"${enum_mode}"`
@@ -204,9 +207,16 @@ var (
 
 func main() {
 	setCLIPlugins()
-	kong.Parse(&cli, kongOptions...)
+	ctx := kong.Parse(&cli, kongOptions...)
 
-	run()
+	switch ctx.Command() {
+	case "run":
+		run()
+	case "ping":
+		log.Print("TODO ping")
+	default:
+		panic("not reachable")
+	}
 }
 
 // defaultLogLevel returns the default log level.
