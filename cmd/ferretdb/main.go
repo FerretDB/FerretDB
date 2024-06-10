@@ -210,9 +210,16 @@ var (
 
 func main() {
 	setCLIPlugins()
-	kong.Parse(&cli, kongOptions...)
+	ctx := kong.Parse(&cli, kongOptions...)
 
-	run()
+	switch ctx.Command() {
+	case "run":
+		run()
+	case "ping":
+		log.Print("TODO ping")
+	default:
+		panic("not reachable")
+	}
 }
 
 // defaultLogLevel returns the default log level.
