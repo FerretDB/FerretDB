@@ -29,6 +29,8 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/expfmt"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/automaxprocs/maxprocs"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -123,7 +125,16 @@ var cli struct {
 			} `embed:"" prefix:"telemetry-"`
 		} `embed:"" prefix:"test-"`
 	} `cmd:"" default:"withargs"`
-	Ping struct{} `cmd:""`
+	Ping struct {
+		Listen struct {
+			Addr        string `default:"127.0.0.1:27017" help:"Listen TCP address."`
+			Unix        string `default:""                help:"Listen Unix domain socket path."`
+			TLS         string `default:""                help:"Listen TLS address."`
+			TLSCertFile string `default:""                help:"TLS cert file path."`
+			TLSKeyFile  string `default:""                help:"TLS key file path."`
+			TLSCaFile   string `default:""                help:"TLS CA file path."`
+		} `embed:"" prefix:"listen-"`
+	} `cmd:""`
 }
 
 // The postgreSQLFlags struct represents flags that are used by the "postgresql" backend.
@@ -216,10 +227,25 @@ func main() {
 	case "run":
 		run()
 	case "ping":
-		log.Print("TODO ping")
+		ping()
 	default:
 		panic("not reachable")
 	}
+}
+
+func ping() {
+	ctx := context.TODO()
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(cli.Ping.Listen.Addr))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer client.Disconnect(ctx)
+
+	if err = client.Ping(ctx, nil); err != nil {
+		log.Fatal(err)
+	}
+
 }
 
 // defaultLogLevel returns the default log level.
