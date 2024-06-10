@@ -245,7 +245,6 @@ func ping() {
 	if err = client.Ping(ctx, nil); err != nil {
 		log.Fatal(err)
 	}
-
 }
 
 // defaultLogLevel returns the default log level.
