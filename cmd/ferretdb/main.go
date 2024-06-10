@@ -53,74 +53,77 @@ import (
 //
 // Keep order in sync with documentation.
 var cli struct {
-	Version     bool   `default:"false"           help:"Print version to stdout and exit." env:"-"`
-	Handler     string `default:"postgresql"      help:"${help_handler}"`
-	Mode        string `default:"${default_mode}" help:"${help_mode}"                      enum:"${enum_mode}"`
-	StateDir    string `default:"."               help:"Process state directory."`
-	ReplSetName string `default:""                help:"Replica set name."`
+	Run struct {
+		Version     bool   `default:"false"           help:"Print version to stdout and exit." env:"-"`
+		Handler     string `default:"postgresql"      help:"${help_handler}"`
+		Mode        string `default:"${default_mode}" help:"${help_mode}"                      enum:"${enum_mode}"`
+		StateDir    string `default:"."               help:"Process state directory."`
+		ReplSetName string `default:""                help:"Replica set name."`
 
-	Listen struct {
-		Addr        string `default:"127.0.0.1:27017" help:"Listen TCP address."`
-		Unix        string `default:""                help:"Listen Unix domain socket path."`
-		TLS         string `default:""                help:"Listen TLS address."`
-		TLSCertFile string `default:""                help:"TLS cert file path."`
-		TLSKeyFile  string `default:""                help:"TLS key file path."`
-		TLSCaFile   string `default:""                help:"TLS CA file path."`
-	} `embed:"" prefix:"listen-"`
+		Listen struct {
+			Addr        string `default:"127.0.0.1:27017" help:"Listen TCP address."`
+			Unix        string `default:""                help:"Listen Unix domain socket path."`
+			TLS         string `default:""                help:"Listen TLS address."`
+			TLSCertFile string `default:""                help:"TLS cert file path."`
+			TLSKeyFile  string `default:""                help:"TLS key file path."`
+			TLSCaFile   string `default:""                help:"TLS CA file path."`
+		} `embed:"" prefix:"listen-"`
 
-	Proxy struct {
-		Addr        string `default:"" help:"Proxy address."`
-		TLSCertFile string `default:"" help:"Proxy TLS cert file path."`
-		TLSKeyFile  string `default:"" help:"Proxy TLS key file path."`
-		TLSCaFile   string `default:"" help:"Proxy TLS CA file path."`
-	} `embed:"" prefix:"proxy-"`
+		Proxy struct {
+			Addr        string `default:"" help:"Proxy address."`
+			TLSCertFile string `default:"" help:"Proxy TLS cert file path."`
+			TLSKeyFile  string `default:"" help:"Proxy TLS key file path."`
+			TLSCaFile   string `default:"" help:"Proxy TLS CA file path."`
+		} `embed:"" prefix:"proxy-"`
 
-	DebugAddr string `default:"127.0.0.1:8088" help:"Listen address for HTTP handlers for metrics, pprof, etc."`
+		DebugAddr string `default:"127.0.0.1:8088" help:"Listen address for HTTP handlers for metrics, pprof, etc."`
 
-	// see setCLIPlugins
-	kong.Plugins
+		// see setCLIPlugins
+		kong.Plugins
 
-	Setup struct {
-		Database string        `default:""    help:"Setup database during backend initialization."`
-		Username string        `default:""    help:"Setup user during backend initialization."`
-		Password string        `default:""    help:"Setup user's password."`
-		Timeout  time.Duration `default:"30s" help:"Setup timeout."`
-	} `embed:"" prefix:"setup-"`
+		Setup struct {
+			Database string        `default:""    help:"Setup database during backend initialization."`
+			Username string        `default:""    help:"Setup user during backend initialization."`
+			Password string        `default:""    help:"Setup user's password."`
+			Timeout  time.Duration `default:"30s" help:"Setup timeout."`
+		} `embed:"" prefix:"setup-"`
 
-	Log struct {
-		Level  string `default:"${default_log_level}" help:"${help_log_level}"`
-		Format string `default:"console"              help:"${help_log_format}"                     enum:"${enum_log_format}"`
-		UUID   bool   `default:"false"                help:"Add instance UUID to all log messages." negatable:""`
-	} `embed:"" prefix:"log-"`
+		Log struct {
+			Level  string `default:"${default_log_level}" help:"${help_log_level}"`
+			Format string `default:"console"              help:"${help_log_format}"                     enum:"${enum_log_format}"`
+			UUID   bool   `default:"false"                help:"Add instance UUID to all log messages." negatable:""`
+		} `embed:"" prefix:"log-"`
 
-	MetricsUUID bool `default:"false" help:"Add instance UUID to all metrics." negatable:""`
+		MetricsUUID bool `default:"false" help:"Add instance UUID to all metrics." negatable:""`
 
-	Telemetry telemetry.Flag `default:"undecided" help:"Enable or disable basic telemetry. See https://beacon.ferretdb.com."`
+		Telemetry telemetry.Flag `default:"undecided" help:"Enable or disable basic telemetry. See https://beacon.ferretdb.com."`
 
-	Test struct {
-		RecordsDir string `default:"" help:"Testing: directory for record files."`
+		Test struct {
+			RecordsDir string `default:"" help:"Testing: directory for record files."`
 
-		DisablePushdown      bool `default:"false" help:"Experimental: disable pushdown."`
-		EnableNestedPushdown bool `default:"false" help:"Experimental: enable pushdown for dot notation."`
+			DisablePushdown      bool `default:"false" help:"Experimental: disable pushdown."`
+			EnableNestedPushdown bool `default:"false" help:"Experimental: enable pushdown for dot notation."`
 
-		CappedCleanup struct {
-			Interval   time.Duration `default:"1m" help:"Experimental: capped collections cleanup interval."`
-			Percentage uint8         `default:"10" help:"Experimental: percentage of documents to cleanup."`
-		} `embed:"" prefix:"capped-cleanup-"`
+			CappedCleanup struct {
+				Interval   time.Duration `default:"1m" help:"Experimental: capped collections cleanup interval."`
+				Percentage uint8         `default:"10" help:"Experimental: percentage of documents to cleanup."`
+			} `embed:"" prefix:"capped-cleanup-"`
 
-		EnableNewAuth bool `default:"false" help:"Experimental: enable new authentication."`
+			EnableNewAuth bool `default:"false" help:"Experimental: enable new authentication."`
 
-		BatchSize            int `default:"100" help:"Experimental: maximum insertion batch size."`
-		MaxBsonObjectSizeMiB int `default:"16"  help:"Experimental: maximum BSON object size in MiB."`
+			BatchSize            int `default:"100" help:"Experimental: maximum insertion batch size."`
+			MaxBsonObjectSizeMiB int `default:"16"  help:"Experimental: maximum BSON object size in MiB."`
 
-		Telemetry struct {
-			URL            string        `default:"https://beacon.ferretdb.com/" help:"Telemetry: reporting URL."`
-			UndecidedDelay time.Duration `default:"1h"                           help:"Telemetry: delay for undecided state."`
-			ReportInterval time.Duration `default:"24h"                          help:"Telemetry: report interval."`
-			ReportTimeout  time.Duration `default:"5s"                           help:"Telemetry: report timeout."`
-			Package        string        `default:""                             help:"Telemetry: custom package type."`
-		} `embed:"" prefix:"telemetry-"`
-	} `embed:"" prefix:"test-"`
+			Telemetry struct {
+				URL            string        `default:"https://beacon.ferretdb.com/" help:"Telemetry: reporting URL."`
+				UndecidedDelay time.Duration `default:"1h"                           help:"Telemetry: delay for undecided state."`
+				ReportInterval time.Duration `default:"24h"                          help:"Telemetry: report interval."`
+				ReportTimeout  time.Duration `default:"5s"                           help:"Telemetry: report timeout."`
+				Package        string        `default:""                             help:"Telemetry: custom package type."`
+			} `embed:"" prefix:"telemetry-"`
+		} `embed:"" prefix:"test-"`
+	} `cmd:"" default:"withargs"`
+	Ping struct{} `cmd:""`
 }
 
 // The postgreSQLFlags struct represents flags that are used by the "postgresql" backend.
@@ -170,7 +173,7 @@ func setCLIPlugins() {
 			panic(fmt.Sprintf("handler %q has no flags", h))
 		}
 
-		cli.Plugins = append(cli.Plugins, f)
+		cli.Run.Plugins = append(cli.Run.Plugins, f)
 	}
 }
 
@@ -186,6 +189,9 @@ var (
 	logFormats = []string{"console", "json"}
 
 	kongOptions = []kong.Option{
+		kong.HelpOptions{
+			NoExpandSubcommands: false,
+		},
 		kong.Vars{
 			"default_log_level": defaultLogLevel().String(),
 			"default_mode":      clientconn.AllModes[0],
@@ -222,9 +228,9 @@ func defaultLogLevel() zapcore.Level {
 func setupState() *state.Provider {
 	var f string
 
-	if cli.StateDir != "" && cli.StateDir != "-" {
+	if cli.Run.StateDir != "" && cli.Run.StateDir != "-" {
 		var err error
-		if f, err = filepath.Abs(filepath.Join(cli.StateDir, "state.json")); err != nil {
+		if f, err = filepath.Abs(filepath.Join(cli.Run.StateDir, "state.json")); err != nil {
 			log.Fatalf("Failed to get path for state file: %s.", err)
 		}
 	}
@@ -244,7 +250,7 @@ func setupMetrics(stateProvider *state.Provider) prometheus.Registerer {
 
 	// we don't do it by default due to
 	// https://prometheus.io/docs/instrumenting/writing_exporters/#target-labels-not-static-scraped-labels
-	if cli.MetricsUUID {
+	if cli.Run.MetricsUUID {
 		r = prometheus.WrapRegistererWith(
 			prometheus.Labels{"uuid": stateProvider.Get().UUID},
 			prometheus.DefaultRegisterer,
@@ -273,12 +279,12 @@ func setupLogger(stateProvider *state.Provider, format string) *zap.Logger {
 	logUUID := stateProvider.Get().UUID
 
 	// Similarly to Prometheus, unless requested, don't add UUID to all messages, but log it once at startup.
-	if !cli.Log.UUID {
+	if !cli.Run.Log.UUID {
 		startupFields = append(startupFields, zap.String("uuid", logUUID))
 		logUUID = ""
 	}
 
-	level, err := zapcore.ParseLevel(cli.Log.Level)
+	level, err := zapcore.ParseLevel(cli.Run.Log.Level)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -299,15 +305,15 @@ func setupLogger(stateProvider *state.Provider, format string) *zap.Logger {
 func checkFlags(logger *zap.Logger) {
 	l := logger.Sugar()
 
-	if cli.Setup.Database != "" && !cli.Test.EnableNewAuth {
+	if cli.Run.Setup.Database != "" && !cli.Run.Test.EnableNewAuth {
 		l.Fatal("--setup-database requires --test-enable-new-auth")
 	}
 
-	if (cli.Setup.Database == "") != (cli.Setup.Username == "") {
+	if (cli.Run.Setup.Database == "") != (cli.Run.Setup.Username == "") {
 		l.Fatal("--setup-database should be used together with --setup-username")
 	}
 
-	if cli.Test.DisablePushdown && cli.Test.EnableNestedPushdown {
+	if cli.Run.Test.DisablePushdown && cli.Run.Test.EnableNestedPushdown {
 		l.Fatal("--test-disable-pushdown and --test-enable-nested-pushdown should not be set at the same time")
 	}
 }
@@ -343,11 +349,11 @@ func run() {
 
 	info := version.Get()
 
-	if p := cli.Test.Telemetry.Package; p != "" {
+	if p := cli.Run.Test.Telemetry.Package; p != "" {
 		info.Package = p
 	}
 
-	if cli.Version {
+	if cli.Run.Version {
 		fmt.Fprintln(os.Stdout, "version:", info.Version)
 		fmt.Fprintln(os.Stdout, "commit:", info.Commit)
 		fmt.Fprintln(os.Stdout, "branch:", info.Branch)
@@ -365,7 +371,7 @@ func run() {
 
 	metricsRegisterer := setupMetrics(stateProvider)
 
-	logger := setupLogger(stateProvider, cli.Log.Format)
+	logger := setupLogger(stateProvider, cli.Run.Log.Format)
 
 	checkFlags(logger)
 
@@ -383,12 +389,12 @@ func run() {
 
 	var wg sync.WaitGroup
 
-	if cli.DebugAddr != "" && cli.DebugAddr != "-" {
+	if cli.Run.DebugAddr != "" && cli.Run.DebugAddr != "-" {
 		wg.Add(1)
 
 		go func() {
 			defer wg.Done()
-			debug.RunHandler(ctx, cli.DebugAddr, metricsRegisterer, logger.Named("debug"))
+			debug.RunHandler(ctx, cli.Run.DebugAddr, metricsRegisterer, logger.Named("debug"))
 		}()
 	}
 
@@ -401,31 +407,31 @@ func run() {
 		runTelemetryReporter(
 			ctx,
 			&telemetry.NewReporterOpts{
-				URL:            cli.Test.Telemetry.URL,
-				F:              &cli.Telemetry,
+				URL:            cli.Run.Test.Telemetry.URL,
+				F:              &cli.Run.Telemetry,
 				DNT:            os.Getenv("DO_NOT_TRACK"),
 				ExecName:       os.Args[0],
 				P:              stateProvider,
 				ConnMetrics:    metrics.ConnMetrics,
 				L:              logger.Named("telemetry"),
-				UndecidedDelay: cli.Test.Telemetry.UndecidedDelay,
-				ReportInterval: cli.Test.Telemetry.ReportInterval,
-				ReportTimeout:  cli.Test.Telemetry.ReportTimeout,
+				UndecidedDelay: cli.Run.Test.Telemetry.UndecidedDelay,
+				ReportInterval: cli.Run.Test.Telemetry.ReportInterval,
+				ReportTimeout:  cli.Run.Test.Telemetry.ReportTimeout,
 			},
 		)
 	}()
 
-	h, closeBackend, err := registry.NewHandler(cli.Handler, &registry.NewHandlerOpts{
+	h, closeBackend, err := registry.NewHandler(cli.Run.Handler, &registry.NewHandlerOpts{
 		Logger:        logger,
 		ConnMetrics:   metrics.ConnMetrics,
 		StateProvider: stateProvider,
-		TCPHost:       cli.Listen.Addr,
-		ReplSetName:   cli.ReplSetName,
+		TCPHost:       cli.Run.Listen.Addr,
+		ReplSetName:   cli.Run.ReplSetName,
 
-		SetupDatabase: cli.Setup.Database,
-		SetupUsername: cli.Setup.Username,
-		SetupPassword: password.WrapPassword(cli.Setup.Password),
-		SetupTimeout:  cli.Setup.Timeout,
+		SetupDatabase: cli.Run.Setup.Database,
+		SetupUsername: cli.Run.Setup.Username,
+		SetupPassword: password.WrapPassword(cli.Run.Setup.Password),
+		SetupTimeout:  cli.Run.Setup.Timeout,
 
 		PostgreSQLURL: postgreSQLFlags.PostgreSQLURL,
 
@@ -436,13 +442,13 @@ func run() {
 		MySQLURL: mySQLFlags.MySQLURL,
 
 		TestOpts: registry.TestOpts{
-			DisablePushdown:         cli.Test.DisablePushdown,
-			EnableNestedPushdown:    cli.Test.EnableNestedPushdown,
-			CappedCleanupInterval:   cli.Test.CappedCleanup.Interval,
-			CappedCleanupPercentage: cli.Test.CappedCleanup.Percentage,
-			EnableNewAuth:           cli.Test.EnableNewAuth,
-			BatchSize:               cli.Test.BatchSize,
-			MaxBsonObjectSizeBytes:  cli.Test.MaxBsonObjectSizeMiB * 1024 * 1024, //nolint:mnd // converting MiB to bytes
+			DisablePushdown:         cli.Run.Test.DisablePushdown,
+			EnableNestedPushdown:    cli.Run.Test.EnableNestedPushdown,
+			CappedCleanupInterval:   cli.Run.Test.CappedCleanup.Interval,
+			CappedCleanupPercentage: cli.Run.Test.CappedCleanup.Percentage,
+			EnableNewAuth:           cli.Run.Test.EnableNewAuth,
+			BatchSize:               cli.Run.Test.BatchSize,
+			MaxBsonObjectSizeBytes:  cli.Run.Test.MaxBsonObjectSizeMiB * 1024 * 1024, //nolint:mnd // converting MiB to bytes
 		},
 	})
 	if err != nil {
@@ -452,24 +458,24 @@ func run() {
 	defer closeBackend()
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
-		TCP:  cli.Listen.Addr,
-		Unix: cli.Listen.Unix,
+		TCP:  cli.Run.Listen.Addr,
+		Unix: cli.Run.Listen.Unix,
 
-		TLS:         cli.Listen.TLS,
-		TLSCertFile: cli.Listen.TLSCertFile,
-		TLSKeyFile:  cli.Listen.TLSKeyFile,
-		TLSCAFile:   cli.Listen.TLSCaFile,
+		TLS:         cli.Run.Listen.TLS,
+		TLSCertFile: cli.Run.Listen.TLSCertFile,
+		TLSKeyFile:  cli.Run.Listen.TLSKeyFile,
+		TLSCAFile:   cli.Run.Listen.TLSCaFile,
 
-		ProxyAddr:        cli.Proxy.Addr,
-		ProxyTLSCertFile: cli.Proxy.TLSCertFile,
-		ProxyTLSKeyFile:  cli.Proxy.TLSKeyFile,
-		ProxyTLSCAFile:   cli.Proxy.TLSCaFile,
+		ProxyAddr:        cli.Run.Proxy.Addr,
+		ProxyTLSCertFile: cli.Run.Proxy.TLSCertFile,
+		ProxyTLSKeyFile:  cli.Run.Proxy.TLSKeyFile,
+		ProxyTLSCAFile:   cli.Run.Proxy.TLSCaFile,
 
-		Mode:           clientconn.Mode(cli.Mode),
+		Mode:           clientconn.Mode(cli.Run.Mode),
 		Metrics:        metrics,
 		Handler:        h,
 		Logger:         logger,
-		TestRecordsDir: cli.Test.RecordsDir,
+		TestRecordsDir: cli.Run.Test.RecordsDir,
 	})
 
 	metricsRegisterer.MustRegister(l)
