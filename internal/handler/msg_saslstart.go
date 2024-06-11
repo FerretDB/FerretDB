@@ -22,6 +22,7 @@ import (
 	"fmt"
 
 	"github.com/xdg-go/scram"
+	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
@@ -168,9 +169,7 @@ func saslStartPlain(doc *types.Document) (string, string, error) {
 }
 
 // scramCredentialLookup looks up an user's credentials in the database.
-func (h *Handler) scramCredentialLookup(ctx context.Context, username, dbName, mechanism string) (
-	*scram.StoredCredentials, error,
-) {
+func (h *Handler) scramCredentialLookup(ctx context.Context, username, dbName, mechanism string) (*scram.StoredCredentials, error) { //nolint:lll // for readability
 	adminDB, err := h.b.Database("admin")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -244,6 +243,8 @@ func (h *Handler) scramCredentialLookup(ctx context.Context, username, dbName, m
 			}, nil
 		}
 	}
+
+	h.L.Warn("Credential lookup failed", zap.String("user", username))
 
 	return nil, handlererrors.NewCommandErrorMsg(
 		handlererrors.ErrAuthenticationFailed,

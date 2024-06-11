@@ -17,6 +17,8 @@ package handler
 import (
 	"context"
 
+	"go.uber.org/zap"
+
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
@@ -45,6 +47,8 @@ func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	conv := conninfo.Get(ctx).Conv()
 
 	if conv == nil {
+		h.L.Warn("saslContinue: no conversation to continue")
+
 		return nil, handlererrors.NewCommandErrorMsg(
 			handlererrors.ErrAuthenticationFailed,
 			"Authentication failed.",
@@ -53,6 +57,13 @@ func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.O
 
 	response, err := conv.Step(string(payload))
 	if err != nil {
+		var fields []zap.Field
+		if h.L.Level().Enabled(zap.DebugLevel) {
+			fields = append(fields, zap.Error(err))
+		}
+
+		h.L.Warn("saslContinue step failed", fields...)
+
 		return nil, handlererrors.NewCommandErrorMsg(
 			handlererrors.ErrAuthenticationFailed,
 			"Authentication failed.",

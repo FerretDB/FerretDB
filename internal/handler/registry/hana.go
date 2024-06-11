@@ -41,6 +41,11 @@ func init() {
 			TCPHost:     opts.TCPHost,
 			ReplSetName: opts.ReplSetName,
 
+			SetupDatabase: opts.SetupDatabase,
+			SetupUsername: opts.SetupUsername,
+			SetupPassword: opts.SetupPassword,
+			SetupTimeout:  opts.SetupTimeout,
+
 			L:             opts.Logger.Named("hana"),
 			ConnMetrics:   opts.ConnMetrics,
 			StateProvider: opts.StateProvider,
