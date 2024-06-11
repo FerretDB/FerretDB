@@ -850,7 +850,7 @@ func (r *Registry) indexesCreate(ctx context.Context, p *pgxpool.Pool, dbName, c
 			q += "UNIQUE "
 		}
 
-		q += "INDEX %s ON %s (%s)"
+		q += "INDEX %s ON %s USING GIN (%s)"
 
 		columns := make([]string, len(index.Key))
 
