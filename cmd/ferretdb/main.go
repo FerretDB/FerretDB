@@ -19,6 +19,8 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -29,6 +31,8 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/expfmt"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/automaxprocs/maxprocs"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -213,9 +217,46 @@ func main() {
 	case "run":
 		run()
 	case "ping":
-		log.Print("TODO ping")
+		ping()
 	default:
 		panic("not reachable")
+	}
+}
+
+func ping() {
+	if cli.Listen.Addr == "" {
+		return
+	}
+
+	// TODO TLS, Socket
+
+	host, port, err := net.SplitHostPort(cli.Listen.Addr)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if host == "" {
+		host = "127.0.0.1"
+	}
+
+	if port == "" {
+		port = "27017"
+	}
+
+	addr, err := url.Parse(fmt.Sprintf("mongodb://%s:%s", host, port))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	ctx := context.TODO()
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(addr.String()))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer client.Disconnect(ctx)
+	if err = client.Ping(ctx, nil); err != nil {
+		log.Fatal(err)
 	}
 }
 
