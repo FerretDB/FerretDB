@@ -246,22 +246,17 @@ func ping() {
 		host = "127.0.0.1"
 	}
 
-	// is it possible?
-	if port == "" {
-		port = "27017"
+	u := &url.URL{
+		Scheme: "mongodb",
+		Host:   fmt.Sprintf("%s:%s", host, port),
+		Path:   cli.Setup.Database,
+		User:   url.UserPassword(cli.Setup.Username, cli.Setup.Password),
 	}
-
-	addr, err := url.Parse(fmt.Sprintf("mongodb://%s:%s", host, port))
-	if err != nil {
-		l.Fatal(err)
-	}
-
-	addr.User = url.UserPassword(cli.Setup.Username, cli.Setup.Password)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(addr.String()))
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(u.String()))
 	if err != nil {
 		l.Fatal(err)
 	}
