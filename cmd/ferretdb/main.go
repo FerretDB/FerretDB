@@ -57,8 +57,8 @@ import (
 //
 // Keep order in sync with documentation.
 var cli struct {
-	Run  struct{} `cmd:"" default:"1"`
-	Ping struct{} `cmd:""`
+	Run  struct{} `cmd:"Start FerretDB." default:"1"`
+	Ping struct{} `cmd:"Ping existing FerretDB instance."`
 
 	Version     bool   `default:"false"           help:"Print version to stdout and exit." env:"-"`
 	Handler     string `default:"postgresql"      help:"${help_handler}"`
@@ -223,7 +223,14 @@ func main() {
 	}
 }
 
+// ping creates connection to FerretDB instance specified by the flags, and runs `ping` command against it.
+// If
 func ping() {
+	logger := setupLogger(setupState(), cli.Log.Format)
+	l := logger.Sugar()
+
+	checkFlags(logger)
+
 	if cli.Listen.Addr == "" {
 		return
 	}
@@ -238,7 +245,7 @@ func ping() {
 
 	host, port, err := net.SplitHostPort(cli.Listen.Addr)
 	if err != nil {
-		log.Fatal(err)
+		l.Fatal(err)
 	}
 
 	if host == "" {
@@ -252,7 +259,7 @@ func ping() {
 
 	addr, err := url.Parse(fmt.Sprintf("mongodb://%s:%s", host, port))
 	if err != nil {
-		log.Fatal(err)
+		l.Fatal(err)
 	}
 
 	addr.User = url.UserPassword(cli.Setup.Username, cli.Setup.Password)
@@ -262,12 +269,12 @@ func ping() {
 
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(addr.String()))
 	if err != nil {
-		log.Fatal(err)
+		l.Fatal(err)
 	}
 
 	defer client.Disconnect(ctx)
 	if err = client.Ping(ctx, nil); err != nil {
-		log.Fatal(err)
+		l.Fatal(err)
 	}
 }
 
