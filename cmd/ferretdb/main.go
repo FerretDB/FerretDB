@@ -231,13 +231,7 @@ func ping() {
 
 	checkFlags(logger)
 
-	if cli.Listen.Addr == "" {
-		return
-	}
-
-	if cli.Setup.Database == "" ||
-		cli.Setup.Username == "" ||
-		cli.Setup.Password == "" {
+	if cli.Listen.Addr == "" || cli.Setup.Database == "" {
 		return
 	}
 
@@ -273,6 +267,7 @@ func ping() {
 	}
 
 	defer client.Disconnect(ctx)
+
 	if err = client.Ping(ctx, nil); err != nil {
 		l.Fatal(err)
 	}
