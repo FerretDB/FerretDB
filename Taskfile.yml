@@ -655,8 +655,7 @@ tasks:
         vars:
           DOCKER_IMAGES: ferretdb-local
           OUTPUT: type=docker
-              #FILE: "{{.FILE}}"
-          TARGET: development
+          TARGET: "{{.FILE}}"
     requires:
       vars: [FILE]
 
