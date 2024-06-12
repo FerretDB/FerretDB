@@ -229,7 +229,6 @@ func ping() {
 	}
 
 	// TODO TLS, Socket
-	// TODO timeout
 
 	host, port, err := net.SplitHostPort(cli.Listen.Addr)
 	if err != nil {
@@ -250,7 +249,9 @@ func ping() {
 		log.Fatal(err)
 	}
 
-	ctx := context.TODO()
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(addr.String()))
 	if err != nil {
 		log.Fatal(err)
