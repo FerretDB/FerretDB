@@ -229,6 +229,7 @@ func ping() {
 	}
 
 	// TODO TLS, Socket
+	// TODO timeout
 
 	host, port, err := net.SplitHostPort(cli.Listen.Addr)
 	if err != nil {
