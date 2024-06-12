@@ -118,8 +118,7 @@ COPY --from=development-build /src/bin/ferretdb /ferretdb
 
 ENTRYPOINT [ "/ferretdb" ]
 
-HEALTHCHECK \
-  CMD /ferretdb ping
+HEALTHCHECK CMD /ferretdb ping
 
 WORKDIR /
 VOLUME /state
