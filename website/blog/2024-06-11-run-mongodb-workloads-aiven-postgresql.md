@@ -39,7 +39,7 @@ From the Aiven dashboard, [create a PostgreSQL service](https://aiven.io/docs/pr
 Once it's set up, your Aiven for PostgreSQL connection string should look like this:
 
 ```text
-postgres://<username>:<password>@<host>:port/database?sslmode=require
+postgres://<username>:<password>@<host>:<port>/<database>?sslmode=require
 ```
 
 Connect to the connection string via `psql`, and create a `ferretdb` database that'll hold your FerretDB data.
