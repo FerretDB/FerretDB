@@ -228,6 +228,12 @@ func ping() {
 		return
 	}
 
+	if cli.Setup.Database == "" ||
+		cli.Setup.Username == "" ||
+		cli.Setup.Password == "" {
+		return
+	}
+
 	// TODO TLS, Socket
 
 	host, port, err := net.SplitHostPort(cli.Listen.Addr)
@@ -248,6 +254,8 @@ func ping() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	addr.User = url.UserPassword(cli.Setup.Username, cli.Setup.Password)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
