@@ -240,6 +240,7 @@ func ping() {
 		host = "127.0.0.1"
 	}
 
+	// is it possible?
 	if port == "" {
 		port = "27017"
 	}
