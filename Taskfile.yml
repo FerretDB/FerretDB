@@ -653,9 +653,10 @@ tasks:
       - echo 'docker-local-{{.FILE}}' > build/version/package.txt
       - task: docker-build
         vars:
+          FILE: ferretdb/{{.FILE}}
+          TARGET: "{{.FILE}}"
           DOCKER_IMAGES: ferretdb-local
           OUTPUT: type=docker
-          TARGET: "{{.FILE}}"
     requires:
       vars: [FILE]
 
