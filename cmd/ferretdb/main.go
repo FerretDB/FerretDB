@@ -288,8 +288,6 @@ func ping() {
 			l.Fatal(err)
 		}
 	}
-
-	// TODO TLS, Socket
 }
 
 // defaultLogLevel returns the default log level.
