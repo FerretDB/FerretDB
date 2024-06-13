@@ -267,17 +267,12 @@ func ping() {
 	}
 
 	if cli.Listen.Unix != "" {
-		u := &url.URL{
-			Scheme: "mongodb",
-			Host:   cli.Listen.Unix,
-			Path:   cli.Setup.Database,
-			User:   url.UserPassword(cli.Setup.Username, cli.Setup.Password),
-		}
-
 		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 		defer cancel()
 
-		client, err := mongo.Connect(ctx, options.Client().ApplyURI(u.String()))
+		u := strings.ReplaceAll(cli.Listen.Addr, "/", "%2F")
+
+		client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://"+u))
 		if err != nil {
 			l.Fatal(err)
 		}
