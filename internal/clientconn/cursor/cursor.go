@@ -121,7 +121,7 @@ func (c *Cursor) Reset(iter types.DocumentsIterator) error {
 			return lazyerrors.Error(err)
 		}
 
-		if doc.RecordID() == recordID {
+		if doc.RecordID() >= recordID {
 			return nil
 		}
 	}
