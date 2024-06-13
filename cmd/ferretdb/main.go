@@ -230,41 +230,66 @@ func ping() {
 
 	checkFlags(logger)
 
-	if cli.Listen.Addr == "" || cli.Setup.Database == "" {
+	if cli.Setup.Database == "" {
 		return
 	}
 
+	if cli.Listen.Addr != "" {
+		host, port, err := net.SplitHostPort(cli.Listen.Addr)
+		if err != nil {
+			l.Fatal(err)
+		}
+
+		if host == "" {
+			host = "127.0.0.1"
+		}
+
+		u := &url.URL{
+			Scheme: "mongodb",
+			Host:   fmt.Sprintf("%s:%s", host, port),
+			Path:   cli.Setup.Database,
+			User:   url.UserPassword(cli.Setup.Username, cli.Setup.Password),
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+
+		client, err := mongo.Connect(ctx, options.Client().ApplyURI(u.String()))
+		if err != nil {
+			l.Fatal(err)
+		}
+
+		defer client.Disconnect(ctx)
+
+		if err = client.Ping(ctx, nil); err != nil {
+			l.Fatal(err)
+		}
+	}
+
+	if cli.Listen.Unix != "" {
+		u := &url.URL{
+			Scheme: "mongodb",
+			Host:   cli.Listen.Unix,
+			Path:   cli.Setup.Database,
+			User:   url.UserPassword(cli.Setup.Username, cli.Setup.Password),
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+
+		client, err := mongo.Connect(ctx, options.Client().ApplyURI(u.String()))
+		if err != nil {
+			l.Fatal(err)
+		}
+
+		defer client.Disconnect(ctx)
+
+		if err = client.Ping(ctx, nil); err != nil {
+			l.Fatal(err)
+		}
+	}
+
 	// TODO TLS, Socket
-
-	host, port, err := net.SplitHostPort(cli.Listen.Addr)
-	if err != nil {
-		l.Fatal(err)
-	}
-
-	if host == "" {
-		host = "127.0.0.1"
-	}
-
-	u := &url.URL{
-		Scheme: "mongodb",
-		Host:   fmt.Sprintf("%s:%s", host, port),
-		Path:   cli.Setup.Database,
-		User:   url.UserPassword(cli.Setup.Username, cli.Setup.Password),
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(u.String()))
-	if err != nil {
-		l.Fatal(err)
-	}
-
-	defer client.Disconnect(ctx)
-
-	if err = client.Ping(ctx, nil); err != nil {
-		l.Fatal(err)
-	}
 }
 
 // defaultLogLevel returns the default log level.
