@@ -116,7 +116,7 @@ func (b *backend) Database(name string) (backends.Database, error) {
 //
 //nolint:lll // for readability
 func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDatabasesParams) (*backends.ListDatabasesResult, error) {
-	rows, err := b.hdb.QueryContext(ctx, "SELECT SCHEMA_NAME FROM SCHEMAS")
+	rows, err := b.hdb.QueryContext(ctx, "SELECT SCHEMA_NAME FROM SCHEMAS ORDER BY SCHEMA_NAME ASC")
 	if err != nil {
 		return nil, err
 	}
