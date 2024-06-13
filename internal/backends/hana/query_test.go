@@ -98,6 +98,12 @@ func TestPrepareWhereClause(t *testing.T) {
 				"_id", must.NotFail(types.NewDocument("$ne", objectID)))),
 			expected: " WHERE \"_id\" <> '6256c5ba0badc0ffeeffffff'",
 		},
+		"KeyWithDollarSignSubdocument": {
+			filter: must.NotFail(types.NewDocument(
+				"o.$v", must.NotFail(types.NewDocument("$eq", int32(123))),
+			)),
+			expected: " WHERE \"o._$v\" = 123",
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
