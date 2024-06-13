@@ -219,12 +219,11 @@ func main() {
 	case "ping":
 		ping()
 	default:
-		panic("not reachable")
+		panic("unknown sub-command")
 	}
 }
 
 // ping creates connection to FerretDB instance specified by the flags, and runs `ping` command against it.
-// If
 func ping() {
 	logger := setupLogger(setupState(), cli.Log.Format)
 	l := logger.Sugar()
