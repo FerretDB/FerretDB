@@ -57,7 +57,7 @@ import (
 //
 // Keep order in sync with documentation.
 var cli struct {
-	Run  struct{} `cmd:"Start FerretDB." default:"1"`
+	Run  struct{} `cmd:"Start FerretDB."                  default:"1"`
 	Ping struct{} `cmd:"Ping existing FerretDB instance."`
 
 	Version     bool   `default:"false"           help:"Print version to stdout and exit." env:"-"`
@@ -251,7 +251,7 @@ func ping() {
 			User:   url.UserPassword(cli.Setup.Username, cli.Setup.Password),
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), cli.Setup.Timeout)
 		defer cancel()
 
 		client, err := mongo.Connect(ctx, options.Client().ApplyURI(u.String()))
@@ -259,7 +259,11 @@ func ping() {
 			l.Fatal(err)
 		}
 
-		defer client.Disconnect(ctx)
+		defer func() {
+			if err = client.Disconnect(ctx); err != nil {
+				l.Fatal(err)
+			}
+		}()
 
 		if err = client.Ping(ctx, nil); err != nil {
 			l.Fatal(err)
@@ -267,7 +271,7 @@ func ping() {
 	}
 
 	if cli.Listen.Unix != "" {
-		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), cli.Setup.Timeout)
 		defer cancel()
 
 		u := strings.ReplaceAll(cli.Listen.Addr, "/", "%2F")
@@ -277,7 +281,11 @@ func ping() {
 			l.Fatal(err)
 		}
 
-		defer client.Disconnect(ctx)
+		defer func() {
+			if err = client.Disconnect(ctx); err != nil {
+				l.Fatal(err)
+			}
+		}()
 
 		if err = client.Ping(ctx, nil); err != nil {
 			l.Fatal(err)
