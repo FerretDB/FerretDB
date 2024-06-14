@@ -275,6 +275,8 @@ func ping() {
 		if err = client.Ping(ctx, nil); err != nil {
 			l.Fatal(err)
 		}
+
+		l.Info("Ping successful.")
 	}
 
 	if cli.Listen.Unix != "" {
@@ -301,7 +303,10 @@ func ping() {
 		if err = client.Ping(ctx, nil); err != nil {
 			l.Fatal(err)
 		}
+
+		l.Info("Ping successful.")
 	}
+
 }
 
 // defaultLogLevel returns the default log level.
