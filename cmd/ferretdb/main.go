@@ -274,7 +274,7 @@ func ping() {
 		ctx, cancel := context.WithTimeout(context.Background(), cli.Setup.Timeout)
 		defer cancel()
 
-		u := strings.ReplaceAll(cli.Listen.Addr, "/", "%2F")
+		u := strings.ReplaceAll(cli.Listen.Unix, "/", "%2F")
 
 		client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://"+u))
 		if err != nil {
