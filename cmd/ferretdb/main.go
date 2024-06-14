@@ -225,12 +225,13 @@ func main() {
 
 // ping creates connection to FerretDB instance specified by the flags, and runs `ping` command against it.
 func ping() {
-	logger := setupLogger(setupState(), cli.Log.Format)
-	l := logger.Sugar()
-
+	logger := setupLogger(cli.Log.Format, "")
 	checkFlags(logger)
 
+	l := logger.Sugar()
+
 	if cli.Setup.Database == "" {
+		l.Info("Setup database not specified - skipping ping")
 		return
 	}
 
@@ -342,7 +343,19 @@ func setupMetrics(stateProvider *state.Provider) prometheus.Registerer {
 }
 
 // setupLogger setups zap logger.
-func setupLogger(stateProvider *state.Provider, format string) *zap.Logger {
+// It should be preffered for specific single commands/operations over setupLoggerWithStartupMsg.
+func setupLogger(format string, uuid string) *zap.Logger {
+	level, err := zapcore.ParseLevel(cli.Log.Level)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	logging.Setup(level, format, uuid)
+	return zap.L()
+}
+
+// setupLoggerWithStartupMsg setups zap logger, and returns the service startup message.
+func setupLoggerWithStartupMsg(stateProvider *state.Provider, format string) *zap.Logger {
 	info := version.Get()
 
 	startupFields := []zap.Field{
@@ -354,6 +367,7 @@ func setupLogger(stateProvider *state.Provider, format string) *zap.Logger {
 		zap.Bool("debugBuild", info.DebugBuild),
 		zap.Any("buildEnvironment", info.BuildEnvironment.Map()),
 	}
+
 	logUUID := stateProvider.Get().UUID
 
 	// Similarly to Prometheus, unless requested, don't add UUID to all messages, but log it once at startup.
@@ -362,13 +376,7 @@ func setupLogger(stateProvider *state.Provider, format string) *zap.Logger {
 		logUUID = ""
 	}
 
-	level, err := zapcore.ParseLevel(cli.Log.Level)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	logging.Setup(level, format, logUUID)
-	l := zap.L()
+	l := setupLogger(format, logUUID)
 
 	l.Info("Starting FerretDB "+info.Version+"...", startupFields...)
 
@@ -449,7 +457,7 @@ func run() {
 
 	metricsRegisterer := setupMetrics(stateProvider)
 
-	logger := setupLogger(stateProvider, cli.Log.Format)
+	logger := setupLoggerWithStartupMsg(stateProvider, cli.Log.Format)
 
 	checkFlags(logger)
 
