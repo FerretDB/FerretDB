@@ -231,7 +231,7 @@ func ping() {
 	l := logger.Sugar()
 
 	if cli.Setup.Database == "" {
-		l.Info("Setup database not specified - skipping ping")
+		l.Info("Setup database not specified - skipping ping.")
 		return
 	}
 
@@ -241,8 +241,12 @@ func ping() {
 			l.Fatal(err)
 		}
 
+		l.Infof("--listen-addr flag is set. Pinging %s...", cli.Listen.Addr)
+
 		if host == "" {
 			host = "127.0.0.1"
+
+			l.Debugf("Host not specified, defaulting to %s.", host)
 		}
 
 		u := &url.URL{
@@ -251,6 +255,8 @@ func ping() {
 			Path:   cli.Setup.Database,
 			User:   url.UserPassword(cli.Setup.Username, cli.Setup.Password),
 		}
+
+		l.Debugf("Pinging %s...", u)
 
 		ctx, cancel := context.WithTimeout(context.Background(), cli.Setup.Timeout)
 		defer cancel()
@@ -275,9 +281,13 @@ func ping() {
 		ctx, cancel := context.WithTimeout(context.Background(), cli.Setup.Timeout)
 		defer cancel()
 
-		u := strings.ReplaceAll(cli.Listen.Addr, "/", "%2F")
+		l.Infof("--listen-unix flag is set. Pinging %s...", cli.Listen.Unix)
 
-		client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://"+u))
+		u := "mongodb://" + strings.ReplaceAll(cli.Listen.Unix, "/", "%2F")
+
+		l.Debugf("Pinging %s...", u)
+
+		client, err := mongo.Connect(ctx, options.Client().ApplyURI(u))
 		if err != nil {
 			l.Fatal(err)
 		}
