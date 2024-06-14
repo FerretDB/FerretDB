@@ -57,8 +57,8 @@ import (
 //
 // Keep order in sync with documentation.
 var cli struct {
-	Run  struct{} `cmd:"Start FerretDB."                  default:"1"`
-	Ping struct{} `cmd:"Ping existing FerretDB instance."`
+	Run  struct{} `cmd:"" default:"1"                             hidden:""`
+	Ping struct{} `cmd:"" help:"Ping existing FerretDB instance."`
 
 	Version     bool   `default:"false"           help:"Print version to stdout and exit." env:"-"`
 	Handler     string `default:"postgresql"      help:"${help_handler}"`
@@ -193,6 +193,9 @@ var (
 	logFormats = []string{"console", "json"}
 
 	kongOptions = []kong.Option{
+		kong.HelpOptions{
+			Compact: true,
+		},
 		kong.Vars{
 			"default_log_level": defaultLogLevel().String(),
 			"default_mode":      clientconn.AllModes[0],
