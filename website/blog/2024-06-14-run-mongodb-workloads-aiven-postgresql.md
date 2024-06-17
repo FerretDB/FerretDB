@@ -56,7 +56,7 @@ To set up the FerretDB instance, specify the `FERRETDB_POSTGRESQL_URL` environme
 Using Docker, run the following command to set it up.
 
 ```sh
-docker run -e FERRETDB_POSTGRESQL_URL='postgres://<username>:<password>@<host>:port/ferretdb?sslmode=require'  -p 27017:27017
+docker run -e FERRETDB_POSTGRESQL_URL='postgres://<username>:<password>@<host>:<port>/ferretdb?sslmode=require' -p 27017:27017
  ghcr.io/ferretdb/ferretdb
 ```
 
