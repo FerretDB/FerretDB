@@ -15,9 +15,12 @@
 package setup
 
 import (
+	"flag"
+	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"testing"
 
 	"github.com/stretchr/testify/require"
 
@@ -113,4 +116,26 @@ func Dir(tb testtb.TB) string {
 	require.True(tb, ok)
 
 	return filepath.Dir(file)
+}
+
+// Main is the entry point for all integration test packages.
+// It should be called from main_test.go in each package.
+func Main(m *testing.M) {
+	flag.Parse()
+
+	var code int
+
+	// ensure that Shutdown runs for any exit code or panic
+	func() {
+		// make `go test -list=.` work without side effects
+		if flag.Lookup("test.list").Value.String() == "" {
+			Startup()
+
+			defer Shutdown()
+		}
+
+		code = m.Run()
+	}()
+
+	os.Exit(code)
 }
