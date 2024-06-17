@@ -45,7 +45,7 @@ postgres://<username>:<password>@<host>:<port>/<database>?sslmode=require
 Connect to the connection string via `psql`, and create a `ferretdb` database that'll hold your FerretDB data.
 
 ```text
-defaultdb=> CREATE DATABASE ferretdb owner <username>;
+defaultdb=> CREATE DATABASE ferretdb OWNER <username>;
 CREATE DATABASE
 ```
 
