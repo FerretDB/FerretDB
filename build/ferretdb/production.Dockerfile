@@ -110,6 +110,8 @@ COPY --from=production-build --chown=ferretdb:ferretdb /state /state
 
 ENTRYPOINT [ "/ferretdb" ]
 
+HEALTHCHECK CMD /ferretdb ping
+
 WORKDIR /
 VOLUME /state
 EXPOSE 27017 27018 8088
