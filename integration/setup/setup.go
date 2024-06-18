@@ -120,6 +120,7 @@ func NewBackendOpts() *BackendOpts {
 	return &BackendOpts{
 		CappedCleanupInterval:   time.Duration(0),
 		CappedCleanupPercentage: uint8(20),
+		EnableNewAuth:           true,
 	}
 }
 
@@ -242,7 +243,11 @@ func setupCollection(tb testtb.TB, ctx context.Context, client *mongo.Client, op
 	// drop remnants of the previous failed run
 	_ = collection.Drop(ctx)
 	if ownDatabase {
-		_ = database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}})
+		if opts.BackendOptions.EnableNewAuth {
+			err := database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}}).Err()
+			require.NoError(tb, err)
+		}
+
 		_ = database.Drop(ctx)
 	}
 
