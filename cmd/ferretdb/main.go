@@ -19,8 +19,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"net"
-	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -31,8 +29,6 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/expfmt"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/automaxprocs/maxprocs"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -221,79 +217,9 @@ func main() {
 	case "run":
 		run()
 	case "ping":
-		ping()
+		// TODO https://github.com/FerretDB/FerretDB/issues/4246
 	default:
 		panic("unknown sub-command")
-	}
-}
-
-// ping creates connection to FerretDB instance specified by the flags, and runs `ping` command against it.
-func ping() {
-	logger := setupLogger(setupState(), cli.Log.Format)
-	l := logger.Sugar()
-
-	checkFlags(logger)
-
-	if cli.Setup.Database == "" {
-		return
-	}
-
-	if cli.Listen.Addr != "" {
-		host, port, err := net.SplitHostPort(cli.Listen.Addr)
-		if err != nil {
-			l.Fatal(err)
-		}
-
-		if host == "" {
-			host = "127.0.0.1"
-		}
-
-		u := &url.URL{
-			Scheme: "mongodb",
-			Host:   fmt.Sprintf("%s:%s", host, port),
-			Path:   cli.Setup.Database,
-			User:   url.UserPassword(cli.Setup.Username, cli.Setup.Password),
-		}
-
-		ctx, cancel := context.WithTimeout(context.Background(), cli.Setup.Timeout)
-		defer cancel()
-
-		client, err := mongo.Connect(ctx, options.Client().ApplyURI(u.String()))
-		if err != nil {
-			l.Fatal(err)
-		}
-
-		defer func() {
-			if err = client.Disconnect(ctx); err != nil {
-				l.Fatal(err)
-			}
-		}()
-
-		if err = client.Ping(ctx, nil); err != nil {
-			l.Fatal(err)
-		}
-	}
-
-	if cli.Listen.Unix != "" {
-		ctx, cancel := context.WithTimeout(context.Background(), cli.Setup.Timeout)
-		defer cancel()
-
-		u := strings.ReplaceAll(cli.Listen.Unix, "/", "%2F")
-
-		client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://"+u))
-		if err != nil {
-			l.Fatal(err)
-		}
-
-		defer func() {
-			if err = client.Disconnect(ctx); err != nil {
-				l.Fatal(err)
-			}
-		}()
-
-		if err = client.Ping(ctx, nil); err != nil {
-			l.Fatal(err)
-		}
 	}
 }
 
