@@ -20,6 +20,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel"
@@ -28,6 +29,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/handler/registry"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
+	"github.com/FerretDB/FerretDB/internal/util/password"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
@@ -51,7 +53,7 @@ func unixSocketPath(tb testtb.TB) string {
 }
 
 // listenerMongoDBURI builds MongoDB URI for in-process FerretDB.
-func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath string, tlsAndAuth bool) string {
+func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath string, tlsAndAuth, enableNewAuth bool) string {
 	tb.Helper()
 
 	var host string
@@ -64,7 +66,7 @@ func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath string, tlsAndAut
 	}
 
 	var user *url.Userinfo
-	var q url.Values
+	q := url.Values{}
 
 	if tlsAndAuth {
 		require.Empty(tb, unixSocketPath, "unixSocketPath cannot be used with TLS")
@@ -79,6 +81,10 @@ func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath string, tlsAndAut
 			"authMechanism":         []string{"PLAIN"},
 		}
 		user = url.UserPassword("username", "password")
+	}
+
+	if enableNewAuth {
+		q.Set("authMechanism", "SCRAM-SHA-256")
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/1507
@@ -183,11 +189,19 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 			DisablePushdown:         *disablePushdownF,
 			CappedCleanupPercentage: opts.CappedCleanupPercentage,
 			CappedCleanupInterval:   opts.CappedCleanupInterval,
-			EnableNewAuth:           true,
+			EnableNewAuth:           opts.EnableNewAuth,
 			BatchSize:               *batchSizeF,
 			MaxBsonObjectSizeBytes:  opts.MaxBsonObjectSizeBytes,
 		},
 	}
+
+	if opts.EnableNewAuth {
+		handlerOpts.SetupDatabase = "test"
+		handlerOpts.SetupUsername = "username"
+		handlerOpts.SetupPassword = password.WrapPassword("password")
+		handlerOpts.SetupTimeout = 1 * time.Second
+	}
+
 	h, closeBackend, err := registry.NewHandler(handler, handlerOpts)
 	require.NoError(tb, err)
 
@@ -256,7 +270,7 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 		hostPort = l.TCPAddr().String()
 	}
 
-	uri := listenerMongoDBURI(tb, hostPort, unixSocketPath, tlsAndAuth)
+	uri := listenerMongoDBURI(tb, hostPort, unixSocketPath, tlsAndAuth, opts.EnableNewAuth)
 
 	logger.Info("Listener started", zap.String("handler", handler), zap.String("uri", uri))
 

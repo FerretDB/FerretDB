@@ -33,7 +33,7 @@ import (
 func TestUpdateUser(t *testing.T) {
 	t.Parallel()
 
-	s := setup.SetupWithOpts(t, &setup.SetupOpts{SetupUser: true})
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{BackendOptions: &setup.BackendOpts{EnableNewAuth: true}})
 	ctx, db := s.Ctx, s.Collection.Database()
 
 	testCases := map[string]struct { //nolint:vet // for readability
@@ -182,19 +182,17 @@ func TestUpdateUser(t *testing.T) {
 				{"createUser", "a_user_with_mechanism"},
 				{"roles", bson.A{}},
 				{"pwd", "password"},
-				{"mechanisms", bson.A{"PLAIN"}},
 			},
 			updatePayload: bson.D{
 				{"updateUser", "a_user_with_mechanism"},
 				{"pwd", "anewpassword"},
+				{"mechanisms", bson.A{"PLAIN"}},
 			},
-			expected: bson.D{
-				{"_id", "TestUpdateUser.a_user_with_mechanism"},
-				{"user", "a_user_with_mechanism"},
-				{"db", "TestUpdateUser"},
-				{"roles", bson.A{}},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "Unknown auth mechanism 'PLAIN'",
 			},
-			skipForMongoDB: "MongoDB decommissioned support to PLAIN auth",
 		},
 		"PasswordChangeWithSCRAMMechanism": {
 			createPayload: bson.D{
@@ -224,14 +222,13 @@ func TestUpdateUser(t *testing.T) {
 			updatePayload: bson.D{
 				{"updateUser", "a_user_with_mechanism_bad"},
 				{"pwd", "anewpassword"},
-				{"mechanisms", bson.A{"PLAIN", "BAD"}},
+				{"mechanisms", bson.A{"SCRAM-SHA-256", "BAD"}},
 			},
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: "Unknown auth mechanism 'BAD'",
 			},
-			skipForMongoDB: "MongoDB decommissioned support to PLAIN auth",
 		},
 		"PasswordChangeWithRoles": {
 			createPayload: bson.D{

@@ -68,15 +68,34 @@ func (h *Handler) saslStart(ctx context.Context, dbName string, document *types.
 		return nil, lazyerrors.Error(err)
 	}
 
+	if h.EnableNewAuth {
+		switch mechanism {
+		case "SCRAM-SHA-1", "SCRAM-SHA-256":
+			var response string
+
+			if response, err = h.saslStartSCRAM(ctx, dbName, mechanism, document); err != nil {
+				return nil, err
+			}
+
+			conninfo.Get(ctx).SetBypassBackendAuth()
+
+			return must.NotFail(types.NewDocument(
+				"conversationId", int32(1),
+				"done", false,
+				"payload", types.Binary{B: []byte(response)},
+			)), nil
+		default:
+			msg := fmt.Sprintf("Unsupported authentication mechanism %q.\n", mechanism) +
+				"See https://docs.ferretdb.io/security/authentication/ for more details."
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrAuthenticationFailed, msg, "mechanism")
+		}
+	}
+
 	switch mechanism {
 	case "PLAIN":
 		username, password, err := saslStartPlain(document)
 		if err != nil {
 			return nil, err
-		}
-
-		if h.EnableNewAuth {
-			conninfo.Get(ctx).SetBypassBackendAuth()
 		}
 
 		conninfo.Get(ctx).SetAuth(username, password, mechanism, nil)
@@ -87,30 +106,6 @@ func (h *Handler) saslStart(ctx context.Context, dbName string, document *types.
 			"conversationId", int32(1),
 			"done", true,
 			"payload", emptyPayload,
-		)), nil
-	case "SCRAM-SHA-1", "SCRAM-SHA-256":
-		if !h.EnableNewAuth {
-			return nil, handlererrors.NewCommandErrorMsg(
-				handlererrors.ErrAuthenticationFailed,
-				"SCRAM authentication is not enabled",
-			)
-		}
-
-		response, err := h.saslStartSCRAM(ctx, dbName, mechanism, document)
-		if err != nil {
-			return nil, err
-		}
-
-		conninfo.Get(ctx).SetBypassBackendAuth()
-
-		binResponse := types.Binary{
-			B: []byte(response),
-		}
-
-		return must.NotFail(types.NewDocument(
-			"conversationId", int32(1),
-			"done", false,
-			"payload", binResponse,
 		)), nil
 	default:
 		msg := fmt.Sprintf("Unsupported authentication mechanism %q.\n", mechanism) +

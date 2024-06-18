@@ -37,7 +37,7 @@ import (
 func TestAuthentication(t *testing.T) {
 	t.Parallel()
 
-	s := setup.SetupWithOpts(t, &setup.SetupOpts{SetupUser: true})
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{BackendOptions: &setup.BackendOpts{EnableNewAuth: true}})
 	ctx := s.Ctx
 	collection := s.Collection
 	db := collection.Database()
@@ -55,11 +55,12 @@ func TestAuthentication(t *testing.T) {
 		topologyError bool
 		errorMessage  string
 	}{
-		"Success": {
-			username:            "username", // when using the PLAIN mechanism we must use user "username"
+		"FailPLAIN": {
+			username:            "username",
 			password:            "password",
-			mechanisms:          []string{"PLAIN"},
 			connectionMechanism: "PLAIN",
+			topologyError:       true,
+			errorMessage:        `unable to authenticate using mechanism "PLAIN": (AuthenticationFailed) Unsupported authentication mechanism "PLAIN"`,
 		},
 		"ScramSHA1": {
 			username:            "scramsha1",
@@ -253,7 +254,7 @@ func TestAuthentication(t *testing.T) {
 func TestAuthenticationOnAuthenticatedConnection(t *testing.T) {
 	t.Parallel()
 
-	s := setup.SetupWithOpts(t, &setup.SetupOpts{SetupUser: true})
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{BackendOptions: &setup.BackendOpts{EnableNewAuth: true}})
 	ctx, db := s.Ctx, s.Collection.Database()
 	username, password, mechanism := "testuser", "testpass", "SCRAM-SHA-256"
 
@@ -331,153 +332,42 @@ func TestAuthenticationOnAuthenticatedConnection(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestAuthenticationLocalhostException(tt *testing.T) {
-	tt.Parallel()
-
-	t := setup.FailsForMongoDB(tt, "MongoDB is not connected via localhost")
-
-	s := setup.SetupWithOpts(t, nil)
-	ctx := s.Ctx
-	collection := s.Collection
-	db := collection.Database()
-
-	opts := options.Client().ApplyURI(s.MongoDBURI)
-	clientNoAuth, err := mongo.Connect(ctx, opts)
-	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		require.NoError(t, clientNoAuth.Disconnect(ctx))
-	})
-
-	db = clientNoAuth.Database(db.Name())
-
-	username, password, mechanism := "testuser", "testpass", "SCRAM-SHA-256"
-
-	roles := bson.A{"userAdmin"}
-	if !setup.IsMongoDB(t) {
-		// TODO https://github.com/FerretDB/FerretDB/issues/3974
-		roles = bson.A{}
-	}
-
-	firstUser := bson.D{
-		{"createUser", username},
-		{"roles", roles},
-		{"pwd", password},
-		{"mechanisms", bson.A{mechanism}},
-	}
-	err = db.RunCommand(ctx, firstUser).Err()
-	require.NoError(t, err, "cannot create user")
-
-	anotherUsername := "anotheruser"
-	secondUser := bson.D{
-		{"createUser", anotherUsername},
-		{"roles", roles},
-		{"pwd", "anotherpass"},
-		{"mechanisms", bson.A{mechanism}},
-	}
-	err = db.RunCommand(ctx, secondUser).Err()
-	integration.AssertEqualCommandError(
-		t,
-		mongo.CommandError{
-			Code:    18,
-			Name:    "AuthenticationFailed",
-			Message: "Authentication failed",
-		},
-		err,
-	)
-
-	credential := options.Credential{
-		AuthMechanism: mechanism,
-		AuthSource:    db.Name(),
-		Username:      username,
-		Password:      password,
-	}
-
-	opts = options.Client().ApplyURI(s.MongoDBURI).SetAuth(credential)
-
-	client, err := mongo.Connect(ctx, opts)
-	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		require.NoError(t, client.Disconnect(ctx))
-	})
-
-	db = client.Database(db.Name())
-	err = db.RunCommand(ctx, secondUser).Err()
-	require.NoError(t, err, "cannot create user")
-
-	t.Cleanup(func() {
-		// delete all users so collection cleanup does not return an authentication error
-		err = db.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", int32(1)}}).Err()
-		require.NoError(t, err)
-	})
-}
-
-func TestAuthenticationEnableNewAuthPLAIN(tt *testing.T) {
+func TestAuthenticationPLAIN(tt *testing.T) {
 	tt.Parallel()
 
 	t := setup.FailsForMongoDB(tt, "PLAIN mechanism is not supported by MongoDB")
 
-	s := setup.SetupWithOpts(t, &setup.SetupOpts{SetupUser: true})
+	s := setup.SetupWithOpts(t, nil)
 	ctx, cName, db := s.Ctx, s.Collection.Name(), s.Collection.Database()
-
-	err := db.RunCommand(ctx, bson.D{
-		{"createUser", "plain-user"},
-		{"roles", bson.A{}},
-		{"pwd", "correct"},
-		{"mechanisms", bson.A{"PLAIN"}},
-	}).Err()
-	require.NoError(t, err, "cannot create user")
-
-	err = db.RunCommand(ctx, bson.D{
-		{"createUser", "scram-user"},
-		{"roles", bson.A{}},
-		{"pwd", "correct"},
-		{"mechanisms", bson.A{"SCRAM-SHA-1", "SCRAM-SHA-256"}},
-	}).Err()
-	require.NoError(t, err, "cannot create user")
 
 	testCases := map[string]struct {
 		username  string
 		password  string
 		mechanism string
 
-		err *mongo.CommandError
+		errMessage string
 	}{
 		"Success": {
-			username:  "plain-user",
-			password:  "correct",
+			username:  "username", // when using the PLAIN mechanism we must use user "username"
+			password:  "password",
 			mechanism: "PLAIN",
 		},
-		"BadPassword": {
-			username:  "plain-user",
+		"BadPassword": { // succeeds due to `POSTGRES_HOST_AUTH_METHOD=trust`
+			username:  "username",
 			password:  "wrong",
 			mechanism: "PLAIN",
-			err: &mongo.CommandError{
-				Code:    18,
-				Name:    "AuthenticationFailed",
-				Message: "Authentication failed",
-			},
 		},
 		"NonExistentUser": {
-			username:  "not-found-user",
-			password:  "something",
-			mechanism: "PLAIN",
-			err: &mongo.CommandError{
-				Code:    18,
-				Name:    "AuthenticationFailed",
-				Message: "Authentication failed",
-			},
+			username:   "not-found-user",
+			password:   "something",
+			mechanism:  "PLAIN",
+			errMessage: `role "not-found-user" does not exist`,
 		},
 		"NonPLAINUser": {
-			username:  "scram-user",
-			password:  "correct",
-			mechanism: "PLAIN",
-			err: &mongo.CommandError{
-				Code:    334,
-				Name:    "ErrMechanismUnavailable",
-				Message: "Unable to use PLAIN based authentication for user without any PLAIN credentials registered",
-			},
+			username:   "scram-user",
+			password:   "correct",
+			mechanism:  "SCRAM-SHA-256",
+			errMessage: `unable to authenticate using mechanism "SCRAM-SHA-256": (AuthenticationFailed) Unsupported authentication mechanism "SCRAM-SHA-256"`,
 		},
 	}
 
@@ -505,8 +395,8 @@ func TestAuthenticationEnableNewAuthPLAIN(tt *testing.T) {
 			c := client.Database(db.Name()).Collection(cName)
 			_, err = c.InsertOne(ctx, bson.D{{"ping", "pong"}})
 
-			if tc.err != nil {
-				integration.AssertEqualCommandError(t, *tc.err, err)
+			if tc.errMessage != "" {
+				require.ErrorContains(t, err, tc.errMessage)
 				return
 			}
 

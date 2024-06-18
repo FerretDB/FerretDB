@@ -29,9 +29,19 @@ import (
 func (h *Handler) authenticate(ctx context.Context) error {
 	_, _, mechanism, conv := conninfo.Get(ctx).Auth()
 
-	if !h.EnableNewAuth {
+	if h.EnableNewAuth {
+		conninfo.Get(ctx).SetBypassBackendAuth()
+
 		switch mechanism {
-		case "PLAIN", "":
+		case "SCRAM-SHA-256", "SCRAM-SHA-1": //nolint:goconst // we don't need a constant for this
+			if conv == nil || !conv.Valid() {
+				return handlererrors.NewCommandErrorMsgWithArgument(
+					handlererrors.ErrAuthenticationFailed,
+					"Authentication failed",
+					"authenticate",
+				)
+			}
+
 			return nil
 		default:
 			msg := fmt.Sprintf("Unsupported authentication mechanism %q.\n", mechanism) +
@@ -40,18 +50,8 @@ func (h *Handler) authenticate(ctx context.Context) error {
 		}
 	}
 
-	conninfo.Get(ctx).SetBypassBackendAuth()
-
 	switch mechanism {
-	case "SCRAM-SHA-256", "SCRAM-SHA-1": //nolint:goconst // we don't need a constant for this
-		if conv == nil || !conv.Valid() {
-			return handlererrors.NewCommandErrorMsgWithArgument(
-				handlererrors.ErrAuthenticationFailed,
-				"Authentication failed",
-				"authenticate",
-			)
-		}
-
+	case "PLAIN", "":
 		return nil
 	default:
 		msg := fmt.Sprintf("Unsupported authentication mechanism %q.\n", mechanism) +
