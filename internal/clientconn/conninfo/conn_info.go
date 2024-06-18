@@ -71,38 +71,22 @@ func (connInfo *ConnInfo) Username() string {
 	return connInfo.username
 }
 
-// Auth returns stored username, password and mechanism.
-func (connInfo *ConnInfo) Auth() (username, password, mechanism string) {
+// Auth returns stored username, password, mechanism and stored SCRAM server conversation.
+func (connInfo *ConnInfo) Auth() (username, password, mechanism string, sc *scram.ServerConversation) {
 	connInfo.rw.RLock()
 	defer connInfo.rw.RUnlock()
 
-	return connInfo.username, connInfo.password, connInfo.mechanism
+	return connInfo.username, connInfo.password, connInfo.mechanism, connInfo.sc
 }
 
-// SetAuth stores username, password.
-func (connInfo *ConnInfo) SetAuth(username, password, mechanism string) {
+// SetAuth stores username, password, mechanism and stored SCRAM server conversation.
+func (connInfo *ConnInfo) SetAuth(username, password, mechanism string, sc *scram.ServerConversation) {
 	connInfo.rw.Lock()
 	defer connInfo.rw.Unlock()
 
 	connInfo.username = username
 	connInfo.password = password
 	connInfo.mechanism = mechanism
-}
-
-// Conv returns stored SCRAM server conversation.
-func (connInfo *ConnInfo) Conv() *scram.ServerConversation {
-	connInfo.rw.RLock()
-	defer connInfo.rw.RUnlock()
-
-	return connInfo.sc
-}
-
-// SetConv stores the SCRAM server conversation.
-func (connInfo *ConnInfo) SetConv(sc *scram.ServerConversation) {
-	connInfo.rw.Lock()
-	defer connInfo.rw.Unlock()
-
-	connInfo.username = sc.Username()
 	connInfo.sc = sc
 }
 

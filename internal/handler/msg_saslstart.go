@@ -79,7 +79,7 @@ func (h *Handler) saslStart(ctx context.Context, dbName string, document *types.
 			conninfo.Get(ctx).SetBypassBackendAuth()
 		}
 
-		conninfo.Get(ctx).SetAuth(username, password, mechanism)
+		conninfo.Get(ctx).SetAuth(username, password, mechanism, nil)
 
 		var emptyPayload types.Binary
 
@@ -95,8 +95,6 @@ func (h *Handler) saslStart(ctx context.Context, dbName string, document *types.
 				"SCRAM authentication is not enabled",
 			)
 		}
-
-		conninfo.Get(ctx).SetAuth("", "", mechanism)
 
 		response, err := h.saslStartSCRAM(ctx, dbName, mechanism, document)
 		if err != nil {
@@ -295,7 +293,7 @@ func (h *Handler) saslStartSCRAM(ctx context.Context, dbName, mechanism string, 
 		return "", err
 	}
 
-	conninfo.Get(ctx).SetConv(conv)
+	conninfo.Get(ctx).SetAuth(conv.Username(), "", mechanism, conv)
 
 	return response, nil
 }
