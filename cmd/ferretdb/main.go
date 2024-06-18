@@ -57,6 +57,7 @@ import (
 //
 // Keep order in sync with documentation.
 var cli struct {
+	// We hide `run` command to show only `ping` in the help message.
 	Run  struct{} `cmd:"" default:"1"                             hidden:""`
 	Ping struct{} `cmd:"" help:"Ping existing FerretDB instance."`
 
