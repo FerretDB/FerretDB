@@ -375,7 +375,7 @@ func TestAuthenticationPLAIN(t *testing.T) {
 		t.Run(name, func(tt *testing.T) {
 			tt.Parallel()
 
-			var t = setup.FailsForMongoDB(tt, "PLAIN mechanism is not supported by MongoDB")
+			t := setup.FailsForMongoDB(tt, "PLAIN mechanism is not supported by MongoDB")
 
 			credential := options.Credential{
 				AuthMechanism: tc.mechanism,

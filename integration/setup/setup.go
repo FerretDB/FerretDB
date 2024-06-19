@@ -278,7 +278,7 @@ func setupCollection(tb testtb.TB, ctx context.Context, client *mongo.Client, op
 		require.NoError(tb, err)
 
 		if ownDatabase {
-			if opts.BackendOptions.EnableNewAuth {
+			if opts.BackendOptions == nil || opts.BackendOptions.EnableNewAuth {
 				err = database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}}).Err()
 				require.NoError(tb, err)
 			}
