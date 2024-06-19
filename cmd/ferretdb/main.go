@@ -317,6 +317,12 @@ func ping() {
 		ctx, cancel := context.WithTimeout(context.Background(), cli.Setup.Timeout)
 		defer cancel()
 
+		if cli.Listen.TLSCaFile == "" ||
+			cli.Listen.TLSCertFile == "" ||
+			cli.Listen.TLSKeyFile == "" {
+			l.Fatal("When --listen-tls is set, CA file, certificate, and key file should be provided.")
+		}
+
 		l.Infof("--listen-tls flag is set. Pinging %s...", cli.Listen.TLS)
 
 		host, port, err := net.SplitHostPort(cli.Listen.TLS)
@@ -337,7 +343,6 @@ func ping() {
 			User:   url.UserPassword(cli.Setup.Username, cli.Setup.Password),
 		}
 
-		// TODO
 		caCert, err := os.ReadFile(cli.Listen.TLSCaFile)
 		if err != nil {
 			l.Fatal(err)
@@ -360,7 +365,22 @@ func ping() {
 			Certificates: []tls.Certificate{cert},
 		}
 
-		mongo.Connect(ctx, options.Client().ApplyURI(u.String()).SetTLSConfig(tlsConfig))
+		client, err := mongo.Connect(ctx, options.Client().ApplyURI(u.String()).SetTLSConfig(tlsConfig))
+		if err != nil {
+			l.Fatal(err)
+		}
+
+		defer func() {
+			if err = client.Disconnect(ctx); err != nil {
+				l.Fatal(err)
+			}
+		}()
+
+		if err = client.Ping(ctx, nil); err != nil {
+			l.Fatal(err)
+		}
+
+		l.Info("Ping successful.")
 	}
 }
 
