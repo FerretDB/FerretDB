@@ -16,6 +16,8 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"fmt"
 	"log"
@@ -311,6 +313,44 @@ func ping() {
 		l.Info("Ping successful.")
 	}
 
+	if cli.Listen.TLS != "" {
+		ctx, cancel := context.WithTimeout(context.Background(), cli.Setup.Timeout)
+		defer cancel()
+
+		l.Infof("--listen-tls flag is set. Pinging %s...", cli.Listen.Unix)
+
+		u := &url.URL{
+			Scheme: "mongodb",
+			Host:   fmt.Sprintf("%s:%s", host, port),
+			Path:   cli.Setup.Database,
+			User:   url.UserPassword(cli.Setup.Username, cli.Setup.Password),
+		}
+
+		// TODO
+		caCert, err := os.ReadFile(cli.Listen.TLSCaFile)
+		if err != nil {
+			l.Fatal(err)
+		}
+
+		caCertPool := x509.NewCertPool()
+		if ok := caCertPool.AppendCertsFromPEM(caCert); !ok {
+			l.Fatal("CA Certificate must be in PEM format")
+		}
+
+		cert, err := tls.LoadX509KeyPair(cli.Listen.TLSCertFile, cli.Listen.TLSKeyFile)
+		if err != nil {
+			l.Fatal(err)
+		}
+
+		l.Debugf("Pinging %s...", u)
+
+		tlsConfig := &tls.Config{
+			RootCAs:      caCertPool,
+			Certificates: []tls.Certificate{cert},
+		}
+
+		mongo.Connect(ctx, options.Client().SetTLSConfig(new(tls.Config)))
+	}
 }
 
 // defaultLogLevel returns the default log level.
