@@ -87,19 +87,6 @@ func FailsForMongoDB(tb testtb.TB, reason string) testtb.TB {
 	return tb
 }
 
-// FailsForSQLite return testtb.TB that expects test to fail for SQLite and pass for MongoDB and other FerretDB backends.
-//
-// This function should not be used lightly.
-func FailsForSQLite(tb testtb.TB, reason string) testtb.TB {
-	tb.Helper()
-
-	if IsSQLite(tb) {
-		return testfail.Expected(tb, reason)
-	}
-
-	return tb
-}
-
 // SkipForMongoDB skips the current test for MongoDB.
 //
 // Deprecated: Use [FailsForMongoDB] in new code.

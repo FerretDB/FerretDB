@@ -28,6 +28,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testfail"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 
 	"github.com/FerretDB/FerretDB/integration"
@@ -353,8 +354,9 @@ func TestAuthenticationPLAIN(t *testing.T) {
 			tt.Parallel()
 
 			t := setup.FailsForMongoDB(tt, "PLAIN mechanism is not supported by MongoDB")
-			if tc.failsForSQLite != "" {
-				t = setup.FailsForSQLite(tt, tc.failsForSQLite)
+
+			if setup.IsSQLite(t) && tc.failsForSQLite != "" {
+				t = testfail.Expected(tt, tc.failsForSQLite)
 			}
 
 			credential := options.Credential{
