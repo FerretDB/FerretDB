@@ -11,7 +11,7 @@ require (
 	github.com/FerretDB/FerretDB v0.0.0-00010101000000-000000000000
 	github.com/prometheus/client_golang v1.19.1
 	github.com/stretchr/testify v1.9.0
-	go.mongodb.org/mongo-driver v1.15.0
+	go.mongodb.org/mongo-driver v1.15.1
 	go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo v0.52.0
 	go.opentelemetry.io/otel v1.27.0
 	go.uber.org/zap v1.27.0
