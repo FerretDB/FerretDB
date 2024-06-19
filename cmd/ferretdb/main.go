@@ -16,8 +16,6 @@ package main
 
 import (
 	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"errors"
 	"fmt"
 	"log"
@@ -296,76 +294,6 @@ func ping() {
 		l.Debugf("Pinging %s...", u)
 
 		client, err := mongo.Connect(ctx, options.Client().ApplyURI(u))
-		if err != nil {
-			l.Fatal(err)
-		}
-
-		defer func() {
-			if err = client.Disconnect(ctx); err != nil {
-				l.Fatal(err)
-			}
-		}()
-
-		if err = client.Ping(ctx, nil); err != nil {
-			l.Fatal(err)
-		}
-
-		l.Info("Ping successful.")
-	}
-
-	if cli.Listen.TLS != "" {
-		ctx, cancel := context.WithTimeout(context.Background(), cli.Setup.Timeout)
-		defer cancel()
-
-		if cli.Listen.TLSCaFile == "" ||
-			cli.Listen.TLSCertFile == "" ||
-			cli.Listen.TLSKeyFile == "" {
-			l.Fatal("When --listen-tls is set, CA file, certificate, and key file should be provided.")
-		}
-
-		l.Infof("--listen-tls flag is set. Pinging %s...", cli.Listen.TLS)
-
-		host, port, err := net.SplitHostPort(cli.Listen.TLS)
-		if err != nil {
-			l.Fatal(err)
-		}
-
-		if host == "" {
-			host = "127.0.0.1"
-
-			l.Debugf("Host not specified, defaulting to %s.", host)
-		}
-
-		u := &url.URL{
-			Scheme: "mongodb",
-			Host:   fmt.Sprintf("%s:%s", host, port),
-			Path:   cli.Setup.Database,
-			User:   url.UserPassword(cli.Setup.Username, cli.Setup.Password),
-		}
-
-		caCert, err := os.ReadFile(cli.Listen.TLSCaFile)
-		if err != nil {
-			l.Fatal(err)
-		}
-
-		caCertPool := x509.NewCertPool()
-		if ok := caCertPool.AppendCertsFromPEM(caCert); !ok {
-			l.Fatal("CA Certificate must be in PEM format")
-		}
-
-		cert, err := tls.LoadX509KeyPair(cli.Listen.TLSCertFile, cli.Listen.TLSKeyFile)
-		if err != nil {
-			l.Fatal(err)
-		}
-
-		l.Debugf("Pinging %s...", u)
-
-		tlsConfig := &tls.Config{
-			RootCAs:      caCertPool,
-			Certificates: []tls.Certificate{cert},
-		}
-
-		client, err := mongo.Connect(ctx, options.Client().ApplyURI(u.String()).SetTLSConfig(tlsConfig))
 		if err != nil {
 			l.Fatal(err)
 		}
