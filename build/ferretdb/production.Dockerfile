@@ -108,7 +108,12 @@ USER ferretdb:ferretdb
 COPY --from=production-build /src/bin/ferretdb /ferretdb
 COPY --from=production-build --chown=ferretdb:ferretdb /state /state
 
-ENTRYPOINT [ "/ferretdb" ]
+# TODO Should the variable be handled on the dockerfile level (like in pg/mongo), or on the FerretDB level itself
+# The first solution would require us to add mongosh to the container, or to create seperate go binary that uses go driver
+COPY docker-entrypoint.sh /usr/local/bin/
+ENTRYPOINT [ "" ]
+
+CMD [ "/ferretdb" ]
 
 HEALTHCHECK --interval=30s --timeout=30s --start-period=0s --start-interval=5s --retries=3 \ 
   CMD /ferretdb ping 
