@@ -369,6 +369,7 @@ func setupLogger(format string, uuid string) *zap.Logger {
 	}
 
 	logging.Setup(level, format, uuid)
+
 	return zap.L()
 }
 
