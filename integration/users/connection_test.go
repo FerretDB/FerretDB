@@ -332,12 +332,12 @@ func TestAuthenticationOnAuthenticatedConnection(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestAuthenticationPLAIN(tt *testing.T) {
-	tt.Parallel()
+func TestAuthenticationPLAIN(t *testing.T) {
+	t.Parallel()
 
-	t := setup.FailsForMongoDB(tt, "PLAIN mechanism is not supported by MongoDB")
-
-	s := setup.SetupWithOpts(t, nil)
+	opts := &setup.SetupOpts{BackendOptions: setup.NewBackendOpts()}
+	opts.BackendOptions.EnableNewAuth = false
+	s := setup.SetupWithOpts(t, opts)
 	ctx, cName, db := s.Ctx, s.Collection.Name(), s.Collection.Database()
 
 	testCases := map[string]struct {
@@ -372,9 +372,10 @@ func TestAuthenticationPLAIN(tt *testing.T) {
 	}
 
 	for name, tc := range testCases {
-		name, tc := name, tc
-		tt.Run(name, func(t *testing.T) {
-			t.Parallel()
+		t.Run(name, func(tt *testing.T) {
+			tt.Parallel()
+
+			var t = setup.FailsForMongoDB(tt, "PLAIN mechanism is not supported by MongoDB")
 
 			credential := options.Credential{
 				AuthMechanism: tc.mechanism,

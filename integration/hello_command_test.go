@@ -178,7 +178,9 @@ func TestHelloWithSupportedMechs(t *testing.T) {
 func TestHelloWithSupportedMechsPLAIN(t *testing.T) {
 	t.Parallel()
 
-	s := setup.SetupWithOpts(t, nil)
+	opts := &setup.SetupOpts{BackendOptions: setup.NewBackendOpts()}
+	opts.BackendOptions.EnableNewAuth = false
+	s := setup.SetupWithOpts(t, opts)
 	ctx, db := s.Ctx, s.Collection.Database()
 
 	testCases := map[string]struct { //nolint:vet // used for test only
