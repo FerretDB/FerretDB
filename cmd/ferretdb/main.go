@@ -53,6 +53,10 @@ import (
 //
 // Keep order in sync with documentation.
 var cli struct {
+	// We hide `run` command to show only `ping` in the help message.
+	Run  struct{} `cmd:"" default:"1"                             hidden:""`
+	Ping struct{} `cmd:"" help:"Ping existing FerretDB instance."`
+
 	Version     bool   `default:"false"           help:"Print version to stdout and exit." env:"-"`
 	Handler     string `default:"postgresql"      help:"${help_handler}"`
 	Mode        string `default:"${default_mode}" help:"${help_mode}"                      enum:"${enum_mode}"`
@@ -186,6 +190,9 @@ var (
 	logFormats = []string{"console", "json"}
 
 	kongOptions = []kong.Option{
+		kong.HelpOptions{
+			Compact: true,
+		},
 		kong.Vars{
 			"default_log_level": defaultLogLevel().String(),
 			"default_mode":      clientconn.AllModes[0],
@@ -204,9 +211,16 @@ var (
 
 func main() {
 	setCLIPlugins()
-	kong.Parse(&cli, kongOptions...)
+	ctx := kong.Parse(&cli, kongOptions...)
 
-	run()
+	switch ctx.Command() {
+	case "run":
+		run()
+	case "ping":
+		// TODO https://github.com/FerretDB/FerretDB/issues/4246
+	default:
+		panic("unknown sub-command")
+	}
 }
 
 // defaultLogLevel returns the default log level.
