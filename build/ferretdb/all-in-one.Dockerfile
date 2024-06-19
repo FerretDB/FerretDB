@@ -135,9 +135,10 @@ ENV POSTGRES_DB=ferretdb
 STOPSIGNAL SIGHUP
 ENTRYPOINT [ "/entrypoint.sh" ]
 
-HEALTHCHECK CMD /ferretdb ping
-
 # all-in-one hacks stop there
+
+HEALTHCHECK --interval=30s --timeout=30s --start-period=0s --start-interval=5s --retries=3 \ 
+  CMD /ferretdb ping 
 
 WORKDIR /
 VOLUME /state
