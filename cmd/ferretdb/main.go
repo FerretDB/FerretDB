@@ -317,7 +317,18 @@ func ping() {
 		ctx, cancel := context.WithTimeout(context.Background(), cli.Setup.Timeout)
 		defer cancel()
 
-		l.Infof("--listen-tls flag is set. Pinging %s...", cli.Listen.Unix)
+		l.Infof("--listen-tls flag is set. Pinging %s...", cli.Listen.TLS)
+
+		host, port, err := net.SplitHostPort(cli.Listen.TLS)
+		if err != nil {
+			l.Fatal(err)
+		}
+
+		if host == "" {
+			host = "127.0.0.1"
+
+			l.Debugf("Host not specified, defaulting to %s.", host)
+		}
 
 		u := &url.URL{
 			Scheme: "mongodb",
@@ -349,7 +360,7 @@ func ping() {
 			Certificates: []tls.Certificate{cert},
 		}
 
-		mongo.Connect(ctx, options.Client().SetTLSConfig(new(tls.Config)))
+		mongo.Connect(ctx, options.Client().ApplyURI(u.String()).SetTLSConfig(tlsConfig))
 	}
 }
 
