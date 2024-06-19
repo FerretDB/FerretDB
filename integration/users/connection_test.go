@@ -38,7 +38,7 @@ import (
 func TestAuthentication(t *testing.T) {
 	t.Parallel()
 
-	s := setup.SetupWithOpts(t, &setup.SetupOpts{BackendOptions: &setup.BackendOpts{EnableNewAuth: true}})
+	s := setup.SetupWithOpts(t, nil)
 	ctx := s.Ctx
 	collection := s.Collection
 	db := collection.Database()
@@ -229,7 +229,7 @@ func TestAuthentication(t *testing.T) {
 func TestAuthenticationOnAuthenticatedConnection(t *testing.T) {
 	t.Parallel()
 
-	s := setup.SetupWithOpts(t, &setup.SetupOpts{BackendOptions: &setup.BackendOpts{EnableNewAuth: true}})
+	s := setup.SetupWithOpts(t, nil)
 	ctx, db := s.Ctx, s.Collection.Database()
 	username, password, mechanism := "testuser", "testpass", "SCRAM-SHA-256"
 

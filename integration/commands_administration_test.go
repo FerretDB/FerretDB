@@ -847,8 +847,8 @@ func TestGetParameterCommandAuthenticationMechanisms(t *testing.T) {
 		require.Equal(t, true, settableAtStartup)
 	})
 
-	t.Run("Scram", func(tt *testing.T) {
-		t := setup.FailsForMongoDB(tt, "MongoDB supports more mechanisms")
+	t.Run("Plain", func(t *testing.T) {
+		setup.SkipForMongoDB(t, "PLAIN authentication mechanism is not support by MongoDB")
 
 		var res bson.D
 		err := s.Collection.Database().RunCommand(s.Ctx, bson.D{
@@ -858,37 +858,11 @@ func TestGetParameterCommandAuthenticationMechanisms(t *testing.T) {
 		require.NoError(t, err)
 
 		expected := bson.D{
-			{"authenticationMechanisms", bson.A{"SCRAM-SHA-1", "SCRAM-SHA-256"}},
+			{"authenticationMechanisms", bson.A{"SCRAM-SHA-1", "SCRAM-SHA-256", "PLAIN"}},
 			{"ok", float64(1)},
 		}
 		require.Equal(t, expected, res)
 	})
-}
-
-func TestGetParameterCommandAuthenticationMechanismsPlain(tt *testing.T) {
-	tt.Parallel()
-
-	t := setup.FailsForMongoDB(tt, "PLAIN authentication mechanism is not support by MongoDB")
-
-	opts := &setup.SetupOpts{
-		DatabaseName:   "admin",
-		BackendOptions: setup.NewBackendOpts(),
-	}
-	opts.BackendOptions.EnableNewAuth = false
-	s := setup.SetupWithOpts(tt, opts)
-
-	var res bson.D
-	err := s.Collection.Database().RunCommand(s.Ctx, bson.D{
-		{"getParameter", bson.D{}},
-		{"authenticationMechanisms", 1},
-	}).Decode(&res)
-	require.NoError(t, err)
-
-	expected := bson.D{
-		{"authenticationMechanisms", bson.A{"PLAIN"}},
-		{"ok", float64(1)},
-	}
-	require.Equal(t, expected, res)
 }
 
 func TestCommandsAdministrationBuildInfo(t *testing.T) {

@@ -35,7 +35,7 @@ import (
 func TestDropAllUsersFromDatabase(t *testing.T) {
 	t.Parallel()
 
-	s := setup.SetupWithOpts(t, &setup.SetupOpts{BackendOptions: &setup.BackendOpts{EnableNewAuth: true}})
+	s := setup.SetupWithOpts(t, nil)
 	ctx := s.Ctx
 	db := s.Collection.Database()
 	client := db.Client()

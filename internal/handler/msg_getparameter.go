@@ -44,11 +44,6 @@ func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.O
 
 	common.Ignored(document, h.L, "comment")
 
-	mechanisms := must.NotFail(types.NewArray("PLAIN"))
-	if h.EnableNewAuth {
-		mechanisms = must.NotFail(types.NewArray("SCRAM-SHA-1", "SCRAM-SHA-256"))
-	}
-
 	parameters := must.NotFail(types.NewDocument(
 		// to add a new parameter, fill template and place it in the alphabetical order position
 		//"<name>", must.NotFail(types.NewDocument(
@@ -57,7 +52,7 @@ func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.O
 		//	"settableAtStartup", <bool>,
 		//)),
 		"authenticationMechanisms", must.NotFail(types.NewDocument(
-			"value", mechanisms,
+			"value", must.NotFail(types.NewArray("SCRAM-SHA-1", "SCRAM-SHA-256", "PLAIN")),
 			"settableAtRuntime", false,
 			"settableAtStartup", true,
 		)),
