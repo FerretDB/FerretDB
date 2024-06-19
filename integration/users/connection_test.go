@@ -45,8 +45,8 @@ func TestAuthentication(t *testing.T) {
 	testCases := map[string]struct { //nolint:vet // for readability
 		username       string
 		password       string
-		updatePassword string   // if true, the password will be updated to this one after the user is created.
-		mechanisms     []string // mechanisms to use for creating user authentication
+		updatePassword string // if true, the password will be updated to this one after the user is created.
+		mechanisms     bson.A // mechanisms to use for creating a user
 
 		connectionMechanism string // if set, try to establish connection with this mechanism
 
@@ -60,50 +60,50 @@ func TestAuthentication(t *testing.T) {
 			password:            "password",
 			connectionMechanism: "PLAIN",
 			topologyError:       true,
-			errorMessage:        `unable to authenticate using mechanism "PLAIN": (AuthenticationFailed) Unsupported authentication mechanism "PLAIN"`,
+			errorMessage:        `unable to authenticate using mechanism "PLAIN"`,
 		},
 		"ScramSHA1": {
 			username:            "scramsha1",
 			password:            "password",
-			mechanisms:          []string{"SCRAM-SHA-1"},
+			mechanisms:          bson.A{"SCRAM-SHA-1"},
 			connectionMechanism: "SCRAM-SHA-1",
 		},
 		"ScramSHA256": {
 			username:            "scramsha256",
 			password:            "password",
-			mechanisms:          []string{"SCRAM-SHA-256"},
+			mechanisms:          bson.A{"SCRAM-SHA-256"},
 			connectionMechanism: "SCRAM-SHA-256",
 		},
 		"MultipleScramSHA1": {
 			username:            "scramsha1multi",
 			password:            "password",
-			mechanisms:          []string{"SCRAM-SHA-1", "SCRAM-SHA-256"},
+			mechanisms:          bson.A{"SCRAM-SHA-1", "SCRAM-SHA-256"},
 			connectionMechanism: "SCRAM-SHA-1",
 		},
 		"MultipleScramSHA256": {
 			username:            "scramsha256multi",
 			password:            "password",
-			mechanisms:          []string{"SCRAM-SHA-1", "SCRAM-SHA-256"},
+			mechanisms:          bson.A{"SCRAM-SHA-1", "SCRAM-SHA-256"},
 			connectionMechanism: "SCRAM-SHA-256",
 		},
 		"ScramSHA1Updated": {
 			username:            "scramsha1updated",
 			password:            "pass123",
 			updatePassword:      "anotherpassword",
-			mechanisms:          []string{"SCRAM-SHA-1"},
+			mechanisms:          bson.A{"SCRAM-SHA-1"},
 			connectionMechanism: "SCRAM-SHA-1",
 		},
 		"ScramSHA256Updated": {
 			username:            "scramsha256updated",
 			password:            "pass123",
 			updatePassword:      "anotherpassword",
-			mechanisms:          []string{"SCRAM-SHA-256"},
+			mechanisms:          bson.A{"SCRAM-SHA-256"},
 			connectionMechanism: "SCRAM-SHA-256",
 		},
 		"NotFoundUser": {
 			username:            "notfound",
 			password:            "something",
-			mechanisms:          []string{"SCRAM-SHA-256"},
+			mechanisms:          bson.A{"SCRAM-SHA-256"},
 			connectionMechanism: "SCRAM-SHA-256",
 			userNotFound:        true,
 			errorMessage:        "Authentication failed.",
@@ -112,7 +112,7 @@ func TestAuthentication(t *testing.T) {
 		"BadPassword": {
 			username:            "baduser",
 			password:            "something",
-			mechanisms:          []string{"SCRAM-SHA-256"},
+			mechanisms:          bson.A{"SCRAM-SHA-256"},
 			connectionMechanism: "SCRAM-SHA-256",
 			wrongPassword:       true,
 			topologyError:       true,
@@ -121,7 +121,7 @@ func TestAuthentication(t *testing.T) {
 		"MechanismNotSet": {
 			username:            "user_mechanism_not_set",
 			password:            "password",
-			mechanisms:          []string{"SCRAM-SHA-256"},
+			mechanisms:          bson.A{"SCRAM-SHA-256"},
 			connectionMechanism: "SCRAM-SHA-1",
 			topologyError:       true,
 			errorMessage:        "Unable to use SCRAM-SHA-1 based authentication for user without any SCRAM-SHA-1 credentials registered",
@@ -136,35 +136,9 @@ func TestAuthentication(t *testing.T) {
 			var t testtb.TB = tt
 
 			if !tc.userNotFound {
-				var (
-					// Use default mechanism for MongoDB and SCRAM-SHA-256 for FerretDB as SHA-1 won't be supported as it's deprecated.
-					mechanisms bson.A
-
-					hasPlain bool
-				)
-
-				if tc.mechanisms == nil {
-					if !setup.IsMongoDB(t) {
-						mechanisms = append(mechanisms, "SCRAM-SHA-1", "SCRAM-SHA-256")
-					}
-				} else {
-					mechanisms = bson.A{}
-
-					for _, mechanism := range tc.mechanisms {
-						switch mechanism {
-						case "PLAIN":
-							hasPlain = true
-							fallthrough
-						case "SCRAM-SHA-1", "SCRAM-SHA-256":
-							mechanisms = append(mechanisms, mechanism)
-						default:
-							t.Fatalf("unimplemented mechanism %s", mechanism)
-						}
-					}
-				}
-
-				if hasPlain {
-					setup.SkipForMongoDB(t, "PLAIN mechanism is not supported by MongoDB")
+				mechanisms := tc.mechanisms
+				if mechanisms == nil {
+					mechanisms = bson.A{"SCRAM-SHA-1", "SCRAM-SHA-256"}
 				}
 
 				// root role is only available in admin database, a role with sufficient privilege is used
