@@ -319,23 +319,26 @@ func TestAuthenticationPLAIN(t *testing.T) {
 		password  string
 		mechanism string
 
-		errMessage string
+		errMessage     string
+		failsForSQLite string
 	}{
 		"Success": {
 			username:  "username", // when using the PLAIN mechanism we must use user "username"
 			password:  "password",
 			mechanism: "PLAIN",
 		},
-		"BadPassword": { // succeeds due to `POSTGRES_HOST_AUTH_METHOD=trust`
+		"BadPassword": {
+			// succeeds due to `POSTGRES_HOST_AUTH_METHOD=trust` for PostgreSQL, and no backend authentication for SQLite
 			username:  "username",
 			password:  "wrong",
 			mechanism: "PLAIN",
 		},
 		"NonExistentUser": {
-			username:   "not-found-user",
-			password:   "something",
-			mechanism:  "PLAIN",
-			errMessage: `role "not-found-user" does not exist`,
+			username:       "not-found-user",
+			password:       "something",
+			mechanism:      "PLAIN",
+			errMessage:     `role "not-found-user" does not exist`,
+			failsForSQLite: "backend authentication is not supported by SQLite",
 		},
 		"NonPLAINUser": {
 			username:   "scram-user",
@@ -350,6 +353,9 @@ func TestAuthenticationPLAIN(t *testing.T) {
 			tt.Parallel()
 
 			t := setup.FailsForMongoDB(tt, "PLAIN mechanism is not supported by MongoDB")
+			if tc.failsForSQLite != "" {
+				t = setup.FailsForSQLite(tt, tc.failsForSQLite)
+			}
 
 			credential := options.Credential{
 				AuthMechanism: tc.mechanism,
