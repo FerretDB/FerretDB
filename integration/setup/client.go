@@ -62,8 +62,7 @@ func setClientPaths(uri string) (string, error) {
 	return u.String(), nil
 }
 
-// makeClient returns new client for the given working MongoDB URI
-// (with fixes applied to `tlsCertificateKeyFile` and `tlsCaFile` file paths).
+// makeClient returns new client for the given working MongoDB URI.
 func makeClient(ctx context.Context, uri string) (*mongo.Client, error) {
 	clientOpts := options.Client().ApplyURI(uri)
 
@@ -84,8 +83,7 @@ func makeClient(ctx context.Context, uri string) (*mongo.Client, error) {
 	return client, nil
 }
 
-// setupClient returns test-specific client for the given MongoDB URI
-// (with fixes applied to `tlsCertificateKeyFile` and `tlsCaFile` file paths).
+// setupClient returns test-specific client for the given MongoDB URI.
 //
 // It disconnects automatically when test ends.
 //
