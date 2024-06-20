@@ -14,7 +14,7 @@ ARG LABEL_COMMIT
 
 # prepare stage
 
-FROM --platform=$BUILDPLATFORM golang:1.22.3 AS all-in-one-prepare
+FROM --platform=$BUILDPLATFORM golang:1.22.4 AS all-in-one-prepare
 
 # use a single directory for all Go caches to simpliy RUN --mount commands below
 ENV GOPATH /cache/gopath
@@ -38,7 +38,7 @@ EOF
 
 # build stage
 
-FROM golang:1.22.3 AS all-in-one-build
+FROM golang:1.22.4 AS all-in-one-build
 
 ARG TARGETARCH
 
@@ -137,8 +137,8 @@ ENTRYPOINT [ "/entrypoint.sh" ]
 
 # all-in-one hacks stop there
 
-HEALTHCHECK --interval=30s --timeout=30s --start-period=0s --start-interval=5s --retries=3 \ 
-  CMD /ferretdb ping 
+HEALTHCHECK --interval=30s --timeout=30s --start-period=0s --start-interval=5s --retries=3 \
+  CMD /ferretdb ping
 
 WORKDIR /
 VOLUME /state
