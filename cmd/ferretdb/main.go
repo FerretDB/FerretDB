@@ -384,39 +384,6 @@ func setupLogger(format string, uuid string) *zap.Logger {
 	return zap.L()
 }
 
-// setupLoggerWithStartupMsg setups zap logger, and returns the service startup message.
-func setupLoggerWithStartupMsg(stateProvider *state.Provider, format string) *zap.Logger {
-	info := version.Get()
-
-	startupFields := []zap.Field{
-		zap.String("version", info.Version),
-		zap.String("commit", info.Commit),
-		zap.String("branch", info.Branch),
-		zap.Bool("dirty", info.Dirty),
-		zap.String("package", info.Package),
-		zap.Bool("debugBuild", info.DebugBuild),
-		zap.Any("buildEnvironment", info.BuildEnvironment.Map()),
-	}
-
-	logUUID := stateProvider.Get().UUID
-
-	// Similarly to Prometheus, unless requested, don't add UUID to all messages, but log it once at startup.
-	if !cli.Log.UUID {
-		startupFields = append(startupFields, zap.String("uuid", logUUID))
-		logUUID = ""
-	}
-
-	l := setupLogger(format, logUUID)
-
-	l.Info("Starting FerretDB "+info.Version+"...", startupFields...)
-
-	if debugbuild.Enabled {
-		l.Info("This is debug build. The performance will be affected.")
-	}
-
-	return l
-}
-
 // checkFlags checks that CLI flags are not self-contradictory.
 func checkFlags(logger *zap.Logger) {
 	l := logger.Sugar()
@@ -487,7 +454,31 @@ func run() {
 
 	metricsRegisterer := setupMetrics(stateProvider)
 
-	logger := setupLoggerWithStartupMsg(stateProvider, cli.Log.Format)
+	startupFields := []zap.Field{
+		zap.String("version", info.Version),
+		zap.String("commit", info.Commit),
+		zap.String("branch", info.Branch),
+		zap.Bool("dirty", info.Dirty),
+		zap.String("package", info.Package),
+		zap.Bool("debugBuild", info.DebugBuild),
+		zap.Any("buildEnvironment", info.BuildEnvironment.Map()),
+	}
+
+	logUUID := stateProvider.Get().UUID
+
+	// Similarly to Prometheus, unless requested, don't add UUID to all messages, but log it once at startup.
+	if !cli.Log.UUID {
+		startupFields = append(startupFields, zap.String("uuid", logUUID))
+		logUUID = ""
+	}
+
+	logger := setupLogger(cli.Log.Format, logUUID)
+
+	logger.Info("Starting FerretDB "+info.Version+"...", startupFields...)
+
+	if debugbuild.Enabled {
+		logger.Info("This is debug build. The performance will be affected.")
+	}
 
 	checkFlags(logger)
 
