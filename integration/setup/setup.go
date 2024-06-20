@@ -226,12 +226,7 @@ func setupCollection(tb testtb.TB, ctx context.Context, client *mongo.Client, op
 	// drop remnants of the previous failed run
 	_ = collection.Drop(ctx)
 	if ownDatabase {
-		if opts.BackendOptions == nil || !opts.BackendOptions.DisableNewAuth {
-			err := database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}}).Err()
-			require.NoError(tb, err)
-		}
-
-		_ = database.Drop(ctx)
+		cleanupDatabase(ctx, tb, database, opts.BackendOptions)
 	}
 
 	var inserted bool
@@ -261,13 +256,7 @@ func setupCollection(tb testtb.TB, ctx context.Context, client *mongo.Client, op
 		require.NoError(tb, err)
 
 		if ownDatabase {
-			if opts.BackendOptions == nil || !opts.BackendOptions.DisableNewAuth {
-				err = database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}}).Err()
-				require.NoError(tb, err)
-			}
-
-			err = database.Drop(ctx)
-			require.NoError(tb, err)
+			cleanupDatabase(ctx, tb, database, opts.BackendOptions)
 		}
 	})
 
@@ -340,4 +329,14 @@ func insertBenchmarkProvider(tb testtb.TB, ctx context.Context, collection *mong
 	span.End()
 
 	return
+}
+
+// cleanupUser removes users for the given database if new authentication is enabled and drops that database.
+func cleanupDatabase(ctx context.Context, tb testtb.TB, database *mongo.Database, opts *BackendOpts) {
+	if opts != nil && !opts.DisableNewAuth {
+		err := database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}}).Err()
+		require.NoError(tb, err)
+	}
+
+	require.NoError(tb, database.Drop(ctx))
 }
