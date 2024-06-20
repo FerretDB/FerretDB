@@ -69,13 +69,11 @@ func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath string, tlsAndAut
 	if tlsAndAuth {
 		require.Empty(tb, unixSocketPath, "unixSocketPath cannot be used with TLS")
 
-		certsRoot := filepath.Join(Dir(tb), "..", "..", "build", "certs")
-
 		// we don't separate TLS and auth just for simplicity of our test configurations
 		q = url.Values{
 			"tls":                   []string{"true"},
-			"tlsCertificateKeyFile": []string{filepath.Join(certsRoot, "client.pem")},
-			"tlsCaFile":             []string{filepath.Join(certsRoot, "rootCA-cert.pem")},
+			"tlsCertificateKeyFile": []string{filepath.Join(testutil.BuildCertsDir, "client.pem")},
+			"tlsCaFile":             []string{filepath.Join(testutil.BuildCertsDir, "rootCA-cert.pem")},
 			"authMechanism":         []string{"PLAIN"},
 		}
 		user = url.UserPassword("username", "password")
@@ -199,7 +197,7 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 		Metrics:        listenerMetrics,
 		Handler:        h,
 		Logger:         logger,
-		TestRecordsDir: filepath.Join(Dir(tb), "..", "..", "tmp", "records"),
+		TestRecordsDir: testutil.TmpRecordsDir,
 	}
 
 	if *targetProxyAddrF != "" {
@@ -212,11 +210,10 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 
 	switch {
 	case *targetTLSF:
-		certsRoot := filepath.Join(Dir(tb), "..", "..", "build", "certs")
 		listenerOpts.TLS = "127.0.0.1:0"
-		listenerOpts.TLSCertFile = filepath.Join(certsRoot, "server-cert.pem")
-		listenerOpts.TLSKeyFile = filepath.Join(certsRoot, "server-key.pem")
-		listenerOpts.TLSCAFile = filepath.Join(certsRoot, "rootCA-cert.pem")
+		listenerOpts.TLSCertFile = filepath.Join(testutil.BuildCertsDir, "server-cert.pem")
+		listenerOpts.TLSKeyFile = filepath.Join(testutil.BuildCertsDir, "server-key.pem")
+		listenerOpts.TLSCAFile = filepath.Join(testutil.BuildCertsDir, "rootCA-cert.pem")
 	case *targetUnixSocketF:
 		listenerOpts.Unix = unixSocketPath(tb)
 	default:

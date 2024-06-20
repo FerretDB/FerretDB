@@ -17,8 +17,6 @@ package setup
 import (
 	"flag"
 	"os"
-	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 
@@ -106,16 +104,6 @@ func SkipForMongoDB(tb testtb.TB, reason string) {
 // PushdownDisabled returns true if FerretDB pushdown is disabled.
 func PushdownDisabled() bool {
 	return *disablePushdownF
-}
-
-// Dir returns the absolute directory of this package.
-func Dir(tb testtb.TB) string {
-	tb.Helper()
-
-	_, file, _, ok := runtime.Caller(0)
-	require.True(tb, ok)
-
-	return filepath.Dir(file)
 }
 
 // Main is the entry point for all integration test packages.
