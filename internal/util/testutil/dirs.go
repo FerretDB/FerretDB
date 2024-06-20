@@ -15,14 +15,17 @@
 package testutil
 
 import (
+	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 )
 
 var (
-	RootDir       string // directory containing the main `go.mod` file
-	BuildCertsDir string
+	RootDir        string // FerretDB root directory
+	BinDir         string // <root>/bin directory
+	BuildCertsDir  string // <root>/build/certs directory
+	IntegrationDir string // <root>/integration directory
+	TmpRecordsDir  string // <root>/tmp/records directory
 )
 
 func init() {
@@ -30,11 +33,29 @@ func init() {
 		panic("testutil package must be used only by tests")
 	}
 
-	_, file, _, ok := runtime.Caller(0)
-	if !ok {
-		panic("testutil initialization failed")
+	// We can't use runtime.Caller because file path might be relative.
+	// See also similar code in the tools module.
+
+	dir, err := os.Getwd()
+	if err != nil {
+		panic(err)
 	}
 
-	RootDir = filepath.Join(filepath.Dir(file), "..", "..", "..")
+	for {
+		if _, err = os.Stat(filepath.Join(dir, ".git")); err == nil {
+			break
+		}
+
+		dir = filepath.Dir(dir)
+		if dir == "/" {
+			panic("failed to locate .git directory")
+		}
+	}
+
+	RootDir = dir
+
+	BinDir = filepath.Join(RootDir, "bin")
 	BuildCertsDir = filepath.Join(RootDir, "build", "certs")
+	IntegrationDir = filepath.Join(RootDir, "integration")
+	TmpRecordsDir = filepath.Join(RootDir, "tmp", "records")
 }
