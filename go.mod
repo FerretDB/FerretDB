@@ -2,7 +2,7 @@ module github.com/FerretDB/FerretDB
 
 go 1.22
 
-toolchain go1.22.4
+toolchain go1.22.3
 
 require (
 	github.com/AlekSi/pointer v1.2.0

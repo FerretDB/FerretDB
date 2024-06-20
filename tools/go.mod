@@ -2,7 +2,7 @@ module github.com/FerretDB/FerretDB/tools
 
 go 1.22
 
-toolchain go1.22.4
+toolchain go1.22.3
 
 require (
 	github.com/FerretDB/gh v0.1.4
