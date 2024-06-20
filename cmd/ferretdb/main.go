@@ -240,7 +240,11 @@ func ping() {
 		return
 	}
 
+	var pingExecuted bool
+
 	if cli.Listen.Addr != "" {
+		pingExecuted = true
+
 		host, port, err := net.SplitHostPort(cli.Listen.Addr)
 		if err != nil {
 			l.Fatal(err)
@@ -285,6 +289,8 @@ func ping() {
 	}
 
 	if cli.Listen.Unix != "" {
+		pingExecuted = true
+
 		ctx, cancel := context.WithTimeout(context.Background(), cli.Setup.Timeout)
 		defer cancel()
 
@@ -310,6 +316,10 @@ func ping() {
 		}
 
 		l.Info("Ping successful.")
+	}
+
+	if !pingExecuted {
+		l.Info("Neither --listen-addr nor --listen-unix flags were specified - skipping ping.")
 	}
 }
 
