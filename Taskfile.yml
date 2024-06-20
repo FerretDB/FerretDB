@@ -216,7 +216,7 @@ tasks:
         -target-backend=ferretdb-postgresql
         -target-tls
         -postgresql-url='postgres://username@127.0.0.1:5432/ferretdb?search_path='
-        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem&replicaSet=rs0'
+        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=client.pem&tlsCaFile=rootCA-cert.pem&replicaSet=rs0'
         -disable-pushdown={{.DISABLE_PUSHDOWN}}
 
   test-integration-sqlite:
@@ -242,7 +242,7 @@ tasks:
         -target-backend=ferretdb-sqlite
         -sqlite-url=file:../tmp/sqlite-tests/
         -target-tls
-        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem&replicaSet=rs0'
+        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=client.pem&tlsCaFile=rootCA-cert.pem&replicaSet=rs0'
         -disable-pushdown={{.DISABLE_PUSHDOWN}}
 
   test-integration-mysql:
@@ -268,7 +268,7 @@ tasks:
         -target-backend=ferretdb-mysql
         -target-tls
         -mysql-url='mysql://username:password@127.0.0.1:3306/ferretdb'
-        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem&replicaSet=rs0'
+        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=client.pem&tlsCaFile=rootCA-cert.pem&replicaSet=rs0'
         -disable-pushdown={{.DISABLE_PUSHDOWN}}
 
   test-integration-hana:
@@ -294,7 +294,7 @@ tasks:
         -target-backend=ferretdb-hana
         -target-tls
         -hana-url=$FERRETDB_HANA_URL
-        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem&replicaSet=rs0'
+        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=client.pem&tlsCaFile=rootCA-cert.pem&replicaSet=rs0'
         -disable-pushdown={{.DISABLE_PUSHDOWN}}
 
   test-integration-mongodb:
@@ -317,7 +317,7 @@ tasks:
         -coverpkg=../...
         -coverprofile=integration-mongodb.txt
         ./...
-        -target-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem&replicaSet=rs0'
+        -target-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=client.pem&tlsCaFile=rootCA-cert.pem&replicaSet=rs0'
         -target-backend=mongodb
 
   bench-unit:
@@ -472,14 +472,14 @@ tasks:
   lint:
     desc: "Run linters"
     cmds:
+      - go vet -vettool=bin/checkswitch{{exeExt}} ./...
+      - go vet -vettool=bin/checkcomments{{exeExt}} ./...
+
       - bin/envtool{{exeExt}} shell rmdir tmp/githubcache
       - bin/envtool{{exeExt}} shell mkdir tmp/githubcache
       - bin/golangci-lint{{exeExt}} run --config=.golangci.yml
       - bin/golangci-lint{{exeExt}} run --config=.golangci-new.yml
       - bin/go-consistent{{exeExt}} -pedantic ./cmd/... ./internal/... ./build/... ./ferretdb/...
-
-      - go vet -vettool=bin/checkswitch{{exeExt}} ./...
-      - go vet -vettool=bin/checkcomments{{exeExt}} ./...
 
       - bin/task{{exeExt}} -d integration lint
       - bin/task{{exeExt}} -d tools lint
