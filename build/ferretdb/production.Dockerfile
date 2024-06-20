@@ -12,7 +12,7 @@ ARG LABEL_COMMIT
 
 # prepare stage
 
-FROM --platform=$BUILDPLATFORM golang:1.22.3 AS production-prepare
+FROM --platform=$BUILDPLATFORM golang:1.22.4 AS production-prepare
 
 # use a single directory for all Go caches to simpliy RUN --mount commands below
 ENV GOPATH /cache/gopath
@@ -36,7 +36,7 @@ EOF
 
 # build stage
 
-FROM golang:1.22.3 AS production-build
+FROM golang:1.22.4 AS production-build
 
 ARG TARGETARCH
 ARG TARGETVARIANT
@@ -110,8 +110,8 @@ COPY --from=production-build --chown=ferretdb:ferretdb /state /state
 
 ENTRYPOINT [ "/ferretdb" ]
 
-HEALTHCHECK --interval=30s --timeout=30s --start-period=0s --start-interval=5s --retries=3 \ 
-  CMD /ferretdb ping 
+HEALTHCHECK --interval=30s --timeout=30s --start-period=0s --start-interval=5s --retries=3 \
+  CMD /ferretdb ping
 
 WORKDIR /
 VOLUME /state
