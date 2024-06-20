@@ -73,9 +73,15 @@ func (h *Handler) MsgHello(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		)
 	}
 
-	mechs, err := h.getUserSupportedMechs(ctx, db, username)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
+	// return `PLAIN` regardless of the user existence for backend authentication,
+	// there is no easy way to find out backend users
+	mechs := []string{"PLAIN"}
+
+	if h.EnableNewAuth {
+		mechs, err = h.getUserSupportedMechs(ctx, db, username)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 	}
 
 	saslSupportedMechsResp := must.NotFail(types.NewArray())

@@ -107,12 +107,6 @@ func TestHelloWithSupportedMechs(t *testing.T) {
 			user:  db.Name() + ".hello_user",
 			mechs: must.NotFail(types.NewArray("SCRAM-SHA-1", "SCRAM-SHA-256")),
 		},
-		// TODO https://github.com/FerretDB/FerretDB/issues/4365
-		//"HelloUserPlain": {
-		//	user:            db.Name() + ".hello_user_plain",
-		//	mechs:           must.NotFail(types.NewArray("PLAIN")),
-		//	failsForMongoDB: "PLAIN authentication mechanism is not support by MongoDB",
-		//},
 		"HelloUserSCRAM1": {
 			user:  db.Name() + ".hello_user_scram1",
 			mechs: must.NotFail(types.NewArray("SCRAM-SHA-1")),
@@ -181,4 +175,29 @@ func TestHelloWithSupportedMechs(t *testing.T) {
 			assert.True(t, mechanisms.(*types.Array).ContainsAll(tc.mechs))
 		})
 	}
+}
+
+func TestHelloWithSupportedMechsPLAIN(tt *testing.T) {
+	tt.Parallel()
+
+	s := setup.SetupWithOpts(tt, &setup.SetupOpts{BackendOptions: &setup.BackendOpts{DisableNewAuth: true}})
+
+	ctx, db := s.Ctx, s.Collection.Database()
+
+	t := setup.FailsForMongoDB(tt, "PLAIN authentication mechanism is not support by MongoDB")
+
+	var res bson.D
+
+	err := db.RunCommand(ctx, bson.D{
+		{"hello", "1"},
+		{"saslSupportedMechs", db.Name() + ".hello_user_plain"},
+	}).Decode(&res)
+
+	actual := ConvertDocument(t, res)
+
+	v, err := actual.Get("saslSupportedMechs")
+	require.NoError(t, err)
+
+	mechanisms := v.(*types.Array)
+	require.Equal(t, must.NotFail(types.NewArray("PLAIN")), mechanisms)
 }
