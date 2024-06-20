@@ -32,6 +32,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
+// setClientPaths replaces file names in query parameters with absolute paths.
 func setClientPaths(uri string) (string, error) {
 	u, err := url.Parse(uri)
 	if err != nil {

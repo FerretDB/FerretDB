@@ -21,11 +21,16 @@ import (
 )
 
 var (
-	RootDir        string // FerretDB root directory
-	BinDir         string // <root>/bin directory
-	BuildCertsDir  string // <root>/build/certs directory
-	IntegrationDir string // <root>/integration directory
-	TmpRecordsDir  string // <root>/tmp/records directory
+	// RootDir is the FerretDB <root> directory.
+	RootDir string
+	// BinDir is the <root>/bin directory.
+	BinDir string
+	// BuildCertsDir is the <root>/build/certs directory.
+	BuildCertsDir string
+	// IntegrationDir is the <root>/integration directory.
+	IntegrationDir string
+	// TmpRecordsDir is the <root>/tmp/records directory.
+	TmpRecordsDir string
 )
 
 func init() {
