@@ -847,7 +847,7 @@ func TestGetParameterCommandAuthenticationMechanisms(t *testing.T) {
 		require.Equal(t, true, settableAtStartup)
 	})
 
-	t.Run("Scram", func(tt *testing.T) {
+	t.Run("SCRAM", func(tt *testing.T) {
 		t := setup.FailsForMongoDB(tt, "MongoDB supports more mechanisms")
 
 		var res bson.D
@@ -865,7 +865,7 @@ func TestGetParameterCommandAuthenticationMechanisms(t *testing.T) {
 	})
 }
 
-func TestGetParameterCommandAuthenticationMechanismsPlain(tt *testing.T) {
+func TestGetParameterCommandAuthenticationMechanismsPLAIN(tt *testing.T) {
 	tt.Parallel()
 
 	s := setup.SetupWithOpts(tt, &setup.SetupOpts{BackendOptions: &setup.BackendOpts{DisableNewAuth: true}})
