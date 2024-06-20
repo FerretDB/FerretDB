@@ -228,6 +228,7 @@ func main() {
 }
 
 // ping creates connection to FerretDB instance specified by the flags, and runs `ping` command against it.
+// The check is only executed if --setup-database flag is set.
 func ping() {
 	logger := setupLogger(cli.Log.Format, "")
 	checkFlags(logger)
