@@ -137,6 +137,9 @@ ENTRYPOINT [ "/entrypoint.sh" ]
 
 # all-in-one hacks stop there
 
+HEALTHCHECK --interval=30s --timeout=30s --start-period=0s --start-interval=5s --retries=3 \ 
+  CMD /ferretdb ping 
+
 WORKDIR /
 VOLUME /state
 EXPOSE 27017 27018 8088
