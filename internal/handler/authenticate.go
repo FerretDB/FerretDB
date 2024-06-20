@@ -52,6 +52,7 @@ func (h *Handler) authenticate(ctx context.Context) error {
 
 	switch mechanism {
 	case "PLAIN", "":
+		// mechanism is empty for unauthenticated connections
 		return nil
 	default:
 		msg := fmt.Sprintf("Unsupported authentication mechanism %q.\n", mechanism) +
