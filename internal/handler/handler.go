@@ -94,7 +94,9 @@ type NewOpts struct {
 
 // New returns a new handler.
 func New(opts *NewOpts) (*Handler, error) {
-	b := oplog.NewBackend(opts.Backend, opts.L.Named("oplog"))
+	if opts.CappedCleanupPercentage == 0 {
+		opts.CappedCleanupPercentage = 10
+	}
 
 	if opts.CappedCleanupPercentage >= 100 || opts.CappedCleanupPercentage <= 0 {
 		return nil, fmt.Errorf(
@@ -106,6 +108,8 @@ func New(opts *NewOpts) (*Handler, error) {
 	if opts.MaxBsonObjectSizeBytes == 0 {
 		opts.MaxBsonObjectSizeBytes = types.MaxDocumentLen
 	}
+
+	b := oplog.NewBackend(opts.Backend, opts.L.Named("oplog"))
 
 	h := &Handler{
 		b:       b,
