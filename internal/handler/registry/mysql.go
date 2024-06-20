@@ -56,7 +56,7 @@ func init() {
 
 		h, err := handler.New(handlerOpts)
 		if err != nil {
-			return nil, nil, err
+			return nil, b.Close, err
 		}
 
 		return h, b.Close, nil
