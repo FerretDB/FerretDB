@@ -192,6 +192,7 @@ func TestHelloWithSupportedMechsPLAIN(tt *testing.T) {
 		{"hello", "1"},
 		{"saslSupportedMechs", db.Name() + ".hello_user_plain"},
 	}).Decode(&res)
+	require.NoError(t, err)
 
 	actual := ConvertDocument(t, res)
 
