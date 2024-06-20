@@ -104,8 +104,8 @@ type BackendOpts struct {
 	// MaxBsonObjectSizeBytes is the maximum allowed size of a document, if not set FerretDB sets the default.
 	MaxBsonObjectSizeBytes int
 
-	// EnableNewAuth is set true to use new authentication.
-	EnableNewAuth bool
+	// DisableNewAuth true uses the old backend authentication.
+	DisableNewAuth bool
 }
 
 // SetupResult represents setup results.
@@ -113,15 +113,6 @@ type SetupResult struct {
 	Ctx        context.Context
 	Collection *mongo.Collection
 	MongoDBURI string // without database name
-}
-
-// NewBackendOpts returns BackendOpts with default values set.
-func NewBackendOpts() *BackendOpts {
-	return &BackendOpts{
-		CappedCleanupInterval:   time.Duration(0),
-		CappedCleanupPercentage: uint8(20),
-		EnableNewAuth:           true,
-	}
 }
 
 // IsUnixSocket returns true if MongoDB URI is a Unix domain socket.
@@ -163,14 +154,6 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 
 	uri := *targetURLF
 	if uri == "" {
-		if opts.BackendOptions == nil {
-			opts.BackendOptions = NewBackendOpts()
-		}
-
-		if opts.BackendOptions.CappedCleanupPercentage == 0 {
-			opts.BackendOptions.CappedCleanupPercentage = NewBackendOpts().CappedCleanupPercentage
-		}
-
 		uri = setupListener(tb, setupCtx, logger, opts.BackendOptions)
 	} else {
 		uri = toAbsolutePathURI(tb, *targetURLF)
@@ -243,12 +226,7 @@ func setupCollection(tb testtb.TB, ctx context.Context, client *mongo.Client, op
 	// drop remnants of the previous failed run
 	_ = collection.Drop(ctx)
 	if ownDatabase {
-		if opts.BackendOptions == nil || opts.BackendOptions.EnableNewAuth {
-			err := database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}}).Err()
-			require.NoError(tb, err)
-		}
-
-		_ = database.Drop(ctx)
+		cleanupDatabase(ctx, tb, database, opts.BackendOptions)
 	}
 
 	var inserted bool
@@ -278,13 +256,7 @@ func setupCollection(tb testtb.TB, ctx context.Context, client *mongo.Client, op
 		require.NoError(tb, err)
 
 		if ownDatabase {
-			if opts.BackendOptions == nil || opts.BackendOptions.EnableNewAuth {
-				err = database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}}).Err()
-				require.NoError(tb, err)
-			}
-
-			err = database.Drop(ctx)
-			require.NoError(tb, err)
+			cleanupDatabase(ctx, tb, database, opts.BackendOptions)
 		}
 	})
 
@@ -357,4 +329,14 @@ func insertBenchmarkProvider(tb testtb.TB, ctx context.Context, collection *mong
 	span.End()
 
 	return
+}
+
+// cleanupUser removes users for the given database if new authentication is enabled and drops that database.
+func cleanupDatabase(ctx context.Context, tb testtb.TB, database *mongo.Database, opts *BackendOpts) {
+	if opts != nil && !opts.DisableNewAuth {
+		err := database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}}).Err()
+		require.NoError(tb, err)
+	}
+
+	require.NoError(tb, database.Drop(ctx))
 }

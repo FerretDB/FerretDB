@@ -43,7 +43,7 @@ func createUser(username, password string) bson.D {
 func TestUsersinfo(t *testing.T) {
 	t.Parallel()
 
-	s := setup.SetupWithOpts(t, &setup.SetupOpts{BackendOptions: &setup.BackendOpts{EnableNewAuth: true}})
+	s := setup.SetupWithOpts(t, nil)
 	ctx, collection := s.Ctx, s.Collection
 	client := collection.Database().Client()
 
