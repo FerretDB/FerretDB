@@ -57,7 +57,7 @@ func TestAuthentication(t *testing.T) {
 		errorMessage  string
 	}{
 		"FailPLAIN": {
-			username:            "username",
+			username:            "plain-user",
 			password:            "password",
 			connectionMechanism: "PLAIN",
 			topologyError:       true,
