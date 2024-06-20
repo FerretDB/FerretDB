@@ -59,8 +59,8 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	return &reply, nil
 }
 
-// saslStart starts authentication for the supported mechanisms.
-// It returns the document containing authentication payload used for the response.
+// saslStart starts authentication and returns a document used for the response.
+// If EnableNewAuth is set SCRAM mechanisms are supported, otherwise `PLAIN` mechanism is supported.
 func (h *Handler) saslStart(ctx context.Context, dbName string, document *types.Document) (*types.Document, error) {
 	// TODO https://github.com/FerretDB/FerretDB/issues/3008
 	mechanism, err := common.GetRequiredParam[string](document, "mechanism")
