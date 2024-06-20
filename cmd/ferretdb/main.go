@@ -296,7 +296,7 @@ func ping() {
 
 		l.Infof("--listen-unix flag is set. Pinging %s...", cli.Listen.Unix)
 
-		u := "mongodb://" + strings.ReplaceAll(cli.Listen.Unix, "/", "%2F")
+		u := "mongodb://" + url.PathEscape(cli.Listen.Unix)
 
 		l.Debugf("Pinging %s...", u)
 
