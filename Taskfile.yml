@@ -472,14 +472,14 @@ tasks:
   lint:
     desc: "Run linters"
     cmds:
-      - go vet -vettool=bin/checkswitch{{exeExt}} ./...
-      - go vet -vettool=bin/checkcomments{{exeExt}} ./...
-
       - bin/envtool{{exeExt}} shell rmdir tmp/githubcache
       - bin/envtool{{exeExt}} shell mkdir tmp/githubcache
       - bin/golangci-lint{{exeExt}} run --config=.golangci.yml
       - bin/golangci-lint{{exeExt}} run --config=.golangci-new.yml
       - bin/go-consistent{{exeExt}} -pedantic ./cmd/... ./internal/... ./build/... ./ferretdb/...
+
+      - go vet -vettool=bin/checkswitch{{exeExt}} ./...
+      - go vet -vettool=bin/checkcomments{{exeExt}} ./...
 
       - bin/task{{exeExt}} -d integration lint
       - bin/task{{exeExt}} -d tools lint

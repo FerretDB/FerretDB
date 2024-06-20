@@ -404,7 +404,7 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 		SELECT
 		    s.index_name,
 			t.index_length,
-		FROM information_schema.tables t 
+		FROM information_schema.tables t
 		JOIN information_schema.statistics s
 		ON t.table_schema = s.table_schema AND t.table_name = s.table_name
 		WHERE t.table_schema = ? AND t.table_name IN ?
