@@ -96,6 +96,10 @@ type NewOpts struct {
 func New(opts *NewOpts) (*Handler, error) {
 	b := oplog.NewBackend(opts.Backend, opts.L.Named("oplog"))
 
+	if opts.CappedCleanupPercentage == 0 {
+		opts.CappedCleanupPercentage = 10
+	}
+
 	if opts.CappedCleanupPercentage >= 100 || opts.CappedCleanupPercentage <= 0 {
 		return nil, fmt.Errorf(
 			"percentage of documents to cleanup must be in range (0, 100), but %d given",

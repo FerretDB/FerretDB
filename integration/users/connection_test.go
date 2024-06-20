@@ -310,8 +310,7 @@ func TestAuthenticationOnAuthenticatedConnection(t *testing.T) {
 func TestAuthenticationPLAIN(t *testing.T) {
 	t.Parallel()
 
-	opts := &setup.SetupOpts{BackendOptions: setup.NewBackendOpts()}
-	opts.BackendOptions.EnableNewAuth = false
+	opts := &setup.SetupOpts{BackendOptions: &setup.BackendOpts{DisableNewAuth: true}}
 	s := setup.SetupWithOpts(t, opts)
 	ctx, cName, db := s.Ctx, s.Collection.Name(), s.Collection.Database()
 

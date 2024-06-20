@@ -173,7 +173,9 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 	sp, err := state.NewProvider("")
 	require.NoError(tb, err)
 
-	require.NotNil(tb, opts)
+	if opts == nil {
+		opts = new(BackendOpts)
+	}
 
 	handlerOpts := &registry.NewHandlerOpts{
 		Logger:        logger,
@@ -189,13 +191,13 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 			DisablePushdown:         *disablePushdownF,
 			CappedCleanupPercentage: opts.CappedCleanupPercentage,
 			CappedCleanupInterval:   opts.CappedCleanupInterval,
-			EnableNewAuth:           opts.EnableNewAuth,
+			EnableNewAuth:           !opts.DisableNewAuth,
 			BatchSize:               *batchSizeF,
 			MaxBsonObjectSizeBytes:  opts.MaxBsonObjectSizeBytes,
 		},
 	}
 
-	if opts.EnableNewAuth {
+	if !opts.DisableNewAuth {
 		handlerOpts.SetupDatabase = "test"
 		handlerOpts.SetupUsername = "username"
 		handlerOpts.SetupPassword = password.WrapPassword("password")
@@ -270,7 +272,7 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 		hostPort = l.TCPAddr().String()
 	}
 
-	uri := listenerMongoDBURI(tb, hostPort, unixSocketPath, tlsAndAuth, opts.EnableNewAuth)
+	uri := listenerMongoDBURI(tb, hostPort, unixSocketPath, tlsAndAuth, !opts.DisableNewAuth)
 
 	logger.Info("Listener started", zap.String("handler", handler), zap.String("uri", uri))
 
