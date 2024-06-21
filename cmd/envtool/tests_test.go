@@ -17,7 +17,6 @@ package main
 import (
 	"context"
 	"os/exec"
-	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
@@ -27,6 +26,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 // makeTestLogger returns a logger that adds all messages to the given slice.
@@ -433,7 +434,7 @@ func TestFilterStringsByRegex(t *testing.T) {
 func TestShardTestFuncs(t *testing.T) {
 	t.Parallel()
 
-	testFuncs, err := listTestFuncs(filepath.Join("..", "..", "integration"))
+	testFuncs, err := listTestFuncs(testutil.IntegrationDir)
 	require.NoError(t, err)
 	assert.Contains(t, testFuncs, "TestQueryCompatLimit")
 	assert.Contains(t, testFuncs, "TestCursorsGetMoreCommand")
@@ -484,7 +485,7 @@ func TestShardTestFuncs(t *testing.T) {
 func TestListTestFuncsWithSkip(t *testing.T) {
 	t.Parallel()
 
-	testFuncs, err := listTestFuncsWithRegex(filepath.Join("testdata"), "", "Skip")
+	testFuncs, err := listTestFuncsWithRegex("testdata", "", "Skip")
 	require.NoError(t, err)
 
 	sort.Strings(testFuncs)
