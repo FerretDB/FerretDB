@@ -73,8 +73,8 @@ func (h *Handler) MsgHello(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		)
 	}
 
-	// return `PLAIN` regardless of the user existence for backend authentication,
-	// there is no easy way to find out backend users
+	// for the backend authentication return `PLAIN` regardless of the user existence,
+	// getting backend users is not easy
 	mechs := []string{"PLAIN"}
 
 	if h.EnableNewAuth {
