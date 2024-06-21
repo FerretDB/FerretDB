@@ -117,14 +117,6 @@ func TestUsersinfo(t *testing.T) {
 		})
 
 		for _, payload := range inserted.payloads {
-			payloadDoc := integration.ConvertDocument(t, payload)
-
-			if setup.IsMongoDB(t) && payloadDoc.Has("mechanisms") {
-				mechanisms := must.NotFail(payloadDoc.Get("mechanisms")).(*types.Array)
-				if mechanisms.Contains("PLAIN") {
-					continue
-				}
-			}
 			err := db.RunCommand(ctx, payload).Err()
 			require.NoErrorf(t, err, "cannot create user on database %q: %q", dbName, payload)
 		}
@@ -574,8 +566,6 @@ func TestUsersinfo(t *testing.T) {
 
 				for _, typ := range tc.showCredentials {
 					switch typ {
-					case "PLAIN":
-						assertPlainCredentials(t, "PLAIN", cred)
 					case "SCRAM-SHA-1":
 						assertSCRAMSHA1Credentials(t, "SCRAM-SHA-1", cred)
 					case "SCRAM-SHA-256":
