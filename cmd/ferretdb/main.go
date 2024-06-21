@@ -381,6 +381,8 @@ func run() {
 
 	logger := setupLogger(stateProvider, cli.Log.Format)
 
+	// todo setup otel
+
 	checkFlags(logger)
 
 	if _, err := maxprocs.Set(maxprocs.Logger(logger.Sugar().Debugf)); err != nil {
