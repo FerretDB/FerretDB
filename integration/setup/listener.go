@@ -205,9 +205,12 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 	}
 
 	h, closeBackend, err := registry.NewHandler(handler, handlerOpts)
-	require.NoError(tb, err)
 
-	tb.Cleanup(closeBackend)
+	if closeBackend != nil {
+		tb.Cleanup(closeBackend)
+	}
+
+	require.NoError(tb, err)
 
 	listenerOpts := clientconn.NewListenerOpts{
 		ProxyAddr:      *targetProxyAddrF,
