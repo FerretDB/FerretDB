@@ -37,17 +37,15 @@ func ping() {
 		return
 	}
 
-	var pingExecuted bool
+	var urls []string
 
 	if cli.Listen.Addr != "" {
-		pingExecuted = true
-
 		host, port, err := net.SplitHostPort(cli.Listen.Addr)
 		if err != nil {
 			l.Fatal(err)
 		}
 
-		l.Infof("--listen-addr flag is set. Pinging %s...", cli.Listen.Addr)
+		l.Infof("--listen-addr flag is set. Ping to %s will be performed.", cli.Listen.Addr)
 
 		if host == "" {
 			host = "127.0.0.1"
@@ -62,40 +60,25 @@ func ping() {
 			User:   url.UserPassword(cli.Setup.Username, cli.Setup.Password),
 		}
 
-		l.Debugf("Pinging %s...", u)
-
-		ctx, cancel := context.WithTimeout(context.Background(), cli.Setup.Timeout)
-		defer cancel()
-
-		client, err := mongo.Connect(ctx, options.Client().ApplyURI(u.String()))
-		if err != nil {
-			l.Fatal(err)
-		}
-
-		defer func() {
-			if err = client.Disconnect(ctx); err != nil {
-				l.Fatal(err)
-			}
-		}()
-
-		if err = client.Ping(ctx, nil); err != nil {
-			l.Fatal(err)
-		}
-
-		l.Info("Ping successful.")
+		urls = append(urls, u.String())
 	}
 
 	if cli.Listen.Unix != "" {
-		pingExecuted = true
+		l.Infof("--listen-unix flag is set. Ping to %s will be performed.", cli.Listen.Unix)
+
+		urls = append(urls, "mongodb://"+url.PathEscape(cli.Listen.Unix))
+	}
+
+	if len(urls) == 0 {
+		l.Info("Neither --listen-addr nor --listen-unix flags were specified - skipping ping.")
+		return
+	}
+
+	for _, u := range urls {
+		l.Debugf("Pinging %s...", u)
 
 		ctx, cancel := context.WithTimeout(context.Background(), cli.Setup.Timeout)
 		defer cancel()
-
-		l.Infof("--listen-unix flag is set. Pinging %s...", cli.Listen.Unix)
-
-		u := "mongodb://" + url.PathEscape(cli.Listen.Unix)
-
-		l.Debugf("Pinging %s...", u)
 
 		client, err := mongo.Connect(ctx, options.Client().ApplyURI(u))
 		if err != nil {
@@ -113,9 +96,5 @@ func ping() {
 		}
 
 		l.Info("Ping successful.")
-	}
-
-	if !pingExecuted {
-		l.Info("Neither --listen-addr nor --listen-unix flags were specified - skipping ping.")
 	}
 }
