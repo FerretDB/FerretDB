@@ -20,6 +20,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel"
@@ -28,6 +29,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/handler/registry"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
+	"github.com/FerretDB/FerretDB/internal/util/password"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
@@ -51,7 +53,7 @@ func unixSocketPath(tb testtb.TB) string {
 }
 
 // listenerMongoDBURI builds MongoDB URI for in-process FerretDB.
-func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath string, tlsAndAuth bool) string {
+func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath string, tlsAndAuth, enableNewAuth bool) string {
 	tb.Helper()
 
 	var host string
@@ -64,7 +66,7 @@ func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath string, tlsAndAut
 	}
 
 	var user *url.Userinfo
-	var q url.Values
+	q := url.Values{}
 
 	if tlsAndAuth {
 		require.Empty(tb, unixSocketPath, "unixSocketPath cannot be used with TLS")
@@ -81,6 +83,10 @@ func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath string, tlsAndAut
 		user = url.UserPassword("username", "password")
 	}
 
+	if enableNewAuth {
+		q.Set("authMechanism", "SCRAM-SHA-256")
+	}
+
 	// TODO https://github.com/FerretDB/FerretDB/issues/1507
 	u := &url.URL{
 		Scheme:   "mongodb",
@@ -95,7 +101,7 @@ func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath string, tlsAndAut
 
 // setupListener starts in-process FerretDB server that runs until ctx is canceled.
 // It returns basic MongoDB URI for that listener.
-func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *BackendOpts, persistData bool) string {
+func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *BackendOpts) string {
 	tb.Helper()
 
 	_, span := otel.Tracer("").Start(ctx, "setupListener")
@@ -144,17 +150,16 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 		panic("not reached")
 	}
 
-	// use per-test PostgreSQL database to prevent handler's/backend's metadata registry
-	// read schemas owned by concurrent tests
+	// use per-test PostgreSQL database to prevent problems with parallel tests
 	postgreSQLURLF := *postgreSQLURLF
-	if postgreSQLURLF != "" && !persistData {
+	if postgreSQLURLF != "" {
 		postgreSQLURLF = testutil.TestPostgreSQLURI(tb, ctx, postgreSQLURLF)
 	}
 
 	// use per-test directory to prevent handler's/backend's metadata registry
 	// read databases owned by concurrent tests
 	sqliteURL := *sqliteURLF
-	if sqliteURL != "" && !persistData {
+	if sqliteURL != "" {
 		sqliteURL = testutil.TestSQLiteURI(tb, sqliteURL)
 	}
 
@@ -168,7 +173,9 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 	sp, err := state.NewProvider("")
 	require.NoError(tb, err)
 
-	require.NotNil(tb, opts)
+	if opts == nil {
+		opts = new(BackendOpts)
+	}
 
 	handlerOpts := &registry.NewHandlerOpts{
 		Logger:        logger,
@@ -184,15 +191,26 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 			DisablePushdown:         *disablePushdownF,
 			CappedCleanupPercentage: opts.CappedCleanupPercentage,
 			CappedCleanupInterval:   opts.CappedCleanupInterval,
-			EnableNewAuth:           true,
+			EnableNewAuth:           !opts.DisableNewAuth,
 			BatchSize:               *batchSizeF,
 			MaxBsonObjectSizeBytes:  opts.MaxBsonObjectSizeBytes,
 		},
 	}
-	h, closeBackend, err := registry.NewHandler(handler, handlerOpts)
-	require.NoError(tb, err)
 
-	tb.Cleanup(closeBackend)
+	if !opts.DisableNewAuth {
+		handlerOpts.SetupDatabase = "test"
+		handlerOpts.SetupUsername = "username"
+		handlerOpts.SetupPassword = password.WrapPassword("password")
+		handlerOpts.SetupTimeout = 1 * time.Second
+	}
+
+	h, closeBackend, err := registry.NewHandler(handler, handlerOpts)
+
+	if closeBackend != nil {
+		tb.Cleanup(closeBackend)
+	}
+
+	require.NoError(tb, err)
 
 	listenerOpts := clientconn.NewListenerOpts{
 		ProxyAddr:      *targetProxyAddrF,
@@ -257,7 +275,7 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 		hostPort = l.TCPAddr().String()
 	}
 
-	uri := listenerMongoDBURI(tb, hostPort, unixSocketPath, tlsAndAuth)
+	uri := listenerMongoDBURI(tb, hostPort, unixSocketPath, tlsAndAuth, !opts.DisableNewAuth)
 
 	logger.Info("Listener started", zap.String("handler", handler), zap.String("uri", uri))
 

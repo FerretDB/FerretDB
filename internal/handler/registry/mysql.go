@@ -36,6 +36,11 @@ func init() {
 			TCPHost:     opts.TCPHost,
 			ReplSetName: opts.ReplSetName,
 
+			SetupDatabase: opts.SetupDatabase,
+			SetupUsername: opts.SetupUsername,
+			SetupPassword: opts.SetupPassword,
+			SetupTimeout:  opts.SetupTimeout,
+
 			L:             opts.Logger.Named("mysql"),
 			ConnMetrics:   opts.ConnMetrics,
 			StateProvider: opts.StateProvider,
@@ -51,7 +56,7 @@ func init() {
 
 		h, err := handler.New(handlerOpts)
 		if err != nil {
-			return nil, nil, err
+			return nil, b.Close, err
 		}
 
 		return h, b.Close, nil

@@ -22,6 +22,7 @@ import (
 	"fmt"
 
 	"github.com/xdg-go/scram"
+	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
@@ -58,13 +59,36 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	return &reply, nil
 }
 
-// saslStart starts authentication for the supported mechanisms.
-// It returns the document containing authentication payload used for the response.
+// saslStart starts authentication and returns a document used for the response.
+// If EnableNewAuth is set SCRAM mechanisms are supported, otherwise `PLAIN` mechanism is supported.
 func (h *Handler) saslStart(ctx context.Context, dbName string, document *types.Document) (*types.Document, error) {
 	// TODO https://github.com/FerretDB/FerretDB/issues/3008
 	mechanism, err := common.GetRequiredParam[string](document, "mechanism")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
+	}
+
+	if h.EnableNewAuth {
+		switch mechanism {
+		case "SCRAM-SHA-1", "SCRAM-SHA-256":
+			var response string
+
+			if response, err = h.saslStartSCRAM(ctx, dbName, mechanism, document); err != nil {
+				return nil, err
+			}
+
+			conninfo.Get(ctx).SetBypassBackendAuth()
+
+			return must.NotFail(types.NewDocument(
+				"conversationId", int32(1),
+				"done", false,
+				"payload", types.Binary{B: []byte(response)},
+			)), nil
+		default:
+			msg := fmt.Sprintf("Unsupported authentication mechanism %q.\n", mechanism) +
+				"See https://docs.ferretdb.io/security/authentication/ for more details."
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrAuthenticationFailed, msg, "mechanism")
+		}
 	}
 
 	switch mechanism {
@@ -74,11 +98,7 @@ func (h *Handler) saslStart(ctx context.Context, dbName string, document *types.
 			return nil, err
 		}
 
-		if h.EnableNewAuth {
-			conninfo.Get(ctx).SetBypassBackendAuth()
-		}
-
-		conninfo.Get(ctx).SetAuth(username, password, mechanism)
+		conninfo.Get(ctx).SetAuth(username, password, mechanism, nil)
 
 		var emptyPayload types.Binary
 
@@ -86,32 +106,6 @@ func (h *Handler) saslStart(ctx context.Context, dbName string, document *types.
 			"conversationId", int32(1),
 			"done", true,
 			"payload", emptyPayload,
-		)), nil
-	case "SCRAM-SHA-1", "SCRAM-SHA-256":
-		if !h.EnableNewAuth {
-			return nil, handlererrors.NewCommandErrorMsg(
-				handlererrors.ErrAuthenticationFailed,
-				"SCRAM authentication is not enabled",
-			)
-		}
-
-		conninfo.Get(ctx).SetAuth("", "", mechanism)
-
-		response, err := h.saslStartSCRAM(ctx, dbName, mechanism, document)
-		if err != nil {
-			return nil, err
-		}
-
-		conninfo.Get(ctx).SetBypassBackendAuth()
-
-		binResponse := types.Binary{
-			B: []byte(response),
-		}
-
-		return must.NotFail(types.NewDocument(
-			"conversationId", int32(1),
-			"done", false,
-			"payload", binResponse,
 		)), nil
 	default:
 		msg := fmt.Sprintf("Unsupported authentication mechanism %q.\n", mechanism) +
@@ -168,9 +162,7 @@ func saslStartPlain(doc *types.Document) (string, string, error) {
 }
 
 // scramCredentialLookup looks up an user's credentials in the database.
-func (h *Handler) scramCredentialLookup(ctx context.Context, username, dbName, mechanism string) (
-	*scram.StoredCredentials, error,
-) {
+func (h *Handler) scramCredentialLookup(ctx context.Context, username, dbName, mechanism string) (*scram.StoredCredentials, error) { //nolint:lll // for readability
 	adminDB, err := h.b.Database("admin")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -245,6 +237,8 @@ func (h *Handler) scramCredentialLookup(ctx context.Context, username, dbName, m
 		}
 	}
 
+	h.L.Warn("Credential lookup failed", zap.String("user", username))
+
 	return nil, handlererrors.NewCommandErrorMsg(
 		handlererrors.ErrAuthenticationFailed,
 		"Authentication failed.",
@@ -294,7 +288,7 @@ func (h *Handler) saslStartSCRAM(ctx context.Context, dbName, mechanism string, 
 		return "", err
 	}
 
-	conninfo.Get(ctx).SetConv(conv)
+	conninfo.Get(ctx).SetAuth(conv.Username(), "", mechanism, conv)
 
 	return response, nil
 }
