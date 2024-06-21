@@ -184,13 +184,13 @@ spec:
             - containerPort: 27017
           env:
             - name: FERRETDB_POSTGRESQL_URL
-              value: 'postgresql://ferretuser@postgres-cluster-rw.cnpg.svc.cluster.local:5432/ferretdb'
+              value: "postgresql://ferretuser@postgres-cluster-rw.cnpg.svc.cluster.local:5432/ferretdb"
 
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: ferretdb
+  name: ferretdb-service
   namespace: cnpg
 spec:
   selector:
@@ -285,7 +285,7 @@ ferretdb>
 
 ### Test CRUD commands in `mongosh`
 
-```json5
+```text
 ferretdb> db.testCollection.insertMany([
 ...   { name: "Alice", age: 25, city: "Wonderland" },
 ...   { name: "Bob", age: 30, city: "Builderland" },
@@ -316,7 +316,8 @@ ferretdb> db.testCollection.countDocuments();
 ### Connect to Postgres cluster via `psql`
 
 Want to see what the data looks like in Postgres?
-Let's create a temporary `postgres-client` pod to connect to the `postgres-cluster-1` pod.
+
+From another terminal window, let's create a temporary `postgres-client` pod to connect to the `postgres-cluster-1` pod.
 
 ```sh
 kubectl exec -it postgres-cluster-1 -n cnpg -- /bin/bash
