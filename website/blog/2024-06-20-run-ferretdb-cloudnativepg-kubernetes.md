@@ -81,7 +81,7 @@ The following command will install the CloudNative-PG operator using Helm and de
 ```sh
 helm repo add cnpg https://cloudnative-pg.github.io/charts
 helm upgrade --install cnpg \
-  --namespace cnpg-system \
+  --namespace cnpg \
   --create-namespace \
   cnpg/cloudnative-pg
 ```
