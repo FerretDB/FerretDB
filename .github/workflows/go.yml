@@ -132,6 +132,7 @@ jobs:
         uses: codecov/codecov-action@v4
         with:
           token: 3c5cbd1b-5110-4302-ad5a-080390ca731a
+          version: v0.6.0 # TODO https://github.com/codecov/codecov-cli/issues/460
           files: ./cover.txt
           flags: unit
           fail_ci_if_error: true
