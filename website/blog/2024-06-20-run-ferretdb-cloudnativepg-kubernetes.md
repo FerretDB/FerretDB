@@ -184,7 +184,7 @@ spec:
             - containerPort: 27017
           env:
             - name: FERRETDB_POSTGRESQL_URL
-              value: "postgresql://ferretuser@postgres-cluster-rw.cnpg.svc.cluster.local:5432/ferretdb"
+              value: 'postgresql://ferretuser@postgres-cluster-rw.cnpg.svc.cluster.local:5432/ferretdb'
 
 ---
 apiVersion: v1
