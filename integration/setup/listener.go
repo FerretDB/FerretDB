@@ -20,6 +20,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel"
@@ -28,6 +29,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/handler/registry"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
+	"github.com/FerretDB/FerretDB/internal/util/password"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
@@ -51,7 +53,7 @@ func unixSocketPath(tb testtb.TB) string {
 }
 
 // listenerMongoDBURI builds MongoDB URI for in-process FerretDB.
-func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath string, tlsAndAuth bool) string {
+func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath string, tlsAndAuth, enableNewAuth bool) string {
 	tb.Helper()
 
 	var host string
@@ -64,21 +66,23 @@ func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath string, tlsAndAut
 	}
 
 	var user *url.Userinfo
-	var q url.Values
+	q := url.Values{}
 
 	if tlsAndAuth {
 		require.Empty(tb, unixSocketPath, "unixSocketPath cannot be used with TLS")
 
-		certsRoot := filepath.Join(Dir(tb), "..", "..", "build", "certs")
-
 		// we don't separate TLS and auth just for simplicity of our test configurations
 		q = url.Values{
 			"tls":                   []string{"true"},
-			"tlsCertificateKeyFile": []string{filepath.Join(certsRoot, "client.pem")},
-			"tlsCaFile":             []string{filepath.Join(certsRoot, "rootCA-cert.pem")},
+			"tlsCertificateKeyFile": []string{filepath.Join(testutil.BuildCertsDir, "client.pem")},
+			"tlsCaFile":             []string{filepath.Join(testutil.BuildCertsDir, "rootCA-cert.pem")},
 			"authMechanism":         []string{"PLAIN"},
 		}
 		user = url.UserPassword("username", "password")
+	}
+
+	if enableNewAuth {
+		q.Set("authMechanism", "SCRAM-SHA-256")
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/1507
@@ -167,7 +171,9 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 	sp, err := state.NewProvider("")
 	require.NoError(tb, err)
 
-	require.NotNil(tb, opts)
+	if opts == nil {
+		opts = new(BackendOpts)
+	}
 
 	handlerOpts := &registry.NewHandlerOpts{
 		Logger:        logger,
@@ -183,15 +189,26 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 			DisablePushdown:         *disablePushdownF,
 			CappedCleanupPercentage: opts.CappedCleanupPercentage,
 			CappedCleanupInterval:   opts.CappedCleanupInterval,
-			EnableNewAuth:           true,
+			EnableNewAuth:           !opts.DisableNewAuth,
 			BatchSize:               *batchSizeF,
 			MaxBsonObjectSizeBytes:  opts.MaxBsonObjectSizeBytes,
 		},
 	}
-	h, closeBackend, err := registry.NewHandler(handler, handlerOpts)
-	require.NoError(tb, err)
 
-	tb.Cleanup(closeBackend)
+	if !opts.DisableNewAuth {
+		handlerOpts.SetupDatabase = "test"
+		handlerOpts.SetupUsername = "username"
+		handlerOpts.SetupPassword = password.WrapPassword("password")
+		handlerOpts.SetupTimeout = 1 * time.Second
+	}
+
+	h, closeBackend, err := registry.NewHandler(handler, handlerOpts)
+
+	if closeBackend != nil {
+		tb.Cleanup(closeBackend)
+	}
+
+	require.NoError(tb, err)
 
 	listenerOpts := clientconn.NewListenerOpts{
 		ProxyAddr:      *targetProxyAddrF,
@@ -199,7 +216,7 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 		Metrics:        listenerMetrics,
 		Handler:        h,
 		Logger:         logger,
-		TestRecordsDir: filepath.Join(Dir(tb), "..", "..", "tmp", "records"),
+		TestRecordsDir: testutil.TmpRecordsDir,
 	}
 
 	if *targetProxyAddrF != "" {
@@ -212,11 +229,10 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 
 	switch {
 	case *targetTLSF:
-		certsRoot := filepath.Join(Dir(tb), "..", "..", "build", "certs")
 		listenerOpts.TLS = "127.0.0.1:0"
-		listenerOpts.TLSCertFile = filepath.Join(certsRoot, "server-cert.pem")
-		listenerOpts.TLSKeyFile = filepath.Join(certsRoot, "server-key.pem")
-		listenerOpts.TLSCAFile = filepath.Join(certsRoot, "rootCA-cert.pem")
+		listenerOpts.TLSCertFile = filepath.Join(testutil.BuildCertsDir, "server-cert.pem")
+		listenerOpts.TLSKeyFile = filepath.Join(testutil.BuildCertsDir, "server-key.pem")
+		listenerOpts.TLSCAFile = filepath.Join(testutil.BuildCertsDir, "rootCA-cert.pem")
 	case *targetUnixSocketF:
 		listenerOpts.Unix = unixSocketPath(tb)
 	default:
@@ -256,7 +272,7 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 		hostPort = l.TCPAddr().String()
 	}
 
-	uri := listenerMongoDBURI(tb, hostPort, unixSocketPath, tlsAndAuth)
+	uri := listenerMongoDBURI(tb, hostPort, unixSocketPath, tlsAndAuth, !opts.DisableNewAuth)
 
 	logger.Info("Listener started", zap.String("handler", handler), zap.String("uri", uri))
 

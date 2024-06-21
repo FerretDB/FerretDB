@@ -141,6 +141,9 @@ func New(config *Config) (*FerretDB, error) {
 		},
 	})
 	if err != nil {
+		if closeBackend != nil {
+			closeBackend()
+		}
 		return nil, fmt.Errorf("failed to construct handler: %s", err)
 	}
 

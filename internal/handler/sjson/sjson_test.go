@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -28,6 +27,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
@@ -188,7 +188,7 @@ func isValidDocumentData(v sjsontype) bool {
 
 func addRecordedFuzzDocs(f *testing.F, needDocument, needSchema bool) int {
 	// TODO https://github.com/FerretDB/FerretDB/issues/3067
-	records, err := wire.LoadRecords(filepath.Join("..", "..", "..", "tmp", "records"), 100)
+	records, err := wire.LoadRecords(testutil.TmpRecordsDir, 100)
 	require.NoError(f, err)
 
 	var n int

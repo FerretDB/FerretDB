@@ -1732,9 +1732,10 @@ func TestCommandsAdministrationCompactCapped(t *testing.T) {
 			expectedDocuments: 11,
 		},
 		"OverflowSize": {
-			force:           true,
-			sizeInBytes:     256,
-			insertDocuments: 20,
+			force:             true,
+			cleanupPercentage: 20,
+			sizeInBytes:       256,
+			insertDocuments:   20,
 			// cleanup will be based on size
 			// [insertDocuments * 0.2 (cleanup 20%)] + 1 (extra insert after compact)
 			expectedDocuments: 17,
@@ -1766,12 +1767,7 @@ func TestCommandsAdministrationCompactCapped(t *testing.T) {
 				setup.SkipForMongoDB(t, tc.skipForMongoDB)
 			}
 
-			beOpts := setup.NewBackendOpts()
-			if tc.cleanupPercentage != 0 {
-				beOpts.CappedCleanupPercentage = tc.cleanupPercentage
-			}
-
-			s := setup.SetupWithOpts(t, &setup.SetupOpts{BackendOptions: beOpts})
+			s := setup.SetupWithOpts(t, &setup.SetupOpts{BackendOptions: &setup.BackendOpts{CappedCleanupPercentage: tc.cleanupPercentage}})
 			ctx, coll := s.Ctx, s.Collection
 
 			collName := testutil.CollectionName(t) + name

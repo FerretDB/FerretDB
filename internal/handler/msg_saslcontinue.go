@@ -44,7 +44,7 @@ func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.O
 
 	payload = binaryPayload.B
 
-	conv := conninfo.Get(ctx).Conv()
+	_, _, _, conv := conninfo.Get(ctx).Auth()
 
 	if conv == nil {
 		h.L.Warn("saslContinue: no conversation to continue")
