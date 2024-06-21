@@ -61,8 +61,9 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 		r.WriteHeader(http.StatusOK)
 	})
 
+	// healthz handler, which is used for liveness probe, returns StatusOK when reached.
+	// This ensures that listener is running.
 	http.HandleFunc("/debug/healthz", func(r http.ResponseWriter, _ *http.Request) {
-		// TODO https://github.com/FerretDB/FerretDB/issues/4306
 		r.WriteHeader(http.StatusOK)
 	})
 
