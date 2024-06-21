@@ -12,14 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package integration
+package testutil
 
 import (
+	"path/filepath"
 	"testing"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestMain(m *testing.M) {
-	setup.Main(m)
+func TestDirs(t *testing.T) {
+	t.Parallel()
+
+	assert.FileExists(t, filepath.Join(RootDir, "CHANGELOG.md"))
+	assert.FileExists(t, filepath.Join(BuildCertsDir, "client.pem"))
 }
