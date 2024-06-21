@@ -35,7 +35,7 @@ import (
 func TestCreateUser(t *testing.T) {
 	t.Parallel()
 
-	s := setup.SetupWithOpts(t, &setup.SetupOpts{SetupUser: true})
+	s := setup.SetupWithOpts(t, nil)
 	ctx, db := s.Ctx, s.Collection.Database()
 
 	testCases := map[string]struct { //nolint:vet // for readability
@@ -153,15 +153,17 @@ func TestCreateUser(t *testing.T) {
 				{"ok", float64(1)},
 			},
 		},
-		"SuccessWithPLAIN": {
+		"FailWithPLAIN": {
 			payload: bson.D{
 				{"createUser", "success_user_with_plain"},
 				{"roles", bson.A{}},
 				{"pwd", "password"},
 				{"mechanisms", bson.A{"PLAIN"}},
 			},
-			expected: bson.D{
-				{"ok", float64(1)},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "Unknown auth mechanism 'PLAIN'",
 			},
 		},
 		"SuccessWithSCRAMSHA1": {
