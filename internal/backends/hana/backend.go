@@ -17,6 +17,7 @@ package hana
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -116,7 +117,15 @@ func (b *backend) Database(name string) (backends.Database, error) {
 //
 //nolint:lll // for readability
 func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDatabasesParams) (*backends.ListDatabasesResult, error) {
-	rows, err := b.hdb.QueryContext(ctx, "SELECT SCHEMA_NAME FROM SCHEMAS ORDER BY SCHEMA_NAME ASC")
+	var dbQuerySQL string
+	dbQuerySQL = "SELECT SCHEMA_NAME FROM SCHEMAS"
+	if params.Name != "" {
+		dbQuerySQL += fmt.Sprintf(" WHERE SCHEMA_NAME = '%s'", params.Name)
+	} else {
+		dbQuerySQL += " ORDER BY SCHEMA_NAME ASC"
+	}
+
+	rows, err := b.hdb.QueryContext(ctx, dbQuerySQL)
 	if err != nil {
 		return nil, err
 	}
