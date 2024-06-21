@@ -65,8 +65,9 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 		"/debug/vars":  "Expvar package metrics",
 		"/debug/pprof": "Runtime profiling data for pprof",
 
-		"/healthz": "Health check",
-		"/ready":   "Health check",
+		"/debug/started": "Check if listener have started",
+		"/debug/healthz": "Check if listener is healthy",
+		"/debug/ready":   "Check if listener and backend are ready for queries",
 	}
 
 	var page bytes.Buffer
