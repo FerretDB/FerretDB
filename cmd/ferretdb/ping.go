@@ -45,7 +45,7 @@ func ping() {
 			l.Fatal(err)
 		}
 
-		l.Infof("--listen-addr flag is set. Ping to %s will be performed.", cli.Listen.Addr)
+		l.Debugf("--listen-addr flag is set. Ping to %s will be performed.", cli.Listen.Addr)
 
 		if host == "" {
 			host = "127.0.0.1"
@@ -64,7 +64,7 @@ func ping() {
 	}
 
 	if cli.Listen.Unix != "" {
-		l.Infof("--listen-unix flag is set. Ping to %s will be performed.", cli.Listen.Unix)
+		l.Debugf("--listen-unix flag is set. Ping to %s will be performed.", cli.Listen.Unix)
 
 		urls = append(urls, "mongodb://"+url.PathEscape(cli.Listen.Unix))
 	}
@@ -95,6 +95,6 @@ func ping() {
 			l.Fatal(err)
 		}
 
-		l.Info("Ping successful.")
+		l.Infof("Ping to %s successful.", u)
 	}
 }
