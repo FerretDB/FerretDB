@@ -18,6 +18,7 @@ package testdata
 import (
 	"time"
 
+	"./tags"
 	"./types"
 )
 
@@ -55,5 +56,57 @@ func testIncorrectMixed(v any) {
 func testIncorrectMultiple(v any) {
 	switch v.(type) { // want "int32 should go before int64 in the switch"
 	case float64, int64, int32:
+	}
+}
+
+func testCorrectTag(v tags.Tag) {
+	switch v {
+	case tags.TagFloat64:
+	case tags.TagString:
+	case tags.TagDocument:
+	case tags.TagArray:
+	case tags.TagBinary:
+	case tags.TagUndefined:
+	case tags.TagObjectID:
+	case tags.TagBool:
+	case tags.TagTime:
+	case tags.TagNull:
+	case tags.TagRegex:
+	case tags.TagDBPointer:
+	case tags.TagJavaScript:
+	case tags.TagSymbol:
+	case tags.TagJavaScriptScope:
+	case tags.TagInt32:
+	case tags.TagTimestamp:
+	case tags.TagInt64:
+	case tags.TagDecimal128:
+	case tags.TagMinKey:
+	case tags.TagMaxKey:
+	}
+}
+
+func testIncorrectSimpleTag(v tags.Tag) {
+	switch v { // want "tagfloat64 should go before tagstring in the switch"
+	case tags.TagString:
+	case tags.TagFloat64:
+	}
+}
+
+func testIncorrectMixedTag(v tags.Tag) {
+	switch v { // want "tagdocument should go before tagtime in the switch"
+	case tags.TagTime:
+	case tags.TagDocument:
+	}
+}
+
+func testCorrectMultipleTag(v tags.Tag) {
+	switch v {
+	case tags.TagArray, tags.TagBinary, tags.TagUndefined:
+	}
+}
+
+func testIncorrectMultipleTag(v tags.Tag) {
+	switch v { // want "tagbinary should go before tagundefined in the switch"
+	case tags.TagArray, tags.TagUndefined, tags.TagBinary:
 	}
 }
