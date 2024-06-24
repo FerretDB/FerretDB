@@ -131,7 +131,8 @@ jobs:
         if: always()
         uses: codecov/codecov-action@v4
         with:
-          token: 22159d7c-856d-4fe9-8fdb-5d9ecff35514
+          token: 3c5cbd1b-5110-4302-ad5a-080390ca731a
+          version: v0.6.0 # TODO https://github.com/codecov/codecov-cli/issues/460
           files: ./cover.txt
           flags: unit
           fail_ci_if_error: true
@@ -231,8 +232,14 @@ jobs:
       - name: Run init
         run: bin/task init
 
+      - name: Build bin/ferretdb
+        run: bin/task build-host
+
       - name: Wait for and setup environment
         run: bin/task env-setup
+
+      - name: Start FerretDB in the background
+        run: bin/task run &
 
       - name: Run env-data
         run: bin/task env-data

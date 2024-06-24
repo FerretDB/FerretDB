@@ -31,9 +31,11 @@ import (
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/password"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
@@ -71,6 +73,11 @@ type NewOpts struct {
 	TCPHost     string
 	ReplSetName string
 
+	SetupDatabase string
+	SetupUsername string
+	SetupPassword password.Password
+	SetupTimeout  time.Duration
+
 	L             *zap.Logger
 	ConnMetrics   *connmetrics.ConnMetrics
 	StateProvider *state.Provider
@@ -87,7 +94,9 @@ type NewOpts struct {
 
 // New returns a new handler.
 func New(opts *NewOpts) (*Handler, error) {
-	b := oplog.NewBackend(opts.Backend, opts.L.Named("oplog"))
+	if opts.CappedCleanupPercentage == 0 {
+		opts.CappedCleanupPercentage = 10
+	}
 
 	if opts.CappedCleanupPercentage >= 100 || opts.CappedCleanupPercentage <= 0 {
 		return nil, fmt.Errorf(
@@ -99,6 +108,8 @@ func New(opts *NewOpts) (*Handler, error) {
 	if opts.MaxBsonObjectSizeBytes == 0 {
 		opts.MaxBsonObjectSizeBytes = types.MaxDocumentLen
 	}
+
+	b := oplog.NewBackend(opts.Backend, opts.L.Named("oplog"))
 
 	h := &Handler{
 		b:       b,
@@ -126,6 +137,11 @@ func New(opts *NewOpts) (*Handler, error) {
 		),
 	}
 
+	if err := h.setup(); err != nil {
+		h.Close()
+		return nil, err
+	}
+
 	h.initCommands()
 
 	h.wg.Add(1)
@@ -137,6 +153,69 @@ func New(opts *NewOpts) (*Handler, error) {
 	}()
 
 	return h, nil
+}
+
+// Setup creates initial database and user if needed.
+func (h *Handler) setup() error {
+	if h.SetupDatabase == "" {
+		return nil
+	}
+
+	ctx, cancel := context.WithTimeout(context.TODO(), h.SetupTimeout)
+	defer cancel()
+
+	info := conninfo.New()
+	info.SetBypassBackendAuth()
+
+	ctx = conninfo.Ctx(ctx, info)
+
+	l := h.L.Named("setup")
+
+	var retry int64
+
+	for ctx.Err() == nil {
+		_, err := h.b.Status(ctx, nil)
+		if err == nil {
+			break
+		}
+
+		l.Debug("Status failed", zap.Error(err))
+
+		retry++
+		ctxutil.SleepWithJitter(ctx, time.Second, retry)
+	}
+
+	res, err := h.b.ListDatabases(ctx, &backends.ListDatabasesParams{Name: h.SetupDatabase})
+	if err != nil {
+		return err
+	}
+
+	if len(res.Databases) > 0 {
+		l.Debug("Database already exists")
+		return nil
+	}
+
+	l.Info("Setting up database and user", zap.String("database", h.SetupDatabase), zap.String("username", h.SetupUsername))
+
+	db, err := h.b.Database(h.SetupDatabase)
+	if err != nil {
+		return err
+	}
+
+	// that's the only way to create a database
+	if err = db.CreateCollection(ctx, &backends.CreateCollectionParams{Name: "setup"}); err != nil {
+		return err
+	}
+
+	if err = db.DropCollection(ctx, &backends.DropCollectionParams{Name: "setup"}); err != nil {
+		return err
+	}
+
+	return backends.CreateUser(ctx, h.b, &backends.CreateUserParams{
+		Database: h.SetupDatabase,
+		Username: h.SetupUsername,
+		Password: h.SetupPassword,
+	})
 }
 
 // runCappedCleanup calls capped collections cleanup function according to the given interval.

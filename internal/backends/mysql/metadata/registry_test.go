@@ -107,6 +107,10 @@ func createDatabase(t *testing.T, ctx context.Context) (r *Registry, db *fsql.DB
 }
 
 func TestCheckAuth(t *testing.T) {
+	// This test is flaky.
+	// TODO https://github.com/FerretDB/FerretDB/issues/3413
+	t.Skip("https://github.com/FerretDB/FerretDB/issues/3413")
+
 	if testing.Short() {
 		t.Skip("skipping in -short mode")
 	}

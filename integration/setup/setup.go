@@ -17,7 +17,6 @@ package setup
 
 import (
 	"context"
-	"errors"
 	"flag"
 	"fmt"
 	"net/url"
@@ -26,7 +25,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -34,12 +32,12 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/integration/shareddata"
-	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
+
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 // Flags.
@@ -82,10 +80,6 @@ type SetupOpts struct {
 	// Database to use. If empty, temporary test-specific database is created and dropped after test.
 	DatabaseName string
 
-	// Collection to use. If empty, temporary test-specific collection is created and dropped after test.
-	// Most tests should keep this empty.
-	CollectionName string
-
 	// Data providers. If empty, collection is not created.
 	Providers []shareddata.Provider
 
@@ -95,15 +89,8 @@ type SetupOpts struct {
 	// ExtraOptions sets the options in MongoDB URI, when the option exists it overwrites that option.
 	ExtraOptions url.Values
 
-	// SetupUser true creates a user and returns an authenticated client.
-	SetupUser bool
-
 	// Options to override default backend configuration.
 	BackendOptions *BackendOpts
-
-	// PersistData modifies the database given by backend url directly
-	// instead of creating a backend database that is deleted after this test.
-	PersistData bool
 }
 
 // BackendOpts represents backend configuration used for test setup.
@@ -116,21 +103,16 @@ type BackendOpts struct {
 
 	// MaxBsonObjectSizeBytes is the maximum allowed size of a document, if not set FerretDB sets the default.
 	MaxBsonObjectSizeBytes int
+
+	// DisableNewAuth true uses the old backend authentication.
+	DisableNewAuth bool
 }
 
 // SetupResult represents setup results.
 type SetupResult struct {
 	Ctx        context.Context
 	Collection *mongo.Collection
-	MongoDBURI string
-}
-
-// NewBackendOpts returns BackendOpts with default values set.
-func NewBackendOpts() *BackendOpts {
-	return &BackendOpts{
-		CappedCleanupInterval:   time.Duration(0),
-		CappedCleanupPercentage: uint8(20),
-	}
+	MongoDBURI string // without database name
 }
 
 // IsUnixSocket returns true if MongoDB URI is a Unix domain socket.
@@ -172,17 +154,7 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 
 	uri := *targetURLF
 	if uri == "" {
-		if opts.BackendOptions == nil {
-			opts.BackendOptions = NewBackendOpts()
-		}
-
-		if opts.BackendOptions.CappedCleanupPercentage == 0 {
-			opts.BackendOptions.CappedCleanupPercentage = NewBackendOpts().CappedCleanupPercentage
-		}
-
-		uri = setupListener(tb, setupCtx, logger, opts.BackendOptions, opts.PersistData)
-	} else {
-		uri = toAbsolutePathURI(tb, *targetURLF)
+		uri = setupListener(tb, setupCtx, logger, opts.BackendOptions)
 	}
 
 	if opts.ExtraOptions != nil {
@@ -206,11 +178,6 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
-
-	if opts.SetupUser {
-		// user is created before the collection so that user can run collection cleanup
-		client = setupUser(tb, ctx, client, uri)
-	}
 
 	collection := setupCollection(tb, ctx, client, opts)
 
@@ -249,12 +216,7 @@ func setupCollection(tb testtb.TB, ctx context.Context, client *mongo.Client, op
 		ownDatabase = true
 	}
 
-	var ownCollection bool
-	collectionName := opts.CollectionName
-	if collectionName == "" {
-		collectionName = testutil.CollectionName(tb)
-		ownCollection = true
-	}
+	collectionName := testutil.CollectionName(tb)
 
 	database := client.Database(databaseName)
 	collection := database.Collection(collectionName)
@@ -262,8 +224,7 @@ func setupCollection(tb testtb.TB, ctx context.Context, client *mongo.Client, op
 	// drop remnants of the previous failed run
 	_ = collection.Drop(ctx)
 	if ownDatabase {
-		_ = database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}})
-		_ = database.Drop(ctx)
+		cleanupDatabase(ctx, tb, database, opts.BackendOptions)
 	}
 
 	var inserted bool
@@ -271,7 +232,7 @@ func setupCollection(tb testtb.TB, ctx context.Context, client *mongo.Client, op
 	switch {
 	case len(opts.Providers) > 0:
 		require.Nil(tb, opts.BenchmarkProvider, "Both Providers and BenchmarkProvider were set")
-		inserted = insertProviders(tb, ctx, collection, opts.Providers...)
+		inserted = InsertProviders(tb, ctx, collection, opts.Providers...)
 	case opts.BenchmarkProvider != nil:
 		inserted = insertBenchmarkProvider(tb, ctx, collection, opts.BenchmarkProvider)
 	}
@@ -282,32 +243,26 @@ func setupCollection(tb testtb.TB, ctx context.Context, client *mongo.Client, op
 		require.True(tb, inserted)
 	}
 
-	if ownCollection {
-		// delete collection and (possibly) database unless test failed
-		tb.Cleanup(func() {
-			if tb.Failed() {
-				tb.Logf("Keeping %s.%s for debugging.", databaseName, collectionName)
-				return
-			}
+	// delete collection and (possibly) database unless test failed
+	tb.Cleanup(func() {
+		if tb.Failed() {
+			tb.Logf("Keeping %s.%s for debugging.", databaseName, collectionName)
+			return
+		}
 
-			err := collection.Drop(ctx)
-			require.NoError(tb, err)
+		err := collection.Drop(ctx)
+		require.NoError(tb, err)
 
-			if ownDatabase {
-				err = database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}}).Err()
-				require.NoError(tb, err)
-
-				err = database.Drop(ctx)
-				require.NoError(tb, err)
-			}
-		})
-	}
+		if ownDatabase {
+			cleanupDatabase(ctx, tb, database, opts.BackendOptions)
+		}
+	})
 
 	return collection
 }
 
-// insertProviders inserts documents from specified Providers into collection. It returns true if any document was inserted.
-func insertProviders(tb testtb.TB, ctx context.Context, collection *mongo.Collection, providers ...shareddata.Provider) (inserted bool) {
+// InsertProviders inserts documents from specified Providers into collection. It returns true if any document was inserted.
+func InsertProviders(tb testtb.TB, ctx context.Context, collection *mongo.Collection, providers ...shareddata.Provider) (inserted bool) {
 	tb.Helper()
 
 	collectionName := collection.Name()
@@ -374,60 +329,12 @@ func insertBenchmarkProvider(tb testtb.TB, ctx context.Context, collection *mong
 	return
 }
 
-// setupUser creates a user in admin database with supported mechanisms. It returns an authenticated client.
-//
-// Without this, once the first user is created, the authentication fails as local exception no longer applies.
-func setupUser(tb testtb.TB, ctx context.Context, client *mongo.Client, uri string) *mongo.Client {
-	tb.Helper()
-
-	// username is unique per test so the user is deleted after the test
-	username, password := "username"+tb.Name(), "password"
-	err := client.Database("admin").RunCommand(ctx, bson.D{
-		{"dropUser", username},
-	}).Err()
-
-	var ce mongo.CommandError
-	if errors.As(err, &ce) && ce.Code == int32(handlererrors.ErrUserNotFound) {
-		err = nil
+// cleanupUser removes users for the given database if new authentication is enabled and drops that database.
+func cleanupDatabase(ctx context.Context, tb testtb.TB, database *mongo.Database, opts *BackendOpts) {
+	if opts != nil && !opts.DisableNewAuth {
+		err := database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}}).Err()
+		require.NoError(tb, err)
 	}
 
-	require.NoError(tb, err)
-
-	roles := bson.A{"root"}
-	if !IsMongoDB(tb) {
-		// use root role for FerretDB once authorization is implemented
-		// TODO https://github.com/FerretDB/FerretDB/issues/3974
-		roles = bson.A{}
-	}
-
-	err = client.Database("admin").RunCommand(ctx, bson.D{
-		{"createUser", username},
-		{"roles", roles},
-		{"pwd", password},
-		{"mechanisms", bson.A{"SCRAM-SHA-1", "SCRAM-SHA-256"}},
-	}).Err()
-	require.NoError(tb, err)
-
-	credential := options.Credential{
-		AuthMechanism: "SCRAM-SHA-256",
-		AuthSource:    "admin",
-		Username:      username,
-		Password:      password,
-	}
-
-	opts := options.Client().ApplyURI(uri).SetAuth(credential)
-
-	authenticatedClient, err := mongo.Connect(ctx, opts)
-	require.NoError(tb, err)
-
-	tb.Cleanup(func() {
-		err = authenticatedClient.Database("admin").RunCommand(ctx, bson.D{
-			{"dropUser", username},
-		}).Err()
-		assert.NoError(tb, err)
-
-		require.NoError(tb, authenticatedClient.Disconnect(ctx))
-	})
-
-	return authenticatedClient
+	require.NoError(tb, database.Drop(ctx))
 }

@@ -43,6 +43,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/password"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/telemetry"
 )
@@ -52,17 +53,15 @@ import (
 //
 // Keep order in sync with documentation.
 var cli struct {
+	// We hide `run` command to show only `ping` in the help message.
+	Run  struct{} `cmd:"" default:"1"                             hidden:""`
+	Ping struct{} `cmd:"" help:"Ping existing FerretDB instance."`
+
 	Version     bool   `default:"false"           help:"Print version to stdout and exit." env:"-"`
 	Handler     string `default:"postgresql"      help:"${help_handler}"`
 	Mode        string `default:"${default_mode}" help:"${help_mode}"                      enum:"${enum_mode}"`
 	StateDir    string `default:"."               help:"Process state directory."`
 	ReplSetName string `default:""                help:"Replica set name."`
-
-	Setup struct {
-		Username string        `default:""    help:"Username for setup."`
-		Password string        `default:""    help:"Password for setup."`
-		Timeout  time.Duration `default:"30s" help:"Timeout for setup."`
-	} `embed:"" prefix:"setup-"`
 
 	Listen struct {
 		Addr        string `default:"127.0.0.1:27017" help:"Listen TCP address."`
@@ -85,6 +84,13 @@ var cli struct {
 	// see setCLIPlugins
 	kong.Plugins
 
+	Setup struct {
+		Database string        `default:""    help:"Setup database during backend initialization."`
+		Username string        `default:""    help:"Setup user during backend initialization."`
+		Password string        `default:""    help:"Setup user's password."`
+		Timeout  time.Duration `default:"30s" help:"Setup timeout."`
+	} `embed:"" prefix:"setup-"`
+
 	Log struct {
 		Level  string `default:"${default_log_level}" help:"${help_log_level}"`
 		Format string `default:"console"              help:"${help_log_format}"                     enum:"${enum_log_format}"`
@@ -106,9 +112,10 @@ var cli struct {
 			Percentage uint8         `default:"10" help:"Experimental: percentage of documents to cleanup."`
 		} `embed:"" prefix:"capped-cleanup-"`
 
-		EnableNewAuth        bool `default:"false" help:"Experimental: enable new authentication."`
-		BatchSize            int  `default:"100"   help:"Experimental: maximum insertion batch size."`
-		MaxBsonObjectSizeMiB int  `default:"16"    help:"Experimental: maximum BSON object size in MiB."`
+		EnableNewAuth bool `default:"false" help:"Experimental: enable new authentication."`
+
+		BatchSize            int `default:"100" help:"Experimental: maximum insertion batch size."`
+		MaxBsonObjectSizeMiB int `default:"16"  help:"Experimental: maximum BSON object size in MiB."`
 
 		Telemetry struct {
 			URL            string        `default:"https://beacon.ferretdb.com/" help:"Telemetry: reporting URL."`
@@ -183,6 +190,9 @@ var (
 	logFormats = []string{"console", "json"}
 
 	kongOptions = []kong.Option{
+		kong.HelpOptions{
+			Compact: true,
+		},
 		kong.Vars{
 			"default_log_level": defaultLogLevel().String(),
 			"default_mode":      clientconn.AllModes[0],
@@ -201,9 +211,16 @@ var (
 
 func main() {
 	setCLIPlugins()
-	kong.Parse(&cli, kongOptions...)
+	ctx := kong.Parse(&cli, kongOptions...)
 
-	run()
+	switch ctx.Command() {
+	case "run":
+		run()
+	case "ping":
+		// TODO https://github.com/FerretDB/FerretDB/issues/4246
+	default:
+		panic("unknown sub-command")
+	}
 }
 
 // defaultLogLevel returns the default log level.
@@ -292,6 +309,23 @@ func setupLogger(stateProvider *state.Provider, format string) *zap.Logger {
 	return l
 }
 
+// checkFlags checks that CLI flags are not self-contradictory.
+func checkFlags(logger *zap.Logger) {
+	l := logger.Sugar()
+
+	if cli.Setup.Database != "" && !cli.Test.EnableNewAuth {
+		l.Fatal("--setup-database requires --test-enable-new-auth")
+	}
+
+	if (cli.Setup.Database == "") != (cli.Setup.Username == "") {
+		l.Fatal("--setup-database should be used together with --setup-username")
+	}
+
+	if cli.Test.DisablePushdown && cli.Test.EnableNestedPushdown {
+		l.Fatal("--test-disable-pushdown and --test-enable-nested-pushdown should not be set at the same time")
+	}
+}
+
 // runTelemetryReporter runs telemetry reporter until ctx is canceled.
 func runTelemetryReporter(ctx context.Context, opts *telemetry.NewReporterOpts) {
 	r, err := telemetry.NewReporter(opts)
@@ -347,6 +381,8 @@ func run() {
 
 	logger := setupLogger(stateProvider, cli.Log.Format)
 
+	checkFlags(logger)
+
 	if _, err := maxprocs.Set(maxprocs.Logger(logger.Sugar().Debugf)); err != nil {
 		logger.Sugar().Warnf("Failed to set GOMAXPROCS: %s.", err)
 	}
@@ -360,14 +396,6 @@ func run() {
 	}()
 
 	var wg sync.WaitGroup
-
-	if cli.Setup.Username != "" && !cli.Test.EnableNewAuth {
-		logger.Sugar().Fatal("--setup-username requires --test-enable-new-auth")
-	}
-
-	if cli.Test.DisablePushdown && cli.Test.EnableNestedPushdown {
-		logger.Sugar().Fatal("--test-disable-pushdown and --test-enable-nested-pushdown should not be set at the same time")
-	}
 
 	if cli.DebugAddr != "" && cli.DebugAddr != "-" {
 		wg.Add(1)
@@ -407,6 +435,11 @@ func run() {
 		StateProvider: stateProvider,
 		TCPHost:       cli.Listen.Addr,
 		ReplSetName:   cli.ReplSetName,
+
+		SetupDatabase: cli.Setup.Database,
+		SetupUsername: cli.Setup.Username,
+		SetupPassword: password.WrapPassword(cli.Setup.Password),
+		SetupTimeout:  cli.Setup.Timeout,
 
 		PostgreSQLURL: postgreSQLFlags.PostgreSQLURL,
 

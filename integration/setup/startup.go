@@ -25,12 +25,13 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
+
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 // listenerMetrics are shared between tests.
@@ -77,28 +78,42 @@ func Startup() {
 		zap.S().Fatalf("Unknown target backend %q.", *targetBackendF)
 	}
 
-	if u := *targetURLF; u != "" {
-		client, err := makeClient(ctx, u)
+	if *targetURLF != "" {
+		var err error
+
+		*targetURLF, err = setClientPaths(*targetURLF)
 		if err != nil {
-			zap.S().Fatalf("Failed to connect to target system %s: %s", u, err)
+			zap.S().Fatal(err)
+		}
+
+		client, err := makeClient(ctx, *targetURLF)
+		if err != nil {
+			zap.S().Fatalf("Failed to connect to target system %s: %s", *targetURLF, err)
 		}
 
 		client.Disconnect(ctx)
 
-		zap.S().Infof("Target system: %s (%s).", *targetBackendF, u)
+		zap.S().Infof("Target system: %s (%s).", *targetBackendF, *targetURLF)
 	} else {
 		zap.S().Infof("Target system: %s (built-in).", *targetBackendF)
 	}
 
-	if u := *compatURLF; u != "" {
-		client, err := makeClient(ctx, u)
+	if *compatURLF != "" {
+		var err error
+
+		*compatURLF, err = setClientPaths(*compatURLF)
 		if err != nil {
-			zap.S().Fatalf("Failed to connect to compat system %s: %s", u, err)
+			zap.S().Fatal(err)
+		}
+
+		client, err := makeClient(ctx, *compatURLF)
+		if err != nil {
+			zap.S().Fatalf("Failed to connect to compat system %s: %s", *compatURLF, err)
 		}
 
 		client.Disconnect(ctx)
 
-		zap.S().Infof("Compat system: MongoDB (%s).", u)
+		zap.S().Infof("Compat system: MongoDB (%s).", *compatURLF)
 	} else {
 		zap.S().Infof("Compat system: none, compatibility tests will be skipped.")
 	}

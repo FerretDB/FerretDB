@@ -22,10 +22,11 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
+
+	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
 func TestCommandsAuthenticationLogout(t *testing.T) {
@@ -69,7 +70,7 @@ func TestCommandsAuthenticationLogout(t *testing.T) {
 func TestCommandsAuthenticationLogoutAuthenticatedUser(t *testing.T) {
 	t.Parallel()
 
-	s := setup.SetupWithOpts(t, &setup.SetupOpts{SetupUser: true})
+	s := setup.SetupWithOpts(t, nil)
 	ctx, db := s.Ctx, s.Collection.Database()
 	username, password, mechanism := "testuser", "testpass", "SCRAM-SHA-256"
 
