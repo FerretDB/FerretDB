@@ -33,15 +33,19 @@ import (
 // Config is the configuration for OpenTelemetry.
 type Config struct {
 	Service          string
+	Version          string
 	Endpoint         string
 	TracesSampler    string
 	TracesSamplerArg string
+	BSPDelay         time.Duration
 }
 
 // ShutdownFunc is a function that shuts down the OpenTelemetry observability system.
 type ShutdownFunc func(context.Context) error
 
 // SetupOtel sets up OTLP exporter and tracer provider.
+//
+// The function returns a shutdown function that should be called when the application is shutting down.
 func SetupOtel(config Config) (ShutdownFunc, error) {
 	exporter, err := otlptracehttp.New(
 		context.TODO(),
@@ -71,10 +75,11 @@ func SetupOtel(config Config) (ShutdownFunc, error) {
 	}
 
 	tp := otelsdktrace.NewTracerProvider(
-		otelsdktrace.WithBatcher(exporter, otelsdktrace.WithBatchTimeout(time.Second)),
+		otelsdktrace.WithBatcher(exporter, otelsdktrace.WithBatchTimeout(config.BSPDelay)),
 		otelsdktrace.WithSampler(sampler),
 		otelsdktrace.WithResource(otelsdkresource.NewSchemaless(
-			otelsemconv.ServiceNameKey.String(config.Service),
+			otelsemconv.ServiceNamespace(config.Service),
+			otelsemconv.ServiceVersion(config.Version),
 		)),
 	)
 

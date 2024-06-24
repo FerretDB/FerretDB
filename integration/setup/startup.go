@@ -104,7 +104,12 @@ func Startup() {
 		zap.S().Infof("Compat system: none, compatibility tests will be skipped.")
 	}
 
-	shutdownOtel = observability.SetupOtel("integration")
+	shutdownOtel = must.NotFail(observability.SetupOtel(observability.Config{
+		Service:       "integration-tests",
+		Endpoint:      "http://localhost:4317",
+		TracesSampler: "always_on",
+		BSPDelay:      5 * time.Second,
+	}))
 }
 
 // Shutdown cleans up after all tests.

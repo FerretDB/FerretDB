@@ -26,8 +26,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/FerretDB/FerretDB/internal/util/observability"
-
 	"github.com/alecthomas/kong"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/expfmt"
@@ -45,6 +43,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/password"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/telemetry"
@@ -129,10 +128,11 @@ var cli struct {
 	} `embed:"" prefix:"test-"`
 
 	OTEL struct {
-		Enable           bool   `default:"false" help:"Enable OpenTelemetry."`
-		OTLPEndpoint     string `default:"127.0.0.1:4318" help:"OTLP exporter endpoint."`
-		TracesSampler    string `default:"always_on" help:"Traces sampler settings, see https://opentelemetry.io/docs/languages/sdk-configuration/general/#otel_traces_sampler." enum:"always_on,always_off,traceidratio"`
-		TracesSamplerArg string `default:"" help:"Traces sampler argument for traceidratio strategy."`
+		Enable           bool          `default:"false" help:"Enable OpenTelemetry."`
+		OTLPEndpoint     string        `default:"127.0.0.1:4318" help:"OTLP exporter endpoint."`
+		TracesSampler    string        `default:"always_on" help:"Traces sampler settings." enum:"always_on,always_off,traceidratio"` //nolint:lll // for readability
+		TracesSamplerArg string        `default:"" help:"Traces sampler argument for traceidratio strategy."`
+		BSPScheduleDelay time.Duration `default:"5s" help:"BatchSpanProcessor maximum delay."`
 	} `embed:"" prefix:"otel-"`
 }
 
@@ -324,7 +324,14 @@ func setupTracer() observability.ShutdownFunc {
 		return nil
 	}
 
-	shutdown, err := observability.SetupOtel("ferretdb", cli.OTEL.OTLPEndpoint)
+	shutdown, err := observability.SetupOtel(observability.Config{
+		Service:          "ferretdb",
+		Version:          version.Get().Version,
+		Endpoint:         cli.OTEL.OTLPEndpoint,
+		TracesSampler:    cli.OTEL.TracesSampler,
+		TracesSamplerArg: cli.OTEL.TracesSamplerArg,
+		BSPDelay:         cli.OTEL.BSPScheduleDelay,
+	})
 	if err != nil {
 		log.Fatalf("Failed to set up OpenTelemetry: %s.", err)
 	}
@@ -405,14 +412,17 @@ func run() {
 	logger := setupLogger(stateProvider, cli.Log.Format)
 
 	otelShutdown := setupTracer()
-	defer func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
 
-		if err := otelShutdown(ctx); err != nil {
-			logger.Sugar().Errorf("Failed to shutdown OpenTelemetry: %s.", err)
-		}
-	}()
+	if otelShutdown != nil {
+		defer func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+
+			if err := otelShutdown(ctx); err != nil {
+				logger.Sugar().Errorf("Failed to shutdown OpenTelemetry: %s.", err)
+			}
+		}()
+	}
 
 	checkFlags(logger)
 
