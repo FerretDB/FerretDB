@@ -28,15 +28,13 @@ Ensure you have the following tools installed:
 
 - Kubernetes Cluster (You can set one up locally with [minikube](https://minikube.sigs.k8s.io/))
 - [`kubectl`](https://kubernetes.io/docs/reference/kubectl/)
-- [Helm](https://helm.sh/)
+- [Helm](https://helm.sh/): If you don't have it installed, run the following command to install it:
 
-Run the following command to install Helm:
-
-```sh
-curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-helm repo add stable https://charts.helm.sh/stable
-helm repo update
-```
+  ```sh
+  curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+  helm repo add stable https://charts.helm.sh/stable
+  helm repo update
+  ```
 
 ## Deploy FerretDB and Postgres cluster using CloudNativePG on Kubernetes
 
