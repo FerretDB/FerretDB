@@ -19,6 +19,8 @@ package observability
 
 import (
 	"context"
+	"errors"
+	"strconv"
 	"time"
 
 	"go.opentelemetry.io/otel"
@@ -28,31 +30,51 @@ import (
 	otelsemconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 )
 
+// Config is the configuration for OpenTelemetry.
+type Config struct {
+	Service          string
+	Endpoint         string
+	TracesSampler    string
+	TracesSamplerArg string
+}
+
 // ShutdownFunc is a function that shuts down the OpenTelemetry observability system.
 type ShutdownFunc func(context.Context) error
 
 // SetupOtel sets up OTLP exporter and tracer provider.
-//
-// If endpoint is empty, no exporter is set up.
-func SetupOtel(service string, endpoint string) (ShutdownFunc, error) {
-	if endpoint == "" {
-		return nil, nil
-	}
-
+func SetupOtel(config Config) (ShutdownFunc, error) {
 	exporter, err := otlptracehttp.New(
 		context.TODO(),
-		otlptracehttp.WithEndpoint(endpoint),
+		otlptracehttp.WithEndpoint(config.Endpoint),
 		otlptracehttp.WithInsecure(),
 	)
 	if err != nil {
 		return nil, err
 	}
 
+	var sampler otelsdktrace.Sampler
+	switch config.TracesSampler {
+	case "always_on":
+		sampler = otelsdktrace.AlwaysSample()
+	case "always_off":
+		sampler = otelsdktrace.NeverSample()
+	case "traceidratio":
+		ratio, err := strconv.ParseFloat(config.TracesSamplerArg, 64)
+		if err != nil {
+			return nil, errors.New("unsupported trace ID ratio: " + config.TracesSamplerArg)
+		}
+
+		sampler = otelsdktrace.TraceIDRatioBased(ratio)
+
+	default:
+		return nil, errors.New("unsupported sampler")
+	}
+
 	tp := otelsdktrace.NewTracerProvider(
 		otelsdktrace.WithBatcher(exporter, otelsdktrace.WithBatchTimeout(time.Second)),
-		otelsdktrace.WithSampler(otelsdktrace.AlwaysSample()),
+		otelsdktrace.WithSampler(sampler),
 		otelsdktrace.WithResource(otelsdkresource.NewSchemaless(
-			otelsemconv.ServiceNameKey.String(service),
+			otelsemconv.ServiceNameKey.String(config.Service),
 		)),
 	)
 
