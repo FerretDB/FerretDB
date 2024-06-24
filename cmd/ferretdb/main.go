@@ -26,6 +26,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/FerretDB/FerretDB/internal/util/observability"
+
 	"github.com/alecthomas/kong"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/expfmt"
@@ -125,6 +127,13 @@ var cli struct {
 			Package        string        `default:""                             help:"Telemetry: custom package type."`
 		} `embed:"" prefix:"telemetry-"`
 	} `embed:"" prefix:"test-"`
+
+	OTEL struct {
+		Enable           bool   `default:"false" help:"Enable OpenTelemetry."`
+		OTLPEndpoint     string `default:"127.0.0.1:4318" help:"OTLP exporter endpoint."`
+		TracesSampler    string `default:"always_on" help:"Traces sampler settings, see https://opentelemetry.io/docs/languages/sdk-configuration/general/#otel_traces_sampler." enum:"always_on,always_off,traceidratio"`
+		TracesSamplerArg string `default:"" help:"Traces sampler argument for traceidratio strategy."`
+	} `embed:"" prefix:"otel-"`
 }
 
 // The postgreSQLFlags struct represents flags that are used by the "postgresql" backend.
@@ -309,6 +318,20 @@ func setupLogger(stateProvider *state.Provider, format string) *zap.Logger {
 	return l
 }
 
+// setupTracer sets up OpenTelemetry exporter.
+func setupTracer() observability.ShutdownFunc {
+	if !cli.OTEL.Enable {
+		return nil
+	}
+
+	shutdown, err := observability.SetupOtel("ferretdb", cli.OTEL.OTLPEndpoint)
+	if err != nil {
+		log.Fatalf("Failed to set up OpenTelemetry: %s.", err)
+	}
+
+	return shutdown
+}
+
 // checkFlags checks that CLI flags are not self-contradictory.
 func checkFlags(logger *zap.Logger) {
 	l := logger.Sugar()
@@ -381,7 +404,15 @@ func run() {
 
 	logger := setupLogger(stateProvider, cli.Log.Format)
 
-	// todo setup otel
+	otelShutdown := setupTracer()
+	defer func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		if err := otelShutdown(ctx); err != nil {
+			logger.Sugar().Errorf("Failed to shutdown OpenTelemetry: %s.", err)
+		}
+	}()
 
 	checkFlags(logger)
 

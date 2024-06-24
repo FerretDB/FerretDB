@@ -26,17 +26,27 @@ import (
 	otelsdkresource "go.opentelemetry.io/otel/sdk/resource"
 	otelsdktrace "go.opentelemetry.io/otel/sdk/trace"
 	otelsemconv "go.opentelemetry.io/otel/semconv/v1.21.0"
-
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// SetupOtel sets up OpenTelemetry exporter with fixed values.
-func SetupOtel(service string) func(context.Context) error {
-	exporter := must.NotFail(otlptracehttp.New(
+// ShutdownFunc is a function that shuts down the OpenTelemetry observability system.
+type ShutdownFunc func(context.Context) error
+
+// SetupOtel sets up OTLP exporter and tracer provider.
+//
+// If endpoint is empty, no exporter is set up.
+func SetupOtel(service string, endpoint string) (ShutdownFunc, error) {
+	if endpoint == "" {
+		return nil, nil
+	}
+
+	exporter, err := otlptracehttp.New(
 		context.TODO(),
-		otlptracehttp.WithEndpoint("127.0.0.1:4318"),
+		otlptracehttp.WithEndpoint(endpoint),
 		otlptracehttp.WithInsecure(),
-	))
+	)
+	if err != nil {
+		return nil, err
+	}
 
 	tp := otelsdktrace.NewTracerProvider(
 		otelsdktrace.WithBatcher(exporter, otelsdktrace.WithBatchTimeout(time.Second)),
@@ -48,5 +58,5 @@ func SetupOtel(service string) func(context.Context) error {
 
 	otel.SetTracerProvider(tp)
 
-	return tp.Shutdown
+	return tp.Shutdown, nil
 }
