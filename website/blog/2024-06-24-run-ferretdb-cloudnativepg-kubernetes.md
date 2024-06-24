@@ -285,12 +285,21 @@ ferretdb>
 
 ### Test CRUD commands in `mongosh`
 
-```text
-ferretdb> db.testCollection.insertMany([
-...   { name: "Alice", age: 25, city: "Wonderland" },
-...   { name: "Bob", age: 30, city: "Builderland" },
-...   { name: "Charlie", age: 35, city: "Chocolate Factory" }
-... ]);
+Now that you are connected to the FerretDB instance, let's run some CRUD commands.
+
+Start by creating a collection and inserting some documents:
+
+```js
+db.testCollection.insertMany([
+  { name: 'Alice', age: 25, city: 'Wonderland' },
+  { name: 'Bob', age: 30, city: 'Builderland' },
+  { name: 'Charlie', age: 35, city: 'Chocolate Factory' }
+])
+```
+
+Output:
+
+```json5
 {
   acknowledged: true,
   insertedIds: {
@@ -299,7 +308,17 @@ ferretdb> db.testCollection.insertMany([
     '2': ObjectId('66741445f0f21e98f96badea')
   }
 }
-ferretdb> db.testCollection.updateOne({ name: "Alice" }, { $set: { age: 26 } });
+```
+
+Next let's update a document:
+
+```js
+db.testCollection.updateOne({ name: 'Alice' }, { $set: { age: 26 } })
+```
+
+Output:
+
+```json5
 {
   acknowledged: true,
   insertedId: null,
@@ -307,9 +326,29 @@ ferretdb> db.testCollection.updateOne({ name: "Alice" }, { $set: { age: 26 } });
   modifiedCount: 1,
   upsertedCount: 0
 }
-ferretdb> db.testCollection.deleteMany({ age: { $lt: 35 } });
+```
+
+Delete documents where age is less than 35:
+
+```js
+db.testCollection.deleteMany({ age: { $lt: 35 } })
+```
+
+Output:
+
+```json5
 { acknowledged: true, deletedCount: 2 }
-ferretdb> db.testCollection.countDocuments();
+```
+
+Count the number of documents in the collection:
+
+```js
+db.testCollection.countDocuments()
+```
+
+Output:
+
+```json5
 1
 ```
 
