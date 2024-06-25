@@ -18,7 +18,6 @@ package main
 import (
 	"fmt"
 	"go/ast"
-	"strings"
 
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/singlechecker"
@@ -70,27 +69,27 @@ var orderTypes = map[string]int{
 
 // orderTags is the preferred order of Tags in the switch.
 var orderTags = map[string]int{
-	"tagfloat64":         1,
-	"tagstring":          2,
-	"tagdocument":        3,
-	"tagarray":           4,
-	"tagbinary":          5,
-	"tagundefined":       6,
-	"tagobjectid":        7,
-	"tagbool":            8,
-	"tagtime":            9,
-	"tagnull":            10,
-	"tagregex":           11,
-	"tagdbpointer":       12,
-	"tagjavascript":      13,
-	"tagsymbol":          14,
-	"tagjavascriptscope": 15,
-	"tagint32":           16,
-	"tagtimestamp":       17,
-	"tagint64":           18,
-	"tagdecimal128":      19,
-	"tagminkey":          20,
-	"tagmaxkey":          21,
+	"tagFloat64":         1,
+	"tagString":          2,
+	"tagDocument":        3,
+	"tagArray":           4,
+	"tagBinary":          5,
+	"tagUndefined":       6,
+	"tagObjectID":        7,
+	"tagBool":            8,
+	"tagTime":            9,
+	"tagNull":            10,
+	"tagRegex":           11,
+	"tagDBPointer":       12,
+	"tagJavaScript":      13,
+	"tagSymbol":          14,
+	"tagJavaScriptScope": 15,
+	"tagInt32":           16,
+	"tagTimestamp":       17,
+	"tagInt64":           18,
+	"tagDecimal128":      19,
+	"tagMinKey":          20,
+	"tagMaxKey":          21,
 }
 
 var analyzer = &analysis.Analyzer{
@@ -194,7 +193,7 @@ func run(pass *analysis.Pass) (any, error) {
 					case *ast.Ident:
 						name = firstTypeCase.Name
 					}
-					name = strings.ToLower(name)
+
 					idxSl, ok := orderTags[name]
 					if ok && (idxSl < idx) {
 						pass.Reportf(n.Pos(), "%s should go before %s in the switch", name, lastName)
@@ -222,7 +221,6 @@ func run(pass *analysis.Pass) (any, error) {
 							case *ast.Ident:
 								name = cs.Name
 							}
-							name = strings.ToLower(name)
 							subidxSl, ok := orderTags[name]
 							if ok && (subidxSl < subidx) {
 								pass.Reportf(n.Pos(), "%s should go before %s in the switch", name, sublastName)
