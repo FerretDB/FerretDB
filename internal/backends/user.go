@@ -93,8 +93,6 @@ func MakeCredentials(username string, userPassword password.Password, mechanisms
 		var hash *types.Document
 
 		switch v {
-		case "PLAIN":
-			credentials.Set("PLAIN", must.NotFail(password.PlainHash(userPassword.Password())))
 		case "SCRAM-SHA-1":
 			hash, err = password.SCRAMSHA1Hash(username, userPassword.Password())
 			if err != nil {

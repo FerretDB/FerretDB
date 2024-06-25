@@ -117,7 +117,6 @@ jobs:
         uses: codecov/codecov-action@v4
         with:
           token: 3c5cbd1b-5110-4302-ad5a-080390ca731a
-          version: v0.6.0 # TODO https://github.com/codecov/codecov-cli/issues/460
           files: ./integration/integration-${{ inputs.task }}.txt
           flags: integration,${{ inputs.task }}-${{ inputs.shard_index }},filter-${{ !inputs.disable_pushdown }}
           fail_ci_if_error: true
