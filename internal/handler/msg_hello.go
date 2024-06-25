@@ -73,9 +73,13 @@ func (h *Handler) MsgHello(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		)
 	}
 
-	mechs, err := h.getUserSupportedMechs(ctx, db, username)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
+	mechs := []string{"PLAIN"}
+
+	if h.EnableNewAuth {
+		mechs, err = h.getUserSupportedMechs(ctx, db, username)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 	}
 
 	saslSupportedMechsResp := must.NotFail(types.NewArray())
