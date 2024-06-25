@@ -92,10 +92,8 @@ func resultKey(packageName, testName string) string {
 // runGoTest runs `go test` with given extra args.
 func runGoTest(ctx context.Context, args []string, total int, times bool, logger *zap.SugaredLogger) error {
 	shutdownOtel, err := observability.SetupOtel(observability.Config{
-		Service:       "envtool tests",
-		Endpoint:      "127.0.0.1:4318",
-		TracesSampler: "always_on",
-		BSPDelay:      5 * time.Second, //nolint:mnd // default timeout is enough
+		Service:  "envtool tests",
+		Endpoint: "127.0.0.1:4318",
 	})
 	if err != nil {
 		return lazyerrors.Error(err)

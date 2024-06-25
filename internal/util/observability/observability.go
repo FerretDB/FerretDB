@@ -19,12 +19,9 @@ package observability
 
 import (
 	"context"
-	"errors"
-	"strconv"
 	"time"
 
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	otelsdkresource "go.opentelemetry.io/otel/sdk/resource"
 	otelsdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -33,12 +30,9 @@ import (
 
 // Config is the configuration for OpenTelemetry.
 type Config struct {
-	Service          string
-	Version          string
-	Endpoint         string
-	TracesSampler    string
-	TracesSamplerArg string
-	BSPDelay         time.Duration
+	Service  string
+	Version  string
+	Endpoint string
 }
 
 // ShutdownFunc is a function that shuts down the OpenTelemetry observability system.
@@ -48,40 +42,21 @@ type ShutdownFunc func(context.Context) error
 //
 // The function returns a shutdown function that should be called when the application is shutting down.
 func SetupOtel(config Config) (ShutdownFunc, error) {
-	var err error
-	var exporter *otlptrace.Exporter
-
-	if exporter, err = otlptracehttp.New(
+	exporter, err := otlptracehttp.New(
 		context.TODO(),
 		otlptracehttp.WithEndpoint(config.Endpoint),
 		otlptracehttp.WithInsecure(),
-	); err != nil {
+	)
+	if err != nil {
 		return nil, err
 	}
 
-	var sampler otelsdktrace.Sampler
-
-	switch config.TracesSampler {
-	case "always_on":
-		sampler = otelsdktrace.AlwaysSample()
-	case "always_off":
-		sampler = otelsdktrace.NeverSample()
-	case "traceidratio":
-		var ratio float64
-
-		if ratio, err = strconv.ParseFloat(config.TracesSamplerArg, 64); err != nil {
-			return nil, errors.New("unsupported trace ID ratio: " + config.TracesSamplerArg)
-		}
-
-		sampler = otelsdktrace.TraceIDRatioBased(ratio)
-
-	default:
-		return nil, errors.New("unsupported sampler")
-	}
-
+	// Tracer is configured with the particular params on purpose.
+	// We don't want to let them being set through OTEL_* environment variables,
+	// but we set them explicitly.
 	tp := otelsdktrace.NewTracerProvider(
-		otelsdktrace.WithBatcher(exporter, otelsdktrace.WithBatchTimeout(config.BSPDelay)),
-		otelsdktrace.WithSampler(sampler),
+		otelsdktrace.WithBatcher(exporter, otelsdktrace.WithBatchTimeout(time.Second)),
+		otelsdktrace.WithSampler(otelsdktrace.AlwaysSample()),
 		otelsdktrace.WithResource(otelsdkresource.NewSchemaless(
 			otelsemconv.ServiceName(config.Service),
 			otelsemconv.ServiceVersion(config.Version),

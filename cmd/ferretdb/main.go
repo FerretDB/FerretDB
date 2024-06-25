@@ -125,15 +125,9 @@ var cli struct {
 			ReportTimeout  time.Duration `default:"5s"                           help:"Telemetry: report timeout."`
 			Package        string        `default:""                             help:"Telemetry: custom package type."`
 		} `embed:"" prefix:"telemetry-"`
-	} `embed:"" prefix:"test-"`
 
-	OTEL struct {
-		OTLPEndpoint     string        `default:"127.0.0.1:4318" help:"OTLP exporter endpoint."`
-		TracesSampler    string        `default:"always_on"      help:"Traces sampler settings."                           enum:"always_on,always_off,traceidratio"` //nolint:lll // for readability
-		TracesSamplerArg string        `default:""               help:"Traces sampler argument for traceidratio strategy."`
-		BSPScheduleDelay time.Duration `default:"5s"             help:"BatchSpanProcessor maximum delay."`
-		Enable           bool          `default:"false"          help:"Enable OpenTelemetry."`
-	} `embed:"" prefix:"otel-"`
+		OTLPEndpoint string `default:"" help:"OTLP exporter endpoint, if unset, OpenTelemetry is disabled."`
+	} `embed:"" prefix:"test-"`
 }
 
 // The postgreSQLFlags struct represents flags that are used by the "postgresql" backend.
@@ -320,17 +314,14 @@ func setupLogger(stateProvider *state.Provider, format string) *zap.Logger {
 
 // setupTracer sets up OpenTelemetry exporter.
 func setupTracer() observability.ShutdownFunc {
-	if !cli.OTEL.Enable {
+	if cli.Test.OTLPEndpoint == "" {
 		return nil
 	}
 
 	shutdown, err := observability.SetupOtel(observability.Config{
-		Service:          "ferretdb",
-		Version:          version.Get().Version,
-		Endpoint:         cli.OTEL.OTLPEndpoint,
-		TracesSampler:    cli.OTEL.TracesSampler,
-		TracesSamplerArg: cli.OTEL.TracesSamplerArg,
-		BSPDelay:         cli.OTEL.BSPScheduleDelay,
+		Service:  "ferretdb",
+		Version:  version.Get().Version,
+		Endpoint: cli.Test.OTLPEndpoint,
 	})
 	if err != nil {
 		log.Fatalf("Failed to set up OpenTelemetry: %s.", err)
