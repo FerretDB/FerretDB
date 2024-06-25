@@ -93,7 +93,7 @@ func resultKey(packageName, testName string) string {
 func runGoTest(ctx context.Context, args []string, total int, times bool, logger *zap.SugaredLogger) error {
 	shutdownOtel, err := observability.SetupOtel(observability.Config{
 		Service:       "envtool tests",
-		Endpoint:      "http://localhost:4317",
+		Endpoint:      "127.0.0.1:4318",
 		TracesSampler: "always_on",
 		BSPDelay:      5 * time.Second,
 	})

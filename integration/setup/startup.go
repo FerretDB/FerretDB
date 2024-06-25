@@ -106,7 +106,7 @@ func Startup() {
 
 	shutdownOtel = must.NotFail(observability.SetupOtel(observability.Config{
 		Service:       "integration-tests",
-		Endpoint:      "http://localhost:4317",
+		Endpoint:      "127.0.0.1:4318",
 		TracesSampler: "always_on",
 		BSPDelay:      5 * time.Second,
 	}))

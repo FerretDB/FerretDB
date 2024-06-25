@@ -78,7 +78,7 @@ func SetupOtel(config Config) (ShutdownFunc, error) {
 		otelsdktrace.WithBatcher(exporter, otelsdktrace.WithBatchTimeout(config.BSPDelay)),
 		otelsdktrace.WithSampler(sampler),
 		otelsdktrace.WithResource(otelsdkresource.NewSchemaless(
-			otelsemconv.ServiceNamespace(config.Service),
+			otelsemconv.ServiceName(config.Service),
 			otelsemconv.ServiceVersion(config.Version),
 		)),
 	)
