@@ -74,8 +74,6 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 			return wire.NewOpReply(must.NotFail(reply.Encode()))
 		}
 
-		s.SetCommandParams(dbName, "", authDoc)
-
 		speculativeAuthenticate, err := h.saslStart(ctx, dbName, authDoc)
 		if err != nil {
 			h.SLOG.DebugContext(ctx, "Speculative authentication failed", logging.Error(err))
