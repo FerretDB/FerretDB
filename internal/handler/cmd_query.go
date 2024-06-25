@@ -19,10 +19,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/FerretDB/FerretDB/internal/handler/common"
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
-	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
@@ -33,60 +33,69 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 	cmd := q.Command()
 	collection := query.FullCollectionName
 
-	v, _ := q.Get("speculativeAuthenticate")
-	if v != nil && (cmd == "ismaster" || cmd == "isMaster") {
-		reply, err := common.IsMaster(ctx, q, h.TCPHost, h.ReplSetName, h.MaxBsonObjectSizeBytes)
+	if !strings.HasSuffix(collection, ".$cmd") {
+		return wire.NewOpReply(must.NotFail(bson.NewDocument(
+			"$err", "OP_QUERY is no longer supported. The client driver may require an upgrade.",
+			"code", int32(handlererrors.ErrOpQueryCollectionSuffixMissing),
+			"ok", float64(0),
+		)))
+	}
+
+	switch cmd {
+	case "hello", "ismaster", "isMaster":
+		reply, err := h.hello(ctx, q, h.TCPHost, h.ReplSetName)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
-		replyDoc := must.NotFail(reply.Document())
+		v := q.Get("speculativeAuthenticate")
+		if v == nil {
+			return wire.NewOpReply(must.NotFail(reply.Encode()))
+		}
 
-		document := v.(*types.Document)
+		docV, ok := v.(bson.AnyDocument)
+		if !ok {
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrTypeMismatch,
+				fmt.Sprintf("speculativeAuthenticate type wrong; expected: document; got: %T", v),
+				"OpQuery: "+q.Command(),
+			)
+		}
 
-		dbName, err := common.GetRequiredParam[string](document, "db")
+		authDoc, err := docV.Decode()
 		if err != nil {
-			reply.SetDocument(replyDoc)
-
-			return reply, nil
+			return nil, lazyerrors.Error(err)
 		}
 
-		doc, err := h.saslStart(ctx, dbName, document)
-		if err == nil {
-			// speculative authenticate response field is only set if the authentication is successful,
-			// for an unsuccessful authentication, saslStart will return an error
-			replyDoc.Set("speculativeAuthenticate", doc)
+		dbName, err := getRequiredParam[string](authDoc, "db")
+		if err != nil {
+			h.SLOG.DebugContext(ctx, "No `db` in `speculativeAuthenticate`", logging.Error(err))
+
+			return wire.NewOpReply(must.NotFail(reply.Encode()))
 		}
 
-		reply.SetDocument(replyDoc)
+		s.SetCommandParams(dbName, "", authDoc)
 
-		return reply, nil
-	}
+		speculativeAuthenticate, err := h.saslStart(ctx, dbName, authDoc)
+		if err != nil {
+			h.SLOG.DebugContext(ctx, "Speculative authentication failed", logging.Error(err))
 
-	if (cmd == "ismaster" || cmd == "isMaster") && strings.HasSuffix(collection, ".$cmd") {
-		return common.IsMaster(ctx, query.Query(), h.TCPHost, h.ReplSetName, h.MaxBsonObjectSizeBytes)
-	}
+			// unsuccessful speculative authentication leave `speculativeAuthenticate` field unset
+			// and let `saslStart` return an error
+			return wire.NewOpReply(must.NotFail(reply.Encode()))
+		}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3008
+		must.NoError(reply.Add("speculativeAuthenticate", speculativeAuthenticate))
 
-	// database name typically is either "$external" or "admin"
+		// saslSupportedMechs is used by the client as default mechanisms if `mechanisms` is unset
+		must.NoError(reply.Add("saslSupportedMechs", must.NotFail(bson.NewArray("SCRAM-SHA-1", "SCRAM-SHA-256"))))
 
-	if cmd == "saslStart" && strings.HasSuffix(collection, ".$cmd") {
-		var emptyPayload types.Binary
-		var reply wire.OpReply
-		reply.SetDocument(must.NotFail(types.NewDocument(
-			"conversationId", int32(1),
-			"done", true,
-			"payload", emptyPayload,
-			"ok", float64(1),
-		)))
-
-		return &reply, nil
+		return wire.NewOpReply(must.NotFail(reply.Encode()))
 	}
 
 	return nil, handlererrors.NewCommandErrorMsgWithArgument(
-		handlererrors.ErrNotImplemented,
-		fmt.Sprintf("CmdQuery: unhandled command %q for collection %q", cmd, collection),
+		handlererrors.ErrUnsupportedOpQueryCommand,
+		fmt.Sprintf("Unsupported OP_QUERY command: %s. The client driver may require an upgrade.", cmd),
 		"OpQuery: "+cmd,
 	)
 }
