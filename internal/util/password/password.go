@@ -33,3 +33,8 @@ func WrapPassword(password string) Password {
 func (p Password) Password() string {
 	return p.p
 }
+
+// Empty return true if password in an empty string.
+func (p Password) Empty() bool {
+	return p.p == ""
+}
