@@ -108,7 +108,7 @@ func Startup() {
 		Service:       "integration-tests",
 		Endpoint:      "127.0.0.1:4318",
 		TracesSampler: "always_on",
-		BSPDelay:      5 * time.Second,
+		BSPDelay:      5 * time.Second, //nolint:mnd // default timeout is enough
 	}))
 }
 
