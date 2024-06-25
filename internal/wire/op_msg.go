@@ -48,9 +48,14 @@ type OpMsg struct {
 }
 
 // NewOpMsg creates a message with a single section of kind 0 with a single raw document.
-func NewOpMsg(raw bson.RawDocument) (*OpMsg, error) {
+func NewOpMsg(doc bson.AnyDocument) (*OpMsg, error) {
+	raw, err := doc.Encode()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	var msg OpMsg
-	if err := msg.SetSections(opMsgSection{documents: []bson.RawDocument{raw}}); err != nil {
+	if err = msg.SetSections(opMsgSection{documents: []bson.RawDocument{raw}}); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
@@ -375,7 +380,7 @@ func (msg *OpMsg) MarshalBinary() ([]byte, error) {
 }
 
 // logMessage returns a string representation for logging.
-func (msg *OpMsg) logMessage(block bool) string {
+func (msg *OpMsg) logMessage(logFunc func(v any) string) string {
 	if msg == nil {
 		return "<nil>"
 	}
@@ -424,21 +429,22 @@ func (msg *OpMsg) logMessage(block bool) string {
 
 	must.NoError(m.Add("Sections", sections))
 
-	if block {
-		return bson.LogMessageBlock(m)
-	}
-
-	return bson.LogMessage(m)
+	return logFunc(m)
 }
 
 // String returns a string representation for logging.
 func (msg *OpMsg) String() string {
-	return msg.logMessage(false)
+	return msg.logMessage(bson.LogMessage)
 }
 
 // StringBlock returns an indented string representation for logging.
 func (msg *OpMsg) StringBlock() string {
-	return msg.logMessage(true)
+	return msg.logMessage(bson.LogMessageBlock)
+}
+
+// StringFlow returns an unindented string representation for logging.
+func (msg *OpMsg) StringFlow() string {
+	return msg.logMessage(bson.LogMessageFlow)
 }
 
 // check interfaces
