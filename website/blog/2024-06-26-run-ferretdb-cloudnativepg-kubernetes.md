@@ -158,6 +158,7 @@ Now that Postgres cluster has been deployed, let's set up and deploy FerretDB wi
 Create another `yaml` file named "ferretdeployment.yaml" for the FerretDB deployment.
 
 FerretDB will connect to the Postgres cluster using the `FERRETDB_POSTGRESQL_URL` environment variable.
+The `FERRETDB_POSTGRESQL_URL` environment variable is set without a password to avoid exposing it in the `yaml` file while still ensuring authenticated connections.
 
 ```yaml
 apiVersion: apps/v1
@@ -391,11 +392,22 @@ ferretdb=> select * from testcollection_c141f891;
 
 ## Clean up resources
 
+To clean up the resources created in the `cnpg` namespace, run the following command:
+
 ```sh
 kubectl delete namespace cnpg
+```
+
+When you are done with the FerretDB and PostgreSQL cluster resources, you can delete the entire cluster.
+This will depend on how your Kubernetes cluster is set up.
+For example, if you used minikube, you can delete the cluster with the following commands:
+
+```sh
 minikube stop
 minikube delete
 ```
+
+Note that this will delete all resources in the cluster.
 
 ## Additional resources
 
