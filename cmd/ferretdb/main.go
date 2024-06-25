@@ -406,7 +406,7 @@ func run() {
 
 	if otelShutdown != nil {
 		defer func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second) //nolint:mnd // default timeout is enough
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second) //nolint:mnd // simple shutdown timeout
 			defer cancel()
 
 			if err := otelShutdown(ctx); err != nil {
