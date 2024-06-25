@@ -20,6 +20,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -90,23 +91,30 @@ func MakeCredentials(username string, userPassword password.Password, mechanisms
 			return nil, lazyerrors.Error(err)
 		}
 
-		var hash *types.Document
+		var hash *bson.Document
+		var hashDoc *types.Document
 
 		switch v {
 		case "SCRAM-SHA-1":
-			hash, err = password.SCRAMSHA1Hash(username, userPassword.Password())
-			if err != nil {
+			if hash, err = password.SCRAMSHA1VariationHash(username, userPassword); err != nil {
 				return nil, err
 			}
 
-			credentials.Set("SCRAM-SHA-1", hash)
+			if hashDoc, err = hash.Convert(); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
+			credentials.Set("SCRAM-SHA-1", hashDoc)
 		case "SCRAM-SHA-256":
-			hash, err = password.SCRAMSHA256Hash(userPassword.Password())
-			if err != nil {
+			if hash, err = password.SCRAMSHA256Hash(userPassword); err != nil {
 				return nil, err
 			}
 
-			credentials.Set("SCRAM-SHA-256", hash)
+			if hashDoc, err = hash.Convert(); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
+			credentials.Set("SCRAM-SHA-256", hashDoc)
 		default:
 			panic("unknown mechanism")
 		}

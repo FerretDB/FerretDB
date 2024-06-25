@@ -18,6 +18,8 @@ package password
 // Password wraps a password string.
 //
 // It exist mainly to avoid issues when multiple string parameters are used.
+//
+// It should be passed by value.
 type Password struct {
 	p string
 }
