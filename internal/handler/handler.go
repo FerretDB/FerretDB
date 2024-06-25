@@ -30,6 +30,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
+	"github.com/FerretDB/FerretDB/internal/handler/users"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -211,7 +212,7 @@ func (h *Handler) setup() error {
 		return err
 	}
 
-	return backends.CreateUser(ctx, h.b, &backends.CreateUserParams{
+	return users.CreateUser(ctx, h.b, &users.CreateUserParams{
 		Database: h.SetupDatabase,
 		Username: h.SetupUsername,
 		Password: h.SetupPassword,
