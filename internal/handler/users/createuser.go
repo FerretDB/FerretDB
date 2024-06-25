@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package backends
+package users
 
 import (
 	"context"
@@ -20,6 +20,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -39,7 +40,7 @@ type CreateUserParams struct {
 }
 
 // CreateUser stores a new user in the given backend.
-func CreateUser(ctx context.Context, b Backend, params *CreateUserParams) error {
+func CreateUser(ctx context.Context, b backends.Backend, params *CreateUserParams) error {
 	must.NotBeZero(params)
 
 	credentials, err := MakeCredentials(params.Username, params.Password, params.Mechanisms)
@@ -60,7 +61,7 @@ func CreateUser(ctx context.Context, b Backend, params *CreateUserParams) error 
 	db := must.NotFail(b.Database("admin"))
 	coll := must.NotFail(db.Collection("system.users"))
 
-	_, err = coll.InsertAll(ctx, &InsertAllParams{
+	_, err = coll.InsertAll(ctx, &backends.InsertAllParams{
 		Docs: []*types.Document{saved},
 	})
 

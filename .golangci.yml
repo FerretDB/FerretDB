@@ -34,6 +34,7 @@ linters-settings:
           - "!**/internal/backends/user.go"
           - "!**/internal/bson/*_test.go"
           - "!**/internal/driver/*.go"
+          - "!**/internal/handler/users/*.go"
           - "!**/internal/util/password/*.go"
           - "!**/internal/util/testutil/*.go"
           - "!**/internal/wire/*.go"
