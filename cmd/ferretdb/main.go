@@ -128,11 +128,11 @@ var cli struct {
 	} `embed:"" prefix:"test-"`
 
 	OTEL struct {
-		Enable           bool          `default:"false"          help:"Enable OpenTelemetry."`
 		OTLPEndpoint     string        `default:"127.0.0.1:4318" help:"OTLP exporter endpoint."`
 		TracesSampler    string        `default:"always_on"      help:"Traces sampler settings."                           enum:"always_on,always_off,traceidratio"` //nolint:lll // for readability
 		TracesSamplerArg string        `default:""               help:"Traces sampler argument for traceidratio strategy."`
 		BSPScheduleDelay time.Duration `default:"5s"             help:"BatchSpanProcessor maximum delay."`
+		Enable           bool          `default:"false"          help:"Enable OpenTelemetry."`
 	} `embed:"" prefix:"otel-"`
 }
 
@@ -415,7 +415,7 @@ func run() {
 
 	if otelShutdown != nil {
 		defer func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second) //nolint:mnd // default timeout is enough
 			defer cancel()
 
 			if err := otelShutdown(ctx); err != nil {

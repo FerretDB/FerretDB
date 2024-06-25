@@ -95,7 +95,7 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 		Service:       "envtool tests",
 		Endpoint:      "127.0.0.1:4318",
 		TracesSampler: "always_on",
-		BSPDelay:      5 * time.Second,
+		BSPDelay:      5 * time.Second, //nolint:mnd // default timeout is enough
 	})
 	if err != nil {
 		return lazyerrors.Error(err)

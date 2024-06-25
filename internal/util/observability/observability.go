@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	otelsdkresource "go.opentelemetry.io/otel/sdk/resource"
 	otelsdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -47,24 +48,28 @@ type ShutdownFunc func(context.Context) error
 //
 // The function returns a shutdown function that should be called when the application is shutting down.
 func SetupOtel(config Config) (ShutdownFunc, error) {
-	exporter, err := otlptracehttp.New(
+	var err error
+	var exporter *otlptrace.Exporter
+
+	if exporter, err = otlptracehttp.New(
 		context.TODO(),
 		otlptracehttp.WithEndpoint(config.Endpoint),
 		otlptracehttp.WithInsecure(),
-	)
-	if err != nil {
+	); err != nil {
 		return nil, err
 	}
 
 	var sampler otelsdktrace.Sampler
+
 	switch config.TracesSampler {
 	case "always_on":
 		sampler = otelsdktrace.AlwaysSample()
 	case "always_off":
 		sampler = otelsdktrace.NeverSample()
 	case "traceidratio":
-		ratio, err := strconv.ParseFloat(config.TracesSamplerArg, 64)
-		if err != nil {
+		var ratio float64
+
+		if ratio, err = strconv.ParseFloat(config.TracesSamplerArg, 64); err != nil {
 			return nil, errors.New("unsupported trace ID ratio: " + config.TracesSamplerArg)
 		}
 
