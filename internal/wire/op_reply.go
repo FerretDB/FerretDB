@@ -37,6 +37,16 @@ type OpReply struct {
 	StartingFrom int32
 }
 
+// NewOpReply creates a new OpReply message.
+func NewOpReply(doc bson.AnyDocument) (*OpReply, error) {
+	raw, err := doc.Encode()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &OpReply{document: raw}, nil
+}
+
 func (reply *OpReply) msgbody() {}
 
 // check implements [MsgBody] interface.
@@ -123,7 +133,7 @@ func (reply *OpReply) SetDocument(doc *types.Document) {
 }
 
 // logMessage returns a string representation for logging.
-func (reply *OpReply) logMessage(block bool) string {
+func (reply *OpReply) logMessage(logFunc func(v any) string) string {
 	if reply == nil {
 		return "<nil>"
 	}
@@ -147,21 +157,22 @@ func (reply *OpReply) logMessage(block bool) string {
 		}
 	}
 
-	if block {
-		return bson.LogMessageBlock(m)
-	}
-
-	return bson.LogMessage(m)
+	return logFunc(m)
 }
 
 // String returns a string representation for logging.
 func (reply *OpReply) String() string {
-	return reply.logMessage(false)
+	return reply.logMessage(bson.LogMessage)
 }
 
 // StringBlock returns an indented string representation for logging.
 func (reply *OpReply) StringBlock() string {
-	return reply.logMessage(true)
+	return reply.logMessage(bson.LogMessageBlock)
+}
+
+// StringFlow returns an unindented string representation for logging.
+func (reply *OpReply) StringFlow() string {
+	return reply.logMessage(bson.LogMessageFlow)
 }
 
 // check interfaces

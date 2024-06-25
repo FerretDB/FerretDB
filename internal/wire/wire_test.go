@@ -120,6 +120,7 @@ func testMessages(t *testing.T, testCases []testCase) {
 				assert.NotEmpty(t, msgHeader.String())
 				assert.Equal(t, testutil.Unindent(t, tc.m), msgBody.String())
 				assert.NotEmpty(t, msgBody.StringBlock())
+				assert.NotEmpty(t, msgBody.StringFlow())
 
 				require.NoError(t, msgBody.check())
 
