@@ -67,7 +67,7 @@ type Handler struct {
 	b backends.Backend
 
 	cursors  *cursor.Registry
-	commands map[string]command
+	commands map[string]*command
 	wg       sync.WaitGroup
 
 	cappedCleanupStop             chan struct{}
