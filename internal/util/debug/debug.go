@@ -67,7 +67,7 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 		Subsystem: subsystem,
 		Name:      "requests_total",
 		Help:      "Total number of debug handler requests.",
-	}, []string{"handler", "code", "method"})
+	}, []string{"handler", "code"})
 
 	must.NoError(r.Register(counter))
 
