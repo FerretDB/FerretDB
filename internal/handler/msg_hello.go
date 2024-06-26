@@ -94,9 +94,13 @@ func (h *Handler) hello(ctx context.Context, spec bson.AnyDocument, tcpHost, nam
 			)
 		}
 
-		resSupportedMechs, err = h.getUserSupportedMechs(ctx, db, username)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
+		resSupportedMechs = must.NotFail(bson.NewArray("PLAIN"))
+
+		if h.EnableNewAuth {
+			resSupportedMechs, err = h.getUserSupportedMechs(ctx, db, username)
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
 		}
 	}
 
@@ -112,7 +116,7 @@ func (h *Handler) hello(ctx context.Context, spec bson.AnyDocument, tcpHost, nam
 		must.NoError(res.Add("hosts", must.NotFail(bson.NewArray(tcpHost))))
 	}
 
-	must.NoError(res.Add("maxBsonObjectSize", int32(types.MaxDocumentLen)))
+	must.NoError(res.Add("maxBsonObjectSize", int32(h.MaxBsonObjectSizeBytes)))
 	must.NoError(res.Add("maxMessageSizeBytes", int32(wire.MaxMsgLen)))
 	must.NoError(res.Add("maxWriteBatchSize", int32(100000)))
 	must.NoError(res.Add("localTime", time.Now()))
