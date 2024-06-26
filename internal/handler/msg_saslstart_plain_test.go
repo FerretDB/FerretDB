@@ -20,8 +20,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
-	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -34,7 +34,7 @@ func TestSaslStartPlain(t *testing.T) {
 	validPayload := []byte("authzid\x00admin\x00pass")
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
-		doc *types.Document
+		doc *bson.Document
 
 		// expected results
 		username string
@@ -42,7 +42,7 @@ func TestSaslStartPlain(t *testing.T) {
 		err      error
 	}{
 		"emptyPayload": {
-			doc: types.MakeDocument(0),
+			doc: bson.MakeDocument(0),
 			err: handlererrors.NewCommandErrorMsgWithArgument(
 				handlererrors.ErrBadValue,
 				`required parameter "payload" is missing`,
@@ -50,15 +50,15 @@ func TestSaslStartPlain(t *testing.T) {
 			),
 		},
 		"wrongTypePayload": {
-			doc: must.NotFail(types.NewDocument("payload", int32(42))),
+			doc: must.NotFail(bson.NewDocument("payload", int32(42))),
 			err: handlererrors.NewCommandErrorMsgWithArgument(
 				handlererrors.ErrBadValue,
-				`required parameter "payload" has type int32 (expected types.Binary)`,
+				`required parameter "payload" has type int32 (expected bsonproto.Binary)`,
 				"payload",
 			),
 		},
 		"stringPayloadInvalid": {
-			doc: must.NotFail(types.NewDocument("payload", "ABC")),
+			doc: must.NotFail(bson.NewDocument("payload", "ABC")),
 			err: handlererrors.NewCommandErrorMsgWithArgument(
 				handlererrors.ErrBadValue,
 				"Invalid payload: illegal base64 data at input byte 0",
@@ -66,7 +66,7 @@ func TestSaslStartPlain(t *testing.T) {
 			),
 		},
 		"binaryPayloadInvalid": {
-			doc: must.NotFail(types.NewDocument("payload", types.Binary{B: []byte("ABC")})),
+			doc: must.NotFail(bson.NewDocument("payload", bson.Binary{B: []byte("ABC")})),
 			err: handlererrors.NewCommandErrorMsgWithArgument(
 				handlererrors.ErrTypeMismatch,
 				"Invalid payload: expected 3 fields, got 1",
@@ -74,13 +74,13 @@ func TestSaslStartPlain(t *testing.T) {
 			),
 		},
 		"stringPayload": {
-			doc:      must.NotFail(types.NewDocument("payload", base64.StdEncoding.EncodeToString(validPayload))),
+			doc:      must.NotFail(bson.NewDocument("payload", base64.StdEncoding.EncodeToString(validPayload))),
 			username: "admin",
 			password: "pass",
 			err:      nil,
 		},
 		"binaryPayload": {
-			doc:      must.NotFail(types.NewDocument("payload", types.Binary{B: validPayload})),
+			doc:      must.NotFail(bson.NewDocument("payload", bson.Binary{B: validPayload})),
 			username: "admin",
 			password: "pass",
 			err:      nil,
@@ -88,7 +88,13 @@ func TestSaslStartPlain(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			username, password, err := saslStartPlain(tc.doc)
-			assert.Equal(t, tc.err, err)
+
+			if tc.err != nil {
+				var tErr *handlererrors.CommandError
+				assert.ErrorAs(t, err, &tErr)
+				assert.Equal(t, tc.err, tErr)
+			}
+
 			assert.Equal(t, tc.username, username)
 			assert.Equal(t, tc.password, password)
 		})
