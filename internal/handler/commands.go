@@ -17,6 +17,10 @@ package handler
 import (
 	"context"
 
+	"go.uber.org/zap"
+
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -276,9 +280,9 @@ func (h *Handler) initCommands() {
 	}
 
 	for name, cmd := range h.commands {
-		if !cmd.anonymous {
+		if h.EnableNewAuth && !cmd.anonymous {
 			h.commands[name].Handler = func(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-				if err := h.checkAuthentication(ctx); err != nil {
+				if err := checkSCRAMConversation(ctx, h.L); err != nil {
 					return nil, err
 				}
 
@@ -286,6 +290,36 @@ func (h *Handler) initCommands() {
 			}
 		}
 	}
+}
+
+// checkSCRAMConversation returns error if SCRAM conversation is not valid.
+func checkSCRAMConversation(ctx context.Context, l *zap.Logger) error {
+	_, _, conv := conninfo.Get(ctx).Auth()
+
+	switch {
+	case conv == nil:
+		l.Warn("checkSCRAMConversation: no conversation")
+
+	case !conv.Valid():
+		l.Warn(
+			"checkSCRAMConversation: invalid conversation",
+			zap.String("username", conv.Username()), zap.Bool("valid", conv.Valid()), zap.Bool("done", conv.Done()),
+		)
+
+	default:
+		l.Debug(
+			"checkSCRAMConversation: passed",
+			zap.String("username", conv.Username()), zap.Bool("valid", conv.Valid()), zap.Bool("done", conv.Done()),
+		)
+
+		return nil
+	}
+
+	return handlererrors.NewCommandErrorMsgWithArgument(
+		handlererrors.ErrAuthenticationFailed,
+		"Authentication failed.",
+		"checkSCRAMConversation",
+	)
 }
 
 // Commands returns a map of enabled commands.

@@ -49,9 +49,10 @@ func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	if conv == nil {
 		h.L.Warn("saslContinue: no conversation to continue")
 
-		return nil, handlererrors.NewCommandErrorMsg(
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
 			handlererrors.ErrAuthenticationFailed,
 			"Authentication failed.",
+			"saslContinue",
 		)
 	}
 
@@ -64,9 +65,10 @@ func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.O
 
 		h.L.Warn("saslContinue step failed", fields...)
 
-		return nil, handlererrors.NewCommandErrorMsg(
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
 			handlererrors.ErrAuthenticationFailed,
 			"Authentication failed.",
+			"saslContinue",
 		)
 	}
 
