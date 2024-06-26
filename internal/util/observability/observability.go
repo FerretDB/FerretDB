@@ -42,6 +42,9 @@ type ShutdownFunc func(context.Context) error
 //
 // The function returns a shutdown function that should be called when the application is shutting down.
 func SetupOtel(config Config) (ShutdownFunc, error) {
+	// Exporter and tracer are configured with the particular params on purpose.
+	// We don't want to let them being set through OTEL_* environment variables,
+	// but we set them explicitly.
 	exporter, err := otlptracehttp.New(
 		context.TODO(),
 		otlptracehttp.WithEndpoint(config.Endpoint),
@@ -51,9 +54,6 @@ func SetupOtel(config Config) (ShutdownFunc, error) {
 		return nil, err
 	}
 
-	// Tracer is configured with the particular params on purpose.
-	// We don't want to let them being set through OTEL_* environment variables,
-	// but we set them explicitly.
 	tp := otelsdktrace.NewTracerProvider(
 		otelsdktrace.WithBatcher(exporter, otelsdktrace.WithBatchTimeout(time.Second)),
 		otelsdktrace.WithSampler(otelsdktrace.AlwaysSample()),

@@ -118,6 +118,8 @@ var cli struct {
 		BatchSize            int `default:"100" help:"Experimental: maximum insertion batch size."`
 		MaxBsonObjectSizeMiB int `default:"16"  help:"Experimental: maximum BSON object size in MiB."`
 
+		OTLPEndpoint string `default:"" help:"Experimental: OTLP exporter endpoint, if unset, OpenTelemetry is disabled."`
+
 		Telemetry struct {
 			URL            string        `default:"https://beacon.ferretdb.com/" help:"Telemetry: reporting URL."`
 			UndecidedDelay time.Duration `default:"1h"                           help:"Telemetry: delay for undecided state."`
@@ -125,8 +127,6 @@ var cli struct {
 			ReportTimeout  time.Duration `default:"5s"                           help:"Telemetry: report timeout."`
 			Package        string        `default:""                             help:"Telemetry: custom package type."`
 		} `embed:"" prefix:"telemetry-"`
-
-		OTLPEndpoint string `default:"" help:"OTLP exporter endpoint, if unset, OpenTelemetry is disabled."`
 	} `embed:"" prefix:"test-"`
 }
 
@@ -312,11 +312,13 @@ func setupLogger(stateProvider *state.Provider, format string) *zap.Logger {
 	return l
 }
 
-// setupTracer sets up OpenTelemetry exporter.
-func setupTracer() observability.ShutdownFunc {
+// setupTracer sets up OpenTelemetry tracer.
+func setupTracer(logger *zap.Logger) observability.ShutdownFunc {
 	if cli.Test.OTLPEndpoint == "" {
 		return nil
 	}
+
+	l := logger.Sugar()
 
 	shutdown, err := observability.SetupOtel(observability.Config{
 		Service:  "ferretdb",
@@ -324,8 +326,10 @@ func setupTracer() observability.ShutdownFunc {
 		Endpoint: cli.Test.OTLPEndpoint,
 	})
 	if err != nil {
-		log.Fatalf("Failed to set up OpenTelemetry: %s.", err)
+		l.Fatalf("Failed to set up OpenTelemetry: %s.", err)
 	}
+
+	l.Infof("OpenTelemetry is enabled. OTLP exporter endpoint: %s.", cli.Test.OTLPEndpoint)
 
 	return shutdown
 }
@@ -402,19 +406,6 @@ func run() {
 
 	logger := setupLogger(stateProvider, cli.Log.Format)
 
-	otelShutdown := setupTracer()
-
-	if otelShutdown != nil {
-		defer func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second) //nolint:mnd // simple shutdown timeout
-			defer cancel()
-
-			if err := otelShutdown(ctx); err != nil {
-				logger.Sugar().Errorf("Failed to shutdown OpenTelemetry: %s.", err)
-			}
-		}()
-	}
-
 	checkFlags(logger)
 
 	if _, err := maxprocs.Set(maxprocs.Logger(logger.Sugar().Debugf)); err != nil {
@@ -428,6 +419,20 @@ func run() {
 		logger.Info("Stopping...")
 		stop()
 	}()
+
+	otelShutdown := setupTracer(logger)
+
+	if otelShutdown != nil {
+		defer func() {
+			shutdownCtx, shutdownCancel := ctxutil.WithDelay(ctx.Done(), 3*time.Second) //nolint:mnd // simple shutdown timeout
+
+			if err := otelShutdown(shutdownCtx); err != nil {
+				logger.Sugar().Errorf("Failed to shutdown OpenTelemetry: %s.", err)
+			}
+
+			shutdownCancel()
+		}()
+	}
 
 	var wg sync.WaitGroup
 
