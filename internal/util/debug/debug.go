@@ -62,7 +62,7 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 	}
 	must.NoError(statsviz.Register(http.DefaultServeMux, opts...))
 
-	counter := prometheus.NewCounterVec(
+	requestCount := prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: namespace,
 			Subsystem: subsystem,
@@ -72,7 +72,7 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 		[]string{"handler", "code"},
 	)
 
-	must.NoError(r.Register(counter))
+	must.NoError(r.Register(requestCount))
 
 	startedHandler := http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 		// TODO https://github.com/FerretDB/FerretDB/issues/4306
@@ -91,17 +91,17 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 	})
 
 	http.Handle("/debug/started", promhttp.InstrumentHandlerCounter(
-		counter.MustCurryWith(prometheus.Labels{"handler": "/debug/started"}),
+		requestCount.MustCurryWith(prometheus.Labels{"handler": "/debug/started"}),
 		startedHandler,
 	))
 
 	http.Handle("/debug/healthz", promhttp.InstrumentHandlerCounter(
-		counter.MustCurryWith(prometheus.Labels{"handler": "/debug/healthz"}),
+		requestCount.MustCurryWith(prometheus.Labels{"handler": "/debug/healthz"}),
 		healthzHandler,
 	))
 
 	http.Handle("/debug/ready", promhttp.InstrumentHandlerCounter(
-		counter.MustCurryWith(prometheus.Labels{"handler": "/debug/ready"}),
+		requestCount.MustCurryWith(prometheus.Labels{"handler": "/debug/ready"}),
 		readyHandler,
 	))
 
