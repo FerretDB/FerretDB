@@ -34,6 +34,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 
+	"github.com/FerretDB/FerretDB/internal/handler"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -44,7 +45,7 @@ const (
 )
 
 // RunHandler runs debug handler.
-func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *zap.Logger) {
+func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *zap.Logger, ferretDBHandler *handler.Handler) {
 	stdL := must.NotFail(zap.NewStdLogAt(l, zap.WarnLevel))
 
 	http.Handle("/debug/metrics", promhttp.InstrumentMetricHandler(
@@ -86,8 +87,14 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 	})
 
 	readyHandler := http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
-		// TODO https://github.com/FerretDB/FerretDB/issues/4306
-		rw.WriteHeader(http.StatusOK)
+		if ferretDBHandler == nil {
+			rw.WriteHeader(http.StatusOK)
+		}
+
+		_, err := ferretDBHandler.Backend.Status(ctx, nil)
+		if err != nil {
+			http.Error(rw, err.Error(), http.StatusServiceUnavailable)
+		}
 	})
 
 	http.Handle("/debug/started", promhttp.InstrumentHandlerCounter(

@@ -397,15 +397,6 @@ func run() {
 
 	var wg sync.WaitGroup
 
-	if cli.DebugAddr != "" && cli.DebugAddr != "-" {
-		wg.Add(1)
-
-		go func() {
-			defer wg.Done()
-			debug.RunHandler(ctx, cli.DebugAddr, metricsRegisterer, logger.Named("debug"))
-		}()
-	}
-
 	metrics := connmetrics.NewListenerMetrics()
 
 	wg.Add(1)
@@ -459,11 +450,21 @@ func run() {
 			MaxBsonObjectSizeBytes:  cli.Test.MaxBsonObjectSizeMiB * 1024 * 1024, //nolint:mnd // converting MiB to bytes
 		},
 	})
+
 	if err != nil {
 		logger.Sugar().Fatalf("Failed to construct handler: %s.", err)
 	}
 
 	defer closeBackend()
+
+	if cli.DebugAddr != "" && cli.DebugAddr != "-" {
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+			debug.RunHandler(ctx, cli.DebugAddr, metricsRegisterer, logger.Named("debug"), h)
+		}()
+	}
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
 		TCP:  cli.Listen.Addr,

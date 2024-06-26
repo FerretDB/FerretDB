@@ -251,7 +251,7 @@ func setupMongodbSecured(ctx context.Context, logger *zap.SugaredLogger) error {
 
 // setup runs all setup commands.
 func setup(ctx context.Context, logger *zap.SugaredLogger) error {
-	go debug.RunHandler(ctx, "127.0.0.1:8089", prometheus.DefaultRegisterer, logger.Named("debug").Desugar())
+	go debug.RunHandler(ctx, "127.0.0.1:8089", prometheus.DefaultRegisterer, logger.Named("debug").Desugar(), nil)
 
 	for _, f := range []func(context.Context, *zap.SugaredLogger) error{
 		setupPostgres,
