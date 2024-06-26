@@ -216,7 +216,7 @@ func run(pass *analysis.Pass) (any, error) {
 								}
 
 							case *ast.SelectorExpr:
-								name = fmt.Sprintf("%s", cs.Sel.Name)
+								name = cs.Sel.Name
 
 							case *ast.Ident:
 								name = cs.Name
