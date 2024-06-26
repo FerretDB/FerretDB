@@ -37,6 +37,12 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
+// Parts of Prometheus metric names.
+const (
+	namespace = "ferretdb"
+	subsystem = "debug"
+)
+
 // RunHandler runs debug handler.
 func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *zap.Logger) {
 	stdL := must.NotFail(zap.NewStdLogAt(l, zap.WarnLevel))
@@ -56,10 +62,58 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 	}
 	must.NoError(statsviz.Register(http.DefaultServeMux, opts...))
 
+	requestCount := prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: subsystem,
+			Name:      "requests_total",
+			Help:      "Total number of debug handler requests.",
+		},
+		[]string{"handler", "code"},
+	)
+
+	must.NoError(r.Register(requestCount))
+
+	startedHandler := http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
+		// TODO https://github.com/FerretDB/FerretDB/issues/4306
+		rw.WriteHeader(http.StatusOK)
+	})
+
+	// healthz handler, which is used for liveness probe, returns StatusOK when reached.
+	// This ensures that listener is running.
+	healthzHandler := http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
+		rw.WriteHeader(http.StatusOK)
+	})
+
+	readyHandler := http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
+		// TODO https://github.com/FerretDB/FerretDB/issues/4306
+		rw.WriteHeader(http.StatusOK)
+	})
+
+	http.Handle("/debug/started", promhttp.InstrumentHandlerCounter(
+		requestCount.MustCurryWith(prometheus.Labels{"handler": "/debug/started"}),
+		startedHandler,
+	))
+
+	http.Handle("/debug/healthz", promhttp.InstrumentHandlerCounter(
+		requestCount.MustCurryWith(prometheus.Labels{"handler": "/debug/healthz"}),
+		healthzHandler,
+	))
+
+	http.Handle("/debug/ready", promhttp.InstrumentHandlerCounter(
+		requestCount.MustCurryWith(prometheus.Labels{"handler": "/debug/ready"}),
+		readyHandler,
+	))
+
 	handlers := map[string]string{
 		// custom handlers registered above
 		"/debug/graphs":  "Visualize metrics",
 		"/debug/metrics": "Metrics in Prometheus format",
+
+		// custom handlers for Kubernetes probes
+		"/debug/started": "Check if listener have started",
+		"/debug/healthz": "Check if listener is healthy",
+		"/debug/ready":   "Check if listener and backend are ready for queries",
 
 		// stdlib handlers
 		"/debug/vars":  "Expvar package metrics",
