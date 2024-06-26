@@ -56,10 +56,10 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 	}
 	must.NoError(statsviz.Register(http.DefaultServeMux, opts...))
 
-	http.HandleFunc("/debug/started", func(r http.ResponseWriter, _ *http.Request) {
+	http.Handle("/debug/started", promhttp.InstrumentMetricHandler(r, http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 		// TODO https://github.com/FerretDB/FerretDB/issues/4306
-		r.WriteHeader(http.StatusOK)
-	})
+		rw.WriteHeader(http.StatusOK)
+	})))
 
 	// healthz handler, which is used for liveness probe, returns StatusOK when reached.
 	// This ensures that listener is running.
