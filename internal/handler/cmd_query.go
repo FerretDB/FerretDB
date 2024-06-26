@@ -94,7 +94,7 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 		reply.Set("speculativeAuthenticate", speculativeAuthenticate)
 
 		// saslSupportedMechs is used by the client as default mechanisms if `mechanisms` is unset
-		reply.Set("saslSupportedMechs", must.NotFail(types.NewArray("SCRAM-SHA-1", "SCRAM-SHA-256")))
+		reply.Set("saslSupportedMechs", must.NotFail(types.NewArray("SCRAM-SHA-1", "SCRAM-SHA-256", "PLAIN")))
 		opReply.SetDocument(reply)
 
 		return &opReply, nil
