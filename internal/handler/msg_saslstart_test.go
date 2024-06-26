@@ -90,8 +90,10 @@ func TestSaslStartPlain(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
-			username, password, err := saslStartPlain(ctx, tc.doc)
+			err := saslStartPlain(ctx, tc.doc)
 			assert.Equal(t, tc.err, err)
+
+			username, password, _ := conninfo.Get(ctx).Auth()
 			assert.Equal(t, tc.username, username)
 			assert.Equal(t, tc.password, password)
 		})

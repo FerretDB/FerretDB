@@ -281,12 +281,14 @@ func (h *Handler) initCommands() {
 
 	for name, cmd := range h.commands {
 		if h.EnableNewAuth && !cmd.anonymous {
+			cmdHandler := h.commands[name].Handler
+
 			h.commands[name].Handler = func(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 				if err := checkSCRAMConversation(ctx, h.L); err != nil {
 					return nil, err
 				}
 
-				return cmd.Handler(ctx, msg)
+				return cmdHandler(ctx, msg)
 			}
 		}
 	}

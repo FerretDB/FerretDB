@@ -94,7 +94,7 @@ func (h *Handler) saslStart(ctx context.Context, document *types.Document) (*typ
 
 	switch mechanism {
 	case "PLAIN":
-		if _, _, err = saslStartPlain(ctx, document); err != nil {
+		if err = saslStartPlain(ctx, document); err != nil {
 			return nil, err
 		}
 
@@ -113,14 +113,14 @@ func (h *Handler) saslStart(ctx context.Context, document *types.Document) (*typ
 }
 
 // saslStartPlain extracts username and password from PLAIN `saslStart` payload.
-func saslStartPlain(ctx context.Context, doc *types.Document) (string, string, error) {
+func saslStartPlain(ctx context.Context, doc *types.Document) error {
 	var payload []byte
 
 	// some drivers send payload as a string
 	stringPayload, err := common.GetRequiredParam[string](doc, "payload")
 	if err == nil {
 		if payload, err = base64.StdEncoding.DecodeString(stringPayload); err != nil {
-			return "", "", handlererrors.NewCommandErrorMsgWithArgument(
+			return handlererrors.NewCommandErrorMsgWithArgument(
 				handlererrors.ErrBadValue,
 				fmt.Sprintf("Invalid payload: %v", err),
 				"payload",
@@ -136,12 +136,12 @@ func saslStartPlain(ctx context.Context, doc *types.Document) (string, string, e
 
 	// as spec's payload should be binary, we return an error mentioned binary as expected type
 	if payload == nil {
-		return "", "", err
+		return err
 	}
 
 	fields := bytes.Split(payload, []byte{0})
 	if l := len(fields); l != 3 {
-		return "", "", handlererrors.NewCommandErrorMsgWithArgument(
+		return handlererrors.NewCommandErrorMsgWithArgument(
 			handlererrors.ErrTypeMismatch,
 			fmt.Sprintf("Invalid payload: expected 3 fields, got %d", l),
 			"payload",
@@ -158,7 +158,7 @@ func saslStartPlain(ctx context.Context, doc *types.Document) (string, string, e
 
 	conninfo.Get(ctx).SetAuth(string(authcid), string(passwd), nil)
 
-	return string(authcid), string(passwd), nil
+	return nil
 }
 
 // scramCredentialLookup looks up an user's credentials in the database.
