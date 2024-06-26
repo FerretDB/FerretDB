@@ -97,8 +97,7 @@ func (h *Handler) hello(ctx context.Context, spec bson.AnyDocument, tcpHost, nam
 		resSupportedMechs = must.NotFail(bson.NewArray("PLAIN"))
 
 		if h.EnableNewAuth {
-			resSupportedMechs, err = h.getUserSupportedMechs(ctx, db, username)
-			if err != nil {
+			if resSupportedMechs, err = h.getUserSupportedMechs(ctx, db, username); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
 		}
