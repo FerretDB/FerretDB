@@ -21,8 +21,9 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/bson"
+	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -34,12 +35,17 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 	cmd := q.Command()
 	collection := query.FullCollectionName
 
+	var opReply wire.OpReply
+
 	if !strings.HasSuffix(collection, ".$cmd") {
-		return wire.NewOpReply(must.NotFail(bson.NewDocument(
+		reply := must.NotFail(types.NewDocument(
 			"$err", "OP_QUERY is no longer supported. The client driver may require an upgrade.",
 			"code", int32(handlererrors.ErrOpQueryCollectionSuffixMissing),
 			"ok", float64(0),
-		)))
+		))
+		opReply.SetDocument(reply)
+
+		return &opReply, nil
 	}
 
 	switch cmd {
@@ -49,12 +55,14 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 			return nil, lazyerrors.Error(err)
 		}
 
-		v := q.Get("speculativeAuthenticate")
+		v, _ := q.Get("speculativeAuthenticate")
 		if v == nil {
-			return wire.NewOpReply(must.NotFail(reply.Encode()))
+			opReply.SetDocument(reply)
+
+			return &opReply, nil
 		}
 
-		docV, ok := v.(bson.AnyDocument)
+		authDoc, ok := v.(*types.Document)
 		if !ok {
 			return nil, handlererrors.NewCommandErrorMsgWithArgument(
 				handlererrors.ErrTypeMismatch,
@@ -63,16 +71,13 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 			)
 		}
 
-		authDoc, err := docV.Decode()
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		dbName, err := getRequiredParam[string](authDoc, "db")
+		dbName, err := common.GetRequiredParam[string](authDoc, "db")
 		if err != nil {
 			h.L.Debug("No `db` in `speculativeAuthenticate`", zap.Error(err))
 
-			return wire.NewOpReply(must.NotFail(reply.Encode()))
+			opReply.SetDocument(reply)
+
+			return &opReply, nil
 		}
 
 		speculativeAuthenticate, err := h.saslStart(ctx, dbName, authDoc)
@@ -81,15 +86,18 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 
 			// unsuccessful speculative authentication leave `speculativeAuthenticate` field unset
 			// and let `saslStart` return an error
-			return wire.NewOpReply(must.NotFail(reply.Encode()))
+			opReply.SetDocument(reply)
+
+			return &opReply, nil
 		}
 
-		must.NoError(reply.Add("speculativeAuthenticate", speculativeAuthenticate))
+		reply.Set("speculativeAuthenticate", speculativeAuthenticate)
 
 		// saslSupportedMechs is used by the client as default mechanisms if `mechanisms` is unset
-		must.NoError(reply.Add("saslSupportedMechs", must.NotFail(bson.NewArray("SCRAM-SHA-1", "SCRAM-SHA-256"))))
+		reply.Set("saslSupportedMechs", must.NotFail(types.NewArray("SCRAM-SHA-1", "SCRAM-SHA-256")))
+		opReply.SetDocument(reply)
 
-		return wire.NewOpReply(must.NotFail(reply.Encode()))
+		return &opReply, nil
 	}
 
 	return nil, handlererrors.NewCommandErrorMsgWithArgument(

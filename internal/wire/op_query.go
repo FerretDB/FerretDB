@@ -143,14 +143,13 @@ func (query *OpQuery) MarshalBinary() ([]byte, error) {
 	return b, nil
 }
 
-// Query returns decoded query document.
-// Only top-level fields are decoded.
-func (query *OpQuery) Query() *bson.Document {
+// Query returns the query document.
+func (query *OpQuery) Query() *types.Document {
 	if query.query == nil {
 		return nil
 	}
 
-	return must.NotFail(query.query.Decode())
+	return must.NotFail(query.query.Convert())
 }
 
 // ReturnFieldsSelector returns the fields selector document (that may be nil).

@@ -17,9 +17,9 @@ package handler
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -27,12 +27,7 @@ import (
 
 // MsgIsMaster implements `isMaster` command.
 func (h *Handler) MsgIsMaster(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	rawDoc, err := msg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	doc, err := rawDoc.Decode()
+	doc, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -42,12 +37,15 @@ func (h *Handler) MsgIsMaster(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		return nil, lazyerrors.Error(err)
 	}
 
-	return wire.NewOpMsg(must.NotFail(res.Encode()))
+	var reply wire.OpMsg
+	must.NoError(reply.SetSections(wire.MakeOpMsgSection(res)))
+
+	return &reply, nil
 }
 
 // checkClientMetadata checks if the message does not contain client metadata after it was received already.
-func checkClientMetadata(ctx context.Context, doc *bson.Document) error {
-	c := doc.Get("client")
+func checkClientMetadata(ctx context.Context, doc *types.Document) error {
+	c, _ := doc.Get("client")
 	if c == nil {
 		return nil
 	}

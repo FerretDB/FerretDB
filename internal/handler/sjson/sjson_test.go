@@ -208,7 +208,7 @@ func addRecordedFuzzDocs(f *testing.F, needDocument, needSchema bool) int {
 
 		case *wire.OpQuery:
 			if doc := b.Query(); doc != nil {
-				docs = append(docs, must.NotFail(doc.Convert()))
+				docs = append(docs, doc)
 			}
 
 			if doc := b.ReturnFieldsSelector(); doc != nil {

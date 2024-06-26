@@ -24,7 +24,6 @@ import (
 	"github.com/xdg-go/scram"
 	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
@@ -37,40 +36,34 @@ import (
 
 // MsgSASLStart implements `saslStart` command.
 func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	spec, err := msg.RawDocument()
+	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	document, err := spec.Decode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	dbName, err := getRequiredParam[string](document, "$db")
+	dbName, err := common.GetRequiredParam[string](document, "$db")
 	if err != nil {
 		return nil, err
 	}
 
-	res, err := h.saslStart(ctx, dbName, document)
+	replyDoc, err := h.saslStart(ctx, dbName, document)
 	if err != nil {
 		return nil, err
 	}
 
-	must.NoError(res.Add("ok", float64(1)))
+	replyDoc.Set("ok", float64(1))
 
-	if msg, err = wire.NewOpMsg(res); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	var reply wire.OpMsg
+	must.NoError(reply.SetSections(wire.MakeOpMsgSection(replyDoc)))
 
-	return msg, nil
+	return &reply, nil
 }
 
 // saslStart starts authentication and returns a document used for the response.
 // If EnableNewAuth is set SCRAM mechanisms are supported, otherwise `PLAIN` mechanism is supported.
-func (h *Handler) saslStart(ctx context.Context, dbName string, document *bson.Document) (*bson.Document, error) {
+func (h *Handler) saslStart(ctx context.Context, dbName string, document *types.Document) (*types.Document, error) {
 	// TODO https://github.com/FerretDB/FerretDB/issues/3008
-	mechanism, err := getRequiredParam[string](document, "mechanism")
+	mechanism, err := common.GetRequiredParam[string](document, "mechanism")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -86,10 +79,10 @@ func (h *Handler) saslStart(ctx context.Context, dbName string, document *bson.D
 
 			conninfo.Get(ctx).SetBypassBackendAuth()
 
-			return must.NotFail(bson.NewDocument(
+			return must.NotFail(types.NewDocument(
 				"conversationId", int32(1),
 				"done", false,
-				"payload", bson.Binary{B: []byte(response)},
+				"payload", types.Binary{B: []byte(response)},
 			)), nil
 		default:
 			msg := fmt.Sprintf("Unsupported authentication mechanism %q.\n", mechanism) +
@@ -107,9 +100,9 @@ func (h *Handler) saslStart(ctx context.Context, dbName string, document *bson.D
 
 		conninfo.Get(ctx).SetAuth(username, password, mechanism, nil)
 
-		var emptyPayload bson.Binary
+		var emptyPayload types.Binary
 
-		return must.NotFail(bson.NewDocument(
+		return must.NotFail(types.NewDocument(
 			"conversationId", int32(1),
 			"done", true,
 			"payload", emptyPayload,
@@ -122,11 +115,11 @@ func (h *Handler) saslStart(ctx context.Context, dbName string, document *bson.D
 }
 
 // saslStartPlain extracts username and password from PLAIN `saslStart` payload.
-func saslStartPlain(doc *bson.Document) (string, string, error) {
+func saslStartPlain(doc *types.Document) (string, string, error) {
 	var payload []byte
 
 	// some drivers send payload as a string
-	stringPayload, err := getRequiredParam[string](doc, "payload")
+	stringPayload, err := common.GetRequiredParam[string](doc, "payload")
 	if err == nil {
 		if payload, err = base64.StdEncoding.DecodeString(stringPayload); err != nil {
 			return "", "", handlererrors.NewCommandErrorMsgWithArgument(
@@ -138,7 +131,7 @@ func saslStartPlain(doc *bson.Document) (string, string, error) {
 	}
 
 	// most drivers follow spec and send payload as a binary
-	binaryPayload, err := getRequiredParam[bson.Binary](doc, "payload")
+	binaryPayload, err := common.GetRequiredParam[types.Binary](doc, "payload")
 	if err == nil {
 		payload = binaryPayload.B
 	}
@@ -254,11 +247,11 @@ func (h *Handler) scramCredentialLookup(ctx context.Context, username, dbName, m
 
 // saslStartSCRAM extracts the initial challenge and attempts to move the
 // authentication conversation forward returning a challenge response.
-func (h *Handler) saslStartSCRAM(ctx context.Context, dbName, mechanism string, doc *bson.Document) (string, error) {
+func (h *Handler) saslStartSCRAM(ctx context.Context, dbName, mechanism string, doc *types.Document) (string, error) {
 	var payload []byte
 
 	// most drivers follow spec and send payload as a binary
-	binaryPayload, err := getRequiredParam[bson.Binary](doc, "payload")
+	binaryPayload, err := common.GetRequiredParam[types.Binary](doc, "payload")
 	if err != nil {
 		return "", err
 	}

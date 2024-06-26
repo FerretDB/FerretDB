@@ -21,7 +21,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -33,12 +32,7 @@ import (
 
 // MsgHello implements `hello` command.
 func (h *Handler) MsgHello(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	spec, err := msg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	doc, err := spec.Decode()
+	doc, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -48,42 +42,40 @@ func (h *Handler) MsgHello(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		return nil, lazyerrors.Error(err)
 	}
 
-	return wire.NewOpMsg(must.NotFail(resp.Encode()))
+	var reply wire.OpMsg
+	must.NoError(reply.SetSections(wire.MakeOpMsgSection(resp)))
+
+	return &reply, nil
 }
 
 // hello checks client metadata and returns hello's document fields.
 // It also returns response for deprecated `isMaster` and `ismaster` commands.
-func (h *Handler) hello(ctx context.Context, spec bson.AnyDocument, tcpHost, name string) (*bson.Document, error) {
-	doc, err := spec.Decode()
-	if err != nil {
+func (h *Handler) hello(ctx context.Context, doc *types.Document, tcpHost, name string) (*types.Document, error) {
+	if err := checkClientMetadata(ctx, doc); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	if err = checkClientMetadata(ctx, doc); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	res := must.NotFail(bson.NewDocument())
+	res := must.NotFail(types.NewDocument())
 
 	switch doc.Command() {
 	case "hello":
-		must.NoError(res.Add("isWritablePrimary", true))
+		res.Set("isWritablePrimary", true)
 	case "isMaster", "ismaster":
-		if helloOk := doc.Get("helloOk"); helloOk != nil {
-			must.NoError(res.Add("helloOk", true))
+		if helloOk, _ := doc.Get("helloOk"); helloOk != nil {
+			res.Set("helloOk", true)
 		}
 
-		must.NoError(res.Add("ismaster", true))
+		res.Set("ismaster", true)
 	default:
 		panic(fmt.Sprintf("unexpected command: %q", doc.Command()))
 	}
 
-	saslSupportedMechs, err := getOptionalParam(doc, "saslSupportedMechs", "")
+	saslSupportedMechs, err := common.GetOptionalParam(doc, "saslSupportedMechs", "")
 	if err != nil {
 		return nil, err
 	}
 
-	var resSupportedMechs *bson.Array
+	var resSupportedMechs *types.Array
 
 	if saslSupportedMechs != "" {
 		db, username, ok := strings.Cut(saslSupportedMechs, ".")
@@ -94,7 +86,7 @@ func (h *Handler) hello(ctx context.Context, spec bson.AnyDocument, tcpHost, nam
 			)
 		}
 
-		resSupportedMechs = must.NotFail(bson.NewArray("PLAIN"))
+		resSupportedMechs = must.NotFail(types.NewArray("PLAIN"))
 
 		if h.EnableNewAuth {
 			if resSupportedMechs, err = h.getUserSupportedMechs(ctx, db, username); err != nil {
@@ -111,32 +103,32 @@ func (h *Handler) hello(ctx context.Context, spec bson.AnyDocument, tcpHost, nam
 			tcpHost = "localhost" + tcpHost
 		}
 
-		must.NoError(res.Add("setName", name))
-		must.NoError(res.Add("hosts", must.NotFail(bson.NewArray(tcpHost))))
+		res.Set("setName", name)
+		res.Set("hosts", must.NotFail(types.NewArray(tcpHost)))
 	}
 
-	must.NoError(res.Add("maxBsonObjectSize", int32(h.MaxBsonObjectSizeBytes)))
-	must.NoError(res.Add("maxMessageSizeBytes", int32(wire.MaxMsgLen)))
-	must.NoError(res.Add("maxWriteBatchSize", int32(100000)))
-	must.NoError(res.Add("localTime", time.Now()))
-	must.NoError(res.Add("logicalSessionTimeoutMinutes", int32(30)))
-	must.NoError(res.Add("connectionId", int32(42)))
-	must.NoError(res.Add("minWireVersion", common.MinWireVersion))
-	must.NoError(res.Add("maxWireVersion", common.MaxWireVersion))
-	must.NoError(res.Add("readOnly", false))
+	res.Set("maxBsonObjectSize", int32(h.MaxBsonObjectSizeBytes))
+	res.Set("maxMessageSizeBytes", int32(wire.MaxMsgLen))
+	res.Set("maxWriteBatchSize", maxWriteBatchSize)
+	res.Set("localTime", time.Now())
+	res.Set("logicalSessionTimeoutMinutes", logicalSessionTimeoutMinutes)
+	res.Set("connectionId", connectionID)
+	res.Set("minWireVersion", common.MinWireVersion)
+	res.Set("maxWireVersion", common.MaxWireVersion)
+	res.Set("readOnly", false)
 
 	if resSupportedMechs != nil && resSupportedMechs.Len() != 0 {
-		must.NoError(res.Add("saslSupportedMechs", resSupportedMechs))
+		res.Set("saslSupportedMechs", resSupportedMechs)
 	}
 
-	must.NoError(res.Add("ok", float64(1)))
+	res.Set("ok", float64(1))
 
 	return res, nil
 }
 
 // getUserSupportedMechs returns supported mechanisms for the given user.
 // If the user was not found, it returns nil.
-func (h *Handler) getUserSupportedMechs(ctx context.Context, db, username string) (*bson.Array, error) {
+func (h *Handler) getUserSupportedMechs(ctx context.Context, db, username string) (*types.Array, error) {
 	adminDB, err := h.b.Database("admin")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -188,9 +180,9 @@ func (h *Handler) getUserSupportedMechs(ctx context.Context, db, username string
 
 		credentials := credentialsV.(*types.Document)
 
-		supportedMechs := bson.MakeArray(len(credentials.Keys()))
+		supportedMechs := types.MakeArray(len(credentials.Keys()))
 		for _, mechanism := range credentials.Keys() {
-			must.NoError(supportedMechs.Add(mechanism))
+			supportedMechs.Append(mechanism)
 		}
 
 		return supportedMechs, nil
