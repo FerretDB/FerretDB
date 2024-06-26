@@ -17,12 +17,12 @@ ARG LABEL_COMMIT
 FROM --platform=$BUILDPLATFORM golang:1.22.4 AS all-in-one-prepare
 
 # use a single directory for all Go caches to simpliy RUN --mount commands below
-ENV GOPATH /cache/gopath
-ENV GOCACHE /cache/gocache
-ENV GOMODCACHE /cache/gomodcache
+ENV GOPATH=/cache/gopath
+ENV GOCACHE=/cache/gocache
+ENV GOMODCACHE=/cache/gomodcache
 
 # remove ",direct"
-ENV GOPROXY https://proxy.golang.org
+ENV GOPROXY=https://proxy.golang.org
 
 COPY go.mod go.sum /src/
 
@@ -48,12 +48,12 @@ RUN test -n "$LABEL_VERSION"
 RUN test -n "$LABEL_COMMIT"
 
 # use the same directories for Go caches as above
-ENV GOPATH /cache/gopath
-ENV GOCACHE /cache/gocache
-ENV GOMODCACHE /cache/gomodcache
+ENV GOPATH=/cache/gopath
+ENV GOCACHE=/cache/gocache
+ENV GOMODCACHE=/cache/gomodcache
 
 # modules are already downloaded
-ENV GOPROXY off
+ENV GOPROXY=off
 
 # see .dockerignore
 WORKDIR /src
