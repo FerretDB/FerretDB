@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package backends
+package users
 
 import (
 	"context"
@@ -20,6 +20,8 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -38,7 +40,7 @@ type CreateUserParams struct {
 }
 
 // CreateUser stores a new user in the given backend.
-func CreateUser(ctx context.Context, b Backend, params *CreateUserParams) error {
+func CreateUser(ctx context.Context, b backends.Backend, params *CreateUserParams) error {
 	must.NotBeZero(params)
 
 	credentials, err := MakeCredentials(params.Username, params.Password, params.Mechanisms)
@@ -59,7 +61,7 @@ func CreateUser(ctx context.Context, b Backend, params *CreateUserParams) error 
 	db := must.NotFail(b.Database("admin"))
 	coll := must.NotFail(db.Collection("system.users"))
 
-	_, err = coll.InsertAll(ctx, &InsertAllParams{
+	_, err = coll.InsertAll(ctx, &backends.InsertAllParams{
 		Docs: []*types.Document{saved},
 	})
 
@@ -90,25 +92,30 @@ func MakeCredentials(username string, userPassword password.Password, mechanisms
 			return nil, lazyerrors.Error(err)
 		}
 
-		var hash *types.Document
+		var hash *bson.Document
+		var hashDoc *types.Document
 
 		switch v {
-		case "PLAIN":
-			credentials.Set("PLAIN", must.NotFail(password.PlainHash(userPassword.Password())))
 		case "SCRAM-SHA-1":
-			hash, err = password.SCRAMSHA1Hash(username, userPassword.Password())
-			if err != nil {
+			if hash, err = password.SCRAMSHA1VariationHash(username, userPassword); err != nil {
 				return nil, err
 			}
 
-			credentials.Set("SCRAM-SHA-1", hash)
+			if hashDoc, err = hash.Convert(); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
+			credentials.Set("SCRAM-SHA-1", hashDoc)
 		case "SCRAM-SHA-256":
-			hash, err = password.SCRAMSHA256Hash(userPassword.Password())
-			if err != nil {
+			if hash, err = password.SCRAMSHA256Hash(userPassword); err != nil {
 				return nil, err
 			}
 
-			credentials.Set("SCRAM-SHA-256", hash)
+			if hashDoc, err = hash.Convert(); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
+			credentials.Set("SCRAM-SHA-256", hashDoc)
 		default:
 			panic("unknown mechanism")
 		}

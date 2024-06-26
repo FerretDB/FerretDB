@@ -101,16 +101,12 @@ func Example_unix() {
 }
 
 func Example_tls() {
-	certPath := filepath.Join("..", "build", "certs", "server-cert.pem")
-	keyPath := filepath.Join("..", "build", "certs", "server-key.pem")
-	caPath := filepath.Join("..", "build", "certs", "rootCA-cert.pem")
-
 	f, err := ferretdb.New(&ferretdb.Config{
 		Listener: ferretdb.ListenerConfig{
 			TLS:         "127.0.0.1:17028",
-			TLSCertFile: certPath,
-			TLSKeyFile:  keyPath,
-			TLSCAFile:   caPath,
+			TLSCertFile: filepath.Join(testutil.BuildCertsDir, "server-cert.pem"),
+			TLSKeyFile:  filepath.Join(testutil.BuildCertsDir, "server-key.pem"),
+			TLSCAFile:   filepath.Join(testutil.BuildCertsDir, "rootCA-cert.pem"),
 		},
 		Handler:       "postgresql",
 		PostgreSQLURL: "postgres://127.0.0.1:5432/ferretdb",

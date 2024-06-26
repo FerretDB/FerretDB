@@ -30,6 +30,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
+	"github.com/FerretDB/FerretDB/internal/handler/users"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -43,6 +44,15 @@ import (
 const (
 	namespace = "ferretdb"
 	subsystem = "handler"
+
+	// Maximum size of a batch for inserting data.
+	maxWriteBatchSize = int32(100000)
+
+	// Required by C# driver for `IsMaster` and `hello` op reply, without it `DPANIC` is thrown.
+	connectionID = int32(42)
+
+	// Default session timeout in minutes.
+	logicalSessionTimeoutMinutes = int32(30)
 )
 
 // Handler provides a set of methods to process clients' requests sent over wire protocol.
@@ -57,7 +67,7 @@ type Handler struct {
 	b backends.Backend
 
 	cursors  *cursor.Registry
-	commands map[string]command
+	commands map[string]*command
 	wg       sync.WaitGroup
 
 	cappedCleanupStop             chan struct{}
@@ -211,7 +221,7 @@ func (h *Handler) setup() error {
 		return err
 	}
 
-	return backends.CreateUser(ctx, h.b, &backends.CreateUserParams{
+	return users.CreateUser(ctx, h.b, &users.CreateUserParams{
 		Database: h.SetupDatabase,
 		Username: h.SetupUsername,
 		Password: h.SetupPassword,

@@ -12,27 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package handler
+package testutil
 
 import (
-	"context"
+	"path/filepath"
+	"testing"
 
-	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
+	"github.com/stretchr/testify/assert"
 )
 
-// MsgLogout implements `logout` command.
-func (h *Handler) MsgLogout(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	conninfo.Get(ctx).SetAuth("", "", nil)
+func TestDirs(t *testing.T) {
+	t.Parallel()
 
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
-		must.NotFail(types.NewDocument(
-			"ok", float64(1),
-		)),
-	)))
-
-	return &reply, nil
+	assert.FileExists(t, filepath.Join(RootDir, "CHANGELOG.md"))
+	assert.FileExists(t, filepath.Join(BuildCertsDir, "client.pem"))
 }

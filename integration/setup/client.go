@@ -17,8 +17,8 @@ package setup
 import (
 	"context"
 	"net/url"
-	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -28,8 +28,39 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
+
+// setClientPaths replaces file names in query parameters with absolute paths.
+func setClientPaths(uri string) (string, error) {
+	u, err := url.Parse(uri)
+	if err != nil {
+		return "", lazyerrors.Error(err)
+	}
+
+	q, err := url.ParseQuery(u.RawQuery)
+	if err != nil {
+		return "", lazyerrors.Error(err)
+	}
+
+	for k, vs := range q {
+		switch k {
+		case "tlsCertificateKeyFile", "tlsCaFile":
+			for i, v := range vs {
+				if strings.Contains(v, "/") {
+					return "", lazyerrors.Errorf("%q: %q should contain only a file name, got %q", uri, k, v)
+				}
+
+				vs[i] = filepath.Join(testutil.BuildCertsDir, v)
+			}
+		}
+	}
+
+	u.RawQuery = q.Encode()
+
+	return u.String(), nil
+}
 
 // makeClient returns new client for the given working MongoDB URI.
 func makeClient(ctx context.Context, uri string) (*mongo.Client, error) {
@@ -78,42 +109,4 @@ func setupClient(tb testtb.TB, ctx context.Context, uri string) *mongo.Client {
 	})
 
 	return client
-}
-
-// toAbsolutePathURI replaces the relative path of tlsCertificateKeyFile and tlsCaFile path
-// to an absolute path. If the file is not found because the test is in subdirectory
-// such as`integration/user/`, the parent directory is looked.
-func toAbsolutePathURI(tb testtb.TB, uri string) string {
-	u, err := url.Parse(uri)
-	require.NoError(tb, err)
-
-	values := url.Values{}
-
-	for k, v := range u.Query() {
-		require.Len(tb, v, 1)
-
-		switch k {
-		case "tlsCertificateKeyFile", "tlsCaFile":
-			file := v[0]
-
-			if filepath.IsAbs(file) {
-				values[k] = []string{file}
-
-				continue
-			}
-
-			file = filepath.Join(Dir(tb), v[0])
-			if _, err = os.Stat(file); os.IsNotExist(err) {
-				file = filepath.Join(Dir(tb), "..", v[0])
-			}
-
-			values[k] = []string{file}
-		default:
-			values[k] = v
-		}
-	}
-
-	u.RawQuery = values.Encode()
-
-	return u.String()
 }

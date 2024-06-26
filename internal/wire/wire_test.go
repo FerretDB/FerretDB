@@ -18,7 +18,6 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -121,6 +120,7 @@ func testMessages(t *testing.T, testCases []testCase) {
 				assert.NotEmpty(t, msgHeader.String())
 				assert.Equal(t, testutil.Unindent(t, tc.m), msgBody.String())
 				assert.NotEmpty(t, msgBody.StringBlock())
+				assert.NotEmpty(t, msgBody.StringFlow())
 
 				require.NoError(t, msgBody.check())
 
@@ -171,7 +171,7 @@ func fuzzMessages(f *testing.F, testCases []testCase) {
 	}
 
 	if !testing.Short() {
-		records, err := LoadRecords(filepath.Join("..", "..", "tmp", "records"), 100)
+		records, err := LoadRecords(testutil.TmpRecordsDir, 100)
 		require.NoError(f, err)
 
 		for _, rec := range records {
