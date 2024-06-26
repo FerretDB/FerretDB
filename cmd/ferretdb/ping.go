@@ -85,13 +85,11 @@ func ping() {
 			l.Fatal(err)
 		}
 
-		defer func() {
-			if err = client.Disconnect(ctx); err != nil {
-				l.Fatal(err)
-			}
-		}()
-
 		if err = client.Ping(ctx, nil); err != nil {
+			l.Fatal(err)
+		}
+
+		if err = client.Disconnect(ctx); err != nil {
 			l.Fatal(err)
 		}
 
