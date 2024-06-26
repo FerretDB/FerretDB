@@ -43,6 +43,9 @@ type MsgBody interface {
 
 	// StringBlock returns an indented string representation for logging.
 	StringBlock() string
+
+	// StringFlow returns an unindented string representation for logging.
+	StringFlow() string
 }
 
 // ErrZeroRead is returned when zero bytes was read from connection,
