@@ -57,13 +57,19 @@ func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	}
 
 	response, err := conv.Step(string(payload))
+
+	fields := []zap.Field{
+		zap.String("username", conv.Username()),
+		zap.Bool("valid", conv.Valid()),
+		zap.Bool("done", conv.Done()),
+	}
+
 	if err != nil {
-		var fields []zap.Field
 		if h.L.Level().Enabled(zap.DebugLevel) {
 			fields = append(fields, zap.Error(err))
 		}
 
-		h.L.Warn("saslContinue step failed", fields...)
+		h.L.Warn("saslContinue: step failed", fields...)
 
 		return nil, handlererrors.NewCommandErrorMsgWithArgument(
 			handlererrors.ErrAuthenticationFailed,
@@ -72,9 +78,9 @@ func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.O
 		)
 	}
 
-	h.L.Debug("saslContinue succeed", zap.Bool("valid", conv.Valid()), zap.Bool("done", conv.Done()))
+	h.L.Debug("saslContinue: step succeed", fields...)
 
-	if conv.Valid() && conv.Done() {
+	if conv.Valid() {
 		conninfo.Get(ctx).SetBypassBackendAuth()
 	}
 

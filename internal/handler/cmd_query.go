@@ -94,6 +94,8 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 			return &opReply, nil
 		}
 
+		h.L.Debug("Speculative authentication passed")
+
 		reply.Set("speculativeAuthenticate", speculativeAuthenticate)
 
 		// saslSupportedMechs is used by the client as default mechanisms if `mechanisms` is unset

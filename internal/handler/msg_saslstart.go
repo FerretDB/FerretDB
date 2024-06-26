@@ -178,6 +178,7 @@ func (h *Handler) scramCredentialLookup(ctx context.Context, username, mechanism
 	// authSource option of the client.
 	// Let authorization handle the database access right.
 	// TODO https://github.com/FerretDB/FerretDB/issues/174
+	// TODO https://github.com/FerretDB/FerretDB/issues/4392
 	filter := must.NotFail(types.NewDocument("user", username))
 
 	// Filter isn't being passed to the query as we are filtering after retrieving all data
@@ -285,9 +286,24 @@ func (h *Handler) saslStartSCRAM(ctx context.Context, mechanism string, doc *typ
 	conv := scramServer.NewConversation()
 
 	response, err := conv.Step(string(payload))
+
+	fields := []zap.Field{
+		zap.String("username", conv.Username()),
+		zap.Bool("valid", conv.Valid()),
+		zap.Bool("done", conv.Done()),
+	}
+
 	if err != nil {
+		if h.L.Level().Enabled(zap.DebugLevel) {
+			fields = append(fields, zap.Error(err))
+		}
+
+		h.L.Warn("saslStartSCRAM: step failed", fields...)
+
 		return "", err
 	}
+
+	h.L.Debug("saslStartSCRAM: step succeed", fields...)
 
 	conninfo.Get(ctx).SetAuth(conv.Username(), "", conv)
 
