@@ -37,6 +37,12 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
+// Parts of Prometheus metric names.
+const (
+	namespace = "ferretdb"
+	subsystem = "debug"
+)
+
 // RunHandler runs debug handler.
 func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *zap.Logger) {
 	stdL := must.NotFail(zap.NewStdLogAt(l, zap.WarnLevel))
@@ -56,16 +62,33 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 	}
 	must.NoError(statsviz.Register(http.DefaultServeMux, opts...))
 
-	http.Handle("/debug/started", promhttp.InstrumentMetricHandler(r, http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
-		// TODO https://github.com/FerretDB/FerretDB/issues/4306
-		rw.WriteHeader(http.StatusOK)
-	})))
+	counter := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Namespace: namespace,
+		Subsystem: subsystem,
+		Name:      "requests_total",
+		Help:      "Total number of debug handler requests.",
+	}, []string{"handler", "code", "method"})
+
+	must.NoError(r.Register(counter))
+
+	//http.Handle("/debug/started", promhttp.InstrumentMetricHandler(
+	//	prometheus.WrapRegistererWith(prometheus.Labels{
+	//		"handler": "/debug/started",
+	//	}, r), http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
+	//		// TODO https://github.com/FerretDB/FerretDB/issues/4306
+	//		rw.WriteHeader(http.StatusOK)
+	//	})))
 
 	// healthz handler, which is used for liveness probe, returns StatusOK when reached.
 	// This ensures that listener is running.
 	http.HandleFunc("/debug/healthz", func(r http.ResponseWriter, _ *http.Request) {
 		r.WriteHeader(http.StatusOK)
 	})
+
+	http.Handle("/debug/started", promhttp.InstrumentHandlerCounter(counter.MustCurryWith(prometheus.Labels{"handler": "/debug/started"}), http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
+		//		// TODO https://github.com/FerretDB/FerretDB/issues/4306
+		rw.WriteHeader(http.StatusOK)
+	})))
 
 	http.HandleFunc("/debug/ready", func(r http.ResponseWriter, _ *http.Request) {
 		// TODO https://github.com/FerretDB/FerretDB/issues/4306
