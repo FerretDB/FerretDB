@@ -71,29 +71,25 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 
 	must.NoError(r.Register(counter))
 
-	//http.Handle("/debug/started", promhttp.InstrumentMetricHandler(
-	//	prometheus.WrapRegistererWith(prometheus.Labels{
-	//		"handler": "/debug/started",
-	//	}, r), http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
-	//		// TODO https://github.com/FerretDB/FerretDB/issues/4306
-	//		rw.WriteHeader(http.StatusOK)
-	//	})))
+	startedHandler := http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
+		// TODO https://github.com/FerretDB/FerretDB/issues/4306
+		rw.WriteHeader(http.StatusOK)
+	})
 
 	// healthz handler, which is used for liveness probe, returns StatusOK when reached.
 	// This ensures that listener is running.
-	http.HandleFunc("/debug/healthz", func(r http.ResponseWriter, _ *http.Request) {
-		r.WriteHeader(http.StatusOK)
-	})
-
-	http.Handle("/debug/started", promhttp.InstrumentHandlerCounter(counter.MustCurryWith(prometheus.Labels{"handler": "/debug/started"}), http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
-		//		// TODO https://github.com/FerretDB/FerretDB/issues/4306
+	healthzHandler := http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 		rw.WriteHeader(http.StatusOK)
-	})))
-
-	http.HandleFunc("/debug/ready", func(r http.ResponseWriter, _ *http.Request) {
-		// TODO https://github.com/FerretDB/FerretDB/issues/4306
-		r.WriteHeader(http.StatusOK)
 	})
+
+	readyHandler := http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
+		// TODO https://github.com/FerretDB/FerretDB/issues/4306
+		rw.WriteHeader(http.StatusOK)
+	})
+
+	http.Handle("/debug/started", promhttp.InstrumentHandlerCounter(counter.MustCurryWith(prometheus.Labels{"handler": "/debug/started"}), startedHandler))
+	http.Handle("/debug/healthz", promhttp.InstrumentHandlerCounter(counter.MustCurryWith(prometheus.Labels{"handler": "/debug/healthz"}), healthzHandler))
+	http.Handle("/debug/ready", promhttp.InstrumentHandlerCounter(counter.MustCurryWith(prometheus.Labels{"handler": "/debug/ready"}), readyHandler))
 
 	handlers := map[string]string{
 		// custom handlers registered above
