@@ -20,9 +20,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 // TestSaslStartPlain tests saslStartPlain function.
@@ -87,7 +89,8 @@ func TestSaslStartPlain(t *testing.T) {
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
-			username, password, err := saslStartPlain(tc.doc)
+			ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
+			username, password, err := saslStartPlain(ctx, tc.doc)
 			assert.Equal(t, tc.err, err)
 			assert.Equal(t, tc.username, username)
 			assert.Equal(t, tc.password, password)

@@ -44,7 +44,7 @@ func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.O
 
 	payload = binaryPayload.B
 
-	_, _, _, conv := conninfo.Get(ctx).Auth()
+	_, _, conv := conninfo.Get(ctx).Auth()
 
 	if conv == nil {
 		h.L.Warn("saslContinue: no conversation to continue")
@@ -70,16 +70,18 @@ func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.O
 		)
 	}
 
-	binResponse := types.Binary{
-		B: []byte(response),
+	h.L.Debug("saslContinue succeed", zap.Bool("valid", conv.Valid()), zap.Bool("done", conv.Done()))
+
+	if conv.Valid() && conv.Done() {
+		conninfo.Get(ctx).SetBypassBackendAuth()
 	}
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
 		must.NotFail(types.NewDocument(
 			"conversationId", int32(1),
-			"done", true,
-			"payload", binResponse,
+			"done", conv.Done(),
+			"payload", types.Binary{B: []byte(response)},
 			"ok", float64(1),
 		)),
 	)))

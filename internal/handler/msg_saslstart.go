@@ -77,8 +77,6 @@ func (h *Handler) saslStart(ctx context.Context, dbName string, document *types.
 				return nil, err
 			}
 
-			conninfo.Get(ctx).SetBypassBackendAuth()
-
 			return must.NotFail(types.NewDocument(
 				"conversationId", int32(1),
 				"done", false,
@@ -93,12 +91,9 @@ func (h *Handler) saslStart(ctx context.Context, dbName string, document *types.
 
 	switch mechanism {
 	case "PLAIN":
-		username, password, err := saslStartPlain(document)
-		if err != nil {
+		if _, _, err = saslStartPlain(ctx, document); err != nil {
 			return nil, err
 		}
-
-		conninfo.Get(ctx).SetAuth(username, password, mechanism, nil)
 
 		var emptyPayload types.Binary
 
@@ -115,7 +110,7 @@ func (h *Handler) saslStart(ctx context.Context, dbName string, document *types.
 }
 
 // saslStartPlain extracts username and password from PLAIN `saslStart` payload.
-func saslStartPlain(doc *types.Document) (string, string, error) {
+func saslStartPlain(ctx context.Context, doc *types.Document) (string, string, error) {
 	var payload []byte
 
 	// some drivers send payload as a string
@@ -157,6 +152,8 @@ func saslStartPlain(doc *types.Document) (string, string, error) {
 	// (see https://www.rfc-editor.org/rfc/rfc4616.html).
 	// Ignore authzid for now.
 	_ = authzid
+
+	conninfo.Get(ctx).SetAuth(string(authcid), string(passwd), nil)
 
 	return string(authcid), string(passwd), nil
 }
@@ -288,7 +285,7 @@ func (h *Handler) saslStartSCRAM(ctx context.Context, dbName, mechanism string, 
 		return "", err
 	}
 
-	conninfo.Get(ctx).SetAuth(conv.Username(), "", mechanism, conv)
+	conninfo.Get(ctx).SetAuth(conv.Username(), "", conv)
 
 	return response, nil
 }

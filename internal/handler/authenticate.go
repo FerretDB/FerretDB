@@ -16,47 +16,25 @@ package handler
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 )
 
-// authenticate validates user credentials.
-// If EnableNewAuth is set, stored SCRAM conversation is validated and
-// the backend authentication is bypassed.
-// If EnableNewAuth not set, `PLAIN` backend authentication is used.
-func (h *Handler) authenticate(ctx context.Context) error {
-	_, _, mechanism, conv := conninfo.Get(ctx).Auth()
-
-	if h.EnableNewAuth {
-		conninfo.Get(ctx).SetBypassBackendAuth()
-
-		switch mechanism {
-		case "SCRAM-SHA-256", "SCRAM-SHA-1": //nolint:goconst // we don't need a constant for this
-			if conv == nil || !conv.Valid() {
-				return handlererrors.NewCommandErrorMsgWithArgument(
-					handlererrors.ErrAuthenticationFailed,
-					"Authentication failed",
-					"authenticate",
-				)
-			}
-
-			return nil
-		default:
-			msg := fmt.Sprintf("Unsupported authentication mechanism %q.\n", mechanism) +
-				"See https://docs.ferretdb.io/security/authentication/ for more details."
-			return handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrAuthenticationFailed, msg, mechanism)
-		}
-	}
-
-	switch mechanism {
-	case "PLAIN", "":
-		// mechanism is empty for unauthenticated connections
+// checkAuthentication returns error if new authentication is enabled and SCRAM conversation is not valid.
+func (h *Handler) checkAuthentication(ctx context.Context) error {
+	if !h.EnableNewAuth {
 		return nil
-	default:
-		msg := fmt.Sprintf("Unsupported authentication mechanism %q.\n", mechanism) +
-			"See https://docs.ferretdb.io/security/authentication/ for more details."
-		return handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrAuthenticationFailed, msg, mechanism)
 	}
+
+	_, _, conv := conninfo.Get(ctx).Auth()
+	if conv == nil || !conv.Valid() {
+		return handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrAuthenticationFailed,
+			"Authentication failed",
+			"checkAuthentication",
+		)
+	}
+
+	return nil
 }

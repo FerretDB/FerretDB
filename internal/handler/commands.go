@@ -276,11 +276,11 @@ func (h *Handler) initCommands() {
 	}
 
 	for name, cmd := range h.commands {
-		h.commands[name] = command{
-			Handler:   h.authenticateWrapper(cmd),
-			anonymous: cmd.anonymous,
-			Help:      cmd.Help,
+		if !cmd.anonymous {
+			cmd.Handler = h.authenticateWrapper(cmd)
 		}
+
+		h.commands[name] = cmd
 	}
 }
 
@@ -290,14 +290,9 @@ func (h *Handler) Commands() map[string]command {
 }
 
 // authenticateWrapper wraps the command handler with the authentication check.
-// If anonymous is true, the command handler is executed without authentication.
 func (h *Handler) authenticateWrapper(cmd command) func(context.Context, *wire.OpMsg) (*wire.OpMsg, error) {
 	return func(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-		if cmd.anonymous {
-			return cmd.Handler(ctx, msg)
-		}
-
-		if err := h.authenticate(ctx); err != nil {
+		if err := h.checkAuthentication(ctx); err != nil {
 			return nil, err
 		}
 
