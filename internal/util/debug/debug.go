@@ -87,9 +87,20 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 		rw.WriteHeader(http.StatusOK)
 	})
 
-	http.Handle("/debug/started", promhttp.InstrumentHandlerCounter(counter.MustCurryWith(prometheus.Labels{"handler": "/debug/started"}), startedHandler))
-	http.Handle("/debug/healthz", promhttp.InstrumentHandlerCounter(counter.MustCurryWith(prometheus.Labels{"handler": "/debug/healthz"}), healthzHandler))
-	http.Handle("/debug/ready", promhttp.InstrumentHandlerCounter(counter.MustCurryWith(prometheus.Labels{"handler": "/debug/ready"}), readyHandler))
+	http.Handle("/debug/started", promhttp.InstrumentHandlerCounter(
+		counter.MustCurryWith(prometheus.Labels{"handler": "/debug/started"}),
+		startedHandler,
+	))
+
+	http.Handle("/debug/healthz", promhttp.InstrumentHandlerCounter(
+		counter.MustCurryWith(prometheus.Labels{"handler": "/debug/healthz"}),
+		healthzHandler,
+	))
+
+	http.Handle("/debug/ready", promhttp.InstrumentHandlerCounter(
+		counter.MustCurryWith(prometheus.Labels{"handler": "/debug/ready"}),
+		readyHandler,
+	))
 
 	handlers := map[string]string{
 		// custom handlers registered above
