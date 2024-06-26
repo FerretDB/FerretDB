@@ -62,12 +62,15 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 	}
 	must.NoError(statsviz.Register(http.DefaultServeMux, opts...))
 
-	counter := prometheus.NewCounterVec(prometheus.CounterOpts{
-		Namespace: namespace,
-		Subsystem: subsystem,
-		Name:      "requests_total",
-		Help:      "Total number of debug handler requests.",
-	}, []string{"handler", "code"})
+	counter := prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: subsystem,
+			Name:      "requests_total",
+			Help:      "Total number of debug handler requests.",
+		},
+		[]string{"handler", "code"},
+	)
 
 	must.NoError(r.Register(counter))
 
