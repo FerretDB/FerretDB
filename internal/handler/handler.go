@@ -44,6 +44,15 @@ import (
 const (
 	namespace = "ferretdb"
 	subsystem = "handler"
+
+	// Maximum size of a batch for inserting data.
+	maxWriteBatchSize = int32(100000)
+
+	// Required by C# driver for `IsMaster` and `hello` op reply, without it `DPANIC` is thrown.
+	connectionID = int32(42)
+
+	// Default session timeout in minutes.
+	logicalSessionTimeoutMinutes = int32(30)
 )
 
 // Handler provides a set of methods to process clients' requests sent over wire protocol.
