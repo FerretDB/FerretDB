@@ -61,10 +61,10 @@ Run `db.scientists.find()` to see the complete list of documents in the collecti
 ### Retrieve documents based on a specific query
 
 Using the `find()` command, you can also filter a collection for only the documents that match the provided query.
-For example, find the document with the field `born` set as 1857.
+For example, find the document with the field `born` set as 1847.
 
 ```js
-db.scientists.find({ born: 1857 })
+db.scientists.find({ born: 1847 })
 ```
 
 ### Retrieve documents using operator queries

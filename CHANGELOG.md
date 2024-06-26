@@ -2,6 +2,85 @@
 
 <!-- markdownlint-disable MD024 MD034 -->
 
+## [v1.22.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.22.0) (2024-06-26)
+
+### What's Changed
+
+#### Docker images changes
+
+Production Docker images now use a non-root user with UID 1000 and GID 1000.
+
+### New Features 🎉
+
+- Make maximum document size configurable by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4294
+- Enable initial user setup for new authentication by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4310
+
+### Fixed Bugs 🐛
+
+- Fix TCP port for debug handler in Docker images by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4218
+- Fix embedded package panic by @noisersup in https://github.com/FerretDB/FerretDB/pull/4278
+
+### Enhancements 🛠
+
+- Use non-privileged `scratch` for production Docker images by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/4211
+- Improve error message for `state.json` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4251
+- Sort new fields in lexicographic order during update by @wazir-ahmed in https://github.com/FerretDB/FerretDB/pull/4223
+
+### Documentation 📄
+
+- Add blog post for FerretDB v1.21 release by @Fashander in https://github.com/FerretDB/FerretDB/pull/4202
+- Add blog post for Openziti by @Fashander in https://github.com/FerretDB/FerretDB/pull/4194
+- Fix broken code blocks in documentation by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4239
+- Add KubeDB blogpost on deploying FerretDB on Kubernetes by @Fashander in https://github.com/FerretDB/FerretDB/pull/4253
+- Add blog post about deploying FerretDB on Taikun CloudWorks by @Fashander in https://github.com/FerretDB/FerretDB/pull/4297
+- Update example in documentation by @nullniverse in https://github.com/FerretDB/FerretDB/pull/4305
+- Add blog post on Adding MongoDB compatibility to Aiven for PostgreSQL by @Fashander in https://github.com/FerretDB/FerretDB/pull/4349
+- Add `restart: on-failure` to all containers by @pravi in https://github.com/FerretDB/FerretDB/pull/4309
+
+### Other Changes 🤖
+
+- Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4201
+- Make our own low-level driver for testing by @noisersup in https://github.com/FerretDB/FerretDB/pull/4193
+- Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4238
+- Fix some comments by @deferdeter in https://github.com/FerretDB/FerretDB/pull/4237
+- Add dummy setup flags by @b1ron in https://github.com/FerretDB/FerretDB/pull/4247
+- Fix some comments by @dockercui in https://github.com/FerretDB/FerretDB/pull/4257
+- Remove old BSON implementation by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4262
+- Port BSON changes by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4263
+- Move tools cache directory by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4265
+- Use more shards on CI by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4266
+- Bump Go to 1.22.3 and deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4272
+- Update linters configuration by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4277
+- Fix `env-data` by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4289
+- Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4302
+- Port some changes from v2 by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4307
+- Extract user creation and move to `backends` package by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4311
+- Populate `env-data` for running `FerretDB` by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4319
+- Fix `task docker-local` command by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4363
+- Add stub for the Docker healthcheck by @noisersup in https://github.com/FerretDB/FerretDB/pull/4355
+- Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4375
+- Remove `PLAIN` mechanism from new authentication by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4373
+- Fix codecov CLI version by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4379
+- Add `TestMain` to each integration test package by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4366
+- Handle supported mechanisms in `hello` and `getParameters` commands by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4368
+- Remove ambiguous comment by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4382
+- Revert codecov version fix by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4383
+- Fix typo in migration guide by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4384
+- Port `wire` package changes by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4386
+- Port `password` changes by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4388
+- Include `SpeculativeAuthenticate` changes by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4390
+- Fix `saslContinue` prematurely returning `done` by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4391
+
+### New Contributors
+
+- @deferdeter made their first contribution in https://github.com/FerretDB/FerretDB/pull/4237
+- @dockercui made their first contribution in https://github.com/FerretDB/FerretDB/pull/4257
+- @nullniverse made their first contribution in https://github.com/FerretDB/FerretDB/pull/4305
+- @pravi made their first contribution in https://github.com/FerretDB/FerretDB/pull/4309
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/64?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v1.21.0...v1.22.0).
+
 ## [v1.21.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.21.0) (2024-02-20)
 
 ### New Features 🎉
