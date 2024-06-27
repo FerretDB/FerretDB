@@ -16,7 +16,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"net/url"
 
@@ -55,7 +54,7 @@ func ping() {
 
 		u := &url.URL{
 			Scheme: "mongodb",
-			Host:   fmt.Sprintf("%s:%s", host, port),
+			Host:   net.JoinHostPort(host, port),
 			Path:   cli.Setup.Database,
 			User:   url.UserPassword(cli.Setup.Username, cli.Setup.Password),
 		}
@@ -95,6 +94,10 @@ func ping() {
 			l.Fatal(pingErr)
 		}
 
-		l.Infof("Ping to %s successful.", u)
+		if uri, err := url.Parse(u); err == nil {
+			u = uri.Redacted()
+		}
+
+		l.Infof("Ping to %s successful.")
 	}
 }
