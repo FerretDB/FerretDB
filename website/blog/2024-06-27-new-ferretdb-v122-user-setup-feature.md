@@ -30,16 +30,15 @@ This makes it easier for users to configure their FerretDB instance securely rig
 Here's how you can do it:
 
 ```sh
-ferretdb --test-enable-new-auth=true --setup-timeout=1m --setup-username=user --setup-password=pass --setup-database=ferretdb
+ferretdb --test-enable-new-auth=true --setup-username=user --setup-password=pass --setup-database=ferretdb
 ```
 
 - `--setup-username`/`FERRETDB_SETUP_USERNAME`: Specifies the username to be created.
 - `--setup-password`/`FERRETDB_SETUP_PASSWORD`: Specifies the password for the user (can be empty).
-- `--setup-timeout`/`FERRETDB_SETUP_TIMEOUT`: Sets the timeout for establishing a working backend connection.
-- `--setup-database`/`FERRETDB_SETUP_DATABASE`: Specifies the database to create the user in.
+- `--setup-database`/`FERRETDB_SETUP_DATABASE`: Specifies the initial database that will be created.
 - `--test-enable-new-auth`/`FERRETDB_TEST_ENABLE_NEW_AUTH`: Must be set to `true` to enable the new authentication setup.
 
-Once the flags/environment variables are passed, FerretDB will create the specified user with the given password.
+Once the flags/environment variables are passed, FerretDB will create the specified user with the given password and database.
 
 ## Make maximum document size configurable
 
