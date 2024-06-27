@@ -38,7 +38,7 @@ ferretdb --test-enable-new-auth=true --setup-username=user --setup-password=pass
 - `--setup-database`/`FERRETDB_SETUP_DATABASE`: Specifies the initial database that will be created.
 - `--test-enable-new-auth`/`FERRETDB_TEST_ENABLE_NEW_AUTH`: Must be set to `true` to enable the new authentication setup.
 
-Once the flags/environment variables are passed, FerretDB will create the specified user with the given password, and also create the given database.
+Once the flags/environment variables are passed, FerretDB will create the specified user with the given password and the given database.
 
 ## Make maximum document size configurable
 
