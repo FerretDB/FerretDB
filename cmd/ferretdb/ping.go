@@ -63,6 +63,37 @@ func ping() {
 		urls = append(urls, u.String())
 	}
 
+	if cli.Listen.TLS != "" {
+		host, port, err := net.SplitHostPort(cli.Listen.TLS)
+		if err != nil {
+			l.Fatal(err)
+		}
+
+		l.Debugf("--listen-tls flag is set. Ping to %s will be performed.", cli.Listen.Addr)
+
+		if host == "" {
+			host = "127.0.0.1"
+
+			l.Debugf("Host not specified, defaulting to %s.", host)
+		}
+
+		values := url.Values{}
+
+		values.Add("tls", "true")
+		values.Add("tlsCaFile", "/certs/rootCA-cert.pem")
+		values.Add("tlsCertificateKeyFile", "/certs/client.pem")
+
+		u := &url.URL{
+			Scheme:   "mongodb",
+			Host:     net.JoinHostPort(host, port),
+			Path:     cli.Setup.Database,
+			User:     url.UserPassword(cli.Setup.Username, cli.Setup.Password),
+			RawQuery: values.Encode(),
+		}
+
+		urls = append(urls, u.String())
+	}
+
 	if cli.Listen.Unix != "" {
 		l.Debugf("--listen-unix flag is set. Ping to %s will be performed.", cli.Listen.Unix)
 
@@ -99,6 +130,6 @@ func ping() {
 			u = uri.Redacted()
 		}
 
-		l.Infof("Ping to %s successful.")
+		l.Infof("Ping to %s successful.", u)
 	}
 }
