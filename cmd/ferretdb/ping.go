@@ -77,11 +77,15 @@ func ping() {
 			l.Debugf("Host not specified, defaulting to %s.", host)
 		}
 
+		if cli.Listen.TLSKeyFile == "" || cli.Listen.TLSCaFile == "" {
+			l.Fatal("When --listen-tls is set. Both --listen-tls-cert-file and --listen-tls-ca-file need to be provided.")
+		}
+
 		values := url.Values{}
 
 		values.Add("tls", "true")
-		values.Add("tlsCaFile", "/certs/rootCA-cert.pem")
-		values.Add("tlsCertificateKeyFile", "/certs/client.pem")
+		values.Add("tlsCaFile", cli.Listen.TLSCaFile)
+		values.Add("tlsCertificateKeyFile", cli.Listen.TLSKeyFile)
 
 		u := &url.URL{
 			Scheme:   "mongodb",
