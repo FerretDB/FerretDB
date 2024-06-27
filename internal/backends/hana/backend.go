@@ -89,7 +89,7 @@ func (b *backend) Status(ctx context.Context, params *backends.StatusParams) (*b
 
 		list, errDB := newDatabase(b.hdb, dbName).ListCollections(ctx, new(backends.ListCollectionsParams))
 		if errDB != nil {
-			return nil, lazyerrors.Error(err)
+			return nil, lazyerrors.Error(errDB)
 		}
 
 		res.CountCollections += int64(len(list.Collections))
