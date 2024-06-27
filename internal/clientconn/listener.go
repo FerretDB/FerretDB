@@ -82,6 +82,36 @@ func NewListener(opts *NewListenerOpts) *Listener {
 	}
 }
 
+// Wait blocks until all of the expected listeners have started or returned the error.
+func (l *Listener) Wait() {
+	var wg sync.WaitGroup
+
+	if l.TCP != "" {
+		wg.Add(1)
+		go func() {
+			<-l.tcpListenerReady
+			wg.Done()
+		}()
+	}
+	if l.Unix != "" {
+		wg.Add(1)
+		go func() {
+			<-l.unixListenerReady
+			wg.Done()
+		}()
+	}
+
+	if l.TLS != "" {
+		wg.Add(1)
+		go func() {
+			<-l.tlsListenerReady
+			wg.Done()
+		}()
+	}
+
+	wg.Wait()
+}
+
 // Run runs the listener until ctx is canceled or some unrecoverable error occurs.
 //
 // When this method returns, listener and all connections, as well as handler are closed.

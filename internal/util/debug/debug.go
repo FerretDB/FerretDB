@@ -44,7 +44,7 @@ const (
 )
 
 // RunHandler runs debug handler.
-func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *zap.Logger) {
+func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *zap.Logger, started <-chan struct{}) {
 	stdL := must.NotFail(zap.NewStdLogAt(l, zap.WarnLevel))
 
 	http.Handle("/debug/metrics", promhttp.InstrumentMetricHandler(
@@ -75,8 +75,16 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 	must.NoError(r.Register(requestCount))
 
 	startedHandler := http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
-		// TODO https://github.com/FerretDB/FerretDB/issues/4306
-		rw.WriteHeader(http.StatusOK)
+		if started == nil {
+			rw.WriteHeader(http.StatusOK)
+		}
+
+		select {
+		case <-started:
+			rw.WriteHeader(http.StatusOK)
+		default:
+			rw.WriteHeader(http.StatusInternalServerError)
+		}
 	})
 
 	// healthz handler, which is used for liveness probe, returns StatusOK when reached.

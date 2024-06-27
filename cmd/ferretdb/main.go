@@ -397,12 +397,14 @@ func run() {
 
 	var wg sync.WaitGroup
 
+	listenerStarted := make(chan struct{})
+
 	if cli.DebugAddr != "" && cli.DebugAddr != "-" {
 		wg.Add(1)
 
 		go func() {
 			defer wg.Done()
-			debug.RunHandler(ctx, cli.DebugAddr, metricsRegisterer, logger.Named("debug"))
+			debug.RunHandler(ctx, cli.DebugAddr, metricsRegisterer, logger.Named("debug"), listenerStarted)
 		}()
 	}
 
@@ -485,6 +487,11 @@ func run() {
 		Logger:         logger,
 		TestRecordsDir: cli.Test.RecordsDir,
 	})
+
+	go func() {
+		l.Wait()
+		close(listenerStarted)
+	}()
 
 	metricsRegisterer.MustRegister(l)
 
