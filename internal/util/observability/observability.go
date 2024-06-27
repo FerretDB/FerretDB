@@ -26,22 +26,20 @@ import (
 	otelsdkresource "go.opentelemetry.io/otel/sdk/resource"
 	otelsdktrace "go.opentelemetry.io/otel/sdk/trace"
 	otelsemconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+	zap "go.uber.org/zap"
 )
 
-// Config is the configuration for OpenTelemetry.
-type Config struct {
+// OtelConfig is the configuration for OpenTelemetry.
+type OtelConfig struct {
 	Service  string
 	Version  string
 	Endpoint string
 }
 
-// ShutdownFunc is a function that shuts down the OpenTelemetry observability system.
-type ShutdownFunc func(context.Context) error
+// RunOtel runs the OpenTelemetry system with the given configuration.
+func RunOtel(ctx context.Context, config OtelConfig, l *zap.Logger) {
+	logger := l.Sugar()
 
-// SetupOtel sets up OTLP exporter and tracer provider.
-//
-// The function returns a shutdown function that should be called when the application is shutting down.
-func SetupOtel(config Config) (ShutdownFunc, error) {
 	// Exporter and tracer are configured with the particular params on purpose.
 	// We don't want to let them being set through OTEL_* environment variables,
 	// but we set them explicitly.
@@ -51,7 +49,8 @@ func SetupOtel(config Config) (ShutdownFunc, error) {
 		otlptracehttp.WithInsecure(),
 	)
 	if err != nil {
-		return nil, err
+		logger.Errorf("Failed to create OTLP exporter: %s. OpenTelemetry won't be used.", err)
+		return
 	}
 
 	tp := otelsdktrace.NewTracerProvider(
@@ -65,5 +64,15 @@ func SetupOtel(config Config) (ShutdownFunc, error) {
 
 	otel.SetTracerProvider(tp)
 
-	return tp.Shutdown, nil
+	<-ctx.Done()
+
+	stopCtx, stopCancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer stopCancel()
+
+	if err := tp.Shutdown(stopCtx); err != nil {
+		logger.Errorf("Error while shutdown OpenTelemetry system: %v", err)
+		return
+	}
+
+	logger.Info("OpenTelemetry system stopped successfully.")
 }

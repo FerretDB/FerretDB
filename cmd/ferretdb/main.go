@@ -445,6 +445,22 @@ func run() {
 		}()
 	}
 
+	if cli.Test.OTLPEndpoint != "" {
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+
+			otelConf := observability.OtelConfig{
+				Service:  "ferretdb",
+				Version:  version.Get().Version,
+				Endpoint: cli.Test.OTLPEndpoint,
+			}
+
+			observability.RunOtel(ctx, otelConf, logger.Named("otel"))
+		}()
+	}
+
 	metrics := connmetrics.NewListenerMetrics()
 
 	wg.Add(1)
