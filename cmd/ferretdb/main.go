@@ -312,28 +312,6 @@ func setupLogger(stateProvider *state.Provider, format string) *zap.Logger {
 	return l
 }
 
-// setupTracer sets up OpenTelemetry tracer.
-func setupTracer(logger *zap.Logger) observability.ShutdownFunc {
-	if cli.Test.OTLPEndpoint == "" {
-		return nil
-	}
-
-	l := logger.Sugar()
-
-	shutdown, err := observability.SetupOtel(observability.Config{
-		Service:  "ferretdb",
-		Version:  version.Get().Version,
-		Endpoint: cli.Test.OTLPEndpoint,
-	})
-	if err != nil {
-		l.Fatalf("Failed to set up OpenTelemetry: %s.", err)
-	}
-
-	l.Infof("OpenTelemetry is enabled. OTLP exporter endpoint: %s.", cli.Test.OTLPEndpoint)
-
-	return shutdown
-}
-
 // checkFlags checks that CLI flags are not self-contradictory.
 func checkFlags(logger *zap.Logger) {
 	l := logger.Sugar()
@@ -420,20 +398,6 @@ func run() {
 		stop()
 	}()
 
-	otelShutdown := setupTracer(logger)
-
-	if otelShutdown != nil {
-		defer func() {
-			shutdownCtx, shutdownCancel := ctxutil.WithDelay(ctx.Done(), 3*time.Second) //nolint:mnd // simple shutdown timeout
-
-			if err := otelShutdown(shutdownCtx); err != nil {
-				logger.Sugar().Errorf("Failed to shutdown OpenTelemetry: %s.", err)
-			}
-
-			shutdownCancel()
-		}()
-	}
-
 	var wg sync.WaitGroup
 
 	if cli.DebugAddr != "" && cli.DebugAddr != "-" {
@@ -448,16 +412,15 @@ func run() {
 	if cli.Test.OTLPEndpoint != "" {
 		wg.Add(1)
 
+		otelConf := observability.OtelConfig{
+			Service:  "ferretdb",
+			Version:  version.Get().Version,
+			Endpoint: cli.Test.OTLPEndpoint,
+		}
+
 		go func() {
 			defer wg.Done()
-
-			otelConf := observability.OtelConfig{
-				Service:  "ferretdb",
-				Version:  version.Get().Version,
-				Endpoint: cli.Test.OTLPEndpoint,
-			}
-
-			observability.RunOtel(ctx, otelConf, logger.Named("otel"))
+			observability.RunOtel(ctx, otelConf, logger.Named("otel").Sugar())
 		}()
 	}
 

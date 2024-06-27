@@ -22,23 +22,19 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/FerretDB/FerretDB/internal/util/observability"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
-	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/util/observability"
-
-	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 // listenerMetrics are shared between tests.
 var listenerMetrics = connmetrics.NewListenerMetrics()
-
-// shutdownOtel is a function that stops OpenTelemetry provider.
-var shutdownOtel func(context.Context) error
 
 // Startup initializes things that should be initialized only once.
 func Startup() {
@@ -54,6 +50,13 @@ func Startup() {
 
 	// use any available port to allow running different configurations in parallel
 	go debug.RunHandler(context.Background(), "127.0.0.1:0", prometheus.DefaultRegisterer, zap.L().Named("debug"))
+
+	otelConf := observability.OtelConfig{
+		Service:  "integration-tests",
+		Endpoint: "127.0.0.1:4318",
+	}
+
+	go observability.RunOtel(context.Background(), otelConf, zap.L().Named("otel").Sugar())
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -117,20 +120,10 @@ func Startup() {
 	} else {
 		zap.S().Infof("Compat system: none, compatibility tests will be skipped.")
 	}
-
-	shutdownOtel = must.NotFail(observability.SetupOtel(observability.Config{
-		Service:  "integration-tests",
-		Endpoint: "127.0.0.1:4318",
-	}))
 }
 
 // Shutdown cleans up after all tests.
 func Shutdown() {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	must.NoError(shutdownOtel(ctx))
-
 	// to increase a chance of resource finalizers to spot problems
 	runtime.GC()
 	runtime.GC()

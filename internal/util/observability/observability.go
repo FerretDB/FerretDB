@@ -22,11 +22,12 @@ import (
 	"time"
 
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	otelsdkresource "go.opentelemetry.io/otel/sdk/resource"
 	otelsdktrace "go.opentelemetry.io/otel/sdk/trace"
 	otelsemconv "go.opentelemetry.io/otel/semconv/v1.21.0"
-	zap "go.uber.org/zap"
+	"go.uber.org/zap"
 )
 
 // OtelConfig is the configuration for OpenTelemetry.
@@ -37,13 +38,14 @@ type OtelConfig struct {
 }
 
 // RunOtel runs the OpenTelemetry system with the given configuration.
-func RunOtel(ctx context.Context, config OtelConfig, l *zap.Logger) {
-	logger := l.Sugar()
+func RunOtel(ctx context.Context, config OtelConfig, logger *zap.SugaredLogger) {
+	var exporter *otlptrace.Exporter
+	var err error
 
 	// Exporter and tracer are configured with the particular params on purpose.
 	// We don't want to let them being set through OTEL_* environment variables,
 	// but we set them explicitly.
-	exporter, err := otlptracehttp.New(
+	exporter, err = otlptracehttp.New(
 		context.TODO(),
 		otlptracehttp.WithEndpoint(config.Endpoint),
 		otlptracehttp.WithInsecure(),
@@ -66,10 +68,10 @@ func RunOtel(ctx context.Context, config OtelConfig, l *zap.Logger) {
 
 	<-ctx.Done()
 
-	stopCtx, stopCancel := context.WithTimeout(context.Background(), 3*time.Second)
+	stopCtx, stopCancel := context.WithTimeout(context.Background(), 3*time.Second) //nolint:mnd // Simple timeout
 	defer stopCancel()
 
-	if err := tp.Shutdown(stopCtx); err != nil {
+	if err = tp.Shutdown(stopCtx); err != nil {
 		logger.Errorf("Error while shutdown OpenTelemetry system: %v", err)
 		return
 	}
