@@ -88,13 +88,16 @@ func (l *Listener) Wait() {
 
 	if l.TCP != "" {
 		wg.Add(1)
+
 		go func() {
 			<-l.tcpListenerReady
 			wg.Done()
 		}()
 	}
+
 	if l.Unix != "" {
 		wg.Add(1)
+
 		go func() {
 			<-l.unixListenerReady
 			wg.Done()
@@ -103,6 +106,7 @@ func (l *Listener) Wait() {
 
 	if l.TLS != "" {
 		wg.Add(1)
+
 		go func() {
 			<-l.tlsListenerReady
 			wg.Done()
