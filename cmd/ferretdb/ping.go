@@ -21,6 +21,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.uber.org/zap"
 )
 
 // ping creates connection to FerretDB instance specified by the flags, and runs `ping` command against it.
@@ -81,17 +82,17 @@ func ping() {
 
 		client, err := mongo.Connect(ctx, options.Client().ApplyURI(u))
 		if err != nil {
-			l.Fatal(err)
+			l.Fatal("Connection failed", zap.Error(err))
 		}
 
 		pingErr := client.Ping(ctx, nil)
 
 		if err = client.Disconnect(ctx); err != nil {
-			l.Fatal(err)
+			l.Fatal("Disconnect failed", zap.Error(err))
 		}
 
 		if pingErr != nil {
-			l.Fatal(pingErr)
+			l.Fatal("Ping failed", zap.Error(pingErr))
 		}
 
 		if uri, err := url.Parse(u); err == nil {
