@@ -126,7 +126,8 @@ func ping() {
 			l.Fatal("Ping failed", zap.Error(pingErr))
 		}
 
-		if uri, err := url.Parse(u); err == nil {
+		var uri *url.URL
+		if uri, err = url.Parse(u); err == nil {
 			u = uri.Redacted()
 		}
 
