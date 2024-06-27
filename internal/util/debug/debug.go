@@ -74,6 +74,10 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 
 	must.NoError(r.Register(requestCount))
 
+	// started handler, which is used for startup probe, returns StatusOK when FerretDB listener were initialized.
+	// If it wasn't yet, the StatusInternalServerError is returned.
+	//
+	// If started channel is nil, the handler always returns StatusOK.
 	startedHandler := http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 		if started == nil {
 			rw.WriteHeader(http.StatusOK)
