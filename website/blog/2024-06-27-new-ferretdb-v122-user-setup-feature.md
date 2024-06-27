@@ -17,7 +17,7 @@ We are thrilled to announce the release of FerretDB v1.22.0, which now includes 
 This release, one of the last in the FerretDB v1.x series, adds new features and improvements to make FerretDB even better.
 Users can now set up an initial user for authentication, configure the document size limit, and benefit from several enhancements in this release.
 
-As we continue to build and improve FerretDB, we are committed to providing a truly open-source document database that satisfies many MongoDB use cases.
+As we continue to build and improve [FerretDB](https://www.ferretdb.com/), we are committed to providing a truly open-source document database that satisfies many MongoDB use cases.
 In the background, we are working on FerretDB v2.0, which will drastically improve performance and compatibility.
 It will also be a complete departure from our current architecture, and we can't wait to share it with you soon.
 
@@ -55,6 +55,7 @@ The `Dockerfile` has been updated to explicitly set ownership of the state direc
 
 We have also improved the error message for invalid ownership/permissions of `state.json`.
 This will provide clearer error messages when there are issues with the ownership or permissions of the `state.json` file and will also log the user and group.
+
 We also made some adjustments to how document fields are sorted.
 Document fields are now sorted in lexicographic order during updates.
 For example, "bar" comes before "foo", "7" comes before "42", and "bar.7" comes before "bar.42".
