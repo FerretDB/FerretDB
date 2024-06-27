@@ -85,12 +85,14 @@ func ping() {
 			l.Fatal(err)
 		}
 
-		if err = client.Ping(ctx, nil); err != nil {
-			l.Fatal(err)
-		}
+		pingErr := client.Ping(ctx, nil)
 
 		if err = client.Disconnect(ctx); err != nil {
 			l.Fatal(err)
+		}
+
+		if pingErr != nil {
+			l.Fatal(pingErr)
 		}
 
 		l.Infof("Ping to %s successful.", u)
