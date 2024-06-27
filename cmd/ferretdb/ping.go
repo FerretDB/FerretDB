@@ -78,7 +78,7 @@ func ping() {
 		}
 
 		if cli.Listen.TLSKeyFile == "" || cli.Listen.TLSCaFile == "" {
-			l.Fatal("When --listen-tls is set. Both --listen-tls-cert-file and --listen-tls-ca-file need to be provided.")
+			l.Fatal("When --listen-tls is set, both --listen-tls-cert-file and --listen-tls-ca-file need to be provided.")
 		}
 
 		values := url.Values{}
