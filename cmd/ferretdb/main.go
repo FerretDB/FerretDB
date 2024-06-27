@@ -272,7 +272,6 @@ func setupMetrics(stateProvider *state.Provider) prometheus.Registerer {
 }
 
 // setupLogger setups zap logger.
-// It should be preffered for specific single commands/operations over setupLoggerWithStartupMsg.
 func setupLogger(format string, uuid string) *zap.Logger {
 	level, err := zapcore.ParseLevel(cli.Log.Level)
 	if err != nil {
