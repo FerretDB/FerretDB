@@ -31,7 +31,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
-func TestRunHandler(t *testing.T) {
+func TestRunHandlerStartupProbe(t *testing.T) {
 	t.Parallel()
 
 	// create and close TCP socket, to obtain a free port
