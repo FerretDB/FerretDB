@@ -53,12 +53,12 @@ func TestRunHandler(t *testing.T) {
 		wg.Done()
 	}()
 
-	req, err := http.NewRequestWithContext(ctx, "GET", "http://"+addr.String()+"/debug/started", nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://"+addr.String()+"/debug/started", nil)
 	require.NoError(t, err)
 
 	// Wait for handler
-	for i := 0; i < 5; i++ {
-		_, err := http.DefaultClient.Do(req)
+	for range 5 {
+		_, err = http.DefaultClient.Do(req)
 		if err == nil {
 			break
 		}
@@ -80,6 +80,8 @@ func TestRunHandler(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, res.StatusCode)
 
+	// Cancel the context to stop RunHandler.
+	// The WaitGroup is needed to make sure that all logs were printed before the test finished.
 	cancel()
 	wg.Wait()
 }
