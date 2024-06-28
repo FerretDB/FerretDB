@@ -96,7 +96,12 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 		Endpoint: "127.0.0.1:4318",
 	}
 
-	go observability.RunOtel(ctx, otelConf, logger)
+	ot, err := observability.NewOtel(&otelConf, logger.Desugar())
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	go ot.Run(ctx)
 
 	cmd := exec.CommandContext(ctx, "go", append([]string{"test", "-json"}, args...)...)
 

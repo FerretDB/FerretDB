@@ -19,6 +19,7 @@ package observability
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"go.opentelemetry.io/otel"
@@ -37,8 +38,18 @@ type OtelConfig struct {
 	Endpoint string
 }
 
-// RunOtel runs the OpenTelemetry system with the given configuration.
-func RunOtel(ctx context.Context, config OtelConfig, logger *zap.SugaredLogger) {
+// Otel represents the OpenTelemetry system.
+type Otel struct {
+	l  *zap.Logger
+	tp *otelsdktrace.TracerProvider
+}
+
+// NewOtel sets up OTLP exporter and tracer provider.
+func NewOtel(config *OtelConfig, l *zap.Logger) (*Otel, error) {
+	if config.Endpoint == "" {
+		return nil, errors.New("endpoint is required")
+	}
+
 	var exporter *otlptrace.Exporter
 	var err error
 
@@ -51,8 +62,7 @@ func RunOtel(ctx context.Context, config OtelConfig, logger *zap.SugaredLogger) 
 		otlptracehttp.WithInsecure(),
 	)
 	if err != nil {
-		logger.Errorf("Failed to create OTLP exporter: %v. OpenTelemetry won't be used.", err)
-		return
+		return nil, err
 	}
 
 	tp := otelsdktrace.NewTracerProvider(
@@ -66,17 +76,25 @@ func RunOtel(ctx context.Context, config OtelConfig, logger *zap.SugaredLogger) 
 
 	otel.SetTracerProvider(tp)
 
-	logger.Infof("OpenTelemetry system started successfully, exporter endpoint is set as %s", config.Endpoint)
+	return &Otel{
+		l:  l,
+		tp: tp,
+	}, nil
+}
+
+// Run runs the OpenTelemetry system.
+func (o *Otel) Run(ctx context.Context) {
+	o.l.Info("OpenTelemetry system started successfully.")
 
 	<-ctx.Done()
 
 	stopCtx, stopCancel := context.WithTimeout(context.Background(), 3*time.Second) //nolint:mnd // Simple timeout
 	defer stopCancel()
 
-	if err = tp.Shutdown(stopCtx); err != nil {
-		logger.Errorf("Error while shutdown OpenTelemetry system: %v", err)
+	if err := o.tp.Shutdown(stopCtx); err != nil {
+		o.l.Error("Error while shutdown OpenTelemetry system.", zap.Error(err))
 		return
 	}
 
-	logger.Info("OpenTelemetry system stopped successfully.")
+	o.l.Info("OpenTelemetry system stopped successfully.")
 }

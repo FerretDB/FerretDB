@@ -56,9 +56,14 @@ func Startup() {
 		Endpoint: "127.0.0.1:4318",
 	}
 
-	go observability.RunOtel(context.Background(), otelConf, zap.L().Named("otel").Sugar())
+	ot, err := observability.NewOtel(&otelConf, zap.L().Named("otel"))
+	if err != nil {
+		zap.S().Fatal(err)
+	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	go ot.Run(context.Background())
+
+	ctx, cancel := context.WithTimeout(context.TODO(), 5*time.Second)
 	defer cancel()
 
 	// do basic flags validation earlier, before all tests
