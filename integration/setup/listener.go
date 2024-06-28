@@ -196,7 +196,7 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 	}
 
 	if !opts.DisableNewAuth {
-		handlerOpts.SetupDatabase = "test"
+		handlerOpts.SetupDatabase = "admin"
 		handlerOpts.SetupUsername = "username"
 		handlerOpts.SetupPassword = password.WrapPassword("password")
 		handlerOpts.SetupTimeout = 1 * time.Second
