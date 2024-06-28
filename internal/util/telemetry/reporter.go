@@ -110,6 +110,8 @@ func NewReporter(opts *NewReporterOpts) (*Reporter, error) {
 }
 
 // Run runs reporter until context is canceled.
+//
+// TODO https://github.com/FerretDB/FerretDB/issues/4403
 func (r *Reporter) Run(ctx context.Context) {
 	r.L.Debug("Reporter started.")
 	defer r.L.Debug("Reporter stopped.")

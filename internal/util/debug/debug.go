@@ -43,7 +43,9 @@ const (
 	subsystem = "debug"
 )
 
-// RunHandler runs debug handler.
+// RunHandler runs debug handler until ctx is canceled.
+//
+// TODO https://github.com/FerretDB/FerretDB/issues/4403
 func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *zap.Logger, started <-chan struct{}) {
 	stdL := must.NotFail(zap.NewStdLogAt(l, zap.WarnLevel))
 

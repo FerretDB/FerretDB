@@ -133,6 +133,8 @@ func newConn(opts *newConnOpts) (*conn, error) {
 // Returned error is always non-nil.
 //
 // The caller is responsible for closing the underlying net.Conn.
+//
+// TODO https://github.com/FerretDB/FerretDB/issues/4403
 func (c *conn) run(ctx context.Context) (err error) {
 	ctx, cancel := context.WithCancelCause(ctx)
 	defer func() {

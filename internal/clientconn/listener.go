@@ -119,6 +119,8 @@ func (l *Listener) Wait() {
 // Run runs the listener until ctx is canceled or some unrecoverable error occurs.
 //
 // When this method returns, listener and all connections, as well as handler are closed.
+//
+// TODO https://github.com/FerretDB/FerretDB/issues/4403
 func (l *Listener) Run(ctx context.Context) error {
 	defer l.Handler.Close()
 
@@ -259,6 +261,8 @@ func setupTLSListener(opts *setupTLSListenerOpts) (net.Listener, error) {
 }
 
 // acceptLoop runs listener's connection accepting loop until context is canceled.
+//
+// TODO https://github.com/FerretDB/FerretDB/issues/4403
 func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, l *Listener, logger *zap.Logger) {
 	var retry int64
 	for {

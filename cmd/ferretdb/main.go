@@ -327,6 +327,8 @@ func checkFlags(logger *zap.Logger) {
 }
 
 // runTelemetryReporter runs telemetry reporter until ctx is canceled.
+//
+// TODO https://github.com/FerretDB/FerretDB/issues/4403
 func runTelemetryReporter(ctx context.Context, opts *telemetry.NewReporterOpts) {
 	r, err := telemetry.NewReporter(opts)
 	if err != nil {
