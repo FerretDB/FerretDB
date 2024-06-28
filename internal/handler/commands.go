@@ -17,6 +17,10 @@ package handler
 import (
 	"context"
 
+	"go.uber.org/zap"
+
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -37,7 +41,7 @@ type command struct {
 
 // initCommands initializes the commands map for that handler instance.
 func (h *Handler) initCommands() {
-	h.commands = map[string]command{
+	h.commands = map[string]*command{
 		// sorted alphabetically
 		"aggregate": {
 			Handler: h.MsgAggregate,
@@ -252,23 +256,23 @@ func (h *Handler) initCommands() {
 
 	if h.EnableNewAuth {
 		// sorted alphabetically
-		h.commands["createUser"] = command{
+		h.commands["createUser"] = &command{
 			Handler: h.MsgCreateUser,
 			Help:    "Creates a new user.",
 		}
-		h.commands["dropAllUsersFromDatabase"] = command{
+		h.commands["dropAllUsersFromDatabase"] = &command{
 			Handler: h.MsgDropAllUsersFromDatabase,
 			Help:    "Drops all user from database.",
 		}
-		h.commands["dropUser"] = command{
+		h.commands["dropUser"] = &command{
 			Handler: h.MsgDropUser,
 			Help:    "Drops user.",
 		}
-		h.commands["updateUser"] = command{
+		h.commands["updateUser"] = &command{
 			Handler: h.MsgUpdateUser,
 			Help:    "Updates user.",
 		}
-		h.commands["usersInfo"] = command{
+		h.commands["usersInfo"] = &command{
 			Handler: h.MsgUsersInfo,
 			Help:    "Returns information about users.",
 		}
@@ -276,31 +280,51 @@ func (h *Handler) initCommands() {
 	}
 
 	for name, cmd := range h.commands {
-		h.commands[name] = command{
-			Handler:   h.authenticateWrapper(cmd),
-			anonymous: cmd.anonymous,
-			Help:      cmd.Help,
+		if h.EnableNewAuth && !cmd.anonymous {
+			cmdHandler := h.commands[name].Handler
+
+			h.commands[name].Handler = func(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+				if err := checkSCRAMConversation(ctx, h.L); err != nil {
+					return nil, err
+				}
+
+				return cmdHandler(ctx, msg)
+			}
 		}
 	}
+}
+
+// checkSCRAMConversation returns error if SCRAM conversation is not valid.
+func checkSCRAMConversation(ctx context.Context, l *zap.Logger) error {
+	_, _, conv := conninfo.Get(ctx).Auth()
+
+	switch {
+	case conv == nil:
+		l.Warn("checkSCRAMConversation: no conversation")
+
+	case !conv.Valid():
+		l.Warn(
+			"checkSCRAMConversation: invalid conversation",
+			zap.String("username", conv.Username()), zap.Bool("valid", conv.Valid()), zap.Bool("done", conv.Done()),
+		)
+
+	default:
+		l.Debug(
+			"checkSCRAMConversation: passed",
+			zap.String("username", conv.Username()), zap.Bool("valid", conv.Valid()), zap.Bool("done", conv.Done()),
+		)
+
+		return nil
+	}
+
+	return handlererrors.NewCommandErrorMsgWithArgument(
+		handlererrors.ErrAuthenticationFailed,
+		"Authentication failed.",
+		"checkSCRAMConversation",
+	)
 }
 
 // Commands returns a map of enabled commands.
-func (h *Handler) Commands() map[string]command {
+func (h *Handler) Commands() map[string]*command {
 	return h.commands
-}
-
-// authenticateWrapper wraps the command handler with the authentication check.
-// If anonymous is true, the command handler is executed without authentication.
-func (h *Handler) authenticateWrapper(cmd command) func(context.Context, *wire.OpMsg) (*wire.OpMsg, error) {
-	return func(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-		if cmd.anonymous {
-			return cmd.Handler(ctx, msg)
-		}
-
-		if err := h.authenticate(ctx); err != nil {
-			return nil, err
-		}
-
-		return cmd.Handler(ctx, msg)
-	}
 }

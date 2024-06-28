@@ -46,7 +46,10 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, err
 	}
 
-	replyDoc, err := h.saslStart(ctx, dbName, document)
+	// TODO https://github.com/FerretDB/FerretDB/issues/4392
+	_ = dbName
+
+	replyDoc, err := h.saslStart(ctx, document)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +64,7 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 // saslStart starts authentication and returns a document used for the response.
 // If EnableNewAuth is set SCRAM mechanisms are supported, otherwise `PLAIN` mechanism is supported.
-func (h *Handler) saslStart(ctx context.Context, dbName string, document *types.Document) (*types.Document, error) {
+func (h *Handler) saslStart(ctx context.Context, document *types.Document) (*types.Document, error) {
 	// TODO https://github.com/FerretDB/FerretDB/issues/3008
 	mechanism, err := common.GetRequiredParam[string](document, "mechanism")
 	if err != nil {
@@ -73,11 +76,9 @@ func (h *Handler) saslStart(ctx context.Context, dbName string, document *types.
 		case "SCRAM-SHA-1", "SCRAM-SHA-256":
 			var response string
 
-			if response, err = h.saslStartSCRAM(ctx, dbName, mechanism, document); err != nil {
+			if response, err = h.saslStartSCRAM(ctx, mechanism, document); err != nil {
 				return nil, err
 			}
-
-			conninfo.Get(ctx).SetBypassBackendAuth()
 
 			return must.NotFail(types.NewDocument(
 				"conversationId", int32(1),
@@ -93,12 +94,9 @@ func (h *Handler) saslStart(ctx context.Context, dbName string, document *types.
 
 	switch mechanism {
 	case "PLAIN":
-		username, password, err := saslStartPlain(document)
-		if err != nil {
+		if err = saslStartPlain(ctx, document); err != nil {
 			return nil, err
 		}
-
-		conninfo.Get(ctx).SetAuth(username, password, mechanism, nil)
 
 		var emptyPayload types.Binary
 
@@ -115,14 +113,14 @@ func (h *Handler) saslStart(ctx context.Context, dbName string, document *types.
 }
 
 // saslStartPlain extracts username and password from PLAIN `saslStart` payload.
-func saslStartPlain(doc *types.Document) (string, string, error) {
+func saslStartPlain(ctx context.Context, doc *types.Document) error {
 	var payload []byte
 
 	// some drivers send payload as a string
 	stringPayload, err := common.GetRequiredParam[string](doc, "payload")
 	if err == nil {
 		if payload, err = base64.StdEncoding.DecodeString(stringPayload); err != nil {
-			return "", "", handlererrors.NewCommandErrorMsgWithArgument(
+			return handlererrors.NewCommandErrorMsgWithArgument(
 				handlererrors.ErrBadValue,
 				fmt.Sprintf("Invalid payload: %v", err),
 				"payload",
@@ -138,12 +136,12 @@ func saslStartPlain(doc *types.Document) (string, string, error) {
 
 	// as spec's payload should be binary, we return an error mentioned binary as expected type
 	if payload == nil {
-		return "", "", err
+		return err
 	}
 
 	fields := bytes.Split(payload, []byte{0})
 	if l := len(fields); l != 3 {
-		return "", "", handlererrors.NewCommandErrorMsgWithArgument(
+		return handlererrors.NewCommandErrorMsgWithArgument(
 			handlererrors.ErrTypeMismatch,
 			fmt.Sprintf("Invalid payload: expected 3 fields, got %d", l),
 			"payload",
@@ -158,11 +156,13 @@ func saslStartPlain(doc *types.Document) (string, string, error) {
 	// Ignore authzid for now.
 	_ = authzid
 
-	return string(authcid), string(passwd), nil
+	conninfo.Get(ctx).SetAuth(string(authcid), string(passwd), nil)
+
+	return nil
 }
 
 // scramCredentialLookup looks up an user's credentials in the database.
-func (h *Handler) scramCredentialLookup(ctx context.Context, username, dbName, mechanism string) (*scram.StoredCredentials, error) { //nolint:lll // for readability
+func (h *Handler) scramCredentialLookup(ctx context.Context, username, mechanism string) (*scram.StoredCredentials, error) { //nolint:lll // for readability
 	adminDB, err := h.b.Database("admin")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -178,6 +178,7 @@ func (h *Handler) scramCredentialLookup(ctx context.Context, username, dbName, m
 	// authSource option of the client.
 	// Let authorization handle the database access right.
 	// TODO https://github.com/FerretDB/FerretDB/issues/174
+	// TODO https://github.com/FerretDB/FerretDB/issues/4392
 	filter := must.NotFail(types.NewDocument("user", username))
 
 	// Filter isn't being passed to the query as we are filtering after retrieving all data
@@ -237,17 +238,18 @@ func (h *Handler) scramCredentialLookup(ctx context.Context, username, dbName, m
 		}
 	}
 
-	h.L.Warn("Credential lookup failed", zap.String("user", username))
+	h.L.Warn("scramCredentialLookup: failed", zap.String("user", username))
 
-	return nil, handlererrors.NewCommandErrorMsg(
+	return nil, handlererrors.NewCommandErrorMsgWithArgument(
 		handlererrors.ErrAuthenticationFailed,
 		"Authentication failed.",
+		"scramCredentialLookup",
 	)
 }
 
 // saslStartSCRAM extracts the initial challenge and attempts to move the
 // authentication conversation forward returning a challenge response.
-func (h *Handler) saslStartSCRAM(ctx context.Context, dbName, mechanism string, doc *types.Document) (string, error) {
+func (h *Handler) saslStartSCRAM(ctx context.Context, mechanism string, doc *types.Document) (string, error) {
 	var payload []byte
 
 	// most drivers follow spec and send payload as a binary
@@ -270,7 +272,7 @@ func (h *Handler) saslStartSCRAM(ctx context.Context, dbName, mechanism string, 
 	}
 
 	scramServer, err := f.NewServer(func(username string) (scram.StoredCredentials, error) {
-		cred, lookupErr := h.scramCredentialLookup(ctx, username, dbName, mechanism)
+		cred, lookupErr := h.scramCredentialLookup(ctx, username, mechanism)
 		if lookupErr != nil {
 			return scram.StoredCredentials{}, lookupErr
 		}
@@ -284,11 +286,26 @@ func (h *Handler) saslStartSCRAM(ctx context.Context, dbName, mechanism string, 
 	conv := scramServer.NewConversation()
 
 	response, err := conv.Step(string(payload))
+
+	fields := []zap.Field{
+		zap.String("username", conv.Username()),
+		zap.Bool("valid", conv.Valid()),
+		zap.Bool("done", conv.Done()),
+	}
+
 	if err != nil {
+		if h.L.Level().Enabled(zap.DebugLevel) {
+			fields = append(fields, zap.Error(err))
+		}
+
+		h.L.Warn("saslStartSCRAM: step failed", fields...)
+
 		return "", err
 	}
 
-	conninfo.Get(ctx).SetAuth(conv.Username(), "", mechanism, conv)
+	h.L.Debug("saslStartSCRAM: step succeed", fields...)
+
+	conninfo.Get(ctx).SetAuth(conv.Username(), "", conv)
 
 	return response, nil
 }
