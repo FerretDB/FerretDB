@@ -52,8 +52,11 @@ func Startup() {
 
 	prometheus.DefaultRegisterer.MustRegister(listenerMetrics)
 
+	started := make(chan struct{})
+	close(started)
+
 	// use any available port to allow running different configurations in parallel
-	go debug.RunHandler(context.Background(), "127.0.0.1:0", prometheus.DefaultRegisterer, zap.L().Named("debug"), nil)
+	go debug.RunHandler(context.Background(), "127.0.0.1:0", prometheus.DefaultRegisterer, zap.L().Named("debug"), started)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
