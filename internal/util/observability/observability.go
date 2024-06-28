@@ -51,7 +51,7 @@ func RunOtel(ctx context.Context, config OtelConfig, logger *zap.SugaredLogger) 
 		otlptracehttp.WithInsecure(),
 	)
 	if err != nil {
-		logger.Errorf("Failed to create OTLP exporter: %s. OpenTelemetry won't be used.", err)
+		logger.Errorf("Failed to create OTLP exporter: %v. OpenTelemetry won't be used.", err)
 		return
 	}
 
