@@ -19,6 +19,7 @@ import (
 	"context"
 	"net"
 	"net/http"
+	"sync"
 	"testing"
 	"time"
 
@@ -40,12 +41,17 @@ func TestRunHandler(t *testing.T) {
 	require.NoError(t, l.Close())
 
 	ctx, cancel := context.WithCancel(testutil.Ctx(t))
-	defer cancel()
 
 	addr := l.Addr().(*net.TCPAddr)
 	started := make(chan struct{})
 
-	go RunHandler(ctx, addr.String(), prometheus.NewRegistry(), testutil.Logger(t), started)
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	go func() {
+		RunHandler(ctx, addr.String(), prometheus.NewRegistry(), testutil.Logger(t), started)
+		wg.Done()
+	}()
 
 	req, err := http.NewRequestWithContext(ctx, "GET", "http://"+addr.String()+"/debug/started", nil)
 	require.NoError(t, err)
@@ -74,4 +80,6 @@ func TestRunHandler(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, res.StatusCode)
 
+	cancel()
+	wg.Wait()
 }
