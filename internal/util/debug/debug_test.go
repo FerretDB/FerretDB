@@ -16,48 +16,57 @@
 package debug
 
 import (
-	"context"
 	"net"
 	"net/http"
 	"testing"
 	"time"
 
+	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 )
 
 func TestRunHandler(t *testing.T) {
 	t.Parallel()
 
-	started := make(chan struct{})
-
-	a, err := net.ResolveTCPAddr("tcp", "localhost:0")
+	// create and close TCP socket, to obtain a free port
+	l, err := net.ListenTCP("tcp", must.NotFail(net.ResolveTCPAddr("tcp", "localhost:0")))
 	require.NoError(t, err)
-
-	l, err := net.ListenTCP("tcp", a)
-	require.NoError(t, err)
-
-	addr := l.Addr().(*net.TCPAddr)
 
 	require.NoError(t, l.Close())
 
-	go RunHandler(context.TODO(), addr.String(), prometheus.NewRegistry(), zap.L(), started)
+	ctx := testutil.Ctx(t)
+	addr := l.Addr().(*net.TCPAddr)
+	started := make(chan struct{})
 
-	time.Sleep(5 * time.Second)
+	go RunHandler(ctx, addr.String(), prometheus.NewRegistry(), testutil.Logger(t), started)
 
-	res, err := http.Get("http://" + addr.String() + "/debug/started")
+	req, err := http.NewRequestWithContext(ctx, "GET", "http://"+addr.String()+"/debug/started", nil)
+	require.NoError(t, err)
+
+	// Wait for handler
+	for i := 0; i < 5; i++ {
+		_, err := http.DefaultClient.Do(req)
+		if err == nil {
+			break
+		}
+
+		time.Sleep(250 * time.Millisecond)
+	}
+
+	res, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusInternalServerError, res.StatusCode)
 
 	close(started)
 
-	res, err = http.Get("http://" + addr.String() + "/debug/started")
+	res, err = http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, res.StatusCode)
 
-	res, err = http.Get("http://" + addr.String() + "/debug/started")
+	res, err = http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, res.StatusCode)
 }
