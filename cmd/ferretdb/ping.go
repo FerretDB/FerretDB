@@ -42,7 +42,7 @@ func ping() {
 	if cli.Listen.Addr != "" {
 		host, port, err := net.SplitHostPort(cli.Listen.Addr)
 		if err != nil {
-			l.Fatal(err)
+			logger.Fatal("Getting host and port failed.", zap.Error(err))
 		}
 
 		l.Debugf("--listen-addr flag is set. Ping to %s will be performed.", cli.Listen.Addr)
@@ -66,7 +66,7 @@ func ping() {
 	if cli.Listen.TLS != "" {
 		host, port, err := net.SplitHostPort(cli.Listen.TLS)
 		if err != nil {
-			l.Fatal(err)
+			logger.Fatal("Getting host and port failed.", zap.Error(err))
 		}
 
 		l.Debugf("--listen-tls flag is set. Ping to %s will be performed.", cli.Listen.Addr)
@@ -78,7 +78,7 @@ func ping() {
 		}
 
 		if cli.Listen.TLSKeyFile == "" || cli.Listen.TLSCaFile == "" {
-			l.Fatal("When --listen-tls is set, both --listen-tls-cert-file and --listen-tls-ca-file need to be provided.")
+			logger.Fatal("When --listen-tls is set, both --listen-tls-cert-file and --listen-tls-ca-file need to be provided.")
 		}
 
 		values := url.Values{}
@@ -117,17 +117,18 @@ func ping() {
 
 		client, err := mongo.Connect(ctx, options.Client().ApplyURI(u))
 		if err != nil {
-			l.Fatal("Connection failed", zap.Error(err))
+			logger.Fatal("Connection failed.", zap.Error(err))
 		}
 
 		pingErr := client.Ping(ctx, nil)
 
+		// do not leave connection open when ping error causes os.Exit with Fatal
 		if err = client.Disconnect(ctx); err != nil {
-			l.Fatal("Disconnect failed", zap.Error(err))
+			logger.Fatal("Disconnect failed.", zap.Error(err))
 		}
 
 		if pingErr != nil {
-			l.Fatal("Ping failed", zap.Error(pingErr))
+			logger.Fatal("Ping failed.", zap.Error(pingErr))
 		}
 
 		var uri *url.URL
