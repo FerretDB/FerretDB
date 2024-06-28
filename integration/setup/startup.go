@@ -61,9 +61,9 @@ func Startup() {
 		zap.S().Fatal(err)
 	}
 
-	go ot.Run(context.Background())
+	go ot.Run(context.TODO())
 
-	ctx, cancel := context.WithTimeout(context.TODO(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	// do basic flags validation earlier, before all tests
