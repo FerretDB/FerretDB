@@ -66,6 +66,8 @@ func RunOtel(ctx context.Context, config OtelConfig, logger *zap.SugaredLogger) 
 
 	otel.SetTracerProvider(tp)
 
+	logger.Infof("OpenTelemetry system started successfully, exporter endpoint is set as %s", config.Endpoint)
+
 	<-ctx.Done()
 
 	stopCtx, stopCancel := context.WithTimeout(context.Background(), 3*time.Second) //nolint:mnd // Simple timeout
