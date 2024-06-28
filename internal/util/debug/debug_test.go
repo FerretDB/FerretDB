@@ -16,6 +16,7 @@
 package debug
 
 import (
+	"context"
 	"net"
 	"net/http"
 	"testing"
@@ -38,7 +39,9 @@ func TestRunHandler(t *testing.T) {
 
 	require.NoError(t, l.Close())
 
-	ctx := testutil.Ctx(t)
+	ctx, cancel := context.WithCancel(testutil.Ctx(t))
+	defer cancel()
+
 	addr := l.Addr().(*net.TCPAddr)
 	started := make(chan struct{})
 
@@ -70,4 +73,5 @@ func TestRunHandler(t *testing.T) {
 	res, err = http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, res.StatusCode)
+
 }
