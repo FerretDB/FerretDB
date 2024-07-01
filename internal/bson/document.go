@@ -24,6 +24,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // field represents a single Document field in the (partially) decoded form.
@@ -256,12 +257,15 @@ func (doc *Document) Encode() (RawDocument, error) {
 	return buf.Bytes(), nil
 }
 
-// Decode returns itself to implement the [AnyDocument] interface.
+// Decode returns itself to implement [AnyDocument].
+//
+// Receiver must not be nil.
 func (doc *Document) Decode() (*Document, error) {
+	must.NotBeZero(doc)
 	return doc, nil
 }
 
-// LogValue implements slog.LogValuer interface.
+// LogValue implements [slog.LogValuer].
 func (doc *Document) LogValue() slog.Value {
 	return slogValue(doc, 1)
 }

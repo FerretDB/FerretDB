@@ -24,6 +24,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // Array represents a BSON array in the (partially) decoded form.
@@ -182,12 +183,15 @@ func (arr *Array) Encode() (RawArray, error) {
 	return buf.Bytes(), nil
 }
 
-// Decode returns itself to implement the [AnyArray] interface.
+// Decode returns itself to implement [AnyArray].
+//
+// Receiver must not be nil.
 func (arr *Array) Decode() (*Array, error) {
+	must.NotBeZero(arr)
 	return arr, nil
 }
 
-// LogValue implements slog.LogValuer interface.
+// LogValue implements [slog.LogValuer].
 func (arr *Array) LogValue() slog.Value {
 	return slogValue(arr, 1)
 }

@@ -95,7 +95,7 @@ func (raw RawArray) decode(mode decodeMode) (*Array, error) {
 	return res, nil
 }
 
-// LogValue implements slog.LogValuer interface.
+// LogValue implements [slog.LogValuer].
 func (raw RawArray) LogValue() slog.Value {
 	return slogValue(raw, 1)
 }
