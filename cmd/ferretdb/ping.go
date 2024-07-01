@@ -19,6 +19,7 @@ import (
 	"net"
 	"net/url"
 
+	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"
@@ -112,7 +113,9 @@ func ping() {
 	for _, u := range urls {
 		l.Debugf("Pinging %s...", u)
 
-		ctx, cancel := context.WithTimeout(context.Background(), cli.Setup.Timeout)
+		ctx, _ := ctxutil.SigTerm(context.Background())
+
+		ctx, cancel := context.WithTimeout(ctx, cli.Setup.Timeout)
 		defer cancel()
 
 		client, err := mongo.Connect(ctx, options.Client().ApplyURI(u))
