@@ -262,7 +262,7 @@ func (h *Handler) Close() {
 	h.wg.Wait()
 }
 
-// Describe implements prometheus.Collector interface.
+// Describe implements [prometheus.Collector].
 func (h *Handler) Describe(ch chan<- *prometheus.Desc) {
 	h.b.Describe(ch)
 	h.cursors.Describe(ch)
@@ -270,7 +270,7 @@ func (h *Handler) Describe(ch chan<- *prometheus.Desc) {
 	h.cleanupCappedCollectionsBytes.Describe(ch)
 }
 
-// Collect implements prometheus.Collector interface.
+// Collect implements [prometheus.Collector].
 func (h *Handler) Collect(ch chan<- prometheus.Metric) {
 	h.b.Collect(ch)
 	h.cursors.Collect(ch)

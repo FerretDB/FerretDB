@@ -49,7 +49,7 @@ func NewOpReply(doc bson.AnyDocument) (*OpReply, error) {
 
 func (reply *OpReply) msgbody() {}
 
-// check implements [MsgBody] interface.
+// check implements [MsgBody].
 func (reply *OpReply) check() error {
 	if d := reply.document; d != nil {
 		if _, err := d.DecodeDeep(); err != nil {
@@ -60,7 +60,7 @@ func (reply *OpReply) check() error {
 	return nil
 }
 
-// UnmarshalBinaryNocopy implements [MsgBody] interface.
+// UnmarshalBinaryNocopy implements [MsgBody].
 func (reply *OpReply) UnmarshalBinaryNocopy(b []byte) error {
 	if len(b) < 20 {
 		return lazyerrors.Errorf("len=%d", len(b))
@@ -93,7 +93,7 @@ func (reply *OpReply) UnmarshalBinaryNocopy(b []byte) error {
 	return nil
 }
 
-// MarshalBinary implements [MsgBody] interface.
+// MarshalBinary implements [MsgBody].
 func (reply *OpReply) MarshalBinary() ([]byte, error) {
 	if debugbuild.Enabled {
 		if err := reply.check(); err != nil {

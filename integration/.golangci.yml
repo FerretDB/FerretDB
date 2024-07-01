@@ -44,8 +44,6 @@ linters-settings:
       - BUG
       - FIXME
       - HACK
-      - lala
-      - lalala
   goheader:
     # Please do not update it, including bumping a year.
     template: |-
