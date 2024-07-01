@@ -54,12 +54,13 @@ func Startup() {
 	// use any available port to allow running different configurations in parallel
 	go debug.RunHandler(context.Background(), "127.0.0.1:0", prometheus.DefaultRegisterer, zap.L().Named("debug"))
 
-	otelConf := observability.OtelConfig{
+	otOpts := observability.OtelTracerOpts{
 		Service:  "integration-tests",
 		Endpoint: "127.0.0.1:4318",
+		Logger:   zap.L().Named("otel"),
 	}
 
-	ot, err := observability.NewOtel(&otelConf, zap.L().Named("otel"))
+	ot, err := observability.NewOtelTracer(&otOpts)
 	if err != nil {
 		zap.S().Fatal(err)
 	}

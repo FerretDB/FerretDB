@@ -31,8 +31,10 @@ import (
 	"go.uber.org/zap"
 )
 
-// OtelTracerConfig is the configuration for OpenTelemetry.
-type OtelTracerConfig struct {
+// OtelTracerOpts is the configuration for OpenTelemetry.
+type OtelTracerOpts struct {
+	Logger *zap.Logger
+
 	Service  string
 	Version  string
 	Endpoint string
@@ -45,8 +47,8 @@ type OtelTracer struct {
 }
 
 // NewOtelTracer sets up OTLP tracer provider.
-func NewOtelTracer(config *OtelTracerConfig, l *zap.Logger) (*OtelTracer, error) {
-	if config.Endpoint == "" {
+func NewOtelTracer(opts *OtelTracerOpts) (*OtelTracer, error) {
+	if opts.Endpoint == "" {
 		return nil, errors.New("endpoint is required")
 	}
 
@@ -58,7 +60,7 @@ func NewOtelTracer(config *OtelTracerConfig, l *zap.Logger) (*OtelTracer, error)
 	// but we set them explicitly.
 	exporter, err = otlptracehttp.New(
 		context.TODO(),
-		otlptracehttp.WithEndpoint(config.Endpoint),
+		otlptracehttp.WithEndpoint(opts.Endpoint),
 		otlptracehttp.WithInsecure(),
 	)
 	if err != nil {
@@ -69,15 +71,15 @@ func NewOtelTracer(config *OtelTracerConfig, l *zap.Logger) (*OtelTracer, error)
 		otelsdktrace.WithBatcher(exporter, otelsdktrace.WithBatchTimeout(time.Second)),
 		otelsdktrace.WithSampler(otelsdktrace.AlwaysSample()),
 		otelsdktrace.WithResource(otelsdkresource.NewSchemaless(
-			otelsemconv.ServiceName(config.Service),
-			otelsemconv.ServiceVersion(config.Version),
+			otelsemconv.ServiceName(opts.Service),
+			otelsemconv.ServiceVersion(opts.Version),
 		)),
 	)
 
 	otel.SetTracerProvider(tp)
 
 	return &OtelTracer{
-		l:  l,
+		l:  opts.Logger,
 		tp: tp,
 	}, nil
 }
