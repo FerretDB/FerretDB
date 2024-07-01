@@ -19,10 +19,11 @@ import (
 	"net"
 	"net/url"
 
-	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"
+
+	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 )
 
 // ping creates connection to FerretDB instance specified by the flags, and runs `ping` command against it.
