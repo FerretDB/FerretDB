@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
@@ -57,13 +58,13 @@ func TestRunHandlerStartupProbe(t *testing.T) {
 	require.NoError(t, err)
 
 	// Wait for handler
-	for range 5 {
+	for attempt := range 5 {
 		_, err = http.DefaultClient.Do(req)
 		if err == nil {
 			break
 		}
 
-		time.Sleep(250 * time.Millisecond)
+		ctxutil.SleepWithJitter(ctx, 500*time.Millisecond, int64(attempt+1))
 	}
 
 	res, err := http.DefaultClient.Do(req)
