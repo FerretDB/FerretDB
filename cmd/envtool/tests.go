@@ -31,8 +31,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/FerretDB/FerretDB/internal/util/observability"
-
 	"go.opentelemetry.io/otel"
 	otelattribute "go.opentelemetry.io/otel/attribute"
 	otelcodes "go.opentelemetry.io/otel/codes"
@@ -42,6 +40,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
 
 // testEvent represents a single even emitted by `go test -json`.
