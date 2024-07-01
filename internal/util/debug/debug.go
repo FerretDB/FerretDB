@@ -223,5 +223,6 @@ func (h *Handler) Serve(ctx context.Context) {
 	_ = s.Shutdown(stopCtx)
 
 	_ = s.Close()
+
 	h.opts.L.Sugar().Info("Debug server stopped.")
 }
