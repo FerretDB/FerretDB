@@ -31,6 +31,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/FerretDB/FerretDB/internal/util/observability"
+
 	"go.opentelemetry.io/otel"
 	otelattribute "go.opentelemetry.io/otel/attribute"
 	otelcodes "go.opentelemetry.io/otel/codes"
@@ -375,6 +377,17 @@ func testsRun(ctx context.Context, index, total uint, run, skip string, args []s
 	if skip != "" {
 		args = append(args, "-skip="+skip)
 	}
+
+	ot, err := observability.NewOtelTracer(&observability.OtelTracerOpts{
+		Logger:   logger.Desugar(),
+		Service:  "envtool-tests",
+		Endpoint: "127.0.0.1:4318",
+	})
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	go ot.Run(ctx)
 
 	return runGoTest(ctx, args, len(shard), true, logger)
 }
