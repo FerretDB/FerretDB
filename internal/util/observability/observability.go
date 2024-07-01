@@ -20,10 +20,11 @@ package observability
 import (
 	"context"
 	"errors"
+	"sync/atomic"
 	"time"
 
+	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	otelsdkresource "go.opentelemetry.io/otel/sdk/resource"
 	otelsdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -31,7 +32,16 @@ import (
 	"go.uber.org/zap"
 )
 
-// OtelTracerOpts is the configuration for OpenTelemetry.
+// setup ensures that OTLP tracer is set up only once.
+var setup atomic.Bool
+
+// OtelTracer represents the OTLP tracer.
+type OtelTracer struct {
+	l  *zap.Logger
+	tp *otelsdktrace.TracerProvider
+}
+
+// OtelTracerOpts is the configuration for OtelTracer.
 type OtelTracerOpts struct {
 	Logger *zap.Logger
 
@@ -40,25 +50,21 @@ type OtelTracerOpts struct {
 	Endpoint string
 }
 
-// OtelTracer represents the OpenTelemetry tracer.
-type OtelTracer struct {
-	l  *zap.Logger
-	tp *otelsdktrace.TracerProvider
-}
-
-// NewOtelTracer sets up OTLP tracer provider.
+// NewOtelTracer sets up OTLP tracer.
 func NewOtelTracer(opts *OtelTracerOpts) (*OtelTracer, error) {
+	if setup.Swap(true) {
+		panic("OTLP tracer is already set up")
+	}
+
 	if opts.Endpoint == "" {
 		return nil, errors.New("endpoint is required")
 	}
 
-	var exporter *otlptrace.Exporter
-	var err error
-
 	// Exporter and tracer are configured with the particular params on purpose.
 	// We don't want to let them being set through OTEL_* environment variables,
 	// but we set them explicitly.
-	exporter, err = otlptracehttp.New(
+
+	exporter, err := otlptracehttp.New(
 		context.TODO(),
 		otlptracehttp.WithEndpoint(opts.Endpoint),
 		otlptracehttp.WithInsecure(),
@@ -84,19 +90,23 @@ func NewOtelTracer(opts *OtelTracerOpts) (*OtelTracer, error) {
 	}, nil
 }
 
-// Run runs the OpenTelemetry tracer while the context is open.
+// Run runs OTLP tracer until ctx is canceled.
 func (ot *OtelTracer) Run(ctx context.Context) {
-	ot.l.Info("OpenTelemetry system started successfully.")
+	ot.l.Info("OTLP tracer started successfully.")
 
 	<-ctx.Done()
 
-	stopCtx, stopCancel := context.WithTimeout(context.Background(), 3*time.Second) //nolint:mnd // Simple timeout
-	defer stopCancel()
+	// ctx is already canceled, but we want to inherit its values
+	shutdownCtx, shutdownCancel := ctxutil.WithDelay(ctx)
+	defer shutdownCancel(nil)
 
-	if err := ot.tp.Shutdown(stopCtx); err != nil {
-		ot.l.Error("Error while shutdown OpenTelemetry system.", zap.Error(err))
-		return
+	if err := ot.tp.ForceFlush(shutdownCtx); err != nil {
+		ot.l.DPanic("ForceFlush exited with unexpected error", zap.Error(err))
 	}
 
-	ot.l.Info("OpenTelemetry system stopped successfully.")
+	if err := ot.tp.Shutdown(shutdownCtx); err != nil {
+		ot.l.DPanic("Shutdown exited with unexpected error", zap.Error(err))
+	}
+
+	ot.l.Info("OTLP tracer stopped.")
 }
