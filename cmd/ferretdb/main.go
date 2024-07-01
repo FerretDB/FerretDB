@@ -397,9 +397,10 @@ func run() {
 			l := logger.Named("debug")
 
 			h, err := debug.Listen(&debug.ListenOpts{
-				TCPAddr: cli.DebugAddr,
-				L:       l,
-				R:       metricsRegisterer,
+				TCPAddr:         cli.DebugAddr,
+				L:               l,
+				R:               metricsRegisterer,
+				FerretdbStarted: listenerStarted,
 			})
 			if err != nil {
 				l.Sugar().Fatalf("Failed to create debug handler: %s.", err)
@@ -498,14 +499,11 @@ func run() {
 		logger.Sugar().Fatalf("Failed to construct listener: %s.", err)
 	}
 
-	go func() {
-		l.Wait()
-		close(listenerStarted)
-	}()
-
 	metricsRegisterer.MustRegister(l)
 
+	close(listenerStarted)
 	l.Run(ctx)
+
 	logger.Info("Listener stopped")
 
 	stop()

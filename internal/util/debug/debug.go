@@ -63,9 +63,10 @@ type Handler struct {
 //
 //nolint:vet // for readability
 type ListenOpts struct {
-	TCPAddr string
-	L       *zap.Logger
-	R       prometheus.Registerer
+	TCPAddr         string
+	L               *zap.Logger
+	R               prometheus.Registerer
+	FerretdbStarted <-chan struct{}
 }
 
 // Listen creates a new debug handler and starts listener on the given TCP address.
@@ -111,7 +112,7 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 	// If it wasn't yet, the StatusInternalServerError is returned.
 	startedHandler := http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 		select {
-		case <-started:
+		case <-opts.FerretdbStarted:
 			rw.WriteHeader(http.StatusOK)
 		default:
 			rw.WriteHeader(http.StatusInternalServerError)
