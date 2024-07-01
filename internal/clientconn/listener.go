@@ -263,6 +263,10 @@ func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, 
 				wg.Done()
 			}()
 
+			// give clients a few seconds to disconnect after ctx is canceled
+			runCtx, runCancel := ctxutil.WithDelay(ctx, 3*time.Second)
+			defer runCancel(nil)
+
 			remoteAddr := netConn.RemoteAddr().String()
 			if netConn.RemoteAddr().Network() == "unix" {
 				// otherwise, all of them would be "" or "@"
@@ -270,10 +274,6 @@ func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, 
 			}
 
 			connID := fmt.Sprintf("%s -> %s", remoteAddr, netConn.LocalAddr())
-
-			// give clients a few seconds to disconnect after ctx is canceled
-			runCtx, runCancel := ctxutil.WithDelay(ctx.Done(), 3*time.Second)
-			defer runCancel()
 
 			defer pprof.SetGoroutineLabels(runCtx)
 			runCtx = pprof.WithLabels(runCtx, pprof.Labels("conn", connID))
@@ -333,13 +333,13 @@ func (l *Listener) TLSAddr() net.Addr {
 	return l.tlsListener.Addr()
 }
 
-// Describe implements prometheus.Collector.
+// Describe implements [prometheus.Collector].
 func (l *Listener) Describe(ch chan<- *prometheus.Desc) {
 	l.Metrics.Describe(ch)
 	l.Handler.Describe(ch)
 }
 
-// Collect implements prometheus.Collector.
+// Collect implements [prometheus.Collector].
 func (l *Listener) Collect(ch chan<- prometheus.Metric) {
 	l.Metrics.Collect(ch)
 	l.Handler.Collect(ch)

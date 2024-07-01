@@ -126,8 +126,8 @@ func (r *Reporter) Run(ctx context.Context) {
 
 	// do one last report before exiting if telemetry is explicitly enabled
 	if pointer.GetBool(r.P.Get().Telemetry) {
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-		defer cancel()
+		ctx, cancel := ctxutil.WithDelay(ctx, 3*time.Second)
+		defer cancel(nil)
 
 		r.report(ctx)
 	}

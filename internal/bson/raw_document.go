@@ -166,7 +166,7 @@ func (raw RawDocument) decode(mode decodeMode) (*Document, error) {
 	}
 }
 
-// LogValue implements slog.LogValuer interface.
+// LogValue implements [slog.LogValuer].
 func (raw RawDocument) LogValue() slog.Value {
 	return slogValue(raw, 1)
 }

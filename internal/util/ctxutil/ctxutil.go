@@ -17,22 +17,28 @@ package ctxutil
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"math/rand"
 	"time"
 )
 
-// WithDelay returns a context that is canceled after a given amount of time after done channel is closed.
-func WithDelay(done <-chan struct{}, delay time.Duration) (context.Context, context.CancelFunc) {
-	ctx, cancel := context.WithCancel(context.Background())
+// errCanceled is returned by [context.Cause] when [WithDelay]'s context is canceled after delay.
+var errCanceled = errors.New("context canceled after delay")
+
+// WithDelay returns a copy of the parent context which is canceled
+// when returned [context.CancelCauseFunc] is called (without any delay),
+// or when parent is canceled and given delay has passed.
+func WithDelay(parent context.Context, delay time.Duration) (context.Context, context.CancelCauseFunc) {
+	ctx, cancel := context.WithCancelCause(context.WithoutCancel(parent))
 
 	go func() {
 		select {
 		case <-ctx.Done():
 			return
 
-		case <-done:
+		case <-parent.Done():
 			t := time.NewTimer(delay)
 			defer t.Stop()
 
@@ -40,7 +46,7 @@ func WithDelay(done <-chan struct{}, delay time.Duration) (context.Context, cont
 			case <-ctx.Done():
 				return
 			case <-t.C:
-				cancel()
+				cancel(errCanceled)
 			}
 		}
 	}()

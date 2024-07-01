@@ -326,16 +326,6 @@ func checkFlags(logger *zap.Logger) {
 	}
 }
 
-// runTelemetryReporter runs telemetry reporter until ctx is canceled.
-func runTelemetryReporter(ctx context.Context, opts *telemetry.NewReporterOpts) {
-	r, err := telemetry.NewReporter(opts)
-	if err != nil {
-		opts.L.Sugar().Fatalf("Failed to create telemetry reporter: %s.", err)
-	}
-
-	r.Run(ctx)
-}
-
 // dumpMetrics dumps all Prometheus metrics to stderr.
 func dumpMetrics() {
 	mfs := must.NotFail(prometheus.DefaultGatherer.Gather())
@@ -412,21 +402,25 @@ func run() {
 
 	go func() {
 		defer wg.Done()
-		runTelemetryReporter(
-			ctx,
-			&telemetry.NewReporterOpts{
-				URL:            cli.Test.Telemetry.URL,
-				F:              &cli.Telemetry,
-				DNT:            os.Getenv("DO_NOT_TRACK"),
-				ExecName:       os.Args[0],
-				P:              stateProvider,
-				ConnMetrics:    metrics.ConnMetrics,
-				L:              logger.Named("telemetry"),
-				UndecidedDelay: cli.Test.Telemetry.UndecidedDelay,
-				ReportInterval: cli.Test.Telemetry.ReportInterval,
-				ReportTimeout:  cli.Test.Telemetry.ReportTimeout,
-			},
-		)
+
+		opts := &telemetry.NewReporterOpts{
+			URL:            cli.Test.Telemetry.URL,
+			F:              &cli.Telemetry,
+			DNT:            os.Getenv("DO_NOT_TRACK"),
+			ExecName:       os.Args[0],
+			P:              stateProvider,
+			ConnMetrics:    metrics.ConnMetrics,
+			L:              logger.Named("telemetry"),
+			UndecidedDelay: cli.Test.Telemetry.UndecidedDelay,
+			ReportInterval: cli.Test.Telemetry.ReportInterval,
+			ReportTimeout:  cli.Test.Telemetry.ReportTimeout,
+		}
+		r, err := telemetry.NewReporter(opts)
+		if err != nil {
+			opts.L.Sugar().Fatalf("Failed to create telemetry reporter: %s.", err)
+		}
+
+		r.Run(ctx)
 	}()
 
 	h, closeBackend, err := registry.NewHandler(cli.Handler, &registry.NewHandlerOpts{
