@@ -105,7 +105,7 @@ func ping() {
 	}
 
 	if len(urls) == 0 {
-		l.Info("Neither --listen-addr nor --listen-unix flags were specified - skipping ping.")
+		l.Info("Neither --listen-addr nor --listen-unix nor --listen-tls flags were specified - skipping ping.")
 		return
 	}
 
