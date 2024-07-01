@@ -39,6 +39,9 @@ var listenerMetrics = connmetrics.NewListenerMetrics()
 // shutdownOtel is a function that stops OpenTelemetry's tracer provider.
 var shutdownOtel context.CancelFunc
 
+// otelDone is a channel that is closed when OpenTelemetry's tracer provider is stopped.
+var otelDone = make(chan struct{})
+
 // Startup initializes things that should be initialized only once.
 func Startup() {
 	logging.Setup(zap.DebugLevel, "console", "")
@@ -65,7 +68,10 @@ func Startup() {
 		zap.S().Fatal(err)
 	}
 
-	go ot.Run(context.TODO())
+	go func() {
+		ot.Run(context.TODO())
+		otelDone <- struct{}{}
+	}()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -134,7 +140,16 @@ func Startup() {
 // Shutdown cleans up after all tests.
 func Shutdown() {
 	shutdownOtel()
-	// TODO how do we check that shutdown is complete?
+
+	t := time.NewTimer(3 * time.Second)
+	defer t.Stop()
+
+	select {
+	case <-otelDone:
+		// do nothing
+	case <-t.C:
+		zap.S().Warn("OpenTelemetry system shutdown timeout.")
+	}
 
 	// to increase a chance of resource finalizers to spot problems
 	runtime.GC()
