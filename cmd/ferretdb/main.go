@@ -16,7 +16,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -326,18 +325,6 @@ func checkFlags(logger *zap.Logger) {
 	}
 }
 
-// runTelemetryReporter runs telemetry reporter until ctx is canceled.
-//
-// TODO https://github.com/FerretDB/FerretDB/issues/4403
-func runTelemetryReporter(ctx context.Context, opts *telemetry.NewReporterOpts) {
-	r, err := telemetry.NewReporter(opts)
-	if err != nil {
-		opts.L.Sugar().Fatalf("Failed to create telemetry reporter: %s.", err)
-	}
-
-	r.Run(ctx)
-}
-
 // dumpMetrics dumps all Prometheus metrics to stderr.
 func dumpMetrics() {
 	mfs := must.NotFail(prometheus.DefaultGatherer.Gather())
@@ -406,7 +393,19 @@ func run() {
 
 		go func() {
 			defer wg.Done()
-			debug.RunHandler(ctx, cli.DebugAddr, metricsRegisterer, logger.Named("debug"), listenerStarted)
+
+			l := logger.Named("debug")
+
+			h, err := debug.Listen(&debug.ListenOpts{
+				TCPAddr: cli.DebugAddr,
+				L:       l,
+				R:       metricsRegisterer,
+			})
+			if err != nil {
+				l.Sugar().Fatalf("Failed to create debug handler: %s.", err)
+			}
+
+			h.Serve(ctx)
 		}()
 	}
 
@@ -416,21 +415,27 @@ func run() {
 
 	go func() {
 		defer wg.Done()
-		runTelemetryReporter(
-			ctx,
-			&telemetry.NewReporterOpts{
-				URL:            cli.Test.Telemetry.URL,
-				F:              &cli.Telemetry,
-				DNT:            os.Getenv("DO_NOT_TRACK"),
-				ExecName:       os.Args[0],
-				P:              stateProvider,
-				ConnMetrics:    metrics.ConnMetrics,
-				L:              logger.Named("telemetry"),
-				UndecidedDelay: cli.Test.Telemetry.UndecidedDelay,
-				ReportInterval: cli.Test.Telemetry.ReportInterval,
-				ReportTimeout:  cli.Test.Telemetry.ReportTimeout,
-			},
-		)
+
+		l := logger.Named("telemetry")
+		opts := &telemetry.NewReporterOpts{
+			URL:            cli.Test.Telemetry.URL,
+			F:              &cli.Telemetry,
+			DNT:            os.Getenv("DO_NOT_TRACK"),
+			ExecName:       os.Args[0],
+			P:              stateProvider,
+			ConnMetrics:    metrics.ConnMetrics,
+			L:              l,
+			UndecidedDelay: cli.Test.Telemetry.UndecidedDelay,
+			ReportInterval: cli.Test.Telemetry.ReportInterval,
+			ReportTimeout:  cli.Test.Telemetry.ReportTimeout,
+		}
+
+		r, err := telemetry.NewReporter(opts)
+		if err != nil {
+			l.Sugar().Fatalf("Failed to create telemetry reporter: %s.", err)
+		}
+
+		r.Run(ctx)
 	}()
 
 	h, closeBackend, err := registry.NewHandler(cli.Handler, &registry.NewHandlerOpts{
@@ -469,7 +474,7 @@ func run() {
 
 	defer closeBackend()
 
-	l := clientconn.NewListener(&clientconn.NewListenerOpts{
+	l, err := clientconn.Listen(&clientconn.NewListenerOpts{
 		TCP:  cli.Listen.Addr,
 		Unix: cli.Listen.Unix,
 
@@ -489,6 +494,9 @@ func run() {
 		Logger:         logger,
 		TestRecordsDir: cli.Test.RecordsDir,
 	})
+	if err != nil {
+		logger.Sugar().Fatalf("Failed to construct listener: %s.", err)
+	}
 
 	go func() {
 		l.Wait()
@@ -497,12 +505,8 @@ func run() {
 
 	metricsRegisterer.MustRegister(l)
 
-	err = l.Run(ctx)
-	if err == nil || errors.Is(err, context.Canceled) {
-		logger.Info("Listener stopped")
-	} else {
-		logger.Error("Listener stopped", zap.Error(err))
-	}
+	l.Run(ctx)
+	logger.Info("Listener stopped")
 
 	stop()
 

@@ -21,12 +21,13 @@ import (
 	"errors"
 	_ "expvar" // for metrics
 	"fmt"
+	"log"
 	"net"
 	"net/http"
 	_ "net/http/pprof" // for profiling
 	"slices"
+	"sync/atomic"
 	"text/template"
-	"time"
 
 	"github.com/arl/statsviz"
 	"github.com/prometheus/client_golang/prometheus"
@@ -34,6 +35,8 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 
+	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -43,26 +46,54 @@ const (
 	subsystem = "debug"
 )
 
-// RunHandler runs debug handler until ctx is canceled.
+// setup ensures that debug handler is set up only once.
+var setup atomic.Bool
+
+// Handler represents debug handler.
 //
-// TODO https://github.com/FerretDB/FerretDB/issues/4403
-func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *zap.Logger, started <-chan struct{}) {
-	stdL := must.NotFail(zap.NewStdLogAt(l, zap.WarnLevel))
+//nolint:vet // for readability
+type Handler struct {
+	opts     *ListenOpts
+	lis      net.Listener
+	handlers map[string]string
+	stdL     *log.Logger
+}
+
+// ListenOpts represents [Listen] options.
+//
+//nolint:vet // for readability
+type ListenOpts struct {
+	TCPAddr string
+	L       *zap.Logger
+	R       prometheus.Registerer
+}
+
+// Listen creates a new debug handler and starts listener on the given TCP address.
+//
+// This function can be called only once because it affects [http.DefaultServeMux].
+func Listen(opts *ListenOpts) (*Handler, error) {
+	if setup.Swap(true) {
+		panic("debug handler is already set up")
+	}
+
+	must.NotBeZero(opts)
+
+	stdL := must.NotFail(zap.NewStdLogAt(opts.L, zap.WarnLevel))
 
 	http.Handle("/debug/metrics", promhttp.InstrumentMetricHandler(
-		r, promhttp.HandlerFor(prometheus.DefaultGatherer, promhttp.HandlerOpts{
+		opts.R, promhttp.HandlerFor(prometheus.DefaultGatherer, promhttp.HandlerOpts{
 			ErrorLog:          stdL,
 			ErrorHandling:     promhttp.ContinueOnError,
-			Registry:          r,
+			Registry:          opts.R,
 			EnableOpenMetrics: true,
 		}),
 	))
 
-	opts := []statsviz.Option{
+	svOpts := []statsviz.Option{
 		statsviz.Root("/debug/graphs"),
 		// TODO https://github.com/FerretDB/FerretDB/issues/3600
 	}
-	must.NoError(statsviz.Register(http.DefaultServeMux, opts...))
+	must.NoError(statsviz.Register(http.DefaultServeMux, svOpts...))
 
 	requestCount := prometheus.NewCounterVec(
 		prometheus.CounterOpts{
@@ -74,7 +105,7 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 		[]string{"handler", "code"},
 	)
 
-	must.NoError(r.Register(requestCount))
+	must.NoError(opts.R.Register(requestCount))
 
 	// started handler, which is used for startup probe, returns StatusOK when FerretDB listener were initialized.
 	// If it wasn't yet, the StatusInternalServerError is returned.
@@ -149,39 +180,61 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 		http.Redirect(rw, req, "/debug", http.StatusSeeOther)
 	})
 
+	lis, err := net.Listen("tcp", opts.TCPAddr)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &Handler{
+		opts:     opts,
+		lis:      lis,
+		handlers: handlers,
+		stdL:     stdL,
+	}, nil
+}
+
+// Serve runs debug handler until ctx is canceled.
+//
+// It exits when handler is stopped and listener closed.
+func (h *Handler) Serve(ctx context.Context) {
 	s := http.Server{
-		Addr:     addr,
-		ErrorLog: stdL,
+		Addr:     h.opts.TCPAddr,
+		ErrorLog: h.stdL,
 		BaseContext: func(_ net.Listener) context.Context {
 			return ctx
 		},
 	}
 
+	root := fmt.Sprintf("http://%s", h.lis.Addr())
+
+	h.opts.L.Sugar().Infof("Starting debug server on %s ...", root)
+
+	paths := maps.Keys(h.handlers)
+	slices.Sort(paths)
+
+	for _, path := range paths {
+		h.opts.L.Sugar().Infof("%s%s - %s", root, path, h.handlers[path])
+	}
+
 	go func() {
-		lis := must.NotFail(net.Listen("tcp", addr))
-
-		root := fmt.Sprintf("http://%s", lis.Addr())
-
-		l.Sugar().Infof("Starting debug server on %s ...", root)
-
-		paths := maps.Keys(handlers)
-		slices.Sort(paths)
-
-		for _, path := range paths {
-			l.Sugar().Infof("%s%s - %s", root, path, handlers[path])
-		}
-
-		if err := s.Serve(lis); !errors.Is(err, http.ErrServerClosed) {
-			panic(err)
+		if err := s.Serve(h.lis); !errors.Is(err, http.ErrServerClosed) {
+			h.opts.L.DPanic("Serve exited with unexpected error", zap.Error(err))
 		}
 	}()
 
 	<-ctx.Done()
 
-	stopCtx, stopCancel := context.WithTimeout(context.Background(), time.Second)
-	defer stopCancel()
-	s.Shutdown(stopCtx) //nolint:contextcheck // use new context for cancellation
+	// ctx is already canceled, but we want to inherit its values
+	stopCtx, stopCancel := ctxutil.WithDelay(ctx)
+	defer stopCancel(nil)
 
-	s.Close()
-	l.Sugar().Info("Debug server stopped.")
+	if err := s.Shutdown(stopCtx); err != nil {
+		h.opts.L.DPanic("Shutdown exited with unexpected error", zap.Error(err))
+	}
+
+	if err := s.Close(); err != nil {
+		h.opts.L.DPanic("Close exited with unexpected error", zap.Error(err))
+	}
+
+	h.opts.L.Sugar().Info("Debug server stopped.")
 }
