@@ -69,7 +69,7 @@ func TestDebugHandlerStartupProbe(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, res.StatusCode)
 
-	// Cancel the context to stop RunHandler.
+	// Cancel the context to stop the handler.
 	// The WaitGroup is needed to make sure that all logs were printed before the test finished.
 	cancel()
 	wg.Wait()
