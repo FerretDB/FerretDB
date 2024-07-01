@@ -24,29 +24,29 @@ import (
 	"time"
 )
 
-// errCanceled is returned by [context.Cause] when [WithDelay]'s context is canceled after delay.
-var errCanceled = errors.New("context canceled after delay")
+// errDelayed is returned by [context.Cause] when [WithDelay]'s context is canceled after delay.
+var errDelayed = errors.New("context canceled after delay")
 
-// WithDelay returns a copy of the parent context which is canceled
+// WithDelay returns a copy of the parent context, which is canceled
 // when returned [context.CancelCauseFunc] is called (without any delay),
-// or when parent is canceled and given delay has passed.
-func WithDelay(parent context.Context, delay time.Duration) (context.Context, context.CancelCauseFunc) {
+// or when the parent is canceled and 3 seconds have passed.
+func WithDelay(parent context.Context) (context.Context, context.CancelCauseFunc) {
 	ctx, cancel := context.WithCancelCause(context.WithoutCancel(parent))
 
 	go func() {
 		select {
 		case <-ctx.Done():
-			return
+			cancel(nil)
 
 		case <-parent.Done():
-			t := time.NewTimer(delay)
+			t := time.NewTimer(3 * time.Second) //nolint:mnd // simple fixed value
 			defer t.Stop()
 
 			select {
 			case <-ctx.Done():
-				return
+				cancel(nil)
 			case <-t.C:
-				cancel(errCanceled)
+				cancel(errDelayed)
 			}
 		}
 	}()

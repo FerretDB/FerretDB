@@ -53,7 +53,16 @@ func Startup() {
 	prometheus.DefaultRegisterer.MustRegister(listenerMetrics)
 
 	// use any available port to allow running different configurations in parallel
-	go debug.RunHandler(context.Background(), "127.0.0.1:0", prometheus.DefaultRegisterer, zap.L().Named("debug"))
+	h, err := debug.Listen(&debug.ListenOpts{
+		TCPAddr: "127.0.0.1:0",
+		L:       zap.L().Named("debug"),
+		R:       prometheus.DefaultRegisterer,
+	})
+	if err != nil {
+		zap.S().Fatalf("Failed to create debug handler: %s.", err)
+	}
+
+	go h.Serve(context.Background())
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

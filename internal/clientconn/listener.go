@@ -264,7 +264,7 @@ func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, 
 			}()
 
 			// give clients a few seconds to disconnect after ctx is canceled
-			runCtx, runCancel := ctxutil.WithDelay(ctx, 3*time.Second)
+			runCtx, runCancel := ctxutil.WithDelay(ctx)
 			defer runCancel(nil)
 
 			remoteAddr := netConn.RemoteAddr().String()

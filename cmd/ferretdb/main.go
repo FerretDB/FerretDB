@@ -392,7 +392,19 @@ func run() {
 
 		go func() {
 			defer wg.Done()
-			debug.RunHandler(ctx, cli.DebugAddr, metricsRegisterer, logger.Named("debug"))
+
+			l := logger.Named("debug")
+
+			h, err := debug.Listen(&debug.ListenOpts{
+				TCPAddr: cli.DebugAddr,
+				L:       l,
+				R:       metricsRegisterer,
+			})
+			if err != nil {
+				l.Sugar().Fatalf("Failed to create debug handler: %s.", err)
+			}
+
+			h.Serve(ctx)
 		}()
 	}
 
@@ -403,6 +415,7 @@ func run() {
 	go func() {
 		defer wg.Done()
 
+		l := logger.Named("telemetry")
 		opts := &telemetry.NewReporterOpts{
 			URL:            cli.Test.Telemetry.URL,
 			F:              &cli.Telemetry,
@@ -410,14 +423,15 @@ func run() {
 			ExecName:       os.Args[0],
 			P:              stateProvider,
 			ConnMetrics:    metrics.ConnMetrics,
-			L:              logger.Named("telemetry"),
+			L:              l,
 			UndecidedDelay: cli.Test.Telemetry.UndecidedDelay,
 			ReportInterval: cli.Test.Telemetry.ReportInterval,
 			ReportTimeout:  cli.Test.Telemetry.ReportTimeout,
 		}
+
 		r, err := telemetry.NewReporter(opts)
 		if err != nil {
-			opts.L.Sugar().Fatalf("Failed to create telemetry reporter: %s.", err)
+			l.Sugar().Fatalf("Failed to create telemetry reporter: %s.", err)
 		}
 
 		r.Run(ctx)
