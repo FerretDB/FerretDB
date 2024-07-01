@@ -20,13 +20,11 @@ import (
 	"net/http"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
@@ -56,16 +54,6 @@ func TestRunHandlerStartupProbe(t *testing.T) {
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://"+addr.String()+"/debug/started", nil)
 	require.NoError(t, err)
-
-	// Wait for handler
-	for attempt := range 5 {
-		_, err = http.DefaultClient.Do(req)
-		if err == nil {
-			break
-		}
-
-		ctxutil.SleepWithJitter(ctx, 500*time.Millisecond, int64(attempt+1))
-	}
 
 	res, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
