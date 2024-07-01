@@ -28,7 +28,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
-func TestRunHandlerStartupProbe(t *testing.T) {
+func TestDebugHandlerStartupProbe(t *testing.T) {
 	t.Parallel()
 
 	ctx, cancel := context.WithCancel(testutil.Ctx(t))
