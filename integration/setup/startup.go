@@ -65,12 +65,11 @@ func Startup() {
 		zap.S().Fatalf("Failed to create debug handler: %s.", err)
 	}
 
-	otOpts := observability.OtelTracerOpts{
+	ot, err := observability.NewOtelTracer(&observability.OtelTracerOpts{
+		Logger:   zap.L().Named("otel"),
 		Service:  "integration-tests",
 		Endpoint: "127.0.0.1:4318",
-		Logger:   zap.L().Named("otel"),
-	}
-	ot, err := observability.NewOtelTracer(&otOpts)
+	})
 	if err != nil {
 		zap.S().Fatalf("Failed to create Otel tracer: %s.", err)
 	}

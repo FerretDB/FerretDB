@@ -23,13 +23,14 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	otelsdkresource "go.opentelemetry.io/otel/sdk/resource"
 	otelsdktrace "go.opentelemetry.io/otel/sdk/trace"
 	otelsemconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.uber.org/zap"
+
+	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 )
 
 // setup ensures that OTLP tracer is set up only once.

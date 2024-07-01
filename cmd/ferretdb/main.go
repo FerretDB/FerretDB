@@ -411,25 +411,25 @@ func run() {
 	}
 
 	if cli.Test.OTLPEndpoint != "" {
-		otOpts := observability.OtelTracerOpts{
-			Service:  "ferretdb",
-			Version:  version.Get().Version,
-			Endpoint: cli.Test.OTLPEndpoint,
-			Logger:   logger.Named("otel"),
-		}
+		wg.Add(1)
 
-		ot, err := observability.NewOtelTracer(&otOpts)
-		if err != nil {
-			otOpts.Logger.Error("Failed to create OpenTelemetry system.", zap.Error(err))
-			stop()
-		} else {
-			wg.Add(1)
+		go func() {
+			defer wg.Done()
 
-			go func() {
-				defer wg.Done()
-				ot.Run(ctx)
-			}()
-		}
+			l := logger.Named("otel")
+
+			ot, err := observability.NewOtelTracer(&observability.OtelTracerOpts{
+				Logger:   l,
+				Service:  "ferretdb",
+				Version:  version.Get().Version,
+				Endpoint: cli.Test.OTLPEndpoint,
+			})
+			if err != nil {
+				l.Sugar().Fatalf("Failed to create Otel tracer: %s.", err)
+			}
+
+			ot.Run(ctx)
+		}()
 	}
 
 	metrics := connmetrics.NewListenerMetrics()
