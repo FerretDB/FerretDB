@@ -46,10 +46,7 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, err
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/4392
-	_ = dbName
-
-	replyDoc, err := h.saslStart(ctx, document)
+	replyDoc, err := h.saslStart(ctx, dbName, document)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +61,7 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 // saslStart starts authentication and returns a document used for the response.
 // If EnableNewAuth is set SCRAM mechanisms are supported, otherwise `PLAIN` mechanism is supported.
-func (h *Handler) saslStart(ctx context.Context, document *types.Document) (*types.Document, error) {
+func (h *Handler) saslStart(ctx context.Context, dbName string, document *types.Document) (*types.Document, error) {
 	// TODO https://github.com/FerretDB/FerretDB/issues/3008
 	mechanism, err := common.GetRequiredParam[string](document, "mechanism")
 	if err != nil {
@@ -76,7 +73,7 @@ func (h *Handler) saslStart(ctx context.Context, document *types.Document) (*typ
 		case "SCRAM-SHA-1", "SCRAM-SHA-256":
 			var response string
 
-			if response, err = h.saslStartSCRAM(ctx, mechanism, document); err != nil {
+			if response, err = h.saslStartSCRAM(ctx, dbName, mechanism, document); err != nil {
 				return nil, err
 			}
 
@@ -162,7 +159,7 @@ func saslStartPlain(ctx context.Context, doc *types.Document) error {
 }
 
 // scramCredentialLookup looks up an user's credentials in the database.
-func (h *Handler) scramCredentialLookup(ctx context.Context, username, mechanism string) (*scram.StoredCredentials, error) { //nolint:lll // for readability
+func (h *Handler) scramCredentialLookup(ctx context.Context, dbName, username, mechanism string) (*scram.StoredCredentials, error) { //nolint:lll // for readability
 	adminDB, err := h.b.Database("admin")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -173,13 +170,8 @@ func (h *Handler) scramCredentialLookup(ctx context.Context, username, mechanism
 		return nil, lazyerrors.Error(err)
 	}
 
-	// For `PLAIN` mechanism $db field is always `$external` upon saslStart.
-	// For `SCRAM-SHA-1` and `SCRAM-SHA-256` mechanisms $db field contains
-	// authSource option of the client.
-	// Let authorization handle the database access right.
 	// TODO https://github.com/FerretDB/FerretDB/issues/174
-	// TODO https://github.com/FerretDB/FerretDB/issues/4392
-	filter := must.NotFail(types.NewDocument("user", username))
+	filter := must.NotFail(types.NewDocument("_id", dbName+"."+username))
 
 	// Filter isn't being passed to the query as we are filtering after retrieving all data
 	// from the database due to limitations of the internal/backends filters.
@@ -249,7 +241,7 @@ func (h *Handler) scramCredentialLookup(ctx context.Context, username, mechanism
 
 // saslStartSCRAM extracts the initial challenge and attempts to move the
 // authentication conversation forward returning a challenge response.
-func (h *Handler) saslStartSCRAM(ctx context.Context, mechanism string, doc *types.Document) (string, error) {
+func (h *Handler) saslStartSCRAM(ctx context.Context, dbName, mechanism string, doc *types.Document) (string, error) {
 	var payload []byte
 
 	// most drivers follow spec and send payload as a binary
@@ -272,7 +264,7 @@ func (h *Handler) saslStartSCRAM(ctx context.Context, mechanism string, doc *typ
 	}
 
 	scramServer, err := f.NewServer(func(username string) (scram.StoredCredentials, error) {
-		cred, lookupErr := h.scramCredentialLookup(ctx, username, mechanism)
+		cred, lookupErr := h.scramCredentialLookup(ctx, dbName, username, mechanism)
 		if lookupErr != nil {
 			return scram.StoredCredentials{}, lookupErr
 		}

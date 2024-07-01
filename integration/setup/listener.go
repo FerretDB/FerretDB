@@ -53,7 +53,7 @@ func unixSocketPath(tb testtb.TB) string {
 }
 
 // listenerMongoDBURI builds MongoDB URI for in-process FerretDB.
-func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath string, tlsAndAuth, enableNewAuth bool) string {
+func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath, newAuthDB string, tlsAndAuth bool) string {
 	tb.Helper()
 
 	var host string
@@ -81,15 +81,18 @@ func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath string, tlsAndAut
 		user = url.UserPassword("username", "password")
 	}
 
-	if enableNewAuth {
+	path := "/"
+
+	if newAuthDB != "" {
 		q.Set("authMechanism", "SCRAM-SHA-256")
+		path += newAuthDB
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/1507
 	u := &url.URL{
 		Scheme:   "mongodb",
 		Host:     host,
-		Path:     "/",
+		Path:     path,
 		User:     user,
 		RawQuery: q.Encode(),
 	}
@@ -272,7 +275,7 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 		hostPort = l.TCPAddr().String()
 	}
 
-	uri := listenerMongoDBURI(tb, hostPort, unixSocketPath, tlsAndAuth, !opts.DisableNewAuth)
+	uri := listenerMongoDBURI(tb, hostPort, unixSocketPath, handlerOpts.SetupDatabase, tlsAndAuth)
 
 	logger.Info("Listener started", zap.String("handler", handler), zap.String("uri", uri))
 
