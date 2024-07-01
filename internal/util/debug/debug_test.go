@@ -17,7 +17,6 @@ package debug
 
 import (
 	"context"
-	"net"
 	"net/http"
 	"sync"
 	"testing"
@@ -27,34 +26,27 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func TestRunHandlerStartupProbe(t *testing.T) {
 	t.Parallel()
 
-	// create and close TCP socket, to obtain a free port
-	l, err := net.ListenTCP("tcp", must.NotFail(net.ResolveTCPAddr("tcp", "localhost:0")))
-	require.NoError(t, err)
-
-	require.NoError(t, l.Close())
-
 	ctx, cancel := context.WithCancel(testutil.Ctx(t))
-
-	addr := l.Addr().(*net.TCPAddr)
 	started := make(chan struct{})
 
 	var wg sync.WaitGroup
 	wg.Add(1)
 
 	h, err := Listen(&ListenOpts{
-		TCPAddr:         addr.String(), //TODO
+		TCPAddr:         "127.0.0.1:0",
 		L:               testutil.Logger(t),
 		R:               prometheus.NewRegistry(),
 		FerretdbStarted: started,
 	})
 	require.NoError(t, err)
+
+	addr := h.lis.Addr()
 
 	go func() {
 		h.Serve(ctx)
