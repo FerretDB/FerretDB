@@ -108,8 +108,8 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 
 	must.NoError(opts.R.Register(requestCount))
 
-	// started handler, which is used for startup probe, returns StatusOK when FerretDB listener were initialized.
-	// If it wasn't yet, the StatusInternalServerError is returned.
+	// started handler, which is used for startup probe,
+	// returns StatusOK when FerretdbStarted channel is closed.
 	startedHandler := http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 		select {
 		case <-opts.FerretdbStarted:
