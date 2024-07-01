@@ -20,6 +20,7 @@ import (
 	"runtime"
 	"slices"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -43,6 +44,9 @@ var shutdownOtel func(context.Context) error
 // shutdown cancels context passed to startup components.
 var shutdown context.CancelFunc
 
+// startupWG waits for all startup components to finish.
+var startupWG sync.WaitGroup
+
 // Startup initializes things that should be initialized only once.
 func Startup() {
 	logging.Setup(zap.DebugLevel, "console", "")
@@ -55,9 +59,6 @@ func Startup() {
 
 	prometheus.DefaultRegisterer.MustRegister(listenerMetrics)
 
-	var ctx context.Context
-	ctx, shutdown = context.WithCancel(context.Background())
-
 	// use any available port to allow running different configurations in parallel
 	h, err := debug.Listen(&debug.ListenOpts{
 		TCPAddr: "127.0.0.1:0",
@@ -68,13 +69,21 @@ func Startup() {
 		zap.S().Fatalf("Failed to create debug handler: %s.", err)
 	}
 
-	go h.Serve(ctx)
+	var ctx context.Context
+	ctx, shutdown = context.WithCancel(context.Background())
+
+	startupWG.Add(1)
+
+	go func() {
+		defer startupWG.Done()
+		h.Serve(ctx)
+	}()
 
 	// this should use ctx instead
 	shutdownOtel = observability.SetupOtel("integration")
 
-	startupCtx, startupCancel := context.WithTimeout(context.Background(), 5*time.Second) //nolint:mnd // for now
-	defer startupCancel()
+	clientCtx, clientCancel := context.WithTimeout(context.Background(), 5*time.Second) //nolint:mnd // good enough
+	defer clientCancel()
 
 	// do basic flags validation earlier, before all tests
 
@@ -104,12 +113,12 @@ func Startup() {
 			zap.S().Fatal(err)
 		}
 
-		client, err := makeClient(startupCtx, *targetURLF)
+		client, err := makeClient(clientCtx, *targetURLF)
 		if err != nil {
 			zap.S().Fatalf("Failed to connect to target system %s: %s", *targetURLF, err)
 		}
 
-		_ = client.Disconnect(startupCtx)
+		_ = client.Disconnect(clientCtx)
 
 		zap.S().Infof("Target system: %s (%s).", *targetBackendF, *targetURLF)
 	} else {
@@ -124,12 +133,12 @@ func Startup() {
 			zap.S().Fatal(err)
 		}
 
-		client, err := makeClient(startupCtx, *compatURLF)
+		client, err := makeClient(clientCtx, *compatURLF)
 		if err != nil {
 			zap.S().Fatalf("Failed to connect to compat system %s: %s", *compatURLF, err)
 		}
 
-		_ = client.Disconnect(startupCtx)
+		_ = client.Disconnect(clientCtx)
 
 		zap.S().Infof("Compat system: MongoDB (%s).", *compatURLF)
 	} else {
@@ -140,6 +149,8 @@ func Startup() {
 // Shutdown cleans up after all tests.
 func Shutdown() {
 	shutdown()
+
+	startupWG.Wait()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
