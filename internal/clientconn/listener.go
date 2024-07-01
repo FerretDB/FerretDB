@@ -317,12 +317,14 @@ func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, 
 // It can be used to determine an actually used port, if it was zero.
 func (l *Listener) TCPAddr() net.Addr {
 	<-l.tcpListenerReady
+	must.NotBeZero(l.tcpListener)
 	return l.tcpListener.Addr()
 }
 
 // UnixAddr returns Unix domain socket listener's address.
 func (l *Listener) UnixAddr() net.Addr {
 	<-l.unixListenerReady
+	must.NotBeZero(l.unixListener)
 	return l.unixListener.Addr()
 }
 
@@ -330,16 +332,17 @@ func (l *Listener) UnixAddr() net.Addr {
 // It can be used to determine an actually used port, if it was zero.
 func (l *Listener) TLSAddr() net.Addr {
 	<-l.tlsListenerReady
+	must.NotBeZero(l.tlsListener)
 	return l.tlsListener.Addr()
 }
 
-// Describe implements prometheus.Collector.
+// Describe implements [prometheus.Collector].
 func (l *Listener) Describe(ch chan<- *prometheus.Desc) {
 	l.Metrics.Describe(ch)
 	l.Handler.Describe(ch)
 }
 
-// Collect implements prometheus.Collector.
+// Collect implements [prometheus.Collector].
 func (l *Listener) Collect(ch chan<- prometheus.Metric) {
 	l.Metrics.Collect(ch)
 	l.Handler.Collect(ch)
