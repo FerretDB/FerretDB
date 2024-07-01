@@ -182,18 +182,9 @@ func New(config *Config) (*FerretDB, error) {
 func (f *FerretDB) Run(ctx context.Context) error {
 	defer f.closeBackend()
 
-	err := f.l.Run(ctx)
-	if errors.Is(err, context.Canceled) {
-		err = nil
-	}
+	f.l.Run(ctx)
 
-	if err != nil {
-		// Do not expose internal error details.
-		// If you need stable error values and/or types for some cases, please create an issue.
-		err = errors.New(err.Error())
-	}
-
-	return err
+	return nil
 }
 
 // MongoDBURI returns MongoDB URI for this FerretDB instance.

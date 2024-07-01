@@ -16,7 +16,6 @@ package setup
 
 import (
 	"context"
-	"errors"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -247,12 +246,7 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 	go func() {
 		defer close(runDone)
 
-		err := l.Run(ctx)
-		if err == nil || errors.Is(err, context.Canceled) {
-			logger.Info("Listener stopped without error")
-		} else {
-			logger.Error("Listener stopped", zap.Error(err))
-		}
+		l.Run(ctx)
 	}()
 
 	// ensure that all listener's and handler's logs are written before test ends
