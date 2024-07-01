@@ -217,10 +217,10 @@ func (h *Handler) Serve(ctx context.Context) {
 
 	<-ctx.Done()
 
-	ctx, cancel := ctxutil.WithDelay(ctx)
-	defer cancel(nil)
+	stopCtx, stopCancel := ctxutil.WithDelay(ctx)
+	defer stopCancel(nil)
 
-	_ = s.Shutdown(ctx)
+	_ = s.Shutdown(stopCtx)
 	_ = s.Close()
 
 	h.opts.L.Sugar().Info("Debug server stopped.")
