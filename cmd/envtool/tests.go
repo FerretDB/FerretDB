@@ -40,7 +40,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
 
 // testEvent represents a single even emitted by `go test -json`.
@@ -91,17 +90,6 @@ func resultKey(packageName, testName string) string {
 
 // runGoTest runs `go test` with given extra args.
 func runGoTest(ctx context.Context, args []string, total int, times bool, logger *zap.SugaredLogger) error {
-	ot, err := observability.NewOtelTracer(&observability.OtelTracerOpts{
-		Logger:   logger.Desugar(),
-		Service:  "envtool-tests",
-		Endpoint: "127.0.0.1:4318",
-	})
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	go ot.Run(ctx)
-
 	cmd := exec.CommandContext(ctx, "go", append([]string{"test", "-json"}, args...)...)
 
 	logger.Debugf("Running %s", strings.Join(cmd.Args, " "))
