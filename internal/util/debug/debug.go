@@ -212,17 +212,23 @@ func (h *Handler) Serve(ctx context.Context) {
 
 	go func() {
 		if err := s.Serve(h.lis); !errors.Is(err, http.ErrServerClosed) {
-			panic(err)
+			h.opts.L.DPanic("Serve exited with unexpected error", zap.Error(err))
 		}
 	}()
 
 	<-ctx.Done()
 
+	// ctx is already canceled, but we want to inherit its values
 	stopCtx, stopCancel := ctxutil.WithDelay(ctx)
 	defer stopCancel(nil)
-	_ = s.Shutdown(stopCtx)
 
-	_ = s.Close()
+	if err := s.Shutdown(stopCtx); err != nil {
+		h.opts.L.DPanic("Shutdown exited with unexpected error", zap.Error(err))
+	}
+
+	if err := s.Close(); err != nil {
+		h.opts.L.DPanic("Close exited with unexpected error", zap.Error(err))
+	}
 
 	h.opts.L.Sugar().Info("Debug server stopped.")
 }
