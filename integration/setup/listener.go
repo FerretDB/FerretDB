@@ -239,7 +239,8 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 		listenerOpts.TCP = "127.0.0.1:0"
 	}
 
-	l := clientconn.NewListener(&listenerOpts)
+	l, err := clientconn.Listen(&listenerOpts)
+	require.NoError(tb, err)
 
 	runDone := make(chan struct{})
 

@@ -147,7 +147,7 @@ func New(config *Config) (*FerretDB, error) {
 		return nil, fmt.Errorf("failed to construct handler: %s", err)
 	}
 
-	l := clientconn.NewListener(&clientconn.NewListenerOpts{
+	l, err := clientconn.Listen(&clientconn.NewListenerOpts{
 		TCP:  config.Listener.TCP,
 		Unix: config.Listener.Unix,
 
@@ -161,6 +161,9 @@ func New(config *Config) (*FerretDB, error) {
 		Handler: h,
 		Logger:  log,
 	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to construct handler: %s", err)
+	}
 
 	return &FerretDB{
 		config:       config,

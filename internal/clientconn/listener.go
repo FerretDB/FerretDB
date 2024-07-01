@@ -32,6 +32,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handler"
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/tlsutil"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
@@ -40,6 +41,8 @@ import (
 // and accepts incoming client connections.
 type Listener struct {
 	*NewListenerOpts
+
+	ll *zap.Logger
 
 	tcpListener  net.Listener
 	unixListener net.Listener
@@ -72,14 +75,58 @@ type NewListenerOpts struct {
 	TestRecordsDir string // if empty, no records are created
 }
 
-// NewListener returns a new listener, configured by the NewListenerOpts argument.
-func NewListener(opts *NewListenerOpts) *Listener {
-	return &Listener{
+// Listen returns a new listener, configured by the NewListenerOpts argument.
+func Listen(opts *NewListenerOpts) (*Listener, error) {
+	ll := opts.Logger.Named("listener")
+	l := &Listener{
 		NewListenerOpts:   opts,
+		ll:                ll,
 		tcpListenerReady:  make(chan struct{}),
 		unixListenerReady: make(chan struct{}),
 		tlsListenerReady:  make(chan struct{}),
 	}
+
+	var err error
+
+	if l.TCP != "" {
+		l.tcpListener, err = net.Listen("tcp", l.TCP)
+		if err != nil {
+			opts.Handler.Close()
+			return nil, lazyerrors.Error(err)
+		}
+
+		close(l.tcpListenerReady)
+		ll.Sugar().Infof("Listening on TCP %s ...", l.TCPAddr())
+	}
+
+	if l.Unix != "" {
+		l.unixListener, err = net.Listen("unix", l.Unix)
+		if err != nil {
+			opts.Handler.Close()
+			return nil, lazyerrors.Error(err)
+		}
+
+		close(l.unixListenerReady)
+		ll.Sugar().Infof("Listening on Unix %s ...", l.UnixAddr())
+	}
+
+	if l.TLS != "" {
+		l.tlsListener, err = setupTLSListener(&setupTLSListenerOpts{
+			addr:     l.TLS,
+			certFile: l.TLSCertFile,
+			keyFile:  l.TLSKeyFile,
+			caFile:   l.TLSCAFile,
+		})
+		if err != nil {
+			opts.Handler.Close()
+			return nil, lazyerrors.Error(err)
+		}
+
+		close(l.tlsListenerReady)
+		ll.Sugar().Infof("Listening on TLS %s ...", l.TLSAddr())
+	}
+
+	return l, nil
 }
 
 // Run runs the listener until ctx is canceled or some unrecoverable error occurs.
@@ -87,52 +134,6 @@ func NewListener(opts *NewListenerOpts) *Listener {
 // When this method returns, listener and all connections, as well as handler are closed.
 func (l *Listener) Run(ctx context.Context) error {
 	defer l.Handler.Close()
-
-	logger := l.Logger.Named("listener")
-
-	if l.TCP != "" {
-		var err error
-		l.tcpListener, err = net.Listen("tcp", l.TCP)
-
-		close(l.tcpListenerReady)
-
-		if err != nil {
-			return err
-		}
-
-		logger.Sugar().Infof("Listening on TCP %s ...", l.TCPAddr())
-	}
-
-	if l.Unix != "" {
-		var err error
-		l.unixListener, err = net.Listen("unix", l.Unix)
-
-		close(l.unixListenerReady)
-
-		if err != nil {
-			return err
-		}
-
-		logger.Sugar().Infof("Listening on Unix %s ...", l.UnixAddr())
-	}
-
-	if l.TLS != "" {
-		var err error
-		l.tlsListener, err = setupTLSListener(&setupTLSListenerOpts{
-			addr:     l.TLS,
-			certFile: l.TLSCertFile,
-			keyFile:  l.TLSKeyFile,
-			caFile:   l.TLSCAFile,
-		})
-
-		close(l.tlsListenerReady)
-
-		if err != nil {
-			return err
-		}
-
-		logger.Sugar().Infof("Listening on TLS %s ...", l.TLSAddr())
-	}
 
 	var wg sync.WaitGroup
 
@@ -160,11 +161,11 @@ func (l *Listener) Run(ctx context.Context) error {
 
 		go func() {
 			defer func() {
-				logger.Sugar().Infof("%s stopped.", l.TCPAddr())
+				l.ll.Sugar().Infof("%s stopped.", l.TCPAddr())
 				wg.Done()
 			}()
 
-			acceptLoop(ctx, l.tcpListener, &wg, l, logger)
+			acceptLoop(ctx, l.tcpListener, &wg, l)
 		}()
 	}
 
@@ -173,11 +174,11 @@ func (l *Listener) Run(ctx context.Context) error {
 
 		go func() {
 			defer func() {
-				logger.Sugar().Infof("%s stopped.", l.UnixAddr())
+				l.ll.Sugar().Infof("%s stopped.", l.UnixAddr())
 				wg.Done()
 			}()
 
-			acceptLoop(ctx, l.unixListener, &wg, l, logger)
+			acceptLoop(ctx, l.unixListener, &wg, l)
 		}()
 	}
 
@@ -186,16 +187,16 @@ func (l *Listener) Run(ctx context.Context) error {
 
 		go func() {
 			defer func() {
-				logger.Sugar().Infof("%s stopped.", l.tlsListener.Addr())
+				l.ll.Sugar().Infof("%s stopped.", l.tlsListener.Addr())
 				wg.Done()
 			}()
 
-			acceptLoop(ctx, l.tlsListener, &wg, l, logger)
+			acceptLoop(ctx, l.tlsListener, &wg, l)
 		}()
 	}
 
 	<-ctx.Done()
-	logger.Info("Waiting for all connections to stop...")
+	l.ll.Info("Waiting for all connections to stop...")
 	wg.Wait()
 
 	return context.Cause(ctx)
@@ -225,7 +226,7 @@ func setupTLSListener(opts *setupTLSListenerOpts) (net.Listener, error) {
 }
 
 // acceptLoop runs listener's connection accepting loop until context is canceled.
-func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, l *Listener, logger *zap.Logger) {
+func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, l *Listener) {
 	var retry int64
 	for {
 		netConn, err := listener.Accept()
@@ -237,7 +238,7 @@ func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, 
 
 			l.Metrics.Accepts.WithLabelValues("1").Inc()
 
-			logger.Warn("Failed to accept connection", zap.Error(err))
+			l.ll.Warn("Failed to accept connection", zap.Error(err))
 			if !errors.Is(err, net.ErrClosed) {
 				retry++
 				ctxutil.SleepWithJitter(ctx, time.Second, retry)
@@ -296,18 +297,18 @@ func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, 
 
 			conn, connErr := newConn(opts)
 			if connErr != nil {
-				logger.Warn("Failed to create connection", zap.String("conn", connID), zap.Error(connErr))
+				l.ll.Warn("Failed to create connection", zap.String("conn", connID), zap.Error(connErr))
 				return
 			}
 
-			logger.Info("Connection started", zap.String("conn", connID))
+			l.ll.Info("Connection started", zap.String("conn", connID))
 
 			connErr = conn.run(runCtx)
 			if errors.Is(connErr, wire.ErrZeroRead) {
 				connErr = nil
-				logger.Info("Connection stopped", zap.String("conn", connID))
+				l.ll.Info("Connection stopped", zap.String("conn", connID))
 			} else {
-				logger.Warn("Connection stopped", zap.String("conn", connID), zap.Error(connErr))
+				l.ll.Warn("Connection stopped", zap.String("conn", connID), zap.Error(connErr))
 			}
 		}()
 	}
@@ -317,12 +318,14 @@ func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, 
 // It can be used to determine an actually used port, if it was zero.
 func (l *Listener) TCPAddr() net.Addr {
 	<-l.tcpListenerReady
+	must.NotBeZero(l.tcpListener)
 	return l.tcpListener.Addr()
 }
 
 // UnixAddr returns Unix domain socket listener's address.
 func (l *Listener) UnixAddr() net.Addr {
 	<-l.unixListenerReady
+	must.NotBeZero(l.unixListener)
 	return l.unixListener.Addr()
 }
 
@@ -330,6 +333,7 @@ func (l *Listener) UnixAddr() net.Addr {
 // It can be used to determine an actually used port, if it was zero.
 func (l *Listener) TLSAddr() net.Addr {
 	<-l.tlsListenerReady
+	must.NotBeZero(l.tlsListener)
 	return l.tlsListener.Addr()
 }
 

@@ -473,7 +473,7 @@ func run() {
 
 	defer closeBackend()
 
-	l := clientconn.NewListener(&clientconn.NewListenerOpts{
+	l, err := clientconn.Listen(&clientconn.NewListenerOpts{
 		TCP:  cli.Listen.Addr,
 		Unix: cli.Listen.Unix,
 
@@ -493,6 +493,9 @@ func run() {
 		Logger:         logger,
 		TestRecordsDir: cli.Test.RecordsDir,
 	})
+	if err != nil {
+		logger.Sugar().Fatalf("Failed to construct listener: %s.", err)
+	}
 
 	metricsRegisterer.MustRegister(l)
 
