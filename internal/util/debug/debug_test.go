@@ -48,8 +48,16 @@ func TestRunHandlerStartupProbe(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 
+	h, err := Listen(&ListenOpts{
+		TCPAddr:         addr.String(), //TODO
+		L:               testutil.Logger(t),
+		R:               prometheus.NewRegistry(),
+		FerretdbStarted: started,
+	})
+	require.NoError(t, err)
+
 	go func() {
-		RunHandler(ctx, addr.String(), prometheus.NewRegistry(), testutil.Logger(t), started)
+		h.Serve(ctx)
 		wg.Done()
 	}()
 
