@@ -31,21 +31,21 @@ import (
 	"go.uber.org/zap"
 )
 
-// OtelConfig is the configuration for OpenTelemetry.
-type OtelConfig struct {
+// OtelTracerConfig is the configuration for OpenTelemetry.
+type OtelTracerConfig struct {
 	Service  string
 	Version  string
 	Endpoint string
 }
 
-// Otel represents the OpenTelemetry system.
-type Otel struct {
+// OtelTracer represents the OpenTelemetry tracer.
+type OtelTracer struct {
 	l  *zap.Logger
 	tp *otelsdktrace.TracerProvider
 }
 
-// NewOtel sets up OTLP exporter and tracer provider.
-func NewOtel(config *OtelConfig, l *zap.Logger) (*Otel, error) {
+// NewOtelTracer sets up OTLP tracer provider.
+func NewOtelTracer(config *OtelTracerConfig, l *zap.Logger) (*OtelTracer, error) {
 	if config.Endpoint == "" {
 		return nil, errors.New("endpoint is required")
 	}
@@ -76,25 +76,25 @@ func NewOtel(config *OtelConfig, l *zap.Logger) (*Otel, error) {
 
 	otel.SetTracerProvider(tp)
 
-	return &Otel{
+	return &OtelTracer{
 		l:  l,
 		tp: tp,
 	}, nil
 }
 
-// Run runs the OpenTelemetry system.
-func (o *Otel) Run(ctx context.Context) {
-	o.l.Info("OpenTelemetry system started successfully.")
+// Run runs the OpenTelemetry tracer while the context is open.
+func (ot *OtelTracer) Run(ctx context.Context) {
+	ot.l.Info("OpenTelemetry system started successfully.")
 
 	<-ctx.Done()
 
 	stopCtx, stopCancel := context.WithTimeout(context.Background(), 3*time.Second) //nolint:mnd // Simple timeout
 	defer stopCancel()
 
-	if err := o.tp.Shutdown(stopCtx); err != nil {
-		o.l.Error("Error while shutdown OpenTelemetry system.", zap.Error(err))
+	if err := ot.tp.Shutdown(stopCtx); err != nil {
+		ot.l.Error("Error while shutdown OpenTelemetry system.", zap.Error(err))
 		return
 	}
 
-	o.l.Info("OpenTelemetry system stopped successfully.")
+	ot.l.Info("OpenTelemetry system stopped successfully.")
 }

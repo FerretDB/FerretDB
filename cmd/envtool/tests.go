@@ -91,12 +91,12 @@ func resultKey(packageName, testName string) string {
 
 // runGoTest runs `go test` with given extra args.
 func runGoTest(ctx context.Context, args []string, total int, times bool, logger *zap.SugaredLogger) error {
-	otelConf := observability.OtelConfig{
+	otConfig := observability.OtelTracerConfig{
 		Service:  "envtool-tests",
 		Endpoint: "127.0.0.1:4318",
 	}
 
-	ot, err := observability.NewOtel(&otelConf, logger.Desugar())
+	ot, err := observability.NewOtelTracer(&otConfig, logger.Desugar())
 	if err != nil {
 		return lazyerrors.Error(err)
 	}

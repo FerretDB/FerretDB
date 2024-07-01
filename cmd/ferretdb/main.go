@@ -410,7 +410,7 @@ func run() {
 	}
 
 	if cli.Test.OTLPEndpoint != "" {
-		otelConf := observability.OtelConfig{
+		otConf := observability.OtelTracerConfig{
 			Service:  "ferretdb",
 			Version:  version.Get().Version,
 			Endpoint: cli.Test.OTLPEndpoint,
@@ -418,7 +418,7 @@ func run() {
 
 		otLogger := logger.Named("otel")
 
-		ot, err := observability.NewOtel(&otelConf, otLogger)
+		ot, err := observability.NewOtelTracer(&otConf, otLogger)
 		if err != nil {
 			otLogger.Error("Failed to create OpenTelemetry system.", zap.Error(err))
 			stop()

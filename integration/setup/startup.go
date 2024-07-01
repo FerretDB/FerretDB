@@ -36,6 +36,9 @@ import (
 // listenerMetrics are shared between tests.
 var listenerMetrics = connmetrics.NewListenerMetrics()
 
+// shutdownOtel is a function that stops OpenTelemetry's tracer provider.
+var shutdownOtel context.CancelFunc
+
 // Startup initializes things that should be initialized only once.
 func Startup() {
 	logging.Setup(zap.DebugLevel, "console", "")
@@ -129,6 +132,9 @@ func Startup() {
 
 // Shutdown cleans up after all tests.
 func Shutdown() {
+	shutdownOtel()
+	// TODO how do we check that shutdown is complete?
+
 	// to increase a chance of resource finalizers to spot problems
 	runtime.GC()
 	runtime.GC()
