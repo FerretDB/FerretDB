@@ -20,6 +20,7 @@ import (
 	"runtime"
 	"slices"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -36,11 +37,11 @@ import (
 // listenerMetrics are shared between tests.
 var listenerMetrics = connmetrics.NewListenerMetrics()
 
-// shutdownOtel is a function that stops OpenTelemetry's tracer provider.
-var shutdownOtel context.CancelFunc
+// shutdown cancels context passed to startup components.
+var shutdown context.CancelFunc
 
-// otelDone is a channel that is closed when OpenTelemetry's tracer provider is stopped.
-var otelDone = make(chan struct{})
+// startupWG waits for all startup components to finish.
+var startupWG sync.WaitGroup
 
 // Startup initializes things that should be initialized only once.
 func Startup() {
@@ -55,26 +56,44 @@ func Startup() {
 	prometheus.DefaultRegisterer.MustRegister(listenerMetrics)
 
 	// use any available port to allow running different configurations in parallel
-	go debug.RunHandler(context.Background(), "127.0.0.1:0", prometheus.DefaultRegisterer, zap.L().Named("debug"))
+	h, err := debug.Listen(&debug.ListenOpts{
+		TCPAddr: "127.0.0.1:0",
+		L:       zap.L().Named("debug"),
+		R:       prometheus.DefaultRegisterer,
+	})
+	if err != nil {
+		zap.S().Fatalf("Failed to create debug handler: %s.", err)
+	}
 
 	otOpts := observability.OtelTracerOpts{
 		Service:  "integration-tests",
 		Endpoint: "127.0.0.1:4318",
 		Logger:   zap.L().Named("otel"),
 	}
-
 	ot, err := observability.NewOtelTracer(&otOpts)
 	if err != nil {
-		zap.S().Fatal(err)
+		zap.S().Fatalf("Failed to create Otel tracer: %s.", err)
 	}
 
+	var ctx context.Context
+	ctx, shutdown = context.WithCancel(context.Background())
+
+	startupWG.Add(1)
+
 	go func() {
-		ot.Run(context.TODO())
-		otelDone <- struct{}{}
+		defer startupWG.Done()
+		h.Serve(ctx)
 	}()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+	startupWG.Add(1)
+
+	go func() {
+		defer startupWG.Done()
+		ot.Run(ctx)
+	}()
+
+	clientCtx, clientCancel := context.WithTimeout(context.Background(), 5*time.Second) //nolint:mnd // good enough
+	defer clientCancel()
 
 	// do basic flags validation earlier, before all tests
 
@@ -104,12 +123,12 @@ func Startup() {
 			zap.S().Fatal(err)
 		}
 
-		client, err := makeClient(ctx, *targetURLF)
+		client, err := makeClient(clientCtx, *targetURLF)
 		if err != nil {
 			zap.S().Fatalf("Failed to connect to target system %s: %s", *targetURLF, err)
 		}
 
-		client.Disconnect(ctx)
+		_ = client.Disconnect(clientCtx)
 
 		zap.S().Infof("Target system: %s (%s).", *targetBackendF, *targetURLF)
 	} else {
@@ -124,12 +143,12 @@ func Startup() {
 			zap.S().Fatal(err)
 		}
 
-		client, err := makeClient(ctx, *compatURLF)
+		client, err := makeClient(clientCtx, *compatURLF)
 		if err != nil {
 			zap.S().Fatalf("Failed to connect to compat system %s: %s", *compatURLF, err)
 		}
 
-		client.Disconnect(ctx)
+		_ = client.Disconnect(clientCtx)
 
 		zap.S().Infof("Compat system: MongoDB (%s).", *compatURLF)
 	} else {
@@ -139,17 +158,9 @@ func Startup() {
 
 // Shutdown cleans up after all tests.
 func Shutdown() {
-	shutdownOtel()
+	shutdown()
 
-	t := time.NewTimer(3 * time.Second)
-	defer t.Stop()
-
-	select {
-	case <-otelDone:
-		// do nothing
-	case <-t.C:
-		zap.S().Warn("OpenTelemetry system shutdown timeout.")
-	}
+	startupWG.Wait()
 
 	// to increase a chance of resource finalizers to spot problems
 	runtime.GC()

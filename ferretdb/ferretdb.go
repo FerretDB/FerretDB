@@ -147,7 +147,7 @@ func New(config *Config) (*FerretDB, error) {
 		return nil, fmt.Errorf("failed to construct handler: %s", err)
 	}
 
-	l := clientconn.NewListener(&clientconn.NewListenerOpts{
+	l, err := clientconn.Listen(&clientconn.NewListenerOpts{
 		TCP:  config.Listener.TCP,
 		Unix: config.Listener.Unix,
 
@@ -161,6 +161,9 @@ func New(config *Config) (*FerretDB, error) {
 		Handler: h,
 		Logger:  log,
 	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to construct handler: %s", err)
+	}
 
 	return &FerretDB{
 		config:       config,
@@ -179,18 +182,9 @@ func New(config *Config) (*FerretDB, error) {
 func (f *FerretDB) Run(ctx context.Context) error {
 	defer f.closeBackend()
 
-	err := f.l.Run(ctx)
-	if errors.Is(err, context.Canceled) {
-		err = nil
-	}
+	f.l.Run(ctx)
 
-	if err != nil {
-		// Do not expose internal error details.
-		// If you need stable error values and/or types for some cases, please create an issue.
-		err = errors.New(err.Error())
-	}
-
-	return err
+	return nil
 }
 
 // MongoDBURI returns MongoDB URI for this FerretDB instance.
