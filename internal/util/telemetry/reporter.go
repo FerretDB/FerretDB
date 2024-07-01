@@ -124,9 +124,10 @@ func (r *Reporter) Run(ctx context.Context) {
 		ctxutil.Sleep(ctx, r.ReportInterval)
 	}
 
-	// do one last report before exiting if telemetry is explicitly enabled
 	if pointer.GetBool(r.P.Get().Telemetry) {
 		var cancel context.CancelCauseFunc
+
+		// ctx is already canceled, but we want to inherit its values
 		ctx, cancel = ctxutil.WithDelay(ctx)
 		defer cancel(nil)
 
