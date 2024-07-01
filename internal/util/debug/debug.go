@@ -46,6 +46,7 @@ const (
 	subsystem = "debug"
 )
 
+// setup ensures that debug handler is set up only once.
 var setup atomic.Bool
 
 // Handler represents debug handler.
@@ -219,9 +220,8 @@ func (h *Handler) Serve(ctx context.Context) {
 
 	stopCtx, stopCancel := ctxutil.WithDelay(ctx)
 	defer stopCancel(nil)
-
 	_ = s.Shutdown(stopCtx)
-	_ = s.Close()
 
+	_ = s.Close()
 	h.opts.L.Sugar().Info("Debug server stopped.")
 }
