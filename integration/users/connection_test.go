@@ -329,19 +329,19 @@ func TestAuthenticationAuthSource(t *testing.T) {
 			path:             "/",
 		},
 		"DefaultAuthDB": {
-			// example: mongodb://user1:pass1@127.0.0.1:40623/TestAuthenticationAuthSourcedb1
+			// example: mongodb://user1:pass1@127.0.0.1:40623/TestAuthenticationAuthSource
 			username:         "user1",
 			password:         "pass1",
-			authenticationDB: t.Name() + "db1",
-			path:             t.Name() + "db1",
+			authenticationDB: t.Name(),
+			path:             t.Name(),
 		},
 		"AuthSource": {
-			// example: mongodb://user2:pass2@127.0.0.1:40623/XXX?authSource=TestAuthenticationAuthSourcedb1
+			// example: mongodb://user2:pass2@127.0.0.1:40623/XXX?authSource=TestAuthenticationAuthSource
 			username:         "user2",
 			password:         "pass2",
-			authenticationDB: t.Name() + "db1",
+			authenticationDB: t.Name(),
 			path:             "/XXX",
-			authSource:       t.Name() + "db1",
+			authSource:       t.Name(),
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
