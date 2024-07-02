@@ -41,6 +41,11 @@ type InsertParams struct {
 	LSID                     any    `ferretdb:"lsid,ignored"`
 	TxnNumber                int64  `ferretdb:"txnNumber,ignored"`
 	ClusterTime              any    `ferretdb:"$clusterTime,ignored"`
+
+	// StableAPI ignored parameters
+	ApiVersion           string `ferretdb:"apiVersion,ignored"`
+	ApiStrict            bool   `ferretdb:"apiStrict,ignored"`
+	ApiDeprecationErrors bool   `ferretdb:"apiDeprecationErrors,ignored"`
 }
 
 // GetInsertParams returns the parameters for an insert command.
