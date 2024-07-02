@@ -64,5 +64,5 @@ func setupSlog(opts *NewHandlerOpts, uuid string) {
 	}
 
 	slog.SetDefault(l)
-	slog.SetLogLoggerLevel(slog.LevelInfo + 2) //nolint:mnd // "strange" level to better differentiate non-slog logs
+	// slog.SetLogLoggerLevel(slog.LevelInfo + 2) //nolint:mnd // "strange" level to better differentiate non-slog logs
 }
