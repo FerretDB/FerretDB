@@ -15,7 +15,6 @@ import (
 	"modernc.org/libc/fcntl"
 	"modernc.org/libc/signal"
 	"modernc.org/libc/stdio"
-
 	// "modernc.org/libc/sys/stat"
 	"modernc.org/libc/sys/types"
 	ctime "modernc.org/libc/time"

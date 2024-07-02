@@ -22,7 +22,7 @@ import (
 	"sync"
 	"unicode"
 
-	lru "github.com/hashicorp/golang-lru/v2"
+	"github.com/hashicorp/golang-lru/v2"
 )
 
 var (

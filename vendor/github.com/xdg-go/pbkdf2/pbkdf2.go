@@ -31,7 +31,7 @@ import (
 // constructor for a hashing function.  For example, for a 32-byte key using
 // SHA-256:
 //
-//	key := Key([]byte("trustNo1"), salt, 10000, 32, sha256.New)
+//  key := Key([]byte("trustNo1"), salt, 10000, 32, sha256.New)
 func Key(password, salt []byte, iterCount, keyLen int, h func() hash.Hash) []byte {
 	prf := hmac.New(h, password)
 	hLen := prf.Size()

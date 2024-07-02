@@ -4,10 +4,8 @@
 
 package fallback
 
-import (
-	"crypto/x509"
-	"encoding/pem"
-)
+import "crypto/x509"
+import "encoding/pem"
 
 func mustParse(b []byte) []*x509.Certificate {
 	var roots []*x509.Certificate
