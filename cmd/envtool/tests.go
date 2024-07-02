@@ -166,6 +166,8 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 				spanName = event.Test
 			}
 
+			spanName = "foobar"
+
 			must.NotBeZero(parentCtx)
 			must.NotBeZero(spanName)
 
