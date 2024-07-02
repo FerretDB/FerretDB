@@ -329,19 +329,19 @@ func TestAuthenticationAuthSource(t *testing.T) {
 			path:             "/",
 		},
 		"DefaultAuthDB": {
-			// example: mongodb://user1:pass1@127.0.0.1:33313/db1
+			// example: mongodb://user1:pass1@127.0.0.1:40623/TestAuthenticationAuthSourcedb1
 			username:         "user1",
 			password:         "pass1",
-			authenticationDB: "db1",
-			path:             "/db1",
+			authenticationDB: t.Name() + "db1",
+			path:             t.Name() + "db1",
 		},
 		"AuthSource": {
-			// example: mongodb://user2:pass2@127.0.0.1:33313/XXX?authSource=db1
+			// example: mongodb://user2:pass2@127.0.0.1:40623/XXX?authSource=TestAuthenticationAuthSourcedb1
 			username:         "user2",
 			password:         "pass2",
-			authenticationDB: "db1",
+			authenticationDB: t.Name() + "db1",
 			path:             "/XXX",
-			authSource:       "db1",
+			authSource:       t.Name() + "db1",
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -400,7 +400,7 @@ func TestAuthenticationDifferentDatabase(t *testing.T) {
 
 	s := setup.SetupWithOpts(t, nil)
 	ctx, db := s.Ctx, s.Collection.Database()
-	user, db1, pass1, db2, pass2 := "user", "db1", "pass1", "db2", "pass2"
+	user, db1, pass1, db2, pass2 := "user", t.Name()+"db1", "pass1", t.Name()+"db2", "pass2"
 
 	for dbName, pass := range map[string]string{
 		db1: pass1,
