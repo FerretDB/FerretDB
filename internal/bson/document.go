@@ -17,12 +17,9 @@ package bson
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
 	"log/slog"
 	"slices"
 
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -71,55 +68,6 @@ func MakeDocument(cap int) *Document {
 	return &Document{
 		fields: make([]field, 0, cap),
 	}
-}
-
-// ConvertDocument converts [*types.Document] to Document.
-func ConvertDocument(doc *types.Document) (*Document, error) {
-	iter := doc.Iterator()
-	defer iter.Close()
-
-	res := MakeDocument(doc.Len())
-
-	for {
-		k, v, err := iter.Next()
-		if err != nil {
-			if errors.Is(err, iterator.ErrIteratorDone) {
-				return res, nil
-			}
-
-			return nil, lazyerrors.Error(err)
-		}
-
-		v, err = convertFromTypes(v)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		if err = res.Add(k, v); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-	}
-}
-
-// Convert converts Document to [*types.Document], decoding raw documents and arrays on the fly.
-func (doc *Document) Convert() (*types.Document, error) {
-	pairs := make([]any, 0, len(doc.fields)*2)
-
-	for _, f := range doc.fields {
-		v, err := convertToTypes(f.value)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		pairs = append(pairs, f.name, v)
-	}
-
-	res, err := types.NewDocument(pairs...)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return res, nil
 }
 
 // Freeze prevents document from further field modifications.
@@ -231,12 +179,16 @@ func (doc *Document) Command() string {
 	return doc.fields[0].name
 }
 
-// Encode encodes BSON document.
+// Encode encodes non-nil BSON document.
 //
 // TODO https://github.com/FerretDB/FerretDB/issues/3759
 // This method should accept a slice of bytes, not return it.
 // That would allow to avoid unnecessary allocations.
+//
+// Receiver must not be nil.
 func (doc *Document) Encode() (RawDocument, error) {
+	must.NotBeZero(doc)
+
 	size := sizeAny(doc)
 	buf := bytes.NewBuffer(make([]byte, 0, size))
 

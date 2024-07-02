@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/FerretDB/FerretDB/internal/bson"
+	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
@@ -40,25 +41,32 @@ func TestLoggingNil(t *testing.T) {
 }
 
 func TestLogging(t *testing.T) {
-	opts := &slog.HandlerOptions{
-		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
-			if groups != nil || a.Key == "v" {
-				return a
-			}
-
-			return slog.Attr{}
-		},
-	}
-
 	ctx := context.Background()
 
-	var tbuf, jbuf bytes.Buffer
-	tlog := slog.New(slog.NewTextHandler(&tbuf, opts))
-	jlog := slog.New(slog.NewJSONHandler(&jbuf, opts))
+	var cbuf, tbuf, jbuf bytes.Buffer
+	clog := slog.New(logging.NewHandler(&cbuf, &logging.NewHandlerOpts{
+		Base:         "console",
+		RemoveTime:   true,
+		RemoveLevel:  true,
+		RemoveSource: true,
+	}))
+	tlog := slog.New(logging.NewHandler(&tbuf, &logging.NewHandlerOpts{
+		Base:         "text",
+		RemoveTime:   true,
+		RemoveLevel:  true,
+		RemoveSource: true,
+	}))
+	jlog := slog.New(logging.NewHandler(&jbuf, &logging.NewHandlerOpts{
+		Base:         "json",
+		RemoveTime:   true,
+		RemoveLevel:  true,
+		RemoveSource: true,
+	}))
 
 	for _, tc := range []struct {
 		name string
-		doc  *bson.Document
+		doc  any
+		c    string
 		t    string
 		j    string
 		m    string
@@ -76,6 +84,7 @@ func TestLogging(t *testing.T) {
 				"i32", int32(42),
 				"i64", int64(42),
 			)),
+			c: `	{"v":{"f64":42,"i32":42,"i64":42,"inf":"+Inf","nan":"NaN","neg_inf":"-Inf","neg_zero":-0,"zero":0}}`,
 			t: `v.f64=42 v.inf=+Inf v.neg_inf=-Inf v.zero=0 v.neg_zero=-0 v.nan=NaN v.i32=42 v.i64=42`,
 			j: `{"v":{"f64":42,"inf":"+Inf","neg_inf":"-Inf","zero":0,"neg_zero":-0,"nan":"NaN","i32":42,"i64":42}}`,
 			m: `
@@ -109,6 +118,7 @@ func TestLogging(t *testing.T) {
 				"bool", true,
 				"time", time.Date(2023, 3, 6, 13, 14, 42, 123456789, time.FixedZone("", int(4*time.Hour.Seconds()))),
 			)),
+			c: `	{"v":{"bool":true,"id":"ObjectID(420000000000000000000000)","null":null,"time":"2023-03-06T09:14:42.123Z"}}`,
 			t: `v.null=<nil> v.id=ObjectID(420000000000000000000000) v.bool=true v.time=2023-03-06T09:14:42.123Z`,
 			j: `{"v":{"null":null,"id":"ObjectID(420000000000000000000000)","bool":true,"time":"2023-03-06T09:14:42.123Z"}}`,
 			m: `
@@ -143,6 +153,8 @@ func TestLogging(t *testing.T) {
 					must.NotFail(bson.NewArray("baz", "qux")),
 				)),
 			)),
+			c: `	{"v":{"array":{"0":"foo","1":"bar","2":{"0":"baz","1":"qux"}},` +
+				`"doc":{"baz":{"qux":"quux"},"foo":"bar"},"doc_raw":"RawDocument<1>"}}`,
 			t: `v.doc.foo=bar v.doc.baz.qux=quux v.doc_raw=RawDocument<1> ` +
 				`v.array.0=foo v.array.1=bar v.array.2.0=baz v.array.2.1=qux`,
 			j: `{"v":{"doc":{"foo":"bar","baz":{"qux":"quux"}},"doc_raw":"RawDocument<1>",` +
@@ -177,7 +189,9 @@ func TestLogging(t *testing.T) {
 		{
 			name: "Nested",
 			doc:  makeNested(false, 20).(*bson.Document),
-			t:    `v.f.0.f.0.f.0.f.0.f.0.f.0.f.0.f.0.f.0.f.0=<nil>`,
+			c: `	{"v":{"f":{"0":{"f":{"0":{"f":{"0":{"f":{"0":{"f":{"0":{"f":{"0":` +
+				`{"f":{"0":{"f":{"0":{"f":{"0":{"f":{"0":null}}}}}}}}}}}}}}}}}}}}}`,
+			t: `v.f.0.f.0.f.0.f.0.f.0.f.0.f.0.f.0.f.0.f.0=<nil>`,
 			j: `{"v":{"f":{"0":{"f":{"0":{"f":{"0":{"f":{"0":{"f":{"0":{"f":{"0":` +
 				`{"f":{"0":{"f":{"0":{"f":{"0":{"f":{"0":null}}}}}}}}}}}}}}}}}}}}}`,
 			m: `
@@ -231,21 +245,36 @@ func TestLogging(t *testing.T) {
 			  ],
 			}`,
 		},
+		{
+			name: "Raw",
+			doc:  bson.RawDocument{42, 7},
+
+			c: `	{"v":"RawDocument<2>"}`,
+
+			t: `v=RawDocument<2>`,
+			j: `{"v":"RawDocument<2>"}`,
+			m: `RawDocument<2>`,
+			b: `RawDocument<2>`,
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			clog.InfoContext(ctx, "", slog.Any("v", tc.doc))
+			assert.Equal(t, tc.c+"\n", cbuf.String(), "console output mismatch")
+			cbuf.Reset()
+
 			tlog.InfoContext(ctx, "", slog.Any("v", tc.doc))
-			assert.Equal(t, tc.t+"\n", tbuf.String())
+			assert.Equal(t, tc.t+"\n", tbuf.String(), "text output mismatch")
 			tbuf.Reset()
 
 			jlog.InfoContext(ctx, "", slog.Any("v", tc.doc))
-			assert.Equal(t, tc.j+"\n", jbuf.String())
+			assert.Equal(t, tc.j+"\n", jbuf.String(), "json output mismatch")
 			jbuf.Reset()
 
 			m := bson.LogMessage(tc.doc)
-			assert.Equal(t, testutil.Unindent(t, tc.m), m, "actual:\n%s", m)
+			assert.Equal(t, testutil.Unindent(t, tc.m), m, "actual LogMessage result:\n%s", m)
 
 			b := bson.LogMessageBlock(tc.doc)
-			assert.Equal(t, testutil.Unindent(t, tc.b), b, "actual:\n%s", b)
+			assert.Equal(t, testutil.Unindent(t, tc.b), b, "actual LogMessageBlock result:\n%s", b)
 		})
 	}
 }
