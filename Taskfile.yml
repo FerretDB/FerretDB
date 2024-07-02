@@ -364,6 +364,7 @@ tasks:
         --handler=pg
         --postgresql-url='postgres://username@127.0.0.1:5432/ferretdb?search_path='
         --test-records-dir=tmp/records
+        --test-otlp-endpoint=127.0.0.1:4318
 
   run-sqlite:
     desc: "Run FerretDB with `sqlite` backend"
