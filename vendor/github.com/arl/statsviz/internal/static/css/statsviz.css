@@ -1,0 +1,62 @@
+html,
+body {
+    height: 100%;
+    margin: 0;
+}
+
+nav.navbar {
+    background-color: #f8f9fa;
+}
+
+body.dark-theme {
+    color: white;
+    background-color: #282a2c;
+}
+
+body.dark-theme nav.navbar span.action svg {
+    color: lightgray;
+}
+
+#header {
+    text-align: center;
+}
+
+.container-xxl {
+    width: 2190px;
+}
+
+.tooltip-table {
+    display: table;
+    width: 160px;
+    border-collapse: collapse;
+}
+
+.tooltip-style {
+    font-family: "Open Sans", verdana, arial, sans-serif;
+    font-size: 12px;
+    fill: rgb(68, 68, 68);
+    fill-opacity: 1;
+    white-space: pre;
+}
+
+.tooltip-row {
+    display: table-row;
+}
+
+.tooltip-value,
+.tooltip-label {
+    display: table-cell;
+    padding: 0.3em;
+    /* border: #f0f0f0 1px solid; */
+}
+
+.tooltip-label {
+    font-weight: bold;
+}
+
+.plots-wrapper {
+    display: grid;
+    height: 100%;
+    /* column must be same as plotWidth (plot.js) */
+    grid-template-columns: repeat(auto-fill, minmax(0px, 630px));
+}
