@@ -35,9 +35,6 @@ func TestDebugHandlerStartupProbe(t *testing.T) {
 	ctx, cancel := context.WithCancel(testutil.Ctx(t))
 	var started atomic.Bool
 
-	var wg sync.WaitGroup
-	wg.Add(1)
-
 	h, err := Listen(&ListenOpts{
 		TCPAddr: "127.0.0.1:0",
 		L:       testutil.Logger(t),
@@ -47,6 +44,9 @@ func TestDebugHandlerStartupProbe(t *testing.T) {
 	require.NoError(t, err)
 
 	addr := h.lis.Addr()
+
+	var wg sync.WaitGroup
+	wg.Add(1)
 
 	go func() {
 		h.Serve(ctx)
