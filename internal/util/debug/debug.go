@@ -66,7 +66,7 @@ type ListenOpts struct {
 	TCPAddr         string
 	L               *zap.Logger
 	R               prometheus.Registerer
-	FerretdbStarted <-chan struct{}
+	FerretdbStarted *atomic.Bool
 }
 
 // Listen creates a new debug handler and starts listener on the given TCP address.
@@ -109,14 +109,14 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 	must.NoError(opts.R.Register(requestCount))
 
 	// started handler, which is used for startup probe,
-	// returns StatusOK when FerretdbStarted channel is closed.
+	// returns StatusOK when FerretdbStarted is true.
 	startedHandler := http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
-		select {
-		case <-opts.FerretdbStarted:
+		if opts.FerretdbStarted.Load() {
 			rw.WriteHeader(http.StatusOK)
-		default:
-			rw.WriteHeader(http.StatusInternalServerError)
+			return
 		}
+
+		rw.WriteHeader(http.StatusInternalServerError)
 	})
 
 	// healthz handler, which is used for liveness probe, returns StatusOK when reached.
