@@ -35,6 +35,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 
+	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -66,6 +67,7 @@ type ListenOpts struct {
 	TCPAddr string
 	L       *zap.Logger
 	R       prometheus.Registerer
+	Backend backends.Backend
 }
 
 // Listen creates a new debug handler and starts listener on the given TCP address.
@@ -118,12 +120,14 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 		rw.WriteHeader(http.StatusOK)
 	})
 
-	readyHandler := http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
-		if ferretDBHandler == nil {
+	readyHandler := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		if opts.Backend == nil {
 			rw.WriteHeader(http.StatusOK)
 		}
 
-		_, err := ferretDBHandler.Backend.Status(ctx, nil)
+		//ctx := conninfo.Ctx(r.Context(), conninfo.New())
+
+		_, err := opts.Backend.Status(r.Context(), nil)
 		if err != nil {
 			http.Error(rw, err.Error(), http.StatusServiceUnavailable)
 		}
