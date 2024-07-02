@@ -387,27 +387,6 @@ func run() {
 
 	var wg sync.WaitGroup
 
-	if cli.DebugAddr != "" && cli.DebugAddr != "-" {
-		wg.Add(1)
-
-		go func() {
-			defer wg.Done()
-
-			l := logger.Named("debug")
-
-			h, err := debug.Listen(&debug.ListenOpts{
-				TCPAddr: cli.DebugAddr,
-				L:       l,
-				R:       metricsRegisterer,
-			})
-			if err != nil {
-				l.Sugar().Fatalf("Failed to create debug handler: %s.", err)
-			}
-
-			h.Serve(ctx)
-		}()
-	}
-
 	if cli.Test.OTLPEndpoint != "" {
 		wg.Add(1)
 
@@ -517,6 +496,33 @@ func run() {
 	})
 	if err != nil {
 		logger.Sugar().Fatalf("Failed to construct listener: %s.", err)
+	}
+
+	if cli.DebugAddr != "" && cli.DebugAddr != "-" {
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+
+			l := logger.Named("debug")
+
+			opts := &debug.ListenOpts{
+				TCPAddr: cli.DebugAddr,
+				L:       l,
+				R:       metricsRegisterer,
+			}
+
+			if cli.Setup.Database != "" {
+				opts.Backend = h.Backend
+			}
+
+			h, err := debug.Listen(opts)
+			if err != nil {
+				l.Sugar().Fatalf("Failed to create debug handler: %s.", err)
+			}
+
+			h.Serve(ctx)
+		}()
 	}
 
 	metricsRegisterer.MustRegister(l)
