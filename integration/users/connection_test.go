@@ -322,21 +322,21 @@ func TestAuthenticationAuthSource(t *testing.T) {
 		authSource       string // if empty, authSource is not set
 	}{
 		"Admin": {
-			// mongodb://adminuser:adminpass@127.0.0.1:33313/
+			// example: mongodb://adminuser:adminpass@127.0.0.1:33313/
 			username:         "adminuser",
 			password:         "adminpass",
 			authenticationDB: "admin",
 			path:             "/",
 		},
 		"DefaultAuthDB": {
-			// mongodb://user1:pass1@127.0.0.1:33313/db1
+			// example: mongodb://user1:pass1@127.0.0.1:33313/db1
 			username:         "user1",
 			password:         "pass1",
 			authenticationDB: "db1",
 			path:             "/db1",
 		},
 		"AuthSource": {
-			// mongodb://user2:pass2@127.0.0.1:33313/XXX?authSource=db1
+			// example: mongodb://user2:pass2@127.0.0.1:33313/XXX?authSource=db1
 			username:         "user2",
 			password:         "pass2",
 			authenticationDB: "db1",
