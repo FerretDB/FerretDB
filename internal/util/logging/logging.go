@@ -17,118 +17,52 @@ package logging
 
 import (
 	"fmt"
-	"log"
 	"log/slog"
 	"os"
 
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-
-	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// logLevels maps zap log levels to slog levels.
-var logLevels = map[zapcore.Level]slog.Level{
-	zapcore.DebugLevel:  slog.LevelDebug,
-	zapcore.InfoLevel:   slog.LevelInfo,
-	zapcore.WarnLevel:   slog.LevelWarn,
-	zapcore.ErrorLevel:  slog.LevelError,
-	zapcore.DPanicLevel: slog.LevelError,
-	zapcore.PanicLevel:  slog.LevelError,
-	zapcore.FatalLevel:  slog.LevelError,
-}
+const (
+	// LevelDPanic panics in debug builds.
+	LevelDPanic = slog.LevelError + 1
 
-// Setup initializes logging with a given level.
-func Setup(level zapcore.Level, encoding, uuid string) {
-	setupSlog(level, encoding)
+	// LevelPanic always panics.
+	LevelPanic = slog.LevelError + 2
 
-	config := zap.Config{
-		Level:             zap.NewAtomicLevelAt(level),
-		Development:       debugbuild.Enabled,
-		DisableCaller:     false,
-		DisableStacktrace: false,
-		Sampling:          nil,
-		Encoding:          encoding,
-		EncoderConfig: zapcore.EncoderConfig{
-			MessageKey:          "M",
-			LevelKey:            "L",
-			TimeKey:             "T",
-			NameKey:             "N",
-			CallerKey:           "C",
-			FunctionKey:         zapcore.OmitKey,
-			StacktraceKey:       "S",
-			LineEnding:          zapcore.DefaultLineEnding,
-			EncodeLevel:         zapcore.CapitalLevelEncoder,
-			EncodeTime:          zapcore.ISO8601TimeEncoder,
-			EncodeDuration:      zapcore.StringDurationEncoder,
-			EncodeCaller:        zapcore.ShortCallerEncoder,
-			EncodeName:          nil,
-			NewReflectedEncoder: nil,
-			ConsoleSeparator:    "\t",
-		},
-		OutputPaths:      []string{"stderr"},
-		ErrorOutputPaths: []string{"stderr"},
-		InitialFields:    nil,
+	// LevelFatal exits with a non-zero status.
+	LevelFatal = slog.LevelError + 3
+)
+
+// Error returns [slog.Attr] for the given error (that can be nil) with error's message as a value.
+func Error(err error) slog.Attr {
+	if err == nil {
+		return slog.String("error", "<nil>")
 	}
 
+	return slog.String("error", err.Error())
+}
+
+// GoError returns [slog.Attr] for the given error (that can be nil) with error's Go representation as a value.
+func GoError(err error) slog.Attr {
+	if err == nil {
+		return slog.String("error", "<nil>")
+	}
+
+	return slog.String("error", fmt.Sprintf("%#v", err))
+}
+
+// setupSlog initializes slog logging with given options and UUID.
+func setupSlog(opts *NewHandlerOpts, uuid string) {
+	must.NotBeZero(opts)
+
+	h := NewHandler(os.Stderr, opts)
+
+	l := slog.New(h)
 	if uuid != "" {
-		config.InitialFields = map[string]any{"uuid": uuid}
+		l = l.With(slog.String("uuid", uuid))
 	}
 
-	logger, err := config.Build()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	SetupWithZapLogger(WithHooks(logger))
-}
-
-// WithHooks returns a logger with recent entries hooks.
-func WithHooks(logger *zap.Logger) *zap.Logger {
-	return logger.WithOptions(zap.Hooks(func(entry zapcore.Entry) error {
-		RecentEntries.append(&entry)
-		return nil
-	}))
-}
-
-// setupSlog initializes slog logging with a given level.
-func setupSlog(level zapcore.Level, encoding string) {
-	// We either should replace zap with slog everywhere,
-	// or use zap's handler for slog,
-	// See https://github.com/uber-go/zap/issues/1270 and https://github.com/uber-go/zap/issues/1333.
-	// TODO https://github.com/FerretDB/FerretDB/issues/4013
-	//
-	// For now, just setup slog in parallel.
-
-	slogLevel, ok := logLevels[level]
-	if !ok {
-		panic(fmt.Sprintf("invalid log level %d", level))
-	}
-
-	slogOpts := &slog.HandlerOptions{
-		AddSource: false,
-		Level:     slogLevel,
-	}
-
-	var slogHandler slog.Handler
-
-	switch encoding {
-	case "console":
-		slogHandler = slog.NewTextHandler(os.Stderr, slogOpts)
-	case "json":
-		slogHandler = slog.NewJSONHandler(os.Stderr, slogOpts)
-	default:
-		panic(fmt.Sprintf("invalid log encoding %q", encoding))
-	}
-
-	slog.SetDefault(slog.New(slogHandler))
-}
-
-// SetupWithZapLogger initializes zap logging with a given logger and its level.
-func SetupWithZapLogger(logger *zap.Logger) {
-	zap.ReplaceGlobals(logger)
-
-	if _, err := zap.RedirectStdLogAt(logger, zap.InfoLevel); err != nil {
-		log.Fatal(err)
-	}
+	slog.SetDefault(l)
+	slog.SetLogLoggerLevel(slog.LevelInfo + 2) //nolint:mnd // "strange" level to better differentiate non-slog logs
 }
