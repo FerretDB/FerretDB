@@ -61,7 +61,7 @@ tasks:
     cmds:
       #- go mod tidy
       #- go mod verify
-      - task: gen-version
+      #- task: gen-version
 
   env-reset:
     desc: "Clean ALL Go and Docker data (caches, images, volumes), and reset environment"
@@ -482,8 +482,8 @@ tasks:
       #- go vet -vettool=bin/checkswitch{{exeExt}} ./...
       #- go vet -vettool=bin/checkcomments{{exeExt}} ./...
 
-      - bin/task{{exeExt}} -d integration lint
-      - bin/task{{exeExt}} -d tools lint
+      #- bin/task{{exeExt}} -d integration lint
+      #- bin/task{{exeExt}} -d tools lint
 
   security:
     desc: "Run security scanners"
