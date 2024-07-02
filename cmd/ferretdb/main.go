@@ -42,6 +42,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/password"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/telemetry"
@@ -115,6 +116,8 @@ var cli struct {
 
 		BatchSize            int `default:"100" help:"Experimental: maximum insertion batch size."`
 		MaxBsonObjectSizeMiB int `default:"16"  help:"Experimental: maximum BSON object size in MiB."`
+
+		OTLPEndpoint string `default:"" help:"Experimental: OTLP exporter endpoint, if unset, OpenTelemetry is disabled."`
 
 		Telemetry struct {
 			URL            string        `default:"https://beacon.ferretdb.com/" help:"Telemetry: reporting URL."`
@@ -404,6 +407,28 @@ func run() {
 			}
 
 			h.Serve(ctx)
+		}()
+	}
+
+	if cli.Test.OTLPEndpoint != "" {
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+
+			l := logger.Named("otel")
+
+			ot, err := observability.NewOtelTracer(&observability.OtelTracerOpts{
+				Logger:   l,
+				Service:  "ferretdb",
+				Version:  version.Get().Version,
+				Endpoint: cli.Test.OTLPEndpoint,
+			})
+			if err != nil {
+				l.Sugar().Fatalf("Failed to create Otel tracer: %s.", err)
+			}
+
+			ot.Run(ctx)
 		}()
 	}
 
