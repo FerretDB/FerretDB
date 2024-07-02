@@ -139,8 +139,9 @@ func NewOperator(doc *types.Document) (Operator, error) {
 // Operators maps all standard aggregation operators.
 var Operators = map[string]newOperatorFunc{
 	// sorted alphabetically
-	"$sum":  newSum,
-	"$type": newType,
+	"$first": newFirst,
+	"$sum":   newSum,
+	"$type":  newType,
 	// please keep sorted alphabetically
 }
 
