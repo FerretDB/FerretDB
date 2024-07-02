@@ -30,6 +30,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"go.opentelemetry.io/otel"
 	otelattribute "go.opentelemetry.io/otel/attribute"
@@ -155,6 +156,14 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 				otelattribute.String("test", event.Test),
 			}
 
+			if !utf8.ValidString(event.Package) {
+				panic(event.Package)
+			}
+
+			if !utf8.ValidString(event.Test) {
+				panic(event.Test)
+			}
+
 			var parentCtx context.Context
 			var spanName string
 
@@ -164,6 +173,10 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 			} else {
 				parentCtx = results[resultKey(event.Package, parentTest(event.Test))].ctx
 				spanName = event.Test
+			}
+
+			if !utf8.ValidString(spanName) {
+				panic(spanName)
 			}
 
 			must.NotBeZero(parentCtx)
