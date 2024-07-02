@@ -36,8 +36,11 @@ func (e *Exporter) ExportSpans(ctx context.Context, ss []tracesdk.ReadOnlySpan) 
 
 	err := e.client.UploadTraces(ctx, protoSpans)
 	if err != nil {
-		log.Printf("spans: %v", protoSpans)
-		panic(protoSpans)
+		//log.Printf("spans: %v", protoSpans)
+		for _, s := range protoSpans {
+			log.Print(s.String())
+			panic(err)
+		}
 		return fmt.Errorf("traces export: %w", err)
 	}
 	return nil
