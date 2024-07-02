@@ -507,12 +507,17 @@ func run() {
 
 			l := logger.Named("debug")
 
-			h, err := debug.Listen(&debug.ListenOpts{
+			opts := &debug.ListenOpts{
 				TCPAddr: cli.DebugAddr,
 				L:       l,
 				R:       metricsRegisterer,
-				Backend: h.Backend,
-			})
+			}
+
+			if cli.Setup.Database != "" {
+				opts.Backend = h.Backend
+			}
+
+			h, err := debug.Listen(opts)
 			if err != nil {
 				l.Sugar().Fatalf("Failed to create debug handler: %s.", err)
 			}

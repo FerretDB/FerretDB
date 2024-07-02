@@ -36,6 +36,7 @@ import (
 	"golang.org/x/exp/maps"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -109,6 +110,13 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 
 	must.NoError(opts.R.Register(requestCount))
 
+	var connInfo *conninfo.ConnInfo
+
+	if opts.Backend != nil {
+		connInfo = conninfo.New()
+		connInfo.SetBypassBackendAuth()
+	}
+
 	startedHandler := http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 		// TODO https://github.com/FerretDB/FerretDB/issues/4306
 		rw.WriteHeader(http.StatusOK)
@@ -123,14 +131,20 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 	readyHandler := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		if opts.Backend == nil {
 			rw.WriteHeader(http.StatusOK)
+			return
 		}
 
-		//ctx := conninfo.Ctx(r.Context(), conninfo.New())
+		ctx := conninfo.Ctx(r.Context(), connInfo)
 
-		_, err := opts.Backend.Status(r.Context(), nil)
+		_, err := opts.Backend.Status(ctx, nil)
 		if err != nil {
-			http.Error(rw, err.Error(), http.StatusServiceUnavailable)
+			opts.L.Error("Backend returned error", zap.Error(err))
+			rw.WriteHeader(http.StatusServiceUnavailable)
+
+			return
 		}
+
+		rw.WriteHeader(http.StatusOK)
 	})
 
 	http.Handle("/debug/started", promhttp.InstrumentHandlerCounter(
