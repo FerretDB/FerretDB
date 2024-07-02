@@ -336,15 +336,25 @@ func TestAuthenticationAuthSource(t *testing.T) {
 			path:             t.Name(),
 		},
 		"AuthSource": {
-			// example: mongodb://user2:pass2@127.0.0.1:40623/XXX?authSource=TestAuthenticationAuthSource
+			// example: mongodb://user2:pass2@127.0.0.1:40623/?authSource=TestAuthenticationAuthSource
 			username:         "user2",
 			password:         "pass2",
 			authenticationDB: t.Name(),
-			path:             "/XXX",
+			path:             "/",
+			authSource:       t.Name(),
+		},
+		"AuthSourceWithDB": {
+			// example: mongodb://user3:pass3@127.0.0.1:40623/XXX?authSource=TestAuthenticationAuthSource
+			username:         "user3",
+			password:         "pass3",
+			authenticationDB: t.Name(),
+			path:             "XXX",
 			authSource:       t.Name(),
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			roles := bson.A{"readWrite"}
 			if !setup.IsMongoDB(t) {
 				// TODO https://github.com/FerretDB/FerretDB/issues/3974
@@ -447,6 +457,8 @@ func TestAuthenticationDifferentDatabase(t *testing.T) {
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			credential := options.Credential{
 				AuthSource: tc.authSource,
 				Username:   tc.username,
