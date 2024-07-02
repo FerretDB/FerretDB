@@ -105,12 +105,16 @@ func (arr *Array) Replace(index int, value any) error {
 	return nil
 }
 
-// Encode encodes BSON array.
+// Encode encodes non-nil BSON array.
 //
 // TODO https://github.com/FerretDB/FerretDB/issues/3759
 // This method should accept a slice of bytes, not return it.
 // That would allow to avoid unnecessary allocations.
+//
+// Receiver must not be nil.
 func (arr *Array) Encode() (RawArray, error) {
+	must.NotBeZero(arr)
+
 	size := sizeAny(arr)
 	buf := bytes.NewBuffer(make([]byte, 0, size))
 

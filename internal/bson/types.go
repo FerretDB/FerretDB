@@ -86,6 +86,94 @@ func convertFromTypes(v any) (any, error) {
 	}
 }
 
+// convertToTypes converts valid BSON value of that package to types package type.
+//
+// Conversions of composite types (including raw types) may cause errors.
+// Invalid types cause panics.
+func convertToTypes(v any) (any, error) {
+	switch v := v.(type) {
+	case *Document:
+		doc, err := v.Convert()
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		return doc, nil
+
+	case RawDocument:
+		d, err := v.Decode()
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		doc, err := d.Convert()
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		return doc, nil
+
+	case *Array:
+		arr, err := v.Convert()
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		return arr, nil
+
+	case RawArray:
+		a, err := v.Decode()
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		arr, err := a.Convert()
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		return arr, nil
+
+	case float64:
+		return v, nil
+	case string:
+		return v, nil
+	case Binary:
+		// Special case to prevent it from being stored as null in sjson.
+		// TODO https://github.com/FerretDB/FerretDB/issues/260
+		if v.B == nil {
+			v.B = []byte{}
+		}
+
+		return types.Binary{
+			B:       v.B,
+			Subtype: types.BinarySubtype(v.Subtype),
+		}, nil
+	case ObjectID:
+		return types.ObjectID(v), nil
+	case bool:
+		return v, nil
+	case time.Time:
+		return v, nil
+	case NullType:
+		return types.Null, nil
+	case Regex:
+		return types.Regex{
+			Pattern: v.Pattern,
+			Options: v.Options,
+		}, nil
+	case int32:
+		return v, nil
+	case Timestamp:
+		return types.Timestamp(v), nil
+	case int64:
+		return v, nil
+
+	default:
+		panic(fmt.Sprintf("invalid BSON type %T", v))
+	}
+}
+
 // ConvertArray converts [*types.Array] to Array.
 func ConvertArray(arr *types.Array) (*Array, error) {
 	iter := arr.Iterator()
