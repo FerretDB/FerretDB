@@ -91,17 +91,6 @@ func resultKey(packageName, testName string) string {
 
 // runGoTest runs `go test` with given extra args.
 func runGoTest(ctx context.Context, args []string, total int, times bool, logger *zap.SugaredLogger) error {
-	shutdownOtel := observability.SetupOtel("envtool tests")
-
-	defer func() {
-		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer shutdownCancel()
-
-		if err := shutdownOtel(shutdownCtx); err != nil {
-			logger.Error(err)
-		}
-	}()
-
 	cmd := exec.CommandContext(ctx, "go", append([]string{"test", "-json"}, args...)...)
 
 	logger.Debugf("Running %s", strings.Join(cmd.Args, " "))
@@ -387,6 +376,17 @@ func testsRun(ctx context.Context, index, total uint, run, skip string, args []s
 	if skip != "" {
 		args = append(args, "-skip="+skip)
 	}
+
+	ot, err := observability.NewOtelTracer(&observability.OtelTracerOpts{
+		Logger:   logger.Desugar(),
+		Service:  "envtool-tests",
+		Endpoint: "127.0.0.1:4318",
+	})
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	go ot.Run(ctx)
 
 	return runGoTest(ctx, args, len(shard), true, logger)
 }

@@ -80,10 +80,7 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 			return &opReply, nil
 		}
 
-		// TODO https://github.com/FerretDB/FerretDB/issues/4392
-		_ = dbName
-
-		speculativeAuthenticate, err := h.saslStart(ctx, authDoc)
+		speculativeAuthenticate, err := h.saslStart(ctx, dbName, authDoc)
 		if err != nil {
 			h.L.Debug("Speculative authentication failed", zap.Error(err))
 

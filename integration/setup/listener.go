@@ -16,7 +16,6 @@ package setup
 
 import (
 	"context"
-	"errors"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -53,7 +52,7 @@ func unixSocketPath(tb testtb.TB) string {
 }
 
 // listenerMongoDBURI builds MongoDB URI for in-process FerretDB.
-func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath string, tlsAndAuth, enableNewAuth bool) string {
+func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath, newAuthDB string, tlsAndAuth bool) string {
 	tb.Helper()
 
 	var host string
@@ -81,15 +80,18 @@ func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath string, tlsAndAut
 		user = url.UserPassword("username", "password")
 	}
 
-	if enableNewAuth {
+	path := "/"
+
+	if newAuthDB != "" {
 		q.Set("authMechanism", "SCRAM-SHA-256")
+		path += newAuthDB
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/1507
 	u := &url.URL{
 		Scheme:   "mongodb",
 		Host:     host,
-		Path:     "/",
+		Path:     path,
 		User:     user,
 		RawQuery: q.Encode(),
 	}
@@ -239,19 +241,15 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 		listenerOpts.TCP = "127.0.0.1:0"
 	}
 
-	l := clientconn.NewListener(&listenerOpts)
+	l, err := clientconn.Listen(&listenerOpts)
+	require.NoError(tb, err)
 
 	runDone := make(chan struct{})
 
 	go func() {
 		defer close(runDone)
 
-		err := l.Run(ctx)
-		if err == nil || errors.Is(err, context.Canceled) {
-			logger.Info("Listener stopped without error")
-		} else {
-			logger.Error("Listener stopped", zap.Error(err))
-		}
+		l.Run(ctx)
 	}()
 
 	// ensure that all listener's and handler's logs are written before test ends
@@ -272,7 +270,7 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 		hostPort = l.TCPAddr().String()
 	}
 
-	uri := listenerMongoDBURI(tb, hostPort, unixSocketPath, tlsAndAuth, !opts.DisableNewAuth)
+	uri := listenerMongoDBURI(tb, hostPort, unixSocketPath, handlerOpts.SetupDatabase, tlsAndAuth)
 
 	logger.Info("Listener started", zap.String("handler", handler), zap.String("uri", uri))
 
