@@ -16,6 +16,7 @@ package users
 
 import (
 	"context"
+	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -305,6 +306,87 @@ func TestAuthenticationOnAuthenticatedConnection(t *testing.T) {
 
 	err = db.RunCommand(ctx, saslStart).Decode(&res)
 	require.NoError(t, err)
+}
+
+func TestAuthenticationAuthSource(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupWithOpts(t, nil)
+	ctx, db := s.Ctx, s.Collection.Database()
+
+	for name, tc := range map[string]struct {
+		username         string
+		password         string
+		authenticationDB string
+		path             string
+		authSource       string // if empty, authSource is not set
+	}{
+		"Admin": {
+			// mongodb://adminuser:adminpass@127.0.0.1:33313/
+			username:         "adminuser",
+			password:         "adminpass",
+			authenticationDB: "admin",
+			path:             "/",
+		},
+		"DefaultAuthDB": {
+			// mongodb://user1:pass1@127.0.0.1:33313/db1
+			username:         "user1",
+			password:         "pass1",
+			authenticationDB: "db1",
+			path:             "/db1",
+		},
+		"AuthSource": {
+			// mongodb://user2:pass2@127.0.0.1:33313/XXX?authSource=db1
+			username:         "user2",
+			password:         "pass2",
+			authenticationDB: "db1",
+			path:             "/XXX",
+			authSource:       "db1",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			err := db.Client().Database(tc.authenticationDB).RunCommand(ctx, bson.D{
+				{"createUser", tc.username},
+				{"roles", bson.A{}},
+				{"pwd", tc.password},
+			}).Err()
+			require.NoError(t, err)
+
+			t.Cleanup(func() {
+				err = db.Client().Database(tc.authenticationDB).RunCommand(ctx, bson.D{{"dropUser", tc.username}}).Err()
+				require.NoError(t, err)
+			})
+
+			u, err := url.Parse(s.MongoDBURI)
+			require.NoError(t, err)
+
+			u.Path = tc.path
+			u.User = url.UserPassword(tc.username, tc.password)
+
+			q := u.Query()
+
+			q.Set("authSource", tc.authSource)
+			if tc.authSource == "" {
+				q.Del("authSource")
+			}
+
+			u.RawQuery = q.Encode()
+
+			opts := options.Client().ApplyURI(u.String())
+
+			t.Log("connecting", u.String())
+
+			client, err := mongo.Connect(ctx, opts)
+			require.NoError(t, err)
+
+			t.Cleanup(func() {
+				require.NoError(t, client.Disconnect(ctx))
+			})
+
+			_, err = client.Database(tc.authenticationDB).Collection("test").Find(ctx, bson.D{})
+			require.NoError(t, err)
+		})
+	}
 }
 
 func TestAuthenticationPLAIN(t *testing.T) {
