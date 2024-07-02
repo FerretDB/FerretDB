@@ -19,6 +19,7 @@ import (
 	"context"
 	"net/http"
 	"sync"
+	"sync/atomic"
 	"testing"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -32,7 +33,7 @@ func TestDebugHandlerStartupProbe(t *testing.T) {
 	t.Parallel()
 
 	ctx, cancel := context.WithCancel(testutil.Ctx(t))
-	started := make(chan struct{})
+	var started atomic.Bool
 
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -41,7 +42,7 @@ func TestDebugHandlerStartupProbe(t *testing.T) {
 		TCPAddr: "127.0.0.1:0",
 		L:       testutil.Logger(t),
 		R:       prometheus.NewRegistry(),
-		Started: started,
+		Started: &started,
 	})
 	require.NoError(t, err)
 
@@ -59,7 +60,7 @@ func TestDebugHandlerStartupProbe(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusInternalServerError, res.StatusCode)
 
-	close(started)
+	started.Store(true)
 
 	res, err = http.DefaultClient.Do(req)
 	require.NoError(t, err)
