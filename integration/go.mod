@@ -6,6 +6,8 @@ toolchain go1.22.4
 
 replace github.com/FerretDB/FerretDB => ../
 
+replace google.golang.org/protobuf => ../protobuf
+
 require (
 	github.com/AlekSi/pointer v1.2.0
 	github.com/FerretDB/FerretDB v0.0.0-00010101000000-000000000000

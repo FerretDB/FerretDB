@@ -4,6 +4,8 @@ go 1.22
 
 toolchain go1.22.4
 
+replace google.golang.org/protobuf => ./protobuf
+
 require (
 	github.com/AlekSi/pointer v1.2.0
 	github.com/SAP/go-hdb v1.9.8
