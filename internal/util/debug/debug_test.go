@@ -38,10 +38,10 @@ func TestDebugHandlerStartupProbe(t *testing.T) {
 	wg.Add(1)
 
 	h, err := Listen(&ListenOpts{
-		TCPAddr:         "127.0.0.1:0",
-		L:               testutil.Logger(t),
-		R:               prometheus.NewRegistry(),
-		FerretdbStarted: started,
+		TCPAddr: "127.0.0.1:0",
+		L:       testutil.Logger(t),
+		R:       prometheus.NewRegistry(),
+		Started: started,
 	})
 	require.NoError(t, err)
 

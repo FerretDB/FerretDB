@@ -398,10 +398,10 @@ func run() {
 			l := logger.Named("debug")
 
 			h, err := debug.Listen(&debug.ListenOpts{
-				TCPAddr:         cli.DebugAddr,
-				L:               l,
-				R:               metricsRegisterer,
-				FerretdbStarted: &listenerStarted,
+				TCPAddr: cli.DebugAddr,
+				L:       l,
+				R:       metricsRegisterer,
+				Started: &listenerStarted,
 			})
 			if err != nil {
 				l.Sugar().Fatalf("Failed to create debug handler: %s.", err)

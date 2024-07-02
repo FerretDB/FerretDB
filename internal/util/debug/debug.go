@@ -63,10 +63,10 @@ type Handler struct {
 //
 //nolint:vet // for readability
 type ListenOpts struct {
-	TCPAddr         string
-	L               *zap.Logger
-	R               prometheus.Registerer
-	FerretdbStarted *atomic.Bool
+	TCPAddr string
+	L       *zap.Logger
+	R       prometheus.Registerer
+	Started *atomic.Bool
 }
 
 // Listen creates a new debug handler and starts listener on the given TCP address.
@@ -109,9 +109,9 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 	must.NoError(opts.R.Register(requestCount))
 
 	// started handler, which is used for startup probe,
-	// returns StatusOK when FerretdbStarted is true.
+	// returns StatusOK when Started is true.
 	startedHandler := http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
-		if opts.FerretdbStarted.Load() {
+		if opts.Started.Load() {
 			rw.WriteHeader(http.StatusOK)
 			return
 		}
