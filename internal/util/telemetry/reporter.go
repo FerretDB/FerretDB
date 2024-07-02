@@ -118,16 +118,18 @@ func (r *Reporter) Run(ctx context.Context) {
 
 	r.firstReportDelay(ctx, ch)
 
-	for context.Cause(ctx) == nil {
+	for ctx.Err() == nil {
 		r.report(ctx)
 
 		ctxutil.Sleep(ctx, r.ReportInterval)
 	}
 
-	// do one last report before exiting if telemetry is explicitly enabled
 	if pointer.GetBool(r.P.Get().Telemetry) {
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-		defer cancel()
+		var cancel context.CancelCauseFunc
+
+		// ctx is already canceled, but we want to inherit its values
+		ctx, cancel = ctxutil.WithDelay(ctx)
+		defer cancel(nil)
 
 		r.report(ctx)
 	}
