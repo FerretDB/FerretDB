@@ -21,6 +21,7 @@ import (
 	"slices"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -59,15 +60,15 @@ func Startup() {
 
 	prometheus.DefaultRegisterer.MustRegister(listenerMetrics)
 
-	started := make(chan struct{})
-	close(started)
+	var started atomic.Bool
+	started.Store(true)
 
 	// use any available port to allow running different configurations in parallel
 	h, err := debug.Listen(&debug.ListenOpts{
-		TCPAddr:         "127.0.0.1:0",
-		L:               zap.L().Named("debug"),
-		R:               prometheus.DefaultRegisterer,
-		FerretdbStarted: started,
+		TCPAddr: "127.0.0.1:0",
+		L:       zap.L().Named("debug"),
+		R:       prometheus.DefaultRegisterer,
+		Started: &started,
 	})
 	if err != nil {
 		zap.S().Fatalf("Failed to create debug handler: %s.", err)
