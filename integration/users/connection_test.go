@@ -345,9 +345,15 @@ func TestAuthenticationAuthSource(t *testing.T) {
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
+			roles := bson.A{"readWrite"}
+			if !setup.IsMongoDB(t) {
+				// TODO https://github.com/FerretDB/FerretDB/issues/3974
+				roles = bson.A{}
+			}
+
 			err := db.Client().Database(tc.authenticationDB).RunCommand(ctx, bson.D{
 				{"createUser", tc.username},
-				{"roles", bson.A{}},
+				{"roles", roles},
 				{"pwd", tc.password},
 			}).Err()
 			require.NoError(t, err)
@@ -364,8 +370,8 @@ func TestAuthenticationAuthSource(t *testing.T) {
 			u.User = url.UserPassword(tc.username, tc.password)
 
 			q := u.Query()
-
 			q.Set("authSource", tc.authSource)
+
 			if tc.authSource == "" {
 				q.Del("authSource")
 			}
@@ -384,6 +390,82 @@ func TestAuthenticationAuthSource(t *testing.T) {
 			})
 
 			_, err = client.Database(tc.authenticationDB).Collection("test").Find(ctx, bson.D{})
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestAuthenticationDifferentDatabase(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupWithOpts(t, nil)
+	ctx, db := s.Ctx, s.Collection.Database()
+	user, db1, pass1, db2, pass2 := "user", "db1", "pass1", "db2", "pass2"
+
+	for dbName, pass := range map[string]string{
+		db1: pass1,
+		db2: pass2,
+	} {
+		roles := bson.A{"readWrite"}
+		if !setup.IsMongoDB(t) {
+			// TODO https://github.com/FerretDB/FerretDB/issues/3974
+			roles = bson.A{}
+		}
+
+		err := db.Client().Database(dbName).RunCommand(ctx, bson.D{
+			{"createUser", user},
+			{"roles", roles},
+			{"pwd", pass},
+		}).Err()
+		require.NoError(t, err)
+
+		t.Cleanup(func() {
+			err = db.Client().Database(dbName).RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", int32(1)}}).Err()
+			require.NoError(t, err)
+		})
+	}
+
+	for name, tc := range map[string]struct {
+		username   string
+		password   string
+		authSource string
+
+		errMsg string
+	}{
+		"CorrectDatabase": {
+			// user:password1 successfully authenticate in db1
+			username:   user,
+			password:   pass1,
+			authSource: db1,
+		},
+		"WrongDatabase": {
+			// user:password2 failed to authenticate in db1
+			username:   user,
+			password:   pass2,
+			authSource: db1,
+			errMsg:     "Authentication failed.",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			credential := options.Credential{
+				AuthSource: tc.authSource,
+				Username:   tc.username,
+				Password:   tc.password,
+			}
+
+			client, err := mongo.Connect(ctx, options.Client().ApplyURI(s.MongoDBURI).SetAuth(credential))
+			require.NoError(t, err)
+
+			t.Cleanup(func() {
+				require.NoError(t, client.Disconnect(ctx))
+			})
+
+			_, err = client.Database(tc.authSource).Collection("test").Find(ctx, bson.D{})
+			if tc.errMsg != "" {
+				require.ErrorContains(t, err, tc.errMsg)
+				return
+			}
+
 			require.NoError(t, err)
 		})
 	}
