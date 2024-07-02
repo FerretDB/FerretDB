@@ -17,7 +17,6 @@ package bson
 import (
 	"log/slog"
 
-	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -51,21 +50,6 @@ func (raw RawDocument) Decode() (*Document, error) {
 // All nested documents and arrays are decoded recursively.
 func (raw RawDocument) DecodeDeep() (*Document, error) {
 	res, err := raw.decode(decodeDeep)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return res, nil
-}
-
-// Convert converts a single valid BSON document that takes the whole byte slice into [*types.Document].
-func (raw RawDocument) Convert() (*types.Document, error) {
-	doc, err := raw.decode(decodeShallow)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	res, err := doc.Convert()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
