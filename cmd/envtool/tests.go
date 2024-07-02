@@ -166,7 +166,8 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 				spanName = event.Test
 			}
 
-			spanName = "foobar"
+			nonUTF8 := []byte{0x80, 0x81, 0x82}
+			spanName = string(nonUTF8)
 
 			must.NotBeZero(parentCtx)
 			must.NotBeZero(spanName)
