@@ -315,41 +315,24 @@ func TestAuthenticationAuthSource(t *testing.T) {
 	ctx, db := s.Ctx, s.Collection.Database()
 
 	for name, tc := range map[string]struct {
-		username         string
-		password         string
+		baseURI          string // host and port are replaced and additional query values from MongoDBURI added
 		authenticationDB string
-		path             string
-		authSource       string // if empty, authSource is not set
 	}{
 		"Admin": {
-			// example: mongodb://adminuser:adminpass@127.0.0.1:33313/
-			username:         "adminuser",
-			password:         "adminpass",
+			baseURI:          "mongodb://adminuser:adminpass@127.0.0.1/",
 			authenticationDB: "admin",
-			path:             "/",
 		},
 		"DefaultAuthDB": {
-			// example: mongodb://user1:pass1@127.0.0.1:40623/TestAuthenticationAuthSource
-			username:         "user1",
-			password:         "pass1",
+			baseURI:          "mongodb://user1:pass1@127.0.0.1/TestAuthenticationAuthSource",
 			authenticationDB: t.Name(),
-			path:             t.Name(),
 		},
 		"AuthSource": {
-			// example: mongodb://user2:pass2@127.0.0.1:40623/?authSource=TestAuthenticationAuthSource
-			username:         "user2",
-			password:         "pass2",
+			baseURI:          "mongodb://user2:pass2@127.0.0.1/?authSource=TestAuthenticationAuthSource",
 			authenticationDB: t.Name(),
-			path:             "/",
-			authSource:       t.Name(),
 		},
 		"AuthSourceWithDB": {
-			// example: mongodb://user3:pass3@127.0.0.1:40623/XXX?authSource=TestAuthenticationAuthSource
-			username:         "user3",
-			password:         "pass3",
+			baseURI:          "mongodb://user3:pass3@127.0.0.1/XXX?authSource=TestAuthenticationAuthSource",
 			authenticationDB: t.Name(),
-			path:             "XXX",
-			authSource:       t.Name(),
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -361,29 +344,34 @@ func TestAuthenticationAuthSource(t *testing.T) {
 				roles = bson.A{}
 			}
 
-			err := db.Client().Database(tc.authenticationDB).RunCommand(ctx, bson.D{
-				{"createUser", tc.username},
+			testURI, err := url.Parse(tc.baseURI)
+			require.NoError(t, err)
+
+			username := testURI.User.Username()
+			password, _ := testURI.User.Password()
+
+			err = db.Client().Database(tc.authenticationDB).RunCommand(ctx, bson.D{
+				{"createUser", username},
 				{"roles", roles},
-				{"pwd", tc.password},
+				{"pwd", password},
 			}).Err()
 			require.NoError(t, err)
 
 			t.Cleanup(func() {
-				err = db.Client().Database(tc.authenticationDB).RunCommand(ctx, bson.D{{"dropUser", tc.username}}).Err()
+				err = db.Client().Database(tc.authenticationDB).RunCommand(ctx, bson.D{{"dropUser", username}}).Err()
 				require.NoError(t, err)
 			})
 
 			u, err := url.Parse(s.MongoDBURI)
 			require.NoError(t, err)
 
-			u.Path = tc.path
-			u.User = url.UserPassword(tc.username, tc.password)
+			u.User = testURI.User
+			u.Path = testURI.Path
 
+			// tls related query values are necessary
 			q := u.Query()
-			q.Set("authSource", tc.authSource)
-
-			if tc.authSource == "" {
-				q.Del("authSource")
+			for k, v := range testURI.Query() {
+				q.Set(k, v[0])
 			}
 
 			u.RawQuery = q.Encode()
