@@ -24,17 +24,18 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 
-	"github.com/FerretDB/FerretDB/integration"
-	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
+
+	"github.com/FerretDB/FerretDB/integration"
+	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
 func TestDropAllUsersFromDatabase(t *testing.T) {
 	t.Parallel()
 
-	s := setup.SetupWithOpts(t, &setup.SetupOpts{SetupUser: true})
+	s := setup.SetupWithOpts(t, nil)
 	ctx := s.Ctx
 	db := s.Collection.Database()
 	client := db.Client()

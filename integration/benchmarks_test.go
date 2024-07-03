@@ -22,9 +22,10 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
+
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
 
 func BenchmarkFind(b *testing.B) {

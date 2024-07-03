@@ -216,7 +216,7 @@ tasks:
         -target-backend=ferretdb-postgresql
         -target-tls
         -postgresql-url='postgres://username@127.0.0.1:5432/ferretdb?search_path='
-        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem&replicaSet=rs0'
+        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=client.pem&tlsCaFile=rootCA-cert.pem&replicaSet=rs0'
         -disable-pushdown={{.DISABLE_PUSHDOWN}}
 
   test-integration-sqlite:
@@ -242,7 +242,7 @@ tasks:
         -target-backend=ferretdb-sqlite
         -sqlite-url=file:../tmp/sqlite-tests/
         -target-tls
-        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem&replicaSet=rs0'
+        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=client.pem&tlsCaFile=rootCA-cert.pem&replicaSet=rs0'
         -disable-pushdown={{.DISABLE_PUSHDOWN}}
 
   test-integration-mysql:
@@ -268,7 +268,7 @@ tasks:
         -target-backend=ferretdb-mysql
         -target-tls
         -mysql-url='mysql://username:password@127.0.0.1:3306/ferretdb'
-        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem&replicaSet=rs0'
+        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=client.pem&tlsCaFile=rootCA-cert.pem&replicaSet=rs0'
         -disable-pushdown={{.DISABLE_PUSHDOWN}}
 
   test-integration-hana:
@@ -294,7 +294,7 @@ tasks:
         -target-backend=ferretdb-hana
         -target-tls
         -hana-url=$FERRETDB_HANA_URL
-        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem&replicaSet=rs0'
+        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=client.pem&tlsCaFile=rootCA-cert.pem&replicaSet=rs0'
         -disable-pushdown={{.DISABLE_PUSHDOWN}}
 
   test-integration-mongodb:
@@ -317,7 +317,7 @@ tasks:
         -coverpkg=../...
         -coverprofile=integration-mongodb.txt
         ./...
-        -target-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem&replicaSet=rs0'
+        -target-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=client.pem&tlsCaFile=rootCA-cert.pem&replicaSet=rs0'
         -target-backend=mongodb
 
   bench-unit:
@@ -364,6 +364,7 @@ tasks:
         --handler=pg
         --postgresql-url='postgres://username@127.0.0.1:5432/ferretdb?search_path='
         --test-records-dir=tmp/records
+        --test-otlp-endpoint=127.0.0.1:4318
 
   run-sqlite:
     desc: "Run FerretDB with `sqlite` backend"
@@ -423,7 +424,7 @@ tasks:
         --test-records-dir=tmp/records
 
   run-proxy:
-    desc: "Run FerretDB in diff-proxy mode"
+    desc: "Run FerretDB in the diff-proxy mode"
     deps: [build-host]
     cmds:
       - >
@@ -436,7 +437,7 @@ tasks:
         --test-records-dir=tmp/records
 
   run-sqlite-proxy:
-    desc: "Run FerretDB with `sqlite` handler in diff-proxy mode"
+    desc: "Run FerretDB with `sqlite` handler in the diff-proxy mode"
     deps: [build-host]
     cmds:
       - bin/envtool{{exeExt}} shell mkdir tmp/sqlite
@@ -450,7 +451,7 @@ tasks:
         --test-records-dir=tmp/records
 
   run-proxy-secured:
-    desc: "Run FerretDB in diff-proxy mode (TLS, auth required)"
+    desc: "Run FerretDB in the diff-proxy mode (TLS, auth required)"
     deps: [build-host]
     cmds:
       - >
@@ -653,9 +654,10 @@ tasks:
       - echo 'docker-local-{{.FILE}}' > build/version/package.txt
       - task: docker-build
         vars:
+          FILE: ferretdb/{{.FILE}}
+          TARGET: "{{.FILE}}"
           DOCKER_IMAGES: ferretdb-local
           OUTPUT: type=docker
-          TARGET: "{{.FILE}}"
     requires:
       vars: [FILE]
 
@@ -879,9 +881,9 @@ tasks:
     desc: "Format and lint documentation"
     run: once
     cmds:
-      - docker compose run --rm textlint --fix --config build/.textlintrc "**/*.md" ".github/**/*.md"
+      - docker compose run --rm textlint --fix --config build/.textlintrc --ignore-path .prettierignore "**/*.md" ".github/**/*.md"
       - docker compose run --rm prettier --write --parser markdown --no-semi --single-quote --trailing-comma none "**/*.md"
-      - docker compose run --rm markdownlint "build/.markdownlint.yml" "**/*.md"
+      - docker compose run --rm markdownlint --config "build/.markdownlint.yml" "**/*.md"
       - bin/envtool{{exeExt}} shell rmdir tmp/githubcache
       - bin/envtool{{exeExt}} shell mkdir tmp/githubcache
       - bin/checkdocs

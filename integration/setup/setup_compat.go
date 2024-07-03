@@ -21,15 +21,15 @@ import (
 	"strings"
 
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
+
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 // SetupCompatOpts represents setup options for compatibility test.
@@ -103,7 +103,7 @@ func SetupCompatWithOpts(tb testtb.TB, opts *SetupCompatOpts) *SetupCompatResult
 
 	var targetClient *mongo.Client
 	if *targetURLF == "" {
-		uri := setupListener(tb, setupCtx, logger, NewBackendOpts())
+		uri := setupListener(tb, setupCtx, logger, nil)
 		targetClient = setupClient(tb, setupCtx, uri)
 	} else {
 		targetClient = setupClient(tb, setupCtx, *targetURLF)
@@ -147,9 +147,7 @@ func setupCompatCollections(tb testtb.TB, ctx context.Context, client *mongo.Cli
 
 	database := client.Database(opts.databaseName)
 
-	// drop remnants of the previous failed run
-	_ = database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}})
-	_ = database.Drop(ctx)
+	cleanupDatabase(ctx, tb, database, nil)
 
 	// delete database unless test failed
 	tb.Cleanup(func() {
@@ -157,11 +155,7 @@ func setupCompatCollections(tb testtb.TB, ctx context.Context, client *mongo.Cli
 			return
 		}
 
-		err := database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}}).Err()
-		require.NoError(tb, err)
-
-		err = database.Drop(ctx)
-		require.NoError(tb, err)
+		cleanupDatabase(ctx, tb, database, nil)
 	})
 
 	collections := make([]*mongo.Collection, 0, len(opts.Providers))

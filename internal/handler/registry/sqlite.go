@@ -39,6 +39,11 @@ func init() {
 			TCPHost:     opts.TCPHost,
 			ReplSetName: opts.ReplSetName,
 
+			SetupDatabase: opts.SetupDatabase,
+			SetupUsername: opts.SetupUsername,
+			SetupPassword: opts.SetupPassword,
+			SetupTimeout:  opts.SetupTimeout,
+
 			L:             opts.Logger.Named("sqlite"),
 			ConnMetrics:   opts.ConnMetrics,
 			StateProvider: opts.StateProvider,
@@ -49,11 +54,12 @@ func init() {
 			CappedCleanupInterval:   opts.CappedCleanupInterval,
 			EnableNewAuth:           opts.EnableNewAuth,
 			BatchSize:               opts.BatchSize,
+			MaxBsonObjectSizeBytes:  opts.MaxBsonObjectSizeBytes,
 		}
 
 		h, err := handler.New(handlerOpts)
 		if err != nil {
-			return nil, nil, err
+			return nil, b.Close, err
 		}
 
 		return h, b.Close, nil

@@ -12,15 +12,15 @@ ARG LABEL_COMMIT
 
 # prepare stage
 
-FROM --platform=$BUILDPLATFORM golang:1.22.3 AS development-prepare
+FROM --platform=$BUILDPLATFORM golang:1.22.5 AS development-prepare
 
 # use a single directory for all Go caches to simpliy RUN --mount commands below
-ENV GOPATH /cache/gopath
-ENV GOCACHE /cache/gocache
-ENV GOMODCACHE /cache/gomodcache
+ENV GOPATH=/cache/gopath
+ENV GOCACHE=/cache/gocache
+ENV GOMODCACHE=/cache/gomodcache
 
 # remove ",direct"
-ENV GOPROXY https://proxy.golang.org
+ENV GOPROXY=https://proxy.golang.org
 
 COPY go.mod go.sum /src/
 
@@ -36,7 +36,7 @@ EOF
 
 # build stage
 
-FROM golang:1.22.3 AS development-build
+FROM golang:1.22.5 AS development-build
 
 ARG TARGETARCH
 ARG TARGETVARIANT
@@ -47,12 +47,12 @@ RUN test -n "$LABEL_VERSION"
 RUN test -n "$LABEL_COMMIT"
 
 # use the same directories for Go caches as above
-ENV GOPATH /cache/gopath
-ENV GOCACHE /cache/gocache
-ENV GOMODCACHE /cache/gomodcache
+ENV GOPATH=/cache/gopath
+ENV GOCACHE=/cache/gocache
+ENV GOMODCACHE=/cache/gomodcache
 
 # modules are already downloaded
-ENV GOPROXY off
+ENV GOPROXY=off
 
 # see .dockerignore
 WORKDIR /src
@@ -107,7 +107,7 @@ COPY --from=development-build /src/bin/ferretdb /ferretdb
 
 # final stage
 
-FROM golang:1.22.3 AS development
+FROM golang:1.22.5 AS development
 
 ENV GOCOVERDIR=/tmp/cover
 ENV GORACE=halt_on_error=1,history_size=2
@@ -117,6 +117,9 @@ RUN mkdir /tmp/cover
 COPY --from=development-build /src/bin/ferretdb /ferretdb
 
 ENTRYPOINT [ "/ferretdb" ]
+
+HEALTHCHECK --interval=30s --timeout=30s --start-period=0s --start-interval=5s --retries=3 \
+  CMD /ferretdb ping
 
 WORKDIR /
 VOLUME /state

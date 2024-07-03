@@ -113,24 +113,24 @@ func newGeneratorBenchmarkProvider(baseName string, genFuncConstructor generator
 	}
 }
 
-// Init implements BenchmarkGenerator.
+// Init implements [BenchmarkGenerator].
 func (gbp *generatorBenchmarkProvider) Init(docs int) {
 	gbp.docs = docs
 }
 
-// Name implements BenchmarkProvider.
+// Name implements [BenchmarkProvider].
 func (gbp *generatorBenchmarkProvider) Name() string {
 	hash := hashBenchmarkProvider(gbp)
 
 	return fmt.Sprintf("%s/Docs%d/%s", gbp.baseName, gbp.docs, hash)
 }
 
-// BaseName implements BenchmarkProvider.
+// BaseName implements [BenchmarkProvider].
 func (gbp *generatorBenchmarkProvider) BaseName() string {
 	return gbp.baseName
 }
 
-// NewIterator implements BenchmarkProvider.
+// NewIterator implements [BenchmarkProvider].
 func (gbp *generatorBenchmarkProvider) NewIterator() iterator.Interface[struct{}, bson.D] {
 	if gbp.docs == 0 {
 		panic("A number of documents must be more than zero")

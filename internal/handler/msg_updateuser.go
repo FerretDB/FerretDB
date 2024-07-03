@@ -23,10 +23,12 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
+	"github.com/FerretDB/FerretDB/internal/handler/users"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/password"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -45,16 +47,6 @@ func (h *Handler) MsgUpdateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 	username, err := common.GetRequiredParam[string](document, document.Command())
 	if err != nil {
 		return nil, err
-	}
-
-	adminDB, err := h.b.Database("admin")
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	users, err := adminDB.Collection("system.users")
-	if err != nil {
-		return nil, lazyerrors.Error(err)
 	}
 
 	if err = common.UnimplementedNonDefault(document, "customData", func(v any) bool {
@@ -96,25 +88,63 @@ func (h *Handler) MsgUpdateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 		return nil, lazyerrors.Error(err)
 	}
 
+	iter := mechanisms.Iterator()
+	defer iter.Close()
+
+	for {
+		var v any
+		_, v, err = iter.Next()
+
+		if errors.Is(err, iterator.ErrIteratorDone) {
+			break
+		}
+
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		switch v {
+		case "SCRAM-SHA-1", "SCRAM-SHA-256":
+			// do nothing
+		default:
+			return nil, handlererrors.NewCommandErrorMsg(
+				handlererrors.ErrBadValue,
+				fmt.Sprintf("Unknown auth mechanism '%s'", v),
+			)
+		}
+	}
+
 	var credentials *types.Document
 
 	if document.Has("pwd") {
-		pwdi := must.NotFail(document.Get("pwd"))
-		pwd, ok := pwdi.(string)
+		pwd, _ := document.Get("pwd")
+		userPassword, ok := pwd.(string)
 
 		if !ok {
 			return nil, handlererrors.NewCommandErrorMsg(
 				handlererrors.ErrTypeMismatch,
 				fmt.Sprintf("BSON field 'updateUser.pwd' is the wrong type '%s', expected type 'string'",
-					handlerparams.AliasFromType(pwdi),
+					handlerparams.AliasFromType(pwd),
 				),
 			)
 		}
 
-		credentials, err = makeCredentials(mechanisms, username, pwd)
+		if userPassword == "" {
+			return nil, handlererrors.NewCommandErrorMsg(
+				handlererrors.ErrSetEmptyPassword,
+				"Password cannot be empty",
+			)
+		}
+
+		credentials, err = users.MakeCredentials(username, password.WrapPassword(userPassword), mechanisms)
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	adminDB, err := h.b.Database("admin")
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
 	usersCol, err := adminDB.Collection("system.users")
@@ -184,7 +214,7 @@ func (h *Handler) MsgUpdateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 		)
 	}
 
-	_, err = users.UpdateAll(ctx, &backends.UpdateAllParams{Docs: []*types.Document{saved}})
+	_, err = usersCol.UpdateAll(ctx, &backends.UpdateAllParams{Docs: []*types.Document{saved}})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
