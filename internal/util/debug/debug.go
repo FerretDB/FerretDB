@@ -128,6 +128,9 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 		rw.WriteHeader(http.StatusOK)
 	})
 
+	// ready handler, which is used for readiness probe,
+	// returns StatusOK when Backend.Status() returned no error.
+	// If Backend is nil, StatusOK is returned.
 	readyHandler := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		if opts.Backend == nil {
 			rw.WriteHeader(http.StatusOK)
