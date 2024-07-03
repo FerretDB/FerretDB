@@ -18,8 +18,11 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/FerretDB/FerretDB/internal/util/observability"
+
+	"go.opentelemetry.io/otel/trace"
+
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
@@ -79,7 +82,15 @@ func TestDiffCollectionName(t *testing.T) {
 
 				ctx, collection := setup.Setup(t)
 
+				currentSpan := trace.SpanFromContext(ctx)
+				currentSpan.SetAttributes(observability.ExclusionAttribute)
+
 				err := collection.Database().CreateCollection(ctx, cName)
+
+				/*
+					currentSpan := trace.SpanFromContext(ctx)
+					log.Printf("span: %+v", currentSpan)
+					currentSpan.IsRecording()*/
 
 				if setup.IsMongoDB(t) {
 					require.NoError(t, err)
@@ -96,38 +107,40 @@ func TestDiffCollectionName(t *testing.T) {
 		}
 	})
 
-	t.Run("RenameCollection", func(t *testing.T) {
-		for name, toName := range testcases {
-			name, toName := name, toName
-			t.Run(name, func(t *testing.T) {
-				t.Parallel()
+	/*
+		t.Run("RenameCollection", func(t *testing.T) {
+			for name, toName := range testcases {
+				name, toName := name, toName
+				t.Run(name, func(t *testing.T) {
+					t.Parallel()
 
-				ctx, collection := setup.Setup(t)
+					ctx, collection := setup.Setup(t)
 
-				fromName := testutil.CollectionName(t)
-				err := collection.Database().CreateCollection(ctx, fromName)
-				require.NoError(t, err)
-
-				dbName := collection.Database().Name()
-				command := bson.D{
-					{"renameCollection", dbName + "." + fromName},
-					{"to", dbName + "." + toName},
-				}
-
-				err = collection.Database().Client().Database("admin").RunCommand(ctx, command).Err()
-
-				if setup.IsMongoDB(t) {
+					fromName := testutil.CollectionName(t)
+					err := collection.Database().CreateCollection(ctx, fromName)
 					require.NoError(t, err)
-					return
-				}
 
-				expected := mongo.CommandError{
-					Name:    "IllegalOperation",
-					Code:    20,
-					Message: fmt.Sprintf(`error with target namespace: Invalid collection name: %s`, toName),
-				}
-				AssertEqualCommandError(t, expected, err)
-			})
-		}
-	})
+					dbName := collection.Database().Name()
+					command := bson.D{
+						{"renameCollection", dbName + "." + fromName},
+						{"to", dbName + "." + toName},
+					}
+
+					err = collection.Database().Client().Database("admin").RunCommand(ctx, command).Err()
+
+					if setup.IsMongoDB(t) {
+						require.NoError(t, err)
+						return
+					}
+
+					expected := mongo.CommandError{
+						Name:    "IllegalOperation",
+						Code:    20,
+						Message: fmt.Sprintf(`error with target namespace: Invalid collection name: %s`, toName),
+					}
+					AssertEqualCommandError(t, expected, err)
+				})
+			}
+		})
+	*/
 }

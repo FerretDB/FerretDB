@@ -20,12 +20,16 @@ package observability
 import (
 	"context"
 	"errors"
+	"slices"
 	"sync/atomic"
 	"time"
+
+	"go.opentelemetry.io/otel/attribute"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	otelsdkresource "go.opentelemetry.io/otel/sdk/resource"
+	"go.opentelemetry.io/otel/sdk/trace"
 	otelsdktrace "go.opentelemetry.io/otel/sdk/trace"
 	otelsemconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.uber.org/zap"
@@ -65,7 +69,7 @@ func NewOtelTracer(opts *OtelTracerOpts) (*OtelTracer, error) {
 	// We don't want to let them being set through OTEL_* environment variables,
 	// but we set them explicitly.
 
-	exporter, err := otlptracehttp.New(
+	exp, err := otlptracehttp.New(
 		context.TODO(),
 		otlptracehttp.WithEndpoint(opts.Endpoint),
 		otlptracehttp.WithInsecure(),
@@ -74,8 +78,10 @@ func NewOtelTracer(opts *OtelTracerOpts) (*OtelTracer, error) {
 		return nil, err
 	}
 
+	exporter := ExporterWithFilter{exporter: exp}
+
 	tp := otelsdktrace.NewTracerProvider(
-		otelsdktrace.WithBatcher(exporter, otelsdktrace.WithBatchTimeout(time.Second)),
+		otelsdktrace.WithBatcher(&exporter, otelsdktrace.WithBatchTimeout(time.Second)),
 		otelsdktrace.WithSampler(otelsdktrace.AlwaysSample()),
 		otelsdktrace.WithResource(otelsdkresource.NewSchemaless(
 			otelsemconv.ServiceName(opts.Service),
@@ -110,4 +116,27 @@ func (ot *OtelTracer) Run(ctx context.Context) {
 	}
 
 	ot.l.Info("OTLP tracer stopped.")
+}
+
+type ExporterWithFilter struct {
+	exporter trace.SpanExporter
+}
+
+var ExclusionAttribute = attribute.KeyValue{Key: "excluded"}
+
+func (e *ExporterWithFilter) ExportSpans(ctx context.Context, spans []trace.ReadOnlySpan) error {
+	var filteredSpans []trace.ReadOnlySpan
+	for _, span := range spans {
+		if slices.Contains(span.Attributes(), ExclusionAttribute) {
+			continue
+		}
+
+		filteredSpans = append(filteredSpans, span)
+	}
+
+	return e.exporter.ExportSpans(ctx, filteredSpans)
+}
+
+func (e *ExporterWithFilter) Shutdown(ctx context.Context) error {
+	return e.exporter.Shutdown(ctx)
 }
