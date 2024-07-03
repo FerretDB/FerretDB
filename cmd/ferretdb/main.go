@@ -386,7 +386,6 @@ func run() {
 		stop()
 	}()
 
-	var wg sync.WaitGroup
 	var listenerStarted atomic.Bool
 
 	metrics := connmetrics.NewListenerMetrics()
@@ -426,6 +425,8 @@ func run() {
 	}
 
 	defer closeBackend()
+
+	var wg sync.WaitGroup
 
 	if cli.DebugAddr != "" && cli.DebugAddr != "-" {
 		wg.Add(1)
