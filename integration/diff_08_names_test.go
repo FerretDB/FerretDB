@@ -85,9 +85,8 @@ func TestDiffCollectionName(t *testing.T) {
 
 				var span trace.Span
 				ctx, span = otel.Tracer("").Start(ctx, "CreateCollection"+name)
-				defer span.End()
-
 				span.SetAttributes(observability.ExclusionAttribute)
+				defer span.End()
 
 				err := collection.Database().CreateCollection(ctx, cName)
 

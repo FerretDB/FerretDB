@@ -125,24 +125,23 @@ type ExporterWithFilter struct {
 var ExclusionAttribute = attribute.KeyValue{Key: "excluded"}
 
 func (e *ExporterWithFilter) ExportSpans(ctx context.Context, spans []otelsdktrace.ReadOnlySpan) error {
-	// Create a map to track excluded spans by their SpanID
-	excludedSpans := make(map[trace.SpanID]struct{})
+	excluded := make(map[trace.SpanID]struct{})
 
-	for _, span := range spans {
+	for i, span := range spans {
 		if slices.Contains(span.Attributes(), ExclusionAttribute) {
-			excludedSpans[span.SpanContext().SpanID()] = struct{}{}
+			excluded[span.SpanContext().SpanID()] = struct{}{}
 		}
-	}
 
-	for _, span := range spans {
-		if _, ok := excludedSpans[span.Parent().SpanID()]; ok {
-			excludedSpans[span.SpanContext().SpanID()] = struct{}{}
+		for j := i + 1; j < len(spans); j++ {
+			if _, ok := excluded[spans[j].Parent().SpanID()]; ok {
+				excluded[spans[j].SpanContext().SpanID()] = struct{}{}
+			}
 		}
 	}
 
 	var filteredSpans []otelsdktrace.ReadOnlySpan
 	for _, span := range spans {
-		if _, ok := excludedSpans[span.SpanContext().SpanID()]; !ok {
+		if _, ok := excluded[span.SpanContext().SpanID()]; !ok {
 			filteredSpans = append(filteredSpans, span)
 		}
 	}
