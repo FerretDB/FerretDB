@@ -126,25 +126,33 @@ type ExporterWithFilter struct {
 var ExclusionAttribute = attribute.KeyValue{Key: "excluded", Value: attribute.BoolValue(true)}
 
 func (e *ExporterWithFilter) ExportSpans(ctx context.Context, spans []otelsdktrace.ReadOnlySpan) error {
-	excluded := make(map[trace.SpanID]struct{})
+	parents := make([]trace.SpanID, 0, len(spans))
+	toProcess := make(map[trace.SpanID][]otelsdktrace.ReadOnlySpan)
 
-	for i, span := range spans {
+	for _, span := range spans {
 		if slices.Contains(span.Attributes(), ExclusionAttribute) {
-			excluded[span.SpanContext().SpanID()] = struct{}{}
+			parents = append(parents, span.SpanContext().SpanID())
+		} else {
+			toProcess[span.Parent().SpanID()] = append(toProcess[span.Parent().SpanID()], span)
 		}
+	}
 
-		for j := i + 1; j < len(spans); j++ {
-			if _, ok := excluded[spans[j].Parent().SpanID()]; ok {
-				excluded[spans[j].SpanContext().SpanID()] = struct{}{}
+	for len(parents) > 0 {
+		parentID := parents[0]
+		parents = parents[1:]
+
+		if children, ok := toProcess[parentID]; ok {
+			for _, child := range children {
+				parents = append(parents, child.SpanContext().SpanID())
 			}
+
+			delete(toProcess, parentID)
 		}
 	}
 
 	var filteredSpans []otelsdktrace.ReadOnlySpan
-	for _, span := range spans {
-		if _, ok := excluded[span.SpanContext().SpanID()]; !ok {
-			filteredSpans = append(filteredSpans, span)
-		}
+	for _, sps := range toProcess {
+		filteredSpans = append(filteredSpans, sps...)
 	}
 
 	return e.exporter.ExportSpans(ctx, filteredSpans)

@@ -73,7 +73,7 @@ func TestDiffCollectionName(t *testing.T) {
 
 	testcases := map[string]string{
 		"ReservedPrefix": "_ferretdb_xxx",
-		//"NonUTF-8":       string([]byte{0xff, 0xfe, 0xfd}),
+		"NonUTF-8":       string([]byte{0xff, 0xfe, 0xfd}),
 	}
 
 	t.Run("CreateCollection", func(t *testing.T) {
