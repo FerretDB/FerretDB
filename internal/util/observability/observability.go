@@ -51,9 +51,10 @@ type OtelTracer struct {
 type OtelTracerOpts struct {
 	Logger *zap.Logger
 
-	Service  string
-	Version  string
-	Endpoint string
+	Service    string
+	Version    string
+	Endpoint   string
+	WithFilter bool // If true, the tracer will filter out spans with ExclusionAttribute.
 }
 
 // NewOtelTracer sets up OTLP tracer.
@@ -79,10 +80,14 @@ func NewOtelTracer(opts *OtelTracerOpts) (*OtelTracer, error) {
 		return nil, err
 	}
 
-	exporter := ExporterWithFilter{exporter: exp}
+	var exporter otelsdktrace.SpanExporter = exp
+
+	if opts.WithFilter {
+		exporter = &ExporterWithFilter{exporter: exp}
+	}
 
 	tp := otelsdktrace.NewTracerProvider(
-		otelsdktrace.WithBatcher(&exporter, otelsdktrace.WithBatchTimeout(time.Second)),
+		otelsdktrace.WithBatcher(exporter, otelsdktrace.WithBatchTimeout(time.Second)),
 		otelsdktrace.WithSampler(otelsdktrace.AlwaysSample()),
 		otelsdktrace.WithResource(otelsdkresource.NewSchemaless(
 			otelsemconv.ServiceName(opts.Service),
@@ -119,12 +124,15 @@ func (ot *OtelTracer) Run(ctx context.Context) {
 	ot.l.Info("OTLP tracer stopped.")
 }
 
+// ExporterWithFilter is a span exporter that filters out spans with ExclusionAttribute and all their subspans.
 type ExporterWithFilter struct {
 	exporter otelsdktrace.SpanExporter
 }
 
+// ExclusionAttribute is the attribute that marks spans to be excluded.
 var ExclusionAttribute = attribute.KeyValue{Key: "excluded", Value: attribute.BoolValue(true)}
 
+// ExportSpans implements otelsdktrace.SpanExporter interface.
 func (e *ExporterWithFilter) ExportSpans(ctx context.Context, spans []otelsdktrace.ReadOnlySpan) error {
 	parents := make([]trace.SpanID, 0, len(spans))
 	parentPlaces := make(map[int]struct{})
@@ -169,6 +177,7 @@ func (e *ExporterWithFilter) ExportSpans(ctx context.Context, spans []otelsdktra
 	return e.exporter.ExportSpans(ctx, filteredSpans)
 }
 
+// Shutdown implements otelsdktrace.SpanExporter interface.
 func (e *ExporterWithFilter) Shutdown(ctx context.Context) error {
 	return e.exporter.Shutdown(ctx)
 }
