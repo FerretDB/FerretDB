@@ -110,13 +110,6 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 
 	must.NoError(opts.R.Register(requestCount))
 
-	var connInfo *conninfo.ConnInfo
-
-	if opts.Backend != nil {
-		connInfo = conninfo.New()
-		connInfo.SetBypassBackendAuth()
-	}
-
 	startedHandler := http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 		// TODO https://github.com/FerretDB/FerretDB/issues/4306
 		rw.WriteHeader(http.StatusOK)
@@ -133,6 +126,9 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 			rw.WriteHeader(http.StatusOK)
 			return
 		}
+
+		connInfo := conninfo.New()
+		connInfo.SetBypassBackendAuth()
 
 		ctx := conninfo.Ctx(r.Context(), connInfo)
 
