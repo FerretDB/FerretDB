@@ -6,7 +6,7 @@ toolchain go1.22.4
 
 require (
 	github.com/FerretDB/gh v0.1.4
-	github.com/go-task/task/v3 v3.37.2
+	github.com/go-task/task/v3 v3.38.0
 	github.com/google/go-github/v57 v57.0.0
 	github.com/goreleaser/nfpm/v2 v2.37.1
 	github.com/quasilyte/go-consistent v0.6.1
@@ -23,12 +23,14 @@ require (
 require (
 	dario.cat/mergo v1.0.0 // indirect
 	github.com/AlekSi/pointer v1.2.0 // indirect
+	github.com/Ladicle/tabwriter v1.0.0 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver/v3 v3.2.1 // indirect
 	github.com/Masterminds/sprig/v3 v3.2.3 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/ProtonMail/go-crypto v1.0.0 // indirect
 	github.com/aclements/go-moremath v0.0.0-20210112150236-f10218a38794 // indirect
+	github.com/alecthomas/chroma/v2 v2.14.0 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
 	github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb // indirect
 	github.com/buger/jsonparser v1.1.1 // indirect
@@ -38,14 +40,15 @@ require (
 	github.com/cpuguy83/go-md2man/v2 v2.0.3 // indirect
 	github.com/cyphar/filepath-securejoin v0.2.4 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/dlclark/regexp2 v1.11.0 // indirect
 	github.com/dominikbraun/graph v0.23.0 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
-	github.com/fatih/color v1.16.0 // indirect
+	github.com/fatih/color v1.17.0 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.5.0 // indirect
 	github.com/go-git/go-git/v5 v5.12.0 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
-	github.com/go-task/template v0.0.0-20240422130016-8f6b279b1e90 // indirect
+	github.com/go-task/template v0.0.0-20240602015157-960e6f576656 // indirect
 	github.com/go-toolsmith/astcast v1.0.0 // indirect
 	github.com/go-toolsmith/astequal v1.0.0 // indirect
 	github.com/go-toolsmith/astinfo v0.0.0-20180906194353-9809ff7efb21 // indirect
