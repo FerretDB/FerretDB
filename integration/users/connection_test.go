@@ -378,7 +378,7 @@ func TestAuthenticationAuthSource(t *testing.T) {
 
 			opts := options.Client().ApplyURI(u.String())
 
-			t.Log("connecting", u.String())
+			t.Log("Connecting", u.String())
 
 			client, err := mongo.Connect(ctx, opts)
 			require.NoError(t, err)
