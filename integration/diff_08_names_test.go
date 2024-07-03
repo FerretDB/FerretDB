@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"go.opentelemetry.io/otel"
+
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/FerretDB/FerretDB/internal/util/observability"
@@ -84,7 +85,7 @@ func TestDiffCollectionName(t *testing.T) {
 				ctx, collection := setup.Setup(t)
 
 				var span trace.Span
-				ctx, span = otel.Tracer("").Start(ctx, "FOO", trace.WithAttributes(observability.ExclusionAttribute))
+				ctx, span = otel.Tracer("").Start(ctx, "FOO")
 				span.SetAttributes(observability.ExclusionAttribute)
 				defer span.End()
 

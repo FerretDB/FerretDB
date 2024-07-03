@@ -20,8 +20,11 @@ package observability
 import (
 	"context"
 	"errors"
+	"slices"
 	"sync/atomic"
 	"time"
+
+	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/otel/attribute"
 
@@ -120,12 +123,12 @@ type ExporterWithFilter struct {
 	exporter otelsdktrace.SpanExporter
 }
 
-var ExclusionAttribute = attribute.KeyValue{Key: "excluded"}
+var ExclusionAttribute = attribute.KeyValue{Key: "excluded", Value: attribute.BoolValue(true)}
 
 func (e *ExporterWithFilter) ExportSpans(ctx context.Context, spans []otelsdktrace.ReadOnlySpan) error {
-	/*excluded := make(map[trace.SpanID]struct{})
+	excluded := make(map[trace.SpanID]struct{})
 
-		for i, span := range spans {
+	for i, span := range spans {
 		if slices.Contains(span.Attributes(), ExclusionAttribute) {
 			excluded[span.SpanContext().SpanID()] = struct{}{}
 		}
@@ -136,12 +139,12 @@ func (e *ExporterWithFilter) ExportSpans(ctx context.Context, spans []otelsdktra
 			}
 		}
 	}
-	*/
+
 	var filteredSpans []otelsdktrace.ReadOnlySpan
 	for _, span := range spans {
-		//	if _, ok := excluded[span.SpanContext().SpanID()]; !ok {
-		filteredSpans = append(filteredSpans, span)
-		//	}
+		if _, ok := excluded[span.SpanContext().SpanID()]; !ok {
+			filteredSpans = append(filteredSpans, span)
+		}
 	}
 
 	return e.exporter.ExportSpans(ctx, filteredSpans)
