@@ -389,56 +389,7 @@ func run() {
 	var wg sync.WaitGroup
 	var listenerStarted atomic.Bool
 
-	if cli.Test.OTLPEndpoint != "" {
-		wg.Add(1)
-
-		go func() {
-			defer wg.Done()
-
-			l := logger.Named("otel")
-
-			ot, err := observability.NewOtelTracer(&observability.OtelTracerOpts{
-				Logger:   l,
-				Service:  "ferretdb",
-				Version:  version.Get().Version,
-				Endpoint: cli.Test.OTLPEndpoint,
-			})
-			if err != nil {
-				l.Sugar().Fatalf("Failed to create Otel tracer: %s.", err)
-			}
-
-			ot.Run(ctx)
-		}()
-	}
-
 	metrics := connmetrics.NewListenerMetrics()
-
-	wg.Add(1)
-
-	go func() {
-		defer wg.Done()
-
-		l := logger.Named("telemetry")
-		opts := &telemetry.NewReporterOpts{
-			URL:            cli.Test.Telemetry.URL,
-			F:              &cli.Telemetry,
-			DNT:            os.Getenv("DO_NOT_TRACK"),
-			ExecName:       os.Args[0],
-			P:              stateProvider,
-			ConnMetrics:    metrics.ConnMetrics,
-			L:              l,
-			UndecidedDelay: cli.Test.Telemetry.UndecidedDelay,
-			ReportInterval: cli.Test.Telemetry.ReportInterval,
-			ReportTimeout:  cli.Test.Telemetry.ReportTimeout,
-		}
-
-		r, err := telemetry.NewReporter(opts)
-		if err != nil {
-			l.Sugar().Fatalf("Failed to create telemetry reporter: %s.", err)
-		}
-
-		r.Run(ctx)
-	}()
 
 	h, closeBackend, err := registry.NewHandler(cli.Handler, &registry.NewHandlerOpts{
 		Logger:        logger,
@@ -476,6 +427,83 @@ func run() {
 
 	defer closeBackend()
 
+	if cli.DebugAddr != "" && cli.DebugAddr != "-" {
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+
+			l := logger.Named("debug")
+
+			opts := &debug.ListenOpts{
+				TCPAddr: cli.DebugAddr,
+				L:       l,
+				R:       metricsRegisterer,
+				Started: &listenerStarted,
+			}
+
+			if cli.Setup.Database != "" {
+				opts.Backend = h.Backend
+			}
+
+			debugHandler, err := debug.Listen(opts)
+			if err != nil {
+				l.Sugar().Fatalf("Failed to create debug handler: %s.", err)
+			}
+
+			debugHandler.Serve(ctx)
+		}()
+	}
+
+	if cli.Test.OTLPEndpoint != "" {
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+
+			l := logger.Named("otel")
+
+			ot, err := observability.NewOtelTracer(&observability.OtelTracerOpts{
+				Logger:   l,
+				Service:  "ferretdb",
+				Version:  version.Get().Version,
+				Endpoint: cli.Test.OTLPEndpoint,
+			})
+			if err != nil {
+				l.Sugar().Fatalf("Failed to create Otel tracer: %s.", err)
+			}
+
+			ot.Run(ctx)
+		}()
+	}
+
+	wg.Add(1)
+
+	go func() {
+		defer wg.Done()
+
+		l := logger.Named("telemetry")
+		opts := &telemetry.NewReporterOpts{
+			URL:            cli.Test.Telemetry.URL,
+			F:              &cli.Telemetry,
+			DNT:            os.Getenv("DO_NOT_TRACK"),
+			ExecName:       os.Args[0],
+			P:              stateProvider,
+			ConnMetrics:    metrics.ConnMetrics,
+			L:              l,
+			UndecidedDelay: cli.Test.Telemetry.UndecidedDelay,
+			ReportInterval: cli.Test.Telemetry.ReportInterval,
+			ReportTimeout:  cli.Test.Telemetry.ReportTimeout,
+		}
+
+		r, err := telemetry.NewReporter(opts)
+		if err != nil {
+			l.Sugar().Fatalf("Failed to create telemetry reporter: %s.", err)
+		}
+
+		r.Run(ctx)
+	}()
+
 	l, err := clientconn.Listen(&clientconn.NewListenerOpts{
 		TCP:  cli.Listen.Addr,
 		Unix: cli.Listen.Unix,
@@ -498,34 +526,6 @@ func run() {
 	})
 	if err != nil {
 		logger.Sugar().Fatalf("Failed to construct listener: %s.", err)
-	}
-
-	if cli.DebugAddr != "" && cli.DebugAddr != "-" {
-		wg.Add(1)
-
-		go func() {
-			defer wg.Done()
-
-			l := logger.Named("debug")
-
-			opts := &debug.ListenOpts{
-				TCPAddr: cli.DebugAddr,
-				L:       l,
-				R:       metricsRegisterer,
-				Started: &listenerStarted,
-			}
-
-			if cli.Setup.Database != "" {
-				opts.Backend = h.Backend
-			}
-
-			h, err := debug.Listen(opts)
-			if err != nil {
-				l.Sugar().Fatalf("Failed to create debug handler: %s.", err)
-			}
-
-			h.Serve(ctx)
-		}()
 	}
 
 	metricsRegisterer.MustRegister(l)
