@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -63,7 +62,6 @@ func TestHelloWithSupportedMechs(t *testing.T) {
 	t.Parallel()
 
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{
-		SetupUser: true,
 		Providers: []shareddata.Provider{shareddata.Scalars, shareddata.Composites},
 	})
 	ctx, db := s.Ctx, s.Collection.Database()
@@ -88,15 +86,6 @@ func TestHelloWithSupportedMechs(t *testing.T) {
 		},
 	}
 
-	if !setup.IsMongoDB(t) {
-		usersPayload = append(usersPayload, primitive.D{
-			{"createUser", "hello_user_plain"},
-			{"roles", bson.A{}},
-			{"pwd", "hello_password"},
-			{"mechanisms", bson.A{"PLAIN"}},
-		})
-	}
-
 	for _, u := range usersPayload {
 		require.NoError(t, db.RunCommand(ctx, u).Err())
 	}
@@ -117,11 +106,6 @@ func TestHelloWithSupportedMechs(t *testing.T) {
 		"HelloUser": {
 			user:  db.Name() + ".hello_user",
 			mechs: must.NotFail(types.NewArray("SCRAM-SHA-1", "SCRAM-SHA-256")),
-		},
-		"HelloUserPlain": {
-			user:            db.Name() + ".hello_user_plain",
-			mechs:           must.NotFail(types.NewArray("PLAIN")),
-			failsForMongoDB: "PLAIN authentication mechanism is not support by MongoDB",
 		},
 		"HelloUserSCRAM1": {
 			user:  db.Name() + ".hello_user_scram1",
@@ -191,4 +175,30 @@ func TestHelloWithSupportedMechs(t *testing.T) {
 			assert.True(t, mechanisms.(*types.Array).ContainsAll(tc.mechs))
 		})
 	}
+}
+
+func TestHelloWithSupportedMechsPLAIN(tt *testing.T) {
+	tt.Parallel()
+
+	s := setup.SetupWithOpts(tt, &setup.SetupOpts{BackendOptions: &setup.BackendOpts{DisableNewAuth: true}})
+
+	ctx, db := s.Ctx, s.Collection.Database()
+
+	t := setup.FailsForMongoDB(tt, "PLAIN authentication mechanism is not support by MongoDB")
+
+	var res bson.D
+
+	err := db.RunCommand(ctx, bson.D{
+		{"hello", "1"},
+		{"saslSupportedMechs", db.Name() + ".hello_user_plain"},
+	}).Decode(&res)
+	require.NoError(t, err)
+
+	actual := ConvertDocument(t, res)
+
+	v, err := actual.Get("saslSupportedMechs")
+	require.NoError(t, err)
+
+	mechanisms := v.(*types.Array)
+	require.Equal(t, must.NotFail(types.NewArray("PLAIN")), mechanisms)
 }

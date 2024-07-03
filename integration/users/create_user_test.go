@@ -35,7 +35,7 @@ import (
 func TestCreateUser(t *testing.T) {
 	t.Parallel()
 
-	s := setup.SetupWithOpts(t, &setup.SetupOpts{SetupUser: true})
+	s := setup.SetupWithOpts(t, nil)
 	ctx, db := s.Ctx, s.Collection.Database()
 
 	testCases := map[string]struct { //nolint:vet // for readability
@@ -153,15 +153,17 @@ func TestCreateUser(t *testing.T) {
 				{"ok", float64(1)},
 			},
 		},
-		"SuccessWithPLAIN": {
+		"FailWithPLAIN": {
 			payload: bson.D{
-				{"createUser", "success_user_with_plain"},
+				{"createUser", "plain_user"},
 				{"roles", bson.A{}},
 				{"pwd", "password"},
 				{"mechanisms", bson.A{"PLAIN"}},
 			},
-			expected: bson.D{
-				{"ok", float64(1)},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "Unknown auth mechanism 'PLAIN'",
 			},
 		},
 		"SuccessWithSCRAMSHA1": {
@@ -263,10 +265,6 @@ func TestCreateUser(t *testing.T) {
 			if payload.Has("mechanisms") {
 				payloadMechanisms := must.NotFail(payload.Get("mechanisms")).(*types.Array)
 
-				if payloadMechanisms.Contains("PLAIN") {
-					assertPlainCredentials(t, "PLAIN", must.NotFail(user.Get("credentials")).(*types.Document))
-				}
-
 				if payloadMechanisms.Contains("SCRAM-SHA-1") {
 					assertSCRAMSHA1Credentials(t, "SCRAM-SHA-1", must.NotFail(user.Get("credentials")).(*types.Document))
 				}
@@ -289,20 +287,6 @@ func TestCreateUser(t *testing.T) {
 			testutil.AssertEqual(t, expectedRec, user)
 		})
 	}
-}
-
-// assertPlainCredentials checks if the credential is a valid PLAIN credential.
-func assertPlainCredentials(t testtb.TB, key string, cred *types.Document) {
-	t.Helper()
-
-	require.True(t, cred.Has(key), "missing credential %q", key)
-
-	c := must.NotFail(cred.Get(key)).(*types.Document)
-
-	assert.Equal(t, must.NotFail(c.Get("algo")), "PBKDF2-HMAC-SHA256")
-	assert.NotEmpty(t, must.NotFail(c.Get("iterationCount")))
-	assert.NotEmpty(t, must.NotFail(c.Get("hash")))
-	assert.NotEmpty(t, must.NotFail(c.Get("salt")))
 }
 
 // assertSCRAMSHA1Credentials checks if the credential is a valid SCRAM-SHA-1 credential.

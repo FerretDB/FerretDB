@@ -23,6 +23,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
+	"github.com/FerretDB/FerretDB/internal/handler/users"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -46,16 +47,6 @@ func (h *Handler) MsgUpdateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 	username, err := common.GetRequiredParam[string](document, document.Command())
 	if err != nil {
 		return nil, err
-	}
-
-	adminDB, err := h.b.Database("admin")
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	users, err := adminDB.Collection("system.users")
-	if err != nil {
-		return nil, lazyerrors.Error(err)
 	}
 
 	if err = common.UnimplementedNonDefault(document, "customData", func(v any) bool {
@@ -113,7 +104,7 @@ func (h *Handler) MsgUpdateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 		}
 
 		switch v {
-		case "PLAIN", "SCRAM-SHA-1", "SCRAM-SHA-256":
+		case "SCRAM-SHA-1", "SCRAM-SHA-256":
 			// do nothing
 		default:
 			return nil, handlererrors.NewCommandErrorMsg(
@@ -145,10 +136,15 @@ func (h *Handler) MsgUpdateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 			)
 		}
 
-		credentials, err = backends.MakeCredentials(username, password.WrapPassword(userPassword), mechanisms)
+		credentials, err = users.MakeCredentials(username, password.WrapPassword(userPassword), mechanisms)
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	adminDB, err := h.b.Database("admin")
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
 	usersCol, err := adminDB.Collection("system.users")
@@ -218,7 +214,7 @@ func (h *Handler) MsgUpdateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 		)
 	}
 
-	_, err = users.UpdateAll(ctx, &backends.UpdateAllParams{Docs: []*types.Document{saved}})
+	_, err = usersCol.UpdateAll(ctx, &backends.UpdateAllParams{Docs: []*types.Document{saved}})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

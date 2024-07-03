@@ -16,7 +16,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -43,6 +42,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/password"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/telemetry"
@@ -53,6 +53,10 @@ import (
 //
 // Keep order in sync with documentation.
 var cli struct {
+	// We hide `run` command to show only `ping` in the help message.
+	Run  struct{} `cmd:"" default:"1"                             hidden:""`
+	Ping struct{} `cmd:"" help:"Ping existing FerretDB instance."`
+
 	Version     bool   `default:"false"           help:"Print version to stdout and exit." env:"-"`
 	Handler     string `default:"postgresql"      help:"${help_handler}"`
 	Mode        string `default:"${default_mode}" help:"${help_mode}"                      enum:"${enum_mode}"`
@@ -112,6 +116,8 @@ var cli struct {
 
 		BatchSize            int `default:"100" help:"Experimental: maximum insertion batch size."`
 		MaxBsonObjectSizeMiB int `default:"16"  help:"Experimental: maximum BSON object size in MiB."`
+
+		OTLPEndpoint string `default:"" help:"Experimental: OTLP exporter endpoint, if unset, OpenTelemetry is disabled."`
 
 		Telemetry struct {
 			URL            string        `default:"https://beacon.ferretdb.com/" help:"Telemetry: reporting URL."`
@@ -186,6 +192,9 @@ var (
 	logFormats = []string{"console", "json"}
 
 	kongOptions = []kong.Option{
+		kong.HelpOptions{
+			Compact: true,
+		},
 		kong.Vars{
 			"default_log_level": defaultLogLevel().String(),
 			"default_mode":      clientconn.AllModes[0],
@@ -204,9 +213,16 @@ var (
 
 func main() {
 	setCLIPlugins()
-	kong.Parse(&cli, kongOptions...)
+	ctx := kong.Parse(&cli, kongOptions...)
 
-	run()
+	switch ctx.Command() {
+	case "run":
+		run()
+	case "ping":
+		ping()
+	default:
+		panic("unknown sub-command")
+	}
 }
 
 // defaultLogLevel returns the default log level.
@@ -258,41 +274,15 @@ func setupMetrics(stateProvider *state.Provider) prometheus.Registerer {
 }
 
 // setupLogger setups zap logger.
-func setupLogger(stateProvider *state.Provider, format string) *zap.Logger {
-	info := version.Get()
-
-	startupFields := []zap.Field{
-		zap.String("version", info.Version),
-		zap.String("commit", info.Commit),
-		zap.String("branch", info.Branch),
-		zap.Bool("dirty", info.Dirty),
-		zap.String("package", info.Package),
-		zap.Bool("debugBuild", info.DebugBuild),
-		zap.Any("buildEnvironment", info.BuildEnvironment.Map()),
-	}
-	logUUID := stateProvider.Get().UUID
-
-	// Similarly to Prometheus, unless requested, don't add UUID to all messages, but log it once at startup.
-	if !cli.Log.UUID {
-		startupFields = append(startupFields, zap.String("uuid", logUUID))
-		logUUID = ""
-	}
-
+func setupLogger(format string, uuid string) *zap.Logger {
 	level, err := zapcore.ParseLevel(cli.Log.Level)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	logging.Setup(level, format, logUUID)
-	l := zap.L()
+	logging.Setup(level, format, uuid)
 
-	l.Info("Starting FerretDB "+info.Version+"...", startupFields...)
-
-	if debugbuild.Enabled {
-		l.Info("This is debug build. The performance will be affected.")
-	}
-
-	return l
+	return zap.L()
 }
 
 // checkFlags checks that CLI flags are not self-contradictory.
@@ -310,16 +300,6 @@ func checkFlags(logger *zap.Logger) {
 	if cli.Test.DisablePushdown && cli.Test.EnableNestedPushdown {
 		l.Fatal("--test-disable-pushdown and --test-enable-nested-pushdown should not be set at the same time")
 	}
-}
-
-// runTelemetryReporter runs telemetry reporter until ctx is canceled.
-func runTelemetryReporter(ctx context.Context, opts *telemetry.NewReporterOpts) {
-	r, err := telemetry.NewReporter(opts)
-	if err != nil {
-		opts.L.Sugar().Fatalf("Failed to create telemetry reporter: %s.", err)
-	}
-
-	r.Run(ctx)
 }
 
 // dumpMetrics dumps all Prometheus metrics to stderr.
@@ -365,7 +345,31 @@ func run() {
 
 	metricsRegisterer := setupMetrics(stateProvider)
 
-	logger := setupLogger(stateProvider, cli.Log.Format)
+	startupFields := []zap.Field{
+		zap.String("version", info.Version),
+		zap.String("commit", info.Commit),
+		zap.String("branch", info.Branch),
+		zap.Bool("dirty", info.Dirty),
+		zap.String("package", info.Package),
+		zap.Bool("debugBuild", info.DebugBuild),
+		zap.Any("buildEnvironment", info.BuildEnvironment.Map()),
+	}
+
+	logUUID := stateProvider.Get().UUID
+
+	// Similarly to Prometheus, unless requested, don't add UUID to all messages, but log it once at startup.
+	if !cli.Log.UUID {
+		startupFields = append(startupFields, zap.String("uuid", logUUID))
+		logUUID = ""
+	}
+
+	logger := setupLogger(cli.Log.Format, logUUID)
+
+	logger.Info("Starting FerretDB "+info.Version+"...", startupFields...)
+
+	if debugbuild.Enabled {
+		logger.Info("This is debug build. The performance will be affected.")
+	}
 
 	checkFlags(logger)
 
@@ -388,7 +392,41 @@ func run() {
 
 		go func() {
 			defer wg.Done()
-			debug.RunHandler(ctx, cli.DebugAddr, metricsRegisterer, logger.Named("debug"))
+
+			l := logger.Named("debug")
+
+			h, err := debug.Listen(&debug.ListenOpts{
+				TCPAddr: cli.DebugAddr,
+				L:       l,
+				R:       metricsRegisterer,
+			})
+			if err != nil {
+				l.Sugar().Fatalf("Failed to create debug handler: %s.", err)
+			}
+
+			h.Serve(ctx)
+		}()
+	}
+
+	if cli.Test.OTLPEndpoint != "" {
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+
+			l := logger.Named("otel")
+
+			ot, err := observability.NewOtelTracer(&observability.OtelTracerOpts{
+				Logger:   l,
+				Service:  "ferretdb",
+				Version:  version.Get().Version,
+				Endpoint: cli.Test.OTLPEndpoint,
+			})
+			if err != nil {
+				l.Sugar().Fatalf("Failed to create Otel tracer: %s.", err)
+			}
+
+			ot.Run(ctx)
 		}()
 	}
 
@@ -398,21 +436,27 @@ func run() {
 
 	go func() {
 		defer wg.Done()
-		runTelemetryReporter(
-			ctx,
-			&telemetry.NewReporterOpts{
-				URL:            cli.Test.Telemetry.URL,
-				F:              &cli.Telemetry,
-				DNT:            os.Getenv("DO_NOT_TRACK"),
-				ExecName:       os.Args[0],
-				P:              stateProvider,
-				ConnMetrics:    metrics.ConnMetrics,
-				L:              logger.Named("telemetry"),
-				UndecidedDelay: cli.Test.Telemetry.UndecidedDelay,
-				ReportInterval: cli.Test.Telemetry.ReportInterval,
-				ReportTimeout:  cli.Test.Telemetry.ReportTimeout,
-			},
-		)
+
+		l := logger.Named("telemetry")
+		opts := &telemetry.NewReporterOpts{
+			URL:            cli.Test.Telemetry.URL,
+			F:              &cli.Telemetry,
+			DNT:            os.Getenv("DO_NOT_TRACK"),
+			ExecName:       os.Args[0],
+			P:              stateProvider,
+			ConnMetrics:    metrics.ConnMetrics,
+			L:              l,
+			UndecidedDelay: cli.Test.Telemetry.UndecidedDelay,
+			ReportInterval: cli.Test.Telemetry.ReportInterval,
+			ReportTimeout:  cli.Test.Telemetry.ReportTimeout,
+		}
+
+		r, err := telemetry.NewReporter(opts)
+		if err != nil {
+			l.Sugar().Fatalf("Failed to create telemetry reporter: %s.", err)
+		}
+
+		r.Run(ctx)
 	}()
 
 	h, closeBackend, err := registry.NewHandler(cli.Handler, &registry.NewHandlerOpts{
@@ -451,7 +495,7 @@ func run() {
 
 	defer closeBackend()
 
-	l := clientconn.NewListener(&clientconn.NewListenerOpts{
+	l, err := clientconn.Listen(&clientconn.NewListenerOpts{
 		TCP:  cli.Listen.Addr,
 		Unix: cli.Listen.Unix,
 
@@ -471,15 +515,14 @@ func run() {
 		Logger:         logger,
 		TestRecordsDir: cli.Test.RecordsDir,
 	})
+	if err != nil {
+		logger.Sugar().Fatalf("Failed to construct listener: %s.", err)
+	}
 
 	metricsRegisterer.MustRegister(l)
 
-	err = l.Run(ctx)
-	if err == nil || errors.Is(err, context.Canceled) {
-		logger.Info("Listener stopped")
-	} else {
-		logger.Error("Listener stopped", zap.Error(err))
-	}
+	l.Run(ctx)
+	logger.Info("Listener stopped")
 
 	stop()
 

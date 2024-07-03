@@ -24,6 +24,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
+	"github.com/FerretDB/FerretDB/internal/handler/users"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -136,7 +137,7 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 		}
 
 		switch v {
-		case "PLAIN", "SCRAM-SHA-1", "SCRAM-SHA-256":
+		case "SCRAM-SHA-1", "SCRAM-SHA-256":
 			// do nothing
 		default:
 			return nil, handlererrors.NewCommandErrorMsg(
@@ -166,7 +167,7 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 			)
 		}
 
-		err = backends.CreateUser(ctx, h.b, &backends.CreateUserParams{
+		err = users.CreateUser(ctx, h.b, &users.CreateUserParams{
 			Database:   dbName,
 			Username:   username,
 			Password:   password.WrapPassword(userPassword),

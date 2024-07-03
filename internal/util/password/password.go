@@ -18,6 +18,8 @@ package password
 // Password wraps a password string.
 //
 // It exist mainly to avoid issues when multiple string parameters are used.
+//
+// It should be passed by value.
 type Password struct {
 	p string
 }
@@ -30,4 +32,9 @@ func WrapPassword(password string) Password {
 // Password returns the password string.
 func (p Password) Password() string {
 	return p.p
+}
+
+// Empty return true if password in an empty string.
+func (p Password) Empty() bool {
+	return p.p == ""
 }

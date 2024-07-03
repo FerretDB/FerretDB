@@ -43,7 +43,7 @@ func createUser(username, password string) bson.D {
 func TestUsersinfo(t *testing.T) {
 	t.Parallel()
 
-	s := setup.SetupWithOpts(t, &setup.SetupOpts{SetupUser: true})
+	s := setup.SetupWithOpts(t, nil)
 	ctx, collection := s.Ctx, s.Collection
 	client := collection.Database().Client()
 
@@ -77,17 +77,6 @@ func TestUsersinfo(t *testing.T) {
 			dbSuffix: "_another",
 			payloads: []bson.D{
 				createUser("singleuser", "123456"),
-			},
-		},
-		{
-			dbSuffix: "nomongo",
-			payloads: []bson.D{
-				{
-					{"createUser", "WithPLAIN"},
-					{"roles", bson.A{}},
-					{"pwd", "pwd1"},
-					{"mechanisms", bson.A{"PLAIN"}},
-				},
 			},
 		},
 		{
@@ -128,14 +117,6 @@ func TestUsersinfo(t *testing.T) {
 		})
 
 		for _, payload := range inserted.payloads {
-			payloadDoc := integration.ConvertDocument(t, payload)
-
-			if setup.IsMongoDB(t) && payloadDoc.Has("mechanisms") {
-				mechanisms := must.NotFail(payloadDoc.Get("mechanisms")).(*types.Array)
-				if mechanisms.Contains("PLAIN") {
-					continue
-				}
-			}
 			err := db.RunCommand(ctx, payload).Err()
 			require.NoErrorf(t, err, "cannot create user on database %q: %q", dbName, payload)
 		}
@@ -201,26 +182,6 @@ func TestUsersinfo(t *testing.T) {
 				}},
 				{"ok", float64(1)},
 			},
-		},
-		"WithPLAIN": {
-			dbSuffix: "nomongo",
-			payload: bson.D{
-				{"usersInfo", "WithPLAIN"},
-				{"showCredentials", true},
-			},
-			showCredentials: []string{"PLAIN"},
-			expected: bson.D{
-				{"users", bson.A{
-					bson.D{
-						{"_id", "TestUsersinfo.one"},
-						{"user", "one"},
-						{"db", "TestUsersinfo"},
-						{"roles", bson.A{}},
-					},
-				}},
-				{"ok", float64(1)},
-			},
-			failsForMongoDB: "Only MongoDB Enterprise offers PLAIN",
 		},
 		"WithSCRAMSHA1": {
 			dbSuffix: "allbackends",
@@ -605,8 +566,6 @@ func TestUsersinfo(t *testing.T) {
 
 				for _, typ := range tc.showCredentials {
 					switch typ {
-					case "PLAIN":
-						assertPlainCredentials(t, "PLAIN", cred)
 					case "SCRAM-SHA-1":
 						assertSCRAMSHA1Credentials(t, "SCRAM-SHA-1", cred)
 					case "SCRAM-SHA-256":

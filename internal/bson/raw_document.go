@@ -17,7 +17,6 @@ package bson
 import (
 	"log/slog"
 
-	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -28,16 +27,23 @@ import (
 type RawDocument []byte
 
 // Encode returns itself to implement the [AnyDocument] interface.
+//
+// Receiver must not be nil.
 func (raw RawDocument) Encode() (RawDocument, error) {
+	must.BeTrue(raw != nil)
 	return raw, nil
 }
 
-// Decode decodes a single BSON document that takes the whole byte slice.
+// Decode decodes a single BSON document that takes the whole not-nil byte slice.
 //
 // Only top-level fields are decoded;
 // nested documents and arrays are converted to RawDocument and RawArray respectively,
 // using raw's subslices without copying.
+//
+// Receiver must not be nil.
 func (raw RawDocument) Decode() (*Document, error) {
+	must.BeTrue(raw != nil)
+
 	res, err := raw.decode(decodeShallow)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -46,26 +52,15 @@ func (raw RawDocument) Decode() (*Document, error) {
 	return res, nil
 }
 
-// DecodeDeep decodes a single valid BSON document that takes the whole byte slice.
+// DecodeDeep decodes a single valid BSON document that takes the whole not-nil byte slice.
 //
 // All nested documents and arrays are decoded recursively.
+//
+// Receiver must not be nil.
 func (raw RawDocument) DecodeDeep() (*Document, error) {
+	must.BeTrue(raw != nil)
+
 	res, err := raw.decode(decodeDeep)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return res, nil
-}
-
-// Convert converts a single valid BSON document that takes the whole byte slice into [*types.Document].
-func (raw RawDocument) Convert() (*types.Document, error) {
-	doc, err := raw.decode(decodeShallow)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	res, err := doc.Convert()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -166,7 +161,7 @@ func (raw RawDocument) decode(mode decodeMode) (*Document, error) {
 	}
 }
 
-// LogValue implements slog.LogValuer interface.
+// LogValue implements [slog.LogValuer].
 func (raw RawDocument) LogValue() slog.Value {
 	return slogValue(raw, 1)
 }

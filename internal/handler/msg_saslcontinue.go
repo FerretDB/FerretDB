@@ -44,42 +44,52 @@ func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.O
 
 	payload = binaryPayload.B
 
-	conv := conninfo.Get(ctx).Conv()
+	_, _, conv := conninfo.Get(ctx).Auth()
 
 	if conv == nil {
 		h.L.Warn("saslContinue: no conversation to continue")
 
-		return nil, handlererrors.NewCommandErrorMsg(
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
 			handlererrors.ErrAuthenticationFailed,
 			"Authentication failed.",
+			"saslContinue",
 		)
 	}
 
 	response, err := conv.Step(string(payload))
+
+	fields := []zap.Field{
+		zap.String("username", conv.Username()),
+		zap.Bool("valid", conv.Valid()),
+		zap.Bool("done", conv.Done()),
+	}
+
 	if err != nil {
-		var fields []zap.Field
 		if h.L.Level().Enabled(zap.DebugLevel) {
 			fields = append(fields, zap.Error(err))
 		}
 
-		h.L.Warn("saslContinue step failed", fields...)
+		h.L.Warn("saslContinue: step failed", fields...)
 
-		return nil, handlererrors.NewCommandErrorMsg(
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
 			handlererrors.ErrAuthenticationFailed,
 			"Authentication failed.",
+			"saslContinue",
 		)
 	}
 
-	binResponse := types.Binary{
-		B: []byte(response),
+	h.L.Debug("saslContinue: step succeed", fields...)
+
+	if conv.Valid() {
+		conninfo.Get(ctx).SetBypassBackendAuth()
 	}
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
 		must.NotFail(types.NewDocument(
 			"conversationId", int32(1),
-			"done", true,
-			"payload", binResponse,
+			"done", conv.Done(),
+			"payload", types.Binary{B: []byte(response)},
 			"ok", float64(1),
 		)),
 	)))

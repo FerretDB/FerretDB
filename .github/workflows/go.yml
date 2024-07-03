@@ -131,7 +131,7 @@ jobs:
         if: always()
         uses: codecov/codecov-action@v4
         with:
-          token: 22159d7c-856d-4fe9-8fdb-5d9ecff35514
+          token: 3c5cbd1b-5110-4302-ad5a-080390ca731a
           files: ./cover.txt
           flags: unit
           fail_ci_if_error: true
