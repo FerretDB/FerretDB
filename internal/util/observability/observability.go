@@ -29,9 +29,9 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	otelsdkresource "go.opentelemetry.io/otel/sdk/resource"
-	"go.opentelemetry.io/otel/sdk/trace"
 	otelsdktrace "go.opentelemetry.io/otel/sdk/trace"
 	otelsemconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
@@ -119,19 +119,32 @@ func (ot *OtelTracer) Run(ctx context.Context) {
 }
 
 type ExporterWithFilter struct {
-	exporter trace.SpanExporter
+	exporter otelsdktrace.SpanExporter
 }
 
 var ExclusionAttribute = attribute.KeyValue{Key: "excluded"}
 
-func (e *ExporterWithFilter) ExportSpans(ctx context.Context, spans []trace.ReadOnlySpan) error {
-	var filteredSpans []trace.ReadOnlySpan
+func (e *ExporterWithFilter) ExportSpans(ctx context.Context, spans []otelsdktrace.ReadOnlySpan) error {
+	// Create a map to track excluded spans by their SpanID
+	excludedSpans := make(map[trace.SpanID]struct{})
+
 	for _, span := range spans {
 		if slices.Contains(span.Attributes(), ExclusionAttribute) {
-			continue
+			excludedSpans[span.SpanContext().SpanID()] = struct{}{}
 		}
+	}
 
-		filteredSpans = append(filteredSpans, span)
+	for _, span := range spans {
+		if _, ok := excludedSpans[span.Parent().SpanID()]; ok {
+			excludedSpans[span.SpanContext().SpanID()] = struct{}{}
+		}
+	}
+
+	var filteredSpans []otelsdktrace.ReadOnlySpan
+	for _, span := range spans {
+		if _, ok := excludedSpans[span.SpanContext().SpanID()]; !ok {
+			filteredSpans = append(filteredSpans, span)
+		}
 	}
 
 	return e.exporter.ExportSpans(ctx, filteredSpans)
