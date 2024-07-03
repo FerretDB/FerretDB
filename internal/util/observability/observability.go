@@ -127,12 +127,23 @@ var ExclusionAttribute = attribute.KeyValue{Key: "excluded", Value: attribute.Bo
 
 func (e *ExporterWithFilter) ExportSpans(ctx context.Context, spans []otelsdktrace.ReadOnlySpan) error {
 	parents := make([]trace.SpanID, 0, len(spans))
-	toProcess := make(map[trace.SpanID][]otelsdktrace.ReadOnlySpan)
+	parentPlaces := make(map[int]struct{})
 
-	for _, span := range spans {
+	for i, span := range spans {
 		if slices.Contains(span.Attributes(), ExclusionAttribute) {
 			parents = append(parents, span.SpanContext().SpanID())
-		} else {
+			parentPlaces[i] = struct{}{}
+		}
+	}
+
+	// If there are no spans to exclude, just export all spans.
+	if len(parents) == 0 {
+		return e.exporter.ExportSpans(ctx, spans)
+	}
+
+	toProcess := make(map[trace.SpanID][]otelsdktrace.ReadOnlySpan)
+	for i, span := range spans {
+		if _, ok := parentPlaces[i]; !ok {
 			toProcess[span.Parent().SpanID()] = append(toProcess[span.Parent().SpanID()], span)
 		}
 	}
