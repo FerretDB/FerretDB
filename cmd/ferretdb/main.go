@@ -446,7 +446,9 @@ func run() {
 				opts.Backend = h.Backend
 			}
 
-			debugHandler, err := debug.Listen(opts)
+			var debugHandler *debug.Handler
+
+			debugHandler, err = debug.Listen(opts)
 			if err != nil {
 				l.Sugar().Fatalf("Failed to create debug handler: %s.", err)
 			}
