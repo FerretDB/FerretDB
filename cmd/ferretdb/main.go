@@ -23,6 +23,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/alecthomas/kong"
@@ -386,6 +387,7 @@ func run() {
 	}()
 
 	var wg sync.WaitGroup
+	var listenerStarted atomic.Bool
 
 	if cli.Test.OTLPEndpoint != "" {
 		wg.Add(1)
@@ -510,6 +512,7 @@ func run() {
 				TCPAddr: cli.DebugAddr,
 				L:       l,
 				R:       metricsRegisterer,
+				Started: &listenerStarted,
 			}
 
 			if cli.Setup.Database != "" {
@@ -527,7 +530,9 @@ func run() {
 
 	metricsRegisterer.MustRegister(l)
 
+	listenerStarted.Store(true)
 	l.Run(ctx)
+
 	logger.Info("Listener stopped")
 
 	stop()
