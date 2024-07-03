@@ -169,6 +169,7 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 			must.NotBeZero(parentCtx)
 			must.NotBeZero(spanName)
 
+			/// ???? Unfinished span ???
 			res.ctx, _ = otel.Tracer("").Start(parentCtx, spanName, oteltrace.WithAttributes(attributes...))
 			res.outputs = make([]string, 0, 2)
 		}

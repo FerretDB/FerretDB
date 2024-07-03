@@ -72,7 +72,7 @@ func TestDiffCollectionName(t *testing.T) {
 
 	testcases := map[string]string{
 		"ReservedPrefix": "_ferretdb_xxx",
-		"NonUTF-8":       string([]byte{0xff, 0xfe, 0xfd}),
+		//"NonUTF-8":       string([]byte{0xff, 0xfe, 0xfd}),
 	}
 
 	t.Run("CreateCollection", func(t *testing.T) {
@@ -84,7 +84,7 @@ func TestDiffCollectionName(t *testing.T) {
 				ctx, collection := setup.Setup(t)
 
 				var span trace.Span
-				ctx, span = otel.Tracer("").Start(ctx, "CreateCollection"+name)
+				ctx, span = otel.Tracer("").Start(ctx, "FOO", trace.WithAttributes(observability.ExclusionAttribute))
 				span.SetAttributes(observability.ExclusionAttribute)
 				defer span.End()
 

@@ -20,7 +20,6 @@ package observability
 import (
 	"context"
 	"errors"
-	"slices"
 	"sync/atomic"
 	"time"
 
@@ -31,7 +30,6 @@ import (
 	otelsdkresource "go.opentelemetry.io/otel/sdk/resource"
 	otelsdktrace "go.opentelemetry.io/otel/sdk/trace"
 	otelsemconv "go.opentelemetry.io/otel/semconv/v1.21.0"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
@@ -125,9 +123,9 @@ type ExporterWithFilter struct {
 var ExclusionAttribute = attribute.KeyValue{Key: "excluded"}
 
 func (e *ExporterWithFilter) ExportSpans(ctx context.Context, spans []otelsdktrace.ReadOnlySpan) error {
-	excluded := make(map[trace.SpanID]struct{})
+	/*excluded := make(map[trace.SpanID]struct{})
 
-	for i, span := range spans {
+		for i, span := range spans {
 		if slices.Contains(span.Attributes(), ExclusionAttribute) {
 			excluded[span.SpanContext().SpanID()] = struct{}{}
 		}
@@ -138,12 +136,12 @@ func (e *ExporterWithFilter) ExportSpans(ctx context.Context, spans []otelsdktra
 			}
 		}
 	}
-
+	*/
 	var filteredSpans []otelsdktrace.ReadOnlySpan
 	for _, span := range spans {
-		if _, ok := excluded[span.SpanContext().SpanID()]; !ok {
-			filteredSpans = append(filteredSpans, span)
-		}
+		//	if _, ok := excluded[span.SpanContext().SpanID()]; !ok {
+		filteredSpans = append(filteredSpans, span)
+		//	}
 	}
 
 	return e.exporter.ExportSpans(ctx, filteredSpans)
