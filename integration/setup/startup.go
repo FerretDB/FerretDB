@@ -30,7 +30,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
@@ -38,9 +37,6 @@ import (
 
 // listenerMetrics are shared between tests.
 var listenerMetrics = connmetrics.NewListenerMetrics()
-
-// shutdownOtel usage should be replaced by shutdown usage.
-var shutdownOtel func(context.Context) error
 
 // shutdown cancels context passed to startup components.
 var shutdown context.CancelFunc
@@ -74,6 +70,15 @@ func Startup() {
 		zap.S().Fatalf("Failed to create debug handler: %s.", err)
 	}
 
+	ot, err := observability.NewOtelTracer(&observability.OtelTracerOpts{
+		Logger:   zap.L().Named("otel"),
+		Service:  "integration-tests",
+		Endpoint: "127.0.0.1:4318",
+	})
+	if err != nil {
+		zap.S().Fatalf("Failed to create Otel tracer: %s.", err)
+	}
+
 	var ctx context.Context
 	ctx, shutdown = context.WithCancel(context.Background())
 
@@ -84,8 +89,12 @@ func Startup() {
 		h.Serve(ctx)
 	}()
 
-	// this should use ctx instead
-	shutdownOtel = observability.SetupOtel("integration")
+	startupWG.Add(1)
+
+	go func() {
+		defer startupWG.Done()
+		ot.Run(ctx)
+	}()
 
 	clientCtx, clientCancel := context.WithTimeout(context.Background(), 5*time.Second) //nolint:mnd // good enough
 	defer clientCancel()
@@ -156,11 +165,6 @@ func Shutdown() {
 	shutdown()
 
 	startupWG.Wait()
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	must.NoError(shutdownOtel(ctx))
 
 	// to increase a chance of resource finalizers to spot problems
 	runtime.GC()

@@ -43,6 +43,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/password"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/telemetry"
@@ -116,6 +117,8 @@ var cli struct {
 
 		BatchSize            int `default:"100" help:"Experimental: maximum insertion batch size."`
 		MaxBsonObjectSizeMiB int `default:"16"  help:"Experimental: maximum BSON object size in MiB."`
+
+		OTLPEndpoint string `default:"" help:"Experimental: OTLP exporter endpoint, if unset, OpenTelemetry is disabled."`
 
 		Telemetry struct {
 			URL            string        `default:"https://beacon.ferretdb.com/" help:"Telemetry: reporting URL."`
@@ -217,7 +220,7 @@ func main() {
 	case "run":
 		run()
 	case "ping":
-		// TODO https://github.com/FerretDB/FerretDB/issues/4246
+		ping()
 	default:
 		panic("unknown sub-command")
 	}
@@ -272,41 +275,15 @@ func setupMetrics(stateProvider *state.Provider) prometheus.Registerer {
 }
 
 // setupLogger setups zap logger.
-func setupLogger(stateProvider *state.Provider, format string) *zap.Logger {
-	info := version.Get()
-
-	startupFields := []zap.Field{
-		zap.String("version", info.Version),
-		zap.String("commit", info.Commit),
-		zap.String("branch", info.Branch),
-		zap.Bool("dirty", info.Dirty),
-		zap.String("package", info.Package),
-		zap.Bool("debugBuild", info.DebugBuild),
-		zap.Any("buildEnvironment", info.BuildEnvironment.Map()),
-	}
-	logUUID := stateProvider.Get().UUID
-
-	// Similarly to Prometheus, unless requested, don't add UUID to all messages, but log it once at startup.
-	if !cli.Log.UUID {
-		startupFields = append(startupFields, zap.String("uuid", logUUID))
-		logUUID = ""
-	}
-
+func setupLogger(format string, uuid string) *zap.Logger {
 	level, err := zapcore.ParseLevel(cli.Log.Level)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	logging.Setup(level, format, logUUID)
-	l := zap.L()
+	logging.Setup(level, format, uuid)
 
-	l.Info("Starting FerretDB "+info.Version+"...", startupFields...)
-
-	if debugbuild.Enabled {
-		l.Info("This is debug build. The performance will be affected.")
-	}
-
-	return l
+	return zap.L()
 }
 
 // checkFlags checks that CLI flags are not self-contradictory.
@@ -369,7 +346,31 @@ func run() {
 
 	metricsRegisterer := setupMetrics(stateProvider)
 
-	logger := setupLogger(stateProvider, cli.Log.Format)
+	startupFields := []zap.Field{
+		zap.String("version", info.Version),
+		zap.String("commit", info.Commit),
+		zap.String("branch", info.Branch),
+		zap.Bool("dirty", info.Dirty),
+		zap.String("package", info.Package),
+		zap.Bool("debugBuild", info.DebugBuild),
+		zap.Any("buildEnvironment", info.BuildEnvironment.Map()),
+	}
+
+	logUUID := stateProvider.Get().UUID
+
+	// Similarly to Prometheus, unless requested, don't add UUID to all messages, but log it once at startup.
+	if !cli.Log.UUID {
+		startupFields = append(startupFields, zap.String("uuid", logUUID))
+		logUUID = ""
+	}
+
+	logger := setupLogger(cli.Log.Format, logUUID)
+
+	logger.Info("Starting FerretDB "+info.Version+"...", startupFields...)
+
+	if debugbuild.Enabled {
+		logger.Info("This is debug build. The performance will be affected.")
+	}
 
 	checkFlags(logger)
 
@@ -408,6 +409,28 @@ func run() {
 			}
 
 			h.Serve(ctx)
+		}()
+	}
+
+	if cli.Test.OTLPEndpoint != "" {
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+
+			l := logger.Named("otel")
+
+			ot, err := observability.NewOtelTracer(&observability.OtelTracerOpts{
+				Logger:   l,
+				Service:  "ferretdb",
+				Version:  version.Get().Version,
+				Endpoint: cli.Test.OTLPEndpoint,
+			})
+			if err != nil {
+				l.Sugar().Fatalf("Failed to create Otel tracer: %s.", err)
+			}
+
+			ot.Run(ctx)
 		}()
 	}
 
