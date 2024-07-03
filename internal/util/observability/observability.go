@@ -142,7 +142,6 @@ func (e *ExporterWithFilter) ExportSpans(ctx context.Context, spans []otelsdktra
 		}
 	}
 
-	// If there are no spans to exclude, just export all spans.
 	if len(parents) == 0 {
 		return e.exporter.ExportSpans(ctx, spans)
 	}
