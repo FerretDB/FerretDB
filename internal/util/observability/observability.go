@@ -24,15 +24,13 @@ import (
 	"sync/atomic"
 	"time"
 
-	"go.opentelemetry.io/otel/trace"
-
-	"go.opentelemetry.io/otel/attribute"
-
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	otelsdkresource "go.opentelemetry.io/otel/sdk/resource"
 	otelsdktrace "go.opentelemetry.io/otel/sdk/trace"
 	otelsemconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
@@ -135,7 +133,7 @@ var ExclusionAttribute = attribute.KeyValue{Key: "excluded", Value: attribute.Bo
 // ExportSpans implements otelsdktrace.SpanExporter interface.
 func (e *ExporterWithFilter) ExportSpans(ctx context.Context, spans []otelsdktrace.ReadOnlySpan) error {
 	parents := make([]trace.SpanID, 0, len(spans))
-	parentPlaces := make(map[int]struct{})
+	parentPlaces := map[int]struct{}{}
 
 	for i, span := range spans {
 		if slices.Contains(span.Attributes(), ExclusionAttribute) {
@@ -149,7 +147,8 @@ func (e *ExporterWithFilter) ExportSpans(ctx context.Context, spans []otelsdktra
 		return e.exporter.ExportSpans(ctx, spans)
 	}
 
-	toProcess := make(map[trace.SpanID][]otelsdktrace.ReadOnlySpan)
+	toProcess := map[trace.SpanID][]otelsdktrace.ReadOnlySpan{}
+
 	for i, span := range spans {
 		if _, ok := parentPlaces[i]; !ok {
 			toProcess[span.Parent().SpanID()] = append(toProcess[span.Parent().SpanID()], span)

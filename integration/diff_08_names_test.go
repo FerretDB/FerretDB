@@ -18,16 +18,13 @@ import (
 	"fmt"
 	"testing"
 
-	"go.opentelemetry.io/otel"
-
-	"go.opentelemetry.io/otel/trace"
-
-	"github.com/FerretDB/FerretDB/internal/util/observability"
-
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
@@ -91,6 +88,7 @@ func TestDiffCollectionName(t *testing.T) {
 					var span trace.Span
 					ctx, span = otel.Tracer("").Start(ctx, name+"ToExclude")
 					span.SetAttributes(observability.ExclusionAttribute)
+
 					defer span.End()
 				}
 
@@ -122,6 +120,7 @@ func TestDiffCollectionName(t *testing.T) {
 					var span trace.Span
 					ctx, span = otel.Tracer("").Start(ctx, name+"ToExclude")
 					span.SetAttributes(observability.ExclusionAttribute)
+
 					defer span.End()
 				}
 
