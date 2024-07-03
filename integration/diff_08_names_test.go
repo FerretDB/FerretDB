@@ -25,6 +25,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
@@ -71,30 +72,29 @@ func TestDiffDatabaseName(t *testing.T) {
 func TestDiffCollectionName(t *testing.T) {
 	t.Parallel()
 
-	testcases := map[string]string{
-		"ReservedPrefix": "_ferretdb_xxx",
-		"NonUTF-8":       string([]byte{0xff, 0xfe, 0xfd}),
+	testcases := map[string]struct {
+		collection  string
+		excludeSpan bool
+	}{
+		"ReservedPrefix": {"_ferretdb_xxx", false},
+		"NonUTF-8":       {string([]byte{0xff, 0xfe, 0xfd}), true}, // invalid UTF-8 won't be accepted by OTLP
 	}
 
 	t.Run("CreateCollection", func(t *testing.T) {
-		for name, cName := range testcases {
-			name, cName := name, cName
+		for name, tc := range testcases {
 			t.Run(name, func(t *testing.T) {
 				t.Parallel()
 
 				ctx, collection := setup.Setup(t)
 
-				var span trace.Span
-				ctx, span = otel.Tracer("").Start(ctx, "FOO")
-				span.SetAttributes(observability.ExclusionAttribute)
-				defer span.End()
+				if tc.excludeSpan {
+					var span trace.Span
+					ctx, span = otel.Tracer("").Start(ctx, name+"ToExclude")
+					span.SetAttributes(observability.ExclusionAttribute)
+					defer span.End()
+				}
 
-				err := collection.Database().CreateCollection(ctx, cName)
-
-				/*
-					currentSpan := trace.SpanFromContext(ctx)
-					log.Printf("span: %+v", currentSpan)
-					currentSpan.IsRecording()*/
+				err := collection.Database().CreateCollection(ctx, tc.collection)
 
 				if setup.IsMongoDB(t) {
 					require.NoError(t, err)
@@ -104,47 +104,51 @@ func TestDiffCollectionName(t *testing.T) {
 				expected := mongo.CommandError{
 					Name:    "InvalidNamespace",
 					Code:    73,
-					Message: fmt.Sprintf(`Invalid collection name: %s`, cName),
+					Message: fmt.Sprintf(`Invalid collection name: %s`, tc.collection),
 				}
 				AssertEqualCommandError(t, expected, err)
 			})
 		}
 	})
 
-	/*
-		t.Run("RenameCollection", func(t *testing.T) {
-			for name, toName := range testcases {
-				name, toName := name, toName
-				t.Run(name, func(t *testing.T) {
-					t.Parallel()
+	t.Run("RenameCollection", func(t *testing.T) {
+		for name, tc := range testcases {
+			t.Run(name, func(t *testing.T) {
+				t.Parallel()
 
-					ctx, collection := setup.Setup(t)
+				ctx, collection := setup.Setup(t)
 
-					fromName := testutil.CollectionName(t)
-					err := collection.Database().CreateCollection(ctx, fromName)
+				if tc.excludeSpan {
+					var span trace.Span
+					ctx, span = otel.Tracer("").Start(ctx, name+"ToExclude")
+					span.SetAttributes(observability.ExclusionAttribute)
+					defer span.End()
+				}
+
+				fromName := testutil.CollectionName(t)
+				err := collection.Database().CreateCollection(ctx, fromName)
+				require.NoError(t, err)
+
+				dbName := collection.Database().Name()
+				command := bson.D{
+					{"renameCollection", dbName + "." + fromName},
+					{"to", dbName + "." + tc.collection},
+				}
+
+				err = collection.Database().Client().Database("admin").RunCommand(ctx, command).Err()
+
+				if setup.IsMongoDB(t) {
 					require.NoError(t, err)
+					return
+				}
 
-					dbName := collection.Database().Name()
-					command := bson.D{
-						{"renameCollection", dbName + "." + fromName},
-						{"to", dbName + "." + toName},
-					}
-
-					err = collection.Database().Client().Database("admin").RunCommand(ctx, command).Err()
-
-					if setup.IsMongoDB(t) {
-						require.NoError(t, err)
-						return
-					}
-
-					expected := mongo.CommandError{
-						Name:    "IllegalOperation",
-						Code:    20,
-						Message: fmt.Sprintf(`error with target namespace: Invalid collection name: %s`, toName),
-					}
-					AssertEqualCommandError(t, expected, err)
-				})
-			}
-		})
-	*/
+				expected := mongo.CommandError{
+					Name:    "IllegalOperation",
+					Code:    20,
+					Message: fmt.Sprintf(`error with target namespace: Invalid collection name: %s`, tc.collection),
+				}
+				AssertEqualCommandError(t, expected, err)
+			})
+		}
+	})
 }
