@@ -37,9 +37,36 @@ Coroot heavily relies on eBPF, a technology that enhances observability and moni
 Custom programs can run directly within the Linux kernel without changing kernel source code or loading additional kernel modules.
 You get deeper and more extensive information on system calls, network functions, and security issues – just better observability.
 
+Let's look at an example with Prometheus and Grafana.
+
+### Monitoring FerretDB with Prometheus and Grafana
+
+A typical approach to monitoring your FerretDB instances is through Prometheus and Grafana.
+You can deploy Prometheus to scrape metrics from FerretDB and visualize them through Grafana dashboards.
+That process involves:
+
+- First, you need to expose the default port for FerretDB metrics in Prometheus format on http://127.0.0.1:8088/debug/metrics.
+  There's no need for an external exporter.
+
+- Next, you need to set up Prometheus for metrics collection
+
+- Then go ahead to design all the dashboards and panels to visualize.
+
+The image below shows a typical dashboard design using Grafana to display some of the metrics, including total client requests and responses, client connection durations, memory usage, CPU usage, and overall instance health.
+
+![Grafana dashboard for FerretDB Prometheus metrics 1](/img/blog/ferretdb-coroot/grafana-prometheus.png)
+
+Although, these dashboards provide valuable insights into the database's performance, workload distribution, and resource utilization, setting it up can be quite labor-intensive.
+The process is time-consuming and requires a deep knowledge of both tools to accurately capture and visualize relevant metrics.
+Besides, each time you start a new service you'll have to repeat the setup process all over again.
+This approach also misses out on some critical insights that an eBPF tool like Coroot provides.
+For instance, detailed network performance, specific per-process resource usage, and dynamic tracing of function calls are not natively captured.
+Coroot offers real-time, low-overhead monitoring directly from the kernel.
+eBPF provides granular visibility into system and application behavior, including precise CPU usage, memory allocation patterns, and detailed latency breakdowns.
+
 ## Setting up Coroot for FerretDB monitoring
 
-[Refer to the Coroot documentation](https://coroot.com/docs) to set up Coroot and all its components on Docker or via Helm.
+[Refer to the Coroot documentation](https://coroot.com/docs) to set up Coroot and all its components using Docker or via Helm.
 
 In this guide, we will set up Coroot to monitor our FerretDB instance.
 If you are yet to setup FerretDB, see the [FerretDB Docker installation guide](https://docs.ferretdb.io/quickstart-guide/docker/).
@@ -50,80 +77,51 @@ Deploy Coroot with the following command:
 curl -fsS https://raw.githubusercontent.com/coroot/coroot/main/deploy/docker-compose.yaml | docker compose -f - up -d
 ```
 
-Since Coroot is deployed locally, you can access it at http://localhost:8080/.
-
-Depending on your setup, you may need to modify the Docker compose `yaml` file and configure Prometheus to pick up FerretDB metrics.
-
-To update the Prometheus container's configuration file, `exec` into the container:
-
-```sh
-docker exec -it <prometheus_container_name> /bin/sh
-```
-
-Then navigate to the file to edit:
-
-```sh
-cd /etc/prometheus
-vi prometheus.yml
-```
-
-Add the following to the Prometheus configuration file:
-
-```text
-scrape_configs:
-  - job_name: 'ferretdb'
-    metrics_path: '/debug/metrics'
-    static_configs:
-      - targets: ['<ferretdb-container>:8088']
-```
-
-Ensure to replace `<ferretdb-container>` with the FerretDB container name or IP address and then restart the Prometheus container so it can pick up the new configuration.
-
-```sh
-docker restart <prometheus_container_name>
-```
-
-Comfirm that the FerretDB metrics are being collected by Prometheus by navigating to the Prometheus targets at http://localhost:9090/targets.
-
-![Prometheus targets](/img/blog/ferretdb-coroot/prometheus-targets.png)
-
-Once the setup is complete, Coroot will start collecting metrics from FerretDB.
+Since Coroot is deployed locally, you can access it at `http://localhost:8080/`.
 
 ## Monitor FerretDB performance with Coroot
 
-The Coroot dashboard provides the full details on all components.
+To actually monitor and resolve any potential issue with any of these, you need all the relevant information at your fingertips.
+Using Coroot, you can focus on any app by viewing the dashboards automatically generated for each application.
+And unlike the Grafana board from earlier where we have to create the dashboards and do not get any application metrics,
+Coroot lets you see the entire system in detail, so there's nothing to miss.
 
-Ensure Prometheus integration is correctly set up to collect metrics from FerretDB.
+The Coroot dashboard provides the full details on all components including the number o client connections.
 
-![Coroot prometheus integration](/img/blog/ferretdb-coroot/prometheus-integration.png)
+![number of running client connections](/img/blog/ferretdb-coroot/client-connection.png)
 
-From the Coroot dashboard, you can view the FerretDB metrics through Prometheus.
+From the image above, you can see the client connections to the FerretDB instance.
+It shows a client instance `elastic_bardeen` and 2 prometheus instances scraping the exposed FerretDB metrics, and all requests then forwarded to `postgres`.
+You can also see the latency/error rate (4ms) and request per second(RPS) (0.1/s) of the client application to FerretDB.
 
-![CPU dashboard 1](/img/blog/ferretdb-coroot/cpu-metrics-1.png)
+For instance, let's peer into the client application `elastic_bardeen`.
 
-![CPU dashboard 1](/img/blog/ferretdb-coroot/cpu-metrics-2.png)
+![client dashboards](/img/blog/ferretdb-coroot/client-dashboard-1.png)
+![client dashboards](/img/blog/ferretdb-coroot/client-dashboard-2.png)
+![client dashboards](/img/blog/ferretdb-coroot/client-dashboard-3.png)
 
-In the images, the FerretDB instance indicates a peak Requests Per Second (RPS) of 0.07 with a consistent 2ms latency.
+Coroot also provides distributed tracing to help you find out why some of your requests are taking long to execute or failing.
+In the image below, you can see the comprehensive view of the request path, latency, and errors, identify performance bottlenecks, and trace the root cause of issues.
 
-![memory usage](/img/blog/ferretdb-coroot/memory-metrics.png)
+![distributed tracing on FerretDB connection](/img/blog/ferretdb-coroot/distributed-tracing.png)
 
-Looking at the memory usage metrics.
-you can see that the system is effectively managing memory resources without any significant performance degradation.
-They show a gradual increase in usage, peaking at around 20MB without any out-of-memory issues or significant leaks.
+Even at that, Coroot's log monitoring metrics offer a little more insight and quick check to identity recurring patterns and message severity.
+For instance, the images below show some warning response regarding the operations that were performed.
 
-We can also monitor the Postgres database to know how it interacts and handles all requests from FerretDB.
+![Log monitoring](/img/blog/ferretdb-coroot/log-monitoring.png)
+![Log warning](/img/blog/ferretdb-coroot/log-warning.png)
 
-![Postgres dashboard](/img/blog/ferretdb-coroot/postgres-cpu-1.png)
+You can look into the changes in CPU and memory usage down to the line of code via Coroot's continuous profiling.
+That should help you quickly pinpoint any performance bottlenecks, optimize your application's resource usage, and deliver a more reliable and faster service.
 
-![Postgres dashboard](/img/blog/ferretdb-coroot/postgres-cpu-2.png)
+![Continuous profiling](/img/blog/ferretdb-coroot/continuous-profiling.png)
 
-The Postgres container indicates a sharp CPU usage spike around 18:00, mirrored by a similar increase in CPU delay.
-Despite the spike, throttled time remains negligible.
-Node CPU usage also show moderate fluctuations but stays within acceptable limits.
-So far, we can see that the system can handle peak loads without significant performance loss.
+FerretDB forwards all requests to Postgres.
+Since Coroot provides a comprehensive view of all services anyways, let's check out the `postgres` service to see how requests are handled, its performance, and what other insights we can learn from it.
 
-It also demonstrates stable I/O performance with low latency around 0.5ms and consistent I/O utilization peaking at 4%.
-IOPS remains steady at approximately 75-100 and the bandwidth usage stays around 2-3MB/s.
+![Postgres dashboard](/img/blog/ferretdb-coroot/postgres-metrics-1.png)
+
+![Postgres dashboard](/img/blog/ferretdb-coroot/postgres-metrics-2.png)
 
 ## Analyze and optimize FerretDB performance with Coroot
 
