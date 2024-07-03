@@ -455,6 +455,12 @@ func TestAuthenticationDifferentDatabase(t *testing.T) {
 			authSource: db1,
 			errMsg:     "Authentication failed.",
 		},
+		"NonExistingDatabase": {
+			username:   user,
+			password:   pass1,
+			authSource: "non-existing-db",
+			errMsg:     "Authentication failed.",
+		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
