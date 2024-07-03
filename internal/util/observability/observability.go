@@ -52,7 +52,7 @@ type OtelTracerOpts struct {
 	Service    string
 	Version    string
 	Endpoint   string
-	WithFilter bool // If true, the tracer will filter out spans with ExclusionAttribute.
+	WithFilter bool // If true, the exporter will filter out spans with ExclusionAttribute.
 }
 
 // NewOtelTracer sets up OTLP tracer.
