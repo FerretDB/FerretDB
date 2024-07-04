@@ -57,14 +57,15 @@ The set of metrics is not stable yet; metric and label names and value formattin
 FerretDB exposes the following probes that can be used for
 [Kubernetes health checks](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/)
 and similar use cases.
-They return HTTP code 200 if a probe is successful and 500 otherwise.
+They return HTTP code 2xx if a probe is successful and 5xx otherwise.
 The response body is always empty, but additional information may be present in logs.
 
 - `/debug/livez` is a liveness probe.
-  It succeeds if FerretDB is ready to accept connections from MongoDB protocol clients.
+  It succeeds if FerretDB is ready to accept new connections from MongoDB protocol clients.
   It does not check if the connection with the backend can be established or authenticated.
   An error response or timeout indicates (after a small initial startup delay) a serious problem.
   Generally, FerretDB should be restarted in that case.
+  Additionally, the error is returned during the FerretDB shutdown while it waits for established connections to be closed.
 - `/debug/readyz` is a readiness probe.
   It succeeds if the liveness probe succeeds.
   Additionally, if [new authentication](../security/authentication.md) is enabled and setup credentials are provided,
