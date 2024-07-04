@@ -17,6 +17,7 @@ package debug
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"sync"
 	"sync/atomic"
@@ -65,6 +66,63 @@ func TestDebugHandlerStartupProbe(t *testing.T) {
 	res, err = http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, res.StatusCode)
+
+	res, err = http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+
+	// Cancel the context to stop the handler.
+	// The WaitGroup is needed to make sure that all logs were printed before the test finished.
+	cancel()
+	wg.Wait()
+}
+
+func TestDebugHandlerReadyProbe(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithCancel(testutil.Ctx(t))
+
+	var returnError bool
+	ready := func(ctx context.Context) error {
+		if returnError {
+			return fmt.Errorf("Service unavailable")
+		}
+
+		return nil
+	}
+
+	h, err := Listen(&ListenOpts{
+		TCPAddr: "127.0.0.1:0",
+		L:       testutil.Logger(t),
+		R:       prometheus.NewRegistry(),
+		Ping:    ready,
+	})
+	require.NoError(t, err)
+
+	addr := h.lis.Addr()
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	go func() {
+		h.Serve(ctx)
+		wg.Done()
+	}()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://"+addr.String()+"/debug/ready", nil)
+	require.NoError(t, err)
+
+	res, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+
+	returnError = true
+
+	res, err = http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusServiceUnavailable, res.StatusCode)
+
+	returnError = false
 
 	res, err = http.DefaultClient.Do(req)
 	require.NoError(t, err)
