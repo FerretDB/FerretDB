@@ -36,10 +36,20 @@ func TestDebugHandler(t *testing.T) {
 	ctx, cancel := context.WithCancel(testutil.Ctx(t))
 	var started atomic.Bool
 
+	var returnError bool
+	ready := func(ctx context.Context) error {
+		if returnError {
+			return fmt.Errorf("Service unavailable")
+		}
+
+		return nil
+	}
+
 	h, err := Listen(&ListenOpts{
 		TCPAddr: "127.0.0.1:0",
 		L:       testutil.Logger(t),
 		R:       prometheus.NewRegistry(),
+		Ping:    ready,
 		Started: &started,
 	})
 	require.NoError(t, err)
@@ -73,62 +83,26 @@ func TestDebugHandler(t *testing.T) {
 		assert.Equal(t, http.StatusOK, res.StatusCode)
 	})
 
-	// Cancel the context to stop the handler.
-	// The WaitGroup is needed to make sure that all logs were printed before the test finished.
-	cancel()
-	wg.Wait()
-}
+	t.Run("ReadyProbe", func(t *testing.T) {
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://"+addr.String()+"/debug/ready", nil)
+		require.NoError(t, err)
 
-func TestDebugHandlerReadyProbe(t *testing.T) {
-	t.Parallel()
+		res, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, res.StatusCode)
 
-	ctx, cancel := context.WithCancel(testutil.Ctx(t))
+		returnError = true
 
-	var returnError bool
-	ready := func(ctx context.Context) error {
-		if returnError {
-			return fmt.Errorf("Service unavailable")
-		}
+		res, err = http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusServiceUnavailable, res.StatusCode)
 
-		return nil
-	}
+		returnError = false
 
-	h, err := Listen(&ListenOpts{
-		TCPAddr: "127.0.0.1:0",
-		L:       testutil.Logger(t),
-		R:       prometheus.NewRegistry(),
-		Ping:    ready,
+		res, err = http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, res.StatusCode)
 	})
-	require.NoError(t, err)
-
-	addr := h.lis.Addr()
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-
-	go func() {
-		h.Serve(ctx)
-		wg.Done()
-	}()
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://"+addr.String()+"/debug/ready", nil)
-	require.NoError(t, err)
-
-	res, err := http.DefaultClient.Do(req)
-	require.NoError(t, err)
-	assert.Equal(t, http.StatusOK, res.StatusCode)
-
-	returnError = true
-
-	res, err = http.DefaultClient.Do(req)
-	require.NoError(t, err)
-	assert.Equal(t, http.StatusServiceUnavailable, res.StatusCode)
-
-	returnError = false
-
-	res, err = http.DefaultClient.Do(req)
-	require.NoError(t, err)
-	assert.Equal(t, http.StatusOK, res.StatusCode)
 
 	// Cancel the context to stop the handler.
 	// The WaitGroup is needed to make sure that all logs were printed before the test finished.
@@ -136,5 +110,4 @@ func TestDebugHandlerReadyProbe(t *testing.T) {
 	wg.Wait()
 }
 
-// TODO ready probe test
 // TODO health probe test
