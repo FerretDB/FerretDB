@@ -30,7 +30,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
-func TestDebugHandlerStartupProbe(t *testing.T) {
+func TestDebugHandler(t *testing.T) {
 	t.Parallel()
 
 	ctx, cancel := context.WithCancel(testutil.Ctx(t))
@@ -54,22 +54,24 @@ func TestDebugHandlerStartupProbe(t *testing.T) {
 		wg.Done()
 	}()
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://"+addr.String()+"/debug/started", nil)
-	require.NoError(t, err)
+	t.Run("StartupProbe", func(t *testing.T) {
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://"+addr.String()+"/debug/started", nil)
+		require.NoError(t, err)
 
-	res, err := http.DefaultClient.Do(req)
-	require.NoError(t, err)
-	assert.Equal(t, http.StatusInternalServerError, res.StatusCode)
+		res, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusInternalServerError, res.StatusCode)
 
-	started.Store(true)
+		started.Store(true)
 
-	res, err = http.DefaultClient.Do(req)
-	require.NoError(t, err)
-	assert.Equal(t, http.StatusOK, res.StatusCode)
+		res, err = http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, res.StatusCode)
 
-	res, err = http.DefaultClient.Do(req)
-	require.NoError(t, err)
-	assert.Equal(t, http.StatusOK, res.StatusCode)
+		res, err = http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, res.StatusCode)
+	})
 
 	// Cancel the context to stop the handler.
 	// The WaitGroup is needed to make sure that all logs were printed before the test finished.
