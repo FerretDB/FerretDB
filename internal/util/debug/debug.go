@@ -35,8 +35,6 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 
-	"github.com/FerretDB/FerretDB/internal/backends"
-	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -68,7 +66,7 @@ type ListenOpts struct {
 	TCPAddr string
 	L       *zap.Logger
 	R       prometheus.Registerer
-	Backend backends.Backend
+	Ping    func(context.Context) error
 	Started *atomic.Bool
 }
 
@@ -129,21 +127,15 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 	})
 
 	// ready handler, which is used for readiness probe,
-	// returns StatusOK when Backend.Status() returned no error.
-	// If Backend is nil, StatusOK is returned.
+	// returns StatusOK when Ping() returned no error.
+	// If Ping is nil, StatusOK is returned.
 	readyHandler := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		if opts.Backend == nil {
+		if opts.Ping == nil {
 			rw.WriteHeader(http.StatusOK)
 			return
 		}
 
-		connInfo := conninfo.New()
-		connInfo.SetBypassBackendAuth()
-
-		ctx := conninfo.Ctx(r.Context(), connInfo)
-
-		_, err := opts.Backend.Status(ctx, nil)
-		if err != nil {
+		if err := opts.Ping(r.Context()); err != nil {
 			opts.L.Error("Backend returned error", zap.Error(err))
 			rw.WriteHeader(http.StatusServiceUnavailable)
 

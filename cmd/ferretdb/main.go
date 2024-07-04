@@ -36,6 +36,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/clientconn"
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handler/registry"
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
@@ -444,7 +445,15 @@ func run() {
 			}
 
 			if cli.Setup.Database != "" {
-				opts.Backend = h.Backend
+				opts.Ping = func(ctx context.Context) error {
+					connInfo := conninfo.New()
+					connInfo.SetBypassBackendAuth()
+
+					ctx = conninfo.Ctx(ctx, connInfo)
+
+					_, err := h.Backend.Status(ctx, nil)
+					return err
+				}
 			}
 
 			var debugHandler *debug.Handler
