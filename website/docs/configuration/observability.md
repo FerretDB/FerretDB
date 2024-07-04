@@ -36,10 +36,38 @@ $ docker logs my-ferretdb
 
 FerretDB writes logs to the standard error (`stderr`) stream.
 
-## Metrics
+## Debug handler
 
-FerretDB exposes metrics in Prometheus format on the debug handler on `http://127.0.0.1:8088/debug/metrics` by default.
-There is no need to use an external exporter.
+FerretDB exposes various HTTP endpoints with the debug handler on `http://127.0.0.1:8088/debug/` by default.
 The host and port can be changed with [`--debug-addr` flag](flags.md#interfaces).
 
-Please note that the set of metrics is not stable yet; metric and label names and formatting of values might change in minor releases.
+### Metrics
+
+FerretDB exposes metrics in Prometheus format on the `/debug/metrics` endpoint.
+There is no need to use an external exporter.
+
+<!-- https://github.com/FerretDB/FerretDB/issues/3420 -->
+
+:::note
+The set of metrics is not stable yet; metric and label names and value formatting might change in minor releases.
+:::
+
+### Probes
+
+FerretDB exposes the following probes that can be used for
+[Kubernetes health checks](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/)
+and similar use cases.
+They return HTTP code 200 if a probe is successful and 500 otherwise.
+The response body is always empty, but additional information may be present in logs.
+
+- `/debug/livez` is a liveness probe.
+  It succeeds if FerretDB is ready to accept connections from MongoDB protocol clients.
+  It does not check if the connection with the backend can be established or authenticated.
+  An error response or timeout indicates (after a small initial startup delay) a serious problem.
+  Generally, FerretDB should be restarted in that case.
+- `/debug/readyz` is a readiness probe.
+  It succeeds if the liveness probe succeeds.
+  Additionally, if [new authentication](../security/authentication.md) is enabled and setup credentials are provided,
+  it checks that connection with the backend can be established and authenticated
+  by sending MongoDB `ping` command to FerretDB.
+  An error response or timeout indicates a problem with the backend or configuration.

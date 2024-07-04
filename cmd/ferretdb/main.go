@@ -80,7 +80,7 @@ var cli struct {
 		TLSCaFile   string `default:"" help:"Proxy TLS CA file path."`
 	} `embed:"" prefix:"proxy-"`
 
-	DebugAddr string `default:"127.0.0.1:8088" help:"Listen address for HTTP handlers for metrics, pprof, etc."`
+	DebugAddr string `default:"127.0.0.1:8088" help:"Listen address for HTTP handlers for metrics, profiling, etc."`
 
 	// see setCLIPlugins
 	kong.Plugins
@@ -388,7 +388,7 @@ func run() {
 
 	var wg sync.WaitGroup
 
-	var listenerStarted atomic.Bool
+	var livez atomic.Bool
 
 	if cli.DebugAddr != "" && cli.DebugAddr != "-" {
 		wg.Add(1)
@@ -402,7 +402,8 @@ func run() {
 				TCPAddr: cli.DebugAddr,
 				L:       l,
 				R:       metricsRegisterer,
-				Started: &listenerStarted,
+				Livez:   livez.Load,
+				Readyz:  nil,
 			})
 			if err != nil {
 				l.Sugar().Fatalf("Failed to create debug handler: %s.", err)
@@ -525,7 +526,7 @@ func run() {
 
 	metricsRegisterer.MustRegister(l)
 
-	listenerStarted.Store(true)
+	livez.Store(true)
 	l.Run(ctx)
 
 	logger.Info("Listener stopped")

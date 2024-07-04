@@ -49,6 +49,11 @@ const (
 // setup ensures that debug handler is set up only once.
 var setup atomic.Bool
 
+// Probe should return true on success and false on failure.
+//
+// It must be thread-safe.
+type Probe func() bool
+
 // Handler represents debug handler.
 //
 //nolint:vet // for readability
@@ -66,7 +71,8 @@ type ListenOpts struct {
 	TCPAddr string
 	L       *zap.Logger
 	R       prometheus.Registerer
-	Started *atomic.Bool
+	Livez   Probe
+	Readyz  Probe
 }
 
 // Listen creates a new debug handler and starts listener on the given TCP address.
@@ -96,64 +102,62 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 	}
 	must.NoError(statsviz.Register(http.DefaultServeMux, svOpts...))
 
-	requestCount := prometheus.NewCounterVec(
-		prometheus.CounterOpts{
+	probeDurations := prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
 			Namespace: namespace,
 			Subsystem: subsystem,
-			Name:      "requests_total",
-			Help:      "Total number of debug handler requests.",
+			Name:      "probe_response_seconds",
+			Help:      "Probe response time seconds.",
+			Buckets:   []float64{0.1, 0.5, 1, 5},
 		},
-		[]string{"handler", "code"},
+		[]string{"probe", "code"},
 	)
 
-	must.NoError(opts.R.Register(requestCount))
+	must.NoError(opts.R.Register(probeDurations))
 
-	// started handler, which is used for startup probe,
-	// returns StatusOK when Started is true.
-	startedHandler := http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
-		if opts.Started.Load() {
+	http.Handle("/debug/livez", promhttp.InstrumentHandlerDuration(
+		probeDurations.MustCurryWith(prometheus.Labels{"probe": "livez"}),
+		http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
+			if !opts.Livez() {
+				opts.L.Warn("Livez probe failed")
+				rw.WriteHeader(http.StatusInternalServerError)
+
+				return
+			}
+
+			opts.L.Debug("Livez probe succeeded")
 			rw.WriteHeader(http.StatusOK)
-			return
-		}
-
-		rw.WriteHeader(http.StatusInternalServerError)
-	})
-
-	// healthz handler, which is used for liveness probe, returns StatusOK when reached.
-	// This ensures that listener is running.
-	healthzHandler := http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
-		rw.WriteHeader(http.StatusOK)
-	})
-
-	readyHandler := http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
-		// TODO https://github.com/FerretDB/FerretDB/issues/4306
-		rw.WriteHeader(http.StatusOK)
-	})
-
-	http.Handle("/debug/started", promhttp.InstrumentHandlerCounter(
-		requestCount.MustCurryWith(prometheus.Labels{"handler": "/debug/started"}),
-		startedHandler,
+		}),
 	))
 
-	http.Handle("/debug/healthz", promhttp.InstrumentHandlerCounter(
-		requestCount.MustCurryWith(prometheus.Labels{"handler": "/debug/healthz"}),
-		healthzHandler,
-	))
+	http.Handle("/debug/readyz", promhttp.InstrumentHandlerDuration(
+		probeDurations.MustCurryWith(prometheus.Labels{"probe": "readyz"}),
+		http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
+			if !opts.Livez() {
+				opts.L.Warn("Readyz probe failed - livez probe failed")
+				rw.WriteHeader(http.StatusInternalServerError)
 
-	http.Handle("/debug/ready", promhttp.InstrumentHandlerCounter(
-		requestCount.MustCurryWith(prometheus.Labels{"handler": "/debug/ready"}),
-		readyHandler,
+				return
+			}
+
+			if !opts.Readyz() {
+				opts.L.Warn("Readyz probe failed")
+				rw.WriteHeader(http.StatusInternalServerError)
+
+				return
+			}
+
+			opts.L.Debug("Readyz probe succeeded")
+			rw.WriteHeader(http.StatusOK)
+		}),
 	))
 
 	handlers := map[string]string{
 		// custom handlers registered above
-		"/debug/graphs":  "Visualize metrics",
 		"/debug/metrics": "Metrics in Prometheus format",
-
-		// custom handlers for Kubernetes probes
-		"/debug/started": "Check if listener have started",
-		"/debug/healthz": "Check if listener is healthy",
-		"/debug/ready":   "Check if listener and backend are ready for queries",
+		"/debug/graphs":  "Visualize metrics",
+		"/debug/livez":   "Liveness probe",
+		"/debug/readyz":  "Readiness probe",
 
 		// stdlib handlers
 		"/debug/vars":  "Expvar package metrics",
@@ -200,6 +204,7 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 func (h *Handler) Serve(ctx context.Context) {
 	s := http.Server{
 		Addr:     h.opts.TCPAddr,
+		Handler:  http.DefaultServeMux,
 		ErrorLog: h.stdL,
 		BaseContext: func(_ net.Listener) context.Context {
 			return ctx

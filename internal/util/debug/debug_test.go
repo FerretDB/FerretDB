@@ -18,7 +18,6 @@ package debug
 import (
 	"context"
 	"net/http"
-	"sync"
 	"sync/atomic"
 	"testing"
 
@@ -29,49 +28,52 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
-func TestDebugHandlerStartupProbe(t *testing.T) {
+func assertProbe(t *testing.T, u string, expected int) {
+	t.Helper()
+
+	res, err := http.Get(u)
+	require.NoError(t, err)
+	assert.Equal(t, expected, res.StatusCode)
+}
+
+func TestProbes(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithCancel(testutil.Ctx(t))
-	var started atomic.Bool
+	var livez, readyz atomic.Bool
 
 	h, err := Listen(&ListenOpts{
 		TCPAddr: "127.0.0.1:0",
 		L:       testutil.Logger(t),
 		R:       prometheus.NewRegistry(),
-		Started: &started,
+		Livez:   livez.Load,
+		Readyz:  readyz.Load,
 	})
 	require.NoError(t, err)
 
-	addr := h.lis.Addr()
-
-	var wg sync.WaitGroup
-	wg.Add(1)
+	ctx, cancel := context.WithCancel(testutil.Ctx(t))
+	done := make(chan struct{})
 
 	go func() {
 		h.Serve(ctx)
-		wg.Done()
+		close(done)
 	}()
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://"+addr.String()+"/debug/started", nil)
-	require.NoError(t, err)
+	live := "http://" + h.lis.Addr().String() + "/debug/livez"
+	ready := "http://" + h.lis.Addr().String() + "/debug/readyz"
 
-	res, err := http.DefaultClient.Do(req)
-	require.NoError(t, err)
-	assert.Equal(t, http.StatusInternalServerError, res.StatusCode)
+	assertProbe(t, live, http.StatusInternalServerError)
+	assertProbe(t, ready, http.StatusInternalServerError)
 
-	started.Store(true)
+	readyz.Store(true)
 
-	res, err = http.DefaultClient.Do(req)
-	require.NoError(t, err)
-	assert.Equal(t, http.StatusOK, res.StatusCode)
+	assertProbe(t, live, http.StatusInternalServerError)
+	assertProbe(t, ready, http.StatusInternalServerError)
 
-	res, err = http.DefaultClient.Do(req)
-	require.NoError(t, err)
-	assert.Equal(t, http.StatusOK, res.StatusCode)
+	livez.Store(true)
 
-	// Cancel the context to stop the handler.
-	// The WaitGroup is needed to make sure that all logs were printed before the test finished.
+	assertProbe(t, live, http.StatusOK)
+	assertProbe(t, ready, http.StatusOK)
+
 	cancel()
-	wg.Wait()
+	<-done // prevent panic on logging after test ends
 }
