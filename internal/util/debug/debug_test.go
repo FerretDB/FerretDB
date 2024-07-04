@@ -75,3 +75,6 @@ func TestDebugHandlerStartupProbe(t *testing.T) {
 	cancel()
 	wg.Wait()
 }
+
+// TODO ready probe test
+// TODO health probe test
