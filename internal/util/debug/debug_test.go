@@ -45,8 +45,8 @@ func TestProbes(t *testing.T) {
 		TCPAddr: "127.0.0.1:0",
 		L:       testutil.Logger(t),
 		R:       prometheus.NewRegistry(),
-		Livez:   livez.Load,
-		Readyz:  readyz.Load,
+		Livez:   func(context.Context) bool { return livez.Load() },
+		Readyz:  func(context.Context) bool { return readyz.Load() },
 	})
 	require.NoError(t, err)
 

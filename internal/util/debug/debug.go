@@ -49,10 +49,11 @@ const (
 // setup ensures that debug handler is set up only once.
 var setup atomic.Bool
 
-// Probe should return true on success and false on failure.
+// Probe should return true on success and false on failure (or context cancellation).
+// It may log additional information if needed.
 //
 // It must be thread-safe.
-type Probe func() bool
+type Probe func(ctx context.Context) bool
 
 // Handler represents debug handler.
 //
@@ -117,8 +118,10 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 
 	http.Handle("/debug/livez", promhttp.InstrumentHandlerDuration(
 		probeDurations.MustCurryWith(prometheus.Labels{"probe": "livez"}),
-		http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
-			if !opts.Livez() {
+		http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			ctx := req.Context()
+
+			if !opts.Livez(ctx) {
 				opts.L.Warn("Livez probe failed")
 				rw.WriteHeader(http.StatusInternalServerError)
 
@@ -132,15 +135,17 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 
 	http.Handle("/debug/readyz", promhttp.InstrumentHandlerDuration(
 		probeDurations.MustCurryWith(prometheus.Labels{"probe": "readyz"}),
-		http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
-			if !opts.Livez() {
+		http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			ctx := req.Context()
+
+			if !opts.Livez(ctx) {
 				opts.L.Warn("Readyz probe failed - livez probe failed")
 				rw.WriteHeader(http.StatusInternalServerError)
 
 				return
 			}
 
-			if !opts.Readyz() {
+			if !opts.Readyz(ctx) {
 				opts.L.Warn("Readyz probe failed")
 				rw.WriteHeader(http.StatusInternalServerError)
 

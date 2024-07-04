@@ -383,12 +383,15 @@ func run() {
 	go func() {
 		<-ctx.Done()
 		logger.Info("Stopping...")
+
+		// second SIGTERM should immediately stop the process
 		stop()
 	}()
 
-	var wg sync.WaitGroup
+	// used to start debug handler with probes as soon as possible, even before listener is created
+	var listener atomic.Pointer[clientconn.Listener]
 
-	var livez atomic.Bool
+	var wg sync.WaitGroup
 
 	if cli.DebugAddr != "" && cli.DebugAddr != "-" {
 		wg.Add(1)
@@ -402,8 +405,14 @@ func run() {
 				TCPAddr: cli.DebugAddr,
 				L:       l,
 				R:       metricsRegisterer,
-				Livez:   livez.Load,
-				Readyz:  nil,
+				Livez: func(context.Context) bool {
+					if listener.Load() == nil {
+						return false
+					}
+
+					return listener.Load().Listening()
+				},
+				Readyz: nil,
 			})
 			if err != nil {
 				l.Sugar().Fatalf("Failed to create debug handler: %s.", err)
@@ -524,14 +533,13 @@ func run() {
 		logger.Sugar().Fatalf("Failed to construct listener: %s.", err)
 	}
 
+	listener.Store(l)
+
 	metricsRegisterer.MustRegister(l)
 
-	livez.Store(true)
 	l.Run(ctx)
 
 	logger.Info("Listener stopped")
-
-	stop()
 
 	wg.Wait()
 
