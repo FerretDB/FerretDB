@@ -450,9 +450,9 @@ func run() {
 					connInfo.SetBypassBackendAuth()
 
 					ctx = conninfo.Ctx(ctx, connInfo)
+					_, pingErr := h.Backend.Status(ctx, nil)
 
-					_, err := h.Backend.Status(ctx, nil)
-					return err
+					return pingErr
 				}
 			}
 

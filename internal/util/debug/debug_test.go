@@ -45,14 +45,14 @@ func TestDebugHandler(t *testing.T) {
 		return nil
 	}
 
-	h, err := Listen(&ListenOpts{
+	h, hErr := Listen(&ListenOpts{
 		TCPAddr: "127.0.0.1:0",
 		L:       testutil.Logger(t),
 		R:       prometheus.NewRegistry(),
 		Ping:    ready,
 		Started: &started,
 	})
-	require.NoError(t, err)
+	require.NoError(t, hErr)
 
 	addr := h.lis.Addr()
 
