@@ -83,7 +83,7 @@ func TestDebugHandler(t *testing.T) {
 		assert.Equal(t, http.StatusOK, res.StatusCode)
 	})
 
-	t.Run("ReadyProbe", func(t *testing.T) {
+	t.Run("ReadinessProbe", func(t *testing.T) {
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://"+addr.String()+"/debug/ready", nil)
 		require.NoError(t, err)
 
@@ -104,7 +104,7 @@ func TestDebugHandler(t *testing.T) {
 		assert.Equal(t, http.StatusOK, res.StatusCode)
 	})
 
-	t.Run("HealthProbe", func(t *testing.T) {
+	t.Run("LivenessProbe", func(t *testing.T) {
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://"+addr.String()+"/debug/healthz", nil)
 		require.NoError(t, err)
 
