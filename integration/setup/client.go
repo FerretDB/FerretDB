@@ -63,10 +63,12 @@ func setClientPaths(uri string) (string, error) {
 }
 
 // makeClient returns new client for the given working MongoDB URI.
-func makeClient(ctx context.Context, uri string) (*mongo.Client, error) {
+func makeClient(ctx context.Context, uri string, enableOtel bool) (*mongo.Client, error) {
 	clientOpts := options.Client().ApplyURI(uri)
 
-	clientOpts.SetMonitor(otelmongo.NewMonitor())
+	if enableOtel {
+		clientOpts.SetMonitor(otelmongo.NewMonitor())
+	}
 
 	client, err := mongo.Connect(ctx, clientOpts)
 	if err != nil {
