@@ -16,6 +16,7 @@ package setup
 
 import (
 	"context"
+	"log/slog"
 	"net/url"
 	"path/filepath"
 	"strings"
@@ -26,6 +27,7 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo"
 	"go.opentelemetry.io/otel"
 
+	"github.com/FerretDB/FerretDB/internal/driver"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
@@ -109,4 +111,32 @@ func setupClient(tb testtb.TB, ctx context.Context, uri string) *mongo.Client {
 	})
 
 	return client
+}
+
+// setupClient returns test-specific non-authenticated low-level driver connection for the given MongoDB URI.
+//
+// It disconnects automatically when test ends.
+//
+// If the connection can't be established, it panics,
+// as it doesn't make sense to proceed with other tests if we couldn't connect in one of them.
+func setupClientDriver(tb testtb.TB, ctx context.Context, uri string, l *slog.Logger) *driver.Conn {
+	tb.Helper()
+
+	ctx, span := otel.Tracer("").Start(ctx, "setupClientDriver")
+	defer span.End()
+
+	defer observability.FuncCall(ctx)()
+
+	conn, err := driver.Connect(ctx, uri, l)
+	if err != nil {
+		tb.Error(err)
+		panic("setupClientDriver: " + err.Error())
+	}
+
+	tb.Cleanup(func() {
+		err = conn.Close()
+		require.NoError(tb, err)
+	})
+
+	return conn
 }

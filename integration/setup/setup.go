@@ -23,6 +23,7 @@ import (
 	"runtime/trace"
 	"slices"
 	"strings"
+	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
@@ -32,6 +33,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/internal/driver"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
@@ -91,6 +93,12 @@ type SetupOpts struct {
 
 	// Options to override default backend configuration.
 	BackendOptions *BackendOpts
+
+	// UseDriver enables low-level driver connection creation.
+	UseDriver bool
+
+	// DriverNoAuth disables automatic authentication of the low-level driver connection.
+	DriverNoAuth bool
 }
 
 // BackendOpts represents backend configuration used for test setup.
@@ -106,12 +114,16 @@ type BackendOpts struct {
 
 	// DisableNewAuth true uses the old backend authentication.
 	DisableNewAuth bool
+
+	// DisableTLS removes TLS related parameters from listener and client URI. Used by the low level driver.
+	DisableTLS bool
 }
 
 // SetupResult represents setup results.
 type SetupResult struct {
 	Ctx        context.Context
 	Collection *mongo.Collection
+	DriverConn *driver.Conn
 	MongoDBURI string // without database name
 }
 
@@ -181,11 +193,21 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 
 	collection := setupCollection(tb, ctx, client, opts)
 
+	var conn *driver.Conn
+	if opts.UseDriver {
+		conn = setupClientDriver(tb, setupCtx, uri, testutil.SLogger(tb))
+
+		if ui, _ := conn.AuthInfo(); ui != nil && !opts.DriverNoAuth {
+			require.NoError(tb, conn.Authenticate(ctx))
+		}
+	}
+
 	level.SetLevel(*logLevelF)
 
 	return &SetupResult{
 		Ctx:        ctx,
 		Collection: collection,
+		DriverConn: conn,
 		MongoDBURI: uri,
 	}
 }
@@ -198,6 +220,24 @@ func Setup(tb testtb.TB, providers ...shareddata.Provider) (context.Context, *mo
 		Providers: providers,
 	})
 	return s.Ctx, s.Collection
+}
+
+// SetupDriver setups a single collection for all providers, if they are present,
+// and returns authenticated low-level driver connection.
+func SetupDriver(tb testing.TB, providers ...shareddata.Provider) (context.Context, *driver.Conn) {
+	tb.Helper()
+
+	s := SetupWithOpts(tb, &SetupOpts{
+		Providers:    providers,
+		UseDriver:    true,
+		DriverNoAuth: true,
+		ExtraOptions: url.Values{
+			"authMechanism": []string{"SCRAM-SHA-256"},
+		},
+		BackendOptions: &BackendOpts{DisableTLS: true},
+	})
+
+	return s.Ctx, s.DriverConn
 }
 
 // setupCollection setups a single collection for all providers, if they are present.
