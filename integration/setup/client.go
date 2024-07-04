@@ -63,10 +63,10 @@ func setClientPaths(uri string) (string, error) {
 }
 
 // makeClient returns new client for the given working MongoDB URI.
-func makeClient(ctx context.Context, uri string, enableOtel bool) (*mongo.Client, error) {
+func makeClient(ctx context.Context, uri string, disableOtel bool) (*mongo.Client, error) {
 	clientOpts := options.Client().ApplyURI(uri)
 
-	if enableOtel {
+	if !disableOtel {
 		clientOpts.SetMonitor(otelmongo.NewMonitor())
 	}
 
@@ -91,7 +91,7 @@ func makeClient(ctx context.Context, uri string, enableOtel bool) (*mongo.Client
 //
 // If the connection can't be established, it panics,
 // as it doesn't make sense to proceed with other tests if we couldn't connect in one of them.
-func setupClient(tb testtb.TB, ctx context.Context, uri string) *mongo.Client {
+func setupClient(tb testtb.TB, ctx context.Context, uri string, disableOtel bool) *mongo.Client {
 	tb.Helper()
 
 	ctx, span := otel.Tracer("").Start(ctx, "setupClient")
@@ -99,7 +99,7 @@ func setupClient(tb testtb.TB, ctx context.Context, uri string) *mongo.Client {
 
 	defer observability.FuncCall(ctx)()
 
-	client, err := makeClient(ctx, uri)
+	client, err := makeClient(ctx, uri, disableOtel)
 	if err != nil {
 		tb.Error(err)
 		panic("setupClient: " + err.Error())
