@@ -26,8 +26,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/x/mongo/driver/topology"
 
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testfail"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 
@@ -262,19 +260,19 @@ func TestAuthenticationOnAuthenticatedConnection(t *testing.T) {
 	err = db.RunCommand(ctx, bson.D{{"connectionStatus", 1}}).Decode(&res)
 	require.NoError(t, err)
 
-	actualAuth, err := integration.ConvertDocument(t, res).Get("authInfo")
-	require.NoError(t, err)
-
-	actualUsersV, err := actualAuth.(*types.Document).Get("authenticatedUsers")
-	require.NoError(t, err)
-
-	actualUsers := actualUsersV.(*types.Array)
-	require.Equal(t, 1, actualUsers.Len())
-
-	actualUser := must.NotFail(actualUsers.Get(0)).(*types.Document)
-	user, err := actualUser.Get("user")
-	require.NoError(t, err)
-	require.Equal(t, username, user)
+	expected := bson.D{
+		{"authInfo", bson.D{
+			{"authenticatedUsers", bson.A{
+				bson.D{
+					{"user", username},
+					{"db", db.Name()},
+				},
+			}},
+			{"authenticatedUserRoles", bson.A{}},
+		}},
+		{"ok", float64(1)},
+	}
+	integration.AssertEqualDocuments(t, expected, res)
 
 	saslStart := bson.D{
 		{"saslStart", 1},
@@ -288,20 +286,7 @@ func TestAuthenticationOnAuthenticatedConnection(t *testing.T) {
 
 	err = db.RunCommand(ctx, bson.D{{"connectionStatus", 1}}).Decode(&res)
 	require.NoError(t, err)
-
-	actualAuth, err = integration.ConvertDocument(t, res).Get("authInfo")
-	require.NoError(t, err)
-
-	actualUsersV, err = actualAuth.(*types.Document).Get("authenticatedUsers")
-	require.NoError(t, err)
-
-	actualUsers = actualUsersV.(*types.Array)
-	require.Equal(t, 1, actualUsers.Len())
-
-	actualUser = must.NotFail(actualUsers.Get(0)).(*types.Document)
-	user, err = actualUser.Get("user")
-	require.NoError(t, err)
-	require.Equal(t, username, user)
+	integration.AssertEqualDocuments(t, expected, res)
 
 	err = db.RunCommand(ctx, saslStart).Decode(&res)
 	require.NoError(t, err)

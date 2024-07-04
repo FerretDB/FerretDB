@@ -41,6 +41,7 @@ func TestSaslStartPlain(t *testing.T) {
 		// expected results
 		username string
 		password string
+		db       string
 		err      error
 	}{
 		"emptyPayload": {
@@ -79,23 +80,24 @@ func TestSaslStartPlain(t *testing.T) {
 			doc:      must.NotFail(types.NewDocument("payload", base64.StdEncoding.EncodeToString(validPayload))),
 			username: "admin",
 			password: "pass",
-			err:      nil,
+			db:       "db",
 		},
 		"binaryPayload": {
 			doc:      must.NotFail(types.NewDocument("payload", types.Binary{B: validPayload})),
 			username: "admin",
 			password: "pass",
-			err:      nil,
+			db:       "db",
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
-			err := saslStartPlain(ctx, tc.doc)
+			err := saslStartPlain(ctx, "db", tc.doc)
 			assert.Equal(t, tc.err, err)
 
-			username, password, _ := conninfo.Get(ctx).Auth()
+			username, password, _, db := conninfo.Get(ctx).Auth()
 			assert.Equal(t, tc.username, username)
 			assert.Equal(t, tc.password, password)
+			assert.Equal(t, tc.db, db)
 		})
 	}
 }

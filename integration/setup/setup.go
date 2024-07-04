@@ -331,7 +331,7 @@ func insertBenchmarkProvider(tb testtb.TB, ctx context.Context, collection *mong
 
 // cleanupUser removes users for the given database if new authentication is enabled and drops that database.
 func cleanupDatabase(ctx context.Context, tb testtb.TB, database *mongo.Database, opts *BackendOpts) {
-	if opts != nil && !opts.DisableNewAuth {
+	if opts == nil || !opts.DisableNewAuth {
 		err := database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}}).Err()
 		require.NoError(tb, err)
 	}

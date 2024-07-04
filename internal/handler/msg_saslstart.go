@@ -91,7 +91,7 @@ func (h *Handler) saslStart(ctx context.Context, dbName string, document *types.
 
 	switch mechanism {
 	case "PLAIN":
-		if err = saslStartPlain(ctx, document); err != nil {
+		if err = saslStartPlain(ctx, dbName, document); err != nil {
 			return nil, err
 		}
 
@@ -110,7 +110,7 @@ func (h *Handler) saslStart(ctx context.Context, dbName string, document *types.
 }
 
 // saslStartPlain extracts username and password from PLAIN `saslStart` payload.
-func saslStartPlain(ctx context.Context, doc *types.Document) error {
+func saslStartPlain(ctx context.Context, dbName string, doc *types.Document) error {
 	var payload []byte
 
 	// some drivers send payload as a string
@@ -153,7 +153,7 @@ func saslStartPlain(ctx context.Context, doc *types.Document) error {
 	// Ignore authzid for now.
 	_ = authzid
 
-	conninfo.Get(ctx).SetAuth(string(authcid), string(passwd), nil)
+	conninfo.Get(ctx).SetAuth(string(authcid), string(passwd), nil, dbName)
 
 	return nil
 }
@@ -297,7 +297,7 @@ func (h *Handler) saslStartSCRAM(ctx context.Context, dbName, mechanism string, 
 
 	h.L.Debug("saslStartSCRAM: step succeed", fields...)
 
-	conninfo.Get(ctx).SetAuth(conv.Username(), "", conv)
+	conninfo.Get(ctx).SetAuth(conv.Username(), "", conv, dbName)
 
 	return response, nil
 }
