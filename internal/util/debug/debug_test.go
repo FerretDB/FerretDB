@@ -104,10 +104,21 @@ func TestDebugHandler(t *testing.T) {
 		assert.Equal(t, http.StatusOK, res.StatusCode)
 	})
 
+	t.Run("HealthProbe", func(t *testing.T) {
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://"+addr.String()+"/debug/healthz", nil)
+		require.NoError(t, err)
+
+		res, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, res.StatusCode)
+
+		res, err = http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, res.StatusCode)
+	})
+
 	// Cancel the context to stop the handler.
 	// The WaitGroup is needed to make sure that all logs were printed before the test finished.
 	cancel()
 	wg.Wait()
 }
-
-// TODO health probe test
