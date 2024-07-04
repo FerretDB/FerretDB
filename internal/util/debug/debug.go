@@ -66,7 +66,11 @@ type ListenOpts struct {
 	TCPAddr string
 	L       *zap.Logger
 	R       prometheus.Registerer
-	Ping    func(context.Context) error
+	// Ping is a function used by ready handler to decide which status code is returned.
+	// If the error is nil, StatusOK is returned.
+	Ping func(context.Context) error
+	// Started is a value used by started handler to decide which status code is returned.
+	// If the value is true, StatusOK is returned.
 	Started *atomic.Bool
 }
 
