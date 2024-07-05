@@ -26,9 +26,13 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 )
 
+type ReadyZ struct {
+	l *zap.Logger
+}
+
 // ping creates connection to FerretDB instance specified by the flags, and runs `ping` command against it.
 // The check is only executed if --setup-database flag is set.
-func ping() {
+func Probe(ctx context.Context) bool {
 	logger := setupLogger(cli.Log.Format, "")
 	checkFlags(logger)
 
@@ -36,7 +40,7 @@ func ping() {
 
 	if cli.Setup.Database == "" {
 		l.Info("Setup database not specified - skipping ping.")
-		return
+		return false
 	}
 
 	var urls []string
@@ -44,7 +48,8 @@ func ping() {
 	if cli.Listen.Addr != "" {
 		host, port, err := net.SplitHostPort(cli.Listen.Addr)
 		if err != nil {
-			logger.Fatal("Getting host and port failed.", zap.Error(err))
+			logger.Error("Getting host and port failed.", zap.Error(err))
+			return false
 		}
 
 		l.Debugf("--listen-addr flag is set. Ping to %s will be performed.", cli.Listen.Addr)
@@ -68,7 +73,8 @@ func ping() {
 	if cli.Listen.TLS != "" {
 		host, port, err := net.SplitHostPort(cli.Listen.TLS)
 		if err != nil {
-			logger.Fatal("Getting host and port failed.", zap.Error(err))
+			logger.Error("Getting host and port failed.", zap.Error(err))
+			return false
 		}
 
 		l.Debugf("--listen-tls flag is set. Ping to %s will be performed.", cli.Listen.Addr)
@@ -80,7 +86,8 @@ func ping() {
 		}
 
 		if cli.Listen.TLSKeyFile == "" || cli.Listen.TLSCaFile == "" {
-			logger.Fatal("When --listen-tls is set, both --listen-tls-cert-file and --listen-tls-ca-file need to be provided.")
+			logger.Error("When --listen-tls is set, both --listen-tls-cert-file and --listen-tls-ca-file need to be provided.")
+			return false
 		}
 
 		values := url.Values{}
@@ -108,7 +115,7 @@ func ping() {
 
 	if len(urls) == 0 {
 		l.Info("Neither --listen-addr nor --listen-unix nor --listen-tls flags were specified - skipping ping.")
-		return
+		return true
 	}
 
 	for _, u := range urls {
@@ -121,18 +128,21 @@ func ping() {
 
 		client, err := mongo.Connect(ctx, options.Client().ApplyURI(u))
 		if err != nil {
-			logger.Fatal("Connection failed.", zap.Error(err))
+			logger.Error("Connection failed.", zap.Error(err))
+			return false
 		}
 
 		pingErr := client.Ping(ctx, nil)
 
 		// do not leave connection open when ping error causes os.Exit with Fatal
 		if err = client.Disconnect(ctx); err != nil {
-			logger.Fatal("Disconnect failed.", zap.Error(err))
+			logger.Error("Disconnect failed.", zap.Error(err))
+			return false
 		}
 
 		if pingErr != nil {
-			logger.Fatal("Ping failed.", zap.Error(pingErr))
+			logger.Error("Ping failed.", zap.Error(pingErr))
+			return false
 		}
 
 		var uri *url.URL
@@ -142,4 +152,6 @@ func ping() {
 
 		l.Infof("Ping to %s successful.", u)
 	}
+
+	return true
 }
