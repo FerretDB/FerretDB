@@ -225,7 +225,9 @@ func main() {
 		}
 
 		ctx, _ := ctxutil.SigTerm(context.Background())
+
 		if !ready.Probe(ctx) {
+			os.Exit(1)
 		}
 
 	default:
