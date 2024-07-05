@@ -32,7 +32,6 @@ type ReadyZ struct {
 // The check is only executed if --setup-database flag is set.
 func (ready *ReadyZ) Probe(ctx context.Context) bool {
 	logger := ready.l
-	checkFlags(logger)
 
 	l := logger.Sugar()
 

@@ -220,8 +220,11 @@ func main() {
 	case "run":
 		run()
 	case "ping":
+		logger := setupLogger(cli.Log.Format, "")
+		checkFlags(logger)
+
 		ready := ReadyZ{
-			l: setupLogger(cli.Log.Format, ""),
+			l: logger,
 		}
 
 		ctx, _ := ctxutil.SigTerm(context.Background())
