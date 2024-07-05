@@ -41,7 +41,7 @@ func (ready *ReadyZ) Probe(ctx context.Context) bool {
 
 	if cli.Setup.Database == "" {
 		l.Info("Setup database not specified - skipping ping.")
-		return false
+		return true
 	}
 
 	var urls []string
