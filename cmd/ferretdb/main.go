@@ -80,7 +80,7 @@ var cli struct {
 		TLSCaFile   string `default:"" help:"Proxy TLS CA file path."`
 	} `embed:"" prefix:"proxy-"`
 
-	DebugAddr string `default:"127.0.0.1:8088" help:"Listen address for HTTP handlers for metrics, pprof, etc."`
+	DebugAddr string `default:"127.0.0.1:8088" help:"Listen address for HTTP handlers for metrics, profiling, etc."`
 
 	// see setCLIPlugins
 	kong.Plugins
@@ -383,12 +383,15 @@ func run() {
 	go func() {
 		<-ctx.Done()
 		logger.Info("Stopping...")
+
+		// second SIGTERM should immediately stop the process
 		stop()
 	}()
 
-	var wg sync.WaitGroup
+	// used to start debug handler with probes as soon as possible, even before listener is created
+	var listener atomic.Pointer[clientconn.Listener]
 
-	var listenerStarted atomic.Bool
+	var wg sync.WaitGroup
 
 	if cli.DebugAddr != "" && cli.DebugAddr != "-" {
 		wg.Add(1)
@@ -402,7 +405,14 @@ func run() {
 				TCPAddr: cli.DebugAddr,
 				L:       l,
 				R:       metricsRegisterer,
-				Started: &listenerStarted,
+				Livez: func(context.Context) bool {
+					if listener.Load() == nil {
+						return false
+					}
+
+					return listener.Load().Listening()
+				},
+				Readyz: nil,
 			})
 			if err != nil {
 				l.Sugar().Fatalf("Failed to create debug handler: %s.", err)
@@ -523,14 +533,13 @@ func run() {
 		logger.Sugar().Fatalf("Failed to construct listener: %s.", err)
 	}
 
+	listener.Store(l)
+
 	metricsRegisterer.MustRegister(l)
 
-	listenerStarted.Store(true)
 	l.Run(ctx)
 
 	logger.Info("Listener stopped")
-
-	stop()
 
 	wg.Wait()
 
