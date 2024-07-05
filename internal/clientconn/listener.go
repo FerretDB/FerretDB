@@ -51,6 +51,7 @@ type Listener struct {
 	tcpListenerReady  chan struct{}
 	unixListenerReady chan struct{}
 	tlsListenerReady  chan struct{}
+	listenersClosed   chan struct{}
 }
 
 // NewListenerOpts represents listener configuration.
@@ -84,13 +85,19 @@ func Listen(opts *NewListenerOpts) (*Listener, error) {
 		tcpListenerReady:  make(chan struct{}),
 		unixListenerReady: make(chan struct{}),
 		tlsListenerReady:  make(chan struct{}),
+		listenersClosed:   make(chan struct{}),
 	}
 
 	var err error
 
+	defer func() {
+		if err != nil {
+			l.Handler.Close()
+		}
+	}()
+
 	if l.TCP != "" {
 		if l.tcpListener, err = net.Listen("tcp", l.TCP); err != nil {
-			opts.Handler.Close()
 			return nil, lazyerrors.Error(err)
 		}
 
@@ -100,7 +107,6 @@ func Listen(opts *NewListenerOpts) (*Listener, error) {
 
 	if l.Unix != "" {
 		if l.unixListener, err = net.Listen("unix", l.Unix); err != nil {
-			opts.Handler.Close()
 			return nil, lazyerrors.Error(err)
 		}
 
@@ -112,12 +118,10 @@ func Listen(opts *NewListenerOpts) (*Listener, error) {
 		var config *tls.Config
 
 		if config, err = tlsutil.Config(l.TLSCertFile, l.TLSKeyFile, l.TLSCAFile); err != nil {
-			opts.Handler.Close()
 			return nil, err
 		}
 
 		if l.tlsListener, err = tls.Listen("tcp", l.TLS, config); err != nil {
-			opts.Handler.Close()
 			return nil, lazyerrors.Error(err)
 		}
 
@@ -128,32 +132,24 @@ func Listen(opts *NewListenerOpts) (*Listener, error) {
 	return l, nil
 }
 
+// Listening returns true if the listener is currently listening and accepting new connection.
+//
+// It returns false when listener is stopped
+// or when it is still running with established connections.
+func (l *Listener) Listening() bool {
+	select {
+	case <-l.listenersClosed:
+		return false
+	default:
+		return true
+	}
+}
+
 // Run runs the listener until ctx is canceled.
 //
 // When this method returns, listener and all connections, as well as handler are closed.
 func (l *Listener) Run(ctx context.Context) {
-	defer l.Handler.Close()
-
 	var wg sync.WaitGroup
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-
-		<-ctx.Done()
-
-		if l.tcpListener != nil {
-			l.tcpListener.Close()
-		}
-
-		if l.unixListener != nil {
-			l.unixListener.Close()
-		}
-
-		if l.tlsListener != nil {
-			l.tlsListener.Close()
-		}
-	}()
 
 	if l.TCP != "" {
 		wg.Add(1)
@@ -186,7 +182,7 @@ func (l *Listener) Run(ctx context.Context) {
 
 		go func() {
 			defer func() {
-				l.ll.Sugar().Infof("%s stopped.", l.tlsListener.Addr())
+				l.ll.Sugar().Infof("%s stopped.", l.TLSAddr())
 				wg.Done()
 			}()
 
@@ -195,11 +191,30 @@ func (l *Listener) Run(ctx context.Context) {
 	}
 
 	<-ctx.Done()
+
+	if l.tcpListener != nil {
+		_ = l.tcpListener.Close()
+	}
+
+	if l.unixListener != nil {
+		_ = l.unixListener.Close()
+	}
+
+	if l.tlsListener != nil {
+		_ = l.tlsListener.Close()
+	}
+
+	close(l.listenersClosed)
+
 	l.ll.Info("Waiting for all connections to stop...")
 	wg.Wait()
+
+	l.Handler.Close()
 }
 
 // acceptLoop runs listener's connection accepting loop until context is canceled.
+//
+// The caller is responsible for closing the listener.
 func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, l *Listener) {
 	var retry int64
 	for {
