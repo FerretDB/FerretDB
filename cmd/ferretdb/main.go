@@ -220,7 +220,14 @@ func main() {
 	case "run":
 		run()
 	case "ping":
-		ping()
+		ready := ReadyZ{
+			l: setupLogger(cli.Log.Format, ""),
+		}
+
+		ctx, _ := ctxutil.SigTerm(context.Background())
+		if !ready.Probe(ctx) {
+		}
+
 	default:
 		panic("unknown sub-command")
 	}

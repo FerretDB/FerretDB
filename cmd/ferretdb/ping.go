@@ -22,8 +22,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"
-
-	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 )
 
 type ReadyZ struct {
@@ -32,8 +30,8 @@ type ReadyZ struct {
 
 // ping creates connection to FerretDB instance specified by the flags, and runs `ping` command against it.
 // The check is only executed if --setup-database flag is set.
-func Probe(ctx context.Context) bool {
-	logger := setupLogger(cli.Log.Format, "")
+func (ready *ReadyZ) Probe(ctx context.Context) bool {
+	logger := ready.l
 	checkFlags(logger)
 
 	l := logger.Sugar()
@@ -120,8 +118,6 @@ func Probe(ctx context.Context) bool {
 
 	for _, u := range urls {
 		l.Debugf("Pinging %s...", u)
-
-		ctx, _ := ctxutil.SigTerm(context.Background())
 
 		ctx, cancel := context.WithTimeout(ctx, cli.Setup.Timeout)
 		defer cancel()
