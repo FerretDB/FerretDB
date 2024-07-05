@@ -500,10 +500,19 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 			if info := protoErr.Info(); info != nil {
 				argument = info.Argument
 			}
-
-		case wire.OpCodeQuery:
-			fallthrough
 		case wire.OpCodeReply:
+			protoErr := handlererrors.ProtocolError(err)
+
+			var reply wire.OpReply
+			reply.SetDocument(protoErr.Document())
+			resBody = &reply
+
+			result = protoErr.(*handlererrors.CommandError).Code().String()
+
+			if info := protoErr.Info(); info != nil {
+				argument = info.Argument
+			}
+		case wire.OpCodeQuery:
 			fallthrough
 		case wire.OpCodeUpdate:
 			fallthrough
