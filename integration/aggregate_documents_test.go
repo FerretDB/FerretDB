@@ -62,13 +62,10 @@ func TestAggregateAddFieldsErrors(t *testing.T) {
 			},
 		},
 	} {
-		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
 				t.Skip(tc.skip)
 			}
-
-			t.Parallel()
 
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
@@ -273,13 +270,10 @@ func TestAggregateGroupErrors(t *testing.T) {
 			skip: "https://github.com/FerretDB/FerretDB/issues/2275",
 		},
 	} {
-		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
 				t.Skip(tc.skip)
 			}
-
-			t.Parallel()
 
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
@@ -594,13 +588,10 @@ func TestAggregateProjectErrors(t *testing.T) {
 			},
 		},
 	} {
-		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
 				t.Skip(tc.skip)
 			}
-
-			t.Parallel()
 
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
@@ -637,13 +628,10 @@ func TestAggregateProject(t *testing.T) {
 			res: []bson.D{{{"v", int32(42)}}},
 		},
 	} {
-		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
 				t.Skip(tc.skip)
 			}
-
-			t.Parallel()
 
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.res, "res must not be nil")
@@ -694,13 +682,10 @@ func TestAggregateSetErrors(t *testing.T) {
 			},
 		},
 	} {
-		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
 				t.Skip(tc.skip)
 			}
-
-			t.Parallel()
 
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
@@ -895,13 +880,10 @@ func TestAggregateUnsetErrors(t *testing.T) {
 			},
 		},
 	} {
-		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
 				t.Skip(tc.skip)
 			}
-
-			t.Parallel()
 
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
@@ -935,13 +917,10 @@ func TestAggregateSortErrors(t *testing.T) {
 			},
 		},
 	} {
-		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
 				t.Skip(tc.skip)
 			}
-
-			t.Parallel()
 
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
@@ -954,6 +933,7 @@ func TestAggregateSortErrors(t *testing.T) {
 
 func TestAggregateCommandMaxTimeMSErrors(t *testing.T) {
 	t.Parallel()
+
 	ctx, collection := setup.Setup(t)
 
 	for name, tc := range map[string]struct { //nolint:vet // used for testing only
@@ -1128,13 +1108,10 @@ func TestAggregateCommandMaxTimeMSErrors(t *testing.T) {
 			altMessage: "BSON field 'aggregate.maxTimeMS' is the wrong type 'object', expected types '[long, int, decimal, double]'",
 		},
 	} {
-		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
 				t.Skip(tc.skip)
 			}
-
-			t.Parallel()
 
 			require.NotNil(t, tc.err, "err must not be nil")
 
@@ -1148,6 +1125,7 @@ func TestAggregateCommandMaxTimeMSErrors(t *testing.T) {
 
 func TestAggregateCommandCursor(t *testing.T) {
 	t.Parallel()
+
 	ctx, collection := setup.Setup(t)
 
 	// the number of documents is set above the default batchSize of 101
@@ -1247,13 +1225,10 @@ func TestAggregateCommandCursor(t *testing.T) {
 			firstBatch: arr[:6],
 		},
 	} {
-		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
 				t.Skip(tc.skip)
 			}
-
-			t.Parallel()
 
 			var pipeline any = bson.A{}
 			if tc.pipeline != nil {
