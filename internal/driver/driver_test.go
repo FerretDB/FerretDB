@@ -35,7 +35,7 @@ func TestDriver(t *testing.T) {
 
 	ctx := testutil.Ctx(t)
 
-	c, err := Connect(ctx, "mongodb://127.0.0.1:47017/", testutil.SLogger(t))
+	c, err := Connect(ctx, "mongodb://username:password@127.0.0.1:27017/?authMechanism=SCRAM-SHA-1", testutil.SLogger(t))
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, c.Close()) })
 
@@ -57,6 +57,8 @@ func TestDriver(t *testing.T) {
 	require.NoError(t, err)
 	err = expectedBatches[2].Add(must.NotFail(bson.NewDocument("_id", int32(2), "v", int32(3))))
 	require.NoError(t, err)
+
+	must.NoError(c.Authenticate(ctx))
 
 	t.Run("Drop", func(t *testing.T) {
 		dropCmd := must.NotFail(bson.NewDocument(
