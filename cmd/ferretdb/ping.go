@@ -24,12 +24,16 @@ import (
 	"go.uber.org/zap"
 )
 
+// ReadyZ represents the Readiness probe, which is used to run `ping`
+// command against the FerretDB instance specified by cli flags.
 type ReadyZ struct {
 	l *zap.Logger
 }
 
-// ping creates connection to FerretDB instance specified by the flags, and runs `ping` command against it.
-// The check is only executed if --setup-database flag is set.
+// Probe executes ping queries to open listeners, and returns true if they succeed.
+// Any errors that occure are passed through ReadyZ.l listener.
+//
+// It is only executed if --setup-database flag is set.
 func (ready *ReadyZ) Probe(ctx context.Context) bool {
 	logger := ready.l
 
@@ -69,7 +73,7 @@ func (ready *ReadyZ) Probe(ctx context.Context) bool {
 
 	if cli.Listen.TLS != "" {
 		// TODO https://github.com/FerretDB/FerretDB/issues/4427
-		logger.Warn("TLS ping is skipped, please check https://github.com/FerretDB/FerretDB/issues/4427 for more details.")
+		l.Warn("TLS ping is skipped, please check https://github.com/FerretDB/FerretDB/issues/4427 for more details.")
 	}
 
 	if cli.Listen.Unix != "" {
