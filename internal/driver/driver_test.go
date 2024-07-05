@@ -35,7 +35,7 @@ func TestDriver(t *testing.T) {
 
 	ctx := testutil.Ctx(t)
 
-	c, err := Connect(ctx, "mongodb://username:password@127.0.0.1:27017/?authMechanism=SCRAM-SHA-1", testutil.SLogger(t))
+	c, err := Connect(ctx, "mongodb://username:password@127.0.0.1:47017/?authMechanism=SCRAM-SHA-1", testutil.SLogger(t))
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, c.Close()) })
 
