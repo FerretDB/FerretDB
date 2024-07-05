@@ -52,7 +52,7 @@ func unixSocketPath(tb testtb.TB) string {
 }
 
 // listenerMongoDBURI builds MongoDB URI for in-process FerretDB.
-func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath, newAuthDB string, tls bool) string {
+func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath, newAuthDB string, tlsAndAuth bool) string {
 	tb.Helper()
 
 	var host string
@@ -64,9 +64,10 @@ func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath, newAuthDB string
 		host = unixSocketPath
 	}
 
-	q := make(url.Values)
+	var user *url.Userinfo
+	q := url.Values{}
 
-	if tls {
+	if tlsAndAuth {
 		require.Empty(tb, unixSocketPath, "unixSocketPath cannot be used with TLS")
 
 		// we don't separate TLS and auth just for simplicity of our test configurations
@@ -74,19 +75,24 @@ func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath, newAuthDB string
 			"tls":                   []string{"true"},
 			"tlsCertificateKeyFile": []string{filepath.Join(testutil.BuildCertsDir, "client.pem")},
 			"tlsCaFile":             []string{filepath.Join(testutil.BuildCertsDir, "rootCA-cert.pem")},
+			"authMechanism":         []string{"PLAIN"},
 		}
+		user = url.UserPassword("username", "password")
 	}
 
-	if newAuthDB == "" {
-		q.Set("authMechanism", "PLAIN")
+	path := "/"
+
+	if newAuthDB != "" {
+		q.Set("authMechanism", "SCRAM-SHA-256")
+		path += newAuthDB
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/1507
 	u := &url.URL{
 		Scheme:   "mongodb",
 		Host:     host,
-		Path:     "/" + newAuthDB,
-		User:     url.UserPassword("username", "password"),
+		Path:     path,
+		User:     user,
 		RawQuery: q.Encode(),
 	}
 
@@ -192,7 +198,7 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 	}
 
 	if !opts.DisableNewAuth {
-		handlerOpts.SetupDatabase = "admin"
+		handlerOpts.SetupDatabase = "test"
 		handlerOpts.SetupUsername = "username"
 		handlerOpts.SetupPassword = password.WrapPassword("password")
 		handlerOpts.SetupTimeout = 1 * time.Second
@@ -223,10 +229,8 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 		tb.Fatal("Both -target-tls and -target-unix-socket are set.")
 	}
 
-	tls := *targetTLSF && !opts.DisableTLS
-
 	switch {
-	case tls:
+	case *targetTLSF:
 		listenerOpts.TLS = "127.0.0.1:0"
 		listenerOpts.TLSCertFile = filepath.Join(testutil.BuildCertsDir, "server-cert.pem")
 		listenerOpts.TLSKeyFile = filepath.Join(testutil.BuildCertsDir, "server-key.pem")
@@ -254,17 +258,19 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 	})
 
 	var hostPort, unixSocketPath string
+	var tlsAndAuth bool
 
 	switch {
-	case tls:
+	case *targetTLSF:
 		hostPort = l.TLSAddr().String()
+		tlsAndAuth = true
 	case *targetUnixSocketF:
 		unixSocketPath = l.UnixAddr().String()
 	default:
 		hostPort = l.TCPAddr().String()
 	}
 
-	uri := listenerMongoDBURI(tb, hostPort, unixSocketPath, handlerOpts.SetupDatabase, tls)
+	uri := listenerMongoDBURI(tb, hostPort, unixSocketPath, handlerOpts.SetupDatabase, tlsAndAuth)
 
 	logger.Info("Listener started", zap.String("handler", handler), zap.String("uri", uri))
 
