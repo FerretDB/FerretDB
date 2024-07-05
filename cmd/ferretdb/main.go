@@ -411,6 +411,9 @@ func run() {
 			defer wg.Done()
 
 			l := logger.Named("debug")
+			ready := ReadyZ{
+				l: l,
+			}
 
 			h, err := debug.Listen(&debug.ListenOpts{
 				TCPAddr: cli.DebugAddr,
@@ -423,7 +426,7 @@ func run() {
 
 					return listener.Load().Listening()
 				},
-				Readyz: nil,
+				Readyz: ready.Probe,
 			})
 			if err != nil {
 				l.Sugar().Fatalf("Failed to create debug handler: %s.", err)
