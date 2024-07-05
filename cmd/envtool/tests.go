@@ -386,9 +386,20 @@ func testsRun(ctx context.Context, index, total uint, run, skip string, args []s
 		return lazyerrors.Error(err)
 	}
 
-	go ot.Run(ctx)
+	ctx, cancel := context.WithCancel(ctx)
+	done := make(chan struct{})
 
-	return runGoTest(ctx, args, len(shard), true, logger)
+	go func() {
+		ot.Run(ctx)
+		close(done)
+	}()
+
+	err = runGoTest(ctx, args, len(shard), true, logger)
+
+	cancel()
+	<-done
+
+	return err
 }
 
 // listTestFuncs returns a sorted slice of all top-level test functions (tests, benchmarks, examples, fuzz functions)
