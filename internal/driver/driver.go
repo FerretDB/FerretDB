@@ -18,20 +18,13 @@ package driver
 import (
 	"bufio"
 	"context"
-	"crypto/md5"
-	"encoding/hex"
 	"fmt"
 	"log/slog"
 	"net"
 	"net/url"
-	"path"
 	"sync/atomic"
 
-	"github.com/xdg-go/scram"
-
-	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -45,19 +38,12 @@ type Conn struct {
 	r *bufio.Reader
 	w *bufio.Writer
 	l *slog.Logger
-
-	authCreds     *url.Userinfo
-	authMechanism string
-	authDB        string
 }
 
-// Connect creates a new non-authenticated connection for the given MongoDB URI and logger.
+// Connect creates a new connection for the given MongoDB URI and logger.
 //
 // Context can be used to cancel the connection attempt.
 // Canceling the context after the connection is established has no effect.
-//
-// Authentication credentials and mechanism can be set in the URI.
-// They are not used by this function, but available to [Authenticate] and via [AuthInfo].
 func Connect(ctx context.Context, uri string, l *slog.Logger) (*Conn, error) {
 	u, err := url.Parse(uri)
 	if err != nil {
@@ -76,21 +62,16 @@ func Connect(ctx context.Context, uri string, l *slog.Logger) (*Conn, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
-	_, authDB := path.Split(u.Path)
+	if u.User != nil {
+		return nil, lazyerrors.Errorf("authentication is not supported")
+	}
 
-	var authMechanism string
+	if u.Path != "/" {
+		return nil, lazyerrors.Errorf("path %q is not supported", u.Path)
+	}
 
-	for k, v := range u.Query() {
+	for k := range u.Query() {
 		switch k {
-		case "authMechanism":
-			authMechanism = v[0]
-
-		case "authSource":
-			authDB = v[0]
-
-		case "replicaSet":
-			// safe to ignore
-
 		default:
 			return nil, lazyerrors.Errorf("query parameter %q is not supported", k)
 		}
@@ -105,122 +86,12 @@ func Connect(ctx context.Context, uri string, l *slog.Logger) (*Conn, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
-	if authMechanism == "" {
-		authMechanism = "SCRAM-SHA-1"
-	}
-
-	if authDB == "" {
-		authDB = "admin"
-	}
-
 	return &Conn{
 		c: c,
 		r: bufio.NewReader(c),
 		w: bufio.NewWriter(c),
 		l: l,
-
-		authCreds:     u.User,
-		authMechanism: authMechanism,
-		authDB:        authDB,
 	}, nil
-}
-
-// AuthInfo returns the authentication credentials and mechanism extracted from the MongoDB URI.
-func (c *Conn) AuthInfo() (*url.Userinfo, string) {
-	return c.authCreds, c.authMechanism
-}
-
-// Authenticate attempts to authenticate the connection.
-//
-// This method is a shortcut for code that primary does not test authentication itself,
-// but accesses MongoDB-compatible system that requires authentication.
-// Code that tests various authentication scenarios should use [Request], [Write], or [WriteRaw] directly.
-func (c *Conn) Authenticate(ctx context.Context) error {
-	username := c.authCreds.Username()
-	password, _ := c.authCreds.Password()
-
-	var h scram.HashGeneratorFcn
-
-	switch c.authMechanism {
-	case "SCRAM-SHA-1":
-		h = scram.SHA1
-
-		md5sum := md5.New()
-		if _, err := md5sum.Write([]byte(username + ":mongo:" + password)); err != nil {
-			return lazyerrors.Error(err)
-		}
-
-		src := md5sum.Sum(nil)
-		dst := make([]byte, hex.EncodedLen(len(src)))
-		hex.Encode(dst, src)
-
-		password = string(dst)
-
-	case "SCRAM-SHA-256":
-		h = scram.SHA256
-
-	default:
-		return lazyerrors.Errorf("unsupported mechanism %q", c.authMechanism)
-	}
-
-	s, err := h.NewClientUnprepped(username, password, "")
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	conv := s.NewConversation()
-
-	payload, err := conv.Step("")
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	cmd := must.NotFail(bson.NewDocument(
-		"saslStart", int32(1),
-		"mechanism", c.authMechanism,
-		"payload", bson.Binary{B: []byte(payload)},
-		"$db", c.authDB,
-	))
-
-	for {
-		var body *wire.OpMsg
-
-		if body, err = wire.NewOpMsg(must.NotFail(cmd.Encode())); err != nil {
-			return lazyerrors.Error(err)
-		}
-
-		var resBody wire.MsgBody
-
-		if _, resBody, err = c.Request(ctx, nil, body); err != nil {
-			return lazyerrors.Error(err)
-		}
-
-		var resMsg *bson.Document
-
-		if resMsg, err = must.NotFail(resBody.(*wire.OpMsg).RawDocument()).Decode(); err != nil {
-			return lazyerrors.Error(err)
-		}
-
-		if ok := resMsg.Get("ok"); ok != 1.0 {
-			return lazyerrors.Errorf("%s was not successful (ok was %v)", cmd.Command(), ok)
-		}
-
-		if resMsg.Get("done").(bool) {
-			return nil
-		}
-
-		payload, err = conv.Step(string(resMsg.Get("payload").(bson.Binary).B))
-		if err != nil {
-			return lazyerrors.Error(err)
-		}
-
-		cmd = must.NotFail(bson.NewDocument(
-			"saslContinue", int32(1),
-			"conversationId", int32(1),
-			"payload", bson.Binary{B: []byte(payload)},
-			"$db", c.authDB,
-		))
-	}
 }
 
 // Close closes the connection.
@@ -304,10 +175,6 @@ var lastRequestID atomic.Int32
 // It returns errors only for request/response parsing issues, or connection issues.
 // All of the driver level errors are stored inside response.
 func (c *Conn) Request(ctx context.Context, header *wire.MsgHeader, body wire.MsgBody) (*wire.MsgHeader, wire.MsgBody, error) {
-	if header == nil {
-		header = new(wire.MsgHeader)
-	}
-
 	if header.MessageLength == 0 {
 		msgBin, err := body.MarshalBinary()
 		if err != nil {
