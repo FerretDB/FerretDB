@@ -62,15 +62,12 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 	ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
 
 	for name, tc := range testCases {
-		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
 
 			if tc.skip != "" {
 				t.Skip(tc.skip)
 			}
-
-			t.Parallel()
 
 			pipeline := tc.pipeline
 			require.NotNil(t, pipeline, "pipeline should be set")
@@ -192,15 +189,12 @@ func testAggregateCommandCompat(t *testing.T, testCases map[string]aggregateComm
 	compatCollection := s.CompatCollections[0]
 
 	for name, tc := range testCases {
-		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
 
 			if tc.skip != "" {
 				t.Skip(tc.skip)
 			}
-
-			t.Parallel()
 
 			command := tc.command
 			require.NotNil(t, command, "command should be set")
