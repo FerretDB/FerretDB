@@ -127,7 +127,7 @@ func Startup() {
 			zap.S().Fatal(err)
 		}
 
-		client, err := makeClient(clientCtx, *targetURLF)
+		client, err := makeClient(clientCtx, *targetURLF, true)
 		if err != nil {
 			zap.S().Fatalf("Failed to connect to target system %s: %s", *targetURLF, err)
 		}
@@ -147,7 +147,7 @@ func Startup() {
 			zap.S().Fatal(err)
 		}
 
-		client, err := makeClient(clientCtx, *compatURLF)
+		client, err := makeClient(clientCtx, *compatURLF, true)
 		if err != nil {
 			zap.S().Fatalf("Failed to connect to compat system %s: %s", *compatURLF, err)
 		}
