@@ -68,40 +68,8 @@ func (ready *ReadyZ) Probe(ctx context.Context) bool {
 	}
 
 	if cli.Listen.TLS != "" {
-		host, port, err := net.SplitHostPort(cli.Listen.TLS)
-		if err != nil {
-			logger.Error("Getting host and port failed.", zap.Error(err))
-			return false
-		}
-
-		l.Debugf("--listen-tls flag is set. Ping to %s will be performed.", cli.Listen.Addr)
-
-		if host == "" {
-			host = "127.0.0.1"
-
-			l.Debugf("Host not specified, defaulting to %s.", host)
-		}
-
-		if cli.Listen.TLSKeyFile == "" || cli.Listen.TLSCaFile == "" {
-			logger.Error("When --listen-tls is set, both --listen-tls-cert-file and --listen-tls-ca-file need to be provided.")
-			return false
-		}
-
-		values := url.Values{}
-
-		values.Add("tls", "true")
-		values.Add("tlsCaFile", cli.Listen.TLSCaFile)
-		values.Add("tlsCertificateKeyFile", cli.Listen.TLSKeyFile)
-
-		u := &url.URL{
-			Scheme:   "mongodb",
-			Host:     net.JoinHostPort(host, port),
-			Path:     cli.Setup.Database,
-			User:     url.UserPassword(cli.Setup.Username, cli.Setup.Password),
-			RawQuery: values.Encode(),
-		}
-
-		urls = append(urls, u.String())
+		// TODO https://github.com/FerretDB/FerretDB/issues/4427
+		logger.Warn("TLS ping is skipped, please check https://github.com/FerretDB/FerretDB/issues/4427 for more details.")
 	}
 
 	if cli.Listen.Unix != "" {
