@@ -8,6 +8,7 @@ state.json
 *.out
 *.sqlite*
 *.txt
+!website/static/*.txt
 
 .task/
 bin/

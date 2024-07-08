@@ -67,7 +67,7 @@ func makeClient(ctx context.Context, uri string, disableOtel bool) (*mongo.Clien
 	clientOpts := options.Client().ApplyURI(uri)
 
 	if !disableOtel {
-		clientOpts.SetMonitor(otelmongo.NewMonitor())
+		clientOpts.SetMonitor(otelmongo.NewMonitor(otelmongo.WithCommandAttributeDisabled(false)))
 	}
 
 	client, err := mongo.Connect(ctx, clientOpts)

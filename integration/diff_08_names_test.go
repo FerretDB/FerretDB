@@ -76,7 +76,7 @@ func TestDiffCollectionName(t *testing.T) {
 		},
 		"NonUTF-8": {
 			collection:  string([]byte{0xff, 0xfe, 0xfd}),
-			disableOtel: true, // otel exporter can't export non-UTF-8 collection name
+			disableOtel: true, // otlptracehttp can't convert non-UTF-8 collection name as protobuf string
 		},
 	}
 

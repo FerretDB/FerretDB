@@ -21,7 +21,6 @@ import (
 	"slices"
 	"strconv"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -56,15 +55,11 @@ func Startup() {
 
 	prometheus.DefaultRegisterer.MustRegister(listenerMetrics)
 
-	var started atomic.Bool
-	started.Store(true)
-
 	// use any available port to allow running different configurations in parallel
 	h, err := debug.Listen(&debug.ListenOpts{
 		TCPAddr: "127.0.0.1:0",
 		L:       zap.L().Named("debug"),
 		R:       prometheus.DefaultRegisterer,
-		Started: &started,
 	})
 	if err != nil {
 		zap.S().Fatalf("Failed to create debug handler: %s.", err)
@@ -127,7 +122,7 @@ func Startup() {
 			zap.S().Fatal(err)
 		}
 
-		client, err := makeClient(clientCtx, *targetURLF, true)
+		client, err := makeClient(clientCtx, *targetURLF, false)
 		if err != nil {
 			zap.S().Fatalf("Failed to connect to target system %s: %s", *targetURLF, err)
 		}
@@ -147,7 +142,7 @@ func Startup() {
 			zap.S().Fatal(err)
 		}
 
-		client, err := makeClient(clientCtx, *compatURLF, true)
+		client, err := makeClient(clientCtx, *compatURLF, false)
 		if err != nil {
 			zap.S().Fatalf("Failed to connect to compat system %s: %s", *compatURLF, err)
 		}
