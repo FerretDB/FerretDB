@@ -60,7 +60,7 @@ func FuncCall(ctx context.Context) (context.Context, context.CancelCauseFunc) {
 		fc.region = trace.StartRegion(ctx, funcName)
 	}
 
-	stopCtx, stopCancel := ctxutil.WithDelay(ctx)
+	stopCtx, stopCancel := ctxutil.WithDelay(context.Background())
 	go fc.run(stopCtx)
 
 	return ctx, stopCancel
