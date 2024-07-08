@@ -66,20 +66,29 @@ func TestDiffDatabaseName(t *testing.T) {
 func TestDiffCollectionName(t *testing.T) {
 	t.Parallel()
 
-	testcases := map[string]string{
-		"ReservedPrefix": "_ferretdb_xxx",
-		"NonUTF-8":       string([]byte{0xff, 0xfe, 0xfd}),
+	testcases := map[string]struct {
+		collection  string
+		disableOtel bool
+	}{
+		"ReservedPrefix": {
+			collection:  "_ferretdb_xxx",
+			disableOtel: false,
+		},
+		"NonUTF-8": {
+			collection:  string([]byte{0xff, 0xfe, 0xfd}),
+			disableOtel: true, // otlptracehttp can't convert non-UTF-8 collection name as protobuf string
+		},
 	}
 
 	t.Run("CreateCollection", func(t *testing.T) {
-		for name, cName := range testcases {
-			name, cName := name, cName
+		for name, tc := range testcases {
 			t.Run(name, func(t *testing.T) {
 				t.Parallel()
 
-				ctx, collection := setup.Setup(t)
+				s := setup.SetupWithOpts(t, &setup.SetupOpts{DisableOtel: tc.disableOtel})
+				ctx, collection := s.Ctx, s.Collection
 
-				err := collection.Database().CreateCollection(ctx, cName)
+				err := collection.Database().CreateCollection(ctx, tc.collection)
 
 				if setup.IsMongoDB(t) {
 					require.NoError(t, err)
@@ -89,7 +98,7 @@ func TestDiffCollectionName(t *testing.T) {
 				expected := mongo.CommandError{
 					Name:    "InvalidNamespace",
 					Code:    73,
-					Message: fmt.Sprintf(`Invalid collection name: %s`, cName),
+					Message: fmt.Sprintf(`Invalid collection name: %s`, tc.collection),
 				}
 				AssertEqualCommandError(t, expected, err)
 			})
@@ -97,12 +106,12 @@ func TestDiffCollectionName(t *testing.T) {
 	})
 
 	t.Run("RenameCollection", func(t *testing.T) {
-		for name, toName := range testcases {
-			name, toName := name, toName
+		for name, tc := range testcases {
 			t.Run(name, func(t *testing.T) {
 				t.Parallel()
 
-				ctx, collection := setup.Setup(t)
+				s := setup.SetupWithOpts(t, &setup.SetupOpts{DisableOtel: tc.disableOtel})
+				ctx, collection := s.Ctx, s.Collection
 
 				fromName := testutil.CollectionName(t)
 				err := collection.Database().CreateCollection(ctx, fromName)
@@ -111,7 +120,7 @@ func TestDiffCollectionName(t *testing.T) {
 				dbName := collection.Database().Name()
 				command := bson.D{
 					{"renameCollection", dbName + "." + fromName},
-					{"to", dbName + "." + toName},
+					{"to", dbName + "." + tc.collection},
 				}
 
 				err = collection.Database().Client().Database("admin").RunCommand(ctx, command).Err()
@@ -124,7 +133,7 @@ func TestDiffCollectionName(t *testing.T) {
 				expected := mongo.CommandError{
 					Name:    "IllegalOperation",
 					Code:    20,
-					Message: fmt.Sprintf(`error with target namespace: Invalid collection name: %s`, toName),
+					Message: fmt.Sprintf(`error with target namespace: Invalid collection name: %s`, tc.collection),
 				}
 				AssertEqualCommandError(t, expected, err)
 			})
