@@ -59,7 +59,9 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 // InsertAll implements backends.Collection interface.
 func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllParams) (*backends.InsertAllResult, error) {
-	defer observability.FuncCall(ctx)()
+	var cancel context.CancelFunc
+	ctx, cancel = observability.FuncCall(ctx)
+	defer cancel()
 
 	res, err := c.origC.InsertAll(ctx, params)
 	if err != nil {
@@ -99,7 +101,9 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 
 // UpdateAll implements backends.Collection interface.
 func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllParams) (*backends.UpdateAllResult, error) {
-	defer observability.FuncCall(ctx)()
+	var cancel context.CancelFunc
+	ctx, cancel = observability.FuncCall(ctx)
+	defer cancel()
 
 	res, err := c.origC.UpdateAll(ctx, params)
 	if err != nil {
@@ -143,7 +147,9 @@ func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllPa
 
 // DeleteAll implements backends.Collection interface.
 func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllParams) (*backends.DeleteAllResult, error) {
-	defer observability.FuncCall(ctx)()
+	var cancel context.CancelFunc
+	ctx, cancel = observability.FuncCall(ctx)
+	defer cancel()
 
 	res, err := c.origC.DeleteAll(ctx, params)
 	if err != nil {

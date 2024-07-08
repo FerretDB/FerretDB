@@ -106,7 +106,9 @@ func (ci *CollectionInfo) Capped() bool {
 //
 // Database may not exist; that's not an error.
 func (dbc *databaseContract) ListCollections(ctx context.Context, params *ListCollectionsParams) (*ListCollectionsResult, error) {
-	defer observability.FuncCall(ctx)()
+	var cancel context.CancelFunc
+	ctx, cancel = observability.FuncCall(ctx)
+	defer cancel()
 
 	res, err := dbc.db.ListCollections(ctx, params)
 	checkError(err)
@@ -142,7 +144,9 @@ func (ccp *CreateCollectionParams) Capped() bool {
 //
 // Database may or may not exist; it should be created automatically if needed.
 func (dbc *databaseContract) CreateCollection(ctx context.Context, params *CreateCollectionParams) error {
-	defer observability.FuncCall(ctx)()
+	var cancel context.CancelFunc
+	ctx, cancel = observability.FuncCall(ctx)
+	defer cancel()
 
 	must.BeTrue(params.CappedSize >= 0)
 	must.BeTrue(params.CappedDocuments >= 0)
@@ -166,7 +170,9 @@ type DropCollectionParams struct {
 //
 // The errors for non-existing database and non-existing collection are the same.
 func (dbc *databaseContract) DropCollection(ctx context.Context, params *DropCollectionParams) error {
-	defer observability.FuncCall(ctx)()
+	var cancel context.CancelFunc
+	ctx, cancel = observability.FuncCall(ctx)
+	defer cancel()
 
 	err := validateCollectionName(params.Name)
 	if err == nil {
@@ -189,7 +195,9 @@ type RenameCollectionParams struct {
 //
 // The errors for non-existing database and non-existing collection are the same.
 func (dbc *databaseContract) RenameCollection(ctx context.Context, params *RenameCollectionParams) error {
-	defer observability.FuncCall(ctx)()
+	var cancel context.CancelFunc
+	ctx, cancel = observability.FuncCall(ctx)
+	defer cancel()
 
 	err := validateCollectionName(params.OldName)
 
@@ -222,7 +230,9 @@ type DatabaseStatsResult struct {
 // Stats returns statistic estimations about the database.
 // All returned values are not exact, but might be more accurate when Stats is called with `Refresh: true`.
 func (dbc *databaseContract) Stats(ctx context.Context, params *DatabaseStatsParams) (*DatabaseStatsResult, error) {
-	defer observability.FuncCall(ctx)()
+	var cancel context.CancelFunc
+	ctx, cancel = observability.FuncCall(ctx)
+	defer cancel()
 
 	res, err := dbc.db.Stats(ctx, params)
 	checkError(err, ErrorCodeDatabaseDoesNotExist)

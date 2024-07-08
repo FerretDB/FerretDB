@@ -31,13 +31,15 @@ type funcCall struct {
 // FuncCall adds observability to a function call.
 //
 // It should be called at the very beginning of the function,
-// and returned function should be called at exit.
+// and returned context.CancelFunc function should be called at exit.
 // The returned function must not be passed or stored.
 // The only valid way to use FuncCall is:
 //
 //	func foo(ctx context.Context) {
-//	    defer FuncCall(ctx)()
-//	    // ...
+//		ctx, cancel := FuncCall(ctx)
+//		defer cancel()
+//		// ...
+//	}
 //
 // For the Go execution tracer, FuncCall creates a new region for the function call
 // and attaches it to the task in the context (or background task).
@@ -56,13 +58,16 @@ func FuncCall(parent context.Context) (ctx context.Context, cancel context.Cance
 		fc.region = trace.StartRegion(parent, funcName)
 	}
 
-	// FIXME - ctx, cancel
+	ctx, cancel = context.WithCancel(parent)
+	go fc.run(ctx)
 
-	return ctx, cancel
+	return
 }
 
-// leave is called on function exit.
-func (fc *funcCall) leave() {
+// run waits until ctx is canceled.
+func (fc *funcCall) run(ctx context.Context) {
+	<-ctx.Done()
+
 	if fc.region != nil {
 		fc.region.End()
 	}
