@@ -91,6 +91,9 @@ type SetupOpts struct {
 
 	// Options to override default backend configuration.
 	BackendOptions *BackendOpts
+
+	// DisableOtel disable OpenTelemetry monitoring for MongoDB client.
+	DisableOtel bool
 }
 
 // BackendOpts represents backend configuration used for test setup.
@@ -174,7 +177,7 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 		tb.Logf("URI with extra options: %s", uri)
 	}
 
-	client := setupClient(tb, setupCtx, uri)
+	client := setupClient(tb, setupCtx, uri, opts.DisableOtel)
 
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
