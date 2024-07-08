@@ -41,7 +41,7 @@ type funcCall struct {
 //
 // For the Go execution tracer, FuncCall creates a new region for the function call
 // and attaches it to the task in the context (or background task).
-func FuncCall(ctx context.Context) func() {
+func FuncCall(parent context.Context) (ctx context.Context, cancel context.CancelFunc) {
 	fc := &funcCall{
 		token: resource.NewToken(),
 	}
@@ -53,10 +53,12 @@ func FuncCall(ctx context.Context) func() {
 		f, _ := runtime.CallersFrames(pc).Next()
 		funcName := f.Function
 
-		fc.region = trace.StartRegion(ctx, funcName)
+		fc.region = trace.StartRegion(parent, funcName)
 	}
 
-	return fc.leave
+	// FIXME - ctx, cancel
+
+	return ctx, cancel
 }
 
 // leave is called on function exit.
