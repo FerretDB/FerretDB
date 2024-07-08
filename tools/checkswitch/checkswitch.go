@@ -174,16 +174,19 @@ func run(pass *analysis.Pass) (any, error) {
 
 			case *ast.SwitchStmt:
 				var name string
+
 				for _, el := range n.Body.List {
 					if len(el.(*ast.CaseClause).List) < 1 {
 						continue
 					}
 					firstTypeCase := el.(*ast.CaseClause).List[0]
+
 					switch firstTypeCase := firstTypeCase.(type) {
 					case *ast.StarExpr:
 						if sexp, ok := firstTypeCase.X.(*ast.SelectorExpr); ok {
 							name = sexp.Sel.Name
 						}
+
 						if sexp, ok := firstTypeCase.X.(*ast.Ident); ok {
 							name = sexp.Name
 						}
@@ -194,9 +197,12 @@ func run(pass *analysis.Pass) (any, error) {
 						name = firstTypeCase.Name
 					}
 
-					idxSl, ok := orderTags[name]
-					if ok && (idxSl < idx) {
+					var idxSl int
+
+					if idxSlc, ok := orderTags[name]; ok && (idxSlc < idx) {
 						pass.Reportf(n.Pos(), "%s should go before %s in the switch", name, lastName)
+					} else {
+						idxSl = idxSlc
 					}
 					idx, lastName = idxSl, name
 
@@ -204,15 +210,17 @@ func run(pass *analysis.Pass) (any, error) {
 					// e.g. 'case int32, int64'
 					if len(el.(*ast.CaseClause).List) > 1 {
 						subidx, sublastName := idx, lastName
-						for i := 0; i < len(el.(*ast.CaseClause).List); i++ {
+
+						for i := range len(el.(*ast.CaseClause).List) {
 							cs := el.(*ast.CaseClause).List[i]
 							switch cs := cs.(type) {
 							case *ast.StarExpr:
 								if sexp, ok := cs.X.(*ast.SelectorExpr); ok {
 									name = sexp.Sel.Name
 								}
-								if sexp, ok := cs.X.(*ast.Ident); ok {
-									name = sexp.Name
+
+								if iexp, ok := cs.X.(*ast.Ident); ok {
+									name = iexp.Name
 								}
 
 							case *ast.SelectorExpr:
@@ -222,6 +230,7 @@ func run(pass *analysis.Pass) (any, error) {
 								name = cs.Name
 							}
 							subidxSl, ok := orderTags[name]
+
 							if ok && (subidxSl < subidx) {
 								pass.Reportf(n.Pos(), "%s should go before %s in the switch", name, sublastName)
 							}
