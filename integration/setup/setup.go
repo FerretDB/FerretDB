@@ -210,9 +210,9 @@ func setupCollection(tb testtb.TB, ctx context.Context, client *mongo.Client, op
 	ctx, span := otel.Tracer("").Start(ctx, "setupCollection")
 	defer span.End()
 
-	var cancel context.CancelFunc
+	var cancel context.CancelCauseFunc
 	ctx, cancel = observability.FuncCall(ctx)
-	defer cancel()
+	defer cancel(nil)
 
 	var ownDatabase bool
 	databaseName := opts.DatabaseName

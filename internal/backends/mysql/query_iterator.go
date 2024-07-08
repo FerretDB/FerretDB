@@ -66,7 +66,7 @@ func newQueryIterator(ctx context.Context, rows *fsql.Rows, onlyRecordIDs bool) 
 // Next implements iterator.Interface.
 func (iter *queryIterator) Next() (struct{}, *types.Document, error) {
 	_, cancel := observability.FuncCall(iter.ctx)
-	defer cancel()
+	defer cancel(nil)
 
 	iter.m.Lock()
 	defer iter.m.Unlock()
@@ -138,7 +138,7 @@ func (iter *queryIterator) Next() (struct{}, *types.Document, error) {
 // Close implements iterator.Interface.
 func (iter *queryIterator) Close() {
 	_, cancel := observability.FuncCall(iter.ctx)
-	defer cancel()
+	defer cancel(nil)
 
 	iter.m.Lock()
 	defer iter.m.Unlock()
@@ -151,7 +151,7 @@ func (iter *queryIterator) Close() {
 // This should be called only when the caller already holds the mutex.
 func (iter *queryIterator) close() {
 	_, cancel := observability.FuncCall(iter.ctx)
-	defer cancel()
+	defer cancel(nil)
 
 	if iter.rows != nil {
 		iter.rows.Close()

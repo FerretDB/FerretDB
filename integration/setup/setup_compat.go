@@ -143,9 +143,9 @@ func setupCompatCollections(tb testtb.TB, ctx context.Context, client *mongo.Cli
 	ctx, span := otel.Tracer("").Start(ctx, "setupCompatCollections")
 	defer span.End()
 
-	var cancel context.CancelFunc
+	var cancel context.CancelCauseFunc
 	ctx, cancel = observability.FuncCall(ctx)
-	defer cancel()
+	defer cancel(nil)
 
 	database := client.Database(opts.databaseName)
 

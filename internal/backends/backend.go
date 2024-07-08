@@ -94,9 +94,9 @@ type StatusResult struct {
 // connection can be established and authenticated.
 // For that reason, the implementation should not return only cached results.
 func (bc *backendContract) Status(ctx context.Context, params *StatusParams) (*StatusResult, error) {
-	var cancel context.CancelFunc
+	var cancel context.CancelCauseFunc
 	ctx, cancel = observability.FuncCall(ctx)
-	defer cancel()
+	defer cancel(nil)
 
 	// to both check that conninfo is present (which is important for that method),
 	// and to render doc.go correctly
@@ -145,9 +145,9 @@ type DatabaseInfo struct {
 //
 // Database may not exist; that's not an error.
 func (bc *backendContract) ListDatabases(ctx context.Context, params *ListDatabasesParams) (*ListDatabasesResult, error) {
-	var cancel context.CancelFunc
+	var cancel context.CancelCauseFunc
 	ctx, cancel = observability.FuncCall(ctx)
-	defer cancel()
+	defer cancel(nil)
 
 	res, err := bc.b.ListDatabases(ctx, params)
 	checkError(err)
@@ -173,9 +173,9 @@ type DropDatabaseParams struct {
 
 // DropDatabase drops existing database for given parameters (including valid name).
 func (bc *backendContract) DropDatabase(ctx context.Context, params *DropDatabaseParams) error {
-	var cancel context.CancelFunc
+	var cancel context.CancelCauseFunc
 	ctx, cancel = observability.FuncCall(ctx)
-	defer cancel()
+	defer cancel(nil)
 
 	err := validateDatabaseName(params.Name)
 	if err == nil {

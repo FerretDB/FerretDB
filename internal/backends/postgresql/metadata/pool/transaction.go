@@ -27,9 +27,9 @@ import (
 //
 // If f returns an error or context is canceled, the transaction is rolled back.
 func InTransaction(ctx context.Context, p *pgxpool.Pool, f func(tx pgx.Tx) error) error {
-	var cancel context.CancelFunc
+	var cancel context.CancelCauseFunc
 	ctx, cancel = observability.FuncCall(ctx)
-	defer cancel()
+	defer cancel(nil)
 
 	if err := pgx.BeginFunc(ctx, p, f); err != nil {
 		// do not wrap error because the caller of f depends on it in some cases

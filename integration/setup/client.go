@@ -97,9 +97,9 @@ func setupClient(tb testtb.TB, ctx context.Context, uri string, disableOtel bool
 	ctx, span := otel.Tracer("").Start(ctx, "setupClient")
 	defer span.End()
 
-	var cancel context.CancelFunc
+	var cancel context.CancelCauseFunc
 	ctx, cancel = observability.FuncCall(ctx)
-	defer cancel()
+	defer cancel(nil)
 
 	client, err := makeClient(ctx, uri, disableOtel)
 	if err != nil {

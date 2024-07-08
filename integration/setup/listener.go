@@ -107,9 +107,9 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 	_, span := otel.Tracer("").Start(ctx, "setupListener")
 	defer span.End()
 
-	var cancel context.CancelFunc
+	var cancel context.CancelCauseFunc
 	ctx, cancel = observability.FuncCall(ctx)
-	defer cancel()
+	defer cancel(nil)
 
 	require.Empty(tb, *targetURLF, "-target-url must be empty for in-process FerretDB")
 
