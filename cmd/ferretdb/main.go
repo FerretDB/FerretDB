@@ -223,12 +223,12 @@ func main() {
 		logger := setupLogger(cli.Log.Format, "")
 		checkFlags(logger)
 
-		ready := ReadyZ{
+		ping := Ping{
 			l: logger,
 		}
 
 		ctx, _ := ctxutil.SigTerm(context.Background())
-		if !ready.Probe(ctx) {
+		if !ping.Probe(ctx) {
 			os.Exit(1)
 		}
 
@@ -411,7 +411,7 @@ func run() {
 			defer wg.Done()
 
 			l := logger.Named("debug")
-			ready := ReadyZ{
+			ping := Ping{
 				l: l,
 			}
 
@@ -426,7 +426,7 @@ func run() {
 
 					return listener.Load().Listening()
 				},
-				Readyz: ready.Probe,
+				Readyz: ping.Probe,
 			})
 			if err != nil {
 				l.Sugar().Fatalf("Failed to create debug handler: %s.", err)
