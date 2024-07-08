@@ -162,9 +162,9 @@ func (p *Pool) Close() {
 
 // List returns a sorted list of database names in the pool.
 func (p *Pool) List(ctx context.Context) []string {
-	var cancel context.CancelCauseFunc
+	var cancel context.CancelFunc
 	_, cancel = observability.FuncCall(ctx)
-	defer cancel(nil)
+	defer cancel()
 
 	p.rw.RLock()
 	defer p.rw.RUnlock()
@@ -177,9 +177,9 @@ func (p *Pool) List(ctx context.Context) []string {
 
 // GetExisting returns an existing database by valid name, or nil.
 func (p *Pool) GetExisting(ctx context.Context, name string) *fsql.DB {
-	var cancel context.CancelCauseFunc
+	var cancel context.CancelFunc
 	_, cancel = observability.FuncCall(ctx)
-	defer cancel(nil)
+	defer cancel()
 
 	p.rw.RLock()
 	defer p.rw.RUnlock()
@@ -191,9 +191,9 @@ func (p *Pool) GetExisting(ctx context.Context, name string) *fsql.DB {
 //
 // Returned boolean value indicates whether the database was created.
 func (p *Pool) GetOrCreate(ctx context.Context, name string) (*fsql.DB, bool, error) {
-	var cancel context.CancelCauseFunc
+	var cancel context.CancelFunc
 	ctx, cancel = observability.FuncCall(ctx)
-	defer cancel(nil)
+	defer cancel()
 
 	db := p.GetExisting(ctx, name)
 	if db != nil {
@@ -227,9 +227,9 @@ func (p *Pool) GetOrCreate(ctx context.Context, name string) (*fsql.DB, bool, er
 //
 // Returned boolean value indicates whether the database was removed.
 func (p *Pool) Drop(ctx context.Context, name string) bool {
-	var cancel context.CancelCauseFunc
+	var cancel context.CancelFunc
 	_, cancel = observability.FuncCall(ctx)
-	defer cancel(nil)
+	defer cancel()
 
 	p.rw.Lock()
 	defer p.rw.Unlock()

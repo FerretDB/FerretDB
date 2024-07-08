@@ -19,8 +19,6 @@ import (
 	"runtime"
 	"runtime/trace"
 
-	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
-
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
 
@@ -33,7 +31,7 @@ type funcCall struct {
 // FuncCall adds observability to a function call.
 //
 // It should be called at the very beginning of the function,
-// and returned [context.CancelCauseFunc] function should be called at exit.
+// and returned [context.CancelFunc] function should be called at exit.
 // The returned function must not be passed or stored.
 // The only valid way to use FuncCall is:
 //
@@ -45,7 +43,7 @@ type funcCall struct {
 //
 // For the Go execution tracer, FuncCall creates a new region for the function call
 // and attaches it to the task in the context (or background task).
-func FuncCall(ctx context.Context) (context.Context, context.CancelCauseFunc) {
+func FuncCall(ctx context.Context) (context.Context, context.CancelFunc) {
 	fc := &funcCall{
 		token: resource.NewToken(),
 	}
@@ -60,7 +58,7 @@ func FuncCall(ctx context.Context) (context.Context, context.CancelCauseFunc) {
 		fc.region = trace.StartRegion(ctx, funcName)
 	}
 
-	stopCtx, stopCancel := ctxutil.WithDelay(context.Background())
+	stopCtx, stopCancel := context.WithCancel(context.Background())
 	go fc.run(stopCtx)
 
 	return ctx, stopCancel
