@@ -54,8 +54,7 @@ func GoError(err error) slog.Attr {
 
 // Named returns a logger with name segment added to existing name.
 func Named(l *slog.Logger, name string) *slog.Logger {
-	// TODO https://github.com/FerretDB/FerretDB/issues/4431
-	return l
+	return l.With(slog.String("name", name))
 }
 
 // setupSlog initializes slog logging with given options and UUID.
