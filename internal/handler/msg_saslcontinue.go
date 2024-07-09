@@ -65,7 +65,6 @@ func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	}
 
 	if err != nil {
-		// FIXME
 		if h.L.Level().Enabled(zap.DebugLevel) {
 			fields = append(fields, zap.Error(err))
 		}
