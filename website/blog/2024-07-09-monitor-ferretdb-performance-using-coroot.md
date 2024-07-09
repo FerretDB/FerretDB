@@ -86,12 +86,12 @@ Using Coroot, you can focus on any app by viewing the dashboards automatically g
 And unlike the Grafana board from earlier where we have to create the dashboards and do not get any application metrics,
 Coroot lets you see the entire system in detail, so there's nothing to miss.
 
-The Coroot dashboard provides the full details on all components including the number o client connections.
+The Coroot dashboard provides the full details on all components including the number of client connections.
 
 ![number of running client connections](/img/blog/ferretdb-coroot/client-connection.png)
 
 From the image above, you can see the client connections to the FerretDB instance.
-It shows a client instance `elastic_bardeen` and 2 prometheus instances scraping the exposed FerretDB metrics, and all requests then forwarded to `postgres`.
+It shows a client instance `elastic_bardeen` and 2 Prometheus instances scraping the exposed FerretDB metrics, and all requests then forwarded to `postgres`.
 You can also see the latency/error rate (4ms) and request per second(RPS) (0.1/s) of the client application to FerretDB.
 
 For instance, let's peer into the client application `elastic_bardeen`.
