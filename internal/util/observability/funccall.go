@@ -19,6 +19,9 @@ import (
 	"runtime"
 	"runtime/trace"
 
+	"go.opentelemetry.io/otel"
+	oteltrace "go.opentelemetry.io/otel/trace"
+
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
 
@@ -26,22 +29,27 @@ import (
 type funcCall struct {
 	token  *resource.Token
 	region *trace.Region
+	span   oteltrace.Span
 }
 
 // FuncCall adds observability to a function call.
 //
 // It should be called at the very beginning of the function,
 // and returned function should be called at exit.
+// The returned context is inherited from the input context and should be used instead of the input context,
+// it contains additional observability data.
 // The returned function must not be passed or stored.
 // The only valid way to use FuncCall is:
 //
 //	func foo(ctx context.Context) {
-//	    defer FuncCall(ctx)()
+//	    ctx, stop := FuncCall(ctx)
+//	    defer stop()
 //	    // ...
+//	}
 //
 // For the Go execution tracer, FuncCall creates a new region for the function call
 // and attaches it to the task in the context (or background task).
-func FuncCall(ctx context.Context) func() {
+func FuncCall(ctx context.Context, name string) (context.Context, func()) {
 	fc := &funcCall{
 		token: resource.NewToken(),
 	}
@@ -56,7 +64,9 @@ func FuncCall(ctx context.Context) func() {
 		fc.region = trace.StartRegion(ctx, funcName)
 	}
 
-	return fc.leave
+	ctx, fc.span = otel.Tracer("").Start(ctx, name)
+
+	return ctx, fc.leave
 }
 
 // leave is called on function exit.
@@ -64,6 +74,8 @@ func (fc *funcCall) leave() {
 	if fc.region != nil {
 		fc.region.End()
 	}
+
+	fc.span.End()
 
 	resource.Untrack(fc, fc.token)
 }
