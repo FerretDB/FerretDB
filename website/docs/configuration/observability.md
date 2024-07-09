@@ -7,7 +7,35 @@ description: Observability
 
 ## Logging
 
-The log level and format can be adjusted by [configuration flags](flags.md#miscellaneous).
+FerretDB provides the following structured log formats:
+
+<!-- https://github.com/FerretDB/FerretDB/issues/4438 -->
+
+- `console` is a human-readable format with optional colors;
+- `text` is machine-readable [logfmt](https://brandur.org/logfmt)-like format
+  (powered by [Go's `slog.TextHandler`](https://pkg.go.dev/log/slog#TextHandler));
+- `json` if machine-readable JSON format
+  (powered by [Go's `slog.JSONHandler`](https://pkg.go.dev/log/slog#JSONHandler)).
+
+There are four logging levels:
+
+<!-- https://github.com/FerretDB/FerretDB/issues/4439 -->
+
+- `error` is used for errors that can't be handled gracefully
+  and typically result in client connection being closed;
+- `warn` is used for errors that can be handled gracefully
+  and typically result in an error being returned to the client (without closing the connection);
+- `info` is used for various information messages;
+- `debug` should only be used for debugging.
+
+:::caution
+`debug`-level messages include complete query and response bodies, authentication credentials, and other sensitive information.
+Both the performance of FerretDB and the security of your environment will be affected when `debug` logging is enabled.
+:::
+
+The default level is `info`, except for [debug builds](https://pkg.go.dev/github.com/FerretDB/FerretDB/build/version#hdr-Debug_builds) that default to `debug`.
+
+The format and level can be adjusted by [configuration flags](flags.md#miscellaneous).
 
 :::note
 

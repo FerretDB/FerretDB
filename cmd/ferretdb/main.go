@@ -373,7 +373,7 @@ func run() {
 	}
 
 	if logger.Level().Enabled(zap.DebugLevel) {
-		logger.Info("Debug logging enabled. The performance will be affected.")
+		logger.Info("Debug logging enabled. The security and performance will be affected.")
 	}
 
 	checkFlags(logger)

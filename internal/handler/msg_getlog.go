@@ -107,7 +107,7 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		}
 
 		if h.L.Level().Enabled(zap.DebugLevel) {
-			startupWarnings = append(startupWarnings, "Debug logging enabled. The performance will be affected.")
+			startupWarnings = append(startupWarnings, "Debug logging enabled. The security and erformance will be affected.")
 		}
 
 		switch {
