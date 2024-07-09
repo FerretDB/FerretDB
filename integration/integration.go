@@ -104,6 +104,31 @@ func convert(t testtb.TB, v any) any {
 	}
 }
 
+// fixCluster removes document fields that are specific for MongoDB running in a cluster.
+func fixCluster(t testtb.TB, doc *types.Document) {
+	t.Helper()
+
+	doc.Remove("$clusterTime")
+	doc.Remove("electionId")
+	doc.Remove("operationTime")
+	doc.Remove("opTime")
+	doc.Remove("commitQuorum")
+}
+
+// fixExpected applies fixes to the expected/compat document.
+func fixExpected(t testtb.TB, expected *types.Document) {
+	t.Helper()
+
+	fixCluster(t, expected)
+}
+
+// fixActual applies fixes to the actual/target document.
+func fixActual(t testtb.TB, actual *types.Document) {
+	t.Helper()
+
+	fixCluster(t, actual)
+}
+
 // ConvertDocument converts given driver's document to FerretDB's *types.Document.
 func ConvertDocument(t testtb.TB, doc bson.D) *types.Document {
 	t.Helper()
@@ -135,6 +160,10 @@ func AssertEqualDocuments(t testtb.TB, expected, actual bson.D) bool {
 
 	expectedDoc := ConvertDocument(t, expected)
 	actualDoc := ConvertDocument(t, actual)
+
+	fixExpected(t, expectedDoc)
+	fixActual(t, actualDoc)
+
 	return testutil.AssertEqual(t, expectedDoc, actualDoc)
 }
 
@@ -147,6 +176,15 @@ func AssertEqualDocumentsSlice(t testtb.TB, expected, actual []bson.D) bool {
 
 	expectedDocs := ConvertDocuments(t, expected)
 	actualDocs := ConvertDocuments(t, actual)
+
+	for _, d := range expectedDocs {
+		fixExpected(t, d)
+	}
+
+	for _, d := range actualDocs {
+		fixActual(t, d)
+	}
+
 	return testutil.AssertEqualSlices(t, expectedDocs, actualDocs)
 }
 
