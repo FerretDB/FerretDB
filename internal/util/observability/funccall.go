@@ -18,59 +18,65 @@ import (
 	"context"
 	"runtime"
 	"runtime/trace"
+	"sync"
 
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
 
 // funcCall tracks function calls.
 type funcCall struct {
-	token  *resource.Token
-	region *trace.Region
+	cancelCtx context.CancelFunc
+	token     *resource.Token
+	region    *trace.Region
 }
 
-// FuncCall adds observability to a function call.
+// FuncCall adds observability to a function or method call.
+// It returns a new derived context and its cancel function.
 //
-// It should be called at the very beginning of the function,
-// and returned [context.CancelFunc] function should be called at exit.
-// The returned function must not be passed or stored.
+// FuncCall should be called at the very beginning of the observable function,
+// and the returned cancel function should be called at exit.
+// The returned context should be passed down.
+//
 // The only valid way to use FuncCall is:
 //
 //	func foo(ctx context.Context) {
 //		ctx, cancel := FuncCall(ctx)
 //		defer cancel()
+//
+//		bar(ctx)
 //		// ...
 //	}
 //
 // For the Go execution tracer, FuncCall creates a new region for the function call
 // and attaches it to the task in the context (or background task).
 func FuncCall(ctx context.Context) (context.Context, context.CancelFunc) {
+	ctx, cancelCtx := context.WithCancel(ctx)
+
 	fc := &funcCall{
-		token: resource.NewToken(),
+		cancelCtx: cancelCtx,
+		token:     resource.NewToken(),
 	}
 	resource.Track(fc, fc.token)
 
-	if trace.IsEnabled() {
-		pc := make([]uintptr, 1)
-		runtime.Callers(1, pc)
-		f, _ := runtime.CallersFrames(pc).Next()
-		funcName := f.Function
+	pc := make([]uintptr, 1)
+	runtime.Callers(1, pc)
+	f, _ := runtime.CallersFrames(pc).Next()
+	funcName := f.Function
 
+	if trace.IsEnabled() {
 		fc.region = trace.StartRegion(ctx, funcName)
 	}
 
-	stopCtx, stopCancel := context.WithCancel(context.Background())
-	go fc.run(stopCtx)
-
-	return ctx, stopCancel
+	return ctx, sync.OnceFunc(fc.cancel)
 }
 
-// run waits until ctx is canceled.
-func (fc *funcCall) run(ctx context.Context) {
-	<-ctx.Done()
-
+// cancel is called on function exit.
+func (fc *funcCall) cancel() {
 	if fc.region != nil {
 		fc.region.End()
 	}
 
 	resource.Untrack(fc, fc.token)
+
+	fc.cancelCtx()
 }
