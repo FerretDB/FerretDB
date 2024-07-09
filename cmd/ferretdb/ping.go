@@ -73,7 +73,7 @@ func (ready *ReadyZ) Probe(ctx context.Context) bool {
 
 	if cli.Listen.TLS != "" {
 		// TODO https://github.com/FerretDB/FerretDB/issues/4427
-		l.Warn("TLS ping is skipped, please check https://github.com/FerretDB/FerretDB/issues/4427 for more details.")
+		l.Warn("TLS ping is not implemented yet.")
 	}
 
 	if cli.Listen.Unix != "" {

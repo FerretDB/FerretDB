@@ -227,7 +227,9 @@ func main() {
 			l: logger,
 		}
 
-		ctx, _ := ctxutil.SigTerm(context.Background())
+		ctx, stop := ctxutil.SigTerm(context.Background())
+		defer stop()
+
 		if !ready.Probe(ctx) {
 			os.Exit(1)
 		}
