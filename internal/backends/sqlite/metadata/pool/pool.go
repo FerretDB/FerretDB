@@ -162,8 +162,7 @@ func (p *Pool) Close() {
 
 // List returns a sorted list of database names in the pool.
 func (p *Pool) List(ctx context.Context) []string {
-	var cancel context.CancelFunc
-	_, cancel = observability.FuncCall(ctx)
+	_, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
 	p.rw.RLock()

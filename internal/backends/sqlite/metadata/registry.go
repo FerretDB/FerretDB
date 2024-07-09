@@ -197,8 +197,7 @@ func (r *Registry) databaseGetOrCreate(ctx context.Context, dbName string) (*fsq
 //
 // Returned boolean value indicates whether the database was dropped.
 func (r *Registry) DatabaseDrop(ctx context.Context, dbName string) bool {
-	var cancel context.CancelFunc
-	ctx, cancel = observability.FuncCall(ctx)
+	ctx, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
 	r.rw.Lock()

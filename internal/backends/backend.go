@@ -94,8 +94,7 @@ type StatusResult struct {
 // connection can be established and authenticated.
 // For that reason, the implementation should not return only cached results.
 func (bc *backendContract) Status(ctx context.Context, params *StatusParams) (*StatusResult, error) {
-	var cancel context.CancelFunc
-	ctx, cancel = observability.FuncCall(ctx)
+	ctx, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
 	// to both check that conninfo is present (which is important for that method),
