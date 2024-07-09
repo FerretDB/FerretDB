@@ -16,8 +16,8 @@
 package main
 
 import (
-	"fmt"
 	"go/ast"
+	"go/token"
 
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/singlechecker"
@@ -109,140 +109,70 @@ func main() {
 func run(pass *analysis.Pass) (any, error) {
 	for _, file := range pass.Files {
 		ast.Inspect(file, func(n ast.Node) bool {
-			var idx int
-			var lastName string
 			switch n := n.(type) {
 			case *ast.TypeSwitchStmt:
-				var name string
-				for _, el := range n.Body.List {
-					if len(el.(*ast.CaseClause).List) < 1 {
-						continue
-					}
-
-					firstTypeCase := el.(*ast.CaseClause).List[0]
-					switch firstTypeCase := firstTypeCase.(type) {
-					case *ast.StarExpr:
-						if sexp, ok := firstTypeCase.X.(*ast.SelectorExpr); ok {
-							name = sexp.Sel.Name
-						}
-						if sexp, ok := firstTypeCase.X.(*ast.Ident); ok {
-							name = sexp.Name
-						}
-
-					case *ast.SelectorExpr:
-						name = firstTypeCase.Sel.Name
-
-					case *ast.Ident:
-						name = firstTypeCase.Name
-					}
-
-					idxSl, ok := orderTypes[name]
-					if ok && (idxSl < idx) {
-						pass.Reportf(n.Pos(), "%s should go before %s in the switch", name, lastName)
-					}
-					idx, lastName = idxSl, name
-
-					// handling with multiple types,
-					// e.g. 'case int32, int64'
-					if len(el.(*ast.CaseClause).List) > 1 {
-						subidx, sublastName := idx, lastName
-						for i := 0; i < len(el.(*ast.CaseClause).List); i++ {
-							cs := el.(*ast.CaseClause).List[i]
-							switch cs := cs.(type) {
-							case *ast.StarExpr:
-								if sexp, ok := cs.X.(*ast.SelectorExpr); ok {
-									name = sexp.Sel.Name
-								}
-								if sexp, ok := cs.X.(*ast.Ident); ok {
-									name = sexp.Name
-								}
-
-							case *ast.SelectorExpr:
-								name = fmt.Sprintf("%s.%s", cs.X, cs.Sel.Name)
-
-							case *ast.Ident:
-								name = cs.Name
-							}
-
-							subidxSl, ok := orderTypes[name]
-							if ok && (subidxSl < subidx) {
-								pass.Reportf(n.Pos(), "%s should go before %s in the switch", name, sublastName)
-							}
-							subidx, sublastName = subidxSl, name
-						}
-					}
-				}
-
+				checkOrder(orderTypes, n.Body.List, pass, n.Pos())
 			case *ast.SwitchStmt:
-				var name string
-
-				for _, el := range n.Body.List {
-					if len(el.(*ast.CaseClause).List) < 1 {
-						continue
-					}
-					firstTypeCase := el.(*ast.CaseClause).List[0]
-
-					switch firstTypeCase := firstTypeCase.(type) {
-					case *ast.StarExpr:
-						if sexp, ok := firstTypeCase.X.(*ast.SelectorExpr); ok {
-							name = sexp.Sel.Name
-						}
-
-						if sexp, ok := firstTypeCase.X.(*ast.Ident); ok {
-							name = sexp.Name
-						}
-					case *ast.SelectorExpr:
-						name = firstTypeCase.Sel.Name
-
-					case *ast.Ident:
-						name = firstTypeCase.Name
-					}
-
-					var idxSl int
-
-					if idxSlc, ok := orderTags[name]; ok && (idxSlc < idx) {
-						pass.Reportf(n.Pos(), "%s should go before %s in the switch", name, lastName)
-					} else {
-						idxSl = idxSlc
-					}
-					idx, lastName = idxSl, name
-
-					// handling with multiple types,
-					// e.g. 'case int32, int64'
-					if len(el.(*ast.CaseClause).List) > 1 {
-						subidx, sublastName := idx, lastName
-
-						for i := range len(el.(*ast.CaseClause).List) {
-							cs := el.(*ast.CaseClause).List[i]
-							switch cs := cs.(type) {
-							case *ast.StarExpr:
-								if sexp, ok := cs.X.(*ast.SelectorExpr); ok {
-									name = sexp.Sel.Name
-								}
-
-								if iexp, ok := cs.X.(*ast.Ident); ok {
-									name = iexp.Name
-								}
-
-							case *ast.SelectorExpr:
-								name = cs.Sel.Name
-
-							case *ast.Ident:
-								name = cs.Name
-							}
-							subidxSl, ok := orderTags[name]
-
-							if ok && (subidxSl < subidx) {
-								pass.Reportf(n.Pos(), "%s should go before %s in the switch", name, sublastName)
-							}
-							subidx, sublastName = subidxSl, name
-						}
-					}
-				}
+				checkOrder(orderTags, n.Body.List, pass, n.Pos())
 			}
+
 			return true
 		})
 	}
 
 	return nil, nil
+}
+
+// checkOrder checks the order of the case elements in switch statements according to the given `orders`.
+func checkOrder(orders map[string]int, list []ast.Stmt, pass *analysis.Pass, pos token.Pos) {
+	var order int
+	var name string
+
+	// outer loop checks the order of case clauses
+	// case "int32":
+	// case "int64":
+	for _, stmt := range list {
+		caseOrder, caseName := order, name
+
+		// inner loop checks the order within a case statement
+		// case "int32", "int64":
+		for i, caseElem := range stmt.(*ast.CaseClause).List {
+			var elemName string
+
+			switch expr := caseElem.(type) {
+			case *ast.StarExpr:
+				switch starExpr := expr.X.(type) {
+				case *ast.SelectorExpr:
+					elemName = starExpr.Sel.Name
+				case *ast.Ident:
+					elemName = starExpr.Name
+				default:
+					// not `types` or `tags`
+				}
+
+			case *ast.SelectorExpr:
+				elemName = expr.Sel.Name
+
+			case *ast.Ident:
+				elemName = expr.Name
+
+			default:
+				// not `types` or `tags`
+			}
+
+			elemOrder, ok := orders[elemName]
+			if ok && (elemOrder < caseOrder) {
+				pass.Reportf(pos, "%s should go before %s in the switch", elemName, caseName)
+			}
+
+			caseOrder, caseName = elemOrder, elemName
+
+			if i == 0 {
+				// i.e. "int64" is larger than "int32" but below is allowed
+				// case "float64", "int64":
+				// case "int32":
+				order, name = elemOrder, elemName
+			}
+		}
+	}
 }
