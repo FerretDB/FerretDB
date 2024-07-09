@@ -26,7 +26,7 @@ import (
 
 func TestCircularBuffer(t *testing.T) {
 	for name, tc := range map[string]struct {
-		size     int64
+		size     int
 		msgPanic string
 	}{
 		"PanicNegativSize": {
@@ -38,71 +38,60 @@ func TestCircularBuffer(t *testing.T) {
 			msgPanic: "buffer size must be at least 1, but 0 provided",
 		},
 	} {
-		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			assert.PanicsWithValue(t, tc.msgPanic, func() { NewCircularBuffer(tc.size) })
 		})
 	}
 
-	logram := NewCircularBuffer(2)
+	cb := NewCircularBuffer(2)
 	for n, tc := range []struct {
 		inLog    zapcore.Entry
 		expected []zapcore.Entry
 	}{{
 		inLog: zapcore.Entry{
-			Level:      1,
-			Time:       time.Date(2022, 12, 31, 11, 59, 1, 0, time.UTC),
-			LoggerName: "logger_1",
-			Message:    "message 1",
+			Level:   1,
+			Time:    time.Date(2022, 12, 31, 11, 59, 1, 0, time.UTC),
+			Message: "message 1",
 		},
 		expected: []zapcore.Entry{{
-			Level:      1,
-			Time:       time.Date(2022, 12, 31, 11, 59, 1, 0, time.UTC),
-			LoggerName: "logger_1",
-			Message:    "message 1",
+			Level:   1,
+			Time:    time.Date(2022, 12, 31, 11, 59, 1, 0, time.UTC),
+			Message: "message 1",
 		}},
 	}, {
 		inLog: zapcore.Entry{
-			Level:      2,
-			Time:       time.Date(2022, 12, 31, 11, 59, 2, 0, time.UTC),
-			LoggerName: "logger_2",
-			Message:    "message 2",
+			Level:   2,
+			Time:    time.Date(2022, 12, 31, 11, 59, 2, 0, time.UTC),
+			Message: "message 2",
 		},
 		expected: []zapcore.Entry{{
-			Level:      1,
-			Time:       time.Date(2022, 12, 31, 11, 59, 1, 0, time.UTC),
-			LoggerName: "logger_1",
-			Message:    "message 1",
+			Level:   1,
+			Time:    time.Date(2022, 12, 31, 11, 59, 1, 0, time.UTC),
+			Message: "message 1",
 		}, {
-			Level:      2,
-			Time:       time.Date(2022, 12, 31, 11, 59, 2, 0, time.UTC),
-			LoggerName: "logger_2",
-			Message:    "message 2",
+			Level:   2,
+			Time:    time.Date(2022, 12, 31, 11, 59, 2, 0, time.UTC),
+			Message: "message 2",
 		}},
 	}, {
 		inLog: zapcore.Entry{
-			Level:      3,
-			Time:       time.Date(2022, 12, 31, 11, 59, 3, 0, time.UTC),
-			LoggerName: "logger_3",
-			Message:    "message 3",
+			Level:   3,
+			Time:    time.Date(2022, 12, 31, 11, 59, 3, 0, time.UTC),
+			Message: "message 3",
 		},
 		expected: []zapcore.Entry{{
-			Level:      2,
-			Time:       time.Date(2022, 12, 31, 11, 59, 2, 0, time.UTC),
-			LoggerName: "logger_2",
-			Message:    "message 2",
+			Level:   2,
+			Time:    time.Date(2022, 12, 31, 11, 59, 2, 0, time.UTC),
+			Message: "message 2",
 		}, {
-			Level:      3,
-			Time:       time.Date(2022, 12, 31, 11, 59, 3, 0, time.UTC),
-			LoggerName: "logger_3",
-			Message:    "message 3",
+			Level:   3,
+			Time:    time.Date(2022, 12, 31, 11, 59, 3, 0, time.UTC),
+			Message: "message 3",
 		}},
 	}} {
-		name := fmt.Sprintf("AppendGet_%d", n)
-		tc := tc
-		t.Run(name, func(t *testing.T) {
-			logram.append(&tc.inLog)
-			actual := logram.get(zap.DebugLevel)
+		t.Run(fmt.Sprintf("AppendGet_%d", n), func(t *testing.T) {
+			cb.append(&tc.inLog)
+			actual := cb.get(zap.DebugLevel)
 			for i, exp := range tc.expected {
 				assert.Equal(t, exp, *actual[i])
 			}
@@ -128,9 +117,7 @@ func TestCircularBuffer(t *testing.T) {
 		addMsg:   "Test message 4",
 		expected: []string{"Test message 1", "Test message 2", "Test message 3", "Test message 4"},
 	}} {
-		name := fmt.Sprintf("ZapHooks_%d", n)
-		tc := tc
-		t.Run(name, func(t *testing.T) {
+		t.Run(fmt.Sprintf("Intercept_%d", n), func(t *testing.T) {
 			logger.Info(tc.addMsg)
 			actual := RecentEntries.get(zap.DebugLevel)
 			for i, exp := range tc.expected {
