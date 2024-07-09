@@ -286,6 +286,7 @@ func (h *Handler) saslStartSCRAM(ctx context.Context, dbName, mechanism string, 
 	}
 
 	if err != nil {
+		// FIXME
 		if h.L.Level().Enabled(zap.DebugLevel) {
 			fields = append(fields, zap.Error(err))
 		}

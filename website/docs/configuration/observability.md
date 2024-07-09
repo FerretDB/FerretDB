@@ -9,7 +9,12 @@ description: Observability
 
 The log level and format can be adjusted by [configuration flags](flags.md#miscellaneous).
 
-Please note that the structured log format is not stable yet; field names and formatting of values might change in minor releases.
+:::note
+
+<!-- https://github.com/FerretDB/FerretDB/issues/3421 -->
+
+Structured log format is not stable yet; field names and formatting of values might change in minor releases.
+:::
 
 ### Docker logs
 

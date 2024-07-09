@@ -106,6 +106,10 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			startupWarnings = append(startupWarnings, "This is debug build. The performance will be affected.")
 		}
 
+		if h.L.Level().Enabled(zap.DebugLevel) {
+			startupWarnings = append(startupWarnings, "Debug logging enabled. The performance will be affected.")
+		}
+
 		switch {
 		case state.Telemetry == nil:
 			startupWarnings = append(

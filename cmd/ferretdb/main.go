@@ -369,7 +369,11 @@ func run() {
 	logger.Info("Starting FerretDB "+info.Version+"...", startupFields...)
 
 	if debugbuild.Enabled {
-		logger.Info("This is debug build. The performance will be affected.")
+		logger.Info("This is a debug build. The performance will be affected.")
+	}
+
+	if logger.Level().Enabled(zap.DebugLevel) {
+		logger.Info("Debug logging enabled. The performance will be affected.")
 	}
 
 	checkFlags(logger)

@@ -68,7 +68,7 @@ func (cb *circularBuffer) get(minLevel zapcore.Level) []*zapcore.Entry {
 	for n := range l {
 		i := (cb.index + n) % l
 
-		if r := cb.records[i]; r != nil && r.Level >= minLevel {
+		if r := cb.records[i]; r != nil && minLevel.Enabled(r.Level) {
 			res = append(res, cb.records[i])
 		}
 	}
