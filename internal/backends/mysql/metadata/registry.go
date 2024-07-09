@@ -124,7 +124,7 @@ func (r *Registry) getPool(ctx context.Context) (*fsql.DB, error) {
 			return nil, lazyerrors.New("no connection pool")
 		}
 	} else {
-		username, password, _ := connInfo.Auth()
+		username, password, _, _ := connInfo.Auth()
 
 		var err error
 		if p, err = r.p.Get(username, password); err != nil {
