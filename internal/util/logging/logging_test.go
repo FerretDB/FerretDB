@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNamed(t *testing.T) {
+func TestFullNamed(t *testing.T) {
 	var buf bytes.Buffer
 
 	l := slog.New(NewHandler(&buf, &NewHandlerOpts{
@@ -32,29 +32,8 @@ func TestNamed(t *testing.T) {
 		RemoveSource: true,
 	}))
 
-	for name, tc := range map[string]struct {
-		name string
-		msg  string
+	testLogger := FullNamed(l, "test-logger")
+	testLogger.Info("test")
 
-		expected string
-	}{
-		"Empty": {
-			name:     "",
-			msg:      "test",
-			expected: `test	{"name":""}`,
-		},
-		"Named": {
-			name:     "test-logger",
-			msg:      "test",
-			expected: `test	{"name":"test-logger"}`,
-		},
-	} {
-		t.Run(name, func(t *testing.T) {
-			testLogger := Named(l, tc.name)
-			testLogger.Info(tc.msg)
-
-			assert.Equal(t, tc.expected+"\n", buf.String())
-			buf.Reset()
-		})
-	}
+	assert.Equal(t, `test	{"name":"test-logger"}`+"\n", buf.String())
 }

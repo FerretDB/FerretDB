@@ -52,8 +52,8 @@ func GoError(err error) slog.Attr {
 	return slog.String("error", fmt.Sprintf("%#v", err))
 }
 
-// Named returns a logger with name segment added to existing name.
-func Named(l *slog.Logger, name string) *slog.Logger {
+// FullNamed returns a logger with name attribute set.
+func FullNamed(l *slog.Logger, name string) *slog.Logger {
 	return l.With(slog.String("name", name))
 }
 
