@@ -150,9 +150,9 @@ linters:
     - wastedassign
     - wrapcheck
     - zerologlint
+
     - nlreturn # too annoying
     - testpackage # we test internals
-    - mnd # the numbers represent the order
 
 issues:
   max-issues-per-linter: 0
@@ -162,5 +162,3 @@ issues:
   # whole-files: true
 
   exclude-use-default: false
-        
- 

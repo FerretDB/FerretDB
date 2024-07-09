@@ -68,6 +68,7 @@ var orderTypes = map[string]int{
 }
 
 // orderTags is the preferred order of Tags in the switch.
+// //nolint: mnd // the numbers represent the order.
 var orderTags = map[string]int{
 	"tagFloat64":         1,
 	"tagString":          2,
