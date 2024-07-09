@@ -28,6 +28,11 @@ linters-settings:
             desc: use `github.com/jackc/pgx/v5` package instead
           - pkg: github.com/jackc/pgx/v4
             desc: use `github.com/jackc/pgx/v5` package instead
+      types:
+        files:
+          - "**/internal/util/logging/*.go"
+        deny:
+          - pkg: github.com/FerretDB/FerretDB/internal/types
       bson:
         files:
           - $all
@@ -35,6 +40,7 @@ linters-settings:
           - "!**/internal/bson/*_test.go"
           - "!**/internal/driver/*.go"
           - "!**/internal/handler/users/*.go"
+          - "!**/internal/util/logging/*.go"
           - "!**/internal/util/password/*.go"
           - "!**/internal/util/testutil/*.go"
           - "!**/internal/wire/*.go"

@@ -16,6 +16,7 @@ package users
 
 import (
 	"context"
+	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -26,8 +27,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/x/mongo/driver/topology"
 
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testfail"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 
@@ -262,19 +261,19 @@ func TestAuthenticationOnAuthenticatedConnection(t *testing.T) {
 	err = db.RunCommand(ctx, bson.D{{"connectionStatus", 1}}).Decode(&res)
 	require.NoError(t, err)
 
-	actualAuth, err := integration.ConvertDocument(t, res).Get("authInfo")
-	require.NoError(t, err)
-
-	actualUsersV, err := actualAuth.(*types.Document).Get("authenticatedUsers")
-	require.NoError(t, err)
-
-	actualUsers := actualUsersV.(*types.Array)
-	require.Equal(t, 1, actualUsers.Len())
-
-	actualUser := must.NotFail(actualUsers.Get(0)).(*types.Document)
-	user, err := actualUser.Get("user")
-	require.NoError(t, err)
-	require.Equal(t, username, user)
+	expected := bson.D{
+		{"authInfo", bson.D{
+			{"authenticatedUsers", bson.A{
+				bson.D{
+					{"user", username},
+					{"db", db.Name()},
+				},
+			}},
+			{"authenticatedUserRoles", bson.A{}},
+		}},
+		{"ok", float64(1)},
+	}
+	integration.AssertEqualDocuments(t, expected, res)
 
 	saslStart := bson.D{
 		{"saslStart", 1},
@@ -288,23 +287,179 @@ func TestAuthenticationOnAuthenticatedConnection(t *testing.T) {
 
 	err = db.RunCommand(ctx, bson.D{{"connectionStatus", 1}}).Decode(&res)
 	require.NoError(t, err)
-
-	actualAuth, err = integration.ConvertDocument(t, res).Get("authInfo")
-	require.NoError(t, err)
-
-	actualUsersV, err = actualAuth.(*types.Document).Get("authenticatedUsers")
-	require.NoError(t, err)
-
-	actualUsers = actualUsersV.(*types.Array)
-	require.Equal(t, 1, actualUsers.Len())
-
-	actualUser = must.NotFail(actualUsers.Get(0)).(*types.Document)
-	user, err = actualUser.Get("user")
-	require.NoError(t, err)
-	require.Equal(t, username, user)
+	integration.AssertEqualDocuments(t, expected, res)
 
 	err = db.RunCommand(ctx, saslStart).Decode(&res)
 	require.NoError(t, err)
+}
+
+func TestAuthenticationAuthSource(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupWithOpts(t, nil)
+	ctx, db := s.Ctx, s.Collection.Database()
+
+	for name, tc := range map[string]struct {
+		baseURI          string // host and port are replaced and additional query values from MongoDBURI added
+		authenticationDB string
+	}{
+		"Admin": {
+			baseURI:          "mongodb://adminuser:adminpass@127.0.0.1/",
+			authenticationDB: "admin",
+		},
+		"DefaultAuthDB": {
+			baseURI:          "mongodb://user1:pass1@127.0.0.1/TestAuthenticationAuthSource",
+			authenticationDB: t.Name(),
+		},
+		"AuthSource": {
+			baseURI:          "mongodb://user2:pass2@127.0.0.1/?authSource=TestAuthenticationAuthSource",
+			authenticationDB: t.Name(),
+		},
+		"AuthSourceWithDB": {
+			baseURI:          "mongodb://user3:pass3@127.0.0.1/XXX?authSource=TestAuthenticationAuthSource",
+			authenticationDB: t.Name(),
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			roles := bson.A{"readWrite"}
+			if !setup.IsMongoDB(t) {
+				// TODO https://github.com/FerretDB/FerretDB/issues/3974
+				roles = bson.A{}
+			}
+
+			testURI, err := url.Parse(tc.baseURI)
+			require.NoError(t, err)
+
+			username := testURI.User.Username()
+			password, _ := testURI.User.Password()
+
+			err = db.Client().Database(tc.authenticationDB).RunCommand(ctx, bson.D{
+				{"createUser", username},
+				{"roles", roles},
+				{"pwd", password},
+			}).Err()
+			require.NoError(t, err)
+
+			t.Cleanup(func() {
+				err = db.Client().Database(tc.authenticationDB).RunCommand(ctx, bson.D{{"dropUser", username}}).Err()
+				require.NoError(t, err)
+			})
+
+			u, err := url.Parse(s.MongoDBURI)
+			require.NoError(t, err)
+
+			u.User = testURI.User
+			u.Path = testURI.Path
+
+			// tls related query values are necessary
+			q := u.Query()
+			for k, v := range testURI.Query() {
+				q.Set(k, v[0])
+			}
+
+			u.RawQuery = q.Encode()
+
+			opts := options.Client().ApplyURI(u.String())
+
+			t.Log("Connecting", u.String())
+
+			client, err := mongo.Connect(ctx, opts)
+			require.NoError(t, err)
+
+			t.Cleanup(func() {
+				require.NoError(t, client.Disconnect(ctx))
+			})
+
+			_, err = client.Database(tc.authenticationDB).Collection("test").Find(ctx, bson.D{})
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestAuthenticationDifferentDatabase(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupWithOpts(t, nil)
+	ctx, db := s.Ctx, s.Collection.Database()
+	user, db1, pass1, db2, pass2 := "user", t.Name()+"db1", "pass1", t.Name()+"db2", "pass2"
+
+	for dbName, pass := range map[string]string{
+		db1: pass1,
+		db2: pass2,
+	} {
+		roles := bson.A{"readWrite"}
+		if !setup.IsMongoDB(t) {
+			// TODO https://github.com/FerretDB/FerretDB/issues/3974
+			roles = bson.A{}
+		}
+
+		err := db.Client().Database(dbName).RunCommand(ctx, bson.D{
+			{"createUser", user},
+			{"roles", roles},
+			{"pwd", pass},
+		}).Err()
+		require.NoError(t, err)
+
+		t.Cleanup(func() {
+			err = db.Client().Database(dbName).RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", int32(1)}}).Err()
+			require.NoError(t, err)
+		})
+	}
+
+	for name, tc := range map[string]struct {
+		username   string
+		password   string
+		authSource string
+
+		errMsg string
+	}{
+		"CorrectDatabase": {
+			// user:password1 successfully authenticate in db1
+			username:   user,
+			password:   pass1,
+			authSource: db1,
+		},
+		"WrongDatabase": {
+			// user:password2 failed to authenticate in db1
+			username:   user,
+			password:   pass2,
+			authSource: db1,
+			errMsg:     "Authentication failed.",
+		},
+		"NonExistingDatabase": {
+			username:   user,
+			password:   pass1,
+			authSource: "non-existing-db",
+			errMsg:     "Authentication failed.",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			credential := options.Credential{
+				AuthSource: tc.authSource,
+				Username:   tc.username,
+				Password:   tc.password,
+			}
+
+			client, err := mongo.Connect(ctx, options.Client().ApplyURI(s.MongoDBURI).SetAuth(credential))
+			require.NoError(t, err)
+
+			t.Cleanup(func() {
+				require.NoError(t, client.Disconnect(ctx))
+			})
+
+			_, err = client.Database(tc.authSource).Collection("test").Find(ctx, bson.D{})
+			if tc.errMsg != "" {
+				require.ErrorContains(t, err, tc.errMsg)
+				return
+			}
+
+			require.NoError(t, err)
+		})
+	}
 }
 
 func TestAuthenticationPLAIN(t *testing.T) {
