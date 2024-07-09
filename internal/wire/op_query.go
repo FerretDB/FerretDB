@@ -49,7 +49,7 @@ func NewOpQuery(doc bson.AnyDocument) (*OpQuery, error) {
 
 func (query *OpQuery) msgbody() {}
 
-// check implements [MsgBody] interface.
+// check implements [MsgBody].
 func (query *OpQuery) check() error {
 	if d := query.query; d != nil {
 		if _, err := d.DecodeDeep(); err != nil {
@@ -66,7 +66,7 @@ func (query *OpQuery) check() error {
 	return nil
 }
 
-// UnmarshalBinaryNocopy implements [MsgBody] interface.
+// UnmarshalBinaryNocopy implements [MsgBody].
 func (query *OpQuery) UnmarshalBinaryNocopy(b []byte) error {
 	if len(b) < 4 {
 		return lazyerrors.Errorf("len=%d", len(b))
@@ -117,7 +117,7 @@ func (query *OpQuery) UnmarshalBinaryNocopy(b []byte) error {
 	return nil
 }
 
-// MarshalBinary implements [MsgBody] interface.
+// MarshalBinary implements [MsgBody].
 func (query *OpQuery) MarshalBinary() ([]byte, error) {
 	if debugbuild.Enabled {
 		if err := query.check(); err != nil {

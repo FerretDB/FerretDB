@@ -91,6 +91,9 @@ type SetupOpts struct {
 
 	// Options to override default backend configuration.
 	BackendOptions *BackendOpts
+
+	// DisableOtel disable OpenTelemetry monitoring for MongoDB client.
+	DisableOtel bool
 }
 
 // BackendOpts represents backend configuration used for test setup.
@@ -174,7 +177,7 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 		tb.Logf("URI with extra options: %s", uri)
 	}
 
-	client := setupClient(tb, setupCtx, uri)
+	client := setupClient(tb, setupCtx, uri, opts.DisableOtel)
 
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
@@ -331,7 +334,7 @@ func insertBenchmarkProvider(tb testtb.TB, ctx context.Context, collection *mong
 
 // cleanupUser removes users for the given database if new authentication is enabled and drops that database.
 func cleanupDatabase(ctx context.Context, tb testtb.TB, database *mongo.Database, opts *BackendOpts) {
-	if opts != nil && !opts.DisableNewAuth {
+	if opts == nil || !opts.DisableNewAuth {
 		err := database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}}).Err()
 		require.NoError(tb, err)
 	}

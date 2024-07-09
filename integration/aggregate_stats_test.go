@@ -187,13 +187,10 @@ func TestAggregateCollStatsCommandErrors(t *testing.T) {
 			},
 		},
 	} {
-		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
 				t.Skip(tc.skip)
 			}
-
-			t.Parallel()
 
 			require.NotNil(t, tc.err, "err must not be nil")
 

@@ -196,7 +196,7 @@ func (msg *OpMsg) RawDocument() (bson.RawDocument, error) {
 
 func (msg *OpMsg) msgbody() {}
 
-// check implements [MsgBody] interface.
+// check implements [MsgBody].
 func (msg *OpMsg) check() error {
 	for _, s := range msg.sections {
 		for _, d := range s.documents {
@@ -209,7 +209,7 @@ func (msg *OpMsg) check() error {
 	return nil
 }
 
-// UnmarshalBinaryNocopy implements [MsgBody] interface.
+// UnmarshalBinaryNocopy implements [MsgBody].
 func (msg *OpMsg) UnmarshalBinaryNocopy(b []byte) error {
 	if len(b) < 6 {
 		return lazyerrors.Errorf("len=%d", len(b))

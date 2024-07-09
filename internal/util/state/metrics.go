@@ -44,12 +44,12 @@ func newMetricsCollector(p *Provider, addUUIDToMetric bool) *metricsCollector {
 	}
 }
 
-// Describe implements prometheus.Collector.
+// Describe implements [prometheus.Collector].
 func (mc *metricsCollector) Describe(ch chan<- *prometheus.Desc) {
 	prometheus.DescribeByCollect(mc, ch)
 }
 
-// Collect implements prometheus.Collector.
+// Collect implements [prometheus.Collector].
 func (mc *metricsCollector) Collect(ch chan<- prometheus.Metric) {
 	info := version.Get()
 	constLabels := prometheus.Labels{

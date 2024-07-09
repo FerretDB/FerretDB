@@ -44,6 +44,15 @@ import (
 const (
 	namespace = "ferretdb"
 	subsystem = "handler"
+
+	// Maximum size of a batch for inserting data.
+	maxWriteBatchSize = int32(100000)
+
+	// Required by C# driver for `IsMaster` and `hello` op reply, without it `DPANIC` is thrown.
+	connectionID = int32(42)
+
+	// Default session timeout in minutes.
+	logicalSessionTimeoutMinutes = int32(30)
 )
 
 // Handler provides a set of methods to process clients' requests sent over wire protocol.
@@ -58,7 +67,7 @@ type Handler struct {
 	b backends.Backend
 
 	cursors  *cursor.Registry
-	commands map[string]command
+	commands map[string]*command
 	wg       sync.WaitGroup
 
 	cappedCleanupStop             chan struct{}
@@ -253,7 +262,7 @@ func (h *Handler) Close() {
 	h.wg.Wait()
 }
 
-// Describe implements prometheus.Collector interface.
+// Describe implements [prometheus.Collector].
 func (h *Handler) Describe(ch chan<- *prometheus.Desc) {
 	h.b.Describe(ch)
 	h.cursors.Describe(ch)
@@ -261,7 +270,7 @@ func (h *Handler) Describe(ch chan<- *prometheus.Desc) {
 	h.cleanupCappedCollectionsBytes.Describe(ch)
 }
 
-// Collect implements prometheus.Collector interface.
+// Collect implements [prometheus.Collector].
 func (h *Handler) Collect(ch chan<- prometheus.Metric) {
 	h.b.Collect(ch)
 	h.cursors.Collect(ch)

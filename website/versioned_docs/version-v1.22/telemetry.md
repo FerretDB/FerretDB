@@ -5,7 +5,7 @@ slug: /telemetry/ # referenced in many places; must not change
 
 # Telemetry reporting
 
-FerretDB collects basic anonymous usage data and sends them to our telemetry service ([FerretDB Beacon](https://beacon.ferretdb.io)),
+FerretDB collects basic anonymous usage data and sends them to our telemetry service ([FerretDB Beacon](https://beacon.ferretdb.com)),
 which helps us understand its usage, and how we can further increase compatibility and enhance our product.
 It also enables us to provide you information about available updates.
 
