@@ -49,7 +49,7 @@ func NewCircularBuffer(size int) *circularBuffer {
 }
 
 // append adds an entry in circularBuffer.
-func (cb *circularBuffer) append(record *zapcore.Entry) { // cb
+func (cb *circularBuffer) append(record *zapcore.Entry) {
 	cb.mu.Lock()
 	defer cb.mu.Unlock()
 
