@@ -132,51 +132,43 @@ func checkOrder(orders map[string]int, list []ast.Stmt, pass *analysis.Pass, pos
 	// case "int32":
 	// case "int64":
 	for _, stmt := range list {
-		elemOrder, elemName := order, name
-
 		// inner loop checks the order within a case statement
 		// case "int32", "int64":
 		for i, caseElem := range stmt.(*ast.CaseClause).List {
-			elemOrder, elemName = checkElemOrder(caseElem, elemOrder, elemName, orders, pass, pos)
+			var elemName string
+
+			switch expr := caseElem.(type) {
+			case *ast.StarExpr:
+				switch starExpr := expr.X.(type) {
+				case *ast.SelectorExpr:
+					elemName = starExpr.Sel.Name
+				case *ast.Ident:
+					elemName = starExpr.Name
+				default:
+					// not `types` or `tags`
+				}
+
+			case *ast.SelectorExpr:
+				elemName = expr.Sel.Name
+
+			case *ast.Ident:
+				elemName = expr.Name
+
+			default:
+				// not `types` or `tags`
+			}
+
+			elemOrder, ok := orders[elemName]
+			if ok && (elemOrder < order) {
+				pass.Reportf(pos, "%s should go before %s in the switch", elemName, name)
+			}
 
 			if i == 0 {
+				// i.e. "int64" is larger than "int32" but below is allowed
+				// case "float64", "int64":
+				// case "int32":
 				order, name = elemOrder, elemName
 			}
 		}
 	}
-}
-
-// checkElemOrder reports diagnostic if the case element comes before the given `order` according to `orders`.
-// It ignores if the element name isn't found in `orders`, that means the switch statement is not about `types` or `tags`.
-// It returns the given case element's name and the order.
-func checkElemOrder(caseElem ast.Expr, order int, lastName string, orders map[string]int, pass *analysis.Pass, pos token.Pos) (int, string) { //nolint:lll // for readability
-	var name string
-
-	switch expr := caseElem.(type) {
-	case *ast.StarExpr:
-		switch starExpr := expr.X.(type) {
-		case *ast.SelectorExpr:
-			name = starExpr.Sel.Name
-		case *ast.Ident:
-			name = starExpr.Name
-		default:
-			// not `types` or `tags`
-		}
-
-	case *ast.SelectorExpr:
-		name = expr.Sel.Name
-
-	case *ast.Ident:
-		name = expr.Name
-
-	default:
-		// not `types` or `tags`
-	}
-
-	idx, ok := orders[name]
-	if ok && (idx < order) {
-		pass.Reportf(pos, "%s should go before %s in the switch", name, lastName)
-	}
-
-	return idx, name
 }
