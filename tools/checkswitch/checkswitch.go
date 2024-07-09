@@ -67,6 +67,32 @@ var orderTypes = map[string]int{
 	"CString": 14,
 }
 
+// orderTags is the preferred order of Tags in the switch.
+// //nolint: mnd // the numbers represent the order.
+var orderTags = map[string]int{
+	"tagFloat64":         1,
+	"tagString":          2,
+	"tagDocument":        3,
+	"tagArray":           4,
+	"tagBinary":          5,
+	"tagUndefined":       6,
+	"tagObjectID":        7,
+	"tagBool":            8,
+	"tagTime":            9,
+	"tagNull":            10,
+	"tagRegex":           11,
+	"tagDBPointer":       12,
+	"tagJavaScript":      13,
+	"tagSymbol":          14,
+	"tagJavaScriptScope": 15,
+	"tagInt32":           16,
+	"tagTimestamp":       17,
+	"tagInt64":           18,
+	"tagDecimal128":      19,
+	"tagMinKey":          20,
+	"tagMaxKey":          21,
+}
+
 var analyzer = &analysis.Analyzer{
 	Name: "checkswitch",
 	Doc:  "check the preferred order of types in the switch",
@@ -79,7 +105,7 @@ func main() {
 
 // run is the function to be called by the driver to execute analysis on a single package.
 //
-// It analyzes the presence of types in 'case' in ascending order of indexes 'orderTypes'.
+// It analyzes the presence of types in 'case' in ascending order of indexes 'orderTypes' and 'orderTags'.
 func run(pass *analysis.Pass) (any, error) {
 	for _, file := range pass.Files {
 		ast.Inspect(file, func(n ast.Node) bool {
@@ -146,8 +172,74 @@ func run(pass *analysis.Pass) (any, error) {
 						}
 					}
 				}
-			}
 
+			case *ast.SwitchStmt:
+				var name string
+
+				for _, el := range n.Body.List {
+					if len(el.(*ast.CaseClause).List) < 1 {
+						continue
+					}
+					firstTypeCase := el.(*ast.CaseClause).List[0]
+
+					switch firstTypeCase := firstTypeCase.(type) {
+					case *ast.StarExpr:
+						if sexp, ok := firstTypeCase.X.(*ast.SelectorExpr); ok {
+							name = sexp.Sel.Name
+						}
+
+						if sexp, ok := firstTypeCase.X.(*ast.Ident); ok {
+							name = sexp.Name
+						}
+					case *ast.SelectorExpr:
+						name = firstTypeCase.Sel.Name
+
+					case *ast.Ident:
+						name = firstTypeCase.Name
+					}
+
+					var idxSl int
+
+					if idxSlc, ok := orderTags[name]; ok && (idxSlc < idx) {
+						pass.Reportf(n.Pos(), "%s should go before %s in the switch", name, lastName)
+					} else {
+						idxSl = idxSlc
+					}
+					idx, lastName = idxSl, name
+
+					// handling with multiple types,
+					// e.g. 'case int32, int64'
+					if len(el.(*ast.CaseClause).List) > 1 {
+						subidx, sublastName := idx, lastName
+
+						for i := range len(el.(*ast.CaseClause).List) {
+							cs := el.(*ast.CaseClause).List[i]
+							switch cs := cs.(type) {
+							case *ast.StarExpr:
+								if sexp, ok := cs.X.(*ast.SelectorExpr); ok {
+									name = sexp.Sel.Name
+								}
+
+								if iexp, ok := cs.X.(*ast.Ident); ok {
+									name = iexp.Name
+								}
+
+							case *ast.SelectorExpr:
+								name = cs.Sel.Name
+
+							case *ast.Ident:
+								name = cs.Name
+							}
+							subidxSl, ok := orderTags[name]
+
+							if ok && (subidxSl < subidx) {
+								pass.Reportf(n.Pos(), "%s should go before %s in the switch", name, sublastName)
+							}
+							subidx, sublastName = subidxSl, name
+						}
+					}
+				}
+			}
 			return true
 		})
 	}
