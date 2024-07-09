@@ -24,18 +24,18 @@ import (
 	"go.uber.org/zap"
 )
 
-// Ping represents mongo driver client, which can be used to run `ping`
+// ReadyZ represents the Readiness probe, which is used to run `ping`
 // command against the FerretDB instance specified by cli flags.
-type Ping struct {
+type ReadyZ struct {
 	l *zap.Logger
 }
 
 // Probe executes ping queries to open listeners, and returns true if they succeed.
-// Any errors that occure are passed through Ping.l listener.
+// Any errors that occure are passed through ReadyZ.l listener.
 //
 // It is only executed if --setup-database flag is set.
-func (ping *Ping) Probe(ctx context.Context) bool {
-	logger := ping.l
+func (ready *ReadyZ) Probe(ctx context.Context) bool {
+	logger := ready.l
 
 	l := logger.Sugar()
 
