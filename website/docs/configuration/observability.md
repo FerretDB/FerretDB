@@ -29,7 +29,8 @@ There are four logging levels:
 - `debug` should only be used for debugging.
 
 :::caution
-`debug`-level messages include complete query and response bodies, authentication credentials, and other sensitive information.
+`debug`-level messages include complete query and response bodies, full error messages, authentication credentials,
+and other sensitive information.
 Both the performance of FerretDB and the security of your environment will be affected when `debug` logging is enabled.
 :::
 
