@@ -128,10 +128,12 @@ func checkOrder(orders map[string]int, list []ast.Stmt, pass *analysis.Pass, pos
 	var order int
 	var name string
 
-	// outer loop checks the order of case statements
+	// outer loop checks the order of case clauses
 	// case "int32":
 	// case "int64":
 	for _, stmt := range list {
+		caseOrder, caseName := order, name
+
 		// inner loop checks the order within a case statement
 		// case "int32", "int64":
 		for i, caseElem := range stmt.(*ast.CaseClause).List {
@@ -159,9 +161,11 @@ func checkOrder(orders map[string]int, list []ast.Stmt, pass *analysis.Pass, pos
 			}
 
 			elemOrder, ok := orders[elemName]
-			if ok && (elemOrder < order) {
-				pass.Reportf(pos, "%s should go before %s in the switch", elemName, name)
+			if ok && (elemOrder < caseOrder) {
+				pass.Reportf(pos, "%s should go before %s in the switch", elemName, caseName)
 			}
+
+			caseOrder, caseName = elemOrder, elemName
 
 			if i == 0 {
 				// i.e. "int64" is larger than "int32" but below is allowed
