@@ -147,8 +147,8 @@ func checkOrder(orders map[string]int, list []ast.Stmt, pass *analysis.Pass, pos
 }
 
 // checkElemOrder reports diagnostic if the case element comes before the given `order` according to `orders`.
-// It ignores element name isn't found in `orders`, that means the switch statement is not about `types` or `tags`.
-// It returns current case element's name and the order.
+// It ignores if the element name isn't found in `orders`, that means the switch statement is not about `types` or `tags`.
+// It returns the given case element's name and the order.
 func checkElemOrder(caseElem ast.Expr, order int, lastName string, orders map[string]int, pass *analysis.Pass, pos token.Pos) (int, string) { //nolint:lll // for readability
 	var name string
 
