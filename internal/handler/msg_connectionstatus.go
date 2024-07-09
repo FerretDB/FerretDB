@@ -27,9 +27,10 @@ import (
 func (h *Handler) MsgConnectionStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	users := types.MakeArray(1)
 
-	if username := conninfo.Get(ctx).Username(); username != "" {
+	if username, _, _, db := conninfo.Get(ctx).Auth(); username != "" {
 		users.Append(must.NotFail(types.NewDocument(
 			"user", username,
+			"db", db,
 		)))
 	}
 
@@ -39,7 +40,6 @@ func (h *Handler) MsgConnectionStatus(ctx context.Context, msg *wire.OpMsg) (*wi
 			"authInfo", must.NotFail(types.NewDocument(
 				"authenticatedUsers", users,
 				"authenticatedUserRoles", must.NotFail(types.NewArray()),
-				"authenticatedUserPrivileges", must.NotFail(types.NewArray()),
 			)),
 			"ok", float64(1),
 		)),

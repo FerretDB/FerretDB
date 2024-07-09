@@ -80,7 +80,7 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, lazyerrors.Error(err)
 		}
 		resDoc = must.NotFail(types.NewDocument(
-			"log", log,
+			"log", must.NotFail(log.Convert()),
 			"totalLinesWritten", int64(log.Len()),
 			"ok", float64(1),
 		))

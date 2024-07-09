@@ -34,6 +34,7 @@ type ConnInfo struct {
 	// the order of fields is weird to make the struct smaller due to alignment
 
 	sc *scram.ServerConversation // protected by rw
+	db string                    // protected by rw
 
 	Peer netip.AddrPort // invalid for Unix domain sockets
 
@@ -65,22 +66,23 @@ func (connInfo *ConnInfo) Username() string {
 	return connInfo.username
 }
 
-// Auth returns stored username, password (for PLAIN mechanism), and SCRAM server conversation (if any).
-func (connInfo *ConnInfo) Auth() (username, password string, sc *scram.ServerConversation) {
+// Auth returns stored username, password (for PLAIN mechanism), SCRAM server conversation (if any) and user's authentication db.
+func (connInfo *ConnInfo) Auth() (username, password string, sc *scram.ServerConversation, db string) {
 	connInfo.rw.RLock()
 	defer connInfo.rw.RUnlock()
 
-	return connInfo.username, connInfo.password, connInfo.sc
+	return connInfo.username, connInfo.password, connInfo.sc, connInfo.db
 }
 
-// SetAuth stores username, password (for PLAIN mechanism), and SCRAM server conversation (if any).
-func (connInfo *ConnInfo) SetAuth(username, password string, sc *scram.ServerConversation) {
+// SetAuth stores username, password (for PLAIN mechanism), SCRAM server conversation (if any) and user's authentication db.
+func (connInfo *ConnInfo) SetAuth(username, password string, sc *scram.ServerConversation, db string) {
 	connInfo.rw.Lock()
 	defer connInfo.rw.Unlock()
 
 	connInfo.username = username
 	connInfo.password = password
 	connInfo.sc = sc
+	connInfo.db = db
 }
 
 // MetadataRecv returns whatever client metadata was received already.
