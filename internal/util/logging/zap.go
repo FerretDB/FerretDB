@@ -44,9 +44,8 @@ func Setup(level zapcore.Level, encoding, uuid string) {
 	}
 
 	slogOpts := &NewHandlerOpts{
-		Base:         encoding,
-		Level:        slogLevel,
-		RemoveSource: true,
+		Base:  encoding,
+		Level: slogLevel,
 	}
 	setupSlog(slogOpts, uuid)
 
