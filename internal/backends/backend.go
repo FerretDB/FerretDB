@@ -144,8 +144,7 @@ type DatabaseInfo struct {
 //
 // Database may not exist; that's not an error.
 func (bc *backendContract) ListDatabases(ctx context.Context, params *ListDatabasesParams) (*ListDatabasesResult, error) {
-	var cancel context.CancelFunc
-	ctx, cancel = observability.FuncCall(ctx)
+	ctx, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
 	res, err := bc.b.ListDatabases(ctx, params)
@@ -172,8 +171,7 @@ type DropDatabaseParams struct {
 
 // DropDatabase drops existing database for given parameters (including valid name).
 func (bc *backendContract) DropDatabase(ctx context.Context, params *DropDatabaseParams) error {
-	var cancel context.CancelFunc
-	ctx, cancel = observability.FuncCall(ctx)
+	ctx, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
 	err := validateDatabaseName(params.Name)

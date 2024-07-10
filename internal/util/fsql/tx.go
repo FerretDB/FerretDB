@@ -65,8 +65,7 @@ func (tx *Tx) Rollback() error {
 
 // QueryContext calls [*sql.Tx.QueryContext].
 func (tx *Tx) QueryContext(ctx context.Context, query string, args ...any) (*Rows, error) {
-	var cancel context.CancelFunc
-	ctx, cancel = observability.FuncCall(ctx)
+	ctx, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
 	start := time.Now()
@@ -84,8 +83,7 @@ func (tx *Tx) QueryContext(ctx context.Context, query string, args ...any) (*Row
 
 // QueryRowContext calls [*sql.Tx.QueryRowContext].
 func (tx *Tx) QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row {
-	var cancel context.CancelFunc
-	ctx, cancel = observability.FuncCall(ctx)
+	ctx, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
 	start := time.Now()
@@ -103,8 +101,7 @@ func (tx *Tx) QueryRowContext(ctx context.Context, query string, args ...any) *s
 
 // ExecContext calls [*sql.Tx.ExecContext].
 func (tx *Tx) ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error) {
-	var cancel context.CancelFunc
-	ctx, cancel = observability.FuncCall(ctx)
+	ctx, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
 	start := time.Now()
