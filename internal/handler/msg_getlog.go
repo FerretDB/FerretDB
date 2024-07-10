@@ -75,7 +75,7 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		))
 
 	case "global":
-		log, err := logging.RecentEntries.GetArray(zap.DebugLevel)
+		log, err := logging.RecentEntries.GetArray(h.L.Level())
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
