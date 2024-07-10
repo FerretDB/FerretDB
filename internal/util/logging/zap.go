@@ -94,7 +94,11 @@ func Setup(level zapcore.Level, encoding, uuid string) {
 // WithHooks returns a logger with recent entries hooks.
 func WithHooks(logger *zap.Logger) *zap.Logger {
 	return logger.WithOptions(zap.Hooks(func(entry zapcore.Entry) error {
-		RecentEntries.append(&entry)
+		// Zap documentation says this:
+		//   Entries are pooled, so any functions that accept them MUST be careful not to
+		//   retain references to them.
+		// So we store the value, not pointer.
+		RecentEntries.add(entry)
 		return nil
 	}))
 }

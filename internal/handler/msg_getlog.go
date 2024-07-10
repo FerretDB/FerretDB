@@ -24,6 +24,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/build/version"
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -75,13 +76,15 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		))
 
 	case "global":
-		log, err := logging.RecentEntries.GetArray(h.L.Level())
-		if err != nil {
+		var res *bson.Array
+
+		if res, err = logging.RecentEntries.GetArray(); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
+
 		resDoc = must.NotFail(types.NewDocument(
-			"log", must.NotFail(log.Convert()),
-			"totalLinesWritten", int64(log.Len()),
+			"log", must.NotFail(res.Convert()),
+			"totalLinesWritten", int64(res.Len()),
 			"ok", float64(1),
 		))
 
