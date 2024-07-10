@@ -209,7 +209,7 @@ func (r *Registry) initDBs(ctx context.Context, p *fsql.DB) ([]string, error) {
 
 // initCollection loads collection metadata from the database during initialization.
 func (r *Registry) initCollections(ctx context.Context, dbName string, p *fsql.DB) error {
-	_, cancel := observability.FuncCall(ctx) // TODO
+	_, cancel := observability.FuncCall(ctx) // TODO https://github.com/FerretDB/FerretDB/issues/3244
 	defer cancel()
 
 	q := fmt.Sprintf(
@@ -248,7 +248,7 @@ func (r *Registry) initCollections(ctx context.Context, dbName string, p *fsql.D
 //
 // If the user is not authenticated, it returns an error.
 func (r *Registry) DatabaseList(ctx context.Context) ([]string, error) {
-	_, cancel := observability.FuncCall(ctx) // TODO
+	_, cancel := observability.FuncCall(ctx) // TODO https://github.com/FerretDB/FerretDB/issues/3244
 	defer cancel()
 
 	_, err := r.getPool(ctx)
@@ -269,7 +269,7 @@ func (r *Registry) DatabaseList(ctx context.Context) ([]string, error) {
 //
 // If the user is not authenticated, it returns error.
 func (r *Registry) DatabaseGetExisting(ctx context.Context, dbName string) (*fsql.DB, error) {
-	_, cancel := observability.FuncCall(ctx) // TODO
+	_, cancel := observability.FuncCall(ctx) // TODO https://github.com/FerretDB/FerretDB/issues/3244
 	defer cancel()
 
 	p, err := r.getPool(ctx)
@@ -294,7 +294,7 @@ func (r *Registry) DatabaseGetExisting(ctx context.Context, dbName string) (*fsq
 //
 // If the user is not authenticated, it returns error.
 func (r *Registry) DatabaseGetOrCreate(ctx context.Context, dbName string) (*fsql.DB, error) {
-	_, cancel := observability.FuncCall(ctx) // TODO
+	_, cancel := observability.FuncCall(ctx) // TODO https://github.com/FerretDB/FerretDB/issues/3244
 	defer cancel()
 
 	p, err := r.getPool(ctx)
@@ -314,7 +314,7 @@ func (r *Registry) DatabaseGetOrCreate(ctx context.Context, dbName string) (*fsq
 //
 // It does not hold the lock.
 func (r *Registry) databaseGetOrCreate(ctx context.Context, p *fsql.DB, dbName string) (*fsql.DB, error) {
-	_, cancel := observability.FuncCall(ctx) // TODO
+	_, cancel := observability.FuncCall(ctx) // TODO https://github.com/FerretDB/FerretDB/issues/3244
 	defer cancel()
 
 	db := r.colls[dbName]
@@ -398,7 +398,7 @@ func (r *Registry) databaseGetOrCreate(ctx context.Context, p *fsql.DB, dbName s
 //
 // If user is not authenticated, it returns error.
 func (r *Registry) DatabaseDrop(ctx context.Context, dbName string) (bool, error) {
-	_, cancel := observability.FuncCall(ctx) // TODO
+	_, cancel := observability.FuncCall(ctx) // TODO https://github.com/FerretDB/FerretDB/issues/3244
 	defer cancel()
 
 	p, err := r.getPool(ctx)
@@ -419,7 +419,7 @@ func (r *Registry) DatabaseDrop(ctx context.Context, dbName string) (bool, error
 //
 // It does not hold the lock.
 func (r *Registry) databaseDrop(ctx context.Context, p *fsql.DB, dbName string) (bool, error) {
-	_, cancel := observability.FuncCall(ctx) // TODO
+	_, cancel := observability.FuncCall(ctx) // TODO https://github.com/FerretDB/FerretDB/issues/3244
 	defer cancel()
 
 	db := r.colls[dbName]
@@ -448,7 +448,7 @@ func (r *Registry) databaseDrop(ctx context.Context, p *fsql.DB, dbName string) 
 //
 // If the user is not authenticated, it returns error.
 func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]*Collection, error) {
-	_, cancel := observability.FuncCall(ctx) // TODO
+	_, cancel := observability.FuncCall(ctx) // TODO https://github.com/FerretDB/FerretDB/issues/3244
 	defer cancel()
 
 	if _, err := r.getPool(ctx); err != nil {
@@ -494,7 +494,7 @@ func (cpp *CollectionCreateParams) Capped() bool {
 //
 // If the user is not authenticated, it returns error.
 func (r *Registry) CollectionCreate(ctx context.Context, params *CollectionCreateParams) (bool, error) {
-	_, cancel := observability.FuncCall(ctx) // TODO
+	_, cancel := observability.FuncCall(ctx) // TODO https://github.com/FerretDB/FerretDB/issues/3244
 	defer cancel()
 
 	p, err := r.getPool(ctx)
@@ -516,7 +516,7 @@ func (r *Registry) CollectionCreate(ctx context.Context, params *CollectionCreat
 //
 // It does not hold the lock.
 func (r *Registry) collectionCreate(ctx context.Context, p *fsql.DB, params *CollectionCreateParams) (bool, error) {
-	_, cancel := observability.FuncCall(ctx) // TODO
+	_, cancel := observability.FuncCall(ctx) // TODO https://github.com/FerretDB/FerretDB/issues/3244
 	defer cancel()
 
 	dbName, collectionName := params.DBName, params.Name
@@ -614,7 +614,7 @@ func (r *Registry) collectionCreate(ctx context.Context, p *fsql.DB, params *Col
 //
 // If the user is not authenticated, it returns error.
 func (r *Registry) CollectionGet(ctx context.Context, dbName, collectionName string) (*Collection, error) {
-	_, cancel := observability.FuncCall(ctx) // TODO
+	_, cancel := observability.FuncCall(ctx) // TODO https://github.com/FerretDB/FerretDB/issues/3244
 	defer cancel()
 
 	if _, err := r.getPool(ctx); err != nil {
@@ -649,7 +649,7 @@ func (r *Registry) collectionGet(dbName, collectionName string) *Collection {
 //
 // If the user is not authenticated, it returns error.
 func (r *Registry) CollectionDrop(ctx context.Context, dbName, collectionName string) (bool, error) {
-	_, cancel := observability.FuncCall(ctx) // TODO
+	_, cancel := observability.FuncCall(ctx) // TODO https://github.com/FerretDB/FerretDB/issues/3244
 	defer cancel()
 
 	p, err := r.getPool(ctx)
@@ -670,7 +670,7 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName, collectionName st
 //
 // It does not hold the lock.
 func (r *Registry) collectionDrop(ctx context.Context, p *fsql.DB, dbName, collectionName string) (bool, error) {
-	_, cancel := observability.FuncCall(ctx) // TODO
+	_, cancel := observability.FuncCall(ctx) // TODO https://github.com/FerretDB/FerretDB/issues/3244
 	defer cancel()
 
 	db := r.colls[dbName]
@@ -721,7 +721,7 @@ func (r *Registry) collectionDrop(ctx context.Context, p *fsql.DB, dbName, colle
 //
 // If the user is not authenticated, it returns error.
 func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionName, newCollectionName string) (bool, error) {
-	_, cancel := observability.FuncCall(ctx) // TODO
+	_, cancel := observability.FuncCall(ctx) // TODO https://github.com/FerretDB/FerretDB/issues/3244
 	defer cancel()
 
 	p, err := r.getPool(ctx)
@@ -777,7 +777,7 @@ func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionNa
 //
 // If the user is not authenticated, it returns error.
 func (r *Registry) IndexesCreate(ctx context.Context, dbName, collectionName string, indexes []IndexInfo) error {
-	_, cancel := observability.FuncCall(ctx) // TODO
+	_, cancel := observability.FuncCall(ctx) // TODO https://github.com/FerretDB/FerretDB/issues/3244
 	defer cancel()
 
 	p, err := r.getPool(ctx)
@@ -796,7 +796,7 @@ func (r *Registry) IndexesCreate(ctx context.Context, dbName, collectionName str
 //
 // It does not hold the lock.
 func (r *Registry) indexesCreate(ctx context.Context, p *fsql.DB, dbName, collectionName string, indexes []IndexInfo) error {
-	_, cancel := observability.FuncCall(ctx) // TODO
+	_, cancel := observability.FuncCall(ctx) // TODO https://github.com/FerretDB/FerretDB/issues/3244
 	defer cancel()
 
 	_, err := r.collectionCreate(ctx, p, &CollectionCreateParams{DBName: dbName, Name: collectionName})
@@ -990,7 +990,7 @@ func (r *Registry) indexesCreate(ctx context.Context, p *fsql.DB, dbName, collec
 //
 // If the user is not authenticated, it returns error.
 func (r *Registry) IndexesDrop(ctx context.Context, dbName, collectionName string, indexNames []string) error {
-	_, cancel := observability.FuncCall(ctx) // TODO
+	_, cancel := observability.FuncCall(ctx) // TODO https://github.com/FerretDB/FerretDB/issues/3244
 	defer cancel()
 
 	p, err := r.getPool(ctx)
@@ -1012,7 +1012,7 @@ func (r *Registry) IndexesDrop(ctx context.Context, dbName, collectionName strin
 //
 // It does not hold the lock.
 func (r *Registry) indexesDrop(ctx context.Context, p *fsql.DB, dbName, collectionName string, indexNames []string) error {
-	_, cancel := observability.FuncCall(ctx) // TODO
+	_, cancel := observability.FuncCall(ctx) // TODO https://github.com/FerretDB/FerretDB/issues/3244
 	defer cancel()
 
 	// check if the collection exists

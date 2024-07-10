@@ -27,7 +27,7 @@ import (
 //
 // If f returns an error or context is canceled, the transaction is rolled back.
 func InTransaction(ctx context.Context, p *pgxpool.Pool, f func(tx pgx.Tx) error) error {
-	_, cancel := observability.FuncCall(ctx) // TODO
+	_, cancel := observability.FuncCall(ctx) // TODO https://github.com/FerretDB/FerretDB/issues/3244
 	defer cancel()
 
 	if err := pgx.BeginFunc(ctx, p, f); err != nil {

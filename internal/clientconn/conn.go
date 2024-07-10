@@ -575,7 +575,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 func (c *conn) handleOpMsg(ctx context.Context, msg *wire.OpMsg, command string) (*wire.OpMsg, error) {
 	if cmd, ok := c.h.Commands()[command]; ok {
 		if cmd.Handler != nil {
-			_, cancel := observability.FuncCall(ctx) // TODO
+			_, cancel := observability.FuncCall(ctx) // TODO https://github.com/FerretDB/FerretDB/issues/3244
 			defer cancel()
 
 			defer pprof.SetGoroutineLabels(ctx)
