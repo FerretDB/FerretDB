@@ -94,7 +94,7 @@ func makeClient(ctx context.Context, uri string, disableOtel bool) (*mongo.Clien
 func setupClient(tb testtb.TB, ctx context.Context, uri string, disableOtel bool) *mongo.Client {
 	tb.Helper()
 
-	ctx, cancel := observability.FuncCall(ctx)
+	_, cancel := observability.FuncCall(ctx) // TODO
 	defer cancel()
 
 	ctx, span := otel.Tracer("").Start(ctx, "setupClient")

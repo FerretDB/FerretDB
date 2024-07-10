@@ -189,7 +189,7 @@ func (p *Pool) GetExisting(ctx context.Context, name string) *fsql.DB {
 //
 // Returned boolean value indicates whether the database was created.
 func (p *Pool) GetOrCreate(ctx context.Context, name string) (*fsql.DB, bool, error) {
-	ctx, cancel := observability.FuncCall(ctx)
+	_, cancel := observability.FuncCall(ctx) // TODO
 	defer cancel()
 
 	db := p.GetExisting(ctx, name)

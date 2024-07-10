@@ -207,7 +207,7 @@ func Setup(tb testtb.TB, providers ...shareddata.Provider) (context.Context, *mo
 func setupCollection(tb testtb.TB, ctx context.Context, client *mongo.Client, opts *SetupOpts) *mongo.Collection {
 	tb.Helper()
 
-	ctx, cancel := observability.FuncCall(ctx)
+	_, cancel := observability.FuncCall(ctx) // TODO
 	defer cancel()
 
 	ctx, span := otel.Tracer("").Start(ctx, "setupCollection")

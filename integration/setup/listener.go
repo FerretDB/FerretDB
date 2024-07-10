@@ -104,7 +104,7 @@ func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath, newAuthDB string
 func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *BackendOpts) string {
 	tb.Helper()
 
-	ctx, cancel := observability.FuncCall(ctx)
+	_, cancel := observability.FuncCall(ctx) // TODO
 	defer cancel()
 
 	_, span := otel.Tracer("").Start(ctx, "setupListener")
