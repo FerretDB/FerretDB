@@ -7,7 +7,17 @@ description: Observability
 
 ## Logging
 
-FerretDB provides the following structured log formats:
+FerretDB writes structured logs to the standard error (`stderr`) stream.
+The most recent entries are also available via `getLog` command.
+
+:::note
+
+<!-- https://github.com/FerretDB/FerretDB/issues/3421 -->
+
+Structured log format is not stable yet; field names and formatting of values might change in minor releases.
+:::
+
+FerretDB provides the following log formats:
 
 <!-- https://github.com/FerretDB/FerretDB/issues/4438 -->
 
@@ -28,22 +38,20 @@ There are four logging levels:
 - `info` is used for various information messages;
 - `debug` should only be used for debugging.
 
+The default level is `info`, except for [debug builds](https://pkg.go.dev/github.com/FerretDB/FerretDB/build/version#hdr-Debug_builds) that default to `debug`.
+
 :::caution
 `debug`-level messages include complete query and response bodies, full error messages, authentication credentials,
 and other sensitive information.
-Both the performance of FerretDB and the security of your environment will be affected when `debug` logging is enabled.
-:::
 
-The default level is `info`, except for [debug builds](https://pkg.go.dev/github.com/FerretDB/FerretDB/build/version#hdr-Debug_builds) that default to `debug`.
+Since logs are often retained by the infrastructure
+(and FerretDB itself makes recent entries available via the `getLog` command),
+that poses a security risk.
+Additionally, writing out a significantly larger number of log messages affects FerretDB performance.
+For those reasons, the `debug` level should not be enabled in production environments.
+:::
 
 The format and level can be adjusted by [configuration flags](flags.md#miscellaneous).
-
-:::note
-
-<!-- https://github.com/FerretDB/FerretDB/issues/3421 -->
-
-Structured log format is not stable yet; field names and formatting of values might change in minor releases.
-:::
 
 ### Docker logs
 
@@ -65,10 +73,6 @@ CONTAINER ID   IMAGE                       COMMAND                  CREATED     
 
 $ docker logs my-ferretdb
 ```
-
-### Binary executable logs
-
-FerretDB writes logs to the standard error (`stderr`) stream.
 
 ## Debug handler
 
