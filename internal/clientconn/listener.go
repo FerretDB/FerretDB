@@ -102,7 +102,7 @@ func Listen(opts *NewListenerOpts) (*Listener, error) {
 		}
 
 		close(l.tcpListenerReady)
-		ll.Sugar().Infof("Listening on TCP %s ...", l.TCPAddr())
+		ll.Sugar().Infof("Listening on TCP %s...", l.TCPAddr())
 	}
 
 	if l.Unix != "" {
@@ -111,7 +111,7 @@ func Listen(opts *NewListenerOpts) (*Listener, error) {
 		}
 
 		close(l.unixListenerReady)
-		ll.Sugar().Infof("Listening on Unix %s ...", l.UnixAddr())
+		ll.Sugar().Infof("Listening on Unix %s...", l.UnixAddr())
 	}
 
 	if l.TLS != "" {
@@ -126,7 +126,7 @@ func Listen(opts *NewListenerOpts) (*Listener, error) {
 		}
 
 		close(l.tlsListenerReady)
-		ll.Sugar().Infof("Listening on TLS %s ...", l.TLSAddr())
+		ll.Sugar().Infof("Listening on TLS %s...", l.TLSAddr())
 	}
 
 	return l, nil

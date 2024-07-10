@@ -83,6 +83,8 @@ func NewOtelTracer(opts *OtelTracerOpts) (*OtelTracer, error) {
 
 	otel.SetTracerProvider(tp)
 
+	opts.Logger.Info("Starting OTLP tracer...")
+
 	return &OtelTracer{
 		l:  opts.Logger,
 		tp: tp,
@@ -91,8 +93,6 @@ func NewOtelTracer(opts *OtelTracerOpts) (*OtelTracer, error) {
 
 // Run runs OTLP tracer until ctx is canceled.
 func (ot *OtelTracer) Run(ctx context.Context) {
-	ot.l.Info("OTLP tracer started successfully.")
-
 	<-ctx.Done()
 
 	// ctx is already canceled, but we want to inherit its values
