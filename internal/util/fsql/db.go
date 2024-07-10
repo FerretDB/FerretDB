@@ -70,8 +70,7 @@ func (db *DB) Close() error {
 
 // Ping calls [*sql.DB.Ping].
 func (db *DB) Ping(ctx context.Context) error {
-	var cancel context.CancelFunc
-	_, cancel = observability.FuncCall(ctx)
+	_, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
 	return db.sqlDB.Ping()

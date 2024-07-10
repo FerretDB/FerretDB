@@ -362,8 +362,7 @@ func (r *Registry) collectionCreate(ctx context.Context, params *CollectionCreat
 //
 // If database or collection does not exist, nil is returned.
 func (r *Registry) CollectionGet(ctx context.Context, dbName, collectionName string) *Collection {
-	var cancel context.CancelFunc
-	_, cancel = observability.FuncCall(ctx)
+	_, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
 	r.rw.RLock()
