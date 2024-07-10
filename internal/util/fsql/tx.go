@@ -83,7 +83,7 @@ func (tx *Tx) QueryContext(ctx context.Context, query string, args ...any) (*Row
 
 // QueryRowContext calls [*sql.Tx.QueryRowContext].
 func (tx *Tx) QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row {
-	_, cancel := observability.FuncCall(ctx) // TODO
+	ctx, cancel := observability.FuncCall(ctx) // TODO
 	defer cancel()
 
 	start := time.Now()
@@ -101,7 +101,7 @@ func (tx *Tx) QueryRowContext(ctx context.Context, query string, args ...any) *s
 
 // ExecContext calls [*sql.Tx.ExecContext].
 func (tx *Tx) ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error) {
-	_, cancel := observability.FuncCall(ctx) // TODO
+	ctx, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
 	start := time.Now()
