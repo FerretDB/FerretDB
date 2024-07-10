@@ -220,7 +220,20 @@ func main() {
 	case "run":
 		run()
 	case "ping":
-		ping()
+		logger := setupLogger(cli.Log.Format, "")
+		checkFlags(logger)
+
+		ready := ReadyZ{
+			l: logger,
+		}
+
+		ctx, stop := ctxutil.SigTerm(context.Background())
+		defer stop()
+
+		if !ready.Probe(ctx) {
+			os.Exit(1)
+		}
+
 	default:
 		panic("unknown sub-command")
 	}
@@ -400,6 +413,9 @@ func run() {
 			defer wg.Done()
 
 			l := logger.Named("debug")
+			ready := ReadyZ{
+				l: l,
+			}
 
 			h, err := debug.Listen(&debug.ListenOpts{
 				TCPAddr: cli.DebugAddr,
@@ -412,7 +428,7 @@ func run() {
 
 					return listener.Load().Listening()
 				},
-				Readyz: nil,
+				Readyz: ready.Probe,
 			})
 			if err != nil {
 				l.Sugar().Fatalf("Failed to create debug handler: %s.", err)
