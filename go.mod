@@ -6,7 +6,7 @@ toolchain go1.22.5
 
 require (
 	github.com/AlekSi/pointer v1.2.0
-	github.com/SAP/go-hdb v1.9.9
+	github.com/SAP/go-hdb v1.9.10
 	github.com/alecthomas/kong v0.9.0
 	github.com/arl/statsviz v0.6.0
 	github.com/cristalhq/bson v0.0.8
@@ -30,10 +30,10 @@ require (
 	go.opentelemetry.io/otel/trace v1.28.0
 	go.uber.org/automaxprocs v1.5.3
 	go.uber.org/zap v1.27.0
-	golang.org/x/crypto v0.24.0
-	golang.org/x/crypto/x509roots/fallback v0.0.0-20240626151235-a6a393ffd658
-	golang.org/x/exp v0.0.0-20240613232115-7f521ea00fb8
-	golang.org/x/sys v0.21.0
+	golang.org/x/crypto v0.25.0
+	golang.org/x/crypto/x509roots/fallback v0.0.0-20240709155400-d66d9c31b4ae
+	golang.org/x/exp v0.0.0-20240707233637-46b078467d37
+	golang.org/x/sys v0.22.0
 	modernc.org/sqlite v1.30.1
 )
 
@@ -53,7 +53,7 @@ require (
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
 	github.com/jackc/puddle/v2 v2.2.1 // indirect
-	github.com/klauspost/compress v1.17.8 // indirect
+	github.com/klauspost/compress v1.13.6 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/montanaflynn/stats v0.7.1 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
@@ -71,7 +71,7 @@ require (
 	golang.org/x/text v0.16.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240701130421-f6361c86f094 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240701130421-f6361c86f094 // indirect
-	google.golang.org/grpc v1.64.0 // indirect
+	google.golang.org/grpc v1.65.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	modernc.org/gc/v3 v3.0.0-20240107210532-573471604cb6 // indirect
