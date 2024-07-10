@@ -494,7 +494,7 @@ tasks:
 
   security-govulncheck:
     cmds:
-      - bin/govulncheck{{exeExt}} -test ./...
+      - bin/govulncheck{{exeExt}} -test -show=verbose,color ./...
       - bin/task{{exeExt}} -d integration integration-security
 
   security-trivy:
