@@ -207,7 +207,7 @@ func Setup(tb testtb.TB, providers ...shareddata.Provider) (context.Context, *mo
 func setupCollection(tb testtb.TB, ctx context.Context, client *mongo.Client, opts *SetupOpts) *mongo.Collection {
 	tb.Helper()
 
-	_, cancel := observability.FuncCall(ctx) // TODO https://github.com/FerretDB/FerretDB/issues/3244
+	ctx, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
 	ctx, span := otel.Tracer("").Start(ctx, "setupCollection")

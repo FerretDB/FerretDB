@@ -140,7 +140,7 @@ func SetupCompat(tb testtb.TB) (context.Context, []*mongo.Collection, []*mongo.C
 func setupCompatCollections(tb testtb.TB, ctx context.Context, client *mongo.Client, opts *SetupCompatOpts, backend string) []*mongo.Collection {
 	tb.Helper()
 
-	_, cancel := observability.FuncCall(ctx) // TODO https://github.com/FerretDB/FerretDB/issues/3244
+	ctx, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
 	ctx, span := otel.Tracer("").Start(ctx, "setupCompatCollections")

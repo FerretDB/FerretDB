@@ -65,7 +65,7 @@ func (tx *Tx) Rollback() error {
 
 // QueryContext calls [*sql.Tx.QueryContext].
 func (tx *Tx) QueryContext(ctx context.Context, query string, args ...any) (*Rows, error) {
-	_, cancel := observability.FuncCall(ctx) // TODO https://github.com/FerretDB/FerretDB/issues/3244
+	_, cancel := observability.FuncCall(ctx) // FuncCall's context can't be used for QueryContext.
 	defer cancel()
 
 	start := time.Now()
@@ -83,7 +83,7 @@ func (tx *Tx) QueryContext(ctx context.Context, query string, args ...any) (*Row
 
 // QueryRowContext calls [*sql.Tx.QueryRowContext].
 func (tx *Tx) QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row {
-	ctx, cancel := observability.FuncCall(ctx) // TODO https://github.com/FerretDB/FerretDB/issues/3244
+	_, cancel := observability.FuncCall(ctx) // FuncCall's context can't be used for QueryRowContext.
 	defer cancel()
 
 	start := time.Now()

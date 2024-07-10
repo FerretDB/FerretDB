@@ -78,7 +78,7 @@ func (db *DB) Ping(ctx context.Context) error {
 
 // QueryContext calls [*sql.DB.QueryContext].
 func (db *DB) QueryContext(ctx context.Context, query string, args ...any) (*Rows, error) {
-	_, cancel := observability.FuncCall(ctx) // TODO https://github.com/FerretDB/FerretDB/issues/3244
+	_, cancel := observability.FuncCall(ctx) // FuncCall's context can't be used for QueryContext.
 	defer cancel()
 
 	start := time.Now()
@@ -96,7 +96,7 @@ func (db *DB) QueryContext(ctx context.Context, query string, args ...any) (*Row
 
 // QueryRowContext calls [*sql.DB.QueryRowContext].
 func (db *DB) QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row {
-	_, cancel := observability.FuncCall(ctx) // TODO https://github.com/FerretDB/FerretDB/issues/3244
+	_, cancel := observability.FuncCall(ctx) // FuncCall's context can't be used for QueryRowContext.
 	defer cancel()
 
 	start := time.Now()
@@ -114,7 +114,7 @@ func (db *DB) QueryRowContext(ctx context.Context, query string, args ...any) *s
 
 // ExecContext calls [*sql.DB.ExecContext].
 func (db *DB) ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error) {
-	_, cancel := observability.FuncCall(ctx) // TODO https://github.com/FerretDB/FerretDB/issues/3244
+	ctx, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
 	start := time.Now()
@@ -142,7 +142,7 @@ func (db *DB) ExecContext(ctx context.Context, query string, args ...any) (sql.R
 //
 // If f returns an error or context is canceled, the transaction is rolled back.
 func (db *DB) InTransaction(ctx context.Context, f func(*Tx) error) (err error) {
-	_, cancel := observability.FuncCall(ctx) // TODO https://github.com/FerretDB/FerretDB/issues/3244
+	ctx, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
 	var sqlTx *sql.Tx

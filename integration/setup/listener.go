@@ -104,7 +104,7 @@ func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath, newAuthDB string
 func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *BackendOpts) string {
 	tb.Helper()
 
-	_, cancel := observability.FuncCall(ctx) // TODO https://github.com/FerretDB/FerretDB/issues/3244
+	_, cancel := observability.FuncCall(ctx) // FuncCall's context can't be used because the function has a goroutine.
 	defer cancel()
 
 	_, span := otel.Tracer("").Start(ctx, "setupListener")
