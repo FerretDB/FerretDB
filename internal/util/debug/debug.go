@@ -218,7 +218,7 @@ func (h *Handler) Serve(ctx context.Context) {
 
 	root := fmt.Sprintf("http://%s", h.lis.Addr())
 
-	h.opts.L.Sugar().Infof("Starting debug server on %s ...", root)
+	h.opts.L.Sugar().Infof("Starting debug server on %s...", root)
 
 	paths := maps.Keys(h.handlers)
 	slices.Sort(paths)

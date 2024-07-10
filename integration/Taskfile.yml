@@ -40,7 +40,7 @@ tasks:
 
   integration-security:
     cmds:
-      - ../bin/govulncheck{{exeExt}} -test ./...
+      - ../bin/govulncheck{{exeExt}} -test -show=verbose,color ./...
 
   bench-postgresql:
     desc: "Run benchmarks for `postgresql` backend"
