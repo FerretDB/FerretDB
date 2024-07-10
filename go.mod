@@ -6,7 +6,7 @@ toolchain go1.22.5
 
 require (
 	github.com/AlekSi/pointer v1.2.0
-	github.com/SAP/go-hdb v1.9.9
+	github.com/SAP/go-hdb v1.9.10
 	github.com/alecthomas/kong v0.9.0
 	github.com/arl/statsviz v0.6.0
 	github.com/cristalhq/bson v0.0.8
@@ -30,10 +30,10 @@ require (
 	go.opentelemetry.io/otel/trace v1.28.0
 	go.uber.org/automaxprocs v1.5.3
 	go.uber.org/zap v1.27.0
-	golang.org/x/crypto v0.24.0
+	golang.org/x/crypto v0.25.0
 	golang.org/x/crypto/x509roots/fallback v0.0.0-20240626151235-a6a393ffd658
 	golang.org/x/exp v0.0.0-20240613232115-7f521ea00fb8
-	golang.org/x/sys v0.21.0
+	golang.org/x/sys v0.22.0
 	modernc.org/sqlite v1.30.1
 )
 
