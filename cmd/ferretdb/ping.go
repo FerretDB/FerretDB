@@ -22,21 +22,26 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"
-
-	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 )
 
-// ping creates connection to FerretDB instance specified by the flags, and runs `ping` command against it.
-// The check is only executed if --setup-database flag is set.
-func ping() {
-	logger := setupLogger(cli.Log.Format, "")
-	checkFlags(logger)
+// ReadyZ represents the Readiness probe, which is used to run `ping`
+// command against the FerretDB instance specified by cli flags.
+type ReadyZ struct {
+	l *zap.Logger
+}
+
+// Probe executes ping queries to open listeners, and returns true if they succeed.
+// Any errors that occure are passed through ReadyZ.l listener.
+//
+// It is only executed if --setup-database flag is set.
+func (ready *ReadyZ) Probe(ctx context.Context) bool {
+	logger := ready.l
 
 	l := logger.Sugar()
 
 	if cli.Setup.Database == "" {
 		l.Info("Setup database not specified - skipping ping.")
-		return
+		return true
 	}
 
 	var urls []string
@@ -44,7 +49,8 @@ func ping() {
 	if cli.Listen.Addr != "" {
 		host, port, err := net.SplitHostPort(cli.Listen.Addr)
 		if err != nil {
-			logger.Fatal("Getting host and port failed.", zap.Error(err))
+			logger.Error("Getting host and port failed.", zap.Error(err))
+			return false
 		}
 
 		l.Debugf("--listen-addr flag is set. Ping to %s will be performed.", cli.Listen.Addr)
@@ -66,38 +72,8 @@ func ping() {
 	}
 
 	if cli.Listen.TLS != "" {
-		host, port, err := net.SplitHostPort(cli.Listen.TLS)
-		if err != nil {
-			logger.Fatal("Getting host and port failed.", zap.Error(err))
-		}
-
-		l.Debugf("--listen-tls flag is set. Ping to %s will be performed.", cli.Listen.Addr)
-
-		if host == "" {
-			host = "127.0.0.1"
-
-			l.Debugf("Host not specified, defaulting to %s.", host)
-		}
-
-		if cli.Listen.TLSKeyFile == "" || cli.Listen.TLSCaFile == "" {
-			logger.Fatal("When --listen-tls is set, both --listen-tls-cert-file and --listen-tls-ca-file need to be provided.")
-		}
-
-		values := url.Values{}
-
-		values.Add("tls", "true")
-		values.Add("tlsCaFile", cli.Listen.TLSCaFile)
-		values.Add("tlsCertificateKeyFile", cli.Listen.TLSKeyFile)
-
-		u := &url.URL{
-			Scheme:   "mongodb",
-			Host:     net.JoinHostPort(host, port),
-			Path:     cli.Setup.Database,
-			User:     url.UserPassword(cli.Setup.Username, cli.Setup.Password),
-			RawQuery: values.Encode(),
-		}
-
-		urls = append(urls, u.String())
+		// TODO https://github.com/FerretDB/FerretDB/issues/4427
+		l.Warn("TLS ping is not implemented yet.")
 	}
 
 	if cli.Listen.Unix != "" {
@@ -108,31 +84,32 @@ func ping() {
 
 	if len(urls) == 0 {
 		l.Info("Neither --listen-addr nor --listen-unix nor --listen-tls flags were specified - skipping ping.")
-		return
+		return true
 	}
 
 	for _, u := range urls {
 		l.Debugf("Pinging %s...", u)
-
-		ctx, _ := ctxutil.SigTerm(context.Background())
 
 		ctx, cancel := context.WithTimeout(ctx, cli.Setup.Timeout)
 		defer cancel()
 
 		client, err := mongo.Connect(ctx, options.Client().ApplyURI(u))
 		if err != nil {
-			logger.Fatal("Connection failed.", zap.Error(err))
+			logger.Error("Connection failed.", zap.Error(err))
+			return false
 		}
 
 		pingErr := client.Ping(ctx, nil)
 
 		// do not leave connection open when ping error causes os.Exit with Fatal
 		if err = client.Disconnect(ctx); err != nil {
-			logger.Fatal("Disconnect failed.", zap.Error(err))
+			logger.Error("Disconnect failed.", zap.Error(err))
+			return false
 		}
 
 		if pingErr != nil {
-			logger.Fatal("Ping failed.", zap.Error(pingErr))
+			logger.Error("Ping failed.", zap.Error(pingErr))
+			return false
 		}
 
 		var uri *url.URL
@@ -142,4 +119,6 @@ func ping() {
 
 		l.Infof("Ping to %s successful.", u)
 	}
+
+	return true
 }
