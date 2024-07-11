@@ -894,8 +894,6 @@ func TestFindAndModifyCompatRemove(t *testing.T) {
 }
 
 func TestFindAndModifyCompatReplacementDoc(t *testing.T) {
-	t.Parallel()
-
 	testCases := map[string]findAndModifyCompatTestCase{
 		"Basic": {
 			command: bson.D{
