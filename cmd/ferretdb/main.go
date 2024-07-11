@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -379,6 +380,8 @@ func run() {
 
 	logger := setupLogger(cli.Log.Format, logUUID)
 
+	slogger := slog.Default()
+
 	logger.Info("Starting FerretDB "+info.Version+"...", startupFields...)
 
 	if debugbuild.Enabled {
@@ -471,7 +474,7 @@ func run() {
 	go func() {
 		defer wg.Done()
 
-		l := logger.Named("telemetry")
+		l := logging.WithName(slogger, "telemetry")
 		opts := &telemetry.NewReporterOpts{
 			URL:            cli.Test.Telemetry.URL,
 			F:              &cli.Telemetry,
@@ -487,7 +490,7 @@ func run() {
 
 		r, err := telemetry.NewReporter(opts)
 		if err != nil {
-			l.Sugar().Fatalf("Failed to create telemetry reporter: %s.", err)
+			l.LogAttrs(ctx, logging.LevelFatal, "Failed to create telemetry reporter", logging.Error(err))
 		}
 
 		r.Run(ctx)

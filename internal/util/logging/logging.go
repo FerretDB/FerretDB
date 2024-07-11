@@ -34,6 +34,9 @@ const (
 	LevelFatal = slog.LevelError + 3
 )
 
+// nameKey is a [slog.Attr] key used by [WithName].
+const nameKey = "name"
+
 // Error returns [slog.Attr] for the given error (that can be nil) with error's message as a value.
 func Error(err error) slog.Attr {
 	if err == nil {
@@ -52,10 +55,11 @@ func GoError(err error) slog.Attr {
 	return slog.String("error", fmt.Sprintf("%#v", err))
 }
 
-// Named returns a logger with name segment added to existing name.
-func Named(l *slog.Logger, name string) *slog.Logger {
-	// TODO https://github.com/FerretDB/FerretDB/issues/4431
-	return l
+// WithName returns a logger with a given period-separated name.
+//
+// How this name is used depends on the handler.
+func WithName(l *slog.Logger, name string) *slog.Logger {
+	return l.With(slog.String(nameKey, name))
 }
 
 // setupSlog initializes slog logging with given options and UUID.
