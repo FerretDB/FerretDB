@@ -140,15 +140,15 @@ func SetupCompat(tb testtb.TB) (context.Context, []*mongo.Collection, []*mongo.C
 func setupCompatCollections(tb testtb.TB, ctx context.Context, client *mongo.Client, opts *SetupCompatOpts, backend string) []*mongo.Collection {
 	tb.Helper()
 
-	_, cancel := observability.FuncCall(ctx) // ignore ctx for now
+	ctxSetup, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
-	ctx, span := otel.Tracer("").Start(ctx, "setupCompatCollections")
+	ctxSetup, span := otel.Tracer("").Start(ctx, "setupCompatCollections")
 	defer span.End()
 
 	database := client.Database(opts.databaseName)
 
-	cleanupDatabase(ctx, tb, database, nil)
+	cleanupDatabase(ctxSetup, tb, database, nil)
 
 	// delete database unless test failed
 	tb.Cleanup(func() {
@@ -165,7 +165,7 @@ func setupCompatCollections(tb testtb.TB, ctx context.Context, client *mongo.Cli
 		fullName := opts.databaseName + "." + collectionName
 
 		spanName := fmt.Sprintf("setupCompatCollections/%s", collectionName)
-		collCtx, span := otel.Tracer("").Start(ctx, spanName)
+		collCtx, span := otel.Tracer("").Start(ctxSetup, spanName)
 		region := trace.StartRegion(collCtx, spanName)
 
 		collection := database.Collection(collectionName)
