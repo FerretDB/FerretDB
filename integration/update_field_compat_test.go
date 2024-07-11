@@ -1087,8 +1087,6 @@ func TestUpdateFieldCompatMixed(t *testing.T) {
 }
 
 func TestUpdateFieldCompatMul(t *testing.T) {
-	t.Parallel()
-
 	providers := shareddata.AllProviders().
 		// OverflowVergeDoubles and Scalars contain numbers that produces +INF on compat,
 		// validation error on target upon $mul operation.
