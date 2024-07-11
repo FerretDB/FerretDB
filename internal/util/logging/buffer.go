@@ -48,28 +48,28 @@ func NewCircularBuffer(size int) *circularBuffer {
 	}
 }
 
-// append adds an entry in circularBuffer.
-func (cb *circularBuffer) append(record *zapcore.Entry) {
+// add adds an entry in circularBuffer.
+func (cb *circularBuffer) add(record zapcore.Entry) {
 	cb.mu.Lock()
 	defer cb.mu.Unlock()
 
-	cb.records[cb.index] = record
+	cb.records[cb.index] = &record
 	cb.index = (cb.index + 1) % len(cb.records)
 }
 
-// get returns entries from circularBuffer with level at minLevel or above.
-func (cb *circularBuffer) get(minLevel zapcore.Level) []*zapcore.Entry {
+// get returns entries from circularBuffer.
+func (cb *circularBuffer) get() []zapcore.Entry {
 	cb.mu.RLock()
 	defer cb.mu.RUnlock()
 
 	l := len(cb.records)
-	res := make([]*zapcore.Entry, 0, l)
+	res := make([]zapcore.Entry, 0, l)
 
 	for n := range l {
 		i := (cb.index + n) % l
 
-		if r := cb.records[i]; r != nil && r.Level >= minLevel {
-			res = append(res, cb.records[i])
+		if r := cb.records[i]; r != nil {
+			res = append(res, *r)
 		}
 	}
 
@@ -77,8 +77,8 @@ func (cb *circularBuffer) get(minLevel zapcore.Level) []*zapcore.Entry {
 }
 
 // GetArray is a version of Get that returns an array as expected by mongosh.
-func (cb *circularBuffer) GetArray(minLevel zapcore.Level) (*bson.Array, error) {
-	records := cb.get(minLevel)
+func (cb *circularBuffer) GetArray() (*bson.Array, error) {
+	records := cb.get()
 	res := bson.MakeArray(len(records))
 
 	for _, r := range records {

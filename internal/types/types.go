@@ -47,8 +47,6 @@
 //	int        int32            32-bit integer
 //	timestamp  types.Timestamp  Timestamp
 //	long       int64            64-bit integer
-//
-//nolint:dupword // false positive
 package types
 
 import (

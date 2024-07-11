@@ -91,7 +91,7 @@ func Startup() {
 		ot.Run(ctx)
 	}()
 
-	clientCtx, clientCancel := context.WithTimeout(context.Background(), 5*time.Second) //nolint:mnd // good enough
+	clientCtx, clientCancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer clientCancel()
 
 	// do basic flags validation earlier, before all tests

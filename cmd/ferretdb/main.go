@@ -221,7 +221,20 @@ func main() {
 	case "run":
 		run()
 	case "ping":
-		ping()
+		logger := setupLogger(cli.Log.Format, "")
+		checkFlags(logger)
+
+		ready := ReadyZ{
+			l: logger,
+		}
+
+		ctx, stop := ctxutil.SigTerm(context.Background())
+		defer stop()
+
+		if !ready.Probe(ctx) {
+			os.Exit(1)
+		}
+
 	default:
 		panic("unknown sub-command")
 	}
@@ -372,7 +385,11 @@ func run() {
 	logger.Info("Starting FerretDB "+info.Version+"...", startupFields...)
 
 	if debugbuild.Enabled {
-		logger.Info("This is debug build. The performance will be affected.")
+		logger.Info("This is a debug build. The performance will be affected.")
+	}
+
+	if logger.Level().Enabled(zap.DebugLevel) {
+		logger.Info("Debug logging enabled. The security and performance will be affected.")
 	}
 
 	checkFlags(logger)
@@ -403,6 +420,9 @@ func run() {
 			defer wg.Done()
 
 			l := logger.Named("debug")
+			ready := ReadyZ{
+				l: l,
+			}
 
 			h, err := debug.Listen(&debug.ListenOpts{
 				TCPAddr: cli.DebugAddr,
@@ -415,7 +435,7 @@ func run() {
 
 					return listener.Load().Listening()
 				},
-				Readyz: nil,
+				Readyz: ready.Probe,
 			})
 			if err != nil {
 				l.Sugar().Fatalf("Failed to create debug handler: %s.", err)
@@ -503,7 +523,7 @@ func run() {
 			CappedCleanupPercentage: cli.Test.CappedCleanup.Percentage,
 			EnableNewAuth:           cli.Test.EnableNewAuth,
 			BatchSize:               cli.Test.BatchSize,
-			MaxBsonObjectSizeBytes:  cli.Test.MaxBsonObjectSizeMiB * 1024 * 1024, //nolint:mnd // converting MiB to bytes
+			MaxBsonObjectSizeBytes:  cli.Test.MaxBsonObjectSizeMiB * 1024 * 1024,
 		},
 	})
 	if err != nil {

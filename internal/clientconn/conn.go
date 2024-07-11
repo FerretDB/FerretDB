@@ -295,7 +295,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 
 		// diffLogLevel provides the level of logging for the diff between the "normal" and "proxy" responses.
 		// It is set to the highest level of logging used to log response.
-		var diffLogLevel zapcore.Level
+		diffLogLevel := zap.DebugLevel
 
 		// send request to proxy first (unless we are in normal mode)
 		// because FerretDB's handling could modify reqBody's documents,
