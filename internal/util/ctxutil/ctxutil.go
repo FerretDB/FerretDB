@@ -39,7 +39,7 @@ func WithDelay(parent context.Context) (context.Context, context.CancelCauseFunc
 			cancel(nil)
 
 		case <-parent.Done():
-			t := time.NewTimer(3 * time.Second) //nolint:mnd // simple fixed value
+			t := time.NewTimer(3 * time.Second)
 			defer t.Stop()
 
 			select {

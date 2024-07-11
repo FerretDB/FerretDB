@@ -61,7 +61,6 @@
 //	long       int64            *sjson.int64Type      {"t":"long"}                           JSON number
 //
 //nolint:lll // for readability
-//nolint:dupword // false positive
 package sjson
 
 import (
