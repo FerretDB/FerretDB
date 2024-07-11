@@ -374,6 +374,8 @@ func TestUpdateFieldCompatMax(t *testing.T) {
 }
 
 func TestUpdateFieldCompatMin(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]updateCompatTestCase{
 		"Int32Lower": {
 			update: bson.D{{"$min", bson.D{{"v", int32(30)}}}},
@@ -969,6 +971,8 @@ func TestUpdateFieldCompatSetOnInsert(t *testing.T) {
 }
 
 func TestUpdateFieldCompatSetOnInsertComplex(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]testUpdateManyCompatTestCase{
 		"IDExists": {
 			filter:     bson.D{{"_id", "int32"}},
@@ -1083,6 +1087,8 @@ func TestUpdateFieldCompatMixed(t *testing.T) {
 }
 
 func TestUpdateFieldCompatMul(t *testing.T) {
+	t.Parallel()
+
 	providers := shareddata.AllProviders().
 		// OverflowVergeDoubles and Scalars contain numbers that produces +INF on compat,
 		// validation error on target upon $mul operation.

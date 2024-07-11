@@ -207,10 +207,10 @@ func Setup(tb testtb.TB, providers ...shareddata.Provider) (context.Context, *mo
 func setupCollection(tb testtb.TB, ctx context.Context, client *mongo.Client, opts *SetupOpts) *mongo.Collection {
 	tb.Helper()
 
-	ctxSetup, cancel := observability.FuncCall(ctx)
+	setupCtx, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
-	ctxSetup, span := otel.Tracer("").Start(ctxSetup, "setupCollection")
+	setupCtx, span := otel.Tracer("").Start(setupCtx, "setupCollection")
 	defer span.End()
 
 	var ownDatabase bool
@@ -226,9 +226,9 @@ func setupCollection(tb testtb.TB, ctx context.Context, client *mongo.Client, op
 	collection := database.Collection(collectionName)
 
 	// drop remnants of the previous failed run
-	_ = collection.Drop(ctxSetup)
+	_ = collection.Drop(setupCtx)
 	if ownDatabase {
-		cleanupDatabase(ctxSetup, tb, database, opts.BackendOptions)
+		cleanupDatabase(setupCtx, tb, database, opts.BackendOptions)
 	}
 
 	var inserted bool
@@ -236,9 +236,9 @@ func setupCollection(tb testtb.TB, ctx context.Context, client *mongo.Client, op
 	switch {
 	case len(opts.Providers) > 0:
 		require.Nil(tb, opts.BenchmarkProvider, "Both Providers and BenchmarkProvider were set")
-		inserted = InsertProviders(tb, ctxSetup, collection, opts.Providers...)
+		inserted = InsertProviders(tb, setupCtx, collection, opts.Providers...)
 	case opts.BenchmarkProvider != nil:
-		inserted = insertBenchmarkProvider(tb, ctxSetup, collection, opts.BenchmarkProvider)
+		inserted = insertBenchmarkProvider(tb, setupCtx, collection, opts.BenchmarkProvider)
 	}
 
 	if len(opts.Providers) == 0 && opts.BenchmarkProvider == nil {
