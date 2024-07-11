@@ -104,7 +104,8 @@ func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath, newAuthDB string
 func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *BackendOpts) string {
 	tb.Helper()
 
-	_, cancel := observability.FuncCall(ctx) // FuncCall's context can't be used because the function calls a goroutine and tb.Cleanup.
+	// FuncCall's context can't be used because the function calls a goroutine and tb.Cleanup because of cancellation.
+	_, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
 	_, span := otel.Tracer("").Start(ctx, "setupListener")

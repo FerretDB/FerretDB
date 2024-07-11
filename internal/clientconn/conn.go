@@ -575,14 +575,14 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 func (c *conn) handleOpMsg(ctx context.Context, msg *wire.OpMsg, command string) (*wire.OpMsg, error) {
 	if cmd, ok := c.h.Commands()[command]; ok {
 		if cmd.Handler != nil {
-			_, cancel := observability.FuncCall(ctx)
+			cmdCtx, cancel := observability.FuncCall(ctx)
 			defer cancel()
 
-			defer pprof.SetGoroutineLabels(ctx)
-			ctx = pprof.WithLabels(ctx, pprof.Labels("command", command))
-			pprof.SetGoroutineLabels(ctx)
+			defer pprof.SetGoroutineLabels(cmdCtx)
+			cmdCtx = pprof.WithLabels(cmdCtx, pprof.Labels("command", command))
+			pprof.SetGoroutineLabels(cmdCtx)
 
-			return cmd.Handler(ctx, msg)
+			return cmd.Handler(cmdCtx, msg)
 		}
 	}
 
