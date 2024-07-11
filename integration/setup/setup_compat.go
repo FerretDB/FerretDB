@@ -140,15 +140,15 @@ func SetupCompat(tb testtb.TB) (context.Context, []*mongo.Collection, []*mongo.C
 func setupCompatCollections(tb testtb.TB, ctx context.Context, client *mongo.Client, opts *SetupCompatOpts, backend string) []*mongo.Collection {
 	tb.Helper()
 
-	_, cancel := observability.FuncCall(ctx)
+	setupCtx, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
-	ctx, span := otel.Tracer("").Start(ctx, "setupCompatCollections")
+	setupCtx, span := otel.Tracer("").Start(setupCtx, "setupCompatCollections")
 	defer span.End()
 
 	database := client.Database(opts.databaseName)
 
-	cleanupDatabase(ctx, tb, database, nil)
+	cleanupDatabase(setupCtx, tb, database, nil)
 
 	// delete database unless test failed
 	tb.Cleanup(func() {
@@ -165,7 +165,7 @@ func setupCompatCollections(tb testtb.TB, ctx context.Context, client *mongo.Cli
 		fullName := opts.databaseName + "." + collectionName
 
 		spanName := fmt.Sprintf("setupCompatCollections/%s", collectionName)
-		collCtx, span := otel.Tracer("").Start(ctx, spanName)
+		collCtx, collSpan := otel.Tracer("").Start(setupCtx, spanName)
 		region := trace.StartRegion(collCtx, spanName)
 
 		collection := database.Collection(collectionName)
@@ -187,14 +187,14 @@ func setupCompatCollections(tb testtb.TB, ctx context.Context, client *mongo.Cli
 				return
 			}
 
-			err := collection.Drop(collCtx)
+			err = collection.Drop(ctx)
 			require.NoError(tb, err)
 		})
 
 		collections = append(collections, collection)
 
 		region.End()
-		span.End()
+		collSpan.End()
 	}
 
 	// opts.AddNonExistentCollection is not needed, always add a non-existent collection
