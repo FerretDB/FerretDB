@@ -42,14 +42,14 @@ func TestHandler(t *testing.T) {
 	for base, expected := range map[string]string{
 		"console": `2024-05-31T09:26:42.000Z	INFO	logging/handler_test.go:34	` +
 			"multi\nline\nmessage\n\n\t" +
-			`{"g2":{"g1":{"k1":42,"k2":7000000000},"g3":{"s":"a"},"i":1,"k3":"dup"}}` + "\n",
+			`{"g2":{"g1":{"k1":42,"k2":7000000000},"g3":{"s":"a"},"i":1,"k3":"dup","name":"test.logger"}}` + "\n",
 		"text": `time=2024-05-31T09:26:42.000Z level=INFO source=logging/handler_test.go:34 ` +
 			`msg="multi\nline\nmessage\n\n" ` +
-			`g2.i=1 g2.g3.s=a g2.g1.k1=42 g2.g1.k2=7s g2.k3=s g2.k3=dup` + "\n",
+			`g2.i=1 g2.g3.s=a g2.name=test.logger g2.g1.k1=42 g2.g1.k2=7s g2.k3=s g2.k3=dup` + "\n",
 		"json": `{"time":"2024-05-31T09:26:42Z","level":"INFO","source":` +
 			`{"function":"github.com/FerretDB/FerretDB/internal/util/logging.TestHandler",` +
 			`"file":"logging/handler_test.go","line":34},"msg":"multi\nline\nmessage\n\n"` +
-			`,"g2":{"i":1,"g3":{"s":"a"},"g1":{"k1":42,"k2":7000000000},"k3":"s","k3":"dup"}}` + "\n",
+			`,"g2":{"i":1,"g3":{"s":"a"},"name":"test.logger","g1":{"k1":42,"k2":7000000000},"k3":"s","k3":"dup"}}` + "\n",
 	} {
 		t.Run(base, func(t *testing.T) {
 			t.Parallel()
@@ -68,7 +68,8 @@ func TestHandler(t *testing.T) {
 				slog.Group("g3", slog.String("s", "a")),
 			})
 
-			require.NoError(t, h.Handle(ctx, r))
+			l := WithName(slog.New(h), "test.logger")
+			require.NoError(t, l.Handler().Handle(ctx, r))
 
 			assert.Equal(t, expected, buf.String(), "actual:\n%s", hex.Dump(buf.Bytes()))
 		})
