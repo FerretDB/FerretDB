@@ -60,11 +60,8 @@ func (sl *pgxLogger) Log(ctx context.Context, level tracelog.LogLevel, msg strin
 
 	l, ok := pgxLogLevels[level]
 	if !ok {
-		l = slog.LevelError + 1
-		sl.l.LogAttrs(
-			ctx, slog.LevelWarn, "Invalid pgx log level",
-			slog.Int64("level", int64(level)), slog.String("original_msg", msg),
-		)
+		sl.l.LogAttrs(ctx, LevelDPanic, "Invalid pgx log level for: "+msg, slog.Int("level", int(level)))
+		l = slog.LevelError
 	}
 
 	if !sl.l.Enabled(ctx, l) {
