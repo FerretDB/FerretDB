@@ -11,6 +11,8 @@ linters-settings:
       - ^lazyerrors\.Errorf$
     use-builtin-exclusions: true
     ignore-test: false
+  copyloopvar:
+    check-alias: true
   errcheck:
     check-type-assertions: false
     check-blank: false
@@ -82,12 +84,14 @@ linters:
     # TODO https://github.com/FerretDB/FerretDB/issues/2748
     - bidichk
     - bodyclose
+    - canonicalheader
     - containedctx
     - contextcheck
     - cyclop
     - decorder
     - dogsled
     - dupl
+    - dupword
     - durationcheck
     - err113
     - errchkjson
@@ -95,9 +99,12 @@ linters:
     - execinquery
     - exhaustruct
     - exportloopref
+    - fatcontext
     - forbidigo
     - forcetypeassert
     - funlen
+    - ginkgolinter
+    - gocheckcompilerdirectives
     - gochecknoglobals
     - gochecknoinits
     - gocognit
@@ -109,11 +116,18 @@ linters:
     - gomoddirectives
     - goprintffuncname
     - gosec
+    - gosmopolitan
     - grouper
     - inamedparam
+    - interfacebloat
+    - intrange
     - ireturn
+    - loggercheck
     - maintidx
     - makezero
+    - mirror
+    - mnd
+    - musttag
     - nakedret
     - nestif
     - nilerr
@@ -127,18 +141,22 @@ linters:
     - predeclared
     - promlinter
     - protogetter
+    - reassign
     - rowserrcheck
     - sloglint
+    - spancheck
     - sqlclosecheck
     - stylecheck
     - tagliatelle
     - tenv
+    - testableexamples
     - testifylint
     - thelper
     - tparallel
     - typecheck
     - unconvert
     - unparam
+    - usestdlibvars
     - varnamelen
     - wastedassign
     - wrapcheck
