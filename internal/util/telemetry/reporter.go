@@ -112,8 +112,8 @@ func NewReporter(opts *NewReporterOpts) (*Reporter, error) {
 
 // Run runs reporter until context is canceled.
 func (r *Reporter) Run(ctx context.Context) {
-	r.L.Debug("Reporter started.")
-	defer r.L.Debug("Reporter stopped.")
+	r.L.DebugContext(ctx, "Reporter started.")
+	defer r.L.DebugContext(ctx, "Reporter stopped.")
 
 	ch := r.P.Subscribe()
 
@@ -149,7 +149,7 @@ func (r *Reporter) firstReportDelay(ctx context.Context, ch <-chan struct{}) {
 			"Read more about FerretDB telemetry and how to opt out at https://beacon.ferretdb.com.",
 		r.UndecidedDelay,
 	)
-	r.L.Info(msg)
+	r.L.InfoContext(ctx, msg)
 
 	delayCtx, delayCancel := context.WithTimeout(ctx, r.UndecidedDelay)
 	defer delayCancel()
