@@ -86,10 +86,10 @@ func testIncorrectMultiple(v any) {
 
 func testCorrectTag(v tag) {
 	switch v {
-	case tagFloat64:
-	case tagString:
 	case tagDocument:
 	case tagArray:
+	case tagFloat64:
+	case tagString:
 	case tagBinary:
 	case tagUndefined:
 	case tagObjectID:
