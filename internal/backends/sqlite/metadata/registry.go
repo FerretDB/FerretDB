@@ -100,7 +100,7 @@ func (r *Registry) Close() {
 
 // initCollections loads collections metadata from the database during initialization.
 func (r *Registry) initCollections(ctx context.Context, dbName string, db *fsql.DB) error {
-	ctx, cancel := observability.FuncCall(ctx)
+	_, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
 	rows, err := db.QueryContext(ctx, fmt.Sprintf("SELECT name, table_name, settings FROM %q", metadataTableName))
@@ -131,7 +131,7 @@ func (r *Registry) initCollections(ctx context.Context, dbName string, db *fsql.
 
 // DatabaseList returns a sorted list of existing databases.
 func (r *Registry) DatabaseList(ctx context.Context) []string {
-	ctx, cancel := observability.FuncCall(ctx)
+	_, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
 	return r.p.List(ctx)
@@ -139,7 +139,7 @@ func (r *Registry) DatabaseList(ctx context.Context) []string {
 
 // DatabaseGetExisting returns a connection to existing database or nil if it doesn't exist.
 func (r *Registry) DatabaseGetExisting(ctx context.Context, dbName string) *fsql.DB {
-	ctx, cancel := observability.FuncCall(ctx)
+	_, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
 	return r.p.GetExisting(ctx, dbName)
@@ -147,7 +147,7 @@ func (r *Registry) DatabaseGetExisting(ctx context.Context, dbName string) *fsql
 
 // DatabaseGetOrCreate returns a connection to existing database or newly created database.
 func (r *Registry) DatabaseGetOrCreate(ctx context.Context, dbName string) (*fsql.DB, error) {
-	ctx, cancel := observability.FuncCall(ctx)
+	_, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
 	r.rw.Lock()
@@ -160,7 +160,7 @@ func (r *Registry) DatabaseGetOrCreate(ctx context.Context, dbName string) (*fsq
 //
 // It does not hold the lock.
 func (r *Registry) databaseGetOrCreate(ctx context.Context, dbName string) (*fsql.DB, error) {
-	ctx, cancel := observability.FuncCall(ctx)
+	_, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
 	db, created, err := r.p.GetOrCreate(ctx, dbName)
@@ -192,7 +192,7 @@ func (r *Registry) databaseGetOrCreate(ctx context.Context, dbName string) (*fsq
 //
 // Returned boolean value indicates whether the database was dropped.
 func (r *Registry) DatabaseDrop(ctx context.Context, dbName string) bool {
-	ctx, cancel := observability.FuncCall(ctx)
+	_, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
 	r.rw.Lock()
@@ -207,7 +207,7 @@ func (r *Registry) DatabaseDrop(ctx context.Context, dbName string) bool {
 //
 // It does not hold the lock.
 func (r *Registry) databaseDrop(ctx context.Context, dbName string) bool {
-	ctx, cancel := observability.FuncCall(ctx)
+	_, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
 	delete(r.colls, dbName)
@@ -219,7 +219,7 @@ func (r *Registry) databaseDrop(ctx context.Context, dbName string) bool {
 //
 // If database does not exist, no error is returned.
 func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]*Collection, error) {
-	ctx, cancel := observability.FuncCall(ctx)
+	_, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
 	db := r.DatabaseGetExisting(ctx, dbName)
@@ -260,7 +260,7 @@ func (ccp *CollectionCreateParams) Capped() bool {
 // Returned boolean value indicates whether the collection was created.
 // If collection already exists, (false, nil) is returned.
 func (r *Registry) CollectionCreate(ctx context.Context, params *CollectionCreateParams) (bool, error) {
-	ctx, cancel := observability.FuncCall(ctx)
+	_, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
 	r.rw.Lock()
@@ -277,7 +277,7 @@ func (r *Registry) CollectionCreate(ctx context.Context, params *CollectionCreat
 //
 // It does not hold the lock.
 func (r *Registry) collectionCreate(ctx context.Context, params *CollectionCreateParams) (bool, error) {
-	ctx, cancel := observability.FuncCall(ctx)
+	_, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
 	dbName, collectionName := params.DBName, params.Name
@@ -391,7 +391,7 @@ func (r *Registry) collectionGet(dbName, collectionName string) *Collection {
 // Returned boolean value indicates whether the collection was dropped.
 // If database or collection did not exist, (false, nil) is returned.
 func (r *Registry) CollectionDrop(ctx context.Context, dbName, collectionName string) (bool, error) {
-	ctx, cancel := observability.FuncCall(ctx)
+	_, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
 	r.rw.Lock()
@@ -407,7 +407,7 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName, collectionName st
 //
 // It does not hold the lock.
 func (r *Registry) collectionDrop(ctx context.Context, dbName, collectionName string) (bool, error) {
-	ctx, cancel := observability.FuncCall(ctx)
+	_, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
 	db := r.DatabaseGetExisting(ctx, dbName)
@@ -442,7 +442,7 @@ func (r *Registry) collectionDrop(ctx context.Context, dbName, collectionName st
 // Returned boolean value indicates whether the collection was renamed.
 // If database or collection did not exist, (false, nil) is returned.
 func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionName, newCollectionName string) (bool, error) {
-	ctx, cancel := observability.FuncCall(ctx)
+	_, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
 	db := r.DatabaseGetExisting(ctx, dbName)
@@ -474,7 +474,7 @@ func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionNa
 //
 // Existing indexes with given names are ignored.
 func (r *Registry) IndexesCreate(ctx context.Context, dbName, collectionName string, indexes []IndexInfo) error {
-	ctx, cancel := observability.FuncCall(ctx)
+	_, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
 	r.rw.Lock()
@@ -489,7 +489,7 @@ func (r *Registry) IndexesCreate(ctx context.Context, dbName, collectionName str
 //
 // It does not hold the lock.
 func (r *Registry) indexesCreate(ctx context.Context, dbName, collectionName string, indexes []IndexInfo) error {
-	ctx, cancel := observability.FuncCall(ctx)
+	_, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
 	_, err := r.collectionCreate(ctx, &CollectionCreateParams{DBName: dbName, Name: collectionName})
@@ -568,7 +568,7 @@ func (r *Registry) indexesCreate(ctx context.Context, dbName, collectionName str
 //
 // If database or collection does not exist, nil is returned.
 func (r *Registry) IndexesDrop(ctx context.Context, dbName, collectionName string, indexNames []string) error {
-	ctx, cancel := observability.FuncCall(ctx)
+	_, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
 	r.rw.Lock()
@@ -585,7 +585,7 @@ func (r *Registry) IndexesDrop(ctx context.Context, dbName, collectionName strin
 //
 // It does not hold the lock.
 func (r *Registry) indexesDrop(ctx context.Context, dbName, collectionName string, indexNames []string) error {
-	ctx, cancel := observability.FuncCall(ctx)
+	_, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
 	c := r.collectionGet(dbName, collectionName)
