@@ -162,7 +162,7 @@ func (p *Pool) Close() {
 
 // List returns a sorted list of database names in the pool.
 func (p *Pool) List(ctx context.Context) []string {
-	_, cancel := observability.FuncCall(ctx)
+	ctx, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
 	p.rw.RLock()
@@ -176,7 +176,7 @@ func (p *Pool) List(ctx context.Context) []string {
 
 // GetExisting returns an existing database by valid name, or nil.
 func (p *Pool) GetExisting(ctx context.Context, name string) *fsql.DB {
-	_, cancel := observability.FuncCall(ctx)
+	ctx, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
 	p.rw.RLock()
@@ -189,7 +189,7 @@ func (p *Pool) GetExisting(ctx context.Context, name string) *fsql.DB {
 //
 // Returned boolean value indicates whether the database was created.
 func (p *Pool) GetOrCreate(ctx context.Context, name string) (*fsql.DB, bool, error) {
-	_, cancel := observability.FuncCall(ctx)
+	ctx, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
 	db := p.GetExisting(ctx, name)
@@ -224,7 +224,7 @@ func (p *Pool) GetOrCreate(ctx context.Context, name string) (*fsql.DB, bool, er
 //
 // Returned boolean value indicates whether the database was removed.
 func (p *Pool) Drop(ctx context.Context, name string) bool {
-	_, cancel := observability.FuncCall(ctx)
+	ctx, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
 	p.rw.Lock()
