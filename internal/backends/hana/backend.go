@@ -119,7 +119,7 @@ func (b *backend) Database(name string) (backends.Database, error) {
 func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDatabasesParams) (*backends.ListDatabasesResult, error) {
 	var dbQuerySQL string
 	dbQuerySQL = "SELECT SCHEMA_NAME FROM SCHEMAS"
-	if params.Name != "" {
+	if params != nil && params.Name != "" {
 		dbQuerySQL += fmt.Sprintf(" WHERE SCHEMA_NAME = '%s'", params.Name)
 	} else {
 		dbQuerySQL += " ORDER BY SCHEMA_NAME ASC"
