@@ -23,8 +23,8 @@ import (
 	"golang.org/x/tools/go/analysis/singlechecker"
 )
 
-// orderTypes is the preferred order of types and tags in the switch.
-var orderTypes = map[string]int{
+// bsonOrder is the preferred order of case elements in switch statements.
+var bsonOrder = map[string]int{
 	"Document":     1,
 	"documentType": 1,
 	"tagDocument":  1,
@@ -108,7 +108,7 @@ func main() {
 
 // run is the function to be called by the driver to execute analysis on a single package.
 //
-// It analyzes the presence of types in 'case' in ascending order of indexes 'orderTypes' and 'orderTags'.
+// It analyzes the presence of types in 'case' in ascending order of indexes defined in 'bsonOrder'.
 func run(pass *analysis.Pass) (any, error) {
 	for _, file := range pass.Files {
 		ast.Inspect(file, func(n ast.Node) bool {
@@ -126,7 +126,7 @@ func run(pass *analysis.Pass) (any, error) {
 	return nil, nil
 }
 
-// checkOrder checks the order of the case elements in switch statements according to the `orderTypes`.
+// checkOrder checks the order of the case elements in switch statements.
 func checkOrder(list []ast.Stmt, pass *analysis.Pass, pos token.Pos) {
 	var order int
 	var name string
@@ -163,7 +163,7 @@ func checkOrder(list []ast.Stmt, pass *analysis.Pass, pos token.Pos) {
 				// not `types` or `tags`
 			}
 
-			elemOrder, ok := orderTypes[elemName]
+			elemOrder, ok := bsonOrder[elemName]
 			if ok && (elemOrder < caseOrder) {
 				pass.Reportf(pos, "%s should go before %s in the switch", elemName, caseName)
 			}
