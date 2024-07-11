@@ -971,8 +971,6 @@ func TestUpdateFieldCompatSetOnInsert(t *testing.T) {
 }
 
 func TestUpdateFieldCompatSetOnInsertComplex(t *testing.T) {
-	t.Parallel()
-
 	testCases := map[string]testUpdateManyCompatTestCase{
 		"IDExists": {
 			filter:     bson.D{{"_id", "int32"}},
