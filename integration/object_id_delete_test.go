@@ -27,7 +27,6 @@ import (
 )
 
 func TestStringAsID(t *testing.T) {
-	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
 	// Insert, update, delete a document with a string (not 12-bytes array) id.
