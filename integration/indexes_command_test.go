@@ -212,8 +212,6 @@ func TestDropIndexesCommandErrors(t *testing.T) {
 }
 
 func TestCreateIndexesCommandInvalidSpec(t *testing.T) {
-	t.Parallel()
-
 	for name, tc := range map[string]struct {
 		indexes        any  // optional
 		missingIndexes bool // optional, if set indexes must be nil

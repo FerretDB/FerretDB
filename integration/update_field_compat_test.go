@@ -374,8 +374,6 @@ func TestUpdateFieldCompatMax(t *testing.T) {
 }
 
 func TestUpdateFieldCompatMin(t *testing.T) {
-	t.Parallel()
-
 	testCases := map[string]updateCompatTestCase{
 		"Int32Lower": {
 			update: bson.D{{"$min", bson.D{{"v", int32(30)}}}},
