@@ -134,7 +134,6 @@ func New(config *Config) (*FerretDB, error) {
 
 		SQLiteURL: config.SQLiteURL,
 
-		//nolint:mnd // Command-line default flags
 		TestOpts: registry.TestOpts{
 			CappedCleanupPercentage: 10,
 			BatchSize:               100,

@@ -253,7 +253,7 @@ func ConvertDocument(doc *types.Document) (*Document, error) {
 
 // Convert converts Document to [*types.Document], decoding raw documents and arrays on the fly.
 func (doc *Document) Convert() (*types.Document, error) {
-	pairs := make([]any, 0, len(doc.fields)*2) //nolint:mnd // key/value pair per field
+	pairs := make([]any, 0, len(doc.fields)*2)
 
 	for _, f := range doc.fields {
 		v, err := convertToTypes(f.value)
