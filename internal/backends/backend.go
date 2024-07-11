@@ -94,7 +94,7 @@ type StatusResult struct {
 // connection can be established and authenticated.
 // For that reason, the implementation should not return only cached results.
 func (bc *backendContract) Status(ctx context.Context, params *StatusParams) (*StatusResult, error) {
-	_, cancel := observability.FuncCall(ctx) // TODO https://github.com/FerretDB/FerretDB/issues/3244
+	ctx, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
 	// to both check that conninfo is present (which is important for that method),
@@ -144,7 +144,7 @@ type DatabaseInfo struct {
 //
 // Database may not exist; that's not an error.
 func (bc *backendContract) ListDatabases(ctx context.Context, params *ListDatabasesParams) (*ListDatabasesResult, error) {
-	_, cancel := observability.FuncCall(ctx) // TODO https://github.com/FerretDB/FerretDB/issues/3244
+	ctx, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
 	res, err := bc.b.ListDatabases(ctx, params)
@@ -171,7 +171,7 @@ type DropDatabaseParams struct {
 
 // DropDatabase drops existing database for given parameters (including valid name).
 func (bc *backendContract) DropDatabase(ctx context.Context, params *DropDatabaseParams) error {
-	_, cancel := observability.FuncCall(ctx) // TODO https://github.com/FerretDB/FerretDB/issues/3244
+	ctx, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
 	err := validateDatabaseName(params.Name)
