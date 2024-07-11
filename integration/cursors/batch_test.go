@@ -30,7 +30,6 @@ import (
 )
 
 func TestCursorsBatchSize(t *testing.T) {
-	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
 	// the number of documents is set above the default batchSize of 101
