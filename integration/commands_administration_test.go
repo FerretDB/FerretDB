@@ -1829,8 +1829,6 @@ func TestCommandsAdministrationCompactCapped(t *testing.T) {
 }
 
 func TestCommandsAdministrationCompactErrors(t *testing.T) {
-	t.Parallel()
-
 	for name, tc := range map[string]struct {
 		dbName string
 
@@ -1869,8 +1867,6 @@ func TestCommandsAdministrationCompactErrors(t *testing.T) {
 			if tc.skipForMongoDB != "" {
 				setup.SkipForMongoDB(t, tc.skipForMongoDB)
 			}
-
-			t.Parallel()
 
 			require.NotNil(t, tc.err, "err must not be nil")
 
