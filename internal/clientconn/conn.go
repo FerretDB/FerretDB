@@ -575,7 +575,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 func (c *conn) handleOpMsg(ctx context.Context, msg *wire.OpMsg, command string) (*wire.OpMsg, error) {
 	if cmd, ok := c.h.Commands()[command]; ok {
 		if cmd.Handler != nil {
-			ctx, cancel := observability.FuncCall(ctx)
+			_, cancel := observability.FuncCall(ctx)
 			defer cancel()
 
 			defer pprof.SetGoroutineLabels(ctx)
