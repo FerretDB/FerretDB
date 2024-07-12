@@ -23,6 +23,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/FerretDB/FerretDB/internal/util/observability"
+
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
@@ -42,6 +44,9 @@ import (
 
 // MsgAggregate implements `aggregate` command.
 func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	ctx, fcCancel := observability.FuncCall(ctx)
+	defer fcCancel()
+
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)

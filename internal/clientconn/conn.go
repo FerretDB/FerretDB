@@ -575,15 +575,8 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 func (c *conn) handleOpMsg(ctx context.Context, msg *wire.OpMsg, command string) (*wire.OpMsg, error) {
 	if cmd, ok := c.h.Commands()[command]; ok {
 		if cmd.Handler != nil {
-			oCtx, cancel := observability.FuncCall(ctx)
+			ctx, cancel := observability.FuncCall(ctx)
 			defer cancel()
-
-			switch command {
-			case "aggregate", "find":
-				// FuncCall's context can't be used for cursors because of cancellation.
-			default:
-				ctx = oCtx
-			}
 
 			defer pprof.SetGoroutineLabels(ctx)
 			ctx = pprof.WithLabels(ctx, pprof.Labels("command", command))
