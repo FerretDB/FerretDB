@@ -16,7 +16,7 @@ All-in-one image is documented in the
 The rest are covered below.
 
 All Docker images include a [`HEALTHCHECK` instruction](https://docs.docker.com/reference/dockerfile/#healthcheck)
-that behaves like a [readiness probe](../configuration/observability.md).
+that behaves like a [readiness probe](../configuration/observability.md#probes).
 
 ## Production image
 
