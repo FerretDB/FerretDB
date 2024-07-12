@@ -17,6 +17,7 @@ package registry
 import (
 	"github.com/FerretDB/FerretDB/internal/backends/mysql"
 	"github.com/FerretDB/FerretDB/internal/handler"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // init registers "mysql" handler.
@@ -28,7 +29,7 @@ func init() {
 			P:   opts.StateProvider,
 		})
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, lazyerrors.Error(err)
 		}
 
 		handlerOpts := &handler.NewOpts{
@@ -56,7 +57,7 @@ func init() {
 
 		h, err := handler.New(handlerOpts)
 		if err != nil {
-			return nil, b.Close, err
+			return nil, b.Close, lazyerrors.Error(err)
 		}
 
 		return h, b.Close, nil
