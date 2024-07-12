@@ -24,7 +24,6 @@ import (
 	"github.com/AlekSi/pointer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/util/state"
@@ -81,7 +80,7 @@ func TestNewReporterLock(t *testing.T) {
 				ExecName:    tc.execName,
 				ConnMetrics: connmetrics.NewListenerMetrics().ConnMetrics,
 				P:           sp,
-				L:           zap.L(),
+				L:           testutil.SLogger(t),
 			}
 
 			_, err = NewReporter(&opts)
@@ -131,7 +130,7 @@ func TestReporterReport(t *testing.T) {
 			F:             &Flag{v: pointer.ToBool(true)},
 			ConnMetrics:   connmetrics.NewListenerMetrics().ConnMetrics,
 			P:             sp,
-			L:             zap.L(),
+			L:             testutil.SLogger(t),
 			ReportTimeout: 1 * time.Minute,
 		}
 
@@ -206,7 +205,7 @@ func TestReporterReport(t *testing.T) {
 			F:             &Flag{v: pointer.ToBool(false)},
 			ConnMetrics:   connmetrics.NewListenerMetrics().ConnMetrics,
 			P:             sp,
-			L:             zap.L(),
+			L:             testutil.SLogger(t),
 			ReportTimeout: 1 * time.Minute,
 		}
 

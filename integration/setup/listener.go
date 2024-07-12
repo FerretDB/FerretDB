@@ -201,7 +201,7 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 		handlerOpts.SetupDatabase = "test"
 		handlerOpts.SetupUsername = "username"
 		handlerOpts.SetupPassword = password.WrapPassword("password")
-		handlerOpts.SetupTimeout = 1 * time.Second
+		handlerOpts.SetupTimeout = 10 * time.Second // CI may be slow for many parallel tests
 	}
 
 	h, closeBackend, err := registry.NewHandler(handler, handlerOpts)

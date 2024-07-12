@@ -71,9 +71,7 @@ func TestState(t *testing.T) {
 			err := f.UnmarshalText([]byte(tc.flag))
 			require.NoError(t, err)
 
-			logger := testutil.Logger(t)
-
-			state, locked, err := initialState(&f, tc.dnt, tc.execName, tc.prev, logger)
+			state, locked, err := initialState(&f, tc.dnt, tc.execName, tc.prev, testutil.SLogger(t))
 			if tc.err != "" {
 				assert.EqualError(t, err, tc.err)
 				return
