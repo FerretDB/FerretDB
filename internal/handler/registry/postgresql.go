@@ -19,6 +19,7 @@ package registry
 import (
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql"
 	"github.com/FerretDB/FerretDB/internal/handler"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // init registers "postgresql" handler.
@@ -31,7 +32,7 @@ func init() {
 			BatchSize: opts.BatchSize,
 		})
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, lazyerrors.Error(err)
 		}
 
 		handlerOpts := &handler.NewOpts{
@@ -59,7 +60,7 @@ func init() {
 
 		h, err := handler.New(handlerOpts)
 		if err != nil {
-			return nil, b.Close, err
+			return nil, b.Close, lazyerrors.Error(err)
 		}
 
 		return h, b.Close, nil
