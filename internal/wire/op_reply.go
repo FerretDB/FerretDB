@@ -126,6 +126,11 @@ func (reply *OpReply) Document() (*types.Document, error) {
 	return reply.document.Convert()
 }
 
+// RawDocument returns raw document.
+func (reply *OpReply) RawDocument() bson.RawDocument {
+	return reply.document
+}
+
 // SetDocument sets reply document.
 func (reply *OpReply) SetDocument(doc *types.Document) {
 	d := must.NotFail(bson.ConvertDocument(doc))
