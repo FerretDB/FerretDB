@@ -20,11 +20,15 @@ import (
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgWhatsMyURI implements `whatsMyURI` command.
 func (h *Handler) MsgWhatsMyURI(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	ctx, cancel := observability.FuncCall(ctx)
+	defer cancel()
+
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
 		must.NotFail(types.NewDocument(

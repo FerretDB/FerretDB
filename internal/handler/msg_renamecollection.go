@@ -25,11 +25,15 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgRenameCollection implements `renameCollection` command.
 func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	ctx, cancel := observability.FuncCall(ctx)
+	defer cancel()
+
 	var err error
 
 	document, err := msg.Document()

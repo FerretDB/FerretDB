@@ -19,11 +19,15 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgGetFreeMonitoringStatus implements `getFreeMonitoringStatus` command.
 func (h *Handler) MsgGetFreeMonitoringStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	_, cancel := observability.FuncCall(ctx)
+	defer cancel()
+
 	state := h.StateProvider.Get().TelemetryString()
 	message := "monitoring is " + state
 

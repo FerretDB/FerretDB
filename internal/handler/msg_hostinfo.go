@@ -27,11 +27,15 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgHostInfo implements `hostInfo` command.
 func (h *Handler) MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	_, cancel := observability.FuncCall(ctx)
+	defer cancel()
+
 	now := time.Now().UTC()
 
 	hostname, err := os.Hostname()

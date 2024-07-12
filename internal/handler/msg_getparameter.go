@@ -25,11 +25,15 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgGetParameter implements `getParameter` command.
 func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	_, cancel := observability.FuncCall(ctx)
+	defer cancel()
+
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)

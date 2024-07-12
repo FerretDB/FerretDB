@@ -19,11 +19,15 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgGetCmdLineOpts implements `getCmdLineOpts` command.
 func (h *Handler) MsgGetCmdLineOpts(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	_, cancel := observability.FuncCall(ctx)
+	defer cancel()
+
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
 		must.NotFail(types.NewDocument(

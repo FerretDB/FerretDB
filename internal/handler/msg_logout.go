@@ -20,11 +20,15 @@ import (
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgLogout implements `logout` command.
 func (h *Handler) MsgLogout(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	ctx, cancel := observability.FuncCall(ctx)
+	defer cancel()
+
 	conninfo.Get(ctx).SetAuth("", "", nil, "")
 
 	var reply wire.OpMsg

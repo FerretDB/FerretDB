@@ -20,11 +20,15 @@ import (
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgConnectionStatus implements `connectionStatus` command.
 func (h *Handler) MsgConnectionStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	ctx, cancel := observability.FuncCall(ctx)
+	defer cancel()
+
 	users := types.MakeArray(1)
 
 	if username, _, _, db := conninfo.Get(ctx).Auth(); username != "" {

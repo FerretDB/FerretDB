@@ -22,11 +22,15 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handler/common/aggregations/stages"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgBuildInfo implements `buildInfo` command.
 func (h *Handler) MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	_, cancel := observability.FuncCall(ctx)
+	defer cancel()
+
 	aggregationStages := types.MakeArray(len(stages.Stages))
 	for stage := range stages.Stages {
 		aggregationStages.Append(stage)

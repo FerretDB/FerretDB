@@ -23,12 +23,16 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgSetFreeMonitoring implements `setFreeMonitoring` command.
 func (h *Handler) MsgSetFreeMonitoring(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	_, cancel := observability.FuncCall(ctx)
+	defer cancel()
+
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)

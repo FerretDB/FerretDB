@@ -25,11 +25,15 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgSASLContinue implements `saslContinue` command.
 func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	ctx, cancel := observability.FuncCall(ctx)
+	defer cancel()
+
 	doc, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)

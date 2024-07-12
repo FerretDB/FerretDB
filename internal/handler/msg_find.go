@@ -32,11 +32,15 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgFind implements `find` command.
 func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	ctx, fcCancel := observability.FuncCall(ctx)
+	defer fcCancel()
+
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
