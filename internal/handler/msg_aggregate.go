@@ -23,8 +23,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/FerretDB/FerretDB/internal/util/observability"
-
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
@@ -39,6 +37,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
