@@ -18,10 +18,10 @@ package telemetry
 import (
 	"encoding"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/AlekSi/pointer"
-	"go.uber.org/zap"
 )
 
 // parseValue parses a string value into true, false, or nil.
@@ -63,7 +63,7 @@ func (s *Flag) UnmarshalText(text []byte) error {
 //
 // The second returned value is true if the telemetry state should be locked, because of
 // setting telemetry via a command-line flag, an environment variable, or a filename.
-func initialState(f *Flag, dnt string, execName string, prev *bool, l *zap.Logger) (state *bool, locked bool, err error) {
+func initialState(f *Flag, dnt string, execName string, prev *bool, l *slog.Logger) (state *bool, locked bool, err error) {
 	// https://consoledonottrack.com is not entirely clear about accepted values.
 	// Assume that "1", "t", "true", etc. mean that telemetry should be disabled,
 	// and other valid values, including "0" and empty string, mean undecided.
@@ -73,13 +73,13 @@ func initialState(f *Flag, dnt string, execName string, prev *bool, l *zap.Logge
 	}
 
 	if pointer.GetBool(dntV) {
-		l.Sugar().Infof("Telemetry is disabled by DO_NOT_TRACK=%s environment variable.", dnt)
+		l.Info(fmt.Sprintf("Telemetry is disabled by DO_NOT_TRACK=%s environment variable.", dnt))
 		state = pointer.ToBool(false)
 		locked = true
 	}
 
 	if strings.Contains(strings.ToLower(execName), "donottrack") {
-		l.Sugar().Infof("Telemetry is disabled by %q executable name.", execName)
+		l.Info(fmt.Sprintf("Telemetry is disabled by %q executable name.", execName))
 		state = pointer.ToBool(false)
 		locked = true
 	}
