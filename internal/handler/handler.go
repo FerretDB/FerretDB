@@ -149,7 +149,7 @@ func New(opts *NewOpts) (*Handler, error) {
 
 	if err := h.setup(); err != nil {
 		h.Close()
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
 	h.initCommands()
@@ -171,8 +171,13 @@ func (h *Handler) setup() error {
 		return nil
 	}
 
-	ctx, cancel := context.WithTimeout(context.TODO(), h.SetupTimeout)
-	defer cancel()
+	ctx := context.TODO()
+
+	if h.SetupTimeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, h.SetupTimeout)
+		defer cancel()
+	}
 
 	info := conninfo.New()
 	info.SetBypassBackendAuth()
@@ -197,7 +202,7 @@ func (h *Handler) setup() error {
 
 	res, err := h.b.ListDatabases(ctx, &backends.ListDatabasesParams{Name: h.SetupDatabase})
 	if err != nil {
-		return err
+		return lazyerrors.Error(err)
 	}
 
 	if len(res.Databases) > 0 {
@@ -209,23 +214,28 @@ func (h *Handler) setup() error {
 
 	db, err := h.b.Database(h.SetupDatabase)
 	if err != nil {
-		return err
+		return lazyerrors.Error(err)
 	}
 
 	// that's the only way to create a database
 	if err = db.CreateCollection(ctx, &backends.CreateCollectionParams{Name: "setup"}); err != nil {
-		return err
+		return lazyerrors.Error(err)
 	}
 
 	if err = db.DropCollection(ctx, &backends.DropCollectionParams{Name: "setup"}); err != nil {
-		return err
+		return lazyerrors.Error(err)
 	}
 
-	return users.CreateUser(ctx, h.b, &users.CreateUserParams{
+	err = users.CreateUser(ctx, h.b, &users.CreateUserParams{
 		Database: h.SetupDatabase,
 		Username: h.SetupUsername,
 		Password: h.SetupPassword,
 	})
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	return nil
 }
 
 // runCappedCleanup calls capped collections cleanup function according to the given interval.
