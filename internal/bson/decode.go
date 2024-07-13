@@ -60,6 +60,9 @@ func decodeCheckOffset(b []byte, offset, size int) error {
 
 func decodeScalarField(b []byte, t tag) (v any, size int, err error) {
 	switch t {
+	case tagDocument, tagArray:
+		err = lazyerrors.Errorf("non-scalar tag: %s", t)
+
 	case tagFloat64:
 		var f float64
 		f, err = bsonproto.DecodeFloat64(b)
@@ -71,9 +74,6 @@ func decodeScalarField(b []byte, t tag) (v any, size int, err error) {
 		s, err = bsonproto.DecodeString(b)
 		v = s
 		size = bsonproto.SizeString(s)
-
-	case tagDocument, tagArray:
-		err = lazyerrors.Errorf("non-scalar tag: %s", t)
 
 	case tagBinary:
 		var bin Binary

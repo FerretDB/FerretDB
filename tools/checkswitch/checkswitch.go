@@ -23,74 +23,77 @@ import (
 	"golang.org/x/tools/go/analysis/singlechecker"
 )
 
-// orderTypes is the preferred order of types in the switch.
-var orderTypes = map[string]int{
+// bsonOrder is the preferred order of case elements in switch statements.
+var bsonOrder = map[string]int{
 	"Document":     1,
 	"documentType": 1,
+	"tagDocument":  1,
 
 	"Array":     2,
 	"arrayType": 2,
+	"tagArray":  2,
 
 	"float64":    3,
 	"doubleType": 3,
+	"tagFloat64": 3,
 
 	"string":     4,
 	"stringType": 4,
+	"tagString":  4,
 
 	"Binary":     5,
 	"binaryType": 5,
+	"tagBinary":  5,
 
-	"ObjectID":     6,
-	"objectIDType": 6,
+	"tagUndefined": 6,
 
-	"bool":     7,
-	"boolType": 7,
+	"ObjectID":     7,
+	"objectIDType": 7,
+	"tagObjectID":  7,
 
-	"Time":         8,
-	"dateTimeType": 8,
+	"bool":     8,
+	"boolType": 8,
+	"tagBool":  8,
 
-	"NullType": 9,
-	"nullType": 9,
+	"Time":         9,
+	"dateTimeType": 9,
+	"tagTime":      9,
 
-	"Regex":     10,
-	"regexType": 10,
+	"NullType": 10,
+	"nullType": 10,
+	"tagNull":  10,
 
-	"int32":     11,
-	"int32Type": 11,
+	"Regex":     11,
+	"regexType": 11,
+	"tagRegex":  11,
 
-	"Timestamp":     12,
-	"timestampType": 12,
+	"tagDBPointer": 12,
 
-	"int64":     13,
-	"int64Type": 13,
+	"tagJavaScript": 13,
 
-	"CString": 14,
-}
+	"tagSymbol": 14,
 
-// orderTags is the preferred order of Tags in the switch.
-// //nolint: mnd // the numbers represent the order.
-var orderTags = map[string]int{
-	"tagFloat64":         1,
-	"tagString":          2,
-	"tagDocument":        3,
-	"tagArray":           4,
-	"tagBinary":          5,
-	"tagUndefined":       6,
-	"tagObjectID":        7,
-	"tagBool":            8,
-	"tagTime":            9,
-	"tagNull":            10,
-	"tagRegex":           11,
-	"tagDBPointer":       12,
-	"tagJavaScript":      13,
-	"tagSymbol":          14,
 	"tagJavaScriptScope": 15,
-	"tagInt32":           16,
-	"tagTimestamp":       17,
-	"tagInt64":           18,
-	"tagDecimal128":      19,
-	"tagMinKey":          20,
-	"tagMaxKey":          21,
+
+	"int32":     16,
+	"int32Type": 16,
+	"tagInt32":  16,
+
+	"Timestamp":     17,
+	"timestampType": 17,
+	"tagTimestamp":  17,
+
+	"int64":     18,
+	"int64Type": 18,
+	"tagInt64":  18,
+
+	"tagDecimal128": 19,
+
+	"tagMinKey": 20,
+
+	"tagMaxKey": 21,
+
+	"CString": 22,
 }
 
 var analyzer = &analysis.Analyzer{
@@ -105,15 +108,15 @@ func main() {
 
 // run is the function to be called by the driver to execute analysis on a single package.
 //
-// It analyzes the presence of types in 'case' in ascending order of indexes 'orderTypes' and 'orderTags'.
+// It analyzes the presence of types in 'case' in ascending order of indexes defined in 'bsonOrder'.
 func run(pass *analysis.Pass) (any, error) {
 	for _, file := range pass.Files {
 		ast.Inspect(file, func(n ast.Node) bool {
 			switch n := n.(type) {
 			case *ast.TypeSwitchStmt:
-				checkOrder(orderTypes, n.Body.List, pass, n.Pos())
+				checkOrder(n.Body.List, pass, n.Pos())
 			case *ast.SwitchStmt:
-				checkOrder(orderTags, n.Body.List, pass, n.Pos())
+				checkOrder(n.Body.List, pass, n.Pos())
 			}
 
 			return true
@@ -123,8 +126,8 @@ func run(pass *analysis.Pass) (any, error) {
 	return nil, nil
 }
 
-// checkOrder checks the order of the case elements in switch statements according to the given `orders`.
-func checkOrder(orders map[string]int, list []ast.Stmt, pass *analysis.Pass, pos token.Pos) {
+// checkOrder checks the order of the case elements in switch statements.
+func checkOrder(list []ast.Stmt, pass *analysis.Pass, pos token.Pos) {
 	var order int
 	var name string
 
@@ -160,7 +163,7 @@ func checkOrder(orders map[string]int, list []ast.Stmt, pass *analysis.Pass, pos
 				// not `types` or `tags`
 			}
 
-			elemOrder, ok := orders[elemName]
+			elemOrder, ok := bsonOrder[elemName]
 			if ok && (elemOrder < caseOrder) {
 				pass.Reportf(pos, "%s should go before %s in the switch", elemName, caseName)
 			}
