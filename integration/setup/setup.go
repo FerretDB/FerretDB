@@ -138,11 +138,10 @@ func (s *SetupResult) IsUnixSocket(tb testtb.TB) bool {
 func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 	tb.Helper()
 
+	// FIXME
 	ctx, cancel := context.WithCancel(testutil.Ctx(tb))
-
 	setupCtx, span := otel.Tracer("").Start(ctx, "SetupWithOpts")
 	defer span.End()
-
 	defer trace.StartRegion(setupCtx, "SetupWithOpts").End()
 
 	if opts == nil {
@@ -210,6 +209,7 @@ func setupCollection(tb testtb.TB, ctx context.Context, client *mongo.Client, op
 	setupCtx, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
+	// FIXME
 	setupCtx, span := otel.Tracer("").Start(setupCtx, "setupCollection")
 	defer span.End()
 
@@ -272,6 +272,7 @@ func InsertProviders(tb testtb.TB, ctx context.Context, collection *mongo.Collec
 	collectionName := collection.Name()
 
 	for _, provider := range providers {
+		// FIXME
 		spanName := fmt.Sprintf("insertProviders/%s/%s", collectionName, provider.Name())
 		provCtx, span := otel.Tracer("").Start(ctx, spanName)
 		region := trace.StartRegion(provCtx, spanName)
@@ -300,6 +301,7 @@ func insertBenchmarkProvider(tb testtb.TB, ctx context.Context, collection *mong
 
 	collectionName := collection.Name()
 
+	// FIXME
 	spanName := fmt.Sprintf("insertBenchmarkProvider/%s/%s", collectionName, provider.Name())
 	provCtx, span := otel.Tracer("").Start(ctx, spanName)
 	region := trace.StartRegion(provCtx, spanName)

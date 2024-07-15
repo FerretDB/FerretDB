@@ -66,11 +66,10 @@ func SetupCompatWithOpts(tb testtb.TB, opts *SetupCompatOpts) *SetupCompatResult
 		tb.Skip("-compat-url is empty, skipping compatibility test")
 	}
 
+	// FIXME
 	ctx, cancel := context.WithCancel(testutil.Ctx(tb))
-
 	setupCtx, span := otel.Tracer("").Start(ctx, "SetupCompatWithOpts")
 	defer span.End()
-
 	defer trace.StartRegion(setupCtx, "SetupCompatWithOpts").End()
 
 	if opts == nil {
@@ -140,9 +139,9 @@ func SetupCompat(tb testtb.TB) (context.Context, []*mongo.Collection, []*mongo.C
 func setupCompatCollections(tb testtb.TB, ctx context.Context, client *mongo.Client, opts *SetupCompatOpts, backend string) []*mongo.Collection {
 	tb.Helper()
 
+	// FIXME
 	setupCtx, cancel := observability.FuncCall(ctx)
 	defer cancel()
-
 	setupCtx, span := otel.Tracer("").Start(setupCtx, "setupCompatCollections")
 	defer span.End()
 
@@ -164,6 +163,7 @@ func setupCompatCollections(tb testtb.TB, ctx context.Context, client *mongo.Cli
 		collectionName := opts.baseCollectionName + "_" + provider.Name()
 		fullName := opts.databaseName + "." + collectionName
 
+		// FIXME
 		spanName := fmt.Sprintf("setupCompatCollections/%s", collectionName)
 		collCtx, collSpan := otel.Tracer("").Start(setupCtx, spanName)
 		region := trace.StartRegion(collCtx, spanName)

@@ -20,6 +20,9 @@ import (
 	"runtime/trace"
 	"sync"
 
+	"go.opentelemetry.io/otel"
+	oteltrace "go.opentelemetry.io/otel/trace"
+
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
 
@@ -28,6 +31,7 @@ type funcCall struct {
 	cancelCtx context.CancelFunc
 	token     *resource.Token
 	region    *trace.Region
+	span      oteltrace.Span
 }
 
 // FuncCall adds observability to a function or method call.
@@ -49,6 +53,8 @@ type funcCall struct {
 //
 // For the Go execution tracer, FuncCall creates a new region for the function call
 // and attaches it to the task in the context (or background task).
+//
+// For the OpenTelemetry tracer, FuncCall creates a new span for the function call.
 func FuncCall(ctx context.Context) (context.Context, context.CancelFunc) {
 	ctx, cancelCtx := context.WithCancel(ctx)
 
@@ -67,11 +73,15 @@ func FuncCall(ctx context.Context) (context.Context, context.CancelFunc) {
 		fc.region = trace.StartRegion(ctx, funcName)
 	}
 
+	ctx, fc.span = otel.Tracer("").Start(ctx, funcName)
+
 	return ctx, sync.OnceFunc(fc.cancel)
 }
 
 // cancel is called on function exit.
 func (fc *funcCall) cancel() {
+	fc.span.End()
+
 	if fc.region != nil {
 		fc.region.End()
 	}

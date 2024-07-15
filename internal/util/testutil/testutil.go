@@ -55,6 +55,7 @@ func Ctx(tb testtb.TB) context.Context {
 		}
 	}()
 
+	// FIXME
 	ctx, span := otel.Tracer("").Start(signalsCtx, tb.Name())
 	tb.Cleanup(func() {
 		span.End()

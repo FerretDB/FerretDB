@@ -126,9 +126,9 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 		totalTests = strconv.Itoa(total)
 	}
 
+	// FIXME
 	var root oteltrace.Span
 	ctx, root = otel.Tracer("").Start(ctx, "run")
-
 	defer root.End()
 
 	for {
@@ -169,6 +169,7 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 			must.NotBeZero(parentCtx)
 			must.NotBeZero(spanName)
 
+			// FIXME
 			res.ctx, _ = otel.Tracer("").Start(parentCtx, spanName, oteltrace.WithAttributes(attributes...))
 			res.outputs = make([]string, 0, 2)
 		}
