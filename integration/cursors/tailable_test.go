@@ -324,8 +324,6 @@ func TestCursorsTailableTwoCursorsSameCollection(t *testing.T) {
 }
 
 func TestCursorsTailableFirstBatchMaxTimeMS(t *testing.T) {
-	t.Skip("https://github.com/FerretDB/FerretDB/issues/3945")
-
 	t.Parallel()
 
 	s := setup.SetupWithOpts(t, nil)
@@ -389,8 +387,6 @@ func TestCursorsTailableFirstBatchMaxTimeMS(t *testing.T) {
 	})
 
 	t.Run("GetMoreEmpty", func(t *testing.T) {
-		t.Skip("https://github.com/FerretDB/FerretDB/issues/3945")
-
 		time.Sleep(100 * time.Millisecond)
 		var res bson.D
 		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)

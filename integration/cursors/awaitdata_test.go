@@ -490,8 +490,6 @@ func TestCursorsTailableAwaitDataStress(t *testing.T) {
 }
 
 func TestCursorsAwaitDataFirstBatchMaxTimeMS(t *testing.T) {
-	t.Skip("https://github.com/FerretDB/FerretDB/issues/3945")
-
 	t.Parallel()
 
 	s := setup.SetupWithOpts(t, nil)
