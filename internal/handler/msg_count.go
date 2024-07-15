@@ -31,8 +31,8 @@ import (
 )
 
 // MsgCount implements `count` command.
-func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	ctx, cancel := observability.FuncCall(ctx)
+func (h *Handler) MsgCount(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	ctx, cancel := observability.FuncCall(connCtx)
 	defer cancel()
 
 	document, err := msg.Document()

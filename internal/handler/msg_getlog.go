@@ -37,8 +37,8 @@ import (
 )
 
 // MsgGetLog implements `getLog` command.
-func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	_, cancel := observability.FuncCall(ctx)
+func (h *Handler) MsgGetLog(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	_, cancel := observability.FuncCall(connCtx)
 	defer cancel()
 
 	document, err := msg.Document()

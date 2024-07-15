@@ -29,8 +29,8 @@ import (
 )
 
 // MsgPing implements `ping` command.
-func (h *Handler) MsgPing(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	ctx, cancel := observability.FuncCall(ctx)
+func (h *Handler) MsgPing(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	ctx, cancel := observability.FuncCall(connCtx)
 	defer cancel()
 
 	document, err := msg.Document()

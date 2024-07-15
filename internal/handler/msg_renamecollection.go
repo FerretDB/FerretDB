@@ -30,8 +30,8 @@ import (
 )
 
 // MsgRenameCollection implements `renameCollection` command.
-func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	ctx, cancel := observability.FuncCall(ctx)
+func (h *Handler) MsgRenameCollection(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	ctx, cancel := observability.FuncCall(connCtx)
 	defer cancel()
 
 	var err error

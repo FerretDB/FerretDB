@@ -30,8 +30,8 @@ import (
 )
 
 // MsgDebugError implements `debugError` command.
-func (h *Handler) MsgDebugError(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	_, cancel := observability.FuncCall(ctx)
+func (h *Handler) MsgDebugError(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	_, cancel := observability.FuncCall(connCtx)
 	defer cancel()
 
 	document, err := msg.Document()

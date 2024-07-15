@@ -24,8 +24,8 @@ import (
 )
 
 // MsgCurrentOp implements `currentOp` command.
-func (h *Handler) MsgCurrentOp(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	_, cancel := observability.FuncCall(ctx)
+func (h *Handler) MsgCurrentOp(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	_, cancel := observability.FuncCall(connCtx)
 	defer cancel()
 
 	var reply wire.OpMsg

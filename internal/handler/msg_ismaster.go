@@ -27,8 +27,8 @@ import (
 )
 
 // MsgIsMaster implements `isMaster` command.
-func (h *Handler) MsgIsMaster(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	ctx, cancel := observability.FuncCall(ctx)
+func (h *Handler) MsgIsMaster(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	ctx, cancel := observability.FuncCall(connCtx)
 	defer cancel()
 
 	doc, err := msg.Document()

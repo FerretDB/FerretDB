@@ -25,8 +25,8 @@ import (
 )
 
 // MsgLogout implements `logout` command.
-func (h *Handler) MsgLogout(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	ctx, cancel := observability.FuncCall(ctx)
+func (h *Handler) MsgLogout(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	ctx, cancel := observability.FuncCall(connCtx)
 	defer cancel()
 
 	conninfo.Get(ctx).SetAuth("", "", nil, "")

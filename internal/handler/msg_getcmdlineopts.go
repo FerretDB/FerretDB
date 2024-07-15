@@ -24,8 +24,8 @@ import (
 )
 
 // MsgGetCmdLineOpts implements `getCmdLineOpts` command.
-func (h *Handler) MsgGetCmdLineOpts(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	_, cancel := observability.FuncCall(ctx)
+func (h *Handler) MsgGetCmdLineOpts(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	_, cancel := observability.FuncCall(connCtx)
 	defer cancel()
 
 	var reply wire.OpMsg

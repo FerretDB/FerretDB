@@ -23,8 +23,8 @@ import (
 )
 
 // MsgCollMod implements `collMod` command.
-func (h *Handler) MsgCollMod(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	_, cancel := observability.FuncCall(ctx)
+func (h *Handler) MsgCollMod(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	_, cancel := observability.FuncCall(connCtx)
 	defer cancel()
 
 	return nil, handlererrors.NewCommandErrorMsg(

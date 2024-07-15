@@ -42,9 +42,9 @@ import (
 )
 
 // MsgAggregate implements `aggregate` command.
-func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	ctx, fcCancel := observability.FuncCall(ctx)
-	defer fcCancel()
+func (h *Handler) MsgAggregate(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	ctx, cancel := observability.FuncCall(connCtx)
+	defer cancel()
 
 	document, err := msg.Document()
 	if err != nil {
@@ -251,8 +251,6 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	if err != nil {
 		return nil, err
 	}
-
-	cancel := func() {}
 
 	if maxTimeMS != 0 {
 		findDone := make(chan struct{})

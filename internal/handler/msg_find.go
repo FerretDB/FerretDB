@@ -37,9 +37,9 @@ import (
 )
 
 // MsgFind implements `find` command.
-func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	ctx, fcCancel := observability.FuncCall(ctx)
-	defer fcCancel()
+func (h *Handler) MsgFind(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	ctx, cancel := observability.FuncCall(connCtx)
+	defer cancel()
 
 	document, err := msg.Document()
 	if err != nil {
@@ -101,8 +101,6 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	if err != nil {
 		return nil, err
 	}
-
-	cancel := func() {}
 
 	if params.MaxTimeMS != 0 {
 		findDone := make(chan struct{})

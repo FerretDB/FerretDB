@@ -24,8 +24,8 @@ import (
 )
 
 // MsgGetFreeMonitoringStatus implements `getFreeMonitoringStatus` command.
-func (h *Handler) MsgGetFreeMonitoringStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	_, cancel := observability.FuncCall(ctx)
+func (h *Handler) MsgGetFreeMonitoringStatus(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	_, cancel := observability.FuncCall(connCtx)
 	defer cancel()
 
 	state := h.StateProvider.Get().TelemetryString()

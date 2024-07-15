@@ -27,8 +27,8 @@ import (
 )
 
 // MsgBuildInfo implements `buildInfo` command.
-func (h *Handler) MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	_, cancel := observability.FuncCall(ctx)
+func (h *Handler) MsgBuildInfo(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	_, cancel := observability.FuncCall(connCtx)
 	defer cancel()
 
 	aggregationStages := types.MakeArray(len(stages.Stages))
