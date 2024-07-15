@@ -28,7 +28,9 @@ import (
 )
 
 // MsgDrop implements `drop` command.
-func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgDrop(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -69,7 +71,7 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, lazyerrors.Error(err)
 	}
 
-	err = db.DropCollection(ctx, &backends.DropCollectionParams{
+	err = db.DropCollection(connCtx, &backends.DropCollectionParams{
 		Name: collectionName,
 	})
 

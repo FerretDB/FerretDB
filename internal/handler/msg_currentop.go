@@ -23,7 +23,9 @@ import (
 )
 
 // MsgCurrentOp implements `currentOp` command.
-func (h *Handler) MsgCurrentOp(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgCurrentOp(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
 		must.NotFail(types.NewDocument(

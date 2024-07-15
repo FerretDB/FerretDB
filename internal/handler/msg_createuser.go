@@ -34,7 +34,9 @@ import (
 )
 
 // MsgCreateUser implements `createUser` command.
-func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgCreateUser(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -167,7 +169,7 @@ func (h *Handler) MsgCreateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 			)
 		}
 
-		err = users.CreateUser(ctx, h.b, &users.CreateUserParams{
+		err = users.CreateUser(connCtx, h.b, &users.CreateUserParams{
 			Database:   dbName,
 			Username:   username,
 			Password:   password.WrapPassword(userPassword),

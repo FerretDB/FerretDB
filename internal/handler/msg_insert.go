@@ -46,7 +46,9 @@ func WriteErrorDocument(we *mongo.WriteError) *types.Document {
 }
 
 // MsgInsert implements `insert` command.
-func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgInsert(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -142,7 +144,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			}
 		}
 
-		if _, err = c.InsertAll(ctx, &backends.InsertAllParams{Docs: docs}); err == nil {
+		if _, err = c.InsertAll(connCtx, &backends.InsertAllParams{Docs: docs}); err == nil {
 			inserted += int32(len(docs))
 
 			if params.Ordered && len(writeErrors) > 0 {
@@ -154,7 +156,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		// insert doc one by one upon failing on batch insertion
 		for j, doc := range docs {
-			if _, err = c.InsertAll(ctx, &backends.InsertAllParams{
+			if _, err = c.InsertAll(connCtx, &backends.InsertAllParams{
 				Docs: []*types.Document{doc},
 			}); err == nil {
 				inserted++

@@ -30,7 +30,9 @@ import (
 )
 
 // CmdQuery implements deprecated OP_QUERY message handling.
-func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpReply, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) CmdQuery(connCtx context.Context, query *wire.OpQuery) (*wire.OpReply, error) {
 	q := query.Query()
 	cmd := q.Command()
 	collection := query.FullCollectionName
@@ -50,7 +52,7 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 
 	switch cmd {
 	case "hello", "ismaster", "isMaster":
-		reply, err := h.hello(ctx, q, h.TCPHost, h.ReplSetName)
+		reply, err := h.hello(connCtx, q, h.TCPHost, h.ReplSetName)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -80,7 +82,7 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 			return &opReply, nil
 		}
 
-		speculativeAuthenticate, err := h.saslStart(ctx, dbName, authDoc)
+		speculativeAuthenticate, err := h.saslStart(connCtx, dbName, authDoc)
 		if err != nil {
 			h.L.Debug("Speculative authentication failed", zap.Error(err))
 

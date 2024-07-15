@@ -24,11 +24,13 @@ import (
 )
 
 // MsgWhatsMyURI implements `whatsMyURI` command.
-func (h *Handler) MsgWhatsMyURI(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgWhatsMyURI(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
 		must.NotFail(types.NewDocument(
-			"you", conninfo.Get(ctx).Peer.String(),
+			"you", conninfo.Get(connCtx).Peer.String(),
 			"ok", float64(1),
 		)),
 	)))

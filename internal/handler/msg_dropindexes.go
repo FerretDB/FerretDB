@@ -31,7 +31,9 @@ import (
 )
 
 // MsgDropIndexes implements `dropIndexes` command.
-func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgDropIndexes(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -78,7 +80,7 @@ func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		)
 	}
 
-	beforeDrop, err := c.ListIndexes(ctx, nil)
+	beforeDrop, err := c.ListIndexes(connCtx, nil)
 	if err != nil {
 		switch {
 		case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist):
@@ -96,7 +98,7 @@ func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		return nil, err
 	}
 
-	_, err = c.DropIndexes(ctx, &backends.DropIndexesParams{Indexes: toDrop})
+	_, err = c.DropIndexes(connCtx, &backends.DropIndexesParams{Indexes: toDrop})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

@@ -31,7 +31,9 @@ import (
 )
 
 // MsgKillCursors implements `killCursors` command.
-func (h *Handler) MsgKillCursors(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgKillCursors(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -49,7 +51,7 @@ func (h *Handler) MsgKillCursors(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		return nil, err
 	}
 
-	username := conninfo.Get(ctx).Username()
+	username := conninfo.Get(connCtx).Username()
 
 	cursors, err := common.GetRequiredParam[*types.Array](document, "cursors")
 	if err != nil {

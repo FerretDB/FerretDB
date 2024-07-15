@@ -24,10 +24,12 @@ import (
 )
 
 // MsgConnectionStatus implements `connectionStatus` command.
-func (h *Handler) MsgConnectionStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgConnectionStatus(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	users := types.MakeArray(1)
 
-	if username, _, _, db := conninfo.Get(ctx).Auth(); username != "" {
+	if username, _, _, db := conninfo.Get(connCtx).Auth(); username != "" {
 		users.Append(must.NotFail(types.NewDocument(
 			"user", username,
 			"db", db,

@@ -28,7 +28,9 @@ import (
 )
 
 // MsgListIndexes implements `listIndexes` command.
-func (h *Handler) MsgListIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgListIndexes(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -66,7 +68,7 @@ func (h *Handler) MsgListIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		return nil, lazyerrors.Error(err)
 	}
 
-	res, err := c.ListIndexes(ctx, nil)
+	res, err := c.ListIndexes(connCtx, nil)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
 			msg := fmt.Sprintf("ns does not exist: %s.%s", dbName, collection)

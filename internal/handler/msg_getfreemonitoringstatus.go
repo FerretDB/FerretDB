@@ -23,7 +23,9 @@ import (
 )
 
 // MsgGetFreeMonitoringStatus implements `getFreeMonitoringStatus` command.
-func (h *Handler) MsgGetFreeMonitoringStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgGetFreeMonitoringStatus(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	state := h.StateProvider.Get().TelemetryString()
 	message := "monitoring is " + state
 

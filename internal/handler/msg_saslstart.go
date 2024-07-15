@@ -35,7 +35,9 @@ import (
 )
 
 // MsgSASLStart implements `saslStart` command.
-func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgSASLStart(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -46,7 +48,7 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, err
 	}
 
-	replyDoc, err := h.saslStart(ctx, dbName, document)
+	replyDoc, err := h.saslStart(connCtx, dbName, document)
 	if err != nil {
 		return nil, err
 	}

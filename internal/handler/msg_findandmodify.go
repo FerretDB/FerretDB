@@ -39,7 +39,9 @@ type findAndModifyResult struct {
 }
 
 // MsgFindAndModify implements `findAndModify` command.
-func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgFindAndModify(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -58,7 +60,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	var resDoc *types.Document
 
-	res, err := h.findAndModifyDocument(ctx, params)
+	res, err := h.findAndModifyDocument(connCtx, params)
 	if err != nil {
 		return nil, handleUpdateError(params.DB, params.Collection, "findAndModify", err)
 	}

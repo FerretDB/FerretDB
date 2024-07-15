@@ -28,7 +28,9 @@ import (
 )
 
 // MsgPing implements `ping` command.
-func (h *Handler) MsgPing(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgPing(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -48,7 +50,7 @@ func (h *Handler) MsgPing(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, lazyerrors.Error(err)
 	}
 
-	if _, err = h.b.Status(ctx, nil); err != nil {
+	if _, err = h.b.Status(connCtx, nil); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
