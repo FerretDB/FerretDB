@@ -218,7 +218,9 @@ func (h *Handler) MsgGetMore(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 
 			data := c.Data.(*findCursorData)
 
-			queryRes, err := data.coll.Query(connCtx, data.qp)
+			var queryRes *backends.QueryResult
+
+			queryRes, err = data.coll.Query(connCtx, data.qp)
 			if err != nil {
 				return nil, lazyerrors.Error(err)
 			}

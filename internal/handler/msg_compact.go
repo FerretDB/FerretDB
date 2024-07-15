@@ -122,7 +122,9 @@ func (h *Handler) MsgCompact(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 			return nil, lazyerrors.Error(err)
 		}
 
-		statsAfter, err := c.Stats(connCtx, new(backends.CollectionStatsParams))
+		var statsAfter *backends.CollectionStatsResult
+
+		statsAfter, err = c.Stats(connCtx, new(backends.CollectionStatsParams))
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}

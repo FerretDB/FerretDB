@@ -83,7 +83,9 @@ func (h *Handler) MsgDropAllUsersFromDatabase(connCtx context.Context, msg *wire
 	var deleted int32
 
 	if len(ids) > 0 {
-		res, err := users.DeleteAll(connCtx, &backends.DeleteAllParams{
+		var res *backends.DeleteAllResult
+
+		res, err = users.DeleteAll(connCtx, &backends.DeleteAllParams{
 			IDs: ids,
 		})
 		if err != nil {
