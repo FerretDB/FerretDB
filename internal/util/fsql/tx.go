@@ -65,7 +65,9 @@ func (tx *Tx) Rollback() error {
 
 // QueryContext calls [*sql.Tx.QueryContext].
 func (tx *Tx) QueryContext(ctx context.Context, query string, args ...any) (*Rows, error) {
-	_, cancel := observability.FuncCall(ctx) // FuncCall's context can't be used for QueryContext because of cancellation..
+	// FuncCall's context can't be used for QueryContext because of cancellation..
+	// FIXME
+	_, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
 	start := time.Now()
@@ -83,7 +85,9 @@ func (tx *Tx) QueryContext(ctx context.Context, query string, args ...any) (*Row
 
 // QueryRowContext calls [*sql.Tx.QueryRowContext].
 func (tx *Tx) QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row {
-	_, cancel := observability.FuncCall(ctx) // FuncCall's context can't be used for QueryRowContext because of cancellation.
+	// FuncCall's context can't be used for QueryRowContext because of cancellation.
+	// FIXME
+	_, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
 	start := time.Now()

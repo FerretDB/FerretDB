@@ -43,7 +43,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -575,14 +574,11 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 func (c *conn) handleOpMsg(ctx context.Context, msg *wire.OpMsg, command string) (*wire.OpMsg, error) {
 	if cmd, ok := c.h.Commands()[command]; ok {
 		if cmd.Handler != nil {
-			cmdCtx, cancel := observability.FuncCall(ctx)
-			defer cancel()
+			defer pprof.SetGoroutineLabels(ctx)
+			ctx = pprof.WithLabels(ctx, pprof.Labels("command", command))
+			pprof.SetGoroutineLabels(ctx)
 
-			defer pprof.SetGoroutineLabels(cmdCtx)
-			cmdCtx = pprof.WithLabels(cmdCtx, pprof.Labels("command", command))
-			pprof.SetGoroutineLabels(cmdCtx)
-
-			return cmd.Handler(cmdCtx, msg)
+			return cmd.Handler(ctx, msg)
 		}
 	}
 

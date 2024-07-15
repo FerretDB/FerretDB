@@ -70,15 +70,17 @@ func (db *DB) Close() error {
 
 // Ping calls [*sql.DB.Ping].
 func (db *DB) Ping(ctx context.Context) error {
-	_, cancel := observability.FuncCall(ctx)
+	ctx, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
-	return db.sqlDB.Ping()
+	return db.sqlDB.PingContext(ctx)
 }
 
 // QueryContext calls [*sql.DB.QueryContext].
 func (db *DB) QueryContext(ctx context.Context, query string, args ...any) (*Rows, error) {
-	_, cancel := observability.FuncCall(ctx) // FuncCall's context can't be used for QueryContext because of cancellation.
+	// FuncCall's context can't be used for QueryContext because of cancellation.
+	// FIXME
+	_, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
 	start := time.Now()
@@ -96,7 +98,9 @@ func (db *DB) QueryContext(ctx context.Context, query string, args ...any) (*Row
 
 // QueryRowContext calls [*sql.DB.QueryRowContext].
 func (db *DB) QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row {
-	_, cancel := observability.FuncCall(ctx) // FuncCall's context can't be used for QueryRowContext because of cancellation.
+	// FuncCall's context can't be used for QueryRowContext because of cancellation.
+	// FIXME
+	_, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
 	start := time.Now()
@@ -142,9 +146,6 @@ func (db *DB) ExecContext(ctx context.Context, query string, args ...any) (sql.R
 //
 // If f returns an error or context is canceled, the transaction is rolled back.
 func (db *DB) InTransaction(ctx context.Context, f func(*Tx) error) (err error) {
-	ctx, cancel := observability.FuncCall(ctx)
-	defer cancel()
-
 	var sqlTx *sql.Tx
 
 	if sqlTx, err = db.sqlDB.BeginTx(ctx, nil); err != nil {

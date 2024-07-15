@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
@@ -105,11 +104,9 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 	tb.Helper()
 
 	// FuncCall's context can't be used because the function calls a goroutine and tb.Cleanup because of cancellation.
+	// FIXME
 	_, cancel := observability.FuncCall(ctx)
 	defer cancel()
-
-	_, span := otel.Tracer("").Start(ctx, "setupListener")
-	defer span.End()
 
 	require.Empty(tb, *targetURLF, "-target-url must be empty for in-process FerretDB")
 

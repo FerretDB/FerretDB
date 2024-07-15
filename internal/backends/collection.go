@@ -103,7 +103,9 @@ type QueryResult struct {
 //
 // Limit, if non-zero, should be applied.
 func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*QueryResult, error) {
-	_, cancel := observability.FuncCall(ctx) // FuncCall's context can't be used for Query because of cancellation.
+	// FuncCall's context can't be used for Query because of cancellation.
+	// FIXME
+	_, cancel := observability.FuncCall(ctx)
 	defer cancel()
 
 	if params == nil {

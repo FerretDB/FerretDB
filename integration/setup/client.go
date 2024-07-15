@@ -24,7 +24,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo"
-	"go.opentelemetry.io/otel"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
@@ -96,9 +95,6 @@ func setupClient(tb testtb.TB, ctx context.Context, uri string, disableOtel bool
 
 	setupCtx, cancel := observability.FuncCall(ctx)
 	defer cancel()
-
-	setupCtx, span := otel.Tracer("").Start(setupCtx, "setupClient")
-	defer span.End()
 
 	client, err := makeClient(setupCtx, uri, disableOtel)
 	if err != nil {
