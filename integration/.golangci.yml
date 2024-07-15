@@ -83,6 +83,7 @@ linters-settings:
         alias: dto
       - pkg: github.com/jaswdr/faker
         alias: fakerlib
+
       - pkg: go.opentelemetry.io/otel/attribute
         alias: otelattribute
       - pkg: go.opentelemetry.io/otel/codes
@@ -93,8 +94,15 @@ linters-settings:
         alias: otelsdkresource
       - pkg: go.opentelemetry.io/otel/sdk/trace
         alias: otelsdktrace
-      - pkg: go.opentelemetry.io/otel/semconv/v1.21.0
+      - pkg: go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp
+        alias: otelexporter
+      - pkg: go.opentelemetry.io/otel/semconv/v1.26.0
         alias: otelsemconv
+
+      - pkg: golang.org/x/net/trace
+        alias: xnettrace
+      - pkg: runtime/trace
+        alias: runtimetrace
   # ineffassign
   lll:
     line-length: 175 # TODO reduce it to 130
