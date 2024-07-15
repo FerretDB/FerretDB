@@ -28,7 +28,9 @@ import (
 )
 
 // MsgDropUser implements `dropUser` command.
-func (h *Handler) MsgDropUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgDropUser(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -56,7 +58,7 @@ func (h *Handler) MsgDropUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		return nil, lazyerrors.Error(err)
 	}
 
-	res, err := users.DeleteAll(ctx, &backends.DeleteAllParams{
+	res, err := users.DeleteAll(connCtx, &backends.DeleteAllParams{
 		IDs: []any{dbName + "." + username},
 	})
 	if err != nil {

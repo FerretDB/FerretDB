@@ -33,7 +33,9 @@ import (
 )
 
 // MsgUpdateUser implements `updateUser` command.
-func (h *Handler) MsgUpdateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgUpdateUser(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -159,7 +161,7 @@ func (h *Handler) MsgUpdateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 
 	// Filter isn't being passed to the query as we are filtering after retrieving all data
 	// from the database due to limitations of the internal/backends filters.
-	qr, err := usersCol.Query(ctx, nil)
+	qr, err := usersCol.Query(connCtx, nil)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -214,7 +216,7 @@ func (h *Handler) MsgUpdateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 		)
 	}
 
-	_, err = usersCol.UpdateAll(ctx, &backends.UpdateAllParams{Docs: []*types.Document{saved}})
+	_, err = usersCol.UpdateAll(connCtx, &backends.UpdateAllParams{Docs: []*types.Document{saved}})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

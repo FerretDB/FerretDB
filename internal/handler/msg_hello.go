@@ -31,13 +31,15 @@ import (
 )
 
 // MsgHello implements `hello` command.
-func (h *Handler) MsgHello(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgHello(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	doc, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	resp, err := h.hello(ctx, doc, h.TCPHost, h.ReplSetName)
+	resp, err := h.hello(connCtx, doc, h.TCPHost, h.ReplSetName)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

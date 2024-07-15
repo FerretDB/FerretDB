@@ -29,7 +29,9 @@ import (
 )
 
 // MsgSASLContinue implements `saslContinue` command.
-func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgSASLContinue(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	doc, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -44,7 +46,7 @@ func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.O
 
 	payload = binaryPayload.B
 
-	_, _, conv, _ := conninfo.Get(ctx).Auth()
+	_, _, conv, _ := conninfo.Get(connCtx).Auth()
 
 	if conv == nil {
 		h.L.Warn("saslContinue: no conversation to continue")
@@ -81,7 +83,7 @@ func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	h.L.Debug("saslContinue: step succeed", fields...)
 
 	if conv.Valid() {
-		conninfo.Get(ctx).SetBypassBackendAuth()
+		conninfo.Get(connCtx).SetBypassBackendAuth()
 	}
 
 	var reply wire.OpMsg

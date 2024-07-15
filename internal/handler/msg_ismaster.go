@@ -26,13 +26,15 @@ import (
 )
 
 // MsgIsMaster implements `isMaster` command.
-func (h *Handler) MsgIsMaster(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgIsMaster(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	doc, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	res, err := h.hello(ctx, doc, h.TCPHost, h.ReplSetName)
+	res, err := h.hello(connCtx, doc, h.TCPHost, h.ReplSetName)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

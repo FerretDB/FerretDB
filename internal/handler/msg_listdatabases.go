@@ -28,7 +28,9 @@ import (
 )
 
 // MsgListDatabases implements `listDatabases` command.
-func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgListDatabases(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -52,7 +54,7 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 		}
 	}
 
-	res, err := h.b.ListDatabases(ctx, nil)
+	res, err := h.b.ListDatabases(connCtx, nil)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -68,7 +70,7 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 			continue
 		}
 
-		stats, err := db.Stats(ctx, nil)
+		stats, err := db.Stats(connCtx, nil)
 		if err != nil {
 			h.L.Warn("Failed to get database stats", zap.Error(err))
 			continue

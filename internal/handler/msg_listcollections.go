@@ -31,7 +31,9 @@ import (
 )
 
 // MsgListCollections implements `listCollections` command.
-func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgListCollections(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -70,7 +72,7 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 		return nil, lazyerrors.Error(err)
 	}
 
-	res, err := db.ListCollections(ctx, nil)
+	res, err := db.ListCollections(connCtx, nil)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
