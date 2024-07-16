@@ -121,7 +121,7 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 		return nil, lazyerrors.Error(err)
 	}
 
-	insertSQL := "INSERT INTO %q.%q values('%s')"
+	insertSQL := "INSERT INTO %q.%q VALUES('%s')"
 
 	for _, doc := range params.Docs {
 		jsonBytes, err := marshalHana(doc)
@@ -161,7 +161,7 @@ func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllPa
 		return &res, nil
 	}
 
-	updateSQL := "UPDATE %q.%q SET %q = parse_json('%s') WHERE \"_id\" = %s"
+	updateSQL := "UPDATE %q.%q SET %q = parse_json('%s') WHERE \"_id\" = '%s'"
 
 	for _, doc := range params.Docs {
 		jsonBytes, err := marshalHana(doc)
@@ -171,8 +171,6 @@ func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllPa
 
 		id, _ := doc.Get("_id")
 		must.NotBeZero(id)
-
-		id = jsonToHanaQueryString(string(must.NotFail(sjson.MarshalSingleValue(id))))
 
 		line := fmt.Sprintf(updateSQL, c.database, c.name, c.name, jsonBytes, id)
 
