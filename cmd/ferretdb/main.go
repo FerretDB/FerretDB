@@ -549,7 +549,7 @@ func run() {
 		Mode:           clientconn.Mode(cli.Mode),
 		Metrics:        metrics,
 		Handler:        h,
-		Logger:         logger,
+		Logger:         slogger,
 		TestRecordsDir: cli.Test.RecordsDir,
 	})
 	if err != nil {
