@@ -159,19 +159,22 @@ func prepareWhereClause(table string, filter *types.Document) (string, error) {
 }
 
 func prepareOrderByClause(sort *types.Document) (string, error) {
-	// if sort.Len() != 1 {
-	// 	return "", nil
-	// }
-	// v := must.NotFail(sort.Get("$natural"))
-	// var order string
-	// switch v.(int64) {
-	// case 1:
-	// 	// Ascending order
-	// case -1:
-	// 	order = "DESC"
-	// default:
-	// 	panic("not reachable")
-	// }
-	// orderByClause := fmt.Sprintf(" ORDER BY %q %s", <key>, order)
-	return "", nil
+	if sort.Len() != 1 {
+		return "", nil
+	}
+
+	v := must.NotFail(sort.Get("$natural"))
+	var order string
+
+	switch v.(int64) {
+	case 1:
+		order = "ASC"
+	case -1:
+		order = "DESC"
+	default:
+		panic("not reachable")
+	}
+	orderByClause := fmt.Sprintf(" ORDER BY \"_id\" %s", order)
+
+	return orderByClause, nil
 }
