@@ -21,6 +21,7 @@ import (
 	"errors"
 	_ "expvar" // for metrics
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"net/http"
@@ -157,12 +158,67 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 		}),
 	))
 
+	// TODO prometheus
+	http.HandleFunc("/debug/archive", func(rw http.ResponseWriter, req *http.Request) {
+		//ctx := req.Context() TODO: use ctx in requests
+		// init zip
+
+		// get metrics
+		resp, err := http.Get(fmt.Sprintf("http://%s%s", req.Host, "/debug/metrics"))
+		if err != nil {
+			opts.L.Error("Archive handler failed", zap.Error(err))
+			rw.WriteHeader(http.StatusInternalServerError)
+
+			return
+		}
+
+		// TODO test
+
+		defer resp.Body.Close()
+
+		_, err = io.Copy(rw, resp.Body)
+		if err != nil {
+			opts.L.Error("Archive handler failed", zap.Error(err))
+			rw.WriteHeader(http.StatusInternalServerError)
+
+			return
+		}
+
+		resp.Body.Close()
+
+		// get heap
+		resp, err = http.Get(fmt.Sprintf("http://%s%s", req.Host, "/debug/pprof/heap"))
+		if err != nil {
+			opts.L.Error("Archive handler failed", zap.Error(err))
+			rw.WriteHeader(http.StatusInternalServerError)
+
+			return
+		}
+
+		defer resp.Body.Close()
+
+		_, err = io.Copy(rw, resp.Body)
+		if err != nil {
+			opts.L.Error("Archive handler failed", zap.Error(err))
+			rw.WriteHeader(http.StatusInternalServerError)
+
+			return
+		}
+
+		resp.Body.Close()
+
+		// close zip
+
+		// respond with zip + content-type headers etc
+	})
+
 	handlers := map[string]string{
 		// custom handlers registered above
 		"/debug/metrics": "Metrics in Prometheus format",
 		"/debug/graphs":  "Visualize metrics",
 		"/debug/livez":   "Liveness probe",
 		"/debug/readyz":  "Readiness probe",
+		"/debug/archive": "Metrics and pprof heap profile packed into the zip archive",
 
 		// stdlib handlers
 		"/debug/vars":  "Expvar package metrics",
