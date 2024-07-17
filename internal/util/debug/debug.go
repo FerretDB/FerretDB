@@ -191,7 +191,7 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 
 		resp, err := http.DefaultClient.Do(scrapeReq)
 		if err != nil {
-			opts.L.Error("Archive handler failed", zap.Error(err))
+			opts.L.Error("Archive handler failed - metrics failed", zap.Error(err))
 			rw.WriteHeader(http.StatusInternalServerError)
 
 			return
@@ -221,7 +221,7 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 
 		resp, err = http.DefaultClient.Do(scrapeReq)
 		if err != nil {
-			opts.L.Error("Archive handler failed", zap.Error(err))
+			opts.L.Error("Archive handler failed - pprof failed", zap.Error(err))
 			rw.WriteHeader(http.StatusInternalServerError)
 
 			return
