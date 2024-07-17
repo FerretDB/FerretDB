@@ -17,11 +17,10 @@ package fsql
 import (
 	"context"
 	"database/sql"
-	"fmt"
-	"log/slog"
 	"time"
 
-	"github.com/FerretDB/FerretDB/internal/util/logging"
+	"go.uber.org/zap"
+
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
@@ -31,12 +30,12 @@ import (
 // It exposes the subset of *sql.Tx methods we use.
 type Tx struct {
 	sqlTx *sql.Tx
-	l     *slog.Logger
+	l     *zap.Logger
 	token *resource.Token
 }
 
 // wrapTx creates new Tx.
-func wrapTx(tx *sql.Tx, l *slog.Logger) *Tx {
+func wrapTx(tx *sql.Tx, l *zap.Logger) *Tx {
 	if tx == nil {
 		return nil
 	}
@@ -70,17 +69,13 @@ func (tx *Tx) QueryContext(ctx context.Context, query string, args ...any) (*Row
 
 	start := time.Now()
 
-	fields := []any{slog.Any("args", args)}
-	if tx.l.Enabled(ctx, slog.LevelDebug) {
-		tx.l.With(fields...).DebugContext(ctx, fmt.Sprintf(">>> %s", query))
-	}
+	fields := []any{zap.Any("args", args)}
+	tx.l.Sugar().With(fields...).Debugf(">>> %s", query)
 
 	rows, err := tx.sqlTx.QueryContext(ctx, query, args...)
 
-	fields = append(fields, slog.Duration("time", time.Since(start)), logging.Error(err))
-	if tx.l.Enabled(ctx, slog.LevelDebug) {
-		tx.l.With(fields...).DebugContext(ctx, fmt.Sprintf("<<< %s", query))
-	}
+	fields = append(fields, zap.Duration("time", time.Since(start)), zap.Error(err))
+	tx.l.Sugar().With(fields...).Debugf("<<< %s", query)
 
 	return wrapRows(rows), err
 }
@@ -91,17 +86,13 @@ func (tx *Tx) QueryRowContext(ctx context.Context, query string, args ...any) *s
 
 	start := time.Now()
 
-	fields := []any{slog.Any("args", args)}
-	if tx.l.Enabled(ctx, slog.LevelDebug) {
-		tx.l.With(fields...).DebugContext(ctx, fmt.Sprintf(">>> %s", query))
-	}
+	fields := []any{zap.Any("args", args)}
+	tx.l.Sugar().With(fields...).Debugf(">>> %s", query)
 
 	row := tx.sqlTx.QueryRowContext(ctx, query, args...)
 
-	fields = append(fields, slog.Duration("time", time.Since(start)), logging.Error(row.Err()))
-	if tx.l.Enabled(ctx, slog.LevelDebug) {
-		tx.l.With(fields...).DebugContext(ctx, fmt.Sprintf("<<< %s", query))
-	}
+	fields = append(fields, zap.Duration("time", time.Since(start)), zap.Error(row.Err()))
+	tx.l.Sugar().With(fields...).Debugf("<<< %s", query)
 
 	return row
 }
@@ -112,10 +103,8 @@ func (tx *Tx) ExecContext(ctx context.Context, query string, args ...any) (sql.R
 
 	start := time.Now()
 
-	fields := []any{slog.Any("args", args)}
-	if tx.l.Enabled(ctx, slog.LevelDebug) {
-		tx.l.With(fields...).DebugContext(ctx, fmt.Sprintf(">>> %s", query))
-	}
+	fields := []any{zap.Any("args", args)}
+	tx.l.Sugar().With(fields...).Debugf(">>> %s", query)
 
 	res, err := tx.sqlTx.ExecContext(ctx, query, args...)
 
@@ -127,10 +116,8 @@ func (tx *Tx) ExecContext(ctx context.Context, query string, args ...any) (sql.R
 		ra = &rav
 	}
 
-	fields = append(fields, slog.Any("rows", ra), slog.Duration("time", time.Since(start)), logging.Error(err))
-	if tx.l.Enabled(ctx, slog.LevelDebug) {
-		tx.l.With(fields...).DebugContext(ctx, fmt.Sprintf("<<< %s", query))
-	}
+	fields = append(fields, zap.Int64p("rows", ra), zap.Duration("time", time.Since(start)), zap.Error(err))
+	tx.l.Sugar().With(fields...).Debugf("<<< %s", query)
 
 	return res, err
 }
