@@ -88,30 +88,42 @@ func TestDebug(t *testing.T) {
 			"metrics", "heap",
 		}
 
-		res, err := http.Get(u)
+		var res *http.Response
+
+		res, err = http.Get(u)
 		require.NoError(t, err)
+
 		assert.Equal(t, http.StatusOK, res.StatusCode)
 
 		require.Equal(t, "application/zip", res.Header.Get("Content-Type"))
 
-		require.Regexp(t, regexp.MustCompile(`attachment; filename=FerretDB-debug-\d+.zip`), res.Header.Get("Content-Disposition"))
+		contentDispositionRegexp := regexp.MustCompile(`attachment; filename=FerretDB-debug-\d+.zip`)
+		require.Regexp(t, contentDispositionRegexp, res.Header.Get("Content-Disposition"))
 
-		body, err := io.ReadAll(res.Body)
+		var body []byte
+		body, err = io.ReadAll(res.Body)
+
 		require.NoError(t, err)
 		require.NoError(t, res.Body.Close())
 
-		zipReader, err := zip.NewReader(bytes.NewReader(body), int64(len(body)))
+		var zipReader *zip.Reader
+
+		zipReader, err = zip.NewReader(bytes.NewReader(body), int64(len(body)))
 		require.NoError(t, err)
 		require.Equal(t, len(fileList), len(zipReader.File))
 
 		for _, file := range zipReader.File {
 			require.Contains(t, fileList, file.FileHeader.Name)
 
-			f, err := file.Open()
+			var f io.ReadCloser
+
+			f, err = file.Open()
 			require.NoError(t, err)
 
 			content := make([]byte, 1)
-			n, err := f.Read(content)
+
+			var n int
+			n, err = f.Read(content)
 			require.NoError(t, err)
 
 			assert.Equal(t, 1, n, "file should contain any data, but was empty")

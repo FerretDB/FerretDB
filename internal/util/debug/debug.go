@@ -127,7 +127,11 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 		archiveDurations,
 		http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 			rw.Header().Set("Content-Type", "application/zip")
-			rw.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=FerretDB-debug-%d.zip", time.Now().UnixMilli()))
+
+			rw.Header().Set(
+				"Content-Disposition",
+				fmt.Sprintf("attachment; filename=FerretDB-debug-%d.zip", time.Now().UnixMilli()),
+			)
 
 			ctx := req.Context()
 			zipWriter := zip.NewWriter(rw)
@@ -150,7 +154,12 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 			}
 
 			// we use *http.Request instead of http.Get function to provide the ctx
-			scrapeReq := must.NotFail(http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("http://%s%s", req.Host, "/debug/metrics"), nil))
+			scrapeReq := must.NotFail(http.NewRequestWithContext(
+				ctx,
+				http.MethodGet,
+				fmt.Sprintf("http://%s%s", req.Host, "/debug/metrics"),
+				nil,
+			))
 
 			resp, err := http.DefaultClient.Do(scrapeReq)
 			if err != nil {
@@ -161,7 +170,8 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 			}
 
 			_, err = io.Copy(metricsFile, resp.Body)
-			resp.Body.Close()
+
+			_ = resp.Body.Close()
 
 			if err != nil {
 				opts.L.Error("Archive handler failed", zap.Error(err))
@@ -189,7 +199,7 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 			}
 
 			_, err = io.Copy(heapFile, resp.Body)
-			resp.Body.Close()
+			_ = resp.Body.Close()
 
 			if err != nil {
 				opts.L.Error("Archive handler failed", zap.Error(err))
