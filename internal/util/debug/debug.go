@@ -185,7 +185,6 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 			return
 		}
 
-		// get metrics
 		resp, err := http.Get(fmt.Sprintf("http://%s%s", req.Host, "/debug/metrics"))
 		if err != nil {
 			opts.L.Error("Archive handler failed", zap.Error(err))
@@ -193,8 +192,6 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 
 			return
 		}
-
-		// TODO test
 
 		defer resp.Body.Close()
 
@@ -216,7 +213,6 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 			return
 		}
 
-		// get heap
 		resp, err = http.Get(fmt.Sprintf("http://%s%s", req.Host, "/debug/pprof/heap"))
 		if err != nil {
 			opts.L.Error("Archive handler failed", zap.Error(err))
@@ -236,10 +232,6 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 		}
 
 		resp.Body.Close()
-
-		// close zip
-
-		// respond with zip + content-type headers etc
 	})
 
 	handlers := map[string]string{
