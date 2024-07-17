@@ -127,7 +127,8 @@ func New(opts *NewOpts) (*Handler, error) {
 	h := &Handler{
 		b:       b,
 		NewOpts: opts,
-		cursors: cursor.NewRegistry(opts.L.Named("cursors")),
+		// TODO https://github.com/FerretDB/FerretDB/issues/4013
+		cursors: cursor.NewRegistry(logging.WithName(slog.Default(), "cursors")),
 
 		cappedCleanupStop: make(chan struct{}),
 		cleanupCappedCollectionsDocs: prometheus.NewCounterVec(
