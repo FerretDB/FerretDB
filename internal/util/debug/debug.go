@@ -162,7 +162,7 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 
 	// TODO prometheus
 	http.HandleFunc("/debug/archive", func(rw http.ResponseWriter, req *http.Request) {
-		//ctx := req.Context() TODO: use ctx in requests
+		ctx := req.Context()
 
 		rw.Header().Set("Content-Type", "application/zip")
 		rw.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=FerretDB-debug-%d.zip", time.Now().UnixMilli()))
@@ -186,7 +186,9 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 			return
 		}
 
-		resp, err := http.Get(fmt.Sprintf("http://%s%s", req.Host, "/debug/metrics"))
+		scrapeReq := must.NotFail(http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("http://%s%s", req.Host, "/debug/metrics"), nil))
+
+		resp, err := http.DefaultClient.Do(scrapeReq)
 		if err != nil {
 			opts.L.Error("Archive handler failed", zap.Error(err))
 			rw.WriteHeader(http.StatusInternalServerError)
@@ -214,7 +216,9 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 			return
 		}
 
-		resp, err = http.Get(fmt.Sprintf("http://%s%s", req.Host, "/debug/pprof/heap"))
+		scrapeReq.URL.Path = "/debug/pprof/heap"
+
+		resp, err = http.DefaultClient.Do(scrapeReq)
 		if err != nil {
 			opts.L.Error("Archive handler failed", zap.Error(err))
 			rw.WriteHeader(http.StatusInternalServerError)
