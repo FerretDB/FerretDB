@@ -186,6 +186,7 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 			return
 		}
 
+		// we use *http.Request instead of http.Get function to provide the ctx
 		scrapeReq := must.NotFail(http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("http://%s%s", req.Host, "/debug/metrics"), nil))
 
 		resp, err := http.DefaultClient.Do(scrapeReq)
