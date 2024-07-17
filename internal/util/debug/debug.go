@@ -162,7 +162,6 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 	// TODO prometheus
 	http.HandleFunc("/debug/archive", func(rw http.ResponseWriter, req *http.Request) {
 		//ctx := req.Context() TODO: use ctx in requests
-		// init zip
 
 		rw.Header().Set("Content-Type", "application/zip")
 		rw.Header().Set("Content-Disposition", "attachment; filename=FerretDB-debug.zip")
