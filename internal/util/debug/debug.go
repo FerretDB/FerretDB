@@ -164,6 +164,9 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 		//ctx := req.Context() TODO: use ctx in requests
 		// init zip
 
+		rw.Header().Set("Content-Type", "application/zip")
+		rw.Header().Set("Content-Disposition", "attachment; filename=FerretDB-debug.zip")
+
 		zipWriter := zip.NewWriter(rw)
 
 		defer func() {
@@ -174,9 +177,6 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 				return
 			}
 		}()
-
-		rw.Header().Set("Content-Type", "application/zip")
-		rw.Header().Set("Content-Disposition", "attachment; filename=FerretDB-debug.zip")
 
 		metricsFile, err := zipWriter.Create("metrics")
 		if err != nil {
