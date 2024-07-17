@@ -15,7 +15,6 @@
 package logging
 
 import (
-	"fmt"
 	"log"
 	"log/slog"
 
@@ -36,19 +35,8 @@ var logLevels = map[zapcore.Level]slog.Level{
 	zapcore.FatalLevel:  LevelFatal,
 }
 
-// Setup initializes logging with a given level.
-func Setup(level zapcore.Level, encoding, uuid string) {
-	slogLevel, ok := logLevels[level]
-	if !ok {
-		panic(fmt.Sprintf("invalid log level %d", level))
-	}
-
-	slogOpts := &NewHandlerOpts{
-		Base:  encoding,
-		Level: slogLevel,
-	}
-	setupSlog(slogOpts, uuid)
-
+// SetupZap initializes logging with a given level.
+func SetupZap(level zapcore.Level, encoding, uuid string) {
 	config := zap.Config{
 		Level:             zap.NewAtomicLevelAt(level),
 		Development:       debugbuild.Enabled,

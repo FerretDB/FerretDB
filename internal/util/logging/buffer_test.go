@@ -15,6 +15,7 @@
 package logging
 
 import (
+	"log/slog"
 	"testing"
 	"time"
 
@@ -26,7 +27,11 @@ import (
 func TestCircularBufferHook(t *testing.T) {
 	RecentEntries = NewCircularBuffer(2)
 
-	Setup(zap.InfoLevel, "console", "")
+	opts := &NewHandlerOpts{
+		Base:  "console",
+		Level: slog.LevelInfo,
+	}
+	Setup(opts, "")
 
 	for _, tc := range []struct { //nolint:vet // for readability
 		msg      string

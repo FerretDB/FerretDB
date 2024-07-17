@@ -22,6 +22,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/url"
 	"sync"
 
@@ -39,8 +40,11 @@ import (
 type Config struct {
 	Listener ListenerConfig
 
-	// Logger to use; if nil, it uses the default global logger.
+	// Deprecated: Use slog logger, panics if not nil.
 	Logger *zap.Logger
+
+	// slog logger to use; if nil, it uses the default global logger.
+	SLogger *slog.Logger
 
 	// Handler to use; one of `postgresql` or `sqlite`.
 	Handler string
@@ -117,15 +121,17 @@ func New(config *Config) (*FerretDB, error) {
 
 	metrics := connmetrics.NewListenerMetrics()
 
-	log := config.Logger
-	if log == nil {
-		log = getGlobalLogger()
-	} else {
-		log = logging.WithHooks(log)
+	log := getGlobalLogger()
+
+	if config.Logger != nil {
+		log.LogAttrs(context.Background(), logging.LevelFatal, "Config.Logger is replaced by Config.SLogger")
 	}
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/4013
+	zlog := zap.L()
+
 	h, closeBackend, err := registry.NewHandler(config.Handler, &registry.NewHandlerOpts{
-		Logger:        log,
+		Logger:        zlog,
 		ConnMetrics:   metrics.ConnMetrics,
 		StateProvider: sp,
 		TCPHost:       config.Listener.TCP,
@@ -158,7 +164,7 @@ func New(config *Config) (*FerretDB, error) {
 		Mode:    clientconn.NormalMode,
 		Metrics: metrics,
 		Handler: h,
-		Logger:  log,
+		Logger:  zlog,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct handler: %s", err)
@@ -225,20 +231,24 @@ func (f *FerretDB) MongoDBURI() string {
 
 var (
 	loggerOnce sync.Once
-	logger     *zap.Logger
+	logger     *slog.Logger
 )
 
 // getGlobalLogger retrieves or creates a global logger using
 // a loggerOnce to ensure it is created only once.
-func getGlobalLogger() *zap.Logger {
+func getGlobalLogger() *slog.Logger {
 	loggerOnce.Do(func() {
-		level := zap.ErrorLevel
+		level := slog.LevelError
 		if version.Get().DebugBuild {
-			level = zap.DebugLevel
+			level = slog.LevelDebug
 		}
 
-		logging.Setup(level, "console", "")
-		logger = zap.L()
+		opts := &logging.NewHandlerOpts{
+			Base:  "console",
+			Level: level,
+		}
+		logging.Setup(opts, "")
+		logger = slog.Default()
 	})
 
 	return logger

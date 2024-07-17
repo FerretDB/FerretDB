@@ -84,3 +84,23 @@ func TestShortPath(t *testing.T) {
 	assert.Equal(t, "dir2/file.go", shortPath("/dir1/dir2/file.go"))
 	assert.Equal(t, "dir3/file.go", shortPath("/dir1/dir2/dir3/file.go"))
 }
+
+func TestWrappedLogger(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+
+	var buf bytes.Buffer
+	l := slog.New(slog.NewTextHandler(&buf, nil)).WithGroup("g1").With(slog.String("k1", "v1"))
+
+	pc, _, _, _ := runtime.Caller(0)
+	r := slog.NewRecord(time.Date(2024, 5, 31, 9, 26, 42, 0, time.UTC), slog.LevelInfo, "message", pc)
+
+	h := WrapHandler(&buf, l.Handler())
+
+	wrappedLogger := WithName(slog.New(h), "test.logger")
+	require.NoError(t, wrappedLogger.Handler().Handle(ctx, r))
+
+	expected := "time=2024-05-31T09:26:42.000Z level=INFO msg=message g1.k1=v1 g1.name=test.logger\n"
+	assert.Equal(t, expected, buf.String(), "actual:\n%s", hex.Dump(buf.Bytes()))
+}

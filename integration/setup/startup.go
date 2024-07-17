@@ -16,6 +16,7 @@ package setup
 
 import (
 	"context"
+	"log/slog"
 	"os"
 	"runtime"
 	"slices"
@@ -45,7 +46,11 @@ var startupWG sync.WaitGroup
 
 // Startup initializes things that should be initialized only once.
 func Startup() {
-	logging.Setup(zap.DebugLevel, "console", "")
+	opts := &logging.NewHandlerOpts{
+		Base:  "console",
+		Level: slog.LevelDebug,
+	}
+	logging.Setup(opts, "")
 
 	// https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables
 	if t, _ := strconv.ParseBool(os.Getenv("RUNNER_DEBUG")); t {

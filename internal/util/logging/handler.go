@@ -131,6 +131,16 @@ func NewHandler(out io.Writer, opts *NewHandlerOpts) *Handler {
 	}
 }
 
+// WrapHandler takes a handler and wraps it with support for
+// additional log levels, shorter source location and appends
+// the record to [RecentEntries] used by `getLog` command.
+func WrapHandler(out io.Writer, h slog.Handler) *Handler {
+	return &Handler{
+		base: h,
+		out:  out,
+	}
+}
+
 // Enabled implements [slog.Handler].
 func (h *Handler) Enabled(ctx context.Context, l slog.Level) bool {
 	return h.base.Enabled(ctx, l)
