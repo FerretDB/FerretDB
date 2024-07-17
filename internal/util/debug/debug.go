@@ -162,11 +162,10 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 
 	// TODO prometheus
 	http.HandleFunc("/debug/archive", func(rw http.ResponseWriter, req *http.Request) {
-		ctx := req.Context()
-
 		rw.Header().Set("Content-Type", "application/zip")
 		rw.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=FerretDB-debug-%d.zip", time.Now().UnixMilli()))
 
+		ctx := req.Context()
 		zipWriter := zip.NewWriter(rw)
 
 		defer func() {
