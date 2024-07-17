@@ -16,6 +16,7 @@ package setup
 
 import (
 	"context"
+	"log/slog"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -217,7 +218,7 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 		Mode:           clientconn.NormalMode,
 		Metrics:        listenerMetrics,
 		Handler:        h,
-		Logger:         logger,
+		Logger:         slog.Default(),
 		TestRecordsDir: testutil.TmpRecordsDir,
 	}
 
