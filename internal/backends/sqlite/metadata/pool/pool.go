@@ -20,7 +20,6 @@ package pool
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"net/url"
 	"os"
 	"path"
@@ -30,11 +29,11 @@ import (
 	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 	"github.com/FerretDB/FerretDB/internal/util/state"
@@ -54,7 +53,7 @@ const (
 //nolint:vet // for readability
 type Pool struct {
 	uri url.URL
-	l   *slog.Logger
+	l   *zap.Logger
 	sp  *state.Provider
 
 	rw  sync.RWMutex
@@ -69,7 +68,7 @@ type Pool struct {
 //
 // The returned map is the initial set of existing databases.
 // It should not be modified.
-func New(u string, l *slog.Logger, sp *state.Provider) (*Pool, map[string]*fsql.DB, error) {
+func New(u string, l *zap.Logger, sp *state.Provider) (*Pool, map[string]*fsql.DB, error) {
 	uri, err := parseURI(u)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to parse SQLite URI %q: %s", u, err)
@@ -99,7 +98,7 @@ func New(u string, l *slog.Logger, sp *state.Provider) (*Pool, map[string]*fsql.
 		name := p.databaseName(f)
 		uri := p.databaseURI(name)
 
-		p.l.Debug("Opening existing database", slog.String("name", name), slog.String("uri", uri))
+		p.l.Debug("Opening existing database.", zap.String("name", name), zap.String("uri", uri))
 
 		db, err := openDB(name, uri, p.memory(), l, p.sp)
 		if err != nil {
@@ -209,7 +208,7 @@ func (p *Pool) GetOrCreate(ctx context.Context, name string) (*fsql.DB, bool, er
 		return nil, false, lazyerrors.Errorf("%s: %w", uri, err)
 	}
 
-	p.l.DebugContext(ctx, "Database created", slog.String("name", name), slog.String("uri", uri))
+	p.l.Debug("Database created.", zap.String("name", name), zap.String("uri", uri))
 
 	p.dbs[name] = db
 
@@ -233,24 +232,18 @@ func (p *Pool) Drop(ctx context.Context, name string) bool {
 	}
 
 	if err := db.Close(); err != nil {
-		p.l.WarnContext(ctx, "Failed to close database connection", slog.String("name", name), logging.Error(err))
+		p.l.Warn("Failed to close database connection.", zap.String("name", name), zap.Error(err))
 	}
 
 	delete(p.dbs, name)
 
 	if f := p.databaseFile(name); f != "" {
 		if err := os.Remove(f); err != nil {
-			p.l.WarnContext(
-				ctx,
-				"Failed to remove database file",
-				slog.String("file", f),
-				slog.String("name", name),
-				logging.Error(err),
-			)
+			p.l.Warn("Failed to remove database file.", zap.String("file", f), zap.String("name", name), zap.Error(err))
 		}
 	}
 
-	p.l.DebugContext(ctx, "Database dropped", slog.String("name", name))
+	p.l.Debug("Database dropped.", zap.String("name", name))
 
 	return true
 }

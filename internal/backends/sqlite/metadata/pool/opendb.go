@@ -17,14 +17,12 @@ package pool
 import (
 	"context"
 	"database/sql"
-	"log/slog"
 
 	"go.uber.org/zap"
 	_ "modernc.org/sqlite" // register database/sql driver
 
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
@@ -34,7 +32,7 @@ import (
 // so no validation is needed.
 // One exception is very long full path names for the filesystem,
 // but we don't check it.
-func openDB(name, uri string, memory bool, l *slog.Logger, sp *state.Provider) (*fsql.DB, error) {
+func openDB(name, uri string, memory bool, l *zap.Logger, sp *state.Provider) (*fsql.DB, error) {
 	db, err := sql.Open("sqlite", uri)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -65,13 +63,13 @@ func openDB(name, uri string, memory bool, l *slog.Logger, sp *state.Provider) (
 
 			row := db.QueryRowContext(context.Background(), "SELECT sqlite_version()")
 			if err := row.Scan(&s.BackendVersion); err != nil {
-				l.Error("sqlite.metadata.pool.openDB: failed to query SQLite version", logging.Error(err))
+				l.Error("sqlite.metadata.pool.openDB: failed to query SQLite version", zap.Error(err))
 			}
 		})
 		if err != nil {
-			l.Error("sqlite.metadata.pool.openDB: failed to update state", logging.Error(err))
+			l.Error("sqlite.metadata.pool.openDB: failed to update state", zap.Error(err))
 		}
 	}
 
-	return fsql.WrapDB(db, name, zap.L()), nil
+	return fsql.WrapDB(db, name, l), nil
 }
