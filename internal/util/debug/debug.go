@@ -91,21 +91,16 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 
 	stdL := must.NotFail(zap.NewStdLogAt(opts.L, zap.WarnLevel))
 
-	http.Handle("/debug/metrics", promhttp.InstrumentMetricHandler(
-		opts.R, promhttp.HandlerFor(prometheus.DefaultGatherer, promhttp.HandlerOpts{
-			ErrorLog:          stdL,
-			ErrorHandling:     promhttp.ContinueOnError,
-			Registry:          opts.R,
-			EnableOpenMetrics: true,
-		}),
-	))
-
-	svOpts := []statsviz.Option{
-		statsviz.Root("/debug/graphs"),
-		// TODO https://github.com/FerretDB/FerretDB/issues/3600
-	}
-	must.NoError(statsviz.Register(http.DefaultServeMux, svOpts...))
-
+	archiveDurations := prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Namespace: namespace,
+			Subsystem: subsystem,
+			Name:      "archive_response_seconds",
+			Help:      "Archive response time seconds.",
+			Buckets:   []float64{0.1, 0.5, 1, 5},
+		},
+		[]string{"code"},
+	)
 	probeDurations := prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Namespace: namespace,
@@ -117,7 +112,102 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 		[]string{"probe", "code"},
 	)
 
-	must.NoError(opts.R.Register(probeDurations))
+	opts.R.MustRegister(archiveDurations, probeDurations)
+
+	http.Handle("/debug/metrics", promhttp.InstrumentMetricHandler(
+		opts.R, promhttp.HandlerFor(prometheus.DefaultGatherer, promhttp.HandlerOpts{
+			ErrorLog:          stdL,
+			ErrorHandling:     promhttp.ContinueOnError,
+			Registry:          opts.R,
+			EnableOpenMetrics: true,
+		}),
+	))
+
+	http.HandleFunc("/debug/archive", promhttp.InstrumentHandlerDuration(
+		archiveDurations,
+		http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			rw.Header().Set("Content-Type", "application/zip")
+			rw.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=FerretDB-debug-%d.zip", time.Now().UnixMilli()))
+
+			ctx := req.Context()
+			zipWriter := zip.NewWriter(rw)
+
+			defer func() {
+				if err := zipWriter.Close(); err != nil {
+					opts.L.Error("Archive handler failed", zap.Error(err))
+					rw.WriteHeader(http.StatusInternalServerError)
+
+					return
+				}
+			}()
+
+			metricsFile, err := zipWriter.Create("metrics")
+			if err != nil {
+				opts.L.Error("Archive handler failed", zap.Error(err))
+				rw.WriteHeader(http.StatusInternalServerError)
+
+				return
+			}
+
+			// we use *http.Request instead of http.Get function to provide the ctx
+			scrapeReq := must.NotFail(http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("http://%s%s", req.Host, "/debug/metrics"), nil))
+
+			resp, err := http.DefaultClient.Do(scrapeReq)
+			if err != nil {
+				opts.L.Error("Archive handler failed - metrics failed", zap.Error(err))
+				rw.WriteHeader(http.StatusInternalServerError)
+
+				return
+			}
+
+			defer resp.Body.Close()
+
+			_, err = io.Copy(metricsFile, resp.Body)
+			if err != nil {
+				opts.L.Error("Archive handler failed", zap.Error(err))
+				rw.WriteHeader(http.StatusInternalServerError)
+
+				return
+			}
+
+			resp.Body.Close()
+
+			heapFile, err := zipWriter.Create("heap")
+			if err != nil {
+				opts.L.Error("Archive handler failed", zap.Error(err))
+				rw.WriteHeader(http.StatusInternalServerError)
+
+				return
+			}
+
+			scrapeReq.URL.Path = "/debug/pprof/heap"
+
+			resp, err = http.DefaultClient.Do(scrapeReq)
+			if err != nil {
+				opts.L.Error("Archive handler failed - pprof failed", zap.Error(err))
+				rw.WriteHeader(http.StatusInternalServerError)
+
+				return
+			}
+
+			defer resp.Body.Close()
+
+			_, err = io.Copy(heapFile, resp.Body)
+			if err != nil {
+				opts.L.Error("Archive handler failed", zap.Error(err))
+				rw.WriteHeader(http.StatusInternalServerError)
+
+				return
+			}
+
+			resp.Body.Close()
+		})))
+
+	svOpts := []statsviz.Option{
+		statsviz.Root("/debug/graphs"),
+		// TODO https://github.com/FerretDB/FerretDB/issues/3600
+	}
+	must.NoError(statsviz.Register(http.DefaultServeMux, svOpts...))
 
 	http.Handle("/debug/livez", promhttp.InstrumentHandlerDuration(
 		probeDurations.MustCurryWith(prometheus.Labels{"probe": "livez"}),
@@ -160,92 +250,13 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 		}),
 	))
 
-	// TODO prometheus
-	http.HandleFunc("/debug/archive", func(rw http.ResponseWriter, req *http.Request) {
-		rw.Header().Set("Content-Type", "application/zip")
-		rw.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=FerretDB-debug-%d.zip", time.Now().UnixMilli()))
-
-		ctx := req.Context()
-		zipWriter := zip.NewWriter(rw)
-
-		defer func() {
-			if err := zipWriter.Close(); err != nil {
-				opts.L.Error("Archive handler failed", zap.Error(err))
-				rw.WriteHeader(http.StatusInternalServerError)
-
-				return
-			}
-		}()
-
-		metricsFile, err := zipWriter.Create("metrics")
-		if err != nil {
-			opts.L.Error("Archive handler failed", zap.Error(err))
-			rw.WriteHeader(http.StatusInternalServerError)
-
-			return
-		}
-
-		// we use *http.Request instead of http.Get function to provide the ctx
-		scrapeReq := must.NotFail(http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("http://%s%s", req.Host, "/debug/metrics"), nil))
-
-		resp, err := http.DefaultClient.Do(scrapeReq)
-		if err != nil {
-			opts.L.Error("Archive handler failed - metrics failed", zap.Error(err))
-			rw.WriteHeader(http.StatusInternalServerError)
-
-			return
-		}
-
-		defer resp.Body.Close()
-
-		_, err = io.Copy(metricsFile, resp.Body)
-		if err != nil {
-			opts.L.Error("Archive handler failed", zap.Error(err))
-			rw.WriteHeader(http.StatusInternalServerError)
-
-			return
-		}
-
-		resp.Body.Close()
-
-		heapFile, err := zipWriter.Create("heap")
-		if err != nil {
-			opts.L.Error("Archive handler failed", zap.Error(err))
-			rw.WriteHeader(http.StatusInternalServerError)
-
-			return
-		}
-
-		scrapeReq.URL.Path = "/debug/pprof/heap"
-
-		resp, err = http.DefaultClient.Do(scrapeReq)
-		if err != nil {
-			opts.L.Error("Archive handler failed - pprof failed", zap.Error(err))
-			rw.WriteHeader(http.StatusInternalServerError)
-
-			return
-		}
-
-		defer resp.Body.Close()
-
-		_, err = io.Copy(heapFile, resp.Body)
-		if err != nil {
-			opts.L.Error("Archive handler failed", zap.Error(err))
-			rw.WriteHeader(http.StatusInternalServerError)
-
-			return
-		}
-
-		resp.Body.Close()
-	})
-
 	handlers := map[string]string{
 		// custom handlers registered above
 		"/debug/metrics": "Metrics in Prometheus format",
+		"/debug/archive": "Metrics and pprof heap profile packed into the zip archive",
 		"/debug/graphs":  "Visualize metrics",
 		"/debug/livez":   "Liveness probe",
 		"/debug/readyz":  "Readiness probe",
-		"/debug/archive": "Metrics and pprof heap profile packed into the zip archive",
 
 		// stdlib handlers
 		"/debug/vars":  "Expvar package metrics",
