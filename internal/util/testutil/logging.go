@@ -25,8 +25,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
-// ZLogger returns zap test logger with valid configuration.
-func ZLogger(tb testtb.TB) *zap.Logger {
+// Logger returns zap test logger with valid configuration.
+func Logger(tb testtb.TB) *zap.Logger {
 	return LevelLogger(tb, zap.NewAtomicLevelAt(zap.DebugLevel))
 }
 
@@ -40,8 +40,10 @@ func LevelLogger(tb testtb.TB, level zap.AtomicLevel) *zap.Logger {
 	return zaptest.NewLogger(tb, opts...)
 }
 
-// Logger returns slog test logger.
-func Logger(tb testtb.TB) *slog.Logger {
+// SLogger returns slog test logger.
+//
+// TODO https://github.com/FerretDB/FerretDB/issues/4013
+func SLogger(tb testtb.TB) *slog.Logger {
 	t := tb.(testing.TB)
 	return slogt.New(t)
 }

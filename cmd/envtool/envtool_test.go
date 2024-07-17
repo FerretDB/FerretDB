@@ -30,7 +30,7 @@ func TestPrintDiagnosticData(t *testing.T) {
 
 	assert.NotPanics(t, func() {
 		var buf bytes.Buffer
-		l := testutil.ZLogger(t)
+		l := testutil.Logger(t)
 		err := printDiagnosticData(&buf, nil, l.Sugar())
 		require.NoError(t, err)
 	})

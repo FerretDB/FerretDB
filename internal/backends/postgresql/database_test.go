@@ -41,7 +41,7 @@ func TestDatabaseStats(t *testing.T) {
 
 	params := NewBackendParams{
 		URI:       testutil.TestPostgreSQLURI(t, ctx, ""),
-		L:         testutil.Logger(t),
+		L:         testutil.SLogger(t),
 		P:         sp,
 		BatchSize: 1000,
 	}

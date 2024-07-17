@@ -45,7 +45,7 @@ func testBackends(t *testing.T) map[string]*testBackend {
 		t.Skip("skipping in -short mode")
 	}
 
-	l := testutil.Logger(t)
+	l := testutil.SLogger(t)
 
 	res := map[string]*testBackend{}
 
