@@ -20,6 +20,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite"
 	"github.com/FerretDB/FerretDB/internal/handler"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/logging"
 )
 
 // init registers "sqlite" handler.
@@ -45,7 +46,7 @@ func init() {
 			SetupPassword: opts.SetupPassword,
 			SetupTimeout:  opts.SetupTimeout,
 
-			L:             opts.Logger.Named("sqlite"),
+			L:             logging.WithName(opts.SLogger, "sqlite"),
 			ConnMetrics:   opts.ConnMetrics,
 			StateProvider: opts.StateProvider,
 
