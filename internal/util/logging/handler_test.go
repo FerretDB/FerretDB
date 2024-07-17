@@ -96,7 +96,7 @@ func TestWrappedLogger(t *testing.T) {
 	pc, _, _, _ := runtime.Caller(0)
 	r := slog.NewRecord(time.Date(2024, 5, 31, 9, 26, 42, 0, time.UTC), slog.LevelInfo, "message", pc)
 
-	h := WrapHandler(&buf, l.Handler())
+	h := wrapHandler(&buf, l.Handler())
 
 	wrappedLogger := WithName(slog.New(h), "test.logger")
 	require.NoError(t, wrappedLogger.Handler().Handle(ctx, r))

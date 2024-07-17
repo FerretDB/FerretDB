@@ -76,3 +76,9 @@ func Setup(opts *NewHandlerOpts, uuid string) {
 	slog.SetDefault(l)
 	slog.SetLogLoggerLevel(slog.LevelInfo + 2)
 }
+
+// WrapLogger wraps the given logger with a handler.
+func WrapLogger(l *slog.Logger) *slog.Logger {
+	h := wrapHandler(os.Stderr, l.Handler())
+	return slog.New(h)
+}

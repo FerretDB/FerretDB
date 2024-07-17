@@ -121,7 +121,12 @@ func New(config *Config) (*FerretDB, error) {
 
 	metrics := connmetrics.NewListenerMetrics()
 
-	log := getGlobalLogger()
+	log := config.SLogger
+	if log == nil {
+		log = getGlobalLogger()
+	} else {
+		log = logging.WrapLogger(log)
+	}
 
 	if config.Logger != nil {
 		log.LogAttrs(context.Background(), logging.LevelFatal, "Config.Logger is replaced by Config.SLogger")
