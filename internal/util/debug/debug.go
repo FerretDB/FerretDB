@@ -160,17 +160,15 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 				return
 			}
 
-			defer resp.Body.Close()
-
 			_, err = io.Copy(metricsFile, resp.Body)
+			resp.Body.Close()
+
 			if err != nil {
 				opts.L.Error("Archive handler failed", zap.Error(err))
 				rw.WriteHeader(http.StatusInternalServerError)
 
 				return
 			}
-
-			resp.Body.Close()
 
 			heapFile, err := zipWriter.Create("heap")
 			if err != nil {
@@ -190,17 +188,15 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 				return
 			}
 
-			defer resp.Body.Close()
-
 			_, err = io.Copy(heapFile, resp.Body)
+			resp.Body.Close()
+
 			if err != nil {
 				opts.L.Error("Archive handler failed", zap.Error(err))
 				rw.WriteHeader(http.StatusInternalServerError)
 
 				return
 			}
-
-			resp.Body.Close()
 		})))
 
 	svOpts := []statsviz.Option{
