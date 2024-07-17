@@ -175,6 +175,9 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 			}
 		}()
 
+		rw.Header().Set("Content-Type", "application/zip")
+		rw.Header().Set("Content-Disposition", "attachment; filename=FerretDB-debug.zip")
+
 		metricsFile, err := zipWriter.Create("metrics")
 		if err != nil {
 			opts.L.Error("Archive handler failed", zap.Error(err))
