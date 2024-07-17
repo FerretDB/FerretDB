@@ -61,7 +61,7 @@ func TestPostgreSQLURI(tb testtb.TB, ctx context.Context, baseURI string) string
 	cfg.MaxConns = 1
 
 	cfg.ConnConfig.Tracer = &tracelog.TraceLog{
-		Logger:   zapadapter.NewLogger(Logger(tb)),
+		Logger:   zapadapter.NewLogger(ZLogger(tb)),
 		LogLevel: tracelog.LogLevelTrace,
 	}
 

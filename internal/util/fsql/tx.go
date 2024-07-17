@@ -17,6 +17,8 @@ package fsql
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"log/slog"
 	"time"
 
 	"go.uber.org/zap"
@@ -30,12 +32,12 @@ import (
 // It exposes the subset of *sql.Tx methods we use.
 type Tx struct {
 	sqlTx *sql.Tx
-	l     *zap.Logger
+	l     *slog.Logger
 	token *resource.Token
 }
 
 // wrapTx creates new Tx.
-func wrapTx(tx *sql.Tx, l *zap.Logger) *Tx {
+func wrapTx(tx *sql.Tx, l *slog.Logger) *Tx {
 	if tx == nil {
 		return nil
 	}
@@ -70,12 +72,16 @@ func (tx *Tx) QueryContext(ctx context.Context, query string, args ...any) (*Row
 	start := time.Now()
 
 	fields := []any{zap.Any("args", args)}
-	tx.l.Sugar().With(fields...).Debugf(">>> %s", query)
+	if tx.l.Enabled(ctx, slog.LevelDebug) {
+		tx.l.With(fields...).DebugContext(ctx, fmt.Sprintf(">>> %s", query))
+	}
 
 	rows, err := tx.sqlTx.QueryContext(ctx, query, args...)
 
 	fields = append(fields, zap.Duration("time", time.Since(start)), zap.Error(err))
-	tx.l.Sugar().With(fields...).Debugf("<<< %s", query)
+	if tx.l.Enabled(ctx, slog.LevelDebug) {
+		tx.l.With(fields...).DebugContext(ctx, fmt.Sprintf("<<< %s", query))
+	}
 
 	return wrapRows(rows), err
 }
@@ -87,12 +93,16 @@ func (tx *Tx) QueryRowContext(ctx context.Context, query string, args ...any) *s
 	start := time.Now()
 
 	fields := []any{zap.Any("args", args)}
-	tx.l.Sugar().With(fields...).Debugf(">>> %s", query)
+	if tx.l.Enabled(ctx, slog.LevelDebug) {
+		tx.l.With(fields...).DebugContext(ctx, fmt.Sprintf(">>> %s", query))
+	}
 
 	row := tx.sqlTx.QueryRowContext(ctx, query, args...)
 
 	fields = append(fields, zap.Duration("time", time.Since(start)), zap.Error(row.Err()))
-	tx.l.Sugar().With(fields...).Debugf("<<< %s", query)
+	if tx.l.Enabled(ctx, slog.LevelDebug) {
+		tx.l.With(fields...).DebugContext(ctx, fmt.Sprintf("<<< %s", query))
+	}
 
 	return row
 }
@@ -104,7 +114,9 @@ func (tx *Tx) ExecContext(ctx context.Context, query string, args ...any) (sql.R
 	start := time.Now()
 
 	fields := []any{zap.Any("args", args)}
-	tx.l.Sugar().With(fields...).Debugf(">>> %s", query)
+	if tx.l.Enabled(ctx, slog.LevelDebug) {
+		tx.l.With(fields...).DebugContext(ctx, fmt.Sprintf(">>> %s", query))
+	}
 
 	res, err := tx.sqlTx.ExecContext(ctx, query, args...)
 
@@ -117,7 +129,9 @@ func (tx *Tx) ExecContext(ctx context.Context, query string, args ...any) (sql.R
 	}
 
 	fields = append(fields, zap.Int64p("rows", ra), zap.Duration("time", time.Since(start)), zap.Error(err))
-	tx.l.Sugar().With(fields...).Debugf("<<< %s", query)
+	if tx.l.Enabled(ctx, slog.LevelDebug) {
+		tx.l.With(fields...).DebugContext(ctx, fmt.Sprintf("<<< %s", query))
+	}
 
 	return res, err
 }

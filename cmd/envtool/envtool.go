@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"html/template"
 	"io"
+	"log/slog"
 	"net"
 	"net/url"
 	"os"
@@ -106,7 +107,8 @@ func setupAnyPostgres(ctx context.Context, logger *zap.SugaredLogger, uri string
 		return err
 	}
 
-	p, err := pool.New(uri, logger.Desugar(), sp)
+	// TODO https://github.com/FerretDB/FerretDB/issues/4013
+	p, err := pool.New(uri, slog.Default(), sp)
 	if err != nil {
 		return err
 	}
@@ -159,7 +161,8 @@ func setupMySQL(ctx context.Context, logger *zap.SugaredLogger) error {
 		return err
 	}
 
-	p, err := mysqlpool.New(uri, logger.Desugar(), sp)
+	// TODO https://github.com/FerretDB/FerretDB/issues/4013
+	p, err := mysqlpool.New(uri, slog.Default(), sp)
 	if err != nil {
 		return err
 	}
