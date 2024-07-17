@@ -22,7 +22,9 @@ import (
 )
 
 // MsgCollMod implements `collMod` command.
-func (h *Handler) MsgCollMod(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgCollMod(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	return nil, handlererrors.NewCommandErrorMsg(
 		handlererrors.ErrNotImplemented,
 		"`collMod` command is not implemented yet",

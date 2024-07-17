@@ -26,7 +26,9 @@ import (
 )
 
 // MsgDropDatabase implements `dropDatabase` command.
-func (h *Handler) MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgDropDatabase(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -50,7 +52,7 @@ func (h *Handler) MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.O
 		}
 	}
 
-	err = h.b.DropDatabase(ctx, &backends.DropDatabaseParams{
+	err = h.b.DropDatabase(connCtx, &backends.DropDatabaseParams{
 		Name: dbName,
 	})
 

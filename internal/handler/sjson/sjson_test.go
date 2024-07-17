@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -28,6 +27,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
@@ -188,7 +188,7 @@ func isValidDocumentData(v sjsontype) bool {
 
 func addRecordedFuzzDocs(f *testing.F, needDocument, needSchema bool) int {
 	// TODO https://github.com/FerretDB/FerretDB/issues/3067
-	records, err := wire.LoadRecords(filepath.Join("..", "..", "..", "tmp", "records"), 100)
+	records, err := wire.LoadRecords(testutil.TmpRecordsDir, 100)
 	require.NoError(f, err)
 
 	var n int
@@ -216,7 +216,12 @@ func addRecordedFuzzDocs(f *testing.F, needDocument, needSchema bool) int {
 			}
 
 		case *wire.OpReply:
-			docs = append(docs, b.Documents()...)
+			doc, err := b.Document()
+			require.NoError(f, err)
+
+			if doc != nil {
+				docs = append(docs, doc)
+			}
 		}
 
 		for _, doc := range docs {
@@ -375,7 +380,7 @@ func benchmark(b *testing.B, testCases []testCase, newFunc func() sjsontype) {
 				b.SetBytes(int64(len(data)))
 				b.ResetTimer()
 
-				for i := 0; i < b.N; i++ {
+				for range b.N {
 					v = newFunc()
 					err = unmarshalJSON(v, &tc)
 				}

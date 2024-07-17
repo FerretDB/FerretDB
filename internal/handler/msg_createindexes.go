@@ -33,7 +33,9 @@ import (
 )
 
 // MsgCreateIndexes implements `createIndexes` command.
-func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgCreateIndexes(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -120,7 +122,7 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 	}
 
 	var createCollection bool
-	beforeCreate, err := c.ListIndexes(ctx, new(backends.ListIndexesParams))
+	beforeCreate, err := c.ListIndexes(connCtx, new(backends.ListIndexesParams))
 	if err != nil {
 		switch {
 		case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist):
@@ -147,7 +149,7 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
-	_, err = c.CreateIndexes(ctx, &backends.CreateIndexesParams{Indexes: toCreate})
+	_, err = c.CreateIndexes(connCtx, &backends.CreateIndexesParams{Indexes: toCreate})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

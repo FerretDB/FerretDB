@@ -17,7 +17,10 @@ package conninfo
 
 import (
 	"context"
+	"net/netip"
 	"sync"
+
+	"github.com/xdg-go/scram"
 )
 
 // contextKey is a named unexported type for the safe use of context.WithValue.
@@ -30,19 +33,24 @@ var connInfoKey = contextKey{}
 type ConnInfo struct {
 	// the order of fields is weird to make the struct smaller due to alignment
 
-	PeerAddr     string
-	username     string // protected by rw
-	password     string // protected by rw
-	metadataRecv bool   // protected by rw
+	sc *scram.ServerConversation // protected by rw
+	db string                    // protected by rw
+
+	Peer netip.AddrPort // invalid for Unix domain sockets
+
+	username string // protected by rw
+	password string // protected by rw
+
+	rw sync.RWMutex
+
+	metadataRecv bool // protected by rw
 
 	// If true, backend implementations should not perform authentication
 	// by adding username and password to the connection string.
 	// It is set to true for background connections (such us capped collections cleanup)
-	// and by the new authentication mechanism.
+	// and by the new authentication.
 	// See where it is used for more details.
-	BypassBackendAuth bool
-
-	rw sync.RWMutex
+	bypassBackendAuth bool // protected by rw
 }
 
 // New returns a new ConnInfo.
@@ -58,21 +66,23 @@ func (connInfo *ConnInfo) Username() string {
 	return connInfo.username
 }
 
-// Auth returns stored username and password.
-func (connInfo *ConnInfo) Auth() (username, password string) {
+// Auth returns stored username, password (for PLAIN mechanism), SCRAM server conversation (if any) and user's authentication db.
+func (connInfo *ConnInfo) Auth() (username, password string, sc *scram.ServerConversation, db string) {
 	connInfo.rw.RLock()
 	defer connInfo.rw.RUnlock()
 
-	return connInfo.username, connInfo.password
+	return connInfo.username, connInfo.password, connInfo.sc, connInfo.db
 }
 
-// SetAuth stores username and password.
-func (connInfo *ConnInfo) SetAuth(username, password string) {
+// SetAuth stores username, password (for PLAIN mechanism), SCRAM server conversation (if any) and user's authentication db.
+func (connInfo *ConnInfo) SetAuth(username, password string, sc *scram.ServerConversation, db string) {
 	connInfo.rw.Lock()
 	defer connInfo.rw.Unlock()
 
 	connInfo.username = username
 	connInfo.password = password
+	connInfo.sc = sc
+	connInfo.db = db
 }
 
 // MetadataRecv returns whatever client metadata was received already.
@@ -89,6 +99,22 @@ func (connInfo *ConnInfo) SetMetadataRecv() {
 	defer connInfo.rw.Unlock()
 
 	connInfo.metadataRecv = true
+}
+
+// SetBypassBackendAuth marks the connection as not requiring backend authentication.
+func (connInfo *ConnInfo) SetBypassBackendAuth() {
+	connInfo.rw.Lock()
+	defer connInfo.rw.Unlock()
+
+	connInfo.bypassBackendAuth = true
+}
+
+// BypassBackendAuth returns whether the connection requires backend authentication.
+func (connInfo *ConnInfo) BypassBackendAuth() bool {
+	connInfo.rw.RLock()
+	defer connInfo.rw.RUnlock()
+
+	return connInfo.bypassBackendAuth
 }
 
 // Ctx returns a derived context with the given ConnInfo.

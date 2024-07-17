@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"strings"
 	"time"
 
 	"go.uber.org/zap"
@@ -40,7 +41,9 @@ import (
 )
 
 // MsgAggregate implements `aggregate` command.
-func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgAggregate(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -101,7 +104,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
-	username := conninfo.Get(ctx).Username()
+	username := conninfo.Get(connCtx).Username()
 
 	v, _ := document.Get("maxTimeMS")
 	if v == nil {
@@ -247,8 +250,10 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, err
 	}
 
+	ctx := connCtx
 	cancel := func() {}
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/2983
 	if maxTimeMS != 0 {
 		findDone := make(chan struct{})
 		defer close(findDone)
@@ -279,6 +284,18 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 		if !h.DisablePushdown {
 			qp.Filter = filter
+		}
+
+		if !h.EnableNestedPushdown && filter != nil {
+			qp.Filter = filter.DeepCopy()
+
+			for _, k := range qp.Filter.Keys() {
+				if !strings.ContainsRune(k, '.') {
+					continue
+				}
+
+				qp.Filter.Remove(k)
+			}
 		}
 
 		if sort, err = common.ValidateSortDocument(sort); err != nil {

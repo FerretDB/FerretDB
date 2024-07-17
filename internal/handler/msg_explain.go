@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/backends"
@@ -32,7 +33,9 @@ import (
 )
 
 // MsgExplain implements `explain` command.
-func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgExplain(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -90,6 +93,18 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		qp.Filter = params.Filter
 	}
 
+	if !h.EnableNestedPushdown && params.Filter != nil {
+		qp.Filter = params.Filter.DeepCopy()
+
+		for _, k := range qp.Filter.Keys() {
+			if !strings.ContainsRune(k, '.') {
+				continue
+			}
+
+			qp.Filter.Remove(k)
+		}
+	}
+
 	if params.Sort, err = common.ValidateSortDocument(params.Sort); err != nil {
 		var pathErr *types.PathError
 		if errors.As(err, &pathErr) && pathErr.Code() == types.ErrPathElementEmpty {
@@ -106,7 +121,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	var cList *backends.ListCollectionsResult
 
 	collectionParam := backends.ListCollectionsParams{Name: params.Collection}
-	if cList, err = db.ListCollections(ctx, &collectionParam); err != nil {
+	if cList, err = db.ListCollections(connCtx, &collectionParam); err != nil {
 		return nil, err
 	}
 
@@ -147,7 +162,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		qp.Limit = params.Limit
 	}
 
-	res, err := coll.Explain(ctx, qp)
+	res, err := coll.Explain(connCtx, qp)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

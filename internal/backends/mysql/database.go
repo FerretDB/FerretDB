@@ -15,7 +15,9 @@
 package mysql
 
 import (
+	"cmp"
 	"context"
+	"slices"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/mysql/metadata"
@@ -45,27 +47,150 @@ func (db *database) Collection(name string) (backends.Collection, error) {
 //
 //nolint:lll // for readability
 func (db *database) ListCollections(ctx context.Context, params *backends.ListCollectionsParams) (*backends.ListCollectionsResult, error) {
-	return nil, lazyerrors.New("not yet implemented")
+	list, err := db.r.CollectionList(ctx, db.name)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	var res []backends.CollectionInfo
+
+	if params != nil && len(params.Name) > 0 {
+		nameList := make([]string, len(list))
+		for i, c := range list {
+			nameList[i] = c.Name
+		}
+
+		i, found := slices.BinarySearchFunc(nameList, params.Name, func(collectionName, t string) int {
+			return cmp.Compare(collectionName, t)
+		})
+
+		var filteredList []*metadata.Collection
+
+		if found {
+			filteredList = append(filteredList, list[i])
+		}
+		list = filteredList
+	}
+
+	res = make([]backends.CollectionInfo, len(list))
+
+	for i, c := range list {
+		res[i] = backends.CollectionInfo{
+			Name:            c.Name,
+			UUID:            c.UUID,
+			CappedSize:      c.CappedSize,
+			CappedDocuments: c.CappedDocuments,
+		}
+	}
+
+	return &backends.ListCollectionsResult{
+		Collections: res,
+	}, nil
 }
 
 // CreateCollection implements backends.Database interface.
 func (db *database) CreateCollection(ctx context.Context, params *backends.CreateCollectionParams) error {
-	return lazyerrors.New("not yet implemented")
+	created, err := db.r.CollectionCreate(ctx, &metadata.CollectionCreateParams{
+		DBName:          db.name,
+		Name:            params.Name,
+		CappedSize:      params.CappedSize,
+		CappedDocuments: params.CappedDocuments,
+	})
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	if !created {
+		return backends.NewError(backends.ErrorCodeCollectionAlreadyExists, err)
+	}
+
+	return nil
 }
 
 // DropCollection implements backends.Database interface.
 func (db *database) DropCollection(ctx context.Context, params *backends.DropCollectionParams) error {
-	return lazyerrors.New("not yet implemented")
+	dropped, err := db.r.CollectionDrop(ctx, db.name, params.Name)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	if !dropped {
+		return backends.NewError(backends.ErrorCodeCollectionDoesNotExist, err)
+	}
+
+	return nil
 }
 
 // RenameCollection implements backends.Database interface.
 func (db *database) RenameCollection(ctx context.Context, params *backends.RenameCollectionParams) error {
-	return lazyerrors.New("not yet implemented")
+	c, err := db.r.CollectionGet(ctx, db.name, params.OldName)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	if c == nil {
+		return backends.NewError(
+			backends.ErrorCodeCollectionDoesNotExist,
+			lazyerrors.Errorf("old database %q or collection %q does not exist", db.name, params.OldName),
+		)
+	}
+
+	c, err = db.r.CollectionGet(ctx, db.name, params.NewName)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	if c == nil {
+		return backends.NewError(
+			backends.ErrorCodeCollectionAlreadyExists,
+			lazyerrors.Errorf("new database %q and collection %q already exists", db.name, params.NewName),
+		)
+	}
+
+	renamed, err := db.r.CollectionRename(ctx, db.name, params.OldName, params.NewName)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	if !renamed {
+		return backends.NewError(backends.ErrorCodeCollectionDoesNotExist, err)
+	}
+
+	return nil
 }
 
 // Stats implements backends.Database interface.
 func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsParams) (*backends.DatabaseStatsResult, error) {
-	return nil, lazyerrors.New("not yet implemented")
+	if params == nil {
+		params = new(backends.DatabaseStatsParams)
+	}
+
+	p, err := db.r.DatabaseGetExisting(ctx, db.name)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if p == nil {
+		return nil, backends.NewError(backends.ErrorCodeCollectionDoesNotExist, lazyerrors.Errorf("no database %s", db.name))
+	}
+
+	list, err := db.r.CollectionList(ctx, db.name)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	stats, err := collectionsStats(ctx, p, db.name, list, params.Refresh)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &backends.DatabaseStatsResult{
+		CountDocuments:  stats.countDocuments,
+		SizeIndexes:     stats.sizeIndexes,
+		SizeCollections: stats.sizeTables,
+		SizeFreeStorage: stats.sizeFreeStorage,
+		SizeTotal:       stats.totalSize,
+	}, nil
 }
 
 // check interfaces

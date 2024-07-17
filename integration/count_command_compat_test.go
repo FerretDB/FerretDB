@@ -22,8 +22,9 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
+
+	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
 type countCommandCompatTestCase struct {
@@ -32,7 +33,7 @@ type countCommandCompatTestCase struct {
 	command        bson.D
 }
 
-// testQueryCompat tests query compatibility test cases.
+// testCountCommandCompat tests query compatibility test cases.
 func testCountCommandCompat(t *testing.T, testCases map[string]countCommandCompatTestCase) {
 	t.Helper()
 

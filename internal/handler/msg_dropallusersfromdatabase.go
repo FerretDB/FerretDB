@@ -28,7 +28,9 @@ import (
 )
 
 // MsgDropAllUsersFromDatabase implements `dropAllUsersFromDatabase` command.
-func (h *Handler) MsgDropAllUsersFromDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgDropAllUsersFromDatabase(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -51,7 +53,7 @@ func (h *Handler) MsgDropAllUsersFromDatabase(ctx context.Context, msg *wire.OpM
 		return nil, lazyerrors.Error(err)
 	}
 
-	qr, err := users.Query(ctx, nil)
+	qr, err := users.Query(connCtx, nil)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -81,7 +83,9 @@ func (h *Handler) MsgDropAllUsersFromDatabase(ctx context.Context, msg *wire.OpM
 	var deleted int32
 
 	if len(ids) > 0 {
-		res, err := users.DeleteAll(ctx, &backends.DeleteAllParams{
+		var res *backends.DeleteAllResult
+
+		res, err = users.DeleteAll(connCtx, &backends.DeleteAllParams{
 			IDs: ids,
 		})
 		if err != nil {

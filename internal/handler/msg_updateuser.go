@@ -23,6 +23,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
+	"github.com/FerretDB/FerretDB/internal/handler/users"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -32,7 +33,9 @@ import (
 )
 
 // MsgUpdateUser implements `updateUser` command.
-func (h *Handler) MsgUpdateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgUpdateUser(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -43,21 +46,9 @@ func (h *Handler) MsgUpdateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 		return nil, err
 	}
 
-	var username string
-	username, err = common.GetRequiredParam[string](document, document.Command())
-
+	username, err := common.GetRequiredParam[string](document, document.Command())
 	if err != nil {
 		return nil, err
-	}
-
-	adminDB, err := h.b.Database("admin")
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	users, err := adminDB.Collection("system.users")
-	if err != nil {
-		return nil, lazyerrors.Error(err)
 	}
 
 	if err = common.UnimplementedNonDefault(document, "customData", func(v any) bool {
@@ -92,61 +83,70 @@ func (h *Handler) MsgUpdateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 
 	common.Ignored(document, h.L, "writeConcern", "authenticationRestrictions", "comment")
 
-	defMechanisms := must.NotFail(types.NewArray())
+	defMechanisms := must.NotFail(types.NewArray("SCRAM-SHA-1", "SCRAM-SHA-256"))
 
 	mechanisms, err := common.GetOptionalParam(document, "mechanisms", defMechanisms)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	if mechanisms != nil {
-		iter := mechanisms.Iterator()
-		defer iter.Close()
+	iter := mechanisms.Iterator()
+	defer iter.Close()
 
-		for {
-			var v any
-			_, v, err = iter.Next()
+	for {
+		var v any
+		_, v, err = iter.Next()
 
-			if errors.Is(err, iterator.ErrIteratorDone) {
-				break
-			}
+		if errors.Is(err, iterator.ErrIteratorDone) {
+			break
+		}
 
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 
-			if v != "PLAIN" {
-				return nil, handlererrors.NewCommandErrorMsg(
-					handlererrors.ErrBadValue,
-					fmt.Sprintf("Unknown auth mechanism '%s'", v),
-				)
-			}
+		switch v {
+		case "SCRAM-SHA-1", "SCRAM-SHA-256":
+			// do nothing
+		default:
+			return nil, handlererrors.NewCommandErrorMsg(
+				handlererrors.ErrBadValue,
+				fmt.Sprintf("Unknown auth mechanism '%s'", v),
+			)
 		}
 	}
 
 	var credentials *types.Document
+
 	if document.Has("pwd") {
-		credentials = types.MakeDocument(0)
-		pwdi := must.NotFail(document.Get("pwd"))
-		pwd, ok := pwdi.(string)
+		pwd, _ := document.Get("pwd")
+		userPassword, ok := pwd.(string)
 
 		if !ok {
 			return nil, handlererrors.NewCommandErrorMsg(
 				handlererrors.ErrTypeMismatch,
 				fmt.Sprintf("BSON field 'updateUser.pwd' is the wrong type '%s', expected type 'string'",
-					handlerparams.AliasFromType(pwdi),
+					handlerparams.AliasFromType(pwd),
 				),
 			)
 		}
 
-		if pwd == "" {
+		if userPassword == "" {
 			return nil, handlererrors.NewCommandErrorMsg(
 				handlererrors.ErrSetEmptyPassword,
 				"Password cannot be empty",
 			)
 		}
 
-		credentials.Set("PLAIN", must.NotFail(password.PlainHash(pwd)))
+		credentials, err = users.MakeCredentials(username, password.WrapPassword(userPassword), mechanisms)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	adminDB, err := h.b.Database("admin")
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
 	usersCol, err := adminDB.Collection("system.users")
@@ -154,21 +154,14 @@ func (h *Handler) MsgUpdateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 		return nil, lazyerrors.Error(err)
 	}
 
-	var filter *types.Document
-	filter, err = usersInfoFilter(false, false, "", []usersInfoPair{
-		{
-			username: username,
-			db:       dbName,
-		},
-	})
-
+	filter, err := usersInfoFilter(false, false, "", []usersInfoPair{{username: username, db: dbName}})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	// Filter isn't being passed to the query as we are filtering after retrieving all data
 	// from the database due to limitations of the internal/backends filters.
-	qr, err := usersCol.Query(ctx, nil)
+	qr, err := usersCol.Query(connCtx, nil)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -191,7 +184,6 @@ func (h *Handler) MsgUpdateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 
 		var matches bool
 		matches, err = common.FilterDocument(v, filter)
-
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -224,7 +216,7 @@ func (h *Handler) MsgUpdateUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 		)
 	}
 
-	_, err = users.UpdateAll(ctx, &backends.UpdateAllParams{Docs: []*types.Document{saved}})
+	_, err = usersCol.UpdateAll(connCtx, &backends.UpdateAllParams{Docs: []*types.Document{saved}})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

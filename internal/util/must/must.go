@@ -38,6 +38,17 @@ func NoError(err error) {
 	}
 }
 
+// BeZero panics if argument has non-zero value.
+//
+// Use that function only for static initialization, test code, or code that "can't" fail.
+// When in doubt, don't.
+func BeZero[T comparable](v T) {
+	var zero T
+	if v != zero {
+		panic(fmt.Sprintf("v has non-zero value (%#v)", v))
+	}
+}
+
 // NotBeZero panics if argument has zero value.
 //
 // Use that function only for static initialization, test code, or code that "can't" fail.

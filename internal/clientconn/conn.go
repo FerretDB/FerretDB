@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"net/netip"
 	"os"
 	"path/filepath"
 	"runtime/pprof"
@@ -140,7 +141,10 @@ func (c *conn) run(ctx context.Context) (err error) {
 
 	connInfo := conninfo.New()
 	if c.netConn.RemoteAddr().Network() != "unix" {
-		connInfo.PeerAddr = c.netConn.RemoteAddr().String()
+		connInfo.Peer, err = netip.ParseAddrPort(c.netConn.RemoteAddr().String())
+		if err != nil {
+			return
+		}
 	}
 
 	ctx = conninfo.Ctx(ctx, connInfo)
@@ -291,7 +295,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 
 		// diffLogLevel provides the level of logging for the diff between the "normal" and "proxy" responses.
 		// It is set to the highest level of logging used to log response.
-		var diffLogLevel zapcore.Level
+		diffLogLevel := zap.DebugLevel
 
 		// send request to proxy first (unless we are in normal mode)
 		// because FerretDB's handling could modify reqBody's documents,
@@ -340,11 +344,11 @@ func (c *conn) run(ctx context.Context) (err error) {
 			var resBodyString, proxyBodyString string
 
 			if resBody != nil {
-				resBodyString = resBody.String()
+				resBodyString = resBody.StringBlock()
 			}
 
 			if proxyBody != nil {
-				proxyBodyString = proxyBody.String()
+				proxyBodyString = proxyBody.StringBlock()
 			}
 
 			var diffBody string
@@ -395,7 +399,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 // They also should not use recover(). That allows us to use fuzzing.
 //
 // Returned resBody can be nil.
-func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wire.MsgBody) (resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) { //nolint:lll // argument list is too long
+func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody wire.MsgBody) (resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) { //nolint:lll // argument list is too long
 	var command, result, argument string
 	defer func() {
 		if result == "" {
@@ -425,7 +429,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 			// do not store typed nil in interface, it makes it non-nil
 
 			var resMsg *wire.OpMsg
-			resMsg, err = c.handleOpMsg(ctx, msg, command)
+			resMsg, err = c.handleOpMsg(connCtx, msg, command)
 
 			if resMsg != nil {
 				resBody = resMsg
@@ -439,7 +443,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 		// do not store typed nil in interface, it makes it non-nil
 
 		var resReply *wire.OpReply
-		resReply, err = c.h.CmdQuery(ctx, query)
+		resReply, err = c.h.CmdQuery(connCtx, query)
 
 		if resReply != nil {
 			resBody = resReply
@@ -496,10 +500,19 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 			if info := protoErr.Info(); info != nil {
 				argument = info.Argument
 			}
-
-		case wire.OpCodeQuery:
-			fallthrough
 		case wire.OpCodeReply:
+			protoErr := handlererrors.ProtocolError(err)
+
+			var reply wire.OpReply
+			reply.SetDocument(protoErr.Document())
+			resBody = &reply
+
+			result = protoErr.(*handlererrors.CommandError).Code().String()
+
+			if info := protoErr.Info(); info != nil {
+				argument = info.Argument
+			}
+		case wire.OpCodeQuery:
 			fallthrough
 		case wire.OpCodeUpdate:
 			fallthrough
@@ -556,19 +569,19 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 	return
 }
 
-// handleOpMsg processes OP_MSG request.
+// handleOpMsg processes OP_MSG requests.
 //
 // The passed context is canceled when the client disconnects.
-func (c *conn) handleOpMsg(ctx context.Context, msg *wire.OpMsg, command string) (*wire.OpMsg, error) {
+func (c *conn) handleOpMsg(connCtx context.Context, msg *wire.OpMsg, command string) (*wire.OpMsg, error) {
 	if cmd, ok := c.h.Commands()[command]; ok {
 		if cmd.Handler != nil {
-			defer observability.FuncCall(ctx)()
+			defer observability.FuncCall(connCtx)()
 
-			defer pprof.SetGoroutineLabels(ctx)
-			ctx = pprof.WithLabels(ctx, pprof.Labels("command", command))
-			pprof.SetGoroutineLabels(ctx)
+			defer pprof.SetGoroutineLabels(connCtx)
+			connCtx = pprof.WithLabels(connCtx, pprof.Labels("command", command))
+			pprof.SetGoroutineLabels(connCtx)
 
-			return cmd.Handler(ctx, msg)
+			return cmd.Handler(connCtx, msg)
 		}
 	}
 
@@ -581,26 +594,31 @@ func (c *conn) handleOpMsg(ctx context.Context, msg *wire.OpMsg, command string)
 //
 // The param `who` will be used in logs and should represent the type of the response,
 // for example "Response" or "Proxy Response".
-//
-// If response op code is not `OP_MSG`, it always logs as a debug.
-// For the `OP_MSG` code, the level depends on the type of error.
-// If there is no errors in the response, it will be logged as a debug.
-// If there is an error in the response, and connection is closed, it will be logged as an error.
-// If there is an error in the response, and connection is not closed, it will be logged as a warning.
 func (c *conn) logResponse(who string, resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) zapcore.Level {
 	level := zap.DebugLevel
 
 	if resHeader.OpCode == wire.OpCodeMsg {
 		doc := must.NotFail(resBody.(*wire.OpMsg).Document())
 
-		ok, _ := doc.Get("ok")
-		if f, _ := ok.(float64); f != 1 {
-			if closeConn {
-				level = zap.ErrorLevel
-			} else {
-				level = zap.WarnLevel
-			}
+		var ok bool
+
+		v, _ := doc.Get("ok")
+		switch v := v.(type) {
+		case float64:
+			ok = v == 1
+		case int32:
+			ok = v == 1
+		case int64:
+			ok = v == 1
 		}
+
+		if !ok {
+			level = zap.WarnLevel
+		}
+	}
+
+	if closeConn {
+		level = zap.ErrorLevel
 	}
 
 	c.l.Desugar().Check(level, fmt.Sprintf("%s header: %s", who, resHeader)).Write()

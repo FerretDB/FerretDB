@@ -26,10 +26,11 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
+
+	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
 //go:generate ../bin/stringer -linecomment -type compatTestCaseResultType
@@ -103,6 +104,31 @@ func convert(t testtb.TB, v any) any {
 	}
 }
 
+// fixCluster removes document fields that are specific for MongoDB running in a cluster.
+func fixCluster(t testtb.TB, doc *types.Document) {
+	t.Helper()
+
+	doc.Remove("$clusterTime")
+	doc.Remove("electionId")
+	doc.Remove("operationTime")
+	doc.Remove("opTime")
+	doc.Remove("commitQuorum")
+}
+
+// fixExpected applies fixes to the expected/compat document.
+func fixExpected(t testtb.TB, expected *types.Document) {
+	t.Helper()
+
+	fixCluster(t, expected)
+}
+
+// fixActual applies fixes to the actual/target document.
+func fixActual(t testtb.TB, actual *types.Document) {
+	t.Helper()
+
+	fixCluster(t, actual)
+}
+
 // ConvertDocument converts given driver's document to FerretDB's *types.Document.
 func ConvertDocument(t testtb.TB, doc bson.D) *types.Document {
 	t.Helper()
@@ -134,6 +160,10 @@ func AssertEqualDocuments(t testtb.TB, expected, actual bson.D) bool {
 
 	expectedDoc := ConvertDocument(t, expected)
 	actualDoc := ConvertDocument(t, actual)
+
+	fixExpected(t, expectedDoc)
+	fixActual(t, actualDoc)
+
 	return testutil.AssertEqual(t, expectedDoc, actualDoc)
 }
 
@@ -146,6 +176,15 @@ func AssertEqualDocumentsSlice(t testtb.TB, expected, actual []bson.D) bool {
 
 	expectedDocs := ConvertDocuments(t, expected)
 	actualDocs := ConvertDocuments(t, actual)
+
+	for _, d := range expectedDocs {
+		fixExpected(t, d)
+	}
+
+	for _, d := range actualDocs {
+		fixActual(t, d)
+	}
+
 	return testutil.AssertEqualSlices(t, expectedDocs, actualDocs)
 }
 
@@ -185,6 +224,23 @@ func AssertEqualWriteError(t testtb.TB, expected mongo.WriteError, actual error)
 	expected.Raw = a.Raw
 
 	return assert.Equal(t, expected, a)
+}
+
+// AssertMatchesError asserts that both errors are of same type and
+// are equal in value, except the message and Raw part.
+func AssertMatchesError(t testtb.TB, expected, actual error) {
+	t.Helper()
+
+	switch expected := expected.(type) { //nolint:errorlint // do not inspect error chain
+	case mongo.CommandError:
+		AssertMatchesCommandError(t, expected, actual)
+	case mongo.WriteException:
+		AssertMatchesWriteError(t, expected, actual)
+	case mongo.BulkWriteException:
+		AssertMatchesBulkException(t, expected, actual)
+	default:
+		t.Fatalf("unknown error type %T, expected one of [CommandError, WriteException, BulkWriteException]", expected)
+	}
 }
 
 // AssertMatchesCommandError asserts that both errors are equal CommandErrors,
@@ -440,30 +496,4 @@ func GenerateDocuments(startID, endID int32) (bson.A, []bson.D) {
 	}
 
 	return arr, docs
-}
-
-// CreateNestedDocument creates a mock BSON document that consists of nested arrays and documents.
-// The nesting level is based on integer parameter.
-func CreateNestedDocument(n int) bson.D {
-	return createNestedDocument(n, false).(bson.D)
-}
-
-// createNestedDocument creates the nested n times object that consists of
-// documents and arrays. If the arr is true, the root value will be array.
-//
-// This function should be used only internally.
-// To generate values for tests please use
-// exported CreateNestedDocument function.
-func createNestedDocument(n int, arr bool) any {
-	var child any
-
-	if n > 0 {
-		child = createNestedDocument(n-1, !arr)
-	}
-
-	if arr {
-		return bson.A{child}
-	}
-
-	return bson.D{{"v", child}}
 }

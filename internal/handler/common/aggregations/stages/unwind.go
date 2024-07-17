@@ -62,7 +62,6 @@ func newUnwind(stage *types.Document) (aggregations.Stage, error) {
 			FindArrayIndex:     false,
 			FindArrayDocuments: false,
 		})
-
 		if err != nil {
 			var exprErr *aggregations.ExpressionError
 			if !errors.As(err, &exprErr) {

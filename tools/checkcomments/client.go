@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -57,23 +56,28 @@ type client struct {
 	c             *github.Client
 	cacheFilePath string
 	logf          gh.Printf
-	debugf        gh.Printf
+	cacheDebugF   gh.Printf
+	clientDebugF  gh.Printf
 	token         string
 }
 
 // newClient creates a new client for the given cache file path and logging functions.
-func newClient(cacheFilePath string, logf, debugf gh.Printf) (*client, error) {
+func newClient(cacheFilePath string, logf, cacheDebugF, clientDebugf gh.Printf) (*client, error) {
 	token := os.Getenv("GITHUB_TOKEN")
 
 	if logf == nil {
 		panic("logf must be set")
 	}
 
-	if debugf == nil {
+	if cacheDebugF == nil {
+		panic("vf must be set")
+	}
+
+	if clientDebugf == nil {
 		panic("debugf must be set")
 	}
 
-	c, err := gh.NewRESTClient(token, debugf)
+	c, err := gh.NewRESTClient(token, clientDebugf)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +87,8 @@ func newClient(cacheFilePath string, logf, debugf gh.Printf) (*client, error) {
 		cacheFilePath: cacheFilePath,
 		token:         token,
 		logf:          logf,
-		debugf:        debugf,
+		cacheDebugF:   cacheDebugF,
+		clientDebugF:  clientDebugf,
 	}, nil
 }
 
@@ -92,65 +97,83 @@ func newClient(cacheFilePath string, logf, debugf gh.Printf) (*client, error) {
 //
 // Returned error is something fatal.
 // On rate limit, the error is logged once and (issueOpen, nil) is returned.
-func (c *client) IssueStatus(ctx context.Context, num int) (issueStatus, error) {
+func (c *client) IssueStatus(ctx context.Context, url, repo string, num int) (issueStatus, error) {
+	start := time.Now()
+
+	cache := &cacheFile{
+		Issues: make(map[string]issue),
+	}
+	cacheRes := "miss"
+
 	var res issueStatus
-	noUpdate := fmt.Errorf("no need to update the cache file")
 
-	err := lockedfile.Transform(c.cacheFilePath, func(data []byte) ([]byte, error) {
-		cache := &cacheFile{
-			Issues: make(map[string]issue),
-		}
+	// fast path without any locks
 
-		if len(data) != 0 {
-			if err := json.Unmarshal(data, cache); err != nil {
-				return nil, err
-			}
-		}
+	data, err := os.ReadFile(c.cacheFilePath)
+	if err == nil {
+		_ = json.Unmarshal(data, cache)
+		res = cache.Issues[url].Status
+	}
 
-		url := fmt.Sprintf("https://github.com/FerretDB/FerretDB/issues/%d", num)
+	if res != "" {
+		cacheRes = "fast hit"
+	} else {
+		// slow path
 
-		if res = cache.Issues[url].Status; res != "" {
-			c.debugf("Cache hit for %s: %s", url, res)
-			return nil, noUpdate
-		}
+		noUpdate := fmt.Errorf("no need to update the cache file")
 
-		var err error
-		if res, err = c.checkIssueStatus(ctx, num); err != nil {
-			var rle *github.RateLimitError
-			if !errors.As(err, &rle) {
-				return nil, fmt.Errorf("%s: %s", url, err)
+		err = lockedfile.Transform(c.cacheFilePath, func(data []byte) ([]byte, error) {
+			cache.Issues = make(map[string]issue)
+
+			if len(data) != 0 {
+				if err = json.Unmarshal(data, cache); err != nil {
+					return nil, err
+				}
 			}
 
-			if cache.RateLimitReached {
-				c.debugf("Rate limit already reached: %s", url)
+			if res = cache.Issues[url].Status; res != "" {
 				return nil, noUpdate
 			}
 
-			cache.RateLimitReached = true
+			if res, err = c.checkIssueStatus(ctx, repo, num); err != nil {
+				var rle *github.RateLimitError
+				if !errors.As(err, &rle) {
+					return nil, fmt.Errorf("%s: %s", url, err)
+				}
 
-			msg := "Rate limit reached: " + err.Error()
-			if c.token == "" {
-				msg += "\nPlease set a GITHUB_TOKEN as described at " +
-					"https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md#setting-a-github_token"
+				if cache.RateLimitReached {
+					c.clientDebugF("Rate limit already reached: %s", url)
+					return nil, noUpdate
+				}
+
+				cache.RateLimitReached = true
+
+				msg := "Rate limit reached: " + err.Error()
+				if c.token == "" {
+					msg += "\nPlease set a GITHUB_TOKEN as described at " +
+						"https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md#setting-a-github_token"
+				}
+				c.logf("%s", msg)
 			}
-			c.logf("%s", msg)
-		}
 
-		// unless rate limited
-		if res != "" {
-			c.debugf("Cache miss for %s: %s", url, res)
-			cache.Issues[url] = issue{
-				RefreshedAt: time.Now(),
-				Status:      res,
+			// unless rate limited
+			if res != "" {
+				cache.Issues[url] = issue{
+					RefreshedAt: time.Now(),
+					Status:      res,
+				}
 			}
+
+			return json.MarshalIndent(cache, "", "  ")
+		})
+
+		if errors.Is(err, noUpdate) {
+			cacheRes = "slow hit"
+			err = nil
 		}
-
-		return json.MarshalIndent(cache, "", "  ")
-	})
-
-	if errors.Is(err, noUpdate) {
-		err = nil
 	}
+
+	c.cacheDebugF("%s: %s (%dms, %s)", url, res, time.Since(start).Milliseconds(), cacheRes)
 
 	// when rate limited
 	if err == nil && res == "" {
@@ -162,8 +185,8 @@ func (c *client) IssueStatus(ctx context.Context, num int) (issueStatus, error) 
 
 // checkIssueStatus checks issue status via GitHub API.
 // It does not use cache.
-func (c *client) checkIssueStatus(ctx context.Context, num int) (issueStatus, error) {
-	issue, resp, err := c.c.Issues.Get(ctx, "FerretDB", "FerretDB", num)
+func (c *client) checkIssueStatus(ctx context.Context, repo string, num int) (issueStatus, error) {
+	issue, resp, err := c.c.Issues.Get(ctx, "FerretDB", repo, num)
 	if err != nil {
 		if resp.StatusCode == http.StatusNotFound {
 			return issueNotFound, nil
@@ -187,28 +210,25 @@ func cacheFilePath() (string, error) {
 	// This tool is called for multiple packages in parallel,
 	// with the current working directory set to the package directory.
 	// To use the same cache file path, we first locate the root of the project by the .git directory.
+	//
+	// We can't use runtime.Caller because file path will be relative (`./tools/...`).
+	// We can't import FerretDB module to use [testutil.RootDir].
 
-	dir, err := filepath.Abs(".")
+	dir, err := os.Getwd()
 	if err != nil {
 		return "", err
 	}
 
 	for {
-		fi, err := os.Stat(filepath.Join(dir, ".git"))
-		if err == nil {
-			if !fi.IsDir() {
-				return "", fmt.Errorf(".git is not a directory")
-			}
-
+		if _, err = os.Stat(filepath.Join(dir, ".git")); err == nil {
 			break
 		}
 
-		if !errors.Is(err, fs.ErrNotExist) {
-			return "", err
-		}
-
 		dir = filepath.Dir(dir)
+		if dir == "/" {
+			return "", fmt.Errorf("failed to locate .git directory")
+		}
 	}
 
-	return filepath.Join(dir, "tmp", "checkcomments", "cache.json"), nil
+	return filepath.Join(dir, "tmp", "githubcache", "cache.json"), nil
 }

@@ -10,7 +10,7 @@ on:
   push:
     branches:
       - main
-      - main/*
+      - main-*
       - releases/*
   schedule:
     - cron: "12 0 * * *"
@@ -129,9 +129,9 @@ jobs:
       # We also can't use ${{ vars.CODECOV_TOKEN }}: https://github.com/orgs/community/discussions/44322
       - name: Upload coverage information to codecov
         if: always()
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
-          token: 22159d7c-856d-4fe9-8fdb-5d9ecff35514
+          token: 3c5cbd1b-5110-4302-ad5a-080390ca731a
           files: ./cover.txt
           flags: unit
           fail_ci_if_error: true
@@ -170,8 +170,8 @@ jobs:
       fail-fast: false
       matrix:
         task: [postgresql, sqlite]
-        shard_index: [1, 2, 3]
-        shard_total: [3]
+        shard_index: [1, 2, 3, 4, 5]
+        shard_total: [5]
         include:
           - { task: "mongodb", shard_index: 1, shard_total: 1 }
 
@@ -231,8 +231,14 @@ jobs:
       - name: Run init
         run: bin/task init
 
+      - name: Build bin/ferretdb
+        run: bin/task build-host
+
       - name: Wait for and setup environment
         run: bin/task env-setup
+
+      - name: Start FerretDB in the background
+        run: bin/task run &
 
       - name: Run env-data
         run: bin/task env-data

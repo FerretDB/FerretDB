@@ -103,6 +103,13 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 			return "", nil, lazyerrors.Error(err)
 		}
 
+		keyOperator := "->" // keyOperator is the operator that is used to access the field. (->/#>)
+
+		// key can be either a string '"v"' or PostgreSQL path '{v,foo}'.
+		// We use path type only for dot notation due to simplicity of SQL queries, and the fact
+		// that path doesn't handle empty keys.
+		var key any = rootKey
+
 		// don't pushdown $comment, as it's attached to query with select clause
 		//
 		// all of the other top-level operators such as `$or` do not support pushdown yet
@@ -116,11 +123,11 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 
 		switch {
 		case err == nil:
-			// Handle dot notation.
-			// TODO https://github.com/FerretDB/FerretDB/issues/2069
 			if path.Len() > 1 {
-				continue
+				keyOperator = "#>"
+				key = path.Slice() // '{v,foo}'
 			}
+
 		case errors.As(err, &pe):
 			// ignore empty key error, otherwise return error
 			if pe.Code() != types.ErrPathElementEmpty {
@@ -148,7 +155,7 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 
 				switch k {
 				case "$eq":
-					if f, a := filterEqual(p, rootKey, v); f != "" {
+					if f, a := filterEqual(p, key, v, keyOperator); f != "" {
 						filters = append(filters, f)
 						args = append(args, a...)
 					}
@@ -209,7 +216,7 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 			// type not supported for pushdown
 
 		case float64, string, types.ObjectID, bool, time.Time, int32, int64:
-			if f, a := filterEqual(p, rootKey, v); f != "" {
+			if f, a := filterEqual(p, key, v, keyOperator); f != "" {
 				filters = append(filters, f)
 				args = append(args, a...)
 			}
@@ -231,7 +238,7 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 //
 // The provided sort document should be already validated.
 // Provided document should only contain a single value.
-func prepareOrderByClause(p *metadata.Placeholder, sort *types.Document) (string, []any) {
+func prepareOrderByClause(sort *types.Document) (string, []any) {
 	if sort.Len() != 1 {
 		return "", nil
 	}
@@ -253,9 +260,9 @@ func prepareOrderByClause(p *metadata.Placeholder, sort *types.Document) (string
 
 // filterEqual returns the proper SQL filter with arguments that filters documents
 // where the value under k is equal to v.
-func filterEqual(p *metadata.Placeholder, k string, v any) (filter string, args []any) {
+func filterEqual(p *metadata.Placeholder, k any, v any, operator string) (filter string, args []any) {
 	// Select if value under the key is equal to provided value.
-	sql := `%[1]s->%[2]s @> %[3]s`
+	sql := `%[1]s%[2]s%[3]s @> %[4]s`
 
 	switch v := v.(type) {
 	case *types.Document, *types.Array, types.Binary,
@@ -267,17 +274,17 @@ func filterEqual(p *metadata.Placeholder, k string, v any) (filter string, args 
 		// TODO https://github.com/FerretDB/FerretDB/issues/3626
 		switch {
 		case v > types.MaxSafeDouble:
-			sql = `%[1]s->%[2]s > %[3]s`
+			sql = `%[1]s%[2]s%[3]s > %[4]s`
 			v = types.MaxSafeDouble
 
 		case v < -types.MaxSafeDouble:
-			sql = `%[1]s->%[2]s < %[3]s`
+			sql = `%[1]s%[2]s%[3]s < %[4]s`
 			v = -types.MaxSafeDouble
 		default:
 			// don't change the default eq query
 		}
 
-		filter = fmt.Sprintf(sql, metadata.DefaultColumn, p.Next(), p.Next())
+		filter = fmt.Sprintf(sql, metadata.DefaultColumn, operator, p.Next(), p.Next())
 		args = append(args, k, v)
 
 	case string, types.ObjectID, time.Time:
@@ -285,7 +292,7 @@ func filterEqual(p *metadata.Placeholder, k string, v any) (filter string, args 
 		// TODO https://github.com/FerretDB/FerretDB/issues/3626
 
 		// don't change the default eq query
-		filter = fmt.Sprintf(sql, metadata.DefaultColumn, p.Next(), p.Next())
+		filter = fmt.Sprintf(sql, metadata.DefaultColumn, operator, p.Next(), p.Next())
 		args = append(args, k, string(must.NotFail(sjson.MarshalSingleValue(v))))
 
 	case bool, int32:
@@ -293,7 +300,7 @@ func filterEqual(p *metadata.Placeholder, k string, v any) (filter string, args 
 		// TODO https://github.com/FerretDB/FerretDB/issues/3626
 
 		// don't change the default eq query
-		filter = fmt.Sprintf(sql, metadata.DefaultColumn, p.Next(), p.Next())
+		filter = fmt.Sprintf(sql, metadata.DefaultColumn, operator, p.Next(), p.Next())
 		args = append(args, k, v)
 
 	case int64:
@@ -303,17 +310,17 @@ func filterEqual(p *metadata.Placeholder, k string, v any) (filter string, args 
 		// If value cannot be safe double, fetch all numbers out of the safe range.
 		switch {
 		case v > maxSafeDouble:
-			sql = `%[1]s->%[2]s > %[3]s`
+			sql = `%[1]s%[2]s%[3]s > %[4]s`
 			v = maxSafeDouble
 
 		case v < -maxSafeDouble:
-			sql = `%[1]s->%[2]s < %[3]s`
+			sql = `%[1]s%[2]s%[3]s < %[4]s`
 			v = -maxSafeDouble
 		default:
 			// don't change the default eq query
 		}
 
-		filter = fmt.Sprintf(sql, metadata.DefaultColumn, p.Next(), p.Next())
+		filter = fmt.Sprintf(sql, metadata.DefaultColumn, operator, p.Next(), p.Next())
 		args = append(args, k, v)
 
 	default:

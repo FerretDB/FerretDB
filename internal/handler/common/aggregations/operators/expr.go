@@ -229,7 +229,7 @@ func (e *expr) processExpr(exprValue any, doc *types.Document) (any, error) {
 	}
 }
 
-// ProcessMatchStageError takes internal error related to operator evaluation and
+// processExprOperatorErrors takes internal error related to operator evaluation and
 // expression evaluation and returns CommandError.
 func processExprOperatorErrors(err error, argument string) error {
 	var opErr OperatorError

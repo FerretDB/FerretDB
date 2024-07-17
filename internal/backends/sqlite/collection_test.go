@@ -39,7 +39,7 @@ func TestCappedCollectionInsertAllQueryExplain(t *testing.T) {
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
-	b, err := NewBackend(&NewBackendParams{URI: testutil.TestSQLiteURI(t, ""), L: testutil.Logger(t), P: sp})
+	b, err := NewBackend(&NewBackendParams{URI: testutil.TestSQLiteURI(t, ""), L: testutil.Logger(t), P: sp, BatchSize: 100})
 	require.NoError(t, err)
 	t.Cleanup(b.Close)
 

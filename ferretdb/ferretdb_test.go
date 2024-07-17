@@ -19,8 +19,15 @@ import (
 	"fmt"
 	"log"
 	"path/filepath"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/ferretdb"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func Example_tcp() {
@@ -94,16 +101,12 @@ func Example_unix() {
 }
 
 func Example_tls() {
-	certPath := filepath.Join("..", "build", "certs", "server-cert.pem")
-	keyPath := filepath.Join("..", "build", "certs", "server-key.pem")
-	caPath := filepath.Join("..", "build", "certs", "rootCA-cert.pem")
-
 	f, err := ferretdb.New(&ferretdb.Config{
 		Listener: ferretdb.ListenerConfig{
 			TLS:         "127.0.0.1:17028",
-			TLSCertFile: certPath,
-			TLSKeyFile:  keyPath,
-			TLSCAFile:   caPath,
+			TLSCertFile: filepath.Join(testutil.BuildCertsDir, "server-cert.pem"),
+			TLSKeyFile:  filepath.Join(testutil.BuildCertsDir, "server-key.pem"),
+			TLSCAFile:   filepath.Join(testutil.BuildCertsDir, "rootCA-cert.pem"),
 		},
 		Handler:       "postgresql",
 		PostgreSQLURL: "postgres://127.0.0.1:5432/ferretdb",
@@ -138,4 +141,38 @@ func Example_tls() {
 	<-done
 
 	// Output: mongodb://127.0.0.1:17028/?tls=true
+}
+
+func TestEmbedded(t *testing.T) {
+	ctx, cancel := context.WithCancel(testutil.Ctx(t))
+
+	f, err := ferretdb.New(&ferretdb.Config{
+		Listener: ferretdb.ListenerConfig{
+			TCP: "127.0.0.1:0",
+		},
+		Handler:       "postgresql",
+		PostgreSQLURL: testutil.TestPostgreSQLURI(t, ctx, "postgres://username@127.0.0.1:5432/ferretdb?search_path="),
+	})
+	require.NoError(t, err)
+
+	done := make(chan struct{})
+
+	go func() {
+		require.NoError(t, f.Run(ctx))
+		close(done)
+	}()
+
+	uri := f.MongoDBURI()
+
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
+	require.NoError(t, err)
+
+	dbName, collName := testutil.DatabaseName(t), testutil.CollectionName(t)
+
+	//nolint:forbidigo // bson is required to use the driver
+	_, err = client.Database(dbName).Collection(collName).InsertOne(ctx, bson.M{"foo": "bar"})
+	require.NoError(t, err)
+
+	cancel()
+	<-done
 }

@@ -208,13 +208,13 @@ func (r *Registry) CloseAndRemove(c *Cursor) {
 	close(c.removed)
 }
 
-// Describe implements prometheus.Collector.
+// Describe implements [prometheus.Collector].
 func (r *Registry) Describe(ch chan<- *prometheus.Desc) {
 	r.created.Describe(ch)
 	r.duration.Describe(ch)
 }
 
-// Collect implements prometheus.Collector.
+// Collect implements [prometheus.Collector].
 func (r *Registry) Collect(ch chan<- prometheus.Metric) {
 	r.created.Collect(ch)
 	r.duration.Collect(ch)

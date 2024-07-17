@@ -15,103 +15,141 @@
 package bson
 
 import (
-	"bufio"
-	"fmt"
+	"bytes"
+	"encoding/binary"
+	"log/slog"
 	"strconv"
 
-	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// arrayType represents BSON Array type.
-type arrayType types.Array
-
-func (a *arrayType) bsontype() {}
-
-// ReadFrom implements bsontype interface.
-func (a *arrayType) ReadFrom(r *bufio.Reader) error {
-	return a.readNested(r, 0)
+// Array represents a BSON array in the (partially) decoded form.
+type Array struct {
+	elements []any
+	frozen   bool
 }
 
-// readNested, similarly to ReadFrom, takes raw bytes from reader
-// and unmarshal them to the arrayType.
-// It also takes the nesting value, and checks if the
-// document doesn't exceed the max nesting allowed.
-func (a *arrayType) readNested(r *bufio.Reader, nesting int) error {
-	if nesting > maxNesting {
-		return lazyerrors.Errorf("bson.Array.readNested: document has exceeded the max supported nesting: %d", maxNesting)
+// NewArray creates a new Array from the given values.
+func NewArray(values ...any) (*Array, error) {
+	res := &Array{
+		elements: make([]any, 0, len(values)),
 	}
 
-	var doc Document
-	if err := doc.readNested(r, nesting); err != nil {
+	for i, v := range values {
+		if err := res.Add(v); err != nil {
+			return nil, lazyerrors.Errorf("%d: %w", i, err)
+		}
+	}
+
+	return res, nil
+}
+
+// MakeArray creates a new empty Array with the given capacity.
+func MakeArray(cap int) *Array {
+	return &Array{
+		elements: make([]any, 0, cap),
+	}
+}
+
+// Freeze prevents array from further modifications.
+// Any methods that would modify the array will panic.
+//
+// It is safe to call Freeze multiple times.
+func (arr *Array) Freeze() {
+	arr.frozen = true
+}
+
+// checkFrozen panics if array is frozen.
+func (arr *Array) checkFrozen() {
+	if arr.frozen {
+		panic("array is frozen and can't be modified")
+	}
+}
+
+// Len returns the number of elements in the Array.
+func (arr *Array) Len() int {
+	return len(arr.elements)
+}
+
+// Get returns the element at the given index.
+// It panics if index is out of bounds.
+func (arr *Array) Get(index int) any {
+	return arr.elements[index]
+}
+
+// Add adds a new element to the Array.
+func (arr *Array) Add(value any) error {
+	if err := validBSONType(value); err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	keys := doc.Keys()
-	values := doc.Values()
+	arr.checkFrozen()
 
-	if len(keys) != len(values) {
-		panic(fmt.Sprintf("document must have the same number of keys and values (keys: %d, values: %d)", len(keys), len(values)))
-	}
+	arr.elements = append(arr.elements, value)
 
-	ta := types.MakeArray(len(keys))
-
-	for i, k := range keys {
-		if k != strconv.Itoa(i) {
-			return lazyerrors.Errorf("key %d is %q", i, k)
-		}
-
-		v := values[i]
-
-		ta.Append(v)
-	}
-
-	*a = arrayType(*ta)
 	return nil
 }
 
-// WriteTo implements bsontype interface.
-func (a arrayType) WriteTo(w *bufio.Writer) error {
-	v, err := a.MarshalBinary()
-	if err != nil {
+// Replace sets the value of the element at the given index.
+// It panics if index is out of bounds.
+func (arr *Array) Replace(index int, value any) error {
+	if err := validBSONType(value); err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	if _, err = w.Write(v); err != nil {
-		return lazyerrors.Error(err)
-	}
+	arr.checkFrozen()
+
+	arr.elements[index] = value
 
 	return nil
 }
 
-// MarshalBinary implements bsontype interface.
-func (a arrayType) MarshalBinary() ([]byte, error) {
-	ta := types.Array(a)
-	l := ta.Len()
+// Encode encodes non-nil BSON array.
+//
+// TODO https://github.com/FerretDB/FerretDB/issues/3759
+// This method should accept a slice of bytes, not return it.
+// That would allow to avoid unnecessary allocations.
+//
+// Receiver must not be nil.
+func (arr *Array) Encode() (RawArray, error) {
+	must.NotBeZero(arr)
 
-	fields := make([]field, l)
-	for i := 0; i < l; i++ {
-		key := strconv.Itoa(i)
-		value, err := ta.Get(i)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
+	size := sizeAny(arr)
+	buf := bytes.NewBuffer(make([]byte, 0, size))
 
-		fields[i] = field{key: key, value: value}
-	}
-
-	doc := Document{
-		fields: fields,
-	}
-
-	b, err := doc.MarshalBinary()
-	if err != nil {
+	if err := binary.Write(buf, binary.LittleEndian, uint32(size)); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-	return b, nil
+
+	for i, v := range arr.elements {
+		if err := encodeField(buf, strconv.Itoa(i), v); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+	}
+
+	if err := binary.Write(buf, binary.LittleEndian, byte(0)); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return buf.Bytes(), nil
+}
+
+// Decode returns itself to implement [AnyArray].
+//
+// Receiver must not be nil.
+func (arr *Array) Decode() (*Array, error) {
+	must.NotBeZero(arr)
+	return arr, nil
+}
+
+// LogValue implements [slog.LogValuer].
+func (arr *Array) LogValue() slog.Value {
+	return slogValue(arr, 1)
 }
 
 // check interfaces
 var (
-	_ bsontype = (*arrayType)(nil)
+	_ AnyArray       = (*Array)(nil)
+	_ slog.LogValuer = (*Array)(nil)
 )

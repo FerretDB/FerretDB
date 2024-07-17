@@ -18,3 +18,82 @@
 //
 //  1. Metadata is heavily cached to avoid most queries and transactions.
 package mysql
+
+import (
+	"context"
+	"fmt"
+	"strings"
+
+	"github.com/FerretDB/FerretDB/internal/backends/mysql/metadata"
+	"github.com/FerretDB/FerretDB/internal/util/fsql"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+)
+
+const (
+	// ErrDuplicateEntry is the unique key violation error code for MySQL.
+	ErrDuplicateEntry = 1062
+)
+
+// stats represents information about statistics of tables and indexes.
+type stats struct {
+	countDocuments  int64
+	sizeIndexes     int64
+	sizeTables      int64
+	sizeFreeStorage int64
+	totalSize       int64
+}
+
+// collectionsStats returns statistics about tables and indexes for the given collections.
+//
+// If refresh is true, it calls ANALYZE on the tables of the given list of collections.
+//
+// If the list of collections is empty, then stats filled with zero values is returned.
+func collectionsStats(ctx context.Context, p *fsql.DB, dbName string, list []*metadata.Collection, refresh bool) (*stats, error) { //nolint:lll // for readability
+	if len(list) == 0 {
+		return new(stats), nil
+	}
+
+	tableNames := make([]string, len(list))
+	for _, c := range list {
+		tableNames = append(tableNames, c.TableName)
+	}
+
+	if refresh {
+		q := fmt.Sprintf(`ANALYZE TABLE %s`, strings.Join(tableNames, ", "))
+		if _, err := p.ExecContext(ctx, q); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+	}
+
+	var s stats
+
+	// The table size is the size used by collection documents. The `data_length` in addition
+	// to the `index_length` is used since MySQL uses clustered indexes, however, these are
+	// not updated immediately after operations such as DELETE unless OPTIMIZE TABLE is called.
+	//
+	// The free storage size of each relation is reported in `data_free`.
+	//
+	// The smallest difference in size that `data_length` reports appears to be 16KB.
+	// Because of that inserting or deleting a single small object may not change the size.
+	//
+	// See also:
+	// Clustered Index: https://dev.mysql.com/doc/refman/8.0/en/innodb-index-types.html
+	q := fmt.Sprintf(`
+		SELECT
+			COALESCE(SUM(t.table_rows), 0),
+			COALESCE(SUM(t.data_length), 0),
+			COALESCE(SUM(t.data_free)),
+			COALESCE(SUM(t.index_length), 0),
+			COALESCE(SUM(t.data_length) + SUM(t.index_length), 0)
+		FROM information_schema.tables
+		WHERE s.schema_name = ? AND t.table_name IN (%s)`,
+		strings.Join(tableNames, ", "),
+	)
+
+	row := p.QueryRowContext(ctx, q, dbName)
+	if err := row.Scan(&s.countDocuments, &s.sizeTables, &s.sizeFreeStorage, &s.sizeIndexes, &s.totalSize); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &s, nil
+}

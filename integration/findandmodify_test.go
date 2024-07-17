@@ -24,11 +24,12 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
+
+	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 func TestFindAndModifyEmptyCollectionName(t *testing.T) {
@@ -162,7 +163,6 @@ func TestFindAndModifyCommandErrors(t *testing.T) {
 					"Performing an update on the path '_id' would modify the immutable field '_id'",
 			},
 			altMessage: "Performing an update on the path '_id' would modify the immutable field '_id'",
-			skip:       "https://github.com/FerretDB/FerretDB/issues/3017",
 		},
 		"RenameEmptyFieldName": {
 			command: bson.D{

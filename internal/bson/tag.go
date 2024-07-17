@@ -16,10 +16,11 @@ package bson
 
 //go:generate ../../bin/stringer -linecomment -type tag
 
+// tag represents type identifier of the document/array field.
 type tag byte
 
 const (
-	tagDouble          = tag(0x01) // Double
+	tagFloat64         = tag(0x01) // Float64
 	tagString          = tag(0x02) // String
 	tagDocument        = tag(0x03) // Document
 	tagArray           = tag(0x04) // Array
@@ -27,7 +28,7 @@ const (
 	tagUndefined       = tag(0x06) // Undefined
 	tagObjectID        = tag(0x07) // ObjectID
 	tagBool            = tag(0x08) // Bool
-	tagDateTime        = tag(0x09) // DateTime
+	tagTime            = tag(0x09) // Time
 	tagNull            = tag(0x0a) // Null
 	tagRegex           = tag(0x0b) // Regex
 	tagDBPointer       = tag(0x0c) // DBPointer
@@ -37,7 +38,7 @@ const (
 	tagInt32           = tag(0x10) // Int32
 	tagTimestamp       = tag(0x11) // Timestamp
 	tagInt64           = tag(0x12) // Int64
-	tagDecimal         = tag(0x13) // Decimal
+	tagDecimal128      = tag(0x13) // Decimal128
 	tagMinKey          = tag(0xff) // MinKey
 	tagMaxKey          = tag(0x7f) // MaxKey
 )

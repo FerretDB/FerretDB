@@ -17,11 +17,18 @@ package handler
 import (
 	"context"
 
+	"go.uber.org/zap"
+
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // command represents a handler for single command.
 type command struct {
+	// anonymous indicates that the command does not require authentication.
+	anonymous bool
+
 	// Handler processes this command.
 	//
 	// The passed context is canceled when the client disconnects.
@@ -34,19 +41,21 @@ type command struct {
 
 // initCommands initializes the commands map for that handler instance.
 func (h *Handler) initCommands() {
-	h.commands = map[string]command{
+	h.commands = map[string]*command{
 		// sorted alphabetically
 		"aggregate": {
 			Handler: h.MsgAggregate,
 			Help:    "Returns aggregated data.",
 		},
 		"buildInfo": {
-			Handler: h.MsgBuildInfo,
-			Help:    "Returns a summary of the build information.",
+			Handler:   h.MsgBuildInfo,
+			anonymous: true,
+			Help:      "Returns a summary of the build information.",
 		},
 		"buildinfo": { // old lowercase variant
-			Handler: h.MsgBuildInfo,
-			Help:    "", // hidden
+			Handler:   h.MsgBuildInfo,
+			anonymous: true,
+			Help:      "", // hidden
 		},
 		"collMod": {
 			Handler: h.MsgCollMod,
@@ -61,7 +70,8 @@ func (h *Handler) initCommands() {
 			Help:    "Reduces the disk space collection takes and refreshes its statistics.",
 		},
 		"connectionStatus": {
-			Handler: h.MsgConnectionStatus,
+			Handler:   h.MsgConnectionStatus,
+			anonymous: true,
 			Help: "Returns information about the current connection, " +
 				"specifically the state of authenticated users and their available permissions.",
 		},
@@ -154,8 +164,9 @@ func (h *Handler) initCommands() {
 			Help:    "Returns the value of the parameter.",
 		},
 		"hello": {
-			Handler: h.MsgHello,
-			Help:    "Returns the role of the FerretDB instance.",
+			Handler:   h.MsgHello,
+			anonymous: true,
+			Help:      "Returns the role of the FerretDB instance.",
 		},
 		"hostInfo": {
 			Handler: h.MsgHostInfo,
@@ -166,12 +177,14 @@ func (h *Handler) initCommands() {
 			Help:    "Inserts documents into the database.",
 		},
 		"isMaster": {
-			Handler: h.MsgIsMaster,
-			Help:    "Returns the role of the FerretDB instance.",
+			Handler:   h.MsgIsMaster,
+			anonymous: true,
+			Help:      "Returns the role of the FerretDB instance.",
 		},
 		"ismaster": { // old lowercase variant
-			Handler: h.MsgIsMaster,
-			Help:    "", // hidden
+			Handler:   h.MsgIsMaster,
+			anonymous: true,
+			Help:      "", // hidden
 		},
 		"killCursors": {
 			Handler: h.MsgKillCursors,
@@ -194,20 +207,28 @@ func (h *Handler) initCommands() {
 			Help:    "Returns a summary of indexes of the specified collection.",
 		},
 		"logout": {
-			Handler: h.MsgLogout,
-			Help:    "Logs out from the current session.",
+			Handler:   h.MsgLogout,
+			anonymous: true,
+			Help:      "Logs out from the current session.",
 		},
 		"ping": {
-			Handler: h.MsgPing,
-			Help:    "Returns a pong response.",
+			Handler:   h.MsgPing,
+			anonymous: true,
+			Help:      "Returns a pong response.",
 		},
 		"renameCollection": {
 			Handler: h.MsgRenameCollection,
 			Help:    "Changes the name of an existing collection.",
 		},
 		"saslStart": {
-			Handler: h.MsgSASLStart,
-			Help:    "Starts a SASL conversation.",
+			Handler:   h.MsgSASLStart,
+			anonymous: true,
+			Help:      "", // hidden
+		},
+		"saslContinue": {
+			Handler:   h.MsgSASLContinue,
+			anonymous: true,
+			Help:      "", // hidden
 		},
 		"serverStatus": {
 			Handler: h.MsgServerStatus,
@@ -226,39 +247,84 @@ func (h *Handler) initCommands() {
 			Help:    "Validates collection.",
 		},
 		"whatsmyuri": {
-			Handler: h.MsgWhatsMyURI,
-			Help:    "Returns peer information.",
+			Handler:   h.MsgWhatsMyURI,
+			anonymous: true,
+			Help:      "Returns peer information.",
 		},
 		// please keep sorted alphabetically
 	}
 
 	if h.EnableNewAuth {
 		// sorted alphabetically
-		h.commands["createUser"] = command{
+		h.commands["createUser"] = &command{
 			Handler: h.MsgCreateUser,
 			Help:    "Creates a new user.",
 		}
-		h.commands["dropAllUsersFromDatabase"] = command{
+		h.commands["dropAllUsersFromDatabase"] = &command{
 			Handler: h.MsgDropAllUsersFromDatabase,
 			Help:    "Drops all user from database.",
 		}
-		h.commands["dropUser"] = command{
+		h.commands["dropUser"] = &command{
 			Handler: h.MsgDropUser,
 			Help:    "Drops user.",
 		}
-		h.commands["updateUser"] = command{
+		h.commands["updateUser"] = &command{
 			Handler: h.MsgUpdateUser,
 			Help:    "Updates user.",
 		}
-		h.commands["usersInfo"] = command{
+		h.commands["usersInfo"] = &command{
 			Handler: h.MsgUsersInfo,
 			Help:    "Returns information about users.",
 		}
 		// please keep sorted alphabetically
 	}
+
+	for name, cmd := range h.commands {
+		if h.EnableNewAuth && !cmd.anonymous {
+			cmdHandler := h.commands[name].Handler
+
+			h.commands[name].Handler = func(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+				if err := checkSCRAMConversation(ctx, h.L); err != nil {
+					return nil, err
+				}
+
+				return cmdHandler(ctx, msg)
+			}
+		}
+	}
+}
+
+// checkSCRAMConversation returns error if SCRAM conversation is not valid.
+func checkSCRAMConversation(ctx context.Context, l *zap.Logger) error {
+	_, _, conv, _ := conninfo.Get(ctx).Auth()
+
+	switch {
+	case conv == nil:
+		l.Warn("checkSCRAMConversation: no conversation")
+
+	case !conv.Valid():
+		l.Warn(
+			"checkSCRAMConversation: invalid conversation",
+			zap.String("username", conv.Username()), zap.Bool("valid", conv.Valid()), zap.Bool("done", conv.Done()),
+		)
+
+	default:
+		l.Debug(
+			"checkSCRAMConversation: passed",
+			zap.String("username", conv.Username()), zap.Bool("valid", conv.Valid()), zap.Bool("done", conv.Done()),
+		)
+
+		return nil
+	}
+
+	return handlererrors.NewCommandErrorMsgWithArgument(
+		handlererrors.ErrAuthenticationFailed,
+		"Authentication failed.",
+		"checkSCRAMConversation",
+	)
 }
 
 // Commands returns a map of enabled commands.
-func (h *Handler) Commands() map[string]command {
+func (h *Handler) Commands() map[string]*command {
 	return h.commands
 }

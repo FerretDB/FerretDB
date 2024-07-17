@@ -24,6 +24,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"regexp"
 	"slices"
 	"sort"
 	"strconv"
@@ -90,17 +91,6 @@ func resultKey(packageName, testName string) string {
 
 // runGoTest runs `go test` with given extra args.
 func runGoTest(ctx context.Context, args []string, total int, times bool, logger *zap.SugaredLogger) error {
-	shutdownOtel := observability.SetupOtel("envtool tests")
-
-	defer func() {
-		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer shutdownCancel()
-
-		if err := shutdownOtel(shutdownCtx); err != nil {
-			logger.Error(err)
-		}
-	}()
-
 	cmd := exec.CommandContext(ctx, "go", append([]string{"test", "-json"}, args...)...)
 
 	logger.Debugf("Running %s", strings.Join(cmd.Args, " "))
@@ -358,43 +348,58 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 func testsRun(ctx context.Context, index, total uint, run, skip string, args []string, logger *zap.SugaredLogger) error {
 	logger.Debugf("testsRun: index=%d, total=%d, run=%q, args=%q", index, total, run, args)
 
-	var totalTest int
-	if run == "" {
-		if index == 0 || total == 0 {
-			return fmt.Errorf("--shard-index and --shard-total must be specified when --run is not")
+	if run == "" && (index == 0 || total == 0) {
+		return fmt.Errorf("--shard-index and --shard-total must be specified when --run is not")
+	}
+
+	tests, err := listTestFuncsWithRegex("", run, skip)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	// Then, shard all the tests but only run the ones that match the regex and that should
+	// be run on the specific shard.
+	shard, skipShard, err := shardTestFuncs(index, total, tests)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	args = append(args, "-run="+run)
+
+	if len(skipShard) > 0 {
+		if skip != "" {
+			skip += "|"
 		}
-
-		all, err := listTestFuncs("")
-		if err != nil {
-			return lazyerrors.Error(err)
-		}
-
-		shard, err := shardTestFuncs(index, total, all)
-		if err != nil {
-			return lazyerrors.Error(err)
-		}
-
-		run = "^("
-
-		for i, t := range shard {
-			run += t
-			if i != len(shard)-1 {
-				run += "|"
-			}
-		}
-
-		totalTest = len(shard)
-		run += ")$"
+		skip += "^(" + strings.Join(skipShard, "|") + ")$"
 	}
 
 	if skip != "" {
-		totalTest = 0
-		args = append(args, "-run="+run, "-skip="+skip)
-	} else {
-		args = append(args, "-run="+run)
+		args = append(args, "-skip="+skip)
 	}
 
-	return runGoTest(ctx, args, totalTest, true, logger)
+	ot, err := observability.NewOtelTracer(&observability.OtelTracerOpts{
+		Logger:   logger.Desugar(),
+		Service:  "envtool-tests",
+		Endpoint: "127.0.0.1:4318",
+	})
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	ctx, cancel := context.WithCancel(ctx)
+	done := make(chan struct{})
+
+	go func() {
+		ot.Run(ctx)
+		close(done)
+	}()
+
+	err = runGoTest(ctx, args, len(shard), true, logger)
+
+	cancel()
+	<-done
+
+	return err
 }
 
 // listTestFuncs returns a sorted slice of all top-level test functions (tests, benchmarks, examples, fuzz functions)
@@ -448,36 +453,95 @@ func listTestFuncs(dir string) ([]string, error) {
 	return res, nil
 }
 
+// listTestFuncsWithRegex returns regex-filtered names of all top-level test
+// functions (tests, benchmarks, examples, fuzz functions) in the specified
+// directory and subdirectories.
+func listTestFuncsWithRegex(dir, run, skip string) ([]string, error) {
+	tests, err := listTestFuncs(dir)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(tests) == 0 {
+		return nil, fmt.Errorf("no tests to run")
+	}
+
+	var (
+		rxRun  *regexp.Regexp
+		rxSkip *regexp.Regexp
+	)
+
+	if run != "" {
+		rxRun, err = regexp.Compile(run)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if skip != "" {
+		rxSkip, err = regexp.Compile(skip)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return filterStringsByRegex(tests, rxRun, rxSkip), nil
+}
+
+// filterStringsByRegex filters a slice of strings based on inclusion and exclusion
+// criteria defined by regular expressions.
+func filterStringsByRegex(tests []string, include, exclude *regexp.Regexp) []string {
+	res := []string{}
+
+	for _, test := range tests {
+		if exclude != nil && exclude.MatchString(test) {
+			continue
+		}
+
+		if include != nil && !include.MatchString(test) {
+			continue
+		}
+
+		res = append(res, test)
+	}
+
+	return res
+}
+
 // shardTestFuncs shards given top-level test functions.
-func shardTestFuncs(index, total uint, testFuncs []string) ([]string, error) {
+// It returns a slice of test functions to run and what test functions to skip for the given shard.
+func shardTestFuncs(index, total uint, testFuncs []string) (run, skip []string, err error) {
 	if index == 0 {
-		return nil, fmt.Errorf("index must be greater than 0")
+		return nil, nil, fmt.Errorf("index must be greater than 0")
 	}
 
 	if total == 0 {
-		return nil, fmt.Errorf("total must be greater than 0")
+		return nil, nil, fmt.Errorf("total must be greater than 0")
 	}
 
 	if index > total {
-		return nil, fmt.Errorf("cannot shard when index is greater than total (%d > %d)", index, total)
+		return nil, nil, fmt.Errorf("cannot shard when index is greater than total (%d > %d)", index, total)
 	}
 
 	l := uint(len(testFuncs))
 	if total > l {
-		return nil, fmt.Errorf("cannot shard when total is greater than a number of test functions (%d > %d)", total, l)
+		return nil, nil, fmt.Errorf("cannot shard when total is greater than a number of test functions (%d > %d)", total, l)
 	}
 
-	res := make([]string, 0, l/total+1)
+	run = make([]string, 0, l/total+1)
+	skip = make([]string, 0, len(testFuncs)-len(run))
 	shard := uint(1)
 
 	// use different shards for tests with similar names for better load balancing
 	for _, test := range testFuncs {
 		if index == shard {
-			res = append(res, test)
+			run = append(run, test)
+		} else {
+			skip = append(skip, test)
 		}
 
 		shard = shard%total + 1
 	}
 
-	return res, nil
+	return run, skip, nil
 }

@@ -37,15 +37,16 @@ type backend struct {
 //
 //nolint:vet // for readability
 type NewBackendParams struct {
-	URI string
-	L   *zap.Logger
-	P   *state.Provider
-	_   struct{} // prevent unkeyed literals
+	URI       string
+	L         *zap.Logger
+	P         *state.Provider
+	BatchSize int
+	_         struct{} // prevent unkeyed literals
 }
 
 // NewBackend creates a new Backend.
 func NewBackend(params *NewBackendParams) (backends.Backend, error) {
-	r, err := metadata.NewRegistry(params.URI, params.L, params.P)
+	r, err := metadata.NewRegistry(params.URI, params.BatchSize, params.L, params.P)
 	if err != nil {
 		return nil, err
 	}

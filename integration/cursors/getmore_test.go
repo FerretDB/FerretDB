@@ -29,11 +29,12 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
+
 	"github.com/FerretDB/FerretDB/integration"
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 func TestCursorsGetMoreCommand(t *testing.T) {
@@ -606,17 +607,6 @@ func TestCursorsGetMoreCommandConnection(t *testing.T) {
 		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/153")
 
 		// do not run subtest in parallel to avoid breaking another parallel subtest
-
-		u, err := url.Parse(s.MongoDBURI)
-		require.NoError(t, err)
-
-		client2, err := mongo.Connect(ctx, options.Client().ApplyURI(u.String()))
-		require.NoError(t, err)
-
-		defer client2.Disconnect(ctx)
-
-		collection2 := client2.Database(databaseName).Collection(collectionName)
-
 		var res bson.D
 		err = collection1.Database().RunCommand(
 			ctx,
@@ -638,15 +628,22 @@ func TestCursorsGetMoreCommandConnection(t *testing.T) {
 		cursorID, _ := cursor.Get("id")
 		assert.NotNil(t, cursorID)
 
-		err = collection2.Database().RunCommand(
+		client2, err := mongo.Connect(ctx, options.Client().ApplyURI(s.MongoDBURI))
+		require.NoError(t, err)
+
+		t.Cleanup(func() {
+			require.NoError(t, client2.Disconnect(ctx))
+		})
+
+		err = client2.Database(databaseName).RunCommand(
 			ctx,
 			bson.D{
 				{"getMore", cursorID},
-				{"collection", collection2.Name()},
+				{"collection", client2.Database(databaseName).Collection(collectionName).Name()},
 			},
 		).Decode(&res)
 
-		integration.AssertMatchesCommandError(t, mongo.CommandError{Code: 50738, Name: "Location50738"}, err)
+		integration.AssertMatchesCommandError(t, mongo.CommandError{Code: 13, Name: "Unauthorized"}, err)
 	})
 }
 

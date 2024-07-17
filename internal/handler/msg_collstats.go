@@ -29,7 +29,9 @@ import (
 )
 
 // MsgCollStats implements `collStats` command.
-func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgCollStats(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -77,7 +79,7 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	collectionParam := backends.ListCollectionsParams{Name: collection}
-	collections, err := db.ListCollections(ctx, &collectionParam)
+	collections, err := db.ListCollections(connCtx, &collectionParam)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -90,7 +92,7 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		cInfo = collections.Collections[0]
 	}
 
-	indexes, err := c.ListIndexes(ctx, new(backends.ListIndexesParams))
+	indexes, err := c.ListIndexes(connCtx, new(backends.ListIndexesParams))
 	if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
 		indexes = new(backends.ListIndexesResult)
 		err = nil
@@ -100,7 +102,7 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
-	stats, err := c.Stats(ctx, &backends.CollectionStatsParams{Refresh: true})
+	stats, err := c.Stats(connCtx, &backends.CollectionStatsParams{Refresh: true})
 	if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
 		stats = new(backends.CollectionStatsResult)
 		err = nil

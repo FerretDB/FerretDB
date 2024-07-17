@@ -91,7 +91,7 @@ func createDatabase(t *testing.T, ctx context.Context) (*Registry, *pgxpool.Pool
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
-	r, err := NewRegistry(u, testutil.Logger(t), sp)
+	r, err := NewRegistry(u, 100, testutil.Logger(t), sp)
 	require.NoError(t, err)
 	t.Cleanup(r.Close)
 
@@ -121,18 +121,15 @@ func TestAuth(t *testing.T) {
 	}{
 		"NoAuth": {
 			uri: "postgres://127.0.0.1:5432/ferretdb",
-			err: "failed to connect to `host=127.0.0.1 user=" + username + " database=ferretdb`: " +
-				`server error (FATAL: role "` + username + `" does not exist (SQLSTATE 28000))`,
+			err: `server error: FATAL: role "` + username + `" does not exist (SQLSTATE 28000)`,
 		},
 		"WrongUser": {
 			uri: "postgres://wrong-user:wrong-password@127.0.0.1:5432/ferretdb",
-			err: "failed to connect to `host=127.0.0.1 user=wrong-user database=ferretdb`: " +
-				`server error (FATAL: role "wrong-user" does not exist (SQLSTATE 28000))`,
+			err: `server error: FATAL: role "wrong-user" does not exist (SQLSTATE 28000)`,
 		},
 		"WrongDatabase": {
 			uri: "postgres://username:password@127.0.0.1:5432/wrong-database",
-			err: "failed to connect to `host=127.0.0.1 user=username database=wrong-database`: " +
-				`server error (FATAL: database "wrong-database" does not exist (SQLSTATE 3D000))`,
+			err: `server error: FATAL: database "wrong-database" does not exist (SQLSTATE 3D000)`,
 		},
 	} {
 		name, tc := name, tc
@@ -140,7 +137,7 @@ func TestAuth(t *testing.T) {
 			sp, err := state.NewProvider("")
 			require.NoError(t, err)
 
-			r, err := NewRegistry(tc.uri, testutil.Logger(t), sp)
+			r, err := NewRegistry(tc.uri, 100, testutil.Logger(t), sp)
 			require.NoError(t, err)
 			t.Cleanup(r.Close)
 

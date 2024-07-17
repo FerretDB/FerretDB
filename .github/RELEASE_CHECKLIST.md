@@ -50,7 +50,7 @@
 
 ## Soon after
 
-1. Bump the latest version on [Beacon](https://beacon.ferretdb.io).
+1. Bump the latest version on https://beacon.ferretdb.com and https://beacon.ferretdb.io.
 2. Publish and announce blog post.
 3. Tweet, toot.
 4. Update NixOS package: https://github.com/NixOS/nixpkgs/tree/master/pkgs/servers/nosql/ferretdb.

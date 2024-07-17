@@ -130,7 +130,7 @@ func TestPC(t *testing.T) {
 var drain any
 
 func BenchmarkNew(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		drain = New("err")
 	}
 
@@ -140,7 +140,7 @@ func BenchmarkNew(b *testing.B) {
 }
 
 func BenchmarkStatic(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		drain = errors.New("[lazyerrors_test.go:144 lazyerrors.BenchmarkStatic] err")
 	}
 

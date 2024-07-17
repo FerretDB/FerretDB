@@ -34,6 +34,7 @@ type CountParams struct {
 
 	Fields any `ferretdb:"fields,ignored"` // legacy MongoDB shell adds it, but it is never actually used
 
+	MaxTimeMS      int64           `ferretdb:"maxTimeMS,ignored"`
 	Hint           any             `ferretdb:"hint,ignored"`
 	ReadConcern    *types.Document `ferretdb:"readConcern,ignored"`
 	Comment        string          `ferretdb:"comment,ignored"`

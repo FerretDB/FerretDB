@@ -176,8 +176,6 @@ func TestCreateOnInsertStressDiffCollection(t *testing.T) {
 }
 
 func TestCreateStressSameCollection(tt *testing.T) {
-	tt.Parallel()
-
 	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/3853")
 
 	// It should be rewritten to use teststress.Stress.
@@ -333,7 +331,6 @@ func TestCreateCappedCommandInvalidSpec(t *testing.T) {
 			},
 		},
 	} {
-		tc, name := tc, name
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
