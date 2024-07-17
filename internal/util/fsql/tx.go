@@ -21,7 +21,7 @@ import (
 	"log/slog"
 	"time"
 
-	"go.uber.org/zap"
+	"github.com/FerretDB/FerretDB/internal/util/logging"
 
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
@@ -71,14 +71,14 @@ func (tx *Tx) QueryContext(ctx context.Context, query string, args ...any) (*Row
 
 	start := time.Now()
 
-	fields := []any{zap.Any("args", args)}
+	fields := []any{slog.Any("args", args)}
 	if tx.l.Enabled(ctx, slog.LevelDebug) {
 		tx.l.With(fields...).DebugContext(ctx, fmt.Sprintf(">>> %s", query))
 	}
 
 	rows, err := tx.sqlTx.QueryContext(ctx, query, args...)
 
-	fields = append(fields, zap.Duration("time", time.Since(start)), zap.Error(err))
+	fields = append(fields, slog.Duration("time", time.Since(start)), logging.Error(err))
 	if tx.l.Enabled(ctx, slog.LevelDebug) {
 		tx.l.With(fields...).DebugContext(ctx, fmt.Sprintf("<<< %s", query))
 	}
@@ -92,14 +92,14 @@ func (tx *Tx) QueryRowContext(ctx context.Context, query string, args ...any) *s
 
 	start := time.Now()
 
-	fields := []any{zap.Any("args", args)}
+	fields := []any{slog.Any("args", args)}
 	if tx.l.Enabled(ctx, slog.LevelDebug) {
 		tx.l.With(fields...).DebugContext(ctx, fmt.Sprintf(">>> %s", query))
 	}
 
 	row := tx.sqlTx.QueryRowContext(ctx, query, args...)
 
-	fields = append(fields, zap.Duration("time", time.Since(start)), zap.Error(row.Err()))
+	fields = append(fields, slog.Duration("time", time.Since(start)), logging.Error(row.Err()))
 	if tx.l.Enabled(ctx, slog.LevelDebug) {
 		tx.l.With(fields...).DebugContext(ctx, fmt.Sprintf("<<< %s", query))
 	}
@@ -113,7 +113,7 @@ func (tx *Tx) ExecContext(ctx context.Context, query string, args ...any) (sql.R
 
 	start := time.Now()
 
-	fields := []any{zap.Any("args", args)}
+	fields := []any{slog.Any("args", args)}
 	if tx.l.Enabled(ctx, slog.LevelDebug) {
 		tx.l.With(fields...).DebugContext(ctx, fmt.Sprintf(">>> %s", query))
 	}
@@ -128,7 +128,7 @@ func (tx *Tx) ExecContext(ctx context.Context, query string, args ...any) (sql.R
 		ra = &rav
 	}
 
-	fields = append(fields, zap.Int64p("rows", ra), zap.Duration("time", time.Since(start)), zap.Error(err))
+	fields = append(fields, slog.Any("rows", ra), slog.Duration("time", time.Since(start)), logging.Error(err))
 	if tx.l.Enabled(ctx, slog.LevelDebug) {
 		tx.l.With(fields...).DebugContext(ctx, fmt.Sprintf("<<< %s", query))
 	}

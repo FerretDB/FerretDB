@@ -23,7 +23,6 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
@@ -90,7 +89,7 @@ func (db *DB) QueryContext(ctx context.Context, query string, args ...any) (*Row
 
 	rows, err := db.sqlDB.QueryContext(ctx, query, args...)
 
-	fields = append(fields, zap.Duration("time", time.Since(start)), zap.Error(err))
+	fields = append(fields, slog.Duration("time", time.Since(start)), logging.Error(err))
 	if db.l.Enabled(ctx, slog.LevelDebug) {
 		db.l.With(fields...).DebugContext(ctx, fmt.Sprintf("<<< %s", query))
 	}
@@ -104,14 +103,14 @@ func (db *DB) QueryRowContext(ctx context.Context, query string, args ...any) *s
 
 	start := time.Now()
 
-	fields := []any{zap.Any("args", args)}
+	fields := []any{slog.Any("args", args)}
 	if db.l.Enabled(ctx, slog.LevelDebug) {
 		db.l.With(fields...).DebugContext(ctx, fmt.Sprintf(">>> %s", query))
 	}
 
 	row := db.sqlDB.QueryRowContext(ctx, query, args...)
 
-	fields = append(fields, zap.Duration("time", time.Since(start)), zap.Error(row.Err()))
+	fields = append(fields, slog.Duration("time", time.Since(start)), logging.Error(row.Err()))
 	if db.l.Enabled(ctx, slog.LevelDebug) {
 		db.l.With(fields...).DebugContext(ctx, fmt.Sprintf("<<< %s", query))
 	}
@@ -125,7 +124,7 @@ func (db *DB) ExecContext(ctx context.Context, query string, args ...any) (sql.R
 
 	start := time.Now()
 
-	fields := []any{zap.Any("args", args)}
+	fields := []any{slog.Any("args", args)}
 	if db.l.Enabled(ctx, slog.LevelDebug) {
 		db.l.With(fields...).DebugContext(ctx, fmt.Sprintf(">>> %s", query))
 	}
@@ -140,7 +139,7 @@ func (db *DB) ExecContext(ctx context.Context, query string, args ...any) (sql.R
 		ra = &rav
 	}
 
-	fields = append(fields, zap.Int64p("rows", ra), zap.Duration("time", time.Since(start)), zap.Error(err))
+	fields = append(fields, slog.Any("rows", ra), slog.Duration("time", time.Since(start)), logging.Error(err))
 	if db.l.Enabled(ctx, slog.LevelDebug) {
 		db.l.With(fields...).DebugContext(ctx, fmt.Sprintf("<<< %s", query))
 	}
