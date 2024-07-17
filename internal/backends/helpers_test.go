@@ -45,7 +45,7 @@ func testBackends(t *testing.T) map[string]*testBackend {
 		t.Skip("skipping in -short mode")
 	}
 
-	l := testutil.SLogger(t)
+	l := testutil.Logger(t)
 
 	res := map[string]*testBackend{}
 
@@ -55,7 +55,7 @@ func testBackends(t *testing.T) map[string]*testBackend {
 
 		b, err := postgresql.NewBackend(&postgresql.NewBackendParams{
 			URI:       testutil.TestPostgreSQLURI(t, context.TODO(), ""),
-			L:         logging.WithName(l, "postgresql"),
+			L:         l.Named("postgresql"),
 			P:         sp,
 			BatchSize: 1000,
 		})
@@ -74,7 +74,7 @@ func testBackends(t *testing.T) map[string]*testBackend {
 
 		b, err := sqlite.NewBackend(&sqlite.NewBackendParams{
 			URI:       testutil.TestSQLiteURI(t, ""),
-			L:         logging.WithName(l, "sqlite"),
+			L:         logging.WithName(testutil.SLogger(t), "sqlite"),
 			P:         sp,
 			BatchSize: 100,
 		})
@@ -93,7 +93,7 @@ func testBackends(t *testing.T) map[string]*testBackend {
 
 		b, err := hana.NewBackend(&hana.NewBackendParams{
 			URI: hanaURL,
-			L:   logging.WithName(l, "hana"),
+			L:   logging.WithName(testutil.SLogger(t), "hana"),
 			P:   sp,
 		})
 		require.NoError(t, err)

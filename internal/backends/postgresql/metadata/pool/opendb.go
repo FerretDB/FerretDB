@@ -16,17 +16,17 @@ package pool
 
 import (
 	"context"
-	"log/slog"
 	"slices"
 	"strings"
 	"time"
 
+	zapadapter "github.com/jackc/pgx-zap"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/tracelog"
+	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
@@ -40,7 +40,7 @@ var (
 
 // openDB creates a pool of connections to PostgreSQL database
 // and check that it works (authentication passes, settings are okay).
-func openDB(uri string, l *slog.Logger, sp *state.Provider) (*pgxpool.Pool, error) {
+func openDB(uri string, l *zap.Logger, sp *state.Provider) (*pgxpool.Pool, error) {
 	config, err := pgxpool.ParseConfig(uri)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -61,7 +61,7 @@ func openDB(uri string, l *slog.Logger, sp *state.Provider) (*pgxpool.Pool, erro
 		n, v, _ := strings.Cut(v, " ")
 		if sp.Get().BackendVersion != v {
 			if err = sp.Update(func(s *state.State) { s.BackendName = n; s.BackendVersion = v }); err != nil {
-				l.ErrorContext(ctx, "openDB: failed to update state", logging.Error(err))
+				l.Error("openDB: failed to update state", zap.Error(err))
 			}
 		}
 
@@ -73,7 +73,7 @@ func openDB(uri string, l *slog.Logger, sp *state.Provider) (*pgxpool.Pool, erro
 
 	// try to log everything; logger's configuration will skip extra levels if needed
 	config.ConnConfig.Tracer = &tracelog.TraceLog{
-		Logger:   logging.NewPgxLogger(l),
+		Logger:   zapadapter.NewLogger(l),
 		LogLevel: tracelog.LogLevelTrace,
 	}
 

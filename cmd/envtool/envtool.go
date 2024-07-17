@@ -107,8 +107,7 @@ func setupAnyPostgres(ctx context.Context, logger *zap.SugaredLogger, uri string
 		return err
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/4013
-	p, err := pool.New(uri, slog.Default(), sp)
+	p, err := pool.New(uri, logger.Desugar(), sp)
 	if err != nil {
 		return err
 	}

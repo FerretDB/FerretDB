@@ -20,7 +20,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql"
 	"github.com/FerretDB/FerretDB/internal/handler"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/logging"
 )
 
 // init registers "postgresql" handler.
@@ -28,7 +27,7 @@ func init() {
 	registry["postgresql"] = func(opts *NewHandlerOpts) (*handler.Handler, CloseBackendFunc, error) {
 		b, err := postgresql.NewBackend(&postgresql.NewBackendParams{
 			URI:       opts.PostgreSQLURL,
-			L:         logging.WithName(opts.SLogger, "postgresql"),
+			L:         opts.Logger.Named("postgresql"),
 			P:         opts.StateProvider,
 			BatchSize: opts.BatchSize,
 		})
