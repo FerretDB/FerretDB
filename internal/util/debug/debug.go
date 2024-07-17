@@ -16,6 +16,7 @@
 package debug
 
 import (
+	"archive/zip"
 	"bytes"
 	"context"
 	"errors"
@@ -163,6 +164,25 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 		//ctx := req.Context() TODO: use ctx in requests
 		// init zip
 
+		zipWriter := zip.NewWriter(rw)
+
+		defer func() {
+			if err := zipWriter.Close(); err != nil {
+				opts.L.Error("Archive handler failed", zap.Error(err))
+				rw.WriteHeader(http.StatusInternalServerError)
+
+				return
+			}
+		}()
+
+		metricsFile, err := zipWriter.Create("metrics")
+		if err != nil {
+			opts.L.Error("Archive handler failed", zap.Error(err))
+			rw.WriteHeader(http.StatusInternalServerError)
+
+			return
+		}
+
 		// get metrics
 		resp, err := http.Get(fmt.Sprintf("http://%s%s", req.Host, "/debug/metrics"))
 		if err != nil {
@@ -176,7 +196,7 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 
 		defer resp.Body.Close()
 
-		_, err = io.Copy(rw, resp.Body)
+		_, err = io.Copy(metricsFile, resp.Body)
 		if err != nil {
 			opts.L.Error("Archive handler failed", zap.Error(err))
 			rw.WriteHeader(http.StatusInternalServerError)
@@ -185,6 +205,14 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 		}
 
 		resp.Body.Close()
+
+		heapFile, err := zipWriter.Create("heap")
+		if err != nil {
+			opts.L.Error("Archive handler failed", zap.Error(err))
+			rw.WriteHeader(http.StatusInternalServerError)
+
+			return
+		}
 
 		// get heap
 		resp, err = http.Get(fmt.Sprintf("http://%s%s", req.Host, "/debug/pprof/heap"))
@@ -197,7 +225,7 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 
 		defer resp.Body.Close()
 
-		_, err = io.Copy(rw, resp.Body)
+		_, err = io.Copy(heapFile, resp.Body)
 		if err != nil {
 			opts.L.Error("Archive handler failed", zap.Error(err))
 			rw.WriteHeader(http.StatusInternalServerError)
