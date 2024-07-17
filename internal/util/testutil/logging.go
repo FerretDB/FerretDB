@@ -41,8 +41,6 @@ func LevelLogger(tb testtb.TB, level zap.AtomicLevel) *zap.Logger {
 }
 
 // Logger returns slog test logger.
-//
-// TODO https://github.com/FerretDB/FerretDB/issues/4013
 func Logger(tb testtb.TB) *slog.Logger {
 	t := tb.(testing.TB)
 	return slogt.New(t)

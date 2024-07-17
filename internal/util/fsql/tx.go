@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/util/logging"
-
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
