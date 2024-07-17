@@ -30,6 +30,7 @@ import (
 	"slices"
 	"sync/atomic"
 	"text/template"
+	"time"
 
 	"github.com/arl/statsviz"
 	"github.com/prometheus/client_golang/prometheus"
@@ -164,7 +165,7 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 		//ctx := req.Context() TODO: use ctx in requests
 
 		rw.Header().Set("Content-Type", "application/zip")
-		rw.Header().Set("Content-Disposition", "attachment; filename=FerretDB-debug.zip")
+		rw.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=FerretDB-debug-%d.zip", time.Now().UnixMilli()))
 
 		zipWriter := zip.NewWriter(rw)
 
