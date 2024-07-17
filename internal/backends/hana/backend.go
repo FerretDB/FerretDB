@@ -17,6 +17,7 @@ package hana
 import (
 	"context"
 	"database/sql"
+	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
@@ -50,7 +51,8 @@ func NewBackend(params *NewBackendParams) (backends.Backend, error) {
 		return nil, err
 	}
 
-	hdb := fsql.WrapDB(db, "hana", params.L)
+	// TODO https://github.com/FerretDB/FerretDB/issues/4013
+	hdb := fsql.WrapDB(db, "hana", slog.Default())
 	hdb.BatchSize = params.BatchSize
 
 	return backends.BackendContract(&backend{

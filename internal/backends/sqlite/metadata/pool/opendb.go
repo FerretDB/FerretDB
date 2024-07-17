@@ -17,6 +17,7 @@ package pool
 import (
 	"context"
 	"database/sql"
+	"log/slog"
 
 	"go.uber.org/zap"
 	_ "modernc.org/sqlite" // register database/sql driver
@@ -71,5 +72,6 @@ func openDB(name, uri string, memory bool, l *zap.Logger, sp *state.Provider) (*
 		}
 	}
 
-	return fsql.WrapDB(db, name, l), nil
+	// TODO https://github.com/FerretDB/FerretDB/issues/4013
+	return fsql.WrapDB(db, name, slog.Default()), nil
 }

@@ -17,6 +17,7 @@ package pool
 import (
 	"context"
 	"database/sql"
+	"log/slog"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql" // register database/sql driver
@@ -64,5 +65,6 @@ func openDB(uri string, l *zap.Logger, sp *state.Provider) (*fsql.DB, error) {
 		}
 	}
 
-	return fsql.WrapDB(db, "", l), nil
+	// TODO https://github.com/FerretDB/FerretDB/issues/4013
+	return fsql.WrapDB(db, "", slog.Default()), nil
 }
