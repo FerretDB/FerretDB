@@ -156,7 +156,7 @@ func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
 		must.NoError(err)
 	}
 
-	// RecentEntries.append(&r)
+	RecentEntries.add(&r)
 
 	if r.Level < LevelDPanic {
 		return err
