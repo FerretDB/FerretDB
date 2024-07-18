@@ -78,7 +78,7 @@ func (ready *ReadyZ) Probe(ctx context.Context) bool {
 	}
 
 	if cli.Listen.Unix != "" {
-		l.DebugContext(ctx, fmt.Sprintf("--listen-unix flag is set. Ping to %s will be performed", cli.Listen.Addr))
+		l.DebugContext(ctx, fmt.Sprintf("--listen-unix flag is set. Ping to %s will be performed", cli.Listen.Unix))
 
 		urls = append(urls, "mongodb://"+url.PathEscape(cli.Listen.Unix))
 	}
@@ -93,6 +93,7 @@ func (ready *ReadyZ) Probe(ctx context.Context) bool {
 
 		var cancel func()
 		ctx, cancel = context.WithTimeout(ctx, cli.Setup.Timeout)
+
 		defer cancel()
 
 		client, err := mongo.Connect(ctx, options.Client().ApplyURI(u))
