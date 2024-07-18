@@ -518,6 +518,7 @@ func run() {
 
 	h, closeBackend, err := registry.NewHandler(cli.Handler, &registry.NewHandlerOpts{
 		Logger:        zlogger,
+		SLogger:       logger,
 		ConnMetrics:   metrics.ConnMetrics,
 		StateProvider: stateProvider,
 		TCPHost:       cli.Listen.Addr,
@@ -569,7 +570,7 @@ func run() {
 		Mode:           clientconn.Mode(cli.Mode),
 		Metrics:        metrics,
 		Handler:        h,
-		Logger:         zlogger,
+		Logger:         logger,
 		TestRecordsDir: cli.Test.RecordsDir,
 	})
 	if err != nil {
