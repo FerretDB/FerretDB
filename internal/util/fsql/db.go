@@ -131,15 +131,12 @@ func (db *DB) ExecContext(ctx context.Context, query string, args ...any) (sql.R
 
 	res, err := db.sqlDB.ExecContext(ctx, query, args...)
 
-	// to differentiate between 0 and nil
-	var ra *int64
-
 	if res != nil {
-		rav, _ := res.RowsAffected()
-		ra = &rav
+		ra, _ := res.RowsAffected()
+		fields = append(fields, slog.Int64("rows", ra))
 	}
 
-	fields = append(fields, slog.Any("rows", ra), slog.Duration("time", time.Since(start)), logging.Error(err))
+	fields = append(fields, slog.Duration("time", time.Since(start)), logging.Error(err))
 	if db.l.Enabled(ctx, slog.LevelDebug) {
 		db.l.With(fields...).DebugContext(ctx, fmt.Sprintf("<<< %s", query))
 	}
