@@ -71,16 +71,12 @@ func (tx *Tx) QueryContext(ctx context.Context, query string, args ...any) (*Row
 	start := time.Now()
 
 	fields := []any{slog.Any("args", args)}
-	if tx.l.Enabled(ctx, slog.LevelDebug) {
-		tx.l.With(fields...).DebugContext(ctx, fmt.Sprintf(">>> %s", query))
-	}
+	tx.l.With(fields...).DebugContext(ctx, fmt.Sprintf(">>> %s", query))
 
 	rows, err := tx.sqlTx.QueryContext(ctx, query, args...)
 
 	fields = append(fields, slog.Duration("time", time.Since(start)), logging.Error(err))
-	if tx.l.Enabled(ctx, slog.LevelDebug) {
-		tx.l.With(fields...).DebugContext(ctx, fmt.Sprintf("<<< %s", query))
-	}
+	tx.l.With(fields...).DebugContext(ctx, fmt.Sprintf("<<< %s", query))
 
 	return wrapRows(rows), err
 }
@@ -92,16 +88,12 @@ func (tx *Tx) QueryRowContext(ctx context.Context, query string, args ...any) *s
 	start := time.Now()
 
 	fields := []any{slog.Any("args", args)}
-	if tx.l.Enabled(ctx, slog.LevelDebug) {
-		tx.l.With(fields...).DebugContext(ctx, fmt.Sprintf(">>> %s", query))
-	}
+	tx.l.With(fields...).DebugContext(ctx, fmt.Sprintf(">>> %s", query))
 
 	row := tx.sqlTx.QueryRowContext(ctx, query, args...)
 
 	fields = append(fields, slog.Duration("time", time.Since(start)), logging.Error(row.Err()))
-	if tx.l.Enabled(ctx, slog.LevelDebug) {
-		tx.l.With(fields...).DebugContext(ctx, fmt.Sprintf("<<< %s", query))
-	}
+	tx.l.With(fields...).DebugContext(ctx, fmt.Sprintf("<<< %s", query))
 
 	return row
 }
@@ -113,9 +105,7 @@ func (tx *Tx) ExecContext(ctx context.Context, query string, args ...any) (sql.R
 	start := time.Now()
 
 	fields := []any{slog.Any("args", args)}
-	if tx.l.Enabled(ctx, slog.LevelDebug) {
-		tx.l.With(fields...).DebugContext(ctx, fmt.Sprintf(">>> %s", query))
-	}
+	tx.l.With(fields...).DebugContext(ctx, fmt.Sprintf(">>> %s", query))
 
 	res, err := tx.sqlTx.ExecContext(ctx, query, args...)
 
@@ -125,9 +115,7 @@ func (tx *Tx) ExecContext(ctx context.Context, query string, args ...any) (sql.R
 	}
 
 	fields = append(fields, slog.Duration("time", time.Since(start)), logging.Error(err))
-	if tx.l.Enabled(ctx, slog.LevelDebug) {
-		tx.l.With(fields...).DebugContext(ctx, fmt.Sprintf("<<< %s", query))
-	}
+	tx.l.With(fields...).DebugContext(ctx, fmt.Sprintf("<<< %s", query))
 
 	return res, err
 }
