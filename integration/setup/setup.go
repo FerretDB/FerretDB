@@ -20,7 +20,6 @@ import (
 	"flag"
 	"fmt"
 	"net/url"
-	"runtime/trace"
 	"slices"
 	"strings"
 	"time"
@@ -33,7 +32,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
-	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 
@@ -143,8 +141,6 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 	setupCtx, span := otel.Tracer("").Start(ctx, "SetupWithOpts")
 	defer span.End()
 
-	defer trace.StartRegion(setupCtx, "SetupWithOpts").End()
-
 	if opts == nil {
 		opts = new(SetupOpts)
 	}
@@ -210,8 +206,6 @@ func setupCollection(tb testtb.TB, ctx context.Context, client *mongo.Client, op
 	ctx, span := otel.Tracer("").Start(ctx, "setupCollection")
 	defer span.End()
 
-	defer observability.FuncCall(ctx)()
-
 	var ownDatabase bool
 	databaseName := opts.DatabaseName
 	if databaseName == "" {
@@ -273,7 +267,6 @@ func InsertProviders(tb testtb.TB, ctx context.Context, collection *mongo.Collec
 	for _, provider := range providers {
 		spanName := fmt.Sprintf("insertProviders/%s/%s", collectionName, provider.Name())
 		provCtx, span := otel.Tracer("").Start(ctx, spanName)
-		region := trace.StartRegion(provCtx, spanName)
 
 		docs := shareddata.Docs(provider)
 		require.NotEmpty(tb, docs)
@@ -283,7 +276,6 @@ func InsertProviders(tb testtb.TB, ctx context.Context, collection *mongo.Collec
 		require.Len(tb, res.InsertedIDs, len(docs))
 		inserted = true
 
-		region.End()
 		span.End()
 	}
 
@@ -301,7 +293,6 @@ func insertBenchmarkProvider(tb testtb.TB, ctx context.Context, collection *mong
 
 	spanName := fmt.Sprintf("insertBenchmarkProvider/%s/%s", collectionName, provider.Name())
 	provCtx, span := otel.Tracer("").Start(ctx, spanName)
-	region := trace.StartRegion(provCtx, spanName)
 
 	iter := provider.NewIterator()
 	defer iter.Close()
@@ -326,7 +317,6 @@ func insertBenchmarkProvider(tb testtb.TB, ctx context.Context, collection *mong
 		inserted = true
 	}
 
-	region.End()
 	span.End()
 
 	return
