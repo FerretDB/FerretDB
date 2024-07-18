@@ -538,7 +538,7 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 				connCtx,
 				"Handler error for unhandled response opcode",
 				logging.Error(err),
-				slog.Any("opcode", resHeader.OpCode),
+				slog.String("opcode", resHeader.OpCode.String()),
 			)
 			return
 
@@ -551,7 +551,7 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 				connCtx,
 				"Handler error for unexpected response opcode",
 				logging.Error(err),
-				slog.Any("opcode", resHeader.OpCode),
+				slog.String("opcode", resHeader.OpCode.String()),
 			)
 			return
 		}
