@@ -26,6 +26,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/backends/hana"
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite"
+	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
@@ -54,7 +55,7 @@ func testBackends(t *testing.T) map[string]*testBackend {
 
 		b, err := postgresql.NewBackend(&postgresql.NewBackendParams{
 			URI:       testutil.TestPostgreSQLURI(t, context.TODO(), ""),
-			L:         l.Named("postgresql"),
+			L:         logging.WithName(testutil.SLogger(t), "postgresql"),
 			P:         sp,
 			BatchSize: 1000,
 		})
@@ -73,7 +74,7 @@ func testBackends(t *testing.T) map[string]*testBackend {
 
 		b, err := sqlite.NewBackend(&sqlite.NewBackendParams{
 			URI:       testutil.TestSQLiteURI(t, ""),
-			L:         l.Named("sqlite"),
+			L:         logging.WithName(testutil.SLogger(t), "sqlite"),
 			P:         sp,
 			BatchSize: 100,
 		})

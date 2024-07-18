@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"hash/fnv"
+	"log/slog"
 	"slices"
 	"sort"
 	"strings"
@@ -25,7 +26,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/prometheus/client_golang/prometheus"
-	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
@@ -57,7 +57,7 @@ const (
 // Exported methods are safe for concurrent use. Unexported methods are not.
 type Registry struct {
 	p         *pool.Pool
-	l         *zap.Logger
+	l         *slog.Logger
 	BatchSize int
 
 	// rw protects colls but also acts like a global lock for the whole registry.
@@ -70,7 +70,7 @@ type Registry struct {
 }
 
 // NewRegistry creates a registry for SQLite databases in the directory specified by SQLite URI.
-func NewRegistry(u string, batchSize int, l *zap.Logger, sp *state.Provider) (*Registry, error) {
+func NewRegistry(u string, batchSize int, l *slog.Logger, sp *state.Provider) (*Registry, error) {
 	p, initDBs, err := pool.New(u, l, sp)
 	if err != nil {
 		return nil, err

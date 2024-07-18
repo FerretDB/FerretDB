@@ -17,10 +17,10 @@ package postgresql
 import (
 	"cmp"
 	"context"
+	"log/slog"
 	"slices"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata"
@@ -38,7 +38,7 @@ type backend struct {
 //nolint:vet // for readability
 type NewBackendParams struct {
 	URI       string
-	L         *zap.Logger
+	L         *slog.Logger
 	P         *state.Provider
 	BatchSize int
 	_         struct{} // prevent unkeyed literals

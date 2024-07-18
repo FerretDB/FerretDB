@@ -18,14 +18,15 @@
 package pool
 
 import (
+	"log/slog"
 	"net/url"
 	"sync"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/prometheus/client_golang/prometheus"
-	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
@@ -41,7 +42,7 @@ const (
 //nolint:vet // for readability
 type Pool struct {
 	baseURI url.URL
-	l       *zap.Logger
+	l       *slog.Logger
 	sp      *state.Provider
 
 	rw    sync.RWMutex
@@ -51,7 +52,7 @@ type Pool struct {
 }
 
 // New creates a new Pool.
-func New(u string, l *zap.Logger, sp *state.Provider) (*Pool, error) {
+func New(u string, l *slog.Logger, sp *state.Provider) (*Pool, error) {
 	baseURI, err := url.Parse(u)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -107,7 +108,7 @@ func (p *Pool) Get(username, password string) (*pgxpool.Pool, error) {
 	p.rw.RUnlock()
 
 	if res != nil {
-		p.l.Debug("Pool: found existing pool", zap.String("username", username))
+		p.l.Debug("Pool: found existing pool", slog.String("username", username))
 		return res, nil
 	}
 
@@ -118,17 +119,17 @@ func (p *Pool) Get(username, password string) (*pgxpool.Pool, error) {
 
 	// a concurrent connection might have created a pool already; check again
 	if res = p.pools[u]; res != nil {
-		p.l.Debug("Pool: found existing pool (after acquiring lock)", zap.String("username", username))
+		p.l.Debug("Pool: found existing pool (after acquiring lock)", slog.String("username", username))
 		return res, nil
 	}
 
 	res, err := openDB(u, p.l, p.sp)
 	if err != nil {
-		p.l.Warn("Pool: connection failed", zap.String("username", username), zap.Error(err))
+		p.l.Warn("Pool: connection failed", slog.String("username", username), logging.Error(err))
 		return nil, lazyerrors.Error(err)
 	}
 
-	p.l.Info("Pool: connection succeed", zap.String("username", username))
+	p.l.Info("Pool: connection succeed", slog.String("username", username))
 	p.pools[u] = res
 
 	return res, nil

@@ -38,7 +38,7 @@ func TestCreateDrop(t *testing.T) {
 	require.NoError(t, err)
 
 	// that also tests that query parameters are preserved by using non-writable directory
-	p, _, err := New("file:/?mode=memory&_pragma=journal_mode(wal)", testutil.Logger(t), sp)
+	p, _, err := New("file:/?mode=memory&_pragma=journal_mode(wal)", testutil.SLogger(t), sp)
 	require.NoError(t, err)
 	t.Cleanup(p.Close)
 
@@ -102,7 +102,8 @@ func TestCreateDropStress(t *testing.T) {
 		"memory-immediate": "file:./" + dir + "/?mode=memory&_txlock=immediate",
 	} {
 		t.Run(testName, func(t *testing.T) {
-			p, _, err := New(uri, testutil.Logger(t), sp)
+			var p *Pool
+			p, _, err = New(uri, testutil.SLogger(t), sp)
 			require.NoError(t, err)
 			t.Cleanup(p.Close)
 
@@ -165,7 +166,7 @@ func TestMemory(t *testing.T) {
 
 	dbName := testutil.DatabaseName(t) + "1"
 
-	p0, dbs, err := New(uri, testutil.Logger(t), sp)
+	p0, dbs, err := New(uri, testutil.SLogger(t), sp)
 	require.NoError(t, err)
 	assert.Empty(t, dbs)
 	t.Cleanup(p0.Close)
@@ -174,7 +175,7 @@ func TestMemory(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, created)
 
-	p1, dbs, err := New(uri+"?mode=memory", testutil.Logger(t), sp)
+	p1, dbs, err := New(uri+"?mode=memory", testutil.SLogger(t), sp)
 	require.NoError(t, err)
 	assert.Empty(t, dbs, "dir content should be ignored for mode=memory")
 	t.Cleanup(p1.Close)
@@ -204,7 +205,7 @@ func TestMemory(t *testing.T) {
 	_, err = db2.ExecContext(ctx, "CREATE TABLE test (id INT) STRICT")
 	require.NoError(t, err)
 
-	p2, dbs, err := New(uri+"?mode=memory", testutil.Logger(t), sp)
+	p2, dbs, err := New(uri+"?mode=memory", testutil.SLogger(t), sp)
 	require.NoError(t, err)
 	assert.Empty(t, dbs)
 	t.Cleanup(p2.Close)
@@ -225,7 +226,7 @@ func TestDefaults(t *testing.T) {
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
-	p, _, err := New(testutil.TestSQLiteURI(t, ""), testutil.Logger(t), sp)
+	p, _, err := New(testutil.TestSQLiteURI(t, ""), testutil.SLogger(t), sp)
 	require.NoError(t, err)
 	t.Cleanup(p.Close)
 
