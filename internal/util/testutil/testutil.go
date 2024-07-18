@@ -17,7 +17,6 @@ package testutil
 
 import (
 	"context"
-	"runtime/trace"
 
 	"go.opentelemetry.io/otel"
 
@@ -59,9 +58,6 @@ func Ctx(tb testtb.TB) context.Context {
 	tb.Cleanup(func() {
 		span.End()
 	})
-
-	ctx, task := trace.NewTask(ctx, tb.Name())
-	tb.Cleanup(task.End)
 
 	return ctx
 }
