@@ -16,7 +16,8 @@ package common
 
 import (
 	"fmt"
-	"log/slog"
+
+	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -59,12 +60,12 @@ func UnimplementedNonDefault(doc *types.Document, field string, isDefault func(v
 }
 
 // Ignored logs a message if doc has any of the given fields.
-func Ignored(doc *types.Document, l *slog.Logger, fields ...string) {
+func Ignored(doc *types.Document, l *zap.Logger, fields ...string) {
 	for _, field := range fields {
 		if v, err := doc.Get(field); err == nil {
 			l.Debug(
 				"ignoring field",
-				slog.String("command", doc.Command()), slog.String("field", field), slog.Any("value", v),
+				zap.String("command", doc.Command()), zap.String("field", field), zap.Any("value", v),
 			)
 		}
 	}

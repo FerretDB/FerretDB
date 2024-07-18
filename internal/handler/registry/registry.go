@@ -17,7 +17,6 @@ package registry
 
 import (
 	"fmt"
-	"log/slog"
 	"time"
 
 	"go.uber.org/zap"
@@ -44,7 +43,6 @@ var registry = map[string]newHandlerFunc{}
 type NewHandlerOpts struct {
 	// for all backends
 	Logger        *zap.Logger
-	SLogger       *slog.Logger
 	ConnMetrics   *connmetrics.ConnMetrics
 	StateProvider *state.Provider
 	TCPHost       string

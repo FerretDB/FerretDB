@@ -20,9 +20,9 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"log/slog"
 
 	"github.com/xdg-go/scram"
+	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
@@ -30,7 +30,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
@@ -233,7 +232,7 @@ func (h *Handler) scramCredentialLookup(ctx context.Context, dbName, username, m
 		}
 	}
 
-	h.L.WarnContext(ctx, "scramCredentialLookup: failed", slog.String("user", username))
+	h.L.Warn("scramCredentialLookup: failed", zap.String("user", username))
 
 	return nil, handlererrors.NewCommandErrorMsgWithArgument(
 		handlererrors.ErrAuthenticationFailed,
@@ -282,23 +281,23 @@ func (h *Handler) saslStartSCRAM(ctx context.Context, dbName, mechanism string, 
 
 	response, err := conv.Step(string(payload))
 
-	attrs := []any{
-		slog.String("username", conv.Username()),
-		slog.Bool("valid", conv.Valid()),
-		slog.Bool("done", conv.Done()),
+	fields := []zap.Field{
+		zap.String("username", conv.Username()),
+		zap.Bool("valid", conv.Valid()),
+		zap.Bool("done", conv.Done()),
 	}
 
 	if err != nil {
-		if h.L.Enabled(ctx, slog.LevelDebug) {
-			attrs = append(attrs, logging.Error(err))
+		if h.L.Level().Enabled(zap.DebugLevel) {
+			fields = append(fields, zap.Error(err))
 		}
 
-		h.L.WarnContext(ctx, "saslStartSCRAM: step failed", attrs...) //nolint:sloglint // attrs is not key-value pairs
+		h.L.Warn("saslStartSCRAM: step failed", fields...)
 
 		return "", err
 	}
 
-	h.L.DebugContext(ctx, "saslStartSCRAM: step succeed", attrs...) //nolint:sloglint // attrs is not key-value pairs
+	h.L.Debug("saslStartSCRAM: step succeed", fields...)
 
 	conninfo.Get(ctx).SetAuth(conv.Username(), "", conv, dbName)
 

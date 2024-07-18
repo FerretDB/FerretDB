@@ -16,7 +16,8 @@ package common
 
 import (
 	"fmt"
-	"log/slog"
+
+	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
@@ -58,7 +59,7 @@ type FindAndModifyParams struct {
 }
 
 // GetFindAndModifyParams returns `findAndModifyParams` command parameters.
-func GetFindAndModifyParams(doc *types.Document, l *slog.Logger) (*FindAndModifyParams, error) {
+func GetFindAndModifyParams(doc *types.Document, l *zap.Logger) (*FindAndModifyParams, error) {
 	var params FindAndModifyParams
 
 	err := handlerparams.ExtractParams(doc, "findAndModify", &params, l)

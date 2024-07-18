@@ -18,7 +18,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/backends/mysql"
 	"github.com/FerretDB/FerretDB/internal/handler"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/logging"
 )
 
 // init registers "mysql" handler.
@@ -43,7 +42,7 @@ func init() {
 			SetupPassword: opts.SetupPassword,
 			SetupTimeout:  opts.SetupTimeout,
 
-			L:             logging.WithName(opts.SLogger, "mysql"),
+			L:             opts.Logger.Named("mysql"),
 			ConnMetrics:   opts.ConnMetrics,
 			StateProvider: opts.StateProvider,
 

@@ -16,14 +16,14 @@ package handler
 
 import (
 	"context"
-	"log/slog"
+
+	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
@@ -49,7 +49,7 @@ func (h *Handler) MsgSASLContinue(connCtx context.Context, msg *wire.OpMsg) (*wi
 	_, _, conv, _ := conninfo.Get(connCtx).Auth()
 
 	if conv == nil {
-		h.L.WarnContext(connCtx, "saslContinue: no conversation to continue")
+		h.L.Warn("saslContinue: no conversation to continue")
 
 		return nil, handlererrors.NewCommandErrorMsgWithArgument(
 			handlererrors.ErrAuthenticationFailed,
@@ -60,18 +60,18 @@ func (h *Handler) MsgSASLContinue(connCtx context.Context, msg *wire.OpMsg) (*wi
 
 	response, err := conv.Step(string(payload))
 
-	attrs := []any{
-		slog.String("username", conv.Username()),
-		slog.Bool("valid", conv.Valid()),
-		slog.Bool("done", conv.Done()),
+	fields := []zap.Field{
+		zap.String("username", conv.Username()),
+		zap.Bool("valid", conv.Valid()),
+		zap.Bool("done", conv.Done()),
 	}
 
 	if err != nil {
-		if h.L.Enabled(connCtx, slog.LevelDebug) {
-			attrs = append(attrs, logging.Error(err))
+		if h.L.Level().Enabled(zap.DebugLevel) {
+			fields = append(fields, zap.Error(err))
 		}
 
-		h.L.WarnContext(connCtx, "saslContinue: step failed", attrs...) //nolint:sloglint // attrs is not key-value pairs
+		h.L.Warn("saslContinue: step failed", fields...)
 
 		return nil, handlererrors.NewCommandErrorMsgWithArgument(
 			handlererrors.ErrAuthenticationFailed,
@@ -80,7 +80,7 @@ func (h *Handler) MsgSASLContinue(connCtx context.Context, msg *wire.OpMsg) (*wi
 		)
 	}
 
-	h.L.DebugContext(connCtx, "saslContinue: step succeed", attrs...) //nolint:sloglint // attrs is not key-value pairs
+	h.L.Debug("saslContinue: step succeed", fields...)
 
 	if conv.Valid() {
 		conninfo.Get(connCtx).SetBypassBackendAuth()
