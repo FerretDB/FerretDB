@@ -77,7 +77,9 @@ func Setup(opts *NewHandlerOpts, uuid string) {
 	slog.SetLogLoggerLevel(slog.LevelInfo + 2)
 }
 
-// WrapLogger wraps the given logger with a handler.
+// WrapLogger wraps the given logger's handler allowing the support for
+// additional log levels, shorter source location and appends
+// the record to [RecentEntries] used by `getLog` command.
 func WrapLogger(l *slog.Logger) *slog.Logger {
 	h := wrapHandler(os.Stderr, l.Handler())
 	return slog.New(h)
