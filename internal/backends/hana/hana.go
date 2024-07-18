@@ -19,10 +19,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
+	"strings"
 
 	// Register HANA SQL driver.
 	"github.com/SAP/go-hdb/driver"
 
+	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
@@ -177,6 +180,23 @@ func createCollection(ctx context.Context, hdb *fsql.DB, database, table string)
 	sql := fmt.Sprintf("CREATE COLLECTION %q.%q", database, table)
 
 	_, err = hdb.ExecContext(ctx, sql)
+	if err != nil {
+		return getHanaErrorIfExists(err)
+	}
+
+	indexInfo := []backends.IndexInfo{
+		backends.IndexInfo{
+			Name: "_id",
+			Key: []backends.IndexKeyPair{
+				backends.IndexKeyPair{
+					Field:      "_id",
+					Descending: false,
+				},
+			},
+		},
+	}
+
+	_, err = createIndexes(ctx, hdb, database, table, &backends.CreateIndexesParams{Indexes: indexInfo})
 
 	return getHanaErrorIfExists(err)
 }
@@ -210,4 +230,134 @@ func dropCollection(ctx context.Context, hdb *fsql.DB, database, table string) (
 	}
 
 	return true, nil
+}
+
+// Prefixes an index with the collection name to store it in hana.
+//
+// Reasoning:
+// Hana DocStore stores indexes on a schema/database level, that may cause
+// confilts for indexes of different collections having the same name (eg col1.idx and col2.idx).
+func prefixIndexName(collection string, name string) string {
+	return fmt.Sprintf("%s__%s", collection, name)
+}
+
+// Removes the prefix of an index name.
+func removeIndexNamePrefix(prefixedIndex string, collection string) string {
+	prefix := fmt.Sprintf("%s__", collection)
+	return strings.Replace(prefixedIndex, prefix, "", 1)
+}
+
+// indexExists checks if an index exists in a list of indexes retrieved from HANA.
+func indexExists(indexes []backends.IndexInfo, indexToFind string) bool {
+	for _, idx := range indexes {
+		if idx.Name == indexToFind {
+			return true
+		}
+	}
+
+	return false
+}
+
+func listIndexes(ctx context.Context, hdb *fsql.DB, database string, collection string) (*backends.ListIndexesResult, error) {
+	db, err := databaseExists(ctx, hdb, database)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if !db {
+		return nil, backends.NewError(
+			backends.ErrorCodeDatabaseDoesNotExist,
+			lazyerrors.Errorf("no ns %s.%s", database, collection),
+		)
+	}
+
+	col, err := collectionExists(ctx, hdb, database, collection)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if !col {
+		return nil, backends.NewError(
+			backends.ErrorCodeCollectionDoesNotExist,
+			lazyerrors.Errorf("no ns %s.%s", database, collection),
+		)
+	}
+
+	sql := "SELECT idx.INDEX_NAME, idx.COLUMN_NAME, idx.ASCENDING_ORDER " +
+		"FROM INDEX_COLUMNS idx, M_TABLES tbl " +
+		"WHERE idx.SCHEMA_NAME = '%s' AND idx.TABLE_NAME = '%s' AND " +
+		"idx.SCHEMA_NAME = tbl.SCHEMA_NAME AND idx.TABLE_NAME = tbl.TABLE_NAME AND " +
+		"tbl.TABLE_TYPE = 'COLLECTION'"
+
+	sql = fmt.Sprintf(sql, database, collection)
+
+	rows, err := hdb.QueryContext(ctx, sql)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	defer rows.Close()
+
+	var indexes []backends.IndexInfo
+
+	for rows.Next() {
+		var idxName, idxColName string
+		var ascending bool
+
+		err = rows.Scan(&idxName, &idxColName, &ascending)
+		if err != nil {
+			return nil, lazyerrors.Error(nil)
+		}
+
+		indexes = append(indexes, backends.IndexInfo{
+			Name:   removeIndexNamePrefix(idxName, collection),
+			Unique: true, // HANATODO: Is this possible to query from HANA?
+			Key:    []backends.IndexKeyPair{{Field: idxColName, Descending: !ascending}},
+		})
+	}
+
+	res := backends.ListIndexesResult{Indexes: indexes}
+
+	sort.Slice(res.Indexes, func(i, j int) bool {
+		return res.Indexes[i].Name < res.Indexes[j].Name
+	})
+
+	return &res, nil
+}
+
+func createIndexes(ctx context.Context, hdb *fsql.DB, database string, collection string, params *backends.CreateIndexesParams) (*backends.CreateIndexesResult, error) {
+	existingIndexes, err := listIndexes(ctx, hdb, database, collection)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	sql := "CREATE HASH INDEX %q.%q ON %q.%q(%q)"
+
+	var createStmt string
+
+	// HANATODO Can we support more than one field for indexes in HANA DocStore?
+	for _, index := range params.Indexes {
+		if !indexExists(existingIndexes.Indexes, index.Name) {
+			createStmt = fmt.Sprintf(sql, database, prefixIndexName(collection, index.Name), database, collection, index.Key[0].Field)
+
+			_, err := hdb.ExecContext(ctx, createStmt)
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+		}
+	}
+
+	return new(backends.CreateIndexesResult), nil
+}
+
+func querySingleInt(query string, ctx context.Context, hdb *fsql.DB) (int64, error) {
+
+	rowCount := hdb.QueryRowContext(ctx, query)
+
+	var res int64
+	if err := rowCount.Scan(&res); err != nil {
+		return 0, lazyerrors.Error(err)
+	}
+
+	return res, nil
 }
