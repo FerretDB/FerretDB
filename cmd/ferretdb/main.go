@@ -220,7 +220,7 @@ func main() {
 	case "run":
 		run()
 	case "ping":
-		logger := setupLogger(cli.Log.Format, "", true)
+		logger := setupLogger(cli.Log.Format, "")
 		checkFlags(logger)
 
 		ready := ReadyZ{
@@ -287,28 +287,9 @@ func setupMetrics(stateProvider *state.Provider) prometheus.Registerer {
 	return r
 }
 
-// setupLogger setups zap logger.
-func setupLogger(format string, uuid string, omitStartupMsg bool) *slog.Logger {
-	info := version.Get()
-
-	startupFields := []slog.Attr{
-		slog.String("version", info.Version),
-		slog.String("commit", info.Commit),
-		slog.String("branch", info.Branch),
-		slog.Bool("dirty", info.Dirty),
-		slog.String("package", info.Package),
-		slog.Bool("debugBuild", info.DebugBuild),
-		slog.Any("buildEnvironment", info.BuildEnvironment.Map()),
-	}
-
-	// Similarly to Prometheus, unless requested, don't add UUID to all messages, but log it once at startup.
-	if !cli.Log.UUID {
-		startupFields = append(startupFields, slog.String("uuid", uuid))
-		uuid = ""
-	}
-
+// setupLogger setups slog logger.
+func setupLogger(format string, uuid string) *slog.Logger {
 	var level slog.Level
-
 	if err := level.UnmarshalText([]byte(cli.Log.Level)); err != nil {
 		log.Fatal(err)
 	}
@@ -318,26 +299,8 @@ func setupLogger(format string, uuid string, omitStartupMsg bool) *slog.Logger {
 		Level: level,
 	}
 	logging.Setup(opts, uuid)
-	logger := slog.Default()
 
-	if omitStartupMsg {
-		return logger
-	}
-
-	ctx := context.Background()
-
-	//nolint:sloglint // https://github.com/go-simpler/sloglint/issues/48
-	logger.LogAttrs(ctx, slog.LevelInfo, "Starting FerretDB "+info.Version+"...", startupFields...)
-
-	if debugbuild.Enabled {
-		logger.InfoContext(ctx, "This is a debug build. The performance will be affected.")
-	}
-
-	if logger.Enabled(ctx, slog.LevelDebug) {
-		logger.InfoContext(ctx, "Debug logging enabled. The security and performance will be affected.")
-	}
-
-	return logger
+	return slog.Default()
 }
 
 // checkFlags checks that CLI flags are not self-contradictory.
@@ -404,9 +367,36 @@ func run() {
 
 	metricsRegisterer := setupMetrics(stateProvider)
 
+	startupFields := []slog.Attr{
+		slog.String("version", info.Version),
+		slog.String("commit", info.Commit),
+		slog.String("branch", info.Branch),
+		slog.Bool("dirty", info.Dirty),
+		slog.String("package", info.Package),
+		slog.Bool("debugBuild", info.DebugBuild),
+		slog.Any("buildEnvironment", info.BuildEnvironment),
+	}
 	logUUID := stateProvider.Get().UUID
 
-	logger := setupLogger(cli.Log.Format, logUUID, false)
+	// Similarly to Prometheus, unless requested, don't add UUID to all messages, but log it once at startup.
+	if !cli.Log.UUID {
+		startupFields = append(startupFields, slog.String("uuid", logUUID))
+		logUUID = ""
+	}
+
+	logger := setupLogger(cli.Log.Format, logUUID)
+
+	//nolint:sloglint // https://github.com/go-simpler/sloglint/issues/48
+	logger.LogAttrs(context.Background(), slog.LevelInfo, "Starting FerretDB "+info.Version+"...", startupFields...)
+
+	if debugbuild.Enabled {
+		logger.Info("This is debug build. The performance will be affected.")
+	}
+
+	if logger.Enabled(context.Background(), slog.LevelDebug) {
+		logger.Info("Debug logging enabled. The performance will be affected.")
+	}
+
 	zlogger := zap.L()
 
 	checkFlags(logger)
