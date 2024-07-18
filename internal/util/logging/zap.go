@@ -15,8 +15,9 @@
 package logging
 
 import (
-	"go.uber.org/zap"
 	"log"
+
+	"go.uber.org/zap"
 )
 
 // SetupWithZapLogger initializes zap logging with a given logger and its level.
