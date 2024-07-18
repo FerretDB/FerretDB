@@ -168,7 +168,7 @@ func (h *Handler) MsgFind(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		ctx,
 		"Got first batch",
 		slog.Int64("cursor_id", cursorID),
-		slog.Any("type", c.Type),
+		slog.String("type", c.Type.String()),
 		slog.Int("count", len(docs)),
 		slog.Int64("batch_size", params.BatchSize),
 		slog.Bool("single_batch", params.SingleBatch),
