@@ -78,18 +78,18 @@ func (ready *ReadyZ) Probe(ctx context.Context) bool {
 	}
 
 	if cli.Listen.Unix != "" {
-		l.DebugContext(ctx, fmt.Sprintf("--listen-addr flag is set. Ping to %s will be performed", cli.Listen.Addr))
+		l.DebugContext(ctx, fmt.Sprintf("--listen-unix flag is set. Ping to %s will be performed", cli.Listen.Addr))
 
 		urls = append(urls, "mongodb://"+url.PathEscape(cli.Listen.Unix))
 	}
 
 	if len(urls) == 0 {
-		l.WarnContext(ctx, "Neither --listen-addr nor --listen-unix nor --listen-tls flags were specified - skipping ping.")
+		l.WarnContext(ctx, "Neither --listen-addr nor --listen-unix nor --listen-tls flags were specified - skipping ping")
 		return true
 	}
 
 	for _, u := range urls {
-		l.DebugContext(ctx, fmt.Sprintf("Pinging %s...", u))
+		l.DebugContext(ctx, fmt.Sprintf("Pinging %s", u))
 
 		var cancel func()
 		ctx, cancel = context.WithTimeout(ctx, cli.Setup.Timeout)
