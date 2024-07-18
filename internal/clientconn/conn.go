@@ -28,7 +28,6 @@ import (
 	"net/netip"
 	"os"
 	"path/filepath"
-	"runtime/pprof"
 	"sync/atomic"
 	"time"
 
@@ -43,7 +42,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -582,12 +580,6 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 func (c *conn) handleOpMsg(connCtx context.Context, msg *wire.OpMsg, command string) (*wire.OpMsg, error) {
 	if cmd, ok := c.h.Commands()[command]; ok {
 		if cmd.Handler != nil {
-			defer observability.FuncCall(connCtx)()
-
-			defer pprof.SetGoroutineLabels(connCtx)
-			connCtx = pprof.WithLabels(connCtx, pprof.Labels("command", command))
-			pprof.SetGoroutineLabels(connCtx)
-
 			return cmd.Handler(connCtx, msg)
 		}
 	}
