@@ -225,7 +225,7 @@ func main() {
 		checkFlags(logger)
 
 		ready := ReadyZ{
-			l: logger,
+			l: slog.Default(), // TODO https://github.com/FerretDB/FerretDB/issues/4013
 		}
 
 		ctx, stop := ctxutil.SigTerm(context.Background())
@@ -419,7 +419,7 @@ func run() {
 		go func() {
 			defer wg.Done()
 
-			l := logger.Named("debug")
+			l := logging.WithName(slogger, "debug")
 			ready := ReadyZ{
 				l: l,
 			}
@@ -438,7 +438,7 @@ func run() {
 				Readyz: ready.Probe,
 			})
 			if err != nil {
-				l.Sugar().Fatalf("Failed to create debug handler: %s.", err)
+				l.LogAttrs(ctx, logging.LevelFatal, "Failed to create debug handler", logging.Error(err))
 			}
 
 			h.Serve(ctx)
