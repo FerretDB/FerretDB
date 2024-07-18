@@ -228,7 +228,7 @@ func setupCollection(tb testtb.TB, ctx context.Context, client *mongo.Client, op
 	switch {
 	case len(opts.Providers) > 0:
 		require.Nil(tb, opts.BenchmarkProvider, "Both Providers and BenchmarkProvider were set")
-		inserted = insertProviders(tb, ctx, collection, opts.Providers...)
+		inserted = InsertProviders(tb, ctx, collection, opts.Providers...)
 	case opts.BenchmarkProvider != nil:
 		inserted = insertBenchmarkProvider(tb, ctx, collection, opts.BenchmarkProvider)
 	}
@@ -257,8 +257,8 @@ func setupCollection(tb testtb.TB, ctx context.Context, client *mongo.Client, op
 	return collection
 }
 
-// insertProviders inserts documents from specified Providers into collection. It returns true if any document was inserted.
-func insertProviders(tb testtb.TB, ctx context.Context, collection *mongo.Collection, providers ...shareddata.Provider) (inserted bool) {
+// InsertProviders inserts documents from specified Providers into collection. It returns true if any document was inserted.
+func InsertProviders(tb testtb.TB, ctx context.Context, collection *mongo.Collection, providers ...shareddata.Provider) (inserted bool) {
 	tb.Helper()
 
 	ctx, span := otel.Tracer("").Start(ctx, "insertProviders")
