@@ -297,7 +297,7 @@ func (h *Handler) Collect(ch chan<- prometheus.Metric) {
 
 // cleanupAllCappedCollections drops the given percent of documents from all capped collections.
 func (h *Handler) cleanupAllCappedCollections(ctx context.Context) error {
-	h.L.DebugContext(ctx, "cleanupAllCappedCollections: started", slog.Int("percentage", int(h.CappedCleanupPercentage)))
+	h.L.DebugContext(ctx, "cleanupAllCappedCollections: started", slog.Any("percentage", h.CappedCleanupPercentage))
 
 	start := time.Now()
 	defer func() {
@@ -345,7 +345,7 @@ func (h *Handler) cleanupAllCappedCollections(ctx context.Context) error {
 					"Capped collection cleaned up.",
 					slog.String("db", dbInfo.Name),
 					slog.String("collection", cInfo.Name),
-					slog.Int("deleted", int(deleted)),
+					slog.Any("deleted", deleted),
 					slog.Int64("bytes_freed", bytesFreed),
 				)
 			}

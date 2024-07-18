@@ -384,7 +384,7 @@ func (h *Handler) MsgAggregate(connCtx context.Context, msg *wire.OpMsg) (*wire.
 		ctx,
 		"Got first batch",
 		slog.Int64("cursor_id", cursorID),
-		slog.String("type", cursor.Type.String()),
+		slog.Any("type", cursor.Type),
 		slog.Int("count", len(docs)),
 		slog.Int64("batch_size", batchSize),
 	)

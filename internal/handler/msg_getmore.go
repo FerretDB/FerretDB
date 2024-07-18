@@ -285,7 +285,7 @@ func (h *Handler) makeNextBatch(c *cursor.Cursor, batchSize int64) (*types.Array
 	h.L.Debug(
 		"Got next batch",
 		slog.Int64("cursor_id", c.ID),
-		slog.String("type", c.Type.String()),
+		slog.Any("type", c.Type),
 		slog.Int("count", len(docs)),
 		slog.Int64("batch_size", batchSize),
 	)
