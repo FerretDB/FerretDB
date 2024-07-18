@@ -84,7 +84,7 @@ func (ready *ReadyZ) Probe(ctx context.Context) bool {
 	}
 
 	if len(urls) == 0 {
-		l.WarnContext(ctx, "Neither --listen-addr nor --listen-unix nor --listen-tls flags were specified - skipping ping")
+		l.InfoContext(ctx, "Neither --listen-addr nor --listen-unix nor --listen-tls flags were specified - skipping ping")
 		return true
 	}
 
