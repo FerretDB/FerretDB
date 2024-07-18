@@ -248,7 +248,10 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 	go func() {
 		defer close(runDone)
 
-		l.Run(ctx)
+		runCtx, runSpan := otel.Tracer("").Start(ctx, "setupListener.Run")
+		defer runSpan.End()
+
+		l.Run(runCtx)
 	}()
 
 	// ensure that all listener's and handler's logs are written before test ends

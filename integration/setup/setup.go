@@ -202,6 +202,9 @@ func Setup(tb testtb.TB, providers ...shareddata.Provider) (context.Context, *mo
 func setupCollection(tb testtb.TB, ctx context.Context, client *mongo.Client, opts *SetupOpts) *mongo.Collection {
 	tb.Helper()
 
+	ctx, span := otel.Tracer("").Start(ctx, "setupCollection")
+	defer span.End()
+
 	var ownDatabase bool
 	databaseName := opts.DatabaseName
 	if databaseName == "" {
@@ -225,7 +228,7 @@ func setupCollection(tb testtb.TB, ctx context.Context, client *mongo.Client, op
 	switch {
 	case len(opts.Providers) > 0:
 		require.Nil(tb, opts.BenchmarkProvider, "Both Providers and BenchmarkProvider were set")
-		inserted = InsertProviders(tb, ctx, collection, opts.Providers...)
+		inserted = insertProviders(tb, ctx, collection, opts.Providers...)
 	case opts.BenchmarkProvider != nil:
 		inserted = insertBenchmarkProvider(tb, ctx, collection, opts.BenchmarkProvider)
 	}
@@ -254,9 +257,12 @@ func setupCollection(tb testtb.TB, ctx context.Context, client *mongo.Client, op
 	return collection
 }
 
-// InsertProviders inserts documents from specified Providers into collection. It returns true if any document was inserted.
-func InsertProviders(tb testtb.TB, ctx context.Context, collection *mongo.Collection, providers ...shareddata.Provider) (inserted bool) {
+// insertProviders inserts documents from specified Providers into collection. It returns true if any document was inserted.
+func insertProviders(tb testtb.TB, ctx context.Context, collection *mongo.Collection, providers ...shareddata.Provider) (inserted bool) {
 	tb.Helper()
+
+	ctx, span := otel.Tracer("").Start(ctx, "insertProviders")
+	defer span.End()
 
 	for _, provider := range providers {
 		docs := shareddata.Docs(provider)
@@ -306,6 +312,9 @@ func insertBenchmarkProvider(tb testtb.TB, ctx context.Context, collection *mong
 
 // cleanupUser removes users for the given database if new authentication is enabled and drops that database.
 func cleanupDatabase(ctx context.Context, tb testtb.TB, database *mongo.Database, opts *BackendOpts) {
+	ctx, span := otel.Tracer("").Start(ctx, "cleanupDatabase")
+	defer span.End()
+
 	if opts == nil || !opts.DisableNewAuth {
 		err := database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}}).Err()
 		require.NoError(tb, err)

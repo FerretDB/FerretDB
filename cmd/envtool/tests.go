@@ -172,8 +172,8 @@ func runGoTest(runCtx context.Context, args []string, total int, times bool, log
 			must.NotBeZero(spanName)
 
 			attributes := []otelattribute.KeyValue{
-				otelattribute.String("db.ferretdb.envtool.package", event.Package),
-				otelattribute.String("db.ferretdb.envtool.test", event.Test),
+				otelattribute.String("envtool.package", event.Package),
+				otelattribute.String("envtool.test", event.Test),
 			}
 
 			res.ctx, _ = otel.Tracer("").Start(parentCtx, spanName, oteltrace.WithAttributes(attributes...))
