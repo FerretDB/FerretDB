@@ -74,7 +74,7 @@ func testBackends(t *testing.T) map[string]*testBackend {
 
 		b, err := sqlite.NewBackend(&sqlite.NewBackendParams{
 			URI:       testutil.TestSQLiteURI(t, ""),
-			L:         l.Named("sqlite"),
+			L:         logging.WithName(testutil.SLogger(t), "sqlite"),
 			P:         sp,
 			BatchSize: 100,
 		})
