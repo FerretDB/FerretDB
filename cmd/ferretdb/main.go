@@ -384,34 +384,34 @@ func run() {
 		logUUID = ""
 	}
 
-	logger := setupLogger(cli.Log.Format, logUUID)
+	slogger := setupLogger(cli.Log.Format, logUUID)
 
 	//nolint:sloglint // https://github.com/go-simpler/sloglint/issues/48
-	logger.LogAttrs(context.Background(), slog.LevelInfo, "Starting FerretDB "+info.Version+"...", startupFields...)
+	slogger.LogAttrs(context.Background(), slog.LevelInfo, "Starting FerretDB "+info.Version+"...", startupFields...)
 
 	if debugbuild.Enabled {
-		logger.Info("This is debug build. The performance will be affected.")
+		slogger.Info("This is debug build. The performance will be affected.")
 	}
 
-	if logger.Enabled(context.Background(), slog.LevelDebug) {
-		logger.Info("Debug logging enabled. The performance will be affected.")
+	if slogger.Enabled(context.Background(), slog.LevelDebug) {
+		slogger.Info("Debug logging enabled. The performance will be affected.")
 	}
 
-	zlogger := zap.L()
+	logger := zap.L()
 
-	checkFlags(logger)
+	checkFlags(slogger)
 
 	if _, err := maxprocs.Set(maxprocs.Logger(func(format string, a ...any) {
-		logger.Debug(fmt.Sprintf(format, a...))
+		slogger.Debug(fmt.Sprintf(format, a...))
 	})); err != nil {
-		logger.Warn("Failed to set GOMAXPROCS", logging.Error(err))
+		slogger.Warn("Failed to set GOMAXPROCS", logging.Error(err))
 	}
 
 	ctx, stop := ctxutil.SigTerm(context.Background())
 
 	go func() {
 		<-ctx.Done()
-		logger.Info("Stopping...")
+		slogger.Info("Stopping...")
 
 		// second SIGTERM should immediately stop the process
 		stop()
@@ -428,8 +428,8 @@ func run() {
 		go func() {
 			defer wg.Done()
 
-			l := logging.WithName(logger, "debug")
-			zl := zlogger.Named("debug")
+			l := logging.WithName(slogger, "debug")
+			zl := logger.Named("debug")
 			ready := ReadyZ{
 				l: zl,
 			}
@@ -461,10 +461,10 @@ func run() {
 		go func() {
 			defer wg.Done()
 
-			l := logging.WithName(logger, "otel")
+			l := logging.WithName(slogger, "otel")
 
 			ot, err := observability.NewOtelTracer(&observability.OtelTracerOpts{
-				Logger:   zlogger.Named("otel"),
+				Logger:   logger.Named("otel"),
 				Service:  "ferretdb",
 				Version:  version.Get().Version,
 				Endpoint: cli.Test.OTLPEndpoint,
@@ -484,7 +484,7 @@ func run() {
 	go func() {
 		defer wg.Done()
 
-		l := logging.WithName(logger, "telemetry")
+		l := logging.WithName(slogger, "telemetry")
 		opts := &telemetry.NewReporterOpts{
 			URL:            cli.Test.Telemetry.URL,
 			F:              &cli.Telemetry,
@@ -507,8 +507,8 @@ func run() {
 	}()
 
 	h, closeBackend, err := registry.NewHandler(cli.Handler, &registry.NewHandlerOpts{
-		Logger:        zlogger,
-		SLogger:       logger,
+		Logger:        logger,
+		SLogger:       slogger,
 		ConnMetrics:   metrics.ConnMetrics,
 		StateProvider: stateProvider,
 		TCPHost:       cli.Listen.Addr,
@@ -538,7 +538,7 @@ func run() {
 		},
 	})
 	if err != nil {
-		logger.LogAttrs(ctx, logging.LevelFatal, "Failed to construct handler", logging.Error(err))
+		slogger.LogAttrs(ctx, logging.LevelFatal, "Failed to construct handler", logging.Error(err))
 	}
 
 	defer closeBackend()
@@ -560,11 +560,11 @@ func run() {
 		Mode:           clientconn.Mode(cli.Mode),
 		Metrics:        metrics,
 		Handler:        h,
-		Logger:         logger,
+		Logger:         slogger,
 		TestRecordsDir: cli.Test.RecordsDir,
 	})
 	if err != nil {
-		logger.LogAttrs(ctx, logging.LevelFatal, "Failed to construct listener", logging.Error(err))
+		slogger.LogAttrs(ctx, logging.LevelFatal, "Failed to construct listener", logging.Error(err))
 	}
 
 	listener.Store(l)
@@ -573,7 +573,7 @@ func run() {
 
 	l.Run(ctx)
 
-	logger.Info("Listener stopped")
+	slogger.Info("Listener stopped")
 
 	wg.Wait()
 
