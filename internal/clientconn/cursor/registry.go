@@ -143,7 +143,7 @@ func (r *Registry) NewCursor(ctx context.Context, iter types.DocumentsIterator, 
 		ctx,
 		"Creating cursor",
 		slog.Int64("id", id),
-		slog.Any("type", params.Type),
+		slog.String("type", params.Type.String()),
 		slog.String("db", params.DB),
 		slog.String("collection", params.Collection),
 		slog.String("username", params.Username),
@@ -201,7 +201,7 @@ func (r *Registry) CloseAndRemove(c *Cursor) {
 	r.l.Debug(
 		"Removing cursor",
 		slog.Int64("id", c.ID),
-		slog.Any("type", c.Type),
+		slog.String("type", c.Type.String()),
 		slog.Int("total", len(r.m)),
 		slog.Duration("duration", d),
 	)

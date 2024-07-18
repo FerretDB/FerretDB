@@ -86,7 +86,7 @@ func newCursor(id int64, iter types.DocumentsIterator, params *NewParams, r *Reg
 		iter:      iter,
 		NewParams: params,
 		r:         r,
-		l:         r.l.With(slog.Int64("id", id), slog.Any("type", params.Type)),
+		l:         r.l.With(slog.Int64("id", id), slog.String("type", params.Type.String())),
 		created:   time.Now(),
 		removed:   make(chan struct{}),
 		token:     resource.NewToken(),
