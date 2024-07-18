@@ -333,7 +333,7 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 
 	if !db {
 		return nil, backends.NewError(
-			backends.ErrorCodeDatabaseDoesNotExist,
+			backends.ErrorCodeCollectionDoesNotExist,
 			lazyerrors.Errorf("no ns %s.%s", c.database, c.name),
 		)
 	}

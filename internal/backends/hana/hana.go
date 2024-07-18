@@ -266,7 +266,7 @@ func listIndexes(ctx context.Context, hdb *fsql.DB, database string, collection 
 
 	if !db {
 		return nil, backends.NewError(
-			backends.ErrorCodeDatabaseDoesNotExist,
+			backends.ErrorCodeCollectionDoesNotExist,
 			lazyerrors.Errorf("no ns %s.%s", database, collection),
 		)
 	}
