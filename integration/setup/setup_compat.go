@@ -17,7 +17,6 @@ package setup
 import (
 	"context"
 	"fmt"
-	"runtime/trace"
 	"strings"
 
 	"github.com/stretchr/testify/require"
@@ -25,7 +24,6 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 
@@ -70,8 +68,6 @@ func SetupCompatWithOpts(tb testtb.TB, opts *SetupCompatOpts) *SetupCompatResult
 
 	setupCtx, span := otel.Tracer("").Start(ctx, "SetupCompatWithOpts")
 	defer span.End()
-
-	defer trace.StartRegion(setupCtx, "SetupCompatWithOpts").End()
 
 	if opts == nil {
 		opts = new(SetupCompatOpts)
@@ -143,8 +139,6 @@ func setupCompatCollections(tb testtb.TB, ctx context.Context, client *mongo.Cli
 	ctx, span := otel.Tracer("").Start(ctx, "setupCompatCollections")
 	defer span.End()
 
-	defer observability.FuncCall(ctx)()
-
 	database := client.Database(opts.databaseName)
 
 	cleanupDatabase(ctx, tb, database, nil)
@@ -165,7 +159,6 @@ func setupCompatCollections(tb testtb.TB, ctx context.Context, client *mongo.Cli
 
 		spanName := fmt.Sprintf("setupCompatCollections/%s", collectionName)
 		collCtx, span := otel.Tracer("").Start(ctx, spanName)
-		region := trace.StartRegion(collCtx, spanName)
 
 		collection := database.Collection(collectionName)
 
@@ -192,7 +185,6 @@ func setupCompatCollections(tb testtb.TB, ctx context.Context, client *mongo.Cli
 
 		collections = append(collections, collection)
 
-		region.End()
 		span.End()
 	}
 
