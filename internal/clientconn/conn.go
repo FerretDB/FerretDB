@@ -424,9 +424,9 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 
 		span.SetName(command)
 		span.SetAttributes(
-			otelattribute.String("opcode", resHeader.OpCode.String()),
-			otelattribute.Int("request_id", int(resHeader.ResponseTo)),
-			otelattribute.String("argument", argument),
+			otelattribute.String("db.ferretdb.opcode", resHeader.OpCode.String()),
+			otelattribute.Int("db.ferretdb.request_id", int(resHeader.ResponseTo)),
+			otelattribute.String("db.ferretdb.argument", argument),
 		)
 		span.End()
 	}()
