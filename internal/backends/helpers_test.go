@@ -55,7 +55,7 @@ func testBackends(t *testing.T) map[string]*testBackend {
 
 		b, err := postgresql.NewBackend(&postgresql.NewBackendParams{
 			URI:       testutil.TestPostgreSQLURI(t, context.TODO(), ""),
-			L:         l.Named("postgresql"),
+			L:         logging.WithName(testutil.SLogger(t), "postgresql"),
 			P:         sp,
 			BatchSize: 1000,
 		})
