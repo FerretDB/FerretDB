@@ -83,7 +83,6 @@ func TestDebug(t *testing.T) {
 	t.Run("Archive", func(t *testing.T) {
 		u := "http://" + h.lis.Addr().String() + "/debug/archive"
 
-		// during test some of the files from the below list shall be absent
 		fileList := []string{
 			"metrics", "heap",
 		}
