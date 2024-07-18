@@ -287,7 +287,7 @@ func setupMetrics(stateProvider *state.Provider) prometheus.Registerer {
 	return r
 }
 
-// setupLogger setups slog logger.
+// setupLogger creates a logger with the level defined from cli.
 func setupLogger(format string, uuid string) *slog.Logger {
 	var level slog.Level
 	if err := level.UnmarshalText([]byte(cli.Log.Level)); err != nil {
@@ -304,19 +304,19 @@ func setupLogger(format string, uuid string) *slog.Logger {
 }
 
 // checkFlags checks that CLI flags are not self-contradictory.
-func checkFlags(logger *slog.Logger) {
+func checkFlags(l *slog.Logger) {
 	ctx := context.Background()
 
 	if cli.Setup.Database != "" && !cli.Test.EnableNewAuth {
-		logger.LogAttrs(ctx, logging.LevelFatal, "--setup-database requires --test-enable-new-auth")
+		l.LogAttrs(ctx, logging.LevelFatal, "--setup-database requires --test-enable-new-auth")
 	}
 
 	if (cli.Setup.Database == "") != (cli.Setup.Username == "") {
-		logger.LogAttrs(ctx, logging.LevelFatal, "--setup-database should be used together with --setup-username")
+		l.LogAttrs(ctx, logging.LevelFatal, "--setup-database should be used together with --setup-username")
 	}
 
 	if cli.Test.DisablePushdown && cli.Test.EnableNestedPushdown {
-		logger.LogAttrs(
+		l.LogAttrs(
 			ctx,
 			logging.LevelFatal,
 			"--test-disable-pushdown and --test-enable-nested-pushdown should not be set at the same time",

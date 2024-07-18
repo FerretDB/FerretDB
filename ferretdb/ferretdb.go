@@ -132,11 +132,8 @@ func New(config *Config) (*FerretDB, error) {
 		log.LogAttrs(context.Background(), logging.LevelFatal, "Config.Logger is replaced by Config.SLogger")
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/4013
-	zlog := zap.L()
-
 	h, closeBackend, err := registry.NewHandler(config.Handler, &registry.NewHandlerOpts{
-		Logger:        zlog,
+		Logger:        zap.L(),
 		SLogger:       log,
 		ConnMetrics:   metrics.ConnMetrics,
 		StateProvider: sp,
