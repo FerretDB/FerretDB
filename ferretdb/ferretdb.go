@@ -22,6 +22,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/url"
 	"sync"
 
@@ -124,8 +125,11 @@ func New(config *Config) (*FerretDB, error) {
 		log = logging.WithHooks(log)
 	}
 
+	slogger := slog.Default()
+
 	h, closeBackend, err := registry.NewHandler(config.Handler, &registry.NewHandlerOpts{
 		Logger:        log,
+		SLogger:       slog.Default(), // TODO https://github.com/FerretDB/FerretDB/issues/4013
 		ConnMetrics:   metrics.ConnMetrics,
 		StateProvider: sp,
 		TCPHost:       config.Listener.TCP,
@@ -158,7 +162,7 @@ func New(config *Config) (*FerretDB, error) {
 		Mode:    clientconn.NormalMode,
 		Metrics: metrics,
 		Handler: h,
-		Logger:  log,
+		Logger:  slogger,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct handler: %s", err)

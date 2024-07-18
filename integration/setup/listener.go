@@ -16,6 +16,7 @@ package setup
 
 import (
 	"context"
+	"log/slog"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -176,6 +177,7 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 
 	handlerOpts := &registry.NewHandlerOpts{
 		Logger:        logger,
+		SLogger:       slog.Default(), // TODO https://github.com/FerretDB/FerretDB/issues/4013
 		ConnMetrics:   listenerMetrics.ConnMetrics,
 		StateProvider: sp,
 
@@ -214,7 +216,7 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 		Mode:           clientconn.NormalMode,
 		Metrics:        listenerMetrics,
 		Handler:        h,
-		Logger:         logger,
+		Logger:         slog.Default(),
 		TestRecordsDir: testutil.TmpRecordsDir,
 	}
 
