@@ -183,27 +183,48 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 
 	queryCountDocuments = fmt.Sprintf(queryCountDocuments, db.name)
 
-	rowCount := db.hdb.QueryRowContext(ctx, queryCountDocuments)
-
-	var countDocuments int64
-	if err := rowCount.Scan(&countDocuments); err != nil {
+	countDocuments, err := querySingleInt(queryCountDocuments, ctx, db.hdb)
+	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	querySizeTotal := "SELECT COALESCE(SUM(TABLE_SIZE),0) FROM M_TABLES " +
-		"WHERE TABLE_TYPE = 'COLLECTION' AND SCHEMA_NAME = '%s'"
+		"WHERE SCHEMA_NAME = '%s'"
 	querySizeTotal = fmt.Sprintf(querySizeTotal, db.name)
 
-	rowSizeTotal := db.hdb.QueryRowContext(ctx, querySizeTotal)
+	sizeTotal, err := querySingleInt(querySizeTotal, ctx, db.hdb)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
-	var sizeTotal int64
-	if err := rowSizeTotal.Scan(&sizeTotal); err != nil {
+	querySizeCollections := querySizeTotal + " AND TABLE_TYPE = 'COLLECTION'"
+	sizeCollections, err := querySingleInt(querySizeCollections, ctx, db.hdb)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	// HANATODO: The size of an index is stored in DocStore only. To receive it
+	// we need to match index ids to the ones from the stats json that can be
+	// queried by:
+	// select info_json from sys.m_collection_tables_ where schema_name = <db-name>;
+	// Since every collection has an index for the _id field this is just set to 1
+	// for now.
+	sizeIndexes := int64(1)
+
+	queryFreeMemory := "SELECT FREE_PHYSICAL_MEMORY  FROM M_HOST_RESOURCE_UTILIZATION"
+	rowFreeMemory := db.hdb.QueryRowContext(ctx, queryFreeMemory)
+
+	var freeMemory int64
+	if err := rowFreeMemory.Scan(&freeMemory); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	return &backends.DatabaseStatsResult{
-		CountDocuments: countDocuments,
-		SizeTotal:      sizeTotal,
+		CountDocuments:  countDocuments,
+		SizeTotal:       sizeTotal,
+		SizeIndexes:     sizeIndexes,
+		SizeCollections: sizeCollections,
+		SizeFreeStorage: freeMemory,
 	}, nil
 }
 
