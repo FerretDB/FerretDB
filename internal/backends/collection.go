@@ -20,6 +20,9 @@ import (
 	"slices"
 	"time"
 
+	"go.opentelemetry.io/otel"
+	otelcodes "go.opentelemetry.io/otel/codes"
+
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -102,6 +105,9 @@ type QueryResult struct {
 //
 // Limit, if non-zero, should be applied.
 func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*QueryResult, error) {
+	ctx, span := otel.Tracer("").Start(ctx, "Query")
+	defer span.End()
+
 	if params == nil {
 		params = new(QueryParams)
 	}
@@ -116,6 +122,10 @@ func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*
 	}
 
 	res, err := cc.c.Query(ctx, params)
+	if err != nil {
+		span.SetStatus(otelcodes.Error, "")
+	}
+
 	checkError(err)
 
 	return res, err
@@ -148,6 +158,9 @@ type ExplainResult struct {
 // The ExplainResult's SortPushdown field is set to true if the backend could have applied the whole requested sorting.
 // If it was possible to apply it only partially or not at all, that field should be set to false.
 func (cc *collectionContract) Explain(ctx context.Context, params *ExplainParams) (*ExplainResult, error) {
+	ctx, span := otel.Tracer("").Start(ctx, "Explain")
+	defer span.End()
+
 	if params == nil {
 		params = new(ExplainParams)
 	}
@@ -162,6 +175,10 @@ func (cc *collectionContract) Explain(ctx context.Context, params *ExplainParams
 	}
 
 	res, err := cc.c.Explain(ctx, params)
+	if err != nil {
+		span.SetStatus(otelcodes.Error, "")
+	}
+
 	checkError(err)
 
 	return res, err
@@ -186,6 +203,9 @@ type InsertAllResult struct{}
 //
 // Both database and collection may or may not exist; they should be created automatically if needed.
 func (cc *collectionContract) InsertAll(ctx context.Context, params *InsertAllParams) (*InsertAllResult, error) {
+	ctx, span := otel.Tracer("").Start(ctx, "InsertAll")
+	defer span.End()
+
 	now := time.Now()
 	for _, doc := range params.Docs {
 		doc.SetRecordID(types.NextTimestamp(now).Signed())
@@ -193,6 +213,10 @@ func (cc *collectionContract) InsertAll(ctx context.Context, params *InsertAllPa
 	}
 
 	res, err := cc.c.InsertAll(ctx, params)
+	if err != nil {
+		span.SetStatus(otelcodes.Error, "")
+	}
+
 	checkError(err, ErrorCodeInsertDuplicateID)
 
 	return res, err
@@ -219,11 +243,18 @@ type UpdateAllResult struct {
 //
 // Database or collection may not exist; that's not an error.
 func (cc *collectionContract) UpdateAll(ctx context.Context, params *UpdateAllParams) (*UpdateAllResult, error) {
+	ctx, span := otel.Tracer("").Start(ctx, "UpdateAll")
+	defer span.End()
+
 	for _, doc := range params.Docs {
 		doc.Freeze()
 	}
 
 	res, err := cc.c.UpdateAll(ctx, params)
+	if err != nil {
+		span.SetStatus(otelcodes.Error, "")
+	}
+
 	checkError(err)
 
 	return res, err
@@ -250,9 +281,16 @@ type DeleteAllResult struct {
 //
 // Database or collection may not exist; that's not an error.
 func (cc *collectionContract) DeleteAll(ctx context.Context, params *DeleteAllParams) (*DeleteAllResult, error) {
+	ctx, span := otel.Tracer("").Start(ctx, "DeleteAll")
+	defer span.End()
+
 	must.BeTrue((params.IDs == nil) != (params.RecordIDs == nil))
 
 	res, err := cc.c.DeleteAll(ctx, params)
+	if err != nil {
+		span.SetStatus(otelcodes.Error, "")
+	}
+
 	checkError(err)
 
 	return res, err
@@ -284,7 +322,14 @@ type IndexSize struct {
 //
 // The errors for non-existing database and non-existing collection are the same.
 func (cc *collectionContract) Stats(ctx context.Context, params *CollectionStatsParams) (*CollectionStatsResult, error) {
+	ctx, span := otel.Tracer("").Start(ctx, "CollectionStats")
+	defer span.End()
+
 	res, err := cc.c.Stats(ctx, params)
+	if err != nil {
+		span.SetStatus(otelcodes.Error, "")
+	}
+
 	checkError(err, ErrorCodeCollectionDoesNotExist)
 
 	return res, err
@@ -304,7 +349,14 @@ type CompactResult struct{}
 // If full is true, the operation should try to reduce the disk space as much as possible,
 // even if collection or the whole database will be locked for some time.
 func (cc *collectionContract) Compact(ctx context.Context, params *CompactParams) (*CompactResult, error) {
+	ctx, span := otel.Tracer("").Start(ctx, "Compact")
+	defer span.End()
+
 	res, err := cc.c.Compact(ctx, params)
+	if err != nil {
+		span.SetStatus(otelcodes.Error, "")
+	}
+
 	checkError(err, ErrorCodeDatabaseDoesNotExist, ErrorCodeCollectionDoesNotExist)
 
 	return res, err
@@ -335,7 +387,14 @@ type IndexKeyPair struct {
 //
 // The errors for non-existing database and non-existing collection are the same.
 func (cc *collectionContract) ListIndexes(ctx context.Context, params *ListIndexesParams) (*ListIndexesResult, error) {
+	ctx, span := otel.Tracer("").Start(ctx, "ListIndexes")
+	defer span.End()
+
 	res, err := cc.c.ListIndexes(ctx, params)
+	if err != nil {
+		span.SetStatus(otelcodes.Error, "")
+	}
+
 	checkError(err, ErrorCodeCollectionDoesNotExist)
 
 	if res != nil && len(res.Indexes) > 0 {
@@ -363,7 +422,14 @@ type CreateIndexesResult struct{}
 //
 // Database or collection may not exist; that's not an error.
 func (cc *collectionContract) CreateIndexes(ctx context.Context, params *CreateIndexesParams) (*CreateIndexesResult, error) {
+	ctx, span := otel.Tracer("").Start(ctx, "CreateIndexes")
+	defer span.End()
+
 	res, err := cc.c.CreateIndexes(ctx, params)
+	if err != nil {
+		span.SetStatus(otelcodes.Error, "")
+	}
+
 	checkError(err)
 
 	return res, err
@@ -385,7 +451,14 @@ type DropIndexesResult struct{}
 //
 // Database or collection may not exist; that's not an error.
 func (cc *collectionContract) DropIndexes(ctx context.Context, params *DropIndexesParams) (*DropIndexesResult, error) {
+	ctx, span := otel.Tracer("").Start(ctx, "DropIndexes")
+	defer span.End()
+
 	res, err := cc.c.DropIndexes(ctx, params)
+	if err != nil {
+		span.SetStatus(otelcodes.Error, "")
+	}
+
 	checkError(err)
 
 	return res, err
