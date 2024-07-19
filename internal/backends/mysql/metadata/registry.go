@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"hash/fnv"
+	"log/slog"
 	"regexp"
 	"slices"
 	"sort"
@@ -26,7 +27,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/prometheus/client_golang/prometheus"
-	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
@@ -72,7 +72,7 @@ var specialCharacters = regexp.MustCompile("[^a-z][^a-z0-9_]*")
 //nolint:vet // for readability
 type Registry struct {
 	p *pool.Pool
-	l *zap.Logger
+	l *slog.Logger
 
 	// rw protects colls but also acts like a global lock for the whole registry.
 	// The latter effectively replaces transactions (see the mysql backend package description for more info).
@@ -84,7 +84,7 @@ type Registry struct {
 }
 
 // NewRegistry creates a registry for the MySQL databases with a given base URI.
-func NewRegistry(u string, l *zap.Logger, sp *state.Provider) (*Registry, error) {
+func NewRegistry(u string, l *slog.Logger, sp *state.Provider) (*Registry, error) {
 	p, err := pool.New(u, l, sp)
 	if err != nil {
 		return nil, err

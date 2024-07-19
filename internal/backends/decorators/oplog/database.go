@@ -16,8 +16,7 @@ package oplog
 
 import (
 	"context"
-
-	"go.uber.org/zap"
+	"log/slog"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 )
@@ -27,11 +26,11 @@ type database struct {
 	origDB backends.Database
 	name   string
 	origB  backends.Backend
-	l      *zap.Logger
+	l      *slog.Logger
 }
 
 // newDatabase creates a new Database that wraps the given database.
-func newDatabase(origDB backends.Database, name string, origB backends.Backend, l *zap.Logger) backends.Database {
+func newDatabase(origDB backends.Database, name string, origB backends.Backend, l *slog.Logger) backends.Database {
 	return &database{
 		origDB: origDB,
 		name:   name,

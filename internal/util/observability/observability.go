@@ -20,6 +20,7 @@ package observability
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"sync/atomic"
 	"time"
 
@@ -28,9 +29,9 @@ import (
 	otelsdkresource "go.opentelemetry.io/otel/sdk/resource"
 	otelsdktrace "go.opentelemetry.io/otel/sdk/trace"
 	otelsemconv "go.opentelemetry.io/otel/semconv/v1.21.0"
-	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
+	"github.com/FerretDB/FerretDB/internal/util/logging"
 )
 
 // setup ensures that OTLP tracer is set up only once.
@@ -38,13 +39,13 @@ var setup atomic.Bool
 
 // OtelTracer represents the OTLP tracer.
 type OtelTracer struct {
-	l  *zap.Logger
+	l  *slog.Logger
 	tp *otelsdktrace.TracerProvider
 }
 
 // OtelTracerOpts is the configuration for OtelTracer.
 type OtelTracerOpts struct {
-	Logger *zap.Logger
+	Logger *slog.Logger
 
 	Service  string
 	Version  string
@@ -102,12 +103,12 @@ func (ot *OtelTracer) Run(ctx context.Context) {
 	defer shutdownCancel(nil)
 
 	if err := ot.tp.ForceFlush(shutdownCtx); err != nil {
-		ot.l.DPanic("ForceFlush exited with unexpected error", zap.Error(err))
+		ot.l.LogAttrs(ctx, logging.LevelDPanic, "ForceFlush exited with unexpected error", logging.Error(err))
 	}
 
 	if err := ot.tp.Shutdown(shutdownCtx); err != nil {
-		ot.l.DPanic("Shutdown exited with unexpected error", zap.Error(err))
+		ot.l.LogAttrs(ctx, logging.LevelDPanic, "Shutdown exited with unexpected error", logging.Error(err))
 	}
 
-	ot.l.Info("OTLP tracer stopped.")
+	ot.l.InfoContext(ctx, "OTLP tracer stopped")
 }
