@@ -35,7 +35,6 @@ import (
 	_ "golang.org/x/crypto/x509roots/fallback" // register root TLS certificates for production Docker image
 
 	"github.com/FerretDB/FerretDB/build/version"
-	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handler/registry"
@@ -375,7 +374,7 @@ func run() {
 		slog.Bool("dirty", info.Dirty),
 		slog.String("package", info.Package),
 		slog.Bool("debugBuild", info.DebugBuild),
-		slog.Any("buildEnvironment", must.NotFail(bson.ConvertDocument(info.BuildEnvironment))),
+		slog.Any("buildEnvironment", info.BuildEnvironment),
 	}
 	logUUID := stateProvider.Get().UUID
 
