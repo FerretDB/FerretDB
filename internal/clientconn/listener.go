@@ -22,7 +22,6 @@ import (
 	"log/slog"
 	"math/rand"
 	"net"
-	"runtime/pprof"
 	"sync"
 	"time"
 
@@ -265,10 +264,6 @@ func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, 
 			}
 
 			connID := fmt.Sprintf("%s -> %s", remoteAddr, netConn.LocalAddr())
-
-			defer pprof.SetGoroutineLabels(connCtx)
-			connCtx = pprof.WithLabels(connCtx, pprof.Labels("conn", connID))
-			pprof.SetGoroutineLabels(connCtx)
 
 			opts := &newConnOpts{
 				netConn:     netConn,

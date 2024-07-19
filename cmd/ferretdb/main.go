@@ -464,7 +464,7 @@ func run() {
 			l := logging.WithName(logger, "otel")
 
 			ot, err := observability.NewOtelTracer(&observability.OtelTracerOpts{
-				Logger:   zlogger.Named("otel"),
+				Logger:   l,
 				Service:  "ferretdb",
 				Version:  version.Get().Version,
 				Endpoint: cli.Test.OTLPEndpoint,
