@@ -91,16 +91,6 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 
 	stdL := must.NotFail(zap.NewStdLogAt(opts.L, zap.WarnLevel))
 
-	archiveDurations := prometheus.NewHistogramVec(
-		prometheus.HistogramOpts{
-			Namespace: namespace,
-			Subsystem: subsystem,
-			Name:      "archive_response_seconds",
-			Help:      "Archive response time seconds.",
-			Buckets:   []float64{0.1, 0.5, 1, 5},
-		},
-		[]string{"code"},
-	)
 	probeDurations := prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Namespace: namespace,
@@ -112,7 +102,7 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 		[]string{"probe", "code"},
 	)
 
-	opts.R.MustRegister(archiveDurations, probeDurations)
+	opts.R.MustRegister(probeDurations)
 
 	http.Handle("/debug/metrics", promhttp.InstrumentMetricHandler(
 		opts.R, promhttp.HandlerFor(prometheus.DefaultGatherer, promhttp.HandlerOpts{
@@ -123,81 +113,79 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 		}),
 	))
 
-	http.HandleFunc("/debug/archive", promhttp.InstrumentHandlerDuration(
-		archiveDurations,
-		http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-			rw.Header().Set("Content-Type", "application/zip")
-			rw.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=FerretDB-debug-%d.zip", time.Now().UnixMilli()))
+	http.HandleFunc("/debug/archive", func(rw http.ResponseWriter, req *http.Request) {
+		rw.Header().Set("Content-Type", "application/zip")
+		rw.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=FerretDB-debug-%d.zip", time.Now().UnixMilli()))
 
-			ctx := req.Context()
-			zipWriter := zip.NewWriter(rw)
+		ctx := req.Context()
+		zipWriter := zip.NewWriter(rw)
 
-			defer func() {
-				if err := zipWriter.Close(); err != nil {
-					opts.L.Error("Archive handler failed", zap.Error(err))
-					rw.WriteHeader(http.StatusInternalServerError)
-
-					return
-				}
-			}()
-
-			metricsFile, err := zipWriter.Create("metrics")
-			if err != nil {
+		defer func() {
+			if err := zipWriter.Close(); err != nil {
 				opts.L.Error("Archive handler failed", zap.Error(err))
 				rw.WriteHeader(http.StatusInternalServerError)
 
 				return
 			}
+		}()
 
-			// we use *http.Request instead of http.Get function to provide the ctx
-			scrapeReq := must.NotFail(http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("http://%s%s", req.Host, "/debug/metrics"), nil))
+		metricsFile, err := zipWriter.Create("metrics")
+		if err != nil {
+			opts.L.Error("Archive handler failed", zap.Error(err))
+			rw.WriteHeader(http.StatusInternalServerError)
 
-			resp, err := http.DefaultClient.Do(scrapeReq)
-			if err != nil {
-				opts.L.Error("Archive handler failed - metrics failed", zap.Error(err))
-				rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 
-				return
-			}
+		// we use *http.Request instead of http.Get function to provide the ctx
+		scrapeReq := must.NotFail(http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("http://%s%s", req.Host, "/debug/metrics"), nil))
 
-			_, err = io.Copy(metricsFile, resp.Body)
-			resp.Body.Close()
+		resp, err := http.DefaultClient.Do(scrapeReq)
+		if err != nil {
+			opts.L.Error("Archive handler failed - metrics failed", zap.Error(err))
+			rw.WriteHeader(http.StatusInternalServerError)
 
-			if err != nil {
-				opts.L.Error("Archive handler failed", zap.Error(err))
-				rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 
-				return
-			}
+		_, err = io.Copy(metricsFile, resp.Body)
+		resp.Body.Close()
 
-			heapFile, err := zipWriter.Create("heap")
-			if err != nil {
-				opts.L.Error("Archive handler failed", zap.Error(err))
-				rw.WriteHeader(http.StatusInternalServerError)
+		if err != nil {
+			opts.L.Error("Archive handler failed", zap.Error(err))
+			rw.WriteHeader(http.StatusInternalServerError)
 
-				return
-			}
+			return
+		}
 
-			scrapeReq.URL.Path = "/debug/pprof/heap"
+		heapFile, err := zipWriter.Create("heap")
+		if err != nil {
+			opts.L.Error("Archive handler failed", zap.Error(err))
+			rw.WriteHeader(http.StatusInternalServerError)
 
-			resp, err = http.DefaultClient.Do(scrapeReq)
-			if err != nil {
-				opts.L.Error("Archive handler failed - pprof failed", zap.Error(err))
-				rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 
-				return
-			}
+		scrapeReq.URL.Path = "/debug/pprof/heap"
 
-			_, err = io.Copy(heapFile, resp.Body)
-			resp.Body.Close()
+		resp, err = http.DefaultClient.Do(scrapeReq)
+		if err != nil {
+			opts.L.Error("Archive handler failed - pprof failed", zap.Error(err))
+			rw.WriteHeader(http.StatusInternalServerError)
 
-			if err != nil {
-				opts.L.Error("Archive handler failed", zap.Error(err))
-				rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 
-				return
-			}
-		})))
+		_, err = io.Copy(heapFile, resp.Body)
+		resp.Body.Close()
+
+		if err != nil {
+			opts.L.Error("Archive handler failed", zap.Error(err))
+			rw.WriteHeader(http.StatusInternalServerError)
+
+			return
+		}
+	})
 
 	svOpts := []statsviz.Option{
 		statsviz.Root("/debug/graphs"),
