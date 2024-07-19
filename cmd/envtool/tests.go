@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"os/exec"
 	"regexp"
@@ -378,7 +379,7 @@ func testsRun(ctx context.Context, index, total uint, run, skip string, args []s
 	}
 
 	ot, err := observability.NewOtelTracer(&observability.OtelTracerOpts{
-		Logger:   logger.Desugar(),
+		Logger:   slog.Default(), // TODO https://github.com/FerretDB/FerretDB/issues/4013
 		Service:  "envtool-tests",
 		Endpoint: "127.0.0.1:4318",
 	})
