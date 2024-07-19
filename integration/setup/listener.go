@@ -28,7 +28,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/handler/registry"
-	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/password"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
@@ -107,8 +106,6 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 
 	_, span := otel.Tracer("").Start(ctx, "setupListener")
 	defer span.End()
-
-	defer observability.FuncCall(ctx)()
 
 	require.Empty(tb, *targetURLF, "-target-url must be empty for in-process FerretDB")
 

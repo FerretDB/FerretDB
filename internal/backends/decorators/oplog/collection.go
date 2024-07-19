@@ -23,7 +23,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
 
 // fixed OpLog database and collection names.
@@ -59,8 +58,6 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 // InsertAll implements backends.Collection interface.
 func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllParams) (*backends.InsertAllResult, error) {
-	defer observability.FuncCall(ctx)()
-
 	res, err := c.origC.InsertAll(ctx, params)
 	if err != nil {
 		return nil, err
@@ -99,8 +96,6 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 
 // UpdateAll implements backends.Collection interface.
 func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllParams) (*backends.UpdateAllResult, error) {
-	defer observability.FuncCall(ctx)()
-
 	res, err := c.origC.UpdateAll(ctx, params)
 	if err != nil {
 		return nil, err
@@ -143,8 +138,6 @@ func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllPa
 
 // DeleteAll implements backends.Collection interface.
 func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllParams) (*backends.DeleteAllResult, error) {
-	defer observability.FuncCall(ctx)()
-
 	res, err := c.origC.DeleteAll(ctx, params)
 	if err != nil {
 		return nil, err
