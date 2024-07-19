@@ -27,7 +27,6 @@ import (
 	"go.opentelemetry.io/otel"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
@@ -96,8 +95,6 @@ func setupClient(tb testtb.TB, ctx context.Context, uri string, disableOtel bool
 
 	ctx, span := otel.Tracer("").Start(ctx, "setupClient")
 	defer span.End()
-
-	defer observability.FuncCall(ctx)()
 
 	client, err := makeClient(ctx, uri, disableOtel)
 	if err != nil {

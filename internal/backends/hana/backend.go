@@ -20,7 +20,6 @@ import (
 	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
@@ -31,7 +30,7 @@ import (
 // backend implements backends.Backend interface.
 type backend struct {
 	hdb *fsql.DB
-	l   *zap.Logger
+	l   *slog.Logger
 }
 
 // NewBackendParams represents the parameters of NewBackend function.
@@ -39,7 +38,7 @@ type backend struct {
 //nolint:vet // for readability
 type NewBackendParams struct {
 	URI       string
-	L         *zap.Logger
+	L         *slog.Logger
 	P         *state.Provider
 	BatchSize int
 }
@@ -51,7 +50,6 @@ func NewBackend(params *NewBackendParams) (backends.Backend, error) {
 		return nil, err
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/4013
 	hdb := fsql.WrapDB(db, "hana", slog.Default())
 	hdb.BatchSize = params.BatchSize
 

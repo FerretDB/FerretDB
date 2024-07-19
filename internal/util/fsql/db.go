@@ -26,7 +26,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
-	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
 
@@ -72,14 +71,11 @@ func (db *DB) Close() error {
 
 // Ping calls [*sql.DB.Ping].
 func (db *DB) Ping(ctx context.Context) error {
-	defer observability.FuncCall(ctx)()
 	return db.sqlDB.Ping()
 }
 
 // QueryContext calls [*sql.DB.QueryContext].
 func (db *DB) QueryContext(ctx context.Context, query string, args ...any) (*Rows, error) {
-	defer observability.FuncCall(ctx)()
-
 	start := time.Now()
 
 	fields := []any{slog.Any("args", args)}
@@ -95,8 +91,6 @@ func (db *DB) QueryContext(ctx context.Context, query string, args ...any) (*Row
 
 // QueryRowContext calls [*sql.DB.QueryRowContext].
 func (db *DB) QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row {
-	defer observability.FuncCall(ctx)()
-
 	start := time.Now()
 
 	fields := []any{slog.Any("args", args)}
@@ -112,8 +106,6 @@ func (db *DB) QueryRowContext(ctx context.Context, query string, args ...any) *s
 
 // ExecContext calls [*sql.DB.ExecContext].
 func (db *DB) ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error) {
-	defer observability.FuncCall(ctx)()
-
 	start := time.Now()
 
 	fields := []any{slog.Any("args", args)}
@@ -136,8 +128,6 @@ func (db *DB) ExecContext(ctx context.Context, query string, args ...any) (sql.R
 //
 // If f returns an error or context is canceled, the transaction is rolled back.
 func (db *DB) InTransaction(ctx context.Context, f func(*Tx) error) (err error) {
-	defer observability.FuncCall(ctx)()
-
 	var sqlTx *sql.Tx
 
 	if sqlTx, err = db.sqlDB.BeginTx(ctx, nil); err != nil {

@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"sync"
 	"time"
 
@@ -35,6 +36,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/password"
 	"github.com/FerretDB/FerretDB/internal/util/state"
@@ -119,12 +121,14 @@ func New(opts *NewOpts) (*Handler, error) {
 		opts.MaxBsonObjectSizeBytes = types.MaxDocumentLen
 	}
 
-	b := oplog.NewBackend(opts.Backend, opts.L.Named("oplog"))
+	// TODO https://github.com/FerretDB/FerretDB/issues/4013
+	b := oplog.NewBackend(opts.Backend, logging.WithName(slog.Default(), "oplog"))
 
 	h := &Handler{
 		b:       b,
 		NewOpts: opts,
-		cursors: cursor.NewRegistry(opts.L.Named("cursors")),
+		// TODO https://github.com/FerretDB/FerretDB/issues/4013
+		cursors: cursor.NewRegistry(logging.WithName(slog.Default(), "cursors")),
 
 		cappedCleanupStop: make(chan struct{}),
 		cleanupCappedCollectionsDocs: prometheus.NewCounterVec(
