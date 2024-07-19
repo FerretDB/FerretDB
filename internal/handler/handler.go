@@ -376,7 +376,13 @@ func (h *Handler) cleanupCappedCollection(ctx context.Context, db backends.Datab
 		return 0, 0, lazyerrors.Error(err)
 	}
 
-	h.L.DebugContext(ctx, "cleanupCappedCollection: stats before", slog.Any("stats", statsBefore))
+	h.L.DebugContext(
+		ctx,
+		"cleanupCappedCollection: stats before",
+		slog.Int64("size_total", statsBefore.SizeTotal),
+		slog.Int64("size_collection", statsBefore.SizeCollection),
+		slog.Int64("count_documents", statsBefore.CountDocuments),
+	)
 
 	// In order to be more precise w.r.t number of documents getting dropped and to avoid
 	// deleting too many documents unnecessarily,
@@ -397,7 +403,13 @@ func (h *Handler) cleanupCappedCollection(ctx context.Context, db backends.Datab
 			return 0, 0, lazyerrors.Error(err)
 		}
 
-		h.L.DebugContext(ctx, "cleanupCappedCollection: stats after document count reduction", slog.Any("stats", statsAfter))
+		h.L.DebugContext(
+			ctx,
+			"cleanupCappedCollection: stats after document count reduction",
+			slog.Int64("size_total", statsBefore.SizeTotal),
+			slog.Int64("size_collection", statsBefore.SizeCollection),
+			slog.Int64("count_documents", statsBefore.CountDocuments),
+		)
 
 		docsDeleted += int32(count)
 		bytesFreed += (statsBefore.SizeTotal - statsAfter.SizeTotal)
@@ -423,7 +435,13 @@ func (h *Handler) cleanupCappedCollection(ctx context.Context, db backends.Datab
 		return 0, 0, lazyerrors.Error(err)
 	}
 
-	h.L.DebugContext(ctx, "cleanupCappedCollection: stats after compact", slog.Any("stats", statsAfter))
+	h.L.DebugContext(
+		ctx,
+		"cleanupCappedCollection: stats after compact",
+		slog.Int64("size_total", statsBefore.SizeTotal),
+		slog.Int64("size_collection", statsBefore.SizeCollection),
+		slog.Int64("count_documents", statsBefore.CountDocuments),
+	)
 
 	bytesFreed += (statsBefore.SizeTotal - statsAfter.SizeTotal)
 
