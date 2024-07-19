@@ -29,6 +29,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
+// TestLogging is a copy of [bson_test.TestLoggingNil] modified to fit `types` value types.
 func TestLoggingNil(t *testing.T) {
 	var doc *types.Document
 	assert.Equal(t, doc.LogValue().String(), "Document<nil>")
@@ -37,6 +38,7 @@ func TestLoggingNil(t *testing.T) {
 	assert.Equal(t, arr.LogValue().String(), "Array<nil>")
 }
 
+// TestLogging is a copy of [bson_test.TestLogging] modified to fit `types` value types.
 func TestLogging(t *testing.T) {
 	ctx := context.Background()
 

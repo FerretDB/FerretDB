@@ -26,8 +26,7 @@ import (
 // logMaxDepth is the maximum depth of a recursive representation of a BSON value.
 const logMaxDepth = 20
 
-// slogValue returns a compact representation of any Go types matching BSON types as [slog.Value].
-// The implementation is a copy of [bson.slogValue].
+// slogValue is a copy of [bson.slogValue] implementation modified to fit `types` value types.
 func slogValue(v any, depth int) slog.Value {
 	switch v := v.(type) {
 	case *Document:
