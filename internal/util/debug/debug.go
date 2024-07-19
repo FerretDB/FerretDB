@@ -168,6 +168,7 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 
 				return
 			}
+			//
 
 			_, err = io.Copy(metricsFile, resp.Body)
 
