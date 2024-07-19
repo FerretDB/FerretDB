@@ -23,9 +23,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
-	"go.uber.org/zap"
-
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/decorators/oplog"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
@@ -40,6 +37,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/password"
 	"github.com/FerretDB/FerretDB/internal/util/state"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 // Parts of Prometheus metric names.
@@ -121,12 +119,12 @@ func New(opts *NewOpts) (*Handler, error) {
 		opts.MaxBsonObjectSizeBytes = types.MaxDocumentLen
 	}
 
-	b := oplog.NewBackend(opts.Backend, zap.L().Named("oplog"))
+	b := oplog.NewBackend(opts.Backend, logging.WithName(opts.L, "oplog"))
 
 	h := &Handler{
 		b:       b,
 		NewOpts: opts,
-		cursors: cursor.NewRegistry(zap.L().Named("cursors")),
+		cursors: cursor.NewRegistry(logging.WithName(opts.L, "cursors")),
 
 		cappedCleanupStop: make(chan struct{}),
 		cleanupCappedCollectionsDocs: prometheus.NewCounterVec(
