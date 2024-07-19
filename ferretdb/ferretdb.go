@@ -24,7 +24,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/url"
-	"sync"
 
 	"go.uber.org/zap"
 
@@ -43,7 +42,9 @@ type Config struct {
 	// Deprecated: Use slog logger, panics if not nil.
 	Logger *zap.Logger
 
-	// slog logger to use; if nil, it uses the default global logger.
+	// slog logger to use; if nil, the default logger is used.
+	//
+	// To make logs accessible by `getLog` command, use [logging.WrapLogger] or [logging.WrapHandler].
 	SLogger *slog.Logger
 
 	// Handler to use; one of `postgresql` or `sqlite`.
@@ -123,9 +124,7 @@ func New(config *Config) (*FerretDB, error) {
 
 	log := config.SLogger
 	if log == nil {
-		log = getGlobalLogger()
-	} else {
-		log = logging.WrapLogger(log)
+		log = slog.Default()
 	}
 
 	if config.Logger != nil {
@@ -230,29 +229,4 @@ func (f *FerretDB) MongoDBURI() string {
 	}
 
 	return u.String()
-}
-
-var (
-	loggerOnce sync.Once
-	logger     *slog.Logger
-)
-
-// getGlobalLogger retrieves or creates a global logger using
-// a loggerOnce to ensure it is created only once.
-func getGlobalLogger() *slog.Logger {
-	loggerOnce.Do(func() {
-		level := slog.LevelError
-		if version.Get().DebugBuild {
-			level = slog.LevelDebug
-		}
-
-		opts := &logging.NewHandlerOpts{
-			Base:  "console",
-			Level: level,
-		}
-		logging.Setup(opts, "")
-		logger = slog.Default()
-	})
-
-	return logger
 }

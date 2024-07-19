@@ -131,10 +131,10 @@ func NewHandler(out io.Writer, opts *NewHandlerOpts) *Handler {
 	}
 }
 
-// wrapHandler takes a handler and wraps it with support for
-// additional log levels, shorter source location and appends
-// the record to [RecentEntries] used by `getLog` command.
-func wrapHandler(out io.Writer, h slog.Handler) *Handler {
+// WrapHandler takes a handler and wraps it with support for
+// additional log levels, shorter source location and make logs
+// accessible by `getLog` command.
+func WrapHandler(out io.Writer, h slog.Handler) *Handler {
 	return &Handler{
 		base: h,
 		out:  out,

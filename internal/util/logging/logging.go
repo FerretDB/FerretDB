@@ -78,9 +78,9 @@ func Setup(opts *NewHandlerOpts, uuid string) {
 }
 
 // WrapLogger wraps the given logger's handler allowing the support for
-// additional log levels, shorter source location and appends
-// the record to [RecentEntries] used by `getLog` command.
+// additional log levels, shorter source location and make logs
+// accessible by `getLog` command.
 func WrapLogger(l *slog.Logger) *slog.Logger {
-	h := wrapHandler(os.Stderr, l.Handler())
+	h := WrapHandler(os.Stderr, l.Handler())
 	return slog.New(h)
 }
