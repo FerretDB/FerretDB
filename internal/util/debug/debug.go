@@ -137,11 +137,13 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 			return
 		}
 
+		debugAddr := ctx.Value(http.LocalAddrContextKey).(net.Addr)
+
 		// we use *http.Request instead of http.Get function to provide the ctx
 		scrapeReq := must.NotFail(http.NewRequestWithContext(
 			ctx,
 			http.MethodGet,
-			fmt.Sprintf("http://127.0.0.1:%s%s", req.URL.Port(), "/debug/metrics"),
+			fmt.Sprintf("http://%s%s", debugAddr.String(), "/debug/metrics"),
 			nil,
 		))
 
