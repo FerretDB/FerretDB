@@ -68,8 +68,6 @@ func TestLogging(t *testing.T) {
 		c    string
 		t    string
 		j    string
-		m    string
-		b    string
 	}{
 		{
 			name: "Numbers",
@@ -86,28 +84,6 @@ func TestLogging(t *testing.T) {
 			c: `	{"v":{"f64":42,"i32":42,"i64":42,"inf":"+Inf","nan":"NaN","neg_inf":"-Inf","neg_zero":-0,"zero":0}}`,
 			t: `v.f64=42 v.inf=+Inf v.neg_inf=-Inf v.zero=0 v.neg_zero=-0 v.nan=NaN v.i32=42 v.i64=42`,
 			j: `{"v":{"f64":42,"inf":"+Inf","neg_inf":"-Inf","zero":0,"neg_zero":-0,"nan":"NaN","i32":42,"i64":42}}`,
-			m: `
-			{
-			  "f64": 42.0,
-			  "inf": +Inf,
-			  "neg_inf": -Inf,
-			  "zero": 0.0,
-			  "neg_zero": -0.0,
-			  "nan": NaN,
-			  "i32": 42,
-			  "i64": int64(42),
-			}`,
-			b: `
-			{
-			  "f64": 42.0,
-			  "inf": +Inf,
-			  "neg_inf": -Inf,
-			  "zero": 0.0,
-			  "neg_zero": -0.0,
-			  "nan": NaN,
-			  "i32": 42,
-			  "i64": int64(42),
-			}`,
 		},
 		{
 			name: "Scalars",
@@ -120,20 +96,6 @@ func TestLogging(t *testing.T) {
 			c: `	{"v":{"bool":true,"id":"ObjectID(420000000000000000000000)","null":null,"time":"2023-03-06T09:14:42.123Z"}}`,
 			t: `v.null=<nil> v.id=ObjectID(420000000000000000000000) v.bool=true v.time=2023-03-06T09:14:42.123Z`,
 			j: `{"v":{"null":null,"id":"ObjectID(420000000000000000000000)","bool":true,"time":"2023-03-06T09:14:42.123Z"}}`,
-			m: `
-			{
-			  "null": null,
-			  "id": ObjectID(420000000000000000000000),
-			  "bool": true,
-			  "time": 2023-03-06T09:14:42.123Z,
-			}`,
-			b: `
-			{
-			  "null": null,
-			  "id": ObjectID(420000000000000000000000),
-			  "bool": true,
-			  "time": 2023-03-06T09:14:42.123Z,
-			}`,
 		},
 		{
 			name: "Composites",
@@ -157,30 +119,6 @@ func TestLogging(t *testing.T) {
 				`v.array.0=foo v.array.1=bar v.array.2.0=baz v.array.2.1=qux`,
 			j: `{"v":{"doc":{"foo":"bar","baz":{"qux":"quux"}},` +
 				`"array":{"0":"foo","1":"bar","2":{"0":"baz","1":"qux"}}}}`,
-			m: `
-			{
-			  "doc": {"foo": "bar", "baz": {"qux": "quux"}},
-			  "doc_empty": {},
-			  "array": ["foo", "bar", ["baz", "qux"]],
-			}`,
-			b: `
-			{
-			  "doc": {
-			    "foo": "bar",
-			    "baz": {
-			      "qux": "quux",
-			    },
-			  },
-			  "doc_empty": {},
-			  "array": [
-			    "foo",
-			    "bar",
-			    [
-			      "baz",
-			      "qux",
-			    ],
-			  ],
-			}`,
 		},
 		{
 			name: "Nested",
@@ -190,56 +128,6 @@ func TestLogging(t *testing.T) {
 			t: `v.f.0.f.0.f.0.f.0.f.0.f.0.f.0.f.0.f.0.f.0=<nil>`,
 			j: `{"v":{"f":{"0":{"f":{"0":{"f":{"0":{"f":{"0":{"f":{"0":{"f":{"0":` +
 				`{"f":{"0":{"f":{"0":{"f":{"0":{"f":{"0":null}}}}}}}}}}}}}}}}}}}}}`,
-			m: `
-			{
-			  "f": [
-			    {
-			      "f": [{"f": [{"f": [{"f": [{"f": [{"f": [{"f": [{"f": [{"f": [null]}]}]}]}]}]}]}]}],
-			    },
-			  ],
-			}`,
-			b: `
-			{
-			  "f": [
-			    {
-			      "f": [
-			        {
-			          "f": [
-			            {
-			              "f": [
-			                {
-			                  "f": [
-			                    {
-			                      "f": [
-			                        {
-			                          "f": [
-			                            {
-			                              "f": [
-			                                {
-			                                  "f": [
-			                                    {
-			                                      "f": [
-			                                        null,
-			                                      ],
-			                                    },
-			                                  ],
-			                                },
-			                              ],
-			                            },
-			                          ],
-			                        },
-			                      ],
-			                    },
-			                  ],
-			                },
-			              ],
-			            },
-			          ],
-			        },
-			      ],
-			    },
-			  ],
-			}`,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
