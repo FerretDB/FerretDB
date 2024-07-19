@@ -50,7 +50,7 @@ func NewBackend(params *NewBackendParams) (backends.Backend, error) {
 		return nil, err
 	}
 
-	hdb := fsql.WrapDB(db, "hana", slog.Default())
+	hdb := fsql.WrapDB(db, "hana", params.L)
 	hdb.BatchSize = params.BatchSize
 
 	return backends.BackendContract(&backend{
