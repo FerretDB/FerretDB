@@ -18,15 +18,15 @@ import (
 	"bytes"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"io"
 	"io/fs"
+	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
-
-	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
@@ -92,7 +92,7 @@ func fuzzGeneratedCorpus() (string, error) {
 }
 
 // fuzzCollectFiles returns a map of all fuzz files in the given directory.
-func fuzzCollectFiles(root string, logger *zap.SugaredLogger) (map[string]struct{}, error) {
+func fuzzCollectFiles(root string, logger *slog.Logger) (map[string]struct{}, error) {
 	existingFiles := make(map[string]struct{}, 1000)
 	err := filepath.Walk(root, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
@@ -155,34 +155,35 @@ func fuzzDiff(src, dst map[string]struct{}) []string {
 }
 
 // fuzzCopyCorpus copies all new corpus files from srcRoot to dstRoot.
-func fuzzCopyCorpus(srcRoot, dstRoot string, logger *zap.SugaredLogger) error {
-	logger.Infof("Copying from %s to %s.", srcRoot, dstRoot)
+func fuzzCopyCorpus(srcRoot, dstRoot string, logger *slog.Logger) error {
+	logger.Info(fmt.Sprintf("Copying from %s to %s", srcRoot, dstRoot))
 
 	srcFiles, err := fuzzCollectFiles(srcRoot, logger)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	logger.Infof("Found %d files in src.", len(srcFiles))
+	logger.Info(fmt.Sprintf("Found %d files in src", len(srcFiles)))
 
 	dstFiles, err := fuzzCollectFiles(dstRoot, logger)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	logger.Infof("Found %d existing files in dst.", len(dstFiles))
+	logger.Info(fmt.Sprintf("Found %d existing files in dst", len(dstFiles)))
 
 	files := fuzzDiff(srcFiles, dstFiles)
-	logger.Infof("Copying new %d files to dst.", len(files))
+	logger.Info(fmt.Sprintf("Copying new %d files to dst", len(files)))
 
 	for _, p := range files {
 		src := filepath.Join(srcRoot, p)
 		dst := fuzzCutTestdata(filepath.Join(dstRoot, p))
-		logger.Debugf("%s -> %s", src, dst)
 
 		if err := copyFile(src, dst); err != nil {
-			return lazyerrors.Error(err)
+			return lazyerrors.Errorf("failed to copy %s to %s: %w", src, dst, err)
 		}
+
+		logger.Debug(fmt.Sprintf("%s -> %s", src, dst))
 	}
 
 	return nil
