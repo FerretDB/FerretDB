@@ -16,13 +16,13 @@ package cursor
 
 import (
 	"context"
+	"log/slog"
 	"math/rand"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -52,7 +52,7 @@ type Registry struct {
 	rw sync.RWMutex
 	m  map[int64]*Cursor
 
-	l  *zap.Logger
+	l  *slog.Logger
 	wg sync.WaitGroup
 
 	created  *prometheus.CounterVec
@@ -60,7 +60,7 @@ type Registry struct {
 }
 
 // NewRegistry creates a new Registry.
-func NewRegistry(l *zap.Logger) *Registry {
+func NewRegistry(l *slog.Logger) *Registry {
 	return &Registry{
 		m: map[int64]*Cursor{},
 		l: l,
@@ -139,10 +139,14 @@ func (r *Registry) NewCursor(ctx context.Context, iter types.DocumentsIterator, 
 		id = int64(lastCursorID.Add(1))
 	}
 
-	r.l.Debug(
+	r.l.DebugContext(
+		ctx,
 		"Creating cursor",
-		zap.Int64("id", id), zap.Stringer("type", params.Type),
-		zap.String("db", params.DB), zap.String("collection", params.Collection), zap.String("username", params.Username),
+		slog.Int64("id", id),
+		slog.String("type", params.Type.String()),
+		slog.String("db", params.DB),
+		slog.String("collection", params.Collection),
+		slog.String("username", params.Username),
 	)
 
 	r.created.WithLabelValues(params.Type.String(), params.DB, params.Collection, params.Username).Inc()
@@ -196,10 +200,10 @@ func (r *Registry) CloseAndRemove(c *Cursor) {
 	d := time.Since(c.created)
 	r.l.Debug(
 		"Removing cursor",
-		zap.Int64("id", c.ID),
-		zap.Stringer("type", c.Type),
-		zap.Int("total", len(r.m)),
-		zap.Duration("duration", d),
+		slog.Int64("id", c.ID),
+		slog.String("type", c.Type.String()),
+		slog.Int("total", len(r.m)),
+		slog.Duration("duration", d),
 	)
 
 	r.duration.WithLabelValues(c.Type.String(), c.DB, c.Collection, c.Username).Observe(d.Seconds())

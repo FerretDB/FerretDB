@@ -451,7 +451,7 @@ func run() {
 		go func() {
 			defer wg.Done()
 
-			l := logger.Named("otel")
+			l := logging.WithName(slogger, "otel")
 
 			ot, err := observability.NewOtelTracer(&observability.OtelTracerOpts{
 				Logger:   l,
@@ -460,7 +460,7 @@ func run() {
 				Endpoint: cli.Test.OTLPEndpoint,
 			})
 			if err != nil {
-				l.Sugar().Fatalf("Failed to create Otel tracer: %s.", err)
+				l.LogAttrs(ctx, logging.LevelFatal, "Failed to create Otel tracer", logging.Error(err))
 			}
 
 			ot.Run(ctx)

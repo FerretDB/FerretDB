@@ -16,9 +16,9 @@ package oplog
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 )
@@ -26,11 +26,11 @@ import (
 // backend implements backends.Backend interface by delegating all methods to the wrapped backend.
 type backend struct {
 	origB backends.Backend
-	l     *zap.Logger
+	l     *slog.Logger
 }
 
 // NewBackend creates a new Backend that wraps the given backend.
-func NewBackend(origB backends.Backend, l *zap.Logger) backends.Backend {
+func NewBackend(origB backends.Backend, l *slog.Logger) backends.Backend {
 	return &backend{
 		origB: origB,
 		l:     l,

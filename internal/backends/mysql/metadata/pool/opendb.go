@@ -17,6 +17,7 @@ package pool
 import (
 	"context"
 	"database/sql"
+	"log/slog"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql" // register database/sql driver
@@ -24,12 +25,13 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
 // openDB creates a pool of connections to MySQL database
 // and check that it works (authentication passes, settings are okay).
-func openDB(uri string, l *zap.Logger, sp *state.Provider) (*fsql.DB, error) {
+func openDB(uri string, l *slog.Logger, sp *state.Provider) (*fsql.DB, error) {
 	mysqlURL, err := parseURI(uri)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -56,13 +58,13 @@ func openDB(uri string, l *zap.Logger, sp *state.Provider) (*fsql.DB, error) {
 
 			row := db.QueryRowContext(context.Background(), `SELECT version()`)
 			if err := row.Scan(&s.BackendVersion); err != nil {
-				l.Error("mysql.metadata.pool.openDB: failed to query MySQL version", zap.Error(err))
+				l.Error("mysql.metadata.pool.openDB: failed to query MySQL version", logging.Error(err))
 			}
 		})
 		if err != nil {
-			l.Error("mysql.metadata.pool.openDB: failed to query MySQL version", zap.Error(err))
+			l.Error("mysql.metadata.pool.openDB: failed to query MySQL version", logging.Error(err))
 		}
 	}
 
-	return fsql.WrapDB(db, "", l), nil
+	return fsql.WrapDB(db, "", zap.L()), nil
 }

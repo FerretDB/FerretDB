@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"os/exec"
 	"regexp"
@@ -90,8 +91,8 @@ func resultKey(packageName, testName string) string {
 }
 
 // runGoTest runs `go test` with given extra args.
-func runGoTest(ctx context.Context, args []string, total int, times bool, logger *zap.SugaredLogger) error {
-	cmd := exec.CommandContext(ctx, "go", append([]string{"test", "-json"}, args...)...)
+func runGoTest(runCtx context.Context, args []string, total int, times bool, logger *zap.SugaredLogger) error {
+	cmd := exec.CommandContext(runCtx, "go", append([]string{"test", "-json"}, args...)...)
 
 	logger.Debugf("Running %s", strings.Join(cmd.Args, " "))
 
@@ -126,10 +127,9 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 		totalTests = strconv.Itoa(total)
 	}
 
-	var root oteltrace.Span
-	ctx, root = otel.Tracer("").Start(ctx, "run")
-
-	defer root.End()
+	runCtx, runSpan := otel.Tracer("").Start(runCtx, "run")
+	runSpan.SetAttributes(otelattribute.String("db.ferretdb.envtool.total_tests", totalTests))
+	defer runSpan.End()
 
 	for {
 		var event testEvent
@@ -145,29 +145,37 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 
 		must.NotBeZero(event.Package)
 
-		res := results[resultKey(event.Package, event.Test)]
+		key := resultKey(event.Package, event.Test)
+		res := results[key]
 		if res == nil {
 			res = new(testResult)
-			results[resultKey(event.Package, event.Test)] = res
-
-			attributes := []otelattribute.KeyValue{
-				otelattribute.String("package", event.Package),
-				otelattribute.String("test", event.Test),
-			}
+			results[key] = res
 
 			var parentCtx context.Context
 			var spanName string
 
 			if event.Test == "" {
-				parentCtx = ctx
+				parentCtx = runCtx
 				spanName = event.Package
 			} else {
-				parentCtx = results[resultKey(event.Package, parentTest(event.Test))].ctx
+				key = resultKey(event.Package, parentTest(event.Test))
+				parent := results[key]
+
+				if parent == nil {
+					panic(fmt.Sprintf("no parent test found: package=%q, test=%q, key=%q", event.Package, event.Test, key))
+				}
+
+				parentCtx = parent.ctx
 				spanName = event.Test
 			}
 
 			must.NotBeZero(parentCtx)
 			must.NotBeZero(spanName)
+
+			attributes := []otelattribute.KeyValue{
+				otelattribute.String("envtool.package", event.Package),
+				otelattribute.String("envtool.test", event.Test),
+			}
 
 			res.ctx, _ = otel.Tracer("").Start(parentCtx, spanName, oteltrace.WithAttributes(attributes...))
 			res.outputs = make([]string, 0, 2)
@@ -220,14 +228,12 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 			fallthrough
 
 		case "skip": // the test was skipped or the package contained no tests
-			code := otelcodes.Ok
+			testSpan := oteltrace.SpanFromContext(res.ctx)
 			if event.Action == "fail" {
-				code = otelcodes.Error
+				testSpan.SetStatus(otelcodes.Error, event.Action)
 			}
 
-			testSpan := oteltrace.SpanFromContext(res.ctx)
 			testSpan.AddEvent(event.Action)
-			testSpan.SetStatus(code, event.Action)
 			testSpan.End()
 
 			if event.Test == "" {
@@ -378,7 +384,7 @@ func testsRun(ctx context.Context, index, total uint, run, skip string, args []s
 	}
 
 	ot, err := observability.NewOtelTracer(&observability.OtelTracerOpts{
-		Logger:   logger.Desugar(),
+		Logger:   slog.Default(), // TODO https://github.com/FerretDB/FerretDB/issues/4013
 		Service:  "envtool-tests",
 		Endpoint: "127.0.0.1:4318",
 	})
