@@ -104,7 +104,7 @@ func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath, newAuthDB string
 func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *BackendOpts) string {
 	tb.Helper()
 
-	_, span := otel.Tracer("").Start(ctx, "setupListener")
+	ctx, span := otel.Tracer("").Start(ctx, "setupListener")
 	defer span.End()
 
 	require.Empty(tb, *targetURLF, "-target-url must be empty for in-process FerretDB")
@@ -248,7 +248,10 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 	go func() {
 		defer close(runDone)
 
-		l.Run(ctx)
+		runCtx, runSpan := otel.Tracer("").Start(ctx, "setupListener.Run")
+		defer runSpan.End()
+
+		l.Run(runCtx)
 	}()
 
 	// ensure that all listener's and handler's logs are written before test ends

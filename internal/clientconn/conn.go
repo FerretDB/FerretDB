@@ -32,6 +32,9 @@ import (
 	"time"
 
 	"github.com/pmezard/go-difflib/difflib"
+	"go.opentelemetry.io/otel"
+	otelattribute "go.opentelemetry.io/otel/attribute"
+	otelcodes "go.opentelemetry.io/otel/codes"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
@@ -401,6 +404,8 @@ func (c *conn) run(ctx context.Context) (err error) {
 //
 // Returned resBody can be nil.
 func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody wire.MsgBody) (resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) { //nolint:lll // argument list is too long
+	connCtx, span := otel.Tracer("").Start(connCtx, "")
+
 	var command, result, argument string
 	defer func() {
 		if result == "" {
@@ -412,6 +417,18 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		}
 
 		c.m.Responses.WithLabelValues(resHeader.OpCode.String(), command, argument, result).Inc()
+
+		if result != "ok" {
+			span.SetStatus(otelcodes.Error, result)
+		}
+
+		span.SetName(command)
+		span.SetAttributes(
+			otelattribute.String("db.ferretdb.opcode", resHeader.OpCode.String()),
+			otelattribute.Int("db.ferretdb.request_id", int(resHeader.ResponseTo)),
+			otelattribute.String("db.ferretdb.argument", argument),
+		)
+		span.End()
 	}()
 
 	resHeader = new(wire.MsgHeader)
@@ -578,15 +595,14 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 //
 // The passed context is canceled when the client disconnects.
 func (c *conn) handleOpMsg(connCtx context.Context, msg *wire.OpMsg, command string) (*wire.OpMsg, error) {
-	if cmd, ok := c.h.Commands()[command]; ok {
-		if cmd.Handler != nil {
-			return cmd.Handler(connCtx, msg)
-		}
+	if cmd := c.h.Commands()[command]; cmd != nil && cmd.Handler != nil {
+		return cmd.Handler(connCtx, msg)
 	}
 
-	errMsg := fmt.Sprintf("no such command: '%s'", command)
-
-	return nil, handlererrors.NewCommandErrorMsg(handlererrors.ErrCommandNotFound, errMsg)
+	return nil, handlererrors.NewCommandErrorMsg(
+		handlererrors.ErrCommandNotFound,
+		fmt.Sprintf("no such command: '%s'", command),
+	)
 }
 
 // logResponse logs response's header and body and returns the log level that was used.
