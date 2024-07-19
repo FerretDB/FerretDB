@@ -145,7 +145,7 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 		scrapeReq := must.NotFail(http.NewRequestWithContext(
 			ctx,
 			http.MethodGet,
-			fmt.Sprintf("http://%s%s", req.Host, "/debug/metrics"),
+			net.JoinHostPort(req.Host, "/debug/metrics"),
 			nil,
 		))
 
