@@ -24,10 +24,9 @@
 package cursor
 
 import (
+	"log/slog"
 	"sync"
 	"time"
-
-	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -68,7 +67,7 @@ type Cursor struct {
 	iter    types.DocumentsIterator // protected by m
 	*NewParams
 	r            *Registry
-	l            *zap.Logger
+	l            *slog.Logger
 	token        *resource.Token
 	removed      chan struct{} // protected by m
 	ID           int64
@@ -87,7 +86,7 @@ func newCursor(id int64, iter types.DocumentsIterator, params *NewParams, r *Reg
 		iter:      iter,
 		NewParams: params,
 		r:         r,
-		l:         r.l.With(zap.Int64("id", id), zap.Stringer("type", params.Type)),
+		l:         r.l.With(slog.Int64("id", id), slog.String("type", params.Type.String())),
 		created:   time.Now(),
 		removed:   make(chan struct{}),
 		token:     resource.NewToken(),

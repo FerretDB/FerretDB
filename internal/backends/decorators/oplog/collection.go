@@ -16,12 +16,12 @@ package oplog
 
 import (
 	"context"
+	"log/slog"
 	"time"
-
-	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -37,11 +37,11 @@ type collection struct {
 	name   string
 	dbName string
 	origB  backends.Backend
-	l      *zap.Logger
+	l      *slog.Logger
 }
 
 // newCollection creates a new Collection that wraps the given collection.
-func newCollection(origC backends.Collection, name, dbName string, origB backends.Backend, l *zap.Logger) backends.Collection {
+func newCollection(origC backends.Collection, name, dbName string, origB backends.Backend, l *slog.Logger) backends.Collection {
 	return &collection{
 		origC:  origC,
 		name:   name,
@@ -76,7 +76,7 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 				op: "i",
 			}
 			if oplogDoc, err = d.marshal(now); err != nil {
-				c.l.Error("Failed to create document", zap.Error(err))
+				c.l.ErrorContext(ctx, "Failed to create document", logging.Error(err))
 				return res, nil
 			}
 
@@ -87,7 +87,7 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 			Docs: oplogDocs,
 		})
 		if err != nil {
-			c.l.Error("Failed to insert documents", zap.Error(err))
+			c.l.ErrorContext(ctx, "Failed to insert documents", logging.Error(err))
 		}
 	}
 
@@ -118,7 +118,7 @@ func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllPa
 				op: "u",
 			}
 			if oplogDoc, err = d.marshal(now); err != nil {
-				c.l.Error("Failed to create document", zap.Error(err))
+				c.l.ErrorContext(ctx, "Failed to create document", logging.Error(err))
 				return res, nil
 			}
 
@@ -129,7 +129,7 @@ func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllPa
 			Docs: oplogDocs,
 		})
 		if err != nil {
-			c.l.Error("Failed to insert documents", zap.Error(err))
+			c.l.ErrorContext(ctx, "Failed to insert documents", logging.Error(err))
 		}
 	}
 
@@ -151,7 +151,7 @@ func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllPa
 
 		for i, id := range params.IDs {
 			if oplogDoc, err = types.NewDocument("_id", id); err != nil {
-				c.l.Error("Failed to create _id document", zap.Error(err))
+				c.l.ErrorContext(ctx, "Failed to create _id document", logging.Error(err))
 				return res, nil
 			}
 
@@ -161,7 +161,7 @@ func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllPa
 				op: "d",
 			}
 			if oplogDoc, err = d.marshal(now); err != nil {
-				c.l.Error("Failed to create document", zap.Error(err))
+				c.l.ErrorContext(ctx, "Failed to create document", logging.Error(err))
 				return res, nil
 			}
 
@@ -172,7 +172,7 @@ func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllPa
 			Docs: oplogDocs,
 		})
 		if err != nil {
-			c.l.Error("Failed to insert documents", zap.Error(err))
+			c.l.ErrorContext(ctx, "Failed to insert documents", logging.Error(err))
 		}
 	}
 
@@ -217,12 +217,12 @@ func (c *collection) oplogCollection(ctx context.Context) backends.Collection {
 
 	cList, err := db.ListCollections(ctx, &backends.ListCollectionsParams{Name: oplogCollection})
 	if err != nil {
-		c.l.Error("Failed to list collections", zap.Error(err))
+		c.l.ErrorContext(ctx, "Failed to list collections", logging.Error(err))
 		return nil
 	}
 
 	if len(cList.Collections) == 0 {
-		c.l.Debug("Collection not found")
+		c.l.DebugContext(ctx, "Collection not found")
 		return nil
 	}
 

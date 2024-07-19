@@ -17,6 +17,7 @@ package hana
 import (
 	"context"
 	"database/sql"
+	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
@@ -30,7 +31,7 @@ import (
 // backend implements backends.Backend interface.
 type backend struct {
 	hdb *fsql.DB
-	l   *zap.Logger
+	l   *slog.Logger
 }
 
 // NewBackendParams represents the parameters of NewBackend function.
@@ -38,7 +39,7 @@ type backend struct {
 //nolint:vet // for readability
 type NewBackendParams struct {
 	URI       string
-	L         *zap.Logger
+	L         *slog.Logger
 	P         *state.Provider
 	BatchSize int
 }
@@ -50,7 +51,7 @@ func NewBackend(params *NewBackendParams) (backends.Backend, error) {
 		return nil, err
 	}
 
-	hdb := fsql.WrapDB(db, "hana", params.L)
+	hdb := fsql.WrapDB(db, "hana", zap.L())
 	hdb.BatchSize = params.BatchSize
 
 	return backends.BackendContract(&backend{
