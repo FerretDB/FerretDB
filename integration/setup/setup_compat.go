@@ -16,7 +16,6 @@ package setup
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/stretchr/testify/require"
@@ -157,18 +156,15 @@ func setupCompatCollections(tb testtb.TB, ctx context.Context, client *mongo.Cli
 		collectionName := opts.baseCollectionName + "_" + provider.Name()
 		fullName := opts.databaseName + "." + collectionName
 
-		spanName := fmt.Sprintf("setupCompatCollections/%s", collectionName)
-		collCtx, span := otel.Tracer("").Start(ctx, spanName)
-
 		collection := database.Collection(collectionName)
 
 		// drop remnants of the previous failed run
-		_ = collection.Drop(collCtx)
+		_ = collection.Drop(ctx)
 
 		docs := shareddata.Docs(provider)
 		require.NotEmpty(tb, docs)
 
-		res, err := collection.InsertMany(collCtx, docs)
+		res, err := collection.InsertMany(ctx, docs)
 		require.NoError(tb, err, "%s: backend %q, collection %s", provider.Name(), backend, fullName)
 		require.Len(tb, res.InsertedIDs, len(docs))
 
@@ -179,13 +175,10 @@ func setupCompatCollections(tb testtb.TB, ctx context.Context, client *mongo.Cli
 				return
 			}
 
-			err := collection.Drop(collCtx)
-			require.NoError(tb, err)
+			require.NoError(tb, collection.Drop(ctx))
 		})
 
 		collections = append(collections, collection)
-
-		span.End()
 	}
 
 	// opts.AddNonExistentCollection is not needed, always add a non-existent collection
