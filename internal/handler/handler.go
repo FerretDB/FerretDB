@@ -345,7 +345,7 @@ func (h *Handler) cleanupAllCappedCollections(ctx context.Context) error {
 			if deleted > 0 || bytesFreed > 0 {
 				h.L.InfoContext(
 					ctx,
-					"Capped collection cleaned up.",
+					"Capped collection cleaned up",
 					slog.String("db", dbInfo.Name),
 					slog.String("collection", cInfo.Name),
 					slog.Int("deleted", int(deleted)),
