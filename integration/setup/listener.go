@@ -216,7 +216,7 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *slog.Logger, opts 
 		Mode:           clientconn.NormalMode,
 		Metrics:        listenerMetrics,
 		Handler:        h,
-		Logger:         slog.Default(),
+		Logger:         slog.Default(), // TODO https://github.com/FerretDB/FerretDB/issues/4013
 		TestRecordsDir: testutil.TmpRecordsDir,
 	}
 
