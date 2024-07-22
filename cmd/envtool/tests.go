@@ -101,7 +101,7 @@ func testArgs(dir string, index, total uint, run, skip string, logger *slog.Logg
 	}
 
 	if index != 0 || total != 0 {
-		testFuncs, _, err = shardTestFuncs(index, total, testFuncs)
+		testFuncs, err = shardTestFuncs(index, total, testFuncs)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -478,39 +478,35 @@ func listTestFuncs(dir string, re string, logger *slog.Logger) ([]string, error)
 }
 
 // shardTestFuncs shards given top-level test functions.
-// It returns a slice of test functions to run and what test functions to skip for the given shard.
-func shardTestFuncs(index, total uint, testFuncs []string) (run, skip []string, err error) {
+func shardTestFuncs(index, total uint, testFuncs []string) ([]string, error) {
 	if index == 0 {
-		return nil, nil, fmt.Errorf("index must be greater than 0")
+		return nil, fmt.Errorf("index must be greater than 0")
 	}
 
 	if total == 0 {
-		return nil, nil, fmt.Errorf("total must be greater than 0")
+		return nil, fmt.Errorf("total must be greater than 0")
 	}
 
 	if index > total {
-		return nil, nil, fmt.Errorf("cannot shard when index is greater than total (%d > %d)", index, total)
+		return nil, fmt.Errorf("cannot shard when index is greater than total (%d > %d)", index, total)
 	}
 
 	l := uint(len(testFuncs))
 	if total > l {
-		return nil, nil, fmt.Errorf("cannot shard when total is greater than a number of test functions (%d > %d)", total, l)
+		return nil, fmt.Errorf("cannot shard when total is greater than a number of test functions (%d > %d)", total, l)
 	}
 
-	run = make([]string, 0, l/total+1)
-	skip = make([]string, 0, len(testFuncs)-len(run))
+	res := make([]string, 0, l/total+1)
 	shard := uint(1)
 
 	// use different shards for tests with similar names for better load balancing
 	for _, test := range testFuncs {
 		if index == shard {
-			run = append(run, test)
-		} else {
-			skip = append(skip, test)
+			res = append(res, test)
 		}
 
 		shard = shard%total + 1
 	}
 
-	return run, skip, nil
+	return res, nil
 }
