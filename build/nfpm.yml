@@ -20,3 +20,4 @@ contents:
   - src: tmp/build/linux_${DIR_ARCH}/ferretdb
     dst: /usr/bin/ferretdb
     expand: true
+
