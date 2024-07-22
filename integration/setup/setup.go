@@ -18,7 +18,6 @@ package setup
 import (
 	"context"
 	"flag"
-	"fmt"
 	"net/url"
 	"slices"
 	"strings"
@@ -178,7 +177,7 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
 
-	collection := setupCollection(tb, ctx, client, opts)
+	collection := setupCollection(tb, setupCtx, client, opts)
 
 	level.SetLevel(*logLevelF)
 
@@ -262,21 +261,17 @@ func setupCollection(tb testtb.TB, ctx context.Context, client *mongo.Client, op
 func InsertProviders(tb testtb.TB, ctx context.Context, collection *mongo.Collection, providers ...shareddata.Provider) (inserted bool) {
 	tb.Helper()
 
-	collectionName := collection.Name()
+	ctx, span := otel.Tracer("").Start(ctx, "insertProviders")
+	defer span.End()
 
 	for _, provider := range providers {
-		spanName := fmt.Sprintf("insertProviders/%s/%s", collectionName, provider.Name())
-		provCtx, span := otel.Tracer("").Start(ctx, spanName)
-
 		docs := shareddata.Docs(provider)
 		require.NotEmpty(tb, docs)
 
-		res, err := collection.InsertMany(provCtx, docs)
+		res, err := collection.InsertMany(ctx, docs)
 		require.NoError(tb, err, "provider %q", provider.Name())
 		require.Len(tb, res.InsertedIDs, len(docs))
 		inserted = true
-
-		span.End()
 	}
 
 	return
@@ -288,11 +283,6 @@ func InsertProviders(tb testtb.TB, ctx context.Context, collection *mongo.Collec
 // The function calculates the checksum of all inserted documents and compare them with provider's hash.
 func insertBenchmarkProvider(tb testtb.TB, ctx context.Context, collection *mongo.Collection, provider shareddata.BenchmarkProvider) (inserted bool) {
 	tb.Helper()
-
-	collectionName := collection.Name()
-
-	spanName := fmt.Sprintf("insertBenchmarkProvider/%s/%s", collectionName, provider.Name())
-	provCtx, span := otel.Tracer("").Start(ctx, spanName)
 
 	iter := provider.NewIterator()
 	defer iter.Close()
@@ -310,20 +300,21 @@ func insertBenchmarkProvider(tb testtb.TB, ctx context.Context, collection *mong
 			insertDocs[i] = doc
 		}
 
-		res, err := collection.InsertMany(provCtx, insertDocs)
+		res, err := collection.InsertMany(ctx, insertDocs)
 		require.NoError(tb, err)
 		require.Len(tb, res.InsertedIDs, len(docs))
 
 		inserted = true
 	}
 
-	span.End()
-
 	return
 }
 
 // cleanupUser removes users for the given database if new authentication is enabled and drops that database.
 func cleanupDatabase(ctx context.Context, tb testtb.TB, database *mongo.Database, opts *BackendOpts) {
+	ctx, span := otel.Tracer("").Start(ctx, "cleanupDatabase")
+	defer span.End()
+
 	if opts == nil || !opts.DisableNewAuth {
 		err := database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}}).Err()
 		require.NoError(tb, err)

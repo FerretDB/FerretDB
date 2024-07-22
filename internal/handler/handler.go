@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"go.opentelemetry.io/otel"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/decorators/oplog"
@@ -172,7 +173,8 @@ func (h *Handler) setup() error {
 		return nil
 	}
 
-	ctx := context.TODO()
+	ctx, span := otel.Tracer("").Start(context.TODO(), "HandlerSetup")
+	defer span.End()
 
 	if h.SetupTimeout > 0 {
 		var cancel context.CancelFunc
@@ -296,10 +298,12 @@ func (h *Handler) Collect(ch chan<- prometheus.Metric) {
 
 // cleanupAllCappedCollections drops the given percent of documents from all capped collections.
 func (h *Handler) cleanupAllCappedCollections(ctx context.Context) error {
+	ctx, span := otel.Tracer("").Start(ctx, "HandlerCleanupAllCappedCollections")
 	h.L.DebugContext(ctx, "cleanupAllCappedCollections: started", slog.Int("percentage", int(h.CappedCleanupPercentage)))
 
 	start := time.Now()
 	defer func() {
+		span.End()
 		h.L.DebugContext(ctx, "cleanupAllCappedCollections: finished", slog.Duration("duration", time.Since(start)))
 	}()
 
