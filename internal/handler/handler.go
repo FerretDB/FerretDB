@@ -19,10 +19,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"sync"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
@@ -35,6 +37,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/password"
 	"github.com/FerretDB/FerretDB/internal/util/state"
@@ -119,12 +122,14 @@ func New(opts *NewOpts) (*Handler, error) {
 		opts.MaxBsonObjectSizeBytes = types.MaxDocumentLen
 	}
 
-	b := oplog.NewBackend(opts.Backend, opts.L.Named("oplog"))
+	// TODO https://github.com/FerretDB/FerretDB/issues/4013
+	b := oplog.NewBackend(opts.Backend, logging.WithName(slog.Default(), "oplog"))
 
 	h := &Handler{
 		b:       b,
 		NewOpts: opts,
-		cursors: cursor.NewRegistry(opts.L.Named("cursors")),
+		// TODO https://github.com/FerretDB/FerretDB/issues/4013
+		cursors: cursor.NewRegistry(logging.WithName(slog.Default(), "cursors")),
 
 		cappedCleanupStop: make(chan struct{}),
 		cleanupCappedCollectionsDocs: prometheus.NewCounterVec(
@@ -171,7 +176,8 @@ func (h *Handler) setup() error {
 		return nil
 	}
 
-	ctx := context.TODO()
+	ctx, span := otel.Tracer("").Start(context.TODO(), "HandlerSetup")
+	defer span.End()
 
 	if h.SetupTimeout > 0 {
 		var cancel context.CancelFunc
@@ -290,10 +296,12 @@ func (h *Handler) Collect(ch chan<- prometheus.Metric) {
 
 // cleanupAllCappedCollections drops the given percent of documents from all capped collections.
 func (h *Handler) cleanupAllCappedCollections(ctx context.Context) error {
+	ctx, span := otel.Tracer("").Start(ctx, "HandlerCleanupAllCappedCollections")
 	h.L.Debug("cleanupAllCappedCollections: started", zap.Uint8("percentage", h.CappedCleanupPercentage))
 
 	start := time.Now()
 	defer func() {
+		span.End()
 		h.L.Debug("cleanupAllCappedCollections: finished", zap.Duration("duration", time.Since(start)))
 	}()
 

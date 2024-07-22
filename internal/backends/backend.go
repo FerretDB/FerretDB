@@ -20,10 +20,11 @@ import (
 	"slices"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"go.opentelemetry.io/otel"
+	otelcodes "go.opentelemetry.io/otel/codes"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
 
@@ -94,13 +95,18 @@ type StatusResult struct {
 // connection can be established and authenticated.
 // For that reason, the implementation should not return only cached results.
 func (bc *backendContract) Status(ctx context.Context, params *StatusParams) (*StatusResult, error) {
-	defer observability.FuncCall(ctx)()
-
 	// to both check that conninfo is present (which is important for that method),
 	// and to render doc.go correctly
 	must.NotBeZero(conninfo.Get(ctx))
 
+	ctx, span := otel.Tracer("").Start(ctx, "Status")
+	defer span.End()
+
 	res, err := bc.b.Status(ctx, params)
+	if err != nil {
+		span.SetStatus(otelcodes.Error, "")
+	}
+
 	checkError(err)
 
 	return res, err
@@ -143,9 +149,14 @@ type DatabaseInfo struct {
 //
 // Database may not exist; that's not an error.
 func (bc *backendContract) ListDatabases(ctx context.Context, params *ListDatabasesParams) (*ListDatabasesResult, error) {
-	defer observability.FuncCall(ctx)()
+	ctx, span := otel.Tracer("").Start(ctx, "ListDatabases")
+	defer span.End()
 
 	res, err := bc.b.ListDatabases(ctx, params)
+	if err != nil {
+		span.SetStatus(otelcodes.Error, "")
+	}
+
 	checkError(err)
 
 	if res != nil && len(res.Databases) > 0 {
@@ -169,11 +180,16 @@ type DropDatabaseParams struct {
 
 // DropDatabase drops existing database for given parameters (including valid name).
 func (bc *backendContract) DropDatabase(ctx context.Context, params *DropDatabaseParams) error {
-	defer observability.FuncCall(ctx)()
+	ctx, span := otel.Tracer("").Start(ctx, "DropDatabase")
+	defer span.End()
 
 	err := validateDatabaseName(params.Name)
 	if err == nil {
 		err = bc.b.DropDatabase(ctx, params)
+	}
+
+	if err != nil {
+		span.SetStatus(otelcodes.Error, "")
 	}
 
 	checkError(err, ErrorCodeDatabaseNameIsInvalid, ErrorCodeDatabaseDoesNotExist)
