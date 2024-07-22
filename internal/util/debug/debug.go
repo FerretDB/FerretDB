@@ -22,6 +22,7 @@ import (
 	_ "expvar" // for metrics
 	"fmt"
 	"log"
+	"log/slog"
 	"net"
 	"net/http"
 	_ "net/http/pprof" // for profiling
@@ -32,11 +33,11 @@ import (
 	"github.com/arl/statsviz"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -70,7 +71,7 @@ type Handler struct {
 //nolint:vet // for readability
 type ListenOpts struct {
 	TCPAddr string
-	L       *zap.Logger
+	L       *slog.Logger
 	R       prometheus.Registerer
 	Livez   Probe
 	Readyz  Probe
@@ -86,7 +87,9 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 
 	must.NotBeZero(opts)
 
-	stdL := must.NotFail(zap.NewStdLogAt(opts.L, zap.WarnLevel))
+	l := opts.L
+
+	stdL := slog.NewLogLogger(l.Handler(), slog.LevelError)
 
 	http.Handle("/debug/metrics", promhttp.InstrumentMetricHandler(
 		opts.R, promhttp.HandlerFor(prometheus.DefaultGatherer, promhttp.HandlerOpts{
@@ -122,13 +125,13 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 			ctx := req.Context()
 
 			if !opts.Livez(ctx) {
-				opts.L.Warn("Livez probe failed")
+				l.Warn("Livez probe failed")
 				rw.WriteHeader(http.StatusInternalServerError)
 
 				return
 			}
 
-			opts.L.Debug("Livez probe succeeded")
+			l.Debug("Livez probe succeeded")
 			rw.WriteHeader(http.StatusOK)
 		}),
 	))
@@ -139,20 +142,20 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 			ctx := req.Context()
 
 			if !opts.Livez(ctx) {
-				opts.L.Warn("Readyz probe failed - livez probe failed")
+				l.Warn("Readyz probe failed - livez probe failed")
 				rw.WriteHeader(http.StatusInternalServerError)
 
 				return
 			}
 
 			if !opts.Readyz(ctx) {
-				opts.L.Warn("Readyz probe failed")
+				l.Warn("Readyz probe failed")
 				rw.WriteHeader(http.StatusInternalServerError)
 
 				return
 			}
 
-			opts.L.Debug("Readyz probe succeeded")
+			l.Debug("Readyz probe succeeded")
 			rw.WriteHeader(http.StatusOK)
 		}),
 	))
@@ -216,20 +219,22 @@ func (h *Handler) Serve(ctx context.Context) {
 		},
 	}
 
+	l := h.opts.L
+
 	root := fmt.Sprintf("http://%s", h.lis.Addr())
 
-	h.opts.L.Sugar().Infof("Starting debug server on %s...", root)
+	l.InfoContext(ctx, fmt.Sprintf("Starting debug server on %s...", root))
 
 	paths := maps.Keys(h.handlers)
 	slices.Sort(paths)
 
 	for _, path := range paths {
-		h.opts.L.Sugar().Infof("%s%s - %s", root, path, h.handlers[path])
+		l.InfoContext(ctx, fmt.Sprintf("%s%s - %s", root, path, h.handlers[path]))
 	}
 
 	go func() {
 		if err := s.Serve(h.lis); !errors.Is(err, http.ErrServerClosed) {
-			h.opts.L.DPanic("Serve exited with unexpected error", zap.Error(err))
+			l.LogAttrs(ctx, logging.LevelDPanic, "Serve exited with unexpected error", logging.Error(err))
 		}
 	}()
 
@@ -240,12 +245,12 @@ func (h *Handler) Serve(ctx context.Context) {
 	defer stopCancel(nil)
 
 	if err := s.Shutdown(stopCtx); err != nil {
-		h.opts.L.DPanic("Shutdown exited with unexpected error", zap.Error(err))
+		l.LogAttrs(ctx, logging.LevelDPanic, "Shutdown exited with unexpected error", logging.Error(err))
 	}
 
 	if err := s.Close(); err != nil {
-		h.opts.L.DPanic("Close exited with unexpected error", zap.Error(err))
+		l.LogAttrs(ctx, logging.LevelDPanic, "Close exited with unexpected error", logging.Error(err))
 	}
 
-	h.opts.L.Sugar().Info("Debug server stopped.")
+	l.InfoContext(ctx, "Debug server stopped")
 }
