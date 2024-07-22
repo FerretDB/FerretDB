@@ -425,11 +425,11 @@ func testsRun(ctx context.Context, params *TestsRunParams, logger *slog.Logger) 
 }
 
 // listTestFuncs returns a sorted slice of all top-level test functions (tests, benchmarks, examples, fuzz functions)
-// in the specified directory and subdirectories.
+// matching given regular expression in the specified directory and subdirectories.
 func listTestFuncs(dir string, re string, logger *slog.Logger) ([]string, error) {
 	var buf bytes.Buffer
 
-	cmd := exec.Command("go", "test", "-list=."+re, "./...")
+	cmd := exec.Command("go", "test", "-list="+re, "./...")
 	cmd.Dir = dir
 	cmd.Stdout = &buf
 	cmd.Stderr = os.Stderr
