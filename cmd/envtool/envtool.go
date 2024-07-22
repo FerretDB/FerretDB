@@ -256,7 +256,7 @@ func setupMongodbSecured(ctx context.Context, logger *zap.SugaredLogger) error {
 func setup(ctx context.Context, logger *zap.SugaredLogger) error {
 	h, err := debug.Listen(&debug.ListenOpts{
 		TCPAddr: "127.0.0.1:8089",
-		L:       logger.Named("debug").Desugar(),
+		L:       logging.WithName(slog.Default(), "debug"), // TODO https://github.com/FerretDB/FerretDB/issues/4013
 		R:       prometheus.DefaultRegisterer,
 	})
 	if err != nil {

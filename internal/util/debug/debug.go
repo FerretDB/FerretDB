@@ -325,7 +325,7 @@ func (h *Handler) Serve(ctx context.Context) {
 	}
 
 	if err := s.Close(); err != nil {
-		l.LogAttrs(ctx, logging.LevelDPanic, "Shutdown exited with unexpected error", logging.Error(err))
+		l.LogAttrs(ctx, logging.LevelDPanic, "Close exited with unexpected error", logging.Error(err))
 	}
 
 	l.InfoContext(ctx, "Debug server stopped")
