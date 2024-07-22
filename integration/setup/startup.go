@@ -16,7 +16,6 @@ package setup
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"os"
 	"runtime"
@@ -119,7 +118,7 @@ func Startup() {
 	}
 
 	if !slices.Contains(allBackends, *targetBackendF) {
-		l.LogAttrs(ctx, logging.LevelFatal, fmt.Sprintf("Unknown target backend %q", *targetBackendF))
+		l.LogAttrs(ctx, logging.LevelFatal, "Unknown target backend", slog.String("target_backend", *targetBackendF))
 	}
 
 	if *targetURLF != "" {
@@ -132,14 +131,14 @@ func Startup() {
 
 		client, err := makeClient(clientCtx, *targetURLF, false)
 		if err != nil {
-			l.LogAttrs(ctx, logging.LevelFatal, fmt.Sprintf("Failed to connect to target system %s", *targetURLF), logging.Error(err))
+			l.LogAttrs(ctx, logging.LevelFatal, "Failed to connect to target system", slog.String("target_url", *targetURLF), logging.Error(err))
 		}
 
 		_ = client.Disconnect(clientCtx)
 
-		l.InfoContext(ctx, fmt.Sprintf("Target system: %s (%s)", *targetBackendF, *targetURLF))
+		l.InfoContext(ctx, "Target system", slog.String("target_backend", *targetBackendF), slog.String("target_url", *targetURLF))
 	} else {
-		l.InfoContext(ctx, fmt.Sprintf("Target system: %s (built-in)", *targetBackendF))
+		l.InfoContext(ctx, "Target system (built-in)", slog.String("target_backend", *targetBackendF))
 	}
 
 	if *compatURLF != "" {
@@ -152,14 +151,14 @@ func Startup() {
 
 		client, err := makeClient(clientCtx, *compatURLF, false)
 		if err != nil {
-			l.LogAttrs(ctx, logging.LevelFatal, fmt.Sprintf("Failed to connect to compat system %s", *compatURLF), logging.Error(err))
+			l.LogAttrs(ctx, logging.LevelFatal, "Failed to connect to compat system %s", slog.String("compat_url", *compatURLF), logging.Error(err))
 		}
 
 		_ = client.Disconnect(clientCtx)
 
-		l.InfoContext(ctx, fmt.Sprintf("Compat system: MongoDB (%s)", *compatURLF))
+		l.InfoContext(ctx, "Compat system: MongoDB", slog.String("compat_url", *compatURLF))
 	} else {
-		l.InfoContext(ctx, fmt.Sprintf("Compat system: none, compatibility tests will be skipped"))
+		l.InfoContext(ctx, "Compat system: none, compatibility tests will be skipped")
 	}
 }
 
