@@ -15,45 +15,32 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"github.com/FerretDB/FerretDB/internal/util/logging"
+	"log/slog"
 	"os/exec"
 	"regexp"
-	"sort"
 	"strings"
 	"testing"
 
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
-
-// makeTestLogger returns a logger that adds all messages to the given slice.
-func makeTestLogger(messages *[]string) (*zap.Logger, error) {
-	logger, err := makeLogger(zap.InfoLevel, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	logger = logger.WithOptions(zap.Hooks(func(entry zapcore.Entry) error {
-		*messages = append(*messages, entry.Message)
-		return nil
-	}))
-
-	return logger, nil
-}
 
 var (
-	cleanupTimingRe    = regexp.MustCompile(`(\d+\.\d+)s`)                   // duration are different
-	cleanupGoroutineRe = regexp.MustCompile(`goroutine (\d+)`)               // goroutine IDs are different
-	cleanupPathRe      = regexp.MustCompile(`^\t(.+)/cmd/envtool/testdata/`) // absolute file paths are different
-	cleanupAddrRe      = regexp.MustCompile(` (\+0x[0-9a-f]+)$`)             // addresses are different
+	cleanupTimingRe    = regexp.MustCompile(`(\d+\.\d+)s`)                  // duration are different
+	cleanupGoroutineRe = regexp.MustCompile(`goroutine (\d+)`)              // goroutine IDs are different
+	cleanupPathRe      = regexp.MustCompile(`\t(.+)/cmd/envtool/testdata/`) // absolute file paths are different
+	cleanupAddrRe      = regexp.MustCompile(` (\+0x[0-9a-f]+)$`)            // addresses are different
 )
 
-// cleanup removes variable parts of the output.
-func cleanup(lines []string) {
+// toLogLines takes buffer and removes variable parts of the output.
+func toLogLines(buf *bytes.Buffer) []string {
+	s := strings.TrimSpace(buf.String())
+	lines := strings.Split(s, "\n")
+
 	for i, line := range lines {
 		if loc := cleanupTimingRe.FindStringSubmatchIndex(line); loc != nil {
 			line = line[:loc[2]] + "<SEC>" + line[loc[3]:]
@@ -73,6 +60,73 @@ func cleanup(lines []string) {
 
 		lines[i] = line
 	}
+
+	return lines
+}
+
+// bufLogger returns logger that writes to buffer.
+func bufLogger() (*slog.Logger, *bytes.Buffer) {
+	var buf bytes.Buffer
+	h := logging.NewHandler(&buf, &logging.NewHandlerOpts{
+		Base:         "console",
+		Level:        slog.LevelInfo,
+		RemoveTime:   true,
+		RemoveSource: true,
+	})
+
+	return slog.New(h), &buf
+}
+
+func TestTestArgs(t *testing.T) {
+	t.Parallel()
+
+	list, listErr := listTestFuncs("testdata", ".", testutil.SLogger(t))
+	require.NoError(t, listErr)
+	require.Equal(
+		t,
+		[]string{"TestError1", "TestError2", "TestNormal1", "TestNormal2", "TestPanic1", "TestSkip1", "TestWithSubtest"},
+		list,
+	)
+
+	t.Run("All", func(t *testing.T) {
+		t.Parallel()
+
+		actual, total, err := testArgs("testdata", 0, 0, "", "", testutil.SLogger(t))
+		require.NoError(t, err)
+		expected := []string{"-run=^(TestError1|TestError2|TestNormal1|TestNormal2|TestPanic1|TestSkip1|TestWithSubtest)$"}
+		assert.Equal(t, expected, actual)
+		assert.EqualValues(t, 7, total)
+	})
+
+	t.Run("Run", func(t *testing.T) {
+		t.Parallel()
+
+		actual, total, err := testArgs("testdata", 0, 0, "(?i)Normal", "", testutil.SLogger(t))
+		require.NoError(t, err)
+		expected := []string{"-run=^(TestNormal1|TestNormal2)$"}
+		assert.Equal(t, expected, actual)
+		assert.EqualValues(t, 2, total)
+	})
+
+	t.Run("Subtest", func(t *testing.T) {
+		t.Parallel()
+
+		actual, total, err := testArgs("testdata", 0, 0, "TestWithSubtest/Second", "", testutil.SLogger(t))
+		require.NoError(t, err)
+		expected := []string{"-run=TestWithSubtest/Second"}
+		assert.Equal(t, expected, actual)
+		assert.EqualValues(t, 0, total)
+	})
+
+	t.Run("Shard", func(t *testing.T) {
+		t.Parallel()
+
+		actual, total, err := testArgs("testdata", 1, 2, "", "", testutil.SLogger(t))
+		require.NoError(t, err)
+		expected := []string{"-run=^(TestError1|TestNormal1|TestPanic1|TestWithSubtest)$"}
+		assert.Equal(t, expected, actual)
+		assert.EqualValues(t, 4, total)
+	})
 }
 
 func TestRunGoTest(t *testing.T) {
@@ -83,421 +137,166 @@ func TestRunGoTest(t *testing.T) {
 	t.Run("Normal", func(t *testing.T) {
 		t.Parallel()
 
-		var actual []string
-		logger, err := makeTestLogger(&actual)
-		require.NoError(t, err)
+		l, buf := bufLogger()
 
-		err = runGoTest(ctx, []string{"./testdata", "-count=1", "-run=TestNormal"}, 2, false, logger.Sugar())
+		err := runGoTest(ctx, []string{"./testdata", "-count=1", "-run=TestNormal"}, 2, false, l)
 		require.NoError(t, err)
 
 		expected := []string{
-			"PASS TestNormal1 1/2",
-			"PASS TestNormal2 2/2",
-			"PASS",
-			"ok  	github.com/FerretDB/FerretDB/cmd/envtool/testdata	<SEC>s",
-			"PASS github.com/FerretDB/FerretDB/cmd/envtool/testdata",
+			"INFO	Running go test -json ./testdata -count=1 -run=TestNormal",
+			"INFO	PASS TestNormal1 1/2",
+			"INFO	PASS TestNormal2 2/2",
+			"INFO	PASS",
+			"INFO	ok  	github.com/FerretDB/FerretDB/cmd/envtool/testdata	<SEC>s",
+			"INFO	PASS github.com/FerretDB/FerretDB/cmd/envtool/testdata",
 		}
 
-		cleanup(actual)
-		assert.Equal(t, expected, actual, "actual:\n%s", strings.Join(actual, "\n"))
+		actual := toLogLines(buf)
+		assert.Equal(t, expected, actual, "actual:\n%s", actual)
 	})
 
 	t.Run("SubtestsPartial", func(t *testing.T) {
 		t.Parallel()
 
-		var actual []string
-		logger, err := makeTestLogger(&actual)
-		require.NoError(t, err)
+		l, buf := bufLogger()
 
-		err = runGoTest(ctx, []string{"./testdata", "-count=1", "-run=TestWithSubtest/Third"}, 1, false, logger.Sugar())
+		err := runGoTest(ctx, []string{"./testdata", "-count=1", "-run=TestWithSubtest/Third"}, 1, false, l)
 		require.NoError(t, err)
 
 		expected := []string{
-			"PASS TestWithSubtest 1/1",
-			"PASS",
-			"ok  	github.com/FerretDB/FerretDB/cmd/envtool/testdata	<SEC>s",
-			"PASS github.com/FerretDB/FerretDB/cmd/envtool/testdata",
+			"INFO	Running go test -json ./testdata -count=1 -run=TestWithSubtest/Third",
+			"INFO	PASS TestWithSubtest 1/1",
+			"INFO	PASS",
+			"INFO	ok  	github.com/FerretDB/FerretDB/cmd/envtool/testdata	<SEC>s",
+			"INFO	PASS github.com/FerretDB/FerretDB/cmd/envtool/testdata",
 		}
 
-		cleanup(actual)
-
-		assert.Equal(t, expected, actual, "actual:\n%s", strings.Join(actual, "\n"))
+		actual := toLogLines(buf)
+		assert.Equal(t, expected, actual, "actual:\n%s", actual)
 	})
 
 	t.Run("SubtestsNotFound", func(t *testing.T) {
 		t.Parallel()
 
-		var actual []string
-		logger, err := makeTestLogger(&actual)
-		require.NoError(t, err)
+		l, buf := bufLogger()
 
-		err = runGoTest(ctx, []string{"./testdata", "-count=1", "-run=TestWithSubtest/None"}, 1, false, logger.Sugar())
+		err := runGoTest(ctx, []string{"./testdata", "-count=1", "-run=TestWithSubtest/None"}, 1, false, l)
 		require.NoError(t, err)
 
 		expected := []string{
-			"PASS TestWithSubtest 1/1",
-			"testing: warning: no tests to run",
-			"PASS",
-			"ok  	github.com/FerretDB/FerretDB/cmd/envtool/testdata	<SEC>s [no tests to run]",
-			"PASS github.com/FerretDB/FerretDB/cmd/envtool/testdata",
+			"INFO	Running go test -json ./testdata -count=1 -run=TestWithSubtest/None",
+			"INFO	PASS TestWithSubtest 1/1",
+			"INFO	testing: warning: no tests to run",
+			"INFO	PASS",
+			"INFO	ok  	github.com/FerretDB/FerretDB/cmd/envtool/testdata	<SEC>s [no tests to run]",
+			"INFO	PASS github.com/FerretDB/FerretDB/cmd/envtool/testdata",
 		}
 
-		cleanup(actual)
-
+		actual := toLogLines(buf)
 		assert.Equal(t, expected, actual, "actual:\n%s", strings.Join(actual, "\n"))
 	})
 
 	t.Run("Error", func(t *testing.T) {
 		t.Parallel()
 
-		var actual []string
-		logger, err := makeTestLogger(&actual)
-		require.NoError(t, err)
+		l, buf := bufLogger()
 
-		err = runGoTest(ctx, []string{"./testdata", "-count=1", "-run=TestError"}, 2, false, logger.Sugar())
+		err := runGoTest(ctx, []string{"./testdata", "-count=1", "-run=TestError"}, 2, false, l)
 
 		var exitErr *exec.ExitError
 		require.ErrorAs(t, err, &exitErr)
 		assert.Equal(t, 1, exitErr.ExitCode())
 
 		expected := []string{
-			"FAIL TestError1 1/2:",
-			"=== RUN   TestError1",
-			"    error_test.go:20: not hidden 1",
-			"    error_test.go:22: Error 1",
-			"    error_test.go:24: not hidden 2",
-			"--- FAIL: TestError1 (<SEC>s)",
-			"",
-			"FAIL TestError2/Parallel:",
-			"=== RUN   TestError2/Parallel",
-			"    error_test.go:35: not hidden 5",
-			"=== PAUSE TestError2/Parallel",
-			"=== CONT  TestError2/Parallel",
-			"    error_test.go:39: not hidden 6",
-			"    error_test.go:41: Error 2",
-			"    error_test.go:43: not hidden 7",
-			"--- FAIL: TestError2/Parallel (<SEC>s)",
-			"",
-			"FAIL TestError2 2/2:",
-			"=== RUN   TestError2",
-			"    error_test.go:28: not hidden 3",
-			"=== PAUSE TestError2",
-			"=== CONT  TestError2",
-			"    error_test.go:32: not hidden 4",
-			"--- FAIL: TestError2 (<SEC>s)",
-			"",
-			"FAIL",
-			"FAIL	github.com/FerretDB/FerretDB/cmd/envtool/testdata	<SEC>s",
-			"FAIL github.com/FerretDB/FerretDB/cmd/envtool/testdata",
+			"INFO	Running go test -json ./testdata -count=1 -run=TestError",
+			"WARN	FAIL TestError1 1/2:",
+			"WARN	=== RUN   TestError1",
+			"WARN	    error_test.go:20: not hidden 1",
+			"WARN	    error_test.go:22: Error 1",
+			"WARN	    error_test.go:24: not hidden 2",
+			"WARN	--- FAIL: TestError1 (<SEC>s)",
+			"WARN	",
+			"WARN	FAIL TestError2/Parallel:",
+			"WARN	=== RUN   TestError2/Parallel",
+			"WARN	    error_test.go:35: not hidden 5",
+			"WARN	=== PAUSE TestError2/Parallel",
+			"WARN	=== CONT  TestError2/Parallel",
+			"WARN	    error_test.go:39: not hidden 6",
+			"WARN	    error_test.go:41: Error 2",
+			"WARN	    error_test.go:43: not hidden 7",
+			"WARN	--- FAIL: TestError2/Parallel (<SEC>s)",
+			"WARN	",
+			"WARN	FAIL TestError2 2/2:",
+			"WARN	=== RUN   TestError2",
+			"WARN	    error_test.go:28: not hidden 3",
+			"WARN	=== PAUSE TestError2",
+			"WARN	=== CONT  TestError2",
+			"WARN	    error_test.go:32: not hidden 4",
+			"WARN	--- FAIL: TestError2 (<SEC>s)",
+			"WARN	",
+			"INFO	FAIL",
+			"INFO	FAIL	github.com/FerretDB/FerretDB/cmd/envtool/testdata	<SEC>s",
+			"INFO	FAIL github.com/FerretDB/FerretDB/cmd/envtool/testdata",
 		}
 
-		cleanup(actual)
+		actual := toLogLines(buf)
 		assert.Equal(t, expected, actual, "actual:\n%s", strings.Join(actual, "\n"))
 	})
 
 	t.Run("Skip", func(t *testing.T) {
 		t.Parallel()
 
-		var actual []string
-		logger, err := makeTestLogger(&actual)
-		require.NoError(t, err)
+		l, buf := bufLogger()
 
-		err = runGoTest(ctx, []string{"./testdata", "-count=1", "-run=TestSkip"}, 1, false, logger.Sugar())
+		err := runGoTest(ctx, []string{"./testdata", "-count=1", "-run=TestSkip"}, 1, false, l)
 		require.NoError(t, err)
 
 		expected := []string{
-			"SKIP TestSkip1 1/1:",
-			"=== RUN   TestSkip1",
-			"    skip_test.go:20: not hidden 1",
-			"    skip_test.go:22: Skip 1",
-			"--- SKIP: TestSkip1 (<SEC>s)",
-			"",
-			"PASS",
-			"ok  	github.com/FerretDB/FerretDB/cmd/envtool/testdata	<SEC>s",
-			"PASS github.com/FerretDB/FerretDB/cmd/envtool/testdata",
+			"INFO	Running go test -json ./testdata -count=1 -run=TestSkip",
+			"WARN	SKIP TestSkip1 1/1:",
+			"WARN	=== RUN   TestSkip1",
+			"WARN	    skip_test.go:20: not hidden 1",
+			"WARN	    skip_test.go:22: Skip 1",
+			"WARN	--- SKIP: TestSkip1 (<SEC>s)",
+			"WARN	",
+			"INFO	PASS",
+			"INFO	ok  	github.com/FerretDB/FerretDB/cmd/envtool/testdata	<SEC>s",
+			"INFO	PASS github.com/FerretDB/FerretDB/cmd/envtool/testdata",
 		}
 
-		cleanup(actual)
+		actual := toLogLines(buf)
 		assert.Equal(t, expected, actual, "actual:\n%s", strings.Join(actual, "\n"))
 	})
 
 	t.Run("Panic", func(t *testing.T) {
 		t.Parallel()
 
-		var actual []string
-		logger, err := makeTestLogger(&actual)
-		require.NoError(t, err)
+		l, buf := bufLogger()
 
-		err = runGoTest(ctx, []string{"./testdata", "-count=1", "-run=TestPanic"}, 1, false, logger.Sugar())
+		err := runGoTest(ctx, []string{"./testdata", "-count=1", "-run=TestPanic"}, 1, false, l)
 		require.Error(t, err)
 
 		expected := []string{
-			"FAIL	github.com/FerretDB/FerretDB/cmd/envtool/testdata	<SEC>s",
-			"FAIL github.com/FerretDB/FerretDB/cmd/envtool/testdata",
-			"",
-			"Some tests did not finish:",
-			"  github.com/FerretDB/FerretDB/cmd/envtool/testdata.TestPanic1",
-			"",
-			"github.com/FerretDB/FerretDB/cmd/envtool/testdata.TestPanic1:",
-			"=== RUN   TestPanic1",
-			"panic: Panic 1",
-			"",
-			"goroutine <ID> [running]:",
-			"github.com/FerretDB/FerretDB/cmd/envtool/testdata.TestPanic1.func1()",
-			"	<DIR>/cmd/envtool/testdata/panic_test.go:25 <ADDR>",
-			"created by github.com/FerretDB/FerretDB/cmd/envtool/testdata.TestPanic1 in goroutine <ID>",
-			"	<DIR>/cmd/envtool/testdata/panic_test.go:23 <ADDR>",
-			"",
+			"INFO	Running go test -json ./testdata -count=1 -run=TestPanic",
+			"INFO	FAIL	github.com/FerretDB/FerretDB/cmd/envtool/testdata	<SEC>s",
+			"INFO	FAIL github.com/FerretDB/FerretDB/cmd/envtool/testdata",
+			"ERROR	",
+			"ERROR	Some tests did not finish:",
+			"ERROR	  github.com/FerretDB/FerretDB/cmd/envtool/testdata.TestPanic1",
+			"ERROR	",
+			"ERROR	github.com/FerretDB/FerretDB/cmd/envtool/testdata.TestPanic1:",
+			"ERROR	=== RUN   TestPanic1",
+			"ERROR	panic: Panic 1",
+			"ERROR	",
+			"ERROR	goroutine <ID> [running]:",
+			"ERROR	github.com/FerretDB/FerretDB/cmd/envtool/testdata.TestPanic1.func1()",
+			"ERROR	<DIR>/cmd/envtool/testdata/panic_test.go:25 <ADDR>",
+			"ERROR	created by github.com/FerretDB/FerretDB/cmd/envtool/testdata.TestPanic1 in goroutine <ID>",
+			"ERROR	<DIR>/cmd/envtool/testdata/panic_test.go:23 <ADDR>",
+			"ERROR",
 		}
 
-		cleanup(actual)
+		actual := toLogLines(buf)
 		assert.Equal(t, expected, actual, "actual:\n%s", strings.Join(actual, "\n"))
 	})
-}
-
-func TestListTestFuncs(t *testing.T) {
-	t.Parallel()
-
-	actual, err := listTestFuncs("./testdata")
-	require.NoError(t, err)
-	expected := []string{
-		"TestError1",
-		"TestError2",
-		"TestNormal1",
-		"TestNormal2",
-		"TestPanic1",
-		"TestSkip1",
-		"TestWithSubtest",
-	}
-	assert.Equal(t, expected, actual)
-}
-
-func TestListTestFuncsWithRegex(t *testing.T) {
-	tests := []struct {
-		wantErr  assert.ErrorAssertionFunc
-		name     string
-		run      string
-		skip     string
-		expected []string
-	}{
-		{
-			name: "NoRunNoSkip",
-			run:  "",
-			skip: "",
-			expected: []string{
-				"TestError1",
-				"TestError2",
-				"TestNormal1",
-				"TestNormal2",
-				"TestPanic1",
-				"TestSkip1",
-				"TestWithSubtest",
-			},
-			wantErr: assert.NoError,
-		},
-		{
-			name: "Run",
-			run:  "TestError",
-			skip: "",
-			expected: []string{
-				"TestError1",
-				"TestError2",
-			},
-			wantErr: assert.NoError,
-		},
-		{
-			name: "Skip",
-			run:  "",
-			skip: "TestError",
-			expected: []string{
-				"TestNormal1",
-				"TestNormal2",
-				"TestPanic1",
-				"TestSkip1",
-				"TestWithSubtest",
-			},
-			wantErr: assert.NoError,
-		},
-		{
-			name: "RunSkip",
-			run:  "TestError",
-			skip: "TestError2",
-			expected: []string{
-				"TestError1",
-			},
-			wantErr: assert.NoError,
-		},
-		{
-			name:     "RunSkipAll",
-			run:      "TestError",
-			skip:     "TestError",
-			expected: []string{},
-			wantErr:  assert.NoError,
-		},
-		{
-			name: "InvalidRun",
-			run:  "[",
-			skip: "",
-			wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
-				return assert.Contains(t, err.Error(), "error parsing regexp")
-			},
-		},
-		{
-			name: "InvalidSkip",
-			run:  "",
-			skip: "[",
-			wantErr: func(t assert.TestingT, err error, i ...interface{}) bool {
-				return assert.Contains(t, err.Error(), "error parsing regexp")
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		tt := tt
-
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			actual, err := listTestFuncsWithRegex("./testdata", tt.run, tt.skip)
-			tt.wantErr(t, err)
-			assert.Equal(t, tt.expected, actual)
-		})
-	}
-}
-
-func TestFilterStringsByRegex(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name     string
-		tests    []string
-		include  *regexp.Regexp
-		exclude  *regexp.Regexp
-		expected []string
-	}{
-		{
-			name:     "Empty",
-			tests:    []string{},
-			include:  nil,
-			exclude:  nil,
-			expected: []string{},
-		},
-		{
-			name:     "Include",
-			tests:    []string{"Test1", "Test2"},
-			include:  regexp.MustCompile("Test1"),
-			exclude:  nil,
-			expected: []string{"Test1"},
-		},
-		{
-			name:     "Exclude",
-			tests:    []string{"Test1", "Test2"},
-			include:  nil,
-			exclude:  regexp.MustCompile("Test1"),
-			expected: []string{"Test2"},
-		},
-		{
-			name:     "IncludeExclude",
-			tests:    []string{"Test1", "Test2"},
-			include:  regexp.MustCompile("Test1"),
-			exclude:  regexp.MustCompile("Test1"),
-			expected: []string{},
-		},
-		{
-			name:     "IncludeExclude2",
-			tests:    []string{"Test1", "Test2"},
-			include:  regexp.MustCompile("Test1"),
-			exclude:  regexp.MustCompile("Test2"),
-			expected: []string{"Test1"},
-		},
-		{
-			name:     "NotMatch",
-			tests:    []string{"Test1", "Test2"},
-			include:  regexp.MustCompile("Test3"),
-			exclude:  regexp.MustCompile("Test3"),
-			expected: []string{},
-		},
-	}
-
-	for _, tt := range tests {
-		tt := tt
-
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			actual := filterStringsByRegex(tt.tests, tt.include, tt.exclude)
-			assert.Equal(t, tt.expected, actual)
-		})
-	}
-}
-
-func TestShardTestFuncs(t *testing.T) {
-	t.Parallel()
-
-	testFuncs, err := listTestFuncs(testutil.IntegrationDir)
-	require.NoError(t, err)
-	assert.Contains(t, testFuncs, "TestQueryCompatLimit")
-	assert.Contains(t, testFuncs, "TestCursorsGetMoreCommand")
-
-	t.Run("InvalidIndex", func(t *testing.T) {
-		t.Parallel()
-
-		_, _, err := shardTestFuncs(0, 3, testFuncs)
-		assert.EqualError(t, err, "index must be greater than 0")
-
-		_, _, err = shardTestFuncs(3, 3, testFuncs)
-		assert.NoError(t, err)
-
-		_, _, err = shardTestFuncs(4, 3, testFuncs)
-		assert.EqualError(t, err, "cannot shard when index is greater than total (4 > 3)")
-	})
-
-	t.Run("InvalidTotal", func(t *testing.T) {
-		t.Parallel()
-
-		_, _, err := shardTestFuncs(3, 1000, testFuncs[:42])
-		assert.EqualError(t, err, "cannot shard when total is greater than a number of test functions (1000 > 42)")
-	})
-
-	t.Run("Valid", func(t *testing.T) {
-		t.Parallel()
-
-		res, skip, err := shardTestFuncs(1, 3, testFuncs)
-		require.NoError(t, err)
-		assert.Equal(t, testFuncs[0], res[0])
-		assert.NotEqual(t, testFuncs[1], res[1])
-		assert.NotEqual(t, testFuncs[2], res[1])
-		assert.Equal(t, testFuncs[3], res[1])
-		assert.NotEmpty(t, skip)
-
-		lastRes, lastSkip, err := shardTestFuncs(3, 3, testFuncs)
-		require.NoError(t, err)
-		assert.NotEqual(t, testFuncs[0], lastRes[0])
-		assert.NotEqual(t, testFuncs[1], lastRes[0])
-		assert.Equal(t, testFuncs[2], lastRes[0])
-		assert.NotEmpty(t, lastSkip)
-
-		assert.NotEqual(t, res, lastRes)
-		assert.NotEqual(t, skip, lastSkip)
-	})
-}
-
-func TestListTestFuncsWithSkip(t *testing.T) {
-	t.Parallel()
-
-	testFuncs, err := listTestFuncsWithRegex("testdata", "", "Skip")
-	require.NoError(t, err)
-
-	sort.Strings(testFuncs)
-
-	res, skip, err := shardTestFuncs(1, 2, testFuncs)
-
-	assert.Equal(t, []string{"TestError2", "TestNormal2", "TestWithSubtest"}, skip)
-	assert.Equal(t, []string{"TestError1", "TestNormal1", "TestPanic1"}, res)
-	assert.Nil(t, err)
-
-	lastRes, lastSkip, err := shardTestFuncs(3, 3, testFuncs)
-	assert.Equal(t, []string{"TestNormal1", "TestWithSubtest"}, lastRes)
-	assert.Equal(t, []string{"TestError1", "TestError2", "TestNormal2", "TestPanic1"}, lastSkip)
-	require.NoError(t, err)
 }

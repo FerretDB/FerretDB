@@ -20,6 +20,7 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
+	"go.uber.org/zap"
 	"html/template"
 	"io"
 	"log/slog"
@@ -33,10 +34,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/alecthomas/kong"
-	"github.com/prometheus/client_golang/prometheus"
-	"go.uber.org/zap"
-
 	"github.com/FerretDB/FerretDB/build/version"
 	mysqlpool "github.com/FerretDB/FerretDB/internal/backends/mysql/metadata/pool"
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata/pool"
@@ -45,6 +42,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/state"
+	"github.com/alecthomas/kong"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 var (
@@ -411,6 +410,18 @@ func packageVersion(w io.Writer, file string) error {
 	return err
 }
 
+// TestsRunParams represents `envtool tests run` parameters.
+//
+//nolint:vet // for readability
+type TestsRunParams struct {
+	ShardIndex uint   `help:"Shard index, starting from 1."`
+	ShardTotal uint   `help:"Total number of shards."`
+	Run        string `help:"Run only tests matching the regexp."`
+	Skip       string `help:"Skip tests matching the regexp."`
+
+	Args []string `arg:"" help:"Other arguments and flags for 'go test'." passthrough:""`
+}
+
 // cli struct represents all command-line commands, fields and flags.
 // It's used for parsing the user input.
 //
@@ -435,14 +446,7 @@ var cli struct {
 	} `cmd:""`
 
 	Tests struct {
-		Run struct {
-			ShardIndex uint   `help:"Shard index, starting from 1."`
-			ShardTotal uint   `help:"Total number of shards."`
-			Run        string `help:"Run only tests matching the regexp."`
-			Skip       string `help:"Skip tests matching the regexp."`
-
-			Args []string `arg:"" help:"Other arguments and flags for 'go test'." passthrough:""`
-		} `cmd:"" help:"Run tests."`
+		Run TestsRunParams `cmd:"" help:"Run tests."`
 	} `cmd:""`
 
 	Fuzz struct {
@@ -502,12 +506,7 @@ func main() {
 		ctx, stop := ctxutil.SigTerm(context.Background())
 		defer stop()
 
-		err = testsRun(
-			ctx,
-			cli.Tests.Run.ShardIndex, cli.Tests.Run.ShardTotal,
-			cli.Tests.Run.Run, cli.Tests.Run.Skip, cli.Tests.Run.Args,
-			logger,
-		)
+		err = testsRun(ctx, &cli.Tests.Run, logger)
 
 	case "fuzz corpus <src> <dst>":
 		var seedCorpus, generatedCorpus string
