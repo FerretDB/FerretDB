@@ -153,7 +153,7 @@ func Startup() {
 
 		client, err := makeClient(clientCtx, *compatURLF, false)
 		if err != nil {
-			l.LogAttrs(ctx, logging.LevelFatal, "Failed to connect to compat system %s", slog.String("compat_url", *compatURLF), logging.Error(err))
+			l.LogAttrs(ctx, logging.LevelFatal, "Failed to connect to compat system", slog.String("compat_url", *compatURLF), logging.Error(err))
 		}
 
 		_ = client.Disconnect(clientCtx)
