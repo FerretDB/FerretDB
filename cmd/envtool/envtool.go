@@ -20,7 +20,6 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
-	"go.uber.org/zap"
 	"html/template"
 	"io"
 	"log/slog"
@@ -34,6 +33,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/alecthomas/kong"
+	"github.com/prometheus/client_golang/prometheus"
+	"go.uber.org/zap"
+
 	"github.com/FerretDB/FerretDB/build/version"
 	mysqlpool "github.com/FerretDB/FerretDB/internal/backends/mysql/metadata/pool"
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata/pool"
@@ -42,8 +45,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/state"
-	"github.com/alecthomas/kong"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 var (
@@ -142,7 +143,7 @@ func setupPostgres(ctx context.Context, logger *slog.Logger) error {
 
 // setupPostgresSecured configures `postgres_secured` container.
 func setupPostgresSecured(ctx context.Context, logger *slog.Logger) error {
-	return setupAnyPostgres(ctx, logging.WithName(logger, "postgres_secured"), "postgres://username:password@127.0.0.1:5433/ferretdb")
+	return setupAnyPostgres(ctx, logging.WithName(logger, "postgres_secured"), "postgres://username:password@127.0.0.1:5433/ferretdb") //nolint:lll // for readability
 }
 
 // setupMySQL configures `mysql` container.
@@ -154,7 +155,7 @@ func setupMySQL(ctx context.Context, logger *slog.Logger) error {
 		return err
 	}
 
-	if err := waitForPort(ctx, logging.WithName(logger, "mysql"), 3306); err != nil {
+	if err = waitForPort(ctx, logging.WithName(logger, "mysql"), 3306); err != nil {
 		return err
 	}
 

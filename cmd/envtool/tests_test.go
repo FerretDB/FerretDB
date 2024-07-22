@@ -17,16 +17,17 @@ package main
 import (
 	"bytes"
 	"context"
-	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"log/slog"
 	"os/exec"
 	"regexp"
 	"strings"
 	"testing"
 
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/FerretDB/FerretDB/internal/util/logging"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 var (
