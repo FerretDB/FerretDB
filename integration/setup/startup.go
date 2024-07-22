@@ -47,13 +47,15 @@ var startupWG sync.WaitGroup
 // Startup initializes things that should be initialized only once.
 func Startup() {
 	opts := &logging.NewHandlerOpts{
-		Base:  "console",
-		Level: slog.LevelDebug,
+		Base:        "console",
+		Level:       slog.LevelDebug,
+		RemoveTime:  true,
+		RemoveLevel: true,
 	}
 	logging.SetupSlog(opts, "")
+	l := slog.Default()
 
 	ctx := context.Background()
-	l := slog.Default()
 
 	// https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables
 	if t, _ := strconv.ParseBool(os.Getenv("RUNNER_DEBUG")); t {
