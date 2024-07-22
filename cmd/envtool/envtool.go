@@ -35,7 +35,6 @@ import (
 
 	"github.com/alecthomas/kong"
 	"github.com/prometheus/client_golang/prometheus"
-	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/build/version"
 	mysqlpool "github.com/FerretDB/FerretDB/internal/backends/mysql/metadata/pool"
@@ -252,7 +251,7 @@ func setupMongodbSecured(ctx context.Context, logger *slog.Logger) error {
 func setup(ctx context.Context, logger *slog.Logger) error {
 	h, err := debug.Listen(&debug.ListenOpts{
 		TCPAddr: "127.0.0.1:8089",
-		L:       zap.L().Named("debug"),
+		L:       logging.WithName(logger, "debug"),
 		R:       prometheus.DefaultRegisterer,
 	})
 	if err != nil {

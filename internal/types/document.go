@@ -17,6 +17,7 @@ package types
 import (
 	"cmp"
 	"fmt"
+	"log/slog"
 	"slices"
 	"strconv"
 
@@ -492,4 +493,14 @@ func (d *Document) moveIDToTheFirstIndex() {
 // check interfaces
 var (
 	_ document = (*Document)(nil)
+)
+
+// LogValue implements [slog.LogValuer].
+func (doc *Document) LogValue() slog.Value {
+	return slogValue(doc, 1)
+}
+
+// check interfaces
+var (
+	_ slog.LogValuer = (*Document)(nil)
 )
