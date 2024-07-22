@@ -63,7 +63,7 @@ func Startup() {
 	// use any available port to allow running different configurations in parallel
 	h, err := debug.Listen(&debug.ListenOpts{
 		TCPAddr: "127.0.0.1:0",
-		L:       zap.L().Named("debug"),
+		L:       logging.WithName(slog.Default(), "debug"), // TODO https://github.com/FerretDB/FerretDB/issues/4013
 		R:       prometheus.DefaultRegisterer,
 	})
 	if err != nil {

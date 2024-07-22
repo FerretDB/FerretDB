@@ -224,7 +224,7 @@ func main() {
 		checkFlags(logger)
 
 		ready := ReadyZ{
-			l: zap.L(),
+			l: logger,
 		}
 
 		ctx, stop := ctxutil.SigTerm(context.Background())
@@ -429,14 +429,13 @@ func run() {
 			defer wg.Done()
 
 			l := logging.WithName(logger, "debug")
-			zl := zlogger.Named("debug")
 			ready := ReadyZ{
-				l: zl,
+				l: l,
 			}
 
 			h, err := debug.Listen(&debug.ListenOpts{
 				TCPAddr: cli.DebugAddr,
-				L:       zl,
+				L:       l,
 				R:       metricsRegisterer,
 				Livez: func(context.Context) bool {
 					if listener.Load() == nil {
