@@ -18,9 +18,8 @@ package setup
 import (
 	"context"
 	"flag"
-	"fmt"
+	"log/slog"
 	"net/url"
-	"runtime/trace"
 	"slices"
 	"strings"
 	"time"
@@ -30,10 +29,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.opentelemetry.io/otel"
-	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
-	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 
@@ -62,7 +59,7 @@ var (
 
 	// Disable noisy setup logs by default.
 	debugSetupF = flag.Bool("debug-setup", false, "enable debug logs for tests setup")
-	logLevelF   = zap.LevelFlag("log-level", zap.DebugLevel, "log level for tests")
+	logLevelF   = flag.String("log-level", slog.LevelDebug.String(), "log level for tests")
 
 	disablePushdownF = flag.Bool("disable-pushdown", false, "disable pushdown")
 )
@@ -143,17 +140,17 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 	setupCtx, span := otel.Tracer("").Start(ctx, "SetupWithOpts")
 	defer span.End()
 
-	defer trace.StartRegion(setupCtx, "SetupWithOpts").End()
-
 	if opts == nil {
 		opts = new(SetupOpts)
 	}
 
-	level := zap.NewAtomicLevelAt(zap.ErrorLevel)
+	var levelVar slog.LevelVar
+	levelVar.Set(slog.LevelError)
 	if *debugSetupF {
-		level = zap.NewAtomicLevelAt(zap.DebugLevel)
+		levelVar.Set(slog.LevelDebug)
 	}
-	logger := testutil.LevelLogger(tb, level)
+
+	logger := testutil.LevelLogger(tb, &levelVar)
 
 	uri := *targetURLF
 	if uri == "" {
@@ -182,9 +179,10 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
 
-	collection := setupCollection(tb, ctx, client, opts)
+	collection := setupCollection(tb, setupCtx, client, opts)
 
-	level.SetLevel(*logLevelF)
+	err := levelVar.UnmarshalText([]byte(*logLevelF))
+	require.NoError(tb, err)
 
 	return &SetupResult{
 		Ctx:        ctx,
@@ -209,8 +207,6 @@ func setupCollection(tb testtb.TB, ctx context.Context, client *mongo.Client, op
 
 	ctx, span := otel.Tracer("").Start(ctx, "setupCollection")
 	defer span.End()
-
-	defer observability.FuncCall(ctx)()
 
 	var ownDatabase bool
 	databaseName := opts.DatabaseName
@@ -268,23 +264,17 @@ func setupCollection(tb testtb.TB, ctx context.Context, client *mongo.Client, op
 func InsertProviders(tb testtb.TB, ctx context.Context, collection *mongo.Collection, providers ...shareddata.Provider) (inserted bool) {
 	tb.Helper()
 
-	collectionName := collection.Name()
+	ctx, span := otel.Tracer("").Start(ctx, "insertProviders")
+	defer span.End()
 
 	for _, provider := range providers {
-		spanName := fmt.Sprintf("insertProviders/%s/%s", collectionName, provider.Name())
-		provCtx, span := otel.Tracer("").Start(ctx, spanName)
-		region := trace.StartRegion(provCtx, spanName)
-
 		docs := shareddata.Docs(provider)
 		require.NotEmpty(tb, docs)
 
-		res, err := collection.InsertMany(provCtx, docs)
+		res, err := collection.InsertMany(ctx, docs)
 		require.NoError(tb, err, "provider %q", provider.Name())
 		require.Len(tb, res.InsertedIDs, len(docs))
 		inserted = true
-
-		region.End()
-		span.End()
 	}
 
 	return
@@ -296,12 +286,6 @@ func InsertProviders(tb testtb.TB, ctx context.Context, collection *mongo.Collec
 // The function calculates the checksum of all inserted documents and compare them with provider's hash.
 func insertBenchmarkProvider(tb testtb.TB, ctx context.Context, collection *mongo.Collection, provider shareddata.BenchmarkProvider) (inserted bool) {
 	tb.Helper()
-
-	collectionName := collection.Name()
-
-	spanName := fmt.Sprintf("insertBenchmarkProvider/%s/%s", collectionName, provider.Name())
-	provCtx, span := otel.Tracer("").Start(ctx, spanName)
-	region := trace.StartRegion(provCtx, spanName)
 
 	iter := provider.NewIterator()
 	defer iter.Close()
@@ -319,21 +303,21 @@ func insertBenchmarkProvider(tb testtb.TB, ctx context.Context, collection *mong
 			insertDocs[i] = doc
 		}
 
-		res, err := collection.InsertMany(provCtx, insertDocs)
+		res, err := collection.InsertMany(ctx, insertDocs)
 		require.NoError(tb, err)
 		require.Len(tb, res.InsertedIDs, len(docs))
 
 		inserted = true
 	}
 
-	region.End()
-	span.End()
-
 	return
 }
 
 // cleanupUser removes users for the given database if new authentication is enabled and drops that database.
 func cleanupDatabase(ctx context.Context, tb testtb.TB, database *mongo.Database, opts *BackendOpts) {
+	ctx, span := otel.Tracer("").Start(ctx, "cleanupDatabase")
+	defer span.End()
+
 	if opts == nil || !opts.DisableNewAuth {
 		err := database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}}).Err()
 		require.NoError(tb, err)

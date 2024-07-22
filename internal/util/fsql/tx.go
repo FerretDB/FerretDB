@@ -21,7 +21,6 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
 
@@ -65,8 +64,6 @@ func (tx *Tx) Rollback() error {
 
 // QueryContext calls [*sql.Tx.QueryContext].
 func (tx *Tx) QueryContext(ctx context.Context, query string, args ...any) (*Rows, error) {
-	defer observability.FuncCall(ctx)()
-
 	start := time.Now()
 
 	fields := []any{zap.Any("args", args)}
@@ -82,8 +79,6 @@ func (tx *Tx) QueryContext(ctx context.Context, query string, args ...any) (*Row
 
 // QueryRowContext calls [*sql.Tx.QueryRowContext].
 func (tx *Tx) QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row {
-	defer observability.FuncCall(ctx)()
-
 	start := time.Now()
 
 	fields := []any{zap.Any("args", args)}
@@ -99,8 +94,6 @@ func (tx *Tx) QueryRowContext(ctx context.Context, query string, args ...any) *s
 
 // ExecContext calls [*sql.Tx.ExecContext].
 func (tx *Tx) ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error) {
-	defer observability.FuncCall(ctx)()
-
 	start := time.Now()
 
 	fields := []any{zap.Any("args", args)}

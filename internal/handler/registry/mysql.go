@@ -18,6 +18,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/backends/mysql"
 	"github.com/FerretDB/FerretDB/internal/handler"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/logging"
 )
 
 // init registers "mysql" handler.
@@ -25,7 +26,7 @@ func init() {
 	registry["mysql"] = func(opts *NewHandlerOpts) (*handler.Handler, CloseBackendFunc, error) {
 		b, err := mysql.NewBackend(&mysql.NewBackendParams{
 			URI: opts.MySQLURL,
-			L:   opts.Logger.Named("mysql"),
+			L:   logging.WithName(opts.SLogger, "mysql"),
 			P:   opts.StateProvider,
 		})
 		if err != nil {

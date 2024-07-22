@@ -20,6 +20,7 @@ package pool
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/url"
 	"os"
 	"path"
@@ -29,12 +30,11 @@ import (
 	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/observability"
+	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
@@ -53,7 +53,7 @@ const (
 //nolint:vet // for readability
 type Pool struct {
 	uri url.URL
-	l   *zap.Logger
+	l   *slog.Logger
 	sp  *state.Provider
 
 	rw  sync.RWMutex
@@ -68,7 +68,7 @@ type Pool struct {
 //
 // The returned map is the initial set of existing databases.
 // It should not be modified.
-func New(u string, l *zap.Logger, sp *state.Provider) (*Pool, map[string]*fsql.DB, error) {
+func New(u string, l *slog.Logger, sp *state.Provider) (*Pool, map[string]*fsql.DB, error) {
 	uri, err := parseURI(u)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to parse SQLite URI %q: %s", u, err)
@@ -98,7 +98,7 @@ func New(u string, l *zap.Logger, sp *state.Provider) (*Pool, map[string]*fsql.D
 		name := p.databaseName(f)
 		uri := p.databaseURI(name)
 
-		p.l.Debug("Opening existing database.", zap.String("name", name), zap.String("uri", uri))
+		p.l.Debug("Opening existing database", slog.String("name", name), slog.String("uri", uri))
 
 		db, err := openDB(name, uri, p.memory(), l, p.sp)
 		if err != nil {
@@ -162,8 +162,6 @@ func (p *Pool) Close() {
 
 // List returns a sorted list of database names in the pool.
 func (p *Pool) List(ctx context.Context) []string {
-	defer observability.FuncCall(ctx)()
-
 	p.rw.RLock()
 	defer p.rw.RUnlock()
 
@@ -175,8 +173,6 @@ func (p *Pool) List(ctx context.Context) []string {
 
 // GetExisting returns an existing database by valid name, or nil.
 func (p *Pool) GetExisting(ctx context.Context, name string) *fsql.DB {
-	defer observability.FuncCall(ctx)()
-
 	p.rw.RLock()
 	defer p.rw.RUnlock()
 
@@ -187,8 +183,6 @@ func (p *Pool) GetExisting(ctx context.Context, name string) *fsql.DB {
 //
 // Returned boolean value indicates whether the database was created.
 func (p *Pool) GetOrCreate(ctx context.Context, name string) (*fsql.DB, bool, error) {
-	defer observability.FuncCall(ctx)()
-
 	db := p.GetExisting(ctx, name)
 	if db != nil {
 		return db, false, nil
@@ -208,7 +202,7 @@ func (p *Pool) GetOrCreate(ctx context.Context, name string) (*fsql.DB, bool, er
 		return nil, false, lazyerrors.Errorf("%s: %w", uri, err)
 	}
 
-	p.l.Debug("Database created.", zap.String("name", name), zap.String("uri", uri))
+	p.l.DebugContext(ctx, "Database created", slog.String("name", name), slog.String("uri", uri))
 
 	p.dbs[name] = db
 
@@ -221,8 +215,6 @@ func (p *Pool) GetOrCreate(ctx context.Context, name string) (*fsql.DB, bool, er
 //
 // Returned boolean value indicates whether the database was removed.
 func (p *Pool) Drop(ctx context.Context, name string) bool {
-	defer observability.FuncCall(ctx)()
-
 	p.rw.Lock()
 	defer p.rw.Unlock()
 
@@ -232,18 +224,24 @@ func (p *Pool) Drop(ctx context.Context, name string) bool {
 	}
 
 	if err := db.Close(); err != nil {
-		p.l.Warn("Failed to close database connection.", zap.String("name", name), zap.Error(err))
+		p.l.WarnContext(ctx, "Failed to close database connection", slog.String("name", name), logging.Error(err))
 	}
 
 	delete(p.dbs, name)
 
 	if f := p.databaseFile(name); f != "" {
 		if err := os.Remove(f); err != nil {
-			p.l.Warn("Failed to remove database file.", zap.String("file", f), zap.String("name", name), zap.Error(err))
+			p.l.WarnContext(
+				ctx,
+				"Failed to remove database file",
+				slog.String("file", f),
+				slog.String("name", name),
+				logging.Error(err),
+			)
 		}
 	}
 
-	p.l.Debug("Database dropped.", zap.String("name", name))
+	p.l.DebugContext(ctx, "Database dropped", slog.String("name", name))
 
 	return true
 }

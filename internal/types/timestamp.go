@@ -15,6 +15,7 @@
 package types
 
 import (
+	"log/slog"
 	"sync/atomic"
 	"time"
 )
@@ -49,3 +50,13 @@ func (ts Timestamp) Time() time.Time {
 func (ts Timestamp) Signed() int64 {
 	return int64(ts)
 }
+
+// LogValue implements [slog.LogValuer].
+func (ts Timestamp) LogValue() slog.Value {
+	return slogValue(ts, 1)
+}
+
+// check interfaces
+var (
+	_ slog.LogValuer = Timestamp(0)
+)

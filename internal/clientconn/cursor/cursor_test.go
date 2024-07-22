@@ -32,7 +32,7 @@ import (
 func TestCursor(t *testing.T) {
 	t.Parallel()
 
-	r := NewRegistry(testutil.Logger(t))
+	r := NewRegistry(testutil.SLogger(t))
 	t.Cleanup(r.Close)
 
 	ctx := testutil.Ctx(t)
