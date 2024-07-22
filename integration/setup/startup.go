@@ -67,7 +67,7 @@ func Startup() {
 	// use any available port to allow running different configurations in parallel
 	h, err := debug.Listen(&debug.ListenOpts{
 		TCPAddr: "127.0.0.1:0",
-		L:       logging.WithName(slog.Default(), "debug"), // TODO https://github.com/FerretDB/FerretDB/issues/4013
+		L:       logging.WithName(l, "debug"),
 		R:       prometheus.DefaultRegisterer,
 	})
 	if err != nil {
@@ -75,7 +75,7 @@ func Startup() {
 	}
 
 	ot, err := observability.NewOtelTracer(&observability.OtelTracerOpts{
-		Logger:   logging.WithName(slog.Default(), "otel"),
+		Logger:   logging.WithName(l, "otel"),
 		Service:  "integration-tests",
 		Endpoint: "127.0.0.1:4318",
 	})
