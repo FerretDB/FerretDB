@@ -119,6 +119,10 @@ func TestDebug(t *testing.T) {
 			f, err = file.Open()
 			require.NoError(t, err)
 
+			t.Cleanup(func() {
+				require.NoError(t, f.Close())
+			})
+
 			content := make([]byte, 1)
 
 			var n int
@@ -126,7 +130,6 @@ func TestDebug(t *testing.T) {
 			require.NoError(t, err)
 
 			assert.Equal(t, 1, n, "file should contain any data, but was empty")
-			require.NoError(t, f.Close())
 		}
 	})
 
