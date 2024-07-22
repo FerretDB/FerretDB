@@ -16,6 +16,7 @@ package types
 
 import (
 	"encoding/binary"
+	"log/slog"
 	"math/rand"
 	"sync/atomic"
 	"time"
@@ -68,3 +69,13 @@ func init() {
 	must.NotFail(rand.Read(objectIDProcess[:]))
 	objectIDCounter.Store(rand.Uint32())
 }
+
+// LogValue implements [slog.LogValuer].
+func (o ObjectID) LogValue() slog.Value {
+	return slogValue(o, 1)
+}
+
+// check interfaces
+var (
+	_ slog.LogValuer = ObjectID{}
+)
