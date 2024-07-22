@@ -47,7 +47,7 @@ func Setup(level zapcore.Level, encoding, uuid string) {
 		Base:  encoding,
 		Level: slogLevel,
 	}
-	setupSlog(slogOpts, uuid)
+	SetupSlog(slogOpts, uuid)
 
 	config := zap.Config{
 		Level:             zap.NewAtomicLevelAt(level),
