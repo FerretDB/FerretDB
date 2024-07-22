@@ -6,8 +6,7 @@ After=network-online.target
 
 [Service]
 ExecStart=/usr/bin/ferretdb
-Restart=always
-EnvironmentFile=-/etc/ferretdb.conf
+Restart=on-failure
 
 [Install]
 WantedBy=multi-user.target

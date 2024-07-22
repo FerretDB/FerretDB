@@ -22,4 +22,3 @@ contents:
     expand: true
   - src: build/ferretdb.service
     dst: /etc/systemd/system/ferretdb.service
-    expand: true
