@@ -20,7 +20,6 @@ import (
 	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
@@ -51,7 +50,7 @@ func NewBackend(params *NewBackendParams) (backends.Backend, error) {
 		return nil, err
 	}
 
-	hdb := fsql.WrapDB(db, "hana", zap.L())
+	hdb := fsql.WrapDB(db, "hana", params.L)
 	hdb.BatchSize = params.BatchSize
 
 	return backends.BackendContract(&backend{
