@@ -29,8 +29,7 @@ sudo apt update
 sudo apt install -y postgresql
 ```
 
-Currently, our `.deb` package does not provide a SystemD unit for starting FerretDB automatically.
-You have to do it manually by running `ferretdb` binary with the [correct flags](../configuration/flags.md).
+<!--systemd --> 
 
 Find out more about:
 
