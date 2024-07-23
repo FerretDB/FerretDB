@@ -409,9 +409,9 @@ func (h *Handler) cleanupCappedCollection(ctx context.Context, db backends.Datab
 		h.L.DebugContext(
 			ctx,
 			"cleanupCappedCollection: stats after document count reduction",
-			slog.Int64("size_total", statsBefore.SizeTotal),
-			slog.Int64("size_collection", statsBefore.SizeCollection),
-			slog.Int64("count_documents", statsBefore.CountDocuments),
+			slog.Int64("size_total", statsAfter.SizeTotal),
+			slog.Int64("size_collection", statsAfter.SizeCollection),
+			slog.Int64("count_documents", statsAfter.CountDocuments),
 		)
 
 		docsDeleted += int32(count)
@@ -441,9 +441,9 @@ func (h *Handler) cleanupCappedCollection(ctx context.Context, db backends.Datab
 	h.L.DebugContext(
 		ctx,
 		"cleanupCappedCollection: stats after compact",
-		slog.Int64("size_total", statsBefore.SizeTotal),
-		slog.Int64("size_collection", statsBefore.SizeCollection),
-		slog.Int64("count_documents", statsBefore.CountDocuments),
+		slog.Int64("size_total", statsAfter.SizeTotal),
+		slog.Int64("size_collection", statsAfter.SizeCollection),
+		slog.Int64("count_documents", statsAfter.CountDocuments),
 	)
 
 	bytesFreed += (statsBefore.SizeTotal - statsAfter.SizeTotal)
