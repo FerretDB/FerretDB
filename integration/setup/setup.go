@@ -18,6 +18,7 @@ package setup
 import (
 	"context"
 	"flag"
+	"log/slog"
 	"net/url"
 	"slices"
 	"strings"
@@ -28,7 +29,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.opentelemetry.io/otel"
-	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
@@ -59,7 +59,7 @@ var (
 
 	// Disable noisy setup logs by default.
 	debugSetupF = flag.Bool("debug-setup", false, "enable debug logs for tests setup")
-	logLevelF   = zap.LevelFlag("log-level", zap.DebugLevel, "log level for tests")
+	logLevelF   = flag.String("log-level", slog.LevelDebug.String(), "log level for tests")
 
 	disablePushdownF = flag.Bool("disable-pushdown", false, "disable pushdown")
 )
@@ -144,11 +144,13 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 		opts = new(SetupOpts)
 	}
 
-	level := zap.NewAtomicLevelAt(zap.ErrorLevel)
+	var levelVar slog.LevelVar
+	levelVar.Set(slog.LevelError)
 	if *debugSetupF {
-		level = zap.NewAtomicLevelAt(zap.DebugLevel)
+		levelVar.Set(slog.LevelDebug)
 	}
-	logger := testutil.LevelLogger(tb, level)
+
+	logger := testutil.LevelLogger(tb, &levelVar)
 
 	uri := *targetURLF
 	if uri == "" {
@@ -179,7 +181,8 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 
 	collection := setupCollection(tb, setupCtx, client, opts)
 
-	level.SetLevel(*logLevelF)
+	err := levelVar.UnmarshalText([]byte(*logLevelF))
+	require.NoError(tb, err)
 
 	return &SetupResult{
 		Ctx:        ctx,
