@@ -101,10 +101,10 @@ func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath, newAuthDB string
 
 // setupListener starts in-process FerretDB server that runs until ctx is canceled.
 // It returns basic MongoDB URI for that listener.
-func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *BackendOpts) string {
+func setupListener(tb testtb.TB, ctx context.Context, logger *slog.Logger, opts *BackendOpts) string {
 	tb.Helper()
 
-	_, span := otel.Tracer("").Start(ctx, "setupListener")
+	ctx, span := otel.Tracer("").Start(ctx, "setupListener")
 	defer span.End()
 
 	require.Empty(tb, *targetURLF, "-target-url must be empty for in-process FerretDB")
@@ -176,7 +176,7 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 	}
 
 	handlerOpts := &registry.NewHandlerOpts{
-		Logger:        logger,
+		Logger:        zap.L(),
 		SLogger:       slog.Default(), // TODO https://github.com/FerretDB/FerretDB/issues/4013
 		ConnMetrics:   listenerMetrics.ConnMetrics,
 		StateProvider: sp,
@@ -216,7 +216,7 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 		Mode:           clientconn.NormalMode,
 		Metrics:        listenerMetrics,
 		Handler:        h,
-		Logger:         slog.Default(),
+		Logger:         slog.Default(), // TODO https://github.com/FerretDB/FerretDB/issues/4013
 		TestRecordsDir: testutil.TmpRecordsDir,
 	}
 
@@ -248,7 +248,10 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 	go func() {
 		defer close(runDone)
 
-		l.Run(ctx)
+		runCtx, runSpan := otel.Tracer("").Start(ctx, "setupListener.Run")
+		defer runSpan.End()
+
+		l.Run(runCtx)
 	}()
 
 	// ensure that all listener's and handler's logs are written before test ends
@@ -271,7 +274,7 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 
 	uri := listenerMongoDBURI(tb, hostPort, unixSocketPath, handlerOpts.SetupDatabase, tlsAndAuth)
 
-	logger.Info("Listener started", zap.String("handler", handler), zap.String("uri", uri))
+	logger.InfoContext(ctx, "Listener started", slog.String("handler", handler), slog.String("uri", uri))
 
 	return uri
 }

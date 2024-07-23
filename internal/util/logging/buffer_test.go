@@ -15,76 +15,80 @@
 package logging
 
 import (
+	"context"
+	"log/slog"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
-func TestCircularBufferHook(t *testing.T) {
+func TestCircularBufferHandler(t *testing.T) {
 	RecentEntries = NewCircularBuffer(2)
 
-	Setup(zap.InfoLevel, "console", "")
+	opts := &NewHandlerOpts{
+		Base:  "console",
+		Level: slog.LevelInfo,
+	}
+	Setup(opts, "")
 
 	for _, tc := range []struct { //nolint:vet // for readability
 		msg      string
-		level    zapcore.Level
-		expected []zapcore.Entry
+		level    slog.Level
+		expected []slog.Record
 	}{
 		{
 			msg:   "message 1",
-			level: zap.WarnLevel,
-			expected: []zapcore.Entry{{
-				Level:   zap.WarnLevel,
+			level: slog.LevelWarn,
+			expected: []slog.Record{{
+				Level:   slog.LevelWarn,
 				Message: "message 1",
 			}},
 		},
 		{
 			msg:   "message 2",
-			level: zap.ErrorLevel,
-			expected: []zapcore.Entry{{
-				Level:   zap.WarnLevel,
+			level: slog.LevelError,
+			expected: []slog.Record{{
+				Level:   slog.LevelWarn,
 				Message: "message 1",
 			}, {
-				Level:   zap.ErrorLevel,
+				Level:   slog.LevelError,
 				Message: "message 2",
 			}},
 		},
 		{
 			msg:   "debug not added",
-			level: zap.DebugLevel,
-			expected: []zapcore.Entry{{
-				Level:   zap.WarnLevel,
+			level: slog.LevelDebug,
+			expected: []slog.Record{{
+				Level:   slog.LevelWarn,
 				Message: "message 1",
 			}, {
-				Level:   zap.ErrorLevel,
+				Level:   slog.LevelError,
 				Message: "message 2",
 			}},
 		},
 		{
 			msg:   "message 3",
-			level: zap.InfoLevel,
-			expected: []zapcore.Entry{{
-				Level:   zap.ErrorLevel,
+			level: slog.LevelInfo,
+			expected: []slog.Record{{
+				Level:   slog.LevelError,
 				Message: "message 2",
 			}, {
-				Level:   zap.InfoLevel,
+				Level:   slog.LevelInfo,
 				Message: "message 3",
 			}},
 		},
 	} {
 		t.Run(tc.msg, func(t *testing.T) {
-			zap.L().Log(tc.level, tc.msg)
+			slog.Default().Log(context.Background(), tc.level, tc.msg)
 
-			actual := RecentEntries.get()
+			records := RecentEntries.get()
+			actual := make([]slog.Record, len(records))
 
-			for i, a := range actual {
-				a.Time = time.Time{}
-				a.Caller = zapcore.EntryCaller{}
-				a.Stack = ""
-				actual[i] = a
+			for i, r := range records {
+				r.Time = time.Time{}
+				r.PC = 0
+				actual[i] = *r
 			}
 
 			assert.Equal(t, tc.expected, actual)
