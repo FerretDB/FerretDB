@@ -18,10 +18,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
-
-	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/bson"
@@ -111,7 +110,7 @@ func (h *Handler) MsgGetLog(connCtx context.Context, msg *wire.OpMsg) (*wire.OpM
 			startupWarnings = append(startupWarnings, "This is debug build. The performance will be affected.")
 		}
 
-		if h.L.Level().Enabled(zap.DebugLevel) {
+		if h.L.Enabled(connCtx, slog.LevelDebug) {
 			startupWarnings = append(startupWarnings, "Debug logging enabled. The security and performance will be affected.")
 		}
 

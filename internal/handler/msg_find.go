@@ -18,10 +18,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
-
-	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
@@ -95,7 +94,7 @@ func (h *Handler) MsgFind(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		}
 	}
 
-	qp, err := h.makeFindQueryParams(params, &cInfo)
+	qp, err := h.makeFindQueryParams(connCtx, params, &cInfo)
 	if err != nil {
 		return nil, err
 	}
@@ -165,10 +164,14 @@ func (h *Handler) MsgFind(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		return nil, handleMaxTimeMSError(err, params.MaxTimeMS, "find")
 	}
 
-	h.L.Debug(
-		"Got first batch", zap.Int64("cursor_id", cursorID), zap.Stringer("type", c.Type),
-		zap.Int("count", len(docs)), zap.Int64("batch_size", params.BatchSize),
-		zap.Bool("single_batch", params.SingleBatch),
+	h.L.DebugContext(
+		ctx,
+		"Got first batch",
+		slog.Int64("cursor_id", cursorID),
+		slog.String("type", c.Type.String()),
+		slog.Int("count", len(docs)),
+		slog.Int64("batch_size", params.BatchSize),
+		slog.Bool("single_batch", params.SingleBatch),
 	)
 
 	if params.SingleBatch || len(docs) < int(params.BatchSize) {
@@ -210,7 +213,7 @@ type findCursorData struct {
 }
 
 // makeFindQueryParams creates the backend's query parameters for the find command.
-func (h *Handler) makeFindQueryParams(params *common.FindParams, cInfo *backends.CollectionInfo) (*backends.QueryParams, error) {
+func (h *Handler) makeFindQueryParams(ctx context.Context, params *common.FindParams, cInfo *backends.CollectionInfo) (*backends.QueryParams, error) { //nolint:lll // for readability
 	qp := &backends.QueryParams{
 		Comment: params.Comment,
 	}
@@ -282,7 +285,7 @@ func (h *Handler) makeFindQueryParams(params *common.FindParams, cInfo *backends
 		qp.Limit = params.Limit
 	}
 
-	h.L.Sugar().Debugf("Converted %+v for %+v to %+v.", params, cInfo, qp)
+	h.L.DebugContext(ctx, fmt.Sprintf("Converted %+v for %+v to %+v.", params, cInfo, qp))
 
 	return qp, nil
 }

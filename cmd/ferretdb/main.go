@@ -31,7 +31,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/expfmt"
 	"go.uber.org/automaxprocs/maxprocs"
-	"go.uber.org/zap"
 	_ "golang.org/x/crypto/x509roots/fallback" // register root TLS certificates for production Docker image
 
 	"github.com/FerretDB/FerretDB/build/version"
@@ -401,8 +400,6 @@ func run() {
 		logger.Info("Debug logging enabled. The security and performance will be affected.")
 	}
 
-	zlogger := zap.L()
-
 	checkFlags(logger)
 
 	if _, err := maxprocs.Set(maxprocs.Logger(func(format string, a ...any) {
@@ -510,8 +507,7 @@ func run() {
 	}()
 
 	h, closeBackend, err := registry.NewHandler(cli.Handler, &registry.NewHandlerOpts{
-		Logger:        zlogger,
-		SLogger:       logger,
+		Logger:        logger,
 		ConnMetrics:   metrics.ConnMetrics,
 		StateProvider: stateProvider,
 		TCPHost:       cli.Listen.Addr,

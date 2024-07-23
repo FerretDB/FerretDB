@@ -19,12 +19,11 @@ import (
 	"fmt"
 	"strings"
 
-	"go.uber.org/zap"
-
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
@@ -75,7 +74,7 @@ func (h *Handler) CmdQuery(connCtx context.Context, query *wire.OpQuery) (*wire.
 
 		dbName, err := common.GetRequiredParam[string](authDoc, "db")
 		if err != nil {
-			h.L.Debug("No `db` in `speculativeAuthenticate`", zap.Error(err))
+			h.L.DebugContext(connCtx, "No `db` in `speculativeAuthenticate`", logging.Error(err))
 
 			opReply.SetDocument(reply)
 
@@ -84,7 +83,7 @@ func (h *Handler) CmdQuery(connCtx context.Context, query *wire.OpQuery) (*wire.
 
 		speculativeAuthenticate, err := h.saslStart(connCtx, dbName, authDoc)
 		if err != nil {
-			h.L.Debug("Speculative authentication failed", zap.Error(err))
+			h.L.DebugContext(connCtx, "Speculative authentication failed", logging.Error(err))
 
 			// unsuccessful speculative authentication leave `speculativeAuthenticate` field unset
 			// and let `saslStart` return an error
@@ -93,7 +92,7 @@ func (h *Handler) CmdQuery(connCtx context.Context, query *wire.OpQuery) (*wire.
 			return &opReply, nil
 		}
 
-		h.L.Debug("Speculative authentication passed")
+		h.L.DebugContext(connCtx, "Speculative authentication passed")
 
 		reply.Set("speculativeAuthenticate", speculativeAuthenticate)
 

@@ -28,7 +28,7 @@ func init() {
 	registry["postgresql"] = func(opts *NewHandlerOpts) (*handler.Handler, CloseBackendFunc, error) {
 		b, err := postgresql.NewBackend(&postgresql.NewBackendParams{
 			URI:       opts.PostgreSQLURL,
-			L:         logging.WithName(opts.SLogger, "postgresql"),
+			L:         logging.WithName(opts.Logger, "postgresql"),
 			P:         opts.StateProvider,
 			BatchSize: opts.BatchSize,
 		})
@@ -46,7 +46,7 @@ func init() {
 			SetupPassword: opts.SetupPassword,
 			SetupTimeout:  opts.SetupTimeout,
 
-			L:             opts.Logger.Named("postgresql"),
+			L:             logging.WithName(opts.Logger, "postgresql"),
 			ConnMetrics:   opts.ConnMetrics,
 			StateProvider: opts.StateProvider,
 

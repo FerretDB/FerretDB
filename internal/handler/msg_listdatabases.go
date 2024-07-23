@@ -17,12 +17,11 @@ package handler
 import (
 	"context"
 
-	"go.uber.org/zap"
-
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
@@ -66,13 +65,13 @@ func (h *Handler) MsgListDatabases(connCtx context.Context, msg *wire.OpMsg) (*w
 	for _, dbInfo := range res.Databases {
 		db, err := h.b.Database(dbInfo.Name)
 		if err != nil {
-			h.L.Warn("Failed to get database", zap.Error(err))
+			h.L.WarnContext(connCtx, "Failed to get database", logging.Error(err))
 			continue
 		}
 
 		stats, err := db.Stats(connCtx, nil)
 		if err != nil {
-			h.L.Warn("Failed to get database stats", zap.Error(err))
+			h.L.WarnContext(connCtx, "Failed to get database stats", logging.Error(err))
 			continue
 		}
 
