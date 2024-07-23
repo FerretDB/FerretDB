@@ -24,7 +24,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel"
-	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/handler/registry"
@@ -176,8 +175,7 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *slog.Logger, opts 
 	}
 
 	handlerOpts := &registry.NewHandlerOpts{
-		Logger:        zap.L(),
-		SLogger:       slog.Default(), // TODO https://github.com/FerretDB/FerretDB/issues/4013
+		Logger:        logger,
 		ConnMetrics:   listenerMetrics.ConnMetrics,
 		StateProvider: sp,
 
@@ -216,7 +214,7 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *slog.Logger, opts 
 		Mode:           clientconn.NormalMode,
 		Metrics:        listenerMetrics,
 		Handler:        h,
-		Logger:         slog.Default(), // TODO https://github.com/FerretDB/FerretDB/issues/4013
+		Logger:         logger,
 		TestRecordsDir: testutil.TmpRecordsDir,
 	}
 
