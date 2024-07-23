@@ -62,8 +62,8 @@ func WithName(l *slog.Logger, name string) *slog.Logger {
 	return l.With(slog.String(nameKey, name))
 }
 
-// SetupSlog initializes slog logging with given options and UUID.
-func SetupSlog(opts *NewHandlerOpts, uuid string) {
+// Setup initializes slog logging with given options and UUID.
+func Setup(opts *NewHandlerOpts, uuid string) {
 	must.NotBeZero(opts)
 
 	h := NewHandler(os.Stderr, opts)
@@ -74,5 +74,13 @@ func SetupSlog(opts *NewHandlerOpts, uuid string) {
 	}
 
 	slog.SetDefault(l)
-	// slog.SetLogLoggerLevel(slog.LevelInfo + 2)
+	slog.SetLogLoggerLevel(slog.LevelInfo + 2)
+}
+
+// WrapLogger wraps the given logger's handler allowing the support for
+// additional log levels, shorter source location and make logs
+// accessible by `getLog` command.
+func WrapLogger(l *slog.Logger) *slog.Logger {
+	h := WrapHandler(os.Stderr, l.Handler())
+	return slog.New(h)
 }

@@ -21,7 +21,6 @@ import (
 	"time"
 
 	_ "github.com/go-sql-driver/mysql" // register database/sql driver
-	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -66,5 +65,5 @@ func openDB(uri string, l *slog.Logger, sp *state.Provider) (*fsql.DB, error) {
 		}
 	}
 
-	return fsql.WrapDB(db, "", zap.L()), nil
+	return fsql.WrapDB(db, "", l), nil
 }
