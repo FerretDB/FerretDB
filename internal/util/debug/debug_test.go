@@ -84,11 +84,12 @@ func TestDebug(t *testing.T) {
 		u := "http://" + h.lis.Addr().String() + "/debug/archive"
 
 		expectedFiles := map[string]struct{}{
-			"heap.pprof":    {},
-			"profile.pprof": {},
-			"metrics.txt":   {},
-			"vars.json":     {},
-			"errors.txt":    {},
+			"goroutine.pprof": {},
+			"heap.pprof":      {},
+			"profile.pprof":   {},
+			"metrics.txt":     {},
+			"vars.json":       {},
+			"errors.txt":      {},
 		}
 
 		res, err := http.Get(u)

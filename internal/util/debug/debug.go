@@ -175,10 +175,11 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 			path  string
 			query string
 		}{
-			"heap.pprof":    {path: "/debug/pprof/heap", query: "gc=1"},
-			"profile.pprof": {path: "/debug/pprof/profile", query: "seconds=5"},
-			"metrics.txt":   {path: "/debug/metrics"},
-			"vars.json":     {path: "/debug/vars"},
+			"goroutine.pprof": {path: "/debug/pprof/goroutine"},
+			"heap.pprof":      {path: "/debug/pprof/heap", query: "gc=1"},
+			"profile.pprof":   {path: "/debug/pprof/profile", query: "seconds=5"},
+			"metrics.txt":     {path: "/debug/metrics"}, // includes version, UUID, etc
+			"vars.json":       {path: "/debug/vars"},
 		} {
 			getReq.URL.Path = u.path
 			getReq.URL.RawQuery = u.query
@@ -305,7 +306,7 @@ func (h *Handler) Serve(ctx context.Context) {
 
 	root := fmt.Sprintf("http://%s", h.lis.Addr())
 
-	l.InfoContext(ctx, fmt.Sprintf("Starting debug server on %s...", root))
+	l.InfoContext(ctx, fmt.Sprintf("Starting debug server on %s/debug ...", root))
 
 	paths := maps.Keys(h.handlers)
 	slices.Sort(paths)
