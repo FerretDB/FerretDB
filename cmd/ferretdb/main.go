@@ -103,7 +103,7 @@ var cli struct {
 
 	OTel struct {
 		Traces struct {
-			URL string `default:"" help:"OpenTelemetry OTLP/HTTP traces endpoint URL (e.g. http://host:4318/v1/traces)."`
+			URL string `default:"" help:"OpenTelemetry OTLP/HTTP traces endpoint URL (e.g. 'http://host:4318/v1/traces')."`
 		} `embed:"" prefix:"traces-"`
 	} `embed:"" prefix:"otel-"`
 

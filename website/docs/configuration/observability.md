@@ -74,6 +74,18 @@ CONTAINER ID   IMAGE                       COMMAND                  CREATED     
 $ docker logs my-ferretdb
 ```
 
+## OpenTelemetry traces
+
+FerretDB can be configured to send OpenTelemetry traces to the specified HTTP/OTLP URL (e.g. `http://host:4318/v1/traces`).
+It can be changed with [`--otel-traces-url` flag](flags.md#miscellaneous).
+
+:::note
+
+<!-- https://github.com/FerretDB/FerretDB/issues/3422 -->
+
+Trace format is not stable yet; attribute names and values might change in minor releases.
+:::
+
 ## Debug handler
 
 FerretDB exposes various HTTP endpoints with the debug handler on `http://127.0.0.1:8088/debug/` by default.
@@ -84,9 +96,10 @@ The host and port can be changed with [`--debug-addr` flag](flags.md#interfaces)
 FerretDB exposes metrics in Prometheus format on the `/debug/metrics` endpoint.
 There is no need to use an external exporter.
 
+:::note
+
 <!-- https://github.com/FerretDB/FerretDB/issues/3420 -->
 
-:::note
 The set of metrics is not stable yet; metric and label names and value formatting might change in minor releases.
 :::
 
