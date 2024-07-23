@@ -15,29 +15,53 @@
 package testutil
 
 import (
+	"io"
 	"log/slog"
+	"strings"
 	"testing"
 
 	"github.com/neilotoole/slogt"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
+	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
-// Logger returns zap test logger with valid configuration.
-func Logger(tb testtb.TB) *zap.Logger {
-	return LevelLogger(tb, zap.NewAtomicLevelAt(zap.DebugLevel))
+// logWriter provides [io.Writer] for [testing.TB].
+type logWriter struct {
+	tb testtb.TB
 }
 
-// LevelLogger returns zap test logger with given level and valid configuration.
-func LevelLogger(tb testtb.TB, level zap.AtomicLevel) *zap.Logger {
+// Write implements [io.Writer].
+func (lw *logWriter) Write(p []byte) (int, error) {
+	// "logging.go:xx" is added by testing.TB.Log itself; there is nothing we can do about it.
+	// lw.tb.Helper() does not help. See:
+	// https://github.com/golang/go/issues/59928
+	// https://github.com/neilotoole/slogt/tree/v1.1.0?tab=readme-ov-file#deficiency
+	lw.tb.Log(strings.TrimSuffix(string(p), "\n"))
+	return len(p), nil
+}
+
+// Logger returns zap test logger with valid configuration.
+func Logger(tb testtb.TB) *zap.Logger {
 	opts := []zaptest.LoggerOption{
-		zaptest.Level(level),
+		zaptest.Level(zap.NewAtomicLevelAt(zap.DebugLevel)),
 		zaptest.WrapOptions(zap.AddCaller(), zap.Development()),
 	}
 
 	return zaptest.NewLogger(tb, opts...)
+}
+
+// LevelLogger returns a test logger for the given level (which might be dynamic).
+func LevelLogger(tb testtb.TB, level slog.Leveler) *slog.Logger {
+	h := logging.NewHandler(&logWriter{tb: tb}, &logging.NewHandlerOpts{
+		Base:       "console",
+		Level:      level,
+		RemoveTime: true,
+	})
+
+	return slog.New(h)
 }
 
 // SLogger returns slog test logger.
@@ -47,3 +71,8 @@ func SLogger(tb testtb.TB) *slog.Logger {
 	t := tb.(testing.TB)
 	return slogt.New(t)
 }
+
+// check interfaces
+var (
+	_ io.Writer = (*logWriter)(nil)
+)

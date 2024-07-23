@@ -14,6 +14,8 @@
 
 package types
 
+import "log/slog"
+
 //go:generate ../../bin/stringer -linecomment -type BinarySubtype
 
 // BinarySubtype represents BSON Binary's subtype.
@@ -50,3 +52,13 @@ type Binary struct {
 	B       []byte
 	Subtype BinarySubtype
 }
+
+// LogValue implements [slog.LogValuer].
+func (b Binary) LogValue() slog.Value {
+	return slogValue(b, 1)
+}
+
+// check interfaces
+var (
+	_ slog.LogValuer = Binary{}
+)

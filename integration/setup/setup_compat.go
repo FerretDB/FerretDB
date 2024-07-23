@@ -16,12 +16,12 @@ package setup
 
 import (
 	"context"
+	"log/slog"
 	"strings"
 
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.opentelemetry.io/otel"
-	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
@@ -90,11 +90,13 @@ func SetupCompatWithOpts(tb testtb.TB, opts *SetupCompatOpts) *SetupCompatResult
 
 	opts.baseCollectionName = testutil.CollectionName(tb)
 
-	level := zap.NewAtomicLevelAt(zap.ErrorLevel)
+	var levelVar slog.LevelVar
+	levelVar.Set(slog.LevelError)
 	if *debugSetupF {
-		level = zap.NewAtomicLevelAt(zap.DebugLevel)
+		levelVar.Set(slog.LevelDebug)
 	}
-	logger := testutil.LevelLogger(tb, level)
+
+	logger := testutil.LevelLogger(tb, &levelVar)
 
 	var targetClient *mongo.Client
 	if *targetURLF == "" {
@@ -112,7 +114,8 @@ func SetupCompatWithOpts(tb testtb.TB, opts *SetupCompatOpts) *SetupCompatResult
 	compatClient := setupClient(tb, setupCtx, *compatURLF, false)
 	compatCollections := setupCompatCollections(tb, setupCtx, compatClient, opts, "mongodb")
 
-	level.SetLevel(*logLevelF)
+	err := levelVar.UnmarshalText([]byte(*logLevelF))
+	require.NoError(tb, err)
 
 	return &SetupCompatResult{
 		Ctx:               ctx,

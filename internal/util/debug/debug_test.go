@@ -43,7 +43,7 @@ func TestProbes(t *testing.T) {
 
 	h, err := Listen(&ListenOpts{
 		TCPAddr: "127.0.0.1:0",
-		L:       testutil.Logger(t),
+		L:       testutil.SLogger(t),
 		R:       prometheus.NewRegistry(),
 		Livez:   func(context.Context) bool { return livez.Load() },
 		Readyz:  func(context.Context) bool { return readyz.Load() },
