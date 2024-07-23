@@ -108,7 +108,7 @@ func TestFindCommentMethod(t *testing.T) {
 	name := collection.Database().Name()
 	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
 	require.NoError(t, err)
-	comment := "*/ 1; DROP SCHEMA " + name + " CASCADE -- "
+	comment := "*/ 1; DROP SCHEMA " + name + " CASCADE -- " // FIXME
 
 	var doc bson.D
 	opts := options.FindOne().SetComment(comment)
