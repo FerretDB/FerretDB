@@ -23,7 +23,7 @@ Restart=on-failure
 # Configure the FerretDB service with `systemctl edit ferretdb`.
 # For more configuration options check https://docs.ferretdb.io/configuration/flags/
 
-Environment="FERRETDB_POSTGRESQL_URL=postgres://username:password@127.0.0.1:5432/ferretdb"
+Environment="FERRETDB_POSTGRESQL_URL=postgres://127.0.0.1:5432/ferretdb"
 ```
 
 You can modify them by using `systemctl edit ferretdb` command.
@@ -37,8 +37,6 @@ For example, if we want to use SQLite backend instead of PostgreSQL, we could wr
 [Service]
 Environment="FERRETDB_SQLITE_URL=file:/var/lib/ferretdb/data/"
 Environment="FERRETDB_HANDLER=sqlite"
-
-Environment="FERRETDB_POSTGRESQL_URL="
 
 ### Lines below this comment will be discarded
 ...

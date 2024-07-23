@@ -11,7 +11,7 @@ Restart=on-failure
 # Configure the FerretDB service with `systemctl edit ferretdb`.
 # For more configuration options check https://docs.ferretdb.io/configuration/flags/
 
-Environment="FERRETDB_POSTGRESQL_URL=postgres://username:password@127.0.0.1:5432/ferretdb"
+Environment="FERRETDB_POSTGRESQL_URL=postgres://127.0.0.1:5432/ferretdb"
 
 [Install]
 WantedBy=multi-user.target
