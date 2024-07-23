@@ -5,9 +5,9 @@ sidebar_position: 4
 # Systemd Unit
 
 With both DEB and RPM package we ship the systemd unit, to start FerretDB automatically.
-If the FerretDB is not installed yet, please refer to the one of the matching pages.
+If FerretDB is not installed yet, please refer to the [`.deb`](https://docs.ferretdb.io/quickstart-guide/deb/) or [`.rpm`](https://docs.ferretdb.io/quickstart-guide/rpm/) installation pages.
 
-The unit file provides some simple environment variables as an example. 
+The unit file provides some basic environment variables as an example. 
 They should be overwritten with the proper configuration, with the [correct flags](../configuration/flags.md).
 
 ```
@@ -23,7 +23,8 @@ Environment="FERRETDB_LISTEN_ADDR=:27017"
 Environment="FERRETDB_DEBUG_ADDR=:8088"
 ```
 
-You can modify them by using systemctl edit ferretdb command. This'll open a text editor that'll allow you to
+You can modify them by using `systemctl edit ferretdb` command.
+This'll open a text editor that'll allow you to
 override the systemd options of choice.
 For example, if we want to use SQLite backend instead of PostgreSQL, we could write something like:
 
