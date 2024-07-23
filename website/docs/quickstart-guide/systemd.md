@@ -4,6 +4,11 @@ sidebar_position: 4
 
 # Systemd Unit
 
+:::note
+This feature is still experimental.
+If you encounter any problem, please [join our community](/#community) to report it.
+:::
+
 With both DEB and RPM package we ship the systemd unit, to start FerretDB automatically.
 If FerretDB is not installed yet, please refer to the [`.deb`](https://docs.ferretdb.io/quickstart-guide/deb/) or [`.rpm`](https://docs.ferretdb.io/quickstart-guide/rpm/) installation pages.
 
