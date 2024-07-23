@@ -285,9 +285,7 @@ func (h *Handler) makeFindQueryParams(ctx context.Context, params *common.FindPa
 		qp.Limit = params.Limit
 	}
 
-	if h.L.Enabled(ctx, slog.LevelDebug) {
-		h.L.DebugContext(ctx, fmt.Sprintf("Converted %+v for %+v to %+v.", params, cInfo, qp))
-	}
+	h.L.DebugContext(ctx, fmt.Sprintf("Converted %+v for %+v to %+v.", params, cInfo, qp))
 
 	return qp, nil
 }
