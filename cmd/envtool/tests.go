@@ -161,6 +161,7 @@ func runGoTest(runCtx context.Context, args []string, total int, times bool, log
 				key = resultKey(event.Package, parentTest(event.Test))
 				parent := results[key]
 
+				// TODO https://github.com/FerretDB/FerretDB/issues/4465
 				if parent == nil {
 					panic(fmt.Sprintf("no parent test found: package=%q, test=%q, key=%q", event.Package, event.Test, key))
 				}
@@ -383,10 +384,10 @@ func testsRun(ctx context.Context, index, total uint, run, skip string, args []s
 		args = append(args, "-skip="+skip)
 	}
 
-	ot, err := observability.NewOtelTracer(&observability.OtelTracerOpts{
-		Logger:   slog.Default(), // TODO https://github.com/FerretDB/FerretDB/issues/4013
-		Service:  "envtool-tests",
-		Endpoint: "127.0.0.1:4318",
+	ot, err := observability.NewOTelTraceExporter(&observability.OTelTraceExporterOpts{
+		Logger:  slog.Default(), // TODO https://github.com/FerretDB/FerretDB/issues/4013
+		Service: "envtool-tests",
+		URL:     "http://127.0.0.1:4318/v1/traces",
 	})
 	if err != nil {
 		return lazyerrors.Error(err)

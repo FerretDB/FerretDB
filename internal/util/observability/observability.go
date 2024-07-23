@@ -34,68 +34,85 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 )
 
-// setup ensures that OTLP tracer is set up only once.
+// setup ensures that global tracer provider is set up only once.
 var setup atomic.Bool
 
-// OtelTracer represents the OTLP tracer.
-type OtelTracer struct {
+// OTelTraceExporter represents the OTLP trace exporter using HTTP with protobuf payloads.
+type OTelTraceExporter struct {
 	l  *slog.Logger
 	tp *otelsdktrace.TracerProvider
 }
 
-// OtelTracerOpts is the configuration for OtelTracer.
-type OtelTracerOpts struct {
+// OTelTraceExporterOpts represents [OTelTraceExporter] options.
+type OTelTraceExporterOpts struct {
 	Logger *slog.Logger
 
-	Service  string
-	Version  string
-	Endpoint string
+	Service string
+	Version string
+	URL     string
 }
 
-// NewOtelTracer sets up OTLP tracer.
-func NewOtelTracer(opts *OtelTracerOpts) (*OtelTracer, error) {
-	if setup.Swap(true) {
-		panic("OTLP tracer is already set up")
+// NewOTelTraceExporter sets up [OTelTraceExporter] and global tracer provider
+// that is available via `otel.Tracer("")`.
+//
+// It must be called only once.
+func NewOTelTraceExporter(opts *OTelTraceExporterOpts) (*OTelTraceExporter, error) {
+	if opts.URL == "" {
+		return nil, errors.New("URL is required")
 	}
 
-	if opts.Endpoint == "" {
-		return nil, errors.New("endpoint is required")
-	}
+	// Exporter and tracer provider are configured explicitly to avoid environment variables fallback.
+	// One current exception is TLS configuration:
+	// - OTEL_EXPORTER_OTLP_CERTIFICATE
+	// - OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE
+	// - OTEL_EXPORTER_OTLP_CLIENT_KEY
+	// - OTEL_EXPORTER_OTLP_TRACES_CERTIFICATE
+	// - OTEL_EXPORTER_OTLP_TRACES_CLIENT_CERTIFICATE
+	// - OTEL_EXPORTER_OTLP_TRACES_CLIENT_KEY
 
-	// Exporter and tracer are configured with the particular params on purpose.
-	// We don't want to let them being set through OTEL_* environment variables,
-	// but we set them explicitly.
-
-	exporter, err := otlptracehttp.New(
-		context.TODO(),
-		otlptracehttp.WithEndpoint(opts.Endpoint),
-		otlptracehttp.WithInsecure(),
+	exporter := otlptracehttp.NewUnstarted(
+		otlptracehttp.WithEndpointURL(opts.URL),
+		otlptracehttp.WithHeaders(nil),
+		otlptracehttp.WithTimeout(10*time.Second),
+		otlptracehttp.WithCompression(otlptracehttp.NoCompression),
 	)
-	if err != nil {
+
+	if err := exporter.Start(context.TODO()); err != nil {
 		return nil, err
 	}
 
 	tp := otelsdktrace.NewTracerProvider(
 		otelsdktrace.WithBatcher(exporter, otelsdktrace.WithBatchTimeout(time.Second)),
-		otelsdktrace.WithSampler(otelsdktrace.AlwaysSample()),
 		otelsdktrace.WithResource(otelsdkresource.NewSchemaless(
 			otelsemconv.ServiceName(opts.Service),
 			otelsemconv.ServiceVersion(opts.Version),
 		)),
+		otelsdktrace.WithSampler(otelsdktrace.AlwaysSample()),
+		otelsdktrace.WithRawSpanLimits(otelsdktrace.SpanLimits{
+			AttributeValueLengthLimit:   otelsdktrace.DefaultAttributeValueLengthLimit,
+			AttributeCountLimit:         otelsdktrace.DefaultAttributeCountLimit,
+			EventCountLimit:             otelsdktrace.DefaultEventCountLimit,
+			LinkCountLimit:              otelsdktrace.DefaultLinkCountLimit,
+			AttributePerEventCountLimit: otelsdktrace.DefaultAttributePerEventCountLimit,
+			AttributePerLinkCountLimit:  otelsdktrace.DefaultAttributePerLinkCountLimit,
+		}),
 	)
 
+	if setup.Swap(true) {
+		panic("global tracer provider is already set up")
+	}
 	otel.SetTracerProvider(tp)
 
-	opts.Logger.Info("Starting OTLP tracer...")
+	opts.Logger.Info("Starting OTel trace exporter...", slog.String("url", opts.URL))
 
-	return &OtelTracer{
+	return &OTelTraceExporter{
 		l:  opts.Logger,
 		tp: tp,
 	}, nil
 }
 
-// Run runs OTLP tracer until ctx is canceled.
-func (ot *OtelTracer) Run(ctx context.Context) {
+// Run runs OTLP trace exporter until ctx is canceled.
+func (ot *OTelTraceExporter) Run(ctx context.Context) {
 	<-ctx.Done()
 
 	// ctx is already canceled, but we want to inherit its values
@@ -110,5 +127,5 @@ func (ot *OtelTracer) Run(ctx context.Context) {
 		ot.l.LogAttrs(ctx, logging.LevelDPanic, "Shutdown exited with unexpected error", logging.Error(err))
 	}
 
-	ot.l.InfoContext(ctx, "OTLP tracer stopped")
+	ot.l.InfoContext(ctx, "OTel trace exporter stopped")
 }
