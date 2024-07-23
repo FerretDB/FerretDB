@@ -16,11 +16,13 @@
 package debug
 
 import (
+	"archive/zip"
 	"bytes"
 	"context"
 	"errors"
 	_ "expvar" // for metrics
 	"fmt"
+	"io"
 	"log"
 	"log/slog"
 	"net"
@@ -29,6 +31,7 @@ import (
 	"slices"
 	"sync/atomic"
 	"text/template"
+	"time"
 
 	"github.com/arl/statsviz"
 	"github.com/prometheus/client_golang/prometheus"
@@ -91,21 +94,6 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 
 	stdL := slog.NewLogLogger(l.Handler(), slog.LevelError)
 
-	http.Handle("/debug/metrics", promhttp.InstrumentMetricHandler(
-		opts.R, promhttp.HandlerFor(prometheus.DefaultGatherer, promhttp.HandlerOpts{
-			ErrorLog:          stdL,
-			ErrorHandling:     promhttp.ContinueOnError,
-			Registry:          opts.R,
-			EnableOpenMetrics: true,
-		}),
-	))
-
-	svOpts := []statsviz.Option{
-		statsviz.Root("/debug/graphs"),
-		// TODO https://github.com/FerretDB/FerretDB/issues/3600
-	}
-	must.NoError(statsviz.Register(http.DefaultServeMux, svOpts...))
-
 	probeDurations := prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Namespace: namespace,
@@ -117,7 +105,94 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 		[]string{"probe", "code"},
 	)
 
-	must.NoError(opts.R.Register(probeDurations))
+	opts.R.MustRegister(probeDurations)
+
+	http.Handle("/debug/metrics", promhttp.InstrumentMetricHandler(
+		opts.R, promhttp.HandlerFor(prometheus.DefaultGatherer, promhttp.HandlerOpts{
+			ErrorLog:          stdL,
+			ErrorHandling:     promhttp.ContinueOnError,
+			Registry:          opts.R,
+			EnableOpenMetrics: true,
+		}),
+	))
+
+	http.HandleFunc("/debug/archive", func(rw http.ResponseWriter, req *http.Request) {
+		rw.Header().Set("Content-Type", "application/zip")
+
+		rw.Header().Set(
+			"Content-Disposition",
+			fmt.Sprintf("attachment; filename=FerretDB-debug-%d.zip", time.Now().UnixMilli()),
+		)
+
+		ctx := req.Context()
+		zipWriter := zip.NewWriter(rw)
+
+		defer func() {
+			if err := zipWriter.Close(); err != nil {
+				l.ErrorContext(ctx, "Archive handler failed", logging.Error(err))
+				return
+			}
+		}()
+
+		metricsFile, err := zipWriter.Create("metrics")
+		if err != nil {
+			l.ErrorContext(ctx, "Archive handler failed", logging.Error(err))
+			return
+		}
+
+		debugAddr := ctx.Value(http.LocalAddrContextKey).(net.Addr)
+
+		// we use *http.Request instead of http.Get function to provide the ctx
+		scrapeReq := must.NotFail(http.NewRequestWithContext(
+			ctx,
+			http.MethodGet,
+			fmt.Sprintf("http://%s%s", debugAddr.String(), "/debug/metrics"),
+			nil,
+		))
+
+		resp, err := http.DefaultClient.Do(scrapeReq)
+		if err != nil {
+			l.ErrorContext(ctx, "Archive handler failed - metrics failed", logging.Error(err))
+			return
+		}
+
+		_, err = io.Copy(metricsFile, resp.Body)
+
+		_ = resp.Body.Close()
+
+		if err != nil {
+			l.ErrorContext(ctx, "Archive handler failed", logging.Error(err))
+			return
+		}
+
+		heapFile, err := zipWriter.Create("heap")
+		if err != nil {
+			l.ErrorContext(ctx, "Archive handler failed", logging.Error(err))
+			return
+		}
+
+		scrapeReq.URL.Path = "/debug/pprof/heap"
+
+		resp, err = http.DefaultClient.Do(scrapeReq)
+		if err != nil {
+			l.ErrorContext(ctx, "Archive handler failed - pprof failed", logging.Error(err))
+			return
+		}
+
+		_, err = io.Copy(heapFile, resp.Body)
+		_ = resp.Body.Close()
+
+		if err != nil {
+			l.ErrorContext(ctx, "Archive handler failed", logging.Error(err))
+			return
+		}
+	})
+
+	svOpts := []statsviz.Option{
+		statsviz.Root("/debug/graphs"),
+		// TODO https://github.com/FerretDB/FerretDB/issues/3600
+	}
+	must.NoError(statsviz.Register(http.DefaultServeMux, svOpts...))
 
 	http.Handle("/debug/livez", promhttp.InstrumentHandlerDuration(
 		probeDurations.MustCurryWith(prometheus.Labels{"probe": "livez"}),
@@ -163,6 +238,7 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 	handlers := map[string]string{
 		// custom handlers registered above
 		"/debug/metrics": "Metrics in Prometheus format",
+		"/debug/archive": "Metrics and pprof heap profile packed into the zip archive",
 		"/debug/graphs":  "Visualize metrics",
 		"/debug/livez":   "Liveness probe",
 		"/debug/readyz":  "Readiness probe",

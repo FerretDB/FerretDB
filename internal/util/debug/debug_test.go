@@ -16,8 +16,12 @@
 package debug
 
 import (
+	"archive/zip"
+	"bytes"
 	"context"
+	"io"
 	"net/http"
+	"regexp"
 	"sync/atomic"
 	"testing"
 
@@ -36,7 +40,7 @@ func assertProbe(t *testing.T, u string, expected int) {
 	assert.Equal(t, expected, res.StatusCode)
 }
 
-func TestProbes(t *testing.T) {
+func TestDebug(t *testing.T) {
 	t.Parallel()
 
 	var livez, readyz atomic.Bool
@@ -58,21 +62,76 @@ func TestProbes(t *testing.T) {
 		close(done)
 	}()
 
-	live := "http://" + h.lis.Addr().String() + "/debug/livez"
-	ready := "http://" + h.lis.Addr().String() + "/debug/readyz"
+	t.Run("Probes", func(t *testing.T) {
+		live := "http://" + h.lis.Addr().String() + "/debug/livez"
+		ready := "http://" + h.lis.Addr().String() + "/debug/readyz"
 
-	assertProbe(t, live, http.StatusInternalServerError)
-	assertProbe(t, ready, http.StatusInternalServerError)
+		assertProbe(t, live, http.StatusInternalServerError)
+		assertProbe(t, ready, http.StatusInternalServerError)
 
-	readyz.Store(true)
+		readyz.Store(true)
 
-	assertProbe(t, live, http.StatusInternalServerError)
-	assertProbe(t, ready, http.StatusInternalServerError)
+		assertProbe(t, live, http.StatusInternalServerError)
+		assertProbe(t, ready, http.StatusInternalServerError)
 
-	livez.Store(true)
+		livez.Store(true)
 
-	assertProbe(t, live, http.StatusOK)
-	assertProbe(t, ready, http.StatusOK)
+		assertProbe(t, live, http.StatusOK)
+		assertProbe(t, ready, http.StatusOK)
+	})
+
+	t.Run("Archive", func(t *testing.T) {
+		u := "http://" + h.lis.Addr().String() + "/debug/archive"
+
+		fileList := []string{
+			"metrics", "heap",
+		}
+
+		var res *http.Response
+
+		res, err = http.Get(u)
+		require.NoError(t, err)
+
+		assert.Equal(t, http.StatusOK, res.StatusCode)
+
+		require.Equal(t, "application/zip", res.Header.Get("Content-Type"))
+
+		contentDispositionRegexp := regexp.MustCompile(`attachment; filename=FerretDB-debug-\d+.zip`)
+		require.Regexp(t, contentDispositionRegexp, res.Header.Get("Content-Disposition"))
+
+		var body []byte
+		body, err = io.ReadAll(res.Body)
+
+		require.NoError(t, err)
+		require.NoError(t, res.Body.Close())
+
+		var zipReader *zip.Reader
+
+		zipReader, err = zip.NewReader(bytes.NewReader(body), int64(len(body)))
+		require.NoError(t, err)
+		require.Equal(t, len(fileList), len(zipReader.File))
+
+		for _, file := range zipReader.File {
+			require.Contains(t, fileList, file.FileHeader.Name)
+
+			var f io.ReadCloser
+
+			f, err = file.Open()
+			require.NoError(t, err)
+
+			t.Cleanup(func() {
+				require.NoError(t, f.Close())
+			})
+
+			content := make([]byte, 1)
+
+			var n int
+			n, err = f.Read(content)
+			require.NoError(t, err)
+
+			assert.Equal(t, 1, n, "file should contain any data, but was empty")
+		}
+	})
 
 	cancel()
 	<-done // prevent panic on logging after test ends
