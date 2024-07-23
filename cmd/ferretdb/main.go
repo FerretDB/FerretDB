@@ -101,6 +101,12 @@ var cli struct {
 
 	MetricsUUID bool `default:"false" help:"Add instance UUID to all metrics." negatable:""`
 
+	OTel struct {
+		Traces struct {
+			URL string `default:"" help:"OpenTelemetry OTLP/HTTP traces endpoint URL (e.g. http://host:4318/v1/traces)."`
+		} `embed:"" prefix:"traces-"`
+	} `embed:"" prefix:"otel-"`
+
 	Telemetry telemetry.Flag `default:"undecided" help:"Enable or disable basic telemetry. See https://beacon.ferretdb.com."`
 
 	Test struct {
@@ -118,8 +124,6 @@ var cli struct {
 
 		BatchSize            int `default:"100" help:"Experimental: maximum insertion batch size."`
 		MaxBsonObjectSizeMiB int `default:"16"  help:"Experimental: maximum BSON object size in MiB."`
-
-		OTLPEndpoint string `default:"" help:"Experimental: OTLP exporter endpoint, if unset, OpenTelemetry is disabled."`
 
 		Telemetry struct {
 			URL            string        `default:"https://beacon.ferretdb.com/" help:"Telemetry: reporting URL."`
@@ -253,9 +257,9 @@ func defaultLogLevel() zapcore.Level {
 func setupState() *state.Provider {
 	var f string
 
-	if cli.StateDir != "" && cli.StateDir != "-" {
+	if dir := cli.StateDir; dir != "" && dir != "-" {
 		var err error
-		if f, err = filepath.Abs(filepath.Join(cli.StateDir, "state.json")); err != nil {
+		if f, err = filepath.Abs(filepath.Join(dir, "state.json")); err != nil {
 			log.Fatalf("Failed to get path for state file: %s.", err)
 		}
 	}
@@ -413,7 +417,7 @@ func run() {
 
 	var wg sync.WaitGroup
 
-	if cli.DebugAddr != "" && cli.DebugAddr != "-" {
+	if addr := cli.DebugAddr; addr != "" && addr != "-" {
 		wg.Add(1)
 
 		go func() {
@@ -425,7 +429,7 @@ func run() {
 			}
 
 			h, err := debug.Listen(&debug.ListenOpts{
-				TCPAddr: cli.DebugAddr,
+				TCPAddr: addr,
 				L:       l,
 				R:       metricsRegisterer,
 				Livez: func(context.Context) bool {
@@ -445,7 +449,7 @@ func run() {
 		}()
 	}
 
-	if cli.Test.OTLPEndpoint != "" {
+	if u := cli.OTel.Traces.URL; u != "" && u != "-" {
 		wg.Add(1)
 
 		go func() {
@@ -453,11 +457,11 @@ func run() {
 
 			l := logging.WithName(slogger, "otel")
 
-			ot, err := observability.NewOtelTracer(&observability.OtelTracerOpts{
-				Logger:   l,
-				Service:  "ferretdb",
-				Version:  version.Get().Version,
-				Endpoint: cli.Test.OTLPEndpoint,
+			ot, err := observability.NewOTelTraceExporter(&observability.OTelTraceExporterOpts{
+				Logger:  l,
+				Service: "ferretdb",
+				Version: version.Get().Version,
+				URL:     u,
 			})
 			if err != nil {
 				l.LogAttrs(ctx, logging.LevelFatal, "Failed to create Otel tracer", logging.Error(err))
