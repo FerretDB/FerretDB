@@ -13,7 +13,7 @@ With both DEB and RPM package we ship the systemd unit, to start FerretDB automa
 If FerretDB is not installed yet, please refer to the [`.deb`](https://docs.ferretdb.io/quickstart-guide/deb/) or [`.rpm`](https://docs.ferretdb.io/quickstart-guide/rpm/) installation pages.
 
 The unit file provides some basic environment variables as an example.
-They should be overwritten with the proper configuration, with the [correct flags](../configuration/flags.md).
+They should be overwritten with the proper [configuration](../configuration/flags.md).
 
 ```systemd
 [Service]
