@@ -10,7 +10,7 @@ If FerretDB is not installed yet, please refer to the [`.deb`](https://docs.ferr
 The unit file provides some basic environment variables as an example. 
 They should be overwritten with the proper configuration, with the [correct flags](../configuration/flags.md).
 
-```
+```systemd
 [Service]
 ExecStart=/usr/bin/ferretdb
 Restart=on-failure
@@ -19,16 +19,13 @@ Restart=on-failure
 # For more configuration options check https://docs.ferretdb.io/configuration/flags/
 
 Environment="FERRETDB_POSTGRESQL_URL=postgres://username:password@127.0.0.1:5432/ferretdb"
-Environment="FERRETDB_LISTEN_ADDR=:27017"
-Environment="FERRETDB_DEBUG_ADDR=:8088"
 ```
 
 You can modify them by using `systemctl edit ferretdb` command.
-This'll open a text editor that'll allow you to
-override the systemd options of choice.
+This'll open a text editor that'll allow you to override the systemd options of choice.
 For example, if we want to use SQLite backend instead of PostgreSQL, we could write something like:
 
-```
+```systemd
 ### Editing /etc/systemd/system/ferretdb.service.d/override.conf
 ### Anything between here and the comment below will become the new contents of the file
 
@@ -41,4 +38,3 @@ Environment="FERRETDB_POSTGRESQL_URL="
 ### Lines below this comment will be discarded
 ...
 ```
-
