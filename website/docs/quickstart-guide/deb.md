@@ -29,7 +29,7 @@ sudo apt update
 sudo apt install -y postgresql
 ```
 
-The `.deb` ships with the systemd unit for starting FerretDB automatically.
+The `.deb` package ships with the systemd unit for starting FerretDB automatically.
 For more information about its configuration, please take a look at [systemd configuration guide](./systemd.md).
 
 Find out more about:
