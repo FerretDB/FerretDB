@@ -30,7 +30,6 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-	"sync/atomic"
 	"time"
 
 	"github.com/alecthomas/kong"
@@ -252,20 +251,7 @@ func setupMongodbSecured(ctx context.Context, logger *zap.SugaredLogger) error {
 
 // setup runs all setup commands.
 func setup(ctx context.Context, logger *zap.SugaredLogger) error {
-	var started atomic.Bool
-	started.Store(true)
-
-	h, err := debug.Listen(&debug.ListenOpts{
-		TCPAddr: "127.0.0.1:8089",
-		L:       logger.Named("debug").Desugar(),
-		R:       prometheus.DefaultRegisterer,
-		Started: &started,
-	})
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	go h.Serve(ctx)
+	go debug.RunHandler(ctx, "127.0.0.1:8089", prometheus.DefaultRegisterer, logger.Named("debug").Desugar())
 
 	for _, f := range []func(context.Context, *zap.SugaredLogger) error{
 		setupPostgres,

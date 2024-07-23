@@ -51,7 +51,6 @@ For Docker, specify `FERRETDB_POSTGRESQL_URL` with default username and password
 services:
   postgres:
     image: postgres
-    restart: on-failure
     environment:
       - POSTGRES_USER=username
       - POSTGRES_PASSWORD=password

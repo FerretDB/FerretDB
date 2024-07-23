@@ -19,8 +19,6 @@ package observability
 
 import (
 	"context"
-	"errors"
-	"sync/atomic"
 	"time"
 
 	"go.opentelemetry.io/otel"
@@ -28,86 +26,27 @@ import (
 	otelsdkresource "go.opentelemetry.io/otel/sdk/resource"
 	otelsdktrace "go.opentelemetry.io/otel/sdk/trace"
 	otelsemconv "go.opentelemetry.io/otel/semconv/v1.21.0"
-	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// setup ensures that OTLP tracer is set up only once.
-var setup atomic.Bool
-
-// OtelTracer represents the OTLP tracer.
-type OtelTracer struct {
-	l  *zap.Logger
-	tp *otelsdktrace.TracerProvider
-}
-
-// OtelTracerOpts is the configuration for OtelTracer.
-type OtelTracerOpts struct {
-	Logger *zap.Logger
-
-	Service  string
-	Version  string
-	Endpoint string
-}
-
-// NewOtelTracer sets up OTLP tracer.
-func NewOtelTracer(opts *OtelTracerOpts) (*OtelTracer, error) {
-	if setup.Swap(true) {
-		panic("OTLP tracer is already set up")
-	}
-
-	if opts.Endpoint == "" {
-		return nil, errors.New("endpoint is required")
-	}
-
-	// Exporter and tracer are configured with the particular params on purpose.
-	// We don't want to let them being set through OTEL_* environment variables,
-	// but we set them explicitly.
-
-	exporter, err := otlptracehttp.New(
+// SetupOtel sets up OpenTelemetry exporter with fixed values.
+func SetupOtel(service string) func(context.Context) error {
+	exporter := must.NotFail(otlptracehttp.New(
 		context.TODO(),
-		otlptracehttp.WithEndpoint(opts.Endpoint),
+		otlptracehttp.WithEndpoint("127.0.0.1:4318"),
 		otlptracehttp.WithInsecure(),
-	)
-	if err != nil {
-		return nil, err
-	}
+	))
 
 	tp := otelsdktrace.NewTracerProvider(
 		otelsdktrace.WithBatcher(exporter, otelsdktrace.WithBatchTimeout(time.Second)),
 		otelsdktrace.WithSampler(otelsdktrace.AlwaysSample()),
 		otelsdktrace.WithResource(otelsdkresource.NewSchemaless(
-			otelsemconv.ServiceName(opts.Service),
-			otelsemconv.ServiceVersion(opts.Version),
+			otelsemconv.ServiceNameKey.String(service),
 		)),
 	)
 
 	otel.SetTracerProvider(tp)
 
-	return &OtelTracer{
-		l:  opts.Logger,
-		tp: tp,
-	}, nil
-}
-
-// Run runs OTLP tracer until ctx is canceled.
-func (ot *OtelTracer) Run(ctx context.Context) {
-	ot.l.Info("OTLP tracer started successfully.")
-
-	<-ctx.Done()
-
-	// ctx is already canceled, but we want to inherit its values
-	shutdownCtx, shutdownCancel := ctxutil.WithDelay(ctx)
-	defer shutdownCancel(nil)
-
-	if err := ot.tp.ForceFlush(shutdownCtx); err != nil {
-		ot.l.DPanic("ForceFlush exited with unexpected error", zap.Error(err))
-	}
-
-	if err := ot.tp.Shutdown(shutdownCtx); err != nil {
-		ot.l.DPanic("Shutdown exited with unexpected error", zap.Error(err))
-	}
-
-	ot.l.Info("OTLP tracer stopped.")
+	return tp.Shutdown
 }

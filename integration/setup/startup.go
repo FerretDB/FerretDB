@@ -20,29 +20,24 @@ import (
 	"runtime"
 	"slices"
 	"strconv"
-	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
-
-	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 // listenerMetrics are shared between tests.
 var listenerMetrics = connmetrics.NewListenerMetrics()
 
-// shutdown cancels context passed to startup components.
-var shutdown context.CancelFunc
-
-// startupWG waits for all startup components to finish.
-var startupWG sync.WaitGroup
+// shutdownOtel is a function that stops OpenTelemetry provider.
+var shutdownOtel func(context.Context) error
 
 // Startup initializes things that should be initialized only once.
 func Startup() {
@@ -56,48 +51,11 @@ func Startup() {
 
 	prometheus.DefaultRegisterer.MustRegister(listenerMetrics)
 
-	var started atomic.Bool
-	started.Store(true)
-
 	// use any available port to allow running different configurations in parallel
-	h, err := debug.Listen(&debug.ListenOpts{
-		TCPAddr: "127.0.0.1:0",
-		L:       zap.L().Named("debug"),
-		R:       prometheus.DefaultRegisterer,
-		Started: &started,
-	})
-	if err != nil {
-		zap.S().Fatalf("Failed to create debug handler: %s.", err)
-	}
+	go debug.RunHandler(context.Background(), "127.0.0.1:0", prometheus.DefaultRegisterer, zap.L().Named("debug"))
 
-	ot, err := observability.NewOtelTracer(&observability.OtelTracerOpts{
-		Logger:   zap.L().Named("otel"),
-		Service:  "integration-tests",
-		Endpoint: "127.0.0.1:4318",
-	})
-	if err != nil {
-		zap.S().Fatalf("Failed to create Otel tracer: %s.", err)
-	}
-
-	var ctx context.Context
-	ctx, shutdown = context.WithCancel(context.Background())
-
-	startupWG.Add(1)
-
-	go func() {
-		defer startupWG.Done()
-		h.Serve(ctx)
-	}()
-
-	startupWG.Add(1)
-
-	go func() {
-		defer startupWG.Done()
-		ot.Run(ctx)
-	}()
-
-	clientCtx, clientCancel := context.WithTimeout(context.Background(), 5*time.Second) //nolint:mnd // good enough
-	defer clientCancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
 	// do basic flags validation earlier, before all tests
 
@@ -119,52 +77,41 @@ func Startup() {
 		zap.S().Fatalf("Unknown target backend %q.", *targetBackendF)
 	}
 
-	if *targetURLF != "" {
-		var err error
-
-		*targetURLF, err = setClientPaths(*targetURLF)
+	if u := *targetURLF; u != "" {
+		client, err := makeClient(ctx, u)
 		if err != nil {
-			zap.S().Fatal(err)
+			zap.S().Fatalf("Failed to connect to target system %s: %s", u, err)
 		}
 
-		client, err := makeClient(clientCtx, *targetURLF)
-		if err != nil {
-			zap.S().Fatalf("Failed to connect to target system %s: %s", *targetURLF, err)
-		}
+		client.Disconnect(ctx)
 
-		_ = client.Disconnect(clientCtx)
-
-		zap.S().Infof("Target system: %s (%s).", *targetBackendF, *targetURLF)
+		zap.S().Infof("Target system: %s (%s).", *targetBackendF, u)
 	} else {
 		zap.S().Infof("Target system: %s (built-in).", *targetBackendF)
 	}
 
-	if *compatURLF != "" {
-		var err error
-
-		*compatURLF, err = setClientPaths(*compatURLF)
+	if u := *compatURLF; u != "" {
+		client, err := makeClient(ctx, u)
 		if err != nil {
-			zap.S().Fatal(err)
+			zap.S().Fatalf("Failed to connect to compat system %s: %s", u, err)
 		}
 
-		client, err := makeClient(clientCtx, *compatURLF)
-		if err != nil {
-			zap.S().Fatalf("Failed to connect to compat system %s: %s", *compatURLF, err)
-		}
+		client.Disconnect(ctx)
 
-		_ = client.Disconnect(clientCtx)
-
-		zap.S().Infof("Compat system: MongoDB (%s).", *compatURLF)
+		zap.S().Infof("Compat system: MongoDB (%s).", u)
 	} else {
 		zap.S().Infof("Compat system: none, compatibility tests will be skipped.")
 	}
+
+	shutdownOtel = observability.SetupOtel("integration")
 }
 
 // Shutdown cleans up after all tests.
 func Shutdown() {
-	shutdown()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
-	startupWG.Wait()
+	must.NoError(shutdownOtel(ctx))
 
 	// to increase a chance of resource finalizers to spot problems
 	runtime.GC()

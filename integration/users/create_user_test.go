@@ -23,19 +23,18 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 
+	"github.com/FerretDB/FerretDB/integration"
+	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
-
-	"github.com/FerretDB/FerretDB/integration"
-	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
 func TestCreateUser(t *testing.T) {
 	t.Parallel()
 
-	s := setup.SetupWithOpts(t, nil)
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{SetupUser: true})
 	ctx, db := s.Ctx, s.Collection.Database()
 
 	testCases := map[string]struct { //nolint:vet // for readability
@@ -153,17 +152,15 @@ func TestCreateUser(t *testing.T) {
 				{"ok", float64(1)},
 			},
 		},
-		"FailWithPLAIN": {
+		"SuccessWithPLAIN": {
 			payload: bson.D{
-				{"createUser", "plain_user"},
+				{"createUser", "success_user_with_plain"},
 				{"roles", bson.A{}},
 				{"pwd", "password"},
 				{"mechanisms", bson.A{"PLAIN"}},
 			},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "Unknown auth mechanism 'PLAIN'",
+			expected: bson.D{
+				{"ok", float64(1)},
 			},
 		},
 		"SuccessWithSCRAMSHA1": {
@@ -265,6 +262,10 @@ func TestCreateUser(t *testing.T) {
 			if payload.Has("mechanisms") {
 				payloadMechanisms := must.NotFail(payload.Get("mechanisms")).(*types.Array)
 
+				if payloadMechanisms.Contains("PLAIN") {
+					assertPlainCredentials(t, "PLAIN", must.NotFail(user.Get("credentials")).(*types.Document))
+				}
+
 				if payloadMechanisms.Contains("SCRAM-SHA-1") {
 					assertSCRAMSHA1Credentials(t, "SCRAM-SHA-1", must.NotFail(user.Get("credentials")).(*types.Document))
 				}
@@ -287,6 +288,20 @@ func TestCreateUser(t *testing.T) {
 			testutil.AssertEqual(t, expectedRec, user)
 		})
 	}
+}
+
+// assertPlainCredentials checks if the credential is a valid PLAIN credential.
+func assertPlainCredentials(t testtb.TB, key string, cred *types.Document) {
+	t.Helper()
+
+	require.True(t, cred.Has(key), "missing credential %q", key)
+
+	c := must.NotFail(cred.Get(key)).(*types.Document)
+
+	assert.Equal(t, must.NotFail(c.Get("algo")), "PBKDF2-HMAC-SHA256")
+	assert.NotEmpty(t, must.NotFail(c.Get("iterationCount")))
+	assert.NotEmpty(t, must.NotFail(c.Get("hash")))
+	assert.NotEmpty(t, must.NotFail(c.Get("salt")))
 }
 
 // assertSCRAMSHA1Credentials checks if the credential is a valid SCRAM-SHA-1 credential.

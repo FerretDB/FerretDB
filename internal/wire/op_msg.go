@@ -28,12 +28,22 @@ import (
 // typesValidation, when true, enables validation of types in wire messages.
 const typesValidation = true
 
-// MakeOpMsgSection creates [opMsgSection] with a single document.
-func MakeOpMsgSection(doc *types.Document) opMsgSection {
+// OpMsgSection is one or more sections contained in an OpMsg.
+type OpMsgSection struct {
+	// The order of fields is weird to make the struct smaller due to alignment.
+	// The wire order is: kind, identifier, documents.
+
+	Identifier string
+	Documents  []bson.RawDocument
+	Kind       byte
+}
+
+// MakeOpMsgSection creates [OpMsgSection] with a single document.
+func MakeOpMsgSection(doc *types.Document) OpMsgSection {
 	raw := must.NotFail(must.NotFail(bson.ConvertDocument(doc)).Encode())
 
-	return opMsgSection{
-		documents: []bson.RawDocument{raw},
+	return OpMsgSection{
+		Documents: []bson.RawDocument{raw},
 	}
 }
 
@@ -42,33 +52,65 @@ type OpMsg struct {
 	// The order of fields is weird to make the struct smaller due to alignment.
 	// The wire order is: flags, sections, optional checksum.
 
-	sections []opMsgSection
+	sections []OpMsgSection
 	Flags    OpMsgFlags
 	checksum uint32
 }
 
 // NewOpMsg creates a message with a single section of kind 0 with a single raw document.
-func NewOpMsg(doc bson.AnyDocument) (*OpMsg, error) {
-	raw, err := doc.Encode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
+func NewOpMsg(raw bson.RawDocument) (*OpMsg, error) {
 	var msg OpMsg
-	if err = msg.SetSections(opMsgSection{documents: []bson.RawDocument{raw}}); err != nil {
+	if err := msg.SetSections(OpMsgSection{Documents: []bson.RawDocument{raw}}); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	return &msg, nil
 }
 
+// checkSections checks given sections.
+func checkSections(sections []OpMsgSection) error {
+	if len(sections) == 0 {
+		return lazyerrors.New("no sections")
+	}
+
+	var kind0Found bool
+
+	for _, s := range sections {
+		switch s.Kind {
+		case 0:
+			if kind0Found {
+				return lazyerrors.New("multiple kind 0 sections")
+			}
+			kind0Found = true
+
+			if s.Identifier != "" {
+				return lazyerrors.New("kind 0 section has identifier")
+			}
+
+			if len(s.Documents) != 1 {
+				return lazyerrors.Errorf("kind 0 section has %d documents", len(s.Documents))
+			}
+
+		case 1:
+			if s.Identifier == "" {
+				return lazyerrors.New("kind 1 section has no identifier")
+			}
+
+		default:
+			return lazyerrors.Errorf("unknown kind %d", s.Kind)
+		}
+	}
+
+	return nil
+}
+
 // Sections returns the sections of the OpMsg.
-func (msg *OpMsg) Sections() []opMsgSection {
+func (msg *OpMsg) Sections() []OpMsgSection {
 	return msg.sections
 }
 
 // SetSections sets sections of the OpMsg.
-func (msg *OpMsg) SetSections(sections ...opMsgSection) error {
+func (msg *OpMsg) SetSections(sections ...OpMsgSection) error {
 	if err := checkSections(sections); err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -105,11 +147,11 @@ func (msg *OpMsg) Document() (*types.Document, error) {
 	// Reorder documents to set keys in the right order.
 
 	for _, section := range msg.sections {
-		if section.kind != 0 {
+		if section.Kind != 0 {
 			continue
 		}
 
-		doc, err := section.documents[0].Convert()
+		doc, err := section.Documents[0].Convert()
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -118,13 +160,13 @@ func (msg *OpMsg) Document() (*types.Document, error) {
 	}
 
 	for _, section := range msg.sections {
-		if section.kind == 0 {
+		if section.Kind == 0 {
 			continue
 		}
 
-		a := types.MakeArray(len(section.documents))
+		a := types.MakeArray(len(section.Documents))
 
-		for _, d := range section.documents {
+		for _, d := range section.Documents {
 			doc, err := d.Convert()
 			if err != nil {
 				return nil, lazyerrors.Error(err)
@@ -133,7 +175,7 @@ func (msg *OpMsg) Document() (*types.Document, error) {
 			a.Append(doc)
 		}
 
-		docs = append(docs, must.NotFail(types.NewDocument(section.identifier, a)))
+		docs = append(docs, must.NotFail(types.NewDocument(section.Identifier, a)))
 	}
 
 	res := types.MakeDocument(2)
@@ -163,12 +205,12 @@ func (msg *OpMsg) RawSections() (bson.RawDocument, []byte) {
 	var seq []byte
 
 	for _, s := range msg.Sections() {
-		switch s.kind {
+		switch s.Kind {
 		case 0:
-			spec = s.documents[0]
+			spec = s.Documents[0]
 
 		case 1:
-			for _, d := range s.documents {
+			for _, d := range s.Documents {
 				seq = append(seq, d...)
 			}
 		}
@@ -187,19 +229,19 @@ func (msg *OpMsg) RawDocument() (bson.RawDocument, error) {
 	}
 
 	s := msg.sections[0]
-	if s.kind != 0 || s.identifier != "" {
-		return nil, lazyerrors.Errorf(`expected section 0/"", got %d/%q`, s.kind, s.identifier)
+	if s.Kind != 0 || s.Identifier != "" {
+		return nil, lazyerrors.Errorf(`expected section 0/"", got %d/%q`, s.Kind, s.Identifier)
 	}
 
-	return s.documents[0], nil
+	return s.Documents[0], nil
 }
 
 func (msg *OpMsg) msgbody() {}
 
-// check implements [MsgBody].
+// check implements [MsgBody] interface.
 func (msg *OpMsg) check() error {
 	for _, s := range msg.sections {
-		for _, d := range s.documents {
+		for _, d := range s.Documents {
 			if _, err := d.DecodeDeep(); err != nil {
 				return lazyerrors.Error(err)
 			}
@@ -209,7 +251,7 @@ func (msg *OpMsg) check() error {
 	return nil
 }
 
-// UnmarshalBinaryNocopy implements [MsgBody].
+// UnmarshalBinaryNocopy implements [MsgBody] interface.
 func (msg *OpMsg) UnmarshalBinaryNocopy(b []byte) error {
 	if len(b) < 6 {
 		return lazyerrors.Errorf("len=%d", len(b))
@@ -220,18 +262,18 @@ func (msg *OpMsg) UnmarshalBinaryNocopy(b []byte) error {
 	offset := 4
 
 	for {
-		var section opMsgSection
-		section.kind = b[offset]
+		var section OpMsgSection
+		section.Kind = b[offset]
 		offset++
 
-		switch section.kind {
+		switch section.Kind {
 		case 0:
 			l, err := bson.FindRaw(b[offset:])
 			if err != nil {
 				return lazyerrors.Error(err)
 			}
 
-			section.documents = []bson.RawDocument{b[offset : offset+l]}
+			section.Documents = []bson.RawDocument{b[offset : offset+l]}
 			offset += l
 
 		case 1:
@@ -252,13 +294,13 @@ func (msg *OpMsg) UnmarshalBinaryNocopy(b []byte) error {
 				return lazyerrors.Errorf("len(b) = %d, offset = %d", len(b), offset)
 			}
 
-			section.identifier, err = bson.DecodeCString(b[offset:])
+			section.Identifier, err = bson.DecodeCString(b[offset:])
 			if err != nil {
 				return lazyerrors.Error(err)
 			}
 
-			offset += bson.SizeCString(section.identifier)
-			secSize -= bson.SizeCString(section.identifier)
+			offset += bson.SizeCString(section.Identifier)
+			secSize -= bson.SizeCString(section.Identifier)
 
 			for secSize != 0 {
 				if secSize < 0 {
@@ -274,13 +316,13 @@ func (msg *OpMsg) UnmarshalBinaryNocopy(b []byte) error {
 					return lazyerrors.Error(err)
 				}
 
-				section.documents = append(section.documents, b[offset:offset+l])
+				section.Documents = append(section.Documents, b[offset:offset+l])
 				offset += l
 				secSize -= l
 			}
 
 		default:
-			return lazyerrors.Errorf("kind is %d", section.kind)
+			return lazyerrors.Errorf("kind is %d", section.Kind)
 		}
 
 		msg.sections = append(msg.sections, section)
@@ -344,17 +386,17 @@ func (msg *OpMsg) MarshalBinary() ([]byte, error) {
 	binary.LittleEndian.PutUint32(b, uint32(msg.Flags))
 
 	for _, section := range msg.sections {
-		b = append(b, section.kind)
+		b = append(b, section.Kind)
 
-		switch section.kind {
+		switch section.Kind {
 		case 0:
-			b = append(b, section.documents[0]...)
+			b = append(b, section.Documents[0]...)
 
 		case 1:
-			sec := make([]byte, bson.SizeCString(section.identifier))
-			bson.EncodeCString(sec, section.identifier)
+			sec := make([]byte, bson.SizeCString(section.Identifier))
+			bson.EncodeCString(sec, section.Identifier)
 
-			for _, doc := range section.documents {
+			for _, doc := range section.Documents {
 				sec = append(sec, doc...)
 			}
 
@@ -364,7 +406,7 @@ func (msg *OpMsg) MarshalBinary() ([]byte, error) {
 			b = append(b, sec...)
 
 		default:
-			return nil, lazyerrors.Errorf("kind is %d", section.kind)
+			return nil, lazyerrors.Errorf("kind is %d", section.Kind)
 		}
 	}
 
@@ -380,7 +422,7 @@ func (msg *OpMsg) MarshalBinary() ([]byte, error) {
 }
 
 // logMessage returns a string representation for logging.
-func (msg *OpMsg) logMessage(logFunc func(v any) string) string {
+func (msg *OpMsg) logMessage(block bool) string {
 	if msg == nil {
 		return "<nil>"
 	}
@@ -393,12 +435,12 @@ func (msg *OpMsg) logMessage(logFunc func(v any) string) string {
 	sections := bson.MakeArray(len(msg.sections))
 	for _, section := range msg.sections {
 		s := must.NotFail(bson.NewDocument(
-			"Kind", int32(section.kind),
+			"Kind", int32(section.Kind),
 		))
 
-		switch section.kind {
+		switch section.Kind {
 		case 0:
-			doc, err := section.documents[0].DecodeDeep()
+			doc, err := section.Documents[0].DecodeDeep()
 			if err == nil {
 				must.NoError(s.Add("Document", doc))
 			} else {
@@ -406,10 +448,10 @@ func (msg *OpMsg) logMessage(logFunc func(v any) string) string {
 			}
 
 		case 1:
-			must.NoError(s.Add("Identifier", section.identifier))
-			docs := bson.MakeArray(len(section.documents))
+			must.NoError(s.Add("Identifier", section.Identifier))
+			docs := bson.MakeArray(len(section.Documents))
 
-			for _, d := range section.documents {
+			for _, d := range section.Documents {
 				doc, err := d.DecodeDeep()
 				if err == nil {
 					must.NoError(docs.Add(doc))
@@ -421,7 +463,7 @@ func (msg *OpMsg) logMessage(logFunc func(v any) string) string {
 			must.NoError(s.Add("Documents", docs))
 
 		default:
-			panic(fmt.Sprintf("unknown kind %d", section.kind))
+			panic(fmt.Sprintf("unknown kind %d", section.Kind))
 		}
 
 		must.NoError(sections.Add(s))
@@ -429,22 +471,21 @@ func (msg *OpMsg) logMessage(logFunc func(v any) string) string {
 
 	must.NoError(m.Add("Sections", sections))
 
-	return logFunc(m)
+	if block {
+		return bson.LogMessageBlock(m)
+	}
+
+	return bson.LogMessage(m)
 }
 
 // String returns a string representation for logging.
 func (msg *OpMsg) String() string {
-	return msg.logMessage(bson.LogMessage)
+	return msg.logMessage(false)
 }
 
 // StringBlock returns an indented string representation for logging.
 func (msg *OpMsg) StringBlock() string {
-	return msg.logMessage(bson.LogMessageBlock)
-}
-
-// StringFlow returns an unindented string representation for logging.
-func (msg *OpMsg) StringFlow() string {
-	return msg.logMessage(bson.LogMessageFlow)
+	return msg.logMessage(true)
 }
 
 // check interfaces

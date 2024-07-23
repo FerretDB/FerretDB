@@ -37,19 +37,9 @@ type OpReply struct {
 	StartingFrom int32
 }
 
-// NewOpReply creates a new OpReply message.
-func NewOpReply(doc bson.AnyDocument) (*OpReply, error) {
-	raw, err := doc.Encode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return &OpReply{document: raw}, nil
-}
-
 func (reply *OpReply) msgbody() {}
 
-// check implements [MsgBody].
+// check implements [MsgBody] interface.
 func (reply *OpReply) check() error {
 	if d := reply.document; d != nil {
 		if _, err := d.DecodeDeep(); err != nil {
@@ -60,7 +50,7 @@ func (reply *OpReply) check() error {
 	return nil
 }
 
-// UnmarshalBinaryNocopy implements [MsgBody].
+// UnmarshalBinaryNocopy implements [MsgBody] interface.
 func (reply *OpReply) UnmarshalBinaryNocopy(b []byte) error {
 	if len(b) < 20 {
 		return lazyerrors.Errorf("len=%d", len(b))
@@ -93,7 +83,7 @@ func (reply *OpReply) UnmarshalBinaryNocopy(b []byte) error {
 	return nil
 }
 
-// MarshalBinary implements [MsgBody].
+// MarshalBinary implements [MsgBody] interface.
 func (reply *OpReply) MarshalBinary() ([]byte, error) {
 	if debugbuild.Enabled {
 		if err := reply.check(); err != nil {
@@ -133,7 +123,7 @@ func (reply *OpReply) SetDocument(doc *types.Document) {
 }
 
 // logMessage returns a string representation for logging.
-func (reply *OpReply) logMessage(logFunc func(v any) string) string {
+func (reply *OpReply) logMessage(block bool) string {
 	if reply == nil {
 		return "<nil>"
 	}
@@ -157,22 +147,21 @@ func (reply *OpReply) logMessage(logFunc func(v any) string) string {
 		}
 	}
 
-	return logFunc(m)
+	if block {
+		return bson.LogMessageBlock(m)
+	}
+
+	return bson.LogMessage(m)
 }
 
 // String returns a string representation for logging.
 func (reply *OpReply) String() string {
-	return reply.logMessage(bson.LogMessage)
+	return reply.logMessage(false)
 }
 
 // StringBlock returns an indented string representation for logging.
 func (reply *OpReply) StringBlock() string {
-	return reply.logMessage(bson.LogMessageBlock)
-}
-
-// StringFlow returns an unindented string representation for logging.
-func (reply *OpReply) StringFlow() string {
-	return reply.logMessage(bson.LogMessageFlow)
+	return reply.logMessage(true)
 }
 
 // check interfaces

@@ -19,8 +19,6 @@ import (
 	"fmt"
 	"strings"
 
-	"go.uber.org/zap"
-
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -35,76 +33,60 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 	cmd := q.Command()
 	collection := query.FullCollectionName
 
-	var opReply wire.OpReply
-
-	if !strings.HasSuffix(collection, ".$cmd") {
-		reply := must.NotFail(types.NewDocument(
-			"$err", "OP_QUERY is no longer supported. The client driver may require an upgrade.",
-			"code", int32(handlererrors.ErrOpQueryCollectionSuffixMissing),
-			"ok", float64(0),
-		))
-		opReply.SetDocument(reply)
-
-		return &opReply, nil
-	}
-
-	switch cmd {
-	case "hello", "ismaster", "isMaster":
-		reply, err := h.hello(ctx, q, h.TCPHost, h.ReplSetName)
+	v, _ := q.Get("speculativeAuthenticate")
+	if v != nil && (cmd == "ismaster" || cmd == "isMaster") {
+		reply, err := common.IsMaster(ctx, q, h.TCPHost, h.ReplSetName)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
-		v, _ := q.Get("speculativeAuthenticate")
-		if v == nil {
-			opReply.SetDocument(reply)
+		replyDoc := must.NotFail(reply.Document())
 
-			return &opReply, nil
-		}
+		document := v.(*types.Document)
 
-		authDoc, ok := v.(*types.Document)
-		if !ok {
-			return nil, handlererrors.NewCommandErrorMsgWithArgument(
-				handlererrors.ErrTypeMismatch,
-				fmt.Sprintf("speculativeAuthenticate type wrong; expected: document; got: %T", v),
-				"OpQuery: "+q.Command(),
-			)
-		}
-
-		dbName, err := common.GetRequiredParam[string](authDoc, "db")
+		dbName, err := common.GetRequiredParam[string](document, "db")
 		if err != nil {
-			h.L.Debug("No `db` in `speculativeAuthenticate`", zap.Error(err))
+			reply.SetDocument(replyDoc)
 
-			opReply.SetDocument(reply)
-
-			return &opReply, nil
+			return reply, nil
 		}
 
-		speculativeAuthenticate, err := h.saslStart(ctx, dbName, authDoc)
-		if err != nil {
-			h.L.Debug("Speculative authentication failed", zap.Error(err))
-
-			// unsuccessful speculative authentication leave `speculativeAuthenticate` field unset
-			// and let `saslStart` return an error
-			opReply.SetDocument(reply)
-
-			return &opReply, nil
+		doc, err := h.saslStart(ctx, dbName, document)
+		if err == nil {
+			// speculative authenticate response field is only set if the authentication is successful,
+			// for an unsuccessful authentication, saslStart will return an error
+			replyDoc.Set("speculativeAuthenticate", doc)
 		}
 
-		h.L.Debug("Speculative authentication passed")
+		reply.SetDocument(replyDoc)
 
-		reply.Set("speculativeAuthenticate", speculativeAuthenticate)
+		return reply, nil
+	}
 
-		// saslSupportedMechs is used by the client as default mechanisms if `mechanisms` is unset
-		reply.Set("saslSupportedMechs", must.NotFail(types.NewArray("SCRAM-SHA-1", "SCRAM-SHA-256", "PLAIN")))
-		opReply.SetDocument(reply)
+	if (cmd == "ismaster" || cmd == "isMaster") && strings.HasSuffix(collection, ".$cmd") {
+		return common.IsMaster(ctx, query.Query(), h.TCPHost, h.ReplSetName)
+	}
 
-		return &opReply, nil
+	// TODO https://github.com/FerretDB/FerretDB/issues/3008
+
+	// database name typically is either "$external" or "admin"
+
+	if cmd == "saslStart" && strings.HasSuffix(collection, ".$cmd") {
+		var emptyPayload types.Binary
+		var reply wire.OpReply
+		reply.SetDocument(must.NotFail(types.NewDocument(
+			"conversationId", int32(1),
+			"done", true,
+			"payload", emptyPayload,
+			"ok", float64(1),
+		)))
+
+		return &reply, nil
 	}
 
 	return nil, handlererrors.NewCommandErrorMsgWithArgument(
-		handlererrors.ErrUnsupportedOpQueryCommand,
-		fmt.Sprintf("Unsupported OP_QUERY command: %s. The client driver may require an upgrade.", cmd),
+		handlererrors.ErrNotImplemented,
+		fmt.Sprintf("CmdQuery: unhandled command %q for collection %q", cmd, collection),
 		"OpQuery: "+cmd,
 	)
 }

@@ -18,8 +18,8 @@ import (
 	"log/slog"
 	"strconv"
 
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // RawArray represents a single BSON array in the binary encoded form.
@@ -28,23 +28,16 @@ import (
 type RawArray []byte
 
 // Encode returns itself to implement the [AnyArray] interface.
-//
-// Receiver must not be nil.
 func (raw RawArray) Encode() (RawArray, error) {
-	must.BeTrue(raw != nil)
 	return raw, nil
 }
 
-// Decode decodes a single BSON array that takes the whole not-nil byte slice.
+// Decode decodes a single BSON array that takes the whole byte slice.
 //
 // Only top-level elements are decoded;
 // nested documents and arrays are converted to RawDocument and RawArray respectively,
 // using raw's subslices without copying.
-//
-// Receiver must not be nil.
 func (raw RawArray) Decode() (*Array, error) {
-	must.BeTrue(raw != nil)
-
 	res, err := raw.decode(decodeShallow)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -53,15 +46,26 @@ func (raw RawArray) Decode() (*Array, error) {
 	return res, nil
 }
 
-// DecodeDeep decodes a single valid BSON array that takes the whole not-nil byte slice.
+// DecodeDeep decodes a single valid BSON array that takes the whole byte slice.
 //
 // All nested documents and arrays are decoded recursively.
-//
-// Receiver must not be nil.
 func (raw RawArray) DecodeDeep() (*Array, error) {
-	must.BeTrue(raw != nil)
-
 	res, err := raw.decode(decodeDeep)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return res, nil
+}
+
+// Convert converts a single valid BSON array that takes the whole byte slice into [*types.Array].
+func (raw RawArray) Convert() (*types.Array, error) {
+	arr, err := raw.decode(decodeShallow)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	res, err := arr.Convert()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -91,7 +95,7 @@ func (raw RawArray) decode(mode decodeMode) (*Array, error) {
 	return res, nil
 }
 
-// LogValue implements [slog.LogValuer].
+// LogValue implements slog.LogValuer interface.
 func (raw RawArray) LogValue() slog.Value {
 	return slogValue(raw, 1)
 }

@@ -37,8 +37,9 @@ type ConnInfo struct {
 
 	Peer netip.AddrPort // invalid for Unix domain sockets
 
-	username string // protected by rw
-	password string // protected by rw
+	username  string // protected by rw
+	password  string // protected by rw
+	mechanism string // protected by rw
 
 	rw sync.RWMutex
 
@@ -47,7 +48,7 @@ type ConnInfo struct {
 	// If true, backend implementations should not perform authentication
 	// by adding username and password to the connection string.
 	// It is set to true for background connections (such us capped collections cleanup)
-	// and by the new authentication.
+	// and by the new authentication mechanism.
 	// See where it is used for more details.
 	bypassBackendAuth bool // protected by rw
 }
@@ -55,6 +56,11 @@ type ConnInfo struct {
 // New returns a new ConnInfo.
 func New() *ConnInfo {
 	return new(ConnInfo)
+}
+
+// LocalPeer returns whether the peer is considered local (using Unix domain socket or loopback IP).
+func (connInfo *ConnInfo) LocalPeer() bool {
+	return !connInfo.Peer.IsValid() || connInfo.Peer.Addr().IsLoopback()
 }
 
 // Username returns stored username.
@@ -65,21 +71,38 @@ func (connInfo *ConnInfo) Username() string {
 	return connInfo.username
 }
 
-// Auth returns stored username, password (for PLAIN mechanism), and SCRAM server conversation (if any).
-func (connInfo *ConnInfo) Auth() (username, password string, sc *scram.ServerConversation) {
+// Auth returns stored username, password and mechanism.
+func (connInfo *ConnInfo) Auth() (username, password, mechanism string) {
 	connInfo.rw.RLock()
 	defer connInfo.rw.RUnlock()
 
-	return connInfo.username, connInfo.password, connInfo.sc
+	return connInfo.username, connInfo.password, connInfo.mechanism
 }
 
-// SetAuth stores username, password (for PLAIN mechanism), and SCRAM server conversation (if any).
-func (connInfo *ConnInfo) SetAuth(username, password string, sc *scram.ServerConversation) {
+// SetAuth stores username, password.
+func (connInfo *ConnInfo) SetAuth(username, password, mechanism string) {
 	connInfo.rw.Lock()
 	defer connInfo.rw.Unlock()
 
 	connInfo.username = username
 	connInfo.password = password
+	connInfo.mechanism = mechanism
+}
+
+// Conv returns stored SCRAM server conversation.
+func (connInfo *ConnInfo) Conv() *scram.ServerConversation {
+	connInfo.rw.RLock()
+	defer connInfo.rw.RUnlock()
+
+	return connInfo.sc
+}
+
+// SetConv stores the SCRAM server conversation.
+func (connInfo *ConnInfo) SetConv(sc *scram.ServerConversation) {
+	connInfo.rw.Lock()
+	defer connInfo.rw.Unlock()
+
+	connInfo.username = sc.Username()
 	connInfo.sc = sc
 }
 

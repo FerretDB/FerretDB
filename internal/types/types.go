@@ -53,9 +53,8 @@ package types
 
 import (
 	"fmt"
+	"maps"
 	"time"
-
-	"golang.org/x/exp/maps"
 )
 
 // MaxDocumentLen is the maximum BSON object size.

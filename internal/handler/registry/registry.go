@@ -23,7 +23,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handler"
-	"github.com/FerretDB/FerretDB/internal/util/password"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
@@ -47,10 +46,6 @@ type NewHandlerOpts struct {
 	StateProvider *state.Provider
 	TCPHost       string
 	ReplSetName   string
-	SetupDatabase string
-	SetupUsername string
-	SetupPassword password.Password
-	SetupTimeout  time.Duration
 
 	// for `postgresql` handler
 	PostgreSQLURL string
@@ -77,7 +72,6 @@ type TestOpts struct {
 	CappedCleanupPercentage uint8
 	EnableNewAuth           bool
 	BatchSize               int
-	MaxBsonObjectSizeBytes  int
 	_                       struct{} // prevent unkeyed literals
 }
 

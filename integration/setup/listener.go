@@ -16,10 +16,10 @@ package setup
 
 import (
 	"context"
+	"errors"
 	"net/url"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel"
@@ -28,7 +28,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/handler/registry"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
-	"github.com/FerretDB/FerretDB/internal/util/password"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
@@ -52,7 +51,7 @@ func unixSocketPath(tb testtb.TB) string {
 }
 
 // listenerMongoDBURI builds MongoDB URI for in-process FerretDB.
-func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath, newAuthDB string, tlsAndAuth bool) string {
+func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath string, tlsAndAuth bool) string {
 	tb.Helper()
 
 	var host string
@@ -65,33 +64,28 @@ func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath, newAuthDB string
 	}
 
 	var user *url.Userinfo
-	q := url.Values{}
+	var q url.Values
 
 	if tlsAndAuth {
 		require.Empty(tb, unixSocketPath, "unixSocketPath cannot be used with TLS")
 
+		certsRoot := filepath.Join(Dir(tb), "..", "..", "build", "certs")
+
 		// we don't separate TLS and auth just for simplicity of our test configurations
 		q = url.Values{
 			"tls":                   []string{"true"},
-			"tlsCertificateKeyFile": []string{filepath.Join(testutil.BuildCertsDir, "client.pem")},
-			"tlsCaFile":             []string{filepath.Join(testutil.BuildCertsDir, "rootCA-cert.pem")},
+			"tlsCertificateKeyFile": []string{filepath.Join(certsRoot, "client.pem")},
+			"tlsCaFile":             []string{filepath.Join(certsRoot, "rootCA-cert.pem")},
 			"authMechanism":         []string{"PLAIN"},
 		}
 		user = url.UserPassword("username", "password")
-	}
-
-	path := "/"
-
-	if newAuthDB != "" {
-		q.Set("authMechanism", "SCRAM-SHA-256")
-		path += newAuthDB
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/1507
 	u := &url.URL{
 		Scheme:   "mongodb",
 		Host:     host,
-		Path:     path,
+		Path:     "/",
 		User:     user,
 		RawQuery: q.Encode(),
 	}
@@ -150,7 +144,8 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 		panic("not reached")
 	}
 
-	// use per-test PostgreSQL database to prevent problems with parallel tests
+	// use per-test PostgreSQL database to prevent handler's/backend's metadata registry
+	// read schemas owned by concurrent tests
 	postgreSQLURLF := *postgreSQLURLF
 	if postgreSQLURLF != "" {
 		postgreSQLURLF = testutil.TestPostgreSQLURI(tb, ctx, postgreSQLURLF)
@@ -173,9 +168,7 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 	sp, err := state.NewProvider("")
 	require.NoError(tb, err)
 
-	if opts == nil {
-		opts = new(BackendOpts)
-	}
+	require.NotNil(tb, opts)
 
 	handlerOpts := &registry.NewHandlerOpts{
 		Logger:        logger,
@@ -191,26 +184,14 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 			DisablePushdown:         *disablePushdownF,
 			CappedCleanupPercentage: opts.CappedCleanupPercentage,
 			CappedCleanupInterval:   opts.CappedCleanupInterval,
-			EnableNewAuth:           !opts.DisableNewAuth,
+			EnableNewAuth:           true,
 			BatchSize:               *batchSizeF,
-			MaxBsonObjectSizeBytes:  opts.MaxBsonObjectSizeBytes,
 		},
 	}
-
-	if !opts.DisableNewAuth {
-		handlerOpts.SetupDatabase = "test"
-		handlerOpts.SetupUsername = "username"
-		handlerOpts.SetupPassword = password.WrapPassword("password")
-		handlerOpts.SetupTimeout = 1 * time.Second
-	}
-
 	h, closeBackend, err := registry.NewHandler(handler, handlerOpts)
-
-	if closeBackend != nil {
-		tb.Cleanup(closeBackend)
-	}
-
 	require.NoError(tb, err)
+
+	tb.Cleanup(closeBackend)
 
 	listenerOpts := clientconn.NewListenerOpts{
 		ProxyAddr:      *targetProxyAddrF,
@@ -218,7 +199,7 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 		Metrics:        listenerMetrics,
 		Handler:        h,
 		Logger:         logger,
-		TestRecordsDir: testutil.TmpRecordsDir,
+		TestRecordsDir: filepath.Join(Dir(tb), "..", "..", "tmp", "records"),
 	}
 
 	if *targetProxyAddrF != "" {
@@ -231,25 +212,30 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 
 	switch {
 	case *targetTLSF:
+		certsRoot := filepath.Join(Dir(tb), "..", "..", "build", "certs")
 		listenerOpts.TLS = "127.0.0.1:0"
-		listenerOpts.TLSCertFile = filepath.Join(testutil.BuildCertsDir, "server-cert.pem")
-		listenerOpts.TLSKeyFile = filepath.Join(testutil.BuildCertsDir, "server-key.pem")
-		listenerOpts.TLSCAFile = filepath.Join(testutil.BuildCertsDir, "rootCA-cert.pem")
+		listenerOpts.TLSCertFile = filepath.Join(certsRoot, "server-cert.pem")
+		listenerOpts.TLSKeyFile = filepath.Join(certsRoot, "server-key.pem")
+		listenerOpts.TLSCAFile = filepath.Join(certsRoot, "rootCA-cert.pem")
 	case *targetUnixSocketF:
 		listenerOpts.Unix = unixSocketPath(tb)
 	default:
 		listenerOpts.TCP = "127.0.0.1:0"
 	}
 
-	l, err := clientconn.Listen(&listenerOpts)
-	require.NoError(tb, err)
+	l := clientconn.NewListener(&listenerOpts)
 
 	runDone := make(chan struct{})
 
 	go func() {
 		defer close(runDone)
 
-		l.Run(ctx)
+		err := l.Run(ctx)
+		if err == nil || errors.Is(err, context.Canceled) {
+			logger.Info("Listener stopped without error")
+		} else {
+			logger.Error("Listener stopped", zap.Error(err))
+		}
 	}()
 
 	// ensure that all listener's and handler's logs are written before test ends
@@ -270,7 +256,7 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 		hostPort = l.TCPAddr().String()
 	}
 
-	uri := listenerMongoDBURI(tb, hostPort, unixSocketPath, handlerOpts.SetupDatabase, tlsAndAuth)
+	uri := listenerMongoDBURI(tb, hostPort, unixSocketPath, tlsAndAuth)
 
 	logger.Info("Listener started", zap.String("handler", handler), zap.String("uri", uri))
 

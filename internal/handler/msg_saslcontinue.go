@@ -17,8 +17,6 @@ package handler
 import (
 	"context"
 
-	"go.uber.org/zap"
-
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
@@ -44,52 +42,33 @@ func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.O
 
 	payload = binaryPayload.B
 
-	_, _, conv := conninfo.Get(ctx).Auth()
+	conv := conninfo.Get(ctx).Conv()
 
 	if conv == nil {
-		h.L.Warn("saslContinue: no conversation to continue")
-
-		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+		return nil, handlererrors.NewCommandErrorMsg(
 			handlererrors.ErrAuthenticationFailed,
 			"Authentication failed.",
-			"saslContinue",
 		)
 	}
 
 	response, err := conv.Step(string(payload))
-
-	fields := []zap.Field{
-		zap.String("username", conv.Username()),
-		zap.Bool("valid", conv.Valid()),
-		zap.Bool("done", conv.Done()),
-	}
-
 	if err != nil {
-		if h.L.Level().Enabled(zap.DebugLevel) {
-			fields = append(fields, zap.Error(err))
-		}
-
-		h.L.Warn("saslContinue: step failed", fields...)
-
-		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+		return nil, handlererrors.NewCommandErrorMsg(
 			handlererrors.ErrAuthenticationFailed,
 			"Authentication failed.",
-			"saslContinue",
 		)
 	}
 
-	h.L.Debug("saslContinue: step succeed", fields...)
-
-	if conv.Valid() {
-		conninfo.Get(ctx).SetBypassBackendAuth()
+	binResponse := types.Binary{
+		B: []byte(response),
 	}
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
 		must.NotFail(types.NewDocument(
 			"conversationId", int32(1),
-			"done", conv.Done(),
-			"payload", types.Binary{B: []byte(response)},
+			"done", true,
+			"payload", binResponse,
 			"ok", float64(1),
 		)),
 	)))

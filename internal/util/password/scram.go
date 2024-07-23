@@ -19,7 +19,7 @@ import (
 	"encoding/base64"
 	"hash"
 
-	"github.com/FerretDB/FerretDB/internal/bson"
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
@@ -46,15 +46,15 @@ type scramParams struct {
 }
 
 // scramDoc creates a document with the stored key, iteration count, salt, and server key.
-func scramDoc(h func() hash.Hash, saltedPassword, salt []byte, params *scramParams) (*bson.Document, error) {
+func scramDoc(h func() hash.Hash, saltedPassword, salt []byte, params *scramParams) (*types.Document, error) {
 	clientKey := computeHMAC(h, saltedPassword, []byte("Client Key"))
 	serverKey := computeHMAC(h, saltedPassword, []byte("Server Key"))
 	storedKey := computeHash(h, clientKey)
 
-	doc, err := bson.NewDocument(
+	doc, err := types.NewDocument(
+		"storedKey", base64.StdEncoding.EncodeToString(storedKey),
 		"iterationCount", int32(params.iterationCount),
 		"salt", base64.StdEncoding.EncodeToString(salt),
-		"storedKey", base64.StdEncoding.EncodeToString(storedKey),
 		"serverKey", base64.StdEncoding.EncodeToString(serverKey),
 	)
 	if err != nil {

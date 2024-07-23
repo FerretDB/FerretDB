@@ -15,10 +15,9 @@
 package setup
 
 import (
-	"flag"
-	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
-	"testing"
 
 	"github.com/stretchr/testify/require"
 
@@ -106,24 +105,12 @@ func PushdownDisabled() bool {
 	return *disablePushdownF
 }
 
-// Main is the entry point for all integration test packages.
-// It should be called from main_test.go in each package.
-func Main(m *testing.M) {
-	flag.Parse()
+// Dir returns the absolute directory of this package.
+func Dir(tb testtb.TB) string {
+	tb.Helper()
 
-	var code int
+	_, file, _, ok := runtime.Caller(0)
+	require.True(tb, ok)
 
-	// ensure that Shutdown runs for any exit code or panic
-	func() {
-		// make `go test -list=.` work without side effects
-		if flag.Lookup("test.list").Value.String() == "" {
-			Startup()
-
-			defer Shutdown()
-		}
-
-		code = m.Run()
-	}()
-
-	os.Exit(code)
+	return filepath.Dir(file)
 }

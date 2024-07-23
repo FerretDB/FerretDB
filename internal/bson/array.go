@@ -17,11 +17,13 @@ package bson
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"log/slog"
 	"strconv"
 
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // Array represents a BSON array in the (partially) decoded form.
@@ -52,6 +54,34 @@ func MakeArray(cap int) *Array {
 	}
 }
 
+// ConvertArray converts [*types.Array] to Array.
+func ConvertArray(arr *types.Array) (*Array, error) {
+	iter := arr.Iterator()
+	defer iter.Close()
+
+	elements := make([]any, arr.Len())
+
+	for {
+		i, v, err := iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				return &Array{
+					elements: elements,
+				}, nil
+			}
+
+			return nil, lazyerrors.Error(err)
+		}
+
+		v, err = convertFromTypes(v)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		elements[i] = v
+	}
+}
+
 // Freeze prevents array from further modifications.
 // Any methods that would modify the array will panic.
 //
@@ -65,6 +95,27 @@ func (arr *Array) checkFrozen() {
 	if arr.frozen {
 		panic("array is frozen and can't be modified")
 	}
+}
+
+// Convert converts Array to [*types.Array], decoding raw documents and arrays on the fly.
+func (arr *Array) Convert() (*types.Array, error) {
+	values := make([]any, len(arr.elements))
+
+	for i, f := range arr.elements {
+		v, err := convertToTypes(f)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		values[i] = v
+	}
+
+	res, err := types.NewArray(values...)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return res, nil
 }
 
 // Len returns the number of elements in the Array.
@@ -105,16 +156,12 @@ func (arr *Array) Replace(index int, value any) error {
 	return nil
 }
 
-// Encode encodes non-nil BSON array.
+// Encode encodes BSON array.
 //
 // TODO https://github.com/FerretDB/FerretDB/issues/3759
 // This method should accept a slice of bytes, not return it.
 // That would allow to avoid unnecessary allocations.
-//
-// Receiver must not be nil.
 func (arr *Array) Encode() (RawArray, error) {
-	must.NotBeZero(arr)
-
 	size := sizeAny(arr)
 	buf := bytes.NewBuffer(make([]byte, 0, size))
 
@@ -135,15 +182,12 @@ func (arr *Array) Encode() (RawArray, error) {
 	return buf.Bytes(), nil
 }
 
-// Decode returns itself to implement [AnyArray].
-//
-// Receiver must not be nil.
+// Decode returns itself to implement the [AnyArray] interface.
 func (arr *Array) Decode() (*Array, error) {
-	must.NotBeZero(arr)
 	return arr, nil
 }
 
-// LogValue implements [slog.LogValuer].
+// LogValue implements slog.LogValuer interface.
 func (arr *Array) LogValue() slog.Value {
 	return slogValue(arr, 1)
 }

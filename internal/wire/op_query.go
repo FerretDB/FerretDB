@@ -37,19 +37,9 @@ type OpQuery struct {
 	NumberToReturn       int32
 }
 
-// NewOpQuery creates a new OpQuery message.
-func NewOpQuery(doc bson.AnyDocument) (*OpQuery, error) {
-	raw, err := doc.Encode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return &OpQuery{query: raw}, nil
-}
-
 func (query *OpQuery) msgbody() {}
 
-// check implements [MsgBody].
+// check implements [MsgBody] interface.
 func (query *OpQuery) check() error {
 	if d := query.query; d != nil {
 		if _, err := d.DecodeDeep(); err != nil {
@@ -66,7 +56,7 @@ func (query *OpQuery) check() error {
 	return nil
 }
 
-// UnmarshalBinaryNocopy implements [MsgBody].
+// UnmarshalBinaryNocopy implements [MsgBody] interface.
 func (query *OpQuery) UnmarshalBinaryNocopy(b []byte) error {
 	if len(b) < 4 {
 		return lazyerrors.Errorf("len=%d", len(b))
@@ -117,7 +107,7 @@ func (query *OpQuery) UnmarshalBinaryNocopy(b []byte) error {
 	return nil
 }
 
-// MarshalBinary implements [MsgBody].
+// MarshalBinary implements [MsgBody] interface.
 func (query *OpQuery) MarshalBinary() ([]byte, error) {
 	if debugbuild.Enabled {
 		if err := query.check(); err != nil {
@@ -162,7 +152,7 @@ func (query *OpQuery) ReturnFieldsSelector() *types.Document {
 }
 
 // logMessage returns a string representation for logging.
-func (query *OpQuery) logMessage(logFunc func(v any) string) string {
+func (query *OpQuery) logMessage(block bool) string {
 	if query == nil {
 		return "<nil>"
 	}
@@ -190,22 +180,21 @@ func (query *OpQuery) logMessage(logFunc func(v any) string) string {
 		}
 	}
 
-	return logFunc(m)
+	if block {
+		return bson.LogMessageBlock(m)
+	}
+
+	return bson.LogMessage(m)
 }
 
 // String returns a string representation for logging.
 func (query *OpQuery) String() string {
-	return query.logMessage(bson.LogMessage)
+	return query.logMessage(false)
 }
 
 // StringBlock returns an indented string representation for logging.
 func (query *OpQuery) StringBlock() string {
-	return query.logMessage(bson.LogMessageBlock)
-}
-
-// StringFlow returns an unindented string representation for logging.
-func (query *OpQuery) StringFlow() string {
-	return query.logMessage(bson.LogMessageFlow)
+	return query.logMessage(true)
 }
 
 // check interfaces

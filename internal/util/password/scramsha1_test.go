@@ -22,8 +22,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/xdg-go/scram"
 
-	"github.com/FerretDB/FerretDB/internal/bson"
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 // scramSHA1TestCase represents a test case for SCRAM-SHA-1 authentication.
@@ -32,10 +33,10 @@ import (
 type scramSHA1TestCase struct {
 	params   scramParams
 	username string
-	password Password
+	password string
 	salt     []byte
 
-	want *bson.Document
+	want *types.Document
 	err  string
 }
 
@@ -48,12 +49,12 @@ var scramSHA1TestCases = map[string]scramSHA1TestCase{
 			saltLen:        16,
 		},
 		username: "user",
-		password: WrapPassword("pencil"),
+		password: "pencil",
 		salt:     must.NotFail(base64.StdEncoding.DecodeString("55hyMPh69qfbfXPueAsr6g==")),
-		want: must.NotFail(bson.NewDocument(
+		want: must.NotFail(types.NewDocument(
+			"storedKey", "W+jN9/MwzC8uhAIOOViZOUiSt14=",
 			"iterationCount", int32(10000),
 			"salt", "55hyMPh69qfbfXPueAsr6g==",
-			"storedKey", "W+jN9/MwzC8uhAIOOViZOUiSt14=",
 			"serverKey", "XnkE60pg5UdvNe9nI9qF8VFV7Og=",
 		)),
 	},
@@ -65,12 +66,12 @@ var scramSHA1TestCases = map[string]scramSHA1TestCase{
 			saltLen:        16,
 		},
 		username: "user",
-		password: WrapPassword("password"),
+		password: "password",
 		salt:     must.NotFail(base64.StdEncoding.DecodeString("OjPS7S2yaYBaJsRTCzahWQ==")),
-		want: must.NotFail(bson.NewDocument(
+		want: must.NotFail(types.NewDocument(
+			"storedKey", "fvtSnYGbBxKrXwbh4nAaUyiYMgg=",
 			"iterationCount", int32(10000),
 			"salt", "OjPS7S2yaYBaJsRTCzahWQ==",
-			"storedKey", "fvtSnYGbBxKrXwbh4nAaUyiYMgg=",
 			"serverKey", "TecAz+P5gUkeFwSB4QxzRZhzryc=",
 		)),
 	},
@@ -80,20 +81,21 @@ var scramSHA1TestCases = map[string]scramSHA1TestCase{
 			iterationCount: 15000,
 			saltLen:        16,
 		},
-		password: WrapPassword("password"),
+		password: "password",
 		salt:     []byte("short"),
 		err:      "unexpected salt length: 5",
 	},
 }
 
-func TestSCRAMSHA1Variation(t *testing.T) {
+func TestSCRAMSHA1(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range scramSHA1TestCases {
+		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			doc, err := scramSHA1VariationHashParams(tc.username, tc.password, tc.salt, &tc.params)
+			doc, err := scramSHA1HashParams(tc.username, tc.password, tc.salt, &tc.params)
 
 			if tc.err != "" {
 				assert.ErrorContains(t, err, tc.err)
@@ -101,7 +103,7 @@ func TestSCRAMSHA1Variation(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			require.Equal(t, tc.want, doc)
+			testutil.AssertEqual(t, tc.want, doc)
 
 			scramServer, err := scram.SHA1.NewServer(func(username string) (scram.StoredCredentials, error) {
 				return scram.StoredCredentials{
@@ -109,8 +111,8 @@ func TestSCRAMSHA1Variation(t *testing.T) {
 						Salt:  string(tc.salt),
 						Iters: tc.params.iterationCount,
 					},
-					StoredKey: []byte(doc.Get("storedKey").(string)),
-					ServerKey: []byte(doc.Get("serverKey").(string)),
+					StoredKey: []byte(must.NotFail(doc.Get("storedKey")).(string)),
+					ServerKey: []byte(must.NotFail(doc.Get("serverKey")).(string)),
 				}, nil
 			})
 			require.NoError(t, err)
@@ -118,7 +120,7 @@ func TestSCRAMSHA1Variation(t *testing.T) {
 			// Check if the generated authentication is valid by simulating a conversation.
 			conv := scramServer.NewConversation()
 
-			client, err := scram.SHA1.NewClient(tc.username, tc.password.Password(), "")
+			client, err := scram.SHA1.NewClient(tc.username, tc.password, "")
 			require.NoError(t, err)
 
 			resp, err := client.NewConversation().Step("")
@@ -136,17 +138,18 @@ func TestSCRAMSHA1Variation(t *testing.T) {
 	t.Run("Exported", func(t *testing.T) {
 		t.Parallel()
 
-		doc1, err := SCRAMSHA1VariationHash("user", WrapPassword("password"))
+		doc1, err := SCRAMSHA1Hash("user", "password")
 		require.NoError(t, err)
 
-		doc2, err := SCRAMSHA1VariationHash("user", WrapPassword("password"))
+		doc2, err := SCRAMSHA1Hash("user", "password")
 		require.NoError(t, err)
-		require.NotEqual(t, doc1, doc2)
 
-		salt := doc1.Get("salt").(string)
+		testutil.AssertNotEqual(t, doc1, doc2)
+
+		salt := must.NotFail(doc1.Get("salt")).(string)
 		assert.Len(t, must.NotFail(base64.StdEncoding.DecodeString(salt)), 16)
 
-		salt = doc2.Get("salt").(string)
+		salt = must.NotFail(doc2.Get("salt")).(string)
 		assert.Len(t, must.NotFail(base64.StdEncoding.DecodeString(salt)), 16)
 	})
 }
@@ -158,7 +161,7 @@ func BenchmarkSCRAMSHA1(b *testing.B) {
 		b.ReportAllocs()
 
 		for range b.N {
-			_, err = SCRAMSHA1VariationHash("user", WrapPassword("password"))
+			_, err = SCRAMSHA1Hash("user", "password")
 		}
 	})
 
