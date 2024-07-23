@@ -83,9 +83,9 @@ type ListenOpts struct {
 // addToZip adds a new file to the zip archive.
 //
 // Passed [io.ReadCloser] is always closed.
-func addToZip(w *zip.Writer, name string, b io.ReadCloser) (err error) {
+func addToZip(w *zip.Writer, name string, r io.ReadCloser) (err error) {
 	defer func() {
-		if e := b.Close(); e != nil && err == nil {
+		if e := r.Close(); e != nil && err == nil {
 			err = e
 		}
 	}()
@@ -98,7 +98,7 @@ func addToZip(w *zip.Writer, name string, b io.ReadCloser) (err error) {
 		return
 	}
 
-	_, err = io.Copy(f, b)
+	_, err = io.Copy(f, r)
 
 	return
 }
