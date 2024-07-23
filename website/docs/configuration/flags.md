@@ -103,12 +103,13 @@ For example: `file:./?mode=memory`.
 
 ## Miscellaneous
 
-| Flag                  | Description                                       | Environment Variable    | Default Value |
-| --------------------- | ------------------------------------------------- | ----------------------- | ------------- |
-| `--log-level`         | Log level: 'debug', 'info', 'warn', 'error'       | `FERRETDB_LOG_LEVEL`    | `info`        |
-| `--[no-]log-uuid`     | Add instance UUID to all log messages             | `FERRETDB_LOG_UUID`     |               |
-| `--[no-]metrics-uuid` | Add instance UUID to all metrics                  | `FERRETDB_METRICS_UUID` |               |
-| `--telemetry`         | Enable or disable [basic telemetry](telemetry.md) | `FERRETDB_TELEMETRY`    | `undecided`   |
+| Flag                  | Description                                                                     | Environment Variable       | Default Value    |
+| --------------------- | ------------------------------------------------------------------------------- | -------------------------- | ---------------- |
+| `--log-level`         | Log level: 'debug', 'info', 'warn', 'error'                                     | `FERRETDB_LOG_LEVEL`       | `info`           |
+| `--[no-]log-uuid`     | Add instance UUID to all log messages                                           | `FERRETDB_LOG_UUID`        |                  |
+| `--[no-]metrics-uuid` | Add instance UUID to all metrics                                                | `FERRETDB_METRICS_UUID`    |                  |
+| `--otel-traces-url`   | OpenTelemetry OTLP/HTTP traces endpoint URL (e.g. `http://host:4318/v1/traces`) | `FERRETDB_OTEL_TRACES_URL` | empty (disabled) |
+| `--telemetry`         | Enable or disable [basic telemetry](telemetry.md)                               | `FERRETDB_TELEMETRY`       | `undecided`      |
 
 <!-- Do not document `--test-XXX` flags here -->
 
