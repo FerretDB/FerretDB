@@ -76,11 +76,3 @@ func Setup(opts *NewHandlerOpts, uuid string) {
 	slog.SetDefault(l)
 	slog.SetLogLoggerLevel(slog.LevelInfo + 2)
 }
-
-// WrapLogger wraps the given logger's handler allowing the support for
-// additional log levels, shorter source location and make logs
-// accessible by `getLog` command.
-func WrapLogger(l *slog.Logger) *slog.Logger {
-	h := WrapHandler(os.Stderr, l.Handler())
-	return slog.New(h)
-}
