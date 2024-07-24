@@ -211,11 +211,9 @@ func (c *Client) checkIssueStatus(ctx context.Context, repo string, num int) (Is
 		return "", err
 	}
 
-	switch s := issue.GetState(); s {
-	case "open":
-		return IssueOpen, nil
-	case "closed":
-		return IssueClosed, nil
+	switch s := IssueStatus(issue.GetState()); s {
+	case IssueOpen, IssueClosed:
+		return s, nil
 	default:
 		return "", fmt.Errorf("unknown issue state: %q", s)
 	}
