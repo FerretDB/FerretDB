@@ -6,8 +6,8 @@ env:
   GOCOVERDIR: tmp/cover
 
 vars:
-  SHARD_INDEX: 1
-  SHARD_TOTAL: 1
+  SHARD_INDEX: 0
+  SHARD_TOTAL: 0
   DISABLE_PUSHDOWN: false
   TEST_RUN: ""
   TEST_TIMEOUT: 35m
