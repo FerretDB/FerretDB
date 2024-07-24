@@ -63,9 +63,9 @@ func TraceContextFromComment(comment string) (trace.SpanContext, error) {
 	ctx = propagator.Extract(ctx, carrier)
 
 	spanContext := trace.SpanContextFromContext(ctx)
-	if !spanContext.IsValid() {
+	/*if !spanContext.IsValid() {
 		panic("Invalid span context") // FIXME
-	}
+	}*/
 
 	return spanContext, nil
 }
