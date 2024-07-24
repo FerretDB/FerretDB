@@ -22,6 +22,7 @@ import (
 	"math"
 	"testing"
 
+	"github.com/FerretDB/wire"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -29,7 +30,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 type testCase struct {

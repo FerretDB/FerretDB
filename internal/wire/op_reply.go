@@ -131,12 +131,6 @@ func (reply *OpReply) RawDocument() bson.RawDocument {
 	return reply.document
 }
 
-// SetDocument sets reply document.
-func (reply *OpReply) SetDocument(doc *types.Document) {
-	d := must.NotFail(bson.ConvertDocument(doc))
-	reply.document = must.NotFail(d.Encode())
-}
-
 // logMessage returns a string representation for logging.
 func (reply *OpReply) logMessage(logFunc func(v any) string) string {
 	if reply == nil {

@@ -17,8 +17,9 @@ package handler
 import (
 	"context"
 
+	"github.com/FerretDB/wire"
+
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgCollMod implements `collMod` command.

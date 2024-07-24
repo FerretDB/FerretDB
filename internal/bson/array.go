@@ -20,14 +20,17 @@ import (
 	"log/slog"
 	"strconv"
 
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/wire/wirebson"
 )
 
 // Array represents a BSON array in the (partially) decoded form.
 type Array struct {
-	elements []any
-	frozen   bool
+	elements        []any
+	frozen          bool
+	*wirebson.Array // embed to delegate method
 }
 
 // NewArray creates a new Array from the given values.
@@ -50,6 +53,23 @@ func MakeArray(cap int) *Array {
 	return &Array{
 		elements: make([]any, 0, cap),
 	}
+}
+
+// TypesArray gets an array, decodes and converts to [*types.Array].
+func TypesArray(arr wirebson.AnyArray) (*types.Array, error) {
+	wArr, err := arr.Decode()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	bArr := &Array{Array: wArr}
+
+	tArr, err := bArr.Convert()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return tArr, nil
 }
 
 // Freeze prevents array from further modifications.

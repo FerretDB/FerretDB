@@ -18,11 +18,11 @@ import (
 	"encoding/base64"
 	"testing"
 
+	bson "github.com/FerretDB/wire/wirebson"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/xdg-go/scram"
 
-	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 

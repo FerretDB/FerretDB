@@ -17,10 +17,12 @@ package handler
 import (
 	"context"
 
+	"github.com/FerretDB/wire"
+
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgConnectionStatus implements `connectionStatus` command.
@@ -36,8 +38,7 @@ func (h *Handler) MsgConnectionStatus(connCtx context.Context, msg *wire.OpMsg) 
 		)))
 	}
 
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
 		must.NotFail(types.NewDocument(
 			"authInfo", must.NotFail(types.NewDocument(
 				"authenticatedUsers", users,
@@ -46,6 +47,4 @@ func (h *Handler) MsgConnectionStatus(connCtx context.Context, msg *wire.OpMsg) 
 			"ok", float64(1),
 		)),
 	)))
-
-	return &reply, nil
 }

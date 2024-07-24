@@ -18,6 +18,9 @@ import (
 	"context"
 	"log/slog"
 
+	"github.com/FerretDB/wire"
+
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
@@ -25,14 +28,13 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgSASLContinue implements `saslContinue` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgSASLContinue(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	doc, err := msg.Document()
+	doc, err := bson.TypesDocumentFromOpMsg(msg)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -86,8 +88,7 @@ func (h *Handler) MsgSASLContinue(connCtx context.Context, msg *wire.OpMsg) (*wi
 		conninfo.Get(connCtx).SetBypassBackendAuth()
 	}
 
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
 		must.NotFail(types.NewDocument(
 			"conversationId", int32(1),
 			"done", conv.Done(),
@@ -95,6 +96,4 @@ func (h *Handler) MsgSASLContinue(connCtx context.Context, msg *wire.OpMsg) (*wi
 			"ok", float64(1),
 		)),
 	)))
-
-	return &reply, nil
 }

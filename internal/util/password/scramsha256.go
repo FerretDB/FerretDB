@@ -19,10 +19,10 @@ import (
 	"crypto/sha256"
 	"fmt"
 
+	bson "github.com/FerretDB/wire/wirebson"
 	"github.com/xdg-go/stringprep"
 	"golang.org/x/crypto/pbkdf2"
 
-	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 

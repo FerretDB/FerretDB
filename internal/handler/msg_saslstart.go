@@ -22,8 +22,10 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/FerretDB/wire"
 	"github.com/xdg-go/scram"
 
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
@@ -32,14 +34,13 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgSASLStart implements `saslStart` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgSASLStart(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := msg.Document()
+	document, err := bson.TypesDocumentFromOpMsg(msg)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -56,10 +57,7 @@ func (h *Handler) MsgSASLStart(connCtx context.Context, msg *wire.OpMsg) (*wire.
 
 	replyDoc.Set("ok", float64(1))
 
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.MakeOpMsgSection(replyDoc)))
-
-	return &reply, nil
+	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(replyDoc)))
 }
 
 // saslStart starts authentication and returns a document used for the response.

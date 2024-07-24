@@ -15,10 +15,13 @@
 package bson
 
 import (
-	"bytes"
-	"encoding/binary"
 	"log/slog"
 	"slices"
+
+	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
+
+	"github.com/FerretDB/FerretDB/internal/types"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -34,8 +37,41 @@ type field struct {
 //
 // It may contain duplicate field names.
 type Document struct {
-	fields []field
-	frozen bool
+	fields             []field
+	frozen             bool
+	*wirebson.Document // embed to delegate method
+}
+
+// TypesDocumentFromOpMsg gets a raw document, decodes and converts to [*types.Document].
+func TypesDocumentFromOpMsg(msg *wire.OpMsg) (*types.Document, error) {
+	rDoc, err := msg.RawDocument()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	tDoc, err := TypesDocument(rDoc)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return tDoc, nil
+}
+
+// TypesDocument gets a document, decodes and converts to [*types.Document].
+func TypesDocument(doc wirebson.AnyDocument) (*types.Document, error) {
+	wDoc, err := doc.Decode()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	bDoc := &Document{Document: wDoc}
+
+	tDoc, err := bDoc.Convert()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return tDoc, nil
 }
 
 // NewDocument creates a new Document from the given pairs of field names and values.
@@ -186,35 +222,21 @@ func (doc *Document) Command() string {
 // That would allow to avoid unnecessary allocations.
 //
 // Receiver must not be nil.
-func (doc *Document) Encode() (RawDocument, error) {
+func (doc *Document) Encode() (wirebson.RawDocument, error) {
 	must.NotBeZero(doc)
+	must.NotBeZero(doc.Document)
 
-	size := sizeAny(doc)
-	buf := bytes.NewBuffer(make([]byte, 0, size))
-
-	if err := binary.Write(buf, binary.LittleEndian, uint32(size)); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	for _, f := range doc.fields {
-		if err := encodeField(buf, f.name, f.value); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-	}
-
-	if err := binary.Write(buf, binary.LittleEndian, byte(0)); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return buf.Bytes(), nil
+	return doc.Document.Encode()
 }
 
 // Decode returns itself to implement [AnyDocument].
 //
 // Receiver must not be nil.
-func (doc *Document) Decode() (*Document, error) {
+func (doc *Document) Decode() (*wirebson.Document, error) {
 	must.NotBeZero(doc)
-	return doc, nil
+	must.NotBeZero(doc.Document)
+
+	return doc.Document.Decode()
 }
 
 // LogValue implements [slog.LogValuer].
@@ -224,6 +246,6 @@ func (doc *Document) LogValue() slog.Value {
 
 // check interfaces
 var (
-	_ AnyDocument    = (*Document)(nil)
-	_ slog.LogValuer = (*Document)(nil)
+	_ wirebson.AnyDocument = (*Document)(nil)
+	_ slog.LogValuer       = (*Document)(nil)
 )

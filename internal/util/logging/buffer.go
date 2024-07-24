@@ -21,7 +21,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/FerretDB/FerretDB/internal/bson"
+	bson "github.com/FerretDB/wire/wirebson"
+
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 

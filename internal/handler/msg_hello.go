@@ -21,20 +21,22 @@ import (
 	"strings"
 	"time"
 
+	"github.com/FerretDB/wire"
+
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgHello implements `hello` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgHello(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	doc, err := msg.Document()
+	doc, err := bson.TypesDocumentFromOpMsg(msg)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -44,10 +46,7 @@ func (h *Handler) MsgHello(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.MakeOpMsgSection(resp)))
-
-	return &reply, nil
+	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(resp)))
 }
 
 // hello checks client metadata and returns hello's document fields.

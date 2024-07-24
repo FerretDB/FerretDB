@@ -31,6 +31,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/FerretDB/wire"
 	"github.com/pmezard/go-difflib/difflib"
 	"go.opentelemetry.io/otel"
 	otelattribute "go.opentelemetry.io/otel/attribute"
@@ -45,7 +46,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // Mode represents FerretDB mode of operation.

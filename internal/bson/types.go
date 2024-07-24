@@ -255,13 +255,13 @@ func ConvertDocument(doc *types.Document) (*Document, error) {
 func (doc *Document) Convert() (*types.Document, error) {
 	pairs := make([]any, 0, len(doc.fields)*2)
 
-	for _, f := range doc.fields {
-		v, err := convertToTypes(f.value)
+	for _, f := range doc.Document.FieldNames() {
+		v, err := convertToTypes(doc.Document.Get(f))
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
-		pairs = append(pairs, f.name, v)
+		pairs = append(pairs, f, v)
 	}
 
 	res, err := types.NewDocument(pairs...)

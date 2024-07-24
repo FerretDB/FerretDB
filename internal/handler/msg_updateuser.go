@@ -19,7 +19,10 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/FerretDB/wire"
+
 	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
@@ -29,14 +32,13 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/password"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgUpdateUser implements `updateUser` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgUpdateUser(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := msg.Document()
+	document, err := bson.TypesDocumentFromOpMsg(msg)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -221,12 +223,9 @@ func (h *Handler) MsgUpdateUser(connCtx context.Context, msg *wire.OpMsg) (*wire
 		return nil, lazyerrors.Error(err)
 	}
 
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
 		must.NotFail(types.NewDocument(
 			"ok", float64(1),
 		)),
 	)))
-
-	return &reply, nil
 }

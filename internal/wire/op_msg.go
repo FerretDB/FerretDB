@@ -28,15 +28,6 @@ import (
 // typesValidation, when true, enables validation of types in wire messages.
 const typesValidation = true
 
-// MakeOpMsgSection creates [opMsgSection] with a single document.
-func MakeOpMsgSection(doc *types.Document) opMsgSection {
-	raw := must.NotFail(must.NotFail(bson.ConvertDocument(doc)).Encode())
-
-	return opMsgSection{
-		documents: []bson.RawDocument{raw},
-	}
-}
-
 // OpMsg is the main wire protocol message type.
 type OpMsg struct {
 	// The order of fields is weird to make the struct smaller due to alignment.

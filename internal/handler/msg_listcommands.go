@@ -18,11 +18,12 @@ import (
 	"context"
 	"sort"
 
+	"github.com/FerretDB/wire"
 	"golang.org/x/exp/maps"
 
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgListCommands implements `listCommands` command.
@@ -44,13 +45,10 @@ func (h *Handler) MsgListCommands(connCtx context.Context, msg *wire.OpMsg) (*wi
 		)))
 	}
 
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
 		must.NotFail(types.NewDocument(
 			"commands", cmdList,
 			"ok", float64(1),
-		)),
-	)))
-
-	return &reply, nil
+		))),
+	))
 }

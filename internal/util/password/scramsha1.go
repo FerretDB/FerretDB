@@ -20,9 +20,9 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 
+	bson "github.com/FerretDB/wire/wirebson"
 	"golang.org/x/crypto/pbkdf2"
 
-	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 

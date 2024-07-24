@@ -22,7 +22,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/FerretDB/wire"
+
 	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
@@ -31,14 +34,13 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgFind implements `find` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgFind(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := msg.Document()
+	document, err := bson.TypesDocumentFromOpMsg(msg)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -191,8 +193,7 @@ func (h *Handler) MsgFind(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		firstBatch.Append(doc)
 	}
 
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
 		must.NotFail(types.NewDocument(
 			"cursor", must.NotFail(types.NewDocument(
 				"firstBatch", firstBatch,
@@ -202,8 +203,6 @@ func (h *Handler) MsgFind(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 			"ok", float64(1),
 		)),
 	)))
-
-	return &reply, nil
 }
 
 type findCursorData struct {

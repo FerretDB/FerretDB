@@ -24,6 +24,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/FerretDB/wire"
+
+	"github.com/FerretDB/FerretDB/internal/bson"
+
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
@@ -36,14 +40,13 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgAggregate implements `aggregate` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgAggregate(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := msg.Document()
+	document, err := bson.TypesDocumentFromOpMsg(msg)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -401,8 +404,7 @@ func (h *Handler) MsgAggregate(connCtx context.Context, msg *wire.OpMsg) (*wire.
 		cursor.Close()
 	}
 
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
 		must.NotFail(types.NewDocument(
 			"cursor", must.NotFail(types.NewDocument(
 				"firstBatch", firstBatch,
@@ -410,10 +412,8 @@ func (h *Handler) MsgAggregate(connCtx context.Context, msg *wire.OpMsg) (*wire.
 				"ns", dbName+"."+cName,
 			)),
 			"ok", float64(1),
-		)),
-	)))
-
-	return &reply, nil
+		))),
+	))
 }
 
 // stagesDocumentsParams contains the parameters for processStagesDocuments.

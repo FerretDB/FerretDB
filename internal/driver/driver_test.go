@@ -17,14 +17,14 @@ package driver
 import (
 	"testing"
 
+	"github.com/FerretDB/wire"
+	bson "github.com/FerretDB/wire/wirebson"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 func TestDriver(t *testing.T) {

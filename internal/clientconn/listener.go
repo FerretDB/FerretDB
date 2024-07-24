@@ -25,6 +25,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/FerretDB/wire"
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
@@ -34,7 +35,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/tlsutil"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // Listener listens on one or multiple interfaces (TCP, Unix, TLS sockets)

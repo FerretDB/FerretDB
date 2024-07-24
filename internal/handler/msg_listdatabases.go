@@ -17,20 +17,22 @@ package handler
 import (
 	"context"
 
+	"github.com/FerretDB/wire"
+
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgListDatabases implements `listDatabases` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgListDatabases(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := msg.Document()
+	document, err := bson.TypesDocumentFromOpMsg(msg)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -99,18 +101,16 @@ func (h *Handler) MsgListDatabases(connCtx context.Context, msg *wire.OpMsg) (*w
 		}
 	}
 
-	var reply wire.OpMsg
-
 	switch {
 	case nameOnly:
-		must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+		return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
 			must.NotFail(types.NewDocument(
 				"databases", databases,
 				"ok", float64(1),
 			)),
 		)))
 	default:
-		must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+		return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
 			must.NotFail(types.NewDocument(
 				"databases", databases,
 				"totalSize", totalSize,
@@ -119,6 +119,4 @@ func (h *Handler) MsgListDatabases(connCtx context.Context, msg *wire.OpMsg) (*w
 			)),
 		)))
 	}
-
-	return &reply, nil
 }

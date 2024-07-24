@@ -18,9 +18,10 @@ import (
 	"context"
 	"log/slog"
 
+	"github.com/FerretDB/wire"
+
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // command represents a handler for single command.

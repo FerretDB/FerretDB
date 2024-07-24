@@ -27,12 +27,12 @@ import (
 	"path/filepath"
 	"sync/atomic"
 
+	"github.com/FerretDB/wire"
+	bson "github.com/FerretDB/wire/wirebson"
 	"github.com/xdg-go/scram"
 
-	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // Conn represents a single connection.

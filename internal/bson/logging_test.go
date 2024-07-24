@@ -22,9 +22,9 @@ import (
 	"testing"
 	"time"
 
+	bson "github.com/FerretDB/wire/wirebson"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"

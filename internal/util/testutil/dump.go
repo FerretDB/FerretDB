@@ -21,9 +21,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	bson "github.com/FerretDB/wire/wirebson"
 	"github.com/stretchr/testify/require"
 
-	"github.com/FerretDB/FerretDB/internal/bson"
+	fbson "github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/hex"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -34,7 +35,7 @@ import (
 func dump[T types.Type](tb testtb.TB, o T) string {
 	tb.Helper()
 
-	v, err := bson.Convert(o)
+	v, err := fbson.Convert(o)
 	require.NoError(tb, err)
 
 	return bson.LogMessageBlock(v)
@@ -47,7 +48,7 @@ func dumpSlice[T types.Type](tb testtb.TB, s []T) string {
 	arr := bson.MakeArray(len(s))
 
 	for _, o := range s {
-		v, err := bson.Convert(o)
+		v, err := fbson.Convert(o)
 		require.NoError(tb, err)
 
 		err = arr.Add(v)
