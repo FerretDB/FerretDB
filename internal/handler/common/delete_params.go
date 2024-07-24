@@ -15,7 +15,7 @@
 package common
 
 import (
-	"go.uber.org/zap"
+	"log/slog"
 
 	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -55,7 +55,7 @@ type Delete struct {
 }
 
 // GetDeleteParams returns parameters for delete operation.
-func GetDeleteParams(document *types.Document, l *zap.Logger) (*DeleteParams, error) {
+func GetDeleteParams(document *types.Document, l *slog.Logger) (*DeleteParams, error) {
 	params := DeleteParams{
 		Ordered: true,
 	}

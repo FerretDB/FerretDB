@@ -31,8 +31,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/expfmt"
 	"go.uber.org/automaxprocs/maxprocs"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	_ "golang.org/x/crypto/x509roots/fallback" // register root TLS certificates for production Docker image
 
 	"github.com/FerretDB/FerretDB/build/version"
@@ -101,6 +99,12 @@ var cli struct {
 
 	MetricsUUID bool `default:"false" help:"Add instance UUID to all metrics." negatable:""`
 
+	OTel struct {
+		Traces struct {
+			URL string `default:"" help:"OpenTelemetry OTLP/HTTP traces endpoint URL (e.g. 'http://host:4318/v1/traces')."`
+		} `embed:"" prefix:"traces-"`
+	} `embed:"" prefix:"otel-"`
+
 	Telemetry telemetry.Flag `default:"undecided" help:"Enable or disable basic telemetry. See https://beacon.ferretdb.com."`
 
 	Test struct {
@@ -118,8 +122,6 @@ var cli struct {
 
 		BatchSize            int `default:"100" help:"Experimental: maximum insertion batch size."`
 		MaxBsonObjectSizeMiB int `default:"16"  help:"Experimental: maximum BSON object size in MiB."`
-
-		OTLPEndpoint string `default:"" help:"Experimental: OTLP exporter endpoint, if unset, OpenTelemetry is disabled."`
 
 		Telemetry struct {
 			URL            string        `default:"https://beacon.ferretdb.com/" help:"Telemetry: reporting URL."`
@@ -185,13 +187,13 @@ func setCLIPlugins() {
 // Additional variables for the kong parsers.
 var (
 	logLevels = []string{
-		zap.DebugLevel.String(),
-		zap.InfoLevel.String(),
-		zap.WarnLevel.String(),
-		zap.ErrorLevel.String(),
+		slog.LevelDebug.String(),
+		slog.LevelInfo.String(),
+		slog.LevelWarn.String(),
+		slog.LevelError.String(),
 	}
 
-	logFormats = []string{"console", "json"}
+	logFormats = []string{"console", "text", "json"}
 
 	kongOptions = []kong.Option{
 		kong.HelpOptions{
@@ -225,7 +227,7 @@ func main() {
 		checkFlags(logger)
 
 		ready := ReadyZ{
-			l: slog.Default(), // TODO https://github.com/FerretDB/FerretDB/issues/4013
+			l: logger,
 		}
 
 		ctx, stop := ctxutil.SigTerm(context.Background())
@@ -241,21 +243,21 @@ func main() {
 }
 
 // defaultLogLevel returns the default log level.
-func defaultLogLevel() zapcore.Level {
+func defaultLogLevel() slog.Level {
 	if version.Get().DebugBuild {
-		return zap.DebugLevel
+		return slog.LevelDebug
 	}
 
-	return zap.InfoLevel
+	return slog.LevelInfo
 }
 
 // setupState setups state provider.
 func setupState() *state.Provider {
 	var f string
 
-	if cli.StateDir != "" && cli.StateDir != "-" {
+	if dir := cli.StateDir; dir != "" && dir != "-" {
 		var err error
-		if f, err = filepath.Abs(filepath.Join(cli.StateDir, "state.json")); err != nil {
+		if f, err = filepath.Abs(filepath.Join(dir, "state.json")); err != nil {
 			log.Fatalf("Failed to get path for state file: %s.", err)
 		}
 	}
@@ -288,32 +290,40 @@ func setupMetrics(stateProvider *state.Provider) prometheus.Registerer {
 	return r
 }
 
-// setupLogger setups zap logger.
-func setupLogger(format string, uuid string) *zap.Logger {
-	level, err := zapcore.ParseLevel(cli.Log.Level)
-	if err != nil {
+// setupLogger creates a logger with the level defined from cli.
+func setupLogger(format string, uuid string) *slog.Logger {
+	var level slog.Level
+	if err := level.UnmarshalText([]byte(cli.Log.Level)); err != nil {
 		log.Fatal(err)
 	}
 
-	logging.Setup(level, format, uuid)
+	opts := &logging.NewHandlerOpts{
+		Base:  format,
+		Level: level,
+	}
+	logging.Setup(opts, uuid)
 
-	return zap.L()
+	return slog.Default()
 }
 
 // checkFlags checks that CLI flags are not self-contradictory.
-func checkFlags(logger *zap.Logger) {
-	l := logger.Sugar()
+func checkFlags(l *slog.Logger) {
+	ctx := context.Background()
 
 	if cli.Setup.Database != "" && !cli.Test.EnableNewAuth {
-		l.Fatal("--setup-database requires --test-enable-new-auth")
+		l.LogAttrs(ctx, logging.LevelFatal, "--setup-database requires --test-enable-new-auth")
 	}
 
 	if (cli.Setup.Database == "") != (cli.Setup.Username == "") {
-		l.Fatal("--setup-database should be used together with --setup-username")
+		l.LogAttrs(ctx, logging.LevelFatal, "--setup-database should be used together with --setup-username")
 	}
 
 	if cli.Test.DisablePushdown && cli.Test.EnableNestedPushdown {
-		l.Fatal("--test-disable-pushdown and --test-enable-nested-pushdown should not be set at the same time")
+		l.LogAttrs(
+			ctx,
+			logging.LevelFatal,
+			"--test-disable-pushdown and --test-enable-nested-pushdown should not be set at the same time",
+		)
 	}
 }
 
@@ -360,42 +370,42 @@ func run() {
 
 	metricsRegisterer := setupMetrics(stateProvider)
 
-	startupFields := []zap.Field{
-		zap.String("version", info.Version),
-		zap.String("commit", info.Commit),
-		zap.String("branch", info.Branch),
-		zap.Bool("dirty", info.Dirty),
-		zap.String("package", info.Package),
-		zap.Bool("debugBuild", info.DebugBuild),
-		zap.Any("buildEnvironment", info.BuildEnvironment.Map()),
+	startupFields := []slog.Attr{
+		slog.String("version", info.Version),
+		slog.String("commit", info.Commit),
+		slog.String("branch", info.Branch),
+		slog.Bool("dirty", info.Dirty),
+		slog.String("package", info.Package),
+		slog.Bool("debugBuild", info.DebugBuild),
+		slog.Any("buildEnvironment", info.BuildEnvironment),
 	}
-
 	logUUID := stateProvider.Get().UUID
 
 	// Similarly to Prometheus, unless requested, don't add UUID to all messages, but log it once at startup.
 	if !cli.Log.UUID {
-		startupFields = append(startupFields, zap.String("uuid", logUUID))
+		startupFields = append(startupFields, slog.String("uuid", logUUID))
 		logUUID = ""
 	}
 
 	logger := setupLogger(cli.Log.Format, logUUID)
 
-	slogger := slog.Default()
-
-	logger.Info("Starting FerretDB "+info.Version+"...", startupFields...)
+	//nolint:sloglint // https://github.com/go-simpler/sloglint/issues/48
+	logger.LogAttrs(context.Background(), slog.LevelInfo, "Starting FerretDB "+info.Version+"...", startupFields...)
 
 	if debugbuild.Enabled {
 		logger.Info("This is a debug build. The performance will be affected.")
 	}
 
-	if logger.Level().Enabled(zap.DebugLevel) {
+	if logger.Enabled(context.Background(), slog.LevelDebug) {
 		logger.Info("Debug logging enabled. The security and performance will be affected.")
 	}
 
 	checkFlags(logger)
 
-	if _, err := maxprocs.Set(maxprocs.Logger(logger.Sugar().Debugf)); err != nil {
-		logger.Sugar().Warnf("Failed to set GOMAXPROCS: %s.", err)
+	if _, err := maxprocs.Set(maxprocs.Logger(func(format string, a ...any) {
+		logger.Debug(fmt.Sprintf(format, a...))
+	})); err != nil {
+		logger.Warn("Failed to set GOMAXPROCS", logging.Error(err))
 	}
 
 	ctx, stop := ctxutil.SigTerm(context.Background())
@@ -413,19 +423,19 @@ func run() {
 
 	var wg sync.WaitGroup
 
-	if cli.DebugAddr != "" && cli.DebugAddr != "-" {
+	if addr := cli.DebugAddr; addr != "" && addr != "-" {
 		wg.Add(1)
 
 		go func() {
 			defer wg.Done()
 
-			l := logging.WithName(slogger, "debug")
+			l := logging.WithName(logger, "debug")
 			ready := ReadyZ{
 				l: l,
 			}
 
 			h, err := debug.Listen(&debug.ListenOpts{
-				TCPAddr: cli.DebugAddr,
+				TCPAddr: addr,
 				L:       l,
 				R:       metricsRegisterer,
 				Livez: func(context.Context) bool {
@@ -445,19 +455,19 @@ func run() {
 		}()
 	}
 
-	if cli.Test.OTLPEndpoint != "" {
+	if u := cli.OTel.Traces.URL; u != "" && u != "-" {
 		wg.Add(1)
 
 		go func() {
 			defer wg.Done()
 
-			l := logging.WithName(slogger, "otel")
+			l := logging.WithName(logger, "otel")
 
-			ot, err := observability.NewOtelTracer(&observability.OtelTracerOpts{
-				Logger:   l,
-				Service:  "ferretdb",
-				Version:  version.Get().Version,
-				Endpoint: cli.Test.OTLPEndpoint,
+			ot, err := observability.NewOTelTraceExporter(&observability.OTelTraceExporterOpts{
+				Logger:  l,
+				Service: "ferretdb",
+				Version: version.Get().Version,
+				URL:     u,
 			})
 			if err != nil {
 				l.LogAttrs(ctx, logging.LevelFatal, "Failed to create Otel tracer", logging.Error(err))
@@ -474,7 +484,7 @@ func run() {
 	go func() {
 		defer wg.Done()
 
-		l := logging.WithName(slogger, "telemetry")
+		l := logging.WithName(logger, "telemetry")
 		opts := &telemetry.NewReporterOpts{
 			URL:            cli.Test.Telemetry.URL,
 			F:              &cli.Telemetry,
@@ -498,7 +508,6 @@ func run() {
 
 	h, closeBackend, err := registry.NewHandler(cli.Handler, &registry.NewHandlerOpts{
 		Logger:        logger,
-		SLogger:       slogger,
 		ConnMetrics:   metrics.ConnMetrics,
 		StateProvider: stateProvider,
 		TCPHost:       cli.Listen.Addr,
@@ -528,7 +537,7 @@ func run() {
 		},
 	})
 	if err != nil {
-		logger.Sugar().Fatalf("Failed to construct handler: %s.", err)
+		logger.LogAttrs(ctx, logging.LevelFatal, "Failed to construct handler", logging.Error(err))
 	}
 
 	defer closeBackend()
@@ -550,11 +559,11 @@ func run() {
 		Mode:           clientconn.Mode(cli.Mode),
 		Metrics:        metrics,
 		Handler:        h,
-		Logger:         slogger,
+		Logger:         logger,
 		TestRecordsDir: cli.Test.RecordsDir,
 	})
 	if err != nil {
-		logger.Sugar().Fatalf("Failed to construct listener: %s.", err)
+		logger.LogAttrs(ctx, logging.LevelFatal, "Failed to construct listener", logging.Error(err))
 	}
 
 	listener.Store(l)

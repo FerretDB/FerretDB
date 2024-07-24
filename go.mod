@@ -15,7 +15,6 @@ require (
 	github.com/jackc/pgerrcode v0.0.0-20240316143900-6e2875d9b438
 	github.com/jackc/pgx-zap v0.0.0-20221202020421-94b1cb2f889f
 	github.com/jackc/pgx/v5 v5.6.0
-	github.com/neilotoole/slogt v1.1.0
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/prometheus/client_golang v1.19.1
 	github.com/prometheus/client_model v0.6.1

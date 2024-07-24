@@ -18,12 +18,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"math"
 	"os"
 	"strings"
 	"time"
-
-	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
@@ -381,9 +380,13 @@ func (h *Handler) MsgAggregate(connCtx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, handleMaxTimeMSError(err, maxTimeMS, "aggregate")
 	}
 
-	h.L.Debug(
-		"Got first batch", zap.Int64("cursor_id", cursorID), zap.Stringer("type", cursor.Type),
-		zap.Int("count", len(docs)), zap.Int64("batch_size", batchSize),
+	h.L.DebugContext(
+		ctx,
+		"Got first batch",
+		slog.Int64("cursor_id", cursorID),
+		slog.String("type", cursor.Type.String()),
+		slog.Int("count", len(docs)),
+		slog.Int64("batch_size", batchSize),
 	)
 
 	firstBatch := types.MakeArray(len(docs))

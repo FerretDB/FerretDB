@@ -476,7 +476,7 @@ func main() {
 		RemoveSource: true,
 	}
 
-	logging.SetupSlog(opts, "")
+	logging.Setup(opts, "")
 	logger := slog.Default()
 
 	cmd := kongCtx.Command()

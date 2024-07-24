@@ -24,7 +24,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/url"
-	"sync"
 
 	"go.uber.org/zap"
 
@@ -40,8 +39,13 @@ import (
 type Config struct {
 	Listener ListenerConfig
 
-	// Logger to use; if nil, it uses the default global logger.
+	// Deprecated: Use slog logger, panics if not nil.
 	Logger *zap.Logger
+
+	// slog logger to use; if nil, the default logger is used.
+	//
+	// To make logs accessible by `getLog` command, use [logging.WrapLogger] or [logging.WrapHandler].
+	SLogger *slog.Logger
 
 	// Handler to use; one of `postgresql` or `sqlite`.
 	Handler string
@@ -118,18 +122,17 @@ func New(config *Config) (*FerretDB, error) {
 
 	metrics := connmetrics.NewListenerMetrics()
 
-	log := config.Logger
+	log := config.SLogger
 	if log == nil {
-		log = getGlobalLogger()
-	} else {
-		log = logging.WithHooks(log)
+		log = slog.Default()
 	}
 
-	slogger := slog.Default()
+	if config.Logger != nil {
+		log.LogAttrs(context.Background(), logging.LevelFatal, "Config.Logger is replaced by Config.SLogger")
+	}
 
 	h, closeBackend, err := registry.NewHandler(config.Handler, &registry.NewHandlerOpts{
 		Logger:        log,
-		SLogger:       slog.Default(), // TODO https://github.com/FerretDB/FerretDB/issues/4013
 		ConnMetrics:   metrics.ConnMetrics,
 		StateProvider: sp,
 		TCPHost:       config.Listener.TCP,
@@ -162,7 +165,7 @@ func New(config *Config) (*FerretDB, error) {
 		Mode:    clientconn.NormalMode,
 		Metrics: metrics,
 		Handler: h,
-		Logger:  slogger,
+		Logger:  log,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct handler: %s", err)
@@ -225,25 +228,4 @@ func (f *FerretDB) MongoDBURI() string {
 	}
 
 	return u.String()
-}
-
-var (
-	loggerOnce sync.Once
-	logger     *zap.Logger
-)
-
-// getGlobalLogger retrieves or creates a global logger using
-// a loggerOnce to ensure it is created only once.
-func getGlobalLogger() *zap.Logger {
-	loggerOnce.Do(func() {
-		level := zap.ErrorLevel
-		if version.Get().DebugBuild {
-			level = zap.DebugLevel
-		}
-
-		logging.Setup(level, "console", "")
-		logger = zap.L()
-	})
-
-	return logger
 }

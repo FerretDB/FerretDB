@@ -28,7 +28,7 @@ func init() {
 	registry["sqlite"] = func(opts *NewHandlerOpts) (*handler.Handler, CloseBackendFunc, error) {
 		b, err := sqlite.NewBackend(&sqlite.NewBackendParams{
 			URI:       opts.SQLiteURL,
-			L:         logging.WithName(opts.SLogger, "sqlite"),
+			L:         logging.WithName(opts.Logger, "sqlite"),
 			P:         opts.StateProvider,
 			BatchSize: opts.BatchSize,
 		})
@@ -46,7 +46,7 @@ func init() {
 			SetupPassword: opts.SetupPassword,
 			SetupTimeout:  opts.SetupTimeout,
 
-			L:             opts.Logger.Named("sqlite"),
+			L:             logging.WithName(opts.Logger, "sqlite"),
 			ConnMetrics:   opts.ConnMetrics,
 			StateProvider: opts.StateProvider,
 
