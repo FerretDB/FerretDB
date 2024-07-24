@@ -200,6 +200,7 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 	}
 
 	querySizeCollections := querySizeTotal + " AND TABLE_TYPE = 'COLLECTION'"
+
 	sizeCollections, err := querySingleInt(querySizeCollections, ctx, db.hdb)
 	if err != nil {
 		return nil, lazyerrors.Error(err)

@@ -130,13 +130,11 @@ func TestPrepareOrderByClause(t *testing.T) {
 		},
 		"OrderAsc": {
 			sort:     must.NotFail(types.NewDocument("$natural", int64(1))),
-			expected: "",
-			// expected: " ORDER BY \"test\"",
+			expected: " ORDER BY \"_id\" ASC",
 		},
 		"OrderDesc": {
 			sort:     must.NotFail(types.NewDocument("$natural", int64(-1))),
-			expected: "",
-			// expected: " ORDER BY \"test\" DESC",
+			expected: " ORDER BY \"_id\" DESC",
 		},
 	} {
 		name, tc := name, tc
