@@ -91,6 +91,15 @@ Trace format is not stable yet; attribute names and values might change in minor
 FerretDB exposes various HTTP endpoints with the debug handler on `http://127.0.0.1:8088/debug/` by default.
 The host and port can be changed with [`--debug-addr` flag](flags.md#interfaces).
 
+### Archive
+
+FerretDB serves a zip archive with debugging information on the `/debug/archive` endpoint.
+Information in the archive helps us debug performance and compatibility problems.
+
+:::caution
+Please do not publish the whole archive in our [public community places](/#community), as it contains sensitive information.
+:::
+
 ### Metrics
 
 FerretDB exposes metrics in Prometheus format on the `/debug/metrics` endpoint.
