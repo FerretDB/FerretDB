@@ -34,7 +34,7 @@ func TestDriver(t *testing.T) {
 
 	ctx := testutil.Ctx(t)
 
-	c := must.NotFail(Connect(ctx, "mongodb://127.0.0.1:47017/", testutil.SLogger(t)))
+	c := must.NotFail(Connect(ctx, "mongodb://127.0.0.1:47017/", testutil.Logger(t)))
 	t.Cleanup(func() { require.NoError(t, c.Close()) })
 
 	dbName := testutil.DatabaseName(t)
@@ -126,7 +126,7 @@ func TestDriverAuthSource(t *testing.T) {
 	}
 
 	ctx := testutil.Ctx(t)
-	l := testutil.SLogger(t)
+	l := testutil.Logger(t)
 
 	for name, tc := range map[string]struct {
 		uri      string

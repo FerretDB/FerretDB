@@ -101,8 +101,6 @@ func NewRegistry(l *slog.Logger) *Registry {
 
 // Close waits for all cursors to be closed and removed from the registry.
 func (r *Registry) Close() {
-	// we mainly do that for tests; see https://github.com/uber-go/zap/issues/687
-
 	r.wg.Wait()
 }
 

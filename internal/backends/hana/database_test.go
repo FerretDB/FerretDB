@@ -33,7 +33,7 @@ func TestDatabaseStats(t *testing.T) {
 
 	params := NewBackendParams{
 		URI: hanaURL,
-		L:   testutil.SLogger(t),
+		L:   testutil.Logger(t),
 	}
 
 	b, err := NewBackend(&params)

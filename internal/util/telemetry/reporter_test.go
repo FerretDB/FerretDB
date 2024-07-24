@@ -80,7 +80,7 @@ func TestNewReporterLock(t *testing.T) {
 				ExecName:    tc.execName,
 				ConnMetrics: connmetrics.NewListenerMetrics().ConnMetrics,
 				P:           sp,
-				L:           testutil.SLogger(t),
+				L:           testutil.Logger(t),
 			}
 
 			_, err = NewReporter(&opts)
@@ -130,7 +130,7 @@ func TestReporterReport(t *testing.T) {
 			F:             &Flag{v: pointer.ToBool(true)},
 			ConnMetrics:   connmetrics.NewListenerMetrics().ConnMetrics,
 			P:             sp,
-			L:             testutil.SLogger(t),
+			L:             testutil.Logger(t),
 			ReportTimeout: 1 * time.Minute,
 		}
 
@@ -205,7 +205,7 @@ func TestReporterReport(t *testing.T) {
 			F:             &Flag{v: pointer.ToBool(false)},
 			ConnMetrics:   connmetrics.NewListenerMetrics().ConnMetrics,
 			P:             sp,
-			L:             testutil.SLogger(t),
+			L:             testutil.Logger(t),
 			ReportTimeout: 1 * time.Minute,
 		}
 

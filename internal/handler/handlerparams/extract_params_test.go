@@ -369,7 +369,7 @@ func TestParse(t *testing.T) {
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			err := ExtractParams(tt.doc, tt.command, tt.params, testutil.SLogger(t))
+			err := ExtractParams(tt.doc, tt.command, tt.params, testutil.Logger(t))
 			if tt.wantErr != "" {
 				require.Regexp(t, regexp.MustCompile(".*"+tt.wantErr), err.Error())
 				return
