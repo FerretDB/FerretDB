@@ -16,55 +16,84 @@
 package main
 
 import (
-	"fmt"
 	"go/ast"
+	"go/token"
 
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/singlechecker"
 )
 
-// orderTypes is the preferred order of types in the switch.
-var orderTypes = map[string]int{
+// bsonOrder is the preferred order of case elements in switch statements.
+var bsonOrder = map[string]int{
 	"Document":     1,
 	"documentType": 1,
+	"tagDocument":  1,
 
 	"Array":     2,
 	"arrayType": 2,
+	"tagArray":  2,
 
 	"float64":    3,
 	"doubleType": 3,
+	"tagFloat64": 3,
 
 	"string":     4,
 	"stringType": 4,
+	"tagString":  4,
 
 	"Binary":     5,
 	"binaryType": 5,
+	"tagBinary":  5,
 
-	"ObjectID":     6,
-	"objectIDType": 6,
+	"tagUndefined": 6,
 
-	"bool":     7,
-	"boolType": 7,
+	"ObjectID":     7,
+	"objectIDType": 7,
+	"tagObjectID":  7,
 
-	"Time":         8,
-	"dateTimeType": 8,
+	"bool":     8,
+	"boolType": 8,
+	"tagBool":  8,
 
-	"NullType": 9,
-	"nullType": 9,
+	"Time":         9,
+	"dateTimeType": 9,
+	"tagTime":      9,
 
-	"Regex":     10,
-	"regexType": 10,
+	"NullType": 10,
+	"nullType": 10,
+	"tagNull":  10,
 
-	"int32":     11,
-	"int32Type": 11,
+	"Regex":     11,
+	"regexType": 11,
+	"tagRegex":  11,
 
-	"Timestamp":     12,
-	"timestampType": 12,
+	"tagDBPointer": 12,
 
-	"int64":     13,
-	"int64Type": 13,
+	"tagJavaScript": 13,
 
-	"CString": 14,
+	"tagSymbol": 14,
+
+	"tagJavaScriptScope": 15,
+
+	"int32":     16,
+	"int32Type": 16,
+	"tagInt32":  16,
+
+	"Timestamp":     17,
+	"timestampType": 17,
+	"tagTimestamp":  17,
+
+	"int64":     18,
+	"int64Type": 18,
+	"tagInt64":  18,
+
+	"tagDecimal128": 19,
+
+	"tagMinKey": 20,
+
+	"tagMaxKey": 21,
+
+	"CString": 22,
 }
 
 var analyzer = &analysis.Analyzer{
@@ -79,73 +108,15 @@ func main() {
 
 // run is the function to be called by the driver to execute analysis on a single package.
 //
-// It analyzes the presence of types in 'case' in ascending order of indexes 'orderTypes'.
+// It analyzes the presence of types in 'case' in ascending order of indexes defined in 'bsonOrder'.
 func run(pass *analysis.Pass) (any, error) {
 	for _, file := range pass.Files {
 		ast.Inspect(file, func(n ast.Node) bool {
-			var idx int
-			var lastName string
 			switch n := n.(type) {
 			case *ast.TypeSwitchStmt:
-				var name string
-				for _, el := range n.Body.List {
-					if len(el.(*ast.CaseClause).List) < 1 {
-						continue
-					}
-
-					firstTypeCase := el.(*ast.CaseClause).List[0]
-					switch firstTypeCase := firstTypeCase.(type) {
-					case *ast.StarExpr:
-						if sexp, ok := firstTypeCase.X.(*ast.SelectorExpr); ok {
-							name = sexp.Sel.Name
-						}
-						if sexp, ok := firstTypeCase.X.(*ast.Ident); ok {
-							name = sexp.Name
-						}
-
-					case *ast.SelectorExpr:
-						name = firstTypeCase.Sel.Name
-
-					case *ast.Ident:
-						name = firstTypeCase.Name
-					}
-
-					idxSl, ok := orderTypes[name]
-					if ok && (idxSl < idx) {
-						pass.Reportf(n.Pos(), "%s should go before %s in the switch", name, lastName)
-					}
-					idx, lastName = idxSl, name
-
-					// handling with multiple types,
-					// e.g. 'case int32, int64'
-					if len(el.(*ast.CaseClause).List) > 1 {
-						subidx, sublastName := idx, lastName
-						for i := 0; i < len(el.(*ast.CaseClause).List); i++ {
-							cs := el.(*ast.CaseClause).List[i]
-							switch cs := cs.(type) {
-							case *ast.StarExpr:
-								if sexp, ok := cs.X.(*ast.SelectorExpr); ok {
-									name = sexp.Sel.Name
-								}
-								if sexp, ok := cs.X.(*ast.Ident); ok {
-									name = sexp.Name
-								}
-
-							case *ast.SelectorExpr:
-								name = fmt.Sprintf("%s.%s", cs.X, cs.Sel.Name)
-
-							case *ast.Ident:
-								name = cs.Name
-							}
-
-							subidxSl, ok := orderTypes[name]
-							if ok && (subidxSl < subidx) {
-								pass.Reportf(n.Pos(), "%s should go before %s in the switch", name, sublastName)
-							}
-							subidx, sublastName = subidxSl, name
-						}
-					}
-				}
+				checkOrder(n.Body.List, pass, n.Pos())
+			case *ast.SwitchStmt:
+				checkOrder(n.Body.List, pass, n.Pos())
 			}
 
 			return true
@@ -153,4 +124,58 @@ func run(pass *analysis.Pass) (any, error) {
 	}
 
 	return nil, nil
+}
+
+// checkOrder checks the order of the case elements in switch statements.
+func checkOrder(list []ast.Stmt, pass *analysis.Pass, pos token.Pos) {
+	var order int
+	var name string
+
+	// outer loop checks the order of case clauses
+	// case "int32":
+	// case "int64":
+	for _, stmt := range list {
+		caseOrder, caseName := order, name
+
+		// inner loop checks the order within a case statement
+		// case "int32", "int64":
+		for i, caseElem := range stmt.(*ast.CaseClause).List {
+			var elemName string
+
+			switch expr := caseElem.(type) {
+			case *ast.StarExpr:
+				switch starExpr := expr.X.(type) {
+				case *ast.SelectorExpr:
+					elemName = starExpr.Sel.Name
+				case *ast.Ident:
+					elemName = starExpr.Name
+				default:
+					// not `types` or `tags`
+				}
+
+			case *ast.SelectorExpr:
+				elemName = expr.Sel.Name
+
+			case *ast.Ident:
+				elemName = expr.Name
+
+			default:
+				// not `types` or `tags`
+			}
+
+			elemOrder, ok := bsonOrder[elemName]
+			if ok && (elemOrder < caseOrder) {
+				pass.Reportf(pos, "%s should go before %s in the switch", elemName, caseName)
+			}
+
+			caseOrder, caseName = elemOrder, elemName
+
+			if i == 0 {
+				// i.e. "int64" is larger than "int32" but below is allowed
+				// case "float64", "int64":
+				// case "int32":
+				order, name = elemOrder, elemName
+			}
+		}
+	}
 }

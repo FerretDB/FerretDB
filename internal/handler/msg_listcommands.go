@@ -26,7 +26,9 @@ import (
 )
 
 // MsgListCommands implements `listCommands` command.
-func (h *Handler) MsgListCommands(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgListCommands(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	cmdList := must.NotFail(types.NewDocument())
 	names := maps.Keys(h.Commands())
 	sort.Strings(names)

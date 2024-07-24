@@ -22,10 +22,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
+
+	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
 func TestCommandsAuthenticationLogout(t *testing.T) {
@@ -69,7 +68,7 @@ func TestCommandsAuthenticationLogout(t *testing.T) {
 func TestCommandsAuthenticationLogoutAuthenticatedUser(t *testing.T) {
 	t.Parallel()
 
-	s := setup.SetupWithOpts(t, &setup.SetupOpts{SetupUser: true})
+	s := setup.SetupWithOpts(t, nil)
 	ctx, db := s.Ctx, s.Collection.Database()
 	username, password, mechanism := "testuser", "testpass", "SCRAM-SHA-256"
 
@@ -102,37 +101,31 @@ func TestCommandsAuthenticationLogoutAuthenticatedUser(t *testing.T) {
 	err = db.RunCommand(ctx, bson.D{{"connectionStatus", 1}}).Decode(&res)
 	require.NoError(t, err)
 
-	actualAuth, err := ConvertDocument(t, res).Get("authInfo")
-	require.NoError(t, err)
+	expected := bson.D{
+		{"authInfo", bson.D{
+			{"authenticatedUsers", bson.A{bson.D{{"user", username}, {"db", db.Name()}}}},
+			{"authenticatedUserRoles", bson.A{}},
+		}},
+		{"ok", float64(1)},
+	}
 
-	actualUsersV, err := actualAuth.(*types.Document).Get("authenticatedUsers")
-	require.NoError(t, err)
-
-	actualUsers := actualUsersV.(*types.Array)
-	require.Equal(t, 1, actualUsers.Len())
-
-	actualUser := must.NotFail(actualUsers.Get(0)).(*types.Document)
-	user, err := actualUser.Get("user")
-	require.NoError(t, err)
-	require.Equal(t, username, user)
+	AssertEqualDocuments(t, expected, res)
 
 	err = db.RunCommand(ctx, bson.D{{"logout", 1}}).Decode(&res)
 	require.NoError(t, err)
 
-	actual := ConvertDocument(t, res)
-	actual.Remove("$clusterTime")
-	actual.Remove("operationTime")
-
-	expected := ConvertDocument(t, bson.D{{"ok", float64(1)}})
-	testutil.AssertEqual(t, expected, actual)
+	AssertEqualDocuments(t, bson.D{{"ok", float64(1)}}, res)
 
 	err = db.RunCommand(ctx, bson.D{{"connectionStatus", 1}}).Decode(&res)
 	require.NoError(t, err)
 
-	actualAuth, err = ConvertDocument(t, res).Get("authInfo")
-	require.NoError(t, err)
+	expected = bson.D{
+		{"authInfo", bson.D{
+			{"authenticatedUsers", bson.A{}},
+			{"authenticatedUserRoles", bson.A{}},
+		}},
+		{"ok", float64(1)},
+	}
 
-	actualUsersV, err = actualAuth.(*types.Document).Get("authenticatedUsers")
-	require.NoError(t, err)
-	require.Empty(t, actualUsersV)
+	AssertEqualDocuments(t, expected, res)
 }

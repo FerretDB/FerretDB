@@ -124,27 +124,12 @@ Please create a pull request and include the link of the pull request in the bug
 With `task` installed (see above), you may do the following:
 
 1. Start the development environment with `task env-up`.
-2. Run all tests in another terminal window with `task test` (see [below](#running-tests)).
-3. Start FerretDB with `task run`.
-   This will start it in a development mode where all requests are handled by FerretDB, but also routed to MongoDB.
-   The differences in response are then logged and the FerretDB response is sent back to the client.
-4. Fill collections in `test` database with data for experiments with `task env-data`.
+2. Run all tests with `task test` (see [below](#running-tests)).
+3. Start FerretDB with `task run`, `task run-sqlite` or `task run-proxy`.
+   (See [Operation modes](https://docs.ferretdb.io/configuration/operation-modes/) page in our documentation.)
+4. Fill collections in the `test` database with data for experiments with `task env-data`.
 5. Run `mongosh` with `task mongosh`.
-   This allows you to run commands against FerretDB.
-   For example, you can see what data was inserted by the previous command with `db.values.find()`.
-
-### Operation modes
-
-FerretDB can run in multiple operation modes.
-Operation mode specify how FerretDB handles incoming requests.
-FerretDB supports four operation modes: `normal`, `proxy`, `diff-normal`, `diff-proxy`,
-see [Operation modes documentation page](https://docs.ferretdb.io/configuration/operation-modes/) for more details.
-
-By running `task run` FerretDB starts on `diff-normal` mode, which routes all of
-the sent requests both to the FerretDB and MongoDB.
-While running, it logs a difference between both returned responses,
-but sends the one from FerretDB to the client.
-If you want to get the MongoDB response, you can run `task run-proxy` to start FerretDB in `diff-proxy` mode.
+   See what collections were created by the previous command with `show collections`.
 
 ### Code overview
 
@@ -251,27 +236,38 @@ please improve it as you work on it.
 Our code follows most of the standard Go conventions,
 documented on [CodeReviewComments wiki page](https://go.dev/wiki/CodeReviewComments)
 and some other pages such as [Spelling](https://go.dev/wiki/Spelling).
-Some of our idiosyncrasies:
+Some of our idiosyncrasies are documented below.
 
 1. We use type switches over BSON types in many places in our code.
    The order of `case`s follows this order: https://pkg.go.dev/github.com/FerretDB/FerretDB/internal/types#hdr-Mapping
    It may seem random, but it is only pseudo-random and follows BSON spec: https://bsonspec.org/spec.html
 2. We generally pass and return `struct`s by pointers.
    There are some exceptions like `types.Path` that have value semantics, but when in doubt – use pointers.
-3. Log messages should not end with punctuation.
-   Log field names use `snake_case`.
-4. Code comments:
-   - All top-level declarations, even unexported, should have documentation comments.
-   - In documentation comments do not describe the name in terms of the name itself (`// Registry is a registry of …`).
-     Use other words instead; often, they could add additional information and make reading more pleasant (`// Registry stores …`).
-   - In code comments, in general, do not describe _what_ the code does: it should be clear from the code itself
-     (and when it doesn't and the code is tricky, simplify it instead).
-     Instead, describe _why_ the code does that if it is not clear from the surrounding context, names, etc.
-     There is no need to add comments just because there are no comments if everything is already clear without them.
-   - For code comments, write either
-     sentence fragments (do not start it with a capital letter, do not end it with a dot, use the simplified grammar) for short notes
-     or full sentences (do start them with capital letters, do end them with dots, do check their grammar) when a longer (2+ sentences)
-     explanation is needed (and the code could not be simplified).
+
+#### Comments conventions
+
+1. All top-level declarations, even unexported, should have documentation comments.
+2. In documentation comments do not describe the name in terms of the name itself (`// Registry is a registry of …`).
+   Use other words instead; often, they could add additional information and make reading more pleasant (`// Registry stores …`).
+3. In code comments, in general, do not describe _what_ the code does: it should be clear from the code itself
+   (and when it doesn't and the code is tricky, simplify it instead).
+   Instead, describe _why_ the code does that if it is not clear from the surrounding context, names, etc.
+   There is no need to add comments just because there are no comments if everything is already clear without them.
+4. For code comments, write either
+   sentence fragments (do not start it with a capital letter, do not end it with a dot, use the simplified grammar) for short notes
+   or full sentences (do start them with capital letters, do end them with dots, do check their grammar) when a longer (2+ sentences)
+   explanation is needed (and the code could not be simplified).
+
+#### Logging conventions
+
+(See also our user documentation for notes about logging levels, logging sensitive information, etc.)
+
+1. Log messages should not end with punctuation.
+2. Log field names should use `snake_case`.
+3. Whatever sensitive information can be logged should be checked by calling `.Enabled(LevelDebug)` on the appropriate logger,
+   not by directly comparing levels with `<` / `>` operators.
+   The same check for `LevelDebug` should be applied if additional sensitive fields should be added
+   to the log message on a different level.
 
 #### Integration tests conventions
 
@@ -302,6 +298,8 @@ const doubleMaxPrec = float64(1<<53 - 1) // 9007199254740991.0:    largest doubl
 ```
 
 #### Integration tests naming guidelines
+
+<!-- https://github.com/FerretDB/FerretDB/issues/694 -->
 
 1. Test names should include the name of the command being tested.
    For instance, `TestDistinct` for testing the distinct command.

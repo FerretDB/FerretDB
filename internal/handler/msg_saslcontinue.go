@@ -17,6 +17,8 @@ package handler
 import (
 	"context"
 
+	"go.uber.org/zap"
+
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
@@ -27,7 +29,9 @@ import (
 )
 
 // MsgSASLContinue implements `saslContinue` command.
-func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgSASLContinue(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	doc, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -42,33 +46,52 @@ func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.O
 
 	payload = binaryPayload.B
 
-	conv := conninfo.Get(ctx).Conv()
+	_, _, conv, _ := conninfo.Get(connCtx).Auth()
 
 	if conv == nil {
-		return nil, handlererrors.NewCommandErrorMsg(
+		h.L.Warn("saslContinue: no conversation to continue")
+
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
 			handlererrors.ErrAuthenticationFailed,
 			"Authentication failed.",
+			"saslContinue",
 		)
 	}
 
 	response, err := conv.Step(string(payload))
+
+	fields := []zap.Field{
+		zap.String("username", conv.Username()),
+		zap.Bool("valid", conv.Valid()),
+		zap.Bool("done", conv.Done()),
+	}
+
 	if err != nil {
-		return nil, handlererrors.NewCommandErrorMsg(
+		if h.L.Level().Enabled(zap.DebugLevel) {
+			fields = append(fields, zap.Error(err))
+		}
+
+		h.L.Warn("saslContinue: step failed", fields...)
+
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
 			handlererrors.ErrAuthenticationFailed,
 			"Authentication failed.",
+			"saslContinue",
 		)
 	}
 
-	binResponse := types.Binary{
-		B: []byte(response),
+	h.L.Debug("saslContinue: step succeed", fields...)
+
+	if conv.Valid() {
+		conninfo.Get(connCtx).SetBypassBackendAuth()
 	}
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
 		must.NotFail(types.NewDocument(
 			"conversationId", int32(1),
-			"done", true,
-			"payload", binResponse,
+			"done", conv.Done(),
+			"payload", types.Binary{B: []byte(response)},
 			"ok", float64(1),
 		)),
 	)))

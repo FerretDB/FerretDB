@@ -29,7 +29,9 @@ import (
 )
 
 // MsgUsersInfo implements `usersInfo` command.
-func (h *Handler) MsgUsersInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgUsersInfo(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -139,7 +141,7 @@ func (h *Handler) MsgUsersInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	// Filter isn't being passed to the query as we are filtering after retrieving all data
 	// from the database due to limitations of the internal/backends filters.
-	qr, err := usersCol.Query(ctx, nil)
+	qr, err := usersCol.Query(connCtx, nil)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

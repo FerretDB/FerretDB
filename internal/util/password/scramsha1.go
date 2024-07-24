@@ -22,18 +22,22 @@ import (
 
 	"golang.org/x/crypto/pbkdf2"
 
-	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// SCRAMSHA1Hash computes SCRAM-SHA-1 credentials and returns the document that should be stored.
-func SCRAMSHA1Hash(username, password string) (*types.Document, error) {
+// SCRAMSHA1VariationHash computes a variation of SCRAM-SHA-1 and returns
+// a document containing stored key, iteration count, salt, and server key.
+//
+// It does not conform to the SCRAM-SHA-1 standard due to the custom preparation
+// of the password.
+func SCRAMSHA1VariationHash(username string, password Password) (*bson.Document, error) {
 	salt := make([]byte, fixedScramSHA1Params.saltLen)
 	if _, err := rand.Read(salt); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	doc, err := scramSHA1HashParams(username, password, salt, fixedScramSHA1Params)
+	doc, err := scramSHA1VariationHashParams(username, password, salt, fixedScramSHA1Params)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -47,16 +51,16 @@ var fixedScramSHA1Params = &scramParams{
 	saltLen:        16,
 }
 
-// scramSHA1HashParams hashes the password with the given salt and parameters,
+// scramSHA1VariationHashParams hashes the password using custom preparation with the given salt and parameters,
 // and returns the document that should be stored using a variation of the SCRAM-SHA-1 algorithm
 // used by MongoDB.
-func scramSHA1HashParams(username, password string, salt []byte, params *scramParams) (*types.Document, error) {
+func scramSHA1VariationHashParams(username string, password Password, salt []byte, params *scramParams) (*bson.Document, error) {
 	if len(salt) != int(params.saltLen) {
 		return nil, lazyerrors.Errorf("unexpected salt length: %d", len(salt))
 	}
 
 	md5sum := md5.New()
-	if _, err := md5sum.Write([]byte(username + ":mongo:" + password)); err != nil {
+	if _, err := md5sum.Write([]byte(username + ":mongo:" + password.Password())); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 

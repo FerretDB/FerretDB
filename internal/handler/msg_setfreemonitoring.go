@@ -28,7 +28,9 @@ import (
 )
 
 // MsgSetFreeMonitoring implements `setFreeMonitoring` command.
-func (h *Handler) MsgSetFreeMonitoring(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgSetFreeMonitoring(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)

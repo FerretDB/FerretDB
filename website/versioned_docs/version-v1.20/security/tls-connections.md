@@ -77,6 +77,7 @@ and volume is mounted from `./server-certs` of Docker host to `/etc/certs` of Do
 services:
   postgres:
     image: postgres
+    restart: on-failure
     environment:
       - POSTGRES_USER=username
       - POSTGRES_PASSWORD=password

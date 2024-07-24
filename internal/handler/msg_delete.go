@@ -32,7 +32,9 @@ import (
 )
 
 // MsgDelete implements `delete` command.
-func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgDelete(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -67,7 +69,8 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	writeErrors := types.MakeArray(0)
 
 	for i, p := range params.Deletes {
-		d, err := h.execDelete(ctx, c, &p)
+		var d int32
+		d, err = h.execDelete(connCtx, c, &p)
 
 		deleted += d
 

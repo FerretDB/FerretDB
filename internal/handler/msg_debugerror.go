@@ -29,7 +29,9 @@ import (
 )
 
 // MsgDebugError implements `debugError` command.
-func (h *Handler) MsgDebugError(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgDebugError(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)

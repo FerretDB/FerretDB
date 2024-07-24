@@ -29,7 +29,9 @@ import (
 )
 
 // MsgCompact implements `compact` command.
-func (h *Handler) MsgCompact(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgCompact(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -83,7 +85,7 @@ func (h *Handler) MsgCompact(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		}
 	}
 
-	statsBefore, err := c.Stats(ctx, new(backends.CollectionStatsParams))
+	statsBefore, err := c.Stats(connCtx, new(backends.CollectionStatsParams))
 	if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
 		return nil, handlererrors.NewCommandErrorMsgWithArgument(
 			handlererrors.ErrNamespaceNotFound,
@@ -96,7 +98,7 @@ func (h *Handler) MsgCompact(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	cList, err := db.ListCollections(ctx, &backends.ListCollectionsParams{
+	cList, err := db.ListCollections(connCtx, &backends.ListCollectionsParams{
 		Name: collection,
 	})
 	if err != nil {
@@ -112,15 +114,17 @@ func (h *Handler) MsgCompact(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	var bytesFreed int64
 
 	if cInfo.Capped() {
-		if _, bytesFreed, err = h.cleanupCappedCollection(ctx, db, &cInfo, force); err != nil {
+		if _, bytesFreed, err = h.cleanupCappedCollection(connCtx, db, &cInfo, force); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 	} else {
-		if _, err = c.Compact(ctx, &backends.CompactParams{Full: force}); err != nil {
+		if _, err = c.Compact(connCtx, &backends.CompactParams{Full: force}); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
-		statsAfter, err := c.Stats(ctx, new(backends.CollectionStatsParams))
+		var statsAfter *backends.CollectionStatsResult
+
+		statsAfter, err = c.Stats(connCtx, new(backends.CollectionStatsParams))
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}

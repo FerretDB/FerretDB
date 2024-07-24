@@ -60,6 +60,9 @@ func decodeCheckOffset(b []byte, offset, size int) error {
 
 func decodeScalarField(b []byte, t tag) (v any, size int, err error) {
 	switch t {
+	case tagDocument, tagArray:
+		err = lazyerrors.Errorf("non-scalar tag: %s", t)
+
 	case tagFloat64:
 		var f float64
 		f, err = bsonproto.DecodeFloat64(b)
@@ -77,6 +80,9 @@ func decodeScalarField(b []byte, t tag) (v any, size int, err error) {
 		bin, err = bsonproto.DecodeBinary(b)
 		v = bin
 		size = bsonproto.SizeBinary(bin)
+
+	case tagUndefined:
+		err = lazyerrors.Errorf("unsupported tag %s: %w", t, ErrDecodeInvalidInput)
 
 	case tagObjectID:
 		v, err = bsonproto.DecodeObjectID(b)
@@ -99,6 +105,9 @@ func decodeScalarField(b []byte, t tag) (v any, size int, err error) {
 		v = re
 		size = bsonproto.SizeRegex(re)
 
+	case tagDBPointer, tagJavaScript, tagSymbol, tagJavaScriptScope, tagDecimal128, tagMinKey, tagMaxKey:
+		err = lazyerrors.Errorf("unsupported tag %s: %w", t, ErrDecodeInvalidInput)
+
 	case tagInt32:
 		v, err = bsonproto.DecodeInt32(b)
 		size = bsonproto.SizeInt32
@@ -110,12 +119,6 @@ func decodeScalarField(b []byte, t tag) (v any, size int, err error) {
 	case tagInt64:
 		v, err = bsonproto.DecodeInt64(b)
 		size = bsonproto.SizeInt64
-
-	case tagUndefined, tagDBPointer, tagJavaScript, tagSymbol, tagJavaScriptScope, tagDecimal128, tagMinKey, tagMaxKey:
-		err = lazyerrors.Errorf("unsupported tag %s: %w", t, ErrDecodeInvalidInput)
-
-	case tagDocument, tagArray:
-		err = lazyerrors.Errorf("non-scalar tag: %s", t)
 
 	default:
 		err = lazyerrors.Errorf("unexpected tag %s: %w", t, ErrDecodeInvalidInput)

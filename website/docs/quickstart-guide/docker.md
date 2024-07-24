@@ -15,6 +15,9 @@ All-in-one image is documented in the
 [README.md file in the repository](https://github.com/FerretDB/FerretDB#quickstart).
 The rest are covered below.
 
+All Docker images include a [`HEALTHCHECK` instruction](https://docs.docker.com/reference/dockerfile/#healthcheck)
+that behaves like a [readiness probe](../configuration/observability.md#probes).
+
 ## Production image
 
 Our [production image](https://ghcr.io/ferretdb/ferretdb) `ghcr.io/ferretdb/ferretdb`
@@ -32,6 +35,7 @@ The following steps describe a quick local setup:
    services:
      postgres:
        image: postgres
+       restart: on-failure
        environment:
          - POSTGRES_USER=username
          - POSTGRES_PASSWORD=password

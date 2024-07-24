@@ -29,7 +29,9 @@ import (
 )
 
 // MsgDBStats implements `dbStats` command.
-func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgDBStats(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -69,7 +71,7 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	list, err := db.ListCollections(ctx, new(backends.ListCollectionsParams))
+	list, err := db.ListCollections(connCtx, new(backends.ListCollectionsParams))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -86,7 +88,7 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 		var iList *backends.ListIndexesResult
 
-		iList, err = c.ListIndexes(ctx, new(backends.ListIndexesParams))
+		iList, err = c.ListIndexes(connCtx, new(backends.ListIndexesParams))
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
 			iList = new(backends.ListIndexesResult)
 			err = nil
@@ -99,7 +101,7 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		nIndexes += int64(len(iList.Indexes))
 	}
 
-	stats, err := db.Stats(ctx, &backends.DatabaseStatsParams{Refresh: true})
+	stats, err := db.Stats(connCtx, &backends.DatabaseStatsParams{Refresh: true})
 	if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseDoesNotExist) {
 		stats = new(backends.DatabaseStatsResult)
 		err = nil

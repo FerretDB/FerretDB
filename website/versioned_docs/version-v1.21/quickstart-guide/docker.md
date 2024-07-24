@@ -32,6 +32,7 @@ The following steps describe a quick local setup:
    services:
      postgres:
        image: postgres
+       restart: on-failure
        environment:
          - POSTGRES_USER=username
          - POSTGRES_PASSWORD=password

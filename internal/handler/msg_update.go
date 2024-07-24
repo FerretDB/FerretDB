@@ -29,7 +29,9 @@ import (
 )
 
 // MsgUpdate implements `update` command.
-func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgUpdate(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -43,7 +45,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	// TODO https://github.com/FerretDB/FerretDB/issues/2612
 	_ = params.Ordered
 
-	matched, modified, upserted, err := h.updateDocument(ctx, params)
+	matched, modified, upserted, err := h.updateDocument(connCtx, params)
 	if err != nil {
 		return nil, handleUpdateError(params.DB, params.Collection, "update", err)
 	}

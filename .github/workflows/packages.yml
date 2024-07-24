@@ -107,6 +107,10 @@ jobs:
       - name: Initialize Docker Buildx builder
         run: bin/task docker-init
 
+      # mostly to check that this command still works
+      - name: Build local Docker image
+        run: bin/task docker-local FILE=production
+
       - name: Extract Docker image names
         id: extract
         uses: FerretDB/github-actions/extract-docker-tag@main

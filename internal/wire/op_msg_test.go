@@ -38,8 +38,8 @@ var msgTestCases = []testCase{
 			OpCode:        OpCodeMsg,
 		},
 		msgBody: &OpMsg{
-			sections: []OpMsgSection{{
-				Documents: []bson.RawDocument{makeRawDocument(
+			sections: []opMsgSection{{
+				documents: []bson.RawDocument{makeRawDocument(
 					"buildInfo", int32(1),
 					"lsid", must.NotFail(types.NewDocument(
 						"id", types.Binary{
@@ -82,8 +82,8 @@ var msgTestCases = []testCase{
 			OpCode:        OpCodeMsg,
 		},
 		msgBody: &OpMsg{
-			sections: []OpMsgSection{{
-				Documents: []bson.RawDocument{makeRawDocument(
+			sections: []opMsgSection{{
+				documents: []bson.RawDocument{makeRawDocument(
 					"version", "5.0.0",
 					"gitVersion", "1184f004a99660de6f5e745573419bda8a28c0e9",
 					"modules", must.NotFail(types.NewArray()),
@@ -178,9 +178,9 @@ var msgTestCases = []testCase{
 			OpCode:        OpCodeMsg,
 		},
 		msgBody: &OpMsg{
-			sections: []OpMsgSection{
+			sections: []opMsgSection{
 				{
-					Documents: []bson.RawDocument{makeRawDocument(
+					documents: []bson.RawDocument{makeRawDocument(
 						"insert", "actor",
 						"ordered", true,
 						"writeConcern", must.NotFail(types.NewDocument(
@@ -190,9 +190,9 @@ var msgTestCases = []testCase{
 					)},
 				},
 				{
-					Kind:       1,
-					Identifier: "documents",
-					Documents: []bson.RawDocument{
+					kind:       1,
+					identifier: "documents",
+					documents: []bson.RawDocument{
 						makeRawDocument(
 							"_id", types.ObjectID{0x61, 0x2e, 0xc2, 0x80, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01},
 							"actor_id", int32(1),
@@ -289,8 +289,8 @@ var msgTestCases = []testCase{
 			OpCode:        OpCodeMsg,
 		},
 		msgBody: &OpMsg{
-			sections: []OpMsgSection{{
-				Documents: []bson.RawDocument{makeRawDocument(
+			sections: []opMsgSection{{
+				documents: []bson.RawDocument{makeRawDocument(
 					"insert", "values",
 					"documents", must.NotFail(types.NewArray(
 						must.NotFail(types.NewDocument(
@@ -341,18 +341,18 @@ var msgTestCases = []testCase{
 			OpCode:        OpCodeMsg,
 		},
 		msgBody: &OpMsg{
-			sections: []OpMsgSection{
+			sections: []opMsgSection{
 				{
-					Documents: []bson.RawDocument{makeRawDocument(
+					documents: []bson.RawDocument{makeRawDocument(
 						"insert", "TestInsertSimple",
 						"ordered", true,
 						"$db", "testinsertsimple",
 					)},
 				},
 				{
-					Kind:       1,
-					Identifier: "documents",
-					Documents: []bson.RawDocument{makeRawDocument(
+					kind:       1,
+					identifier: "documents",
+					documents: []bson.RawDocument{makeRawDocument(
 						"_id", types.ObjectID{0x63, 0x7c, 0xfa, 0xd8, 0x8d, 0xc3, 0xce, 0xcd, 0xe3, 0x8e, 0x1e, 0x6b},
 						"v", math.Copysign(0, -1),
 					)},
@@ -417,17 +417,17 @@ var msgTestCases = []testCase{
 		},
 		msgBody: &OpMsg{
 			Flags: OpMsgFlags(OpMsgChecksumPresent),
-			sections: []OpMsgSection{
+			sections: []opMsgSection{
 				{
-					Kind:       1,
-					Identifier: "documents",
-					Documents: []bson.RawDocument{makeRawDocument(
+					kind:       1,
+					identifier: "documents",
+					documents: []bson.RawDocument{makeRawDocument(
 						"_id", types.ObjectID{0x63, 0x8c, 0xec, 0x46, 0xaa, 0x77, 0x8b, 0xf3, 0x70, 0x10, 0x54, 0x29},
 						"a", float64(3),
 					)},
 				},
 				{
-					Documents: []bson.RawDocument{makeRawDocument(
+					documents: []bson.RawDocument{makeRawDocument(
 						"insert", "foo",
 						"ordered", true,
 						"$db", "test",
@@ -506,11 +506,11 @@ var msgTestCases = []testCase{
 		},
 		msgBody: &OpMsg{
 			Flags: OpMsgFlags(OpMsgChecksumPresent),
-			sections: []OpMsgSection{
+			sections: []opMsgSection{
 				{
-					Kind:       1,
-					Identifier: "updates",
-					Documents: []bson.RawDocument{makeRawDocument(
+					kind:       1,
+					identifier: "updates",
+					documents: []bson.RawDocument{makeRawDocument(
 						"q", must.NotFail(types.NewDocument(
 							"a", float64(20),
 						)),
@@ -524,7 +524,7 @@ var msgTestCases = []testCase{
 					)},
 				},
 				{
-					Documents: []bson.RawDocument{makeRawDocument(
+					documents: []bson.RawDocument{makeRawDocument(
 						"update", "foo",
 						"ordered", true,
 						"$db", "test",
@@ -590,17 +590,17 @@ var msgTestCases = []testCase{
 		},
 		msgBody: &OpMsg{
 			Flags: OpMsgFlags(OpMsgChecksumPresent),
-			sections: []OpMsgSection{
+			sections: []opMsgSection{
 				{
-					Kind:       1,
-					Identifier: "documents",
-					Documents: []bson.RawDocument{makeRawDocument(
+					kind:       1,
+					identifier: "documents",
+					documents: []bson.RawDocument{makeRawDocument(
 						"_id", types.ObjectID{0x63, 0x8c, 0xec, 0x46, 0xaa, 0x77, 0x8b, 0xf3, 0x70, 0x10, 0x54, 0x29},
 						"a", float64(3),
 					)},
 				},
 				{
-					Documents: []bson.RawDocument{makeRawDocument(
+					documents: []bson.RawDocument{makeRawDocument(
 						"insert", "fooo",
 						"ordered", true,
 						"$db", "test",

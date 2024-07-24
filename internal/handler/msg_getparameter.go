@@ -29,7 +29,9 @@ import (
 )
 
 // MsgGetParameter implements `getParameter` command.
-func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgGetParameter(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -44,6 +46,11 @@ func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.O
 
 	common.Ignored(document, h.L, "comment")
 
+	mechanisms := must.NotFail(types.NewArray("PLAIN"))
+	if h.EnableNewAuth {
+		mechanisms = must.NotFail(types.NewArray("SCRAM-SHA-1", "SCRAM-SHA-256"))
+	}
+
 	parameters := must.NotFail(types.NewDocument(
 		// to add a new parameter, fill template and place it in the alphabetical order position
 		//"<name>", must.NotFail(types.NewDocument(
@@ -52,7 +59,7 @@ func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.O
 		//	"settableAtStartup", <bool>,
 		//)),
 		"authenticationMechanisms", must.NotFail(types.NewDocument(
-			"value", must.NotFail(types.NewArray("SCRAM-SHA-1", "SCRAM-SHA-256", "PLAIN")),
+			"value", mechanisms,
 			"settableAtRuntime", false,
 			"settableAtStartup", true,
 		)),

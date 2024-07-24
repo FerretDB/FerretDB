@@ -30,7 +30,9 @@ import (
 )
 
 // MsgCount implements `count` command.
-func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgCount(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -66,7 +68,7 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		qp.Filter = params.Filter
 	}
 
-	queryRes, err := c.Query(ctx, &qp)
+	queryRes, err := c.Query(connCtx, &qp)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

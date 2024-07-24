@@ -38,7 +38,9 @@ import (
 )
 
 // MsgGetMore implements `getMore` command.
-func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgGetMore(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -148,7 +150,7 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	// Handle comment.
 	// TODO https://github.com/FerretDB/FerretDB/issues/2986
 
-	username := conninfo.Get(ctx).Username()
+	username := conninfo.Get(connCtx).Username()
 
 	// Use ExtractParam.
 	// TODO https://github.com/FerretDB/FerretDB/issues/2859
@@ -216,7 +218,9 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 			data := c.Data.(*findCursorData)
 
-			queryRes, err := data.coll.Query(ctx, data.qp)
+			var queryRes *backends.QueryResult
+
+			queryRes, err = data.coll.Query(connCtx, data.qp)
 			if err != nil {
 				return nil, lazyerrors.Error(err)
 			}
@@ -243,7 +247,7 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 	case cursor.TailableAwait:
 		if nextBatch.Len() == 0 {
-			nextBatch, err = h.awaitData(ctx, &awaitDataParams{
+			nextBatch, err = h.awaitData(connCtx, &awaitDataParams{
 				cursor:    c,
 				batchSize: batchSize,
 				maxTimeMS: maxTimeMS,

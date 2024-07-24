@@ -36,7 +36,9 @@ import (
 )
 
 // MsgFind implements `find` command.
-func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgFind(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -47,7 +49,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
-	username := conninfo.Get(ctx).Username()
+	username := conninfo.Get(connCtx).Username()
 
 	db, err := h.b.Database(params.DB)
 	if err != nil {
@@ -72,7 +74,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	var cList *backends.ListCollectionsResult
 	collectionParam := backends.ListCollectionsParams{Name: params.Collection}
 
-	if cList, err = db.ListCollections(ctx, &collectionParam); err != nil {
+	if cList, err = db.ListCollections(connCtx, &collectionParam); err != nil {
 		return nil, err
 	}
 
@@ -98,8 +100,10 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
+	ctx := connCtx
 	cancel := func() {}
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/2983
 	if params.MaxTimeMS != 0 {
 		findDone := make(chan struct{})
 		defer close(findDone)

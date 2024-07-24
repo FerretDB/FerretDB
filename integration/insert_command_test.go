@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -194,4 +195,38 @@ func TestInsertIDDifferentTypes(t *testing.T) {
 		"E11000 duplicate key error collection: TestInsertIDDifferentTypes.TestInsertIDDifferentTypes",
 		err,
 	)
+}
+
+func TestInsertTooLargeDocument(tt *testing.T) {
+	t := setup.FailsForMongoDB(tt, "maximum BSON document size is only configurable for FerretDB")
+
+	tt.Parallel()
+
+	size := 20 * 1024 * 1024
+	s := setup.SetupWithOpts(tt, &setup.SetupOpts{BackendOptions: &setup.BackendOpts{MaxBsonObjectSizeBytes: size}})
+	ctx, collection := s.Ctx, s.Collection
+
+	var isMasterRes bson.D
+	err := collection.Database().RunCommand(ctx, bson.D{{"isMaster", int32(1)}}).Decode(&isMasterRes)
+	require.NoError(t, err)
+
+	var actual bson.D
+
+	for _, field := range isMasterRes {
+		if field.Key == "maxBsonObjectSize" {
+			actual = append(actual, field)
+		}
+	}
+
+	expected := bson.D{{"maxBsonObjectSize", int32(size)}}
+	require.Equal(t, expected, actual)
+
+	// doc has 17MB size, larger than the default maximum BSON document size of 16MiB
+	doc := bson.D{
+		{"_id", "large-key"},
+		{"123", strings.Repeat("1234567890abcde", 1000000)},
+	}
+
+	_, err = collection.InsertOne(ctx, doc)
+	require.NoError(t, err)
 }

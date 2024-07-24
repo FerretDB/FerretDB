@@ -220,3 +220,31 @@ func (c *Client) checkIssueStatus(ctx context.Context, repo string, num int) (Is
 		return "", fmt.Errorf("unknown issue state: %q", s)
 	}
 }
+
+// cacheFilePath returns the path to the cache file.
+func cacheFilePath() (string, error) {
+	// This tool is called for multiple packages in parallel,
+	// with the current working directory set to the package directory.
+	// To use the same cache file path, we first locate the root of the project by the .git directory.
+	//
+	// We can't use runtime.Caller because file path will be relative (`./tools/...`).
+	// We can't import FerretDB module to use [testutil.RootDir].
+
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
+	for {
+		if _, err = os.Stat(filepath.Join(dir, ".git")); err == nil {
+			break
+		}
+
+		dir = filepath.Dir(dir)
+		if dir == "/" {
+			return "", fmt.Errorf("failed to locate .git directory")
+		}
+	}
+
+	return filepath.Join(dir, "tmp", "githubcache", "cache.json"), nil
+}

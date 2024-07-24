@@ -17,8 +17,8 @@ package setup
 import (
 	"context"
 	"net/url"
-	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -28,14 +28,47 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
+// setClientPaths replaces file names in query parameters with absolute paths.
+func setClientPaths(uri string) (string, error) {
+	u, err := url.Parse(uri)
+	if err != nil {
+		return "", lazyerrors.Error(err)
+	}
+
+	q, err := url.ParseQuery(u.RawQuery)
+	if err != nil {
+		return "", lazyerrors.Error(err)
+	}
+
+	for k, vs := range q {
+		switch k {
+		case "tlsCertificateKeyFile", "tlsCaFile":
+			for i, v := range vs {
+				if strings.Contains(v, "/") {
+					return "", lazyerrors.Errorf("%q: %q should contain only a file name, got %q", uri, k, v)
+				}
+
+				vs[i] = filepath.Join(testutil.BuildCertsDir, v)
+			}
+		}
+	}
+
+	u.RawQuery = q.Encode()
+
+	return u.String(), nil
+}
+
 // makeClient returns new client for the given working MongoDB URI.
-func makeClient(ctx context.Context, uri string) (*mongo.Client, error) {
+func makeClient(ctx context.Context, uri string, disableOtel bool) (*mongo.Client, error) {
 	clientOpts := options.Client().ApplyURI(uri)
 
-	clientOpts.SetMonitor(otelmongo.NewMonitor())
+	if !disableOtel {
+		clientOpts.SetMonitor(otelmongo.NewMonitor(otelmongo.WithCommandAttributeDisabled(false)))
+	}
 
 	client, err := mongo.Connect(ctx, clientOpts)
 	if err != nil {
@@ -58,7 +91,7 @@ func makeClient(ctx context.Context, uri string) (*mongo.Client, error) {
 //
 // If the connection can't be established, it panics,
 // as it doesn't make sense to proceed with other tests if we couldn't connect in one of them.
-func setupClient(tb testtb.TB, ctx context.Context, uri string) *mongo.Client {
+func setupClient(tb testtb.TB, ctx context.Context, uri string, disableOtel bool) *mongo.Client {
 	tb.Helper()
 
 	ctx, span := otel.Tracer("").Start(ctx, "setupClient")
@@ -66,7 +99,7 @@ func setupClient(tb testtb.TB, ctx context.Context, uri string) *mongo.Client {
 
 	defer observability.FuncCall(ctx)()
 
-	client, err := makeClient(ctx, uri)
+	client, err := makeClient(ctx, uri, disableOtel)
 	if err != nil {
 		tb.Error(err)
 		panic("setupClient: " + err.Error())
@@ -78,42 +111,4 @@ func setupClient(tb testtb.TB, ctx context.Context, uri string) *mongo.Client {
 	})
 
 	return client
-}
-
-// toAbsolutePathURI replaces the relative path of tlsCertificateKeyFile and tlsCaFile path
-// to an absolute path. If the file is not found because the test is in subdirectory
-// such as`integration/user/`, the parent directory is looked.
-func toAbsolutePathURI(tb testtb.TB, uri string) string {
-	u, err := url.Parse(uri)
-	require.NoError(tb, err)
-
-	values := url.Values{}
-
-	for k, v := range u.Query() {
-		require.Len(tb, v, 1)
-
-		switch k {
-		case "tlsCertificateKeyFile", "tlsCaFile":
-			file := v[0]
-
-			if filepath.IsAbs(file) {
-				values[k] = []string{file}
-
-				continue
-			}
-
-			file = filepath.Join(Dir(tb), v[0])
-			if _, err = os.Stat(file); os.IsNotExist(err) {
-				file = filepath.Join(Dir(tb), "..", v[0])
-			}
-
-			values[k] = []string{file}
-		default:
-			values[k] = v
-		}
-	}
-
-	u.RawQuery = values.Encode()
-
-	return u.String()
 }

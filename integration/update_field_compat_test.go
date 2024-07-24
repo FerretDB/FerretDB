@@ -23,9 +23,10 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 func TestUpdateFieldCompatCurrentDate(t *testing.T) {
