@@ -263,7 +263,8 @@ func listExistingIndexes(
 	hdb *fsql.DB,
 	database string,
 	collection string,
-	mustExist bool) (*backends.ListIndexesResult, error) {
+	mustExist bool,
+) (*backends.ListIndexesResult, error) {
 	db, err := databaseExists(ctx, hdb, database)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -347,7 +348,8 @@ func createIndexes(
 	hdb *fsql.DB,
 	database string,
 	collection string,
-	params *backends.CreateIndexesParams) (*backends.CreateIndexesResult, error) {
+	params *backends.CreateIndexesParams,
+) (*backends.CreateIndexesResult, error) {
 	err := createCollectionIfNotExists(ctx, hdb, database, collection)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
