@@ -26,7 +26,7 @@ func init() {
 	registry["mysql"] = func(opts *NewHandlerOpts) (*handler.Handler, CloseBackendFunc, error) {
 		b, err := mysql.NewBackend(&mysql.NewBackendParams{
 			URI: opts.MySQLURL,
-			L:   logging.WithName(opts.SLogger, "mysql"),
+			L:   logging.WithName(opts.Logger, "mysql"),
 			P:   opts.StateProvider,
 		})
 		if err != nil {
@@ -43,7 +43,7 @@ func init() {
 			SetupPassword: opts.SetupPassword,
 			SetupTimeout:  opts.SetupTimeout,
 
-			L:             opts.Logger.Named("mysql"),
+			L:             logging.WithName(opts.Logger, "mysql"),
 			ConnMetrics:   opts.ConnMetrics,
 			StateProvider: opts.StateProvider,
 

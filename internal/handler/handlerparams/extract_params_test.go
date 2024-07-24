@@ -19,10 +19,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func TestParse(t *testing.T) {
@@ -369,7 +369,7 @@ func TestParse(t *testing.T) {
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			err := ExtractParams(tt.doc, tt.command, tt.params, zap.NewNop())
+			err := ExtractParams(tt.doc, tt.command, tt.params, testutil.SLogger(t))
 			if tt.wantErr != "" {
 				require.Regexp(t, regexp.MustCompile(".*"+tt.wantErr), err.Error())
 				return

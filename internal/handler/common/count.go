@@ -15,7 +15,7 @@
 package common
 
 import (
-	"go.uber.org/zap"
+	"log/slog"
 
 	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -44,7 +44,7 @@ type CountParams struct {
 }
 
 // GetCountParams returns the parameters for the count command.
-func GetCountParams(document *types.Document, l *zap.Logger) (*CountParams, error) {
+func GetCountParams(document *types.Document, l *slog.Logger) (*CountParams, error) {
 	var count CountParams
 
 	err := handlerparams.ExtractParams(document, "count", &count, l)

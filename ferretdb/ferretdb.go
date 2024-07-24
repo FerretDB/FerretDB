@@ -132,8 +132,7 @@ func New(config *Config) (*FerretDB, error) {
 	}
 
 	h, closeBackend, err := registry.NewHandler(config.Handler, &registry.NewHandlerOpts{
-		Logger:        zap.L(),
-		SLogger:       log,
+		Logger:        log,
 		ConnMetrics:   metrics.ConnMetrics,
 		StateProvider: sp,
 		TCPHost:       config.Listener.TCP,

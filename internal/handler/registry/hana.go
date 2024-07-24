@@ -30,7 +30,7 @@ func init() {
 
 		b, err := hana.NewBackend(&hana.NewBackendParams{
 			URI:       opts.HANAURL,
-			L:         logging.WithName(opts.SLogger, "hana"),
+			L:         logging.WithName(opts.Logger, "hana"),
 			P:         opts.StateProvider,
 			BatchSize: opts.BatchSize,
 		})
@@ -48,7 +48,7 @@ func init() {
 			SetupPassword: opts.SetupPassword,
 			SetupTimeout:  opts.SetupTimeout,
 
-			L:             opts.Logger.Named("hana"),
+			L:             logging.WithName(opts.Logger, "hana"),
 			ConnMetrics:   opts.ConnMetrics,
 			StateProvider: opts.StateProvider,
 

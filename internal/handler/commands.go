@@ -16,8 +16,7 @@ package handler
 
 import (
 	"context"
-
-	"go.uber.org/zap"
+	"log/slog"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
@@ -295,23 +294,25 @@ func (h *Handler) initCommands() {
 }
 
 // checkSCRAMConversation returns error if SCRAM conversation is not valid.
-func checkSCRAMConversation(ctx context.Context, l *zap.Logger) error {
+func checkSCRAMConversation(ctx context.Context, l *slog.Logger) error {
 	_, _, conv, _ := conninfo.Get(ctx).Auth()
 
 	switch {
 	case conv == nil:
-		l.Warn("checkSCRAMConversation: no conversation")
+		l.WarnContext(ctx, "checkSCRAMConversation: no conversation")
 
 	case !conv.Valid():
-		l.Warn(
+		l.WarnContext(
+			ctx,
 			"checkSCRAMConversation: invalid conversation",
-			zap.String("username", conv.Username()), zap.Bool("valid", conv.Valid()), zap.Bool("done", conv.Done()),
+			slog.String("username", conv.Username()), slog.Bool("valid", conv.Valid()), slog.Bool("done", conv.Done()),
 		)
 
 	default:
-		l.Debug(
+		l.DebugContext(
+			ctx,
 			"checkSCRAMConversation: passed",
-			zap.String("username", conv.Username()), zap.Bool("valid", conv.Valid()), zap.Bool("done", conv.Done()),
+			slog.String("username", conv.Username()), slog.Bool("valid", conv.Valid()), slog.Bool("done", conv.Done()),
 		)
 
 		return nil
