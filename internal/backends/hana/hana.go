@@ -92,7 +92,7 @@ func hanaErrorCollectionNotExist(err error) bool {
 // Returns true if the err is database does not exist.
 func hanaErrorDatabaseNotExist(err error) bool {
 	var dbError driver.Error
-	if errors.As(err, &dbError) {
+	if err != nil && errors.As(err, &dbError) {
 		return dbError.Code() == 362
 	}
 
@@ -186,7 +186,7 @@ func createCollection(ctx context.Context, hdb *fsql.DB, database, table string)
 
 	indexInfo := []backends.IndexInfo{
 		backends.IndexInfo{
-			Name: "_id",
+			Name: "_id_",
 			Key: []backends.IndexKeyPair{
 				backends.IndexKeyPair{
 					Field:      "_id",
@@ -258,17 +258,21 @@ func indexExists(indexes []backends.IndexInfo, indexToFind string) bool {
 	return false
 }
 
-func listIndexes(ctx context.Context, hdb *fsql.DB, database string, collection string) (*backends.ListIndexesResult, error) {
+func listExistingIndexes(ctx context.Context, hdb *fsql.DB, database string, collection string, mustExist bool) (*backends.ListIndexesResult, error) {
 	db, err := databaseExists(ctx, hdb, database)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	if !db {
-		return nil, backends.NewError(
-			backends.ErrorCodeCollectionDoesNotExist,
-			lazyerrors.Errorf("no ns %s.%s", database, collection),
-		)
+		if mustExist {
+			return nil, backends.NewError(
+				backends.ErrorCodeCollectionDoesNotExist,
+				lazyerrors.Errorf("no ns %s.%s", database, collection),
+			)
+		} else {
+			return &backends.ListIndexesResult{}, nil
+		}
 	}
 
 	col, err := collectionExists(ctx, hdb, database, collection)
@@ -277,10 +281,14 @@ func listIndexes(ctx context.Context, hdb *fsql.DB, database string, collection 
 	}
 
 	if !col {
-		return nil, backends.NewError(
-			backends.ErrorCodeCollectionDoesNotExist,
-			lazyerrors.Errorf("no ns %s.%s", database, collection),
-		)
+		if mustExist {
+			return nil, backends.NewError(
+				backends.ErrorCodeCollectionDoesNotExist,
+				lazyerrors.Errorf("no ns %s.%s", database, collection),
+			)
+		} else {
+			return &backends.ListIndexesResult{}, nil
+		}
 	}
 
 	sql := "SELECT idx.INDEX_NAME, idx.COLUMN_NAME, idx.ASCENDING_ORDER " +
@@ -325,8 +333,18 @@ func listIndexes(ctx context.Context, hdb *fsql.DB, database string, collection 
 	return &res, nil
 }
 
+func listIndexes(ctx context.Context, hdb *fsql.DB, database string, collection string) (*backends.ListIndexesResult, error) {
+	return listExistingIndexes(ctx, hdb, database, collection, true)
+}
+
 func createIndexes(ctx context.Context, hdb *fsql.DB, database string, collection string, params *backends.CreateIndexesParams) (*backends.CreateIndexesResult, error) {
-	existingIndexes, err := listIndexes(ctx, hdb, database, collection)
+
+	err := createCollectionIfNotExists(ctx, hdb, database, collection)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	existingIndexes, err := listExistingIndexes(ctx, hdb, database, collection, false)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

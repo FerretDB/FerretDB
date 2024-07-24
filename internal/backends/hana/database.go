@@ -212,10 +212,9 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 	sizeIndexes := int64(1)
 
 	queryFreeMemory := "SELECT FREE_PHYSICAL_MEMORY  FROM M_HOST_RESOURCE_UTILIZATION"
-	rowFreeMemory := db.hdb.QueryRowContext(ctx, queryFreeMemory)
 
-	var freeMemory int64
-	if err := rowFreeMemory.Scan(&freeMemory); err != nil {
+	freeMemory, err := querySingleInt(queryFreeMemory, ctx, db.hdb)
+	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 

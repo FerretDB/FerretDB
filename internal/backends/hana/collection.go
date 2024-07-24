@@ -350,7 +350,36 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 		)
 	}
 
-	// HANATODO Fill out collection stats
+	queryCountDocuments := "SELECT count(*) FROM %q.%q"
+	queryCountDocuments = fmt.Sprintf(queryCountDocuments, c.database, c.name)
+
+	countDocuments, err := querySingleInt(queryCountDocuments, ctx, c.hdb)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	querySizeTotal := "SELECT COALESCE(SUM(TABLE_SIZE),0) FROM M_TABLES " +
+		"WHERE SCHEMA_NAME = '%s' AND TABLE_NAME = '%s'"
+	querySizeTotal = fmt.Sprintf(querySizeTotal, c.database, c.name)
+
+	sizeTotal, err := querySingleInt(querySizeTotal, ctx, c.hdb)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	queryFreeMemory := "SELECT FREE_PHYSICAL_MEMORY  FROM M_HOST_RESOURCE_UTILIZATION"
+
+	freeMemory, err := querySingleInt(queryFreeMemory, ctx, c.hdb)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	res.CountDocuments = countDocuments
+	res.SizeCollection = sizeTotal
+	res.SizeIndexes = 1 // see database.Stats
+	res.SizeTotal = res.SizeCollection + res.SizeIndexes
+	// Note: this does currently not take capped collections into account.
+	res.SizeFreeStorage = freeMemory
 
 	return &res, nil
 }
