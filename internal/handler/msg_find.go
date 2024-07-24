@@ -21,6 +21,10 @@ import (
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/otel/trace"
+
+	"go.opentelemetry.io/otel"
+
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
@@ -100,7 +104,13 @@ func (h *Handler) MsgFind(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		return nil, err
 	}
 
+	spanCtx, _ := common.TraceContextFromComment(params.Comment)
+
 	ctx := connCtx
+	ctx = trace.ContextWithRemoteSpanContext(ctx, spanCtx)
+	ctx, span := otel.Tracer("").Start(ctx, "MsgFind")
+	defer span.End()
+
 	cancel := func() {}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/2983

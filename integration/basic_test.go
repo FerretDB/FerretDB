@@ -102,13 +102,27 @@ func TestInsertFind(t *testing.T) {
 	}
 }
 
+func TestOtelComment(t *testing.T) {
+	ctx, collection := setup.Setup(t, shareddata.Scalars)
+	name := collection.Database().Name()
+	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
+	require.NoError(t, err)
+	comment := `{"traceparent":"foo","tracestate":"bar"}`
+
+	var doc bson.D
+	opts := options.FindOne().SetComment(comment)
+	err = collection.FindOne(ctx, bson.D{{"_id", "string"}}, opts).Decode(&doc)
+	require.NoError(t, err)
+	assert.Contains(t, databaseNames, name)
+}
+
 //nolint:paralleltest // we test a global list of databases
 func TestFindCommentMethod(t *testing.T) {
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 	name := collection.Database().Name()
 	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
 	require.NoError(t, err)
-	comment := "*/ 1; DROP SCHEMA " + name + " CASCADE -- " // FIXME
+	comment := "*/ 1; DROP SCHEMA " + name + " CASCADE -- "
 
 	var doc bson.D
 	opts := options.FindOne().SetComment(comment)
