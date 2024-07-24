@@ -15,47 +15,25 @@
 package testutil
 
 import (
-	"context"
-	"database/sql"
-	"fmt"
 	"os"
 	"testing"
 
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
-	"github.com/stretchr/testify/require"
 )
 
 // TestHanaURI returns a HANA Database URL for testing.
 // HANATODO Create a Database per test run?
-func TestHanaURI(tb testtb.TB, ctx context.Context, baseURI string) string {
+func TestHanaURI(tb testtb.TB) string {
 	tb.Helper()
 
 	if testing.Short() {
 		tb.Skip("skipping in -short mode")
 	}
 
-	if baseURI == "" {
-		baseURI = os.Getenv("FERRETDB_HANA_URL")
-	}
-
-	if baseURI == "" {
+	url := os.Getenv("FERRETDB_HANA_URL")
+	if url == "" {
 		tb.Skip("FERRETDB_HANA_URL is not set")
 	}
 
-	name := DirectoryName(tb)
-
-	db, err := sql.Open("hdb", baseURI)
-	defer db.Close()
-	require.NoError(tb, err)
-
-	q := fmt.Sprintf("DROP SCHEMA %q CASCADE", name)
-
-	// Drop database (schema) if it exists.
-	_, err = db.ExecContext(ctx, q)
-	if err != nil {
-		require.ErrorContains(tb, err,
-			"SQL Error 362 - invalid schema name:")
-	}
-
-	return baseURI
+	return url
 }

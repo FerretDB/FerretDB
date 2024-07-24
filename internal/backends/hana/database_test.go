@@ -29,7 +29,7 @@ func TestDatabaseStats(t *testing.T) {
 	t.Parallel()
 	ctx := testutil.Ctx(t)
 
-	hanaURL := testutil.TestHanaURI(t, ctx, "")
+	hanaURL := testutil.TestHanaURI(t)
 
 	params := NewBackendParams{
 		URI: hanaURL,
