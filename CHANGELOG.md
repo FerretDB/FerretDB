@@ -8,7 +8,7 @@
 
 #### Embeddable package
 
-FerretDB switched from the [`zap` logger package](https://github.com/uber-go/zap) to the standard [`slog`](https://pkg.go.dev/log/slog).
+This release switches from the [`zap` logging package](https://github.com/uber-go/zap) to the standard [`slog`](https://pkg.go.dev/log/slog).
 If the logger was configured by Go programs that import [`github.com/FerretDB/FerretDB/ferretdb` package](https://pkg.go.dev/github.com/FerretDB/FerretDB/ferretdb), they should configure the `SLogger` field instead.
 Setting the old `Logger` field will make the program panic and make the issue immediately noticeable.
 
@@ -22,19 +22,19 @@ The set of spans and their attributes is not stable yet and will change over tim
 All improvements in observability in this release (OpenTelemetry traces, Kubernetes probes, debug archive)
 are documented [there](https://docs.ferretdb.io/configuration/observability/).
 
-#### Systemd configuration in `.deb` and `.rpm` packages
+#### Experimental Systemd configuration in `.deb` and `.rpm` packages
 
 This release adds initial unit files for `systemd` that auto-start FerretDB.
-They are likely to change in the future in incompatible way; for example, we might add a non-root user to run FerretDB.
+They are likely to change in the future in incompatible ways; for example, we may switch to using a non-root user.
 
 ### New Features 🎉
 
 - Add Kubernetes liveness probe by @noisersup in https://github.com/FerretDB/FerretDB/pull/4378
-- Implement Docker healthcheck by @noisersup in https://github.com/FerretDB/FerretDB/pull/4364
 - Add Kubernetes readiness probe by @noisersup in https://github.com/FerretDB/FerretDB/pull/4426
+- Implement Docker healthcheck by @noisersup in https://github.com/FerretDB/FerretDB/pull/4364
 - Add OpenTelemetry traces and spans by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4477
-- Implement `/debug/archive` handler by @sachinpuranik in https://github.com/FerretDB/FerretDB/pull/3895
 - Send OpenTelemetry traces and spans to OTLP endpoint by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4484
+- Implement `/debug/archive` handler by @sachinpuranik in https://github.com/FerretDB/FerretDB/pull/3895
 - Provide systemd unit file in `.deb` and `.rpm` packages by @noisersup in https://github.com/FerretDB/FerretDB/pull/4478
 
 ### Enhancements 🛠
@@ -43,14 +43,14 @@ They are likely to change in the future in incompatible way; for example, we mig
 
 ### Documentation 📄
 
+- Document Kubernetes probes by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4424
+- Refactor and document `/debug/archive` handler by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4485
+- Document logging by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4436
 - Add release blog post for FerretDB v.1.22.0 by @Fashander in https://github.com/FerretDB/FerretDB/pull/4401
 - Add blog post on running FerretDB and CloudNativePG on Kubernetes by @Fashander in https://github.com/FerretDB/FerretDB/pull/4377
-- Document Kubernetes probes by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4424
-- Remove broken links by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4433
 - Add blogpost on "monitoring FerretDB performance using Coroot" by @Fashander in https://github.com/FerretDB/FerretDB/pull/4279
 - Crush `.png` images by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4441
-- Document logging by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4436
-- Refactor and document `/debug/archive` handler by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4485
+- Remove broken links by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4433
 
 ### Other Changes 🤖
 
