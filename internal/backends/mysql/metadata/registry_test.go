@@ -89,7 +89,7 @@ func createDatabase(t *testing.T, ctx context.Context) (r *Registry, db *fsql.DB
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
-	r, err = NewRegistry(u, testutil.SLogger(t), sp)
+	r, err = NewRegistry(u, testutil.Logger(t), sp)
 	require.NoError(t, err)
 	t.Cleanup(r.Close)
 
@@ -124,7 +124,7 @@ func TestCheckAuth(t *testing.T) {
 		t.Parallel()
 
 		var r *Registry
-		r, err = NewRegistry("mysql://username:password@127.0.0.1:3306/ferretdb", testutil.SLogger(t), sp)
+		r, err = NewRegistry("mysql://username:password@127.0.0.1:3306/ferretdb", testutil.Logger(t), sp)
 		require.NoError(t, err)
 		t.Cleanup(r.Close)
 
@@ -138,7 +138,7 @@ func TestCheckAuth(t *testing.T) {
 		var r *Registry
 		r, err = NewRegistry(
 			"mysql://wrong-user:wrong-password@127.0.0.1:3306/ferretdb?allowNativePasswords=true",
-			testutil.SLogger(t),
+			testutil.Logger(t),
 			sp,
 		)
 		require.NoError(t, err)
@@ -154,7 +154,7 @@ func TestCheckAuth(t *testing.T) {
 		t.Parallel()
 
 		var r *Registry
-		r, err = NewRegistry("mysql://username:password@127.0.0.1:3306/wrong-database", testutil.SLogger(t), sp)
+		r, err = NewRegistry("mysql://username:password@127.0.0.1:3306/wrong-database", testutil.Logger(t), sp)
 		require.NoError(t, err)
 		t.Cleanup(r.Close)
 
