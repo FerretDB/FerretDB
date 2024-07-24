@@ -118,6 +118,7 @@ func (b *backend) Database(name string) (backends.Database, error) {
 //nolint:lll // for readability
 func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDatabasesParams) (*backends.ListDatabasesResult, error) {
 	var dbQuerySQL string
+
 	dbQuerySQL = "SELECT SCHEMA_NAME FROM SCHEMAS"
 	if params != nil && params.Name != "" {
 		dbQuerySQL += fmt.Sprintf(" WHERE SCHEMA_NAME = '%s'", params.Name)

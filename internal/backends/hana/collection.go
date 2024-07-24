@@ -75,6 +75,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
+
 	if !db {
 		return &backends.QueryResult{
 			Iter: newQueryIterator(ctx, nil),

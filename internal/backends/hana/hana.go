@@ -185,10 +185,10 @@ func createCollection(ctx context.Context, hdb *fsql.DB, database, table string)
 	}
 
 	indexInfo := []backends.IndexInfo{
-		backends.IndexInfo{
+		{
 			Name: "_id_",
 			Key: []backends.IndexKeyPair{
-				backends.IndexKeyPair{
+				{
 					Field:      "_id",
 					Descending: false,
 				},
@@ -258,7 +258,12 @@ func indexExists(indexes []backends.IndexInfo, indexToFind string) bool {
 	return false
 }
 
-func listExistingIndexes(ctx context.Context, hdb *fsql.DB, database string, collection string, mustExist bool) (*backends.ListIndexesResult, error) {
+func listExistingIndexes(
+	ctx context.Context,
+	hdb *fsql.DB,
+	database string,
+	collection string,
+	mustExist bool) (*backends.ListIndexesResult, error) {
 	db, err := databaseExists(ctx, hdb, database)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -271,7 +276,7 @@ func listExistingIndexes(ctx context.Context, hdb *fsql.DB, database string, col
 				lazyerrors.Errorf("no ns %s.%s", database, collection),
 			)
 		} else {
-			return &backends.ListIndexesResult{}, nil
+			return new(backends.ListIndexesResult), nil
 		}
 	}
 
@@ -287,7 +292,7 @@ func listExistingIndexes(ctx context.Context, hdb *fsql.DB, database string, col
 				lazyerrors.Errorf("no ns %s.%s", database, collection),
 			)
 		} else {
-			return &backends.ListIndexesResult{}, nil
+			return new(backends.ListIndexesResult), nil
 		}
 	}
 
@@ -337,8 +342,12 @@ func listIndexes(ctx context.Context, hdb *fsql.DB, database string, collection 
 	return listExistingIndexes(ctx, hdb, database, collection, true)
 }
 
-func createIndexes(ctx context.Context, hdb *fsql.DB, database string, collection string, params *backends.CreateIndexesParams) (*backends.CreateIndexesResult, error) {
-
+func createIndexes(
+	ctx context.Context,
+	hdb *fsql.DB,
+	database string,
+	collection string,
+	params *backends.CreateIndexesParams) (*backends.CreateIndexesResult, error) {
 	err := createCollectionIfNotExists(ctx, hdb, database, collection)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -356,9 +365,16 @@ func createIndexes(ctx context.Context, hdb *fsql.DB, database string, collectio
 	// HANATODO Can we support more than one field for indexes in HANA DocStore?
 	for _, index := range params.Indexes {
 		if !indexExists(existingIndexes.Indexes, index.Name) {
-			createStmt = fmt.Sprintf(sql, database, prefixIndexName(collection, index.Name), database, collection, index.Key[0].Field)
+			createStmt = fmt.Sprintf(
+				sql,
+				database,
+				prefixIndexName(collection, index.Name),
+				database,
+				collection,
+				index.Key[0].Field,
+			)
 
-			_, err := hdb.ExecContext(ctx, createStmt)
+			_, err = hdb.ExecContext(ctx, createStmt)
 			if err != nil {
 				return nil, lazyerrors.Error(err)
 			}
@@ -369,7 +385,6 @@ func createIndexes(ctx context.Context, hdb *fsql.DB, database string, collectio
 }
 
 func querySingleInt(query string, ctx context.Context, hdb *fsql.DB) (int64, error) {
-
 	rowCount := hdb.QueryRowContext(ctx, query)
 
 	var res int64

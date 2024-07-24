@@ -171,9 +171,11 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
+
 	if !d {
 		return nil, backends.NewError(backends.ErrorCodeDatabaseDoesNotExist,
-			lazyerrors.Errorf("no database %s", db.name))
+			lazyerrors.Errorf("no database %s", db.name),
+		)
 	}
 
 	// Todo: should we load unloaded schemas?
@@ -199,6 +201,7 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 
 	querySizeCollections := querySizeTotal + " AND TABLE_TYPE = 'COLLECTION'"
 	sizeCollections, err := querySingleInt(querySizeCollections, ctx, db.hdb)
+
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
