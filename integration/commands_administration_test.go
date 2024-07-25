@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"math"
 	"runtime"
-	"sort"
+	"slices"
 	"strconv"
 	"sync"
 	"testing"
@@ -1503,7 +1503,7 @@ func TestCommandsAdministrationServerStatusMetrics(t *testing.T) {
 
 			actualFields := actualDoc.Keys()
 
-			sort.Strings(actualFields)
+			slices.Sort(actualFields)
 
 			var actualNotZeros []string
 			for key, value := range actualDoc.Map() {
