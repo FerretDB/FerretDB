@@ -36,12 +36,12 @@ import (
 var issueRE = regexp.MustCompile(`\[(i?)(Issue)]\((\Qhttps://github.com/FerretDB/\E([-\w]+)/issues/(\d+))\)`)
 
 func main() {
-	files, err := filepath.Glob(filepath.Join("website", "blog", "*.md"))
+	blogFiles, err := filepath.Glob(filepath.Join("website", "blog", "*.md"))
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	checkFiles(files, log.Printf, log.Fatalf)
+	checkBlogFiles(blogFiles)
 
 	tableFile, err := filepath.Abs(filepath.Join("website", "docs", "reference", "supported-commands.md"))
 	if err != nil {
@@ -53,11 +53,11 @@ func main() {
 	}
 }
 
-// checkFiles verifies that blog posts are correctly formatted,
+// checkBlogFiles verifies that blog posts are correctly formatted,
 // using logf for progress reporting and fatalf for errors.
-func checkFiles(files []string, logf, fatalf func(string, ...any)) {
+func checkBlogFiles(files []string) {
 	if len(files) == 0 {
-		fatalf("No blog posts found")
+		log.Fatalf("No blog posts found")
 	}
 
 	var failed bool
@@ -65,37 +65,37 @@ func checkFiles(files []string, logf, fatalf func(string, ...any)) {
 	for _, file := range files {
 		fileInBytes, err := os.ReadFile(file)
 		if err != nil {
-			fatalf("Couldn't read file %s: %s", file, err)
+			log.Fatalf("Couldn't read file %s: %s", file, err)
 		}
 
 		b, err := extractFrontMatter(fileInBytes)
 		if err != nil {
-			fatalf("Couldn't extract front matter from %s: %s", file, err)
+			log.Fatalf("Couldn't extract front matter from %s: %s", file, err)
 		}
 
 		if err = verifySlug(filepath.Base(file), b); err != nil {
-			logf("%q: %s", file, err)
+			log.Printf("%q: %s", file, err)
 			failed = true
 		}
 
 		if err = verifyDateNotPresent(b); err != nil {
-			logf("%q: %s", file, err)
+			log.Printf("%q: %s", file, err)
 			failed = true
 		}
 
 		if err = verifyTags(b); err != nil {
-			logf("%q: %s", file, err)
+			log.Printf("%q: %s", file, err)
 			failed = true
 		}
 
 		if err = verifyTruncateString(fileInBytes); err != nil {
-			logf("%q: %s", file, err)
+			log.Printf("%q: %s", file, err)
 			failed = true
 		}
 	}
 
 	if failed {
-		fatalf("One or more blog posts are not correctly formatted")
+		log.Fatalf("One or more blog posts are not correctly formatted")
 	}
 }
 
