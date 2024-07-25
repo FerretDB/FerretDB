@@ -15,10 +15,15 @@
 package integration
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 	"strings"
 	"testing"
+
+	"go.opentelemetry.io/otel/propagation"
+
+	"go.opentelemetry.io/otel"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -104,16 +109,30 @@ func TestInsertFind(t *testing.T) {
 
 func TestOtelComment(t *testing.T) {
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
-	name := collection.Database().Name()
-	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
+
+	ctx, span := otel.Tracer("").Start(ctx, "TestOtelComment")
+	defer span.End()
+
+	carrier := propagation.MapCarrier{}
+	otel.GetTextMapPropagator().Inject(ctx, &carrier)
+	traceParent := carrier.Get("traceparent")
+	traceState := carrier.Get("tracestate")
+
+	traceData := struct {
+		TraceParent string `json:"traceparent"`
+		TraceState  string `json:"tracestate"`
+	}{
+		TraceParent: traceParent,
+		TraceState:  traceState,
+	}
+
+	comment, err := json.Marshal(traceData)
 	require.NoError(t, err)
-	comment := `{"traceparent":"foo","tracestate":"bar"}`
 
 	var doc bson.D
-	opts := options.FindOne().SetComment(comment)
+	opts := options.FindOne().SetComment(string(comment))
 	err = collection.FindOne(ctx, bson.D{{"_id", "string"}}, opts).Decode(&doc)
 	require.NoError(t, err)
-	assert.Contains(t, databaseNames, name)
 }
 
 //nolint:paralleltest // we test a global list of databases

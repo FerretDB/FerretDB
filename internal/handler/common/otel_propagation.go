@@ -17,6 +17,7 @@ package common
 import (
 	"context"
 	"encoding/json"
+	"errors"
 
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
@@ -63,9 +64,9 @@ func TraceContextFromComment(comment string) (trace.SpanContext, error) {
 	ctx = propagator.Extract(ctx, carrier)
 
 	spanContext := trace.SpanContextFromContext(ctx)
-	/*if !spanContext.IsValid() {
-		panic("Invalid span context") // FIXME
-	}*/
+	if !spanContext.IsValid() {
+		return trace.SpanContext{}, errors.New("invalid span context")
+	}
 
 	return spanContext, nil
 }
