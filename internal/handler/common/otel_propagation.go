@@ -15,18 +15,13 @@
 package common
 
 import (
-	"context"
-	"encoding/json"
-	"errors"
-
-	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 )
 
-// TraceContextFromComment extracts OpenTelemetry tracing information from a comment document.
+// SpanContextFromComment extracts OpenTelemetry tracing information from a comment document.
 //
 // If the comment is empty or parent field is not set, an empty span context is returned.
-func TraceContextFromComment(comment string) (trace.SpanContext, error) {
+func SpanContextFromComment(comment string) (trace.SpanContext, error) {
 	// TODO
 	/*	if comment.Len() == 0 {
 			return trace.SpanContext{}, nil
@@ -42,7 +37,14 @@ func TraceContextFromComment(comment string) (trace.SpanContext, error) {
 			return trace.SpanContext{}, errors.New("missing tracestate")
 		}*/
 
-	type TraceData struct {
+	conf := trace.SpanContextConfig{
+		TraceID: trace.TraceID{}, // todo
+		SpanID:  trace.SpanID{},  // todo
+	}
+
+	return trace.NewSpanContext(conf), nil
+
+	/*type TraceData struct {
 		TraceParent string `json:"traceparent"`
 		TraceState  string `json:"tracestate"`
 	}
@@ -68,5 +70,5 @@ func TraceContextFromComment(comment string) (trace.SpanContext, error) {
 		return trace.SpanContext{}, errors.New("invalid span context")
 	}
 
-	return spanContext, nil
+	return spanContext, nil*/
 }

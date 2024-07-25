@@ -104,7 +104,7 @@ func (h *Handler) MsgFind(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		return nil, err
 	}
 
-	spanCtx, _ := common.TraceContextFromComment(params.Comment)
+	spanCtx, _ := common.SpanContextFromComment(params.Comment)
 
 	ctx := connCtx
 	ctx = trace.ContextWithRemoteSpanContext(ctx, spanCtx)
