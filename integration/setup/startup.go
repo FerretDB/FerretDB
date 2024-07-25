@@ -123,8 +123,6 @@ func Startup() {
 	}
 
 	if *targetURLF != "" {
-		var err error
-
 		*targetURLF, err = setClientPaths(*targetURLF)
 		if err != nil {
 			l.LogAttrs(ctx, logging.LevelFatal, "Failed to set target client path", logging.Error(err))
@@ -143,8 +141,6 @@ func Startup() {
 	}
 
 	if *compatURLF != "" {
-		var err error
-
 		*compatURLF, err = setClientPaths(*compatURLF)
 		if err != nil {
 			l.LogAttrs(ctx, logging.LevelFatal, "Failed to set compat client path", logging.Error(err))
