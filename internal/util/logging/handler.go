@@ -26,8 +26,12 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// Handler is a [slog.Handler] that wraps another handler with support for
-// additional log levels and shorter source location.
+// Handler is a [slog.Handler] that wraps another handler with support for:
+//   - additional log levels
+//     (DPanic/ERROR+1 panics in debug builds, Panic/ERROR+2 always panics, Fatal/ERROR+3 exits with a non-zero status);
+//   - shorter source locations;
+//   - removal of time, level, and source attributes;
+//   - collecting recent log entries for `getLog` command.
 type Handler struct {
 	base slog.Handler
 	out  io.Writer
