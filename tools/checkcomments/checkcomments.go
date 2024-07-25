@@ -100,10 +100,6 @@ func run(pass *analysis.Pass) (any, error) {
 
 				url := match[0]
 
-				if client == nil {
-					continue
-				}
-
 				status, err := client.IssueStatus(context.TODO(), url)
 				switch err {
 				case github.ErrIncorrectURL, github.ErrIncorrectIssueNumber:
