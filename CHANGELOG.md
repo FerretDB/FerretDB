@@ -2,6 +2,108 @@
 
 <!-- markdownlint-disable MD024 MD034 -->
 
+## [v1.23.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.23.0) (2024-07-25)
+
+### What's Changed
+
+#### Embeddable package
+
+This release switches from the [`zap` logging package](https://github.com/uber-go/zap) to the standard [`slog`](https://pkg.go.dev/log/slog).
+If the logger was configured by Go programs that import [`github.com/FerretDB/FerretDB/ferretdb` package](https://pkg.go.dev/github.com/FerretDB/FerretDB/ferretdb), they should configure the `SLogger` field instead.
+Setting the old `Logger` field will make the program panic and make the issue immediately noticeable.
+
+The next release will completely remove `zap` and rename `SLogger` to just `Logger`.
+
+#### Initial OpenTelemetry tracing support
+
+This release adds initial support for sending OpenTelemetry traces to the OTLP endpoint.
+The set of spans and their attributes is not stable yet and will change over time.
+
+All improvements in observability in this release (OpenTelemetry traces, Kubernetes probes, debug archive)
+are documented [there](https://docs.ferretdb.io/configuration/observability/).
+
+#### Experimental Systemd configuration in `.deb` and `.rpm` packages
+
+This release adds initial unit files for `systemd` that auto-start FerretDB.
+They are likely to change in the future in incompatible ways; for example, we may switch to using a non-root user.
+
+### New Features 🎉
+
+- Add Kubernetes liveness probe by @noisersup in https://github.com/FerretDB/FerretDB/pull/4378
+- Add Kubernetes readiness probe by @noisersup in https://github.com/FerretDB/FerretDB/pull/4426
+- Implement Docker healthcheck by @noisersup in https://github.com/FerretDB/FerretDB/pull/4364
+- Add OpenTelemetry traces and spans by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4477
+- Send OpenTelemetry traces and spans to OTLP endpoint by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4484
+- Implement `/debug/archive` handler by @sachinpuranik in https://github.com/FerretDB/FerretDB/pull/3895
+- Provide systemd unit file in `.deb` and `.rpm` packages by @noisersup in https://github.com/FerretDB/FerretDB/pull/4478
+
+### Enhancements 🛠
+
+- Improve support for named loggers by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4432
+
+### Documentation 📄
+
+- Document Kubernetes probes by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4424
+- Refactor and document `/debug/archive` handler by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4485
+- Document logging by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4436
+- Add release blog post for FerretDB v.1.22.0 by @Fashander in https://github.com/FerretDB/FerretDB/pull/4401
+- Add blog post on running FerretDB and CloudNativePG on Kubernetes by @Fashander in https://github.com/FerretDB/FerretDB/pull/4377
+- Add blogpost on "monitoring FerretDB performance using Coroot" by @Fashander in https://github.com/FerretDB/FerretDB/pull/4279
+- Crush `.png` images by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4441
+- Remove broken links by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4433
+
+### Other Changes 🤖
+
+- Replace deprecated syntax in Dockerfiles by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4397
+- Update comments about interfaces by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4405
+- Check database name for authentication by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4402
+- Refactor runnables by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4404
+- Add tests for `ctxutil.Sigterm` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4406
+- Setup OpenTelemetry exporter for FerretDB by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/4380
+- Extract `types` and `zap` code into separate files by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4408
+- Bump Go and deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4416
+- Implement Kubernetes startup probe by @noisersup in https://github.com/FerretDB/FerretDB/pull/4399
+- Disable OTEL in tests where collection name might have non-UTF-8 symbols by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/4423
+- Stop Otel exporter gracefully in `envtool` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4425
+- Include `OpReply` error handling by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4420
+- Test `authSource` by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4407
+- Return `connectionStatus` command `db` field by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4419
+- Implement checkswitch to handle regular switches by @PaveenV in https://github.com/FerretDB/FerretDB/pull/4381
+- Cleanup `checkswitch` handling by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4434
+- Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4446
+- Ignore `$readPreferences` for `insert` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4440
+- Readiness probe cleanup by @noisersup in https://github.com/FerretDB/FerretDB/pull/4447
+- Update linters configuration by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4451
+- Add support for named `slog` loggers by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4435
+- Increase setup timeout in tests by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4454
+- Port pgx logger by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4450
+- Handle `authSource` in low level driver by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4449
+- Use single definition of order for `checkswitch` by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4452
+- Clarify the meaning of the passed context by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4455
+- Remove `FuncCall` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4476
+- Use `slog` in `clientconn` package by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4457
+- Use `slog` in `postgresql` backend by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4466
+- Use `slog` in `sqlite` backend by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4467
+- Use `slog` in `mysql` and `hana` backends by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4463
+- Use `slog` in `oplog` and `cursor` packages by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4471
+- Use `slog` in `otel` by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4474
+- Use `slog` in `debug` package by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4473
+- Use `slog` in integration tests by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4481
+- Use `slog` in `main.go` and embedded `ferretdb` package by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4462
+- Use `slog` in `fsql` by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4464
+- Use `slog` in handler by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4470
+- Use `slog` in envtool by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4480
+- Implement `slog.LogValuer` interface for `types` package by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4479
+- Drop old dependency by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4486
+- Cleanup logging by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4489
+
+### New Contributors
+
+- @PaveenV made their first contribution in https://github.com/FerretDB/FerretDB/pull/4381
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/65?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v1.22.0...v1.23.0).
+
 ## [v1.22.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.22.0) (2024-06-26)
 
 ### What's Changed
