@@ -38,12 +38,12 @@ Alternatively, you can set the `FERRETDB_OTEL_TRACES_URL` environment variable t
 ![OTel tracing](/img/blog/otel-tracing.png)
 
 ```note
-At the moment, the trace format is not stable yet; attribute names and values might change over time.
+The trace format is not stable yet; attribute names and values might change over time.
 ```
 
 ## Kubernetes liveness and readiness probes and other observability improvements
 
-FerretDB now supports Kubernetes liveness and readiness probes, which can be used to monitor the health of FerretDB instances in a Kubernetes environment.
+FerretDB now supports Kubernetes liveness and readiness probes that you can use to monitor the health of FerretDB instances in a Kubernetes environment.
 
 The liveness probe endpoint is `/debug/livez` while the readiness probe endpoint is `/debug/readyz`.
 
