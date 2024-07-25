@@ -259,6 +259,8 @@ func checkSupportedCommands(file string) {
 		log.Panic(err)
 	}
 
+	var failed bool
+
 	s := bufio.NewScanner(f)
 	for s.Scan() {
 		line := s.Text()
@@ -271,6 +273,7 @@ func checkSupportedCommands(file string) {
 
 		if len(match) != 1 {
 			log.Printf("invalid [issue]({URL}) format: %s", line)
+			failed = true
 			continue
 		}
 
@@ -281,7 +284,9 @@ func checkSupportedCommands(file string) {
 		status, err = client.IssueStatus(context.TODO(), url)
 		switch err {
 		case github.ErrIncorrectURL, github.ErrIncorrectIssueNumber:
+			failed = true
 			log.Print(err.Error())
+			continue
 		default:
 			log.Panic(err)
 		}
@@ -290,8 +295,10 @@ func checkSupportedCommands(file string) {
 		case github.IssueOpen:
 			// nothing
 		case github.IssueClosed:
+			failed = true
 			log.Printf("invalid [issue]({URL}) linked issue %s is closed", url)
 		case github.IssueNotFound:
+			failed = true
 			log.Printf("invalid [issue]({URL}) linked issue %s is not found", url)
 		default:
 			log.Panicf("unknown issue status: %s", status)
@@ -299,6 +306,12 @@ func checkSupportedCommands(file string) {
 	}
 
 	if err = s.Err(); err != nil {
+		f.Close()
 		log.Fatalf("error reading input: %s", err)
+	}
+
+	if failed {
+		f.Close()
+		os.Exit(1)
 	}
 }
