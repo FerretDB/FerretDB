@@ -185,15 +185,13 @@ func ConvertArray(arr *types.Array) (*Array, error) {
 	iter := arr.Iterator()
 	defer iter.Close()
 
-	elements := make([]any, arr.Len())
+	elements := MakeArray(arr.Len())
 
 	for {
-		i, v, err := iter.Next()
+		_, v, err := iter.Next()
 		if err != nil {
 			if errors.Is(err, iterator.ErrIteratorDone) {
-				return &Array{
-					elements: elements,
-				}, nil
+				return elements, nil
 			}
 
 			return nil, lazyerrors.Error(err)
@@ -204,16 +202,16 @@ func ConvertArray(arr *types.Array) (*Array, error) {
 			return nil, lazyerrors.Error(err)
 		}
 
-		elements[i] = v
+		elements.Array.Add(v)
 	}
 }
 
 // Convert converts Array to [*types.Array], decoding raw documents and arrays on the fly.
 func (arr *Array) Convert() (*types.Array, error) {
-	values := make([]any, len(arr.elements))
+	values := make([]any, arr.Len())
 
-	for i, f := range arr.elements {
-		v, err := convertToTypes(f)
+	for i := range arr.Len() {
+		v, err := convertToTypes(arr.Get(i))
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}

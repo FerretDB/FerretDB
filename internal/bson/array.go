@@ -22,8 +22,6 @@ import (
 
 // Array represents a BSON array in the (partially) decoded form.
 type Array struct {
-	elements        []any
-	frozen          bool
 	*wirebson.Array // embed to delegate method
 }
 

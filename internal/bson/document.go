@@ -22,12 +22,6 @@ import (
 	"github.com/FerretDB/wire/wirebson"
 )
 
-// field represents a single Document field in the (partially) decoded form.
-type field struct {
-	value any
-	name  string
-}
-
 // Document represents a BSON document a.k.a object in the (partially) decoded form.
 //
 // It may contain duplicate field names.
@@ -74,16 +68,6 @@ func TypesDocument(doc wirebson.AnyDocument) (*types.Document, error) {
 	}
 
 	return tDoc, nil
-}
-
-// NewDocument creates a new Document from the given pairs of field names and values.
-func NewDocument(pairs ...any) (*Document, error) {
-	d, err := wirebson.NewDocument(pairs...)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return &Document{Document: d}, nil
 }
 
 // MakeDocument creates a new empty Document with the given capacity.
