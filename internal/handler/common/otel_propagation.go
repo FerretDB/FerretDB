@@ -40,8 +40,8 @@ func SpanContextFromComment(comment string) (trace.SpanContext, error) {
 		}*/
 
 	type TraceData struct {
-		TraceParent string `json:"ferretTraceID"`
-		TraceState  string `json:"ferretSpanID"`
+		TraceID [16]byte `json:"ferretTraceID"`
+		SpanID  [8]byte  `json:"ferretSpanID"`
 	}
 
 	var data TraceData
@@ -51,8 +51,8 @@ func SpanContextFromComment(comment string) (trace.SpanContext, error) {
 	}
 
 	conf := trace.SpanContextConfig{
-		TraceID: trace.TraceID{}, // todo
-		SpanID:  trace.SpanID{},  // todo
+		TraceID: trace.TraceID(data.TraceID),
+		SpanID:  trace.SpanID(data.SpanID),
 	}
 
 	return trace.NewSpanContext(conf), nil

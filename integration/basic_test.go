@@ -112,19 +112,24 @@ func TestOtelComment(t *testing.T) {
 	defer span.End()
 
 	traceData := struct {
-		TraceID string `json:"ferretTraceID"`
-		SpanID  string `json:"ferretSpanID"`
+		TraceID [16]byte `json:"ferretTraceID"`
+		SpanID  [8]byte  `json:"ferretSpanID"`
 	}{
-		TraceID: span.SpanContext().TraceID().String(),
-		SpanID:  span.SpanContext().SpanID().String(),
+		TraceID: [16]byte(span.SpanContext().TraceID()),
+		SpanID:  [8]byte(span.SpanContext().SpanID()),
 	}
 
 	comment, err := json.Marshal(traceData)
 	require.NoError(t, err)
 
+	traceDataDoc := bson.D{
+		{"ferretTraceID", span.SpanContext().TraceID()},
+		{"ferretSpanID", span.SpanContext().SpanID()},
+	}
+
 	var doc bson.D
 	opts := options.FindOne().SetComment(string(comment))
-	err = collection.FindOne(ctx, bson.D{{"_id", "string"}}, opts).Decode(&doc)
+	err = collection.FindOne(ctx, bson.D{{"_id", "string"}, {"$comment", traceDataDoc}}, opts).Decode(&doc)
 	require.NoError(t, err)
 }
 
