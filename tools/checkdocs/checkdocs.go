@@ -297,9 +297,12 @@ func checkSupportedCommands(file string) {
 
 		var status github.IssueStatus
 
-		status, err = client.IssueStatus(context.TODO(), url, repo, num)
-		if err != nil {
-			log.Fatalf(err.Error())
+		status, err = client.IssueStatus(context.TODO(), url)
+		switch err {
+		case github.ErrIncorrectURL, github.ErrIncorrectIssueNumber:
+			log.Print(err.Error())
+		default:
+			log.Panic(err)
 		}
 
 		switch status {

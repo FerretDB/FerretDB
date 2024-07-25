@@ -105,7 +105,10 @@ func run(pass *analysis.Pass) (any, error) {
 				}
 
 				status, err := client.IssueStatus(context.TODO(), url)
-				if err != nil {
+				switch err {
+				case github.ErrIncorrectURL, github.ErrIncorrectIssueNumber:
+					log.Print(err.Error())
+				default:
 					log.Panic(err)
 				}
 
