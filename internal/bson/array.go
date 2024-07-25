@@ -82,6 +82,13 @@ func (arr *Array) Get(index int) any {
 
 // Add adds a new element to the Array.
 func (arr *Array) Add(value any) error {
+	switch v := value.(type) {
+	case *Document:
+		value = v.Document
+	case *Array:
+		value = v.Array
+	}
+
 	return arr.Array.Add(value)
 }
 

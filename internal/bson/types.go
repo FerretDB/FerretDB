@@ -101,8 +101,39 @@ func convertToTypes(v any) (any, error) {
 
 		return doc, nil
 
+	case *wirebson.Document:
+		doc, err := TypesDocument(v)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		return doc, nil
+
+	case wirebson.RawDocument:
+		doc, err := TypesDocument(v)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		return doc, nil
 	case *Array:
 		arr, err := v.Convert()
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		return arr, nil
+
+	case *wirebson.Array:
+		arr, err := TypesArray(v)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		return arr, nil
+
+	case wirebson.RawArray:
+		arr, err := TypesArray(v)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}

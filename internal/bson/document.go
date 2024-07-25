@@ -120,7 +120,14 @@ func (doc *Document) Get(name string) any {
 
 // Add adds a new field to the Document.
 func (doc *Document) Add(name string, value any) error {
-	return doc.Add(name, value)
+	switch v := value.(type) {
+	case *Document:
+		value = v.Document
+	case *Array:
+		value = v.Array
+	}
+
+	return doc.Document.Add(name, value)
 }
 
 // Remove removes the first existing field with the given name.
