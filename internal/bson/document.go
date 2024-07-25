@@ -15,16 +15,11 @@
 package bson
 
 import (
-	"log/slog"
-	"slices"
-
+	"fmt"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
-
-	"github.com/FerretDB/FerretDB/internal/types"
-
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // field represents a single Document field in the (partially) decoded form.
@@ -37,12 +32,11 @@ type field struct {
 //
 // It may contain duplicate field names.
 type Document struct {
-	fields             []field
-	frozen             bool
 	*wirebson.Document // embed to delegate method
 }
 
-// TypesDocumentFromOpMsg gets a raw document, decodes and converts to [*types.Document].
+// TypesDocumentFromOpMsg gets a raw document, decodes, converts to [*types.Document]
+// and validates it.
 func TypesDocumentFromOpMsg(msg *wire.OpMsg) (*types.Document, error) {
 	rDoc, err := msg.RawDocument()
 	if err != nil {
@@ -52,6 +46,14 @@ func TypesDocumentFromOpMsg(msg *wire.OpMsg) (*types.Document, error) {
 	tDoc, err := TypesDocument(rDoc)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
+	}
+
+	if err = validateValue(tDoc); err != nil {
+		tDoc.Remove("lsid") // to simplify error message
+		return nil, newValidationError(fmt.Errorf("bson.TypesDocumentFromOpMsg: validation failed for %v with: %v",
+			types.FormatAnyValue(tDoc),
+			err,
+		))
 	}
 
 	return tDoc, nil
@@ -76,33 +78,18 @@ func TypesDocument(doc wirebson.AnyDocument) (*types.Document, error) {
 
 // NewDocument creates a new Document from the given pairs of field names and values.
 func NewDocument(pairs ...any) (*Document, error) {
-	l := len(pairs)
-	if l%2 != 0 {
-		return nil, lazyerrors.Errorf("invalid number of arguments: %d", l)
+	d, err := wirebson.NewDocument(pairs...)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
-	res := MakeDocument(l / 2)
-
-	for i := 0; i < l; i += 2 {
-		name, ok := pairs[i].(string)
-		if !ok {
-			return nil, lazyerrors.Errorf("invalid field name type: %T", pairs[i])
-		}
-
-		value := pairs[i+1]
-
-		if err := res.Add(name, value); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-	}
-
-	return res, nil
+	return &Document{Document: d}, nil
 }
 
 // MakeDocument creates a new empty Document with the given capacity.
 func MakeDocument(cap int) *Document {
 	return &Document{
-		fields: make([]field, 0, cap),
+		Document: wirebson.MakeDocument(cap),
 	}
 }
 
@@ -111,26 +98,14 @@ func MakeDocument(cap int) *Document {
 //
 // It is safe to call Freeze multiple times.
 func (doc *Document) Freeze() {
-	doc.frozen = true
-}
-
-// checkFrozen panics if document is frozen.
-func (doc *Document) checkFrozen() {
-	if doc.frozen {
-		panic("document is frozen and can't be modified")
-	}
+	doc.Document.Freeze()
 }
 
 // FieldNames returns a slice of field names in the Document.
 //
 // If document contains duplicate field names, the same name may appear multiple times.
 func (doc *Document) FieldNames() []string {
-	fields := make([]string, len(doc.fields))
-	for i, f := range doc.fields {
-		fields[i] = f.name
-	}
-
-	return fields
+	return doc.Document.FieldNames()
 }
 
 // Get returns a value of the field with the given name.
@@ -140,112 +115,28 @@ func (doc *Document) FieldNames() []string {
 //
 // TODO https://github.com/FerretDB/FerretDB/issues/4208
 func (doc *Document) Get(name string) any {
-	for _, f := range doc.fields {
-		if f.name == name {
-			return f.value
-		}
-	}
-
-	return nil
+	return doc.Document.Get(name)
 }
 
 // Add adds a new field to the Document.
 func (doc *Document) Add(name string, value any) error {
-	if err := validBSONType(value); err != nil {
-		return lazyerrors.Errorf("%q: %w", name, err)
-	}
-
-	doc.checkFrozen()
-
-	doc.fields = append(doc.fields, field{
-		name:  name,
-		value: value,
-	})
-
-	return nil
+	return doc.Add(name, value)
 }
 
 // Remove removes the first existing field with the given name.
 // It does nothing if the field with that name does not exist.
 func (doc *Document) Remove(name string) {
-	doc.checkFrozen()
-
-	var found bool
-	doc.fields = slices.DeleteFunc(doc.fields, func(f field) bool {
-		if f.name != name {
-			return false
-		}
-
-		if found {
-			return false
-		}
-
-		found = true
-
-		return true
-	})
+	doc.Document.Remove(name)
 }
 
 // Replace sets the value for the first existing field with the given name.
 // It does nothing if the field with that name does not exist.
 func (doc *Document) Replace(name string, value any) error {
-	if err := validBSONType(value); err != nil {
-		return lazyerrors.Errorf("%q: %w", name, err)
-	}
-
-	doc.checkFrozen()
-
-	for i, f := range doc.fields {
-		if f.name == name {
-			doc.fields[i].value = value
-			return nil
-		}
-	}
-
-	return nil
+	return doc.Document.Replace(name, value)
 }
 
 // Command returns the first field name. This is often used as a command name.
 // It returns an empty string if document is nil or empty.
 func (doc *Document) Command() string {
-	if doc == nil || len(doc.fields) == 0 {
-		return ""
-	}
-
-	return doc.fields[0].name
+	return doc.Document.Command()
 }
-
-// Encode encodes non-nil BSON document.
-//
-// TODO https://github.com/FerretDB/FerretDB/issues/3759
-// This method should accept a slice of bytes, not return it.
-// That would allow to avoid unnecessary allocations.
-//
-// Receiver must not be nil.
-func (doc *Document) Encode() (wirebson.RawDocument, error) {
-	must.NotBeZero(doc)
-	must.NotBeZero(doc.Document)
-
-	return doc.Document.Encode()
-}
-
-// Decode returns itself to implement [AnyDocument].
-//
-// Receiver must not be nil.
-func (doc *Document) Decode() (*wirebson.Document, error) {
-	must.NotBeZero(doc)
-	must.NotBeZero(doc.Document)
-
-	return doc.Document.Decode()
-}
-
-// LogValue implements [slog.LogValuer].
-func (doc *Document) LogValue() slog.Value {
-	return slogValue(doc, 1)
-}
-
-// check interfaces
-var (
-	_ wirebson.AnyDocument = (*Document)(nil)
-	_ slog.LogValuer       = (*Document)(nil)
-)

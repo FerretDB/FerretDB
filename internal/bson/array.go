@@ -15,14 +15,8 @@
 package bson
 
 import (
-	"bytes"
-	"encoding/binary"
-	"log/slog"
-	"strconv"
-
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/wire/wirebson"
 )
 
@@ -35,23 +29,18 @@ type Array struct {
 
 // NewArray creates a new Array from the given values.
 func NewArray(values ...any) (*Array, error) {
-	res := &Array{
-		elements: make([]any, 0, len(values)),
+	arr, err := wirebson.NewArray(values)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
-	for i, v := range values {
-		if err := res.Add(v); err != nil {
-			return nil, lazyerrors.Errorf("%d: %w", i, err)
-		}
-	}
-
-	return res, nil
+	return &Array{Array: arr}, nil
 }
 
 // MakeArray creates a new empty Array with the given capacity.
 func MakeArray(cap int) *Array {
 	return &Array{
-		elements: make([]any, 0, cap),
+		Array: wirebson.MakeArray(cap),
 	}
 }
 
@@ -77,99 +66,27 @@ func TypesArray(arr wirebson.AnyArray) (*types.Array, error) {
 //
 // It is safe to call Freeze multiple times.
 func (arr *Array) Freeze() {
-	arr.frozen = true
-}
-
-// checkFrozen panics if array is frozen.
-func (arr *Array) checkFrozen() {
-	if arr.frozen {
-		panic("array is frozen and can't be modified")
-	}
+	arr.Array.Freeze()
 }
 
 // Len returns the number of elements in the Array.
 func (arr *Array) Len() int {
-	return len(arr.elements)
+	return arr.Array.Len()
 }
 
 // Get returns the element at the given index.
 // It panics if index is out of bounds.
 func (arr *Array) Get(index int) any {
-	return arr.elements[index]
+	return arr.Array.Get(index)
 }
 
 // Add adds a new element to the Array.
 func (arr *Array) Add(value any) error {
-	if err := validBSONType(value); err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	arr.checkFrozen()
-
-	arr.elements = append(arr.elements, value)
-
-	return nil
+	return arr.Array.Add(value)
 }
 
 // Replace sets the value of the element at the given index.
 // It panics if index is out of bounds.
 func (arr *Array) Replace(index int, value any) error {
-	if err := validBSONType(value); err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	arr.checkFrozen()
-
-	arr.elements[index] = value
-
-	return nil
+	return arr.Array.Replace(index, value)
 }
-
-// Encode encodes non-nil BSON array.
-//
-// TODO https://github.com/FerretDB/FerretDB/issues/3759
-// This method should accept a slice of bytes, not return it.
-// That would allow to avoid unnecessary allocations.
-//
-// Receiver must not be nil.
-func (arr *Array) Encode() (RawArray, error) {
-	must.NotBeZero(arr)
-
-	size := sizeAny(arr)
-	buf := bytes.NewBuffer(make([]byte, 0, size))
-
-	if err := binary.Write(buf, binary.LittleEndian, uint32(size)); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	for i, v := range arr.elements {
-		if err := encodeField(buf, strconv.Itoa(i), v); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-	}
-
-	if err := binary.Write(buf, binary.LittleEndian, byte(0)); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return buf.Bytes(), nil
-}
-
-// Decode returns itself to implement [AnyArray].
-//
-// Receiver must not be nil.
-func (arr *Array) Decode() (*Array, error) {
-	must.NotBeZero(arr)
-	return arr, nil
-}
-
-// LogValue implements [slog.LogValuer].
-func (arr *Array) LogValue() slog.Value {
-	return slogValue(arr, 1)
-}
-
-// check interfaces
-var (
-	_ AnyArray       = (*Array)(nil)
-	_ slog.LogValuer = (*Array)(nil)
-)

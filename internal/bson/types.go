@@ -17,6 +17,7 @@ package bson
 import (
 	"errors"
 	"fmt"
+	"github.com/FerretDB/wire/wirebson"
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -57,27 +58,27 @@ func convertFromTypes(v any) (any, error) {
 	case string:
 		return v, nil
 	case types.Binary:
-		return Binary{
+		return wirebson.Binary{
 			B:       v.B,
-			Subtype: BinarySubtype(v.Subtype),
+			Subtype: wirebson.BinarySubtype(v.Subtype),
 		}, nil
 	case types.ObjectID:
-		return ObjectID(v), nil
+		return wirebson.ObjectID(v), nil
 	case bool:
 		return v, nil
 	case time.Time:
 		return v, nil
 	case types.NullType:
-		return Null, nil
+		return wirebson.Null, nil
 	case types.Regex:
-		return Regex{
+		return wirebson.Regex{
 			Pattern: v.Pattern,
 			Options: v.Options,
 		}, nil
 	case int32:
 		return v, nil
 	case types.Timestamp:
-		return Timestamp(v), nil
+		return wirebson.Timestamp(v), nil
 	case int64:
 		return v, nil
 
@@ -100,34 +101,8 @@ func convertToTypes(v any) (any, error) {
 
 		return doc, nil
 
-	case RawDocument:
-		d, err := v.Decode()
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		doc, err := d.Convert()
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		return doc, nil
-
 	case *Array:
 		arr, err := v.Convert()
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		return arr, nil
-
-	case RawArray:
-		a, err := v.Decode()
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		arr, err := a.Convert()
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -138,7 +113,7 @@ func convertToTypes(v any) (any, error) {
 		return v, nil
 	case string:
 		return v, nil
-	case Binary:
+	case wirebson.Binary:
 		// Special case to prevent it from being stored as null in sjson.
 		// TODO https://github.com/FerretDB/FerretDB/issues/260
 		if v.B == nil {
@@ -149,22 +124,22 @@ func convertToTypes(v any) (any, error) {
 			B:       v.B,
 			Subtype: types.BinarySubtype(v.Subtype),
 		}, nil
-	case ObjectID:
+	case wirebson.ObjectID:
 		return types.ObjectID(v), nil
 	case bool:
 		return v, nil
 	case time.Time:
 		return v, nil
-	case NullType:
+	case wirebson.NullType:
 		return types.Null, nil
-	case Regex:
+	case wirebson.Regex:
 		return types.Regex{
 			Pattern: v.Pattern,
 			Options: v.Options,
 		}, nil
 	case int32:
 		return v, nil
-	case Timestamp:
+	case wirebson.Timestamp:
 		return types.Timestamp(v), nil
 	case int64:
 		return v, nil
@@ -253,9 +228,10 @@ func ConvertDocument(doc *types.Document) (*Document, error) {
 
 // Convert converts Document to [*types.Document], decoding raw documents and arrays on the fly.
 func (doc *Document) Convert() (*types.Document, error) {
-	pairs := make([]any, 0, len(doc.fields)*2)
+	fields := doc.Document.FieldNames()
+	pairs := make([]any, 0, len(fields)*2)
 
-	for _, f := range doc.Document.FieldNames() {
+	for _, f := range fields {
 		v, err := convertToTypes(doc.Document.Get(f))
 		if err != nil {
 			return nil, lazyerrors.Error(err)
@@ -265,36 +241,6 @@ func (doc *Document) Convert() (*types.Document, error) {
 	}
 
 	res, err := types.NewDocument(pairs...)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return res, nil
-}
-
-// Convert converts a single valid BSON array that takes the whole byte slice into [*types.Array].
-func (raw RawArray) Convert() (*types.Array, error) {
-	arr, err := raw.decode(decodeShallow)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	res, err := arr.Convert()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return res, nil
-}
-
-// Convert converts a single valid BSON document that takes the whole byte slice into [*types.Document].
-func (raw RawDocument) Convert() (*types.Document, error) {
-	doc, err := raw.decode(decodeShallow)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	res, err := doc.Convert()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

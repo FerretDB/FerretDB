@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	fbson "github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
@@ -285,7 +286,7 @@ var normalTestCases = []normalTestCase{
 	{
 		name: "nested",
 		raw:  testutil.MustParseDumpFile("testdata", "nested.hex"),
-		tdoc: must.NotFail(makeNested(false, 150).(*bson.Document).Convert()),
+		tdoc: must.NotFail(fbson.TypesDocument(makeNested(false, 150).(*bson.Document))),
 		m: `
 		{
 		  "f": [
@@ -610,7 +611,7 @@ func TestNormal(t *testing.T) {
 					assert.NotEmpty(t, bson.LogMessageBlock(doc))
 					assert.NotEmpty(t, bson.LogMessageFlow(doc))
 
-					tdoc, err := doc.Convert()
+					tdoc, err := fbson.TypesDocument(doc)
 					require.NoError(t, err)
 					testutil.AssertEqual(t, tc.tdoc, tdoc)
 
@@ -631,7 +632,7 @@ func TestNormal(t *testing.T) {
 					assert.NotEmpty(t, bson.LogMessageBlock(doc))
 					assert.NotEmpty(t, bson.LogMessageFlow(doc))
 
-					tdoc, err := doc.Convert()
+					tdoc, err := fbson.TypesDocument(doc)
 					require.NoError(t, err)
 					testutil.AssertEqual(t, tc.tdoc, tdoc)
 
@@ -641,7 +642,7 @@ func TestNormal(t *testing.T) {
 				})
 
 				t.Run("ConvertEncode", func(t *testing.T) {
-					doc, err := bson.ConvertDocument(tc.tdoc)
+					doc, err := fbson.ConvertDocument(tc.tdoc)
 					require.NoError(t, err)
 
 					raw, err := doc.Encode()
@@ -843,7 +844,7 @@ func testRawDocument(t *testing.T, rawDoc bson.RawDocument) {
 			assert.NotEmpty(t, bson.LogMessageBlock(doc))
 			assert.NotEmpty(t, bson.LogMessageFlow(doc))
 
-			_, _ = doc.Convert()
+			_, _ = fbson.TypesDocument(doc)
 
 			raw, err := doc.Encode()
 			if err == nil {
@@ -865,7 +866,7 @@ func testRawDocument(t *testing.T, rawDoc bson.RawDocument) {
 			assert.NotEmpty(t, bson.LogMessageBlock(doc))
 			assert.NotEmpty(t, bson.LogMessageFlow(doc))
 
-			_, err = doc.Convert()
+			_, err = fbson.TypesDocument(doc)
 			require.NoError(t, err)
 
 			raw, err := doc.Encode()

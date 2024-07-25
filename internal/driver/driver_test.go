@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	fbson "github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
@@ -87,9 +88,9 @@ func TestDriver(t *testing.T) {
 	var cursorID int64
 
 	expectedBatches := []*types.Array{
-		must.NotFail(types.NewArray(must.NotFail(doc1.Convert()))),
-		must.NotFail(types.NewArray(must.NotFail(doc2.Convert()))),
-		must.NotFail(types.NewArray(must.NotFail(doc3.Convert()))),
+		must.NotFail(types.NewArray(must.NotFail(fbson.TypesDocument(doc1)))),
+		must.NotFail(types.NewArray(must.NotFail(fbson.TypesDocument(doc2)))),
+		must.NotFail(types.NewArray(must.NotFail(fbson.TypesDocument(doc3)))),
 	}
 
 	t.Run("Find", func(t *testing.T) {
@@ -115,7 +116,7 @@ func TestDriver(t *testing.T) {
 		require.NoError(t, err)
 		cursorID = cursor.Get("id").(int64)
 
-		testutil.AssertEqual(t, expectedBatches[0], must.NotFail(firstBatch.Convert()))
+		testutil.AssertEqual(t, expectedBatches[0], must.NotFail(fbson.TypesArray(firstBatch)))
 		require.NotZero(t, cursorID)
 	})
 }
