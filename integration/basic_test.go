@@ -21,8 +21,6 @@ import (
 	"strings"
 	"testing"
 
-	"go.opentelemetry.io/otel/propagation"
-
 	"go.opentelemetry.io/otel"
 
 	"github.com/stretchr/testify/assert"
@@ -113,17 +111,12 @@ func TestOtelComment(t *testing.T) {
 	ctx, span := otel.Tracer("").Start(ctx, "TestOtelComment")
 	defer span.End()
 
-	carrier := propagation.MapCarrier{}
-	otel.GetTextMapPropagator().Inject(ctx, &carrier)
-	traceParent := carrier.Get("traceparent")
-	traceState := carrier.Get("tracestate")
-
 	traceData := struct {
-		TraceParent string `json:"traceparent"`
-		TraceState  string `json:"tracestate"`
+		TraceID string `json:"ferretTraceID"`
+		SpanID  string `json:"ferretSpanID"`
 	}{
-		TraceParent: traceParent,
-		TraceState:  traceState,
+		TraceID: span.SpanContext().TraceID().String(),
+		SpanID:  span.SpanContext().SpanID().String(),
 	}
 
 	comment, err := json.Marshal(traceData)

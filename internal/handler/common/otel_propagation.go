@@ -15,6 +15,8 @@
 package common
 
 import (
+	"encoding/json"
+
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -36,6 +38,17 @@ func SpanContextFromComment(comment string) (trace.SpanContext, error) {
 		if err != nil {
 			return trace.SpanContext{}, errors.New("missing tracestate")
 		}*/
+
+	type TraceData struct {
+		TraceParent string `json:"ferretTraceID"`
+		TraceState  string `json:"ferretSpanID"`
+	}
+
+	var data TraceData
+	err := json.Unmarshal([]byte(comment), &data)
+	if err != nil {
+		return trace.SpanContext{}, nil
+	}
 
 	conf := trace.SpanContextConfig{
 		TraceID: trace.TraceID{}, // todo
