@@ -23,8 +23,11 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"time"
 
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/gh"
 	"github.com/google/go-github/v57/github"
 	"github.com/rogpeppe/go-internal/lockedfile"
@@ -108,13 +111,43 @@ func CacheFilePath() (string, error) {
 	return filepath.Join(dir, "tmp", "githubcache", "cache.json"), nil
 }
 
+// urlRE represents correct // TODO comment format.
+var urlRE = regexp.MustCompile(`^\Qhttps://github.com/FerretDB/\E([-\w]+)/issues/(\d+)$`)
+
+var ErrIncorrectURL = errors.New("invalid TODO: incorrect format")
+var ErrIncorrectIssueNumber = errors.New("invalid TODO: incorrect issue number")
+
+func parseIssueURL(line string) (repo string, num int, err error) {
+	match := urlRE.FindStringSubmatch(line)
+
+	if len(match) != 2 {
+		err = ErrIncorrectURL
+		return
+	}
+
+	repo = match[0]
+	num = must.NotFail(strconv.Atoi(match[1]))
+
+	if num <= 0 {
+		err = ErrIncorrectIssueNumber
+		return
+	}
+
+	return
+}
+
 // IssueStatus returns issue status.
 // It uses cache.
 //
 // Returned error is something fatal.
 // On rate limit, the error is logged once and (issueOpen, nil) is returned.
-func (c *Client) IssueStatus(ctx context.Context, url, repo string, num int) (IssueStatus, error) {
+func (c *Client) IssueStatus(ctx context.Context, url string) (IssueStatus, error) {
 	start := time.Now()
+
+	repo, num, err := parseIssueURL(url)
+	if err != nil {
+		return IssueNotFound, err
+	}
 
 	cache := &cacheFile{
 		Issues: make(map[string]issue),
@@ -217,4 +250,7 @@ func (c *Client) checkIssueStatus(ctx context.Context, repo string, num int) (Is
 	default:
 		return "", fmt.Errorf("unknown issue state: %q", s)
 	}
+}
+
+func ValidateURL(line string) {
 }
