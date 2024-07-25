@@ -176,8 +176,6 @@ linters-settings:
         alias: otelsemconv
       - pkg: github.com/FerretDB/FerretDB/internal/backends/mysql/metadata/pool
         alias: mysqlpool
-      - pkg: golang.org/x/net/trace
-        alias: xnettrace
   # ineffassign
   lll:
     line-length: 130
