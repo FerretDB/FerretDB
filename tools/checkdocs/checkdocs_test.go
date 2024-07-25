@@ -32,6 +32,11 @@ func TestReal(t *testing.T) {
 	require.NoError(t, err)
 
 	checkBlogFiles(files)
+
+	tableFile, err := filepath.Abs(filepath.Join("website", "docs", "reference", "supported-commands.md"))
+	require.NoError(t, err)
+
+	checkSupportedCommands(tableFile)
 }
 
 var fm = bytes.TrimSpace([]byte(`
