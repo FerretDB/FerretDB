@@ -48,7 +48,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if err = checkTableFile(tableFile, log.Printf, log.Fatalf); err != nil {
+	if err = checkSupportedCommands(tableFile, log.Printf, log.Fatalf); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -239,21 +239,21 @@ func verifyTags(fm []byte) error {
 	return nil
 }
 
-// checkTableFile verifies that supported-commands.md is correctly formatted,
+// checkSupportedCommands verifies that supported-commands.md is correctly formatted,
 // using logf for progress reporting and fatalf for errors.
-func checkTableFile(file string, logf, fatalf func(string, ...any)) error {
+func checkSupportedCommands(file string) error {
 	fileInBytes, err := os.ReadFile(file)
 	if err != nil {
 		return fmt.Errorf("couldn't read file %s: %s", file, err)
 	}
 
-	verifyIssues(fileInBytes, logf, fatalf)
+	verifyIssues(fileInBytes)
 
 	return nil
 }
 
 // verifyIssues checks that listed issues statuses.
-func verifyIssues(fm []byte, logf, fatalf func(string, ...any)) {
+func verifyIssues(fm []byte) {
 	p, err := github.CacheFilePath()
 	if err != nil {
 		log.Panic(err)
@@ -261,7 +261,8 @@ func verifyIssues(fm []byte, logf, fatalf func(string, ...any)) {
 
 	clientDebugF := gh.NoopPrintf
 
-	client, err := github.NewClient(p, log.Printf, logf, clientDebugF)
+	// TODO: cacheDebugF clientDebugF
+	client, err := github.NewClient(p, log.Printf, log.Printf, clientDebugF)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -278,7 +279,7 @@ func verifyIssues(fm []byte, logf, fatalf func(string, ...any)) {
 		expectedMatchLen := 6
 
 		if len(match) != expectedMatchLen {
-			logf("invalid [issue]({URL}) format: %s", line)
+			log.Printf("invalid [issue]({URL}) format: %s", line)
 			continue
 		}
 
@@ -289,11 +290,11 @@ func verifyIssues(fm []byte, logf, fatalf func(string, ...any)) {
 
 		num, err = strconv.Atoi(match[5])
 		if err != nil {
-			fatalf(err.Error())
+			log.Fatalf(err.Error())
 		}
 
 		if num <= 0 {
-			logf("invalid [issue]({URL}) incorrect issue number")
+			log.Printf("invalid [issue]({URL}) incorrect issue number")
 			continue
 		}
 
@@ -305,22 +306,22 @@ func verifyIssues(fm []byte, logf, fatalf func(string, ...any)) {
 
 		status, err = client.IssueStatus(context.TODO(), url, repo, num)
 		if err != nil {
-			fatalf(err.Error())
+			log.Fatalf(err.Error())
 		}
 
 		switch status {
 		case github.IssueOpen:
 			// nothing
 		case github.IssueClosed:
-			logf("invalid [issue]({URL}) linked issue %s is closed", url)
+			log.Printf("invalid [issue]({URL}) linked issue %s is closed", url)
 		case github.IssueNotFound:
-			logf("invalid [issue]({URL}) linked issue %s is not found", url)
+			log.Printf("invalid [issue]({URL}) linked issue %s is not found", url)
 		default:
 			log.Panicf("unknown issue status: %s", status)
 		}
 	}
 
 	if err = s.Err(); err != nil {
-		fatalf("error reading input: %s", err)
+		log.Fatalf("error reading input: %s", err)
 	}
 }
