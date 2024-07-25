@@ -240,10 +240,12 @@ func verifyTags(fm []byte) error {
 // checkSupportedCommands verifies that supported-commands.md is correctly formatted,
 // using logf for progress reporting and fatalf for errors.
 func checkSupportedCommands(file string) {
-	fm, err := os.ReadFile(file)
+	f, err := os.OpenFile(file, os.O_RDONLY, 0o666)
 	if err != nil {
-		log.Fatalf("couldn't read file %s: %s", file, err)
+		log.Fatalf("couldn't open the file %s: %s", file, err)
 	}
+
+	defer f.Close()
 
 	p, err := github.CacheFilePath()
 	if err != nil {
@@ -258,7 +260,7 @@ func checkSupportedCommands(file string) {
 		log.Panic(err)
 	}
 
-	s := bufio.NewScanner(bytes.NewReader(fm))
+	s := bufio.NewScanner(f)
 	for s.Scan() {
 		line := s.Text()
 
