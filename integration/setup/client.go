@@ -118,6 +118,8 @@ func setupClient(tb testtb.TB, ctx context.Context, uri string, disableOtel bool
 //
 // If the connection can't be established, it panics,
 // as it doesn't make sense to proceed with other tests if we couldn't connect in one of them.
+//
+//nolint:unused // for now
 func setupClientDriver(tb testtb.TB, ctx context.Context, uri string, l *slog.Logger) *driver.Conn {
 	tb.Helper()
 
