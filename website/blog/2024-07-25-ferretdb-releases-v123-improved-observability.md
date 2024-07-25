@@ -63,7 +63,9 @@ This release adds initial unit files for `systemd` that auto-start FerretDB.
 
 Please note that there is a possibility that they will change in the future in an incompatible way; for example, we may switch to using a non-root user.
 
-## Conclusion
+## Other updates
+
+We updated our documentation to include information on logging, Kubernetes probes, and OpenTelemetry tracing with clearer guidelines on how to configure and use them.
 
 For a complete list of all changes in this release, please see our [FerretDB v1.23 release Changelog](https://github.com/FerretDB/FerretDB/releases/tag/v1.23.0)
 
