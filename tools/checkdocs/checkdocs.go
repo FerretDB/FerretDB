@@ -24,16 +24,12 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/FerretDB/gh"
 
 	"github.com/FerretDB/FerretDB/tools/github"
 )
-
-// issueRE represents correct {{STATUS}} | (issue)[{{URL}}] format in the markdown files containing tables.
-var issueRE = regexp.MustCompile(`\[(i?)(Issue)]\((\Qhttps://github.com/FerretDB/\E([-\w]+)/issues/(\d+))\)`)
 
 func main() {
 	blogFiles, err := filepath.Glob(filepath.Join("website", "blog", "*.md"))
@@ -237,6 +233,9 @@ func verifyTags(fm []byte) error {
 	return nil
 }
 
+// issueRE represents correct {{STATUS}} | (issue)[{{URL}}] format in the markdown files containing tables.
+var issueRE = regexp.MustCompile(`\[(i?)(Issue)]\((\Qhttps://github.com/FerretDB/\E([-\w]+)/issues/(\d+))\)`)
+
 // checkSupportedCommands verifies that supported-commands.md is correctly formatted,
 // using logf for progress reporting and fatalf for errors.
 func checkSupportedCommands(file string) {
@@ -273,21 +272,6 @@ func checkSupportedCommands(file string) {
 
 		if len(match) != expectedMatchLen {
 			log.Printf("invalid [issue]({URL}) format: %s", line)
-			continue
-		}
-
-		url := match[3]
-		repo := match[4]
-
-		var num int
-
-		num, err = strconv.Atoi(match[5])
-		if err != nil {
-			log.Fatalf(err.Error())
-		}
-
-		if num <= 0 {
-			log.Printf("invalid [issue]({URL}) incorrect issue number")
 			continue
 		}
 
