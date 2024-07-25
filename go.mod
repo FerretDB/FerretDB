@@ -6,7 +6,7 @@ toolchain go1.22.5
 
 require (
 	github.com/AlekSi/pointer v1.2.0
-	github.com/SAP/go-hdb v1.9.10
+	github.com/SAP/go-hdb v1.10.1
 	github.com/alecthomas/kong v0.9.0
 	github.com/arl/statsviz v0.6.0
 	github.com/cristalhq/bson v0.0.8
@@ -32,7 +32,7 @@ require (
 	golang.org/x/crypto/x509roots/fallback v0.0.0-20240709155400-d66d9c31b4ae
 	golang.org/x/exp v0.0.0-20240707233637-46b078467d37
 	golang.org/x/sys v0.22.0
-	modernc.org/sqlite v1.30.1
+	modernc.org/sqlite v1.31.1
 )
 
 require (
@@ -73,7 +73,7 @@ require (
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	modernc.org/gc/v3 v3.0.0-20240107210532-573471604cb6 // indirect
-	modernc.org/libc v1.52.1 // indirect
+	modernc.org/libc v1.55.3 // indirect
 	modernc.org/mathutil v1.6.0 // indirect
 	modernc.org/memory v1.8.0 // indirect
 	modernc.org/strutil v1.2.0 // indirect
