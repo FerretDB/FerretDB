@@ -31,7 +31,7 @@ func TestReal(t *testing.T) {
 	files, err := filepath.Glob(filepath.Join("..", "..", "website", "blog", "*.md"))
 	require.NoError(t, err)
 
-	checkFiles(files, t.Logf, t.Fatalf)
+	checkBlogFiles(files)
 }
 
 var fm = bytes.TrimSpace([]byte(`
