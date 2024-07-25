@@ -264,16 +264,17 @@ func checkSupportedCommands(file string) {
 		line := s.Text()
 
 		match := issueRE.FindStringSubmatch(line)
+
 		if len(match) == 0 {
 			continue
 		}
 
-		expectedMatchLen := 6
-
-		if len(match) != expectedMatchLen {
+		if len(match) != 1 {
 			log.Printf("invalid [issue]({URL}) format: %s", line)
 			continue
 		}
+
+		url := match[0]
 
 		if client == nil {
 			continue
