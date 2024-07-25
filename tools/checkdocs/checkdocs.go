@@ -276,10 +276,6 @@ func checkSupportedCommands(file string) {
 
 		url := match[0]
 
-		if client == nil {
-			continue
-		}
-
 		var status github.IssueStatus
 
 		status, err = client.IssueStatus(context.TODO(), url)
