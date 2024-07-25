@@ -141,8 +141,6 @@ func (h *Handler) Enabled(ctx context.Context, l slog.Level) bool {
 }
 
 // Handle implements [slog.Handler].
-//
-// Also appends the record to [RecentEntries] used by `getLog` command.
 func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
 	err := h.base.Handle(ctx, r)
 
