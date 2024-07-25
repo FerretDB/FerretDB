@@ -242,18 +242,11 @@ func verifyTags(fm []byte) error {
 // checkSupportedCommands verifies that supported-commands.md is correctly formatted,
 // using logf for progress reporting and fatalf for errors.
 func checkSupportedCommands(file string) error {
-	fileInBytes, err := os.ReadFile(file)
+	fm, err := os.ReadFile(file)
 	if err != nil {
 		return fmt.Errorf("couldn't read file %s: %s", file, err)
 	}
 
-	verifyIssues(fileInBytes)
-
-	return nil
-}
-
-// verifyIssues checks that listed issues statuses.
-func verifyIssues(fm []byte) {
 	p, err := github.CacheFilePath()
 	if err != nil {
 		log.Panic(err)
@@ -324,4 +317,6 @@ func verifyIssues(fm []byte) {
 	if err = s.Err(); err != nil {
 		log.Fatalf("error reading input: %s", err)
 	}
+
+	return nil
 }
