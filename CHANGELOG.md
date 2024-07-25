@@ -16,7 +16,7 @@ The next release will completely remove `zap` and rename `SLogger` to just `Logg
 
 #### Initial OpenTelemetry tracing support
 
-This release adds initial support for sending OpenTelemtry traces to the OTLP endpoint.
+This release adds initial support for sending OpenTelemetry traces to the OTLP endpoint.
 The set of spans and their attributes is not stable yet and will change over time.
 
 All improvements in observability in this release (OpenTelemetry traces, Kubernetes probes, debug archive)
