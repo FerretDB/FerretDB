@@ -27,21 +27,21 @@ import (
 
 // database implements backends.Database.
 type database struct {
-	hdb    *fsql.DB
-	schema string
+	hdb  *fsql.DB
+	name string
 }
 
 // newDatabase creates a new Database.
 func newDatabase(hdb *fsql.DB, name string) backends.Database {
 	return backends.DatabaseContract(&database{
-		hdb:    hdb,
-		schema: name,
+		hdb:  hdb,
+		name: name,
 	})
 }
 
 // Collection implements backends.Database interface.
 func (db *database) Collection(name string) (backends.Collection, error) {
-	return newCollection(db.hdb, db.schema, name), nil
+	return newCollection(db.hdb, db.name, name), nil
 }
 
 // ListCollections implements backends.Database interface.
@@ -49,9 +49,25 @@ func (db *database) ListCollections(
 	ctx context.Context,
 	params *backends.ListCollectionsParams,
 ) (*backends.ListCollectionsResult, error) {
+	d, err := databaseExists(ctx, db.hdb, db.name)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	var res []backends.CollectionInfo
+	if !d {
+		return &backends.ListCollectionsResult{
+			Collections: res,
+		}, nil
+	}
+
 	sqlStmt := fmt.Sprintf("SELECT TABLE_NAME FROM M_TABLES"+
-		" WHERE SCHEMA_NAME = '%s' AND TABLE_TYPE = 'COLLECTION'", db.schema,
+		" WHERE SCHEMA_NAME = '%s' AND TABLE_TYPE = 'COLLECTION'", db.name,
 	)
+
+	if params != nil && len(params.Name) > 0 {
+		sqlStmt += fmt.Sprintf(" AND TABLE_NAME = '%s'", params.Name)
+	}
 
 	rows, err := db.hdb.QueryContext(ctx, sqlStmt)
 	if err != nil {
@@ -61,7 +77,6 @@ func (db *database) ListCollections(
 	defer rows.Close()
 
 	// HANATODO add proper limits for collection sizes.
-	var res []backends.CollectionInfo
 
 	for rows.Next() {
 		var name string
@@ -90,7 +105,7 @@ func (db *database) ListCollections(
 
 // CreateCollection implements backends.Database interface.
 func (db *database) CreateCollection(ctx context.Context, params *backends.CreateCollectionParams) error {
-	exists, err := collectionExists(ctx, db.hdb, db.schema, params.Name)
+	exists, err := collectionExists(ctx, db.hdb, db.name, params.Name)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -99,14 +114,14 @@ func (db *database) CreateCollection(ctx context.Context, params *backends.Creat
 		return backends.NewError(backends.ErrorCodeCollectionAlreadyExists, err)
 	}
 
-	err = createCollection(ctx, db.hdb, db.schema, params.Name)
+	err = createCollection(ctx, db.hdb, db.name, params.Name)
 
 	return getHanaErrorIfExists(err)
 }
 
 // DropCollection implements backends.Database interface.
 func (db *database) DropCollection(ctx context.Context, params *backends.DropCollectionParams) error {
-	dropped, err := dropCollection(ctx, db.hdb, db.schema, params.Name)
+	dropped, err := dropCollection(ctx, db.hdb, db.name, params.Name)
 	if err != nil {
 		return getHanaErrorIfExists(err)
 	}
@@ -120,16 +135,27 @@ func (db *database) DropCollection(ctx context.Context, params *backends.DropCol
 
 // RenameCollection implements backends.Database interface.
 func (db *database) RenameCollection(ctx context.Context, params *backends.RenameCollectionParams) error {
-	exists, err := collectionExists(ctx, db.hdb, db.schema, params.OldName)
+	exists, err := collectionExists(ctx, db.hdb, db.name, params.OldName)
 	if err != nil {
 		return getHanaErrorIfExists(err)
 	}
 
 	if !exists {
-		return lazyerrors.Errorf("old database %q or collection %q does not exist", db.schema, params.OldName)
+		return lazyerrors.Errorf("old database %q or collection %q does not exist", db.name, params.OldName)
 	}
 
-	sqlStmt := fmt.Sprintf("RENAME COLLECTION %q.%q to %q", db.schema, params.OldName, params.NewName)
+	col, err := collectionExists(ctx, db.hdb, db.name, params.NewName)
+	if err != nil {
+		return getHanaErrorIfExists(err)
+	}
+
+	if col {
+		return backends.NewError(backends.ErrorCodeCollectionAlreadyExists,
+			lazyerrors.Errorf("new database %q or collection %q already exists", db.name, params.NewName),
+		)
+	}
+
+	sqlStmt := fmt.Sprintf("RENAME COLLECTION %q.%q to %q", db.name, params.OldName, params.NewName)
 
 	_, err = db.hdb.ExecContext(ctx, sqlStmt)
 	if err != nil {
@@ -141,34 +167,66 @@ func (db *database) RenameCollection(ctx context.Context, params *backends.Renam
 
 // Stats implements backends.Database interface.
 func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsParams) (*backends.DatabaseStatsResult, error) {
+	d, err := databaseExists(ctx, db.hdb, db.name)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if !d {
+		return nil, backends.NewError(backends.ErrorCodeDatabaseDoesNotExist,
+			lazyerrors.Errorf("no database %s", db.name),
+		)
+	}
+
 	// Todo: should we load unloaded schemas?
 
 	queryCountDocuments := "SELECT COALESCE(SUM(RECORD_COUNT),0) FROM M_TABLES " +
 		"WHERE TABLE_TYPE = 'COLLECTION' AND SCHEMA_NAME = '%s'"
 
-	queryCountDocuments = fmt.Sprintf(queryCountDocuments, db.schema)
+	queryCountDocuments = fmt.Sprintf(queryCountDocuments, db.name)
 
-	rowCount := db.hdb.QueryRowContext(ctx, queryCountDocuments)
-
-	var countDocuments int64
-	if err := rowCount.Scan(&countDocuments); err != nil {
+	countDocuments, err := querySingleInt(queryCountDocuments, ctx, db.hdb)
+	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	querySizeTotal := "SELECT COALESCE(SUM(TABLE_SIZE),0) FROM M_TABLES " +
-		"WHERE TABLE_TYPE = 'COLLECTION' AND SCHEMA_NAME = '%s'"
-	querySizeTotal = fmt.Sprintf(querySizeTotal, db.schema)
+		"WHERE SCHEMA_NAME = '%s'"
+	querySizeTotal = fmt.Sprintf(querySizeTotal, db.name)
 
-	rowSizeTotal := db.hdb.QueryRowContext(ctx, querySizeTotal)
+	sizeTotal, err := querySingleInt(querySizeTotal, ctx, db.hdb)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
-	var sizeTotal int64
-	if err := rowSizeTotal.Scan(&sizeTotal); err != nil {
+	querySizeCollections := querySizeTotal + " AND TABLE_TYPE = 'COLLECTION'"
+
+	sizeCollections, err := querySingleInt(querySizeCollections, ctx, db.hdb)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	// HANATODO: The size of an index is stored in DocStore only. To receive it
+	// we need to match index ids to the ones from the stats json that can be
+	// queried by:
+	// select info_json from sys.m_collection_tables_ where schema_name = <db-name>;
+	// Since every collection has an index for the _id field this is just set to 1
+	// for now.
+	sizeIndexes := int64(1)
+
+	queryFreeMemory := "SELECT FREE_PHYSICAL_MEMORY  FROM M_HOST_RESOURCE_UTILIZATION"
+
+	freeMemory, err := querySingleInt(queryFreeMemory, ctx, db.hdb)
+	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	return &backends.DatabaseStatsResult{
-		CountDocuments: countDocuments,
-		SizeTotal:      sizeTotal,
+		CountDocuments:  countDocuments,
+		SizeTotal:       sizeTotal,
+		SizeIndexes:     sizeIndexes,
+		SizeCollections: sizeCollections,
+		SizeFreeStorage: freeMemory,
 	}, nil
 }
 
