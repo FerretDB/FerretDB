@@ -266,7 +266,6 @@ func checkSupportedCommands(file string) {
 		line := s.Text()
 
 		match := issueRE.FindStringSubmatch(line)
-
 		if len(match) == 0 {
 			continue
 		}
@@ -280,8 +279,8 @@ func checkSupportedCommands(file string) {
 		url := match[0]
 
 		var status github.IssueStatus
-
 		status, err = client.IssueStatus(context.TODO(), url)
+
 		switch err {
 		case github.ErrIncorrectURL, github.ErrIncorrectIssueNumber:
 			failed = true
