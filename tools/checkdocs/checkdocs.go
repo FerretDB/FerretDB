@@ -48,9 +48,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if err = checkSupportedCommands(tableFile, log.Printf, log.Fatalf); err != nil {
-		log.Fatal(err)
-	}
+	checkSupportedCommands(tableFile)
 }
 
 // checkBlogFiles verifies that blog posts are correctly formatted,
@@ -241,10 +239,10 @@ func verifyTags(fm []byte) error {
 
 // checkSupportedCommands verifies that supported-commands.md is correctly formatted,
 // using logf for progress reporting and fatalf for errors.
-func checkSupportedCommands(file string) error {
+func checkSupportedCommands(file string) {
 	fm, err := os.ReadFile(file)
 	if err != nil {
-		return fmt.Errorf("couldn't read file %s: %s", file, err)
+		log.Fatalf("couldn't read file %s: %s", file, err)
 	}
 
 	p, err := github.CacheFilePath()
@@ -317,6 +315,4 @@ func checkSupportedCommands(file string) error {
 	if err = s.Err(); err != nil {
 		log.Fatalf("error reading input: %s", err)
 	}
-
-	return nil
 }
