@@ -40,12 +40,9 @@
 package bson
 
 import (
-	"time"
-
 	"github.com/cristalhq/bson/bsonproto"
 
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 type (
@@ -176,30 +173,4 @@ type AnyDocument interface {
 type AnyArray interface {
 	Encode() (RawArray, error)
 	Decode() (*Array, error)
-}
-
-// validBSONType checks if v is a valid BSON type (including raw types).
-func validBSONType(v any) error {
-	switch v := v.(type) {
-	case *Document:
-	case RawDocument:
-	case *Array:
-	case RawArray:
-	case float64:
-	case string:
-	case Binary:
-	case ObjectID:
-	case bool:
-	case time.Time:
-	case NullType:
-	case Regex:
-	case int32:
-	case Timestamp:
-	case int64:
-
-	default:
-		return lazyerrors.Errorf("invalid BSON type %T", v)
-	}
-
-	return nil
 }

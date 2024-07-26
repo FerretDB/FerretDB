@@ -21,10 +21,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	bson "github.com/FerretDB/wire/wirebson"
+	"github.com/FerretDB/wire/wirebson"
 	"github.com/stretchr/testify/require"
 
-	fbson "github.com/FerretDB/FerretDB/internal/bson"
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/hex"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -35,27 +35,27 @@ import (
 func dump[T types.Type](tb testtb.TB, o T) string {
 	tb.Helper()
 
-	v, err := fbson.Convert(o)
+	v, err := bson.Convert(o)
 	require.NoError(tb, err)
 
-	return bson.LogMessageBlock(v)
+	return wirebson.LogMessageBlock(v)
 }
 
 // dumpSlice returns string representation for debugging.
 func dumpSlice[T types.Type](tb testtb.TB, s []T) string {
 	tb.Helper()
 
-	arr := bson.MakeArray(len(s))
+	arr := wirebson.MakeArray(len(s))
 
 	for _, o := range s {
-		v, err := fbson.Convert(o)
+		v, err := bson.Convert(o)
 		require.NoError(tb, err)
 
 		err = arr.Add(v)
 		require.NoError(tb, err)
 	}
 
-	return bson.LogMessageBlock(arr)
+	return wirebson.LogMessageBlock(arr)
 }
 
 // MustParseDumpFile panics if fails to parse file input to byte array.

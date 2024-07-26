@@ -28,7 +28,7 @@ import (
 	"sync/atomic"
 
 	"github.com/FerretDB/wire"
-	bson "github.com/FerretDB/wire/wirebson"
+	"github.com/FerretDB/wire/wirebson"
 	"github.com/xdg-go/scram"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -179,10 +179,10 @@ func (c *Conn) Authenticate(ctx context.Context) error {
 		return lazyerrors.Error(err)
 	}
 
-	cmd := must.NotFail(bson.NewDocument(
+	cmd := must.NotFail(wirebson.NewDocument(
 		"saslStart", int32(1),
 		"mechanism", c.authMechanism,
-		"payload", bson.Binary{B: []byte(payload)},
+		"payload", wirebson.Binary{B: []byte(payload)},
 		"$db", c.authDB,
 	))
 
@@ -199,7 +199,7 @@ func (c *Conn) Authenticate(ctx context.Context) error {
 			return lazyerrors.Error(err)
 		}
 
-		var resMsg *bson.Document
+		var resMsg *wirebson.Document
 
 		if resMsg, err = must.NotFail(resBody.(*wire.OpMsg).RawDocument()).Decode(); err != nil {
 			return lazyerrors.Error(err)
@@ -213,15 +213,15 @@ func (c *Conn) Authenticate(ctx context.Context) error {
 			return nil
 		}
 
-		payload, err = conv.Step(string(resMsg.Get("payload").(bson.Binary).B))
+		payload, err = conv.Step(string(resMsg.Get("payload").(wirebson.Binary).B))
 		if err != nil {
 			return lazyerrors.Error(err)
 		}
 
-		cmd = must.NotFail(bson.NewDocument(
+		cmd = must.NotFail(wirebson.NewDocument(
 			"saslContinue", int32(1),
 			"conversationId", int32(1),
-			"payload", bson.Binary{B: []byte(payload)},
+			"payload", wirebson.Binary{B: []byte(payload)},
 			"$db", c.authDB,
 		))
 	}

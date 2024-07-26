@@ -18,11 +18,11 @@ import (
 	"context"
 	"errors"
 
-	bson "github.com/FerretDB/wire/wirebson"
+	"github.com/FerretDB/wire/wirebson"
 	"github.com/google/uuid"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
-	fbson "github.com/FerretDB/FerretDB/internal/bson"
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -93,7 +93,7 @@ func MakeCredentials(username string, userPassword password.Password, mechanisms
 			return nil, lazyerrors.Error(err)
 		}
 
-		var hash *bson.Document
+		var hash *wirebson.Document
 		var hashDoc *types.Document
 
 		switch v {
@@ -102,7 +102,7 @@ func MakeCredentials(username string, userPassword password.Password, mechanisms
 				return nil, err
 			}
 
-			if hashDoc, err = fbson.TypesDocument(hash); err != nil {
+			if hashDoc, err = bson.TypesDocument(hash); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
 
@@ -112,7 +112,7 @@ func MakeCredentials(username string, userPassword password.Password, mechanisms
 				return nil, err
 			}
 
-			if hashDoc, err = fbson.TypesDocument(hash); err != nil {
+			if hashDoc, err = bson.TypesDocument(hash); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
 

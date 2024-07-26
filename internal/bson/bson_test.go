@@ -18,11 +18,11 @@ import (
 	"testing"
 	"time"
 
-	bson "github.com/FerretDB/wire/wirebson"
+	"github.com/FerretDB/wire/wirebson"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	fbson "github.com/FerretDB/FerretDB/internal/bson"
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
@@ -33,7 +33,7 @@ import (
 //nolint:vet // for readability
 type normalTestCase struct {
 	name string
-	raw  bson.RawDocument
+	raw  wirebson.RawDocument
 	tdoc *types.Document
 	m    string
 }
@@ -43,7 +43,7 @@ type normalTestCase struct {
 //nolint:vet // for readability
 type decodeTestCase struct {
 	name string
-	raw  bson.RawDocument
+	raw  wirebson.RawDocument
 
 	oldOk bool
 
@@ -286,7 +286,7 @@ var normalTestCases = []normalTestCase{
 	{
 		name: "nested",
 		raw:  testutil.MustParseDumpFile("testdata", "nested.hex"),
-		tdoc: must.NotFail(fbson.TypesDocument(makeNested(false, 150).(*bson.Document))),
+		tdoc: must.NotFail(bson.TypesDocument(makeNested(false, 150).(*wirebson.Document))),
 		m: `
 		{
 		  "f": [
@@ -298,7 +298,7 @@ var normalTestCases = []normalTestCase{
 	},
 	{
 		name: "float64Doc",
-		raw: bson.RawDocument{
+		raw: wirebson.RawDocument{
 			0x10, 0x00, 0x00, 0x00,
 			0x01, 0x66, 0x00,
 			0x18, 0x2d, 0x44, 0x54, 0xfb, 0x21, 0x09, 0x40,
@@ -311,7 +311,7 @@ var normalTestCases = []normalTestCase{
 	},
 	{
 		name: "stringDoc",
-		raw: bson.RawDocument{
+		raw: wirebson.RawDocument{
 			0x0e, 0x00, 0x00, 0x00,
 			0x02, 0x66, 0x00,
 			0x02, 0x00, 0x00, 0x00,
@@ -325,7 +325,7 @@ var normalTestCases = []normalTestCase{
 	},
 	{
 		name: "binaryDoc",
-		raw: bson.RawDocument{
+		raw: wirebson.RawDocument{
 			0x0e, 0x00, 0x00, 0x00,
 			0x05, 0x66, 0x00,
 			0x01, 0x00, 0x00, 0x00,
@@ -340,7 +340,7 @@ var normalTestCases = []normalTestCase{
 	},
 	{
 		name: "objectIDDoc",
-		raw: bson.RawDocument{
+		raw: wirebson.RawDocument{
 			0x14, 0x00, 0x00, 0x00,
 			0x07, 0x66, 0x00,
 			0x62, 0x56, 0xc5, 0xba, 0x18, 0x2d, 0x44, 0x54, 0xfb, 0x21, 0x09, 0x40,
@@ -353,7 +353,7 @@ var normalTestCases = []normalTestCase{
 	},
 	{
 		name: "boolDoc",
-		raw: bson.RawDocument{
+		raw: wirebson.RawDocument{
 			0x09, 0x00, 0x00, 0x00,
 			0x08, 0x66, 0x00,
 			0x01,
@@ -366,7 +366,7 @@ var normalTestCases = []normalTestCase{
 	},
 	{
 		name: "timeDoc",
-		raw: bson.RawDocument{
+		raw: wirebson.RawDocument{
 			0x10, 0x00, 0x00, 0x00,
 			0x09, 0x66, 0x00,
 			0x0b, 0xce, 0x82, 0x18, 0x8d, 0x01, 0x00, 0x00,
@@ -379,7 +379,7 @@ var normalTestCases = []normalTestCase{
 	},
 	{
 		name: "nullDoc",
-		raw: bson.RawDocument{
+		raw: wirebson.RawDocument{
 			0x08, 0x00, 0x00, 0x00,
 			0x0a, 0x66, 0x00,
 			0x00,
@@ -391,7 +391,7 @@ var normalTestCases = []normalTestCase{
 	},
 	{
 		name: "regexDoc",
-		raw: bson.RawDocument{
+		raw: wirebson.RawDocument{
 			0x0c, 0x00, 0x00, 0x00,
 			0x0b, 0x66, 0x00,
 			0x70, 0x00,
@@ -405,7 +405,7 @@ var normalTestCases = []normalTestCase{
 	},
 	{
 		name: "int32Doc",
-		raw: bson.RawDocument{
+		raw: wirebson.RawDocument{
 			0x0c, 0x00, 0x00, 0x00,
 			0x10, 0x66, 0x00,
 			0xa1, 0xb0, 0xb9, 0x12,
@@ -418,7 +418,7 @@ var normalTestCases = []normalTestCase{
 	},
 	{
 		name: "timestampDoc",
-		raw: bson.RawDocument{
+		raw: wirebson.RawDocument{
 			0x10, 0x00, 0x00, 0x00,
 			0x11, 0x66, 0x00,
 			0x2a, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -431,7 +431,7 @@ var normalTestCases = []normalTestCase{
 	},
 	{
 		name: "int64Doc",
-		raw: bson.RawDocument{
+		raw: wirebson.RawDocument{
 			0x10, 0x00, 0x00, 0x00,
 			0x12, 0x66, 0x00,
 			0x21, 0x6d, 0x25, 0x0a, 0x43, 0x29, 0x0b, 0x00,
@@ -444,7 +444,7 @@ var normalTestCases = []normalTestCase{
 	},
 	{
 		name: "smallDoc",
-		raw: bson.RawDocument{
+		raw: wirebson.RawDocument{
 			0x0f, 0x00, 0x00, 0x00, // document length
 			0x03, 0x66, 0x6f, 0x6f, 0x00, // subdocument "foo"
 			0x05, 0x00, 0x00, 0x00, 0x00, // subdocument length and end of subdocument
@@ -457,7 +457,7 @@ var normalTestCases = []normalTestCase{
 	},
 	{
 		name: "smallArray",
-		raw: bson.RawDocument{
+		raw: wirebson.RawDocument{
 			0x0f, 0x00, 0x00, 0x00, // document length
 			0x04, 0x66, 0x6f, 0x6f, 0x00, // subarray "foo"
 			0x05, 0x00, 0x00, 0x00, 0x00, // subarray length and end of subarray
@@ -470,7 +470,7 @@ var normalTestCases = []normalTestCase{
 	},
 	{
 		name: "duplicateKeys",
-		raw: bson.RawDocument{
+		raw: wirebson.RawDocument{
 			0x0b, 0x00, 0x00, 0x00, // document length
 			0x08, 0x00, 0x00, // "": false
 			0x08, 0x00, 0x01, // "": true
@@ -488,62 +488,62 @@ var normalTestCases = []normalTestCase{
 var decodeTestCases = []decodeTestCase{
 	{
 		name:       "EOF",
-		raw:        bson.RawDocument{0x00},
-		findRawErr: bson.ErrDecodeShortInput,
-		decodeErr:  bson.ErrDecodeShortInput,
+		raw:        wirebson.RawDocument{0x00},
+		findRawErr: wirebson.ErrDecodeShortInput,
+		decodeErr:  wirebson.ErrDecodeShortInput,
 	},
 	{
 		name: "invalidLength",
-		raw: bson.RawDocument{
+		raw: wirebson.RawDocument{
 			0x00, 0x00, 0x00, 0x00, // invalid document length
 			0x00, // end of document
 		},
-		findRawErr: bson.ErrDecodeInvalidInput,
-		decodeErr:  bson.ErrDecodeInvalidInput,
+		findRawErr: wirebson.ErrDecodeInvalidInput,
+		decodeErr:  wirebson.ErrDecodeInvalidInput,
 	},
 	{
 		name: "missingByte",
-		raw: bson.RawDocument{
+		raw: wirebson.RawDocument{
 			0x06, 0x00, 0x00, 0x00, // document length
 			0x00, // end of document
 		},
-		findRawErr: bson.ErrDecodeShortInput,
-		decodeErr:  bson.ErrDecodeShortInput,
+		findRawErr: wirebson.ErrDecodeShortInput,
+		decodeErr:  wirebson.ErrDecodeShortInput,
 	},
 	{
 		name: "extraByte",
-		raw: bson.RawDocument{
+		raw: wirebson.RawDocument{
 			0x05, 0x00, 0x00, 0x00, // document length
 			0x00, // end of document
 			0x00, // extra byte
 		},
 		oldOk:     true,
 		findRawL:  5,
-		decodeErr: bson.ErrDecodeInvalidInput,
+		decodeErr: wirebson.ErrDecodeInvalidInput,
 	},
 	{
 		name: "unexpectedTag",
-		raw: bson.RawDocument{
+		raw: wirebson.RawDocument{
 			0x06, 0x00, 0x00, 0x00, // document length
 			0xdd, // unexpected tag
 			0x00, // end of document
 		},
 		findRawL:  6,
-		decodeErr: bson.ErrDecodeInvalidInput,
+		decodeErr: wirebson.ErrDecodeInvalidInput,
 	},
 	{
 		name: "invalidTag",
-		raw: bson.RawDocument{
+		raw: wirebson.RawDocument{
 			0x06, 0x00, 0x00, 0x00, // document length
 			0x00, // invalid tag
 			0x00, // end of document
 		},
 		findRawL:  6,
-		decodeErr: bson.ErrDecodeInvalidInput,
+		decodeErr: wirebson.ErrDecodeInvalidInput,
 	},
 	{
 		name: "shortDoc",
-		raw: bson.RawDocument{
+		raw: wirebson.RawDocument{
 			0x0f, 0x00, 0x00, 0x00, // document length
 			0x03, 0x66, 0x6f, 0x6f, 0x00, // subdocument "foo"
 			0x06, 0x00, 0x00, 0x00, // invalid subdocument length
@@ -551,12 +551,12 @@ var decodeTestCases = []decodeTestCase{
 			0x00, // end of document
 		},
 		findRawL:      15,
-		decodeErr:     bson.ErrDecodeShortInput,
-		decodeDeepErr: bson.ErrDecodeInvalidInput,
+		decodeErr:     wirebson.ErrDecodeShortInput,
+		decodeDeepErr: wirebson.ErrDecodeInvalidInput,
 	},
 	{
 		name: "invalidDoc",
-		raw: bson.RawDocument{
+		raw: wirebson.RawDocument{
 			0x0f, 0x00, 0x00, 0x00, // document length
 			0x03, 0x66, 0x6f, 0x6f, 0x00, // subdocument "foo"
 			0x05, 0x00, 0x00, 0x00, // subdocument length
@@ -564,11 +564,11 @@ var decodeTestCases = []decodeTestCase{
 			0x00, // end of document
 		},
 		findRawL:  15,
-		decodeErr: bson.ErrDecodeInvalidInput,
+		decodeErr: wirebson.ErrDecodeInvalidInput,
 	},
 	{
 		name: "invalidDocTag",
-		raw: bson.RawDocument{
+		raw: wirebson.RawDocument{
 			0x10, 0x00, 0x00, 0x00, // document length
 			0x03, 0x66, 0x6f, 0x6f, 0x00, // subdocument "foo"
 			0x06, 0x00, 0x00, 0x00, // subdocument length
@@ -577,7 +577,7 @@ var decodeTestCases = []decodeTestCase{
 			0x00, // end of document
 		},
 		findRawL:      16,
-		decodeDeepErr: bson.ErrDecodeInvalidInput,
+		decodeDeepErr: wirebson.ErrDecodeInvalidInput,
 	},
 }
 
@@ -590,11 +590,11 @@ func TestNormal(t *testing.T) {
 					assert.NotContains(t, ls, "panicked")
 					assert.NotContains(t, ls, "called too many times")
 
-					assert.NotEmpty(t, bson.LogMessage(tc.raw))
-					assert.NotEmpty(t, bson.LogMessageBlock(tc.raw))
-					assert.NotEmpty(t, bson.LogMessageFlow(tc.raw))
+					assert.NotEmpty(t, wirebson.LogMessage(tc.raw))
+					assert.NotEmpty(t, wirebson.LogMessageBlock(tc.raw))
+					assert.NotEmpty(t, wirebson.LogMessageFlow(tc.raw))
 
-					l, err := bson.FindRaw(tc.raw)
+					l, err := wirebson.FindRaw(tc.raw)
 					require.NoError(t, err)
 					require.Len(t, tc.raw, l)
 				})
@@ -607,11 +607,11 @@ func TestNormal(t *testing.T) {
 					assert.NotContains(t, ls, "panicked")
 					assert.NotContains(t, ls, "called too many times")
 
-					assert.NotEmpty(t, bson.LogMessage(doc))
-					assert.NotEmpty(t, bson.LogMessageBlock(doc))
-					assert.NotEmpty(t, bson.LogMessageFlow(doc))
+					assert.NotEmpty(t, wirebson.LogMessage(doc))
+					assert.NotEmpty(t, wirebson.LogMessageBlock(doc))
+					assert.NotEmpty(t, wirebson.LogMessageFlow(doc))
 
-					tdoc, err := fbson.TypesDocument(doc)
+					tdoc, err := bson.TypesDocument(doc)
 					require.NoError(t, err)
 					testutil.AssertEqual(t, tc.tdoc, tdoc)
 
@@ -628,11 +628,11 @@ func TestNormal(t *testing.T) {
 					assert.NotContains(t, ls, "panicked")
 					assert.NotContains(t, ls, "called too many times")
 
-					assert.Equal(t, testutil.Unindent(t, tc.m), bson.LogMessage(doc))
-					assert.NotEmpty(t, bson.LogMessageBlock(doc))
-					assert.NotEmpty(t, bson.LogMessageFlow(doc))
+					assert.Equal(t, testutil.Unindent(t, tc.m), wirebson.LogMessage(doc))
+					assert.NotEmpty(t, wirebson.LogMessageBlock(doc))
+					assert.NotEmpty(t, wirebson.LogMessageFlow(doc))
 
-					tdoc, err := fbson.TypesDocument(doc)
+					tdoc, err := bson.TypesDocument(doc)
 					require.NoError(t, err)
 					testutil.AssertEqual(t, tc.tdoc, tdoc)
 
@@ -642,7 +642,7 @@ func TestNormal(t *testing.T) {
 				})
 
 				t.Run("ConvertEncode", func(t *testing.T) {
-					doc, err := fbson.ConvertDocument(tc.tdoc)
+					doc, err := bson.ConvertDocument(tc.tdoc)
 					require.NoError(t, err)
 
 					raw, err := doc.Encode()
@@ -669,11 +669,11 @@ func TestDecode(t *testing.T) {
 					assert.NotContains(t, ls, "panicked")
 					assert.NotContains(t, ls, "called too many times")
 
-					assert.NotEmpty(t, bson.LogMessage(tc.raw))
-					assert.NotEmpty(t, bson.LogMessageBlock(tc.raw))
-					assert.NotEmpty(t, bson.LogMessageFlow(tc.raw))
+					assert.NotEmpty(t, wirebson.LogMessage(tc.raw))
+					assert.NotEmpty(t, wirebson.LogMessageBlock(tc.raw))
+					assert.NotEmpty(t, wirebson.LogMessageFlow(tc.raw))
 
-					l, err := bson.FindRaw(tc.raw)
+					l, err := wirebson.FindRaw(tc.raw)
 
 					if tc.findRawErr != nil {
 						require.ErrorIs(t, err, tc.findRawErr)
@@ -708,7 +708,7 @@ func BenchmarkDocument(b *testing.B) {
 	for _, tc := range normalTestCases {
 		b.Run(tc.name, func(b *testing.B) {
 			b.Run("bson", func(b *testing.B) {
-				var doc *bson.Document
+				var doc *wirebson.Document
 				var raw []byte
 				var m string
 				var err error
@@ -751,7 +751,7 @@ func BenchmarkDocument(b *testing.B) {
 					b.ResetTimer()
 
 					for range b.N {
-						m = bson.LogMessage(doc)
+						m = wirebson.LogMessage(doc)
 					}
 
 					b.StopTimer()
@@ -797,7 +797,7 @@ func BenchmarkDocument(b *testing.B) {
 					b.ResetTimer()
 
 					for range b.N {
-						m = bson.LogMessage(doc)
+						m = wirebson.LogMessage(doc)
 					}
 
 					b.StopTimer()
@@ -811,7 +811,7 @@ func BenchmarkDocument(b *testing.B) {
 
 // testRawDocument tests a single RawDocument (that might or might not be valid).
 // It is adapted from tests above.
-func testRawDocument(t *testing.T, rawDoc bson.RawDocument) {
+func testRawDocument(t *testing.T, rawDoc wirebson.RawDocument) {
 	t.Helper()
 
 	t.Run("bson", func(t *testing.T) {
@@ -820,11 +820,11 @@ func testRawDocument(t *testing.T, rawDoc bson.RawDocument) {
 			assert.NotContains(t, ls, "panicked")
 			assert.NotContains(t, ls, "called too many times")
 
-			assert.NotEmpty(t, bson.LogMessage(rawDoc))
-			assert.NotEmpty(t, bson.LogMessageBlock(rawDoc))
-			assert.NotEmpty(t, bson.LogMessageFlow(rawDoc))
+			assert.NotEmpty(t, wirebson.LogMessage(rawDoc))
+			assert.NotEmpty(t, wirebson.LogMessageBlock(rawDoc))
+			assert.NotEmpty(t, wirebson.LogMessageFlow(rawDoc))
 
-			_, _ = bson.FindRaw(rawDoc)
+			_, _ = wirebson.FindRaw(rawDoc)
 		})
 
 		t.Run("DecodeEncode", func(t *testing.T) {
@@ -840,11 +840,11 @@ func testRawDocument(t *testing.T, rawDoc bson.RawDocument) {
 			assert.NotContains(t, ls, "panicked")
 			assert.NotContains(t, ls, "called too many times")
 
-			assert.NotEmpty(t, bson.LogMessage(doc))
-			assert.NotEmpty(t, bson.LogMessageBlock(doc))
-			assert.NotEmpty(t, bson.LogMessageFlow(doc))
+			assert.NotEmpty(t, wirebson.LogMessage(doc))
+			assert.NotEmpty(t, wirebson.LogMessageBlock(doc))
+			assert.NotEmpty(t, wirebson.LogMessageFlow(doc))
 
-			_, _ = fbson.TypesDocument(doc)
+			_, _ = bson.TypesDocument(doc)
 
 			raw, err := doc.Encode()
 			if err == nil {
@@ -862,11 +862,11 @@ func testRawDocument(t *testing.T, rawDoc bson.RawDocument) {
 			assert.NotContains(t, ls, "panicked")
 			assert.NotContains(t, ls, "called too many times")
 
-			assert.NotEmpty(t, bson.LogMessage(doc))
-			assert.NotEmpty(t, bson.LogMessageBlock(doc))
-			assert.NotEmpty(t, bson.LogMessageFlow(doc))
+			assert.NotEmpty(t, wirebson.LogMessage(doc))
+			assert.NotEmpty(t, wirebson.LogMessageBlock(doc))
+			assert.NotEmpty(t, wirebson.LogMessageFlow(doc))
 
-			_, err = fbson.TypesDocument(doc)
+			_, err = bson.TypesDocument(doc)
 			require.NoError(t, err)
 
 			raw, err := doc.Encode()
@@ -888,11 +888,11 @@ func FuzzDocument(f *testing.F) {
 	f.Fuzz(func(t *testing.T, b []byte) {
 		t.Parallel()
 
-		testRawDocument(t, bson.RawDocument(b))
+		testRawDocument(t, wirebson.RawDocument(b))
 
-		l, err := bson.FindRaw(b)
+		l, err := wirebson.FindRaw(b)
 		if err == nil {
-			testRawDocument(t, bson.RawDocument(b[:l]))
+			testRawDocument(t, wirebson.RawDocument(b[:l]))
 		}
 	})
 }

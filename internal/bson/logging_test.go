@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	bson "github.com/FerretDB/wire/wirebson"
+	"github.com/FerretDB/wire/wirebson"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/FerretDB/FerretDB/internal/util/logging"
@@ -31,13 +31,13 @@ import (
 )
 
 func TestLoggingNil(t *testing.T) {
-	var doc *bson.Document
+	var doc *wirebson.Document
 	assert.Equal(t, doc.LogValue().String(), "Document<nil>")
-	assert.Equal(t, bson.LogMessage(doc), "{<nil>}")
+	assert.Equal(t, wirebson.LogMessage(doc), "{<nil>}")
 
-	var arr *bson.Array
+	var arr *wirebson.Array
 	assert.Equal(t, arr.LogValue().String(), "Array<nil>")
-	assert.Equal(t, bson.LogMessage(arr), "[<nil>]")
+	assert.Equal(t, wirebson.LogMessage(arr), "[<nil>]")
 }
 
 func TestLogging(t *testing.T) {
@@ -74,7 +74,7 @@ func TestLogging(t *testing.T) {
 	}{
 		{
 			name: "Numbers",
-			doc: must.NotFail(bson.NewDocument(
+			doc: must.NotFail(wirebson.NewDocument(
 				"f64", 42.0,
 				"inf", float64(math.Inf(1)),
 				"neg_inf", float64(math.Inf(-1)),
@@ -112,9 +112,9 @@ func TestLogging(t *testing.T) {
 		},
 		{
 			name: "Scalars",
-			doc: must.NotFail(bson.NewDocument(
-				"null", bson.Null,
-				"id", bson.ObjectID{0x42},
+			doc: must.NotFail(wirebson.NewDocument(
+				"null", wirebson.Null,
+				"id", wirebson.ObjectID{0x42},
 				"bool", true,
 				"time", time.Date(2023, 3, 6, 13, 14, 42, 123456789, time.FixedZone("", int(4*time.Hour.Seconds()))),
 			)),
@@ -138,19 +138,19 @@ func TestLogging(t *testing.T) {
 		},
 		{
 			name: "Composites",
-			doc: must.NotFail(bson.NewDocument(
-				"doc", must.NotFail(bson.NewDocument(
+			doc: must.NotFail(wirebson.NewDocument(
+				"doc", must.NotFail(wirebson.NewDocument(
 					"foo", "bar",
-					"baz", must.NotFail(bson.NewDocument(
+					"baz", must.NotFail(wirebson.NewDocument(
 						"qux", "quux",
 					)),
 				)),
-				"doc_raw", bson.RawDocument{0x42},
-				"doc_empty", must.NotFail(bson.NewDocument()),
-				"array", must.NotFail(bson.NewArray(
+				"doc_raw", wirebson.RawDocument{0x42},
+				"doc_empty", must.NotFail(wirebson.NewDocument()),
+				"array", must.NotFail(wirebson.NewArray(
 					"foo",
 					"bar",
-					must.NotFail(bson.NewArray("baz", "qux")),
+					must.NotFail(wirebson.NewArray("baz", "qux")),
 				)),
 			)),
 			c: `	{"v":{"array":{"0":"foo","1":"bar","2":{"0":"baz","1":"qux"}},` +
@@ -188,7 +188,7 @@ func TestLogging(t *testing.T) {
 		},
 		{
 			name: "Nested",
-			doc:  makeNested(false, 20).(*bson.Document),
+			doc:  makeNested(false, 20).(*wirebson.Document),
 			c: `	{"v":{"f":{"0":{"f":{"0":{"f":{"0":{"f":{"0":{"f":{"0":{"f":{"0":` +
 				`{"f":{"0":{"f":{"0":{"f":{"0":{"f":{"0":null}}}}}}}}}}}}}}}}}}}}}`,
 			t: `v.f.0.f.0.f.0.f.0.f.0.f.0.f.0.f.0.f.0.f.0=<nil>`,
@@ -247,7 +247,7 @@ func TestLogging(t *testing.T) {
 		},
 		{
 			name: "Raw",
-			doc:  bson.RawDocument{42, 7},
+			doc:  wirebson.RawDocument{42, 7},
 
 			c: `	{"v":"RawDocument<2>"}`,
 
@@ -270,10 +270,10 @@ func TestLogging(t *testing.T) {
 			assert.Equal(t, tc.j+"\n", jbuf.String(), "json output mismatch")
 			jbuf.Reset()
 
-			m := bson.LogMessage(tc.doc)
+			m := wirebson.LogMessage(tc.doc)
 			assert.Equal(t, testutil.Unindent(t, tc.m), m, "actual LogMessage result:\n%s", m)
 
-			b := bson.LogMessageBlock(tc.doc)
+			b := wirebson.LogMessageBlock(tc.doc)
 			assert.Equal(t, testutil.Unindent(t, tc.b), b, "actual LogMessageBlock result:\n%s", b)
 		})
 	}
@@ -285,15 +285,15 @@ func makeNested(array bool, depth int) any {
 		panic("depth must be at least 1")
 	}
 
-	var child any = bson.Null
+	var child any = wirebson.Null
 
 	if depth > 1 {
 		child = makeNested(!array, depth-1)
 	}
 
 	if array {
-		return must.NotFail(bson.NewArray(child))
+		return must.NotFail(wirebson.NewArray(child))
 	}
 
-	return must.NotFail(bson.NewDocument("f", child))
+	return must.NotFail(wirebson.NewDocument("f", child))
 }

@@ -17,8 +17,6 @@ package bson
 import (
 	"encoding/binary"
 
-	"github.com/cristalhq/bson/bsonproto"
-
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
@@ -47,82 +45,4 @@ func FindRaw(b []byte) (int, error) {
 	}
 
 	return dl, nil
-}
-
-// decodeCheckOffset checks that b has enough bytes to decode size bytes starting from offset.
-func decodeCheckOffset(b []byte, offset, size int) error {
-	if l := len(b); l < offset+size {
-		return lazyerrors.Errorf("len(b) = %d, offset = %d, size = %d: %w", l, offset, size, ErrDecodeShortInput)
-	}
-
-	return nil
-}
-
-func decodeScalarField(b []byte, t tag) (v any, size int, err error) {
-	switch t {
-	case tagDocument, tagArray:
-		err = lazyerrors.Errorf("non-scalar tag: %s", t)
-
-	case tagFloat64:
-		var f float64
-		f, err = bsonproto.DecodeFloat64(b)
-		v = f
-		size = bsonproto.SizeFloat64
-
-	case tagString:
-		var s string
-		s, err = bsonproto.DecodeString(b)
-		v = s
-		size = bsonproto.SizeString(s)
-
-	case tagBinary:
-		var bin Binary
-		bin, err = bsonproto.DecodeBinary(b)
-		v = bin
-		size = bsonproto.SizeBinary(bin)
-
-	case tagUndefined:
-		err = lazyerrors.Errorf("unsupported tag %s: %w", t, ErrDecodeInvalidInput)
-
-	case tagObjectID:
-		v, err = bsonproto.DecodeObjectID(b)
-		size = bsonproto.SizeObjectID
-
-	case tagBool:
-		v, err = bsonproto.DecodeBool(b)
-		size = bsonproto.SizeBool
-
-	case tagTime:
-		v, err = bsonproto.DecodeTime(b)
-		size = bsonproto.SizeTime
-
-	case tagNull:
-		v = Null
-
-	case tagRegex:
-		var re Regex
-		re, err = bsonproto.DecodeRegex(b)
-		v = re
-		size = bsonproto.SizeRegex(re)
-
-	case tagDBPointer, tagJavaScript, tagSymbol, tagJavaScriptScope, tagDecimal128, tagMinKey, tagMaxKey:
-		err = lazyerrors.Errorf("unsupported tag %s: %w", t, ErrDecodeInvalidInput)
-
-	case tagInt32:
-		v, err = bsonproto.DecodeInt32(b)
-		size = bsonproto.SizeInt32
-
-	case tagTimestamp:
-		v, err = bsonproto.DecodeTimestamp(b)
-		size = bsonproto.SizeTimestamp
-
-	case tagInt64:
-		v, err = bsonproto.DecodeInt64(b)
-		size = bsonproto.SizeInt64
-
-	default:
-		err = lazyerrors.Errorf("unexpected tag %s: %w", t, ErrDecodeInvalidInput)
-	}
-
-	return
 }

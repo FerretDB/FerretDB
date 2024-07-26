@@ -14,9 +14,7 @@
 
 package bson
 
-import (
-	"github.com/FerretDB/FerretDB/internal/util/must"
-)
+import "github.com/FerretDB/FerretDB/internal/util/must"
 
 // RawArray represents a single BSON array in the binary encoded form.
 //

@@ -47,6 +47,7 @@ func TypesDocumentFromOpMsg(msg *wire.OpMsg) (*types.Document, error) {
 
 	if err = validateValue(tDoc); err != nil {
 		tDoc.Remove("lsid") // to simplify error message
+
 		return nil, newValidationError(fmt.Errorf("bson.TypesDocumentFromOpMsg: validation failed for %v with: %v",
 			types.FormatAnyValue(tDoc),
 			err,
@@ -72,8 +73,9 @@ func TypesDocumentFromOpMsgSections(msg *wire.OpMsg) (*types.Document, error) {
 		a := types.MakeArray(len(section.Documents))
 
 		for _, d := range section.Documents {
-			doc, err := TypesDocument(d)
-			if err != nil {
+			var doc *types.Document
+
+			if doc, err = TypesDocument(d); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
 
@@ -85,6 +87,7 @@ func TypesDocumentFromOpMsgSections(msg *wire.OpMsg) (*types.Document, error) {
 
 	if err = validateValue(res); err != nil {
 		res.Remove("lsid") // to simplify error message
+
 		return nil, newValidationError(fmt.Errorf("bson.TypesDocumentFromOpMsgSections: validation failed for %v with: %v",
 			types.FormatAnyValue(res),
 			err,
@@ -98,6 +101,7 @@ func TypesDocumentFromOpMsgSections(msg *wire.OpMsg) (*types.Document, error) {
 func NewOpMsg(doc *types.Document) (*wire.OpMsg, error) {
 	if err := validateValue(doc); err != nil {
 		doc.Remove("lsid") // to simplify error message
+
 		return nil, newValidationError(fmt.Errorf("bson.NewOpMsg: validation failed for %v with: %v",
 			types.FormatAnyValue(doc),
 			err,

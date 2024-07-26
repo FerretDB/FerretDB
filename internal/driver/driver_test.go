@@ -18,11 +18,11 @@ import (
 	"testing"
 
 	"github.com/FerretDB/wire"
-	bson "github.com/FerretDB/wire/wirebson"
+	"github.com/FerretDB/wire/wirebson"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	fbson "github.com/FerretDB/FerretDB/internal/bson"
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
@@ -40,15 +40,15 @@ func TestDriver(t *testing.T) {
 
 	dbName := testutil.DatabaseName(t)
 
-	doc1 := must.NotFail(bson.NewDocument("_id", int32(0), "w", int32(2), "v", int32(1)))
-	doc2 := must.NotFail(bson.NewDocument("_id", int32(1), "v", int32(2)))
-	doc3 := must.NotFail(bson.NewDocument("_id", int32(2), "v", int32(3)))
+	doc1 := must.NotFail(wirebson.NewDocument("_id", int32(0), "w", int32(2), "v", int32(1)))
+	doc2 := must.NotFail(wirebson.NewDocument("_id", int32(1), "v", int32(2)))
+	doc3 := must.NotFail(wirebson.NewDocument("_id", int32(2), "v", int32(3)))
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/4448
 	// must.NoError(c.Authenticate(ctx))
 
 	t.Run("Drop", func(t *testing.T) {
-		dropCmd := must.NotFail(bson.NewDocument(
+		dropCmd := must.NotFail(wirebson.NewDocument(
 			"dropDatabase", int32(1),
 			"$db", dbName,
 		))
@@ -65,9 +65,9 @@ func TestDriver(t *testing.T) {
 	})
 
 	t.Run("Insert", func(t *testing.T) {
-		insertCmd := must.NotFail(bson.NewDocument(
+		insertCmd := must.NotFail(wirebson.NewDocument(
 			"insert", "values",
-			"documents", must.NotFail(bson.NewArray(doc1, doc2, doc3)),
+			"documents", must.NotFail(wirebson.NewArray(doc1, doc2, doc3)),
 			"$db", dbName,
 		))
 
@@ -88,16 +88,16 @@ func TestDriver(t *testing.T) {
 	var cursorID int64
 
 	expectedBatches := []*types.Array{
-		must.NotFail(types.NewArray(must.NotFail(fbson.TypesDocument(doc1)))),
-		must.NotFail(types.NewArray(must.NotFail(fbson.TypesDocument(doc2)))),
-		must.NotFail(types.NewArray(must.NotFail(fbson.TypesDocument(doc3)))),
+		must.NotFail(types.NewArray(must.NotFail(bson.TypesDocument(doc1)))),
+		must.NotFail(types.NewArray(must.NotFail(bson.TypesDocument(doc2)))),
+		must.NotFail(types.NewArray(must.NotFail(bson.TypesDocument(doc3)))),
 	}
 
 	t.Run("Find", func(t *testing.T) {
-		findCmd := must.NotFail(bson.NewDocument(
+		findCmd := must.NotFail(wirebson.NewDocument(
 			"find", "values",
-			"filter", must.NotFail(bson.NewDocument()),
-			"sort", must.NotFail(bson.NewDocument("_id", int32(1))),
+			"filter", must.NotFail(wirebson.NewDocument()),
+			"sort", must.NotFail(wirebson.NewDocument("_id", int32(1))),
 			"batchSize", int32(1),
 			"$db", dbName,
 		))
@@ -109,14 +109,14 @@ func TestDriver(t *testing.T) {
 		resMsg, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).Decode()
 		require.NoError(t, err)
 
-		cursor, err := resMsg.Get("cursor").(bson.AnyDocument).Decode()
+		cursor, err := resMsg.Get("cursor").(wirebson.AnyDocument).Decode()
 		require.NoError(t, err)
 
-		firstBatch, err := cursor.Get("firstBatch").(bson.AnyArray).Decode()
+		firstBatch, err := cursor.Get("firstBatch").(wirebson.AnyArray).Decode()
 		require.NoError(t, err)
 		cursorID = cursor.Get("id").(int64)
 
-		testutil.AssertEqual(t, expectedBatches[0], must.NotFail(fbson.TypesArray(firstBatch)))
+		testutil.AssertEqual(t, expectedBatches[0], must.NotFail(bson.TypesArray(firstBatch)))
 		require.NotZero(t, cursorID)
 	})
 }

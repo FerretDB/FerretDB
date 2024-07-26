@@ -26,16 +26,6 @@ type Array struct {
 	*wirebson.Array // embed to delegate method
 }
 
-// NewArray creates a new Array from the given values.
-func NewArray(values ...any) (*Array, error) {
-	arr, err := wirebson.NewArray(values)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return &Array{Array: arr}, nil
-}
-
 // MakeArray creates a new empty Array with the given capacity.
 func MakeArray(cap int) *Array {
 	return &Array{
