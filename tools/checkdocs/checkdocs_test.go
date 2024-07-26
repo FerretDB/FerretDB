@@ -106,6 +106,10 @@ func TestCheckSupportedCommands(t *testing.T) {
 			Payload:        "[IssueLabel](https://github.com/FerretDB/FerretDB/issues/1)",
 			ExpectedOutput: "linked issue https://github.com/FerretDB/FerretDB/issues/1 is closed\n",
 		},
+		"NoLabel": {
+			Payload:        "https://github.com/FerretDB/FerretDB/issues/1",
+			ExpectedOutput: "",
+		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			buf.Reset()
