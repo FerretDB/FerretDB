@@ -34,7 +34,7 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgGetParameter(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := bson.TypesDocumentFromOpMsg(msg)
+	document, err := bson.Section0Document(msg)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

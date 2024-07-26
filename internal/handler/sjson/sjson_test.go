@@ -205,7 +205,7 @@ func addRecordedFuzzDocs(f *testing.F, needDocument, needSchema bool) int {
 		switch b := rec.Body.(type) {
 		case *wire.OpMsg:
 			var doc *types.Document
-			doc, err = bson.TypesDocumentFromOpMsg(b)
+			doc, err = bson.Section0Document(b)
 			require.NoError(f, err)
 			docs = append(docs, doc)
 

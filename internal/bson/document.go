@@ -15,14 +15,7 @@
 package bson
 
 import (
-	"fmt"
-
-	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
-
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // Document represents a BSON document a.k.a object in the (partially) decoded form.
@@ -30,102 +23,6 @@ import (
 // It may contain duplicate field names.
 type Document struct {
 	*wirebson.Document // embed to delegate method
-}
-
-// TypesDocumentFromOpMsg gets a raw document, decodes, converts to [*types.Document]
-// and validates it.
-func TypesDocumentFromOpMsg(msg *wire.OpMsg) (*types.Document, error) {
-	rDoc, err := msg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	tDoc, err := TypesDocument(rDoc)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	if err = validateValue(tDoc); err != nil {
-		tDoc.Remove("lsid") // to simplify error message
-
-		return nil, newValidationError(fmt.Errorf("bson.TypesDocumentFromOpMsg: validation failed for %v with: %v",
-			types.FormatAnyValue(tDoc),
-			err,
-		))
-	}
-
-	return tDoc, nil
-}
-
-// TypesDocumentFromOpMsgSections gets a raw document, decodes, converts to [*types.Document]
-// and validates it.
-func TypesDocumentFromOpMsgSections(msg *wire.OpMsg) (*types.Document, error) {
-	res, err := TypesDocument(msg.RawSection0())
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	for _, section := range msg.Sections() {
-		if section.Kind == 0 {
-			continue
-		}
-
-		a := types.MakeArray(len(section.Documents))
-
-		for _, d := range section.Documents {
-			var doc *types.Document
-
-			if doc, err = TypesDocument(d); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-			a.Append(doc)
-		}
-
-		res.Set(section.Identifier, a)
-	}
-
-	if err = validateValue(res); err != nil {
-		res.Remove("lsid") // to simplify error message
-
-		return nil, newValidationError(fmt.Errorf("bson.TypesDocumentFromOpMsgSections: validation failed for %v with: %v",
-			types.FormatAnyValue(res),
-			err,
-		))
-	}
-
-	return res, nil
-}
-
-// NewOpMsg validates the document and convert it to create a new OpMsg.
-func NewOpMsg(doc *types.Document) (*wire.OpMsg, error) {
-	if err := validateValue(doc); err != nil {
-		doc.Remove("lsid") // to simplify error message
-
-		return nil, newValidationError(fmt.Errorf("bson.NewOpMsg: validation failed for %v with: %v",
-			types.FormatAnyValue(doc),
-			err,
-		))
-	}
-
-	return wire.NewOpMsg(must.NotFail(ConvertDocument(doc)))
-}
-
-// TypesDocument gets a document, decodes and converts to [*types.Document].
-func TypesDocument(doc wirebson.AnyDocument) (*types.Document, error) {
-	wDoc, err := doc.Decode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	bDoc := &Document{Document: wDoc}
-
-	tDoc, err := bDoc.Convert()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return tDoc, nil
 }
 
 // MakeDocument creates a new empty Document with the given capacity.
