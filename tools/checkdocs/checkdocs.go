@@ -29,6 +29,7 @@ import (
 
 	"github.com/FerretDB/gh"
 
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/tools/github"
 )
 
@@ -66,6 +67,9 @@ type SupportedCommandsAnalyzer struct {
 	failed bool
 }
 
+// issueRE represents correct {{STATUS}} | (issue)[{{URL}}] format in the markdown files containing tables.
+var issueRE = regexp.MustCompile(`\[\w+]\((\Qhttps://github.com/FerretDB/\E[-\w]+/issues/\d+)\)`)
+
 func NewSupportedCommandsAnalyzer(l *log.Logger) (Analyzer, error) {
 	p, err := github.CacheFilePath()
 	if err != nil {
@@ -92,7 +96,10 @@ func NewSupportedCommandsAnalyzer(l *log.Logger) (Analyzer, error) {
 
 func (a SupportedCommandsAnalyzer) Scan(f io.Reader) error {
 	s := bufio.NewScanner(f)
+
+	var n int
 	for s.Scan() {
+		n++
 		line := s.Text()
 
 		match := issueRE.FindStringSubmatch(line)
@@ -100,13 +107,15 @@ func (a SupportedCommandsAnalyzer) Scan(f io.Reader) error {
 			continue
 		}
 
-		if len(match) != 1 {
-			a.l.Printf("invalid [issue]({URL}) format: %s", line)
+		if len(match) != 2 {
+			a.l.Printf("invalid [issue]({URL}) format:\n %s", line)
 			a.failed = true
+
 			continue
 		}
 
-		url := match[0]
+		url := match[1]
+		log.Printf("url: %s", url)
 
 		var status github.IssueStatus
 		status, err := a.client.IssueStatus(context.TODO(), url)
@@ -119,7 +128,7 @@ func (a SupportedCommandsAnalyzer) Scan(f io.Reader) error {
 			a.l.Print(err.Error())
 			continue
 		default:
-			return err
+			return lazyerrors.Error(err)
 		}
 
 		switch status {
@@ -127,17 +136,17 @@ func (a SupportedCommandsAnalyzer) Scan(f io.Reader) error {
 			// nothing
 		case github.IssueClosed:
 			a.failed = true
-			a.l.Printf("invalid [issue]({URL}) linked issue %s is closed", url)
+			a.l.Printf("linked issue %s is closed", url)
 		case github.IssueNotFound:
 			a.failed = true
-			a.l.Printf("invalid [issue]({URL}) linked issue %s is not found", url)
+			a.l.Printf("linked issue %s is not found", url)
 		default:
-			return fmt.Errorf("unknown issue status: %s", status)
+			return lazyerrors.Errorf("unknown issue status: %s", status)
 		}
 	}
 
 	if err := s.Err(); err != nil {
-		return fmt.Errorf("error reading input: %s", err)
+		return lazyerrors.Errorf("error reading input: %s", err)
 	}
 
 	return nil
@@ -336,9 +345,6 @@ func verifyTags(fm []byte) error {
 
 	return nil
 }
-
-// issueRE represents correct {{STATUS}} | (issue)[{{URL}}] format in the markdown files containing tables.
-var issueRE = regexp.MustCompile(`\[(i?)(Issue)]\((\Qhttps://github.com/FerretDB/\E([-\w]+)/issues/(\d+))\)`)
 
 // checkSupportedCommands verifies that supported-commands.md is correctly formatted,
 // using logf for progress reporting and fatalf for errors.

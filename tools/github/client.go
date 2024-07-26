@@ -120,13 +120,13 @@ var ErrIncorrectIssueNumber = errors.New("invalid TODO: incorrect issue number")
 func parseIssueURL(line string) (repo string, num int, err error) {
 	match := urlRE.FindStringSubmatch(line)
 
-	if len(match) != 2 {
+	if len(match) != 3 {
 		err = ErrIncorrectURL
 		return
 	}
 
-	repo = match[0]
-	num = must.NotFail(strconv.Atoi(match[1]))
+	repo = match[1]
+	num = must.NotFail(strconv.Atoi(match[2]))
 
 	if num <= 0 {
 		err = ErrIncorrectIssueNumber
