@@ -115,7 +115,6 @@ func (a SupportedCommandsAnalyzer) Scan(f io.Reader) error {
 		}
 
 		url := match[1]
-		log.Printf("url: %s", url)
 
 		var status github.IssueStatus
 		status, err := a.client.IssueStatus(context.TODO(), url)
