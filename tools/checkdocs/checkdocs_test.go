@@ -16,6 +16,7 @@ package main
 
 import (
 	"bytes"
+	"log"
 	"os"
 	"path/filepath"
 	"testing"
@@ -36,7 +37,14 @@ func TestReal(t *testing.T) {
 	tableFile, err := filepath.Abs(filepath.Join("website", "docs", "reference", "supported-commands.md"))
 	require.NoError(t, err)
 
-	checkSupportedCommands(tableFile)
+	f, err := os.OpenFile(tableFile, os.O_RDONLY, 0o666)
+	if err != nil {
+		log.Fatalf("couldn't open the file %s: %s", f, err)
+	}
+
+	defer f.Close()
+
+	checkSupportedCommands(f)
 }
 
 var fm = bytes.TrimSpace([]byte(`

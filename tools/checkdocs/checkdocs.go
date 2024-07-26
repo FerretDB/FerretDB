@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -44,7 +45,14 @@ func main() {
 		log.Fatal(err)
 	}
 
-	checkSupportedCommands(tableFile)
+	f, err := os.OpenFile(tableFile, os.O_RDONLY, 0o666)
+	if err != nil {
+		log.Fatalf("couldn't open the file %s: %s", tableFile, err)
+	}
+
+	defer f.Close()
+
+	checkSupportedCommands(f)
 }
 
 // checkBlogFiles verifies that blog posts are correctly formatted,
@@ -238,14 +246,7 @@ var issueRE = regexp.MustCompile(`\[(i?)(Issue)]\((\Qhttps://github.com/FerretDB
 
 // checkSupportedCommands verifies that supported-commands.md is correctly formatted,
 // using logf for progress reporting and fatalf for errors.
-func checkSupportedCommands(file string) {
-	f, err := os.OpenFile(file, os.O_RDONLY, 0o666)
-	if err != nil {
-		log.Fatalf("couldn't open the file %s: %s", file, err)
-	}
-
-	defer f.Close()
-
+func checkSupportedCommands(f io.ReadCloser) {
 	p, err := github.CacheFilePath()
 	if err != nil {
 		log.Panic(err)
