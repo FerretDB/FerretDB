@@ -57,20 +57,95 @@ func main() {
 
 type Analyzer interface {
 	Scan(io.ReadCloser) error
-	Close() bool
+	Close() error
 }
 
 type SupportedCommandsAnalyzer struct {
+	client *github.Client
+	failed bool
 }
 
-func NewSupportedCommandsAnalyzer() Analyzer {
-	return SupportedCommandsAnalyzer{}
+func NewSupportedCommandsAnalyzer() (Analyzer, error) {
+	p, err := github.CacheFilePath()
+	if err != nil {
+		log.Panic(err)
+	}
+
+	clientDebugF := gh.NoopPrintf
+
+	// TODO: cacheDebugF clientDebugF
+	client, err := github.NewClient(p, log.Printf, log.Printf, clientDebugF)
+	if err != nil {
+		return nil, err
+	}
+
+	return SupportedCommandsAnalyzer{
+		client: client,
+	}, nil
 }
 
 func (a SupportedCommandsAnalyzer) Scan(f io.ReadCloser) error {
+	s := bufio.NewScanner(f)
+	for s.Scan() {
+		line := s.Text()
+
+		match := issueRE.FindStringSubmatch(line)
+		if len(match) == 0 {
+			continue
+		}
+
+		if len(match) != 1 {
+			log.Printf("invalid [issue]({URL}) format: %s", line)
+			a.failed = true
+			continue
+		}
+
+		url := match[0]
+
+		var status github.IssueStatus
+		status, err := a.client.IssueStatus(context.TODO(), url)
+
+		switch err {
+		case nil:
+			// nothing
+		case github.ErrIncorrectURL, github.ErrIncorrectIssueNumber:
+			a.failed = true
+			log.Print(err.Error())
+			continue
+		default:
+			return err
+		}
+
+		switch status {
+		case github.IssueOpen:
+			// nothing
+		case github.IssueClosed:
+			a.failed = true
+			log.Printf("invalid [issue]({URL}) linked issue %s is closed", url)
+		case github.IssueNotFound:
+			a.failed = true
+			log.Printf("invalid [issue]({URL}) linked issue %s is not found", url)
+		default:
+			return fmt.Errorf("unknown issue status: %s", status)
+		}
+	}
+
+	if err := s.Err(); err != nil {
+		f.Close()
+		return fmt.Errorf("error reading input: %s", err)
+	}
+
+	f.Close()
+
+	return nil
 }
 
-func (a SupportedCommandsAnalyzer) Close() bool {
+func (a SupportedCommandsAnalyzer) Close() error {
+	if a.failed {
+		return fmt.Errorf("One or more issues checks have failed")
+	}
+
+	return nil
 }
 
 // checkBlogFiles verifies that blog posts are correctly formatted,
@@ -265,71 +340,4 @@ var issueRE = regexp.MustCompile(`\[(i?)(Issue)]\((\Qhttps://github.com/FerretDB
 // checkSupportedCommands verifies that supported-commands.md is correctly formatted,
 // using logf for progress reporting and fatalf for errors.
 func checkSupportedCommands(f io.ReadCloser) {
-	p, err := github.CacheFilePath()
-	if err != nil {
-		log.Panic(err)
-	}
-
-	clientDebugF := gh.NoopPrintf
-
-	// TODO: cacheDebugF clientDebugF
-	client, err := github.NewClient(p, log.Printf, log.Printf, clientDebugF)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	var failed bool
-
-	s := bufio.NewScanner(f)
-	for s.Scan() {
-		line := s.Text()
-
-		match := issueRE.FindStringSubmatch(line)
-		if len(match) == 0 {
-			continue
-		}
-
-		if len(match) != 1 {
-			log.Printf("invalid [issue]({URL}) format: %s", line)
-			failed = true
-			continue
-		}
-
-		url := match[0]
-
-		var status github.IssueStatus
-		status, err = client.IssueStatus(context.TODO(), url)
-
-		switch err {
-		case github.ErrIncorrectURL, github.ErrIncorrectIssueNumber:
-			failed = true
-			log.Print(err.Error())
-			continue
-		default:
-			log.Panic(err)
-		}
-
-		switch status {
-		case github.IssueOpen:
-			// nothing
-		case github.IssueClosed:
-			failed = true
-			log.Printf("invalid [issue]({URL}) linked issue %s is closed", url)
-		case github.IssueNotFound:
-			failed = true
-			log.Printf("invalid [issue]({URL}) linked issue %s is not found", url)
-		default:
-			log.Panicf("unknown issue status: %s", status)
-		}
-	}
-
-	if err = s.Err(); err != nil {
-		f.Close()
-		log.Fatalf("error reading input: %s", err)
-	}
-
-	if failed {
-		f.Close()
-		os.Exit(1)
-	}
 }
