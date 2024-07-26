@@ -26,7 +26,6 @@ import (
 	"os"
 	"os/exec"
 	"slices"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -66,6 +65,93 @@ type testResult struct {
 	cont       time.Time
 	lastAction string
 	outputs    []string
+}
+
+// listTestFuncs returns a sorted slice of all top-level test functions (tests, benchmarks, examples, fuzz functions)
+// matching given regular expression in the specified directory and subdirectories.
+func listTestFuncs(dir, re string, logger *slog.Logger) ([]string, error) {
+	var buf bytes.Buffer
+
+	cmd := exec.Command("go", "test", "-list="+re, "./...")
+	cmd.Dir = dir
+	cmd.Stdout = &buf
+	cmd.Stderr = os.Stderr
+
+	logger.Info(fmt.Sprintf("Running %s", strings.Join(cmd.Args, " ")))
+
+	if err := cmd.Run(); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	testFuncs := make(map[string]struct{}, 300)
+
+	s := bufio.NewScanner(&buf)
+	for s.Scan() {
+		l := s.Text()
+
+		switch {
+		case strings.HasPrefix(l, "Test"):
+		case strings.HasPrefix(l, "Benchmark"):
+		case strings.HasPrefix(l, "Example"):
+		case strings.HasPrefix(l, "Fuzz"):
+		case strings.HasPrefix(l, "? "):
+			continue
+		case strings.HasPrefix(l, "ok "):
+			continue
+		default:
+			return nil, fmt.Errorf("can't parse line %q", l)
+		}
+
+		if _, dup := testFuncs[l]; dup {
+			// testutil.DatabaseName and other helpers depend on test names being unique across packages
+			return nil, fmt.Errorf("duplicate test function name %q", l)
+		}
+
+		testFuncs[l] = struct{}{}
+	}
+
+	if err := s.Err(); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	res := maps.Keys(testFuncs)
+	slices.Sort(res)
+
+	return res, nil
+}
+
+// shardTestFuncs shards given top-level test functions.
+func shardTestFuncs(index, total uint, testFuncs []string) ([]string, error) {
+	if index == 0 {
+		return nil, fmt.Errorf("index must be greater than 0")
+	}
+
+	if total == 0 {
+		return nil, fmt.Errorf("total must be greater than 0")
+	}
+
+	if index > total {
+		return nil, fmt.Errorf("cannot shard when index is greater than total (%d > %d)", index, total)
+	}
+
+	l := uint(len(testFuncs))
+	if total > l {
+		return nil, fmt.Errorf("cannot shard when total is greater than a number of test functions (%d > %d)", total, l)
+	}
+
+	res := make([]string, 0, l/total+1)
+	shard := uint(1)
+
+	// use different shards for tests with similar names for better load balancing
+	for _, test := range testFuncs {
+		if index == shard {
+			res = append(res, test)
+		}
+
+		shard = shard%total + 1
+	}
+
+	return res, nil
 }
 
 // testArgs handles `envtool tests run` arguments and returns a slice of `go test` arguments.
@@ -423,91 +509,4 @@ func testsRun(ctx context.Context, params *TestsRunParams, logger *slog.Logger) 
 	<-done
 
 	return err
-}
-
-// listTestFuncs returns a sorted slice of all top-level test functions (tests, benchmarks, examples, fuzz functions)
-// matching given regular expression in the specified directory and subdirectories.
-func listTestFuncs(dir string, re string, logger *slog.Logger) ([]string, error) {
-	var buf bytes.Buffer
-
-	cmd := exec.Command("go", "test", "-list="+re, "./...")
-	cmd.Dir = dir
-	cmd.Stdout = &buf
-	cmd.Stderr = os.Stderr
-
-	logger.Info(fmt.Sprintf("Running %s", strings.Join(cmd.Args, " ")))
-
-	if err := cmd.Run(); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	testFuncs := make(map[string]struct{}, 300)
-
-	s := bufio.NewScanner(&buf)
-	for s.Scan() {
-		l := s.Text()
-
-		switch {
-		case strings.HasPrefix(l, "Test"):
-		case strings.HasPrefix(l, "Benchmark"):
-		case strings.HasPrefix(l, "Example"):
-		case strings.HasPrefix(l, "Fuzz"):
-		case strings.HasPrefix(l, "? "):
-			continue
-		case strings.HasPrefix(l, "ok "):
-			continue
-		default:
-			return nil, fmt.Errorf("can't parse line %q", l)
-		}
-
-		if _, dup := testFuncs[l]; dup {
-			// testutil.DatabaseName and other helpers depend on test names being unique across packages
-			return nil, fmt.Errorf("duplicate test function name %q", l)
-		}
-
-		testFuncs[l] = struct{}{}
-	}
-
-	if err := s.Err(); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	res := maps.Keys(testFuncs)
-	sort.Strings(res)
-
-	return res, nil
-}
-
-// shardTestFuncs shards given top-level test functions.
-func shardTestFuncs(index, total uint, testFuncs []string) ([]string, error) {
-	if index == 0 {
-		return nil, fmt.Errorf("index must be greater than 0")
-	}
-
-	if total == 0 {
-		return nil, fmt.Errorf("total must be greater than 0")
-	}
-
-	if index > total {
-		return nil, fmt.Errorf("cannot shard when index is greater than total (%d > %d)", index, total)
-	}
-
-	l := uint(len(testFuncs))
-	if total > l {
-		return nil, fmt.Errorf("cannot shard when total is greater than a number of test functions (%d > %d)", total, l)
-	}
-
-	res := make([]string, 0, l/total+1)
-	shard := uint(1)
-
-	// use different shards for tests with similar names for better load balancing
-	for _, test := range testFuncs {
-		if index == shard {
-			res = append(res, test)
-		}
-
-		shard = shard%total + 1
-	}
-
-	return res, nil
 }
