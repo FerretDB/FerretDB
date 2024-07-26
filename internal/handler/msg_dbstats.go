@@ -161,7 +161,7 @@ func (h *Handler) MsgDBStats(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 		"ok", float64(1),
 	)
 
-	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
+	return bson.NewOpMsg(
 		must.NotFail(types.NewDocument(pairs...)),
-	)))
+	)
 }

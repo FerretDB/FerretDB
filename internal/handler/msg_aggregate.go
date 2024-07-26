@@ -404,7 +404,7 @@ func (h *Handler) MsgAggregate(connCtx context.Context, msg *wire.OpMsg) (*wire.
 		cursor.Close()
 	}
 
-	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
+	return bson.NewOpMsg(
 		must.NotFail(types.NewDocument(
 			"cursor", must.NotFail(types.NewDocument(
 				"firstBatch", firstBatch,
@@ -412,8 +412,8 @@ func (h *Handler) MsgAggregate(connCtx context.Context, msg *wire.OpMsg) (*wire.
 				"ns", dbName+"."+cName,
 			)),
 			"ok", float64(1),
-		))),
-	))
+		)),
+	)
 }
 
 // stagesDocumentsParams contains the parameters for processStagesDocuments.

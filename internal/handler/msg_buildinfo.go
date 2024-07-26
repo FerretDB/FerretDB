@@ -36,7 +36,7 @@ func (h *Handler) MsgBuildInfo(connCtx context.Context, msg *wire.OpMsg) (*wire.
 		aggregationStages.Append(stage)
 	}
 
-	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
+	return bson.NewOpMsg(
 		must.NotFail(types.NewDocument(
 			"version", version.Get().MongoDBVersion,
 			"gitVersion", version.Get().Commit,
@@ -56,5 +56,5 @@ func (h *Handler) MsgBuildInfo(connCtx context.Context, msg *wire.OpMsg) (*wire.
 
 			"ok", float64(1),
 		)),
-	)))
+	)
 }

@@ -106,7 +106,7 @@ func (h *Handler) MsgKillCursors(connCtx context.Context, msg *wire.OpMsg) (*wir
 		cursorsKilled.Append(id)
 	}
 
-	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
+	return bson.NewOpMsg(
 		must.NotFail(types.NewDocument(
 			"cursorsKilled", cursorsKilled,
 			"cursorsNotFound", cursorsNotFound,
@@ -114,5 +114,5 @@ func (h *Handler) MsgKillCursors(connCtx context.Context, msg *wire.OpMsg) (*wir
 			"cursorsUnknown", cursorsUnknown,
 			"ok", float64(1),
 		)),
-	)))
+	)
 }

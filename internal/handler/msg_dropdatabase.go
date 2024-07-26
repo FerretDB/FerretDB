@@ -73,7 +73,7 @@ func (h *Handler) MsgDropDatabase(connCtx context.Context, msg *wire.OpMsg) (*wi
 
 	res.Set("ok", float64(1))
 
-	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
+	return bson.NewOpMsg(
 		res,
-	)))
+	)
 }

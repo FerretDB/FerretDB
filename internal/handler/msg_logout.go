@@ -31,9 +31,9 @@ import (
 func (h *Handler) MsgLogout(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	conninfo.Get(connCtx).SetAuth("", "", nil, "")
 
-	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
+	return bson.NewOpMsg(
 		must.NotFail(types.NewDocument(
 			"ok", float64(1),
 		)),
-	)))
+	)
 }

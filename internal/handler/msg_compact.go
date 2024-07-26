@@ -141,10 +141,10 @@ func (h *Handler) MsgCompact(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 		}
 	}
 
-	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
+	return bson.NewOpMsg(
 		must.NotFail(types.NewDocument(
 			"bytesFreed", float64(bytesFreed),
 			"ok", float64(1),
 		)),
-	)))
+	)
 }

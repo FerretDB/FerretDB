@@ -169,9 +169,9 @@ func (h *Handler) MsgCreateIndexes(connCtx context.Context, msg *wire.OpMsg) (*w
 
 	resp.Set("ok", float64(1))
 
-	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
+	return bson.NewOpMsg(
 		resp,
-	)))
+	)
 }
 
 // processIndexesArray processes the given array of indexes and returns a slice of backends.IndexInfo elements.

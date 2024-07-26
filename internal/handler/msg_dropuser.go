@@ -74,9 +74,9 @@ func (h *Handler) MsgDropUser(connCtx context.Context, msg *wire.OpMsg) (*wire.O
 		)
 	}
 
-	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
+	return bson.NewOpMsg(
 		must.NotFail(types.NewDocument(
 			"ok", float64(1),
 		)),
-	)))
+	)
 }

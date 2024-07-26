@@ -142,7 +142,7 @@ func (h *Handler) MsgListCollections(connCtx context.Context, msg *wire.OpMsg) (
 		collections.Append(d)
 	}
 
-	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
+	return bson.NewOpMsg(
 		must.NotFail(types.NewDocument(
 			"cursor", must.NotFail(types.NewDocument(
 				"id", int64(0),
@@ -151,5 +151,5 @@ func (h *Handler) MsgListCollections(connCtx context.Context, msg *wire.OpMsg) (
 			)),
 			"ok", float64(1),
 		)),
-	)))
+	)
 }

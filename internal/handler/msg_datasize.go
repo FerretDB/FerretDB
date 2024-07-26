@@ -98,7 +98,7 @@ func (h *Handler) MsgDataSize(connCtx context.Context, msg *wire.OpMsg) (*wire.O
 		return nil, lazyerrors.Error(err)
 	}
 
-	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
+	return bson.NewOpMsg(
 		must.NotFail(types.NewDocument(
 			"estimate", false,
 			"size", stats.SizeTotal,
@@ -106,5 +106,5 @@ func (h *Handler) MsgDataSize(connCtx context.Context, msg *wire.OpMsg) (*wire.O
 			"millis", int32(time.Since(started).Milliseconds()),
 			"ok", float64(1),
 		)),
-	)))
+	)
 }

@@ -193,12 +193,12 @@ func (h *Handler) MsgUsersInfo(connCtx context.Context, msg *wire.OpMsg) (*wire.
 		}
 	}
 
-	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
+	return bson.NewOpMsg(
 		must.NotFail(types.NewDocument(
 			"users", res,
 			"ok", float64(1),
 		)),
-	)))
+	)
 }
 
 // usersInfoPair is a pair of username and database name.

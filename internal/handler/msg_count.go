@@ -100,10 +100,10 @@ func (h *Handler) MsgCount(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	count, _ := res.Get("count")
 	n, _ := count.(int32)
 
-	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
+	return bson.NewOpMsg(
 		must.NotFail(types.NewDocument(
 			"n", n,
 			"ok", float64(1),
 		)),
-	)))
+	)
 }

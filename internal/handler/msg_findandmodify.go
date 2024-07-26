@@ -86,9 +86,9 @@ func (h *Handler) MsgFindAndModify(connCtx context.Context, msg *wire.OpMsg) (*w
 
 	resDoc.Set("ok", float64(1))
 
-	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
+	return bson.NewOpMsg(
 		resDoc,
-	)))
+	)
 }
 
 // findAndModifyDocument finds and modifies a single document.

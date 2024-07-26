@@ -98,9 +98,9 @@ func (h *Handler) MsgGetParameter(connCtx context.Context, msg *wire.OpMsg) (*wi
 
 	resDoc.Set("ok", float64(1))
 
-	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
+	return bson.NewOpMsg(
 		resDoc,
-	)))
+	)
 }
 
 // selectParameters makes a selection of requested parameters.

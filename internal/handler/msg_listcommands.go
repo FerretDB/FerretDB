@@ -45,10 +45,10 @@ func (h *Handler) MsgListCommands(connCtx context.Context, msg *wire.OpMsg) (*wi
 		)))
 	}
 
-	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
+	return bson.NewOpMsg(
 		must.NotFail(types.NewDocument(
 			"commands", cmdList,
 			"ok", float64(1),
-		))),
-	))
+		)),
+	)
 }

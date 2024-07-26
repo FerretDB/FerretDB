@@ -262,7 +262,7 @@ func (h *Handler) MsgGetMore(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 		panic(fmt.Sprintf("unknown cursor type %s", c.Type))
 	}
 
-	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
+	return bson.NewOpMsg(
 		must.NotFail(types.NewDocument(
 			"cursor", must.NotFail(types.NewDocument(
 				"nextBatch", nextBatch,
@@ -271,7 +271,7 @@ func (h *Handler) MsgGetMore(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 			)),
 			"ok", float64(1),
 		)),
-	)))
+	)
 }
 
 // makeNextBatch returns the next batch of documents from the cursor.

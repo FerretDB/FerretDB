@@ -117,9 +117,9 @@ func (h *Handler) MsgDropIndexes(connCtx context.Context, msg *wire.OpMsg) (*wir
 		"ok", float64(1),
 	)
 
-	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
+	return bson.NewOpMsg(
 		replyDoc,
-	)))
+	)
 }
 
 // processDropIndexOptions parses and validates index doc and returns the list of indexes to delete

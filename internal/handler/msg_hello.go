@@ -46,7 +46,7 @@ func (h *Handler) MsgHello(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
-	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(resp)))
+	return bson.NewOpMsg(resp)
 }
 
 // hello checks client metadata and returns hello's document fields.

@@ -69,7 +69,7 @@ func (h *Handler) MsgHostInfo(connCtx context.Context, msg *wire.OpMsg) (*wire.O
 		os = "Windows"
 	}
 
-	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
+	return bson.NewOpMsg(
 		must.NotFail(types.NewDocument(
 			"system", must.NotFail(types.NewDocument(
 				"currentTime", now,
@@ -86,7 +86,7 @@ func (h *Handler) MsgHostInfo(connCtx context.Context, msg *wire.OpMsg) (*wire.O
 			"extra", must.NotFail(types.NewDocument()),
 			"ok", float64(1),
 		)),
-	)))
+	)
 }
 
 // parseOSRelease parses the /etc/os-release or /usr/lib/os-release file content,

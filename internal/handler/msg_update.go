@@ -63,9 +63,9 @@ func (h *Handler) MsgUpdate(connCtx context.Context, msg *wire.OpMsg) (*wire.OpM
 	res.Set("nModified", modified)
 	res.Set("ok", float64(1))
 
-	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
+	return bson.NewOpMsg(
 		res,
-	)))
+	)
 }
 
 // updateDocument iterate through all documents in collection and update them.

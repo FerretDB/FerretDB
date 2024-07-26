@@ -73,7 +73,7 @@ func (h *Handler) MsgValidate(connCtx context.Context, msg *wire.OpMsg) (*wire.O
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/3841
-	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
+	return bson.NewOpMsg(
 		must.NotFail(types.NewDocument(
 			"ns", dbName+"."+collection,
 			"nInvalidDocuments", int32(0),
@@ -89,5 +89,5 @@ func (h *Handler) MsgValidate(connCtx context.Context, msg *wire.OpMsg) (*wire.O
 			"corruptRecords", types.MakeArray(0),
 			"ok", float64(1),
 		)),
-	)))
+	)
 }

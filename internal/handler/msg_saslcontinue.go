@@ -88,12 +88,12 @@ func (h *Handler) MsgSASLContinue(connCtx context.Context, msg *wire.OpMsg) (*wi
 		conninfo.Get(connCtx).SetBypassBackendAuth()
 	}
 
-	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
+	return bson.NewOpMsg(
 		must.NotFail(types.NewDocument(
 			"conversationId", int32(1),
 			"done", conv.Done(),
 			"payload", types.Binary{B: []byte(response)},
 			"ok", float64(1),
 		)),
-	)))
+	)
 }

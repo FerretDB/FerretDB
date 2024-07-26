@@ -52,9 +52,9 @@ func (h *Handler) MsgDebugError(connCtx context.Context, msg *wire.OpMsg) (*wire
 
 	switch {
 	case expected == "ok":
-		return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(must.NotFail(types.NewDocument(
+		return bson.NewOpMsg(must.NotFail(types.NewDocument(
 			"ok", float64(1),
-		)))))
+		)))
 
 	case strings.HasPrefix(expected, "panic"):
 		panic("debugError " + expected)

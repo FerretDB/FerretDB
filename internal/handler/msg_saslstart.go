@@ -57,7 +57,7 @@ func (h *Handler) MsgSASLStart(connCtx context.Context, msg *wire.OpMsg) (*wire.
 
 	replyDoc.Set("ok", float64(1))
 
-	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(replyDoc)))
+	return bson.NewOpMsg(replyDoc)
 }
 
 // saslStart starts authentication and returns a document used for the response.

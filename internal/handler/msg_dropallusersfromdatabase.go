@@ -97,10 +97,10 @@ func (h *Handler) MsgDropAllUsersFromDatabase(connCtx context.Context, msg *wire
 		deleted = res.Deleted
 	}
 
-	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
+	return bson.NewOpMsg(
 		must.NotFail(types.NewDocument(
 			"n", deleted,
 			"ok", float64(1),
 		)),
-	)))
+	)
 }

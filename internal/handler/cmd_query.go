@@ -43,7 +43,7 @@ func (h *Handler) CmdQuery(connCtx context.Context, query *wire.OpQuery) (*wire.
 	collection := query.FullCollectionName
 
 	if !strings.HasSuffix(collection, ".$cmd") {
-		wire.NewOpMsg(must.NotFail(bson.ConvertDocument(must.NotFail(types.NewDocument(
+		return wire.NewOpReply(must.NotFail(bson.ConvertDocument(must.NotFail(types.NewDocument(
 			"$err", "OP_QUERY is no longer supported. The client driver may require an upgrade.",
 			"code", int32(handlererrors.ErrOpQueryCollectionSuffixMissing),
 			"ok", float64(0),

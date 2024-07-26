@@ -262,7 +262,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 			// get protocol error to return correct error document
 			protoErr := handlererrors.ProtocolError(validationErr)
 
-			res := must.NotFail(wire.NewOpMsg(must.NotFail(bson.ConvertDocument(protoErr.Document())).Document))
+			res := must.NotFail(bson.NewOpMsg(protoErr.Document()))
 
 			b := must.NotFail(res.MarshalBinary())
 
@@ -498,7 +498,7 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		case wire.OpCodeMsg:
 			protoErr := handlererrors.ProtocolError(err)
 
-			resBody = must.NotFail(wire.NewOpMsg(must.NotFail(bson.ConvertDocument(protoErr.Document()))))
+			resBody = must.NotFail(bson.NewOpMsg(protoErr.Document()))
 
 			switch protoErr := protoErr.(type) {
 			case *handlererrors.CommandError:

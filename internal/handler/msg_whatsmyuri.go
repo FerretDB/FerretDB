@@ -29,10 +29,10 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgWhatsMyURI(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
+	return bson.NewOpMsg(
 		must.NotFail(types.NewDocument(
 			"you", conninfo.Get(connCtx).Peer.String(),
 			"ok", float64(1),
 		)),
-	)))
+	)
 }

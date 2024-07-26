@@ -31,11 +31,11 @@ func (h *Handler) MsgGetFreeMonitoringStatus(connCtx context.Context, msg *wire.
 	state := h.StateProvider.Get().TelemetryString()
 	message := "monitoring is " + state
 
-	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
+	return bson.NewOpMsg(
 		must.NotFail(types.NewDocument(
 			"state", state,
 			"message", message,
 			"ok", float64(1),
 		)),
-	)))
+	)
 }

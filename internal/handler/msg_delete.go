@@ -107,9 +107,9 @@ func (h *Handler) MsgDelete(connCtx context.Context, msg *wire.OpMsg) (*wire.OpM
 
 	res.Set("ok", float64(1))
 
-	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
+	return bson.NewOpMsg(
 		res,
-	)))
+	)
 }
 
 // execDelete performs a single delete operation.

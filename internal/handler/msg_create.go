@@ -120,11 +120,11 @@ func (h *Handler) MsgCreate(connCtx context.Context, msg *wire.OpMsg) (*wire.OpM
 
 	switch {
 	case err == nil:
-		return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
+		return bson.NewOpMsg(
 			must.NotFail(types.NewDocument(
 				"ok", float64(1),
-			))),
-		))
+			)),
+		)
 
 	case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid):
 		msg := fmt.Sprintf("Invalid collection name: %s", collectionName)
