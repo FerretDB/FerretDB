@@ -15,9 +15,10 @@
 package bson
 
 import (
+	"github.com/FerretDB/wire/wirebson"
+
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/wire/wirebson"
 )
 
 // Array represents a BSON array in the (partially) decoded form.

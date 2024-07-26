@@ -8,7 +8,7 @@ replace github.com/FerretDB/FerretDB => ../
 
 require (
 	github.com/AlekSi/pointer v1.2.0
-	github.com/FerretDB/FerretDB v0.0.0-00010101000000-000000000000
+	github.com/FerretDB/FerretDB v1.23.0
 	github.com/prometheus/client_golang v1.19.1
 	github.com/stretchr/testify v1.9.0
 	go.mongodb.org/mongo-driver v1.16.0
@@ -19,7 +19,7 @@ require (
 
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
-	github.com/FerretDB/wire v0.0.2 // indirect
+	github.com/FerretDB/wire v0.0.4-0.20240726061557-e935edf6c827 // indirect
 	github.com/SAP/go-hdb v1.9.10 // indirect
 	github.com/arl/statsviz v0.6.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect

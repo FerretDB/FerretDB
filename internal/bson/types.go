@@ -17,8 +17,9 @@ package bson
 import (
 	"errors"
 	"fmt"
-	"github.com/FerretDB/wire/wirebson"
 	"time"
+
+	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -202,7 +203,9 @@ func ConvertArray(arr *types.Array) (*Array, error) {
 			return nil, lazyerrors.Error(err)
 		}
 
-		elements.Array.Add(v)
+		if err = elements.Add(v); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 	}
 }
 

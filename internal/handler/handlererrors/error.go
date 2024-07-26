@@ -17,8 +17,8 @@ package handlererrors
 
 import (
 	"errors"
-	"github.com/FerretDB/FerretDB/internal/bson"
 
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
