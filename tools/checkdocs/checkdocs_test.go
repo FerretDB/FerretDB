@@ -88,7 +88,13 @@ func TestVerifyTruncateString(t *testing.T) {
 func TestCheckSupportedCommands(t *testing.T) {
 	tableFile := filepath.Join("testdata", "check.md")
 
-	checkSupportedCommands(tableFile)
+	a, err := NewSupportedCommandsAnalyzer()
+	require.NoError(t, err)
+
+	fm := []byte("| ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/4035) |")
+
+	a.Scan()
+
 }
 
 func TestVerifyIssues(t *testing.T) {

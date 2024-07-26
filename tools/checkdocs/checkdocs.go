@@ -46,17 +46,17 @@ func main() {
 	}
 
 	f, err := os.OpenFile(tableFile, os.O_RDONLY, 0o666)
+	f.Close()
+
 	if err != nil {
 		log.Fatalf("couldn't open the file %s: %s", tableFile, err)
 	}
-
-	defer f.Close()
 
 	checkSupportedCommands(f)
 }
 
 type Analyzer interface {
-	Scan(io.ReadCloser) error
+	Scan(io.Reader) error
 	Close() error
 }
 
@@ -84,7 +84,7 @@ func NewSupportedCommandsAnalyzer() (Analyzer, error) {
 	}, nil
 }
 
-func (a SupportedCommandsAnalyzer) Scan(f io.ReadCloser) error {
+func (a SupportedCommandsAnalyzer) Scan(f io.Reader) error {
 	s := bufio.NewScanner(f)
 	for s.Scan() {
 		line := s.Text()
@@ -131,11 +131,8 @@ func (a SupportedCommandsAnalyzer) Scan(f io.ReadCloser) error {
 	}
 
 	if err := s.Err(); err != nil {
-		f.Close()
 		return fmt.Errorf("error reading input: %s", err)
 	}
-
-	f.Close()
 
 	return nil
 }
