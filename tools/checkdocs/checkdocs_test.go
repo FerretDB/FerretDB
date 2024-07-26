@@ -77,6 +77,12 @@ func TestVerifyTruncateString(t *testing.T) {
 	assert.EqualError(t, err, "<!--truncate--> must be included to have \"Read more\" link on the homepage")
 }
 
+func TestCheckSupportedCommands(t *testing.T) {
+	tableFile := filepath.Join("testdata", "check.md")
+
+	checkSupportedCommands(tableFile)
+}
+
 func TestVerifyIssues(t *testing.T) {
 	t.Parallel()
 
