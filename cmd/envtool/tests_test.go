@@ -173,7 +173,7 @@ func TestRunGoTest(t *testing.T) {
 		}
 
 		actual := toLogLines(buf)
-		assert.Equal(t, expected, actual, "actual:\n%s", actual)
+		assert.Equal(t, expected, actual, "actual:\n%s", strings.Join(actual, "\n"))
 	})
 
 	t.Run("SubtestsNotFound", func(t *testing.T) {
