@@ -55,6 +55,24 @@ func main() {
 	checkSupportedCommands(f)
 }
 
+type Analyzer interface {
+	Scan(io.ReadCloser) error
+	Close() bool
+}
+
+type SupportedCommandsAnalyzer struct {
+}
+
+func NewSupportedCommandsAnalyzer() Analyzer {
+	return SupportedCommandsAnalyzer{}
+}
+
+func (a SupportedCommandsAnalyzer) Scan(f io.ReadCloser) error {
+}
+
+func (a SupportedCommandsAnalyzer) Close() bool {
+}
+
 // checkBlogFiles verifies that blog posts are correctly formatted,
 // using logf for progress reporting and fatalf for errors.
 func checkBlogFiles(files []string) {
