@@ -82,13 +82,6 @@ func TestVerifyTruncateString(t *testing.T) {
 }
 
 func TestCheckSupportedCommands(t *testing.T) {
-	//pr, pw := io.Pipe()
-	//t.Cleanup(func() {
-	//	require.NoError(t, pw.Close())
-	//})
-
-	//lr := bufio.NewReader(pr)
-
 	buf := new(bytes.Buffer)
 	l := log.New(buf, "", 0)
 
