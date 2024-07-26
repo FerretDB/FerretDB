@@ -89,9 +89,8 @@ func TestCheckSupportedCommands(t *testing.T) {
 
 	//lr := bufio.NewReader(pr)
 
-	var buf bytes.Buffer
-
-	l := log.New(&buf, "", 0)
+	buf := new(bytes.Buffer)
+	l := log.New(buf, "", 0)
 
 	a, err := NewSupportedCommandsAnalyzer(l)
 	require.NoError(t, err)
@@ -116,6 +115,8 @@ func TestCheckSupportedCommands(t *testing.T) {
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
+			buf.Reset()
+
 			r := strings.NewReader(tc.Payload)
 			require.NoError(t, a.Scan(r))
 
