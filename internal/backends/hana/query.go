@@ -32,11 +32,13 @@ func prepareSelectClause(schema, table string) string {
 }
 
 func jsonToHanaQueryString(jsonStr string) string {
-	return strings.ReplaceAll(jsonStr, "\"", "'")
+	hanaString := string(strToHanaJSON([]byte(jsonStr)))
+	return strings.ReplaceAll(hanaString, "\"", "'")
 }
 
 func makeFilter(table, key, op string, value any) string {
 	var valStr string
+	hanaKey := jsonToHanaQueryString(key)
 
 	switch v := value.(type) {
 	case *types.Document, *types.Array, types.Binary,
@@ -68,7 +70,7 @@ func makeFilter(table, key, op string, value any) string {
 		panic(fmt.Sprintf("Unexpected type of value: %v", v))
 	}
 
-	res := fmt.Sprintf("%q %s %s", key, op, valStr)
+	res := fmt.Sprintf("%q %s %s", hanaKey, op, valStr)
 
 	// If table name matches key we need to prefix with "table"."key"
 	if key == table {
@@ -157,19 +159,22 @@ func prepareWhereClause(table string, filter *types.Document) (string, error) {
 }
 
 func prepareOrderByClause(sort *types.Document) (string, error) {
-	// if sort.Len() != 1 {
-	// 	return "", nil
-	// }
-	// v := must.NotFail(sort.Get("$natural"))
-	// var order string
-	// switch v.(int64) {
-	// case 1:
-	// 	// Ascending order
-	// case -1:
-	// 	order = "DESC"
-	// default:
-	// 	panic("not reachable")
-	// }
-	// orderByClause := fmt.Sprintf(" ORDER BY %q %s", <key>, order)
-	return "", nil
+	if sort.Len() != 1 {
+		return "", nil
+	}
+
+	v := must.NotFail(sort.Get("$natural"))
+	var order string
+
+	switch v.(int64) {
+	case 1:
+		order = "ASC"
+	case -1:
+		order = "DESC"
+	default:
+		panic("not reachable")
+	}
+	orderByClause := fmt.Sprintf(" ORDER BY \"_id\" %s", order)
+
+	return orderByClause, nil
 }

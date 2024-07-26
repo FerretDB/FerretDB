@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
@@ -123,14 +124,14 @@ func Startup() {
 	}
 
 	if *targetURLF != "" {
-		var err error
-
 		*targetURLF, err = setClientPaths(*targetURLF)
 		if err != nil {
 			l.LogAttrs(ctx, logging.LevelFatal, "Failed to set target client path", logging.Error(err))
 		}
 
-		client, err := makeClient(clientCtx, *targetURLF, false)
+		var client *mongo.Client
+
+		client, err = makeClient(clientCtx, *targetURLF, false)
 		if err != nil {
 			l.LogAttrs(ctx, logging.LevelFatal, "Failed to connect to target system", slog.String("target_url", *targetURLF), logging.Error(err))
 		}
@@ -143,14 +144,14 @@ func Startup() {
 	}
 
 	if *compatURLF != "" {
-		var err error
-
 		*compatURLF, err = setClientPaths(*compatURLF)
 		if err != nil {
 			l.LogAttrs(ctx, logging.LevelFatal, "Failed to set compat client path", logging.Error(err))
 		}
 
-		client, err := makeClient(clientCtx, *compatURLF, false)
+		var client *mongo.Client
+
+		client, err = makeClient(clientCtx, *compatURLF, false)
 		if err != nil {
 			l.LogAttrs(ctx, logging.LevelFatal, "Failed to connect to compat system", slog.String("compat_url", *compatURLF), logging.Error(err))
 		}

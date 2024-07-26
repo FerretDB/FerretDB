@@ -81,7 +81,7 @@ func bufLogger() (*slog.Logger, *bytes.Buffer) {
 func TestTestArgs(t *testing.T) {
 	t.Parallel()
 
-	list, listErr := listTestFuncs("testdata", ".", testutil.SLogger(t))
+	list, listErr := listTestFuncs("testdata", ".", testutil.Logger(t))
 	require.NoError(t, listErr)
 	require.Equal(
 		t,
@@ -92,7 +92,7 @@ func TestTestArgs(t *testing.T) {
 	t.Run("All", func(t *testing.T) {
 		t.Parallel()
 
-		actual, total, err := testArgs("testdata", 0, 0, "", "", testutil.SLogger(t))
+		actual, total, err := testArgs("testdata", 0, 0, "", "", testutil.Logger(t))
 		require.NoError(t, err)
 		expected := []string{"-run=^(TestError1|TestError2|TestNormal1|TestNormal2|TestPanic1|TestSkip1|TestWithSubtest)$"}
 		assert.Equal(t, expected, actual)
@@ -102,7 +102,7 @@ func TestTestArgs(t *testing.T) {
 	t.Run("Run", func(t *testing.T) {
 		t.Parallel()
 
-		actual, total, err := testArgs("testdata", 0, 0, "(?i)Normal", "", testutil.SLogger(t))
+		actual, total, err := testArgs("testdata", 0, 0, "(?i)Normal", "", testutil.Logger(t))
 		require.NoError(t, err)
 		expected := []string{"-run=^(TestNormal1|TestNormal2)$"}
 		assert.Equal(t, expected, actual)
@@ -112,7 +112,7 @@ func TestTestArgs(t *testing.T) {
 	t.Run("Subtest", func(t *testing.T) {
 		t.Parallel()
 
-		actual, total, err := testArgs("testdata", 0, 0, "TestWithSubtest/Second", "", testutil.SLogger(t))
+		actual, total, err := testArgs("testdata", 0, 0, "TestWithSubtest/Second", "", testutil.Logger(t))
 		require.NoError(t, err)
 		expected := []string{"-run=TestWithSubtest/Second"}
 		assert.Equal(t, expected, actual)
@@ -122,7 +122,7 @@ func TestTestArgs(t *testing.T) {
 	t.Run("Shard", func(t *testing.T) {
 		t.Parallel()
 
-		actual, total, err := testArgs("testdata", 1, 2, "", "", testutil.SLogger(t))
+		actual, total, err := testArgs("testdata", 1, 2, "", "", testutil.Logger(t))
 		require.NoError(t, err)
 		expected := []string{"-run=^(TestError1|TestNormal1|TestPanic1|TestWithSubtest)$"}
 		assert.Equal(t, expected, actual)
@@ -173,7 +173,7 @@ func TestRunGoTest(t *testing.T) {
 		}
 
 		actual := toLogLines(buf)
-		assert.Equal(t, expected, actual, "actual:\n%s", actual)
+		assert.Equal(t, expected, actual, "actual:\n%s", strings.Join(actual, "\n"))
 	})
 
 	t.Run("SubtestsNotFound", func(t *testing.T) {

@@ -75,7 +75,7 @@ func TestCreateDrop(t *testing.T) {
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
-	r, err := NewRegistry(testutil.TestSQLiteURI(t, ""), 100, testutil.SLogger(t), sp)
+	r, err := NewRegistry(testutil.TestSQLiteURI(t, ""), 100, testutil.Logger(t), sp)
 	require.NoError(t, err)
 	t.Cleanup(r.Close)
 
@@ -115,7 +115,7 @@ func TestCreateDropStress(t *testing.T) {
 			uri := testutil.TestSQLiteURI(t, "") + params
 
 			var r *Registry
-			r, err = NewRegistry(uri, 100, testutil.SLogger(t), sp)
+			r, err = NewRegistry(uri, 100, testutil.Logger(t), sp)
 			require.NoError(t, err)
 			t.Cleanup(r.Close)
 
@@ -162,7 +162,7 @@ func TestCreateSameStress(t *testing.T) {
 			uri := testutil.TestSQLiteURI(t, "") + params
 
 			var r *Registry
-			r, err = NewRegistry(uri, 100, testutil.SLogger(t), sp)
+			r, err = NewRegistry(uri, 100, testutil.Logger(t), sp)
 			require.NoError(t, err)
 			t.Cleanup(r.Close)
 
@@ -233,7 +233,7 @@ func TestDropSameStress(t *testing.T) {
 			uri := testutil.TestSQLiteURI(t, "") + params
 
 			var r *Registry
-			r, err = NewRegistry(uri, 100, testutil.SLogger(t), sp)
+			r, err = NewRegistry(uri, 100, testutil.Logger(t), sp)
 			require.NoError(t, err)
 			t.Cleanup(r.Close)
 
@@ -288,7 +288,7 @@ func TestCreateDropSameStress(t *testing.T) {
 			uri := testutil.TestSQLiteURI(t, "") + params
 
 			var r *Registry
-			r, err = NewRegistry(uri, 100, testutil.SLogger(t), sp)
+			r, err = NewRegistry(uri, 100, testutil.Logger(t), sp)
 			require.NoError(t, err)
 			t.Cleanup(r.Close)
 
@@ -337,7 +337,7 @@ func TestIndexesCreateDrop(t *testing.T) {
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
-	r, err := NewRegistry(testutil.TestSQLiteURI(t, ""), 100, testutil.SLogger(t), sp)
+	r, err := NewRegistry(testutil.TestSQLiteURI(t, ""), 100, testutil.Logger(t), sp)
 	require.NoError(t, err)
 	t.Cleanup(r.Close)
 

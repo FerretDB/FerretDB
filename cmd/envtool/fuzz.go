@@ -25,7 +25,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -149,7 +149,7 @@ func fuzzDiff(src, dst map[string]struct{}) []string {
 		res = append(res, p)
 	}
 
-	sort.Strings(res)
+	slices.Sort(res)
 
 	return res
 }

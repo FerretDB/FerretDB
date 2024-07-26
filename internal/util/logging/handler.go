@@ -26,8 +26,12 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// Handler is a [slog.Handler] that wraps another handler with support for
-// additional log levels and shorter source location.
+// Handler is a [slog.Handler] that wraps another handler with support for:
+//   - additional log levels
+//     (DPanic/ERROR+1 panics in debug builds, Panic/ERROR+2 always panics, Fatal/ERROR+3 exits with a non-zero status);
+//   - shorter source locations;
+//   - removal of time, level, and source attributes;
+//   - collecting recent log entries for `getLog` command.
 type Handler struct {
 	base slog.Handler
 	out  io.Writer
@@ -131,24 +135,12 @@ func NewHandler(out io.Writer, opts *NewHandlerOpts) *Handler {
 	}
 }
 
-// WrapHandler takes a handler and wraps it with support for
-// additional log levels, shorter source location and make logs
-// accessible by `getLog` command.
-func WrapHandler(out io.Writer, h slog.Handler) *Handler {
-	return &Handler{
-		base: h,
-		out:  out,
-	}
-}
-
 // Enabled implements [slog.Handler].
 func (h *Handler) Enabled(ctx context.Context, l slog.Level) bool {
 	return h.base.Enabled(ctx, l)
 }
 
 // Handle implements [slog.Handler].
-//
-// Also appends the record to [RecentEntries] used by `getLog` command.
 func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
 	err := h.base.Handle(ctx, r)
 

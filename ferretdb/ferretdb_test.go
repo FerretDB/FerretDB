@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"log/slog"
 	"path/filepath"
 	"testing"
 
@@ -35,6 +36,7 @@ func Example_tcp() {
 		Listener: ferretdb.ListenerConfig{
 			TCP: "127.0.0.1:17027",
 		},
+		Logger:        slog.With("component", "ferretdb"),
 		Handler:       "postgresql",
 		PostgreSQLURL: "postgres://127.0.0.1:5432/ferretdb",
 	})
@@ -43,27 +45,31 @@ func Example_tcp() {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-
-	done := make(chan struct{})
+	done := make(chan error)
 
 	go func() {
-		log.Print(f.Run(ctx))
-		close(done)
+		done <- f.Run(ctx)
 	}()
 
 	uri := f.MongoDBURI()
 	fmt.Println(uri)
 
-	// Use MongoDB URI as usual. For example:
+	// Use MongoDB URI as usual.
+	// For example:
 	//
 	// import "go.mongodb.org/mongo-driver/mongo"
+	// import "go.mongodb.org/mongo-driver/mongo/options"
 	//
 	// [...]
 	//
 	// mongo.Connect(ctx, options.Client().ApplyURI(uri))
 
 	cancel()
-	<-done
+
+	err = <-done
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Output: mongodb://127.0.0.1:17027/
 }
@@ -73,6 +79,7 @@ func Example_unix() {
 		Listener: ferretdb.ListenerConfig{
 			Unix: "/tmp/ferretdb.sock",
 		},
+		Logger:        slog.With("component", "ferretdb"),
 		Handler:       "postgresql",
 		PostgreSQLURL: "postgres://127.0.0.1:5432/ferretdb",
 	})
@@ -81,21 +88,31 @@ func Example_unix() {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-
-	done := make(chan struct{})
+	done := make(chan error)
 
 	go func() {
-		log.Print(f.Run(ctx))
-		close(done)
+		done <- f.Run(ctx)
 	}()
 
 	uri := f.MongoDBURI()
 	fmt.Println(uri)
 
 	// Use MongoDB URI as usual.
+	// For example:
+	//
+	// import "go.mongodb.org/mongo-driver/mongo"
+	// import "go.mongodb.org/mongo-driver/mongo/options"
+	//
+	// [...]
+	//
+	// mongo.Connect(ctx, options.Client().ApplyURI(uri))
 
 	cancel()
-	<-done
+
+	err = <-done
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Output: mongodb://%2Ftmp%2Fferretdb.sock/
 }
@@ -108,6 +125,7 @@ func Example_tls() {
 			TLSKeyFile:  filepath.Join(testutil.BuildCertsDir, "server-key.pem"),
 			TLSCAFile:   filepath.Join(testutil.BuildCertsDir, "rootCA-cert.pem"),
 		},
+		Logger:        slog.With("component", "ferretdb"),
 		Handler:       "postgresql",
 		PostgreSQLURL: "postgres://127.0.0.1:5432/ferretdb",
 	})
@@ -116,18 +134,17 @@ func Example_tls() {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-
-	done := make(chan struct{})
+	done := make(chan error)
 
 	go func() {
-		log.Print(f.Run(ctx))
-		close(done)
+		done <- f.Run(ctx)
 	}()
 
 	uri := f.MongoDBURI()
 	fmt.Println(uri)
 
-	// Use MongoDB URI as usual. To connect to TLS listener, set TLS config.
+	// Use MongoDB URI as usual.
+	// To connect to TLS listener, set TLS config.
 	// For example:
 	//
 	// import "go.mongodb.org/mongo-driver/mongo"
@@ -138,7 +155,11 @@ func Example_tls() {
 	// mongo.Connect(ctx, options.Client().ApplyURI(uri))
 
 	cancel()
-	<-done
+
+	err = <-done
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Output: mongodb://127.0.0.1:17028/?tls=true
 }
@@ -150,6 +171,7 @@ func TestEmbedded(t *testing.T) {
 		Listener: ferretdb.ListenerConfig{
 			TCP: "127.0.0.1:0",
 		},
+		Logger:        testutil.Logger(t),
 		Handler:       "postgresql",
 		PostgreSQLURL: testutil.TestPostgreSQLURI(t, ctx, "postgres://username@127.0.0.1:5432/ferretdb?search_path="),
 	})

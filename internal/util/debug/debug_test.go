@@ -48,7 +48,7 @@ func TestDebug(t *testing.T) {
 
 	h := must.NotFail(Listen(&ListenOpts{
 		TCPAddr: "127.0.0.1:0",
-		L:       testutil.SLogger(t),
+		L:       testutil.Logger(t),
 		R:       prometheus.NewRegistry(),
 		Livez:   func(context.Context) bool { return livez.Load() },
 		Readyz:  func(context.Context) bool { return readyz.Load() },
