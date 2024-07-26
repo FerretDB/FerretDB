@@ -25,8 +25,6 @@ import (
 	"log/slog"
 	"net/url"
 
-	"go.uber.org/zap"
-
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
@@ -38,12 +36,8 @@ import (
 type Config struct {
 	Listener ListenerConfig
 
-	// Setting this field triggers panic.
-	// Deprecated: Use Logger field instead.
-	Logger *zap.Logger
-
 	// Logger to use; if nil, `slog.Default()` is used.
-	SLogger *slog.Logger
+	Logger *slog.Logger
 
 	// Handler to use; one of `postgresql` or `sqlite`.
 	Handler string
@@ -120,17 +114,13 @@ func New(config *Config) (*FerretDB, error) {
 
 	metrics := connmetrics.NewListenerMetrics()
 
-	log := config.SLogger
-	if log == nil {
-		log = slog.Default()
-	}
-
-	if config.Logger != nil {
-		panic("ferretdb.Config.SLogger should be used instead of ferretdb.Config.Logger")
+	logger := config.Logger
+	if logger == nil {
+		logger = slog.Default()
 	}
 
 	h, closeBackend, err := registry.NewHandler(config.Handler, &registry.NewHandlerOpts{
-		Logger:        log,
+		Logger:        logger,
 		ConnMetrics:   metrics.ConnMetrics,
 		StateProvider: sp,
 		TCPHost:       config.Listener.TCP,
@@ -163,7 +153,7 @@ func New(config *Config) (*FerretDB, error) {
 		Mode:    clientconn.NormalMode,
 		Metrics: metrics,
 		Handler: h,
-		Logger:  log,
+		Logger:  logger,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct handler: %s", err)
