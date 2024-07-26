@@ -8,7 +8,7 @@ image: /img/blog/ferretdb-v1.17.0.jpg
 tags: [release]
 ---
 
-![FerretDB releases v.1.17.0](/img/blog/ferretdb-v1.17.0.jpg)
+![FerretDB releases v1.17.0](/img/blog/ferretdb-v1.17.0.jpg)
 
 We just released FerretDB v1.17.0, which now makes it possible to build FerretDB without PostgreSQL or SQLite backend, among other new features.
 
