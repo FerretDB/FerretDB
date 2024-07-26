@@ -62,13 +62,18 @@ type Analyzer interface {
 
 type SupportedCommandsAnalyzer struct {
 	client *github.Client
+	l      *log.Logger
 	failed bool
 }
 
-func NewSupportedCommandsAnalyzer() (Analyzer, error) {
+func NewSupportedCommandsAnalyzer(l *log.Logger) (Analyzer, error) {
 	p, err := github.CacheFilePath()
 	if err != nil {
-		log.Panic(err)
+		return nil, err
+	}
+
+	if l == nil {
+		l = log.Default()
 	}
 
 	clientDebugF := gh.NoopPrintf
@@ -81,6 +86,7 @@ func NewSupportedCommandsAnalyzer() (Analyzer, error) {
 
 	return SupportedCommandsAnalyzer{
 		client: client,
+		l:      l,
 	}, nil
 }
 
@@ -95,7 +101,7 @@ func (a SupportedCommandsAnalyzer) Scan(f io.Reader) error {
 		}
 
 		if len(match) != 1 {
-			log.Printf("invalid [issue]({URL}) format: %s", line)
+			a.l.Printf("invalid [issue]({URL}) format: %s", line)
 			a.failed = true
 			continue
 		}
@@ -110,7 +116,7 @@ func (a SupportedCommandsAnalyzer) Scan(f io.Reader) error {
 			// nothing
 		case github.ErrIncorrectURL, github.ErrIncorrectIssueNumber:
 			a.failed = true
-			log.Print(err.Error())
+			a.l.Print(err.Error())
 			continue
 		default:
 			return err
@@ -121,10 +127,10 @@ func (a SupportedCommandsAnalyzer) Scan(f io.Reader) error {
 			// nothing
 		case github.IssueClosed:
 			a.failed = true
-			log.Printf("invalid [issue]({URL}) linked issue %s is closed", url)
+			a.l.Printf("invalid [issue]({URL}) linked issue %s is closed", url)
 		case github.IssueNotFound:
 			a.failed = true
-			log.Printf("invalid [issue]({URL}) linked issue %s is not found", url)
+			a.l.Printf("invalid [issue]({URL}) linked issue %s is not found", url)
 		default:
 			return fmt.Errorf("unknown issue status: %s", status)
 		}
