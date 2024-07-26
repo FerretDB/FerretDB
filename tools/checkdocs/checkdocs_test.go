@@ -122,23 +122,3 @@ func TestCheckSupportedCommands(t *testing.T) {
 		})
 	}
 }
-
-//func TestVerifyIssues(t *testing.T) {
-//	t.Parallel()
-//
-//	path, err := github.CacheFilePath()
-//	require.NoError(t, err)
-//
-//	err = os.MkdirAll(filepath.Dir(path), 0o777)
-//	require.NoError(t, err)
-//
-//	t.Run("Empty fm", func(t *testing.T) {
-//		verifyIssues(nil, gh.NoopPrintf, gh.NoopPrintf)
-//	})
-//
-//	t.Run("Sample row", func(t *testing.T) {
-//		fm = []byte("| ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/4035) |")
-//
-//		verifyIssues(fm, gh.NoopPrintf, gh.NoopPrintf)
-//	})
-//}
