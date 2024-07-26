@@ -109,6 +109,11 @@ func TestCheckSupportedCommands(t *testing.T) {
 			Payload:        "|                 | `closedIssueLink`          | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1) |",
 			ExpectedOutput: "linked issue https://github.com/FerretDB/FerretDB/issues/1 is closed\n",
 		},
+
+		"AnyLabelClosedIssue": {
+			Payload:        "[IssueLabel](https://github.com/FerretDB/FerretDB/issues/1)",
+			ExpectedOutput: "linked issue https://github.com/FerretDB/FerretDB/issues/1 is closed\n",
+		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			r := strings.NewReader(tc.Payload)
