@@ -94,14 +94,6 @@ func convertFromTypes(v any) (any, error) {
 // Invalid types cause panics.
 func convertToTypes(v any) (any, error) {
 	switch v := v.(type) {
-	case *Document:
-		doc, err := v.Convert()
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		return doc, nil
-
 	case *wirebson.Document:
 		doc, err := TypesDocument(v)
 		if err != nil {
@@ -117,13 +109,6 @@ func convertToTypes(v any) (any, error) {
 		}
 
 		return doc, nil
-	case *Array:
-		arr, err := v.Convert()
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		return arr, nil
 
 	case *wirebson.Array:
 		arr, err := TypesArray(v)
