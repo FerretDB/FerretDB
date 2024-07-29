@@ -14,9 +14,7 @@
 
 package bson
 
-import (
-	"github.com/FerretDB/wire/wirebson"
-)
+import "github.com/FerretDB/wire/wirebson"
 
 // Document represents a BSON document a.k.a object in the (partially) decoded form.
 //

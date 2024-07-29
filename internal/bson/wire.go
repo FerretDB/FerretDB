@@ -64,9 +64,10 @@ func AllSectionsDocument(msg *wire.OpMsg) (*types.Document, error) {
 			continue
 		}
 
-		a := types.MakeArray(len(section.Documents))
+		docs := section.Documents()
+		a := types.MakeArray(len(docs))
 
-		for _, d := range section.Documents {
+		for _, d := range docs {
 			var doc *types.Document
 
 			if doc, err = TypesDocument(d); err != nil {
