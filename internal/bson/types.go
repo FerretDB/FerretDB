@@ -195,29 +195,30 @@ func ConvertArray(arr *types.Array) (*wirebson.Array, error) {
 }
 
 // TypesArray decodes an array and converts to [*types.Array].
-func TypesArray(arr wirebson.AnyArray) (*types.Array, error) {
-	wArr, err := arr.Decode()
+func TypesArray(a wirebson.AnyArray) (*types.Array, error) {
+	arr, err := a.Decode()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	values := make([]any, wArr.Len())
+	values := make([]any, arr.Len())
 
-	for i := range wArr.Len() {
-		v, err := convertToTypes(wArr.Get(i))
-		if err != nil {
+	for i := range arr.Len() {
+		var v any
+
+		if v, err = convertToTypes(arr.Get(i)); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
 		values[i] = v
 	}
 
-	tArr, err := types.NewArray(values...)
+	res, err := types.NewArray(values...)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	return tArr, nil
+	return res, nil
 }
 
 // ConvertDocument converts [*types.Document] to [*wirebson.Document].
@@ -249,28 +250,29 @@ func ConvertDocument(doc *types.Document) (*wirebson.Document, error) {
 }
 
 // TypesDocument decodes a document and converts to [*types.Document].
-func TypesDocument(doc wirebson.AnyDocument) (*types.Document, error) {
-	wDoc, err := doc.Decode()
+func TypesDocument(d wirebson.AnyDocument) (*types.Document, error) {
+	doc, err := d.Decode()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	fields := wDoc.FieldNames()
+	fields := doc.FieldNames()
 	pairs := make([]any, 0, len(fields)*2)
 
 	for _, f := range fields {
-		v, err := convertToTypes(wDoc.Get(f))
-		if err != nil {
+		var v any
+
+		if v, err = convertToTypes(doc.Get(f)); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
 		pairs = append(pairs, f, v)
 	}
 
-	tDoc, err := types.NewDocument(pairs...)
+	res, err := types.NewDocument(pairs...)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	return tDoc, nil
+	return res, nil
 }
