@@ -14,7 +14,12 @@
 
 package bson
 
-import "github.com/FerretDB/wire/wirebson"
+import (
+	"github.com/FerretDB/wire/wirebson"
+
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+)
 
 // Document represents a BSON document a.k.a object in the (partially) decoded form.
 //
@@ -23,64 +28,19 @@ type Document struct {
 	*wirebson.Document // embed to delegate method
 }
 
-// MakeDocument creates a new empty Document with the given capacity.
-func MakeDocument(cap int) *Document {
-	return &Document{
-		Document: wirebson.MakeDocument(cap),
-	}
-}
-
-// Freeze prevents document from further field modifications.
-// Any methods that would modify document fields will panic.
-//
-// It is safe to call Freeze multiple times.
-func (doc *Document) Freeze() {
-	doc.Document.Freeze()
-}
-
-// FieldNames returns a slice of field names in the Document.
-//
-// If document contains duplicate field names, the same name may appear multiple times.
-func (doc *Document) FieldNames() []string {
-	return doc.Document.FieldNames()
-}
-
-// Get returns a value of the field with the given name.
-//
-// It returns nil if the field is not found.
-// If document contains duplicate field names, it returns the first one.
-//
-// TODO https://github.com/FerretDB/FerretDB/issues/4208
-func (doc *Document) Get(name string) any {
-	return doc.Document.Get(name)
-}
-
-// Add adds a new field to the Document.
-func (doc *Document) Add(name string, value any) error {
-	switch v := value.(type) {
-	case *Document:
-		value = v.Document
-	case *Array:
-		value = v.Array
+// TypesDocument decodes a document and converts to [*types.Document].
+func TypesDocument(doc wirebson.AnyDocument) (*types.Document, error) {
+	wDoc, err := doc.Decode()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
-	return doc.Document.Add(name, value)
-}
+	bDoc := &Document{Document: wDoc}
 
-// Remove removes the first existing field with the given name.
-// It does nothing if the field with that name does not exist.
-func (doc *Document) Remove(name string) {
-	doc.Document.Remove(name)
-}
+	tDoc, err := bDoc.Convert()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
-// Replace sets the value for the first existing field with the given name.
-// It does nothing if the field with that name does not exist.
-func (doc *Document) Replace(name string, value any) error {
-	return doc.Document.Replace(name, value)
-}
-
-// Command returns the first field name. This is often used as a command name.
-// It returns an empty string if document is nil or empty.
-func (doc *Document) Command() string {
-	return doc.Document.Command()
+	return tDoc, nil
 }

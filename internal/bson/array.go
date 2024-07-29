@@ -26,13 +26,6 @@ type Array struct {
 	*wirebson.Array // embed to delegate method
 }
 
-// MakeArray creates a new empty Array with the given capacity.
-func MakeArray(cap int) *Array {
-	return &Array{
-		Array: wirebson.MakeArray(cap),
-	}
-}
-
 // TypesArray gets an array, decodes and converts to [*types.Array].
 func TypesArray(arr wirebson.AnyArray) (*types.Array, error) {
 	wArr, err := arr.Decode()
@@ -48,41 +41,4 @@ func TypesArray(arr wirebson.AnyArray) (*types.Array, error) {
 	}
 
 	return tArr, nil
-}
-
-// Freeze prevents array from further modifications.
-// Any methods that would modify the array will panic.
-//
-// It is safe to call Freeze multiple times.
-func (arr *Array) Freeze() {
-	arr.Array.Freeze()
-}
-
-// Len returns the number of elements in the Array.
-func (arr *Array) Len() int {
-	return arr.Array.Len()
-}
-
-// Get returns the element at the given index.
-// It panics if index is out of bounds.
-func (arr *Array) Get(index int) any {
-	return arr.Array.Get(index)
-}
-
-// Add adds a new element to the Array.
-func (arr *Array) Add(value any) error {
-	switch v := value.(type) {
-	case *Document:
-		value = v.Document
-	case *Array:
-		value = v.Array
-	}
-
-	return arr.Array.Add(value)
-}
-
-// Replace sets the value of the element at the given index.
-// It panics if index is out of bounds.
-func (arr *Array) Replace(index int, value any) error {
-	return arr.Array.Replace(index, value)
 }

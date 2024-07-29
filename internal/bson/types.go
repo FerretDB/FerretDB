@@ -166,12 +166,14 @@ func convertToTypes(v any) (any, error) {
 	}
 }
 
-// ConvertArray converts [*types.Array] to Array.
+// ConvertArray converts [*types.Array] to [*wirebson.Array].
 func ConvertArray(arr *types.Array) (*wirebson.Array, error) {
 	iter := arr.Iterator()
 	defer iter.Close()
 
-	elements := MakeArray(arr.Len())
+	elements := &Array{
+		Array: wirebson.MakeArray(arr.Len()),
+	}
 
 	for {
 		_, v, err := iter.Next()
@@ -199,7 +201,7 @@ func (arr *Array) Convert() (*types.Array, error) {
 	values := make([]any, arr.Len())
 
 	for i := range arr.Len() {
-		v, err := convertToTypes(arr.Get(i))
+		v, err := convertToTypes(arr.Array.Get(i))
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -215,12 +217,14 @@ func (arr *Array) Convert() (*types.Array, error) {
 	return res, nil
 }
 
-// ConvertDocument converts [*types.Document] to Document.
+// ConvertDocument converts [*types.Document] to [*wirebson.Document].
 func ConvertDocument(doc *types.Document) (*wirebson.Document, error) {
 	iter := doc.Iterator()
 	defer iter.Close()
 
-	res := MakeDocument(doc.Len())
+	res := &Document{
+		Document: wirebson.MakeDocument(doc.Len()),
+	}
 
 	for {
 		k, v, err := iter.Next()

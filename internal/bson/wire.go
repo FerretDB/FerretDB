@@ -18,12 +18,25 @@ import (
 	"fmt"
 
 	"github.com/FerretDB/wire"
-	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
+
+// NewOpMsg validates the document and converts it to [*wirebson.Document] to create a new OpMsg with it.
+func NewOpMsg(doc *types.Document) (*wire.OpMsg, error) {
+	if err := validateValue(doc); err != nil {
+		doc.Remove("lsid") // to simplify error message
+
+		return nil, newValidationError(fmt.Errorf("bson.NewOpMsg: validation failed for %v with: %v",
+			types.FormatAnyValue(doc),
+			err,
+		))
+	}
+
+	return wire.NewOpMsg(must.NotFail(ConvertDocument(doc)))
+}
 
 // Section0Document gets a raw document, decodes, converts to [*types.Document]
 // and validates it.
@@ -90,35 +103,4 @@ func AllSectionsDocument(msg *wire.OpMsg) (*types.Document, error) {
 	}
 
 	return res, nil
-}
-
-// NewOpMsg validates the document and converts it to [*wirebson.Document] to create a new OpMsg with it.
-func NewOpMsg(doc *types.Document) (*wire.OpMsg, error) {
-	if err := validateValue(doc); err != nil {
-		doc.Remove("lsid") // to simplify error message
-
-		return nil, newValidationError(fmt.Errorf("bson.NewOpMsg: validation failed for %v with: %v",
-			types.FormatAnyValue(doc),
-			err,
-		))
-	}
-
-	return wire.NewOpMsg(must.NotFail(ConvertDocument(doc)))
-}
-
-// TypesDocument decodes a document and converts to [*types.Document].
-func TypesDocument(doc wirebson.AnyDocument) (*types.Document, error) {
-	wDoc, err := doc.Decode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	bDoc := &Document{Document: wDoc}
-
-	tDoc, err := bDoc.Convert()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return tDoc, nil
 }
