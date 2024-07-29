@@ -46,7 +46,7 @@ They are likely to change in the future in incompatible ways; for example, we ma
 - Document Kubernetes probes by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4424
 - Refactor and document `/debug/archive` handler by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4485
 - Document logging by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4436
-- Add release blog post for FerretDB v.1.22.0 by @Fashander in https://github.com/FerretDB/FerretDB/pull/4401
+- Add release blog post for FerretDB v1.22.0 by @Fashander in https://github.com/FerretDB/FerretDB/pull/4401
 - Add blog post on running FerretDB and CloudNativePG on Kubernetes by @Fashander in https://github.com/FerretDB/FerretDB/pull/4377
 - Add blogpost on "monitoring FerretDB performance using Coroot" by @Fashander in https://github.com/FerretDB/FerretDB/pull/4279
 - Crush `.png` images by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4441
@@ -498,7 +498,7 @@ might also be needed.
 ### Documentation 📄
 
 - Clarify MongoDB version by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3653
-- Add blogpost for release v.1.15 by @Fashander in https://github.com/FerretDB/FerretDB/pull/3728
+- Add blogpost for release v1.15 by @Fashander in https://github.com/FerretDB/FerretDB/pull/3728
 - Update domain name in docs by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3757
 - Update Docusaurus to v3 by @Fashander in https://github.com/FerretDB/FerretDB/pull/3772
 - Update domain name in more places by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3802
