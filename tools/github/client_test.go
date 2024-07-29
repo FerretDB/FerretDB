@@ -67,15 +67,15 @@ func TestClient(t *testing.T) {
 		c, err := NewClient(cacheFilePath, t.Logf, t.Logf, t.Logf)
 		require.NoError(t, err)
 
-		actual, err := c.IssueStatus(ctx, "https://github.com/FerretDB/FerretDB/issues/10")
+		actual, err := c.IssueStatus(ctx, "https://github.com/FerretDB/FerretDB/issues/10", "FerretDB", 10)
 		require.NoError(t, err)
 		assert.Equal(t, IssueOpen, actual)
 
-		actual, err = c.IssueStatus(ctx, "https://github.com/FerretDB/FerretDB/issues/1")
+		actual, err = c.IssueStatus(ctx, "https://github.com/FerretDB/FerretDB/issues/1", "FerretDB", 1)
 		require.NoError(t, err)
 		assert.Equal(t, IssueClosed, actual)
 
-		actual, err = c.IssueStatus(ctx, "https://github.com/FerretDB/FerretDB/issues/999999")
+		actual, err = c.IssueStatus(ctx, "https://github.com/FerretDB/FerretDB/issues/999999", "FerretDB", 999999)
 		require.NoError(t, err)
 		assert.Equal(t, IssueNotFound, actual)
 
@@ -88,15 +88,15 @@ func TestClient(t *testing.T) {
 
 		c.c = nil
 
-		actual, err = c.IssueStatus(ctx, "https://github.com/FerretDB/FerretDB/issues/10")
+		actual, err = c.IssueStatus(ctx, "https://github.com/FerretDB/FerretDB/issues/10", "FerretDB", 10)
 		require.NoError(t, err)
 		assert.Equal(t, IssueOpen, actual)
 
-		actual, err = c.IssueStatus(ctx, "https://github.com/FerretDB/FerretDB/issues/1")
+		actual, err = c.IssueStatus(ctx, "https://github.com/FerretDB/FerretDB/issues/1", "FerretDB", 1)
 		require.NoError(t, err)
 		assert.Equal(t, IssueClosed, actual)
 
-		actual, err = c.IssueStatus(ctx, "https://github.com/FerretDB/FerretDB/issues/999999")
+		actual, err = c.IssueStatus(ctx, "https://github.com/FerretDB/FerretDB/issues/999999", "FerretDB", 999999)
 		require.NoError(t, err)
 		assert.Equal(t, IssueNotFound, actual)
 	})
