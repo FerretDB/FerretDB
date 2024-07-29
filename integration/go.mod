@@ -19,6 +19,7 @@ require (
 
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
+	github.com/FerretDB/wire v0.0.4-0.20240729011506-6b6160b9bdbe // indirect
 	github.com/SAP/go-hdb v1.10.1 // indirect
 	github.com/arl/statsviz v0.6.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
