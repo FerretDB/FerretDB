@@ -49,30 +49,8 @@ func main() {
 	checkSupportedCommands(tableFile)
 }
 
-type Analyzer interface {
-	Scan(io.Reader) error
-	Close() error
-}
-
-type SupportedCommandsAnalyzer struct {
-	client *github.Client
-	l      *log.Logger
-	failed bool
-}
-
 // issueRE represents correct {{STATUS}} | (issue)[{{URL}}] format in the markdown files containing tables.
 var issueRE = regexp.MustCompile(`\[\w+]\((\Qhttps://github.com/FerretDB/\E[-\w]+/issues/\d+)\)`)
-
-func (a SupportedCommandsAnalyzer) Scan(f io.Reader) error {
-}
-
-func (a SupportedCommandsAnalyzer) Close() error {
-	if a.failed {
-		return fmt.Errorf("One or more issues checks have failed")
-	}
-
-	return nil
-}
 
 // checkBlogFiles verifies that blog posts are correctly formatted,
 // using logf for progress reporting and fatalf for errors.
