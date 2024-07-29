@@ -435,7 +435,7 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 	case wire.OpCodeMsg:
 		var document *types.Document
 		msg := reqBody.(*wire.OpMsg)
-		document, err = bson.Section0Document(msg)
+		document, err = bson.Document(msg)
 
 		command = document.Command()
 
@@ -604,7 +604,7 @@ func (c *conn) logResponse(ctx context.Context, who string, resHeader *wire.MsgH
 	level := slog.LevelDebug
 
 	if resHeader.OpCode == wire.OpCodeMsg {
-		doc := must.NotFail(bson.Section0Document(resBody.(*wire.OpMsg)))
+		doc := must.NotFail(bson.Document(resBody.(*wire.OpMsg)))
 
 		var ok bool
 

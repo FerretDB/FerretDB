@@ -36,7 +36,7 @@ import (
 func (h *Handler) MsgRenameCollection(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	var err error
 
-	document, err := bson.Section0Document(msg)
+	document, err := bson.Document(msg)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

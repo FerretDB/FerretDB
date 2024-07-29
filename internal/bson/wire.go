@@ -38,36 +38,17 @@ func NewOpMsg(doc *types.Document) (*wire.OpMsg, error) {
 	return wire.NewOpMsg(must.NotFail(ConvertDocument(doc)))
 }
 
-// Section0Document gets a raw document, decodes, converts to [*types.Document]
-// and validates it.
-func Section0Document(msg *wire.OpMsg) (*types.Document, error) {
+// Document gets a raw document, decodes and converts to [*types.Document].
+// Then it iterates raw documents from sections 1 if any, decodes and append
+// them to the response using the section identifier.
+// It validates and returns [*types.Document].
+func Document(msg *wire.OpMsg) (*types.Document, error) {
 	rDoc, err := msg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	tDoc, err := TypesDocument(rDoc)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	if err = validateValue(tDoc); err != nil {
-		tDoc.Remove("lsid") // to simplify error message
-
-		return nil, newValidationError(fmt.Errorf("bson.Section0Document: validation failed for %v with: %v",
-			types.FormatAnyValue(tDoc),
-			err,
-		))
-	}
-
-	return tDoc, nil
-}
-
-// AllSectionsDocument first gets the document from section 0, decodes and converts to [*types.Document].
-// Then it gets raw documents from sections 1, decodes and append it to the response using section identifier.
-// It validates the document.
-func AllSectionsDocument(msg *wire.OpMsg) (*types.Document, error) {
-	res, err := TypesDocument(msg.RawSection0())
+	res, err := TypesDocument(rDoc)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

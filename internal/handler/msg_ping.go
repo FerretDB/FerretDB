@@ -33,7 +33,7 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgPing(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := bson.Section0Document(msg)
+	document, err := bson.Document(msg)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
