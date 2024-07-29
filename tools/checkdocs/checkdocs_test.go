@@ -20,6 +20,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/FerretDB/FerretDB/tools/github"
+	"github.com/FerretDB/gh"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -85,7 +87,13 @@ func TestCheckSupportedCommands(t *testing.T) {
 	buf := new(bytes.Buffer)
 	l := log.New(buf, "", 0)
 
-	a, err := NewSupportedCommandsAnalyzer(l)
+	p, err := github.CacheFilePath()
+	require.NoError(t, err)
+
+	clientDebugF := gh.NoopPrintf
+
+	// TODO: cacheDebugF clientDebugF
+	client, err := github.NewClient(p, log.Printf, log.Printf, clientDebugF)
 	require.NoError(t, err)
 
 	for name, tc := range map[string]struct {
@@ -113,9 +121,11 @@ func TestCheckSupportedCommands(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			buf.Reset()
-
 			r := strings.NewReader(tc.Payload)
-			require.NoError(t, a.Scan(r))
+
+			failed, err := checkCommands(client, r, l)
+			require.NoError(t, err)
+			assert.Equal(t, tc.ExpectedOutput != "", failed)
 
 			actualOutput := buf.String()
 			assert.Equal(t, tc.ExpectedOutput, actualOutput)
