@@ -198,7 +198,7 @@ func validateGroupKey(groupKey any) error {
 		if _, ok := fields[k]; ok {
 			return handlererrors.NewCommandErrorMsgWithArgument(
 				handlererrors.ErrGroupDuplicateFieldName,
-				fmt.Sprintf("duplicate field name specified in object literal: %s", types.FormatAnyValue(doc)),
+				fmt.Sprintf("duplicate field name specified in object literal: %s", k),
 				"$group (stage)",
 			)
 		}
