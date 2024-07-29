@@ -264,19 +264,16 @@ func verifyTags(fm []byte) error {
 // using logf for progress reporting and fatalf for errors.
 func checkSupportedCommands(file string) {
 	f, err := os.OpenFile(file, os.O_RDONLY, 0o666)
-	f.Close()
-
 	if err != nil {
 		log.Fatalf("couldn't open the file %s: %s", file, err)
 	}
 
+	defer f.Close()
+
 	p, err := github.CacheFilePath()
 	if err != nil {
-		return nil, err
-	}
-
-	if l == nil {
-		l = log.Default()
+		f.Close()
+		log.Fatal(err)
 	}
 
 	clientDebugF := gh.NoopPrintf
@@ -284,9 +281,20 @@ func checkSupportedCommands(file string) {
 	// TODO: cacheDebugF clientDebugF
 	client, err := github.NewClient(p, log.Printf, log.Printf, clientDebugF)
 	if err != nil {
-		return nil, err
+		f.Close()
+		log.Fatal(err)
 	}
 
+	failed, err := checkCommands(client, f, log.Default())
+	if err != nil {
+		f.Close()
+		log.Fatal(err)
+	}
+
+	if failed {
+		f.Close()
+		log.Fatalf("supported commands table is not formated correctly")
+	}
 }
 
 func checkCommands(client *github.Client, f io.Reader, l *log.Logger) (bool, error) {
