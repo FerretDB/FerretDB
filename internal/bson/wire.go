@@ -29,7 +29,7 @@ func NewOpMsg(doc *types.Document) (*wire.OpMsg, error) {
 	if err := validateValue(doc); err != nil {
 		doc.Remove("lsid") // to simplify error message
 
-		return nil, newValidationError(fmt.Errorf("bson.NewOpMsg: validation failed for %v with: %v",
+		return nil, newValidationError(fmt.Errorf("wire.OpMsg.Document: validation failed for %v with: %v",
 			types.FormatAnyValue(doc),
 			err,
 		))
@@ -77,7 +77,7 @@ func Document(msg *wire.OpMsg) (*types.Document, error) {
 	if err = validateValue(res); err != nil {
 		res.Remove("lsid") // to simplify error message
 
-		return nil, newValidationError(fmt.Errorf("bson.AllSectionsDocument: validation failed for %v with: %v",
+		return nil, newValidationError(fmt.Errorf("wire.OpMsg.Document: validation failed for %v with: %v",
 			types.FormatAnyValue(res),
 			err,
 		))
