@@ -46,14 +46,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	f, err := os.OpenFile(tableFile, os.O_RDONLY, 0o666)
-	f.Close()
-
-	if err != nil {
-		log.Fatalf("couldn't open the file %s: %s", tableFile, err)
-	}
-
-	checkSupportedCommands(f)
+	checkSupportedCommands(tableFile)
 }
 
 type Analyzer interface {
@@ -348,4 +341,10 @@ func verifyTags(fm []byte) error {
 // checkSupportedCommands verifies that supported-commands.md is correctly formatted,
 // using logf for progress reporting and fatalf for errors.
 func checkSupportedCommands(f io.ReadCloser) {
+	f, err := os.OpenFile(tableFile, os.O_RDONLY, 0o666)
+	f.Close()
+
+	if err != nil {
+		log.Fatalf("couldn't open the file %s: %s", tableFile, err)
+	}
 }
