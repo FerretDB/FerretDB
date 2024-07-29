@@ -262,12 +262,12 @@ func verifyTags(fm []byte) error {
 
 // checkSupportedCommands verifies that supported-commands.md is correctly formatted,
 // using logf for progress reporting and fatalf for errors.
-func checkSupportedCommands(f io.ReadCloser) {
-	f, err := os.OpenFile(tableFile, os.O_RDONLY, 0o666)
+func checkSupportedCommands(file string) {
+	f, err := os.OpenFile(file, os.O_RDONLY, 0o666)
 	f.Close()
 
 	if err != nil {
-		log.Fatalf("couldn't open the file %s: %s", tableFile, err)
+		log.Fatalf("couldn't open the file %s: %s", file, err)
 	}
 
 	p, err := github.CacheFilePath()
@@ -287,7 +287,12 @@ func checkSupportedCommands(f io.ReadCloser) {
 		return nil, err
 	}
 
+}
+
+func checkCommands(client *github.Client, f io.Reader, l *log.Logger) (bool, error) {
 	s := bufio.NewScanner(f)
+
+	var failed bool
 
 	var n int
 	for s.Scan() {
@@ -300,8 +305,8 @@ func checkSupportedCommands(f io.ReadCloser) {
 		}
 
 		if len(match) != 2 {
-			a.l.Printf("invalid [issue]({URL}) format:\n %s", line)
-			a.failed = true
+			l.Printf("invalid [issue]({URL}) format:\n %s", line)
+			failed = true
 
 			continue
 		}
@@ -309,36 +314,36 @@ func checkSupportedCommands(f io.ReadCloser) {
 		url := match[1]
 
 		var status github.IssueStatus
-		status, err := a.client.IssueStatus(context.TODO(), url)
+		status, err := client.IssueStatus(context.TODO(), url)
 
 		switch err {
 		case nil:
 			// nothing
 		case github.ErrIncorrectURL, github.ErrIncorrectIssueNumber:
-			a.failed = true
-			a.l.Print(err.Error())
+			failed = true
+			l.Print(err.Error())
 			continue
 		default:
-			return lazyerrors.Error(err)
+			return false, lazyerrors.Error(err)
 		}
 
 		switch status {
 		case github.IssueOpen:
 			// nothing
 		case github.IssueClosed:
-			a.failed = true
-			a.l.Printf("linked issue %s is closed", url)
+			failed = true
+			l.Printf("linked issue %s is closed", url)
 		case github.IssueNotFound:
-			a.failed = true
-			a.l.Printf("linked issue %s is not found", url)
+			failed = true
+			l.Printf("linked issue %s is not found", url)
 		default:
-			return lazyerrors.Errorf("unknown issue status: %s", status)
+			return false, lazyerrors.Errorf("unknown issue status: %s", status)
 		}
 	}
 
 	if err := s.Err(); err != nil {
-		return lazyerrors.Errorf("error reading input: %s", err)
+		return false, lazyerrors.Errorf("error reading input: %s", err)
 	}
 
-	return nil
+	return failed, nil
 }
