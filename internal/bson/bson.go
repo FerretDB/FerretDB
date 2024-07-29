@@ -12,29 +12,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package bson implements encoding and decoding of BSON as defined by https://bsonspec.org/spec.html.
-//
-// # Types
-//
-// The following BSON types are supported:
-//
-//	BSON                Go
-//
-//	Document/Object     *bson.Document or bson.RawDocument
-//	Array               *bson.Array    or bson.RawArray
-//
-//	Double              float64
-//	String              string
-//	Binary data         bson.Binary
-//	ObjectId            bson.ObjectID
-//	Boolean             bool
-//	Date                time.Time
-//	Null                bson.NullType
-//	Regular Expression  bson.Regex
-//	32-bit integer      int32
-//	Timestamp           bson.Timestamp
-//	64-bit integer      int64
-//
-// Composite types (Document and Array) are passed by pointers.
-// Raw composite type and scalars are passed by values.
+// Package bson converts wirebson and validates with allowed types values.
 package bson
