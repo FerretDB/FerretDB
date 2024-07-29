@@ -33,7 +33,7 @@ func Convert[T types.Type](v T) (any, error) {
 	return convertFromTypes(v)
 }
 
-// convertFromTypes is a variant of [Convert] without type parameters (generics).
+// convertFromTypes converts types package value to BSON value of wirebson package.
 //
 // Invalid types cause panics.
 func convertFromTypes(v any) (any, error) {
@@ -88,9 +88,8 @@ func convertFromTypes(v any) (any, error) {
 	}
 }
 
-// convertToTypes converts valid BSON value of that package to types package type.
+// convertToTypes converts valid BSON value of wirebson package to types package type.
 //
-// Conversions of composite types (including raw types) may cause errors.
 // Invalid types cause panics.
 func convertToTypes(v any) (any, error) {
 	switch v := v.(type) {
