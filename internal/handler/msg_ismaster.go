@@ -30,7 +30,7 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgIsMaster(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	doc, err := bson.Document(msg)
+	doc, err := bson.OpMsgDocument(msg)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
