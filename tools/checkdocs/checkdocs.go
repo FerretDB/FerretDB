@@ -41,12 +41,12 @@ func main() {
 
 	checkBlogFiles(blogFiles)
 
-	tableFile, err := filepath.Abs(filepath.Join("website", "docs", "reference", "supported-commands.md"))
+	commandsFile, err := filepath.Abs(filepath.Join("website", "docs", "reference", "supported-commands.md"))
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	checkSupportedCommands(tableFile)
+	checkSupportedCommands(commandsFile)
 }
 
 // issueRE represents correct {{STATUS}} | (issue)[{{URL}}] format in the markdown files containing tables.

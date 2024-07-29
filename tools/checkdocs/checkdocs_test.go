@@ -17,6 +17,7 @@ package main
 import (
 	"bytes"
 	"log"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -26,24 +27,21 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-//func TestReal(t *testing.T) {
-//	files, err := filepath.Glob(filepath.Join("..", "..", "website", "blog", "*.md"))
-//	require.NoError(t, err)
-//
-//	checkBlogFiles(files)
-//
-//	tableFile, err := filepath.Abs(filepath.Join("website", "docs", "reference", "supported-commands.md"))
-//	require.NoError(t, err)
-//
-//	f, err := os.OpenFile(tableFile, os.O_RDONLY, 0o666)
-//	if err != nil {
-//		log.Fatalf("couldn't open the file %s: %s", f, err)
-//	}
-//
-//	defer f.Close()
-//
-//	checkSupportedCommands(f)
-//}
+func TestReal(t *testing.T) {
+	blogFiles, err := filepath.Glob(filepath.Join("website", "blog", "*.md"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	checkBlogFiles(blogFiles)
+
+	commandsFile, err := filepath.Abs(filepath.Join("website", "docs", "reference", "supported-commands.md"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	checkSupportedCommands(commandsFile)
+}
 
 var fm = bytes.TrimSpace([]byte(`
 slug: using-ferretdb-with-studio-3t
