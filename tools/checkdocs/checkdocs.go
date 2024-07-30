@@ -98,7 +98,7 @@ func checkBlogFiles(files []string) error {
 	}
 
 	if failed {
-		return lazyerrors.Errorf("One or more blog posts are not correctly formatted")
+		return fmt.Errorf("One or more blog posts are not correctly formatted")
 	}
 
 	return nil
@@ -245,7 +245,7 @@ func verifyTags(fm []byte) error {
 }
 
 // checkSupportedCommands verifies that supported-commands.md is correctly formatted.
-func checkSupportedCommands(file string) {
+func checkSupportedCommands(file string) error {
 	f, err := os.OpenFile(file, os.O_RDONLY, 0o666)
 	if err != nil {
 		log.Fatalf("couldn't open the file %s: %s", file, err)
@@ -255,26 +255,24 @@ func checkSupportedCommands(file string) {
 
 	p, err := github.CacheFilePath()
 	if err != nil {
-		f.Close()
-		log.Fatal(err)
+		return lazyerrors.Error(err)
 	}
 
 	client, err := github.NewClient(p, log.Printf, gh.NoopPrintf, gh.NoopPrintf)
 	if err != nil {
-		f.Close()
-		log.Fatal(err)
+		return lazyerrors.Error(err)
 	}
 
 	failed, err := checkIssueURLs(client, f, log.Default())
 	if err != nil {
-		f.Close()
-		log.Fatal(err)
+		return lazyerrors.Error(err)
 	}
 
 	if failed {
-		f.Close()
-		log.Fatalf("supported commands table is not formated correctly")
+		return fmt.Errorf("supported commands table is not formated correctly")
 	}
+
+	return nil
 }
 
 // checkIssueURLs validates FerretDB issues URLs if they occure in the r [io.Reader].
