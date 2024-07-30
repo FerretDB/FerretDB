@@ -27,10 +27,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/gh"
 	"github.com/google/go-github/v57/github"
 	"github.com/rogpeppe/go-internal/lockedfile"
+
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // cacheFile stores information regarding rate limiting and the status of issues.
