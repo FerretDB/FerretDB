@@ -19,6 +19,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -254,7 +255,12 @@ func checkSupportedCommands(file string) error {
 		log.Fatalf("couldn't open the file %s: %s", file, err)
 	}
 
-	defer f.Close()
+	defer func() {
+		err = f.Close()
+		if err != nil {
+			log.Panic(err)
+		}
+	}()
 
 	p, err := github.CacheFilePath()
 	if err != nil {
@@ -309,15 +315,14 @@ func checkIssueURLs(client *github.Client, r io.Reader, l *log.Logger) (bool, er
 		var status github.IssueStatus
 		status, err := client.IssueStatus(context.TODO(), url)
 
-		switch err {
-		case nil:
+		switch {
+		case err == nil:
 			// nothing
-		case github.ErrIncorrectURL, github.ErrIncorrectIssueNumber:
-			failed = true
-			l.Print(err.Error())
-			continue
+		case errors.Is(err, github.ErrIncorrectURL),
+			errors.Is(err, github.ErrIncorrectIssueNumber):
+			log.Print(err.Error())
 		default:
-			return false, lazyerrors.Error(err)
+			log.Panic(err)
 		}
 
 		switch status {

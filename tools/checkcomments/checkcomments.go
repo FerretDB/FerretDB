@@ -17,6 +17,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"log"
 	"regexp"
@@ -101,10 +102,11 @@ func run(pass *analysis.Pass) (any, error) {
 				url := match[1]
 
 				status, err := client.IssueStatus(context.TODO(), url)
-				switch err {
-				case nil:
+				switch {
+				case err == nil:
 					// nothing
-				case github.ErrIncorrectURL, github.ErrIncorrectIssueNumber:
+				case errors.Is(err, github.ErrIncorrectURL),
+					errors.Is(err, github.ErrIncorrectIssueNumber):
 					log.Print(err.Error())
 				default:
 					log.Panic(err)
