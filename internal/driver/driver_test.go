@@ -17,14 +17,14 @@ package driver
 import (
 	"testing"
 
+	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
+	"github.com/FerretDB/wire/wireclient"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/FerretDB/FerretDB/internal/bson"
-	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 func TestDriver(t *testing.T) {
@@ -34,25 +34,25 @@ func TestDriver(t *testing.T) {
 
 	ctx := testutil.Ctx(t)
 
-	c := must.NotFail(Connect(ctx, "mongodb://127.0.0.1:47017/", testutil.Logger(t)))
+	c := must.NotFail(wireclient.Connect(ctx, "mongodb://127.0.0.1:47017/", testutil.Logger(t)))
 	t.Cleanup(func() { require.NoError(t, c.Close()) })
 
 	dbName := testutil.DatabaseName(t)
 
-	doc1 := must.NotFail(bson.NewDocument("_id", int32(0), "w", int32(2), "v", int32(1)))
-	doc2 := must.NotFail(bson.NewDocument("_id", int32(1), "v", int32(2)))
-	doc3 := must.NotFail(bson.NewDocument("_id", int32(2), "v", int32(3)))
+	doc1 := must.NotFail(wirebson.NewDocument("_id", int32(0), "w", int32(2), "v", int32(1)))
+	doc2 := must.NotFail(wirebson.NewDocument("_id", int32(1), "v", int32(2)))
+	doc3 := must.NotFail(wirebson.NewDocument("_id", int32(2), "v", int32(3)))
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/4448
 	// must.NoError(c.Authenticate(ctx))
 
 	t.Run("Drop", func(t *testing.T) {
-		dropCmd := must.NotFail(bson.NewDocument(
+		dropCmd := must.NotFail(wirebson.NewDocument(
 			"dropDatabase", int32(1),
 			"$db", dbName,
 		))
 
-		resHeader, resBody, err := c.Request(ctx, nil, must.NotFail(wire.NewOpMsg(dropCmd)))
+		resHeader, resBody, err := c.Request(ctx, must.NotFail(wire.NewOpMsg(dropCmd)))
 		require.NoError(t, err)
 		assert.NotZero(t, resHeader.RequestID)
 
@@ -64,13 +64,13 @@ func TestDriver(t *testing.T) {
 	})
 
 	t.Run("Insert", func(t *testing.T) {
-		insertCmd := must.NotFail(bson.NewDocument(
+		insertCmd := must.NotFail(wirebson.NewDocument(
 			"insert", "values",
-			"documents", must.NotFail(bson.NewArray(doc1, doc2, doc3)),
+			"documents", must.NotFail(wirebson.NewArray(doc1, doc2, doc3)),
 			"$db", dbName,
 		))
 
-		resHeader, resBody, err := c.Request(ctx, nil, must.NotFail(wire.NewOpMsg(insertCmd)))
+		resHeader, resBody, err := c.Request(ctx, must.NotFail(wire.NewOpMsg(insertCmd)))
 		require.NoError(t, err)
 		assert.NotZero(t, resHeader.RequestID)
 
@@ -86,76 +86,36 @@ func TestDriver(t *testing.T) {
 
 	var cursorID int64
 
-	expectedBatches := []*types.Array{
-		must.NotFail(types.NewArray(must.NotFail(doc1.Convert()))),
-		must.NotFail(types.NewArray(must.NotFail(doc2.Convert()))),
-		must.NotFail(types.NewArray(must.NotFail(doc3.Convert()))),
-	}
-
 	t.Run("Find", func(t *testing.T) {
-		findCmd := must.NotFail(bson.NewDocument(
+		findCmd := must.NotFail(wirebson.NewDocument(
 			"find", "values",
-			"filter", must.NotFail(bson.NewDocument()),
-			"sort", must.NotFail(bson.NewDocument("_id", int32(1))),
+			"filter", must.NotFail(wirebson.NewDocument()),
+			"sort", must.NotFail(wirebson.NewDocument("_id", int32(1))),
 			"batchSize", int32(1),
 			"$db", dbName,
 		))
 
-		resHeader, resBody, err := c.Request(ctx, nil, must.NotFail(wire.NewOpMsg(findCmd)))
+		resHeader, resBody, err := c.Request(ctx, must.NotFail(wire.NewOpMsg(findCmd)))
 		require.NoError(t, err)
 		assert.NotZero(t, resHeader.RequestID)
 
 		resMsg, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).Decode()
 		require.NoError(t, err)
 
-		cursor, err := resMsg.Get("cursor").(bson.AnyDocument).Decode()
+		cursor, err := resMsg.Get("cursor").(wirebson.AnyDocument).Decode()
 		require.NoError(t, err)
 
-		firstBatch, err := cursor.Get("firstBatch").(bson.AnyArray).Decode()
+		firstBatch, err := cursor.Get("firstBatch").(wirebson.AnyArray).Decode()
 		require.NoError(t, err)
 		cursorID = cursor.Get("id").(int64)
-
-		testutil.AssertEqual(t, expectedBatches[0], must.NotFail(firstBatch.Convert()))
 		require.NotZero(t, cursorID)
+
+		arr, err := firstBatch.Decode()
+		require.NoError(t, err)
+		require.Equal(t, 1, arr.Len())
+
+		d, err := arr.Get(0).(wirebson.AnyDocument).Decode()
+		require.NoError(t, err)
+		require.Equal(t, doc1, d)
 	})
-}
-
-func TestDriverAuthSource(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping in -short mode")
-	}
-
-	ctx := testutil.Ctx(t)
-	l := testutil.Logger(t)
-
-	for name, tc := range map[string]struct {
-		uri      string
-		expected string
-	}{
-		"Default": {
-			uri:      "mongodb://username:password@127.0.0.1:47017/",
-			expected: "admin",
-		},
-		"DefaultAuthDB": {
-			uri:      "mongodb://username:password@127.0.0.1:47017/foo",
-			expected: "foo",
-		},
-		"AuthSource": {
-			uri:      "mongodb://username:password@127.0.0.1:47017/?authSource=bar",
-			expected: "bar",
-		},
-		"DefaultAuthDBAuthSource": {
-			uri:      "mongodb://username:password@127.0.0.1:47017/foo?authSource=bar",
-			expected: "bar",
-		},
-	} {
-		t.Run(name, func(t *testing.T) {
-			c, err := Connect(ctx, tc.uri, l)
-			require.NoError(t, err)
-
-			t.Cleanup(func() { require.NoError(t, c.Close()) })
-
-			require.Equal(t, tc.expected, c.authDB)
-		})
-	}
 }

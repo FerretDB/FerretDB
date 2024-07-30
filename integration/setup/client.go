@@ -21,13 +21,13 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/FerretDB/wire/wireclient"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo"
 	"go.opentelemetry.io/otel"
 
-	"github.com/FerretDB/FerretDB/internal/driver"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
@@ -120,13 +120,13 @@ func setupClient(tb testtb.TB, ctx context.Context, uri string, disableOtel bool
 // as it doesn't make sense to proceed with other tests if we couldn't connect in one of them.
 //
 //nolint:unused // for now
-func setupClientDriver(tb testtb.TB, ctx context.Context, uri string, l *slog.Logger) *driver.Conn {
+func setupClientDriver(tb testtb.TB, ctx context.Context, uri string, l *slog.Logger) *wireclient.Conn {
 	tb.Helper()
 
 	ctx, span := otel.Tracer("").Start(ctx, "setupClientDriver")
 	defer span.End()
 
-	conn, err := driver.Connect(ctx, uri, l)
+	conn, err := wireclient.Connect(ctx, uri, l)
 	if err != nil {
 		tb.Error(err)
 		panic("setupClientDriver: " + err.Error())
