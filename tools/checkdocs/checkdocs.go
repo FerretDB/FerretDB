@@ -254,10 +254,7 @@ func checkSupportedCommands(file string) {
 		log.Fatal(err)
 	}
 
-	clientDebugF := gh.NoopPrintf
-
-	// TODO: cacheDebugF clientDebugF
-	client, err := github.NewClient(p, log.Printf, log.Printf, clientDebugF)
+	client, err := github.NewClient(p, log.Printf, gh.NoopPrintf, gh.NoopPrintf)
 	if err != nil {
 		f.Close()
 		log.Fatal(err)

@@ -88,10 +88,7 @@ func TestCheckSupportedCommands(t *testing.T) {
 	p, err := github.CacheFilePath()
 	require.NoError(t, err)
 
-	clientDebugF := gh.NoopPrintf
-
-	// TODO: cacheDebugF clientDebugF
-	client, err := github.NewClient(p, log.Printf, log.Printf, clientDebugF)
+	client, err := github.NewClient(p, log.Printf, gh.NoopPrintf, gh.NoopPrintf)
 	require.NoError(t, err)
 
 	for name, tc := range map[string]struct {
