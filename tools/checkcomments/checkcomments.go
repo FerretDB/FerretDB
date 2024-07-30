@@ -93,15 +93,17 @@ func run(pass *analysis.Pass) (any, error) {
 
 				match := todoRE.FindStringSubmatch(line)
 
-				if len(match) != 1 {
+				if len(match) != 2 {
 					pass.Reportf(c.Pos(), "invalid TODO: incorrect format")
 					continue
 				}
 
-				url := match[0]
+				url := match[1]
 
 				status, err := client.IssueStatus(context.TODO(), url)
 				switch err {
+				case nil:
+					// nothing
 				case github.ErrIncorrectURL, github.ErrIncorrectIssueNumber:
 					log.Print(err.Error())
 				default:
