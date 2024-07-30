@@ -49,7 +49,10 @@ func main() {
 		log.Fatal(err)
 	}
 
-	checkSupportedCommands(commandsFile)
+	err = checkSupportedCommands(commandsFile)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 // issueRE represents FerretDB issue url with label in Markdown format,
