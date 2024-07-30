@@ -262,7 +262,7 @@ func checkSupportedCommands(file string) {
 		log.Fatal(err)
 	}
 
-	failed, err := checkCommands(client, f, log.Default())
+	failed, err := checkIssueURLs(client, f, log.Default())
 	if err != nil {
 		f.Close()
 		log.Fatal(err)
@@ -274,8 +274,14 @@ func checkSupportedCommands(file string) {
 	}
 }
 
-func checkCommands(client *github.Client, f io.Reader, l *log.Logger) (bool, error) {
-	s := bufio.NewScanner(f)
+// checkIssueURLs validates FerretDB issues URLs if they occure in the r [io.Reader].
+// If URL formatting is invalid, the represented issue is closed or not found - the appropriate
+// message is sent to l [*log.Logger].
+
+// At the end of scan the true value is returned if any of above was detected.
+// An error is returned only if something fatal happened.
+func checkIssueURLs(client *github.Client, r io.Reader, l *log.Logger) (bool, error) {
+	s := bufio.NewScanner(r)
 
 	var failed bool
 
