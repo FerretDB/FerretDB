@@ -328,15 +328,14 @@ func checkIssueURLs(client *github.Client, r io.Reader, l *log.Logger) (bool, er
 		switch status {
 		case github.IssueOpen:
 			// nothing
-
 		case github.IssueClosed:
 			failed = true
-			l.Printf("linked issue %s is closed", url)
 
+			l.Printf("linked issue %s is closed", url)
 		case github.IssueNotFound:
 			failed = true
-			l.Printf("linked issue %s is not found", url)
 
+			l.Printf("linked issue %s is not found", url)
 		default:
 			return false, lazyerrors.Errorf("unknown issue status: %s", status)
 		}
