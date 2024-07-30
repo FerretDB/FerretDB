@@ -125,7 +125,9 @@ func TestCheckSupportedCommands(t *testing.T) {
 			buf.Reset()
 			r := strings.NewReader(tc.Payload)
 
-			failed, err := checkIssueURLs(client, r, l)
+			var failed bool
+
+			failed, err = checkIssueURLs(client, r, l)
 			require.NoError(t, err)
 			assert.Equal(t, tc.ExpectedOutput != "", failed)
 

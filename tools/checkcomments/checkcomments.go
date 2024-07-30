@@ -102,6 +102,7 @@ func run(pass *analysis.Pass) (any, error) {
 				url := match[1]
 
 				status, err := client.IssueStatus(context.TODO(), url)
+
 				switch {
 				case err == nil:
 					// nothing
