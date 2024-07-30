@@ -260,6 +260,3 @@ func (c *Client) checkIssueStatus(ctx context.Context, repo string, num int) (Is
 		return "", fmt.Errorf("unknown issue state: %q", s)
 	}
 }
-
-func ValidateURL(line string) {
-}
