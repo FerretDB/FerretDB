@@ -17,6 +17,7 @@ package main
 import (
 	"bytes"
 	"log"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -27,21 +28,27 @@ import (
 	"github.com/FerretDB/FerretDB/tools/github"
 )
 
-// func TestReal(t *testing.T) {
-// 	blogFiles, err := filepath.Glob(filepath.Join("website", "blog", "*.md"))
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
-//
-// 	checkBlogFiles(blogFiles)
-//
-// 	commandsFile, err := filepath.Abs(filepath.Join("website", "docs", "reference", "supported-commands.md"))
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
-//
-// 	checkSupportedCommands(commandsFile)
-// }
+func TestReal(t *testing.T) {
+	blogFiles, err := filepath.Glob(filepath.Join("..", "..", "website", "blog", "*.md"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = checkBlogFiles(blogFiles)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	commandsFile, err := filepath.Abs(filepath.Join("..", "..", "website", "docs", "reference", "supported-commands.md"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = checkSupportedCommands(commandsFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
 
 var fm = bytes.TrimSpace([]byte(`
 slug: using-ferretdb-with-studio-3t
@@ -96,12 +103,12 @@ func TestCheckSupportedCommands(t *testing.T) {
 		ExpectedOutput string
 	}{
 		"OpenIssueLink": {
-			Payload:        "|                 | `openIssueLink`          | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/3413) |",
+			Payload:        "|                 | `openIssueLink`          | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/3413) |", //nolint:lll // for readability
 			ExpectedOutput: "",
 		},
 
 		"ClosedIssueLink": {
-			Payload:        "|                 | `closedIssueLink`          | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1) |",
+			Payload:        "|                 | `closedIssueLink`          | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1) |", //nolint:lll // for readability
 			ExpectedOutput: "linked issue https://github.com/FerretDB/FerretDB/issues/1 is closed\n",
 		},
 
