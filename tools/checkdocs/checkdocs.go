@@ -281,7 +281,7 @@ func checkSupportedCommands(file string) error {
 // checkIssueURLs validates FerretDB issues URLs if they occure in the r [io.Reader].
 // If URL formatting is invalid, the represented issue is closed or not found - the appropriate
 // message is sent to l [*log.Logger].
-
+//
 // At the end of scan the true value is returned if any of above was detected.
 // An error is returned only if something fatal happened.
 func checkIssueURLs(client *github.Client, r io.Reader, l *log.Logger) (bool, error) {
