@@ -331,10 +331,12 @@ func checkIssueURLs(client *github.Client, r io.Reader, l *log.Logger) (bool, er
 
 		case github.IssueClosed:
 			failed = true
+
 			l.Printf("linked issue %s is closed", url)
 
 		case github.IssueNotFound:
 			failed = true
+
 			l.Printf("linked issue %s is not found", url)
 
 		default:
