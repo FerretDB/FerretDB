@@ -54,7 +54,6 @@ func main() {
 var issueRE = regexp.MustCompile(`\[\w+]\((\Qhttps://github.com/FerretDB/\E[-\w]+/issues/\d+)\)`)
 
 // checkBlogFiles verifies that blog posts are correctly formatted,
-// using logf for progress reporting and fatalf for errors.
 func checkBlogFiles(files []string) {
 	if len(files) == 0 {
 		log.Fatalf("No blog posts found")
@@ -239,8 +238,7 @@ func verifyTags(fm []byte) error {
 	return nil
 }
 
-// checkSupportedCommands verifies that supported-commands.md is correctly formatted,
-// using logf for progress reporting and fatalf for errors.
+// checkSupportedCommands verifies that supported-commands.md is correctly formatted.
 func checkSupportedCommands(file string) {
 	f, err := os.OpenFile(file, os.O_RDONLY, 0o666)
 	if err != nil {
@@ -281,9 +279,7 @@ func checkCommands(client *github.Client, f io.Reader, l *log.Logger) (bool, err
 
 	var failed bool
 
-	var n int
 	for s.Scan() {
-		n++
 		line := s.Text()
 
 		match := issueRE.FindStringSubmatch(line)
@@ -292,7 +288,7 @@ func checkCommands(client *github.Client, f io.Reader, l *log.Logger) (bool, err
 		}
 
 		if len(match) != 2 {
-			l.Printf("invalid [issue]({URL}) format:\n %s", line)
+			l.Printf("invalid Markdown URL format:\n %s", line)
 			failed = true
 
 			continue
