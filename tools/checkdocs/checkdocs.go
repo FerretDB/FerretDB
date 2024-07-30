@@ -39,7 +39,10 @@ func main() {
 		log.Fatal(err)
 	}
 
-	checkBlogFiles(blogFiles)
+	err = checkBlogFiles(blogFiles)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	commandsFile, err := filepath.Abs(filepath.Join("website", "docs", "reference", "supported-commands.md"))
 	if err != nil {
@@ -54,10 +57,10 @@ func main() {
 // It returns url as a submatch.
 var issueRE = regexp.MustCompile(`\[\w+]\((\Qhttps://github.com/FerretDB/\E[-\w]+/issues/\d+)\)`)
 
-// checkBlogFiles verifies that blog posts are correctly formatted,
-func checkBlogFiles(files []string) {
+// checkBlogFiles verifies that blog posts are correctly formatted.
+func checkBlogFiles(files []string) error {
 	if len(files) == 0 {
-		log.Fatalf("No blog posts found")
+		return lazyerrors.Errorf("No blog posts found")
 	}
 
 	var failed bool
@@ -65,12 +68,12 @@ func checkBlogFiles(files []string) {
 	for _, file := range files {
 		fileInBytes, err := os.ReadFile(file)
 		if err != nil {
-			log.Fatalf("Couldn't read file %s: %s", file, err)
+			return lazyerrors.Errorf("Couldn't read file %s: %s", file, err)
 		}
 
 		b, err := extractFrontMatter(fileInBytes)
 		if err != nil {
-			log.Fatalf("Couldn't extract front matter from %s: %s", file, err)
+			return lazyerrors.Errorf("Couldn't extract front matter from %s: %s", file, err)
 		}
 
 		if err = verifySlug(filepath.Base(file), b); err != nil {
@@ -95,8 +98,10 @@ func checkBlogFiles(files []string) {
 	}
 
 	if failed {
-		log.Fatalf("One or more blog posts are not correctly formatted")
+		return lazyerrors.Errorf("One or more blog posts are not correctly formatted")
 	}
+
+	return nil
 }
 
 // verifyTruncateString checks that the truncate string is present.

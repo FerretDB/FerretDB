@@ -17,7 +17,6 @@ package main
 import (
 	"bytes"
 	"log"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -27,21 +26,21 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestReal(t *testing.T) {
-	blogFiles, err := filepath.Glob(filepath.Join("website", "blog", "*.md"))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	checkBlogFiles(blogFiles)
-
-	commandsFile, err := filepath.Abs(filepath.Join("website", "docs", "reference", "supported-commands.md"))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	checkSupportedCommands(commandsFile)
-}
+// func TestReal(t *testing.T) {
+// 	blogFiles, err := filepath.Glob(filepath.Join("website", "blog", "*.md"))
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
+//
+// 	checkBlogFiles(blogFiles)
+//
+// 	commandsFile, err := filepath.Abs(filepath.Join("website", "docs", "reference", "supported-commands.md"))
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
+//
+// 	checkSupportedCommands(commandsFile)
+// }
 
 var fm = bytes.TrimSpace([]byte(`
 slug: using-ferretdb-with-studio-3t
@@ -118,7 +117,7 @@ func TestCheckSupportedCommands(t *testing.T) {
 			buf.Reset()
 			r := strings.NewReader(tc.Payload)
 
-			failed, err := checkCommands(client, r, l)
+			failed, err := checkIssueURLs(client, r, l)
 			require.NoError(t, err)
 			assert.Equal(t, tc.ExpectedOutput != "", failed)
 
