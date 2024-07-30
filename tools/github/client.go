@@ -111,12 +111,20 @@ func CacheFilePath() (string, error) {
 	return filepath.Join(dir, "tmp", "githubcache", "cache.json"), nil
 }
 
-// urlRE represents correct // TODO comment format.
-var urlRE = regexp.MustCompile(`^\Qhttps://github.com/FerretDB/\E([-\w]+)/issues/(\d+)$`)
+var (
+	// urlRE represents correctly formated FerretDB issue.
+	// It returns repository name and the issue number as it's submatches.
+	urlRE = regexp.MustCompile(`^\Qhttps://github.com/FerretDB/\E([-\w]+)/issues/(\d+)$`)
 
-var ErrIncorrectURL = errors.New("invalid TODO: incorrect format")
-var ErrIncorrectIssueNumber = errors.New("invalid TODO: incorrect issue number")
+	// ErrIncorrectURL indicates that FerretDB issue URL is formatted incorrectly.
+	ErrIncorrectURL = errors.New("invalid TODO: incorrect format")
+	// ErrIncorrectIssueNumber indicates that FerretDB issue number is formatted incorrectly.
+	ErrIncorrectIssueNumber = errors.New("invalid TODO: incorrect issue number")
+)
 
+// parseIssueURL takes the properly formated FerretDB issue URL and returns it's
+// repository name and issue number.
+// If the issue number or URL formatting is incorrect, the error is returned.
 func parseIssueURL(line string) (repo string, num int, err error) {
 	match := urlRE.FindStringSubmatch(line)
 
@@ -139,7 +147,8 @@ func parseIssueURL(line string) (repo string, num int, err error) {
 // IssueStatus returns issue status.
 // It uses cache.
 //
-// Returned error is something fatal.
+// If URL formatting is incorrect it returns `ErrIncorrectURL`, or `ErrIncorrectIssueNumber` error.
+// Any other error means something fatal.
 // On rate limit, the error is logged once and (issueOpen, nil) is returned.
 func (c *Client) IssueStatus(ctx context.Context, url string) (IssueStatus, error) {
 	start := time.Now()
