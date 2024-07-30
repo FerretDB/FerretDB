@@ -49,7 +49,8 @@ func main() {
 	checkSupportedCommands(commandsFile)
 }
 
-// issueRE represents correct {{STATUS}} | (issue)[{{URL}}] format in the markdown files containing tables.
+// issueRE represents FerretDB issue url with label in Markdown format,
+// such as: `[Label](https://github.com/FerretDB/FerretDB/issues/1)`.
 var issueRE = regexp.MustCompile(`\[\w+]\((\Qhttps://github.com/FerretDB/\E[-\w]+/issues/\d+)\)`)
 
 // checkBlogFiles verifies that blog posts are correctly formatted,
