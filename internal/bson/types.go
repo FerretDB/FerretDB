@@ -529,10 +529,10 @@ func TypesDocument(d wirebson.AnyDocument) (*types.Document, error) {
 	fields := doc.FieldNames()
 	pairs := make([]any, 0, len(fields)*2)
 
-	for _, f := range fields {
-		var v any
+	for i := range fields {
+		f, v := doc.GetByIndex(i)
 
-		if v, err = convertToTypes(doc.Get(f)); err != nil {
+		if v, err = convertToTypes(v); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
