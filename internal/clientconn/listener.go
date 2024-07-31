@@ -120,7 +120,8 @@ func Listen(opts *NewListenerOpts) (*Listener, error) {
 		var config *tls.Config
 
 		if config, err = tlsutil.Config(l.TLSCertFile, l.TLSKeyFile, l.TLSCAFile); err != nil {
-			return nil, lazyerrors.Error(err)
+			// this error is user visible, do not use lazyerror as it makes less readable
+			return nil, err
 		}
 
 		if l.tlsListener, err = tls.Listen("tcp", l.TLS, config); err != nil {
