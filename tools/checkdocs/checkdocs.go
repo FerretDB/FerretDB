@@ -319,7 +319,7 @@ func checkIssueURLs(client *github.Client, r io.Reader, l *log.Logger) (bool, er
 			// nothing
 		case errors.Is(err, github.ErrIncorrectURL),
 			errors.Is(err, github.ErrIncorrectIssueNumber):
-			log.Print(err.Error())
+			l.Print(err.Error())
 		default:
 			log.Panic(err)
 		}
