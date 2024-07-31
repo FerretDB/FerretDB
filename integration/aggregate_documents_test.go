@@ -206,9 +206,6 @@ func TestAggregateGroupErrors(t *testing.T) {
 				Name:    "Location16406",
 				Message: "duplicate field name specified in object literal: { v: \"$v\", v: \"$non-existent\" }",
 			},
-			// message is different due to wirebson package cannot get values of duplicate field names
-			// TODO https://github.com/FerretDB/FerretDB/issues/2412
-			altMessage: "duplicate field name specified in object literal: v",
 		},
 		"IDExpressionEmptyPath": {
 			pipeline: bson.A{

@@ -307,10 +307,6 @@ func TestQueryProjectionPositionalOperatorCompat(t *testing.T) {
 				{"v", bson.D{{"$gt", 41}}},
 			},
 			projection: bson.D{{"v.$", true}},
-			// FerretDB wirebson package only gets the first filter value due to
-			// the duplicate key causing the second filter value to be ignored
-			// TODO https://github.com/FerretDB/FerretDB/issues/2412
-			skip: "https://github.com/FerretDB/FerretDB/issues/2412",
 		},
 		"TwoConflictingLtGt": {
 			filter: bson.D{
