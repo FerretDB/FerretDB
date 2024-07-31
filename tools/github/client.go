@@ -30,8 +30,6 @@ import (
 	"github.com/FerretDB/gh"
 	"github.com/google/go-github/v57/github"
 	"github.com/rogpeppe/go-internal/lockedfile"
-
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // cacheFile stores information regarding rate limiting and the status of issues.
@@ -135,14 +133,18 @@ func parseIssueURL(line string) (repo string, num int, err error) {
 	}
 
 	repo = match[1]
-	num = must.NotFail(strconv.Atoi(match[2]))
 
-	if num <= 0 {
+	num, err = strconv.Atoi(match[2])
+
+	switch {
+	case err != nil:
+		panic(err)
+	case num <= 0:
 		err = ErrIncorrectIssueNumber
 		return
+	default:
+		return
 	}
-
-	return
 }
 
 // IssueStatus returns issue status.
