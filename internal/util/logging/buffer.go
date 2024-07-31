@@ -17,10 +17,9 @@ package logging
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"sync"
 	"time"
-
-	"go.uber.org/zap/zapcore"
 
 	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -33,7 +32,7 @@ var RecentEntries = NewCircularBuffer(1024)
 // circularBuffer is a storage of log records in memory.
 type circularBuffer struct {
 	mu      sync.RWMutex
-	records []*zapcore.Entry
+	records []*slog.Record
 	index   int
 }
 
@@ -44,32 +43,32 @@ func NewCircularBuffer(size int) *circularBuffer {
 	}
 
 	return &circularBuffer{
-		records: make([]*zapcore.Entry, size),
+		records: make([]*slog.Record, size),
 	}
 }
 
 // add adds an entry in circularBuffer.
-func (cb *circularBuffer) add(record zapcore.Entry) {
+func (cb *circularBuffer) add(record *slog.Record) {
 	cb.mu.Lock()
 	defer cb.mu.Unlock()
 
-	cb.records[cb.index] = &record
+	cb.records[cb.index] = record
 	cb.index = (cb.index + 1) % len(cb.records)
 }
 
 // get returns entries from circularBuffer.
-func (cb *circularBuffer) get() []zapcore.Entry {
+func (cb *circularBuffer) get() []*slog.Record {
 	cb.mu.RLock()
 	defer cb.mu.RUnlock()
 
 	l := len(cb.records)
-	res := make([]zapcore.Entry, 0, l)
+	res := make([]*slog.Record, 0, l)
 
 	for n := range l {
 		i := (cb.index + n) % l
 
 		if r := cb.records[i]; r != nil {
-			res = append(res, *r)
+			res = append(res, r)
 		}
 	}
 

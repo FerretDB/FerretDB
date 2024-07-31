@@ -17,8 +17,7 @@ package common
 import (
 	"errors"
 	"fmt"
-
-	"go.uber.org/zap"
+	"log/slog"
 
 	"github.com/FerretDB/FerretDB/internal/handler/commonpath"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
@@ -49,7 +48,7 @@ type DistinctParams struct {
 }
 
 // GetDistinctParams returns `distinct` command parameters.
-func GetDistinctParams(document *types.Document, l *zap.Logger) (*DistinctParams, error) {
+func GetDistinctParams(document *types.Document, l *slog.Logger) (*DistinctParams, error) {
 	var dp DistinctParams
 
 	err := handlerparams.ExtractParams(document, "distinct", &dp, l)

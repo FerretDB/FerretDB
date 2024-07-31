@@ -20,6 +20,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite"
 	"github.com/FerretDB/FerretDB/internal/handler"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/logging"
 )
 
 // init registers "sqlite" handler.
@@ -27,7 +28,7 @@ func init() {
 	registry["sqlite"] = func(opts *NewHandlerOpts) (*handler.Handler, CloseBackendFunc, error) {
 		b, err := sqlite.NewBackend(&sqlite.NewBackendParams{
 			URI:       opts.SQLiteURL,
-			L:         opts.Logger.Named("sqlite"),
+			L:         logging.WithName(opts.Logger, "sqlite"),
 			P:         opts.StateProvider,
 			BatchSize: opts.BatchSize,
 		})
@@ -45,7 +46,7 @@ func init() {
 			SetupPassword: opts.SetupPassword,
 			SetupTimeout:  opts.SetupTimeout,
 
-			L:             opts.Logger.Named("sqlite"),
+			L:             logging.WithName(opts.Logger, "sqlite"),
 			ConnMetrics:   opts.ConnMetrics,
 			StateProvider: opts.StateProvider,
 

@@ -62,8 +62,8 @@ func WithName(l *slog.Logger, name string) *slog.Logger {
 	return l.With(slog.String(nameKey, name))
 }
 
-// setupSlog initializes slog logging with given options and UUID.
-func setupSlog(opts *NewHandlerOpts, uuid string) {
+// Setup initializes slog logging with given options and UUID.
+func Setup(opts *NewHandlerOpts, uuid string) {
 	must.NotBeZero(opts)
 
 	h := NewHandler(os.Stderr, opts)
@@ -74,5 +74,5 @@ func setupSlog(opts *NewHandlerOpts, uuid string) {
 	}
 
 	slog.SetDefault(l)
-	// slog.SetLogLoggerLevel(slog.LevelInfo + 2)
+	slog.SetLogLoggerLevel(slog.LevelInfo + 2)
 }

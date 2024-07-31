@@ -19,19 +19,19 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"log/slog"
 	"math/rand"
 	"net"
-	"runtime/pprof"
 	"sync"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handler"
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/tlsutil"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -42,7 +42,7 @@ import (
 type Listener struct {
 	*NewListenerOpts
 
-	ll *zap.Logger
+	ll *slog.Logger
 
 	tcpListener  net.Listener
 	unixListener net.Listener
@@ -72,13 +72,13 @@ type NewListenerOpts struct {
 	Mode           Mode
 	Metrics        *connmetrics.ListenerMetrics
 	Handler        *handler.Handler
-	Logger         *zap.Logger
+	Logger         *slog.Logger
 	TestRecordsDir string // if empty, no records are created
 }
 
 // Listen creates a new listener and starts listening on configured interfaces.
 func Listen(opts *NewListenerOpts) (*Listener, error) {
-	ll := opts.Logger.Named("listener")
+	ll := logging.WithName(opts.Logger, "listener")
 	l := &Listener{
 		NewListenerOpts:   opts,
 		ll:                ll,
@@ -102,7 +102,7 @@ func Listen(opts *NewListenerOpts) (*Listener, error) {
 		}
 
 		close(l.tcpListenerReady)
-		ll.Sugar().Infof("Listening on TCP %s...", l.TCPAddr())
+		ll.Info(fmt.Sprintf("Listening on TCP %s...", l.TCPAddr()))
 	}
 
 	if l.Unix != "" {
@@ -111,7 +111,7 @@ func Listen(opts *NewListenerOpts) (*Listener, error) {
 		}
 
 		close(l.unixListenerReady)
-		ll.Sugar().Infof("Listening on Unix %s...", l.UnixAddr())
+		ll.Info(fmt.Sprintf("Listening on Unix %s...", l.UnixAddr()))
 	}
 
 	if l.TLS != "" {
@@ -126,7 +126,7 @@ func Listen(opts *NewListenerOpts) (*Listener, error) {
 		}
 
 		close(l.tlsListenerReady)
-		ll.Sugar().Infof("Listening on TLS %s...", l.TLSAddr())
+		ll.Info(fmt.Sprintf("Listening on TLS %s...", l.TLSAddr()))
 	}
 
 	return l, nil
@@ -156,7 +156,7 @@ func (l *Listener) Run(ctx context.Context) {
 
 		go func() {
 			defer func() {
-				l.ll.Sugar().Infof("%s stopped.", l.TCPAddr())
+				l.ll.Info(fmt.Sprintf("%s stopped.", l.TCPAddr()))
 				wg.Done()
 			}()
 
@@ -169,7 +169,7 @@ func (l *Listener) Run(ctx context.Context) {
 
 		go func() {
 			defer func() {
-				l.ll.Sugar().Infof("%s stopped.", l.UnixAddr())
+				l.ll.InfoContext(ctx, fmt.Sprintf("%s stopped.", l.UnixAddr()))
 				wg.Done()
 			}()
 
@@ -182,7 +182,7 @@ func (l *Listener) Run(ctx context.Context) {
 
 		go func() {
 			defer func() {
-				l.ll.Sugar().Infof("%s stopped.", l.TLSAddr())
+				l.ll.InfoContext(ctx, fmt.Sprintf("%s stopped.", l.TLSAddr()))
 				wg.Done()
 			}()
 
@@ -206,7 +206,7 @@ func (l *Listener) Run(ctx context.Context) {
 
 	close(l.listenersClosed)
 
-	l.ll.Info("Waiting for all connections to stop...")
+	l.ll.InfoContext(ctx, "Waiting for all connections to stop...")
 	wg.Wait()
 
 	l.Handler.Close()
@@ -227,7 +227,7 @@ func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, 
 
 			l.Metrics.Accepts.WithLabelValues("1").Inc()
 
-			l.ll.Warn("Failed to accept connection", zap.Error(err))
+			l.ll.WarnContext(ctx, "Failed to accept connection", logging.Error(err))
 			if !errors.Is(err, net.ErrClosed) {
 				retry++
 				ctxutil.SleepWithJitter(ctx, time.Second, retry)
@@ -265,14 +265,10 @@ func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, 
 
 			connID := fmt.Sprintf("%s -> %s", remoteAddr, netConn.LocalAddr())
 
-			defer pprof.SetGoroutineLabels(connCtx)
-			connCtx = pprof.WithLabels(connCtx, pprof.Labels("conn", connID))
-			pprof.SetGoroutineLabels(connCtx)
-
 			opts := &newConnOpts{
 				netConn:     netConn,
 				mode:        l.Mode,
-				l:           l.Logger.Named("// " + connID + " "), // derive from the original unnamed logger
+				l:           logging.WithName(l.Logger, "// "+connID+" "), // derive from the original unnamed logger
 				handler:     l.Handler,
 				connMetrics: l.Metrics.ConnMetrics, // share between all conns
 
@@ -286,19 +282,19 @@ func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, 
 
 			conn, connErr := newConn(opts)
 			if connErr != nil {
-				l.ll.Warn("Failed to create connection", zap.String("conn", connID), zap.Error(connErr))
+				l.ll.WarnContext(ctx, "Failed to create connection", slog.String("conn", connID), logging.Error(connErr))
 				return
 			}
 
-			l.ll.Info("Connection started", zap.String("conn", connID))
+			l.ll.InfoContext(ctx, "Connection started", slog.String("conn", connID))
 
 			connErr = conn.run(connCtx)
 			if errors.Is(connErr, wire.ErrZeroRead) {
 				connErr = nil
 
-				l.ll.Info("Connection stopped", zap.String("conn", connID))
+				l.ll.InfoContext(ctx, "Connection stopped", slog.String("conn", connID))
 			} else {
-				l.ll.Warn("Connection stopped", zap.String("conn", connID), zap.Error(connErr))
+				l.ll.WarnContext(ctx, "Connection stopped", slog.String("conn", connID), logging.Error(connErr))
 			}
 		}()
 	}

@@ -16,6 +16,7 @@ package setup
 
 import (
 	"context"
+	"log/slog"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -23,11 +24,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel"
-	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/handler/registry"
-	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/password"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
@@ -101,13 +100,11 @@ func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath, newAuthDB string
 
 // setupListener starts in-process FerretDB server that runs until ctx is canceled.
 // It returns basic MongoDB URI for that listener.
-func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *BackendOpts) string {
+func setupListener(tb testtb.TB, ctx context.Context, logger *slog.Logger, opts *BackendOpts) string {
 	tb.Helper()
 
-	_, span := otel.Tracer("").Start(ctx, "setupListener")
+	ctx, span := otel.Tracer("").Start(ctx, "setupListener")
 	defer span.End()
-
-	defer observability.FuncCall(ctx)()
 
 	require.Empty(tb, *targetURLF, "-target-url must be empty for in-process FerretDB")
 
@@ -249,7 +246,10 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 	go func() {
 		defer close(runDone)
 
-		l.Run(ctx)
+		runCtx, runSpan := otel.Tracer("").Start(ctx, "setupListener.Run")
+		defer runSpan.End()
+
+		l.Run(runCtx)
 	}()
 
 	// ensure that all listener's and handler's logs are written before test ends
@@ -272,7 +272,7 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger, opts *
 
 	uri := listenerMongoDBURI(tb, hostPort, unixSocketPath, handlerOpts.SetupDatabase, tlsAndAuth)
 
-	logger.Info("Listener started", zap.String("handler", handler), zap.String("uri", uri))
+	logger.InfoContext(ctx, "Listener started", slog.String("handler", handler), slog.String("uri", uri))
 
 	return uri
 }

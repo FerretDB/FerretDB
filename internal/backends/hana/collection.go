@@ -18,8 +18,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"sort"
-	"strings"
 
 	"github.com/SAP/go-hdb/driver"
 	"github.com/google/uuid"
@@ -36,48 +34,25 @@ import (
 // A collection in HANA is either stored in a table or as a column of a table. The column representation
 // not supported yet.
 type collection struct {
-	hdb    *fsql.DB
-	schema string
-	table  string
-	// column string
+	hdb      *fsql.DB
+	database string
+	name     string
 }
 
 // newCollection creates a new Collection.
-func newCollection(hdb *fsql.DB, schema, table string) backends.Collection {
+func newCollection(hdb *fsql.DB, database, name string) backends.Collection {
 	return backends.CollectionContract(&collection{
-		hdb:    hdb,
-		schema: schema,
-		table:  table,
+		hdb:      hdb,
+		database: database,
+		name:     name,
 	})
 }
 
-// Helperfunction to check if database and collection exist on hana.
-func (c *collection) checkSchemaAndCollectionExists(ctx context.Context) error {
-	s, err := schemaExists(ctx, c.hdb, c.schema)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	if !s {
-		return lazyerrors.Errorf("Database %q does not exist!", c.schema)
-	}
-
-	col, err := collectionExists(ctx, c.hdb, c.schema, c.table)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	if !col {
-		return lazyerrors.Errorf("Collection %q does not exist!", c.table)
-	}
-
-	return nil
-}
-
+// generateQuery generates the HANA SQL query for the given filter and sort.
 func (c *collection) generateQuery(filter, sort *types.Document) (string, error) {
-	selectClause := prepareSelectClause(c.schema, c.table)
+	selectClause := prepareSelectClause(c.database, c.name)
 
-	whereClause, err := prepareWhereClause(c.table, filter)
+	whereClause, err := prepareWhereClause(c.name, filter)
 	if err != nil {
 		return "", lazyerrors.Error(err)
 	}
@@ -96,9 +71,26 @@ func (c *collection) generateQuery(filter, sort *types.Document) (string, error)
 
 // Query implements backends.Collection interface.
 func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*backends.QueryResult, error) {
-	err := c.checkSchemaAndCollectionExists(ctx)
+	db, err := databaseExists(ctx, c.hdb, c.database)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
+	}
+
+	if !db {
+		return &backends.QueryResult{
+			Iter: newQueryIterator(ctx, nil),
+		}, nil
+	}
+
+	col, err := collectionExists(ctx, c.hdb, c.database, c.name)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if !col {
+		return &backends.QueryResult{
+			Iter: newQueryIterator(ctx, nil),
+		}, nil
 	}
 
 	sql, err := c.generateQuery(params.Filter, params.Sort)
@@ -118,17 +110,17 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 // InsertAll implements backends.Collection interface.
 func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllParams) (*backends.InsertAllResult, error) {
-	err := createSchemaIfNotExists(ctx, c.hdb, c.schema)
+	err := createDatabaseIfNotExists(ctx, c.hdb, c.database)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	err = createCollectionIfNotExists(ctx, c.hdb, c.schema, c.table)
+	err = createCollectionIfNotExists(ctx, c.hdb, c.database, c.name)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	insertSQL := "INSERT INTO %q.%q values('%s')"
+	insertSQL := "INSERT INTO %q.%q VALUES('%s')"
 
 	for _, doc := range params.Docs {
 		jsonBytes, err := marshalHana(doc)
@@ -136,7 +128,7 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 			return nil, lazyerrors.Error(err)
 		}
 
-		line := fmt.Sprintf(insertSQL, c.schema, c.table, jsonBytes)
+		line := fmt.Sprintf(insertSQL, c.database, c.name, jsonBytes)
 
 		_, err = c.hdb.ExecContext(ctx, line)
 		if err != nil {
@@ -149,14 +141,26 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 
 // UpdateAll implements backends.Collection interface.
 func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllParams) (*backends.UpdateAllResult, error) {
-	var res backends.UpdateAllResult
-
-	err := c.checkSchemaAndCollectionExists(ctx)
+	db, err := databaseExists(ctx, c.hdb, c.database)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	updateSQL := "UPDATE %q.%q SET %q = parse_json('%s') WHERE \"_id\" = %s"
+	var res backends.UpdateAllResult
+	if !db {
+		return &res, nil
+	}
+
+	col, err := collectionExists(ctx, c.hdb, c.database, c.name)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if !col {
+		return &res, nil
+	}
+
+	updateSQL := "UPDATE %q.%q SET %q = parse_json('%s') WHERE \"_id\" = '%s'"
 
 	for _, doc := range params.Docs {
 		jsonBytes, err := marshalHana(doc)
@@ -167,9 +171,7 @@ func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllPa
 		id, _ := doc.Get("_id")
 		must.NotBeZero(id)
 
-		id = jsonToHanaQueryString(string(must.NotFail(sjson.MarshalSingleValue(id))))
-
-		line := fmt.Sprintf(updateSQL, c.schema, c.table, c.table, jsonBytes, id)
+		line := fmt.Sprintf(updateSQL, c.database, c.name, c.name, jsonBytes, id)
 
 		execResult, err := c.hdb.ExecContext(ctx, line)
 		if err != nil {
@@ -189,9 +191,22 @@ func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllPa
 
 // DeleteAll implements backends.Collection interface.
 func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllParams) (*backends.DeleteAllResult, error) {
-	err := c.checkSchemaAndCollectionExists(ctx)
+	db, err := databaseExists(ctx, c.hdb, c.database)
 	if err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
+	}
+
+	if !db {
+		return &backends.DeleteAllResult{Deleted: 0}, nil
+	}
+
+	col, err := collectionExists(ctx, c.hdb, c.database, c.name)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if !col {
+		return &backends.DeleteAllResult{Deleted: 0}, nil
 	}
 
 	var res backends.DeleteAllResult
@@ -199,7 +214,7 @@ func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllPa
 
 	for _, id := range params.IDs {
 		idString := jsonToHanaQueryString(string(must.NotFail(sjson.MarshalSingleValue(id))))
-		line := fmt.Sprintf(deleteSQL, c.schema, c.table, idString)
+		line := fmt.Sprintf(deleteSQL, c.database, c.name, idString)
 
 		execResult, err := c.hdb.ExecContext(ctx, line)
 		if err != nil {
@@ -221,13 +236,30 @@ func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllPa
 func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams) (*backends.ExplainResult, error) {
 	// HANATODO HANA does not provide explain plan in json format. We need a conversion here.
 
-	err := c.checkSchemaAndCollectionExists(ctx)
+	db, err := databaseExists(ctx, c.hdb, c.database)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
+	if !db {
+		return &backends.ExplainResult{
+			QueryPlanner: must.NotFail(types.NewDocument()),
+		}, nil
+	}
+
+	col, err := collectionExists(ctx, c.hdb, c.database, c.name)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if !col {
+		return &backends.ExplainResult{
+			QueryPlanner: must.NotFail(types.NewDocument()),
+		}, nil
+	}
+
 	// Generate uuid for explain plan statement name.
-	explainUUID := c.schema + "_" + c.table + "_" + uuid.New().String()
+	explainUUID := c.database + "_" + c.name + "_" + uuid.New().String()
 
 	querySQL, err := c.generateQuery(params.Filter, params.Sort)
 	if err != nil {
@@ -295,12 +327,60 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 func (c *collection) Stats(ctx context.Context, params *backends.CollectionStatsParams) (*backends.CollectionStatsResult, error) {
 	var res backends.CollectionStatsResult
 
-	err := c.checkSchemaAndCollectionExists(ctx)
+	db, err := databaseExists(ctx, c.hdb, c.database)
 	if err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
-	// HANATODO Fill out collection stats
+	if !db {
+		return nil, backends.NewError(
+			backends.ErrorCodeCollectionDoesNotExist,
+			lazyerrors.Errorf("no ns %s.%s", c.database, c.name),
+		)
+	}
+
+	col, err := collectionExists(ctx, c.hdb, c.database, c.name)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if !col {
+		return nil, backends.NewError(
+			backends.ErrorCodeCollectionDoesNotExist,
+			lazyerrors.Errorf("no ns %s.%s", c.database, c.name),
+		)
+	}
+
+	queryCountDocuments := "SELECT count(*) FROM %q.%q"
+	queryCountDocuments = fmt.Sprintf(queryCountDocuments, c.database, c.name)
+
+	countDocuments, err := querySingleInt(queryCountDocuments, ctx, c.hdb)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	querySizeTotal := "SELECT COALESCE(SUM(TABLE_SIZE),0) FROM M_TABLES " +
+		"WHERE SCHEMA_NAME = '%s' AND TABLE_NAME = '%s'"
+	querySizeTotal = fmt.Sprintf(querySizeTotal, c.database, c.name)
+
+	sizeTotal, err := querySingleInt(querySizeTotal, ctx, c.hdb)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	queryFreeMemory := "SELECT FREE_PHYSICAL_MEMORY  FROM M_HOST_RESOURCE_UTILIZATION"
+
+	freeMemory, err := querySingleInt(queryFreeMemory, ctx, c.hdb)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	res.CountDocuments = countDocuments
+	res.SizeCollection = sizeTotal
+	res.SizeIndexes = 1 // see database.Stats
+	res.SizeTotal = res.SizeCollection + res.SizeIndexes
+	// Note: this does currently not take capped collections into account.
+	res.SizeFreeStorage = freeMemory
 
 	return &res, nil
 }
@@ -311,115 +391,21 @@ func (c *collection) Compact(ctx context.Context, params *backends.CompactParams
 	return new(backends.CompactResult), nil
 }
 
-// Prefixes an index with the collection name to store it in hana.
-//
-// Reasoning:
-// Hana DocStore stores indexes on a schema/database level, that may cause
-// confilts for indexes of different collections having the same name (eg col1.idx and col2.idx).
-func (c *collection) prefixIndexName(indexName string) string {
-	return fmt.Sprintf("%s__%s", c.table, indexName)
-}
-
-// Removes the prefix of an index name.
-func (c *collection) removeIndexNamePrefix(prefixedIndex string) string {
-	prefix := fmt.Sprintf("%s__", c.table)
-	return strings.Replace(prefixedIndex, prefix, "", 1)
-}
-
 // ListIndexes implements backends.Collection interface.
 func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndexesParams) (*backends.ListIndexesResult, error) {
-	err := c.checkSchemaAndCollectionExists(ctx)
-	if err != nil {
-		return nil, err
-	}
-	sql := "SELECT idx.INDEX_NAME, idx.COLUMN_NAME, idx.ASCENDING_ORDER " +
-		"FROM INDEX_COLUMNS idx, M_TABLES tbl " +
-		"WHERE idx.SCHEMA_NAME = '%s' AND idx.TABLE_NAME = '%s' AND " +
-		"idx.SCHEMA_NAME = tbl.SCHEMA_NAME AND idx.TABLE_NAME = tbl.TABLE_NAME AND " +
-		"tbl.TABLE_TYPE = 'COLLECTION'"
-
-	sql = fmt.Sprintf(sql, c.schema, c.table)
-
-	rows, err := c.hdb.QueryContext(ctx, sql)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	defer rows.Close()
-
-	var indexes []backends.IndexInfo
-
-	for rows.Next() {
-		var idxName, idxColName string
-		var ascending bool
-
-		err = rows.Scan(&idxName, &idxColName, &ascending)
-		if err != nil {
-			return nil, lazyerrors.Error(nil)
-		}
-
-		indexes = append(indexes, backends.IndexInfo{
-			Name:   c.removeIndexNamePrefix(idxName),
-			Unique: true, // HANATODO: Is this possible to query from HANA?
-			Key:    []backends.IndexKeyPair{{Field: idxColName, Descending: !ascending}},
-		})
-	}
-
-	res := backends.ListIndexesResult{Indexes: indexes}
-
-	sort.Slice(res.Indexes, func(i, j int) bool {
-		return res.Indexes[i].Name < res.Indexes[j].Name
-	})
-
-	return &res, nil
-}
-
-func indexExists(indexes []backends.IndexInfo, indexToFind string) bool {
-	for _, idx := range indexes {
-		if idx.Name == indexToFind {
-			return true
-		}
-	}
-
-	return false
+	return listIndexes(ctx, c.hdb, c.database, c.name)
 }
 
 // CreateIndexes implements backends.Collection interface.
 func (c *collection) CreateIndexes(ctx context.Context, params *backends.CreateIndexesParams) (*backends.CreateIndexesResult, error) { //nolint:lll // for readability
-	err := c.checkSchemaAndCollectionExists(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	existingIndexes, err := c.ListIndexes(ctx, new(backends.ListIndexesParams))
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	sql := "CREATE HASH INDEX %q.%q ON %q.%q(%q)"
-
-	var createStmt string
-
-	// HANATODO Can we support more than one field for indexes in HANA DocStore?
-	for _, index := range params.Indexes {
-		if !indexExists(existingIndexes.Indexes, index.Name) {
-			createStmt = fmt.Sprintf(sql, c.schema, c.prefixIndexName(index.Name), c.schema, c.table, index.Key[0].Field)
-
-			_, err := c.hdb.ExecContext(ctx, createStmt)
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-		}
-	}
-
-	return new(backends.CreateIndexesResult), nil
+	return createIndexes(ctx, c.hdb, c.database, c.name, params)
 }
 
 // DropIndexes implements backends.Collection interface.
 func (c *collection) DropIndexes(ctx context.Context, params *backends.DropIndexesParams) (*backends.DropIndexesResult, error) {
-	err := c.checkSchemaAndCollectionExists(ctx)
+	_, err := databaseExists(ctx, c.hdb, c.database)
 	if err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
 	// HANATODO Check if index is on this collection.
@@ -429,7 +415,7 @@ func (c *collection) DropIndexes(ctx context.Context, params *backends.DropIndex
 	var droptStmt string
 
 	for _, index := range params.Indexes {
-		droptStmt = fmt.Sprintf(sql, c.schema, c.prefixIndexName(index))
+		droptStmt = fmt.Sprintf(sql, c.database, prefixIndexName(c.name, index))
 
 		_, err := c.hdb.ExecContext(ctx, droptStmt)
 		if err != nil {

@@ -16,6 +16,7 @@ package types
 
 import (
 	"fmt"
+	"log/slog"
 
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -260,3 +261,13 @@ func (a *Array) Remove(index int) {
 
 	a.s = append(a.s[:index], a.s[index+1:]...)
 }
+
+// LogValue implements [slog.LogValuer].
+func (arr *Array) LogValue() slog.Value {
+	return slogValue(arr, 1)
+}
+
+// check interfaces
+var (
+	_ slog.LogValuer = (*Array)(nil)
+)

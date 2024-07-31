@@ -17,9 +17,8 @@ package registry
 
 import (
 	"fmt"
+	"log/slog"
 	"time"
-
-	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handler"
@@ -42,7 +41,7 @@ var registry = map[string]newHandlerFunc{}
 // NewHandlerOpts represents configuration for constructing handlers.
 type NewHandlerOpts struct {
 	// for all backends
-	Logger        *zap.Logger
+	Logger        *slog.Logger
 	ConnMetrics   *connmetrics.ConnMetrics
 	StateProvider *state.Provider
 	TCPHost       string

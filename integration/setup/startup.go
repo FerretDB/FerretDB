@@ -16,6 +16,7 @@ package setup
 
 import (
 	"context"
+	"log/slog"
 	"os"
 	"runtime"
 	"slices"
@@ -24,7 +25,7 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"go.uber.org/zap"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
@@ -45,11 +46,20 @@ var startupWG sync.WaitGroup
 
 // Startup initializes things that should be initialized only once.
 func Startup() {
-	logging.Setup(zap.DebugLevel, "console", "")
+	opts := &logging.NewHandlerOpts{
+		Base:        "console",
+		Level:       slog.LevelDebug,
+		RemoveTime:  true,
+		RemoveLevel: true,
+	}
+	logging.Setup(opts, "")
+	l := slog.Default()
+
+	ctx := context.Background()
 
 	// https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables
 	if t, _ := strconv.ParseBool(os.Getenv("RUNNER_DEBUG")); t {
-		zap.S().Info("Enabling setup debug logging on GitHub Actions.")
+		l.InfoContext(ctx, "Enabling setup debug logging on GitHub Actions")
 		*debugSetupF = true
 	}
 
@@ -58,24 +68,23 @@ func Startup() {
 	// use any available port to allow running different configurations in parallel
 	h, err := debug.Listen(&debug.ListenOpts{
 		TCPAddr: "127.0.0.1:0",
-		L:       zap.L().Named("debug"),
+		L:       logging.WithName(l, "debug"),
 		R:       prometheus.DefaultRegisterer,
 	})
 	if err != nil {
-		zap.S().Fatalf("Failed to create debug handler: %s.", err)
+		l.LogAttrs(ctx, logging.LevelFatal, "Failed to create debug handler", logging.Error(err))
 	}
 
-	ot, err := observability.NewOtelTracer(&observability.OtelTracerOpts{
-		Logger:   zap.L().Named("otel"),
-		Service:  "integration-tests",
-		Endpoint: "127.0.0.1:4318",
+	ot, err := observability.NewOTelTraceExporter(&observability.OTelTraceExporterOpts{
+		Logger:  logging.WithName(l, "otel"),
+		Service: "integration-tests",
+		URL:     "http://127.0.0.1:4318/v1/traces",
 	})
 	if err != nil {
-		zap.S().Fatalf("Failed to create Otel tracer: %s.", err)
+		l.LogAttrs(ctx, logging.LevelFatal, "Failed to create Otel tracer", logging.Error(err))
 	}
 
-	var ctx context.Context
-	ctx, shutdown = context.WithCancel(context.Background())
+	ctx, shutdown = context.WithCancel(ctx)
 
 	startupWG.Add(1)
 
@@ -91,13 +100,13 @@ func Startup() {
 		ot.Run(ctx)
 	}()
 
-	clientCtx, clientCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	clientCtx, clientCancel := context.WithTimeout(ctx, 5*time.Second)
 	defer clientCancel()
 
 	// do basic flags validation earlier, before all tests
 
 	if *benchDocsF <= 0 {
-		zap.S().Fatal("-bench-docs must be > 0.")
+		l.LogAttrs(ctx, logging.LevelFatal, "-bench-docs must be > 0")
 	}
 
 	for _, p := range shareddata.AllBenchmarkProviders() {
@@ -107,51 +116,51 @@ func Startup() {
 	}
 
 	if *targetBackendF == "" {
-		zap.S().Fatal("-target-backend must be set.")
+		l.LogAttrs(ctx, logging.LevelFatal, "-target-backend must be set")
 	}
 
 	if !slices.Contains(allBackends, *targetBackendF) {
-		zap.S().Fatalf("Unknown target backend %q.", *targetBackendF)
+		l.LogAttrs(ctx, logging.LevelFatal, "Unknown target backend", slog.String("target_backend", *targetBackendF))
 	}
 
 	if *targetURLF != "" {
-		var err error
-
 		*targetURLF, err = setClientPaths(*targetURLF)
 		if err != nil {
-			zap.S().Fatal(err)
+			l.LogAttrs(ctx, logging.LevelFatal, "Failed to set target client path", logging.Error(err))
 		}
 
-		client, err := makeClient(clientCtx, *targetURLF, false)
+		var client *mongo.Client
+
+		client, err = makeClient(clientCtx, *targetURLF, false)
 		if err != nil {
-			zap.S().Fatalf("Failed to connect to target system %s: %s", *targetURLF, err)
+			l.LogAttrs(ctx, logging.LevelFatal, "Failed to connect to target system", slog.String("target_url", *targetURLF), logging.Error(err))
 		}
 
 		_ = client.Disconnect(clientCtx)
 
-		zap.S().Infof("Target system: %s (%s).", *targetBackendF, *targetURLF)
+		l.InfoContext(ctx, "Target system", slog.String("target_backend", *targetBackendF), slog.String("target_url", *targetURLF))
 	} else {
-		zap.S().Infof("Target system: %s (built-in).", *targetBackendF)
+		l.InfoContext(ctx, "Target system (built-in)", slog.String("target_backend", *targetBackendF))
 	}
 
 	if *compatURLF != "" {
-		var err error
-
 		*compatURLF, err = setClientPaths(*compatURLF)
 		if err != nil {
-			zap.S().Fatal(err)
+			l.LogAttrs(ctx, logging.LevelFatal, "Failed to set compat client path", logging.Error(err))
 		}
 
-		client, err := makeClient(clientCtx, *compatURLF, false)
+		var client *mongo.Client
+
+		client, err = makeClient(clientCtx, *compatURLF, false)
 		if err != nil {
-			zap.S().Fatalf("Failed to connect to compat system %s: %s", *compatURLF, err)
+			l.LogAttrs(ctx, logging.LevelFatal, "Failed to connect to compat system", slog.String("compat_url", *compatURLF), logging.Error(err))
 		}
 
 		_ = client.Disconnect(clientCtx)
 
-		zap.S().Infof("Compat system: MongoDB (%s).", *compatURLF)
+		l.InfoContext(ctx, "Compat system: MongoDB", slog.String("compat_url", *compatURLF))
 	} else {
-		zap.S().Infof("Compat system: none, compatibility tests will be skipped.")
+		l.InfoContext(ctx, "Compat system: none, compatibility tests will be skipped")
 	}
 }
 

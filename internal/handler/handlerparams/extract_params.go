@@ -17,11 +17,10 @@ package handlerparams
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"reflect"
 	"slices"
 	"strings"
-
-	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -58,7 +57,7 @@ import (
 //   - `ErrBadValue` when field is out of integer range;
 //   - `ErrBadValue` when field has negative value;
 //   - `ErrInvalidNamespace` - collection name has invalid type.
-func ExtractParams(doc *types.Document, command string, value any, l *zap.Logger) error {
+func ExtractParams(doc *types.Document, command string, value any, l *slog.Logger) error {
 	rv := reflect.ValueOf(value)
 	if rv.Kind() != reflect.Ptr || rv.IsNil() {
 		panic("value must be a non-nil pointer")
@@ -107,7 +106,7 @@ func ExtractParams(doc *types.Document, command string, value any, l *zap.Logger
 		if options.ignored {
 			l.Debug(
 				"ignoring field",
-				zap.String("command", doc.Command()), zap.String("field", key), zap.Any("value", val),
+				slog.String("command", doc.Command()), slog.String("field", key), slog.Any("value", val),
 			)
 
 			continue
@@ -229,7 +228,7 @@ func tagOptionsFromList(optionsList []string) *tagOptions {
 }
 
 // setStructField sets the value of the document field to the structure field.
-func setStructField(elem *reflect.Value, o *tagOptions, i int, command, key string, val any, l *zap.Logger) error {
+func setStructField(elem *reflect.Value, o *tagOptions, i int, command, key string, val any, l *slog.Logger) error {
 	var err error
 
 	field := elem.Type().Field(i)
