@@ -35,6 +35,7 @@ const config = {
         }
       },
     ],
+    'plugin-image-zoom'
   ],
 
   presets: [
