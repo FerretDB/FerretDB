@@ -68,7 +68,7 @@ jobs:
         working-directory: tools
 
       - name: Run init 
-        run: bin/task int
+        run: bin/task init
 
       - name: Build tools
         run: bin/task env-pull
