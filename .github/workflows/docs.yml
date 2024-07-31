@@ -67,17 +67,14 @@ jobs:
         run: go generate -x
         working-directory: tools
 
-      - name: Run init
-        run: bin/task init
-
       - name: Build tools
         run: bin/task env-pull
 
+      - name: Create directory
+        run: mkdir -p tmp/githubcache
+
       - name: Build docs
         run: bin/task docs
-
-      - name: Create directory
-        run: mkdir tmp
 
       - name: Archive docs
         run: >
