@@ -13,10 +13,10 @@ require (
 	github.com/rogpeppe/go-internal v1.12.0
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/oauth2 v0.21.0
-	golang.org/x/perf v0.0.0-20240716160700-783bcb78a185
-	golang.org/x/pkgsite v0.0.0-20240724212307-557c002897fc
+	golang.org/x/perf v0.0.0-20240707193131-dc66afd55b77
+	golang.org/x/pkgsite v0.0.0-20240701161620-30d9315975ff
 	golang.org/x/tools v0.23.0
-	golang.org/x/vuln v1.1.3
+	golang.org/x/vuln v1.1.2
 	mvdan.cc/gofumpt v0.6.0
 )
 
@@ -61,7 +61,7 @@ require (
 	github.com/google/licensecheck v0.3.1 // indirect
 	github.com/google/rpmpack v0.6.1-0.20240329070804-c2247cbb881a // indirect
 	github.com/google/safehtml v0.0.3-0.20211026203422-d6f0e11a5516 // indirect
-	github.com/google/uuid v1.4.0 // indirect
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/goreleaser/chglog v0.6.1 // indirect
 	github.com/goreleaser/fileglob v1.3.0 // indirect
 	github.com/huandu/xstrings v1.3.3 // indirect
@@ -103,7 +103,7 @@ require (
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	gitlab.com/digitalxero/go-conventional-commit v1.0.7 // indirect
 	golang.org/x/crypto v0.25.0 // indirect
-	golang.org/x/exp v0.0.0-20231206192017-f3f8817b8deb // indirect
+	golang.org/x/exp v0.0.0-20240707233637-46b078467d37 // indirect
 	golang.org/x/mod v0.19.0 // indirect
 	golang.org/x/net v0.27.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect

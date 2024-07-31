@@ -67,6 +67,9 @@ jobs:
         run: go generate -x
         working-directory: tools
 
+      - name: Run init
+        run: bin/task init
+
       - name: Build tools
         run: bin/task env-pull
 
