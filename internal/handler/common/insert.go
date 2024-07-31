@@ -16,8 +16,7 @@ package common
 
 import (
 	"fmt"
-
-	"go.uber.org/zap"
+	"log/slog"
 
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
@@ -45,7 +44,7 @@ type InsertParams struct {
 }
 
 // GetInsertParams returns the parameters for an insert command.
-func GetInsertParams(document *types.Document, l *zap.Logger) (*InsertParams, error) {
+func GetInsertParams(document *types.Document, l *slog.Logger) (*InsertParams, error) {
 	params := InsertParams{
 		Ordered: true,
 	}

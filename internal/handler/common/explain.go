@@ -15,7 +15,7 @@
 package common
 
 import (
-	"go.uber.org/zap"
+	"log/slog"
 
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
@@ -45,7 +45,7 @@ type ExplainParams struct {
 }
 
 // GetExplainParams returns the parameters for the explain command.
-func GetExplainParams(document *types.Document, l *zap.Logger) (*ExplainParams, error) {
+func GetExplainParams(document *types.Document, l *slog.Logger) (*ExplainParams, error) {
 	var err error
 
 	var db, collection string

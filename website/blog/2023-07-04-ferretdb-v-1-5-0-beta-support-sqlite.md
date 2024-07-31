@@ -8,7 +8,7 @@ image: /img/blog/ferretdb-v1.5.0.jpg
 tags: [release]
 ---
 
-![FerretDB v.1.5.0 includes beta-level support for the SQLite Backend](/img/blog/ferretdb-v1.5.0.jpg)
+![FerretDB v1.5.0 includes beta-level support for the SQLite Backend](/img/blog/ferretdb-v1.5.0.jpg)
 
 After a great deal of work from the [FerretDB](https://www.ferretdb.io/) team and our open-source community, we are delighted to announce the release of FerretDB v1.5.0, which includes beta-level support for the [SQLite](https://www.sqlite.org/) backend.
 

@@ -28,8 +28,8 @@ To install PostgreSQL, run the following commands:
 sudo yum install -y postgresql
 ```
 
-Currently, our `.rpm` package does not provide a SystemD unit for starting FerretDB automatically.
-You have to do it manually by running `ferretdb` binary with the [correct flags](../configuration/flags.md).
+The `.rpm` package ships with the systemd unit for starting FerretDB automatically.
+For more information about its configuration, please take a look at [systemd configuration guide](./systemd.md).
 
 Find out more about:
 

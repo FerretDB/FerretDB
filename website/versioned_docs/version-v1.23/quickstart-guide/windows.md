@@ -1,8 +1,8 @@
 ---
-sidebar_position: 4
+sidebar_position: 6
 ---
 
-# macOS
+# Windows
 
 _This section is not currently available.
 You can help FerretDB by contributing to this section.

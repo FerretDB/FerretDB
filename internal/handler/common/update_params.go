@@ -15,7 +15,7 @@
 package common
 
 import (
-	"go.uber.org/zap"
+	"log/slog"
 
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
@@ -84,7 +84,7 @@ type UpdateResult struct {
 }
 
 // GetUpdateParams returns parameters for update command.
-func GetUpdateParams(document *types.Document, l *zap.Logger) (*UpdateParams, error) {
+func GetUpdateParams(document *types.Document, l *slog.Logger) (*UpdateParams, error) {
 	var params UpdateParams
 
 	err := handlerparams.ExtractParams(document, "update", &params, l)

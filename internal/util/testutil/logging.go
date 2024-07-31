@@ -18,11 +18,6 @@ import (
 	"io"
 	"log/slog"
 	"strings"
-	"testing"
-
-	"github.com/neilotoole/slogt"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest"
 
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
@@ -43,16 +38,6 @@ func (lw *logWriter) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-// Logger returns zap test logger with valid configuration.
-func Logger(tb testtb.TB) *zap.Logger {
-	opts := []zaptest.LoggerOption{
-		zaptest.Level(zap.NewAtomicLevelAt(zap.DebugLevel)),
-		zaptest.WrapOptions(zap.AddCaller(), zap.Development()),
-	}
-
-	return zaptest.NewLogger(tb, opts...)
-}
-
 // LevelLogger returns a test logger for the given level (which might be dynamic).
 func LevelLogger(tb testtb.TB, level slog.Leveler) *slog.Logger {
 	h := logging.NewHandler(&logWriter{tb: tb}, &logging.NewHandlerOpts{
@@ -64,12 +49,9 @@ func LevelLogger(tb testtb.TB, level slog.Leveler) *slog.Logger {
 	return slog.New(h)
 }
 
-// SLogger returns slog test logger.
-//
-// TODO https://github.com/FerretDB/FerretDB/issues/4013
-func SLogger(tb testtb.TB) *slog.Logger {
-	t := tb.(testing.TB)
-	return slogt.New(t)
+// Logger returns slog test logger.
+func Logger(tb testtb.TB) *slog.Logger {
+	return LevelLogger(tb, slog.LevelDebug)
 }
 
 // check interfaces

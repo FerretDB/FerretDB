@@ -12,19 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package logging
+package github
 
 import (
-	"log"
-
-	"go.uber.org/zap"
+	"time"
 )
 
-// SetupWithZapLogger initializes zap logging with a given logger and its level.
-func SetupWithZapLogger(logger *zap.Logger) {
-	zap.ReplaceGlobals(logger)
+// IssueStatus represents a known issue status.
+type IssueStatus string
 
-	if _, err := zap.RedirectStdLogAt(logger, zap.InfoLevel); err != nil {
-		log.Fatal(err)
-	}
+// Known issue statuses.
+const (
+	IssueOpen     IssueStatus = "open"
+	IssueClosed   IssueStatus = "closed"
+	IssueNotFound IssueStatus = "not found"
+)
+
+// issue represents a single cached issue.
+type issue struct {
+	RefreshedAt time.Time   `json:"refreshedAt"`
+	Status      IssueStatus `json:"status"`
 }

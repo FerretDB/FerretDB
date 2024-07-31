@@ -439,6 +439,12 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		msg := reqBody.(*wire.OpMsg)
 		document, err = msg.Document()
 
+		comment, err := document.Get("comment")
+		if err == nil {
+			panic(comment)
+			// parse comment through SpanContextFromComment
+		}
+
 		command = document.Command()
 
 		resHeader.OpCode = wire.OpCodeMsg

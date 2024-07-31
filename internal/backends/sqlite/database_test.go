@@ -33,7 +33,7 @@ func TestDatabaseStats(t *testing.T) {
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
-	b, err := NewBackend(&NewBackendParams{URI: testutil.TestSQLiteURI(t, ""), L: testutil.SLogger(t), P: sp})
+	b, err := NewBackend(&NewBackendParams{URI: testutil.TestSQLiteURI(t, ""), L: testutil.Logger(t), P: sp})
 	require.NoError(t, err)
 	t.Cleanup(b.Close)
 
@@ -74,7 +74,7 @@ func TestDatabaseStatsFreeStorage(t *testing.T) {
 			uri := testutil.TestSQLiteURI(t, "") + params
 
 			var b backends.Backend
-			b, err = NewBackend(&NewBackendParams{URI: uri, L: testutil.SLogger(t), P: sp, BatchSize: 100})
+			b, err = NewBackend(&NewBackendParams{URI: uri, L: testutil.Logger(t), P: sp, BatchSize: 100})
 			require.NoError(t, err)
 
 			t.Cleanup(b.Close)

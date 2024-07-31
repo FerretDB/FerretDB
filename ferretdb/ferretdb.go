@@ -25,13 +25,10 @@ import (
 	"log/slog"
 	"net/url"
 
-	"go.uber.org/zap"
-
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handler/registry"
-	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
@@ -39,13 +36,8 @@ import (
 type Config struct {
 	Listener ListenerConfig
 
-	// Deprecated: Use slog logger, panics if not nil.
-	Logger *zap.Logger
-
-	// slog logger to use; if nil, the default logger is used.
-	//
-	// To make logs accessible by `getLog` command, use [logging.WrapLogger] or [logging.WrapHandler].
-	SLogger *slog.Logger
+	// Logger to use; if nil, `slog.Default()` is used.
+	Logger *slog.Logger
 
 	// Handler to use; one of `postgresql` or `sqlite`.
 	Handler string
@@ -122,18 +114,13 @@ func New(config *Config) (*FerretDB, error) {
 
 	metrics := connmetrics.NewListenerMetrics()
 
-	log := config.SLogger
-	if log == nil {
-		log = slog.Default()
-	}
-
-	if config.Logger != nil {
-		log.LogAttrs(context.Background(), logging.LevelFatal, "Config.Logger is replaced by Config.SLogger")
+	logger := config.Logger
+	if logger == nil {
+		logger = slog.Default()
 	}
 
 	h, closeBackend, err := registry.NewHandler(config.Handler, &registry.NewHandlerOpts{
-		Logger:        zap.L(),
-		SLogger:       log,
+		Logger:        logger,
 		ConnMetrics:   metrics.ConnMetrics,
 		StateProvider: sp,
 		TCPHost:       config.Listener.TCP,
@@ -166,7 +153,7 @@ func New(config *Config) (*FerretDB, error) {
 		Mode:    clientconn.NormalMode,
 		Metrics: metrics,
 		Handler: h,
-		Logger:  log,
+		Logger:  logger,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct handler: %s", err)

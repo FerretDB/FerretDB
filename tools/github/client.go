@@ -12,16 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package github
 
 import (
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/FerretDB/gh"
@@ -29,30 +32,14 @@ import (
 	"github.com/rogpeppe/go-internal/lockedfile"
 )
 
-// issueStatus represents a known issue status.
-type issueStatus string
-
-// Known issue statuses.
-const (
-	issueOpen     issueStatus = "open"
-	issueClosed   issueStatus = "closed"
-	issueNotFound issueStatus = "not found"
-)
-
-// issue represents a single cached issue.
-type issue struct {
-	RefreshedAt time.Time   `json:"refreshedAt"`
-	Status      issueStatus `json:"status"`
-}
-
 // cacheFile stores information regarding rate limiting and the status of issues.
 type cacheFile struct {
 	Issues           map[string]issue `json:"issues"`
 	RateLimitReached bool             `json:"rateLimitReached"`
 }
 
-// client represent GitHub API client with shared file cache.
-type client struct {
+// Client represent GitHub API Client with shared file cache.
+type Client struct {
 	c             *github.Client
 	cacheFilePath string
 	logf          gh.Printf
@@ -61,8 +48,8 @@ type client struct {
 	token         string
 }
 
-// newClient creates a new client for the given cache file path and logging functions.
-func newClient(cacheFilePath string, logf, cacheDebugF, clientDebugf gh.Printf) (*client, error) {
+// NewClient creates a new client for the given cache file path and logging functions.
+func NewClient(cacheFilePath string, logf, cacheDebugF, clientDebugf gh.Printf) (*Client, error) {
 	token := os.Getenv("GITHUB_TOKEN")
 
 	if logf == nil {
@@ -82,7 +69,7 @@ func newClient(cacheFilePath string, logf, cacheDebugF, clientDebugf gh.Printf) 
 		return nil, err
 	}
 
-	return &client{
+	return &Client{
 		c:             c,
 		cacheFilePath: cacheFilePath,
 		token:         token,
@@ -92,20 +79,94 @@ func newClient(cacheFilePath string, logf, cacheDebugF, clientDebugf gh.Printf) 
 	}, nil
 }
 
+// CacheFilePath returns the path to the cache file.
+func CacheFilePath() (string, error) {
+	// This tool is called for multiple packages in parallel,
+	// with the current working directory set to the package directory.
+	// To use the same cache file path, we first locate the root of the project by the .git directory.
+
+	dir, err := filepath.Abs(".")
+	if err != nil {
+		return "", err
+	}
+
+	for {
+		fi, err := os.Stat(filepath.Join(dir, ".git"))
+		if err == nil {
+			if !fi.IsDir() {
+				return "", fmt.Errorf(".git is not a directory")
+			}
+
+			break
+		}
+
+		if !errors.Is(err, fs.ErrNotExist) {
+			return "", err
+		}
+
+		dir = filepath.Dir(dir)
+	}
+
+	return filepath.Join(dir, "tmp", "githubcache", "cache.json"), nil
+}
+
+var (
+	// urlRE represents correctly formated FerretDB issue.
+	// It returns repository name and the issue number as it's submatches.
+	urlRE = regexp.MustCompile(`^\Qhttps://github.com/FerretDB/\E([-\w]+)/issues/(\d+)$`)
+
+	// ErrIncorrectURL indicates that FerretDB issue URL is formatted incorrectly.
+	ErrIncorrectURL = errors.New("invalid TODO: incorrect format")
+	// ErrIncorrectIssueNumber indicates that FerretDB issue number is formatted incorrectly.
+	ErrIncorrectIssueNumber = errors.New("invalid TODO: incorrect issue number")
+)
+
+// parseIssueURL takes the properly formated FerretDB issue URL and returns it's
+// repository name and issue number.
+// If the issue number or URL formatting is incorrect, the error is returned.
+func parseIssueURL(line string) (repo string, num int, err error) {
+	match := urlRE.FindStringSubmatch(line)
+
+	if len(match) != 3 {
+		err = ErrIncorrectURL
+		return
+	}
+
+	repo = match[1]
+
+	num, err = strconv.Atoi(match[2])
+
+	switch {
+	case err != nil:
+		panic(err)
+	case num <= 0:
+		err = ErrIncorrectIssueNumber
+		return
+	default:
+		return
+	}
+}
+
 // IssueStatus returns issue status.
 // It uses cache.
 //
-// Returned error is something fatal.
+// If URL formatting is incorrect it returns `ErrIncorrectURL`, or `ErrIncorrectIssueNumber` error.
+// Any other error means something fatal.
 // On rate limit, the error is logged once and (issueOpen, nil) is returned.
-func (c *client) IssueStatus(ctx context.Context, url, repo string, num int) (issueStatus, error) {
+func (c *Client) IssueStatus(ctx context.Context, url string) (IssueStatus, error) {
 	start := time.Now()
+
+	repo, num, err := parseIssueURL(url)
+	if err != nil {
+		return IssueNotFound, err
+	}
 
 	cache := &cacheFile{
 		Issues: make(map[string]issue),
 	}
 	cacheRes := "miss"
 
-	var res issueStatus
+	var res IssueStatus
 
 	// fast path without any locks
 
@@ -177,7 +238,7 @@ func (c *client) IssueStatus(ctx context.Context, url, repo string, num int) (is
 
 	// when rate limited
 	if err == nil && res == "" {
-		res = issueOpen
+		res = IssueOpen
 	}
 
 	return res, err
@@ -185,50 +246,20 @@ func (c *client) IssueStatus(ctx context.Context, url, repo string, num int) (is
 
 // checkIssueStatus checks issue status via GitHub API.
 // It does not use cache.
-func (c *client) checkIssueStatus(ctx context.Context, repo string, num int) (issueStatus, error) {
+func (c *Client) checkIssueStatus(ctx context.Context, repo string, num int) (IssueStatus, error) {
 	issue, resp, err := c.c.Issues.Get(ctx, "FerretDB", repo, num)
 	if err != nil {
 		if resp.StatusCode == http.StatusNotFound {
-			return issueNotFound, nil
+			return IssueNotFound, nil
 		}
 
 		return "", err
 	}
 
-	switch s := issue.GetState(); s {
-	case "open":
-		return issueOpen, nil
-	case "closed":
-		return issueClosed, nil
+	switch s := IssueStatus(issue.GetState()); s {
+	case IssueOpen, IssueClosed:
+		return s, nil
 	default:
 		return "", fmt.Errorf("unknown issue state: %q", s)
 	}
-}
-
-// cacheFilePath returns the path to the cache file.
-func cacheFilePath() (string, error) {
-	// This tool is called for multiple packages in parallel,
-	// with the current working directory set to the package directory.
-	// To use the same cache file path, we first locate the root of the project by the .git directory.
-	//
-	// We can't use runtime.Caller because file path will be relative (`./tools/...`).
-	// We can't import FerretDB module to use [testutil.RootDir].
-
-	dir, err := os.Getwd()
-	if err != nil {
-		return "", err
-	}
-
-	for {
-		if _, err = os.Stat(filepath.Join(dir, ".git")); err == nil {
-			break
-		}
-
-		dir = filepath.Dir(dir)
-		if dir == "/" {
-			return "", fmt.Errorf("failed to locate .git directory")
-		}
-	}
-
-	return filepath.Join(dir, "tmp", "githubcache", "cache.json"), nil
 }

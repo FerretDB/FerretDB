@@ -18,10 +18,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"math"
 	"time"
-
-	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
@@ -284,8 +283,11 @@ func (h *Handler) makeNextBatch(c *cursor.Cursor, batchSize int64) (*types.Array
 	}
 
 	h.L.Debug(
-		"Got next batch", zap.Int64("cursor_id", c.ID), zap.Stringer("type", c.Type),
-		zap.Int("count", len(docs)), zap.Int64("batch_size", batchSize),
+		"Got next batch",
+		slog.Int64("cursor_id", c.ID),
+		slog.String("type", c.Type.String()),
+		slog.Int("count", len(docs)),
+		slog.Int64("batch_size", batchSize),
 	)
 
 	nextBatch := types.MakeArray(len(docs))

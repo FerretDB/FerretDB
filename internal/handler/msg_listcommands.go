@@ -16,7 +16,7 @@ package handler
 
 import (
 	"context"
-	"sort"
+	"slices"
 
 	"golang.org/x/exp/maps"
 
@@ -31,7 +31,7 @@ import (
 func (h *Handler) MsgListCommands(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	cmdList := must.NotFail(types.NewDocument())
 	names := maps.Keys(h.Commands())
-	sort.Strings(names)
+	slices.Sort(names)
 
 	for _, name := range names {
 		cmd := h.Commands()[name]

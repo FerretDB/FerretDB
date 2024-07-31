@@ -35,6 +35,7 @@ const config = {
         }
       },
     ],
+    'plugin-image-zoom'
   ],
 
   presets: [
@@ -49,7 +50,7 @@ const config = {
 
           versions: {
             // the latest minus one minor
-            'v1.21': {
+            'v1.22': {
               banner: 'none',
             },
           },
@@ -152,7 +153,7 @@ const config = {
       prism: {
         theme: themes.github,
         darkTheme: themes.dracula,
-        additionalLanguages: ['go', 'sql', 'json', 'json5'],
+        additionalLanguages: ['go', 'sql', 'json', 'json5', 'systemd'],
       },
       mermaid: {
         theme: {light: 'default', dark: 'dark'},
