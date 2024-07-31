@@ -209,7 +209,7 @@ func (l *Listener) Run(ctx context.Context) {
 
 	close(l.listenersClosed)
 
-	l.ll.InfoContext(ctx, "Waiting for all connections to stop")
+	l.ll.InfoContext(ctx, "Waiting for all connections to stop...")
 	wg.Wait()
 
 	l.Handler.Close()
