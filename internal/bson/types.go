@@ -182,7 +182,7 @@ func convertToTypes(v any) (any, error) {
 func convertBSONFromTypes(v any) (any, error) {
 	switch v := v.(type) {
 	case *types.Document:
-		doc, err := ConvertDocument(v)
+		doc, err := ConvertBSONDocument(v)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -190,7 +190,7 @@ func convertBSONFromTypes(v any) (any, error) {
 		return doc, nil
 
 	case *types.Array:
-		arr, err := ConvertArray(v)
+		arr, err := ConvertBSONArray(v)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -508,7 +508,7 @@ func ConvertBSONDocument(doc *types.Document) (*wirebson.Document, error) {
 			return nil, lazyerrors.Error(err)
 		}
 
-		v, err = convertFromTypes(v)
+		v, err = convertBSONFromTypes(v)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -532,7 +532,7 @@ func TypesDocument(d wirebson.AnyDocument) (*types.Document, error) {
 	for i := range fields {
 		f, v := doc.GetByIndex(i)
 
-		if v, err = convertToTypes(v); err != nil {
+		if v, err = convertBSONToTypes(v); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
