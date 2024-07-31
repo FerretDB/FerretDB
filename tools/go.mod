@@ -5,7 +5,6 @@ go 1.22
 toolchain go1.22.5
 
 require (
-	github.com/FerretDB/FerretDB v1.23.0
 	github.com/FerretDB/gh v0.1.4
 	github.com/go-task/task/v3 v3.38.0
 	github.com/google/go-github/v57 v57.0.0
@@ -14,10 +13,10 @@ require (
 	github.com/rogpeppe/go-internal v1.12.0
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/oauth2 v0.21.0
-	golang.org/x/perf v0.0.0-20240716160700-783bcb78a185
-	golang.org/x/pkgsite v0.0.0-20240724212307-557c002897fc
+	golang.org/x/perf v0.0.0-20240707193131-dc66afd55b77
+	golang.org/x/pkgsite v0.0.0-20240701161620-30d9315975ff
 	golang.org/x/tools v0.23.0
-	golang.org/x/vuln v1.1.3
+	golang.org/x/vuln v1.1.2
 	mvdan.cc/gofumpt v0.6.0
 )
 
