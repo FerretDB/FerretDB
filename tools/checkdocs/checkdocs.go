@@ -30,7 +30,6 @@ import (
 
 	"github.com/FerretDB/gh"
 
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/tools/github"
 )
 
@@ -64,7 +63,7 @@ var issueRE = regexp.MustCompile(`\[\w+]\((\Qhttps://github.com/FerretDB/\E[-\w]
 // checkBlogFiles verifies that blog posts are correctly formatted.
 func checkBlogFiles(files []string) error {
 	if len(files) == 0 {
-		return lazyerrors.Errorf("No blog posts found")
+		return fmt.Errorf("No blog posts found")
 	}
 
 	var failed bool
@@ -72,12 +71,12 @@ func checkBlogFiles(files []string) error {
 	for _, file := range files {
 		fileInBytes, err := os.ReadFile(file)
 		if err != nil {
-			return lazyerrors.Errorf("Couldn't read file %s: %s", file, err)
+			return fmt.Errorf("Couldn't read file %s: %s", file, err)
 		}
 
 		b, err := extractFrontMatter(fileInBytes)
 		if err != nil {
-			return lazyerrors.Errorf("Couldn't extract front matter from %s: %s", file, err)
+			return fmt.Errorf("Couldn't extract front matter from %s: %s", file, err)
 		}
 
 		if err = verifySlug(filepath.Base(file), b); err != nil {
@@ -264,17 +263,17 @@ func checkSupportedCommands(file string) error {
 
 	p, err := github.CacheFilePath()
 	if err != nil {
-		return lazyerrors.Error(err)
+		return err
 	}
 
 	client, err := github.NewClient(p, log.Printf, gh.NoopPrintf, gh.NoopPrintf)
 	if err != nil {
-		return lazyerrors.Error(err)
+		return err
 	}
 
 	failed, err := checkIssueURLs(client, f, log.Default())
 	if err != nil {
-		return lazyerrors.Error(err)
+		return err
 	}
 
 	if failed {
@@ -340,12 +339,12 @@ func checkIssueURLs(client *github.Client, r io.Reader, l *log.Logger) (bool, er
 			l.Printf("linked issue %s is not found", url)
 
 		default:
-			return false, lazyerrors.Errorf("unknown issue status: %s", status)
+			return false, fmt.Errorf("unknown issue status: %s", status)
 		}
 	}
 
 	if err := s.Err(); err != nil {
-		return false, lazyerrors.Errorf("error reading input: %s", err)
+		return false, fmt.Errorf("error reading input: %s", err)
 	}
 
 	return failed, nil
