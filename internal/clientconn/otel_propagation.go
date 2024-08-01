@@ -36,6 +36,7 @@ func spanContextFromComment(comment string) (trace.SpanContext, error) {
 	}
 
 	var data TraceData
+
 	err := json.Unmarshal([]byte(comment), &data)
 	if err != nil {
 		return trace.SpanContext{}, lazyerrors.Error(err)
