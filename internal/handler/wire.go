@@ -29,6 +29,8 @@ import (
 )
 
 // newOpMsg validates the document and converts it to [*wirebson.Document] to create a new OpMsg with it.
+//
+//nolint:unused // to be used by each handler
 func newOpMsg(doc *types.Document) (*wire.OpMsg, error) {
 	if err := validateValue(doc); err != nil {
 		doc.Remove("lsid") // to simplify error message
@@ -43,9 +45,11 @@ func newOpMsg(doc *types.Document) (*wire.OpMsg, error) {
 }
 
 // opMsgDocument gets a raw document, decodes and converts to [*types.Document].
-// Then it iterates raw documents from sections 1 if any, decodes and append
+// Then it iterates raw documents from sections 1 if any, decodes and appends
 // them to the response using the section identifier.
 // It validates and returns [*types.Document].
+//
+//nolint:unused // to be used by each handler
 func opMsgDocument(msg *wire.OpMsg) (*types.Document, error) {
 	rDoc, err := msg.RawDocument()
 	if err != nil {
@@ -91,6 +95,8 @@ func opMsgDocument(msg *wire.OpMsg) (*types.Document, error) {
 }
 
 // validateValue checks given value and returns error if unsupported value was encountered.
+//
+//nolint:unused // to be used by each handler
 func validateValue(v any) error {
 	switch v := v.(type) {
 	case *types.Document:
