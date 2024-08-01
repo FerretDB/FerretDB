@@ -44,22 +44,25 @@ func TestLogging(t *testing.T) {
 
 	var cbuf, tbuf, jbuf bytes.Buffer
 	clog := slog.New(logging.NewHandler(&cbuf, &logging.NewHandlerOpts{
-		Base:         "console",
-		RemoveTime:   true,
-		RemoveLevel:  true,
-		RemoveSource: true,
+		Base:          "console",
+		RemoveTime:    true,
+		RemoveLevel:   true,
+		RemoveSource:  true,
+		CheckMessages: true,
 	}))
 	tlog := slog.New(logging.NewHandler(&tbuf, &logging.NewHandlerOpts{
-		Base:         "text",
-		RemoveTime:   true,
-		RemoveLevel:  true,
-		RemoveSource: true,
+		Base:          "text",
+		RemoveTime:    true,
+		RemoveLevel:   true,
+		RemoveSource:  true,
+		CheckMessages: true,
 	}))
 	jlog := slog.New(logging.NewHandler(&jbuf, &logging.NewHandlerOpts{
-		Base:         "json",
-		RemoveTime:   true,
-		RemoveLevel:  true,
-		RemoveSource: true,
+		Base:          "json",
+		RemoveTime:    true,
+		RemoveLevel:   true,
+		RemoveSource:  true,
+		CheckMessages: true,
 	}))
 
 	for _, tc := range []struct {
