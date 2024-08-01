@@ -31,7 +31,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.opentelemetry.io/otel"
 
-	"github.com/FerretDB/FerretDB/internal/driver"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/password"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
@@ -89,11 +88,11 @@ type SetupOpts struct {
 	// ExtraOptions sets the options in MongoDB URI, when the option exists it overwrites that option.
 	ExtraOptions url.Values
 
-	// UseDriver enables low-level driver connection creation.
-	UseDriver bool
+	// UseWireConn enables low-level wire connection creation.
+	UseWireConn bool
 
-	// DriverNoAuth disables automatic authentication of the low-level driver connection.
-	DriverNoAuth bool
+	// WireConnNoAuth disables automatic authentication of the low-level wire connection.
+	WireConnNoAuth bool
 
 	// Options to override default backend configuration.
 	BackendOptions *BackendOpts
@@ -121,7 +120,7 @@ type BackendOpts struct {
 type SetupResult struct {
 	Ctx        context.Context
 	Collection *mongo.Collection
-	DriverConn *wireclient.Conn
+	WireConn   *wireclient.Conn
 	MongoDBURI string // without database name
 }
 
@@ -193,16 +192,16 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 
 	var conn *wireclient.Conn
 
-	if opts.UseDriver {
+	if opts.UseWireConn {
 		u, err := url.Parse(uri)
 		require.NoError(tb, err)
 
 		query := u.Query()
 		u.RawQuery = ""
 
-		conn = setupClientDriver(tb, setupCtx, u.String(), testutil.Logger(tb))
+		conn = setupWireConn(tb, setupCtx, u.String(), testutil.Logger(tb))
 
-		if u.User != nil && !opts.DriverNoAuth {
+		if u.User != nil && !opts.WireConnNoAuth {
 			user := u.User.Username()
 			pass, _ := u.User.Password()
 
@@ -213,7 +212,7 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 
 			authDB := query.Get("authSource")
 
-			require.NoError(tb, driver.Authenticate(ctx, conn, user, password.WrapPassword(pass), mech, authDB))
+			require.NoError(tb, authenticate(ctx, conn, user, password.WrapPassword(pass), mech, authDB))
 		}
 	}
 
@@ -223,7 +222,7 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 	return &SetupResult{
 		Ctx:        ctx,
 		Collection: collection,
-		DriverConn: conn,
+		WireConn:   conn,
 		MongoDBURI: uri,
 	}
 }
@@ -238,20 +237,20 @@ func Setup(tb testtb.TB, providers ...shareddata.Provider) (context.Context, *mo
 	return s.Ctx, s.Collection
 }
 
-// SetupDriver setups a single collection for all providers, if they are present,
-// and returns authenticated low-level driver connection.
-func SetupDriver(tb testtb.TB, providers ...shareddata.Provider) (context.Context, *wireclient.Conn) {
+// SetupWireConn setups a single collection for all providers, if they are present,
+// and returns authenticated low-level wire connection.
+func SetupWireConn(tb testtb.TB, providers ...shareddata.Provider) (context.Context, *wireclient.Conn) {
 	tb.Helper()
 
 	s := SetupWithOpts(tb, &SetupOpts{
-		Providers: providers,
-		UseDriver: true,
+		Providers:   providers,
+		UseWireConn: true,
 		ExtraOptions: url.Values{
 			"authSource": []string{"admin"},
 		},
 	})
 
-	return s.Ctx, s.DriverConn
+	return s.Ctx, s.WireConn
 }
 
 // setupCollection setups a single collection for all providers, if they are present.

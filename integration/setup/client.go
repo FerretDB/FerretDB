@@ -16,12 +16,10 @@ package setup
 
 import (
 	"context"
-	"log/slog"
 	"net/url"
 	"path/filepath"
 	"strings"
 
-	"github.com/FerretDB/wire/wireclient"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -110,30 +108,4 @@ func setupClient(tb testtb.TB, ctx context.Context, uri string, disableOtel bool
 	})
 
 	return client
-}
-
-// setupClient returns test-specific non-authenticated low-level driver connection for the given MongoDB URI.
-//
-// It disconnects automatically when test ends.
-//
-// If the connection can't be established, it panics,
-// as it doesn't make sense to proceed with other tests if we couldn't connect in one of them.
-func setupClientDriver(tb testtb.TB, ctx context.Context, uri string, l *slog.Logger) *wireclient.Conn {
-	tb.Helper()
-
-	ctx, span := otel.Tracer("").Start(ctx, "setupClientDriver")
-	defer span.End()
-
-	conn, err := wireclient.Connect(ctx, uri, l)
-	if err != nil {
-		tb.Error(err)
-		panic("setupClientDriver: " + err.Error())
-	}
-
-	tb.Cleanup(func() {
-		err = conn.Close()
-		require.NoError(tb, err)
-	})
-
-	return conn
 }

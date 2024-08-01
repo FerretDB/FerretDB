@@ -12,26 +12,55 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package driver provides low-level wire protocol driver for testing.
-package driver
+package setup
 
 import (
 	"context"
 	"crypto/md5"
 	"encoding/hex"
+	"log/slog"
 
 	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/FerretDB/wire/wireclient"
+	"github.com/stretchr/testify/require"
 	"github.com/xdg-go/scram"
+	"go.opentelemetry.io/otel"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/password"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
-// Authenticate authenticates the given connection using the provided credentials and authentication mechanism.
-func Authenticate(ctx context.Context, c *wireclient.Conn, user string, pass password.Password, mech, authDB string) error {
+// setupClient returns test-specific non-authenticated low-level wire connection for the given MongoDB URI.
+//
+// It disconnects automatically when test ends.
+//
+// If the connection can't be established, it panics,
+// as it doesn't make sense to proceed with other tests if we couldn't connect in one of them.
+func setupWireConn(tb testtb.TB, ctx context.Context, uri string, l *slog.Logger) *wireclient.Conn {
+	tb.Helper()
+
+	ctx, span := otel.Tracer("").Start(ctx, "setupWireConn")
+	defer span.End()
+
+	conn, err := wireclient.Connect(ctx, uri, l)
+	if err != nil {
+		tb.Error(err)
+		panic("setupWireConn: " + err.Error())
+	}
+
+	tb.Cleanup(func() {
+		err = conn.Close()
+		require.NoError(tb, err)
+	})
+
+	return conn
+}
+
+// authenticate verifies the provided credentials using the mechanism for the given connection.
+func authenticate(ctx context.Context, c *wireclient.Conn, user string, pass password.Password, mech, authDB string) error {
 	password := pass.Password()
 
 	var h scram.HashGeneratorFcn
