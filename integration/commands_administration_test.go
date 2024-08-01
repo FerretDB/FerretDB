@@ -181,8 +181,7 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 		},
 		"Regex": {
 			filter: bson.D{
-				{Key: "name", Value: name},
-				{Key: "name", Value: primitive.Regex{Pattern: "^Test", Options: "i"}},
+				{Key: "name", Value: primitive.Regex{Pattern: "ListDatabases$", Options: "i"}},
 			},
 			expected: mongo.ListDatabasesResult{
 				Databases: []mongo.DatabaseSpecification{{
@@ -192,8 +191,7 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 		},
 		"RegexNameOnly": {
 			filter: bson.D{
-				{Key: "name", Value: name},
-				{Key: "name", Value: primitive.Regex{Pattern: "^Test", Options: "i"}},
+				{Key: "name", Value: primitive.Regex{Pattern: "ListDatabases$", Options: "i"}},
 			},
 			opts: []*options.ListDatabasesOptions{
 				options.ListDatabases().SetNameOnly(true),
@@ -213,7 +211,6 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 		},
 		"RegexNotFound": {
 			filter: bson.D{
-				{Key: "name", Value: name},
 				{Key: "name", Value: primitive.Regex{Pattern: "^xyz$", Options: "i"}},
 			},
 			expected: mongo.ListDatabasesResult{
@@ -222,7 +219,6 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 		},
 		"RegexNotFoundNameOnly": {
 			filter: bson.D{
-				{Key: "name", Value: name},
 				{Key: "name", Value: primitive.Regex{Pattern: "^xyz$", Options: "i"}},
 			},
 			opts: []*options.ListDatabasesOptions{
