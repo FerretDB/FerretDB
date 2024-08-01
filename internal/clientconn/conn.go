@@ -35,6 +35,7 @@ import (
 	"go.opentelemetry.io/otel"
 	otelattribute "go.opentelemetry.io/otel/attribute"
 	otelcodes "go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
@@ -439,13 +440,19 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		msg := reqBody.(*wire.OpMsg)
 		document, err = msg.Document()
 
+		command = document.Command()
+
 		comment, err := document.Get("comment")
 		if err == nil {
-			panic(comment)
-			// parse comment through SpanContextFromComment
-		}
+			if cmt, ok := comment.(string); ok {
+				spanCtx, _ := spanContextFromComment(cmt)
 
-		command = document.Command()
+				connCtx = trace.ContextWithRemoteSpanContext(connCtx, spanCtx)
+				var span trace.Span
+				connCtx, span = otel.Tracer("").Start(connCtx, command)
+				defer span.End()
+			}
+		}
 
 		resHeader.OpCode = wire.OpCodeMsg
 
