@@ -90,6 +90,8 @@ func Listen(opts *NewListenerOpts) (*Listener, error) {
 
 	var err error
 
+	ctx := context.Background()
+
 	defer func() {
 		if err != nil {
 			l.Handler.Close()
@@ -102,7 +104,7 @@ func Listen(opts *NewListenerOpts) (*Listener, error) {
 		}
 
 		close(l.tcpListenerReady)
-		ll.Info(fmt.Sprintf("Listening on TCP %s...", l.TCPAddr()))
+		ll.InfoContext(ctx, fmt.Sprintf("Listening on TCP %s...", l.TCPAddr()))
 	}
 
 	if l.Unix != "" {
@@ -111,13 +113,14 @@ func Listen(opts *NewListenerOpts) (*Listener, error) {
 		}
 
 		close(l.unixListenerReady)
-		ll.Info(fmt.Sprintf("Listening on Unix %s...", l.UnixAddr()))
+		ll.InfoContext(ctx, fmt.Sprintf("Listening on Unix %s...", l.UnixAddr()))
 	}
 
 	if l.TLS != "" {
 		var config *tls.Config
 
 		if config, err = tlsutil.Config(l.TLSCertFile, l.TLSKeyFile, l.TLSCAFile); err != nil {
+			// this error is user visible, do not use lazyerror as it makes less readable
 			return nil, err
 		}
 
@@ -126,7 +129,7 @@ func Listen(opts *NewListenerOpts) (*Listener, error) {
 		}
 
 		close(l.tlsListenerReady)
-		ll.Info(fmt.Sprintf("Listening on TLS %s...", l.TLSAddr()))
+		ll.InfoContext(ctx, fmt.Sprintf("Listening on TLS %s...", l.TLSAddr()))
 	}
 
 	return l, nil
@@ -156,7 +159,7 @@ func (l *Listener) Run(ctx context.Context) {
 
 		go func() {
 			defer func() {
-				l.ll.Info(fmt.Sprintf("%s stopped.", l.TCPAddr()))
+				l.ll.InfoContext(ctx, fmt.Sprintf("%s stopped", l.TCPAddr()))
 				wg.Done()
 			}()
 
@@ -169,7 +172,7 @@ func (l *Listener) Run(ctx context.Context) {
 
 		go func() {
 			defer func() {
-				l.ll.InfoContext(ctx, fmt.Sprintf("%s stopped.", l.UnixAddr()))
+				l.ll.InfoContext(ctx, fmt.Sprintf("%s stopped", l.UnixAddr()))
 				wg.Done()
 			}()
 
@@ -182,7 +185,7 @@ func (l *Listener) Run(ctx context.Context) {
 
 		go func() {
 			defer func() {
-				l.ll.InfoContext(ctx, fmt.Sprintf("%s stopped.", l.TLSAddr()))
+				l.ll.InfoContext(ctx, fmt.Sprintf("%s stopped", l.TLSAddr()))
 				wg.Done()
 			}()
 
