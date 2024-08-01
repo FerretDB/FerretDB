@@ -32,6 +32,7 @@ import (
 	"time"
 
 	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
 	"github.com/pmezard/go-difflib/difflib"
 	"go.opentelemetry.io/otel"
 	otelattribute "go.opentelemetry.io/otel/attribute"
@@ -43,7 +44,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handler"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/proxy"
-	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -262,7 +262,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 			// get protocol error to return correct error document
 			protoErr := handlererrors.ProtocolError(validationErr)
 
-			res := must.NotFail(bson.NewOpMsg(protoErr.Document()))
+			res := must.NotFail(wire.NewOpMsg(protoErr.Document()))
 
 			b := must.NotFail(res.MarshalBinary())
 
@@ -433,11 +433,21 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 	var err error
 	switch reqHeader.OpCode {
 	case wire.OpCodeMsg:
-		var document *types.Document
 		msg := reqBody.(*wire.OpMsg)
-		document, err = bson.OpMsgDocument(msg)
 
-		command = document.Command()
+		var spec wirebson.RawDocument
+
+		if spec, err = msg.RawDocument(); err != nil {
+			break
+		}
+
+		var doc *wirebson.Document
+
+		if doc, err = spec.Decode(); err != nil {
+			break
+		}
+
+		command = doc.Command()
 
 		resHeader.OpCode = wire.OpCodeMsg
 
@@ -498,7 +508,7 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		case wire.OpCodeMsg:
 			protoErr := handlererrors.ProtocolError(err)
 
-			resBody = must.NotFail(bson.NewOpMsg(protoErr.Document()))
+			resBody = must.NotFail(wire.NewOpMsg(protoErr.Document()))
 
 			switch protoErr := protoErr.(type) {
 			case *handlererrors.CommandError:
@@ -514,7 +524,7 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 			}
 		case wire.OpCodeReply:
 			protoErr := handlererrors.ProtocolError(err)
-			resBody = must.NotFail(wire.NewOpReply(must.NotFail(bson.ConvertDocument(protoErr.Document()))))
+			resBody = must.NotFail(wire.NewOpReply(protoErr.Document()))
 
 			result = protoErr.(*handlererrors.CommandError).Code().String()
 
@@ -604,11 +614,11 @@ func (c *conn) logResponse(ctx context.Context, who string, resHeader *wire.MsgH
 	level := slog.LevelDebug
 
 	if resHeader.OpCode == wire.OpCodeMsg {
-		doc := must.NotFail(bson.OpMsgDocument(resBody.(*wire.OpMsg)))
+		doc := must.NotFail(must.NotFail(resBody.(*wire.OpMsg).RawDocument()).Decode())
 
 		var ok bool
 
-		v, _ := doc.Get("ok")
+		v := doc.Get("ok")
 		switch v := v.(type) {
 		case float64:
 			ok = v == 1

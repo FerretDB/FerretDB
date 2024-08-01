@@ -18,8 +18,9 @@ package handlererrors
 import (
 	"errors"
 
+	"github.com/FerretDB/wire/wirebson"
+
 	"github.com/FerretDB/FerretDB/internal/bson"
-	"github.com/FerretDB/FerretDB/internal/types"
 )
 
 //go:generate ../../../bin/stringer -linecomment -type ErrorCode
@@ -354,7 +355,7 @@ type ProtoErr interface {
 	error
 
 	// Document returns error representation for returning to the client.
-	Document() *types.Document
+	Document() *wirebson.Document
 
 	// Info returns additional error information, or nil.
 	Info() *ErrInfo
