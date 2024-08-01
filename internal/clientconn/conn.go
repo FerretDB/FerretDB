@@ -167,7 +167,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 
 	defer func() {
 		if p := recover(); p != nil {
-			c.l.LogAttrs(ctx, logging.LevelDPanic, fmt.Sprint("Failed to run", p), logging.Error(err))
+			c.l.LogAttrs(ctx, logging.LevelDPanic, fmt.Sprint(p), logging.Error(err))
 			err = errors.New("panic")
 		}
 
