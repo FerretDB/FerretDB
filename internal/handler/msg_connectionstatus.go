@@ -37,7 +37,7 @@ func (h *Handler) MsgConnectionStatus(connCtx context.Context, msg *wire.OpMsg) 
 		)))
 	}
 
-	return NewOpMsg(
+	return newOpMsg(
 		must.NotFail(types.NewDocument(
 			"authInfo", must.NotFail(types.NewDocument(
 				"authenticatedUsers", users,

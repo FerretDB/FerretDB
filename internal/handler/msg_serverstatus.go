@@ -101,7 +101,7 @@ func (h *Handler) MsgServerStatus(connCtx context.Context, msg *wire.OpMsg) (*wi
 		"internalViews", int32(0),
 	)))
 
-	return NewOpMsg(
+	return newOpMsg(
 		res,
 	)
 }

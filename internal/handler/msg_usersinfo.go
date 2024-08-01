@@ -33,7 +33,7 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgUsersInfo(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := OpMsgDocument(msg)
+	document, err := opMsgDocument(msg)
 	if err != nil {
 		return nil, err
 	}
@@ -192,7 +192,7 @@ func (h *Handler) MsgUsersInfo(connCtx context.Context, msg *wire.OpMsg) (*wire.
 		}
 	}
 
-	return NewOpMsg(
+	return newOpMsg(
 		must.NotFail(types.NewDocument(
 			"users", res,
 			"ok", float64(1),

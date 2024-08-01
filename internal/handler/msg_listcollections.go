@@ -34,7 +34,7 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgListCollections(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := OpMsgDocument(msg)
+	document, err := opMsgDocument(msg)
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +141,7 @@ func (h *Handler) MsgListCollections(connCtx context.Context, msg *wire.OpMsg) (
 		collections.Append(d)
 	}
 
-	return NewOpMsg(
+	return newOpMsg(
 		must.NotFail(types.NewDocument(
 			"cursor", must.NotFail(types.NewDocument(
 				"id", int64(0),

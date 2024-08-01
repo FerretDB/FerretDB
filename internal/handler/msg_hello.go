@@ -35,7 +35,7 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgHello(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	doc, err := OpMsgDocument(msg)
+	doc, err := opMsgDocument(msg)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -45,7 +45,7 @@ func (h *Handler) MsgHello(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
-	return NewOpMsg(resp)
+	return newOpMsg(resp)
 }
 
 // hello checks client metadata and returns hello's document fields.

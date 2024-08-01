@@ -35,7 +35,7 @@ func (h *Handler) MsgBuildInfo(connCtx context.Context, msg *wire.OpMsg) (*wire.
 		aggregationStages.Append(stage)
 	}
 
-	return NewOpMsg(
+	return newOpMsg(
 		must.NotFail(types.NewDocument(
 			"version", version.Get().MongoDBVersion,
 			"gitVersion", version.Get().Commit,

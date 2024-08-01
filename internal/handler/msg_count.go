@@ -34,7 +34,7 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgCount(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := OpMsgDocument(msg)
+	document, err := opMsgDocument(msg)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +99,7 @@ func (h *Handler) MsgCount(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	count, _ := res.Get("count")
 	n, _ := count.(int32)
 
-	return NewOpMsg(
+	return newOpMsg(
 		must.NotFail(types.NewDocument(
 			"n", n,
 			"ok", float64(1),

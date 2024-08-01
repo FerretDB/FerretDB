@@ -31,7 +31,7 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgSetFreeMonitoring(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := OpMsgDocument(msg)
+	document, err := opMsgDocument(msg)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +78,7 @@ func (h *Handler) MsgSetFreeMonitoring(connCtx context.Context, msg *wire.OpMsg)
 		return nil, err
 	}
 
-	return NewOpMsg(
+	return newOpMsg(
 		must.NotFail(types.NewDocument(
 			"ok", float64(1),
 		)),

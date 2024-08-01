@@ -27,7 +27,7 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgCurrentOp(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return NewOpMsg(
+	return newOpMsg(
 		must.NotFail(types.NewDocument(
 			"inprog", must.NotFail(types.NewArray()),
 			"ok", float64(1),

@@ -31,7 +31,7 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgListDatabases(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := OpMsgDocument(msg)
+	document, err := opMsgDocument(msg)
 	if err != nil {
 		return nil, err
 	}
@@ -102,14 +102,14 @@ func (h *Handler) MsgListDatabases(connCtx context.Context, msg *wire.OpMsg) (*w
 
 	switch {
 	case nameOnly:
-		return NewOpMsg(
+		return newOpMsg(
 			must.NotFail(types.NewDocument(
 				"databases", databases,
 				"ok", float64(1),
 			)),
 		)
 	default:
-		return NewOpMsg(
+		return newOpMsg(
 			must.NotFail(types.NewDocument(
 				"databases", databases,
 				"totalSize", totalSize,

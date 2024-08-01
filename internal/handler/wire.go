@@ -28,8 +28,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// NewOpMsg validates the document and converts it to [*wirebson.Document] to create a new OpMsg with it.
-func NewOpMsg(doc *types.Document) (*wire.OpMsg, error) {
+// newOpMsg validates the document and converts it to [*wirebson.Document] to create a new OpMsg with it.
+func newOpMsg(doc *types.Document) (*wire.OpMsg, error) {
 	if err := validateValue(doc); err != nil {
 		doc.Remove("lsid") // to simplify error message
 
@@ -42,11 +42,11 @@ func NewOpMsg(doc *types.Document) (*wire.OpMsg, error) {
 	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(doc)))
 }
 
-// OpMsgDocument gets a raw document, decodes and converts to [*types.Document].
-// Then it iterates raw documents from sections 1 if any, decodes and append
+// opMsgDocument gets a raw document, decodes and converts to [*types.Document].
+// Then it iterates raw documents from sections 1 if any, decodes and appends
 // them to the response using the section identifier.
 // It validates and returns [*types.Document].
-func OpMsgDocument(msg *wire.OpMsg) (*types.Document, error) {
+func opMsgDocument(msg *wire.OpMsg) (*types.Document, error) {
 	rDoc, err := msg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)

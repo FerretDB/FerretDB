@@ -49,7 +49,7 @@ func WriteErrorDocument(we *mongo.WriteError) *types.Document {
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgInsert(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := OpMsgDocument(msg)
+	document, err := opMsgDocument(msg)
 	if err != nil {
 		return nil, err
 	}
@@ -199,7 +199,7 @@ func (h *Handler) MsgInsert(connCtx context.Context, msg *wire.OpMsg) (*wire.OpM
 
 	res.Set("ok", float64(1))
 
-	return NewOpMsg(
+	return newOpMsg(
 		res,
 	)
 }

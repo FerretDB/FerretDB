@@ -12,26 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package handler
+package github
 
 import (
-	"context"
-
-	"github.com/FerretDB/wire"
-
-	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"time"
 )
 
-// MsgWhatsMyURI implements `whatsMyURI` command.
-//
-// The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgWhatsMyURI(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return newOpMsg(
-		must.NotFail(types.NewDocument(
-			"you", conninfo.Get(connCtx).Peer.String(),
-			"ok", float64(1),
-		)),
-	)
+// IssueStatus represents a known issue status.
+type IssueStatus string
+
+// Known issue statuses.
+const (
+	IssueOpen     IssueStatus = "open"
+	IssueClosed   IssueStatus = "closed"
+	IssueNotFound IssueStatus = "not found"
+)
+
+// issue represents a single cached issue.
+type issue struct {
+	RefreshedAt time.Time   `json:"refreshedAt"`
+	Status      IssueStatus `json:"status"`
 }

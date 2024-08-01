@@ -33,7 +33,7 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgSASLContinue(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	doc, err := OpMsgDocument(msg)
+	doc, err := opMsgDocument(msg)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -87,7 +87,7 @@ func (h *Handler) MsgSASLContinue(connCtx context.Context, msg *wire.OpMsg) (*wi
 		conninfo.Get(connCtx).SetBypassBackendAuth()
 	}
 
-	return NewOpMsg(
+	return newOpMsg(
 		must.NotFail(types.NewDocument(
 			"conversationId", int32(1),
 			"done", conv.Done(),

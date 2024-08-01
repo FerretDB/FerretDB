@@ -44,7 +44,7 @@ func (h *Handler) MsgListCommands(connCtx context.Context, msg *wire.OpMsg) (*wi
 		)))
 	}
 
-	return NewOpMsg(
+	return newOpMsg(
 		must.NotFail(types.NewDocument(
 			"commands", cmdList,
 			"ok", float64(1),

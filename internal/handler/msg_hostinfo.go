@@ -68,7 +68,7 @@ func (h *Handler) MsgHostInfo(connCtx context.Context, msg *wire.OpMsg) (*wire.O
 		os = "Windows"
 	}
 
-	return NewOpMsg(
+	return newOpMsg(
 		must.NotFail(types.NewDocument(
 			"system", must.NotFail(types.NewDocument(
 				"currentTime", now,

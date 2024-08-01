@@ -27,7 +27,7 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgGetCmdLineOpts(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return NewOpMsg(
+	return newOpMsg(
 		must.NotFail(types.NewDocument(
 			"argv", must.NotFail(types.NewArray("ferretdb")),
 			"parsed", must.NotFail(types.NewDocument()),
