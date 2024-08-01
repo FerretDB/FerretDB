@@ -452,9 +452,11 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 				}
 
 				connCtx = trace.ContextWithRemoteSpanContext(connCtx, spanCtx)
-				var span trace.Span
-				connCtx, span = otel.Tracer("").Start(connCtx, command)
-				defer span.End()
+
+				var remoteCtxSpan trace.Span
+				connCtx, remoteCtxSpan = otel.Tracer("").Start(connCtx, command)
+
+				defer remoteCtxSpan.End()
 			}
 		}
 
