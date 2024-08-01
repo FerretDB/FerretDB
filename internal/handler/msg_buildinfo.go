@@ -21,7 +21,6 @@ import (
 	"github.com/FerretDB/wire"
 
 	"github.com/FerretDB/FerretDB/build/version"
-	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/handler/common/aggregations/stages"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -36,7 +35,7 @@ func (h *Handler) MsgBuildInfo(connCtx context.Context, msg *wire.OpMsg) (*wire.
 		aggregationStages.Append(stage)
 	}
 
-	return bson.NewOpMsg(
+	return NewOpMsg(
 		must.NotFail(types.NewDocument(
 			"version", version.Get().MongoDBVersion,
 			"gitVersion", version.Get().Commit,

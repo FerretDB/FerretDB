@@ -25,7 +25,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/backends"
-	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
@@ -38,9 +37,9 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgExplain(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := bson.OpMsgDocument(msg)
+	document, err := OpMsgDocument(msg)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, err
 	}
 
 	params, err := common.GetExplainParams(document, h.L)
@@ -169,7 +168,7 @@ func (h *Handler) MsgExplain(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 		return nil, lazyerrors.Error(err)
 	}
 
-	return bson.NewOpMsg(
+	return NewOpMsg(
 		must.NotFail(types.NewDocument(
 			"queryPlanner", res.QueryPlanner,
 			"explainVersion", "1",

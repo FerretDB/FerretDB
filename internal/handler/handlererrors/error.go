@@ -19,8 +19,6 @@ import (
 	"errors"
 
 	"github.com/FerretDB/wire/wirebson"
-
-	"github.com/FerretDB/FerretDB/internal/bson"
 )
 
 //go:generate ../../../bin/stringer -linecomment -type ErrorCode
@@ -382,7 +380,7 @@ func ProtocolError(err error) ProtoErr {
 		return writeErr
 	}
 
-	var validationErr *bson.ValidationError
+	var validationErr *ValidationError
 	if errors.As(err, &validationErr) {
 		//nolint:errorlint // only *CommandError could be returned
 		return NewCommandError(ErrBadValue, err).(*CommandError)

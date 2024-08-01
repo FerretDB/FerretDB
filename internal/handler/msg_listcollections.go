@@ -22,7 +22,6 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
-	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
@@ -35,9 +34,9 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgListCollections(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := bson.OpMsgDocument(msg)
+	document, err := OpMsgDocument(msg)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, err
 	}
 
 	var filter *types.Document
@@ -142,7 +141,7 @@ func (h *Handler) MsgListCollections(connCtx context.Context, msg *wire.OpMsg) (
 		collections.Append(d)
 	}
 
-	return bson.NewOpMsg(
+	return NewOpMsg(
 		must.NotFail(types.NewDocument(
 			"cursor", must.NotFail(types.NewDocument(
 				"id", int64(0),

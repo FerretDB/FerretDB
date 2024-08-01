@@ -19,7 +19,6 @@ import (
 
 	"github.com/FerretDB/wire"
 
-	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -31,7 +30,7 @@ func (h *Handler) MsgGetFreeMonitoringStatus(connCtx context.Context, msg *wire.
 	state := h.StateProvider.Get().TelemetryString()
 	message := "monitoring is " + state
 
-	return bson.NewOpMsg(
+	return NewOpMsg(
 		must.NotFail(types.NewDocument(
 			"state", state,
 			"message", message,

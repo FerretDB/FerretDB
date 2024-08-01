@@ -40,9 +40,9 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgGetLog(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := bson.OpMsgDocument(msg)
+	document, err := OpMsgDocument(msg)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, err
 	}
 
 	command := document.Command()
@@ -169,7 +169,7 @@ func (h *Handler) MsgGetLog(connCtx context.Context, msg *wire.OpMsg) (*wire.OpM
 		)
 	}
 
-	return bson.NewOpMsg(
+	return NewOpMsg(
 		resDoc,
 	)
 }

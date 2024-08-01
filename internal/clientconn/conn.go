@@ -38,7 +38,6 @@ import (
 	otelattribute "go.opentelemetry.io/otel/attribute"
 	otelcodes "go.opentelemetry.io/otel/codes"
 
-	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handler"
@@ -248,7 +247,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 		var reqBody wire.MsgBody
 		var resHeader *wire.MsgHeader
 		var resBody wire.MsgBody
-		var validationErr *bson.ValidationError
+		var validationErr *handlererrors.ValidationError
 
 		reqHeader, reqBody, err = wire.ReadMessage(bufr)
 		if err != nil && errors.As(err, &validationErr) {

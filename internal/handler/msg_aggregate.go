@@ -27,7 +27,6 @@ import (
 	"github.com/FerretDB/wire"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
-	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
@@ -45,9 +44,9 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgAggregate(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := bson.OpMsgDocument(msg)
+	document, err := OpMsgDocument(msg)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, err
 	}
 
 	common.Ignored(document, h.L, "lsid")
@@ -403,7 +402,7 @@ func (h *Handler) MsgAggregate(connCtx context.Context, msg *wire.OpMsg) (*wire.
 		cursor.Close()
 	}
 
-	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
+	return NewOpMsg(
 		must.NotFail(types.NewDocument(
 			"cursor", must.NotFail(types.NewDocument(
 				"firstBatch", firstBatch,
@@ -412,7 +411,7 @@ func (h *Handler) MsgAggregate(connCtx context.Context, msg *wire.OpMsg) (*wire.
 			)),
 			"ok", float64(1),
 		)),
-	)))
+	)
 }
 
 // stagesDocumentsParams contains the parameters for processStagesDocuments.

@@ -21,7 +21,6 @@ import (
 	"github.com/FerretDB/wire"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
-	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -33,9 +32,9 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgDropAllUsersFromDatabase(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := bson.OpMsgDocument(msg)
+	document, err := OpMsgDocument(msg)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, err
 	}
 
 	common.Ignored(document, h.L, "writeConcern", "comment")
@@ -97,7 +96,7 @@ func (h *Handler) MsgDropAllUsersFromDatabase(connCtx context.Context, msg *wire
 		deleted = res.Deleted
 	}
 
-	return bson.NewOpMsg(
+	return NewOpMsg(
 		must.NotFail(types.NewDocument(
 			"n", deleted,
 			"ok", float64(1),

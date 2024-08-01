@@ -19,7 +19,6 @@ import (
 
 	"github.com/FerretDB/wire"
 
-	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -28,7 +27,7 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgGetCmdLineOpts(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return bson.NewOpMsg(
+	return NewOpMsg(
 		must.NotFail(types.NewDocument(
 			"argv", must.NotFail(types.NewArray("ferretdb")),
 			"parsed", must.NotFail(types.NewDocument()),

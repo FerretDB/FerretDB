@@ -19,7 +19,6 @@ import (
 
 	"github.com/FerretDB/wire"
 
-	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -30,7 +29,7 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgIsMaster(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	doc, err := bson.OpMsgDocument(msg)
+	doc, err := OpMsgDocument(msg)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -40,7 +39,7 @@ func (h *Handler) MsgIsMaster(connCtx context.Context, msg *wire.OpMsg) (*wire.O
 		return nil, lazyerrors.Error(err)
 	}
 
-	return bson.NewOpMsg(res)
+	return NewOpMsg(res)
 }
 
 // checkClientMetadata checks if the message does not contain client metadata after it was received already.

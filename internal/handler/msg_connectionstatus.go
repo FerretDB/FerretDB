@@ -19,7 +19,6 @@ import (
 
 	"github.com/FerretDB/wire"
 
-	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -38,7 +37,7 @@ func (h *Handler) MsgConnectionStatus(connCtx context.Context, msg *wire.OpMsg) 
 		)))
 	}
 
-	return bson.NewOpMsg(
+	return NewOpMsg(
 		must.NotFail(types.NewDocument(
 			"authInfo", must.NotFail(types.NewDocument(
 				"authenticatedUsers", users,

@@ -22,7 +22,6 @@ import (
 
 	"github.com/FerretDB/wire"
 
-	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -34,9 +33,9 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgDebugError(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := bson.OpMsgDocument(msg)
+	document, err := OpMsgDocument(msg)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, err
 	}
 
 	expected, err := common.GetRequiredParam[string](document, document.Command())
@@ -52,7 +51,7 @@ func (h *Handler) MsgDebugError(connCtx context.Context, msg *wire.OpMsg) (*wire
 
 	switch {
 	case expected == "ok":
-		return bson.NewOpMsg(must.NotFail(types.NewDocument(
+		return NewOpMsg(must.NotFail(types.NewDocument(
 			"ok", float64(1),
 		)))
 

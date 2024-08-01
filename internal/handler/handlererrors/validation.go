@@ -12,59 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bson
-
-import (
-	"errors"
-	"math"
-
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/must"
-)
+package handlererrors
 
 // ValidationError is used for reporting validation errors.
 type ValidationError struct {
 	err error
 }
 
-// Error implements error interface.
+// Error implements [error].
 func (v *ValidationError) Error() string {
 	return v.err.Error()
 }
 
-// newValidationError returns new ValidationError.
+// NewValidationError returns new ValidationError.
 //
 // Remove and make callers use validateValue only?
 // TODO https://github.com/FerretDB/FerretDB/issues/2412
-func newValidationError(err error) error {
+func NewValidationError(err error) error {
 	return &ValidationError{err: err}
-}
-
-// validateValue checks given value and returns error if not supported value was encountered.
-func validateValue(v any) error {
-	switch v := v.(type) {
-	case *types.Document:
-		for _, v := range v.Values() {
-			if err := validateValue(v); err != nil {
-				return err
-			}
-		}
-
-	case *types.Array:
-		for i := 0; i < v.Len(); i++ {
-			v := must.NotFail(v.Get(i))
-			if err := validateValue(v); err != nil {
-				return err
-			}
-		}
-
-	case float64:
-		if math.IsNaN(v) {
-			return errors.New("NaN is not supported")
-		}
-	}
-
-	return nil
 }
 
 // check interfaces

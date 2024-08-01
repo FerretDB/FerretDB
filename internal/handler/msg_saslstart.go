@@ -25,7 +25,6 @@ import (
 	"github.com/FerretDB/wire"
 	"github.com/xdg-go/scram"
 
-	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
@@ -40,9 +39,9 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgSASLStart(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := bson.OpMsgDocument(msg)
+	document, err := OpMsgDocument(msg)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, err
 	}
 
 	dbName, err := common.GetRequiredParam[string](document, "$db")
@@ -57,7 +56,7 @@ func (h *Handler) MsgSASLStart(connCtx context.Context, msg *wire.OpMsg) (*wire.
 
 	replyDoc.Set("ok", float64(1))
 
-	return bson.NewOpMsg(replyDoc)
+	return NewOpMsg(replyDoc)
 }
 
 // saslStart starts authentication and returns a document used for the response.

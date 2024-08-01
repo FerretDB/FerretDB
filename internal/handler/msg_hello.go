@@ -23,7 +23,6 @@ import (
 
 	"github.com/FerretDB/wire"
 
-	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -36,7 +35,7 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgHello(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	doc, err := bson.OpMsgDocument(msg)
+	doc, err := OpMsgDocument(msg)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -46,7 +45,7 @@ func (h *Handler) MsgHello(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
-	return bson.NewOpMsg(resp)
+	return NewOpMsg(resp)
 }
 
 // hello checks client metadata and returns hello's document fields.
