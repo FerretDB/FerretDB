@@ -12,13 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package bson
+package handler
 
 import (
 	"fmt"
 
 	"github.com/FerretDB/wire"
 
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -35,7 +36,7 @@ func NewOpMsg(doc *types.Document) (*wire.OpMsg, error) {
 		))
 	}
 
-	return wire.NewOpMsg(must.NotFail(ConvertBSONDocument(doc)))
+	return wire.NewOpMsg(must.NotFail(bson.ConvertBSONDocument(doc)))
 }
 
 // OpMsgDocument gets a raw document, decodes and converts to [*types.Document].
@@ -48,7 +49,7 @@ func OpMsgDocument(msg *wire.OpMsg) (*types.Document, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
-	res, err := TypesDocument(rDoc)
+	res, err := bson.TypesDocument(rDoc)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -64,7 +65,7 @@ func OpMsgDocument(msg *wire.OpMsg) (*types.Document, error) {
 		for _, d := range docs {
 			var doc *types.Document
 
-			if doc, err = TypesDocument(d); err != nil {
+			if doc, err = bson.TypesDocument(d); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
 
