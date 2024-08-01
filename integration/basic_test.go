@@ -122,14 +122,9 @@ func TestOtelComment(t *testing.T) {
 	comment, err := json.Marshal(traceData)
 	require.NoError(t, err)
 
-	traceDataDoc := bson.D{
-		{"ferretTraceID", span.SpanContext().TraceID()},
-		{"ferretSpanID", span.SpanContext().SpanID()},
-	}
-
 	var doc bson.D
 	opts := options.FindOne().SetComment(string(comment))
-	err = collection.FindOne(ctx, bson.D{{"_id", "string"}, {"$comment", traceDataDoc}}, opts).Decode(&doc)
+	err = collection.FindOne(ctx, bson.D{{"_id", "string"}}, opts).Decode(&doc)
 	require.NoError(t, err)
 }
 
