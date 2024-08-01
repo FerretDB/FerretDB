@@ -316,6 +316,7 @@ jobs:
           ssh-key: ${{ secrets.FUZZ_CORPUS_DEPLOY_KEY }}
           path: fuzz-corpus
           fetch-depth: 0 # for commit and push to work
+          lfs: false # LFS is used only by website
 
       - name: Setup corpus
         run: bin/task fuzz-corpus
