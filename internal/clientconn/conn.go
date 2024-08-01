@@ -445,6 +445,7 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		if comment, cerr := document.Get("comment"); cerr == nil {
 			if cmt, ok := comment.(string); ok {
 				var spanCtx trace.SpanContext
+
 				spanCtx, cerr = spanContextFromComment(cmt)
 				if cerr != nil {
 					c.l.ErrorContext(connCtx, "Failed to extract span context from comment", logging.Error(err))
