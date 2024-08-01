@@ -100,7 +100,6 @@ func (h *Handler) MsgFind(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	}
 
 	ctx := connCtx
-
 	cancel := func() {}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/2983
