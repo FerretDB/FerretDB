@@ -21,13 +21,12 @@ import (
 	"strings"
 	"testing"
 
-	"go.opentelemetry.io/otel"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.opentelemetry.io/otel"
 
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 
