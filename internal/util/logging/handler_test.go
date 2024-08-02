@@ -56,8 +56,9 @@ func TestHandler(t *testing.T) {
 
 			var buf bytes.Buffer
 			var h slog.Handler = NewHandler(&buf, &NewHandlerOpts{
-				Base:  base,
-				Level: slog.LevelInfo,
+				Base:          base,
+				Level:         slog.LevelInfo,
+				CheckMessages: true,
 			})
 
 			h = h.WithGroup("g2")
