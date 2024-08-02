@@ -6,7 +6,7 @@ toolchain go1.22.5
 
 require (
 	github.com/AlekSi/pointer v1.2.0
-	github.com/FerretDB/wire v0.0.5
+	github.com/FerretDB/wire v0.0.6-0.20240802074916-ef42403ca98c
 	github.com/SAP/go-hdb v1.10.1
 	github.com/alecthomas/kong v0.9.0
 	github.com/arl/statsviz v0.6.0
