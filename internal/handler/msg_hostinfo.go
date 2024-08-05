@@ -26,6 +26,7 @@ import (
 
 	"github.com/FerretDB/wire"
 
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -68,7 +69,7 @@ func (h *Handler) MsgHostInfo(connCtx context.Context, msg *wire.OpMsg) (*wire.O
 		os = "Windows"
 	}
 
-	return newOpMsg(
+	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
 		must.NotFail(types.NewDocument(
 			"system", must.NotFail(types.NewDocument(
 				"currentTime", now,
@@ -85,7 +86,7 @@ func (h *Handler) MsgHostInfo(connCtx context.Context, msg *wire.OpMsg) (*wire.O
 			"extra", must.NotFail(types.NewDocument()),
 			"ok", float64(1),
 		)),
-	)
+	)))
 }
 
 // parseOSRelease parses the /etc/os-release or /usr/lib/os-release file content,

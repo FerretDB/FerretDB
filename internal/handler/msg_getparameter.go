@@ -20,6 +20,7 @@ import (
 
 	"github.com/FerretDB/wire"
 
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
@@ -97,9 +98,9 @@ func (h *Handler) MsgGetParameter(connCtx context.Context, msg *wire.OpMsg) (*wi
 
 	resDoc.Set("ok", float64(1))
 
-	return newOpMsg(
+	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
 		resDoc,
-	)
+	)))
 }
 
 // selectParameters makes a selection of requested parameters.

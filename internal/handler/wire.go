@@ -15,44 +15,23 @@
 package handler
 
 import (
-	"errors"
-	"fmt"
-	"math"
-
 	"github.com/FerretDB/wire"
 
 	"github.com/FerretDB/FerretDB/internal/bson"
-	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// newOpMsg validates the document and converts it to [*wirebson.Document] to create a new OpMsg with it.
-func newOpMsg(doc *types.Document) (*wire.OpMsg, error) {
-	if err := validateValue(doc); err != nil {
-		doc.Remove("lsid") // to simplify error message
-
-		return nil, handlererrors.NewValidationError(fmt.Errorf("wire.OpMsg.Document: validation failed for %v with: %v",
-			types.FormatAnyValue(doc),
-			err,
-		))
-	}
-
-	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(doc)))
+// init disallows NaN values by setting false to [wire.AllowNaN].
+func init() {
+	wire.AllowNaN = false
 }
 
-// opMsgDocument gets a raw document, decodes and converts to [*types.Document].
-// Then it iterates raw documents from sections 1 if any, decodes and appends
-// them to the response using the section identifier.
-// It validates and returns [*types.Document].
+// opMsgDocument gets a raw document from section 0 and converts to [*types.Document].
+// Then it iterates raw documents from sections 1 if any, appends them
+// to the response using the section identifier as the key.
 func opMsgDocument(msg *wire.OpMsg) (*types.Document, error) {
-	rDoc, err := msg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	res, err := bson.TypesDocument(rDoc)
+	res, err := bson.TypesDocument(msg.RawSection0())
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -78,41 +57,5 @@ func opMsgDocument(msg *wire.OpMsg) (*types.Document, error) {
 		res.Set(section.Identifier, a)
 	}
 
-	if err = validateValue(res); err != nil {
-		res.Remove("lsid") // to simplify error message
-
-		return nil, handlererrors.NewValidationError(fmt.Errorf("wire.OpMsg.Document: validation failed for %v with: %v",
-			types.FormatAnyValue(res),
-			err,
-		))
-	}
-
 	return res, nil
-}
-
-// validateValue checks given value and returns error if unsupported value was encountered.
-func validateValue(v any) error {
-	switch v := v.(type) {
-	case *types.Document:
-		for _, v := range v.Values() {
-			if err := validateValue(v); err != nil {
-				return err
-			}
-		}
-
-	case *types.Array:
-		for i := 0; i < v.Len(); i++ {
-			v := must.NotFail(v.Get(i))
-			if err := validateValue(v); err != nil {
-				return err
-			}
-		}
-
-	case float64:
-		if math.IsNaN(v) {
-			return errors.New("NaN is not supported")
-		}
-	}
-
-	return nil
 }

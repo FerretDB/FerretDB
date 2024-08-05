@@ -19,6 +19,7 @@ import (
 
 	"github.com/FerretDB/wire"
 
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -102,20 +103,20 @@ func (h *Handler) MsgListDatabases(connCtx context.Context, msg *wire.OpMsg) (*w
 
 	switch {
 	case nameOnly:
-		return newOpMsg(
+		return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
 			must.NotFail(types.NewDocument(
 				"databases", databases,
 				"ok", float64(1),
 			)),
-		)
+		)))
 	default:
-		return newOpMsg(
+		return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
 			must.NotFail(types.NewDocument(
 				"databases", databases,
 				"totalSize", totalSize,
 				"totalSizeMb", totalSize/1024/1024,
 				"ok", float64(1),
 			)),
-		)
+		)))
 	}
 }

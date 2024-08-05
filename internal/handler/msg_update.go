@@ -21,6 +21,7 @@ import (
 	"github.com/FerretDB/wire"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -62,9 +63,9 @@ func (h *Handler) MsgUpdate(connCtx context.Context, msg *wire.OpMsg) (*wire.OpM
 	res.Set("nModified", modified)
 	res.Set("ok", float64(1))
 
-	return newOpMsg(
+	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
 		res,
-	)
+	)))
 }
 
 // updateDocument iterate through all documents in collection and update them.

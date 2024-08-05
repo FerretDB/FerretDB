@@ -24,6 +24,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -101,7 +102,7 @@ func (h *Handler) MsgServerStatus(connCtx context.Context, msg *wire.OpMsg) (*wi
 		"internalViews", int32(0),
 	)))
 
-	return newOpMsg(
+	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
 		res,
-	)
+	)))
 }

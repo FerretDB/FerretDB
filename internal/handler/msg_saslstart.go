@@ -25,6 +25,7 @@ import (
 	"github.com/FerretDB/wire"
 	"github.com/xdg-go/scram"
 
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
@@ -56,7 +57,7 @@ func (h *Handler) MsgSASLStart(connCtx context.Context, msg *wire.OpMsg) (*wire.
 
 	replyDoc.Set("ok", float64(1))
 
-	return newOpMsg(replyDoc)
+	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(replyDoc)))
 }
 
 // saslStart starts authentication and returns a document used for the response.

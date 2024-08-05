@@ -9,8 +9,10 @@ replace github.com/FerretDB/FerretDB => ../
 require (
 	github.com/AlekSi/pointer v1.2.0
 	github.com/FerretDB/FerretDB v0.0.0-00010101000000-000000000000
+	github.com/FerretDB/wire v0.0.6-0.20240802074916-ef42403ca98c
 	github.com/prometheus/client_golang v1.19.1
 	github.com/stretchr/testify v1.9.0
+	github.com/xdg-go/scram v1.1.2
 	go.mongodb.org/mongo-driver v1.16.0
 	go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo v0.53.0
 	go.opentelemetry.io/otel v1.28.0
@@ -19,7 +21,6 @@ require (
 
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
-	github.com/FerretDB/wire v0.0.5 // indirect
 	github.com/SAP/go-hdb v1.10.1 // indirect
 	github.com/arl/statsviz v0.6.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -51,7 +52,6 @@ require (
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
-	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.28.0 // indirect

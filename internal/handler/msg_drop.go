@@ -21,6 +21,7 @@ import (
 	"github.com/FerretDB/wire"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -78,13 +79,13 @@ func (h *Handler) MsgDrop(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 
 	switch {
 	case err == nil, backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist):
-		return newOpMsg(
+		return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
 			must.NotFail(types.NewDocument(
 				"nIndexesWas", int32(1), // TODO https://github.com/FerretDB/FerretDB/issues/2337
 				"ns", dbName+"."+collectionName,
 				"ok", float64(1),
 			)),
-		)
+		)))
 
 	case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid):
 		msg := fmt.Sprintf("Invalid collection name: %s", collectionName)

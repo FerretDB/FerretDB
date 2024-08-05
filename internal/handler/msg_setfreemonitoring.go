@@ -20,6 +20,7 @@ import (
 
 	"github.com/FerretDB/wire"
 
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -78,9 +79,9 @@ func (h *Handler) MsgSetFreeMonitoring(connCtx context.Context, msg *wire.OpMsg)
 		return nil, err
 	}
 
-	return newOpMsg(
+	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
 		must.NotFail(types.NewDocument(
 			"ok", float64(1),
 		)),
-	)
+	)))
 }

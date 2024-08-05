@@ -22,6 +22,7 @@ import (
 	"github.com/FerretDB/wire"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
@@ -116,9 +117,9 @@ func (h *Handler) MsgDropIndexes(connCtx context.Context, msg *wire.OpMsg) (*wir
 		"ok", float64(1),
 	)
 
-	return newOpMsg(
+	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
 		replyDoc,
-	)
+	)))
 }
 
 // processDropIndexOptions parses and validates index doc and returns the list of indexes to delete

@@ -23,6 +23,7 @@ import (
 
 	"github.com/FerretDB/wire"
 
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -45,7 +46,7 @@ func (h *Handler) MsgHello(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
-	return newOpMsg(resp)
+	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(resp)))
 }
 
 // hello checks client metadata and returns hello's document fields.

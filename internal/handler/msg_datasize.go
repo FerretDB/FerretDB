@@ -22,6 +22,7 @@ import (
 	"github.com/FerretDB/wire"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
@@ -97,7 +98,7 @@ func (h *Handler) MsgDataSize(connCtx context.Context, msg *wire.OpMsg) (*wire.O
 		return nil, lazyerrors.Error(err)
 	}
 
-	return newOpMsg(
+	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
 		must.NotFail(types.NewDocument(
 			"estimate", false,
 			"size", stats.SizeTotal,
@@ -105,5 +106,5 @@ func (h *Handler) MsgDataSize(connCtx context.Context, msg *wire.OpMsg) (*wire.O
 			"millis", int32(time.Since(started).Milliseconds()),
 			"ok", float64(1),
 		)),
-	)
+	)))
 }

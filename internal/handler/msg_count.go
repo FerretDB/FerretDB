@@ -22,6 +22,7 @@ import (
 	"github.com/FerretDB/wire"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -99,10 +100,10 @@ func (h *Handler) MsgCount(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	count, _ := res.Get("count")
 	n, _ := count.(int32)
 
-	return newOpMsg(
+	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
 		must.NotFail(types.NewDocument(
 			"n", n,
 			"ok", float64(1),
 		)),
-	)
+	)))
 }

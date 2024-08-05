@@ -20,6 +20,7 @@ import (
 
 	"github.com/FerretDB/wire"
 
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
@@ -87,12 +88,12 @@ func (h *Handler) MsgSASLContinue(connCtx context.Context, msg *wire.OpMsg) (*wi
 		conninfo.Get(connCtx).SetBypassBackendAuth()
 	}
 
-	return newOpMsg(
+	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
 		must.NotFail(types.NewDocument(
 			"conversationId", int32(1),
 			"done", conv.Done(),
 			"payload", types.Binary{B: []byte(response)},
 			"ok", float64(1),
 		)),
-	)
+	)))
 }
