@@ -38,7 +38,7 @@ func (h *Handler) MsgRenameCollection(connCtx context.Context, msg *wire.OpMsg) 
 
 	document, err := opMsgDocument(msg)
 	if err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
 	// implement dropTarget param

@@ -12,5 +12,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package bson converts wirebson and validates with allowed types values.
+// Package bson converts wirebson allowed values.
 package bson

@@ -24,6 +24,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
@@ -34,7 +35,7 @@ import (
 func (h *Handler) MsgSetFreeMonitoring(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := opMsgDocument(msg)
 	if err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
 	action, err := common.GetRequiredParam[string](document, "action")

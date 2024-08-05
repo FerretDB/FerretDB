@@ -52,7 +52,7 @@ func WriteErrorDocument(we *mongo.WriteError) *types.Document {
 func (h *Handler) MsgInsert(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := opMsgDocument(msg)
 	if err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
 	params, err := common.GetInsertParams(document, h.L)

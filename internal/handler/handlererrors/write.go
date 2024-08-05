@@ -73,11 +73,11 @@ func (we *WriteErrors) Document() *wirebson.Document {
 	for _, e := range we.errs {
 		doc := wirebson.MakeDocument(3)
 
-		_ = doc.Add("index", e.index)
-		_ = doc.Add("code", int32(e.code))
-		_ = doc.Add("errmsg", e.errmsg)
+		must.NoError(doc.Add("index", e.index))
+		must.NoError(doc.Add("code", int32(e.code)))
+		must.NoError(doc.Add("errmsg", e.errmsg))
 
-		_ = errs.Add(doc)
+		must.NoError(errs.Add(doc))
 	}
 
 	return must.NotFail(wirebson.NewDocument(

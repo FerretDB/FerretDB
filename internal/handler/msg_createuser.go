@@ -41,7 +41,7 @@ import (
 func (h *Handler) MsgCreateUser(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := opMsgDocument(msg)
 	if err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
 	dbName, err := common.GetRequiredParam[string](document, "$db")

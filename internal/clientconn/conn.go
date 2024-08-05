@@ -32,7 +32,6 @@ import (
 	"time"
 
 	"github.com/FerretDB/wire"
-	"github.com/FerretDB/wire/wirebson"
 	"github.com/pmezard/go-difflib/difflib"
 	"go.opentelemetry.io/otel"
 	otelattribute "go.opentelemetry.io/otel/attribute"
@@ -433,18 +432,8 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 	case wire.OpCodeMsg:
 		msg := reqBody.(*wire.OpMsg)
 
-		var spec wirebson.RawDocument
-
-		if spec, err = msg.RawDocument(); err != nil {
-			break
-		}
-
-		var doc *wirebson.Document
-
-		if doc, err = spec.Decode(); err != nil {
-			break
-		}
-
+		// decoded successfully in [wire.ReadMessage] [UnmarshalBinaryNocopy] [check]
+		doc := must.NotFail(msg.RawSection0().Decode())
 		command = doc.Command()
 
 		resHeader.OpCode = wire.OpCodeMsg

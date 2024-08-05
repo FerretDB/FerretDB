@@ -93,8 +93,8 @@ func (e *CommandError) Document() *wirebson.Document {
 	))
 
 	if e.code != errUnset {
-		_ = d.Add("code", int32(e.code))
-		_ = d.Add("codeName", e.code.String())
+		must.NoError(d.Add("code", int32(e.code)))
+		must.NoError(d.Add("codeName", e.code.String()))
 	}
 
 	return d

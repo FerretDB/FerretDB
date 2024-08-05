@@ -36,7 +36,7 @@ import (
 func (h *Handler) MsgDistinct(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := opMsgDocument(msg)
 	if err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
 	params, err := common.GetDistinctParams(document, h.L)

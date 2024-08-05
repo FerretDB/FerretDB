@@ -34,7 +34,7 @@ import (
 func (h *Handler) MsgListDatabases(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := opMsgDocument(msg)
 	if err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
 	var filter *types.Document

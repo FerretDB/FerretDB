@@ -38,7 +38,7 @@ import (
 func (h *Handler) MsgDelete(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := opMsgDocument(msg)
 	if err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
 	params, err := common.GetDeleteParams(document, h.L)
