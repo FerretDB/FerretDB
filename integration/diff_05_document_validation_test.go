@@ -71,6 +71,15 @@ func TestDiffDocumentValidation(t *testing.T) {
 					Message: `invalid value: { "foo": -Inf } (infinity values are not allowed)`,
 				}}},
 			},
+			"NaN": {
+				doc: bson.D{{"_id", "nan"}, {"foo", math.NaN()}},
+				err: mongo.CommandError{
+					Code: 2,
+					Name: "BadValue",
+					Message: `wire.OpMsg.Document: validation failed for { insert: "TestDiffDocumentValidation", ordered: true, ` +
+						`$db: "TestDiffDocumentValidation", documents: [ { _id: "nan", foo: nan.0 } ] } with: NaN is not supported`,
+				},
+			},
 		} {
 			name, tc := name, tc
 			t.Run(name, func(t *testing.T) {
@@ -107,6 +116,29 @@ func TestDiffDocumentValidation(t *testing.T) {
 					Message: `invalid key: "bar.baz" (key must not contain '.' sign)`,
 				},
 			},
+			"NaN": {
+				filter: bson.D{{"_id", "2"}},
+				update: bson.D{{"$set", bson.D{{"foo", math.NaN()}}}},
+				cerr: &mongo.CommandError{
+					Code: 2,
+					Name: "BadValue",
+					Message: `wire.OpMsg.Document: validation failed for { update: "TestDiffDocumentValidation", ` +
+						`ordered: true, $db: "TestDiffDocumentValidation", updates: [ { q: { _id: "2" }, ` +
+						`u: { $set: { foo: nan.0 } } } ] } with: NaN is not supported`,
+				},
+			},
+			"NaNWithUpsert": {
+				filter: bson.D{{"_id", "3"}},
+				update: bson.D{{"$set", bson.D{{"foo", math.NaN()}}}},
+				opts:   options.Update().SetUpsert(true),
+				cerr: &mongo.CommandError{
+					Code: 2,
+					Name: "BadValue",
+					Message: `wire.OpMsg.Document: validation failed for { update: "TestDiffDocumentValidation", ` +
+						`ordered: true, $db: "TestDiffDocumentValidation", updates: [ { q: { _id: "3" }, ` +
+						`u: { $set: { foo: nan.0 } }, upsert: true } ] } with: NaN is not supported`,
+				},
+			},
 		} {
 			name, tc := name, tc
 			t.Run(name, func(t *testing.T) {
@@ -125,6 +157,48 @@ func TestDiffDocumentValidation(t *testing.T) {
 				}
 
 				AssertEqualCommandError(t, *tc.cerr, err)
+			})
+		}
+	})
+
+	t.Run("FindAndModify", func(t *testing.T) {
+		t.Parallel()
+
+		for name, tc := range map[string]struct {
+			filter bson.D
+			update bson.D
+			err    mongo.CommandError
+		}{
+			"NaN": {
+				filter: bson.D{{"_id", "4"}},
+				update: bson.D{{"$set", bson.D{{"foo", math.NaN()}}}},
+				err: mongo.CommandError{
+					Code: 2,
+					Name: "BadValue",
+					Message: `wire.OpMsg.Document: validation failed for { findAndModify: "TestDiffDocumentValidation", ` +
+						`query: { _id: "4" }, update: { $set: { foo: nan.0 } }, $db: "TestDiffDocumentValidation" } with: NaN ` +
+						`is not supported`,
+				},
+			},
+		} {
+			name, tc := name, tc
+
+			t.Run(name, func(t *testing.T) {
+				t.Parallel()
+
+				_, err := collection.InsertOne(ctx, tc.filter)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				err = collection.FindOneAndUpdate(ctx, tc.filter, tc.update).Err()
+
+				if setup.IsMongoDB(t) {
+					require.NoError(t, err)
+					return
+				}
+
+				AssertEqualCommandError(t, tc.err, err)
 			})
 		}
 	})
