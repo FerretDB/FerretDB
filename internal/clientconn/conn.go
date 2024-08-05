@@ -247,10 +247,9 @@ func (c *conn) run(ctx context.Context) (err error) {
 		var reqBody wire.MsgBody
 		var resHeader *wire.MsgHeader
 		var resBody wire.MsgBody
-		var validationErr *handlererrors.ValidationError
 
 		reqHeader, reqBody, err = wire.ReadMessage(bufr)
-		if err != nil && errors.As(err, &validationErr) {
+		if err != nil && errors.Is(err, wire.ErrNaN) {
 			// Currently, we respond with OP_MSG containing an error and don't close the connection.
 			// That's probably not right. First, we always respond with OP_MSG, even to OP_QUERY.
 			// Second, we don't know what command it was, if any,
@@ -259,7 +258,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 			// TODO https://github.com/FerretDB/FerretDB/issues/2412
 
 			// get protocol error to return correct error document
-			protoErr := handlererrors.ProtocolError(validationErr)
+			protoErr := handlererrors.ProtocolError(err)
 
 			res := must.NotFail(wire.NewOpMsg(protoErr.Document()))
 
