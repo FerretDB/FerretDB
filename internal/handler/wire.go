@@ -23,7 +23,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// init disallows NaN values in wire.
+// init disallows NaN values by setting false to [wire.AllowNaN].
 func init() {
 	wire.AllowNaN = false
 }
