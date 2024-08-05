@@ -41,12 +41,7 @@ func newOpMsg(doc *types.Document) (*wire.OpMsg, error) {
 //
 //nolint:unused // to be used by each handler
 func opMsgDocument(msg *wire.OpMsg) (*types.Document, error) {
-	rDoc, err := msg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	res, err := bson.TypesDocument(rDoc)
+	res, err := bson.TypesDocument(msg.RawSection0())
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
