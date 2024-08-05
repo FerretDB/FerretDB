@@ -20,7 +20,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // init disallows NaN values by setting false to [wire.AllowNaN].
@@ -28,16 +27,9 @@ func init() {
 	wire.AllowNaN = false
 }
 
-// newOpMsg validates the document and converts it to [*wirebson.Document] to create a new OpMsg with it.
-//
-//nolint:unused // to be used by each handler
-func newOpMsg(doc *types.Document) (*wire.OpMsg, error) {
-	return wire.NewOpMsg(must.NotFail(bson.ConvertBSONDocument(doc)))
-}
-
-// opMsgDocument gets a raw document, decodes and converts to [*types.Document].
-// Then it iterates raw documents from sections 1 if any, decodes and appends
-// them to the response using the section identifier.
+// opMsgDocument gets a raw document from section 0 and converts to [*types.Document].
+// Then it iterates raw documents from sections 1 if any, appends them
+// to the response using the section identifier as the key.
 //
 //nolint:unused // to be used by each handler
 func opMsgDocument(msg *wire.OpMsg) (*types.Document, error) {
