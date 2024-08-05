@@ -74,8 +74,8 @@ jobs:
         if: github.event_name == 'pull_request_target'
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-          lfs: false
+          fetch-depth: 0 # for `git describe` to work
+          lfs: false # LFS is used only by website
           ref: ${{ github.event.pull_request.head.sha }}
 
       # for version.txt on push tags; see https://github.com/actions/checkout/issues/290

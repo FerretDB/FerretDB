@@ -2,6 +2,15 @@
 
 <!-- markdownlint-disable MD024 MD034 -->
 
+## [v1.24.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.24.0) (TBD)
+
+### What's Changed
+
+#### Embeddable package
+
+As communicated in the previous release, this version renames the `SLogger` field to `Logger`,
+finishing the migration from [`zap`](https://github.com/uber-go/zap) to [`slog`](https://pkg.go.dev/log/slog).
+
 ## [v1.23.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.23.0) (2024-07-25)
 
 ### What's Changed

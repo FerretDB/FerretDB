@@ -262,12 +262,12 @@ Some of our idiosyncrasies are documented below.
 
 (See also our user documentation for notes about logging levels, logging sensitive information, etc.)
 
-1. Log messages should not end with punctuation.
-2. Log field names should use `snake_case`.
-3. Whatever sensitive information can be logged should be checked by calling `.Enabled(LevelDebug)` on the appropriate logger,
+1. Log messages should contain a single sentence; use a semicolon if you must.
+2. Log messages should not have leading/trailing spaces or end with punctuation.
+3. Log field names should use `snake_case`.
+4. Whatever sensitive information can be logged should be checked by calling `.Enabled(slog.LevelDebug)` on the appropriate logger,
    not by directly comparing levels with `<` / `>` operators.
-   The same check for `LevelDebug` should be applied if additional sensitive fields should be added
-   to the log message on a different level.
+   The same check should be applied if additional sensitive fields should be added to the log message on a different level.
 
 #### Integration tests conventions
 
