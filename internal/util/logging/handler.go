@@ -21,6 +21,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -31,10 +32,12 @@ import (
 //     (DPanic/ERROR+1 panics in debug builds, Panic/ERROR+2 always panics, Fatal/ERROR+3 exits with a non-zero status);
 //   - shorter source locations;
 //   - removal of time, level, and source attributes;
+//   - message checks for leading/trailing spaces and ending punctuation;
 //   - collecting recent log entries for `getLog` command.
 type Handler struct {
-	base slog.Handler
-	out  io.Writer
+	base          slog.Handler
+	out           io.Writer
+	checkMessages bool
 }
 
 // NewHandlerOpts represents [NewHandler] options.
@@ -46,6 +49,13 @@ type NewHandlerOpts struct {
 	RemoveTime   bool
 	RemoveLevel  bool
 	RemoveSource bool
+
+	// When set, causes handler to panic on messages with leading/trailing spaces or ending punctuation.
+	// It must not be set unconditionally because we don't control messages from third-party packages.
+	//
+	// But we can enable it in our tests and when [debugbuild.Enabled] is true.
+	// TODO https://github.com/FerretDB/FerretDB/issues/4511
+	CheckMessages bool
 }
 
 // shortPath returns shorter path for the given path.
@@ -146,6 +156,16 @@ func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
 
 	if debugbuild.Enabled {
 		must.NoError(err)
+	}
+
+	if h.checkMessages {
+		if strings.TrimSpace(r.Message) != r.Message {
+			panic(fmt.Sprintf("message %q has leading/trailing spaces", r.Message))
+		}
+
+		if strings.TrimRight(r.Message, ".?!") != r.Message {
+			panic(fmt.Sprintf("message %q ends with punctuation", r.Message))
+		}
 	}
 
 	RecentEntries.add(&r)

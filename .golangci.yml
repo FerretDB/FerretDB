@@ -28,6 +28,14 @@ linters-settings:
             desc: use `github.com/jackc/pgx/v5` package instead
           - pkg: github.com/jackc/pgx/v4
             desc: use `github.com/jackc/pgx/v5` package instead
+
+      ferretdb-in-tools:
+        files:
+          - "**/tools/**/*.go"
+        deny:
+          - pkg: github.com/FerretDB/FerretDB/internal/
+            desc: tools should not import FerretDB code
+
       types:
         files:
           - "**/internal/util/logging/*.go"

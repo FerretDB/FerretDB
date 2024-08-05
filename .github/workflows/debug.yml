@@ -39,8 +39,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-          lfs: false
+          fetch-depth: 0 # for `git describe` to work
+          lfs: false # LFS is used only by website
 
       - name: Debug git status
         run: git status
