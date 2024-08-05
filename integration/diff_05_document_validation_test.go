@@ -74,10 +74,9 @@ func TestDiffDocumentValidation(t *testing.T) {
 			"NaN": {
 				doc: bson.D{{"_id", "nan"}, {"foo", math.NaN()}},
 				err: mongo.CommandError{
-					Code: 2,
-					Name: "BadValue",
-					Message: `wire.OpMsg.Document: validation failed for { insert: "TestDiffDocumentValidation", ordered: true, ` +
-						`$db: "TestDiffDocumentValidation", documents: [ { _id: "nan", foo: nan.0 } ] } with: NaN is not supported`,
+					Code:    2,
+					Name:    "BadValue",
+					Message: `NaN is not supported`,
 				},
 			},
 		} {
@@ -120,11 +119,9 @@ func TestDiffDocumentValidation(t *testing.T) {
 				filter: bson.D{{"_id", "2"}},
 				update: bson.D{{"$set", bson.D{{"foo", math.NaN()}}}},
 				cerr: &mongo.CommandError{
-					Code: 2,
-					Name: "BadValue",
-					Message: `wire.OpMsg.Document: validation failed for { update: "TestDiffDocumentValidation", ` +
-						`ordered: true, $db: "TestDiffDocumentValidation", updates: [ { q: { _id: "2" }, ` +
-						`u: { $set: { foo: nan.0 } } } ] } with: NaN is not supported`,
+					Code:    2,
+					Name:    "BadValue",
+					Message: `NaN is not supported`,
 				},
 			},
 			"NaNWithUpsert": {
@@ -132,11 +129,9 @@ func TestDiffDocumentValidation(t *testing.T) {
 				update: bson.D{{"$set", bson.D{{"foo", math.NaN()}}}},
 				opts:   options.Update().SetUpsert(true),
 				cerr: &mongo.CommandError{
-					Code: 2,
-					Name: "BadValue",
-					Message: `wire.OpMsg.Document: validation failed for { update: "TestDiffDocumentValidation", ` +
-						`ordered: true, $db: "TestDiffDocumentValidation", updates: [ { q: { _id: "3" }, ` +
-						`u: { $set: { foo: nan.0 } }, upsert: true } ] } with: NaN is not supported`,
+					Code:    2,
+					Name:    "BadValue",
+					Message: `NaN is not supported`,
 				},
 			},
 		} {
@@ -173,11 +168,9 @@ func TestDiffDocumentValidation(t *testing.T) {
 				filter: bson.D{{"_id", "4"}},
 				update: bson.D{{"$set", bson.D{{"foo", math.NaN()}}}},
 				err: mongo.CommandError{
-					Code: 2,
-					Name: "BadValue",
-					Message: `wire.OpMsg.Document: validation failed for { findAndModify: "TestDiffDocumentValidation", ` +
-						`query: { _id: "4" }, update: { $set: { foo: nan.0 } }, $db: "TestDiffDocumentValidation" } with: NaN ` +
-						`is not supported`,
+					Code:    2,
+					Name:    "BadValue",
+					Message: `NaN is not supported`,
 				},
 			},
 		} {

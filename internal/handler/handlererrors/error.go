@@ -383,7 +383,7 @@ func ProtocolError(err error) ProtoErr {
 
 	if errors.Is(err, wire.ErrNaN) {
 		//nolint:errorlint // only *CommandError could be returned
-		return NewCommandError(ErrBadValue, err).(*CommandError)
+		return NewCommandError(ErrBadValue, wire.ErrNaN).(*CommandError)
 	}
 
 	//nolint:errorlint // only *CommandError could be returned
