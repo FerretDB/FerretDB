@@ -210,6 +210,7 @@ func addRecordedFuzzDocs(f *testing.F, needDocument, needSchema bool) int {
 
 			var doc *types.Document
 			doc, err = bson.TypesDocument(raw)
+			require.NoError(f, err)
 
 			docs = append(docs, doc)
 
@@ -217,6 +218,7 @@ func addRecordedFuzzDocs(f *testing.F, needDocument, needSchema bool) int {
 			if raw := b.Query(); raw != nil {
 				var doc *types.Document
 				doc, err = bson.TypesDocument(raw)
+				require.NoError(f, err)
 
 				docs = append(docs, doc)
 			}
