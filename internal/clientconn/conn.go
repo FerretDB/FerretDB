@@ -401,21 +401,20 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 	case wire.OpCodeMsg:
 		msg := reqBody.(*wire.OpMsg)
 
-		// decoded successfully in [wire.ReadMessage] [UnmarshalBinaryNocopy] [check]
+		// decoded successfully already in [wire.ReadMessage] [UnmarshalBinaryNocopy] [check]
 		doc := must.NotFail(msg.RawSection0().Decode())
+
 		command = doc.Command()
 
 		resHeader.OpCode = wire.OpCodeMsg
 
-		if err == nil {
-			// do not store typed nil in interface, it makes it non-nil
+		// do not store typed nil in interface, it makes it non-nil
 
-			var resMsg *wire.OpMsg
-			resMsg, err = c.handleOpMsg(connCtx, msg, command)
+		var resMsg *wire.OpMsg
+		resMsg, err = c.handleOpMsg(connCtx, msg, command)
 
-			if resMsg != nil {
-				resBody = resMsg
-			}
+		if resMsg != nil {
+			resBody = resMsg
 		}
 
 	case wire.OpCodeQuery:
@@ -480,6 +479,7 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 			}
 		case wire.OpCodeReply:
 			protoErr := handlererrors.ProtocolError(err)
+
 			resBody = must.NotFail(wire.NewOpReply(protoErr.Document()))
 
 			result = protoErr.(*handlererrors.CommandError).Code().String()
