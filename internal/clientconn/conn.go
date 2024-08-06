@@ -35,16 +35,19 @@ import (
 	"go.opentelemetry.io/otel"
 	otelattribute "go.opentelemetry.io/otel/attribute"
 	otelcodes "go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handler"
+	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/proxy"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -404,8 +407,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 //
 // Returned resBody can be nil.
 func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody wire.MsgBody) (resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) { //nolint:lll // argument list is too long
-	connCtx, span := otel.Tracer("").Start(connCtx, "")
-
+	var span trace.Span
 	var command, result, argument string
 	defer func() {
 		if result == "" {
@@ -417,6 +419,8 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		}
 
 		c.m.Responses.WithLabelValues(resHeader.OpCode.String(), command, argument, result).Inc()
+
+		must.NotBeZero(span)
 
 		if result != "ok" {
 			span.SetStatus(otelcodes.Error, result)
@@ -437,11 +441,25 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 	case wire.OpCodeMsg:
 		var document *types.Document
 		msg := reqBody.(*wire.OpMsg)
-		document, err = msg.Document()
-
-		command = document.Command()
 
 		resHeader.OpCode = wire.OpCodeMsg
+
+		document, err = msg.Document()
+
+		if err == nil {
+			comment, _ := common.GetOptionalParam(document, "comment", "")
+
+			spanCtx, e := observability.SpanContextFromComment(comment)
+			if e == nil {
+				connCtx = trace.ContextWithRemoteSpanContext(connCtx, spanCtx)
+			} else {
+				c.l.DebugContext(connCtx, "Failed to extract span context from comment", logging.Error(e))
+			}
+		}
+
+		connCtx, span = otel.Tracer("").Start(connCtx, "")
+
+		command = document.Command()
 
 		if err == nil {
 			// do not store typed nil in interface, it makes it non-nil
@@ -455,6 +473,8 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		}
 
 	case wire.OpCodeQuery:
+		connCtx, span = otel.Tracer("").Start(connCtx, "")
+
 		query := reqBody.(*wire.OpQuery)
 		resHeader.OpCode = wire.OpCodeReply
 
@@ -482,9 +502,11 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 	case wire.OpCodeKillCursors:
 		fallthrough
 	case wire.OpCodeCompressed:
+		connCtx, span = otel.Tracer("").Start(connCtx, "")
 		err = lazyerrors.Errorf("unhandled OpCode %s", reqHeader.OpCode)
 
 	default:
+		connCtx, span = otel.Tracer("").Start(connCtx, "")
 		err = lazyerrors.Errorf("unexpected OpCode %s", reqHeader.OpCode)
 	}
 
