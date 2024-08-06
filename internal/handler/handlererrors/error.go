@@ -18,7 +18,6 @@ package handlererrors
 import (
 	"errors"
 
-	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 )
 
@@ -379,11 +378,6 @@ func ProtocolError(err error) ProtoErr {
 	var writeErr *WriteErrors
 	if errors.As(err, &writeErr) {
 		return writeErr
-	}
-
-	if errors.Is(err, wire.ErrNaN) {
-		//nolint:errorlint // only *CommandError could be returned
-		return NewCommandError(ErrBadValue, wire.ErrNaN).(*CommandError)
 	}
 
 	//nolint:errorlint // only *CommandError could be returned

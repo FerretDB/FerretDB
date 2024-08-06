@@ -247,40 +247,9 @@ func (c *conn) run(ctx context.Context) (err error) {
 		var resHeader *wire.MsgHeader
 		var resBody wire.MsgBody
 
+		// currently we close the connection when NaN is encountered
+		// TODO https://github.com/FerretDB/FerretDB/issues/2412
 		reqHeader, reqBody, err = wire.ReadMessage(bufr)
-		if err != nil && errors.Is(err, wire.ErrNaN) {
-			// Currently, we respond with OP_MSG containing an error and don't close the connection.
-			// That's probably not right. First, we always respond with OP_MSG, even to OP_QUERY.
-			// Second, we don't know what command it was, if any,
-			// and if the client could handle returned error for it.
-			//
-			// TODO https://github.com/FerretDB/FerretDB/issues/2412
-
-			// get protocol error to return correct error document
-			protoErr := handlererrors.ProtocolError(err)
-
-			res := must.NotFail(wire.NewOpMsg(protoErr.Document()))
-
-			b := must.NotFail(res.MarshalBinary())
-
-			resHeader = &wire.MsgHeader{
-				OpCode:        reqHeader.OpCode,
-				RequestID:     c.lastRequestID.Add(1),
-				ResponseTo:    reqHeader.RequestID,
-				MessageLength: int32(wire.MsgHeaderLen + len(b)),
-			}
-
-			if err = wire.WriteMessage(bufw, resHeader, res); err != nil {
-				return
-			}
-
-			if err = bufw.Flush(); err != nil {
-				return
-			}
-
-			continue
-		}
-
 		if err != nil {
 			return
 		}
