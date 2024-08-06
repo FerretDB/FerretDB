@@ -46,6 +46,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -438,16 +439,19 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 	case wire.OpCodeMsg:
 		var document *types.Document
 		msg := reqBody.(*wire.OpMsg)
-		document, err = msg.Document()
+
+		var err1 error
+		document, err1 = msg.Document()
 
 		command = document.Command()
 
-		if comment, cerr := document.Get("comment"); cerr == nil {
+		var comment any
+		if comment, err = document.Get("comment"); err == nil {
 			if cmt, ok := comment.(string); ok {
 				var spanCtx trace.SpanContext
 
-				spanCtx, cerr = spanContextFromComment(cmt)
-				if cerr != nil {
+				spanCtx, err = observability.SpanContextFromComment(cmt)
+				if err != nil {
 					c.l.DebugContext(connCtx, "Failed to extract span context from comment", logging.Error(err))
 				}
 
@@ -459,6 +463,8 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 				defer remoteCtxSpan.End()
 			}
 		}
+
+		err = err1
 
 		resHeader.OpCode = wire.OpCodeMsg
 

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package clientconn
+package observability
 
 import (
 	"encoding/json"
@@ -22,29 +22,38 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// spanContextFromComment extracts OpenTelemetry tracing information from comment.
+// SpanContextFromComment extracts OpenTelemetry tracing information from comment's field ferretDB.
+// The comment is expected to be a string in JSON format.
 //
-// If the comment is empty, it returns an empty span context and no error.
-func spanContextFromComment(comment string) (trace.SpanContext, error) {
+// If the comment is empty or ferretDB field is not set, it returns an empty span context and no error.
+func SpanContextFromComment(comment string) (trace.SpanContext, error) {
 	if comment == "" {
 		return trace.SpanContext{}, nil
 	}
 
 	type TraceData struct {
-		TraceID [16]byte `json:"ferretTraceID"`
-		SpanID  [8]byte  `json:"ferretSpanID"`
+		TraceID [16]byte `json:"traceID"`
+		SpanID  [8]byte  `json:"spanID"`
 	}
 
-	var data TraceData
+	type Comment struct {
+		FerretDB *TraceData `json:"ferretDB"`
+	}
+
+	var data Comment
 
 	err := json.Unmarshal([]byte(comment), &data)
 	if err != nil {
 		return trace.SpanContext{}, lazyerrors.Error(err)
 	}
 
+	if data.FerretDB == nil {
+		return trace.SpanContext{}, nil
+	}
+
 	c := trace.SpanContextConfig{
-		TraceID: trace.TraceID(data.TraceID),
-		SpanID:  trace.SpanID(data.SpanID),
+		TraceID: trace.TraceID(data.FerretDB.TraceID),
+		SpanID:  trace.SpanID(data.FerretDB.SpanID),
 	}
 
 	return trace.NewSpanContext(c), nil

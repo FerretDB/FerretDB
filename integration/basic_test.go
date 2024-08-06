@@ -110,15 +110,21 @@ func TestOtelComment(t *testing.T) {
 	ctx, span := otel.Tracer("").Start(ctx, "TestOtelComment")
 	defer span.End()
 
-	traceData := struct {
-		TraceID [16]byte `json:"ferretTraceID"`
-		SpanID  [8]byte  `json:"ferretSpanID"`
-	}{
-		TraceID: [16]byte(span.SpanContext().TraceID()),
-		SpanID:  [8]byte(span.SpanContext().SpanID()),
+	type traceData struct {
+		TraceID [16]byte `json:"traceID"`
+		SpanID  [8]byte  `json:"spanID"`
 	}
 
-	comment, err := json.Marshal(traceData)
+	commentData := struct {
+		FerretDB traceData `json:"ferretDB"`
+	}{
+		FerretDB: traceData{
+			TraceID: [16]byte(span.SpanContext().TraceID()),
+			SpanID:  [8]byte(span.SpanContext().SpanID()),
+		},
+	}
+
+	comment, err := json.Marshal(commentData)
 	require.NoError(t, err)
 
 	var doc bson.D
