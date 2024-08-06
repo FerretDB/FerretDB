@@ -22,9 +22,9 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// init disallows NaN values by setting false to [wire.AllowNaN].
+// init sets wire package to return error if float64 NaN value is present in wire messages.
 func init() {
-	wire.AllowNaN = false
+	wire.CheckNaNs = true
 }
 
 // opMsgDocument gets a raw document from section 0 and converts to [*types.Document].
