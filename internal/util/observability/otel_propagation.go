@@ -15,7 +15,6 @@
 package observability
 
 import (
-	"encoding/hex"
 	"encoding/json"
 
 	"go.opentelemetry.io/otel/trace"
@@ -23,49 +22,11 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// TraceData represents OpenTelemetry tracing information that can be used to restore the info about parent span.
-type TraceData struct {
-	TraceID [16]byte `json:"traceID"`
-	SpanID  [8]byte  `json:"spanID"`
-}
-
-// MarshalJSON implements json.Marshaler interface.
-func (td *TraceData) MarshalJSON() ([]byte, error) {
-	return json.Marshal(&struct {
+type commentData struct {
+	FerretDB struct {
 		TraceID string `json:"traceID"`
 		SpanID  string `json:"spanID"`
-	}{
-		TraceID: hex.EncodeToString(td.TraceID[:]),
-		SpanID:  hex.EncodeToString(td.SpanID[:]),
-	})
-}
-
-// UnmarshalJSON implements json.Unmarshaler interface.
-func (td *TraceData) UnmarshalJSON(data []byte) error {
-	var stringData struct {
-		TraceID string `json:"traceID"`
-		SpanID  string `json:"spanID"`
-	}
-
-	err := json.Unmarshal(data, &stringData)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	traceID, err := hex.DecodeString(stringData.TraceID)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	spanID, err := hex.DecodeString(stringData.SpanID)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	copy(td.TraceID[:], traceID)
-	copy(td.SpanID[:], spanID)
-
-	return nil
+	} `json:"ferretDB"`
 }
 
 // SpanContextFromComment extracts OpenTelemetry tracing information from comment's field ferretDB.
@@ -73,31 +34,35 @@ func (td *TraceData) UnmarshalJSON(data []byte) error {
 //
 // If the comment is empty or ferretDB field is not set, it returns an empty span context and no error.
 func SpanContextFromComment(comment string) (trace.SpanContext, error) {
+	var sc trace.SpanContext
+
 	if comment == "" {
-		return trace.SpanContext{}, nil
+		return sc, nil
 	}
 
-	type Comment struct {
-		FerretDB *TraceData `json:"ferretDB"`
-	}
-
-	var data Comment
+	var data commentData
 
 	err := json.Unmarshal([]byte(comment), &data)
 	if err != nil {
-		return trace.SpanContext{}, lazyerrors.Error(err)
+		return sc, lazyerrors.Error(err)
 	}
 
-	if data.FerretDB == nil {
-		return trace.SpanContext{}, nil
+	traceID, err := trace.TraceIDFromHex(data.FerretDB.TraceID)
+	if err != nil {
+		return sc, lazyerrors.Error(err)
 	}
 
-	c := trace.SpanContextConfig{
-		TraceID: trace.TraceID(data.FerretDB.TraceID),
-		SpanID:  trace.SpanID(data.FerretDB.SpanID),
+	spanID, err := trace.SpanIDFromHex(data.FerretDB.SpanID)
+	if err != nil {
+		return sc, lazyerrors.Error(err)
 	}
 
-	return trace.NewSpanContext(c), nil
+	sc = trace.NewSpanContext(trace.SpanContextConfig{
+		TraceID: traceID,
+		SpanID:  spanID,
+	})
+
+	return sc, nil
 }
 
 // CommentFromSpanContext creates a comment string with OpenTelemetry tracing information set in comment's field ferretDB.
@@ -106,18 +71,13 @@ func CommentFromSpanContext(sc trace.SpanContext) (string, error) {
 		return "", lazyerrors.New("invalid span context")
 	}
 
-	data := TraceData{
-		TraceID: sc.TraceID(),
-		SpanID:  sc.SpanID(),
-	}
+	var data commentData
+	data.FerretDB.TraceID = sc.TraceID().String()
+	data.FerretDB.SpanID = sc.SpanID().String()
 
-	comment, err := json.Marshal(&struct {
-		FerretDB *TraceData `json:"ferretDB"`
-	}{
-		FerretDB: &data,
-	})
+	comment, err := json.Marshal(data)
 	if err != nil {
-		return "", lazyerrors.New("can't marshal trace data")
+		return "", lazyerrors.Error(err)
 	}
 
 	return string(comment), nil
