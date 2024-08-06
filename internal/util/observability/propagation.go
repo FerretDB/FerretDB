@@ -22,6 +22,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
+// commentData represents an operation comment formatted to contain tracing data.
 type commentData struct {
 	FerretDB struct {
 		TraceID string `json:"traceID"`
@@ -29,10 +30,10 @@ type commentData struct {
 	} `json:"ferretDB"`
 }
 
-// SpanContextFromComment extracts OpenTelemetry tracing information from comment's field ferretDB.
-// The comment is expected to be a string in JSON format.
+// SpanContextFromComment extracts OpenTelemetry tracing information from an operation comment.
+// The comment is expected to be a json string (see commentData).
 //
-// If the comment is empty or ferretDB field is not set, it returns an empty span context and no error.
+// If the comment is empty, it returns an empty span context and no error.
 func SpanContextFromComment(comment string) (trace.SpanContext, error) {
 	var sc trace.SpanContext
 
@@ -65,7 +66,7 @@ func SpanContextFromComment(comment string) (trace.SpanContext, error) {
 	return sc, nil
 }
 
-// CommentFromSpanContext creates a comment string with OpenTelemetry tracing information set in comment's field ferretDB.
+// CommentFromSpanContext creates a json-encoded string with tracing information (see commentData) from span context.
 func CommentFromSpanContext(sc trace.SpanContext) (string, error) {
 	if !sc.IsValid() {
 		return "", lazyerrors.New("invalid span context")
