@@ -101,9 +101,9 @@ func SpanContextFromComment(comment string) (trace.SpanContext, error) {
 }
 
 // CommentFromSpanContext creates a comment string with OpenTelemetry tracing information set in comment's field ferretDB.
-func CommentFromSpanContext(sc trace.SpanContext) string {
+func CommentFromSpanContext(sc trace.SpanContext) (string, error) {
 	if !sc.IsValid() {
-		return ""
+		return "", lazyerrors.New("invalid span context")
 	}
 
 	data := TraceData{
@@ -117,8 +117,8 @@ func CommentFromSpanContext(sc trace.SpanContext) string {
 		FerretDB: &data,
 	})
 	if err != nil {
-		return ""
+		return "", lazyerrors.New("can't marshal trace data")
 	}
 
-	return string(comment)
+	return string(comment), nil
 }

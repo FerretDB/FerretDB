@@ -31,7 +31,9 @@ func TestCommentFromSpanContext(t *testing.T) {
 		SpanID:  spanID,
 	})
 
-	comment := CommentFromSpanContext(sc)
+	comment, err := CommentFromSpanContext(sc)
+	require.NoError(t, err)
+
 	expectedComment := `{"ferretDB":{"traceID":"1234567890abcdef1234567890abcdef","spanID":"fedcba9876543210"}}`
 	require.Equal(t, expectedComment, comment)
 

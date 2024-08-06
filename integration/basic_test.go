@@ -110,11 +110,12 @@ func TestOtelComment(t *testing.T) {
 	ctx, span := otel.Tracer("").Start(ctx, "TestOtelComment")
 	defer span.End()
 
-	comment := observability.CommentFromSpanContext(span.SpanContext())
+	comment, err := observability.CommentFromSpanContext(span.SpanContext())
+	require.NoError(t, err)
 
 	var doc bson.D
 	opts := options.FindOne().SetComment(string(comment))
-	err := collection.FindOne(ctx, bson.D{{"_id", "string"}}, opts).Decode(&doc)
+	err = collection.FindOne(ctx, bson.D{{"_id", "string"}}, opts).Decode(&doc)
 	require.NoError(t, err)
 }
 
