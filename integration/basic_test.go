@@ -15,7 +15,6 @@
 package integration
 
 import (
-	"encoding/json"
 	"fmt"
 	"math"
 	"strings"
@@ -28,6 +27,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.opentelemetry.io/otel"
 
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
@@ -110,26 +110,11 @@ func TestOtelComment(t *testing.T) {
 	ctx, span := otel.Tracer("").Start(ctx, "TestOtelComment")
 	defer span.End()
 
-	type traceData struct {
-		TraceID [16]byte `json:"traceID"`
-		SpanID  [8]byte  `json:"spanID"`
-	}
-
-	commentData := struct {
-		FerretDB traceData `json:"ferretDB"`
-	}{
-		FerretDB: traceData{
-			TraceID: [16]byte(span.SpanContext().TraceID()),
-			SpanID:  [8]byte(span.SpanContext().SpanID()),
-		},
-	}
-
-	comment, err := json.Marshal(commentData)
-	require.NoError(t, err)
+	comment := observability.CommentFromSpanContext(span.SpanContext())
 
 	var doc bson.D
 	opts := options.FindOne().SetComment(string(comment))
-	err = collection.FindOne(ctx, bson.D{{"_id", "string"}}, opts).Decode(&doc)
+	err := collection.FindOne(ctx, bson.D{{"_id", "string"}}, opts).Decode(&doc)
 	require.NoError(t, err)
 }
 
