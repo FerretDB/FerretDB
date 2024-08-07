@@ -45,6 +45,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/proxy"
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -404,33 +405,39 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 	var err error
 	switch reqHeader.OpCode {
 	case wire.OpCodeMsg:
+		var document *types.Document
 		msg := reqBody.(*wire.OpMsg)
+
+		resHeader.OpCode = wire.OpCodeMsg
 
 		// decoded successfully already in [wire.ReadMessage] [UnmarshalBinaryNocopy] [check]
 		doc := must.NotFail(msg.RawSection0().Decode())
 
-		comment, _ := common.GetOptionalParam(must.NotFail(bson.TypesDocument(doc)), "comment", "")
+		document, err = bson.TypesDocument(doc)
+		if err != nil {
+			comment, _ := common.GetOptionalParam(document, "comment", "")
 
-		spanCtx, e := observability.SpanContextFromComment(comment)
-		if e == nil {
-			connCtx = trace.ContextWithRemoteSpanContext(connCtx, spanCtx)
-		} else {
-			c.l.DebugContext(connCtx, "Failed to extract span context from comment", logging.Error(e))
+			spanCtx, e := observability.SpanContextFromComment(comment)
+			if e == nil {
+				connCtx = trace.ContextWithRemoteSpanContext(connCtx, spanCtx)
+			} else {
+				c.l.DebugContext(connCtx, "Failed to extract span context from comment", logging.Error(e))
+			}
 		}
 
 		connCtx, span = otel.Tracer("").Start(connCtx, "")
 
 		command = doc.Command()
 
-		resHeader.OpCode = wire.OpCodeMsg
+		if err == nil {
+			// do not store typed nil in interface, it makes it non-nil
 
-		// do not store typed nil in interface, it makes it non-nil
+			var resMsg *wire.OpMsg
+			resMsg, err = c.handleOpMsg(connCtx, msg, command)
 
-		var resMsg *wire.OpMsg
-		resMsg, err = c.handleOpMsg(connCtx, msg, command)
-
-		if resMsg != nil {
-			resBody = resMsg
+			if resMsg != nil {
+				resBody = resMsg
+			}
 		}
 
 	case wire.OpCodeQuery:
