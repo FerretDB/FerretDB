@@ -25,7 +25,9 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.opentelemetry.io/otel"
 
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
@@ -100,6 +102,21 @@ func TestInsertFind(t *testing.T) {
 			AssertEqualDocuments(t, expected, actual[0])
 		})
 	}
+}
+
+func TestOtelComment(t *testing.T) {
+	ctx, collection := setup.Setup(t, shareddata.Scalars)
+
+	ctx, span := otel.Tracer("").Start(ctx, "TestOtelComment")
+	defer span.End()
+
+	comment, err := observability.CommentFromSpanContext(span.SpanContext())
+	require.NoError(t, err)
+
+	var doc bson.D
+	opts := options.FindOne().SetComment(string(comment))
+	err = collection.FindOne(ctx, bson.D{{"_id", "string"}}, opts).Decode(&doc)
+	require.NoError(t, err)
 }
 
 //nolint:paralleltest // we test a global list of databases
