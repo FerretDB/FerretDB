@@ -892,6 +892,10 @@ tasks:
     requires:
       vars: [FILE]
 
+  pngcrush-new:
+    cmds:
+      - git diff --name-only upstream/main '*.png' | parallel "pngcrush -ow -brute {} {.}.temp"
+
   pngcrush-all:
     cmds:
       - find . -type f -name '*.png' | parallel "pngcrush -ow -brute {} {.}.temp"
