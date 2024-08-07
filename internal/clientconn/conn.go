@@ -252,7 +252,6 @@ func (c *conn) run(ctx context.Context) (err error) {
 		var resHeader *wire.MsgHeader
 		var resBody wire.MsgBody
 
-		// the connection is closed when NaN is encountered
 		// TODO https://github.com/FerretDB/FerretDB/issues/2412
 		reqHeader, reqBody, err = wire.ReadMessage(bufr)
 		if err != nil {
@@ -414,6 +413,7 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		doc := must.NotFail(msg.RawSection0().Decode())
 
 		document, err = bson.TypesDocument(doc)
+
 		if err != nil {
 			comment, _ := common.GetOptionalParam(document, "comment", "")
 
