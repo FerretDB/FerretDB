@@ -247,6 +247,12 @@ We will use a `PATCH` request to update the `genre` field of the record.
 
 ![Update record by ObjectId](/img/blog/ferretdb-deno/update-record.png)
 
+#### Delete record by ObjectId
+
+Finally, we will delete the record by its `ObjectId` using a `DELETE` request.
+
+![Delete record by ObjectId](/img/blog/ferretdb-deno/delete-record.png)
+
 ## Conclusion
 
 As we step back from this interesting setup, we've not only built a functional API but also provided an alternative approach to building web applications.
