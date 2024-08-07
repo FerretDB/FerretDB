@@ -414,7 +414,7 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 
 		document, err = bson.TypesDocument(doc)
 
-		if err != nil {
+		if err == nil {
 			comment, _ := common.GetOptionalParam(document, "comment", "")
 
 			spanCtx, e := observability.SpanContextFromComment(comment)
