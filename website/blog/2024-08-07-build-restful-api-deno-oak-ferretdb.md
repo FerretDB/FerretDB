@@ -14,12 +14,12 @@ What if you could overcome Node.js's limitations and build a RESTful API with en
 
 <!--truncate-->
 
-Node.js has been the most popular server-side Javascript runtime for quite some time now.
+[Node.js](https://nodejs.org/en) has been the most popular server-side Javascript runtime environment for quite some time now.
 For many developers, it has become a crucial part of the popularized web development stacks such as MEAN (MongoDB, Express, Angular, and Node.js) and MERN (MongoDB, Express, React, and Node.js).
 
 However, Node.js is not without its limitations – a centralized module system, no built-in support for Typescript, complex dependency management, and poor security.
 
-To address these issues, the creators of Node.js developed Deno.
+To address these issues, the creators of Node.js developed [Deno](https://deno.com/).
 It comes with built-in TypeScript support, a more secure runtime that requires explicit permission to access files, networks, and environments, and a simplified module system that uses URL imports instead of centralized packages.
 
 In this blog post, we'll guide you through setting up a RESTful API using Deno, Oak, and FerretDB for data storage.
@@ -28,16 +28,15 @@ In this blog post, we'll guide you through setting up a RESTful API using Deno, 
 
 Unlike the typical Node.js-based stacks, Deno, Oak, and FerretDB together offer a modern alternative framework for web development.
 
-Instead of Express, you can use Oak – a middleware framework built specifically for Deno – for building web applications and APIs and can take full advantage of its features and ecosystem without additional configuration.
+Instead of Express, you can use [Oak](https://deno.land/x/oak) – a middleware framework built specifically for Deno – for building web applications and APIs and can take full advantage of its features and ecosystem without additional configuration.
 
-FerretDB, a truly open source alternative to MongoDB built on Postgres offers you flexibility and freedom without limiting you in any way – you won't have to worry about vendor lock-in associated with proprietary solutions.
+[FerretDB](https://www.ferretdb.com/), a truly open source alternative to MongoDB built on Postgres, offers you flexibility and freedom without limiting you in any way – no need to worry about vendor lock-in associated with proprietary solutions[](https://blog.ferretdb.io/5-ways-to-avoid-database-vendor-lock-in/).
 
-This combination creates a powerful, secure, and modern framework for building scalable web applications and APIs, offering as a strong alternative to traditional Node.js-based stacks.
+This combination of Deno, Oak, and FerretDB offers a powerful, secure, and modern framework for building scalable web applications and APIs, which makes it a strong alternative to traditional Node.js-based stacks.
 
 ## Prerequisites
 
-FerretDB is installed and running locally.
-If you don't currently have FerretDB running, follow this quick setup guide to set it up.
+- FerretDB is installed and running locally: If you don't currently have FerretDB running, [follow this quickstart guide to set up an instance](https://docs.ferretdb.io/quickstart-guide/).
 
 ## Install Deno locally
 
@@ -90,7 +89,7 @@ Create a `db.ts` file for database connection:
 import { MongoClient, ObjectId } from './deps.ts'
 
 const client = new MongoClient()
-await client.connect('<FerretDB_URI>')
+await client.connect('<FerretDB_connection_URI>')
 
 const db = client.database('library')
 export const books = db.collection<BookSchema>('books')
@@ -105,6 +104,8 @@ interface BookSchema {
 
 In the code above, we set up a connection to the FerretDB database using the MongoDB client imported from the `deps.ts` file.
 We also define a `BookSchema` interface to structure our data.
+
+Ensure to replace `<FerretDB_connection_URI>` with the connection URI to your FerretDB instance.
 
 #### Create the main server file
 
@@ -176,19 +177,19 @@ console.log(`Server running at http://localhost:${PORT}`)
 await app.listen({ port: PORT })
 ```
 
-We set up each route with a path and a callback function to handle HTTP requests.
-The first route handles GET requests at the root URL ("/"), and then sends a simple JSON message back to the client.
+Each route is set up with a path and a callback function to handle HTTP requests.
+The first route handles `GET` requests at the root URL (`"/"`), and then sends a simple JSON message back to the client.
 
-The next route handles GET requests at `"/api/books"`, and fetches all book records from the database and returns them to the client.
+The next route handles `GET` requests at `"/api/books"`, and fetches all book records from the database and returns them to the client.
 
-For GET requests at `"/api/books/:id"`, we retrieve a specific book by its ObjectId, returning the book if found, or a 404 error if not.
-The POST route at "/api/books" reads the request body to insert a new book into the database and returns the new book's ID.
+For `GET` requests at `"/api/books/:id"`, we retrieve a specific book by its `ObjectId`, returning the book if found, or a `404` error if not.
+The `POST` route at `"/api/books"` reads the request body to insert a new book into the database and returns the new book's ID.
 
-The PATCH route updates the specified book's details if the ID is valid and sends back a confirmation message.
+The `PATCH` route updates the specified book's details if the ID is valid and sends back a confirmation message.
 
-The DELETE route removes the specified book from the database and provides a success response message or an error if the ID is invalid.
+The `DELETE` route removes the specified book from the database and provides a success response message or an error if the ID is invalid.
 
-#### 6. Run the Server
+#### 6. Run the server
 
 Run the server with the necessary permissions:
 
@@ -211,7 +212,7 @@ A screenshot of the endpoint's output in Postman can be seen below.
 
 #### Inserting a new book
 
-Below is an example of a `POST` request made to the API endpoint http://localhost:3000/api/books.
+Below is an example of a `POST` request made to the API endpoint `http://localhost:3000/api/books`.
 Here, we are inserting one database record into our FerretDB database.
 
 ```json
@@ -236,7 +237,7 @@ Since there's only one record at this point, the expected response should be the
 Since we are not working with a fixed schema or data type, we can update the genre for the data record to an array.
 That way, we can have it cover more than a singular genre.
 
-We willl use a PATCH reques to update the `genre` field of the record.
+We will use a `PATCH` request to update the `genre` field of the record.
 
 ```json
 {
@@ -251,6 +252,8 @@ We willl use a PATCH reques to update the `genre` field of the record.
 As we step back from this interesting setup, we've not only built a functional API but also provided an alternative approach to building web applications.
 Deno's built-in TypeScript support and security features offer a modern, efficient alternative for API development.
 
-Deno, Oak and FerretDB (FORD or FOAD stack??) is a viable alternative stack for many developers to build full-stack web applications.
+Deno, Oak and FerretDB (FORD or FOAD stack?) is a viable alternative stack for many developers to build full-stack web applications.
 
 So if you're looking to try out new tools or enhance your existing workflow, we encourage you to experiment with Deno, Oak and FerretDB and let us know what you think.
+
+Feel free to reach out to us on our [community channels](https://docs.ferretdb.io/#community) with your thoughts, feedback, and questions.
