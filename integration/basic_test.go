@@ -517,29 +517,27 @@ func TestDatabaseName(t *testing.T) {
 	})
 }
 
-func TestDebugErrorNaN(tt *testing.T) {
-	t := setup.FailsForMongoDB(tt, "FerretDB-specific command")
-
-	tt.Parallel()
-
-	ctx, collection := setup.Setup(t)
-	db := collection.Database()
-
-	// TODO https://github.com/FerretDB/FerretDB/issues/2412
-	err := db.RunCommand(ctx, bson.D{{"debugError", bson.D{{"NaN", math.NaN()}}}}).Err()
-	require.ErrorContains(t, err, "socket was unexpectedly closed")
-}
-
 func TestDebugError(t *testing.T) {
+	setup.SkipForMongoDB(t, "FerretDB-specific command")
+
 	t.Parallel()
 
-	ctx, collection := setup.Setup(t)
-	db := collection.Database()
+	// TODO https://github.com/FerretDB/FerretDB/issues/2412
+	t.Run("ValidationError", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("LazyError", func(tt *testing.T) {
-		tt.Parallel()
+		ctx, collection := setup.Setup(t)
+		db := collection.Database()
 
-		t := setup.FailsForMongoDB(tt, "FerretDB-specific command")
+		err := db.RunCommand(ctx, bson.D{{"debugError", bson.D{{"NaN", math.NaN()}}}}).Err()
+		require.ErrorContains(t, err, "socket was unexpectedly closed")
+	})
+
+	t.Run("LazyError", func(t *testing.T) {
+		t.Parallel()
+
+		ctx, collection := setup.Setup(t)
+		db := collection.Database()
 
 		err := db.RunCommand(ctx, bson.D{{"debugError", "lazy error"}}).Err()
 		expected := mongo.CommandError{
@@ -552,10 +550,11 @@ func TestDebugError(t *testing.T) {
 		require.NoError(t, db.Client().Ping(ctx, nil), "lazy errors should not close connection")
 	})
 
-	t.Run("OtherError", func(tt *testing.T) {
-		tt.Parallel()
+	t.Run("OtherError", func(t *testing.T) {
+		t.Parallel()
 
-		t := setup.FailsForMongoDB(tt, "FerretDB-specific command")
+		ctx, collection := setup.Setup(t)
+		db := collection.Database()
 
 		err := db.RunCommand(ctx, bson.D{{"debugError", "other error"}}).Err()
 		expected := mongo.CommandError{
