@@ -363,7 +363,6 @@ type ProtoErr interface {
 //
 // Nil panics (it never should be passed),
 // [*CommandError] or [*WriteErrors] (possibly wrapped) are returned unwrapped,
-// [*wire.ValidationError] (possibly wrapped) is returned as CommandError with BadValue code,
 // any other values (including lazy errors) are returned as CommandError with InternalError code.
 func ProtocolError(err error) ProtoErr {
 	if err == nil {
