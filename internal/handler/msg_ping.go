@@ -21,7 +21,6 @@ import (
 	"github.com/FerretDB/wire"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
-	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -56,9 +55,9 @@ func (h *Handler) MsgPing(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		return nil, lazyerrors.Error(err)
 	}
 
-	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
+	return documentOpMsg(
 		must.NotFail(types.NewDocument(
 			"ok", float64(1),
 		)),
-	)))
+	)
 }

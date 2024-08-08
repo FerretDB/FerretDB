@@ -24,7 +24,6 @@ import (
 	"github.com/FerretDB/wire"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
-	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
@@ -169,9 +168,9 @@ func (h *Handler) MsgCreateIndexes(connCtx context.Context, msg *wire.OpMsg) (*w
 
 	resp.Set("ok", float64(1))
 
-	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
+	return documentOpMsg(
 		resp,
-	)))
+	)
 }
 
 // processIndexesArray processes the given array of indexes and returns a slice of backends.IndexInfo elements.

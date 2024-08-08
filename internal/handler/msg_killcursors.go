@@ -21,7 +21,6 @@ import (
 
 	"github.com/FerretDB/wire"
 
-	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
@@ -106,7 +105,7 @@ func (h *Handler) MsgKillCursors(connCtx context.Context, msg *wire.OpMsg) (*wir
 		cursorsKilled.Append(id)
 	}
 
-	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
+	return documentOpMsg(
 		must.NotFail(types.NewDocument(
 			"cursorsKilled", cursorsKilled,
 			"cursorsNotFound", cursorsNotFound,
@@ -114,5 +113,5 @@ func (h *Handler) MsgKillCursors(connCtx context.Context, msg *wire.OpMsg) (*wir
 			"cursorsUnknown", cursorsUnknown,
 			"ok", float64(1),
 		)),
-	)))
+	)
 }

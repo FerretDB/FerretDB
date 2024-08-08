@@ -21,7 +21,6 @@ import (
 	"github.com/FerretDB/wire"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
-	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -73,7 +72,7 @@ func (h *Handler) MsgValidate(connCtx context.Context, msg *wire.OpMsg) (*wire.O
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/3841
-	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
+	return documentOpMsg(
 		must.NotFail(types.NewDocument(
 			"ns", dbName+"."+collection,
 			"nInvalidDocuments", int32(0),
@@ -89,5 +88,5 @@ func (h *Handler) MsgValidate(connCtx context.Context, msg *wire.OpMsg) (*wire.O
 			"corruptRecords", types.MakeArray(0),
 			"ok", float64(1),
 		)),
-	)))
+	)
 }

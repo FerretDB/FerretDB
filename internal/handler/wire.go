@@ -20,6 +20,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // init sets wire package to return error if float64 NaN value is present in wire messages.
@@ -58,4 +59,9 @@ func opMsgDocument(msg *wire.OpMsg) (*types.Document, error) {
 	}
 
 	return res, nil
+}
+
+// documentOpMsg converts the document to [*wirebson.Document].
+func documentOpMsg(doc *types.Document) (*wire.OpMsg, error) {
+	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(doc)))
 }

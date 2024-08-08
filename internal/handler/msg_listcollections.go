@@ -22,7 +22,6 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
-	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
@@ -142,7 +141,7 @@ func (h *Handler) MsgListCollections(connCtx context.Context, msg *wire.OpMsg) (
 		collections.Append(d)
 	}
 
-	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(
+	return documentOpMsg(
 		must.NotFail(types.NewDocument(
 			"cursor", must.NotFail(types.NewDocument(
 				"id", int64(0),
@@ -151,5 +150,5 @@ func (h *Handler) MsgListCollections(connCtx context.Context, msg *wire.OpMsg) (
 			)),
 			"ok", float64(1),
 		)),
-	)))
+	)
 }
