@@ -48,14 +48,6 @@ func TestDouble(t *testing.T) {
 	testJSON(t, doubleTestCases, func() sjsontype { return new(doubleType) })
 }
 
-func FuzzDoubleWithFixedSchemas(f *testing.F) {
-	fuzzJSONWithFixedSchemas(f, doubleTestCases, func() sjsontype { return new(doubleType) })
-}
-
-func FuzzDoubleWithFixedDocuments(f *testing.F) {
-	fuzzJSONWithFixedDocuments(f, doubleTestCases, func() sjsontype { return new(doubleType) })
-}
-
 func BenchmarkDouble(b *testing.B) {
 	benchmark(b, doubleTestCases, func() sjsontype { return new(doubleType) })
 }

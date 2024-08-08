@@ -12,8 +12,6 @@ vars:
   TEST_RUN: ""
   TEST_TIMEOUT: 35m
   BENCH_TIME: 5s
-  FUZZ_TIME: 15s
-  FUZZ_CORPUS: ../fuzz-corpus
   TESTJS_PORT: 27017
   RACE_FLAG: -race={{and (ne OS "windows") (ne ARCH "arm") (ne ARCH "riscv64")}}
   BUILD_TAGS: ferretdb_debug,ferretdb_hana

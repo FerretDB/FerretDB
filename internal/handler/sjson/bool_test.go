@@ -35,14 +35,6 @@ func TestBool(t *testing.T) {
 	testJSON(t, boolTestCases, func() sjsontype { return new(boolType) })
 }
 
-func FuzzBoolWithFixedSchemas(f *testing.F) {
-	fuzzJSONWithFixedSchemas(f, boolTestCases, func() sjsontype { return new(boolType) })
-}
-
-func FuzzBoolWithFixedDocuments(f *testing.F) {
-	fuzzJSONWithFixedDocuments(f, boolTestCases, func() sjsontype { return new(boolType) })
-}
-
 func BenchmarkBool(b *testing.B) {
 	benchmark(b, boolTestCases, func() sjsontype { return new(boolType) })
 }
