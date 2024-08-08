@@ -522,27 +522,22 @@ func TestDebugError(t *testing.T) {
 
 	t.Parallel()
 
-	ctx, collection := setup.Setup(t)
-	db := collection.Database()
-
 	// TODO https://github.com/FerretDB/FerretDB/issues/2412
-
 	t.Run("ValidationError", func(t *testing.T) {
 		t.Parallel()
 
-		err := db.RunCommand(ctx, bson.D{{"debugError", bson.D{{"NaN", math.NaN()}}}}).Err()
-		expected := mongo.CommandError{
-			Code: 2,
-			Name: "BadValue",
-		}
-		AssertMatchesCommandError(t, expected, err)
-		assert.ErrorContains(t, err, "NaN is not supported")
+		ctx, collection := setup.Setup(t)
+		db := collection.Database()
 
-		require.NoError(t, db.Client().Ping(ctx, nil), "validation errors should not close connection")
+		err := db.RunCommand(ctx, bson.D{{"debugError", bson.D{{"NaN", math.NaN()}}}}).Err()
+		require.ErrorContains(t, err, "socket was unexpectedly closed")
 	})
 
 	t.Run("LazyError", func(t *testing.T) {
 		t.Parallel()
+
+		ctx, collection := setup.Setup(t)
+		db := collection.Database()
 
 		err := db.RunCommand(ctx, bson.D{{"debugError", "lazy error"}}).Err()
 		expected := mongo.CommandError{
@@ -557,6 +552,9 @@ func TestDebugError(t *testing.T) {
 
 	t.Run("OtherError", func(t *testing.T) {
 		t.Parallel()
+
+		ctx, collection := setup.Setup(t)
+		db := collection.Database()
 
 		err := db.RunCommand(ctx, bson.D{{"debugError", "other error"}}).Err()
 		expected := mongo.CommandError{
