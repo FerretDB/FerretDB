@@ -199,7 +199,7 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 		query := u.Query()
 		u.RawQuery = ""
 
-		conn = setupWireConn(tb, setupCtx, u.String(), testutil.Logger(tb))
+		conn = setupWireConn(tb, setupCtx, uri, testutil.Logger(tb))
 
 		if u.User != nil && !opts.WireConnNoAuth {
 			user := u.User.Username()

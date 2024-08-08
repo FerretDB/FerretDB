@@ -17,8 +17,15 @@ package setup
 import (
 	"context"
 	"crypto/md5"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/hex"
+	"encoding/pem"
+	"fmt"
 	"log/slog"
+	"net"
+	"net/url"
+	"os"
 
 	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
@@ -45,11 +52,78 @@ func setupWireConn(tb testtb.TB, ctx context.Context, uri string, l *slog.Logger
 	ctx, span := otel.Tracer("").Start(ctx, "setupWireConn")
 	defer span.End()
 
-	conn, err := wireclient.Connect(ctx, uri, l)
+	u, err := url.Parse(uri)
 	if err != nil {
 		tb.Error(err)
 		panic("setupWireConn: " + err.Error())
 	}
+
+	q := u.Query()
+
+	var conn *wireclient.Conn
+
+	if q.Get("tls") == "" {
+		conn, err = wireclient.Connect(ctx, uri, l)
+		if err != nil {
+			tb.Error(err)
+			panic("setupWireConn: " + err.Error())
+		}
+
+		tb.Cleanup(func() {
+			err = conn.Close()
+			require.NoError(tb, err)
+		})
+
+		return conn
+	}
+
+	b, err := os.ReadFile(q.Get("tlsCertificateKeyFile"))
+	if err != nil {
+		tb.Error(err)
+		panic("setupWireConn: " + err.Error())
+	}
+
+	var cert tls.Certificate
+
+	// tlsCertificateKeyFile contains both certificate and private key
+	for block, rest := pem.Decode(b); block != nil; block, rest = pem.Decode(rest) {
+		switch block.Type {
+		case "CERTIFICATE":
+			cert.Certificate = append(cert.Certificate, block.Bytes)
+		case "PRIVATE KEY":
+			cert.PrivateKey = must.NotFail(x509.ParsePKCS8PrivateKey(block.Bytes))
+		}
+	}
+
+	b, err = os.ReadFile(q.Get("tlsCaFile"))
+	if err != nil {
+		tb.Error(err)
+		panic("setupWireConn: " + err.Error())
+	}
+
+	ca := x509.NewCertPool()
+	if ok := ca.AppendCertsFromPEM(b); !ok {
+		err = fmt.Errorf("TLS CA file: failed to parse")
+		tb.Error(err)
+		panic("setupWireConn: " + err.Error())
+	}
+
+	dialer := new(net.Dialer)
+
+	dialConn, err := dialer.DialContext(ctx, "tcp", u.Host)
+	if err != nil {
+		tb.Error(err)
+		panic("setupWireConn: " + err.Error())
+	}
+
+	config := &tls.Config{
+		Certificates: []tls.Certificate{cert},
+		ClientCAs:    ca,
+		RootCAs:      ca,
+		ServerName:   u.Hostname(),
+	}
+
+	conn = wireclient.New(tls.Client(dialConn, config), l)
 
 	tb.Cleanup(func() {
 		err = conn.Close()
