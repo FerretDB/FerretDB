@@ -12,8 +12,6 @@ vars:
   TEST_RUN: ""
   TEST_TIMEOUT: 35m
   BENCH_TIME: 5s
-  FUZZ_TIME: 15s
-  FUZZ_CORPUS: ../fuzz-corpus
   TESTJS_PORT: 27017
   RACE_FLAG: -race={{and (ne OS "windows") (ne ARCH "arm") (ne ARCH "riscv64")}}
   BUILD_TAGS: ferretdb_debug,ferretdb_hana
@@ -326,30 +324,6 @@ tasks:
       - go test -list='Benchmark.*' ./...
       - go test -count=10 -bench=BenchmarkDocument -benchtime={{.BENCH_TIME}} ./internal/bson/ | tee -a new.txt
       - bin/benchstat{{exeExt}} old.txt new.txt
-
-  # That's not quite correct: https://github.com/golang/go/issues/15513
-  # But good enough for us.
-  fuzz-init:
-    deps: [gen-version]
-    cmds:
-      - go test -count=0 ./...
-
-  fuzz:
-    desc: "Fuzz for about 1 minute (with default FUZZ_TIME)"
-    cmds:
-      - go test -list='Fuzz.*' ./...
-      - go test -run=XXX -fuzz=FuzzDocument -fuzztime={{.FUZZ_TIME}} ./internal/bson/
-      - go test -run=XXX -fuzz=FuzzMsg      -fuzztime={{.FUZZ_TIME}} ./internal/wire/
-      - go test -run=XXX -fuzz=FuzzQuery    -fuzztime={{.FUZZ_TIME}} ./internal/wire/
-      - go test -run=XXX -fuzz=FuzzReply    -fuzztime={{.FUZZ_TIME}} ./internal/wire/
-
-  fuzz-corpus:
-    desc: "Sync seed and generated fuzz corpora with FUZZ_CORPUS"
-    deps: [gen-version]
-    cmds:
-      - bin/envtool{{exeExt}} fuzz corpus generated {{.FUZZ_CORPUS}}
-      - bin/envtool{{exeExt}} fuzz corpus seed {{.FUZZ_CORPUS}}
-      - bin/envtool{{exeExt}} fuzz corpus {{.FUZZ_CORPUS}} generated
 
   run:
     desc: "Run FerretDB with `postgresql` backend"

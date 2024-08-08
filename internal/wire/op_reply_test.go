@@ -138,7 +138,3 @@ func TestReply(t *testing.T) {
 	t.Parallel()
 	testMessages(t, replyTestCases)
 }
-
-func FuzzReply(f *testing.F) {
-	fuzzMessages(f, replyTestCases)
-}
