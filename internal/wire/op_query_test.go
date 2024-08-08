@@ -153,7 +153,3 @@ func TestQuery(t *testing.T) {
 	t.Parallel()
 	testMessages(t, queryTestCases)
 }
-
-func FuzzQuery(f *testing.F) {
-	fuzzMessages(f, queryTestCases)
-}

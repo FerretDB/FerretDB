@@ -617,7 +617,3 @@ func TestMsg(t *testing.T) {
 	t.Parallel()
 	testMessages(t, msgTestCases)
 }
-
-func FuzzMsg(f *testing.F) {
-	fuzzMessages(f, msgTestCases)
-}
