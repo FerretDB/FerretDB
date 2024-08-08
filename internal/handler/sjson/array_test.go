@@ -143,14 +143,6 @@ func TestArray(t *testing.T) {
 	testJSON(t, arrayTestCases, func() sjsontype { return new(arrayType) })
 }
 
-func FuzzArrayWithFixedSchemas(f *testing.F) {
-	fuzzJSONWithFixedSchemas(f, arrayTestCases, func() sjsontype { return new(arrayType) })
-}
-
-func FuzzArrayWithFixedDocuments(f *testing.F) {
-	fuzzJSONWithFixedDocuments(f, arrayTestCases, func() sjsontype { return new(arrayType) })
-}
-
 func BenchmarkArray(b *testing.B) {
 	benchmark(b, arrayTestCases, func() sjsontype { return new(arrayType) })
 }

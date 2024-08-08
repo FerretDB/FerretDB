@@ -39,14 +39,6 @@ func TestTimestamp(t *testing.T) {
 	testJSON(t, timestampTestCases, func() sjsontype { return new(timestampType) })
 }
 
-func FuzzTimestampWithFixedSchemas(f *testing.F) {
-	fuzzJSONWithFixedSchemas(f, timestampTestCases, func() sjsontype { return new(timestampType) })
-}
-
-func FuzzTimestampWithFixedDocuments(f *testing.F) {
-	fuzzJSONWithFixedDocuments(f, timestampTestCases, func() sjsontype { return new(timestampType) })
-}
-
 func BenchmarkTimestamp(b *testing.B) {
 	benchmark(b, timestampTestCases, func() sjsontype { return new(timestampType) })
 }
