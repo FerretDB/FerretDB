@@ -18,11 +18,11 @@ import (
 	"encoding/base64"
 	"testing"
 
+	"github.com/FerretDB/wire/wirebson"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/xdg-go/scram"
 
-	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -34,7 +34,7 @@ type scramSHA256TestCase struct {
 	password Password
 	salt     []byte
 
-	want *bson.Document
+	want *wirebson.Document
 	err  string
 }
 
@@ -48,7 +48,7 @@ var scramSHA256TestCases = map[string]scramSHA256TestCase{
 		},
 		password: WrapPassword("pencil"),
 		salt:     must.NotFail(base64.StdEncoding.DecodeString("vXan6ZbWmm5i+f+mKY598rnIfoAGGp+G9NP0qQ==")),
-		want: must.NotFail(bson.NewDocument(
+		want: must.NotFail(wirebson.NewDocument(
 			"iterationCount", int32(15000),
 			"salt", "vXan6ZbWmm5i+f+mKY598rnIfoAGGp+G9NP0qQ==",
 			"storedKey", "bNxFkKtMt93v+ha80yJsDG6Xes3GOMh5qsRzwkcF85s=",
@@ -64,7 +64,7 @@ var scramSHA256TestCases = map[string]scramSHA256TestCase{
 		},
 		password: WrapPassword("password"),
 		salt:     must.NotFail(base64.StdEncoding.DecodeString("4vbrJBkaleBWRqgdXri8Otu1pwLCoX5BCUoa1Q==")),
-		want: must.NotFail(bson.NewDocument(
+		want: must.NotFail(wirebson.NewDocument(
 			"iterationCount", int32(15000),
 			"salt", "4vbrJBkaleBWRqgdXri8Otu1pwLCoX5BCUoa1Q==",
 			"storedKey", "1442RVPbzP5LhF3i/2Ld19Xj8TGfgK6XPy0KEbTL5so=",
@@ -100,7 +100,7 @@ var scramSHA256TestCases = map[string]scramSHA256TestCase{
 		},
 		password: WrapPassword("password"),
 		salt:     []byte("salt"),
-		want: must.NotFail(bson.NewDocument(
+		want: must.NotFail(wirebson.NewDocument(
 			"iterationCount", int32(1),
 			"salt", "c2FsdA==",
 			"storedKey", "tWgTq9QWqLI2SkBpZeZSmGl7RzeuMuU3vWYYEpOFTvk=",
@@ -114,7 +114,7 @@ var scramSHA256TestCases = map[string]scramSHA256TestCase{
 		},
 		password: WrapPassword("password"),
 		salt:     []byte("salt"),
-		want: must.NotFail(bson.NewDocument(
+		want: must.NotFail(wirebson.NewDocument(
 			"iterationCount", int32(2),
 			"salt", "c2FsdA==",
 			"storedKey", "db2Cdby2HHY1enQpujvJPfRJNlLyQ95MIEMwybJdFcI=",
@@ -128,7 +128,7 @@ var scramSHA256TestCases = map[string]scramSHA256TestCase{
 		},
 		password: WrapPassword("password"),
 		salt:     []byte("salt"),
-		want: must.NotFail(bson.NewDocument(
+		want: must.NotFail(wirebson.NewDocument(
 			"iterationCount", int32(4096),
 			"salt", "c2FsdA==",
 			"storedKey", "lF4cRm/Jky763CN4HtxdHnjV4Q8AWTNlKvGmEFFU8IQ=",
@@ -142,7 +142,7 @@ var scramSHA256TestCases = map[string]scramSHA256TestCase{
 		},
 		password: WrapPassword("passwordPASSWORDpassword"),
 		salt:     []byte("saltSALTsaltSALTsaltSALTsaltSALTsalt"),
-		want: must.NotFail(bson.NewDocument(
+		want: must.NotFail(wirebson.NewDocument(
 			"iterationCount", int32(4096),
 			"salt", "c2FsdFNBTFRzYWx0U0FMVHNhbHRTQUxUc2FsdFNBTFRzYWx0",
 			"storedKey", "kl1yVUP4s3BJMFrtaC4zLJycbv6k5yMBhVgocYmsYsU=",
@@ -156,7 +156,7 @@ var scramSHA256TestCases = map[string]scramSHA256TestCase{
 		},
 		password: WrapPassword("passwd"),
 		salt:     []byte("salt"),
-		want: must.NotFail(bson.NewDocument(
+		want: must.NotFail(wirebson.NewDocument(
 			"iterationCount", int32(1),
 			"salt", "c2FsdA==",
 			"storedKey", "dcwmgrDYICpRpKjwHLKxZ/21/go62U106s5V4i9v+Q8=",
@@ -170,7 +170,7 @@ var scramSHA256TestCases = map[string]scramSHA256TestCase{
 		},
 		password: WrapPassword("Password"),
 		salt:     []byte("NaCl"),
-		want: must.NotFail(bson.NewDocument(
+		want: must.NotFail(wirebson.NewDocument(
 			"iterationCount", int32(80000),
 			"salt", "TmFDbA==",
 			"storedKey", "EI8wmB+eWKGZ8k+dln75YQnX8lj+MBoG6+eH9AzR1e4=",
@@ -184,7 +184,7 @@ var scramSHA256TestCases = map[string]scramSHA256TestCase{
 		},
 		password: WrapPassword("Password"),
 		salt:     []byte("sa\x00lt"),
-		want: must.NotFail(bson.NewDocument(
+		want: must.NotFail(wirebson.NewDocument(
 			"iterationCount", int32(4096),
 			"salt", "c2EAbHQ=",
 			"storedKey", "BHJbwIZ9YCvb+dFApByBLe4jR7gquvBm3kPApnWCylk=",

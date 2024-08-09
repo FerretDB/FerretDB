@@ -77,8 +77,6 @@ linters-settings:
     no-unaliased: false
     no-extra-aliases: true
     alias:
-      - pkg: github.com/FerretDB/FerretDB/internal/bson
-        alias: fbson
       - pkg: github.com/prometheus/client_model/go
         alias: dto
       - pkg: github.com/jaswdr/faker

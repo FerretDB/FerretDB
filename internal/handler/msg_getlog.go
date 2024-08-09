@@ -22,6 +22,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
+
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
@@ -31,14 +34,13 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgGetLog implements `getLog` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgGetLog(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := msg.Document()
+	document, err := opMsgDocument(msg)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -77,14 +79,14 @@ func (h *Handler) MsgGetLog(connCtx context.Context, msg *wire.OpMsg) (*wire.OpM
 		))
 
 	case "global":
-		var res *bson.Array
+		var res *wirebson.Array
 
 		if res, err = logging.RecentEntries.GetArray(); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
 		resDoc = must.NotFail(types.NewDocument(
-			"log", must.NotFail(res.Convert()),
+			"log", must.NotFail(bson.TypesArray(res)),
 			"totalLinesWritten", int64(res.Len()),
 			"ok", float64(1),
 		))
@@ -167,10 +169,7 @@ func (h *Handler) MsgGetLog(connCtx context.Context, msg *wire.OpMsg) (*wire.OpM
 		)
 	}
 
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+	return documentOpMsg(
 		resDoc,
-	)))
-
-	return &reply, nil
+	)
 }

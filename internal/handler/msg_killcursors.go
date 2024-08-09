@@ -19,6 +19,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/FerretDB/wire"
+
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
@@ -27,14 +29,13 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgKillCursors implements `killCursors` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgKillCursors(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := msg.Document()
+	document, err := opMsgDocument(msg)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -104,8 +105,7 @@ func (h *Handler) MsgKillCursors(connCtx context.Context, msg *wire.OpMsg) (*wir
 		cursorsKilled.Append(id)
 	}
 
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+	return documentOpMsg(
 		must.NotFail(types.NewDocument(
 			"cursorsKilled", cursorsKilled,
 			"cursorsNotFound", cursorsNotFound,
@@ -113,7 +113,5 @@ func (h *Handler) MsgKillCursors(connCtx context.Context, msg *wire.OpMsg) (*wir
 			"cursorsUnknown", cursorsUnknown,
 			"ok", float64(1),
 		)),
-	)))
-
-	return &reply, nil
+	)
 }

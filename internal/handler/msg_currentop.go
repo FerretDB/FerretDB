@@ -17,22 +17,20 @@ package handler
 import (
 	"context"
 
+	"github.com/FerretDB/wire"
+
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgCurrentOp implements `currentOp` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgCurrentOp(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+	return documentOpMsg(
 		must.NotFail(types.NewDocument(
 			"inprog", must.NotFail(types.NewArray()),
 			"ok", float64(1),
 		)),
-	)))
-
-	return &reply, nil
+	)
 }

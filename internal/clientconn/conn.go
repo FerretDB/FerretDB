@@ -31,12 +31,14 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/FerretDB/wire"
 	"github.com/pmezard/go-difflib/difflib"
 	"go.opentelemetry.io/otel"
 	otelattribute "go.opentelemetry.io/otel/attribute"
 	otelcodes "go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handler"
@@ -48,7 +50,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // Mode represents FerretDB mode of operation.
@@ -251,6 +252,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 		var resHeader *wire.MsgHeader
 		var resBody wire.MsgBody
 
+		// TODO https://github.com/FerretDB/FerretDB/issues/2412
 		reqHeader, reqBody, err = wire.ReadMessage(bufr)
 		if err != nil {
 			return
@@ -407,7 +409,10 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 
 		resHeader.OpCode = wire.OpCodeMsg
 
-		document, err = msg.Document()
+		// decoded successfully already in [run] [wire.ReadMessage] [UnmarshalBinaryNocopy] [check]
+		doc := must.NotFail(msg.RawSection0().Decode())
+
+		document, err = bson.TypesDocument(doc)
 
 		if err == nil {
 			comment, _ := common.GetOptionalParam(document, "comment", "")
@@ -422,7 +427,7 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 
 		connCtx, span = otel.Tracer("").Start(connCtx, "")
 
-		command = document.Command()
+		command = doc.Command()
 
 		if err == nil {
 			// do not store typed nil in interface, it makes it non-nil
@@ -485,11 +490,7 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		case wire.OpCodeMsg:
 			protoErr := handlererrors.ProtocolError(err)
 
-			var res wire.OpMsg
-			must.NoError(res.SetSections(wire.MakeOpMsgSection(
-				protoErr.Document(),
-			)))
-			resBody = &res
+			resBody = must.NotFail(wire.NewOpMsg(protoErr.Document()))
 
 			switch protoErr := protoErr.(type) {
 			case *handlererrors.CommandError:
@@ -506,9 +507,7 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		case wire.OpCodeReply:
 			protoErr := handlererrors.ProtocolError(err)
 
-			var reply wire.OpReply
-			reply.SetDocument(protoErr.Document())
-			resBody = &reply
+			resBody = must.NotFail(wire.NewOpReply(protoErr.Document()))
 
 			result = protoErr.(*handlererrors.CommandError).Code().String()
 
@@ -598,11 +597,11 @@ func (c *conn) logResponse(ctx context.Context, who string, resHeader *wire.MsgH
 	level := slog.LevelDebug
 
 	if resHeader.OpCode == wire.OpCodeMsg {
-		doc := must.NotFail(resBody.(*wire.OpMsg).Document())
+		doc := must.NotFail(must.NotFail(resBody.(*wire.OpMsg).RawDocument()).Decode())
 
 		var ok bool
 
-		v, _ := doc.Get("ok")
+		v := doc.Get("ok")
 		switch v := v.(type) {
 		case float64:
 			ok = v == 1

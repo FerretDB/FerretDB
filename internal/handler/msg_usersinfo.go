@@ -19,20 +19,21 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/FerretDB/wire"
+
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgUsersInfo implements `usersInfo` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgUsersInfo(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := msg.Document()
+	document, err := opMsgDocument(msg)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -191,15 +192,12 @@ func (h *Handler) MsgUsersInfo(connCtx context.Context, msg *wire.OpMsg) (*wire.
 		}
 	}
 
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+	return documentOpMsg(
 		must.NotFail(types.NewDocument(
 			"users", res,
 			"ok", float64(1),
 		)),
-	)))
-
-	return &reply, nil
+	)
 }
 
 // usersInfoPair is a pair of username and database name.

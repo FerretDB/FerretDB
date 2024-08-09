@@ -20,9 +20,9 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 
+	"github.com/FerretDB/wire/wirebson"
 	"golang.org/x/crypto/pbkdf2"
 
-	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
@@ -31,7 +31,7 @@ import (
 //
 // It does not conform to the SCRAM-SHA-1 standard due to the custom preparation
 // of the password.
-func SCRAMSHA1VariationHash(username string, password Password) (*bson.Document, error) {
+func SCRAMSHA1VariationHash(username string, password Password) (*wirebson.Document, error) {
 	salt := make([]byte, fixedScramSHA1Params.saltLen)
 	if _, err := rand.Read(salt); err != nil {
 		return nil, lazyerrors.Error(err)
@@ -54,7 +54,7 @@ var fixedScramSHA1Params = &scramParams{
 // scramSHA1VariationHashParams hashes the password using custom preparation with the given salt and parameters,
 // and returns the document that should be stored using a variation of the SCRAM-SHA-1 algorithm
 // used by MongoDB.
-func scramSHA1VariationHashParams(username string, password Password, salt []byte, params *scramParams) (*bson.Document, error) {
+func scramSHA1VariationHashParams(username string, password Password, salt []byte, params *scramParams) (*wirebson.Document, error) { //nolint:lll // for readability
 	if len(salt) != int(params.saltLen) {
 		return nil, lazyerrors.Errorf("unexpected salt length: %d", len(salt))
 	}

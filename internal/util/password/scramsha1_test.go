@@ -18,11 +18,11 @@ import (
 	"encoding/base64"
 	"testing"
 
+	"github.com/FerretDB/wire/wirebson"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/xdg-go/scram"
 
-	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -35,7 +35,7 @@ type scramSHA1TestCase struct {
 	password Password
 	salt     []byte
 
-	want *bson.Document
+	want *wirebson.Document
 	err  string
 }
 
@@ -50,7 +50,7 @@ var scramSHA1TestCases = map[string]scramSHA1TestCase{
 		username: "user",
 		password: WrapPassword("pencil"),
 		salt:     must.NotFail(base64.StdEncoding.DecodeString("55hyMPh69qfbfXPueAsr6g==")),
-		want: must.NotFail(bson.NewDocument(
+		want: must.NotFail(wirebson.NewDocument(
 			"iterationCount", int32(10000),
 			"salt", "55hyMPh69qfbfXPueAsr6g==",
 			"storedKey", "W+jN9/MwzC8uhAIOOViZOUiSt14=",
@@ -67,7 +67,7 @@ var scramSHA1TestCases = map[string]scramSHA1TestCase{
 		username: "user",
 		password: WrapPassword("password"),
 		salt:     must.NotFail(base64.StdEncoding.DecodeString("OjPS7S2yaYBaJsRTCzahWQ==")),
-		want: must.NotFail(bson.NewDocument(
+		want: must.NotFail(wirebson.NewDocument(
 			"iterationCount", int32(10000),
 			"salt", "OjPS7S2yaYBaJsRTCzahWQ==",
 			"storedKey", "fvtSnYGbBxKrXwbh4nAaUyiYMgg=",
