@@ -32,6 +32,7 @@ import (
 	"time"
 
 	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
 	"github.com/pmezard/go-difflib/difflib"
 	"go.opentelemetry.io/otel"
 	otelattribute "go.opentelemetry.io/otel/attribute"
@@ -407,12 +408,13 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		var document *types.Document
 		msg := reqBody.(*wire.OpMsg)
 
+		var doc *wirebson.Document
+		if doc, err = msg.RawSection0().Decode(); err == nil {
+			command = doc.Command()
+			document, err = bson.TypesDocument(doc)
+		}
+
 		resHeader.OpCode = wire.OpCodeMsg
-
-		// decoded successfully already in [run] [wire.ReadMessage] [UnmarshalBinaryNocopy] [check]
-		doc := must.NotFail(msg.RawSection0().Decode())
-
-		document, err = bson.TypesDocument(doc)
 
 		if err == nil {
 			comment, _ := common.GetOptionalParam(document, "comment", "")
@@ -426,8 +428,6 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		}
 
 		connCtx, span = otel.Tracer("").Start(connCtx, "")
-
-		command = doc.Command()
 
 		if err == nil {
 			// do not store typed nil in interface, it makes it non-nil
