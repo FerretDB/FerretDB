@@ -4,6 +4,7 @@ title: FerretDB releases v1.23.0 with improved observability
 authors: [alex]
 description: >
   We are happy to announce the release of FerretDB v1.23.0 with new features and improvements to enhance observability and debugging.
+image: /img/blog/ferretdb-v1.23.0.jpg
 tags: [release]
 ---
 
