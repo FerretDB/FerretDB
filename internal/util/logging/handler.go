@@ -61,7 +61,6 @@ type NewHandlerOpts struct {
 // shortPath returns shorter path for the given path.
 func shortPath(path string) string {
 	must.NotBeZero(path)
-	must.BeTrue(filepath.IsAbs(path))
 
 	dir := filepath.Base(filepath.Dir(path))
 	if dir == "/" {
