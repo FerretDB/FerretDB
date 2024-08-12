@@ -1,19 +1,19 @@
 ---
 slug: <tbd>
-title: <tbd>
+title: OTel context propagation in FerretDB
 authors: [elena]
 description: >
   <tbd>
-tags: [<tbd>]
+tags: [observability, opentelemetry, tracing]
 ---
 
 Nowadays, distributed systems have become a norm in software development. When we talk about making such systems 
-reliable we often mention observability as a tool to get feedback  and troubleshoot such systems. 
+reliable we often mention observability as a tool to get feedback and troubleshoot such systems. 
 This is where distributed tracing comes in, and where OpenTelemetry offers a standard to use it.
 
-While it is relatively easy to start using OpenTelemtry when writing applications in various programming languages, 
-passing the context to databases is more complicated. Most databases don’t support native approach to work with tracing-related context. 
-There are some approaches such as SQLCommenter (https://google.github.io/sqlcommenter/) to make it possible to connect 
+While it is relatively easy to start using OpenTelemetry when writing applications in various programming languages, 
+passing the context to databases is more complicated. Most databases don’t support native way of working with tracing-related context. 
+There are some approaches such as [SQLCommenter](https://google.github.io/sqlcommenter/) to make it possible to connect 
 the data of the current trace and the queries executed in the DB. In this case, the information about the trace is injected 
 on the ORM level and passed through SQL comments to the database. The operator of the database can enable query logs to link 
 the exact queries with the exact requests of the caller application.
@@ -52,10 +52,18 @@ spanID := [8]byte{0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10}
 
 With such an approach, it’s relatively easy to visualize client’s requests to FerretDB showing them as part of the initial client’s trace.
 
-However, not all the operations support `comment` field. For example, `insert` or `listCollections` operations don’t have `comment` field.
+However, not all the operations support `comment` field. For example, `insert` or `listCollections` operations don’t have it.
 
 Another problem with `comment` field is that it’s typed as string, and, in principle, any string can be passed there. 
 In our example where we let FerretDB receive and parse tracing data through the comment, we need to decode the json passed 
 in the comment (and the driver needs to encode it).
 
-A much better approach would be to have a special field to pass some additional request-related context. 
+A much better approach would be to have a special field to pass some additional request-related context, and it would
+be great to agree on a standard for such fields. This way, we could have a more reliable way to pass context to the database.
+
+However, as such standard doesn't exist yet, let's take a look at an example application that works with FerretDB and
+passes the tracing context through the `comment` field
+
+In conclusion, we believe that passing context to databases is an important part of making document databases more observable.
+We hope that the community will come up with a standard way to pass context to databases, and we are looking forward to
+contributing to this effort.
