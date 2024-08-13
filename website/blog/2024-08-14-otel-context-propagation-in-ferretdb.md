@@ -85,25 +85,23 @@ that interacts with FerretDB and passes the tracing context using the `comment` 
 For simplicity, most error handling is omitted in the example below.
 
 ```go
-    collection := client.Database("testdb").Collection("customers")
+collection := client.Database("testdb").Collection("customers")
 
-    user := bson.D{
-        {Key: "name", Value: "John Doe"},
-        {Key: "email", Value: "john.doe@example.com"},
-    }
+user := bson.D{
+    {Key: "name", Value: "John Doe"},
+    {Key: "email", Value: "john.doe@example.com"},
+}
 
-    insertCtx, insertSpan := tracer.Start(ctx, "InsertCustomer")
-    _, _ = collection.InsertOne(insertCtx, user)
-    insertSpan.End()
+insertCtx, insertSpan := tracer.Start(ctx, "InsertCustomer")
+_, _ = collection.InsertOne(insertCtx, user)
+insertSpan.End()
 
-    findCtx, findSpan := tracer.Start(ctx, "FindCustomer")
-    filter := bson.D{{Key: "name", Value: "John Doe"}}
+findCtx, findSpan := tracer.Start(ctx, "FindCustomer")
+filter := bson.D{{Key: "name", Value: "John Doe"}}
 
-    var result bson.D
-    _ = collection.FindOne(findCtx, filter).Decode(&result)
-    findSpan.End()
-
-    fmt.Printf("Found document: %v\n", result)
+var result bson.D
+_ = collection.FindOne(findCtx, filter).Decode(&result)
+findSpan.End()
 ```
 
 In this setup, we create two spans: one for inserting a document and another for finding it.
@@ -117,27 +115,28 @@ If we pass the tracing context through the `comment` field, we will see that the
 Let's modify the `FindCustomer` part:
 
 ```go
-    findCtx, findSpan := tracer.Start(ctx, "FindCustomer")
-    filter := bson.D{{Key: "name", Value: "John Doe"}}
+findCtx, findSpan := tracer.Start(ctx, "FindCustomer")
+filter := bson.D{{Key: "name", Value: "John Doe"}}
 
-    traceID := findSpan.SpanContext().TraceID().String()
-    spanID := findSpan.SpanContext().SpanID().String()
+traceID := findSpan.SpanContext().TraceID().String()
+spanID := findSpan.SpanContext().SpanID().String()
 
-    traceContext := struct {
-        TraceID string `json:"traceID"`
-        SpanID  string `json:"spanID"`
-    }{
-        TraceID: traceID,
-        SpanID:  spanID,
-    }
+traceContext := struct {
+    TraceID string `json:"traceID"`
+    SpanID  string `json:"spanID"`
+}{
+    TraceID: traceID,
+    SpanID:  spanID,
+}
 
-    comment, _ := json.Marshal(map[string]interface{}{
-        "ferretDB": traceContext,
-    })
+comment, _ := json.Marshal(map[string]interface{}{
+    "ferretDB": traceContext,
+})
 
-    var result bson.D
-    _ = collection.FindOne(findCtx, filter, options.FindOne().SetComment(string(comment))).Decode(&result)
-    findSpan.End()
+var result bson.D
+_ = collection.FindOne(findCtx, filter, options.FindOne().SetComment(string(comment))).Decode(&result)
+
+findSpan.End()
 ```
 
 Now, if we run the application, we will see that the spans are linked and the `FindCustomer` span is a child span created on the FerretDB side:
