@@ -31,21 +31,25 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/FerretDB/wire"
 	"github.com/pmezard/go-difflib/difflib"
 	"go.opentelemetry.io/otel"
 	otelattribute "go.opentelemetry.io/otel/attribute"
 	otelcodes "go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handler"
+	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/proxy"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
 
 // Mode represents FerretDB mode of operation.
@@ -247,45 +251,9 @@ func (c *conn) run(ctx context.Context) (err error) {
 		var reqBody wire.MsgBody
 		var resHeader *wire.MsgHeader
 		var resBody wire.MsgBody
-		var validationErr *wire.ValidationError
 
+		// TODO https://github.com/FerretDB/FerretDB/issues/2412
 		reqHeader, reqBody, err = wire.ReadMessage(bufr)
-		if err != nil && errors.As(err, &validationErr) {
-			// Currently, we respond with OP_MSG containing an error and don't close the connection.
-			// That's probably not right. First, we always respond with OP_MSG, even to OP_QUERY.
-			// Second, we don't know what command it was, if any,
-			// and if the client could handle returned error for it.
-			//
-			// TODO https://github.com/FerretDB/FerretDB/issues/2412
-
-			// get protocol error to return correct error document
-			protoErr := handlererrors.ProtocolError(validationErr)
-
-			var res wire.OpMsg
-			must.NoError(res.SetSections(wire.MakeOpMsgSection(
-				protoErr.Document(),
-			)))
-
-			b := must.NotFail(res.MarshalBinary())
-
-			resHeader = &wire.MsgHeader{
-				OpCode:        reqHeader.OpCode,
-				RequestID:     c.lastRequestID.Add(1),
-				ResponseTo:    reqHeader.RequestID,
-				MessageLength: int32(wire.MsgHeaderLen + len(b)),
-			}
-
-			if err = wire.WriteMessage(bufw, resHeader, &res); err != nil {
-				return
-			}
-
-			if err = bufw.Flush(); err != nil {
-				return
-			}
-
-			continue
-		}
-
 		if err != nil {
 			return
 		}
@@ -404,8 +372,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 //
 // Returned resBody can be nil.
 func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody wire.MsgBody) (resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) { //nolint:lll // argument list is too long
-	connCtx, span := otel.Tracer("").Start(connCtx, "")
-
+	var span trace.Span
 	var command, result, argument string
 	defer func() {
 		if result == "" {
@@ -417,6 +384,8 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		}
 
 		c.m.Responses.WithLabelValues(resHeader.OpCode.String(), command, argument, result).Inc()
+
+		must.NotBeZero(span)
 
 		if result != "ok" {
 			span.SetStatus(otelcodes.Error, result)
@@ -437,11 +406,28 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 	case wire.OpCodeMsg:
 		var document *types.Document
 		msg := reqBody.(*wire.OpMsg)
-		document, err = msg.Document()
-
-		command = document.Command()
 
 		resHeader.OpCode = wire.OpCodeMsg
+
+		// decoded successfully already in [run] [wire.ReadMessage] [UnmarshalBinaryNocopy] [check]
+		doc := must.NotFail(msg.RawSection0().Decode())
+
+		document, err = bson.TypesDocument(doc)
+
+		if err == nil {
+			comment, _ := common.GetOptionalParam(document, "comment", "")
+
+			spanCtx, e := observability.SpanContextFromComment(comment)
+			if e == nil {
+				connCtx = trace.ContextWithRemoteSpanContext(connCtx, spanCtx)
+			} else {
+				c.l.DebugContext(connCtx, "Failed to extract span context from comment", logging.Error(e))
+			}
+		}
+
+		connCtx, span = otel.Tracer("").Start(connCtx, "")
+
+		command = doc.Command()
 
 		if err == nil {
 			// do not store typed nil in interface, it makes it non-nil
@@ -455,6 +441,8 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		}
 
 	case wire.OpCodeQuery:
+		connCtx, span = otel.Tracer("").Start(connCtx, "")
+
 		query := reqBody.(*wire.OpQuery)
 		resHeader.OpCode = wire.OpCodeReply
 
@@ -482,9 +470,11 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 	case wire.OpCodeKillCursors:
 		fallthrough
 	case wire.OpCodeCompressed:
+		connCtx, span = otel.Tracer("").Start(connCtx, "")
 		err = lazyerrors.Errorf("unhandled OpCode %s", reqHeader.OpCode)
 
 	default:
+		connCtx, span = otel.Tracer("").Start(connCtx, "")
 		err = lazyerrors.Errorf("unexpected OpCode %s", reqHeader.OpCode)
 	}
 
@@ -500,11 +490,7 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		case wire.OpCodeMsg:
 			protoErr := handlererrors.ProtocolError(err)
 
-			var res wire.OpMsg
-			must.NoError(res.SetSections(wire.MakeOpMsgSection(
-				protoErr.Document(),
-			)))
-			resBody = &res
+			resBody = must.NotFail(wire.NewOpMsg(protoErr.Document()))
 
 			switch protoErr := protoErr.(type) {
 			case *handlererrors.CommandError:
@@ -521,9 +507,7 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		case wire.OpCodeReply:
 			protoErr := handlererrors.ProtocolError(err)
 
-			var reply wire.OpReply
-			reply.SetDocument(protoErr.Document())
-			resBody = &reply
+			resBody = must.NotFail(wire.NewOpReply(protoErr.Document()))
 
 			result = protoErr.(*handlererrors.CommandError).Code().String()
 
@@ -613,11 +597,11 @@ func (c *conn) logResponse(ctx context.Context, who string, resHeader *wire.MsgH
 	level := slog.LevelDebug
 
 	if resHeader.OpCode == wire.OpCodeMsg {
-		doc := must.NotFail(resBody.(*wire.OpMsg).Document())
+		doc := must.NotFail(must.NotFail(resBody.(*wire.OpMsg).RawDocument()).Decode())
 
 		var ok bool
 
-		v, _ := doc.Get("ok")
+		v := doc.Get("ok")
 		switch v := v.(type) {
 		case float64:
 			ok = v == 1

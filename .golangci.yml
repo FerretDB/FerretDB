@@ -41,14 +41,6 @@ linters-settings:
           - "**/internal/util/logging/*.go"
         deny:
           - pkg: github.com/FerretDB/FerretDB/internal/types
-      bsonproto:
-        files:
-          - $all
-          - "!**/internal/bson/*.go"
-          - "!**/internal/driver/*.go"
-        deny:
-          - pkg: github.com/cristalhq/bson
-          - pkg: github.com/cristalhq/bson/bsonproto
       sjson:
         files:
           - $all

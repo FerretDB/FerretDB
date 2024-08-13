@@ -2,14 +2,14 @@ module github.com/FerretDB/FerretDB/integration
 
 go 1.22
 
-toolchain go1.22.5
+toolchain go1.22.6
 
 replace github.com/FerretDB/FerretDB => ../
 
 require (
 	github.com/AlekSi/pointer v1.2.0
 	github.com/FerretDB/FerretDB v0.0.0-00010101000000-000000000000
-	github.com/FerretDB/wire v0.0.5
+	github.com/FerretDB/wire v0.0.7
 	github.com/prometheus/client_golang v1.19.1
 	github.com/stretchr/testify v1.9.0
 	github.com/xdg-go/scram v1.1.2
@@ -26,7 +26,6 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/cristalhq/bson v0.0.8 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect

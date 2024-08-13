@@ -83,7 +83,8 @@ func NewClient(cacheFilePath string, logf, cacheDebugF, clientDebugf gh.Printf) 
 func CacheFilePath() (string, error) {
 	// This tool is called for multiple packages in parallel,
 	// with the current working directory set to the package directory.
-	// To use the same cache file path, we first locate the root of the project by the .git directory.
+	// To use the same cache file path, we first locate the root of the project by the .git directory
+	// (or .git gitdir file for submodules).
 
 	dir, err := filepath.Abs(".")
 	if err != nil {
@@ -91,12 +92,8 @@ func CacheFilePath() (string, error) {
 	}
 
 	for {
-		fi, err := os.Stat(filepath.Join(dir, ".git"))
+		_, err := os.Stat(filepath.Join(dir, ".git"))
 		if err == nil {
-			if !fi.IsDir() {
-				return "", fmt.Errorf(".git is not a directory")
-			}
-
 			break
 		}
 

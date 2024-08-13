@@ -17,7 +17,8 @@ package handlererrors
 import (
 	"errors"
 
-	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/wire/wirebson"
+
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -66,20 +67,20 @@ func (we *WriteErrors) Error() string {
 }
 
 // Document implements ProtoErr interface.
-func (we *WriteErrors) Document() *types.Document {
-	errs := types.MakeArray(we.Len())
+func (we *WriteErrors) Document() *wirebson.Document {
+	errs := wirebson.MakeArray(we.Len())
 
 	for _, e := range we.errs {
-		doc := types.MakeDocument(3)
+		doc := wirebson.MakeDocument(3)
 
-		doc.Set("index", e.index)
-		doc.Set("code", int32(e.code))
-		doc.Set("errmsg", e.errmsg)
+		must.NoError(doc.Add("index", e.index))
+		must.NoError(doc.Add("code", int32(e.code)))
+		must.NoError(doc.Add("errmsg", e.errmsg))
 
-		errs.Append(doc)
+		must.NoError(errs.Add(doc))
 	}
 
-	return must.NotFail(types.NewDocument(
+	return must.NotFail(wirebson.NewDocument(
 		"ok", float64(1),
 		"writeErrors", errs,
 	))

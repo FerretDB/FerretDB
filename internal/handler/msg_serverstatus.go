@@ -20,12 +20,13 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/FerretDB/wire"
+
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgServerStatus implements `serverStatus` command.
@@ -100,10 +101,7 @@ func (h *Handler) MsgServerStatus(connCtx context.Context, msg *wire.OpMsg) (*wi
 		"internalViews", int32(0),
 	)))
 
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+	return documentOpMsg(
 		res,
-	)))
-
-	return &reply, nil
+	)
 }

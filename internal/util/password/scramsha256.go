@@ -19,16 +19,16 @@ import (
 	"crypto/sha256"
 	"fmt"
 
+	"github.com/FerretDB/wire/wirebson"
 	"github.com/xdg-go/stringprep"
 	"golang.org/x/crypto/pbkdf2"
 
-	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // SCRAMSHA256Hash computes SCRAM-SHA-256 credentials and returns
 // a document containing stored key, iteration count, salt, and server key.
-func SCRAMSHA256Hash(password Password) (*bson.Document, error) {
+func SCRAMSHA256Hash(password Password) (*wirebson.Document, error) {
 	salt := make([]byte, fixedScramSHA256Params.saltLen)
 	if _, err := rand.Read(salt); err != nil {
 		return nil, lazyerrors.Error(err)
@@ -52,7 +52,7 @@ var fixedScramSHA256Params = &scramParams{
 // and returns the document that should be stored.
 //
 // https://datatracker.ietf.org/doc/html/rfc5802
-func scramSHA256HashParams(password Password, salt []byte, params *scramParams) (*bson.Document, error) {
+func scramSHA256HashParams(password Password, salt []byte, params *scramParams) (*wirebson.Document, error) {
 	if len(salt) != int(params.saltLen) {
 		return nil, lazyerrors.Errorf("unexpected salt length: %d", len(salt))
 	}

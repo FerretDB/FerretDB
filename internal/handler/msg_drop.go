@@ -18,20 +18,21 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/FerretDB/wire"
+
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgDrop implements `drop` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgDrop(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := msg.Document()
+	document, err := opMsgDocument(msg)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -77,16 +78,13 @@ func (h *Handler) MsgDrop(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 
 	switch {
 	case err == nil, backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist):
-		var reply wire.OpMsg
-		must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+		return documentOpMsg(
 			must.NotFail(types.NewDocument(
 				"nIndexesWas", int32(1), // TODO https://github.com/FerretDB/FerretDB/issues/2337
 				"ns", dbName+"."+collectionName,
 				"ok", float64(1),
 			)),
-		)))
-
-		return &reply, nil
+		)
 
 	case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid):
 		msg := fmt.Sprintf("Invalid collection name: %s", collectionName)

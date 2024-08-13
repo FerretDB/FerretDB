@@ -18,7 +18,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/wire/wirebson"
+
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -85,15 +86,15 @@ func (e *CommandError) Error() string {
 }
 
 // Document implements ProtoErr interface.
-func (e *CommandError) Document() *types.Document {
-	d := must.NotFail(types.NewDocument(
+func (e *CommandError) Document() *wirebson.Document {
+	d := must.NotFail(wirebson.NewDocument(
 		"ok", float64(0),
 		"errmsg", e.err.Error(),
 	))
 
 	if e.code != errUnset {
-		d.Set("code", int32(e.code))
-		d.Set("codeName", e.code.String())
+		must.NoError(d.Add("code", int32(e.code)))
+		must.NoError(d.Add("codeName", e.code.String()))
 	}
 
 	return d

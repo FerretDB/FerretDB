@@ -50,14 +50,6 @@ func TestRegex(t *testing.T) {
 	testJSON(t, regexTestCases, func() sjsontype { return new(regexType) })
 }
 
-func FuzzRegexWithFixedSchemas(f *testing.F) {
-	fuzzJSONWithFixedSchemas(f, regexTestCases, func() sjsontype { return new(regexType) })
-}
-
-func FuzzRegexWithFixedDocuments(f *testing.F) {
-	fuzzJSONWithFixedDocuments(f, regexTestCases, func() sjsontype { return new(regexType) })
-}
-
 func BenchmarkRegex(b *testing.B) {
 	benchmark(b, regexTestCases, func() sjsontype { return new(regexType) })
 }

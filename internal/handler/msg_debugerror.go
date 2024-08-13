@@ -20,19 +20,20 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/FerretDB/wire"
+
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgDebugError implements `debugError` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgDebugError(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := msg.Document()
+	document, err := opMsgDocument(msg)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -50,17 +51,9 @@ func (h *Handler) MsgDebugError(connCtx context.Context, msg *wire.OpMsg) (*wire
 
 	switch {
 	case expected == "ok":
-		var reply wire.OpMsg
-
-		replyDoc := must.NotFail(types.NewDocument(
+		return documentOpMsg(must.NotFail(types.NewDocument(
 			"ok", float64(1),
-		))
-
-		must.NoError(reply.SetSections(wire.MakeOpMsgSection(
-			replyDoc,
 		)))
-
-		return &reply, nil
 
 	case strings.HasPrefix(expected, "panic"):
 		panic("debugError " + expected)

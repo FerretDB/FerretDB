@@ -12,7 +12,7 @@ ARG LABEL_COMMIT
 
 # prepare stage
 
-FROM --platform=$BUILDPLATFORM golang:1.22.5 AS production-prepare
+FROM --platform=$BUILDPLATFORM golang:1.22.6 AS production-prepare
 
 # use a single directory for all Go caches to simpliy RUN --mount commands below
 ENV GOPATH=/cache/gopath
@@ -36,7 +36,7 @@ EOF
 
 # build stage
 
-FROM golang:1.22.5 AS production-build
+FROM golang:1.22.6 AS production-build
 
 ARG TARGETARCH
 ARG TARGETVARIANT
@@ -77,12 +77,12 @@ export CGO_ENABLED=0
 
 go env
 
-# Do not trim paths to reuse build cache.
+# Trim paths mostly to check that building with `-trimpath` is supported.
 
 # check if stdlib was cached
-go install -v std
+go install -v -trimpath std
 
-go build -v -o=bin/ferretdb ./cmd/ferretdb
+go build -v -trimpath -o=bin/ferretdb ./cmd/ferretdb
 
 go version -m bin/ferretdb
 bin/ferretdb --version

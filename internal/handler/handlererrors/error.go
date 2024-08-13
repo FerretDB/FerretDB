@@ -18,8 +18,7 @@ package handlererrors
 import (
 	"errors"
 
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/wire"
+	"github.com/FerretDB/wire/wirebson"
 )
 
 //go:generate ../../../bin/stringer -linecomment -type ErrorCode
@@ -354,7 +353,7 @@ type ProtoErr interface {
 	error
 
 	// Document returns error representation for returning to the client.
-	Document() *types.Document
+	Document() *wirebson.Document
 
 	// Info returns additional error information, or nil.
 	Info() *ErrInfo
@@ -364,7 +363,6 @@ type ProtoErr interface {
 //
 // Nil panics (it never should be passed),
 // [*CommandError] or [*WriteErrors] (possibly wrapped) are returned unwrapped,
-// [*wire.ValidationError] (possibly wrapped) is returned as CommandError with BadValue code,
 // any other values (including lazy errors) are returned as CommandError with InternalError code.
 func ProtocolError(err error) ProtoErr {
 	if err == nil {
@@ -379,12 +377,6 @@ func ProtocolError(err error) ProtoErr {
 	var writeErr *WriteErrors
 	if errors.As(err, &writeErr) {
 		return writeErr
-	}
-
-	var validationErr *wire.ValidationError
-	if errors.As(err, &validationErr) {
-		//nolint:errorlint // only *CommandError could be returned
-		return NewCommandError(ErrBadValue, err).(*CommandError)
 	}
 
 	//nolint:errorlint // only *CommandError could be returned

@@ -21,7 +21,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/FerretDB/FerretDB/internal/bson"
+	"github.com/FerretDB/wire/wirebson"
+
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
@@ -76,9 +77,9 @@ func (cb *circularBuffer) get() []*slog.Record {
 }
 
 // GetArray is a version of Get that returns an array as expected by mongosh.
-func (cb *circularBuffer) GetArray() (*bson.Array, error) {
+func (cb *circularBuffer) GetArray() (*wirebson.Array, error) {
 	records := cb.get()
-	res := bson.MakeArray(len(records))
+	res := wirebson.MakeArray(len(records))
 
 	for _, r := range records {
 		b, err := json.Marshal(map[string]any{
