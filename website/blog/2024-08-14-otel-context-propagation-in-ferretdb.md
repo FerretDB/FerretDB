@@ -8,15 +8,23 @@ tags: [observability]
 ---
 
 In today's world of distributed systems, achieving reliability depends on various factors, one of which is effective observability.
-OpenTelemetry (OTel) has emerged as a standard for distributed tracing, but passing context to databases remains a significant challenge,
+OpenTelemetry (OTel) has emerged as a standard for distributed tracing, but passing tracing data to databases remains a significant challenge,
 particularly with document databases like MongoDB.
 At FerretDB, we're committed to addressing this challenge.
 
 <!--truncate-->
 
 While adopting OpenTelemetry in application development is relatively straightforward across various programming languages,
-the process becomes more complex when passing context to databases.
-Most databases don't natively support tracing-related context.
+the process becomes more complex when passing tracing data to databases.
+
+Context propagation, a concept that enables the tracking of requests as they move through different services, is explained by OpenTelemetry
+[here](https://opentelemetry.io/docs/concepts/context-propagation/). This context typically includes request-related data, 
+such as trace identifiers, which are passed across service boundaries, 
+allowing you to link different parts of a distributed request together. 
+The most common approach to implement context propagation is by using [trace context](https://www.w3.org/TR/trace-context/)
+headers to pass this information between services, but this method is not always feasible.
+
+Most databases don't support such headers or other native ways to pass tracing-related context.
 Approaches like [SQLCommenter](https://google.github.io/sqlcommenter/) have been developed to bridge this gap,
 enabling the connection between current trace data and database queries.
 In these cases, trace information is injected at the ORM level and passed to the database via SQL comments.
