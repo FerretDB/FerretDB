@@ -4,7 +4,7 @@ title: 'OpenTelemetry context propagation in FerretDB'
 authors: [elena]
 description: >
   In this blog post, we demonstrate how to pass tracing context to queries in FerretDB using OpenTelemetry.
-tags: [observability]
+tags: [observability, product, open source]
 ---
 
 In today's world of distributed systems, achieving reliability depends on various factors, one of which is effective observability.
