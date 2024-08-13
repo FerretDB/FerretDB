@@ -190,7 +190,7 @@ making it easier to diagnose and understand performance issues or unexpected beh
 
 While this solution isn't perfect due to the limitations discussed, it is a step towards better context propagation in document databases.
 
-In conclusion, we believe that passing context to databases is an important part of making document databases more observable.
+In conclusion, we believe that passing context to document databases is an important part of making them more observable.
 We hope that the community will come up with a standard way to pass context to databases, and we are looking forward to
 contributing to this effort.
 
