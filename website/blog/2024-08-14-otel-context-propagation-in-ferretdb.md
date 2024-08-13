@@ -7,6 +7,8 @@ description: >
 tags: [observability, product, open source]
 ---
 
+![OpenTelemetry context propagation in FerretDB](/img/blog/ferretdb-otel/opentelemetry.jpg)
+
 In today's world of distributed systems, achieving reliability depends on various factors, one of which is effective observability.
 OpenTelemetry (OTel) has emerged as a standard for distributed tracing, but passing tracing data to databases remains a significant challenge,
 particularly with document databases like MongoDB.
