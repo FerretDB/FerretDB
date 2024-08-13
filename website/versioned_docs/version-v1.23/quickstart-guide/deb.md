@@ -34,4 +34,4 @@ For more information about its configuration, please take a look at [systemd con
 
 Find out more about:
 
-- [getting logs](../configuration/observability.md#binary-executable-logs).
+- [getting logs](../configuration/observability.md#logging).
