@@ -7,30 +7,33 @@ description: >
 tags: [observability, opentelemetry, tracing]
 ---
 
-In today's world of distributed systems, achieving reliability depends on various factors, one of which is effective observability. 
-OpenTelemetry (OTel) has emerged as a standard for distributed tracing, but passing context to databases remains a significant challenge, particularly with document databases like MongoDB. At FerretDB, we're committed to addressing this challenge.
+In today's world of distributed systems, achieving reliability depends on various factors, one of which is effective observability.
+OpenTelemetry (OTel) has emerged as a standard for distributed tracing, but passing context to databases remains a significant challenge, particularly with document databases like MongoDB.
+At FerretDB, we're committed to addressing this challenge.
 
-While adopting OpenTelemetry in application development is relatively straightforward across various programming languages, 
-the process becomes more complex when passing context to databases.  Most databases don't natively support tracing-related context. 
-Approaches like [SQLCommenter](https://google.github.io/sqlcommenter/) have been developed to bridge this gap, 
-enabling the connection between current trace data and database queries. 
-In these cases, trace information is injected at the ORM level and passed to the database via SQL comments. 
+While adopting OpenTelemetry in application development is relatively straightforward across various programming languages,
+the process becomes more complex when passing context to databases.
+Most databases don't natively support tracing-related context.
+Approaches like [SQLCommenter](https://google.github.io/sqlcommenter/) have been developed to bridge this gap,
+enabling the connection between current trace data and database queries.
+In these cases, trace information is injected at the ORM level and passed to the database via SQL comments.
 Database operators can then enable query logs to link specific queries with the corresponding application requests.
 
-But is it possible to achieve something similar with MongoDB's query language? 
-At FerretDB, we believe that enabling the linking of a query's lifecycle with the caller's response can help developers make 
+But is it possible to achieve something similar with MongoDB's query language?
+At FerretDB, we believe that enabling the linking of a query's lifecycle with the caller's response can help developers make
 their applications more predictable and reliable.
 
-Let’s consider a SQLCommenter-like approach for MongoDB. We can leverage MongoDB's existing features to attach metadata to queries. 
-One such feature is the comment field, which allows additional information to be included in MongoDB queries. 
+Let's consider a SQLCommenter-like approach for MongoDB.
+We can leverage MongoDB's existing features to attach metadata to queries.
+One such feature is the comment field, which allows additional information to be included in MongoDB queries.
 This field doesn't influence query logic but can be used to provide valuable context.
 
-At FerretDB, we want to empower users to pass such context. We decided to utilize the `comment` field to do it.
-We parse the content of the `comment` field, and if it’s a JSON document with a `ferretDB` key, we check for tracing data. 
-If the tracing data is present, FerretDB sets the parent’s context when a span for the current operation is created.
+At FerretDB, we want to empower users to pass such context.
+We decided to utilize the `comment` field to do it.
+We parse the content of the `comment` field, and if it's a JSON document with a `ferretDB` key, we check for tracing data.
+If the tracing data is present, FerretDB sets the parent's context when a span for the current operation is created.
 
 An example of a comment with tracing data could look like this:
-
 
 ```json
 {
@@ -41,29 +44,31 @@ An example of a comment with tracing data could look like this:
 }
 ```
 
-The strings `traceID` and `spanID` are hex-encoded strings that represent the corresponding trace and span identifiers. 
+The strings `traceID` and `spanID` are hex-encoded strings that represent the corresponding trace and span identifiers.
 For example, the JSON above represents the following data:
 
 ```go
 traceID := [16]byte{0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef, 0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef}
 spanID := [8]byte{0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10}
-``` 
+```
 
-Using this approach, it’s relatively easy to visualize client’s requests to FerretDB showing them as part of the original client trace.
+Using this approach, it's relatively easy to visualize client's requests to FerretDB showing them as part of the original client trace.
 
-However, there are some limitations. Not all operations support the comment field. 
+However, there are some limitations.
+Not all operations support the comment field.
 For instance, operations like `insert` or `listCollections` do not support it.
 
-Another challenge with the `comment` field is its handling in some MongoDB drivers, where it is typed as a string. 
-This means that, in principle, any string can be passed. In our scenario, where we allow FerretDB to receive and parse 
+Another challenge with the `comment` field is its handling in some MongoDB drivers, where it is typed as a string.
+This means that, in principle, any string can be passed.
+In our scenario, where we allow FerretDB to receive and parse
 tracing data through the `comment` field, the JSON must be correctly encoded by the driver and then decoded by FerretDB.
 
-A more robust solution would involve having a dedicated field for passing request-related context, 
-and it would be ideal to establish a standard for such fields. 
-For instance, it could be a BSON document with particular tracing-related fields. 
+A more robust solution would involve having a dedicated field for passing request-related context,
+and it would be ideal to establish a standard for such fields.
+For instance, it could be a BSON document with particular tracing-related fields.
 This would provide a more reliable method for passing context to the database.
 
-Since such a standard does not yet exist, let’s explore an example application that interacts 
+Since such a standard does not yet exist, let's explore an example application that interacts
 with FerretDB and passes the tracing context using the `comment` field.
 
 For simplicity, most error handling is omitted in the example below.
@@ -154,7 +159,8 @@ If we run this application, we will see that the spans for the `InsertCustomer` 
 
 [![Trace without propagation](/img/blog/ferretdb-otel/without-propagation.png)](/img/blog/ferretdb-otel/without-propagation.png)
 
-Let's add more details. If we pass the tracing context through the `comment` field, we will see that the spans are linked.
+Let's add more details.
+If we pass the tracing context through the `comment` field, we will see that the spans are linked.
 Let's modify the `FindCustomer` part:
 
 ```go
@@ -163,7 +169,7 @@ Let's modify the `FindCustomer` part:
 
     traceID := findSpan.SpanContext().TraceID().String()
     spanID := findSpan.SpanContext().SpanID().String()
-    
+
     traceContext := struct {
     TraceID string `json:"traceID"`
     SpanID  string `json:"spanID"`
@@ -171,11 +177,11 @@ Let's modify the `FindCustomer` part:
     TraceID: traceID,
     SpanID:  spanID,
     }
-    
+
     comment, _ := json.Marshal(map[string]interface{}{
     "ferretDB": traceContext,
     })
-    
+
     var result bson.D
     _ = collection.FindOne(findCtx, filter, options.FindOne().SetComment(string(comment))).Decode(&result)
     findSpan.End()
@@ -194,5 +200,6 @@ In conclusion, we believe that passing context to document databases is an impor
 We hope that the community will come up with a standard way to pass context to databases, and we are looking forward to
 contributing to this effort.
 
-We’d love to hear your thoughts on this approach. Have you implemented similar context propagation strategies in your projects? 
+We'd love to hear your thoughts on this approach.
+Have you implemented similar context propagation strategies in your projects?
 Please feel free to reach out to us to share your experiences or ask questions!
