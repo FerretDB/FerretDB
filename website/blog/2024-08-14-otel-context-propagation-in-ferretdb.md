@@ -70,66 +70,12 @@ and it would be ideal to establish a standard for such fields.
 For instance, it could be a BSON document with particular tracing-related fields.
 This would provide a more reliable method for passing context to the database.
 
-Since such a standard does not yet exist, let's explore an example application that interacts
-with FerretDB and passes the tracing context using the `comment` field.
+Since such a standard does not yet exist, let's explore [an example application](https://gist.github.com/rumyantseva/3c6ef7c7dfc3fbdea8f94a31f4a17885) 
+that interacts with FerretDB and passes the tracing context using the `comment` field.
 
 For simplicity, most error handling is omitted in the example below.
 
 ```go
-package main
-
-import (
-    "context"
-    "fmt"
-    "log"
-    "time"
-
-    "go.mongodb.org/mongo-driver/bson"
-    "go.mongodb.org/mongo-driver/mongo"
-    "go.mongodb.org/mongo-driver/mongo/options"
-
-    "go.opentelemetry.io/otel"
-    "go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
-    sdkresource "go.opentelemetry.io/otel/sdk/resource"
-    sdktrace "go.opentelemetry.io/otel/sdk/trace"
-    semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
-)
-
-func main() {
-    exporter := otlptracehttp.NewUnstarted(
-        otlptracehttp.WithEndpointURL("http://127.0.0.1:4318/v1/traces"),
-        otlptracehttp.WithTimeout(10*time.Second),
-    )
-
-    tp := sdktrace.NewTracerProvider(
-        sdktrace.WithBatcher(exporter),
-        sdktrace.WithResource(sdkresource.NewSchemaless(
-            semconv.ServiceName("test-app"),
-        )),
-    )
-
-    otel.SetTracerProvider(tp)
-
-    defer func() {
-        _ = tp.Shutdown(context.Background())
-    }()
-
-    tracer := otel.Tracer("")
-
-    ctx, span := tracer.Start(context.Background(), "main")
-    defer span.End()
-
-    clientOpts := options.Client().ApplyURI("mongodb://localhost:27017")
-    client, err := mongo.Connect(ctx, clientOpts)
-
-    if err != nil {
-        log.Panicf("Failed to connect to FerretDB: %v", err)
-    }
-
-    defer func() {
-        _ = client.Disconnect(ctx)
-    }()
-
     collection := client.Database("testdb").Collection("customers")
 
     user := bson.D{
@@ -149,10 +95,9 @@ func main() {
     findSpan.End()
 
     fmt.Printf("Found document: %v\n", result)
-}
 ```
 
-In this setup, we initialize the OpenTelemetry tracer provider and configure it to export traces to a local Jaeger endpoint.
+In this setup, we create two spans: one for inserting a document and another for finding it.
 
 If we run this application, we will see that the spans for the `InsertCustomer` and `FindCustomer` operations are created:
 
