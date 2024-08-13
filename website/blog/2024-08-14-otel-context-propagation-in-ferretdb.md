@@ -4,12 +4,15 @@ title: 'OpenTelemetry context propagation in FerretDB'
 authors: [elena]
 description: >
   In this blog post, we demonstrate how to pass tracing context to queries in FerretDB using OpenTelemetry.
-tags: [observability, opentelemetry, tracing]
+tags: [observability, opentelemetry]
 ---
 
 In today's world of distributed systems, achieving reliability depends on various factors, one of which is effective observability.
-OpenTelemetry (OTel) has emerged as a standard for distributed tracing, but passing context to databases remains a significant challenge, particularly with document databases like MongoDB.
+OpenTelemetry (OTel) has emerged as a standard for distributed tracing, but passing context to databases remains a significant challenge,
+particularly with document databases like MongoDB.
 At FerretDB, we're committed to addressing this challenge.
+
+<!--truncate-->
 
 While adopting OpenTelemetry in application development is relatively straightforward across various programming languages,
 the process becomes more complex when passing context to databases.

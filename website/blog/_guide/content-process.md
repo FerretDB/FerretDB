@@ -53,7 +53,9 @@ Please only include the following tags (and keep them in sync with the `checkdoc
 - javascript frameworks
 - mongodb compatible
 - mongodb gui
+- observability
 - open source
+- opentelemetry
 - postgresql tools
 - product
 - release

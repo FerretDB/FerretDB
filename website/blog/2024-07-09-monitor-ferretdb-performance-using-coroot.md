@@ -5,7 +5,7 @@ authors: [alex]
 description: >
   Observability is vital in any infrastructure. Find out how Coroot can provide real-time monitoring and visibility into a FerretDB setup.
 image: /img/blog/ferretdb-coroot.jpg
-tags: [tutorial, community, cloud, open source]
+tags: [observability, tutorial, community, cloud, open source]
 ---
 
 ![Monitor FerretDB Performance using Coroot](/img/blog/ferretdb-coroot.jpg)
