@@ -11,6 +11,15 @@
 As communicated in the previous release, this version renames the `SLogger` field to `Logger`,
 finishing the migration from [`zap`](https://github.com/uber-go/zap) to [`slog`](https://pkg.go.dev/log/slog).
 
+## [v1.23.1](https://github.com/FerretDB/FerretDB/releases/tag/v1.23.1) (2024-08-13)
+
+### Fixed Bugs 🐛
+
+- Fix building with `go build -trimpath` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4526
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/67?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v1.23.0...v1.23.1).
+
 ## [v1.23.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.23.0) (2024-07-25)
 
 ### What's Changed
