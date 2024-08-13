@@ -14,6 +14,8 @@ At FerretDB, we're committed to addressing this challenge.
 
 <!--truncate-->
 
+## OpenTelemetry context propagation for databases
+
 Context propagation, a concept that enables the tracking of requests as they move through different services, is explained by OpenTelemetry
 [here](https://opentelemetry.io/docs/concepts/context-propagation/). This context typically includes request-related data, 
 such as trace identifiers, which are passed across service boundaries, 
@@ -30,6 +32,8 @@ Database operators can then enable query logs to link specific queries with the 
 But is it possible to achieve something similar with MongoDB's query language?
 At FerretDB, we believe that enabling the linking of a query's lifecycle with the caller's response can help developers make
 their applications more predictable and reliable.
+
+## FerretDB's approach to context propagation
 
 Let's consider a SQLCommenter-like approach for MongoDB.
 We can leverage MongoDB's existing features to attach metadata to queries.
@@ -69,6 +73,8 @@ A more robust solution would involve having a dedicated field for passing reques
 and it would be ideal to establish a standard for such fields.
 For instance, it could be a BSON document with particular tracing-related fields.
 This would provide a more reliable method for passing context to the database.
+
+## Example application
 
 Since such a standard does not yet exist, let's explore [an example application](https://gist.github.com/rumyantseva/3c6ef7c7dfc3fbdea8f94a31f4a17885) 
 that interacts with FerretDB and passes the tracing context using the `comment` field.
@@ -140,7 +146,9 @@ making it easier to diagnose and understand performance issues or unexpected beh
 
 While this solution isn't perfect due to the limitations discussed, it is a step towards better context propagation in document databases.
 
-In conclusion, we believe that passing context to document databases is an important part of making them more observable.
+## Conclusion
+
+We believe that passing context to document databases is an important part of making them more observable.
 We hope that the community will come up with a standard way to pass context to databases, and we are looking forward to
 contributing to this effort.
 
