@@ -101,6 +101,7 @@ filter := bson.D{{Key: "name", Value: "John Doe"}}
 
 var result bson.D
 _ = collection.FindOne(findCtx, filter).Decode(&result)
+
 findSpan.End()
 ```
 
