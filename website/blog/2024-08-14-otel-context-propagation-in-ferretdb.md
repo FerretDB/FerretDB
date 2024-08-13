@@ -80,79 +80,79 @@ For simplicity, most error handling is omitted in the example below.
 package main
 
 import (
-	"context"
-	"fmt"
-	"log"
-	"time"
+    "context"
+    "fmt"
+    "log"
+    "time"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+    "go.mongodb.org/mongo-driver/bson"
+    "go.mongodb.org/mongo-driver/mongo"
+    "go.mongodb.org/mongo-driver/mongo/options"
 
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
-	sdkresource "go.opentelemetry.io/otel/sdk/resource"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+    "go.opentelemetry.io/otel"
+    "go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+    sdkresource "go.opentelemetry.io/otel/sdk/resource"
+    sdktrace "go.opentelemetry.io/otel/sdk/trace"
+    semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 )
 
 func main() {
-	exporter := otlptracehttp.NewUnstarted(
-		otlptracehttp.WithEndpointURL("http://127.0.0.1:4318/v1/traces"),
-		otlptracehttp.WithTimeout(10*time.Second),
-	)
+    exporter := otlptracehttp.NewUnstarted(
+        otlptracehttp.WithEndpointURL("http://127.0.0.1:4318/v1/traces"),
+        otlptracehttp.WithTimeout(10*time.Second),
+    )
 
-	tp := sdktrace.NewTracerProvider(
-		sdktrace.WithBatcher(exporter),
-		sdktrace.WithResource(sdkresource.NewSchemaless(
-			semconv.ServiceName("test-app"),
-		)),
-	)
+    tp := sdktrace.NewTracerProvider(
+        sdktrace.WithBatcher(exporter),
+        sdktrace.WithResource(sdkresource.NewSchemaless(
+            semconv.ServiceName("test-app"),
+        )),
+    )
 
-	otel.SetTracerProvider(tp)
+    otel.SetTracerProvider(tp)
 
-	defer func() {
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-		defer cancel()
+    defer func() {
+        shutdownCtx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+        defer cancel()
 
-		_ = tp.Shutdown(shutdownCtx)
-	}()
+        _ = tp.Shutdown(shutdownCtx)
+    }()
 
-	tracer := otel.Tracer("")
+    tracer := otel.Tracer("")
 
-	ctx, span := tracer.Start(context.Background(), "main")
-	defer span.End()
+    ctx, span := tracer.Start(context.Background(), "main")
+    defer span.End()
 
-	clientOpts := options.Client().ApplyURI("mongodb://localhost:27017")
-	client, err := mongo.Connect(ctx, clientOpts)
+    clientOpts := options.Client().ApplyURI("mongodb://localhost:27017")
+    client, err := mongo.Connect(ctx, clientOpts)
 
-	if err != nil {
-		log.Panicf("Failed to connect to FerretDB: %v", err)
-	}
+    if err != nil {
+        log.Panicf("Failed to connect to FerretDB: %v", err)
+    }
 
-	defer func() {
-		_ = client.Disconnect(ctx)
-	}()
+    defer func() {
+        _ = client.Disconnect(ctx)
+    }()
 
-	collection := client.Database("testdb").Collection("customers")
+    collection := client.Database("testdb").Collection("customers")
 
-	user := bson.D{
-		{Key: "name", Value: "John Doe"},
-		{Key: "email", Value: "john.doe@example.com"},
-	}
+    user := bson.D{
+        {Key: "name", Value: "John Doe"},
+        {Key: "email", Value: "john.doe@example.com"},
+    }
 
-	insertCtx, insertSpan := tracer.Start(ctx, "InsertCustomer")
-	_, _ = collection.InsertOne(insertCtx, user)
-	insertSpan.End()
+    insertCtx, insertSpan := tracer.Start(ctx, "InsertCustomer")
+    _, _ = collection.InsertOne(insertCtx, user)
+    insertSpan.End()
 
-	findCtx, findSpan := tracer.Start(ctx, "FindCustomer")
-	filter := bson.D{{Key: "name", Value: "John Doe"}}
+    findCtx, findSpan := tracer.Start(ctx, "FindCustomer")
+    filter := bson.D{{Key: "name", Value: "John Doe"}}
 
-	var result bson.D
-	_ = collection.FindOne(findCtx, filter).Decode(&result)
-	findSpan.End()
+    var result bson.D
+    _ = collection.FindOne(findCtx, filter).Decode(&result)
+    findSpan.End()
 
-	fmt.Printf("Found document: %v\n", result)
+    fmt.Printf("Found document: %v\n", result)
 }
 ```
 
@@ -174,15 +174,15 @@ Let's modify the `FindCustomer` part:
     spanID := findSpan.SpanContext().SpanID().String()
 
     traceContext := struct {
-    TraceID string `json:"traceID"`
-    SpanID  string `json:"spanID"`
+        TraceID string `json:"traceID"`
+        SpanID  string `json:"spanID"`
     }{
-    TraceID: traceID,
-    SpanID:  spanID,
+        TraceID: traceID,
+        SpanID:  spanID,
     }
 
     comment, _ := json.Marshal(map[string]interface{}{
-    "ferretDB": traceContext,
+        "ferretDB": traceContext,
     })
 
     var result bson.D
