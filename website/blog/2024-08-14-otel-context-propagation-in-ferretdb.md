@@ -14,9 +14,6 @@ At FerretDB, we're committed to addressing this challenge.
 
 <!--truncate-->
 
-While adopting OpenTelemetry in application development is relatively straightforward across various programming languages,
-the process becomes more complex when passing tracing data to databases.
-
 Context propagation, a concept that enables the tracking of requests as they move through different services, is explained by OpenTelemetry
 [here](https://opentelemetry.io/docs/concepts/context-propagation/). This context typically includes request-related data, 
 such as trace identifiers, which are passed across service boundaries, 
