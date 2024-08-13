@@ -230,7 +230,6 @@ func verifyTags(fm []byte) error {
 		"mongodb gui":             {},
 		"observability":           {},
 		"open source":             {},
-		"opentelemetry":           {},
 		"postgresql tools":        {},
 		"product":                 {},
 		"release":                 {},

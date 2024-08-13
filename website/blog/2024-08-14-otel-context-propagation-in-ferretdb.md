@@ -4,7 +4,7 @@ title: 'OpenTelemetry context propagation in FerretDB'
 authors: [elena]
 description: >
   In this blog post, we demonstrate how to pass tracing context to queries in FerretDB using OpenTelemetry.
-tags: [observability, opentelemetry]
+tags: [observability]
 ---
 
 In today's world of distributed systems, achieving reliability depends on various factors, one of which is effective observability.
@@ -112,10 +112,7 @@ func main() {
     otel.SetTracerProvider(tp)
 
     defer func() {
-        shutdownCtx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-        defer cancel()
-
-        _ = tp.Shutdown(shutdownCtx)
+        _ = tp.Shutdown(context.Background())
     }()
 
     tracer := otel.Tracer("")
