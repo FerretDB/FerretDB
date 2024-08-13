@@ -80,8 +80,14 @@ func TestHandler(t *testing.T) {
 func TestShortPath(t *testing.T) {
 	t.Parallel()
 
+	// without -trimpath
 	assert.Equal(t, "file.go", shortPath("/file.go"))
 	assert.Equal(t, "dir1/file.go", shortPath("/dir1/file.go"))
 	assert.Equal(t, "dir2/file.go", shortPath("/dir1/dir2/file.go"))
 	assert.Equal(t, "dir3/file.go", shortPath("/dir1/dir2/dir3/file.go"))
+
+	// with -trimpath
+	assert.Equal(t, "debug/debug.go", shortPath("github.com/FerretDB/FerretDB/internal/util/debug/debug.go"))
+	assert.Equal(t, "util/debug.go", shortPath("github.com/FerretDB/FerretDB/internal/util/debug.go"))
+	assert.Equal(t, "internal/debug.go", shortPath("github.com/FerretDB/FerretDB/internal/debug.go"))
 }

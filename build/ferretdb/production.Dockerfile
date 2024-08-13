@@ -77,12 +77,12 @@ export CGO_ENABLED=0
 
 go env
 
-# Do not trim paths to reuse build cache.
+# Trim paths mostly to check that building with `-trimpath` is supported.
 
 # check if stdlib was cached
-go install -v std
+go install -v -trimpath std
 
-go build -v -o=bin/ferretdb ./cmd/ferretdb
+go build -v -trimpath -o=bin/ferretdb ./cmd/ferretdb
 
 go version -m bin/ferretdb
 bin/ferretdb --version
