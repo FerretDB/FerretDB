@@ -53,12 +53,6 @@ An example of a comment with tracing data could look like this:
 ```
 
 The strings `traceID` and `spanID` are hex-encoded strings that represent the corresponding trace and span identifiers.
-For example, the JSON above represents the following data:
-
-```go
-traceID := [16]byte{0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef, 0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef}
-spanID := [8]byte{0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10}
-```
 
 Using this approach, it's relatively easy to visualize client's requests to FerretDB showing them as part of the original client trace.
 
