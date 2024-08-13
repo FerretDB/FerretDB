@@ -7,28 +7,27 @@ description: >
 tags: [observability, opentelemetry, tracing]
 ---
 
-Nowadays, distributed systems have become a norm in software development. When we talk about making such systems 
-reliable we often mention observability as a tool to get feedback and troubleshoot such systems. 
-This is where distributed tracing comes in, and where OpenTelemetry offers a standard to use it.
+In today's world of distributed systems, achieving reliability depends on various factors, one of which is effective observability. 
+OpenTelemetry (OTel) has emerged as a standard for distributed tracing, but passing context to databases remains a significant challenge, particularly with document databases like MongoDB. At FerretDB, we're committed to addressing this challenge.
 
-While it is relatively easy to start using OpenTelemetry when writing applications in various programming languages, 
-passing the context to databases is more complicated. Most databases don’t support native way of working with tracing-related context. 
-There are some approaches such as [SQLCommenter](https://google.github.io/sqlcommenter/) to make it possible to connect 
-the data of the current trace and the queries executed in the DB. In this case, the information about the trace is injected 
-on the ORM level and passed through SQL comments to the database. The operator of the database can enable query logs to link 
-the exact queries with the exact requests of the caller application.
+While adopting OpenTelemetry in application development is relatively straightforward across various programming languages, 
+the process becomes more complex when passing context to databases.  Most databases don't natively support tracing-related context. 
+Approaches like [SQLCommenter](https://google.github.io/sqlcommenter/) have been developed to bridge this gap, 
+enabling the connection between current trace data and database queries. 
+In these cases, trace information is injected at the ORM level and passed to the database via SQL comments. 
+Database operators can then enable query logs to link specific queries with the corresponding application requests.
 
-But what about document databases? Would it be possible to do something similar with MongoDB query language? At FerretDB 
-we believe that giving an ability to link the exact query lifecycle with the caller’s response can help developers make 
+But is it possible to achieve something similar with MongoDB's query language? 
+At FerretDB, we believe that enabling the linking of a query's lifecycle with the caller's response can help developers make 
 their applications more predictable and reliable.
 
-So, let’s say we want to try an approach similar to SQLCommenter. We need to leverage the existing capabilities that MongoDB 
-offers to attach metadata to queries. One such feature is the comment field, which can be used to include additional information 
-in MongoDB queries. This field is not executed as part of the query logic but can be used to provide some additional context.
+Let’s consider a SQLCommenter-like approach for MongoDB. We can leverage MongoDB's existing features to attach metadata to queries. 
+One such feature is the comment field, which allows additional information to be included in MongoDB queries. 
+This field doesn't influence query logic but can be used to provide valuable context.
 
-At FerretDB, we want to give users an ability to pass such context. So, we decided to use the `comment` field to do it. 
-We parse the comment field, and if it’s a json document with the `ferretDB` key being set, we check whether it contains the tracing data. 
-If so, FerretDB sets parent’s context when a span for the current operation is created.
+At FerretDB, we want to empower users to pass such context. We decided to utilize the `comment` field to do it.
+We parse the content of the `comment` field, and if it’s a JSON document with a `ferretDB` key, we check for tracing data. 
+If the tracing data is present, FerretDB sets the parent’s context when a span for the current operation is created.
 
 An example of a comment with tracing data could look like this:
 
@@ -50,21 +49,24 @@ traceID := [16]byte{0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef, 0x12, 0x34, 
 spanID := [8]byte{0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10}
 ``` 
 
-With such an approach, it’s relatively easy to visualize client’s requests to FerretDB showing them as part of the initial client’s trace.
+Using this approach, it’s relatively easy to visualize client’s requests to FerretDB showing them as part of the original client trace.
 
-However, not all the operations support `comment` field. For example, `insert` or `listCollections` operations don’t have it.
+However, there are some limitations. Not all operations support the comment field. 
+For instance, operations like `insert` or `listCollections` do not support it.
 
-Another problem with `comment` field is that it’s typed as string, and, in principle, any string can be passed there. 
-In our example where we let FerretDB receive and parse tracing data through the comment, we need to decode the json passed 
-in the comment (and the driver needs to encode it).
+Another challenge with the `comment` field is its handling in some MongoDB drivers, where it is typed as a string. 
+This means that, in principle, any string can be passed. In our scenario, where we allow FerretDB to receive and parse 
+tracing data through the `comment` field, the JSON must be correctly encoded by the driver and then decoded by FerretDB.
 
-A much better approach would be to have a special field to pass some additional request-related context, and it would
-be great to agree on a standard for such fields. This way, we could have a more reliable way to pass context to the database.
+A more robust solution would involve having a dedicated field for passing request-related context, 
+and it would be ideal to establish a standard for such fields. 
+For instance, it could be a BSON document with particular tracing-related fields. 
+This would provide a more reliable method for passing context to the database.
 
-However, as such standard doesn't exist yet, let's take a look at an example application that works with FerretDB and
-passes the tracing context through the `comment` field.
+Since such a standard does not yet exist, let’s explore an example application that interacts 
+with FerretDB and passes the tracing context using the `comment` field.
 
-For simplicity, most of error handling is omitted in the example below.
+For simplicity, most error handling is omitted in the example below.
 
 ```go
 package main
@@ -146,11 +148,13 @@ func main() {
 }
 ```
 
+In this setup, we initialize the OpenTelemetry tracer provider and configure it to export traces to a local Jaeger endpoint.
+
 If we run this application, we will see that the spans for the `InsertCustomer` and `FindCustomer` operations are created:
 
 [![Trace without propagation](/img/blog/ferretdb-otel/without-propagation.png)](/img/blog/ferretdb-otel/without-propagation.png)
 
-Now let's add more details. If we pass the tracing context through the `comment` field, we will see that the spans are linked.
+Let's add more details. If we pass the tracing context through the `comment` field, we will see that the spans are linked.
 Let's modify the `FindCustomer` part:
 
 ```go
@@ -181,7 +185,10 @@ Now, if we run the application, we will see that the spans are linked and the `F
 
 [![Trace with propagation](/img/blog/ferretdb-otel/with-propagation.png)](/img/blog/ferretdb-otel/with-propagation.png)
 
-This approach gives more insights into the FerretDB's behavior and helps to understand the exact query lifecycle.
+This approach gives more insights into the FerretDB's behavior and helps to understand the exact query lifecycle,
+making it easier to diagnose and understand performance issues or unexpected behavior.
+
+While this solution isn't perfect due to the limitations discussed, it is a step towards better context propagation in document databases.
 
 In conclusion, we believe that passing context to databases is an important part of making document databases more observable.
 We hope that the community will come up with a standard way to pass context to databases, and we are looking forward to
