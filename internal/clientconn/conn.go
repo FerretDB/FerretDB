@@ -412,7 +412,7 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		// decoded successfully already in [run] [wire.ReadMessage] [UnmarshalBinaryNocopy] [check]
 		doc := must.NotFail(msg.RawSection0().Decode())
 
-		document, err = bson.TypesDocument(doc)
+		document, err = bson.ToDocument(doc)
 
 		if err == nil {
 			comment, _ := common.GetOptionalParam(document, "comment", "")

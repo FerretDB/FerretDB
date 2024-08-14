@@ -35,7 +35,7 @@ import (
 func dump[T types.Type](tb testtb.TB, o T) string {
 	tb.Helper()
 
-	v, err := bson.Convert(o)
+	v, err := bson.From(o)
 	require.NoError(tb, err)
 
 	return wirebson.LogMessageBlock(v)
@@ -48,7 +48,7 @@ func dumpSlice[T types.Type](tb testtb.TB, s []T) string {
 	arr := wirebson.MakeArray(len(s))
 
 	for _, o := range s {
-		v, err := bson.Convert(o)
+		v, err := bson.From(o)
 		require.NoError(tb, err)
 
 		err = arr.Add(v)
