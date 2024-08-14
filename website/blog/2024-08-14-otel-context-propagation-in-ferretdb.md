@@ -157,4 +157,4 @@ contributing to this effort.
 
 We'd love to hear your thoughts on this approach.
 Have you implemented similar context propagation strategies in your projects?
-Please feel free to reach out to us to share your experiences or ask questions!
+[Please feel free to [reach out to us here](https://docs.ferretdb.io/#community) to share your experiences or ask questions!
