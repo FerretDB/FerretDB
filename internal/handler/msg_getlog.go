@@ -86,7 +86,7 @@ func (h *Handler) MsgGetLog(connCtx context.Context, msg *wire.OpMsg) (*wire.OpM
 		}
 
 		resDoc = must.NotFail(types.NewDocument(
-			"log", must.NotFail(bson.TypesArray(res)),
+			"log", must.NotFail(bson.ToArray(res)),
 			"totalLinesWritten", int64(res.Len()),
 			"ok", float64(1),
 		))

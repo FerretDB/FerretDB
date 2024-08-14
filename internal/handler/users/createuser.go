@@ -102,7 +102,7 @@ func MakeCredentials(username string, userPassword password.Password, mechanisms
 				return nil, err
 			}
 
-			if hashDoc, err = bson.TypesDocument(hash); err != nil {
+			if hashDoc, err = bson.ToDocument(hash); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
 
@@ -112,7 +112,7 @@ func MakeCredentials(username string, userPassword password.Password, mechanisms
 				return nil, err
 			}
 
-			if hashDoc, err = bson.TypesDocument(hash); err != nil {
+			if hashDoc, err = bson.ToDocument(hash); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
 
