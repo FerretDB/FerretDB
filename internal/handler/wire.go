@@ -32,7 +32,7 @@ func init() {
 // Then it iterates raw documents from sections 1 if any, appends them
 // to the response using the section identifier as the key.
 func opMsgDocument(msg *wire.OpMsg) (*types.Document, error) {
-	res, err := bson.TypesDocument(msg.RawSection0())
+	res, err := bson.ToDocument(msg.RawSection0())
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -48,7 +48,7 @@ func opMsgDocument(msg *wire.OpMsg) (*types.Document, error) {
 		for _, d := range docs {
 			var doc *types.Document
 
-			if doc, err = bson.TypesDocument(d); err != nil {
+			if doc, err = bson.ToDocument(d); err != nil {
 				return nil, lazyerrors.Error(err)
 			}
 
@@ -63,5 +63,5 @@ func opMsgDocument(msg *wire.OpMsg) (*types.Document, error) {
 
 // documentOpMsg converts the document to [*wirebson.Document].
 func documentOpMsg(doc *types.Document) (*wire.OpMsg, error) {
-	return wire.NewOpMsg(must.NotFail(bson.ConvertDocument(doc)))
+	return wire.NewOpMsg(must.NotFail(bson.FromDocument(doc)))
 }
