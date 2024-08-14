@@ -109,7 +109,7 @@ In this setup, we create two spans: one for inserting a document and another for
 
 If we run this application, we will see that the spans for the `InsertCustomer` and `FindCustomer` operations are created:
 
-[![Trace without propagation](/img/blog/ferretdb-otel/without-propagation.png)](/img/blog/ferretdb-otel/without-propagation.png)
+![Trace without propagation](/img/blog/ferretdb-otel/without-propagation.png)
 
 Let's add more details.
 If we pass the tracing context through the `comment` field, we will see that the spans are linked.
