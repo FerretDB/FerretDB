@@ -142,7 +142,7 @@ findSpan.End()
 
 Now, if we run the application, we will see that the spans are linked and the `FindCustomer` span is a child span created on the FerretDB side:
 
-[![Trace with propagation](/img/blog/ferretdb-otel/with-propagation.png)](/img/blog/ferretdb-otel/with-propagation.png)
+![Trace with propagation](/img/blog/ferretdb-otel/with-propagation.png)
 
 This approach gives more insights into the FerretDB's behavior and helps to understand the exact query lifecycle,
 making it easier to diagnose and understand performance issues or unexpected behavior.
