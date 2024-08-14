@@ -27,7 +27,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// convertFromTypes converts types package value to BSON value of wirebson package.
+// convertFromTypes converts types package value to wirebson package value.
 //
 // Invalid types cause panics.
 func convertFromTypes(v any) (any, error) {
@@ -82,9 +82,7 @@ func convertFromTypes(v any) (any, error) {
 	}
 }
 
-// From converts valid types package values to BSON values of that package.
-//
-// Conversions of composite types may cause errors.
+// From converts types package value to wirebson package value.
 func From[T types.Type](v T) (any, error) {
 	return convertFromTypes(v)
 }
@@ -145,7 +143,7 @@ func FromDocument(doc *types.Document) (*wirebson.Document, error) {
 	}
 }
 
-// convertToTypes converts valid BSON value of wirebson package to types package type.
+// convertToTypes converts wirebson package value to types package value.
 //
 // Invalid types cause panics.
 func convertToTypes(v any) (any, error) {
@@ -222,7 +220,7 @@ func convertToTypes(v any) (any, error) {
 	}
 }
 
-// ToArray decodes an array and converts to [*types.Array].
+// ToArray converts wirebson array to [*types.Array].
 func ToArray(a wirebson.AnyArray) (*types.Array, error) {
 	arr, err := a.Decode()
 	if err != nil {
@@ -249,7 +247,7 @@ func ToArray(a wirebson.AnyArray) (*types.Array, error) {
 	return res, nil
 }
 
-// ToDocument decodes a document and converts to [*types.Document].
+// ToDocument converts wirebson document to [*types.Document].
 func ToDocument(d wirebson.AnyDocument) (*types.Document, error) {
 	doc, err := d.Decode()
 	if err != nil {
