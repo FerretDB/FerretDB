@@ -26,11 +26,9 @@ pull_request_rules:
       - "label = 'blog/engineering'"
     actions:
       request_reviews:
-        users: ["AlekSi", "Fashander", "ptrfarkas"]
-        teams: ["@FerretDB/leads", "@FerretDB/core"]
-        users_from_teams: ["@FerretDB/leads", "@FerretDB/core"]
+        users_from_teams: ["@FerretDB/core", "@FerretDB/docs"]
       comment:
-        message: "Engineering blog posts should be reviewed by other engineers and @Fashander."
+        message: "Engineering blog posts should be reviewed by @FerretDB/core and @FerretDB/docs."
 
   - name: "Request review for marketing blogs posts"
     conditions:
