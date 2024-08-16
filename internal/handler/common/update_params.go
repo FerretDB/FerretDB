@@ -36,6 +36,10 @@ type UpdateParams struct {
 
 	Let *types.Document `ferretdb:"let,unimplemented"`
 
+	APIVersion           string `ferretdb:"apiVersion,ignored"`
+	APIStrict            bool   `ferretdb:"apiStrict,ignored"`
+	APIDeprecationErrors bool   `ferretdb:"apiDeprecationErrors,ignored"`
+
 	Ordered                  bool            `ferretdb:"ordered,ignored"`
 	BypassDocumentValidation bool            `ferretdb:"bypassDocumentValidation,ignored"`
 	WriteConcern             *types.Document `ferretdb:"writeConcern,ignored"`
