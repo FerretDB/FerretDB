@@ -279,8 +279,8 @@ func TestGenerateChangelogIntegration(t *testing.T) {
 	require.Equal(t, 29, *milestone.ClosedIssues, "The number of closed issues does not match")
 
 	prItems, err := ListMergedPRsOnMilestone(ctx, client, *milestone.Number)
-	expectedNumberOfPRs := 21
 	require.NoError(t, err)
+	expectedNumberOfPRs := 21
 	require.Len(t, prItems, expectedNumberOfPRs, "The number of PR items does not match the expected")
 
 	categorizedPRs := GroupPRsByCategories(prItems, template.Changelog.Categories)
