@@ -134,8 +134,7 @@ comment, _ := json.Marshal(map[string]interface{}{
     "ferretDB": traceContext,
 })
 
-var result bson.D
-_ = collection.FindOne(findCtx, filter, options.FindOne().SetComment(string(comment))).Decode(&result)
+_ = collection.FindOne(findCtx, filter, options.FindOne().SetComment(string(comment)))
 
 findSpan.End()
 ```
