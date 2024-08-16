@@ -12,301 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package bson implements encoding and decoding of BSON as defined by https://bsonspec.org/spec.html.
-//
-// # Types
-//
-// The following BSON types are supported:
-//
-//	BSON                Go
-//
-//	Document/Object     *bson.Document or bson.RawDocument
-//	Array               *bson.Array    or bson.RawArray
-//
-//	Double              float64
-//	String              string
-//	Binary data         bson.Binary
-//	ObjectId            bson.ObjectID
-//	Boolean             bool
-//	Date                time.Time
-//	Null                bson.NullType
-//	Regular Expression  bson.Regex
-//	32-bit integer      int32
-//	Timestamp           bson.Timestamp
-//	64-bit integer      int64
-//
-// Composite types (Document and Array) are passed by pointers.
-// Raw composite type and scalars are passed by values.
+// Package bson provides convertors between wirebson and types packages.
 package bson
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
-	"github.com/cristalhq/bson/bsonproto"
+	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-type (
-	// ScalarType represents a BSON scalar type.
-	//
-	// CString is not included as it is not a real BSON type.
-	ScalarType = bsonproto.ScalarType
-
-	// Binary represents BSON scalar type binary.
-	Binary = bsonproto.Binary
-
-	// BinarySubtype represents BSON Binary's subtype.
-	BinarySubtype = bsonproto.BinarySubtype
-
-	// NullType represents BSON scalar type null.
-	NullType = bsonproto.NullType
-
-	// ObjectID represents BSON scalar type ObjectID.
-	ObjectID = bsonproto.ObjectID
-
-	// Regex represents BSON scalar type regular expression.
-	Regex = bsonproto.Regex
-
-	// Timestamp represents BSON scalar type timestamp.
-	Timestamp = bsonproto.Timestamp
-)
-
-const (
-	// BinaryGeneric represents a BSON Binary generic subtype.
-	BinaryGeneric = bsonproto.BinaryGeneric
-
-	// BinaryFunction represents a BSON Binary function subtype.
-	BinaryFunction = bsonproto.BinaryFunction
-
-	// BinaryGenericOld represents a BSON Binary generic-old subtype.
-	BinaryGenericOld = bsonproto.BinaryGenericOld
-
-	// BinaryUUIDOld represents a BSON Binary UUID old subtype.
-	BinaryUUIDOld = bsonproto.BinaryUUIDOld
-
-	// BinaryUUID represents a BSON Binary UUID subtype.
-	BinaryUUID = bsonproto.BinaryUUID
-
-	// BinaryMD5 represents a BSON Binary MD5 subtype.
-	BinaryMD5 = bsonproto.BinaryMD5
-
-	// BinaryEncrypted represents a BSON Binary encrypted subtype.
-	BinaryEncrypted = bsonproto.BinaryEncrypted
-
-	// BinaryUser represents a BSON Binary user-defined subtype.
-	BinaryUser = bsonproto.BinaryUser
-)
-
-// Null represents BSON scalar value null.
-var Null = bsonproto.Null
-
-//go:generate ../../bin/stringer -linecomment -type decodeMode
-
-// decodeMode represents a mode for decoding BSON.
-type decodeMode int
-
-const (
-	_ decodeMode = iota
-
-	// DecodeShallow represents a mode in which only top-level fields/elements are decoded;
-	// nested documents and arrays are converted to RawDocument and RawArray respectively,
-	// using raw's subslices without copying.
-	decodeShallow
-
-	// DecodeDeep represents a mode in which nested documents and arrays are decoded recursively;
-	// RawDocuments and RawArrays are never returned.
-	decodeDeep
-)
-
-var (
-	// ErrDecodeShortInput is returned wrapped by Decode functions if the input bytes slice is too short.
-	ErrDecodeShortInput = bsonproto.ErrDecodeShortInput
-
-	// ErrDecodeInvalidInput is returned wrapped by Decode functions if the input bytes slice is invalid.
-	ErrDecodeInvalidInput = bsonproto.ErrDecodeInvalidInput
-)
-
-// SizeCString returns a size of the encoding of v cstring in bytes.
-func SizeCString(s string) int {
-	return bsonproto.SizeCString(s)
-}
-
-// EncodeCString encodes cstring value v into b.
-//
-// Slice must be at least len(v)+1 ([SizeCString]) bytes long; otherwise, EncodeString will panic.
-// Only b[0:len(v)+1] bytes are modified.
-func EncodeCString(b []byte, v string) {
-	bsonproto.EncodeCString(b, v)
-}
-
-// DecodeCString decodes cstring value from b.
-//
-// If there is not enough bytes, DecodeCString will return a wrapped [ErrDecodeShortInput].
-// If the input is otherwise invalid, a wrapped [ErrDecodeInvalidInput] is returned.
-func DecodeCString(b []byte) (string, error) {
-	return bsonproto.DecodeCString(b)
-}
-
-// Type represents a BSON type.
-type Type interface {
-	ScalarType | CompositeType
-}
-
-// CompositeType represents a BSON composite type (including raw types).
-type CompositeType interface {
-	*Document | *Array | RawDocument | RawArray
-}
-
-// AnyDocument represents a BSON document type (both [*Document] and [RawDocument]).
-//
-// Note that the Encode and Decode methods could return the receiver itself,
-// so care must be taken when results are modified.
-type AnyDocument interface {
-	Encode() (RawDocument, error)
-	Decode() (*Document, error)
-	Convert() (*types.Document, error)
-}
-
-// AnyArray represents a BSON array type (both [*Array] and [RawArray]).
-//
-// Note that the Encode and Decode methods could return the receiver itself,
-// so care must be taken when results are modified.
-type AnyArray interface {
-	Encode() (RawArray, error)
-	Decode() (*Array, error)
-}
-
-// validBSONType checks if v is a valid BSON type (including raw types).
-func validBSONType(v any) error {
-	switch v := v.(type) {
-	case *Document:
-	case RawDocument:
-	case *Array:
-	case RawArray:
-	case float64:
-	case string:
-	case Binary:
-	case ObjectID:
-	case bool:
-	case time.Time:
-	case NullType:
-	case Regex:
-	case int32:
-	case Timestamp:
-	case int64:
-
-	default:
-		return lazyerrors.Errorf("invalid BSON type %T", v)
-	}
-
-	return nil
-}
-
-// convertToTypes converts valid BSON value of that package to types package type.
-//
-// Conversions of composite types (including raw types) may cause errors.
-// Invalid types cause panics.
-func convertToTypes(v any) (any, error) {
-	switch v := v.(type) {
-	case *Document:
-		doc, err := v.Convert()
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		return doc, nil
-
-	case RawDocument:
-		d, err := v.Decode()
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		doc, err := d.Convert()
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		return doc, nil
-
-	case *Array:
-		arr, err := v.Convert()
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		return arr, nil
-
-	case RawArray:
-		a, err := v.Decode()
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		arr, err := a.Convert()
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		return arr, nil
-
-	case float64:
-		return v, nil
-	case string:
-		return v, nil
-	case Binary:
-		// Special case to prevent it from being stored as null in sjson.
-		// TODO https://github.com/FerretDB/FerretDB/issues/260
-		if v.B == nil {
-			v.B = []byte{}
-		}
-
-		return types.Binary{
-			B:       v.B,
-			Subtype: types.BinarySubtype(v.Subtype),
-		}, nil
-	case ObjectID:
-		return types.ObjectID(v), nil
-	case bool:
-		return v, nil
-	case time.Time:
-		return v, nil
-	case NullType:
-		return types.Null, nil
-	case Regex:
-		return types.Regex{
-			Pattern: v.Pattern,
-			Options: v.Options,
-		}, nil
-	case int32:
-		return v, nil
-	case Timestamp:
-		return types.Timestamp(v), nil
-	case int64:
-		return v, nil
-
-	default:
-		panic(fmt.Sprintf("invalid BSON type %T", v))
-	}
-}
-
-// Convert converts valid types package values to BSON values of that package.
-//
-// Conversions of composite types may cause errors.
-func Convert[T types.Type](v T) (any, error) {
-	return convertFromTypes(v)
-}
-
-// convertFromTypes is a variant of [Convert] without type parameters (generics).
+// convertFromTypes converts types package value to wirebson package value.
 //
 // Invalid types cause panics.
 func convertFromTypes(v any) (any, error) {
 	switch v := v.(type) {
 	case *types.Document:
-		doc, err := ConvertDocument(v)
+		doc, err := FromDocument(v)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -314,7 +41,7 @@ func convertFromTypes(v any) (any, error) {
 		return doc, nil
 
 	case *types.Array:
-		arr, err := ConvertArray(v)
+		arr, err := FromArray(v)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -326,31 +53,224 @@ func convertFromTypes(v any) (any, error) {
 	case string:
 		return v, nil
 	case types.Binary:
-		return Binary{
+		return wirebson.Binary{
 			B:       v.B,
-			Subtype: BinarySubtype(v.Subtype),
+			Subtype: wirebson.BinarySubtype(v.Subtype),
 		}, nil
 	case types.ObjectID:
-		return ObjectID(v), nil
+		return wirebson.ObjectID(v), nil
 	case bool:
 		return v, nil
 	case time.Time:
 		return v, nil
 	case types.NullType:
-		return Null, nil
+		return wirebson.Null, nil
 	case types.Regex:
-		return Regex{
+		return wirebson.Regex{
 			Pattern: v.Pattern,
 			Options: v.Options,
 		}, nil
 	case int32:
 		return v, nil
 	case types.Timestamp:
-		return Timestamp(v), nil
+		return wirebson.Timestamp(v), nil
 	case int64:
 		return v, nil
 
 	default:
 		panic(fmt.Sprintf("invalid type %T", v))
 	}
+}
+
+// From converts types package value to wirebson package value.
+func From[T types.Type](v T) (any, error) {
+	return convertFromTypes(v)
+}
+
+// FromArray converts [*types.Array] to [*wirebson.Array].
+func FromArray(arr *types.Array) (*wirebson.Array, error) {
+	iter := arr.Iterator()
+	defer iter.Close()
+
+	elements := wirebson.MakeArray(arr.Len())
+
+	for {
+		_, v, err := iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				return elements, nil
+			}
+
+			return nil, lazyerrors.Error(err)
+		}
+
+		v, err = convertFromTypes(v)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		if err = elements.Add(v); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+	}
+}
+
+// FromDocument converts [*types.Document] to [*wirebson.Document].
+func FromDocument(doc *types.Document) (*wirebson.Document, error) {
+	iter := doc.Iterator()
+	defer iter.Close()
+
+	res := wirebson.MakeDocument(doc.Len())
+
+	for {
+		k, v, err := iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				return res, nil
+			}
+
+			return nil, lazyerrors.Error(err)
+		}
+
+		v, err = convertFromTypes(v)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		if err = res.Add(k, v); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+	}
+}
+
+// convertToTypes converts wirebson package value to types package value.
+//
+// Invalid types cause panics.
+func convertToTypes(v any) (any, error) {
+	switch v := v.(type) {
+	case *wirebson.Document:
+		doc, err := ToDocument(v)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		return doc, nil
+
+	case wirebson.RawDocument:
+		doc, err := ToDocument(v)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		return doc, nil
+
+	case *wirebson.Array:
+		arr, err := ToArray(v)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		return arr, nil
+
+	case wirebson.RawArray:
+		arr, err := ToArray(v)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		return arr, nil
+
+	case float64:
+		return v, nil
+	case string:
+		return v, nil
+	case wirebson.Binary:
+		// Special case to prevent it from being stored as null in sjson.
+		// TODO https://github.com/FerretDB/FerretDB/issues/260
+		if v.B == nil {
+			v.B = []byte{}
+		}
+
+		return types.Binary{
+			B:       v.B,
+			Subtype: types.BinarySubtype(v.Subtype),
+		}, nil
+	case wirebson.ObjectID:
+		return types.ObjectID(v), nil
+	case bool:
+		return v, nil
+	case time.Time:
+		return v, nil
+	case wirebson.NullType:
+		return types.Null, nil
+	case wirebson.Regex:
+		return types.Regex{
+			Pattern: v.Pattern,
+			Options: v.Options,
+		}, nil
+	case int32:
+		return v, nil
+	case wirebson.Timestamp:
+		return types.Timestamp(v), nil
+	case int64:
+		return v, nil
+
+	default:
+		panic(fmt.Sprintf("invalid BSON type %T", v))
+	}
+}
+
+// ToArray converts wirebson array to [*types.Array].
+func ToArray(a wirebson.AnyArray) (*types.Array, error) {
+	arr, err := a.Decode()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	values := make([]any, arr.Len())
+
+	for i := range arr.Len() {
+		var v any
+
+		if v, err = convertToTypes(arr.Get(i)); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		values[i] = v
+	}
+
+	res, err := types.NewArray(values...)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return res, nil
+}
+
+// ToDocument converts wirebson document to [*types.Document].
+func ToDocument(d wirebson.AnyDocument) (*types.Document, error) {
+	doc, err := d.Decode()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	fields := doc.FieldNames()
+	pairs := make([]any, 0, len(fields)*2)
+
+	for i := range fields {
+		f, v := doc.GetByIndex(i)
+
+		if v, err = convertToTypes(v); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		pairs = append(pairs, f, v)
+	}
+
+	res, err := types.NewDocument(pairs...)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return res, nil
 }

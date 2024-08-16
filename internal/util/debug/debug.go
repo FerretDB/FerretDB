@@ -16,50 +16,239 @@
 package debug
 
 import (
+	"archive/zip"
 	"bytes"
 	"context"
 	"errors"
 	_ "expvar" // for metrics
 	"fmt"
+	"io"
+	"log"
+	"log/slog"
 	"net"
 	"net/http"
 	_ "net/http/pprof" // for profiling
 	"slices"
+	"sync/atomic"
 	"text/template"
 	"time"
 
 	"github.com/arl/statsviz"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 
+	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// RunHandler runs debug handler.
-func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *zap.Logger) {
-	stdL := must.NotFail(zap.NewStdLogAt(l, zap.WarnLevel))
+// Parts of Prometheus metric names.
+const (
+	namespace = "ferretdb"
+	subsystem = "debug"
+)
+
+// setup ensures that debug handler is set up only once.
+var setup atomic.Bool
+
+// Probe should return true on success and false on failure (or context cancellation).
+// It may log additional information if needed.
+//
+// It must be thread-safe.
+type Probe func(ctx context.Context) bool
+
+// Handler represents debug handler.
+//
+//nolint:vet // for readability
+type Handler struct {
+	opts     *ListenOpts
+	lis      net.Listener
+	handlers map[string]string
+	stdL     *log.Logger
+}
+
+// ListenOpts represents [Listen] options.
+//
+//nolint:vet // for readability
+type ListenOpts struct {
+	TCPAddr string
+	L       *slog.Logger
+	R       prometheus.Registerer
+	Livez   Probe
+	Readyz  Probe
+}
+
+// addToZip adds a new file to the zip archive.
+//
+// Passed [io.ReadCloser] is always closed.
+func addToZip(w *zip.Writer, name string, r io.ReadCloser) (err error) {
+	defer func() {
+		if e := r.Close(); e != nil && err == nil {
+			err = e
+		}
+	}()
+
+	f, err := w.CreateHeader(&zip.FileHeader{
+		Name:   name,
+		Method: zip.Deflate,
+	})
+	if err != nil {
+		return
+	}
+
+	_, err = io.Copy(f, r)
+
+	return
+}
+
+// Listen creates a new debug handler and starts listener on the given TCP address.
+//
+// This function can be called only once because it affects [http.DefaultServeMux].
+func Listen(opts *ListenOpts) (*Handler, error) {
+	if setup.Swap(true) {
+		panic("debug handler is already set up")
+	}
+
+	must.NotBeZero(opts)
+
+	l := opts.L
+
+	stdL := slog.NewLogLogger(l.Handler(), slog.LevelError)
+
+	probeDurations := prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Namespace: namespace,
+			Subsystem: subsystem,
+			Name:      "probe_response_seconds",
+			Help:      "Probe response time seconds.",
+			Buckets:   []float64{0.1, 0.5, 1, 5},
+		},
+		[]string{"probe", "code"},
+	)
+
+	opts.R.MustRegister(probeDurations)
 
 	http.Handle("/debug/metrics", promhttp.InstrumentMetricHandler(
-		r, promhttp.HandlerFor(prometheus.DefaultGatherer, promhttp.HandlerOpts{
+		opts.R, promhttp.HandlerFor(prometheus.DefaultGatherer, promhttp.HandlerOpts{
 			ErrorLog:          stdL,
 			ErrorHandling:     promhttp.ContinueOnError,
-			Registry:          r,
+			Registry:          opts.R,
 			EnableOpenMetrics: true,
 		}),
 	))
 
-	opts := []statsviz.Option{
+	http.HandleFunc("/debug/archive", func(rw http.ResponseWriter, req *http.Request) {
+		rw.Header().Set("Content-Type", "application/zip")
+		rw.Header().Set(
+			"Content-Disposition",
+			fmt.Sprintf("attachment; filename=ferretdb-%s.zip", time.Now().Format("2006-01-02-15-04-05")),
+		)
+
+		ctx := req.Context()
+		zipWriter := zip.NewWriter(rw)
+		errs := map[string]error{}
+
+		defer func() {
+			files := maps.Keys(errs)
+			slices.Sort(files)
+
+			var b bytes.Buffer
+			for _, f := range files {
+				b.WriteString(fmt.Sprintf("%s: %v\n", f, errs[f]))
+			}
+
+			if err := addToZip(zipWriter, "errors.txt", io.NopCloser(&b)); err != nil {
+				l.ErrorContext(ctx, "Failed to add errors.txt to archive", logging.Error(err))
+			}
+
+			if err := zipWriter.Close(); err != nil {
+				l.ErrorContext(ctx, "Failed to close archive", logging.Error(err))
+			}
+		}()
+
+		host := ctx.Value(http.LocalAddrContextKey).(net.Addr)
+		getReq := must.NotFail(http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("http://%s/", host), nil))
+
+		for file, u := range map[string]struct {
+			path  string
+			query string
+		}{
+			"goroutine.pprof": {path: "/debug/pprof/goroutine"},
+			"heap.pprof":      {path: "/debug/pprof/heap", query: "gc=1"},
+			"profile.pprof":   {path: "/debug/pprof/profile", query: "seconds=5"},
+			"metrics.txt":     {path: "/debug/metrics"}, // includes version, UUID, etc
+			"vars.json":       {path: "/debug/vars"},
+		} {
+			getReq.URL.Path = u.path
+			getReq.URL.RawQuery = u.query
+
+			l.DebugContext(ctx, "Fetching file for archive", slog.String("file", file), slog.String("url", getReq.URL.String()))
+
+			resp, err := http.DefaultClient.Do(getReq)
+			if err == nil {
+				err = addToZip(zipWriter, file, resp.Body)
+			}
+
+			errs[file] = err
+		}
+	})
+
+	svOpts := []statsviz.Option{
 		statsviz.Root("/debug/graphs"),
 		// TODO https://github.com/FerretDB/FerretDB/issues/3600
 	}
-	must.NoError(statsviz.Register(http.DefaultServeMux, opts...))
+	must.NoError(statsviz.Register(http.DefaultServeMux, svOpts...))
+
+	http.Handle("/debug/livez", promhttp.InstrumentHandlerDuration(
+		probeDurations.MustCurryWith(prometheus.Labels{"probe": "livez"}),
+		http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			ctx := req.Context()
+
+			if !opts.Livez(ctx) {
+				l.Warn("Livez probe failed")
+				rw.WriteHeader(http.StatusInternalServerError)
+
+				return
+			}
+
+			l.Debug("Livez probe succeeded")
+			rw.WriteHeader(http.StatusOK)
+		}),
+	))
+
+	http.Handle("/debug/readyz", promhttp.InstrumentHandlerDuration(
+		probeDurations.MustCurryWith(prometheus.Labels{"probe": "readyz"}),
+		http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			ctx := req.Context()
+
+			if !opts.Livez(ctx) {
+				l.Warn("Readyz probe failed - livez probe failed")
+				rw.WriteHeader(http.StatusInternalServerError)
+
+				return
+			}
+
+			if !opts.Readyz(ctx) {
+				l.Warn("Readyz probe failed")
+				rw.WriteHeader(http.StatusInternalServerError)
+
+				return
+			}
+
+			l.Debug("Readyz probe succeeded")
+			rw.WriteHeader(http.StatusOK)
+		}),
+	))
 
 	handlers := map[string]string{
 		// custom handlers registered above
-		"/debug/graphs":  "Visualize metrics",
 		"/debug/metrics": "Metrics in Prometheus format",
+		"/debug/archive": "Zip archive with debugging information",
+		"/debug/graphs":  "Visualize metrics",
+		"/debug/livez":   "Liveness probe",
+		"/debug/readyz":  "Readiness probe",
 
 		// stdlib handlers
 		"/debug/vars":  "Expvar package metrics",
@@ -87,39 +276,64 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 		http.Redirect(rw, req, "/debug", http.StatusSeeOther)
 	})
 
+	lis, err := net.Listen("tcp", opts.TCPAddr)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &Handler{
+		opts:     opts,
+		lis:      lis,
+		handlers: handlers,
+		stdL:     stdL,
+	}, nil
+}
+
+// Serve runs debug handler until ctx is canceled.
+//
+// It exits when handler is stopped and listener closed.
+func (h *Handler) Serve(ctx context.Context) {
 	s := http.Server{
-		Addr:     addr,
-		ErrorLog: stdL,
+		Addr:     h.opts.TCPAddr,
+		Handler:  http.DefaultServeMux,
+		ErrorLog: h.stdL,
 		BaseContext: func(_ net.Listener) context.Context {
 			return ctx
 		},
 	}
 
+	l := h.opts.L
+
+	root := fmt.Sprintf("http://%s", h.lis.Addr())
+
+	l.InfoContext(ctx, fmt.Sprintf("Starting debug server on %s/debug ...", root))
+
+	paths := maps.Keys(h.handlers)
+	slices.Sort(paths)
+
+	for _, path := range paths {
+		l.InfoContext(ctx, fmt.Sprintf("%s%s - %s", root, path, h.handlers[path]))
+	}
+
 	go func() {
-		lis := must.NotFail(net.Listen("tcp", addr))
-
-		root := fmt.Sprintf("http://%s", lis.Addr())
-
-		l.Sugar().Infof("Starting debug server on %s ...", root)
-
-		paths := maps.Keys(handlers)
-		slices.Sort(paths)
-
-		for _, path := range paths {
-			l.Sugar().Infof("%s%s - %s", root, path, handlers[path])
-		}
-
-		if err := s.Serve(lis); !errors.Is(err, http.ErrServerClosed) {
-			panic(err)
+		if err := s.Serve(h.lis); !errors.Is(err, http.ErrServerClosed) {
+			l.LogAttrs(ctx, logging.LevelDPanic, "Serve exited with unexpected error", logging.Error(err))
 		}
 	}()
 
 	<-ctx.Done()
 
-	stopCtx, stopCancel := context.WithTimeout(context.Background(), time.Second)
-	defer stopCancel()
-	s.Shutdown(stopCtx) //nolint:contextcheck // use new context for cancellation
+	// ctx is already canceled, but we want to inherit its values
+	stopCtx, stopCancel := ctxutil.WithDelay(ctx)
+	defer stopCancel(nil)
 
-	s.Close()
-	l.Sugar().Info("Debug server stopped.")
+	if err := s.Shutdown(stopCtx); err != nil {
+		l.LogAttrs(ctx, logging.LevelDPanic, "Shutdown exited with unexpected error", logging.Error(err))
+	}
+
+	if err := s.Close(); err != nil {
+		l.LogAttrs(ctx, logging.LevelDPanic, "Close exited with unexpected error", logging.Error(err))
+	}
+
+	l.InfoContext(ctx, "Debug server stopped")
 }

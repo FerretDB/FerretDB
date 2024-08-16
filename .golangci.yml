@@ -16,6 +16,8 @@ linters-settings:
             desc: use `context` package instead
           - pkg: golang.org/x/exp/slices
             desc: use `slices` package instead
+          - pkg: maps
+            desc: use `golang.org/x/exp/maps` package instead
           - pkg: github.com/jackc/pgconn
             desc: use `github.com/jackc/pgx/v5/pgconn` package instead
           - pkg: github.com/jackc/pgproto3
@@ -26,23 +28,19 @@ linters-settings:
             desc: use `github.com/jackc/pgx/v5` package instead
           - pkg: github.com/jackc/pgx/v4
             desc: use `github.com/jackc/pgx/v5` package instead
-      bson:
+
+      ferretdb-in-tools:
         files:
-          - $all
-          - "!**/internal/bson/*_test.go"
-          - "!**/internal/driver/*.go"
-          - "!**/internal/util/testutil/*.go"
-          - "!**/internal/wire/*.go"
+          - "**/tools/**/*.go"
         deny:
-          - pkg: github.com/FerretDB/FerretDB/internal/bson
-      bsonproto:
+          - pkg: github.com/FerretDB/FerretDB/internal/
+            desc: tools should not import FerretDB code
+
+      types:
         files:
-          - $all
-          - "!**/internal/bson/*.go"
-          - "!**/internal/driver/*.go"
+          - "**/internal/util/logging/*.go"
         deny:
-          - pkg: github.com/cristalhq/bson
-          - pkg: github.com/cristalhq/bson/bsonproto
+          - pkg: github.com/FerretDB/FerretDB/internal/types
       sjson:
         files:
           - $all
@@ -125,8 +123,6 @@ linters-settings:
       - BUG
       - FIXME
       - HACK
-      - lala
-      - lalala
   goheader:
     # Please do not update it, including bumping a year.
     template: |-
@@ -162,8 +158,6 @@ linters-settings:
     alias:
       - pkg: github.com/prometheus/client_model/go
         alias: dto
-      - pkg: github.com/jackc/pgx-zap
-        alias: zapadapter
       - pkg: modernc.org/sqlite
         alias: sqlite3
       - pkg: modernc.org/sqlite/lib
@@ -189,9 +183,13 @@ linters-settings:
   misspell:
     ignore-words:
       - guiness # present in the test dataset
+    extra-words: # https://go.dev/wiki/Spelling, https://github.com/golangci/misspell/issues/11
+      - typo: "iff"
+        correction: "if"
+      - typo: "cancelation"
+        correction: "cancellation"
   nolintlint:
     allow-unused: false
-    allow-leading-space: false
     allow-no-explanation: []
     require-explanation: true
     require-specific: true
@@ -203,7 +201,8 @@ linters-settings:
     no-mixed-args: true
     kv-only: false
     attr-only: true
-    context-only: false # https://github.com/go-simpler/sloglint/issues/29
+    no-global: "all"
+    context: "scope"
     static-msg: false # TODO https://github.com/FerretDB/FerretDB/issues/3421
     no-raw-keys: false # TODO https://github.com/FerretDB/FerretDB/issues/3421
     key-naming-case: snake

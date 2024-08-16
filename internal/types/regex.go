@@ -16,6 +16,7 @@ package types
 
 import (
 	"fmt"
+	"log/slog"
 	"regexp"
 	"regexp/syntax"
 
@@ -120,3 +121,13 @@ func (r Regex) Compile() (*regexp.Regexp, error) {
 
 	return nil, lazyerrors.Error(err)
 }
+
+// LogValue implements [slog.LogValuer].
+func (r Regex) LogValue() slog.Value {
+	return slogValue(r, 1)
+}
+
+// check interfaces
+var (
+	_ slog.LogValuer = Regex{}
+)

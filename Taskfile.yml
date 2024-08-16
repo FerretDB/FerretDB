@@ -6,14 +6,12 @@ env:
   GOCOVERDIR: tmp/cover
 
 vars:
-  SHARD_INDEX: 1
-  SHARD_TOTAL: 1
+  SHARD_INDEX: 0
+  SHARD_TOTAL: 0
   DISABLE_PUSHDOWN: false
   TEST_RUN: ""
   TEST_TIMEOUT: 35m
   BENCH_TIME: 5s
-  FUZZ_TIME: 15s
-  FUZZ_CORPUS: ../fuzz-corpus
   TESTJS_PORT: 27017
   RACE_FLAG: -race={{and (ne OS "windows") (ne ARCH "arm") (ne ARCH "riscv64")}}
   BUILD_TAGS: ferretdb_debug,ferretdb_hana
@@ -216,7 +214,7 @@ tasks:
         -target-backend=ferretdb-postgresql
         -target-tls
         -postgresql-url='postgres://username@127.0.0.1:5432/ferretdb?search_path='
-        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem&replicaSet=rs0'
+        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=client.pem&tlsCaFile=rootCA-cert.pem&replicaSet=rs0'
         -disable-pushdown={{.DISABLE_PUSHDOWN}}
 
   test-integration-sqlite:
@@ -242,7 +240,7 @@ tasks:
         -target-backend=ferretdb-sqlite
         -sqlite-url=file:../tmp/sqlite-tests/
         -target-tls
-        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem&replicaSet=rs0'
+        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=client.pem&tlsCaFile=rootCA-cert.pem&replicaSet=rs0'
         -disable-pushdown={{.DISABLE_PUSHDOWN}}
 
   test-integration-mysql:
@@ -268,7 +266,7 @@ tasks:
         -target-backend=ferretdb-mysql
         -target-tls
         -mysql-url='mysql://username:password@127.0.0.1:3306/ferretdb'
-        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem&replicaSet=rs0'
+        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=client.pem&tlsCaFile=rootCA-cert.pem&replicaSet=rs0'
         -disable-pushdown={{.DISABLE_PUSHDOWN}}
 
   test-integration-hana:
@@ -294,7 +292,7 @@ tasks:
         -target-backend=ferretdb-hana
         -target-tls
         -hana-url=$FERRETDB_HANA_URL
-        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem&replicaSet=rs0'
+        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=client.pem&tlsCaFile=rootCA-cert.pem&replicaSet=rs0'
         -disable-pushdown={{.DISABLE_PUSHDOWN}}
 
   test-integration-mongodb:
@@ -317,7 +315,7 @@ tasks:
         -coverpkg=../...
         -coverprofile=integration-mongodb.txt
         ./...
-        -target-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem&replicaSet=rs0'
+        -target-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=client.pem&tlsCaFile=rootCA-cert.pem&replicaSet=rs0'
         -target-backend=mongodb
 
   bench-unit:
@@ -326,30 +324,6 @@ tasks:
       - go test -list='Benchmark.*' ./...
       - go test -count=10 -bench=BenchmarkDocument -benchtime={{.BENCH_TIME}} ./internal/bson/ | tee -a new.txt
       - bin/benchstat{{exeExt}} old.txt new.txt
-
-  # That's not quite correct: https://github.com/golang/go/issues/15513
-  # But good enough for us.
-  fuzz-init:
-    deps: [gen-version]
-    cmds:
-      - go test -count=0 ./...
-
-  fuzz:
-    desc: "Fuzz for about 1 minute (with default FUZZ_TIME)"
-    cmds:
-      - go test -list='Fuzz.*' ./...
-      - go test -run=XXX -fuzz=FuzzDocument -fuzztime={{.FUZZ_TIME}} ./internal/bson/
-      - go test -run=XXX -fuzz=FuzzMsg      -fuzztime={{.FUZZ_TIME}} ./internal/wire/
-      - go test -run=XXX -fuzz=FuzzQuery    -fuzztime={{.FUZZ_TIME}} ./internal/wire/
-      - go test -run=XXX -fuzz=FuzzReply    -fuzztime={{.FUZZ_TIME}} ./internal/wire/
-
-  fuzz-corpus:
-    desc: "Sync seed and generated fuzz corpora with FUZZ_CORPUS"
-    deps: [gen-version]
-    cmds:
-      - bin/envtool{{exeExt}} fuzz corpus generated {{.FUZZ_CORPUS}}
-      - bin/envtool{{exeExt}} fuzz corpus seed {{.FUZZ_CORPUS}}
-      - bin/envtool{{exeExt}} fuzz corpus {{.FUZZ_CORPUS}} generated
 
   run:
     desc: "Run FerretDB with `postgresql` backend"
@@ -364,6 +338,7 @@ tasks:
         --handler=pg
         --postgresql-url='postgres://username@127.0.0.1:5432/ferretdb?search_path='
         --test-records-dir=tmp/records
+        --otel-traces-url=http://127.0.0.1:4318/v1/traces
 
   run-sqlite:
     desc: "Run FerretDB with `sqlite` backend"
@@ -423,7 +398,7 @@ tasks:
         --test-records-dir=tmp/records
 
   run-proxy:
-    desc: "Run FerretDB in diff-proxy mode"
+    desc: "Run FerretDB in the diff-proxy mode"
     deps: [build-host]
     cmds:
       - >
@@ -436,7 +411,7 @@ tasks:
         --test-records-dir=tmp/records
 
   run-sqlite-proxy:
-    desc: "Run FerretDB with `sqlite` handler in diff-proxy mode"
+    desc: "Run FerretDB with `sqlite` handler in the diff-proxy mode"
     deps: [build-host]
     cmds:
       - bin/envtool{{exeExt}} shell mkdir tmp/sqlite
@@ -450,7 +425,7 @@ tasks:
         --test-records-dir=tmp/records
 
   run-proxy-secured:
-    desc: "Run FerretDB in diff-proxy mode (TLS, auth required)"
+    desc: "Run FerretDB in the diff-proxy mode (TLS, auth required)"
     deps: [build-host]
     cmds:
       - >
@@ -472,15 +447,11 @@ tasks:
   lint:
     desc: "Run linters"
     cmds:
-      - bin/envtool{{exeExt}} shell rmdir tmp/checkcomments
-      - bin/envtool{{exeExt}} shell mkdir tmp/checkcomments
+      - bin/envtool{{exeExt}} shell rmdir tmp/githubcache
+      - bin/envtool{{exeExt}} shell mkdir tmp/githubcache
       - bin/golangci-lint{{exeExt}} run --config=.golangci.yml
       - bin/golangci-lint{{exeExt}} run --config=.golangci-new.yml
-
-      # Stop CI from failing too often; see https://github.com/quasilyte/go-consistent/issues/38.
-      # Still, note the output and fix the issues.
-      - cmd: bin/go-consistent{{exeExt}} -pedantic ./cmd/... ./internal/... ./build/... ./ferretdb/...
-        ignore_error: true
+      - bin/go-consistent{{exeExt}} -pedantic ./cmd/... ./internal/... ./build/... ./ferretdb/...
 
       - go vet -vettool=bin/checkswitch{{exeExt}} ./...
       - go vet -vettool=bin/checkcomments{{exeExt}} ./...
@@ -497,7 +468,7 @@ tasks:
 
   security-govulncheck:
     cmds:
-      - bin/govulncheck{{exeExt}} -test ./...
+      - bin/govulncheck{{exeExt}} -test -show=verbose,color ./...
       - bin/task{{exeExt}} -d integration integration-security
 
   security-trivy:
@@ -657,9 +628,10 @@ tasks:
       - echo 'docker-local-{{.FILE}}' > build/version/package.txt
       - task: docker-build
         vars:
+          FILE: ferretdb/{{.FILE}}
+          TARGET: "{{.FILE}}"
           DOCKER_IMAGES: ferretdb-local
           OUTPUT: type=docker
-          TARGET: "{{.FILE}}"
     requires:
       vars: [FILE]
 
@@ -883,9 +855,9 @@ tasks:
     desc: "Format and lint documentation"
     run: once
     cmds:
-      - docker compose run --rm textlint --fix --config build/.textlintrc "**/*.md" ".github/**/*.md"
+      - docker compose run --rm textlint --fix --config build/.textlintrc --ignore-path .prettierignore "**/*.md" ".github/**/*.md"
       - docker compose run --rm prettier --write --parser markdown --no-semi --single-quote --trailing-comma none "**/*.md"
-      - docker compose run --rm markdownlint "build/.markdownlint.yml" "**/*.md"
+      - docker compose run --rm markdownlint --config "build/.markdownlint.yml" "**/*.md"
       - bin/checkdocs
 
   pngcrush:
@@ -893,6 +865,10 @@ tasks:
       - pngcrush -ow -brute {{.FILE}}
     requires:
       vars: [FILE]
+
+  pngcrush-new:
+    cmds:
+      - git diff --name-only upstream/main '*.png' | parallel "pngcrush -ow -brute {} {.}.temp"
 
   pngcrush-all:
     cmds:

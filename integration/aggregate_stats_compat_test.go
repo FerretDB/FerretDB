@@ -21,9 +21,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 
+	"github.com/FerretDB/FerretDB/internal/types"
+
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
-	"github.com/FerretDB/FerretDB/internal/types"
 )
 
 func TestAggregateCompatCollStats(t *testing.T) {
@@ -66,13 +67,10 @@ func TestAggregateCompatCollStats(t *testing.T) {
 			},
 		},
 	} {
-		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
 				t.Skip(tc.skip)
 			}
-
-			t.Parallel()
 
 			require.NotNil(t, tc.pipeline, "pipeline must be set")
 

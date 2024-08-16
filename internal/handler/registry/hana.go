@@ -19,6 +19,8 @@ package registry
 import (
 	"github.com/FerretDB/FerretDB/internal/backends/hana"
 	"github.com/FerretDB/FerretDB/internal/handler"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/logging"
 )
 
 // init registers "hana" handler for Hana when "ferretdb_hana" build tag is provided.
@@ -28,12 +30,12 @@ func init() {
 
 		b, err := hana.NewBackend(&hana.NewBackendParams{
 			URI:       opts.HANAURL,
-			L:         opts.Logger.Named("hana"),
+			L:         logging.WithName(opts.Logger, "hana"),
 			P:         opts.StateProvider,
 			BatchSize: opts.BatchSize,
 		})
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, lazyerrors.Error(err)
 		}
 
 		handlerOpts := &handler.NewOpts{
@@ -41,7 +43,12 @@ func init() {
 			TCPHost:     opts.TCPHost,
 			ReplSetName: opts.ReplSetName,
 
-			L:             opts.Logger.Named("hana"),
+			SetupDatabase: opts.SetupDatabase,
+			SetupUsername: opts.SetupUsername,
+			SetupPassword: opts.SetupPassword,
+			SetupTimeout:  opts.SetupTimeout,
+
+			L:             logging.WithName(opts.Logger, "hana"),
 			ConnMetrics:   opts.ConnMetrics,
 			StateProvider: opts.StateProvider,
 
@@ -50,11 +57,12 @@ func init() {
 			CappedCleanupInterval:   opts.CappedCleanupInterval,
 			EnableNewAuth:           opts.EnableNewAuth,
 			BatchSize:               opts.BatchSize,
+			MaxBsonObjectSizeBytes:  opts.MaxBsonObjectSizeBytes,
 		}
 
 		h, err := handler.New(handlerOpts)
 		if err != nil {
-			return nil, nil, err
+			return nil, b.Close, lazyerrors.Error(err)
 		}
 
 		return h, b.Close, nil

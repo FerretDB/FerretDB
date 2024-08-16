@@ -15,29 +15,11 @@
 package integration
 
 import (
-	"flag"
-	"os"
 	"testing"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
-// TestMain is the entry point for all integration tests.
 func TestMain(m *testing.M) {
-	flag.Parse()
-
-	var code int
-
-	// ensure that Shutdown runs for any exit code or panic
-	func() {
-		// make `go test -list=.` work without side effects
-		if flag.Lookup("test.list").Value.String() == "" {
-			setup.Startup()
-			defer setup.Shutdown()
-		}
-
-		code = m.Run()
-	}()
-
-	os.Exit(code)
+	setup.Main(m)
 }

@@ -17,8 +17,11 @@ package handler
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
+
+	"github.com/FerretDB/wire"
 
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
@@ -26,75 +29,106 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgHello implements `hello` command.
-func (h *Handler) MsgHello(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	doc, err := msg.Document()
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgHello(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	doc, err := opMsgDocument(msg)
 	if err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
-	if err := common.CheckClientMetadata(ctx, doc); err != nil {
+	resp, err := h.hello(connCtx, doc, h.TCPHost, h.ReplSetName)
+	if err != nil {
 		return nil, lazyerrors.Error(err)
+	}
+
+	return documentOpMsg(resp)
+}
+
+// hello checks client metadata and returns hello's document fields.
+// It also returns response for deprecated `isMaster` and `ismaster` commands.
+func (h *Handler) hello(ctx context.Context, doc *types.Document, tcpHost, name string) (*types.Document, error) {
+	if err := checkClientMetadata(ctx, doc); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	res := must.NotFail(types.NewDocument())
+
+	switch doc.Command() {
+	case "hello":
+		res.Set("isWritablePrimary", true)
+	case "isMaster", "ismaster":
+		if helloOk, _ := doc.Get("helloOk"); helloOk != nil {
+			res.Set("helloOk", true)
+		}
+
+		res.Set("ismaster", true)
+	default:
+		panic(fmt.Sprintf("unexpected command: %q", doc.Command()))
 	}
 
 	saslSupportedMechs, err := common.GetOptionalParam(doc, "saslSupportedMechs", "")
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, err
 	}
 
-	var reply wire.OpMsg
-	resp := must.NotFail(types.NewDocument(
-		"isWritablePrimary", true,
-		"maxBsonObjectSize", int32(types.MaxDocumentLen),
-		"maxMessageSizeBytes", int32(wire.MaxMsgLen),
-		"maxWriteBatchSize", int32(100000),
-		"localTime", time.Now(),
-		"connectionId", int32(42),
-		"minWireVersion", common.MinWireVersion,
-		"maxWireVersion", common.MaxWireVersion,
-		"readOnly", false,
-	))
+	var resSupportedMechs *types.Array
 
-	if saslSupportedMechs == "" {
-		resp.Set("ok", float64(1))
-		must.NoError(reply.SetSections(wire.MakeOpMsgSection(resp)))
+	if saslSupportedMechs != "" {
+		db, username, ok := strings.Cut(saslSupportedMechs, ".")
+		if !ok {
+			return nil, handlererrors.NewCommandErrorMsg(
+				handlererrors.ErrBadValue,
+				"UserName must contain a '.' separated database.user pair",
+			)
+		}
 
-		return &reply, nil
+		resSupportedMechs = must.NotFail(types.NewArray("PLAIN"))
+
+		if h.EnableNewAuth {
+			if resSupportedMechs, err = h.getUserSupportedMechs(ctx, db, username); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+		}
 	}
 
-	db, username, ok := strings.Cut(saslSupportedMechs, ".")
-	if !ok {
-		return nil, handlererrors.NewCommandErrorMsg(
-			handlererrors.ErrBadValue,
-			"UserName must contain a '.' separated database.user pair",
-		)
+	if name != "" {
+		// That does not work for TLS-only setups, IPv6 addresses, etc.
+		// The proper solution is to support `replSetInitiate` command.
+		// TODO https://github.com/FerretDB/FerretDB/issues/3936
+		if strings.HasPrefix(tcpHost, ":") {
+			tcpHost = "localhost" + tcpHost
+		}
+
+		res.Set("setName", name)
+		res.Set("hosts", must.NotFail(types.NewArray(tcpHost)))
 	}
 
-	mechs, err := h.getUserSupportedMechs(ctx, db, username)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
+	res.Set("maxBsonObjectSize", int32(h.MaxBsonObjectSizeBytes))
+	res.Set("maxMessageSizeBytes", int32(wire.MaxMsgLen))
+	res.Set("maxWriteBatchSize", maxWriteBatchSize)
+	res.Set("localTime", time.Now())
+	res.Set("logicalSessionTimeoutMinutes", logicalSessionTimeoutMinutes)
+	res.Set("connectionId", connectionID)
+	res.Set("minWireVersion", common.MinWireVersion)
+	res.Set("maxWireVersion", common.MaxWireVersion)
+	res.Set("readOnly", false)
+
+	if resSupportedMechs != nil && resSupportedMechs.Len() != 0 {
+		res.Set("saslSupportedMechs", resSupportedMechs)
 	}
 
-	saslSupportedMechsResp := must.NotFail(types.NewArray())
-	for _, k := range mechs {
-		saslSupportedMechsResp.Append(k)
-	}
+	res.Set("ok", float64(1))
 
-	if saslSupportedMechsResp.Len() != 0 {
-		resp.Set("saslSupportedMechs", saslSupportedMechsResp)
-	}
-
-	resp.Set("ok", float64(1))
-	must.NoError(reply.SetSections(wire.MakeOpMsgSection(resp)))
-
-	return &reply, nil
+	return res, nil
 }
 
-// getUserSupportedMechs for a given user.
-func (h *Handler) getUserSupportedMechs(ctx context.Context, db, username string) ([]string, error) {
+// getUserSupportedMechs returns supported mechanisms for the given user.
+// If the user was not found, it returns nil.
+func (h *Handler) getUserSupportedMechs(ctx context.Context, db, username string) (*types.Array, error) {
 	adminDB, err := h.b.Database("admin")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -139,10 +173,19 @@ func (h *Handler) getUserSupportedMechs(ctx context.Context, db, username string
 			continue
 		}
 
-		if v.Has("credentials") {
-			credentials := must.NotFail(v.Get("credentials")).(*types.Document)
-			return credentials.Keys(), nil
+		credentialsV, _ := v.Get("credentials")
+		if credentialsV == nil {
+			return nil, nil
 		}
+
+		credentials := credentialsV.(*types.Document)
+
+		supportedMechs := types.MakeArray(len(credentials.Keys()))
+		for _, mechanism := range credentials.Keys() {
+			supportedMechs.Append(mechanism)
+		}
+
+		return supportedMechs, nil
 	}
 
 	return nil, nil

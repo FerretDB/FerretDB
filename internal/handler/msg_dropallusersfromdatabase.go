@@ -18,18 +18,21 @@ import (
 	"context"
 	"errors"
 
+	"github.com/FerretDB/wire"
+
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgDropAllUsersFromDatabase implements `dropAllUsersFromDatabase` command.
-func (h *Handler) MsgDropAllUsersFromDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := msg.Document()
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgDropAllUsersFromDatabase(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	document, err := opMsgDocument(msg)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -51,7 +54,7 @@ func (h *Handler) MsgDropAllUsersFromDatabase(ctx context.Context, msg *wire.OpM
 		return nil, lazyerrors.Error(err)
 	}
 
-	qr, err := users.Query(ctx, nil)
+	qr, err := users.Query(connCtx, nil)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -81,7 +84,9 @@ func (h *Handler) MsgDropAllUsersFromDatabase(ctx context.Context, msg *wire.OpM
 	var deleted int32
 
 	if len(ids) > 0 {
-		res, err := users.DeleteAll(ctx, &backends.DeleteAllParams{
+		var res *backends.DeleteAllResult
+
+		res, err = users.DeleteAll(connCtx, &backends.DeleteAllParams{
 			IDs: ids,
 		})
 		if err != nil {
@@ -91,13 +96,10 @@ func (h *Handler) MsgDropAllUsersFromDatabase(ctx context.Context, msg *wire.OpM
 		deleted = res.Deleted
 	}
 
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+	return documentOpMsg(
 		must.NotFail(types.NewDocument(
 			"n", deleted,
 			"ok", float64(1),
 		)),
-	)))
-
-	return &reply, nil
+	)
 }

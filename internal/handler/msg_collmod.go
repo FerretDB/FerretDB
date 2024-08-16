@@ -17,12 +17,15 @@ package handler
 import (
 	"context"
 
+	"github.com/FerretDB/wire"
+
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgCollMod implements `collMod` command.
-func (h *Handler) MsgCollMod(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgCollMod(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	return nil, handlererrors.NewCommandErrorMsg(
 		handlererrors.ErrNotImplemented,
 		"`collMod` command is not implemented yet",

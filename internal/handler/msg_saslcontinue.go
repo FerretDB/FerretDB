@@ -16,19 +16,24 @@ package handler
 
 import (
 	"context"
+	"log/slog"
+
+	"github.com/FerretDB/wire"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgSASLContinue implements `saslContinue` command.
-func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	doc, err := msg.Document()
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgSASLContinue(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	doc, err := opMsgDocument(msg)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -42,36 +47,52 @@ func (h *Handler) MsgSASLContinue(ctx context.Context, msg *wire.OpMsg) (*wire.O
 
 	payload = binaryPayload.B
 
-	conv := conninfo.Get(ctx).Conv()
+	_, _, conv, _ := conninfo.Get(connCtx).Auth()
 
 	if conv == nil {
-		return nil, handlererrors.NewCommandErrorMsg(
+		h.L.WarnContext(connCtx, "saslContinue: no conversation to continue")
+
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
 			handlererrors.ErrAuthenticationFailed,
 			"Authentication failed.",
+			"saslContinue",
 		)
 	}
 
 	response, err := conv.Step(string(payload))
+
+	attrs := []any{
+		slog.String("username", conv.Username()),
+		slog.Bool("valid", conv.Valid()),
+		slog.Bool("done", conv.Done()),
+	}
+
 	if err != nil {
-		return nil, handlererrors.NewCommandErrorMsg(
+		if h.L.Enabled(connCtx, slog.LevelDebug) {
+			attrs = append(attrs, logging.Error(err))
+		}
+
+		h.L.WarnContext(connCtx, "saslContinue: step failed", attrs...) //nolint:sloglint // attrs is not key-value pairs
+
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
 			handlererrors.ErrAuthenticationFailed,
 			"Authentication failed.",
+			"saslContinue",
 		)
 	}
 
-	binResponse := types.Binary{
-		B: []byte(response),
+	h.L.DebugContext(connCtx, "saslContinue: step succeed", attrs...) //nolint:sloglint // attrs is not key-value pairs
+
+	if conv.Valid() {
+		conninfo.Get(connCtx).SetBypassBackendAuth()
 	}
 
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+	return documentOpMsg(
 		must.NotFail(types.NewDocument(
 			"conversationId", int32(1),
-			"done", true,
-			"payload", binResponse,
+			"done", conv.Done(),
+			"payload", types.Binary{B: []byte(response)},
 			"ok", float64(1),
 		)),
-	)))
-
-	return &reply, nil
+	)
 }

@@ -17,24 +17,24 @@ package handler
 import (
 	"context"
 
+	"github.com/FerretDB/wire"
+
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgGetFreeMonitoringStatus implements `getFreeMonitoringStatus` command.
-func (h *Handler) MsgGetFreeMonitoringStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgGetFreeMonitoringStatus(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	state := h.StateProvider.Get().TelemetryString()
 	message := "monitoring is " + state
 
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+	return documentOpMsg(
 		must.NotFail(types.NewDocument(
 			"state", state,
 			"message", message,
 			"ok", float64(1),
 		)),
-	)))
-
-	return &reply, nil
+	)
 }

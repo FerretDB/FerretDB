@@ -464,14 +464,6 @@ func TestDocument(t *testing.T) {
 	testJSON(t, documentTestCases, func() sjsontype { return new(documentType) })
 }
 
-func FuzzDocumentWithFixedSchemas(f *testing.F) {
-	fuzzJSONWithFixedSchemas(f, documentTestCases, func() sjsontype { return new(documentType) })
-}
-
-func FuzzDocumentWithFixedDocuments(f *testing.F) {
-	fuzzJSONWithFixedDocuments(f, documentTestCases, func() sjsontype { return new(documentType) })
-}
-
 func BenchmarkDocument(b *testing.B) {
 	benchmark(b, documentTestCases, func() sjsontype { return new(documentType) })
 }

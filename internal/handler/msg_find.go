@@ -18,10 +18,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
-	"go.uber.org/zap"
+	"github.com/FerretDB/wire"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
@@ -32,12 +33,13 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgFind implements `find` command.
-func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := msg.Document()
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgFind(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	document, err := opMsgDocument(msg)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -47,7 +49,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
-	username := conninfo.Get(ctx).Username()
+	username := conninfo.Get(connCtx).Username()
 
 	db, err := h.b.Database(params.DB)
 	if err != nil {
@@ -72,7 +74,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	var cList *backends.ListCollectionsResult
 	collectionParam := backends.ListCollectionsParams{Name: params.Collection}
 
-	if cList, err = db.ListCollections(ctx, &collectionParam); err != nil {
+	if cList, err = db.ListCollections(connCtx, &collectionParam); err != nil {
 		return nil, err
 	}
 
@@ -93,13 +95,15 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		}
 	}
 
-	qp, err := h.makeFindQueryParams(params, &cInfo)
+	qp, err := h.makeFindQueryParams(connCtx, params, &cInfo)
 	if err != nil {
 		return nil, err
 	}
 
+	ctx := connCtx
 	cancel := func() {}
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/2983
 	if params.MaxTimeMS != 0 {
 		findDone := make(chan struct{})
 		defer close(findDone)
@@ -161,10 +165,14 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, handleMaxTimeMSError(err, params.MaxTimeMS, "find")
 	}
 
-	h.L.Debug(
-		"Got first batch", zap.Int64("cursor_id", cursorID), zap.Stringer("type", c.Type),
-		zap.Int("count", len(docs)), zap.Int64("batch_size", params.BatchSize),
-		zap.Bool("single_batch", params.SingleBatch),
+	h.L.DebugContext(
+		ctx,
+		"Got first batch",
+		slog.Int64("cursor_id", cursorID),
+		slog.String("type", c.Type.String()),
+		slog.Int("count", len(docs)),
+		slog.Int64("batch_size", params.BatchSize),
+		slog.Bool("single_batch", params.SingleBatch),
 	)
 
 	if params.SingleBatch || len(docs) < int(params.BatchSize) {
@@ -184,8 +192,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		firstBatch.Append(doc)
 	}
 
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+	return documentOpMsg(
 		must.NotFail(types.NewDocument(
 			"cursor", must.NotFail(types.NewDocument(
 				"firstBatch", firstBatch,
@@ -194,9 +201,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 			)),
 			"ok", float64(1),
 		)),
-	)))
-
-	return &reply, nil
+	)
 }
 
 type findCursorData struct {
@@ -206,7 +211,7 @@ type findCursorData struct {
 }
 
 // makeFindQueryParams creates the backend's query parameters for the find command.
-func (h *Handler) makeFindQueryParams(params *common.FindParams, cInfo *backends.CollectionInfo) (*backends.QueryParams, error) {
+func (h *Handler) makeFindQueryParams(ctx context.Context, params *common.FindParams, cInfo *backends.CollectionInfo) (*backends.QueryParams, error) { //nolint:lll // for readability
 	qp := &backends.QueryParams{
 		Comment: params.Comment,
 	}
@@ -278,7 +283,7 @@ func (h *Handler) makeFindQueryParams(params *common.FindParams, cInfo *backends
 		qp.Limit = params.Limit
 	}
 
-	h.L.Sugar().Debugf("Converted %+v for %+v to %+v.", params, cInfo, qp)
+	h.L.DebugContext(ctx, fmt.Sprintf("Converted %+v for %+v to %+v.", params, cInfo, qp))
 
 	return qp, nil
 }

@@ -16,18 +16,38 @@ package main
 
 import (
 	"bytes"
+	"log"
 	"path/filepath"
+	"strings"
 	"testing"
 
+	"github.com/FerretDB/gh"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/FerretDB/FerretDB/tools/github"
 )
 
 func TestReal(t *testing.T) {
-	files, err := filepath.Glob(filepath.Join("..", "..", "website", "blog", "*.md"))
-	require.NoError(t, err)
+	blogFiles, err := filepath.Glob(filepath.Join("..", "..", "website", "blog", "*.md"))
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	checkFiles(files, t.Logf, t.Fatalf)
+	err = checkBlogFiles(blogFiles)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	commandsFile, err := filepath.Abs(filepath.Join("..", "..", "website", "docs", "reference", "supported-commands.md"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = checkSupportedCommands(commandsFile)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 var fm = bytes.TrimSpace([]byte(`
@@ -66,4 +86,53 @@ func TestVerifyTags(t *testing.T) {
 func TestVerifyTruncateString(t *testing.T) {
 	err := verifyTruncateString(fm)
 	assert.EqualError(t, err, "<!--truncate--> must be included to have \"Read more\" link on the homepage")
+}
+
+func TestCheckSupportedCommands(t *testing.T) {
+	buf := new(bytes.Buffer)
+	l := log.New(buf, "", 0)
+
+	p, err := github.CacheFilePath()
+	require.NoError(t, err)
+
+	client, err := github.NewClient(p, log.Printf, gh.NoopPrintf, gh.NoopPrintf)
+	require.NoError(t, err)
+
+	for name, tc := range map[string]struct {
+		Payload        string
+		ExpectedOutput string
+	}{
+		"OpenIssueLink": {
+			Payload:        "|                 | `openIssueLink`          | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/3413) |", //nolint:lll // for readability
+			ExpectedOutput: "",
+		},
+
+		"ClosedIssueLink": {
+			Payload:        "|                 | `closedIssueLink`          | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1) |", //nolint:lll // for readability
+			ExpectedOutput: "linked issue https://github.com/FerretDB/FerretDB/issues/1 is closed\n",
+		},
+
+		"AnyLabelClosedIssue": {
+			Payload:        "[IssueLabel](https://github.com/FerretDB/FerretDB/issues/1)",
+			ExpectedOutput: "linked issue https://github.com/FerretDB/FerretDB/issues/1 is closed\n",
+		},
+		"NoLabel": {
+			Payload:        "https://github.com/FerretDB/FerretDB/issues/1",
+			ExpectedOutput: "",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			buf.Reset()
+			r := strings.NewReader(tc.Payload)
+
+			var failed bool
+
+			failed, err = checkIssueURLs(client, r, l)
+			require.NoError(t, err)
+			assert.Equal(t, tc.ExpectedOutput != "", failed)
+
+			actualOutput := buf.String()
+			assert.Equal(t, tc.ExpectedOutput, actualOutput)
+		})
+	}
 }

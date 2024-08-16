@@ -12,15 +12,15 @@ ARG LABEL_COMMIT
 
 # prepare stage
 
-FROM --platform=$BUILDPLATFORM golang:1.22.2 AS production-prepare
+FROM --platform=$BUILDPLATFORM golang:1.22.6 AS production-prepare
 
 # use a single directory for all Go caches to simpliy RUN --mount commands below
-ENV GOPATH /cache/gopath
-ENV GOCACHE /cache/gocache
-ENV GOMODCACHE /cache/gomodcache
+ENV GOPATH=/cache/gopath
+ENV GOCACHE=/cache/gocache
+ENV GOMODCACHE=/cache/gomodcache
 
 # remove ",direct"
-ENV GOPROXY https://proxy.golang.org
+ENV GOPROXY=https://proxy.golang.org
 
 COPY go.mod go.sum /src/
 
@@ -36,7 +36,7 @@ EOF
 
 # build stage
 
-FROM golang:1.22.2 AS production-build
+FROM golang:1.22.6 AS production-build
 
 ARG TARGETARCH
 ARG TARGETVARIANT
@@ -47,12 +47,12 @@ RUN test -n "$LABEL_VERSION"
 RUN test -n "$LABEL_COMMIT"
 
 # use the same directories for Go caches as above
-ENV GOPATH /cache/gopath
-ENV GOCACHE /cache/gocache
-ENV GOMODCACHE /cache/gomodcache
+ENV GOPATH=/cache/gopath
+ENV GOCACHE=/cache/gocache
+ENV GOMODCACHE=/cache/gomodcache
 
 # modules are already downloaded
-ENV GOPROXY off
+ENV GOPROXY=off
 
 # see .dockerignore
 WORKDIR /src
@@ -77,12 +77,12 @@ export CGO_ENABLED=0
 
 go env
 
-# Do not trim paths to reuse build cache.
+# Trim paths mostly to check that building with `-trimpath` is supported.
 
 # check if stdlib was cached
-go install -v std
+go install -v -trimpath std
 
-go build -v -o=bin/ferretdb ./cmd/ferretdb
+go build -v -trimpath -o=bin/ferretdb ./cmd/ferretdb
 
 go version -m bin/ferretdb
 bin/ferretdb --version
@@ -109,6 +109,9 @@ COPY --from=production-build /src/bin/ferretdb /ferretdb
 COPY --from=production-build --chown=ferretdb:ferretdb /state /state
 
 ENTRYPOINT [ "/ferretdb" ]
+
+HEALTHCHECK --interval=1m --timeout=5s --retries=1 --start-period=30s --start-interval=5s \
+  CMD /ferretdb ping
 
 WORKDIR /
 VOLUME /state

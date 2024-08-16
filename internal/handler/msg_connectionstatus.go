@@ -17,33 +17,33 @@ package handler
 import (
 	"context"
 
+	"github.com/FerretDB/wire"
+
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgConnectionStatus implements `connectionStatus` command.
-func (h *Handler) MsgConnectionStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgConnectionStatus(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	users := types.MakeArray(1)
 
-	if username := conninfo.Get(ctx).Username(); username != "" {
+	if username, _, _, db := conninfo.Get(connCtx).Auth(); username != "" {
 		users.Append(must.NotFail(types.NewDocument(
 			"user", username,
+			"db", db,
 		)))
 	}
 
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+	return documentOpMsg(
 		must.NotFail(types.NewDocument(
 			"authInfo", must.NotFail(types.NewDocument(
 				"authenticatedUsers", users,
 				"authenticatedUserRoles", must.NotFail(types.NewArray()),
-				"authenticatedUserPrivileges", must.NotFail(types.NewArray()),
 			)),
 			"ok", float64(1),
 		)),
-	)))
-
-	return &reply, nil
+	)
 }

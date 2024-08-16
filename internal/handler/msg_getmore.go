@@ -18,10 +18,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"math"
 	"time"
 
-	"go.uber.org/zap"
+	"github.com/FerretDB/wire"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
@@ -34,12 +35,13 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgGetMore implements `getMore` command.
-func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := msg.Document()
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgGetMore(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	document, err := opMsgDocument(msg)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -148,7 +150,7 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	// Handle comment.
 	// TODO https://github.com/FerretDB/FerretDB/issues/2986
 
-	username := conninfo.Get(ctx).Username()
+	username := conninfo.Get(connCtx).Username()
 
 	// Use ExtractParam.
 	// TODO https://github.com/FerretDB/FerretDB/issues/2859
@@ -216,7 +218,9 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 			data := c.Data.(*findCursorData)
 
-			queryRes, err := data.coll.Query(ctx, data.qp)
+			var queryRes *backends.QueryResult
+
+			queryRes, err = data.coll.Query(connCtx, data.qp)
 			if err != nil {
 				return nil, lazyerrors.Error(err)
 			}
@@ -243,7 +247,7 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 	case cursor.TailableAwait:
 		if nextBatch.Len() == 0 {
-			nextBatch, err = h.awaitData(ctx, &awaitDataParams{
+			nextBatch, err = h.awaitData(connCtx, &awaitDataParams{
 				cursor:    c,
 				batchSize: batchSize,
 				maxTimeMS: maxTimeMS,
@@ -257,8 +261,7 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		panic(fmt.Sprintf("unknown cursor type %s", c.Type))
 	}
 
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+	return documentOpMsg(
 		must.NotFail(types.NewDocument(
 			"cursor", must.NotFail(types.NewDocument(
 				"nextBatch", nextBatch,
@@ -267,9 +270,7 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			)),
 			"ok", float64(1),
 		)),
-	)))
-
-	return &reply, nil
+	)
 }
 
 // makeNextBatch returns the next batch of documents from the cursor.
@@ -280,8 +281,11 @@ func (h *Handler) makeNextBatch(c *cursor.Cursor, batchSize int64) (*types.Array
 	}
 
 	h.L.Debug(
-		"Got next batch", zap.Int64("cursor_id", c.ID), zap.Stringer("type", c.Type),
-		zap.Int("count", len(docs)), zap.Int64("batch_size", batchSize),
+		"Got next batch",
+		slog.Int64("cursor_id", c.ID),
+		slog.String("type", c.Type.String()),
+		slog.Int("count", len(docs)),
+		slog.Int64("batch_size", batchSize),
 	)
 
 	nextBatch := types.MakeArray(len(docs))

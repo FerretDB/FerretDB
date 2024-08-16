@@ -15,7 +15,7 @@
 package common
 
 import (
-	"go.uber.org/zap"
+	"log/slog"
 
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
@@ -65,7 +65,7 @@ type FindParams struct {
 }
 
 // GetFindParams returns `find` command parameters.
-func GetFindParams(doc *types.Document, l *zap.Logger) (*FindParams, error) {
+func GetFindParams(doc *types.Document, l *slog.Logger) (*FindParams, error) {
 	params := FindParams{
 		BatchSize: 101,
 	}

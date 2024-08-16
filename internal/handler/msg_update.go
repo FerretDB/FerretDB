@@ -18,6 +18,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/FerretDB/wire"
+
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
@@ -25,12 +27,13 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgUpdate implements `update` command.
-func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := msg.Document()
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgUpdate(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	document, err := opMsgDocument(msg)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -43,7 +46,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	// TODO https://github.com/FerretDB/FerretDB/issues/2612
 	_ = params.Ordered
 
-	matched, modified, upserted, err := h.updateDocument(ctx, params)
+	matched, modified, upserted, err := h.updateDocument(connCtx, params)
 	if err != nil {
 		return nil, handleUpdateError(params.DB, params.Collection, "update", err)
 	}
@@ -59,12 +62,9 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	res.Set("nModified", modified)
 	res.Set("ok", float64(1))
 
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+	return documentOpMsg(
 		res,
-	)))
-
-	return &reply, nil
+	)
 }
 
 // updateDocument iterate through all documents in collection and update them.

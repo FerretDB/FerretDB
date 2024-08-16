@@ -16,8 +16,7 @@ package common
 
 import (
 	"fmt"
-
-	"go.uber.org/zap"
+	"log/slog"
 
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
@@ -34,17 +33,18 @@ type InsertParams struct {
 	Collection string       `ferretdb:"insert,collection"`
 	Ordered    bool         `ferretdb:"ordered,opt"`
 
-	MaxTimeMS                int64  `ferretdb:"maxTimeMS,ignored"`
-	WriteConcern             any    `ferretdb:"writeConcern,ignored"`
-	BypassDocumentValidation bool   `ferretdb:"bypassDocumentValidation,ignored"`
-	Comment                  string `ferretdb:"comment,ignored"`
-	LSID                     any    `ferretdb:"lsid,ignored"`
-	TxnNumber                int64  `ferretdb:"txnNumber,ignored"`
-	ClusterTime              any    `ferretdb:"$clusterTime,ignored"`
+	MaxTimeMS                int64           `ferretdb:"maxTimeMS,ignored"`
+	WriteConcern             any             `ferretdb:"writeConcern,ignored"`
+	BypassDocumentValidation bool            `ferretdb:"bypassDocumentValidation,ignored"`
+	Comment                  string          `ferretdb:"comment,ignored"`
+	LSID                     any             `ferretdb:"lsid,ignored"`
+	TxnNumber                int64           `ferretdb:"txnNumber,ignored"`
+	ClusterTime              any             `ferretdb:"$clusterTime,ignored"`
+	ReadPreference           *types.Document `ferretdb:"$readPreference,ignored"`
 }
 
 // GetInsertParams returns the parameters for an insert command.
-func GetInsertParams(document *types.Document, l *zap.Logger) (*InsertParams, error) {
+func GetInsertParams(document *types.Document, l *slog.Logger) (*InsertParams, error) {
 	params := InsertParams{
 		Ordered: true,
 	}

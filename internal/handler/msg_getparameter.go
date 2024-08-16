@@ -18,6 +18,8 @@ import (
 	"context"
 	"errors"
 
+	"github.com/FerretDB/wire"
+
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
@@ -25,12 +27,13 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgGetParameter implements `getParameter` command.
-func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := msg.Document()
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgGetParameter(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	document, err := opMsgDocument(msg)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -44,6 +47,11 @@ func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.O
 
 	common.Ignored(document, h.L, "comment")
 
+	mechanisms := must.NotFail(types.NewArray("PLAIN"))
+	if h.EnableNewAuth {
+		mechanisms = must.NotFail(types.NewArray("SCRAM-SHA-1", "SCRAM-SHA-256"))
+	}
+
 	parameters := must.NotFail(types.NewDocument(
 		// to add a new parameter, fill template and place it in the alphabetical order position
 		//"<name>", must.NotFail(types.NewDocument(
@@ -52,7 +60,7 @@ func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.O
 		//	"settableAtStartup", <bool>,
 		//)),
 		"authenticationMechanisms", must.NotFail(types.NewDocument(
-			"value", must.NotFail(types.NewArray("SCRAM-SHA-1", "SCRAM-SHA-256", "PLAIN")),
+			"value", mechanisms,
 			"settableAtRuntime", false,
 			"settableAtStartup", true,
 		)),
@@ -89,12 +97,9 @@ func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.O
 
 	resDoc.Set("ok", float64(1))
 
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+	return documentOpMsg(
 		resDoc,
-	)))
-
-	return &reply, nil
+	)
 }
 
 // selectParameters makes a selection of requested parameters.

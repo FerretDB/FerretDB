@@ -22,16 +22,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/url"
-	"sync"
-
-	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handler/registry"
-	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
@@ -39,8 +36,8 @@ import (
 type Config struct {
 	Listener ListenerConfig
 
-	// Logger to use; if nil, it uses the default global logger.
-	Logger *zap.Logger
+	// Logger to use; if nil, `slog.Default()` is used.
+	Logger *slog.Logger
 
 	// Handler to use; one of `postgresql` or `sqlite`.
 	Handler string
@@ -117,15 +114,13 @@ func New(config *Config) (*FerretDB, error) {
 
 	metrics := connmetrics.NewListenerMetrics()
 
-	log := config.Logger
-	if log == nil {
-		log = getGlobalLogger()
-	} else {
-		log = logging.WithHooks(log)
+	logger := config.Logger
+	if logger == nil {
+		logger = slog.Default()
 	}
 
 	h, closeBackend, err := registry.NewHandler(config.Handler, &registry.NewHandlerOpts{
-		Logger:        log,
+		Logger:        logger,
 		ConnMetrics:   metrics.ConnMetrics,
 		StateProvider: sp,
 		TCPHost:       config.Listener.TCP,
@@ -135,14 +130,18 @@ func New(config *Config) (*FerretDB, error) {
 		SQLiteURL: config.SQLiteURL,
 
 		TestOpts: registry.TestOpts{
-			CappedCleanupPercentage: 10, // handler expects it to be a non-zero value
+			CappedCleanupPercentage: 10,
+			BatchSize:               100,
 		},
 	})
 	if err != nil {
+		if closeBackend != nil {
+			closeBackend()
+		}
 		return nil, fmt.Errorf("failed to construct handler: %s", err)
 	}
 
-	l := clientconn.NewListener(&clientconn.NewListenerOpts{
+	l, err := clientconn.Listen(&clientconn.NewListenerOpts{
 		TCP:  config.Listener.TCP,
 		Unix: config.Listener.Unix,
 
@@ -154,8 +153,11 @@ func New(config *Config) (*FerretDB, error) {
 		Mode:    clientconn.NormalMode,
 		Metrics: metrics,
 		Handler: h,
-		Logger:  log,
+		Logger:  logger,
 	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to construct handler: %s", err)
+	}
 
 	return &FerretDB{
 		config:       config,
@@ -174,18 +176,9 @@ func New(config *Config) (*FerretDB, error) {
 func (f *FerretDB) Run(ctx context.Context) error {
 	defer f.closeBackend()
 
-	err := f.l.Run(ctx)
-	if errors.Is(err, context.Canceled) {
-		err = nil
-	}
+	f.l.Run(ctx)
 
-	if err != nil {
-		// Do not expose internal error details.
-		// If you need stable error values and/or types for some cases, please create an issue.
-		err = errors.New(err.Error())
-	}
-
-	return err
+	return nil
 }
 
 // MongoDBURI returns MongoDB URI for this FerretDB instance.
@@ -223,25 +216,4 @@ func (f *FerretDB) MongoDBURI() string {
 	}
 
 	return u.String()
-}
-
-var (
-	loggerOnce sync.Once
-	logger     *zap.Logger
-)
-
-// getGlobalLogger retrieves or creates a global logger using
-// a loggerOnce to ensure it is created only once.
-func getGlobalLogger() *zap.Logger {
-	loggerOnce.Do(func() {
-		level := zap.ErrorLevel
-		if version.Get().DebugBuild {
-			level = zap.DebugLevel
-		}
-
-		logging.Setup(level, "console", "")
-		logger = zap.L()
-	})
-
-	return logger
 }

@@ -17,18 +17,7 @@ tasks:
         go test -count=1 {{.RACE_FLAG}} -run=TestEnvData
         -tags=ferretdb_testenvdata .
         -target-backend=ferretdb-postgresql
-        -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb
-      - >
-        go test -count=1 {{.RACE_FLAG}} -run=TestEnvData
-        -tags=ferretdb_testenvdata .
-        -target-backend=ferretdb-postgresql
-        -postgresql-url=postgres://username:password@127.0.0.1:5433/ferretdb
-      - >
-        go test -count=1 {{.RACE_FLAG}} -run=TestEnvData
-        -tags=ferretdb_testenvdata .
-        -target-backend=ferretdb-sqlite
-        -sqlite-url=file:../tmp/sqlite-tests/
-      # no hana yet
+        -target-url='mongodb://127.0.0.1:27017/'
       - >
         go test -count=1 {{.RACE_FLAG}} -run=TestEnvData
         -tags=ferretdb_testenvdata .
@@ -44,18 +33,14 @@ tasks:
     cmds:
       - ../bin/golangci-lint{{exeExt}} run --config=.golangci.yml
       - ../bin/golangci-lint{{exeExt}} run --config=.golangci-new.yml
-
-      # Stop CI from failing too often; see https://github.com/quasilyte/go-consistent/issues/38.
-      # Still, note the output and fix the issues.
-      - cmd: ../bin/go-consistent{{exeExt}} -pedantic ./...
-        ignore_error: true
+      - ../bin/go-consistent{{exeExt}} -pedantic ./...
 
       - go vet -vettool=../bin/checkswitch{{exeExt}} ./...
       - go vet -vettool=../bin/checkcomments{{exeExt}} ./...
 
   integration-security:
     cmds:
-      - ../bin/govulncheck{{exeExt}} -test ./...
+      - ../bin/govulncheck{{exeExt}} -test -show=verbose,color ./...
 
   bench-postgresql:
     desc: "Run benchmarks for `postgresql` backend"

@@ -1,3 +1,17 @@
+// Copyright 2021 FerretDB Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 // Package main contains script that generates changes for the latest version.
 package main
 
@@ -14,12 +28,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const (
-	OrgOwner = "FerretDB"
-	Repo     = "FerretDB"
-)
-
-// The PR itself from the Github endpoint
+// PRItem represents GitHub's PR.
 type PRItem struct {
 	URL    string
 	Number int
@@ -32,32 +41,37 @@ type PRItem struct {
 	}
 }
 
-// The deconstructed template categories from the given template file
+// ReleaseTemplate represents template categories from the given template file.
 type ReleaseTemplate struct {
 	Changelog struct {
 		Categories []TemplateCategory `yaml:"categories"`
 	} `yaml:"changelog"`
 }
 
+// TemplateCategory represents a category in the template file.
 type TemplateCategory struct {
 	Title  string   `yaml:"title"`
 	Labels []string `yaml:"labels"`
 }
 
-// An intermediate struct to group PRs by labels and categories
+// GroupedPRs is an intermediate struct to group PRs by labels and categories.
 type GroupedPRs struct {
 	CategoryTitle string
 	PRs           []PRItem
 }
 
+// CategorizedPRs represents a slice of GroupedPRs.
 type CategorizedPRs struct {
 	Groups []GroupedPRs
 }
 
+// NewGitHubClient creates a new GitHub client with the given token.
+// FIXME: Use https://github.com/FerretDB/gh instead.
 func NewGitHubClient() *github.Client {
 	return github.NewClient(nil).WithAuthToken(os.Getenv("GITHUB_TOKEN"))
 }
 
+// GetMilestone fetches the milestone with the given title.
 func GetMilestone(ctx context.Context, client *github.Client, milestoneTitle string) (*github.Milestone, error) {
 	milestones, _, err := client.Issues.ListMilestones(ctx, "FerretDB", "FerretDB", &github.MilestoneListOptions{
 		State: "all",
@@ -75,6 +89,7 @@ func GetMilestone(ctx context.Context, client *github.Client, milestoneTitle str
 	return nil, fmt.Errorf("no milestone found with the name %s", milestoneTitle)
 }
 
+// ListMergedPRsOnMilestone fetches merged PRs on the given milestone.
 func ListMergedPRsOnMilestone(ctx context.Context, client *github.Client, milestoneNumber int) ([]PRItem, error) {
 	issues, _, err := client.Issues.ListByRepo(
 		ctx,
@@ -94,9 +109,9 @@ func ListMergedPRsOnMilestone(ctx context.Context, client *github.Client, milest
 			continue
 		}
 
-		labels := []struct {
+		var labels []struct {
 			Name string
-		}{}
+		}
 
 		for _, label := range issue.Labels {
 			labels = append(labels, struct{ Name string }{Name: *label.Name})
@@ -118,7 +133,7 @@ func ListMergedPRsOnMilestone(ctx context.Context, client *github.Client, milest
 	return prItems, nil
 }
 
-// Loads the given release template
+// LoadReleaseTemplate loads the given release template.
 func LoadReleaseTemplate(filePath string) (*ReleaseTemplate, error) {
 	bytes, err := os.ReadFile(filePath)
 	if err != nil {
@@ -134,7 +149,7 @@ func LoadReleaseTemplate(filePath string) (*ReleaseTemplate, error) {
 	return &template, nil
 }
 
-// Helper function that generates slice of PRItems with input slice of PRs and set of labels
+// collectPRItemsWithLabels generates slice of PRItems with input slice of PRs and set of labels.
 func collectPRItemsWithLabels(prItems []PRItem, labelSet map[string]struct{}) []PRItem {
 	res := []PRItem{}
 
@@ -150,7 +165,7 @@ func collectPRItemsWithLabels(prItems []PRItem, labelSet map[string]struct{}) []
 	return res
 }
 
-// Generating a Group of PRs based on the template category
+// groupPRsByTemplateCategory generates a group of PRs based on the template category.
 func groupPRsByTemplateCategory(prItems []PRItem, templateCategory TemplateCategory) *GroupedPRs {
 	labelSet := make(map[string]struct{})
 
@@ -165,7 +180,7 @@ func groupPRsByTemplateCategory(prItems []PRItem, templateCategory TemplateCateg
 	}
 }
 
-// Iterating through the categories and generating Groups of PRs
+// GroupPRsByCategories iterates through the categories and generates Groups of PRs.
 func GroupPRsByCategories(prItems []PRItem, categories []TemplateCategory) CategorizedPRs {
 	var categorizedPRs CategorizedPRs
 
@@ -179,7 +194,7 @@ func GroupPRsByCategories(prItems []PRItem, categories []TemplateCategory) Categ
 	return categorizedPRs
 }
 
-// Rendering markdown based on template to stdout
+// RenderMarkdownFromFile renders markdown based on template to stdout.
 func RenderMarkdownFromFile(categorizedPRs CategorizedPRs, templatePath string) error {
 	tmpl, err := template.ParseFiles(templatePath)
 	if err != nil {

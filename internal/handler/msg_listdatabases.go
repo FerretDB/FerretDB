@@ -17,19 +17,21 @@ package handler
 import (
 	"context"
 
-	"go.uber.org/zap"
+	"github.com/FerretDB/wire"
 
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgListDatabases implements `listDatabases` command.
-func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := msg.Document()
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgListDatabases(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	document, err := opMsgDocument(msg)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -52,7 +54,7 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 		}
 	}
 
-	res, err := h.b.ListDatabases(ctx, nil)
+	res, err := h.b.ListDatabases(connCtx, nil)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -64,13 +66,13 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 	for _, dbInfo := range res.Databases {
 		db, err := h.b.Database(dbInfo.Name)
 		if err != nil {
-			h.L.Warn("Failed to get database", zap.Error(err))
+			h.L.WarnContext(connCtx, "Failed to get database", logging.Error(err))
 			continue
 		}
 
-		stats, err := db.Stats(ctx, nil)
+		stats, err := db.Stats(connCtx, nil)
 		if err != nil {
-			h.L.Warn("Failed to get database stats", zap.Error(err))
+			h.L.WarnContext(connCtx, "Failed to get database stats", logging.Error(err))
 			continue
 		}
 
@@ -98,26 +100,22 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 		}
 	}
 
-	var reply wire.OpMsg
-
 	switch {
 	case nameOnly:
-		must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+		return documentOpMsg(
 			must.NotFail(types.NewDocument(
 				"databases", databases,
 				"ok", float64(1),
 			)),
-		)))
+		)
 	default:
-		must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+		return documentOpMsg(
 			must.NotFail(types.NewDocument(
 				"databases", databases,
 				"totalSize", totalSize,
 				"totalSizeMb", totalSize/1024/1024,
 				"ok", float64(1),
 			)),
-		)))
+		)
 	}
-
-	return &reply, nil
 }

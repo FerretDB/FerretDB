@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"math"
 	"runtime"
-	"sort"
+	"slices"
 	"strconv"
 	"sync"
 	"testing"
@@ -31,12 +31,13 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
+
+	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 func TestCommandsAdministrationCreateDropList(t *testing.T) {
@@ -180,8 +181,7 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 		},
 		"Regex": {
 			filter: bson.D{
-				{Key: "name", Value: name},
-				{Key: "name", Value: primitive.Regex{Pattern: "^Test", Options: "i"}},
+				{Key: "name", Value: primitive.Regex{Pattern: "ListDatabases$", Options: "i"}},
 			},
 			expected: mongo.ListDatabasesResult{
 				Databases: []mongo.DatabaseSpecification{{
@@ -191,8 +191,7 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 		},
 		"RegexNameOnly": {
 			filter: bson.D{
-				{Key: "name", Value: name},
-				{Key: "name", Value: primitive.Regex{Pattern: "^Test", Options: "i"}},
+				{Key: "name", Value: primitive.Regex{Pattern: "ListDatabases$", Options: "i"}},
 			},
 			opts: []*options.ListDatabasesOptions{
 				options.ListDatabases().SetNameOnly(true),
@@ -212,7 +211,6 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 		},
 		"RegexNotFound": {
 			filter: bson.D{
-				{Key: "name", Value: name},
 				{Key: "name", Value: primitive.Regex{Pattern: "^xyz$", Options: "i"}},
 			},
 			expected: mongo.ListDatabasesResult{
@@ -221,7 +219,6 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 		},
 		"RegexNotFoundNameOnly": {
 			filter: bson.D{
-				{Key: "name", Value: name},
 				{Key: "name", Value: primitive.Regex{Pattern: "^xyz$", Options: "i"}},
 			},
 			opts: []*options.ListDatabasesOptions{
@@ -846,8 +843,8 @@ func TestGetParameterCommandAuthenticationMechanisms(t *testing.T) {
 		require.Equal(t, true, settableAtStartup)
 	})
 
-	t.Run("Plain", func(t *testing.T) {
-		setup.SkipForMongoDB(t, "PLAIN authentication mechanism is not support by MongoDB")
+	t.Run("SCRAM", func(tt *testing.T) {
+		t := setup.FailsForMongoDB(tt, "MongoDB supports more mechanisms")
 
 		var res bson.D
 		err := s.Collection.Database().RunCommand(s.Ctx, bson.D{
@@ -857,11 +854,32 @@ func TestGetParameterCommandAuthenticationMechanisms(t *testing.T) {
 		require.NoError(t, err)
 
 		expected := bson.D{
-			{"authenticationMechanisms", bson.A{"SCRAM-SHA-1", "SCRAM-SHA-256", "PLAIN"}},
+			{"authenticationMechanisms", bson.A{"SCRAM-SHA-1", "SCRAM-SHA-256"}},
 			{"ok", float64(1)},
 		}
 		require.Equal(t, expected, res)
 	})
+}
+
+func TestGetParameterCommandAuthenticationMechanismsPLAIN(tt *testing.T) {
+	tt.Parallel()
+
+	s := setup.SetupWithOpts(tt, &setup.SetupOpts{BackendOptions: &setup.BackendOpts{DisableNewAuth: true}})
+
+	t := setup.FailsForMongoDB(tt, "PLAIN authentication mechanism is not support by MongoDB")
+
+	var res bson.D
+	err := s.Collection.Database().RunCommand(s.Ctx, bson.D{
+		{"getParameter", bson.D{}},
+		{"authenticationMechanisms", 1},
+	}).Decode(&res)
+	require.NoError(t, err)
+
+	expected := bson.D{
+		{"authenticationMechanisms", bson.A{"PLAIN"}},
+		{"ok", float64(1)},
+	}
+	require.Equal(t, expected, res)
 }
 
 func TestCommandsAdministrationBuildInfo(t *testing.T) {
@@ -1481,7 +1499,7 @@ func TestCommandsAdministrationServerStatusMetrics(t *testing.T) {
 
 			actualFields := actualDoc.Keys()
 
-			sort.Strings(actualFields)
+			slices.Sort(actualFields)
 
 			var actualNotZeros []string
 			for key, value := range actualDoc.Map() {
@@ -1731,9 +1749,10 @@ func TestCommandsAdministrationCompactCapped(t *testing.T) {
 			expectedDocuments: 11,
 		},
 		"OverflowSize": {
-			force:           true,
-			sizeInBytes:     256,
-			insertDocuments: 20,
+			force:             true,
+			cleanupPercentage: 20,
+			sizeInBytes:       256,
+			insertDocuments:   20,
 			// cleanup will be based on size
 			// [insertDocuments * 0.2 (cleanup 20%)] + 1 (extra insert after compact)
 			expectedDocuments: 17,
@@ -1765,12 +1784,7 @@ func TestCommandsAdministrationCompactCapped(t *testing.T) {
 				setup.SkipForMongoDB(t, tc.skipForMongoDB)
 			}
 
-			beOpts := setup.NewBackendOpts()
-			if tc.cleanupPercentage != 0 {
-				beOpts.CappedCleanupPercentage = tc.cleanupPercentage
-			}
-
-			s := setup.SetupWithOpts(t, &setup.SetupOpts{BackendOptions: beOpts})
+			s := setup.SetupWithOpts(t, &setup.SetupOpts{BackendOptions: &setup.BackendOpts{CappedCleanupPercentage: tc.cleanupPercentage}})
 			ctx, coll := s.Ctx, s.Collection
 
 			collName := testutil.CollectionName(t) + name

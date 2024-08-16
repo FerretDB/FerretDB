@@ -1,3 +1,17 @@
+// Copyright 2021 FerretDB Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package main
 
 import (
@@ -80,7 +94,8 @@ func TestLoadReleaseTemplate(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedNumCategories := 3
-	assert.Len(t, template.Changelog.Categories, expectedNumCategories, fmt.Sprintf("Expected %d categories", expectedNumCategories))
+	assert.Len(t, template.Changelog.Categories, expectedNumCategories,
+		fmt.Sprintf("Expected %d categories", expectedNumCategories))
 
 	expectedCategories := []TemplateCategory{
 		{Title: "features", Labels: []string{"code/feature"}},
@@ -230,7 +245,8 @@ func TestRenderMarkdownFromFile(t *testing.T) {
 	var buf bytes.Buffer
 	io.Copy(&buf, r)
 
-	expectedOutput := "\n### Features 🎉\n- Add feature X by @dev1 in https://github.com/FerretDB/FerretDB/pull/1\n### Bugs 🐛\n- Fix bug Y by @dev2 in https://github.com/FerretDB/FerretDB/pull/2\n"
+	expectedOutput := "\n### Features 🎉\n- Add feature X by @dev1 in https://github.com/FerretDB/FerretDB/pull/1\n" +
+		"### Bugs 🐛\n- Fix bug Y by @dev2 in https://github.com/FerretDB/FerretDB/pull/2\n"
 
 	assert.Equal(t, expectedOutput, buf.String(), "Expected rendered markdown to be equal")
 }
@@ -243,7 +259,8 @@ func TestGenerateChangelogIntegration(t *testing.T) {
 	template, err := LoadReleaseTemplate(releaseYamlFile)
 	require.NoError(t, err)
 	expectedNumCategories := 6
-	assert.Len(t, template.Changelog.Categories, expectedNumCategories, fmt.Sprintf("Expected %d categories", expectedNumCategories))
+	assert.Len(t, template.Changelog.Categories, expectedNumCategories,
+		fmt.Sprintf("Expected %d categories", expectedNumCategories))
 
 	ctx := context.Background()
 	client := NewGitHubClient()
@@ -258,6 +275,7 @@ func TestGenerateChangelogIntegration(t *testing.T) {
 
 	prItems, err := ListMergedPRsOnMilestone(ctx, client, *milestone.Number)
 	expectedNumberOfPRs := 21
+	require.NoError(t, err)
 	require.Len(t, prItems, expectedNumberOfPRs, "The number of PR items does not match the expected")
 
 	categorizedPRs := GroupPRsByCategories(prItems, template.Changelog.Categories)
@@ -279,7 +297,39 @@ func TestGenerateChangelogIntegration(t *testing.T) {
 	var buf bytes.Buffer
 	io.Copy(&buf, r)
 
-	expectedOutput := "\n### New Features 🎉\n\n- Support `listIndexes` command by @rumyantseva in https://api.github.com/repos/FerretDB/FerretDB/issues/1960\n- Pushdown Tigris queries with dot notation by @noisersup in https://api.github.com/repos/FerretDB/FerretDB/issues/1908\n- Support Tigris pushdowns for numbers by @noisersup in https://api.github.com/repos/FerretDB/FerretDB/issues/1842\n\n### Fixed Bugs 🐛\n\n- Fix key ordering on document replacing by @noisersup in https://api.github.com/repos/FerretDB/FerretDB/issues/1946\n- Fix SASL response for `PLAIN` authentication by @b1ron in https://api.github.com/repos/FerretDB/FerretDB/issues/1942\n- Fix `$pop` operator error handling of non-existent path by @chilagrow in https://api.github.com/repos/FerretDB/FerretDB/issues/1907\n\n### Documentation 📄\n\n- Prepare v0.9.1 release by @AlekSi in https://api.github.com/repos/FerretDB/FerretDB/issues/1958\n- Fix broken link by @Fashander in https://api.github.com/repos/FerretDB/FerretDB/issues/1918\n- Add blog post on \"MongoDB Alternatives: 5 Database Alternatives to MongoDB for 2023\" by @Fashander in https://api.github.com/repos/FerretDB/FerretDB/issues/1911\n- Bump deps by @AlekSi in https://api.github.com/repos/FerretDB/FerretDB/issues/1902\n\n### Other Changes 🤖\n\n- Prepare v0.9.1 release by @AlekSi in https://api.github.com/repos/FerretDB/FerretDB/issues/1958\n- Remove `skipTigrisPushdown` from tests by @noisersup in https://api.github.com/repos/FerretDB/FerretDB/issues/1957\n- Rename function, add TODO by @AlekSi in https://api.github.com/repos/FerretDB/FerretDB/issues/1955\n- Tweak CI settings by @AlekSi in https://api.github.com/repos/FerretDB/FerretDB/issues/1948\n- Add `iterator.WithClose` helper by @AlekSi in https://api.github.com/repos/FerretDB/FerretDB/issues/1947\n- Implement Tigris query iterator by @w84thesun in https://api.github.com/repos/FerretDB/FerretDB/issues/1924\n- Remove unused parameter by @AlekSi in https://api.github.com/repos/FerretDB/FerretDB/issues/1919\n- Bump Tigris by @AlekSi in https://api.github.com/repos/FerretDB/FerretDB/issues/1916\n- Assorted internal tweaks by @AlekSi in https://api.github.com/repos/FerretDB/FerretDB/issues/1909\n- Bump deps by @AlekSi in https://api.github.com/repos/FerretDB/FerretDB/issues/1902\n- Use multiple Tigris instances to run tests by @chilagrow in https://api.github.com/repos/FerretDB/FerretDB/issues/1878\n- Add simple `otel` tracing to collect data from tests by @rumyantseva in https://api.github.com/repos/FerretDB/FerretDB/issues/1863\n- Rework on integration test setup by @chilagrow in https://api.github.com/repos/FerretDB/FerretDB/issues/1857\n\n"
+	expectedOutput := "\n### New Features 🎉\n\n" +
+		"- Support `listIndexes` command by @rumyantseva in https://api.github.com/repos/FerretDB/FerretDB/issues/1960\n" +
+		"- Pushdown Tigris queries with dot notation by @noisersup in " +
+		"https://api.github.com/repos/FerretDB/FerretDB/issues/1908\n" +
+		"- Support Tigris pushdowns for numbers by @noisersup in https://api.github.com/repos/FerretDB/FerretDB/issues/1842\n\n" +
+		"### Fixed Bugs 🐛\n\n- Fix key ordering on document replacing by @noisersup in " +
+		"https://api.github.com/repos/FerretDB/FerretDB/issues/1946\n" +
+		"- Fix SASL response for `PLAIN` authentication by @b1ron in " +
+		"https://api.github.com/repos/FerretDB/FerretDB/issues/1942\n" +
+		"- Fix `$pop` operator error handling of non-existent path by @chilagrow in " +
+		"https://api.github.com/repos/FerretDB/FerretDB/issues/1907\n\n" +
+		"### Documentation 📄\n\n- Prepare v0.9.1 release by @AlekSi in " +
+		"https://api.github.com/repos/FerretDB/FerretDB/issues/1958\n" +
+		"- Fix broken link by @Fashander in https://api.github.com/repos/FerretDB/FerretDB/issues/1918\n" +
+		"- Add blog post on \"MongoDB Alternatives: 5 Database Alternatives to MongoDB for 2023\"" +
+		"by @Fashander in https://api.github.com/repos/FerretDB/FerretDB/issues/1911\n" +
+		"- Bump deps by @AlekSi in https://api.github.com/repos/FerretDB/FerretDB/issues/1902\n\n" +
+		"### Other Changes 🤖\n\n- Prepare v0.9.1 release by @AlekSi in " +
+		"https://api.github.com/repos/FerretDB/FerretDB/issues/195+8\n" +
+		"- Remove `skipTigrisPushdown` from tests by @noisersup in https://api.github.com/repos/FerretDB/FerretDB/issues/1957\n" +
+		"- Rename function, add TODO by @AlekSi in https://api.github.com/repos/FerretDB/FerretDB/issues/1955\n" +
+		"- Tweak CI settings by @AlekSi in https://api.github.com/repos/FerretDB/FerretDB/issues/1948\n" +
+		"- Add `iterator.WithClose` helper by @AlekSi in https://api.github.com/repos/FerretDB/FerretDB/issues/1947\n" +
+		"- Implement Tigris query iterator by @w84thesun in https://api.github.com/repos/FerretDB/FerretDB/issues/1924\n" +
+		"- Remove unused parameter by @AlekSi in https://api.github.com/repos/FerretDB/FerretDB/issues/1919\n" +
+		"- Bump Tigris by @AlekSi in https://api.github.com/repos/FerretDB/FerretDB/issues/1916\n" +
+		"- Assorted internal tweaks by @AlekSi in https://api.github.com/repos/FerretDB/FerretDB/issues/1909\n" +
+		"- Bump deps by @AlekSi in https://api.github.com/repos/FerretDB/FerretDB/issues/1902\n" +
+		"- Use multiple Tigris instances to run tests by @chilagrow in " +
+		"https://api.github.com/repos/FerretDB/FerretDB/issues/1878\n" +
+		"- Add simple `otel` tracing to collect data from tests by @rumyantseva in " +
+		"https://api.github.com/repos/FerretDB/FerretDB/issues/1863\n" +
+		"- Rework on integration test setup by @chilagrow in https://api.github.com/repos/FerretDB/FerretDB/issues/1857\n\n"
 
 	assert.Equal(t, expectedOutput, buf.String(), "Expected rendered markdown to be equal")
 }

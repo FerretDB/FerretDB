@@ -19,21 +19,26 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"sync"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/otel"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/decorators/oplog"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
+	"github.com/FerretDB/FerretDB/internal/handler/users"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/password"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
@@ -41,6 +46,15 @@ import (
 const (
 	namespace = "ferretdb"
 	subsystem = "handler"
+
+	// Maximum size of a batch for inserting data.
+	maxWriteBatchSize = int32(100000)
+
+	// Required by C# driver for `IsMaster` and `hello` op reply, without it `DPANIC` is thrown.
+	connectionID = int32(42)
+
+	// Default session timeout in minutes.
+	logicalSessionTimeoutMinutes = int32(30)
 )
 
 // Handler provides a set of methods to process clients' requests sent over wire protocol.
@@ -55,7 +69,7 @@ type Handler struct {
 	b backends.Backend
 
 	cursors  *cursor.Registry
-	commands map[string]command
+	commands map[string]*command
 	wg       sync.WaitGroup
 
 	cappedCleanupStop             chan struct{}
@@ -71,7 +85,12 @@ type NewOpts struct {
 	TCPHost     string
 	ReplSetName string
 
-	L             *zap.Logger
+	SetupDatabase string
+	SetupUsername string
+	SetupPassword password.Password
+	SetupTimeout  time.Duration
+
+	L             *slog.Logger
 	ConnMetrics   *connmetrics.ConnMetrics
 	StateProvider *state.Provider
 
@@ -82,11 +101,14 @@ type NewOpts struct {
 	CappedCleanupPercentage uint8
 	EnableNewAuth           bool
 	BatchSize               int
+	MaxBsonObjectSizeBytes  int
 }
 
 // New returns a new handler.
 func New(opts *NewOpts) (*Handler, error) {
-	b := oplog.NewBackend(opts.Backend, opts.L.Named("oplog"))
+	if opts.CappedCleanupPercentage == 0 {
+		opts.CappedCleanupPercentage = 10
+	}
 
 	if opts.CappedCleanupPercentage >= 100 || opts.CappedCleanupPercentage <= 0 {
 		return nil, fmt.Errorf(
@@ -95,10 +117,16 @@ func New(opts *NewOpts) (*Handler, error) {
 		)
 	}
 
+	if opts.MaxBsonObjectSizeBytes == 0 {
+		opts.MaxBsonObjectSizeBytes = types.MaxDocumentLen
+	}
+
+	b := oplog.NewBackend(opts.Backend, logging.WithName(opts.L, "oplog"))
+
 	h := &Handler{
 		b:       b,
 		NewOpts: opts,
-		cursors: cursor.NewRegistry(opts.L.Named("cursors")),
+		cursors: cursor.NewRegistry(logging.WithName(opts.L, "cursors")),
 
 		cappedCleanupStop: make(chan struct{}),
 		cleanupCappedCollectionsDocs: prometheus.NewCounterVec(
@@ -121,6 +149,11 @@ func New(opts *NewOpts) (*Handler, error) {
 		),
 	}
 
+	if err := h.setup(); err != nil {
+		h.Close()
+		return nil, lazyerrors.Error(err)
+	}
+
 	h.initCommands()
 
 	h.wg.Add(1)
@@ -134,6 +167,85 @@ func New(opts *NewOpts) (*Handler, error) {
 	return h, nil
 }
 
+// Setup creates initial database and user if needed.
+func (h *Handler) setup() error {
+	if h.SetupDatabase == "" {
+		return nil
+	}
+
+	ctx, span := otel.Tracer("").Start(context.TODO(), "HandlerSetup")
+	defer span.End()
+
+	if h.SetupTimeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, h.SetupTimeout)
+		defer cancel()
+	}
+
+	info := conninfo.New()
+	info.SetBypassBackendAuth()
+
+	ctx = conninfo.Ctx(ctx, info)
+
+	l := logging.WithName(h.L, "setup")
+
+	var retry int64
+
+	for ctx.Err() == nil {
+		_, err := h.b.Status(ctx, nil)
+		if err == nil {
+			break
+		}
+
+		l.DebugContext(ctx, "Status failed", logging.Error(err))
+
+		retry++
+		ctxutil.SleepWithJitter(ctx, time.Second, retry)
+	}
+
+	res, err := h.b.ListDatabases(ctx, &backends.ListDatabasesParams{Name: h.SetupDatabase})
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	if len(res.Databases) > 0 {
+		l.DebugContext(ctx, "Database already exists")
+		return nil
+	}
+
+	l.InfoContext(
+		ctx,
+		"Setting up database and user",
+		slog.String("database", h.SetupDatabase),
+		slog.String("username", h.SetupUsername),
+	)
+
+	db, err := h.b.Database(h.SetupDatabase)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	// that's the only way to create a database
+	if err = db.CreateCollection(ctx, &backends.CreateCollectionParams{Name: "setup"}); err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	if err = db.DropCollection(ctx, &backends.DropCollectionParams{Name: "setup"}); err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	err = users.CreateUser(ctx, h.b, &users.CreateUserParams{
+		Database: h.SetupDatabase,
+		Username: h.SetupUsername,
+		Password: h.SetupPassword,
+	})
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	return nil
+}
+
 // runCappedCleanup calls capped collections cleanup function according to the given interval.
 func (h *Handler) runCappedCleanup() {
 	if h.CappedCleanupInterval <= 0 {
@@ -141,7 +253,7 @@ func (h *Handler) runCappedCleanup() {
 		return
 	}
 
-	h.L.Info("Capped collections cleanup enabled.", zap.Duration("interval", h.CappedCleanupInterval))
+	h.L.Info("Capped collections cleanup enabled.", slog.Duration("interval", h.CappedCleanupInterval))
 
 	ticker := time.NewTicker(h.CappedCleanupInterval)
 	defer ticker.Stop()
@@ -150,7 +262,7 @@ func (h *Handler) runCappedCleanup() {
 		select {
 		case <-ticker.C:
 			if err := h.cleanupAllCappedCollections(context.Background()); err != nil {
-				h.L.Error("Failed to cleanup capped collections.", zap.Error(err))
+				h.L.Error("Failed to cleanup capped collections.", logging.Error(err))
 			}
 
 		case <-h.cappedCleanupStop:
@@ -168,7 +280,7 @@ func (h *Handler) Close() {
 	h.wg.Wait()
 }
 
-// Describe implements prometheus.Collector interface.
+// Describe implements [prometheus.Collector].
 func (h *Handler) Describe(ch chan<- *prometheus.Desc) {
 	h.b.Describe(ch)
 	h.cursors.Describe(ch)
@@ -176,7 +288,7 @@ func (h *Handler) Describe(ch chan<- *prometheus.Desc) {
 	h.cleanupCappedCollectionsBytes.Describe(ch)
 }
 
-// Collect implements prometheus.Collector interface.
+// Collect implements [prometheus.Collector].
 func (h *Handler) Collect(ch chan<- prometheus.Metric) {
 	h.b.Collect(ch)
 	h.cursors.Collect(ch)
@@ -186,11 +298,13 @@ func (h *Handler) Collect(ch chan<- prometheus.Metric) {
 
 // cleanupAllCappedCollections drops the given percent of documents from all capped collections.
 func (h *Handler) cleanupAllCappedCollections(ctx context.Context) error {
-	h.L.Debug("cleanupAllCappedCollections: started", zap.Uint8("percentage", h.CappedCleanupPercentage))
+	ctx, span := otel.Tracer("").Start(ctx, "HandlerCleanupAllCappedCollections")
+	h.L.DebugContext(ctx, "cleanupAllCappedCollections: started", slog.Int("percentage", int(h.CappedCleanupPercentage)))
 
 	start := time.Now()
 	defer func() {
-		h.L.Debug("cleanupAllCappedCollections: finished", zap.Duration("duration", time.Since(start)))
+		span.End()
+		h.L.DebugContext(ctx, "cleanupAllCappedCollections: finished", slog.Duration("duration", time.Since(start)))
 	}()
 
 	connInfo := conninfo.New()
@@ -229,9 +343,13 @@ func (h *Handler) cleanupAllCappedCollections(ctx context.Context) error {
 			}
 
 			if deleted > 0 || bytesFreed > 0 {
-				h.L.Info("Capped collection cleaned up.",
-					zap.String("db", dbInfo.Name), zap.String("collection", cInfo.Name),
-					zap.Int32("deleted", deleted), zap.Int64("bytesFreed", bytesFreed),
+				h.L.InfoContext(
+					ctx,
+					"Capped collection cleaned up",
+					slog.String("db", dbInfo.Name),
+					slog.String("collection", cInfo.Name),
+					slog.Int("deleted", int(deleted)),
+					slog.Int64("bytes_freed", bytesFreed),
 				)
 			}
 
@@ -260,7 +378,14 @@ func (h *Handler) cleanupCappedCollection(ctx context.Context, db backends.Datab
 	if err != nil {
 		return 0, 0, lazyerrors.Error(err)
 	}
-	h.L.Debug("cleanupCappedCollection: stats before", zap.Any("stats", statsBefore))
+
+	h.L.DebugContext(
+		ctx,
+		"cleanupCappedCollection: stats before",
+		slog.Int64("size_total", statsBefore.SizeTotal),
+		slog.Int64("size_collection", statsBefore.SizeCollection),
+		slog.Int64("count_documents", statsBefore.CountDocuments),
+	)
 
 	// In order to be more precise w.r.t number of documents getting dropped and to avoid
 	// deleting too many documents unnecessarily,
@@ -281,7 +406,13 @@ func (h *Handler) cleanupCappedCollection(ctx context.Context, db backends.Datab
 			return 0, 0, lazyerrors.Error(err)
 		}
 
-		h.L.Debug("cleanupCappedCollection: stats after document count reduction", zap.Any("stats", statsAfter))
+		h.L.DebugContext(
+			ctx,
+			"cleanupCappedCollection: stats after document count reduction",
+			slog.Int64("size_total", statsAfter.SizeTotal),
+			slog.Int64("size_collection", statsAfter.SizeCollection),
+			slog.Int64("count_documents", statsAfter.CountDocuments),
+		)
 
 		docsDeleted += int32(count)
 		bytesFreed += (statsBefore.SizeTotal - statsAfter.SizeTotal)
@@ -307,7 +438,13 @@ func (h *Handler) cleanupCappedCollection(ctx context.Context, db backends.Datab
 		return 0, 0, lazyerrors.Error(err)
 	}
 
-	h.L.Debug("cleanupCappedCollection: stats after compact", zap.Any("stats", statsAfter))
+	h.L.DebugContext(
+		ctx,
+		"cleanupCappedCollection: stats after compact",
+		slog.Int64("size_total", statsAfter.SizeTotal),
+		slog.Int64("size_collection", statsAfter.SizeCollection),
+		slog.Int64("count_documents", statsAfter.CountDocuments),
+	)
 
 	bytesFreed += (statsBefore.SizeTotal - statsAfter.SizeTotal)
 

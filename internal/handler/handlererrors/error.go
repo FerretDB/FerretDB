@@ -18,8 +18,7 @@ package handlererrors
 import (
 	"errors"
 
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/wire"
+	"github.com/FerretDB/wire/wirebson"
 )
 
 //go:generate ../../../bin/stringer -linecomment -type ErrorCode
@@ -128,6 +127,9 @@ const (
 
 	// ErrMechanismUnavailable indicates that the authentication mechanism is unavailable.
 	ErrMechanismUnavailable = ErrorCode(334)
+
+	// ErrUnsupportedOpQueryCommand indicates that given op query is not supported.
+	ErrUnsupportedOpQueryCommand = ErrorCode(352) // UnsupportedOpQueryCommand
 
 	// ErrIndexesWrongType indicates that indexes parameter has wrong type.
 	ErrIndexesWrongType = ErrorCode(10065) // Location10065
@@ -333,6 +335,9 @@ const (
 	// ErrStageCollStatsInvalidArg indicates invalid argument for the aggregation $collStats stage.
 	ErrStageCollStatsInvalidArg = ErrorCode(5447000) // Location5447000
 
+	// ErrOpQueryCollectionSuffixMissing indicates that op query collection does not contain .$cmd suffix.
+	ErrOpQueryCollectionSuffixMissing = ErrorCode(5739101) // Location5739101
+
 	// ErrStageIndexedStringVectorDuplicate indicates that input to IndexedStringVector contained duplicate values.
 	ErrStageIndexedStringVectorDuplicate = ErrorCode(7582300) // Location7582300
 )
@@ -348,7 +353,7 @@ type ProtoErr interface {
 	error
 
 	// Document returns error representation for returning to the client.
-	Document() *types.Document
+	Document() *wirebson.Document
 
 	// Info returns additional error information, or nil.
 	Info() *ErrInfo
@@ -358,7 +363,6 @@ type ProtoErr interface {
 //
 // Nil panics (it never should be passed),
 // [*CommandError] or [*WriteErrors] (possibly wrapped) are returned unwrapped,
-// [*wire.ValidationError] (possibly wrapped) is returned as CommandError with BadValue code,
 // any other values (including lazy errors) are returned as CommandError with InternalError code.
 func ProtocolError(err error) ProtoErr {
 	if err == nil {
@@ -373,12 +377,6 @@ func ProtocolError(err error) ProtoErr {
 	var writeErr *WriteErrors
 	if errors.As(err, &writeErr) {
 		return writeErr
-	}
-
-	var validationErr *wire.ValidationError
-	if errors.As(err, &validationErr) {
-		//nolint:errorlint // only *CommandError could be returned
-		return NewCommandError(ErrBadValue, err).(*CommandError)
 	}
 
 	//nolint:errorlint // only *CommandError could be returned

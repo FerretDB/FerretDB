@@ -19,8 +19,10 @@ import (
 	"context"
 	"slices"
 
+	"go.opentelemetry.io/otel"
+	otelcodes "go.opentelemetry.io/otel/codes"
+
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
 
 // Database is a generic interface for all backends for accessing databases.
@@ -106,9 +108,14 @@ func (ci *CollectionInfo) Capped() bool {
 //
 // Database may not exist; that's not an error.
 func (dbc *databaseContract) ListCollections(ctx context.Context, params *ListCollectionsParams) (*ListCollectionsResult, error) {
-	defer observability.FuncCall(ctx)()
+	ctx, span := otel.Tracer("").Start(ctx, "ListCollections")
+	defer span.End()
 
 	res, err := dbc.db.ListCollections(ctx, params)
+	if err != nil {
+		span.SetStatus(otelcodes.Error, "")
+	}
+
 	checkError(err)
 
 	if res != nil && len(res.Collections) > 0 {
@@ -142,7 +149,8 @@ func (ccp *CreateCollectionParams) Capped() bool {
 //
 // Database may or may not exist; it should be created automatically if needed.
 func (dbc *databaseContract) CreateCollection(ctx context.Context, params *CreateCollectionParams) error {
-	defer observability.FuncCall(ctx)()
+	ctx, span := otel.Tracer("").Start(ctx, "CreateCollection")
+	defer span.End()
 
 	must.BeTrue(params.CappedSize >= 0)
 	must.BeTrue(params.CappedDocuments >= 0)
@@ -150,6 +158,10 @@ func (dbc *databaseContract) CreateCollection(ctx context.Context, params *Creat
 	err := validateCollectionName(params.Name)
 	if err == nil {
 		err = dbc.db.CreateCollection(ctx, params)
+	}
+
+	if err != nil {
+		span.SetStatus(otelcodes.Error, "")
 	}
 
 	checkError(err, ErrorCodeCollectionNameIsInvalid, ErrorCodeCollectionAlreadyExists)
@@ -166,11 +178,16 @@ type DropCollectionParams struct {
 //
 // The errors for non-existing database and non-existing collection are the same.
 func (dbc *databaseContract) DropCollection(ctx context.Context, params *DropCollectionParams) error {
-	defer observability.FuncCall(ctx)()
+	ctx, span := otel.Tracer("").Start(ctx, "DropCollection")
+	defer span.End()
 
 	err := validateCollectionName(params.Name)
 	if err == nil {
 		err = dbc.db.DropCollection(ctx, params)
+	}
+
+	if err != nil {
+		span.SetStatus(otelcodes.Error, "")
 	}
 
 	checkError(err, ErrorCodeCollectionNameIsInvalid, ErrorCodeCollectionDoesNotExist)
@@ -189,7 +206,8 @@ type RenameCollectionParams struct {
 //
 // The errors for non-existing database and non-existing collection are the same.
 func (dbc *databaseContract) RenameCollection(ctx context.Context, params *RenameCollectionParams) error {
-	defer observability.FuncCall(ctx)()
+	ctx, span := otel.Tracer("").Start(ctx, "RenameCollection")
+	defer span.End()
 
 	err := validateCollectionName(params.OldName)
 
@@ -199,6 +217,10 @@ func (dbc *databaseContract) RenameCollection(ctx context.Context, params *Renam
 
 	if err == nil {
 		err = dbc.db.RenameCollection(ctx, params)
+	}
+
+	if err != nil {
+		span.SetStatus(otelcodes.Error, "")
 	}
 
 	checkError(err, ErrorCodeCollectionNameIsInvalid, ErrorCodeCollectionDoesNotExist, ErrorCodeCollectionAlreadyExists)
@@ -222,9 +244,14 @@ type DatabaseStatsResult struct {
 // Stats returns statistic estimations about the database.
 // All returned values are not exact, but might be more accurate when Stats is called with `Refresh: true`.
 func (dbc *databaseContract) Stats(ctx context.Context, params *DatabaseStatsParams) (*DatabaseStatsResult, error) {
-	defer observability.FuncCall(ctx)()
+	ctx, span := otel.Tracer("").Start(ctx, "Stats")
+	defer span.End()
 
 	res, err := dbc.db.Stats(ctx, params)
+	if err != nil {
+		span.SetStatus(otelcodes.Error, "")
+	}
+
 	checkError(err, ErrorCodeDatabaseDoesNotExist)
 
 	return res, err
