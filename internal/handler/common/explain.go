@@ -42,7 +42,7 @@ type ExplainParams struct {
 	Command    *types.Document `ferretdb:"-"`
 
 	APIVersion           string `ferretdb:"apiVersion,ignored"`
-	APIString            string `ferretdb:"apiStrict,ignored"`
+	APIStrict            bool   `ferretdb:"apiStrict,ignored"`
 	APIDeprecationErrors bool   `ferretdb:"apiDeprecationErrors,ignored"`
 
 	Verbosity string `ferretdb:"verbosity,ignored"`

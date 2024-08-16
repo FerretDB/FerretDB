@@ -35,7 +35,7 @@ type CountParams struct {
 	Fields any `ferretdb:"fields,ignored"` // legacy MongoDB shell adds it, but it is never actually used
 
 	APIVersion           string `ferretdb:"apiVersion,ignored"`
-	APIString            string `ferretdb:"apiStrict,ignored"`
+	APIStrict            bool   `ferretdb:"apiStrict,ignored"`
 	APIDeprecationErrors bool   `ferretdb:"apiDeprecationErrors,ignored"`
 
 	MaxTimeMS      int64           `ferretdb:"maxTimeMS,ignored"`

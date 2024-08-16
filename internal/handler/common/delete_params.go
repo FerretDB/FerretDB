@@ -35,7 +35,7 @@ type DeleteParams struct {
 	Let *types.Document `ferretdb:"let,unimplemented"`
 
 	APIVersion           string `ferretdb:"apiVersion,ignored"`
-	APIString            string `ferretdb:"apiStrict,ignored"`
+	APIStrict            bool   `ferretdb:"apiStrict,ignored"`
 	APIDeprecationErrors bool   `ferretdb:"apiDeprecationErrors,ignored"`
 
 	MaxTimeMS      int64           `ferretdb:"maxTimeMS,ignored"`

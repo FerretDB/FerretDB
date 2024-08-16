@@ -49,7 +49,7 @@ type FindAndModifyParams struct {
 	ArrayFilters *types.Array    `ferretdb:"arrayFilters,unimplemented"`
 
 	APIVersion           string `ferretdb:"apiVersion,ignored"`
-	APIString            string `ferretdb:"apiStrict,ignored"`
+	APIStrict            bool   `ferretdb:"apiStrict,ignored"`
 	APIDeprecationErrors bool   `ferretdb:"apiDeprecationErrors,ignored"`
 
 	Hint                     string          `ferretdb:"hint,ignored"`
