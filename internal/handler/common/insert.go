@@ -33,6 +33,10 @@ type InsertParams struct {
 	Collection string       `ferretdb:"insert,collection"`
 	Ordered    bool         `ferretdb:"ordered,opt"`
 
+	APIVersion           string `ferretdb:"apiVersion,ignored"`
+	APIStrict            bool   `ferretdb:"apiStrict,ignored"`
+	APIDeprecationErrors bool   `ferretdb:"apiDeprecationErrors,ignored"`
+
 	MaxTimeMS                int64           `ferretdb:"maxTimeMS,ignored"`
 	WriteConcern             any             `ferretdb:"writeConcern,ignored"`
 	BypassDocumentValidation bool            `ferretdb:"bypassDocumentValidation,ignored"`

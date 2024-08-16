@@ -48,6 +48,10 @@ type FindAndModifyParams struct {
 	Fields       *types.Document `ferretdb:"fields,unimplemented"`
 	ArrayFilters *types.Array    `ferretdb:"arrayFilters,unimplemented"`
 
+	APIVersion           string `ferretdb:"apiVersion,ignored"`
+	APIStrict            bool   `ferretdb:"apiStrict,ignored"`
+	APIDeprecationErrors bool   `ferretdb:"apiDeprecationErrors,ignored"`
+
 	Hint                     string          `ferretdb:"hint,ignored"`
 	WriteConcern             *types.Document `ferretdb:"writeConcern,ignored"`
 	BypassDocumentValidation bool            `ferretdb:"bypassDocumentValidation,ignored"`

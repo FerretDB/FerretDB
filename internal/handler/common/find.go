@@ -44,6 +44,10 @@ type FindParams struct {
 	Collation *types.Document `ferretdb:"collation,unimplemented"`
 	Let       *types.Document `ferretdb:"let,unimplemented"`
 
+	APIVersion           string `ferretdb:"apiVersion,ignored"`
+	APIStrict            bool   `ferretdb:"apiStrict,ignored"`
+	APIDeprecationErrors bool   `ferretdb:"apiDeprecationErrors,ignored"`
+
 	AllowDiskUse     bool            `ferretdb:"allowDiskUse,ignored"`
 	ReadConcern      *types.Document `ferretdb:"readConcern,ignored"`
 	Max              *types.Document `ferretdb:"max,ignored"`
