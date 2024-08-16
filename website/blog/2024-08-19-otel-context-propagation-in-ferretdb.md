@@ -24,9 +24,9 @@ This context typically includes request-related data,
 such as trace identifiers, which are passed across service boundaries,
 allowing you to link different parts of a distributed request together.
 The most common approach to implement context propagation is by using [trace context](https://www.w3.org/TR/trace-context/)
-headers to pass this information between services, but this method is not always feasible.
+HTTP headers to pass this information between services, but this method is not always feasible.
 
-Most databases don't support such headers or other native ways to pass tracing-related context.
+Obviously, most databases don't support such HTTP headers or other native ways to pass tracing-related context.
 Approaches like [SQLCommenter](https://google.github.io/sqlcommenter/) have been developed to bridge this gap,
 enabling the connection between current trace data and database queries.
 In these cases, trace information is injected at the ORM level and passed to the database via SQL comments.
@@ -46,7 +46,7 @@ This field doesn't influence query logic but can be used to provide valuable con
 At FerretDB, we want to empower users to pass such context.
 We decided to utilize the `comment` field to do it.
 We parse the content of the `comment` field, and if it's a JSON document with a `ferretDB` key, we check for tracing data.
-If the tracing data is present, FerretDB sets the parent's context when a span for the current operation is created.
+If the tracing data is present, FerretDB sets the parent context for a span created for the current operation.
 
 An example of a comment with tracing data could look like this:
 
@@ -73,7 +73,8 @@ In our scenario, where we allow FerretDB to receive and parse
 tracing data through the `comment` field, the JSON must be correctly encoded by the driver and then decoded by FerretDB.
 
 A more robust solution would involve having a dedicated field for passing request-related context,
-and it would be ideal to establish a standard for such fields.
+and it would be ideal to establish a standard for such fields within 
+[Trace Context Protocols Registry](https://www.w3.org/TR/trace-context-protocols-registry/#registry).
 For instance, it could be a BSON document with particular tracing-related fields.
 This would provide a more reliable method for passing context to the database.
 
@@ -140,7 +141,8 @@ _ = collection.FindOne(findCtx, filter, options.FindOne().SetComment(string(comm
 findSpan.End()
 ```
 
-Now, if we run the application, we will see that the spans are linked and the `FindCustomer` span is a child span created on the FerretDB side:
+Now, if we run the application, we will see that the spans created in the application and in FerretDB are linked.
+The `FindCustomer` span has a child span `find` created on the FerretDB side:
 
 ![Trace with propagation](/img/blog/ferretdb-otel/with-propagation.png)
 
@@ -152,9 +154,11 @@ While this solution isn't perfect due to the limitations discussed, it is a step
 ## Conclusion
 
 We believe that passing context to document databases is an important part of making them more observable.
-We hope that the community will come up with a standard way to pass context to databases, and we are looking forward to
-contributing to this effort.
+We hope that the community will come up with a standard way to do it, and we are looking forward to
+contributing to this effort. Ideally, it would be great to extend 
+[Trace Context Protocols Registry](https://www.w3.org/TR/trace-context-protocols-registry/)
+with a protocol for passing context to document databases.
 
 We'd love to hear your thoughts on this approach.
 Have you implemented similar context propagation strategies in your projects?
-[Please feel free to [reach out to us here](https://docs.ferretdb.io/#community) to share your experiences or ask questions!
+Please feel free to [reach out to us here](https://docs.ferretdb.io/#community) to share your experiences or ask questions!
