@@ -24,15 +24,16 @@ import (
 	"strconv"
 	"text/template"
 
+	"github.com/FerretDB/gh"
 	"github.com/google/go-github/v57/github"
 	"gopkg.in/yaml.v3"
 )
 
 // PRItem represents GitHub's PR.
-type PRItem struct {
+type PRItem struct { //nolint:vet // for readability
 	URL    string
-	Number int
 	Title  string
+	Number int
 	User   struct {
 		Login string
 	}
@@ -63,12 +64,6 @@ type GroupedPRs struct {
 // CategorizedPRs represents a slice of GroupedPRs.
 type CategorizedPRs struct {
 	Groups []GroupedPRs
-}
-
-// NewGitHubClient creates a new GitHub client with the given token.
-// FIXME: Use https://github.com/FerretDB/gh instead.
-func NewGitHubClient() *github.Client {
-	return github.NewClient(nil).WithAuthToken(os.Getenv("GITHUB_TOKEN"))
 }
 
 // GetMilestone fetches the milestone with the given title.
@@ -104,6 +99,7 @@ func ListMergedPRsOnMilestone(ctx context.Context, client *github.Client, milest
 	}
 
 	var prItems []PRItem
+
 	for _, issue := range issues {
 		if !issue.IsPullRequest() {
 			continue
@@ -141,6 +137,7 @@ func LoadReleaseTemplate(filePath string) (*ReleaseTemplate, error) {
 	}
 
 	var template ReleaseTemplate
+
 	err = yaml.Unmarshal(bytes, &template)
 	if err != nil {
 		return nil, err
@@ -201,11 +198,11 @@ func RenderMarkdownFromFile(categorizedPRs CategorizedPRs, templatePath string) 
 		return err
 	}
 
-	if err := tmpl.Execute(os.Stdout, categorizedPRs); err != nil {
+	if err = tmpl.Execute(os.Stdout, categorizedPRs); err != nil {
 		return err
 	}
 
-	fmt.Fprintln(os.Stdout)
+	_, _ = fmt.Fprintln(os.Stdout)
 
 	return nil
 }
@@ -233,7 +230,10 @@ func main() {
 
 	ctx := context.Background()
 
-	client := NewGitHubClient()
+	client, err := gh.NewRESTClient(os.Getenv("GITHUB_TOKEN"), log.Printf)
+	if err != nil {
+		log.Fatalf("Failed to create GitHub client: %v", err)
+	}
 
 	milestone, err := GetMilestone(ctx, client, milestoneTitle)
 	if err != nil {
@@ -251,7 +251,7 @@ func main() {
 
 	// Render to markdown
 	markdownTemplatePath := filepath.Join(repoRoot, "tools", "generatechangelog", "changelog_template.tmpl")
-	if err := RenderMarkdownFromFile(categorizedPRs, markdownTemplatePath); err != nil {
+	if err = RenderMarkdownFromFile(categorizedPRs, markdownTemplatePath); err != nil {
 		log.Fatalf("Failed to render markdown: %v", err)
 	}
 }

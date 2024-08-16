@@ -19,21 +19,20 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/FerretDB/gh"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-const (
-	TagDate = "2024-03-20"
-)
-
 func TestGetMilestone(t *testing.T) {
 	ctx := context.Background()
-	client := NewGitHubClient()
+	client, err := gh.NewRESTClient(os.Getenv("GITHUB_TOKEN"), log.Printf)
+	require.NoError(t, err)
 
 	milestoneTitle := "v0.9.1"
 
@@ -55,7 +54,8 @@ func TestGetMilestone(t *testing.T) {
 
 func TestListMergedPRsOnMilestone(t *testing.T) {
 	ctx := context.Background()
-	client := NewGitHubClient()
+	client, err := gh.NewRESTClient(os.Getenv("GITHUB_TOKEN"), log.Printf)
+	require.NoError(t, err)
 
 	// The milestone number for "v0.9.1"
 	milestoneNumber := 30
@@ -68,11 +68,14 @@ func TestListMergedPRsOnMilestone(t *testing.T) {
 
 	if len(prItems) > 0 {
 		t.Logf("PR items for milestone %d:\n", milestoneNumber)
+
 		for _, prItem := range prItems {
 			t.Logf("- PR #%d: %s by %s\n", prItem.Number, prItem.Title, prItem.User.Login)
 			t.Logf("  URL: %s\n", prItem.URL)
+
 			if len(prItem.Labels) > 0 {
 				t.Log("  Labels:")
+
 				for _, label := range prItem.Labels {
 					t.Logf("    - %s\n", label.Name)
 				}
@@ -195,7 +198,7 @@ func TestRenderMarkdownFromFile(t *testing.T) {
 
 	tmpfile, err := os.CreateTemp("", "example")
 	require.NoError(t, err)
-	defer os.Remove(tmpfile.Name())
+	defer assert.NoError(t, os.Remove(tmpfile.Name()))
 
 	_, err = tmpfile.Write([]byte(templateContent))
 	require.NoError(t, err)
@@ -241,9 +244,10 @@ func TestRenderMarkdownFromFile(t *testing.T) {
 	err = RenderMarkdownFromFile(categorizedPRs, tmpfile.Name())
 	require.NoError(t, err)
 
-	w.Close()
+	assert.NoError(t, w.Close())
 	var buf bytes.Buffer
-	io.Copy(&buf, r)
+	_, err = io.Copy(&buf, r)
+	assert.NoError(t, err)
 
 	expectedOutput := "\n### Features 🎉\n- Add feature X by @dev1 in https://github.com/FerretDB/FerretDB/pull/1\n" +
 		"### Bugs 🐛\n- Fix bug Y by @dev2 in https://github.com/FerretDB/FerretDB/pull/2\n"
@@ -263,7 +267,8 @@ func TestGenerateChangelogIntegration(t *testing.T) {
 		fmt.Sprintf("Expected %d categories", expectedNumCategories))
 
 	ctx := context.Background()
-	client := NewGitHubClient()
+	client, err := gh.NewRESTClient(os.Getenv("GITHUB_TOKEN"), log.Printf)
+	require.NoError(t, err)
 
 	milestone, err := GetMilestone(ctx, client, milestoneTitle)
 	require.NoError(t, err)
@@ -293,9 +298,10 @@ func TestGenerateChangelogIntegration(t *testing.T) {
 	err = RenderMarkdownFromFile(categorizedPRs, mdTemplate)
 	require.NoError(t, err)
 
-	w.Close()
+	assert.NoError(t, w.Close())
 	var buf bytes.Buffer
-	io.Copy(&buf, r)
+	_, err = io.Copy(&buf, r)
+	assert.NoError(t, err)
 
 	expectedOutput := "\n### New Features 🎉\n\n" +
 		"- Support `listIndexes` command by @rumyantseva in https://api.github.com/repos/FerretDB/FerretDB/issues/1960\n" +
