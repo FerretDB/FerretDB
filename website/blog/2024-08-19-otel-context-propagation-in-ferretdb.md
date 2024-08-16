@@ -125,7 +125,7 @@ comment, _ := json.Marshal(map[string]interface{}{
         "traceID": traceID,
         "spanID": spanID,
     }
-}
+})
 
 _ = collection.FindOne(findCtx, filter, options.FindOne().SetComment(string(comment)))
 
