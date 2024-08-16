@@ -41,6 +41,10 @@ type ExplainParams struct {
 	Aggregate  bool            `ferretdb:"-"`
 	Command    *types.Document `ferretdb:"-"`
 
+	APIVersion           string `ferretdb:"apiVersion,ignored"`
+	APIString            string `ferretdb:"apiStrict,ignored"`
+	APIDeprecationErrors bool   `ferretdb:"apiDeprecationErrors,ignored"`
+
 	Verbosity string `ferretdb:"verbosity,ignored"`
 }
 
