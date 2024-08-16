@@ -121,9 +121,10 @@ traceID := findSpan.SpanContext().TraceID().String()
 spanID := findSpan.SpanContext().SpanID().String()
 
 comment, _ := json.Marshal(map[string]interface{}{
-   "ferretDB": map[string]string{}{
-      "traceID": traceID, 
-	  "spanID": spanID,
+   "ferretDB": map[string]string{
+        "traceID": traceID,
+        "spanID": spanID,
+    }
 },
 
 _ = collection.FindOne(findCtx, filter, options.FindOne().SetComment(string(comment)))
