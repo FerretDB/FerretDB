@@ -73,7 +73,7 @@ In our scenario, where we allow FerretDB to receive and parse
 tracing data through the `comment` field, the JSON must be correctly encoded by the driver and then decoded by FerretDB.
 
 A more robust solution would involve having a dedicated field for passing request-related context,
-and it would be ideal to establish a standard for such fields within 
+and it would be ideal to establish a standard for such fields within
 [Trace Context Protocols Registry](https://www.w3.org/TR/trace-context-protocols-registry/#registry).
 For instance, it could be a BSON document with particular tracing-related fields.
 This would provide a more reliable method for passing context to the database.
@@ -153,7 +153,8 @@ While this solution isn't perfect due to the limitations discussed, it is a step
 
 We believe that passing context to document databases is an important part of making them more observable.
 We hope that the community will come up with a standard way to do it, and we are looking forward to
-contributing to this effort. Ideally, it would be great to extend 
+contributing to this effort.
+Ideally, it would be great to extend
 [Trace Context Protocols Registry](https://www.w3.org/TR/trace-context-protocols-registry/)
 with a protocol for passing context to document databases.
 
