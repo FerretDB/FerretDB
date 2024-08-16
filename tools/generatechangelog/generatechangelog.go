@@ -230,7 +230,7 @@ func main() {
 
 	ctx := context.Background()
 
-	client, err := gh.NewRESTClient(os.Getenv("GITHUB_TOKEN"), log.Printf)
+	client, err := gh.NewRESTClient(os.Getenv("GITHUB_TOKEN"), nil)
 	if err != nil {
 		log.Fatalf("Failed to create GitHub client: %v", err)
 	}
