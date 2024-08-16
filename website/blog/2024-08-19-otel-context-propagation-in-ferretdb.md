@@ -59,8 +59,6 @@ An example of a comment with tracing data could look like this:
 }
 ```
 
-The strings `traceID` and `spanID` are hex-encoded strings that represent the corresponding trace and span identifiers.
-
 Using this approach, it's relatively easy to visualize client's requests to FerretDB showing them as part of the original client trace.
 
 However, there are some limitations.
@@ -122,17 +120,11 @@ filter := bson.D{{Key: "name", Value: "John Doe"}}
 traceID := findSpan.SpanContext().TraceID().String()
 spanID := findSpan.SpanContext().SpanID().String()
 
-traceContext := struct {
-    TraceID string `json:"traceID"`
-    SpanID  string `json:"spanID"`
-}{
-    TraceID: traceID,
-    SpanID:  spanID,
-}
-
 comment, _ := json.Marshal(map[string]interface{}{
-    "ferretDB": traceContext,
-})
+   "ferretDB": map[string]string{}{
+      "traceID": traceID, 
+	  "spanID": spanID,
+},
 
 _ = collection.FindOne(findCtx, filter, options.FindOne().SetComment(string(comment)))
 
