@@ -78,7 +78,7 @@ and it would be ideal to establish a standard for such fields within
 For instance, it could be a BSON document with particular tracing-related fields.
 This would provide a more reliable method for passing context to the database.
 
-## Example application
+### Example application
 
 Since such a standard does not yet exist, let's explore [an example application](https://gist.github.com/rumyantseva/3c6ef7c7dfc3fbdea8f94a31f4a17885)
 that interacts with FerretDB and passes the tracing context using the `comment` field.
@@ -100,8 +100,7 @@ insertSpan.End()
 findCtx, findSpan := tracer.Start(ctx, "FindCustomer")
 filter := bson.D{{Key: "name", Value: "John Doe"}}
 
-var result bson.D
-_ = collection.FindOne(findCtx, filter).Decode(&result)
+_ = collection.FindOne(findCtx, filter)
 
 findSpan.End()
 ```
