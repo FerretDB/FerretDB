@@ -74,6 +74,7 @@ func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath string, disableNe
 			"tls":                   []string{"true"},
 			"tlsCertificateKeyFile": []string{filepath.Join(testutil.BuildCertsDir, "client.pem")},
 			"tlsCaFile":             []string{filepath.Join(testutil.BuildCertsDir, "rootCA-cert.pem")},
+			"authMechanism":         []string{"SCRAM-SHA-1"},
 		}
 		user = url.UserPassword("username", "password")
 
