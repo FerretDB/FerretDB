@@ -350,20 +350,22 @@ func TestAuthenticationAuthSource(t *testing.T) {
 			u, err := url.Parse(s.MongoDBURI)
 			require.NoError(t, err)
 
-			u.User = testURI.User
-			u.Path = testURI.Path
+			testURI.Host = u.Host
 
 			// tls related query values are necessary
-			q := u.Query()
-			for k, v := range testURI.Query() {
-				q.Set(k, v[0])
+			q := testURI.Query()
+			for k, v := range u.Query() {
+				switch k {
+				case "tls", "tlsCertificateKeyFile", "tlsCaFile":
+					q.Set(k, v[0])
+				}
 			}
 
-			u.RawQuery = q.Encode()
+			testURI.RawQuery = q.Encode()
 
-			opts := options.Client().ApplyURI(u.String())
+			opts := options.Client().ApplyURI(testURI.String())
 
-			t.Log("Connecting", u.String())
+			t.Log("Connecting", testURI.String())
 
 			client, err := mongo.Connect(ctx, opts)
 			require.NoError(t, err)
