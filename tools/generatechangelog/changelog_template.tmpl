@@ -1,8 +1,13 @@
-{{- range .Groups }}
+## [{{ .Header }}](https://github.com/FerretDB/FerretDB/releases/tag/{{ .Current }}) ({{ .Date }})
+{{ range .PRs }}
 ### {{ .CategoryTitle }}
 {{- "\n" }}
 {{- range .PRs }}
 - {{ .Title }} by @{{ .User.Login }} in {{ .URL }}
 {{- end }}
 {{- "\n" }}
+{{- end }}
+[All closed issues and pull requests]({{ .URL }}?closed=1).
+{{- if .Previous }}
+[All commits](https://github.com/FerretDB/FerretDB/compare/{{ .Previous }}...{{ .Current }}).
 {{- end }}

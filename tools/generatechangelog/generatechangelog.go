@@ -21,8 +21,11 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
+	"slices"
 	"strconv"
 	"text/template"
+	"time"
 
 	"github.com/FerretDB/gh"
 	"github.com/google/go-github/v57/github"
@@ -61,27 +64,58 @@ type GroupedPRs struct {
 	PRs           []PRItem
 }
 
-// CategorizedPRs represents a slice of GroupedPRs.
-type CategorizedPRs struct {
-	Groups []GroupedPRs
-}
-
 // GetMilestone fetches the milestone with the given title.
-func GetMilestone(ctx context.Context, client *github.Client, milestoneTitle string) (*github.Milestone, error) {
+func GetMilestone(ctx context.Context, client *github.Client, milestoneTitle string) (current, previous *github.Milestone, err error) {
 	milestones, _, err := client.Issues.ListMilestones(ctx, "FerretDB", "FerretDB", &github.MilestoneListOptions{
 		State: "all",
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
+
+	// Sort milestones by version number so we can find the previous milestone
+	slices.SortFunc(milestones, func(a, b *github.Milestone) int {
+		re := regexp.MustCompile(`^v(\d+)\.(\d+)\.(\d+)$`)
+		aMatches := re.FindStringSubmatch(*a.Title)
+		bMatches := re.FindStringSubmatch(*b.Title)
+
+		if len(aMatches) != 4 || len(bMatches) != 4 {
+			return 0
+		}
+
+		aMajor, _ := strconv.Atoi(aMatches[1])
+		aMinor, _ := strconv.Atoi(aMatches[2])
+		aPatch, _ := strconv.Atoi(aMatches[3])
+
+		bMajor, _ := strconv.Atoi(bMatches[1])
+		bMinor, _ := strconv.Atoi(bMatches[2])
+		bPatch, _ := strconv.Atoi(bMatches[3])
+
+		if aMajor != bMajor {
+			return aMajor - bMajor
+		}
+
+		if aMinor != bMinor {
+			return aMinor - bMinor
+		}
+
+		if aPatch != bPatch {
+			return aPatch - bPatch
+		}
+
+		return 0
+	})
 
 	for _, milestone := range milestones {
 		if *milestone.Title == milestoneTitle {
-			return milestone, nil
+			current = milestone
+			return
 		}
+
+		previous = milestone
 	}
 
-	return nil, fmt.Errorf("no milestone found with the name %s", milestoneTitle)
+	return nil, nil, fmt.Errorf("no milestone found with the name %s", milestoneTitle)
 }
 
 // ListMergedPRsOnMilestone fetches merged PRs on the given milestone.
@@ -178,13 +212,13 @@ func groupPRsByTemplateCategory(prItems []PRItem, templateCategory TemplateCateg
 }
 
 // GroupPRsByCategories iterates through the categories and generates Groups of PRs.
-func GroupPRsByCategories(prItems []PRItem, categories []TemplateCategory) CategorizedPRs {
-	var categorizedPRs CategorizedPRs
+func GroupPRsByCategories(prItems []PRItem, categories []TemplateCategory) []GroupedPRs {
+	var categorizedPRs []GroupedPRs
 
 	for _, category := range categories {
 		grouped := groupPRsByTemplateCategory(prItems, category)
 		if len(grouped.PRs) > 0 {
-			categorizedPRs.Groups = append(categorizedPRs.Groups, *grouped)
+			categorizedPRs = append(categorizedPRs, *grouped)
 		}
 	}
 
@@ -192,7 +226,7 @@ func GroupPRsByCategories(prItems []PRItem, categories []TemplateCategory) Categ
 }
 
 // RenderMarkdownFromFile renders markdown based on template to stdout.
-func RenderMarkdownFromFile(categorizedPRs CategorizedPRs, templatePath string) error {
+func RenderMarkdownFromFile(categorizedPRs []GroupedPRs, templatePath string) error {
 	tmpl, err := template.ParseFiles(templatePath)
 	if err != nil {
 		return err
@@ -223,7 +257,7 @@ func main() {
 	releaseYamlFile := filepath.Join(repoRoot, ".github", "release.yml")
 
 	// Load the release template file
-	template, err := LoadReleaseTemplate(releaseYamlFile)
+	tpl, err := LoadReleaseTemplate(releaseYamlFile)
 	if err != nil {
 		log.Fatalf("Failed to read from template yaml file: %v", err)
 	}
@@ -235,7 +269,7 @@ func main() {
 		log.Fatalf("Failed to create GitHub client: %v", err)
 	}
 
-	milestone, err := GetMilestone(ctx, client, milestoneTitle)
+	milestone, previous, err := GetMilestone(ctx, client, milestoneTitle)
 	if err != nil {
 		log.Fatalf("Failed to fetch milestone: %v", err)
 	}
@@ -247,11 +281,46 @@ func main() {
 	}
 
 	// Group PRs by labels
-	categorizedPRs := GroupPRsByCategories(mergedPRs, template.Changelog.Categories)
+	categorizedPRs := GroupPRsByCategories(mergedPRs, tpl.Changelog.Categories)
 
 	// Render to markdown
-	markdownTemplatePath := filepath.Join(repoRoot, "tools", "generatechangelog", "changelog_template.tmpl")
-	if err = RenderMarkdownFromFile(categorizedPRs, markdownTemplatePath); err != nil {
+	templatePath := filepath.Join(repoRoot, "tools", "generatechangelog", "changelog_template.tmpl")
+	tmpl, err := template.ParseFiles(templatePath)
+	if err != nil {
+		log.Fatalf("Failed to parse template file: %v", err)
+	}
+
+	var previousTitle string
+
+	if previous != nil {
+		previousTitle = *previous.Title
+		re := regexp.MustCompile(`^v\d+\.\d+\.\d+`)
+		previousTitle = re.FindString(previousTitle)
+	}
+
+	currentTitle := *milestone.Title
+	re := regexp.MustCompile(`^v\d+\.\d+\.\d+`)
+	currentTitle = re.FindString(currentTitle)
+
+	data := struct {
+		Header   string
+		Date     string
+		Previous string
+		Current  string
+		URL      string
+		PRs      []GroupedPRs
+	}{
+		Header:   *milestone.Title, // e.g. v0.8.0 Beta
+		Date:     time.Now().Format("2006-01-02"),
+		Previous: previousTitle, // e.g. v0.7.0
+		Current:  currentTitle,  // e.g. v0.8.0
+		URL:      *milestone.HTMLURL,
+		PRs:      categorizedPRs,
+	}
+
+	if err = tmpl.Execute(os.Stdout, data); err != nil {
 		log.Fatalf("Failed to render markdown: %v", err)
 	}
+
+	_, _ = fmt.Fprintln(os.Stdout)
 }
