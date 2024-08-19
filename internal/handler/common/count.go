@@ -34,10 +34,6 @@ type CountParams struct {
 
 	Fields any `ferretdb:"fields,ignored"` // legacy MongoDB shell adds it, but it is never actually used
 
-	APIVersion           string `ferretdb:"apiVersion,ignored"`
-	APIStrict            bool   `ferretdb:"apiStrict,ignored"`
-	APIDeprecationErrors bool   `ferretdb:"apiDeprecationErrors,ignored"`
-
 	MaxTimeMS      int64           `ferretdb:"maxTimeMS,ignored"`
 	Hint           any             `ferretdb:"hint,ignored"`
 	ReadConcern    *types.Document `ferretdb:"readConcern,ignored"`
@@ -45,6 +41,10 @@ type CountParams struct {
 	LSID           any             `ferretdb:"lsid,ignored"`
 	ClusterTime    any             `ferretdb:"$clusterTime,ignored"`
 	ReadPreference *types.Document `ferretdb:"$readPreference,ignored"`
+
+	ApiVersion           string `ferretdb:"apiVersion,ignored"`
+	ApiStrict            bool   `ferretdb:"apiStrict,ignored"`
+	ApiDeprecationErrors bool   `ferretdb:"apiDeprecationErrors,ignored"`
 }
 
 // GetCountParams returns the parameters for the count command.

@@ -48,10 +48,6 @@ type FindAndModifyParams struct {
 	Fields       *types.Document `ferretdb:"fields,unimplemented"`
 	ArrayFilters *types.Array    `ferretdb:"arrayFilters,unimplemented"`
 
-	APIVersion           string `ferretdb:"apiVersion,ignored"`
-	APIStrict            bool   `ferretdb:"apiStrict,ignored"`
-	APIDeprecationErrors bool   `ferretdb:"apiDeprecationErrors,ignored"`
-
 	Hint                     string          `ferretdb:"hint,ignored"`
 	WriteConcern             *types.Document `ferretdb:"writeConcern,ignored"`
 	BypassDocumentValidation bool            `ferretdb:"bypassDocumentValidation,ignored"`
@@ -59,6 +55,10 @@ type FindAndModifyParams struct {
 	TxnNumber                int64           `ferretdb:"txnNumber,ignored"`
 	ClusterTime              any             `ferretdb:"$clusterTime,ignored"`
 	ReadPreference           *types.Document `ferretdb:"$readPreference,ignored"`
+
+	ApiVersion           string `ferretdb:"apiVersion,ignored"`
+	ApiStrict            bool   `ferretdb:"apiStrict,ignored"`
+	ApiDeprecationErrors bool   `ferretdb:"apiDeprecationErrors,ignored"`
 }
 
 // GetFindAndModifyParams returns `findAndModifyParams` command parameters.
