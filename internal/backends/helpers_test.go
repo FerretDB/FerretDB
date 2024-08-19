@@ -26,6 +26,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/backends/hana"
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite"
+	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
@@ -53,9 +54,10 @@ func testBackends(t *testing.T) map[string]*testBackend {
 		require.NoError(t, err)
 
 		b, err := postgresql.NewBackend(&postgresql.NewBackendParams{
-			URI: testutil.TestPostgreSQLURI(t, context.TODO(), ""),
-			L:   l.Named("postgresql"),
-			P:   sp,
+			URI:       testutil.TestPostgreSQLURI(t, context.TODO(), ""),
+			L:         logging.WithName(l, "postgresql"),
+			P:         sp,
+			BatchSize: 1000,
 		})
 		require.NoError(t, err)
 		t.Cleanup(b.Close)
@@ -71,9 +73,10 @@ func testBackends(t *testing.T) map[string]*testBackend {
 		require.NoError(t, err)
 
 		b, err := sqlite.NewBackend(&sqlite.NewBackendParams{
-			URI: testutil.TestSQLiteURI(t, ""),
-			L:   l.Named("sqlite"),
-			P:   sp,
+			URI:       testutil.TestSQLiteURI(t, ""),
+			L:         logging.WithName(l, "sqlite"),
+			P:         sp,
+			BatchSize: 100,
 		})
 		require.NoError(t, err)
 		t.Cleanup(b.Close)
@@ -90,7 +93,7 @@ func testBackends(t *testing.T) map[string]*testBackend {
 
 		b, err := hana.NewBackend(&hana.NewBackendParams{
 			URI: hanaURL,
-			L:   l.Named("hana"),
+			L:   logging.WithName(l, "hana"),
 			P:   sp,
 		})
 		require.NoError(t, err)

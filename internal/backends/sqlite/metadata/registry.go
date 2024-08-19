@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"hash/fnv"
+	"log/slog"
 	"slices"
 	"sort"
 	"strings"
@@ -25,7 +26,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/prometheus/client_golang/prometheus"
-	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
@@ -33,7 +33,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
@@ -56,8 +55,9 @@ const (
 //
 // Exported methods are safe for concurrent use. Unexported methods are not.
 type Registry struct {
-	p *pool.Pool
-	l *zap.Logger
+	p         *pool.Pool
+	l         *slog.Logger
+	BatchSize int
 
 	// rw protects colls but also acts like a global lock for the whole registry.
 	// The latter effectively replaces transactions (see the sqlite backend package description for more info).
@@ -69,16 +69,17 @@ type Registry struct {
 }
 
 // NewRegistry creates a registry for SQLite databases in the directory specified by SQLite URI.
-func NewRegistry(u string, l *zap.Logger, sp *state.Provider) (*Registry, error) {
+func NewRegistry(u string, batchSize int, l *slog.Logger, sp *state.Provider) (*Registry, error) {
 	p, initDBs, err := pool.New(u, l, sp)
 	if err != nil {
 		return nil, err
 	}
 
 	r := &Registry{
-		p:     p,
-		l:     l,
-		colls: map[string]map[string]*Collection{},
+		p:         p,
+		l:         l,
+		BatchSize: batchSize,
+		colls:     map[string]map[string]*Collection{},
 	}
 
 	for name, db := range initDBs {
@@ -98,8 +99,6 @@ func (r *Registry) Close() {
 
 // initCollections loads collections metadata from the database during initialization.
 func (r *Registry) initCollections(ctx context.Context, dbName string, db *fsql.DB) error {
-	defer observability.FuncCall(ctx)()
-
 	rows, err := db.QueryContext(ctx, fmt.Sprintf("SELECT name, table_name, settings FROM %q", metadataTableName))
 	if err != nil {
 		return lazyerrors.Error(err)
@@ -128,22 +127,16 @@ func (r *Registry) initCollections(ctx context.Context, dbName string, db *fsql.
 
 // DatabaseList returns a sorted list of existing databases.
 func (r *Registry) DatabaseList(ctx context.Context) []string {
-	defer observability.FuncCall(ctx)()
-
 	return r.p.List(ctx)
 }
 
 // DatabaseGetExisting returns a connection to existing database or nil if it doesn't exist.
 func (r *Registry) DatabaseGetExisting(ctx context.Context, dbName string) *fsql.DB {
-	defer observability.FuncCall(ctx)()
-
 	return r.p.GetExisting(ctx, dbName)
 }
 
 // DatabaseGetOrCreate returns a connection to existing database or newly created database.
 func (r *Registry) DatabaseGetOrCreate(ctx context.Context, dbName string) (*fsql.DB, error) {
-	defer observability.FuncCall(ctx)()
-
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
@@ -154,8 +147,6 @@ func (r *Registry) DatabaseGetOrCreate(ctx context.Context, dbName string) (*fsq
 //
 // It does not hold the lock.
 func (r *Registry) databaseGetOrCreate(ctx context.Context, dbName string) (*fsql.DB, error) {
-	defer observability.FuncCall(ctx)()
-
 	db, created, err := r.p.GetOrCreate(ctx, dbName)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -185,8 +176,6 @@ func (r *Registry) databaseGetOrCreate(ctx context.Context, dbName string) (*fsq
 //
 // Returned boolean value indicates whether the database was dropped.
 func (r *Registry) DatabaseDrop(ctx context.Context, dbName string) bool {
-	defer observability.FuncCall(ctx)()
-
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
@@ -199,8 +188,6 @@ func (r *Registry) DatabaseDrop(ctx context.Context, dbName string) bool {
 //
 // It does not hold the lock.
 func (r *Registry) databaseDrop(ctx context.Context, dbName string) bool {
-	defer observability.FuncCall(ctx)()
-
 	delete(r.colls, dbName)
 
 	return r.p.Drop(ctx, dbName)
@@ -210,8 +197,6 @@ func (r *Registry) databaseDrop(ctx context.Context, dbName string) bool {
 //
 // If database does not exist, no error is returned.
 func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]*Collection, error) {
-	defer observability.FuncCall(ctx)()
-
 	db := r.DatabaseGetExisting(ctx, dbName)
 	if db == nil {
 		return nil, nil
@@ -250,8 +235,6 @@ func (ccp *CollectionCreateParams) Capped() bool {
 // Returned boolean value indicates whether the collection was created.
 // If collection already exists, (false, nil) is returned.
 func (r *Registry) CollectionCreate(ctx context.Context, params *CollectionCreateParams) (bool, error) {
-	defer observability.FuncCall(ctx)()
-
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
@@ -266,8 +249,6 @@ func (r *Registry) CollectionCreate(ctx context.Context, params *CollectionCreat
 //
 // It does not hold the lock.
 func (r *Registry) collectionCreate(ctx context.Context, params *CollectionCreateParams) (bool, error) {
-	defer observability.FuncCall(ctx)()
-
 	dbName, collectionName := params.DBName, params.Name
 
 	db, err := r.databaseGetOrCreate(ctx, dbName)
@@ -350,8 +331,6 @@ func (r *Registry) collectionCreate(ctx context.Context, params *CollectionCreat
 //
 // If database or collection does not exist, nil is returned.
 func (r *Registry) CollectionGet(ctx context.Context, dbName, collectionName string) *Collection {
-	defer observability.FuncCall(ctx)()
-
 	r.rw.RLock()
 	defer r.rw.RUnlock()
 
@@ -378,8 +357,6 @@ func (r *Registry) collectionGet(dbName, collectionName string) *Collection {
 // Returned boolean value indicates whether the collection was dropped.
 // If database or collection did not exist, (false, nil) is returned.
 func (r *Registry) CollectionDrop(ctx context.Context, dbName, collectionName string) (bool, error) {
-	defer observability.FuncCall(ctx)()
-
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
@@ -393,8 +370,6 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName, collectionName st
 //
 // It does not hold the lock.
 func (r *Registry) collectionDrop(ctx context.Context, dbName, collectionName string) (bool, error) {
-	defer observability.FuncCall(ctx)()
-
 	db := r.DatabaseGetExisting(ctx, dbName)
 	if db == nil {
 		return false, nil
@@ -427,8 +402,6 @@ func (r *Registry) collectionDrop(ctx context.Context, dbName, collectionName st
 // Returned boolean value indicates whether the collection was renamed.
 // If database or collection did not exist, (false, nil) is returned.
 func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionName, newCollectionName string) (bool, error) {
-	defer observability.FuncCall(ctx)()
-
 	db := r.DatabaseGetExisting(ctx, dbName)
 	if db == nil {
 		return false, nil
@@ -458,8 +431,6 @@ func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionNa
 //
 // Existing indexes with given names are ignored.
 func (r *Registry) IndexesCreate(ctx context.Context, dbName, collectionName string, indexes []IndexInfo) error {
-	defer observability.FuncCall(ctx)()
-
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
@@ -472,8 +443,6 @@ func (r *Registry) IndexesCreate(ctx context.Context, dbName, collectionName str
 //
 // It does not hold the lock.
 func (r *Registry) indexesCreate(ctx context.Context, dbName, collectionName string, indexes []IndexInfo) error {
-	defer observability.FuncCall(ctx)()
-
 	_, err := r.collectionCreate(ctx, &CollectionCreateParams{DBName: dbName, Name: collectionName})
 	if err != nil {
 		return lazyerrors.Error(err)
@@ -502,8 +471,6 @@ func (r *Registry) indexesCreate(ctx context.Context, dbName, collectionName str
 			q += "UNIQUE "
 		}
 
-		// Find a better way to sanitize identifiers.
-		// TODO https://github.com/FerretDB/FerretDB/issues/3418
 		q += "INDEX %q ON %q (%s)"
 
 		columns := make([]string, len(index.Key))
@@ -552,8 +519,6 @@ func (r *Registry) indexesCreate(ctx context.Context, dbName, collectionName str
 //
 // If database or collection does not exist, nil is returned.
 func (r *Registry) IndexesDrop(ctx context.Context, dbName, collectionName string, indexNames []string) error {
-	defer observability.FuncCall(ctx)()
-
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
@@ -568,8 +533,6 @@ func (r *Registry) IndexesDrop(ctx context.Context, dbName, collectionName strin
 //
 // It does not hold the lock.
 func (r *Registry) indexesDrop(ctx context.Context, dbName, collectionName string, indexNames []string) error {
-	defer observability.FuncCall(ctx)()
-
 	c := r.collectionGet(dbName, collectionName)
 	if c == nil {
 		return nil

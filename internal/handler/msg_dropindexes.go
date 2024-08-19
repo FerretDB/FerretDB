@@ -19,6 +19,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/FerretDB/wire"
+
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
@@ -27,12 +29,13 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgDropIndexes implements `dropIndexes` command.
-func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := msg.Document()
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgDropIndexes(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	document, err := opMsgDocument(msg)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -78,7 +81,7 @@ func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		)
 	}
 
-	beforeDrop, err := c.ListIndexes(ctx, nil)
+	beforeDrop, err := c.ListIndexes(connCtx, nil)
 	if err != nil {
 		switch {
 		case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist):
@@ -96,7 +99,7 @@ func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		return nil, err
 	}
 
-	_, err = c.DropIndexes(ctx, &backends.DropIndexesParams{Indexes: toDrop})
+	_, err = c.DropIndexes(connCtx, &backends.DropIndexesParams{Indexes: toDrop})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -113,12 +116,9 @@ func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		"ok", float64(1),
 	)
 
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+	return documentOpMsg(
 		replyDoc,
-	)))
-
-	return &reply, nil
+	)
 }
 
 // processDropIndexOptions parses and validates index doc and returns the list of indexes to delete

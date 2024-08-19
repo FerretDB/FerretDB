@@ -17,8 +17,7 @@ package common
 import (
 	"errors"
 	"fmt"
-
-	"go.uber.org/zap"
+	"log/slog"
 
 	"github.com/FerretDB/FerretDB/internal/handler/commonpath"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
@@ -47,14 +46,13 @@ type DistinctParams struct {
 	ClusterTime    any             `ferretdb:"$clusterTime,ignored"`
 	ReadPreference *types.Document `ferretdb:"$readPreference,ignored"`
 
-	// StableAPI ignored parameters
 	ApiVersion           string `ferretdb:"apiVersion,ignored"`
 	ApiStrict            bool   `ferretdb:"apiStrict,ignored"`
 	ApiDeprecationErrors bool   `ferretdb:"apiDeprecationErrors,ignored"`
 }
 
 // GetDistinctParams returns `distinct` command parameters.
-func GetDistinctParams(document *types.Document, l *zap.Logger) (*DistinctParams, error) {
+func GetDistinctParams(document *types.Document, l *slog.Logger) (*DistinctParams, error) {
 	var dp DistinctParams
 
 	err := handlerparams.ExtractParams(document, "distinct", &dp, l)

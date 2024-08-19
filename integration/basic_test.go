@@ -25,10 +25,13 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.opentelemetry.io/otel"
+
+	"github.com/FerretDB/FerretDB/internal/util/observability"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func TestMostCommandsAreCaseSensitive(t *testing.T) {
@@ -99,6 +102,21 @@ func TestInsertFind(t *testing.T) {
 			AssertEqualDocuments(t, expected, actual[0])
 		})
 	}
+}
+
+func TestOtelComment(t *testing.T) {
+	ctx, collection := setup.Setup(t, shareddata.Scalars)
+
+	ctx, span := otel.Tracer("").Start(ctx, "TestOtelComment")
+	defer span.End()
+
+	comment, err := observability.CommentFromSpanContext(span.SpanContext())
+	require.NoError(t, err)
+
+	var doc bson.D
+	opts := options.FindOne().SetComment(string(comment))
+	err = collection.FindOne(ctx, bson.D{{"_id", "string"}}, opts).Decode(&doc)
+	require.NoError(t, err)
 }
 
 //nolint:paralleltest // we test a global list of databases
@@ -504,27 +522,22 @@ func TestDebugError(t *testing.T) {
 
 	t.Parallel()
 
-	ctx, collection := setup.Setup(t)
-	db := collection.Database()
-
 	// TODO https://github.com/FerretDB/FerretDB/issues/2412
-
 	t.Run("ValidationError", func(t *testing.T) {
 		t.Parallel()
 
-		err := db.RunCommand(ctx, bson.D{{"debugError", bson.D{{"NaN", math.NaN()}}}}).Err()
-		expected := mongo.CommandError{
-			Code: 2,
-			Name: "BadValue",
-		}
-		AssertMatchesCommandError(t, expected, err)
-		assert.ErrorContains(t, err, "NaN is not supported")
+		ctx, collection := setup.Setup(t)
+		db := collection.Database()
 
-		require.NoError(t, db.Client().Ping(ctx, nil), "validation errors should not close connection")
+		err := db.RunCommand(ctx, bson.D{{"debugError", bson.D{{"NaN", math.NaN()}}}}).Err()
+		require.ErrorContains(t, err, "socket was unexpectedly closed")
 	})
 
 	t.Run("LazyError", func(t *testing.T) {
 		t.Parallel()
+
+		ctx, collection := setup.Setup(t)
+		db := collection.Database()
 
 		err := db.RunCommand(ctx, bson.D{{"debugError", "lazy error"}}).Err()
 		expected := mongo.CommandError{
@@ -540,6 +553,9 @@ func TestDebugError(t *testing.T) {
 	t.Run("OtherError", func(t *testing.T) {
 		t.Parallel()
 
+		ctx, collection := setup.Setup(t)
+		db := collection.Database()
+
 		err := db.RunCommand(ctx, bson.D{{"debugError", "other error"}}).Err()
 		expected := mongo.CommandError{
 			Code: 1,
@@ -550,53 +566,6 @@ func TestDebugError(t *testing.T) {
 
 		require.NoError(t, db.Client().Ping(ctx, nil), "other errors should not close connection")
 	})
-}
-
-func TestCheckingNestedDocuments(t *testing.T) {
-	t.Parallel()
-
-	for name, tc := range map[string]struct {
-		doc any
-		err error
-	}{
-		"1ok": {
-			doc: CreateNestedDocument(1),
-		},
-		"10ok": {
-			doc: CreateNestedDocument(10),
-		},
-		"100ok": {
-			doc: CreateNestedDocument(100),
-		},
-		"179ok": {
-			doc: CreateNestedDocument(179),
-		},
-		"180fail": {
-			doc: CreateNestedDocument(180),
-			err: fmt.Errorf("bson.Array.ReadFrom (document has exceeded the max supported nesting: 179."),
-		},
-		"180endedWithDocumentFail": {
-			doc: bson.D{{"v", CreateNestedDocument(179)}},
-			err: fmt.Errorf("bson.Document.ReadFrom (document has exceeded the max supported nesting: 179."),
-		},
-		"1000fail": {
-			doc: CreateNestedDocument(1000),
-			err: fmt.Errorf("bson.Document.ReadFrom (document has exceeded the max supported nesting: 179."),
-		},
-	} {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-			ctx, collection := setup.Setup(t)
-			_, err := collection.InsertOne(ctx, tc.doc)
-			if tc.err != nil {
-				require.Error(t, tc.err)
-				return
-			}
-
-			require.NoError(t, err)
-		})
-	}
 }
 
 func TestPingCommand(t *testing.T) {
@@ -699,23 +668,19 @@ func TestMutatingClientMetadata(t *testing.T) {
 			},
 		},
 	} {
-		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			res := db.RunCommand(ctx, tc.command)
+			var res bson.D
 
+			err := db.RunCommand(ctx, tc.command).Decode(&res)
 			if tc.err != nil {
-				err := res.Decode(&res)
 				AssertEqualCommandError(t, *tc.err, err)
 				return
 			}
 
-			var actualRes bson.D
-			err := res.Decode(&actualRes)
-
 			require.NoError(t, err)
-			require.NotNil(t, actualRes)
+			require.NotNil(t, res)
 		})
 	}
 }

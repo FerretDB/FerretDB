@@ -15,7 +15,7 @@
 package common
 
 import (
-	"go.uber.org/zap"
+	"log/slog"
 
 	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -34,12 +34,13 @@ type DeleteParams struct {
 
 	Let *types.Document `ferretdb:"let,unimplemented"`
 
+	MaxTimeMS      int64           `ferretdb:"maxTimeMS,ignored"`
 	WriteConcern   *types.Document `ferretdb:"writeConcern,ignored"`
 	LSID           any             `ferretdb:"lsid,ignored"`
+	TxnNumber      int64           `ferretdb:"txnNumber,ignored"`
 	ClusterTime    any             `ferretdb:"$clusterTime,ignored"`
 	ReadPreference *types.Document `ferretdb:"$readPreference,ignored"`
 
-	// StableAPI ignored parameters
 	ApiVersion           string `ferretdb:"apiVersion,ignored"`
 	ApiStrict            bool   `ferretdb:"apiStrict,ignored"`
 	ApiDeprecationErrors bool   `ferretdb:"apiDeprecationErrors,ignored"`
@@ -58,7 +59,7 @@ type Delete struct {
 }
 
 // GetDeleteParams returns parameters for delete operation.
-func GetDeleteParams(document *types.Document, l *zap.Logger) (*DeleteParams, error) {
+func GetDeleteParams(document *types.Document, l *slog.Logger) (*DeleteParams, error) {
 	params := DeleteParams{
 		Ordered: true,
 	}

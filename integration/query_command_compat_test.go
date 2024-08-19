@@ -23,8 +23,9 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
+
+	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
 // queryCommandCompatTestCase describes query compatibility test case.
@@ -43,7 +44,7 @@ type queryCommandCompatTestCase struct {
 	skip string // always skip this test case, must have issue number mentioned
 }
 
-// testQueryCompat tests query compatibility test cases.
+// testQueryCommandCompat tests query compatibility test cases.
 func testQueryCommandCompat(t *testing.T, testCases map[string]queryCommandCompatTestCase) {
 	t.Helper()
 

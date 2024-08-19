@@ -87,12 +87,12 @@ type topLevelValues[id comparable] struct {
 	data     map[id]Fields
 }
 
-// Name implements Provider interface.
+// Name implements [Provider].
 func (t *topLevelValues[id]) Name() string {
 	return t.name
 }
 
-// Docs implements Provider interface.
+// Docs implements [Provider].
 func (t *topLevelValues[id]) Docs() []bson.D {
 	ids := maps.Keys(t.data)
 

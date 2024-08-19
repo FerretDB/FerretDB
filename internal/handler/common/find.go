@@ -15,9 +15,7 @@
 package common
 
 import (
-	"errors"
-
-	"go.uber.org/zap"
+	"log/slog"
 
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
@@ -46,14 +44,17 @@ type FindParams struct {
 	Collation *types.Document `ferretdb:"collation,unimplemented"`
 	Let       *types.Document `ferretdb:"let,unimplemented"`
 
-	AllowDiskUse   bool            `ferretdb:"allowDiskUse,ignored"`
-	ReadConcern    *types.Document `ferretdb:"readConcern,ignored"`
-	Max            *types.Document `ferretdb:"max,ignored"`
-	Min            *types.Document `ferretdb:"min,ignored"`
-	Hint           any             `ferretdb:"hint,ignored"`
-	LSID           any             `ferretdb:"lsid,ignored"`
-	ClusterTime    any             `ferretdb:"$clusterTime,ignored"`
-	ReadPreference *types.Document `ferretdb:"$readPreference,ignored"`
+	AllowDiskUse     bool            `ferretdb:"allowDiskUse,ignored"`
+	ReadConcern      *types.Document `ferretdb:"readConcern,ignored"`
+	Max              *types.Document `ferretdb:"max,ignored"`
+	Min              *types.Document `ferretdb:"min,ignored"`
+	Hint             any             `ferretdb:"hint,ignored"`
+	LSID             any             `ferretdb:"lsid,ignored"`
+	TxnNumber        int64           `ferretdb:"txnNumber,ignored"`
+	StartTransaction bool            `ferretdb:"startTransaction,ignored"`
+	Autocommit       bool            `ferretdb:"autocommit,ignored"`
+	ClusterTime      any             `ferretdb:"$clusterTime,ignored"`
+	ReadPreference   *types.Document `ferretdb:"$readPreference,ignored"`
 
 	ReturnKey           bool `ferretdb:"returnKey,unimplemented-non-default"`
 	OplogReplay         bool `ferretdb:"oplogReplay,ignored"`
@@ -62,28 +63,18 @@ type FindParams struct {
 	// TODO https://github.com/FerretDB/FerretDB/issues/4035
 	NoCursorTimeout bool `ferretdb:"noCursorTimeout,unimplemented-non-default"`
 
-	// StableAPI ignored parameters
 	ApiVersion           string `ferretdb:"apiVersion,ignored"`
 	ApiStrict            bool   `ferretdb:"apiStrict,ignored"`
 	ApiDeprecationErrors bool   `ferretdb:"apiDeprecationErrors,ignored"`
 }
 
 // GetFindParams returns `find` command parameters.
-func GetFindParams(doc *types.Document, l *zap.Logger) (*FindParams, error) {
+func GetFindParams(doc *types.Document, l *slog.Logger) (*FindParams, error) {
 	params := FindParams{
 		BatchSize: 101,
 	}
 
-	err := handlerparams.ExtractParams(doc, "find", &params, l)
-
-	var ce *handlererrors.CommandError
-	if errors.As(err, &ce) {
-		if ce.Code() == handlererrors.ErrInvalidNamespace {
-			return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrBadValue, ce.Err().Error(), "find")
-		}
-	}
-
-	if err != nil {
+	if err := handlerparams.ExtractParams(doc, "find", &params, l); err != nil {
 		return nil, err
 	}
 

@@ -16,6 +16,7 @@ const config = {
 
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'throw',
+  onBrokenAnchors: 'throw',
 
   i18n: {
     defaultLocale: 'en',
@@ -29,7 +30,6 @@ const config = {
   scripts: [
     {src: 'https://plausible.io/js/script.js', defer: true, "data-domain": "blog.ferretdb.io"},
     {src: '/codapi/snippet.js', defer: true},
-    {src: '/codapi/init.js', defer: true},
   ],
 
   plugins: [
@@ -43,6 +43,7 @@ const config = {
         }
       },
     ],
+    'plugin-image-zoom'
   ],
 
   presets: [

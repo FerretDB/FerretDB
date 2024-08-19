@@ -21,9 +21,10 @@ import (
 	"crypto/tls"
 	"net"
 
+	"github.com/FerretDB/wire"
+
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/tlsutil"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // Router "handles" messages by sending them to another wire protocol compatible service.

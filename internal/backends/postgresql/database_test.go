@@ -40,9 +40,10 @@ func TestDatabaseStats(t *testing.T) {
 	require.NoError(t, err)
 
 	params := NewBackendParams{
-		URI: testutil.TestPostgreSQLURI(t, ctx, ""),
-		L:   testutil.Logger(t),
-		P:   sp,
+		URI:       testutil.TestPostgreSQLURI(t, ctx, ""),
+		L:         testutil.Logger(t),
+		P:         sp,
+		BatchSize: 1000,
 	}
 	b, err := NewBackend(&params)
 	require.NoError(t, err)

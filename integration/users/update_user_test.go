@@ -22,18 +22,19 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 
-	"github.com/FerretDB/FerretDB/integration"
-	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
+
+	"github.com/FerretDB/FerretDB/integration"
+	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
 func TestUpdateUser(t *testing.T) {
 	t.Parallel()
 
-	ctx, collection := setup.Setup(t)
-	db := collection.Database()
+	s := setup.SetupWithOpts(t, nil)
+	ctx, db := s.Ctx, s.Collection.Database()
 
 	testCases := map[string]struct { //nolint:vet // for readability
 		createPayload bson.D
@@ -109,6 +110,22 @@ func TestUpdateUser(t *testing.T) {
 			},
 			altMessage: "Password cannot be empty",
 		},
+		"BadPasswordValue": {
+			createPayload: bson.D{
+				{"createUser", "b_user_bad_password_value"},
+				{"roles", bson.A{}},
+				{"pwd", "password"},
+			},
+			updatePayload: bson.D{
+				{"updateUser", "b_user_bad_password_value"},
+				{"pwd", true},
+			},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'updateUser.pwd' is the wrong type 'bool', expected type 'string'",
+			},
+		},
 		"BadPasswordType": {
 			createPayload: bson.D{
 				{"createUser", "a_user_bad_password_type"},
@@ -165,19 +182,36 @@ func TestUpdateUser(t *testing.T) {
 				{"createUser", "a_user_with_mechanism"},
 				{"roles", bson.A{}},
 				{"pwd", "password"},
-				{"mechanisms", bson.A{"PLAIN"}},
 			},
 			updatePayload: bson.D{
 				{"updateUser", "a_user_with_mechanism"},
 				{"pwd", "anewpassword"},
+				{"mechanisms", bson.A{"PLAIN"}},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "Unknown auth mechanism 'PLAIN'",
+			},
+		},
+		"PasswordChangeWithSCRAMMechanism": {
+			createPayload: bson.D{
+				{"createUser", "a_user_with_scram_mechanism"},
+				{"roles", bson.A{}},
+				{"pwd", "password"},
+				{"mechanisms", bson.A{"SCRAM-SHA-256"}},
+			},
+			updatePayload: bson.D{
+				{"updateUser", "a_user_with_scram_mechanism"},
+				{"pwd", "anewpassword"},
+				{"mechanisms", bson.A{"SCRAM-SHA-256"}},
 			},
 			expected: bson.D{
-				{"_id", "TestUpdateUser.a_user_with_mechanism"},
-				{"user", "a_user_with_mechanism"},
+				{"_id", "TestUpdateUser.a_user_with_scram_mechanism"},
+				{"user", "a_user_with_scram_mechanism"},
 				{"db", "TestUpdateUser"},
 				{"roles", bson.A{}},
 			},
-			skipForMongoDB: "MongoDB decommissioned support to PLAIN auth",
 		},
 		"PasswordChangeWithBadAuthMechanism": {
 			createPayload: bson.D{
@@ -188,14 +222,13 @@ func TestUpdateUser(t *testing.T) {
 			updatePayload: bson.D{
 				{"updateUser", "a_user_with_mechanism_bad"},
 				{"pwd", "anewpassword"},
-				{"mechanisms", bson.A{"PLAIN", "BAD"}},
+				{"mechanisms", bson.A{"SCRAM-SHA-256", "BAD"}},
 			},
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: "Unknown auth mechanism 'BAD'",
 			},
-			skipForMongoDB: "MongoDB decommissioned support to PLAIN auth",
 		},
 		"PasswordChangeWithRoles": {
 			createPayload: bson.D{

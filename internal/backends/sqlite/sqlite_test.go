@@ -31,7 +31,7 @@ func TestCollectionsStats(t *testing.T) {
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
-	r, err := metadata.NewRegistry(testutil.TestSQLiteURI(t, ""), testutil.Logger(t), sp)
+	r, err := metadata.NewRegistry(testutil.TestSQLiteURI(t, ""), 100, testutil.Logger(t), sp)
 	require.NoError(t, err)
 	t.Cleanup(r.Close)
 

@@ -71,15 +71,6 @@ func TestDiffDocumentValidation(t *testing.T) {
 					Message: `invalid value: { "foo": -Inf } (infinity values are not allowed)`,
 				}}},
 			},
-			"NaN": {
-				doc: bson.D{{"_id", "nan"}, {"foo", math.NaN()}},
-				err: mongo.CommandError{
-					Code: 2,
-					Name: "BadValue",
-					Message: `wire.OpMsg.Document: validation failed for { insert: "TestDiffDocumentValidation", ordered: true, ` +
-						`$db: "TestDiffDocumentValidation", documents: [ { _id: "nan", foo: nan.0 } ] } with: NaN is not supported`,
-				},
-			},
 		} {
 			name, tc := name, tc
 			t.Run(name, func(t *testing.T) {
@@ -106,7 +97,6 @@ func TestDiffDocumentValidation(t *testing.T) {
 			opts   *options.UpdateOptions
 
 			werr *mongo.WriteError
-			cerr *mongo.CommandError
 		}{
 			"DotSign": {
 				filter: bson.D{},
@@ -114,29 +104,6 @@ func TestDiffDocumentValidation(t *testing.T) {
 				werr: &mongo.WriteError{
 					Code:    2,
 					Message: `invalid key: "bar.baz" (key must not contain '.' sign)`,
-				},
-			},
-			"NaN": {
-				filter: bson.D{{"_id", "2"}},
-				update: bson.D{{"$set", bson.D{{"foo", math.NaN()}}}},
-				cerr: &mongo.CommandError{
-					Code: 2,
-					Name: "BadValue",
-					Message: `wire.OpMsg.Document: validation failed for { update: "TestDiffDocumentValidation", ` +
-						`ordered: true, $db: "TestDiffDocumentValidation", updates: [ { q: { _id: "2" }, ` +
-						`u: { $set: { foo: nan.0 } } } ] } with: NaN is not supported`,
-				},
-			},
-			"NaNWithUpsert": {
-				filter: bson.D{{"_id", "3"}},
-				update: bson.D{{"$set", bson.D{{"foo", math.NaN()}}}},
-				opts:   options.Update().SetUpsert(true),
-				cerr: &mongo.CommandError{
-					Code: 2,
-					Name: "BadValue",
-					Message: `wire.OpMsg.Document: validation failed for { update: "TestDiffDocumentValidation", ` +
-						`ordered: true, $db: "TestDiffDocumentValidation", updates: [ { q: { _id: "3" }, ` +
-						`u: { $set: { foo: nan.0 } }, upsert: true } ] } with: NaN is not supported`,
 				},
 			},
 		} {
@@ -151,55 +118,84 @@ func TestDiffDocumentValidation(t *testing.T) {
 					return
 				}
 
-				if tc.werr != nil {
-					AssertEqualWriteError(t, *tc.werr, err)
-					return
-				}
-
-				AssertEqualCommandError(t, *tc.cerr, err)
+				AssertEqualWriteError(t, *tc.werr, err)
 			})
 		}
 	})
+}
 
-	t.Run("FindAndModify", func(t *testing.T) {
+func TestDiffDocumentValidationNaN(t *testing.T) {
+	t.Parallel()
+
+	t.Run("InsertNaN", func(t *testing.T) {
 		t.Parallel()
 
-		for name, tc := range map[string]struct {
+		ctx, collection := setup.Setup(t, shareddata.Scalars)
+
+		_, err := collection.InsertOne(ctx, bson.D{{"_id", "nan"}, {"foo", math.NaN()}})
+
+		if setup.IsMongoDB(t) {
+			require.NoError(t, err)
+			return
+		}
+
+		require.ErrorContains(t, err, "socket was unexpectedly closed")
+	})
+
+	t.Run("Update", func(t *testing.T) {
+		t.Parallel()
+
+		for name, tc := range map[string]struct { //nolint:vet // used only for testing
 			filter bson.D
 			update bson.D
-			err    mongo.CommandError
+			opts   *options.UpdateOptions
 		}{
 			"NaN": {
-				filter: bson.D{{"_id", "4"}},
+				filter: bson.D{{"_id", "2"}},
 				update: bson.D{{"$set", bson.D{{"foo", math.NaN()}}}},
-				err: mongo.CommandError{
-					Code: 2,
-					Name: "BadValue",
-					Message: `wire.OpMsg.Document: validation failed for { findAndModify: "TestDiffDocumentValidation", ` +
-						`query: { _id: "4" }, update: { $set: { foo: nan.0 } }, $db: "TestDiffDocumentValidation" } with: NaN ` +
-						`is not supported`,
-				},
+			},
+			"NaNWithUpsert": {
+				filter: bson.D{{"_id", "3"}},
+				update: bson.D{{"$set", bson.D{{"foo", math.NaN()}}}},
+				opts:   options.Update().SetUpsert(true),
 			},
 		} {
-			name, tc := name, tc
-
 			t.Run(name, func(t *testing.T) {
 				t.Parallel()
 
-				_, err := collection.InsertOne(ctx, tc.filter)
-				if err != nil {
-					t.Fatal(err)
-				}
+				ctx, collection := setup.Setup(t, shareddata.Scalars)
 
-				err = collection.FindOneAndUpdate(ctx, tc.filter, tc.update).Err()
+				_, err := collection.UpdateOne(ctx, tc.filter, tc.update, tc.opts)
 
 				if setup.IsMongoDB(t) {
 					require.NoError(t, err)
 					return
 				}
 
-				AssertEqualCommandError(t, tc.err, err)
+				require.ErrorContains(t, err, "socket was unexpectedly closed")
 			})
 		}
+	})
+
+	t.Run("FindAndModifyNaN", func(t *testing.T) {
+		t.Parallel()
+
+		ctx, collection := setup.Setup(t, shareddata.Scalars)
+
+		filter := bson.D{{"_id", "4"}}
+
+		_, err := collection.InsertOne(ctx, filter)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = collection.FindOneAndUpdate(ctx, filter, bson.D{{"$set", bson.D{{"foo", math.NaN()}}}}).Err()
+
+		if setup.IsMongoDB(t) {
+			require.NoError(t, err)
+			return
+		}
+
+		require.ErrorContains(t, err, "socket was unexpectedly closed")
 	})
 }

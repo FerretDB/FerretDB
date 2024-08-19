@@ -18,8 +18,7 @@ package handlererrors
 import (
 	"errors"
 
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/wire"
+	"github.com/FerretDB/wire/wirebson"
 )
 
 //go:generate ../../../bin/stringer -linecomment -type ErrorCode
@@ -79,7 +78,7 @@ const (
 	ErrDollarPrefixedFieldName = ErrorCode(52) // DollarPrefixedFieldName
 
 	// ErrInvalidID indicates that _id field is invalid.
-	ErrInvalidID = ErrorCode(53) // InvalidID
+	ErrInvalidID = ErrorCode(53) // InvalidIdField
 
 	// ErrEmptyName indicates that the field name is empty.
 	ErrEmptyName = ErrorCode(56) // EmptyFieldName
@@ -126,11 +125,17 @@ const (
 	// ErrNotImplemented indicates that a flag or command is not implemented.
 	ErrNotImplemented = ErrorCode(238) // NotImplemented
 
+	// ErrMechanismUnavailable indicates that the authentication mechanism is unavailable.
+	ErrMechanismUnavailable = ErrorCode(334)
+
+	// ErrUnsupportedOpQueryCommand indicates that given op query is not supported.
+	ErrUnsupportedOpQueryCommand = ErrorCode(352) // UnsupportedOpQueryCommand
+
 	// ErrIndexesWrongType indicates that indexes parameter has wrong type.
 	ErrIndexesWrongType = ErrorCode(10065) // Location10065
 
 	// ErrDuplicateKeyInsert indicates duplicate key violation on inserting document.
-	ErrDuplicateKeyInsert = ErrorCode(11000) // Location11000
+	ErrDuplicateKeyInsert = ErrorCode(11000) // DuplicateKey
 
 	// ErrSetBadExpression indicates set expression is not object.
 	ErrSetBadExpression = ErrorCode(40272) // Location40272
@@ -284,6 +289,9 @@ const (
 	// ErrSetEmptyPassword indicates that a password must not be empty.
 	ErrSetEmptyPassword = ErrorCode(50687) // Location50687
 
+	// ErrStringProhibited indicates that a password contains prohibited runes.
+	ErrStringProhibited = ErrorCode(50692) // Location50692
+
 	// ErrFreeMonitoringDisabled indicates that free monitoring is disabled
 	// by command-line or config file.
 	ErrFreeMonitoringDisabled = ErrorCode(50840) // Location50840
@@ -327,6 +335,9 @@ const (
 	// ErrStageCollStatsInvalidArg indicates invalid argument for the aggregation $collStats stage.
 	ErrStageCollStatsInvalidArg = ErrorCode(5447000) // Location5447000
 
+	// ErrOpQueryCollectionSuffixMissing indicates that op query collection does not contain .$cmd suffix.
+	ErrOpQueryCollectionSuffixMissing = ErrorCode(5739101) // Location5739101
+
 	// ErrStageIndexedStringVectorDuplicate indicates that input to IndexedStringVector contained duplicate values.
 	ErrStageIndexedStringVectorDuplicate = ErrorCode(7582300) // Location7582300
 )
@@ -342,7 +353,7 @@ type ProtoErr interface {
 	error
 
 	// Document returns error representation for returning to the client.
-	Document() *types.Document
+	Document() *wirebson.Document
 
 	// Info returns additional error information, or nil.
 	Info() *ErrInfo
@@ -351,8 +362,7 @@ type ProtoErr interface {
 // ProtocolError converts any error to wire protocol error.
 //
 // Nil panics (it never should be passed),
-// *CommandError or *WriteErrors (possibly wrapped) are returned unwrapped,
-// *wire.ValidationError (possibly wrapped) is returned as CommandError with BadValue code,
+// [*CommandError] or [*WriteErrors] (possibly wrapped) are returned unwrapped,
 // any other values (including lazy errors) are returned as CommandError with InternalError code.
 func ProtocolError(err error) ProtoErr {
 	if err == nil {
@@ -367,12 +377,6 @@ func ProtocolError(err error) ProtoErr {
 	var writeErr *WriteErrors
 	if errors.As(err, &writeErr) {
 		return writeErr
-	}
-
-	var validationErr *wire.ValidationError
-	if errors.As(err, &validationErr) {
-		//nolint:errorlint // only *CommandError could be returned
-		return NewCommandError(ErrBadValue, err).(*CommandError)
 	}
 
 	//nolint:errorlint // only *CommandError could be returned

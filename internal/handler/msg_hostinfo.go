@@ -24,14 +24,17 @@ import (
 	"strings"
 	"time"
 
+	"github.com/FerretDB/wire"
+
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgHostInfo implements `hostInfo` command.
-func (h *Handler) MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgHostInfo(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	now := time.Now().UTC()
 
 	hostname, err := os.Hostname()
@@ -65,8 +68,7 @@ func (h *Handler) MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		os = "Windows"
 	}
 
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+	return documentOpMsg(
 		must.NotFail(types.NewDocument(
 			"system", must.NotFail(types.NewDocument(
 				"currentTime", now,
@@ -83,9 +85,7 @@ func (h *Handler) MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 			"extra", must.NotFail(types.NewDocument()),
 			"ok", float64(1),
 		)),
-	)))
-
-	return &reply, nil
+	)
 }
 
 // parseOSRelease parses the /etc/os-release or /usr/lib/os-release file content,

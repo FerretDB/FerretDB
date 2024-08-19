@@ -18,11 +18,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"math"
 	"os"
+	"strings"
 	"time"
 
-	"go.uber.org/zap"
+	"github.com/FerretDB/wire"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
@@ -36,12 +38,13 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgAggregate implements `aggregate` command.
-func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := msg.Document()
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgAggregate(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	document, err := opMsgDocument(msg)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -101,7 +104,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
-	username := conninfo.Get(ctx).Username()
+	username := conninfo.Get(connCtx).Username()
 
 	v, _ := document.Get("maxTimeMS")
 	if v == nil {
@@ -247,8 +250,10 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, err
 	}
 
+	ctx := connCtx
 	cancel := func() {}
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/2983
 	if maxTimeMS != 0 {
 		findDone := make(chan struct{})
 		defer close(findDone)
@@ -279,6 +284,18 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 		if !h.DisablePushdown {
 			qp.Filter = filter
+		}
+
+		if !h.EnableNestedPushdown && filter != nil {
+			qp.Filter = filter.DeepCopy()
+
+			for _, k := range qp.Filter.Keys() {
+				if !strings.ContainsRune(k, '.') {
+					continue
+				}
+
+				qp.Filter.Remove(k)
+			}
 		}
 
 		if sort, err = common.ValidateSortDocument(sort); err != nil {
@@ -364,9 +381,13 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, handleMaxTimeMSError(err, maxTimeMS, "aggregate")
 	}
 
-	h.L.Debug(
-		"Got first batch", zap.Int64("cursor_id", cursorID), zap.Stringer("type", cursor.Type),
-		zap.Int("count", len(docs)), zap.Int64("batch_size", batchSize),
+	h.L.DebugContext(
+		ctx,
+		"Got first batch",
+		slog.Int64("cursor_id", cursorID),
+		slog.String("type", cursor.Type.String()),
+		slog.Int("count", len(docs)),
+		slog.Int64("batch_size", batchSize),
 	)
 
 	firstBatch := types.MakeArray(len(docs))
@@ -381,8 +402,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		cursor.Close()
 	}
 
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+	return documentOpMsg(
 		must.NotFail(types.NewDocument(
 			"cursor", must.NotFail(types.NewDocument(
 				"firstBatch", firstBatch,
@@ -391,9 +411,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			)),
 			"ok", float64(1),
 		)),
-	)))
-
-	return &reply, nil
+	)
 }
 
 // stagesDocumentsParams contains the parameters for processStagesDocuments.

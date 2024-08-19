@@ -18,6 +18,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/FerretDB/wire"
+
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
@@ -25,12 +27,13 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgDBStats implements `dbStats` command.
-func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := msg.Document()
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgDBStats(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	document, err := opMsgDocument(msg)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -69,7 +72,7 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	list, err := db.ListCollections(ctx, new(backends.ListCollectionsParams))
+	list, err := db.ListCollections(connCtx, new(backends.ListCollectionsParams))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -86,7 +89,7 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 		var iList *backends.ListIndexesResult
 
-		iList, err = c.ListIndexes(ctx, new(backends.ListIndexesParams))
+		iList, err = c.ListIndexes(connCtx, new(backends.ListIndexesParams))
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
 			iList = new(backends.ListIndexesResult)
 			err = nil
@@ -99,7 +102,7 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		nIndexes += int64(len(iList.Indexes))
 	}
 
-	stats, err := db.Stats(ctx, &backends.DatabaseStatsParams{Refresh: true})
+	stats, err := db.Stats(connCtx, &backends.DatabaseStatsParams{Refresh: true})
 	if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseDoesNotExist) {
 		stats = new(backends.DatabaseStatsResult)
 		err = nil
@@ -157,10 +160,7 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		"ok", float64(1),
 	)
 
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+	return documentOpMsg(
 		must.NotFail(types.NewDocument(pairs...)),
-	)))
-
-	return &reply, nil
+	)
 }

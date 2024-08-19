@@ -26,12 +26,13 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/teststress"
+
+	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 func TestCommandsDiagnosticConnectionStatus(t *testing.T) {
@@ -403,7 +404,7 @@ func TestCommandsDiagnosticWhatsMyURI(t *testing.T) {
 	databaseName := s.Collection.Database().Name()
 	collectionName := s.Collection.Name()
 
-	// only check port number on TCP connection, no need to check on Unix socket
+	// only check port number on TCP connection, no need to check on Unix domain socket
 	isUnix := s.IsUnixSocket(t)
 
 	// setup second client connection to check that `whatsmyuri` returns different ports

@@ -15,7 +15,7 @@
 package common
 
 import (
-	"go.uber.org/zap"
+	"log/slog"
 
 	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -34,6 +34,7 @@ type CountParams struct {
 
 	Fields any `ferretdb:"fields,ignored"` // legacy MongoDB shell adds it, but it is never actually used
 
+	MaxTimeMS      int64           `ferretdb:"maxTimeMS,ignored"`
 	Hint           any             `ferretdb:"hint,ignored"`
 	ReadConcern    *types.Document `ferretdb:"readConcern,ignored"`
 	Comment        string          `ferretdb:"comment,ignored"`
@@ -41,14 +42,13 @@ type CountParams struct {
 	ClusterTime    any             `ferretdb:"$clusterTime,ignored"`
 	ReadPreference *types.Document `ferretdb:"$readPreference,ignored"`
 
-	// StableAPI ignored parameters
 	ApiVersion           string `ferretdb:"apiVersion,ignored"`
 	ApiStrict            bool   `ferretdb:"apiStrict,ignored"`
 	ApiDeprecationErrors bool   `ferretdb:"apiDeprecationErrors,ignored"`
 }
 
 // GetCountParams returns the parameters for the count command.
-func GetCountParams(document *types.Document, l *zap.Logger) (*CountParams, error) {
+func GetCountParams(document *types.Document, l *slog.Logger) (*CountParams, error) {
 	var count CountParams
 
 	err := handlerparams.ExtractParams(document, "count", &count, l)

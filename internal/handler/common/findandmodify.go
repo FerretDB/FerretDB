@@ -16,8 +16,7 @@ package common
 
 import (
 	"fmt"
-
-	"go.uber.org/zap"
+	"log/slog"
 
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
@@ -25,6 +24,8 @@ import (
 )
 
 // FindAndModifyParams represent parameters for the findAndModify command.
+//
+//nolint:vet // for readability
 type FindAndModifyParams struct {
 	DB                string          `ferretdb:"$db"`
 	Collection        string          `ferretdb:"findAndModify,collection"`
@@ -51,17 +52,17 @@ type FindAndModifyParams struct {
 	WriteConcern             *types.Document `ferretdb:"writeConcern,ignored"`
 	BypassDocumentValidation bool            `ferretdb:"bypassDocumentValidation,ignored"`
 	LSID                     any             `ferretdb:"lsid,ignored"`
+	TxnNumber                int64           `ferretdb:"txnNumber,ignored"`
 	ClusterTime              any             `ferretdb:"$clusterTime,ignored"`
 	ReadPreference           *types.Document `ferretdb:"$readPreference,ignored"`
 
-	// StableAPI ignored parameters
 	ApiVersion           string `ferretdb:"apiVersion,ignored"`
 	ApiStrict            bool   `ferretdb:"apiStrict,ignored"`
 	ApiDeprecationErrors bool   `ferretdb:"apiDeprecationErrors,ignored"`
 }
 
 // GetFindAndModifyParams returns `findAndModifyParams` command parameters.
-func GetFindAndModifyParams(doc *types.Document, l *zap.Logger) (*FindAndModifyParams, error) {
+func GetFindAndModifyParams(doc *types.Document, l *slog.Logger) (*FindAndModifyParams, error) {
 	var params FindAndModifyParams
 
 	err := handlerparams.ExtractParams(doc, "findAndModify", &params, l)

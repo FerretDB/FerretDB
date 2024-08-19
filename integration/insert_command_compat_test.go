@@ -20,8 +20,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
+
+	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
 type insertCommandCompatTestCase struct { //nolint:vet // for readability

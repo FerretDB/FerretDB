@@ -15,7 +15,7 @@
 package common
 
 import (
-	"go.uber.org/zap"
+	"log/slog"
 
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
@@ -42,10 +42,14 @@ type ExplainParams struct {
 	Command    *types.Document `ferretdb:"-"`
 
 	Verbosity string `ferretdb:"verbosity,ignored"`
+
+	ApiVersion           string `ferretdb:"apiVersion,ignored"`
+	ApiStrict            bool   `ferretdb:"apiStrict,ignored"`
+	ApiDeprecationErrors bool   `ferretdb:"apiDeprecationErrors,ignored"`
 }
 
 // GetExplainParams returns the parameters for the explain command.
-func GetExplainParams(document *types.Document, l *zap.Logger) (*ExplainParams, error) {
+func GetExplainParams(document *types.Document, l *slog.Logger) (*ExplainParams, error) {
 	var err error
 
 	var db, collection string

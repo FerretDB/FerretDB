@@ -18,6 +18,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/FerretDB/wire"
+
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
@@ -25,12 +27,13 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgCollStats implements `collStats` command.
-func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := msg.Document()
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgCollStats(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	document, err := opMsgDocument(msg)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -77,7 +80,7 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	collectionParam := backends.ListCollectionsParams{Name: collection}
-	collections, err := db.ListCollections(ctx, &collectionParam)
+	collections, err := db.ListCollections(connCtx, &collectionParam)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -90,7 +93,7 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		cInfo = collections.Collections[0]
 	}
 
-	indexes, err := c.ListIndexes(ctx, new(backends.ListIndexesParams))
+	indexes, err := c.ListIndexes(connCtx, new(backends.ListIndexesParams))
 	if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
 		indexes = new(backends.ListIndexesResult)
 		err = nil
@@ -100,7 +103,7 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
-	stats, err := c.Stats(ctx, &backends.CollectionStatsParams{Refresh: true})
+	stats, err := c.Stats(connCtx, &backends.CollectionStatsParams{Refresh: true})
 	if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
 		stats = new(backends.CollectionStatsResult)
 		err = nil
@@ -158,10 +161,7 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		"ok", float64(1),
 	)
 
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+	return documentOpMsg(
 		must.NotFail(types.NewDocument(pairs...)),
-	)))
-
-	return &reply, nil
+	)
 }

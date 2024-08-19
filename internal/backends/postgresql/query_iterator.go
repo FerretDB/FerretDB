@@ -28,7 +28,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
 
@@ -51,7 +50,7 @@ type queryIterator struct {
 // In that case, the iterator's Close method should still be called.
 //
 // Nil rows are possible and return already done iterator.
-// It still should be Close'd.
+// It still should be Closed.
 func newQueryIterator(ctx context.Context, rows pgx.Rows, onlyRecordIDs bool) types.DocumentsIterator {
 	iter := &queryIterator{
 		ctx:           ctx,
@@ -66,8 +65,6 @@ func newQueryIterator(ctx context.Context, rows pgx.Rows, onlyRecordIDs bool) ty
 
 // Next implements iterator.Interface.
 func (iter *queryIterator) Next() (struct{}, *types.Document, error) {
-	defer observability.FuncCall(iter.ctx)()
-
 	iter.m.Lock()
 	defer iter.m.Unlock()
 
@@ -137,8 +134,6 @@ func (iter *queryIterator) Next() (struct{}, *types.Document, error) {
 
 // Close implements iterator.Interface.
 func (iter *queryIterator) Close() {
-	defer observability.FuncCall(iter.ctx)()
-
 	iter.m.Lock()
 	defer iter.m.Unlock()
 
@@ -149,8 +144,6 @@ func (iter *queryIterator) Close() {
 //
 // This should be called only when the caller already holds the mutex.
 func (iter *queryIterator) close() {
-	defer observability.FuncCall(iter.ctx)()
-
 	if iter.rows != nil {
 		iter.rows.Close()
 		iter.rows = nil

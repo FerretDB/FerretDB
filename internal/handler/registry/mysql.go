@@ -17,6 +17,8 @@ package registry
 import (
 	"github.com/FerretDB/FerretDB/internal/backends/mysql"
 	"github.com/FerretDB/FerretDB/internal/handler"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/logging"
 )
 
 // init registers "mysql" handler.
@@ -24,11 +26,11 @@ func init() {
 	registry["mysql"] = func(opts *NewHandlerOpts) (*handler.Handler, CloseBackendFunc, error) {
 		b, err := mysql.NewBackend(&mysql.NewBackendParams{
 			URI: opts.MySQLURL,
-			L:   opts.Logger.Named("mysql"),
+			L:   logging.WithName(opts.Logger, "mysql"),
 			P:   opts.StateProvider,
 		})
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, lazyerrors.Error(err)
 		}
 
 		handlerOpts := &handler.NewOpts{
@@ -36,19 +38,27 @@ func init() {
 			TCPHost:     opts.TCPHost,
 			ReplSetName: opts.ReplSetName,
 
-			L:             opts.Logger.Named("mysql"),
+			SetupDatabase: opts.SetupDatabase,
+			SetupUsername: opts.SetupUsername,
+			SetupPassword: opts.SetupPassword,
+			SetupTimeout:  opts.SetupTimeout,
+
+			L:             logging.WithName(opts.Logger, "mysql"),
 			ConnMetrics:   opts.ConnMetrics,
 			StateProvider: opts.StateProvider,
 
 			DisablePushdown:         opts.DisablePushdown,
+			EnableNestedPushdown:    opts.EnableNestedPushdown,
 			CappedCleanupPercentage: opts.CappedCleanupPercentage,
 			CappedCleanupInterval:   opts.CappedCleanupInterval,
 			EnableNewAuth:           opts.EnableNewAuth,
+			BatchSize:               opts.BatchSize,
+			MaxBsonObjectSizeBytes:  opts.MaxBsonObjectSizeBytes,
 		}
 
 		h, err := handler.New(handlerOpts)
 		if err != nil {
-			return nil, nil, err
+			return nil, b.Close, lazyerrors.Error(err)
 		}
 
 		return h, b.Close, nil

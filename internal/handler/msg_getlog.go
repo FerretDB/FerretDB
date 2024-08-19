@@ -18,12 +18,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
-	"go.uber.org/zap"
+	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/build/version"
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -31,12 +34,13 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgGetLog implements `getLog` command.
-func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := msg.Document()
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgGetLog(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	document, err := opMsgDocument(msg)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -75,13 +79,15 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		))
 
 	case "global":
-		log, err := logging.RecentEntries.GetArray(zap.DebugLevel)
-		if err != nil {
+		var res *wirebson.Array
+
+		if res, err = logging.RecentEntries.GetArray(); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
+
 		resDoc = must.NotFail(types.NewDocument(
-			"log", log,
-			"totalLinesWritten", int64(log.Len()),
+			"log", must.NotFail(bson.ToArray(res)),
+			"totalLinesWritten", int64(res.Len()),
 			"ok", float64(1),
 		))
 
@@ -106,21 +112,28 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			startupWarnings = append(startupWarnings, "This is debug build. The performance will be affected.")
 		}
 
+		if h.L.Enabled(connCtx, slog.LevelDebug) {
+			startupWarnings = append(startupWarnings, "Debug logging enabled. The security and performance will be affected.")
+		}
+
 		switch {
 		case state.Telemetry == nil:
 			startupWarnings = append(
 				startupWarnings,
 				"The telemetry state is undecided.",
-				"Read more about FerretDB telemetry and how to opt out at https://beacon.ferretdb.io.",
+				"Read more about FerretDB telemetry and how to opt out at https://beacon.ferretdb.com.",
 			)
-		case state.UpdateAvailable:
-			startupWarnings = append(
-				startupWarnings,
-				fmt.Sprintf(
+
+		case state.UpdateInfo != "", state.UpdateAvailable:
+			msg := state.UpdateInfo
+			if msg == "" {
+				msg = fmt.Sprintf(
 					"A new version available! The latest version: %s. The current version: %s.",
 					state.LatestVersion, info.Version,
-				),
-			)
+				)
+			}
+
+			startupWarnings = append(startupWarnings, msg)
 		}
 
 		var log types.Array
@@ -156,10 +169,7 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		)
 	}
 
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+	return documentOpMsg(
 		resDoc,
-	)))
-
-	return &reply, nil
+	)
 }

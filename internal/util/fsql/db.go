@@ -18,13 +18,14 @@ package fsql
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/observability"
+	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
 
@@ -35,16 +36,17 @@ import (
 type DB struct {
 	*metricsCollector
 
-	sqlDB *sql.DB
-	l     *zap.Logger
-	token *resource.Token
+	sqlDB     *sql.DB
+	l         *slog.Logger
+	token     *resource.Token
+	BatchSize int
 }
 
 // WrapDB creates a new DB.
 //
 // Name is used for metric label values, etc.
 // Logger (that will be named) is used for query logging.
-func WrapDB(db *sql.DB, name string, l *zap.Logger) *DB {
+func WrapDB(db *sql.DB, name string, l *slog.Logger) *DB {
 	if db == nil {
 		return nil
 	}
@@ -52,7 +54,7 @@ func WrapDB(db *sql.DB, name string, l *zap.Logger) *DB {
 	res := &DB{
 		metricsCollector: newMetricsCollector(name, db.Stats),
 		sqlDB:            db,
-		l:                l.Named(name),
+		l:                logging.WithName(l, name),
 		token:            resource.NewToken(),
 	}
 
@@ -67,61 +69,57 @@ func (db *DB) Close() error {
 	return db.sqlDB.Close()
 }
 
+// Ping calls [*sql.DB.Ping].
+func (db *DB) Ping(ctx context.Context) error {
+	return db.sqlDB.Ping()
+}
+
 // QueryContext calls [*sql.DB.QueryContext].
 func (db *DB) QueryContext(ctx context.Context, query string, args ...any) (*Rows, error) {
-	defer observability.FuncCall(ctx)()
-
 	start := time.Now()
 
-	fields := []any{zap.Any("args", args)}
-	db.l.Sugar().With(fields...).Debugf(">>> %s", query)
+	fields := []any{slog.Any("args", args)}
+	db.l.With(fields...).DebugContext(ctx, fmt.Sprintf(">>> %s", query))
 
 	rows, err := db.sqlDB.QueryContext(ctx, query, args...)
 
-	fields = append(fields, zap.Duration("time", time.Since(start)), zap.Error(err))
-	db.l.Sugar().With(fields...).Debugf("<<< %s", query)
+	fields = append(fields, slog.Duration("time", time.Since(start)), logging.Error(err))
+	db.l.With(fields...).DebugContext(ctx, fmt.Sprintf("<<< %s", query))
 
 	return wrapRows(rows), err
 }
 
 // QueryRowContext calls [*sql.DB.QueryRowContext].
 func (db *DB) QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row {
-	defer observability.FuncCall(ctx)()
-
 	start := time.Now()
 
-	fields := []any{zap.Any("args", args)}
-	db.l.Sugar().With(fields...).Debugf(">>> %s", query)
+	fields := []any{slog.Any("args", args)}
+	db.l.With(fields...).DebugContext(ctx, fmt.Sprintf(">>> %s", query))
 
 	row := db.sqlDB.QueryRowContext(ctx, query, args...)
 
-	fields = append(fields, zap.Duration("time", time.Since(start)), zap.Error(row.Err()))
-	db.l.Sugar().With(fields...).Debugf("<<< %s", query)
+	fields = append(fields, slog.Duration("time", time.Since(start)), logging.Error(row.Err()))
+	db.l.With(fields...).DebugContext(ctx, fmt.Sprintf("<<< %s", query))
 
 	return row
 }
 
 // ExecContext calls [*sql.DB.ExecContext].
 func (db *DB) ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error) {
-	defer observability.FuncCall(ctx)()
-
 	start := time.Now()
 
-	fields := []any{zap.Any("args", args)}
-	db.l.Sugar().With(fields...).Debugf(">>> %s", query)
+	fields := []any{slog.Any("args", args)}
+	db.l.With(fields...).DebugContext(ctx, fmt.Sprintf(">>> %s", query))
 
 	res, err := db.sqlDB.ExecContext(ctx, query, args...)
 
-	// to differentiate between 0 and nil
-	var ra *int64
-
 	if res != nil {
-		rav, _ := res.RowsAffected()
-		ra = &rav
+		ra, _ := res.RowsAffected()
+		fields = append(fields, slog.Int64("rows", ra))
 	}
 
-	fields = append(fields, zap.Int64p("rows", ra), zap.Duration("time", time.Since(start)), zap.Error(err))
-	db.l.Sugar().With(fields...).Debugf("<<< %s", query)
+	fields = append(fields, slog.Duration("time", time.Since(start)), logging.Error(err))
+	db.l.With(fields...).DebugContext(ctx, fmt.Sprintf("<<< %s", query))
 
 	return res, err
 }
@@ -130,8 +128,6 @@ func (db *DB) ExecContext(ctx context.Context, query string, args ...any) (sql.R
 //
 // If f returns an error or context is canceled, the transaction is rolled back.
 func (db *DB) InTransaction(ctx context.Context, f func(*Tx) error) (err error) {
-	defer observability.FuncCall(ctx)()
-
 	var sqlTx *sql.Tx
 
 	if sqlTx, err = db.sqlDB.BeginTx(ctx, nil); err != nil {

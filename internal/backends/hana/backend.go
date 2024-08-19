@@ -17,9 +17,10 @@ package hana
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
@@ -30,16 +31,17 @@ import (
 // backend implements backends.Backend interface.
 type backend struct {
 	hdb *fsql.DB
-	l   *zap.Logger
+	l   *slog.Logger
 }
 
 // NewBackendParams represents the parameters of NewBackend function.
 //
 //nolint:vet // for readability
 type NewBackendParams struct {
-	URI string
-	L   *zap.Logger
-	P   *state.Provider
+	URI       string
+	L         *slog.Logger
+	P         *state.Provider
+	BatchSize int
 }
 
 // NewBackend creates a new Backend.
@@ -50,6 +52,7 @@ func NewBackend(params *NewBackendParams) (backends.Backend, error) {
 	}
 
 	hdb := fsql.WrapDB(db, "hana", params.L)
+	hdb.BatchSize = params.BatchSize
 
 	return backends.BackendContract(&backend{
 		hdb: hdb,
@@ -78,7 +81,7 @@ func (b *backend) Status(ctx context.Context, params *backends.StatusParams) (*b
 	var res backends.StatusResult
 
 	for rows.Next() {
-		// db name is schema name from here on out
+		// on HANA, dbName is the name of the schema
 		var dbName string
 		if err = rows.Scan(&dbName); err != nil {
 			return nil, lazyerrors.Error(err)
@@ -86,7 +89,7 @@ func (b *backend) Status(ctx context.Context, params *backends.StatusParams) (*b
 
 		list, errDB := newDatabase(b.hdb, dbName).ListCollections(ctx, new(backends.ListCollectionsParams))
 		if errDB != nil {
-			return nil, lazyerrors.Error(err)
+			return nil, lazyerrors.Error(errDB)
 		}
 
 		res.CountCollections += int64(len(list.Collections))
@@ -114,7 +117,16 @@ func (b *backend) Database(name string) (backends.Database, error) {
 //
 //nolint:lll // for readability
 func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDatabasesParams) (*backends.ListDatabasesResult, error) {
-	rows, err := b.hdb.QueryContext(ctx, "SELECT SCHEMA_NAME FROM SCHEMAS")
+	var dbQuerySQL string
+
+	dbQuerySQL = "SELECT SCHEMA_NAME FROM SCHEMAS"
+	if params != nil && params.Name != "" {
+		dbQuerySQL += fmt.Sprintf(" WHERE SCHEMA_NAME = '%s'", params.Name)
+	} else {
+		dbQuerySQL += " ORDER BY SCHEMA_NAME ASC"
+	}
+
+	rows, err := b.hdb.QueryContext(ctx, dbQuerySQL)
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +147,7 @@ func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDataba
 
 // DropDatabase implements backends.Backend interface.
 func (b *backend) DropDatabase(ctx context.Context, params *backends.DropDatabaseParams) error {
-	dropped, err := dropSchema(ctx, b.hdb, params.Name)
+	dropped, err := dropDatabase(ctx, b.hdb, params.Name)
 	if err != nil {
 		return getHanaErrorIfExists(err)
 	}

@@ -39,14 +39,6 @@ func TestString(t *testing.T) {
 	testJSON(t, stringTestCases, func() sjsontype { return new(stringType) })
 }
 
-func FuzzStringWithFixedSchemas(f *testing.F) {
-	fuzzJSONWithFixedSchemas(f, stringTestCases, func() sjsontype { return new(stringType) })
-}
-
-func FuzzStringWithFixedDocuments(f *testing.F) {
-	fuzzJSONWithFixedDocuments(f, stringTestCases, func() sjsontype { return new(stringType) })
-}
-
 func BenchmarkString(b *testing.B) {
 	benchmark(b, stringTestCases, func() sjsontype { return new(stringType) })
 }

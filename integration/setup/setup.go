@@ -18,24 +18,25 @@ package setup
 import (
 	"context"
 	"flag"
-	"fmt"
+	"log/slog"
 	"net/url"
-	"runtime/trace"
 	"slices"
 	"strings"
+	"time"
 
+	"github.com/FerretDB/wire/wireclient"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.opentelemetry.io/otel"
-	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
-	"github.com/FerretDB/FerretDB/internal/util/observability"
+	"github.com/FerretDB/FerretDB/internal/util/password"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
+
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 // Flags.
@@ -45,12 +46,14 @@ var (
 
 	targetProxyAddrF  = flag.String("target-proxy-addr", "", "in-process FerretDB: use given proxy")
 	targetTLSF        = flag.Bool("target-tls", false, "in-process FerretDB: use TLS")
-	targetUnixSocketF = flag.Bool("target-unix-socket", false, "in-process FerretDB: use Unix socket")
+	targetUnixSocketF = flag.Bool("target-unix-socket", false, "in-process FerretDB: use Unix domain socket")
 
 	postgreSQLURLF = flag.String("postgresql-url", "", "in-process FerretDB: PostgreSQL URL for 'postgresql' handler.")
 	sqliteURLF     = flag.String("sqlite-url", "", "in-process FerretDB: SQLite URI for 'sqlite' handler.")
 	mysqlURLF      = flag.String("mysql-url", "", "in-process FerretDB: MySQL URL for 'mysql' handler.")
 	hanaURLF       = flag.String("hana-url", "", "in-process FerretDB: Hana URL for 'hana' handler.")
+
+	batchSizeF = flag.Int("batch-size", 100, "maximum insertion batch size")
 
 	compatURLF = flag.String("compat-url", "", "compat system's (MongoDB) URL for compatibility tests; if empty, they are skipped")
 
@@ -58,7 +61,7 @@ var (
 
 	// Disable noisy setup logs by default.
 	debugSetupF = flag.Bool("debug-setup", false, "enable debug logs for tests setup")
-	logLevelF   = zap.LevelFlag("log-level", zap.DebugLevel, "log level for tests")
+	logLevelF   = flag.String("log-level", slog.LevelDebug.String(), "log level for tests")
 
 	disablePushdownF = flag.Bool("disable-pushdown", false, "disable pushdown")
 )
@@ -76,10 +79,6 @@ type SetupOpts struct {
 	// Database to use. If empty, temporary test-specific database is created and dropped after test.
 	DatabaseName string
 
-	// Collection to use. If empty, temporary test-specific collection is created and dropped after test.
-	// Most tests should keep this empty.
-	CollectionName string
-
 	// Data providers. If empty, collection is not created.
 	Providers []shareddata.Provider
 
@@ -88,21 +87,49 @@ type SetupOpts struct {
 
 	// ExtraOptions sets the options in MongoDB URI, when the option exists it overwrites that option.
 	ExtraOptions url.Values
+
+	// UseWireConn enables low-level wire connection creation.
+	UseWireConn bool
+
+	// WireConnNoAuth disables automatic authentication of the low-level wire connection.
+	WireConnNoAuth bool
+
+	// Options to override default backend configuration.
+	BackendOptions *BackendOpts
+
+	// DisableOtel disable OpenTelemetry monitoring for MongoDB client.
+	DisableOtel bool
+}
+
+// BackendOpts represents backend configuration used for test setup.
+type BackendOpts struct {
+	// Capped collections cleanup interval.
+	CappedCleanupInterval time.Duration
+
+	// Percentage of documents to cleanup for capped collections. If not set, defaults to 20.
+	CappedCleanupPercentage uint8
+
+	// MaxBsonObjectSizeBytes is the maximum allowed size of a document, if not set FerretDB sets the default.
+	MaxBsonObjectSizeBytes int
+
+	// DisableNewAuth true uses the old backend authentication.
+	DisableNewAuth bool
 }
 
 // SetupResult represents setup results.
 type SetupResult struct {
 	Ctx        context.Context
 	Collection *mongo.Collection
-	MongoDBURI string
+	WireConn   *wireclient.Conn
+	MongoDBURI string // without database name
 }
 
-// IsUnixSocket returns true if MongoDB URI is a Unix socket.
+// IsUnixSocket returns true if MongoDB URI is a Unix domain socket.
 func (s *SetupResult) IsUnixSocket(tb testtb.TB) bool {
 	tb.Helper()
 
 	// we can't use a regular url.Parse because
-	// MongoDB really wants Unix socket path in the host part of the URI
+	// MongoDB really wants Unix domain socket path in the host part of the URI
 	opts := options.Client().ApplyURI(s.MongoDBURI)
 	res := slices.ContainsFunc(opts.Hosts, func(host string) bool {
 		return strings.Contains(host, "/")
@@ -122,21 +149,21 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 	setupCtx, span := otel.Tracer("").Start(ctx, "SetupWithOpts")
 	defer span.End()
 
-	defer trace.StartRegion(setupCtx, "SetupWithOpts").End()
-
 	if opts == nil {
 		opts = new(SetupOpts)
 	}
 
-	level := zap.NewAtomicLevelAt(zap.ErrorLevel)
+	var levelVar slog.LevelVar
+	levelVar.Set(slog.LevelError)
 	if *debugSetupF {
-		level = zap.NewAtomicLevelAt(zap.DebugLevel)
+		levelVar.Set(slog.LevelDebug)
 	}
-	logger := testutil.LevelLogger(tb, level)
+
+	logger := testutil.LevelLogger(tb, &levelVar)
 
 	uri := *targetURLF
 	if uri == "" {
-		uri = setupListener(tb, setupCtx, logger)
+		uri = setupListener(tb, setupCtx, logger, opts.BackendOptions)
 	}
 
 	if opts.ExtraOptions != nil {
@@ -156,18 +183,46 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 		tb.Logf("URI with extra options: %s", uri)
 	}
 
-	client := setupClient(tb, setupCtx, uri)
+	client := setupClient(tb, setupCtx, uri, opts.DisableOtel)
 
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
 
 	collection := setupCollection(tb, setupCtx, client, opts)
 
-	level.SetLevel(*logLevelF)
+	var conn *wireclient.Conn
+
+	if opts.UseWireConn {
+		u, err := url.Parse(uri)
+		require.NoError(tb, err)
+
+		query := u.Query()
+		u.RawQuery = ""
+
+		conn = setupWireConn(tb, setupCtx, u.String(), testutil.Logger(tb))
+
+		if u.User != nil && !opts.WireConnNoAuth {
+			user := u.User.Username()
+			pass, _ := u.User.Password()
+
+			mech := query.Get("authMechanism")
+			if mech == "" {
+				mech = "SCRAM-SHA-1"
+			}
+
+			authDB := query.Get("authSource")
+
+			require.NoError(tb, authenticate(ctx, conn, user, password.WrapPassword(pass), mech, authDB))
+		}
+	}
+
+	err := levelVar.UnmarshalText([]byte(*logLevelF))
+	require.NoError(tb, err)
 
 	return &SetupResult{
 		Ctx:        ctx,
 		Collection: collection,
+		WireConn:   conn,
 		MongoDBURI: uri,
 	}
 }
@@ -182,14 +237,28 @@ func Setup(tb testtb.TB, providers ...shareddata.Provider) (context.Context, *mo
 	return s.Ctx, s.Collection
 }
 
+// SetupWireConn setups a single collection for all providers, if they are present,
+// and returns authenticated low-level wire connection.
+func SetupWireConn(tb testtb.TB, providers ...shareddata.Provider) (context.Context, *wireclient.Conn) {
+	tb.Helper()
+
+	s := SetupWithOpts(tb, &SetupOpts{
+		Providers:   providers,
+		UseWireConn: true,
+		ExtraOptions: url.Values{
+			"authSource": []string{"admin"},
+		},
+	})
+
+	return s.Ctx, s.WireConn
+}
+
 // setupCollection setups a single collection for all providers, if they are present.
 func setupCollection(tb testtb.TB, ctx context.Context, client *mongo.Client, opts *SetupOpts) *mongo.Collection {
 	tb.Helper()
 
 	ctx, span := otel.Tracer("").Start(ctx, "setupCollection")
 	defer span.End()
-
-	defer observability.FuncCall(ctx)()
 
 	var ownDatabase bool
 	databaseName := opts.DatabaseName
@@ -198,12 +267,7 @@ func setupCollection(tb testtb.TB, ctx context.Context, client *mongo.Client, op
 		ownDatabase = true
 	}
 
-	var ownCollection bool
-	collectionName := opts.CollectionName
-	if collectionName == "" {
-		collectionName = testutil.CollectionName(tb)
-		ownCollection = true
-	}
+	collectionName := testutil.CollectionName(tb)
 
 	database := client.Database(databaseName)
 	collection := database.Collection(collectionName)
@@ -211,8 +275,7 @@ func setupCollection(tb testtb.TB, ctx context.Context, client *mongo.Client, op
 	// drop remnants of the previous failed run
 	_ = collection.Drop(ctx)
 	if ownDatabase {
-		_ = database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}})
-		_ = database.Drop(ctx)
+		cleanupDatabase(ctx, tb, database, opts.BackendOptions)
 	}
 
 	var inserted bool
@@ -220,7 +283,7 @@ func setupCollection(tb testtb.TB, ctx context.Context, client *mongo.Client, op
 	switch {
 	case len(opts.Providers) > 0:
 		require.Nil(tb, opts.BenchmarkProvider, "Both Providers and BenchmarkProvider were set")
-		inserted = insertProviders(tb, ctx, collection, opts.Providers...)
+		inserted = InsertProviders(tb, ctx, collection, opts.Providers...)
 	case opts.BenchmarkProvider != nil:
 		inserted = insertBenchmarkProvider(tb, ctx, collection, opts.BenchmarkProvider)
 	}
@@ -231,51 +294,39 @@ func setupCollection(tb testtb.TB, ctx context.Context, client *mongo.Client, op
 		require.True(tb, inserted)
 	}
 
-	if ownCollection {
-		// delete collection and (possibly) database unless test failed
-		tb.Cleanup(func() {
-			if tb.Failed() {
-				tb.Logf("Keeping %s.%s for debugging.", databaseName, collectionName)
-				return
-			}
+	// delete collection and (possibly) database unless test failed
+	tb.Cleanup(func() {
+		if tb.Failed() {
+			tb.Logf("Keeping %s.%s for debugging.", databaseName, collectionName)
+			return
+		}
 
-			err := collection.Drop(ctx)
-			require.NoError(tb, err)
+		err := collection.Drop(ctx)
+		require.NoError(tb, err)
 
-			if ownDatabase {
-				err = database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}}).Err()
-				require.NoError(tb, err)
-
-				err = database.Drop(ctx)
-				require.NoError(tb, err)
-			}
-		})
-	}
+		if ownDatabase {
+			cleanupDatabase(ctx, tb, database, opts.BackendOptions)
+		}
+	})
 
 	return collection
 }
 
-// insertProviders inserts documents from specified Providers into collection. It returns true if any document was inserted.
-func insertProviders(tb testtb.TB, ctx context.Context, collection *mongo.Collection, providers ...shareddata.Provider) (inserted bool) {
+// InsertProviders inserts documents from specified Providers into collection. It returns true if any document was inserted.
+func InsertProviders(tb testtb.TB, ctx context.Context, collection *mongo.Collection, providers ...shareddata.Provider) (inserted bool) {
 	tb.Helper()
 
-	collectionName := collection.Name()
+	ctx, span := otel.Tracer("").Start(ctx, "insertProviders")
+	defer span.End()
 
 	for _, provider := range providers {
-		spanName := fmt.Sprintf("insertProviders/%s/%s", collectionName, provider.Name())
-		provCtx, span := otel.Tracer("").Start(ctx, spanName)
-		region := trace.StartRegion(provCtx, spanName)
-
 		docs := shareddata.Docs(provider)
 		require.NotEmpty(tb, docs)
 
-		res, err := collection.InsertMany(provCtx, docs)
+		res, err := collection.InsertMany(ctx, docs)
 		require.NoError(tb, err, "provider %q", provider.Name())
 		require.Len(tb, res.InsertedIDs, len(docs))
 		inserted = true
-
-		region.End()
-		span.End()
 	}
 
 	return
@@ -287,12 +338,6 @@ func insertProviders(tb testtb.TB, ctx context.Context, collection *mongo.Collec
 // The function calculates the checksum of all inserted documents and compare them with provider's hash.
 func insertBenchmarkProvider(tb testtb.TB, ctx context.Context, collection *mongo.Collection, provider shareddata.BenchmarkProvider) (inserted bool) {
 	tb.Helper()
-
-	collectionName := collection.Name()
-
-	spanName := fmt.Sprintf("insertBenchmarkProvider/%s/%s", collectionName, provider.Name())
-	provCtx, span := otel.Tracer("").Start(ctx, spanName)
-	region := trace.StartRegion(provCtx, spanName)
 
 	iter := provider.NewIterator()
 	defer iter.Close()
@@ -310,15 +355,25 @@ func insertBenchmarkProvider(tb testtb.TB, ctx context.Context, collection *mong
 			insertDocs[i] = doc
 		}
 
-		res, err := collection.InsertMany(provCtx, insertDocs)
+		res, err := collection.InsertMany(ctx, insertDocs)
 		require.NoError(tb, err)
 		require.Len(tb, res.InsertedIDs, len(docs))
 
 		inserted = true
 	}
 
-	region.End()
-	span.End()
-
 	return
+}
+
+// cleanupUser removes users for the given database if new authentication is enabled and drops that database.
+func cleanupDatabase(ctx context.Context, tb testtb.TB, database *mongo.Database, opts *BackendOpts) {
+	ctx, span := otel.Tracer("").Start(ctx, "cleanupDatabase")
+	defer span.End()
+
+	if opts == nil || !opts.DisableNewAuth {
+		err := database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}}).Err()
+		require.NoError(tb, err)
+	}
+
+	require.NoError(tb, database.Drop(ctx))
 }

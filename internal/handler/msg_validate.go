@@ -18,18 +18,21 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/FerretDB/wire"
+
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgValidate implements `validate` command.
-func (h *Handler) MsgValidate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := msg.Document()
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgValidate(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	document, err := opMsgDocument(msg)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -58,7 +61,7 @@ func (h *Handler) MsgValidate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		return nil, lazyerrors.Error(err)
 	}
 
-	stats, err := c.Stats(ctx, &backends.CollectionStatsParams{Refresh: true})
+	stats, err := c.Stats(connCtx, &backends.CollectionStatsParams{Refresh: true})
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
 			msg := fmt.Sprintf("Collection '%s.%s' does not exist to validate.", dbName, collection)
@@ -69,8 +72,7 @@ func (h *Handler) MsgValidate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/3841
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+	return documentOpMsg(
 		must.NotFail(types.NewDocument(
 			"ns", dbName+"."+collection,
 			"nInvalidDocuments", int32(0),
@@ -86,7 +88,5 @@ func (h *Handler) MsgValidate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 			"corruptRecords", types.MakeArray(0),
 			"ok", float64(1),
 		)),
-	)))
-
-	return &reply, nil
+	)
 }

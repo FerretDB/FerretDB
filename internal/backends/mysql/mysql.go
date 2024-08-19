@@ -29,6 +29,11 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
+const (
+	// ErrDuplicateEntry is the unique key violation error code for MySQL.
+	ErrDuplicateEntry = 1062
+)
+
 // stats represents information about statistics of tables and indexes.
 type stats struct {
 	countDocuments  int64
@@ -38,7 +43,7 @@ type stats struct {
 	totalSize       int64
 }
 
-// collectionStats returns statistics about tables and indexes for the given collections.
+// collectionsStats returns statistics about tables and indexes for the given collections.
 //
 // If refresh is true, it calls ANALYZE on the tables of the given list of collections.
 //

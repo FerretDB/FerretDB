@@ -25,7 +25,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
 
@@ -51,8 +50,6 @@ func newQueryIterator(ctx context.Context, rows *fsql.Rows) types.DocumentsItera
 // Next implements iterator.Interface.
 // Otherwise, the next document is returned.
 func (iter *queryIterator) Next() (struct{}, *types.Document, error) {
-	defer observability.FuncCall(iter.ctx)()
-
 	iter.m.Lock()
 	defer iter.m.Unlock()
 
@@ -96,8 +93,6 @@ func (iter *queryIterator) Next() (struct{}, *types.Document, error) {
 
 // Close implements iterator.Interface.
 func (iter *queryIterator) Close() {
-	defer observability.FuncCall(iter.ctx)()
-
 	iter.m.Lock()
 	defer iter.m.Unlock()
 
@@ -108,8 +103,6 @@ func (iter *queryIterator) Close() {
 //
 // This should be called only when the caller already holds the mutex.
 func (iter *queryIterator) close() {
-	defer observability.FuncCall(iter.ctx)()
-
 	if iter.rows != nil {
 		iter.rows.Close()
 		iter.rows = nil

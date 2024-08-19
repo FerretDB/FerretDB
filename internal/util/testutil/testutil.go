@@ -17,11 +17,8 @@ package testutil
 
 import (
 	"context"
-	"runtime/trace"
 
 	"go.opentelemetry.io/otel"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest"
 
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
@@ -62,23 +59,5 @@ func Ctx(tb testtb.TB) context.Context {
 		span.End()
 	})
 
-	ctx, task := trace.NewTask(ctx, tb.Name())
-	tb.Cleanup(task.End)
-
 	return ctx
-}
-
-// Logger returns zap test logger with valid configuration.
-func Logger(tb testtb.TB) *zap.Logger {
-	return LevelLogger(tb, zap.NewAtomicLevelAt(zap.DebugLevel))
-}
-
-// LevelLogger returns zap test logger with given level and valid configuration.
-func LevelLogger(tb testtb.TB, level zap.AtomicLevel) *zap.Logger {
-	opts := []zaptest.LoggerOption{
-		zaptest.Level(level),
-		zaptest.WrapOptions(zap.AddCaller(), zap.Development()),
-	}
-
-	return zaptest.NewLogger(tb, opts...)
 }

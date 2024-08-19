@@ -11,6 +11,8 @@ linters-settings:
       - ^lazyerrors\.Errorf$
     use-builtin-exclusions: true
     ignore-test: false
+  copyloopvar:
+    check-alias: true
   errcheck:
     check-type-assertions: false
     check-blank: false
@@ -24,8 +26,10 @@ linters-settings:
     asserts: true
     comparison: true
   govet:
-    check-shadowing: true
     enable-all: true
+    settings:
+      shadow:
+        strict: true
   revive:
     ignore-generated-header: true
     severity: warning
@@ -81,46 +85,56 @@ linters:
     - lll
     - misspell
     - nolintlint
+    - sloglint
     - unused
     - whitespace
 
     # TODO https://github.com/FerretDB/FerretDB/issues/2748
     - bidichk
     - bodyclose
+    - canonicalheader
     - containedctx
     - contextcheck
     - cyclop
-    - deadcode
     - decorder
     - dogsled
     - dupl
+    - dupword
     - durationcheck
+    - err113
     - errchkjson
     - errname
     - execinquery
-    - exhaustivestruct
     - exhaustruct
     - exportloopref
+    - fatcontext
     - forcetypeassert
     - funlen
+    - ginkgolinter
+    - gocheckcompilerdirectives
     - gochecknoglobals
     - gochecknoinits
     - gocognit
     - gocritic
     - gocyclo
-    - goerr113
     - gofmt
     - gofumpt
     - gomnd
     - gomoddirectives
     - goprintffuncname
     - gosec
+    - gosmopolitan
     - grouper
-    - ifshort
     - inamedparam
+    - interfacebloat
+    - intrange
     - ireturn
+    - loggercheck
     - maintidx
     - makezero
+    - mirror
+    - mnd
+    - musttag
     - nakedret
     - nestif
     - nilerr
@@ -134,31 +148,26 @@ linters:
     - predeclared
     - promlinter
     - protogetter
+    - reassign
     - rowserrcheck
     - sloglint
+    - spancheck
     - sqlclosecheck
     - stylecheck
     - tagliatelle
     - tenv
+    - testableexamples
     - testifylint
     - thelper
     - tparallel
     - typecheck
     - unconvert
     - unparam
-    - varcheck
+    - usestdlibvars
     - varnamelen
     - wastedassign
     - wrapcheck
     - zerologlint
-
-    # deprecated
-    - golint
-    - interfacer
-    - maligned
-    - nosnakecase
-    - scopelint
-    - structcheck
 
     - nlreturn # too annoying
     - testpackage # we test internals
@@ -166,5 +175,8 @@ linters:
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
-  exclude-use-default: false
+
   new-from-rev: origin/main
+  # whole-files: true
+
+  exclude-use-default: false

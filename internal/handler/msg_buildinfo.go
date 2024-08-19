@@ -18,22 +18,24 @@ import (
 	"context"
 	"strconv"
 
+	"github.com/FerretDB/wire"
+
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/handler/common/aggregations/stages"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgBuildInfo implements `buildInfo` command.
-func (h *Handler) MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgBuildInfo(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	aggregationStages := types.MakeArray(len(stages.Stages))
 	for stage := range stages.Stages {
 		aggregationStages.Append(stage)
 	}
 
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+	return documentOpMsg(
 		must.NotFail(types.NewDocument(
 			"version", version.Get().MongoDBVersion,
 			"gitVersion", version.Get().Commit,
@@ -42,7 +44,7 @@ func (h *Handler) MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			"versionArray", version.Get().MongoDBVersionArray,
 			"bits", int32(strconv.IntSize),
 			"debug", version.Get().DebugBuild,
-			"maxBsonObjectSize", int32(types.MaxDocumentLen),
+			"maxBsonObjectSize", int32(h.MaxBsonObjectSizeBytes),
 			"buildEnvironment", version.Get().BuildEnvironment,
 
 			// our extensions
@@ -53,7 +55,5 @@ func (h *Handler) MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 			"ok", float64(1),
 		)),
-	)))
-
-	return &reply, nil
+	)
 }

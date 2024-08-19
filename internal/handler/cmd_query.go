@@ -19,45 +19,88 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/FerretDB/wire"
+
+	"github.com/FerretDB/FerretDB/internal/bson"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // CmdQuery implements deprecated OP_QUERY message handling.
-func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpReply, error) {
-	cmd := query.Query().Command()
-	collection := query.FullCollectionName
-
-	// both are valid and are allowed to be run against any database as we don't support authorization yet
-	if (cmd == "ismaster" || cmd == "isMaster") && strings.HasSuffix(collection, ".$cmd") {
-		return common.IsMaster(ctx, query.Query(), h.TCPHost, h.ReplSetName)
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) CmdQuery(connCtx context.Context, query *wire.OpQuery) (*wire.OpReply, error) {
+	q, err := bson.ToDocument(query.Query())
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3008
+	cmd := q.Command()
+	collection := query.FullCollectionName
 
-	// database name typically is either "$external" or "admin"
+	if !strings.HasSuffix(collection, ".$cmd") {
+		return wire.NewOpReply(must.NotFail(bson.FromDocument(must.NotFail(types.NewDocument(
+			"$err", "OP_QUERY is no longer supported. The client driver may require an upgrade.",
+			"code", int32(handlererrors.ErrOpQueryCollectionSuffixMissing),
+			"ok", float64(0),
+		)))))
+	}
 
-	if cmd == "saslStart" && strings.HasSuffix(collection, ".$cmd") {
-		var emptyPayload types.Binary
-		reply := wire.OpReply{
-			NumberReturned: 1,
+	switch cmd {
+	case "hello", "ismaster", "isMaster":
+		var reply *types.Document
+		reply, err = h.hello(connCtx, q, h.TCPHost, h.ReplSetName)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
 		}
-		reply.SetDocument(must.NotFail(types.NewDocument(
-			"conversationId", int32(1),
-			"done", true,
-			"payload", emptyPayload,
-			"ok", float64(1),
-		)))
 
-		return &reply, nil
+		v, _ := q.Get("speculativeAuthenticate")
+		if v == nil {
+			return wire.NewOpReply(must.NotFail(bson.FromDocument(reply)))
+		}
+
+		authDoc, ok := v.(*types.Document)
+		if !ok {
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrTypeMismatch,
+				fmt.Sprintf("speculativeAuthenticate type wrong; expected: document; got: %T", v),
+				"OpQuery: "+q.Command(),
+			)
+		}
+
+		dbName, err := common.GetRequiredParam[string](authDoc, "db")
+		if err != nil {
+			h.L.DebugContext(connCtx, "No `db` in `speculativeAuthenticate`", logging.Error(err))
+
+			return wire.NewOpReply(must.NotFail(bson.FromDocument(reply)))
+		}
+
+		speculativeAuthenticate, err := h.saslStart(connCtx, dbName, authDoc)
+		if err != nil {
+			h.L.DebugContext(connCtx, "Speculative authentication failed", logging.Error(err))
+
+			// unsuccessful speculative authentication leave `speculativeAuthenticate` field unset
+			// and let `saslStart` return an error
+			return wire.NewOpReply(must.NotFail(bson.FromDocument(reply)))
+		}
+
+		h.L.DebugContext(connCtx, "Speculative authentication passed")
+
+		reply.Set("speculativeAuthenticate", speculativeAuthenticate)
+
+		// saslSupportedMechs is used by the client as default mechanisms if `mechanisms` is unset
+		reply.Set("saslSupportedMechs", must.NotFail(types.NewArray("SCRAM-SHA-1", "SCRAM-SHA-256", "PLAIN")))
+
+		return wire.NewOpReply(must.NotFail(bson.FromDocument(reply)))
 	}
 
 	return nil, handlererrors.NewCommandErrorMsgWithArgument(
-		handlererrors.ErrNotImplemented,
-		fmt.Sprintf("CmdQuery: unhandled command %q for collection %q", cmd, collection),
+		handlererrors.ErrUnsupportedOpQueryCommand,
+		fmt.Sprintf("Unsupported OP_QUERY command: %s. The client driver may require an upgrade.", cmd),
 		"OpQuery: "+cmd,
 	)
 }

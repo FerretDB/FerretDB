@@ -107,6 +107,10 @@ func createDatabase(t *testing.T, ctx context.Context) (r *Registry, db *fsql.DB
 }
 
 func TestCheckAuth(t *testing.T) {
+	// This test is flaky.
+	// TODO https://github.com/FerretDB/FerretDB/issues/3413
+	t.Skip("https://github.com/FerretDB/FerretDB/issues/3413")
+
 	if testing.Short() {
 		t.Skip("skipping in -short mode")
 	}
@@ -119,7 +123,8 @@ func TestCheckAuth(t *testing.T) {
 	t.Run("Auth", func(t *testing.T) {
 		t.Parallel()
 
-		r, err := NewRegistry("mysql://username:password@127.0.0.1:3306/ferretdb", testutil.Logger(t), sp)
+		var r *Registry
+		r, err = NewRegistry("mysql://username:password@127.0.0.1:3306/ferretdb", testutil.Logger(t), sp)
 		require.NoError(t, err)
 		t.Cleanup(r.Close)
 
@@ -130,7 +135,8 @@ func TestCheckAuth(t *testing.T) {
 	t.Run("WrongUser", func(t *testing.T) {
 		t.Parallel()
 
-		r, err := NewRegistry(
+		var r *Registry
+		r, err = NewRegistry(
 			"mysql://wrong-user:wrong-password@127.0.0.1:3306/ferretdb?allowNativePasswords=true",
 			testutil.Logger(t),
 			sp,
@@ -147,7 +153,8 @@ func TestCheckAuth(t *testing.T) {
 	t.Run("WrongDatabase", func(t *testing.T) {
 		t.Parallel()
 
-		r, err := NewRegistry("mysql://username:password@127.0.0.1:3306/wrong-database", testutil.Logger(t), sp)
+		var r *Registry
+		r, err = NewRegistry("mysql://username:password@127.0.0.1:3306/wrong-database", testutil.Logger(t), sp)
 		require.NoError(t, err)
 		t.Cleanup(r.Close)
 

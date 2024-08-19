@@ -12,127 +12,265 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package bson provides converters from/to BSON for built-in and `types` types.
-//
-// See contributing guidelines and documentation for package `types` for details.
-//
-// # Mapping
-//
-// Composite types
-//
-//	Alias      types package    bson package
-//
-//	object     *types.Document  *bson.Document
-//	array      *types.Array     *bson.arrayType
-//
-// Scalar types
-//
-//	Alias      types package    bson package
-//
-//	double     float64          *bson.doubleType
-//	string     string           *bson.stringType
-//	binData    types.Binary     *bson.binaryType
-//	objectId   types.ObjectID   *bson.objectIDType
-//	bool       bool             *bson.boolType
-//	date       time.Time        *bson.dateTimeType
-//	null       types.NullType   *bson.nullType
-//	regex      types.Regex      *bson.regexType
-//	int        int32            *bson.int32Type
-//	timestamp  types.Timestamp  *bson.timestampType
-//	long       int64            *bson.int64Type
-//
-//nolint:dupword // false positive
+// Package bson provides convertors between wirebson and types packages.
 package bson
 
 import (
-	"bufio"
-	"encoding"
+	"errors"
 	"fmt"
 	"time"
 
-	"github.com/AlekSi/pointer"
+	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-//sumtype:decl
-type bsontype interface {
-	bsontype() // seal for sumtype
-
-	ReadFrom(*bufio.Reader) error
-	WriteTo(*bufio.Writer) error
-	encoding.BinaryMarshaler
-}
-
-// TODO https://github.com/FerretDB/FerretDB/issues/260
-func fromBSON(v bsontype) any {
-	switch v := v.(type) {
-	case *Document:
-		return must.NotFail(types.ConvertDocument(v))
-	case *arrayType:
-		return pointer.To(types.Array(*v))
-	case *doubleType:
-		return float64(*v)
-	case *stringType:
-		return string(*v)
-	case *binaryType:
-		return types.Binary(*v)
-	case *objectIDType:
-		return types.ObjectID(*v)
-	case *boolType:
-		return bool(*v)
-	case *dateTimeType:
-		return time.Time(*v)
-	case *nullType:
-		return types.Null
-	case *regexType:
-		return types.Regex(*v)
-	case *int32Type:
-		return int32(*v)
-	case *timestampType:
-		return types.Timestamp(*v)
-	case *int64Type:
-		return int64(*v)
-	case *CString:
-		panic("CString should not be there")
-	}
-
-	panic(fmt.Sprintf("not reached: %T", v)) // for sumtype to work
-}
-
-// TODO https://github.com/FerretDB/FerretDB/issues/260
+// convertFromTypes converts types package value to wirebson package value.
 //
-//nolint:deadcode,unused // remove later if it is not needed
-func toBSON(v any) bsontype {
+// Invalid types cause panics.
+func convertFromTypes(v any) (any, error) {
 	switch v := v.(type) {
 	case *types.Document:
-		return must.NotFail(ConvertDocument(v))
+		doc, err := FromDocument(v)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		return doc, nil
+
 	case *types.Array:
-		return pointer.To(arrayType(*v))
+		arr, err := FromArray(v)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		return arr, nil
+
 	case float64:
-		return pointer.To(doubleType(v))
+		return v, nil
 	case string:
-		return pointer.To(stringType(v))
+		return v, nil
 	case types.Binary:
-		return pointer.To(binaryType(v))
+		return wirebson.Binary{
+			B:       v.B,
+			Subtype: wirebson.BinarySubtype(v.Subtype),
+		}, nil
 	case types.ObjectID:
-		return pointer.To(objectIDType(v))
+		return wirebson.ObjectID(v), nil
 	case bool:
-		return pointer.To(boolType(v))
+		return v, nil
 	case time.Time:
-		return pointer.To(dateTimeType(v))
+		return v, nil
 	case types.NullType:
-		return pointer.To(nullType(v))
+		return wirebson.Null, nil
 	case types.Regex:
-		return pointer.To(regexType(v))
+		return wirebson.Regex{
+			Pattern: v.Pattern,
+			Options: v.Options,
+		}, nil
 	case int32:
-		return pointer.To(int32Type(v))
+		return v, nil
 	case types.Timestamp:
-		return pointer.To(timestampType(v))
+		return wirebson.Timestamp(v), nil
 	case int64:
-		return pointer.To(int64Type(v))
+		return v, nil
+
+	default:
+		panic(fmt.Sprintf("invalid type %T", v))
+	}
+}
+
+// From converts types package value to wirebson package value.
+func From[T types.Type](v T) (any, error) {
+	return convertFromTypes(v)
+}
+
+// FromArray converts [*types.Array] to [*wirebson.Array].
+func FromArray(arr *types.Array) (*wirebson.Array, error) {
+	iter := arr.Iterator()
+	defer iter.Close()
+
+	elements := wirebson.MakeArray(arr.Len())
+
+	for {
+		_, v, err := iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				return elements, nil
+			}
+
+			return nil, lazyerrors.Error(err)
+		}
+
+		v, err = convertFromTypes(v)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		if err = elements.Add(v); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+	}
+}
+
+// FromDocument converts [*types.Document] to [*wirebson.Document].
+func FromDocument(doc *types.Document) (*wirebson.Document, error) {
+	iter := doc.Iterator()
+	defer iter.Close()
+
+	res := wirebson.MakeDocument(doc.Len())
+
+	for {
+		k, v, err := iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				return res, nil
+			}
+
+			return nil, lazyerrors.Error(err)
+		}
+
+		v, err = convertFromTypes(v)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		if err = res.Add(k, v); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+	}
+}
+
+// convertToTypes converts wirebson package value to types package value.
+//
+// Invalid types cause panics.
+func convertToTypes(v any) (any, error) {
+	switch v := v.(type) {
+	case *wirebson.Document:
+		doc, err := ToDocument(v)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		return doc, nil
+
+	case wirebson.RawDocument:
+		doc, err := ToDocument(v)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		return doc, nil
+
+	case *wirebson.Array:
+		arr, err := ToArray(v)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		return arr, nil
+
+	case wirebson.RawArray:
+		arr, err := ToArray(v)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		return arr, nil
+
+	case float64:
+		return v, nil
+	case string:
+		return v, nil
+	case wirebson.Binary:
+		// Special case to prevent it from being stored as null in sjson.
+		// TODO https://github.com/FerretDB/FerretDB/issues/260
+		if v.B == nil {
+			v.B = []byte{}
+		}
+
+		return types.Binary{
+			B:       v.B,
+			Subtype: types.BinarySubtype(v.Subtype),
+		}, nil
+	case wirebson.ObjectID:
+		return types.ObjectID(v), nil
+	case bool:
+		return v, nil
+	case time.Time:
+		return v, nil
+	case wirebson.NullType:
+		return types.Null, nil
+	case wirebson.Regex:
+		return types.Regex{
+			Pattern: v.Pattern,
+			Options: v.Options,
+		}, nil
+	case int32:
+		return v, nil
+	case wirebson.Timestamp:
+		return types.Timestamp(v), nil
+	case int64:
+		return v, nil
+
+	default:
+		panic(fmt.Sprintf("invalid BSON type %T", v))
+	}
+}
+
+// ToArray converts wirebson array to [*types.Array].
+func ToArray(a wirebson.AnyArray) (*types.Array, error) {
+	arr, err := a.Decode()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
-	panic(fmt.Sprintf("not reached: %T", v)) // for sumtype to work
+	values := make([]any, arr.Len())
+
+	for i := range arr.Len() {
+		var v any
+
+		if v, err = convertToTypes(arr.Get(i)); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		values[i] = v
+	}
+
+	res, err := types.NewArray(values...)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return res, nil
+}
+
+// ToDocument converts wirebson document to [*types.Document].
+func ToDocument(d wirebson.AnyDocument) (*types.Document, error) {
+	doc, err := d.Decode()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	fields := doc.FieldNames()
+	pairs := make([]any, 0, len(fields)*2)
+
+	for i := range fields {
+		f, v := doc.GetByIndex(i)
+
+		if v, err = convertToTypes(v); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		pairs = append(pairs, f, v)
+	}
+
+	res, err := types.NewDocument(pairs...)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return res, nil
 }

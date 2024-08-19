@@ -17,12 +17,12 @@ package registry
 
 import (
 	"fmt"
+	"log/slog"
 	"time"
-
-	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handler"
+	"github.com/FerretDB/FerretDB/internal/util/password"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
@@ -41,11 +41,15 @@ var registry = map[string]newHandlerFunc{}
 // NewHandlerOpts represents configuration for constructing handlers.
 type NewHandlerOpts struct {
 	// for all backends
-	Logger        *zap.Logger
+	Logger        *slog.Logger
 	ConnMetrics   *connmetrics.ConnMetrics
 	StateProvider *state.Provider
 	TCPHost       string
 	ReplSetName   string
+	SetupDatabase string
+	SetupUsername string
+	SetupPassword password.Password
+	SetupTimeout  time.Duration
 
 	// for `postgresql` handler
 	PostgreSQLURL string
@@ -67,9 +71,12 @@ type NewHandlerOpts struct {
 // TestOpts represents experimental configuration options.
 type TestOpts struct {
 	DisablePushdown         bool
+	EnableNestedPushdown    bool
 	CappedCleanupInterval   time.Duration
 	CappedCleanupPercentage uint8
 	EnableNewAuth           bool
+	BatchSize               int
+	MaxBsonObjectSizeBytes  int
 	_                       struct{} // prevent unkeyed literals
 }
 

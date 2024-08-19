@@ -8,6 +8,7 @@ state.json
 *.out
 *.sqlite*
 *.txt
+!website/static/*.txt
 
 .task/
 bin/
@@ -16,3 +17,5 @@ vendor/
 website/build/
 
 **/testdata/fuzz/
+
+build/trivy-ignore.yml

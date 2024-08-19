@@ -27,7 +27,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
 
@@ -42,10 +41,29 @@ type queryIterator struct {
 	onlyRecordIDs bool
 }
 
+// newQueryIterator returns a new queryiterator for the given Rows.
+//
+// Iterator's Close method closes rows.
+// They are also closed by the Next method on any error, including context cancellation,
+// to make sure that the database connection is released as early as possible.
+// In that case, the iterator's Close method should still be called.
+//
+// Nil rows are possible and return already done iterator.
+// It should still be Closed.
+func newQueryIterator(ctx context.Context, rows *fsql.Rows, onlyRecordIDs bool) types.DocumentsIterator {
+	iter := &queryIterator{
+		ctx:           ctx,
+		rows:          rows,
+		onlyRecordIDs: onlyRecordIDs,
+		token:         resource.NewToken(),
+	}
+	resource.Track(iter, iter.token)
+
+	return iter
+}
+
 // Next implements iterator.Interface.
 func (iter *queryIterator) Next() (struct{}, *types.Document, error) {
-	defer observability.FuncCall(iter.ctx)()
-
 	iter.m.Lock()
 	defer iter.m.Unlock()
 
@@ -115,8 +133,6 @@ func (iter *queryIterator) Next() (struct{}, *types.Document, error) {
 
 // Close implements iterator.Interface.
 func (iter *queryIterator) Close() {
-	defer observability.FuncCall(iter.ctx)()
-
 	iter.m.Lock()
 	defer iter.m.Unlock()
 
@@ -127,8 +143,6 @@ func (iter *queryIterator) Close() {
 //
 // This should be called only when the caller already holds the mutex.
 func (iter *queryIterator) close() {
-	defer observability.FuncCall(iter.ctx)()
-
 	if iter.rows != nil {
 		iter.rows.Close()
 		iter.rows = nil

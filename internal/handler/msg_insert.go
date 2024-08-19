@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/FerretDB/wire"
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
@@ -30,7 +31,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // WriteErrorDocument returns a document representation of the write error.
@@ -46,8 +46,10 @@ func WriteErrorDocument(we *mongo.WriteError) *types.Document {
 }
 
 // MsgInsert implements `insert` command.
-func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := msg.Document()
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgInsert(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	document, err := opMsgDocument(msg)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -85,13 +87,10 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	var done bool
 	for !done {
-		// TODO https://github.com/FerretDB/FerretDB/issues/3708
-		const batchSize = 1000
+		docs := make([]*types.Document, 0, h.BatchSize)
+		docsIndexes := make([]int, 0, h.BatchSize)
 
-		docs := make([]*types.Document, 0, batchSize)
-		docsIndexes := make([]int, 0, batchSize)
-
-		for j := 0; j < batchSize; j++ {
+		for j := 0; j < h.BatchSize; j++ {
 			var i int
 			var d any
 
@@ -145,7 +144,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			}
 		}
 
-		if _, err = c.InsertAll(ctx, &backends.InsertAllParams{Docs: docs}); err == nil {
+		if _, err = c.InsertAll(connCtx, &backends.InsertAllParams{Docs: docs}); err == nil {
 			inserted += int32(len(docs))
 
 			if params.Ordered && len(writeErrors) > 0 {
@@ -157,7 +156,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		// insert doc one by one upon failing on batch insertion
 		for j, doc := range docs {
-			if _, err = c.InsertAll(ctx, &backends.InsertAllParams{
+			if _, err = c.InsertAll(connCtx, &backends.InsertAllParams{
 				Docs: []*types.Document{doc},
 			}); err == nil {
 				inserted++
@@ -200,10 +199,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	res.Set("ok", float64(1))
 
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
+	return documentOpMsg(
 		res,
-	)))
-
-	return &reply, nil
+	)
 }
