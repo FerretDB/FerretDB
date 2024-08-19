@@ -42,6 +42,10 @@ type ExplainParams struct {
 	Command    *types.Document `ferretdb:"-"`
 
 	Verbosity string `ferretdb:"verbosity,ignored"`
+
+	ApiVersion           string `ferretdb:"apiVersion,ignored"`
+	ApiStrict            bool   `ferretdb:"apiStrict,ignored"`
+	ApiDeprecationErrors bool   `ferretdb:"apiDeprecationErrors,ignored"`
 }
 
 // GetExplainParams returns the parameters for the explain command.

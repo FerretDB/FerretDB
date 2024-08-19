@@ -55,6 +55,10 @@ type FindAndModifyParams struct {
 	TxnNumber                int64           `ferretdb:"txnNumber,ignored"`
 	ClusterTime              any             `ferretdb:"$clusterTime,ignored"`
 	ReadPreference           *types.Document `ferretdb:"$readPreference,ignored"`
+
+	ApiVersion           string `ferretdb:"apiVersion,ignored"`
+	ApiStrict            bool   `ferretdb:"apiStrict,ignored"`
+	ApiDeprecationErrors bool   `ferretdb:"apiDeprecationErrors,ignored"`
 }
 
 // GetFindAndModifyParams returns `findAndModifyParams` command parameters.
