@@ -51,7 +51,7 @@ func unixSocketPath(tb testtb.TB) string {
 }
 
 // listenerMongoDBURI builds MongoDB URI for in-process FerretDB.
-func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath, newAuthDB string, tlsAndAuth bool) string {
+func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath string, disableNewAuth, tls bool) string {
 	tb.Helper()
 
 	var host string
@@ -66,7 +66,7 @@ func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath, newAuthDB string
 	var user *url.Userinfo
 	q := url.Values{}
 
-	if tlsAndAuth {
+	if tls {
 		require.Empty(tb, unixSocketPath, "unixSocketPath cannot be used with TLS")
 
 		// we don't separate TLS and auth just for simplicity of our test configurations
@@ -74,23 +74,19 @@ func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath, newAuthDB string
 			"tls":                   []string{"true"},
 			"tlsCertificateKeyFile": []string{filepath.Join(testutil.BuildCertsDir, "client.pem")},
 			"tlsCaFile":             []string{filepath.Join(testutil.BuildCertsDir, "rootCA-cert.pem")},
-			"authMechanism":         []string{"PLAIN"},
 		}
 		user = url.UserPassword("username", "password")
-	}
 
-	path := "/"
-
-	if newAuthDB != "" {
-		q.Set("authMechanism", "SCRAM-SHA-256")
-		path += newAuthDB
+		if disableNewAuth {
+			q.Set("authMechanism", "PLAIN")
+		}
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/1507
 	u := &url.URL{
 		Scheme:   "mongodb",
 		Host:     host,
-		Path:     path,
+		Path:     "/",
 		User:     user,
 		RawQuery: q.Encode(),
 	}
@@ -258,19 +254,17 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *slog.Logger, opts 
 	})
 
 	var hostPort, unixSocketPath string
-	var tlsAndAuth bool
 
 	switch {
 	case *targetTLSF:
 		hostPort = l.TLSAddr().String()
-		tlsAndAuth = true
 	case *targetUnixSocketF:
 		unixSocketPath = l.UnixAddr().String()
 	default:
 		hostPort = l.TCPAddr().String()
 	}
 
-	uri := listenerMongoDBURI(tb, hostPort, unixSocketPath, handlerOpts.SetupDatabase, tlsAndAuth)
+	uri := listenerMongoDBURI(tb, hostPort, unixSocketPath, opts.DisableNewAuth, *targetTLSF)
 
 	logger.InfoContext(ctx, "Listener started", slog.String("handler", handler), slog.String("uri", uri))
 

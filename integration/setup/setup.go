@@ -32,7 +32,6 @@ import (
 	"go.opentelemetry.io/otel"
 
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
-	"github.com/FerretDB/FerretDB/internal/util/password"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 
@@ -71,6 +70,20 @@ var (
 	allBackends = []string{"ferretdb-postgresql", "ferretdb-sqlite", "ferretdb-mysql", "ferretdb-hana", "mongodb"}
 )
 
+// WireConn represents how to configure low-level wire connection.
+type WireConn int
+
+const (
+	// WireConnNoConn does not create low-level wire connection.
+	WireConnNoConn WireConn = iota
+
+	// WireConnNoAuth creates bare wire connection without authentication.
+	WireConnNoAuth
+
+	// WireConnAuth creates authenticated wire connection.
+	WireConnAuth
+)
+
 // SetupOpts represents setup options.
 //
 // Add option to use read-only user.
@@ -85,14 +98,15 @@ type SetupOpts struct {
 	// Benchmark data provider. If empty, collection is not created.
 	BenchmarkProvider shareddata.BenchmarkProvider
 
-	// ExtraOptions sets the options in MongoDB URI, when the option exists it overwrites that option.
+	// ExtraOptions adds or replaces query parameters in the MongoDB URI.
+	// It is used by both driver and low-level wire connections.
+	//
+	// Note that low-level wire connection does not support many options
+	// and returns an error if it encounters an unknown one
 	ExtraOptions url.Values
 
-	// UseWireConn enables low-level wire connection creation.
-	UseWireConn bool
-
-	// WireConnNoAuth disables automatic authentication of the low-level wire connection.
-	WireConnNoAuth bool
+	// WireConn defines if and how low-level wire connection is configured.
+	WireConn WireConn
 
 	// Options to override default backend configuration.
 	BackendOptions *BackendOpts
@@ -192,27 +206,21 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 
 	var conn *wireclient.Conn
 
-	if opts.UseWireConn {
-		u, err := url.Parse(uri)
-		require.NoError(tb, err)
+	if opts.WireConn != WireConnNoConn {
+		conn = setupWireConn(tb, setupCtx, uri, testutil.Logger(tb))
 
-		query := u.Query()
-		u.RawQuery = ""
+		if opts.WireConn == WireConnAuth {
+			u, err := url.Parse(uri)
+			require.NoError(tb, err)
 
-		conn = setupWireConn(tb, setupCtx, u.String(), testutil.Logger(tb))
-
-		if u.User != nil && !opts.WireConnNoAuth {
 			user := u.User.Username()
+			require.NotEmpty(tb, user)
+
 			pass, _ := u.User.Password()
+			require.NotEmpty(tb, pass)
 
-			mech := query.Get("authMechanism")
-			if mech == "" {
-				mech = "SCRAM-SHA-1"
-			}
-
-			authDB := query.Get("authSource")
-
-			require.NoError(tb, authenticate(ctx, conn, user, password.WrapPassword(pass), mech, authDB))
+			// TODO https://github.com/FerretDB/FerretDB/issues/4448
+			require.NoError(tb, conn.Login(ctx, user, pass, "admin"))
 		}
 	}
 
@@ -235,22 +243,6 @@ func Setup(tb testtb.TB, providers ...shareddata.Provider) (context.Context, *mo
 		Providers: providers,
 	})
 	return s.Ctx, s.Collection
-}
-
-// SetupWireConn setups a single collection for all providers, if they are present,
-// and returns authenticated low-level wire connection.
-func SetupWireConn(tb testtb.TB, providers ...shareddata.Provider) (context.Context, *wireclient.Conn) {
-	tb.Helper()
-
-	s := SetupWithOpts(tb, &SetupOpts{
-		Providers:   providers,
-		UseWireConn: true,
-		ExtraOptions: url.Values{
-			"authSource": []string{"admin"},
-		},
-	})
-
-	return s.Ctx, s.WireConn
 }
 
 // setupCollection setups a single collection for all providers, if they are present.

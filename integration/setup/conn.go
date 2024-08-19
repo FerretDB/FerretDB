@@ -16,24 +16,16 @@ package setup
 
 import (
 	"context"
-	"crypto/md5"
-	"encoding/hex"
 	"log/slog"
 
-	"github.com/FerretDB/wire"
-	"github.com/FerretDB/wire/wirebson"
 	"github.com/FerretDB/wire/wireclient"
 	"github.com/stretchr/testify/require"
-	"github.com/xdg-go/scram"
 	"go.opentelemetry.io/otel"
 
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/util/password"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
-// setupClient returns test-specific non-authenticated low-level wire connection for the given MongoDB URI.
+// setupWireConn returns test-specific non-authenticated low-level wire connection for the given MongoDB URI.
 //
 // It disconnects automatically when test ends.
 //
@@ -57,92 +49,4 @@ func setupWireConn(tb testtb.TB, ctx context.Context, uri string, l *slog.Logger
 	})
 
 	return conn
-}
-
-// authenticate verifies the provided credentials using the mechanism for the given connection.
-func authenticate(ctx context.Context, c *wireclient.Conn, user string, pass password.Password, mech, authDB string) error {
-	password := pass.Password()
-
-	var h scram.HashGeneratorFcn
-
-	switch mech {
-	case "SCRAM-SHA-1":
-		h = scram.SHA1
-
-		md5sum := md5.New()
-		if _, err := md5sum.Write([]byte(user + ":mongo:" + password)); err != nil {
-			return lazyerrors.Error(err)
-		}
-
-		src := md5sum.Sum(nil)
-		dst := make([]byte, hex.EncodedLen(len(src)))
-		hex.Encode(dst, src)
-
-		password = string(dst)
-
-	case "SCRAM-SHA-256":
-		h = scram.SHA256
-
-	default:
-		return lazyerrors.Errorf("unsupported mechanism %q", mech)
-	}
-
-	s, err := h.NewClientUnprepped(user, password, "")
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	conv := s.NewConversation()
-
-	payload, err := conv.Step("")
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	cmd := must.NotFail(wirebson.NewDocument(
-		"saslStart", int32(1),
-		"mechanism", mech,
-		"payload", wirebson.Binary{B: []byte(payload)},
-		"$db", authDB,
-	))
-
-	for {
-		var body *wire.OpMsg
-
-		if body, err = wire.NewOpMsg(must.NotFail(cmd.Encode())); err != nil {
-			return lazyerrors.Error(err)
-		}
-
-		var resBody wire.MsgBody
-
-		if _, resBody, err = c.Request(ctx, body); err != nil {
-			return lazyerrors.Error(err)
-		}
-
-		var resMsg *wirebson.Document
-
-		if resMsg, err = must.NotFail(resBody.(*wire.OpMsg).RawDocument()).Decode(); err != nil {
-			return lazyerrors.Error(err)
-		}
-
-		if ok := resMsg.Get("ok"); ok != 1.0 {
-			return lazyerrors.Errorf("%s was not successful (ok was %v)", cmd.Command(), ok)
-		}
-
-		if resMsg.Get("done").(bool) {
-			return nil
-		}
-
-		payload, err = conv.Step(string(resMsg.Get("payload").(wirebson.Binary).B))
-		if err != nil {
-			return lazyerrors.Error(err)
-		}
-
-		cmd = must.NotFail(wirebson.NewDocument(
-			"saslContinue", int32(1),
-			"conversationId", int32(1),
-			"payload", wirebson.Binary{B: []byte(payload)},
-			"$db", authDB,
-		))
-	}
 }
