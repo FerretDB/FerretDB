@@ -51,7 +51,7 @@ func unixSocketPath(tb testtb.TB) string {
 }
 
 // listenerMongoDBURI builds MongoDB URI for in-process FerretDB.
-func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath string, disableNewAuth, tls bool) string {
+func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath, newAuthDB string, tls bool) string {
 	tb.Helper()
 
 	var host string
@@ -74,12 +74,13 @@ func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath string, disableNe
 			"tls":                   []string{"true"},
 			"tlsCertificateKeyFile": []string{filepath.Join(testutil.BuildCertsDir, "client.pem")},
 			"tlsCaFile":             []string{filepath.Join(testutil.BuildCertsDir, "rootCA-cert.pem")},
-			"authMechanism":         []string{"SCRAM-SHA-256"},
 		}
 		user = url.UserPassword("username", "password")
 
-		if disableNewAuth {
+		if newAuthDB == "" {
 			q.Set("authMechanism", "PLAIN")
+		} else {
+			q.Set("authSource", newAuthDB)
 		}
 	}
 
@@ -265,7 +266,7 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *slog.Logger, opts 
 		hostPort = l.TCPAddr().String()
 	}
 
-	uri := listenerMongoDBURI(tb, hostPort, unixSocketPath, opts.DisableNewAuth, *targetTLSF)
+	uri := listenerMongoDBURI(tb, hostPort, unixSocketPath, handlerOpts.SetupDatabase, *targetTLSF)
 
 	logger.InfoContext(ctx, "Listener started", slog.String("handler", handler), slog.String("uri", uri))
 
