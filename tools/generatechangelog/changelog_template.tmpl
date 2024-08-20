@@ -11,12 +11,3 @@
 {{- if .Previous }}
 [All commits](https://github.com/FerretDB/FerretDB/compare/{{ .Previous }}...{{ .Current }}).
 {{- end }}
-
-{{- if .FirstTimers }}
-### First time contributors
-
-{{ range $user, $url := .FirstTimers }}
-- @{{ $user }} made their first contribution in {{ $url }}
-{{ end }}
-
-{{ end }}

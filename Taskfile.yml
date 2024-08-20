@@ -913,3 +913,5 @@ tasks:
     desc: "Generate changelogs locally for a given milestone."
     cmds:
       - bin/generatechangelog {{.MILESTONE_TITLE}}
+    requires:
+      vars: [ MILESTONE_TITLE ]

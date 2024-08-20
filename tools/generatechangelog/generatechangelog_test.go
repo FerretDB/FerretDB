@@ -24,7 +24,7 @@ import (
 	"github.com/google/go-github/v57/github"
 )
 
-func TestCompareMilestiones(t *testing.T) {
+func TestCompareMilestones(t *testing.T) {
 	for name, tc := range map[string]struct {
 		name     string
 		a        *github.Milestone
@@ -50,6 +50,16 @@ func TestCompareMilestiones(t *testing.T) {
 			a:        &github.Milestone{Title: pointer.To("v1.2.0")},
 			b:        &github.Milestone{Title: pointer.To("v1.21.0")},
 			expected: -19,
+		},
+		"v0.2.0 vs v1.2.0": {
+			a:        &github.Milestone{Title: pointer.To("v0.2.0")},
+			b:        &github.Milestone{Title: pointer.To("v1.2.0")},
+			expected: -1,
+		},
+		"v1.2.10 vs v1.2.1": {
+			a:        &github.Milestone{Title: pointer.To("v1.2.10")},
+			b:        &github.Milestone{Title: pointer.To("v1.2.1")},
+			expected: 9,
 		},
 	} {
 		t.Run(name, func(t *testing.T) {

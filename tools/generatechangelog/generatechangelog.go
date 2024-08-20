@@ -125,8 +125,8 @@ func compareMilestones(a, b *github.Milestone) int {
 	return 0
 }
 
-// ListMergedPRsOnMilestone returns the list of merged PRs on the given milestone and the set of first time contributors with their first contributions.
-func ListMergedPRsOnMilestone(ctx context.Context, client *github.Client, milestone *github.Milestone) ([]PRItem, map[string]string, error) {
+// ListMergedPRsOnMilestone returns the list of merged PRs on the given milestone.
+func ListMergedPRsOnMilestone(ctx context.Context, client *github.Client, milestone *github.Milestone) ([]PRItem, error) {
 	issues, _, err := client.Issues.ListByRepo(
 		ctx,
 		"FerretDB",
@@ -138,11 +138,10 @@ func ListMergedPRsOnMilestone(ctx context.Context, client *github.Client, milest
 			Direction: "asc",
 		})
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	var prItems []PRItem
-	contributors := make(map[string]string)
 
 	for _, issue := range issues {
 		if !issue.IsPullRequest() {
@@ -163,43 +162,10 @@ func ListMergedPRsOnMilestone(ctx context.Context, client *github.Client, milest
 			Labels: labels,
 		}
 
-		if _, exists := contributors[prItem.User]; !exists {
-			contributors[prItem.User] = prItem.URL
-		}
-
 		prItems = append(prItems, prItem)
 	}
 
-	for user := range contributors {
-		uIssues, _, err := client.Issues.ListByRepo(
-			ctx,
-			"FerretDB",
-			"FerretDB",
-			&github.IssueListByRepoOptions{
-				State:   "closed",
-				Creator: user,
-			})
-		if err != nil {
-			return nil, nil, err
-		}
-
-		fmt.Printf("current milestone: %s\n", *milestone.Title)
-
-		for _, issue := range uIssues {
-			if !issue.IsPullRequest() || issue.Milestone == nil || compareMilestones(issue.Milestone, milestone) <= 0 {
-				continue
-			}
-
-			fmt.Printf("contrubutor: %s, issue: %d, milestone: %s\n", user, *issue.Number, *issue.Milestone.Title)
-
-			delete(contributors, user)
-			break
-		}
-	}
-
-	fmt.Printf("new contribs: %d", len(contributors))
-
-	return prItems, contributors, nil
+	return prItems, nil
 }
 
 // LoadReleaseTemplate loads the given release template.
@@ -313,7 +279,7 @@ func main() {
 	}
 
 	// Fetch merged PRs for retrieved milestone
-	mergedPRs, firstTimers, err := ListMergedPRsOnMilestone(ctx, client, milestone)
+	mergedPRs, err := ListMergedPRsOnMilestone(ctx, client, milestone)
 	if err != nil {
 		log.Fatalf("Failed to fetch PRs: %v", err)
 	}
@@ -341,21 +307,19 @@ func main() {
 	currentTitle = re.FindString(currentTitle)
 
 	data := struct {
-		Header      string
-		Date        string
-		Previous    string
-		Current     string
-		URL         string
-		PRs         []GroupedPRs
-		FirstTimers map[string]string
+		Header   string
+		Date     string
+		Previous string
+		Current  string
+		URL      string
+		PRs      []GroupedPRs
 	}{
-		Header:      *milestone.Title, // e.g. v0.8.0 Beta
-		Date:        time.Now().Format("2006-01-02"),
-		Previous:    previousTitle, // e.g. v0.7.0
-		Current:     currentTitle,  // e.g. v0.8.0
-		URL:         *milestone.HTMLURL,
-		PRs:         categorizedPRs,
-		FirstTimers: firstTimers,
+		Header:   *milestone.Title, // e.g. v0.8.0 Beta
+		Date:     time.Now().Format("2006-01-02"),
+		Previous: previousTitle, // e.g. v0.7.0
+		Current:  currentTitle,  // e.g. v0.8.0
+		URL:      *milestone.HTMLURL,
+		PRs:      categorizedPRs,
 	}
 
 	if err = tmpl.Execute(os.Stdout, data); err != nil {
