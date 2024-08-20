@@ -76,37 +76,7 @@ func GetMilestone(ctx context.Context, client *github.Client, milestoneTitle str
 	}
 
 	// Sort milestones by version number so we can find the previous milestone
-	slices.SortFunc(milestones, func(a, b *github.Milestone) int {
-		re := regexp.MustCompile(`^v(\d+)\.(\d+)\.(\d+)$`)
-		aMatches := re.FindStringSubmatch(*a.Title)
-		bMatches := re.FindStringSubmatch(*b.Title)
-
-		if len(aMatches) != 4 || len(bMatches) != 4 {
-			return 0
-		}
-
-		aMajor, _ := strconv.Atoi(aMatches[1])
-		aMinor, _ := strconv.Atoi(aMatches[2])
-		aPatch, _ := strconv.Atoi(aMatches[3])
-
-		bMajor, _ := strconv.Atoi(bMatches[1])
-		bMinor, _ := strconv.Atoi(bMatches[2])
-		bPatch, _ := strconv.Atoi(bMatches[3])
-
-		if aMajor != bMajor {
-			return aMajor - bMajor
-		}
-
-		if aMinor != bMinor {
-			return aMinor - bMinor
-		}
-
-		if aPatch != bPatch {
-			return aPatch - bPatch
-		}
-
-		return 0
-	})
+	slices.SortFunc(milestones, compareMilestones)
 
 	for _, milestone := range milestones {
 		if *milestone.Title == milestoneTitle {
@@ -120,15 +90,50 @@ func GetMilestone(ctx context.Context, client *github.Client, milestoneTitle str
 	return nil, nil, fmt.Errorf("no milestone found with the name %s", milestoneTitle)
 }
 
+// compareMilestones compares two milestones by their version numbers.
+// It returns a negative number when a < b, a positive number when
+// a > b and zero when a == b or a and b are incomparable
+func compareMilestones(a, b *github.Milestone) int {
+	re := regexp.MustCompile(`^v(\d+)\.(\d+)\.(\d+)$`)
+	aMatches := re.FindStringSubmatch(*a.Title)
+	bMatches := re.FindStringSubmatch(*b.Title)
+
+	if len(aMatches) != 4 || len(bMatches) != 4 {
+		return 0
+	}
+
+	aMajor, _ := strconv.Atoi(aMatches[1])
+	aMinor, _ := strconv.Atoi(aMatches[2])
+	aPatch, _ := strconv.Atoi(aMatches[3])
+
+	bMajor, _ := strconv.Atoi(bMatches[1])
+	bMinor, _ := strconv.Atoi(bMatches[2])
+	bPatch, _ := strconv.Atoi(bMatches[3])
+
+	if aMajor != bMajor {
+		return aMajor - bMajor
+	}
+
+	if aMinor != bMinor {
+		return aMinor - bMinor
+	}
+
+	if aPatch != bPatch {
+		return aPatch - bPatch
+	}
+
+	return 0
+}
+
 // ListMergedPRsOnMilestone returns the list of merged PRs on the given milestone and the set of first time contributors with their first contributions.
-func ListMergedPRsOnMilestone(ctx context.Context, client *github.Client, milestoneNumber int) ([]PRItem, map[string]string, error) {
+func ListMergedPRsOnMilestone(ctx context.Context, client *github.Client, milestone *github.Milestone) ([]PRItem, map[string]string, error) {
 	issues, _, err := client.Issues.ListByRepo(
 		ctx,
 		"FerretDB",
 		"FerretDB",
 		&github.IssueListByRepoOptions{
 			State:     "closed",
-			Milestone: strconv.Itoa(milestoneNumber),
+			Milestone: strconv.Itoa(*milestone.Number),
 			Sort:      "created",
 			Direction: "asc",
 		})
@@ -178,15 +183,21 @@ func ListMergedPRsOnMilestone(ctx context.Context, client *github.Client, milest
 			return nil, nil, err
 		}
 
+		fmt.Printf("current milestone: %s\n", *milestone.Title)
+
 		for _, issue := range uIssues {
-			if !issue.IsPullRequest() || issue.Milestone == nil || *issue.Milestone.Number == milestoneNumber {
+			if !issue.IsPullRequest() || issue.Milestone == nil || compareMilestones(issue.Milestone, milestone) <= 0 {
 				continue
 			}
+
+			fmt.Printf("contrubutor: %s, issue: %d, milestone: %s\n", user, *issue.Number, *issue.Milestone.Title)
 
 			delete(contributors, user)
 			break
 		}
 	}
+
+	fmt.Printf("new contribs: %d", len(contributors))
 
 	return prItems, contributors, nil
 }
@@ -302,7 +313,7 @@ func main() {
 	}
 
 	// Fetch merged PRs for retrieved milestone
-	mergedPRs, firstTimers, err := ListMergedPRsOnMilestone(ctx, client, *milestone.Number)
+	mergedPRs, firstTimers, err := ListMergedPRsOnMilestone(ctx, client, milestone)
 	if err != nil {
 		log.Fatalf("Failed to fetch PRs: %v", err)
 	}

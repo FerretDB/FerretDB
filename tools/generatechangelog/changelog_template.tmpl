@@ -16,7 +16,7 @@
 ### First time contributors
 
 {{ range $user, $url := .FirstTimers }}
-- @{{ .User.Login }} in {{ .URL }}
+- @{{ $user }} made their first contribution in {{ $url }}
 {{ end }}
 
 {{ end }}
