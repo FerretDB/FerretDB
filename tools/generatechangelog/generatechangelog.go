@@ -37,12 +37,8 @@ type PRItem struct { //nolint:vet // for readability
 	URL    string
 	Title  string
 	Number int
-	User   struct {
-		Login string
-	}
-	Labels []struct {
-		Name string
-	}
+	User   string
+	Labels []string
 }
 
 // ReleaseTemplate represents template categories from the given template file.
@@ -64,10 +60,16 @@ type GroupedPRs struct {
 	PRs           []PRItem
 }
 
+// contributors represents existing contributors.
+var contributors = map[string]struct{}{}
+
 // GetMilestone fetches the milestone with the given title.
 func GetMilestone(ctx context.Context, client *github.Client, milestoneTitle string) (current, previous *github.Milestone, err error) {
 	milestones, _, err := client.Issues.ListMilestones(ctx, "FerretDB", "FerretDB", &github.MilestoneListOptions{
 		State: "all",
+		ListOptions: github.ListOptions{
+			PerPage: 500,
+		},
 	})
 	if err != nil {
 		return nil, nil, err
@@ -118,8 +120,8 @@ func GetMilestone(ctx context.Context, client *github.Client, milestoneTitle str
 	return nil, nil, fmt.Errorf("no milestone found with the name %s", milestoneTitle)
 }
 
-// ListMergedPRsOnMilestone fetches merged PRs on the given milestone.
-func ListMergedPRsOnMilestone(ctx context.Context, client *github.Client, milestoneNumber int) ([]PRItem, error) {
+// ListMergedPRsOnMilestone returns the list of merged PRs on the given milestone and the set of first time contributors with their first contributions.
+func ListMergedPRsOnMilestone(ctx context.Context, client *github.Client, milestoneNumber int) ([]PRItem, map[string]string, error) {
 	issues, _, err := client.Issues.ListByRepo(
 		ctx,
 		"FerretDB",
@@ -127,40 +129,66 @@ func ListMergedPRsOnMilestone(ctx context.Context, client *github.Client, milest
 		&github.IssueListByRepoOptions{
 			State:     "closed",
 			Milestone: strconv.Itoa(milestoneNumber),
+			Sort:      "created",
+			Direction: "asc",
 		})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	var prItems []PRItem
+	contributors := make(map[string]string)
 
 	for _, issue := range issues {
 		if !issue.IsPullRequest() {
 			continue
 		}
 
-		var labels []struct {
-			Name string
-		}
+		var labels []string
 
 		for _, label := range issue.Labels {
-			labels = append(labels, struct{ Name string }{Name: *label.Name})
+			labels = append(labels, *label.Name)
 		}
 
 		prItem := PRItem{
 			URL:    *issue.URL,
 			Number: *issue.Number,
 			Title:  *issue.Title,
-			User: struct{ Login string }{
-				Login: *issue.User.Login,
-			},
+			User:   *issue.User.Login,
 			Labels: labels,
+		}
+
+		if _, exists := contributors[prItem.User]; !exists {
+			contributors[prItem.User] = prItem.URL
 		}
 
 		prItems = append(prItems, prItem)
 	}
 
-	return prItems, nil
+	for user := range contributors {
+		uIssues, _, err := client.Issues.ListByRepo(
+			ctx,
+			"FerretDB",
+			"FerretDB",
+			&github.IssueListByRepoOptions{
+				State:   "closed",
+				Creator: user,
+			})
+		if err != nil {
+			return nil, nil, err
+		}
+
+		for _, issue := range uIssues {
+			if !issue.IsPullRequest() || issue.Milestone == nil || *issue.Milestone.Number == milestoneNumber {
+				continue
+			}
+
+			delete(contributors, user)
+			break
+		}
+	}
+
+	return prItems, contributors, nil
 }
 
 // LoadReleaseTemplate loads the given release template.
@@ -186,7 +214,7 @@ func collectPRItemsWithLabels(prItems []PRItem, labelSet map[string]struct{}) []
 
 	for _, prItem := range prItems {
 		for _, label := range prItem.Labels {
-			if _, exists := labelSet[label.Name]; exists {
+			if _, exists := labelSet[label]; exists {
 				res = append(res, prItem)
 				break
 			}
@@ -253,7 +281,6 @@ func main() {
 		log.Fatalf("Failed to get current working directory: %v", err)
 	}
 
-	// Use existing release.yml file in .github
 	releaseYamlFile := filepath.Join(repoRoot, ".github", "release.yml")
 
 	// Load the release template file
@@ -275,7 +302,7 @@ func main() {
 	}
 
 	// Fetch merged PRs for retrieved milestone
-	mergedPRs, err := ListMergedPRsOnMilestone(ctx, client, *milestone.Number)
+	mergedPRs, firstTimers, err := ListMergedPRsOnMilestone(ctx, client, *milestone.Number)
 	if err != nil {
 		log.Fatalf("Failed to fetch PRs: %v", err)
 	}
@@ -303,19 +330,21 @@ func main() {
 	currentTitle = re.FindString(currentTitle)
 
 	data := struct {
-		Header   string
-		Date     string
-		Previous string
-		Current  string
-		URL      string
-		PRs      []GroupedPRs
+		Header      string
+		Date        string
+		Previous    string
+		Current     string
+		URL         string
+		PRs         []GroupedPRs
+		FirstTimers map[string]string
 	}{
-		Header:   *milestone.Title, // e.g. v0.8.0 Beta
-		Date:     time.Now().Format("2006-01-02"),
-		Previous: previousTitle, // e.g. v0.7.0
-		Current:  currentTitle,  // e.g. v0.8.0
-		URL:      *milestone.HTMLURL,
-		PRs:      categorizedPRs,
+		Header:      *milestone.Title, // e.g. v0.8.0 Beta
+		Date:        time.Now().Format("2006-01-02"),
+		Previous:    previousTitle, // e.g. v0.7.0
+		Current:     currentTitle,  // e.g. v0.8.0
+		URL:         *milestone.HTMLURL,
+		PRs:         categorizedPRs,
+		FirstTimers: firstTimers,
 	}
 
 	if err = tmpl.Execute(os.Stdout, data); err != nil {
