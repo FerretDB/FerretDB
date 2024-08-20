@@ -5,6 +5,7 @@ go 1.22
 toolchain go1.22.6
 
 require (
+	github.com/AlekSi/pointer v1.2.0
 	github.com/FerretDB/gh v0.1.4
 	github.com/go-task/task/v3 v3.38.0
 	github.com/google/go-github/v57 v57.0.0
@@ -23,7 +24,6 @@ require (
 
 require (
 	dario.cat/mergo v1.0.0 // indirect
-	github.com/AlekSi/pointer v1.2.0 // indirect
 	github.com/Ladicle/tabwriter v1.0.0 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver/v3 v3.2.1 // indirect

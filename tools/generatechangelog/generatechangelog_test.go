@@ -43,13 +43,13 @@ func TestCompareMilestiones(t *testing.T) {
 		},
 		"v0.9.0 vs v0.9.0": {
 			a:        &github.Milestone{Title: pointer.To("v0.9.0")},
-			b:        &github.Milestone{Title: pointer.To("v0.9.1")},
+			b:        &github.Milestone{Title: pointer.To("v0.9.0")},
 			expected: 0,
 		},
-		"v0.21.0 vs v0.2.1": {
-			a:        &github.Milestone{Title: pointer.To("v0.9.0")},
-			b:        &github.Milestone{Title: pointer.To("v0.9.1")},
-			expected: 1,
+		"v1.2.0 vs v1.21.0": {
+			a:        &github.Milestone{Title: pointer.To("v1.2.0")},
+			b:        &github.Milestone{Title: pointer.To("v1.21.0")},
+			expected: -19,
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
