@@ -33,10 +33,6 @@ type InsertParams struct {
 	Collection string       `ferretdb:"insert,collection"`
 	Ordered    bool         `ferretdb:"ordered,opt"`
 
-	APIVersion           string `ferretdb:"apiVersion,ignored"`
-	APIStrict            bool   `ferretdb:"apiStrict,ignored"`
-	APIDeprecationErrors bool   `ferretdb:"apiDeprecationErrors,ignored"`
-
 	MaxTimeMS                int64           `ferretdb:"maxTimeMS,ignored"`
 	WriteConcern             any             `ferretdb:"writeConcern,ignored"`
 	BypassDocumentValidation bool            `ferretdb:"bypassDocumentValidation,ignored"`
@@ -45,6 +41,10 @@ type InsertParams struct {
 	TxnNumber                int64           `ferretdb:"txnNumber,ignored"`
 	ClusterTime              any             `ferretdb:"$clusterTime,ignored"`
 	ReadPreference           *types.Document `ferretdb:"$readPreference,ignored"`
+
+	ApiVersion           string `ferretdb:"apiVersion,ignored"`
+	ApiStrict            bool   `ferretdb:"apiStrict,ignored"`
+	ApiDeprecationErrors bool   `ferretdb:"apiDeprecationErrors,ignored"`
 }
 
 // GetInsertParams returns the parameters for an insert command.

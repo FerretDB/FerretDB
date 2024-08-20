@@ -44,10 +44,6 @@ type FindParams struct {
 	Collation *types.Document `ferretdb:"collation,unimplemented"`
 	Let       *types.Document `ferretdb:"let,unimplemented"`
 
-	APIVersion           string `ferretdb:"apiVersion,ignored"`
-	APIStrict            bool   `ferretdb:"apiStrict,ignored"`
-	APIDeprecationErrors bool   `ferretdb:"apiDeprecationErrors,ignored"`
-
 	AllowDiskUse     bool            `ferretdb:"allowDiskUse,ignored"`
 	ReadConcern      *types.Document `ferretdb:"readConcern,ignored"`
 	Max              *types.Document `ferretdb:"max,ignored"`
@@ -66,6 +62,10 @@ type FindParams struct {
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/4035
 	NoCursorTimeout bool `ferretdb:"noCursorTimeout,unimplemented-non-default"`
+
+	ApiVersion           string `ferretdb:"apiVersion,ignored"`
+	ApiStrict            bool   `ferretdb:"apiStrict,ignored"`
+	ApiDeprecationErrors bool   `ferretdb:"apiDeprecationErrors,ignored"`
 }
 
 // GetFindParams returns `find` command parameters.
