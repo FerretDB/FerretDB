@@ -226,18 +226,7 @@ func groupPRsByCategories(prItems []PRItem, categories []TemplateCategory) []Gro
 	return categorizedPRs
 }
 
-func main() {
-	if len(os.Args) < 2 {
-		fmt.Println("Usage: generatechangelog MILESTONE_TITLE")
-		os.Exit(1)
-	}
-	milestoneTitle := os.Args[1]
-
-	repoRoot, err := os.Getwd()
-	if err != nil {
-		log.Fatalf("Failed to get current working directory: %v", err)
-	}
-
+func run(repoRoot, milestoneTitle string) {
 	releaseYamlFile := filepath.Join(repoRoot, ".github", "release.yml")
 
 	tpl, err := loadReleaseTemplate(releaseYamlFile)
@@ -303,4 +292,19 @@ func main() {
 	}
 
 	_, _ = fmt.Fprintln(os.Stdout)
+}
+
+func main() {
+	if len(os.Args) < 2 {
+		fmt.Println("Usage: generatechangelog MILESTONE_TITLE")
+		os.Exit(1)
+	}
+	milestoneTitle := os.Args[1]
+
+	repoRoot, err := os.Getwd()
+	if err != nil {
+		log.Fatalf("Failed to get current working directory: %v", err)
+	}
+
+	run(repoRoot, milestoneTitle)
 }
