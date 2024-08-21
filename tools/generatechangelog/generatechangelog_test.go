@@ -555,11 +555,6 @@ func TestGenerateChangelogIntegration(t *testing.T) {
 		"https://github.com/FerretDB/FerretDB/pull/4160\n" +
 		"- Bump `pgx` by @AlekSi in " +
 		"https://github.com/FerretDB/FerretDB/pull/4190\n\n" +
-		"### New Contributors\n\n" +
-		"- @farit2000 made their first contribution in " +
-		"https://github.com/FerretDB/FerretDB/pull/4121\n" +
-		"- @sbshah97 made their first contribution in " +
-		"https://github.com/FerretDB/FerretDB/pull/4139\n\n" +
 		"[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/63?closed=1).\n" +
 		"[All commits](https://github.com/FerretDB/FerretDB/compare/v1.20.1...v1.21.0).\n"
 

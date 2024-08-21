@@ -152,7 +152,7 @@ func listMergedPRsOnMilestone(ctx context.Context, client *github.Client, milest
 		}
 
 		prItem := PRItem{
-			URL:    *issue.URL,
+			URL:    *issue.PullRequestLinks.HTMLURL,
 			Number: *issue.Number,
 			Title:  *issue.Title,
 			User:   *issue.User.Login,
