@@ -32,16 +32,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// PRItem represents GitHub's PR.
-type PRItem struct { //nolint:vet // for readability
-	URL    string
-	Title  string
-	Number int
-	User   string
-	Labels []string
-}
-
-// ReleaseTemplate represents template categories from the given template file.
+// ReleaseTemplate represents GitHub release template.
 type ReleaseTemplate struct {
 	Changelog struct {
 		Categories []TemplateCategory `yaml:"categories"`
@@ -54,17 +45,23 @@ type TemplateCategory struct {
 	Labels []string `yaml:"labels"`
 }
 
-// GroupedPRs is an intermediate struct to group PRs by labels and categories.
+// GroupedPRs represented PRs grouped by categories.
 type GroupedPRs struct {
 	CategoryTitle string
 	PRs           []PRItem
 }
 
-// contributors represents existing contributors.
-var contributors = map[string]struct{}{}
+// PRItem represents GitHub PR.
+type PRItem struct { //nolint:vet // for readability
+	URL    string
+	Title  string
+	Number int
+	User   string
+	Labels []string
+}
 
-// GetMilestone fetches the milestone with the given title.
-func GetMilestone(ctx context.Context, client *github.Client, milestoneTitle string) (current, previous *github.Milestone, err error) {
+// getMilestone fetches the milestone with the given title.
+func getMilestone(ctx context.Context, client *github.Client, milestoneTitle string) (current, previous *github.Milestone, err error) {
 	milestones, _, err := client.Issues.ListMilestones(ctx, "FerretDB", "FerretDB", &github.MilestoneListOptions{
 		State: "all",
 		ListOptions: github.ListOptions{
@@ -94,7 +91,7 @@ func GetMilestone(ctx context.Context, client *github.Client, milestoneTitle str
 // It returns a negative number when a < b, a positive number when
 // a > b and zero when a == b or a and b are incomparable
 func compareMilestones(a, b *github.Milestone) int {
-	re := regexp.MustCompile(`^v(\d+)\.(\d+)\.(\d+)$`)
+	re := regexp.MustCompile(`^v(\d+)\.(\d+)\.(\d+).*`)
 	aMatches := re.FindStringSubmatch(*a.Title)
 	bMatches := re.FindStringSubmatch(*b.Title)
 
@@ -125,8 +122,8 @@ func compareMilestones(a, b *github.Milestone) int {
 	return 0
 }
 
-// ListMergedPRsOnMilestone returns the list of merged PRs on the given milestone.
-func ListMergedPRsOnMilestone(ctx context.Context, client *github.Client, milestone *github.Milestone) ([]PRItem, error) {
+// listMergedPRsOnMilestone returns the list of merged PRs on the given milestone.
+func listMergedPRsOnMilestone(ctx context.Context, client *github.Client, milestone *github.Milestone) ([]PRItem, error) {
 	issues, _, err := client.Issues.ListByRepo(
 		ctx,
 		"FerretDB",
@@ -168,21 +165,21 @@ func ListMergedPRsOnMilestone(ctx context.Context, client *github.Client, milest
 	return prItems, nil
 }
 
-// LoadReleaseTemplate loads the given release template.
-func LoadReleaseTemplate(filePath string) (*ReleaseTemplate, error) {
+// loadReleaseTemplate loads the given release template.
+func loadReleaseTemplate(filePath string) (*ReleaseTemplate, error) {
 	bytes, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, err
 	}
 
-	var template ReleaseTemplate
+	var tpl ReleaseTemplate
 
-	err = yaml.Unmarshal(bytes, &template)
+	err = yaml.Unmarshal(bytes, &tpl)
 	if err != nil {
 		return nil, err
 	}
 
-	return &template, nil
+	return &tpl, nil
 }
 
 // collectPRItemsWithLabels generates slice of PRItems with input slice of PRs and set of labels.
@@ -205,7 +202,6 @@ func collectPRItemsWithLabels(prItems []PRItem, labelSet map[string]struct{}) []
 func groupPRsByTemplateCategory(prItems []PRItem, templateCategory TemplateCategory) *GroupedPRs {
 	labelSet := make(map[string]struct{})
 
-	// Generate set of labels to check against PR
 	for _, label := range templateCategory.Labels {
 		labelSet[label] = struct{}{}
 	}
@@ -216,8 +212,8 @@ func groupPRsByTemplateCategory(prItems []PRItem, templateCategory TemplateCateg
 	}
 }
 
-// GroupPRsByCategories iterates through the categories and generates Groups of PRs.
-func GroupPRsByCategories(prItems []PRItem, categories []TemplateCategory) []GroupedPRs {
+// groupPRsByCategories iterates through the categories and generates Groups of PRs.
+func groupPRsByCategories(prItems []PRItem, categories []TemplateCategory) []GroupedPRs {
 	var categorizedPRs []GroupedPRs
 
 	for _, category := range categories {
@@ -228,22 +224,6 @@ func GroupPRsByCategories(prItems []PRItem, categories []TemplateCategory) []Gro
 	}
 
 	return categorizedPRs
-}
-
-// RenderMarkdownFromFile renders markdown based on template to stdout.
-func RenderMarkdownFromFile(categorizedPRs []GroupedPRs, templatePath string) error {
-	tmpl, err := template.ParseFiles(templatePath)
-	if err != nil {
-		return err
-	}
-
-	if err = tmpl.Execute(os.Stdout, categorizedPRs); err != nil {
-		return err
-	}
-
-	_, _ = fmt.Fprintln(os.Stdout)
-
-	return nil
 }
 
 func main() {
@@ -260,8 +240,7 @@ func main() {
 
 	releaseYamlFile := filepath.Join(repoRoot, ".github", "release.yml")
 
-	// Load the release template file
-	tpl, err := LoadReleaseTemplate(releaseYamlFile)
+	tpl, err := loadReleaseTemplate(releaseYamlFile)
 	if err != nil {
 		log.Fatalf("Failed to read from template yaml file: %v", err)
 	}
@@ -273,21 +252,18 @@ func main() {
 		log.Fatalf("Failed to create GitHub client: %v", err)
 	}
 
-	milestone, previous, err := GetMilestone(ctx, client, milestoneTitle)
+	milestone, previous, err := getMilestone(ctx, client, milestoneTitle)
 	if err != nil {
 		log.Fatalf("Failed to fetch milestone: %v", err)
 	}
 
-	// Fetch merged PRs for retrieved milestone
-	mergedPRs, err := ListMergedPRsOnMilestone(ctx, client, milestone)
+	mergedPRs, err := listMergedPRsOnMilestone(ctx, client, milestone)
 	if err != nil {
 		log.Fatalf("Failed to fetch PRs: %v", err)
 	}
 
-	// Group PRs by labels
-	categorizedPRs := GroupPRsByCategories(mergedPRs, tpl.Changelog.Categories)
+	categorizedPRs := groupPRsByCategories(mergedPRs, tpl.Changelog.Categories)
 
-	// Render to markdown
 	templatePath := filepath.Join(repoRoot, "tools", "generatechangelog", "changelog_template.tmpl")
 	tmpl, err := template.ParseFiles(templatePath)
 	if err != nil {

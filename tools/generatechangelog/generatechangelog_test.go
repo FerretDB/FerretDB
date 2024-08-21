@@ -15,7 +15,13 @@
 package main
 
 import (
+	"context"
+	"log"
+	"os"
 	"testing"
+
+	"github.com/FerretDB/gh"
+	"github.com/stretchr/testify/require"
 
 	"github.com/stretchr/testify/assert"
 
@@ -46,6 +52,16 @@ func TestCompareMilestones(t *testing.T) {
 			b:        &github.Milestone{Title: pointer.To("v0.9.0")},
 			expected: 0,
 		},
+		"v0.9.1 vs v0.9.0 Developer Preview": {
+			a:        &github.Milestone{Title: pointer.To("v0.9.1")},
+			b:        &github.Milestone{Title: pointer.To("v0.9.0 Developer Preview")},
+			expected: 1,
+		},
+		"v0.9.0 Developer Preview vs v0.9.1": {
+			a:        &github.Milestone{Title: pointer.To("v0.9.0 Developer Preview")},
+			b:        &github.Milestone{Title: pointer.To("v0.9.1")},
+			expected: -1,
+		},
 		"v1.2.0 vs v1.21.0": {
 			a:        &github.Milestone{Title: pointer.To("v1.2.0")},
 			b:        &github.Milestone{Title: pointer.To("v1.21.0")},
@@ -69,7 +85,6 @@ func TestCompareMilestones(t *testing.T) {
 	}
 }
 
-/*
 func TestGetMilestone(t *testing.T) {
 	ctx := context.Background()
 	client, err := gh.NewRESTClient(os.Getenv("GITHUB_TOKEN"), log.Printf)
@@ -77,22 +92,59 @@ func TestGetMilestone(t *testing.T) {
 
 	milestoneTitle := "v0.9.1"
 
-	milestone, err := GetMilestone(ctx, client, milestoneTitle)
+	milestone, previous, err := getMilestone(ctx, client, milestoneTitle)
 	require.NoError(t, err)
-	require.NotNil(t, milestone, "The milestone should not be nil")
-	require.Equal(t, milestoneTitle, *milestone.Title, "Milestone title does not match")
-	require.Equal(t, 30, *milestone.Number, "Milestone Number does not match")
-	require.Equal(t, "closed", *milestone.State, "Milestone should be closed")
-	require.Equal(t, 29, *milestone.ClosedIssues, "The number of closed issues does not match")
 
-	t.Logf("Milestone details:\n- Title: %s\n- Number: %d\n- State: %s\n- Closed Issues: %d\n- Description: %s",
-		*milestone.Title,
-		*milestone.Number,
-		*milestone.State,
-		*milestone.ClosedIssues,
-		*milestone.Description)
+	expectedMilestone := &github.Milestone{
+		Title:        pointer.To("v0.9.1"),
+		Number:       pointer.To(30),
+		State:        pointer.To("closed"),
+		ClosedIssues: pointer.To(29),
+		Description:  pointer.To(""),
+		URL:          pointer.To("https://api.github.com/repos/FerretDB/FerretDB/milestones/30"),
+		HTMLURL:      pointer.To("https://github.com/FerretDB/FerretDB/milestone/30"),
+		LabelsURL:    pointer.To("https://api.github.com/repos/FerretDB/FerretDB/milestones/30/labels"),
+		ID:           pointer.To(int64(8941887)),
+	}
+	actualMilestone := &github.Milestone{
+		Title:        milestone.Title,
+		Number:       milestone.Number,
+		State:        milestone.State,
+		ClosedIssues: milestone.ClosedIssues,
+		Description:  milestone.Description,
+		URL:          milestone.URL,
+		HTMLURL:      milestone.HTMLURL,
+		LabelsURL:    milestone.LabelsURL,
+		ID:           milestone.ID,
+	}
+	assert.Equal(t, expectedMilestone, actualMilestone)
+
+	expectedPrevious := &github.Milestone{
+		Title:        pointer.To("v0.9.0 Developer Preview"),
+		Number:       pointer.To(13),
+		State:        pointer.To("closed"),
+		ClosedIssues: pointer.To(58),
+		Description:  pointer.To(""),
+		URL:          pointer.To("https://api.github.com/repos/FerretDB/FerretDB/milestones/13"),
+		HTMLURL:      pointer.To("https://github.com/FerretDB/FerretDB/milestone/13"),
+		LabelsURL:    pointer.To("https://api.github.com/repos/FerretDB/FerretDB/milestones/13/labels"),
+		ID:           pointer.To(int64(7815597)),
+	}
+	actualPrevious := &github.Milestone{
+		Title:        previous.Title,
+		Number:       previous.Number,
+		State:        previous.State,
+		ClosedIssues: previous.ClosedIssues,
+		Description:  previous.Description,
+		URL:          previous.URL,
+		HTMLURL:      previous.HTMLURL,
+		LabelsURL:    previous.LabelsURL,
+		ID:           previous.ID,
+	}
+	assert.Equal(t, expectedPrevious, actualPrevious)
 }
 
+/*
 func TestListMergedPRsOnMilestone(t *testing.T) {
 	ctx := context.Background()
 	client, err := gh.NewRESTClient(os.Getenv("GITHUB_TOKEN"), log.Printf)
@@ -101,7 +153,7 @@ func TestListMergedPRsOnMilestone(t *testing.T) {
 	// The milestone number for "v0.9.1"
 	milestoneNumber := 30
 
-	prItems, err := ListMergedPRsOnMilestone(ctx, client, milestoneNumber)
+	prItems, err := listMergedPRsOnMilestone(ctx, client, milestoneNumber)
 	require.NoError(t, err)
 
 	expectedNumberOfPRs := 21
@@ -133,7 +185,7 @@ func TestLoadReleaseTemplate(t *testing.T) {
 
 	releaseYamlFile := filepath.Join(cwd, "test_template.yml")
 
-	template, err := LoadReleaseTemplate(releaseYamlFile)
+	template, err := loadReleaseTemplate(releaseYamlFile)
 
 	require.NoError(t, err)
 
@@ -162,9 +214,7 @@ func TestGroupPRsByCategories(t *testing.T) {
 			User: struct {
 				Login string
 			}{Login: "user1"},
-			Labels: []struct {
-				Name string
-			}{{Name: "code/feature"}},
+			Labels: []string}{{Name: "code/feature"}},
 		},
 		{
 			URL:    "http://example.com/pr2",
@@ -296,6 +346,7 @@ func TestRenderMarkdownFromFile(t *testing.T) {
 	assert.Equal(t, expectedOutput, buf.String(), "Expected rendered markdown to be equal")
 }
 
+/*
 func TestGenerateChangelogIntegration(t *testing.T) {
 	milestoneTitle := "v0.9.1"
 	cwd, err := os.Getwd()
