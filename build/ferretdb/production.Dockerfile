@@ -111,7 +111,7 @@ COPY --from=production-build --chown=ferretdb:ferretdb /state /state
 ENTRYPOINT [ "/ferretdb" ]
 
 HEALTHCHECK --interval=1m --timeout=5s --retries=1 --start-period=30s --start-interval=5s \
-  CMD /ferretdb ping
+  CMD ["/ferretdb", "ping"]
 
 WORKDIR /
 VOLUME /state
