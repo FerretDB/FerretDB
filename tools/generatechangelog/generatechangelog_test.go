@@ -65,7 +65,7 @@ func TestCompareMilestones(t *testing.T) {
 		"v1.2.0 vs v1.21.0": {
 			a:        &github.Milestone{Title: pointer.To("v1.2.0")},
 			b:        &github.Milestone{Title: pointer.To("v1.21.0")},
-			expected: -19,
+			expected: -1,
 		},
 		"v0.2.0 vs v1.2.0": {
 			a:        &github.Milestone{Title: pointer.To("v0.2.0")},
@@ -75,7 +75,7 @@ func TestCompareMilestones(t *testing.T) {
 		"v1.2.10 vs v1.2.1": {
 			a:        &github.Milestone{Title: pointer.To("v1.2.10")},
 			b:        &github.Milestone{Title: pointer.To("v1.2.1")},
-			expected: 9,
+			expected: 1,
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -144,7 +144,7 @@ func TestGetMilestone(t *testing.T) {
 	assert.Equal(t, expectedPrevious, actualPrevious)
 }
 
-func TestGenerateChangelogIntegration(t *testing.T) {
+func TestGenerateChangelog(t *testing.T) {
 	r, w, err := os.Pipe()
 	require.NoError(t, err)
 
@@ -264,7 +264,7 @@ func TestGenerateChangelogIntegration(t *testing.T) {
 		"- Bump `pgx` by @AlekSi in " +
 		"https://github.com/FerretDB/FerretDB/pull/4190\n\n" +
 		"[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/63?closed=1).\n" +
-		"[All commits](https://github.com/FerretDB/FerretDB/compare/v1.20.1...v1.21.0).\n"
+		"[All commits](https://github.com/FerretDB/FerretDB/compare/v1.20.1...v1.21.0).\n\n"
 
 	assert.Equal(t, expected, string(actual))
 }

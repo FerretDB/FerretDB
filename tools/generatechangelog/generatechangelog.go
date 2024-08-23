@@ -24,11 +24,13 @@ import (
 	"regexp"
 	"slices"
 	"strconv"
+	"strings"
 	"text/template"
 	"time"
 
 	"github.com/FerretDB/gh"
 	"github.com/google/go-github/v57/github"
+	"golang.org/x/mod/semver"
 	"gopkg.in/yaml.v3"
 )
 
@@ -90,37 +92,11 @@ func getMilestone(ctx context.Context, client *github.Client, milestoneTitle str
 // compareMilestones compares two milestones by their version numbers.
 // It returns a negative number when a < b, a positive number when
 // a > b and zero when a == b or a and b are incomparable.
-// fixme: replace with semver library
 func compareMilestones(a, b *github.Milestone) int {
-	re := regexp.MustCompile(`^v(\d+)\.(\d+)\.(\d+).*`)
-	aMatches := re.FindStringSubmatch(*a.Title)
-	bMatches := re.FindStringSubmatch(*b.Title)
+	aTitle := strings.Fields(*a.Title)[0]
+	bTitle := strings.Fields(*b.Title)[0]
 
-	if len(aMatches) != 4 || len(bMatches) != 4 {
-		return 0
-	}
-
-	aMajor, _ := strconv.Atoi(aMatches[1])
-	aMinor, _ := strconv.Atoi(aMatches[2])
-	aPatch, _ := strconv.Atoi(aMatches[3])
-
-	bMajor, _ := strconv.Atoi(bMatches[1])
-	bMinor, _ := strconv.Atoi(bMatches[2])
-	bPatch, _ := strconv.Atoi(bMatches[3])
-
-	if aMajor != bMajor {
-		return aMajor - bMajor
-	}
-
-	if aMinor != bMinor {
-		return aMinor - bMinor
-	}
-
-	if aPatch != bPatch {
-		return aPatch - bPatch
-	}
-
-	return 0
+	return semver.Compare(aTitle, bTitle)
 }
 
 // listMergedPRsOnMilestone returns the list of merged PRs on the given milestone.
