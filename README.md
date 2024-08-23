@@ -106,6 +106,7 @@ See [there](https://pkg.go.dev/github.com/FerretDB/FerretDB/build/version) for m
 
 - [Civo](https://www.civo.com/marketplace/FerretDB)
 - [Tembo](https://tembo.io/docs/tembo-stacks/mongo-alternative)
+- [Elestio](https://elest.io/open-source/ferretdb)
 
 ## Documentation
 
