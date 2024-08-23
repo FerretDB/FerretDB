@@ -31,7 +31,7 @@ import (
 )
 
 func TestCompareMilestones(t *testing.T) {
-	for name, tc := range map[string]struct { //nolint:govet // for readability
+	for name, tc := range map[string]struct { //nolint:vet // for readability
 		name     string
 		a        *github.Milestone
 		b        *github.Milestone
