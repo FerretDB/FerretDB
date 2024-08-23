@@ -29,8 +29,8 @@ import (
 	"time"
 
 	"github.com/FerretDB/gh"
+	"github.com/Masterminds/semver/v3"
 	"github.com/google/go-github/v57/github"
-	"golang.org/x/mod/semver"
 	"gopkg.in/yaml.v3"
 )
 
@@ -83,6 +83,7 @@ func getMilestone(ctx context.Context, client *github.Client, milestoneTitle str
 			return
 		}
 
+		// todo: user semver lib to find previous ???
 		previous = milestone
 	}
 
@@ -96,7 +97,10 @@ func compareMilestones(a, b *github.Milestone) int {
 	aTitle := strings.Fields(*a.Title)[0]
 	bTitle := strings.Fields(*b.Title)[0]
 
-	return semver.Compare(aTitle, bTitle)
+	aVer := semver.MustParse(aTitle)
+	bVer := semver.MustParse(bTitle)
+
+	return aVer.Compare(bVer)
 }
 
 // listMergedPRsOnMilestone returns the list of merged PRs on the given milestone.
