@@ -161,7 +161,7 @@ func loadReleaseTemplate(filePath string) (*ReleaseTemplate, error) {
 
 // collectPRItemsWithLabels generates slice of PRItems with input slice of PRs and set of labels.
 func collectPRItemsWithLabels(prItems []PRItem, labelSet map[string]struct{}) []PRItem {
-	res := []PRItem{}
+	var res []PRItem
 
 	for _, prItem := range prItems {
 		for _, label := range prItem.Labels {

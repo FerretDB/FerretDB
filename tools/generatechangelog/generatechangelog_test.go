@@ -31,7 +31,7 @@ import (
 )
 
 func TestCompareMilestones(t *testing.T) {
-	for name, tc := range map[string]struct {
+	for name, tc := range map[string]struct { //nolint:govet // for readability
 		name     string
 		a        *github.Milestone
 		b        *github.Milestone
@@ -148,7 +148,7 @@ func TestGenerateChangelog(t *testing.T) {
 	r, w, err := os.Pipe()
 	require.NoError(t, err)
 
-	defer r.Close()
+	defer require.NoError(t, r.Close())
 
 	os.Stdout = w
 
@@ -159,7 +159,7 @@ func TestGenerateChangelog(t *testing.T) {
 
 	run(root, "v1.21.0")
 
-	w.Close()
+	require.NoError(t, w.Close())
 
 	actual, err := io.ReadAll(r)
 	require.NoError(t, err)
