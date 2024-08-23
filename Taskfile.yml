@@ -914,4 +914,4 @@ tasks:
     cmds:
       - bin/generatechangelog {{.MILESTONE_TITLE}}
     requires:
-      vars: [ MILESTONE_TITLE ]
+      vars: [MILESTONE_TITLE]
