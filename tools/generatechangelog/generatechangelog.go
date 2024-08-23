@@ -61,7 +61,7 @@ type PRItem struct { //nolint:vet // for readability
 }
 
 // getMilestone fetches the milestone with the given title.
-func getMilestone(ctx context.Context, client *github.Client, milestoneTitle string) (current, previous *github.Milestone, err error) {
+func getMilestone(ctx context.Context, client *github.Client, milestoneTitle string) (current, previous *github.Milestone, err error) { //nolint:lll // for readability
 	milestones, _, err := client.Issues.ListMilestones(ctx, "FerretDB", "FerretDB", &github.MilestoneListOptions{
 		State: "all",
 		ListOptions: github.ListOptions{
@@ -89,7 +89,8 @@ func getMilestone(ctx context.Context, client *github.Client, milestoneTitle str
 
 // compareMilestones compares two milestones by their version numbers.
 // It returns a negative number when a < b, a positive number when
-// a > b and zero when a == b or a and b are incomparable
+// a > b and zero when a == b or a and b are incomparable.
+// fixme: replace with semver library
 func compareMilestones(a, b *github.Milestone) int {
 	re := regexp.MustCompile(`^v(\d+)\.(\d+)\.(\d+).*`)
 	aMatches := re.FindStringSubmatch(*a.Title)
