@@ -235,6 +235,7 @@ func run(repoRoot, milestoneTitle string) {
 	categorizedPRs := groupPRsByCategories(mergedPRs, tpl.Changelog.Categories)
 
 	templatePath := filepath.Join(repoRoot, "tools", "generatechangelog", "changelog_template.tmpl")
+
 	tmpl, err := template.ParseFiles(templatePath)
 	if err != nil {
 		log.Fatalf("Failed to parse template file: %v", err)
