@@ -148,7 +148,7 @@ func TestGenerateChangelog(t *testing.T) {
 	r, w, err := os.Pipe()
 	require.NoError(t, err)
 
-	defer require.NoError(t, r.Close())
+	defer func() { require.NoError(t, r.Close()) }()
 
 	os.Stdout = w
 
