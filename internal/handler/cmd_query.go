@@ -119,8 +119,8 @@ func (h *Handler) CmdQuery(connCtx context.Context, query *wire.OpQuery) (*wire.
 		}
 
 		var reply *types.Document
-		reply, err = h.saslContinue(connCtx, q)
-		if err != nil {
+
+		if reply, err = h.saslContinue(connCtx, q); err != nil {
 			return nil, err
 		}
 
@@ -135,8 +135,8 @@ func (h *Handler) CmdQuery(connCtx context.Context, query *wire.OpQuery) (*wire.
 		}
 
 		var reply *types.Document
-		reply, err = h.saslStart(connCtx, db, q)
-		if err != nil {
+
+		if reply, err = h.saslStart(connCtx, db, q); err != nil {
 			return nil, err
 		}
 
