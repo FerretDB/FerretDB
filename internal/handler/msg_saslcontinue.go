@@ -38,6 +38,23 @@ func (h *Handler) MsgSASLContinue(connCtx context.Context, msg *wire.OpMsg) (*wi
 		return nil, lazyerrors.Error(err)
 	}
 
+	res, err := h.saslContinue(connCtx, doc)
+	if err != nil {
+		return nil, err
+	}
+
+	if msg, err = documentOpMsg(res); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return msg, nil
+}
+
+// saslContinue executes [scram.Step] on payload to move the conversation forward
+// and returns the response containing the payload.
+// If the conversation is already valid, it returns response with empty payload
+// without executing [scram.Step].
+func (h *Handler) saslContinue(connCtx context.Context, doc *types.Document) (*types.Document, error) {
 	var payload []byte
 
 	binaryPayload, err := common.GetRequiredParam[types.Binary](doc, "payload")
@@ -87,12 +104,10 @@ func (h *Handler) MsgSASLContinue(connCtx context.Context, msg *wire.OpMsg) (*wi
 		conninfo.Get(connCtx).SetBypassBackendAuth()
 	}
 
-	return documentOpMsg(
-		must.NotFail(types.NewDocument(
-			"conversationId", int32(1),
-			"done", conv.Done(),
-			"payload", types.Binary{B: []byte(response)},
-			"ok", float64(1),
-		)),
-	)
+	return must.NotFail(types.NewDocument(
+		"conversationId", int32(1),
+		"done", conv.Done(),
+		"payload", types.Binary{B: []byte(response)},
+		"ok", float64(1),
+	)), nil
 }
