@@ -100,12 +100,13 @@ func (h *Handler) CmdQuery(connCtx context.Context, query *wire.OpQuery) (*wire.
 			return wire.NewOpReply(must.NotFail(bson.FromDocument(reply)))
 		}
 
-		h.L.DebugContext(connCtx, "Speculative authentication passed")
-
 		reply.Set("speculativeAuthenticate", speculativeAuthenticate)
 
-		// saslSupportedMechs is used by the client as default mechanisms if `mechanisms` is unset
-		reply.Set("saslSupportedMechs", must.NotFail(types.NewArray("SCRAM-SHA-1", "SCRAM-SHA-256", "PLAIN")))
+		// ok field is the last field
+		reply.Remove("ok")
+		reply.Set("ok", float64(1))
+
+		h.L.DebugContext(connCtx, "Speculative authentication passed")
 
 		return wire.NewOpReply(must.NotFail(bson.FromDocument(reply)))
 	case "saslContinue":
