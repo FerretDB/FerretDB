@@ -94,11 +94,22 @@ func getMilestone(ctx context.Context, client *github.Client, milestoneTitle str
 // It returns a negative number when a < b, a positive number when
 // a > b and zero when a == b or a and b are incomparable.
 func compareMilestones(a, b *github.Milestone) int {
+	if *a.Title == "Next" || *b.Title == "Next" {
+		return 0
+	}
+
 	aTitle := strings.Fields(*a.Title)[0]
 	bTitle := strings.Fields(*b.Title)[0]
 
-	aVer := semver.MustParse(aTitle)
-	bVer := semver.MustParse(bTitle)
+	aVer, err := semver.NewVersion(aTitle)
+	if err != nil {
+		panic("Failed to parse version " + aTitle)
+	}
+
+	bVer, err := semver.NewVersion(bTitle)
+	if err != nil {
+		panic("Failed to parse version " + bTitle)
+	}
 
 	return aVer.Compare(bVer)
 }
