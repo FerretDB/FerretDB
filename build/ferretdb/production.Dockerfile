@@ -108,7 +108,7 @@ USER ferretdb:ferretdb
 COPY --from=production-build /src/bin/ferretdb /ferretdb
 COPY --from=production-build --chown=ferretdb:ferretdb /state /state
 
-ENTRYPOINT [ "/ferretdb" ]
+ENTRYPOINT ["/ferretdb"]
 
 HEALTHCHECK --interval=1m --timeout=5s --retries=1 --start-period=30s --start-interval=5s \
   CMD ["/ferretdb", "ping"]
