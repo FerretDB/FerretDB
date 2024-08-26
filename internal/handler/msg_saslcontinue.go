@@ -52,8 +52,6 @@ func (h *Handler) MsgSASLContinue(connCtx context.Context, msg *wire.OpMsg) (*wi
 
 // saslContinue executes [scram.Step] on payload to move the conversation forward
 // and returns the response containing the payload.
-// If the conversation is already valid, it returns response with empty payload
-// without executing [scram.Step].
 func (h *Handler) saslContinue(connCtx context.Context, doc *types.Document) (*types.Document, error) {
 	var payload []byte
 
