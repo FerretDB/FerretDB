@@ -183,7 +183,9 @@ func TestGenerateChangelog(t *testing.T) {
 		"- Bump protobuf dependency to make CI happy by @AlekSi in " +
 		"https://github.com/FerretDB/FerretDB/pull/4187\n" +
 		"- Bump `pgx` by @AlekSi in " +
-		"https://github.com/FerretDB/FerretDB/pull/4190\n\n" +
+		"https://github.com/FerretDB/FerretDB/pull/4190\n" +
+		"- Prepare v1.21.0 release by @AlekSi in " +
+		"https://github.com/FerretDB/FerretDB/pull/4195\n\n" +
 		"[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/63?closed=1).\n" +
 		"[All commits](https://github.com/FerretDB/FerretDB/compare/v1.20.1...v1.21.0).\n\n"
 
