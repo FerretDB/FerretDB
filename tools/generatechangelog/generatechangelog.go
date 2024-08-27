@@ -21,7 +21,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"text/template"
 	"time"
@@ -44,19 +43,13 @@ type TemplateCategory struct {
 	Labels []string `yaml:"labels"`
 }
 
-// GroupedPRs represented PRs grouped by categories.
-type GroupedPRs struct {
-	CategoryTitle string
-	PRs           []PRItem
-}
-
 // PRItem represents GitHub PR.
 type PRItem struct { //nolint:vet // for readability
 	URL    string
 	Title  string
 	Number int
 	User   string
-	Labels []string
+	Labels map[string]struct{}
 }
 
 // getMilestone fetches the milestone with the given title.
@@ -106,10 +99,10 @@ func listMergedPRsOnMilestone(ctx context.Context, client *github.Client, milest
 			continue
 		}
 
-		var labels []string
+		labels := make(map[string]struct{}, len(issue.Labels))
 
 		for _, label := range issue.Labels {
-			labels = append(labels, *label.Name)
+			labels[*label.Name] = struct{}{}
 		}
 
 		prItem := PRItem{
@@ -143,48 +136,38 @@ func loadReleaseTemplate(filePath string) (*ReleaseTemplate, error) {
 	return &tpl, nil
 }
 
-// collectPRItemsWithLabels generates slice of PRItems with input slice of PRs and set of labels.
-func collectPRItemsWithLabels(prItems []PRItem, labelSet map[string]struct{}) []PRItem {
-	var res []PRItem
+// groupPRsByCategories iterates through the categories and generates Groups of PRs.
+func groupPRsByCategories(prItems []PRItem, categories []TemplateCategory) map[string][]PRItem {
+	res := map[string][]PRItem{}
 
 	for _, prItem := range prItems {
-		for _, label := range prItem.Labels {
-			if _, exists := labelSet[label]; exists {
-				res = append(res, prItem)
+		var categoryFound bool
+
+		for _, category := range categories {
+			for _, label := range category.Labels {
+				if _, ok := prItem.Labels[label]; !ok {
+					continue
+				}
+
+				prs := res[category.Title]
+				prs = append(prs, prItem)
+				res[category.Title] = prs
+
+				categoryFound = true
 				break
 			}
+
+			if categoryFound {
+				break
+			}
+		}
+
+		if !categoryFound {
+			log.Fatalf("No category for %q", prItem.URL)
 		}
 	}
 
 	return res
-}
-
-// groupPRsByTemplateCategory generates a group of PRs based on the template category.
-func groupPRsByTemplateCategory(prItems []PRItem, templateCategory TemplateCategory) *GroupedPRs {
-	labelSet := make(map[string]struct{})
-
-	for _, label := range templateCategory.Labels {
-		labelSet[label] = struct{}{}
-	}
-
-	return &GroupedPRs{
-		CategoryTitle: templateCategory.Title,
-		PRs:           collectPRItemsWithLabels(prItems, labelSet),
-	}
-}
-
-// groupPRsByCategories iterates through the categories and generates Groups of PRs.
-func groupPRsByCategories(prItems []PRItem, categories []TemplateCategory) []GroupedPRs {
-	var categorizedPRs []GroupedPRs
-
-	for _, category := range categories {
-		grouped := groupPRsByTemplateCategory(prItems, category)
-		if len(grouped.PRs) > 0 {
-			categorizedPRs = append(categorizedPRs, *grouped)
-		}
-	}
-
-	return categorizedPRs
 }
 
 func run(repoRoot, milestoneTitle, previousMilestoneTitle string) {
@@ -212,7 +195,7 @@ func run(repoRoot, milestoneTitle, previousMilestoneTitle string) {
 		log.Fatalf("Failed to fetch PRs: %v", err)
 	}
 
-	categorizedPRs := groupPRsByCategories(mergedPRs, tpl.Changelog.Categories)
+	prs := groupPRsByCategories(mergedPRs, tpl.Changelog.Categories)
 
 	templatePath := filepath.Join(repoRoot, "tools", "generatechangelog", "changelog_template.tmpl")
 
@@ -221,24 +204,25 @@ func run(repoRoot, milestoneTitle, previousMilestoneTitle string) {
 		log.Fatalf("Failed to parse template file: %v", err)
 	}
 
-	currentTitle := *milestone.Title
-	re := regexp.MustCompile(`^v\d+\.\d+\.\d+`)
-	currentTitle = re.FindString(currentTitle)
+	categories := make([]string, len(tpl.Changelog.Categories))
+	for i, category := range tpl.Changelog.Categories {
+		categories[i] = category.Title
+	}
 
 	data := struct {
-		Header   string
-		Date     string
-		Previous string
-		Current  string
-		URL      string
-		PRs      []GroupedPRs
+		Date       string
+		Current    string
+		Previous   string
+		URL        string
+		Categories []string
+		PRs        map[string][]PRItem
 	}{
-		Header:   *milestone.Title, // e.g. v0.8.0 Beta
-		Date:     time.Now().Format("2006-01-02"),
-		Previous: previousMilestoneTitle, // e.g. v0.7.0
-		Current:  currentTitle,           // e.g. v0.8.0
-		URL:      *milestone.HTMLURL,
-		PRs:      categorizedPRs,
+		Date:       time.Now().Format("2006-01-02"),
+		Current:    *milestone.Title,       // e.g. v0.8.0 Beta
+		Previous:   previousMilestoneTitle, // e.g. v0.7.0
+		URL:        *milestone.HTMLURL,
+		Categories: categories,
+		PRs:        prs,
 	}
 
 	if err = tmpl.Execute(os.Stdout, data); err != nil {
