@@ -47,6 +47,9 @@ const (
 	// ErrTypeMismatch for $sort indicates that the expression in the $sort is not an object.
 	ErrTypeMismatch = ErrorCode(14) // TypeMismatch
 
+	// ErrProtocolError indicates SASL handshake failed.
+	ErrProtocolError = ErrorCode(17) // ProtocolError
+
 	// ErrAuthenticationFailed indicates failed authentication.
 	ErrAuthenticationFailed = ErrorCode(18) // AuthenticationFailed
 

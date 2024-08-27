@@ -16,6 +16,7 @@ package handler
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 
 	"github.com/FerretDB/wire"
@@ -284,7 +285,7 @@ func (h *Handler) initCommands() {
 			cmdHandler := h.commands[name].Handler
 
 			h.commands[name].Handler = func(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-				if err := checkSCRAMConversation(ctx, h.L); err != nil {
+				if err := checkSCRAMConversation(ctx, name, h.L); err != nil {
 					return nil, err
 				}
 
@@ -295,7 +296,7 @@ func (h *Handler) initCommands() {
 }
 
 // checkSCRAMConversation returns error if SCRAM conversation is not valid.
-func checkSCRAMConversation(ctx context.Context, l *slog.Logger) error {
+func checkSCRAMConversation(ctx context.Context, command string, l *slog.Logger) error {
 	_, _, conv, _ := conninfo.Get(ctx).Auth()
 
 	switch {
@@ -320,8 +321,8 @@ func checkSCRAMConversation(ctx context.Context, l *slog.Logger) error {
 	}
 
 	return handlererrors.NewCommandErrorMsgWithArgument(
-		handlererrors.ErrAuthenticationFailed,
-		"Authentication failed.",
+		handlererrors.ErrUnauthorized,
+		fmt.Sprintf("Command %s requires authentication", command),
 		"checkSCRAMConversation",
 	)
 }
