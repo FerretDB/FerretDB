@@ -30,61 +30,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestCompareMilestones(t *testing.T) {
-	for name, tc := range map[string]struct { //nolint:vet // for readability
-		name     string
-		a        *github.Milestone
-		b        *github.Milestone
-		expected int
-	}{
-		"v0.9.1 vs v0.9.0": {
-			a:        &github.Milestone{Title: pointer.To("v0.9.1")},
-			b:        &github.Milestone{Title: pointer.To("v0.9.0")},
-			expected: 1,
-		},
-		"v0.9.0 vs v0.9.1": {
-			a:        &github.Milestone{Title: pointer.To("v0.9.0")},
-			b:        &github.Milestone{Title: pointer.To("v0.9.1")},
-			expected: -1,
-		},
-		"v0.9.0 vs v0.9.0": {
-			a:        &github.Milestone{Title: pointer.To("v0.9.0")},
-			b:        &github.Milestone{Title: pointer.To("v0.9.0")},
-			expected: 0,
-		},
-		"v0.9.1 vs v0.9.0 Developer Preview": {
-			a:        &github.Milestone{Title: pointer.To("v0.9.1")},
-			b:        &github.Milestone{Title: pointer.To("v0.9.0 Developer Preview")},
-			expected: 1,
-		},
-		"v0.9.0 Developer Preview vs v0.9.1": {
-			a:        &github.Milestone{Title: pointer.To("v0.9.0 Developer Preview")},
-			b:        &github.Milestone{Title: pointer.To("v0.9.1")},
-			expected: -1,
-		},
-		"v1.2.0 vs v1.21.0": {
-			a:        &github.Milestone{Title: pointer.To("v1.2.0")},
-			b:        &github.Milestone{Title: pointer.To("v1.21.0")},
-			expected: -1,
-		},
-		"v0.2.0 vs v1.2.0": {
-			a:        &github.Milestone{Title: pointer.To("v0.2.0")},
-			b:        &github.Milestone{Title: pointer.To("v1.2.0")},
-			expected: -1,
-		},
-		"v1.2.10 vs v1.2.1": {
-			a:        &github.Milestone{Title: pointer.To("v1.2.10")},
-			b:        &github.Milestone{Title: pointer.To("v1.2.1")},
-			expected: 1,
-		},
-	} {
-		t.Run(name, func(t *testing.T) {
-			actual := compareMilestones(tc.a, tc.b)
-			assert.Equal(t, tc.expected, actual)
-		})
-	}
-}
-
 func TestGetMilestone(t *testing.T) {
 	ctx := context.Background()
 	client, err := gh.NewRESTClient(os.Getenv("GITHUB_TOKEN"), log.Printf)
@@ -92,7 +37,7 @@ func TestGetMilestone(t *testing.T) {
 
 	milestoneTitle := "v0.9.1"
 
-	milestone, previous, err := getMilestone(ctx, client, milestoneTitle)
+	milestone, err := getMilestone(ctx, client, milestoneTitle)
 	require.NoError(t, err)
 
 	expectedMilestone := &github.Milestone{
@@ -118,30 +63,6 @@ func TestGetMilestone(t *testing.T) {
 		ID:           milestone.ID,
 	}
 	assert.Equal(t, expectedMilestone, actualMilestone)
-
-	expectedPrevious := &github.Milestone{
-		Title:        pointer.To("v0.9.0 Developer Preview"),
-		Number:       pointer.To(13),
-		State:        pointer.To("closed"),
-		ClosedIssues: pointer.To(58),
-		Description:  pointer.To(""),
-		URL:          pointer.To("https://api.github.com/repos/FerretDB/FerretDB/milestones/13"),
-		HTMLURL:      pointer.To("https://github.com/FerretDB/FerretDB/milestone/13"),
-		LabelsURL:    pointer.To("https://api.github.com/repos/FerretDB/FerretDB/milestones/13/labels"),
-		ID:           pointer.To(int64(7815597)),
-	}
-	actualPrevious := &github.Milestone{
-		Title:        previous.Title,
-		Number:       previous.Number,
-		State:        previous.State,
-		ClosedIssues: previous.ClosedIssues,
-		Description:  previous.Description,
-		URL:          previous.URL,
-		HTMLURL:      previous.HTMLURL,
-		LabelsURL:    previous.LabelsURL,
-		ID:           previous.ID,
-	}
-	assert.Equal(t, expectedPrevious, actualPrevious)
 }
 
 func TestGenerateChangelog(t *testing.T) {
@@ -157,7 +78,7 @@ func TestGenerateChangelog(t *testing.T) {
 
 	root = filepath.Dir(filepath.Dir(root))
 
-	run(root, "v1.21.0")
+	run(root, "v1.21.0", "v1.20.1")
 
 	require.NoError(t, w.Close())
 
@@ -191,30 +112,30 @@ func TestGenerateChangelog(t *testing.T) {
 		"- Remove some closed issues from documentation by @AlekSi in " +
 		"https://github.com/FerretDB/FerretDB/pull/4172\n\n" +
 		"### Other Changes 🤖\n\n" +
+		"- Make logger configurable in the embedded `ferretdb` package by @fadyat in " +
+		"https://github.com/FerretDB/FerretDB/pull/4028\n" +
+		"- Enforce new authentication by @chilagrow in " +
+		"https://github.com/FerretDB/FerretDB/pull/4075\n" +
+		"- Add MySQL backend collection by @adetunjii in " +
+		"https://github.com/FerretDB/FerretDB/pull/4083\n" +
 		"- Use Go 1.22 and bump deps by @AlekSi in " +
 		"https://github.com/FerretDB/FerretDB/pull/4094\n" +
 		"- Add more fields to requests and responses by @rumyantseva in " +
 		"https://github.com/FerretDB/FerretDB/pull/4096\n" +
-		"- Revert SQLite version bump by @AlekSi in " +
-		"https://github.com/FerretDB/FerretDB/pull/4106\n" +
-		"- Refactor `bson2` package by @AlekSi in " +
-		"https://github.com/FerretDB/FerretDB/pull/4105\n" +
-		"- Use `bson2` package for wire queries and replies by @AlekSi in " +
-		"https://github.com/FerretDB/FerretDB/pull/4108\n" +
-		"- Make logger configurable in the embedded `ferretdb` package by @fadyat in " +
-		"https://github.com/FerretDB/FerretDB/pull/4028\n" +
 		"- Fix `envtool run test` `-run` and `-skip` flags by @henvic in " +
 		"https://github.com/FerretDB/FerretDB/pull/4101\n" +
-		"- Add MySQL backend collection by @adetunjii in " +
-		"https://github.com/FerretDB/FerretDB/pull/4083\n" +
+		"- Refactor `bson2` package by @AlekSi in " +
+		"https://github.com/FerretDB/FerretDB/pull/4105\n" +
+		"- Revert SQLite version bump by @AlekSi in " +
+		"https://github.com/FerretDB/FerretDB/pull/4106\n" +
+		"- Use `bson2` package for wire queries and replies by @AlekSi in " +
+		"https://github.com/FerretDB/FerretDB/pull/4108\n" +
 		"- Ignore `maxTimeMS` argument in `count`, `insert`, `update`, `delete` by @farit2000 in " +
 		"https://github.com/FerretDB/FerretDB/pull/4121\n" +
 		"- Use correct salt length by @AlekSi in " +
 		"https://github.com/FerretDB/FerretDB/pull/4126\n" +
 		"- Skip stuck tailable cursor test by @chilagrow in " +
 		"https://github.com/FerretDB/FerretDB/pull/4131\n" +
-		"- Enforce new authentication by @chilagrow in " +
-		"https://github.com/FerretDB/FerretDB/pull/4075\n" +
 		"- Replace `bson` with `bson2` in `wire` by @AlekSi in " +
 		"https://github.com/FerretDB/FerretDB/pull/4110\n" +
 		"- Improve `OP_MSG` validity checks by @AlekSi in " +
@@ -264,7 +185,7 @@ func TestGenerateChangelog(t *testing.T) {
 		"- Bump `pgx` by @AlekSi in " +
 		"https://github.com/FerretDB/FerretDB/pull/4190\n\n" +
 		"[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/63?closed=1).\n" +
-		"[All commits](https://github.com/FerretDB/FerretDB/compare/v1.20.0...v1.21.0).\n\n"
+		"[All commits](https://github.com/FerretDB/FerretDB/compare/v1.20.1...v1.21.0).\n\n"
 
 	assert.Equal(t, expected, string(actual))
 }

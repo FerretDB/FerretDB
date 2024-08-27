@@ -22,14 +22,11 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"slices"
 	"strconv"
-	"strings"
 	"text/template"
 	"time"
 
 	"github.com/FerretDB/gh"
-	"github.com/Masterminds/semver/v3"
 	"github.com/google/go-github/v57/github"
 	"gopkg.in/yaml.v3"
 )
@@ -63,7 +60,7 @@ type PRItem struct { //nolint:vet // for readability
 }
 
 // getMilestone fetches the milestone with the given title.
-func getMilestone(ctx context.Context, client *github.Client, milestoneTitle string) (current, previous *github.Milestone, err error) { //nolint:lll // for readability
+func getMilestone(ctx context.Context, client *github.Client, milestoneTitle string) (*github.Milestone, error) {
 	milestones, _, err := client.Issues.ListMilestones(ctx, "FerretDB", "FerretDB", &github.MilestoneListOptions{
 		State: "all",
 		ListOptions: github.ListOptions{
@@ -71,47 +68,16 @@ func getMilestone(ctx context.Context, client *github.Client, milestoneTitle str
 		},
 	})
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-
-	// Sort milestones by version number so we can find the previous milestone
-	slices.SortFunc(milestones, compareMilestones)
 
 	for _, milestone := range milestones {
 		if *milestone.Title == milestoneTitle {
-			current = milestone
-			return
+			return milestone, nil
 		}
-
-		// todo: user semver lib to find previous ???
-		previous = milestone
 	}
 
-	return nil, nil, fmt.Errorf("no milestone found with the name %s", milestoneTitle)
-}
-
-// compareMilestones compares two milestones by their version numbers.
-// It returns a negative number when a < b, a positive number when
-// a > b and zero when a == b or a and b are incomparable.
-func compareMilestones(a, b *github.Milestone) int {
-	if *a.Title == "Next" || *b.Title == "Next" {
-		return 0
-	}
-
-	aTitle := strings.Fields(*a.Title)[0]
-	bTitle := strings.Fields(*b.Title)[0]
-
-	aVer, err := semver.NewVersion(aTitle)
-	if err != nil {
-		panic("Failed to parse version " + aTitle)
-	}
-
-	bVer, err := semver.NewVersion(bTitle)
-	if err != nil {
-		panic("Failed to parse version " + bTitle)
-	}
-
-	return aVer.Compare(bVer)
+	return nil, fmt.Errorf("no milestone found with the name %s", milestoneTitle)
 }
 
 // listMergedPRsOnMilestone returns the list of merged PRs on the given milestone.
@@ -125,6 +91,9 @@ func listMergedPRsOnMilestone(ctx context.Context, client *github.Client, milest
 			Milestone: strconv.Itoa(*milestone.Number),
 			Sort:      "created",
 			Direction: "asc",
+			ListOptions: github.ListOptions{
+				PerPage: 500,
+			},
 		})
 	if err != nil {
 		return nil, err
@@ -218,7 +187,7 @@ func groupPRsByCategories(prItems []PRItem, categories []TemplateCategory) []Gro
 	return categorizedPRs
 }
 
-func run(repoRoot, milestoneTitle string) {
+func run(repoRoot, milestoneTitle, previousMilestoneTitle string) {
 	releaseYamlFile := filepath.Join(repoRoot, ".github", "release.yml")
 
 	tpl, err := loadReleaseTemplate(releaseYamlFile)
@@ -233,7 +202,7 @@ func run(repoRoot, milestoneTitle string) {
 		log.Fatalf("Failed to create GitHub client: %v", err)
 	}
 
-	milestone, previous, err := getMilestone(ctx, client, milestoneTitle)
+	milestone, err := getMilestone(ctx, client, milestoneTitle)
 	if err != nil {
 		log.Fatalf("Failed to fetch milestone: %v", err)
 	}
@@ -252,14 +221,6 @@ func run(repoRoot, milestoneTitle string) {
 		log.Fatalf("Failed to parse template file: %v", err)
 	}
 
-	var previousTitle string
-
-	if previous != nil {
-		previousTitle = *previous.Title
-		re := regexp.MustCompile(`^v\d+\.\d+\.\d+`)
-		previousTitle = re.FindString(previousTitle)
-	}
-
 	currentTitle := *milestone.Title
 	re := regexp.MustCompile(`^v\d+\.\d+\.\d+`)
 	currentTitle = re.FindString(currentTitle)
@@ -274,8 +235,8 @@ func run(repoRoot, milestoneTitle string) {
 	}{
 		Header:   *milestone.Title, // e.g. v0.8.0 Beta
 		Date:     time.Now().Format("2006-01-02"),
-		Previous: previousTitle, // e.g. v0.7.0
-		Current:  currentTitle,  // e.g. v0.8.0
+		Previous: previousMilestoneTitle, // e.g. v0.7.0
+		Current:  currentTitle,           // e.g. v0.8.0
 		URL:      *milestone.HTMLURL,
 		PRs:      categorizedPRs,
 	}
@@ -288,16 +249,15 @@ func run(repoRoot, milestoneTitle string) {
 }
 
 func main() {
-	if len(os.Args) < 2 {
-		fmt.Println("Usage: generatechangelog MILESTONE_TITLE")
+	if len(os.Args) != 3 {
+		fmt.Println("Usage: generatechangelog MILESTONE_TITLE PREVIOUS_MILESTONE_TITLE")
 		os.Exit(1)
 	}
-	milestoneTitle := os.Args[1]
 
 	repoRoot, err := os.Getwd()
 	if err != nil {
 		log.Fatalf("Failed to get current working directory: %v", err)
 	}
 
-	run(repoRoot, milestoneTitle)
+	run(repoRoot, os.Args[1], os.Args[2])
 }
