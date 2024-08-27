@@ -154,6 +154,7 @@ func groupPRsByCategories(prItems []PRItem, categories []TemplateCategory) map[s
 				res[category.Title] = prs
 
 				categoryFound = true
+
 				break
 			}
 
@@ -163,7 +164,7 @@ func groupPRsByCategories(prItems []PRItem, categories []TemplateCategory) map[s
 		}
 
 		if !categoryFound {
-			log.Fatalf("No category for %q", prItem.URL)
+			log.Fatalf("no category found for %q, check the labels in the PR", prItem.URL)
 		}
 	}
 
@@ -209,7 +210,7 @@ func run(repoRoot, milestoneTitle, previousMilestoneTitle string) {
 		categories[i] = category.Title
 	}
 
-	data := struct {
+	data := struct { //nolint:vet // for readability
 		Date       string
 		Current    string
 		Previous   string
