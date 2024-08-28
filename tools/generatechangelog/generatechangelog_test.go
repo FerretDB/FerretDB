@@ -15,8 +15,8 @@
 package main
 
 import (
+	"bytes"
 	"context"
-	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -73,31 +73,17 @@ func TestGenerateChangelog(t *testing.T) {
 		t.Skip("skipping in -short mode")
 	}
 
-	r, w, err := os.Pipe()
-	require.NoError(t, err)
-
-	originalStdout := os.Stdout
-	os.Stdout = w
-
-	defer func() {
-		os.Stdout = originalStdout
-		require.NoError(t, r.Close())
-	}()
-
 	root, err := os.Getwd()
 	require.NoError(t, err)
 
 	root = filepath.Dir(filepath.Dir(root))
 
-	run(root, "v1.21.0", "v1.20.1")
-
-	require.NoError(t, w.Close())
-
-	actual, err := io.ReadAll(r)
-	require.NoError(t, err)
+	var buf bytes.Buffer
+	run(&buf, root, "v1.21.0", "v1.20.1")
 
 	date := time.Now().Format("2006-01-02")
-	expected := "## [v1.21.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.21.0) (" + date + ")\n\n" +
+	expected := "\n" +
+		"## [v1.21.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.21.0) (" + date + ")\n\n" +
 		"### New Features 🎉\n\n" +
 		"- Add experimental `SCRAM-SHA-1`/`SCRAM-SHA-256` authentication support by @henvic in " +
 		"https://github.com/FerretDB/FerretDB/pull/4078\n\n" +
@@ -200,5 +186,5 @@ func TestGenerateChangelog(t *testing.T) {
 		"[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/63?closed=1).\n" +
 		"[All commits](https://github.com/FerretDB/FerretDB/compare/v1.20.1...v1.21.0).\n"
 
-	assert.Equal(t, expected, string(actual))
+	assert.Equal(t, expected, buf.String())
 }

@@ -19,6 +19,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -29,11 +30,6 @@ import (
 	"github.com/FerretDB/gh"
 	"github.com/google/go-github/v57/github"
 	"gopkg.in/yaml.v3"
-)
-
-var (
-	milestone = flag.String("milestone", "", "Milestone to generate changelog for, e.g. v1.22.0")
-	previous  = flag.String("previous", "", "Previous milestone to compare against, e.g. v1.21.0")
 )
 
 // ReleaseTemplate represents GitHub release template.
@@ -177,7 +173,7 @@ func groupPRsByCategories(prItems []PRItem, categories []TemplateCategory) map[s
 	return res
 }
 
-func run(repoRoot, milestoneTitle, previousMilestoneTitle string) {
+func run(w io.Writer, repoRoot, milestoneTitle, previousMilestoneTitle string) {
 	releaseYamlFile := filepath.Join(repoRoot, ".github", "release.yml")
 
 	tpl, err := loadReleaseTemplate(releaseYamlFile)
@@ -204,8 +200,8 @@ func run(repoRoot, milestoneTitle, previousMilestoneTitle string) {
 
 	prs := groupPRsByCategories(mergedPRs, tpl.Changelog.Categories)
 
-	tmpl, err := template.New("changelog").Parse(
-		`## [{{ .Current }}](https://github.com/FerretDB/FerretDB/releases/tag/{{ .Current }}) ({{ .Date }})
+	tmpl, err := template.New("changelog").Parse(`
+## [{{ .Current }}](https://github.com/FerretDB/FerretDB/releases/tag/{{ .Current }}) ({{ .Date }})
 {{- $root := . }}
 {{- range .Categories }}
 {{ $prs := index $root.PRs . }}
@@ -219,7 +215,9 @@ func run(repoRoot, milestoneTitle, previousMilestoneTitle string) {
 [All closed issues and pull requests]({{ .URL }}?closed=1).
 {{- if .Previous }}
 [All commits](https://github.com/FerretDB/FerretDB/compare/{{ .Previous }}...{{ .Current }}).
-{{- end }}`)
+{{- end }}
+`,
+	)
 	if err != nil {
 		log.Fatalf("Failed to parse template: %v", err)
 	}
@@ -245,21 +243,21 @@ func run(repoRoot, milestoneTitle, previousMilestoneTitle string) {
 		PRs:        prs,
 	}
 
-	if err = tmpl.Execute(os.Stdout, data); err != nil {
+	if err = tmpl.Execute(w, data); err != nil {
 		log.Fatalf("Failed to render markdown: %v", err)
 	}
-
-	_, _ = fmt.Fprintln(os.Stdout)
 }
 
 func main() {
+	milestoneF := flag.String("milestone", "", "Milestone to generate changelog for, e.g. v1.22.0")
+	previousF := flag.String("previous", "", "Previous milestone to compare against, e.g. v1.21.0")
 	flag.Parse()
 
-	if *milestone == "" {
+	if *milestoneF == "" {
 		log.Fatal("Milestone title is required")
 	}
 
-	if *previous == "" {
+	if *previousF == "" {
 		log.Fatal("Previous milestone title is required")
 	}
 
@@ -268,5 +266,5 @@ func main() {
 		log.Fatalf("Failed to get current working directory: %v", err)
 	}
 
-	run(repoRoot, *milestone, *previous)
+	run(os.Stdout, repoRoot, *milestoneF, *previousF)
 }
