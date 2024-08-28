@@ -170,7 +170,7 @@ func groupPRsByCategories(prItems []PRItem, categories []TemplateCategory) map[s
 		}
 
 		if !categoryFound {
-			log.Fatalf("no category found for %q, check the labels in the PR", prItem.URL)
+			log.Fatalf("No category found for %q, check the labels in the PR", prItem.URL)
 		}
 	}
 
