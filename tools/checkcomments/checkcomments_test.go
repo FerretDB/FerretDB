@@ -26,6 +26,10 @@ import (
 )
 
 func TestCheckCommentIssue(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in -short mode")
+	}
+
 	t.Parallel()
 
 	path, err := github.CacheFilePath()
