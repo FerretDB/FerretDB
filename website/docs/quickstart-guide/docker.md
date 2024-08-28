@@ -82,6 +82,7 @@ The following steps describe a quick local setup:
 
 You can improve that setup by:
 
+- [setting up initial user authentication](../security/authentication.md);
 - [securing connections with TLS](../security/tls-connections.md);
 - adding backups.
 
@@ -113,9 +114,6 @@ The following steps describe the setup for SQLite:
    ```
 
    Unlike PostgreSQL, SQLite operates serverlessly so it does not require its own service in Docker Compose.
-   :::note
-   At the moment, authentication is not available for the SQLite backend ([See Issue here](https://github.com/FerretDB/FerretDB/issues/3008)).
-   :::
 
 2. Start services with `docker compose up -d`.
 3. If you have `mongosh` installed, just run it to connect to FerretDB.
@@ -132,6 +130,8 @@ The following steps describe the setup for SQLite:
    docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo \
      "mongodb://ferretdb/ferretdb"
    ```
+4. You can secure SQLite connections by configuring your setup with initial user credentials for authentication.
+   [Read more about initial user authentication for SQLite backend here](../security/initial-authentication-setup.md#initial-authentication-setup-with-sqlite-backend).
 
 ## Development image
 

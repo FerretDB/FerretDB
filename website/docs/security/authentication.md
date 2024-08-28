@@ -9,11 +9,17 @@ description: Learn to use authentication mechanisms
 FerretDB does not store authentication information (usernames and passwords) itself but uses the backend's authentication mechanisms.
 The default username and password can be specified in FerretDB's connection string,
 but the client could use a different user by providing a username and password in MongoDB URI.
+
 For example, if the server was started with `postgres://user1:pass1@postgres:5432/ferretdb`,
 anonymous clients will be authenticated as user1,
 but clients that use `mongodb://user2:pass2@ferretdb:27018/ferretdb?tls=true&authMechanism=PLAIN` MongoDB URI will be authenticated as user2.
 Since usernames and passwords are transferred in plain text,
 the use of [TLS](../security/tls-connections.md) is highly recommended.
+
+:::tip
+Users can configure their FerretDB instance to be created with an initial user for authentication by specifying the right flags or environment variables.
+See [Initial authentication setup](../security/initial-authentication-setup.md) for more information.
+:::
 
 ## PostgreSQL backend with default username and password
 
