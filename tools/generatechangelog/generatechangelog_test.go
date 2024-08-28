@@ -17,7 +17,6 @@ package main
 import (
 	"context"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"testing"
@@ -32,7 +31,7 @@ import (
 
 func TestGetMilestone(t *testing.T) {
 	ctx := context.Background()
-	client, err := gh.NewRESTClient(os.Getenv("GITHUB_TOKEN"), log.Printf)
+	client, err := gh.NewRESTClient(os.Getenv("GITHUB_TOKEN"), nil)
 	require.NoError(t, err)
 
 	milestoneTitle := "v0.9.1"
