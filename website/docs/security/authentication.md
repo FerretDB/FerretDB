@@ -17,7 +17,7 @@ but clients that use `mongodb://user2:pass2@ferretdb:27018/ferretdb?tls=true&aut
 Since usernames and passwords are transferred in plain text,
 the use of [TLS](../security/tls-connections.md) is highly recommended.
 
-Tthe FerretDB experimental authentication mode allows you to create user credentials for authenticated connections.
+The FerretDB experimental authentication mode allows you to create user credentials for authenticated connections.
 See [experimental authentication mode](#experimental-authentication-mode) for more.
 :::
 
