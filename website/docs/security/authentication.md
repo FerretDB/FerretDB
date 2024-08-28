@@ -19,7 +19,6 @@ the use of [TLS](../security/tls-connections.md) is highly recommended.
 
 The FerretDB experimental authentication mode allows you to create user credentials for authenticated connections.
 See [experimental authentication mode](#experimental-authentication-mode) for more.
-:::
 
 ## PostgreSQL backend with default username and password
 
