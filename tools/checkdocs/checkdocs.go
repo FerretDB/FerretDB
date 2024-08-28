@@ -277,7 +277,7 @@ func checkSupportedCommands(file string) error {
 	}
 
 	if failed {
-		return fmt.Errorf("supported commands table is not formated correctly")
+		return fmt.Errorf("supported commands table is not formatted correctly")
 	}
 
 	return nil
