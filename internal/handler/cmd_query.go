@@ -17,6 +17,7 @@ package handler
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/FerretDB/wire"
@@ -42,12 +43,23 @@ func (h *Handler) CmdQuery(connCtx context.Context, query *wire.OpQuery) (*wire.
 	cmd := q.Command()
 	collection := query.FullCollectionName
 
-	if !strings.HasSuffix(collection, ".$cmd") {
+	suffix := ".$cmd"
+	if !strings.HasSuffix(collection, suffix) {
 		return wire.NewOpReply(must.NotFail(bson.FromDocument(must.NotFail(types.NewDocument(
 			"$err", "OP_QUERY is no longer supported. The client driver may require an upgrade.",
 			"code", int32(handlererrors.ErrOpQueryCollectionSuffixMissing),
 			"ok", float64(0),
 		)))))
+	}
+
+	db := strings.TrimSuffix(collection, suffix)
+
+	if query.NumberToReturn != 1 && query.NumberToReturn != -1 {
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrBadNumberToReturn,
+			fmt.Sprintf("Bad numberToReturn (%d) for $cmd type ns - can only be 1 or -1", query.NumberToReturn),
+			"OpQuery: "+cmd,
+		)
 	}
 
 	switch cmd {
@@ -88,12 +100,47 @@ func (h *Handler) CmdQuery(connCtx context.Context, query *wire.OpQuery) (*wire.
 			return wire.NewOpReply(must.NotFail(bson.FromDocument(reply)))
 		}
 
-		h.L.DebugContext(connCtx, "Speculative authentication passed")
-
 		reply.Set("speculativeAuthenticate", speculativeAuthenticate)
 
-		// saslSupportedMechs is used by the client as default mechanisms if `mechanisms` is unset
-		reply.Set("saslSupportedMechs", must.NotFail(types.NewArray("SCRAM-SHA-1", "SCRAM-SHA-256", "PLAIN")))
+		// ok field is the last field
+		reply.Remove("ok")
+		reply.Set("ok", float64(1))
+
+		h.L.DebugContext(connCtx, "Speculative authentication passed")
+
+		return wire.NewOpReply(must.NotFail(bson.FromDocument(reply)))
+	case "saslContinue":
+		if slices.Contains(q.Keys(), "$db") {
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrOpQueryInvalidField,
+				"$db is not allowed in OP_QUERY requests",
+				"OpQuery: "+cmd,
+			)
+		}
+
+		var reply *types.Document
+
+		if reply, err = h.saslContinue(connCtx, q); err != nil {
+			return nil, err
+		}
+
+		return wire.NewOpReply(must.NotFail(bson.FromDocument(reply)))
+	case "saslStart":
+		if slices.Contains(q.Keys(), "$db") {
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrOpQueryInvalidField,
+				"$db is not allowed in OP_QUERY requests",
+				"OpQuery: "+cmd,
+			)
+		}
+
+		var reply *types.Document
+
+		if reply, err = h.saslStart(connCtx, db, q); err != nil {
+			return nil, err
+		}
+
+		reply.Set("ok", float64(1))
 
 		return wire.NewOpReply(must.NotFail(bson.FromDocument(reply)))
 	}

@@ -133,7 +133,7 @@ ENV POSTGRES_PASSWORD=password
 ENV POSTGRES_DB=ferretdb
 
 STOPSIGNAL SIGHUP
-ENTRYPOINT [ "/entrypoint.sh" ]
+ENTRYPOINT ["/entrypoint.sh"]
 
 # all-in-one hacks stop there
 

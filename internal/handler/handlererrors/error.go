@@ -47,6 +47,9 @@ const (
 	// ErrTypeMismatch for $sort indicates that the expression in the $sort is not an object.
 	ErrTypeMismatch = ErrorCode(14) // TypeMismatch
 
+	// ErrProtocolError indicates SASL handshake failed.
+	ErrProtocolError = ErrorCode(17) // ProtocolError
+
 	// ErrAuthenticationFailed indicates failed authentication.
 	ErrAuthenticationFailed = ErrorCode(18) // AuthenticationFailed
 
@@ -192,6 +195,9 @@ const (
 	// ErrGroupInvalidFieldPath indicates invalid path is given for group _id.
 	ErrGroupInvalidFieldPath = ErrorCode(16872) // Location16872
 
+	// ErrBadNumberToReturn indicates that invalid number to return was given for op query.
+	ErrBadNumberToReturn = ErrorCode(16979) // Location16979
+
 	// ErrGroupUndefinedVariable indicates the variable is not defined.
 	ErrGroupUndefinedVariable = ErrorCode(17276) // Location17276
 
@@ -285,6 +291,9 @@ const (
 
 	// ErrCollStatsIsNotFirstStage indicates that $collStats must be the first stage in the pipeline.
 	ErrCollStatsIsNotFirstStage = ErrorCode(40602) // Location40602
+
+	// ErrOpQueryInvalidField indicates that the field is not allowed for op query.
+	ErrOpQueryInvalidField = ErrorCode(40621) // Location40621
 
 	// ErrSetEmptyPassword indicates that a password must not be empty.
 	ErrSetEmptyPassword = ErrorCode(50687) // Location50687
