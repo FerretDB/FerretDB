@@ -30,6 +30,10 @@ import (
 )
 
 func TestGetMilestone(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in -short mode")
+	}
+
 	ctx := context.Background()
 	client, err := gh.NewRESTClient(os.Getenv("GITHUB_TOKEN"), nil)
 	require.NoError(t, err)
@@ -65,6 +69,10 @@ func TestGetMilestone(t *testing.T) {
 }
 
 func TestGenerateChangelog(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in -short mode")
+	}
+
 	r, w, err := os.Pipe()
 	require.NoError(t, err)
 
