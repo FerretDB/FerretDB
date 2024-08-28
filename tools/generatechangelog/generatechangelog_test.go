@@ -68,9 +68,13 @@ func TestGenerateChangelog(t *testing.T) {
 	r, w, err := os.Pipe()
 	require.NoError(t, err)
 
-	defer func() { require.NoError(t, r.Close()) }()
-
+	originalStdout := os.Stdout
 	os.Stdout = w
+
+	defer func() {
+		os.Stdout = originalStdout
+		require.NoError(t, r.Close())
+	}()
 
 	root, err := os.Getwd()
 	require.NoError(t, err)
