@@ -1,10 +1,27 @@
 ---
 sidebar_position: 3
-slug: /security/initial-authentication-setup/
-description: Learn to set up authentication from scratch
+slug: /security/experimental-authentication-mode/
+description: Learn to use the experimental authentication mode
 ---
 
-# Initial authentication setup
+# Experimental authentication mode
+
+FerretDB provides a new experimental authentication mode that supports the `SCRAM-SHA-1` and `SCRAM-SHA-256` authentication mechanisms.
+This mode enables FerretDB to manage users by itself and also provide support for more user management commands.
+
+You can enable this mode by setting the `FERRETDB_TEST_ENABLE_NEW_AUTH` flag or `--test-enable-new-auth` to `true`.
+
+For example:
+
+```sh
+ferretdb --test-enable-new-auth=true
+```
+
+With this new authentication mode, you can create user credentials for authenticated connections using the `createUser` command and also access other user management commands such as `dropAllUsersFromDatabase`, `dropUser`, `updateUser`, and `usersInfo`.
+
+This mode also enables you to set up initial authentication credentials for your instance.
+
+## Initial authentication setup
 
 You can secure your connections right from scratch by setting up an initial authentication credential using the following dedicated flags or environment variables.
 
@@ -18,7 +35,7 @@ You can secure your connections right from scratch by setting up an initial auth
 
 Once the flags/environment variables are passed, FerretDB will create the specified user with the given password and the given database.
 
-## Initial authentication setup with Postgres backend
+### Initial authentication setup with Postgres backend
 
 A typical setup for a local Postgres database with an initial user setup would look like this:
 
@@ -57,7 +74,7 @@ Once the services are up and running, you can connect to the FerretDB instance u
 mongosh "mongodb://user:pass@ferretdb/ferretdb"
 ```
 
-## Initial authentication setup with SQLite backend
+### Initial authentication setup with SQLite backend
 
 You can configure your instance to be created with an initial user for authentication.
 

@@ -82,7 +82,7 @@ The following steps describe a quick local setup:
 
 You can improve that setup by:
 
-- [setting up initial user authentication](../security/authentication.md);
+- [setting up initial user authentication](../security/experimental-authentication-mode.md);
 - [securing connections with TLS](../security/tls-connections.md);
 - adding backups.
 
@@ -130,8 +130,9 @@ The following steps describe the setup for SQLite:
    docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo \
      "mongodb://ferretdb/ferretdb"
    ```
-4. You can secure SQLite connections by configuring your setup with initial user credentials for authentication.
-   [Read more about initial user authentication for SQLite backend here](../security/initial-authentication-setup.md#initial-authentication-setup-with-sqlite-backend).
+
+4. You can secure SQLite connections using the experimental authentication mode by setting the `FERRETDB_TEST_ENABLE_NEW_AUTH` environment variable to `true`.
+   See [experimental authentication mode](../security/experimental-authentication-mode.md) to learn more.
 
 ## Development image
 

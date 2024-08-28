@@ -17,8 +17,8 @@ Since usernames and passwords are transferred in plain text,
 the use of [TLS](../security/tls-connections.md) is highly recommended.
 
 :::tip
-Users can configure their FerretDB instance to be created with an initial user for authentication by specifying the right flags or environment variables.
-See [Initial authentication setup](../security/initial-authentication-setup.md) for more information.
+FerretDB provides an experimental authentication mode that allows you to create user credentials for authenticated connections.
+See [experimental authentication mode](../security/experimental-authentication-mode.md) for more.
 :::
 
 ## PostgreSQL backend with default username and password
