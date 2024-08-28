@@ -6,8 +6,9 @@ description: Learn to use authentication mechanisms
 
 # Authentication
 
-FerretDB does not store authentication information (usernames and passwords) itself but uses the backend's authentication mechanisms.
-The default username and password can be specified in FerretDB's connection string,
+FerretDB provides authentication via the backend's authentication mechanisms and the experimental authentication mode.
+
+For the backend's authentication mechanism, the default username and password can be specified in FerretDB's connection string,
 but the client could use a different user by providing a username and password in MongoDB URI.
 
 For example, if the server was started with `postgres://user1:pass1@postgres:5432/ferretdb`,
@@ -16,9 +17,8 @@ but clients that use `mongodb://user2:pass2@ferretdb:27018/ferretdb?tls=true&aut
 Since usernames and passwords are transferred in plain text,
 the use of [TLS](../security/tls-connections.md) is highly recommended.
 
-:::tip
-FerretDB provides an experimental authentication mode that allows you to create user credentials for authenticated connections.
-See [experimental authentication mode](../security/authentication.md#experimental-authentication-mode) for more.
+Tthe FerretDB experimental authentication mode allows you to create user credentials for authenticated connections.
+See [experimental authentication mode](#experimental-authentication-mode) for more.
 :::
 
 ## PostgreSQL backend with default username and password
@@ -117,6 +117,7 @@ FerretDB provides a new experimental authentication mode that supports the `SCRA
 This mode enables FerretDB to manage users by itself and also provide support for more user management commands.
 
 You can enable this mode by setting the `FERRETDB_TEST_ENABLE_NEW_AUTH` flag or `--test-enable-new-auth` to `true`.
+See [flags](../configuration/flags.md) for more information.
 
 For example:
 
@@ -130,7 +131,7 @@ This mode also enables you to set up initial authentication credentials for your
 
 ### Initial authentication setup
 
-You can secure your connections right from scratch by setting up an initial authentication credential using the following dedicated flags or environment variables.
+You can secure your connections right from scratch by setting up an initial authentication credential using the following [dedicated flags or environment variables](../configuration/flags.md)
 
 - `--setup-username`/`FERRETDB_SETUP_USERNAME`: Specifies the username to be created.
 - `--setup-password`/`FERRETDB_SETUP_PASSWORD`: Specifies the password for the user (can be empty).
