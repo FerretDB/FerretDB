@@ -140,7 +140,7 @@ func loadReleaseTemplate(filePath string) (*ReleaseTemplate, error) {
 
 // groupPRsByCategories iterates through the categories and generates Groups of PRs.
 func groupPRsByCategories(prItems []PRItem, categories []TemplateCategory) map[string][]PRItem {
-	res := map[string][]PRItem{}
+	res := make(map[string][]PRItem)
 
 	for _, prItem := range prItems {
 		var categoryFound bool
