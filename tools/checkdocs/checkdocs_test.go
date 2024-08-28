@@ -29,6 +29,10 @@ import (
 )
 
 func TestReal(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in -short mode")
+	}
+
 	blogFiles, err := filepath.Glob(filepath.Join("..", "..", "website", "blog", "*.md"))
 	if err != nil {
 		log.Fatal(err)
@@ -89,8 +93,12 @@ func TestVerifyTruncateString(t *testing.T) {
 }
 
 func TestCheckSupportedCommands(t *testing.T) {
-	buf := new(bytes.Buffer)
-	l := log.New(buf, "", 0)
+	if testing.Short() {
+		t.Skip("skipping in -short mode")
+	}
+
+	var buf bytes.Buffer
+	l := log.New(&buf, "", 0)
 
 	p, err := github.CacheFilePath()
 	require.NoError(t, err)

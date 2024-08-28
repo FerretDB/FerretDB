@@ -83,10 +83,10 @@ The results will be saved `tmp/bin`.
 Some of our development tools require access to public information on GitHub
 at a rate higher than allowed for unauthenticated requests.
 Those tools will report a problem in this case.
-It could be solved by creating a new classic or fine-graned personal access token
+It could be solved by creating a new classic or fine-grained personal access token
 [there](https://github.com/settings/tokens).
 No scopes are needed for classic tokens, not even `public_repo`.
-For fine-graned tokens, only read-only access to public repositories is needed without any additional permissions.
+For fine-grained tokens, only read-only access to public repositories is needed without any additional permissions.
 After generating a token, set the `GITHUB_TOKEN` environment variable:
 
 ```sh
