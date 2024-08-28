@@ -17,6 +17,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -28,6 +29,11 @@ import (
 	"github.com/FerretDB/gh"
 	"github.com/google/go-github/v57/github"
 	"gopkg.in/yaml.v3"
+)
+
+var (
+	milestone = flag.String("milestone", "", "Milestone to generate changelog for, e.g. v1.22.0")
+	previous  = flag.String("previous", "", "Previous milestone to compare against, e.g. v1.21.0")
 )
 
 // ReleaseTemplate represents GitHub release template.
@@ -247,9 +253,14 @@ func run(repoRoot, milestoneTitle, previousMilestoneTitle string) {
 }
 
 func main() {
-	if len(os.Args) != 3 {
-		fmt.Println("Usage: generatechangelog MILESTONE_TITLE PREVIOUS_MILESTONE_TITLE")
-		os.Exit(1)
+	flag.Parse()
+
+	if *milestone == "" {
+		log.Fatal("Milestone title is required")
+	}
+
+	if *previous == "" {
+		log.Fatal("Previous milestone title is required")
 	}
 
 	repoRoot, err := os.Getwd()
@@ -257,5 +268,5 @@ func main() {
 		log.Fatalf("Failed to get current working directory: %v", err)
 	}
 
-	run(repoRoot, os.Args[1], os.Args[2])
+	run(repoRoot, *milestone, *previous)
 }
