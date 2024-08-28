@@ -908,3 +908,10 @@ tasks:
         --entrypoint='/bin/sh -c "git config --global --add safe.directory /workdir && git status"'
         wrangler
       - docker compose run --rm --service-ports wrangler pages deployment create --project-name=blog website/build
+
+  changelog:
+    desc: "Generate changelogs locally for a given milestone."
+    cmds:
+      - bin/generatechangelog -milestone={{.MILESTONE_TITLE}} -previous={{.PREVIOUS_MILESTONE_TITLE}}
+    requires:
+      vars: [MILESTONE_TITLE, PREVIOUS_MILESTONE_TITLE]

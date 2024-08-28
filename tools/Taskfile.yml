@@ -3,17 +3,19 @@
 version: 3
 
 vars:
-  PACKAGES: ./checkcomments/... ./checkdocs/... ./checkswitch/... ./github/...
+  PACKAGES: ./checkcomments/... ./checkdocs/... ./checkswitch/... ./generatechangelog/... ./github/...
   RACE_FLAG: -race={{and (ne OS "windows") (ne ARCH "arm") (ne ARCH "riscv64")}}
 
 tasks:
   tools-test-short:
+    desc: "Run short unit tests (with caching)"
     cmds:
       - ../bin/envtool{{exeExt}} shell rmdir ../tmp/githubcache
       - ../bin/envtool{{exeExt}} shell mkdir ../tmp/githubcache
       - go test -short {{.RACE_FLAG}} -shuffle=on -coverprofile=cover.txt -coverpkg=./... {{.PACKAGES}}
 
   tools-test:
+    desc: "Run all unit tests"
     cmds:
       - ../bin/envtool{{exeExt}} shell rmdir ../tmp/githubcache
       - ../bin/envtool{{exeExt}} shell mkdir ../tmp/githubcache
