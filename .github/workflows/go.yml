@@ -60,6 +60,7 @@ jobs:
         run: bin/task test-unit-short TEST_TIMEOUT=10m
         env:
           GOFLAGS: ${{ runner.debug == '1' && '-v' || '' }}
+          GITHUB_TOKEN: invalid # to test that -short is handled correctly
 
       # we don't want them on CI
       - name: Clean test and fuzz caches
