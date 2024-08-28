@@ -60,6 +60,7 @@ jobs:
         run: bin/task test-unit-short TEST_TIMEOUT=10m
         env:
           GOFLAGS: ${{ runner.debug == '1' && '-v' || '' }}
+          GITHUB_TOKEN: invalid # to test that -short is handled correctly
 
       # we don't want them on CI
       - name: Clean test and fuzz caches
@@ -119,6 +120,7 @@ jobs:
         run: bin/task test-unit TEST_TIMEOUT=10m
         env:
           GOFLAGS: ${{ runner.debug == '1' && '-v' || '' }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # for tools
 
       # The token is not required but should make uploads more stable.
       # If secrets are unavailable (for example, for a pull request from a fork), it fallbacks to the tokenless uploads.

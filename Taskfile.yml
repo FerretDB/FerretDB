@@ -174,7 +174,7 @@ tasks:
     desc: "Run short unit tests (with caching)"
     cmds:
       - go test -short -timeout={{.TEST_TIMEOUT}} {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -coverpkg=./... -coverprofile=cover.txt ./...
-      - bin/task{{exeExt}} -d tools tools-test
+      - bin/task{{exeExt}} -d tools tools-test-short
 
   test-unit:
     desc: "Run all unit tests"

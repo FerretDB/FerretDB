@@ -37,6 +37,10 @@ func TestCacheFilePath(t *testing.T) {
 }
 
 func TestClient(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in -short mode")
+	}
+
 	t.Parallel()
 
 	cacheFilePath := filepath.Join(t.TempDir(), "cache.json")
