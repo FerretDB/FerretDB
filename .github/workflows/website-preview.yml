@@ -73,6 +73,8 @@ jobs:
 
       - name: Build blog
         run: bin/task blog
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # for checkdocs
 
       - name: Check dirty
         run: |
@@ -142,6 +144,8 @@ jobs:
 
       - name: Build docs
         run: bin/task docs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # for checkdocs
 
       - name: Check dirty
         run: |

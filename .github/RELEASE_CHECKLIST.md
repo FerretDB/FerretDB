@@ -9,7 +9,6 @@
 5. Generate changelog:
    - Run `task changelog MILESTONE_TITLE=vX.Y.Z PREVIOUS_MILESTONE_TITLE=vX.Y.Z` to generate release changelog for the given milestone.
    - Copy the changelog to the `CHANGELOG.md` file.
-   - By default, the date for the milestone is set as the current date, modify it if needed.
    - Sort items within sections according to importance if needed.
    - Add first-time contributor credits if any (copy this data from the release draft).
 6. Run `task docs-version VERSION=X.Y`.

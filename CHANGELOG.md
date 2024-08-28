@@ -2,7 +2,7 @@
 
 <!-- markdownlint-disable MD024 MD034 -->
 
-## [v1.24.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.24.0) (TBD)
+## [v1.24.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.24.0) (2024-08-28)
 
 ### What's Changed
 
@@ -10,6 +10,64 @@
 
 As communicated in the previous release, this version renames the `SLogger` field to `Logger`,
 finishing the migration from [`zap`](https://github.com/uber-go/zap) to [`slog`](https://pkg.go.dev/log/slog).
+
+### Fixed Bugs 🐛
+
+- Ignore Stable API fields by @Evengard in https://github.com/FerretDB/FerretDB/pull/4067
+- Fix Docker's `HEALTHCHECK` in production image by @dasjoe in https://github.com/FerretDB/FerretDB/pull/4547
+- Remove duplicate response field on `OP_QUERY` `hello` by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4549
+- Fix `OP_QUERY` `saslStart` and `saslContinue` for C# driver by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4550
+- Fix `saslContinue` completing handshake too early by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4552
+
+### Documentation 📄
+
+- Fix Terser plugin build error by @nalgeon in https://github.com/FerretDB/FerretDB/pull/4506
+- Enable zoom on images by @Fashander in https://github.com/FerretDB/FerretDB/pull/4508
+- Add blog post on building a RESTful API with Deno by @Fashander in https://github.com/FerretDB/FerretDB/pull/4517
+- Update missing image by @Fashander in https://github.com/FerretDB/FerretDB/pull/4522
+- Fix broken links by @Fashander in https://github.com/FerretDB/FerretDB/pull/4525
+- Fix critical typo in telemetry documentation by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4536
+- Bump Docusaurus by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4544
+- Added Elestio as one-click deploy option by @kaiwalyakoparkar in https://github.com/FerretDB/FerretDB/pull/4546
+- Add docs for new authentication by @Fashander in https://github.com/FerretDB/FerretDB/pull/4557
+
+### Other Changes 🤖
+
+- Implement our own changelog generator by @vigneshsankariyer1234567890 in https://github.com/FerretDB/FerretDB/pull/4219
+- Add open issues check in `checkdocs` by @kropidlowsky in https://github.com/FerretDB/FerretDB/pull/4258
+- Prototype OTel context propagation by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/4483
+- Cleanup logging by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4489
+- Use `wire` and `wirebson` packages by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4490
+- Alignment and Bugfixes for SAP HANA backend by @yonarw in https://github.com/FerretDB/FerretDB/pull/4491
+- Port small things from v2 by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4495
+- Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4496
+- Remove `zap` remnants by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4497
+- Update `listDatabases` integration test filter input by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4499
+- Update duplicate field handling by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4500
+- Convert BSON values of `wirebson` to `types` by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4501
+- Use `wireclient` package by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4502
+- Fix log message by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4503
+- Fix `checkdocs` Github cache on CI by @noisersup in https://github.com/FerretDB/FerretDB/pull/4509
+- Document logging changes by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4510
+- Fix CI for documentation preview by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4518
+- Add `Taskfile` target to `pngcrush` all new images by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4519
+- Remove fuzzing by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4520
+- Use Go 1.22.6 by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4523
+- Minor cleanup by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4535
+- Use `wireclient` login function in integration test by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4538
+- Remove `wireconn` tests for now by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4548
+- Pass `GITHUB_TOKEN` to tools tests by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4558
+
+### New Contributors
+
+- @nalgeon made their first contribution in https://github.com/FerretDB/FerretDB/pull/4506
+- @Evengard made their first contribution in https://github.com/FerretDB/FerretDB/pull/4067
+- @dasjoe made their first contribution in https://github.com/FerretDB/FerretDB/pull/4547
+- @kaiwalyakoparkar made their first contribution in https://github.com/FerretDB/FerretDB/pull/4546
+- @vigneshsankariyer1234567890 made their first contribution in https://github.com/FerretDB/FerretDB/pull/4219
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/66?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v1.23.1...v1.24.0).
 
 ## [v1.23.1](https://github.com/FerretDB/FerretDB/releases/tag/v1.23.1) (2024-08-13)
 
