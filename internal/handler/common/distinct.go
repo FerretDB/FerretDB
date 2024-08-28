@@ -41,14 +41,14 @@ type DistinctParams struct {
 
 	Collation *types.Document `ferretdb:"collation,unimplemented"`
 
-	APIVersion           string `ferretdb:"apiVersion,ignored"`
-	APIStrict            bool   `ferretdb:"apiStrict,ignored"`
-	APIDeprecationErrors bool   `ferretdb:"apiDeprecationErrors,ignored"`
-
 	ReadConcern    *types.Document `ferretdb:"readConcern,ignored"`
 	LSID           any             `ferretdb:"lsid,ignored"`
 	ClusterTime    any             `ferretdb:"$clusterTime,ignored"`
 	ReadPreference *types.Document `ferretdb:"$readPreference,ignored"`
+
+	ApiVersion           string `ferretdb:"apiVersion,ignored"`
+	ApiStrict            bool   `ferretdb:"apiStrict,ignored"`
+	ApiDeprecationErrors bool   `ferretdb:"apiDeprecationErrors,ignored"`
 }
 
 // GetDistinctParams returns `distinct` command parameters.

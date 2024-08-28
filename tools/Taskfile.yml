@@ -3,21 +3,30 @@
 version: 3
 
 vars:
+  PACKAGES: ./checkcomments/... ./checkdocs/... ./checkswitch/... ./generatechangelog/... ./github/...
   RACE_FLAG: -race={{and (ne OS "windows") (ne ARCH "arm") (ne ARCH "riscv64")}}
 
 tasks:
-  tools-test:
+  tools-test-short:
+    desc: "Run short unit tests (with caching)"
     cmds:
       - ../bin/envtool{{exeExt}} shell rmdir ../tmp/githubcache
       - ../bin/envtool{{exeExt}} shell mkdir ../tmp/githubcache
-      - go test -short {{.RACE_FLAG}} -shuffle=on -coverprofile=cover.txt -coverpkg=./... ./checkcomments/... ./checkdocs/... ./checkswitch/...
+      - go test -short {{.RACE_FLAG}} -shuffle=on -coverprofile=cover.txt -coverpkg=./... {{.PACKAGES}}
+
+  tools-test:
+    desc: "Run all unit tests"
+    cmds:
+      - ../bin/envtool{{exeExt}} shell rmdir ../tmp/githubcache
+      - ../bin/envtool{{exeExt}} shell mkdir ../tmp/githubcache
+      - go test -count=1 {{.RACE_FLAG}} -shuffle=on -coverprofile=cover.txt -coverpkg=./... {{.PACKAGES}}
 
   lint:
     desc: "Run linters"
     cmds:
-      - ../bin/golangci-lint{{exeExt}} run --config=../.golangci.yml ./checkcomments/... ./checkdocs/... ./checkswitch/...
-      - ../bin/golangci-lint{{exeExt}} run --config=../.golangci-new.yml ./checkcomments/... ./checkdocs/... ./checkswitch/...
-      - ../bin/go-consistent{{exeExt}} -pedantic ./checkcomments/... ./checkdocs/... ./checkswitch/...
+      - ../bin/golangci-lint{{exeExt}} run --config=../.golangci.yml {{.PACKAGES}}
+      - ../bin/golangci-lint{{exeExt}} run --config=../.golangci-new.yml {{.PACKAGES}}
+      - ../bin/go-consistent{{exeExt}} -pedantic {{.PACKAGES}}
 
-      - go vet -vettool=../bin/checkswitch{{exeExt}} ./checkcomments/... ./checkdocs/... ./checkswitch/...
-      - go vet -vettool=../bin/checkcomments{{exeExt}} ./checkcomments/... ./checkdocs/... ./checkswitch/...
+      - go vet -vettool=../bin/checkswitch{{exeExt}} {{.PACKAGES}}
+      - go vet -vettool=../bin/checkcomments{{exeExt}} {{.PACKAGES}}

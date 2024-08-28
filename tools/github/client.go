@@ -108,17 +108,18 @@ func CacheFilePath() (string, error) {
 }
 
 var (
-	// urlRE represents correctly formated FerretDB issue.
+	// Correctly formatted FerretDB issue.
 	// It returns repository name and the issue number as it's submatches.
 	urlRE = regexp.MustCompile(`^\Qhttps://github.com/FerretDB/\E([-\w]+)/issues/(\d+)$`)
 
 	// ErrIncorrectURL indicates that FerretDB issue URL is formatted incorrectly.
 	ErrIncorrectURL = errors.New("invalid TODO: incorrect format")
+
 	// ErrIncorrectIssueNumber indicates that FerretDB issue number is formatted incorrectly.
 	ErrIncorrectIssueNumber = errors.New("invalid TODO: incorrect issue number")
 )
 
-// parseIssueURL takes the properly formated FerretDB issue URL and returns it's
+// parseIssueURL takes the properly formatted FerretDB issue URL and returns it's
 // repository name and issue number.
 // If the issue number or URL formatting is incorrect, the error is returned.
 func parseIssueURL(line string) (repo string, num int, err error) {
@@ -256,6 +257,8 @@ func (c *Client) checkIssueStatus(ctx context.Context, repo string, num int) (Is
 	switch s := IssueStatus(issue.GetState()); s {
 	case IssueOpen, IssueClosed:
 		return s, nil
+	case IssueNotFound:
+		fallthrough
 	default:
 		return "", fmt.Errorf("unknown issue state: %q", s)
 	}

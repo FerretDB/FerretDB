@@ -1,10 +1,8 @@
 ---
-sidebar_position: 6
+sidebar_position: 5
 ---
 
-# Go
-
-See https://pkg.go.dev/github.com/FerretDB/FerretDB/ferretdb.
+# macOS
 
 _This section is not currently available.
 You can help FerretDB by contributing to this section.

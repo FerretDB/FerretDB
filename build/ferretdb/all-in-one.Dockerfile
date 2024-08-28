@@ -133,12 +133,12 @@ ENV POSTGRES_PASSWORD=password
 ENV POSTGRES_DB=ferretdb
 
 STOPSIGNAL SIGHUP
-ENTRYPOINT [ "/entrypoint.sh" ]
+ENTRYPOINT ["/entrypoint.sh"]
 
 # all-in-one hacks stop there
 
 HEALTHCHECK --interval=1m --timeout=5s --retries=1 --start-period=30s --start-interval=5s \
-  CMD /ferretdb ping
+  CMD ["/ferretdb", "ping"]
 
 WORKDIR /
 VOLUME /state

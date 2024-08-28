@@ -5,6 +5,7 @@ go 1.22
 toolchain go1.22.6
 
 require (
+	github.com/AlekSi/pointer v1.2.0
 	github.com/FerretDB/gh v0.1.4
 	github.com/go-task/task/v3 v3.38.0
 	github.com/google/go-github/v57 v57.0.0
@@ -12,17 +13,16 @@ require (
 	github.com/quasilyte/go-consistent v0.6.1
 	github.com/rogpeppe/go-internal v1.12.0
 	github.com/stretchr/testify v1.9.0
-	golang.org/x/oauth2 v0.21.0
 	golang.org/x/perf v0.0.0-20240707193131-dc66afd55b77
 	golang.org/x/pkgsite v0.0.0-20240701161620-30d9315975ff
 	golang.org/x/tools v0.23.0
 	golang.org/x/vuln v1.1.2
+	gopkg.in/yaml.v3 v3.0.1
 	mvdan.cc/gofumpt v0.6.0
 )
 
 require (
 	dario.cat/mergo v1.0.0 // indirect
-	github.com/AlekSi/pointer v1.2.0 // indirect
 	github.com/Ladicle/tabwriter v1.0.0 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver/v3 v3.2.1 // indirect
@@ -106,13 +106,13 @@ require (
 	golang.org/x/exp v0.0.0-20240707233637-46b078467d37 // indirect
 	golang.org/x/mod v0.19.0 // indirect
 	golang.org/x/net v0.27.0 // indirect
+	golang.org/x/oauth2 v0.21.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect
 	golang.org/x/sys v0.22.0 // indirect
 	golang.org/x/telemetry v0.0.0-20240522233618-39ace7a40ae7 // indirect
 	golang.org/x/term v0.22.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 	mvdan.cc/sh/v3 v3.8.0 // indirect
 	rsc.io/markdown v0.0.0-20231214224604-88bb533a6020 // indirect
 )

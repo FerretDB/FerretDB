@@ -75,6 +75,8 @@ jobs:
 
       - name: Build docs
         run: bin/task docs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # for checkdocs
 
       - name: Archive docs
         run: >

@@ -36,10 +36,6 @@ type UpdateParams struct {
 
 	Let *types.Document `ferretdb:"let,unimplemented"`
 
-	APIVersion           string `ferretdb:"apiVersion,ignored"`
-	APIStrict            bool   `ferretdb:"apiStrict,ignored"`
-	APIDeprecationErrors bool   `ferretdb:"apiDeprecationErrors,ignored"`
-
 	Ordered                  bool            `ferretdb:"ordered,ignored"`
 	BypassDocumentValidation bool            `ferretdb:"bypassDocumentValidation,ignored"`
 	WriteConcern             *types.Document `ferretdb:"writeConcern,ignored"`
@@ -48,6 +44,10 @@ type UpdateParams struct {
 	Autocommit               bool            `ferretdb:"autocommit,ignored"`
 	ClusterTime              any             `ferretdb:"$clusterTime,ignored"`
 	ReadPreference           *types.Document `ferretdb:"$readPreference,ignored"`
+
+	ApiVersion           string `ferretdb:"apiVersion,ignored"`
+	ApiStrict            bool   `ferretdb:"apiStrict,ignored"`
+	ApiDeprecationErrors bool   `ferretdb:"apiDeprecationErrors,ignored"`
 }
 
 // Update represents a single update operation parameters.

@@ -24,7 +24,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/FerretDB/wire/wireclient"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -32,7 +31,6 @@ import (
 	"go.opentelemetry.io/otel"
 
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
-	"github.com/FerretDB/FerretDB/internal/util/password"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 
@@ -88,12 +86,6 @@ type SetupOpts struct {
 	// ExtraOptions sets the options in MongoDB URI, when the option exists it overwrites that option.
 	ExtraOptions url.Values
 
-	// UseWireConn enables low-level wire connection creation.
-	UseWireConn bool
-
-	// WireConnNoAuth disables automatic authentication of the low-level wire connection.
-	WireConnNoAuth bool
-
 	// Options to override default backend configuration.
 	BackendOptions *BackendOpts
 
@@ -120,7 +112,6 @@ type BackendOpts struct {
 type SetupResult struct {
 	Ctx        context.Context
 	Collection *mongo.Collection
-	WireConn   *wireclient.Conn
 	MongoDBURI string // without database name
 }
 
@@ -190,39 +181,12 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 
 	collection := setupCollection(tb, setupCtx, client, opts)
 
-	var conn *wireclient.Conn
-
-	if opts.UseWireConn {
-		u, err := url.Parse(uri)
-		require.NoError(tb, err)
-
-		query := u.Query()
-		u.RawQuery = ""
-
-		conn = setupWireConn(tb, setupCtx, u.String(), testutil.Logger(tb))
-
-		if u.User != nil && !opts.WireConnNoAuth {
-			user := u.User.Username()
-			pass, _ := u.User.Password()
-
-			mech := query.Get("authMechanism")
-			if mech == "" {
-				mech = "SCRAM-SHA-1"
-			}
-
-			authDB := query.Get("authSource")
-
-			require.NoError(tb, authenticate(ctx, conn, user, password.WrapPassword(pass), mech, authDB))
-		}
-	}
-
 	err := levelVar.UnmarshalText([]byte(*logLevelF))
 	require.NoError(tb, err)
 
 	return &SetupResult{
 		Ctx:        ctx,
 		Collection: collection,
-		WireConn:   conn,
 		MongoDBURI: uri,
 	}
 }
@@ -235,22 +199,6 @@ func Setup(tb testtb.TB, providers ...shareddata.Provider) (context.Context, *mo
 		Providers: providers,
 	})
 	return s.Ctx, s.Collection
-}
-
-// SetupWireConn setups a single collection for all providers, if they are present,
-// and returns authenticated low-level wire connection.
-func SetupWireConn(tb testtb.TB, providers ...shareddata.Provider) (context.Context, *wireclient.Conn) {
-	tb.Helper()
-
-	s := SetupWithOpts(tb, &SetupOpts{
-		Providers:   providers,
-		UseWireConn: true,
-		ExtraOptions: url.Values{
-			"authSource": []string{"admin"},
-		},
-	})
-
-	return s.Ctx, s.WireConn
 }
 
 // setupCollection setups a single collection for all providers, if they are present.

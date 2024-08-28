@@ -38,14 +38,27 @@ func (h *Handler) MsgSASLContinue(connCtx context.Context, msg *wire.OpMsg) (*wi
 		return nil, lazyerrors.Error(err)
 	}
 
-	var payload []byte
-
-	binaryPayload, err := common.GetRequiredParam[types.Binary](doc, "payload")
+	res, err := h.saslContinue(connCtx, doc)
 	if err != nil {
 		return nil, err
 	}
 
-	payload = binaryPayload.B
+	if msg, err = documentOpMsg(res); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return msg, nil
+}
+
+// saslContinue executes [scram.Step] on payload to move the conversation forward
+// and returns the response containing the payload.
+// If the conversation is already valid, it returns response with empty payload
+// without executing [scram.Step].
+func (h *Handler) saslContinue(connCtx context.Context, doc *types.Document) (*types.Document, error) {
+	payload, err := common.GetRequiredParam[types.Binary](doc, "payload")
+	if err != nil {
+		return nil, err
+	}
 
 	_, _, conv, _ := conninfo.Get(connCtx).Auth()
 
@@ -53,19 +66,36 @@ func (h *Handler) MsgSASLContinue(connCtx context.Context, msg *wire.OpMsg) (*wi
 		h.L.WarnContext(connCtx, "saslContinue: no conversation to continue")
 
 		return nil, handlererrors.NewCommandErrorMsgWithArgument(
-			handlererrors.ErrAuthenticationFailed,
-			"Authentication failed.",
+			handlererrors.ErrProtocolError,
+			"No SASL session state found",
 			"saslContinue",
 		)
 	}
 
-	response, err := conv.Step(string(payload))
+	valid := conv.Valid()
 
 	attrs := []any{
 		slog.String("username", conv.Username()),
-		slog.Bool("valid", conv.Valid()),
+		slog.Bool("valid", valid),
 		slog.Bool("done", conv.Done()),
 	}
+
+	if valid {
+		h.L.DebugContext(connCtx, "saslContinue: conversation success", attrs...) //nolint:sloglint // slice of attrs
+
+		conninfo.Get(connCtx).SetBypassBackendAuth()
+
+		return must.NotFail(types.NewDocument(
+			"conversationId", int32(1),
+			"done", valid,
+			"payload", types.Binary{},
+			"ok", float64(1),
+		)), nil
+	}
+
+	response, err := conv.Step(string(payload.B))
+
+	attrs = append(attrs, slog.Bool("step_valid", conv.Valid()), slog.Bool("step_done", conv.Done()))
 
 	if err != nil {
 		if h.L.Enabled(connCtx, slog.LevelDebug) {
@@ -73,6 +103,8 @@ func (h *Handler) MsgSASLContinue(connCtx context.Context, msg *wire.OpMsg) (*wi
 		}
 
 		h.L.WarnContext(connCtx, "saslContinue: step failed", attrs...) //nolint:sloglint // attrs is not key-value pairs
+
+		conninfo.Get(connCtx).SetAuth("", "", nil, "")
 
 		return nil, handlererrors.NewCommandErrorMsgWithArgument(
 			handlererrors.ErrAuthenticationFailed,
@@ -83,16 +115,10 @@ func (h *Handler) MsgSASLContinue(connCtx context.Context, msg *wire.OpMsg) (*wi
 
 	h.L.DebugContext(connCtx, "saslContinue: step succeed", attrs...) //nolint:sloglint // attrs is not key-value pairs
 
-	if conv.Valid() {
-		conninfo.Get(connCtx).SetBypassBackendAuth()
-	}
-
-	return documentOpMsg(
-		must.NotFail(types.NewDocument(
-			"conversationId", int32(1),
-			"done", conv.Done(),
-			"payload", types.Binary{B: []byte(response)},
-			"ok", float64(1),
-		)),
-	)
+	return must.NotFail(types.NewDocument(
+		"conversationId", int32(1),
+		"done", valid, // for compatibility, assign the validity of the conversation before [Step] was called
+		"payload", types.Binary{B: []byte(response)},
+		"ok", float64(1),
+	)), nil
 }
