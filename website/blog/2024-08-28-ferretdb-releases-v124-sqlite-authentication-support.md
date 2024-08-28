@@ -10,7 +10,7 @@ tags: [release]
 
 ![FerretDB v1.24 with SQLite authentication support](/img/blog/ferretdb-v1.24.0.jpg)
 
-We are happy to announce the release of FerretDB v1.24 with support for SQLite authentication — now available via the experimental authentication mode.
+We are happy to announce the release of FerretDB v1.24 with support for SQLite authentication – now available via the experimental authentication mode.
 
 <!--truncate-->
 
