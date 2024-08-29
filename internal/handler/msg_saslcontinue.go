@@ -81,7 +81,7 @@ func (h *Handler) saslContinue(connCtx context.Context, doc *types.Document) (*t
 	}
 
 	if valid {
-		h.L.DebugContext(connCtx, "saslContinue: conversation success", attrs...) //nolint:sloglint // slice of attrs
+		h.L.DebugContext(connCtx, "saslContinue: conversation success", attrs...)
 
 		conninfo.Get(connCtx).SetBypassBackendAuth()
 
@@ -102,7 +102,7 @@ func (h *Handler) saslContinue(connCtx context.Context, doc *types.Document) (*t
 			attrs = append(attrs, logging.Error(err))
 		}
 
-		h.L.WarnContext(connCtx, "saslContinue: step failed", attrs...) //nolint:sloglint // attrs is not key-value pairs
+		h.L.WarnContext(connCtx, "saslContinue: step failed", attrs...)
 
 		conninfo.Get(connCtx).SetAuth("", "", nil, "")
 
@@ -113,7 +113,7 @@ func (h *Handler) saslContinue(connCtx context.Context, doc *types.Document) (*t
 		)
 	}
 
-	h.L.DebugContext(connCtx, "saslContinue: step succeed", attrs...) //nolint:sloglint // attrs is not key-value pairs
+	h.L.DebugContext(connCtx, "saslContinue: step succeed", attrs...)
 
 	return must.NotFail(types.NewDocument(
 		"conversationId", int32(1),

@@ -289,12 +289,12 @@ func (h *Handler) saslStartSCRAM(ctx context.Context, dbName, mechanism string, 
 			attrs = append(attrs, logging.Error(err))
 		}
 
-		h.L.WarnContext(ctx, "saslStartSCRAM: step failed", attrs...) //nolint:sloglint // attrs is not key-value pairs
+		h.L.WarnContext(ctx, "saslStartSCRAM: step failed", attrs...)
 
 		return "", err
 	}
 
-	h.L.DebugContext(ctx, "saslStartSCRAM: step succeed", attrs...) //nolint:sloglint // attrs is not key-value pairs
+	h.L.DebugContext(ctx, "saslStartSCRAM: step succeed", attrs...)
 
 	conninfo.Get(ctx).SetAuth(conv.Username(), "", conv, dbName)
 

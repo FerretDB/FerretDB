@@ -389,7 +389,6 @@ func run() {
 
 	logger := setupLogger(cli.Log.Format, logUUID)
 
-	//nolint:sloglint // https://github.com/go-simpler/sloglint/issues/48
 	logger.LogAttrs(context.Background(), slog.LevelInfo, "Starting FerretDB "+info.Version+"...", startupFields...)
 
 	if debugbuild.Enabled {
