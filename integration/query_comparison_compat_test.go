@@ -1395,16 +1395,6 @@ func TestQueryComparisonCompatNe(t *testing.T) {
 func TestQueryComparisonCompatMultipleOperators(t *testing.T) {
 	t.Parallel()
 
-	var scalarDataTypesFilter bson.A
-	for _, scalarDataType := range shareddata.Scalars.Docs() {
-		scalarDataTypesFilter = append(scalarDataTypesFilter, scalarDataType.Map()["v"])
-	}
-
-	var compositeDataTypesFilter bson.A
-	for _, compositeDataType := range shareddata.Composites.Docs() {
-		compositeDataTypesFilter = append(compositeDataTypesFilter, compositeDataType.Map()["v"])
-	}
-
 	testCases := map[string]queryCompatTestCase{
 		"InLteGte": {
 			filter: bson.D{
