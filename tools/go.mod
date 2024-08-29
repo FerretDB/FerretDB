@@ -9,16 +9,16 @@ require (
 	github.com/FerretDB/gh v0.1.4
 	github.com/go-task/task/v3 v3.38.0
 	github.com/google/go-github/v57 v57.0.0
-	github.com/goreleaser/nfpm/v2 v2.38.0
+	github.com/goreleaser/nfpm/v2 v2.39.0
 	github.com/quasilyte/go-consistent v0.6.1
 	github.com/rogpeppe/go-internal v1.12.0
 	github.com/stretchr/testify v1.9.0
-	golang.org/x/perf v0.0.0-20240707193131-dc66afd55b77
-	golang.org/x/pkgsite v0.0.0-20240701161620-30d9315975ff
-	golang.org/x/tools v0.23.0
-	golang.org/x/vuln v1.1.2
+	golang.org/x/perf v0.0.0-20240806191124-3f62151e343c
+	golang.org/x/pkgsite v0.0.0-20240824135812-676c19eae995
+	golang.org/x/tools v0.24.0
+	golang.org/x/vuln v1.1.3
 	gopkg.in/yaml.v3 v3.0.1
-	mvdan.cc/gofumpt v0.6.0
+	mvdan.cc/gofumpt v0.7.0
 )
 
 require (
@@ -61,7 +61,7 @@ require (
 	github.com/google/licensecheck v0.3.1 // indirect
 	github.com/google/rpmpack v0.6.1-0.20240329070804-c2247cbb881a // indirect
 	github.com/google/safehtml v0.0.3-0.20211026203422-d6f0e11a5516 // indirect
-	github.com/google/uuid v1.6.0 // indirect
+	github.com/google/uuid v1.4.0 // indirect
 	github.com/goreleaser/chglog v0.6.1 // indirect
 	github.com/goreleaser/fileglob v1.3.0 // indirect
 	github.com/huandu/xstrings v1.3.3 // indirect
@@ -102,16 +102,16 @@ require (
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	gitlab.com/digitalxero/go-conventional-commit v1.0.7 // indirect
-	golang.org/x/crypto v0.25.0 // indirect
-	golang.org/x/exp v0.0.0-20240707233637-46b078467d37 // indirect
-	golang.org/x/mod v0.19.0 // indirect
-	golang.org/x/net v0.27.0 // indirect
-	golang.org/x/oauth2 v0.21.0 // indirect
-	golang.org/x/sync v0.7.0 // indirect
-	golang.org/x/sys v0.22.0 // indirect
+	golang.org/x/crypto v0.26.0 // indirect
+	golang.org/x/exp v0.0.0-20231206192017-f3f8817b8deb // indirect
+	golang.org/x/mod v0.20.0 // indirect
+	golang.org/x/net v0.28.0 // indirect
+	golang.org/x/oauth2 v0.22.0 // indirect
+	golang.org/x/sync v0.8.0 // indirect
+	golang.org/x/sys v0.23.0 // indirect
 	golang.org/x/telemetry v0.0.0-20240522233618-39ace7a40ae7 // indirect
-	golang.org/x/term v0.22.0 // indirect
-	golang.org/x/text v0.16.0 // indirect
+	golang.org/x/term v0.23.0 // indirect
+	golang.org/x/text v0.17.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	mvdan.cc/sh/v3 v3.8.0 // indirect
 	rsc.io/markdown v0.0.0-20231214224604-88bb533a6020 // indirect
