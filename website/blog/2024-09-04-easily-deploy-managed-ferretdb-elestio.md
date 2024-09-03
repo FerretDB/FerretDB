@@ -54,7 +54,7 @@ You can also select the "Service Cloud Region" and "Service Plan" for the instan
 On the next page, select the kind of technical support you want.
 For example, length of remote backup retention, service snapshots, response time, SLA, priority queuing, etc.
 
-![Set up support & advanced configuration](/img/blog/ferretdb-elestio/service-dashboard.png)
+![Set up support & advanced configuration](/img/blog/ferretdb-elestio/support-config.png)
 
 Once you're done, create the service.
 
