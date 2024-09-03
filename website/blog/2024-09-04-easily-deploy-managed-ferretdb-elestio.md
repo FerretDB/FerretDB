@@ -14,12 +14,13 @@ Do you want to deploy a fully managed FerretDB instance in production in any clo
 
 <!--truncate-->
 
-[Elestio](https://elest.io/) lets you easily run, monitor, backup, maintain, and secure your [FerretDB](https://www.ferretdb.com/) instance.
-It is a DevOps platform that lets you manage and deploy open-source software in production environments.
+[Elestio](https://elest.io/) is a DevOps platform that lets you manage and deploy open-source software like FerretDB in production environments.
 
-You can deploy your service on any cloud ([AWS](https://aws.amazon.com/), [DigitalOcean](https://www.digitalocean.com/), [Hetzner](https://www.hetzner.com/), etc.) or on-premise.
+With Elestio, you can easily configure, run, monitor, backup, maintain, and secure your [FerretDB](https://www.ferretdb.com/) instance.
 
-In this blog post, you will learn to deploy FerretDB on Elestio in any cloud environment under 5 minutes.
+You can deploy your instance on any cloud ([AWS](https://aws.amazon.com/), [DigitalOcean](https://www.digitalocean.com/), [Hetzner](https://www.hetzner.com/), etc.) or on-premise – in under 5 minutes.
+
+In this blog post, you will learn to deploy FerretDB on Elestio in any cloud environment.
 
 ## Prerequisites
 
@@ -31,9 +32,9 @@ In this blog post, you will learn to deploy FerretDB on Elestio in any cloud env
 FerretDB is an open source document database alternative to MongoDB with Postgres as a backend.
 To start creating a FerretDB service on Elestio, [simply follow this link](https://elest.io/open-source/ferretdb).
 
-### Start by creating a FerretDB service
+### Select FerretDB service
 
-Select "FerretDB" service.
+Select "FerretDB" service from the Elestio services dashboard.
 
 ![Select FerretDB service](/img/blog/ferretdb-elestio/select-service.png)
 
@@ -84,11 +85,11 @@ Start by inserting the following document into a `record` collection.
 
 ```js
 db.record.insertOne({
-    username: "JD",
-    content: "Enjoying the beautiful weather today! 🌞 #sunnyday",
-    likes: 120,
-    timestamp: new Date()
-});
+  username: 'JD',
+  content: 'Enjoying the beautiful weather today! 🌞 #sunnyday',
+  likes: 120,
+  timestamp: new Date()
+})
 ```
 
 Once it's inserted, view the documents by running `db.record.find()`:
@@ -110,10 +111,7 @@ The output:
 Next, update the `likes` of JD's post to 150.
 
 ```js
-db.record.updateOne(
-    { username: "JD" },
-    { $set: { likes: 150 } }
-);
+db.record.updateOne({ username: 'JD' }, { $set: { likes: 150 } })
 ```
 
 The output:
@@ -133,14 +131,14 @@ You can run `db.record.find()` again just to be sure it's updated.
 Finally, delete the singular document from the collection.
 
 ```js
-db.record.deleteOne({ username: "JD"});
+db.record.deleteOne({ username: 'JD' })
 ```
 
 ## Conclusion
 
-Like that, you can have a managed FerretDB database production-ready on Elestio.
+Like that, you have a managed FerretDB database production-ready on Elestio.
 No need to worry about DevOps or infrastructure concerns!
-Plus, it's open source, with no vendor lock-in, so you can easily migrate your data to any cloud anytime.
+Moreover, it's open source, with no vendor lock-in, so you can migrate your data to any cloud anytime.
 
 If you want to know more about FerretDB, do check out:
 
