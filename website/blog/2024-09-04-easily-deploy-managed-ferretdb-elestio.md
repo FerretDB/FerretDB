@@ -26,7 +26,7 @@ In this blog post, you will learn to deploy FerretDB on Elestio in any cloud env
 - [Elestio account](https://elest.io/)
 - `mongosh`
 
-## How to deploy FerretDB on Elastio
+## How to deploy FerretDB on Elestio
 
 FerretDB is an open source document database alternative to MongoDB with Postgres as a backend.
 To start creating a FerretDB service on Elestio, [simply follow this link](https://elest.io/open-source/ferretdb).
@@ -59,7 +59,7 @@ Once you're done, create the service.
 
 It may take a few minutes to provision the instance and resources.
 
-That's all you need to set up FerretDB using Elastio!
+That's all you need to set up FerretDB using Elestio!
 
 ### Connect to FerretDB using `mongosh`
 
