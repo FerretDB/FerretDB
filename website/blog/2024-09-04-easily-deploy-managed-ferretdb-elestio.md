@@ -82,7 +82,7 @@ You can now populate the FerretDB instance with data.
 
 Start by inserting the following document into a `record` collection.
 
-```json5
+```js
 db.record.insertOne({
     username: "JD",
     content: "Enjoying the beautiful weather today! 🌞 #sunnyday",
@@ -95,7 +95,7 @@ Once it's inserted, view the documents by running `db.record.find()`:
 
 The output:
 
-```json
+```json5
 [
   {
     _id: ObjectId('66d6a9346e70f5ffc91022c0'),
@@ -109,7 +109,7 @@ The output:
 
 Next, update the `likes` of JD's post to 150.
 
-```json5
+```js
 db.record.updateOne(
     { username: "JD" },
     { $set: { likes: 150 } }
@@ -118,13 +118,13 @@ db.record.updateOne(
 
 The output:
 
-```json
+```json5
 {
-  "acknowledged": true,
-  "insertedId": null,
-  "matchedCount": 1,
-  "modifiedCount": 1,
-  "upsertedCount": 0
+  acknowledged: true,
+  insertedId: null,
+  matchedCount: 1,
+  modifiedCount: 1,
+  upsertedCount: 0
 }
 ```
 
@@ -132,7 +132,7 @@ You can run `db.record.find()` again just to be sure it's updated.
 
 Finally, delete the singular document from the collection.
 
-```json5
+```js
 db.record.deleteOne({ username: "JD"});
 ```
 
