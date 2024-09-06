@@ -41,7 +41,7 @@ Select "FerretDB" service from the Elestio services dashboard.
 ### Select cloud provider
 
 Next, select a service cloud provider to use for your project.
-There are different options – DigitalOcean, Hetzner, Amazon, Amazon Linode, Vultr, Scaleway, and BYOS if you prefer.
+There are different options – DigitalOcean, Hetzner, Amazon, Linode, Vultr, Scaleway, and BYOS if you prefer.
 
 For this example, let's set up FerretDB on DigitalOcean.
 
