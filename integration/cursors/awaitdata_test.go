@@ -15,6 +15,7 @@
 package cursors
 
 import (
+	"context"
 	"fmt"
 	"sync/atomic"
 	"testing"
@@ -663,4 +664,498 @@ func TestCursorsAwaitDataGetMoreAfterInsertion(t *testing.T) {
 		require.Equal(t, 0, nextBatch.Len())
 		assert.Equal(t, cursorID, nextID)
 	})
+}
+
+func TestCursorsAwaitDataTimeoutDerivation(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupWithOpts(t, nil)
+
+	db, ctx := s.Collection.Database(), s.Ctx
+
+	bsonArr, _ := integration.GenerateDocuments(0, 1000)
+
+	var count atomic.Int32
+
+	//teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
+	id := count.Add(1)
+
+	collName := fmt.Sprintf("%s_%d", testutil.CollectionName(t), id)
+
+	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(100000)
+	err := db.CreateCollection(s.Ctx, collName, opts)
+	require.NoError(t, err)
+
+	collection := db.Collection(collName)
+
+	_, err = collection.InsertMany(ctx, bsonArr)
+	require.NoError(t, err)
+
+	findCmd := bson.D{
+		{"find", collection.Name()},
+		{"batchSize", 1},
+		{"tailable", true},
+		{"awaitData", true},
+		{"maxTimeMS", 3},
+	}
+
+	expectedErr := mongo.CommandError{
+		Code:    50,
+		Name:    "MaxTimeMSExpired",
+		Message: "Executor error during find command :: caused by :: operation exceeded time limit",
+	}
+
+	//ready <- struct{}{}
+	//<-start
+
+	var res bson.D
+	err = db.RunCommand(ctx, findCmd).Decode(&res)
+	require.NoError(t, err)
+	if err != nil {
+		integration.AssertEqualCommandError(t, expectedErr, err)
+		return
+	}
+
+	_, cursorID := getFirstBatch(t, res)
+	require.NotZero(t, cursorID)
+
+	getMoreCmd := bson.D{
+		{"getMore", cursorID},
+		{"collection", collection.Name()},
+		{"batchSize", 900},
+	}
+
+	err = db.RunCommand(ctx, getMoreCmd).Decode(&res)
+	require.NoError(t, err)
+
+	nextBatch, _ := getNextBatch(t, res)
+	require.Equal(t, 900, nextBatch.Len())
+	//})
+}
+
+func TestCursorsAwaitDataParallelErr(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupWithOpts(t, nil)
+
+	db, ctx := s.Collection.Database(), s.Ctx
+
+	bsonArr, _ := integration.GenerateDocuments(0, 3)
+
+	ready := make(chan struct{})
+
+	t.Run("Good", func(t *testing.T) {
+		t.Parallel()
+
+		collName := testutil.CollectionName(t)
+
+		opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(10000)
+		err := db.CreateCollection(s.Ctx, collName, opts)
+		require.NoError(t, err)
+
+		collection := db.Collection(collName)
+
+		_, err = collection.InsertMany(ctx, bsonArr)
+		require.NoError(t, err)
+
+		findCmd := bson.D{
+			{"find", collection.Name()},
+			{"batchSize", 1},
+			{"tailable", true},
+			{"awaitData", true},
+			{"maxTimeMS", 100},
+		}
+
+		var res bson.D
+		err = db.RunCommand(ctx, findCmd).Decode(&res)
+		require.NoError(t, err)
+
+		ready <- struct{}{}
+
+		_, cursorID := getFirstBatch(t, res)
+		require.NotZero(t, cursorID)
+
+		getMoreCmd := bson.D{
+			{"getMore", cursorID},
+			{"collection", collection.Name()},
+			{"batchSize", 1},
+		}
+
+		err = db.RunCommand(ctx, getMoreCmd).Err()
+		require.NoError(t, err)
+
+		err = db.RunCommand(ctx, getMoreCmd).Err()
+		require.NoError(t, err)
+	})
+
+	t.Run("Timeout", func(t *testing.T) {
+		t.Parallel()
+
+		collName := testutil.CollectionName(t)
+
+		opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(10000)
+		err := db.CreateCollection(s.Ctx, collName, opts)
+		require.NoError(t, err)
+
+		collection := db.Collection(collName)
+
+		_, err = collection.InsertMany(ctx, bsonArr)
+		require.NoError(t, err)
+
+		findCmd := bson.D{
+			{"find", collection.Name()},
+			{"batchSize", 1},
+			{"tailable", true},
+			{"awaitData", true},
+			{"maxTimeMS", 2},
+		}
+
+		expectedErr := mongo.CommandError{
+			Code:    50,
+			Name:    "MaxTimeMSExpired",
+			Message: "Executor error during find command :: caused by :: operation exceeded time limit",
+		}
+
+		var res bson.D
+		<-ready
+		err = db.RunCommand(ctx, findCmd).Decode(&res)
+		require.NoError(t, err)
+		if err != nil {
+			require.True(t, integration.AssertEqualCommandError(t, expectedErr, err))
+			return
+		}
+
+		_, cursorID := getFirstBatch(t, res)
+		require.NotZero(t, cursorID)
+
+		getMoreCmd := bson.D{
+			{"getMore", cursorID},
+			{"collection", collection.Name()},
+			{"batchSize", 1},
+		}
+
+		err = db.RunCommand(ctx, getMoreCmd).Err()
+		require.NoError(t, err)
+
+		err = db.RunCommand(ctx, getMoreCmd).Err()
+		require.NoError(t, err)
+
+		err = db.RunCommand(ctx, getMoreCmd).Err()
+		require.NoError(t, err)
+	})
+}
+
+func TestCursorsAwaitDataStress(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupWithOpts(t, nil)
+
+	db, ctx := s.Collection.Database(), s.Ctx
+
+	bsonArr, _ := integration.GenerateDocuments(0, 3)
+
+	var count atomic.Int32
+
+	teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
+		id := count.Add(1)
+
+		t.Run(fmt.Sprint(id), func(t *testing.T) {
+			collName := testutil.CollectionName(t)
+
+			opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(10000)
+			err := db.CreateCollection(s.Ctx, collName, opts)
+			require.NoError(t, err)
+
+			collection := db.Collection(collName)
+
+			_, err = collection.InsertMany(ctx, bsonArr)
+			require.NoError(t, err)
+
+			findCmd := bson.D{
+				{"find", collection.Name()},
+				{"batchSize", 1},
+				{"tailable", true},
+				{"awaitData", true},
+				{"maxTimeMS", 5}, // it seems its still derived...
+			}
+
+			expectedErr := mongo.CommandError{
+				Code:    50,
+				Name:    "MaxTimeMSExpired",
+				Message: "Executor error during find command :: caused by :: operation exceeded time limit",
+			}
+
+			ready <- struct{}{}
+			<-start
+
+			var res bson.D
+			err = db.RunCommand(ctx, findCmd).Decode(&res)
+			if err != nil {
+				require.True(t, integration.AssertEqualCommandError(t, expectedErr, err))
+				return
+			}
+
+			time.Sleep(10 * time.Millisecond)
+
+			_, cursorID := getFirstBatch(t, res)
+			require.NotZero(t, cursorID)
+
+			getMoreCmd := bson.D{
+				{"getMore", cursorID},
+				{"collection", collection.Name()},
+				{"batchSize", 1},
+			}
+
+			err = db.RunCommand(ctx, getMoreCmd).Err()
+			require.NoError(t, err)
+
+			err = db.RunCommand(ctx, getMoreCmd).Err()
+			require.NoError(t, err)
+		})
+	})
+}
+
+func TestCursorsAwaitDataTimeout(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupWithOpts(t, nil)
+
+	db, ctx := s.Collection.Database(), s.Ctx
+
+	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(10000)
+	err := db.CreateCollection(s.Ctx, testutil.CollectionName(t), opts)
+	require.NoError(t, err)
+
+	collection := db.Collection(testutil.CollectionName(t))
+
+	bsonArr, _ := integration.GenerateDocuments(0, 3)
+	_, err = collection.InsertMany(ctx, bsonArr)
+	require.NoError(t, err)
+
+	findCmd := bson.D{
+		{"find", collection.Name()},
+		{"batchSize", 1},
+		{"tailable", true},
+		{"awaitData", true},
+	}
+
+	t.Run("AfterFind", func(t *testing.T) {
+		var res bson.D
+		err := db.RunCommand(ctx, findCmd).Decode(&res)
+		require.NoError(t, err)
+
+		_, cursorID := getFirstBatch(t, res)
+
+		getMoreCmd := bson.D{
+			{"getMore", cursorID},
+			{"collection", collection.Name()},
+			{"batchSize", 1},
+		}
+
+		time.Sleep(1 * time.Minute)
+
+		err = db.RunCommand(ctx, getMoreCmd).Err()
+		require.NoError(t, err)
+
+		err = db.RunCommand(ctx, getMoreCmd).Err()
+		require.NoError(t, err)
+	})
+
+	t.Run("AfterGetMore", func(t *testing.T) {
+		var res bson.D
+		err := db.RunCommand(ctx, findCmd).Decode(&res)
+		require.NoError(t, err)
+
+		_, cursorID := getFirstBatch(t, res)
+
+		getMoreCmd := bson.D{
+			{"getMore", cursorID},
+			{"collection", collection.Name()},
+			{"batchSize", 1},
+		}
+
+		err = db.RunCommand(ctx, getMoreCmd).Err()
+		require.NoError(t, err)
+
+		time.Sleep(1 * time.Minute)
+
+		err = db.RunCommand(ctx, getMoreCmd).Err()
+		require.NoError(t, err)
+	})
+
+	//t.Run("AfterLast", func(t *testing.T) {
+	//	var res bson.D
+	//	err := db.RunCommand(ctx, findCmd).Decode(&res)
+	//	require.NoError(t, err)
+
+	//	_, cursorID := getFirstBatch(t, res)
+
+	//	getMoreCmd := bson.D{
+	//		{"getMore", cursorID},
+	//		{"collection", collection.Name()},
+	//		{"batchSize", 1},
+	//	}
+
+	//	err = db.RunCommand(ctx, getMoreCmd).Err()
+	//	require.NoError(t, err)
+	//})
+}
+
+func TestParallelAwaitDataCursorsSingleConn(t *testing.T) {
+	s := setup.SetupWithOpts(t, nil)
+
+	db, ctx := s.Collection.Database(), s.Ctx
+
+	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(10000)
+	err := db.CreateCollection(s.Ctx, testutil.CollectionName(t), opts)
+	require.NoError(t, err)
+
+	collection := db.Collection(testutil.CollectionName(t))
+	bsonArr, _ := integration.GenerateDocuments(0, 100) // TODO small and large
+	_, err = collection.InsertMany(ctx, bsonArr)
+	require.NoError(t, err)
+
+	// 50 is a limit! afterwards it "blocks"
+	// that because of pool_max_conns which is set in my ide configuration. Although, should we allow it to block?
+	// EDIT: it behaves in exactly same fashion with pool_max_conns
+	teststress.StressN(t, 50, func(ready chan<- struct{}, start <-chan struct{}) {
+		ready <- struct{}{}
+		<-start
+
+		collection := db.Collection(testutil.CollectionName(t))
+
+		cursorID, err := awaitDataFind(t, ctx, collection, 0)
+		require.NoError(t, err)
+
+		for i := 1; i < 100; i++ {
+			err = awaitDataGetMore(t, ctx, collection, cursorID)
+			require.NoError(t, err)
+		}
+	})
+}
+
+func awaitDataFind(t *testing.T, ctx context.Context, coll *mongo.Collection, maxTimeMS int) (any, error) {
+	t.Helper()
+
+	findCmd := bson.D{
+		{"find", coll.Name()},
+		{"batchSize", 1},
+		{"tailable", true},
+		{"awaitData", true},
+	}
+
+	if maxTimeMS > 0 {
+		findCmd = bson.D{
+			{"find", coll.Name()},
+			{"batchSize", 1},
+			{"tailable", true},
+			{"awaitData", true},
+			{"maxTimeMS", maxTimeMS},
+		}
+	}
+
+	db := coll.Database()
+
+	var res bson.D
+	err := db.RunCommand(ctx, findCmd).Decode(&res)
+	//require.NoError(t, err)
+	if err != nil {
+		expectedErr := mongo.CommandError{
+			Code:    50,
+			Name:    "MaxTimeMSExpired",
+			Message: "Executor error during find command :: caused by :: operation exceeded time limit",
+		}
+
+		require.True(t, integration.AssertEqualCommandError(t, expectedErr, err))
+		return nil, err
+	}
+
+	_, cursorID := getFirstBatch(t, res)
+	require.NotZero(t, cursorID)
+
+	return cursorID, err
+}
+
+func awaitDataGetMore(t *testing.T, ctx context.Context, coll *mongo.Collection, cursorID any) error {
+	t.Helper()
+
+	db := coll.Database()
+
+	getMoreCmd := bson.D{
+		{"getMore", cursorID},
+		{"collection", coll.Name()},
+		{"batchSize", 1},
+	}
+
+	var res bson.D
+	err := db.RunCommand(ctx, getMoreCmd).Decode(&res)
+	require.NoError(t, err)
+	//if err != nil {
+	//	expectedErr := mongo.CommandError{
+	//		Code:    50,
+	//		Name:    "MaxTimeMSExpired",
+	//		Message: "Executor error during find command :: caused by :: operation exceeded time limit",
+	//	}
+
+	//	require.True(t, integration.AssertEqualCommandError(t, expectedErr, err))
+	//}
+
+	_, nextID := getNextBatch(t, res)
+	require.Equal(t, cursorID, nextID)
+
+	return err
+}
+
+func TestParallelAwaitDataCursorsTwoConn(t *testing.T) {
+}
+
+func TestParallelAwaitDataTimeoutCursorsSingleConn(t *testing.T) {
+	s := setup.SetupWithOpts(t, nil)
+
+	db, ctx := s.Collection.Database(), s.Ctx
+
+	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(10000)
+	err := db.CreateCollection(s.Ctx, testutil.CollectionName(t), opts)
+	require.NoError(t, err)
+
+	collection := db.Collection(testutil.CollectionName(t))
+	bsonArr, _ := integration.GenerateDocuments(0, 100) // TODO small and large
+	_, err = collection.InsertMany(ctx, bsonArr)
+	require.NoError(t, err)
+
+	// 50 is a limit! afterwards it "blocks"
+	// that because of pool_max_conns which is set in my ide configuration. Although, should we allow it to block?
+	// EDIT: it behaves in exactly same fashion with pool_max_conns
+	teststress.StressN(t, 50, func(ready chan<- struct{}, start <-chan struct{}) {
+		ready <- struct{}{}
+		<-start
+
+		collection := db.Collection(testutil.CollectionName(t))
+
+		go func() {
+			for i := 1; i < 10; i++ {
+				_, err := awaitDataFind(t, ctx, collection, 1)
+				if err != nil {
+					expectedErr := mongo.CommandError{
+						Code:    50,
+						Name:    "MaxTimeMSExpired",
+						Message: "Executor error during find command :: caused by :: operation exceeded time limit",
+					}
+					require.True(t, integration.AssertEqualCommandError(t, expectedErr, err))
+					return
+				}
+			}
+		}()
+
+		cursorID, err := awaitDataFind(t, ctx, collection, 0)
+		require.NoError(t, err)
+
+		for i := 1; i < 100; i++ {
+			err = awaitDataGetMore(t, ctx, collection, cursorID)
+			require.NoError(t, err)
+		}
+	})
+}
+
+func TestParallelAwaitDataTimeoutCursorsTwoConn(t *testing.T) {
 }
