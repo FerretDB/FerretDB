@@ -16,10 +16,6 @@ At any given moment, that software you depend on may be deprecated – and you'r
 
 That was [the case with MongoDB over the past week with the deprecation of Data API and Device Sync](https://www.mongodb.com/docs/atlas/app-services/deprecation/#std-label-app-services-deprecation), among other features.
 
-A primary downside of non-open source solutions (proprietary, SSPL, and other open source pretenders) is that you're always at risk, at all times.
-At any given moment, that software you depend on may be deprecated – and you're left with months or years of wasted effort.
-That was [the case with MongoDB over the past week with the deprecation of Data API and Device Sync](https://www.mongodb.com/docs/atlas/app-services/deprecation/#std-label-app-services-deprecation), among other features.
-
 As of September 2024, the deprecated services include:
 
 - Atlas Device Sync and Edge Server
@@ -50,7 +46,7 @@ Every feature, change, and development is done to meet the needs of the user.
 
 With an open source solution, users continuously contribute to the development of the product and also extend and improve on it as much as they can.
 There are transparent roadmaps, community feedback, and public development processes.
-The eventual fate of certain features are not decided by a single vendor.
+The eventual fate of certain features is not decided by a single vendor.
 
 In contrast to proprietary solutions where you're always in danger of lock-in, open source software like FerretDB does not lock you into a specific ecosystem.
 
@@ -59,7 +55,7 @@ You're free to host FerretDB on your own infrastructure, either on-premise, clou
 
 ## FerretDB replacement for Data API
 
-In light of the recent deprecation announcement**, [we have started working on an alternative for Data API](https://github.com/FerretDB/FerretDB/discussions/4578).** The first iteration of that HTTP API should be out in a few weeks, along with the first public version of FerretDB v2.
+In light of the recent deprecation announcement, **[we have started working on an alternative for Data API](https://github.com/FerretDB/FerretDB/discussions/4578)**. The first iteration of that HTTP API should be out in a few weeks, along with the first public version of FerretDB v2.
 This next major version, built around the PostgreSQL extension, will bring significant compatibility and performance improvements suitable for most workloads.
 
 Moving forward, developers and businesses should consider building their tech stacks with resilience in mind and prioritize open-source solutions that offer control, community support, and long-term stability.
