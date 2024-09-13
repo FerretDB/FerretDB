@@ -55,7 +55,8 @@ You're free to host FerretDB on your own infrastructure, either on-premise, clou
 
 ## FerretDB replacement for Data API
 
-In light of the recent deprecation announcement, **[we have started working on an alternative for Data API](https://github.com/FerretDB/FerretDB/discussions/4578)**. The first iteration of that HTTP API should be out in a few weeks, along with the first public version of FerretDB v2.
+In light of the recent deprecation announcement, **[we have started working on an alternative for Data API](https://github.com/FerretDB/FerretDB/discussions/4578)**.
+The first iteration of that HTTP API should be out in a few weeks, along with the first public version of FerretDB v2.
 This next major version, built around the PostgreSQL extension, will bring significant compatibility and performance improvements suitable for most workloads.
 
 Moving forward, developers and businesses should consider building their tech stacks with resilience in mind and prioritize open-source solutions that offer control, community support, and long-term stability.
