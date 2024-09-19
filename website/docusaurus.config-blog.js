@@ -14,9 +14,9 @@ const config = {
   favicon: 'img/favicon.ico',
   trailingSlash: true,
 
+  onBrokenAnchors: 'throw',
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'throw',
-  onBrokenAnchors: 'throw',
 
   i18n: {
     defaultLocale: 'en',
@@ -56,8 +56,10 @@ const config = {
           routeBasePath: '/',
           blogTitle: 'FerretDB Blog',
           showReadingTime: true,
-          authorsMapPath: 'authors.yml',
           postsPerPage: 8,
+          authorsMapPath: 'authors.yml',
+          onInlineAuthors: 'warn', // TODO https://github.com/FerretDB/FerretDB/issues/4587
+          onUntruncatedBlogPosts: 'throw',
 
           blogSidebarTitle: 'All posts',
           blogSidebarCount: 'ALL',

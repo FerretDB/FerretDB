@@ -228,6 +228,7 @@ func verifyTags(fm []byte) error {
 		"javascript frameworks":   {},
 		"mongodb compatible":      {},
 		"mongodb gui":             {},
+		"observability":           {},
 		"open source":             {},
 		"postgresql tools":        {},
 		"product":                 {},
