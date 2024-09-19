@@ -20,12 +20,18 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
+
+func init() {
+	wire.Debug = debugbuild.Enabled
+}
 
 // convertFromTypes converts types package value to wirebson package value.
 //

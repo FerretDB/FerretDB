@@ -15,14 +15,14 @@ using PostgreSQL or SQLite as a database engine.
 
 ```mermaid
 flowchart LR
-  A["Any application\nAny MongoDB driver"]
+  A["Any application<br>Any MongoDB driver"]
   F{{FerretDB}}
   P[(PostgreSQL)]
   S[("SQLite")]
 
-  A -- "MongoDB protocol\nBSON" --> F
-  F -- "PostgreSQL protocol\nSQL" --> P
-  F -. "SQLite library\nSQL" .-> S
+  A -- "MongoDB protocol<br>BSON" --> F
+  F -- "PostgreSQL protocol<br>SQL" --> P
+  F -. "SQLite library<br>SQL" .-> S
 ```
 
 ## Why do we need FerretDB?
@@ -107,6 +107,7 @@ See [there](https://pkg.go.dev/github.com/FerretDB/FerretDB/build/version) for m
 - [Civo](https://www.civo.com/marketplace/FerretDB)
 - [Tembo](https://tembo.io/docs/tembo-stacks/mongo-alternative)
 - [Elestio](https://elest.io/open-source/ferretdb)
+- [Cozystack](https://cozystack.io/docs/components/#managed-ferretdb).
 
 ## Documentation
 
