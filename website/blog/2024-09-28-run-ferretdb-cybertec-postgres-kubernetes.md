@@ -336,7 +336,7 @@ postgres=# SELECT * FROM weather_36404793;
 ## Conclusion
 
 Using open-source solutions like FerretDB and CyberTec Postgres, you can migrate from MongoDB to a Kubernetes-based setup without vendor lock-in.
-This gives you complete control over your infrastructure, while taking advantage of Postgres’ advanced features, scalability, and reliability.
+This gives you complete control over your infrastructure, while taking advantage of Postgres advanced features, scalability, and reliability.
 Be sure to follow the [CyberTec Postgres documentation](https://cybertec-postgresql.github.io/CYBERTEC-pg-operator/documentation/how-to-use/installation/) for further optimizations and advanced configurations.
 
 This is one of a series of a series of Postgres operator solutions you can use to setup a Postgres cluster on Kubernetes for your FerretDB instance.
