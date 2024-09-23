@@ -166,6 +166,8 @@ issues:
 
   exclude-use-default: false
   exclude-rules:
-    # that's a valid usage of bson.D
+    # that's a valid usage of bson.D / bson.E
     - linters: [govet]
       text: "composites: go.mongodb.org/mongo-driver/bson/primitive.E struct literal uses unkeyed fields"
+    - linters: [govet]
+      text: "composites: go.mongodb.org/mongo-driver/bson.E struct literal uses unkeyed fields"
