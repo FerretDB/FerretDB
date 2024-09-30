@@ -35,7 +35,11 @@ To run FerretDB on Kubernetes, you need to set up a Postgres cluster, and you ca
 
 ### Download the CyberTec project
 
-Start by downloading/cloning the the CyberTec project.
+When cloning the CyberTec Postgres operator repository, you can either fork it (if you intend to make customizations) or clone it directly for use in your environment.
+
+Start by forking the [CyberTec project](https://github.com/cybertec-postgresql/CYBERTEC-operator-tutorials.git).
+
+Then clone the forked repository:
 
 ```sh
 GITHUB_USER='USERNAME'
@@ -43,7 +47,6 @@ git clone https://github.com/$GITHUB_USER/CYBERTEC-operator-tutorials.git
 cd CYBERTEC-operator-tutorials
 ```
 
-When cloning the CyberTec Postgres operator repository, you can either fork it (if you intend to make customizations) or clone it directly for use in your environment.
 This folder is where the core Helm chart for installing the Postgres operator resides, and you will use it in the subsequent steps to install the operator and configure your Postgres cluster.
 
 ### Create a namespace for the project
@@ -70,7 +73,7 @@ Next, you need to set up a single Postgres cluster.
 ### Create a single Postgres cluster
 
 The required `yaml` file is already present in the `cluster-tutorials/single-cluster` directory.
-Run the apply command to create the Postgres cluster within the `cpo` namespace.
+kubectl apply -f cluster-tutorials/single-cluster/postgres.yaml -n cpo
 
 ```sh
 kubectl apply -f cluster-tutorials/single-cluster/postgres.yaml -n cpo
@@ -309,7 +312,14 @@ Run `db.weather.find()` on the collection to see the updated document:
 ## View data in Postgres via `psql`
 
 FerretDB stores the data in a JSONB format in the Postgres database.
-If you want to know how this looks, connect to the database via `psql` using the database and user credentials:
+
+If you want to know how this looks, port-forward the Postgres service to your local machine:
+
+```sh
+kubectl port-forward svc/cluster-1 5432:5432 -n cpo
+```
+
+Connect to the database via `psql` using the database and user credentials:
 
 ```sh
 PGPASSWORD=<password> psql -h 127.0.0.1 -p 5432 -U postgres
