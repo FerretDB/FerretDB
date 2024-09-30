@@ -236,7 +236,7 @@ kubectl run -it --rm --image=mongo:latest mongo-client -- bash
 Connect to the FerretDB instance using the Postgres credentials generated earlier:
 
 ```sh
-mongosh "mongodb://postgres:<password>@host:27017/postgres?authMechanism=PLAIN"
+mongosh "mongodb://postgres:<password>@<host>:27017/postgres?authMechanism=PLAIN"
 ```
 
 Ensure to use the password generated from your the user credential in `Secret`.
