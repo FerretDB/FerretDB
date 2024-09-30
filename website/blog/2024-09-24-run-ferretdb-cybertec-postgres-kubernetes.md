@@ -73,7 +73,7 @@ The required `yaml` file is already present in the `cluster-tutorials/single-clu
 Run the apply command to create the Postgres cluster within the `cpo` namespace.
 
 ```sh
- kubectl apply -f cluster-tutorials/single-cluster/postgres.yaml -n cpo
+kubectl apply -f cluster-tutorials/single-cluster/postgres.yaml -n cpo
 ```
 
 When you apply the `postgres.yaml` file, the CyberTec Postgres operator automates the deployment and lifecycle management of the Postgres cluster.
