@@ -60,7 +60,7 @@ kubectl create namespace cpo
 Use Helm to install the CyberTec Postgres Operator.
 
 ```sh
- helm install cpo -n cpo setup/helm/operator/.
+helm install cpo -n cpo setup/helm/operator/
 ```
 
 This action will install the CyberTec Postgres operator in the `cpo` namespace.
