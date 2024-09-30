@@ -134,7 +134,7 @@ kubectl get secret -n cpo postgres.cluster-1.credentials.postgresql.cpo.opensour
 
 Output should look like this:
 
-```text
+```json
 {
   "password": "naS0UMX4ajDUtFJZ2Zntwxscn5tnBnLsrDolSXqKOcxvaYkjAdjWRCRQhybbyORN",
   "username": "postgres"
