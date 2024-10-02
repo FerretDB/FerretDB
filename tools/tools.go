@@ -27,9 +27,10 @@ import (
 	_ "mvdan.cc/gofumpt"
 )
 
+//go:generate go build -v -o ../bin/ ./checkcomments
 //go:generate go build -v -o ../bin/ ./checkdocs
 //go:generate go build -v -o ../bin/ ./checkswitch
-//go:generate go build -v -o ../bin/ ./checkcomments
+//go:generate go build -v -o ../bin/ ./definedockertag
 //go:generate go build -v -o ../bin/ ./generatechangelog
 
 //go:generate go build -v -o ../bin/ github.com/go-task/task/v3/cmd/task
