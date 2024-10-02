@@ -247,7 +247,7 @@ func (c *Client) IssueStatus(ctx context.Context, url string) (IssueStatus, erro
 func (c *Client) checkIssueStatus(ctx context.Context, repo string, num int) (IssueStatus, error) {
 	issue, resp, err := c.c.Issues.Get(ctx, "FerretDB", repo, num)
 	if err != nil {
-		if resp.StatusCode == http.StatusNotFound {
+		if resp != nil && resp.StatusCode == http.StatusNotFound {
 			return IssueNotFound, nil
 		}
 

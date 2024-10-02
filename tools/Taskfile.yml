@@ -3,7 +3,7 @@
 version: 3
 
 vars:
-  PACKAGES: ./checkcomments/... ./checkdocs/... ./checkswitch/... ./generatechangelog/... ./github/...
+  PACKAGES: ./checkcomments/... ./checkdocs/... ./checkswitch/... ./definedockertag/... ./generatechangelog/... ./github/...
   RACE_FLAG: -race={{and (ne OS "windows") (ne ARCH "arm") (ne ARCH "riscv64")}}
 
 tasks:
@@ -12,14 +12,14 @@ tasks:
     cmds:
       - ../bin/envtool{{exeExt}} shell rmdir ../tmp/githubcache
       - ../bin/envtool{{exeExt}} shell mkdir ../tmp/githubcache
-      - go test -short {{.RACE_FLAG}} -shuffle=on -coverprofile=cover.txt -coverpkg=./... {{.PACKAGES}}
+      - go test -short {{.RACE_FLAG}} -shuffle=on -coverprofile=cover.txt {{.PACKAGES}}
 
   tools-test:
     desc: "Run all unit tests"
     cmds:
       - ../bin/envtool{{exeExt}} shell rmdir ../tmp/githubcache
       - ../bin/envtool{{exeExt}} shell mkdir ../tmp/githubcache
-      - go test -count=1 {{.RACE_FLAG}} -shuffle=on -coverprofile=cover.txt -coverpkg=./... {{.PACKAGES}}
+      - go test -count=1 {{.RACE_FLAG}} -shuffle=on -coverprofile=cover.txt {{.PACKAGES}}
 
   lint:
     desc: "Run linters"
