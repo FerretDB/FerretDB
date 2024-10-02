@@ -53,7 +53,7 @@ func collectionsStats(ctx context.Context, p *fsql.DB, dbName string, list []*me
 		return new(stats), nil
 	}
 
-	tableNames := make([]string, len(list))
+	tableNames := make([]string, 0, len(list))
 	for _, c := range list {
 		tableNames = append(tableNames, c.TableName)
 	}
