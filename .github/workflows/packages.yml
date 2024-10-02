@@ -112,8 +112,12 @@ jobs:
         run: bin/task docker-local FILE=production
 
       - name: Extract Docker image names
-        id: extract
+        id: tag
         uses: FerretDB/github-actions/extract-docker-tag@main
+
+      # - name: Define Docker image names
+      #   id: tag
+      #   run: bin/definedockertag
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -135,17 +139,17 @@ jobs:
           username: ferretdbbot
           password: ${{ secrets.QUAY_TOKEN }}
 
-      - name: Build and push all-in-one Docker images ${{ steps.extract.outputs.all_in_one_images }}
-        if: steps.extract.outputs.all_in_one_images != ''
-        run: bin/task docker-all-in-one-push DOCKER_IMAGES=${{ steps.extract.outputs.all_in_one_images }}
+      - name: Build and push all-in-one Docker images ${{ steps.tag.outputs.all_in_one_images }}
+        if: steps.tag.outputs.all_in_one_images != ''
+        run: bin/task docker-all-in-one-push DOCKER_IMAGES=${{ steps.tag.outputs.all_in_one_images }}
 
-      - name: Build and push development Docker images ${{ steps.extract.outputs.development_images }}
-        if: steps.extract.outputs.development_images != ''
-        run: bin/task docker-development-push DOCKER_IMAGES=${{ steps.extract.outputs.development_images }}
+      - name: Build and push development Docker images ${{ steps.tag.outputs.development_images }}
+        if: steps.tag.outputs.development_images != ''
+        run: bin/task docker-development-push DOCKER_IMAGES=${{ steps.tag.outputs.development_images }}
 
-      - name: Build and push production Docker images ${{ steps.extract.outputs.production_images }}
-        if: steps.extract.outputs.production_images != ''
-        run: bin/task docker-production-push DOCKER_IMAGES=${{ steps.extract.outputs.production_images }}
+      - name: Build and push production Docker images ${{ steps.tag.outputs.production_images }}
+        if: steps.tag.outputs.production_images != ''
+        run: bin/task docker-production-push DOCKER_IMAGES=${{ steps.tag.outputs.production_images }}
 
       - name: Build development binaries
         run: bin/task build-development

@@ -2,7 +2,7 @@ module github.com/FerretDB/FerretDB/integration
 
 go 1.23
 
-toolchain go1.23.1
+toolchain go1.23.2
 
 replace github.com/FerretDB/FerretDB => ../
 
