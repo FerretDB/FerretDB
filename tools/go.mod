@@ -2,7 +2,7 @@ module github.com/FerretDB/FerretDB/tools
 
 go 1.23
 
-toolchain go1.23.1
+toolchain go1.23.2
 
 require (
 	github.com/AlekSi/pointer v1.2.0
@@ -12,6 +12,7 @@ require (
 	github.com/goreleaser/nfpm/v2 v2.39.0
 	github.com/quasilyte/go-consistent v0.6.1
 	github.com/rogpeppe/go-internal v1.12.0
+	github.com/sethvargo/go-githubactions v1.3.0
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/perf v0.0.0-20240806191124-3f62151e343c
 	golang.org/x/pkgsite v0.0.0-20240824135812-676c19eae995
