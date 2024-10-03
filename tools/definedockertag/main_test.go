@@ -43,7 +43,7 @@ type testCase struct {
 	expected *result
 }
 
-func TestDefineFerretDB(t *testing.T) {
+func TestDefine(t *testing.T) {
 	for name, tc := range map[string]testCase{
 		"pull_request": {
 			env: map[string]string{
@@ -60,6 +60,61 @@ func TestDefineFerretDB(t *testing.T) {
 				},
 				developmentImages: []string{
 					"ghcr.io/ferretdb/ferretdb-dev:pr-define-docker-tag",
+				},
+			},
+		},
+		"pull_request-other": {
+			env: map[string]string{
+				"GITHUB_BASE_REF":   "main",
+				"GITHUB_EVENT_NAME": "pull_request",
+				"GITHUB_HEAD_REF":   "define-docker-tag",
+				"GITHUB_REF_NAME":   "1/merge",
+				"GITHUB_REF_TYPE":   "branch",
+				"GITHUB_REPOSITORY": "OtherOrg/OtherRepo",
+			},
+			expected: &result{
+				allInOneImages: []string{
+					"ghcr.io/otherorg/all-in-one:pr-define-docker-tag",
+				},
+				developmentImages: []string{
+					"ghcr.io/otherorg/otherrepo-dev:pr-define-docker-tag",
+				},
+			},
+		},
+
+		"pull_request/dependabot": {
+			env: map[string]string{
+				"GITHUB_BASE_REF":   "main",
+				"GITHUB_EVENT_NAME": "pull_request",
+				"GITHUB_HEAD_REF":   "dependabot/submodules/tests/mongo-go-driver-29d768e",
+				"GITHUB_REF_NAME":   "58/merge",
+				"GITHUB_REF_TYPE":   "branch",
+				"GITHUB_REPOSITORY": "FerretDB/FerretDB",
+			},
+			expected: &result{
+				allInOneImages: []string{
+					"ghcr.io/ferretdb/all-in-one:pr-mongo-go-driver-29d768e",
+				},
+				developmentImages: []string{
+					"ghcr.io/ferretdb/ferretdb-dev:pr-mongo-go-driver-29d768e",
+				},
+			},
+		},
+		"pull_request/dependabot-other": {
+			env: map[string]string{
+				"GITHUB_BASE_REF":   "main",
+				"GITHUB_EVENT_NAME": "pull_request",
+				"GITHUB_HEAD_REF":   "dependabot/submodules/tests/mongo-go-driver-29d768e",
+				"GITHUB_REF_NAME":   "58/merge",
+				"GITHUB_REF_TYPE":   "branch",
+				"GITHUB_REPOSITORY": "OtherOrg/OtherRepo",
+			},
+			expected: &result{
+				allInOneImages: []string{
+					"ghcr.io/otherorg/all-in-one:pr-mongo-go-driver-29d768e",
+				},
+				developmentImages: []string{
+					"ghcr.io/otherorg/otherrepo-dev:pr-mongo-go-driver-29d768e",
 				},
 			},
 		},
@@ -82,22 +137,21 @@ func TestDefineFerretDB(t *testing.T) {
 				},
 			},
 		},
-
-		"pull_request/dependabot": {
+		"pull_request_target-other": {
 			env: map[string]string{
 				"GITHUB_BASE_REF":   "main",
-				"GITHUB_EVENT_NAME": "pull_request",
-				"GITHUB_HEAD_REF":   "dependabot/submodules/tests/mongo-go-driver-29d768e",
-				"GITHUB_REF_NAME":   "58/merge",
+				"GITHUB_EVENT_NAME": "pull_request_target",
+				"GITHUB_HEAD_REF":   "define-docker-tag",
+				"GITHUB_REF_NAME":   "main",
 				"GITHUB_REF_TYPE":   "branch",
-				"GITHUB_REPOSITORY": "FerretDB/FerretDB",
+				"GITHUB_REPOSITORY": "OtherOrg/OtherRepo",
 			},
 			expected: &result{
 				allInOneImages: []string{
-					"ghcr.io/ferretdb/all-in-one:pr-mongo-go-driver-29d768e",
+					"ghcr.io/otherorg/all-in-one:pr-define-docker-tag",
 				},
 				developmentImages: []string{
-					"ghcr.io/ferretdb/ferretdb-dev:pr-mongo-go-driver-29d768e",
+					"ghcr.io/otherorg/otherrepo-dev:pr-define-docker-tag",
 				},
 			},
 		},
@@ -124,6 +178,24 @@ func TestDefineFerretDB(t *testing.T) {
 				},
 			},
 		},
+		"push/main-other": {
+			env: map[string]string{
+				"GITHUB_BASE_REF":   "",
+				"GITHUB_EVENT_NAME": "push",
+				"GITHUB_HEAD_REF":   "",
+				"GITHUB_REF_NAME":   "main",
+				"GITHUB_REF_TYPE":   "branch",
+				"GITHUB_REPOSITORY": "OtherOrg/OtherRepo",
+			},
+			expected: &result{
+				allInOneImages: []string{
+					"ghcr.io/otherorg/all-in-one:main",
+				},
+				developmentImages: []string{
+					"ghcr.io/otherorg/otherrepo-dev:main",
+				},
+			},
+		},
 
 		"push/main-v1": {
 			env: map[string]string{
@@ -147,6 +219,24 @@ func TestDefineFerretDB(t *testing.T) {
 				},
 			},
 		},
+		"push/main-v1-other": {
+			env: map[string]string{
+				"GITHUB_BASE_REF":   "",
+				"GITHUB_EVENT_NAME": "push",
+				"GITHUB_HEAD_REF":   "",
+				"GITHUB_REF_NAME":   "main-v1",
+				"GITHUB_REF_TYPE":   "branch",
+				"GITHUB_REPOSITORY": "OtherOrg/OtherRepo",
+			},
+			expected: &result{
+				allInOneImages: []string{
+					"ghcr.io/otherorg/all-in-one:main-v1",
+				},
+				developmentImages: []string{
+					"ghcr.io/otherorg/otherrepo-dev:main-v1",
+				},
+			},
+		},
 
 		"push/release": {
 			env: map[string]string{
@@ -167,6 +257,24 @@ func TestDefineFerretDB(t *testing.T) {
 					"ferretdb/ferretdb-dev:releases-2.1",
 					"ghcr.io/ferretdb/ferretdb-dev:releases-2.1",
 					"quay.io/ferretdb/ferretdb-dev:releases-2.1",
+				},
+			},
+		},
+		"push/release-other": {
+			env: map[string]string{
+				"GITHUB_BASE_REF":   "",
+				"GITHUB_EVENT_NAME": "push",
+				"GITHUB_HEAD_REF":   "",
+				"GITHUB_REF_NAME":   "releases/2.1",
+				"GITHUB_REF_TYPE":   "branch",
+				"GITHUB_REPOSITORY": "OtherOrg/OtherRepo",
+			},
+			expected: &result{
+				allInOneImages: []string{
+					"ghcr.io/otherorg/all-in-one:releases-2.1",
+				},
+				developmentImages: []string{
+					"ghcr.io/otherorg/otherrepo-dev:releases-2.1",
 				},
 			},
 		},
@@ -195,6 +303,27 @@ func TestDefineFerretDB(t *testing.T) {
 					"ferretdb/ferretdb:2.1.0-beta",
 					"ghcr.io/ferretdb/ferretdb:2.1.0-beta",
 					"quay.io/ferretdb/ferretdb:2.1.0-beta",
+				},
+			},
+		},
+		"push/tag/beta-other": {
+			env: map[string]string{
+				"GITHUB_BASE_REF":   "",
+				"GITHUB_EVENT_NAME": "push",
+				"GITHUB_HEAD_REF":   "",
+				"GITHUB_REF_NAME":   "v2.1.0-beta",
+				"GITHUB_REF_TYPE":   "tag",
+				"GITHUB_REPOSITORY": "OtherOrg/OtherRepo",
+			},
+			expected: &result{
+				allInOneImages: []string{
+					"ghcr.io/otherorg/all-in-one:2.1.0-beta",
+				},
+				developmentImages: []string{
+					"ghcr.io/otherorg/otherrepo-dev:2.1.0-beta",
+				},
+				productionImages: []string{
+					"ghcr.io/otherorg/otherrepo:2.1.0-beta",
 				},
 			},
 		},
@@ -244,6 +373,33 @@ func TestDefineFerretDB(t *testing.T) {
 				},
 			},
 		},
+		"push/tag/release-other": {
+			env: map[string]string{
+				"GITHUB_BASE_REF":   "",
+				"GITHUB_EVENT_NAME": "push",
+				"GITHUB_HEAD_REF":   "",
+				"GITHUB_REF_NAME":   "v2.1.0",
+				"GITHUB_REF_TYPE":   "tag",
+				"GITHUB_REPOSITORY": "OtherOrg/FerretDB",
+			},
+			expected: &result{
+				allInOneImages: []string{
+					"ghcr.io/otherorg/all-in-one:2",
+					"ghcr.io/otherorg/all-in-one:2.1",
+					"ghcr.io/otherorg/all-in-one:2.1.0",
+				},
+				developmentImages: []string{
+					"ghcr.io/otherorg/ferretdb-dev:2",
+					"ghcr.io/otherorg/ferretdb-dev:2.1",
+					"ghcr.io/otherorg/ferretdb-dev:2.1.0",
+				},
+				productionImages: []string{
+					"ghcr.io/otherorg/ferretdb:2",
+					"ghcr.io/otherorg/ferretdb:2.1",
+					"ghcr.io/otherorg/ferretdb:2.1.0",
+				},
+			},
+		},
 
 		"push/tag/wrong": {
 			env: map[string]string{
@@ -253,6 +409,16 @@ func TestDefineFerretDB(t *testing.T) {
 				"GITHUB_REF_NAME":   "2.1.0", // no leading v
 				"GITHUB_REF_TYPE":   "tag",
 				"GITHUB_REPOSITORY": "FerretDB/FerretDB",
+			},
+		},
+		"push/tag/wrong-other": {
+			env: map[string]string{
+				"GITHUB_BASE_REF":   "",
+				"GITHUB_EVENT_NAME": "push",
+				"GITHUB_HEAD_REF":   "",
+				"GITHUB_REF_NAME":   "2.1.0", // no leading v
+				"GITHUB_REF_TYPE":   "tag",
+				"GITHUB_REPOSITORY": "OtherOrg/OtherRepo",
 			},
 		},
 
@@ -275,6 +441,24 @@ func TestDefineFerretDB(t *testing.T) {
 					"ferretdb/ferretdb-dev:main",
 					"ghcr.io/ferretdb/ferretdb-dev:main",
 					"quay.io/ferretdb/ferretdb-dev:main",
+				},
+			},
+		},
+		"schedule-other": {
+			env: map[string]string{
+				"GITHUB_BASE_REF":   "",
+				"GITHUB_EVENT_NAME": "schedule",
+				"GITHUB_HEAD_REF":   "",
+				"GITHUB_REF_NAME":   "main",
+				"GITHUB_REF_TYPE":   "branch",
+				"GITHUB_REPOSITORY": "OtherOrg/OtherRepo",
+			},
+			expected: &result{
+				allInOneImages: []string{
+					"ghcr.io/otherorg/all-in-one:main",
+				},
+				developmentImages: []string{
+					"ghcr.io/otherorg/otherrepo-dev:main",
 				},
 			},
 		},
@@ -301,6 +485,24 @@ func TestDefineFerretDB(t *testing.T) {
 				},
 			},
 		},
+		"workflow_run-other": {
+			env: map[string]string{
+				"GITHUB_BASE_REF":   "",
+				"GITHUB_EVENT_NAME": "workflow_run",
+				"GITHUB_HEAD_REF":   "",
+				"GITHUB_REF_NAME":   "main",
+				"GITHUB_REF_TYPE":   "branch",
+				"GITHUB_REPOSITORY": "OtherOrg/OtherRepo",
+			},
+			expected: &result{
+				allInOneImages: []string{
+					"ghcr.io/otherorg/all-in-one:main",
+				},
+				developmentImages: []string{
+					"ghcr.io/otherorg/otherrepo-dev:main",
+				},
+			},
+		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			actual, err := define(getEnvFunc(t, tc.env))
@@ -313,494 +515,6 @@ func TestDefineFerretDB(t *testing.T) {
 			assert.Equal(t, tc.expected, actual)
 		})
 	}
-}
-
-func TestDefineOtherOrg(t *testing.T) {
-	t.Run("pull_request", func(t *testing.T) {
-		getenv := getEnvFunc(t, map[string]string{
-			"GITHUB_BASE_REF":   "main",
-			"GITHUB_EVENT_NAME": "pull_request",
-			"GITHUB_HEAD_REF":   "define-docker-tag",
-			"GITHUB_REF_NAME":   "1/merge",
-			"GITHUB_REF_TYPE":   "branch",
-			"GITHUB_REPOSITORY": "OtherOrg/FerretDB",
-		})
-
-		actual, err := define(getenv)
-		require.NoError(t, err)
-
-		expected := &result{
-			allInOneImages: []string{
-				"ghcr.io/otherorg/all-in-one:pr-define-docker-tag",
-			},
-			developmentImages: []string{
-				"ghcr.io/otherorg/ferretdb-dev:pr-define-docker-tag",
-			},
-		}
-		assert.Equal(t, expected, actual)
-	})
-
-	t.Run("pull_request_target", func(t *testing.T) {
-		getenv := getEnvFunc(t, map[string]string{
-			"GITHUB_BASE_REF":   "main",
-			"GITHUB_EVENT_NAME": "pull_request_target",
-			"GITHUB_HEAD_REF":   "define-docker-tag",
-			"GITHUB_REF_NAME":   "main",
-			"GITHUB_REF_TYPE":   "branch",
-			"GITHUB_REPOSITORY": "OtherOrg/FerretDB",
-		})
-
-		actual, err := define(getenv)
-		require.NoError(t, err)
-
-		expected := &result{
-			allInOneImages: []string{
-				"ghcr.io/otherorg/all-in-one:pr-define-docker-tag",
-			},
-			developmentImages: []string{
-				"ghcr.io/otherorg/ferretdb-dev:pr-define-docker-tag",
-			},
-		}
-		assert.Equal(t, expected, actual)
-	})
-
-	t.Run("pull_request/dependabot", func(t *testing.T) {
-		getenv := getEnvFunc(t, map[string]string{
-			"GITHUB_BASE_REF":   "main",
-			"GITHUB_EVENT_NAME": "pull_request",
-			"GITHUB_HEAD_REF":   "dependabot/submodules/tests/mongo-go-driver-29d768e",
-			"GITHUB_REF_NAME":   "58/merge",
-			"GITHUB_REF_TYPE":   "branch",
-			"GITHUB_REPOSITORY": "OtherOrg/FerretDB",
-		})
-
-		actual, err := define(getenv)
-		require.NoError(t, err)
-
-		expected := &result{
-			allInOneImages: []string{
-				"ghcr.io/otherorg/all-in-one:pr-mongo-go-driver-29d768e",
-			},
-			developmentImages: []string{
-				"ghcr.io/otherorg/ferretdb-dev:pr-mongo-go-driver-29d768e",
-			},
-		}
-		assert.Equal(t, expected, actual)
-	})
-
-	t.Run("push/main", func(t *testing.T) {
-		getenv := getEnvFunc(t, map[string]string{
-			"GITHUB_BASE_REF":   "",
-			"GITHUB_EVENT_NAME": "push",
-			"GITHUB_HEAD_REF":   "",
-			"GITHUB_REF_NAME":   "main",
-			"GITHUB_REF_TYPE":   "branch",
-			"GITHUB_REPOSITORY": "OtherOrg/FerretDB",
-		})
-
-		actual, err := define(getenv)
-		require.NoError(t, err)
-
-		expected := &result{
-			allInOneImages: []string{
-				"ghcr.io/otherorg/all-in-one:main",
-			},
-			developmentImages: []string{
-				"ghcr.io/otherorg/ferretdb-dev:main",
-			},
-		}
-		assert.Equal(t, expected, actual)
-	})
-
-	t.Run("push/release", func(t *testing.T) {
-		getenv := getEnvFunc(t, map[string]string{
-			"GITHUB_BASE_REF":   "",
-			"GITHUB_EVENT_NAME": "push",
-			"GITHUB_HEAD_REF":   "",
-			"GITHUB_REF_NAME":   "releases/2.1",
-			"GITHUB_REF_TYPE":   "branch",
-			"GITHUB_REPOSITORY": "OtherOrg/FerretDB",
-		})
-
-		actual, err := define(getenv)
-		require.NoError(t, err)
-
-		expected := &result{
-			allInOneImages: []string{
-				"ghcr.io/otherorg/all-in-one:releases-2.1",
-			},
-			developmentImages: []string{
-				"ghcr.io/otherorg/ferretdb-dev:releases-2.1",
-			},
-		}
-		assert.Equal(t, expected, actual)
-	})
-
-	t.Run("push/tag/beta", func(t *testing.T) {
-		getenv := getEnvFunc(t, map[string]string{
-			"GITHUB_BASE_REF":   "",
-			"GITHUB_EVENT_NAME": "push",
-			"GITHUB_HEAD_REF":   "",
-			"GITHUB_REF_NAME":   "v2.1.0-beta",
-			"GITHUB_REF_TYPE":   "tag",
-			"GITHUB_REPOSITORY": "OtherOrg/FerretDB",
-		})
-
-		actual, err := define(getenv)
-		require.NoError(t, err)
-
-		expected := &result{
-			allInOneImages: []string{
-				"ghcr.io/otherorg/all-in-one:2.1.0-beta",
-			},
-			developmentImages: []string{
-				"ghcr.io/otherorg/ferretdb-dev:2.1.0-beta",
-			},
-			productionImages: []string{
-				"ghcr.io/otherorg/ferretdb:2.1.0-beta",
-			},
-		}
-		assert.Equal(t, expected, actual)
-	})
-
-	t.Run("push/tag/release", func(t *testing.T) {
-		getenv := getEnvFunc(t, map[string]string{
-			"GITHUB_BASE_REF":   "",
-			"GITHUB_EVENT_NAME": "push",
-			"GITHUB_HEAD_REF":   "",
-			"GITHUB_REF_NAME":   "v2.1.0",
-			"GITHUB_REF_TYPE":   "tag",
-			"GITHUB_REPOSITORY": "OtherOrg/FerretDB",
-		})
-
-		actual, err := define(getenv)
-		require.NoError(t, err)
-
-		expected := &result{
-			allInOneImages: []string{
-				"ghcr.io/otherorg/all-in-one:2",
-				"ghcr.io/otherorg/all-in-one:2.1",
-				"ghcr.io/otherorg/all-in-one:2.1.0",
-			},
-			developmentImages: []string{
-				"ghcr.io/otherorg/ferretdb-dev:2",
-				"ghcr.io/otherorg/ferretdb-dev:2.1",
-				"ghcr.io/otherorg/ferretdb-dev:2.1.0",
-			},
-			productionImages: []string{
-				"ghcr.io/otherorg/ferretdb:2",
-				"ghcr.io/otherorg/ferretdb:2.1",
-				"ghcr.io/otherorg/ferretdb:2.1.0",
-			},
-		}
-		assert.Equal(t, expected, actual)
-	})
-
-	t.Run("push/tag/wrong", func(t *testing.T) {
-		getenv := getEnvFunc(t, map[string]string{
-			"GITHUB_BASE_REF":   "",
-			"GITHUB_EVENT_NAME": "push",
-			"GITHUB_HEAD_REF":   "",
-			"GITHUB_REF_NAME":   "2.1.0", // no leading v
-			"GITHUB_REF_TYPE":   "tag",
-			"GITHUB_REPOSITORY": "OtherOrg/FerretDB",
-		})
-
-		_, err := define(getenv)
-		require.Error(t, err)
-	})
-
-	t.Run("schedule", func(t *testing.T) {
-		getenv := getEnvFunc(t, map[string]string{
-			"GITHUB_BASE_REF":   "",
-			"GITHUB_EVENT_NAME": "schedule",
-			"GITHUB_HEAD_REF":   "",
-			"GITHUB_REF_NAME":   "main",
-			"GITHUB_REF_TYPE":   "branch",
-			"GITHUB_REPOSITORY": "OtherOrg/FerretDB",
-		})
-
-		actual, err := define(getenv)
-		require.NoError(t, err)
-
-		expected := &result{
-			allInOneImages: []string{
-				"ghcr.io/otherorg/all-in-one:main",
-			},
-			developmentImages: []string{
-				"ghcr.io/otherorg/ferretdb-dev:main",
-			},
-		}
-		assert.Equal(t, expected, actual)
-	})
-
-	t.Run("workflow_run", func(t *testing.T) {
-		getenv := getEnvFunc(t, map[string]string{
-			"GITHUB_BASE_REF":   "",
-			"GITHUB_EVENT_NAME": "workflow_run",
-			"GITHUB_HEAD_REF":   "",
-			"GITHUB_REF_NAME":   "main",
-			"GITHUB_REF_TYPE":   "branch",
-			"GITHUB_REPOSITORY": "OtherOrg/FerretDB",
-		})
-
-		actual, err := define(getenv)
-		require.NoError(t, err)
-
-		expected := &result{
-			allInOneImages: []string{
-				"ghcr.io/otherorg/all-in-one:main",
-			},
-			developmentImages: []string{
-				"ghcr.io/otherorg/ferretdb-dev:main",
-			},
-		}
-		assert.Equal(t, expected, actual)
-	})
-}
-
-func TestDefineOtherRepo(t *testing.T) {
-	t.Run("pull_request", func(t *testing.T) {
-		getenv := getEnvFunc(t, map[string]string{
-			"GITHUB_BASE_REF":   "main",
-			"GITHUB_EVENT_NAME": "pull_request",
-			"GITHUB_HEAD_REF":   "define-docker-tag",
-			"GITHUB_REF_NAME":   "1/merge",
-			"GITHUB_REF_TYPE":   "branch",
-			"GITHUB_REPOSITORY": "FerretDB/OtherRepo",
-		})
-
-		actual, err := define(getenv)
-		require.NoError(t, err)
-
-		expected := &result{
-			allInOneImages: []string{
-				"ghcr.io/ferretdb/otherrepo-all-in-one:pr-define-docker-tag",
-			},
-			developmentImages: []string{
-				"ghcr.io/ferretdb/otherrepo-dev:pr-define-docker-tag",
-			},
-		}
-		assert.Equal(t, expected, actual)
-	})
-
-	t.Run("pull_request_target", func(t *testing.T) {
-		getenv := getEnvFunc(t, map[string]string{
-			"GITHUB_BASE_REF":   "main",
-			"GITHUB_EVENT_NAME": "pull_request_target",
-			"GITHUB_HEAD_REF":   "define-docker-tag",
-			"GITHUB_REF_NAME":   "main",
-			"GITHUB_REF_TYPE":   "branch",
-			"GITHUB_REPOSITORY": "FerretDB/OtherRepo",
-		})
-
-		actual, err := define(getenv)
-		require.NoError(t, err)
-
-		expected := &result{
-			allInOneImages: []string{
-				"ghcr.io/ferretdb/otherrepo-all-in-one:pr-define-docker-tag",
-			},
-			developmentImages: []string{
-				"ghcr.io/ferretdb/otherrepo-dev:pr-define-docker-tag",
-			},
-		}
-		assert.Equal(t, expected, actual)
-	})
-
-	t.Run("pull_request/dependabot", func(t *testing.T) {
-		getenv := getEnvFunc(t, map[string]string{
-			"GITHUB_BASE_REF":   "main",
-			"GITHUB_EVENT_NAME": "pull_request",
-			"GITHUB_HEAD_REF":   "dependabot/submodules/tests/mongo-go-driver-29d768e",
-			"GITHUB_REF_NAME":   "58/merge",
-			"GITHUB_REF_TYPE":   "branch",
-			"GITHUB_REPOSITORY": "FerretDB/OtherRepo",
-		})
-
-		actual, err := define(getenv)
-		require.NoError(t, err)
-
-		expected := &result{
-			allInOneImages: []string{
-				"ghcr.io/ferretdb/otherrepo-all-in-one:pr-mongo-go-driver-29d768e",
-			},
-			developmentImages: []string{
-				"ghcr.io/ferretdb/otherrepo-dev:pr-mongo-go-driver-29d768e",
-			},
-		}
-		assert.Equal(t, expected, actual)
-	})
-
-	t.Run("push/main", func(t *testing.T) {
-		getenv := getEnvFunc(t, map[string]string{
-			"GITHUB_BASE_REF":   "",
-			"GITHUB_EVENT_NAME": "push",
-			"GITHUB_HEAD_REF":   "",
-			"GITHUB_REF_NAME":   "main",
-			"GITHUB_REF_TYPE":   "branch",
-			"GITHUB_REPOSITORY": "FerretDB/OtherRepo",
-		})
-
-		actual, err := define(getenv)
-		require.NoError(t, err)
-
-		expected := &result{
-			allInOneImages: []string{
-				"ghcr.io/ferretdb/otherrepo-all-in-one:main",
-			},
-			developmentImages: []string{
-				"ghcr.io/ferretdb/otherrepo-dev:main",
-			},
-		}
-		assert.Equal(t, expected, actual)
-	})
-
-	t.Run("push/release", func(t *testing.T) {
-		getenv := getEnvFunc(t, map[string]string{
-			"GITHUB_BASE_REF":   "",
-			"GITHUB_EVENT_NAME": "push",
-			"GITHUB_HEAD_REF":   "",
-			"GITHUB_REF_NAME":   "releases/2.1",
-			"GITHUB_REF_TYPE":   "branch",
-			"GITHUB_REPOSITORY": "FerretDB/OtherRepo",
-		})
-
-		actual, err := define(getenv)
-		require.NoError(t, err)
-
-		expected := &result{
-			allInOneImages: []string{
-				"ghcr.io/ferretdb/otherrepo-all-in-one:releases-2.1",
-			},
-			developmentImages: []string{
-				"ghcr.io/ferretdb/otherrepo-dev:releases-2.1",
-			},
-		}
-		assert.Equal(t, expected, actual)
-	})
-
-	t.Run("push/tag/beta", func(t *testing.T) {
-		getenv := getEnvFunc(t, map[string]string{
-			"GITHUB_BASE_REF":   "",
-			"GITHUB_EVENT_NAME": "push",
-			"GITHUB_HEAD_REF":   "",
-			"GITHUB_REF_NAME":   "v2.1.0-beta",
-			"GITHUB_REF_TYPE":   "tag",
-			"GITHUB_REPOSITORY": "FerretDB/OtherRepo",
-		})
-
-		actual, err := define(getenv)
-		require.NoError(t, err)
-
-		expected := &result{
-			allInOneImages: []string{
-				"ghcr.io/ferretdb/otherrepo-all-in-one:2.1.0-beta",
-			},
-			developmentImages: []string{
-				"ghcr.io/ferretdb/otherrepo-dev:2.1.0-beta",
-			},
-			productionImages: []string{
-				"ghcr.io/ferretdb/otherrepo:2.1.0-beta",
-			},
-		}
-		assert.Equal(t, expected, actual)
-	})
-
-	t.Run("push/tag/release", func(t *testing.T) {
-		getenv := getEnvFunc(t, map[string]string{
-			"GITHUB_BASE_REF":   "",
-			"GITHUB_EVENT_NAME": "push",
-			"GITHUB_HEAD_REF":   "",
-			"GITHUB_REF_NAME":   "v2.1.0",
-			"GITHUB_REF_TYPE":   "tag",
-			"GITHUB_REPOSITORY": "FerretDB/OtherRepo",
-		})
-
-		actual, err := define(getenv)
-		require.NoError(t, err)
-
-		expected := &result{
-			allInOneImages: []string{
-				"ghcr.io/ferretdb/otherrepo-all-in-one:2",
-				"ghcr.io/ferretdb/otherrepo-all-in-one:2.1",
-				"ghcr.io/ferretdb/otherrepo-all-in-one:2.1.0",
-			},
-			developmentImages: []string{
-				"ghcr.io/ferretdb/otherrepo-dev:2",
-				"ghcr.io/ferretdb/otherrepo-dev:2.1",
-				"ghcr.io/ferretdb/otherrepo-dev:2.1.0",
-			},
-			productionImages: []string{
-				"ghcr.io/ferretdb/otherrepo:2",
-				"ghcr.io/ferretdb/otherrepo:2.1",
-				"ghcr.io/ferretdb/otherrepo:2.1.0",
-			},
-		}
-		assert.Equal(t, expected, actual)
-	})
-
-	t.Run("push/tag/wrong", func(t *testing.T) {
-		getenv := getEnvFunc(t, map[string]string{
-			"GITHUB_BASE_REF":   "",
-			"GITHUB_EVENT_NAME": "push",
-			"GITHUB_HEAD_REF":   "",
-			"GITHUB_REF_NAME":   "2.1.0", // no leading v
-			"GITHUB_REF_TYPE":   "tag",
-			"GITHUB_REPOSITORY": "FerretDB/OtherRepo",
-		})
-
-		_, err := define(getenv)
-		require.Error(t, err)
-	})
-
-	t.Run("schedule", func(t *testing.T) {
-		getenv := getEnvFunc(t, map[string]string{
-			"GITHUB_BASE_REF":   "",
-			"GITHUB_EVENT_NAME": "schedule",
-			"GITHUB_HEAD_REF":   "",
-			"GITHUB_REF_NAME":   "main",
-			"GITHUB_REF_TYPE":   "branch",
-			"GITHUB_REPOSITORY": "FerretDB/OtherRepo",
-		})
-
-		actual, err := define(getenv)
-		require.NoError(t, err)
-
-		expected := &result{
-			allInOneImages: []string{
-				"ghcr.io/ferretdb/otherrepo-all-in-one:main",
-			},
-			developmentImages: []string{
-				"ghcr.io/ferretdb/otherrepo-dev:main",
-			},
-		}
-		assert.Equal(t, expected, actual)
-	})
-
-	t.Run("workflow_run", func(t *testing.T) {
-		getenv := getEnvFunc(t, map[string]string{
-			"GITHUB_BASE_REF":   "",
-			"GITHUB_EVENT_NAME": "workflow_run",
-			"GITHUB_HEAD_REF":   "",
-			"GITHUB_REF_NAME":   "main",
-			"GITHUB_REF_TYPE":   "branch",
-			"GITHUB_REPOSITORY": "FerretDB/OtherRepo",
-		})
-
-		actual, err := define(getenv)
-		require.NoError(t, err)
-
-		expected := &result{
-			allInOneImages: []string{
-				"ghcr.io/ferretdb/otherrepo-all-in-one:main",
-			},
-			developmentImages: []string{
-				"ghcr.io/ferretdb/otherrepo-dev:main",
-			},
-		}
-		assert.Equal(t, expected, actual)
-	})
 }
 
 //nolint:lll // it is more readable this way
