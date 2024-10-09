@@ -338,19 +338,47 @@ func TestDefine(t *testing.T) {
 				"GITHUB_REPOSITORY": "FerretDB/FerretDB",
 			},
 			expected: &result{
+				// add all tags except latest while v2 is not GA
 				allInOneImages: []string{
+					"ferretdb/all-in-one:2",
+					"ferretdb/all-in-one:2.1",
+					"ferretdb/all-in-one:2.1.0",
 					"ferretdb/all-in-one:2.1.0-beta",
+					"ghcr.io/ferretdb/all-in-one:2",
+					"ghcr.io/ferretdb/all-in-one:2.1",
+					"ghcr.io/ferretdb/all-in-one:2.1.0",
 					"ghcr.io/ferretdb/all-in-one:2.1.0-beta",
+					"quay.io/ferretdb/all-in-one:2",
+					"quay.io/ferretdb/all-in-one:2.1",
+					"quay.io/ferretdb/all-in-one:2.1.0",
 					"quay.io/ferretdb/all-in-one:2.1.0-beta",
 				},
 				developmentImages: []string{
+					"ferretdb/ferretdb-dev:2",
+					"ferretdb/ferretdb-dev:2.1",
+					"ferretdb/ferretdb-dev:2.1.0",
 					"ferretdb/ferretdb-dev:2.1.0-beta",
+					"ghcr.io/ferretdb/ferretdb-dev:2",
+					"ghcr.io/ferretdb/ferretdb-dev:2.1",
+					"ghcr.io/ferretdb/ferretdb-dev:2.1.0",
 					"ghcr.io/ferretdb/ferretdb-dev:2.1.0-beta",
+					"quay.io/ferretdb/ferretdb-dev:2",
+					"quay.io/ferretdb/ferretdb-dev:2.1",
+					"quay.io/ferretdb/ferretdb-dev:2.1.0",
 					"quay.io/ferretdb/ferretdb-dev:2.1.0-beta",
 				},
 				productionImages: []string{
+					"ferretdb/ferretdb:2",
+					"ferretdb/ferretdb:2.1",
+					"ferretdb/ferretdb:2.1.0",
 					"ferretdb/ferretdb:2.1.0-beta",
+					"ghcr.io/ferretdb/ferretdb:2",
+					"ghcr.io/ferretdb/ferretdb:2.1",
+					"ghcr.io/ferretdb/ferretdb:2.1.0",
 					"ghcr.io/ferretdb/ferretdb:2.1.0-beta",
+					"quay.io/ferretdb/ferretdb:2",
+					"quay.io/ferretdb/ferretdb:2.1",
+					"quay.io/ferretdb/ferretdb:2.1.0",
 					"quay.io/ferretdb/ferretdb:2.1.0-beta",
 				},
 			},
@@ -365,13 +393,23 @@ func TestDefine(t *testing.T) {
 				"GITHUB_REPOSITORY": "OtherOrg/OtherRepo",
 			},
 			expected: &result{
+				// add all tags except latest while v2 is not GA
 				allInOneImages: []string{
+					"ghcr.io/otherorg/all-in-one:2",
+					"ghcr.io/otherorg/all-in-one:2.1",
+					"ghcr.io/otherorg/all-in-one:2.1.0",
 					"ghcr.io/otherorg/all-in-one:2.1.0-beta",
 				},
 				developmentImages: []string{
+					"ghcr.io/otherorg/otherrepo-dev:2",
+					"ghcr.io/otherorg/otherrepo-dev:2.1",
+					"ghcr.io/otherorg/otherrepo-dev:2.1.0",
 					"ghcr.io/otherorg/otherrepo-dev:2.1.0-beta",
 				},
 				productionImages: []string{
+					"ghcr.io/otherorg/otherrepo:2",
+					"ghcr.io/otherorg/otherrepo:2.1",
+					"ghcr.io/otherorg/otherrepo:2.1.0",
 					"ghcr.io/otherorg/otherrepo:2.1.0-beta",
 				},
 			},
@@ -387,6 +425,7 @@ func TestDefine(t *testing.T) {
 				"GITHUB_REPOSITORY": "FerretDB/FerretDB",
 			},
 			expected: &result{
+				// latest is v1 for now
 				allInOneImages: []string{
 					"ferretdb/all-in-one:1",
 					"ferretdb/all-in-one:1.26",
@@ -441,6 +480,7 @@ func TestDefine(t *testing.T) {
 				"GITHUB_REPOSITORY": "OtherOrg/FerretDB",
 			},
 			expected: &result{
+				// latest is v1 for now
 				allInOneImages: []string{
 					"ghcr.io/otherorg/all-in-one:1",
 					"ghcr.io/otherorg/all-in-one:1.26",
@@ -472,6 +512,7 @@ func TestDefine(t *testing.T) {
 				"GITHUB_REPOSITORY": "FerretDB/FerretDB",
 			},
 			expected: &result{
+				// latest is v1, not v2, for now
 				allInOneImages: []string{
 					"ferretdb/all-in-one:2",
 					"ferretdb/all-in-one:2.1",
@@ -517,6 +558,7 @@ func TestDefine(t *testing.T) {
 				"GITHUB_REPOSITORY": "OtherOrg/FerretDB",
 			},
 			expected: &result{
+				// latest is v1, not v2, for now
 				allInOneImages: []string{
 					"ghcr.io/otherorg/all-in-one:2",
 					"ghcr.io/otherorg/all-in-one:2.1",

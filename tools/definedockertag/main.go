@@ -13,8 +13,6 @@
 // limitations under the License.
 
 // Package main contains tool for defining Docker image tags on CI.
-//
-//nolint:goconst // "ferretdb" means different things
 package main
 
 import (
@@ -116,17 +114,33 @@ func define(getenv githubactions.GetenvFunc) (*result, error) {
 			prerelease := match[semVerTag.SubexpIndex("prerelease")]
 
 			var tags []string
-			if prerelease == "" {
+
+			switch major {
+			case "1":
+				if prerelease == "" {
+					tags = []string{
+						major,
+						major + "." + minor,
+						major + "." + minor + "." + patch,
+						"latest",
+					}
+				} else {
+					tags = []string{major + "." + minor + "." + patch + "-" + prerelease}
+				}
+
+			case "2":
+				// add all tags except latest while v2 is not GA
 				tags = []string{
 					major,
 					major + "." + minor,
 					major + "." + minor + "." + patch,
 				}
-				if major == "1" {
-					tags = append(tags, "latest")
+				if prerelease != "" {
+					tags = append(tags, major+"."+minor+"."+patch+"-"+prerelease)
 				}
-			} else {
-				tags = []string{major + "." + minor + "." + patch + "-" + prerelease}
+
+			default:
+				err = fmt.Errorf("unhandled major version %q", major)
 			}
 
 			res = defineForTag(owner, repo, tags)
