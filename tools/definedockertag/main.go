@@ -121,8 +121,9 @@ func define(getenv githubactions.GetenvFunc) (*result, error) {
 					major,
 					major + "." + minor,
 					major + "." + minor + "." + patch,
-					// No "latest", because we don't know if, say, 2.0.2 is really the latest version
-					// (for example, when 2.1.0 already exists).
+				}
+				if major == "1" {
+					tags = append(tags, "latest")
 				}
 			} else {
 				tags = []string{major + "." + minor + "." + patch + "-" + prerelease}
