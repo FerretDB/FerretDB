@@ -13,8 +13,6 @@
 // limitations under the License.
 
 // Package main contains tool for defining Docker image tags on CI.
-//
-//nolint:goconst // "ferretdb" means different things
 package main
 
 import (
@@ -116,16 +114,33 @@ func define(getenv githubactions.GetenvFunc) (*result, error) {
 			prerelease := match[semVerTag.SubexpIndex("prerelease")]
 
 			var tags []string
-			if prerelease == "" {
+
+			switch major {
+			case "1":
+				if prerelease == "" {
+					tags = []string{
+						major,
+						major + "." + minor,
+						major + "." + minor + "." + patch,
+						"latest",
+					}
+				} else {
+					tags = []string{major + "." + minor + "." + patch + "-" + prerelease}
+				}
+
+			case "2":
+				// add all tags except latest while v2 is not GA
 				tags = []string{
 					major,
 					major + "." + minor,
 					major + "." + minor + "." + patch,
-					// No "latest", because we don't know if, say, 2.0.2 is really the latest version
-					// (for example, when 2.1.0 already exists).
 				}
-			} else {
-				tags = []string{major + "." + minor + "." + patch + "-" + prerelease}
+				if prerelease != "" {
+					tags = append(tags, major+"."+minor+"."+patch+"-"+prerelease)
+				}
+
+			default:
+				err = fmt.Errorf("unhandled major version %q", major)
 			}
 
 			res = defineForTag(owner, repo, tags)
@@ -149,15 +164,6 @@ func define(getenv githubactions.GetenvFunc) (*result, error) {
 	return res, nil
 }
 
-// allInOneRepo returns a part of Docker repository name for the given GitHub repository name.
-func allInOneRepo(repo string) string {
-	if repo == "ferretdb" {
-		return "all-in-one"
-	}
-
-	return repo + "-all-in-one"
-}
-
 // defineForPR defines Docker image names and tags for pull requests.
 func defineForPR(owner, repo, branch string) *result {
 	// for branches like "dependabot/submodules/XXX"
@@ -166,7 +172,7 @@ func defineForPR(owner, repo, branch string) *result {
 
 	res := &result{
 		allInOneImages: []string{
-			fmt.Sprintf("ghcr.io/%s/%s:pr-%s", owner, allInOneRepo(repo), branch),
+			fmt.Sprintf("ghcr.io/%s/all-in-one:pr-%s", owner, branch),
 		},
 		developmentImages: []string{
 			fmt.Sprintf("ghcr.io/%s/%s-dev:pr-%s", owner, repo, branch),
@@ -195,7 +201,7 @@ func defineForBranch(owner, repo, branch string) (*result, error) {
 
 	res := &result{
 		allInOneImages: []string{
-			fmt.Sprintf("ghcr.io/%s/%s:%s", owner, allInOneRepo(repo), branch),
+			fmt.Sprintf("ghcr.io/%s/all-in-one:%s", owner, branch),
 		},
 		developmentImages: []string{
 			fmt.Sprintf("ghcr.io/%s/%s-dev:%s", owner, repo, branch),
@@ -226,7 +232,7 @@ func defineForTag(owner, repo string, tags []string) *result {
 	res := new(result)
 
 	for _, t := range tags {
-		res.allInOneImages = append(res.allInOneImages, fmt.Sprintf("ghcr.io/%s/%s:%s", owner, allInOneRepo(repo), t))
+		res.allInOneImages = append(res.allInOneImages, fmt.Sprintf("ghcr.io/%s/all-in-one:%s", owner, t))
 		res.developmentImages = append(res.developmentImages, fmt.Sprintf("ghcr.io/%s/%s-dev:%s", owner, repo, t))
 		res.productionImages = append(res.productionImages, fmt.Sprintf("ghcr.io/%s/%s:%s", owner, repo, t))
 	}
