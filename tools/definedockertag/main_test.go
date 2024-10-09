@@ -74,7 +74,7 @@ func TestDefine(t *testing.T) {
 			},
 			expected: &result{
 				allInOneImages: []string{
-					"ghcr.io/otherorg/all-in-one:pr-define-docker-tag",
+					"ghcr.io/otherorg/otherrepo-all-in-one:pr-define-docker-tag",
 				},
 				developmentImages: []string{
 					"ghcr.io/otherorg/otherrepo-dev:pr-define-docker-tag",
@@ -111,7 +111,7 @@ func TestDefine(t *testing.T) {
 			},
 			expected: &result{
 				allInOneImages: []string{
-					"ghcr.io/otherorg/all-in-one:pr-mongo-go-driver-29d768e",
+					"ghcr.io/otherorg/otherrepo-all-in-one:pr-mongo-go-driver-29d768e",
 				},
 				developmentImages: []string{
 					"ghcr.io/otherorg/otherrepo-dev:pr-mongo-go-driver-29d768e",
@@ -148,7 +148,7 @@ func TestDefine(t *testing.T) {
 			},
 			expected: &result{
 				allInOneImages: []string{
-					"ghcr.io/otherorg/all-in-one:pr-define-docker-tag",
+					"ghcr.io/otherorg/otherrepo-all-in-one:pr-define-docker-tag",
 				},
 				developmentImages: []string{
 					"ghcr.io/otherorg/otherrepo-dev:pr-define-docker-tag",
@@ -189,7 +189,7 @@ func TestDefine(t *testing.T) {
 			},
 			expected: &result{
 				allInOneImages: []string{
-					"ghcr.io/otherorg/all-in-one:main",
+					"ghcr.io/otherorg/otherrepo-all-in-one:main",
 				},
 				developmentImages: []string{
 					"ghcr.io/otherorg/otherrepo-dev:main",
@@ -230,7 +230,7 @@ func TestDefine(t *testing.T) {
 			},
 			expected: &result{
 				allInOneImages: []string{
-					"ghcr.io/otherorg/all-in-one:main-v1",
+					"ghcr.io/otherorg/otherrepo-all-in-one:main-v1",
 				},
 				developmentImages: []string{
 					"ghcr.io/otherorg/otherrepo-dev:main-v1",
@@ -271,7 +271,7 @@ func TestDefine(t *testing.T) {
 			},
 			expected: &result{
 				allInOneImages: []string{
-					"ghcr.io/otherorg/all-in-one:releases-2.1",
+					"ghcr.io/otherorg/otherrepo-all-in-one:releases-2.1",
 				},
 				developmentImages: []string{
 					"ghcr.io/otherorg/otherrepo-dev:releases-2.1",
@@ -317,7 +317,7 @@ func TestDefine(t *testing.T) {
 			},
 			expected: &result{
 				allInOneImages: []string{
-					"ghcr.io/otherorg/all-in-one:1.26.0-beta",
+					"ghcr.io/otherorg/otherrepo-all-in-one:1.26.0-beta",
 				},
 				developmentImages: []string{
 					"ghcr.io/otherorg/otherrepo-dev:1.26.0-beta",
@@ -395,10 +395,10 @@ func TestDefine(t *testing.T) {
 			expected: &result{
 				// add all tags except latest while v2 is not GA
 				allInOneImages: []string{
-					"ghcr.io/otherorg/all-in-one:2",
-					"ghcr.io/otherorg/all-in-one:2.1",
-					"ghcr.io/otherorg/all-in-one:2.1.0",
-					"ghcr.io/otherorg/all-in-one:2.1.0-beta",
+					"ghcr.io/otherorg/otherrepo-all-in-one:2",
+					"ghcr.io/otherorg/otherrepo-all-in-one:2.1",
+					"ghcr.io/otherorg/otherrepo-all-in-one:2.1.0",
+					"ghcr.io/otherorg/otherrepo-all-in-one:2.1.0-beta",
 				},
 				developmentImages: []string{
 					"ghcr.io/otherorg/otherrepo-dev:2",
@@ -477,27 +477,27 @@ func TestDefine(t *testing.T) {
 				"GITHUB_HEAD_REF":   "",
 				"GITHUB_REF_NAME":   "v1.26.0",
 				"GITHUB_REF_TYPE":   "tag",
-				"GITHUB_REPOSITORY": "OtherOrg/FerretDB",
+				"GITHUB_REPOSITORY": "OtherOrg/OtherRepo",
 			},
 			expected: &result{
 				// latest is v1 for now
 				allInOneImages: []string{
-					"ghcr.io/otherorg/all-in-one:1",
-					"ghcr.io/otherorg/all-in-one:1.26",
-					"ghcr.io/otherorg/all-in-one:1.26.0",
-					"ghcr.io/otherorg/all-in-one:latest",
+					"ghcr.io/otherorg/otherrepo-all-in-one:1",
+					"ghcr.io/otherorg/otherrepo-all-in-one:1.26",
+					"ghcr.io/otherorg/otherrepo-all-in-one:1.26.0",
+					"ghcr.io/otherorg/otherrepo-all-in-one:latest",
 				},
 				developmentImages: []string{
-					"ghcr.io/otherorg/ferretdb-dev:1",
-					"ghcr.io/otherorg/ferretdb-dev:1.26",
-					"ghcr.io/otherorg/ferretdb-dev:1.26.0",
-					"ghcr.io/otherorg/ferretdb-dev:latest",
+					"ghcr.io/otherorg/otherrepo-dev:1",
+					"ghcr.io/otherorg/otherrepo-dev:1.26",
+					"ghcr.io/otherorg/otherrepo-dev:1.26.0",
+					"ghcr.io/otherorg/otherrepo-dev:latest",
 				},
 				productionImages: []string{
-					"ghcr.io/otherorg/ferretdb:1",
-					"ghcr.io/otherorg/ferretdb:1.26",
-					"ghcr.io/otherorg/ferretdb:1.26.0",
-					"ghcr.io/otherorg/ferretdb:latest",
+					"ghcr.io/otherorg/otherrepo:1",
+					"ghcr.io/otherorg/otherrepo:1.26",
+					"ghcr.io/otherorg/otherrepo:1.26.0",
+					"ghcr.io/otherorg/otherrepo:latest",
 				},
 			},
 		},
@@ -555,24 +555,24 @@ func TestDefine(t *testing.T) {
 				"GITHUB_HEAD_REF":   "",
 				"GITHUB_REF_NAME":   "v2.1.0",
 				"GITHUB_REF_TYPE":   "tag",
-				"GITHUB_REPOSITORY": "OtherOrg/FerretDB",
+				"GITHUB_REPOSITORY": "OtherOrg/OtherRepo",
 			},
 			expected: &result{
 				// latest is v1, not v2, for now
 				allInOneImages: []string{
-					"ghcr.io/otherorg/all-in-one:2",
-					"ghcr.io/otherorg/all-in-one:2.1",
-					"ghcr.io/otherorg/all-in-one:2.1.0",
+					"ghcr.io/otherorg/otherrepo-all-in-one:2",
+					"ghcr.io/otherorg/otherrepo-all-in-one:2.1",
+					"ghcr.io/otherorg/otherrepo-all-in-one:2.1.0",
 				},
 				developmentImages: []string{
-					"ghcr.io/otherorg/ferretdb-dev:2",
-					"ghcr.io/otherorg/ferretdb-dev:2.1",
-					"ghcr.io/otherorg/ferretdb-dev:2.1.0",
+					"ghcr.io/otherorg/otherrepo-dev:2",
+					"ghcr.io/otherorg/otherrepo-dev:2.1",
+					"ghcr.io/otherorg/otherrepo-dev:2.1.0",
 				},
 				productionImages: []string{
-					"ghcr.io/otherorg/ferretdb:2",
-					"ghcr.io/otherorg/ferretdb:2.1",
-					"ghcr.io/otherorg/ferretdb:2.1.0",
+					"ghcr.io/otherorg/otherrepo:2",
+					"ghcr.io/otherorg/otherrepo:2.1",
+					"ghcr.io/otherorg/otherrepo:2.1.0",
 				},
 			},
 		},
@@ -631,7 +631,7 @@ func TestDefine(t *testing.T) {
 			},
 			expected: &result{
 				allInOneImages: []string{
-					"ghcr.io/otherorg/all-in-one:main",
+					"ghcr.io/otherorg/otherrepo-all-in-one:main",
 				},
 				developmentImages: []string{
 					"ghcr.io/otherorg/otherrepo-dev:main",
@@ -672,7 +672,7 @@ func TestDefine(t *testing.T) {
 			},
 			expected: &result{
 				allInOneImages: []string{
-					"ghcr.io/otherorg/all-in-one:main",
+					"ghcr.io/otherorg/otherrepo-all-in-one:main",
 				},
 				developmentImages: []string{
 					"ghcr.io/otherorg/otherrepo-dev:main",

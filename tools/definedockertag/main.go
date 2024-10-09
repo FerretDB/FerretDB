@@ -13,6 +13,8 @@
 // limitations under the License.
 
 // Package main contains tool for defining Docker image tags on CI.
+//
+//nolint:goconst // "ferretdb" means different things
 package main
 
 import (
@@ -164,6 +166,15 @@ func define(getenv githubactions.GetenvFunc) (*result, error) {
 	return res, nil
 }
 
+// allInOneRepo returns a part of Docker repository name for the given GitHub repository name.
+func allInOneRepo(repo string) string {
+	if repo == "ferretdb" {
+		return "all-in-one"
+	}
+
+	return repo + "-all-in-one"
+}
+
 // defineForPR defines Docker image names and tags for pull requests.
 func defineForPR(owner, repo, branch string) *result {
 	// for branches like "dependabot/submodules/XXX"
@@ -172,7 +183,7 @@ func defineForPR(owner, repo, branch string) *result {
 
 	res := &result{
 		allInOneImages: []string{
-			fmt.Sprintf("ghcr.io/%s/all-in-one:pr-%s", owner, branch),
+			fmt.Sprintf("ghcr.io/%s/%s:pr-%s", owner, allInOneRepo(repo), branch),
 		},
 		developmentImages: []string{
 			fmt.Sprintf("ghcr.io/%s/%s-dev:pr-%s", owner, repo, branch),
@@ -201,7 +212,7 @@ func defineForBranch(owner, repo, branch string) (*result, error) {
 
 	res := &result{
 		allInOneImages: []string{
-			fmt.Sprintf("ghcr.io/%s/all-in-one:%s", owner, branch),
+			fmt.Sprintf("ghcr.io/%s/%s:%s", owner, allInOneRepo(repo), branch),
 		},
 		developmentImages: []string{
 			fmt.Sprintf("ghcr.io/%s/%s-dev:%s", owner, repo, branch),
@@ -232,7 +243,7 @@ func defineForTag(owner, repo string, tags []string) *result {
 	res := new(result)
 
 	for _, t := range tags {
-		res.allInOneImages = append(res.allInOneImages, fmt.Sprintf("ghcr.io/%s/all-in-one:%s", owner, t))
+		res.allInOneImages = append(res.allInOneImages, fmt.Sprintf("ghcr.io/%s/%s:%s", owner, allInOneRepo(repo), t))
 		res.developmentImages = append(res.developmentImages, fmt.Sprintf("ghcr.io/%s/%s-dev:%s", owner, repo, t))
 		res.productionImages = append(res.productionImages, fmt.Sprintf("ghcr.io/%s/%s:%s", owner, repo, t))
 	}
