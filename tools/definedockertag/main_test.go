@@ -279,7 +279,56 @@ func TestDefine(t *testing.T) {
 			},
 		},
 
-		"push/tag/beta": {
+		"push/tag/beta1": {
+			env: map[string]string{
+				"GITHUB_BASE_REF":   "",
+				"GITHUB_EVENT_NAME": "push",
+				"GITHUB_HEAD_REF":   "",
+				"GITHUB_REF_NAME":   "v1.26.0-beta",
+				"GITHUB_REF_TYPE":   "tag",
+				"GITHUB_REPOSITORY": "FerretDB/FerretDB",
+			},
+			expected: &result{
+				allInOneImages: []string{
+					"ferretdb/all-in-one:1.26.0-beta",
+					"ghcr.io/ferretdb/all-in-one:1.26.0-beta",
+					"quay.io/ferretdb/all-in-one:1.26.0-beta",
+				},
+				developmentImages: []string{
+					"ferretdb/ferretdb-dev:1.26.0-beta",
+					"ghcr.io/ferretdb/ferretdb-dev:1.26.0-beta",
+					"quay.io/ferretdb/ferretdb-dev:1.26.0-beta",
+				},
+				productionImages: []string{
+					"ferretdb/ferretdb:1.26.0-beta",
+					"ghcr.io/ferretdb/ferretdb:1.26.0-beta",
+					"quay.io/ferretdb/ferretdb:1.26.0-beta",
+				},
+			},
+		},
+		"push/tag/beta1-other": {
+			env: map[string]string{
+				"GITHUB_BASE_REF":   "",
+				"GITHUB_EVENT_NAME": "push",
+				"GITHUB_HEAD_REF":   "",
+				"GITHUB_REF_NAME":   "v1.26.0-beta",
+				"GITHUB_REF_TYPE":   "tag",
+				"GITHUB_REPOSITORY": "OtherOrg/OtherRepo",
+			},
+			expected: &result{
+				allInOneImages: []string{
+					"ghcr.io/otherorg/all-in-one:1.26.0-beta",
+				},
+				developmentImages: []string{
+					"ghcr.io/otherorg/otherrepo-dev:1.26.0-beta",
+				},
+				productionImages: []string{
+					"ghcr.io/otherorg/otherrepo:1.26.0-beta",
+				},
+			},
+		},
+
+		"push/tag/beta2": {
 			env: map[string]string{
 				"GITHUB_BASE_REF":   "",
 				"GITHUB_EVENT_NAME": "push",
@@ -306,7 +355,7 @@ func TestDefine(t *testing.T) {
 				},
 			},
 		},
-		"push/tag/beta-other": {
+		"push/tag/beta2-other": {
 			env: map[string]string{
 				"GITHUB_BASE_REF":   "",
 				"GITHUB_EVENT_NAME": "push",
@@ -328,7 +377,80 @@ func TestDefine(t *testing.T) {
 			},
 		},
 
-		"push/tag/release": {
+		"push/tag/release1": {
+			env: map[string]string{
+				"GITHUB_BASE_REF":   "",
+				"GITHUB_EVENT_NAME": "push",
+				"GITHUB_HEAD_REF":   "",
+				"GITHUB_REF_NAME":   "v1.26.0",
+				"GITHUB_REF_TYPE":   "tag",
+				"GITHUB_REPOSITORY": "FerretDB/FerretDB",
+			},
+			expected: &result{
+				allInOneImages: []string{
+					"ferretdb/all-in-one:1",
+					"ferretdb/all-in-one:1.26",
+					"ferretdb/all-in-one:1.26.0",
+					"ghcr.io/ferretdb/all-in-one:1",
+					"ghcr.io/ferretdb/all-in-one:1.26",
+					"ghcr.io/ferretdb/all-in-one:1.26.0",
+					"quay.io/ferretdb/all-in-one:1",
+					"quay.io/ferretdb/all-in-one:1.26",
+					"quay.io/ferretdb/all-in-one:1.26.0",
+				},
+				developmentImages: []string{
+					"ferretdb/ferretdb-dev:1",
+					"ferretdb/ferretdb-dev:1.26",
+					"ferretdb/ferretdb-dev:1.26.0",
+					"ghcr.io/ferretdb/ferretdb-dev:1",
+					"ghcr.io/ferretdb/ferretdb-dev:1.26",
+					"ghcr.io/ferretdb/ferretdb-dev:1.26.0",
+					"quay.io/ferretdb/ferretdb-dev:1",
+					"quay.io/ferretdb/ferretdb-dev:1.26",
+					"quay.io/ferretdb/ferretdb-dev:1.26.0",
+				},
+				productionImages: []string{
+					"ferretdb/ferretdb:1",
+					"ferretdb/ferretdb:1.26",
+					"ferretdb/ferretdb:1.26.0",
+					"ghcr.io/ferretdb/ferretdb:1",
+					"ghcr.io/ferretdb/ferretdb:1.26",
+					"ghcr.io/ferretdb/ferretdb:1.26.0",
+					"quay.io/ferretdb/ferretdb:1",
+					"quay.io/ferretdb/ferretdb:1.26",
+					"quay.io/ferretdb/ferretdb:1.26.0",
+				},
+			},
+		},
+		"push/tag/release1-other": {
+			env: map[string]string{
+				"GITHUB_BASE_REF":   "",
+				"GITHUB_EVENT_NAME": "push",
+				"GITHUB_HEAD_REF":   "",
+				"GITHUB_REF_NAME":   "v1.26.0",
+				"GITHUB_REF_TYPE":   "tag",
+				"GITHUB_REPOSITORY": "OtherOrg/FerretDB",
+			},
+			expected: &result{
+				allInOneImages: []string{
+					"ghcr.io/otherorg/all-in-one:1",
+					"ghcr.io/otherorg/all-in-one:1.26",
+					"ghcr.io/otherorg/all-in-one:1.26.0",
+				},
+				developmentImages: []string{
+					"ghcr.io/otherorg/ferretdb-dev:1",
+					"ghcr.io/otherorg/ferretdb-dev:1.26",
+					"ghcr.io/otherorg/ferretdb-dev:1.26.0",
+				},
+				productionImages: []string{
+					"ghcr.io/otherorg/ferretdb:1",
+					"ghcr.io/otherorg/ferretdb:1.26",
+					"ghcr.io/otherorg/ferretdb:1.26.0",
+				},
+			},
+		},
+
+		"push/tag/release2": {
 			env: map[string]string{
 				"GITHUB_BASE_REF":   "",
 				"GITHUB_EVENT_NAME": "push",
@@ -373,7 +495,7 @@ func TestDefine(t *testing.T) {
 				},
 			},
 		},
-		"push/tag/release-other": {
+		"push/tag/release2-other": {
 			env: map[string]string{
 				"GITHUB_BASE_REF":   "",
 				"GITHUB_EVENT_NAME": "push",
