@@ -104,6 +104,7 @@ func NewAccumulator(stage, key string, value any) (Accumulator, error) {
 var Accumulators = map[string]newAccumulatorFunc{
 	// sorted alphabetically
 	"$count": newCount,
+	"$first": newFirst,
 	"$sum":   newSum,
 	// please keep sorted alphabetically
 }
