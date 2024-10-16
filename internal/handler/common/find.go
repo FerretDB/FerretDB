@@ -40,6 +40,7 @@ type FindParams struct {
 	ShowRecordId bool            `ferretdb:"showRecordId,opt"`
 	Tailable     bool            `ferretdb:"tailable,opt"`
 	AwaitData    bool            `ferretdb:"awaitData,opt"`
+	NoCursorTimeout bool         `ferretdb:"noCursorTimeout,opt"`
 
 	Collation *types.Document `ferretdb:"collation,unimplemented"`
 	Let       *types.Document `ferretdb:"let,unimplemented"`
@@ -59,9 +60,6 @@ type FindParams struct {
 	ReturnKey           bool `ferretdb:"returnKey,unimplemented-non-default"`
 	OplogReplay         bool `ferretdb:"oplogReplay,ignored"`
 	AllowPartialResults bool `ferretdb:"allowPartialResults,unimplemented-non-default"`
-
-	// TODO https://github.com/FerretDB/FerretDB/issues/4035
-	NoCursorTimeout bool `ferretdb:"noCursorTimeout,unimplemented-non-default"`
 
 	ApiVersion           string `ferretdb:"apiVersion,ignored"`
 	ApiStrict            bool   `ferretdb:"apiStrict,ignored"`

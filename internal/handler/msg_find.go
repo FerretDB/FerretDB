@@ -145,6 +145,10 @@ func (h *Handler) MsgFind(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		t = cursor.TailableAwait
 	}
 
+	if params.NoCursorTimeout {
+		t = cursor.NoTimeout
+	}
+
 	c := h.cursors.NewCursor(ctx, iter, &cursor.NewParams{
 		Data: &findCursorData{
 			coll:       coll,
