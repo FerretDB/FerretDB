@@ -139,6 +139,7 @@ func NewOperator(doc *types.Document) (Operator, error) {
 // Operators maps all standard aggregation operators.
 var Operators = map[string]newOperatorFunc{
 	// sorted alphabetically
+	"$avg":  newAvg,
 	"$sum":  newSum,
 	"$type": newType,
 	// please keep sorted alphabetically
@@ -161,7 +162,6 @@ var unsupportedOperators = map[string]struct{}{
 	"$atan":             {},
 	"$atan2":            {},
 	"$atanh":            {},
-	"$avg":              {},
 	"$binarySize":       {},
 	"$bsonSize":         {},
 	"$ceil":             {},

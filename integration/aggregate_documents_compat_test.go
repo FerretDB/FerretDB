@@ -779,6 +779,46 @@ func TestAggregateCompatGroup(t *testing.T) {
 			},
 			resultType: emptyResult,
 		},
+		"IDAvg": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{{"_id", bson.D{{"$avg", "$v"}}}}}},
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+			},
+		},
+		"IDFieldAvg": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{{"_id", bson.D{{"avg", bson.D{{"$avg", "$v"}}}}}}}},
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+			},
+		},
+		"IDNestedFieldAvg": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{{"_id", bson.D{{"nested", bson.D{{"avg", bson.D{{"$avg", "$v"}}}}}}}}}},
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+			},
+		},
+		"IDAvgNonExistentField": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{{"_id", bson.D{{"$avg", "$non-existent"}}}}}},
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+			},
+		},
+		"IDAvgInvalid": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{{"_id", bson.D{{"$avg", "$"}}}}}},
+			},
+			resultType: emptyResult,
+		},
+		"IDAvgRecursiveInvalid": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{{"_id", bson.D{{"$avg", bson.D{{"$avg", "$"}}}}}}}},
+			},
+			resultType: emptyResult,
+		},
 	}
 
 	testAggregateStagesCompat(t, testCases)

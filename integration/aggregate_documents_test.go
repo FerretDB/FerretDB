@@ -587,6 +587,42 @@ func TestAggregateProjectErrors(t *testing.T) {
 				Message: "Invalid $project :: caused by :: '$' starts with an invalid character for a user variable name",
 			},
 		},
+		"AvgEmptyExpression": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"avg", bson.D{{"$avg", "$"}}},
+				}}},
+			},
+			err: &mongo.CommandError{
+				Code:    16872,
+				Name:    "Location16872",
+				Message: "Invalid $project :: caused by :: '$' by itself is not a valid FieldPath",
+			},
+		},
+		"AvgEmptyVariable": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sum", bson.D{{"$sum", "$$"}}},
+				}}},
+			},
+			err: &mongo.CommandError{
+				Code:    9,
+				Name:    "FailedToParse",
+				Message: "Invalid $project :: caused by :: empty variable names are not allowed",
+			},
+		},
+		"AvgDollarVariable": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sum", bson.D{{"$sum", "$$$"}}},
+				}}},
+			},
+			err: &mongo.CommandError{
+				Code:    9,
+				Name:    "FailedToParse",
+				Message: "Invalid $project :: caused by :: '$' starts with an invalid character for a user variable name",
+			},
+		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {

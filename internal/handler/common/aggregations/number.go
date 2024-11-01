@@ -69,3 +69,37 @@ func SumNumbers(vs ...any) any {
 
 	return integer
 }
+
+// AvgNumbers accumulate numbers and returns the average result.
+// It will calculate sum value and return by dividing according to its type
+// For empty `vs`, it returns int32(0).
+// This should only be used for aggregation, aggregation does not return
+// error on overflow.
+func AvgNumbers(vs ...any) any {
+	if len(vs) == 0 {
+		return int32(0)
+	}
+
+	numCount := float64(0)
+	for _, v := range vs {
+		switch v.(type) {
+		case float64, int32, int64:
+			numCount++
+		default:
+			// ignore non-number
+		}
+	}
+
+	sum := SumNumbers(vs...)
+	switch v := sum.(type) {
+	case int32:
+		return float64(v) / numCount
+	case int64:
+		return float64(v) / numCount
+	case float64:
+		return v / numCount
+	default:
+		// SumNumbers should only return an int64 or float64
+	}
+	return 0
+}
