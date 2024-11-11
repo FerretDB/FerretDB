@@ -8,7 +8,7 @@ image: /img/blog/relational-document.jpg
 tags: [document databases, open source, mongodb compatible, community]
 ---
 
-![Relational database vs document database ](/img/blog/relational-document.jpg)
+![Relational database vs document database](/img/blog/relational-document.jpg)
 
 Before settling on a database for your application, you want to be sure you're picking the most suitable option available.
 Among the key considerations you'll make is deciding between document database or relational database – which is the best fit?
