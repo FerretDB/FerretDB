@@ -1,14 +1,14 @@
 ---
 slug: relational-vs-document-database-comparison
-title: 'MongoDB vs PostgreSQL: A Detailed Database Comparison'
+title: 'Document vs Relational Database: Choosing the right fit for your needs'
 authors: [alex]
 description: >
-  Compare the features and benefits of MongoDB and PostgreSQL to determine which database management system is best for your application.
+  Document databases and relational databases offer distinct advantages tailored to different application needs — find out which is the best fit for your application.
 image: /img/blog/relational-document.jpg
 tags: [document databases, open source, mongodb compatible, community]
 ---
 
-![Relational database vs Document database ](/img/blog/relational-document.jpg)
+![Relational database vs document database ](/img/blog/relational-document.jpg)
 
 Before settling on a database for your application, you want to be sure you're picking the most suitable option available.
 Among the key considerations you'll make is deciding between document database or relational database – which is the best fit?
