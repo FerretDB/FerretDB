@@ -604,7 +604,7 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/1917).
 |                                   | `writeConcern`                 |                           | ⚠️     |                                                           |
 |                                   | `commitQuorum`                 |                           | ⚠️     |                                                           |
 |                                   | `comment`                      |                           | ⚠️     |                                                           |
-| `currentOp`                       |                                |                           | ✅     |                                                           |
+| `currentOp`                       |                                |                           | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/2399) |
 |                                   | `$ownOps`                      |                           | ⚠️     |                                                           |
 |                                   | `$all`                         |                           | ⚠️     |                                                           |
 |                                   | `comment`                      |                           | ⚠️     |                                                           |
