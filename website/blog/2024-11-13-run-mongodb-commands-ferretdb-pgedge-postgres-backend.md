@@ -35,7 +35,7 @@ Then you'll pass its connection string as the `FERRETDB_POSTGRES_URI`/ `--postgr
 
 Start by setting up a Postgres database named `ferretdb` on pgEdge, and wait a few seconds for the database to be provisioned.
 
-![image of postgres](/img/blog/pgedge-connection.jpg)
+![image of postgres](/img/blog/pgedge-connection.png)
 
 Once it's ready, get the connection URI credentials for the `admin` user and use it as the FERRETDB_POSTGRES_URI/ –-postgres-uri flag.
 
@@ -173,7 +173,7 @@ As you can see, FerretDB lets you run many commands just as you would with Mongo
 It translates BSON documents to JSONB under the hood.
 Now let's see what that looks like on pgEdge.
 
-![image of pgEdge dashboard](/img/blog/pgedge-dashboard.jpg)
+![image of pgEdge dashboard](/img/blog/pgedge-dashboard.png)
 
 Go ahead to try out FerretDB with pgEdge as your backend for many MongoDB use cases.
 Here are some materials to help you start.
