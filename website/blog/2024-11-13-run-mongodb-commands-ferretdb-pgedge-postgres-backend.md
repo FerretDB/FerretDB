@@ -107,7 +107,7 @@ db.books.find({ title: "Learning SQL" })
 
 Output:
 
-```json
+```json5
 [
   {
     _id: ObjectId('672ce25eee320eddb90952c3'),
