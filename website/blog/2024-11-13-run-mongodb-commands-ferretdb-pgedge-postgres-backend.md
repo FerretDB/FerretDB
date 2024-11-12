@@ -132,7 +132,7 @@ db.books.updateOne(
 )
 ```
 
-Nex, let's run a `find` command with the `sort` option to list all books sorted by the publication_year in descending order.
+Next, let's run a `find` command with the `sort` option to list all books sorted by the publication_year in descending order.
 
 ```json5
 db.books.find({}).sort({ publication_year: -1 })
