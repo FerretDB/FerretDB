@@ -79,7 +79,7 @@ Run basic MongoDB CRUD commands on your Postgres database using FerretDB:
 
 Let's start by inserting a couple of interesting database books into a `books` collection.
 
-```json5
+```js
 db.books.insertMany([
   {
     title: "Introduction to Database Systems",
