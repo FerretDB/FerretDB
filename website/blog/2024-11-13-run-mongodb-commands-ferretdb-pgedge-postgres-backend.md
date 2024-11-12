@@ -31,7 +31,7 @@ Before you start, ensure you have the following:
 ## Setting up Postgres with pgEdge
 
 Before setting up a FerretDB instance, you need a Postgres database configured and ready.
-Then you'll pass its connection string as the `FERRETDB_POSTGRES_URI`/ `--postgres-uri flag` when you run the FerretDB instance.
+Then you'll pass its connection string as the `FERRETDB_POSTGRESQL_URL`/ `--postgresql-url` flag when you run the FerretDB instance.
 
 Start by setting up a Postgres database named `ferretdb` on pgEdge, and wait a few seconds for the database to be provisioned.
 
@@ -42,7 +42,8 @@ Once it's ready, get the connection URI credentials for the `admin` user and use
 ## Connect FerretDB to Postgres using Docker
 
 Ensure you have Docker running.
-Run the FerretDB container using the following command without the connection uri from pgEdge configured to connect via the `FERRETDB_POSTGRESQL_URL`.
+Run the FerretDB container using the following command to connect via the `FERRETDB_POSTGRESQL_URL`.
+Make sure to replace `<password>`, `<host>`, and `<port>` with your pgEdge connection details.
 
 ```sh
 docker run -e FERRETDB_POSTGRESQL_URL='postgresql://admin:<password>@<host>/ferretdb?sslmode=require' -p 27017:27017 ghcr.io/ferretdb/ferretdb
@@ -82,16 +83,16 @@ Let's start by inserting a couple of interesting database books into a `books` c
 ```js
 db.books.insertMany([
   {
-    title: "Introduction to Database Systems",
-    author: "C.J. Date",
-    genre: "Technical",
+    title: 'Introduction to Database Systems',
+    author: 'C.J. Date',
+    genre: 'Technical',
     publication_year: 1995,
     isAvailable: true
   },
   {
-    title: "Learning SQL",
-    author: "Alan Beaulieu",
-    genre: "Technical",
+    title: 'Learning SQL',
+    author: 'Alan Beaulieu',
+    genre: 'Technical',
     publication_year: 2005,
     isAvailable: false
   }
@@ -101,8 +102,8 @@ db.books.insertMany([
 Then let's run some quick `find` commands to check out our data and see the inserted book records.
 For example, let find the book "Learning SQL" using its title:
 
-```json5
-db.books.find({ title: "Learning SQL" })
+```js
+db.books.find({ title: 'Learning SQL' })
 ```
 
 Output:
@@ -124,11 +125,18 @@ You can update the collection using the `upsert` command which will update a doc
 
 Let's upsert a document where the title is "Database Systems Concepts," setting the isAvailable status to true:
 
-```json5
+```js
 db.books.updateOne(
- { title: "Database Systems Concepts" },
- { $set: { author: "Silberschatz, Korth, and Sudarshan", genre: "Technical", publication_year: 2002, isAvailable: true } },
- { upsert: true }
+  { title: 'Database Systems Concepts' },
+  {
+    $set: {
+      author: 'Silberschatz, Korth, and Sudarshan',
+      genre: 'Technical',
+      publication_year: 2002,
+      isAvailable: true
+    }
+  },
+  { upsert: true }
 )
 ```
 
@@ -140,7 +148,7 @@ db.books.find({}).sort({ publication_year: -1 })
 
 The entire collection is returned, sorted by the `publication_year` in descending order:
 
-```json
+```json5
 [
   {
     _id: ObjectId('672ce25eee320eddb90952c3'),
