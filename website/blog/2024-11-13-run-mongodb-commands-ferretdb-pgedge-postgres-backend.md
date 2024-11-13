@@ -37,7 +37,7 @@ Start by setting up a Postgres database named `ferretdb` on pgEdge, and wait a f
 
 ![image of postgres](/img/blog/pgedge-connection.png)
 
-Once it's ready, get the connection URI credentials for the `admin` user and use it as the FERRETDB_POSTGRES_URI/ –-postgres-uri flag.
+Once it's ready, get the connection URI credentials for the `admin` user and use it as the `FERRETDB_POSTGRESQL_URL`/ `--postgresql-url` flag.
 
 ## Connect FerretDB to Postgres using Docker
 
