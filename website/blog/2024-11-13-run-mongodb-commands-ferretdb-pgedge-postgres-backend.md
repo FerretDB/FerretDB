@@ -52,7 +52,7 @@ docker run -e FERRETDB_POSTGRESQL_URL='postgresql://admin:<password>@<host>/ferr
 Connect to FerretDB via `mongosh` using the following connection string:
 
 ```sh
-mongosh "mongodb://admin:&lt;password>@localhost/ferretdb?authMechanism=PLAIN"
+mongosh "mongodb://admin:<password>@localhost/ferretdb?authMechanism=PLAIN"
 ```
 
 Output should look like this:
