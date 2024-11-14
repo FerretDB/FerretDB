@@ -139,7 +139,7 @@ Couchbase's ability to handle data in both document and key-value formats makes 
 
 ### CouchDB
 
-Developed by the Apache Software Foundation,[CouchDB](https://couchdb.apache.org/) is a NoSQL database with an HTTP-based API, offering a RESTful architecture ideal for distributed systems.
+Developed by the Apache Software Foundation, [CouchDB](https://couchdb.apache.org/) is a NoSQL database with an HTTP-based API, offering a RESTful architecture ideal for distributed systems.
 CouchDB uses JSON for documents and HTTP for its API, providing an offline-first approach that automatically syncs when connectivity is restored.
 
 CouchDB's offline-first nature makes it perfect for mobile applications or systems that operate in environments with intermittent connectivity.
