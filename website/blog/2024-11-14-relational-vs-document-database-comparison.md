@@ -82,7 +82,6 @@ Using a document database allows the application to store these complex structur
 
 Here's a quick comparison of the characteristics of document and relational databases:
 
-```markdown
 | Feature                 | Document Database               | Relational Database                   |
 | ----------------------- | ------------------------------- | ------------------------------------- |
 | **Schema**              | Flexible, schema-less           | Fixed, schema-enforced                |
@@ -92,15 +91,14 @@ Here's a quick comparison of the characteristics of document and relational data
 | **Transaction Support** | Limited or eventual consistency | Strong, ACID-compliant                |
 | **Flexibility**         | High (adaptable fields)         | Low (structured tables)               |
 | **Best for**            | Dynamic and unstructured data   | Structured and highly relational data |
-```
 
-## **Examples of Document databases**
+## **Examples of document databases**
 
 The following are some popular document databases that you can consider for your application:
 
 ### FerretDB
 
-[FerretDB](https://ferretdb.io) is the truly open-source document database alternative to MongoDB, built on PostgreSQL.
+[FerretDB](https://ferretdb.com) is the truly open-source document database alternative to MongoDB, built on PostgreSQL.
 FerretDB lets you run MongoDB workloads on PostgreSQL using familiar commands and syntaxes.
 
 FerretDB is particularly suited for teams that value open-source databases and want to avoid vendor lock-in.
@@ -109,11 +107,11 @@ Here is a [guide to help you get started with the FerretDB migration process](ht
 
 ### MongoDB
 
-One of the most widely used document databases,[MongoDB](https://www.mongodb.com/) is favored for its schema-less flexibility, scalability, and support for a broad range of applications from small projects to enterprise-scale systems.
+One of the most widely used document databases, [MongoDB](https://www.mongodb.com/) is favored for its schema-less flexibility, scalability, and support for a broad range of applications from small projects to enterprise-scale systems.
 
 While initially release as an open source database, MongoDB has since switched to the controversial and restrictive Server Side Public License (SSPL).
 Under this license, MongoDB may require you to release certain portions of your source code under SSPL, particularly in specific use cases like offering MongoDB as a service.
-You can read more about the [SSPL license](https://www.mongodb.com/licensing/server-side-public-license#13-offering-the-program-as-a-service).
+You can read more about the [SSPL license](https://www.ferretdb.com/sspl).
 
 MongoDB's architecture allows it to handle both structured and semi-structured data effortlessly, making it ideal for high-performance web applications.
 MongoDB queries use a syntax similar to JSON, allowing developers to access and manipulate data quickly.
@@ -144,7 +142,7 @@ CouchDB uses JSON for documents and HTTP for its API, providing an offline-first
 
 CouchDB's offline-first nature makes it perfect for mobile applications or systems that operate in environments with intermittent connectivity.
 
-## Examples of Relational Databases
+## Examples of relational databases
 
 The following are some popular relational databases that you can consider for your application:
 
