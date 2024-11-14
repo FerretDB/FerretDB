@@ -193,4 +193,4 @@ If you are looking for a open source document database alternative to MongoDB, F
 FerretDB combines the best of both worlds, offering the flexibility of a document database with the reliability and consistency of PostgreSQL.
 It is a document database with MongoDB compatibility built-in by enabling PostgreSQL or SQLite to run MongoDB workloads.
 
-Check out the [FerretDB quickstart guide](https://docs.ferretdb.io/quickstart-guide/)to get started.
+Check out the [FerretDB quickstart guide](https://docs.ferretdb.io/quickstart-guide/) to get started.
