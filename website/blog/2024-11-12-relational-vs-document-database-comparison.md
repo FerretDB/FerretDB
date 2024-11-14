@@ -164,7 +164,7 @@ MySQL's broad support and numerous plugins make it a versatile option for a wide
 
 ### Microsoft SQL Server
 
-A commercial database from Microsoft,[SQL Server](https://www.microsoft.com/en-us/sql-server) integrates well with Windows environments and supports enterprise-grade features such as high availability and replication.
+A commercial database from Microsoft, [SQL Server](https://www.microsoft.com/en-us/sql-server) integrates well with Windows environments and supports enterprise-grade features such as high availability and replication.
 It's widely used in corporate environments where integration with Microsoft products is crucial.
 
 SQL Server is often chosen for applications in industries like finance and healthcare, where reliability, security, and integration with Windows services are paramount.
