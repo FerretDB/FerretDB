@@ -1,0 +1,17 @@
+---
+# https://aquasecurity.github.io/trivy/latest/docs/references/configuration/config-file/
+
+exit-code: 1
+
+cache:
+  dir: tmp/trivy
+
+# https://github.com/orgs/community/discussions/139074
+db:
+  repository: public.ecr.aws/aquasecurity/trivy-db:2
+
+scan:
+  skip-files:
+    - .env
+    - .envrc
+    - build/certs/*.pem
