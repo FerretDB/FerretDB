@@ -473,12 +473,7 @@ tasks:
 
   security-trivy:
     cmds:
-      - >
-        docker compose run --rm trivy filesystem .
-        --secret-config=./build/trivy-secret.yml
-        --ignorefile=./build/trivy-ignore.yml
-        --cache-dir=./tmp/trivy
-        --exit-code=1
+      - docker compose run --rm trivy --config=./build/trivy.yml filesystem .
 
   godocs:
     desc: "Serve Go code documentation"
