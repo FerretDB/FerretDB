@@ -15,9 +15,10 @@ FerretDB, a truly open source MongoDB alternative, lets you run your workloads i
 
 <!--truncate-->
 
-By translating MongoDB queries into SQL, FerretDB allows developers to leverage MongoDB-like functionality while using a relational database backend, such as [PostgreSQL](https://www.postgresql.org/).
-When paired with [ScaleGrid for PostgreSQL](https://scalegrid.io/postgresql/), a fully managed database hosting service, you get a reliable and scalable solution for running MongoDB workloads without compromising performance or flexibility.
-With ScaleGrid, developers can focus on building their applications while enjoying features like automated backups, monitoring, and high availability.
+By converting BSON documents to JSONB, FerretDB allows developers to leverage MongoDB-like functionality on [PostgreSQL](https://www.postgresql.org/).
+When paired with [ScaleGrid for PostgreSQL](https://scalegrid.io/postgresql/) — a fully managed database hosting service — developers get a reliable and scalable solution for running MongoDB workloads without compromising performance or flexibility.
+With ScaleGrid, developers can focus on building their applications while enjoying features like automated backups, disaster recovery, real-time monitoring, and high availability.
+
 In this blog post, we'll explore how to use FerretDB and ScaleGrid for PostgreSQL to run MongoDB workloads.
 
 ## Prerequisites
@@ -32,17 +33,18 @@ Ensure to have the following installed before you start:
 ## Create a PostgreSQL deployment in ScaleGrid
 
 FerretDB requires a PostgreSQL instance configured as the storage engine.
-You can then connect to the database by passing the connection string to the `FERRETDB_POSTGRESQL_URL` environment variable or `--postgresql-url` flag.
+This means you'll need to create a PostgreSQL deployment in ScaleGrid before running FerretDB.
+You can then configure FerretDB to connect to the PostgreSQL database by passing the connection string to the `FERRETDB_POSTGRESQL_URL` environment variable or `--postgresql-url` flag.
 
-Start by creating a fully managed Postgres deployment in ScaleGrid on any cloud platform of your choice.
+Start by creating a fully managed PostgreSQL deployment in ScaleGrid on any cloud platform of your choice.
 [Follow this documentation to create a PostgreSQL deployment on ScaleGrid](https://help.scalegrid.io/docs/postgresql-new-cluster).
 
 You'll need the connection string for the PostgreSQL instance once it's ready – it may take a few minutes to be provisioned.
 
-## Run and connect FerretDB to ScaleGrid for PostgreSQL via Docker
+## Connect FerretDB to PostgreSQL using Docker
 
 From your local terminal, start by running the FerretDB container via Docker.
-You'll need the connection string for your PostgreSQL instance for this.
+You'll need the connection string for your PostgreSQL instance — available on the PostgreSQL deployment dashboard.
 
 ```sh
 docker run -e FERRETDB_POSTGRESQL_URL='postgresql://<username>:<password>@<host>/<database>' -p 27017:27017 ghcr.io/ferretdb/ferretdb
@@ -108,7 +110,7 @@ The output will look like this:
 ]
 ```
 
-Next, you can update the collection to include an additional landmark for "Kyoto".
+Next, update the collection to include an additional landmark for "Kyoto".
 Here, you'll search for cities named "Kyoto" and push an element into the landmark array.
 
 ```js
@@ -118,7 +120,7 @@ db.cities.updateOne(
 )
 ```
 
-Now say there is a population increase of 200,000 in Barcelona, you want to update that as well.
+Say there is a population increase of 200,000 in Barcelona, you want to update that as well.
 
 ````js
 db.cities.updateOne(
@@ -199,10 +201,11 @@ postgres=# SELECT * from cities_fb4544d2;
 
 ## Conclusion
 
-Your entire document and collection data, all stored in Postgres  –  that's what FerretDB lets you do. And with that, you can take advantage of the simplified and scalable setup of ScaleGrid for PostgreSQL to manage your data.
+Your entire workload data (documents, collections, indexes, etc), all stored in PostgreSQL.
+That's what FerretDB lets you do.
+And with that, you can take advantage of the simplified and scalable setup of ScaleGrid for PostgreSQL to manage your data.
 
 To get started with your migration from MongoDB to FerretDB, here's some materials to make the process easier.
 
-[Migrate your MongoDB workloads to FerretDB](https://docs.ferretdb.io/migration/migrating-from-mongodb/)
-[Quickstart guide for FerretDB](https://docs.ferretdb.io/quickstart-guide/docker/)
-````
+- [Migrate your MongoDB workloads to FerretDB](https://docs.ferretdb.io/migration/migrating-from-mongodb/)
+- [Quickstart guide for FerretDB](https://docs.ferretdb.io/quickstart-guide/docker/)
