@@ -205,7 +205,7 @@ Your entire workload data (documents, collections, indexes, etc), all stored in 
 That's what FerretDB lets you do.
 And with that, you can take advantage of the simplified and scalable setup of ScaleGrid for PostgreSQL to manage your data.
 
-To get started with your migration from MongoDB to FerretDB, here's some materials to make the process easier.
+To migrate from MongoDB to FerretDB, here's some materials to make the process easier:
 
 - [Migrate your MongoDB workloads to FerretDB](https://docs.ferretdb.io/migration/migrating-from-mongodb/)
 - [Quickstart guide for FerretDB](https://docs.ferretdb.io/quickstart-guide/docker/)
