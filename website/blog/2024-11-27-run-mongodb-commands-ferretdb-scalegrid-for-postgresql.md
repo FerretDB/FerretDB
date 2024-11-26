@@ -16,7 +16,7 @@ FerretDB, a truly open source MongoDB alternative, lets you run your workloads i
 <!--truncate-->
 
 By converting BSON documents to JSONB, FerretDB allows developers to leverage MongoDB-like functionality on [PostgreSQL](https://www.postgresql.org/).
-When paired with [ScaleGrid for PostgreSQL](https://scalegrid.io/postgresql/) — a fully managed database hosting service — developers get a reliable and scalable solution for running MongoDB workloads without compromising performance or flexibility.
+When paired with [ScaleGrid for PostgreSQL](https://scalegrid.io/postgresql/) – a fully managed database hosting service – developers get a reliable and scalable solution for running MongoDB workloads without compromising performance or flexibility.
 With ScaleGrid, developers can focus on building their applications while enjoying features like automated backups, disaster recovery, real-time monitoring, and high availability.
 
 In this blog post, we'll explore how to use FerretDB and ScaleGrid for PostgreSQL to run MongoDB workloads.
@@ -28,7 +28,7 @@ Ensure to have the following installed before you start:
 - [ScaleGrid account](https://scalegrid.io/)
 - [`mongosh`](https://www.mongodb.com/docs/mongodb-shell/)
 - [Docker](https://www.docker.com/)
-- [psql](https://www.postgresql.org/docs/current/app-psql.html)
+- [`psql`](https://www.postgresql.org/docs/current/app-psql.html)
 
 ## Create a PostgreSQL deployment in ScaleGrid
 
@@ -44,7 +44,7 @@ You'll need the connection string for the PostgreSQL instance once it's ready �
 ## Connect FerretDB to PostgreSQL using Docker
 
 From your local terminal, start by running the FerretDB container via Docker.
-You'll need the connection string for your PostgreSQL instance — available on the PostgreSQL deployment dashboard.
+You'll need the connection string for your PostgreSQL instance – available on the PostgreSQL deployment dashboard.
 
 ```sh
 docker run -e FERRETDB_POSTGRESQL_URL='postgresql://<username>:<password>@<host>/<database>' -p 27017:27017 ghcr.io/ferretdb/ferretdb
@@ -122,14 +122,11 @@ db.cities.updateOne(
 
 Say there is a population increase of 200,000 in Barcelona, you want to update that as well.
 
-````js
-db.cities.updateOne(
-    { "name": "Barcelona" },
-    { $inc: { "population": 200000 } }
-);
+```js
+db.cities.updateOne({ name: 'Barcelona' }, { $inc: { population: 200000 } })
 ```
 
-Run `db.cities.find()` to see the newly updated collection  –  the population of "Barcelona" should have increased to "5700000" and "Kyoto" should now have three elements in its "landmarks" array.
+Run `db.cities.find()` to see the newly updated collection – the population of "Barcelona" should have increased to "5700000" and "Kyoto" should now have three elements in its "landmarks" array.
 
 ```json5
 [
@@ -155,10 +152,10 @@ Run `db.cities.find()` to see the newly updated collection  –  the population 
 Finally, let's delete a city with an average winter temperature less than or equal to 5 ℃.
 
 ```js
-db.cities.deleteMany({ "average_temperature.winter": { $lte: 5 } });
+db.cities.deleteMany({ 'average_temperature.winter': { $lte: 5 } })
 ```
 
-When you run `db.cities.find()`, it should leave you with a single document  –  "Barcelona".
+When you run `db.cities.find()`, it should leave you with a single document – "Barcelona".
 
 ```json5
 [
@@ -173,14 +170,14 @@ When you run `db.cities.find()`, it should leave you with a single document  –
 ]
 ```
 
-If you're interested in seeing how the database looks like in Postgres, ScaleGrid for PostgreSQL provides a `psql` command with the connection string. Or you can use the `FERRETDB_POSTGRESQL_URL` from earlier.
+If you're interested in seeing how the database looks like in Postgres, ScaleGrid for PostgreSQL provides a `psql` command with the connection string.
+Or you can use the `FERRETDB_POSTGRESQL_URL` from earlier.
 
 ```sh
 psql 'postgresql://<username>:<password>@<host>/<database>'
 ```
 
 Once you're in, set the search path to `postgres` and display the data:
-
 
 ```text
 postgres=# set search_path to postgres;
