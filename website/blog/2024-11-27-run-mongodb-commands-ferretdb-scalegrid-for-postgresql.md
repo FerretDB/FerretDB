@@ -170,7 +170,7 @@ When you run `db.cities.find()`, it should leave you with a single document – 
 ]
 ```
 
-If you're interested in seeing how the database looks like in Postgres, ScaleGrid for PostgreSQL provides a `psql` command with the connection string.
+If you're interested in seeing how the database looks like in PostgreSQL, ScaleGrid for PostgreSQL provides a `psql` command with the connection string.
 Or you can use the `FERRETDB_POSTGRESQL_URL` from earlier.
 
 ```sh
