@@ -15,5 +15,6 @@ bin/
 tmp/
 vendor/
 website/build/
+.DS_Store
 
 **/testdata/fuzz/
