@@ -1,6 +1,6 @@
 ---
 slug: run-mongodb-commands-ferretdb-scalegrid-for-postgresql
-title: 'Run MongoDB Commands on FerretDB with ScaleGrid for PostgreSQL'
+title: 'Run MongoDB Commands on FerretDB and ScaleGrid for PostgreSQL'
 authors: [alex]
 description: >
   Learn how to run MongoDB workloads in FerretDB with a fully managed PostgreSQL service like ScaleGrid for PostgreSQL.
