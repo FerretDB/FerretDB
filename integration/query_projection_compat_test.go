@@ -349,6 +349,13 @@ func TestQueryProjectionPositionalOperatorCompat(t *testing.T) {
 			},
 			skip: "https://github.com/FerretDB/FerretDB/issues/835",
 		},
+		"AvgOperatorValue": {
+			filter: bson.D{},
+			projection: bson.D{
+				{"avg", bson.D{{"$avg", "$v"}}},
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/835",
+		},
 	}
 
 	testQueryCompatWithProviders(t, providers, testCases)
