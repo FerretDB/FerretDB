@@ -10,7 +10,7 @@ If you encounter any problem, please [join our community](/#community) to report
 :::
 
 With both DEB and RPM package we ship the systemd unit, to start FerretDB automatically.
-If FerretDB is not installed yet, please refer to the [`.deb`](https://docs.ferretdb.io/quickstart-guide/deb/) or [`.rpm`](https://docs.ferretdb.io/quickstart-guide/rpm/) installation pages.
+If FerretDB is not installed yet, please refer to the [`.deb`](deb.md) or [`.rpm`](rpm.md) installation pages.
 
 The unit file provides some basic environment variables as an example.
 They should be overwritten with the proper [configuration](../configuration/flags.md).

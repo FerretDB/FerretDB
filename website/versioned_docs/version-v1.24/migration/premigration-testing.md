@@ -29,7 +29,7 @@ You would do the following:
 
    Ensure to specify `--listen-addr` and `--proxy-addr` flags or set the `FERRETDB_LISTEN_ADDR` and `FERRETDB_PROXY_ADDR` environment variables.
    Specify the address of your MongoDB instance for `--proxy-addr` flag or `FERRETDB_PROXY_ADDR` environment variable.
-   [See docs for more details](https://docs.ferretdb.io/configuration/flags/#interfaces). For example:
+   [See docs for more details](../configuration/flags.md#interfaces). For example:
 
    ```sh
    ferretdb --mode=diff-normal \

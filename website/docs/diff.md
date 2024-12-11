@@ -1,6 +1,6 @@
 ---
 sidebar_position: 11
-slug: /diff/ # referenced in README.md and beacon
+slug: /diff/ # referenced in README.md
 ---
 
 # Known differences

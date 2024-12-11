@@ -27,8 +27,7 @@ Example: `mongodb://ferretdb:27018/?tls=true&tlsCAFile=companyRootCA.pem`.
 
 Using TLS is recommended if username and password are transferred in plain text.
 
-In following examples, FerretDB uses TLS certificates to secure the connection.
-Example certificates are found in [build/certs](https://github.com/FerretDB/FerretDB/tree/main/build/certs).
+In the following examples, FerretDB uses TLS certificates to secure the connection.
 The `ferretdb` server uses TLS server certificate file, TLS private key file and root CA certificate file.
 
 ```text
