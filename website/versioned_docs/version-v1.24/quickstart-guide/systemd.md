@@ -10,7 +10,7 @@ If you encounter any problem, please [join our community](/#community) to report
 :::
 
 With both DEB and RPM package we ship the systemd unit, to start FerretDB automatically.
-If FerretDB is not installed yet, please refer to the [`.deb`](https://docs.ferretdb.io/quickstart-guide/deb/) or [`.rpm`](https://docs.ferretdb.io/quickstart-guide/rpm/) installation pages.
+If FerretDB is not installed yet, please refer to the [`.deb`](deb.md) or [`.rpm`](rpm.md) installation pages.
 
 The unit file provides some basic environment variables as an example.
 They should be overwritten with the proper [configuration](../configuration/flags.md).
@@ -21,7 +21,7 @@ ExecStart=/usr/bin/ferretdb
 Restart=on-failure
 
 # Configure the FerretDB service with `systemctl edit ferretdb`.
-# For more configuration options check https://docs.ferretdb.io/configuration/flags/
+# For more configuration options check https://docs.ferretdb.io/v1.24/configuration/flags/
 
 Environment="FERRETDB_POSTGRESQL_URL=postgres://127.0.0.1:5432/ferretdb"
 ```
