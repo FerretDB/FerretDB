@@ -10,12 +10,12 @@ tags: [tutorial, open source, cloud]
 
 ![Run Managed FerretDB instance on Taikun CloudWorks](/img/blog/ferretdb-taikun2.jpg)
 
-Do you want a fully managed, production-ready FerretDB instance – in no time?
+Do you want a fully managed, production-ready [FerretDB](https://www.ferretdb.com/) instance – in no time?
 Taikun CloudWorks now includes FerretDB as part of its numerous applications.
 
 <!--truncate-->
 
-Taikun CloudWorks provides automated features to build, manage, and deploy different Kubernetes clusters and applications at scale – including FerretDB and PostgreSQL – on a unified interface across different cloud vendors, including AWS, Azure, GCP, OpenStack, and more.
+[Taikun CloudWorks](https://taikun.cloud/taikun-cloudworks/) provides automated features to build, manage, and deploy different Kubernetes clusters and applications at scale – including FerretDB and [PostgreSQL](https://www.postgresql.org/) – on a unified interface across different cloud vendors, including [AWS](https://aws.amazon.com/), [Azure](https://azure.microsoft.com/), [GCP](https://cloud.google.com/), [OpenStack](https://www.openstack.org/), and more.
 
 With a FerretDB instance running on Taikun CloudWorks, you can easily run your MongoDB workloads on a production-ready cluster.
 
@@ -25,7 +25,8 @@ Let's dive into the entire setup and see how you can get a managed FerretDB inst
 
 Before you begin, ensure you have the following:
 
-- A Kubernetes cluster configured and running on Taikun CloudWorks. If you don't have a Kubernetes cluster set up on Taikun CloudWorks, you can [follow this guide to set up a Kubernetes cluster in Taikun CloudWorks](https://taikun.cloud/docs/installing-applications/)
+- A Kubernetes cluster configured and running on Taikun CloudWorks.
+  If you don't have a Kubernetes cluster set up yet, you can [follow this guide to set it up](https://taikun.cloud/docs/installing-applications/)
 - [kubectl](https://kubernetes.io/docs/reference/kubectl/)
 - [Helm](https://helm.sh/docs/intro/install/)
 
@@ -33,14 +34,14 @@ Before you begin, ensure you have the following:
 
 Start by creating a Taikun project.
 It will act as a central management place for the Kubernetes cluster.
-Read the following documentation to learn how to create a Kubernetes cluster in Taikun:
+Read the following documentation guides to learn how to create a Kubernetes cluster in Taikun:
 
 - [Create a project](https://taikun.cloud/docs/taikun-project-creation/)
 - [Create Kubernetes Cluster in Taikun](https://taikun.cloud/docs/creating-kubernetes-cluster/)
 - [Download Cluster kubeconfig](https://taikun.cloud/docs/accessing-cluster-kubeconfig/)
 
-You want to start by your `kubeconfig` file.
 With the `kubeconfig` file, you can access the Kubernetes cluster from your local machine.
+After downloading the `kubeconfig` file, set the `KUBECONFIG` environment variable to point to the file:
 
 ```sh
 export KUBECONFIG=/<path>/<to>/<kubeconfig-file>.yaml
@@ -52,19 +53,37 @@ Then create a namespace for the project:
 kubectl create namespace newferret
 ```
 
-## Install FerretDB Helm chart
+This namespace will house all the resources for deploying the FerretDB instance.
 
-Before installing the FerretDB Helm chart, you need to have the [Percona PostgreSQL Operator](https://github.com/percona/percona-postgresql-operator) installed and running in your Kubernetes cluster.
+## Install Percona PostgreSQL Operator
+
+You can deploy a managed FerretDB instance on Taikun CloudWorks using the FerretDB Helm chart.
+
 FerretDB relies on PostgreSQL as the backend database, and the Percona PostgreSQL Operator provides a robust and scalable PostgreSQL solution.
+So before installing the chart, ensure the [Percona PostgreSQL Operator](https://github.com/percona/percona-postgresql-operator) is installed and running in your Kubernetes cluster.
 
-You can install the Percona PostgreSQL Operator by following their installation guide [here](https://github.com/percona/percona-postgresql-operator#installation) OR
-
-Install Percona PostgreSQL operator by running the following command:
+You can install the Percona PostgreSQL Operator by following their installation guide [here](https://github.com/percona/percona-postgresql-operator#installation) or by running the following command:
 
 ```sh
 kubectl apply --server-side -f https://raw.githubusercontent.com/percona/percona-postgresql-operator/v2.3.1/deploy/bundle.yaml -n newferret
 ```
 
+Check to see if the Percona PostgreSQL Operator is running (the status should be `Running`):
+
+```sh
+kubectl get pods -n newferret
+```
+
+You should see the Percona PostgreSQL Operator pods running:
+
+```text
+NAME                                      READY   STATUS    RESTARTS   AGE
+percona-postgresql-operator-59d79f547b-cgz9j   1/1     Running     0          25m
+```
+
+## Install FerretDB Helm chart
+
+Now you can install the FerretDB Helm chart.
 To add the FerretDB Helm chart repository, run the following command:
 
 ```sh
@@ -79,7 +98,7 @@ helm install mydb --namespace newferret ferretdb/ferretdb
 
 It may take a few minutes to install the FerretDB instance.
 
-Once its installed and ready, you should have the following log output:
+Once its installed and ready, you should see an output similar to the following:
 
 ```text
 ---------------------------------------------------
@@ -113,7 +132,7 @@ $ kubectl get secret new-ferret-pgdb-pguser-ferretuser -n newferret -o jsonpath=
 As you can see, the FerretDB instance is now running in the `newferret` namespace.
 You can access the FerretDB user credentials (`password`, `username`, and `database`) using the commands provided in the output above.
 
-## Access FerretDB instance
+## Connect to the FerretDB instance via `mongosh`
 
 To access the FerretDB instance, you need the user credential and service address for the FerretDB instance.
 A typical FerretDB connection string looks like this:
@@ -142,8 +161,6 @@ new-ferret-pgdb-replicas    ClusterIP      10.233.21.71    <none>          5432/
 ```
 
 The service `new-ferret-ferretdb` is the FerretDB instance and the host address `10.233.11.15` and port is `27017`.
-
-## Connect to the FerretDB instance
 
 Now that you have the service address, you can connect to the FerretDB instance.
 
