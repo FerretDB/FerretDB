@@ -10,14 +10,14 @@ tags: [tutorial, open source, cloud]
 
 ![Run Managed FerretDB instance on Taikun CloudWorks](/img/blog/ferretdb-taikun2.jpg)
 
-Do you want a fully managed, production-ready [FerretDB](https://www.ferretdb.com/) instance – in no time?
+Are you looking to migrate from MongoDB Atlas to a fully managed, production-ready [FerretDB](https://www.ferretdb.com/) instance – in no time?
 Taikun CloudWorks now includes FerretDB as part of its numerous applications.
 
 <!--truncate-->
 
 [Taikun CloudWorks](https://taikun.cloud/taikun-cloudworks/) provides automated features to build, manage, and deploy different Kubernetes clusters and applications at scale – including FerretDB and [PostgreSQL](https://www.postgresql.org/) – on a unified interface across different cloud vendors, including [AWS](https://aws.amazon.com/), [Azure](https://azure.microsoft.com/), [GCP](https://cloud.google.com/), [OpenStack](https://www.openstack.org/), and more.
 
-With a FerretDB instance running on Taikun CloudWorks, you can easily run your MongoDB workloads on a production-ready cluster.
+With a FerretDB instance running on Taikun CloudWorks, you can easily run your MongoDB workloads on a highly scalable, production-ready PostgreSQL cluster powered by Percona PostgreSQL Operator.
 
 Let's dive into the entire setup and see how you can get a managed FerretDB instance running in minutes.
 
