@@ -25,11 +25,11 @@ We appreciate your feedback.
 ## Contributing to this documentation
 
 If you find anything confusing or missing in the documentation, click the "Edit this page" link at the bottom of almost every page in the documentation.
-More information on contributing to the documentation can be found [here](https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md#contributing-documentation).
+More information on contributing to the documentation can be found [here](https://github.com/FerretDB/FerretDB/blob/main-v1/CONTRIBUTING.md#contributing-documentation).
 
 ## Contributing to the FerretDB repository
 
-- To contribute to this [FerretDB project](https://github.com/FerretDB/FerretDB/), please read the [CONTRIBUTING.md](https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](https://github.com/FerretDB/FerretDB/blob/main/CODE_OF_CONDUCT.md) guideline to know more.
+- To contribute to this [FerretDB project](https://github.com/FerretDB/FerretDB/), please read the [CONTRIBUTING.md](https://github.com/FerretDB/FerretDB/blob/main-v1/CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](https://github.com/FerretDB/FerretDB/blob/main-v1/CODE_OF_CONDUCT.md) guideline to know more.
 - Is everything working as it should?
   If not, please let us know by [creating an issue](https://github.com/FerretDB/FerretDB/issues/new/choose).
   You can create issues for bugs, documentation, features, or enhancements.

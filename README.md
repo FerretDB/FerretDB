@@ -3,7 +3,7 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/FerretDB/FerretDB/ferretdb.svg)](https://pkg.go.dev/github.com/FerretDB/FerretDB/ferretdb)
 
 [![Go](https://github.com/FerretDB/FerretDB/actions/workflows/go.yml/badge.svg?branch=main)](https://github.com/FerretDB/FerretDB/actions/workflows/go.yml)
-[![codecov](https://codecov.io/gh/FerretDB/FerretDB/branch/main/graph/badge.svg?token=JZ56XFT3DM)](https://codecov.io/gh/FerretDB/FerretDB)
+[![codecov](https://codecov.io/gh/FerretDB/FerretDB/branch/main-v1/graph/badge.svg?token=JZ56XFT3DM)](https://codecov.io/gh/FerretDB/FerretDB)
 
 [![Security](https://github.com/FerretDB/FerretDB/actions/workflows/security.yml/badge.svg?branch=main)](https://github.com/FerretDB/FerretDB/actions/workflows/security.yml)
 [![Packages](https://github.com/FerretDB/FerretDB/actions/workflows/packages.yml/badge.svg?branch=main)](https://github.com/FerretDB/FerretDB/actions/workflows/packages.yml)
@@ -45,7 +45,7 @@ Features are constantly being added to further increase compatibility and perfor
 
 We welcome all contributors.
 See our [public roadmap](https://github.com/orgs/FerretDB/projects/2/views/1),
-a list of [known differences with MongoDB](https://docs.ferretdb.io/diff/),
+a list of [known differences with MongoDB](https://docs.ferretdb.io/v1.24/diff/),
 and [contributing guidelines](CONTRIBUTING.md).
 
 ## Quickstart
@@ -64,7 +64,7 @@ docker run -d --rm --name ferretdb -p 27017:27017 -e FERRETDB_HANDLER=sqlite ghc
 
 This command will start a container with FerretDB, PostgreSQL/SQLite, and MongoDB Shell for quick testing and experiments.
 However, it is unsuitable for production use cases because it keeps all data inside and loses it on shutdown.
-See our [Docker quickstart guide](https://docs.ferretdb.io/quickstart-guide/docker/) for instructions
+See our [Docker quickstart guide](https://docs.ferretdb.io/v1.24/quickstart-guide/docker/) for instructions
 that don't have those problems.
 
 With that container running, you can:
@@ -86,7 +86,7 @@ You can stop the container with `docker stop ferretdb`.
 
 We also provide binaries and packages for various Linux distributions,
 as well as [Go library package](https://pkg.go.dev/github.com/FerretDB/FerretDB/ferretdb) that embeds FerretDB into your application.
-See [our documentation](https://docs.ferretdb.io/quickstart-guide/) for more details.
+See [our documentation](https://docs.ferretdb.io/v1.24/quickstart-guide/) for more details.
 
 ## Building and packaging
 
