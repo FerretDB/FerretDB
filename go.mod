@@ -2,7 +2,7 @@ module github.com/FerretDB/FerretDB
 
 go 1.23
 
-toolchain go1.23.3
+toolchain go1.23.4
 
 require (
 	github.com/AlekSi/pointer v1.2.0
@@ -27,10 +27,10 @@ require (
 	go.opentelemetry.io/otel/sdk v1.29.0
 	go.opentelemetry.io/otel/trace v1.29.0
 	go.uber.org/automaxprocs v1.5.3
-	golang.org/x/crypto v0.26.0
-	golang.org/x/crypto/x509roots/fallback v0.0.0-20240806160748-b2d3a6a4b4d3
+	golang.org/x/crypto v0.32.0
+	golang.org/x/crypto/x509roots/fallback v0.0.0-20250106144430-8929309228b4
 	golang.org/x/exp v0.0.0-20240823005443-9b4947da3948
-	golang.org/x/sys v0.24.0
+	golang.org/x/sys v0.29.0
 	modernc.org/sqlite v1.32.0
 )
 
@@ -63,9 +63,9 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.29.0 // indirect
 	go.opentelemetry.io/otel/metric v1.29.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.3.1 // indirect
-	golang.org/x/net v0.28.0 // indirect
-	golang.org/x/sync v0.8.0 // indirect
-	golang.org/x/text v0.17.0 // indirect
+	golang.org/x/net v0.34.0 // indirect
+	golang.org/x/sync v0.10.0 // indirect
+	golang.org/x/text v0.21.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240822170219-fc7c04adadcd // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240822170219-fc7c04adadcd // indirect
 	google.golang.org/grpc v1.65.0 // indirect
