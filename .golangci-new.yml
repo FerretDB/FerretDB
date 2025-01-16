@@ -104,7 +104,6 @@ linters:
     - err113
     - errchkjson
     - errname
-    - execinquery
     - exhaustruct
     - exportloopref
     - fatcontext
@@ -119,7 +118,6 @@ linters:
     - gocyclo
     - gofmt
     - gofumpt
-    - gomnd
     - gomoddirectives
     - goprintffuncname
     - gosec
