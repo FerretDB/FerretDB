@@ -1,7 +1,7 @@
 // @ts-check
 // Note: type annotations allow type checking and IDEs autocompletion
 
-import {themes} from 'prism-react-renderer';
+import { themes } from 'prism-react-renderer';
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
@@ -23,27 +23,25 @@ const config = {
     locales: ['en'],
   },
 
-  stylesheets: [
-    {href: "/codapi/snippet.css"},
-  ],
+  stylesheets: [{ href: '/codapi/snippet.css' }],
 
   scripts: [
-    {src: 'https://plausible.io/js/script.js', defer: true, "data-domain": "blog.ferretdb.io"},
-    {src: '/codapi/snippet.js', defer: true},
+    { src: 'https://plausible.io/js/script.js', defer: true, 'data-domain': 'blog.ferretdb.io' },
+    { src: '/codapi/snippet.js', defer: true },
   ],
 
   plugins: [
     [
-      require.resolve("@cmfcmf/docusaurus-search-local"),
+      require.resolve('@cmfcmf/docusaurus-search-local'),
       {
         indexBlog: true, // Index blog posts in search engine
         indexDocs: false, // Docs plugin is disabled, docs search needs to be disabled too
-        lunr:{
+        lunr: {
           tokenizerSeparator: /[\s\-\$]+/,
-        }
+        },
       },
     ],
-    'plugin-image-zoom'
+    'plugin-image-zoom',
   ],
 
   presets: [
@@ -71,24 +69,18 @@ const config = {
 
             // override to add images; see https://github.com/facebook/docusaurus/discussions/8321#discussioncomment-7016367
             createFeedItems: async (params) => {
-              const {
-                blogPosts,
-                defaultCreateFeedItems,
-                siteConfig,
-                outDir
-              } = params;
+              const { blogPosts, defaultCreateFeedItems, siteConfig, outDir } = params;
 
               const allFeedItems = await defaultCreateFeedItems({
                 blogPosts: blogPosts.slice(0, 10),
                 siteConfig: siteConfig,
-                outDir: outDir
+                outDir: outDir,
               });
 
               return allFeedItems.map((item, index) => ({
                 ...item,
                 image: `${config.url}${blogPosts[index].metadata.frontMatter.image}`,
-              }))
-
+              }));
             },
           },
         },
@@ -107,7 +99,7 @@ const config = {
         logo: {
           alt: 'FerretDB Logo',
           src: 'img/logo-dark.jpg',
-          srcDark: 'img/logo-light.png'
+          srcDark: 'img/logo-light.png',
         },
         items: [
           {
@@ -151,8 +143,8 @@ const config = {
                 href: 'https://join.slack.com/t/ferretdb/shared_invite/zt-zqe9hj8g-ZcMG3~5Cs5u9uuOPnZB8~A',
               },
               {
-                label: 'Twitter',
-                href: 'https://twitter.com/ferret_db',
+                label: 'X (Twitter)',
+                href: 'https://x.com/ferret_db',
               },
               {
                 label: 'Mastodon',
@@ -187,7 +179,7 @@ const config = {
         additionalLanguages: ['go', 'sql', 'json', 'json5'],
       },
       mermaid: {
-        theme: {light: 'default', dark: 'dark'},
+        theme: { light: 'default', dark: 'dark' },
       },
     }),
   markdown: {
