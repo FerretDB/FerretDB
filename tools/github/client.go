@@ -210,7 +210,7 @@ func (c *Client) IssueStatus(ctx context.Context, url string) (IssueStatus, erro
 				msg := "Rate limit reached: " + err.Error()
 				if c.token == "" {
 					msg += "\nPlease set a GITHUB_TOKEN as described at " +
-						"https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md#setting-a-github_token"
+						"https://github.com/FerretDB/FerretDB/blob/main-v1/CONTRIBUTING.md#setting-a-github_token"
 				}
 				c.logf("%s", msg)
 			}

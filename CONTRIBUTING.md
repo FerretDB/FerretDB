@@ -126,7 +126,7 @@ With `task` installed (see above), you may do the following:
 1. Start the development environment with `task env-up`.
 2. Run all tests with `task test` (see [below](#running-tests)).
 3. Start FerretDB with `task run`, `task run-sqlite` or `task run-proxy`.
-   (See [Operation modes](https://docs.ferretdb.io/configuration/operation-modes/) page in our documentation.)
+   (See [Operation modes](https://docs.ferretdb.io/v1.24/configuration/operation-modes/) page in our documentation.)
 4. Fill collections in the `test` database with data for experiments with `task env-data`.
 5. Run `mongosh` with `task mongosh`.
    See what collections were created by the previous command with `show collections`.
@@ -389,4 +389,4 @@ Before submitting a pull request, please make sure that:
    created from the [current state](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/syncing-a-fork)
    of our main branch.
 2. Documentation is formatted, linted, and built with `task docs`.
-3. Documentation is written according to our [writing guide](https://docs.ferretdb.io/contributing/writing-guide/).
+3. Documentation is written according to our [writing guide](https://docs.ferretdb.io/v1.24/contributing/writing-guide/).

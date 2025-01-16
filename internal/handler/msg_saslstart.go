@@ -83,7 +83,7 @@ func (h *Handler) saslStart(ctx context.Context, dbName string, document *types.
 			)), nil
 		default:
 			msg := fmt.Sprintf("Unsupported authentication mechanism %q.\n", mechanism) +
-				"See https://docs.ferretdb.io/security/authentication/ for more details."
+				"See https://docs.ferretdb.io/v1.24/security/authentication/ for more details."
 			return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrAuthenticationFailed, msg, "mechanism")
 		}
 	}
@@ -103,7 +103,7 @@ func (h *Handler) saslStart(ctx context.Context, dbName string, document *types.
 		)), nil
 	default:
 		msg := fmt.Sprintf("Unsupported authentication mechanism %q.\n", mechanism) +
-			"See https://docs.ferretdb.io/security/authentication/ for more details."
+			"See https://docs.ferretdb.io/v1.24/security/authentication/ for more details."
 		return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrAuthenticationFailed, msg, "mechanism")
 	}
 }
