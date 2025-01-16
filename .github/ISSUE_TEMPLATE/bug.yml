@@ -17,7 +17,7 @@ body:
       label: FerretDB version
       description: >
         What version and package of FerretDB do you use?
-        Please provide an output of running FerretDB with [`--version` flag](https://docs.ferretdb.io/configuration/flags/).
+        Please provide an output of running FerretDB with [`--version` flag](https://docs.ferretdb.io/v1.24/configuration/flags/).
     validations:
       required: true
   - type: input
@@ -48,7 +48,7 @@ body:
       label: What did you do?
       description: >
         Include MongoDB queries or
-        [pull request with a test script](https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md#reporting-a-bug)
+        [pull request with a test script](https://github.com/FerretDB/FerretDB/blob/main-v1/CONTRIBUTING.md#reporting-a-bug)
         if you can.
     validations:
       required: true
@@ -65,6 +65,6 @@ body:
     attributes:
       label: What did you see instead?
       description: >
-        Please include FerretDB [logs](https://docs.ferretdb.io/configuration/observability/).
+        Please include FerretDB [logs](https://docs.ferretdb.io/v1.24/configuration/observability/).
     validations:
       required: true

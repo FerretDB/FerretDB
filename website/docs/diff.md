@@ -6,7 +6,7 @@ slug: /diff/ # referenced in README.md
 # Known differences
 
 <!--
-   Each numbered point should have a corresponding, numbered test file https://github.com/FerretDB/FerretDB/tree/main/integration/diff_*_test.go
+   Each numbered point should have a corresponding, numbered test file https://github.com/FerretDB/FerretDB/tree/main-v1/integration/diff_*_test.go
    Bullet subpoints should be in the same file as the parent point.
 -->
 

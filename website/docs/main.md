@@ -27,7 +27,7 @@ We are constantly adding features to increase compatibility based on user feedba
 
 See our [public roadmap](https://github.com/orgs/FerretDB/projects/2/views/1),
 a list of [known differences with MongoDB](diff.md),
-and [contributing guidelines](https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md).
+and [contributing guidelines](https://github.com/FerretDB/FerretDB/blob/main-v1/CONTRIBUTING.md).
 
 ## Community
 
