@@ -1,9 +1,9 @@
 ---
-slug: run-managed-ferretdb-taikun-cloudworks
-title: 'Run Managed FerretDB instance on Taikun CloudWorks'
+slug: run-mongodb-workloads-ferretdb-taikun-cloudworks
+title: 'Run MongoDB workloads with FerretDB on Taikun CloudWorks'
 authors: [alex]
 description: >
-  Learn how to deploy a fully managed FerretDB instance in production in any cloud environment using Taikun CloudWorks.
+  Learn to run MongoDB workloads with a FerretDB instance in production on any cloud environment using Taikun CloudWorks.
 image: /img/blog/ferretdb-taikun2.jpg
 tags: [tutorial, open source, cloud]
 ---
