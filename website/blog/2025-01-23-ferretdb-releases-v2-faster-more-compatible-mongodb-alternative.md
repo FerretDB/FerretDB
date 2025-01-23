@@ -10,7 +10,8 @@ tags: [release]
 
 ![We just launched FerretDB 2.0 RC. The Truly Open Source MongoDB Alternative, built on Postgres. Fast, free, and more compatible. Now powered by DocumentDB.](/img/blog/ferretdb-v2.png)
 
-We are pleased to announce the first release candidate of FerretDB v2.0, a significant milestone in our objective to provide a high-performance, truly Open Source alternative to MongoDB.
+We are pleased to announce [the first release candidate of FerretDB v2.0](https://github.com/FerretDB/FerretDB/releases/tag/v2.0.0-rc.1),
+a significant milestone in our objective to provide a high-performance, truly Open Source alternative to MongoDB.
 
 <!--truncate-->
 
