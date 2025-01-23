@@ -17,15 +17,13 @@ package shareddata
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
-	"errors"
 	"fmt"
+	"iter"
 	"reflect"
 
 	"go.mongodb.org/mongo-driver/bson"
 
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // BenchmarkProvider is implemented by shared data sets that provide documents for benchmarks.
@@ -36,8 +34,8 @@ type BenchmarkProvider interface {
 	// BaseName returns a part of the full name that does not include a number of documents and their hash.
 	BaseName() string
 
-	// NewIterator returns a new iterator for the same documents.
-	NewIterator() iterator.Interface[struct{}, bson.D]
+	// NewIter returns a new iterator for the same documents.
+	NewIter() iter.Seq[bson.D]
 }
 
 // BenchmarkGenerator provides documents for benchmarks by generating them.
@@ -48,68 +46,47 @@ type BenchmarkGenerator interface {
 	BenchmarkProvider
 }
 
-// hashBenchmarkProvider checks that BenchmarkProvider's NewIterator methods returns a new iterator
+// hashBenchmarkProvider checks that BenchmarkProvider's NewIter methods returns a new iterator
 // for the same documents in the same order,
 // and returns a hash of those documents that could be used as a part of benchmark name.
 func hashBenchmarkProvider(bp BenchmarkProvider) string {
-	iter1 := bp.NewIterator()
-	defer iter1.Close()
-
-	iter2 := bp.NewIterator()
-	defer iter2.Close()
+	next, stop := iter.Pull(bp.NewIter())
+	defer stop()
 
 	h := sha256.New()
 
-	for {
-		_, v1, err := iter1.Next()
+	for v1 := range bp.NewIter() {
+		v2, ok := next()
+		must.BeTrue(ok)
+		must.BeTrue(reflect.DeepEqual(v1, v2))
 
-		switch {
-		case err == nil:
-			var v2 bson.D
-
-			_, v2, err = iter2.Next()
-			must.NoError(err)
-			must.BeTrue(reflect.DeepEqual(v1, v2))
-
-			b := must.NotFail(json.Marshal(v1))
-			h.Write(b)
-
-		case errors.Is(err, iterator.ErrIteratorDone):
-			_, _, err = iter2.Next()
-			if !errors.Is(err, iterator.ErrIteratorDone) {
-				panic("iter2 should be done too")
-			}
-
-			return hex.EncodeToString(h.Sum(nil)[:2])
-
-		default:
-			panic(err)
-		}
+		b := must.NotFail(bson.MarshalExtJSON(v1, true, false))
+		h.Write(b)
 	}
+
+	_, ok := next()
+	must.BeZero(ok)
+
+	return hex.EncodeToString(h.Sum(nil)[:2])
 }
 
-// generatorFunc is a function that returns the next generated bson.D document, or nil.
+// newGen returns a function that generates the next bson.D document, or nil.
 //
-// The order of documents returned must be deterministic.
-type generatorFunc func() bson.D
+// Returned functions should be independent from each other, but return the same documents in the same order.
+type newGen func(docs int) func() bson.D
 
-// generatorFuncConstructor returns a new generatorFunc that returns documents.
-//
-// All returned functions should be independent from each other, but return the same documents in the same order.
-type generatorFuncConstructor func(docs int) generatorFunc
-
-// generatorBenchmarkProvider uses generator functions to implement BenchmarkProvider.
+// generatorBenchmarkProvider implements BenchmarkProvider.
 type generatorBenchmarkProvider struct {
-	baseName           string
-	genFuncConstructor generatorFuncConstructor
-	docs               int
+	baseName string
+	newGen   newGen
+	docs     int
 }
 
-// newGeneratorBenchmarkProvider returns BenchmarkProvider with a given base name and newGeneratorFunc.
-func newGeneratorBenchmarkProvider(baseName string, genFuncConstructor generatorFuncConstructor) BenchmarkProvider {
+// newGeneratorBenchmarkProvider returns BenchmarkProvider.
+func newGeneratorBenchmarkProvider(baseName string, newGen newGen) BenchmarkProvider {
 	return &generatorBenchmarkProvider{
-		baseName:           baseName,
-		genFuncConstructor: genFuncConstructor,
+		baseName: baseName,
+		newGen:   newGen,
 	}
 }
 
@@ -130,25 +107,26 @@ func (gbp *generatorBenchmarkProvider) BaseName() string {
 	return gbp.baseName
 }
 
-// NewIterator implements [BenchmarkProvider].
-func (gbp *generatorBenchmarkProvider) NewIterator() iterator.Interface[struct{}, bson.D] {
+// NewIter implements [BenchmarkProvider].
+func (gbp *generatorBenchmarkProvider) NewIter() iter.Seq[bson.D] {
 	if gbp.docs == 0 {
 		panic("A number of documents must be more than zero")
 	}
 
-	var unused struct{}
-	next := gbp.genFuncConstructor(gbp.docs)
+	g := gbp.newGen(gbp.docs)
 
-	f := func() (struct{}, bson.D, error) {
-		v := next()
-		if v == nil {
-			return unused, nil, iterator.ErrIteratorDone
+	return func(yield func(bson.D) bool) {
+		for {
+			v := g()
+			if v == nil {
+				return
+			}
+
+			if !yield(v) {
+				return
+			}
 		}
-
-		return unused, v, nil
 	}
-
-	return iterator.ForFunc(f)
 }
 
 // check interfaces

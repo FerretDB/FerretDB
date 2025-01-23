@@ -17,8 +17,10 @@ package integration
 
 import (
 	"context"
-	"time"
+	"slices"
+	"testing"
 
+	"github.com/FerretDB/wire/wirebson"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -26,11 +28,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
-	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
+	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/v2/integration/setup"
 )
 
 //go:generate ../bin/stringer -linecomment -type compatTestCaseResultType
@@ -48,56 +48,67 @@ const (
 	emptyResult
 )
 
-// convert converts given driver value (bson.D, bson.A, etc) to FerretDB types package value.
-//
-// It then can be used with all types helpers such as testutil.AssertEqual.
-func convert(t testtb.TB, v any) any {
+// convert converts given driver value ([bson.D], [bson.A], etc) to FerretDB's bson package value.
+func convert(t testing.TB, v any) any {
 	t.Helper()
 
 	switch v := v.(type) {
 	// composite types
 	case primitive.D:
-		doc := types.MakeDocument(len(v))
+		doc := wirebson.MakeDocument(len(v))
 		for _, e := range v {
-			doc.Set(e.Key, convert(t, e.Value))
+			err := doc.Add(e.Key, convert(t, e.Value))
+			require.NoError(t, err)
 		}
+
 		return doc
+
 	case primitive.A:
-		arr := types.MakeArray(len(v))
+		arr := wirebson.MakeArray(len(v))
 		for _, e := range v {
-			arr.Append(convert(t, e))
+			err := arr.Add(convert(t, e))
+			require.NoError(t, err)
 		}
+
 		return arr
 
-	// scalar types (in the same order as in types package)
+	// scalar types (in the same order as in bson package)
 	case float64:
 		return v
 	case string:
 		return v
 	case primitive.Binary:
-		return types.Binary{
-			Subtype: types.BinarySubtype(v.Subtype),
+		return wirebson.Binary{
+			Subtype: wirebson.BinarySubtype(v.Subtype),
 			B:       v.Data,
 		}
 	case primitive.ObjectID:
-		return types.ObjectID(v)
+		return wirebson.ObjectID(v)
 	case bool:
 		return v
 	case primitive.DateTime:
 		return v.Time()
 	case nil:
-		return types.Null
+		return wirebson.Null
 	case primitive.Regex:
-		return types.Regex{
+		return wirebson.Regex{
 			Pattern: v.Pattern,
 			Options: v.Options,
 		}
 	case int32:
 		return v
 	case primitive.Timestamp:
-		return types.NewTimestamp(time.Unix(int64(v.T), 0), v.I)
+		return wirebson.Timestamp(uint64(v.T)<<32 | uint64(v.I))
 	case int64:
 		return v
+	case primitive.Decimal128:
+		h, l := v.GetBytes()
+
+		return wirebson.Decimal128{
+			H: h,
+			L: l,
+		}
+
 	default:
 		t.Fatalf("unexpected type %T", v)
 		panic("not reached")
@@ -105,7 +116,7 @@ func convert(t testtb.TB, v any) any {
 }
 
 // fixCluster removes document fields that are specific for MongoDB running in a cluster.
-func fixCluster(t testtb.TB, doc *types.Document) {
+func fixCluster(t testing.TB, doc *wirebson.Document) {
 	t.Helper()
 
 	doc.Remove("$clusterTime")
@@ -115,51 +126,117 @@ func fixCluster(t testtb.TB, doc *types.Document) {
 	doc.Remove("commitQuorum")
 }
 
+// fixOrder sorts document fields.
+//
+// It does nothing if the current test is running for MongoDB.
+//
+// This function should eventually be removed.
+// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/410
+// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/348
+func fixOrder(t testing.TB, doc *wirebson.Document) {
+	t.Helper()
+
+	if setup.IsMongoDB(t) {
+		return
+	}
+
+	fieldNames := doc.FieldNames()
+	slices.Sort(fieldNames)
+	fieldNames = slices.Compact(fieldNames)
+	require.Len(t, fieldNames, len(doc.FieldNames()), "duplicate field names are not handled")
+
+	for _, n := range fieldNames {
+		v := doc.Get(n)
+		require.NotNil(t, v)
+
+		// no practical need to handle arrays yet
+		if ad, ok := v.(wirebson.AnyDocument); ok {
+			d, err := ad.Decode()
+			require.NoError(t, err)
+			fixOrder(t, d)
+			v = d
+		}
+
+		doc.Remove(n)
+		require.NoError(t, doc.Add(n, v))
+	}
+}
+
+// fixActualUpdateN replaces the int64 `nMatched`, `nModified`, `nUpserted`, `n` fields with a int32 values.
+//
+// It does nothing if the current test is running for MongoDB.
+//
+// It should be used only with actual/target document, not with expected/compat document.
+//
+// This function should eventually be removed.
+// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/359
+func fixActualUpdateN(t testing.TB, actual *wirebson.Document) {
+	t.Helper()
+
+	if setup.IsMongoDB(t) {
+		return
+	}
+
+	// avoid updating generic responses that just happened to contain `n`
+	if actual.Get("nMatched") == nil && actual.Get("nModified") == nil && actual.Get("nUpserted") == nil {
+		return
+	}
+
+	for _, f := range []string{"nMatched", "nModified", "nUpserted", "n"} {
+		switch v := actual.Get(f).(type) {
+		case int64:
+			require.NoError(t, actual.Replace(f, int32(v)))
+		}
+	}
+}
+
 // fixExpected applies fixes to the expected/compat document.
-func fixExpected(t testtb.TB, expected *types.Document) {
+func fixExpected(t testing.TB, expected *wirebson.Document) {
 	t.Helper()
 
 	fixCluster(t, expected)
+	fixOrder(t, expected)
 }
 
 // fixActual applies fixes to the actual/target document.
-func fixActual(t testtb.TB, actual *types.Document) {
+func fixActual(t testing.TB, actual *wirebson.Document) {
 	t.Helper()
 
 	fixCluster(t, actual)
+	fixOrder(t, actual)
+	fixActualUpdateN(t, actual)
 }
 
-// ConvertDocument converts given driver's document to FerretDB's *types.Document.
-func ConvertDocument(t testtb.TB, doc bson.D) *types.Document {
+// convertDocument converts given driver's document to FerretDB's *bson.Document.
+func convertDocument(t testing.TB, doc bson.D) *wirebson.Document {
 	t.Helper()
 
 	v := convert(t, doc)
 
-	var res *types.Document
+	var res *wirebson.Document
 	require.IsType(t, res, v)
-	return v.(*types.Document)
+
+	return v.(*wirebson.Document)
 }
 
-// ConvertDocuments converts given driver's documents slice to FerretDB's []*types.Document.
-func ConvertDocuments(t testtb.TB, docs []bson.D) []*types.Document {
+// convertDocuments converts given driver's documents slice to FerretDB's []*bson.Document.
+func convertDocuments(t testing.TB, docs []bson.D) []*wirebson.Document {
 	t.Helper()
 
-	res := make([]*types.Document, len(docs))
+	res := make([]*wirebson.Document, len(docs))
 	for i, doc := range docs {
-		res[i] = ConvertDocument(t, doc)
+		res[i] = convertDocument(t, doc)
 	}
+
 	return res
 }
 
-// AssertEqualDocuments asserts that two documents are equal in a way that is useful for tests
-// (NaNs are equal, etc).
-//
-// See testutil.AssertEqual for details.
-func AssertEqualDocuments(t testtb.TB, expected, actual bson.D) bool {
+// AssertEqualDocuments asserts that two documents are equal in a way that is useful for tests.
+func AssertEqualDocuments(t testing.TB, expected, actual bson.D) bool {
 	t.Helper()
 
-	expectedDoc := ConvertDocument(t, expected)
-	actualDoc := ConvertDocument(t, actual)
+	expectedDoc := convertDocument(t, expected)
+	actualDoc := convertDocument(t, actual)
 
 	fixExpected(t, expectedDoc)
 	fixActual(t, actualDoc)
@@ -167,15 +244,12 @@ func AssertEqualDocuments(t testtb.TB, expected, actual bson.D) bool {
 	return testutil.AssertEqual(t, expectedDoc, actualDoc)
 }
 
-// AssertEqualDocumentsSlice asserts that two document slices are equal in a way that is useful for tests
-// (NaNs are equal, etc).
-//
-// See testutil.AssertEqual for details.
-func AssertEqualDocumentsSlice(t testtb.TB, expected, actual []bson.D) bool {
+// AssertEqualDocumentsSlice asserts that two document slices are equal in a way that is useful for tests.
+func AssertEqualDocumentsSlice(t testing.TB, expected, actual []bson.D) bool {
 	t.Helper()
 
-	expectedDocs := ConvertDocuments(t, expected)
-	actualDocs := ConvertDocuments(t, actual)
+	expectedDocs := convertDocuments(t, expected)
+	actualDocs := convertDocuments(t, actual)
 
 	for _, d := range expectedDocs {
 		fixExpected(t, d)
@@ -189,7 +263,7 @@ func AssertEqualDocumentsSlice(t testtb.TB, expected, actual []bson.D) bool {
 }
 
 // AssertEqualCommandError asserts that the expected error is the same as the actual (ignoring the Raw part).
-func AssertEqualCommandError(t testtb.TB, expected mongo.CommandError, actual error) bool {
+func AssertEqualCommandError(t testing.TB, expected mongo.CommandError, actual error) bool {
 	t.Helper()
 
 	a, ok := actual.(mongo.CommandError)
@@ -205,7 +279,7 @@ func AssertEqualCommandError(t testtb.TB, expected mongo.CommandError, actual er
 }
 
 // AssertEqualWriteError asserts that actual is a WriteException containing exactly one expected error (ignoring the Raw part).
-func AssertEqualWriteError(t testtb.TB, expected mongo.WriteError, actual error) bool {
+func AssertEqualWriteError(t testing.TB, expected mongo.WriteError, actual error) bool {
 	t.Helper()
 
 	we, ok := actual.(mongo.WriteException) //nolint:errorlint // do not inspect error chain
@@ -228,7 +302,7 @@ func AssertEqualWriteError(t testtb.TB, expected mongo.WriteError, actual error)
 
 // AssertMatchesError asserts that both errors are of same type and
 // are equal in value, except the message and Raw part.
-func AssertMatchesError(t testtb.TB, expected, actual error) {
+func AssertMatchesError(t testing.TB, expected, actual error) {
 	t.Helper()
 
 	switch expected := expected.(type) { //nolint:errorlint // do not inspect error chain
@@ -245,14 +319,14 @@ func AssertMatchesError(t testtb.TB, expected, actual error) {
 
 // AssertMatchesCommandError asserts that both errors are equal CommandErrors,
 // except messages (and ignoring the Raw part).
-func AssertMatchesCommandError(t testtb.TB, expected, actual error) {
+func AssertMatchesCommandError(t testing.TB, expected, actual error) {
 	t.Helper()
 
 	a, ok := actual.(mongo.CommandError) //nolint:errorlint // do not inspect error chain
-	require.Truef(t, ok, "actual is %T, not mongo.CommandError", actual)
+	require.Truef(t, ok, "actual is %[1]T (%[1]v), not mongo.CommandError", actual)
 
 	e, ok := expected.(mongo.CommandError) //nolint:errorlint // do not inspect error chain
-	require.Truef(t, ok, "expected is %T, not mongo.CommandError", expected)
+	require.Truef(t, ok, "expected is %[1]T (%[1]v), not mongo.CommandError", expected)
 
 	a.Raw = nil
 	e.Raw = nil
@@ -267,7 +341,7 @@ func AssertMatchesCommandError(t testtb.TB, expected, actual error) {
 
 // AssertMatchesWriteError asserts that both errors are WriteExceptions containing exactly one WriteError,
 // and those WriteErrors are equal, except messages (and ignoring the Raw part).
-func AssertMatchesWriteError(t testtb.TB, expected, actual error) {
+func AssertMatchesWriteError(t testing.TB, expected, actual error) {
 	t.Helper()
 
 	a, ok := actual.(mongo.WriteException) //nolint:errorlint // do not inspect error chain
@@ -296,7 +370,7 @@ func AssertMatchesWriteError(t testtb.TB, expected, actual error) {
 // and those WriteErrors are equal, except messages (and ignoring the Raw part).
 //
 // TODO https://github.com/FerretDB/FerretDB/issues/3290
-func AssertMatchesBulkException(t testtb.TB, expected, actual error) {
+func AssertMatchesBulkException(t testing.TB, expected, actual error) {
 	t.Helper()
 
 	a, ok := actual.(mongo.BulkWriteException) //nolint:errorlint // do not inspect error chain
@@ -330,7 +404,7 @@ func AssertMatchesBulkException(t testtb.TB, expected, actual error) {
 //     `{ $slice: { a: { b: 3 }, b: "string" } }` exactly the same way).
 //
 // In any case, the alternative error message returned by FerretDB should not mislead users.
-func AssertEqualAltCommandError(t testtb.TB, expected mongo.CommandError, altMessage string, actual error) bool {
+func AssertEqualAltCommandError(t testing.TB, expected mongo.CommandError, altMessage string, actual error) bool {
 	t.Helper()
 
 	a, ok := actual.(mongo.CommandError)
@@ -356,7 +430,7 @@ func AssertEqualAltCommandError(t testtb.TB, expected mongo.CommandError, altMes
 
 // AssertEqualAltWriteError asserts that the expected MongoDB error is the same as the actual;
 // the alternative error message may be provided if FerretDB is unable to produce exactly the same text as MongoDB.
-func AssertEqualAltWriteError(t testtb.TB, expected mongo.WriteError, altMessage string, actual error) bool {
+func AssertEqualAltWriteError(t testing.TB, expected mongo.WriteError, altMessage string, actual error) bool {
 	t.Helper()
 
 	we, ok := actual.(mongo.WriteException)
@@ -389,7 +463,7 @@ func AssertEqualAltWriteError(t testtb.TB, expected mongo.WriteError, altMessage
 // UnsetRaw returns error with all Raw fields unset. It returns nil if err is nil.
 //
 // Error is checked using a regular type assertion; wrapped errors (errors.As) are not checked.
-func UnsetRaw(t testtb.TB, err error) error {
+func UnsetRaw(t testing.TB, err error) error {
 	t.Helper()
 
 	switch err := err.(type) {
@@ -428,7 +502,7 @@ func UnsetRaw(t testtb.TB, err error) error {
 // CollectIDs returns all _id values from given documents.
 //
 // The order is preserved.
-func CollectIDs(t testtb.TB, docs []bson.D) []any {
+func CollectIDs(t testing.TB, docs []bson.D) []any {
 	t.Helper()
 
 	ids := make([]any, len(docs))
@@ -444,7 +518,7 @@ func CollectIDs(t testtb.TB, docs []bson.D) []any {
 // CollectKeys returns document keys.
 //
 // The order is preserved.
-func CollectKeys(t testtb.TB, doc bson.D) []string {
+func CollectKeys(t testing.TB, doc bson.D) []string {
 	t.Helper()
 
 	res := make([]string, len(doc))
@@ -456,7 +530,7 @@ func CollectKeys(t testtb.TB, doc bson.D) []string {
 }
 
 // FetchAll fetches all documents from the cursor, closing it.
-func FetchAll(t testtb.TB, ctx context.Context, cursor *mongo.Cursor) []bson.D {
+func FetchAll(t testing.TB, ctx context.Context, cursor *mongo.Cursor) []bson.D {
 	t.Helper()
 
 	var res []bson.D
@@ -467,7 +541,7 @@ func FetchAll(t testtb.TB, ctx context.Context, cursor *mongo.Cursor) []bson.D {
 }
 
 // FilterAll returns filtered documented from the given collection sorted by _id.
-func FilterAll(t testtb.TB, ctx context.Context, collection *mongo.Collection, filter bson.D) []bson.D {
+func FilterAll(t testing.TB, ctx context.Context, collection *mongo.Collection, filter bson.D) []bson.D {
 	t.Helper()
 
 	opts := options.Find().SetSort(bson.D{{"_id", 1}})
@@ -478,22 +552,20 @@ func FilterAll(t testtb.TB, ctx context.Context, collection *mongo.Collection, f
 }
 
 // FindAll returns all documents from the given collection sorted by _id.
-func FindAll(t testtb.TB, ctx context.Context, collection *mongo.Collection) []bson.D {
+func FindAll(t testing.TB, ctx context.Context, collection *mongo.Collection) []bson.D {
 	t.Helper()
 
 	return FilterAll(t, ctx, collection, bson.D{})
 }
 
-// GenerateDocuments generates documents with _id ranging from startID to endID.
-// It returns bson.A and []bson.D both containing same bson.D documents.
-func GenerateDocuments(startID, endID int32) (bson.A, []bson.D) {
+// GenerateDocuments generates documents with _id in a range [startID, endID).
+// It returns bson.A containing bson.D documents.
+func GenerateDocuments(startID, endID int32) bson.A {
 	var arr bson.A
-	var docs []bson.D
 
 	for i := startID; i < endID; i++ {
 		arr = append(arr, bson.D{{"_id", i}})
-		docs = append(docs, bson.D{{"_id", i}})
 	}
 
-	return arr, docs
+	return arr
 }

@@ -22,12 +22,10 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
-
-	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/v2/integration/setup"
 )
 
-func TestCommandsAuthenticationLogout(t *testing.T) {
+func TestLogoutCommand(t *testing.T) {
 	t.Parallel()
 
 	s := setup.SetupWithOpts(t, nil)
@@ -47,30 +45,26 @@ func TestCommandsAuthenticationLogout(t *testing.T) {
 	err = db.RunCommand(ctx, bson.D{{"logout", 1}}).Decode(&res)
 	require.NoError(t, err)
 
-	actual := ConvertDocument(t, res)
-	actual.Remove("$clusterTime")
-	actual.Remove("operationTime")
-
-	expected := ConvertDocument(t, bson.D{{"ok", float64(1)}})
-	testutil.AssertEqual(t, expected, actual)
+	AssertEqualDocuments(t, bson.D{{"ok", float64(1)}}, res)
 
 	// the test user logs out again, it has no effect
 	err = db.RunCommand(ctx, bson.D{{"logout", 1}}).Decode(&res)
 	require.NoError(t, err)
 
-	actual = ConvertDocument(t, res)
-	actual.Remove("$clusterTime")
-	actual.Remove("operationTime")
-
-	testutil.AssertEqual(t, expected, actual)
+	AssertEqualDocuments(t, bson.D{{"ok", float64(1)}}, res)
 }
 
-func TestCommandsAuthenticationLogoutAuthenticatedUser(t *testing.T) {
-	t.Parallel()
+func TestLogoutCommandAuthenticatedUser(tt *testing.T) {
+	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/953")
 
-	s := setup.SetupWithOpts(t, nil)
+	tt.Parallel()
+
+	s := setup.SetupWithOpts(tt, nil)
 	ctx, db := s.Ctx, s.Collection.Database()
-	username, password, mechanism := "testuser", "testpass", "SCRAM-SHA-256"
+	username, password, mechanism := "logoutuser", "testpass", "SCRAM-SHA-256"
+
+	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/864
+	_ = db.RunCommand(ctx, bson.D{{"dropUser", username}})
 
 	err := db.RunCommand(ctx, bson.D{
 		{"createUser", username},
@@ -128,4 +122,11 @@ func TestCommandsAuthenticationLogoutAuthenticatedUser(t *testing.T) {
 	}
 
 	AssertEqualDocuments(t, expected, res)
+
+	_, err = db.Collection(s.Collection.Name()).InsertOne(ctx, bson.D{{"foo", "bar"}})
+
+	// after logout FerretDB returns `(AuthenticationFailed) Authentication failed`
+	// after logout MongoDB returns `(Unauthorized) Command insert requires authentication`
+	// TODO https://github.com/FerretDB/FerretDB/issues/3974
+	require.Error(t, err)
 }

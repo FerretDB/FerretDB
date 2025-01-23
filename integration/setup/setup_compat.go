@@ -17,16 +17,17 @@ package setup
 import (
 	"context"
 	"log/slog"
-	"strings"
+	"slices"
+	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.opentelemetry.io/otel"
 
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
-	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
+	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
 
-	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/v2/integration/shareddata"
 )
 
 // SetupCompatOpts represents setup options for compatibility test.
@@ -56,7 +57,7 @@ type SetupCompatResult struct {
 }
 
 // SetupCompatWithOpts setups the compatibility test according to given options.
-func SetupCompatWithOpts(tb testtb.TB, opts *SetupCompatOpts) *SetupCompatResult {
+func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResult {
 	tb.Helper()
 
 	if *compatURLF == "" {
@@ -72,17 +73,7 @@ func SetupCompatWithOpts(tb testtb.TB, opts *SetupCompatOpts) *SetupCompatResult
 		opts = new(SetupCompatOpts)
 	}
 
-	// When we use `task test-integration` to run `postgresql` and `sqlite` compat tests in parallel,
-	// they both use the same MongoDB instance.
-	// Add suffix to prevent the usage of the same database.
-	suffix := strings.TrimPrefix(*targetBackendF, "ferretdb-")
-	switch suffix {
-	case "postgresql":
-		suffix = "pg"
-	case "sqlite":
-		suffix = "sl"
-	}
-	opts.databaseName = testutil.DatabaseName(tb) + "_" + suffix
+	opts.databaseName = testutil.DatabaseName(tb)
 
 	// When database name is too long, database is created but inserting documents
 	// fail with InvalidNamespace error.
@@ -99,12 +90,13 @@ func SetupCompatWithOpts(tb testtb.TB, opts *SetupCompatOpts) *SetupCompatResult
 	logger := testutil.LevelLogger(tb, &levelVar)
 
 	var targetClient *mongo.Client
-	if *targetURLF == "" {
-		uri := setupListener(tb, setupCtx, logger, nil)
-		targetClient = setupClient(tb, setupCtx, uri, false)
-	} else {
-		targetClient = setupClient(tb, setupCtx, *targetURLF, false)
+
+	uri := *targetURLF
+	if uri == "" {
+		uri = setupListener(tb, setupCtx, nil, logger)
 	}
+
+	targetClient = setupClient(tb, setupCtx, uri, false)
 
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
@@ -125,7 +117,7 @@ func SetupCompatWithOpts(tb testtb.TB, opts *SetupCompatOpts) *SetupCompatResult
 }
 
 // SetupCompat setups compatibility test.
-func SetupCompat(tb testtb.TB) (context.Context, []*mongo.Collection, []*mongo.Collection) {
+func SetupCompat(tb testing.TB) (context.Context, []*mongo.Collection, []*mongo.Collection) {
 	tb.Helper()
 
 	s := SetupCompatWithOpts(tb, &SetupCompatOpts{
@@ -135,7 +127,7 @@ func SetupCompat(tb testtb.TB) (context.Context, []*mongo.Collection, []*mongo.C
 }
 
 // setupCompatCollections setups a single database with one collection per provider for compatibility tests.
-func setupCompatCollections(tb testtb.TB, ctx context.Context, client *mongo.Client, opts *SetupCompatOpts, backend string) []*mongo.Collection {
+func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Client, opts *SetupCompatOpts, backend string) []*mongo.Collection {
 	tb.Helper()
 
 	ctx, span := otel.Tracer("").Start(ctx, "setupCompatCollections")
@@ -143,26 +135,35 @@ func setupCompatCollections(tb testtb.TB, ctx context.Context, client *mongo.Cli
 
 	database := client.Database(opts.databaseName)
 
-	cleanupDatabase(ctx, tb, database, nil)
+	// drop remnants of the previous failed run
+	_ = database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}})
+	_ = database.Drop(ctx)
 
-	// delete database unless test failed
+	// drop database unless test failed
 	tb.Cleanup(func() {
 		if tb.Failed() {
 			return
 		}
 
-		cleanupDatabase(ctx, tb, database, nil)
+		err := database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}}).Err()
+		require.NoError(tb, err)
+
+		err = database.Drop(ctx)
+		require.NoError(tb, err)
 	})
 
-	collections := make([]*mongo.Collection, 0, len(opts.Providers))
-	for _, provider := range opts.Providers {
+	providers := slices.Clone(opts.Providers)
+
+	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/825
+	// rand.Shuffle(len(providers), func(i, j int) { providers[i], providers[j] = providers[j], providers[i] })
+
+	collections := make([]*mongo.Collection, 0, len(providers))
+
+	for _, provider := range providers {
 		collectionName := opts.baseCollectionName + "_" + provider.Name()
 		fullName := opts.databaseName + "." + collectionName
 
 		collection := database.Collection(collectionName)
-
-		// drop remnants of the previous failed run
-		_ = collection.Drop(ctx)
 
 		docs := shareddata.Docs(provider)
 		require.NotEmpty(tb, docs)
@@ -170,16 +171,6 @@ func setupCompatCollections(tb testtb.TB, ctx context.Context, client *mongo.Cli
 		res, err := collection.InsertMany(ctx, docs)
 		require.NoError(tb, err, "%s: backend %q, collection %s", provider.Name(), backend, fullName)
 		require.Len(tb, res.InsertedIDs, len(docs))
-
-		// delete collection unless test failed
-		tb.Cleanup(func() {
-			if tb.Failed() {
-				tb.Logf("Keeping %s for debugging.", fullName)
-				return
-			}
-
-			require.NoError(tb, collection.Drop(ctx))
-		})
 
 		collections = append(collections, collection)
 	}
@@ -193,5 +184,9 @@ func setupCompatCollections(tb testtb.TB, ctx context.Context, client *mongo.Cli
 	}
 
 	require.NotEmpty(tb, collections)
+
+	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/825
+	// rand.Shuffle(len(collections), func(i, j int) { collections[i], collections[j] = collections[j], collections[i] })
+
 	return collections
 }

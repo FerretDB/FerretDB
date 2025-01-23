@@ -23,8 +23,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/v2/integration/setup"
+	"github.com/FerretDB/FerretDB/v2/integration/shareddata"
 )
 
 func TestQueryProjectionErrors(t *testing.T) {
@@ -36,9 +36,9 @@ func TestQueryProjectionErrors(t *testing.T) {
 		filter     bson.D // required
 		projection any    // required
 
-		err        *mongo.CommandError // required, expected error from MongoDB
-		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
-		skip       string              // optional, skip test with a specified reason
+		err              *mongo.CommandError // required, expected error from MongoDB
+		altMessage       string              // optional, alternative error message for FerretDB, ignored if empty
+		failsForFerretDB string
 	}{
 		"EmptyKey": {
 			filter:     bson.D{{"v", 42}},
@@ -48,6 +48,7 @@ func TestQueryProjectionErrors(t *testing.T) {
 				Name:    "Location40352",
 				Message: "FieldPath cannot be constructed with empty string",
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 		"EmptyPath": {
 			filter:     bson.D{{"v", 42}},
@@ -57,6 +58,7 @@ func TestQueryProjectionErrors(t *testing.T) {
 				Name:    "Location15998",
 				Message: "FieldPath field names may not be empty strings.",
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 		"ExcludeInclude": {
 			filter:     bson.D{},
@@ -66,6 +68,7 @@ func TestQueryProjectionErrors(t *testing.T) {
 				Name:    "Location31253",
 				Message: "Cannot do inclusion on field bar in exclusion projection",
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 		"IncludeExclude": {
 			filter:     bson.D{},
@@ -75,6 +78,7 @@ func TestQueryProjectionErrors(t *testing.T) {
 				Name:    "Location31254",
 				Message: "Cannot do exclusion on field bar in inclusion projection",
 			},
+			altMessage: "Cannot do exclusion on field bar in inclusion projection.",
 		},
 		"PositionalOperatorMultiple": {
 			filter:     bson.D{{"_id", "array-numbers-asc"}},
@@ -92,6 +96,7 @@ func TestQueryProjectionErrors(t *testing.T) {
 				"for example: a.b.$. If the query previously used a form " +
 				"like a.b.$.d, remove the parts following the '$' and " +
 				"the results will be equivalent.",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 		"PositionalOperatorMiddle": {
 			filter:     bson.D{{"_id", "array-numbers-asc"}},
@@ -109,6 +114,7 @@ func TestQueryProjectionErrors(t *testing.T) {
 				"for example: a.b.$. If the query previously used a form " +
 				"like a.b.$.d, remove the parts following the '$' and " +
 				"the results will be equivalent.",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 		"PositionalOperatorWrongLocations": {
 			filter:     bson.D{{"v", 42}},
@@ -126,6 +132,7 @@ func TestQueryProjectionErrors(t *testing.T) {
 				"used at the end, for example: a.b.$. If the query previously " +
 				"used a form like a.b.$.d, remove the parts following the '$' and " +
 				"the results will be equivalent.",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 		"PositionalOperatorEmptyFilter": {
 			filter:     bson.D{},
@@ -168,6 +175,7 @@ func TestQueryProjectionErrors(t *testing.T) {
 				Name:    "Location51247",
 				Message: "Executor error during find command :: caused by :: positional operator '.$' element mismatch",
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 		"PositionalOperatorEmptyPath": {
 			filter:     bson.D{{"v", 42}},
@@ -177,6 +185,7 @@ func TestQueryProjectionErrors(t *testing.T) {
 				Name:    "Location40353",
 				Message: "FieldPath must not end with a '.'.",
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 		"PositionalOperatorDollarKey": {
 			filter:     bson.D{{"v", 42}},
@@ -186,6 +195,7 @@ func TestQueryProjectionErrors(t *testing.T) {
 				Name:    "Location16410",
 				Message: "FieldPath field names may not start with '$'. Consider using $getField or $setField.",
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 		"PositionalOperatorDollarInKey": {
 			filter:     bson.D{{"v", 42}},
@@ -195,6 +205,7 @@ func TestQueryProjectionErrors(t *testing.T) {
 				Name:    "Location16410",
 				Message: "FieldPath field names may not start with '$'. Consider using $getField or $setField.",
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 		"PositionalOperatorDollarPrefix": {
 			filter:     bson.D{{"v", 42}},
@@ -204,6 +215,7 @@ func TestQueryProjectionErrors(t *testing.T) {
 				Name:    "Location16410",
 				Message: "FieldPath field names may not start with '$'. Consider using $getField or $setField.",
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 		"PositionalOperatorDotNotationDollarInKey": {
 			filter:     bson.D{{"v", 42}},
@@ -213,6 +225,7 @@ func TestQueryProjectionErrors(t *testing.T) {
 				Name:    "Location16410",
 				Message: "FieldPath field names may not start with '$'. Consider using $getField or $setField.",
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 		"PositionalOperatorPrefixSuffix": {
 			filter:     bson.D{{"_id", "array-numbers-asc"}},
@@ -222,6 +235,7 @@ func TestQueryProjectionErrors(t *testing.T) {
 				Name:    "Location16410",
 				Message: "FieldPath field names may not start with '$'. Consider using $getField or $setField.",
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 		"PositionalOperatorExclusion": {
 			filter:     bson.D{{"v", 42}},
@@ -233,13 +247,13 @@ func TestQueryProjectionErrors(t *testing.T) {
 			},
 		},
 	} {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
+		t.Run(name, func(tt *testing.T) {
+			tt.Parallel()
 
-			t.Parallel()
+			var t testing.TB = tt
+			if tc.failsForFerretDB != "" {
+				t = setup.FailsForFerretDB(tt, tc.failsForFerretDB)
+			}
 
 			require.NotNil(t, tc.filter, "filter should be set")
 			require.NotNil(t, tc.projection, "projection should be set")
@@ -261,8 +275,6 @@ func TestQueryProjectionSuccess(t *testing.T) {
 		filter     bson.D   // required
 		projection any      // required
 		res        []bson.D // required
-
-		skip string // optional, skip test with a specified reason
 	}{
 		"QueryProjectionOfFieldV": {
 			filter:     bson.D{{"_id", "int32"}},
@@ -272,12 +284,7 @@ func TestQueryProjectionSuccess(t *testing.T) {
 			},
 		},
 	} {
-		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
-
 			t.Parallel()
 
 			require.NotNil(t, tc.filter, "filter should be set")

@@ -22,15 +22,13 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
-
-	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/v2/integration/setup"
 )
 
 type countCommandCompatTestCase struct {
-	skip           string
-	collectionName any
-	command        bson.D
+	collectionName   any
+	command          bson.D
+	failsForFerretDB string
 }
 
 // testCountCommandCompat tests query compatibility test cases.
@@ -44,21 +42,23 @@ func testCountCommandCompat(t *testing.T, testCases map[string]countCommandCompa
 	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
 
 	for name, tc := range testCases {
-		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
-
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
 
 			t.Parallel()
 
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
-				t.Run(targetCollection.Name(), func(t *testing.T) {
-					t.Helper()
+
+				t.Run(targetCollection.Name(), func(tt *testing.T) {
+					tt.Helper()
+
+					var t testing.TB = tt
+
+					if tc.failsForFerretDB != "" {
+						t = setup.FailsForFerretDB(tt, tc.failsForFerretDB)
+					}
 
 					targetCollectionName := tc.collectionName
 					compatCollectionName := tc.collectionName
@@ -101,12 +101,7 @@ func testCountCommandCompat(t *testing.T, testCases map[string]countCommandCompa
 					require.NoError(t, targetResult.Decode(&targetRes))
 					require.NoError(t, compatResult.Decode(&compatRes))
 
-					compatDoc := ConvertDocument(t, compatRes)
-					compatDoc.Remove("$clusterTime")
-					compatDoc.Remove("operationTime")
-
-					targetDoc := ConvertDocument(t, targetRes)
-					testutil.AssertEqual(t, compatDoc, targetDoc)
+					AssertEqualDocuments(t, compatRes, targetRes)
 
 					targetCount := targetRes.Map()["n"].(int32)
 					compatCount := compatRes.Map()["n"].(int32)
@@ -132,42 +127,49 @@ func TestCountCommandCompatErrors(t *testing.T) {
 			command: bson.D{
 				{"query", bson.D{}},
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/401",
 		},
 		"CollectionArray": {
 			collectionName: primitive.A{},
 			command: bson.D{
 				{"query", bson.D{}},
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/401",
 		},
 		"CollectionDouble": {
 			collectionName: 3.14,
 			command: bson.D{
 				{"query", bson.D{}},
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/401",
 		},
 		"CollectionBinary": {
 			collectionName: primitive.Binary{},
 			command: bson.D{
 				{"query", bson.D{}},
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/401",
 		},
 		"CollectionObjectID": {
 			collectionName: primitive.ObjectID{},
 			command: bson.D{
 				{"query", bson.D{}},
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/401",
 		},
 		"CollectionBool": {
 			collectionName: true,
 			command: bson.D{
 				{"query", bson.D{}},
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/401",
 		},
 		"CollectionDate": {
 			collectionName: time.Now(),
 			command: bson.D{
 				{"query", bson.D{}},
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/401",
 		},
 		"CollectionNull": {
 			collectionName: nil,
@@ -180,24 +182,28 @@ func TestCountCommandCompatErrors(t *testing.T) {
 			command: bson.D{
 				{"query", bson.D{}},
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/401",
 		},
 		"CollectionInt": {
 			collectionName: int32(42),
 			command: bson.D{
 				{"query", bson.D{}},
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/401",
 		},
 		"CollectionTimestamp": {
 			collectionName: primitive.Timestamp{},
 			command: bson.D{
 				{"query", bson.D{}},
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/401",
 		},
 		"CollectionLong": {
 			collectionName: int64(42),
 			command: bson.D{
 				{"query", bson.D{}},
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/401",
 		},
 		"QueryArray": {
 			command: bson.D{

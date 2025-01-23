@@ -16,13 +16,13 @@ tasks:
       - >
         go test -count=1 {{.RACE_FLAG}} -run=TestEnvData
         -tags=ferretdb_testenvdata .
-        -target-backend=ferretdb-postgresql
-        -target-url='mongodb://127.0.0.1:27017/'
+        -target-backend=mongodb
+        -target-url='mongodb://username:password@127.0.0.1:47017/'
       - >
         go test -count=1 {{.RACE_FLAG}} -run=TestEnvData
         -tags=ferretdb_testenvdata .
-        -target-backend=mongodb
-        -target-url='mongodb://127.0.0.1:47017/'
+        -target-backend=ferretdb
+        -target-url='mongodb://username:password@127.0.0.1:27017/'
 
   integration-gen:
     cmds:
@@ -34,7 +34,6 @@ tasks:
       - ../bin/golangci-lint{{exeExt}} run --config=.golangci.yml
       - ../bin/golangci-lint{{exeExt}} run --config=.golangci-new.yml
       - ../bin/go-consistent{{exeExt}} -pedantic ./...
-
       - go vet -vettool=../bin/checkswitch{{exeExt}} ./...
       - go vet -vettool=../bin/checkcomments{{exeExt}} ./...
 
@@ -50,78 +49,10 @@ tasks:
         -count={{.BENCH_COUNT}} -bench={{.BENCH_NAME}} -benchtime={{.BENCH_TIME}} -benchmem
         -log-level=error
         -bench-docs={{.BENCH_DOCS}}
-        -target-backend=ferretdb-postgresql
-        -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb
+        -target-backend=ferretdb
+        -postgresql-url=postgres://username:password@127.0.0.1:5432/postgres
         | tee new-postgresql.txt
       - ../bin/benchstat{{exeExt}} old-postgresql.txt new-postgresql.txt
-
-  bench-postgresql-no-pushdown:
-    desc: "Run benchmarks for `postgresql` backend without filter pushdown"
-    cmds:
-      - >
-        go test -tags={{.BUILD_TAGS}} -timeout=0 -run=XXX
-        -count={{.BENCH_COUNT}} -bench={{.BENCH_NAME}} -benchtime={{.BENCH_TIME}} -benchmem
-        -log-level=error
-        -bench-docs={{.BENCH_DOCS}}
-        -target-backend=ferretdb-postgresql
-        -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb
-        -disable-pushdown
-        | tee new-postgresql.txt
-      - ../bin/benchstat{{exeExt}} old-postgresql.txt new-postgresql.txt
-
-  bench-sqlite:
-    desc: "Run benchmarks for `sqlite` backend"
-    cmds:
-      - >
-        go test -tags={{.BUILD_TAGS}} -timeout=0 -run=XXX
-        -count={{.BENCH_COUNT}} -bench={{.BENCH_NAME}} -benchtime={{.BENCH_TIME}} -benchmem
-        -log-level=error
-        -bench-docs={{.BENCH_DOCS}}
-        -target-backend=ferretdb-sqlite
-        -sqlite-url=file:../tmp/sqlite-tests/
-        | tee new-sqlite.txt
-      - ../bin/benchstat{{exeExt}} old-sqlite.txt new-sqlite.txt
-
-  bench-sqlite-no-pushdown:
-    desc: "Run benchmarks for `sqlite` with filter pushdown disabled"
-    cmds:
-      - >
-        go test -tags={{.BUILD_TAGS}} -timeout=0 -run=XXX
-        -count={{.BENCH_COUNT}} -bench={{.BENCH_NAME}} -benchtime={{.BENCH_TIME}} -benchmem
-        -log-level=error
-        -bench-docs={{.BENCH_DOCS}}
-        -target-backend=ferretdb-sqlite
-        -sqlite-url=file:../tmp/sqlite-tests/
-        -disable-pushdown
-        | tee new-sqlite.txt
-      - ../bin/benchstat{{exeExt}} old-sqlite.txt new-sqlite.txt
-
-  bench-mysql:
-    desc: "Run benchmarks for `mysql` backend"
-    cmds:
-      - >
-        go test -tags={{.BUILD_TAGS}} -timeout=0 -run=XXX
-        -count={{.BENCH_COUNT}} -bench-{{.BENCH_NAME}} -benchtime={{.BENCH_TIME}} -benchmem
-        -log-level=error
-        -bench-docs={{.BENCH_DOCS}}
-        -target-backend=ferretdb-mysql
-        -mysql-url=mysql://username:password@127.0.0.1:3306/ferretdb
-        | tee new-mysql.txt
-      - ../bin/benchstat{{exeExt}} old-mysql.txt new-mysql.txt
-
-  bench-mysql-no-pushdown:
-    desc: "Run benchmarks for `mysql` with filter pushdown disabled"
-    cmds:
-      - >
-        go test -tags={{.BUILD_TAGS}} -timeout=0 -run=XXX
-        -count={{.BENCH_COUNT}} -bench={{.BENCH_NAME}} -benchtime={{.BENCH_TIME}} -benchmem
-        -log-level=error
-        -bench-docs={{.BENCH_DOCS}}
-        -target-backend=ferretdb-mysql
-        -mysql-url=mysql://username:password@127.0.0.1:3306/ferretdb
-        -disable-pushdown
-        | tee new-sqlite.txt
-      - ../bin/benchstat{{exeExt}} old-sqlite.txt new-sqlite.txt
 
   bench-mongodb:
     desc: "Run benchmarks for MongoDB"
@@ -132,6 +63,6 @@ tasks:
         -log-level=error
         -bench-docs={{.BENCH_DOCS}}
         -target-backend=mongodb
-        -target-url='mongodb://127.0.0.1:47017/'
+        -target-url='mongodb://username:password@127.0.0.1:47017/'
         | tee new-mongodb.txt
       - ../bin/benchstat{{exeExt}} old-mongodb.txt new-mongodb.txt

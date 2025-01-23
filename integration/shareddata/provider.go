@@ -70,11 +70,10 @@ type field struct {
 type Fields []field
 
 // NewTopLevelFieldsProvider creates a new TopLevelValues provider.
-func NewTopLevelFieldsProvider[id comparable](name string, backends []string, data map[id]Fields) Provider {
+func NewTopLevelFieldsProvider[id comparable](name string, data map[id]Fields) Provider {
 	return &topLevelValues[id]{
-		name:     name,
-		backends: backends,
-		data:     data,
+		name: name,
+		data: data,
 	}
 }
 
@@ -82,9 +81,8 @@ func NewTopLevelFieldsProvider[id comparable](name string, backends []string, da
 //
 //nolint:vet // for readability
 type topLevelValues[id comparable] struct {
-	name     string
-	backends []string // empty values means all backends
-	data     map[id]Fields
+	name string
+	data map[id]Fields
 }
 
 // Name implements [Provider].
