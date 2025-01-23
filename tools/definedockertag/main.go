@@ -13,8 +13,6 @@
 // limitations under the License.
 
 // Package main contains tool for defining Docker image tags on CI.
-//
-//nolint:goconst // "ferretdb" means different things
 package main
 
 import (
@@ -46,7 +44,7 @@ func main() {
 
 // result represents Docker image names and tags extracted from the environment.
 type result struct {
-	allInOneImages    []string
+	evaluationImages  []string
 	developmentImages []string
 	productionImages  []string
 }
@@ -117,32 +115,23 @@ func define(getenv githubactions.GetenvFunc) (*result, error) {
 
 			var tags []string
 
-			switch major {
-			case "1":
-				if prerelease == "" {
-					tags = []string{
-						major,
-						major + "." + minor,
-						major + "." + minor + "." + patch,
-						"latest",
-					}
-				} else {
-					tags = []string{major + "." + minor + "." + patch + "-" + prerelease}
-				}
-
-			case "2":
-				// add all tags except latest while v2 is not GA
+			if prerelease == "" {
 				tags = []string{
 					major,
 					major + "." + minor,
 					major + "." + minor + "." + patch,
 				}
-				if prerelease != "" {
-					tags = append(tags, major+"."+minor+"."+patch+"-"+prerelease)
-				}
 
-			default:
-				err = fmt.Errorf("unhandled major version %q", major)
+				if major == "2" {
+					tags = append(tags, "latest")
+				}
+			} else {
+				tags = []string{major + "." + minor + "." + patch + "-" + prerelease}
+
+				// while v2 is not GA
+				if major == "2" {
+					tags = append(tags, major)
+				}
 			}
 
 			res = defineForTag(owner, repo, tags)
@@ -159,20 +148,15 @@ func define(getenv githubactions.GetenvFunc) (*result, error) {
 		return nil, err
 	}
 
-	slices.Sort(res.allInOneImages)
+	if res == nil {
+		panic("both res and err are nil")
+	}
+
+	slices.Sort(res.evaluationImages)
 	slices.Sort(res.developmentImages)
 	slices.Sort(res.productionImages)
 
 	return res, nil
-}
-
-// allInOneRepo returns a part of Docker repository name for the given GitHub repository name.
-func allInOneRepo(repo string) string {
-	if repo == "ferretdb" {
-		return "all-in-one"
-	}
-
-	return repo + "-all-in-one"
 }
 
 // defineForPR defines Docker image names and tags for pull requests.
@@ -182,8 +166,8 @@ func defineForPR(owner, repo, branch string) *result {
 	branch = parts[len(parts)-1]
 
 	res := &result{
-		allInOneImages: []string{
-			fmt.Sprintf("ghcr.io/%s/%s:pr-%s", owner, allInOneRepo(repo), branch),
+		evaluationImages: []string{
+			fmt.Sprintf("ghcr.io/%s/%s-eval:pr-%s", owner, repo, branch),
 		},
 		developmentImages: []string{
 			fmt.Sprintf("ghcr.io/%s/%s-dev:pr-%s", owner, repo, branch),
@@ -211,8 +195,8 @@ func defineForBranch(owner, repo, branch string) (*result, error) {
 	}
 
 	res := &result{
-		allInOneImages: []string{
-			fmt.Sprintf("ghcr.io/%s/%s:%s", owner, allInOneRepo(repo), branch),
+		evaluationImages: []string{
+			fmt.Sprintf("ghcr.io/%s/%s-eval:%s", owner, repo, branch),
 		},
 		developmentImages: []string{
 			fmt.Sprintf("ghcr.io/%s/%s-dev:%s", owner, repo, branch),
@@ -229,10 +213,10 @@ func defineForBranch(owner, repo, branch string) (*result, error) {
 		return res, nil
 	}
 
-	res.allInOneImages = append(res.allInOneImages, fmt.Sprintf("quay.io/ferretdb/all-in-one:%s", branch))
+	res.evaluationImages = append(res.evaluationImages, fmt.Sprintf("quay.io/ferretdb/ferretdb-eval:%s", branch))
 	res.developmentImages = append(res.developmentImages, fmt.Sprintf("quay.io/ferretdb/ferretdb-dev:%s", branch))
 
-	res.allInOneImages = append(res.allInOneImages, fmt.Sprintf("ferretdb/all-in-one:%s", branch))
+	res.evaluationImages = append(res.evaluationImages, fmt.Sprintf("ferretdb/ferretdb-eval:%s", branch))
 	res.developmentImages = append(res.developmentImages, fmt.Sprintf("ferretdb/ferretdb-dev:%s", branch))
 
 	return res, nil
@@ -243,7 +227,7 @@ func defineForTag(owner, repo string, tags []string) *result {
 	res := new(result)
 
 	for _, t := range tags {
-		res.allInOneImages = append(res.allInOneImages, fmt.Sprintf("ghcr.io/%s/%s:%s", owner, allInOneRepo(repo), t))
+		res.evaluationImages = append(res.evaluationImages, fmt.Sprintf("ghcr.io/%s/%s-eval:%s", owner, repo, t))
 		res.developmentImages = append(res.developmentImages, fmt.Sprintf("ghcr.io/%s/%s-dev:%s", owner, repo, t))
 		res.productionImages = append(res.productionImages, fmt.Sprintf("ghcr.io/%s/%s:%s", owner, repo, t))
 	}
@@ -259,11 +243,11 @@ func defineForTag(owner, repo string, tags []string) *result {
 	}
 
 	for _, t := range tags {
-		res.allInOneImages = append(res.allInOneImages, fmt.Sprintf("quay.io/ferretdb/all-in-one:%s", t))
+		res.evaluationImages = append(res.evaluationImages, fmt.Sprintf("quay.io/ferretdb/ferretdb-eval:%s", t))
 		res.developmentImages = append(res.developmentImages, fmt.Sprintf("quay.io/ferretdb/ferretdb-dev:%s", t))
 		res.productionImages = append(res.productionImages, fmt.Sprintf("quay.io/ferretdb/ferretdb:%s", t))
 
-		res.allInOneImages = append(res.allInOneImages, fmt.Sprintf("ferretdb/all-in-one:%s", t))
+		res.evaluationImages = append(res.evaluationImages, fmt.Sprintf("ferretdb/ferretdb-eval:%s", t))
 		res.developmentImages = append(res.developmentImages, fmt.Sprintf("ferretdb/ferretdb-dev:%s", t))
 		res.productionImages = append(res.productionImages, fmt.Sprintf("ferretdb/ferretdb:%s", t))
 	}
@@ -278,19 +262,19 @@ func setResults(action *githubactions.Action, res *result) {
 	fmt.Fprintf(w, "\tType\tImage\t\n")
 	fmt.Fprintf(w, "\t----\t-----\t\n")
 
-	for _, image := range res.allInOneImages {
+	for _, image := range res.evaluationImages {
 		u := imageURL(image)
-		fmt.Fprintf(w, "\tAll-in-one\t[`%s`](%s)\t\n", image, u)
+		_, _ = fmt.Fprintf(w, "\tEvaluation\t[`%s`](%s)\t\n", image, u)
 	}
 
 	for _, image := range res.developmentImages {
 		u := imageURL(image)
-		fmt.Fprintf(w, "\tDevelopment\t[`%s`](%s)\t\n", image, u)
+		_, _ = fmt.Fprintf(w, "\tDevelopment\t[`%s`](%s)\t\n", image, u)
 	}
 
 	for _, image := range res.productionImages {
 		u := imageURL(image)
-		fmt.Fprintf(w, "\tProduction\t[`%s`](%s)\t\n", image, u)
+		_, _ = fmt.Fprintf(w, "\tProduction\t[`%s`](%s)\t\n", image, u)
 	}
 
 	_ = w.Flush()
@@ -298,7 +282,7 @@ func setResults(action *githubactions.Action, res *result) {
 	action.AddStepSummary(buf.String())
 	action.Infof("%s", buf.String())
 
-	action.SetOutput("all_in_one_images", strings.Join(res.allInOneImages, ","))
+	action.SetOutput("evaluation_images", strings.Join(res.evaluationImages, ","))
 	action.SetOutput("development_images", strings.Join(res.developmentImages, ","))
 	action.SetOutput("production_images", strings.Join(res.productionImages, ","))
 }

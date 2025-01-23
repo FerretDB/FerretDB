@@ -25,73 +25,64 @@ import (
 
 // bsonOrder is the preferred order of case elements in switch statements.
 var bsonOrder = map[string]int{
-	"Document":     1,
-	"documentType": 1,
-	"tagDocument":  1,
+	"AnyDocument":          1,
+	"Document":             1,
+	"RawDocument":          1,
+	"TypeEmbeddedDocument": 1,
 
+	"AnyArray":  2,
 	"Array":     2,
-	"arrayType": 2,
-	"tagArray":  2,
+	"RawArray":  2,
+	"TypeArray": 2,
 
 	"float64":    3,
-	"doubleType": 3,
-	"tagFloat64": 3,
+	"TypeDouble": 3,
 
 	"string":     4,
-	"stringType": 4,
-	"tagString":  4,
+	"TypeString": 4,
 
 	"Binary":     5,
-	"binaryType": 5,
-	"tagBinary":  5,
+	"TypeBinary": 5,
 
-	"tagUndefined": 6,
+	"TypeUndefined": 6,
 
 	"ObjectID":     7,
-	"objectIDType": 7,
-	"tagObjectID":  7,
+	"TypeObjectID": 7,
 
-	"bool":     8,
-	"boolType": 8,
-	"tagBool":  8,
+	"bool":        8,
+	"TypeBoolean": 8,
 
 	"Time":         9,
-	"dateTimeType": 9,
-	"tagTime":      9,
+	"TypeDateTime": 9,
 
 	"NullType": 10,
-	"nullType": 10,
-	"tagNull":  10,
+	"TypeNull": 10,
 
 	"Regex":     11,
-	"regexType": 11,
-	"tagRegex":  11,
+	"TypeRegex": 11,
 
-	"tagDBPointer": 12,
+	"TypeDBPointer": 12,
 
-	"tagJavaScript": 13,
+	"TypeJavaScript": 13,
 
-	"tagSymbol": 14,
+	"TypeSymbol": 14,
 
-	"tagJavaScriptScope": 15,
+	"TypeCodeWithScope": 15,
 
 	"int32":     16,
-	"int32Type": 16,
-	"tagInt32":  16,
+	"TypeInt32": 16,
 
 	"Timestamp":     17,
-	"timestampType": 17,
-	"tagTimestamp":  17,
+	"TypeTimestamp": 17,
 
 	"int64":     18,
-	"int64Type": 18,
-	"tagInt64":  18,
+	"TypeInt64": 18,
 
-	"tagDecimal128": 19,
+	"TypeDecimal128": 19,
 
-	"tagMinKey": 20,
+	"TypeMinKey": 20,
 
-	"tagMaxKey": 21,
+	"TypeMaxKey": 21,
 
 	"CString": 22,
 }

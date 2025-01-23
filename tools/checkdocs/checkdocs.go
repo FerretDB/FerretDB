@@ -28,8 +28,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/FerretDB/gh"
-
 	"github.com/FerretDB/FerretDB/tools/github"
 )
 
@@ -40,16 +38,6 @@ func main() {
 	}
 
 	err = checkBlogFiles(blogFiles)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	commandsFile, err := filepath.Abs(filepath.Join("website", "docs", "reference", "supported-commands.md"))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	err = checkSupportedCommands(commandsFile)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -248,43 +236,7 @@ func verifyTags(fm []byte) error {
 	return nil
 }
 
-// checkSupportedCommands verifies that supported-commands.md is correctly formatted.
-func checkSupportedCommands(file string) error {
-	f, err := os.OpenFile(file, os.O_RDONLY, 0o666)
-	if err != nil {
-		log.Fatalf("couldn't open the file %s: %s", file, err)
-	}
-
-	defer func() {
-		err = f.Close()
-		if err != nil {
-			log.Panic(err)
-		}
-	}()
-
-	p, err := github.CacheFilePath()
-	if err != nil {
-		return err
-	}
-
-	client, err := github.NewClient(p, log.Printf, gh.NoopPrintf, gh.NoopPrintf)
-	if err != nil {
-		return err
-	}
-
-	failed, err := checkIssueURLs(client, f, log.Default())
-	if err != nil {
-		return err
-	}
-
-	if failed {
-		return fmt.Errorf("supported commands table is not formatted correctly")
-	}
-
-	return nil
-}
-
-// checkIssueURLs validates FerretDB issues URLs if they occure in the r [io.Reader].
+// checkIssueURLs validates FerretDB issues URLs if they occur in the r [io.Reader].
 // If URL formatting is invalid, the represented issue is closed or not found - the appropriate
 // message is sent to l [*log.Logger].
 //

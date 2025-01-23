@@ -12,12 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package types provides stubs for testing.
-package types
+// Package bson provides stubs for testing.
+package bson
+
+type AnyDocument interface{}
+
+type AnyArray interface{}
 
 type Document struct{}
 
 type Array struct{}
+
+type RawDocument []byte
+
+type RawArray []byte
 
 type Binary struct{}
 

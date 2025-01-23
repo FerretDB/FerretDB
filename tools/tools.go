@@ -15,6 +15,7 @@
 package tools
 
 import (
+	_ "github.com/OpenDocDB/cts/opendocdb-cts"
 	_ "github.com/go-task/task/v3/cmd/task"
 	_ "github.com/goreleaser/nfpm/v2/cmd/nfpm"
 	_ "github.com/kisielk/godepgraph"
@@ -35,6 +36,7 @@ import (
 //go:generate go build -v -o ../bin/ ./definedockertag
 //go:generate go build -v -o ../bin/ ./generatechangelog
 
+//go:generate go build -v -o ../bin/ github.com/OpenDocDB/cts/opendocdb-cts
 //go:generate go build -v -o ../bin/ github.com/go-task/task/v3/cmd/task
 //go:generate go build -v -o ../bin/ github.com/goreleaser/nfpm/v2/cmd/nfpm
 //go:generate go build -v -o ../bin/ github.com/kisielk/godepgraph
