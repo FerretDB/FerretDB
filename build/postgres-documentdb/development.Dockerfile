@@ -66,6 +66,6 @@ WORKDIR /
 
 LABEL org.opencontainers.image.title="PostgreSQL+DocumentDB (development image)"
 LABEL org.opencontainers.image.description="PostgreSQL with DocumentDB extension (development image)"
-LABEL org.opencontainers.image.source="https://github.com/FerretDB/FerretDB-DocumentDB"
+LABEL org.opencontainers.image.source="https://github.com/FerretDB/FerretDB"
 LABEL org.opencontainers.image.url="https://www.ferretdb.com/"
 LABEL org.opencontainers.image.vendor="FerretDB Inc."

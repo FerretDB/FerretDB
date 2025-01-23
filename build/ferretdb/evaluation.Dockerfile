@@ -136,8 +136,8 @@ ARG LABEL_COMMIT
 # TODO https://github.com/FerretDB/FerretDB/issues/2212
 LABEL org.opencontainers.image.description="A truly Open Source MongoDB alternative (evaluation image)"
 LABEL org.opencontainers.image.revision="${LABEL_COMMIT}"
-LABEL org.opencontainers.image.source="https://github.com/FerretDB/FerretDB-DocumentDB"
-LABEL org.opencontainers.image.title="FerretDB-DocumentDB (evaluation image)"
+LABEL org.opencontainers.image.source="https://github.com/FerretDB/FerretDB"
+LABEL org.opencontainers.image.title="FerretDB (evaluation image)"
 LABEL org.opencontainers.image.url="https://www.ferretdb.com/"
 LABEL org.opencontainers.image.vendor="FerretDB Inc."
 LABEL org.opencontainers.image.version="${LABEL_VERSION}"
