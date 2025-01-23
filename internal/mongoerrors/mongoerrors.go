@@ -35,8 +35,9 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-//go:generate go run ./generate.go
-//go:generate ../../bin/stringer -linecomment -type Code
+// skip for now
+// generate go run ./generate.go
+// generate ../../bin/stringer -linecomment -type Code
 
 // Code represents MongoDB error code.
 type Code int32
