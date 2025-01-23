@@ -30,8 +30,8 @@ import (
 	otelsdktrace "go.opentelemetry.io/otel/sdk/trace"
 	otelsemconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 
-	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
-	"github.com/FerretDB/FerretDB/internal/util/logging"
+	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
+	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 )
 
 // setup ensures that global tracer provider is set up only once.
@@ -120,11 +120,11 @@ func (ot *OTelTraceExporter) Run(ctx context.Context) {
 	defer shutdownCancel(nil)
 
 	if err := ot.tp.ForceFlush(shutdownCtx); err != nil {
-		ot.l.LogAttrs(ctx, logging.LevelDPanic, "ForceFlush exited with unexpected error", logging.Error(err))
+		ot.l.ErrorContext(ctx, "ForceFlush exited with unexpected error", logging.Error(err))
 	}
 
 	if err := ot.tp.Shutdown(shutdownCtx); err != nil {
-		ot.l.LogAttrs(ctx, logging.LevelDPanic, "Shutdown exited with unexpected error", logging.Error(err))
+		ot.l.ErrorContext(ctx, "Shutdown exited with unexpected error", logging.Error(err))
 	}
 
 	ot.l.InfoContext(ctx, "OTel trace exporter stopped")

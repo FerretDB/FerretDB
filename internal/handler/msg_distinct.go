@@ -20,76 +20,71 @@ import (
 
 	"github.com/FerretDB/wire"
 
-	"github.com/FerretDB/FerretDB/internal/backends"
-	"github.com/FerretDB/FerretDB/internal/handler/common"
-	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
+	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
 // MsgDistinct implements `distinct` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgDistinct(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := opMsgDocument(msg)
+	opID := h.operations.Start("query")
+	defer h.operations.Stop(opID)
+
+	spec, err := msg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	params, err := common.GetDistinctParams(document, h.L)
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+		return nil, err
+	}
+
+	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
+	doc, err := spec.Decode()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	dbName, err := getRequiredParam[string](doc, "$db")
 	if err != nil {
 		return nil, err
 	}
 
-	db, err := h.b.Database(params.DB)
-	if err != nil {
-		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
-			msg := fmt.Sprintf("Invalid namespace specified '%s.%s'", params.DB, params.Collection)
-			return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrInvalidNamespace, msg, document.Command())
-		}
+	collection, ok := doc.Get(doc.Command()).(string)
+	if !ok {
+		return nil, mongoerrors.NewWithArgument(
+			mongoerrors.ErrInvalidNamespace,
+			"Failed to parse namespace element",
+			doc.Command(),
+		)
+	}
 
+	h.operations.Update(opID, dbName, collection, doc)
+
+	if collection == "" {
+		return nil, mongoerrors.NewWithArgument(
+			mongoerrors.ErrInvalidNamespace,
+			fmt.Sprintf("Invalid namespace specified '%s.%s'", dbName, collection),
+			doc.Command(),
+		)
+	}
+
+	conn, err := h.Pool.Acquire()
+	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
+	defer conn.Release()
 
-	c, err := db.Collection(params.Collection)
-	if err != nil {
-		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
-			msg := fmt.Sprintf("Invalid collection name: %s", params.Collection)
-			return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrInvalidNamespace, msg, document.Command())
-		}
-
-		return nil, lazyerrors.Error(err)
-	}
-
-	closer := iterator.NewMultiCloser()
-	defer closer.Close()
-
-	var qp backends.QueryParams
-	if !h.DisablePushdown {
-		qp.Filter = params.Filter
-	}
-
-	// TODO https://github.com/FerretDB/FerretDB/issues/3235
-	queryRes, err := c.Query(connCtx, &qp)
+	res, err := documentdb_api.DistinctQuery(connCtx, conn.Conn(), h.L, dbName, spec)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	closer.Add(queryRes.Iter)
-
-	iter := common.FilterIterator(queryRes.Iter, closer, params.Filter)
-
-	distinct, err := common.FilterDistinctValues(iter, params.Key)
-	if err != nil {
+	if msg, err = wire.NewOpMsg(res); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	return documentOpMsg(
-		must.NotFail(types.NewDocument(
-			"values", distinct,
-			"ok", float64(1),
-		)),
-	)
+	return msg, nil
 }

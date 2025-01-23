@@ -21,8 +21,8 @@ import (
 
 	"github.com/FerretDB/wire"
 
-	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
-	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
+	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 )
 
 // command represents a handler for single command.
@@ -88,6 +88,10 @@ func (h *Handler) initCommands() {
 			Handler: h.MsgCreateIndexes,
 			Help:    "Creates indexes on a collection.",
 		},
+		"createUser": {
+			Handler: h.MsgCreateUser,
+			Help:    "Creates a new user.",
+		},
 		"currentOp": {
 			Handler: h.MsgCurrentOp,
 			Help:    "Returns information about operations currently in progress.",
@@ -120,6 +124,10 @@ func (h *Handler) initCommands() {
 			Handler: h.MsgDrop,
 			Help:    "Drops the collection.",
 		},
+		"dropAllUsersFromDatabase": {
+			Handler: h.MsgDropAllUsersFromDatabase,
+			Help:    "Drops all user from database.",
+		},
 		"dropDatabase": {
 			Handler: h.MsgDropDatabase,
 			Help:    "Drops production database.",
@@ -127,6 +135,14 @@ func (h *Handler) initCommands() {
 		"dropIndexes": {
 			Handler: h.MsgDropIndexes,
 			Help:    "Drops indexes on a collection.",
+		},
+		"dropUser": {
+			Handler: h.MsgDropUser,
+			Help:    "Drops user.",
+		},
+		"endSessions": {
+			Handler: h.MsgEndSessions,
+			Help:    "Marks sessions as expired.",
 		},
 		"explain": {
 			Handler: h.MsgExplain,
@@ -187,9 +203,21 @@ func (h *Handler) initCommands() {
 			anonymous: true,
 			Help:      "", // hidden
 		},
+		"killAllSessions": {
+			Handler: h.MsgKillAllSessions,
+			Help:    "Kills all sessions.",
+		},
+		"killAllSessionsByPattern": {
+			Handler: h.MsgKillAllSessionsByPattern,
+			Help:    "Kills all sessions that match the pattern.",
+		},
 		"killCursors": {
 			Handler: h.MsgKillCursors,
 			Help:    "Closes server cursors.",
+		},
+		"killSessions": {
+			Handler: h.MsgKillSessions,
+			Help:    "Kills sessions.",
 		},
 		"listCollections": {
 			Handler: h.MsgListCollections,
@@ -217,6 +245,10 @@ func (h *Handler) initCommands() {
 			anonymous: true,
 			Help:      "Returns a pong response.",
 		},
+		"refreshSessions": {
+			Handler: h.MsgRefreshSessions,
+			Help:    "Updates the last used time of sessions.",
+		},
 		"renameCollection": {
 			Handler: h.MsgRenameCollection,
 			Help:    "Changes the name of an existing collection.",
@@ -239,9 +271,21 @@ func (h *Handler) initCommands() {
 			Handler: h.MsgSetFreeMonitoring,
 			Help:    "Toggles free monitoring.",
 		},
+		"startSession": {
+			Handler: h.MsgStartSession,
+			Help:    "Returns a session.",
+		},
 		"update": {
 			Handler: h.MsgUpdate,
 			Help:    "Updates documents that are matched by the query.",
+		},
+		"updateUser": {
+			Handler: h.MsgUpdateUser,
+			Help:    "Updates user.",
+		},
+		"usersInfo": {
+			Handler: h.MsgUsersInfo,
+			Help:    "Returns information about users.",
 		},
 		"validate": {
 			Handler: h.MsgValidate,
@@ -255,75 +299,50 @@ func (h *Handler) initCommands() {
 		// please keep sorted alphabetically
 	}
 
-	if h.EnableNewAuth {
-		// sorted alphabetically
-		h.commands["createUser"] = &command{
-			Handler: h.MsgCreateUser,
-			Help:    "Creates a new user.",
-		}
-		h.commands["dropAllUsersFromDatabase"] = &command{
-			Handler: h.MsgDropAllUsersFromDatabase,
-			Help:    "Drops all user from database.",
-		}
-		h.commands["dropUser"] = &command{
-			Handler: h.MsgDropUser,
-			Help:    "Drops user.",
-		}
-		h.commands["updateUser"] = &command{
-			Handler: h.MsgUpdateUser,
-			Help:    "Updates user.",
-		}
-		h.commands["usersInfo"] = &command{
-			Handler: h.MsgUsersInfo,
-			Help:    "Returns information about users.",
-		}
-		// please keep sorted alphabetically
+	if !h.Auth {
+		return
 	}
 
 	for name, cmd := range h.commands {
-		if h.EnableNewAuth && !cmd.anonymous {
-			cmdHandler := h.commands[name].Handler
+		if cmd.anonymous {
+			continue
+		}
 
-			h.commands[name].Handler = func(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-				if err := checkSCRAMConversation(ctx, name, h.L); err != nil {
-					return nil, err
-				}
+		cmdHandler := h.commands[name].Handler
 
-				return cmdHandler(ctx, msg)
+		h.commands[name].Handler = func(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+			if err := checkAuthentication(ctx, name, h.L); err != nil {
+				return nil, err
 			}
+
+			return cmdHandler(ctx, msg)
 		}
 	}
 }
 
-// checkSCRAMConversation returns error if SCRAM conversation is not valid.
-func checkSCRAMConversation(ctx context.Context, command string, l *slog.Logger) error {
-	_, _, conv, _ := conninfo.Get(ctx).Auth()
+// checkAuthentication returns error if SCRAM conversation is absent or did not succeed.
+func checkAuthentication(ctx context.Context, command string, l *slog.Logger) error {
+	conv := conninfo.Get(ctx).Conv()
+	succeed := conv.Succeed()
+	username := conv.Username()
 
 	switch {
 	case conv == nil:
-		l.WarnContext(ctx, "checkSCRAMConversation: no conversation")
+		l.WarnContext(ctx, "checkAuthentication: no existing conversation")
 
-	case !conv.Valid():
-		l.WarnContext(
-			ctx,
-			"checkSCRAMConversation: invalid conversation",
-			slog.String("username", conv.Username()), slog.Bool("valid", conv.Valid()), slog.Bool("done", conv.Done()),
-		)
+	case !succeed:
+		l.WarnContext(ctx, "checkAuthentication: conversation did not succeed", slog.String("username", username))
 
 	default:
-		l.DebugContext(
-			ctx,
-			"checkSCRAMConversation: passed",
-			slog.String("username", conv.Username()), slog.Bool("valid", conv.Valid()), slog.Bool("done", conv.Done()),
-		)
+		l.DebugContext(ctx, "checkAuthentication: passed", slog.String("username", conv.Username()))
 
 		return nil
 	}
 
-	return handlererrors.NewCommandErrorMsgWithArgument(
-		handlererrors.ErrUnauthorized,
+	return mongoerrors.NewWithArgument(
+		mongoerrors.ErrUnauthorized,
 		fmt.Sprintf("Command %s requires authentication", command),
-		"checkSCRAMConversation",
+		"checkAuthentication",
 	)
 }
 

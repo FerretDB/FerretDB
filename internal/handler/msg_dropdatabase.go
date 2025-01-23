@@ -18,61 +18,54 @@ import (
 	"context"
 
 	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
 
-	"github.com/FerretDB/FerretDB/internal/backends"
-	"github.com/FerretDB/FerretDB/internal/handler/common"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // MsgDropDatabase implements `dropDatabase` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgDropDatabase(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := opMsgDocument(msg)
+	spec, err := msg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	common.Ignored(document, h.L, "writeConcern", "comment")
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+		return nil, err
+	}
 
-	dbName, err := common.GetRequiredParam[string](document, "$db")
+	doc, err := spec.Decode()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	dbName, err := getRequiredParam[string](doc, "$db")
 	if err != nil {
 		return nil, err
 	}
 
-	// Most backends would block on `DropDatabase` below otherwise.
-	//
-	// There is a race condition: another client could create a new cursor for that database
-	// after we closed all of them, but before we drop the database itself.
-	// In that case, we expect the client to wait or to retry the operation.
-	for _, c := range h.cursors.All() {
-		if c.DB == dbName {
-			h.cursors.CloseAndRemove(c)
-		}
-	}
+	// Should we manually close all cursors for the database?
+	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/17
 
-	err = h.b.DropDatabase(connCtx, &backends.DropDatabaseParams{
-		Name: dbName,
-	})
-
-	res := must.NotFail(types.NewDocument())
-
-	switch {
-	case err == nil:
-		res.Set("dropped", dbName)
-	case backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid):
-		// nothing?
-	case backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseDoesNotExist):
-		// nothing
-	default:
+	conn, err := h.Pool.Acquire()
+	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	res.Set("ok", float64(1))
+	defer conn.Release()
 
-	return documentOpMsg(
-		res,
-	)
+	_, err = documentdb_api.DropDatabase(connCtx, conn.Conn(), h.L, dbName, nil)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	res := must.NotFail(wirebson.NewDocument(
+		"ok", float64(1),
+	))
+
+	return wire.NewOpMsg(must.NotFail(res.Encode()))
 }

@@ -16,105 +16,47 @@ package handler
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/FerretDB/wire"
 
-	"github.com/FerretDB/FerretDB/internal/backends"
-	"github.com/FerretDB/FerretDB/internal/handler/common"
-	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
 // MsgListIndexes implements `listIndexes` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgListIndexes(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := opMsgDocument(msg)
+	spec, err := msg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	command := document.Command()
+	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
+	doc, err := spec.Decode()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
-	dbName, err := common.GetRequiredParam[string](document, "$db")
+	dbName, err := getRequiredParam[string](doc, "$db")
 	if err != nil {
 		return nil, err
 	}
 
-	collection, err := common.GetRequiredParam[string](document, command)
+	userID, sessionID, err := h.s.CreateOrUpdateByLSID(connCtx, spec)
 	if err != nil {
 		return nil, err
 	}
 
-	db, err := h.b.Database(dbName)
+	page, cursorID, err := h.Pool.ListIndexes(connCtx, dbName, spec)
 	if err != nil {
-		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
-			msg := fmt.Sprintf("Invalid database specified '%s'", dbName)
-			return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrInvalidNamespace, msg, document.Command())
-		}
-
 		return nil, lazyerrors.Error(err)
 	}
 
-	c, err := db.Collection(collection)
-	if err != nil {
-		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
-			msg := fmt.Sprintf("Invalid collection name: %s", collection)
-			return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrInvalidNamespace, msg, document.Command())
-		}
+	h.s.AddCursor(connCtx, userID, sessionID, cursorID)
 
+	if msg, err = wire.NewOpMsg(page); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	res, err := c.ListIndexes(connCtx, nil)
-	if err != nil {
-		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
-			msg := fmt.Sprintf("ns does not exist: %s.%s", dbName, collection)
-			return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrNamespaceNotFound, msg, document.Command())
-		}
-
-		return nil, lazyerrors.Error(err)
-	}
-
-	firstBatch := types.MakeArray(len(res.Indexes))
-
-	for _, index := range res.Indexes {
-		indexKey := must.NotFail(types.NewDocument())
-
-		for _, key := range index.Key {
-			order := int32(1)
-			if key.Descending {
-				order = -1
-			}
-
-			indexKey.Set(key.Field, order)
-		}
-
-		indexDoc := must.NotFail(types.NewDocument(
-			"v", int32(2), // for compatibility, the meaning of this field is not documented
-			"key", indexKey,
-			"name", index.Name,
-		))
-
-		// only non-default unique indexes should have unique field in the response
-		if index.Unique && index.Name != backends.DefaultIndexName {
-			indexDoc.Set("unique", index.Unique)
-		}
-
-		firstBatch.Append(indexDoc)
-	}
-
-	return documentOpMsg(
-		must.NotFail(types.NewDocument(
-			"cursor", must.NotFail(types.NewDocument(
-				"id", int64(0),
-				"ns", fmt.Sprintf("%s.%s", dbName, collection),
-				"firstBatch", firstBatch,
-			)),
-			"ok", float64(1),
-		)),
-	)
+	return msg, nil
 }

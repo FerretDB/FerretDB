@@ -16,44 +16,62 @@ package handler
 
 import (
 	"context"
+	"maps"
+	"slices"
 	"strconv"
 
 	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
 
-	"github.com/FerretDB/FerretDB/build/version"
-	"github.com/FerretDB/FerretDB/internal/handler/common/aggregations/stages"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/v2/build/version"
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // MsgBuildInfo implements `buildInfo` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgBuildInfo(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	aggregationStages := types.MakeArray(len(stages.Stages))
-	for stage := range stages.Stages {
-		aggregationStages.Append(stage)
+	spec, err := msg.RawDocument()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
-	return documentOpMsg(
-		must.NotFail(types.NewDocument(
-			"version", version.Get().MongoDBVersion,
-			"gitVersion", version.Get().Commit,
-			"modules", must.NotFail(types.NewArray()),
-			"sysInfo", "deprecated",
-			"versionArray", version.Get().MongoDBVersionArray,
-			"bits", int32(strconv.IntSize),
-			"debug", version.Get().DebugBuild,
-			"maxBsonObjectSize", int32(h.MaxBsonObjectSizeBytes),
-			"buildEnvironment", version.Get().BuildEnvironment,
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+		return nil, err
+	}
 
-			// our extensions
-			"ferretdbVersion", version.Get().Version,
-			"ferretdbFeatures", must.NotFail(types.NewDocument(
-				"aggregationStages", aggregationStages,
-			)),
+	info := version.Get()
 
-			"ok", float64(1),
-		)),
+	buildEnvironment := wirebson.MakeDocument(len(info.BuildEnvironment))
+	for _, k := range slices.Sorted(maps.Keys(info.BuildEnvironment)) {
+		must.NoError(buildEnvironment.Add(k, info.BuildEnvironment[k]))
+	}
+
+	versionArray := wirebson.MakeArray(len(info.MongoDBVersionArray))
+	for _, v := range info.MongoDBVersionArray {
+		must.NoError(versionArray.Add(v))
+	}
+
+	res := wire.MustOpMsg(
+		"version", info.MongoDBVersion,
+		"gitVersion", info.Commit,
+		"modules", wirebson.MakeArray(0),
+		"sysInfo", "deprecated",
+		"versionArray", versionArray,
+		"bits", int32(strconv.IntSize),
+		"debug", info.DevBuild,
+		"maxBsonObjectSize", maxBsonObjectSize,
+		"buildEnvironment", buildEnvironment,
+
+		// our extensions
+		"ferretdb", wirebson.MustDocument(
+			"version", info.Version,
+			"package", info.Package,
+		),
+
+		"ok", float64(1),
 	)
+
+	return res, nil
 }

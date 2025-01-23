@@ -17,156 +17,152 @@ package handler
 import (
 	"context"
 	"fmt"
+	"strings"
+	"unicode/utf8"
 
 	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
 
-	"github.com/FerretDB/FerretDB/internal/backends"
-	"github.com/FerretDB/FerretDB/internal/handler/common"
-	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
-	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
+	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // MsgRenameCollection implements `renameCollection` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgRenameCollection(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	var err error
-
-	document, err := opMsgDocument(msg)
+	spec, err := msg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	// implement dropTarget param
-	// TODO https://github.com/FerretDB/FerretDB/issues/2565
-	if err = common.UnimplementedNonDefault(document, "dropTarget", func(v any) bool {
-		b, ok := v.(bool)
-		return ok && !b
-	}); err != nil {
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
 		return nil, err
 	}
 
-	ignoredFields := []string{
-		"writeConcern",
-		"comment",
-	}
-	common.Ignored(document, h.L, ignoredFields...)
-
-	command := document.Command()
-
-	oldName, err := common.GetRequiredParam[string](document, command)
+	document, err := spec.Decode()
 	if err != nil {
-		from, fe := document.Get(command)
-		if fe != nil || from == types.Null {
-			return nil, handlererrors.NewCommandErrorMsgWithArgument(
-				handlererrors.ErrMissingField,
+		return nil, lazyerrors.Error(err)
+	}
+
+	command := "renameCollection"
+
+	oldName, err := getRequiredParam[string](document, command)
+	if err != nil {
+		from := document.Get(command)
+		if from == nil || from == wirebson.Null {
+			return nil, mongoerrors.NewWithArgument(
+				mongoerrors.ErrLocation40414,
 				"BSON field 'renameCollection.from' is missing but a required field",
 				command,
 			)
 		}
 
-		return nil, handlererrors.NewCommandErrorMsgWithArgument(
-			handlererrors.ErrTypeMismatch,
-			fmt.Sprintf("collection name has invalid type %s", handlerparams.AliasFromType(from)),
+		return nil, mongoerrors.NewWithArgument(
+			mongoerrors.ErrTypeMismatch,
+			fmt.Sprintf("collection name has invalid type %s", aliasFromType(from)),
 			command,
 		)
 	}
 
-	newName, err := common.GetRequiredParam[string](document, "to")
+	newName, err := getRequiredParam[string](document, "to")
 	if err != nil {
-		if to, te := document.Get("to"); te != nil || to == types.Null {
-			return nil, handlererrors.NewCommandErrorMsgWithArgument(
-				handlererrors.ErrMissingField,
+		if to := document.Get("to"); to == nil || to == wirebson.Null {
+			return nil, mongoerrors.NewWithArgument(
+				mongoerrors.ErrLocation40414,
 				"BSON field 'renameCollection.to' is missing but a required field",
 				command,
 			)
 		}
 
-		return nil, handlererrors.NewCommandErrorMsgWithArgument(
-			handlererrors.ErrTypeMismatch,
+		return nil, mongoerrors.NewWithArgument(
+			mongoerrors.ErrTypeMismatch,
 			"'to' must be of type String",
 			command,
 		)
 	}
 
-	oldDBName, oldCName, err := handlerparams.SplitNamespace(oldName, command)
+	dropTarget, err := getOptionalParam[bool](document, "dropTarget", false)
 	if err != nil {
 		return nil, err
 	}
 
-	newDBName, newCName, err := handlerparams.SplitNamespace(newName, command)
+	oldDBName, oldCName, err := splitNamespace(oldName, command)
 	if err != nil {
-		return nil, handlererrors.NewCommandErrorMsgWithArgument(
-			handlererrors.ErrInvalidNamespace,
+		return nil, err
+	}
+
+	newDBName, newCName, err := splitNamespace(newName, command)
+	if err != nil {
+		return nil, mongoerrors.NewWithArgument(
+			mongoerrors.ErrInvalidNamespace,
 			fmt.Sprintf("Invalid target namespace: %s", newName),
 			command,
 		)
 	}
 
+	if !collectionNameRe.MatchString(oldCName) ||
+		!utf8.ValidString(oldCName) {
+		msg := fmt.Sprintf("Invalid collection name: %s", oldCName)
+		return nil, mongoerrors.NewWithArgument(mongoerrors.ErrInvalidNamespace, msg, "renameCollection")
+	}
+
+	if !collectionNameRe.MatchString(newCName) ||
+		!utf8.ValidString(newCName) {
+		msg := fmt.Sprintf("Invalid collection name: %s", newCName)
+		return nil, mongoerrors.NewWithArgument(mongoerrors.ErrInvalidNamespace, msg, "renameCollection")
+	}
+
 	// support cross-database rename
 	// TODO https://github.com/FerretDB/FerretDB/issues/2563
 	if oldDBName != newDBName {
-		return nil, handlererrors.NewCommandErrorMsgWithArgument(
-			handlererrors.ErrNotImplemented,
+		return nil, mongoerrors.NewWithArgument(
+			mongoerrors.ErrNotImplemented,
 			"Command renameCollection does not support cross-database rename",
 			command,
 		)
 	}
 
 	if oldCName == newCName {
-		return nil, handlererrors.NewCommandErrorMsgWithArgument(
-			handlererrors.ErrIllegalOperation,
+		return nil, mongoerrors.NewWithArgument(
+			mongoerrors.ErrIllegalOperation,
 			"Can't rename a collection to itself",
 			command,
 		)
 	}
 
-	db, err := h.b.Database(oldDBName)
+	conn, err := h.Pool.Acquire()
 	if err != nil {
-		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
-			msg := fmt.Sprintf("Invalid namespace specified '%s'", oldName)
-			return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrInvalidNamespace, msg, command)
-		}
-
 		return nil, lazyerrors.Error(err)
 	}
 
-	err = db.RenameCollection(connCtx, &backends.RenameCollectionParams{
-		OldName: oldCName,
-		NewName: newCName,
-	})
+	defer conn.Release()
 
-	switch {
-	case err == nil:
-	// do nothing
-	case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionAlreadyExists):
-		return nil, handlererrors.NewCommandErrorMsgWithArgument(
-			handlererrors.ErrNamespaceExists,
-			"target namespace exists",
-			command,
-		)
-	case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist):
-		return nil, handlererrors.NewCommandErrorMsgWithArgument(
-			handlererrors.ErrNamespaceNotFound,
-			fmt.Sprintf("Source collection %s does not exist", oldName),
-			command,
-		)
-	case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid):
-		return nil, handlererrors.NewCommandErrorMsgWithArgument(
-			handlererrors.ErrIllegalOperation,
-			fmt.Sprintf("error with target namespace: Invalid collection name: %s", newCName),
-			command,
-		)
-	default:
+	_, err = documentdb_api.RenameCollection(connCtx, conn.Conn(), h.L, oldDBName, oldCName, newCName, dropTarget)
+	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	return documentOpMsg(
-		must.NotFail(types.NewDocument(
-			"ok", float64(1),
-		)),
-	)
+	res := must.NotFail(wirebson.NewDocument(
+		"ok", float64(1),
+	))
+
+	return wire.NewOpMsg(must.NotFail(res.Encode()))
+}
+
+// splitNamespace returns the database and collection name from a given namespace in format "database.collection".
+func splitNamespace(ns, argument string) (string, string, error) {
+	parts := strings.Split(ns, ".")
+
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return "", "", mongoerrors.NewWithArgument(
+			mongoerrors.ErrInvalidNamespace,
+			fmt.Sprintf("Invalid namespace specified '%s'", ns),
+			argument,
+		)
+	}
+
+	return parts[0], parts[1], nil
 }

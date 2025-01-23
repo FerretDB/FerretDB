@@ -16,139 +16,72 @@ package handler
 
 import (
 	"context"
-	"fmt"
+	"sort"
 
 	"github.com/FerretDB/wire"
-	"github.com/google/uuid"
+	"github.com/FerretDB/wire/wirebson"
 
-	"github.com/FerretDB/FerretDB/internal/backends"
-	"github.com/FerretDB/FerretDB/internal/handler/common"
-	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
-	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
 // MsgListCollections implements `listCollections` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgListCollections(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := opMsgDocument(msg)
+	spec, err := msg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	var filter *types.Document
-	if filter, err = common.GetOptionalParam(document, "filter", filter); err != nil {
-		return nil, err
+	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
+	doc, err := spec.Decode()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
-	common.Ignored(document, h.L, "comment")
-
-	// TODO https://github.com/FerretDB/FerretDB/issues/3770
-	common.Ignored(document, h.L, "authorizedCollections")
-
-	dbName, err := common.GetRequiredParam[string](document, "$db")
+	dbName, err := getRequiredParam[string](doc, "$db")
 	if err != nil {
 		return nil, err
 	}
 
-	var nameOnly bool
-
-	if v, _ := document.Get("nameOnly"); v != nil {
-		if nameOnly, err = handlerparams.GetBoolOptionalParam("nameOnly", v); err != nil {
-			return nil, err
-		}
-	}
-
-	db, err := h.b.Database(dbName)
+	userID, sessionID, err := h.s.CreateOrUpdateByLSID(connCtx, spec)
 	if err != nil {
-		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
-			msg := fmt.Sprintf("Invalid namespace specified '%s'", dbName)
-			return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrInvalidNamespace, msg, "listCollections")
-		}
-
-		return nil, lazyerrors.Error(err)
+		return nil, err
 	}
 
-	res, err := db.ListCollections(connCtx, nil)
+	page, cursorID, err := h.Pool.ListCollections(connCtx, dbName, spec)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	collections := types.MakeArray(len(res.Collections))
+	h.s.AddCursor(connCtx, userID, sessionID, cursorID)
 
-	for _, collection := range res.Collections {
-		d := must.NotFail(types.NewDocument(
-			"name", collection.Name,
-			"type", "collection",
-			"idIndex", must.NotFail(types.NewDocument(
-				"v", int32(2),
-				"key", must.NotFail(types.NewDocument("_id", int32(1))),
-				"name", "_id_",
-			)),
-		))
+	// Sort the first page as a partial workaround for
+	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/822
 
-		options := must.NotFail(types.NewDocument())
-		info := must.NotFail(types.NewDocument("readOnly", false))
-
-		if collection.Capped() {
-			options.Set("capped", true)
-		}
-
-		if collection.CappedSize > 0 {
-			options.Set("size", collection.CappedSize)
-		}
-
-		if collection.CappedDocuments > 0 {
-			options.Set("max", collection.CappedDocuments)
-		}
-
-		d.Set("options", options)
-
-		if collection.UUID != "" {
-			uuid, err := uuid.Parse(collection.UUID)
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-			uuidBinary := types.Binary{
-				Subtype: types.BinaryUUID,
-				B:       must.NotFail(uuid.MarshalBinary()),
-			}
-
-			info.Set("uuid", uuidBinary)
-		}
-
-		d.Set("info", info)
-
-		matches, err := common.FilterDocument(d, filter)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		if !matches {
-			continue
-		}
-
-		if nameOnly {
-			d = must.NotFail(types.NewDocument(
-				"name", collection.Name,
-			))
-		}
-
-		collections.Append(d)
+	resp, err := page.DecodeDeep()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
-	return documentOpMsg(
-		must.NotFail(types.NewDocument(
-			"cursor", must.NotFail(types.NewDocument(
-				"id", int64(0),
-				"ns", dbName+".$cmd.listCollections",
-				"firstBatch", collections,
-			)),
-			"ok", float64(1),
-		)),
-	)
+	cursor := resp.Get("cursor").(*wirebson.Document)
+	firstBatch := cursor.Get("firstBatch").(*wirebson.Array)
+
+	sort.Sort(firstBatch.SortInterface(func(a, b any) bool {
+		an := a.(*wirebson.Document).Get("name").(string)
+		bn := b.(*wirebson.Document).Get("name").(string)
+
+		return an < bn
+	}))
+
+	page, err = resp.Encode()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if msg, err = wire.NewOpMsg(page); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return msg, nil
 }

@@ -20,90 +20,82 @@ import (
 	"time"
 
 	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
 
-	"github.com/FerretDB/FerretDB/internal/backends"
-	"github.com/FerretDB/FerretDB/internal/handler/common"
-	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
-	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
+	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // MsgDataSize implements `dataSize` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgDataSize(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := opMsgDocument(msg)
+	spec, err := msg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	if err = common.Unimplemented(document, "keyPattern", "min", "max"); err != nil {
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
 		return nil, err
 	}
 
-	common.Ignored(document, h.L, "estimate")
-
-	var namespaceParam any
-
-	if namespaceParam, err = document.Get(document.Command()); err != nil {
-		return nil, err
+	doc, err := spec.Decode()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
-	namespace, ok := namespaceParam.(string)
+	cmd := doc.Command()
+
+	v := doc.Get(cmd)
+
+	ns, ok := v.(string)
 	if !ok {
-		return nil, handlererrors.NewCommandErrorMsgWithArgument(
-			handlererrors.ErrTypeMismatch,
-			fmt.Sprintf("collection name has invalid type %s", handlerparams.AliasFromType(namespaceParam)),
-			document.Command(),
-		)
+		msg := fmt.Sprintf("BSON field 'dataSize.dataSize' is the wrong type '%s', expected type 'string'", aliasFromType(v))
+		return nil, lazyerrors.Error(mongoerrors.NewWithArgument(mongoerrors.ErrTypeMismatch, msg, cmd))
 	}
 
-	dbName, cName, err := handlerparams.SplitNamespace(namespace, document.Command())
+	db, collection, err := splitNamespace(ns, cmd)
 	if err != nil {
 		return nil, err
-	}
-
-	db, err := h.b.Database(dbName)
-	if err != nil {
-		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
-			msg := fmt.Sprintf("Invalid database specified '%s'", dbName)
-			return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrInvalidNamespace, msg, document.Command())
-		}
-
-		return nil, lazyerrors.Error(err)
-	}
-
-	c, err := db.Collection(cName)
-	if err != nil {
-		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
-			msg := fmt.Sprintf("Invalid collection name: %s", cName)
-			return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrInvalidNamespace, msg, document.Command())
-		}
-
-		return nil, lazyerrors.Error(err)
 	}
 
 	started := time.Now()
 
-	stats, err := c.Stats(connCtx, new(backends.CollectionStatsParams))
-	if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
-		stats = new(backends.CollectionStatsResult)
-		err = nil
+	conn, err := h.Pool.Acquire()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
+	defer conn.Release()
 
+	pageRaw, err := documentdb_api.CollStats(connCtx, conn.Conn(), h.L, db, collection, float64(1))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	return documentOpMsg(
-		must.NotFail(types.NewDocument(
-			"estimate", false,
-			"size", stats.SizeTotal,
-			"numObjects", stats.CountDocuments,
-			"millis", int32(time.Since(started).Milliseconds()),
-			"ok", float64(1),
-		)),
-	)
+	page, err := pageRaw.Decode()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	count := page.Get("count").(int32)
+	size := page.Get("totalSize")
+
+	res := must.NotFail(wirebson.NewDocument())
+
+	if count != 0 {
+		must.NoError(res.Add("estimate", false))
+	}
+
+	must.NoError(res.Add("millis", time.Since(started).Milliseconds()))
+	must.NoError(res.Add("numObjects", count))
+	must.NoError(res.Add("ok", float64(1)))
+	must.NoError(res.Add("size", size))
+
+	if msg, err = wire.NewOpMsg(res); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return msg, nil
 }

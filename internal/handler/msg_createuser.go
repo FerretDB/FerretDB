@@ -16,188 +16,64 @@ package handler
 
 import (
 	"context"
-	"errors"
-	"fmt"
-	"strings"
+	"log/slog"
 
 	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
+	"github.com/jackc/pgx/v5"
 
-	"github.com/FerretDB/FerretDB/internal/backends"
-	"github.com/FerretDB/FerretDB/internal/handler/common"
-	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
-	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
-	"github.com/FerretDB/FerretDB/internal/handler/users"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/util/password"
+	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // MsgCreateUser implements `createUser` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgCreateUser(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := opMsgDocument(msg)
+	spec, err := msg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	dbName, err := common.GetRequiredParam[string](document, "$db")
-	if err != nil {
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
 		return nil, err
 	}
 
-	if dbName != "$external" && !document.Has("pwd") {
-		return nil, handlererrors.NewCommandErrorMsg(
-			handlererrors.ErrBadValue,
-			"Must provide a 'pwd' field for all user documents, except those with '$external' as the user's source db",
-		)
-	}
-
-	username, err := common.GetRequiredParam[string](document, document.Command())
-	if err != nil {
-		return nil, err
-	}
-
-	if username == "" {
-		return nil, handlererrors.NewCommandErrorMsg(
-			handlererrors.ErrBadValue,
-			"User document needs 'user' field to be non-empty",
-		)
-	}
-
-	if err = common.UnimplementedNonDefault(document, "customData", func(v any) bool {
-		if v == nil || v == types.Null {
-			return true
-		}
-
-		cd, ok := v.(*types.Document)
-		return ok && cd.Len() == 0
-	}); err != nil {
-		return nil, err
-	}
-
-	if _, err = common.GetRequiredParam[*types.Array](document, "roles"); err != nil {
-		var ce *handlererrors.CommandError
-		if errors.As(err, &ce) && ce.Code() == handlererrors.ErrBadValue {
-			return nil, handlererrors.NewCommandErrorMsg(
-				handlererrors.ErrMissingField,
-				"BSON field 'createUser.roles' is missing but a required field",
-			)
-		}
-
-		return nil, lazyerrors.Error(err)
-	}
-
-	if err = common.UnimplementedNonDefault(document, "roles", func(v any) bool {
-		r, ok := v.(*types.Array)
-		return ok && r.Len() == 0
-	}); err != nil {
-		return nil, err
-	}
-
-	if err = common.UnimplementedNonDefault(document, "digestPassword", func(v any) bool {
-		if v == nil || v == types.Null {
-			return true
-		}
-
-		dp, ok := v.(bool)
-		return ok && dp
-	}); err != nil {
-		return nil, err
-	}
-
-	common.Ignored(document, h.L, "writeConcern", "authenticationRestrictions", "comment")
-
-	defMechanisms := must.NotFail(types.NewArray("SCRAM-SHA-1", "SCRAM-SHA-256"))
-
-	mechanisms, err := common.GetOptionalParam(document, "mechanisms", defMechanisms)
+	doc, err := spec.DecodeDeep()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	if mechanisms.Len() == 0 {
-		return nil, handlererrors.NewCommandErrorMsg(
-			handlererrors.ErrBadValue,
-			"mechanisms field must not be empty",
+	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/913
+	doc.Remove("mechanisms")
+
+	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/911
+	roles, _ := doc.Get("roles").(*wirebson.Array)
+	if roles == nil || roles.Len() == 0 {
+		roles = wirebson.MustArray(
+			wirebson.MustDocument("role", "clusterAdmin", "db", "admin"),
+			wirebson.MustDocument("role", "readWriteAnyDatabase", "db", "admin"),
 		)
+
+		h.L.WarnContext(
+			connCtx, "Adding default roles",
+			slog.Any("user", doc.Get(doc.Command())), slog.String("roles", roles.LogMessage()),
+		)
+
+		must.NoError(doc.Replace("roles", roles))
+		spec = must.NotFail(doc.Encode())
 	}
 
-	iter := mechanisms.Iterator()
-	defer iter.Close()
+	var res wirebson.RawDocument
 
-	for {
-		var v any
-		_, v, err := iter.Next()
-
-		if errors.Is(err, iterator.ErrIteratorDone) {
-			break
-		}
-
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		switch v {
-		case "SCRAM-SHA-1", "SCRAM-SHA-256":
-			// do nothing
-		default:
-			return nil, handlererrors.NewCommandErrorMsg(
-				handlererrors.ErrBadValue,
-				fmt.Sprintf("Unknown auth mechanism '%s'", v),
-			)
-		}
+	err = h.Pool.WithConn(func(conn *pgx.Conn) error {
+		res, err = documentdb_api.CreateUser(connCtx, conn, h.L, spec)
+		return err
+	})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
-	if document.Has("pwd") {
-		pwd, _ := document.Get("pwd")
-		userPassword, ok := pwd.(string)
-
-		if !ok {
-			return nil, handlererrors.NewCommandErrorMsg(
-				handlererrors.ErrTypeMismatch,
-				fmt.Sprintf("BSON field 'createUser.pwd' is the wrong type '%s', expected type 'string'",
-					handlerparams.AliasFromType(pwd),
-				),
-			)
-		}
-
-		if userPassword == "" {
-			return nil, handlererrors.NewCommandErrorMsg(
-				handlererrors.ErrSetEmptyPassword,
-				"Password cannot be empty",
-			)
-		}
-
-		err = users.CreateUser(connCtx, h.b, &users.CreateUserParams{
-			Database:   dbName,
-			Username:   username,
-			Password:   password.WrapPassword(userPassword),
-			Mechanisms: mechanisms,
-		})
-		if err != nil {
-			if backends.ErrorCodeIs(err, backends.ErrorCodeInsertDuplicateID) {
-				return nil, handlererrors.NewCommandErrorMsg(
-					handlererrors.ErrUserAlreadyExists,
-					fmt.Sprintf("User \"%s@%s\" already exists", username, dbName),
-				)
-			}
-
-			if strings.Contains(err.Error(), "prohibited character") {
-				return nil, handlererrors.NewCommandErrorMsg(
-					handlererrors.ErrStringProhibited,
-					"Error preflighting normalization: U_STRINGPREP_PROHIBITED_ERROR",
-				)
-			}
-
-			return nil, lazyerrors.Error(err)
-		}
-	}
-
-	return documentOpMsg(
-		must.NotFail(types.NewDocument(
-			"ok", float64(1),
-		)),
-	)
+	return wire.NewOpMsg(res)
 }

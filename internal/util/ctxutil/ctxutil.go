@@ -62,8 +62,10 @@ func Sleep(ctx context.Context, d time.Duration) {
 }
 
 // SleepWithJitter pauses the current goroutine until d + jitter has passed or ctx is canceled.
-func SleepWithJitter(ctx context.Context, d time.Duration, attempts int64) {
-	sleepCtx, cancel := context.WithTimeout(ctx, durationWithJitter(d, attempts))
+//
+// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/811
+func SleepWithJitter(ctx context.Context, d time.Duration, attempt int64) {
+	sleepCtx, cancel := context.WithTimeout(ctx, durationWithJitter(d, attempt))
 	defer cancel()
 	<-sleepCtx.Done()
 }
@@ -80,7 +82,7 @@ func durationWithJitter(cap time.Duration, attempt int64) time.Duration {
 	capDuration := cap.Milliseconds()
 
 	if attempt < 1 {
-		panic("attempt must be nonzero positive number")
+		panic("attempt must be positive number")
 	}
 
 	if capDuration <= minDuration {

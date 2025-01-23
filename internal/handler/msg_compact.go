@@ -16,134 +16,65 @@ package handler
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
 
-	"github.com/FerretDB/FerretDB/internal/backends"
-	"github.com/FerretDB/FerretDB/internal/handler/common"
-	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
-	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // MsgCompact implements `compact` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgCompact(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := opMsgDocument(msg)
+	spec, err := msg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	common.Ignored(document, h.L, "comment")
-
-	command := document.Command()
-
-	dbName, err := common.GetRequiredParam[string](document, "$db")
-	if err != nil {
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
 		return nil, err
 	}
 
-	collection, err := common.GetRequiredParam[string](document, command)
+	doc, err := spec.Decode()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	_, err = getRequiredParam[string](doc, "$db")
 	if err != nil {
 		return nil, err
-	}
-
-	db, err := h.b.Database(dbName)
-	if err != nil {
-		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
-			return nil, handlererrors.NewCommandErrorMsgWithArgument(
-				handlererrors.ErrInvalidNamespace,
-				fmt.Sprintf("Invalid namespace specified '%s.%s'", dbName, collection),
-				command,
-			)
-		}
-
-		return nil, lazyerrors.Error(err)
-	}
-
-	c, err := db.Collection(collection)
-	if err != nil {
-		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
-			return nil, handlererrors.NewCommandErrorMsgWithArgument(
-				handlererrors.ErrInvalidNamespace,
-				fmt.Sprintf("Invalid namespace specified '%s.%s'", dbName, collection),
-				command,
-			)
-		}
-
-		return nil, lazyerrors.Error(err)
 	}
 
 	var force bool
 
-	if v, _ := document.Get("force"); v != nil {
-		if force, err = handlerparams.GetBoolOptionalParam("force", v); err != nil {
+	if v := doc.Get("force"); v != nil {
+		if force, err = getBoolParam("force", v); err != nil {
 			return nil, err
 		}
 	}
 
-	statsBefore, err := c.Stats(connCtx, new(backends.CollectionStatsParams))
-	if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
-		return nil, handlererrors.NewCommandErrorMsgWithArgument(
-			handlererrors.ErrNamespaceNotFound,
-			fmt.Sprintf("Invalid namespace specified '%s.%s'", dbName, collection),
-			command,
-		)
+	conn, err := h.Pool.Acquire()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+	defer conn.Release()
+
+	q := "VACUUM ANALYZE"
+	if force {
+		q = "VACUUM FULL ANALYZE"
 	}
 
+	_, err = conn.Conn().Exec(connCtx, q)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	cList, err := db.ListCollections(connCtx, &backends.ListCollectionsParams{
-		Name: collection,
-	})
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	res := must.NotFail(wirebson.NewDocument(
+		"bytesFreed", int32(0),
+		"ok", float64(1),
+	))
 
-	var cInfo backends.CollectionInfo
-
-	if len(cList.Collections) > 0 {
-		cInfo = cList.Collections[0]
-	}
-
-	var bytesFreed int64
-
-	if cInfo.Capped() {
-		if _, bytesFreed, err = h.cleanupCappedCollection(connCtx, db, &cInfo, force); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-	} else {
-		if _, err = c.Compact(connCtx, &backends.CompactParams{Full: force}); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		var statsAfter *backends.CollectionStatsResult
-
-		statsAfter, err = c.Stats(connCtx, new(backends.CollectionStatsParams))
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		bytesFreed = statsBefore.SizeTotal - statsAfter.SizeTotal
-
-		// There's a possibility that the size of a collection might be greater at the
-		// end of a compact operation if the collection is being actively written to at
-		// the time of compaction.
-		if bytesFreed < 0 {
-			bytesFreed = 0
-		}
-	}
-
-	return documentOpMsg(
-		must.NotFail(types.NewDocument(
-			"bytesFreed", float64(bytesFreed),
-			"ok", float64(1),
-		)),
-	)
+	return wire.NewOpMsg(must.NotFail(res.Encode()))
 }

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package clientconn provides client connection implementation.
+// Package clientconn provides wire protocol server implementation.
 package clientconn
 
 import (
@@ -32,24 +32,22 @@ import (
 	"time"
 
 	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
 	"github.com/pmezard/go-difflib/difflib"
 	"go.opentelemetry.io/otel"
 	otelattribute "go.opentelemetry.io/otel/attribute"
 	otelcodes "go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
+	oteltrace "go.opentelemetry.io/otel/trace"
 
-	"github.com/FerretDB/FerretDB/internal/bson"
-	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
-	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
-	"github.com/FerretDB/FerretDB/internal/handler"
-	"github.com/FerretDB/FerretDB/internal/handler/common"
-	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
-	"github.com/FerretDB/FerretDB/internal/handler/proxy"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/logging"
-	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/util/observability"
+	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
+	"github.com/FerretDB/FerretDB/v2/internal/handler"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/proxy"
+	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
+	"github.com/FerretDB/FerretDB/v2/internal/util/observability"
 )
 
 // Mode represents FerretDB mode of operation.
@@ -252,7 +250,6 @@ func (c *conn) run(ctx context.Context) (err error) {
 		var resHeader *wire.MsgHeader
 		var resBody wire.MsgBody
 
-		// TODO https://github.com/FerretDB/FerretDB/issues/2412
 		reqHeader, reqBody, err = wire.ReadMessage(bufr)
 		if err != nil {
 			return
@@ -260,7 +257,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 
 		if c.l.Enabled(ctx, slog.LevelDebug) {
 			c.l.DebugContext(ctx, "Request header: "+reqHeader.String())
-			c.l.DebugContext(ctx, "Request message:\n"+reqBody.String()+"\n")
+			c.l.DebugContext(ctx, "Request message:\n"+reqBody.StringIndent()+"\n")
 		}
 
 		// diffLogLevel provides the level of logging for the diff between the "normal" and "proxy" responses.
@@ -314,11 +311,11 @@ func (c *conn) run(ctx context.Context) (err error) {
 			var resBodyString, proxyBodyString string
 
 			if resBody != nil {
-				resBodyString = resBody.StringBlock()
+				resBodyString = resBody.StringIndent()
 			}
 
 			if proxyBody != nil {
-				proxyBodyString = proxyBody.StringBlock()
+				proxyBodyString = proxyBody.StringIndent()
 			}
 
 			var diffBody string
@@ -349,15 +346,22 @@ func (c *conn) run(ctx context.Context) (err error) {
 		}
 
 		if err = wire.WriteMessage(bufw, resHeader, resBody); err != nil {
+			c.l.DebugContext(ctx, "Failed to write message", logging.Error(err))
+
 			return
 		}
 
 		if err = bufw.Flush(); err != nil {
+			c.l.DebugContext(ctx, "Failed to flush buffer", logging.Error(err))
+
 			return
 		}
 
 		if resCloseConn {
 			err = errors.New("fatal error")
+
+			c.l.DebugContext(ctx, "Connection closed unexpectedly", logging.Error(err))
+
 			return
 		}
 	}
@@ -372,7 +376,8 @@ func (c *conn) run(ctx context.Context) (err error) {
 //
 // Returned resBody can be nil.
 func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody wire.MsgBody) (resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) { //nolint:lll // argument list is too long
-	var span trace.Span
+	var span oteltrace.Span
+
 	var command, result, argument string
 	defer func() {
 		if result == "" {
@@ -404,22 +409,22 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 	var err error
 	switch reqHeader.OpCode {
 	case wire.OpCodeMsg:
-		var document *types.Document
 		msg := reqBody.(*wire.OpMsg)
+		raw := msg.RawSection0()
 
 		resHeader.OpCode = wire.OpCodeMsg
 
-		// decoded successfully already in [run] [wire.ReadMessage] [UnmarshalBinaryNocopy] [check]
-		doc := must.NotFail(msg.RawSection0().Decode())
-
-		document, err = bson.ToDocument(doc)
+		var doc *wirebson.Document
+		if doc, err = raw.Decode(); err == nil {
+			command = doc.Command()
+		}
 
 		if err == nil {
-			comment, _ := common.GetOptionalParam(document, "comment", "")
+			comment, _ := doc.Get("comment").(string)
 
 			spanCtx, e := observability.SpanContextFromComment(comment)
 			if e == nil {
-				connCtx = trace.ContextWithRemoteSpanContext(connCtx, spanCtx)
+				connCtx = oteltrace.ContextWithRemoteSpanContext(connCtx, spanCtx)
 			} else {
 				c.l.DebugContext(connCtx, "Failed to extract span context from comment", logging.Error(e))
 			}
@@ -427,17 +432,8 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 
 		connCtx, span = otel.Tracer("").Start(connCtx, "")
 
-		command = doc.Command()
-
 		if err == nil {
-			// do not store typed nil in interface, it makes it non-nil
-
-			var resMsg *wire.OpMsg
-			resMsg, err = c.handleOpMsg(connCtx, msg, command)
-
-			if resMsg != nil {
-				resBody = resMsg
-			}
+			resBody = c.handleOpMsg(connCtx, msg, command)
 		}
 
 	case wire.OpCodeQuery:
@@ -488,32 +484,17 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 	if err != nil {
 		switch resHeader.OpCode {
 		case wire.OpCodeMsg:
-			protoErr := handlererrors.ProtocolError(err)
+			protoErr := mongoerrors.Make(connCtx, err, "", c.l)
+			resBody = protoErr.Msg()
+			result = protoErr.Name
+			argument = protoErr.Argument
 
-			resBody = must.NotFail(wire.NewOpMsg(protoErr.Document()))
-
-			switch protoErr := protoErr.(type) {
-			case *handlererrors.CommandError:
-				result = protoErr.Code().String()
-			case *handlererrors.WriteErrors:
-				result = "write-error"
-			default:
-				panic(fmt.Errorf("unexpected error type %T", protoErr))
-			}
-
-			if info := protoErr.Info(); info != nil {
-				argument = info.Argument
-			}
 		case wire.OpCodeReply:
-			protoErr := handlererrors.ProtocolError(err)
+			protoErr := mongoerrors.Make(connCtx, err, "", c.l)
+			resBody = protoErr.Reply()
+			result = protoErr.Name
+			argument = protoErr.Argument
 
-			resBody = must.NotFail(wire.NewOpReply(protoErr.Document()))
-
-			result = protoErr.(*handlererrors.CommandError).Code().String()
-
-			if info := protoErr.Info(); info != nil {
-				argument = info.Argument
-			}
 		case wire.OpCodeQuery:
 			fallthrough
 		case wire.OpCodeUpdate:
@@ -537,7 +518,7 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 				connCtx,
 				"Handler error for unhandled response opcode",
 				logging.Error(err),
-				slog.String("opcode", resHeader.OpCode.String()),
+				slog.Any("opcode", resHeader.OpCode),
 			)
 			return
 
@@ -550,7 +531,7 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 				connCtx,
 				"Handler error for unexpected response opcode",
 				logging.Error(err),
-				slog.String("opcode", resHeader.OpCode.String()),
+				slog.Any("opcode", resHeader.OpCode),
 			)
 			return
 		}
@@ -578,15 +559,23 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 // handleOpMsg processes OP_MSG requests.
 //
 // The passed context is canceled when the client disconnects.
-func (c *conn) handleOpMsg(connCtx context.Context, msg *wire.OpMsg, command string) (*wire.OpMsg, error) {
-	if cmd := c.h.Commands()[command]; cmd != nil && cmd.Handler != nil {
-		return cmd.Handler(connCtx, msg)
+func (c *conn) handleOpMsg(connCtx context.Context, msg *wire.OpMsg, command string) *wire.OpMsg {
+	cmd, ok := c.h.Commands()[command]
+	if !ok || cmd.Handler == nil {
+		err := mongoerrors.New(
+			mongoerrors.ErrCommandNotFound,
+			fmt.Sprintf("no such command: '%s'", command),
+		)
+
+		return mongoerrors.Make(connCtx, err, "", c.l).Msg()
 	}
 
-	return nil, handlererrors.NewCommandErrorMsg(
-		handlererrors.ErrCommandNotFound,
-		fmt.Sprintf("no such command: '%s'", command),
-	)
+	res, err := cmd.Handler(connCtx, msg)
+	if err != nil {
+		return mongoerrors.Make(connCtx, err, "", c.l).Msg()
+	}
+
+	return res
 }
 
 // logResponse logs response's header and body and returns the log level that was used.
@@ -597,18 +586,22 @@ func (c *conn) logResponse(ctx context.Context, who string, resHeader *wire.MsgH
 	level := slog.LevelDebug
 
 	if resHeader.OpCode == wire.OpCodeMsg {
-		doc := must.NotFail(must.NotFail(resBody.(*wire.OpMsg).RawDocument()).Decode())
+		msg := resBody.(*wire.OpMsg)
+
+		raw := msg.RawSection0()
+		doc, _ := raw.Decode()
 
 		var ok bool
 
-		v := doc.Get("ok")
-		switch v := v.(type) {
-		case float64:
-			ok = v == 1
-		case int32:
-			ok = v == 1
-		case int64:
-			ok = v == 1
+		if doc != nil {
+			switch v := doc.Get("ok").(type) {
+			case float64:
+				ok = v == 1
+			case int32:
+				ok = v == 1
+			case int64:
+				ok = v == 1
+			}
 		}
 
 		if !ok {
@@ -622,7 +615,7 @@ func (c *conn) logResponse(ctx context.Context, who string, resHeader *wire.MsgH
 
 	if c.l.Enabled(ctx, level) {
 		c.l.Log(ctx, level, who+" header: "+resHeader.String())
-		c.l.Log(ctx, level, who+" message:\n"+resBody.String()+"\n")
+		c.l.Log(ctx, level, who+" message:\n"+resBody.StringIndent()+"\n")
 	}
 
 	return level

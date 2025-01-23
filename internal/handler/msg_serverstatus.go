@@ -16,23 +16,33 @@ package handler
 
 import (
 	"context"
+	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 	"time"
 
 	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
 
-	"github.com/FerretDB/FerretDB/build/version"
-	"github.com/FerretDB/FerretDB/internal/backends"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/v2/build/version"
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // MsgServerStatus implements `serverStatus` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgServerStatus(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	spec, err := msg.RawDocument()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+		return nil, err
+	}
+
 	host, err := os.Hostname()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -43,9 +53,7 @@ func (h *Handler) MsgServerStatus(connCtx context.Context, msg *wire.OpMsg) (*wi
 		return nil, lazyerrors.Error(err)
 	}
 
-	uptime := time.Since(h.StateProvider.Get().Start)
-
-	metricsDoc := types.MakeDocument(0)
+	metricsDoc := wirebson.MakeDocument(0)
 
 	metrics := h.ConnMetrics.GetResponses()
 	for _, commands := range metrics {
@@ -59,49 +67,58 @@ func (h *Handler) MsgServerStatus(connCtx context.Context, msg *wire.OpMsg) (*wi
 				}
 			}
 
-			d := must.NotFail(types.NewDocument("total", int64(total), "failed", int64(failed)))
-			metricsDoc.Set(command, d)
+			d := must.NotFail(wirebson.NewDocument("total", int64(total), "failed", int64(failed)))
+			must.NoError(metricsDoc.Add(command, d))
 		}
 	}
 
-	res := must.NotFail(types.NewDocument(
+	info := version.Get()
+
+	buildEnvironment := wirebson.MakeDocument(len(info.BuildEnvironment))
+	for _, k := range slices.Sorted(maps.Keys(info.BuildEnvironment)) {
+		must.NoError(buildEnvironment.Add(k, info.BuildEnvironment[k]))
+	}
+
+	state := h.StateProvider.Get()
+	uptime := time.Since(state.Start)
+
+	res := must.NotFail(wirebson.NewDocument(
 		"host", host,
-		"version", version.Get().MongoDBVersion,
+		"version", info.MongoDBVersion,
 		"process", filepath.Base(exec),
 		"pid", int64(os.Getpid()),
 		"uptime", uptime.Seconds(),
 		"uptimeMillis", uptime.Milliseconds(),
 		"uptimeEstimate", int64(uptime.Seconds()),
 		"localTime", time.Now(),
-		"freeMonitoring", must.NotFail(types.NewDocument(
-			"state", h.StateProvider.Get().TelemetryString(),
+		"freeMonitoring", must.NotFail(wirebson.NewDocument(
+			"state", state.TelemetryString(),
 		)),
-		"metrics", must.NotFail(types.NewDocument(
+		"metrics", must.NotFail(wirebson.NewDocument(
 			"commands", metricsDoc,
 		)),
+		"catalogStats", must.NotFail(wirebson.NewDocument(
+			"collections", int32(0),
+			"clustered", int32(0),
+			"timeseries", int32(0),
+			"views", int32(0),
+			"internalCollections", int32(0),
+			"internalViews", int32(0),
+		)),
 
-		// our extensions
-		"ferretdbVersion", version.Get().Version,
+		// our extensions for easier bug reporting
+		"ferretdb", must.NotFail(wirebson.NewDocument(
+			"version", info.Version,
+			"gitVersion", info.Commit,
+			"buildEnvironment", buildEnvironment,
+			"debug", info.DevBuild,
+			"package", info.Package,
+			"postgresql", state.PostgreSQLVersion,
+			"documentdb", state.DocumentDBVersion,
+		)),
 
 		"ok", float64(1),
 	))
 
-	stats, err := h.b.Status(connCtx, new(backends.StatusParams))
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	res.Set("catalogStats", must.NotFail(types.NewDocument(
-		"collections", stats.CountCollections,
-		"capped", stats.CountCappedCollections,
-		"clustered", int32(0),
-		"timeseries", int32(0),
-		"views", int32(0),
-		"internalCollections", int32(0),
-		"internalViews", int32(0),
-	)))
-
-	return documentOpMsg(
-		res,
-	)
+	return wire.NewOpMsg(must.NotFail(res.Encode()))
 }

@@ -16,48 +16,40 @@ package handler
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
+	"github.com/jackc/pgx/v5"
 
-	"github.com/FerretDB/FerretDB/internal/backends"
-	"github.com/FerretDB/FerretDB/internal/handler/common"
-	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // MsgPing implements `ping` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgPing(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := opMsgDocument(msg)
+	spec, err := msg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	dbName, err := common.GetRequiredParam[string](document, "$db")
-	if err != nil {
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
 		return nil, err
 	}
 
-	if _, err = h.b.Database(dbName); err != nil {
-		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
-			msg := fmt.Sprintf("Invalid namespace specified '%s'", dbName)
-			return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrInvalidNamespace, msg, "ping")
-		}
-
+	err = h.Pool.WithConn(func(conn *pgx.Conn) error {
+		_, err = documentdb_api.BinaryExtendedVersion(connCtx, conn, h.L)
+		return err
+	})
+	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	if _, err = h.b.Status(connCtx, nil); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	res := must.NotFail(wirebson.NewDocument(
+		"ok", float64(1),
+	))
 
-	return documentOpMsg(
-		must.NotFail(types.NewDocument(
-			"ok", float64(1),
-		)),
-	)
+	return wire.NewOpMsg(must.NotFail(res.Encode()))
 }

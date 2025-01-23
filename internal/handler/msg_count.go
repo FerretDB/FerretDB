@@ -16,93 +16,57 @@ package handler
 
 import (
 	"context"
-	"errors"
-	"fmt"
 
 	"github.com/FerretDB/wire"
 
-	"github.com/FerretDB/FerretDB/internal/backends"
-	"github.com/FerretDB/FerretDB/internal/handler/common"
-	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
 // MsgCount implements `count` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgCount(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := opMsgDocument(msg)
+	opID := h.operations.Start("query")
+	defer h.operations.Stop(opID)
+
+	spec, err := msg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	params, err := common.GetCountParams(document, h.L)
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+		return nil, err
+	}
+
+	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
+	doc, err := spec.Decode()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	dbName, err := getRequiredParam[string](doc, "$db")
 	if err != nil {
 		return nil, err
 	}
 
-	db, err := h.b.Database(params.DB)
-	if err != nil {
-		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
-			msg := fmt.Sprintf("Invalid namespace specified '%s.%s'", params.DB, params.Collection)
-			return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrInvalidNamespace, msg, "count")
-		}
+	collection, _ := doc.Get(doc.Command()).(string)
+	h.operations.Update(opID, dbName, collection, doc)
 
+	conn, err := h.Pool.Acquire()
+	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
+	defer conn.Release()
 
-	c, err := db.Collection(params.Collection)
-	if err != nil {
-		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
-			msg := fmt.Sprintf("Invalid collection name: %s", params.Collection)
-			return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrInvalidNamespace, msg, "count")
-		}
-
-		return nil, lazyerrors.Error(err)
-	}
-
-	var qp backends.QueryParams
-	if !h.DisablePushdown {
-		qp.Filter = params.Filter
-	}
-
-	queryRes, err := c.Query(connCtx, &qp)
+	page, err := documentdb_api.CountQuery(connCtx, conn.Conn(), h.L, dbName, spec)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	iter := queryRes.Iter
-
-	closer := iterator.NewMultiCloser(iter)
-	defer closer.Close()
-
-	iter = common.FilterIterator(iter, closer, params.Filter)
-
-	iter = common.SkipIterator(iter, closer, params.Skip)
-
-	iter = common.LimitIterator(iter, closer, params.Limit)
-
-	iter = common.CountIterator(iter, closer, "count")
-
-	_, res, err := iter.Next()
-	if errors.Is(err, iterator.ErrIteratorDone) {
-		err = nil
-	}
-
-	if err != nil {
+	if msg, err = wire.NewOpMsg(page); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	count, _ := res.Get("count")
-	n, _ := count.(int32)
-
-	return documentOpMsg(
-		must.NotFail(types.NewDocument(
-			"n", n,
-			"ok", float64(1),
-		)),
-	)
+	return msg, nil
 }

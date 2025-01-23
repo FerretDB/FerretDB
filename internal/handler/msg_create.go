@@ -17,123 +17,70 @@ package handler
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"unicode/utf8"
 
 	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
 
-	"github.com/FerretDB/FerretDB/internal/backends"
-	"github.com/FerretDB/FerretDB/internal/handler/common"
-	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
-	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
+	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
+
+// collectionNameRe validates collection names.
+var collectionNameRe = regexp.MustCompile("^[^\\.$\x00][^$\x00]{0,234}$")
 
 // MsgCreate implements `create` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgCreate(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := opMsgDocument(msg)
+	spec, err := msg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	unimplementedFields := []string{
-		"timeseries",
-		"expireAfterSeconds",
-		"validator",
-		"validationLevel",
-		"validationAction",
-		"viewOn",
-		"pipeline",
-		"collation",
-	}
-	if err = common.Unimplemented(document, unimplementedFields...); err != nil {
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
 		return nil, err
 	}
 
-	ignoredFields := []string{
-		"autoIndexId",
-		"storageEngine",
-		"indexOptionDefaults",
-		"writeConcern",
-		"comment",
-	}
-	common.Ignored(document, h.L, ignoredFields...)
-
-	command := document.Command()
-
-	dbName, err := common.GetRequiredParam[string](document, "$db")
+	doc, err := spec.Decode()
 	if err != nil {
-		return nil, err
-	}
-
-	collectionName, err := common.GetRequiredParam[string](document, command)
-	if err != nil {
-		return nil, err
-	}
-
-	params := backends.CreateCollectionParams{
-		Name: collectionName,
-	}
-
-	var capped bool
-	if v, _ := document.Get("capped"); v != nil {
-		capped, err = handlerparams.GetBoolOptionalParam("capped", v)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if capped {
-		size, _ := document.Get("size")
-		if _, ok := size.(types.NullType); size == nil || ok {
-			msg := "the 'size' field is required when 'capped' is true"
-			return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrInvalidOptions, msg, "create")
-		}
-
-		params.CappedSize, err = handlerparams.GetValidatedNumberParamWithMinValue(document.Command(), "size", size, 1)
-		if err != nil {
-			return nil, err
-		}
-
-		if max, _ := document.Get("max"); max != nil {
-			params.CappedDocuments, err = handlerparams.GetValidatedNumberParamWithMinValue(document.Command(), "max", max, 0)
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-
-	db, err := h.b.Database(dbName)
-	if err != nil {
-		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
-			msg := fmt.Sprintf("Invalid namespace specified '%s.%s'", dbName, collectionName)
-			return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrInvalidNamespace, msg, "create")
-		}
-
 		return nil, lazyerrors.Error(err)
 	}
 
-	err = db.CreateCollection(connCtx, &params)
+	dbName, err := getRequiredParam[string](doc, "$db")
+	if err != nil {
+		return nil, err
+	}
 
-	switch {
-	case err == nil:
-		return documentOpMsg(
-			must.NotFail(types.NewDocument(
-				"ok", float64(1),
-			)),
-		)
+	collectionName, err := getRequiredParam[string](doc, "create")
+	if err != nil {
+		return nil, err
+	}
 
-	case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid):
+	if !collectionNameRe.MatchString(collectionName) ||
+		!utf8.ValidString(collectionName) {
 		msg := fmt.Sprintf("Invalid collection name: %s", collectionName)
-		return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrInvalidNamespace, msg, "create")
+		return nil, mongoerrors.NewWithArgument(mongoerrors.ErrInvalidNamespace, msg, "create")
+	}
 
-	case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionAlreadyExists):
-		msg := fmt.Sprintf("Collection %s.%s already exists.", dbName, collectionName)
-		return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrNamespaceExists, msg, "create")
-
-	default:
+	conn, err := h.Pool.Acquire()
+	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
+
+	defer conn.Release()
+
+	_, err = documentdb_api.CreateCollection(connCtx, conn.Conn(), h.L, dbName, collectionName)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	res := wirebson.MustDocument(
+		"ok", float64(1),
+	)
+
+	return wire.NewOpMsg(must.NotFail(res.Encode()))
 }

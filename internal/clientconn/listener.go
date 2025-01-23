@@ -28,13 +28,12 @@ import (
 	"github.com/FerretDB/wire"
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
-	"github.com/FerretDB/FerretDB/internal/handler"
-	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/logging"
-	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/util/tlsutil"
+	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
+	"github.com/FerretDB/FerretDB/v2/internal/handler"
+	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
+	"github.com/FerretDB/FerretDB/v2/internal/util/tlsutil"
 )
 
 // Listener listens on one or multiple interfaces (TCP, Unix, TLS sockets)
@@ -89,14 +88,7 @@ func Listen(opts *NewListenerOpts) (*Listener, error) {
 	}
 
 	var err error
-
 	ctx := context.Background()
-
-	defer func() {
-		if err != nil {
-			l.Handler.Close()
-		}
-	}()
 
 	if l.TCP != "" {
 		if l.tcpListener, err = net.Listen("tcp", l.TCP); err != nil {
@@ -120,8 +112,7 @@ func Listen(opts *NewListenerOpts) (*Listener, error) {
 		var config *tls.Config
 
 		if config, err = tlsutil.Config(l.TLSCertFile, l.TLSKeyFile, l.TLSCAFile); err != nil {
-			// this error is user visible, do not use lazyerror as it makes less readable
-			return nil, err
+			return nil, lazyerrors.Error(err)
 		}
 
 		if l.tlsListener, err = tls.Listen("tcp", l.TLS, config); err != nil {
@@ -148,10 +139,19 @@ func (l *Listener) Listening() bool {
 	}
 }
 
-// Run runs the listener until ctx is canceled.
+// Run runs the listener (and handler) until ctx is canceled.
 //
-// When this method returns, listener and all connections, as well as handler are closed.
+// When this method returns, listener and all connections are closed, and handler is stopped.
 func (l *Listener) Run(ctx context.Context) {
+	// inherit ctx's values
+	handlerCtx, handlerCancel := context.WithCancel(context.WithoutCancel(ctx))
+	handlerDone := make(chan struct{})
+
+	go func() {
+		defer close(handlerDone)
+		l.Handler.Run(handlerCtx)
+	}()
+
 	var wg sync.WaitGroup
 
 	if l.TCP != "" {
@@ -209,22 +209,23 @@ func (l *Listener) Run(ctx context.Context) {
 
 	close(l.listenersClosed)
 
-	l.ll.InfoContext(ctx, "Waiting for all connections to stop...")
+	l.ll.InfoContext(ctx, "Waiting for all connections to close")
 	wg.Wait()
 
-	l.Handler.Close()
+	// to properly handle last client commands like endSession,
+	// stop handler only after the last client disconnects
+	handlerCancel()
+	<-handlerDone
 }
 
 // acceptLoop runs listener's connection accepting loop until context is canceled.
-//
-// The caller is responsible for closing the listener.
 func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, l *Listener) {
-	var retry int64
+	var attempt int64
 	for {
 		netConn, err := listener.Accept()
 		if err != nil {
-			// [Run] closed listener on context cancellation
-			if ctx.Err() != nil {
+			// Run closed listener on context cancellation
+			if context.Cause(ctx) != nil {
 				return
 			}
 
@@ -232,8 +233,8 @@ func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, 
 
 			l.ll.WarnContext(ctx, "Failed to accept connection", logging.Error(err))
 			if !errors.Is(err, net.ErrClosed) {
-				retry++
-				ctxutil.SleepWithJitter(ctx, time.Second, retry)
+				attempt++
+				ctxutil.SleepWithJitter(ctx, time.Second, attempt)
 			}
 			continue
 		}
@@ -256,7 +257,7 @@ func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, 
 				wg.Done()
 			}()
 
-			// give already connected clients a few seconds to disconnect
+			// give already connected clients a few seconds to gracefully disconnect
 			connCtx, connCancel := ctxutil.WithDelay(ctx)
 			defer connCancel(nil)
 
@@ -271,7 +272,7 @@ func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, 
 			opts := &newConnOpts{
 				netConn:     netConn,
 				mode:        l.Mode,
-				l:           logging.WithName(l.Logger, "// "+connID+" "), // derive from the original unnamed logger
+				l:           logging.WithName(l.ll, "// "+connID+" "), // derive from the original unnamed logger
 				handler:     l.Handler,
 				connMetrics: l.Metrics.ConnMetrics, // share between all conns
 
@@ -285,7 +286,7 @@ func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, 
 
 			conn, connErr := newConn(opts)
 			if connErr != nil {
-				l.ll.WarnContext(ctx, "Failed to create connection", slog.String("conn", connID), logging.Error(connErr))
+				l.ll.WarnContext(connCtx, "Failed to create connection", slog.String("conn", connID), logging.Error(err))
 				return
 			}
 
@@ -297,7 +298,7 @@ func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, 
 
 				l.ll.InfoContext(ctx, "Connection stopped", slog.String("conn", connID))
 			} else {
-				l.ll.WarnContext(ctx, "Connection stopped", slog.String("conn", connID), logging.Error(connErr))
+				l.ll.WarnContext(ctx, "Connection stopped", slog.String("conn", connID), logging.Error(err))
 			}
 		}()
 	}
@@ -307,14 +308,12 @@ func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, 
 // It can be used to determine an actually used port, if it was zero.
 func (l *Listener) TCPAddr() net.Addr {
 	<-l.tcpListenerReady
-	must.NotBeZero(l.tcpListener)
 	return l.tcpListener.Addr()
 }
 
 // UnixAddr returns Unix domain socket listener's address.
 func (l *Listener) UnixAddr() net.Addr {
 	<-l.unixListenerReady
-	must.NotBeZero(l.unixListener)
 	return l.unixListener.Addr()
 }
 
@@ -322,7 +321,6 @@ func (l *Listener) UnixAddr() net.Addr {
 // It can be used to determine an actually used port, if it was zero.
 func (l *Listener) TLSAddr() net.Addr {
 	<-l.tlsListenerReady
-	must.NotBeZero(l.tlsListener)
 	return l.tlsListener.Addr()
 }
 

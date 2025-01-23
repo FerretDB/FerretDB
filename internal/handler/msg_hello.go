@@ -16,26 +16,34 @@ package handler
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
 
-	"github.com/FerretDB/FerretDB/internal/handler/common"
-	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/session"
+	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // MsgHello implements `hello` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgHello(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	doc, err := opMsgDocument(msg)
+	spec, err := msg.RawDocument()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+		return nil, err
+	}
+
+	doc, err := spec.Decode()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -45,54 +53,36 @@ func (h *Handler) MsgHello(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
-	return documentOpMsg(resp)
+	return wire.NewOpMsg(must.NotFail(resp.Encode()))
 }
 
 // hello checks client metadata and returns hello's document fields.
 // It also returns response for deprecated `isMaster` and `ismaster` commands.
-func (h *Handler) hello(ctx context.Context, doc *types.Document, tcpHost, name string) (*types.Document, error) {
-	if err := checkClientMetadata(ctx, doc); err != nil {
+func (h *Handler) hello(ctx context.Context, spec wirebson.AnyDocument, tcpHost, name string) (*wirebson.Document, error) {
+	doc, err := spec.Decode()
+	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	res := must.NotFail(types.NewDocument())
+	if err = checkClientMetadata(ctx, doc); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	res := must.NotFail(wirebson.NewDocument())
 
 	switch doc.Command() {
 	case "hello":
-		res.Set("isWritablePrimary", true)
+		must.NoError(res.Add("isWritablePrimary", true))
+
 	case "isMaster", "ismaster":
-		if helloOk, _ := doc.Get("helloOk"); helloOk != nil {
-			res.Set("helloOk", true)
+		if helloOk := doc.Get("helloOk"); helloOk != nil {
+			must.NoError(res.Add("helloOk", true))
 		}
 
-		res.Set("ismaster", true)
+		must.NoError(res.Add("ismaster", true))
+
 	default:
 		panic(fmt.Sprintf("unexpected command: %q", doc.Command()))
-	}
-
-	saslSupportedMechs, err := common.GetOptionalParam(doc, "saslSupportedMechs", "")
-	if err != nil {
-		return nil, err
-	}
-
-	var resSupportedMechs *types.Array
-
-	if saslSupportedMechs != "" {
-		db, username, ok := strings.Cut(saslSupportedMechs, ".")
-		if !ok {
-			return nil, handlererrors.NewCommandErrorMsg(
-				handlererrors.ErrBadValue,
-				"UserName must contain a '.' separated database.user pair",
-			)
-		}
-
-		resSupportedMechs = must.NotFail(types.NewArray("PLAIN"))
-
-		if h.EnableNewAuth {
-			if resSupportedMechs, err = h.getUserSupportedMechs(ctx, db, username); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-		}
 	}
 
 	if name != "" {
@@ -103,90 +93,64 @@ func (h *Handler) hello(ctx context.Context, doc *types.Document, tcpHost, name 
 			tcpHost = "localhost" + tcpHost
 		}
 
-		res.Set("setName", name)
-		res.Set("hosts", must.NotFail(types.NewArray(tcpHost)))
+		must.NoError(res.Add("setName", name))
+		must.NoError(res.Add("hosts", must.NotFail(wirebson.NewArray(tcpHost))))
 	}
 
-	res.Set("maxBsonObjectSize", int32(h.MaxBsonObjectSizeBytes))
-	res.Set("maxMessageSizeBytes", int32(wire.MaxMsgLen))
-	res.Set("maxWriteBatchSize", maxWriteBatchSize)
-	res.Set("localTime", time.Now())
-	res.Set("logicalSessionTimeoutMinutes", logicalSessionTimeoutMinutes)
-	res.Set("connectionId", connectionID)
-	res.Set("minWireVersion", common.MinWireVersion)
-	res.Set("maxWireVersion", common.MaxWireVersion)
-	res.Set("readOnly", false)
+	must.NoError(res.Add("maxBsonObjectSize", maxBsonObjectSize))
+	must.NoError(res.Add("maxMessageSizeBytes", int32(wire.MaxMsgLen)))
+	must.NoError(res.Add("maxWriteBatchSize", maxWriteBatchSize))
+	must.NoError(res.Add("localTime", time.Now()))
+	must.NoError(res.Add("logicalSessionTimeoutMinutes", session.LogicalSessionTimeoutMinutes))
+	must.NoError(res.Add("connectionId", connectionID))
+	must.NoError(res.Add("minWireVersion", minWireVersion))
+	must.NoError(res.Add("maxWireVersion", maxWireVersion))
+	must.NoError(res.Add("readOnly", false))
+	must.NoError(res.Add("saslSupportedMechs", wirebson.MustArray("SCRAM-SHA-256")))
 
-	if resSupportedMechs != nil && resSupportedMechs.Len() != 0 {
-		res.Set("saslSupportedMechs", resSupportedMechs)
+	authV := doc.Get("speculativeAuthenticate")
+	if authV == nil {
+		must.NoError(res.Add("ok", float64(1)))
+
+		return res, nil
 	}
 
-	res.Set("ok", float64(1))
+	authAny, ok := authV.(wirebson.AnyDocument)
+	if !ok {
+		return nil, mongoerrors.NewWithArgument(
+			mongoerrors.ErrTypeMismatch,
+			fmt.Sprintf("speculativeAuthenticate type wrong; expected: document; got: %T", authV),
+			doc.Command(),
+		)
+	}
+
+	auth, err := authAny.Decode()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if _, err = getRequiredParam[string](auth, "db"); err != nil {
+		h.L.DebugContext(ctx, "No `db` in `speculativeAuthenticate`", logging.Error(err))
+		must.NoError(res.Add("ok", float64(1)))
+
+		return res, nil
+	}
+
+	authRes, err := h.saslStart(ctx, auth)
+	if err != nil {
+		h.L.DebugContext(ctx, "Speculative authentication failed", logging.Error(err))
+
+		// unsuccessful speculative authentication leave `speculativeAuthenticate` field unset
+		// and let `saslStart` return an error
+		must.NoError(res.Add("ok", float64(1)))
+
+		return res, nil
+	}
+
+	must.NoError(res.Add("speculativeAuthenticate", authRes))
+	must.NoError(res.Add("ok", float64(1)))
+
+	h.L.DebugContext(ctx, "Speculative authentication passed")
 
 	return res, nil
-}
-
-// getUserSupportedMechs returns supported mechanisms for the given user.
-// If the user was not found, it returns nil.
-func (h *Handler) getUserSupportedMechs(ctx context.Context, db, username string) (*types.Array, error) {
-	adminDB, err := h.b.Database("admin")
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	usersCol, err := adminDB.Collection("system.users")
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	filter, err := usersInfoFilter(false, false, db, []usersInfoPair{
-		{username: username, db: db},
-	})
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	qr, err := usersCol.Query(ctx, nil)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	defer qr.Iter.Close()
-
-	for {
-		_, v, err := qr.Iter.Next()
-
-		if errors.Is(err, iterator.ErrIteratorDone) {
-			break
-		}
-
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		matches, err := common.FilterDocument(v, filter)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		if !matches {
-			continue
-		}
-
-		credentialsV, _ := v.Get("credentials")
-		if credentialsV == nil {
-			return nil, nil
-		}
-
-		credentials := credentialsV.(*types.Document)
-
-		supportedMechs := types.MakeArray(len(credentials.Keys()))
-		for _, mechanism := range credentials.Keys() {
-			supportedMechs.Append(mechanism)
-		}
-
-		return supportedMechs, nil
-	}
-
-	return nil, nil
 }

@@ -16,90 +16,95 @@ package handler
 
 import (
 	"context"
-	"errors"
 
 	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
 
-	"github.com/FerretDB/FerretDB/internal/backends"
-	"github.com/FerretDB/FerretDB/internal/handler/common"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // MsgDropAllUsersFromDatabase implements `dropAllUsersFromDatabase` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgDropAllUsersFromDatabase(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := opMsgDocument(msg)
+	spec, err := msg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	common.Ignored(document, h.L, "writeConcern", "comment")
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+		return nil, err
+	}
 
-	dbName, err := common.GetRequiredParam[string](document, "$db")
+	doc, err := spec.Decode()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	dbName, err := getRequiredParam[string](doc, "$db")
 	if err != nil {
 		return nil, err
 	}
 
-	adminDB, err := h.b.Database("admin")
+	conn, err := h.Pool.Acquire()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	users, err := adminDB.Collection("system.users")
+	defer conn.Release()
+
+	usersInfoSpec := must.NotFail(wirebson.MustDocument(
+		"usersInfo", int32(1),
+		"$db", dbName,
+	).Encode())
+
+	usersInfo, err := documentdb_api.UsersInfo(connCtx, conn.Conn(), h.L, usersInfoSpec)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	qr, err := users.Query(connCtx, nil)
+	usersInfoDoc, err := usersInfo.Decode()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	var ids []any
+	usersV, ok := usersInfoDoc.Get("users").(wirebson.AnyArray)
+	if !ok {
+		return wire.MustOpMsg("n", int32(0), "ok", float64(1)), nil
+	}
 
-	defer qr.Iter.Close()
+	users, err := usersV.Decode()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
-	filter := must.NotFail(types.NewDocument("db", dbName))
+	var n int32
 
-	for {
-		_, v, err := qr.Iter.Next()
-		if errors.Is(err, iterator.ErrIteratorDone) {
-			break
-		}
+	for userV := range users.Values() {
+		var user *wirebson.Document
 
-		matches, err := common.FilterDocument(v, filter)
-		if err != nil {
+		if user, err = userV.(wirebson.AnyDocument).Decode(); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
-		if matches {
-			ids = append(ids, must.NotFail(v.Get("_id")))
+		if userDB := user.Get("db").(string); userDB != dbName {
+			continue
 		}
-	}
 
-	var deleted int32
+		username := user.Get("user").(string)
+		dropUserSpec := must.NotFail(wirebson.MustDocument(
+			"dropUser", username,
+			"$db", dbName,
+		).Encode())
 
-	if len(ids) > 0 {
-		var res *backends.DeleteAllResult
-
-		res, err = users.DeleteAll(connCtx, &backends.DeleteAllParams{
-			IDs: ids,
-		})
-		if err != nil {
+		if _, err = documentdb_api.DropUser(connCtx, conn.Conn(), h.L, dropUserSpec); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
-		deleted = res.Deleted
+		n++
 	}
 
-	return documentOpMsg(
-		must.NotFail(types.NewDocument(
-			"n", deleted,
-			"ok", float64(1),
-		)),
-	)
+	return wire.MustOpMsg("n", n, "ok", float64(1)), nil
 }

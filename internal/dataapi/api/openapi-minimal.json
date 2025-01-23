@@ -1,0 +1,1598 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "version": "v1",
+    "title": "MongoDB Atlas Data API",
+    "description": "A fully-managed API to read, write, and aggregate data in MongoDB\nAtlas. The Data API is powered by serverless Atlas Functions and\nsecured with user authentication and role-based permissions. To\nlearn more about the Data API, see [Atlas Data\nAPI](https://www.mongodb.com/docs/atlas/app-services/data-api/).\n\n## Set Up the Data API\n\nBefore you can use the Data API, you must enable and configure it in\nan Atlas App Services App. The configuration controls how the App's\nusers authenticate, authorize requests, and interact with the API.\n\nTo learn how to start using the Data API in your App, see [Set up\nthe Data\nAPI](https://www.mongodb.com/docs/atlas/app-services/data-api/generated-endpoints/#set-up-the-data-api).\n\n## Authenticate Requests\n\nYour Data API configuration in App Services controls how users\nauthenticate their API requests. In most cases, you will use\nApplication authentication, which lets users log in with one of the\nApp's authentication providers. Users can either provide their login\ncredentials directly in every request or provide a reusable access\ntoken for an authenticated session.\n\nTo learn more, see [Authenticate Data API\nRequests](https://www.mongodb.com/docs/atlas/app-services/data-api/authenticate/).\n"
+  },
+  "servers": [
+    {
+      "description": "Global App",
+      "url": "https://data.mongodb-api.com/app/{appId}/endpoint/data/v1",
+      "variables": {
+        "appId": {
+          "description": "Your App's Client App ID.",
+          "default": "your-app-id"
+        }
+      }
+    },
+    {
+      "description": "Local App",
+      "url": "https://{region}.data.mongodb-api.com/app/{appId}/endpoint/data/v1",
+      "variables": {
+        "appId": {
+          "description": "Your App's Client App ID.",
+          "default": "your-app-id"
+        },
+        "region": {
+          "description": "The sub-domain for the cloud region where your App is\ndeployed. Uses the format `<region>.<cloud>`. For example,\n`us-east-1.aws` or `eastus2.azure`. To learn more about\ndeployment regions, see [Deployment Models &\nRegions](https://www.mongodb.com/docs/atlas/app-services/apps/deployment-models-and-regions/).\n",
+          "default": "us-east-1.aws",
+          "enum": [
+            "us-east-1.aws",
+            "us-east-2.aws",
+            "us-west-2.aws",
+            "eu-central-1.aws",
+            "eu-west-1.aws",
+            "eu-west-2.aws",
+            "ap-southeast-1.aws",
+            "ap-southeast-2.aws",
+            "ap-south-1.aws",
+            "sa-east-1.aws",
+            "eastus2.azure",
+            "westus.azure",
+            "westeurope.azure",
+            "eastasia.azure",
+            "southeastasia.azure",
+            "us-central1.gcp",
+            "us-east4.gcp",
+            "us-west1.gcp",
+            "europe-west1.gcp",
+            "asia-south1.gcp"
+          ]
+        }
+      }
+    }
+  ],
+  "security": [
+    {
+      "HttpAuth": []
+    }
+  ],
+  "paths": {
+    "/action/findOne": {
+      "post": {
+        "operationId": "findOne",
+        "summary": "Find One Document",
+        "description": "Find a single document that matches a query.",
+        "x-codeSamples": [
+          {
+            "lang": "cURL",
+            "label": "cURL",
+            "source": "curl -s \"https://data.mongodb-api.com/app/$CLIENT_APP_ID/endpoint/data/v1/action/findOne\" \\\n  -X POST \\\n  -H \"apiKey: $API_KEY\" \\\n  -H 'Content-Type: application/ejson' \\\n  -H \"Accept: application/json\" \\\n  -d '{\n    \"dataSource\": \"mongodb-atlas\",\n    \"database\": \"learn-data-api\",\n    \"collection\": \"tasks\",\n    \"filter\": {\n      \"text\": \"Do the dishes\"\n    }\n  }'\n"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/FindOneRequestBody"
+                  }
+                ],
+                "example": {
+                  "dataSource": "mongodb-atlas",
+                  "database": "todo",
+                  "collection": "tasks",
+                  "filter": {
+                    "text": "Do the dishes"
+                  },
+                  "projection": {
+                    "status": 1,
+                    "text": 1
+                  }
+                }
+              }
+            },
+            "application/ejson": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/FindOneRequestBody"
+                  }
+                ],
+                "example": {
+                  "dataSource": "mongodb-atlas",
+                  "database": "todo",
+                  "collection": "tasks",
+                  "filter": {
+                    "text": "Do the dishes"
+                  },
+                  "projection": {
+                    "status": 1,
+                    "text": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FindOneResponseBody"
+                },
+                "example": {
+                  "document": {
+                    "_id": "6193504e1be4ab27791c8133",
+                    "status": "open",
+                    "text": "Do the dishes"
+                  }
+                }
+              },
+              "application/ejson": {
+                "schema": {
+                  "$ref": "#/components/schemas/FindOneResponseBody"
+                },
+                "example": {
+                  "document": {
+                    "_id": {
+                      "$oid": "6193504e1be4ab27791c8133"
+                    },
+                    "status": "open",
+                    "text": "Do the dishes"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "$ref": "#/components/responses/BadRequestError"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "$ref": "#/components/responses/UnauthorizedRequestError"
+          }
+        }
+      }
+    },
+    "/action/find": {
+      "post": {
+        "operationId": "find",
+        "summary": "Find Documents",
+        "description": "Find multiple documents that match a query.",
+        "x-codeSamples": [
+          {
+            "lang": "cURL",
+            "label": "cURL",
+            "source": "curl -s \"https://data.mongodb-api.com/app/$CLIENT_APP_ID/endpoint/data/v1/action/find\" \\\n  -X POST \\\n  -H \"apiKey: $API_KEY\" \\\n  -H 'Content-Type: application/ejson' \\\n  -H \"Accept: application/json\" \\\n  -d '{\n    \"dataSource\": \"mongodb-atlas\",\n    \"database\": \"learn-data-api\",\n    \"collection\": \"tasks\",\n    \"filter\": {\n      \"status\": \"complete\"\n    },\n    \"sort\": { \"completedAt\": 1 },\n    \"limit\": 10\n  }'\n"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/FindManyRequestBody"
+                  }
+                ],
+                "example": {
+                  "dataSource": "mongodb-atlas",
+                  "database": "todo",
+                  "collection": "tasks",
+                  "filter": {
+                    "status": "complete"
+                  },
+                  "projection": {
+                    "text": 1,
+                    "completedAt": 1
+                  },
+                  "sort": {
+                    "completedAt": 1
+                  },
+                  "limit": 10
+                }
+              }
+            },
+            "application/ejson": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/FindManyRequestBody"
+                  }
+                ],
+                "example": {
+                  "dataSource": "mongodb-atlas",
+                  "database": "todo",
+                  "collection": "tasks",
+                  "filter": {
+                    "status": "complete"
+                  },
+                  "projection": {
+                    "text": 1,
+                    "completedAt": 1
+                  },
+                  "sort": {
+                    "completedAt": 1
+                  },
+                  "limit": 10
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FindManyResponseBody"
+                },
+                "example": {
+                  "documents": [
+                    {
+                      "_id": "6193504e1be4ab27791c8133",
+                      "text": "Do the dishes",
+                      "completedAt": "2022-05-16T20:22:01.104Z"
+                    },
+                    {
+                      "_id": "6194604e1d38dc33792d8257",
+                      "text": "Feed the dog",
+                      "completedAt": "2022-05-17T05:12:42.828Z"
+                    }
+                  ]
+                }
+              },
+              "application/ejson": {
+                "schema": {
+                  "$ref": "#/components/schemas/FindManyResponseBody"
+                },
+                "example": {
+                  "documents": [
+                    {
+                      "_id": {
+                        "$oid": "6193504e1be4ab27791c8133"
+                      },
+                      "text": "Do the dishes",
+                      "completedAt": {
+                        "$date": {
+                          "$numberLong": "1652732521104"
+                        }
+                      }
+                    },
+                    {
+                      "_id": {
+                        "$oid": "6194604e1d38dc33792d8257"
+                      },
+                      "text": "Feed the dog",
+                      "completedAt": {
+                        "$date": {
+                          "$numberLong": "1652764362828"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "$ref": "#/components/responses/BadRequestError"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "$ref": "#/components/responses/UnauthorizedRequestError"
+          }
+        }
+      }
+    },
+    "/action/insertOne": {
+      "post": {
+        "operationId": "insertOne",
+        "summary": "Insert One Document",
+        "description": "Insert a single document into a collection.",
+        "x-codeSamples": [
+          {
+            "lang": "cURL",
+            "label": "cURL",
+            "source": "curl -s \"https://data.mongodb-api.com/app/$CLIENT_APP_ID/endpoint/data/v1/action/insertOne\" \\\n  -X POST \\\n  -H \"apiKey: $API_KEY\" \\\n  -H 'Content-Type: application/ejson' \\\n  -H \"Accept: application/json\" \\\n  -d '{\n    \"dataSource\": \"mongodb-atlas\",\n    \"database\": \"learn-data-api\",\n    \"collection\": \"tasks\",\n    \"document\": {\n      \"status\": \"open\",\n      \"text\": \"Do the dishes\"\n    }\n  }'\n"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/InsertOneRequestBody"
+                  }
+                ],
+                "example": {
+                  "dataSource": "mongodb-atlas",
+                  "database": "todo",
+                  "collection": "tasks",
+                  "document": {
+                    "status": "open${{ env.BUNDLED_SPEC_FILEPATH }}",
+                    "text": "Do the dishes"
+                  }
+                }
+              }
+            },
+            "application/ejson": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/InsertOneRequestBody"
+                  }
+                ],
+                "example": {
+                  "dataSource": "mongodb-atlas",
+                  "database": "todo",
+                  "collection": "tasks",
+                  "document": {
+                    "status": "open",
+                    "text": "Do the dishes"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Inserted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/InsertOneResponseBody"
+                    },
+                    {
+                      "properties": {
+                        "insertedId": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "example": {
+                  "insertedId": "6193504e1be4ab27791c8133"
+                }
+              },
+              "application/ejson": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/InsertOneResponseBody"
+                    },
+                    {
+                      "properties": {
+                        "insertedId": {
+                          "type": "object"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "example": {
+                  "insertedId": {
+                    "$oid": "6193504e1be4ab27791c8133"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "$ref": "#/components/responses/BadRequestError"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "$ref": "#/components/responses/UnauthorizedRequestError"
+          }
+        }
+      }
+    },
+    "/action/insertMany": {
+      "post": {
+        "operationId": "insertMany",
+        "summary": "Insert Documents",
+        "description": "Insert multiple documents into a collection.",
+        "x-codeSamples": [
+          {
+            "lang": "cURL",
+            "label": "cURL",
+            "source": "curl -s \"https://data.mongodb-api.com/app/$CLIENT_APP_ID/endpoint/data/v1/action/insertMany\" \\\n  -X POST \\\n  -H \"apiKey: $API_KEY\" \\\n  -H 'Content-Type: application/ejson' \\\n  -H \"Accept: application/json\" \\\n  -d '{\n    \"dataSource\": \"mongodb-atlas\",\n    \"database\": \"learn-data-api\",\n    \"collection\": \"tasks\",\n    \"documents\": [\n      {\n        \"status\": \"open\",\n        \"text\": \"Mop the floor\"\n      },\n      {\n        \"status\": \"open\",\n        \"text\": \"Clean the windows\"\n      }\n    ]\n  }'\n"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/InsertManyRequestBody"
+                  }
+                ],
+                "example": {
+                  "dataSource": "mongodb-atlas",
+                  "database": "todo",
+                  "collection": "tasks",
+                  "documents": [
+                    {
+                      "status": "open",
+                      "text": "Mop the floor"
+                    },
+                    {
+                      "status": "open",
+                      "text": "Clean the windows"
+                    }
+                  ]
+                }
+              }
+            },
+            "application/ejson": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/InsertManyRequestBody"
+                  }
+                ],
+                "example": {
+                  "dataSource": "mongodb-atlas",
+                  "database": "todo",
+                  "collection": "tasks",
+                  "documents": [
+                    {
+                      "status": "open",
+                      "text": "Mop the floor"
+                    },
+                    {
+                      "status": "open",
+                      "text": "Clean the windows"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Inserted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/InsertManyResponseBody"
+                    },
+                    {
+                      "properties": {
+                        "insertedIds": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  ],
+                  "example": {
+                    "insertedIds": ["61935189ec53247016a623c9", "61935189ec53247016a623ca"]
+                  }
+                }
+              },
+              "application/ejson": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/InsertManyResponseBody"
+                    },
+                    {
+                      "properties": {
+                        "insertedIds": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          }
+                        }
+                      }
+                    }
+                  ],
+                  "example": {
+                    "insertedIds": [
+                      {
+                        "$oid": "61935189ec53247016a623c9"
+                      },
+                      {
+                        "$oid": "61935189ec53247016a623ca"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "$ref": "#/components/responses/BadRequestError"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "$ref": "#/components/responses/UnauthorizedRequestError"
+          }
+        }
+      }
+    },
+    "/action/updateOne": {
+      "post": {
+        "operationId": "updateOne",
+        "summary": "Update One Document",
+        "description": "Update a single document in a collection.",
+        "x-codeSamples": [
+          {
+            "lang": "cURL",
+            "label": "cURL",
+            "source": "curl -s \"https://data.mongodb-api.com/app/$CLIENT_APP_ID/endpoint/data/v1/action/updateOne\" \\\n  -X POST \\\n  -H \"apiKey: $API_KEY\" \\\n  -H 'Content-Type: application/ejson' \\\n  -H \"Accept: application/json\" \\\n  -d '{\n    \"dataSource\": \"mongodb-atlas\",\n    \"database\": \"learn-data-api\",\n    \"collection\": \"tasks\",\n    \"filter\": {\n      \"_id\": { \"$oid\": \"64224f4d089104f1766116a5\" }\n    },\n    \"update\": {\n      \"$set\": {\n        \"status\": \"complete\",\n        \"completedAt\": { \"$date\": { \"$numberLong\": \"1680105272788\" } }\n      }\n    }\n  }'\n"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/UpdateRequestBody"
+                  }
+                ],
+                "example": {
+                  "dataSource": "mongodb-atlas",
+                  "database": "todo",
+                  "collection": "tasks",
+                  "filter": {
+                    "_id": {
+                      "$oid": "642f1bb5cee4111898828bf6"
+                    }
+                  },
+                  "update": {
+                    "$set": {
+                      "status": "complete"
+                    }
+                  },
+                  "upsert": false
+                }
+              }
+            },
+            "application/ejson": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/UpdateRequestBody"
+                  }
+                ],
+                "example": {
+                  "dataSource": "mongodb-atlas",
+                  "database": "todo",
+                  "collection": "tasks",
+                  "filter": {
+                    "_id": {
+                      "$oid": "642f1bb5cee4111898828bf6"
+                    }
+                  },
+                  "update": {
+                    "$set": {
+                      "status": "complete"
+                    }
+                  },
+                  "upsert": false
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/UpdateResponseBody"
+                    },
+                    {
+                      "properties": {
+                        "matchedCount": {
+                          "type": "number"
+                        },
+                        "modifiedCount": {
+                          "type": "number"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "example": {
+                  "matchedCount": 1,
+                  "modifiedCount": 1
+                }
+              },
+              "application/ejson": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/UpdateResponseBody"
+                    },
+                    {
+                      "properties": {
+                        "matchedCount": {
+                          "type": "object"
+                        },
+                        "modifiedCount": {
+                          "type": "object"
+                        }
+                      }
+                    }
+                  ],
+                  "example": {
+                    "matchedCount": {
+                      "$numberInt": "1"
+                    },
+                    "modifiedCount": {
+                      "$numberInt": "1"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "$ref": "#/components/responses/BadRequestError"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "$ref": "#/components/responses/UnauthorizedRequestError"
+          }
+        }
+      }
+    },
+    "/action/updateMany": {
+      "post": {
+        "operationId": "updateMany",
+        "summary": "Update Documents",
+        "description": "Update multiple documents in a collection.",
+        "x-codeSamples": [
+          {
+            "lang": "cURL",
+            "label": "cURL",
+            "source": "curl -s \"https://data.mongodb-api.com/app/$CLIENT_APP_ID/endpoint/data/v1/action/updateMany\" \\\n  -X POST \\\n  -H \"apiKey: $API_KEY\" \\\n  -H 'Content-Type: application/ejson' \\\n  -H \"Accept: application/json\" \\\n  -d '{\n    \"dataSource\": \"mongodb-atlas\",\n    \"database\": \"learn-data-api\",\n    \"collection\": \"tasks\",\n    \"filter\": {\n      \"status\": \"open\"\n    },\n    \"update\": {\n      \"$set\": {\n        \"status\": \"complete\",\n        \"completedAt\": { \"$date\": { \"$numberLong\": \"1680105287069\" } }\n      }\n    }\n  }'\n"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/UpdateRequestBody"
+                  }
+                ],
+                "example": {
+                  "dataSource": "mongodb-atlas",
+                  "database": "todo",
+                  "collection": "tasks",
+                  "filter": {
+                    "status": "open"
+                  },
+                  "update": {
+                    "$set": {
+                      "status": "complete"
+                    }
+                  }
+                }
+              }
+            },
+            "application/ejson": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/UpdateRequestBody"
+                  }
+                ],
+                "example": {
+                  "dataSource": "mongodb-atlas",
+                  "database": "todo",
+                  "collection": "tasks",
+                  "filter": {
+                    "status": "open"
+                  },
+                  "update": {
+                    "$set": {
+                      "status": "complete"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/UpdateResponseBody"
+                    },
+                    {
+                      "properties": {
+                        "matchedCount": {
+                          "type": "number"
+                        },
+                        "modifiedCount": {
+                          "type": "number"
+                        }
+                      }
+                    }
+                  ],
+                  "example": {
+                    "matchedCount": 12,
+                    "modifiedCount": 12
+                  }
+                }
+              },
+              "application/ejson": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/UpdateResponseBody"
+                    },
+                    {
+                      "properties": {
+                        "matchedCount": {
+                          "type": "object"
+                        },
+                        "modifiedCount": {
+                          "type": "object"
+                        }
+                      }
+                    }
+                  ],
+                  "example": {
+                    "matchedCount": {
+                      "$numberInt": "12"
+                    },
+                    "modifiedCount": {
+                      "$numberInt": "12"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "$ref": "#/components/responses/BadRequestError"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "$ref": "#/components/responses/UnauthorizedRequestError"
+          }
+        }
+      }
+    },
+    "/action/deleteOne": {
+      "post": {
+        "operationId": "deleteOne",
+        "summary": "Delete One Document",
+        "description": "Delete a single document that matches a query.",
+        "x-codeSamples": [
+          {
+            "lang": "cURL",
+            "label": "cURL",
+            "source": "curl -s \"https://data.mongodb-api.com/app/$CLIENT_APP_ID/endpoint/data/v1/action/deleteOne\" \\\n  -X POST \\\n  -H \"apiKey: $API_KEY\" \\\n  -H 'Content-Type: application/ejson' \\\n  -H \"Accept: application/json\" \\\n  -d '{\n    \"dataSource\": \"mongodb-atlas\",\n    \"database\": \"learn-data-api\",\n    \"collection\": \"tasks\",\n    \"filter\": {\n      \"_id\": { \"$oid\": \"64224f3cd79f54ad342dd9b2\" }\n    }\n  }'\n"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/DeleteRequestBody"
+                  }
+                ],
+                "example": {
+                  "dataSource": "mongodb-atlas",
+                  "database": "todo",
+                  "collection": "tasks",
+                  "filter": {
+                    "text": "Do the dishes"
+                  }
+                }
+              }
+            },
+            "application/ejson": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/DeleteRequestBody"
+                  }
+                ],
+                "example": {
+                  "dataSource": "mongodb-atlas",
+                  "database": "todo",
+                  "collection": "tasks",
+                  "filter": {
+                    "text": "Do the dishes"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/DeleteResponseBody"
+                    },
+                    {
+                      "properties": {
+                        "deletedCount": {
+                          "type": "number"
+                        }
+                      }
+                    }
+                  ],
+                  "example": {
+                    "deletedCount": 1
+                  }
+                }
+              },
+              "application/ejson": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/DeleteResponseBody"
+                    },
+                    {
+                      "properties": {
+                        "deletedCount": {
+                          "type": "object"
+                        }
+                      }
+                    }
+                  ],
+                  "example": {
+                    "deletedCount": {
+                      "$numberInt": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "$ref": "#/components/responses/BadRequestError"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "$ref": "#/components/responses/UnauthorizedRequestError"
+          }
+        }
+      }
+    },
+    "/action/deleteMany": {
+      "post": {
+        "operationId": "deleteMany",
+        "summary": "Delete Documents",
+        "description": "Delete multiple documents that match a query.",
+        "x-codeSamples": [
+          {
+            "lang": "cURL",
+            "label": "cURL",
+            "source": "curl -s \"https://data.mongodb-api.com/app/$CLIENT_APP_ID/endpoint/data/v1/action/deleteMany\" \\\n  -X POST \\\n  -H \"apiKey: $API_KEY\" \\\n  -H 'Content-Type: application/ejson' \\\n  -H \"Accept: application/json\" \\\n  -d '{\n    \"dataSource\": \"mongodb-atlas\",\n    \"database\": \"learn-data-api\",\n    \"collection\": \"tasks\",\n    \"filter\": {\n      \"status\": \"complete\"\n    }\n  }'\n"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/DeleteRequestBody"
+                  }
+                ],
+                "example": {
+                  "dataSource": "mongodb-atlas",
+                  "database": "todo",
+                  "collection": "tasks",
+                  "filter": {
+                    "status": "complete"
+                  }
+                }
+              }
+            },
+            "application/ejson": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/DeleteRequestBody"
+                  }
+                ],
+                "example": {
+                  "dataSource": "mongodb-atlas",
+                  "database": "todo",
+                  "collection": "tasks",
+                  "filter": {
+                    "status": "complete"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/DeleteResponseBody"
+                    },
+                    {
+                      "properties": {
+                        "deletedCount": {
+                          "type": "number"
+                        }
+                      }
+                    }
+                  ],
+                  "example": {
+                    "deletedCount": 12
+                  }
+                }
+              },
+              "application/ejson": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/DeleteResponseBody"
+                    },
+                    {
+                      "properties": {
+                        "deletedCount": {
+                          "type": "object"
+                        }
+                      }
+                    }
+                  ],
+                  "example": {
+                    "deletedCount": {
+                      "$numberInt": 12
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "$ref": "#/components/responses/BadRequestError"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "$ref": "#/components/responses/UnauthorizedRequestError"
+          }
+        }
+      }
+    },
+    "/action/aggregate": {
+      "post": {
+        "operationId": "aggregate",
+        "summary": "Aggregate Documents",
+        "description": "Run an aggregation pipeline.",
+        "x-codeSamples": [
+          {
+            "lang": "cURL",
+            "label": "cURL",
+            "source": "curl -s \"https://data.mongodb-api.com/app/$CLIENT_APP_ID/endpoint/data/v1/action/aggregate\" \\\n  -X POST \\\n  -H \"apiKey: $API_KEY\" \\\n  -H 'Content-Type: application/ejson' \\\n  -H \"Accept: application/json\" \\\n  -d '{\n    \"dataSource\": \"mongodb-atlas\",\n    \"database\": \"learn-data-api\",\n    \"collection\": \"tasks\",\n    \"pipeline\": [\n      {\n        \"$match\": { \"status\": \"complete\" }\n      },\n      {\n        \"$group\": {\n          \"_id\": \"$status\",\n          \"count\": { \"$sum\": 1 },\n          \"tasks\": { \"$push\": \"$text\" }\n        }\n      },\n      {\n        \"$sort\": { \"count\": -1 }\n      }\n    ]\n  }'\n"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/AggregateRequestBody"
+                  }
+                ],
+                "example": [
+                  {
+                    "$groupBy": {
+                      "_id": "$status",
+                      "count": {
+                        "$sum": 1
+                      },
+                      "tasks": {
+                        "$push": "$text"
+                      }
+                    }
+                  },
+                  {
+                    "$sort": {
+                      "count": 1
+                    }
+                  }
+                ]
+              }
+            },
+            "application/ejson": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/AggregateRequestBody"
+                  }
+                ],
+                "example": [
+                  {
+                    "$groupBy": {
+                      "_id": "$status",
+                      "count": {
+                        "$sum": 1
+                      },
+                      "tasks": {
+                        "$push": "$text"
+                      }
+                    }
+                  },
+                  {
+                    "$sort": {
+                      "count": 1
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/AggregateResponseBody"
+                    }
+                  ],
+                  "example": [
+                    {
+                      "$groupBy": {
+                        "_id": "$status",
+                        "count": {
+                          "$sum": 1
+                        },
+                        "tasks": {
+                          "$push": "$text"
+                        }
+                      }
+                    },
+                    {
+                      "$sort": {
+                        "count": 1
+                      }
+                    }
+                  ]
+                }
+              },
+              "application/ejson": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/AggregateResponseBody"
+                    }
+                  ],
+                  "example": [
+                    {
+                      "$groupBy": {
+                        "_id": "$status",
+                        "count": {
+                          "$sum": 1
+                        },
+                        "tasks": {
+                          "$push": "$text"
+                        }
+                      }
+                    },
+                    {
+                      "$sort": {
+                        "count": 1
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "$ref": "#/components/responses/BadRequestError"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "$ref": "#/components/responses/UnauthorizedRequestError"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "HttpAuth": {
+        "type": "http",
+        "scheme": "basic"
+      },
+      "AccessToken": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "A [user access\ntoken](https://www.mongodb.com/docs/atlas/app-services/users/sessions/)\nspecified as a Bearer token in the Authorization header.\n\n**Example:** `Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...`"
+      },
+      "Email": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "email",
+        "description": "A registered email/password user's email address. Must be used\ntogether with the ``password`` header.\n\n**Example:** `email: someone@example.com`"
+      },
+      "Password": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "password",
+        "description": "A registered email/password user's password. Must be used\ntogether with the ``email`` header.\n\n**Example:** `password: Pa55w0rd!`"
+      },
+      "ApiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "apiKey",
+        "description": "A server or user API key.\n\n**Example:** `apiKey: A1g70fN7oKMNCnDRNeyou20Wd24rD6QNmXWYMPwz0SnDRQRQSYwGPdC3y44aJN3H`"
+      },
+      "CustomJwt": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "jwtTokenString",
+        "description": "A custom JSON web token string that the App is configured to support.\n\n**Example:** `jwtTokenString: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJteWFwcC1hYmNkZSIsInN1YiI6IjY0MzZlMDZiZGU1YzQ2ZGQ5MTQwZWFlOSIsIm5hbWUiOiJKb2huIERvZSIsImlhdCI6MTUxNjIzOTAyMn0.Y_6JR4ocrqoCEY3yOZlEqhxtAsSpvlzrXc9uvTSJA0k`"
+      }
+    },
+    "schemas": {
+      "Namespace": {
+        "type": "object",
+        "required": ["dataSource", "database", "collection"],
+        "properties": {
+          "dataSource": {
+            "type": "string",
+            "description": "The name of a linked MongoDB Atlas data source. This is\ncommonly `\"mongodb-atlas\"` though it may be different in\nyour App if you chose a different name when you created the\ndata source.\n"
+          },
+          "database": {
+            "type": "string",
+            "description": "The name of a database in the specified data source."
+          },
+          "collection": {
+            "type": "string",
+            "description": "The name of a collection in the specified database."
+          }
+        }
+      },
+      "Filter": {
+        "type": "object",
+        "properties": {
+          "filter": {
+            "type": "object",
+            "x-go-type": "json.RawMessage",
+            "description": "A MongoDB query filter that matches documents. For a list of all query operators that the Data API supports, see [Query Operators](https://www.mongodb.com/docs/atlas/app-services/mongodb/crud-and-aggregation-apis/#query-operators)."
+          }
+        }
+      },
+      "Projection": {
+        "type": "object",
+        "properties": {
+          "projection": {
+            "type": "object",
+            "x-go-type": "json.RawMessage",
+            "additionalProperties": {
+              "type": "number",
+              "enum": [0, 1]
+            },
+            "description": "A [MongoDB projection](https://www.mongodb.com/docs/manual/tutorial/project-fields-from-query-results/) for matched documents returned by the operation."
+          }
+        }
+      },
+      "FindOneRequestBody": {
+        "title": "FindOneRequestBody",
+        "required": ["filter"],
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Namespace"
+          },
+          {
+            "$ref": "#/components/schemas/Filter"
+          },
+          {
+            "$ref": "#/components/schemas/Projection"
+          }
+        ]
+      },
+      "FindOneResponseBody": {
+        "title": "FindOneResponseBody",
+        "type": "object",
+        "description": "The result of a findOne operation.",
+        "properties": {
+          "document": {
+            "type": "object",
+            "nullable": true,
+            "description": "A document that matches the specified filter. If no documents match, this is `null`."
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "x-go-type-skip-optional-pointer": true,
+            "description": "A message that describes the error."
+          },
+          "error_code": {
+            "type": "string",
+            "x-go-type-skip-optional-pointer": true,
+            "description": "The error type."
+          },
+          "link": {
+            "type": "string",
+            "x-go-type-skip-optional-pointer": true,
+            "description": "A link to a [log entry](https://www.mongodb.com/docs/atlas/app-services/logs/endpoint/) for the failed operation."
+          }
+        }
+      },
+      "ErrorNoAuthenticationSpecified": {
+        "description": "Indicates that the request did not include any authentication\ncredentials.",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Error"
+          },
+          {
+            "properties": {
+              "error": {
+                "const": "no authentication methods were specified"
+              },
+              "error_code": {
+                "const": "InvalidParameter"
+              }
+            }
+          }
+        ]
+      },
+      "ErrorMissingAuthenticationParameter": {
+        "description": "Indicates that an authentication parameter is missing from the\nrequest body or headers. For example, the request might include\nan `email` header but no corresponding `password` header.",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Error"
+          },
+          {
+            "properties": {
+              "error": {
+                "const": "must specify some form of authentication (either email+password, api-key, or jwt) in the request header or body"
+              },
+              "error_code": {
+                "const": "MissingParameter"
+              }
+            }
+          }
+        ]
+      },
+      "ErrorUserNotFound": {
+        "description": "Indicates that no user matched the provided authentication\ncredentials.",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Error"
+          },
+          {
+            "properties": {
+              "error": {
+                "const": "invalid session: error finding user for endpoint"
+              },
+              "error_code": {
+                "const": "InvalidSession"
+              }
+            }
+          }
+        ]
+      },
+      "Sort": {
+        "type": "object",
+        "properties": {
+          "sort": {
+            "type": "object",
+            "x-go-type": "json.RawMessage",
+            "description": "A [MongoDB sort expression](https://www.mongodb.com/docs/manual/reference/method/cursor.sort/) that indicates sorted field names and directions."
+          }
+        }
+      },
+      "Limit": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "number",
+            "description": "The maximum number of matching documents to include the in the response."
+          }
+        }
+      },
+      "Skip": {
+        "type": "object",
+        "properties": {
+          "skip": {
+            "type": "number",
+            "description": "The number of matching documents to omit from the response."
+          }
+        }
+      },
+      "FindManyRequestBody": {
+        "title": "FindManyRequestBody",
+        "required": ["filter"],
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Namespace"
+          },
+          {
+            "$ref": "#/components/schemas/Filter"
+          },
+          {
+            "$ref": "#/components/schemas/Projection"
+          },
+          {
+            "$ref": "#/components/schemas/Sort"
+          },
+          {
+            "$ref": "#/components/schemas/Limit"
+          },
+          {
+            "$ref": "#/components/schemas/Skip"
+          }
+        ]
+      },
+      "FindManyResponseBody": {
+        "title": "FindManyResponseBody",
+        "type": "object",
+        "description": "The result of a find operation.",
+        "properties": {
+          "documents": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "A list of documents that match the specified filter."
+          }
+        }
+      },
+      "InsertOneRequestBody": {
+        "title": "InsertOneRequestBody",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Namespace"
+          },
+          {
+            "type": "object",
+            "required": ["document"],
+            "properties": {
+              "document": {
+                "type": "object",
+                "x-go-type": "json.RawMessage",
+                "description": "A document to insert into the collection."
+              }
+            }
+          }
+        ]
+      },
+      "InsertOneResponseBody": {
+        "title": "InsertOneResponseBody",
+        "description": "The result of an insertOne operation.",
+        "type": "object",
+        "properties": {
+          "insertedId": {
+            "description": "The `_id` value of the inserted document."
+          }
+        }
+      },
+      "InsertManyRequestBody": {
+        "title": "InsertManyRequestBody",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Namespace"
+          },
+          {
+            "type": "object",
+            "required": ["documents"],
+            "properties": {
+              "documents": {
+                "type": "array",
+                "x-go-type": "json.RawMessage",
+                "items": {
+                  "type": "object"
+                },
+                "description": "A list of documents to insert into the collection."
+              }
+            }
+          }
+        ]
+      },
+      "InsertManyResponseBody": {
+        "title": "InsertManyResponseBody",
+        "description": "The result of an insertMany operation.",
+        "type": "object",
+        "properties": {
+          "insertedIds": {
+            "type": "array",
+            "description": "A list of the `_id` values of the inserted documents.",
+            "items": {
+              "type": "string",
+              "description": "The `_id` value of an inserted document."
+            }
+          }
+        }
+      },
+      "UpdateRequestBody": {
+        "title": "UpdateRequestBody",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Namespace"
+          },
+          {
+            "$ref": "#/components/schemas/Filter"
+          },
+          {
+            "type": "object",
+            "required": ["filter", "update"],
+            "properties": {
+              "update": {
+                "type": "object",
+                "x-go-type": "json.RawMessage",
+                "description": "A MongoDB update expression to apply to matching documents. For a list of all update operators that the Data API supports, see [Update Operators](https://www.mongodb.com/docs/atlas/app-services/mongodb/crud-and-aggregation-apis/#update-operators)."
+              },
+              "upsert": {
+                "type": "boolean",
+                "default": false,
+                "description": "When `true`, if the update filter does not match any\nexisting documents, then insert a new document based on\nthe filter and the specified update operation.\n"
+              }
+            }
+          }
+        ]
+      },
+      "UpdateResponseBody": {
+        "title": "UpdateResponseBody",
+        "type": "object",
+        "required": ["matchedCount", "modifiedCount"],
+        "properties": {
+          "matchedCount": {
+            "description": "The number of documents matched by the query filter."
+          },
+          "modifiedCount": {
+            "description": "The number of matched documents that were modified."
+          },
+          "upsertedId": {
+            "type": "string",
+            "description": "The `_id` value of the upserted document."
+          }
+        }
+      },
+      "DeleteRequestBody": {
+        "title": "DeleteRequestBody",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Namespace"
+          },
+          {
+            "$ref": "#/components/schemas/Filter"
+          }
+        ]
+      },
+      "DeleteResponseBody": {
+        "title": "DeleteResponseBody",
+        "type": "object",
+        "required": ["deletedCount"],
+        "properties": {
+          "deletedCount": {
+            "description": "The number of documents that were deleted."
+          }
+        }
+      },
+      "AggregateRequestBody": {
+        "title": "AggregateRequestBody",
+        "required": ["pipeline"],
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Namespace"
+          },
+          {
+            "properties": {
+              "pipeline": {
+                "type": "array",
+                "x-go-type": "json.RawMessage",
+                "description": "An array of aggregation stages.",
+                "items": {
+                  "type": "object",
+                  "description": "A MongoDB aggregation stage. For a list of all aggregation stages that the Data API supports, see [Aggregation Pipeline Stage Availability](https://www.mongodb.com/docs/atlas/app-services/mongodb/crud-and-aggregation-apis/#aggregation)."
+                }
+              }
+            }
+          }
+        ]
+      },
+      "AggregateResponseBody": {
+        "title": "AggregateResponseBody",
+        "required": ["documents"],
+        "properties": {
+          "documents": {
+            "description": "An array that contains the result set of the aggregation.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "A document included in the result set of the aggregation."
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "BadRequestError": {
+        "description": "The request was malformed or incomplete.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/ErrorNoAuthenticationSpecified"
+                },
+                {
+                  "$ref": "#/components/schemas/ErrorMissingAuthenticationParameter"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "UnauthorizedRequestError": {
+        "description": "The authenticated user does not have permission to access this endpoint.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorUserNotFound"
+            }
+          }
+        }
+      }
+    }
+  }
+}

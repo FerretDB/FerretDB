@@ -15,22 +15,19 @@
 package telemetry
 
 import (
-	"encoding/json"
-	"net/http"
-	"net/http/httptest"
+	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/AlekSi/pointer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
-	"github.com/FerretDB/FerretDB/internal/util/state"
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
+	"github.com/FerretDB/FerretDB/v2/internal/util/state"
+	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
 )
 
-func TestNewReporterLock(t *testing.T) {
+func TestReporterLocked(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
@@ -66,24 +63,22 @@ func TestNewReporterLock(t *testing.T) {
 			locked:   true,
 		},
 	} {
-		name, tc := name, tc
-
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
 			sp, err := state.NewProvider("")
 			require.NoError(t, err)
 
-			opts := NewReporterOpts{
+			_, err = NewReporter(&NewReporterOpts{
+				URL:         "http://127.0.0.1:1/",
+				File:        filepath.Join(t.TempDir(), "telemetry.json"),
 				F:           tc.f,
 				DNT:         tc.dnt,
 				ExecName:    tc.execName,
 				ConnMetrics: connmetrics.NewListenerMetrics().ConnMetrics,
 				P:           sp,
 				L:           testutil.Logger(t),
-			}
-
-			_, err = NewReporter(&opts)
+			})
 			assert.NoError(t, err)
 
 			s := sp.Get()
@@ -91,136 +86,4 @@ func TestNewReporterLock(t *testing.T) {
 			assert.Equal(t, tc.locked, s.TelemetryLocked)
 		})
 	}
-}
-
-// beaconServer returns a httptest.Server that emulates beacon server.
-func beaconServer(t *testing.T, calls *int, res *response) *httptest.Server {
-	t.Helper()
-
-	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		*calls++
-
-		w.WriteHeader(http.StatusCreated)
-		require.NoError(t, json.NewEncoder(w).Encode(res))
-	}))
-
-	t.Cleanup(s.Close)
-
-	return s
-}
-
-func TestReporterReport(t *testing.T) {
-	t.Parallel()
-
-	t.Run("TelemetryEnabled", func(t *testing.T) {
-		t.Parallel()
-
-		var serverCalled int
-		telemetryResponse := response{
-			LatestVersion:   "v1.2.1",
-			UpdateAvailable: true,
-		}
-		bs := beaconServer(t, &serverCalled, &telemetryResponse)
-
-		sp, err := state.NewProvider("")
-		require.NoError(t, err)
-
-		opts := NewReporterOpts{
-			URL:           bs.URL,
-			F:             &Flag{v: pointer.ToBool(true)},
-			ConnMetrics:   connmetrics.NewListenerMetrics().ConnMetrics,
-			P:             sp,
-			L:             testutil.Logger(t),
-			ReportTimeout: 1 * time.Minute,
-		}
-
-		r, err := NewReporter(&opts)
-		require.NoError(t, err)
-
-		s := r.P.Get()
-		assert.False(t, s.UpdateAvailable)
-		assert.Empty(t, s.LatestVersion)
-
-		r.report(testutil.Ctx(t))
-		assert.Equal(t, 1, serverCalled)
-
-		s = r.P.Get()
-		assert.True(t, s.UpdateAvailable)
-		assert.Equal(t, "v1.2.1", s.LatestVersion)
-
-		telemetryResponse.UpdateAvailable = false
-
-		r.report(testutil.Ctx(t))
-		assert.Equal(t, 2, serverCalled)
-
-		s = r.P.Get()
-		assert.False(t, s.UpdateAvailable)
-		assert.Equal(t, "v1.2.1", s.LatestVersion)
-
-		telemetryResponse.UpdateAvailable = true
-		telemetryResponse.LatestVersion = "v1.2.0"
-
-		r.report(testutil.Ctx(t))
-		assert.Equal(t, 3, serverCalled)
-
-		s = r.P.Get()
-		assert.True(t, s.UpdateAvailable)
-		assert.Equal(t, "v1.2.0", s.LatestVersion)
-
-		require.NoError(t, sp.Update(func(s *state.State) { s.DisableTelemetry() }))
-
-		r.report(testutil.Ctx(t))
-		assert.Equal(t, 3, serverCalled)
-
-		s = r.P.Get()
-		assert.False(t, s.UpdateAvailable)
-		assert.Empty(t, s.LatestVersion)
-
-		require.NoError(t, sp.Update(func(s *state.State) { s.EnableTelemetry() }))
-		telemetryResponse.LatestVersion = "v1.2.2"
-
-		r.report(testutil.Ctx(t))
-		assert.Equal(t, 4, serverCalled)
-
-		s = r.P.Get()
-		assert.True(t, s.UpdateAvailable)
-		assert.Equal(t, "v1.2.2", s.LatestVersion)
-	})
-
-	t.Run("TelemetryDisabled", func(t *testing.T) {
-		t.Parallel()
-
-		var serverCalled int
-		telemetryResponse := response{
-			LatestVersion:   "v1.2.1",
-			UpdateAvailable: true,
-		}
-		bs := beaconServer(t, &serverCalled, &telemetryResponse)
-
-		sp, err := state.NewProvider("")
-		require.NoError(t, err)
-
-		opts := NewReporterOpts{
-			URL:           bs.URL,
-			F:             &Flag{v: pointer.ToBool(false)},
-			ConnMetrics:   connmetrics.NewListenerMetrics().ConnMetrics,
-			P:             sp,
-			L:             testutil.Logger(t),
-			ReportTimeout: 1 * time.Minute,
-		}
-
-		r, err := NewReporter(&opts)
-		require.NoError(t, err)
-
-		s := r.P.Get()
-		assert.False(t, s.UpdateAvailable)
-		assert.Empty(t, s.LatestVersion)
-
-		r.report(testutil.Ctx(t))
-		assert.Equal(t, 0, serverCalled)
-
-		s = r.P.Get()
-		assert.False(t, s.UpdateAvailable)
-		assert.Empty(t, s.LatestVersion)
-	})
 }

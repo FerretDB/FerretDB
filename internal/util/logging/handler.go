@@ -23,13 +23,13 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/v2/internal/util/devbuild"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // Handler is a [slog.Handler] that wraps another handler with support for:
 //   - additional log levels
-//     (DPanic/ERROR+1 panics in debug builds, Panic/ERROR+2 always panics, Fatal/ERROR+3 exits with a non-zero status);
+//     (DPanic/ERROR+1 panics in development builds, Panic/ERROR+2 always panics, Fatal/ERROR+3 exits with a non-zero status);
 //   - shorter source locations;
 //   - removal of time, level, and source attributes;
 //   - message checks for leading/trailing spaces and ending punctuation;
@@ -53,7 +53,7 @@ type NewHandlerOpts struct {
 	// When set, causes handler to panic on messages with leading/trailing spaces or ending punctuation.
 	// It must not be set unconditionally because we don't control messages from third-party packages.
 	//
-	// But we can enable it in our tests and when [debugbuild.Enabled] is true.
+	// But we can enable it in our tests and when [devbuild.Enabled] is true.
 	// TODO https://github.com/FerretDB/FerretDB/issues/4511
 	CheckMessages bool
 }
@@ -139,8 +139,9 @@ func NewHandler(out io.Writer, opts *NewHandlerOpts) *Handler {
 	}
 
 	return &Handler{
-		base: h,
-		out:  out,
+		base:          h,
+		out:           out,
+		checkMessages: opts.CheckMessages,
 	}
 }
 
@@ -153,7 +154,7 @@ func (h *Handler) Enabled(ctx context.Context, l slog.Level) bool {
 func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
 	err := h.base.Handle(ctx, r)
 
-	if debugbuild.Enabled {
+	if devbuild.Enabled {
 		must.NoError(err)
 	}
 
@@ -182,7 +183,7 @@ func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
 	//nolint:exhaustive // levels smaller than LevelDPanic are handled above
 	switch r.Level {
 	case LevelDPanic:
-		if debugbuild.Enabled {
+		if devbuild.Enabled {
 			panic(r.Message)
 		}
 
@@ -200,16 +201,18 @@ func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
 // WithAttrs implements [slog.Handler].
 func (h *Handler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	return &Handler{
-		base: h.base.WithAttrs(attrs),
-		out:  h.out,
+		base:          h.base.WithAttrs(attrs),
+		out:           h.out,
+		checkMessages: h.checkMessages,
 	}
 }
 
 // WithGroup implements [slog.Handler].
 func (h *Handler) WithGroup(name string) slog.Handler {
 	return &Handler{
-		base: h.base.WithGroup(name),
-		out:  h.out,
+		base:          h.base.WithGroup(name),
+		out:           h.out,
+		checkMessages: h.checkMessages,
 	}
 }
 

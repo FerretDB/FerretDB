@@ -18,14 +18,14 @@ import (
 	"io"
 	"log/slog"
 	"strings"
+	"testing"
 
-	"github.com/FerretDB/FerretDB/internal/util/logging"
-	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
+	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 )
 
 // logWriter provides [io.Writer] for [testing.TB].
 type logWriter struct {
-	tb testtb.TB
+	tb testing.TB
 }
 
 // Write implements [io.Writer].
@@ -38,8 +38,13 @@ func (lw *logWriter) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-// LevelLogger returns a test logger for the given level (which might be dynamic).
-func LevelLogger(tb testtb.TB, level slog.Leveler) *slog.Logger {
+// Logger returns slog test logger.
+func Logger(tb testing.TB) *slog.Logger {
+	return LevelLogger(tb, slog.LevelDebug)
+}
+
+// LevelLogger returns a slog test logger for the given level (which might be dynamic).
+func LevelLogger(tb testing.TB, level slog.Leveler) *slog.Logger {
 	h := logging.NewHandler(&logWriter{tb: tb}, &logging.NewHandlerOpts{
 		Base:       "console",
 		Level:      level,
@@ -47,11 +52,6 @@ func LevelLogger(tb testtb.TB, level slog.Leveler) *slog.Logger {
 	})
 
 	return slog.New(h)
-}
-
-// Logger returns slog test logger.
-func Logger(tb testtb.TB) *slog.Logger {
-	return LevelLogger(tb, slog.LevelDebug)
 }
 
 // check interfaces
