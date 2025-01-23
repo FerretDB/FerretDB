@@ -16,7 +16,6 @@ package main
 
 import (
 	"bytes"
-	"context"
 	"log/slog"
 	"os/exec"
 	"regexp"
@@ -26,8 +25,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/FerretDB/FerretDB/internal/util/logging"
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
+	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
 )
 
 var (
@@ -81,7 +80,9 @@ func bufLogger() (*slog.Logger, *bytes.Buffer) {
 func TestTestArgs(t *testing.T) {
 	t.Parallel()
 
-	list, listErr := listTestFuncs("testdata", ".", testutil.Logger(t))
+	ctx := testutil.Ctx(t)
+
+	list, listErr := listTestFuncs(ctx, "testdata", ".", testutil.Logger(t))
 	require.NoError(t, listErr)
 	require.Equal(
 		t,
@@ -92,7 +93,7 @@ func TestTestArgs(t *testing.T) {
 	t.Run("All", func(t *testing.T) {
 		t.Parallel()
 
-		actual, total, err := testArgs("testdata", 0, 0, "", "", testutil.Logger(t))
+		actual, total, err := testArgs(ctx, "testdata", 0, 0, "", "", testutil.Logger(t))
 		require.NoError(t, err)
 		expected := []string{"-run=^(TestError1|TestError2|TestNormal1|TestNormal2|TestPanic1|TestSkip1|TestWithSubtest)$"}
 		assert.Equal(t, expected, actual)
@@ -102,7 +103,7 @@ func TestTestArgs(t *testing.T) {
 	t.Run("Run", func(t *testing.T) {
 		t.Parallel()
 
-		actual, total, err := testArgs("testdata", 0, 0, "(?i)Normal", "", testutil.Logger(t))
+		actual, total, err := testArgs(ctx, "testdata", 0, 0, "(?i)Normal", "", testutil.Logger(t))
 		require.NoError(t, err)
 		expected := []string{"-run=^(TestNormal1|TestNormal2)$"}
 		assert.Equal(t, expected, actual)
@@ -112,7 +113,7 @@ func TestTestArgs(t *testing.T) {
 	t.Run("Subtest", func(t *testing.T) {
 		t.Parallel()
 
-		actual, total, err := testArgs("testdata", 0, 0, "TestWithSubtest/Second", "", testutil.Logger(t))
+		actual, total, err := testArgs(ctx, "testdata", 0, 0, "TestWithSubtest/Second", "", testutil.Logger(t))
 		require.NoError(t, err)
 		expected := []string{"-run=TestWithSubtest/Second"}
 		assert.Equal(t, expected, actual)
@@ -122,7 +123,7 @@ func TestTestArgs(t *testing.T) {
 	t.Run("Shard", func(t *testing.T) {
 		t.Parallel()
 
-		actual, total, err := testArgs("testdata", 1, 2, "", "", testutil.Logger(t))
+		actual, total, err := testArgs(ctx, "testdata", 1, 2, "", "", testutil.Logger(t))
 		require.NoError(t, err)
 		expected := []string{"-run=^(TestError1|TestNormal1|TestPanic1|TestWithSubtest)$"}
 		assert.Equal(t, expected, actual)
@@ -133,14 +134,18 @@ func TestTestArgs(t *testing.T) {
 func TestRunGoTest(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.TODO()
+	ctx := testutil.Ctx(t)
 
 	t.Run("Normal", func(t *testing.T) {
 		t.Parallel()
 
 		l, buf := bufLogger()
 
-		err := runGoTest(ctx, []string{"./testdata", "-count=1", "-run=TestNormal"}, 2, false, l)
+		err := runGoTest(ctx, &runGoTestOpts{
+			args:   []string{"./testdata", "-count=1", "-run=TestNormal"},
+			total:  2,
+			logger: l,
+		})
 		require.NoError(t, err)
 
 		expected := []string{
@@ -148,8 +153,8 @@ func TestRunGoTest(t *testing.T) {
 			"INFO	PASS TestNormal1 1/2",
 			"INFO	PASS TestNormal2 2/2",
 			"INFO	PASS",
-			"INFO	ok  	github.com/FerretDB/FerretDB/cmd/envtool/testdata	<SEC>s",
-			"INFO	PASS github.com/FerretDB/FerretDB/cmd/envtool/testdata",
+			"INFO	ok  	github.com/FerretDB/FerretDB/v2/cmd/envtool/testdata	<SEC>s",
+			"INFO	PASS github.com/FerretDB/FerretDB/v2/cmd/envtool/testdata",
 		}
 
 		actual := toLogLines(buf)
@@ -161,15 +166,19 @@ func TestRunGoTest(t *testing.T) {
 
 		l, buf := bufLogger()
 
-		err := runGoTest(ctx, []string{"./testdata", "-count=1", "-run=TestWithSubtest/Third"}, 1, false, l)
+		err := runGoTest(ctx, &runGoTestOpts{
+			args:   []string{"./testdata", "-count=1", "-run=TestWithSubtest/Third"},
+			total:  1,
+			logger: l,
+		})
 		require.NoError(t, err)
 
 		expected := []string{
 			"INFO	Running go test -json ./testdata -count=1 -run=TestWithSubtest/Third",
 			"INFO	PASS TestWithSubtest 1/1",
 			"INFO	PASS",
-			"INFO	ok  	github.com/FerretDB/FerretDB/cmd/envtool/testdata	<SEC>s",
-			"INFO	PASS github.com/FerretDB/FerretDB/cmd/envtool/testdata",
+			"INFO	ok  	github.com/FerretDB/FerretDB/v2/cmd/envtool/testdata	<SEC>s",
+			"INFO	PASS github.com/FerretDB/FerretDB/v2/cmd/envtool/testdata",
 		}
 
 		actual := toLogLines(buf)
@@ -181,7 +190,11 @@ func TestRunGoTest(t *testing.T) {
 
 		l, buf := bufLogger()
 
-		err := runGoTest(ctx, []string{"./testdata", "-count=1", "-run=TestWithSubtest/None"}, 1, false, l)
+		err := runGoTest(ctx, &runGoTestOpts{
+			args:   []string{"./testdata", "-count=1", "-run=TestWithSubtest/None"},
+			total:  1,
+			logger: l,
+		})
 		require.NoError(t, err)
 
 		expected := []string{
@@ -189,8 +202,8 @@ func TestRunGoTest(t *testing.T) {
 			"INFO	PASS TestWithSubtest 1/1",
 			"INFO	testing: warning: no tests to run",
 			"INFO	PASS",
-			"INFO	ok  	github.com/FerretDB/FerretDB/cmd/envtool/testdata	<SEC>s [no tests to run]",
-			"INFO	PASS github.com/FerretDB/FerretDB/cmd/envtool/testdata",
+			"INFO	ok  	github.com/FerretDB/FerretDB/v2/cmd/envtool/testdata	<SEC>s [no tests to run]",
+			"INFO	PASS github.com/FerretDB/FerretDB/v2/cmd/envtool/testdata",
 		}
 
 		actual := toLogLines(buf)
@@ -202,7 +215,11 @@ func TestRunGoTest(t *testing.T) {
 
 		l, buf := bufLogger()
 
-		err := runGoTest(ctx, []string{"./testdata", "-count=1", "-run=TestError"}, 2, false, l)
+		err := runGoTest(ctx, &runGoTestOpts{
+			args:   []string{"./testdata", "-count=1", "-run=TestError"},
+			total:  2,
+			logger: l,
+		})
 
 		var exitErr *exec.ExitError
 		require.ErrorAs(t, err, &exitErr)
@@ -236,8 +253,8 @@ func TestRunGoTest(t *testing.T) {
 			"WARN	--- FAIL: TestError2 (<SEC>s)",
 			"WARN	",
 			"INFO	FAIL",
-			"INFO	FAIL	github.com/FerretDB/FerretDB/cmd/envtool/testdata	<SEC>s",
-			"INFO	FAIL github.com/FerretDB/FerretDB/cmd/envtool/testdata",
+			"INFO	FAIL	github.com/FerretDB/FerretDB/v2/cmd/envtool/testdata	<SEC>s",
+			"INFO	FAIL github.com/FerretDB/FerretDB/v2/cmd/envtool/testdata",
 		}
 
 		actual := toLogLines(buf)
@@ -249,7 +266,11 @@ func TestRunGoTest(t *testing.T) {
 
 		l, buf := bufLogger()
 
-		err := runGoTest(ctx, []string{"./testdata", "-count=1", "-run=TestSkip"}, 1, false, l)
+		err := runGoTest(ctx, &runGoTestOpts{
+			args:   []string{"./testdata", "-count=1", "-run=TestSkip"},
+			total:  1,
+			logger: l,
+		})
 		require.NoError(t, err)
 
 		expected := []string{
@@ -261,8 +282,8 @@ func TestRunGoTest(t *testing.T) {
 			"WARN	--- SKIP: TestSkip1 (<SEC>s)",
 			"WARN	",
 			"INFO	PASS",
-			"INFO	ok  	github.com/FerretDB/FerretDB/cmd/envtool/testdata	<SEC>s",
-			"INFO	PASS github.com/FerretDB/FerretDB/cmd/envtool/testdata",
+			"INFO	ok  	github.com/FerretDB/FerretDB/v2/cmd/envtool/testdata	<SEC>s",
+			"INFO	PASS github.com/FerretDB/FerretDB/v2/cmd/envtool/testdata",
 		}
 
 		actual := toLogLines(buf)
@@ -274,25 +295,29 @@ func TestRunGoTest(t *testing.T) {
 
 		l, buf := bufLogger()
 
-		err := runGoTest(ctx, []string{"./testdata", "-count=1", "-run=TestPanic"}, 1, false, l)
+		err := runGoTest(ctx, &runGoTestOpts{
+			args:   []string{"./testdata", "-count=1", "-run=TestPanic"},
+			total:  1,
+			logger: l,
+		})
 		require.Error(t, err)
 
 		expected := []string{
 			"INFO	Running go test -json ./testdata -count=1 -run=TestPanic",
-			"INFO	FAIL	github.com/FerretDB/FerretDB/cmd/envtool/testdata	<SEC>s",
-			"INFO	FAIL github.com/FerretDB/FerretDB/cmd/envtool/testdata",
+			"INFO	FAIL	github.com/FerretDB/FerretDB/v2/cmd/envtool/testdata	<SEC>s",
+			"INFO	FAIL github.com/FerretDB/FerretDB/v2/cmd/envtool/testdata",
 			"ERROR	",
 			"ERROR	Some tests did not finish:",
-			"ERROR	  github.com/FerretDB/FerretDB/cmd/envtool/testdata.TestPanic1",
+			"ERROR	  github.com/FerretDB/FerretDB/v2/cmd/envtool/testdata.TestPanic1",
 			"ERROR	",
-			"ERROR	github.com/FerretDB/FerretDB/cmd/envtool/testdata.TestPanic1:",
+			"ERROR	github.com/FerretDB/FerretDB/v2/cmd/envtool/testdata.TestPanic1:",
 			"ERROR	=== RUN   TestPanic1",
 			"ERROR	panic: Panic 1",
 			"ERROR	",
 			"ERROR	goroutine <ID> [running]:",
-			"ERROR	github.com/FerretDB/FerretDB/cmd/envtool/testdata.TestPanic1.func1()",
+			"ERROR	github.com/FerretDB/FerretDB/v2/cmd/envtool/testdata.TestPanic1.func1()",
 			"ERROR	<DIR>/cmd/envtool/testdata/panic_test.go:25 <ADDR>",
-			"ERROR	created by github.com/FerretDB/FerretDB/cmd/envtool/testdata.TestPanic1 in goroutine <ID>",
+			"ERROR	created by github.com/FerretDB/FerretDB/v2/cmd/envtool/testdata.TestPanic1 in goroutine <ID>",
 			"ERROR	<DIR>/cmd/envtool/testdata/panic_test.go:23 <ADDR>",
 			"ERROR",
 		}

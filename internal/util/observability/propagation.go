@@ -17,9 +17,9 @@ package observability
 import (
 	"encoding/json"
 
-	"go.opentelemetry.io/otel/trace"
+	oteltrace "go.opentelemetry.io/otel/trace"
 
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
 // commentData represents an operation comment formatted to contain tracing data.
@@ -34,8 +34,8 @@ type commentData struct {
 // The comment is expected to be a json string (see commentData).
 //
 // If the comment is empty, it returns an empty span context and no error.
-func SpanContextFromComment(comment string) (trace.SpanContext, error) {
-	var sc trace.SpanContext
+func SpanContextFromComment(comment string) (oteltrace.SpanContext, error) {
+	var sc oteltrace.SpanContext
 
 	if comment == "" {
 		return sc, nil
@@ -48,17 +48,17 @@ func SpanContextFromComment(comment string) (trace.SpanContext, error) {
 		return sc, lazyerrors.Error(err)
 	}
 
-	traceID, err := trace.TraceIDFromHex(data.FerretDB.TraceID)
+	traceID, err := oteltrace.TraceIDFromHex(data.FerretDB.TraceID)
 	if err != nil {
 		return sc, lazyerrors.Error(err)
 	}
 
-	spanID, err := trace.SpanIDFromHex(data.FerretDB.SpanID)
+	spanID, err := oteltrace.SpanIDFromHex(data.FerretDB.SpanID)
 	if err != nil {
 		return sc, lazyerrors.Error(err)
 	}
 
-	sc = trace.NewSpanContext(trace.SpanContextConfig{
+	sc = oteltrace.NewSpanContext(oteltrace.SpanContextConfig{
 		TraceID: traceID,
 		SpanID:  spanID,
 	})
@@ -67,7 +67,7 @@ func SpanContextFromComment(comment string) (trace.SpanContext, error) {
 }
 
 // CommentFromSpanContext creates a json-encoded string with tracing information (see commentData) from span context.
-func CommentFromSpanContext(sc trace.SpanContext) (string, error) {
+func CommentFromSpanContext(sc oteltrace.SpanContext) (string, error) {
 	if !sc.IsValid() {
 		return "", lazyerrors.New("invalid span context")
 	}

@@ -17,23 +17,43 @@ package testutil
 
 import (
 	"context"
+	"testing"
+	"time"
 
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel"
 
-	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
-	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
+	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
+
+// contextKey is a named unexported type for the safe use of [context.WithValue].
+type contextKey struct{}
+
+// Context key for [fileLock] in context returned by [Ctx].
+var fileLockKey = contextKey{}
 
 // Ctx returns test context.
 // It is canceled when test is finished or interrupted.
-func Ctx(tb testtb.TB) context.Context {
+func Ctx(tb testing.TB) context.Context {
 	tb.Helper()
 
 	signalsCtx, signalsStop := ctxutil.SigTerm(context.Background())
 
+	start := time.Now()
+
+	fl := newFileLock(tb)
+
+	if d := time.Since(start); d > 1*time.Millisecond {
+		fl.tb.Logf("%s got shared flock in %s.", fl.tb.Name(), d)
+	}
+
+	signalsCtx = context.WithValue(signalsCtx, fileLockKey, fl)
+
 	testDone := make(chan struct{})
 
 	tb.Cleanup(func() {
+		fl.Unlock()
 		close(testDone)
 	})
 
@@ -60,4 +80,26 @@ func Ctx(tb testtb.TB) context.Context {
 	})
 
 	return ctx
+}
+
+// Exclusive signals that test calling that function can't be run in parallel with any other test
+// that uses [Ctx] to get test context, including tests in other packages.
+//
+// The bar for using this helper is very high.
+// Most tests can run in parallel with other tests just fine by retrying operations, filtering results,
+// or using different instances of system under test (collections, databases, etc).
+func Exclusive(ctx context.Context, reason string) {
+	fl := ctx.Value(fileLockKey).(*fileLock)
+	must.NotBeZero(fl)
+
+	fl.tb.Helper()
+
+	require.NotEmpty(fl.tb, reason)
+	fl.tb.Logf("%s waits for exclusive flock: %s.", fl.tb.Name(), reason)
+
+	start := time.Now()
+
+	fl.Lock()
+
+	fl.tb.Logf("%s got exclusive flock in %s.", fl.tb.Name(), time.Since(start))
 }

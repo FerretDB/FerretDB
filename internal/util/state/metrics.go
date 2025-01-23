@@ -19,7 +19,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/FerretDB/FerretDB/build/version"
+	"github.com/FerretDB/FerretDB/v2/build/version"
 )
 
 // Parts of Prometheus metric names.
@@ -58,7 +58,7 @@ func (mc *metricsCollector) Collect(ch chan<- prometheus.Metric) {
 		"branch":  info.Branch,
 		"dirty":   strconv.FormatBool(info.Dirty),
 		"package": info.Package,
-		"debug":   strconv.FormatBool(info.DebugBuild),
+		"dev":     strconv.FormatBool(info.DevBuild),
 	}
 
 	s := mc.p.Get()
@@ -74,13 +74,13 @@ func (mc *metricsCollector) Collect(ch chan<- prometheus.Metric) {
 		prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "up"),
 			"FerretDB instance state.",
-			[]string{"backend_name", "backend_version"},
+			[]string{"postgresql", "documentdb"},
 			constLabels,
 		),
 		prometheus.GaugeValue,
 		1,
-		s.BackendName,
-		s.BackendVersion,
+		s.PostgreSQLVersion,
+		s.DocumentDBVersion,
 	)
 }
 

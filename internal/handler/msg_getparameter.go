@@ -16,65 +16,63 @@ package handler
 
 import (
 	"context"
-	"errors"
 
 	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
 
-	"github.com/FerretDB/FerretDB/internal/handler/common"
-	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
-	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // MsgGetParameter implements `getParameter` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgGetParameter(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := opMsgDocument(msg)
+	spec, err := msg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	getParameter := must.NotFail(document.Get("getParameter"))
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+		return nil, err
+	}
+
+	doc, err := spec.Decode()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	getParameter := doc.Get(doc.Command())
 
 	showDetails, allParameters, err := extractGetParameter(getParameter)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	common.Ignored(document, h.L, "comment")
-
-	mechanisms := must.NotFail(types.NewArray("PLAIN"))
-	if h.EnableNewAuth {
-		mechanisms = must.NotFail(types.NewArray("SCRAM-SHA-1", "SCRAM-SHA-256"))
-	}
-
-	parameters := must.NotFail(types.NewDocument(
+	parameters := must.NotFail(wirebson.NewDocument(
 		// to add a new parameter, fill template and place it in the alphabetical order position
-		//"<name>", must.NotFail(types.NewDocument(
+		//"<name>", must.NotFail(bson.NewDocument(
 		//	"value", <value>,
 		//	"settableAtRuntime", <bool>,
 		//	"settableAtStartup", <bool>,
 		//)),
-		"authenticationMechanisms", must.NotFail(types.NewDocument(
-			"value", mechanisms,
+		"authenticationMechanisms", must.NotFail(wirebson.NewDocument(
+			"value", must.NotFail(wirebson.NewArray("SCRAM-SHA-1", "SCRAM-SHA-256")),
 			"settableAtRuntime", false,
 			"settableAtStartup", true,
 		)),
-		"authSchemaVersion", must.NotFail(types.NewDocument(
+		"authSchemaVersion", must.NotFail(wirebson.NewDocument(
 			"value", int32(5),
 			"settableAtRuntime", true,
 			"settableAtStartup", true,
 		)),
-		"featureCompatibilityVersion", must.NotFail(types.NewDocument(
-			"value", must.NotFail(types.NewDocument("version", "7.0")),
+		"featureCompatibilityVersion", must.NotFail(wirebson.NewDocument(
+			"value", must.NotFail(wirebson.NewDocument("version", "7.0")),
 			"settableAtRuntime", false,
 			"settableAtStartup", false,
 		)),
-		"quiet", must.NotFail(types.NewDocument(
+		"quiet", must.NotFail(wirebson.NewDocument(
 			"value", false,
 			"settableAtRuntime", true,
 			"settableAtStartup", true,
@@ -82,52 +80,50 @@ func (h *Handler) MsgGetParameter(connCtx context.Context, msg *wire.OpMsg) (*wi
 		// parameters are alphabetically ordered
 	))
 
-	resDoc, err := selectParameters(document, parameters, showDetails, allParameters)
+	res, err := selectParameters(doc, parameters, showDetails, allParameters)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	if resDoc.Len() < 1 {
-		return nil, handlererrors.NewCommandErrorMsgWithArgument(
-			handlererrors.ErrorCode(72),
+	if len(res.FieldNames()) < 1 {
+		return nil, mongoerrors.NewWithArgument(
+			mongoerrors.ErrInvalidOptions,
 			"no option found to get",
-			document.Command(),
+			doc.Command(),
 		)
 	}
 
-	resDoc.Set("ok", float64(1))
+	must.NoError(res.Add("ok", float64(1)))
 
-	return documentOpMsg(
-		resDoc,
-	)
+	if msg, err = wire.NewOpMsg(res); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return msg, nil
 }
 
 // selectParameters makes a selection of requested parameters.
-func selectParameters(document, parameters *types.Document, showDetails, allParameters bool) (resDoc *types.Document, err error) {
-	resDoc = must.NotFail(types.NewDocument())
+func selectParameters(document, parameters *wirebson.Document, showDetails, allParameters bool) (*wirebson.Document, error) {
+	params := parameters.FieldNames()
+	resDoc := wirebson.MakeDocument(len(params))
 
-	iter := parameters.Iterator()
-	defer iter.Close()
-
-	for {
-		k, v, err := iter.Next()
-		if err != nil {
-			if errors.Is(err, iterator.ErrIteratorDone) {
-				break
-			}
-
-			return nil, lazyerrors.Error(err)
-		}
-
-		if !allParameters && !document.Has(k) {
+	for _, k := range params {
+		if !allParameters && document.Get(k) == nil {
 			continue
 		}
 
+		v := parameters.Get(k)
+
 		if !showDetails {
-			v = must.NotFail(v.(*types.Document).Get("value"))
+			doc, err := v.(wirebson.AnyDocument).Decode()
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
+			v = doc.Get("value")
 		}
 
-		resDoc.Set(k, v)
+		must.NoError(resDoc.Add(k, v))
 	}
 
 	return resDoc, nil
@@ -140,16 +136,23 @@ func extractGetParameter(getParameter any) (showDetails, allParameters bool, err
 		return
 	}
 
-	if param, ok := getParameter.(*types.Document); ok {
-		if v, _ := param.Get("showDetails"); v != nil {
-			showDetails, err = handlerparams.GetBoolOptionalParam("showDetails", v)
+	if param, ok := getParameter.(wirebson.AnyDocument); ok {
+		var doc *wirebson.Document
+
+		doc, err = param.Decode()
+		if err != nil {
+			return false, false, lazyerrors.Error(err)
+		}
+
+		if v := doc.Get("showDetails"); v != nil {
+			showDetails, err = getBoolParam("showDetails", v)
 			if err != nil {
 				return false, false, lazyerrors.Error(err)
 			}
 		}
 
-		if v, _ := param.Get("allParameters"); v != nil {
-			allParameters, err = handlerparams.GetBoolOptionalParam("allParameters", v)
+		if v := doc.Get("allParameters"); v != nil {
+			allParameters, err = getBoolParam("allParameters", v)
 			if err != nil {
 				return false, false, lazyerrors.Error(err)
 			}

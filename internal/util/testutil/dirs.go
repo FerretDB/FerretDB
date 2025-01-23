@@ -23,12 +23,19 @@ import (
 var (
 	// RootDir is the FerretDB <root> directory.
 	RootDir string
+
 	// BinDir is the <root>/bin directory.
 	BinDir string
+
 	// BuildCertsDir is the <root>/build/certs directory.
 	BuildCertsDir string
+
 	// IntegrationDir is the <root>/integration directory.
 	IntegrationDir string
+
+	// TmpDir is the <root>/tmp directory.
+	TmpDir string
+
 	// TmpRecordsDir is the <root>/tmp/records directory.
 	TmpRecordsDir string
 )
@@ -39,7 +46,7 @@ func init() {
 	}
 
 	// We can't use runtime.Caller because file path might be relative.
-	// See also similar code in the tools module.
+	// See also similar code in the tools/github package.
 
 	dir, err := os.Getwd()
 	if err != nil {
@@ -62,5 +69,10 @@ func init() {
 	BinDir = filepath.Join(RootDir, "bin")
 	BuildCertsDir = filepath.Join(RootDir, "build", "certs")
 	IntegrationDir = filepath.Join(RootDir, "integration")
+	TmpDir = filepath.Join(RootDir, "tmp")
 	TmpRecordsDir = filepath.Join(RootDir, "tmp", "records")
+
+	if err = os.MkdirAll(TmpDir, 0o777); err != nil {
+		panic(err)
+	}
 }

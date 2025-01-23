@@ -20,43 +20,13 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"testing"
 
-	"github.com/FerretDB/wire/wirebson"
 	"github.com/stretchr/testify/require"
 
-	"github.com/FerretDB/FerretDB/internal/bson"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/hex"
-	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
+	"github.com/FerretDB/FerretDB/v2/internal/util/hex"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
-
-// dump returns string representation for debugging.
-func dump[T types.Type](tb testtb.TB, o T) string {
-	tb.Helper()
-
-	v, err := bson.From(o)
-	require.NoError(tb, err)
-
-	return wirebson.LogMessageBlock(v)
-}
-
-// dumpSlice returns string representation for debugging.
-func dumpSlice[T types.Type](tb testtb.TB, s []T) string {
-	tb.Helper()
-
-	arr := wirebson.MakeArray(len(s))
-
-	for _, o := range s {
-		v, err := bson.From(o)
-		require.NoError(tb, err)
-
-		err = arr.Add(v)
-		require.NoError(tb, err)
-	}
-
-	return wirebson.LogMessageBlock(arr)
-}
 
 // MustParseDumpFile panics if fails to parse file input to byte array.
 func MustParseDumpFile(path ...string) []byte {
@@ -65,7 +35,7 @@ func MustParseDumpFile(path ...string) []byte {
 }
 
 // IndentJSON returns an indented form of the JSON input.
-func IndentJSON(tb testtb.TB, b []byte) []byte {
+func IndentJSON(tb testing.TB, b []byte) []byte {
 	tb.Helper()
 
 	dst := bytes.NewBuffer(make([]byte, 0, len(b)))
@@ -75,7 +45,7 @@ func IndentJSON(tb testtb.TB, b []byte) []byte {
 }
 
 // Unindent removes the common number of leading tabs from all lines in s.
-func Unindent(tb testtb.TB, s string) string {
+func Unindent(tb testing.TB, s string) string {
 	tb.Helper()
 
 	require.NotEmpty(tb, s)

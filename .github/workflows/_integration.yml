@@ -13,23 +13,21 @@ on:
         required: true
         type: number
       coveralls:
-        required: true
-        type: boolean
-      disable_pushdown:
         required: false
         type: boolean
         default: false
-      postgres_dockerfile:
+      test_timeout:
         required: false
         type: string
-        default: "postgres"
+        default: 20m
+      no_xfail:
+        required: false
+        type: boolean
+        default: false
       checkout_ref:
         required: false
         type: string
         default: ""
-    secrets:
-      FERRETDB_HANA_URL:
-        required: false
 
 env:
   GOPATH: /home/runner/go
@@ -51,11 +49,6 @@ jobs:
     timeout-minutes: 25
 
     steps:
-      - name: Dump github context
-        run: echo "$GITHUB_CONTEXT"
-        env:
-          GITHUB_CONTEXT: ${{ toJSON(github) }}
-
       # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
         uses: actions/checkout@v4
@@ -80,10 +73,15 @@ jobs:
         run: go generate -x
         working-directory: tools
 
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Start environment
         run: bin/task env-up-detach
-        env:
-          POSTGRES_DOCKERFILE: ${{ inputs.postgres_dockerfile }}
 
       - name: Run init
         run: bin/task init
@@ -93,42 +91,34 @@ jobs:
 
       - name: >
           Run ${{ inputs.task }} tests
-          (${{ inputs.shard_index }}/${{ inputs.shard_total }},
-          pushdown=${{ !inputs.disable_pushdown }})
+          (${{ inputs.shard_index }}/${{ inputs.shard_total }})
         run: >
           bin/task test-integration-${{ inputs.task }}
           SHARD_INDEX=${{ inputs.shard_index }}
           SHARD_TOTAL=${{ inputs.shard_total }}
-          TEST_TIMEOUT=20m
-          DISABLE_PUSHDOWN=${{ inputs.disable_pushdown }}
+          TEST_TIMEOUT=${{ inputs.test_timeout }}
+          NO_XFAIL=${{ inputs.no_xfail }}
         env:
-          GOFLAGS: ${{ runner.debug == '1' && '-v' || '' }}
-          FERRETDB_HANA_URL: ${{ secrets.FERRETDB_HANA_URL }}
+          ENVTOOL_DEBUG: ${{ runner.debug == '1' && 'true' || 'false' }}
 
-      # The token is not required but should make uploads more stable.
-      # If secrets are unavailable (for example, for a pull request from a fork), it fallbacks to the tokenless uploads.
-      #
-      # Unfortunately, it seems that tokenless uploads fail too often.
-      # See https://github.com/codecov/codecov-action/issues/837.
-      #
-      # We also can't use ${{ vars.CODECOV_TOKEN }}: https://github.com/orgs/community/discussions/44322
-      - name: Upload coverage information to codecov
-        if: always()
-        uses: codecov/codecov-action@v4
-        with:
-          token: 3c5cbd1b-5110-4302-ad5a-080390ca731a
-          files: ./integration/integration-${{ inputs.task }}.txt
-          flags: integration,${{ inputs.task }}-${{ inputs.shard_index }},filter-${{ !inputs.disable_pushdown }}
-          fail_ci_if_error: true
-          verbose: true
+      - name: Collect logs
+        if: failure()
+        run: |
+          mkdir -p /tmp/logs
+          bin/task env-logs-collect > /tmp/logs/compose-logs.txt
+          cp -v integration/*.json.tmp integration/*.txt.tmp /tmp/logs/
 
-      - name: Upload coverage information to coveralls
-        if: always() && inputs.coveralls
-        uses: coverallsapp/github-action@v2
+      - name: Compress logs before upload
+        if: failure()
+        run: zip -r -q -9 logs.zip /tmp/logs
+
+      - name: Upload logs
+        if: failure()
+        uses: actions/upload-artifact@v4
         with:
-          file: ./integration/integration-${{ inputs.task }}.txt
-          flag-name: integration-${{ inputs.task }}-${{ inputs.shard_index }}-filter-${{ !inputs.disable_pushdown }}
-          parallel: true
+          name: logs-${{ inputs.task }}-${{ inputs.shard_index }}-${{ inputs.shard_total }}
+          path: logs.zip
+          retention-days: 3
 
       # we don't want them on CI
       - name: Clean test and fuzz caches
@@ -136,6 +126,8 @@ jobs:
         run: go clean -testcache -fuzzcache
 
       - name: Check dirty
+        if: always()
         run: |
+          git status --untracked-files --ignored
           git status
           git diff --exit-code

@@ -16,19 +16,21 @@ package setup
 
 import (
 	"context"
+	"log/slog"
 	"net/url"
 	"path/filepath"
 	"strings"
+	"testing"
 
+	"github.com/FerretDB/wire/wireclient"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo"
 	"go.opentelemetry.io/otel"
 
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
-	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
 )
 
 // setClientPaths replaces file names in query parameters with absolute paths.
@@ -90,13 +92,29 @@ func makeClient(ctx context.Context, uri string, disableOtel bool) (*mongo.Clien
 //
 // If the connection can't be established, it panics,
 // as it doesn't make sense to proceed with other tests if we couldn't connect in one of them.
-func setupClient(tb testtb.TB, ctx context.Context, uri string, disableOtel bool) *mongo.Client {
+func setupClient(tb testing.TB, ctx context.Context, uri string, disableOtel bool) *mongo.Client {
 	tb.Helper()
 
 	ctx, span := otel.Tracer("").Start(ctx, "setupClient")
 	defer span.End()
 
-	client, err := makeClient(ctx, uri, disableOtel)
+	u, err := url.Parse(uri)
+	require.NoError(tb, err)
+
+	q := u.Query()
+
+	// assign non-default values to debug closed connection
+	// TODO https://github.com/FerretDB/FerretDB/issues/1551
+
+	require.False(tb, q.Has("connectTimeoutMS"))
+	q.Set("connectTimeoutMS", "40000")
+
+	require.False(tb, q.Has("serverSelectionTimeoutMS"))
+	q.Set("serverSelectionTimeoutMS", "20000")
+
+	u.RawQuery = q.Encode()
+
+	client, err := makeClient(ctx, u.String(), disableOtel)
 	if err != nil {
 		tb.Error(err)
 		panic("setupClient: " + err.Error())
@@ -108,4 +126,30 @@ func setupClient(tb testtb.TB, ctx context.Context, uri string, disableOtel bool
 	})
 
 	return client
+}
+
+// setupWireConn returns test-specific non-authenticated wire connection for the given MongoDB URI.
+//
+// It disconnects automatically when test ends.
+//
+// If the connection can't be established, it panics,
+// as it doesn't make sense to proceed with other tests if we couldn't connect in one of them.
+func setupWireConn(tb testing.TB, ctx context.Context, uri string, l *slog.Logger) *wireclient.Conn {
+	tb.Helper()
+
+	ctx, span := otel.Tracer("").Start(ctx, "setupWireConn")
+	defer span.End()
+
+	conn, err := wireclient.Connect(ctx, uri, l)
+	if err != nil {
+		tb.Error(err)
+		panic("setupWireConn: " + err.Error())
+	}
+
+	tb.Cleanup(func() {
+		err = conn.Close()
+		require.NoError(tb, err)
+	})
+
+	return conn
 }

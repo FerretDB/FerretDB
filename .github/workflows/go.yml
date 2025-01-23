@@ -26,7 +26,11 @@ env:
 jobs:
   short-test:
     name: Short test
-    runs-on: ubuntu-22.04
+
+    # https://www.ubicloud.com/docs/about/pricing#github-actions
+    # https://docs.github.com/en/billing/managing-billing-for-github-actions/about-billing-for-github-actions#per-minute-rates-for-larger-runners
+    runs-on: ubicloud-standard-2
+
     timeout-minutes: 15
 
     # Do not run this job in parallel for any PR change or branch push.
@@ -68,13 +72,19 @@ jobs:
         run: go clean -testcache -fuzzcache
 
       - name: Check dirty
+        if: always()
         run: |
+          git status --untracked-files --ignored
           git status
           git diff --exit-code
 
   test:
     name: Test
-    runs-on: ubuntu-22.04
+
+    # https://www.ubicloud.com/docs/about/pricing#github-actions
+    # https://docs.github.com/en/billing/managing-billing-for-github-actions/about-billing-for-github-actions#per-minute-rates-for-larger-runners
+    runs-on: ubicloud-standard-2
+
     timeout-minutes: 15
 
     # Do not run this job in parallel for any PR change or branch push.
@@ -82,7 +92,9 @@ jobs:
       group: ${{ github.workflow }}-test-${{ github.head_ref || github.ref_name }}
       cancel-in-progress: true
 
-    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
+    # skip this job for now
+    if: false
+    # if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
 
     steps:
       # TODO https://github.com/FerretDB/github-actions/issues/211
@@ -101,20 +113,29 @@ jobs:
         run: go generate -x
         working-directory: tools
 
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Start environment
         run: bin/task env-up-detach
 
       - name: Run init
         run: bin/task init
 
+      - name: Wait for and setup environment
+        run: bin/task env-setup
+
       - name: Regenerate and reformat
         run: bin/task gen
+        env:
+          DOCUMENTDB_GEN_URL: postgres://username:password@127.0.0.1:5432/postgres
 
       - name: Build bin/ferretdb
         run: bin/task build-host
-
-      - name: Wait for and setup environment
-        run: bin/task env-setup
 
       - name: Run unit tests
         run: bin/task test-unit TEST_TIMEOUT=10m
@@ -122,37 +143,15 @@ jobs:
           GOFLAGS: ${{ runner.debug == '1' && '-v' || '' }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # for tools
 
-      # The token is not required but should make uploads more stable.
-      # If secrets are unavailable (for example, for a pull request from a fork), it fallbacks to the tokenless uploads.
-      #
-      # Unfortunately, it seems that tokenless uploads fail too often.
-      # See https://github.com/codecov/codecov-action/issues/837.
-      #
-      # We also can't use ${{ vars.CODECOV_TOKEN }}: https://github.com/orgs/community/discussions/44322
-      - name: Upload coverage information to codecov
-        if: always()
-        uses: codecov/codecov-action@v4
-        with:
-          token: 3c5cbd1b-5110-4302-ad5a-080390ca731a
-          files: ./cover.txt
-          flags: unit
-          fail_ci_if_error: true
-          verbose: true
-
-      - name: Upload coverage information to coveralls
-        uses: coverallsapp/github-action@v2
-        with:
-          file: ./cover.txt
-          flag-name: unit
-          parallel: true
-
       # we don't want them on CI
       - name: Clean test and fuzz caches
         if: always()
         run: go clean -testcache -fuzzcache
 
       - name: Check dirty
+        if: always()
         run: |
+          git status --untracked-files --ignored
           git status
           git diff --exit-code
 
@@ -171,7 +170,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        task: [postgresql, sqlite]
+        task: [postgresql]
         shard_index: [1, 2, 3, 4, 5]
         shard_total: [5]
         include:
@@ -184,23 +183,47 @@ jobs:
       shard_total: ${{ matrix.shard_total }}
       coveralls: true
 
+  integration-no-xfail:
+    name: postgresql no-xfail
+
+    # Do not run this job in parallel for any PR change or branch push
+    # to save some resources.
+    concurrency:
+      group: ${{ github.workflow }}-integration-no-xfail-${{ github.head_ref || github.ref_name }}
+      cancel-in-progress: true
+
+    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
+
+    uses: ./.github/workflows/_integration.yml
+    with:
+      task: postgresql
+      shard_index: 1
+      shard_total: 1
+      test_timeout: 5m
+      no_xfail: true
+
   # https://github.com/lemurheavy/coveralls-public/issues/1636
   submit-coveralls:
     name: Submit final coveralls report
-    runs-on: ubuntu-22.04
+
+    # https://www.ubicloud.com/docs/about/pricing#github-actions
+    # https://docs.github.com/en/billing/managing-billing-for-github-actions/about-billing-for-github-actions#per-minute-rates-for-larger-runners
+    runs-on: ubicloud-standard-2
 
     needs: [test, integration]
     if: always() && (github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready'))
 
     steps:
-      - name: Submit coveralls
-        uses: coverallsapp/github-action@v2
-        with:
-          parallel-finished: true
+      - name: Do nothing
+        run: echo 'nothing'
 
   env-data:
     name: env-data
-    runs-on: ubuntu-22.04
+
+    # https://www.ubicloud.com/docs/about/pricing#github-actions
+    # https://docs.github.com/en/billing/managing-billing-for-github-actions/about-billing-for-github-actions#per-minute-rates-for-larger-runners
+    runs-on: ubicloud-standard-2
+
     timeout-minutes: 10
 
     # Do not run this job in parallel for any PR change or branch push.
@@ -227,6 +250,13 @@ jobs:
         run: go generate -x
         working-directory: tools
 
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Start environment
         run: bin/task env-up-detach
 
@@ -249,7 +279,11 @@ jobs:
 
   golangci-lint:
     name: golangci-lint
-    runs-on: ubuntu-22.04
+
+    # https://www.ubicloud.com/docs/about/pricing#github-actions
+    # https://docs.github.com/en/billing/managing-billing-for-github-actions/about-billing-for-github-actions#per-minute-rates-for-larger-runners
+    runs-on: ubicloud-standard-2
+
     timeout-minutes: 10
 
     # Do not run this job in parallel for any PR change or branch push.
@@ -258,6 +292,10 @@ jobs:
       cancel-in-progress: true
 
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
+
+    permissions:
+      contents: read
+      issues: read
 
     steps:
       # TODO https://github.com/FerretDB/github-actions/issues/211

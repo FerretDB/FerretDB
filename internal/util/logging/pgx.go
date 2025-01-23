@@ -12,13 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !ferretdb_no_postgresql
-
 package logging
 
 import (
 	"context"
 	"log/slog"
+	"maps"
 	"runtime"
 	"slices"
 	"strconv"
@@ -26,10 +25,9 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/tracelog"
-	"golang.org/x/exp/maps"
 
-	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/v2/internal/util/devbuild"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // pgxLogLevels maps pgx log levels to slog levels.
@@ -80,7 +78,8 @@ func (sl *pgxLogger) Log(ctx context.Context, level tracelog.LogLevel, msg strin
 		for {
 			frame, more := frames.Next()
 
-			if !strings.Contains(frame.File, "github.com/jackc/pgx") {
+			// skip both pgx and puddle
+			if !strings.Contains(frame.File, "github.com/jackc/") {
 				pc = frame.PC
 				break
 			}
@@ -93,8 +92,7 @@ func (sl *pgxLogger) Log(ctx context.Context, level tracelog.LogLevel, msg strin
 
 	record := slog.NewRecord(now, l, msg, pc)
 
-	dataKeys := maps.Keys(data)
-	slices.Sort(dataKeys)
+	dataKeys := slices.Sorted(maps.Keys(data))
 
 	msgAttrs := make([]slog.Attr, len(data))
 
@@ -118,11 +116,11 @@ func (sl *pgxLogger) Log(ctx context.Context, level tracelog.LogLevel, msg strin
 				Value: slog.GroupValue(attrs...),
 			}
 
+		case error:
+			attr = Error(v)
+
 		default:
-			attr = slog.Attr{
-				Key:   k,
-				Value: slog.AnyValue(v),
-			}
+			attr = slog.Any(k, v)
 		}
 
 		msgAttrs[i] = attr
@@ -132,7 +130,7 @@ func (sl *pgxLogger) Log(ctx context.Context, level tracelog.LogLevel, msg strin
 
 	err := sl.l.Handler().Handle(ctx, record)
 
-	if debugbuild.Enabled {
+	if devbuild.Enabled {
 		must.NoError(err)
 	}
 }

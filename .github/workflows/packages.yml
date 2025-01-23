@@ -68,6 +68,7 @@ jobs:
         with:
           fetch-depth: 0 # for `git describe` to work
           lfs: false # LFS is used only by website
+          ssh-key: ${{ secrets.FERRETDB_DOCUMENTDB_DEPLOY_KEY }}
 
       # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout pull request code
@@ -77,6 +78,7 @@ jobs:
           fetch-depth: 0 # for `git describe` to work
           lfs: false # LFS is used only by website
           ref: ${{ github.event.pull_request.head.sha }}
+          ssh-key: ${{ secrets.FERRETDB_DOCUMENTDB_DEPLOY_KEY }}
 
       # for version.txt on push tags; see https://github.com/actions/checkout/issues/290
       - name: Fetch annotated tags
@@ -116,12 +118,6 @@ jobs:
         id: tag
         run: bin/definedockertag
 
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ferretdbbot
-          password: ${{ secrets.DOCKER_HUB_TOKEN }}
-
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -129,16 +125,9 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Login to Quay.io
-        uses: docker/login-action@v3
-        with:
-          registry: quay.io
-          username: ferretdbbot
-          password: ${{ secrets.QUAY_TOKEN }}
-
-      - name: Build and push all-in-one Docker images ${{ steps.tag.outputs.all_in_one_images }}
-        if: steps.tag.outputs.all_in_one_images != ''
-        run: bin/task docker-all-in-one-push DOCKER_IMAGES=${{ steps.tag.outputs.all_in_one_images }}
+      - name: Build and push evaluation Docker images ${{ steps.tag.outputs.evaluation_images }}
+        if: steps.tag.outputs.evaluation_images != ''
+        run: bin/task docker-evaluation-push DOCKER_IMAGES=${{ steps.tag.outputs.evaluation_images }}
 
       - name: Build and push development Docker images ${{ steps.tag.outputs.development_images }}
         if: steps.tag.outputs.development_images != ''
@@ -190,6 +179,8 @@ jobs:
           if-no-files-found: error
 
       - name: Check dirty
+        if: always()
         run: |
+          git status --untracked-files --ignored
           git status
           git diff --exit-code

@@ -18,20 +18,30 @@ import (
 	"context"
 
 	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
 
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // MsgGetCmdLineOpts implements `getCmdLineOpts` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgGetCmdLineOpts(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return documentOpMsg(
-		must.NotFail(types.NewDocument(
-			"argv", must.NotFail(types.NewArray("ferretdb")),
-			"parsed", must.NotFail(types.NewDocument()),
-			"ok", float64(1),
-		)),
-	)
+	spec, err := msg.RawDocument()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+		return nil, err
+	}
+
+	res := must.NotFail(wirebson.NewDocument(
+		"argv", must.NotFail(wirebson.NewArray("ferretdb")),
+		"parsed", must.NotFail(wirebson.NewDocument()),
+		"ok", float64(1),
+	))
+
+	return wire.NewOpMsg(must.NotFail(res.Encode()))
 }

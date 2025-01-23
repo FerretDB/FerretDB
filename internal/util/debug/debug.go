@@ -25,6 +25,7 @@ import (
 	"io"
 	"log"
 	"log/slog"
+	"maps"
 	"net"
 	"net/http"
 	_ "net/http/pprof" // for profiling
@@ -36,12 +37,11 @@ import (
 	"github.com/arl/statsviz"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"golang.org/x/exp/maps"
 
-	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/logging"
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // Parts of Prometheus metric names.
@@ -151,8 +151,7 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 		errs := map[string]error{}
 
 		defer func() {
-			files := maps.Keys(errs)
-			slices.Sort(files)
+			files := slices.Sorted(maps.Keys(errs))
 
 			var b bytes.Buffer
 			for _, f := range files {
@@ -204,7 +203,8 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 	http.Handle("/debug/livez", promhttp.InstrumentHandlerDuration(
 		probeDurations.MustCurryWith(prometheus.Labels{"probe": "livez"}),
 		http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-			ctx := req.Context()
+			ctx, cancel := context.WithTimeout(req.Context(), 5*time.Second)
+			defer cancel()
 
 			if !opts.Livez(ctx) {
 				l.Warn("Livez probe failed")
@@ -221,7 +221,8 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 	http.Handle("/debug/readyz", promhttp.InstrumentHandlerDuration(
 		probeDurations.MustCurryWith(prometheus.Labels{"probe": "readyz"}),
 		http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-			ctx := req.Context()
+			ctx, cancel := context.WithTimeout(req.Context(), 5*time.Second)
+			defer cancel()
 
 			if !opts.Livez(ctx) {
 				l.Warn("Readyz probe failed - livez probe failed")
@@ -308,8 +309,7 @@ func (h *Handler) Serve(ctx context.Context) {
 
 	l.InfoContext(ctx, fmt.Sprintf("Starting debug server on %s/debug ...", root))
 
-	paths := maps.Keys(h.handlers)
-	slices.Sort(paths)
+	paths := slices.Sorted(maps.Keys(h.handlers))
 
 	for _, path := range paths {
 		l.InfoContext(ctx, fmt.Sprintf("%s%s - %s", root, path, h.handlers[path]))
@@ -324,10 +324,10 @@ func (h *Handler) Serve(ctx context.Context) {
 	<-ctx.Done()
 
 	// ctx is already canceled, but we want to inherit its values
-	stopCtx, stopCancel := ctxutil.WithDelay(ctx)
-	defer stopCancel(nil)
+	shutdownCtx, shutdownCancel := ctxutil.WithDelay(ctx)
+	defer shutdownCancel(nil)
 
-	if err := s.Shutdown(stopCtx); err != nil {
+	if err := s.Shutdown(shutdownCtx); err != nil {
 		l.LogAttrs(ctx, logging.LevelDPanic, "Shutdown exited with unexpected error", logging.Error(err))
 	}
 

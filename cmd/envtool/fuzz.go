@@ -28,7 +28,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
 // copyFile copies a file from src to dst, overwriting dst if it exists.
@@ -68,7 +68,7 @@ func copyFile(src, dst string) error {
 	return nil
 }
 
-// fuzzGeneratedCorpus returns $GOCACHE/fuzz/github.com/FerretDB/FerretDB,
+// fuzzGeneratedCorpus returns $GOCACHE/fuzz/github.com/FerretDB/FerretDB/v2,
 // ensuring that this directory exists.
 func fuzzGeneratedCorpus() (string, error) {
 	b, err := exec.Command("go", "env", "GOCACHE").Output()
@@ -76,7 +76,7 @@ func fuzzGeneratedCorpus() (string, error) {
 		return "", lazyerrors.Error(err)
 	}
 
-	path := filepath.Join(string(bytes.TrimSpace(b)), "fuzz", "github.com", "FerretDB", "FerretDB")
+	path := filepath.Join(string(bytes.TrimSpace(b)), "fuzz", "github.com", "FerretDB", "FerretDB", "v2")
 
 	if _, err = os.Stat(path); err != nil {
 		if errors.Is(err, fs.ErrNotExist) {

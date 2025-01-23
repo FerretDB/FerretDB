@@ -1,6 +1,6 @@
 ---
-sidebar_position: 12
-slug: /telemetry/ # referenced in many places; must not change
+sidebar_position: 7
+slug: /telemetry/ # referenced in many places
 ---
 
 # Telemetry reporting
@@ -20,7 +20,8 @@ The following data is collected:
 - [Autonomous system](<https://en.wikipedia.org/wiki/Autonomous_system_(Internet)>) number,
   cloud provider region and country derived from the IP address (but not the IP address itself)
 - FerretDB version
-- Backend (PostgreSQL or SQLite) version
+- PostgreSQL version
+- DocumentDB version
 - Installation type (Docker, package, cloud provider marketplace, self-built)
 - Build configuration (Go version, build flags and tags)
 - Uptime
@@ -33,6 +34,9 @@ The following data is collected:
 :::info
 Argument values, data field names, successful responses, or error messages are never collected.
 :::
+
+The same information is always saved in a `telemetry.json` file
+in the [state directory](configuration/flags.md#general), making it easy to inspect.
 
 ## Version notifications
 
@@ -58,9 +62,6 @@ The latter acts as if it is `enabled` with two differences:
 `undecided` state does not automatically change into `enabled` or `disabled`.
 Explicit user action is required (see below) to change an `undecided` state to `enabled` or `disabled`.
 :::
-
-Telemetry reporting is always disabled for [embedded FerretDB](https://pkg.go.dev/github.com/FerretDB/FerretDB/ferretdb)
-and can't be configured.
 
 ### Disable telemetry
 
@@ -140,11 +141,8 @@ we will not have data about unimplemented commands and errors.
 
 If you want to help us with that, please do the following:
 
-1. Start FerretDB with [debug logging](configuration/flags.md) and telemetry explicitly enabled.
-   Confirm that telemetry is enabled from the logs.
+1. Start FerretDB with telemetry explicitly enabled.
 2. Test your application manually or with integration tests.
 3. Gracefully stop FerretDB with `SIGTERM` or `docker stop` (not with `SIGKILL` or `docker kill`).
-4. Optionally, locate instance UUID in the `state.json` file in the state directory
-   (`/state` for Docker, current directory otherwise) and send it to us.
-   That would allow us to locate your data and understand what FerretDB functionality
-   should be implemented or fixed to improve compatibility with your application.
+4. Locate the `telemetry.json` file in the state directory
+   (`/state` for Docker, current directory otherwise), review it, and send it to us.

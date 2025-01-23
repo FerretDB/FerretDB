@@ -49,7 +49,7 @@ To restore or import your backed-up data to FerretDB, set the connection string 
 Run the following command in your terminal, from your `dump` folder:
 
 ```sh
-mongorestore --uri="mongodb://<yourusername>:<yourpassword>@<host>:<port>/?authMechanism=PLAIN"
+mongorestore --uri="mongodb://<yourusername>:<yourpassword>@<host>:<port>/"
 ```
 
 With this command, you can restore all the data in `dump` into your FerretDB instance.
@@ -58,7 +58,7 @@ You can also specify the database and collection (`dump/<database>/<collection>`
 To import your database using `mongoimport`, run the command from the terminal directory where you exported your data:
 
 ```sh
-mongoimport --uri="mongodb://<yourusername>:<yourpassword>@<host>:<port>/?authMechanism=PLAIN" --db=<database-name> --collection=<collection-name> --file=<collection>.json
+mongoimport--uri="mongodb://<yourusername>:<yourpassword>@<host>:<port>/" --db=<database-name> --collection=<collection-name> --file=<collection>.json
 ```
 
 The command will import the specified collection you exported from your MongoDB instance to FerretDB.

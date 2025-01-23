@@ -16,46 +16,76 @@ package integration
 
 import (
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
-
-	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/v2/integration/setup"
+	"github.com/FerretDB/FerretDB/v2/integration/shareddata"
 )
 
-func TestHello(t *testing.T) {
-	t.Parallel()
+func TestHello(tt *testing.T) {
+	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/955")
 
-	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
+	tt.Parallel()
+
+	ctx, collection := setup.Setup(tt, shareddata.Scalars, shareddata.Composites)
 	db := collection.Database()
 
-	var res bson.D
+	var actual bson.D
 
 	require.NoError(t, db.RunCommand(ctx, bson.D{
 		{"hello", "1"},
-	}).Decode(&res))
+	}).Decode(&actual))
 
-	actual := ConvertDocument(t, res)
+	var actualComparable, actualFieldNames bson.D
 
-	assert.Equal(t, must.NotFail(actual.Get("isWritablePrimary")), true)
-	assert.Equal(t, must.NotFail(actual.Get("maxBsonObjectSize")), int32(16777216))
-	assert.Equal(t, must.NotFail(actual.Get("maxMessageSizeBytes")), int32(48000000))
-	assert.Equal(t, must.NotFail(actual.Get("maxMessageSizeBytes")), int32(48000000))
-	assert.Equal(t, must.NotFail(actual.Get("maxWriteBatchSize")), int32(100000))
-	assert.IsType(t, must.NotFail(actual.Get("localTime")), time.Time{})
-	assert.IsType(t, must.NotFail(actual.Get("connectionId")), int32(1))
-	assert.Equal(t, must.NotFail(actual.Get("minWireVersion")), int32(0))
-	assert.Equal(t, must.NotFail(actual.Get("maxWireVersion")), int32(21))
-	assert.Equal(t, must.NotFail(actual.Get("readOnly")), false)
-	assert.Equal(t, must.NotFail(actual.Get("ok")), float64(1))
+	for _, field := range actual {
+		switch field.Key {
+		case "hosts", "setName", "topologyVersion", "setVersion", "secondary", "primary", "me", "electionId", "lastWrite":
+			// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/566
+			continue
+		case "connectionId":
+			assert.IsType(t, int32(0), field.Value)
+		case "localTime":
+			assert.IsType(t, primitive.DateTime(0), field.Value)
+		default:
+			actualComparable = append(actualComparable, field)
+		}
+
+		actualFieldNames = append(actualFieldNames, bson.E{Key: field.Key})
+	}
+
+	expectedComparable := bson.D{
+		{"isWritablePrimary", true},
+		{"maxBsonObjectSize", int32(16777216)},
+		{"maxMessageSizeBytes", int32(48000000)},
+		{"maxWriteBatchSize", int32(100000)},
+		{"logicalSessionTimeoutMinutes", int32(30)},
+		{"minWireVersion", int32(0)},
+		{"maxWireVersion", int32(21)},
+		{"readOnly", false},
+		{"ok", float64(1)},
+	}
+	AssertEqualDocuments(t, expectedComparable, actualComparable)
+
+	expectedFieldNames := bson.D{
+		{Key: "isWritablePrimary"},
+		{Key: "maxBsonObjectSize"},
+		{Key: "maxMessageSizeBytes"},
+		{Key: "maxWriteBatchSize"},
+		{Key: "localTime"},
+		{Key: "logicalSessionTimeoutMinutes"},
+		{Key: "connectionId"},
+		{Key: "minWireVersion"},
+		{Key: "maxWireVersion"},
+		{Key: "readOnly"},
+		{Key: "ok"},
+	}
+	AssertEqualDocuments(t, expectedFieldNames, actualFieldNames)
 }
 
 func TestHelloWithSupportedMechs(t *testing.T) {
@@ -66,58 +96,39 @@ func TestHelloWithSupportedMechs(t *testing.T) {
 	})
 	ctx, db := s.Ctx, s.Collection.Database()
 
-	usersPayload := []bson.D{
-		{
-			{"createUser", "hello_user"},
-			{"roles", bson.A{}},
-			{"pwd", "hello_password"},
-		},
-		{
-			{"createUser", "hello_user_scram1"},
-			{"roles", bson.A{}},
-			{"pwd", "hello_password"},
-			{"mechanisms", bson.A{"SCRAM-SHA-1"}},
-		},
-		{
-			{"createUser", "hello_user_scram256"},
-			{"roles", bson.A{}},
-			{"pwd", "hello_password"},
-			{"mechanisms", bson.A{"SCRAM-SHA-256"}},
-		},
-	}
+	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/864
+	_ = db.RunCommand(ctx, bson.D{{"dropUser", "hello_user_scram256"}})
 
-	for _, u := range usersPayload {
-		require.NoError(t, db.RunCommand(ctx, u).Err())
-	}
+	require.NoError(t, db.RunCommand(ctx, bson.D{
+		{"createUser", "hello_user_scram256"},
+		{"roles", bson.A{}},
+		{"pwd", "hello_password"},
+		{"mechanisms", bson.A{"SCRAM-SHA-256"}},
+	}).Err())
 
 	testCases := map[string]struct { //nolint:vet // used for test only
 		user  string
-		mechs *types.Array
+		mechs bson.A
 
-		err             *mongo.CommandError
-		failsForMongoDB string
+		err              *mongo.CommandError
+		failsForFerretDB string
 	}{
 		"NotFound": {
-			user: db.Name() + ".not_found",
+			user:             db.Name() + ".not_found",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/955",
 		},
 		"AnotherDB": {
-			user: db.Name() + "_not_found.another_db",
-		},
-		"HelloUser": {
-			user:  db.Name() + ".hello_user",
-			mechs: must.NotFail(types.NewArray("SCRAM-SHA-1", "SCRAM-SHA-256")),
-		},
-		"HelloUserSCRAM1": {
-			user:  db.Name() + ".hello_user_scram1",
-			mechs: must.NotFail(types.NewArray("SCRAM-SHA-1")),
+			user:             db.Name() + "_not_found.another_db",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/955",
 		},
 		"HelloUserSCRAM256": {
 			user:  db.Name() + ".hello_user_scram256",
-			mechs: must.NotFail(types.NewArray("SCRAM-SHA-256")),
+			mechs: bson.A{"SCRAM-SHA-256"},
 		},
 		"EmptyUsername": {
-			user:  db.Name() + ".",
-			mechs: nil,
+			user:             db.Name() + ".",
+			mechs:            nil,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/955",
 		},
 		"MissingSeparator": {
 			user: db.Name(),
@@ -126,21 +137,20 @@ func TestHelloWithSupportedMechs(t *testing.T) {
 				Name:    "BadValue",
 				Message: "UserName must contain a '.' separated database.user pair",
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/955",
 		},
 	}
 
 	for name, tc := range testCases {
 		t.Run(name, func(tt *testing.T) {
-			tt.Parallel()
-
-			var t testtb.TB = tt
-
-			if tc.failsForMongoDB != "" {
-				t = setup.FailsForMongoDB(t, tc.failsForMongoDB)
+			var t testing.TB = tt
+			if tc.failsForFerretDB != "" {
+				t = setup.FailsForFerretDB(t, tc.failsForFerretDB)
 			}
 
-			var res bson.D
+			tt.Parallel()
 
+			var res bson.D
 			err := db.RunCommand(ctx, bson.D{
 				{"hello", "1"},
 				{"saslSupportedMechs", tc.user},
@@ -151,54 +161,59 @@ func TestHelloWithSupportedMechs(t *testing.T) {
 				return
 			}
 
-			actual := ConvertDocument(t, res)
+			var actualComparable, actualFieldNames bson.D
 
-			assert.Equal(t, must.NotFail(actual.Get("isWritablePrimary")), true)
-			assert.Equal(t, must.NotFail(actual.Get("maxBsonObjectSize")), int32(16777216))
-			assert.Equal(t, must.NotFail(actual.Get("maxMessageSizeBytes")), int32(48000000))
-			assert.Equal(t, must.NotFail(actual.Get("maxMessageSizeBytes")), int32(48000000))
-			assert.Equal(t, must.NotFail(actual.Get("maxWriteBatchSize")), int32(100000))
-			assert.IsType(t, must.NotFail(actual.Get("localTime")), time.Time{})
-			assert.IsType(t, must.NotFail(actual.Get("connectionId")), int32(1))
-			assert.Equal(t, must.NotFail(actual.Get("minWireVersion")), int32(0))
-			assert.Equal(t, must.NotFail(actual.Get("maxWireVersion")), int32(21))
-			assert.Equal(t, must.NotFail(actual.Get("readOnly")), false)
-			assert.Equal(t, must.NotFail(actual.Get("ok")), float64(1))
+			for _, field := range res {
+				switch field.Key {
+				case "hosts", "setName", "topologyVersion", "setVersion", "secondary", "primary", "me", "electionId", "lastWrite":
+					// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/566
+					continue
+				case "connectionId":
+					assert.IsType(t, int32(0), field.Value)
+				case "localTime":
+					assert.IsType(t, primitive.DateTime(0), field.Value)
+				case "saslSupportedMechs":
+					// the order of mechanisms is not guaranteed
+					assert.ElementsMatch(t, tc.mechs, field.Value)
+				default:
+					actualComparable = append(actualComparable, field)
+				}
 
-			if tc.mechs == nil {
-				assert.False(t, actual.Has("saslSupportedMechs"))
-				return
+				actualFieldNames = append(actualFieldNames, bson.E{Key: field.Key})
 			}
 
-			mechanisms, err := actual.Get("saslSupportedMechs")
-			require.NoError(t, err)
-			assert.True(t, mechanisms.(*types.Array).ContainsAll(tc.mechs))
+			expected := bson.D{
+				{"isWritablePrimary", true},
+				{"maxBsonObjectSize", int32(16777216)},
+				{"maxMessageSizeBytes", int32(48000000)},
+				{"maxWriteBatchSize", int32(100000)},
+				{"logicalSessionTimeoutMinutes", int32(30)},
+				{"minWireVersion", int32(0)},
+				{"maxWireVersion", int32(21)},
+				{"readOnly", false},
+				{"ok", float64(1)},
+			}
+			AssertEqualDocuments(t, expected, actualComparable)
+
+			fieldNames := bson.D{
+				{Key: "isWritablePrimary"},
+				{Key: "maxBsonObjectSize"},
+				{Key: "maxMessageSizeBytes"},
+				{Key: "maxWriteBatchSize"},
+				{Key: "localTime"},
+				{Key: "logicalSessionTimeoutMinutes"},
+				{Key: "connectionId"},
+				{Key: "minWireVersion"},
+				{Key: "maxWireVersion"},
+				{Key: "readOnly"},
+			}
+
+			if tc.mechs != nil {
+				fieldNames = append(fieldNames, bson.E{Key: "saslSupportedMechs"})
+			}
+			fieldNames = append(fieldNames, bson.E{Key: "ok"})
+
+			AssertEqualDocuments(t, fieldNames, actualFieldNames)
 		})
 	}
-}
-
-func TestHelloWithSupportedMechsPLAIN(tt *testing.T) {
-	tt.Parallel()
-
-	s := setup.SetupWithOpts(tt, &setup.SetupOpts{BackendOptions: &setup.BackendOpts{DisableNewAuth: true}})
-
-	ctx, db := s.Ctx, s.Collection.Database()
-
-	t := setup.FailsForMongoDB(tt, "PLAIN authentication mechanism is not support by MongoDB")
-
-	var res bson.D
-
-	err := db.RunCommand(ctx, bson.D{
-		{"hello", "1"},
-		{"saslSupportedMechs", db.Name() + ".hello_user_plain"},
-	}).Decode(&res)
-	require.NoError(t, err)
-
-	actual := ConvertDocument(t, res)
-
-	v, err := actual.Get("saslSupportedMechs")
-	require.NoError(t, err)
-
-	mechanisms := v.(*types.Array)
-	require.Equal(t, must.NotFail(types.NewArray("PLAIN")), mechanisms)
 }

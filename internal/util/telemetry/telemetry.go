@@ -73,13 +73,14 @@ func initialState(f *Flag, dnt string, execName string, prev *bool, l *slog.Logg
 	}
 
 	if pointer.GetBool(dntV) {
-		l.Info(fmt.Sprintf("Telemetry is disabled by DO_NOT_TRACK=%s environment variable.", dnt))
+		l.Info(fmt.Sprintf("Telemetry is disabled by DO_NOT_TRACK=%s environment variable", dnt))
+
 		state = pointer.ToBool(false)
 		locked = true
 	}
 
 	if strings.Contains(strings.ToLower(execName), "donottrack") {
-		l.Info(fmt.Sprintf("Telemetry is disabled by %q executable name.", execName))
+		l.Info(fmt.Sprintf("Telemetry is disabled by %q executable name", execName))
 		state = pointer.ToBool(false)
 		locked = true
 	}
@@ -104,9 +105,9 @@ func initialState(f *Flag, dnt string, execName string, prev *bool, l *slog.Logg
 		}
 
 		if *state {
-			l.Info("Telemetry is enabled because it was enabled previously.")
+			l.Info("Telemetry is enabled because it was enabled previously")
 		} else {
-			l.Info("Telemetry is disabled because it was disabled previously.")
+			l.Info("Telemetry is disabled because it was disabled previously")
 		}
 
 		return
@@ -117,9 +118,9 @@ func initialState(f *Flag, dnt string, execName string, prev *bool, l *slog.Logg
 	locked = true
 
 	if *state {
-		l.Info("Telemetry enabled.")
+		l.Info("Telemetry enabled")
 	} else {
-		l.Info("Telemetry disabled.")
+		l.Info("Telemetry disabled")
 	}
 
 	return

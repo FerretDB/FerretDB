@@ -16,76 +16,83 @@ package handler
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
 
-	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
-	"github.com/FerretDB/FerretDB/internal/handler/common"
-	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
-	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // MsgKillCursors implements `killCursors` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgKillCursors(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := opMsgDocument(msg)
+	spec, err := msg.RawDocument()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	document, err := spec.Decode()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	command := document.Command()
 
-	db, err := common.GetRequiredParam[string](document, "$db")
+	db, err := getRequiredParam[string](document, "$db")
 	if err != nil {
 		return nil, err
 	}
 
-	collection, err := common.GetRequiredParam[string](document, command)
+	collection, err := getRequiredParam[string](document, command)
 	if err != nil {
 		return nil, err
 	}
 
-	username := conninfo.Get(connCtx).Username()
+	username := conninfo.Get(connCtx).Conv().Username()
 
-	cursors, err := common.GetRequiredParam[*types.Array](document, "cursors")
+	userID, _, err := h.s.CreateOrUpdateByLSID(connCtx, spec)
 	if err != nil {
 		return nil, err
 	}
 
-	iter := cursors.Iterator()
-	defer iter.Close()
+	cursorsV, err := getRequiredParamAny(document, "cursors")
+	if err != nil {
+		return nil, err
+	}
+
+	curArr, ok := cursorsV.(wirebson.AnyArray)
+	if !ok {
+		msg := fmt.Sprintf(`required parameter "cursors" has type %T (expected array)`, cursorsV)
+		return nil, lazyerrors.Error(mongoerrors.NewWithArgument(mongoerrors.ErrBadValue, msg, command))
+	}
+
+	cursors, err := curArr.Decode()
+	if !ok {
+		return nil, lazyerrors.Error(err)
+	}
 
 	var ids []int64
-	cursorsKilled := types.MakeArray(0)
-	cursorsNotFound := types.MakeArray(0)
-	cursorsAlive := types.MakeArray(0)
-	cursorsUnknown := types.MakeArray(0)
+	cursorsKilled := wirebson.MakeArray(0)
+	cursorsNotFound := wirebson.MakeArray(0)
+	cursorsAlive := wirebson.MakeArray(0)
+	cursorsUnknown := wirebson.MakeArray(0)
 
-	for {
-		i, v, err := iter.Next()
-		if err != nil {
-			if errors.Is(err, iterator.ErrIteratorDone) {
-				break
-			}
-
-			return nil, lazyerrors.Error(err)
-		}
+	for i := range cursors.Len() {
+		v := cursors.Get(i)
 
 		id, ok := v.(int64)
 		if !ok {
-			return nil, handlererrors.NewCommandErrorMsgWithArgument(
-				handlererrors.ErrTypeMismatch,
+			return nil, mongoerrors.NewWithArgument(
+				mongoerrors.ErrTypeMismatch,
 				fmt.Sprintf(
 					"BSON field 'killCursors.cursors.%d' is the wrong type '%s', expected type 'long'",
 					i,
-					handlerparams.AliasFromType(v),
+					aliasFromType(v),
 				),
 				command,
 			)
@@ -95,23 +102,29 @@ func (h *Handler) MsgKillCursors(connCtx context.Context, msg *wire.OpMsg) (*wir
 	}
 
 	for _, id := range ids {
-		cursor := h.cursors.Get(id)
-		if cursor == nil || cursor.DB != db || cursor.Collection != collection || cursor.Username != username {
-			cursorsNotFound.Append(id)
+		// Should we check database and collection names?
+		// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/17
+		_, _, _ = db, collection, username
+
+		if err = h.s.DeleteCursor(userID, id, db); err != nil {
+			return nil, err
+		}
+
+		if deleted := h.Pool.KillCursor(connCtx, id); !deleted {
+			must.NoError(cursorsNotFound.Add(id))
 			continue
 		}
 
-		h.cursors.CloseAndRemove(cursor)
-		cursorsKilled.Append(id)
+		must.NoError(cursorsKilled.Add(id))
 	}
 
-	return documentOpMsg(
-		must.NotFail(types.NewDocument(
-			"cursorsKilled", cursorsKilled,
-			"cursorsNotFound", cursorsNotFound,
-			"cursorsAlive", cursorsAlive,
-			"cursorsUnknown", cursorsUnknown,
-			"ok", float64(1),
-		)),
-	)
+	res := must.NotFail(wirebson.NewDocument(
+		"cursorsKilled", cursorsKilled,
+		"cursorsNotFound", cursorsNotFound,
+		"cursorsAlive", cursorsAlive,
+		"cursorsUnknown", cursorsUnknown,
+		"ok", float64(1),
+	))
+
+	return wire.NewOpMsg(must.NotFail(res.Encode()))
 }

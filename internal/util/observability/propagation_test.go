@@ -19,14 +19,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/trace"
+	oteltrace "go.opentelemetry.io/otel/trace"
 )
 
 func TestCommentFromSpanContext(t *testing.T) {
 	traceID := [16]byte{0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef, 0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef}
 	spanID := [8]byte{0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10}
 
-	sc := trace.NewSpanContext(trace.SpanContextConfig{
+	sc := oteltrace.NewSpanContext(oteltrace.SpanContextConfig{
 		TraceID: traceID,
 		SpanID:  spanID,
 	})

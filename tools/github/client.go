@@ -28,7 +28,7 @@ import (
 	"time"
 
 	"github.com/FerretDB/gh"
-	"github.com/google/go-github/v57/github"
+	"github.com/google/go-github/v66/github"
 	"github.com/rogpeppe/go-internal/lockedfile"
 )
 
@@ -85,6 +85,8 @@ func CacheFilePath() (string, error) {
 	// with the current working directory set to the package directory.
 	// To use the same cache file path, we first locate the root of the project by the .git directory
 	// (or .git gitdir file for submodules).
+	//
+	// See also similar code in internal/util/testutil package.
 
 	dir, err := filepath.Abs(".")
 	if err != nil {
@@ -210,7 +212,7 @@ func (c *Client) IssueStatus(ctx context.Context, url string) (IssueStatus, erro
 				msg := "Rate limit reached: " + err.Error()
 				if c.token == "" {
 					msg += "\nPlease set a GITHUB_TOKEN as described at " +
-						"https://github.com/FerretDB/FerretDB/blob/main-v1/CONTRIBUTING.md#setting-a-github_token"
+						"https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md#setting-a-github_token"
 				}
 				c.logf("%s", msg)
 			}

@@ -14,7 +14,7 @@ ARG LABEL_COMMIT
 
 FROM --platform=$BUILDPLATFORM golang:1.23.5 AS production-prepare
 
-# use a single directory for all Go caches to simpliy RUN --mount commands below
+# use a single directory for all Go caches to simplify RUN --mount commands below
 ENV GOPATH=/cache/gopath
 ENV GOCACHE=/cache/gocache
 ENV GOMODCACHE=/cache/gomodcache
@@ -39,7 +39,6 @@ EOF
 FROM golang:1.23.5 AS production-build
 
 ARG TARGETARCH
-ARG TARGETVARIANT
 
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
@@ -69,9 +68,6 @@ git status
 # Do not raise it without providing a separate v1 build
 # because v2+ is problematic for some virtualization platforms and older hardware.
 export GOAMD64=v1
-
-# Set GOARM explicitly due to https://github.com/docker-library/golang/issues/494.
-export GOARM=${TARGETVARIANT#v}
 
 export CGO_ENABLED=0
 
@@ -108,7 +104,7 @@ USER ferretdb:ferretdb
 COPY --from=production-build /src/bin/ferretdb /ferretdb
 COPY --from=production-build --chown=ferretdb:ferretdb /state /state
 
-ENTRYPOINT ["/ferretdb"]
+ENTRYPOINT [ "/ferretdb" ]
 
 HEALTHCHECK --interval=1m --timeout=5s --retries=1 --start-period=30s --start-interval=5s \
   CMD ["/ferretdb", "ping"]
@@ -122,14 +118,12 @@ ENV FERRETDB_LISTEN_ADDR=:27017
 # ENV FERRETDB_LISTEN_TLS=:27018
 ENV FERRETDB_DEBUG_ADDR=:8088
 ENV FERRETDB_STATE_DIR=/state
-ENV FERRETDB_SQLITE_URL=file:/state/
 
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
 
 # TODO https://github.com/FerretDB/FerretDB/issues/2212
 LABEL org.opencontainers.image.description="A truly Open Source MongoDB alternative"
-LABEL org.opencontainers.image.licenses="Apache-2.0"
 LABEL org.opencontainers.image.revision="${LABEL_COMMIT}"
 LABEL org.opencontainers.image.source="https://github.com/FerretDB/FerretDB"
 LABEL org.opencontainers.image.title="FerretDB"

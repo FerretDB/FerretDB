@@ -18,32 +18,41 @@ import (
 	"context"
 
 	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
 
-	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // MsgConnectionStatus implements `connectionStatus` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgConnectionStatus(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	users := types.MakeArray(1)
-
-	if username, _, _, db := conninfo.Get(connCtx).Auth(); username != "" {
-		users.Append(must.NotFail(types.NewDocument(
-			"user", username,
-			"db", db,
-		)))
+	spec, err := msg.RawDocument()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
-	return documentOpMsg(
-		must.NotFail(types.NewDocument(
-			"authInfo", must.NotFail(types.NewDocument(
-				"authenticatedUsers", users,
-				"authenticatedUserRoles", must.NotFail(types.NewArray()),
-			)),
-			"ok", float64(1),
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+		return nil, err
+	}
+
+	users := wirebson.MakeArray(1)
+
+	if u := conninfo.Get(connCtx).Conv().Username(); u != "" {
+		must.NoError(users.Add(must.NotFail(wirebson.NewDocument(
+			"user", u,
+		))))
+	}
+
+	res := must.NotFail(wirebson.NewDocument(
+		"authInfo", must.NotFail(wirebson.NewDocument(
+			"authenticatedUsers", users,
+			"authenticatedUserRoles", must.NotFail(wirebson.NewArray()),
 		)),
-	)
+		"ok", float64(1),
+	))
+
+	return wire.NewOpMsg(must.NotFail(res.Encode()))
 }

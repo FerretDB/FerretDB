@@ -16,35 +16,117 @@ package handler
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
 	"os"
-	"strings"
+	"strconv"
 
 	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
+	"golang.org/x/exp/maps"
 
-	"github.com/FerretDB/FerretDB/build/version"
-	"github.com/FerretDB/FerretDB/internal/backends"
-	"github.com/FerretDB/FerretDB/internal/handler/common"
-	"github.com/FerretDB/FerretDB/internal/handler/common/aggregations"
-	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/v2/build/version"
+	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // MsgExplain implements `explain` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgExplain(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := opMsgDocument(msg)
+	opID := h.operations.Start("command")
+	defer h.operations.Stop(opID)
+
+	spec, err := msg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	params, err := common.GetExplainParams(document, h.L)
-	if err != nil {
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
 		return nil, err
+	}
+	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
+	doc, err := spec.Decode()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	dbName, err := getRequiredParam[string](doc, "$db")
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	explainV, err := getRequiredParamAny(doc, "explain")
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	explainSpec, ok := explainV.(wirebson.RawDocument)
+	if !ok {
+		msg := fmt.Sprintf(`required parameter "explain" has type %T (expected document)`, explainV)
+		return nil, lazyerrors.Error(mongoerrors.NewWithArgument(mongoerrors.ErrBadValue, msg, "explain"))
+	}
+
+	explainDoc, err := explainSpec.Decode()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	err = explainDoc.Add("$db", dbName)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	cmd := explainDoc.Command()
+
+	collection, ok := explainDoc.Get(cmd).(string)
+	if !ok {
+		return nil, mongoerrors.NewWithArgument(mongoerrors.ErrInvalidNamespace, "Failed to parse namespace element", "explain")
+	}
+
+	h.operations.Update(opID, dbName, collection, doc)
+
+	var f string
+
+	switch cmd {
+	case "aggregate":
+		f = "documentdb_api_catalog.bson_aggregation_pipeline"
+	case "count":
+		f = "documentdb_api_catalog.bson_aggregation_count"
+	case "find":
+		f = "documentdb_api_catalog.bson_aggregation_find"
+	default:
+		return nil, mongoerrors.NewWithArgument(
+			mongoerrors.ErrNotImplemented,
+			fmt.Sprintf("explain for %s command is not supported", cmd),
+			"explain",
+		)
+	}
+
+	q := fmt.Sprintf(`
+		EXPLAIN (FORMAT JSON)
+			SELECT document
+		FROM %s($1, $2::bytea)`,
+		f,
+	)
+
+	conn, err := h.Pool.Acquire()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+	defer conn.Release()
+
+	var dest []byte
+	if err = conn.Conn().QueryRow(connCtx, q, dbName, explainSpec).Scan(&dest); err != nil {
+		return nil, lazyerrors.Error(mongoerrors.Make(connCtx, err, "", h.L))
+	}
+
+	queryPlan, err := unmarshalExplain(dest)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
 	hostname, err := os.Hostname()
@@ -52,136 +134,92 @@ func (h *Handler) MsgExplain(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 		return nil, lazyerrors.Error(err)
 	}
 
-	serverInfo := must.NotFail(types.NewDocument(
+	_, portV, _ := net.SplitHostPort(h.TCPHost)
+
+	var port int
+
+	if portV != "" {
+		port, err = strconv.Atoi(portV)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+	}
+
+	serverInfo := must.NotFail(wirebson.NewDocument(
 		"host", hostname,
+		"port", int32(port),
 		"version", version.Get().MongoDBVersion,
 		"gitVersion", version.Get().Commit,
 
 		// our extensions
-		"ferretdbVersion", version.Get().Version,
+		"ferretdb", must.NotFail(wirebson.NewDocument(
+			"version", version.Get().Version,
+		)),
 	))
 
-	cmd := params.Command
-	cmd.Set("$db", params.DB)
-
-	db, err := h.b.Database(params.DB)
-	if err != nil {
-		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
-			msg := fmt.Sprintf("Invalid namespace specified '%s.%s'", params.DB, params.Collection)
-			return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrInvalidNamespace, msg, document.Command())
-		}
-
-		return nil, lazyerrors.Error(err)
-	}
-
-	coll, err := db.Collection(params.Collection)
-	if err != nil {
-		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
-			msg := fmt.Sprintf("Invalid collection name: %s", params.Collection)
-			return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrInvalidNamespace, msg, document.Command())
-		}
-
-		return nil, lazyerrors.Error(err)
-	}
-
-	qp := new(backends.ExplainParams)
-
-	if params.Aggregate {
-		params.Filter, params.Sort = aggregations.GetPushdownQuery(params.StagesDocs)
-	}
-
-	if !h.DisablePushdown {
-		qp.Filter = params.Filter
-	}
-
-	if !h.EnableNestedPushdown && params.Filter != nil {
-		qp.Filter = params.Filter.DeepCopy()
-
-		for _, k := range qp.Filter.Keys() {
-			if !strings.ContainsRune(k, '.') {
-				continue
-			}
-
-			qp.Filter.Remove(k)
-		}
-	}
-
-	if params.Sort, err = common.ValidateSortDocument(params.Sort); err != nil {
-		var pathErr *types.PathError
-		if errors.As(err, &pathErr) && pathErr.Code() == types.ErrPathElementEmpty {
-			return nil, handlererrors.NewCommandErrorMsgWithArgument(
-				handlererrors.ErrPathContainsEmptyElement,
-				"Empty field names in path are not allowed",
-				document.Command(),
-			)
-		}
-
-		return nil, err
-	}
-
-	var cList *backends.ListCollectionsResult
-
-	collectionParam := backends.ListCollectionsParams{Name: params.Collection}
-	if cList, err = db.ListCollections(connCtx, &collectionParam); err != nil {
-		return nil, err
-	}
-
-	var cInfo backends.CollectionInfo
-
-	if len(cList.Collections) > 0 {
-		cInfo = cList.Collections[0]
-	}
-
-	switch {
-	case h.DisablePushdown:
-		// Pushdown disabled
-	case params.Sort.Len() == 0 && cInfo.Capped():
-		// Pushdown default recordID sorting for capped collections
-		qp.Sort = must.NotFail(types.NewDocument("$natural", int64(1)))
-	case params.Sort.Len() == 1:
-		if params.Sort.Keys()[0] != "$natural" {
-			break
-		}
-
-		if !cInfo.Capped() {
-			return nil, handlererrors.NewCommandErrorMsgWithArgument(
-				handlererrors.ErrNotImplemented,
-				"$natural sort for non-capped collection is not supported.",
-				"explain",
-			)
-		}
-
-		qp.Sort = params.Sort
-	}
-
-	// Limit pushdown is not applied if:
-	//  - pushdown is disabled;
-	//  - `filter` is set, it must fetch all documents to filter them in memory;
-	//  - `sort` is set, it must fetch all documents and sort them in memory;
-	//  - `skip` is non-zero value, skip pushdown is not supported yet.
-	if !h.DisablePushdown && params.Filter.Len() == 0 && params.Sort.Len() == 0 && params.Skip == 0 {
-		qp.Limit = params.Limit
-	}
-
-	res, err := coll.Explain(connCtx, qp)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return documentOpMsg(
-		must.NotFail(types.NewDocument(
-			"queryPlanner", res.QueryPlanner,
-			"explainVersion", "1",
-			"command", cmd,
-			"serverInfo", serverInfo,
-
-			// our extensions
-			// TODO https://github.com/FerretDB/FerretDB/issues/3235
-			"filterPushdown", res.FilterPushdown,
-			"sortPushdown", res.SortPushdown,
-			"limitPushdown", res.LimitPushdown,
-
-			"ok", float64(1),
-		)),
+	res, err := wirebson.NewDocument(
+		"queryPlanner", queryPlan,
+		"explainVersion", "1",
+		"command", must.NotFail(explainDoc.Encode()),
+		"serverInfo", serverInfo,
+		"ok", float64(1),
 	)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	reply, err := res.Encode()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return wire.NewOpMsg(reply)
+}
+
+// unmarshalExplain unmarshalls the plan from EXPLAIN postgreSQL command.
+func unmarshalExplain(b []byte) (*wirebson.Document, error) {
+	var plans []map[string]any
+
+	if err := json.Unmarshal(b, &plans); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if len(plans) == 0 {
+		return nil, lazyerrors.Error(errors.New("no execution plan returned"))
+	}
+
+	return convertJSON(plans[0]).(*wirebson.Document), nil
+}
+
+// convertJSON transforms decoded JSON map[string]any value into bson.Document.
+func convertJSON(value any) any {
+	switch value := value.(type) {
+	case map[string]any:
+		d := wirebson.MakeDocument(len(value))
+		keys := maps.Keys(value)
+
+		for _, k := range keys {
+			v := value[k]
+			must.NoError(d.Add(k, convertJSON(v)))
+		}
+
+		return d
+
+	case []any:
+		a := wirebson.MakeArray(len(value))
+		for _, v := range value {
+			must.NoError(a.Add(convertJSON(v)))
+		}
+
+		return a
+
+	case nil:
+		return wirebson.Null
+
+	case float64, string, bool:
+		return value
+
+	default:
+		panic(fmt.Sprintf("unsupported type: %[1]T (%[1]v)", value))
+	}
 }

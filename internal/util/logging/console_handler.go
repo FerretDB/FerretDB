@@ -21,14 +21,14 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"maps"
 	"runtime"
 	"slices"
 	"strconv"
 	"sync"
 
-	"golang.org/x/exp/maps"
-
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/v2/internal/util/devbuild"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // timeLayout is the format of date time used by the console handler.
@@ -132,13 +132,18 @@ func (ch *consoleHandler) Handle(ctx context.Context, r slog.Record) error {
 
 		var b bytes.Buffer
 		encoder := json.NewEncoder(&b)
-		encoder.SetEscapeHTML(false) // avoid escaping HTML
+		encoder.SetEscapeHTML(false)
 
-		if err := encoder.Encode(m); err != nil {
-			// last resort of logging attributes when encoding fails
-			buf.WriteString(fmt.Sprintf("%#v", m))
-		} else {
+		err := encoder.Encode(m)
+		if devbuild.Enabled || ch.opts.CheckMessages {
+			must.NoError(err)
+		}
+
+		if err == nil {
 			buf.Write(bytes.TrimSuffix(b.Bytes(), []byte{'\n'}))
+		} else {
+			// last resort
+			buf.WriteString(fmt.Sprintf("%#v", m))
 		}
 
 		if ch.testAttrs != nil {

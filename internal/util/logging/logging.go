@@ -16,15 +16,14 @@
 package logging
 
 import (
-	"fmt"
 	"log/slog"
 	"os"
 
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 const (
-	// LevelDPanic panics in debug builds.
+	// LevelDPanic panics in development builds.
 	LevelDPanic = slog.LevelError + 1
 
 	// LevelPanic always panics.
@@ -37,6 +36,13 @@ const (
 // nameKey is a [slog.Attr] key used by [WithName].
 const nameKey = "name"
 
+// WithName returns a logger with a given period-separated name.
+//
+// How this name is used depends on the handler.
+func WithName(l *slog.Logger, name string) *slog.Logger {
+	return l.With(slog.String(nameKey, name))
+}
+
 // Error returns [slog.Attr] for the given error (that can be nil) with error's message as a value.
 func Error(err error) slog.Attr {
 	if err == nil {
@@ -46,21 +52,11 @@ func Error(err error) slog.Attr {
 	return slog.String("error", err.Error())
 }
 
-// GoError returns [slog.Attr] for the given error (that can be nil) with error's Go representation as a value.
-func GoError(err error) slog.Attr {
-	if err == nil {
-		return slog.String("error", "<nil>")
-	}
+// LazyString is a lazily evaluated [slog.LogValuer].
+type LazyString func() string
 
-	return slog.String("error", fmt.Sprintf("%#v", err))
-}
-
-// WithName returns a logger with a given period-separated name.
-//
-// How this name is used depends on the handler.
-func WithName(l *slog.Logger, name string) *slog.Logger {
-	return l.With(slog.String(nameKey, name))
-}
+// LogValue implements [slog.LogValuer].
+func (ls LazyString) LogValue() slog.Value { return slog.StringValue(ls()) }
 
 // Setup initializes slog logging with given options and UUID.
 func Setup(opts *NewHandlerOpts, uuid string) {
@@ -76,3 +72,8 @@ func Setup(opts *NewHandlerOpts, uuid string) {
 	slog.SetDefault(l)
 	slog.SetLogLoggerLevel(slog.LevelInfo + 2)
 }
+
+// check interfaces
+var (
+	_ slog.LogValuer = (LazyString)(nil)
+)

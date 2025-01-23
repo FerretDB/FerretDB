@@ -21,39 +21,49 @@ import (
 	"strings"
 
 	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
 
-	"github.com/FerretDB/FerretDB/internal/handler/common"
-	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // MsgDebugError implements `debugError` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgDebugError(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := opMsgDocument(msg)
+	spec, err := msg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	expected, err := common.GetRequiredParam[string](document, document.Command())
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+		return nil, err
+	}
+
+	doc, err := spec.Decode()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	expected, err := getRequiredParam[string](doc, doc.Command())
 	if err != nil {
 		return nil, err
 	}
 
 	// check if parameter is an error code
 	if n, err := strconv.ParseInt(expected, 10, 32); err == nil {
-		errCode := handlererrors.ErrorCode(n)
+		errCode := mongoerrors.Code(n)
 		return nil, errors.New(errCode.String())
 	}
 
 	switch {
 	case expected == "ok":
-		return documentOpMsg(must.NotFail(types.NewDocument(
+		res := must.NotFail(wirebson.NewDocument(
 			"ok", float64(1),
-		)))
+		))
+
+		return wire.NewOpMsg(must.NotFail(res.Encode()))
 
 	case strings.HasPrefix(expected, "panic"):
 		panic("debugError " + expected)

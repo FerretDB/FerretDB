@@ -25,69 +25,71 @@ import (
 	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
-	"github.com/FerretDB/FerretDB/build/version"
-	"github.com/FerretDB/FerretDB/internal/bson"
-	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
-	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/logging"
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/v2/build/version"
+	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/devbuild"
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // MsgGetLog implements `getLog` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgGetLog(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := opMsgDocument(msg)
+	spec, err := msg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	command := document.Command()
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+		return nil, err
+	}
 
-	getLog, err := document.Get(command)
+	doc, err := spec.Decode()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	if _, ok := getLog.(types.NullType); ok {
-		return nil, handlererrors.NewCommandErrorMsg(
-			handlererrors.ErrMissingField,
+	command := doc.Command()
+	getLog := doc.Get(command)
+
+	if _, ok := getLog.(wirebson.NullType); ok {
+		return nil, mongoerrors.New(
+			mongoerrors.ErrLocation40414,
 			`BSON field 'getLog.getLog' is missing but a required field`,
 		)
 	}
 
 	if _, ok := getLog.(string); !ok {
-		return nil, handlererrors.NewCommandError(
-			handlererrors.ErrTypeMismatch,
-			fmt.Errorf(
+		return nil, mongoerrors.New(
+			mongoerrors.ErrTypeMismatch,
+			fmt.Sprintf(
 				"BSON field 'getLog.getLog' is the wrong type '%s', expected type 'string'",
-				handlerparams.AliasFromType(getLog),
+				aliasFromType(getLog),
 			),
 		)
 	}
 
-	var resDoc *types.Document
+	var res *wirebson.Document
 
 	switch getLog {
 	case "*":
-		resDoc = must.NotFail(types.NewDocument(
-			"names", must.NotFail(types.NewArray("global", "startupWarnings")),
+		res = must.NotFail(wirebson.NewDocument(
+			"names", must.NotFail(wirebson.NewArray("global", "startupWarnings")),
 			"ok", float64(1),
 		))
 
 	case "global":
-		var res *wirebson.Array
+		var log *wirebson.Array
 
-		if res, err = logging.RecentEntries.GetArray(); err != nil {
+		if log, err = logging.RecentEntries.GetArray(); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
-		resDoc = must.NotFail(types.NewDocument(
-			"log", must.NotFail(bson.ToArray(res)),
-			"totalLinesWritten", int64(res.Len()),
+		res = must.NotFail(wirebson.NewDocument(
+			"log", log,
+			"totalLinesWritten", int32(log.Len()),
 			"ok", float64(1),
 		))
 
@@ -96,32 +98,39 @@ func (h *Handler) MsgGetLog(connCtx context.Context, msg *wire.OpMsg) (*wire.OpM
 
 		info := version.Get()
 
+		poweredBy := fmt.Sprintf("Powered by FerretDB %s", info.Version)
+
 		// it may be empty if no connection was established yet
-		var b string
-		if state.BackendVersion != "" {
-			b, _, _ = strings.Cut(state.BackendVersion, " (")
-			b = " and " + state.BackendName + " " + strings.TrimSpace(b)
+		if state.DocumentDBVersion != "" {
+			v, _, _ := strings.Cut(state.DocumentDBVersion, " ")
+			poweredBy += " and DocumentDB " + v + " ("
+
+			v, _, _ = strings.Cut(state.PostgreSQLVersion, " (")
+			poweredBy += v + ")"
 		}
+
+		poweredBy += "."
 
 		startupWarnings := []string{
-			fmt.Sprintf("Powered by FerretDB %s%s.", info.Version, b),
-			"Please star us on GitHub: https://github.com/FerretDB/FerretDB.",
+			poweredBy,
+			"Please star us on GitHub: https://github.com/FerretDB/FerretDB and https://github.com/microsoft/documentdb.",
 		}
 
-		if debugbuild.Enabled {
-			startupWarnings = append(startupWarnings, "This is debug build. The performance will be affected.")
-		}
-
-		if h.L.Enabled(connCtx, slog.LevelDebug) {
-			startupWarnings = append(startupWarnings, "Debug logging enabled. The security and performance will be affected.")
+		if state.DocumentDBVersion != "" && state.DocumentDBVersion != version.DocumentDB {
+			startupWarnings = append(
+				startupWarnings,
+				"This version of FerretDB requires DocumentDB '"+version.DocumentDB+
+					"'. The currently installed version is '"+state.DocumentDBVersion+
+					"'. Some functions may not behave correctly.",
+			)
 		}
 
 		switch {
 		case state.Telemetry == nil:
 			startupWarnings = append(
 				startupWarnings,
-				"The telemetry state is undecided.",
-				"Read more about FerretDB telemetry and how to opt out at https://beacon.ferretdb.com.",
+				"The telemetry state is undecided. "+
+					"Read more about FerretDB telemetry and how to opt out at https://beacon.ferretdb.com.",
 			)
 
 		case state.UpdateInfo != "", state.UpdateAvailable:
@@ -136,7 +145,21 @@ func (h *Handler) MsgGetLog(connCtx context.Context, msg *wire.OpMsg) (*wire.OpM
 			startupWarnings = append(startupWarnings, msg)
 		}
 
-		var log types.Array
+		if devbuild.Enabled {
+			startupWarnings = append(
+				startupWarnings,
+				"This is a development build. The performance will be affected.",
+			)
+		}
+
+		if h.L.Enabled(connCtx, slog.LevelDebug) {
+			startupWarnings = append(
+				startupWarnings,
+				"Debug logging enabled. The security and performance will be affected.",
+			)
+		}
+
+		log := wirebson.MakeArray(len(startupWarnings))
 
 		for _, line := range startupWarnings {
 			b, err := json.Marshal(map[string]any{
@@ -154,22 +177,22 @@ func (h *Handler) MsgGetLog(connCtx context.Context, msg *wire.OpMsg) (*wire.OpM
 				return nil, lazyerrors.Error(err)
 			}
 
-			log.Append(string(b))
+			if err = log.Add(string(b)); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
 		}
-		resDoc = must.NotFail(types.NewDocument(
-			"log", &log,
-			"totalLinesWritten", int64(log.Len()),
+		res = must.NotFail(wirebson.NewDocument(
+			"log", log,
+			"totalLinesWritten", int32(log.Len()),
 			"ok", float64(1),
 		))
 
 	default:
-		return nil, handlererrors.NewCommandError(
-			handlererrors.ErrOperationFailed,
-			fmt.Errorf("no RecentEntries named: %s", getLog),
+		return nil, mongoerrors.New(
+			mongoerrors.ErrOperationFailed,
+			fmt.Sprintf("no RecentEntries named: %s", getLog),
 		)
 	}
 
-	return documentOpMsg(
-		resDoc,
-	)
+	return wire.NewOpMsg(must.NotFail(res.Encode()))
 }

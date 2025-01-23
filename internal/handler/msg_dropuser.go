@@ -16,66 +16,59 @@ package handler
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
+	"github.com/jackc/pgx/v5"
 
-	"github.com/FerretDB/FerretDB/internal/backends"
-	"github.com/FerretDB/FerretDB/internal/handler/common"
-	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // MsgDropUser implements `dropUser` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgDropUser(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := opMsgDocument(msg)
+	spec, err := msg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	common.Ignored(document, h.L, "writeConcern", "comment")
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+		return nil, err
+	}
 
-	dbName, err := common.GetRequiredParam[string](document, "$db")
+	doc, err := spec.Decode()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	user, err := getRequiredParam[string](doc, "dropUser")
 	if err != nil {
 		return nil, err
 	}
 
-	username, err := common.GetRequiredParam[string](document, document.Command())
+	dbName, err := getRequiredParam[string](doc, "$db")
 	if err != nil {
 		return nil, err
 	}
 
-	adminDB, err := h.b.Database("admin")
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	dropSpec := must.NotFail(must.NotFail(wirebson.NewDocument(
+		"dropUser", user,
+		"$db", dbName,
+	)).Encode())
 
-	users, err := adminDB.Collection("system.users")
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	var res wirebson.RawDocument
 
-	res, err := users.DeleteAll(connCtx, &backends.DeleteAllParams{
-		IDs: []any{dbName + "." + username},
+	err = h.Pool.WithConn(func(conn *pgx.Conn) error {
+		// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/859
+		res, err = documentdb_api.DropUser(connCtx, conn, h.L, dropSpec)
+		return err
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	if res.Deleted == 0 {
-		return nil, handlererrors.NewCommandErrorMsg(
-			handlererrors.ErrUserNotFound,
-			fmt.Sprintf("User '%s@%s' not found", username, dbName),
-		)
-	}
-
-	return documentOpMsg(
-		must.NotFail(types.NewDocument(
-			"ok", float64(1),
-		)),
-	)
+	return wire.NewOpMsg(res)
 }

@@ -23,8 +23,6 @@ import (
 	"html/template"
 	"io"
 	"log/slog"
-	"net"
-	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -34,16 +32,10 @@ import (
 	"time"
 
 	"github.com/alecthomas/kong"
-	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/FerretDB/FerretDB/build/version"
-	mysqlpool "github.com/FerretDB/FerretDB/internal/backends/mysql/metadata/pool"
-	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata/pool"
-	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
-	"github.com/FerretDB/FerretDB/internal/util/debug"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/logging"
-	"github.com/FerretDB/FerretDB/internal/util/state"
+	"github.com/FerretDB/FerretDB/v2/build/version"
+	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
+	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 )
 
 var (
@@ -56,225 +48,6 @@ var (
 
 // versionFile contains version information with leading v.
 const versionFile = "build/version/version.txt"
-
-// waitForPort waits for the given port to be available until ctx is canceled.
-func waitForPort(ctx context.Context, logger *slog.Logger, port uint16) error {
-	addr := fmt.Sprintf("127.0.0.1:%d", port)
-	logger.InfoContext(ctx, fmt.Sprintf("Waiting for %s to be up", addr))
-
-	var retry int64
-	for ctx.Err() == nil {
-		conn, err := net.Dial("tcp", addr)
-		if err == nil {
-			conn.Close()
-			return nil
-		}
-
-		logger.InfoContext(ctx, fmt.Sprintf("%s: %s", addr, err))
-
-		retry++
-		ctxutil.SleepWithJitter(ctx, time.Second, retry)
-	}
-
-	return fmt.Errorf("failed to connect to %s", addr)
-}
-
-// setupAnyPostgres configures given PostgreSQL.
-func setupAnyPostgres(ctx context.Context, logger *slog.Logger, uri string) error {
-	u, err := url.Parse(uri)
-	if err != nil {
-		return err
-	}
-
-	port, err := strconv.ParseUint(u.Port(), 10, 16)
-	if err != nil {
-		return err
-	}
-
-	if u.User == nil {
-		return lazyerrors.New("No username specified")
-	}
-
-	if err = waitForPort(ctx, logger, uint16(port)); err != nil {
-		return err
-	}
-
-	sp, err := state.NewProvider("")
-	if err != nil {
-		return err
-	}
-
-	p, err := pool.New(uri, logger, sp)
-	if err != nil {
-		return err
-	}
-
-	defer p.Close()
-
-	username := u.User.Username()
-	password, _ := u.User.Password()
-
-	var retry int64
-	for ctx.Err() == nil {
-		if _, err = p.Get(username, password); err == nil {
-			break
-		}
-
-		logger.InfoContext(ctx, fmt.Sprintf("%s: %s", uri, err))
-
-		retry++
-		ctxutil.SleepWithJitter(ctx, time.Second, retry)
-	}
-
-	if ctx.Err() != nil {
-		return ctx.Err()
-	}
-
-	return nil
-}
-
-// setupPostgres configures `postgres` container.
-func setupPostgres(ctx context.Context, logger *slog.Logger) error {
-	// user `username` must exist, but password may be any, even empty
-	return setupAnyPostgres(ctx, logging.WithName(logger, "postgres"), "postgres://username@127.0.0.1:5432/ferretdb")
-}
-
-// setupPostgresSecured configures `postgres_secured` container.
-func setupPostgresSecured(ctx context.Context, logger *slog.Logger) error {
-	return setupAnyPostgres(ctx, logging.WithName(logger, "postgres_secured"), "postgres://username:password@127.0.0.1:5433/ferretdb") //nolint:lll // for readability
-}
-
-// setupMySQL configures `mysql` container.
-func setupMySQL(ctx context.Context, logger *slog.Logger) error {
-	uri := "mysql://root:password@127.0.0.1:3306/ferretdb"
-
-	sp, err := state.NewProvider("")
-	if err != nil {
-		return err
-	}
-
-	if err = waitForPort(ctx, logging.WithName(logger, "mysql"), 3306); err != nil {
-		return err
-	}
-
-	p, err := mysqlpool.New(uri, logger, sp)
-	if err != nil {
-		return err
-	}
-
-	defer p.Close()
-
-	var retry int64
-	for ctx.Err() == nil {
-		db, err := p.Get("root", "password")
-		if err == nil {
-			if _, err = db.ExecContext(ctx, "GRANT ALL PRIVILEGES ON *.* TO 'username'@'%';"); err != nil {
-				return lazyerrors.Error(err)
-			}
-
-			break
-		}
-
-		logger.InfoContext(ctx, fmt.Sprintf("%s: %s", uri, err))
-
-		retry++
-		ctxutil.SleepWithJitter(ctx, time.Second, retry)
-	}
-
-	if ctx.Err() != nil {
-		return ctx.Err()
-	}
-
-	return nil
-}
-
-// setupMongodb configures `mongodb` container.
-func setupMongodb(ctx context.Context, logger *slog.Logger) error {
-	if err := waitForPort(ctx, logging.WithName(logger, "mongodb"), 47017); err != nil {
-		return err
-	}
-
-	eval := `'rs.initiate({_id: "rs0", members: [{_id: 0, host: "localhost:47017" }]})'`
-	args := []string{"compose", "exec", "-T", "mongodb", "mongosh", "--port=47017", "--eval", eval}
-
-	var buf bytes.Buffer
-	var retry int64
-
-	for ctx.Err() == nil {
-		buf.Reset()
-
-		err := runCommand("docker", args, &buf, logger)
-		if err == nil {
-			break
-		}
-
-		logger.InfoContext(ctx, fmt.Sprintf("%s:\n%s", err, buf.String()))
-
-		retry++
-		ctxutil.SleepWithJitter(ctx, time.Second, retry)
-	}
-
-	return ctx.Err()
-}
-
-// setupMongodbSecured configures `mongodb_secured` container.
-func setupMongodbSecured(ctx context.Context, logger *slog.Logger) error {
-	if err := waitForPort(ctx, logging.WithName(logger, "mongodb_secured"), 47018); err != nil {
-		return err
-	}
-
-	eval := `'rs.initiate({_id: "rs0", members: [{_id: 0, host: "localhost:47018" }]})'`
-	shell := `mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=/etc/certs/client.pem&tlsCaFile=/etc/certs/rootCA-cert.pem` //nolint:lll // for readability
-	args := []string{"compose", "exec", "-T", "mongodb_secured", "mongosh", "--eval", eval, "--shell", shell}
-
-	var buf bytes.Buffer
-	var retry int64
-
-	for ctx.Err() == nil {
-		buf.Reset()
-
-		err := runCommand("docker", args, &buf, logger)
-		if err == nil {
-			break
-		}
-
-		logger.InfoContext(ctx, fmt.Sprintf("%s:\n%s", err, buf.String()))
-
-		retry++
-		ctxutil.SleepWithJitter(ctx, time.Second, retry)
-	}
-
-	return ctx.Err()
-}
-
-// setup runs all setup commands.
-func setup(ctx context.Context, logger *slog.Logger) error {
-	h, err := debug.Listen(&debug.ListenOpts{
-		TCPAddr: "127.0.0.1:8089",
-		L:       logging.WithName(logger, "debug"),
-		R:       prometheus.DefaultRegisterer,
-	})
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	go h.Serve(ctx)
-
-	for _, f := range []func(context.Context, *slog.Logger) error{
-		setupPostgres,
-		setupPostgresSecured,
-		setupMySQL,
-		setupMongodb,
-		setupMongodbSecured,
-	} {
-		if err := f(ctx, logger); err != nil {
-			return err
-		}
-	}
-
-	logger.InfoContext(ctx, "Done")
-	return nil
-}
 
 // runCommand runs command with given arguments.
 func runCommand(command string, args []string, stdout io.Writer, logger *slog.Logger) error {
@@ -338,12 +111,12 @@ func printDiagnosticData(w io.Writer, setupError error, logger *slog.Logger) err
 		"GOOS":   runtime.GOOS,
 		"GOARCH": runtime.GOARCH,
 
-		"Version":    info.Version,
-		"Commit":     info.Commit,
-		"Branch":     info.Branch,
-		"Dirty":      info.Dirty,
-		"Package":    info.Package,
-		"DebugBuild": info.DebugBuild,
+		"Version":  info.Version,
+		"Commit":   info.Commit,
+		"Branch":   info.Branch,
+		"Dirty":    info.Dirty,
+		"Package":  info.Package,
+		"DevBuild": info.DevBuild,
 
 		"GoVersion":      runtime.Version(),
 		"GitVersion":     strings.TrimSpace(gitVersion),
@@ -417,6 +190,7 @@ type TestsRunParams struct {
 	ShardTotal uint   `help:"Total number of shards."`
 	Run        string `help:"Run only tests matching the regexp."`
 	Skip       string `help:"Skip tests matching the regexp."`
+	RawPrefix  string `help:"Prefix for raw output files."`
 
 	Args []string `arg:"" help:"Other arguments and flags for 'go test'." passthrough:""`
 }
@@ -434,13 +208,13 @@ var cli struct {
 
 	Shell struct {
 		Mkdir struct {
-			Paths []string `arg:"" name:"path" help:"Paths to create." type:"path"`
+			Paths []string `name:"path" arg:"" help:"Paths to create." type:"path"`
 		} `cmd:"" help:"Create directories if they do not already exist."`
 		Rmdir struct {
-			Paths []string `arg:"" name:"path" help:"Paths to remove." type:"path"`
+			Paths []string `name:"path" arg:"" help:"Paths to remove." type:"path"`
 		} `cmd:"" help:"Remove directories."`
 		Read struct {
-			Paths []string `arg:"" name:"path" help:"Paths to read." type:"path"`
+			Paths []string `name:"path" arg:"" help:"Paths to read." type:"path"`
 		} `cmd:"" help:"Read files."`
 	} `cmd:""`
 
@@ -457,10 +231,10 @@ var cli struct {
 }
 
 func main() {
-	kongCtx := kong.Parse(&cli)
+	kongCtx := kong.Parse(&cli, kong.DefaultEnvars("ENVTOOL"))
 
 	// https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables
-	if t, _ := strconv.ParseBool(os.Getenv("CI")); t {
+	if t, _ := strconv.ParseBool(os.Getenv("RUNNER_DEBUG")); t {
 		cli.Debug = true
 	}
 
@@ -475,7 +249,6 @@ func main() {
 		RemoveTime:   true,
 		RemoveSource: true,
 	}
-
 	logging.Setup(opts, "")
 	logger := slog.Default()
 
@@ -562,7 +335,7 @@ func main() {
 
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {
-			logger.Error("Failed to exit", logging.Error(exitErr))
+			logger.Error("Failed", logging.Error(exitErr))
 			os.Exit(exitErr.ExitCode())
 		}
 

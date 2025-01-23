@@ -17,80 +17,73 @@ package handler
 import (
 	"context"
 	"fmt"
+	"unicode/utf8"
 
 	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
 
-	"github.com/FerretDB/FerretDB/internal/backends"
-	"github.com/FerretDB/FerretDB/internal/handler/common"
-	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
+	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // MsgDrop implements `drop` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgDrop(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := opMsgDocument(msg)
+	spec, err := msg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	common.Ignored(document, h.L, "writeConcern", "comment")
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+		return nil, err
+	}
 
-	command := document.Command()
+	doc, err := spec.Decode()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
-	dbName, err := common.GetRequiredParam[string](document, "$db")
+	dbName, err := getRequiredParam[string](doc, "$db")
 	if err != nil {
 		return nil, err
 	}
 
-	collectionName, err := common.GetRequiredParam[string](document, command)
+	collectionName, err := getRequiredParam[string](doc, "drop")
 	if err != nil {
 		return nil, err
 	}
 
-	// Most backends would block on `DropCollection` below otherwise.
-	//
-	// There is a race condition: another client could create a new cursor for that collection
-	// after we closed all of them, but before we drop the collection itself.
-	// In that case, we expect the client to wait or to retry the operation.
-	for _, c := range h.cursors.All() {
-		if c.DB == dbName && c.Collection == collectionName {
-			h.cursors.CloseAndRemove(c)
-		}
+	if !collectionNameRe.MatchString(collectionName) ||
+		!utf8.ValidString(collectionName) {
+		msg := fmt.Sprintf("Invalid namespace specified '%s.%s'", dbName, collectionName)
+		return nil, mongoerrors.NewWithArgument(mongoerrors.ErrInvalidNamespace, msg, "drop")
 	}
 
-	db, err := h.b.Database(dbName)
+	// Should we manually close all cursors for the collection?
+	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/17
+
+	conn, err := h.Pool.Acquire()
 	if err != nil {
-		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
-			msg := fmt.Sprintf("Invalid namespace specified '%s'", dbName)
-			return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrInvalidNamespace, msg, "drop")
-		}
-
 		return nil, lazyerrors.Error(err)
 	}
 
-	err = db.DropCollection(connCtx, &backends.DropCollectionParams{
-		Name: collectionName,
-	})
+	defer conn.Release()
 
-	switch {
-	case err == nil, backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist):
-		return documentOpMsg(
-			must.NotFail(types.NewDocument(
-				"nIndexesWas", int32(1), // TODO https://github.com/FerretDB/FerretDB/issues/2337
-				"ns", dbName+"."+collectionName,
-				"ok", float64(1),
-			)),
-		)
-
-	case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid):
-		msg := fmt.Sprintf("Invalid collection name: %s", collectionName)
-		return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrInvalidNamespace, msg, "drop")
-
-	default:
+	dropped, err := documentdb_api.DropCollection(connCtx, conn.Conn(), h.L, dbName, collectionName, nil, nil, false)
+	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
+
+	res := must.NotFail(wirebson.NewDocument())
+	if dropped {
+		must.NoError(res.Add("nIndexesWas", int32(1))) // TODO https://github.com/FerretDB/FerretDB/issues/2337
+		must.NoError(res.Add("ns", dbName+"."+collectionName))
+	}
+
+	must.NoError(res.Add("ok", float64(1)))
+
+	return wire.NewOpMsg(must.NotFail(res.Encode()))
 }

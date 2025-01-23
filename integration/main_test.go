@@ -17,7 +17,7 @@ package integration
 import (
 	"testing"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/v2/integration/setup"
 )
 
 func TestMain(m *testing.M) {

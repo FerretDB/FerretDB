@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
 )
 
 func TestState(t *testing.T) {
@@ -71,7 +71,9 @@ func TestState(t *testing.T) {
 			err := f.UnmarshalText([]byte(tc.flag))
 			require.NoError(t, err)
 
-			state, locked, err := initialState(&f, tc.dnt, tc.execName, tc.prev, testutil.Logger(t))
+			logger := testutil.Logger(t)
+
+			state, locked, err := initialState(&f, tc.dnt, tc.execName, tc.prev, logger)
 			if tc.err != "" {
 				assert.EqualError(t, err, tc.err)
 				return

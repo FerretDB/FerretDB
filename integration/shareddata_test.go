@@ -29,15 +29,12 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/v2/integration/setup"
+	"github.com/FerretDB/FerretDB/v2/integration/shareddata"
 )
 
 func TestEnvData(t *testing.T) {
-	t.Parallel()
-
-	database := "test"
-	s := setup.SetupWithOpts(t, &setup.SetupOpts{DatabaseName: database})
+	s := setup.SetupWithOpts(t, nil)
 
 	opts := options.Client().ApplyURI(s.MongoDBURI)
 	client, err := mongo.Connect(s.Ctx, opts)
@@ -47,17 +44,12 @@ func TestEnvData(t *testing.T) {
 		require.NoError(t, client.Disconnect(s.Ctx))
 	})
 
-	db := client.Database(database)
+	db := client.Database("test")
 	require.NoError(t, db.Drop(s.Ctx))
 
 	for _, p := range shareddata.AllProviders() {
-		p := p
-		name := p.Name()
-
-		t.Run(name, func(t *testing.T) {
-			inserted := setup.InsertProviders(t, s.Ctx, db.Collection(p.Name()), p)
-			require.True(t, inserted)
-		})
+		inserted := setup.InsertProviders(t, s.Ctx, db.Collection(p.Name()), p)
+		require.True(t, inserted)
 	}
 
 	tb := setup.FailsForFerretDB(t, "https://github.com/FerretDB/FerretDB/issues/4303")

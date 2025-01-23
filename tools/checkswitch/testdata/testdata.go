@@ -18,63 +18,67 @@ package testdata
 import (
 	"time"
 
-	"./types"
+	"./bson"
 )
 
-type tag byte
+type bsonType byte
 
 const (
-	tagFloat64         = tag(0x01) // Float64
-	tagString          = tag(0x02) // String
-	tagDocument        = tag(0x03) // Document
-	tagArray           = tag(0x04) // Array
-	tagBinary          = tag(0x05) // Binary
-	tagUndefined       = tag(0x06) // Undefined
-	tagObjectID        = tag(0x07) // ObjectID
-	tagBool            = tag(0x08) // Bool
-	tagTime            = tag(0x09) // Time
-	tagNull            = tag(0x0a) // Null
-	tagRegex           = tag(0x0b) // Regex
-	tagDBPointer       = tag(0x0c) // DBPointer
-	tagJavaScript      = tag(0x0d) // JavaScript
-	tagSymbol          = tag(0x0e) // Symbol
-	tagJavaScriptScope = tag(0x0f) // JavaScriptScope
-	tagInt32           = tag(0x10) // Int32
-	tagTimestamp       = tag(0x11) // Timestamp
-	tagInt64           = tag(0x12) // Int64
-	tagDecimal128      = tag(0x13) // Decimal128
-	tagMinKey          = tag(0xff) // MinKey
-	tagMaxKey          = tag(0x7f) // MaxKey
+	TypeDouble           = bsonType(0x01)
+	TypeString           = bsonType(0x02)
+	TypeEmbeddedDocument = bsonType(0x03)
+	TypeArray            = bsonType(0x04)
+	TypeBinary           = bsonType(0x05)
+	TypeUndefined        = bsonType(0x06)
+	TypeObjectID         = bsonType(0x07)
+	TypeBoolean          = bsonType(0x08)
+	TypeDateTime         = bsonType(0x09)
+	TypeNull             = bsonType(0x0A)
+	TypeRegex            = bsonType(0x0B)
+	TypeDBPointer        = bsonType(0x0C)
+	TypeJavaScript       = bsonType(0x0D)
+	TypeSymbol           = bsonType(0x0E)
+	TypeCodeWithScope    = bsonType(0x0F)
+	TypeInt32            = bsonType(0x10)
+	TypeTimestamp        = bsonType(0x11)
+	TypeInt64            = bsonType(0x12)
+	TypeDecimal128       = bsonType(0x13)
+	TypeMinKey           = bsonType(0xFF)
+	TypeMaxKey           = bsonType(0x7F)
 )
 
 func testCorrect(v any) {
 	switch v.(type) {
-	case *types.Document:
-	case *types.Array:
+	case bson.AnyDocument:
+	case *bson.Document:
+	case bson.RawDocument:
+	case bson.AnyArray:
+	case *bson.Array:
+	case bson.RawArray:
 	case float64, int32, int64: // multiple types
 	case int8: // unexpected type
 	case string:
-	case types.Binary:
-	case types.ObjectID:
+	case bson.Binary:
+	case bson.ObjectID:
 	case bool:
 	case time.Time:
-	case types.NullType:
-	case types.Regex:
-	case types.Timestamp:
+	case bson.NullType:
+	case bson.Regex:
+	case bson.Timestamp:
 	}
 }
 
 func testIncorrectSimple(v any) {
 	switch v.(type) { // want "Document should go before Array in the switch"
-	case *types.Array:
-	case *types.Document:
+	case *bson.Array:
+	case *bson.Document:
 	}
 }
 
 func testIncorrectMixed(v any) {
 	switch v.(type) { // want "Document should go before Time in the switch"
 	case time.Time:
-	case *types.Document:
+	case *bson.Document:
 	}
 }
 
@@ -84,54 +88,54 @@ func testIncorrectMultiple(v any) {
 	}
 }
 
-func testCorrectTag(v tag) {
+func testCorrectType(v bsonType) {
 	switch v {
-	case tagDocument:
-	case tagArray:
-	case tagFloat64:
-	case tagString:
-	case tagBinary:
-	case tagUndefined:
-	case tagObjectID:
-	case tagBool:
-	case tagTime:
-	case tagNull:
-	case tagRegex:
-	case tagDBPointer:
-	case tagJavaScript:
-	case tagSymbol:
-	case tagJavaScriptScope:
-	case tagInt32:
-	case tagTimestamp:
-	case tagInt64:
-	case tagDecimal128:
-	case tagMinKey:
-	case tagMaxKey:
+	case TypeEmbeddedDocument:
+	case TypeArray:
+	case TypeDouble:
+	case TypeString:
+	case TypeBinary:
+	case TypeUndefined:
+	case TypeObjectID:
+	case TypeBoolean:
+	case TypeDateTime:
+	case TypeNull:
+	case TypeRegex:
+	case TypeDBPointer:
+	case TypeJavaScript:
+	case TypeSymbol:
+	case TypeCodeWithScope:
+	case TypeInt32:
+	case TypeTimestamp:
+	case TypeInt64:
+	case TypeDecimal128:
+	case TypeMinKey:
+	case TypeMaxKey:
 	}
 }
 
-func testIncorrectSimpleTag(v tag) {
-	switch v { // want "tagFloat64 should go before tagString in the switch"
-	case tagString:
-	case tagFloat64:
+func testIncorrectSimpleType(v bsonType) {
+	switch v { // want "TypeDouble should go before TypeString in the switch"
+	case TypeString:
+	case TypeDouble:
 	}
 }
 
-func testIncorrectMixedTag(v tag) {
-	switch v { // want "tagDocument should go before tagTime in the switch"
-	case tagTime:
-	case tagDocument:
+func testIncorrectMixedType(v bsonType) {
+	switch v { // want "TypeEmbeddedDocument should go before TypeDateTime in the switch"
+	case TypeDateTime:
+	case TypeEmbeddedDocument:
 	}
 }
 
-func testCorrectMultipleTag(v tag) {
+func testCorrectMultipleType(v bsonType) {
 	switch v {
-	case tagArray, tagBinary, tagUndefined:
+	case TypeArray, TypeBinary, TypeUndefined:
 	}
 }
 
-func testIncorrectMultipleTag(v tag) {
-	switch v { // want "tagBinary should go before tagUndefined in the switch"
-	case tagArray, tagUndefined, tagBinary:
+func testIncorrectMultipleType(v bsonType) {
+	switch v { // want "TypeBinary should go before TypeUndefined in the switch"
+	case TypeArray, TypeUndefined, TypeBinary:
 	}
 }

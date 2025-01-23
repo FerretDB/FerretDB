@@ -1,6 +1,5 @@
 ---
 sidebar_position: 3
-description: Observability
 ---
 
 # Observability
@@ -38,7 +37,7 @@ There are four logging levels:
 - `info` is used for various information messages;
 - `debug` should only be used for debugging.
 
-The default level is `info`, except for [debug builds](https://pkg.go.dev/github.com/FerretDB/FerretDB/build/version#hdr-Debug_builds) that default to `debug`.
+The default level is `info`, except for [development builds](https://pkg.go.dev/github.com/FerretDB/FerretDB/v2/build/version#hdr-Development_builds) that default to `debug`.
 
 :::caution
 `debug`-level messages include complete query and response bodies, full error messages, authentication credentials,
@@ -55,7 +54,7 @@ The format and level can be adjusted by [configuration flags](flags.md#miscellan
 
 ### Docker logs
 
-If Docker was launched with [our quick local setup with Docker Compose](../quickstart-guide/docker.md#postgresql-setup-with-docker-compose),
+If Docker was launched with [our quick local setup with Docker Compose](../installation/ferretdb/docker.md#postgresql-setup-with-docker-compose),
 the following command can be used to fetch the logs.
 
 ```sh
@@ -63,16 +62,7 @@ docker compose logs ferretdb
 ```
 
 Otherwise, you can check a list of running Docker containers with `docker ps`
-and get logs with `docker logs`:
-
-```sh
-$ docker ps
-CONTAINER ID   IMAGE                       COMMAND                  CREATED              STATUS          PORTS                                           NAMES
-13db4c8800d3   postgres                    "docker-entrypoint.s…"   About a minute ago   Up 59 seconds   5432/tcp                                        my-postgres
-44fe6f4c3527   ghcr.io/ferretdb/ferretdb   "/ferretdb"              About a minute ago   Up 59 seconds   8088/tcp, 27018/tcp, 0.0.0.0:27017->27017/tcp   my-ferretdb
-
-$ docker logs my-ferretdb
-```
+and get logs with `docker logs`.
 
 ## OpenTelemetry traces
 
@@ -122,13 +112,11 @@ The response body is always empty, but additional information may be present in 
 
 - `/debug/livez` is a liveness probe.
   It succeeds if FerretDB is ready to accept new connections from MongoDB protocol clients.
-  It does not check if the connection with the backend can be established or authenticated.
+  It does not check the PostgreSQL connection.
   An error response or timeout indicates (after a small initial startup delay) a serious problem.
   Generally, FerretDB should be restarted in that case.
   Additionally, the error is returned during the FerretDB shutdown while it waits for established connections to be closed.
 - `/debug/readyz` is a readiness probe.
-  It succeeds if the liveness probe succeeds.
-  Additionally, if [new authentication](../security/authentication.md) is enabled and setup credentials are provided,
-  it checks that connection with the backend can be established and authenticated
-  by sending MongoDB `ping` command to FerretDB.
-  An error response or timeout indicates a problem with the backend or configuration.
+  It checks that the MongoDB protocol client connection can be established by sending the `ping` command to FerretDB.
+  That ensures that the PostgreSQL connection can be established and DocumentDB is installed correctly.
+  An error response or timeout indicates a problem with the PostgreSQL or DocumentDB configuration.

@@ -32,7 +32,7 @@ func TestHandler(t *testing.T) {
 
 	ctx := context.Background()
 	pc, _, _, _ := runtime.Caller(0)
-	r := slog.NewRecord(time.Date(2024, 5, 31, 9, 26, 42, 0, time.UTC), slog.LevelInfo, "multi\nline\nmessage\n\n", pc)
+	r := slog.NewRecord(time.Date(2024, 5, 31, 9, 26, 42, 0, time.UTC), slog.LevelInfo, "multi\nline\nmessage", pc)
 
 	r.AddAttrs(slog.Group("g1", slog.Int("k1", 42), slog.Duration("k2", 7*time.Second)))
 	r.AddAttrs(slog.Group("g4", slog.Group("g5")))
@@ -41,14 +41,14 @@ func TestHandler(t *testing.T) {
 
 	for base, expected := range map[string]string{
 		"console": `2024-05-31T09:26:42.000Z	INFO	logging/handler_test.go:34	` +
-			"multi\nline\nmessage\n\n\t" +
+			"multi\nline\nmessage\t" +
 			`{"g2":{"g1":{"k1":42,"k2":7000000000},"g3":{"s":"a"},"i":1,"k3":"dup","name":"test.logger"}}` + "\n",
 		"text": `time=2024-05-31T09:26:42.000Z level=INFO source=logging/handler_test.go:34 ` +
-			`msg="multi\nline\nmessage\n\n" ` +
+			`msg="multi\nline\nmessage" ` +
 			`g2.i=1 g2.g3.s=a g2.name=test.logger g2.g1.k1=42 g2.g1.k2=7s g2.k3=s g2.k3=dup` + "\n",
 		"json": `{"time":"2024-05-31T09:26:42Z","level":"INFO","source":` +
-			`{"function":"github.com/FerretDB/FerretDB/internal/util/logging.TestHandler",` +
-			`"file":"logging/handler_test.go","line":34},"msg":"multi\nline\nmessage\n\n"` +
+			`{"function":"github.com/FerretDB/FerretDB/v2/internal/util/logging.TestHandler",` +
+			`"file":"logging/handler_test.go","line":34},"msg":"multi\nline\nmessage"` +
 			`,"g2":{"i":1,"g3":{"s":"a"},"name":"test.logger","g1":{"k1":42,"k2":7000000000},"k3":"s","k3":"dup"}}` + "\n",
 	} {
 		t.Run(base, func(t *testing.T) {
