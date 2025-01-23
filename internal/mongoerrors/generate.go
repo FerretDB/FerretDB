@@ -152,7 +152,7 @@ func parseMongoErrors(ctx context.Context, l *slog.Logger) map[string]int {
 		}
 
 		mongoError, errorName := records[0], records[1]
-		if mongoError == "MongoError" {
+		if mongoError == "ErrorMapping" {
 			continue
 		}
 
