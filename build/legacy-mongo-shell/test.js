@@ -1,7 +1,7 @@
 // Please do not merge changes in this file.
 
-(function() {
-  'use strict';
+(function () {
+  "use strict";
 
-  print('test.js passed!');
+  print("test.js passed!");
 })();
