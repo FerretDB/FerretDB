@@ -828,32 +828,52 @@ tasks:
       PACKAGE_VERSION:
         sh: bin/envtool{{exeExt}} package-version
 
+  fmt-js:
+    desc: "Format JS files"
+    cmds:
+      - docker compose run --rm prettier --write --print-width 120 "**/*.js"
+
+  fmt-json:
+    desc: "Format JSON files"
+    cmds:
+      - docker compose run --rm prettier --write --print-width 120 "**/*.json"
+
   fmt-yaml:
     desc: "Format YAML files"
     cmds:
-      - docker compose run --rm prettier --write --parser=yaml --print-width=120 "**/*.yml"
+      - docker compose run --rm prettier --write --print-width 120 "**/*.yml"
+
+  # see https://github.com/DavidAnson/markdownlint-cli2#command-line for the reason we use double-quotes
+  fmt-docs:
+    desc: "Format and lint documentation"
+    deps: [fmt-js, fmt-json, fmt-yaml]
+    run: once
+    cmds:
+      - >
+        docker compose run --rm textlint --fix --config build/.textlintrc --ignore-path .prettierignore
+        "**/*.md" "**/*.mdx" ".github/**/*.md"
+      - >
+        docker compose run --rm prettier --write --parser markdown --no-semi --single-quote --trailing-comma none
+        "**/*.md" "**/*.mdx"
+      - >
+        docker compose run --rm markdownlint --config "build/.markdownlint.yml"
+        "**/*.md" "**/*.mdx"
+      - bin/checkdocs
+
+  docs-fmt:
+    deps: [fmt-docs]
 
   docs:
     desc: "Format, lint and build documentation"
-    deps: [docs-fmt]
+    deps: [fmt-docs]
     cmds:
       - docker compose run --rm docusaurus-docs build
 
   blog:
     desc: "Format, lint and build blog"
-    deps: [docs-fmt]
+    deps: [fmt-docs]
     cmds:
       - docker compose run --rm docusaurus-blog build
-
-  # see https://github.com/DavidAnson/markdownlint-cli2#command-line for the reason we use double-quotes
-  docs-fmt:
-    desc: "Format and lint documentation"
-    run: once
-    cmds:
-      - docker compose run --rm textlint --fix --config build/.textlintrc --ignore-path .prettierignore "**/*.md" ".github/**/*.md"
-      - docker compose run --rm prettier --write --parser markdown --no-semi --single-quote --trailing-comma none "**/*.md"
-      - docker compose run --rm markdownlint --config "build/.markdownlint.yml" "**/*.md"
-      - bin/checkdocs
 
   pngcrush:
     cmds:
