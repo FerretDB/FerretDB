@@ -134,7 +134,7 @@ services:
       - ./data:/var/lib/postgresql/data
 
   ferretdb:
-    image: ghcr.io/ferretdb/ferretdb-documentdb:2
+    image: ghcr.io/ferretdb/ferretdb:2
     restart: on-failure
     ports:
       - 27017:27017

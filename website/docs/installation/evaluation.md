@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Evaluation
 
-We provide an [**evaluation** image](https://ghcr.io/ferretdb/ferretdb-documentdb-eval:2)
+We provide an [**evaluation** image](https://ghcr.io/ferretdb/ferretdb-eval:2)
 for quick testing and experiments.
 
 You'll need [Docker](https://docs.docker.com/get-docker/) installed to run it.
@@ -12,7 +12,7 @@ You'll need [Docker](https://docs.docker.com/get-docker/) installed to run it.
 Run this command to start FerretDB with PostgreSQL + DocumentDB extension:
 
 ```sh
-docker run -d --rm --name ferretdb -p 27017:27017 ghcr.io/ferretdb/ferretdb-documentdb-eval:2
+docker run -d --rm --name ferretdb -p 27017:27017 ghcr.io/ferretdb/ferretdb-eval:2
 ```
 
 This command will start a container with FerretDB, pre-packaged PostgreSQL with DocumentDB extension, and MongoDB Shell for quick testing and experiments.

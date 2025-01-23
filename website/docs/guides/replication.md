@@ -116,7 +116,7 @@ services:
       - '5433:5432'
 
   ferretdb:
-    image: ghcr.io/ferretdb/ferretdb-documentdb:2
+    image: ghcr.io/ferretdb/ferretdb:2
     container_name: ferretdb
     environment:
       - FERRETDB_POSTGRESQL_URL=postgres://user:password@postgres_primary:5432/postgres
@@ -124,7 +124,7 @@ services:
       - '27017:27017'
 
   ferretdb_readonly:
-    image: ghcr.io/ferretdb/ferretdb-documentdb:2
+    image: ghcr.io/ferretdb/ferretdb:2
     container_name: ferretdb_readonly
     environment:
       - FERRETDB_POSTGRESQL_URL=postgres://user:password@postgres_replica:5432/postgres
