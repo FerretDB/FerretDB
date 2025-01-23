@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"maps"
 	"os"
 	"os/exec"
 	"slices"
@@ -34,11 +35,10 @@ import (
 	otelattribute "go.opentelemetry.io/otel/attribute"
 	otelcodes "go.opentelemetry.io/otel/codes"
 	oteltrace "go.opentelemetry.io/otel/trace"
-	"golang.org/x/exp/maps"
 
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/util/observability"
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
+	"github.com/FerretDB/FerretDB/v2/internal/util/observability"
 )
 
 // testEvent represents a single even emitted by `go test -json`.
@@ -69,15 +69,18 @@ type testResult struct {
 
 // listTestFuncs returns a sorted slice of all top-level test functions (tests, benchmarks, examples, fuzz functions)
 // matching given regular expression in the specified directory and subdirectories.
-func listTestFuncs(dir, re string, logger *slog.Logger) ([]string, error) {
+func listTestFuncs(ctx context.Context, dir, re string, logger *slog.Logger) ([]string, error) {
+	ctx, span := otel.Tracer("").Start(ctx, "listTestFuncs")
+	defer span.End()
+
 	var buf bytes.Buffer
 
-	cmd := exec.Command("go", "test", "-list="+re, "./...")
+	cmd := exec.CommandContext(ctx, "go", "test", "-list="+re, "./...")
 	cmd.Dir = dir
 	cmd.Stdout = &buf
 	cmd.Stderr = os.Stderr
 
-	logger.Info(fmt.Sprintf("Running %s", strings.Join(cmd.Args, " ")))
+	logger.InfoContext(ctx, fmt.Sprintf("Running %s", strings.Join(cmd.Args, " ")))
 
 	if err := cmd.Run(); err != nil {
 		return nil, lazyerrors.Error(err)
@@ -114,10 +117,7 @@ func listTestFuncs(dir, re string, logger *slog.Logger) ([]string, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
-	res := maps.Keys(testFuncs)
-	slices.Sort(res)
-
-	return res, nil
+	return slices.Sorted(maps.Keys(testFuncs)), nil
 }
 
 // shardTestFuncs shards given top-level test functions.
@@ -155,7 +155,10 @@ func shardTestFuncs(index, total uint, testFuncs []string) ([]string, error) {
 }
 
 // testArgs handles `envtool tests run` arguments and returns a slice of `go test` arguments.
-func testArgs(dir string, index, total uint, run, skip string, logger *slog.Logger) ([]string, uint, error) {
+func testArgs(ctx context.Context, dir string, index, total uint, run, skip string, logger *slog.Logger) ([]string, uint, error) {
+	ctx, span := otel.Tracer("").Start(ctx, "testArgs")
+	defer span.End()
+
 	listRE := "."
 
 	if run != "" || skip != "" {
@@ -181,7 +184,7 @@ func testArgs(dir string, index, total uint, run, skip string, logger *slog.Logg
 		listRE = run
 	}
 
-	testFuncs, err := listTestFuncs(dir, listRE, logger)
+	testFuncs, err := listTestFuncs(ctx, dir, listRE, logger)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -216,24 +219,111 @@ func resultKey(packageName, testName string) string {
 	return packageName + "." + testName
 }
 
-// runGoTest runs `go test` with given extra args.
-func runGoTest(runCtx context.Context, args []string, total uint, times bool, logger *slog.Logger) error {
-	cmd := exec.CommandContext(runCtx, "go", append([]string{"test", "-json"}, args...)...)
+// startGoTest starts `go test` with given arguments.
+func startGoTest(ctx context.Context, args []string, raw string, l *slog.Logger) (*json.Decoder, func() error, error) {
+	var cleanups []func() error
 
-	logger.InfoContext(runCtx, fmt.Sprintf("Running %s", strings.Join(cmd.Args, " ")))
+	cleanup := func() error {
+		var err error
+
+		for _, f := range slices.Backward(cleanups) {
+			if e := f(); e != nil {
+				l.DebugContext(ctx, fmt.Sprintf("Cleanup error: %s", e))
+
+				if err == nil {
+					err = lazyerrors.Error(e)
+				}
+			}
+		}
+
+		return err
+	}
+
+	cmd := exec.CommandContext(ctx, "go", append([]string{"test", "-json"}, args...)...)
+
+	l.InfoContext(ctx, fmt.Sprintf("Running %s", strings.Join(cmd.Args, " ")))
 
 	cmd.Stderr = os.Stderr
 
-	p, err := cmd.StdoutPipe()
-	if err != nil {
-		return lazyerrors.Error(err)
+	if raw != "" {
+		f, e := os.Create(raw + "-stderr.txt.tmp")
+		if e != nil {
+			_ = cleanup()
+			return nil, nil, lazyerrors.Error(e)
+		}
+
+		cleanups = append(cleanups, f.Close)
+
+		cmd.Stderr = io.MultiWriter(f, os.Stderr)
 	}
+
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		_ = cleanup()
+		return nil, nil, lazyerrors.Error(err)
+	}
+
+	d := json.NewDecoder(stdout)
+
+	if raw != "" {
+		f, e := os.Create(raw + "-stdout.json.tmp")
+		if e != nil {
+			_ = cleanup()
+			return nil, nil, lazyerrors.Error(e)
+		}
+
+		cleanups = append(cleanups, f.Close)
+
+		d = json.NewDecoder(io.TeeReader(stdout, f))
+	}
+
+	d.DisallowUnknownFields()
 
 	if err = cmd.Start(); err != nil {
-		return lazyerrors.Error(err)
+		_ = cleanup()
+		return nil, nil, lazyerrors.Error(err)
 	}
 
-	defer cmd.Cancel() //nolint:errcheck // safe to ignore
+	cleanups = append(cleanups, cmd.Wait)
+
+	return d, cleanup, nil
+}
+
+// runGoTestOpts represents [runGoTest] options.
+//
+//nolint:vet // for readability
+type runGoTestOpts struct {
+	args      []string
+	total     uint
+	times     bool
+	rawPrefix string
+	logger    *slog.Logger
+}
+
+// runGoTest runs `go test` with given extra args.
+func runGoTest(runCtx context.Context, opts *runGoTestOpts) (resErr error) {
+	totalTests := "?"
+	if opts.total > 0 {
+		totalTests = strconv.Itoa(int(opts.total))
+	}
+
+	runCtx, runSpan := otel.Tracer("").Start(runCtx, "run")
+	runSpan.SetAttributes(otelattribute.String("db.ferretdb.envtool.total_tests", totalTests))
+	defer runSpan.End()
+
+	d, cleanup, err := startGoTest(runCtx, opts.args, opts.rawPrefix, opts.logger)
+	if err != nil {
+		resErr = lazyerrors.Error(err)
+		return
+	}
+
+	defer func() {
+		if e := cleanup(); resErr == nil && e != nil {
+			resErr = lazyerrors.Error(e)
+		}
+	}()
+
+	runSpan.AddEvent("started")
 
 	// Keys are:
 	// - "package/name"
@@ -244,27 +334,22 @@ func runGoTest(runCtx context.Context, args []string, total uint, times bool, lo
 	results := make(map[string]*testResult, 300)
 
 	var done int
-
-	d := json.NewDecoder(p)
-	d.DisallowUnknownFields()
-
-	totalTests := "?"
-	if total > 0 {
-		totalTests = strconv.Itoa(int(total))
-	}
-
-	runCtx, runSpan := otel.Tracer("").Start(runCtx, "run")
-	runSpan.SetAttributes(otelattribute.String("db.ferretdb.envtool.total_tests", totalTests))
-	defer runSpan.End()
+	var firstEvent bool
 
 	for {
 		var event testEvent
 		if err = d.Decode(&event); err != nil {
 			if !errors.Is(err, io.EOF) {
-				return lazyerrors.Error(err)
+				resErr = lazyerrors.Error(err)
+				return
 			}
 
 			break
+		}
+
+		if !firstEvent {
+			runSpan.AddEvent("first event")
+			firstEvent = true
 		}
 
 		must.NotBeZero(event.Package)
@@ -287,7 +372,9 @@ func runGoTest(runCtx context.Context, args []string, total uint, times bool, lo
 
 				// TODO https://github.com/FerretDB/FerretDB/issues/4465
 				if parent == nil {
-					panic(fmt.Sprintf("no parent test found: package=%q, test=%q, key=%q", event.Package, event.Test, key))
+					panic(fmt.Sprintf(
+						"no parent test found: package=%q, test=%q, key=%q", event.Package, event.Test, key,
+					))
 				}
 
 				parentCtx = parent.ctx
@@ -337,7 +424,7 @@ func runGoTest(runCtx context.Context, args []string, total uint, times bool, lo
 
 			// initial setup output or early panic
 			if event.Test == "" {
-				logger.InfoContext(runCtx, out)
+				opts.logger.InfoContext(runCtx, out)
 				continue
 			}
 
@@ -362,7 +449,7 @@ func runGoTest(runCtx context.Context, args []string, total uint, times bool, lo
 			testSpan.End()
 
 			if event.Test == "" {
-				logger.InfoContext(runCtx, strings.ToTitle(event.Action)+" "+event.Package)
+				opts.logger.InfoContext(runCtx, strings.ToTitle(event.Action)+" "+event.Package)
 				continue
 			}
 
@@ -373,7 +460,7 @@ func runGoTest(runCtx context.Context, args []string, total uint, times bool, lo
 
 			msg := strings.ToTitle(event.Action) + " " + event.Test
 
-			if times {
+			if opts.times {
 				msg += fmt.Sprintf(" (%.2fs", event.Time.Sub(res.cont).Seconds())
 
 				if res.run != res.cont {
@@ -392,22 +479,29 @@ func runGoTest(runCtx context.Context, args []string, total uint, times bool, lo
 				msg += fmt.Sprintf(" %d/%s", done, totalTests)
 			}
 
+			logOutput := opts.logger.WarnContext
+
 			if event.Action == "pass" {
-				logger.InfoContext(runCtx, msg)
-				continue
+				if !opts.logger.Enabled(runCtx, slog.LevelDebug) {
+					opts.logger.InfoContext(runCtx, msg)
+					continue
+				}
+
+				logOutput = opts.logger.DebugContext
 			}
 
 			msg += ":"
-			logger.WarnContext(runCtx, msg)
+			logOutput(runCtx, msg)
 
 			for _, l := range res.outputs {
-				logger.WarnContext(runCtx, l)
+				logOutput(runCtx, l)
 			}
 
-			logger.WarnContext(runCtx, "")
+			logOutput(runCtx, "")
 
 		default:
-			return lazyerrors.Errorf("unknown action %q", event.Action)
+			resErr = lazyerrors.Errorf("unknown action %q", event.Action)
+			return
 		}
 	}
 
@@ -423,20 +517,20 @@ func runGoTest(runCtx context.Context, args []string, total uint, times bool, lo
 	}
 
 	if unfinished == nil {
-		return cmd.Wait()
+		return
 	}
 
 	slices.Sort(unfinished)
 
-	logger.ErrorContext(runCtx, "")
+	opts.logger.ErrorContext(runCtx, "")
 
-	logger.ErrorContext(runCtx, "Some tests did not finish:")
+	opts.logger.ErrorContext(runCtx, "Some tests did not finish:")
 
 	for _, t := range unfinished {
-		logger.ErrorContext(runCtx, fmt.Sprintf("  %s", t))
+		opts.logger.ErrorContext(runCtx, fmt.Sprintf("  %s", t))
 	}
 
-	logger.ErrorContext(runCtx, "")
+	opts.logger.ErrorContext(runCtx, "")
 
 	// On panic, the last event will not be "fail"; see https://github.com/golang/go/issues/38382.
 	// Try to provide the best possible output in that case.
@@ -462,29 +556,22 @@ func runGoTest(runCtx context.Context, args []string, total uint, times bool, lo
 			continue
 		}
 
-		logger.ErrorContext(runCtx, fmt.Sprintf("%s:", t))
+		opts.logger.ErrorContext(runCtx, fmt.Sprintf("%s:", t))
 
 		for _, l := range results[t].outputs {
-			logger.ErrorContext(runCtx, l)
+			opts.logger.ErrorContext(runCtx, l)
 		}
 
-		logger.ErrorContext(runCtx, "")
+		opts.logger.ErrorContext(runCtx, "")
 	}
 
-	return cmd.Wait()
+	return
 }
 
 // testsRun runs tests specified by the shard index and total or by the run regex
 // using `go test` with given extra args.
 func testsRun(ctx context.Context, params *TestsRunParams, logger *slog.Logger) error {
 	logger.DebugContext(ctx, fmt.Sprintf("testsRun: %+v", params))
-
-	args, total, err := testArgs("", params.ShardIndex, params.ShardTotal, params.Run, params.Skip, logger)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	args = append(args, params.Args...)
 
 	ot, err := observability.NewOTelTraceExporter(&observability.OTelTraceExporterOpts{
 		Logger:  logger,
@@ -495,6 +582,8 @@ func testsRun(ctx context.Context, params *TestsRunParams, logger *slog.Logger) 
 		return lazyerrors.Error(err)
 	}
 
+	ctx, span := otel.Tracer("").Start(ctx, "testsRun")
+
 	ctx, cancel := context.WithCancel(ctx)
 	done := make(chan struct{})
 
@@ -503,10 +592,30 @@ func testsRun(ctx context.Context, params *TestsRunParams, logger *slog.Logger) 
 		close(done)
 	}()
 
-	err = runGoTest(ctx, args, total, true, logger)
+	defer func() {
+		span.End()
+		cancel()
+		<-done
+	}()
 
-	cancel()
-	<-done
+	args, total, err := testArgs(ctx, "", params.ShardIndex, params.ShardTotal, params.Run, params.Skip, logger)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	if len(params.Args) > 0 && params.Args[0] == "--" {
+		params.Args = params.Args[1:]
+	}
+
+	args = append(args, params.Args...)
+
+	err = runGoTest(ctx, &runGoTestOpts{
+		args:      args,
+		total:     total,
+		times:     true,
+		rawPrefix: params.RawPrefix,
+		logger:    logger,
+	})
 
 	return err
 }

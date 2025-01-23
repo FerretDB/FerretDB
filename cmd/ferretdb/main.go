@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
+	"math"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -33,19 +34,20 @@ import (
 	"go.uber.org/automaxprocs/maxprocs"
 	_ "golang.org/x/crypto/x509roots/fallback" // register root TLS certificates for production Docker image
 
-	"github.com/FerretDB/FerretDB/build/version"
-	"github.com/FerretDB/FerretDB/internal/clientconn"
-	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
-	"github.com/FerretDB/FerretDB/internal/handler/registry"
-	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
-	"github.com/FerretDB/FerretDB/internal/util/debug"
-	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
-	"github.com/FerretDB/FerretDB/internal/util/logging"
-	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/util/observability"
-	"github.com/FerretDB/FerretDB/internal/util/password"
-	"github.com/FerretDB/FerretDB/internal/util/state"
-	"github.com/FerretDB/FerretDB/internal/util/telemetry"
+	"github.com/FerretDB/FerretDB/v2/build/version"
+	"github.com/FerretDB/FerretDB/v2/internal/clientconn"
+	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
+	"github.com/FerretDB/FerretDB/v2/internal/dataapi"
+	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
+	"github.com/FerretDB/FerretDB/v2/internal/handler"
+	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
+	"github.com/FerretDB/FerretDB/v2/internal/util/debug"
+	"github.com/FerretDB/FerretDB/v2/internal/util/devbuild"
+	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
+	"github.com/FerretDB/FerretDB/v2/internal/util/observability"
+	"github.com/FerretDB/FerretDB/v2/internal/util/state"
+	"github.com/FerretDB/FerretDB/v2/internal/util/telemetry"
 )
 
 // The cli struct represents all command-line commands, fields and flags.
@@ -57,19 +59,20 @@ var cli struct {
 	Run  struct{} `cmd:"" default:"1"                             hidden:""`
 	Ping struct{} `cmd:"" help:"Ping existing FerretDB instance."`
 
-	Version     bool   `default:"false"           help:"Print version to stdout and exit." env:"-"`
-	Handler     string `default:"postgresql"      help:"${help_handler}"`
-	Mode        string `default:"${default_mode}" help:"${help_mode}"                      enum:"${enum_mode}"`
+	Version     bool   `default:"false"           help:"Print version to stdout and exit."      env:"-"`
+	Mode        string `default:"${default_mode}" help:"${help_mode}"                           enum:"${enum_mode}"`
+	Auth        bool   `default:"true"            help:"Enable authentication (on by default)." negatable:""`
 	StateDir    string `default:"."               help:"Process state directory."`
 	ReplSetName string `default:""                help:"Replica set name."`
 
 	Listen struct {
-		Addr        string `default:"127.0.0.1:27017" help:"Listen TCP address."`
-		Unix        string `default:""                help:"Listen Unix domain socket path."`
-		TLS         string `default:""                help:"Listen TLS address."`
+		Addr        string `default:"127.0.0.1:27017" help:"Listen TCP address for MongoDB protocol."`
+		Unix        string `default:""                help:"Listen Unix domain socket path for MongoDB protocol."`
+		TLS         string `default:""                help:"Listen TLS address for MongoDB protocol."`
 		TLSCertFile string `default:""                help:"TLS cert file path."`
 		TLSKeyFile  string `default:""                help:"TLS key file path."`
 		TLSCaFile   string `default:""                help:"TLS CA file path."`
+		DataAPIAddr string `default:""                help:"Listen TCP address for HTTP Data API."`
 	} `embed:"" prefix:"listen-"`
 
 	Proxy struct {
@@ -79,23 +82,15 @@ var cli struct {
 		TLSCaFile   string `default:"" help:"Proxy TLS CA file path."`
 	} `embed:"" prefix:"proxy-"`
 
-	DebugAddr string `default:"127.0.0.1:8088" help:"Listen address for HTTP handlers for metrics, profiling, etc."`
-
-	// see setCLIPlugins
-	kong.Plugins
-
-	Setup struct {
-		Database string        `default:""    help:"Setup database during backend initialization."`
-		Username string        `default:""    help:"Setup user during backend initialization."`
-		Password string        `default:""    help:"Setup user's password."`
-		Timeout  time.Duration `default:"30s" help:"Setup timeout."`
-	} `embed:"" prefix:"setup-"`
+	DebugAddr string `default:"127.0.0.1:8088" help:"Listen address for HTTP handlers for metrics, pprof, etc."`
 
 	Log struct {
 		Level  string `default:"${default_log_level}" help:"${help_log_level}"`
 		Format string `default:"console"              help:"${help_log_format}"                     enum:"${enum_log_format}"`
 		UUID   bool   `default:"false"                help:"Add instance UUID to all log messages." negatable:""`
 	} `embed:"" prefix:"log-"`
+
+	PostgreSQLURL string `name:"postgresql-url" default:"postgres://127.0.0.1:5432/postgres" help:"PostgreSQL URL."`
 
 	MetricsUUID bool `default:"false" help:"Add instance UUID to all metrics." negatable:""`
 
@@ -105,86 +100,21 @@ var cli struct {
 		} `embed:"" prefix:"traces-"`
 	} `embed:"" prefix:"otel-"`
 
-	Telemetry telemetry.Flag `default:"undecided" help:"Enable or disable basic telemetry. See https://beacon.ferretdb.com."`
+	Telemetry telemetry.Flag `default:"undecided" help:"${help_telemetry}"`
 
-	Test struct {
-		RecordsDir string `default:"" help:"Testing: directory for record files."`
-
-		DisablePushdown      bool `default:"false" help:"Experimental: disable pushdown."`
-		EnableNestedPushdown bool `default:"false" help:"Experimental: enable pushdown for dot notation."`
-
-		CappedCleanup struct {
-			Interval   time.Duration `default:"1m" help:"Experimental: capped collections cleanup interval."`
-			Percentage uint8         `default:"10" help:"Experimental: percentage of documents to cleanup."`
-		} `embed:"" prefix:"capped-cleanup-"`
-
-		EnableNewAuth bool `default:"false" help:"Experimental: enable new authentication."`
-
-		BatchSize            int `default:"100" help:"Experimental: maximum insertion batch size."`
-		MaxBsonObjectSizeMiB int `default:"16"  help:"Experimental: maximum BSON object size in MiB."`
+	Dev struct {
+		RecordsDir string `hidden:""`
 
 		Telemetry struct {
-			URL            string        `default:"https://beacon.ferretdb.com/" help:"Telemetry: reporting URL."`
-			UndecidedDelay time.Duration `default:"1h"                           help:"Telemetry: delay for undecided state."`
-			ReportInterval time.Duration `default:"24h"                          help:"Telemetry: report interval."`
-			ReportTimeout  time.Duration `default:"5s"                           help:"Telemetry: report timeout."`
-			Package        string        `default:""                             help:"Telemetry: custom package type."`
+			URL            string        `default:"https://beacon.ferretdb.com/" hidden:""`
+			UndecidedDelay time.Duration `default:"1h"                           hidden:""`
+			ReportInterval time.Duration `default:"24h"                          hidden:""`
+			Package        string        `default:""                             hidden:""`
 		} `embed:"" prefix:"telemetry-"`
-	} `embed:"" prefix:"test-"`
+	} `embed:"" prefix:"dev-"`
 }
 
-// The postgreSQLFlags struct represents flags that are used by the "postgresql" backend.
-//
-// See main_postgresql.go.
-//
-//nolint:lll // some tags are long
-var postgreSQLFlags struct {
-	PostgreSQLURL string `name:"postgresql-url" default:"postgres://127.0.0.1:5432/ferretdb" help:"PostgreSQL URL for 'postgresql' handler."`
-}
-
-// The sqliteFlags struct represents flags that are used by the "sqlite" backend.
-//
-// See main_sqlite.go.
-var sqliteFlags struct {
-	SQLiteURL string `name:"sqlite-url" default:"file:data/" help:"SQLite URI (directory) for 'sqlite' handler."`
-}
-
-// The mySQLFlags struct represents flags that are used by the "mysql" backend.
-//
-// See main_mysql.go.
-var mySQLFlags struct {
-	MySQLURL string `name:"mysql-url" default:"mysql://127.0.0.1:3306/ferretdb" help:"MySQL URL for 'mysql' handler" hidden:""`
-}
-
-// The hanaFlags struct represents flags that are used by the "hana" handler.
-//
-// See main_hana.go.
-var hanaFlags struct {
-	HANAURL string `name:"hana-url" help:"SAP HANA URL for 'hana' handler"`
-}
-
-// handlerFlags is a map of handler names to their flags.
-var handlerFlags = map[string]any{}
-
-// setCLIPlugins adds Kong flags for handlers in the right order.
-func setCLIPlugins() {
-	handlers := registry.Handlers()
-
-	if len(handlers) != len(handlerFlags) {
-		panic("handlers and handlerFlags are not in sync")
-	}
-
-	for _, h := range handlers {
-		f := handlerFlags[h]
-		if f == nil {
-			panic(fmt.Sprintf("handler %q has no flags", h))
-		}
-
-		cli.Plugins = append(cli.Plugins, f)
-	}
-}
-
-// Additional variables for the kong parsers.
+// Additional variables for [kong.Parse].
 var (
 	logLevels = []string{
 		slog.LevelDebug.String(),
@@ -196,9 +126,6 @@ var (
 	logFormats = []string{"console", "text", "json"}
 
 	kongOptions = []kong.Option{
-		kong.HelpOptions{
-			Compact: true,
-		},
 		kong.Vars{
 			"default_log_level": defaultLogLevel().String(),
 			"default_mode":      clientconn.AllModes[0],
@@ -206,22 +133,22 @@ var (
 			"enum_log_format": strings.Join(logFormats, ","),
 			"enum_mode":       strings.Join(clientconn.AllModes, ","),
 
-			"help_handler":    fmt.Sprintf("Backend handler: '%s'.", strings.Join(registry.Handlers(), "', '")),
 			"help_log_format": fmt.Sprintf("Log format: '%s'.", strings.Join(logFormats, "', '")),
 			"help_log_level":  fmt.Sprintf("Log level: '%s'.", strings.Join(logLevels, "', '")),
 			"help_mode":       fmt.Sprintf("Operation mode: '%s'.", strings.Join(clientconn.AllModes, "', '")),
+			"help_telemetry":  "Enable or disable basic telemetry reporting. See https://beacon.ferretdb.com.",
 		},
 		kong.DefaultEnvars("FERRETDB"),
 	}
 )
 
 func main() {
-	setCLIPlugins()
 	ctx := kong.Parse(&cli, kongOptions...)
 
 	switch ctx.Command() {
 	case "run":
 		run()
+
 	case "ping":
 		logger := setupLogger(cli.Log.Format, "")
 		checkFlags(logger)
@@ -244,7 +171,7 @@ func main() {
 
 // defaultLogLevel returns the default log level.
 func defaultLogLevel() slog.Level {
-	if version.Get().DebugBuild {
+	if version.Get().DevBuild {
 		return slog.LevelDebug
 	}
 
@@ -253,13 +180,13 @@ func defaultLogLevel() slog.Level {
 
 // setupState setups state provider.
 func setupState() *state.Provider {
-	var f string
+	if cli.StateDir == "" || cli.StateDir == "-" {
+		log.Fatal("State directory must be set.")
+	}
 
-	if dir := cli.StateDir; dir != "" && dir != "-" {
-		var err error
-		if f, err = filepath.Abs(filepath.Join(dir, "state.json")); err != nil {
-			log.Fatalf("Failed to get path for state file: %s.", err)
-		}
+	f, err := filepath.Abs(filepath.Join(cli.StateDir, "state.json"))
+	if err != nil {
+		log.Fatalf("Failed to get path for state file: %s.", err)
 	}
 
 	sp, err := state.NewProvider(f)
@@ -290,7 +217,7 @@ func setupMetrics(stateProvider *state.Provider) prometheus.Registerer {
 	return r
 }
 
-// setupLogger creates a logger with the level defined from cli.
+// setupLogger setups slog logger.
 func setupLogger(format string, uuid string) *slog.Logger {
 	var level slog.Level
 	if err := level.UnmarshalText([]byte(cli.Log.Level)); err != nil {
@@ -302,28 +229,25 @@ func setupLogger(format string, uuid string) *slog.Logger {
 		Level: level,
 	}
 	logging.Setup(opts, uuid)
+	logger := slog.Default()
 
-	return slog.Default()
+	return logger
 }
 
 // checkFlags checks that CLI flags are not self-contradictory.
-func checkFlags(l *slog.Logger) {
+func checkFlags(logger *slog.Logger) {
 	ctx := context.Background()
 
-	if cli.Setup.Database != "" && !cli.Test.EnableNewAuth {
-		l.LogAttrs(ctx, logging.LevelFatal, "--setup-database requires --test-enable-new-auth")
+	if devbuild.Enabled {
+		logger.WarnContext(ctx, "This is a development build. The performance will be affected.")
 	}
 
-	if (cli.Setup.Database == "") != (cli.Setup.Username == "") {
-		l.LogAttrs(ctx, logging.LevelFatal, "--setup-database should be used together with --setup-username")
+	if logger.Enabled(ctx, slog.LevelDebug) {
+		logger.WarnContext(ctx, "Debug logging enabled. The performance will be affected.")
 	}
 
-	if cli.Test.DisablePushdown && cli.Test.EnableNestedPushdown {
-		l.LogAttrs(
-			ctx,
-			logging.LevelFatal,
-			"--test-disable-pushdown and --test-enable-nested-pushdown should not be set at the same time",
-		)
+	if !cli.Auth {
+		logger.WarnContext(ctx, "Authentication is disabled. The server will accept any connection.")
 	}
 }
 
@@ -339,7 +263,7 @@ func dumpMetrics() {
 // run sets up environment based on provided flags and runs FerretDB.
 func run() {
 	// to increase a chance of resource finalizers to spot problems
-	if debugbuild.Enabled {
+	if devbuild.Enabled {
 		defer func() {
 			runtime.GC()
 			runtime.GC()
@@ -348,17 +272,17 @@ func run() {
 
 	info := version.Get()
 
-	if p := cli.Test.Telemetry.Package; p != "" {
+	if p := cli.Dev.Telemetry.Package; p != "" {
 		info.Package = p
 	}
 
 	if cli.Version {
-		fmt.Fprintln(os.Stdout, "version:", info.Version)
-		fmt.Fprintln(os.Stdout, "commit:", info.Commit)
-		fmt.Fprintln(os.Stdout, "branch:", info.Branch)
-		fmt.Fprintln(os.Stdout, "dirty:", info.Dirty)
-		fmt.Fprintln(os.Stdout, "package:", info.Package)
-		fmt.Fprintln(os.Stdout, "debugBuild:", info.DebugBuild)
+		_, _ = fmt.Fprintln(os.Stdout, "version:", info.Version)
+		_, _ = fmt.Fprintln(os.Stdout, "commit:", info.Commit)
+		_, _ = fmt.Fprintln(os.Stdout, "branch:", info.Branch)
+		_, _ = fmt.Fprintln(os.Stdout, "dirty:", info.Dirty)
+		_, _ = fmt.Fprintln(os.Stdout, "package:", info.Package)
+		_, _ = fmt.Fprintln(os.Stdout, "devBuild:", info.DevBuild)
 
 		return
 	}
@@ -376,7 +300,7 @@ func run() {
 		slog.String("branch", info.Branch),
 		slog.Bool("dirty", info.Dirty),
 		slog.String("package", info.Package),
-		slog.Bool("debugBuild", info.DebugBuild),
+		slog.Bool("devBuild", info.DevBuild),
 		slog.Any("buildEnvironment", info.BuildEnvironment),
 	}
 	logUUID := stateProvider.Get().UUID
@@ -391,19 +315,18 @@ func run() {
 
 	logger.LogAttrs(context.Background(), slog.LevelInfo, "Starting FerretDB "+info.Version+"...", startupFields...)
 
-	if debugbuild.Enabled {
-		logger.Info("This is a debug build. The performance will be affected.")
-	}
-
-	if logger.Enabled(context.Background(), slog.LevelDebug) {
-		logger.Info("Debug logging enabled. The security and performance will be affected.")
-	}
-
 	checkFlags(logger)
 
-	if _, err := maxprocs.Set(maxprocs.Logger(func(format string, a ...any) {
-		logger.Debug(fmt.Sprintf(format, a...))
-	})); err != nil {
+	maxprocsOpts := []maxprocs.Option{
+		maxprocs.Min(2),
+		maxprocs.RoundQuotaFunc(func(v float64) int {
+			return int(math.Ceil(v))
+		}),
+		maxprocs.Logger(func(format string, a ...any) {
+			logger.Info(fmt.Sprintf(format, a...))
+		}),
+	}
+	if _, err := maxprocs.Set(maxprocsOpts...); err != nil {
 		logger.Warn("Failed to set GOMAXPROCS", logging.Error(err))
 	}
 
@@ -411,7 +334,7 @@ func run() {
 
 	go func() {
 		<-ctx.Done()
-		logger.Info("Stopping...")
+		logger.InfoContext(ctx, "Stopping")
 
 		// second SIGTERM should immediately stop the process
 		stop()
@@ -444,6 +367,7 @@ func run() {
 
 					return listener.Load().Listening()
 				},
+
 				Readyz: ready.Probe,
 			})
 			if err != nil {
@@ -478,70 +402,64 @@ func run() {
 
 	metrics := connmetrics.NewListenerMetrics()
 
-	wg.Add(1)
+	{
+		wg.Add(1)
 
-	go func() {
-		defer wg.Done()
+		go func() {
+			defer wg.Done()
 
-		l := logging.WithName(logger, "telemetry")
-		opts := &telemetry.NewReporterOpts{
-			URL:            cli.Test.Telemetry.URL,
-			F:              &cli.Telemetry,
-			DNT:            os.Getenv("DO_NOT_TRACK"),
-			ExecName:       os.Args[0],
-			P:              stateProvider,
-			ConnMetrics:    metrics.ConnMetrics,
-			L:              l,
-			UndecidedDelay: cli.Test.Telemetry.UndecidedDelay,
-			ReportInterval: cli.Test.Telemetry.ReportInterval,
-			ReportTimeout:  cli.Test.Telemetry.ReportTimeout,
-		}
+			l := logging.WithName(logger, "telemetry")
 
-		r, err := telemetry.NewReporter(opts)
-		if err != nil {
-			l.LogAttrs(ctx, logging.LevelFatal, "Failed to create telemetry reporter", logging.Error(err))
-		}
+			file, err := filepath.Abs(filepath.Join(cli.StateDir, "telemetry.json"))
+			if err != nil {
+				l.LogAttrs(ctx, logging.LevelFatal, "Failed to get path for local telemetry report file", logging.Error(err))
+			}
 
-		r.Run(ctx)
-	}()
+			r, err := telemetry.NewReporter(&telemetry.NewReporterOpts{
+				URL:            cli.Dev.Telemetry.URL,
+				File:           file,
+				F:              &cli.Telemetry,
+				DNT:            os.Getenv("DO_NOT_TRACK"),
+				ExecName:       os.Args[0],
+				P:              stateProvider,
+				ConnMetrics:    metrics.ConnMetrics,
+				L:              l,
+				UndecidedDelay: cli.Dev.Telemetry.UndecidedDelay,
+				ReportInterval: cli.Dev.Telemetry.ReportInterval,
+			})
+			if err != nil {
+				l.LogAttrs(ctx, logging.LevelFatal, "Failed to create telemetry reporter", logging.Error(err))
+			}
 
-	h, closeBackend, err := registry.NewHandler(cli.Handler, &registry.NewHandlerOpts{
-		Logger:        logger,
-		ConnMetrics:   metrics.ConnMetrics,
-		StateProvider: stateProvider,
-		TCPHost:       cli.Listen.Addr,
-		ReplSetName:   cli.ReplSetName,
-
-		SetupDatabase: cli.Setup.Database,
-		SetupUsername: cli.Setup.Username,
-		SetupPassword: password.WrapPassword(cli.Setup.Password),
-		SetupTimeout:  cli.Setup.Timeout,
-
-		PostgreSQLURL: postgreSQLFlags.PostgreSQLURL,
-
-		SQLiteURL: sqliteFlags.SQLiteURL,
-
-		HANAURL: hanaFlags.HANAURL,
-
-		MySQLURL: mySQLFlags.MySQLURL,
-
-		TestOpts: registry.TestOpts{
-			DisablePushdown:         cli.Test.DisablePushdown,
-			EnableNestedPushdown:    cli.Test.EnableNestedPushdown,
-			CappedCleanupInterval:   cli.Test.CappedCleanup.Interval,
-			CappedCleanupPercentage: cli.Test.CappedCleanup.Percentage,
-			EnableNewAuth:           cli.Test.EnableNewAuth,
-			BatchSize:               cli.Test.BatchSize,
-			MaxBsonObjectSizeBytes:  cli.Test.MaxBsonObjectSizeMiB * 1024 * 1024,
-		},
-	})
-	if err != nil {
-		logger.LogAttrs(ctx, logging.LevelFatal, "Failed to construct handler", logging.Error(err))
+			r.Run(ctx)
+		}()
 	}
 
-	defer closeBackend()
+	p, err := documentdb.NewPool(cli.PostgreSQLURL, logging.WithName(logger, "pool"), stateProvider)
+	if err != nil {
+		logger.LogAttrs(ctx, logging.LevelFatal, "Failed to construct pool", logging.Error(err))
+	}
 
-	l, err := clientconn.Listen(&clientconn.NewListenerOpts{
+	defer p.Close()
+
+	handlerOpts := &handler.NewOpts{
+		Pool: p,
+		Auth: cli.Auth,
+
+		TCPHost:     cli.Listen.Addr,
+		ReplSetName: cli.ReplSetName,
+
+		L:             logging.WithName(logger, "handler"),
+		ConnMetrics:   metrics.ConnMetrics,
+		StateProvider: stateProvider,
+	}
+
+	h, err := handler.New(handlerOpts)
+	if err != nil {
+		handlerOpts.L.LogAttrs(ctx, logging.LevelFatal, "Failed to construct handler", logging.Error(err))
+	}
+
+	lis, err := clientconn.Listen(&clientconn.NewListenerOpts{
 		TCP:  cli.Listen.Addr,
 		Unix: cli.Listen.Unix,
 
@@ -559,23 +477,44 @@ func run() {
 		Metrics:        metrics,
 		Handler:        h,
 		Logger:         logger,
-		TestRecordsDir: cli.Test.RecordsDir,
+		TestRecordsDir: cli.Dev.RecordsDir,
 	})
 	if err != nil {
 		logger.LogAttrs(ctx, logging.LevelFatal, "Failed to construct listener", logging.Error(err))
 	}
 
-	listener.Store(l)
+	if addr := cli.Listen.DataAPIAddr; addr != "" && addr != "-" {
+		wg.Add(1)
 
-	metricsRegisterer.MustRegister(l)
+		go func() {
+			defer wg.Done()
 
-	l.Run(ctx)
+			l := logging.WithName(logger, "dataapi")
 
-	logger.Info("Listener stopped")
+			var lis *dataapi.Listener
+
+			lis, err = dataapi.Listen(&dataapi.ListenOpts{
+				TCPAddr: addr,
+				L:       l,
+				Handler: h,
+			})
+			if err != nil {
+				l.LogAttrs(ctx, logging.LevelFatal, "Failed to construct DataAPI listener", logging.Error(err))
+			}
+
+			lis.Run(ctx)
+		}()
+	}
+
+	listener.Store(lis)
+
+	metricsRegisterer.MustRegister(lis)
+
+	lis.Run(ctx)
 
 	wg.Wait()
 
-	if info.DebugBuild {
+	if info.DevBuild {
 		dumpMetrics()
 	}
 }

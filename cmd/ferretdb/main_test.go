@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"os/exec"
 	"path/filepath"
 	"regexp"
@@ -25,7 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
 )
 
 func TestVersion(t *testing.T) {
@@ -38,7 +39,7 @@ func TestVersion(t *testing.T) {
 	ctx, cancel := context.WithTimeout(testutil.Ctx(t), 5*time.Second)
 	t.Cleanup(cancel)
 
-	bin := filepath.Join(testutil.BinDir, "ferretdb")
+	bin := filepath.Join("..", "..", "bin", "ferretdb")
 
 	cmd := exec.CommandContext(ctx, bin, "--version")
 	b, err := cmd.Output()
@@ -56,4 +57,17 @@ func TestVersion(t *testing.T) {
 	require.Len(t, revision, 2)
 
 	assert.Equal(t, commit[1], revision[1])
+}
+
+func TestDeps(t *testing.T) {
+	t.Parallel()
+
+	var res struct {
+		Deps []string `json:"Deps"`
+	}
+	b, err := exec.Command("go", "list", "-json").Output()
+	require.NoError(t, err)
+	require.NoError(t, json.Unmarshal(b, &res))
+
+	assert.NotContains(t, res.Deps, "testing", `package "testing" should not be imported by non-testing code`)
 }
