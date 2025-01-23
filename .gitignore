@@ -1,12 +1,14 @@
-# Please use global .gitignore file for .vscode/, .idea/, go.work, .envrc, etc.
+# This file is used only for repository-specific patterns.
+# Please use global .gitignore file for .DS_Store, .idea/, go.work, .envrc, etc.
 # See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files#configuring-ignored-files-for-all-repositories-on-your-computer
 
 docker-compose.override.yml
 
 state.json
+telemetry.json
 
 *.out
-*.sqlite*
+*.tmp
 *.txt
 !website/static/*.txt
 

@@ -14,17 +14,5 @@
 
 package version
 
-import (
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-)
-
-func TestGet(t *testing.T) {
-	v := Get()
-
-	assert.NotEmpty(t, v.Version)
-
-	assert.Equal(t, "7.0.77", v.MongoDBVersion)
-	assert.Equal(t, [...]int32{int32(7), int32(0), int32(77), int32(0)}, v.MongoDBVersionArray)
-}
+// DocumentDB is a version of DocumentDB this version of FerretDB is compatible with.
+const DocumentDB = "0.100.0 gitref: HEAD sha:9e93e70 buildId:0"
