@@ -54,9 +54,9 @@ const config = {
           routeBasePath: "/",
           blogTitle: "FerretDB Blog",
           showReadingTime: true,
-          postsPerPage: 8,
           authorsMapPath: "authors.yml",
-          onInlineAuthors: "warn", // TODO https://github.com/FerretDB/FerretDB/issues/4587
+          postsPerPage: 8,
+          onInlineTags: "throw",
           onUntruncatedBlogPosts: "throw",
 
           blogSidebarTitle: "All posts",

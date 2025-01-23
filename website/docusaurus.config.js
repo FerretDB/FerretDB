@@ -27,6 +27,31 @@ const config = {
 
   plugins: [
     [
+      // https://docusaurus.io/docs/api/plugins/@docusaurus/plugin-client-redirects
+      // Note that it does not work in development (`task docs-dev`).
+      require.resolve("@docusaurus/plugin-client-redirects"),
+      {
+        redirects: [
+          { to: "/migration/diff", from: "/diff" },
+          { to: "/reference", from: ["/reference/supported_commands", "/reference/supported-commands"] },
+          { to: "/installation", from: "/quickstart" },
+        ],
+
+        createRedirects(existingPath) {
+          if (existingPath.startsWith("/installation/ferretdb")) {
+            return [
+              // old blog posts
+              // for example: /quickstart-guide/docker/ -> /installation/ferretdb/docker/
+              existingPath.replace("/installation/ferretdb", "/quickstart-guide"),
+              existingPath.replace("/installation/ferretdb", "/quickstart_guide"),
+            ];
+          }
+
+          return undefined;
+        },
+      },
+    ],
+    [
       require.resolve("@cmfcmf/docusaurus-search-local"),
       {
         indexBlog: true, // Index blog posts in search engine
@@ -47,15 +72,14 @@ const config = {
         docs: {
           routeBasePath: "/",
           sidebarPath: require.resolve("./sidebars.js"),
-          editUrl: "https://github.com/FerretDB/FerretDB/tree/main-v1/website",
+          editUrl: "https://github.com/FerretDB/FerretDB/tree/main/website",
 
           // https://docusaurus.io/docs/versioning#configuring-versioning-behavior
           // https://docusaurus.io/docs/api/plugins/@docusaurus/plugin-content-docs#configuration
-          lastVersion: "v1.24",
+          lastVersion: "current",
           versions: {
             current: {
-              label: "Next",
-              path: "/",
+              label: "v2.0 RC",
               banner: "none",
             },
             "v1.24": {
