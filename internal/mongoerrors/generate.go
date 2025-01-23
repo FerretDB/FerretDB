@@ -129,7 +129,7 @@ var pgCodes = map[string]Code{
 
 // parseMongoErrors parses mongoerrors.csv and adds a few codes not defined there.
 func parseMongoErrors(ctx context.Context, l *slog.Logger) map[string]int {
-	f, err := os.Open(filepath.FromSlash("../../build/postgres-documentdb/documentdb/mongoerrors.csv"))
+	f, err := os.Open(filepath.FromSlash("../../build/postgres-documentdb/documentdb/error_mappings.csv"))
 	if err != nil {
 		l.Log(ctx, logging.LevelFatal, "Can't open file", logging.Error(err))
 	}
