@@ -36,13 +36,13 @@
 4. Check:
    - https://hub.docker.com/r/ferretdb/ferretdb/tags
    - https://hub.docker.com/r/ferretdb/ferretdb-dev/tags
-   - https://hub.docker.com/r/ferretdb/all-in-one/tags
+   - https://hub.docker.com/r/ferretdb/ferretdb-eval/tags
    - https://github.com/FerretDB/FerretDB/pkgs/container/ferretdb
    - https://github.com/FerretDB/FerretDB/pkgs/container/ferretdb-dev
-   - https://github.com/FerretDB/FerretDB/pkgs/container/all-in-one
+   - https://github.com/FerretDB/FerretDB/pkgs/container/ferretdb-eval
    - https://quay.io/repository/ferretdb/ferretdb?tab=tags
    - https://quay.io/repository/ferretdb/ferretdb-dev?tab=tags
-   - https://quay.io/repository/ferretdb/all-in-one?tab=tags
+   - https://quay.io/repository/ferretdb/ferretdb-eval?tab=tags
 5. Close milestone in issues.
 6. Publish release on GitHub.
 7. Announce it on Slack.

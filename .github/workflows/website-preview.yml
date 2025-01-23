@@ -26,7 +26,11 @@ env:
 jobs:
   blog-preview:
     name: Preview blog
-    runs-on: ubuntu-22.04
+
+    # https://www.ubicloud.com/docs/about/pricing#github-actions
+    # https://docs.github.com/en/billing/managing-billing-for-github-actions/about-billing-for-github-actions#per-minute-rates-for-larger-runners
+    runs-on: ubicloud-standard-2
+
     timeout-minutes: 10
 
     if: >
@@ -77,7 +81,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # for checkdocs
 
       - name: Check dirty
+        if: always()
         run: |
+          git status --untracked-files --ignored
           git status
           git diff --exit-code
 
@@ -93,7 +99,11 @@ jobs:
 
   docs-preview:
     name: Preview docs
-    runs-on: ubuntu-22.04
+
+    # https://www.ubicloud.com/docs/about/pricing#github-actions
+    # https://docs.github.com/en/billing/managing-billing-for-github-actions/about-billing-for-github-actions#per-minute-rates-for-larger-runners
+    runs-on: ubicloud-standard-2
+
     timeout-minutes: 10
 
     if: >
@@ -148,7 +158,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # for checkdocs
 
       - name: Check dirty
+        if: always()
         run: |
+          git status --untracked-files --ignored
           git status
           git diff --exit-code
 

@@ -3,6 +3,14 @@
 # Apply the "not ready" label to prevent cascaded CI runs on each auto-merge.
 
 version: 2
+
+registries:
+  ghcr:
+    type: docker-registry
+    url: ghcr.io
+    username: ferretdb-bot
+    password: ${{ secrets.PRIVATE_DEPENDABOT_TOKEN }}
+
 updates:
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -18,6 +26,7 @@ updates:
       time: "01:42"
 
   - package-ecosystem: "docker"
+    registries: ["ghcr"]
     directory: "/build/ferretdb"
     labels: ["deps", "not ready"]
     assignees: [AlekSi]
@@ -30,6 +39,19 @@ updates:
       day: "wednesday"
       time: "01:42"
   - package-ecosystem: "docker"
+    directory: "/build/postgres-documentdb"
+    labels: ["deps", "not ready"]
+    assignees: [AlekSi]
+    open-pull-requests-limit: 20
+    groups:
+      build-docker:
+        patterns: ["*"]
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+      time: "01:42"
+  - package-ecosystem: "docker"
+    registries: ["ghcr"]
     directory: "/build/deps"
     labels: ["deps", "not ready"]
     assignees: [AlekSi]
@@ -86,6 +108,16 @@ updates:
     groups:
       golangci:
         patterns: ["*"]
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+      time: "01:42"
+
+  - package-ecosystem: "gitsubmodule"
+    directory: "/"
+    labels: ["deps", "not ready"]
+    assignees: [AlekSi]
+    open-pull-requests-limit: 20
     schedule:
       interval: "weekly"
       day: "wednesday"

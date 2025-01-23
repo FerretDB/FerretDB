@@ -1,5 +1,5 @@
 ---
-name: JS
+name: Test scripts
 on:
   pull_request:
     types:
@@ -9,6 +9,7 @@ on:
       - synchronize
     paths:
       - build/legacy-mongo-shell/*.js
+      - build/testscripts/*.sql
   push:
     branches:
       - main
@@ -31,9 +32,13 @@ env:
   GOTOOLCHAIN: local
 
 jobs:
-  testjs:
-    name: Test script
-    runs-on: ubuntu-22.04
+  run:
+    name: Run test scripts
+
+    # https://www.ubicloud.com/docs/about/pricing#github-actions
+    # https://docs.github.com/en/billing/managing-billing-for-github-actions/about-billing-for-github-actions#per-minute-rates-for-larger-runners
+    runs-on: ubicloud-standard-2
+
     timeout-minutes: 10
 
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
@@ -49,11 +54,18 @@ jobs:
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
         with:
-          cache-key: testjs
+          cache-key: testscripts
 
       - name: Install Task
         run: go generate -x
         working-directory: tools
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Start environment
         run: bin/task env-up-detach
@@ -67,20 +79,26 @@ jobs:
       - name: Wait for and setup environment
         run: bin/task env-setup
 
-      - name: Start FerretDB in the background
+      - name: Start FerretDB (no auth) in the background
         run: >
           bin/ferretdb
           --listen-addr=:27017
-          --proxy-addr=127.0.0.1:47017
+          --proxy-addr=127.0.0.1:37017
+          --no-auth
           --mode=diff-normal
-          --handler=pg
-          --postgresql-url='postgres://username@127.0.0.1:5432/ferretdb'
+          --postgresql-url='postgres://username:password@127.0.0.1:5432/postgres'
           2> ferretdb.log &
 
-      - name: Run testjs for MongoDB
-        run: bin/task testjs TESTJS_PORT=47017
+      - name: Run testsql for PostgreSQL
+        if: always()
+        run: bin/task testsql
 
-      - name: Run testjs for FerretDB
+      - name: Run testjs for MongoDB (no auth)
+        if: always()
+        run: bin/task testjs TESTJS_PORT=37017
+
+      - name: Run testjs for FerretDB (no auth)
+        if: always()
         run: bin/task testjs
 
       - name: Compress FerretDB log before upload
@@ -108,6 +126,8 @@ jobs:
         run: go clean -testcache -fuzzcache
 
       - name: Check dirty
+        if: always()
         run: |
+          git status --untracked-files --ignored
           git status
           git diff --exit-code
