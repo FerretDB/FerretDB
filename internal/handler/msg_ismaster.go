@@ -17,27 +17,57 @@ package handler
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/handler/common"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
+	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
+
+	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // MsgIsMaster implements `isMaster` command.
-func (h *Handler) MsgIsMaster(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	doc, err := msg.Document()
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgIsMaster(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	spec, err := msg.RawDocument()
 	if err != nil {
-		return nil, err
-	}
-
-	if err := common.CheckClientMetadata(ctx, doc); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
-		common.IsMasterDocument(h.TCPHost, h.ReplSetName, h.MaxBsonObjectSizeBytes),
-	)))
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+		return nil, err
+	}
 
-	return &reply, nil
+	doc, err := spec.Decode()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	res, err := h.hello(connCtx, doc, h.TCPHost, h.ReplSetName)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return wire.NewOpMsg(must.NotFail(res.Encode()))
+}
+
+// checkClientMetadata checks if the message does not contain client metadata after it was received already.
+func checkClientMetadata(ctx context.Context, doc *wirebson.Document) error {
+	c := doc.Get("client")
+	if c == nil {
+		return nil
+	}
+
+	connInfo := conninfo.Get(ctx)
+	if connInfo.MetadataRecv() {
+		return mongoerrors.New(
+			mongoerrors.ErrClientMetadataCannotBeMutated,
+			"The client metadata document may only be sent in the first hello",
+		)
+	}
+
+	connInfo.SetMetadataRecv()
+
+	return nil
 }

@@ -23,10 +23,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
-
-	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/v2/integration/setup"
+	"github.com/FerretDB/FerretDB/v2/integration/shareddata"
 )
 
 // countCompatTestCase describes count compatibility test case.
@@ -35,8 +33,9 @@ type countCompatTestCase struct {
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/2255
 	// those two probably should be of the same type
-	optSkip any   // optional, skip option for the query, defaults to nil
-	limit   int64 // optional, limit option for the query, defaults to 0
+	optSkip          any   // optional, skip option for the query, defaults to nil
+	limit            int64 // optional, limit option for the query, defaults to 0
+	failsForFerretDB string
 
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
 }
@@ -56,7 +55,6 @@ func testCountCompat(t *testing.T, testCases map[string]countCompatTestCase) {
 	ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
 
 	for name, tc := range testCases {
-		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
 
@@ -69,8 +67,15 @@ func testCountCompat(t *testing.T, testCases map[string]countCompatTestCase) {
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
-				t.Run(targetCollection.Name(), func(t *testing.T) {
-					t.Helper()
+
+				t.Run(targetCollection.Name(), func(tt *testing.T) {
+					tt.Helper()
+
+					var t testing.TB = tt
+
+					if tc.failsForFerretDB != "" {
+						t = setup.FailsForFerretDB(tt, tc.failsForFerretDB)
+					}
 
 					// RunCommand must be used to test the count command.
 					// It's not possible to use CountDocuments because it calls aggregation.
@@ -102,12 +107,7 @@ func testCountCompat(t *testing.T, testCases map[string]countCompatTestCase) {
 					t.Logf("Compat (expected) result: %v", compatRes)
 					t.Logf("Target (actual)   result: %v", targetRes)
 
-					compatDoc := ConvertDocument(t, compatRes)
-					compatDoc.Remove("$clusterTime")
-					compatDoc.Remove("operationTime")
-
-					targetDoc := ConvertDocument(t, targetRes)
-					testutil.AssertEqual(t, compatDoc, targetDoc)
+					AssertEqualDocuments(t, compatRes, targetRes)
 
 					if targetRes != nil || compatRes != nil {
 						nonEmptyResults = true
@@ -117,6 +117,10 @@ func testCountCompat(t *testing.T, testCases map[string]countCompatTestCase) {
 
 			switch tc.resultType {
 			case nonEmptyResult:
+				if tc.failsForFerretDB != "" {
+					return
+				}
+
 				assert.True(t, nonEmptyResults, "expected non-empty results")
 			case emptyResult:
 				assert.False(t, nonEmptyResults, "expected empty results")
@@ -194,8 +198,9 @@ func TestCountCompat(t *testing.T) {
 			optSkip: 1000,
 		},
 		"SkipDouble": {
-			filter:  bson.D{},
-			optSkip: 1.111,
+			filter:           bson.D{},
+			optSkip:          1.111,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/405",
 		},
 		"SkipNegative": {
 			filter:     bson.D{},
