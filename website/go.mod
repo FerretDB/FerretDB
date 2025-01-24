@@ -3,6 +3,6 @@
 
 module ferretdb.com/website
 
-go 1.22
+go 1.23
 
-toolchain go1.22.3
+toolchain go1.23.5

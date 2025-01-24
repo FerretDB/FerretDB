@@ -21,15 +21,13 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
-
-	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/v2/integration/setup"
+	"github.com/FerretDB/FerretDB/v2/integration/shareddata"
 )
 
 // deleteCommandCompatTestCase describes delete compatibility test case.
 type deleteCommandCompatTestCase struct {
-	skip    string // optional, skip test with a specified reason
+	skip    string // TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/1086
 	deletes bson.A // required
 }
 
@@ -37,7 +35,6 @@ func testDeleteCommandCompat(t *testing.T, testCases map[string]deleteCommandCom
 	t.Helper()
 
 	for name, tc := range testCases {
-		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
 
@@ -151,12 +148,5 @@ func TestDeleteCommandCompatNotExistingDatabase(t *testing.T) {
 	assert.NoError(t, targetErr)
 	assert.NoError(t, compatErr)
 
-	compat := ConvertDocument(t, compatRes)
-	compat.Remove("$clusterTime")
-	compat.Remove("operationTime")
-	compat.Remove("electionId")
-	compat.Remove("opTime")
-
-	target := ConvertDocument(t, targetRes)
-	testutil.AssertEqual(t, compat, target)
+	AssertEqualDocuments(t, targetRes, compatRes)
 }

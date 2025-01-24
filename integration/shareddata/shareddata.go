@@ -26,6 +26,7 @@ func AllProviders() Providers {
 		Scalars,
 
 		Doubles,
+		Decimal128s,
 		OverflowVergeDoubles,
 		SmallDoubles,
 		Strings,
