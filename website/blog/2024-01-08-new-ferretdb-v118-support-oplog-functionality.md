@@ -8,7 +8,7 @@ image: /img/blog/ferretdb-v1.18.0.jpg
 tags: [release]
 ---
 
-![FerretDB releases v.1.18.0](/img/blog/ferretdb-v1.18.0.jpg)
+![FerretDB releases v1.18.0](/img/blog/ferretdb-v1.18.0.jpg)
 
 We are starting the new year with a major feature addition!
 The latest version of FerretDB v1.18.0 has just been released with support for basic OpLog functionality, along with other exciting features.

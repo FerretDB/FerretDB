@@ -20,3 +20,5 @@ contents:
   - src: tmp/build/linux_${DIR_ARCH}/ferretdb
     dst: /usr/bin/ferretdb
     expand: true
+  - src: build/ferretdb.service
+    dst: /etc/systemd/system/ferretdb.service

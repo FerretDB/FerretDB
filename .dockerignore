@@ -15,3 +15,4 @@
 
 # additional files for Docker images
 !build/ferretdb
+!build/postgres-documentdb

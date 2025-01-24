@@ -19,10 +19,10 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 
-	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/v2/integration/shareddata"
 )
 
-func TestAggregateVariablesCompatRoot(t *testing.T) {
+func TestAggregateCompatRootVariable(t *testing.T) {
 	t.Parallel()
 
 	providers := shareddata.AllProviders().Remove(shareddata.Composites)
@@ -32,7 +32,6 @@ func TestAggregateVariablesCompatRoot(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$addFields", bson.D{{"field", "$$ROOT"}}}},
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/1413",
 		},
 		"GroupID": {
 			pipeline: bson.A{
@@ -125,7 +124,6 @@ func TestAggregateVariablesCompatRoot(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$set", bson.D{{"field", "$$ROOT"}}}},
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/1413",
 		},
 		"Unwind": {
 			pipeline: bson.A{

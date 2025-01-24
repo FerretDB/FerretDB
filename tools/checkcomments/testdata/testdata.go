@@ -16,7 +16,7 @@
 package testdata
 
 func testCorrect() {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3413
+	// TODO https://github.com/FerretDB/FerretDB/issues/178
 }
 
 func testIncorrectNoURL() {
@@ -24,7 +24,7 @@ func testIncorrectNoURL() {
 }
 
 func testIncorrectFormat() {
-	// TODO: https://github.com/FerretDB/FerretDB/issues/3413 // want "invalid TODO: incorrect format"
+	// TODO: https://github.com/FerretDB/FerretDB/issues/178 // want "invalid TODO: incorrect format"
 }
 
 // For https://github.com/github/codeql/issues/15894.
