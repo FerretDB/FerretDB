@@ -17,76 +17,90 @@ package handler
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
-	"github.com/FerretDB/FerretDB/internal/handler/common"
-	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
+	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
+
+	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // CmdQuery implements deprecated OP_QUERY message handling.
-func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpReply, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) CmdQuery(connCtx context.Context, query *wire.OpQuery) (*wire.OpReply, error) {
 	q := query.Query()
 	cmd := q.Command()
 	collection := query.FullCollectionName
 
-	v, _ := q.Get("speculativeAuthenticate")
-	if v != nil && (cmd == "ismaster" || cmd == "isMaster") {
-		reply, err := common.IsMaster(ctx, q, h.TCPHost, h.ReplSetName, h.MaxBsonObjectSizeBytes)
+	suffix := ".$cmd"
+	if !strings.HasSuffix(collection, suffix) {
+		// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/527
+		return wire.NewOpReply(must.NotFail(wirebson.NewDocument(
+			"$err", "OP_QUERY is no longer supported. The client driver may require an upgrade.",
+			"code", int32(mongoerrors.ErrLocation5739101),
+			"ok", float64(0),
+		)))
+	}
+
+	if query.NumberToReturn != 1 && query.NumberToReturn != -1 {
+		return nil, mongoerrors.NewWithArgument(
+			mongoerrors.ErrLocation16979,
+			fmt.Sprintf("Bad numberToReturn (%d) for $cmd type ns - can only be 1 or -1", query.NumberToReturn),
+			"OpQuery: "+cmd,
+		)
+	}
+
+	switch cmd {
+	case "hello", "ismaster", "isMaster":
+		reply, err := h.hello(connCtx, q, h.TCPHost, h.ReplSetName)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
-		replyDoc := must.NotFail(reply.Document())
+		return wire.NewOpReply(must.NotFail(reply.Encode()))
 
-		document := v.(*types.Document)
+	case "saslStart":
+		if slices.Contains(q.FieldNames(), "$db") {
+			return nil, mongoerrors.NewWithArgument(
+				mongoerrors.ErrLocation40621,
+				"$db is not allowed in OP_QUERY requests",
+				"OpQuery: "+cmd,
+			)
+		}
 
-		dbName, err := common.GetRequiredParam[string](document, "db")
+		reply, err := h.saslStart(connCtx, q)
 		if err != nil {
-			reply.SetDocument(replyDoc)
-
-			return reply, nil
+			return nil, err
 		}
 
-		doc, err := h.saslStart(ctx, dbName, document)
-		if err == nil {
-			// speculative authenticate response field is only set if the authentication is successful,
-			// for an unsuccessful authentication, saslStart will return an error
-			replyDoc.Set("speculativeAuthenticate", doc)
+		must.NoError(reply.Add("ok", float64(1)))
+
+		return wire.NewOpReply(must.NotFail(reply.Encode()))
+
+	case "saslContinue":
+		if slices.Contains(q.FieldNames(), "$db") {
+			return nil, mongoerrors.NewWithArgument(
+				mongoerrors.ErrLocation40621,
+				"$db is not allowed in OP_QUERY requests",
+				"OpQuery: "+cmd,
+			)
 		}
 
-		reply.SetDocument(replyDoc)
+		reply, err := h.saslContinue(connCtx, q)
+		if err != nil {
+			return nil, err
+		}
 
-		return reply, nil
+		return wire.NewOpReply(must.NotFail(reply.Encode()))
 	}
 
-	if (cmd == "ismaster" || cmd == "isMaster") && strings.HasSuffix(collection, ".$cmd") {
-		return common.IsMaster(ctx, query.Query(), h.TCPHost, h.ReplSetName, h.MaxBsonObjectSizeBytes)
-	}
-
-	// TODO https://github.com/FerretDB/FerretDB/issues/3008
-
-	// database name typically is either "$external" or "admin"
-
-	if cmd == "saslStart" && strings.HasSuffix(collection, ".$cmd") {
-		var emptyPayload types.Binary
-		var reply wire.OpReply
-		reply.SetDocument(must.NotFail(types.NewDocument(
-			"conversationId", int32(1),
-			"done", true,
-			"payload", emptyPayload,
-			"ok", float64(1),
-		)))
-
-		return &reply, nil
-	}
-
-	return nil, handlererrors.NewCommandErrorMsgWithArgument(
-		handlererrors.ErrNotImplemented,
-		fmt.Sprintf("CmdQuery: unhandled command %q for collection %q", cmd, collection),
+	return nil, mongoerrors.NewWithArgument(
+		mongoerrors.ErrUnsupportedOpQueryCommand,
+		fmt.Sprintf("Unsupported OP_QUERY command: %s. The client driver may require an upgrade.", cmd),
 		"OpQuery: "+cmd,
 	)
 }

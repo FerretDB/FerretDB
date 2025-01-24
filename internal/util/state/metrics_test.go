@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/FerretDB/FerretDB/build/version"
+	"github.com/FerretDB/FerretDB/v2/build/version"
 )
 
 func TestMetrics(t *testing.T) {
@@ -33,8 +33,8 @@ func TestMetrics(t *testing.T) {
 	require.NoError(t, err)
 
 	err = p.Update(func(s *State) {
-		s.BackendName = "Test"
-		s.BackendVersion = "0.0.1"
+		s.PostgreSQLVersion = "postgres"
+		s.DocumentDBVersion = "documentdb"
 		s.EnableTelemetry()
 	})
 	require.NoError(t, err)
@@ -56,9 +56,9 @@ func TestMetrics(t *testing.T) {
 			`
 				# HELP ferretdb_up FerretDB instance state.
 				# TYPE ferretdb_up gauge
-				ferretdb_up{backend_name="Test",backend_version="0.0.1",branch=%q,commit=%q,debug="%t",dirty="%t",package="unknown",telemetry="enabled",update_available="false",uuid=%q,version=%q} 1
+				ferretdb_up{branch=%q,commit=%q,dev="%t",dirty="%t",documentdb="documentdb",package="unknown",postgresql="postgres",telemetry="enabled",update_available="false",uuid=%q,version=%q} 1
 			`,
-			info.Branch, info.Commit, info.DebugBuild, info.Dirty, uuid, info.Version,
+			info.Branch, info.Commit, info.DevBuild, info.Dirty, uuid, info.Version,
 		)
 		assert.NoError(t, testutil.CollectAndCompare(mc, strings.NewReader(expected)))
 	})
@@ -76,9 +76,9 @@ func TestMetrics(t *testing.T) {
 			`
 				# HELP ferretdb_up FerretDB instance state.
 				# TYPE ferretdb_up gauge
-				ferretdb_up{backend_name="Test",backend_version="0.0.1",branch=%q,commit=%q,debug="%t",dirty="%t",package="unknown",telemetry="enabled",update_available="false",version=%q} 1
+				ferretdb_up{branch=%q,commit=%q,dev="%t",dirty="%t",documentdb="documentdb",package="unknown",postgresql="postgres",telemetry="enabled",update_available="false",version=%q} 1
 			`,
-			info.Branch, info.Commit, info.DebugBuild, info.Dirty, info.Version,
+			info.Branch, info.Commit, info.DevBuild, info.Dirty, info.Version,
 		)
 		assert.NoError(t, testutil.CollectAndCompare(mc, strings.NewReader(expected)))
 	})

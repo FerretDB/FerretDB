@@ -104,13 +104,13 @@ func simulateCompetingClients(clients int) int64 {
 		wg.Add(1)
 
 		go func() {
-			for retry := 1; retry < 1000; retry++ {
+			for a := range 1000 {
 				if call() {
 					wg.Done()
 					return
 				}
 
-				time.Sleep(durationWithJitter(200*time.Millisecond, int64(retry)))
+				time.Sleep(durationWithJitter(200*time.Millisecond, int64(a+1)))
 			}
 		}()
 	}
