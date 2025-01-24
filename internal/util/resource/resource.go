@@ -19,11 +19,12 @@ import (
 	"fmt"
 	"reflect"
 	"runtime"
+	"runtime/debug"
 	"runtime/pprof"
 	"sync"
 	"unsafe"
 
-	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
+	"github.com/FerretDB/FerretDB/v2/internal/util/devbuild"
 )
 
 // Token should be a field of a tracked object.
@@ -75,15 +76,18 @@ func Track(obj any, token *Token) {
 	// because otherwise profile will hold a reference to obj and finalizer will never run
 	p.Add(token, 1)
 
-	stack := debugbuild.Stack()
+	var stack string
+	if devbuild.Enabled {
+		stack = string(debug.Stack())
+	}
 
 	// set finalizer on obj, not token
 	runtime.SetFinalizer(obj, func(obj any) {
 		// this closure has to use only obj argument and captured "stack" variable
 
 		msg := fmt.Sprintf("%T has not been finalized", obj)
-		if stack != nil {
-			msg += "\nObject created by " + string(stack)
+		if stack != "" {
+			msg += "\nObject created by " + stack
 		}
 
 		panic(msg)
@@ -91,10 +95,17 @@ func Track(obj any, token *Token) {
 }
 
 // Untrack stops tracking the lifetime of an object.
+//
+// It is safe to call this function multiple times.
 func Untrack(obj any, token *Token) {
 	checkArgs(obj, token)
 
-	pprof.Lookup(profileName(obj)).Remove(token)
+	p := pprof.Lookup(profileName(obj))
+	if p == nil {
+		panic("object is not tracked")
+	}
+
+	p.Remove(token)
 
 	runtime.SetFinalizer(obj, nil)
 }

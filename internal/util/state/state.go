@@ -20,8 +20,6 @@ import (
 
 	"github.com/AlekSi/pointer"
 	"github.com/google/uuid"
-
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // State represents FerretDB process state.
@@ -29,12 +27,19 @@ type State struct {
 	UUID      string `json:"uuid"`
 	Telemetry *bool  `json:"telemetry,omitempty"` // nil for undecided
 
-	// never persisted
+	// all following fields are never persisted
+
 	TelemetryLocked bool      `json:"-"`
 	Start           time.Time `json:"-"`
-	HandlerVersion  string    `json:"-"` // may be empty if FerretDB did not connect to the backend yet
-	LatestVersion   string    `json:"-"` // as reported by beacon, if known
-	UpdateAvailable bool      `json:"-"` // as reported by beacon, if known
+
+	// may be empty if FerretDB did not connect to PostgreSQL yet
+	PostgreSQLVersion string `json:"-"`
+	DocumentDBVersion string `json:"-"`
+
+	// as reported by beacon, if known
+	LatestVersion   string `json:"-"`
+	UpdateInfo      string `json:"-"`
+	UpdateAvailable bool   `json:"-"`
 }
 
 // TelemetryString returns "enabled", "disabled" or "undecided".
@@ -52,11 +57,11 @@ func (s *State) TelemetryString() string {
 
 // DisableTelemetry disables telemetry.
 //
-// It also sets LatestVersion and UpdateAvailable to zero values
-// to avoid stale values when telemetry is re-enabled.
+// It also resets other telemetry fields to avoid stale values when telemetry is re-enabled.
 func (s *State) DisableTelemetry() {
 	s.Telemetry = pointer.ToBool(false)
 	s.LatestVersion = ""
+	s.UpdateInfo = ""
 	s.UpdateAvailable = false
 }
 
@@ -68,7 +73,7 @@ func (s *State) EnableTelemetry() {
 // fill replaces all unset or invalid values with default.
 func (s *State) fill() {
 	if _, err := uuid.Parse(s.UUID); err != nil {
-		s.UUID = must.NotFail(uuid.NewRandom()).String()
+		s.UUID = uuid.NewString()
 	}
 
 	if s.Start.IsZero() {
@@ -84,12 +89,14 @@ func (s *State) deepCopy() *State {
 	}
 
 	return &State{
-		UUID:            s.UUID,
-		Telemetry:       telemetry,
-		TelemetryLocked: s.TelemetryLocked,
-		Start:           s.Start,
-		HandlerVersion:  s.HandlerVersion,
-		LatestVersion:   s.LatestVersion,
-		UpdateAvailable: s.UpdateAvailable,
+		UUID:              s.UUID,
+		Telemetry:         telemetry,
+		TelemetryLocked:   s.TelemetryLocked,
+		Start:             s.Start,
+		PostgreSQLVersion: s.PostgreSQLVersion,
+		DocumentDBVersion: s.DocumentDBVersion,
+		LatestVersion:     s.LatestVersion,
+		UpdateInfo:        s.UpdateInfo,
+		UpdateAvailable:   s.UpdateAvailable,
 	}
 }

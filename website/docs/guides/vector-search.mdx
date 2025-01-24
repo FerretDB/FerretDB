@@ -1,0 +1,141 @@
+---
+sidebar_position: 2
+---
+
+# Vector search
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import CodeBlock from '@theme/CodeBlock';
+import IndexSyntax from '!!raw-loader!./requests/index-syntax.js';
+import SearchSyntax from '!!raw-loader!./requests/search-syntax.js';
+import MyDataSet from '!!raw-loader!./requests/1-insert-vector.js';
+import HNSWIndex from '!!raw-loader!./requests/2-hnsw-index.js';
+import HSNWSearch from '!!raw-loader!./requests/3-hnsw-search.js';
+import HNSWSearchResponse from '!!raw-loader!./responses/3-hnsw-search.json';
+import IVFIndex from '!!raw-loader!./requests/4-ivf-index.js';
+import IVFSearch from '!!raw-loader!./requests/5-ivf-search.js';
+import IVFSearchResponse from '!!raw-loader!./responses/5-ivf-search.json';
+
+Vector search is a technique for retrieving contextual and semantically related items based on the similarity of their vector representations.
+It operates on numerical vectors, which represent data such as text, images, or audio.
+These vectors, known as **vector embeddings**, are typically generated using embedding models such as Word2Vec, GloVe, BERT, and GPT for text data, ResNet for image data, or Wav2Vec for audio data.
+
+Vector search is widely used in various applications, especially to power generative AI workflows, such as conversational agents and chatbots.
+It is also used for building recommendation systems for personalized content and product suggestions, and to enable semantic search for context-aware document retrieval.
+
+## Vector indexes
+
+Every vector search application requires a method to calculate the similarity between two vectors.
+Similarity metrics such as Cosine similarity and Euclidean distance help calculate the distance between vectors and are essential for finding the nearest neighbors of a query from the same embedding model.
+
+FerretDB supports the following vector index kinds:
+
+- **Hierarchical Navigable Small World (HNSW)**: HNSW is a graph-based index that uses a hierarchical structure to store vectors, suitable for high-speed vector search in memory.
+- **Inverted File (IVF)**: IVF is an inverted file index that partitions the vector space (data sets) into clusters (inverted lists) and performs approximate nearest neighbor search within selected clusters.
+
+<!-- markdownlint-disable MD033 -->
+
+## Creating an index
+
+Vector index can be created using the usual `createIndexes` command with the following syntax:
+
+<CodeBlock language="js">{IndexSyntax}</CodeBlock>
+
+A vector index definition can take the following parameters, depending on the kind of index:
+
+| Field                 | Type     | Description                                                                                                                                                    | Index kind |
+| --------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| `<path>`              | string   | The path to the field containing the vector embeddings. The field must be mapped to `"cosmosSearch"` to enable creation of a vector index.                     | All        |
+| `cosmosSearchOptions` | document | It specifies the configuration parameters (`kind`, `similarity`, `dimensions`, etc.) for the vector index to suit your specific use case                       | All        |
+| `kind`                | string   | The kind of index to create. Possible values: `vector-hnsw`, `vector-ivf`.                                                                                     | All        |
+| `similarity`          | string   | The similarity metric to use for nearest neighbor search. Option could be `COS` for cosine similarity, `L2` for Euclidean distance, or `IP` for inner product. | All        |
+| `dimensions`          | integer  | The number of dimensions in the vector. Note that all vectors in the collection must have the same dimensionality. Must range from 2-16000                     | All        |
+|                       |          |                                                                                                                                                                |            |
+| `m`                   | integer  | The maximum number of connections per layer. Typically range from 2 to 100 (default: 16).                                                                      | HNSW       |
+| `efConstruction`      | integer  | The number of neighbors or dynamic candidate list to search during graph construction. Typically 4 to 1000 (default: 64). Must be at least `2 * m`.            | HNSW       |
+|                       |          |                                                                                                                                                                |            |
+| `numLists`            | integer  | The number of lists to store in the index. Ranges from 1 to 32768 (default: 100).                                                                              | IVF        |
+
+### Index creation example
+
+In the following sections, we will demonstrate how to create and use vector indexes by inserting the following documents with vector embeddings into a collection:
+
+<CodeBlock language="js">{MyDataSet}</CodeBlock>
+
+The `vector` field represents the vector embeddings generated for the `summary` field using the [SentenceTransformer("all-MiniLM-L6-v2") model](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2).
+You can use any embedding model to generate the vectors.
+
+<Tabs groupId="kind">
+
+<TabItem value="hnsw" label="HNSW" default>
+
+To create an HNSW index, set the `kind` field to `vector-hnsw` when creating the vector index.
+
+<CodeBlock language="js">{HNSWIndex}</CodeBlock>
+
+</TabItem>
+
+<TabItem value="ivf" label="IVF">
+
+To create an IVF index, set the `kind` field to `vector-ivf` when creating the vector index.
+
+<CodeBlock language="js">{IVFIndex}</CodeBlock>
+
+</TabItem>
+
+</Tabs>
+
+## Performing a vector search
+
+Once an index is created, you can perform vector searches using the `$search` stage in the aggregation pipeline:
+
+<CodeBlock language="js">{SearchSyntax}</CodeBlock>
+
+A typical vector search query includes the query vector, the path to the field containing the vector, and the number of neighbors to return, as described below:
+
+| Field          | Type     | Description                                                                                                  | Applicable Index |
+| -------------- | -------- | ------------------------------------------------------------------------------------------------------------ | ---------------- |
+| `cosmosSearch` | document | An operator that specifies query parameters (`vector`, `path`, `k`, `efSearch`, etc.) for the vector search. | All              |
+| `vector`       | array    | The vector to search for.                                                                                    | All              |
+| `path`         | string   | The path to the field containing the vector.                                                                 | All              |
+| `k`            | integer  | The number of neighbors (results) to return.                                                                 | All              |
+|                |          |                                                                                                              |                  |
+| `efSearch`     | integer  | The number of neighbors or dynamic candidate list to search (default: 40). Must range from 1 to 1000         | HSNW             |
+
+### Vector search example
+
+<Tabs groupId="kind">
+
+<TabItem value="hnsw" label="HNSW" default>
+
+Using the same embedding model used for generating the vectors, a query vector is generated for `An exciting tale of adventure and exploration at sea`.
+Next, a vector search is performed on the `vector` field in the `books` collection to find the two nearest neighbors of the query vector.
+
+<CodeBlock language="js">{HSNWSearch}</CodeBlock>
+
+The query returns the two nearest neighbors of the query vector.
+
+<CodeBlock language="json">{HNSWSearchResponse}</CodeBlock>
+
+</TabItem>
+
+<TabItem value="ivf" label="IVF">
+
+Using the embeddings model used for generating the vectors, a query vector is generated for `"A science fiction tale exploring the boundaries of human knowledge"`.
+The following aggregation query performs a vector search on the `vector` field in the `books` collection:
+
+<CodeBlock language="js">{IVFSearch}</CodeBlock>
+
+By setting `returnStoredSource: true`, the query returns the similarity score along with matching documents.
+Otherwise, only the similarity score is returned, and the actual document content is excluded.
+
+The query returns the two nearest neighbors of the query vector.
+
+<CodeBlock language="json">{IVFSearchResponse}</CodeBlock>
+
+</TabItem>
+
+</Tabs>
+
+<!-- markdownlint-enable MD033 -->

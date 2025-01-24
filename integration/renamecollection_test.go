@@ -23,13 +23,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/internal/util/testutil/teststress"
+	"github.com/FerretDB/FerretDB/v2/internal/util/testutil/teststress"
+
+	"github.com/FerretDB/FerretDB/v2/integration/setup"
 )
 
-func TestRenameCollectionStress(tt *testing.T) {
-	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/2760")
-
+func TestRenameCollectionStress(t *testing.T) {
 	ctx, collection := setup.Setup(t)
 	db := collection.Database()
 

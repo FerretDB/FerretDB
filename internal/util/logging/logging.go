@@ -16,64 +16,64 @@
 package logging
 
 import (
-	"log"
+	"log/slog"
+	"os"
 
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-
-	"github.com/FerretDB/FerretDB/build/version"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// Setup initializes logging with a given level.
-func Setup(level zapcore.Level, uuid string) {
-	config := zap.Config{
-		Level:             zap.NewAtomicLevelAt(level),
-		Development:       version.Get().DebugBuild,
-		DisableCaller:     false,
-		DisableStacktrace: false,
-		Sampling:          nil,
-		Encoding:          "console",
-		EncoderConfig: zapcore.EncoderConfig{
-			TimeKey:        "T",
-			LevelKey:       "L",
-			NameKey:        "N",
-			CallerKey:      "C",
-			FunctionKey:    zapcore.OmitKey,
-			MessageKey:     "M",
-			StacktraceKey:  "S",
-			LineEnding:     zapcore.DefaultLineEnding,
-			EncodeLevel:    zapcore.CapitalLevelEncoder,
-			EncodeTime:     zapcore.ISO8601TimeEncoder,
-			EncodeDuration: zapcore.StringDurationEncoder,
-			EncodeCaller:   zapcore.ShortCallerEncoder,
-		},
-		OutputPaths:      []string{"stderr"},
-		ErrorOutputPaths: []string{"stderr"},
-		InitialFields:    nil,
+const (
+	// LevelDPanic panics in development builds.
+	LevelDPanic = slog.LevelError + 1
+
+	// LevelPanic always panics.
+	LevelPanic = slog.LevelError + 2
+
+	// LevelFatal exits with a non-zero status.
+	LevelFatal = slog.LevelError + 3
+)
+
+// nameKey is a [slog.Attr] key used by [WithName].
+const nameKey = "name"
+
+// WithName returns a logger with a given period-separated name.
+//
+// How this name is used depends on the handler.
+func WithName(l *slog.Logger, name string) *slog.Logger {
+	return l.With(slog.String(nameKey, name))
+}
+
+// Error returns [slog.Attr] for the given error (that can be nil) with error's message as a value.
+func Error(err error) slog.Attr {
+	if err == nil {
+		return slog.String("error", "<nil>")
 	}
 
+	return slog.String("error", err.Error())
+}
+
+// LazyString is a lazily evaluated [slog.LogValuer].
+type LazyString func() string
+
+// LogValue implements [slog.LogValuer].
+func (ls LazyString) LogValue() slog.Value { return slog.StringValue(ls()) }
+
+// Setup initializes slog logging with given options and UUID.
+func Setup(opts *NewHandlerOpts, uuid string) {
+	must.NotBeZero(opts)
+
+	h := NewHandler(os.Stderr, opts)
+
+	l := slog.New(h)
 	if uuid != "" {
-		config.InitialFields = map[string]any{"uuid": uuid}
+		l = l.With(slog.String("uuid", uuid))
 	}
 
-	logger, err := config.Build()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	logger = logger.WithOptions(zap.Hooks(func(entry zapcore.Entry) error {
-		RecentEntries.append(&entry)
-		return nil
-	}))
-
-	setupWithLogger(logger)
+	slog.SetDefault(l)
+	slog.SetLogLoggerLevel(slog.LevelInfo + 2)
 }
 
-// setupWithLogger initializes logging with a given logger and its level.
-func setupWithLogger(logger *zap.Logger) {
-	zap.ReplaceGlobals(logger)
-
-	if _, err := zap.RedirectStdLogAt(logger, zap.InfoLevel); err != nil {
-		log.Fatal(err)
-	}
-}
+// check interfaces
+var (
+	_ slog.LogValuer = (LazyString)(nil)
+)

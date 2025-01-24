@@ -15,65 +15,122 @@
 package main
 
 import (
+	"bytes"
+	"log"
+	"path/filepath"
+	"strings"
 	"testing"
-	"testing/fstest"
 
+	"github.com/FerretDB/gh"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/FerretDB/FerretDB/tools/github"
 )
 
-func TestGetBlogSlugs(t *testing.T) {
-	m := fstest.MapFS{
-		"2022-05-16-using-cla-assistant-with-ferretdb.md": {
-			Data: []byte(`---
-slug: using-cla-assistant-with-ferretdb
-title: "Using CLA Assistant with FerretDB"
-author: Alexey Palazhchenko
-description: Like many other open-source projects FerretDB 
-image: /img/blog/cla3.jpg
-date: 2022-05-16
----
-Finally, we need a web server that would handle HTTPS for us.
-For that, we will use
-Caddy will listen on both HTTP and
-`),
-		},
+func TestReal(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in -short mode")
 	}
 
-	dirs, err := m.ReadDir(".")
-	require.NoError(t, err)
+	blogFiles, err := filepath.Glob(filepath.Join("..", "..", "website", "blog", "*.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	slugs := getBlogSlugs(dirs)
-	tSlug := fileSlug{fileName: "2022-05-16-using-cla-assistant-with-ferretdb.md", slug: "using-cla-assistant-with-ferretdb"}
-	assert.Equal(t, slugs[0], tSlug, "should be equal")
+	err = checkBlogFiles(blogFiles)
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
-func TestVerifySlugs(t *testing.T) {
-	m := fstest.MapFS{
-		"2022-05-16-using-cla-assistant-with-ferretdb.md": {
-			Data: []byte(`---
-slug: using-cla-assistant-with-ferretdb
-title: "Using CLA Assistant with FerretDB"
-author: Alexey Palazhchenko
-description: Like many other open-source projects
-image: /img/blog/cla3.jpg
-date: 2022-05-16
----
-Finally, we need a web server that would handle HTTPS for us.
-For that, we will use [Caddy](https://caddyserver.com):
-Caddy will listen on both HTTP and HTTPS ports, 
-`),
-		},
+var fm = bytes.TrimSpace([]byte(`
+slug: using-ferretdb-with-studio-3t
+date: 2023-04-18
+title: Using FerretDB 1.0 with Studio 3T
+authors: [alex]
+description: >
+	Discover how to use FerretDB 1.0 with Studio 3T, and explore ways to leverage FerretDB for MongoDB GUI applications.
+image: /img/blog/ferretdb-studio3t.png
+tags:
+	[
+		tutorial,
+		mongodb compatible,
+		mongodb gui,
+		compatible applications,
+		documents databases
+	]
+	`))
+
+func TestVerifySlug(t *testing.T) {
+	err := verifySlug("2023-04-18-using-ferretdb-with-studio.md", fm)
+	assert.EqualError(t, err, `slug "using-ferretdb-with-studio-3t" doesn't match the file name`)
+}
+
+func TestVerifyDateNotPresent(t *testing.T) {
+	err := verifyDateNotPresent(fm)
+	assert.EqualError(t, err, `date field should not be present in the front matter`)
+}
+
+func TestVerifyTags(t *testing.T) {
+	err := verifyTags(fm)
+	assert.EqualError(t, err, `tag "documents databases" is not in the allowed list`)
+}
+
+func TestVerifyTruncateString(t *testing.T) {
+	err := verifyTruncateString(fm)
+	assert.EqualError(t, err, "<!--truncate--> must be included to have \"Read more\" link on the homepage")
+}
+
+func TestCheckSupportedCommands(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in -short mode")
 	}
 
-	dirs, err := m.ReadDir(".")
+	var buf bytes.Buffer
+	l := log.New(&buf, "", 0)
+
+	p, err := github.CacheFilePath()
 	require.NoError(t, err)
 
-	slugs := getBlogSlugs(dirs)
-
-	f, err := m.Open("2022-05-16-using-cla-assistant-with-ferretdb.md")
+	client, err := github.NewClient(p, log.Printf, gh.NoopPrintf, gh.NoopPrintf)
 	require.NoError(t, err)
 
-	err = verifySlug(slugs[0], f)
-	require.NoError(t, err)
+	for name, tc := range map[string]struct {
+		Payload        string
+		ExpectedOutput string
+	}{
+		"OpenIssueLink": {
+			Payload:        "|                 | `openIssueLink`          | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/178) |", //nolint:lll // for readability
+			ExpectedOutput: "",
+		},
+
+		"ClosedIssueLink": {
+			Payload:        "|                 | `closedIssueLink`          | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1) |", //nolint:lll // for readability
+			ExpectedOutput: "linked issue https://github.com/FerretDB/FerretDB/issues/1 is closed\n",
+		},
+
+		"AnyLabelClosedIssue": {
+			Payload:        "[IssueLabel](https://github.com/FerretDB/FerretDB/issues/1)",
+			ExpectedOutput: "linked issue https://github.com/FerretDB/FerretDB/issues/1 is closed\n",
+		},
+		"NoLabel": {
+			Payload:        "https://github.com/FerretDB/FerretDB/issues/1",
+			ExpectedOutput: "",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			buf.Reset()
+			r := strings.NewReader(tc.Payload)
+
+			var failed bool
+
+			failed, err = checkIssueURLs(client, r, l)
+			require.NoError(t, err)
+			assert.Equal(t, tc.ExpectedOutput != "", failed)
+
+			actualOutput := buf.String()
+			assert.Equal(t, tc.ExpectedOutput, actualOutput)
+		})
+	}
 }

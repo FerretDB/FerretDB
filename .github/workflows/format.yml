@@ -10,6 +10,7 @@ on:
   push:
     branches:
       - main
+      - main-*
       - releases/*
   schedule:
     - cron: "12 0 * * *"
@@ -25,22 +26,24 @@ env:
   GOLANGCI_LINT_CACHE: /home/runner/go/cache/lint
   GOMODCACHE: /home/runner/go/mod
   GOPROXY: https://proxy.golang.org
+  GOTOOLCHAIN: local
 
 jobs:
   format:
     name: Format files
-    runs-on: ubuntu-22.04
+
+    # https://www.ubicloud.com/docs/about/pricing#github-actions
+    # https://docs.github.com/en/billing/managing-billing-for-github-actions/about-billing-for-github-actions#per-minute-rates-for-larger-runners
+    runs-on: ubicloud-standard-2
+
     timeout-minutes: 10
 
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
 
     steps:
-      - name: Setup permissions monitoring
-        uses: GitHubSecurityLab/actions-permissions/monitor@v1
-        if: false
-
+      # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0 # for `git describe` to work
           lfs: false # LFS is used only by website
@@ -54,9 +57,6 @@ jobs:
         run: go generate -x
         working-directory: tools
 
-      - name: Run init
-        run: bin/task init
-
       - name: Format Go code
         run: bin/task fmt-go
 
@@ -64,6 +64,8 @@ jobs:
         run: bin/task fmt-yaml
 
       - name: Check dirty
+        if: always()
         run: |
+          git status --untracked-files --ignored
           git status
           git diff --exit-code

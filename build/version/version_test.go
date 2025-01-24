@@ -18,10 +18,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func TestGet(t *testing.T) {
@@ -29,6 +25,6 @@ func TestGet(t *testing.T) {
 
 	assert.NotEmpty(t, v.Version)
 
-	assert.Equal(t, "6.0.42", v.MongoDBVersion)
-	testutil.AssertEqual(t, must.NotFail(types.NewArray(int32(6), int32(0), int32(42), int32(0))), v.MongoDBVersionArray)
+	assert.Equal(t, "7.0.77", v.MongoDBVersion)
+	assert.Equal(t, [...]int32{int32(7), int32(0), int32(77), int32(0)}, v.MongoDBVersionArray)
 }

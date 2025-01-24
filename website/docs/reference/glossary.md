@@ -1,5 +1,5 @@
 ---
-sidebar_position: 2
+sidebar_position: 1
 ---
 
 # Glossary
@@ -12,13 +12,11 @@ _This section contains a list of common terminologies related to FerretDB_.
 
 #### aggregation
 
-A way of processsing documents in a collection and passing them through various operations or stages.
-See [list of supported aggregation operations and commands here](supported-commands.md#aggregation-pipelines).
+A way of processing documents in a collection and passing them through various operations or stages.
 
 #### aggregation pipeline
 
 A set of operators that lets you perform complex operations that aggregate and summarize values.
-See [list of supported aggregation pipeline operators](supported-commands.md#aggregation-pipeline-operators) here.
 
 ---
 
@@ -50,7 +48,7 @@ It is comparable to a table in a relational database.
 #### CRUD
 
 The four basic operations of a database: Create, Read, Update, and Delete.
-See [Basic FerretDB CRUD operations here](../basic-operations/index.md).
+See [Basic FerretDB CRUD operations here](../usage/concepts.md).
 
 ---
 
@@ -63,17 +61,16 @@ An organized repository for collections containing its own sets of documents, an
 #### database command
 
 The set of commands in FerretDB.
-For more information, see [supported commands](supported-commands.md) for more details.
 
 #### document
 
 A record in a collection that comprises key-value pairs.
-See [Documents](../understanding-ferretdb.md#documents) for more.
+See [Documents](../usage/concepts.md#documents) for more.
 
 #### dot notation
 
 Dot notation is used to reference or access the elements in an array or in an embedded document.
-See [dot notation](../understanding-ferretdb.md#dot-notation) for more details.
+See [dot notation](../usage/concepts.md#dot-notation) for more details.
 
 ---
 
@@ -93,7 +90,7 @@ They are represented as field name-value pairs and describe the kind of data in 
 A data structure used for identifying and querying records in a collection.
 It helps to limit the number of documents to search through or inspect in a collection.
 Examples include `_id` index, user-defined index, hashed index, and partial index.
-See [Indexes](../indexes.md) for more.
+See [Indexes](../usage/indexes.md) for more.
 
 ---
 
@@ -115,6 +112,16 @@ A defining 12-byte type that ensures singularity and uniques within a collection
 #### operator
 
 A keyword that starts with a `$` character to query, update, or transform data.
+
+---
+
+### O
+
+#### Operation modes
+
+FerretDB utilizes operation modes to define its approach in handling incoming requests, serving purposes such as testing, debugging, and bug reporting.
+By default, FerretDB operates in `normal` mode.
+See [Operation modes](../configuration/operation-modes.md) for more details.
 
 ---
 

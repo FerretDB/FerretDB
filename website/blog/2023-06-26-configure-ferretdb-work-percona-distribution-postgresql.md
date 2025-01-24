@@ -3,7 +3,7 @@ slug: configure-ferretdb-work-percona-distribution-postgresql
 title: 'How to Configure FerretDB to Work on Percona Distribution for PostgreSQL'
 authors: [alex]
 description: >
-  In this article, we’ll guide you through the advantages of using FerretDB and how you can configure it to work natively on Percona Distribution for PostgreSQL.
+  In this article, we'll guide you through the advantages of using FerretDB and how you can configure it to work natively on Percona Distribution for PostgreSQL.
 image: /img/blog/percona-ferretdb.png
 keywords:
   [enterprise postgresql, run mongodb workload on postgresql, postgresql tools]

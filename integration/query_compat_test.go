@@ -16,6 +16,8 @@ package integration
 
 import (
 	"math"
+	"slices"
+	"strings"
 	"testing"
 
 	"github.com/AlekSi/pointer"
@@ -26,23 +28,24 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/v2/integration/setup"
+	"github.com/FerretDB/FerretDB/v2/integration/shareddata"
 )
 
 // queryCompatTestCase describes query compatibility test case.
 type queryCompatTestCase struct {
-	filter         bson.D                   // required
-	sort           bson.D                   // defaults to `bson.D{{"_id", 1}}`
-	optSkip        *int64                   // defaults to nil to leave unset
-	limit          *int64                   // defaults to nil to leave unset
-	batchSize      *int32                   // defaults to nil to leave unset
-	projection     bson.D                   // nil for leaving projection unset
-	resultType     compatTestCaseResultType // defaults to nonEmptyResult
-	resultPushdown bool                     // defaults to false
+	filter     bson.D                   // required
+	sort       bson.D                   // defaults to `bson.D{{"_id", 1}}`
+	optSkip    *int64                   // defaults to nil to leave unset
+	limit      *int64                   // defaults to nil to leave unset
+	batchSize  *int32                   // defaults to nil to leave unset
+	projection bson.D                   // nil for leaving projection unset
+	resultType compatTestCaseResultType // defaults to nonEmptyResult
 
-	skipIDCheck bool   // skip check collected IDs, use it when no ids returned from query
-	skip        string // skip test for all handlers, must have issue number mentioned
+	skipIDCheck      bool   // skip check collected IDs, use it when no ids returned from query
+	skip             string // TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/1086
+	failsForFerretDB string
+	failsProviders   []shareddata.Provider // use only if failsForFerretDB is set, defaults to all providers
 }
 
 func testQueryCompatWithProviders(t *testing.T, providers shareddata.Providers, testCases map[string]queryCompatTestCase) {
@@ -51,7 +54,9 @@ func testQueryCompatWithProviders(t *testing.T, providers shareddata.Providers, 
 	require.NotEmpty(t, providers)
 
 	// Use shared setup because find queries can't modify data.
-	// TODO Use read-only user. https://github.com/FerretDB/FerretDB/issues/1025
+	//
+	// Use read-only user.
+	// TODO https://github.com/FerretDB/FerretDB/issues/1025
 	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
 		Providers: providers,
 	})
@@ -59,7 +64,6 @@ func testQueryCompatWithProviders(t *testing.T, providers shareddata.Providers, 
 	ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
 
 	for name, tc := range testCases {
-		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
 
@@ -95,12 +99,31 @@ func testQueryCompatWithProviders(t *testing.T, providers shareddata.Providers, 
 				opts.SetProjection(tc.projection)
 			}
 
+			failsProviders := make([]string, len(tc.failsProviders))
+			for i, p := range tc.failsProviders {
+				failsProviders[i] = p.Name()
+			}
+
 			var nonEmptyResults bool
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
-				t.Run(targetCollection.Name(), func(t *testing.T) {
-					t.Helper()
+
+				t.Run(targetCollection.Name(), func(tt *testing.T) {
+					tt.Helper()
+
+					var t testing.TB = tt
+
+					// a workaround to get provider name by using the part after last `_`,
+					// e.g. `Doubles` from `TestQueryArrayCompatElemMatch_Doubles`
+					str := strings.Split(targetCollection.Name(), "_")
+					providerName := str[len(str)-1]
+
+					failsForCollection := len(tc.failsProviders) == 0 || slices.Contains(failsProviders, providerName)
+
+					if tc.failsForFerretDB != "" && failsForCollection {
+						t = setup.FailsForFerretDB(tt, tc.failsForFerretDB)
+					}
 
 					targetIdx, tagetErr := targetCollection.Indexes().CreateOne(ctx, mongo.IndexModel{
 						Keys: bson.D{{"v", 1}},
@@ -112,23 +135,6 @@ func testQueryCompatWithProviders(t *testing.T, providers shareddata.Providers, 
 					require.NoError(t, tagetErr)
 					require.NoError(t, compatErr)
 					require.Equal(t, compatIdx, targetIdx)
-
-					// don't add sort, limit, skip, and projection because we don't pushdown them yet
-					explainQuery := bson.D{{"explain", bson.D{
-						{"find", targetCollection.Name()},
-						{"filter", filter},
-					}}}
-
-					var explainRes bson.D
-					require.NoError(t, targetCollection.Database().RunCommand(ctx, explainQuery).Decode(&explainRes))
-
-					var msg string
-					if setup.IsPushdownDisabled() {
-						tc.resultPushdown = false
-						msg = "Query pushdown is disabled, but target resulted with pushdown"
-					}
-
-					assert.Equal(t, tc.resultPushdown, explainRes.Map()["pushdown"], msg)
 
 					targetCursor, targetErr := targetCollection.Find(ctx, filter, opts)
 					compatCursor, compatErr := compatCollection.Find(ctx, filter, opts)
@@ -169,6 +175,10 @@ func testQueryCompatWithProviders(t *testing.T, providers shareddata.Providers, 
 
 			switch tc.resultType {
 			case nonEmptyResult:
+				if tc.failsForFerretDB != "" {
+					return
+				}
+
 				assert.True(t, nonEmptyResults, "expected non-empty results")
 			case emptyResult:
 				assert.False(t, nonEmptyResults, "expected empty results")
@@ -193,17 +203,23 @@ func TestQueryCompatFilter(t *testing.T) {
 		"Empty": {
 			filter: bson.D{},
 		},
+		"String": {
+			filter: bson.D{{"v", "foo"}},
+		},
+		"Int32": {
+			filter: bson.D{{"v", int32(42)}},
+		},
 		"IDString": {
-			filter:         bson.D{{"_id", "string"}},
-			resultPushdown: true,
+			filter: bson.D{{"_id", "string"}},
+		},
+		"IDNilObjectID": {
+			filter: bson.D{{"_id", primitive.NilObjectID}},
 		},
 		"IDObjectID": {
-			filter:         bson.D{{"_id", primitive.NilObjectID}},
-			resultPushdown: true,
+			filter: bson.D{{"_id", primitive.ObjectID{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11}}},
 		},
 		"ObjectID": {
-			filter:         bson.D{{"v", primitive.NilObjectID}},
-			resultPushdown: true,
+			filter: bson.D{{"v", primitive.NilObjectID}},
 		},
 		"UnknownFilterOperator": {
 			filter:     bson.D{{"v", bson.D{{"$someUnknownOperator", 42}}}},
@@ -219,16 +235,22 @@ func TestQueryCompatSort(t *testing.T) {
 
 	testCases := map[string]queryCompatTestCase{
 		"Asc": {
-			filter: bson.D{},
-			sort:   bson.D{{"v", 1}, {"_id", 1}},
+			filter:           bson.D{},
+			sort:             bson.D{{"v", 1}, {"_id", 1}},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/264",
+			failsProviders:   []shareddata.Provider{shareddata.ArrayStrings, shareddata.Composites},
 		},
 		"Desc": {
-			filter: bson.D{},
-			sort:   bson.D{{"v", -1}, {"_id", 1}},
+			filter:           bson.D{},
+			sort:             bson.D{{"v", -1}, {"_id", 1}},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/264",
+			failsProviders:   []shareddata.Provider{shareddata.ArrayStrings, shareddata.Composites, shareddata.Mixed},
 		},
 		"AscDesc": {
-			filter: bson.D{},
-			sort:   bson.D{{"v", 1}, {"_id", -1}},
+			filter:           bson.D{},
+			sort:             bson.D{{"v", 1}, {"_id", -1}},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/264",
+			failsProviders:   []shareddata.Provider{shareddata.ArrayStrings, shareddata.Composites, shareddata.Mixed},
 		},
 		"DescDesc": {
 			filter: bson.D{},
@@ -244,21 +266,23 @@ func TestQueryCompatSort(t *testing.T) {
 		},
 
 		"Bad": {
-			filter:     bson.D{},
-			sort:       bson.D{{"v", 13}},
-			resultType: emptyResult,
+			filter:           bson.D{},
+			sort:             bson.D{{"v", 13}},
+			resultType:       emptyResult,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 		"BadZero": {
-			filter:     bson.D{},
-			sort:       bson.D{{"v", 0}},
-			resultType: emptyResult,
+			filter:           bson.D{},
+			sort:             bson.D{{"v", 0}},
+			resultType:       emptyResult,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 		"BadNull": {
-			filter:     bson.D{},
-			sort:       bson.D{{"v", nil}},
-			resultType: emptyResult,
+			filter:           bson.D{},
+			sort:             bson.D{{"v", nil}},
+			resultType:       emptyResult,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
-
 		"DotNotationIndex": {
 			filter: bson.D{},
 			sort:   bson.D{{"v.0", 1}, {"_id", 1}},
@@ -268,25 +292,29 @@ func TestQueryCompatSort(t *testing.T) {
 			sort:   bson.D{{"invalid.foo", 1}, {"_id", 1}},
 		},
 		"DotNotationMissingField": {
-			filter:     bson.D{},
-			sort:       bson.D{{"v..foo", 1}, {"_id", 1}},
-			resultType: emptyResult,
+			filter:           bson.D{},
+			sort:             bson.D{{"v..foo", 1}, {"_id", 1}},
+			resultType:       emptyResult,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 
 		"BadDollarStart": {
-			filter:     bson.D{},
-			sort:       bson.D{{"$v.foo", 1}},
-			resultType: emptyResult,
+			filter:           bson.D{},
+			sort:             bson.D{{"$v.foo", 1}},
+			resultType:       emptyResult,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/265",
 		},
 		"BadDollarMid": {
-			filter:     bson.D{},
-			sort:       bson.D{{"v.$foo.bar", 1}, {"_id", 1}},
-			resultType: emptyResult,
+			filter:           bson.D{},
+			sort:             bson.D{{"v.$foo.bar", 1}, {"_id", 1}},
+			resultType:       emptyResult,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/265",
 		},
 		"BadDollarEnd": {
-			filter:     bson.D{},
-			sort:       bson.D{{"_id", 1}, {"v.$foo", 1}},
-			resultType: emptyResult,
+			filter:           bson.D{},
+			sort:             bson.D{{"_id", 1}, {"v.$foo.bar", 1}},
+			resultType:       emptyResult,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/265",
 		},
 		"DollarPossible": {
 			filter: bson.D{},
@@ -301,7 +329,7 @@ func TestQueryCompatSortDotNotation(t *testing.T) {
 	t.Parallel()
 
 	providers := shareddata.AllProviders().
-		// TODO: https://github.com/FerretDB/FerretDB/issues/2618
+		// TODO https://github.com/FerretDB/FerretDB/issues/2618
 		Remove(shareddata.ArrayDocuments)
 
 	testCases := map[string]queryCompatTestCase{
@@ -348,9 +376,10 @@ func TestQueryCompatSkip(t *testing.T) {
 			optSkip: pointer.ToInt64(0),
 		},
 		"Bad": {
-			filter:     bson.D{},
-			optSkip:    pointer.ToInt64(-1),
-			resultType: emptyResult,
+			filter:           bson.D{},
+			optSkip:          pointer.ToInt64(-1),
+			resultType:       emptyResult,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 		"MaxInt64": {
 			filter:     bson.D{},
@@ -358,9 +387,10 @@ func TestQueryCompatSkip(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"MinInt64": {
-			filter:     bson.D{},
-			optSkip:    pointer.ToInt64(math.MinInt64),
-			resultType: emptyResult,
+			filter:           bson.D{},
+			optSkip:          pointer.ToInt64(math.MinInt64),
+			resultType:       emptyResult,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 	}
 
@@ -438,9 +468,10 @@ func TestQueryCompatBatchSize(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"Bad": {
-			filter:     bson.D{},
-			batchSize:  pointer.ToInt32(-1),
-			resultType: emptyResult,
+			filter:           bson.D{},
+			batchSize:        pointer.ToInt32(-1),
+			resultType:       emptyResult,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 	}
 

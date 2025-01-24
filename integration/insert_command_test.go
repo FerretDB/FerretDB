@@ -20,10 +20,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/v2/integration/setup"
+	"github.com/FerretDB/FerretDB/v2/integration/shareddata"
 )
 
 func TestInsertCommandErrors(t *testing.T) {
@@ -33,10 +34,10 @@ func TestInsertCommandErrors(t *testing.T) {
 		toInsert []any // required, slice of bson.D to insert
 		ordered  any   // required, sets it to `ordered`
 
-		cerr       *mongo.CommandError // optional, expected command error from MongoDB
-		werr       *mongo.WriteError   // optional, expected write error from MongoDB
-		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
-		skip       string              // optional, skip test with a specified reason
+		cerr             *mongo.CommandError // optional, expected command error from MongoDB
+		werr             *mongo.WriteError   // optional, expected write error from MongoDB
+		altMessage       string              // optional, alternative error message for FerretDB, ignored if empty
+		failsForFerretDB string
 	}{
 		"InsertOrderedInvalid": {
 			toInsert: []any{
@@ -60,7 +61,7 @@ func TestInsertCommandErrors(t *testing.T) {
 				Message: `E11000 duplicate key error collection: ` +
 					`TestInsertCommandErrors-InsertDuplicateKey.TestInsertCommandErrors-InsertDuplicateKey index: _id_ dup key: { _id: "double" }`,
 			},
-			altMessage: "E11000 duplicate key error collection: TestInsertCommandErrors-InsertDuplicateKey.TestInsertCommandErrors-InsertDuplicateKey",
+			altMessage: `Duplicate key violation on the requested collection: Index '_id_'`,
 		},
 		"InsertDuplicateKeyOrdered": {
 			toInsert: []any{
@@ -74,7 +75,7 @@ func TestInsertCommandErrors(t *testing.T) {
 				Message: `E11000 duplicate key error collection: ` +
 					`TestInsertCommandErrors-InsertDuplicateKeyOrdered.TestInsertCommandErrors-InsertDuplicateKeyOrdered index: _id_ dup key: { _id: "double" }`,
 			},
-			altMessage: `E11000 duplicate key error collection: TestInsertCommandErrors-InsertDuplicateKeyOrdered.TestInsertCommandErrors-InsertDuplicateKeyOrdered`,
+			altMessage: `Duplicate key violation on the requested collection: Index '_id_'`,
 		},
 		"InsertArray": {
 			toInsert: []any{
@@ -88,19 +89,54 @@ func TestInsertCommandErrors(t *testing.T) {
 				Message: "BSON field 'insert.documents.1' is the wrong type 'array', expected type 'object'",
 			},
 		},
+		"InsertArrayAsDocumentID": {
+			toInsert: []any{
+				bson.D{{"_id", bson.A{int32(42), int32(42)}}},
+			},
+			ordered: false,
+			werr: &mongo.WriteError{
+				Code:    53,
+				Message: "The '_id' value cannot be of type array",
+			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/295",
+		},
+		"InsertRegexAsDocumentID": {
+			toInsert: []any{
+				bson.D{{"_id", primitive.Regex{Pattern: "foo", Options: "i"}}},
+			},
+			ordered: false,
+			werr: &mongo.WriteError{
+				Code:    53,
+				Message: "The '_id' value cannot be of type regex",
+			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/295",
+		},
+		"InsertDuplicateID": {
+			toInsert: []any{
+				bson.D{{"_id", "foo"}, {"_id", "bar"}},
+			},
+			ordered: false,
+			werr: &mongo.WriteError{
+				Code:    2,
+				Message: "can't have multiple _id fields in one document",
+			},
+			altMessage:       `invalid key: "_id" (duplicate keys are not allowed)`,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/293",
+		},
 	} {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
+		t.Run(name, func(tt *testing.T) {
+			var t testing.TB = tt
+
+			if tc.failsForFerretDB != "" {
+				t = setup.FailsForFerretDB(tt, tc.failsForFerretDB)
 			}
 
-			t.Parallel()
+			tt.Parallel()
 
 			require.NotNil(t, tc.toInsert, "toInsert must not be nil")
 			require.NotNil(t, tc.ordered, "ordered must not be nil")
 
-			ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
+			ctx, collection := setup.Setup(tt, shareddata.Scalars, shareddata.Composites)
 
 			var res bson.D
 			err := collection.Database().RunCommand(ctx, bson.D{
@@ -124,4 +160,48 @@ func TestInsertCommandErrors(t *testing.T) {
 			require.NoError(t, err)
 		})
 	}
+}
+
+func TestInsertIDDifferentTypes(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
+
+	_, err := collection.InsertOne(ctx, bson.D{
+		{"_id", int64(1)},
+		{"v", "foo2"},
+	})
+	require.NoError(t, err)
+
+	_, err = collection.InsertOne(ctx, bson.D{
+		{"_id", int32(1)},
+		{"v", "foo1"},
+	})
+
+	expected := mongo.WriteError{
+		Message: "E11000 duplicate key error collection: TestInsertIDDifferentTypes.TestInsertIDDifferentTypes index: _id_ dup key: { _id: 1 }",
+		Code:    11000,
+	}
+	AssertEqualAltWriteError(
+		t,
+		expected,
+		`Duplicate key violation on the requested collection: Index '_id_'`,
+		err,
+	)
+
+	_, err = collection.InsertOne(ctx, bson.D{
+		{"_id", float32(1)},
+		{"v", "foo3"},
+	})
+
+	expected = mongo.WriteError{
+		Message: "E11000 duplicate key error collection: TestInsertIDDifferentTypes.TestInsertIDDifferentTypes index: _id_ dup key: { _id: 1.0 }",
+		Code:    11000,
+	}
+	AssertEqualAltWriteError(
+		t,
+		expected,
+		`Duplicate key violation on the requested collection: Index '_id_'`,
+		err,
+	)
 }

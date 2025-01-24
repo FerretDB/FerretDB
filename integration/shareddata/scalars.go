@@ -16,19 +16,39 @@ package shareddata
 
 import (
 	"math"
+	"math/big"
+	"sync"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 const (
 	doubleMaxPrec = float64(1<<53 - 1) // 9007199254740991.0:    largest double values that could be represented as integer exactly
 	doubleBig     = float64(1 << 61)   // 2305843009213693952.0: some number larger than safe integer (doubleBig+1 == doubleBig)
-	longBig       = int64(1 << 61)     // 2305843009213693952:   same as doubleBig but integer
+	longBig       = int64(doubleBig)   // 2305843009213693952:   same as doubleBig but integer
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/2321
+	doubleMaxOverflow = float64(math.MaxInt64) + 1100.0 // 9223372036854777856.0: double value that is larger than MaxInt64
+	doubleMinOverflow = float64(math.MinInt64) - 1100.0 // -9223372036854777856.0: double value that is smaller than MinInt64
+
+	Int32Interval = "[0, 2147483647]" // Int32Interval is [0, math.MaxInt32]
+)
+
+var (
+	doubleMaxVerge = math.Nextafter(math.MaxFloat64, 0) // 1.7976931348623155e+308: double value that is close to the MaxFloat64 (1.7976931348623157e+308)
+
+	// 9999999999999999999999999999999999: the largest value which can be stored as Decimal128 significand (34 digits).
+	decimal128MaxSig = sync.OnceValue(func() *big.Int {
+		i := new(big.Int)
+		var ok bool
+
+		i, ok = i.SetString("9999999999999999999999999999999999", 10)
+		must.BeTrue(ok)
+
+		return i
+	})()
 )
 
 // Scalars contain scalar values for tests.
@@ -37,23 +57,19 @@ const (
 var Scalars = &Values[string]{
 	name: "Scalars",
 	data: map[string]any{
-		"double":                    42.13,
-		"double-whole":              42.0,
-		"double-zero":               0.0,
-		"double-max":                math.MaxFloat64,
-		"double-smallest":           math.SmallestNonzeroFloat64,
-		"double-big":                doubleBig,
-		"double-1":                  float64(math.MinInt64 - 1),
-		"double-2":                  float64(math.MinInt64),
-		"double-3":                  float64(-123456789),
-		"double-4":                  float64(123456789),
-		"double-5":                  float64(math.MaxInt64),
-		"double-6":                  float64(math.MaxInt64 + 1),
-		"double-7":                  1.79769e+307,
-		"double-max-overflow":       9.223372036854776833e+18, // TODO https://github.com/FerretDB/FerretDB/issues/2321
-		"double-max-overflow-verge": 9.223372036854776832e+18,
-		"double-min-overflow":       -9.223372036854776833e+18,
-		"double-min-overflow-verge": -9.223372036854776832e+18,
+		"double":              42.13,
+		"double-whole":        42.0,
+		"double-zero":         0.0,
+		"double-max":          math.MaxFloat64,
+		"double-smallest":     math.SmallestNonzeroFloat64,
+		"double-big":          doubleBig,
+		"double-1":            float64(math.MinInt64),
+		"double-2":            float64(-123456789), // random
+		"double-3":            float64(123456789),  // random
+		"double-4":            float64(math.MaxInt64),
+		"double-5":            doubleMaxVerge,
+		"double-max-overflow": doubleMaxOverflow,
+		"double-min-overflow": doubleMinOverflow,
 
 		"string":        "foo",
 		"string-double": "42.13",
@@ -91,8 +107,8 @@ var Scalars = &Values[string]{
 		"int32-max":  int32(math.MaxInt32),
 		"int32-min":  int32(math.MinInt32),
 		"int32-1":    int32(4080),
-		"int32-2":    int32(1048560),
-		"int32-3":    int32(268435440),
+		"int32-2":    int32(1048560),   // random
+		"int32-3":    int32(268435440), // random
 
 		"timestamp":   primitive.Timestamp{T: 42, I: 13},
 		"timestamp-i": primitive.Timestamp{I: 1},
@@ -102,12 +118,18 @@ var Scalars = &Values[string]{
 		"int64-max":        int64(math.MaxInt64),
 		"int64-min":        int64(math.MinInt64),
 		"int64-big":        longBig,
-		"int64-double-big": int64(1 << 61),
-		"int64-1":          int64(1099511628000),
-		"int64-2":          int64(281474976700000),
-		"int64-3":          int64(72057594040000000),
+		"int64-double-big": doubleBig,
+		"int64-1":          int64(1099511628000),     // random
+		"int64-2":          int64(281474976700000),   // random
+		"int64-3":          int64(72057594040000000), // random
 
-		// no 128-bit decimal floating point (yet)
+		"decimal128-int":      must.NotFail(primitive.ParseDecimal128("42")),
+		"decimal128-int-zero": must.NotFail(primitive.ParseDecimal128("0")),
+
+		"decimal128":        must.NotFail(primitive.ParseDecimal128("42.13")),
+		"decimal128-whole":  must.NotFail(primitive.ParseDecimal128("42.0")),
+		"decimal128-zero":   must.NotFail(primitive.ParseDecimal128("0.0")),
+		"decimal128-double": must.NotFail(primitive.ParseDecimal128("9007199254740991.0")),
 
 		// no Min key
 		// no Max key
@@ -147,17 +169,13 @@ var Doubles = &Values[string]{
 		"double-prec-min-minus":     -doubleMaxPrec - 1,
 		"double-prec-min-minus-two": -doubleMaxPrec - 2,
 
-		"double-null":               nil,
-		"double-1":                  float64(math.MinInt64 - 1),
-		"double-2":                  float64(math.MinInt64),
-		"double-3":                  float64(-123456789),
-		"double-4":                  float64(123456789),
-		"double-5":                  float64(math.MaxInt64),
-		"double-6":                  float64(math.MaxInt64 + 1),
-		"double-max-overflow":       9.223372036854776833e+18,
-		"double-max-overflow-verge": 9.223372036854776832e+18,
-		"double-min-overflow":       -9.223372036854776833e+18,
-		"double-min-overflow-verge": -9.223372036854776832e+18,
+		"double-null":         nil,
+		"double-1":            float64(math.MinInt64),
+		"double-2":            float64(-123456789), // random
+		"double-3":            float64(123456789),  // random
+		"double-4":            float64(math.MaxInt64),
+		"double-max-overflow": doubleMaxOverflow,
+		"double-min-overflow": doubleMinOverflow,
 	},
 }
 
@@ -170,7 +188,7 @@ var OverflowVergeDoubles = &Values[string]{
 	name: "OverflowVergeDoubles",
 	data: map[string]any{
 		"double-max": math.MaxFloat64,
-		"double-7":   1.79769e+307,
+		"double-7":   doubleMaxVerge,
 	},
 }
 
@@ -181,9 +199,9 @@ var SmallDoubles = &Values[string]{
 	data: map[string]any{
 		"double":       42.13,
 		"double-whole": 42.0,
-		"double-1":     4080.1234,
-		"double-2":     1048560.0099,
-		"double-3":     268435440.2,
+		"double-1":     4080.1234,    // random
+		"double-2":     1048560.0099, // random
+		"double-3":     268435440.2,  // random
 	},
 }
 
@@ -270,8 +288,8 @@ var Int32s = &Values[string]{
 		"int32-min":  int32(math.MinInt32),
 		// "int32-null": nil, TODO: https://github.com/FerretDB/FerretDB/issues/1821
 		"int32-1": int32(4080),
-		"int32-2": int32(1048560),
-		"int32-3": int32(268435440),
+		"int32-2": int32(1048560),   // random
+		"int32-3": int32(268435440), // random
 	},
 }
 
@@ -294,9 +312,9 @@ var Int64s = &Values[string]{
 		"int64-max":  int64(math.MaxInt64),
 		"int64-min":  int64(math.MinInt64),
 		// "int64-null": nil, TODO: https://github.com/FerretDB/FerretDB/issues/1821
-		"int64-1": int64(1099511628000),
-		"int64-2": int64(281474976700000),
-		"int64-3": int64(72057594040000000),
+		"int64-1": int64(1099511628000),     // random
+		"int64-2": int64(281474976700000),   // random
+		"int64-3": int64(72057594040000000), // random
 
 		// long big values ~1<<61
 		"int64-big":       longBig,
@@ -320,6 +338,37 @@ var Int64s = &Values[string]{
 		"int64-prec-min-minus":     -int64(doubleMaxPrec) - 1,
 		"int64-prec-min-minus-two": -int64(doubleMaxPrec) - 2,
 	},
+}
+
+// Decimal128s contains decimal128 values for tests.
+var Decimal128s = &Values[string]{
+	name: "Decimal128s",
+	data: map[string]any{
+		"decimal128":       must.NotFail(primitive.ParseDecimal128("42.13")),
+		"decimal128-whole": must.NotFail(primitive.ParseDecimal128("42.0")),
+		"decimal128-zero":  must.NotFail(primitive.ParseDecimal128("0.0")),
+
+		// decimal128 corner exponent values
+		"decimal128-max-exp": mustParseDecimal128FromBigInt(big.NewInt(42), primitive.MaxDecimal128Exp),
+		"decimal128-min-exp": mustParseDecimal128FromBigInt(big.NewInt(42), primitive.MinDecimal128Exp),
+
+		// decimal128 corner significant values + corner exponent values
+		"decimal128-max-sig":     mustParseDecimal128FromBigInt(decimal128MaxSig, 0),
+		"decimal128-max-exp-sig": mustParseDecimal128FromBigInt(decimal128MaxSig, primitive.MaxDecimal128Exp),
+		"decimal128-min-exp-sig": mustParseDecimal128FromBigInt(decimal128MaxSig, primitive.MinDecimal128Exp),
+
+		"decimal128-int":      must.NotFail(primitive.ParseDecimal128("42")),
+		"decimal128-int-zero": must.NotFail(primitive.ParseDecimal128("0")),
+	},
+}
+
+// mustParseDecimal128FromBigInt parses the significand and exponent into a Decimal128 value.
+// It panics on failure.
+func mustParseDecimal128FromBigInt(sig *big.Int, exp int) primitive.Decimal128 {
+	res, ok := primitive.ParseDecimal128FromBigInt(sig, exp)
+	must.BeTrue(ok)
+
+	return res
 }
 
 // Unsets contains unset value for tests.
@@ -353,4 +402,14 @@ func init() {
 
 	must.BeTrue(-doubleMaxPrec != -doubleMaxPrec-1)
 	must.BeTrue(-doubleMaxPrec-1 == -doubleMaxPrec-2)
+
+	must.BeTrue(int64(-doubleMaxPrec) != int64(-doubleMaxPrec-1))
+	must.BeTrue(int64(-doubleMaxPrec-1) == int64(-doubleMaxPrec-2))
+
+	must.BeTrue(-doubleMaxPrec != -doubleMaxPrec-1)
+
+	must.BeTrue(doubleMaxOverflow > float64(math.MaxInt64))
+	must.BeTrue(doubleMinOverflow < float64(math.MinInt64))
+
+	must.BeTrue(doubleMaxVerge < math.MaxFloat64)
 }

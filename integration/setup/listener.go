@@ -16,24 +16,31 @@ package setup
 
 import (
 	"context"
-	"errors"
+	"log/slog"
 	"net/url"
 	"os"
 	"path/filepath"
+	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel"
-	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/clientconn"
-	"github.com/FerretDB/FerretDB/internal/handlers/registry"
-	"github.com/FerretDB/FerretDB/internal/util/observability"
-	"github.com/FerretDB/FerretDB/internal/util/state"
-	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
+	"github.com/FerretDB/FerretDB/v2/internal/clientconn"
+	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
+	"github.com/FerretDB/FerretDB/v2/internal/handler"
+	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
+	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 )
 
+// ListenerOpts represents setup options for in-process FerretDB listener.
+type ListenerOpts struct {
+	// SessionCleanupInterval is a duration between expired session deletion runs.
+	SessionCleanupInterval time.Duration
+}
+
 // unixSocketPath returns temporary Unix domain socket path for that test.
-func unixSocketPath(tb testtb.TB) string {
+func unixSocketPath(tb testing.TB) string {
 	tb.Helper()
 
 	// do not use tb.TempDir() because generated path is too long on macOS
@@ -50,7 +57,7 @@ func unixSocketPath(tb testtb.TB) string {
 }
 
 // listenerMongoDBURI builds MongoDB URI for in-process FerretDB.
-func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath string, tlsAndAuth bool) string {
+func listenerMongoDBURI(tb testing.TB, hostPort, unixSocketPath string) string {
 	tb.Helper()
 
 	var host string
@@ -62,29 +69,12 @@ func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath string, tlsAndAut
 		host = unixSocketPath
 	}
 
-	var user *url.Userinfo
-	var q url.Values
-
-	if tlsAndAuth {
-		require.Empty(tb, unixSocketPath, "unixSocketPath cannot be used with TLS")
-
-		// we don't separate TLS and auth just for simplicity of our test configurations
-		q = url.Values{
-			"tls":                   []string{"true"},
-			"tlsCertificateKeyFile": []string{filepath.Join(CertsRoot, "client.pem")},
-			"tlsCaFile":             []string{filepath.Join(CertsRoot, "rootCA-cert.pem")},
-			"authMechanism":         []string{"PLAIN"},
-		}
-		user = url.UserPassword("username", "password")
-	}
-
 	// TODO https://github.com/FerretDB/FerretDB/issues/1507
 	u := &url.URL{
-		Scheme:   "mongodb",
-		Host:     host,
-		Path:     "/",
-		User:     user,
-		RawQuery: q.Encode(),
+		Scheme: "mongodb",
+		Host:   host,
+		Path:   "/",
+		User:   url.UserPassword("username", "password"),
 	}
 
 	return u.String()
@@ -92,33 +82,17 @@ func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath string, tlsAndAut
 
 // setupListener starts in-process FerretDB server that runs until ctx is canceled.
 // It returns basic MongoDB URI for that listener.
-func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string {
+func setupListener(tb testing.TB, ctx context.Context, opts *ListenerOpts, logger *slog.Logger) string {
 	tb.Helper()
 
-	_, span := otel.Tracer("").Start(ctx, "setupListener")
+	ctx, span := otel.Tracer("").Start(ctx, "setupListener")
 	defer span.End()
-
-	defer observability.FuncCall(ctx)()
 
 	require.Empty(tb, *targetURLF, "-target-url must be empty for in-process FerretDB")
 
-	var handler string
-
 	switch *targetBackendF {
-	case "ferretdb-pg":
+	case "ferretdb":
 		require.NotEmpty(tb, *postgreSQLURLF, "-postgresql-url must be set for %q", *targetBackendF)
-		require.Empty(tb, *hanaURLF, "-hana-url must be empty for %q", *targetBackendF)
-		handler = "pg"
-
-	case "ferretdb-sqlite":
-		require.Empty(tb, *postgreSQLURLF, "-postgresql-url must be empty for %q", *targetBackendF)
-		require.Empty(tb, *hanaURLF, "-hana-url must be empty for %q", *targetBackendF)
-		handler = "sqlite"
-
-	case "ferretdb-hana":
-		require.Empty(tb, *postgreSQLURLF, "-postgresql-url must be empty for %q", *targetBackendF)
-		require.NotEmpty(tb, *hanaURLF, "-hana-url must be set for %q", *targetBackendF)
-		handler = "hana"
 
 	case "mongodb":
 		tb.Fatal("can't start in-process MongoDB")
@@ -128,26 +102,34 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 		panic("not reached")
 	}
 
-	p, err := state.NewProvider("")
+	sp, err := state.NewProvider("")
 	require.NoError(tb, err)
 
-	handlerOpts := &registry.NewHandlerOpts{
-		Logger:        logger,
-		ConnMetrics:   listenerMetrics.ConnMetrics,
-		StateProvider: p,
-
-		PostgreSQLURL: *postgreSQLURLF,
-
-		SQLiteURL: sqliteURL.String(),
-
-		HANAURL: *hanaURLF,
-
-		TestOpts: registry.TestOpts{
-			DisableFilterPushdown: *disableFilterPushdownF,
-			EnableSortPushdown:    *enableSortPushdownF,
-		},
+	if opts == nil {
+		opts = new(ListenerOpts)
 	}
-	h, err := registry.NewHandler(handler, handlerOpts)
+
+	p, err := documentdb.NewPool(*postgreSQLURLF, logging.WithName(logger, "pool"), sp)
+	require.NoError(tb, err)
+
+	tb.Cleanup(p.Close)
+
+	handlerOpts := &handler.NewOpts{
+		Pool: p,
+		Auth: true,
+
+		// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/566
+		TCPHost:     "",
+		ReplSetName: "",
+
+		L:             logging.WithName(logger, "handler"),
+		ConnMetrics:   listenerMetrics.ConnMetrics,
+		StateProvider: sp,
+
+		SessionCleanupInterval: opts.SessionCleanupInterval,
+	}
+
+	h, err := handler.New(handlerOpts)
 	require.NoError(tb, err)
 
 	listenerOpts := clientconn.NewListenerOpts{
@@ -156,42 +138,32 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 		Metrics:        listenerMetrics,
 		Handler:        h,
 		Logger:         logger,
-		TestRecordsDir: filepath.Join("..", "tmp", "records"),
+		TestRecordsDir: filepath.Join(Dir(tb), "..", "..", "tmp", "records"),
 	}
 
 	if *targetProxyAddrF != "" {
 		listenerOpts.Mode = clientconn.DiffNormalMode
 	}
 
-	if *targetTLSF && *targetUnixSocketF {
-		tb.Fatal("Both -target-tls and -target-unix-socket are set.")
-	}
-
 	switch {
-	case *targetTLSF:
-		listenerOpts.TLS = "127.0.0.1:0"
-		listenerOpts.TLSCertFile = filepath.Join(CertsRoot, "server-cert.pem")
-		listenerOpts.TLSKeyFile = filepath.Join(CertsRoot, "server-key.pem")
-		listenerOpts.TLSCAFile = filepath.Join(CertsRoot, "rootCA-cert.pem")
 	case *targetUnixSocketF:
 		listenerOpts.Unix = unixSocketPath(tb)
 	default:
 		listenerOpts.TCP = "127.0.0.1:0"
 	}
 
-	l := clientconn.NewListener(&listenerOpts)
+	l, err := clientconn.Listen(&listenerOpts)
+	require.NoError(tb, err)
 
 	runDone := make(chan struct{})
 
 	go func() {
 		defer close(runDone)
 
-		err := l.Run(ctx)
-		if err == nil || errors.Is(err, context.Canceled) {
-			logger.Info("Listener stopped without error")
-		} else {
-			logger.Error("Listener stopped", zap.Error(err))
-		}
+		runCtx, runSpan := otel.Tracer("").Start(ctx, "setupListener.Run")
+		defer runSpan.End()
+
+		l.Run(runCtx)
 	}()
 
 	// ensure that all listener's and handler's logs are written before test ends
@@ -200,21 +172,17 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 	})
 
 	var hostPort, unixSocketPath string
-	var tlsAndAuth bool
 
 	switch {
-	case *targetTLSF:
-		hostPort = l.TLSAddr().String()
-		tlsAndAuth = true
 	case *targetUnixSocketF:
 		unixSocketPath = l.UnixAddr().String()
 	default:
 		hostPort = l.TCPAddr().String()
 	}
 
-	uri := listenerMongoDBURI(tb, hostPort, unixSocketPath, tlsAndAuth)
+	uri := listenerMongoDBURI(tb, hostPort, unixSocketPath)
 
-	logger.Info("Listener started", zap.String("handler", handler), zap.String("uri", uri))
+	logger.InfoContext(ctx, "Listener started", slog.String("uri", uri))
 
 	return uri
 }

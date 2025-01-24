@@ -6,20 +6,37 @@ run:
 
 linters-settings:
   # asciicheck
+  depguard:
+    rules:
+      old:
+        files:
+          - $all
+        deny:
+          - pkg: golang.org/x/net/context
+            desc: use `context` package instead
+          - pkg: golang.org/x/exp/slices
+            desc: use `slices` package instead
+          # - pkg: golang.org/x/exp/maps
+          #   desc: use `maps` package instead
+      commonerrors:
+        files:
+          - $all
+        deny:
+          - pkg: github.com/FerretDB/FerretDB/v2/internal/handler/commonerrors
   exhaustive:
     default-signifies-exhaustive: false
   gci:
     sections:
       - standard
       - default
-      - prefix(github.com/FerretDB/FerretDB)
+      - prefix(github.com/FerretDB/FerretDB/v2)
+      - prefix(github.com/FerretDB/FerretDB/v2/integration)
   goconst:
     min-occurrences: 5
     ignore-tests: true
   godot:
     scope: toplevel
     exclude:
-      - go-sumtype:decl
       - check interfaces
     capital: true
   godox:
@@ -27,6 +44,8 @@ linters-settings:
       - BUG
       - FIXME
       - HACK
+      - lala
+      - lalala
   goheader:
     # Please do not update it, including bumping a year.
     template: |-
@@ -44,8 +63,12 @@ linters-settings:
       See the License for the specific language governing permissions and
       limitations under the License.
   goimports:
-    local-prefixes: github.com/FerretDB/FerretDB
-  # gomodguard
+    local-prefixes: github.com/FerretDB/FerretDB/v2
+  gomodguard:
+    blocked:
+      modules:
+        - github.com/FerretDB/FerretDB:
+            reason: "Use `github.com/FerretDB/FerretDB/v2/...` instead."
   gosimple:
     checks: ["all"]
   govet:
@@ -55,17 +78,28 @@ linters-settings:
       - nilness
       - shadow
   importas:
-    no-unaliased: false
-    no-extra-aliases: true
+    # https://github.com/julz/importas/issues/15
+    no-unaliased: true
+    no-extra-aliases: false
     alias:
       - pkg: github.com/prometheus/client_model/go
         alias: dto
-      - pkg: go.opentelemetry.io/otel/semconv/v1.17.0
-        alias: otelsemconv
-      - pkg: go.opentelemetry.io/otel/sdk/trace
-        alias: oteltrace
       - pkg: github.com/jaswdr/faker
         alias: fakerlib
+      - pkg: github.com/xdg-go/scram
+        alias: xdgscram
+      - pkg: go.opentelemetry.io/otel/attribute
+        alias: otelattribute
+      - pkg: go.opentelemetry.io/otel/codes
+        alias: otelcodes
+      - pkg: go.opentelemetry.io/otel/trace
+        alias: oteltrace
+      - pkg: go.opentelemetry.io/otel/sdk/resource
+        alias: otelsdkresource
+      - pkg: go.opentelemetry.io/otel/sdk/trace
+        alias: otelsdktrace
+      - pkg: go.opentelemetry.io/otel/semconv/v1.21.0
+        alias: otelsemconv
   # ineffassign
   lll:
     line-length: 175 # TODO reduce it to 130
@@ -73,9 +107,13 @@ linters-settings:
   misspell:
     ignore-words:
       - guiness # present in the test dataset
+    extra-words: # https://go.dev/wiki/Spelling, https://github.com/golangci/misspell/issues/11
+      - typo: "iff"
+        correction: "if"
+      - typo: "cancelation"
+        correction: "cancellation"
   nolintlint:
     allow-unused: false
-    allow-leading-space: false
     allow-no-explanation: []
     require-explanation: true
     require-specific: true
@@ -83,11 +121,37 @@ linters-settings:
     ignore-generated-header: true
     severity: error
     rules: []
+  sloglint:
+    no-mixed-args: true
+    kv-only: false
+    attr-only: true
+    no-global: "all"
+    context: "scope"
+    static-msg: false # TODO https://github.com/FerretDB/FerretDB/issues/3421
+    no-raw-keys: false # TODO https://github.com/FerretDB/FerretDB/issues/3421
+    key-naming-case: snake
+    args-on-sep-lines: false
   staticcheck:
     checks:
       - all
       - -SA1019 # ignore deprecation errors in existing code; new code is checked by the other configuration
-  # unused
+  tagalign:
+    sort: true
+    order:
+      - name
+      - cmd
+      - arg
+      - default
+      - help
+  unparam:
+    check-exported: false
+  unused:
+    field-writes-are-uses: false
+    post-statements-are-reads: false
+    exported-fields-are-used: false
+    parameters-are-used: true # it should be false, TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/823
+    local-variables-are-used: false
+    generated-is-used: false
   whitespace:
     multi-if: false
     multi-func: false
@@ -96,8 +160,10 @@ linters:
   disable-all: true
   enable:
     - asciicheck
+    - depguard
     - exhaustive
     - gci
+    - gochecksumtype
     - goconst
     - godot
     - godox
@@ -112,7 +178,9 @@ linters:
     - misspell
     - nolintlint
     - revive
+    - sloglint
     - staticcheck
+    - tagalign
     - unused
     - whitespace
 
@@ -122,6 +190,8 @@ issues:
 
   exclude-use-default: false
   exclude-rules:
-    # that's a valid usage of bson.D
+    # that's a valid usage of bson.D / bson.E
     - linters: [govet]
       text: "composites: go.mongodb.org/mongo-driver/bson/primitive.E struct literal uses unkeyed fields"
+    - linters: [govet]
+      text: "composites: go.mongodb.org/mongo-driver/bson.E struct literal uses unkeyed fields"

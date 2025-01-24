@@ -1,6 +1,5 @@
 ---
-# https://github.com/DavidAnson/markdownlint
-# https://github.com/DavidAnson/markdownlint-cli2
+# https://github.com/DavidAnson/markdownlint-cli2#configuration
 # https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md
 
 default: true
@@ -10,4 +9,6 @@ MD003: { style: atx }
 MD004: { style: "dash" }
 MD006: false # deprecated
 MD013: false # we use https://sembr.org that could lead to long lines
+MD026: { punctuation: ".,;:。，；：" } # default is .,;:!。，；：！
 MD029: { style: ordered }
+MD034: false # autolink tags <link> no longer supported by MDX

@@ -21,16 +21,17 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/AlekSi/pointer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/v2/integration/setup"
 )
 
 func TestCreateStress(t *testing.T) {
-	// TODO rewrite using teststress.Stress
+	// It should be rewritten to use teststress.Stress.
 
 	ctx, collection := setup.Setup(t) // no providers there, we will create collections concurrently
 	db := collection.Database()
@@ -92,10 +93,8 @@ func TestCreateStress(t *testing.T) {
 	}
 }
 
-func TestCreateOnInsertStressSameCollection(tt *testing.T) {
-	// TODO rewrite using teststress.Stress
-
-	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/2747")
+func TestCreateOnInsertStressSameCollection(t *testing.T) {
+	// It should be rewritten to use teststress.Stress.
 
 	ctx, collection := setup.Setup(t)
 	// do not toLower() db name as it may contain uppercase letters
@@ -135,7 +134,7 @@ func TestCreateOnInsertStressSameCollection(tt *testing.T) {
 }
 
 func TestCreateOnInsertStressDiffCollection(t *testing.T) {
-	// TODO rewrite using teststress.Stress
+	// It should be rewritten to use teststress.Stress.
 
 	ctx, collection := setup.Setup(t)
 	// do not toLower() db name as it may contain uppercase letters
@@ -176,11 +175,11 @@ func TestCreateOnInsertStressDiffCollection(t *testing.T) {
 }
 
 func TestCreateStressSameCollection(tt *testing.T) {
-	// TODO rewrite using teststress.Stress
+	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/3853")
 
-	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/2747")
+	// It should be rewritten to use teststress.Stress.
 
-	ctx, collection := setup.Setup(t) // no providers there, we will create collection from the test
+	ctx, collection := setup.Setup(tt) // no providers there, we will create collection from the test
 	db := collection.Database()
 
 	collNum := runtime.GOMAXPROCS(-1) * 10
@@ -203,19 +202,8 @@ func TestCreateStressSameCollection(tt *testing.T) {
 			<-start
 
 			err := db.CreateCollection(ctx, collName)
-			if err == nil {
-				created.Add(1)
-			} else {
-				AssertEqualCommandError(
-					t,
-					mongo.CommandError{
-						Code:    48,
-						Name:    "NamespaceExists",
-						Message: `Collection TestCreateStressSameCollection.stress_same_collection already exists.`,
-					},
-					err,
-				)
-			}
+			require.NoError(t, err)
+			created.Add(1)
 
 			id := fmt.Sprintf("foo_%d", i)
 			_, err = db.Collection(collName).InsertOne(ctx, bson.D{{"_id", id}, {"v", "bar"}})
@@ -243,5 +231,10 @@ func TestCreateStressSameCollection(tt *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, bson.D{{"_id", "foo_1"}, {"v", "bar"}}, doc)
 
-	require.Equal(t, int32(1), created.Load(), "Only one attempt to create a collection should succeed")
+	// Until Mongo 7.0, attempts to create a collection that existed would return a NamespaceExists error.
+	require.Equal(t, int32(collNum), created.Load(), "All attempts to create a collection should succeed")
+
+	assert.Error(t, db.CreateCollection(ctx, collName, &options.CreateCollectionOptions{
+		SizeInBytes: pointer.ToInt64(int64(1024)),
+	}))
 }

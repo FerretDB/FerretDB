@@ -1,0 +1,5 @@
+# We can't have it in build/.prettierignore due to https://github.com/prettier/prettier/issues/15428
+# Textlint uses the same format, so we re-use the file.
+build/postgres-documentdb/documentdb/**
+internal/dataapi/api/openapi.json
+website/static/codapi/snippet.js

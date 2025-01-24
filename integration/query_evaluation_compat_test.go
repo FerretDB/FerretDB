@@ -16,11 +16,12 @@ package integration
 
 import (
 	"math"
-	"runtime"
 	"testing"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+
+	"github.com/FerretDB/FerretDB/v2/integration/shareddata"
 )
 
 func TestQueryEvaluationCompatRegexErrors(t *testing.T) {
@@ -101,10 +102,6 @@ func TestQueryEvaluationCompatRegexErrors(t *testing.T) {
 }
 
 func TestQueryEvaluationCompatMod(t *testing.T) {
-	if runtime.GOARCH == "arm64" {
-		t.Skip("TODO https://github.com/FerretDB/FerretDB/issues/491")
-	}
-
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
@@ -181,24 +178,31 @@ func TestQueryEvaluationCompatMod(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"MinInt64_Divisor": {
-			filter: bson.D{{"v", bson.D{{"$mod", bson.A{math.MinInt64, 0}}}}},
+			filter:           bson.D{{"v", bson.D{{"$mod", bson.A{math.MinInt64, 0}}}}},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/331",
+			failsProviders:   []shareddata.Provider{shareddata.Doubles, shareddata.Scalars},
 		},
 		"MinInt64_Remainder": {
 			filter:     bson.D{{"v", bson.D{{"$mod", bson.A{1, math.MinInt64}}}}},
 			resultType: emptyResult,
 		},
 		"MinInt64_floatDivisor": {
-			filter: bson.D{{"v", bson.D{{"$mod", bson.A{float64(math.MinInt64), 0}}}}},
+			filter:           bson.D{{"v", bson.D{{"$mod", bson.A{float64(math.MinInt64), 0}}}}},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/330",
 		},
 		"MinInt64_floatRemainder": {
-			filter:     bson.D{{"v", bson.D{{"$mod", bson.A{1, float64(math.MinInt64)}}}}},
-			resultType: emptyResult,
+			filter:           bson.D{{"v", bson.D{{"$mod", bson.A{1, float64(math.MinInt64)}}}}},
+			resultType:       emptyResult,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/330",
 		},
 		"MinInt64_minus": {
-			filter: bson.D{{"v", bson.D{{"$mod", bson.A{-9.223372036854775809e+18, 0}}}}},
+			filter:           bson.D{{"v", bson.D{{"$mod", bson.A{-9.223372036854775809e+18, 0}}}}},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/330",
 		},
 		"MinInt64_1": {
-			filter: bson.D{{"v", bson.D{{"$mod", bson.A{-922337203685477580, -8}}}}},
+			filter:           bson.D{{"v", bson.D{{"$mod", bson.A{-922337203685477580, -8}}}}},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/331",
+			failsProviders:   []shareddata.Provider{shareddata.Doubles, shareddata.Scalars},
 		},
 		"MinInt64_2": {
 			filter:     bson.D{{"v", bson.D{{"$mod", bson.A{-9.223372036854775808e+17, -8}}}}},
@@ -213,7 +217,8 @@ func TestQueryEvaluationCompatMod(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"MinInt64_overflowVerge": {
-			filter: bson.D{{"v", bson.D{{"$mod", bson.A{-9.223372036854776832e+18, 0}}}}},
+			filter:           bson.D{{"v", bson.D{{"$mod", bson.A{-9.223372036854776832e+18, 0}}}}},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/330",
 		},
 		"MinInt64_overflowDivisor": {
 			filter:     bson.D{{"v", bson.D{{"$mod", bson.A{-9.223372036854776833e+18, 0}}}}},
@@ -299,6 +304,103 @@ func TestQueryEvaluationCompatMod(t *testing.T) {
 		"InfinityPositive": {
 			filter:     bson.D{{"v", bson.D{{"$mod", bson.A{math.Inf(+1), 0}}}}},
 			resultType: emptyResult,
+		},
+	}
+
+	testQueryCompat(t, testCases)
+}
+
+func TestQueryEvaluationCompatExpr(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]queryCompatTestCase{
+		"Expression": {
+			filter:           bson.D{{"$expr", "$v"}},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/332",
+			failsProviders:   []shareddata.Provider{shareddata.Decimal128s, shareddata.Doubles, shareddata.Int64s, shareddata.Scalars},
+		},
+		"ExpressionDotNotation": {
+			filter: bson.D{{"$expr", "$v.foo"}},
+		},
+		"ExpressionIndexDotNotation": {
+			filter: bson.D{{"$expr", "$v.0.foo"}},
+		},
+		"Document": {
+			filter: bson.D{{"$expr", bson.D{{"v", "foo"}}}},
+		},
+		"DocumentExpression": {
+			filter: bson.D{{"$expr", bson.D{{"v", "$v"}}}},
+		},
+		"DocumentNestedExpr": {
+			filter:           bson.D{{"$expr", bson.D{{"v", bson.D{{"$expr", int32(1)}}}}}},
+			resultType:       emptyResult,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
+		},
+		"DocumentInvalid": {
+			filter:           bson.D{{"$expr", bson.D{{"v", "$"}}}},
+			resultType:       emptyResult,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/268",
+		},
+		"Array": {
+			filter: bson.D{{"$expr", bson.A{"$v"}}},
+		},
+		"ArrayMany": {
+			filter: bson.D{{"$expr", bson.A{nil, "foo", int32(42)}}},
+		},
+		"ArrayInvalid": {
+			filter:           bson.D{{"$expr", bson.A{"$"}}},
+			resultType:       emptyResult,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/268",
+		},
+		"String": {
+			filter: bson.D{{"$expr", "v"}},
+		},
+		"True": {
+			filter: bson.D{{"$expr", true}},
+		},
+		"False": {
+			filter:     bson.D{{"$expr", false}},
+			resultType: emptyResult,
+		},
+		"IntZero": {
+			filter:     bson.D{{"$expr", int32(0)}},
+			resultType: emptyResult,
+		},
+		"Int": {
+			filter: bson.D{{"$expr", int32(1)}},
+		},
+		"LongZero": {
+			filter:     bson.D{{"$expr", int64(0)}},
+			resultType: emptyResult,
+		},
+		"Long": {
+			filter: bson.D{{"$expr", int64(42)}},
+		},
+		"DoubleZero": {
+			filter:     bson.D{{"$expr", float64(0)}},
+			resultType: emptyResult,
+		},
+		"Double": {
+			filter: bson.D{{"$expr", float64(-1)}},
+		},
+		"NonExistent": {
+			filter:     bson.D{{"$expr", "$non-existent"}},
+			resultType: emptyResult,
+		},
+		"Type": {
+			filter: bson.D{{"$expr", bson.D{{"$type", "$v"}}}},
+		},
+		"Sum": {
+			filter:           bson.D{{"$expr", bson.D{{"$sum", "$v"}}}},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/332",
+			failsProviders:   []shareddata.Provider{shareddata.Decimal128s, shareddata.Doubles, shareddata.Int64s, shareddata.Scalars},
+		},
+		"SumType": {
+			filter: bson.D{{"$expr", bson.D{{"$type", bson.D{{"$sum", "$v"}}}}}},
+		},
+		"Gt": {
+			filter: bson.D{{"$expr", bson.D{{"$gt", bson.A{"$v", 2}}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/1456",
 		},
 	}
 

@@ -15,140 +15,105 @@
 package integration
 
 import (
-	"math"
+	"math/rand/v2"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/integration/shareddata"
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/v2/integration/setup"
 )
 
-func TestCommandsAdministrationCompatCollStatsWithScale(t *testing.T) {
+func TestListCollectionsCompat(t *testing.T) {
 	t.Parallel()
 
-	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
-		Providers:                []shareddata.Provider{shareddata.DocumentsDocuments},
-		AddNonExistentCollection: true,
-	})
+	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
 
-	ctx, targetCollection, compatCollection := s.Ctx, s.TargetCollections[0], s.CompatCollections[0]
-
-	for name, tc := range map[string]struct { //nolint:vet // for readability
-		scale      any
-		resultType compatTestCaseResultType
-	}{
-		"scaleOne":           {scale: int32(1)},
-		"scaleBig":           {scale: int64(1000)},
-		"scaleMaxInt":        {scale: math.MaxInt64},
-		"scaleZero":          {scale: int32(0), resultType: emptyResult},
-		"scaleNegative":      {scale: int32(-100), resultType: emptyResult},
-		"scaleFloat":         {scale: 2.8},
-		"scaleFloatNegative": {scale: -2.8, resultType: emptyResult},
-		"scaleMinFloat":      {scale: -math.MaxFloat64, resultType: emptyResult},
-		"scaleMaxFloat":      {scale: math.MaxFloat64},
-		"scaleString": {
-			scale:      "1",
-			resultType: emptyResult,
-		},
-		"scaleObject": {
-			scale:      bson.D{{"a", 1}},
-			resultType: emptyResult,
-		},
-		"scaleNull": {scale: nil},
-	} {
-		name, tc := name, tc
-
-		t.Run(name, func(t *testing.T) {
-			t.Helper()
-
-			t.Parallel()
-
-			var targetRes bson.D
-			targetCommand := bson.D{{"collStats", targetCollection.Name()}, {"scale", tc.scale}}
-			targetErr := targetCollection.Database().RunCommand(ctx, targetCommand).Decode(&targetRes)
-
-			var compatRes bson.D
-			compatCommand := bson.D{{"collStats", compatCollection.Name()}, {"scale", tc.scale}}
-			compatErr := compatCollection.Database().RunCommand(ctx, compatCommand).Decode(&compatRes)
-
-			if targetErr != nil {
-				t.Logf("Target error: %v", targetErr)
-				t.Logf("Compat error: %v", compatErr)
-
-				// error messages are intentionally not compared
-				AssertMatchesCommandError(t, compatErr, targetErr)
-
-				return
-			}
-			require.NoError(t, compatErr, "compat error; target returned no error")
-
-			targetDoc := ConvertDocument(t, targetRes)
-			compatDoc := ConvertDocument(t, compatRes)
-
-			targetFactor := must.NotFail(targetDoc.Get("scaleFactor"))
-			compatFactor := must.NotFail(compatDoc.Get("scaleFactor"))
-
-			assert.Equal(t, compatFactor, targetFactor)
-		})
+	filterNames := make(bson.A, len(targetCollections))
+	for i, n := range targetCollections {
+		filterNames[i] = n.Name()
 	}
-}
 
-func TestCommandsAdministrationCompatDBStatsWithScale(t *testing.T) {
-	t.Parallel()
+	// We should remove shuffle there once it is implemented in the setup.
+	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/825
 
-	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
-		Providers:                []shareddata.Provider{shareddata.DocumentsDocuments},
-		AddNonExistentCollection: true,
-	})
+	rand.Shuffle(len(filterNames), func(i, j int) { filterNames[i], filterNames[j] = filterNames[j], filterNames[i] })
+	filterNames = filterNames[:len(filterNames)-1]
+	require.NotEmpty(t, filterNames)
 
-	ctx, targetCollection, compatCollection := s.Ctx, s.TargetCollections[0], s.CompatCollections[0]
+	filter := bson.D{{
+		"name", bson.D{{
+			"$in", filterNames,
+		}},
+	}}
 
-	for name, tc := range map[string]struct { //nolint:vet // for readability
-		scale      any
-		resultType compatTestCaseResultType
-	}{
-		"scaleOne":   {scale: int32(1)},
-		"scaleBig":   {scale: int64(1000)},
-		"scaleFloat": {scale: 2.8},
-		"scaleNull":  {scale: nil},
-	} {
-		name, tc := name, tc
+	compat, err := compatCollections[0].Database().ListCollections(ctx, filter)
+	require.NoError(t, err)
+	defer compat.Close(ctx)
 
-		t.Run(name, func(t *testing.T) {
-			t.Helper()
+	var compatRes []bson.D
+	err = compat.All(ctx, &compatRes)
+	require.NoError(t, err)
 
-			t.Parallel()
-
-			var targetRes bson.D
-			targetCommand := bson.D{{"dbStats", int32(1)}, {"scale", tc.scale}}
-			targetErr := targetCollection.Database().RunCommand(ctx, targetCommand).Decode(&targetRes)
-
-			var compatRes bson.D
-			compatCommand := bson.D{{"dbStats", int32(1)}, {"scale", tc.scale}}
-			compatErr := compatCollection.Database().RunCommand(ctx, compatCommand).Decode(&compatRes)
-
-			if targetErr != nil {
-				t.Logf("Target error: %v", targetErr)
-				t.Logf("Compat error: %v", compatErr)
-
-				// error messages are intentionally not compared
-				AssertMatchesCommandError(t, compatErr, targetErr)
-
-				return
-			}
-			require.NoError(t, compatErr, "compat error; target returned no error")
-
-			targetDoc := ConvertDocument(t, targetRes)
-			compatDoc := ConvertDocument(t, compatRes)
-
-			targetFactor := must.NotFail(targetDoc.Get("scaleFactor"))
-			compatFactor := must.NotFail(compatDoc.Get("scaleFactor"))
-
-			assert.Equal(t, compatFactor, targetFactor)
-		})
+	compatNames := make([]string, len(compatRes))
+	for i, doc := range compatRes {
+		compatNames[i] = doc.Map()["name"].(string)
 	}
+
+	require.True(t, slices.IsSorted(compatNames), "compat collections are not sorted")
+
+	target, err := targetCollections[0].Database().ListCollections(ctx, filter)
+	require.NoError(t, err)
+	defer target.Close(ctx)
+
+	var targetRes []bson.D
+	err = target.All(ctx, &targetRes)
+	require.NoError(t, err)
+
+	assert.Equal(t, target.RemainingBatchLength(), compat.RemainingBatchLength())
+
+	comparable := func(res []bson.D) []bson.D {
+		var resComparable []bson.D
+
+		for _, doc := range res {
+			var docComparable bson.D
+
+			for _, field := range doc {
+				switch field.Key {
+				case "info":
+					info, ok := field.Value.(bson.D)
+					require.True(t, ok)
+
+					var infoComparable bson.D
+
+					for _, infoField := range info {
+						switch infoField.Key {
+						case "uuid":
+							uuid, uuidOk := infoField.Value.(primitive.Binary)
+							require.True(t, uuidOk)
+							assert.Equal(t, bson.TypeBinaryUUID, uuid.Subtype)
+							assert.Len(t, uuid.Data, 16)
+							infoComparable = append(infoComparable, bson.E{Key: infoField.Key, Value: primitive.Binary{}})
+						default:
+							infoComparable = append(infoComparable, infoField)
+						}
+					}
+
+					docComparable = append(docComparable, bson.E{Key: field.Key, Value: infoComparable})
+
+				default:
+					docComparable = append(docComparable, field)
+				}
+			}
+
+			resComparable = append(resComparable, docComparable)
+		}
+
+		return resComparable
+	}
+
+	AssertEqualDocumentsSlice(t, comparable(compatRes), comparable(targetRes))
 }

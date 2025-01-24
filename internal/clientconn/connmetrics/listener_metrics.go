@@ -20,6 +20,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+// Parts of Prometheus metric names.
 const (
 	namespace = "ferretdb"
 	subsystem = "client"
@@ -68,14 +69,14 @@ func NewListenerMetrics() *ListenerMetrics {
 	}
 }
 
-// Describe implements prometheus.Collector.
+// Describe implements [prometheus.Collector].
 func (lm *ListenerMetrics) Describe(ch chan<- *prometheus.Desc) {
 	lm.Accepts.Describe(ch)
 	lm.Durations.Describe(ch)
 	lm.ConnMetrics.Describe(ch)
 }
 
-// Collect implements prometheus.Collector.
+// Collect implements [prometheus.Collector].
 func (lm *ListenerMetrics) Collect(ch chan<- prometheus.Metric) {
 	lm.Accepts.Collect(ch)
 	lm.Durations.Collect(ch)

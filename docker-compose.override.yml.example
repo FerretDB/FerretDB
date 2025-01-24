@@ -1,0 +1,4 @@
+---
+services:
+  postgres:
+    platform: linux/amd64
