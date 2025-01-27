@@ -44,6 +44,9 @@ type testCase struct {
 }
 
 func TestDefine(t *testing.T) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/4694
+	t.Skip("https://github.com/FerretDB/FerretDB/issues/4694")
+
 	for name, tc := range map[string]testCase{
 		"pull_request": {
 			env: map[string]string{

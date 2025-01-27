@@ -63,11 +63,7 @@ env:
 jobs:
   conform-pr:
     name: Conform PR
-
-    # https://www.ubicloud.com/docs/about/pricing#github-actions
-    # https://docs.github.com/en/billing/managing-billing-for-github-actions/about-billing-for-github-actions#per-minute-rates-for-larger-runners
-    runs-on: ubicloud-standard-2
-
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
 
     # No `trust` label check because we don't checkout PR's code.
