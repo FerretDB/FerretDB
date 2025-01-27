@@ -70,29 +70,36 @@ func Convert(rows []map[string]any) map[string]convertedRoutine {
 
 			paramNames = append(paramNames, name)
 
-			// skip a row if the row does not contain parameter such as BinaryExtendedVersion(),
-			// also skip p_transaction_id parameter
-			if row["parameter_name"] != nil && row["parameter_name"] != "p_transaction_id" {
-				comment = append(comment, toParamComment(name, row))
+			if row["parameter_name"] == "p_transaction_id" {
+				// skip p_transaction_id, transaction is not supported yet
+				// TODO https://github.com/FerretDB/FerretDB/issues/8
+				continue
+			}
 
-				p := convertedRoutineParam{
-					Name: convertName(name),
-					Type: convertType(dataType(row)),
-				}
+			if row["parameter_name"] == nil {
+				// skip a row if the row does not contain a parameter such as BinaryExtendedVersion(),
+				continue
+			}
 
-				if row["parameter_mode"] == "IN" || row["parameter_mode"] == "INOUT" {
-					placeholder := fmt.Sprintf("$%d", placeholderCounter+1)
-					placeholderCounter++
-					sqlParams = append(sqlParams, convertEncodedType(placeholder, dataType(row)))
-					goParams = append(goParams, p)
-				}
+			comment = append(comment, toParamComment(name, row))
 
-				p.Name = camelCase("out_" + p.Name)
+			p := convertedRoutineParam{
+				Name: convertName(name),
+				Type: convertType(dataType(row)),
+			}
 
-				if row["parameter_mode"] == "OUT" || row["parameter_mode"] == "INOUT" {
-					sqlReturns = append(sqlReturns, convertEncodedType(name, dataType(row)))
-					goReturns = append(goReturns, p)
-				}
+			if row["parameter_mode"] == "IN" || row["parameter_mode"] == "INOUT" {
+				placeholder := fmt.Sprintf("$%d", placeholderCounter+1)
+				placeholderCounter++
+				sqlParams = append(sqlParams, convertEncodedType(placeholder, dataType(row)))
+				goParams = append(goParams, p)
+			}
+
+			p.Name = camelCase("out_" + p.Name)
+
+			if row["parameter_mode"] == "OUT" || row["parameter_mode"] == "INOUT" {
+				sqlReturns = append(sqlReturns, convertEncodedType(name, dataType(row)))
+				goReturns = append(goReturns, p)
 			}
 		}
 
