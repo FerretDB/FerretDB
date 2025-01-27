@@ -14,12 +14,14 @@ We provide three Docker images for various deployments:
 An evaluation image is documented [separately](../evaluation.md).
 The rest are covered below.
 
+:::tip
 All Docker images include a [`HEALTHCHECK` instruction](https://docs.docker.com/reference/dockerfile/#healthcheck)
 that behaves like a [readiness probe](../../configuration/observability.md#probes).
+:::
 
 ## Production image
 
-Our [production image](https://ghcr.io/ferretdb/ferretdb:2) (`ghcr.io/ferretdb/ferretdb:2`) is recommended for most deployments.
+Our [production image](https://ghcr.io/ferretdb/ferretdb-documentdb:2) (`ghcr.io/ferretdb/ferretdb-documentdb:2`) is recommended for most deployments.
 It does not include a PostgreSQL image with DocumentDB extension, so you must run this [pre-packaged PostgreSQL image with DocumentDB extension](https://ghcr.io/ferretdb/postgres-documentdb:16) (`ghcr.io/ferretdb/postgres-documentdb:16`) separately.
 You can do that with Docker Compose, Kubernetes, or any other means.
 
@@ -42,7 +44,7 @@ The following steps describe a quick local setup:
          - ./data:/var/lib/postgresql/data
 
      ferretdb:
-       image: ghcr.io/ferretdb/ferretdb:2
+       image: ghcr.io/ferretdb/ferretdb-documentdb:2
        restart: on-failure
        ports:
          - 27017:27017
@@ -87,8 +89,8 @@ Find out more about:
 
 ## Development image
 
-The [development image](https://ghcr.io/ferretdb/ferretdb-dev:2) `ghcr.io/ferretdb/ferretdb-dev:2`
-contains the [development build](https://pkg.go.dev/github.com/FerretDB/FerretDB/v2/build/version#hdr-Development_builds)
+The [development image](https://ghcr.io/ferretdb/ferretdb-documentdb-dev:2) `ghcr.io/ferretdb/ferretdb-documentdb-dev:2`
+contains the [development build](https://pkg.go.dev/github.com/FerretDB/v2/FerretDB/build/version#hdr-Development_builds)
 of FerretDB with test coverage instrumentation, race detector,
 and other changes that make it more suitable for debugging problems.
 It can be used exactly the same way as the production image, as described above.
