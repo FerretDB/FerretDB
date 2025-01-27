@@ -35,6 +35,8 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
+//nolint:godot // skip temporary
+// TODO https://github.com/FerretDB/FerretDB/issues/4696
 // skip for now
 // generate go run ./generate.go
 // generate ../../bin/stringer -linecomment -type Code
