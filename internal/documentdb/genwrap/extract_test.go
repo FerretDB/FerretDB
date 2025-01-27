@@ -15,10 +15,11 @@
 package main
 
 import (
-	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
 )
 
 func TestExtract(t *testing.T) {

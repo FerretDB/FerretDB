@@ -16,7 +16,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"maps"
 	"slices"
 	"strings"
@@ -39,7 +38,6 @@ type convertedRoutine struct {
 	Comment      string
 	GoParams     []convertedRoutineParam
 	GoReturns    []convertedRoutineParam
-	GoInOut      []convertedRoutineParam
 	IsProcedure  bool
 }
 
@@ -54,7 +52,7 @@ func Convert(rows []map[string]any) map[string]convertedRoutine {
 	routines := map[string]convertedRoutine{}
 
 	for _, params := range routineParams {
-		var goParams, goReturns, goInOuts []convertedRoutineParam
+		var goParams, goReturns []convertedRoutineParam
 		var sqlParams, sqlReturns, comment, paramNames []string
 
 		var placeholderCounter int
@@ -77,31 +75,23 @@ func Convert(rows []map[string]any) map[string]convertedRoutine {
 			if row["parameter_name"] != nil && row["parameter_name"] != "p_transaction_id" {
 				comment = append(comment, toParamComment(name, row))
 
-				switch row["parameter_mode"] {
-				case "IN", "INOUT":
-					placeholder := fmt.Sprintf("$%d", placeholderCounter+1)
-					placeholderCounter++
-					sqlParams = append(sqlParams, convertEncodedType(placeholder, dataType(row)))
-				case "OUT":
-					sqlReturns = append(sqlReturns, convertEncodedType(name, dataType(row)))
-				default:
-					log.Printf("unrecognized parameter mode: %s", row["parameter_mode"])
-				}
-
 				p := convertedRoutineParam{
 					Name: convertName(name),
 					Type: convertType(dataType(row)),
 				}
 
-				switch row["parameter_mode"] {
-				case "IN":
+				if row["parameter_mode"] == "IN" || row["parameter_mode"] == "INOUT" {
+					placeholder := fmt.Sprintf("$%d", placeholderCounter+1)
+					placeholderCounter++
+					sqlParams = append(sqlParams, convertEncodedType(placeholder, dataType(row)))
 					goParams = append(goParams, p)
-				case "OUT":
+				}
+
+				p.Name = camelCase("out_" + p.Name)
+
+				if row["parameter_mode"] == "OUT" || row["parameter_mode"] == "INOUT" {
+					sqlReturns = append(sqlReturns, convertEncodedType(name, dataType(row)))
 					goReturns = append(goReturns, p)
-				case "INOUT":
-					goInOuts = append(goInOuts, p)
-				default:
-					log.Printf("unrecognized parameter mode: %s", row["parameter_mode"])
 				}
 			}
 		}
@@ -114,7 +104,7 @@ func Convert(rows []map[string]any) map[string]convertedRoutine {
 			sqlReturns = append(sqlReturns, convertEncodedType(routineName, routineDataType(params[0])))
 
 			goReturns = []convertedRoutineParam{{
-				Name: convertName(routineName),
+				Name: camelCase("out_" + convertName(routineName)),
 				Type: convertType(routineDataType(params[0])),
 			}}
 
@@ -133,7 +123,6 @@ func Convert(rows []map[string]any) map[string]convertedRoutine {
 			Comment:      fmt.Sprintf("%s.%s(%s)", params[0]["specific_schema"], routineName, strings.Join(comment, ", ")),
 			GoParams:     goParams,
 			GoReturns:    goReturns,
-			GoInOut:      goInOuts,
 		}
 
 		handleFunctionOverloading(&r)

@@ -55,10 +55,14 @@ func TestGenerate(t *testing.T) {
 						Name: "arg",
 						Type: "wirebson.RawDocument",
 					},
-				},
-				GoInOut: []convertedRoutineParam{
 					{
 						Name: "retValue",
+						Type: "wirebson.RawDocument",
+					},
+				},
+				GoReturns: []convertedRoutineParam{
+					{
+						Name: "outRetValue",
 						Type: "wirebson.RawDocument",
 					},
 				},

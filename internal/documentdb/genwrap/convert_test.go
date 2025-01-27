@@ -140,7 +140,7 @@ func TestConvert(t *testing.T) {
 			Comment:      `documentdb_api.binary_extended_version(OUT binary_extended_version text)`,
 			GoReturns: []convertedRoutineParam{
 				{
-					Name: "binaryExtendedVersion",
+					Name: "outBinaryExtendedVersion",
 					Type: "string",
 				},
 			},
@@ -164,7 +164,7 @@ func TestConvert(t *testing.T) {
 			},
 			GoReturns: []convertedRoutineParam{
 				{
-					Name: "document",
+					Name: "outDocument",
 					Type: "wirebson.RawDocument",
 				},
 			},
@@ -174,7 +174,7 @@ func TestConvert(t *testing.T) {
 			SQLFuncName:  "documentdb_api.drop_indexes",
 			IsProcedure:  true,
 			QueryArgs:    "$1, $2::bytea, $3::bytea",
-			QueryReturns: "",
+			QueryReturns: "retval::bytea",
 			Comment: `documentdb_api.drop_indexes(p_database_name text, p_arg documentdb_core.bson, ` +
 				`INOUT retval documentdb_core.bson DEFAULT NULL)`,
 			GoParams: []convertedRoutineParam{
@@ -186,10 +186,14 @@ func TestConvert(t *testing.T) {
 					Name: "arg",
 					Type: "wirebson.RawDocument",
 				},
-			},
-			GoInOut: []convertedRoutineParam{
 				{
 					Name: "retValue",
+					Type: "wirebson.RawDocument",
+				},
+			},
+			GoReturns: []convertedRoutineParam{
+				{
+					Name: "outRetValue",
 					Type: "wirebson.RawDocument",
 				},
 			},
