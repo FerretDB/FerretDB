@@ -213,6 +213,8 @@ func defineForBranch(owner, repo, branch string) (*result, error) {
 		return res, nil
 	}
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/4694
+
 	// res.evaluationImages = append(res.evaluationImages, fmt.Sprintf("quay.io/ferretdb/ferretdb-eval:%s", branch))
 	// res.developmentImages = append(res.developmentImages, fmt.Sprintf("quay.io/ferretdb/ferretdb-dev:%s", branch))
 
@@ -242,6 +244,7 @@ func defineForTag(owner, repo string, tags []string) *result {
 		return res
 	}
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/4694
 	// for _, t := range tags {
 	// 	res.evaluationImages = append(res.evaluationImages, fmt.Sprintf("quay.io/ferretdb/ferretdb-eval:%s", t))
 	// 	res.developmentImages = append(res.developmentImages, fmt.Sprintf("quay.io/ferretdb/ferretdb-dev:%s", t))
