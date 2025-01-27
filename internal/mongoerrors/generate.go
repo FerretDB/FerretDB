@@ -42,7 +42,7 @@ type line struct {
 	MongoError int
 }
 
-// extraMongoErrors contains MongoDB error codes FerretDB uses and mongoerrors.csv does not include
+// extraMongoErrors contains MongoDB error codes FerretDB uses and error_mappings.csv does not include
 var extraMongoErrors = map[string]int{
 	"Unset":                         0,
 	"UserNotFound":                  11,
@@ -84,7 +84,7 @@ func main() {
 
 	flag.Parse()
 
-	mongoErrors := parseMongoErrors(ctx, l)
+	mongoErrors := parseErrorMappings(ctx, l)
 	data := parseDocumentDBCodes(ctx, l, mongoErrors)
 
 	slices.SortFunc(data, func(a, b line) int {
@@ -127,8 +127,8 @@ var pgCodes = map[string]Code{
 	}
 }
 
-// parseMongoErrors parses mongoerrors.csv and adds a few codes not defined there.
-func parseMongoErrors(ctx context.Context, l *slog.Logger) map[string]int {
+// parseErrorMappings parses error_mappings.csv and adds a few codes not defined there.
+func parseErrorMappings(ctx context.Context, l *slog.Logger) map[string]int {
 	f, err := os.Open(filepath.FromSlash("../../build/postgres-documentdb/documentdb/error_mappings.csv"))
 	if err != nil {
 		l.Log(ctx, logging.LevelFatal, "Can't open file", logging.Error(err))
@@ -158,7 +158,7 @@ func parseMongoErrors(ctx context.Context, l *slog.Logger) map[string]int {
 
 		mongoErrorCode, err := strconv.Atoi(mongoError)
 		if err != nil {
-			l.Log(ctx, logging.LevelFatal, "Can't parse MongoError", logging.Error(err))
+			l.Log(ctx, logging.LevelFatal, "Can't parse ErrorMapping", logging.Error(err))
 		}
 
 		if _, ok := codes[mongoErrorCode]; ok {
