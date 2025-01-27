@@ -135,7 +135,7 @@ func Generate(writer io.Writer, f *convertedRoutine) error {
 // generateSQL builds SQL query and arguments for the given function definition.
 func generateSQL(f *convertedRoutine) (string, []string) {
 	args := make([]string, len(f.GoParams))
-	for i, p := range append(f.GoParams) {
+	for i, p := range f.GoParams {
 		args[i] = p.Name
 	}
 
