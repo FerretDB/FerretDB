@@ -92,9 +92,7 @@ jobs:
       group: ${{ github.workflow }}-test-${{ github.head_ref || github.ref_name }}
       cancel-in-progress: true
 
-    # skip this job for now
-    if: false
-    # if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
+    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
 
     steps:
       # TODO https://github.com/FerretDB/github-actions/issues/211
