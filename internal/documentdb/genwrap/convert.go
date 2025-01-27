@@ -77,7 +77,7 @@ func Convert(rows []map[string]any) map[string]convertedRoutine {
 			}
 
 			if row["parameter_name"] == nil {
-				// skip a row if the row does not contain a parameter such as BinaryExtendedVersion(),
+				// skip a row if the row does not contain a parameter such as BinaryExtendedVersion()
 				continue
 			}
 
