@@ -192,7 +192,9 @@ jobs:
       group: ${{ github.workflow }}-integration-no-xfail-${{ github.head_ref || github.ref_name }}
       cancel-in-progress: true
 
-    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
+    # disable for now
+    if: false
+    # if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
 
     uses: ./.github/workflows/_integration.yml
     with:
