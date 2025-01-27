@@ -67,7 +67,7 @@ func (h *Handler) MsgCreateIndexes(connCtx context.Context, msg *wire.OpMsg) (*w
 	}
 	defer conn.Release()
 
-	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/1147
+	// TODO https://github.com/microsoft/documentdb/issues/25
 	// resRaw, _, _, err := documentdb_api.CreateIndexesBackground(connCtx, conn.Conn(), h.L, dbName, spec)
 	resRaw, err := documentdb_api_internal.CreateIndexesNonConcurrently(connCtx, conn.Conn(), h.L, dbName, spec, true)
 	if err != nil {

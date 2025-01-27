@@ -36,7 +36,7 @@ import "context"
 // TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/1148
 //
 // We use that schema for indexes and authentication:
-// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/1147
+// TODO https://github.com/microsoft/documentdb/issues/25
 // TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/1221
 
 // todoCtx should be used instead of [context.TODO] in this package.

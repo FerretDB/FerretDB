@@ -136,7 +136,7 @@ func Make(ctx context.Context, err error, arg string, l *slog.Logger) *Error {
 			level = slog.LevelError
 		}
 
-		// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/1147
+		// TODO https://github.com/microsoft/documentdb/issues/25
 		if arg == "documentdb_api_internal.create_indexes_non_concurrently" {
 			level = slog.LevelError
 		}

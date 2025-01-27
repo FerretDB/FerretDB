@@ -35,7 +35,7 @@ import (
 //
 //	documentdb_api_internal.create_indexes_non_concurrently(p_database_name text, p_arg documentdb_core.bson, p_skip_check_collection_create boolean DEFAULT false, OUT create_indexes_non_concurrently documentdb_core.bson).
 //
-// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/1147
+// TODO https://github.com/microsoft/documentdb/issues/25
 func CreateIndexesNonConcurrently(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, arg wirebson.RawDocument, skipCheckCollectionCreate bool) (outCreateIndexesNonConcurrently wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.create_indexes_non_concurrently", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()

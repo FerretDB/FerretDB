@@ -478,7 +478,7 @@ func TestCreateIndexesCompatUnique(t *testing.T) {
 			insertDoc: bson.D{{"v", "value"}},
 			new:       true,
 			// This test case passes only because of our hack for
-			// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/1147
+			// TODO https://github.com/microsoft/documentdb/issues/25
 			// failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/296",
 		},
 		"NotExistingFieldIndex": {
@@ -518,7 +518,7 @@ func TestCreateIndexesCompatUnique(t *testing.T) {
 			},
 			insertDoc: bson.D{{"v", int32(42)}},
 			// This test case passes only because of our hack for
-			// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/1147
+			// TODO https://github.com/microsoft/documentdb/issues/25
 			// failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/296",
 		},
 	} {
