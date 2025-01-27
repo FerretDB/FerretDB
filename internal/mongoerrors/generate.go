@@ -37,13 +37,13 @@ import (
 
 // line represents a single mapping.
 type line struct {
-	ErrorName    string
-	ErrorCode    string
-	ErrorMapping int
+	ErrorName  string
+	ErrorCode  string
+	MongoError int
 }
 
-// extraErrorMappings contains MongoDB error codes FerretDB uses and error_mappings.csv does not include
-var extraErrorMappings = map[string]int{
+// extraMongoErrors contains MongoDB error codes FerretDB uses and mongoerrors.csv does not include
+var extraMongoErrors = map[string]int{
 	"Unset":                         0,
 	"UserNotFound":                  11,
 	"UnsupportedFormat":             12,
@@ -84,12 +84,12 @@ func main() {
 
 	flag.Parse()
 
-	errorMappings := parseErrorMappings(ctx, l)
-	data := parseDocumentDBCodes(ctx, l, errorMappings)
+	mongoErrors := parseMongoErrors(ctx, l)
+	data := parseDocumentDBCodes(ctx, l, mongoErrors)
 
 	slices.SortFunc(data, func(a, b line) int {
 		return cmp.Or(
-			cmp.Compare(a.ErrorMapping, b.ErrorMapping),
+			cmp.Compare(a.MongoError, b.MongoError),
 			cmp.Compare(a.ErrorName, b.ErrorName),
 		)
 	})
@@ -127,8 +127,8 @@ var pgCodes = map[string]Code{
 	}
 }
 
-// parseErrorMappings parses error_mappings.csv and adds a few codes not defined there.
-func parseErrorMappings(ctx context.Context, l *slog.Logger) map[string]int {
+// parseMongoErrors parses mongoerrors.csv and adds a few codes not defined there.
+func parseMongoErrors(ctx context.Context, l *slog.Logger) map[string]int {
 	f, err := os.Open(filepath.FromSlash("../../build/postgres-documentdb/documentdb/error_mappings.csv"))
 	if err != nil {
 		l.Log(ctx, logging.LevelFatal, "Can't open file", logging.Error(err))
@@ -151,46 +151,46 @@ func parseErrorMappings(ctx context.Context, l *slog.Logger) map[string]int {
 			l.Log(ctx, logging.LevelFatal, "Can't read record", logging.Error(err))
 		}
 
-		errorMapping, errorName := records[0], records[1]
-		if errorMapping == "ErrorMapping" {
+		mongoError, errorName := records[0], records[1]
+		if mongoError == "ErrorMapping" {
 			continue
 		}
 
-		errorCode, err := strconv.Atoi(errorMapping)
+		mongoErrorCode, err := strconv.Atoi(mongoError)
 		if err != nil {
-			l.Log(ctx, logging.LevelFatal, "Can't parse ErrorMapping", logging.Error(err))
+			l.Log(ctx, logging.LevelFatal, "Can't parse MongoError", logging.Error(err))
 		}
 
-		if _, ok := codes[errorCode]; ok {
-			l.Log(ctx, logging.LevelFatal, "Duplicate error mapping code", slog.Int("code", errorCode))
+		if _, ok := codes[mongoErrorCode]; ok {
+			l.Log(ctx, logging.LevelFatal, "Duplicate Mongo error code", slog.Int("code", mongoErrorCode))
 		}
 
 		if _, ok := res[errorName]; ok {
-			l.Log(ctx, logging.LevelFatal, "Duplicate error mapping name", slog.String("name", errorName))
+			l.Log(ctx, logging.LevelFatal, "Duplicate Mongo error name", slog.String("name", errorName))
 		}
 
-		codes[errorCode] = struct{}{}
-		res[errorName] = errorCode
+		codes[mongoErrorCode] = struct{}{}
+		res[errorName] = mongoErrorCode
 	}
 
-	for errorName, errorCode := range extraErrorMappings {
-		if _, ok := codes[errorCode]; ok {
-			l.Log(ctx, logging.LevelFatal, "Duplicate error mapping code", slog.Int("code", errorCode))
+	for errorName, mongoErrorCode := range extraMongoErrors {
+		if _, ok := codes[mongoErrorCode]; ok {
+			l.Log(ctx, logging.LevelFatal, "Duplicate Mongo error code", slog.Int("code", mongoErrorCode))
 		}
 
 		if _, ok := res[errorName]; ok {
-			l.Log(ctx, logging.LevelFatal, "Duplicate error mapping name", slog.String("name", errorName))
+			l.Log(ctx, logging.LevelFatal, "Duplicate Mongo error name", slog.String("name", errorName))
 		}
 
-		codes[errorCode] = struct{}{}
-		res[errorName] = errorCode
+		codes[mongoErrorCode] = struct{}{}
+		res[errorName] = mongoErrorCode
 	}
 
 	return res
 }
 
 // parseDocumentDBCodes parses documentdb_codes.txt.
-func parseDocumentDBCodes(ctx context.Context, l *slog.Logger, errorMappings map[string]int) []line {
+func parseDocumentDBCodes(ctx context.Context, l *slog.Logger, mongoErrors map[string]int) []line {
 	f, err := os.Open(filepath.FromSlash("../../build/postgres-documentdb/documentdb/pg_documentdb_core/include/utils/documentdb_codes.txt"))
 	if err != nil {
 		l.Log(ctx, logging.LevelFatal, "Can't open file", logging.Error(err))
@@ -221,38 +221,38 @@ func parseDocumentDBCodes(ctx context.Context, l *slog.Logger, errorMappings map
 		}
 
 		if _, ok := names[errorName]; ok {
-			l.Log(ctx, logging.LevelFatal, "Duplicate error mapping name", slog.String("name", errorName))
+			l.Log(ctx, logging.LevelFatal, "Duplicate Mongo error name", slog.String("name", errorName))
 		}
 
 		if _, ok := pCodes[errorCode]; ok {
-			l.Log(ctx, logging.LevelFatal, "Duplicate error mapping code", slog.String("code", errorCode))
+			l.Log(ctx, logging.LevelFatal, "Duplicate PostgreSQL error code", slog.String("code", errorCode))
 		}
 
 		names[errorName] = struct{}{}
 		pCodes[errorCode] = struct{}{}
 
-		errorMapping := errorMappings[errorName]
-		if errorMapping == 0 {
-			l.Log(ctx, logging.LevelFatal, "No error mapping code for name", slog.String("name", errorName))
+		mongoError := mongoErrors[errorName]
+		if mongoError == 0 {
+			l.Log(ctx, logging.LevelFatal, "No Mongo error code for name", slog.String("name", errorName))
 		}
 
-		delete(errorMappings, errorName)
+		delete(mongoErrors, errorName)
 
 		res = append(res, line{
-			ErrorName:    errorName,
-			ErrorCode:    errorCode,
-			ErrorMapping: errorMapping,
+			ErrorName:  errorName,
+			ErrorCode:  errorCode,
+			MongoError: mongoError,
 		})
 	}
 
-	if !reflect.DeepEqual(errorMappings, extraErrorMappings) {
-		l.Log(ctx, logging.LevelFatal, "Extra error codes", slog.Any("codes", errorMappings))
+	if !reflect.DeepEqual(mongoErrors, extraMongoErrors) {
+		l.Log(ctx, logging.LevelFatal, "Extra error codes", slog.Any("codes", mongoErrors))
 	}
 
-	for errorName, errorMapping := range errorMappings {
+	for errorName, mongoError := range mongoErrors {
 		res = append(res, line{
-			ErrorName:    errorName,
-			ErrorMapping: errorMapping,
+			ErrorName:  errorName,
+			MongoError: mongoError,
 		})
 	}
 
