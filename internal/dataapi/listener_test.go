@@ -66,11 +66,10 @@ func TestSmokeDataAPI(t *testing.T) {
 		require.NoError(t, err)
 
 		// TODO check response
-		assert.Equal(t, nil, string(resB))
+		assert.JSONEq(t, `{"documents":[]}`, string(resB))
 	})
 
 	// TODO every operation
-
 }
 
 func setup(tb testing.TB) (addr string, dbName string) {
