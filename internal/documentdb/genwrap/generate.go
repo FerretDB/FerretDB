@@ -120,7 +120,7 @@ func Generate(writer io.Writer, f *convertedRoutine) error {
 	queryRowArgs := append([]string{"ctx", fmt.Sprintf(`"%s"`, q)}, sqlArgs...)
 
 	data := templateData{
-		FuncName:     pascalCase(f.Name),
+		FuncName:     f.Name,
 		SQLFuncName:  f.SQLFuncName,
 		Comment:      f.Comment,
 		Params:       params,

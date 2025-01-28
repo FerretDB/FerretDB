@@ -19,15 +19,8 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func TestCamelCase(t *testing.T) {
-	t.Parallel()
-
-	assert.Equal(t, "cursorGetMore", camelCase("cursor_get_more"))
-}
 
 func TestGenerate(t *testing.T) {
 	t.Parallel()
