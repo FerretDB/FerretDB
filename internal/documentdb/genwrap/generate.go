@@ -165,10 +165,7 @@ func main() {
 		}
 		must.NoError(headerTemplate.Execute(out, &h))
 
-		ks := slices.Collect(maps.Keys(fs))
-		slices.Sort(ks)
-
-		for _, k := range ks {
+		for _, k := range slices.Sorted(maps.Keys(fs)) {
 			v := fs[k]
 			must.NoError(Generate(out, &v))
 		}

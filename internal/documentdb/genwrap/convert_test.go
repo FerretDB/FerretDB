@@ -20,6 +20,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestCamelCase(t *testing.T) {
+	t.Parallel()
+
+	c := new(Converter)
+
+	require.Equal(t, "cursorGetMore", c.camelCase("cursor_get_more"))
+}
+
 func TestConvert(t *testing.T) {
 	t.Parallel()
 
