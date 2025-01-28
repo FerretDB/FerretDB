@@ -193,8 +193,21 @@ func TestSmokeDataAPI(t *testing.T) {
 		assert.JSONEq(t, `{"deletedCount":1}`, string(body))
 	})
 
-	// TODO
-	//find
+	t.Run("Find", func(t *testing.T) {
+		jsonBody := `{
+			"database": "` + db + `",
+			"collection": "` + coll + `",
+			"filter": {}
+		}`
+
+		res, err := request(t, "http://"+addr+"/action/find", jsonBody)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, res.StatusCode)
+
+		body, err := io.ReadAll(res.Body)
+		require.NoError(t, err)
+		assert.JSONEq(t, `{"documents":[`+docs[2]+`]}`, string(body))
+	})
 }
 
 func request(tb testing.TB, uri, jsonBody string) (*http.Response, error) {
