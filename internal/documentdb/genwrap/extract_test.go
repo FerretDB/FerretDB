@@ -31,7 +31,7 @@ func TestExtract(t *testing.T) {
 	ctx := testutil.Ctx(t)
 	uri := "postgres://username:password@127.0.0.1:5432/postgres"
 
-	rows := Extract(ctx, uri, "documentdb_api")
+	rows := Extract(ctx, uri, map[string]struct{}{"documentdb_api": {}})
 	require.NotZero(t, rows)
 
 	row := rows[0]

@@ -94,6 +94,7 @@ func joinParameters(params []param) string {
 
 // templateData contains information need for generating a function to run SQL query and scan the output.
 type templateData struct {
+	Schema       string
 	FuncName     string
 	SQLFuncName  string
 	Comment      string
@@ -151,11 +152,11 @@ func main() {
 		schemas[schema] = struct{}{}
 	}
 
-	for schema := range schemas {
-		vs := Extract(ctx, uri, schema)
+	rows := Extract(ctx, uri, schemas)
 
-		fs := Convert(vs)
+	schemaRoutines := Convert(rows)
 
+	for schema, routines := range schemaRoutines {
 		out := must.NotFail(os.Create(filepath.Join(schema, schema+".go")))
 		defer out.Close() //nolint:errcheck // ignore for now, but it should be checked
 
@@ -165,8 +166,8 @@ func main() {
 		}
 		must.NoError(headerTemplate.Execute(out, &h))
 
-		for _, k := range slices.Sorted(maps.Keys(fs)) {
-			v := fs[k]
+		for _, k := range slices.Sorted(maps.Keys(routines)) {
+			v := routines[k]
 			must.NoError(Generate(out, &v))
 		}
 	}

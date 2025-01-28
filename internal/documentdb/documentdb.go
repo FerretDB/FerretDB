@@ -17,20 +17,14 @@ package documentdb
 
 import "context"
 
-//go:generate go run ./genwrap -schemas=documentdb_core
-
-// The only schema we should be using.
+// The only schema we should be using documentdb_core.
 // See also:
 // TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/1221
-//go:generate go run ./genwrap -schemas=documentdb_api
-
-//go:generate go run ./genwrap -schemas=documentdb_api_catalog
+//go:generate go run ./genwrap -schemas=documentdb_api,documentdb_core,documentdb_api_catalog,documentdb_api_internal
 
 // We use that schema for `listDatabases` and `explain` commands.
 // TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/26
 // TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/143
-
-//go:generate go run ./genwrap -schemas=documentdb_api_internal
 
 // We use that schema for indexes and authentication:
 // TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/1147

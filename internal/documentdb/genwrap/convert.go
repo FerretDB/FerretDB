@@ -25,17 +25,17 @@ import (
 // Converter converts SQL data types to Go data types.
 type Converter struct{}
 
-// Convert takes rows containing parameters of routines. It groups them to
-// each routine and converts to Go formatted names and types.
+// Convert takes rows containing parameters of routines.
+// It returns map of schema and routines each schema and
+// converts rows to Go formatted names and types.
 //
 // For an anonymous SQL parameter, it assigns a unique name.
 // It also produces SQL query placeholders and return parameters in strings.
-func Convert(rows []map[string]any) map[string]templateData {
+func Convert(rows []map[string]any) map[string]map[string]templateData {
 	c := new(Converter)
 
 	routineParams := c.groupBySpecificName(rows)
-
-	routines := map[string]templateData{}
+	schemas := map[string]map[string]templateData{}
 
 	for _, specificName := range slices.Sorted(maps.Keys(routineParams)) {
 		params := routineParams[specificName]
@@ -106,10 +106,17 @@ func Convert(rows []map[string]any) map[string]templateData {
 			comment = append(comment, "OUT "+routineName+" "+c.routineDataType(params[0]))
 		}
 
+		schema := params[0]["specific_schema"].(string)
+
+		if _, ok := schemas[schema]; !ok {
+			schemas[schema] = map[string]templateData{}
+		}
+
 		// unique name is used to handle function overloading
-		uniqueFunctionName := c.uniqueName(slices.Collect(maps.Keys(routines)), routineName)
+		uniqueFunctionName := c.uniqueName(slices.Collect(maps.Keys(schemas[schema])), routineName)
 
 		r := templateData{
+			Schema:      schema,
 			FuncName:    c.pascalCase(uniqueFunctionName),
 			SQLFuncName: fmt.Sprintf("%s.%s", params[0]["specific_schema"], routineName),
 			IsProcedure: params[0]["routine_type"] == "PROCEDURE",
@@ -122,10 +129,10 @@ func Convert(rows []map[string]any) map[string]templateData {
 
 		c.handleFunctionOverloading(&r)
 
-		routines[uniqueFunctionName] = r
+		schemas[schema][uniqueFunctionName] = r
 	}
 
-	return routines
+	return schemas
 }
 
 // convertEncodedType appends binary data encoding to documentdb_core.bson data type.

@@ -16,6 +16,8 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 
@@ -24,7 +26,7 @@ import (
 
 // Extract returns rows of routines and parameters for the given schema.
 // Returned routines are sorted by the function/procedure name and its parameter position.
-func Extract(ctx context.Context, uri string, schema string) []map[string]any {
+func Extract(ctx context.Context, uri string, schemas map[string]struct{}) []map[string]any {
 	conn, err := pgx.Connect(ctx, uri)
 	must.NoError(err)
 
@@ -32,9 +34,19 @@ func Extract(ctx context.Context, uri string, schema string) []map[string]any {
 		must.NoError(conn.Close(ctx))
 	}()
 
+	placeholders := make([]string, len(schemas))
+	args := make([]any, len(schemas))
+	var i int
+
+	for schema := range schemas {
+		placeholders[i] = fmt.Sprintf("$%d", i+1)
+		args[i] = schema
+		i++
+	}
+
 	// https://www.postgresql.org/docs/current/infoschema-routines.html
 	// https://www.postgresql.org/docs/current/infoschema-parameters.html
-	q := `
+	q := fmt.Sprintf(`
 	SELECT
 		specific_schema,
 		specific_name,
@@ -51,9 +63,11 @@ func Extract(ctx context.Context, uri string, schema string) []map[string]any {
 		r.type_udt_name AS routine_udt_name
 	FROM information_schema.routines AS r
 		LEFT JOIN information_schema.parameters AS p USING (specific_schema, specific_name)
-	WHERE specific_schema = $1
+	WHERE specific_schema IN(%s)
 	ORDER BY specific_schema, specific_name, ordinal_position
-	`
+	`,
+		strings.Join(placeholders, ","),
+	)
 
-	return must.NotFail(pgx.CollectRows(must.NotFail(conn.Query(ctx, q, schema)), pgx.RowToMap))
+	return must.NotFail(pgx.CollectRows(must.NotFail(conn.Query(ctx, q, args...)), pgx.RowToMap))
 }
