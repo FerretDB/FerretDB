@@ -139,71 +139,41 @@ func TestConvert(t *testing.T) {
 		},
 	}
 
-	expected := map[string]templateData{
-		"binary_extended_version": {
-			FuncName:    "BinaryExtendedVersion",
-			SQLFuncName: "documentdb_api.binary_extended_version",
-			SQLArgs:     "",
-			SQLReturns:  "binary_extended_version",
-			Comment:     `documentdb_api.binary_extended_version(OUT binary_extended_version text)`,
-			Returns: []param{
-				{
-					Name: "outBinaryExtendedVersion",
-					Type: "string",
-				},
+	expected := map[string]map[string]templateData{
+		"documentdb_api": {
+			"binary_extended_version": {
+				FuncName:    "BinaryExtendedVersion",
+				SQLFuncName: "documentdb_api.binary_extended_version",
+				SQLArgs:     "",
+				SQLReturns:  "binary_extended_version",
+				Comment:     `documentdb_api.binary_extended_version(OUT binary_extended_version text)`,
+				Returns:     "outBinaryExtendedVersion string",
+				ScanArgs:    "&outBinaryExtendedVersion",
 			},
-		},
-		"count_query": {
-			FuncName:    "CountQuery",
-			SQLFuncName: "documentdb_api.count_query",
-			SQLArgs:     "$1, $2::bytea",
-			SQLReturns:  "document::bytea",
-			Comment: `documentdb_api.count_query(database text, countspec documentdb_core.bson, ` +
-				`OUT document documentdb_core.bson)`,
-			Params: []param{
-				{
-					Name: "database",
-					Type: "string",
-				},
-				{
-					Name: "countSpec",
-					Type: "wirebson.RawDocument",
-				},
+			"count_query": {
+				FuncName:    "CountQuery",
+				SQLFuncName: "documentdb_api.count_query",
+				SQLArgs:     "$1, $2::bytea",
+				SQLReturns:  "document::bytea",
+				Comment: `documentdb_api.count_query(database text, countspec documentdb_core.bson, ` +
+					`OUT document documentdb_core.bson)`,
+				Params:       "database string, countSpec wirebson.RawDocument",
+				Returns:      "outDocument wirebson.RawDocument",
+				QueryRowArgs: "database, countSpec",
+				ScanArgs:     "&outDocument",
 			},
-			Returns: []param{
-				{
-					Name: "outDocument",
-					Type: "wirebson.RawDocument",
-				},
-			},
-		},
-		"drop_indexes": {
-			FuncName:    "DropIndexes",
-			SQLFuncName: "documentdb_api.drop_indexes",
-			IsProcedure: true,
-			SQLArgs:     "$1, $2::bytea, $3::bytea",
-			SQLReturns:  "retval::bytea",
-			Comment: `documentdb_api.drop_indexes(p_database_name text, p_arg documentdb_core.bson, ` +
-				`INOUT retval documentdb_core.bson DEFAULT NULL)`,
-			Params: []param{
-				{
-					Name: "databaseName",
-					Type: "string",
-				},
-				{
-					Name: "arg",
-					Type: "wirebson.RawDocument",
-				},
-				{
-					Name: "retValue",
-					Type: "wirebson.RawDocument",
-				},
-			},
-			Returns: []param{
-				{
-					Name: "outRetValue",
-					Type: "wirebson.RawDocument",
-				},
+			"drop_indexes": {
+				FuncName:    "DropIndexes",
+				SQLFuncName: "documentdb_api.drop_indexes",
+				IsProcedure: true,
+				SQLArgs:     "$1, $2::bytea, $3::bytea",
+				SQLReturns:  "retval::bytea",
+				Comment: `documentdb_api.drop_indexes(p_database_name text, p_arg documentdb_core.bson, ` +
+					`INOUT retval documentdb_core.bson DEFAULT NULL)`,
+				Params:       "databaseName string, arg wirebson.RawDocument, retValue wirebson.RawDocument",
+				Returns:      "outRetValue wirebson.RawDocument",
+				ScanArgs:     "&outRetValue",
+				QueryRowArgs: "databaseName, arg, retValue",
 			},
 		},
 	}

@@ -40,8 +40,7 @@ func Convert(rows []map[string]any) map[string]map[string]templateData {
 	for _, specificName := range slices.Sorted(maps.Keys(routineParams)) {
 		params := routineParams[specificName]
 
-		var goParams, goReturns []param
-		var sqlParams, sqlReturns, comment, paramNames []string
+		var sqlParams, sqlReturns, comment, queryRowArgs, scanArgs, goParams, goReturns, paramNames []string
 
 		var placeholderCounter int
 
@@ -71,23 +70,19 @@ func Convert(rows []map[string]any) map[string]map[string]templateData {
 
 			comment = append(comment, c.toParamComment(name, row))
 
-			p := param{
-				Name: c.convertName(name),
-				Type: c.convertType(c.dataType(row)),
-			}
-
 			if row["parameter_mode"] == "IN" || row["parameter_mode"] == "INOUT" {
 				placeholder := fmt.Sprintf("$%d", placeholderCounter+1)
 				placeholderCounter++
 				sqlParams = append(sqlParams, c.convertEncodedType(placeholder, c.dataType(row)))
-				goParams = append(goParams, p)
+				goParams = append(goParams, c.convertName(name)+" "+c.convertType(c.dataType(row)))
+				queryRowArgs = append(queryRowArgs, c.convertName(name))
 			}
 
-			p.Name = c.camelCase("out_" + p.Name)
-
 			if row["parameter_mode"] == "OUT" || row["parameter_mode"] == "INOUT" {
+				goName := c.camelCase("out_" + c.convertName(name))
 				sqlReturns = append(sqlReturns, c.convertEncodedType(name, c.dataType(row)))
-				goReturns = append(goReturns, p)
+				goReturns = append(goReturns, goName+" "+c.convertType(c.dataType(row)))
+				scanArgs = append(scanArgs, "&"+goName)
 			}
 		}
 
@@ -96,13 +91,10 @@ func Convert(rows []map[string]any) map[string]map[string]templateData {
 		if len(goReturns) == 0 && params[0]["routine_type"] == "FUNCTION" {
 			// function such as binary_extended_version() does not have
 			// parameter data type, but it has routine data type for the return variable.
+			name := c.camelCase("out_" + c.convertName(routineName))
 			sqlReturns = append(sqlReturns, c.convertEncodedType(routineName, c.routineDataType(params[0])))
-
-			goReturns = []param{{
-				Name: c.camelCase("out_" + c.convertName(routineName)),
-				Type: c.convertType(c.routineDataType(params[0])),
-			}}
-
+			goReturns = append(goReturns, name+" "+c.convertType(c.routineDataType(params[0])))
+			scanArgs = append(scanArgs, "&"+name)
 			comment = append(comment, "OUT "+routineName+" "+c.routineDataType(params[0]))
 		}
 
@@ -116,15 +108,16 @@ func Convert(rows []map[string]any) map[string]map[string]templateData {
 		uniqueFunctionName := c.uniqueName(slices.Collect(maps.Keys(schemas[schema])), routineName)
 
 		r := templateData{
-			Schema:      schema,
-			FuncName:    c.pascalCase(uniqueFunctionName),
-			SQLFuncName: fmt.Sprintf("%s.%s", params[0]["specific_schema"], routineName),
-			IsProcedure: params[0]["routine_type"] == "PROCEDURE",
-			SQLArgs:     strings.Join(sqlParams, ", "),
-			SQLReturns:  strings.Join(sqlReturns, ", "),
-			Comment:     fmt.Sprintf("%s.%s(%s)", params[0]["specific_schema"], routineName, strings.Join(comment, ", ")),
-			Params:      goParams,
-			Returns:     goReturns,
+			FuncName:     c.pascalCase(uniqueFunctionName),
+			SQLFuncName:  fmt.Sprintf("%s.%s", params[0]["specific_schema"], routineName),
+			IsProcedure:  params[0]["routine_type"] == "PROCEDURE",
+			SQLArgs:      strings.Join(sqlParams, ", "),
+			SQLReturns:   strings.Join(sqlReturns, ", "),
+			Comment:      fmt.Sprintf("%s.%s(%s)", params[0]["specific_schema"], routineName, strings.Join(comment, ", ")),
+			Params:       strings.Join(goParams, ", "),
+			Returns:      strings.Join(goReturns, ", "),
+			QueryRowArgs: strings.Join(queryRowArgs, ", "),
+			ScanArgs:     strings.Join(scanArgs, ", "),
 		}
 
 		c.handleFunctionOverloading(&r)

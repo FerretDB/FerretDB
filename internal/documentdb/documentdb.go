@@ -17,7 +17,7 @@ package documentdb
 
 import "context"
 
-// The only schema we should be using documentdb_core.
+// The only schema we should be using is documentdb_core.
 // See also:
 // TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/1221
 //go:generate go run ./genwrap -schemas=documentdb_api,documentdb_core,documentdb_api_catalog,documentdb_api_internal

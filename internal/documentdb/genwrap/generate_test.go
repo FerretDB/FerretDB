@@ -37,28 +37,12 @@ func TestGenerate(t *testing.T) {
 				IsProcedure: true,
 				Comment: `documentdb_api.drop_indexes(p_database_name text, p_arg documentdb_core.bson, ` +
 					`INOUT retval documentdb_core.bson DEFAULT NULL)`,
-				SQLArgs:    "$1, $2::bytea, $3::bytea",
-				SQLReturns: "retval::bytea",
-				Params: []param{
-					{
-						Name: "databaseName",
-						Type: "string",
-					},
-					{
-						Name: "arg",
-						Type: "wirebson.RawDocument",
-					},
-					{
-						Name: "retValue",
-						Type: "wirebson.RawDocument",
-					},
-				},
-				Returns: []param{
-					{
-						Name: "outRetValue",
-						Type: "wirebson.RawDocument",
-					},
-				},
+				SQLArgs:      "$1, $2::bytea, $3::bytea",
+				SQLReturns:   "retval::bytea",
+				Params:       "databaseName string, arg wirebson.RawDocument, retValue wirebson.RawDocument",
+				Returns:      "outRetValue wirebson.RawDocument",
+				QueryRowArgs: "databaseName, arg, retValue",
+				ScanArgs:     "&outRetValue",
 			},
 			//nolint:lll // generated function is too long
 			res: `
