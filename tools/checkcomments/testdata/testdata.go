@@ -47,3 +47,7 @@ func testCorrectFormatNotExists() {
 func testIncorrectFormatNotExists() {
 	// TODO: https://github.com/FerretDB/FerretDB/issues/999999 // want "invalid TODO: incorrect format"
 }
+
+func testPrivateIssue() {
+	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/1
+}
