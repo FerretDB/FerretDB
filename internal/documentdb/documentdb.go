@@ -30,7 +30,7 @@ import "context"
 // TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/26
 // TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/143
 
-//go:generate go run ./genwrap -schemas=documentdb_api_catalog
+//go:generate go run ./genwrap -schemas=documentdb_api_internal
 
 // We use that schema for indexes and authentication:
 // TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/1147

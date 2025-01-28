@@ -192,7 +192,8 @@ func convertType(typ string) string {
 		return "[]byte"
 	case "boolean":
 		return "bool"
-	case `"any"`, "anyelement", "internal", "index_am_handler", "oid", "record", "void":
+	case `"any"`, "anyelement", "documentdb_api_catalog.index_spec_type", "internal", "index_am_handler", "oid",
+		"public.vector", "record", "regclass", "trigger", "tsquery", "void":
 		// use string for PostgreSQL/DocumentDB type we do not know how to convert
 		return "string"
 	case "smallint":
