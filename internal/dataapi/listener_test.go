@@ -17,7 +17,6 @@ package dataapi
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"io"
 	"net/http"
 	"net/url"
@@ -42,14 +41,13 @@ func TestSmokeDataAPI(t *testing.T) {
 	coll := testutil.CollectionName(t)
 
 	t.Run("Find", func(t *testing.T) {
-		jb, err := json.Marshal(map[string]any{
-			"database":   db,
-			"collection": coll,
-			"filter":     map[string]any{},
-		})
-		require.NoError(t, err)
+		jsonBody := `{
+			"database": "` + db + `",
+			"collection": "` + coll + `",
+			"filter": {}
+		}`
 
-		res, err := request(t, "http://"+addr+"/action/find", string(jb))
+		res, err := request(t, "http://"+addr+"/action/find", jsonBody)
 		require.NoError(t, err)
 
 		assert.Equal(t, http.StatusOK, res.StatusCode)
