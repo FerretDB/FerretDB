@@ -4,13 +4,6 @@
 
 version: 2
 
-registries:
-  ghcr:
-    type: docker-registry
-    url: ghcr.io
-    username: ferretdb-bot
-    password: ${{ secrets.PRIVATE_DEPENDABOT_TOKEN }}
-
 updates:
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -26,7 +19,6 @@ updates:
       time: "01:42"
 
   - package-ecosystem: "docker"
-    registries: ["ghcr"]
     directory: "/build/ferretdb"
     labels: ["deps", "not ready"]
     assignees: [AlekSi]
@@ -51,7 +43,6 @@ updates:
       day: "wednesday"
       time: "01:42"
   - package-ecosystem: "docker"
-    registries: ["ghcr"]
     directory: "/build/deps"
     labels: ["deps", "not ready"]
     assignees: [AlekSi]
