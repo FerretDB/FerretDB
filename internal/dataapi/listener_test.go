@@ -58,10 +58,10 @@ func TestSmokeDataAPI(t *testing.T) {
 	})
 
 	docs := []string{
-		`{"_id":1,"foo":"bar"}`,
-		`{"_id":2,"foo":42}`,
-		`{"_id":3,"foo":42.13}`,
-		`{"_id":4,"foo":{"foo":"bar"}}`,
+		`{"_id":1,"v":"foo"}`,
+		`{"_id":2,"v":42}`,
+		`{"_id":3,"v":42.13}`,
+		`{"_id":4,"v":{"foo":"bar"}}`,
 	}
 
 	t.Run("InsertOne", func(t *testing.T) {
@@ -110,7 +110,7 @@ func TestSmokeDataAPI(t *testing.T) {
 
 		body, err := io.ReadAll(res.Body)
 		require.NoError(t, err)
-		assert.JSONEq(t, `{"documents":[`+strings.Join(docs[:3], ",")+`]}`, string(body))
+		assert.JSONEq(t, `{"matchedCount":1,"modifiedCount":1}`, string(body))
 	})
 
 	t.Run("UpdateMany", func(t *testing.T) {
@@ -121,13 +121,13 @@ func TestSmokeDataAPI(t *testing.T) {
 			"update": {"$set":{"v":42.13}}
 		}`
 
-		res, err := request(t, "http://"+addr+"/action/updateOne", jsonBody)
+		res, err := request(t, "http://"+addr+"/action/updateMany", jsonBody)
 		require.NoError(t, err)
 		assert.Equal(t, http.StatusOK, res.StatusCode)
 
 		body, err := io.ReadAll(res.Body)
 		require.NoError(t, err)
-		assert.JSONEq(t, `{"documents":[`+strings.Join(docs[:3], ",")+`]}`, string(body))
+		assert.JSONEq(t, `{"matchedCount":2,"modifiedCount":2}`, string(body))
 	})
 
 	// TODO
