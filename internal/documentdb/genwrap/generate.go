@@ -15,10 +15,20 @@
 package main
 
 import (
+	"context"
+	"flag"
 	"fmt"
 	"io"
+	"log/slog"
+	"maps"
+	"os"
+	"path/filepath"
+	"slices"
 	"strings"
 	"text/template"
+
+	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // headerTemplate is used to generate header.
@@ -91,6 +101,69 @@ type templateData struct {
 	Returns      []convertedRoutineParam
 	QueryRowArgs []string
 	ScanArgs     []string
+}
+
+func main() {
+	opts := &logging.NewHandlerOpts{
+		Base:          "console",
+		Level:         slog.LevelDebug,
+		CheckMessages: true,
+	}
+	logging.Setup(opts, "")
+
+	l := slog.Default()
+	ctx := context.Background()
+
+	schemasF := flag.String("schemas", "", "comma-separated list of schemas")
+	flag.Parse()
+
+	if *schemasF == "" {
+		l.Log(ctx, logging.LevelFatal, "-schemas flag is empty.")
+	}
+
+	// DOCUMENTDB_GEN_URL=postgres://username:password@127.0.0.1:5432/postgres
+	uri := os.Getenv("DOCUMENTDB_GEN_URL")
+	if uri == "" {
+		l.InfoContext(ctx, "DOCUMENTDB_GEN_URL not set, skipping code generation.")
+		os.Exit(0)
+	}
+
+	schemas := map[string]struct{}{}
+
+	for _, schema := range strings.Split(*schemasF, ",") {
+		schema = strings.TrimSpace(schema)
+		if schema == "" {
+			continue
+		}
+
+		must.NoError(os.RemoveAll(schema))
+		must.NoError(os.MkdirAll(schema, 0o777))
+
+		schemas[schema] = struct{}{}
+	}
+
+	for schema := range schemas {
+		vs := Extract(ctx, uri, schema)
+
+		fs := Convert(vs)
+
+		out := must.NotFail(os.Create(filepath.Join(schema, schema+".go")))
+		defer out.Close() //nolint:errcheck // ignore for now, but it should be checked
+
+		h := headerData{
+			Cmd:     "genwrap " + strings.Join(os.Args[1:], " "),
+			Package: schema,
+		}
+		must.NoError(headerTemplate.Execute(out, &h))
+
+		ks := slices.Collect(maps.Keys(fs))
+		slices.Sort(ks)
+
+		for _, k := range ks {
+			v := fs[k]
+			must.NoError(Generate(out, &v))
+		}
+	}
 }
 
 // Generate uses schema and function definition to produce go function for
