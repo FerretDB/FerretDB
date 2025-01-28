@@ -53,6 +53,8 @@ func TestSmokeDataAPI(t *testing.T) {
 	h, err := handler.New(handlerOpts)
 	require.NoError(t, err)
 
+	// TODO add ferretdb listener and client to drop database before
+
 	var lis *Listener
 	lis, err = Listen(&ListenOpts{
 		TCPAddr: "127.0.0.1:0",
