@@ -280,7 +280,7 @@ func (f *faker) ScalarValue() any {
 		case 0x12: // Int64
 			return int64(f.r.Uint64())
 		case 0x13: // Decimal
-			// TODO https://github.com/FerretDB/FerretDB/issues/66
+			return primitive.NewDecimal128(f.r.Uint64(), f.r.Uint64())
 		default:
 		}
 	}
