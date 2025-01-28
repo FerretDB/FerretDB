@@ -60,8 +60,7 @@ func TestSmokeDataAPI(t *testing.T) {
 	docs := []string{
 		`{"_id":1,"v":"foo"}`,
 		`{"_id":2,"v":42}`,
-		`{"_id":3,"v":42.13}`,
-		`{"_id":4,"v":{"foo":"bar"}}`,
+		`{"_id":3,"v":{"foo":"bar"}}`,
 	}
 
 	t.Run("InsertOne", func(t *testing.T) {
@@ -146,8 +145,23 @@ func TestSmokeDataAPI(t *testing.T) {
 		assert.JSONEq(t, `{"document":{"_id":1,"v":42.13}}`, string(body))
 	})
 
+	t.Run("Aggregate", func(t *testing.T) {
+		jsonBody := `{
+			"database": "` + db + `",
+			"collection": "` + coll + `",
+			"pipeline": [{"$group":{"_id": "$v"}}]
+		}`
+
+		res, err := request(t, "http://"+addr+"/action/aggregate", jsonBody)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, res.StatusCode)
+
+		body, err := io.ReadAll(res.Body)
+		require.NoError(t, err)
+		assert.JSONEq(t, `{"documents":[{"_id":42.13},{"_id":{"foo":"bar"}}]}`, string(body))
+	})
+
 	// TODO
-	//aggregate
 	//deleteone
 	//deletemany
 	//find
