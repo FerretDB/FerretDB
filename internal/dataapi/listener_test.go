@@ -49,13 +49,11 @@ func TestSmokeDataAPI(t *testing.T) {
 
 		res, err := request(t, "http://"+addr+"/action/find", jsonBody)
 		require.NoError(t, err)
-
 		assert.Equal(t, http.StatusOK, res.StatusCode)
 
-		resB, err := io.ReadAll(res.Body)
+		body, err := io.ReadAll(res.Body)
 		require.NoError(t, err)
-
-		assert.JSONEq(t, `{"documents":[]}`, string(resB))
+		assert.JSONEq(t, `{"documents":[]}`, string(body))
 	})
 
 	// TODO every operation
