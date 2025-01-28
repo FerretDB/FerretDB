@@ -38,84 +38,10 @@ import (
 )
 
 func TestSmokeDataAPI(t *testing.T) {
-	const uri = "postgres://username:password@127.0.0.1:5432/postgres"
-
-	sp, err := state.NewProvider("")
-	require.NoError(t, err)
-
-	l := testutil.Logger(t)
-
-	p, err := documentdb.NewPool(uri, logging.WithName(l, "pool"), sp)
-	require.NoError(t, err)
-
-	handlerOpts := &handler.NewOpts{
-		Pool: p,
-		Auth: true,
-
-		L:             logging.WithName(l, "handler"),
-		StateProvider: sp,
-	}
-
-	h, err := handler.New(handlerOpts)
-	require.NoError(t, err)
-
-	listenerOpts := clientconn.NewListenerOpts{
-		Mode:    clientconn.NormalMode,
-		Metrics: connmetrics.NewListenerMetrics(),
-		Handler: h,
-		Logger:  logging.WithName(l, "listener"),
-		TCP:     "127.0.0.1:0",
-	}
-
-	lis, err := clientconn.Listen(&listenerOpts)
-	require.NoError(t, err)
-
-	var apiLis *Listener
-	apiLis, err = Listen(&ListenOpts{
-		TCPAddr: "127.0.0.1:0",
-		L:       logging.WithName(l, "dataapi"),
-		Handler: h,
-	})
-	require.NoError(t, err)
-
-	ctx, cancel := context.WithCancel(testutil.Ctx(t))
-	var wg sync.WaitGroup
-
-	// ensure that all listener's and handler's logs are written before test ends
-	t.Cleanup(func() {
-		wg.Wait()
-	})
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		lis.Run(ctx)
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		apiLis.Run(ctx)
-	}()
-
-	addr := apiLis.lis.Addr().String()
-	db := testutil.DatabaseName(t)
+	addr, db := setup(t)
 	coll := testutil.CollectionName(t)
 
 	c := http.Client{}
-
-	u := &url.URL{
-		Scheme: "mongodb",
-		Host:   lis.TCPAddr().String(),
-		Path:   "/",
-		User:   url.UserPassword("username", "password"),
-	}
-
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(u.String()))
-	require.NoError(t, err)
-
-	err = client.Database(db).Drop(ctx)
-	require.NoError(t, err)
 
 	t.Run("Find", func(t *testing.T) {
 		jb, err := json.Marshal(map[string]any{
@@ -145,5 +71,84 @@ func TestSmokeDataAPI(t *testing.T) {
 
 	// TODO every operation
 
-	cancel()
+}
+
+func setup(tb testing.TB) (addr string, dbName string) {
+	const uri = "postgres://username:password@127.0.0.1:5432/postgres"
+
+	sp, err := state.NewProvider("")
+	require.NoError(tb, err)
+
+	l := testutil.Logger(tb)
+
+	p, err := documentdb.NewPool(uri, logging.WithName(l, "pool"), sp)
+	require.NoError(tb, err)
+
+	handlerOpts := &handler.NewOpts{
+		Pool: p,
+		Auth: true,
+
+		L:             logging.WithName(l, "handler"),
+		StateProvider: sp,
+	}
+
+	h, err := handler.New(handlerOpts)
+	require.NoError(tb, err)
+
+	listenerOpts := clientconn.NewListenerOpts{
+		Mode:    clientconn.NormalMode,
+		Metrics: connmetrics.NewListenerMetrics(),
+		Handler: h,
+		Logger:  logging.WithName(l, "listener"),
+		TCP:     "127.0.0.1:0",
+	}
+
+	lis, err := clientconn.Listen(&listenerOpts)
+	require.NoError(tb, err)
+
+	var apiLis *Listener
+	apiLis, err = Listen(&ListenOpts{
+		TCPAddr: "127.0.0.1:0",
+		L:       logging.WithName(l, "dataapi"),
+		Handler: h,
+	})
+	require.NoError(tb, err)
+
+	ctx, cancel := context.WithCancel(testutil.Ctx(tb))
+	var wg sync.WaitGroup
+
+	// ensure that all listener's and handler's logs are written before test ends
+	tb.Cleanup(func() {
+		cancel()
+		wg.Wait()
+	})
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		lis.Run(ctx)
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		apiLis.Run(ctx)
+	}()
+
+	u := &url.URL{
+		Scheme: "mongodb",
+		Host:   lis.TCPAddr().String(),
+		Path:   "/",
+		User:   url.UserPassword("username", "password"),
+	}
+
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(u.String()))
+	require.NoError(tb, err)
+
+	addr = apiLis.lis.Addr().String()
+	dbName = testutil.DatabaseName(tb)
+
+	err = client.Database(dbName).Drop(ctx)
+	require.NoError(tb, err)
+	return
 }
