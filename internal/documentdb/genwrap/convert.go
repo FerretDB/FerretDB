@@ -51,7 +51,12 @@ func Convert(rows []map[string]any) map[string]convertedRoutine {
 
 	routines := map[string]convertedRoutine{}
 
-	for _, params := range routineParams {
+	specificNames := slices.Collect(maps.Keys(routineParams))
+	slices.Sort(specificNames)
+
+	for _, specificName := range specificNames {
+		params := routineParams[specificName]
+
 		var goParams, goReturns []convertedRoutineParam
 		var sqlParams, sqlReturns, comment, paramNames []string
 
