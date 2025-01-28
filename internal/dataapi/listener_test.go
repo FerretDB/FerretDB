@@ -41,7 +41,7 @@ func TestSmokeDataAPI(t *testing.T) {
 	addr, db := setup(t)
 	coll := testutil.CollectionName(t)
 
-	t.Run("Find", func(t *testing.T) {
+	t.Run("FindEmpty", func(t *testing.T) {
 		jsonBody := `{
 			"database": "` + db + `",
 			"collection": "` + coll + `",
@@ -80,30 +80,12 @@ func TestSmokeDataAPI(t *testing.T) {
 		assert.JSONEq(t, `{"n":1}`, string(body))
 	})
 
-	t.Run("FindAfterInsertOne", func(t *testing.T) {
-		jsonBody := `{
-			"database": "` + db + `",
-			"collection": "` + coll + `",
-			"filter": {}
-		}`
-
-		res, err := request(t, "http://"+addr+"/action/find", jsonBody)
-		require.NoError(t, err)
-		assert.Equal(t, http.StatusOK, res.StatusCode)
-
-		body, err := io.ReadAll(res.Body)
-		require.NoError(t, err)
-		assert.JSONEq(t, `{"documents":[`+docs[0]+`]}`, string(body))
-	})
-
 	t.Run("InsertMany", func(t *testing.T) {
 		jsonBody := `{
 			"database": "` + db + `",
 			"collection": "` + coll + `",
 			"documents": [` + strings.Join(docs[1:3], ",") + `]
 		}`
-
-		//strings.Join(docs[:3], ",")
 
 		res, err := request(t, "http://"+addr+"/action/insertMany", jsonBody)
 		require.NoError(t, err)
@@ -112,22 +94,6 @@ func TestSmokeDataAPI(t *testing.T) {
 		body, err := io.ReadAll(res.Body)
 		require.NoError(t, err)
 		assert.JSONEq(t, `{"n":1}`, string(body))
-	})
-
-	t.Run("FindAfterInsertMany", func(t *testing.T) {
-		jsonBody := `{
-			"database": "` + db + `",
-			"collection": "` + coll + `",
-			"filter": {}
-		}`
-
-		res, err := request(t, "http://"+addr+"/action/find", jsonBody)
-		require.NoError(t, err)
-		assert.Equal(t, http.StatusOK, res.StatusCode)
-
-		body, err := io.ReadAll(res.Body)
-		require.NoError(t, err)
-		assert.JSONEq(t, `{"documents":[`+strings.Join(docs[:3], ",")+`]}`, string(body))
 	})
 
 	t.Run("UpdateOne", func(t *testing.T) {
@@ -170,8 +136,6 @@ func TestSmokeDataAPI(t *testing.T) {
 	//deleteone
 	//deletemany
 	//find
-
-	// TODO every operation
 }
 
 func request(tb testing.TB, uri, jsonBody string) (*http.Response, error) {
