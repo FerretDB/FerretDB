@@ -20,6 +20,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"sync"
 	"testing"
 
@@ -99,8 +100,10 @@ func TestSmokeDataAPI(t *testing.T) {
 		jsonBody := `{
 			"database": "` + db + `",
 			"collection": "` + coll + `",
-			"documents": [` + docs[1] + "," + docs[2] + `]
+			"documents": [` + strings.Join(docs[1:3], ",") + `]
 		}`
+
+		//strings.Join(docs[:3], ",")
 
 		res, err := request(t, "http://"+addr+"/action/insertMany", jsonBody)
 		require.NoError(t, err)
@@ -124,8 +127,49 @@ func TestSmokeDataAPI(t *testing.T) {
 
 		body, err := io.ReadAll(res.Body)
 		require.NoError(t, err)
-		assert.JSONEq(t, `{"documents":[`+docs[0]+","+docs[1]+","+docs[2]+`]}`, string(body))
+		assert.JSONEq(t, `{"documents":[`+strings.Join(docs[:3], ",")+`]}`, string(body))
 	})
+
+	t.Run("UpdateOne", func(t *testing.T) {
+		jsonBody := `{
+			"database": "` + db + `",
+			"collection": "` + coll + `",
+			"filter": {"v":42},
+			"update": {"$set":{"v":"foo"}}
+		}`
+
+		res, err := request(t, "http://"+addr+"/action/updateOne", jsonBody)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, res.StatusCode)
+
+		body, err := io.ReadAll(res.Body)
+		require.NoError(t, err)
+		assert.JSONEq(t, `{"documents":[`+strings.Join(docs[:3], ",")+`]}`, string(body))
+	})
+
+	t.Run("UpdateMany", func(t *testing.T) {
+		jsonBody := `{
+			"database": "` + db + `",
+			"collection": "` + coll + `",
+			"filter": {"v":"foo"},
+			"update": {"$set":{"v":42.13}}
+		}`
+
+		res, err := request(t, "http://"+addr+"/action/updateOne", jsonBody)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, res.StatusCode)
+
+		body, err := io.ReadAll(res.Body)
+		require.NoError(t, err)
+		assert.JSONEq(t, `{"documents":[`+strings.Join(docs[:3], ",")+`]}`, string(body))
+	})
+
+	// TODO
+	//findone
+	//aggregate
+	//deleteone
+	//deletemany
+	//find
 
 	// TODO every operation
 }
