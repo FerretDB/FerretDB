@@ -41,8 +41,6 @@ func TestSmokeDataAPI(t *testing.T) {
 	addr, db := setup(t)
 	coll := testutil.CollectionName(t)
 
-	c := http.Client{}
-
 	t.Run("Find", func(t *testing.T) {
 		jb, err := json.Marshal(map[string]any{
 			"database":   db,
@@ -51,13 +49,7 @@ func TestSmokeDataAPI(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		req, err := http.NewRequest(http.MethodPost, "http://"+addr+"/action/find", bytes.NewBuffer(jb))
-		require.NoError(t, err)
-		req.Header.Set("Content-Type", "application/json")
-
-		req.SetBasicAuth("username", "password")
-
-		res, err := c.Do(req)
+		res, err := request(t, "http://"+addr+"/action/find", string(jb))
 		require.NoError(t, err)
 
 		assert.Equal(t, http.StatusOK, res.StatusCode)
@@ -65,11 +57,20 @@ func TestSmokeDataAPI(t *testing.T) {
 		resB, err := io.ReadAll(res.Body)
 		require.NoError(t, err)
 
-		// TODO check response
 		assert.JSONEq(t, `{"documents":[]}`, string(resB))
 	})
 
 	// TODO every operation
+}
+
+func request(tb testing.TB, uri, jsonBody string) (*http.Response, error) {
+	req, err := http.NewRequest(http.MethodPost, uri, bytes.NewBuffer([]byte(jsonBody)))
+	require.NoError(tb, err)
+	req.Header.Set("Content-Type", "application/json")
+
+	req.SetBasicAuth("username", "password")
+
+	return http.DefaultClient.Do(req)
 }
 
 func setup(tb testing.TB) (addr string, dbName string) {
