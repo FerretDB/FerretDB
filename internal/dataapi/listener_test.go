@@ -44,7 +44,7 @@ func TestSmokeDataAPI(t *testing.T) {
 
 	handlerOpts := &handler.NewOpts{
 		Pool: p,
-		Auth: true,
+		Auth: false,
 
 		L:             logging.WithName(l, "handler"),
 		StateProvider: sp,
@@ -83,11 +83,14 @@ func TestSmokeDataAPI(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		req, err := http.NewRequest(http.MethodGet, "http://"+addr+"/action/find", bytes.NewBuffer(jb))
+		req, err := http.NewRequest(http.MethodPost, "http://"+addr+"/action/find", bytes.NewBuffer(jb))
 		require.NoError(t, err)
+		req.Header.Set("Content-Type", "application/json")
 
 		res, err := c.Do(req)
 		require.NoError(t, err)
+
+		assert.Equal(t, http.StatusOK, res.StatusCode)
 
 		resB, err := io.ReadAll(res.Body)
 		require.NoError(t, err)
