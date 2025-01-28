@@ -15,7 +15,11 @@
 package dataapi
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"io"
+	"net/http"
 	"testing"
 
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
@@ -23,6 +27,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -63,6 +68,32 @@ func TestSmokeDataAPI(t *testing.T) {
 		lis.Run(ctx)
 		close(done)
 	}()
+
+	addr := lis.lis.Addr().String()
+	db := testutil.DatabaseName(t)
+	coll := testutil.CollectionName(t)
+
+	c := http.Client{}
+
+	t.Run("Find", func(t *testing.T) {
+		jb, err := json.Marshal(map[string]any{
+			"database":   db,
+			"collection": coll,
+			"filter":     map[string]any{},
+		})
+		require.NoError(t, err)
+
+		req, err := http.NewRequest(http.MethodGet, addr+"/action/find", bytes.NewBuffer(jb))
+		require.NoError(t, err)
+
+		res, err := c.Do(req)
+		require.NoError(t, err)
+
+		resB, err := io.ReadAll(res.Body)
+		require.NoError(t, err)
+
+		assert.Equal(t, nil, string(resB))
+	})
 
 	cancel()
 	<-done // prevent panic on logging after test ends
