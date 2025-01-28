@@ -39,12 +39,12 @@ func TestSmokeDataAPI(t *testing.T) {
 
 	l := testutil.Logger(t)
 
-	p, err := documentdb.NewPool(uri, l, sp)
+	p, err := documentdb.NewPool(uri, logging.WithName(l, "pool"), sp)
 	require.NoError(t, err)
 
 	handlerOpts := &handler.NewOpts{
 		Pool: p,
-		Auth: false,
+		Auth: true,
 
 		L:             logging.WithName(l, "handler"),
 		StateProvider: sp,
@@ -56,7 +56,7 @@ func TestSmokeDataAPI(t *testing.T) {
 	var lis *Listener
 	lis, err = Listen(&ListenOpts{
 		TCPAddr: "127.0.0.1:0",
-		L:       l,
+		L:       logging.WithName(l, "dataapi"),
 		Handler: h,
 	})
 	require.NoError(t, err)
@@ -86,6 +86,8 @@ func TestSmokeDataAPI(t *testing.T) {
 		req, err := http.NewRequest(http.MethodPost, "http://"+addr+"/action/find", bytes.NewBuffer(jb))
 		require.NoError(t, err)
 		req.Header.Set("Content-Type", "application/json")
+
+		req.SetBasicAuth("username", "password")
 
 		res, err := c.Do(req)
 		require.NoError(t, err)
