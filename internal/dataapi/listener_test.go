@@ -54,6 +54,7 @@ func TestSmokeDataAPI(t *testing.T) {
 		L:       l,
 		Handler: h,
 	})
+	require.NoError(t, err)
 
 	lis.Run()
 }
