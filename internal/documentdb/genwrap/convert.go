@@ -22,34 +22,15 @@ import (
 	"unicode"
 )
 
-// convertedRoutineParam represents name and type of Go parameter.
-type convertedRoutineParam struct {
-	Name string
-	Type string
-}
-
-// convertedRoutine contains function/procedure and parameter information converted
-// from SQL to Go formatted names and types.
-type convertedRoutine struct {
-	Name         string
-	SQLFuncName  string
-	QueryArgs    string
-	QueryReturns string
-	Comment      string
-	GoParams     []convertedRoutineParam
-	GoReturns    []convertedRoutineParam
-	IsProcedure  bool
-}
-
 // Convert takes rows containing parameters of routines. It groups them to
 // each routine and converts to Go formatted names and types.
 //
 // For an anonymous SQL parameter, it assigns a unique name.
 // It also produces SQL query placeholders and return parameters in strings.
-func Convert(rows []map[string]any) map[string]convertedRoutine {
+func Convert(rows []map[string]any) map[string]templateData {
 	routineParams := groupBySpecificName(rows)
 
-	routines := map[string]convertedRoutine{}
+	routines := map[string]templateData{}
 
 	specificNames := slices.Collect(maps.Keys(routineParams))
 	slices.Sort(specificNames)
@@ -57,7 +38,7 @@ func Convert(rows []map[string]any) map[string]convertedRoutine {
 	for _, specificName := range specificNames {
 		params := routineParams[specificName]
 
-		var goParams, goReturns []convertedRoutineParam
+		var goParams, goReturns []param
 		var sqlParams, sqlReturns, comment, paramNames []string
 
 		var placeholderCounter int
@@ -88,7 +69,7 @@ func Convert(rows []map[string]any) map[string]convertedRoutine {
 
 			comment = append(comment, toParamComment(name, row))
 
-			p := convertedRoutineParam{
+			p := param{
 				Name: convertName(name),
 				Type: convertType(dataType(row)),
 			}
@@ -115,7 +96,7 @@ func Convert(rows []map[string]any) map[string]convertedRoutine {
 			// parameter data type, but it has routine data type for the return variable.
 			sqlReturns = append(sqlReturns, convertEncodedType(routineName, routineDataType(params[0])))
 
-			goReturns = []convertedRoutineParam{{
+			goReturns = []param{{
 				Name: camelCase("out_" + convertName(routineName)),
 				Type: convertType(routineDataType(params[0])),
 			}}
@@ -126,15 +107,15 @@ func Convert(rows []map[string]any) map[string]convertedRoutine {
 		// unique name is used to handle function overloading
 		uniqueFunctionName := uniqueName(slices.Collect(maps.Keys(routines)), routineName)
 
-		r := convertedRoutine{
-			Name:         pascalCase(uniqueFunctionName),
-			SQLFuncName:  fmt.Sprintf("%s.%s", params[0]["specific_schema"], routineName),
-			IsProcedure:  params[0]["routine_type"] == "PROCEDURE",
-			QueryArgs:    strings.Join(sqlParams, ", "),
-			QueryReturns: strings.Join(sqlReturns, ", "),
-			Comment:      fmt.Sprintf("%s.%s(%s)", params[0]["specific_schema"], routineName, strings.Join(comment, ", ")),
-			GoParams:     goParams,
-			GoReturns:    goReturns,
+		r := templateData{
+			FuncName:    pascalCase(uniqueFunctionName),
+			SQLFuncName: fmt.Sprintf("%s.%s", params[0]["specific_schema"], routineName),
+			IsProcedure: params[0]["routine_type"] == "PROCEDURE",
+			SQLArgs:     strings.Join(sqlParams, ", "),
+			SQLReturns:  strings.Join(sqlReturns, ", "),
+			Comment:     fmt.Sprintf("%s.%s(%s)", params[0]["specific_schema"], routineName, strings.Join(comment, ", ")),
+			Params:      goParams,
+			Returns:     goReturns,
 		}
 
 		handleFunctionOverloading(&r)
@@ -268,7 +249,7 @@ func pascalCase(s string) string {
 }
 
 // handleFunctionOverloading applies different wrapper function name for overloaded functions.
-func handleFunctionOverloading(f *convertedRoutine) {
+func handleFunctionOverloading(f *templateData) {
 	var funcName string
 
 	var skip bool
@@ -282,7 +263,7 @@ func handleFunctionOverloading(f *convertedRoutine) {
 	}
 
 	if !skip && strings.Contains(f.Comment, "documentdb_core.bson,") {
-		f.Name = funcName
+		f.FuncName = funcName
 	}
 }
 

@@ -33,20 +33,20 @@ func TestGenerate(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]struct { //nolint:vet // use only for testing
-		f convertedRoutine
+		data templateData
 
 		res string
 	}{
 		"DropIndexes": {
-			f: convertedRoutine{
-				Name:        "drop_indexes",
+			data: templateData{
+				FuncName:    "DropIndexes",
 				SQLFuncName: "documentdb_api.drop_indexes",
 				IsProcedure: true,
 				Comment: `documentdb_api.drop_indexes(p_database_name text, p_arg documentdb_core.bson, ` +
 					`INOUT retval documentdb_core.bson DEFAULT NULL)`,
-				QueryArgs:    "$1, $2::bytea, $3::bytea",
-				QueryReturns: "retval::bytea",
-				GoParams: []convertedRoutineParam{
+				SQLArgs:    "$1, $2::bytea, $3::bytea",
+				SQLReturns: "retval::bytea",
+				Params: []param{
 					{
 						Name: "databaseName",
 						Type: "string",
@@ -60,7 +60,7 @@ func TestGenerate(t *testing.T) {
 						Type: "wirebson.RawDocument",
 					},
 				},
-				GoReturns: []convertedRoutineParam{
+				Returns: []param{
 					{
 						Name: "outRetValue",
 						Type: "wirebson.RawDocument",
@@ -94,7 +94,7 @@ func DropIndexes(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseNa
 
 			var b bytes.Buffer
 			w := bufio.NewWriter(&b)
-			err := Generate(w, &tc.f)
+			err := Generate(w, &tc.data)
 			require.NoError(t, err)
 
 			err = w.Flush()

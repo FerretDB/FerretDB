@@ -131,14 +131,14 @@ func TestConvert(t *testing.T) {
 		},
 	}
 
-	expected := map[string]convertedRoutine{
+	expected := map[string]templateData{
 		"binary_extended_version": {
-			Name:         "BinaryExtendedVersion",
-			SQLFuncName:  "documentdb_api.binary_extended_version",
-			QueryArgs:    "",
-			QueryReturns: "binary_extended_version",
-			Comment:      `documentdb_api.binary_extended_version(OUT binary_extended_version text)`,
-			GoReturns: []convertedRoutineParam{
+			FuncName:    "BinaryExtendedVersion",
+			SQLFuncName: "documentdb_api.binary_extended_version",
+			SQLArgs:     "",
+			SQLReturns:  "binary_extended_version",
+			Comment:     `documentdb_api.binary_extended_version(OUT binary_extended_version text)`,
+			Returns: []param{
 				{
 					Name: "outBinaryExtendedVersion",
 					Type: "string",
@@ -146,13 +146,13 @@ func TestConvert(t *testing.T) {
 			},
 		},
 		"count_query": {
-			Name:         "CountQuery",
-			SQLFuncName:  "documentdb_api.count_query",
-			QueryArgs:    "$1, $2::bytea",
-			QueryReturns: "document::bytea",
+			FuncName:    "CountQuery",
+			SQLFuncName: "documentdb_api.count_query",
+			SQLArgs:     "$1, $2::bytea",
+			SQLReturns:  "document::bytea",
 			Comment: `documentdb_api.count_query(database text, countspec documentdb_core.bson, ` +
 				`OUT document documentdb_core.bson)`,
-			GoParams: []convertedRoutineParam{
+			Params: []param{
 				{
 					Name: "database",
 					Type: "string",
@@ -162,7 +162,7 @@ func TestConvert(t *testing.T) {
 					Type: "wirebson.RawDocument",
 				},
 			},
-			GoReturns: []convertedRoutineParam{
+			Returns: []param{
 				{
 					Name: "outDocument",
 					Type: "wirebson.RawDocument",
@@ -170,14 +170,14 @@ func TestConvert(t *testing.T) {
 			},
 		},
 		"drop_indexes": {
-			Name:         "DropIndexes",
-			SQLFuncName:  "documentdb_api.drop_indexes",
-			IsProcedure:  true,
-			QueryArgs:    "$1, $2::bytea, $3::bytea",
-			QueryReturns: "retval::bytea",
+			FuncName:    "DropIndexes",
+			SQLFuncName: "documentdb_api.drop_indexes",
+			IsProcedure: true,
+			SQLArgs:     "$1, $2::bytea, $3::bytea",
+			SQLReturns:  "retval::bytea",
 			Comment: `documentdb_api.drop_indexes(p_database_name text, p_arg documentdb_core.bson, ` +
 				`INOUT retval documentdb_core.bson DEFAULT NULL)`,
-			GoParams: []convertedRoutineParam{
+			Params: []param{
 				{
 					Name: "databaseName",
 					Type: "string",
@@ -191,7 +191,7 @@ func TestConvert(t *testing.T) {
 					Type: "wirebson.RawDocument",
 				},
 			},
-			GoReturns: []convertedRoutineParam{
+			Returns: []param{
 				{
 					Name: "outRetValue",
 					Type: "wirebson.RawDocument",
