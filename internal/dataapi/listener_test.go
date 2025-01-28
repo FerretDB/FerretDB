@@ -15,6 +15,7 @@
 package dataapi
 
 import (
+	"context"
 	"testing"
 
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
@@ -27,7 +28,6 @@ import (
 
 func TestSmokeDataAPI(t *testing.T) {
 	const uri = "postgres://username:password@127.0.0.1:5432/postgres"
-	const addr = ""
 
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
@@ -50,11 +50,20 @@ func TestSmokeDataAPI(t *testing.T) {
 
 	var lis *Listener
 	lis, err = Listen(&ListenOpts{
-		TCPAddr: addr,
+		TCPAddr: "127.0.0.1:0",
 		L:       l,
 		Handler: h,
 	})
 	require.NoError(t, err)
 
-	lis.Run()
+	ctx, cancel := context.WithCancel(testutil.Ctx(t))
+	done := make(chan struct{})
+
+	go func() {
+		lis.Run(ctx)
+		close(done)
+	}()
+
+	cancel()
+	<-done // prevent panic on logging after test ends
 }
