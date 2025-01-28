@@ -4,6 +4,11 @@ sidebar_position: 3
 
 # RPM package
 
+:::note
+The `.rpm` package for PostgreSQL with DocumentDB extension is not currently available.
+Please check the DocumentDB extension [installation guide](../documentdb/docker.md) for alternative installation methods.
+:::
+
 To install the `.rpm` packages for FerretDB on your RHEL, CentOS, and other `.rpm`-based systems,
 you can use `rpm` tool.
 
@@ -22,11 +27,6 @@ ferretdb --version
 ```
 
 FerretDB does not automatically install PostgreSQL with DocumentDB extension.
-
-:::note
-The `.rpm` package for PostgreSQL with DocumentDB extension is not currently available.
-Please check the DocumentDB extension [installation guide](../documentdb/docker.md) for alternative installation methods.
-:::
 
 The `.rpm` package ships with the systemd unit for starting FerretDB automatically.
 For more information about its configuration, please take a look at [systemd configuration guide](systemd.md).
