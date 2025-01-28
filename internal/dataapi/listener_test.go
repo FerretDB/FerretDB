@@ -20,8 +20,12 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"net/url"
+	"sync"
 	"testing"
 
+	"github.com/FerretDB/FerretDB/v2/internal/clientconn"
+	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
 	"github.com/FerretDB/FerretDB/v2/internal/handler"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
@@ -29,6 +33,8 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func TestSmokeDataAPI(t *testing.T) {
@@ -53,10 +59,19 @@ func TestSmokeDataAPI(t *testing.T) {
 	h, err := handler.New(handlerOpts)
 	require.NoError(t, err)
 
-	// TODO add ferretdb listener and client to drop database before
+	listenerOpts := clientconn.NewListenerOpts{
+		Mode:    clientconn.NormalMode,
+		Metrics: connmetrics.NewListenerMetrics(),
+		Handler: h,
+		Logger:  logging.WithName(l, "listener"),
+		TCP:     "127.0.0.1:0",
+	}
 
-	var lis *Listener
-	lis, err = Listen(&ListenOpts{
+	lis, err := clientconn.Listen(&listenerOpts)
+	require.NoError(t, err)
+
+	var apiLis *Listener
+	apiLis, err = Listen(&ListenOpts{
 		TCPAddr: "127.0.0.1:0",
 		L:       logging.WithName(l, "dataapi"),
 		Handler: h,
@@ -64,20 +79,43 @@ func TestSmokeDataAPI(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx, cancel := context.WithCancel(testutil.Ctx(t))
-	done := make(chan struct{})
+	var wg sync.WaitGroup
 
+	// ensure that all listener's and handler's logs are written before test ends
+	t.Cleanup(func() {
+		wg.Wait()
+	})
+
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		lis.Run(ctx)
-		close(done)
 	}()
 
-	addr := lis.lis.Addr().String()
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		apiLis.Run(ctx)
+	}()
+
+	addr := apiLis.lis.Addr().String()
 	db := testutil.DatabaseName(t)
 	coll := testutil.CollectionName(t)
 
 	c := http.Client{}
 
-	// TODO drop
+	u := &url.URL{
+		Scheme: "mongodb",
+		Host:   lis.TCPAddr().String(),
+		Path:   "/",
+		User:   url.UserPassword("username", "password"),
+	}
+
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(u.String()))
+	require.NoError(t, err)
+
+	err = client.Database(db).Drop(ctx)
+	require.NoError(t, err)
 
 	t.Run("Find", func(t *testing.T) {
 		jb, err := json.Marshal(map[string]any{
@@ -108,5 +146,4 @@ func TestSmokeDataAPI(t *testing.T) {
 	// TODO every operation
 
 	cancel()
-	<-done // prevent panic on logging after test ends
 }
