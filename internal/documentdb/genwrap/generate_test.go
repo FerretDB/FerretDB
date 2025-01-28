@@ -32,7 +32,7 @@ func TestGenerate(t *testing.T) {
 	}{
 		"DropIndexes": {
 			f: convertedRoutine{
-				Name:        "drop_indexes",
+				Name:        "DropIndexes",
 				SQLFuncName: "documentdb_api.drop_indexes",
 				IsProcedure: true,
 				Comment: `documentdb_api.drop_indexes(p_database_name text, p_arg documentdb_core.bson, ` +
