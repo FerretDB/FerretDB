@@ -83,7 +83,7 @@ func TestSmokeDataAPI(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		req, err := http.NewRequest(http.MethodGet, addr+"/action/find", bytes.NewBuffer(jb))
+		req, err := http.NewRequest(http.MethodGet, "http://"+addr+"/action/find", bytes.NewBuffer(jb))
 		require.NoError(t, err)
 
 		res, err := c.Do(req)
