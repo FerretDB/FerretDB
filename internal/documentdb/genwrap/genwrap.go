@@ -16,7 +16,6 @@
 package main
 
 import (
-	"cmp"
 	"context"
 	"flag"
 	"log/slog"
@@ -84,13 +83,12 @@ func main() {
 		}
 		must.NoError(headerTemplate.Execute(out, &h))
 
-		routines := slices.Collect(maps.Values(fs))
-		slices.SortFunc(routines, func(a, b convertedRoutine) int {
-			return cmp.Compare(a.Name, b.Name)
-		})
+		ks := slices.Collect(maps.Keys(fs))
+		slices.Sort(ks)
 
-		for _, r := range routines {
-			must.NoError(Generate(out, &r))
+		for _, k := range ks {
+			v := fs[k]
+			must.NoError(Generate(out, &v))
 		}
 	}
 }
