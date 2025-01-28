@@ -74,7 +74,7 @@ func TestSmokeDataAPI(t *testing.T) {
 		assert.JSONEq(t, `{"n":1}`, string(body))
 	})
 
-	t.Run("Find", func(t *testing.T) {
+	t.Run("FindAfterInsertOne", func(t *testing.T) {
 		jsonBody := `{
 			"database": "` + db + `",
 			"collection": "` + coll + `",
