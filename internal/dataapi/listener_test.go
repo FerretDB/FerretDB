@@ -56,11 +56,13 @@ func TestSmokeDataAPI(t *testing.T) {
 		assert.JSONEq(t, `{"documents":[]}`, string(body))
 	})
 
+	insertDoc := `{"_id":1,"foo":"bar"}`
+
 	t.Run("InsertOne", func(t *testing.T) {
 		jsonBody := `{
 			"database": "` + db + `",
 			"collection": "` + coll + `",
-			"document": {"v":"foo"}
+			"document": ` + insertDoc + `
 		}`
 
 		res, err := request(t, "http://"+addr+"/action/insertOne", jsonBody)
@@ -70,6 +72,22 @@ func TestSmokeDataAPI(t *testing.T) {
 		body, err := io.ReadAll(res.Body)
 		require.NoError(t, err)
 		assert.JSONEq(t, `{"n":1}`, string(body))
+	})
+
+	t.Run("Find", func(t *testing.T) {
+		jsonBody := `{
+			"database": "` + db + `",
+			"collection": "` + coll + `",
+			"filter": {}
+		}`
+
+		res, err := request(t, "http://"+addr+"/action/find", jsonBody)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, res.StatusCode)
+
+		body, err := io.ReadAll(res.Body)
+		require.NoError(t, err)
+		assert.JSONEq(t, `{"documents":[`+insertDoc+`]}`, string(body))
 	})
 
 	// TODO every operation
