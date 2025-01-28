@@ -56,13 +56,18 @@ func TestSmokeDataAPI(t *testing.T) {
 		assert.JSONEq(t, `{"documents":[]}`, string(body))
 	})
 
-	insertDoc := `{"_id":1,"foo":"bar"}`
+	docs := []string{
+		`{"_id":1,"foo":"bar"}`,
+		`{"_id":2,"foo":42}`,
+		`{"_id":3,"foo":42.13}`,
+		`{"_id":4,"foo":{"foo":"bar"}}`,
+	}
 
 	t.Run("InsertOne", func(t *testing.T) {
 		jsonBody := `{
 			"database": "` + db + `",
 			"collection": "` + coll + `",
-			"document": ` + insertDoc + `
+			"document": ` + docs[0] + `
 		}`
 
 		res, err := request(t, "http://"+addr+"/action/insertOne", jsonBody)
@@ -87,7 +92,39 @@ func TestSmokeDataAPI(t *testing.T) {
 
 		body, err := io.ReadAll(res.Body)
 		require.NoError(t, err)
-		assert.JSONEq(t, `{"documents":[`+insertDoc+`]}`, string(body))
+		assert.JSONEq(t, `{"documents":[`+docs[0]+`]}`, string(body))
+	})
+
+	t.Run("InsertMany", func(t *testing.T) {
+		jsonBody := `{
+			"database": "` + db + `",
+			"collection": "` + coll + `",
+			"documents": [` + docs[1] + "," + docs[2] + `]
+		}`
+
+		res, err := request(t, "http://"+addr+"/action/insertMany", jsonBody)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, res.StatusCode)
+
+		body, err := io.ReadAll(res.Body)
+		require.NoError(t, err)
+		assert.JSONEq(t, `{"n":1}`, string(body))
+	})
+
+	t.Run("FindAfterInsertMany", func(t *testing.T) {
+		jsonBody := `{
+			"database": "` + db + `",
+			"collection": "` + coll + `",
+			"filter": {}
+		}`
+
+		res, err := request(t, "http://"+addr+"/action/find", jsonBody)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, res.StatusCode)
+
+		body, err := io.ReadAll(res.Body)
+		require.NoError(t, err)
+		assert.JSONEq(t, `{"documents":[`+docs[0]+","+docs[1]+","+docs[2]+`]}`, string(body))
 	})
 
 	// TODO every operation
