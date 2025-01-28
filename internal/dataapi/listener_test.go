@@ -77,6 +77,8 @@ func TestSmokeDataAPI(t *testing.T) {
 
 	c := http.Client{}
 
+	// TODO drop
+
 	t.Run("Find", func(t *testing.T) {
 		jb, err := json.Marshal(map[string]any{
 			"database":   db,
@@ -99,8 +101,11 @@ func TestSmokeDataAPI(t *testing.T) {
 		resB, err := io.ReadAll(res.Body)
 		require.NoError(t, err)
 
+		// TODO check response
 		assert.Equal(t, nil, string(resB))
 	})
+
+	// TODO every operation
 
 	cancel()
 	<-done // prevent panic on logging after test ends
