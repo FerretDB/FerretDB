@@ -29,8 +29,8 @@ type Converter struct {
 }
 
 // Convert takes rows containing parameters of routines.
-// It returns map of schema and routines each schema and
-// converts rows to Go formatted names and types.
+// It returns a map of schemas and routines belonging to each schema by
+// converting rows to Go formatted names and types.
 //
 // For an anonymous SQL parameter, it assigns a unique name.
 // It also produces SQL query placeholders and return parameters in strings.
