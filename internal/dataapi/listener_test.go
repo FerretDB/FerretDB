@@ -280,12 +280,14 @@ func setupDataAPI(tb testing.TB) (addr string, dbName string) {
 	})
 
 	wg.Add(1)
+
 	go func() {
 		defer wg.Done()
 		lis.Run(ctx)
 	}()
 
 	wg.Add(1)
+
 	go func() {
 		defer wg.Done()
 		apiLis.Run(ctx)
@@ -306,5 +308,6 @@ func setupDataAPI(tb testing.TB) (addr string, dbName string) {
 
 	err = client.Database(dbName).Drop(ctx)
 	require.NoError(tb, err)
+
 	return
 }
