@@ -18,6 +18,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
 )
 
 func TestCamelCase(t *testing.T) {
@@ -30,6 +32,8 @@ func TestCamelCase(t *testing.T) {
 
 func TestConvert(t *testing.T) {
 	t.Parallel()
+
+	l := testutil.Logger(t)
 
 	rows := []map[string]any{
 		{
@@ -178,6 +182,6 @@ func TestConvert(t *testing.T) {
 		},
 	}
 
-	res := Convert(rows)
+	res := Convert(rows, l)
 	require.Equal(t, expected, res)
 }

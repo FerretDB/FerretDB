@@ -16,6 +16,7 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
 	"maps"
 	"slices"
 	"strings"
@@ -23,7 +24,9 @@ import (
 )
 
 // Converter converts SQL data types to Go data types.
-type Converter struct{}
+type Converter struct {
+	l *slog.Logger
+}
 
 // Convert takes rows containing parameters of routines.
 // It returns map of schema and routines each schema and
@@ -31,8 +34,10 @@ type Converter struct{}
 //
 // For an anonymous SQL parameter, it assigns a unique name.
 // It also produces SQL query placeholders and return parameters in strings.
-func Convert(rows []map[string]any) map[string]map[string]templateData {
-	c := new(Converter)
+func Convert(rows []map[string]any, l *slog.Logger) map[string]map[string]templateData {
+	c := &Converter{
+		l: l,
+	}
 
 	routineParams := c.groupBySpecificName(rows)
 	schemas := map[string]map[string]templateData{}
@@ -181,7 +186,7 @@ func (c *Converter) convertType(typ string) string {
 		return "bool"
 	case `"any"`, "anyelement", "documentdb_api_catalog.index_spec_type", "internal", "index_am_handler", "oid",
 		"public.vector", "record", "regclass", "trigger", "tsquery", "void":
-		// use string for PostgreSQL/DocumentDB type we do not know how to convert
+		c.l.Debug("use string for PostgreSQL/DocumentDB type without known conversion", slog.String("data_type", typ))
 		return "string"
 	case "smallint":
 		return "int16"

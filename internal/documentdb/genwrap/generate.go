@@ -130,7 +130,7 @@ func main() {
 
 	rows := Extract(ctx, uri, schemas)
 
-	schemaRoutines := Convert(rows)
+	schemaRoutines := Convert(rows, l)
 
 	for schema, routines := range schemaRoutines {
 		out := must.NotFail(os.Create(filepath.Join(schema, schema+".go")))
