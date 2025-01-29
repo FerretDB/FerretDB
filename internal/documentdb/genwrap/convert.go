@@ -45,8 +45,7 @@ func Convert(rows []map[string]any, l *slog.Logger) map[string]map[string]templa
 	for _, specificName := range slices.Sorted(maps.Keys(routineParams)) {
 		params := routineParams[specificName]
 
-		var sqlParams, sqlReturns, comment, queryRowArgs, scanArgs, goParams, goReturns, paramNames []string
-
+		var goParams, goReturns, sqlParams, sqlReturns, comment, queryRowArgs, scanArgs, paramNames []string
 		var placeholderCounter int
 
 		for _, row := range params {

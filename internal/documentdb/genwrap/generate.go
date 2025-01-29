@@ -156,14 +156,22 @@ func main() {
 func Generate(writer io.Writer, data *templateData) error {
 	q := generateSQL(data)
 
-	data.QueryRowArgs = fmt.Sprintf(`ctx, "%s", %s`, q, data.QueryRowArgs)
-	data.Params = fmt.Sprintf("ctx context.Context, conn *pgx.Conn, l *slog.Logger, %s", data.Params)
+	queryRowArgs := fmt.Sprintf(`ctx, "%s"`, q)
+	if data.QueryRowArgs != "" {
+		queryRowArgs = fmt.Sprintf("%s, %s", queryRowArgs, data.QueryRowArgs)
+	}
+	data.QueryRowArgs = queryRowArgs
+
+	params := "ctx context.Context, conn *pgx.Conn, l *slog.Logger"
+	if data.Params != "" {
+		params = fmt.Sprintf("%s, %s", params, data.Params)
+	}
+	data.Params = params
 
 	returns := "err error"
 	if data.Returns != "" {
-		returns = fmt.Sprintf("%s, err error", data.Returns)
+		returns = fmt.Sprintf("%s, %s", data.Returns, returns)
 	}
-
 	data.Returns = returns
 
 	return funcTemplate.Execute(writer, &data)
