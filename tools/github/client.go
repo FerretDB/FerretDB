@@ -25,6 +25,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/FerretDB/gh"
@@ -111,8 +112,8 @@ func CacheFilePath() (string, error) {
 
 var (
 	// Correctly formatted FerretDB issue.
-	// It returns repository name and the issue number as it's submatches.
-	urlRE = regexp.MustCompile(`^\Qhttps://github.com/FerretDB/\E([-\w]+)/issues/(\d+)$`)
+	// It returns owner/repository name and the issue number as it's submatches.
+	urlRE = regexp.MustCompile(`^\Qhttps://github.com/\E(FerretDB/[-\w]+|microsoft/documentdb)/issues/(\d+)$`)
 
 	// ErrIncorrectURL indicates that FerretDB issue URL is formatted incorrectly.
 	ErrIncorrectURL = errors.New("invalid TODO: incorrect format")
@@ -122,9 +123,9 @@ var (
 )
 
 // parseIssueURL takes the properly formatted FerretDB issue URL and returns it's
-// repository name and issue number.
+// owner name, repository name and issue number.
 // If the issue number or URL formatting is incorrect, the error is returned.
-func parseIssueURL(line string) (repo string, num int, err error) {
+func parseIssueURL(line string) (owner, repo string, num int, err error) {
 	match := urlRE.FindStringSubmatch(line)
 
 	if len(match) != 3 {
@@ -132,7 +133,7 @@ func parseIssueURL(line string) (repo string, num int, err error) {
 		return
 	}
 
-	repo = match[1]
+	owner, repo, _ = strings.Cut(match[1], "/")
 
 	num, err = strconv.Atoi(match[2])
 
@@ -156,7 +157,7 @@ func parseIssueURL(line string) (repo string, num int, err error) {
 func (c *Client) IssueStatus(ctx context.Context, url string) (IssueStatus, error) {
 	start := time.Now()
 
-	repo, num, err := parseIssueURL(url)
+	owner, repo, num, err := parseIssueURL(url)
 	if err != nil {
 		return IssueNotFound, err
 	}
@@ -196,7 +197,7 @@ func (c *Client) IssueStatus(ctx context.Context, url string) (IssueStatus, erro
 				return nil, noUpdate
 			}
 
-			if res, err = c.checkIssueStatus(ctx, repo, num); err != nil {
+			if res, err = c.checkIssueStatus(ctx, owner, repo, num); err != nil {
 				var rle *github.RateLimitError
 				if !errors.As(err, &rle) {
 					return nil, fmt.Errorf("%s: %s", url, err)
@@ -246,8 +247,8 @@ func (c *Client) IssueStatus(ctx context.Context, url string) (IssueStatus, erro
 
 // checkIssueStatus checks issue status via GitHub API.
 // It does not use cache.
-func (c *Client) checkIssueStatus(ctx context.Context, repo string, num int) (IssueStatus, error) {
-	issue, resp, err := c.c.Issues.Get(ctx, "FerretDB", repo, num)
+func (c *Client) checkIssueStatus(ctx context.Context, owner, repo string, num int) (IssueStatus, error) {
+	issue, resp, err := c.c.Issues.Get(ctx, owner, repo, num)
 	if err != nil {
 		if resp != nil && resp.StatusCode == http.StatusNotFound {
 			return IssueNotFound, nil
