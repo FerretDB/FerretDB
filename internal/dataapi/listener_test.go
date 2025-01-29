@@ -48,7 +48,7 @@ func TestSmokeDataAPI(t *testing.T) {
 			"filter": {}
 		}`
 
-		res, err := request(t, "http://"+addr+"/action/find", jsonBody)
+		res, err := postJSON(t, "http://"+addr+"/action/find", jsonBody)
 		require.NoError(t, err)
 		assert.Equal(t, http.StatusOK, res.StatusCode)
 
@@ -70,7 +70,7 @@ func TestSmokeDataAPI(t *testing.T) {
 			"document": ` + docs[0] + `
 		}`
 
-		res, err := request(t, "http://"+addr+"/action/insertOne", jsonBody)
+		res, err := postJSON(t, "http://"+addr+"/action/insertOne", jsonBody)
 		require.NoError(t, err)
 		assert.Equal(t, http.StatusOK, res.StatusCode)
 
@@ -86,7 +86,7 @@ func TestSmokeDataAPI(t *testing.T) {
 			"documents": [` + strings.Join(docs[1:3], ",") + `]
 		}`
 
-		res, err := request(t, "http://"+addr+"/action/insertMany", jsonBody)
+		res, err := postJSON(t, "http://"+addr+"/action/insertMany", jsonBody)
 		require.NoError(t, err)
 		assert.Equal(t, http.StatusOK, res.StatusCode)
 
@@ -103,7 +103,7 @@ func TestSmokeDataAPI(t *testing.T) {
 			"update": {"$set":{"v":"foo"}}
 		}`
 
-		res, err := request(t, "http://"+addr+"/action/updateOne", jsonBody)
+		res, err := postJSON(t, "http://"+addr+"/action/updateOne", jsonBody)
 		require.NoError(t, err)
 		assert.Equal(t, http.StatusOK, res.StatusCode)
 
@@ -120,7 +120,7 @@ func TestSmokeDataAPI(t *testing.T) {
 			"update": {"$set":{"v":42.13}}
 		}`
 
-		res, err := request(t, "http://"+addr+"/action/updateMany", jsonBody)
+		res, err := postJSON(t, "http://"+addr+"/action/updateMany", jsonBody)
 		require.NoError(t, err)
 		assert.Equal(t, http.StatusOK, res.StatusCode)
 
@@ -136,7 +136,7 @@ func TestSmokeDataAPI(t *testing.T) {
 			"filter": {"v":42.13}
 		}`
 
-		res, err := request(t, "http://"+addr+"/action/findOne", jsonBody)
+		res, err := postJSON(t, "http://"+addr+"/action/findOne", jsonBody)
 		require.NoError(t, err)
 		assert.Equal(t, http.StatusOK, res.StatusCode)
 
@@ -152,7 +152,7 @@ func TestSmokeDataAPI(t *testing.T) {
 			"pipeline": [{"$group":{"_id": "$v"}}]
 		}`
 
-		res, err := request(t, "http://"+addr+"/action/aggregate", jsonBody)
+		res, err := postJSON(t, "http://"+addr+"/action/aggregate", jsonBody)
 		require.NoError(t, err)
 		assert.Equal(t, http.StatusOK, res.StatusCode)
 
@@ -168,7 +168,7 @@ func TestSmokeDataAPI(t *testing.T) {
 			"filter": {"v":42.13}
 		}`
 
-		res, err := request(t, "http://"+addr+"/action/deleteOne", jsonBody)
+		res, err := postJSON(t, "http://"+addr+"/action/deleteOne", jsonBody)
 		require.NoError(t, err)
 		assert.Equal(t, http.StatusOK, res.StatusCode)
 
@@ -184,7 +184,7 @@ func TestSmokeDataAPI(t *testing.T) {
 			"filter": {"v":42.13}
 		}`
 
-		res, err := request(t, "http://"+addr+"/action/deleteMany", jsonBody)
+		res, err := postJSON(t, "http://"+addr+"/action/deleteMany", jsonBody)
 		require.NoError(t, err)
 		assert.Equal(t, http.StatusOK, res.StatusCode)
 
@@ -200,7 +200,7 @@ func TestSmokeDataAPI(t *testing.T) {
 			"filter": {}
 		}`
 
-		res, err := request(t, "http://"+addr+"/action/find", jsonBody)
+		res, err := postJSON(t, "http://"+addr+"/action/find", jsonBody)
 		require.NoError(t, err)
 		assert.Equal(t, http.StatusOK, res.StatusCode)
 
@@ -210,11 +210,13 @@ func TestSmokeDataAPI(t *testing.T) {
 	})
 }
 
-func request(tb testing.TB, uri, jsonBody string) (*http.Response, error) {
+// postJSON sends POST request with provided JSON to data API under provided uri.
+// It handles necessary headers, as well as authentication.
+func postJSON(tb testing.TB, uri, jsonBody string) (*http.Response, error) {
 	req, err := http.NewRequest(http.MethodPost, uri, bytes.NewBuffer([]byte(jsonBody)))
 	require.NoError(tb, err)
-	req.Header.Set("Content-Type", "application/json")
 
+	req.Header.Set("Content-Type", "application/json")
 	req.SetBasicAuth("username", "password")
 
 	return http.DefaultClient.Do(req)
