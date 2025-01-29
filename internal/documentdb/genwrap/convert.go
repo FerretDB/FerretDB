@@ -69,20 +69,23 @@ func Convert(rows []map[string]any) map[string]map[string]templateData {
 			}
 
 			comment = append(comment, c.toParamComment(name, row))
+			dataType := c.dataType(row)
 
 			if row["parameter_mode"] == "IN" || row["parameter_mode"] == "INOUT" {
 				placeholder := fmt.Sprintf("$%d", placeholderCounter+1)
 				placeholderCounter++
-				sqlParams = append(sqlParams, c.convertEncodedType(placeholder, c.dataType(row)))
-				goParams = append(goParams, c.convertName(name)+" "+c.convertType(c.dataType(row)))
-				queryRowArgs = append(queryRowArgs, c.convertName(name))
+
+				goName := c.convertName(name)
+				sqlParams = append(sqlParams, c.convertEncodedType(placeholder, dataType))
+				goParams = append(goParams, fmt.Sprintf("%s %s", goName, c.convertType(dataType)))
+				queryRowArgs = append(queryRowArgs, goName)
 			}
 
 			if row["parameter_mode"] == "OUT" || row["parameter_mode"] == "INOUT" {
-				goName := c.camelCase("out_" + c.convertName(name))
-				sqlReturns = append(sqlReturns, c.convertEncodedType(name, c.dataType(row)))
-				goReturns = append(goReturns, goName+" "+c.convertType(c.dataType(row)))
-				scanArgs = append(scanArgs, "&"+goName)
+				goName := "out" + c.pascalCase(c.convertName(name))
+				sqlReturns = append(sqlReturns, c.convertEncodedType(name, dataType))
+				goReturns = append(goReturns, fmt.Sprintf("%s %s", goName, c.convertType(dataType)))
+				scanArgs = append(scanArgs, fmt.Sprintf("&%s", goName))
 			}
 		}
 
@@ -91,11 +94,12 @@ func Convert(rows []map[string]any) map[string]map[string]templateData {
 		if len(goReturns) == 0 && params[0]["routine_type"] == "FUNCTION" {
 			// function such as binary_extended_version() does not have
 			// parameter data type, but it has routine data type for the return variable.
-			name := c.camelCase("out_" + c.convertName(routineName))
-			sqlReturns = append(sqlReturns, c.convertEncodedType(routineName, c.routineDataType(params[0])))
-			goReturns = append(goReturns, name+" "+c.convertType(c.routineDataType(params[0])))
-			scanArgs = append(scanArgs, "&"+name)
-			comment = append(comment, "OUT "+routineName+" "+c.routineDataType(params[0]))
+			goName := "out" + c.pascalCase(c.convertName(routineName))
+			dataType := c.routineDataType(params[0])
+			sqlReturns = append(sqlReturns, c.convertEncodedType(routineName, dataType))
+			goReturns = append(goReturns, fmt.Sprintf("%s %s", goName, c.convertType(dataType)))
+			scanArgs = append(scanArgs, fmt.Sprintf("&%s", goName))
+			comment = append(comment, fmt.Sprintf("OUT %s %s", routineName, dataType))
 		}
 
 		schema := params[0]["specific_schema"].(string)
@@ -109,11 +113,11 @@ func Convert(rows []map[string]any) map[string]map[string]templateData {
 
 		r := templateData{
 			FuncName:     c.pascalCase(uniqueFunctionName),
-			SQLFuncName:  fmt.Sprintf("%s.%s", params[0]["specific_schema"], routineName),
+			SQLFuncName:  fmt.Sprintf("%s.%s", schema, routineName),
+			Comment:      fmt.Sprintf("%s.%s(%s)", schema, routineName, strings.Join(comment, ", ")),
 			IsProcedure:  params[0]["routine_type"] == "PROCEDURE",
 			SQLArgs:      strings.Join(sqlParams, ", "),
 			SQLReturns:   strings.Join(sqlReturns, ", "),
-			Comment:      fmt.Sprintf("%s.%s(%s)", params[0]["specific_schema"], routineName, strings.Join(comment, ", ")),
 			Params:       strings.Join(goParams, ", "),
 			Returns:      strings.Join(goReturns, ", "),
 			QueryRowArgs: strings.Join(queryRowArgs, ", "),
