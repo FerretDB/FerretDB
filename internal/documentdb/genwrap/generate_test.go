@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestGenerate(t *testing.T) {
+func TestGenerateGoFunction(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]struct { //nolint:vet // use only for testing
@@ -71,7 +71,7 @@ func DropIndexes(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseNa
 
 			var b bytes.Buffer
 			w := bufio.NewWriter(&b)
-			err := Generate(w, &tc.data)
+			err := generateGoFunction(w, &tc.data)
 			require.NoError(t, err)
 
 			err = w.Flush()

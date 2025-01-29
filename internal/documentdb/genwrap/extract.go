@@ -63,10 +63,10 @@ func Extract(ctx context.Context, uri string, schemas map[string]struct{}) []map
 		r.type_udt_name AS routine_udt_name
 	FROM information_schema.routines AS r
 		LEFT JOIN information_schema.parameters AS p USING (specific_schema, specific_name)
-	WHERE specific_schema IN(%s)
+	WHERE specific_schema IN (%s)
 	ORDER BY specific_schema, specific_name, ordinal_position
 	`,
-		strings.Join(placeholders, ","),
+		strings.Join(placeholders, ", "),
 	)
 
 	return must.NotFail(pgx.CollectRows(must.NotFail(conn.Query(ctx, q, args...)), pgx.RowToMap))

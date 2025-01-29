@@ -14,3 +14,56 @@
 
 // Package main contains code generator for DocumentDB APIs.
 package main
+
+import (
+	"context"
+	"flag"
+	"log/slog"
+	"os"
+	"strings"
+
+	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
+)
+
+func main() {
+	opts := &logging.NewHandlerOpts{
+		Base:          "console",
+		Level:         slog.LevelDebug,
+		CheckMessages: true,
+	}
+	logging.Setup(opts, "")
+
+	l := slog.Default()
+	ctx := context.Background()
+
+	schemasF := flag.String("schemas", "", "comma-separated list of schemas")
+	flag.Parse()
+
+	if *schemasF == "" {
+		l.Log(ctx, logging.LevelFatal, "-schemas flag is empty.")
+	}
+
+	// DOCUMENTDB_GEN_URL=postgres://username:password@127.0.0.1:5432/postgres
+	uri := os.Getenv("DOCUMENTDB_GEN_URL")
+	if uri == "" {
+		l.InfoContext(ctx, "DOCUMENTDB_GEN_URL not set, skipping code generation.")
+		os.Exit(0)
+	}
+
+	schemas := map[string]struct{}{}
+
+	for _, schema := range strings.Split(*schemasF, ",") {
+		schema = strings.TrimSpace(schema)
+		if schema == "" {
+			continue
+		}
+
+		schemas[schema] = struct{}{}
+	}
+
+	rows := Extract(ctx, uri, schemas)
+	schemaRoutines := Convert(rows, l)
+	err := Generate(schemaRoutines)
+	must.NoError(err)
+}
