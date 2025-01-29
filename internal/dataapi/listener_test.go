@@ -38,7 +38,7 @@ import (
 )
 
 func TestSmokeDataAPI(t *testing.T) {
-	addr, db := setup(t)
+	addr, db := setupDataAPI(t)
 	coll := testutil.CollectionName(t)
 
 	t.Run("FindEmpty", func(t *testing.T) {
@@ -222,7 +222,9 @@ func postJSON(tb testing.TB, uri, jsonBody string) (*http.Response, error) {
 	return http.DefaultClient.Do(req)
 }
 
-func setup(tb testing.TB) (addr string, dbName string) {
+// setupDataAPI sets up clean database and the Data API handler.
+// It returns Data API address, and database name.
+func setupDataAPI(tb testing.TB) (addr string, dbName string) {
 	const uri = "postgres://username:password@127.0.0.1:5432/postgres"
 
 	sp, err := state.NewProvider("")
