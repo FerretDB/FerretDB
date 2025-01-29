@@ -16,10 +16,14 @@ package main
 
 import (
 	"fmt"
-	"log"
+	"maps"
+	"slices"
 	"strings"
 	"unicode"
 )
+
+// Converter converts SQL data types to Go data types.
+type Converter struct{}
 
 // convertedRoutineParam represents name and type of Go parameter.
 type convertedRoutineParam struct {
@@ -37,121 +41,114 @@ type convertedRoutine struct {
 	Comment      string
 	GoParams     []convertedRoutineParam
 	GoReturns    []convertedRoutineParam
-	GoInOut      []convertedRoutineParam
 	IsProcedure  bool
 }
 
-// Convert takes information schema routine and converts SQL data type to Go data type.
+// Convert takes rows containing parameters of routines. It groups them to
+// each routine and converts to Go formatted names and types.
+//
 // For an anonymous SQL parameter, it assigns a unique name.
 // It also produces SQL query placeholders and return parameters in strings.
-func Convert(r *extractedRoutine) *convertedRoutine {
-	f := convertedRoutine{
-		Name:        pascalCase(r.RoutineName),
-		SQLFuncName: fmt.Sprintf("%s.%s", r.SpecificSchema, r.RoutineName),
-		IsProcedure: r.RoutineType == "PROCEDURE",
-	}
+func Convert(rows []map[string]any) map[string]convertedRoutine {
+	c := new(Converter)
 
-	var comment []string
-	var sqlParams []string
-	var sqlReturns []string
+	routineParams := c.groupBySpecificName(rows)
 
-	uniqueNameChecker := map[string]struct{}{}
-	var placeholderCounter int
+	routines := map[string]convertedRoutine{}
 
-	for _, p := range r.Params {
-		if p.DataType == nil {
-			continue
-		}
+	for _, specificName := range slices.Sorted(maps.Keys(routineParams)) {
+		params := routineParams[specificName]
 
-		name := "anonymous"
-		if p.ParameterName != nil {
-			name = *p.ParameterName
-		}
+		var goParams, goReturns []convertedRoutineParam
+		var sqlParams, sqlReturns, comment, paramNames []string
 
-		if name == "p_transaction_id" {
-			continue
-		}
+		var placeholderCounter int
 
-		if *p.ParameterMode == "IN" {
-			// assign unique name for parameters such as
-			// cursor_state(anonymous documentdb_core.bson, anonymous1 documentdb_core.bson)
-			if _, found := uniqueNameChecker[name]; found {
-				i := 1
+		for _, row := range params {
+			name := "anonymous"
 
-				for {
-					newName := fmt.Sprintf("%s%d", name, i)
-					if _, found := uniqueNameChecker[newName]; !found {
-						name = newName
-						break
-					}
-
-					i++
-				}
+			if row["parameter_name"] != nil {
+				name = row["parameter_name"].(string)
 			}
-			uniqueNameChecker[name] = struct{}{}
+
+			if row["parameter_mode"] == "IN" {
+				name = c.uniqueName(paramNames, name)
+			}
+
+			paramNames = append(paramNames, name)
+
+			if row["parameter_name"] == "p_transaction_id" {
+				// skip p_transaction_id, transaction is not supported yet
+				// TODO https://github.com/FerretDB/FerretDB/issues/8
+				continue
+			}
+
+			if row["parameter_name"] == nil {
+				// skip a row if the row does not contain a parameter such as BinaryExtendedVersion()
+				continue
+			}
+
+			comment = append(comment, c.toParamComment(name, row))
+
+			p := convertedRoutineParam{
+				Name: c.convertName(name),
+				Type: c.convertType(c.dataType(row)),
+			}
+
+			if row["parameter_mode"] == "IN" || row["parameter_mode"] == "INOUT" {
+				placeholder := fmt.Sprintf("$%d", placeholderCounter+1)
+				placeholderCounter++
+				sqlParams = append(sqlParams, c.convertEncodedType(placeholder, c.dataType(row)))
+				goParams = append(goParams, p)
+			}
+
+			p.Name = c.camelCase("out_" + p.Name)
+
+			if row["parameter_mode"] == "OUT" || row["parameter_mode"] == "INOUT" {
+				sqlReturns = append(sqlReturns, c.convertEncodedType(name, c.dataType(row)))
+				goReturns = append(goReturns, p)
+			}
 		}
 
-		commentParam := name + " " + p.toDataType()
-		if *p.ParameterMode != "IN" {
-			commentParam = *p.ParameterMode + " " + commentParam
+		routineName := params[0]["routine_name"].(string)
+
+		if len(goReturns) == 0 && params[0]["routine_type"] == "FUNCTION" {
+			// function such as binary_extended_version() does not have
+			// parameter data type, but it has routine data type for the return variable.
+			sqlReturns = append(sqlReturns, c.convertEncodedType(routineName, c.routineDataType(params[0])))
+
+			goReturns = []convertedRoutineParam{{
+				Name: c.camelCase("out_" + c.convertName(routineName)),
+				Type: c.convertType(c.routineDataType(params[0])),
+			}}
+
+			comment = append(comment, "OUT "+routineName+" "+c.routineDataType(params[0]))
 		}
 
-		if p.ParameterDefault != nil {
-			commentParam += p.toDefault()
+		// unique name is used to handle function overloading
+		uniqueFunctionName := c.uniqueName(slices.Collect(maps.Keys(routines)), routineName)
+
+		r := convertedRoutine{
+			Name:         c.pascalCase(uniqueFunctionName),
+			SQLFuncName:  fmt.Sprintf("%s.%s", params[0]["specific_schema"], routineName),
+			IsProcedure:  params[0]["routine_type"] == "PROCEDURE",
+			QueryArgs:    strings.Join(sqlParams, ", "),
+			QueryReturns: strings.Join(sqlReturns, ", "),
+			Comment:      fmt.Sprintf("%s.%s(%s)", params[0]["specific_schema"], routineName, strings.Join(comment, ", ")),
+			GoParams:     goParams,
+			GoReturns:    goReturns,
 		}
-		comment = append(comment, commentParam)
 
-		gp := convertedRoutineParam{
-			Name: convertName(name),
-			Type: convertType(p.toDataType()),
-		}
+		c.handleFunctionOverloading(&r)
 
-		switch *p.ParameterMode {
-		case "IN":
-			placeholder := fmt.Sprintf("$%d", placeholderCounter+1)
-			sqlParams = append(sqlParams, convertEncodedType(placeholder, p.toDataType()))
-			placeholderCounter++
-
-			f.GoParams = append(f.GoParams, gp)
-		case "OUT":
-			sqlReturns = append(sqlReturns, convertEncodedType(name, p.toDataType()))
-			f.GoReturns = append(f.GoReturns, gp)
-		case "INOUT":
-			// INOUT parameter appears for SQL procedure
-			placeholder := fmt.Sprintf("$%d", placeholderCounter+1)
-			sqlParams = append(sqlParams, convertEncodedType(placeholder, p.toDataType()))
-			placeholderCounter++
-
-			f.GoInOut = append(f.GoInOut, gp)
-		default:
-			log.Printf("unrecognized parameter mode: %s", *p.ParameterMode)
-		}
+		routines[uniqueFunctionName] = r
 	}
 
-	if len(f.GoReturns) == 0 && !f.IsProcedure {
-		// function such as binary_extended_version() does not have
-		// parameter data type, but it has routine data type for the return variable.
-		sqlReturns = append(sqlReturns, convertEncodedType(r.RoutineName, r.toDataType()))
-
-		f.GoReturns = []convertedRoutineParam{{
-			Name: convertName(r.RoutineName),
-			Type: convertType(r.toDataType()),
-		}}
-
-		comment = append(comment, "OUT "+r.RoutineName+" "+r.toDataType())
-	}
-
-	f.QueryArgs = strings.Join(sqlParams, ", ")
-	f.QueryReturns = strings.Join(sqlReturns, ", ")
-	f.Comment = fmt.Sprintf("%s.%s(%s)", r.SpecificSchema, r.RoutineName, strings.Join(comment, ", "))
-
-	handleFunctionOverloading(&f)
-
-	return &f
+	return routines
 }
 
 // convertEncodedType appends binary data encoding to documentdb_core.bson data type.
-func convertEncodedType(parameter string, dataType string) string {
+func (c *Converter) convertEncodedType(parameter string, dataType string) string {
 	res := parameter
 
 	switch dataType {
@@ -163,7 +160,7 @@ func convertEncodedType(parameter string, dataType string) string {
 }
 
 // camelCase converts a string to camelCase.
-func camelCase(s string) string {
+func (c *Converter) camelCase(s string) string {
 	var nextCapital bool
 	var out []byte
 
@@ -185,7 +182,7 @@ func camelCase(s string) string {
 }
 
 // convertType converts DocumentDB and PostgreSQL types to Go types.
-func convertType(typ string) string {
+func (c *Converter) convertType(typ string) string {
 	switch typ {
 	case "ARRAY":
 		return "[]any"
@@ -214,16 +211,16 @@ func convertType(typ string) string {
 }
 
 // convertName converts to golang friendly formatted name.
-func convertName(name string) string {
+func (c *Converter) convertName(name string) string {
 	var found bool
 	if name, found = strings.CutPrefix(name, "p_"); found {
-		return camelCase(name)
+		return c.camelCase(name)
 	}
 
 	switch name {
 	case "ok", "document", "requests", "shard_key_value", "creation_time", "complete",
 		"binary_version", "binary_extended_version", "create_collection":
-		return camelCase(name)
+		return c.camelCase(name)
 
 	case "dbname":
 		return "databaseName"
@@ -258,13 +255,13 @@ func convertName(name string) string {
 		return "continuationSpec"
 
 	default:
-		return camelCase(name)
+		return c.camelCase(name)
 	}
 }
 
 // pascalCase converts a string to PascalCase.
-func pascalCase(s string) string {
-	strArr := []rune(camelCase(s))
+func (c *Converter) pascalCase(s string) string {
+	strArr := []rune(c.camelCase(s))
 
 	strArr[0] = unicode.ToUpper(strArr[0])
 
@@ -272,7 +269,7 @@ func pascalCase(s string) string {
 }
 
 // handleFunctionOverloading applies different wrapper function name for overloaded functions.
-func handleFunctionOverloading(f *convertedRoutine) {
+func (c *Converter) handleFunctionOverloading(f *convertedRoutine) {
 	var funcName string
 
 	var skip bool
@@ -288,4 +285,74 @@ func handleFunctionOverloading(f *convertedRoutine) {
 	if !skip && strings.Contains(f.Comment, "documentdb_core.bson,") {
 		f.Name = funcName
 	}
+}
+
+// groupBySpecificName groups rows by specific_name.
+func (c *Converter) groupBySpecificName(rows []map[string]any) map[string][]map[string]any {
+	var specificName any
+
+	routines := map[string][]map[string]any{}
+	var groupedParams []map[string]any
+
+	for _, row := range rows {
+		if specificName != row["specific_name"] && specificName != nil {
+			routines[specificName.(string)] = groupedParams
+			groupedParams = []map[string]any{}
+		}
+
+		groupedParams = append(groupedParams, row)
+		specificName = row["specific_name"]
+	}
+
+	routines[specificName.(string)] = groupedParams
+
+	return routines
+}
+
+// dataType returns SQL datatype of a parameter. If the data type is USER-DEFINED,
+// it returns schema and name concatenated by dot.
+func (c *Converter) dataType(row map[string]any) string {
+	if row["data_type"] == "USER-DEFINED" {
+		return row["udt_schema"].(string) + "." + row["udt_name"].(string)
+	}
+
+	return row["data_type"].(string)
+}
+
+// routineDataType returns SQL datatype of a routine. If the data type is USER-DEFINED,
+// it returns schema and name concatenated by dot.
+func (c *Converter) routineDataType(row map[string]any) string {
+	if row["routine_data_type"] == "USER-DEFINED" {
+		return row["routine_udt_schema"].(string) + "." + row["routine_udt_name"].(string)
+	}
+
+	return row["routine_data_type"].(string)
+}
+
+// toParamComment returns concatenated string of parameter name, data type
+// and default value to use for the parameter description of a function.
+// If the parameter is not an input, prefix OUT/INOUT is added to the comment.
+func (c *Converter) toParamComment(paramName string, row map[string]any) string {
+	comment := paramName + " " + c.dataType(row)
+	if row["parameter_mode"] != "IN" {
+		comment = row["parameter_mode"].(string) + " " + comment
+	}
+
+	if row["parameter_default"] != nil {
+		d, _, _ := strings.Cut(row["parameter_default"].(string), "::")
+		comment += " DEFAULT " + d
+	}
+
+	return comment
+}
+
+// uniqueName generates a new name if it exists in names slice.
+func (c *Converter) uniqueName(names []string, name string) string {
+	i := 1
+	for slices.Contains(names, name) {
+		name = fmt.Sprintf("%s%d", name, i)
+		i++
+	}
+
+	return name
 }
