@@ -309,5 +309,7 @@ func setupDataAPI(tb testing.TB) (addr string, dbName string) {
 	err = client.Database(dbName).Drop(ctx)
 	require.NoError(tb, err)
 
+	_ = client.Disconnect(ctx)
+
 	return
 }
