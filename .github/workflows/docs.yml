@@ -54,6 +54,7 @@ jobs:
           filesizelimit: 102400b
           labelName: use-git-lfs
           exclusionPatterns: |
+            **/*.go
             **/*.js
             **/*.md
             **/go.sum
