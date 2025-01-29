@@ -16,16 +16,14 @@
 package main
 
 import (
-	"cmp"
 	"context"
 	"flag"
 	"log/slog"
+	"maps"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
-
-	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
@@ -51,8 +49,8 @@ func main() {
 	}
 
 	// DOCUMENTDB_GEN_URL=postgres://username:password@127.0.0.1:5432/postgres
-	connString := os.Getenv("DOCUMENTDB_GEN_URL")
-	if connString == "" {
+	uri := os.Getenv("DOCUMENTDB_GEN_URL")
+	if uri == "" {
 		l.InfoContext(ctx, "DOCUMENTDB_GEN_URL not set, skipping code generation.")
 		os.Exit(0)
 	}
@@ -71,42 +69,10 @@ func main() {
 		schemas[schema] = struct{}{}
 	}
 
-	conn, err := pgx.Connect(ctx, connString)
-	must.NoError(err)
-
-	defer conn.Close(ctx)
-
-	// https://www.postgresql.org/docs/current/infoschema-routines.html
-	// https://www.postgresql.org/docs/current/infoschema-parameters.html
-	q := `
-	SELECT
-		specific_schema,
-		specific_name,
-		routine_name,
-		routine_type,
-		parameter_name,
-		parameter_mode,
-		parameter_default,
-		p.data_type,
-		p.udt_schema,
-		p.udt_name,
-		r.data_type AS routine_data_type,
-		r.type_udt_schema AS routine_udt_schema,
-		r.type_udt_name AS routine_udt_name
-	FROM information_schema.routines AS r
-		LEFT JOIN information_schema.parameters AS p USING (specific_schema, specific_name)
-	ORDER BY specific_schema, specific_name, ordinal_position
-	`
-
-	rowsData := must.NotFail(pgx.CollectRows(must.NotFail(conn.Query(ctx, q)), pgx.RowToMap))
-
 	for schema := range schemas {
-		vs := Extract(rowsData, schema)
+		vs := Extract(ctx, uri, schema)
 
-		fs := make([]*convertedRoutine, len(vs))
-		for i, v := range vs {
-			fs[i] = Convert(v)
-		}
+		fs := Convert(vs)
 
 		out := must.NotFail(os.Create(filepath.Join(schema, schema+".go")))
 		defer out.Close() //nolint:errcheck // ignore for now, but it should be checked
@@ -117,12 +83,9 @@ func main() {
 		}
 		must.NoError(headerTemplate.Execute(out, &h))
 
-		slices.SortFunc(fs, func(a, b *convertedRoutine) int {
-			return cmp.Compare(a.Name, b.Name)
-		})
-
-		for _, f := range fs {
-			must.NoError(Generate(out, f))
+		for _, k := range slices.Sorted(maps.Keys(fs)) {
+			v := fs[k]
+			must.NoError(Generate(out, &v))
 		}
 	}
 }

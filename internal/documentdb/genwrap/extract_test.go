@@ -17,159 +17,39 @@ package main
 import (
 	"testing"
 
-	"github.com/AlekSi/pointer"
 	"github.com/stretchr/testify/require"
+
+	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
 )
 
 func TestExtract(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in -short mode")
+	}
+
 	t.Parallel()
-	testCases := map[string]struct {
-		schema string
-		rows   []map[string]any
+	ctx := testutil.Ctx(t)
+	uri := "postgres://username:password@127.0.0.1:5432/postgres"
 
-		res []*extractedRoutine
-	}{
-		"Multiple": {
-			schema: "documentdb_api",
-			rows: []map[string]any{
-				{
-					"specific_schema": "documentdb_api",
-					"specific_name":   "count_query_18525",
-					"routine_name":    "count_query",
-					"routine_type":    "FUNCTION",
-					"parameter_name":  "database",
-					"parameter_mode":  "IN",
-					"data_type":       "USER-DEFINED",
-				},
-				{
-					"specific_schema": "documentdb_api",
-					"specific_name":   "count_query_18525",
-					"routine_name":    "count_query",
-					"routine_type":    "FUNCTION",
-					"parameter_name":  "countspec",
-					"parameter_mode":  "IN",
-					"data_type":       "USER-DEFINED",
-				},
-				{
-					"specific_schema": "documentdb_api",
-					"specific_name":   "count_query_18525",
-					"routine_name":    "count_query",
-					"routine_type":    "FUNCTION",
-					"parameter_name":  "document",
-					"parameter_mode":  "OUT",
-					"data_type":       "USER-DEFINED",
-				},
-				{
-					"specific_schema":   "documentdb_api",
-					"specific_name":     "binary_extended_version_18551",
-					"routine_type":      "FUNCTION",
-					"routine_name":      "binary_extended_version",
-					"routine_data_type": "text",
-				},
-			},
-			res: []*extractedRoutine{
-				{
-					SpecificSchema: "documentdb_api",
-					SpecificName:   "count_query_18525",
-					RoutineName:    "count_query",
-					RoutineType:    "FUNCTION",
-					Params: []extractedRoutineParam{
-						{
-							ParameterName: pointer.ToString("database"),
-							ParameterMode: pointer.ToString("IN"),
-							DataType:      pointer.ToString("USER-DEFINED"),
-						},
-						{
-							ParameterName: pointer.ToString("countspec"),
-							ParameterMode: pointer.ToString("IN"),
-							DataType:      pointer.ToString("USER-DEFINED"),
-						},
-						{
-							ParameterName: pointer.ToString("document"),
-							ParameterMode: pointer.ToString("OUT"),
-							DataType:      pointer.ToString("USER-DEFINED"),
-						},
-					},
-				},
-				{
-					SpecificSchema: "documentdb_api",
-					SpecificName:   "binary_extended_version_18551",
-					RoutineName:    "binary_extended_version",
-					DataType:       pointer.ToString("text"),
-					RoutineType:    "FUNCTION",
-					Params: []extractedRoutineParam{
-						{},
-					},
-				},
-			},
-		},
-		"DropIndexes": {
-			schema: "documentdb_api",
-			rows: []map[string]any{
-				{
-					"specific_schema": "documentdb_api",
-					"specific_name":   "drop_indexes_18587",
-					"routine_name":    "drop_indexes",
-					"routine_type":    "PROCEDURE",
-					"parameter_name":  "p_database_name",
-					"parameter_mode":  "IN",
-					"data_type":       "text",
-				},
-				{
-					"specific_schema": "documentdb_api",
-					"specific_name":   "drop_indexes_18587",
-					"routine_name":    "drop_indexes",
-					"routine_type":    "PROCEDURE",
-					"parameter_name":  "p_arg",
-					"parameter_mode":  "IN",
-					"data_type":       "USER-DEFINED",
-				},
-				{
-					"specific_schema": "documentdb_api",
-					"specific_name":   "drop_indexes_18587",
-					"routine_name":    "drop_indexes",
-					"routine_type":    "PROCEDURE",
-					"parameter_name":  "retval",
-					"parameter_mode":  "INOUT",
-					"data_type":       "USER-DEFINED",
-				},
-			},
-			res: []*extractedRoutine{
-				{
-					SpecificSchema: "documentdb_api",
-					SpecificName:   "drop_indexes_18587",
-					RoutineName:    "drop_indexes",
-					RoutineType:    "PROCEDURE",
-					Params: []extractedRoutineParam{
-						{
-							ParameterName: pointer.ToString("p_database_name"),
-							ParameterMode: pointer.ToString("IN"),
-							DataType:      pointer.ToString("text"),
-						},
-						{
-							ParameterName: pointer.ToString("p_arg"),
-							ParameterMode: pointer.ToString("IN"),
-							DataType:      pointer.ToString("USER-DEFINED"),
-						},
-						{
-							ParameterName: pointer.ToString("retval"),
-							ParameterMode: pointer.ToString("INOUT"),
-							DataType:      pointer.ToString("USER-DEFINED"),
-						},
-					},
-				},
-			},
-		},
+	rows := Extract(ctx, uri, "documentdb_api")
+	require.NotZero(t, rows)
+
+	row := rows[0]
+
+	expected := map[string]any{
+		"specific_schema":    "documentdb_api",
+		"specific_name":      "aggregate_cursor_first_page_19111",
+		"routine_name":       "aggregate_cursor_first_page",
+		"routine_type":       "FUNCTION",
+		"parameter_name":     "database",
+		"parameter_mode":     "IN",
+		"parameter_default":  nil,
+		"data_type":          "text",
+		"udt_schema":         "pg_catalog",
+		"udt_name":           "text",
+		"routine_data_type":  "record",
+		"routine_udt_schema": "pg_catalog",
+		"routine_udt_name":   "record",
 	}
-
-	for name, tc := range testCases {
-		tc := tc
-
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-
-			res := Extract(tc.rows, tc.schema)
-			require.Equal(t, tc.res, res)
-		})
-	}
+	require.Equal(t, expected, row)
 }

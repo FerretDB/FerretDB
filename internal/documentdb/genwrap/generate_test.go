@@ -19,15 +19,8 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func TestCamelCase(t *testing.T) {
-	t.Parallel()
-
-	assert.Equal(t, "cursorGetMore", camelCase("cursor_get_more"))
-}
 
 func TestGenerate(t *testing.T) {
 	t.Parallel()
@@ -39,7 +32,7 @@ func TestGenerate(t *testing.T) {
 	}{
 		"DropIndexes": {
 			f: convertedRoutine{
-				Name:        "drop_indexes",
+				Name:        "DropIndexes",
 				SQLFuncName: "documentdb_api.drop_indexes",
 				IsProcedure: true,
 				Comment: `documentdb_api.drop_indexes(p_database_name text, p_arg documentdb_core.bson, ` +
@@ -55,10 +48,14 @@ func TestGenerate(t *testing.T) {
 						Name: "arg",
 						Type: "wirebson.RawDocument",
 					},
-				},
-				GoInOut: []convertedRoutineParam{
 					{
 						Name: "retValue",
+						Type: "wirebson.RawDocument",
+					},
+				},
+				GoReturns: []convertedRoutineParam{
+					{
+						Name: "outRetValue",
 						Type: "wirebson.RawDocument",
 					},
 				},
