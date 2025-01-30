@@ -21,7 +21,8 @@ import (
 	"os"
 	"os/user"
 	"strconv"
-	"syscall"
+
+	"golang.org/x/sys/unix"
 )
 
 // stateFileProblem adds details to the state file access error.
@@ -41,7 +42,7 @@ func stateFileProblem(f string, err error) string {
 		var username, group string
 		var uid, gid uint64
 
-		if s, _ := fi.Sys().(*syscall.Stat_t); s != nil {
+		if s, _ := fi.Sys().(*unix.Stat_t); s != nil {
 			uid = uint64(s.Uid)
 			if u, _ := user.LookupId(strconv.FormatUint(uid, 10)); u != nil {
 				username = u.Username

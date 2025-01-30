@@ -23,9 +23,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
-	"github.com/FerretDB/FerretDB/internal/handler/common"
-
-	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/v2/integration/setup"
 )
 
 func TestCommandsReplication(t *testing.T) {
@@ -33,9 +31,10 @@ func TestCommandsReplication(t *testing.T) {
 	ctx, collection := setup.Setup(t)
 
 	for _, command := range []string{"ismaster", "isMaster", "hello"} {
-		command := command
-		t.Run(command, func(t *testing.T) {
-			t.Parallel()
+		t.Run(command, func(tt *testing.T) {
+			t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/955")
+
+			tt.Parallel()
 
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, bson.D{{command, 1}}).Decode(&actual)
@@ -63,18 +62,12 @@ func TestCommandsReplication(t *testing.T) {
 			assert.InDelta(t, time.Now().Unix(), m["localTime"].(primitive.DateTime).Time().Unix(), 2)
 			delete(m, "localTime")
 
-			maxWireVersion := m["maxWireVersion"].(int32)
-			assert.Equal(t, common.MaxWireVersion, maxWireVersion)
-			delete(m, "maxWireVersion")
-
-			minWireVersion := m["minWireVersion"].(int32)
-			assert.True(t, minWireVersion == 0 || minWireVersion == common.MinWireVersion)
-			delete(m, "minWireVersion")
-
 			expected := bson.M{
 				"maxBsonObjectSize":   int32(16777216),
 				"maxMessageSizeBytes": int32(48000000),
 				"maxWriteBatchSize":   int32(100000),
+				"maxWireVersion":      int32(21),
+				"minWireVersion":      int32(0),
 				"ok":                  float64(1),
 				"readOnly":            false,
 			}

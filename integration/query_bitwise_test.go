@@ -16,7 +16,6 @@ package integration
 
 import (
 	"math"
-	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -26,15 +25,11 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/v2/integration/setup"
+	"github.com/FerretDB/FerretDB/v2/integration/shareddata"
 )
 
 func TestQueryBitwiseAllClear(t *testing.T) {
-	if runtime.GOARCH == "arm64" {
-		t.Skip("TODO https://github.com/FerretDB/FerretDB/issues/491")
-	}
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 
@@ -49,13 +44,14 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		value       any   // required, used for $bitsAllClear filter value
 		expectedIDs []any // optional
 
-		err        *mongo.CommandError // optional, expected error from MongoDB
-		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
-		skip       string              // optional, skip test with a specified reason
+		err              *mongo.CommandError // optional, expected error from MongoDB
+		altMessage       string              // optional, alternative error message for FerretDB, ignored if empty
+		failsForFerretDB string
 	}{
 		"Array": {
 			value: primitive.A{1, 5},
 			expectedIDs: []any{
+				"decimal128-int-zero", "decimal128-zero",
 				"double-1", "double-3",
 				"double-big", "double-zero",
 				"int32-min", "int32-zero",
@@ -70,10 +66,12 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 				Name:    "BadValue",
 				Message: "Failed to parse bit position. Expected a non-negative number in: 0: -1",
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 		"ArrayFloatWholeBitPositionValue": {
 			value: primitive.A{1.0},
 			expectedIDs: []any{
+				"decimal128-int-zero", "decimal128-zero",
 				"double-1", "double-3", "double-big",
 				"double-zero",
 				"int32-1", "int32-2", "int32-3", "int32-min", "int32-zero",
@@ -88,6 +86,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 				Name:    "BadValue",
 				Message: "Failed to parse bit position. Expected an integer: 0: 1.2",
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/278",
 		},
 		"ArrayStringBitPositionValue": {
 			value: primitive.A{"123"},
@@ -96,6 +95,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 				Name:    "BadValue",
 				Message: `Failed to parse bit position. Expected a number in: 0: "123"`,
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 
 		"Double": {
@@ -109,6 +109,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		"DoubleWhole": {
 			value: 2.0,
 			expectedIDs: []any{
+				"decimal128-int-zero", "decimal128-zero",
 				"double-1", "double-3",
 				"double-big", "double-zero",
 				"int32-1", "int32-2", "int32-3", "int32-min", "int32-zero",
@@ -123,6 +124,18 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 				Name:    "FailedToParse",
 				Message: "Expected a non-negative number in: $bitsAllClear: -1.0",
 			},
+			altMessage: "Expected a positive number in: $bitsAllClear: -1.0",
+		},
+		"DoubleZero": {
+			value: 0.0,
+			expectedIDs: []any{
+				"decimal128", "decimal128-double", "decimal128-int", "decimal128-int-zero", "decimal128-whole", "decimal128-zero",
+				"double-1", "double-2", "double-3", "double-big", "double-whole",
+				"double-zero", "int32", "int32-1", "int32-2", "int32-3",
+				"int32-max", "int32-min", "int32-zero", "int64", "int64-1",
+				"int64-2", "int64-3", "int64-big", "int64-double-big", "int64-max",
+				"int64-min", "int64-zero",
+			},
 		},
 
 		"String": {
@@ -132,12 +145,14 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 				Name:    "BadValue",
 				Message: `v takes an Array, a number, or a BinData but received: $bitsAllClear: "123"`,
 			},
-			altMessage: `value takes an Array, a number, or a BinData but received: $bitsAllClear: "123"`,
+			altMessage:       `value takes an Array, a number, or a BinData but received: $bitsAllClear: "123"`,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 
 		"Binary": {
 			value: primitive.Binary{Data: []byte{2}},
 			expectedIDs: []any{
+				"decimal128-int-zero", "decimal128-zero",
 				"double-1", "double-3",
 				"double-big", "double-zero",
 				"int32-1", "int32-2", "int32-3", "int32-min", "int32-zero",
@@ -148,6 +163,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		"BinaryWithZeroBytes": {
 			value: primitive.Binary{Data: []byte{0, 0, 2}},
 			expectedIDs: []any{
+				"decimal128", "decimal128-int", "decimal128-int-zero", "decimal128-whole", "decimal128-zero",
 				"double-1", "double-2", "double-big",
 				"double-whole", "double-zero",
 				"int32", "int32-1", "int32-min", "int32-zero",
@@ -158,6 +174,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		"Binary9Bytes": {
 			value: primitive.Binary{Data: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9}},
 			expectedIDs: []any{
+				"decimal128", "decimal128-int", "decimal128-int-zero", "decimal128-whole", "decimal128-zero",
 				"double-big", "double-whole", "double-zero",
 				"int32", "int32-zero",
 				"int64", "int64-1", "int64-big", "int64-double-big", "int64-zero",
@@ -167,6 +184,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		"Int32": {
 			value: int32(2),
 			expectedIDs: []any{
+				"decimal128-int-zero", "decimal128-zero",
 				"double-1", "double-3", "double-big",
 				"double-zero",
 				"int32-1", "int32-2", "int32-3",
@@ -182,17 +200,20 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 				Name:    "FailedToParse",
 				Message: "Expected a non-negative number in: $bitsAllClear: -1",
 			},
+			altMessage: "Expected a positive number in: $bitsAllClear: -1.0",
 		},
 
 		"Int64Max": {
 			value: math.MaxInt64,
 			expectedIDs: []any{
+				"decimal128-int-zero", "decimal128-zero",
 				"double-1",
 				"double-zero",
 				"int32-zero",
 				"int64-min",
 				"int64-zero",
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/257",
 		},
 		"Int64NegativeValue": {
 			value: int64(-1),
@@ -201,17 +222,17 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 				Name:    "FailedToParse",
 				Message: "Expected a non-negative number in: $bitsAllClear: -1",
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/258",
 		},
 	} {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
+		t.Run(name, func(tt *testing.T) {
+			tt.Parallel()
+
+			var t testing.TB = tt
+
+			if tc.failsForFerretDB != "" {
+				t = setup.FailsForFerretDB(tt, tc.failsForFerretDB)
 			}
-
-			t.Parallel()
-
-			require.NotNil(t, tc.value, "value must not be nil")
 
 			filter := bson.D{{"v", bson.D{{"$bitsAllClear", tc.value}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
@@ -233,10 +254,6 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 }
 
 func TestQueryBitwiseAllSet(t *testing.T) {
-	if runtime.GOARCH == "arm64" {
-		t.Skip("TODO https://github.com/FerretDB/FerretDB/issues/491")
-	}
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 
@@ -251,13 +268,15 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 		value       any   // required, used for $bitsAllSet filter value
 		expectedIDs []any // optional
 
-		err        *mongo.CommandError // optional, expected error from MongoDB
-		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
-		skip       string              // optional, skip test with a specified reason
+		err              *mongo.CommandError // optional, expected error from MongoDB
+		altMessage       string              // optional, alternative error message for FerretDB, ignored if empty
+		failsForFerretDB string
 	}{
 		"Array": {
-			value:       primitive.A{1, 5},
-			expectedIDs: []any{"double-2", "double-whole", "int32", "int32-max", "int64", "int64-max"},
+			value: primitive.A{1, 5},
+			expectedIDs: []any{
+				"decimal128", "decimal128-double", "decimal128-int", "decimal128-whole", "double-2", "double-whole", "int32", "int32-max", "int64", "int64-max",
+			},
 		},
 		"ArrayNegativeBitPositionValue": {
 			value: primitive.A{-1},
@@ -266,6 +285,7 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 				Name:    "BadValue",
 				Message: "Failed to parse bit position. Expected a non-negative number in: 0: -1",
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 		"ArrayBadValue": {
 			value: primitive.A{"123"},
@@ -274,6 +294,7 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 				Name:    "BadValue",
 				Message: `Failed to parse bit position. Expected a number in: 0: "123"`,
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 
 		"Double": {
@@ -285,8 +306,10 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 			},
 		},
 		"DoubleWhole": {
-			value:       2.0,
-			expectedIDs: []any{"double-2", "double-whole", "int32", "int32-max", "int64", "int64-max"},
+			value: 2.0,
+			expectedIDs: []any{
+				"decimal128", "decimal128-double", "decimal128-int", "decimal128-whole", "double-2", "double-whole", "int32", "int32-max", "int64", "int64-max",
+			},
 		},
 		"DoubleNegativeValue": {
 			value: -1.0,
@@ -294,6 +317,18 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 				Code:    9,
 				Name:    "FailedToParse",
 				Message: "Expected a non-negative number in: $bitsAllSet: -1.0",
+			},
+			altMessage: "Expected a positive number in: $bitsAllSet: -1.0",
+		},
+		"LongZero": {
+			value: int64(0),
+			expectedIDs: []any{
+				"decimal128", "decimal128-double", "decimal128-int", "decimal128-int-zero", "decimal128-whole", "decimal128-zero",
+				"double-1", "double-2", "double-3", "double-big", "double-whole",
+				"double-zero", "int32", "int32-1", "int32-2", "int32-3",
+				"int32-max", "int32-min", "int32-zero", "int64", "int64-1",
+				"int64-2", "int64-3", "int64-big", "int64-double-big", "int64-max",
+				"int64-min", "int64-zero",
 			},
 		},
 
@@ -304,21 +339,26 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 				Name:    "BadValue",
 				Message: `v takes an Array, a number, or a BinData but received: $bitsAllSet: "123"`,
 			},
-			altMessage: `value takes an Array, a number, or a BinData but received: $bitsAllSet: "123"`,
+			altMessage:       `value takes an Array, a number, or a BinData but received: $bitsAllSet: "123"`,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 
 		"Binary": {
-			value:       primitive.Binary{Data: []byte{2}},
-			expectedIDs: []any{"double-2", "double-whole", "int32", "int32-max", "int64", "int64-max"},
+			value: primitive.Binary{Data: []byte{2}},
+			expectedIDs: []any{
+				"decimal128", "decimal128-double", "decimal128-int", "decimal128-whole", "double-2", "double-whole", "int32", "int32-max", "int64", "int64-max",
+			},
 		},
 		"BinaryWithZeroBytes": {
 			value:       primitive.Binary{Data: []byte{0, 0, 2}},
-			expectedIDs: []any{"double-3", "int32-2", "int32-3", "int32-max", "int64-2", "int64-3", "int64-max"},
+			expectedIDs: []any{"decimal128-double", "double-3", "int32-2", "int32-3", "int32-max", "int64-2", "int64-3", "int64-max"},
 		},
 
 		"Int32": {
-			value:       int32(2),
-			expectedIDs: []any{"double-2", "double-whole", "int32", "int32-max", "int64", "int64-max"},
+			value: int32(2),
+			expectedIDs: []any{
+				"decimal128", "decimal128-double", "decimal128-int", "decimal128-whole", "double-2", "double-whole", "int32", "int32-max", "int64", "int64-max",
+			},
 		},
 		"Int32NegativeValue": {
 			value: int32(-1),
@@ -327,11 +367,13 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 				Name:    "FailedToParse",
 				Message: "Expected a non-negative number in: $bitsAllSet: -1",
 			},
+			altMessage: "Expected a positive number in: $bitsAllSet: -1.0",
 		},
 
 		"Int64Max": {
-			value:       math.MaxInt64,
-			expectedIDs: []any{"int64-max"},
+			value:            math.MaxInt64,
+			expectedIDs:      []any{"int64-max"},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/257",
 		},
 		"Int64NegativeValue": {
 			value: int64(-1),
@@ -340,15 +382,17 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 				Name:    "FailedToParse",
 				Message: "Expected a non-negative number in: $bitsAllSet: -1",
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/258",
 		},
 	} {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
+		t.Run(name, func(tt *testing.T) {
+			tt.Parallel()
 
-			t.Parallel()
+			var t testing.TB = tt
+
+			if tc.failsForFerretDB != "" {
+				t = setup.FailsForFerretDB(tt, tc.failsForFerretDB)
+			}
 
 			require.NotNil(t, tc.value, "value must not be nil")
 
@@ -372,10 +416,6 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 }
 
 func TestQueryBitwiseAnyClear(t *testing.T) {
-	if runtime.GOARCH == "arm64" {
-		t.Skip("TODO https://github.com/FerretDB/FerretDB/issues/491")
-	}
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 
@@ -390,13 +430,14 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 		value       any   // required, used for $bitsAnyClear filter value
 		expectedIDs []any // optional
 
-		err        *mongo.CommandError // optional, expected error from MongoDB
-		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
-		skip       string              // optional, skip test with a specified reason
+		err              *mongo.CommandError // optional, expected error from MongoDB
+		altMessage       string              // optional, alternative error message for FerretDB, ignored if empty
+		failsForFerretDB string
 	}{
 		"Array": {
 			value: primitive.A{1, 5},
 			expectedIDs: []any{
+				"decimal128-int-zero", "decimal128-zero",
 				"double-1", "double-3",
 				"double-big", "double-zero",
 				"int32-1", "int32-2", "int32-3",
@@ -412,6 +453,7 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 				Name:    "BadValue",
 				Message: "Failed to parse bit position. Expected a non-negative number in: 0: -1",
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 		"ArrayBadValue": {
 			value: primitive.A{"123"},
@@ -420,6 +462,7 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 				Name:    "BadValue",
 				Message: `Failed to parse bit position. Expected a number in: 0: "123"`,
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 
 		"Double": {
@@ -433,6 +476,7 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 		"DoubleWhole": {
 			value: 2.0,
 			expectedIDs: []any{
+				"decimal128-int-zero", "decimal128-zero",
 				"double-1", "double-3",
 				"double-big", "double-zero",
 				"int32-1", "int32-2", "int32-3",
@@ -448,6 +492,11 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 				Name:    "FailedToParse",
 				Message: "Expected a non-negative number in: $bitsAnyClear: -1.0",
 			},
+			altMessage: "Expected a positive number in: $bitsAnyClear: -1.0",
+		},
+		"DoubleZero": {
+			value:       0.0,
+			expectedIDs: []any{},
 		},
 
 		"String": {
@@ -457,12 +506,14 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 				Name:    "BadValue",
 				Message: `v takes an Array, a number, or a BinData but received: $bitsAnyClear: "123"`,
 			},
-			altMessage: `value takes an Array, a number, or a BinData but received: $bitsAnyClear: "123"`,
+			altMessage:       `value takes an Array, a number, or a BinData but received: $bitsAnyClear: "123"`,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 
 		"Binary": {
 			value: primitive.Binary{Data: []byte{2}},
 			expectedIDs: []any{
+				"decimal128-int-zero", "decimal128-zero",
 				"double-1", "double-3",
 				"double-big", "double-zero",
 				"int32-1", "int32-2", "int32-3",
@@ -474,6 +525,7 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 		"BinaryWithZeroBytes": {
 			value: primitive.Binary{Data: []byte{0, 0, 2}},
 			expectedIDs: []any{
+				"decimal128", "decimal128-int", "decimal128-int-zero", "decimal128-whole", "decimal128-zero",
 				"double-1", "double-2",
 				"double-big", "double-whole", "double-zero",
 				"int32", "int32-1", "int32-min", "int32-zero",
@@ -485,6 +537,7 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 		"Int32": {
 			value: int32(2),
 			expectedIDs: []any{
+				"decimal128-int-zero", "decimal128-zero",
 				"double-1", "double-3",
 				"double-big", "double-zero",
 				"int32-1", "int32-2", "int32-3",
@@ -500,17 +553,20 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 				Name:    "FailedToParse",
 				Message: "Expected a non-negative number in: $bitsAnyClear: -1",
 			},
+			altMessage: "Expected a positive number in: $bitsAnyClear: -1.0",
 		},
 
 		"Int64Max": {
 			value: math.MaxInt64,
 			expectedIDs: []any{
+				"decimal128", "decimal128-double", "decimal128-int", "decimal128-int-zero", "decimal128-whole", "decimal128-zero",
 				"double-1", "double-2", "double-3",
 				"double-big", "double-whole", "double-zero",
 				"int32", "int32-1", "int32-2", "int32-3", "int32-max", "int32-min", "int32-zero",
 				"int64", "int64-1", "int64-2", "int64-3", "int64-big", "int64-double-big",
 				"int64-min", "int64-zero",
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/257",
 		},
 		"Int64NegativeValue": {
 			value: int64(-1),
@@ -519,15 +575,17 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 				Name:    "FailedToParse",
 				Message: "Expected a non-negative number in: $bitsAnyClear: -1",
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/258",
 		},
 	} {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
+		t.Run(name, func(tt *testing.T) {
+			tt.Parallel()
 
-			t.Parallel()
+			var t testing.TB = tt
+
+			if tc.failsForFerretDB != "" {
+				t = setup.FailsForFerretDB(tt, tc.failsForFerretDB)
+			}
 
 			require.NotNil(t, tc.value, "value must not be nil")
 
@@ -551,10 +609,6 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 }
 
 func TestQueryBitwiseAnySet(t *testing.T) {
-	if runtime.GOARCH == "arm64" {
-		t.Skip("TODO https://github.com/FerretDB/FerretDB/issues/491")
-	}
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 
@@ -569,13 +623,14 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 		value       any   // required, used for $bitsAnySet filter value
 		expectedIDs []any // optional
 
-		err        *mongo.CommandError // optional, expected error from MongoDB
-		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
-		skip       string              // optional, skip test with a specified reason
+		err              *mongo.CommandError // optional, expected error from MongoDB
+		altMessage       string              // optional, alternative error message for FerretDB, ignored if empty
+		failsForFerretDB string
 	}{
 		"Array": {
 			value: primitive.A{1, 5},
 			expectedIDs: []any{
+				"decimal128", "decimal128-double", "decimal128-int", "decimal128-whole",
 				"double-2", "double-whole",
 				"int32", "int32-1", "int32-2", "int32-3", "int32-max",
 				"int64", "int64-1", "int64-2", "int64-max",
@@ -588,6 +643,7 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 				Name:    "BadValue",
 				Message: "Failed to parse bit position. Expected a non-negative number in: 0: -1",
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 		"ArrayBadValue": {
 			value: primitive.A{"123"},
@@ -596,6 +652,7 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 				Name:    "BadValue",
 				Message: `Failed to parse bit position. Expected a number in: 0: "123"`,
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 
 		"Double": {
@@ -609,6 +666,7 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 		"DoubleWhole": {
 			value: 2.0,
 			expectedIDs: []any{
+				"decimal128", "decimal128-double", "decimal128-int", "decimal128-whole",
 				"double-2", "double-whole",
 				"int32", "int32-max",
 				"int64", "int64-max",
@@ -621,6 +679,11 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 				Name:    "FailedToParse",
 				Message: "Expected a non-negative number in: $bitsAnySet: -1.0",
 			},
+			altMessage: "Expected a positive number in: $bitsAnySet: -1.0",
+		},
+		"DoubleZero": {
+			value:       0.0,
+			expectedIDs: []any{},
 		},
 
 		"String": {
@@ -630,21 +693,25 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 				Name:    "BadValue",
 				Message: `v takes an Array, a number, or a BinData but received: $bitsAnySet: "123"`,
 			},
-			altMessage: `value takes an Array, a number, or a BinData but received: $bitsAnySet: "123"`,
+			altMessage:       `value takes an Array, a number, or a BinData but received: $bitsAnySet: "123"`,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 
 		"Binary": {
-			value:       primitive.Binary{Data: []byte{2}},
-			expectedIDs: []any{"double-2", "double-whole", "int32", "int32-max", "int64", "int64-max"},
+			value: primitive.Binary{Data: []byte{2}},
+			expectedIDs: []any{
+				"decimal128", "decimal128-double", "decimal128-int", "decimal128-whole", "double-2", "double-whole", "int32", "int32-max", "int64", "int64-max",
+			},
 		},
 		"BinaryWithZeroBytes": {
 			value:       primitive.Binary{Data: []byte{0, 0, 2}},
-			expectedIDs: []any{"double-3", "int32-2", "int32-3", "int32-max", "int64-2", "int64-3", "int64-max"},
+			expectedIDs: []any{"decimal128-double", "double-3", "int32-2", "int32-3", "int32-max", "int64-2", "int64-3", "int64-max"},
 		},
 
 		"Int32": {
 			value: int32(2),
 			expectedIDs: []any{
+				"decimal128", "decimal128-double", "decimal128-int", "decimal128-whole",
 				"double-2", "double-whole",
 				"int32", "int32-max",
 				"int64", "int64-max",
@@ -657,17 +724,20 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 				Name:    "FailedToParse",
 				Message: "Expected a non-negative number in: $bitsAnySet: -1",
 			},
+			altMessage: "Expected a positive number in: $bitsAnySet: -1.0",
 		},
 
 		"Int64Max": {
 			value: math.MaxInt64,
 			expectedIDs: []any{
+				"decimal128", "decimal128-double", "decimal128-int", "decimal128-whole",
 				"double-2", "double-3",
 				"double-big", "double-whole",
 				"int32", "int32-1", "int32-2", "int32-3", "int32-max", "int32-min",
 				"int64", "int64-1", "int64-2", "int64-3", "int64-big",
 				"int64-double-big", "int64-max",
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/257",
 		},
 		"Int64NegativeValue": {
 			value: int64(-1),
@@ -676,15 +746,16 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 				Name:    "FailedToParse",
 				Message: "Expected a non-negative number in: $bitsAnySet: -1",
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/258",
 		},
 	} {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
+		t.Run(name, func(tt *testing.T) {
+			tt.Parallel()
 
-			t.Parallel()
+			var t testing.TB = tt
+			if tc.failsForFerretDB != "" {
+				t = setup.FailsForFerretDB(tt, tc.failsForFerretDB)
+			}
 
 			require.NotNil(t, tc.value, "value must not be nil")
 

@@ -22,7 +22,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/v2/integration/setup"
 )
 
 func TestExplainCommandQueryErrors(t *testing.T) {
@@ -32,9 +32,9 @@ func TestExplainCommandQueryErrors(t *testing.T) {
 	for name, tc := range map[string]struct { //nolint:vet // used for testing only
 		command bson.D // required, command to run
 
-		err        *mongo.CommandError // required, expected error from MongoDB
-		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
-		skip       string              // optional, skip test with a specified reason
+		err              *mongo.CommandError // required, expected error from MongoDB
+		altMessage       string              // optional, alternative error message for FerretDB, ignored if empty
+		failsForFerretDB string
 	}{
 		"LimitDocument": {
 			command: bson.D{
@@ -48,7 +48,8 @@ func TestExplainCommandQueryErrors(t *testing.T) {
 				Name:    "TypeMismatch",
 				Message: "BSON field 'FindCommandRequest.limit' is the wrong type 'object', expected types '[long, int, decimal, double']",
 			},
-			altMessage: "BSON field 'limit' is the wrong type 'object', expected type 'long'",
+			altMessage:       "BSON field 'limit' is the wrong type 'object', expected type 'long'",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/960",
 		},
 		"LimitNegative": {
 			command: bson.D{
@@ -62,6 +63,7 @@ func TestExplainCommandQueryErrors(t *testing.T) {
 				Name:    "Location51024",
 				Message: "BSON field 'limit' value must be >= 0, actual value '-1'",
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/959",
 		},
 		"SkipDocument": {
 			command: bson.D{
@@ -75,7 +77,8 @@ func TestExplainCommandQueryErrors(t *testing.T) {
 				Name:    "TypeMismatch",
 				Message: "BSON field 'FindCommandRequest.skip' is the wrong type 'object', expected types '[long, int, decimal, double']",
 			},
-			altMessage: "BSON field 'skip' is the wrong type 'object', expected type 'long'",
+			altMessage:       "BSON field 'skip' is the wrong type 'object', expected type 'long'",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/960",
 		},
 		"SkipNegative": {
 			command: bson.D{
@@ -89,15 +92,28 @@ func TestExplainCommandQueryErrors(t *testing.T) {
 				Name:    "Location51024",
 				Message: "BSON field 'skip' value must be >= 0, actual value '-1'",
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/960",
+		},
+		"CollectionName": {
+			command: bson.D{
+				{"explain", bson.D{
+					{"find", int32(1)},
+				}},
+			},
+			err: &mongo.CommandError{
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "Failed to parse namespace element",
+			},
 		},
 	} {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
+		t.Run(name, func(tt *testing.T) {
+			tt.Parallel()
 
-			t.Parallel()
+			var t testing.TB = tt
+			if tc.failsForFerretDB != "" {
+				t = setup.FailsForFerretDB(tt, tc.failsForFerretDB)
+			}
 
 			require.NotNil(t, tc.command, "command must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")

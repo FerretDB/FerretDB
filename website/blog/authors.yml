@@ -4,21 +4,32 @@ alex:
   title: FerretDB Team
   url: https://github.com/fashander
   image_url: https://github.com/fashander.png
+  page: true
 
 peter:
   name: Peter Farkas
   title: Co-Founder, CEO
   url: https://www.linkedin.com/in/farkasp/
   image_url: https://github.com/ptrfarkas.png
+  page: true
 
 aleksi:
   name: Alexey Palazhchenko
   title: Co-Founder, CTO
   url: https://www.linkedin.com/in/alexeypalazhchenko/
   image_url: https://github.com/AlekSi.png
+  page: true
 
 chi:
   name: Chi Fujii
   title: FerretDB Team
   url: https://www.linkedin.com/in/chifujii/
   image_url: https://github.com/chilagrow.png
+  page: true
+
+elena:
+  name: Elena Grahovac
+  title: FerretDB Team
+  url: https://www.linkedin.com/in/grahovac/
+  image_url: https://github.com/rumyantseva.png
+  page: true

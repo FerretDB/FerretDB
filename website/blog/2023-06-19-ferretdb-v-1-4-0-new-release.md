@@ -8,7 +8,7 @@ image: /img/blog/ferretdb-v1.4.0.jpg
 tags: [release]
 ---
 
-![FerretDB v.1.4.0](/img/blog/ferretdb-v1.4.0.jpg)
+![FerretDB v1.4.0](/img/blog/ferretdb-v1.4.0.jpg)
 
 We're delighted to announce the latest [FerretDB](https://www.ferretdb.io/) release – v1.4.0, which now includes options for creating unique indexes, and support for more aggregation pipeline stages, among other interesting updates.
 
