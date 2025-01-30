@@ -43,6 +43,8 @@ func TestSmokeDataAPI(t *testing.T) {
 		t.Skip("skipping in -short mode")
 	}
 
+	t.Parallel()
+
 	addr, db := setupDataAPI(t)
 	coll := testutil.CollectionName(t)
 
