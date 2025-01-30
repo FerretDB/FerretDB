@@ -43,9 +43,9 @@ func main() {
 	}
 }
 
-// issueRE represents FerretDB issue or microsoft/document issue url.
+// issueRE represents FerretDB issue and microsoft/documentdb issue url.
 // It returns owner/repo name as submatches.
-var issueRE = regexp.MustCompile(`(\Qhttps://github.com/\E(FerretDB/[-\w]+|microsoft/documentdb)/issues/\d+)`)
+var issueRE = regexp.MustCompile(`\Qhttps://github.com/\E(FerretDB/[-\w]+|microsoft/documentdb)/issues/\d+`)
 
 // checkBlogFiles verifies that blog posts are correctly formatted.
 func checkBlogFiles(files []string) error {
@@ -235,7 +235,7 @@ func verifyTags(fm []byte) error {
 	return nil
 }
 
-// checkIssueURLs validates FerretDB or microsoft/document issues URLs if they occur in the r [io.Reader].
+// checkIssueURLs validates FerretDB and microsoft/documentdb issues URLs if they occur in the r [io.Reader].
 // If URL formatting is invalid, the represented issue is closed or not found - the appropriate
 // message is sent to l [*log.Logger].
 //
@@ -254,14 +254,14 @@ func checkIssueURLs(client *github.Client, r io.Reader, l *log.Logger) (bool, er
 			continue
 		}
 
-		if len(match) != 3 {
-			l.Printf("invalid Markdown URL format:\n %s", line)
+		if len(match) != 2 {
+			l.Printf("invalid URL format:\n %s", line)
 			failed = true
 
 			continue
 		}
 
-		url := match[1]
+		url := match[0]
 
 		var status github.IssueStatus
 		status, err := client.IssueStatus(context.TODO(), url)
