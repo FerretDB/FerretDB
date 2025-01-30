@@ -8,7 +8,7 @@ image: /img/blog/ferretdb-1-2-0-minor-release.jpg
 tags: [release]
 ---
 
-![FerretDB v.1.2.0](/img/blog/ferretdb-1-2-0-minor-release.jpg)
+![FerretDB v1.2.0](/img/blog/ferretdb-1-2-0-minor-release.jpg)
 
 FerretDB v1.2.0 has just been released with minor changes that address some of the bugs in previous versions and enhance existing features and processes.
 
@@ -46,7 +46,7 @@ Furthermore, we've added support for dot notation in query projections.
 
 Our documentation has also been updated with a new section that explains the [installation details for .rpm packages](https://docs.ferretdb.io/quickstart-guide/rpm/).
 
-[See here to learn more about all the other changes](https://github.com/FerretDB/FerretDB/releases/latest) that come with FerretDB v.1.2.0.
+[See here to learn more about all the other changes](https://github.com/FerretDB/FerretDB/releases/latest) that come with FerretDB v1.2.0.
 
 Special appreciation goes to all FerretDB contributors, users, and admirers – we're so product and delighted for all the contributions.
 Plus, it's been an impressive period since we released our [first GA version back in April](https://blog.ferretdb.io/ferretdb-1-0-ga-opensource-mongodb-alternative/), with a rising list of contributors, users, comments, and followers.

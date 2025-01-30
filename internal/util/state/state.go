@@ -32,9 +32,9 @@ type State struct {
 	TelemetryLocked bool      `json:"-"`
 	Start           time.Time `json:"-"`
 
-	// may be empty if FerretDB did not connect to the backend yet
-	BackendName    string `json:"-"`
-	BackendVersion string `json:"-"`
+	// may be empty if FerretDB did not connect to PostgreSQL yet
+	PostgreSQLVersion string `json:"-"`
+	DocumentDBVersion string `json:"-"`
 
 	// as reported by beacon, if known
 	LatestVersion   string `json:"-"`
@@ -89,14 +89,14 @@ func (s *State) deepCopy() *State {
 	}
 
 	return &State{
-		UUID:            s.UUID,
-		Telemetry:       telemetry,
-		TelemetryLocked: s.TelemetryLocked,
-		Start:           s.Start,
-		BackendName:     s.BackendName,
-		BackendVersion:  s.BackendVersion,
-		LatestVersion:   s.LatestVersion,
-		UpdateInfo:      s.UpdateInfo,
-		UpdateAvailable: s.UpdateAvailable,
+		UUID:              s.UUID,
+		Telemetry:         telemetry,
+		TelemetryLocked:   s.TelemetryLocked,
+		Start:             s.Start,
+		PostgreSQLVersion: s.PostgreSQLVersion,
+		DocumentDBVersion: s.DocumentDBVersion,
+		LatestVersion:     s.LatestVersion,
+		UpdateInfo:        s.UpdateInfo,
+		UpdateAvailable:   s.UpdateAvailable,
 	}
 }
