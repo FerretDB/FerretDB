@@ -111,7 +111,7 @@ func CacheFilePath() (string, error) {
 }
 
 var (
-	// Correctly formatted FerretDB issue or microsoft/documentdb issue.
+	// Checks correctly formatted FerretDB issue or microsoft/documentdb issue.
 	// It returns owner/repository name and the issue number as it's submatches.
 	urlRE = regexp.MustCompile(`^\Qhttps://github.com/\E(FerretDB/[-\w]+|microsoft/documentdb)/issues/(\d+)$`)
 
