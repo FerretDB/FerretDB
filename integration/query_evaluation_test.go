@@ -24,8 +24,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/v2/integration/setup"
+	"github.com/FerretDB/FerretDB/v2/integration/shareddata"
 )
 
 func TestQueryEvaluationRegex(t *testing.T) {
@@ -73,7 +73,6 @@ func TestQueryEvaluationRegex(t *testing.T) {
 			expectedIDs: []any{"multiline-string", "string"},
 		},
 	} {
-		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
@@ -97,9 +96,10 @@ func TestQueryEvaluationExprErrors(t *testing.T) {
 	for name, tc := range map[string]struct { //nolint:vet // used for test only
 		filter bson.D // required, aggregation pipeline stages
 
-		err        *mongo.CommandError // required
-		altMessage string              // optional, alternative error message
-		skip       string              // optional, skip test with a specified reason
+		err              *mongo.CommandError // required
+		altMessage       string              // optional, alternative error message
+		skip             string              // TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/1086
+		failsForFerretDB string
 	}{
 		"TooManyFields": {
 			filter: bson.D{{"$expr", bson.D{{"$type", "v"}, {"$op", "v"}}}},
@@ -108,7 +108,8 @@ func TestQueryEvaluationExprErrors(t *testing.T) {
 				Name:    "Location15983",
 				Message: `An object representing an expression must have exactly one field: { $type: "v", $op: "v" }`,
 			},
-			altMessage: "An object representing an expression must have exactly one field",
+			altMessage:       "An object representing an expression must have exactly one field",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/267",
 		},
 		"TypeWrongLen": {
 			filter: bson.D{{"$expr", bson.D{{"$type", bson.A{"foo", "bar"}}}}},
@@ -133,6 +134,7 @@ func TestQueryEvaluationExprErrors(t *testing.T) {
 				Name:    "InvalidPipelineOperator",
 				Message: "Unrecognized expression '$non-existent'",
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 		"EmptyPath": {
 			filter: bson.D{{"$expr", "$"}},
@@ -141,6 +143,7 @@ func TestQueryEvaluationExprErrors(t *testing.T) {
 				Name:    "Location16872",
 				Message: "'$' by itself is not a valid FieldPath",
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/268",
 		},
 		"EmptyVariable": {
 			filter: bson.D{{"$expr", "$$"}},
@@ -149,6 +152,7 @@ func TestQueryEvaluationExprErrors(t *testing.T) {
 				Name:    "FailedToParse",
 				Message: "empty variable names are not allowed",
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/268",
 		},
 		"InvalidVariable$": {
 			filter: bson.D{{"$expr", "$$$"}},
@@ -173,6 +177,7 @@ func TestQueryEvaluationExprErrors(t *testing.T) {
 				Name:    "InvalidPipelineOperator",
 				Message: "Unrecognized expression '$expr'",
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 		"ExpressionWithinField": {
 			filter: bson.D{{"v", bson.D{{"$expr", int32(1)}}}},
@@ -210,13 +215,17 @@ func TestQueryEvaluationExprErrors(t *testing.T) {
 			skip: "https://github.com/FerretDB/FerretDB/issues/1456",
 		},
 	} {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
+		t.Run(name, func(tt *testing.T) {
 			if tc.skip != "" {
-				t.Skip(tc.skip)
+				tt.Skip(tc.skip)
 			}
 
-			t.Parallel()
+			tt.Parallel()
+
+			var t testing.TB = tt
+			if tc.failsForFerretDB != "" {
+				t = setup.FailsForFerretDB(tt, tc.failsForFerretDB)
+			}
 
 			require.NotNil(t, tc.filter, "filter must not be nil")
 

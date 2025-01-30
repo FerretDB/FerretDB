@@ -8,7 +8,7 @@ image: /img/blog/ferretdb-v1.3.0.jpg
 tags: [release]
 ---
 
-![FerretDB v.1.3.0](/img/blog/ferretdb-v1.3.0.jpg)
+![FerretDB v1.3.0](/img/blog/ferretdb-v1.3.0.jpg)
 
 We've just announced the release of FerretDB v1.3.0, which includes new feature additions, such as the `logout` command and positional operator in projection.
 
@@ -19,7 +19,7 @@ Since our [GA release](https://blog.ferretdb.io/ferretdb-1-0-ga-opensource-mongo
 We've seen a high demand for FerretDB and its application as an open-source replacement for MongoDB workloads and applications.
 This is exciting news, and we look forward to enabling more developers build their applications with FerretDB, starting with the latest release.
 
-Want to know what's new in FerretDB v.1.3.0?
+Want to know what's new in FerretDB v1.3.0?
 Let's find out.
 
 ## New features

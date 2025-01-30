@@ -17,14 +17,55 @@ package handler
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
-	"github.com/FerretDB/FerretDB/internal/wire"
+	"github.com/FerretDB/wire"
+
+	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
 // MsgCollMod implements `collMod` command.
-func (h *Handler) MsgCollMod(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return nil, handlererrors.NewCommandErrorMsg(
-		handlererrors.ErrNotImplemented,
-		"`collMod` command is not implemented yet",
-	)
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgCollMod(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	spec, err := msg.RawDocument()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+		return nil, err
+	}
+
+	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
+	doc, err := spec.Decode()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	dbName, err := getRequiredParam[string](doc, "$db")
+	if err != nil {
+		return nil, err
+	}
+
+	collName, err := getRequiredParam[string](doc, "collMod")
+	if err != nil {
+		return nil, err
+	}
+
+	conn, err := h.Pool.Acquire()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+	defer conn.Release()
+
+	page, err := documentdb_api.CollMod(connCtx, conn.Conn(), h.L, dbName, collName, spec)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if msg, err = wire.NewOpMsg(page); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return msg, nil
 }

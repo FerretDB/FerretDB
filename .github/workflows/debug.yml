@@ -28,7 +28,7 @@ concurrency:
 jobs:
   contexts:
     name: Contexts
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
 
     # comment out to enable this job
@@ -39,11 +39,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-          lfs: false
+          fetch-depth: 0 # for `git describe` to work
+          lfs: false # LFS is used only by website
 
       - name: Debug git status
-        run: git status
+        run: |
+          git status --untracked-files --ignored
+          git status
 
       - name: Dump github context
         run: echo "$GITHUB_CONTEXT"
