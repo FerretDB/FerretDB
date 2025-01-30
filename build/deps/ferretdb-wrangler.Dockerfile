@@ -1,1 +1,1 @@
-FROM ghcr.io/ferretdb/ferretdb-wrangler:3.57.1-1
+FROM ghcr.io/ferretdb/ferretdb-wrangler:3.101.0-1

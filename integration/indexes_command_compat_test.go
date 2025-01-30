@@ -22,11 +22,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
-	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
-
-	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/v2/integration/setup"
+	"github.com/FerretDB/FerretDB/v2/integration/shareddata"
 )
 
 // TestCreateIndexesCommandCompat tests specific behavior for index creation that can be only provided through RunCommand.
@@ -44,7 +41,7 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 		unique         any
 		resultType     compatTestCaseResultType // defaults to nonEmptyResult
 
-		skip string // optional, skip test with a specified reason
+		failsForFerretDB string
 	}{
 		"InvalidCollectionName": {
 			collectionName: 42,
@@ -83,9 +80,10 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 			resultType:     emptyResult,
 		},
 		"ExistingNameDifferentKeyLength": {
-			collectionName: "test",
-			key:            bson.D{{"_id", 1}, {"v", 1}},
-			indexName:      "_id_", // the same name as the default index
+			collectionName:   "test",
+			key:              bson.D{{"_id", 1}, {"v", 1}},
+			indexName:        "_id_", // the same name as the default index
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/290",
 		},
 		"InvalidKey": {
 			collectionName: "test",
@@ -115,14 +113,15 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 			resultType:     emptyResult,
 		},
 	} {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
+		t.Run(name, func(tt *testing.T) {
+			tt.Helper()
+			tt.Parallel()
 
-			t.Helper()
-			t.Parallel()
+			var t testing.TB = tt
+
+			if tc.failsForFerretDB != "" {
+				t = setup.FailsForFerretDB(tt, tc.failsForFerretDB)
+			}
 
 			indexesDoc := bson.D{}
 
@@ -166,13 +165,7 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 				require.Nil(t, compatRes)
 			}
 
-			compatDoc := ConvertDocument(t, compatRes)
-			compatDoc.Remove("$clusterTime")
-			compatDoc.Remove("operationTime")
-			compatDoc.Remove("commitQuorum")
-
-			targetDoc := ConvertDocument(t, targetRes)
-			testutil.AssertEqual(t, compatDoc, targetDoc)
+			AssertEqualDocuments(t, compatRes, targetRes)
 
 			targetCursor, targetErr := targetCollection.Indexes().List(ctx)
 			compatCursor, compatErr := compatCollection.Indexes().List(ctx)
@@ -206,10 +199,10 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 // TestCreateIndexesCommandCompatCheckFields check that the response contains response's fields
 // such as numIndexBefore, numIndexAfter, createdCollectionAutomatically
 // contain the correct values.
-func TestCreateIndexesCommandCompatCheckFields(t *testing.T) {
-	t.Parallel()
+func TestCreateIndexesCommandCompatCheckFields(tt *testing.T) {
+	tt.Parallel()
 
-	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
+	ctx, targetCollections, compatCollections := setup.SetupCompat(tt)
 	targetCollection := targetCollections[0]
 	compatCollection := compatCollections[0]
 
@@ -229,21 +222,10 @@ func TestCreateIndexesCommandCompatCheckFields(t *testing.T) {
 		{"indexes", bson.A{indexesDoc}},
 	}).Decode(&compatRes)
 
-	require.NoError(t, compatErr)
-	require.NoError(t, targetErr, "target error; compat returned no error")
+	require.NoError(tt, compatErr)
+	require.NoError(tt, targetErr, "target error; compat returned no error")
 
-	compatDoc := ConvertDocument(t, compatRes)
-	createdCollectionAutomatically, err := compatDoc.Get("createdCollectionAutomatically")
-	require.NoError(t, err)
-	require.True(t, createdCollectionAutomatically.(bool)) // must be true because a new collection was created
-
-	compat := ConvertDocument(t, compatRes)
-	compat.Remove("$clusterTime")
-	compat.Remove("operationTime")
-	compat.Remove("commitQuorum")
-
-	target := ConvertDocument(t, targetRes)
-	testutil.AssertEqual(t, compat, target)
+	AssertEqualDocuments(tt, compatRes, targetRes)
 
 	// Now this collection exists, so we create another index and expect createdCollectionAutomatically to be false.
 	indexesDoc = bson.D{{"key", bson.D{{"foo", 1}}}, {"name", "foo_1"}}
@@ -258,23 +240,15 @@ func TestCreateIndexesCommandCompatCheckFields(t *testing.T) {
 		{"indexes", bson.A{indexesDoc}},
 	}).Decode(&compatRes)
 
-	require.NoError(t, compatErr)
-	require.NoError(t, targetErr, "target error; compat returned no error")
+	require.NoError(tt, compatErr)
+	require.NoError(tt, targetErr, "target error; compat returned no error")
 
-	compatDoc = ConvertDocument(t, compatRes)
-	createdCollectionAutomatically, err = compatDoc.Get("createdCollectionAutomatically")
-	require.NoError(t, err)
-	require.False(t, createdCollectionAutomatically.(bool)) // must be false because the collection already exists
-
-	compatDoc.Remove("$clusterTime")
-	compatDoc.Remove("operationTime")
-	compatDoc.Remove("commitQuorum")
-
-	targetDoc := ConvertDocument(t, targetRes)
-	testutil.AssertEqual(t, compatDoc, targetDoc)
+	AssertEqualDocuments(tt, compatRes, targetRes)
 
 	// Call index creation for the index that already exists, expect note to be set.
 	indexesDoc = bson.D{{"key", bson.D{{"foo", 1}}}, {"name", "foo_1"}}
+
+	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/499")
 
 	targetErr = targetCollection.Database().RunCommand(ctx, bson.D{
 		{"createIndexes", collectionName},
@@ -289,23 +263,11 @@ func TestCreateIndexesCommandCompatCheckFields(t *testing.T) {
 	require.NoError(t, compatErr)
 	require.NoError(t, targetErr, "target error; compat returned no error")
 
-	compatDoc = ConvertDocument(t, compatRes)
-	createdCollectionAutomatically, err = compatDoc.Get("note")
-	require.NoError(t, err)
-
-	// note must be set because no new indexes were created:
-	require.Equal(t, "all indexes already exist", createdCollectionAutomatically.(string))
-
-	compatDoc.Remove("$clusterTime")
-	compatDoc.Remove("operationTime")
-	compatDoc.Remove("commitQuorum")
-
-	targetDoc = ConvertDocument(t, targetRes)
-	testutil.AssertEqual(t, compatDoc, targetDoc)
+	AssertEqualDocuments(t, compatRes, targetRes)
 }
 
-func TestDropIndexesCommandCompat(tt *testing.T) {
-	tt.Parallel()
+func TestDropIndexesCommandCompat(t *testing.T) {
+	t.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
 		toCreate []mongo.IndexModel // optional, if set, create the given indexes before drop is called
@@ -313,7 +275,7 @@ func TestDropIndexesCommandCompat(tt *testing.T) {
 
 		resultType compatTestCaseResultType // optional, defaults to nonEmptyResult
 
-		skip string // optional, skip test with a specified reason
+		failsForFerretDB string
 	}{
 		"MultipleIndexesByName": {
 			toCreate: []mongo.IndexModel{
@@ -321,7 +283,8 @@ func TestDropIndexesCommandCompat(tt *testing.T) {
 				{Keys: bson.D{{"v", 1}, {"foo", 1}}},
 				{Keys: bson.D{{"v.foo", -1}}},
 			},
-			toDrop: bson.A{"v_-1", "v_1_foo_1"},
+			toDrop:           bson.A{"v_-1", "v_1_foo_1"},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/306",
 		},
 		"MultipleIndexesByKey": {
 			toCreate: []mongo.IndexModel{
@@ -350,14 +313,16 @@ func TestDropIndexesCommandCompat(tt *testing.T) {
 			toCreate: []mongo.IndexModel{
 				{Keys: bson.D{{"v", -1}}},
 			},
-			toDrop: bson.D{{"v", -1}},
+			toDrop:           bson.D{{"v", -1}},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/306",
 		},
 		"SimilarIndexes": {
 			toCreate: []mongo.IndexModel{
 				{Keys: bson.D{{"v", 1}, {"foo", 1}}},
 				{Keys: bson.D{{"v", 1}, {"bar", 1}}},
 			},
-			toDrop: bson.D{{"v", 1}, {"bar", 1}},
+			toDrop:           bson.D{{"v", 1}, {"bar", 1}},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/306",
 		},
 		"DropAllExpression": {
 			toCreate: []mongo.IndexModel{
@@ -365,7 +330,8 @@ func TestDropIndexesCommandCompat(tt *testing.T) {
 				{Keys: bson.D{{"foo.bar", 1}}},
 				{Keys: bson.D{{"foo", 1}, {"bar", 1}}},
 			},
-			toDrop: "*",
+			toDrop:           "*",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/306",
 		},
 		"WrongExpression": {
 			toCreate: []mongo.IndexModel{
@@ -388,21 +354,16 @@ func TestDropIndexesCommandCompat(tt *testing.T) {
 				{"_id", -1},
 				{"v", 1},
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/306",
 		},
 	} {
-		name, tc := name, tc
-		tt.Run(name, func(tt *testing.T) {
-			if tc.skip != "" {
-				tt.Skip(tc.skip)
-			}
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 
-			tt.Helper()
-			tt.Parallel()
-
-			require.NotNil(tt, tc.toDrop, "toDrop must not be nil")
+			require.NotNil(t, tc.toDrop, "toDrop must not be nil")
 
 			// It's enough to use a single provider for drop indexes test as indexes work the same for different collections.
-			s := setup.SetupCompatWithOpts(tt, &setup.SetupCompatOpts{
+			s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
 				Providers:                []shareddata.Provider{shareddata.Composites},
 				AddNonExistentCollection: true,
 			})
@@ -412,10 +373,13 @@ func TestDropIndexesCommandCompat(tt *testing.T) {
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
-				tt.Run(targetCollection.Name(), func(tt *testing.T) {
-					tt.Helper()
 
-					var t testtb.TB = tt
+				t.Run(targetCollection.Name(), func(tt *testing.T) {
+					var t testing.TB = tt
+
+					if tc.failsForFerretDB != "" {
+						t = setup.FailsForFerretDB(tt, tc.failsForFerretDB)
+					}
 
 					if tc.toCreate != nil {
 						_, targetErr := targetCollection.Indexes().CreateMany(ctx, tc.toCreate)
@@ -475,12 +439,7 @@ func TestDropIndexesCommandCompat(tt *testing.T) {
 						require.Nil(t, compatRes)
 					}
 
-					compatDoc := ConvertDocument(t, compatRes)
-					compatDoc.Remove("$clusterTime")
-					compatDoc.Remove("operationTime")
-
-					targetDoc := ConvertDocument(t, targetRes)
-					testutil.AssertEqual(t, compatDoc, targetDoc)
+					AssertEqualDocuments(t, compatRes, targetRes)
 
 					if compatErr == nil {
 						nonEmptyResults = true
@@ -509,11 +468,15 @@ func TestDropIndexesCommandCompat(tt *testing.T) {
 
 			switch tc.resultType {
 			case nonEmptyResult:
-				require.True(tt, nonEmptyResults, "expected non-empty results (some indexes should be deleted)")
+				if tc.failsForFerretDB != "" {
+					return
+				}
+
+				require.True(t, nonEmptyResults, "expected non-empty results (some indexes should be deleted)")
 			case emptyResult:
-				require.False(tt, nonEmptyResults, "expected empty results (no indexes should be deleted)")
+				require.False(t, nonEmptyResults, "expected empty results (no indexes should be deleted)")
 			default:
-				tt.Fatalf("unknown result type %v", tc.resultType)
+				t.Fatalf("unknown result type %v", tc.resultType)
 			}
 		})
 	}

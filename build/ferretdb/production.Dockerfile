@@ -12,15 +12,15 @@ ARG LABEL_COMMIT
 
 # prepare stage
 
-FROM --platform=$BUILDPLATFORM golang:1.22.3 AS production-prepare
+FROM --platform=$BUILDPLATFORM golang:1.23.5 AS production-prepare
 
-# use a single directory for all Go caches to simpliy RUN --mount commands below
-ENV GOPATH /cache/gopath
-ENV GOCACHE /cache/gocache
-ENV GOMODCACHE /cache/gomodcache
+# use a single directory for all Go caches to simplify RUN --mount commands below
+ENV GOPATH=/cache/gopath
+ENV GOCACHE=/cache/gocache
+ENV GOMODCACHE=/cache/gomodcache
 
 # remove ",direct"
-ENV GOPROXY https://proxy.golang.org
+ENV GOPROXY=https://proxy.golang.org
 
 COPY go.mod go.sum /src/
 
@@ -36,10 +36,9 @@ EOF
 
 # build stage
 
-FROM golang:1.22.3 AS production-build
+FROM golang:1.23.5 AS production-build
 
 ARG TARGETARCH
-ARG TARGETVARIANT
 
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
@@ -47,12 +46,12 @@ RUN test -n "$LABEL_VERSION"
 RUN test -n "$LABEL_COMMIT"
 
 # use the same directories for Go caches as above
-ENV GOPATH /cache/gopath
-ENV GOCACHE /cache/gocache
-ENV GOMODCACHE /cache/gomodcache
+ENV GOPATH=/cache/gopath
+ENV GOCACHE=/cache/gocache
+ENV GOMODCACHE=/cache/gomodcache
 
 # modules are already downloaded
-ENV GOPROXY off
+ENV GOPROXY=off
 
 # see .dockerignore
 WORKDIR /src
@@ -70,19 +69,16 @@ git status
 # because v2+ is problematic for some virtualization platforms and older hardware.
 export GOAMD64=v1
 
-# Set GOARM explicitly due to https://github.com/docker-library/golang/issues/494.
-export GOARM=${TARGETVARIANT#v}
-
 export CGO_ENABLED=0
 
 go env
 
-# Do not trim paths to reuse build cache.
+# Trim paths mostly to check that building with `-trimpath` is supported.
 
 # check if stdlib was cached
-go install -v std
+go install -v -trimpath std
 
-go build -v -o=bin/ferretdb ./cmd/ferretdb
+go build -v -trimpath -o=bin/ferretdb ./cmd/ferretdb
 
 go version -m bin/ferretdb
 bin/ferretdb --version
@@ -110,6 +106,9 @@ COPY --from=production-build --chown=ferretdb:ferretdb /state /state
 
 ENTRYPOINT [ "/ferretdb" ]
 
+HEALTHCHECK --interval=1m --timeout=5s --retries=1 --start-period=30s --start-interval=5s \
+  CMD ["/ferretdb", "ping"]
+
 WORKDIR /
 VOLUME /state
 EXPOSE 27017 27018 8088
@@ -119,14 +118,12 @@ ENV FERRETDB_LISTEN_ADDR=:27017
 # ENV FERRETDB_LISTEN_TLS=:27018
 ENV FERRETDB_DEBUG_ADDR=:8088
 ENV FERRETDB_STATE_DIR=/state
-ENV FERRETDB_SQLITE_URL=file:/state/
 
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
 
 # TODO https://github.com/FerretDB/FerretDB/issues/2212
 LABEL org.opencontainers.image.description="A truly Open Source MongoDB alternative"
-LABEL org.opencontainers.image.licenses="Apache-2.0"
 LABEL org.opencontainers.image.revision="${LABEL_COMMIT}"
 LABEL org.opencontainers.image.source="https://github.com/FerretDB/FerretDB"
 LABEL org.opencontainers.image.title="FerretDB"

@@ -36,8 +36,9 @@ func TestQueryArrayCompatSize(t *testing.T) {
 			filter: bson.D{{"v", bson.D{{"$size", int64(2)}}}},
 		},
 		"Infinity": {
-			filter:     bson.D{{"v", bson.D{{"$size", math.Inf(+1)}}}},
-			resultType: emptyResult,
+			filter:           bson.D{{"v", bson.D{{"$size", math.Inf(+1)}}}},
+			resultType:       emptyResult,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/245",
 		},
 		"InvalidUse": {
 			filter:     bson.D{{"$size", 2}},
@@ -141,8 +142,7 @@ func TestQueryArrayCompatElemMatch(t *testing.T) {
 				{"_id", "double"},
 				{"v", bson.D{{"$elemMatch", bson.D{{"$gt", int32(0)}}}}},
 			},
-			resultType:     emptyResult,
-			resultPushdown: pgPushdown,
+			resultType: emptyResult,
 		},
 		"GtZero": {
 			filter: bson.D{{"v", bson.D{{"$elemMatch", bson.D{{"$gt", int32(0)}}}}}},
@@ -200,7 +200,8 @@ func TestQueryArrayCompatElemMatch(t *testing.T) {
 					},
 				},
 			}}},
-			resultType: emptyResult,
+			resultType:       emptyResult,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/785",
 		},
 	}
 

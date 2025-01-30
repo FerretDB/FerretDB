@@ -17,30 +17,36 @@ package ctxutil
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"math/rand"
 	"time"
 )
 
-// WithDelay returns a context that is canceled after a given amount of time after done channel is closed.
-func WithDelay(done <-chan struct{}, delay time.Duration) (context.Context, context.CancelFunc) {
-	ctx, cancel := context.WithCancel(context.Background())
+// errDelayed is returned by [context.Cause] when [WithDelay]'s context is canceled after delay.
+var errDelayed = errors.New("context canceled after delay")
+
+// WithDelay returns a copy of the parent context (with its values), which is canceled
+// when returned [context.CancelCauseFunc] is called (without any delay),
+// or when the parent is canceled and 3 seconds have passed.
+func WithDelay(parent context.Context) (context.Context, context.CancelCauseFunc) {
+	ctx, cancel := context.WithCancelCause(context.WithoutCancel(parent))
 
 	go func() {
 		select {
 		case <-ctx.Done():
-			return
+			cancel(nil)
 
-		case <-done:
-			t := time.NewTimer(delay)
+		case <-parent.Done():
+			t := time.NewTimer(3 * time.Second)
 			defer t.Stop()
 
 			select {
 			case <-ctx.Done():
-				return
+				cancel(nil)
 			case <-t.C:
-				cancel()
+				cancel(errDelayed)
 			}
 		}
 	}()
@@ -56,8 +62,10 @@ func Sleep(ctx context.Context, d time.Duration) {
 }
 
 // SleepWithJitter pauses the current goroutine until d + jitter has passed or ctx is canceled.
-func SleepWithJitter(ctx context.Context, d time.Duration, attempts int64) {
-	sleepCtx, cancel := context.WithTimeout(ctx, durationWithJitter(d, attempts))
+//
+// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/811
+func SleepWithJitter(ctx context.Context, d time.Duration, attempt int64) {
+	sleepCtx, cancel := context.WithTimeout(ctx, durationWithJitter(d, attempt))
 	defer cancel()
 	<-sleepCtx.Done()
 }
@@ -74,7 +82,7 @@ func durationWithJitter(cap time.Duration, attempt int64) time.Duration {
 	capDuration := cap.Milliseconds()
 
 	if attempt < 1 {
-		panic("attempt must be nonzero positive number")
+		panic("attempt must be positive number")
 	}
 
 	if capDuration <= minDuration {
