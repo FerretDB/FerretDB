@@ -114,13 +114,13 @@ func TestCheckSupportedCommands(t *testing.T) {
 			Payload:        "[IssueLabel](https://github.com/FerretDB/FerretDB/issues/1)",
 			ExpectedOutput: "linked issue https://github.com/FerretDB/FerretDB/issues/1 is closed\n",
 		},
+		"ClosedDocumentDBIssue": {
+			Payload:        "[Issue](https://github.com/microsoft/documentdb/issues/1)",
+			ExpectedOutput: "linked issue https://github.com/microsoft/documentdb/issues/1 is closed\n",
+		},
 		"NoLabel": {
 			Payload:        "https://github.com/FerretDB/FerretDB/issues/1",
 			ExpectedOutput: "",
-		},
-		"ClosedDocumentDBIssue": {
-			Payload:        "[IssueLabel](https://github.com/microsoft/documentdb/issues/1)",
-			ExpectedOutput: "linked issue https://github.com/microsoft/documentdb/issues/1 is closed\n",
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
