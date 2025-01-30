@@ -8,7 +8,7 @@ image: /img/blog/ferretdb-v1.11.jpg
 tags: [release]
 ---
 
-![FerretDB v.1.11.0 - new release](/img/blog/ferretdb-v1.11.jpg)
+![FerretDB v1.11.0 - new release](/img/blog/ferretdb-v1.11.jpg)
 
 We just released FerretDB v1.11.0, which includes several improvements for the SQLite backend.
 

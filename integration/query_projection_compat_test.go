@@ -22,7 +22,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
-	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/v2/integration/shareddata"
 )
 
 func TestQueryProjectionCompat(t *testing.T) {
@@ -31,7 +31,6 @@ func TestQueryProjectionCompat(t *testing.T) {
 	// topLevelFieldsIntegers contains documents with several top level fields with integer values.
 	topLevelFieldsIntegers := shareddata.NewTopLevelFieldsProvider(
 		"TopLevelFieldsIntegers",
-		nil,
 		map[string]shareddata.Fields{
 			"int32-two": {
 				{Key: "foo", Value: int32(1)},
@@ -72,9 +71,10 @@ func TestQueryProjectionCompat(t *testing.T) {
 			projection: bson.D{{"foo", int32(0)}, {"bar", false}},
 		},
 		"Include1FieldExclude1Field": {
-			filter:     bson.D{},
-			projection: bson.D{{"foo", int32(0)}, {"bar", true}},
-			resultType: emptyResult,
+			filter:           bson.D{},
+			projection:       bson.D{{"foo", int32(0)}, {"bar", true}},
+			resultType:       emptyResult,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 		"Exclude1FieldInclude1Field": {
 			filter:     bson.D{},
@@ -233,25 +233,21 @@ func TestQueryProjectionPositionalOperatorCompat(t *testing.T) {
 			// it returns error only if collection contains a doc that matches the filter
 			// and the filter does not contain positional operator path,
 			// e.g. missing {v: <val>} in the filter.
-			filter:         bson.D{{"_id", "array"}},
-			projection:     bson.D{{"v.$", true}},
-			resultPushdown: allPushdown,
+			filter:     bson.D{{"_id", "array"}},
+			projection: bson.D{{"v.$", true}},
 		},
 		"Implicit": {
-			filter:         bson.D{{"v", float64(42)}},
-			projection:     bson.D{{"v.$", true}},
-			resultPushdown: pgPushdown,
+			filter:     bson.D{{"v", float64(42)}},
+			projection: bson.D{{"v.$", true}},
 		},
 		"ImplicitNoMatch": {
-			filter:         bson.D{{"v", "non-existent"}},
-			projection:     bson.D{{"v.$", true}},
-			resultPushdown: pgPushdown,
-			resultType:     emptyResult,
+			filter:     bson.D{{"v", "non-existent"}},
+			projection: bson.D{{"v.$", true}},
+			resultType: emptyResult,
 		},
 		"Eq": {
-			filter:         bson.D{{"v", bson.D{{"$eq", 45.5}}}},
-			projection:     bson.D{{"v.$", true}},
-			resultPushdown: pgPushdown,
+			filter:     bson.D{{"v", bson.D{{"$eq", 45.5}}}},
+			projection: bson.D{{"v.$", true}},
 		},
 		"Gt": {
 			filter:     bson.D{{"v", bson.D{{"$gt", 42}}}},
@@ -260,7 +256,6 @@ func TestQueryProjectionPositionalOperatorCompat(t *testing.T) {
 		"GtNoMatch": {
 			filter:     bson.D{{"v", bson.D{{"$gt", math.MaxFloat64}}}},
 			projection: bson.D{{"v.$", true}},
-			resultType: emptyResult,
 		},
 		"DollarEndingKey": {
 			filter:     bson.D{{"v", bson.D{{"$gt", 42}}}},
@@ -271,23 +266,38 @@ func TestQueryProjectionPositionalOperatorCompat(t *testing.T) {
 			projection: bson.D{{"v$v", true}},
 		},
 		"ImplicitDotNotation": {
-			filter:         bson.D{{"v", float64(42)}},
-			projection:     bson.D{{"v.foo.$", true}},
-			resultPushdown: pgPushdown,
+			filter:           bson.D{{"v", float64(42)}},
+			projection:       bson.D{{"v.foo.$", true}},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/785",
+			failsProviders: []shareddata.Provider{
+				shareddata.ArrayInt32s,
+				shareddata.Composites,
+			},
 		},
 		"ImplicitDotNoMatch": {
-			filter:         bson.D{{"v", "non-existent"}},
-			projection:     bson.D{{"v.foo.$", true}},
-			resultPushdown: pgPushdown,
-			resultType:     emptyResult,
+			filter:     bson.D{{"v", "non-existent"}},
+			projection: bson.D{{"v.foo.$", true}},
+			resultType: emptyResult,
 		},
 		"GtDotNotation": {
-			filter:     bson.D{{"v", bson.D{{"$gt", 42}}}},
-			projection: bson.D{{"v.foo.$", true}},
+			filter:           bson.D{{"v", bson.D{{"$gt", 42}}}},
+			projection:       bson.D{{"v.foo.$", true}},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/785",
+			failsProviders: []shareddata.Provider{
+				shareddata.ArrayDoubles,
+				shareddata.ArrayInt32s,
+				shareddata.Composites,
+			},
 		},
 		"GtDotNoMatch": {
-			filter:     bson.D{{"v", bson.D{{"$gt", 42}}}},
-			projection: bson.D{{"v.foo.$", true}},
+			filter:           bson.D{{"v", bson.D{{"$gt", 42}}}},
+			projection:       bson.D{{"v.foo.$", true}},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/785",
+			failsProviders: []shareddata.Provider{
+				shareddata.ArrayDoubles,
+				shareddata.ArrayInt32s,
+				shareddata.Composites,
+			},
 		},
 		"DotNotationDollarEndingKey": {
 			filter:     bson.D{{"v", bson.D{{"$gt", 42}}}},
@@ -298,8 +308,7 @@ func TestQueryProjectionPositionalOperatorCompat(t *testing.T) {
 				{"_id", "array"},
 				{"v", bson.D{{"$gt", 41}}},
 			},
-			projection:     bson.D{{"v.$", true}},
-			resultPushdown: pgPushdown,
+			projection: bson.D{{"v.$", true}},
 		},
 		"TwoFilter": {
 			filter: bson.D{
@@ -335,7 +344,13 @@ func TestQueryProjectionPositionalOperatorCompat(t *testing.T) {
 			filter: bson.D{
 				{"v", bson.D{{"$gt", 42}}},
 			},
-			projection: bson.D{{"v.foo.$", true}},
+			projection:       bson.D{{"v.foo.$", true}},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/785",
+			failsProviders: []shareddata.Provider{
+				shareddata.ArrayDoubles,
+				shareddata.ArrayInt32s,
+				shareddata.Composites,
+			},
 		},
 		"TypeOperator": {
 			filter:     bson.D{},

@@ -21,8 +21,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/v2/integration/setup"
+	"github.com/FerretDB/FerretDB/v2/integration/shareddata"
 )
 
 // explainCompatTestCase describes explain compatibility test case.
@@ -32,7 +32,8 @@ type explainCompatTestCase struct {
 	pipeline   bson.A                   // ignored if nil
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
 
-	skip string // always skip this test case, must have issue number mentioned
+	failsForFerretDB string
+	skip             string // TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/1086
 }
 
 // testExplainCompatError tests explain compatibility test cases.
@@ -41,10 +42,10 @@ type explainCompatTestCase struct {
 // If you see following error, use `testAggregateStagesCompat` test instead.
 //
 //	`(FailedToParse) The 'cursor' option is required, except for aggregate with the explain argument`
-func testExplainCompatError(t *testing.T, testCases map[string]explainCompatTestCase) {
-	t.Helper()
+func testExplainCompatError(tt *testing.T, testCases map[string]explainCompatTestCase) {
+	tt.Helper()
 
-	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
+	s := setup.SetupCompatWithOpts(tt, &setup.SetupCompatOpts{
 		Providers: []shareddata.Provider{shareddata.Int32s},
 	})
 
@@ -53,18 +54,21 @@ func testExplainCompatError(t *testing.T, testCases map[string]explainCompatTest
 	compatCollection := s.CompatCollections[0]
 
 	for name, tc := range testCases {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Helper()
-
+		tt.Run(name, func(tt *testing.T) {
+			tt.Helper()
 			if tc.skip != "" {
-				t.Skip(tc.skip)
+				tt.Skip(tc.skip)
 			}
 
-			t.Parallel()
+			tt.Parallel()
 
-			t.Run(targetCollection.Name(), func(t *testing.T) {
-				t.Helper()
+			tt.Run(targetCollection.Name(), func(tt *testing.T) {
+				tt.Helper()
+
+				var t testing.TB = tt
+				if tc.failsForFerretDB != "" {
+					t = setup.FailsForFerretDB(tt, tc.failsForFerretDB)
+				}
 
 				explainTarget := bson.D{{tc.command, targetCollection.Name()}}
 				explainCompat := bson.D{{tc.command, compatCollection.Name()}}
@@ -135,6 +139,7 @@ func TestExplainCompatError(t *testing.T) {
 	testCases := map[string]explainCompatTestCase{
 		"AggregateMissingPipeline": {
 			command: "aggregate",
+			skip:    "https://github.com/FerretDB/FerretDB-DocumentDB/issues/958",
 		},
 		"AggregateInvalidPipeline": {
 			command:  "aggregate",
