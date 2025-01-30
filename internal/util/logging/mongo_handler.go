@@ -13,3 +13,32 @@
 // limitations under the License.
 
 package logging
+
+import (
+	"context"
+	"log/slog"
+)
+
+type mongoHandler struct {
+	opts *NewHandlerOpts
+}
+
+func (h *mongoHandler) Enabled(_ context.Context, l slog.Level) bool {
+	minLevel := slog.LevelInfo
+	if h.opts.Level != nil {
+		minLevel = h.opts.Level.Level()
+	}
+
+	return l >= minLevel
+}
+
+func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
+
+}
+
+func (h *mongoHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
+
+}
+
+func (h *mongoHandler) WithGroup(name string) slog.Handler {
+}
