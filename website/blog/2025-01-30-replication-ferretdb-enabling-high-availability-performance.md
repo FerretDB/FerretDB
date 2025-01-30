@@ -1,5 +1,5 @@
 ---
-slug: high-availability-performance-replication-ferretdb
+slug: replication-ferretdb-enabling-high-availability-performance
 title: 'Replication in FerretDB: Enabling High Availability and Performance'
 authors: [alex]
 description: >
@@ -10,19 +10,19 @@ tags: [community, cloud, open source]
 
 ![Monitor FerretDB Performance using Coroot](/img/blog/replication.jpg)
 
-Speed and reliability are critical features of all databases – every millisecond matters.
-When serving data to your users, every second of downtime can cost your business.
+Speed and reliability are critical for all databases – every millisecond matters.
+When serving data to your users, every second of downtime can lead to lost revenue and unhappy customers.
 
 <!--truncate-->
 
-For applications that demand high availability, disaster recovery, and scale, replication is an essential feature.
+For applications that demand high availability and disaster recovery, replication is an essential feature.
 Now, with the release of FerretDB v2 (which uses PostgreSQL with DocumentDB extension as the storage engine) and its replication capabilities, developers and businesses can create fault-tolerant and highly available database environments.
 
 In this blog post, we'll discuss replication, its importance and benefits, and how FerretDB can help you create a reliable and fault-tolerant environment.
 
 ## What is replication?
 
-Replication is a database technique for distributing traffic across multiple nodes.
+Replication is a database technique for distributing traffic across multiple servers.
 It works by maintaining one primary database where all writes happen and one or more read-only replicas that sync with the primary.
 Setting up your database this way ensures a reduction in the load on the primary instance, boosts query performance, and enhances fault tolerance.
 
@@ -57,9 +57,25 @@ Unlike MongoDB, replication works a bit differently in FerretDB.
 Replication in FerretDB relies entirely on PostgreSQL's native replication mechanisms.
 However, only the Write-Ahead Logging (WAL) streaming method is currently supported.
 
-Here's a typical setup for replication in FerretDB.
+Here's an example of a replication setup in FerretDB:
 
-![Replication setup in FerretDB](images/image1.png)
+```mermaid
+flowchart LR
+    subgraph Application
+        G[Client]
+    end
+
+    subgraph FerretDB
+        G -->|Connects to| A[FerretDB Primary]
+        G -->|Connects to| F[FerretDB Read-only]
+    end
+
+    subgraph PostgreSQL
+        A -->|Write/Read| B[Postgres Primary]
+        F -->|Read-only| C[Postgres Replica]
+        B -->|Replication - WAL Streaming| C[Postgres Replica]
+    end
+```
 
 The replication process involves setting up a primary PostgreSQL database that handles all write operations.
 Read replicas – also powered by PostgreSQL – continuously sync with the primary database, receiving updates through streaming replication.
