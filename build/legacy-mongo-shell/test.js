@@ -1,7 +1,7 @@
 // Please do not merge changes in this file.
 
-(function() {
-  'use strict';
+(function () {
+  "use strict";
 
   const coll = db.jstests_elemmatch_value;
   coll.drop();

@@ -1,8 +1,8 @@
 ---
-label: Migrating to FerretDB
-position: 9
+label: Migrate from MongoDB
+position: 6
 link:
   type: generated-index
-  slug: /migration/
+  slug: /migration
   description: >
     This section details the procedures on how to migrate to FerretDB

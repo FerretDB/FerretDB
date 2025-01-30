@@ -8,7 +8,7 @@ image: /img/blog/ferretdb-v1.13.0.png
 tags: [release]
 ---
 
-![FerretDB v.1.13.0 - new release with new PostgreSQL backend](/img/blog/ferretdb-v1.13.0.png)
+![FerretDB v1.13.0 - new release with new PostgreSQL backend](/img/blog/ferretdb-v1.13.0.png)
 
 The release of FerretDB v1.13.0 brings new changes, which include the new PostgreSQL backend – now enabled by default – `arm/v7` packages, and a default SQLite directory for Docker images.
 

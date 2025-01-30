@@ -20,16 +20,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
-
-	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/v2/integration/setup"
 )
 
 type insertCommandCompatTestCase struct { //nolint:vet // for readability
 	toInsert []any // required, slice of bson.D to insert
 	ordered  any   // required, sets it to `ordered`
-
-	skip string // optional, skip test with a specified reason
 }
 
 // testInsertCommandCompat tests insert compatibility test cases.
@@ -39,12 +35,7 @@ func testInsertCommandCompat(t *testing.T, testCases map[string]insertCommandCom
 	t.Helper()
 
 	for name, tc := range testCases {
-		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
-
 			t.Helper()
 			t.Parallel()
 
@@ -87,14 +78,7 @@ func testInsertCommandCompat(t *testing.T, testCases map[string]insertCommandCom
 					t.Logf("Compat (expected) result: %v", compatRes)
 					t.Logf("Target (actual)   result: %v", targetRes)
 
-					compatDoc := ConvertDocument(t, compatRes)
-					compatDoc.Remove("$clusterTime")
-					compatDoc.Remove("operationTime")
-					compatDoc.Remove("electionId")
-					compatDoc.Remove("opTime")
-
-					targetDoc := ConvertDocument(t, targetRes)
-					testutil.AssertEqual(t, compatDoc, targetDoc)
+					AssertEqualDocuments(t, compatRes, targetRes)
 				})
 			}
 		})
