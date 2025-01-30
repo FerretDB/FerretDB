@@ -21,6 +21,8 @@ import (
 
 type mongoHandler struct {
 	opts *NewHandlerOpts
+
+	jsonHandler slog.Handler
 }
 
 func (h *mongoHandler) Enabled(_ context.Context, l slog.Level) bool {
@@ -33,12 +35,13 @@ func (h *mongoHandler) Enabled(_ context.Context, l slog.Level) bool {
 }
 
 func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
-
+	return h.jsonHandler.Handle(ctx, r)
 }
 
 func (h *mongoHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
-
+	return h.jsonHandler.WithAttrs(attrs)
 }
 
 func (h *mongoHandler) WithGroup(name string) slog.Handler {
+	return h.jsonHandler.WithGroup(name)
 }
