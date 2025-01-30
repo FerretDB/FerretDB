@@ -43,10 +43,10 @@ func main() {
 	}
 }
 
-// issueRE represents FerretDB issue url with label in Markdown format,
+// issueRE represents FerretDB issue or microsoft/document issue url with label in Markdown format,
 // such as: `[Label](https://github.com/FerretDB/FerretDB/issues/1)`.
-// It returns url as a submatch.
-var issueRE = regexp.MustCompile(`\[\w+]\((\Qhttps://github.com/FerretDB/\E[-\w]+/issues/\d+)\)`)
+// It returns url and owner/repo as submatches.
+var issueRE = regexp.MustCompile(`\[\w+]\((\Qhttps://github.com/\E(FerretDB/[-\w]+|microsoft/documentdb)/issues/\d+)\)`)
 
 // checkBlogFiles verifies that blog posts are correctly formatted.
 func checkBlogFiles(files []string) error {
@@ -255,7 +255,7 @@ func checkIssueURLs(client *github.Client, r io.Reader, l *log.Logger) (bool, er
 			continue
 		}
 
-		if len(match) != 2 {
+		if len(match) != 3 {
 			l.Printf("invalid Markdown URL format:\n %s", line)
 			failed = true
 
