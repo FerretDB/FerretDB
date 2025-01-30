@@ -31,6 +31,7 @@ import (
 )
 
 // todoRE represents correct "// TODO" comment format.
+// It returns url and owner/repo name as submatches.
 var todoRE = regexp.MustCompile(`^// TODO (\Qhttps://github.com/\E(FerretDB/[-\w]+|microsoft/documentdb)/issues/\d+)$`)
 
 // analyzer represents the checkcomments analyzer.

@@ -45,7 +45,7 @@ func main() {
 
 // issueRE represents FerretDB issue or microsoft/document issue url with label in Markdown format,
 // such as: `[Label](https://github.com/FerretDB/FerretDB/issues/1)`.
-// It returns url and owner/repo as submatches.
+// It returns url and owner/repo name as submatches.
 var issueRE = regexp.MustCompile(`\[\w+]\((\Qhttps://github.com/\E(FerretDB/[-\w]+|microsoft/documentdb)/issues/\d+)\)`)
 
 // checkBlogFiles verifies that blog posts are correctly formatted.
