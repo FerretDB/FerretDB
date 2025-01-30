@@ -69,7 +69,6 @@ func (lis *Listener) Run(ctx context.Context) {
 	}
 
 	srv := &http.Server{
-		Addr:    lis.opts.TCPAddr,
 		Handler: srvHandler,
 		BaseContext: func(_ net.Listener) context.Context {
 			return ctx
