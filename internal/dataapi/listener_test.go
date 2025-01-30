@@ -218,6 +218,8 @@ func TestSmokeDataAPI(t *testing.T) {
 // postJSON sends POST request with provided JSON to data API under provided uri.
 // It handles necessary headers, as well as authentication.
 func postJSON(tb testing.TB, uri, jsonBody string) (*http.Response, error) {
+	tb.Helper()
+
 	req, err := http.NewRequest(http.MethodPost, uri, bytes.NewBuffer([]byte(jsonBody)))
 	require.NoError(tb, err)
 
@@ -230,6 +232,7 @@ func postJSON(tb testing.TB, uri, jsonBody string) (*http.Response, error) {
 // setupDataAPI sets up clean database and the Data API handler.
 // It returns Data API address, and database name.
 func setupDataAPI(tb testing.TB) (addr string, dbName string) {
+	tb.Helper()
 	const uri = "postgres://username:password@127.0.0.1:5432/postgres"
 
 	sp, err := state.NewProvider("")
