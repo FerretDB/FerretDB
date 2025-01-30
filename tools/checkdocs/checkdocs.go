@@ -18,28 +18,40 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"context"
+	"errors"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/FerretDB/FerretDB/tools/github"
 )
 
 func main() {
-	files, err := filepath.Glob(filepath.Join("website", "blog", "*.md"))
+	blogFiles, err := filepath.Glob(filepath.Join("website", "blog", "*.md"))
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	checkFiles(files, log.Printf, log.Fatalf)
+	err = checkBlogFiles(blogFiles)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
-// checkFiles verifies that blog posts are correctly formatted,
-// using logf for progress reporting and fatalf for errors.
-func checkFiles(files []string, logf, fatalf func(string, ...any)) {
+// issueRE represents FerretDB issue url with label in Markdown format,
+// such as: `[Label](https://github.com/FerretDB/FerretDB/issues/1)`.
+// It returns url as a submatch.
+var issueRE = regexp.MustCompile(`\[\w+]\((\Qhttps://github.com/FerretDB/\E[-\w]+/issues/\d+)\)`)
+
+// checkBlogFiles verifies that blog posts are correctly formatted.
+func checkBlogFiles(files []string) error {
 	if len(files) == 0 {
-		fatalf("No blog posts found")
+		return fmt.Errorf("No blog posts found")
 	}
 
 	var failed bool
@@ -47,38 +59,40 @@ func checkFiles(files []string, logf, fatalf func(string, ...any)) {
 	for _, file := range files {
 		fileInBytes, err := os.ReadFile(file)
 		if err != nil {
-			fatalf("Couldn't read file %s: %s", file, err)
+			return fmt.Errorf("Couldn't read file %s: %s", file, err)
 		}
 
 		b, err := extractFrontMatter(fileInBytes)
 		if err != nil {
-			fatalf("Couldn't extract front matter from %s: %s", file, err)
+			return fmt.Errorf("Couldn't extract front matter from %s: %s", file, err)
 		}
 
 		if err = verifySlug(filepath.Base(file), b); err != nil {
-			logf("%q: %s", file, err)
+			log.Printf("%q: %s", file, err)
 			failed = true
 		}
 
 		if err = verifyDateNotPresent(b); err != nil {
-			logf("%q: %s", file, err)
+			log.Printf("%q: %s", file, err)
 			failed = true
 		}
 
 		if err = verifyTags(b); err != nil {
-			logf("%q: %s", file, err)
+			log.Printf("%q: %s", file, err)
 			failed = true
 		}
 
 		if err = verifyTruncateString(fileInBytes); err != nil {
-			logf("%q: %s", file, err)
+			log.Printf("%q: %s", file, err)
 			failed = true
 		}
 	}
 
 	if failed {
-		fatalf("One or more blog posts are not correctly formatted")
+		return fmt.Errorf("One or more blog posts are not correctly formatted")
 	}
+
+	return nil
 }
 
 // verifyTruncateString checks that the truncate string is present.
@@ -202,6 +216,7 @@ func verifyTags(fm []byte) error {
 		"javascript frameworks":   {},
 		"mongodb compatible":      {},
 		"mongodb gui":             {},
+		"observability":           {},
 		"open source":             {},
 		"postgresql tools":        {},
 		"product":                 {},
@@ -219,4 +234,71 @@ func verifyTags(fm []byte) error {
 	}
 
 	return nil
+}
+
+// checkIssueURLs validates FerretDB issues URLs if they occur in the r [io.Reader].
+// If URL formatting is invalid, the represented issue is closed or not found - the appropriate
+// message is sent to l [*log.Logger].
+//
+// At the end of scan the true value is returned if any of above was detected.
+// An error is returned only if something fatal happened.
+func checkIssueURLs(client *github.Client, r io.Reader, l *log.Logger) (bool, error) {
+	s := bufio.NewScanner(r)
+
+	var failed bool
+
+	for s.Scan() {
+		line := s.Text()
+
+		match := issueRE.FindStringSubmatch(line)
+		if len(match) == 0 {
+			continue
+		}
+
+		if len(match) != 2 {
+			l.Printf("invalid Markdown URL format:\n %s", line)
+			failed = true
+
+			continue
+		}
+
+		url := match[1]
+
+		var status github.IssueStatus
+		status, err := client.IssueStatus(context.TODO(), url)
+
+		switch {
+		case err == nil:
+			// nothing
+		case errors.Is(err, github.ErrIncorrectURL),
+			errors.Is(err, github.ErrIncorrectIssueNumber):
+			l.Print(err.Error())
+		default:
+			log.Panic(err)
+		}
+
+		switch status {
+		case github.IssueOpen:
+			// nothing
+
+		case github.IssueClosed:
+			failed = true
+
+			l.Printf("linked issue %s is closed", url)
+
+		case github.IssueNotFound:
+			failed = true
+
+			l.Printf("linked issue %s is not found", url)
+
+		default:
+			return false, fmt.Errorf("unknown issue status: %s", status)
+		}
+	}
+
+	if err := s.Err(); err != nil {
+		return false, fmt.Errorf("error reading input: %s", err)
+	}
+
+	return failed, nil
 }
