@@ -15,9 +15,13 @@
 package integration
 
 import (
+	"fmt"
 	"testing"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+
+	"github.com/FerretDB/FerretDB/v2/integration/shareddata"
 )
 
 func TestUpdateArrayCompatPop(t *testing.T) {
@@ -29,10 +33,96 @@ func TestUpdateArrayCompatPop(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"Pop": {
-			update: bson.D{{"$pop", bson.D{{"v", 1}}}},
+			update:           bson.D{{"$pop", bson.D{{"v", 1}}}},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/314",
+			failsIDs: []struct {
+				provider shareddata.Provider
+				ids      []string
+			}{
+				{provider: shareddata.Binaries},
+				{provider: shareddata.Bools},
+				{provider: shareddata.Composites, ids: []string{
+					"document", "document-composite",
+					"document-composite-numerical-field-name", "document-composite-reverse", "document-empty", "document-null",
+				}},
+				{provider: shareddata.Decimal128s},
+				{provider: shareddata.Doubles},
+				{provider: shareddata.Int32s},
+				{provider: shareddata.Int64s},
+				{provider: shareddata.Nulls},
+				{provider: shareddata.ObjectIDKeys},
+				{provider: shareddata.ObjectIDs},
+				{provider: shareddata.Scalars, ids: []string{
+					"binary", "binary-empty", "bool-false", "bool-true", "datetime",
+					"datetime-epoch", "datetime-year-max", "datetime-year-min", "double", "double-1", "double-2",
+					"double-3", "double-4", "double-5", "double-big", "double-max", "double-max-overflow",
+					"double-min-overflow", "double-smallest", "double-whole", "double-zero",
+					"decimal128", "decimal128-int", "decimal128-int-zero", "decimal128-zero", "decimal128-double", "decimal128-whole", "int32", "int32-1",
+					"int32-2", "int32-3", "int32-max", "int32-min", "int32-zero", "int64", "int64-1", "int64-2",
+					"int64-3", "int64-big", "int64-double-big", "int64-max", "int64-min", "int64-zero", "null",
+					"objectid", "objectid-empty", "regex", "regex-empty", "string", "string-double", "string-empty",
+					"string-whole", "timestamp", "timestamp-i",
+				}},
+				{provider: shareddata.SmallDoubles},
+				{provider: shareddata.OverflowVergeDoubles},
+				{provider: shareddata.Strings},
+				{provider: shareddata.DateTimes},
+				{provider: shareddata.Timestamps},
+				{provider: shareddata.Mixed, ids: []string{"null"}},
+				{provider: shareddata.Regexes},
+				{provider: shareddata.ArrayAndDocuments, ids: []string{"document"}},
+				{provider: shareddata.DocumentsDocuments},
+				{provider: shareddata.DocumentsDeeplyNested},
+				{provider: shareddata.DocumentsDoubles},
+				{provider: shareddata.DocumentsStrings},
+				{provider: shareddata.PostgresEdgeCases},
+			},
 		},
 		"PopFirst": {
-			update: bson.D{{"$pop", bson.D{{"v", -1}}}},
+			update:           bson.D{{"$pop", bson.D{{"v", -1}}}},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/314",
+			failsIDs: []struct {
+				provider shareddata.Provider
+				ids      []string
+			}{
+				{provider: shareddata.Binaries},
+				{provider: shareddata.Bools},
+				{provider: shareddata.Composites, ids: []string{
+					"document", "document-composite",
+					"document-composite-numerical-field-name", "document-composite-reverse", "document-empty",
+					"document-null",
+				}},
+				{provider: shareddata.Decimal128s},
+				{provider: shareddata.Doubles},
+				{provider: shareddata.Int32s},
+				{provider: shareddata.Int64s},
+				{provider: shareddata.Nulls},
+				{provider: shareddata.ObjectIDKeys},
+				{provider: shareddata.ObjectIDs},
+				{provider: shareddata.Scalars, ids: []string{
+					"binary", "binary-empty", "bool-false", "bool-true", "datetime",
+					"datetime-epoch", "datetime-year-max", "datetime-year-min", "double", "double-1", "double-2", "double-3",
+					"decimal128", "decimal128-int", "decimal128-int-zero", "decimal128-zero", "decimal128-double", "decimal128-whole",
+					"double-4", "double-5", "double-big", "double-max", "double-max-overflow", "double-min-overflow",
+					"double-smallest", "double-whole", "double-zero", "int32", "int32-1", "int32-2", "int32-3",
+					"int32-max", "int32-min", "int32-zero", "int64", "int64-1", "int64-2", "int64-3", "int64-big",
+					"int64-double-big", "int64-max", "int64-min", "int64-zero", "null", "objectid", "objectid-empty",
+					"regex", "regex-empty", "string", "string-double", "string-empty", "string-whole", "timestamp", "timestamp-i",
+				}},
+				{provider: shareddata.SmallDoubles},
+				{provider: shareddata.OverflowVergeDoubles},
+				{provider: shareddata.Strings},
+				{provider: shareddata.DateTimes},
+				{provider: shareddata.Timestamps},
+				{provider: shareddata.Mixed, ids: []string{"null"}},
+				{provider: shareddata.Regexes},
+				{provider: shareddata.ArrayAndDocuments, ids: []string{"document"}},
+				{provider: shareddata.DocumentsDocuments},
+				{provider: shareddata.DocumentsDeeplyNested},
+				{provider: shareddata.DocumentsDoubles},
+				{provider: shareddata.DocumentsStrings},
+				{provider: shareddata.PostgresEdgeCases},
+			},
 		},
 		"NonExistentField": {
 			update:     bson.D{{"$pop", bson.D{{"non-existent-field", 1}}}},
@@ -47,9 +137,16 @@ func TestUpdateArrayCompatPop(t *testing.T) {
 			update: bson.D{{"$pop", bson.D{{"v.0.foo", -1}}}},
 		},
 		"DotNotationNonArray": {
-			filter:     bson.D{{"_id", "array-documents-nested"}},
-			update:     bson.D{{"$pop", bson.D{{"v.0.foo.0.bar", 1}}}},
-			resultType: emptyResult,
+			filter:           bson.D{{"_id", "array-documents-nested"}},
+			update:           bson.D{{"$pop", bson.D{{"v.0.foo.0.bar", 1}}}},
+			resultType:       emptyResult,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/314",
+			failsIDs: []struct {
+				provider shareddata.Provider
+				ids      []string
+			}{
+				{provider: shareddata.ArrayDocuments},
+			},
 		},
 		"DotNotationNonExistentPath": {
 			update:     bson.D{{"$pop", bson.D{{"non.existent.path", 1}}}},
@@ -68,12 +165,53 @@ func TestUpdateArrayCompatPop(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"DotNotationObjectInArray": {
-			update:     bson.D{{"$pop", bson.D{{"v.array.foo.array", 1}}}},
-			resultType: emptyResult,
+			update:           bson.D{{"$pop", bson.D{{"v.array.foo.array", 1}}}},
+			resultType:       emptyResult,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/413",
+			failsIDs: []struct {
+				provider shareddata.Provider
+				ids      []string
+			}{
+				{provider: shareddata.Composites, ids: []string{
+					"array", "array-empty", "array-null", "array-composite",
+					"array-documents", "array-numbers-asc", "array-numbers-desc", "array-strings-desc", "array-three",
+					"array-three-reverse", "array-two", "document-composite", "document-composite-reverse",
+				}},
+				{provider: shareddata.Mixed, ids: []string{"array-empty", "array-null"}},
+				{provider: shareddata.ArrayAndDocuments, ids: []string{"array-documents", "array-documents-two-fields"}},
+				{provider: shareddata.ArrayStrings},
+				{provider: shareddata.ArrayDoubles},
+				{provider: shareddata.ArrayRegexes},
+				{provider: shareddata.ArrayInt32s},
+				{provider: shareddata.ArrayDocuments},
+			},
 		},
 		"DotNotationObject": {
-			update:     bson.D{{"$pop", bson.D{{"v.foo", 1}}}},
-			resultType: emptyResult,
+			update:           bson.D{{"$pop", bson.D{{"v.foo", 1}}}},
+			resultType:       emptyResult,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/413",
+			failsIDs: []struct {
+				provider shareddata.Provider
+				ids      []string
+			}{
+				{provider: shareddata.Composites, ids: []string{
+					"array", "array-empty", "array-null", "array-composite",
+					"array-documents", "array-numbers-asc", "array-numbers-desc", "array-strings-desc", "array-three",
+					"array-three-reverse", "array-two", "document", "document-composite", "document-composite-reverse",
+					"document-composite-numerical-field-name", "document-null",
+				}},
+				{provider: shareddata.Mixed, ids: []string{"array-empty", "array-null"}},
+				{provider: shareddata.ArrayAndDocuments, ids: []string{"array-documents", "array-documents-two-fields", "document"}},
+				{
+					provider: shareddata.DocumentsDocuments,
+					ids:      []string{fmt.Sprint(primitive.ObjectID{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01})},
+				},
+				{provider: shareddata.ArrayStrings},
+				{provider: shareddata.ArrayDoubles},
+				{provider: shareddata.ArrayRegexes},
+				{provider: shareddata.ArrayInt32s},
+				{provider: shareddata.ArrayDocuments},
+			},
 		},
 	}
 
@@ -92,12 +230,10 @@ func TestUpdateArrayCompatPush(t *testing.T) {
 			update: bson.D{{"$push", bson.D{{"v", "foo"}}}},
 		},
 		"Int32": {
-			update:        bson.D{{"$push", bson.D{{"v", int32(42)}}}},
-			skipForTigris: "Some tests would fail because Tigris might convert int32 to float/int64 based on the schema",
+			update: bson.D{{"$push", bson.D{{"v", int32(42)}}}},
 		},
 		"NonExistentField": {
-			update:        bson.D{{"$push", bson.D{{"non-existent-field", int32(42)}}}},
-			skipForTigris: "Tigris does not support adding new fields to documents",
+			update: bson.D{{"$push", bson.D{{"non-existent-field", int32(42)}}}},
 		},
 		"DotNotation": {
 			filter: bson.D{{"_id", "array-documents-nested"}},
@@ -109,12 +245,10 @@ func TestUpdateArrayCompatPush(t *testing.T) {
 			resultType: emptyResult, // attempt to push to non-array
 		},
 		"DotNotationNonExistentPath": {
-			update:        bson.D{{"$push", bson.D{{"non.existent.path", int32(42)}}}},
-			skipForTigris: "Tigris does not support adding new fields to documents",
+			update: bson.D{{"$push", bson.D{{"non.existent.path", int32(42)}}}},
 		},
 		"TwoElements": {
-			update:        bson.D{{"$push", bson.D{{"non.existent.path", int32(42)}, {"v", int32(42)}}}},
-			skipForTigris: "Tigris does not support adding new fields to documents",
+			update: bson.D{{"$push", bson.D{{"non.existent.path", int32(42)}, {"v", int32(42)}}}},
 		},
 	}
 
@@ -135,24 +269,19 @@ func TestUpdateArrayCompatAddToSet(t *testing.T) {
 			update: bson.D{{"$addToSet", bson.D{{"v", "foo"}}}},
 		},
 		"Document": {
-			update:        bson.D{{"$addToSet", bson.D{{"v", bson.D{{"foo", "bar"}}}}}},
-			skipForTigris: "Tigris does not support adding new array elements with different types",
+			update: bson.D{{"$addToSet", bson.D{{"v", bson.D{{"foo", "bar"}}}}}},
 		},
 		"Int32": {
-			update:        bson.D{{"$addToSet", bson.D{{"v", int32(42)}}}},
-			skipForTigris: "Some tests would fail because Tigris might convert int32 to float/int64 based on the schema",
+			update: bson.D{{"$addToSet", bson.D{{"v", int32(42)}}}},
 		},
 		"Int64": {
-			update:        bson.D{{"$addToSet", bson.D{{"v", int64(42)}}}},
-			skipForTigris: "Some tests would fail because Tigris might convert int64 to float/int64 based on the schema",
+			update: bson.D{{"$addToSet", bson.D{{"v", int64(42)}}}},
 		},
 		"Float64": {
-			update:        bson.D{{"$addToSet", bson.D{{"v", float64(42)}}}},
-			skipForTigris: "Some tests would fail because of schema mismatch.",
+			update: bson.D{{"$addToSet", bson.D{{"v", float64(42)}}}},
 		},
 		"NonExistentField": {
-			update:        bson.D{{"$addToSet", bson.D{{"non-existent-field", int32(42)}}}},
-			skipForTigris: "Tigris does not support adding new fields to documents",
+			update: bson.D{{"$addToSet", bson.D{{"non-existent-field", int32(42)}}}},
 		},
 		"DotNotation": {
 			filter: bson.D{{"_id", "array-documents-nested"}},
@@ -164,8 +293,7 @@ func TestUpdateArrayCompatAddToSet(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"DotNotationNonExistentPath": {
-			update:        bson.D{{"$addToSet", bson.D{{"non.existent.path", int32(1)}}}},
-			skipForTigris: "Tigris does not support adding new fields to documents",
+			update: bson.D{{"$addToSet", bson.D{{"non.existent.path", int32(1)}}}},
 		},
 		"EmptyValue": {
 			update:     bson.D{{"$addToSet", bson.D{}}},
@@ -193,8 +321,7 @@ func TestUpdateArrayCompatPullAll(t *testing.T) {
 			update: bson.D{{"$pullAll", bson.D{{"v", bson.A{"foo"}}}}},
 		},
 		"Document": {
-			update:        bson.D{{"$pullAll", bson.D{{"v", bson.A{bson.D{{"field", int32(42)}}}}}}},
-			skipForTigris: "We don't have such documents for Tigris.",
+			update: bson.D{{"$pullAll", bson.D{{"v", bson.A{bson.D{{"field", int32(42)}}}}}}},
 		},
 		"Int32": {
 			update: bson.D{{"$pullAll", bson.D{{"v", bson.A{int32(42)}}}}},
@@ -247,7 +374,6 @@ func TestUpdateArrayCompatAddToSetEach(t *testing.T) {
 			update: bson.D{{"$addToSet", bson.D{{"v", bson.D{
 				{"$each", bson.A{bson.D{{"field", int32(42)}}}},
 			}}}}},
-			skipForTigris: "No suitable schema for Tigris.",
 		},
 		"String": {
 			update: bson.D{{"$addToSet", bson.D{{"v", bson.D{{"$each", bson.A{"foo"}}}}}}},
@@ -256,11 +382,53 @@ func TestUpdateArrayCompatAddToSetEach(t *testing.T) {
 			update: bson.D{{"$addToSet", bson.D{{"v", bson.D{
 				{"$each", bson.A{int32(1), int32(42), int32(2)}},
 			}}}}},
-			skipForTigris: "Tigris would implicitly convert the int32 to a float64.",
 		},
 		"NotArray": {
-			update:     bson.D{{"$addToSet", bson.D{{"v", bson.D{{"$each", int32(1)}}}}}},
-			resultType: emptyResult,
+			update:           bson.D{{"$addToSet", bson.D{{"v", bson.D{{"$each", int32(1)}}}}}},
+			resultType:       emptyResult,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/478",
+			failsIDs: []struct {
+				provider shareddata.Provider
+				ids      []string
+			}{
+				{provider: shareddata.Int32s},
+				{provider: shareddata.Int64s},
+				{provider: shareddata.Scalars, ids: []string{
+					"decimal128", "decimal128-int", "decimal128-int-zero", "decimal128-zero", "decimal128-double", "decimal128-whole",
+					"double", "double-whole", "double-zero", "double-max",
+					"double-smallest", "double-big", "double-1", "double-2", "double-3", "double-4", "double-5",
+					"double-max-overflow", "double-min-overflow", "string", "string-double", "string-whole",
+					"string-empty", "binary", "binary-empty", "objectid", "objectid-empty", "bool-false", "bool-true",
+					"datetime", "datetime-epoch", "datetime-year-min", "datetime-year-max", "null", "regex", "regex-empty",
+					"int32", "int32-zero", "int32-max", "int32-min", "int32-1", "int32-2", "int32-3", "timestamp",
+					"timestamp-i", "int64", "int64-zero", "int64-max", "int64-min", "int64-big", "int64-double-big",
+					"int64-1", "int64-2", "int64-3",
+				}},
+				{provider: shareddata.Decimal128s},
+				{provider: shareddata.Doubles},
+				{provider: shareddata.SmallDoubles},
+				{provider: shareddata.Bools},
+				{provider: shareddata.Nulls},
+				{provider: shareddata.Timestamps},
+				{provider: shareddata.DateTimes},
+				{provider: shareddata.Strings},
+				{provider: shareddata.Binaries},
+				{provider: shareddata.ObjectIDs},
+				{provider: shareddata.ObjectIDKeys},
+				{provider: shareddata.Composites, ids: []string{
+					"document", "document-composite", "document-composite-reverse",
+					"document-composite-numerical-field-name", "document-empty", "document-null",
+				}},
+				{provider: shareddata.Mixed, ids: []string{"null"}},
+				{provider: shareddata.Regexes},
+				{provider: shareddata.PostgresEdgeCases},
+				{provider: shareddata.OverflowVergeDoubles},
+				{provider: shareddata.DocumentsStrings},
+				{provider: shareddata.DocumentsDoubles},
+				{provider: shareddata.DocumentsDeeplyNested},
+				{provider: shareddata.DocumentsDocuments},
+				{provider: shareddata.ArrayAndDocuments, ids: []string{"document"}},
+			},
 		},
 		"EmptyArray": {
 			filter:     bson.D{{"_id", "array-documents-nested"}},
@@ -268,25 +436,21 @@ func TestUpdateArrayCompatAddToSetEach(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"ArrayMixedValuesExists": {
-			update:        bson.D{{"$addToSet", bson.D{{"v", bson.D{{"$each", bson.A{int32(42), "foo"}}}}}}},
-			skipForTigris: "Tigris doesn't support mixed types.",
+			update: bson.D{{"$addToSet", bson.D{{"v", bson.D{{"$each", bson.A{int32(42), "foo"}}}}}}},
 		},
 		"NonExistentField": {
-			update:        bson.D{{"$addToSet", bson.D{{"non-existent-field", bson.D{{"$each", bson.A{int32(42)}}}}}}},
-			skipForTigris: "Tigris does not support adding new fields to documents.",
+			update: bson.D{{"$addToSet", bson.D{{"non-existent-field", bson.D{{"$each", bson.A{int32(42)}}}}}}},
 		},
 		"DotNotation": {
-			update:        bson.D{{"$addToSet", bson.D{{"v.0.foo", bson.D{{"$each", bson.A{int32(42)}}}}}}},
-			skipForTigris: "Tigris schema validation would fail.",
+			update: bson.D{{"$addToSet", bson.D{{"v.0.foo", bson.D{{"$each", bson.A{int32(42)}}}}}}},
 		},
 		"DotNotationNonArray": {
 			filter:     bson.D{{"_id", "array-documents-nested"}},
 			update:     bson.D{{"$addToSet", bson.D{{"v.0.foo.0.bar", bson.D{{"$each", bson.A{int32(42)}}}}}}},
 			resultType: emptyResult,
 		},
-		"DotNotationPathNotExist": {
-			update:        bson.D{{"$addToSet", bson.D{{"non.existent.path", bson.D{{"$each", bson.A{int32(42)}}}}}}},
-			skipForTigris: "Tigris does not support adding new fields to documents",
+		"DotNotatPathNotExist": {
+			update: bson.D{{"$addToSet", bson.D{{"non.existent.path", bson.D{{"$each", bson.A{int32(42)}}}}}}},
 		},
 	}
 
@@ -301,7 +465,6 @@ func TestUpdateArrayCompatPushEach(t *testing.T) {
 			update: bson.D{{"$push", bson.D{{"v", bson.D{
 				{"$each", bson.A{bson.D{{"field", int32(42)}}}},
 			}}}}},
-			skipForTigris: "No suitable schema for Tigris.",
 		},
 		"String": {
 			update: bson.D{{"$push", bson.D{{"v", bson.D{{"$each", bson.A{"foo"}}}}}}},
@@ -310,28 +473,34 @@ func TestUpdateArrayCompatPushEach(t *testing.T) {
 			update: bson.D{{"$push", bson.D{{"v", bson.D{
 				{"$each", bson.A{int32(1), int32(42), int32(2)}},
 			}}}}},
-			skipForTigris: "Tigris would implicitly convert the int32 to a float64.",
 		},
 		"NotArray": {
 			update:     bson.D{{"$push", bson.D{{"v", bson.D{{"$each", int32(1)}}}}}},
 			resultType: emptyResult,
 		},
 		"EmptyArray": {
-			filter:     bson.D{{"_id", "array-documents-nested"}},
-			update:     bson.D{{"$push", bson.D{{"v", bson.D{{"$each", bson.A{}}}}}}},
-			resultType: emptyResult,
+			filter:           bson.D{{"_id", "array-documents-nested"}},
+			update:           bson.D{{"$push", bson.D{{"v", bson.D{{"$each", bson.A{}}}}}}},
+			resultType:       emptyResult,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/373",
+			failsIDs: []struct {
+				provider shareddata.Provider
+				ids      []string
+			}{
+				{provider: shareddata.ArrayDocuments, ids: []string{
+					"array-documents-nested", "array-two-documents",
+					"array-three-documents", "array-documents-nested-duplicate",
+				}},
+			},
 		},
 		"MixedValuesExists": {
-			update:        bson.D{{"$push", bson.D{{"v", bson.D{{"$each", bson.A{int32(42), "foo"}}}}}}},
-			skipForTigris: "Tigris doesn't support mixed types.",
+			update: bson.D{{"$push", bson.D{{"v", bson.D{{"$each", bson.A{int32(42), "foo"}}}}}}},
 		},
 		"NonExistentField": {
-			update:        bson.D{{"$push", bson.D{{"non-existent-field", bson.D{{"$each", bson.A{int32(42)}}}}}}},
-			skipForTigris: "Tigris does not support adding new fields to documents.",
+			update: bson.D{{"$push", bson.D{{"non-existent-field", bson.D{{"$each", bson.A{int32(42)}}}}}}},
 		},
 		"DotNotation": {
-			update:        bson.D{{"$push", bson.D{{"v.0.foo", bson.D{{"$each", bson.A{int32(42)}}}}}}},
-			skipForTigris: "Tigris schema validation would fail.",
+			update: bson.D{{"$push", bson.D{{"v.0.foo", bson.D{{"$each", bson.A{int32(42)}}}}}}},
 		},
 		"DotNotationNonArray": {
 			filter:     bson.D{{"_id", "array-documents-nested"}},
@@ -339,8 +508,7 @@ func TestUpdateArrayCompatPushEach(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"DotNotationPathNotExist": {
-			update:        bson.D{{"$push", bson.D{{"non.existent.path", bson.D{{"$each", bson.A{int32(42)}}}}}}},
-			skipForTigris: "Tigris does not support adding new fields to documents",
+			update: bson.D{{"$push", bson.D{{"non.existent.path", bson.D{{"$each", bson.A{int32(42)}}}}}}},
 		},
 	}
 

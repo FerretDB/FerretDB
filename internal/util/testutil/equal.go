@@ -18,19 +18,39 @@ import (
 	"bytes"
 	"fmt"
 	"math"
+	"slices"
 	"testing"
 	"time"
 
+	"github.com/FerretDB/wire/wirebson"
 	"github.com/pmezard/go-difflib/difflib"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/exp/slices"
-
-	"github.com/FerretDB/FerretDB/internal/types"
 )
 
+// dump returns string representation for debugging.
+func dump[T wirebson.Type](tb testing.TB, v T) string {
+	tb.Helper()
+
+	return wirebson.LogMessageIndent(v)
+}
+
+// dumpSlice returns string representation for debugging.
+func dumpSlice[T wirebson.Type](tb testing.TB, s []T) string {
+	tb.Helper()
+
+	arr := wirebson.MakeArray(len(s))
+
+	for _, v := range s {
+		err := arr.Add(v)
+		require.NoError(tb, err)
+	}
+
+	return wirebson.LogMessageIndent(arr)
+}
+
 // AssertEqual asserts that two BSON values are equal.
-func AssertEqual[T types.Type](tb testing.TB, expected, actual T) bool {
+func AssertEqual[T wirebson.Type](tb testing.TB, expected, actual T) bool {
 	tb.Helper()
 
 	if equal(tb, expected, actual) {
@@ -39,11 +59,12 @@ func AssertEqual[T types.Type](tb testing.TB, expected, actual T) bool {
 
 	expectedS, actualS, diff := diffValues(tb, expected, actual)
 	msg := fmt.Sprintf("Not equal: \nexpected: %s\nactual  : %s\n%s", expectedS, actualS, diff)
+
 	return assert.Fail(tb, msg)
 }
 
 // AssertEqualSlices asserts that two BSON slices are equal.
-func AssertEqualSlices[T types.Type](tb testing.TB, expected, actual []T) bool {
+func AssertEqualSlices[T wirebson.Type](tb testing.TB, expected, actual []T) bool {
 	tb.Helper()
 
 	allEqual := len(expected) == len(actual)
@@ -63,51 +84,14 @@ func AssertEqualSlices[T types.Type](tb testing.TB, expected, actual []T) bool {
 
 	expectedS, actualS, diff := diffSlices(tb, expected, actual)
 	msg := fmt.Sprintf("Not equal: \nexpected: %s\nactual  : %s\n%s", expectedS, actualS, diff)
-	return assert.Fail(tb, msg)
-}
 
-// AssertNotEqual asserts that two BSON values are not equal.
-func AssertNotEqual[T types.Type](tb testing.TB, expected, actual T) bool {
-	tb.Helper()
-
-	if !equal(tb, expected, actual) {
-		return true
-	}
-
-	// The diff of equal values should be empty, but produce it anyway to catch subtle bugs.
-	expectedS, actualS, diff := diffValues(tb, expected, actual)
-	msg := fmt.Sprintf("Unexpected equal: \nexpected: %s\nactual  : %s\n%s", expectedS, actualS, diff)
-	return assert.Fail(tb, msg)
-}
-
-// AssertNotEqualSlices asserts that two BSON slices are not equal.
-func AssertNotEqualSlices[T types.Type](tb testing.TB, expected, actual []T) bool {
-	tb.Helper()
-
-	allEqual := len(expected) == len(actual)
-	if allEqual {
-		for i, e := range expected {
-			a := actual[i]
-			if !equal(tb, e, a) {
-				allEqual = false
-				break
-			}
-		}
-	}
-
-	if !allEqual {
-		return true
-	}
-
-	expectedS, actualS, diff := diffSlices(tb, expected, actual)
-	msg := fmt.Sprintf("Unexpected equal: \nexpected: %s\nactual  : %s\n%s", expectedS, actualS, diff)
 	return assert.Fail(tb, msg)
 }
 
 // diffValues returns a readable form of given values and the difference between them.
-func diffValues[T types.Type](tb testing.TB, expected, actual T) (expectedS string, actualS string, diff string) {
-	expectedS = Dump(tb, expected)
-	actualS = Dump(tb, actual)
+func diffValues[T wirebson.Type](tb testing.TB, expected, actual T) (expectedS string, actualS string, diff string) {
+	expectedS = dump(tb, expected)
+	actualS = dump(tb, actual)
 
 	var err error
 	diff, err = difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
@@ -123,9 +107,9 @@ func diffValues[T types.Type](tb testing.TB, expected, actual T) (expectedS stri
 }
 
 // diffSlices returns a readable form of given slices and the difference between them.
-func diffSlices[T types.Type](tb testing.TB, expected, actual []T) (expectedS string, actualS string, diff string) {
-	expectedS = DumpSlice(tb, expected)
-	actualS = DumpSlice(tb, actual)
+func diffSlices[T wirebson.Type](tb testing.TB, expected, actual []T) (expectedS string, actualS string, diff string) {
+	expectedS = dumpSlice(tb, expected)
+	actualS = dumpSlice(tb, actual)
 
 	var err error
 	diff, err = difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
@@ -146,24 +130,24 @@ func diffSlices[T types.Type](tb testing.TB, expected, actual []T) (expectedS st
 //   - time.Time values are compared using Equal method.
 //
 // This function is for tests; it should not try to convert values to different types before comparing them.
-//
-// Compare and contrast with types.Compare function.
 func equal(tb testing.TB, v1, v2 any) bool {
 	tb.Helper()
 
 	switch v1 := v1.(type) {
-	case *types.Document:
-		d, ok := v2.(*types.Document)
+	case wirebson.AnyDocument:
+		d, ok := v2.(wirebson.AnyDocument)
 		if !ok {
 			return false
 		}
+
 		return equalDocuments(tb, v1, d)
 
-	case *types.Array:
-		a, ok := v2.(*types.Array)
+	case wirebson.AnyArray:
+		a, ok := v2.(wirebson.AnyArray)
 		if !ok {
 			return false
 		}
+
 		return equalArrays(tb, v1, a)
 
 	default:
@@ -172,25 +156,29 @@ func equal(tb testing.TB, v1, v2 any) bool {
 }
 
 // equalDocuments compares BSON documents.
-func equalDocuments(tb testing.TB, v1, v2 *types.Document) bool {
+func equalDocuments(tb testing.TB, v1, v2 wirebson.AnyDocument) bool {
 	tb.Helper()
 
 	require.NotNil(tb, v1)
 	require.NotNil(tb, v2)
 
-	keys := v1.Keys()
-	if !slices.Equal(keys, v2.Keys()) {
+	d1, err := v1.Decode()
+	require.NoError(tb, err)
+
+	d2, err := v2.Decode()
+	require.NoError(tb, err)
+
+	fieldNames := d1.FieldNames()
+	slices.Sort(fieldNames)
+	fieldNames = slices.Compact(fieldNames)
+	require.Len(tb, fieldNames, len(d1.FieldNames()), "duplicate field names are not handled")
+
+	if !slices.Equal(d1.FieldNames(), d2.FieldNames()) {
 		return false
 	}
 
-	for _, k := range keys {
-		f1, err := v1.Get(k)
-		require.NoError(tb, err)
-
-		f2, err := v2.Get(k)
-		require.NoError(tb, err)
-
-		if !equal(tb, f1, f2) {
+	for _, n := range fieldNames {
+		if !equal(tb, d1.Get(n), d2.Get(n)) {
 			return false
 		}
 	}
@@ -199,25 +187,25 @@ func equalDocuments(tb testing.TB, v1, v2 *types.Document) bool {
 }
 
 // equalArrays compares BSON arrays.
-func equalArrays(tb testing.TB, v1, v2 *types.Array) bool {
+func equalArrays(tb testing.TB, v1, v2 wirebson.AnyArray) bool {
 	tb.Helper()
 
 	require.NotNil(tb, v1)
 	require.NotNil(tb, v2)
 
-	l := v1.Len()
-	if l != v2.Len() {
+	a1, err := v1.Decode()
+	require.NoError(tb, err)
+
+	a2, err := v2.Decode()
+	require.NoError(tb, err)
+
+	l := a1.Len()
+	if l != a2.Len() {
 		return false
 	}
 
-	for i := 0; i < l; i++ {
-		el1, err := v1.Get(i)
-		require.NoError(tb, err)
-
-		el2, err := v2.Get(i)
-		require.NoError(tb, err)
-
-		if !equal(tb, el1, el2) {
+	for i := range l {
+		if !equal(tb, a1.Get(i), a2.Get(i)) {
 			return false
 		}
 	}
@@ -238,12 +226,15 @@ func equalScalars(tb testing.TB, v1, v2 any) bool {
 		if !ok {
 			return false
 		}
+
 		if math.IsNaN(s1) {
 			return math.IsNaN(s2)
 		}
+
 		if s1 == 0 && s2 == 0 {
 			return math.Signbit(s1) == math.Signbit(s2)
 		}
+
 		return s1 == s2
 
 	case string:
@@ -251,20 +242,23 @@ func equalScalars(tb testing.TB, v1, v2 any) bool {
 		if !ok {
 			return false
 		}
+
 		return s1 == s2
 
-	case types.Binary:
-		s2, ok := v2.(types.Binary)
+	case wirebson.Binary:
+		s2, ok := v2.(wirebson.Binary)
 		if !ok {
 			return false
 		}
+
 		return s1.Subtype == s2.Subtype && bytes.Equal(s1.B, s2.B)
 
-	case types.ObjectID:
-		s2, ok := v2.(types.ObjectID)
+	case wirebson.ObjectID:
+		s2, ok := v2.(wirebson.ObjectID)
 		if !ok {
 			return false
 		}
+
 		return s1 == s2
 
 	case bool:
@@ -272,6 +266,7 @@ func equalScalars(tb testing.TB, v1, v2 any) bool {
 		if !ok {
 			return false
 		}
+
 		return s1 == s2
 
 	case time.Time:
@@ -279,17 +274,19 @@ func equalScalars(tb testing.TB, v1, v2 any) bool {
 		if !ok {
 			return false
 		}
+
 		return s1.Equal(s2)
 
-	case types.NullType:
-		_, ok := v2.(types.NullType)
+	case wirebson.NullType:
+		_, ok := v2.(wirebson.NullType)
 		return ok
 
-	case types.Regex:
-		s2, ok := v2.(types.Regex)
+	case wirebson.Regex:
+		s2, ok := v2.(wirebson.Regex)
 		if !ok {
 			return false
 		}
+
 		return s1.Pattern == s2.Pattern && s1.Options == s2.Options
 
 	case int32:
@@ -297,13 +294,15 @@ func equalScalars(tb testing.TB, v1, v2 any) bool {
 		if !ok {
 			return false
 		}
+
 		return s1 == s2
 
-	case types.Timestamp:
-		s2, ok := v2.(types.Timestamp)
+	case wirebson.Timestamp:
+		s2, ok := v2.(wirebson.Timestamp)
 		if !ok {
 			return false
 		}
+
 		return s1 == s2
 
 	case int64:
@@ -311,6 +310,15 @@ func equalScalars(tb testing.TB, v1, v2 any) bool {
 		if !ok {
 			return false
 		}
+
+		return s1 == s2
+
+	case wirebson.Decimal128:
+		s2, ok := v2.(wirebson.Decimal128)
+		if !ok {
+			return false
+		}
+
 		return s1 == s2
 
 	default:

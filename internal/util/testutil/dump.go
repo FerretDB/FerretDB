@@ -17,46 +17,21 @@ package testutil
 import (
 	"bytes"
 	"encoding/json"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/types/fjson"
+	"github.com/FerretDB/FerretDB/v2/internal/util/hex"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// Dump returns string representation for debugging.
-func Dump[T types.Type](tb testing.TB, o T) string {
-	tb.Helper()
-
-	// We might switch to go-spew or something else later.
-	b, err := fjson.Marshal(o)
-	require.NoError(tb, err)
-
-	return string(IndentJSON(tb, b))
-}
-
-// DumpSlice returns string representation for debugging.
-func DumpSlice[T types.Type](tb testing.TB, s []T) string {
-	tb.Helper()
-
-	// We might switch to go-spew or something else later.
-
-	res := []byte("[")
-
-	for i, o := range s {
-		b, err := fjson.Marshal(o)
-		require.NoError(tb, err)
-
-		res = append(res, b...)
-		if i < len(s)-1 {
-			res = append(res, ',')
-		}
-	}
-
-	res = append(res, ']')
-
-	return string(IndentJSON(tb, res))
+// MustParseDumpFile panics if fails to parse file input to byte array.
+func MustParseDumpFile(path ...string) []byte {
+	b := must.NotFail(os.ReadFile(filepath.Join(path...)))
+	return must.NotFail(hex.ParseDump(string(b)))
 }
 
 // IndentJSON returns an indented form of the JSON input.
@@ -67,4 +42,28 @@ func IndentJSON(tb testing.TB, b []byte) []byte {
 	err := json.Indent(dst, b, "", "  ")
 	require.NoError(tb, err)
 	return dst.Bytes()
+}
+
+// Unindent removes the common number of leading tabs from all lines in s.
+func Unindent(tb testing.TB, s string) string {
+	tb.Helper()
+
+	require.NotEmpty(tb, s)
+
+	parts := strings.Split(s, "\n")
+	require.Positive(tb, len(parts))
+
+	if parts[0] == "" {
+		parts = parts[1:]
+	}
+
+	indent := len(parts[0]) - len(strings.TrimLeft(parts[0], "\t"))
+	require.GreaterOrEqual(tb, indent, 0)
+
+	for i := range parts {
+		require.Greater(tb, len(parts[i]), indent, "line: %q", parts[i])
+		parts[i] = parts[i][indent:]
+	}
+
+	return strings.Join(parts, "\n")
 }

@@ -19,9 +19,10 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/FerretDB/FerretDB/build/version"
+	"github.com/FerretDB/FerretDB/v2/build/version"
 )
 
+// Parts of Prometheus metric names.
 const (
 	namespace = "ferretdb"
 	subsystem = ""
@@ -43,12 +44,12 @@ func newMetricsCollector(p *Provider, addUUIDToMetric bool) *metricsCollector {
 	}
 }
 
-// Describe implements prometheus.Collector.
+// Describe implements [prometheus.Collector].
 func (mc *metricsCollector) Describe(ch chan<- *prometheus.Desc) {
 	prometheus.DescribeByCollect(mc, ch)
 }
 
-// Collect implements prometheus.Collector.
+// Collect implements [prometheus.Collector].
 func (mc *metricsCollector) Collect(ch chan<- prometheus.Metric) {
 	info := version.Get()
 	constLabels := prometheus.Labels{
@@ -57,7 +58,7 @@ func (mc *metricsCollector) Collect(ch chan<- prometheus.Metric) {
 		"branch":  info.Branch,
 		"dirty":   strconv.FormatBool(info.Dirty),
 		"package": info.Package,
-		"debug":   strconv.FormatBool(info.DebugBuild),
+		"dev":     strconv.FormatBool(info.DevBuild),
 	}
 
 	s := mc.p.Get()
@@ -70,9 +71,16 @@ func (mc *metricsCollector) Collect(ch chan<- prometheus.Metric) {
 	}
 
 	ch <- prometheus.MustNewConstMetric(
-		prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "up"), "FerretDB instance state.", nil, constLabels),
+		prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, subsystem, "up"),
+			"FerretDB instance state.",
+			[]string{"postgresql", "documentdb"},
+			constLabels,
+		),
 		prometheus.GaugeValue,
 		1,
+		s.PostgreSQLVersion,
+		s.DocumentDBVersion,
 	)
 }
 

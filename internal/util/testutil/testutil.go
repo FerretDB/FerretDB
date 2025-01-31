@@ -17,58 +17,89 @@ package testutil
 
 import (
 	"context"
-	"runtime/trace"
 	"testing"
+	"time"
 
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest"
+
+	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
+// contextKey is a named unexported type for the safe use of [context.WithValue].
+type contextKey struct{}
+
+// Context key for [fileLock] in context returned by [Ctx].
+var fileLockKey = contextKey{}
+
 // Ctx returns test context.
+// It is canceled when test is finished or interrupted.
 func Ctx(tb testing.TB) context.Context {
 	tb.Helper()
 
-	ctx, span := otel.Tracer("").Start(context.Background(), tb.Name())
+	signalsCtx, signalsStop := ctxutil.SigTerm(context.Background())
+
+	start := time.Now()
+
+	fl := newFileLock(tb)
+
+	if d := time.Since(start); d > 1*time.Millisecond {
+		fl.tb.Logf("%s got shared flock in %s.", fl.tb.Name(), d)
+	}
+
+	signalsCtx = context.WithValue(signalsCtx, fileLockKey, fl)
+
+	testDone := make(chan struct{})
+
+	tb.Cleanup(func() {
+		fl.Unlock()
+		close(testDone)
+	})
+
+	go func() {
+		select {
+		case <-testDone:
+			signalsStop()
+
+		case <-signalsCtx.Done():
+			// There is a weird interaction between terminal's process group/session signal handling,
+			// Task's signal handling,
+			// and this attempt to handle signals gracefully.
+			// It may cause tests to continue running in the background
+			// while terminal shows command-line prompt already.
+			//
+			// Panic to surely stop tests.
+			panic("Stopping everything")
+		}
+	}()
+
+	ctx, span := otel.Tracer("").Start(signalsCtx, tb.Name())
 	tb.Cleanup(func() {
 		span.End()
 	})
 
-	ctx, task := trace.NewTask(ctx, tb.Name())
-	tb.Cleanup(task.End)
-
-	ctx, stop := notifyTestsTermination(ctx)
-
-	go func() {
-		<-ctx.Done()
-
-		tb.Log("Stopping...")
-		stop()
-
-		// There is a weird interaction between terminal's process group/session signal handling,
-		// Task's signal handling,
-		// and this attempt to handle signals gracefully.
-		// It may cause tests to continue running in the background
-		// while terminal shows command-line prompt already.
-		//
-		// Panic to surely stop tests.
-		panic("Stopping everything")
-	}()
-
 	return ctx
 }
 
-// Logger returns zap test logger with valid configuration.
-func Logger(tb testing.TB) *zap.Logger {
-	return LevelLogger(tb, zap.NewAtomicLevelAt(zap.DebugLevel))
-}
+// Exclusive signals that test calling that function can't be run in parallel with any other test
+// that uses [Ctx] to get test context, including tests in other packages.
+//
+// The bar for using this helper is very high.
+// Most tests can run in parallel with other tests just fine by retrying operations, filtering results,
+// or using different instances of system under test (collections, databases, etc).
+func Exclusive(ctx context.Context, reason string) {
+	fl := ctx.Value(fileLockKey).(*fileLock)
+	must.NotBeZero(fl)
 
-// LevelLogger returns zap test logger with given level and valid configuration.
-func LevelLogger(tb testing.TB, level zap.AtomicLevel) *zap.Logger {
-	opts := []zaptest.LoggerOption{
-		zaptest.Level(level),
-		zaptest.WrapOptions(zap.AddCaller(), zap.Development()),
-	}
+	fl.tb.Helper()
 
-	return zaptest.NewLogger(tb, opts...)
+	require.NotEmpty(fl.tb, reason)
+	fl.tb.Logf("%s waits for exclusive flock: %s.", fl.tb.Name(), reason)
+
+	start := time.Now()
+
+	fl.Lock()
+
+	fl.tb.Logf("%s got exclusive flock in %s.", fl.tb.Name(), time.Since(start))
 }

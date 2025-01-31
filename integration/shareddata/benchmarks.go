@@ -30,7 +30,7 @@ import (
 // `_id` is an int32 primary key that starts from 0.
 // `id` has the same value as `_id`, but is not indexed by default.
 // `v` has one of the four values shown above.
-var BenchmarkSmallDocuments = newGeneratorBenchmarkProvider("SmallDocuments", func(docs int) generatorFunc {
+var BenchmarkSmallDocuments = newGeneratorBenchmarkProvider("SmallDocuments", func(docs int) func() bson.D {
 	values := []any{
 		"foo", int32(42), "42", bson.D{{"foo", int32(42)}},
 	}
@@ -58,7 +58,7 @@ var BenchmarkSmallDocuments = newGeneratorBenchmarkProvider("SmallDocuments", fu
 // BenchmarkSettingsDocuments provides large documents with 100 fields of various types.
 //
 // It simulates a settings document like the one FastNetMon uses.
-var BenchmarkSettingsDocuments = newGeneratorBenchmarkProvider("SettingsDocuments", func(docs int) generatorFunc {
+var BenchmarkSettingsDocuments = newGeneratorBenchmarkProvider("SettingsDocuments", func(docs int) func() bson.D {
 	var total int
 	f := newFaker()
 

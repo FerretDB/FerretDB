@@ -13,6 +13,7 @@ on:
   push:
     branches:
       - main
+      - main-*
       - releases/*
     tags:
       - "*"
@@ -22,26 +23,29 @@ on:
 # Do not run this workflow in parallel for any PR change.
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   contexts:
     name: Contexts
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
 
     # comment out to enable this job
     if: false
 
     steps:
+      # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-          lfs: false
+          fetch-depth: 0 # for `git describe` to work
+          lfs: false # LFS is used only by website
 
       - name: Debug git status
-        run: git status
+        run: |
+          git status --untracked-files --ignored
+          git status
 
       - name: Dump github context
         run: echo "$GITHUB_CONTEXT"

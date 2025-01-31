@@ -16,52 +16,98 @@ package setup
 
 import (
 	"context"
-	"net/http"
+	"log/slog"
 	"os"
-	"path/filepath"
 	"runtime"
+	"slices"
+	"strconv"
+	"sync"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/jaeger"
-	"go.opentelemetry.io/otel/sdk/resource"
-	oteltrace "go.opentelemetry.io/otel/sdk/trace"
-	otelsemconv "go.opentelemetry.io/otel/semconv/v1.17.0"
-	"go.uber.org/zap"
-	"golang.org/x/exp/slices"
+	"go.mongodb.org/mongo-driver/mongo"
 
-	"github.com/FerretDB/FerretDB/integration/shareddata"
-	"github.com/FerretDB/FerretDB/internal/util/debug"
-	"github.com/FerretDB/FerretDB/internal/util/logging"
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
+	"github.com/FerretDB/FerretDB/v2/internal/util/debug"
+	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
+	"github.com/FerretDB/FerretDB/v2/internal/util/observability"
+
+	"github.com/FerretDB/FerretDB/v2/integration/shareddata"
 )
 
-// jaegerExporter is a global Jaeger exporter for tests.
-var jaegerExporter *jaeger.Exporter
+// listenerMetrics are shared between tests.
+var listenerMetrics = connmetrics.NewListenerMetrics()
 
-// sqliteDir is a fixed directory for SQLite backend tests.
-//
-// We don't use testing.T.TempDir() or something to make debugging of failed tests easier.
-var sqliteDir = filepath.Join("..", "tmp", "sqlite-tests")
+// shutdown cancels context passed to startup components.
+var shutdown context.CancelFunc
+
+// startupWG waits for all startup components to finish.
+var startupWG sync.WaitGroup
 
 // Startup initializes things that should be initialized only once.
 func Startup() {
-	logging.Setup(zap.DebugLevel, "")
+	opts := &logging.NewHandlerOpts{
+		Base:        "console",
+		Level:       slog.LevelDebug,
+		RemoveTime:  true,
+		RemoveLevel: true,
+	}
+	logging.Setup(opts, "")
+	l := slog.Default()
+
+	ctx := context.Background()
 
 	// https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables
-	if os.Getenv("RUNNER_DEBUG") == "1" {
-		zap.S().Info("Enabling setup debug logging on GitHub Actions.")
+	if t, _ := strconv.ParseBool(os.Getenv("RUNNER_DEBUG")); t {
+		l.InfoContext(ctx, "Enabling setup debug logging on GitHub Actions")
 		*debugSetupF = true
 	}
 
-	// use any available port to allow running different configuration in parallel
-	go debug.RunHandler(context.Background(), "127.0.0.1:0", prometheus.DefaultRegisterer, zap.L().Named("debug"))
+	prometheus.DefaultRegisterer.MustRegister(listenerMetrics)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+	// use any available port to allow running different configurations in parallel
+	h, err := debug.Listen(&debug.ListenOpts{
+		TCPAddr: "127.0.0.1:0",
+		L:       logging.WithName(l, "debug"),
+		R:       prometheus.DefaultRegisterer,
+	})
+	if err != nil {
+		l.LogAttrs(ctx, logging.LevelFatal, "Failed to create debug handler", logging.Error(err))
+	}
+
+	ot, err := observability.NewOTelTraceExporter(&observability.OTelTraceExporterOpts{
+		Logger:  logging.WithName(l, "otel"),
+		Service: "integration-tests",
+		URL:     "http://127.0.0.1:4318/v1/traces",
+	})
+	if err != nil {
+		l.LogAttrs(ctx, logging.LevelFatal, "Failed to create Otel tracer", logging.Error(err))
+	}
+
+	ctx, shutdown = context.WithCancel(ctx)
+
+	startupWG.Add(1)
+
+	go func() {
+		defer startupWG.Done()
+		h.Serve(ctx)
+	}()
+
+	startupWG.Add(1)
+
+	go func() {
+		defer startupWG.Done()
+		ot.Run(ctx)
+	}()
+
+	clientCtx, clientCancel := context.WithTimeout(ctx, 5*time.Second)
+	defer clientCancel()
 
 	// do basic flags validation earlier, before all tests
+
+	if *benchDocsF <= 0 {
+		l.LogAttrs(ctx, logging.LevelFatal, "-bench-docs must be > 0")
+	}
 
 	for _, p := range shareddata.AllBenchmarkProviders() {
 		if g, ok := p.(shareddata.BenchmarkGenerator); ok {
@@ -70,67 +116,59 @@ func Startup() {
 	}
 
 	if *targetBackendF == "" {
-		zap.S().Fatal("-target-backend must be set.")
+		l.LogAttrs(ctx, logging.LevelFatal, "-target-backend must be set")
 	}
 
 	if !slices.Contains(allBackends, *targetBackendF) {
-		zap.S().Fatalf("Unknown target backend %q.", *targetBackendF)
+		l.LogAttrs(ctx, logging.LevelFatal, "Unknown target backend", slog.String("target_backend", *targetBackendF))
 	}
 
-	_ = os.Remove(sqliteDir)
-	must.NoError(os.MkdirAll(sqliteDir, 0o777))
-
-	if u := *targetURLF; u != "" {
-		client, err := makeClient(ctx, u)
+	if *targetURLF != "" {
+		*targetURLF, err = setClientPaths(*targetURLF)
 		if err != nil {
-			zap.S().Fatalf("Failed to connect to target system %s: %s", u, err)
+			l.LogAttrs(ctx, logging.LevelFatal, "Failed to set target client path", logging.Error(err))
 		}
 
-		client.Disconnect(ctx)
+		var client *mongo.Client
 
-		zap.S().Infof("Target system: %s (%s).", *targetBackendF, u)
-	} else {
-		zap.S().Infof("Target system: %s (built-in).", *targetBackendF)
-	}
-
-	if u := *compatURLF; u != "" {
-		client, err := makeClient(ctx, u)
+		client, err = makeClient(clientCtx, *targetURLF, false)
 		if err != nil {
-			zap.S().Fatalf("Failed to connect to compat system %s: %s", u, err)
+			l.LogAttrs(ctx, logging.LevelFatal, "Failed to connect to target system", slog.String("target_url", *targetURLF), logging.Error(err))
 		}
 
-		client.Disconnect(ctx)
+		_ = client.Disconnect(clientCtx)
 
-		zap.S().Infof("Compat system: MongoDB (%s).", u)
+		l.InfoContext(ctx, "Target system", slog.String("target_backend", *targetBackendF), slog.String("target_url", *targetURLF))
 	} else {
-		zap.S().Infof("Compat system: none, compatibility tests will be skipped.")
+		l.InfoContext(ctx, "Target system (built-in)", slog.String("target_backend", *targetBackendF))
 	}
 
-	// avoid OTEL_EXPORTER_JAEGER_XXX environment variables effects
-	jaegerExporter = must.NotFail(jaeger.New(jaeger.WithCollectorEndpoint(
-		jaeger.WithEndpoint("http://127.0.0.1:14268/api/traces"),
-		jaeger.WithUsername(""),
-		jaeger.WithPassword(""),
-		jaeger.WithHTTPClient(http.DefaultClient),
-	)))
+	if *compatURLF != "" {
+		*compatURLF, err = setClientPaths(*compatURLF)
+		if err != nil {
+			l.LogAttrs(ctx, logging.LevelFatal, "Failed to set compat client path", logging.Error(err))
+		}
 
-	tp := oteltrace.NewTracerProvider(
-		oteltrace.WithBatcher(jaegerExporter),
-		oteltrace.WithSampler(oteltrace.AlwaysSample()),
-		oteltrace.WithResource(resource.NewSchemaless(
-			otelsemconv.ServiceNameKey.String("FerretDB"),
-		)),
-	)
+		var client *mongo.Client
 
-	otel.SetTracerProvider(tp)
+		client, err = makeClient(clientCtx, *compatURLF, false)
+		if err != nil {
+			l.LogAttrs(ctx, logging.LevelFatal, "Failed to connect to compat system", slog.String("compat_url", *compatURLF), logging.Error(err))
+		}
+
+		_ = client.Disconnect(clientCtx)
+
+		l.InfoContext(ctx, "Compat system: MongoDB", slog.String("compat_url", *compatURLF))
+	} else {
+		l.InfoContext(ctx, "Compat system: none, compatibility tests will be skipped")
+	}
 }
 
 // Shutdown cleans up after all tests.
 func Shutdown() {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+	shutdown()
 
-	must.NoError(jaegerExporter.Shutdown(ctx))
+	startupWG.Wait()
 
 	// to increase a chance of resource finalizers to spot problems
 	runtime.GC()

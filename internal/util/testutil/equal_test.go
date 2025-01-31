@@ -19,8 +19,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/wire/wirebson"
+
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 func TestEqual(t *testing.T) {
@@ -28,29 +29,17 @@ func TestEqual(t *testing.T) {
 
 	AssertEqual(
 		t,
-		must.NotFail(types.NewDocument("foo", "bar", "baz", int32(42))),
-		must.NotFail(types.NewDocument("foo", "bar", "baz", int32(42))),
-	)
-	AssertNotEqual(
-		t,
-		must.NotFail(types.NewDocument("foo", "bar", "baz", int32(42))),
-		must.NotFail(types.NewDocument("baz", int32(42), "foo", "bar")),
+		must.NotFail(wirebson.NewDocument("foo", "bar", "baz", int32(42))),
+		must.NotFail(wirebson.NewDocument("foo", "bar", "baz", int32(42))),
 	)
 
 	AssertEqual(t, math.Inf(+1), math.Inf(+1))
-	AssertNotEqual(t, math.Inf(-1), math.Inf(+1))
 
 	AssertEqual(t, 0.0, math.Copysign(0, +1))
-	AssertNotEqual(t, math.Copysign(0, +1), math.Copysign(0, -1))
 
 	AssertEqual(
 		t,
 		time.Date(2022, time.March, 11, 8, 8, 42, 123456789, time.FixedZone("Test", int(3*time.Hour.Seconds()))),
 		time.Date(2022, time.March, 11, 5, 8, 42, 123456789, time.UTC),
-	)
-	AssertNotEqual(
-		t,
-		time.Date(2022, time.March, 11, 8, 8, 42, 123456789, time.FixedZone("Test", int(3*time.Hour.Seconds()))),
-		time.Date(2022, time.March, 11, 8, 8, 42, 123456789, time.UTC),
 	)
 }

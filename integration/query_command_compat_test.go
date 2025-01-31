@@ -23,7 +23,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/v2/integration/setup"
 )
 
 // queryCommandCompatTestCase describes query compatibility test case.
@@ -34,35 +34,26 @@ type queryCommandCompatTestCase struct {
 	sort       bson.D // defaults to `bson.D{{"_id", 1}}`
 	projection bson.D // nil for leaving projection unset
 
-	optSkip        any                      // defaults to nil to leave unset
-	limit          *int64                   // defaults to nil to leave unset
-	resultType     compatTestCaseResultType // defaults to nonEmptyResult
-	resultPushdown bool                     // defaults to false
+	optSkip    any                      // defaults to nil to leave unset
+	limit      *int64                   // defaults to nil to leave unset
+	resultType compatTestCaseResultType // defaults to nonEmptyResult
 
-	skip          string // skip test for all handlers, must have issue number mentioned
-	skipForTigris string // skip test for Tigris
+	failsForFerretDB string
 }
 
-// testQueryCompat tests query compatibility test cases.
+// testQueryCommandCompat tests query compatibility test cases.
 func testQueryCommandCompat(t *testing.T, testCases map[string]queryCommandCompatTestCase) {
 	t.Helper()
 
 	// Use shared setup because find queries can't modify data.
-	// TODO Use read-only user. https://github.com/FerretDB/FerretDB/issues/1025
+	//
+	// Use read-only user.
+	// TODO https://github.com/FerretDB/FerretDB/issues/1025
 	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
 
 	for name, tc := range testCases {
-		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
-
-			if tc.skipForTigris != "" {
-				setup.SkipForTigrisWithReason(t, tc.skipForTigris)
-			}
-
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
 
 			var rest bson.D
 			if tc.sort != nil {
@@ -92,25 +83,14 @@ func testQueryCommandCompat(t *testing.T, testCases map[string]queryCommandCompa
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
-				t.Run(targetCollection.Name(), func(t *testing.T) {
-					t.Helper()
 
-					// don't add sort, limit, skip, and projection because we don't pushdown them yet
-					explainQuery := bson.D{{"explain", bson.D{
-						{"find", targetCollection.Name()},
-						{"filter", filter},
-					}}}
+				t.Run(targetCollection.Name(), func(tt *testing.T) {
+					tt.Helper()
 
-					var explainRes bson.D
-					require.NoError(t, targetCollection.Database().RunCommand(ctx, explainQuery).Decode(&explainRes))
-
-					var msg string
-					if setup.IsPushdownDisabled() {
-						tc.resultPushdown = false
-						msg = "Query pushdown is disabled, but target resulted with pushdown"
+					var t testing.TB = tt
+					if tc.failsForFerretDB != "" {
+						t = setup.FailsForFerretDB(tt, tc.failsForFerretDB)
 					}
-
-					assert.Equal(t, tc.resultPushdown, explainRes.Map()["pushdown"], msg)
 
 					targetCommand := append(
 						bson.D{
@@ -148,7 +128,7 @@ func testQueryCommandCompat(t *testing.T, testCases map[string]queryCommandCompa
 					require.NoError(t, targetResult.Decode(&targetRes))
 					require.NoError(t, compatResult.Decode(&compatRes))
 
-					AssertEqualDocuments(t, compatRes, targetRes)
+					AssertEqualDocuments(t, targetRes, compatRes)
 
 					targetDocs := targetRes.Map()["cursor"].(bson.D).Map()["firstBatch"].(primitive.A)
 					compatDocs := compatRes.Map()["cursor"].(bson.D).Map()["firstBatch"].(primitive.A)
@@ -161,6 +141,10 @@ func testQueryCommandCompat(t *testing.T, testCases map[string]queryCommandCompa
 
 			switch tc.resultType {
 			case nonEmptyResult:
+				if tc.failsForFerretDB != "" {
+					return
+				}
+
 				assert.True(t, nonEmptyResults, "expected non-empty results")
 			case emptyResult:
 				assert.False(t, nonEmptyResults, "expected empty results")
@@ -181,27 +165,32 @@ func TestQueryCommandCompatSkip(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"Int64Overflow": {
-			filter:     bson.D{},
-			optSkip:    float64(1 << 86),
-			resultType: emptyResult,
+			filter:           bson.D{},
+			optSkip:          float64(1 << 86),
+			resultType:       emptyResult,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/261",
 		},
 		"NegativeInt64": {
-			filter:     bson.D{},
-			optSkip:    int64(-2),
-			resultType: emptyResult,
+			filter:           bson.D{},
+			optSkip:          int64(-2),
+			resultType:       emptyResult,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 		"NegativeFloat64": {
-			filter:     bson.D{},
-			optSkip:    -2.8,
-			resultType: emptyResult,
+			filter:           bson.D{},
+			optSkip:          -2.8,
+			resultType:       emptyResult,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 		"Float64": {
-			filter:  bson.D{},
-			optSkip: 2.8,
+			filter:           bson.D{},
+			optSkip:          2.8,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/261",
 		},
 		"Float64Ceil": {
-			filter:  bson.D{},
-			optSkip: 2.1,
+			filter:           bson.D{},
+			optSkip:          2.1,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/261",
 		},
 	}
 

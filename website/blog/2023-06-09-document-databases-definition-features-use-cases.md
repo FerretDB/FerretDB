@@ -10,7 +10,7 @@ keywords: [
     NoSQL databases
     schema design
   ]
-tags: [document databases]
+tags: [document databases, open source, sspl]
 ---
 
 ![Document databases](/img/blog/document-databases.jpg)

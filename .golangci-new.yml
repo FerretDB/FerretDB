@@ -5,26 +5,31 @@
 run:
   timeout: 3m
 
+# bin/golangci-lint linters -c .golangci-new.yml
 linters-settings:
   asasalint:
     exclude:
       - ^lazyerrors\.Errorf$
     use-builtin-exclusions: true
     ignore-test: false
+  copyloopvar:
+    check-alias: true
   errcheck:
     check-type-assertions: false
     check-blank: false
     disable-default-exclusions: false
     exclude-functions:
-      - (*database/sql.Rows).Close
+      - (*github.com/jackc/pgx/v5.Conn).Close
   errorlint:
     # see caveats at https://github.com/polyfloyd/go-errorlint#fmterrorf-wrapping-verb
     errorf: false
     asserts: true
     comparison: true
   govet:
-    check-shadowing: true
     enable-all: true
+    settings:
+      shadow:
+        strict: true
   revive:
     ignore-generated-header: true
     severity: warning
@@ -32,7 +37,7 @@ linters-settings:
     rules:
       # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md
       - name: exported
-        arguments: [checkPrivateReceivers]
+        arguments: [checkPrivateReceivers, disableStutteringCheck]
       - name: package-comments
   staticcheck:
     checks: ["all"]
@@ -57,7 +62,9 @@ linters:
     - asciicheck
     - depguard
     - exhaustive
+    - forbidigo
     - gci
+    - gochecksumtype
     - goconst
     - godot
     - godox
@@ -70,46 +77,57 @@ linters:
     - lll
     - misspell
     - nolintlint
+    - sloglint
+    - tagalign
+    - unparam
     - unused
     - whitespace
 
     # TODO https://github.com/FerretDB/FerretDB/issues/2748
     - bidichk
     - bodyclose
+    - canonicalheader
     - containedctx
     - contextcheck
     - cyclop
-    - deadcode
     - decorder
     - dogsled
     - dupl
+    - dupword
     - durationcheck
+    - err113
     - errchkjson
     - errname
-    - execinquery
-    - exhaustivestruct
     - exhaustruct
     - exportloopref
-    - forbidigo
+    - fatcontext
     - forcetypeassert
     - funlen
+    - ginkgolinter
+    - gocheckcompilerdirectives
     - gochecknoglobals
     - gochecknoinits
     - gocognit
     - gocritic
     - gocyclo
-    - goerr113
     - gofmt
     - gofumpt
-    - gomnd
     - gomoddirectives
     - goprintffuncname
     - gosec
+    - gosmopolitan
     - grouper
-    - ifshort
+    - iface
+    - inamedparam
+    - interfacebloat
+    - intrange
     - ireturn
+    - loggercheck
     - maintidx
     - makezero
+    - mirror
+    - mnd
+    - musttag
     - nakedret
     - nestif
     - nilerr
@@ -118,31 +136,31 @@ linters:
     - nonamedreturns
     - nosprintfhostport
     - paralleltest
+    - perfsprint
     - prealloc
     - predeclared
     - promlinter
+    - protogetter
+    - reassign
+    - recvcheck
     - rowserrcheck
+    - sloglint
+    - spancheck
     - sqlclosecheck
     - stylecheck
     - tagliatelle
     - tenv
+    - testableexamples
+    - testifylint
     - thelper
     - tparallel
     - typecheck
     - unconvert
-    - unparam
-    - varcheck
+    - usestdlibvars
     - varnamelen
     - wastedassign
     - wrapcheck
-
-    # deprecated
-    - golint
-    - interfacer
-    - maligned
-    - nosnakecase
-    - scopelint
-    - structcheck
+    - zerologlint
 
     - nlreturn # too annoying
     - testpackage # we test internals
@@ -150,5 +168,8 @@ linters:
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
-  exclude-use-default: false
+
   new-from-rev: origin/main
+  # whole-files: true
+
+  exclude-use-default: false

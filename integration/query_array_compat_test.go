@@ -36,8 +36,9 @@ func TestQueryArrayCompatSize(t *testing.T) {
 			filter: bson.D{{"v", bson.D{{"$size", int64(2)}}}},
 		},
 		"Infinity": {
-			filter:     bson.D{{"v", bson.D{{"$size", math.Inf(+1)}}}},
-			resultType: emptyResult,
+			filter:           bson.D{{"v", bson.D{{"$size", math.Inf(+1)}}}},
+			resultType:       emptyResult,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/245",
 		},
 		"InvalidUse": {
 			filter:     bson.D{{"$size", 2}},
@@ -89,24 +90,20 @@ func TestQueryArrayCompatDotNotation(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"Field": {
-			filter:        bson.D{{"v.array", int32(42)}},
-			skipForTigris: "Tigris does not support language keyword 'array' as field name",
+			filter: bson.D{{"v.array", int32(42)}},
 		},
 		"FieldPosition": {
-			filter:        bson.D{{"v.array.0", int32(42)}},
-			skipForTigris: "Tigris does not support language keyword 'array' as field name",
+			filter: bson.D{{"v.array.0", int32(42)}},
 		},
 		"FieldPositionQuery": {
-			filter:        bson.D{{"v.array.0", bson.D{{"$gte", int32(42)}}}},
-			skipForTigris: "Tigris does not support language keyword 'array' as field name",
+			filter: bson.D{{"v.array.0", bson.D{{"$gte", int32(42)}}}},
 		},
 		"FieldPositionQueryNonArray": {
 			filter:     bson.D{{"v.document.0", bson.D{{"$lt", int32(42)}}}},
 			resultType: emptyResult,
 		},
 		"DocumentDotNotationArrayDocument": {
-			filter:        bson.D{{"v.0.foo.0.bar", "hello"}},
-			skipForTigris: "No suitable Tigris-compatible provider to test this data",
+			filter: bson.D{{"v.0.foo.0.bar", "hello"}},
 		},
 		"DocumentDotNotationArrayDocumentNoIndexNin": {
 			filter: bson.D{
@@ -117,24 +114,19 @@ func TestQueryArrayCompatDotNotation(t *testing.T) {
 			filter: bson.D{{"v.foo.bar", "hello"}},
 		},
 		"FieldArrayIndex": {
-			filter:        bson.D{{"v.foo[0]", int32(42)}},
-			skipForTigris: "Tigris does not support characters as field name",
+			filter: bson.D{{"v.foo[0]", int32(42)}},
 		},
 		"FieldArrayAsterix": {
-			filter:        bson.D{{"v.foo[*]", int32(42)}},
-			skipForTigris: "Tigris does not support characters as field name",
+			filter: bson.D{{"v.foo[*]", int32(42)}},
 		},
 		"FieldAsterix": {
-			filter:        bson.D{{"v.*", int32(42)}},
-			skipForTigris: "Tigris does not support characters as field name",
+			filter: bson.D{{"v.*", int32(42)}},
 		},
 		"FieldAt": {
-			filter:        bson.D{{"v.@", int32(42)}},
-			skipForTigris: "Tigris does not support characters as field name",
+			filter: bson.D{{"v.@", int32(42)}},
 		},
 		"FieldComma": {
-			filter:        bson.D{{"v.f,oo", int32(42)}},
-			skipForTigris: "Tigris does not support characters as field name",
+			filter: bson.D{{"v.f,oo", int32(42)}},
 		},
 	}
 
@@ -150,8 +142,7 @@ func TestQueryArrayCompatElemMatch(t *testing.T) {
 				{"_id", "double"},
 				{"v", bson.D{{"$elemMatch", bson.D{{"$gt", int32(0)}}}}},
 			},
-			resultType:     emptyResult,
-			resultPushdown: true,
+			resultType: emptyResult,
 		},
 		"GtZero": {
 			filter: bson.D{{"v", bson.D{{"$elemMatch", bson.D{{"$gt", int32(0)}}}}}},
@@ -176,7 +167,6 @@ func TestQueryArrayCompatElemMatch(t *testing.T) {
 					{"$type", "string"},
 				}},
 			},
-			skipForTigris: "Tigris does not support mixed types in arrays",
 		},
 		"GtLt": {
 			filter: bson.D{
@@ -210,7 +200,8 @@ func TestQueryArrayCompatElemMatch(t *testing.T) {
 					},
 				},
 			}}},
-			resultType: emptyResult,
+			resultType:       emptyResult,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/785",
 		},
 	}
 
@@ -229,12 +220,10 @@ func TestQueryArrayCompatEquality(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"Three": {
-			filter:        bson.D{{"v", bson.A{int32(42), "foo", nil}}},
-			skipForTigris: "Tigris does not support mixed types in arrays",
+			filter: bson.D{{"v", bson.A{int32(42), "foo", nil}}},
 		},
 		"Three-reverse": {
-			filter:        bson.D{{"v", bson.A{nil, "foo", int32(42)}}},
-			skipForTigris: "Tigris does not support mixed types in arrays",
+			filter: bson.D{{"v", bson.A{nil, "foo", int32(42)}}},
 		},
 		"Empty": {
 			filter: bson.D{{"v", bson.A{}}},
@@ -280,8 +269,7 @@ func TestQueryArrayCompatAll(t *testing.T) {
 			filter: bson.D{{"v", bson.D{{"$all", bson.A{math.SmallestNonzeroFloat64}}}}},
 		},
 		"MultiAll": {
-			filter:        bson.D{{"v", bson.D{{"$all", bson.A{"foo", 42}}}}},
-			skipForTigris: "Tigris does not support mixed types in arrays",
+			filter: bson.D{{"v", bson.D{{"$all", bson.A{"foo", 42}}}}},
 		},
 		"MultiAllWithNil": {
 			filter: bson.D{{"v", bson.D{{"$all", bson.A{"foo", nil}}}}},

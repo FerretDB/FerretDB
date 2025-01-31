@@ -15,7 +15,7 @@
 // This file contains the implementation of `task env-data` command
 // that creates collections in the `test` database for manual experiments.
 // It is not a real test file but wrapped into one
-// because all needed functionality is already available in setup helpers.
+// because some needed functionality is already available in setup helpers.
 // This file is skipped by default; we pass the build tag only in the `task env-data` command.
 
 //go:build ferretdb_testenvdata
@@ -23,46 +23,38 @@
 package integration
 
 import (
-	"fmt"
 	"testing"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"github.com/FerretDB/FerretDB/v2/integration/setup"
+	"github.com/FerretDB/FerretDB/v2/integration/shareddata"
 )
 
 func TestEnvData(t *testing.T) {
-	t.Parallel()
+	s := setup.SetupWithOpts(t, nil)
 
-	// Setups one collection for each data set for all backends.
-	t.Run("All", func(t *testing.T) {
-		for _, p := range shareddata.AllProviders() {
-			p := p
-			name := p.Name()
+	opts := options.Client().ApplyURI(s.MongoDBURI)
+	client, err := mongo.Connect(s.Ctx, opts)
+	require.NoError(t, err)
 
-			t.Run(name, func(t *testing.T) {
-				if !p.IsCompatible("ferretdb-tigris") {
-					setup.SkipForTigrisWithReason(t, fmt.Sprintf("%q is not supported by Tigris", name))
-				}
-
-				setup.SetupWithOpts(t, &setup.SetupOpts{
-					DatabaseName:   "test",
-					CollectionName: p.Name(),
-					Providers:      []shareddata.Provider{p},
-				})
-			})
-		}
+	t.Cleanup(func() {
+		require.NoError(t, client.Disconnect(s.Ctx))
 	})
 
-	// Setups old `values` collection with mixed types for all backends except `ferretdb-tigris`.
-	t.Run("Values", func(t *testing.T) {
-		setup.SkipForTigris(t)
+	db := client.Database("test")
+	require.NoError(t, db.Drop(s.Ctx))
 
-		t.Parallel()
+	for _, p := range shareddata.AllProviders() {
+		inserted := setup.InsertProviders(t, s.Ctx, db.Collection(p.Name()), p)
+		require.True(t, inserted)
+	}
 
-		setup.SetupWithOpts(t, &setup.SetupOpts{
-			DatabaseName:   "test",
-			CollectionName: "values",
-			Providers:      []shareddata.Provider{shareddata.Scalars, shareddata.Composites},
-		})
-	})
+	tb := setup.FailsForFerretDB(t, "https://github.com/FerretDB/FerretDB/issues/4303")
+	tb = setup.FailsForMongoDB(tb, "https://github.com/FerretDB/FerretDB/issues/4303")
+
+	inserted := setup.InsertProviders(tb, s.Ctx, db.Collection("All"), shareddata.AllProviders()...)
+	require.True(tb, inserted)
 }

@@ -5,8 +5,7 @@ authors: [alex]
 description: >
   Here we explore the possible synergy and compatibility of FerretDB in Meteor.js and how you can build your applications without any concern for vendor lock-in.
 image: /img/blog/ferretdb-meteor.jpg
-keywords: [FerretDB, meteor, mongodb alternative]
-tags: [javascript frameworks, compatible applications]
+tags: [javascript frameworks, compatible applications, open source, community]
 ---
 
 ![Meteor.js and FerretDB](/img/blog/ferretdb-meteor.jpg)

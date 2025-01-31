@@ -15,126 +15,84 @@
 package logging
 
 import (
-	"fmt"
+	"context"
+	"log/slog"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
-func TestCircularBuffer(t *testing.T) {
-	for name, tc := range map[string]struct {
-		size     int64
-		msgPanic string
+func TestCircularBufferHandler(t *testing.T) {
+	RecentEntries = NewCircularBuffer(2)
+
+	opts := &NewHandlerOpts{
+		Base:          "console",
+		Level:         slog.LevelInfo,
+		CheckMessages: true,
+	}
+	Setup(opts, "")
+
+	for _, tc := range []struct { //nolint:vet // for readability
+		msg      string
+		level    slog.Level
+		expected []slog.Record
 	}{
-		"PanicNegativSize": {
-			size:     -2,
-			msgPanic: "buffer size must be at least 1, but -2 provided",
+		{
+			msg:   "message 1",
+			level: slog.LevelWarn,
+			expected: []slog.Record{{
+				Level:   slog.LevelWarn,
+				Message: "message 1",
+			}},
 		},
-		"PanicZeroSize": {
-			size:     0,
-			msgPanic: "buffer size must be at least 1, but 0 provided",
+		{
+			msg:   "message 2",
+			level: slog.LevelError,
+			expected: []slog.Record{{
+				Level:   slog.LevelWarn,
+				Message: "message 1",
+			}, {
+				Level:   slog.LevelError,
+				Message: "message 2",
+			}},
+		},
+		{
+			msg:   "debug not added",
+			level: slog.LevelDebug,
+			expected: []slog.Record{{
+				Level:   slog.LevelWarn,
+				Message: "message 1",
+			}, {
+				Level:   slog.LevelError,
+				Message: "message 2",
+			}},
+		},
+		{
+			msg:   "message 3",
+			level: slog.LevelInfo,
+			expected: []slog.Record{{
+				Level:   slog.LevelError,
+				Message: "message 2",
+			}, {
+				Level:   slog.LevelInfo,
+				Message: "message 3",
+			}},
 		},
 	} {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			assert.PanicsWithValue(t, tc.msgPanic, func() { NewCircularBuffer(tc.size) })
-		})
-	}
+		t.Run(tc.msg, func(t *testing.T) {
+			slog.Default().Log(context.Background(), tc.level, tc.msg)
 
-	logram := NewCircularBuffer(2)
-	for n, tc := range []struct {
-		inLog    zapcore.Entry
-		expected []zapcore.Entry
-	}{{
-		inLog: zapcore.Entry{
-			Level:      1,
-			Time:       time.Date(2022, 12, 31, 11, 59, 1, 0, time.UTC),
-			LoggerName: "logger_1",
-			Message:    "message 1",
-		},
-		expected: []zapcore.Entry{{
-			Level:      1,
-			Time:       time.Date(2022, 12, 31, 11, 59, 1, 0, time.UTC),
-			LoggerName: "logger_1",
-			Message:    "message 1",
-		}},
-	}, {
-		inLog: zapcore.Entry{
-			Level:      2,
-			Time:       time.Date(2022, 12, 31, 11, 59, 2, 0, time.UTC),
-			LoggerName: "logger_2",
-			Message:    "message 2",
-		},
-		expected: []zapcore.Entry{{
-			Level:      1,
-			Time:       time.Date(2022, 12, 31, 11, 59, 1, 0, time.UTC),
-			LoggerName: "logger_1",
-			Message:    "message 1",
-		}, {
-			Level:      2,
-			Time:       time.Date(2022, 12, 31, 11, 59, 2, 0, time.UTC),
-			LoggerName: "logger_2",
-			Message:    "message 2",
-		}},
-	}, {
-		inLog: zapcore.Entry{
-			Level:      3,
-			Time:       time.Date(2022, 12, 31, 11, 59, 3, 0, time.UTC),
-			LoggerName: "logger_3",
-			Message:    "message 3",
-		},
-		expected: []zapcore.Entry{{
-			Level:      2,
-			Time:       time.Date(2022, 12, 31, 11, 59, 2, 0, time.UTC),
-			LoggerName: "logger_2",
-			Message:    "message 2",
-		}, {
-			Level:      3,
-			Time:       time.Date(2022, 12, 31, 11, 59, 3, 0, time.UTC),
-			LoggerName: "logger_3",
-			Message:    "message 3",
-		}},
-	}} {
-		name := fmt.Sprintf("AppendGet_%d", n)
-		tc := tc
-		t.Run(name, func(t *testing.T) {
-			logram.append(&tc.inLog)
-			actual := logram.get(zap.DebugLevel)
-			for i, exp := range tc.expected {
-				assert.Equal(t, exp, *actual[i])
-			}
-		})
-	}
+			records := RecentEntries.get()
+			actual := make([]slog.Record, len(records))
 
-	Setup(zap.DebugLevel, "")
-	logger := zap.L()
-	for n, tc := range []struct {
-		addMsg   string
-		expected []string
-	}{{
-		addMsg:   "Test message 1",
-		expected: []string{"Test message 1"},
-	}, {
-		addMsg:   "Test message 2",
-		expected: []string{"Test message 1", "Test message 2"},
-	}, {
-		addMsg:   "Test message 3",
-		expected: []string{"Test message 1", "Test message 2", "Test message 3"},
-	}, {
-		addMsg:   "Test message 4",
-		expected: []string{"Test message 1", "Test message 2", "Test message 3", "Test message 4"},
-	}} {
-		name := fmt.Sprintf("ZapHooks_%d", n)
-		tc := tc
-		t.Run(name, func(t *testing.T) {
-			logger.Info(tc.addMsg)
-			actual := RecentEntries.get(zap.DebugLevel)
-			for i, exp := range tc.expected {
-				assert.Equal(t, exp, actual[i].Message)
+			for i, r := range records {
+				r.Time = time.Time{}
+				r.PC = 0
+				actual[i] = *r
 			}
+
+			assert.Equal(t, tc.expected, actual)
 		})
 	}
 }

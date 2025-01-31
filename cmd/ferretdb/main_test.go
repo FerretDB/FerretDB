@@ -12,47 +12,62 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build ferretdb_testcover
-
 package main
 
 import (
-	"flag"
-	"os"
+	"context"
+	"encoding/json"
+	"os/exec"
+	"path/filepath"
+	"regexp"
 	"testing"
+	"time"
 
-	"github.com/alecthomas/kong"
-	"golang.org/x/exp/slices"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
 )
 
-// TestCover allows us to run FerretDB with coverage enabled.
-func TestCover(t *testing.T) {
-	run()
-}
-
-// TestMain ensures that command-line flags are initialized correctly when FerretDB is run with coverage enabled.
-func TestMain(m *testing.M) {
-	// Split flags for kong and for `go test` by "--". For example:
-	// bin/ferretdb -test.coverprofile=cover.txt -- --test-records-dir=tmp/records --mode=diff-normal --listen-addr=:27017
-	// forKong: --test-records-dir=tmp/records --mode=diff-normal --listen-addr=:27017
-	// forTest: -test.coverprofile=cover.txt
-	forKong := os.Args[1:]
-	forTest := []string{}
-	i := slices.Index(os.Args, "--")
-	if i != -1 {
-		forKong = os.Args[i+1:]
-		forTest = os.Args[1:i]
+func TestVersion(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in -short mode")
 	}
 
-	setCLIPlugins()
-	parser := must.NotFail(kong.New(&cli, kongOptions...))
+	t.Parallel()
 
-	_, err := parser.Parse(forKong)
-	parser.FatalIfErrorf(err)
+	ctx, cancel := context.WithTimeout(testutil.Ctx(t), 5*time.Second)
+	t.Cleanup(cancel)
 
-	flag.CommandLine.Parse(forTest)
+	bin := filepath.Join("..", "..", "bin", "ferretdb")
 
-	os.Exit(m.Run())
+	cmd := exec.CommandContext(ctx, bin, "--version")
+	b, err := cmd.Output()
+	require.NoError(t, err)
+	assert.Regexp(t, `version: v([0-9]+)\.([0-9]+)\.([0-9]+)`, string(b))
+	assert.Regexp(t, `branch: \w+`, string(b))
+	commit := regexp.MustCompile(`commit: ([0-9a-f]{40})`).FindStringSubmatch(string(b))
+	require.Len(t, commit, 2)
+
+	cmd = exec.CommandContext(ctx, "go", "version", "-m", bin)
+	b, err = cmd.Output()
+	require.NoError(t, err)
+	revision := regexp.MustCompile(`vcs.revision=([0-9a-f]{40})`).FindStringSubmatch(string(b))
+	require.NotEmpty(t, revision)
+	require.Len(t, revision, 2)
+
+	assert.Equal(t, commit[1], revision[1])
+}
+
+func TestDeps(t *testing.T) {
+	t.Parallel()
+
+	var res struct {
+		Deps []string `json:"Deps"`
+	}
+	b, err := exec.Command("go", "list", "-json").Output()
+	require.NoError(t, err)
+	require.NoError(t, json.Unmarshal(b, &res))
+
+	assert.NotContains(t, res.Deps, "testing", `package "testing" should not be imported by non-testing code`)
 }

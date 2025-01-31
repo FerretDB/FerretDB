@@ -22,11 +22,14 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/v2/integration/setup"
 )
 
 func TestCommandsFreeMonitoringGetFreeMonitoringStatus(t *testing.T) {
+	setup.SkipForMongoDB(t, "MongoDB decommissioned enabling free monitoring")
+
 	t.Parallel()
+
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{
 		DatabaseName: "admin",
 	})
@@ -51,7 +54,10 @@ func TestCommandsFreeMonitoringGetFreeMonitoringStatus(t *testing.T) {
 }
 
 func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
+	setup.SkipForMongoDB(t, "MongoDB decommissioned enabling free monitoring")
+
 	t.Parallel()
+
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{
 		DatabaseName: "admin",
 	})
@@ -63,7 +69,7 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 		expectedStatus string              // optional, expected status
 		err            *mongo.CommandError // optional, expected error from MongoDB
 		altMessage     string              // optional, alternative error message for FerretDB, ignored if empty
-		skip           string              // optional, skip test with a specified reason
+		skip           string              // TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/1086
 	}{
 		"Enable": {
 			command:        bson.D{{"setFreeMonitoring", 1}, {"action", "enable"}},
@@ -121,8 +127,6 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 			skip: "https://github.com/FerretDB/FerretDB/issues/2704",
 		},
 	} {
-		name, tc := name, tc
-
 		t.Run(name, func(t *testing.T) {
 			// these tests shouldn't be run in parallel, because they work on the same database
 

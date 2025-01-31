@@ -14,12 +14,12 @@ tags: [tag1, tag2]
 draft: true
 ---
 
+![Image alt description](/img/blog/banner-image.jpg) <!--Please add the path for the image banner (i.e. /img/blog/banner-image.png).-->
+
 Leave a space before starting article.
 Please write a short summary of the article here.
 This can be the same as the `description` above.
 Then add the feature image of the article
-
-![Image alt description](/img/blog/banner-image.jpg) <!---Please add the path for the image banner (i.e. /img/blog/banner-image.png).-->
 
 <!--truncate-->
 
@@ -33,10 +33,13 @@ Please add Markdown files to the `blog` directory.
 Files should be in this format `YYYY-MM-DD-shortened-article-name.md` or `YYYY-MM-DD-folder-name/article-name.md`.
 
 All images for this blog post - including the banner image - should be stored in this folder `(../../static/img/blog)`.
-You can also store the images in a folder with the blog post date under this directory for example, `/img/blog/2022-12-29/banner.png`.
+
+For partner blog posts that involve testing FerretDB with another application, store related images in the same folder (even for multiple blog posts on the same product), as `/img/blog/partner-name/image.png`.
+
+For non-partner blog posts, store related blog post images in a folder using the published date as the folder name, for example, `/img/blog/2022-12-29/image.png`.
 
 Regular blog authors and engineers can be added to `authors.yml`.
-When the author information is present in `authors.yml`, fill the unique author name in the frontmatter as (`authors: [name tag]`).
+When the author information is present in `authors.yml`, fill the unique author name in the frontmatter as (`authors: [name1 name2]`).
 Ensure to remove all other descriptions in the frontmatter about the author (`author`, `author_url`, `author title`, and `author_image_url`).
 
 ## formatting guidelines
