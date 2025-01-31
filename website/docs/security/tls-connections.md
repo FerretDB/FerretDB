@@ -23,12 +23,11 @@ You may also need to set `tlsCAFile` parameter if the system-wide certificate au
 See documentation for your client or driver for more details.
 Example: `mongodb://ferretdb:27018/?tls=true&tlsCAFile=companyRootCA.pem`.
 
-## PostgreSQL backend with TLS
+## PostgreSQL with TLS
 
 Using TLS is recommended if username and password are transferred in plain text.
 
-In following examples, FerretDB uses TLS certificates to secure the connection.
-Example certificates are found in [build/certs](https://github.com/FerretDB/FerretDB/tree/main/build/certs).
+In the following examples, FerretDB uses TLS certificates to secure the connection.
 The `ferretdb` server uses TLS server certificate file, TLS private key file and root CA certificate file.
 
 ```text
@@ -48,23 +47,23 @@ client-certs/
 
 ### Using TLS with `ferretdb` package
 
-The example below connects to localhost PostgreSQL instance using TLS with certificates in `server-certs` directory.
+The example below connects to localhost PostgreSQL instance with DocumentDB extension using TLS with certificates in `server-certs` directory.
 Be sure to check that `server-certs` directory and files are present.
 
 ```sh
 ferretdb \
-  --postgresql-url=postgres://localhost:5432/ferretdb \
+  --postgresql-url=postgres://username:password@localhost:5432/postgres \
   --listen-tls=:27018 \
   --listen-tls-cert-file=./server-certs/server-cert.pem \
   --listen-tls-key-file=./server-certs/server-key.pem \
   --listen-tls-ca-file=./server-certs/rootCA-cert.pem
 ```
 
-Using `mongosh`, a client connects to ferretdb as `user2` using TLS certificates in `client-certs` directory.
+Using `mongosh`, a client connects to FerretDB as `username` using TLS certificates in `client-certs` directory.
 Be sure to check that `client-certs` directory and files are present.
 
 ```sh
-mongosh 'mongodb://user2:pass2@127.0.0.1:27018/ferretdb?authMechanism=PLAIN&tls=true&tlsCertificateKeyFile=./client-certs/client.pem&tlsCaFile=./client-certs/rootCA-cert.pem'
+mongosh 'mongodb://username:password@127.0.0.1:27018/postgres?tls=true&tlsCertificateKeyFile=./client-certs/client.pem&tlsCaFile=./client-certs/rootCA-cert.pem'
 ```
 
 ### Using TLS with Docker
@@ -76,21 +75,21 @@ and volume is mounted from `./server-certs` of Docker host to `/etc/certs` of Do
 ```yaml
 services:
   postgres:
-    image: postgres
+    image: ghcr.io/ferretdb/postgres-documentdb:16
     environment:
       - POSTGRES_USER=username
       - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=ferretdb
+      - POSTGRES_DB=postgres
     volumes:
       - ./data:/var/lib/postgresql/data
 
   ferretdb:
-    image: ghcr.io/ferretdb/ferretdb
+    image: ghcr.io/ferretdb/ferretdb:2
     restart: on-failure
     ports:
       - 27018:27018
     environment:
-      - FERRETDB_POSTGRESQL_URL=postgres://postgres:5432/ferretdb
+      - FERRETDB_POSTGRESQL_URL=postgres://username:password@localhost:5432/postgres
       - FERRETDB_LISTEN_TLS=:27018
       - FERRETDB_LISTEN_TLS_CERT_FILE=/etc/certs/server-cert.pem
       - FERRETDB_LISTEN_TLS_KEY_FILE=/etc/certs/server-key.pem
@@ -109,7 +108,7 @@ To start `ferretdb`, use docker compose.
 docker compose up
 ```
 
-In the following example, a client connects to MongoDB URI using TLS certificates as `user2`.
+In the following example, a client connects to MongoDB URI using TLS certificates as `username`.
 It uses Docker volume to mount `./clients-certs` of Docker host to `/clients` Docker container.
 
 ```sh
@@ -117,5 +116,5 @@ docker run --rm -it \
   --network=ferretdb \
   --volume ./client-certs:/clients \
   --entrypoint=mongosh \
-  mongo 'mongodb://user2:pass2@host.docker.internal:27018/ferretdb?authMechanism=PLAIN&tls=true&tlsCertificateKeyFile=/clients/client.pem&tlsCaFile=/clients/rootCA-cert.pem'
+  mongo 'mongodb://username:password@host.docker.internal:27018/postgres?tls=true&tlsCertificateKeyFile=/clients/client.pem&tlsCaFile=/clients/rootCA-cert.pem'
 ```

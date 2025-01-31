@@ -8,7 +8,7 @@ image: /img/blog/ferretdb-v1.12.png
 tags: [release]
 ---
 
-![FerretDB v.1.12 - new release](/img/blog/ferretdb-v1.12.png)
+![FerretDB v1.12 - new release](/img/blog/ferretdb-v1.12.png)
 
 We've just released FerretDB v1.12 with many new interesting updates on our new PostgreSQL backend, Docker images, arm64 binaries and packages, and more.
 

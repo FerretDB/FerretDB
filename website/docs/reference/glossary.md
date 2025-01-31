@@ -1,5 +1,5 @@
 ---
-sidebar_position: 2
+sidebar_position: 1
 ---
 
 # Glossary
@@ -13,12 +13,10 @@ _This section contains a list of common terminologies related to FerretDB_.
 #### aggregation
 
 A way of processing documents in a collection and passing them through various operations or stages.
-See [list of supported aggregation operations and commands here](supported-commands.md#aggregation-pipelines).
 
 #### aggregation pipeline
 
 A set of operators that lets you perform complex operations that aggregate and summarize values.
-See [list of supported aggregation pipeline operators](supported-commands.md#aggregation-pipeline-operators) here.
 
 ---
 
@@ -50,7 +48,7 @@ It is comparable to a table in a relational database.
 #### CRUD
 
 The four basic operations of a database: Create, Read, Update, and Delete.
-See [Basic FerretDB CRUD operations here](../basic-operations/performing.md).
+See [Basic FerretDB CRUD operations here](../usage/concepts.md).
 
 ---
 
@@ -63,17 +61,16 @@ An organized repository for collections containing its own sets of documents, an
 #### database command
 
 The set of commands in FerretDB.
-For more information, see [supported commands](supported-commands.md) for more details.
 
 #### document
 
 A record in a collection that comprises key-value pairs.
-See [Documents](../understanding-ferretdb.md#documents) for more.
+See [Documents](../usage/concepts.md#documents) for more.
 
 #### dot notation
 
 Dot notation is used to reference or access the elements in an array or in an embedded document.
-See [dot notation](../understanding-ferretdb.md#dot-notation) for more details.
+See [dot notation](../usage/concepts.md#dot-notation) for more details.
 
 ---
 
@@ -93,7 +90,7 @@ They are represented as field name-value pairs and describe the kind of data in 
 A data structure used for identifying and querying records in a collection.
 It helps to limit the number of documents to search through or inspect in a collection.
 Examples include `_id` index, user-defined index, hashed index, and partial index.
-See [Indexes](../indexes.md) for more.
+See [Indexes](../usage/indexes.md) for more.
 
 ---
 
@@ -145,12 +142,5 @@ See [Operation modes](../configuration/operation-modes.md) for more details.
 
 An open source relational database.
 FerretDB uses PostgreSQL as a database engine.
-
-### S
-
-#### SQLite
-
-SQLite is a self-contained, serverless system ideal for lightweight applications.
-FerretDB now offers SQLite backend support.
 
 ---

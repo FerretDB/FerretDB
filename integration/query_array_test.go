@@ -24,8 +24,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/v2/integration/setup"
+	"github.com/FerretDB/FerretDB/v2/integration/shareddata"
 )
 
 func TestQueryArrayDotNotation(t *testing.T) {
@@ -38,7 +38,6 @@ func TestQueryArrayDotNotation(t *testing.T) {
 
 		err        *mongo.CommandError // optional, expected error from MongoDB
 		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
-		skip       string              // optional, skip test with a specified reason
 	}{
 		"FieldPositionQueryRegex": {
 			// Move to compat.
@@ -52,12 +51,7 @@ func TestQueryArrayDotNotation(t *testing.T) {
 			altMessage: "Can't have RegEx as arg to predicate over field 'v.array.0'.",
 		},
 	} {
-		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
-
 			t.Parallel()
 
 			require.NotNil(t, tc.filter, "filter must not be nil")

@@ -17,22 +17,34 @@ package handler
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
+	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
+
+	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // MsgLogout implements `logout` command.
-func (h *Handler) MsgLogout(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	conninfo.Get(ctx).SetAuth("", "", "")
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgLogout(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	spec, err := msg.RawDocument()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
-		must.NotFail(types.NewDocument(
-			"ok", float64(1),
-		)),
-	)))
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+		return nil, err
+	}
 
-	return &reply, nil
+	if !conninfo.Get(connCtx).SetConv(nil) {
+		h.L.WarnContext(connCtx, "MsgLogout: no SCRAM conversation")
+	}
+
+	res := must.NotFail(wirebson.NewDocument(
+		"ok", float64(1),
+	))
+
+	return wire.NewOpMsg(must.NotFail(res.Encode()))
 }

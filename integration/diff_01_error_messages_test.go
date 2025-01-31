@@ -20,7 +20,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/v2/integration/setup"
 )
 
 func TestDiffErrorMessages(t *testing.T) {
@@ -46,9 +46,10 @@ func TestDiffErrorMessages(t *testing.T) {
 	}
 
 	expected := mongo.CommandError{
-		Code:    14,
-		Name:    "TypeMismatch",
-		Message: "BSON field 'allParameters' is the wrong type 'string', expected types '[bool, long, int, decimal, double]'",
+		Code: 14,
+		Name: "TypeMismatch",
+		Message: "BSON field 'allParameters' is the wrong type 'string', " +
+			"expected types '[bool, long, int, decimal, double]'",
 	}
 	AssertEqualCommandError(t, expected, err)
 }

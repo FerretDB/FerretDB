@@ -5,19 +5,21 @@
 run:
   timeout: 3m
 
+# bin/golangci-lint linters -c .golangci-new.yml
 linters-settings:
   asasalint:
     exclude:
       - ^lazyerrors\.Errorf$
     use-builtin-exclusions: true
     ignore-test: false
+  copyloopvar:
+    check-alias: true
   errcheck:
     check-type-assertions: false
     check-blank: false
     disable-default-exclusions: false
     exclude-functions:
-      - (*database/sql.Rows).Close
-      - (*github.com/FerretDB/FerretDB/internal/util/fsql.Rows).Close
+      - (*github.com/jackc/pgx/v5.Conn).Close
   errorlint:
     # see caveats at https://github.com/polyfloyd/go-errorlint#fmterrorf-wrapping-verb
     errorf: false
@@ -39,14 +41,6 @@ linters-settings:
       - name: package-comments
   staticcheck:
     checks: ["all"]
-  tagalign:
-    sort: true
-    order:
-      - name
-      - cmd
-      - arg
-      - default
-      - help
   wsl:
     # https://github.com/bombsimon/wsl/blob/master/doc/configuration.md
     strict-append: false
@@ -84,27 +78,33 @@ linters:
     - misspell
     - nolintlint
     - sloglint
+    - tagalign
+    - unparam
     - unused
     - whitespace
 
     # TODO https://github.com/FerretDB/FerretDB/issues/2748
     - bidichk
     - bodyclose
+    - canonicalheader
     - containedctx
     - contextcheck
     - cyclop
     - decorder
     - dogsled
     - dupl
+    - dupword
     - durationcheck
     - err113
     - errchkjson
     - errname
-    - execinquery
     - exhaustruct
     - exportloopref
+    - fatcontext
     - forcetypeassert
     - funlen
+    - ginkgolinter
+    - gocheckcompilerdirectives
     - gochecknoglobals
     - gochecknoinits
     - gocognit
@@ -112,15 +112,22 @@ linters:
     - gocyclo
     - gofmt
     - gofumpt
-    - gomnd
     - gomoddirectives
     - goprintffuncname
     - gosec
+    - gosmopolitan
     - grouper
+    - iface
     - inamedparam
+    - interfacebloat
+    - intrange
     - ireturn
+    - loggercheck
     - maintidx
     - makezero
+    - mirror
+    - mnd
+    - musttag
     - nakedret
     - nestif
     - nilerr
@@ -134,18 +141,22 @@ linters:
     - predeclared
     - promlinter
     - protogetter
+    - reassign
+    - recvcheck
     - rowserrcheck
     - sloglint
+    - spancheck
     - sqlclosecheck
     - stylecheck
     - tagliatelle
     - tenv
+    - testableexamples
     - testifylint
     - thelper
     - tparallel
     - typecheck
     - unconvert
-    - unparam
+    - usestdlibvars
     - varnamelen
     - wastedassign
     - wrapcheck
