@@ -23,9 +23,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/FerretDB/wire/wirebson"
+
 	"github.com/FerretDB/FerretDB/v2/internal/util/devbuild"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
-	"github.com/FerretDB/wire/wirebson"
 )
 
 // Handler is a [slog.Handler] that wraps another handler with support for:
