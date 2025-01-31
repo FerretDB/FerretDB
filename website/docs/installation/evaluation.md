@@ -34,7 +34,7 @@ With that container running, you can:
   If you don't have it installed locally, you can run:
 
   ```sh
-  docker exec -it ferretdb mongosh
+  docker exec -it ferretdb mongosh 'mongodb://username:password@127.0.0.1:27017/'
   ```
 
 - To access PostgreSQL with DocumentDB extension, connect to it by running:
