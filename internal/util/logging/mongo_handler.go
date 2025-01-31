@@ -29,8 +29,6 @@ import (
 type mongoHandler struct {
 	opts *NewHandlerOpts
 
-	jsonHandler slog.Handler
-
 	m   *sync.Mutex
 	out io.Writer
 }
@@ -95,9 +93,11 @@ func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
 }
 
 func (h *mongoHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	return h.jsonHandler.WithAttrs(attrs)
+	// TODO
+	return h
 }
 
 func (h *mongoHandler) WithGroup(name string) slog.Handler {
-	return h.jsonHandler.WithGroup(name)
+	// TODO
+	return h
 }
