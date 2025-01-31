@@ -1,7 +1,7 @@
 // Please do not merge changes in this file.
 
-(function() {
-  'use strict';
+(function () {
+  "use strict";
 
   // Make 4 test databases.
   db.getSiblingDB('foo').coll.insert({});
