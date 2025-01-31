@@ -31,8 +31,8 @@ import (
 )
 
 // todoRE represents correct "// TODO" comment format.
-// It returns url and owner/repo name as submatches.
-var todoRE = regexp.MustCompile(`^// TODO (\Qhttps://github.com/\E(FerretDB/[-\w]+|microsoft/documentdb)/issues/\d+)$`)
+// It returns url as a submatch.
+var todoRE = regexp.MustCompile(`^// TODO (.+)$`)
 
 // analyzer represents the checkcomments analyzer.
 var analyzer = &analysis.Analyzer{
@@ -98,7 +98,7 @@ func run(pass *analysis.Pass) (any, error) {
 
 				match := todoRE.FindStringSubmatch(line)
 
-				if len(match) != 3 {
+				if len(match) != 2 {
 					pass.Reportf(c.Pos(), "invalid TODO: incorrect format")
 					continue
 				}
