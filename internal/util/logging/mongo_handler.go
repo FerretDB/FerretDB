@@ -36,10 +36,10 @@ type mongoHandler struct {
 type mongoLog struct {
 	Timestamp  primitive.DateTime `bson:"t"`
 	Severity   string             `bson:"s"`
-	Components string             `bson:"c"`
-	ID         int                `bson:"id"`
-	Ctx        string             `bson:"ctx"`
-	Svc        string             `bson:"svc"`
+	Components string             `bson:"c"`   //TODO
+	ID         int                `bson:"id"`  //TODO
+	Ctx        string             `bson:"ctx"` // TODO
+	Svc        string             `bson:"svc,omitempty"`
 	Msg        string             `bson:"msg"`
 	Attr       bson.D             `bson:"attr,omitempty"`
 	Tags       []string           `bson:"tags,omitempty"`
