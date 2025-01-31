@@ -17,12 +17,18 @@ package logging
 import (
 	"context"
 	"log/slog"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type mongoHandler struct {
 	opts *NewHandlerOpts
 
 	jsonHandler slog.Handler
+}
+
+type mongoLog struct {
+	Timestamp primitive.DateTime `bson:"t"`
 }
 
 func (h *mongoHandler) Enabled(_ context.Context, l slog.Level) bool {
