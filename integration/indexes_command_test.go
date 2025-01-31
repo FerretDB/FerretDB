@@ -22,8 +22,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/v2/integration/setup"
+	"github.com/FerretDB/FerretDB/v2/integration/shareddata"
 )
 
 // TestListIndexesCommandNonExistentNS tests that the listIndexes command returns a particular error
@@ -72,7 +72,6 @@ func TestDropIndexesCommandErrors(t *testing.T) {
 
 		err        *mongo.CommandError // required, expected error from MongoDB
 		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
-		skip       string              // optional, skip test with a specified reason
 	}{
 		"InvalidType": {
 			toDrop: true,
@@ -81,7 +80,7 @@ func TestDropIndexesCommandErrors(t *testing.T) {
 				Name:    "TypeMismatch",
 				Message: "BSON field 'dropIndexes.index' is the wrong type 'bool', expected types '[string, object']",
 			},
-			altMessage: `BSON field 'dropIndexes.index' is the wrong type 'bool', expected types '[string, object]'`,
+			altMessage: `BSON field 'dropIndexes.index' is the wrong type 'bool', expected type '[string, object]'`,
 		},
 		"MultipleIndexesByKey": {
 			toCreate: []mongo.IndexModel{
@@ -94,7 +93,7 @@ func TestDropIndexesCommandErrors(t *testing.T) {
 				Name:    "TypeMismatch",
 				Message: "BSON field 'dropIndexes.index' is the wrong type 'array', expected types '[string']",
 			},
-			altMessage: `BSON field 'dropIndexes.index' is the wrong type 'array', expected types '[string, object]'`,
+			altMessage: `BSON field 'dropIndexes.index.item' is the wrong type 'object', expected type 'string'`,
 		},
 		"NonExistentMultipleIndexes": {
 			err: &mongo.CommandError{
@@ -111,7 +110,7 @@ func TestDropIndexesCommandErrors(t *testing.T) {
 				Name:    "TypeMismatch",
 				Message: "BSON field 'dropIndexes.index' is the wrong type 'array', expected types '[string']",
 			},
-			altMessage: `BSON field 'dropIndexes.index' is the wrong type 'array', expected types '[string, object]'`,
+			altMessage: `BSON field 'dropIndexes.index.item' is the wrong type 'int', expected type 'string'`,
 		},
 		"InvalidDocumentIndex": {
 			toDrop: bson.D{{"invalid", "invalid"}},
@@ -120,6 +119,7 @@ func TestDropIndexesCommandErrors(t *testing.T) {
 				Name:    "IndexNotFound",
 				Message: "can't find index with key: { invalid: \"invalid\" }",
 			},
+			altMessage: "can't find index with key: { \"invalid\" : \"invalid\" }",
 		},
 		"NonExistentKey": {
 			toDrop: bson.D{{"non-existent", 1}},
@@ -128,6 +128,7 @@ func TestDropIndexesCommandErrors(t *testing.T) {
 				Name:    "IndexNotFound",
 				Message: "can't find index with key: { non-existent: 1 }",
 			},
+			altMessage: "can't find index with key: { \"non-existent\" : 1 }",
 		},
 		"DocumentIndexID": {
 			toDrop: bson.D{{"_id", 1}},
@@ -154,6 +155,7 @@ func TestDropIndexesCommandErrors(t *testing.T) {
 				Name:    "IndexNotFound",
 				Message: "can't find index with key: { _id: -1 }",
 			},
+			altMessage: "can't find index with key: { \"_id\" : -1 }",
 		},
 		"NonExistentMultipleKeyIndex": {
 			toDrop: bson.D{
@@ -165,14 +167,10 @@ func TestDropIndexesCommandErrors(t *testing.T) {
 				Name:    "IndexNotFound",
 				Message: "can't find index with key: { non-existent1: -1, non-existent2: -1 }",
 			},
+			altMessage: "can't find index with key: { \"non-existent1\" : -1, \"non-existent2\" : -1 }",
 		},
 	} {
-		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
-
 			t.Parallel()
 
 			if tc.command != nil {
@@ -222,7 +220,7 @@ func TestCreateIndexesCommandInvalidSpec(t *testing.T) {
 		err        *mongo.CommandError // required, expected error from MongoDB
 		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
 
-		skip string // optional, skip test with a specified reason
+		failsForFerretDB string
 	}{
 		"EmptyIndexes": {
 			indexes: bson.A{},
@@ -247,6 +245,7 @@ func TestCreateIndexesCommandInvalidSpec(t *testing.T) {
 				Name:    "Location10065",
 				Message: "invalid parameter: expected an object (indexes)",
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/290",
 		},
 		"InvalidTypeObject": {
 			indexes: bson.D{},
@@ -286,6 +285,7 @@ func TestCreateIndexesCommandInvalidSpec(t *testing.T) {
 				Message: `The field 'unique' is not valid for an _id index specification.` +
 					` Specification: { key: { _id: 1 }, name: "_id_", unique: true, v: 2 }`,
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/290",
 		},
 		"MissingName": {
 			indexes: bson.A{
@@ -299,6 +299,7 @@ func TestCreateIndexesCommandInvalidSpec(t *testing.T) {
 				Message: `Error in specification { key: { v: 1 } } :: caused by :: ` +
 					`The 'name' field is a required property of an index specification`,
 			},
+			altMessage: `Error in specification { "key" : { "v" : 1 } } :: caused by :: The 'name' field is a required property of an index specification`,
 		},
 		"EmptyName": {
 			indexes: bson.A{
@@ -312,7 +313,7 @@ func TestCreateIndexesCommandInvalidSpec(t *testing.T) {
 				Name:    "CannotCreateIndex",
 				Message: `Error in specification { key: { v: -1 }, name: "", v: 2 } :: caused by :: index name cannot be empty`,
 			},
-			altMessage: `Error in specification { key: { v: -1 }, name: "" } :: caused by :: index name cannot be empty`,
+			altMessage: `Error in specification { "key" : { "v" : -1 }, "name" : "" } :: caused by :: The index name cannot be empty`,
 		},
 		"MissingKey": {
 			indexes: bson.A{
@@ -323,6 +324,7 @@ func TestCreateIndexesCommandInvalidSpec(t *testing.T) {
 				Name:    "FailedToParse",
 				Message: `Error in specification {} :: caused by :: The 'key' field is a required property of an index specification`,
 			},
+			altMessage: `Error in specification { } :: caused by :: The 'key' field is a required property of an index specification`,
 		},
 		"IdenticalIndex": {
 			indexes: bson.A{
@@ -366,8 +368,8 @@ func TestCreateIndexesCommandInvalidSpec(t *testing.T) {
 			altMessage: "An existing index has the same name as the requested index. " +
 				"When index names are not specified, they are auto generated and can " +
 				"cause conflicts. Please refer to our documentation. " +
-				"Requested index: { key: { bar: -1 }, name: \"index-name\" }, " +
-				"existing index: { key: { foo: -1 }, name: \"index-name\" }",
+				"Requested index: { \"v\" : 2, \"key\" : { \"bar\" : -1 }, \"name\" : \"index-name\" }, " +
+				"existing index: { \"v\" : 2, \"key\" : { \"foo\" : -1 }, \"name\" : \"index-name\" }",
 		},
 		"SameIndex": {
 			indexes: bson.A{
@@ -401,17 +403,18 @@ func TestCreateIndexesCommandInvalidSpec(t *testing.T) {
 				Message: `Error in specification { key: { v: 1 }, name: "unique_index", unique: {} } ` +
 					`:: caused by :: The field 'unique has value unique: {}, which is not convertible to bool`,
 			},
-			altMessage: `Error in specification { key: { v: 1 }, name: "unique_index", unique: {  } } ` +
-				`:: caused by :: The field 'unique' has value unique: {  }, which is not convertible to bool`,
+			altMessage: `Error in specification { "key" : { "v" : 1 }, "name" : "unique_index", "unique" : {  } } ` +
+				`:: caused by :: The field 'unique' has value unique: { }, which is not convertible to bool`,
 		},
 	} {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
+		t.Run(name, func(tt *testing.T) {
+			tt.Parallel()
 
-			t.Parallel()
+			var t testing.TB = tt
+
+			if tc.failsForFerretDB != "" {
+				t = setup.FailsForFerretDB(tt, tc.failsForFerretDB)
+			}
 
 			if tc.missingIndexes {
 				require.Nil(t, tc.indexes, "indexes must be nil if missingIndexes is true")
@@ -423,7 +426,7 @@ func TestCreateIndexesCommandInvalidSpec(t *testing.T) {
 				providers = append(providers, shareddata.ArrayDocuments)
 			}
 
-			ctx, collection := setup.Setup(t, providers...)
+			ctx, collection := setup.Setup(tt, providers...)
 
 			var rest bson.D
 
@@ -454,7 +457,6 @@ func TestCreateIndexesCommandInvalidCollection(t *testing.T) {
 		indexes        any
 		err            *mongo.CommandError
 		altMessage     string
-		skip           string
 	}{
 		"InvalidTypeCollection": {
 			collectionName: 42,
@@ -501,12 +503,7 @@ func TestCreateIndexesCommandInvalidCollection(t *testing.T) {
 			},
 		},
 	} {
-		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
-
 			t.Parallel()
 
 			ctx, collection := setup.Setup(t)
@@ -529,11 +526,11 @@ func TestDropIndexesCommandInvalidCollection(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		collectionName any
-		indexName      any
-		err            *mongo.CommandError
-		altMessage     string
-		skip           string
+		collectionName   any
+		indexName        any
+		err              *mongo.CommandError
+		altMessage       string
+		failsForFerretDB string
 	}{
 		"NonExistentCollection": {
 			collectionName: "non-existent",
@@ -552,7 +549,8 @@ func TestDropIndexesCommandInvalidCollection(t *testing.T) {
 				Name:    "BadValue",
 				Message: "collection name has invalid type int",
 			},
-			altMessage: "required parameter \"dropIndexes\" has type int32 (expected string)",
+			altMessage:       "required parameter \"dropIndexes\" has type int32 (expected string)",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/305",
 		},
 		"NilCollection": {
 			collectionName: nil,
@@ -562,7 +560,8 @@ func TestDropIndexesCommandInvalidCollection(t *testing.T) {
 				Name:    "BadValue",
 				Message: "collection name has invalid type null",
 			},
-			altMessage: "required parameter \"dropIndexes\" has type types.NullType (expected string)",
+			altMessage:       "required parameter \"dropIndexes\" has type types.NullType (expected string)",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/305",
 		},
 		"EmptyCollection": {
 			collectionName: "",
@@ -572,17 +571,19 @@ func TestDropIndexesCommandInvalidCollection(t *testing.T) {
 				Name:    "InvalidNamespace",
 				Message: "Invalid namespace specified 'TestDropIndexesCommandInvalidCollection-EmptyCollection.'",
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/305",
 		},
 	} {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
+		t.Run(name, func(tt *testing.T) {
+			tt.Parallel()
+
+			var t testing.TB = tt
+
+			if tc.failsForFerretDB != "" {
+				t = setup.FailsForFerretDB(tt, tc.failsForFerretDB)
 			}
 
-			t.Parallel()
-
-			ctx, collection := setup.Setup(t)
+			ctx, collection := setup.Setup(tt)
 
 			command := bson.D{
 				{"dropIndexes", tc.collectionName},

@@ -3,18 +3,18 @@ slug: ferretdb-releases-v1140
 title: FerretDB releases v1.14.0!
 authors: [alex]
 description: >
-  We’re happy to announce the release of FerretDB v.1.14.0 which includes the implementation of the `compact` command, optimized `insert`, and more.
+  We’re happy to announce the release of FerretDB v1.14.0 which includes the implementation of the `compact` command, optimized `insert`, and more.
 image: /img/blog/ferretdb-v1.14.0.jpg
 tags: [release]
 ---
 
-![FerretDB releases v.1.14.0](/img/blog/ferretdb-v1.14.0.jpg)
+![FerretDB releases v1.14.0](/img/blog/ferretdb-v1.14.0.jpg)
 
-We're happy to announce the release of FerretDB v.1.14.0 which includes the implementation of the `compact` command, optimized `insert`, and more.
+We're happy to announce the release of FerretDB v1.14.0 which includes the implementation of the `compact` command, optimized `insert`, and more.
 
 <!--truncate-->
 
-As we mentioned in our [previous release (v.1.13.0)](https://blog.ferretdb.io/ferretdb-v1130-new-postgresql-backend/), we've migrated to the new PostgreSQL backend, and the old PostgreSQL backend code is now completely removed in this release.
+As we mentioned in our [previous release (v1.13.0)](https://blog.ferretdb.io/ferretdb-v1130-new-postgresql-backend/), we've migrated to the new PostgreSQL backend, and the old PostgreSQL backend code is now completely removed in this release.
 If you're unfamiliar with the new PostgreSQL backend, [here's an overview that should help](https://blog.ferretdb.io/ferretdb-v1-10-production-ready-sqlite/#the-new-architecture).
 
 It's been an exciting time at FerretDB and the open source community as we rounded up the last of the Hactoberfest PRs.

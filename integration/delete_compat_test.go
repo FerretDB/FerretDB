@@ -24,7 +24,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/v2/integration/setup"
 )
 
 // deleteCompatTestCase describes delete compatibility test case.
@@ -130,7 +130,6 @@ func testDeleteCompat(t *testing.T, testCases map[string]deleteCompatTestCase) {
 	t.Helper()
 
 	for name, tc := range testCases {
-		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
 

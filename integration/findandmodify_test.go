@@ -24,12 +24,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
-
-	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/v2/integration/setup"
+	"github.com/FerretDB/FerretDB/v2/integration/shareddata"
 )
 
 func TestFindAndModifyEmptyCollectionName(t *testing.T) {
@@ -42,13 +38,14 @@ func TestFindAndModifyEmptyCollectionName(t *testing.T) {
 
 	assert.Nil(t, res)
 
-	AssertEqualCommandError(
+	AssertEqualAltCommandError(
 		t,
 		mongo.CommandError{
 			Code:    73,
 			Message: "Invalid namespace specified 'TestFindAndModifyEmptyCollectionName.'",
 			Name:    "InvalidNamespace",
 		},
+		"Invalid empty namespace specified",
 		err,
 	)
 }
@@ -67,8 +64,8 @@ func TestFindAndModifyNonExistingCollection(t *testing.T) {
 	assert.Nil(t, actual)
 }
 
-func TestFindAndModifyCommandErrors(t *testing.T) {
-	t.Parallel()
+func TestFindAndModifyCommandErrors(tt *testing.T) {
+	tt.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // it is used for test only
 		command  bson.D              // required, command to run
@@ -76,7 +73,8 @@ func TestFindAndModifyCommandErrors(t *testing.T) {
 
 		err        *mongo.CommandError // required
 		altMessage string              // optional, alternative error message
-		skip       string              // optional, skip test with a specified reason
+
+		failsForFerretDB string
 	}{
 		"UpsertAndRemove": {
 			command: bson.D{
@@ -151,6 +149,7 @@ func TestFindAndModifyCommandErrors(t *testing.T) {
 			},
 			altMessage: `Cannot create field 'foo' in element ` +
 				`{v: [ { foo: [ { bar: "hello" }, { bar: "world" } ] } ]}`,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/320",
 		},
 		"SetImmutableID": {
 			command: bson.D{
@@ -174,6 +173,7 @@ func TestFindAndModifyCommandErrors(t *testing.T) {
 				Name:    "EmptyFieldName",
 				Message: "An empty update path is not valid.",
 			},
+			altMessage: "An empty update path is not valid",
 		},
 		"RenameEmptyPath": {
 			command: bson.D{
@@ -185,6 +185,7 @@ func TestFindAndModifyCommandErrors(t *testing.T) {
 				Name:    "EmptyFieldName",
 				Message: "The update path 'v.' contains an empty field name, which is not allowed.",
 			},
+			altMessage: "An update path 'v.' contains an empty field name, which is not allowed.",
 		},
 		"RenameArrayInvalidIndex": {
 			command: bson.D{
@@ -198,7 +199,8 @@ func TestFindAndModifyCommandErrors(t *testing.T) {
 					`cannot use the part (v of v.-1) to traverse the element ` +
 					`({v: [ { foo: [ { bar: "hello" }, { bar: "world" } ] } ]})`,
 			},
-			altMessage: "cannot use path 'v.-1' to traverse the document",
+			altMessage:       "cannot use path 'v.-1' to traverse the document",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/320",
 		},
 		"RenameUnsuitableValue": {
 			command: bson.D{
@@ -211,7 +213,7 @@ func TestFindAndModifyCommandErrors(t *testing.T) {
 				Message: `Plan executor error during findAndModify :: caused by :: ` +
 					`cannot use the part (bar of v.0.foo.0.bar.z) to traverse the element ({bar: "hello"})`,
 			},
-			altMessage: `types.getByPath: can't access string by path "z"`,
+			altMessage: `Cannot create field 'bar' in element {bar : "hello"}`,
 		},
 		"IncTypeMismatch": {
 			command: bson.D{
@@ -223,6 +225,7 @@ func TestFindAndModifyCommandErrors(t *testing.T) {
 				Name:    "TypeMismatch",
 				Message: `Cannot increment with non-numeric argument: {v: "string"}`,
 			},
+			altMessage: "Increment should be numeric",
 		},
 		"IncUnsuitableValue": {
 			command: bson.D{
@@ -238,6 +241,7 @@ func TestFindAndModifyCommandErrors(t *testing.T) {
 			},
 			altMessage: `Cannot create field 'foo' in element ` +
 				`{v: [ { foo: [ { bar: "hello" }, { bar: "world" } ] } ]}`,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/320",
 		},
 		"IncNonNumeric": {
 			command: bson.D{
@@ -252,7 +256,7 @@ func TestFindAndModifyCommandErrors(t *testing.T) {
 					`{_id: "array-documents-nested"} has the field 'bar' of non-numeric type string`,
 			},
 			altMessage: `Cannot apply $inc to a value of non-numeric type. ` +
-				`{_id: "array-documents-nested"} has the field 'bar' of non-numeric type string`,
+				`{ _id: "array-documents-nested" } has the field 'bar' of non-numeric type string`,
 		},
 		"IncInt64BadValue": {
 			command: bson.D{
@@ -300,6 +304,7 @@ func TestFindAndModifyCommandErrors(t *testing.T) {
 			},
 			altMessage: `Cannot create field 'foo' in element ` +
 				`{v: [ { foo: [ { bar: "hello" }, { bar: "world" } ] } ]}`,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/320",
 		},
 		"MinUnsuitableValue": {
 			command: bson.D{
@@ -315,6 +320,7 @@ func TestFindAndModifyCommandErrors(t *testing.T) {
 			},
 			altMessage: `Cannot create field 'foo' in element ` +
 				`{v: [ { foo: [ { bar: "hello" }, { bar: "world" } ] } ]}`,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/320",
 		},
 		"MulTypeMismatch": {
 			command: bson.D{
@@ -326,6 +332,8 @@ func TestFindAndModifyCommandErrors(t *testing.T) {
 				Name:    "TypeMismatch",
 				Message: `Cannot multiply with non-numeric argument: {v: "string"}`,
 			},
+			altMessage:       `Cannot multiply with non-numeric argument: { v: "string" }`,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/320",
 		},
 		"MulTypeMismatchNonExistent": {
 			command: bson.D{
@@ -337,6 +345,7 @@ func TestFindAndModifyCommandErrors(t *testing.T) {
 				Name:    "TypeMismatch",
 				Message: `Cannot multiply with non-numeric argument: {non-existent: "string"}`,
 			},
+			altMessage: `Cannot multiply with non-numeric argument: { non-existent : "string" }`,
 		},
 		"MulUnsuitableValue": {
 			command: bson.D{
@@ -352,6 +361,7 @@ func TestFindAndModifyCommandErrors(t *testing.T) {
 			},
 			altMessage: `Cannot create field 'foo' in element ` +
 				`{v: [ { foo: [ { bar: "hello" }, { bar: "world" } ] } ]}`,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/320",
 		},
 		"MulNonNumeric": {
 			command: bson.D{
@@ -366,7 +376,7 @@ func TestFindAndModifyCommandErrors(t *testing.T) {
 					`{_id: "array-documents-nested"} has the field 'bar' of non-numeric type string`,
 			},
 			altMessage: `Cannot apply $mul to a value of non-numeric type. ` +
-				`{_id: "array-documents-nested"} has the field 'bar' of non-numeric type string`,
+				`{ _id: "array-documents-nested" } has the field 'bar' of non-numeric type string`,
 		},
 		"MulInt64BadValue": {
 			command: bson.D{
@@ -381,8 +391,8 @@ func TestFindAndModifyCommandErrors(t *testing.T) {
 					`((NumberLong)9223372036854775807) for document {_id: "int64-max"}`,
 			},
 			provider: shareddata.Int64s,
-			altMessage: `Failed to apply $mul operations to current value ` +
-				`((NumberLong)9223372036854775807) for document {_id: "int64-max"}`,
+			altMessage: `Failed to apply $mul operations to current ` +
+				`((NumberLong)9223372036854775807) value for document { _id: "int64-max" }`,
 		},
 		"MulInt32BadValue": {
 			command: bson.D{
@@ -397,8 +407,8 @@ func TestFindAndModifyCommandErrors(t *testing.T) {
 					`((NumberInt)42) for document {_id: "int32"}`,
 			},
 			provider: shareddata.Int32s,
-			altMessage: `Failed to apply $mul operations to current value ` +
-				`((NumberInt)42) for document {_id: "int32"}`,
+			altMessage: `Failed to apply $mul operations to current ` +
+				`((NumberInt)42) value for document { _id: "int32" }`,
 		},
 		"MulEmptyPath": {
 			command: bson.D{
@@ -410,6 +420,7 @@ func TestFindAndModifyCommandErrors(t *testing.T) {
 				Name:    "EmptyFieldName",
 				Message: "The update path 'v.' contains an empty field name, which is not allowed.",
 			},
+			altMessage: "An update path 'v.' contains an empty field name, which is not allowed.",
 		},
 		"ConflictCollision": {
 			command: bson.D{
@@ -442,23 +453,24 @@ func TestFindAndModifyCommandErrors(t *testing.T) {
 			altMessage: "Updating the path 'v.foo' would create a conflict at 'v.foo'",
 		},
 	} {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
+		tt.Run(name, func(tt *testing.T) {
+			tt.Parallel()
 
-			t.Parallel()
-
-			require.NotNil(t, tc.command, "command must not be nil")
-			require.NotNil(t, tc.err, "err must not be nil")
+			require.NotNil(tt, tc.command, "command must not be nil")
+			require.NotNil(tt, tc.err, "err must not be nil")
 
 			provider := tc.provider
 			if provider == nil {
 				provider = shareddata.ArrayDocuments
 			}
 
-			ctx, collection := setup.Setup(t, provider)
+			ctx, collection := setup.Setup(tt, provider)
+
+			var t testing.TB = tt
+
+			if tc.failsForFerretDB != "" {
+				t = setup.FailsForFerretDB(tt, tc.failsForFerretDB)
+			}
 
 			command := bson.D{{"findAndModify", collection.Name()}}
 			command = append(command, tc.command...)
@@ -547,7 +559,6 @@ func TestFindAndModifyCommandUpsert(t *testing.T) {
 			},
 		},
 	} {
-		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
@@ -623,16 +634,16 @@ func TestFindAndModifyCommentQuery(t *testing.T) {
 	err = collection.Database().RunCommand(ctx, request).Decode(&actual)
 	require.NoError(t, err)
 
-	lastErrObj, _ := ConvertDocument(t, actual).Get("lastErrorObject")
-	if lastErrObj == nil {
-		t.Fatal(actual)
-	}
-
 	assert.Contains(t, databaseNames, name)
 
-	expectedLastErrObj := must.NotFail(types.NewDocument(
-		"n", int32(1),
-		"updatedExisting", true,
-	))
-	testutil.AssertEqual(t, expectedLastErrObj, lastErrObj.(*types.Document))
+	expected := bson.D{
+		{"lastErrorObject", bson.D{
+			{"n", int32(1)},
+			{"updatedExisting", true},
+		}},
+		{"value", bson.D{{"_id", "string"}, {"v", "foo"}}},
+		{"ok", float64(1)},
+	}
+
+	AssertEqualDocuments(t, expected, actual)
 }

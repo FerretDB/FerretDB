@@ -24,13 +24,14 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/v2/integration/setup"
 )
 
 type insertCompatTestCase struct {
-	insert     []any                    // required, slice of bson.D to be insert
-	ordered    bool                     // defaults to false
-	resultType compatTestCaseResultType // defaults to nonEmptyResult
+	insert           []any // required, slice of bson.D to be insert
+	ordered          bool  // defaults to false
+	failsForFerretDB string
+	resultType       compatTestCaseResultType // defaults to nonEmptyResult
 }
 
 // testInsertCompat tests insert compatibility test cases.
@@ -38,8 +39,6 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 	t.Helper()
 
 	for name, tc := range testCases {
-		name, tc := name, tc
-
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
 			t.Parallel()
@@ -56,8 +55,14 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 				for i := range targetCollections {
 					targetCollection := targetCollections[i]
 					compatCollection := compatCollections[i]
-					t.Run(targetCollection.Name(), func(t *testing.T) {
-						t.Helper()
+
+					t.Run(targetCollection.Name(), func(tt *testing.T) {
+						tt.Helper()
+
+						var t testing.TB = tt
+						if tc.failsForFerretDB != "" {
+							t = setup.FailsForFerretDB(tt, tc.failsForFerretDB)
+						}
 
 						for _, doc := range insert {
 							targetInsertRes, targetErr := targetCollection.InsertOne(ctx, doc)
@@ -105,8 +110,14 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 				for i := range targetCollections {
 					targetCollection := targetCollections[i]
 					compatCollection := compatCollections[i]
-					t.Run(targetCollection.Name(), func(t *testing.T) {
-						t.Helper()
+
+					t.Run(targetCollection.Name(), func(tt *testing.T) {
+						tt.Helper()
+
+						var t testing.TB = tt
+						if tc.failsForFerretDB != "" {
+							t = setup.FailsForFerretDB(tt, tc.failsForFerretDB)
+						}
 
 						opts := options.InsertMany().SetOrdered(tc.ordered)
 						targetInsertRes, targetErr := targetCollection.InsertMany(ctx, insert, opts)
@@ -167,12 +178,14 @@ func TestInsertCompat(t *testing.T) {
 		},
 
 		"IDArray": {
-			insert:     []any{bson.D{{"_id", bson.A{"foo", "bar"}}}},
-			resultType: emptyResult,
+			insert:           []any{bson.D{{"_id", bson.A{"foo", "bar"}}}},
+			resultType:       emptyResult,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/295",
 		},
 		"IDRegex": {
-			insert:     []any{bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}}},
-			resultType: emptyResult,
+			insert:           []any{bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}}},
+			resultType:       emptyResult,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/295",
 		},
 
 		"OrderedAllErrors": {
@@ -180,16 +193,18 @@ func TestInsertCompat(t *testing.T) {
 				bson.D{{"_id", bson.A{"foo", "bar"}}},
 				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
 			},
-			ordered:    true,
-			resultType: emptyResult,
+			ordered:          true,
+			resultType:       emptyResult,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/295",
 		},
 		"UnorderedAllErrors": {
 			insert: []any{
 				bson.D{{"_id", bson.A{"foo", "bar"}}},
 				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
 			},
-			ordered:    false,
-			resultType: emptyResult,
+			ordered:          false,
+			resultType:       emptyResult,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/295",
 		},
 
 		"OrderedOneError": {
@@ -198,7 +213,8 @@ func TestInsertCompat(t *testing.T) {
 				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
 				bson.D{{"_id", "2"}},
 			},
-			ordered: true,
+			ordered:          true,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/295",
 		},
 		"UnorderedTwoErrors": {
 			insert: []any{
@@ -207,7 +223,8 @@ func TestInsertCompat(t *testing.T) {
 				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
 				bson.D{{"_id", "2"}},
 			},
-			ordered: false,
+			ordered:          false,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/295",
 		},
 		"OrderedThreeErrors": {
 			insert: []any{
@@ -218,7 +235,8 @@ func TestInsertCompat(t *testing.T) {
 				bson.D{{"_id", "3"}},
 				bson.D{{"_id", "4"}, {"_id", "4"}},
 			},
-			ordered: true,
+			ordered:          true,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/295",
 		},
 		"UnorderedThreeErrors": {
 			insert: []any{
@@ -229,7 +247,8 @@ func TestInsertCompat(t *testing.T) {
 				bson.D{{"_id", "3"}},
 				bson.D{{"_id", "4"}, {"_id", "4"}},
 			},
-			ordered: false,
+			ordered:          false,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/295",
 		},
 	}
 
