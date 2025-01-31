@@ -85,6 +85,8 @@ func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
 		return err
 	}
 
+	buf.WriteRune('\n')
+
 	h.m.Lock()
 	defer h.m.Unlock()
 
