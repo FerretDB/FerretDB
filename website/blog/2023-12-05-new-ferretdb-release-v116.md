@@ -8,7 +8,7 @@ image: /img/blog/ferretdb-v1.16.0.jpg
 tags: [release]
 ---
 
-![FerretDB releases v.1.16.0](/img/blog/ferretdb-v1.16.0.jpg)
+![FerretDB releases v1.16.0](/img/blog/ferretdb-v1.16.0.jpg)
 
 We are delighted to announce the release of FerretDB v1.16.0, where we update our documentation to be compatible with Docusaurus v3, enable support for `DeleteAll` for capped collections, and more.
 

@@ -14,18 +14,9 @@ body:
   - type: textarea
     id: version
     attributes:
-      label: FerretDB version
+      label: FerretDB, PostgreSQL, and DocumentDB versions
       description: >
-        What version and package of FerretDB do you use?
-        Please provide an output of running FerretDB with [`--version` flag](https://docs.ferretdb.io/configuration/flags/).
-    validations:
-      required: true
-  - type: input
-    id: backend
-    attributes:
-      label: Backend
-      description: >
-        What backend (PostgreSQL, etc) and what version do you use?
+        Please add the output of the `serverStatus` command.
     validations:
       required: true
   - type: textarea
@@ -33,9 +24,9 @@ body:
       label: Environment
       description: |
         For example:
-          - **OS**: Ubuntu 22.04 x86_64
-          - **Deployment**: Docker using `ghcr.io/ferretdb/ferretdb:1.15.0` image
-          - **Deployment details**: Docker version 24.0.6
+          - **OS**: Ubuntu 24.04 x86_64
+          - **Deployment**: Docker using `ghcr.io/ferretdb/ferretdb:2` image
+          - **Deployment details**: Docker version 27.3.1
       value: |
         - OS:
         - Deployment:

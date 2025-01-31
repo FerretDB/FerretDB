@@ -17,25 +17,22 @@ package integration
 import (
 	"net"
 	"net/url"
-	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
-	"github.com/FerretDB/FerretDB/internal/util/testutil/teststress"
+	"github.com/FerretDB/FerretDB/v2/internal/util/testutil/teststress"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/v2/integration/setup"
+	"github.com/FerretDB/FerretDB/v2/integration/shareddata"
 )
 
-func TestCommandsDiagnosticConnectionStatus(t *testing.T) {
+func TestConnectionStatusCommand(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
@@ -48,7 +45,7 @@ func TestCommandsDiagnosticConnectionStatus(t *testing.T) {
 	assert.Equal(t, float64(1), ok)
 }
 
-func TestCommandsDiagnosticExplain(t *testing.T) {
+func TestExplainCommand(t *testing.T) {
 	t.Parallel()
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{
 		Providers: []shareddata.Provider{shareddata.Int32s},
@@ -75,7 +72,6 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 			},
 		},
 	} {
-		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
@@ -84,45 +80,80 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 			err := collection.Database().RunCommand(ctx, bson.D{{"explain", tc.query}}).Decode(&actual)
 			require.NoError(t, err)
 
-			explainResult := actual.Map()
+			var actualComparable bson.D
 
-			assert.Equal(t, float64(1), explainResult["ok"])
+			for _, elem := range actual {
+				switch elem.Key {
+				case "explainVersion":
+					assert.True(t, elem.Value == "1" || elem.Value == "2") // explainVersion 1 and 2 are in use for different methods on Mongo 7
+					actualComparable = append(actualComparable, bson.E{"explainVersion", "1"})
 
-			// explainVersion 1 and 2 are in use for different methods on Mongo 7
-			assert.True(t, explainResult["explainVersion"] == "1" || explainResult["explainVersion"] == "2")
-			assert.Equal(t, tc.command, explainResult["command"])
+				case "serverInfo":
+					var elemComparable bson.D
 
-			serverInfo := ConvertDocument(t, explainResult["serverInfo"].(bson.D))
-			keys := serverInfo.Keys()
-			values := serverInfo.Values()
+					for _, subElem := range elem.Value.(bson.D) {
+						switch subElem.Key {
+						case "host":
+							assert.IsType(t, "", subElem.Value)
+							assert.NotEmpty(t, subElem.Value)
+							elemComparable = append(elemComparable, bson.E{"host", ""})
 
-			var host string
-			var gitVersion string
-			var version string
+						case "port":
+							assert.IsType(t, int32(0), subElem.Value)
+							elemComparable = append(elemComparable, bson.E{"port", int32(0)})
 
-			for i, k := range keys {
-				switch k {
-				case "host":
-					host = values[i].(string)
-				case "gitVersion":
-					gitVersion = values[i].(string)
-				case "version":
-					version = values[i].(string)
+						case "version":
+							assert.IsType(t, "", subElem.Value)
+							assert.Regexp(t, `^7\.0\.`, subElem.Value)
+							elemComparable = append(elemComparable, bson.E{"version", "7.0.0"})
+
+						case "gitVersion":
+							assert.IsType(t, "", subElem.Value)
+							assert.NotEmpty(t, subElem.Value)
+							elemComparable = append(elemComparable, bson.E{"gitVersion", ""})
+
+						case "ferretdb":
+							// ignore
+
+						default:
+							elemComparable = append(elemComparable, subElem)
+						}
+					}
+
+					actualComparable = append(actualComparable, bson.E{"serverInfo", elemComparable})
+
+				case "queryPlanner":
+					assert.NotEmpty(t, elem.Value)
+					assert.IsType(t, bson.D{}, elem.Value)
+					actualComparable = append(actualComparable, bson.E{elem.Key, bson.D{}})
+
+				case "serverParameters", "executionStats":
+					// ignore
+
+				default:
+					actualComparable = append(actualComparable, elem)
 				}
 			}
 
-			assert.NotEmpty(t, host)
+			expected := bson.D{
+				{"explainVersion", "1"},
+				{"queryPlanner", bson.D{}},
+				{"command", tc.command},
+				{"serverInfo", bson.D{
+					{"host", ""},
+					{"port", int32(0)},
+					{"version", "7.0.0"},
+					{"gitVersion", ""},
+				}},
+				{"ok", float64(1)},
+			}
 
-			assert.NotEmpty(t, gitVersion)
-			assert.Regexp(t, `^7\.0\.`, version)
-
-			assert.NotEmpty(t, explainResult["queryPlanner"])
-			assert.IsType(t, bson.D{}, explainResult["queryPlanner"])
+			AssertEqualDocuments(t, expected, actualComparable)
 		})
 	}
 }
 
-func TestCommandsDiagnosticGetLog(t *testing.T) {
+func TestGetLogCommand(t *testing.T) {
 	t.Parallel()
 	res := setup.SetupWithOpts(t, &setup.SetupOpts{
 		DatabaseName: "admin",
@@ -133,32 +164,31 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 	for name, tc := range map[string]struct {
 		command bson.D // required, command to run
 
-		expected   map[string]any      // optional, expected keys of response
-		err        *mongo.CommandError // optional, expected error from MongoDB
-		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
-		skip       string              // optional, skip test with a specified reason
+		expectedComparable bson.D
+		err                *mongo.CommandError // optional, expected error from MongoDB
+		altMessage         string              // optional, alternative error message for FerretDB, ignored if empty
 	}{
 		"Asterisk": {
 			command: bson.D{{"getLog", "*"}},
-			expected: map[string]any{
-				"names": bson.A(bson.A{"global", "startupWarnings"}),
-				"ok":    float64(1),
+			expectedComparable: bson.D{
+				{"names", bson.A{"global", "startupWarnings"}},
+				{"ok", float64(1)},
 			},
 		},
 		"Global": {
 			command: bson.D{{"getLog", "global"}},
-			expected: map[string]any{
-				"totalLinesWritten": int64(1024),
-				"log":               bson.A{},
-				"ok":                float64(1),
+			expectedComparable: bson.D{
+				{Key: "totalLinesWritten"},
+				{Key: "log"},
+				{"ok", float64(1)},
 			},
 		},
 		"StartupWarnings": {
 			command: bson.D{{"getLog", "startupWarnings"}},
-			expected: map[string]any{
-				"totalLinesWritten": int64(1024),
-				"log":               bson.A{},
-				"ok":                float64(1),
+			expectedComparable: bson.D{
+				{Key: "totalLinesWritten"},
+				{Key: "log"},
+				{"ok", float64(1)},
 			},
 		},
 		"NonExistentName": {
@@ -187,12 +217,7 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 			},
 		},
 	} {
-		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
-
 			t.Parallel()
 
 			require.NotNil(t, tc.command, "command must not be nil")
@@ -208,20 +233,30 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 
 			require.NoError(t, err)
 
-			m := res.Map()
-			k := CollectKeys(t, res)
+			var resComparable bson.D
 
-			for key, item := range tc.expected {
-				assert.Contains(t, k, key)
-				if key != "log" && key != "totalLinesWritten" {
-					assert.Equal(t, m[key], item)
+			for _, elem := range res {
+				switch elem.Key {
+				case "log":
+					resComparable = append(resComparable, bson.E{Key: elem.Key})
+					log, ok := elem.Value.(bson.A)
+					assert.True(t, ok)
+					assert.Positive(t, len(log))
+				case "totalLinesWritten":
+					assert.IsType(t, int32(0), elem.Value)
+					assert.Positive(t, elem.Value)
+					resComparable = append(resComparable, bson.E{Key: elem.Key})
+				default:
+					resComparable = append(resComparable, elem)
 				}
 			}
+
+			AssertEqualDocuments(t, tc.expectedComparable, resComparable)
 		})
 	}
 }
 
-func TestCommandsDiagnosticHostInfo(t *testing.T) {
+func TestHostInfoCommand(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
@@ -229,137 +264,254 @@ func TestCommandsDiagnosticHostInfo(t *testing.T) {
 	err := collection.Database().RunCommand(ctx, bson.D{{"hostInfo", 42}}).Decode(&a)
 	require.NoError(t, err)
 
-	actual := ConvertDocument(t, a)
-	assert.Equal(t, float64(1), must.NotFail(actual.Get("ok")))
+	var actualComparable bson.D
 
-	keys := actual.Keys()
-	keys = slices.DeleteFunc(keys, func(val string) bool {
-		return val == "$clusterTime" || val == "operationTime"
-	})
-	assert.Equal(t, []string{"system", "os", "extra", "ok"}, keys)
+	for _, elem := range a {
+		switch elem.Key {
+		case "system":
+			var elemForComparsion bson.D
 
-	os := must.NotFail(actual.Get("os")).(*types.Document)
-	assert.Equal(t, []string{"type", "name", "version"}, os.Keys())
+			for _, subElem := range elem.Value.(bson.D) {
+				switch subElem.Key {
+				case "currentTime":
+					assert.IsType(t, primitive.DateTime(0), subElem.Value)
+					elemForComparsion = append(elemForComparsion, bson.E{"currentTime", primitive.DateTime(0)})
 
-	system := must.NotFail(actual.Get("system")).(*types.Document)
-	keys = system.Keys()
-	assert.Contains(t, keys, "currentTime")
-	assert.Contains(t, keys, "hostname")
-	assert.Contains(t, keys, "cpuAddrSize")
-	assert.Contains(t, keys, "numCores")
-	assert.Contains(t, keys, "cpuArch")
+				case "hostname", "cpuArch":
+					assert.IsType(t, "", subElem.Value)
+					elemForComparsion = append(elemForComparsion, bson.E{subElem.Key, ""})
+
+				case "cpuAddrSize", "numCores":
+					assert.IsType(t, int32(0), subElem.Value)
+					elemForComparsion = append(elemForComparsion, bson.E{subElem.Key, int32(0)})
+
+				case "numPhysicalCores", "numCpuSockets", "numNumaNodes", "numaEnabled", "memSizeMB", "memLimitMB":
+					// not implemented in FerretDB, do nothing
+					// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/587
+
+				default:
+					elemForComparsion = append(elemForComparsion, subElem)
+				}
+			}
+
+			actualComparable = append(actualComparable, bson.E{"system", elemForComparsion})
+
+		case "os":
+			var elemForComparsion bson.D
+
+			for _, subElem := range elem.Value.(bson.D) {
+				switch subElem.Key {
+				case "type", "name", "version":
+					assert.IsType(t, "", subElem.Value)
+					elemForComparsion = append(elemForComparsion, bson.E{subElem.Key, ""})
+
+				default:
+					elemForComparsion = append(elemForComparsion, subElem)
+				}
+			}
+
+			actualComparable = append(actualComparable, bson.E{"os", elemForComparsion})
+
+		case "extra":
+			assert.IsType(t, bson.D{}, elem.Value)
+			actualComparable = append(actualComparable, bson.E{"extra", bson.D{}})
+
+		default:
+			actualComparable = append(actualComparable, elem)
+		}
+	}
+
+	expected := bson.D{
+		{"system", bson.D{
+			{"currentTime", primitive.DateTime(0)},
+			{"hostname", ""},
+			{"cpuAddrSize", int32(0)},
+			{"numCores", int32(0)},
+			{"cpuArch", ""},
+		}},
+		{"os", bson.D{
+			{"type", ""},
+			{"name", ""},
+			{"version", ""},
+		}},
+		{"extra", bson.D{}},
+		{"ok", float64(1)},
+	}
+
+	AssertEqualDocuments(t, expected, actualComparable)
 }
 
-func TestCommandsDiagnosticListCommands(t *testing.T) {
+func TestListCommandsCommand(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
-	var a bson.D
-	err := collection.Database().RunCommand(ctx, bson.D{{"listCommands", 42}}).Decode(&a)
+	var res bson.D
+	err := collection.Database().RunCommand(ctx, bson.D{{"listCommands", 42}}).Decode(&res)
 	require.NoError(t, err)
 
-	actual := ConvertDocument(t, a)
-	assert.Equal(t, float64(1), must.NotFail(actual.Get("ok")))
+	var actualForComparsion bson.D
 
-	keys := actual.Keys()
-	keys = slices.DeleteFunc(keys, func(val string) bool {
-		return val == "$clusterTime" || val == "operationTime"
-	})
-	assert.Equal(t, []string{"commands", "ok"}, keys)
+	for _, v := range res {
+		switch v.Key {
+		case "commands":
+			var commandsComparable bson.D
 
-	commands := must.NotFail(actual.Get("commands")).(*types.Document)
-	listCommands := must.NotFail(commands.Get("listCommands")).(*types.Document)
-	assert.NotEmpty(t, must.NotFail(listCommands.Get("help")).(string))
+			for _, command := range v.Value.(bson.D) {
+				var commandComparable bson.D
+
+				switch command.Key {
+				case "listCommands":
+					for _, subV := range command.Value.(bson.D) {
+						switch subV.Key {
+						case "help":
+							assert.IsType(t, "", subV.Value)
+							commandComparable = append(commandComparable, bson.E{"help", bson.D{}})
+
+						case "requiresAuth", "secondaryOk", "adminOnly", "apiVersions", "deprecatedApiVersions":
+							// not implemented in FerretDB, do nothing
+							// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/588
+
+						default:
+							commandComparable = append(commandComparable, subV)
+						}
+					}
+
+					commandsComparable = append(commandsComparable, bson.E{command.Key, commandComparable})
+
+				default:
+					// do nothing, we only check "listCommands" command for now
+				}
+			}
+
+			actualForComparsion = append(actualForComparsion, bson.E{"commands", commandsComparable})
+
+		default:
+			actualForComparsion = append(actualForComparsion, v)
+		}
+	}
+
+	expected := bson.D{
+		{"commands", bson.D{{"listCommands", bson.D{{"help", bson.D{}}}}}},
+		{"ok", float64(1)},
+	}
+
+	AssertEqualDocuments(t, expected, actualForComparsion)
 }
 
-func TestCommandsDiagnosticValidate(t *testing.T) {
+func TestValidateCommand(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Basic", func(t *testing.T) {
-		t.Parallel()
+	t.Run("Basic", func(tt *testing.T) {
+		tt.Parallel()
 
-		ctx, collection := setup.Setup(t, shareddata.Doubles)
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/1015")
 
-		var doc bson.D
+		ctx, collection := setup.Setup(tt, shareddata.Doubles)
+
+		var res bson.D
 		command := bson.D{{"validate", collection.Name()}}
-		err := collection.Database().RunCommand(ctx, command).Decode(&doc)
+		err := collection.Database().RunCommand(ctx, command).Decode(&res)
 		require.NoError(t, err)
 
-		actual := ConvertDocument(t, doc)
-		expected := must.NotFail(types.NewDocument(
-			"ns", "TestCommandsDiagnosticValidate-Basic.TestCommandsDiagnosticValidate-Basic",
-			"nInvalidDocuments", int32(0),
-			"nNonCompliantDocuments", int32(0),
-			"nrecords", int32(25),
-			"nIndexes", int32(1),
-			"valid", true,
-			"repaired", false,
-			"warnings", types.MakeArray(0),
-			"errors", types.MakeArray(0),
-			"extraIndexEntries", types.MakeArray(0),
-			"missingIndexEntries", types.MakeArray(0),
-			"corruptRecords", types.MakeArray(0),
-			"ok", float64(1),
-		))
+		var uuid primitive.Binary
 
-		// TODO https://github.com/FerretDB/FerretDB/issues/3841
-		actual.Remove("uuid")
-		actual.Remove("keysPerIndex")
-		actual.Remove("indexDetails")
-		actual.Remove("$clusterTime")
-		actual.Remove("operationTime")
+		for _, elem := range res {
+			if elem.Key != "uuid" {
+				continue
+			}
 
-		testutil.AssertEqual(t, expected, actual)
+			uuid = elem.Value.(primitive.Binary)
+			require.Equal(t, bson.TypeBinaryUUID, uuid.Subtype)
+			require.Equal(t, 16, len(uuid.Data))
+
+			break
+		}
+
+		expected := bson.D{
+			{"ns", "TestValidateCommand-Basic.TestValidateCommand-Basic"},
+			{"uuid", uuid},
+			{"nInvalidDocuments", int32(0)},
+			{"nNonCompliantDocuments", int32(0)},
+			{"nrecords", int32(25)},
+			{"nIndexes", int32(1)},
+			{"keysPerIndex", bson.D{{"_id_", int32(25)}}},
+			{"indexDetails", bson.D{{"_id_", bson.D{{"valid", true}}}}},
+			{"valid", true},
+			{"repaired", false},
+			{"warnings", bson.A{}},
+			{"errors", bson.A{}},
+			{"extraIndexEntries", bson.A{}},
+			{"missingIndexEntries", bson.A{}},
+			{"corruptRecords", bson.A{}},
+			{"ok", float64(1)},
+		}
+
+		AssertEqualDocuments(t, expected, res)
 	})
 
-	t.Run("TwoIndexes", func(t *testing.T) {
-		t.Parallel()
+	t.Run("TwoIndexes", func(tt *testing.T) {
+		tt.Parallel()
 
-		ctx, collection := setup.Setup(t, shareddata.Doubles)
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/1016")
+
+		ctx, collection := setup.Setup(tt, shareddata.Doubles)
 
 		_, err := collection.Indexes().CreateOne(ctx, mongo.IndexModel{Keys: bson.D{{"a", 1}}})
 		require.NoError(t, err)
 
-		var doc bson.D
+		var res bson.D
 		command := bson.D{{"validate", collection.Name()}}
-		err = collection.Database().RunCommand(ctx, command).Decode(&doc)
+		err = collection.Database().RunCommand(ctx, command).Decode(&res)
 		require.NoError(t, err)
 
-		actual := ConvertDocument(t, doc)
-		expected := must.NotFail(types.NewDocument(
-			"ns", "TestCommandsDiagnosticValidate-TwoIndexes.TestCommandsDiagnosticValidate-TwoIndexes",
-			"nInvalidDocuments", int32(0),
-			"nNonCompliantDocuments", int32(0),
-			"nrecords", int32(25),
-			"nIndexes", int32(2),
-			"valid", true,
-			"repaired", false,
-			"warnings", types.MakeArray(0),
-			"errors", types.MakeArray(0),
-			"extraIndexEntries", types.MakeArray(0),
-			"missingIndexEntries", types.MakeArray(0),
-			"corruptRecords", types.MakeArray(0),
-			"ok", float64(1),
-		))
+		var uuid primitive.Binary
 
-		actual.Remove("uuid")
-		actual.Remove("keysPerIndex")
-		actual.Remove("indexDetails")
-		actual.Remove("$clusterTime")
-		actual.Remove("operationTime")
+		for _, elem := range res {
+			if elem.Key != "uuid" {
+				continue
+			}
 
-		testutil.AssertEqual(t, expected, actual)
+			uuid = elem.Value.(primitive.Binary)
+			require.Equal(t, bson.TypeBinaryUUID, uuid.Subtype)
+			require.Equal(t, 16, len(uuid.Data))
+
+			break
+		}
+
+		expected := bson.D{
+			{"ns", "TestValidateCommand-TwoIndexes.TestValidateCommand-TwoIndexes"},
+			{"uuid", uuid},
+			{"nInvalidDocuments", int32(0)},
+			{"nNonCompliantDocuments", int32(0)},
+			{"nrecords", int32(25)},
+			{"nIndexes", int32(2)},
+			{"keysPerIndex", bson.D{{"_id_", int32(25)}, {"a_1", int32(25)}}},
+			{"indexDetails", bson.D{
+				{"_id_", bson.D{{"valid", true}}},
+				{"a_1", bson.D{{"valid", true}}},
+			}},
+			{"valid", true},
+			{"repaired", false},
+			{"warnings", bson.A{}},
+			{"errors", bson.A{}},
+			{"extraIndexEntries", bson.A{}},
+			{"missingIndexEntries", bson.A{}},
+			{"corruptRecords", bson.A{}},
+			{"ok", float64(1)},
+		}
+
+		AssertEqualDocuments(t, expected, res)
 	})
 }
 
-func TestCommandsDiagnosticValidateError(t *testing.T) {
-	t.Skip("https://github.com/FerretDB/FerretDB/issues/2704")
-
+func TestValidateCommandError(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
 		command bson.D
-		err     *mongo.CommandError
+
+		err              *mongo.CommandError
+		failsForFerretDB string
 	}{
 		"InvalidTypeDocument": {
 			command: bson.D{{"validate", bson.D{}}},
@@ -374,13 +526,17 @@ func TestCommandsDiagnosticValidateError(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    26,
 				Name:    "NamespaceNotFound",
-				Message: "Collection 'TestCommandsDiagnosticValidateError-NonExistentCollection.nonExistentCollection' does not exist to validate.",
+				Message: "Collection 'TestValidateCommandError-NonExistentCollection.nonExistentCollection' does not exist to validate.",
 			},
 		},
 	} {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
+		t.Run(name, func(tt *testing.T) {
+			tt.Parallel()
+
+			var t testing.TB = tt
+			if tc.failsForFerretDB != "" {
+				t = setup.FailsForFerretDB(tt, tc.failsForFerretDB)
+			}
 
 			require.NotNil(t, tc.command, "command must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
@@ -396,7 +552,7 @@ func TestCommandsDiagnosticValidateError(t *testing.T) {
 	}
 }
 
-func TestCommandsDiagnosticWhatsMyURI(t *testing.T) {
+func TestWhatsMyURICommand(t *testing.T) {
 	t.Parallel()
 
 	s := setup.SetupWithOpts(t, nil)
@@ -418,36 +574,40 @@ func TestCommandsDiagnosticWhatsMyURI(t *testing.T) {
 	var ports []string
 
 	for _, collection := range []*mongo.Collection{collection1, collection2} {
-		var actual bson.D
+		var res bson.D
 		command := bson.D{{"whatsmyuri", int32(1)}}
-		err := collection.Database().RunCommand(s.Ctx, command).Decode(&actual)
+		err = collection.Database().RunCommand(s.Ctx, command).Decode(&res)
 		require.NoError(t, err)
 
-		doc := ConvertDocument(t, actual)
-		keys := doc.Keys()
-		values := doc.Values()
+		var actualComparable bson.D
 
-		var ok float64
-		var you string
-
-		for i, k := range keys {
-			switch k {
-			case "ok":
-				ok = values[i].(float64)
+		for _, field := range res {
+			switch field.Key {
 			case "you":
-				you = values[i].(string)
+				you := field.Value.(string)
+
+				if !isUnix {
+					// record ports to compare that they are not equal for two different clients.
+					var port string
+					_, port, err = net.SplitHostPort(you)
+					require.NoError(t, err)
+					assert.NotEmpty(t, port)
+					ports = append(ports, port)
+				}
+
+				actualComparable = append(actualComparable, bson.E{"you", ""})
+
+			default:
+				actualComparable = append(actualComparable, field)
 			}
 		}
 
-		assert.Equal(t, float64(1), ok)
-
-		if !isUnix {
-			// record ports to compare that they are not equal for two different clients.
-			_, port, err := net.SplitHostPort(you)
-			require.NoError(t, err)
-			assert.NotEmpty(t, port)
-			ports = append(ports, port)
+		expected := bson.D{
+			{"you", ""},
+			{"ok", float64(1)},
 		}
+
+		AssertEqualDocuments(t, expected, actualComparable)
 	}
 
 	if !isUnix {
@@ -456,20 +616,11 @@ func TestCommandsDiagnosticWhatsMyURI(t *testing.T) {
 	}
 }
 
-// TestCommandWhatsMyURIConnection tests that integration test setup applies
-// minPoolSize, maxPoolSize and maxIdleTimeMS correctly to the driver.
-// It also tests that the driver behaves like we think it should.
-func TestCommandWhatsMyURIConnection(t *testing.T) {
+// TestWhatsMyURICommandSingleConn tests that SingleConn behaves like advertised.
+func TestWhatsMyURICommandSingleConn(t *testing.T) {
 	t.Parallel()
 
-	// options are applied to create a client that uses single connection pool
-	s := setup.SetupWithOpts(t, &setup.SetupOpts{
-		ExtraOptions: url.Values{
-			"minPoolSize":   []string{"1"},
-			"maxPoolSize":   []string{"1"},
-			"maxIdleTimeMS": []string{"0"},
-		},
-	})
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{SingleConn: true})
 
 	collection1 := s.Collection
 	databaseName := s.Collection.Database().Name()
@@ -488,20 +639,30 @@ func TestCommandWhatsMyURIConnection(t *testing.T) {
 			err := collection1.Database().RunCommand(s.Ctx, bson.D{{"whatsmyuri", int32(1)}}).Decode(&res)
 			require.NoError(t, err)
 
-			doc := ConvertDocument(t, res)
-			v, _ := doc.Get("ok")
-			resOk, ok := v.(float64)
-			require.True(t, ok)
-			assert.Equal(t, float64(1), resOk)
+			var actualComparable bson.D
 
-			v, _ = doc.Get("you")
-			you, ok := v.(string)
-			require.True(t, ok)
+			for _, field := range res {
+				switch field.Key {
+				case "you":
+					var port string
+					_, port, err = net.SplitHostPort(field.Value.(string))
+					require.NoError(t, err)
+					assert.NotEmpty(t, port)
+					ports <- port
 
-			_, port, err := net.SplitHostPort(you)
-			require.NoError(t, err)
-			assert.NotEmpty(t, port)
-			ports <- port
+					actualComparable = append(actualComparable, bson.E{"you", ""})
+
+				default:
+					actualComparable = append(actualComparable, field)
+				}
+			}
+
+			expected := bson.D{
+				{"you", ""},
+				{"ok", float64(1)},
+			}
+
+			AssertEqualDocuments(t, expected, actualComparable)
 		})
 
 		close(ports)
@@ -532,21 +693,30 @@ func TestCommandWhatsMyURIConnection(t *testing.T) {
 			err := collection.Database().RunCommand(s.Ctx, bson.D{{"whatsmyuri", int32(1)}}).Decode(&res)
 			require.NoError(t, err)
 
-			doc := ConvertDocument(t, res)
-			v, _ := doc.Get("ok")
-			resOk, ok := v.(float64)
-			require.True(t, ok)
-			assert.Equal(t, float64(1), resOk)
+			var actualComparable bson.D
 
-			v, _ = doc.Get("you")
-			you, ok := v.(string)
-			require.True(t, ok)
+			for _, field := range res {
+				switch field.Key {
+				case "you":
+					var port string
+					_, port, err = net.SplitHostPort(field.Value.(string))
+					require.NoError(t, err)
+					assert.NotEmpty(t, port)
+					ports = append(ports, port)
 
-			_, port, err := net.SplitHostPort(you)
-			require.NoError(t, err)
-			assert.NotEmpty(t, port)
+					actualComparable = append(actualComparable, bson.E{"you", ""})
 
-			ports = append(ports, port)
+				default:
+					actualComparable = append(actualComparable, field)
+				}
+			}
+
+			expected := bson.D{
+				{"you", ""},
+				{"ok", float64(1)},
+			}
+
+			AssertEqualDocuments(t, expected, actualComparable)
 		}
 
 		require.Equal(t, 2, len(ports))
