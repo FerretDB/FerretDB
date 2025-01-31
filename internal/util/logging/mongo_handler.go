@@ -15,9 +15,13 @@
 package logging
 
 import (
+	"bytes"
 	"context"
+	"io"
 	"log/slog"
+	"sync"
 
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -26,6 +30,9 @@ type mongoHandler struct {
 	opts *NewHandlerOpts
 
 	jsonHandler slog.Handler
+
+	m   *sync.Mutex
+	out io.Writer
 }
 
 type mongoLog struct {
@@ -42,6 +49,16 @@ type mongoLog struct {
 	Size       bson.D             `bson:"size"`
 }
 
+func newMongoHandler(out io.Writer, opts *NewHandlerOpts) *mongoHandler {
+	must.NotBeZero(opts)
+
+	return &mongoHandler{
+		opts: opts,
+		m:    new(sync.Mutex),
+		out:  out,
+	}
+}
+
 func (h *mongoHandler) Enabled(_ context.Context, l slog.Level) bool {
 	minLevel := slog.LevelInfo
 	if h.opts.Level != nil {
@@ -52,11 +69,27 @@ func (h *mongoHandler) Enabled(_ context.Context, l slog.Level) bool {
 }
 
 func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
+	var buf bytes.Buffer
+
 	logRecord := mongoLog{
 		Timestamp: primitive.NewDateTimeFromTime(r.Time),
 	}
 
 	extJSON, err := bson.MarshalExtJSON(&logRecord, false, false)
+	if err != nil {
+		return err
+	}
+
+	_, err = buf.Write(extJSON)
+	if err != nil {
+		return err
+	}
+
+	h.m.Lock()
+	defer h.m.Unlock()
+
+	_, err = buf.WriteTo(h.out)
+	return err
 }
 
 func (h *mongoHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
