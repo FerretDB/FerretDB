@@ -103,7 +103,7 @@ func (r *ReadyZ) Probe(ctx context.Context) bool {
 			return false
 		}
 
-		if res.Get("ok").(float64) == 0 {
+		if res.Get("ok").(float64) == 1 {
 			r.l.InfoContext(ctx, fmt.Sprintf("Ping to %s successful", u))
 			continue
 		}
