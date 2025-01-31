@@ -19,6 +19,8 @@ import (
 	"context"
 	"io"
 	"log/slog"
+	"runtime"
+	"strconv"
 	"sync"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
@@ -41,7 +43,7 @@ type mongoLog struct {
 	Ctx        string             `bson:"ctx"` // TODO
 	Svc        string             `bson:"svc,omitempty"`
 	Msg        string             `bson:"msg"`
-	Attr       bson.D             `bson:"attr,omitempty"`
+	Attr       map[string]any     `bson:"attr,omitempty"`
 	Tags       []string           `bson:"tags,omitempty"`
 	Truncated  bson.D             `bson:"truncated,omitempty"`
 	Size       bson.D             `bson:"size,omitempty"`
@@ -74,6 +76,33 @@ func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
 		Severity:  getSeverity(r.Level),
 		Msg:       r.Message,
 	}
+
+	if !h.opts.RemoveSource {
+		f, _ := runtime.CallersFrames([]uintptr{r.PC}).Next()
+		if f.File != "" {
+			logRecord.Ctx = shortPath(f.File) + ":" + strconv.Itoa(f.Line)
+		}
+	}
+
+	m := make(map[string]any, r.NumAttrs())
+
+	r.Attrs(func(attr slog.Attr) bool {
+		if attr.Key != "" {
+			m[attr.Key] = resolve(attr.Value)
+
+			return true
+		}
+
+		if attr.Value.Kind() == slog.KindGroup {
+			for _, gAttr := range attr.Value.Group() {
+				m[gAttr.Key] = resolve(gAttr.Value)
+			}
+		}
+
+		return true
+	})
+
+	logRecord.Attr = m
 
 	extJSON, err := bson.MarshalExtJSON(&logRecord, false, false)
 	if err != nil {
