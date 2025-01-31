@@ -72,6 +72,7 @@ func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
 	logRecord := mongoLog{
 		Timestamp: primitive.NewDateTimeFromTime(r.Time),
 		Severity:  getSeverity(r.Level),
+		Msg:       r.Message,
 	}
 
 	extJSON, err := bson.MarshalExtJSON(&logRecord, false, false)
