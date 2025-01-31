@@ -105,33 +105,13 @@ func Generate(writer io.Writer, f *convertedRoutine) error {
 	}
 	params = append(params, f.GoParams...)
 
-	returns := make([]convertedRoutineParam, len(f.GoReturns))
 	scanArgs := make([]string, len(f.GoReturns))
 
 	for i, r := range f.GoReturns {
-		name := camelCase("out_" + r.Name)
-		scanArgs[i] = fmt.Sprintf("&%s", name)
-		returns[i] = convertedRoutineParam{
-			Name: name,
-			Type: r.Type,
-		}
+		scanArgs[i] = fmt.Sprintf("&%s", r.Name)
 	}
 
-	for _, r := range f.GoInOut {
-		params = append(params, convertedRoutineParam{
-			Name: r.Name,
-			Type: r.Type,
-		})
-
-		name := camelCase("out_" + r.Name)
-		scanArgs = append(scanArgs, fmt.Sprintf("&%s", name))
-		returns = append(returns, convertedRoutineParam{
-			Name: name,
-			Type: r.Type,
-		})
-	}
-
-	returns = append(returns, convertedRoutineParam{
+	returns := append(f.GoReturns, convertedRoutineParam{
 		Name: "err",
 		Type: "error",
 	})
@@ -140,7 +120,7 @@ func Generate(writer io.Writer, f *convertedRoutine) error {
 	queryRowArgs := append([]string{"ctx", fmt.Sprintf(`"%s"`, q)}, sqlArgs...)
 
 	data := templateData{
-		FuncName:     pascalCase(f.Name),
+		FuncName:     f.Name,
 		SQLFuncName:  f.SQLFuncName,
 		Comment:      f.Comment,
 		Params:       params,
@@ -154,8 +134,8 @@ func Generate(writer io.Writer, f *convertedRoutine) error {
 
 // generateSQL builds SQL query and arguments for the given function definition.
 func generateSQL(f *convertedRoutine) (string, []string) {
-	args := make([]string, len(f.GoParams)+len(f.GoInOut))
-	for i, p := range append(f.GoParams, f.GoInOut...) {
+	args := make([]string, len(f.GoParams))
+	for i, p := range f.GoParams {
 		args[i] = p.Name
 	}
 
