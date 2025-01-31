@@ -32,7 +32,7 @@ env:
 jobs:
   build:
     name: Build docs
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
 
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
@@ -54,6 +54,7 @@ jobs:
           filesizelimit: 102400b
           labelName: use-git-lfs
           exclusionPatterns: |
+            **/*.go
             **/*.js
             **/*.md
             **/go.sum
@@ -70,11 +71,13 @@ jobs:
       - name: Build tools
         run: bin/task env-pull
 
+      - name: Create directory
+        run: mkdir -p tmp/githubcache
+
       - name: Build docs
         run: bin/task docs
-
-      - name: Create directory
-        run: mkdir tmp
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # for checkdocs
 
       - name: Archive docs
         run: >
@@ -100,7 +103,7 @@ jobs:
 
   github:
     name: Deploy to GitHub Pages
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
 
     # exclude pull_request and schedule
