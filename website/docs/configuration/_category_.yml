@@ -1,9 +1,9 @@
 ---
 label: Configuration
-position: 10
+position: 4
 link:
   type: generated-index
-  slug: /configuration/
+  slug: /configuration
   description: >
     This configuration section provides guidance on setting up and customizing
     the FerretDB environment through various flags, variables, and operation

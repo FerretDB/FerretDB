@@ -18,10 +18,9 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"testing"
 
 	"github.com/stretchr/testify/require"
-
-	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 var (
@@ -38,7 +37,7 @@ var (
 // DirectoryName returns a stable directory name for that test.
 //
 // It also could be used as PostgreSQL database name (not FerretDB database / PostgreSQL schema name).
-func DirectoryName(tb testtb.TB) string {
+func DirectoryName(tb testing.TB) string {
 	tb.Helper()
 
 	name := strings.ToLower(tb.Name())
@@ -63,7 +62,7 @@ func DirectoryName(tb testtb.TB) string {
 }
 
 // DatabaseName returns a stable FerretDB database name for that test.
-func DatabaseName(tb testtb.TB) string {
+func DatabaseName(tb testing.TB) string {
 	tb.Helper()
 
 	// do not use strings.ToLower because database names can contain uppercase letters
@@ -89,7 +88,7 @@ func DatabaseName(tb testtb.TB) string {
 }
 
 // CollectionName returns a stable FerretDB collection name for that test.
-func CollectionName(tb testtb.TB) string {
+func CollectionName(tb testing.TB) string {
 	tb.Helper()
 
 	// do not use strings.ToLower because collection names can contain uppercase letters
