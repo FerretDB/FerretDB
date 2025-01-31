@@ -83,7 +83,7 @@ func (h *Handler) MsgGetLog(connCtx context.Context, msg *wire.OpMsg) (*wire.OpM
 	case "global":
 		var log *wirebson.Array
 
-		if log, err = logging.RecentEntries.GetArray(); err != nil {
+		if log, err = h.L.Handler().(*logging.Handler).RecentEntries(); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 

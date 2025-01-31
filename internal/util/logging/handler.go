@@ -25,6 +25,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/devbuild"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
+	"github.com/FerretDB/wire/wirebson"
 )
 
 // Handler is a [slog.Handler] that wraps another handler with support for:
@@ -38,6 +39,7 @@ type Handler struct {
 	base          slog.Handler
 	out           io.Writer
 	checkMessages bool
+	recentEntries *circularBuffer
 }
 
 // NewHandlerOpts represents [NewHandler] options.
@@ -142,6 +144,7 @@ func NewHandler(out io.Writer, opts *NewHandlerOpts) *Handler {
 		base:          h,
 		out:           out,
 		checkMessages: opts.CheckMessages,
+		recentEntries: newCircularBuffer(1024),
 	}
 }
 
@@ -168,7 +171,7 @@ func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
 		}
 	}
 
-	RecentEntries.add(&r)
+	h.recentEntries.add(&r)
 
 	if r.Level < LevelDPanic {
 		return err
@@ -214,6 +217,10 @@ func (h *Handler) WithGroup(name string) slog.Handler {
 		out:           h.out,
 		checkMessages: h.checkMessages,
 	}
+}
+
+func (h *Handler) RecentEntries() (*wirebson.Array, error) {
+	return h.recentEntries.getArray()
 }
 
 // check interfaces
