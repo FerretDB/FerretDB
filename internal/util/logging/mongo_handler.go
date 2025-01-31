@@ -18,6 +18,7 @@ import (
 	"context"
 	"log/slog"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -41,7 +42,11 @@ func (h *mongoHandler) Enabled(_ context.Context, l slog.Level) bool {
 }
 
 func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
-	return h.jsonHandler.Handle(ctx, r)
+	logRecord := mongoLog{
+		Timestamp: primitive.NewDateTimeFromTime(r.Time),
+	}
+
+	extJSON, err := bson.MarshalExtJSON(&logRecord, false, false)
 }
 
 func (h *mongoHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
