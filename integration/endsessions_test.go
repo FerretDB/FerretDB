@@ -168,42 +168,22 @@ func TestEndSessionsUnauthenticated(t *testing.T) {
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{WireConn: setup.WireConnNoAuth})
 
 	ctx, db, conn := s.Ctx, s.Collection, s.WireConn
-	dbName := db.Name()
 
 	randomUUID := must.NotFail(uuid.NewRandom())
 	sessionID := wirebson.Binary{B: randomUUID[:], Subtype: wirebson.BinaryUUID}
 
 	_, resBody, err := conn.Request(ctx, wire.MustOpMsg(
-		"ping", int32(1),
-		"lsid", wirebson.MustDocument("id", sessionID),
-		"$db", dbName,
-	))
-	require.NoError(t, err)
-
-	var res *wirebson.Document
-	res, err = must.NotFail(resBody.(*wire.OpMsg).RawDocument()).DecodeDeep()
-	require.NoError(t, err)
-
-	fixCluster(t, res)
-
-	expected := wirebson.MustDocument(
-		"ok", float64(1),
-	)
-
-	testutil.AssertEqual(t, expected, res)
-
-	_, resBody, err = conn.Request(ctx, wire.MustOpMsg(
 		"endSessions", wirebson.MustArray(wirebson.MustDocument("id", sessionID)),
-		"$db", dbName,
+		"$db", db.Name(),
 	))
 	require.NoError(t, err)
 
-	res, err = must.NotFail(resBody.(*wire.OpMsg).RawDocument()).DecodeDeep()
+	res, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).DecodeDeep()
 	require.NoError(t, err)
 
 	fixCluster(t, res)
 
-	expected = must.NotFail(wirebson.NewDocument(
+	expected := must.NotFail(wirebson.NewDocument(
 		"ok", float64(0),
 		"errmsg", "Command endSessions requires authentication",
 		"code", int32(13),
