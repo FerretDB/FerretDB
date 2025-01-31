@@ -103,12 +103,19 @@ func (r *ReadyZ) Probe(ctx context.Context) bool {
 			return false
 		}
 
-		if res.Get("ok").(float64) != 0 {
-			r.l.ErrorContext(ctx, "Ping failed")
-			return false
+		if res.Get("ok").(float64) == 0 {
+			r.l.InfoContext(ctx, fmt.Sprintf("Ping to %s successful", u))
+			continue
 		}
 
-		r.l.InfoContext(ctx, fmt.Sprintf("Ping to %s successful", u))
+		attrs := []any{
+			slog.Int("code", int(res.Get("code").(int32))),
+			slog.String("code_name", res.Get("codeName").(string)),
+			slog.String("errmsg", res.Get("errmsg").(string)),
+		}
+		r.l.ErrorContext(ctx, "Ping failed", attrs...)
+
+		return false
 	}
 
 	return true
