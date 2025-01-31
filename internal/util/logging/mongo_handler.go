@@ -71,6 +71,7 @@ func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
 
 	logRecord := mongoLog{
 		Timestamp: primitive.NewDateTimeFromTime(r.Time),
+		Severity:  getSeverity(r.Level),
 	}
 
 	extJSON, err := bson.MarshalExtJSON(&logRecord, false, false)
@@ -100,4 +101,19 @@ func (h *mongoHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 func (h *mongoHandler) WithGroup(name string) slog.Handler {
 	// TODO
 	return h
+}
+
+func getSeverity(level slog.Level) string {
+	switch level {
+	case slog.LevelDebug:
+		return "D"
+	case slog.LevelInfo:
+		return "I"
+	case slog.LevelWarn:
+		return "W"
+	case slog.LevelError:
+		return "E"
+	default:
+		return level.String()
+	}
 }
