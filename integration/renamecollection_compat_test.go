@@ -22,8 +22,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/v2/integration/setup"
+	"github.com/FerretDB/FerretDB/v2/integration/shareddata"
 )
 
 func TestRenameCollectionCompat(t *testing.T) {
@@ -147,8 +147,9 @@ func TestRenameCollectionCompatErrors(t *testing.T) {
 	compatDBConnect := compatCollection.Database().Client().Database("admin")
 
 	for name, tc := range map[string]struct {
-		from any
-		to   any
+		from             any
+		to               any
+		failsForFerretDB string
 	}{
 		"NilFrom": {
 			from: nil,
@@ -207,20 +208,23 @@ func TestRenameCollectionCompatErrors(t *testing.T) {
 			to:   dbName + "." + cName,
 		},
 		"InvalidNameTo": {
-			from: dbName + "." + cName,
-			to:   dbName + ".new$Collection",
+			from:             dbName + "." + cName,
+			to:               dbName + ".new$Collection",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/341",
 		},
 		"LongNameTo": {
-			from: dbName + "." + cName,
-			to:   dbName + "." + strings.Repeat("aB", 150),
+			from:             dbName + "." + cName,
+			to:               dbName + "." + strings.Repeat("aB", 150),
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/341",
 		},
 	} {
-		name, tc := name, tc
+		t.Run(name, func(tt *testing.T) {
+			tt.Parallel()
 
-		t.Run(name, func(t *testing.T) {
-			t.Helper()
-
-			t.Parallel()
+			var t testing.TB = tt
+			if tc.failsForFerretDB != "" {
+				t = setup.FailsForFerretDB(tt, tc.failsForFerretDB)
+			}
 
 			var targetRes bson.D
 			targetCommand := bson.D{{"renameCollection", tc.from}, {"to", tc.to}}

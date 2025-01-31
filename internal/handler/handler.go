@@ -12,35 +12,38 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package handler provides a universal handler implementation for all backends.
+// Package handler provides implementations of command handlers.
 package handler
 
 import (
 	"context"
-	"errors"
-	"fmt"
-	"sync"
+	"log/slog"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/backends"
-	"github.com/FerretDB/FerretDB/internal/backends/decorators/oplog"
-	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
-	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
-	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/util/state"
+	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
+	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/operation"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/session"
+	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 )
 
-// Parts of Prometheus metric names.
 const (
-	namespace = "ferretdb"
-	subsystem = "handler"
+	// Minimal supported wire protocol version.
+	minWireVersion = int32(0) // needed for some apps and drivers
+
+	// Maximal supported wire protocol version.
+	maxWireVersion = int32(21)
+
+	// Maximal supported BSON document size (enforced in DocumentDB by BSON_MAX_ALLOWED_SIZE constant).
+	maxBsonObjectSize = int32(16777216)
+
+	// Maximum size of a batch for inserting data.
+	maxWriteBatchSize = int32(100000)
+
+	// Required by C# driver for `IsMaster` and `hello` op reply, without it `DPANIC` is thrown.
+	connectionID = int32(42)
 )
 
 // Handler provides a set of methods to process clients' requests sent over wire protocol.
@@ -52,340 +55,86 @@ const (
 type Handler struct {
 	*NewOpts
 
-	b backends.Backend
+	commands map[string]*command
 
-	cursors  *cursor.Registry
-	commands map[string]command
-	wg       sync.WaitGroup
-
-	cappedCleanupStop             chan struct{}
-	cleanupCappedCollectionsDocs  *prometheus.CounterVec
-	cleanupCappedCollectionsBytes *prometheus.CounterVec
+	operations *operation.Registry
+	s          *session.Registry
 }
 
 // NewOpts represents handler configuration.
 //
 //nolint:vet // for readability
 type NewOpts struct {
-	Backend     backends.Backend
+	Pool *documentdb.Pool
+	Auth bool
+
 	TCPHost     string
 	ReplSetName string
 
-	L             *zap.Logger
+	L             *slog.Logger
 	ConnMetrics   *connmetrics.ConnMetrics
 	StateProvider *state.Provider
 
-	// test options
-	DisablePushdown         bool
-	EnableNestedPushdown    bool
-	CappedCleanupInterval   time.Duration
-	CappedCleanupPercentage uint8
-	EnableNewAuth           bool
-	BatchSize               int
-	MaxBsonObjectSizeBytes  int
+	SessionCleanupInterval time.Duration
 }
 
 // New returns a new handler.
 func New(opts *NewOpts) (*Handler, error) {
-	b := oplog.NewBackend(opts.Backend, opts.L.Named("oplog"))
-
-	if opts.CappedCleanupPercentage >= 100 || opts.CappedCleanupPercentage <= 0 {
-		return nil, fmt.Errorf(
-			"percentage of documents to cleanup must be in range (0, 100), but %d given",
-			opts.CappedCleanupPercentage,
-		)
-	}
-
-	if opts.MaxBsonObjectSizeBytes == 0 {
-		opts.MaxBsonObjectSizeBytes = types.MaxDocumentLen
-	}
+	sessionTimeout := time.Duration(session.LogicalSessionTimeoutMinutes) * time.Minute
 
 	h := &Handler{
-		b:       b,
 		NewOpts: opts,
-		cursors: cursor.NewRegistry(opts.L.Named("cursors")),
 
-		cappedCleanupStop: make(chan struct{}),
-		cleanupCappedCollectionsDocs: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Namespace: namespace,
-				Subsystem: subsystem,
-				Name:      "cleanup_capped_docs",
-				Help:      "Total number of documents deleted in capped collections during cleanup.",
-			},
-			[]string{"db", "collection"},
-		),
-		cleanupCappedCollectionsBytes: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Namespace: namespace,
-				Subsystem: subsystem,
-				Name:      "cleanup_capped_bytes",
-				Help:      "Total number of bytes freed in capped collections during cleanup.",
-			},
-			[]string{"db", "collection"},
-		),
+		operations: operation.NewRegistry(),
+		s:          session.NewRegistry(sessionTimeout, opts.L),
 	}
 
 	h.initCommands()
 
-	h.wg.Add(1)
-
-	go func() {
-		defer h.wg.Done()
-
-		h.runCappedCleanup()
-	}()
-
 	return h, nil
 }
 
-// runCappedCleanup calls capped collections cleanup function according to the given interval.
-func (h *Handler) runCappedCleanup() {
-	if h.CappedCleanupInterval <= 0 {
-		h.L.Info("Capped collections cleanup disabled.")
-		return
+// Run runs the handler until ctx is canceled.
+func (h *Handler) Run(ctx context.Context) {
+	defer func() {
+		h.s.Stop()
+		h.operations.Close()
+		h.L.InfoContext(ctx, "Handler stopped")
+	}()
+
+	sessionCleanupInterval := h.SessionCleanupInterval
+	if sessionCleanupInterval == 0 {
+		sessionCleanupInterval = time.Minute
 	}
 
-	h.L.Info("Capped collections cleanup enabled.", zap.Duration("interval", h.CappedCleanupInterval))
+	ticker := time.NewTicker(sessionCleanupInterval)
 
-	ticker := time.NewTicker(h.CappedCleanupInterval)
 	defer ticker.Stop()
 
 	for {
 		select {
-		case <-ticker.C:
-			if err := h.cleanupAllCappedCollections(context.Background()); err != nil {
-				h.L.Error("Failed to cleanup capped collections.", zap.Error(err))
-			}
-
-		case <-h.cappedCleanupStop:
-			h.L.Info("Capped collections cleanup stopped.")
+		case <-ctx.Done():
+			h.L.InfoContext(ctx, "Expired session deletion stopped")
 			return
+
+		case <-ticker.C:
+			cursorIDs := h.s.DeleteExpired()
+
+			for _, cursorID := range cursorIDs {
+				_ = h.Pool.KillCursor(ctx, cursorID)
+			}
 		}
 	}
 }
 
-// Close gracefully shutdowns handler.
-// It should be called after listener closes all client connections and stops listening.
-func (h *Handler) Close() {
-	h.cursors.Close()
-	close(h.cappedCleanupStop)
-	h.wg.Wait()
-}
-
-// Describe implements prometheus.Collector interface.
+// Describe implements [prometheus.Collector].
 func (h *Handler) Describe(ch chan<- *prometheus.Desc) {
-	h.b.Describe(ch)
-	h.cursors.Describe(ch)
-	h.cleanupCappedCollectionsDocs.Describe(ch)
-	h.cleanupCappedCollectionsBytes.Describe(ch)
+	h.Pool.Describe(ch)
+	h.s.Describe(ch)
 }
 
-// Collect implements prometheus.Collector interface.
+// Collect implements [prometheus.Collector].
 func (h *Handler) Collect(ch chan<- prometheus.Metric) {
-	h.b.Collect(ch)
-	h.cursors.Collect(ch)
-	h.cleanupCappedCollectionsDocs.Collect(ch)
-	h.cleanupCappedCollectionsBytes.Collect(ch)
-}
-
-// cleanupAllCappedCollections drops the given percent of documents from all capped collections.
-func (h *Handler) cleanupAllCappedCollections(ctx context.Context) error {
-	h.L.Debug("cleanupAllCappedCollections: started", zap.Uint8("percentage", h.CappedCleanupPercentage))
-
-	start := time.Now()
-	defer func() {
-		h.L.Debug("cleanupAllCappedCollections: finished", zap.Duration("duration", time.Since(start)))
-	}()
-
-	connInfo := conninfo.New()
-	connInfo.SetBypassBackendAuth()
-	ctx = conninfo.Ctx(ctx, connInfo)
-
-	dbList, err := h.b.ListDatabases(ctx, nil)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	for _, dbInfo := range dbList.Databases {
-		db, err := h.b.Database(dbInfo.Name)
-		if err != nil {
-			return lazyerrors.Error(err)
-		}
-
-		cList, err := db.ListCollections(ctx, nil)
-		if err != nil {
-			return lazyerrors.Error(err)
-		}
-
-		for _, cInfo := range cList.Collections {
-			if !cInfo.Capped() {
-				continue
-			}
-
-			deleted, bytesFreed, err := h.cleanupCappedCollection(ctx, db, &cInfo, false)
-			if err != nil {
-				if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) ||
-					backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseDoesNotExist) {
-					continue
-				}
-
-				return lazyerrors.Error(err)
-			}
-
-			if deleted > 0 || bytesFreed > 0 {
-				h.L.Info("Capped collection cleaned up.",
-					zap.String("db", dbInfo.Name), zap.String("collection", cInfo.Name),
-					zap.Int32("deleted", deleted), zap.Int64("bytesFreed", bytesFreed),
-				)
-			}
-
-			h.cleanupCappedCollectionsDocs.WithLabelValues(dbInfo.Name, cInfo.Name).Add(float64(deleted))
-			h.cleanupCappedCollectionsBytes.WithLabelValues(dbInfo.Name, cInfo.Name).Add(float64(bytesFreed))
-		}
-	}
-
-	return nil
-}
-
-// cleanupCappedCollection drops a percent of documents from the given capped collection and compacts it.
-func (h *Handler) cleanupCappedCollection(ctx context.Context, db backends.Database, cInfo *backends.CollectionInfo, force bool) (int32, int64, error) { //nolint:lll // for readability
-	must.BeTrue(cInfo.Capped())
-
-	var docsDeleted int32
-	var bytesFreed int64
-	var statsBefore, statsAfter *backends.CollectionStatsResult
-
-	coll, err := db.Collection(cInfo.Name)
-	if err != nil {
-		return 0, 0, lazyerrors.Error(err)
-	}
-
-	statsBefore, err = coll.Stats(ctx, &backends.CollectionStatsParams{Refresh: true})
-	if err != nil {
-		return 0, 0, lazyerrors.Error(err)
-	}
-	h.L.Debug("cleanupCappedCollection: stats before", zap.Any("stats", statsBefore))
-
-	// In order to be more precise w.r.t number of documents getting dropped and to avoid
-	// deleting too many documents unnecessarily,
-	//
-	// - First, drop the surplus documents, if document count exceeds capped configuration.
-	// - Collect stats again.
-	// - If collection size still exceeds the capped size, then drop the documents based on
-	//   CappedCleanupPercentage.
-
-	if count := getDocCleanupCount(cInfo, statsBefore); count > 0 {
-		err = deleteFirstNDocuments(ctx, coll, count)
-		if err != nil {
-			return 0, 0, lazyerrors.Error(err)
-		}
-
-		statsAfter, err = coll.Stats(ctx, &backends.CollectionStatsParams{Refresh: true})
-		if err != nil {
-			return 0, 0, lazyerrors.Error(err)
-		}
-
-		h.L.Debug("cleanupCappedCollection: stats after document count reduction", zap.Any("stats", statsAfter))
-
-		docsDeleted += int32(count)
-		bytesFreed += (statsBefore.SizeTotal - statsAfter.SizeTotal)
-
-		statsBefore = statsAfter
-	}
-
-	if count := getSizeCleanupCount(cInfo, statsBefore, h.CappedCleanupPercentage); count > 0 {
-		err = deleteFirstNDocuments(ctx, coll, count)
-		if err != nil {
-			return 0, 0, lazyerrors.Error(err)
-		}
-
-		docsDeleted += int32(count)
-	}
-
-	if _, err = coll.Compact(ctx, &backends.CompactParams{Full: force}); err != nil {
-		return 0, 0, lazyerrors.Error(err)
-	}
-
-	statsAfter, err = coll.Stats(ctx, &backends.CollectionStatsParams{Refresh: true})
-	if err != nil {
-		return 0, 0, lazyerrors.Error(err)
-	}
-
-	h.L.Debug("cleanupCappedCollection: stats after compact", zap.Any("stats", statsAfter))
-
-	bytesFreed += (statsBefore.SizeTotal - statsAfter.SizeTotal)
-
-	// There's a possibility that the size of a collection might be greater at the
-	// end of a compact operation if the collection is being actively written to at
-	// the time of compaction.
-	if bytesFreed < 0 {
-		bytesFreed = 0
-	}
-
-	return docsDeleted, bytesFreed, nil
-}
-
-// getDocCleanupCount returns the number of documents to be deleted during capped collection cleanup
-// based on document count of the collection and capped configuration.
-func getDocCleanupCount(cInfo *backends.CollectionInfo, cStats *backends.CollectionStatsResult) int64 {
-	if cInfo.CappedDocuments == 0 || cInfo.CappedDocuments >= cStats.CountDocuments {
-		return 0
-	}
-
-	return (cStats.CountDocuments - cInfo.CappedDocuments)
-}
-
-// getSizeCleanupCount returns the number of documents to be deleted during capped collection cleanup
-// based collection size, capped configuration and cleanup percentage.
-func getSizeCleanupCount(cInfo *backends.CollectionInfo, cStats *backends.CollectionStatsResult, cleanupPercent uint8) int64 {
-	if cInfo.CappedSize >= cStats.SizeCollection {
-		return 0
-	}
-
-	return int64(float64(cStats.CountDocuments) * float64(cleanupPercent) / 100)
-}
-
-// deleteFirstNDocuments drops first n documents (based on order of insertion) from the collection.
-func deleteFirstNDocuments(ctx context.Context, coll backends.Collection, n int64) error {
-	if n == 0 {
-		return nil
-	}
-
-	res, err := coll.Query(ctx, &backends.QueryParams{
-		Sort:          must.NotFail(types.NewDocument("$natural", int64(1))),
-		Limit:         n,
-		OnlyRecordIDs: true,
-	})
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	defer res.Iter.Close()
-
-	var recordIDs []int64
-
-	for {
-		var doc *types.Document
-
-		_, doc, err = res.Iter.Next()
-		if err != nil {
-			if errors.Is(err, iterator.ErrIteratorDone) {
-				break
-			}
-
-			return lazyerrors.Error(err)
-		}
-
-		recordIDs = append(recordIDs, doc.RecordID())
-	}
-
-	if len(recordIDs) > 0 {
-		_, err := coll.DeleteAll(ctx, &backends.DeleteAllParams{RecordIDs: recordIDs})
-		if err != nil {
-			return lazyerrors.Error(err)
-		}
-	}
-
-	return nil
+	h.Pool.Collect(ch)
+	h.s.Collect(ch)
 }
