@@ -97,7 +97,7 @@ func (r *ReadyZ) Probe(ctx context.Context) bool {
 			return false
 		}
 
-		res, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).DecodeDeep()
+		res, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).Decode()
 		if err != nil {
 			r.l.ErrorContext(ctx, "Decoding ping response failed", logging.Error(err))
 			return false
