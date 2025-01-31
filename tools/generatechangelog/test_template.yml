@@ -1,0 +1,16 @@
+---
+# https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes
+
+changelog:
+  categories:
+    - title: features
+      labels:
+        - code/feature
+
+    - title: bugs
+      labels:
+        - code/bug
+
+    - title: enhancements
+      labels:
+        - code/enhancement

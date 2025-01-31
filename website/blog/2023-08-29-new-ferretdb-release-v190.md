@@ -8,7 +8,7 @@ image: /img/blog/ferretdb-v1.9.0.png
 tags: [release]
 ---
 
-![FerretDB v.1.9.0 - new release](/img/blog/ferretdb-v1.9.0.png)
+![FerretDB v1.9.0 - new release](/img/blog/ferretdb-v1.9.0.png)
 
 We're happy to announce the release of FerretDB v1.9.0, which comes with a couple of enhancements, fixes, and a greater focus on delivering the most performant and optimized [FerretDB](https://www.ferretdb.io) architecture.
 

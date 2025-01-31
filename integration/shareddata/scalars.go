@@ -16,11 +16,13 @@ package shareddata
 
 import (
 	"math"
+	"math/big"
+	"sync"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 const (
@@ -34,7 +36,20 @@ const (
 	Int32Interval = "[0, 2147483647]" // Int32Interval is [0, math.MaxInt32]
 )
 
-var doubleMaxVerge = math.Nextafter(math.MaxFloat64, 0) // 1.7976931348623155e+308: double value that is close to the MaxFloat64 (1.7976931348623157e+308)
+var (
+	doubleMaxVerge = math.Nextafter(math.MaxFloat64, 0) // 1.7976931348623155e+308: double value that is close to the MaxFloat64 (1.7976931348623157e+308)
+
+	// 9999999999999999999999999999999999: the largest value which can be stored as Decimal128 significand (34 digits).
+	decimal128MaxSig = sync.OnceValue(func() *big.Int {
+		i := new(big.Int)
+		var ok bool
+
+		i, ok = i.SetString("9999999999999999999999999999999999", 10)
+		must.BeTrue(ok)
+
+		return i
+	})()
+)
 
 // Scalars contain scalar values for tests.
 //
@@ -108,7 +123,13 @@ var Scalars = &Values[string]{
 		"int64-2":          int64(281474976700000),   // random
 		"int64-3":          int64(72057594040000000), // random
 
-		// no 128-bit decimal floating point (yet)
+		"decimal128-int":      must.NotFail(primitive.ParseDecimal128("42")),
+		"decimal128-int-zero": must.NotFail(primitive.ParseDecimal128("0")),
+
+		"decimal128":        must.NotFail(primitive.ParseDecimal128("42.13")),
+		"decimal128-whole":  must.NotFail(primitive.ParseDecimal128("42.0")),
+		"decimal128-zero":   must.NotFail(primitive.ParseDecimal128("0.0")),
+		"decimal128-double": must.NotFail(primitive.ParseDecimal128("9007199254740991.0")),
 
 		// no Min key
 		// no Max key
@@ -317,6 +338,37 @@ var Int64s = &Values[string]{
 		"int64-prec-min-minus":     -int64(doubleMaxPrec) - 1,
 		"int64-prec-min-minus-two": -int64(doubleMaxPrec) - 2,
 	},
+}
+
+// Decimal128s contains decimal128 values for tests.
+var Decimal128s = &Values[string]{
+	name: "Decimal128s",
+	data: map[string]any{
+		"decimal128":       must.NotFail(primitive.ParseDecimal128("42.13")),
+		"decimal128-whole": must.NotFail(primitive.ParseDecimal128("42.0")),
+		"decimal128-zero":  must.NotFail(primitive.ParseDecimal128("0.0")),
+
+		// decimal128 corner exponent values
+		"decimal128-max-exp": mustParseDecimal128FromBigInt(big.NewInt(42), primitive.MaxDecimal128Exp),
+		"decimal128-min-exp": mustParseDecimal128FromBigInt(big.NewInt(42), primitive.MinDecimal128Exp),
+
+		// decimal128 corner significant values + corner exponent values
+		"decimal128-max-sig":     mustParseDecimal128FromBigInt(decimal128MaxSig, 0),
+		"decimal128-max-exp-sig": mustParseDecimal128FromBigInt(decimal128MaxSig, primitive.MaxDecimal128Exp),
+		"decimal128-min-exp-sig": mustParseDecimal128FromBigInt(decimal128MaxSig, primitive.MinDecimal128Exp),
+
+		"decimal128-int":      must.NotFail(primitive.ParseDecimal128("42")),
+		"decimal128-int-zero": must.NotFail(primitive.ParseDecimal128("0")),
+	},
+}
+
+// mustParseDecimal128FromBigInt parses the significand and exponent into a Decimal128 value.
+// It panics on failure.
+func mustParseDecimal128FromBigInt(sig *big.Int, exp int) primitive.Decimal128 {
+	res, ok := primitive.ParseDecimal128FromBigInt(sig, exp)
+	must.BeTrue(ok)
+
+	return res
 }
 
 // Unsets contains unset value for tests.

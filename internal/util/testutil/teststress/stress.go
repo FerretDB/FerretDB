@@ -21,8 +21,7 @@ import (
 	"context"
 	"runtime"
 	"sync"
-
-	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
+	"testing"
 )
 
 // Stress runs function f in multiple goroutines.
@@ -30,7 +29,7 @@ import (
 //
 // Function f should do a needed setup, send a message to ready channel when it is ready to start,
 // wait for start channel to be closed, and then do the actual work.
-func Stress(tb testtb.TB, f func(ready chan<- struct{}, start <-chan struct{})) int {
+func Stress(tb testing.TB, f func(ready chan<- struct{}, start <-chan struct{})) int {
 	tb.Helper()
 
 	n := runtime.GOMAXPROCS(-1) * 10
@@ -42,7 +41,7 @@ func Stress(tb testtb.TB, f func(ready chan<- struct{}, start <-chan struct{})) 
 // StressN is a variant of Stress that allows to specify the number of goroutines.
 //
 // Prefer using Stress when possible.
-func StressN(tb testtb.TB, n int, f func(ready chan<- struct{}, start <-chan struct{})) {
+func StressN(tb testing.TB, n int, f func(ready chan<- struct{}, start <-chan struct{})) {
 	tb.Helper()
 
 	// do a bit more work to reduce a chance that one goroutine would finish
