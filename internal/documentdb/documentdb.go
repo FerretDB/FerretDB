@@ -29,7 +29,8 @@ import "context"
 // TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/1148
 //
 // We use that schema for `listDatabases` and `explain` commands.
-// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/26
+// TODO https://github.com/FerretDB/FerretDB/issues/4722
+// TODO https://github.com/microsoft/documentdb/issues/45
 // TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/143
 
 // Code for `documentdb_api_internal` can't be generated yet:
