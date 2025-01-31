@@ -41,10 +41,10 @@ type mongoLog struct {
 	Ctx        string             `bson:"ctx"`
 	Svc        string             `bson:"svc"`
 	Msg        string             `bson:"msg"`
-	Attr       bson.D             `bson:"attr"`
-	Tags       []string           `bson:"tags"`
-	Truncated  bson.D             `bson:"truncated"`
-	Size       bson.D             `bson:"size"`
+	Attr       bson.D             `bson:"attr,omitempty"`
+	Tags       []string           `bson:"tags,omitempty"`
+	Truncated  bson.D             `bson:"truncated,omitempty"`
+	Size       bson.D             `bson:"size,omitempty"`
 }
 
 func newMongoHandler(out io.Writer, opts *NewHandlerOpts) *mongoHandler {
