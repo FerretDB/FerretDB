@@ -78,6 +78,7 @@ func (cb *circularBuffer) getArray() (*wirebson.Array, error) {
 	res := wirebson.MakeArray(len(records))
 
 	for _, r := range records {
+		// TODO https://github.com/FerretDB/FerretDB/issues/4347
 		b, err := json.Marshal(map[string]any{
 			"t": map[string]time.Time{
 				"$date": r.Time,
