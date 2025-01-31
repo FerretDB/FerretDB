@@ -29,7 +29,17 @@ type mongoHandler struct {
 }
 
 type mongoLog struct {
-	Timestamp primitive.DateTime `bson:"t"`
+	Timestamp  primitive.DateTime `bson:"t"`
+	Severity   string             `bson:"s"`
+	Components string             `bson:"c"`
+	ID         int                `bson:"id"`
+	Ctx        string             `bson:"ctx"`
+	Svc        string             `bson:"svc"`
+	Msg        string             `bson:"msg"`
+	Attr       bson.D             `bson:"attr"`
+	Tags       []string           `bson:"tags"`
+	Truncated  bson.D             `bson:"truncated"`
+	Size       bson.D             `bson:"size"`
 }
 
 func (h *mongoHandler) Enabled(_ context.Context, l slog.Level) bool {
