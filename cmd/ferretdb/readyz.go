@@ -84,7 +84,7 @@ func (r *ReadyZ) Probe(ctx context.Context) bool {
 
 		defer func() {
 			if err = conn.Close(); err != nil {
-				r.l.ErrorContext(ctx, "Close failed", logging.Error(err))
+				r.l.ErrorContext(ctx, "Closing connection failed", logging.Error(err))
 			}
 		}()
 
@@ -99,12 +99,12 @@ func (r *ReadyZ) Probe(ctx context.Context) bool {
 
 		res, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).DecodeDeep()
 		if err != nil {
-			r.l.ErrorContext(ctx, "Ping decode failed", logging.Error(err))
+			r.l.ErrorContext(ctx, "Decoding ping response failed", logging.Error(err))
 			return false
 		}
 
 		if res.Get("ok").(float64) == 1 {
-			r.l.InfoContext(ctx, fmt.Sprintf("Ping to %s successful", u))
+			r.l.InfoContext(ctx, "Ping successful", slog.String("url", u))
 			continue
 		}
 
