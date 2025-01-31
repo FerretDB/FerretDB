@@ -1,0 +1,17 @@
+[Unit]
+Description=FerretDB Database
+Documentation=https://docs.ferretdb.io/
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+ExecStart=/usr/bin/ferretdb
+Restart=on-failure
+
+# Configure the FerretDB service with `systemctl edit ferretdb`.
+# For more configuration options check https://docs.ferretdb.io/configuration/flags/
+
+Environment="FERRETDB_POSTGRESQL_URL=postgres://127.0.0.1:5432/postgres"
+
+[Install]
+WantedBy=multi-user.target

@@ -22,10 +22,10 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/v2/internal/util/xiter"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/v2/integration/setup"
+	"github.com/FerretDB/FerretDB/v2/integration/shareddata"
 )
 
 func BenchmarkFind(b *testing.B) {
@@ -91,8 +91,6 @@ func BenchmarkReplaceOne(b *testing.B) {
 	})
 	ctx, collection := s.Ctx, s.Collection
 
-	// use the last document by the natural order to make non-pushdown path slower
-
 	cursor, err := collection.Find(ctx, bson.D{})
 	require.NoError(b, err)
 
@@ -135,8 +133,10 @@ func BenchmarkInsertMany(b *testing.B) {
 	ctx, collection := setup.Setup(b)
 
 	for _, provider := range shareddata.AllBenchmarkProviders() {
-		total, err := iterator.ConsumeCount(provider.NewIterator())
-		require.NoError(b, err)
+		var total int
+		for range provider.NewIter() {
+			total++
+		}
 
 		var batchSizes []int
 		for _, batchSize := range []int{1, 10, 100, 1000} {
@@ -152,16 +152,7 @@ func BenchmarkInsertMany(b *testing.B) {
 				for range b.N {
 					require.NoError(b, collection.Drop(ctx))
 
-					iter := provider.NewIterator()
-
-					for {
-						docs, err := iterator.ConsumeValuesN(iter, batchSize)
-						require.NoError(b, err)
-
-						if docs == nil {
-							break
-						}
-
+					for docs := range xiter.Chunk(provider.NewIter(), batchSize) {
 						insertDocs := make([]any, len(docs))
 						for i := range insertDocs {
 							insertDocs[i] = docs[i]
@@ -169,7 +160,7 @@ func BenchmarkInsertMany(b *testing.B) {
 
 						b.StartTimer()
 
-						_, err = collection.InsertMany(ctx, insertDocs)
+						_, err := collection.InsertMany(ctx, insertDocs)
 						require.NoError(b, err)
 
 						b.StopTimer()

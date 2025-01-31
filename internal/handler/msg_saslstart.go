@@ -15,286 +15,165 @@
 package handler
 
 import (
-	"bytes"
 	"context"
-	"encoding/base64"
-	"errors"
 	"fmt"
+	"log/slog"
 
-	"github.com/xdg-go/scram"
+	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
+	"github.com/jackc/pgx/v5"
 
-	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
-	"github.com/FerretDB/FerretDB/internal/handler/common"
-	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
+	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api_internal"
+	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
+	"github.com/FerretDB/FerretDB/v2/internal/util/scram"
 )
 
 // MsgSASLStart implements `saslStart` command.
-func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := msg.Document()
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgSASLStart(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	spec, err := msg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	dbName, err := common.GetRequiredParam[string](document, "$db")
-	if err != nil {
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
 		return nil, err
 	}
 
-	replyDoc, err := h.saslStart(ctx, dbName, document)
+	doc, err := spec.Decode()
 	if err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
-	replyDoc.Set("ok", float64(1))
+	res, err := h.saslStart(connCtx, doc)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.MakeOpMsgSection(replyDoc)))
+	must.NoError(res.Add("ok", float64(1)))
 
-	return &reply, nil
+	return wire.NewOpMsg(res)
 }
 
-// saslStart starts authentication for the supported mechanisms.
+// saslStart starts SCRAM conversation.
 // It returns the document containing authentication payload used for the response.
-func (h *Handler) saslStart(ctx context.Context, dbName string, document *types.Document) (*types.Document, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3008
-	mechanism, err := common.GetRequiredParam[string](document, "mechanism")
+func (h *Handler) saslStart(ctx context.Context, doc *wirebson.Document) (*wirebson.Document, error) {
+	if !h.Auth {
+		h.L.WarnContext(ctx, "saslStart is called when authentication is disabled")
+	}
+
+	mechanism, err := getRequiredParam[string](doc, "mechanism")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	switch mechanism {
-	case "PLAIN":
-		username, password, err := saslStartPlain(document)
-		if err != nil {
-			return nil, err
-		}
+	if mechanism != "SCRAM-SHA-256" {
+		msg := fmt.Sprintf(
+			"Received authentication for mechanism %s which is not enabled",
+			mechanism,
+		)
 
-		if h.EnableNewAuth {
-			conninfo.Get(ctx).SetBypassBackendAuth()
-		}
-
-		conninfo.Get(ctx).SetAuth(username, password, mechanism)
-
-		var emptyPayload types.Binary
-
-		return must.NotFail(types.NewDocument(
-			"conversationId", int32(1),
-			"done", true,
-			"payload", emptyPayload,
-		)), nil
-	case "SCRAM-SHA-1", "SCRAM-SHA-256":
-		if !h.EnableNewAuth {
-			return nil, handlererrors.NewCommandErrorMsg(
-				handlererrors.ErrAuthenticationFailed,
-				"SCRAM authentication is not enabled",
-			)
-		}
-
-		conninfo.Get(ctx).SetAuth("", "", mechanism)
-
-		response, err := h.saslStartSCRAM(ctx, dbName, mechanism, document)
-		if err != nil {
-			return nil, err
-		}
-
-		conninfo.Get(ctx).SetBypassBackendAuth()
-
-		binResponse := types.Binary{
-			B: []byte(response),
-		}
-
-		return must.NotFail(types.NewDocument(
-			"conversationId", int32(1),
-			"done", false,
-			"payload", binResponse,
-		)), nil
-	default:
-		msg := fmt.Sprintf("Unsupported authentication mechanism %q.\n", mechanism) +
-			"See https://docs.ferretdb.io/security/authentication/ for more details."
-		return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrAuthenticationFailed, msg, "mechanism")
-	}
-}
-
-// saslStartPlain extracts username and password from PLAIN `saslStart` payload.
-func saslStartPlain(doc *types.Document) (string, string, error) {
-	var payload []byte
-
-	// some drivers send payload as a string
-	stringPayload, err := common.GetRequiredParam[string](doc, "payload")
-	if err == nil {
-		if payload, err = base64.StdEncoding.DecodeString(stringPayload); err != nil {
-			return "", "", handlererrors.NewCommandErrorMsgWithArgument(
-				handlererrors.ErrBadValue,
-				fmt.Sprintf("Invalid payload: %v", err),
-				"payload",
-			)
-		}
+		return nil, mongoerrors.NewWithArgument(mongoerrors.ErrMechanismUnavailable, msg, "mechanism")
 	}
 
-	// most drivers follow spec and send payload as a binary
-	binaryPayload, err := common.GetRequiredParam[types.Binary](doc, "payload")
-	if err == nil {
-		payload = binaryPayload.B
+	payload, err := getRequiredParam[wirebson.Binary](doc, "payload")
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
-	// as spec's payload should be binary, we return an error mentioned binary as expected type
-	if payload == nil {
-		return "", "", err
+	optionsV, err := getOptionalParamAny(doc, "options", wirebson.MustDocument())
+
+	optionsDoc, ok := optionsV.(wirebson.AnyDocument)
+	if !ok {
+		msg := fmt.Sprintf("BSON field 'saslStart.options' is the wrong type '%T', expected type 'object'", optionsV)
+		return nil, lazyerrors.Error(mongoerrors.NewWithArgument(mongoerrors.ErrTypeMismatch, msg, "options"))
 	}
 
-	fields := bytes.Split(payload, []byte{0})
-	if l := len(fields); l != 3 {
-		return "", "", handlererrors.NewCommandErrorMsgWithArgument(
-			handlererrors.ErrTypeMismatch,
-			fmt.Sprintf("Invalid payload: expected 3 fields, got %d", l),
-			"payload",
+	options, err := optionsDoc.Decode()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	skipEmptyExchange, err := getOptionalParam(options, "skipEmptyExchange", false)
+	if err != nil {
+		h.L.DebugContext(
+			ctx, "saslStart: skipEmptyExchange",
+			slog.String("options", optionsDoc.LogMessage()), logging.Error(err),
+		)
+
+		return nil, mongoerrors.NewWithArgument(
+			mongoerrors.ErrAuthenticationFailed,
+			"Authentication failed.",
+			"saslStart",
 		)
 	}
 
-	authzid, authcid, passwd := fields[0], fields[1], fields[2]
+	steps := 2
 
-	// Some drivers (Go) send empty authorization identity (authzid),
-	// while others (Java) set it to the same value as authentication identity (authcid)
-	// (see https://www.rfc-editor.org/rfc/rfc4616.html).
-	// Ignore authzid for now.
-	_ = authzid
-
-	return string(authcid), string(passwd), nil
-}
-
-// scramCredentialLookup looks up an user's credentials in the database.
-func (h *Handler) scramCredentialLookup(ctx context.Context, username, dbName, mechanism string) (
-	*scram.StoredCredentials, error,
-) {
-	adminDB, err := h.b.Database("admin")
-	if err != nil {
-		return nil, lazyerrors.Error(err)
+	if skipEmptyExchange {
+		steps = 1
 	}
 
-	usersCol, err := adminDB.Collection("system.users")
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	conninfo.Get(ctx).SetSteps(steps)
 
-	// For `PLAIN` mechanism $db field is always `$external` upon saslStart.
-	// For `SCRAM-SHA-1` and `SCRAM-SHA-256` mechanisms $db field contains
-	// authSource option of the client.
-	// Let authorization handle the database access right.
-	// TODO https://github.com/FerretDB/FerretDB/issues/174
-	filter := must.NotFail(types.NewDocument("user", username))
-
-	// Filter isn't being passed to the query as we are filtering after retrieving all data
-	// from the database due to limitations of the internal/backends filters.
-	qr, err := usersCol.Query(ctx, nil)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	defer qr.Iter.Close()
-
-	for {
-		_, v, err := qr.Iter.Next()
-
-		if errors.Is(err, iterator.ErrIteratorDone) {
-			break
-		}
-
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		matches, err := common.FilterDocument(v, filter)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		if matches {
-			credentials := must.NotFail(v.Get("credentials")).(*types.Document)
-
-			if !credentials.Has(mechanism) {
-				return nil, handlererrors.NewCommandErrorMsgWithArgument(
-					handlererrors.ErrMechanismUnavailable,
-					fmt.Sprintf(
-						"Unable to use %s based authentication for user without any %s credentials registered",
-						mechanism,
-						mechanism,
-					),
-					mechanism,
-				)
-			}
-
-			cred := must.NotFail(credentials.Get(mechanism)).(*types.Document)
-
-			salt := must.NotFail(base64.StdEncoding.DecodeString(must.NotFail(cred.Get("salt")).(string)))
-			storedKey := must.NotFail(base64.StdEncoding.DecodeString(must.NotFail(cred.Get("storedKey")).(string)))
-			serverKey := must.NotFail(base64.StdEncoding.DecodeString(must.NotFail(cred.Get("serverKey")).(string)))
-
-			return &scram.StoredCredentials{
-				KeyFactors: scram.KeyFactors{
-					Salt:  string(salt),
-					Iters: int(must.NotFail(cred.Get("iterationCount")).(int32)),
-				},
-				StoredKey: storedKey,
-				ServerKey: serverKey,
-			}, nil
-		}
-	}
-
-	return nil, handlererrors.NewCommandErrorMsg(
-		handlererrors.ErrAuthenticationFailed,
-		"Authentication failed.",
+	conv := scram.NewConv(h.L)
+	username, err := conv.ClientFirst(string(payload.B))
+	h.L.DebugContext(
+		ctx, "saslStart: client first",
+		slog.String("payload", string(payload.B)), slog.String("username", username), logging.Error(err),
 	)
-}
-
-// saslStartSCRAM extracts the initial challenge and attempts to move the
-// authentication conversation forward returning a challenge response.
-func (h *Handler) saslStartSCRAM(ctx context.Context, dbName, mechanism string, doc *types.Document) (string, error) {
-	var payload []byte
-
-	// most drivers follow spec and send payload as a binary
-	binaryPayload, err := common.GetRequiredParam[types.Binary](doc, "payload")
 	if err != nil {
-		return "", err
+		return nil, mongoerrors.NewWithArgument(
+			mongoerrors.ErrAuthenticationFailed,
+			"Authentication failed.",
+			"saslStart",
+		)
 	}
 
-	payload = binaryPayload.B
+	var res wirebson.RawDocument
 
-	var f scram.HashGeneratorFcn
-
-	switch mechanism {
-	case "SCRAM-SHA-1":
-		f = scram.SHA1
-	case "SCRAM-SHA-256":
-		f = scram.SHA256
-	default:
-		panic("unsupported SCRAM mechanism")
-	}
-
-	scramServer, err := f.NewServer(func(username string) (scram.StoredCredentials, error) {
-		cred, lookupErr := h.scramCredentialLookup(ctx, username, dbName, mechanism)
-		if lookupErr != nil {
-			return scram.StoredCredentials{}, lookupErr
-		}
-
-		return *cred, nil
+	err = h.Pool.WithConn(func(conn *pgx.Conn) error {
+		res, err = documentdb_api_internal.ScramSha256GetSaltAndIterations(ctx, conn, h.L, username)
+		return err
 	})
 	if err != nil {
-		return "", err
+		return nil, lazyerrors.Error(err)
 	}
 
-	conv := scramServer.NewConversation()
-
-	response, err := conv.Step(string(payload))
+	resDoc, err := res.DecodeDeep()
+	h.L.DebugContext(
+		ctx, "saslStart: salt and iterations",
+		slog.Any("res", logging.LazyString(resDoc.LogMessage)), logging.Error(err),
+	)
 	if err != nil {
-		return "", err
+		return nil, lazyerrors.Error(err)
 	}
 
-	conninfo.Get(ctx).SetConv(conv)
+	payloadS, err := conv.ServerFirst(res)
+	h.L.DebugContext(
+		ctx, "saslStart: server first",
+		slog.String("payload", payloadS), logging.Error(err),
+	)
+	if err != nil {
+		return nil, mongoerrors.NewWithArgument(
+			mongoerrors.ErrAuthenticationFailed,
+			"Authentication failed.",
+			"saslStart",
+		)
+	}
 
-	return response, nil
+	if conninfo.Get(ctx).SetConv(conv) {
+		h.L.WarnContext(ctx, "saslStart: replaced existing SCRAM conversation")
+	}
+
+	return wirebson.MustDocument(
+		"conversationId", int32(1),
+		"done", false,
+		"payload", wirebson.Binary{B: []byte(payloadS)},
+	), nil
 }

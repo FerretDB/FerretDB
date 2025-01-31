@@ -1,7 +1,7 @@
 // Please do not merge changes in this file.
 
-(function() {
-  'use strict';
+(function () {
+  "use strict";
 
   const t = db.scan_capped_id;
   t.drop();
