@@ -1935,12 +1935,12 @@ func BuildIndexConcurrently(ctx context.Context, conn *pgx.Conn, l *slog.Logger,
 // CheckBuildIndexStatus is a wrapper for
 //
 //	documentdb_api_internal.check_build_index_status(p_arg documentdb_core.bson, OUT retval documentdb_core.bson, OUT ok boolean, OUT complete boolean).
-func CheckBuildIndexStatus(ctx context.Context, conn *pgx.Conn, l *slog.Logger, arg wirebson.RawDocument) (outRetVal wirebson.RawDocument, outOk bool, outComplete bool, err error) {
+func CheckBuildIndexStatus(ctx context.Context, conn *pgx.Conn, l *slog.Logger, arg wirebson.RawDocument) (outRetValue wirebson.RawDocument, outOk bool, outComplete bool, err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.check_build_index_status", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT retval::bytea, ok, complete FROM documentdb_api_internal.check_build_index_status($1::bytea)", arg)
-	if err = row.Scan(&outRetVal, &outOk, &outComplete); err != nil {
+	if err = row.Scan(&outRetValue, &outOk, &outComplete); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.check_build_index_status", l)
 	}
 	return

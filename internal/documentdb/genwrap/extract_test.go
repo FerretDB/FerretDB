@@ -69,4 +69,29 @@ func TestExtract(t *testing.T) {
 		"udt_name":           "bson",
 	}
 	require.Equal(t, expected, rows[1])
+
+	// TODO https://github.com/microsoft/documentdb/issues/49
+	var row map[string]any
+	for _, row = range rows {
+		if row["routine_name"] == "drop_indexes" && row["parameter_mode"] == "INOUT" {
+			break
+		}
+	}
+
+	expected = map[string]any{
+		"specific_schema":    "documentdb_api",
+		"specific_name":      "drop_indexes_19097",
+		"routine_name":       "drop_indexes",
+		"routine_type":       "PROCEDURE",
+		"routine_data_type":  nil,
+		"routine_udt_schema": nil,
+		"routine_udt_name":   nil,
+		"parameter_name":     "retval",
+		"parameter_mode":     "INOUT",
+		"parameter_default":  "NULL::documentdb_core.bson",
+		"data_type":          "USER-DEFINED",
+		"udt_schema":         "documentdb_core",
+		"udt_name":           "bson",
+	}
+	require.Equal(t, expected, row)
 }

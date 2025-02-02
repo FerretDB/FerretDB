@@ -143,12 +143,12 @@ func CreateCollectionView(ctx context.Context, conn *pgx.Conn, l *slog.Logger, d
 // CreateIndexesBackground is a wrapper for
 //
 //	documentdb_api.create_indexes_background(p_database_name text, p_index_spec documentdb_core.bson, OUT retval documentdb_core.bson, OUT ok boolean, OUT requests documentdb_core.bson).
-func CreateIndexesBackground(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, indexSpec wirebson.RawDocument) (outRetVal wirebson.RawDocument, outOk bool, outRequests wirebson.RawDocument, err error) {
+func CreateIndexesBackground(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, indexSpec wirebson.RawDocument) (outRetValue wirebson.RawDocument, outOk bool, outRequests wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.create_indexes_background", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT retval::bytea, ok, requests::bytea FROM documentdb_api.create_indexes_background($1, $2::bytea)", databaseName, indexSpec)
-	if err = row.Scan(&outRetVal, &outOk, &outRequests); err != nil {
+	if err = row.Scan(&outRetValue, &outOk, &outRequests); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.create_indexes_background", l)
 	}
 	return
@@ -255,12 +255,12 @@ func DropDatabase(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseN
 // DropIndexes is a wrapper for
 //
 //	documentdb_api.drop_indexes(p_database_name text, p_arg documentdb_core.bson, INOUT retval documentdb_core.bson DEFAULT NULL).
-func DropIndexes(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, arg wirebson.RawDocument, retVal wirebson.RawDocument) (outRetVal wirebson.RawDocument, err error) {
+func DropIndexes(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, arg wirebson.RawDocument, retValue wirebson.RawDocument) (outRetValue wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.drop_indexes", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "CALL documentdb_api.drop_indexes($1, $2::bytea, $3::bytea)", databaseName, arg, retVal)
-	if err = row.Scan(&outRetVal); err != nil {
+	row := conn.QueryRow(ctx, "CALL documentdb_api.drop_indexes($1, $2::bytea, $3::bytea)", databaseName, arg, retValue)
+	if err = row.Scan(&outRetValue); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.drop_indexes", l)
 	}
 	return

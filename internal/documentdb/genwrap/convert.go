@@ -67,8 +67,19 @@ func Convert(rows []map[string]any, l *slog.Logger) map[string]map[string]templa
 				continue
 			}
 
-			comment = append(comment, c.toParamComment(name, row))
-			dataType := c.dataType(row)
+			paramComment := name + " " + c.pgParameterType(row)
+			if row["parameter_mode"] != "IN" {
+				paramComment = row["parameter_mode"].(string) + " " + paramComment
+			}
+
+			if row["parameter_default"] != nil {
+				d, _, _ := strings.Cut(row["parameter_default"].(string), "::")
+				paramComment += " DEFAULT " + d
+			}
+
+			comment = append(comment, paramComment)
+
+			dataType := c.pgParameterType(row)
 
 			if row["parameter_mode"] == "IN" || row["parameter_mode"] == "INOUT" {
 				placeholder := fmt.Sprintf("$%d", placeholderCounter+1)
@@ -188,7 +199,7 @@ func (c *converter) parameterName(name string) string {
 	case "persistconnection":
 		return "persistConnection"
 	case "retval":
-		return "retVal"
+		return "retValue"
 	}
 
 	if name != "spec" && strings.HasSuffix(name, "spec") {
@@ -200,8 +211,8 @@ func (c *converter) parameterName(name string) string {
 
 // parameterType converts PostgreSQL/DocumentDB routine parameter type
 // to Go function/method parameter type.
-func (c *converter) parameterType(typ string) string {
-	switch typ {
+func (c *converter) parameterType(pgType string) string {
+	switch pgType {
 	case "text":
 		return "string"
 	case "boolean":
@@ -219,7 +230,7 @@ func (c *converter) parameterType(typ string) string {
 		return "[]byte"
 	}
 
-	c.l.Debug("Unhandled type", slog.String("type", typ))
+	c.l.Debug("Unhandled type", slog.String("type", pgType))
 	return "struct{}"
 }
 
@@ -231,6 +242,25 @@ func (c *converter) parameterCast(name string, typ string) string {
 	default:
 		return name
 	}
+}
+
+// pgParameterType converts PostgreSQL/DocumentDB routine parameter type.
+func (c *converter) pgParameterType(row map[string]any) string {
+	if row["data_type"] == "USER-DEFINED" {
+		return row["udt_schema"].(string) + "." + row["udt_name"].(string)
+	}
+
+	return row["data_type"].(string)
+}
+
+// routineDataType returns SQL datatype of a routine. If the data type is USER-DEFINED,
+// it returns schema and name concatenated by dot.
+func (c *converter) routineDataType(row map[string]any) string {
+	if row["routine_data_type"] == "USER-DEFINED" {
+		return row["routine_udt_schema"].(string) + "." + row["routine_udt_name"].(string)
+	}
+
+	return row["routine_data_type"].(string)
 }
 
 // handleFunctionOverloading applies different wrapper function name for overloaded functions.
@@ -272,43 +302,6 @@ func (c *converter) groupBySpecificName(rows []map[string]any) map[string][]map[
 	routines[specificName.(string)] = groupedParams
 
 	return routines
-}
-
-// dataType returns SQL datatype of a parameter. If the data type is USER-DEFINED,
-// it returns schema and name concatenated by dot.
-func (c *converter) dataType(row map[string]any) string {
-	if row["data_type"] == "USER-DEFINED" {
-		return row["udt_schema"].(string) + "." + row["udt_name"].(string)
-	}
-
-	return row["data_type"].(string)
-}
-
-// routineDataType returns SQL datatype of a routine. If the data type is USER-DEFINED,
-// it returns schema and name concatenated by dot.
-func (c *converter) routineDataType(row map[string]any) string {
-	if row["routine_data_type"] == "USER-DEFINED" {
-		return row["routine_udt_schema"].(string) + "." + row["routine_udt_name"].(string)
-	}
-
-	return row["routine_data_type"].(string)
-}
-
-// toParamComment returns concatenated string of parameter name, data type
-// and default value to use for the parameter description of a function.
-// If the parameter is not an input, prefix OUT/INOUT is added to the comment.
-func (c *converter) toParamComment(paramName string, row map[string]any) string {
-	comment := paramName + " " + c.dataType(row)
-	if row["parameter_mode"] != "IN" {
-		comment = row["parameter_mode"].(string) + " " + comment
-	}
-
-	if row["parameter_default"] != nil {
-		d, _, _ := strings.Cut(row["parameter_default"].(string), "::")
-		comment += " DEFAULT " + d
-	}
-
-	return comment
 }
 
 // uniqueName generates a new name if it exists in names slice.
