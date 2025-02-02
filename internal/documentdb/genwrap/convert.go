@@ -74,16 +74,16 @@ func Convert(rows []map[string]any, l *slog.Logger) map[string]map[string]templa
 				placeholder := fmt.Sprintf("$%d", placeholderCounter+1)
 				placeholderCounter++
 
-				goName := c.parameter(name)
+				goName := c.parameterName(name)
 				sqlParams = append(sqlParams, c.typeCast(placeholder, dataType))
-				goParams = append(goParams, fmt.Sprintf("%s %s", goName, c.convertType(dataType)))
+				goParams = append(goParams, fmt.Sprintf("%s %s", goName, c.parameterType(dataType)))
 				queryRowArgs = append(queryRowArgs, goName)
 			}
 
 			if row["parameter_mode"] == "OUT" || row["parameter_mode"] == "INOUT" {
-				goName := "out" + c.pascalCase(c.parameter(name))
+				goName := "out" + c.pascalCase(c.parameterName(name))
 				sqlReturns = append(sqlReturns, c.typeCast(name, dataType))
-				goReturns = append(goReturns, fmt.Sprintf("%s %s", goName, c.convertType(dataType)))
+				goReturns = append(goReturns, fmt.Sprintf("%s %s", goName, c.parameterType(dataType)))
 				scanArgs = append(scanArgs, fmt.Sprintf("&%s", goName))
 			}
 		}
@@ -93,10 +93,10 @@ func Convert(rows []map[string]any, l *slog.Logger) map[string]map[string]templa
 		if len(goReturns) == 0 && params[0]["routine_type"] == "FUNCTION" {
 			// function such as binary_extended_version() does not have
 			// parameter data type, but it has routine data type for the return variable.
-			goName := "out" + c.pascalCase(c.parameter(routineName))
+			goName := "out" + c.pascalCase(c.parameterName(routineName))
 			dataType := c.routineDataType(params[0])
 			sqlReturns = append(sqlReturns, c.typeCast(routineName, dataType))
-			goReturns = append(goReturns, fmt.Sprintf("%s %s", goName, c.convertType(dataType)))
+			goReturns = append(goReturns, fmt.Sprintf("%s %s", goName, c.parameterType(dataType)))
 			scanArgs = append(scanArgs, fmt.Sprintf("&%s", goName))
 			comment = append(comment, fmt.Sprintf("OUT %s %s", routineName, dataType))
 		}
@@ -165,19 +165,12 @@ func (c *converter) pascalCase(s string) string {
 	return string(res)
 }
 
-// parameter converts PostgreSQL/DocumentDB routine parameter name to Go function/method parameter name.
-func (c *converter) parameter(name string) string {
-	if n, found := strings.CutPrefix(name, "p_"); found {
-		return c.camelCase(n)
-	}
+// parameterName converts PostgreSQL/DocumentDB routine parameter name
+// to Go function/method parameter name.
+func (c *converter) parameterName(name string) string {
+	name = strings.TrimPrefix(name, "p_")
 
 	switch name {
-	case "complete", "continuation", "database", "document", "ok", "requests":
-		return name
-
-	case "binary_extended_version", "binary_version", "create_collection", "creation_time", "shard_key_value":
-		return c.camelCase(name)
-
 	case "commandspec":
 		return "commandSpec"
 	case "continuationspec":
@@ -202,24 +195,14 @@ func (c *converter) parameter(name string) string {
 		return "persistConnection"
 	case "retval":
 		return "retVal"
-
-	default:
-		return c.camelCase(name)
 	}
+
+	return c.camelCase(name)
 }
 
-// typeCast adds a type cast (::type) to a parameter if needed.
-func (c *converter) typeCast(parameter string, dataType string) string {
-	switch dataType {
-	case "documentdb_core.bson", "documentdb_core.bsonsequence":
-		return parameter + "::bytea"
-	default:
-		return parameter
-	}
-}
-
-// convertType converts PostgreSQL/DocumentDB type to the Go type.
-func (c *converter) convertType(typ string) string {
+// parameterType converts PostgreSQL/DocumentDB routine parameter type
+// to Go function/method parameter type.
+func (c *converter) parameterType(typ string) string {
 	switch typ {
 	case "text":
 		return "string"
@@ -236,10 +219,19 @@ func (c *converter) convertType(typ string) string {
 		return "wirebson.RawDocument"
 	case "documentdb_core.bsonsequence":
 		return "[]byte"
+	}
 
+	c.l.Debug("Unhandled type", slog.String("type", typ))
+	return "struct{}"
+}
+
+// typeCast adds a type cast (::type) to a parameter if needed.
+func (c *converter) typeCast(parameter string, dataType string) string {
+	switch dataType {
+	case "documentdb_core.bson", "documentdb_core.bsonsequence":
+		return parameter + "::bytea"
 	default:
-		c.l.Debug("Unhandled type", slog.String("type", typ))
-		return "struct{}"
+		return parameter
 	}
 }
 
