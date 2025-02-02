@@ -29,12 +29,11 @@ import (
 //
 // For an anonymous SQL parameter, it assigns a unique name.
 // It also produces SQL query placeholders and return parameters in strings.
-func Convert(rows []map[string]any, l *slog.Logger) map[string]map[string]templateData {
+func Convert(routineParams map[string][]map[string]any, l *slog.Logger) map[string]map[string]templateData {
 	c := &converter{
 		l: l,
 	}
 
-	routineParams := c.groupBySpecificName(rows)
 	schemas := map[string]map[string]templateData{}
 
 	for _, specificName := range slices.Sorted(maps.Keys(routineParams)) {
@@ -280,28 +279,6 @@ func (c *converter) handleFunctionOverloading(f *templateData) {
 	if !skip && strings.Contains(f.Comment, "documentdb_core.bson,") {
 		f.FuncName = funcName
 	}
-}
-
-// groupBySpecificName groups rows by specific_name.
-func (c *converter) groupBySpecificName(rows []map[string]any) map[string][]map[string]any {
-	var specificName any
-
-	routines := map[string][]map[string]any{}
-	var groupedParams []map[string]any
-
-	for _, row := range rows {
-		if specificName != row["specific_name"] && specificName != nil {
-			routines[specificName.(string)] = groupedParams
-			groupedParams = []map[string]any{}
-		}
-
-		groupedParams = append(groupedParams, row)
-		specificName = row["specific_name"]
-	}
-
-	routines[specificName.(string)] = groupedParams
-
-	return routines
 }
 
 // uniqueName generates a new name if it exists in names slice.

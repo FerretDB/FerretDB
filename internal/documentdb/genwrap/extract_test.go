@@ -51,33 +51,9 @@ func TestExtract(t *testing.T) {
 		"udt_schema":         "pg_catalog",
 		"udt_name":           "text",
 	}
-	require.Equal(t, expected, rows[0])
-
-	expected = map[string]any{
-		"specific_schema":    "documentdb_api",
-		"specific_name":      "aggregate_cursor_first_page_19111",
-		"routine_name":       "aggregate_cursor_first_page",
-		"routine_type":       "FUNCTION",
-		"routine_data_type":  "record",
-		"routine_udt_schema": "pg_catalog",
-		"routine_udt_name":   "record",
-		"parameter_name":     "commandspec",
-		"parameter_mode":     "IN",
-		"parameter_default":  nil,
-		"data_type":          "USER-DEFINED",
-		"udt_schema":         "documentdb_core",
-		"udt_name":           "bson",
-	}
-	require.Equal(t, expected, rows[1])
+	require.Equal(t, expected, rows["documentdb_api.aggregate_cursor_first_page_19111"][0])
 
 	// TODO https://github.com/microsoft/documentdb/issues/49
-	var row map[string]any
-	for _, row = range rows {
-		if row["routine_name"] == "drop_indexes" && row["parameter_mode"] == "INOUT" {
-			break
-		}
-	}
-
 	expected = map[string]any{
 		"specific_schema":    "documentdb_api",
 		"specific_name":      "drop_indexes_19097",
@@ -93,5 +69,5 @@ func TestExtract(t *testing.T) {
 		"udt_schema":         "documentdb_core",
 		"udt_name":           "bson",
 	}
-	require.Equal(t, expected, row)
+	require.Equal(t, expected, rows["documentdb_api.drop_indexes_19097"][2])
 }

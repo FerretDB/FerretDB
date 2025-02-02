@@ -26,8 +26,8 @@ import (
 )
 
 // Extract returns rows of routines and parameters for given schemas.
-// Returned routines are sorted by schema name, their name and its parameter position.
-func Extract(ctx context.Context, uri string, schemas []string) ([]map[string]any, error) {
+// Returned routines are grouped by full specific names; rows are sorted by parameter position.
+func Extract(ctx context.Context, uri string, schemas []string) (map[string][]map[string]any, error) {
 	conn, err := pgx.Connect(ctx, uri)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -66,7 +66,7 @@ func Extract(ctx context.Context, uri string, schemas []string) ([]map[string]an
 	FROM information_schema.routines AS r
 		LEFT JOIN information_schema.parameters AS p USING (specific_schema, specific_name)
 	WHERE specific_schema IN (%s)
-	ORDER BY specific_schema, specific_name, ordinal_position
+	ORDER BY ordinal_position
 	`,
 		strings.Join(placeholders, ", "),
 	)
@@ -76,5 +76,24 @@ func Extract(ctx context.Context, uri string, schemas []string) ([]map[string]an
 		return nil, lazyerrors.Error(err)
 	}
 
-	return pgx.CollectRows(rows, pgx.RowToMap)
+	mappedRows, err := pgx.CollectRows(rows, pgx.RowToMap)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	res := make(map[string][]map[string]any)
+
+	for _, row := range mappedRows {
+		name := row["specific_schema"].(string) + "." + row["specific_name"].(string)
+
+		routine := res[name]
+		if routine == nil {
+			routine = []map[string]any{}
+		}
+
+		routine = append(routine, row)
+		res[name] = routine
+	}
+
+	return res, nil
 }
