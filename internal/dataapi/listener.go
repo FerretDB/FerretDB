@@ -26,12 +26,14 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi/api"
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi/server"
 	"github.com/FerretDB/FerretDB/v2/internal/handler"
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 )
 
 // Listener represents dataapi listener.
 type Listener struct {
 	opts *ListenOpts
+	lis  net.Listener
 	srv  *server.Server
 }
 
@@ -44,8 +46,14 @@ type ListenOpts struct {
 
 // Listen creates a new dataapi handler and starts listener on the given TCP address.
 func Listen(opts *ListenOpts) (*Listener, error) {
+	lis, err := net.Listen("tcp", opts.TCPAddr)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	return &Listener{
 		opts: opts,
+		lis:  lis,
 		srv:  server.New(opts.L, opts.Handler),
 	}, nil
 }
@@ -61,7 +69,6 @@ func (lis *Listener) Run(ctx context.Context) {
 	}
 
 	srv := &http.Server{
-		Addr:    lis.opts.TCPAddr,
 		Handler: srvHandler,
 		BaseContext: func(_ net.Listener) context.Context {
 			return ctx
@@ -69,7 +76,7 @@ func (lis *Listener) Run(ctx context.Context) {
 	}
 
 	go func() {
-		if err := srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+		if err := srv.Serve(lis.lis); !errors.Is(err, http.ErrServerClosed) {
 			lis.opts.L.LogAttrs(ctx, logging.LevelDPanic, "ListenAndServe exited with unexpected error", logging.Error(err))
 		}
 	}()
