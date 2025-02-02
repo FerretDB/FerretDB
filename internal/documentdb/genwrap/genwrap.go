@@ -23,7 +23,6 @@ import (
 	"strings"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
-	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 func main() {
@@ -51,19 +50,14 @@ func main() {
 		os.Exit(0)
 	}
 
-	schemas := map[string]struct{}{}
-
-	for _, schema := range strings.Split(*schemasF, ",") {
-		schema = strings.TrimSpace(schema)
-		if schema == "" {
-			continue
-		}
-
-		schemas[schema] = struct{}{}
+	rows, err := Extract(ctx, uri, strings.Split(*schemasF, ","))
+	if err != nil {
+		l.Log(ctx, logging.LevelFatal, err.Error())
 	}
 
-	rows := Extract(ctx, uri, schemas)
 	schemaRoutines := Convert(rows, l)
-	err := Generate(schemaRoutines)
-	must.NoError(err)
+
+	if err = Generate(schemaRoutines); err != nil {
+		l.Log(ctx, logging.LevelFatal, err.Error())
+	}
 }
