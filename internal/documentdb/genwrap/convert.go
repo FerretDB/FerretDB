@@ -75,14 +75,14 @@ func Convert(rows []map[string]any, l *slog.Logger) map[string]map[string]templa
 				placeholderCounter++
 
 				goName := c.parameterName(name)
-				sqlParams = append(sqlParams, c.typeCast(placeholder, dataType))
+				sqlParams = append(sqlParams, c.parameterCast(placeholder, dataType))
 				goParams = append(goParams, fmt.Sprintf("%s %s", goName, c.parameterType(dataType)))
 				queryRowArgs = append(queryRowArgs, goName)
 			}
 
 			if row["parameter_mode"] == "OUT" || row["parameter_mode"] == "INOUT" {
 				goName := "out" + c.pascalCase(c.parameterName(name))
-				sqlReturns = append(sqlReturns, c.typeCast(name, dataType))
+				sqlReturns = append(sqlReturns, c.parameterCast(name, dataType))
 				goReturns = append(goReturns, fmt.Sprintf("%s %s", goName, c.parameterType(dataType)))
 				scanArgs = append(scanArgs, fmt.Sprintf("&%s", goName))
 			}
@@ -95,7 +95,7 @@ func Convert(rows []map[string]any, l *slog.Logger) map[string]map[string]templa
 			// parameter data type, but it has routine data type for the return variable.
 			goName := "out" + c.pascalCase(c.parameterName(routineName))
 			dataType := c.routineDataType(params[0])
-			sqlReturns = append(sqlReturns, c.typeCast(routineName, dataType))
+			sqlReturns = append(sqlReturns, c.parameterCast(routineName, dataType))
 			goReturns = append(goReturns, fmt.Sprintf("%s %s", goName, c.parameterType(dataType)))
 			scanArgs = append(scanArgs, fmt.Sprintf("&%s", goName))
 			comment = append(comment, fmt.Sprintf("OUT %s %s", routineName, dataType))
@@ -223,13 +223,13 @@ func (c *converter) parameterType(typ string) string {
 	return "struct{}"
 }
 
-// typeCast adds a type cast (::type) to a parameter if needed.
-func (c *converter) typeCast(parameter string, dataType string) string {
-	switch dataType {
+// parameterCast adds a type cast (::type) to a parameter if needed.
+func (c *converter) parameterCast(name string, typ string) string {
+	switch typ {
 	case "documentdb_core.bson", "documentdb_core.bsonsequence":
-		return parameter + "::bytea"
+		return name + "::bytea"
 	default:
-		return parameter
+		return name
 	}
 }
 
