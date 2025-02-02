@@ -29,7 +29,7 @@ import "context"
 // TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/1147
 // TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/1221
 //
-//go:generate go run ./genwrap -schemas=documentdb_api,documentdb_core,documentdb_api_catalog,documentdb_api_internal
+//go:generate go run ./genwrap -debug -schemas=documentdb_api,documentdb_api_catalog,documentdb_api_internal,documentdb_core
 
 // todoCtx should be used instead of [context.TODO] in this package.
 // See https://github.com/jackc/pgx/issues/1726#issuecomment-1711612138.

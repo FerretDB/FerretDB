@@ -17,17 +17,19 @@ package main
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
 )
 
-func TestCamelCase(t *testing.T) {
+func TestCase(t *testing.T) {
 	t.Parallel()
 
-	c := new(Converter)
+	c := new(converter)
 
-	require.Equal(t, "cursorGetMore", c.camelCase("cursor_get_more"))
+	assert.Equal(t, "cursorGetMore", c.camelCase("cursor_get_more"))
+	assert.Equal(t, "CursorGetMore", c.pascalCase("cursor_get_more"))
 }
 
 func TestConvert(t *testing.T) {

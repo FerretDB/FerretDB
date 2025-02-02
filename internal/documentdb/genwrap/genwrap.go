@@ -26,18 +26,24 @@ import (
 )
 
 func main() {
+	debugF := flag.Bool("debug", false, "enable debug logging")
+	schemasF := flag.String("schemas", "", "comma-separated list of schemas")
+	flag.Parse()
+
 	opts := &logging.NewHandlerOpts{
 		Base:          "console",
-		Level:         slog.LevelDebug,
+		Level:         slog.LevelInfo,
 		CheckMessages: true,
 	}
+
+	if *debugF {
+		opts.Level = slog.LevelDebug
+	}
+
 	logging.Setup(opts, "")
 
 	l := slog.Default()
 	ctx := context.Background()
-
-	schemasF := flag.String("schemas", "", "comma-separated list of schemas")
-	flag.Parse()
 
 	if *schemasF == "" {
 		l.Log(ctx, logging.LevelFatal, "-schemas flag is empty.")

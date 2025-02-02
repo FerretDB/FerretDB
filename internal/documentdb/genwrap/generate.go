@@ -38,6 +38,7 @@ package {{.Package}}
 import (
 	"context"
 	"log/slog"
+	"time"
 
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/jackc/pgx/v5"

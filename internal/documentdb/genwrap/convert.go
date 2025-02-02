@@ -23,11 +23,6 @@ import (
 	"unicode"
 )
 
-// Converter converts SQL data types to Go data types.
-type Converter struct {
-	l *slog.Logger
-}
-
 // Convert takes rows containing parameters of routines.
 // It returns a map of schemas and routines belonging to each schema by
 // converting rows to Go formatted names and types.
@@ -35,7 +30,7 @@ type Converter struct {
 // For an anonymous SQL parameter, it assigns a unique name.
 // It also produces SQL query placeholders and return parameters in strings.
 func Convert(rows []map[string]any, l *slog.Logger) map[string]map[string]templateData {
-	c := &Converter{
+	c := &converter{
 		l: l,
 	}
 
@@ -79,15 +74,15 @@ func Convert(rows []map[string]any, l *slog.Logger) map[string]map[string]templa
 				placeholder := fmt.Sprintf("$%d", placeholderCounter+1)
 				placeholderCounter++
 
-				goName := c.convertName(name)
-				sqlParams = append(sqlParams, c.convertEncodedType(placeholder, dataType))
+				goName := c.parameter(name)
+				sqlParams = append(sqlParams, c.typeCast(placeholder, dataType))
 				goParams = append(goParams, fmt.Sprintf("%s %s", goName, c.convertType(dataType)))
 				queryRowArgs = append(queryRowArgs, goName)
 			}
 
 			if row["parameter_mode"] == "OUT" || row["parameter_mode"] == "INOUT" {
-				goName := "out" + c.pascalCase(c.convertName(name))
-				sqlReturns = append(sqlReturns, c.convertEncodedType(name, dataType))
+				goName := "out" + c.pascalCase(c.parameter(name))
+				sqlReturns = append(sqlReturns, c.typeCast(name, dataType))
 				goReturns = append(goReturns, fmt.Sprintf("%s %s", goName, c.convertType(dataType)))
 				scanArgs = append(scanArgs, fmt.Sprintf("&%s", goName))
 			}
@@ -98,9 +93,9 @@ func Convert(rows []map[string]any, l *slog.Logger) map[string]map[string]templa
 		if len(goReturns) == 0 && params[0]["routine_type"] == "FUNCTION" {
 			// function such as binary_extended_version() does not have
 			// parameter data type, but it has routine data type for the return variable.
-			goName := "out" + c.pascalCase(c.convertName(routineName))
+			goName := "out" + c.pascalCase(c.parameter(routineName))
 			dataType := c.routineDataType(params[0])
-			sqlReturns = append(sqlReturns, c.convertEncodedType(routineName, dataType))
+			sqlReturns = append(sqlReturns, c.typeCast(routineName, dataType))
 			goReturns = append(goReturns, fmt.Sprintf("%s %s", goName, c.convertType(dataType)))
 			scanArgs = append(scanArgs, fmt.Sprintf("&%s", goName))
 			comment = append(comment, fmt.Sprintf("OUT %s %s", routineName, dataType))
@@ -136,130 +131,120 @@ func Convert(rows []map[string]any, l *slog.Logger) map[string]map[string]templa
 	return schemas
 }
 
-// convertEncodedType appends binary data encoding to documentdb_core.bson data type.
-func (c *Converter) convertEncodedType(parameter string, dataType string) string {
-	res := parameter
-
-	switch dataType {
-	case "documentdb_core.bson", "documentdb_core.bsonsequence":
-		res += "::bytea"
-	}
-
-	return res
+// converter is used to group methods used by [Convert].
+type converter struct {
+	l *slog.Logger
 }
 
-// camelCase converts a string to camelCase.
-func (c *Converter) camelCase(s string) string {
-	var nextCapital bool
-	var out []byte
+// camelCase converts snake_case to to camelCase.
+func (c *converter) camelCase(s string) string {
+	var res []rune
 
+	var u bool
 	for _, ch := range s {
 		if ch == '_' {
-			nextCapital = true
+			u = true
 			continue
 		}
 
-		if nextCapital {
+		if u {
 			ch = unicode.ToUpper(ch)
-			nextCapital = false
+			u = false
 		}
 
-		out = append(out, byte(ch))
+		res = append(res, ch)
 	}
 
-	return string(out)
+	return string(res)
 }
 
-// convertType converts DocumentDB and PostgreSQL types to Go types.
-func (c *Converter) convertType(typ string) string {
-	switch typ {
-	case "ARRAY":
-		return "[]any"
-	case "text", "cstring":
-		return "string"
-	case "documentdb_core.bson", "documentdb_core.bsonquery":
-		return "wirebson.RawDocument"
-	case "documentdb_core.bsonsequence", "timestamp with time zone", "uuid", "bytea":
-		return "[]byte"
-	case "boolean":
-		return "bool"
-	case `"any"`, "anyelement", "documentdb_api_catalog.index_spec_type", "internal", "index_am_handler", "oid",
-		"public.vector", "record", "regclass", "trigger", "tsquery", "void":
-		c.l.Debug("use string for PostgreSQL/DocumentDB type without known conversion", slog.String("data_type", typ))
-		return "string"
-	case "smallint":
-		return "int16"
-	case "integer":
-		return "int32"
-	case "bigint":
-		return "int64"
-	case "double precision":
-		return "float64"
-	default:
-		return typ
-	}
+// pascalCase converts snake_case to PascalCase.
+func (c *converter) pascalCase(s string) string {
+	res := []rune(c.camelCase(s))
+	res[0] = unicode.ToUpper(res[0])
+	return string(res)
 }
 
-// convertName converts to golang friendly formatted name.
-func (c *Converter) convertName(name string) string {
-	var found bool
-	if name, found = strings.CutPrefix(name, "p_"); found {
-		return c.camelCase(name)
+// parameter converts PostgreSQL/DocumentDB routine parameter name to Go function/method parameter name.
+func (c *converter) parameter(name string) string {
+	if n, found := strings.CutPrefix(name, "p_"); found {
+		return c.camelCase(n)
 	}
 
 	switch name {
-	case "ok", "document", "requests", "shard_key_value", "creation_time", "complete",
-		"binary_version", "binary_extended_version", "create_collection":
+	case "complete", "continuation", "database", "document", "ok", "requests":
+		return name
+
+	case "binary_extended_version", "binary_version", "create_collection", "creation_time", "shard_key_value":
 		return c.camelCase(name)
 
-	case "dbname":
-		return "databaseName"
-	case "database":
-		return "database"
 	case "commandspec":
 		return "commandSpec"
+	case "continuationspec":
+		return "continuationSpec"
 	case "countspec":
 		return "countSpec"
+	case "createSpec":
+		return "createSpec"
 	case "cursorid":
 		return "cursorID"
-	case "object_id":
-		return "objectID"
 	case "cursorpage":
 		return "cursorPage"
-
-	case "continuation":
-		return "continuation"
-
-	case "retval":
-		return "retValue"
-
-	case "persistconnection":
-		return "persistConnection"
-	case "createspec":
-		return "createSpec"
+	case "dbname":
+		return "dbName"
 	case "distinctspec":
 		return "distinctSpec"
 	case "getmorespec":
 		return "getMoreSpec"
-	case "continuationspec":
-		return "continuationSpec"
+	case "object_id":
+		return "objectID"
+	case "persistconnection":
+		return "persistConnection"
+	case "retval":
+		return "retVal"
 
 	default:
 		return c.camelCase(name)
 	}
 }
 
-// pascalCase converts a string to PascalCase.
-func (c *Converter) pascalCase(s string) string {
-	strArr := []rune(c.camelCase(s))
+// typeCast adds a type cast (::type) to a parameter if needed.
+func (c *converter) typeCast(parameter string, dataType string) string {
+	switch dataType {
+	case "documentdb_core.bson", "documentdb_core.bsonsequence":
+		return parameter + "::bytea"
+	default:
+		return parameter
+	}
+}
 
-	strArr[0] = unicode.ToUpper(strArr[0])
+// convertType converts PostgreSQL/DocumentDB type to the Go type.
+func (c *converter) convertType(typ string) string {
+	switch typ {
+	case "text":
+		return "string"
+	case "boolean":
+		return "bool"
+	case "bigint":
+		return "int64"
+	case "double precision":
+		return "float64"
+	case "uuid":
+		return "[]byte"
 
-	return string(strArr)
+	case "documentdb_core.bson":
+		return "wirebson.RawDocument"
+	case "documentdb_core.bsonsequence":
+		return "[]byte"
+
+	default:
+		c.l.Debug("Unhandled type", slog.String("type", typ))
+		return "struct{}"
+	}
 }
 
 // handleFunctionOverloading applies different wrapper function name for overloaded functions.
-func (c *Converter) handleFunctionOverloading(f *templateData) {
+func (c *converter) handleFunctionOverloading(f *templateData) {
 	var funcName string
 
 	var skip bool
@@ -278,7 +263,7 @@ func (c *Converter) handleFunctionOverloading(f *templateData) {
 }
 
 // groupBySpecificName groups rows by specific_name.
-func (c *Converter) groupBySpecificName(rows []map[string]any) map[string][]map[string]any {
+func (c *converter) groupBySpecificName(rows []map[string]any) map[string][]map[string]any {
 	var specificName any
 
 	routines := map[string][]map[string]any{}
@@ -301,7 +286,7 @@ func (c *Converter) groupBySpecificName(rows []map[string]any) map[string][]map[
 
 // dataType returns SQL datatype of a parameter. If the data type is USER-DEFINED,
 // it returns schema and name concatenated by dot.
-func (c *Converter) dataType(row map[string]any) string {
+func (c *converter) dataType(row map[string]any) string {
 	if row["data_type"] == "USER-DEFINED" {
 		return row["udt_schema"].(string) + "." + row["udt_name"].(string)
 	}
@@ -311,7 +296,7 @@ func (c *Converter) dataType(row map[string]any) string {
 
 // routineDataType returns SQL datatype of a routine. If the data type is USER-DEFINED,
 // it returns schema and name concatenated by dot.
-func (c *Converter) routineDataType(row map[string]any) string {
+func (c *converter) routineDataType(row map[string]any) string {
 	if row["routine_data_type"] == "USER-DEFINED" {
 		return row["routine_udt_schema"].(string) + "." + row["routine_udt_name"].(string)
 	}
@@ -322,7 +307,7 @@ func (c *Converter) routineDataType(row map[string]any) string {
 // toParamComment returns concatenated string of parameter name, data type
 // and default value to use for the parameter description of a function.
 // If the parameter is not an input, prefix OUT/INOUT is added to the comment.
-func (c *Converter) toParamComment(paramName string, row map[string]any) string {
+func (c *converter) toParamComment(paramName string, row map[string]any) string {
 	comment := paramName + " " + c.dataType(row)
 	if row["parameter_mode"] != "IN" {
 		comment = row["parameter_mode"].(string) + " " + comment
@@ -337,7 +322,7 @@ func (c *Converter) toParamComment(paramName string, row map[string]any) string 
 }
 
 // uniqueName generates a new name if it exists in names slice.
-func (c *Converter) uniqueName(names []string, name string) string {
+func (c *converter) uniqueName(names []string, name string) string {
 	i := 1
 	for slices.Contains(names, name) {
 		name = fmt.Sprintf("%s%d", name, i)
