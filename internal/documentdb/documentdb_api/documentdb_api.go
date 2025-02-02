@@ -129,11 +129,11 @@ func CreateCollection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, datab
 // CreateCollectionView is a wrapper for
 //
 //	documentdb_api.create_collection_view(dbname text, createspec documentdb_core.bson, OUT create_collection_view documentdb_core.bson).
-func CreateCollectionView(ctx context.Context, conn *pgx.Conn, l *slog.Logger, dbName string, createspec wirebson.RawDocument) (outCreateCollectionView wirebson.RawDocument, err error) {
+func CreateCollectionView(ctx context.Context, conn *pgx.Conn, l *slog.Logger, database string, createSpec wirebson.RawDocument) (outCreateCollectionView wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.create_collection_view", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT create_collection_view::bytea FROM documentdb_api.create_collection_view($1, $2::bytea)", dbName, createspec)
+	row := conn.QueryRow(ctx, "SELECT create_collection_view::bytea FROM documentdb_api.create_collection_view($1, $2::bytea)", database, createSpec)
 	if err = row.Scan(&outCreateCollectionView); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.create_collection_view", l)
 	}
@@ -479,11 +479,11 @@ func UsersInfo(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebso
 // Validate is a wrapper for
 //
 //	documentdb_api.validate(database text, validatespec documentdb_core.bson, OUT document documentdb_core.bson).
-func Validate(ctx context.Context, conn *pgx.Conn, l *slog.Logger, database string, validatespec wirebson.RawDocument) (outDocument wirebson.RawDocument, err error) {
+func Validate(ctx context.Context, conn *pgx.Conn, l *slog.Logger, database string, validateSpec wirebson.RawDocument) (outDocument wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.validate", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT document::bytea FROM documentdb_api.validate($1, $2::bytea)", database, validatespec)
+	row := conn.QueryRow(ctx, "SELECT document::bytea FROM documentdb_api.validate($1, $2::bytea)", database, validateSpec)
 	if err = row.Scan(&outDocument); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.validate", l)
 	}

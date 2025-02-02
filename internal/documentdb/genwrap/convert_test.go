@@ -32,6 +32,14 @@ func TestCase(t *testing.T) {
 	assert.Equal(t, "CursorGetMore", c.pascalCase("cursor_get_more"))
 }
 
+func TestParameterName(t *testing.T) {
+	t.Parallel()
+
+	c := new(converter)
+
+	assert.Equal(t, "validateSpec", c.parameterName("validatespec"))
+}
+
 func TestConvert(t *testing.T) {
 	t.Parallel()
 

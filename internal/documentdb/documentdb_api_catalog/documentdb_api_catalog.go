@@ -45,11 +45,11 @@ func BsonAggregationDistinct(ctx context.Context, conn *pgx.Conn, l *slog.Logger
 // BsonAggregationFind is a wrapper for
 //
 //	documentdb_api_catalog.bson_aggregation_find(databasename text, findspec documentdb_core.bson, OUT document documentdb_core.bson).
-func BsonAggregationFind(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databasename string, findspec wirebson.RawDocument) (outDocument wirebson.RawDocument, err error) {
+func BsonAggregationFind(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databasename string, findSpec wirebson.RawDocument) (outDocument wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_catalog.bson_aggregation_find", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT document::bytea FROM documentdb_api_catalog.bson_aggregation_find($1, $2::bytea)", databasename, findspec)
+	row := conn.QueryRow(ctx, "SELECT document::bytea FROM documentdb_api_catalog.bson_aggregation_find($1, $2::bytea)", databasename, findSpec)
 	if err = row.Scan(&outDocument); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_catalog.bson_aggregation_find", l)
 	}
@@ -199,11 +199,11 @@ func BsonDistinctUnwind(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (ou
 // BsonDollarAddFields is a wrapper for
 //
 //	documentdb_api_catalog.bson_dollar_add_fields(document documentdb_core.bson, pathspec documentdb_core.bson, OUT bson_dollar_add_fields documentdb_core.bson).
-func BsonDollarAddFields(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, pathspec wirebson.RawDocument) (outBsonDollarAddFields wirebson.RawDocument, err error) {
+func BsonDollarAddFields(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, pathSpec wirebson.RawDocument) (outBsonDollarAddFields wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_catalog.bson_dollar_add_fields", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bson_dollar_add_fields::bytea FROM documentdb_api_catalog.bson_dollar_add_fields($1::bytea, $2::bytea)", document, pathspec)
+	row := conn.QueryRow(ctx, "SELECT bson_dollar_add_fields::bytea FROM documentdb_api_catalog.bson_dollar_add_fields($1::bytea, $2::bytea)", document, pathSpec)
 	if err = row.Scan(&outBsonDollarAddFields); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_catalog.bson_dollar_add_fields", l)
 	}
@@ -577,11 +577,11 @@ func BsonDollarNin(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBson
 // BsonDollarProject is a wrapper for
 //
 //	documentdb_api_catalog.bson_dollar_project(document documentdb_core.bson, pathspec documentdb_core.bson, OUT bson_dollar_project documentdb_core.bson).
-func BsonDollarProject(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, pathspec wirebson.RawDocument) (outBsonDollarProject wirebson.RawDocument, err error) {
+func BsonDollarProject(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, pathSpec wirebson.RawDocument) (outBsonDollarProject wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_catalog.bson_dollar_project", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bson_dollar_project::bytea FROM documentdb_api_catalog.bson_dollar_project($1::bytea, $2::bytea)", document, pathspec)
+	row := conn.QueryRow(ctx, "SELECT bson_dollar_project::bytea FROM documentdb_api_catalog.bson_dollar_project($1::bytea, $2::bytea)", document, pathSpec)
 	if err = row.Scan(&outBsonDollarProject); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_catalog.bson_dollar_project", l)
 	}
@@ -591,11 +591,11 @@ func BsonDollarProject(ctx context.Context, conn *pgx.Conn, l *slog.Logger, docu
 // BsonDollarProjectFind is a wrapper for
 //
 //	documentdb_api_catalog.bson_dollar_project_find(document documentdb_core.bson, pathspec documentdb_core.bson, queryspec documentdb_core.bson DEFAULT NULL, OUT bson_dollar_project_find documentdb_core.bson).
-func BsonDollarProjectFind(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, pathspec wirebson.RawDocument, queryspec wirebson.RawDocument) (outBsonDollarProjectFind wirebson.RawDocument, err error) {
+func BsonDollarProjectFind(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, pathSpec wirebson.RawDocument, querySpec wirebson.RawDocument) (outBsonDollarProjectFind wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_catalog.bson_dollar_project_find", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bson_dollar_project_find::bytea FROM documentdb_api_catalog.bson_dollar_project_find($1::bytea, $2::bytea, $3::bytea)", document, pathspec, queryspec)
+	row := conn.QueryRow(ctx, "SELECT bson_dollar_project_find::bytea FROM documentdb_api_catalog.bson_dollar_project_find($1::bytea, $2::bytea, $3::bytea)", document, pathSpec, querySpec)
 	if err = row.Scan(&outBsonDollarProjectFind); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_catalog.bson_dollar_project_find", l)
 	}
@@ -633,11 +633,11 @@ func BsonDollarRegex(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBs
 // BsonDollarReplaceRoot is a wrapper for
 //
 //	documentdb_api_catalog.bson_dollar_replace_root(document documentdb_core.bson, pathspec documentdb_core.bson, OUT bson_dollar_replace_root documentdb_core.bson).
-func BsonDollarReplaceRoot(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, pathspec wirebson.RawDocument) (outBsonDollarReplaceRoot wirebson.RawDocument, err error) {
+func BsonDollarReplaceRoot(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, pathSpec wirebson.RawDocument) (outBsonDollarReplaceRoot wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_catalog.bson_dollar_replace_root", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bson_dollar_replace_root::bytea FROM documentdb_api_catalog.bson_dollar_replace_root($1::bytea, $2::bytea)", document, pathspec)
+	row := conn.QueryRow(ctx, "SELECT bson_dollar_replace_root::bytea FROM documentdb_api_catalog.bson_dollar_replace_root($1::bytea, $2::bytea)", document, pathSpec)
 	if err = row.Scan(&outBsonDollarReplaceRoot); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_catalog.bson_dollar_replace_root", l)
 	}
@@ -647,11 +647,11 @@ func BsonDollarReplaceRoot(ctx context.Context, conn *pgx.Conn, l *slog.Logger, 
 // BsonDollarSet is a wrapper for
 //
 //	documentdb_api_catalog.bson_dollar_set(document documentdb_core.bson, pathspec documentdb_core.bson, OUT bson_dollar_set documentdb_core.bson).
-func BsonDollarSet(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, pathspec wirebson.RawDocument) (outBsonDollarSet wirebson.RawDocument, err error) {
+func BsonDollarSet(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, pathSpec wirebson.RawDocument) (outBsonDollarSet wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_catalog.bson_dollar_set", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bson_dollar_set::bytea FROM documentdb_api_catalog.bson_dollar_set($1::bytea, $2::bytea)", document, pathspec)
+	row := conn.QueryRow(ctx, "SELECT bson_dollar_set::bytea FROM documentdb_api_catalog.bson_dollar_set($1::bytea, $2::bytea)", document, pathSpec)
 	if err = row.Scan(&outBsonDollarSet); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_catalog.bson_dollar_set", l)
 	}
@@ -689,11 +689,11 @@ func BsonDollarType(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBso
 // BsonDollarUnset is a wrapper for
 //
 //	documentdb_api_catalog.bson_dollar_unset(document documentdb_core.bson, pathspec documentdb_core.bson, OUT bson_dollar_unset documentdb_core.bson).
-func BsonDollarUnset(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, pathspec wirebson.RawDocument) (outBsonDollarUnset wirebson.RawDocument, err error) {
+func BsonDollarUnset(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, pathSpec wirebson.RawDocument) (outBsonDollarUnset wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_catalog.bson_dollar_unset", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bson_dollar_unset::bytea FROM documentdb_api_catalog.bson_dollar_unset($1::bytea, $2::bytea)", document, pathspec)
+	row := conn.QueryRow(ctx, "SELECT bson_dollar_unset::bytea FROM documentdb_api_catalog.bson_dollar_unset($1::bytea, $2::bytea)", document, pathSpec)
 	if err = row.Scan(&outBsonDollarUnset); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_catalog.bson_dollar_unset", l)
 	}
@@ -731,11 +731,11 @@ func BsonDollarUnwind1(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (out
 // BsonExpressionGet is a wrapper for
 //
 //	documentdb_api_catalog.bson_expression_get(document documentdb_core.bson, expressionspec documentdb_core.bson, isnullonempty boolean DEFAULT false, OUT bson_expression_get documentdb_core.bson).
-func BsonExpressionGet(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, expressionspec wirebson.RawDocument, isnullonempty bool) (outBsonExpressionGet wirebson.RawDocument, err error) {
+func BsonExpressionGet(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, expressionSpec wirebson.RawDocument, isnullonempty bool) (outBsonExpressionGet wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_catalog.bson_expression_get", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bson_expression_get::bytea FROM documentdb_api_catalog.bson_expression_get($1::bytea, $2::bytea, $3)", document, expressionspec, isnullonempty)
+	row := conn.QueryRow(ctx, "SELECT bson_expression_get::bytea FROM documentdb_api_catalog.bson_expression_get($1::bytea, $2::bytea, $3)", document, expressionSpec, isnullonempty)
 	if err = row.Scan(&outBsonExpressionGet); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_catalog.bson_expression_get", l)
 	}
@@ -745,11 +745,11 @@ func BsonExpressionGet(ctx context.Context, conn *pgx.Conn, l *slog.Logger, docu
 // BsonExpressionMap is a wrapper for
 //
 //	documentdb_api_catalog.bson_expression_map(document documentdb_core.bson, sourcearrayname text, expressionspec documentdb_core.bson, isnullonempty boolean DEFAULT false, OUT bson_expression_map documentdb_core.bson).
-func BsonExpressionMap(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, sourcearrayname string, expressionspec wirebson.RawDocument, isnullonempty bool) (outBsonExpressionMap wirebson.RawDocument, err error) {
+func BsonExpressionMap(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, sourcearrayname string, expressionSpec wirebson.RawDocument, isnullonempty bool) (outBsonExpressionMap wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_catalog.bson_expression_map", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bson_expression_map::bytea FROM documentdb_api_catalog.bson_expression_map($1::bytea, $2, $3::bytea, $4)", document, sourcearrayname, expressionspec, isnullonempty)
+	row := conn.QueryRow(ctx, "SELECT bson_expression_map::bytea FROM documentdb_api_catalog.bson_expression_map($1::bytea, $2, $3::bytea, $4)", document, sourcearrayname, expressionSpec, isnullonempty)
 	if err = row.Scan(&outBsonExpressionMap); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_catalog.bson_expression_map", l)
 	}

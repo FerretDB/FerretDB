@@ -171,30 +171,28 @@ func (c *converter) parameterName(name string) string {
 	name = strings.TrimPrefix(name, "p_")
 
 	switch name {
-	case "commandspec":
-		return "commandSpec"
-	case "continuationspec":
-		return "continuationSpec"
-	case "countspec":
-		return "countSpec"
-	case "createSpec":
-		return "createSpec"
+	case "dbname":
+		return "database"
+
+	case "getmorespec":
+		return "getMoreSpec"
+	case "letvariablespec":
+		return "letVariableSpec"
+
 	case "cursorid":
 		return "cursorID"
 	case "cursorpage":
 		return "cursorPage"
-	case "dbname":
-		return "dbName"
-	case "distinctspec":
-		return "distinctSpec"
-	case "getmorespec":
-		return "getMoreSpec"
 	case "object_id":
 		return "objectID"
 	case "persistconnection":
 		return "persistConnection"
 	case "retval":
 		return "retVal"
+	}
+
+	if name != "spec" && strings.HasSuffix(name, "spec") {
+		name = strings.TrimSuffix(name, "spec") + "_spec"
 	}
 
 	return c.camelCase(name)
