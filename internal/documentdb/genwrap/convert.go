@@ -124,8 +124,6 @@ func Convert(rows []map[string]any, l *slog.Logger) map[string]map[string]templa
 			ScanArgs:     strings.Join(scanArgs, ", "),
 		}
 
-		c.handleFunctionOverloading(&r)
-
 		schemas[schema][uniqueFunctionName] = r
 	}
 
@@ -208,12 +206,12 @@ func (c *converter) parameterType(typ string) string {
 		return "string"
 	case "boolean":
 		return "bool"
+	case "integer":
+		return "int32"
 	case "bigint":
 		return "int64"
 	case "double precision":
 		return "float64"
-	case "integer":
-		return "int32"
 	case "uuid":
 		return "[]byte"
 
@@ -235,25 +233,6 @@ func (c *converter) parameterCast(name string, typ string) string {
 		return name + "::bytea"
 	default:
 		return name
-	}
-}
-
-// handleFunctionOverloading applies different wrapper function name for overloaded functions.
-func (c *converter) handleFunctionOverloading(f *templateData) {
-	var funcName string
-
-	var skip bool
-
-	// handle Bson duplicates
-	switch f.SQLFuncName {
-	case "documentdb_core.bsonquery_compare":
-		funcName = "BsonQueryCompareBson"
-	default:
-		skip = true
-	}
-
-	if !skip && strings.Contains(f.Comment, "documentdb_core.bson,") {
-		f.FuncName = funcName
 	}
 }
 
