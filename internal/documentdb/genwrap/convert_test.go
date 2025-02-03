@@ -151,6 +151,37 @@ func TestConvert(t *testing.T) {
 			"routine_udt_schema": nil,
 			"routine_udt_name":   nil,
 		},
+
+		{
+			"specific_schema":    "documentdb_core",
+			"specific_name":      "bsonquery_compare_16444",
+			"routine_name":       "bsonquery_compare",
+			"routine_type":       "FUNCTION",
+			"parameter_name":     nil,
+			"parameter_mode":     "IN",
+			"parameter_default":  nil,
+			"data_type":          "USER-DEFINED",
+			"udt_schema":         "documentdb_core",
+			"udt_name":           "bsonquery",
+			"routine_data_type":  "integer",
+			"routine_udt_schema": "pg_catalog",
+			"routine_udt_name":   "int4",
+		},
+		{
+			"specific_schema":    "documentdb_core",
+			"specific_name":      "bsonquery_compare_16444",
+			"routine_name":       "bsonquery_compare",
+			"routine_type":       "FUNCTION",
+			"parameter_name":     nil,
+			"parameter_mode":     "IN",
+			"parameter_default":  nil,
+			"data_type":          "USER-DEFINED",
+			"udt_schema":         "documentdb_core",
+			"udt_name":           "bsonquery",
+			"routine_data_type":  "integer",
+			"routine_udt_schema": "pg_catalog",
+			"routine_udt_name":   "int4",
+		},
 	}
 
 	expected := map[string]map[string]templateData{
@@ -188,6 +219,21 @@ func TestConvert(t *testing.T) {
 				Returns:      "outRetVal wirebson.RawDocument",
 				ScanArgs:     "&outRetVal",
 				QueryRowArgs: "databaseName, arg, retVal",
+			},
+		},
+		"documentdb_core": {
+			"bsonquery_compare": {
+				FuncName:    "BsonqueryCompare",
+				SQLFuncName: "documentdb_core.bsonquery_compare",
+				IsProcedure: false,
+				SQLArgs:     "$1, $2",
+				SQLReturns:  "bsonquery_compare",
+				Comment: `documentdb_core.bsonquery_compare(anonymous documentdb_core.bsonquery, anonymous1 documentdb_core.bsonquery, ` +
+					`OUT bsonquery_compare integer)`,
+				Params:       "anonymous struct{}, anonymous1 struct{}",
+				Returns:      "outBsonqueryCompare int32",
+				ScanArgs:     "&outBsonqueryCompare",
+				QueryRowArgs: "anonymous, anonymous1",
 			},
 		},
 	}

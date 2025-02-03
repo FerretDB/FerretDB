@@ -62,7 +62,7 @@ func Convert(rows []map[string]any, l *slog.Logger) map[string]map[string]templa
 				continue
 			}
 
-			if row["parameter_name"] == nil {
+			if row["parameter_mode"] == nil {
 				// skip a row if the row does not contain a parameter such as BinaryExtendedVersion()
 				continue
 			}
@@ -212,6 +212,8 @@ func (c *converter) parameterType(typ string) string {
 		return "int64"
 	case "double precision":
 		return "float64"
+	case "integer":
+		return "int32"
 	case "uuid":
 		return "[]byte"
 
