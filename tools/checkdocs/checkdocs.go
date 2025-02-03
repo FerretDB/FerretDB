@@ -45,7 +45,7 @@ func main() {
 }
 
 // issueRE represents FerretDB and microsoft issue url.
-// It returns owner as a submatch.
+// It returns owner, repo and issue number as submatches.
 var issueRE = regexp.MustCompile(`\Qhttps://github.com/\E(FerretDB|microsoft)/([-\w]+)/issues/(\d+)`)
 
 // checkBlogFiles verifies that blog posts are correctly formatted.
@@ -236,7 +236,7 @@ func verifyTags(fm []byte) error {
 	return nil
 }
 
-// checkIssueURLs validates FerretDB and microsoft/documentdb issues URLs if they occur in the r [io.Reader].
+// checkIssueURLs validates FerretDB and microsoft issues URLs if they occur in the r [io.Reader].
 // If URL formatting is invalid, the represented issue is closed or not found - the appropriate
 // message is sent to l [*log.Logger].
 //
