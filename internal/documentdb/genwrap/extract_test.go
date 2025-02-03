@@ -34,7 +34,6 @@ func TestExtract(t *testing.T) {
 
 	rows, err := Extract(ctx, uri, []string{"documentdb_core", "documentdb_api"})
 	require.NoError(t, err)
-	require.NotZero(t, rows)
 
 	expected := map[string]any{
 		"specific_schema":    "documentdb_api",

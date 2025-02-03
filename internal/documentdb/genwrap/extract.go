@@ -84,15 +84,15 @@ func Extract(ctx context.Context, uri string, schemas []string) (map[string][]ma
 	res := make(map[string][]map[string]any)
 
 	for _, row := range mappedRows {
-		name := row["specific_schema"].(string) + "." + row["specific_name"].(string)
+		fullName := row["specific_schema"].(string) + "." + row["specific_name"].(string)
 
-		routine := res[name]
+		routine := res[fullName]
 		if routine == nil {
 			routine = []map[string]any{}
 		}
 
 		routine = append(routine, row)
-		res[name] = routine
+		res[fullName] = routine
 	}
 
 	return res, nil

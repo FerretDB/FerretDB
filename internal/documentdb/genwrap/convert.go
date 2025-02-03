@@ -243,7 +243,13 @@ func (c *converter) parameterCast(name string, typ string) string {
 	}
 }
 
-// pgParameterType converts PostgreSQL/DocumentDB routine parameter type.
+// funcName converts PostgreSQL/DocumentDB routine name
+// to Go function/method name.
+func (c *converter) funcName(name string) string {
+	return c.pascalCase(c.parameterName(name))
+}
+
+// pgParameterType gets PostgreSQL/DocumentDB routine parameter type.
 func (c *converter) pgParameterType(row map[string]any) string {
 	if row["data_type"] == "USER-DEFINED" {
 		return row["udt_schema"].(string) + "." + row["udt_name"].(string)
@@ -252,9 +258,8 @@ func (c *converter) pgParameterType(row map[string]any) string {
 	return row["data_type"].(string)
 }
 
-// routineDataType returns SQL datatype of a routine. If the data type is USER-DEFINED,
-// it returns schema and name concatenated by dot.
-func (c *converter) routineDataType(row map[string]any) string {
+// pgParameterType gets PostgreSQL/DocumentDB routine result parameter type.
+func (c *converter) pgResultType(row map[string]any) string {
 	if row["routine_data_type"] == "USER-DEFINED" {
 		return row["routine_udt_schema"].(string) + "." + row["routine_udt_name"].(string)
 	}
@@ -262,32 +267,20 @@ func (c *converter) routineDataType(row map[string]any) string {
 	return row["routine_data_type"].(string)
 }
 
-// handleFunctionOverloading applies different wrapper function name for overloaded functions.
-func (c *converter) handleFunctionOverloading(f *templateData) {
-	var funcName string
-
-	var skip bool
-
-	// handle Bson duplicates
-	switch f.SQLFuncName {
-	case "documentdb_core.bsonquery_compare":
-		funcName = "BsonQueryCompareBson"
-	default:
-		skip = true
+func (c *converter) routine(routine []map[string]any) templateData {
+	f := routine[0]
+	res := templateData{
+		FuncName:     c.funcName(f["routine_name"].(string)),
+		SQLFuncName:  fmt.Sprintf("%s.%s", f["specific_schema"], f["routine_name"]),
+		Comment:      "[Comment]",
+		Params:       "[Params]",
+		Returns:      "[Returns]",
+		SQLArgs:      "[SQLArgs]",
+		SQLReturns:   "[SQLReturns]",
+		IsProcedure:  f["routine_type"] == "PROCEDURE",
+		QueryRowArgs: "[QueryRowArgs]",
+		ScanArgs:     "[ScanArgs]",
 	}
 
-	if !skip && strings.Contains(f.Comment, "documentdb_core.bson,") {
-		f.FuncName = funcName
-	}
-}
-
-// uniqueName generates a new name if it exists in names slice.
-func (c *converter) uniqueName(names []string, name string) string {
-	i := 1
-	for slices.Contains(names, name) {
-		name = fmt.Sprintf("%s%d", name, i)
-		i++
-	}
-
-	return name
+	return res
 }
