@@ -90,9 +90,10 @@ func Convert(rows []map[string]any, l *slog.Logger) map[string]map[string]templa
 
 		routineName := params[0]["routine_name"].(string)
 
-		if len(goReturns) == 0 && params[0]["routine_type"] == "FUNCTION" {
+		if len(goReturns) == 0 && params[0]["routine_type"] == "FUNCTION" && params[0]["routine_data_type"] != "void" {
 			// function such as binary_extended_version() does not have
-			// parameter data type, but it has routine data type for the return variable.
+			// parameter data type, but it has routine data type for the return variable,
+			// except void data type which does not return anything.
 			goName := "out" + c.pascalCase(c.parameterName(routineName))
 			dataType := c.routineDataType(params[0])
 			sqlReturns = append(sqlReturns, c.parameterCast(routineName, dataType))

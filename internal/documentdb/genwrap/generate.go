@@ -38,7 +38,6 @@ package {{.Package}}
 import (
 	"context"
 	"log/slog"
-	"time"
 
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/jackc/pgx/v5"
@@ -154,6 +153,10 @@ func generateGoFunction(writer io.Writer, data *templateData) error {
 func generateSQL(f *templateData) string {
 	if f.IsProcedure {
 		return fmt.Sprintf("CALL %s(%s)", f.SQLFuncName, f.SQLArgs)
+	}
+
+	if f.SQLReturns == "" {
+		return fmt.Sprintf("SELECT %s(%s)", f.SQLFuncName, f.SQLArgs)
 	}
 
 	return fmt.Sprintf(

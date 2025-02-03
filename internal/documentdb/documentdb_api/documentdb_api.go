@@ -240,13 +240,13 @@ func DropCollection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databas
 
 // DropDatabase is a wrapper for
 //
-//	documentdb_api.drop_database(p_database_name text, p_write_concern documentdb_core.bson DEFAULT NULL, OUT drop_database void).
-func DropDatabase(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, writeConcern wirebson.RawDocument) (outDropDatabase struct{}, err error) {
+//	documentdb_api.drop_database(p_database_name text, p_write_concern documentdb_core.bson DEFAULT NULL).
+func DropDatabase(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, writeConcern wirebson.RawDocument) (err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.drop_database", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT drop_database FROM documentdb_api.drop_database($1, $2::bytea)", databaseName, writeConcern)
-	if err = row.Scan(&outDropDatabase); err != nil {
+	row := conn.QueryRow(ctx, "SELECT documentdb_api.drop_database($1, $2::bytea)", databaseName, writeConcern)
+	if err = row.Scan(); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.drop_database", l)
 	}
 	return
@@ -366,13 +366,13 @@ func ListIndexesCursorFirstPage(ctx context.Context, conn *pgx.Conn, l *slog.Log
 
 // RenameCollection is a wrapper for
 //
-//	documentdb_api.rename_collection(p_database_name text, p_collection_name text, p_target_name text, p_drop_target boolean DEFAULT false, OUT rename_collection void).
-func RenameCollection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, collectionName string, targetName string, dropTarget bool) (outRenameCollection struct{}, err error) {
+//	documentdb_api.rename_collection(p_database_name text, p_collection_name text, p_target_name text, p_drop_target boolean DEFAULT false).
+func RenameCollection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, collectionName string, targetName string, dropTarget bool) (err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.rename_collection", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT rename_collection FROM documentdb_api.rename_collection($1, $2, $3, $4)", databaseName, collectionName, targetName, dropTarget)
-	if err = row.Scan(&outRenameCollection); err != nil {
+	row := conn.QueryRow(ctx, "SELECT documentdb_api.rename_collection($1, $2, $3, $4)", databaseName, collectionName, targetName, dropTarget)
+	if err = row.Scan(); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.rename_collection", l)
 	}
 	return
@@ -380,13 +380,13 @@ func RenameCollection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, datab
 
 // ReshardCollection is a wrapper for
 //
-//	documentdb_api.reshard_collection(p_shard_key_spec documentdb_core.bson, OUT reshard_collection void).
-func ReshardCollection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, shardKeySpec wirebson.RawDocument) (outReshardCollection struct{}, err error) {
+//	documentdb_api.reshard_collection(p_shard_key_spec documentdb_core.bson).
+func ReshardCollection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, shardKeySpec wirebson.RawDocument) (err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.reshard_collection", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT reshard_collection FROM documentdb_api.reshard_collection($1::bytea)", shardKeySpec)
-	if err = row.Scan(&outReshardCollection); err != nil {
+	row := conn.QueryRow(ctx, "SELECT documentdb_api.reshard_collection($1::bytea)", shardKeySpec)
+	if err = row.Scan(); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.reshard_collection", l)
 	}
 	return
@@ -394,13 +394,13 @@ func ReshardCollection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, shar
 
 // ShardCollection is a wrapper for
 //
-//	documentdb_api.shard_collection(p_database_name text, p_collection_name text, p_shard_key documentdb_core.bson, p_is_reshard boolean DEFAULT true, OUT shard_collection void).
-func ShardCollection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, collectionName string, shardKey wirebson.RawDocument, isReshard bool) (outShardCollection struct{}, err error) {
+//	documentdb_api.shard_collection(p_database_name text, p_collection_name text, p_shard_key documentdb_core.bson, p_is_reshard boolean DEFAULT true).
+func ShardCollection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, collectionName string, shardKey wirebson.RawDocument, isReshard bool) (err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.shard_collection", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT shard_collection FROM documentdb_api.shard_collection($1, $2, $3::bytea, $4)", databaseName, collectionName, shardKey, isReshard)
-	if err = row.Scan(&outShardCollection); err != nil {
+	row := conn.QueryRow(ctx, "SELECT documentdb_api.shard_collection($1, $2, $3::bytea, $4)", databaseName, collectionName, shardKey, isReshard)
+	if err = row.Scan(); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.shard_collection", l)
 	}
 	return
@@ -408,13 +408,13 @@ func ShardCollection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databa
 
 // ShardCollection1 is a wrapper for
 //
-//	documentdb_api.shard_collection(p_shard_key_spec documentdb_core.bson, OUT shard_collection void).
-func ShardCollection1(ctx context.Context, conn *pgx.Conn, l *slog.Logger, shardKeySpec wirebson.RawDocument) (outShardCollection struct{}, err error) {
+//	documentdb_api.shard_collection(p_shard_key_spec documentdb_core.bson).
+func ShardCollection1(ctx context.Context, conn *pgx.Conn, l *slog.Logger, shardKeySpec wirebson.RawDocument) (err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.shard_collection", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT shard_collection FROM documentdb_api.shard_collection($1::bytea)", shardKeySpec)
-	if err = row.Scan(&outShardCollection); err != nil {
+	row := conn.QueryRow(ctx, "SELECT documentdb_api.shard_collection($1::bytea)", shardKeySpec)
+	if err = row.Scan(); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.shard_collection", l)
 	}
 	return
@@ -422,13 +422,13 @@ func ShardCollection1(ctx context.Context, conn *pgx.Conn, l *slog.Logger, shard
 
 // UnshardCollection is a wrapper for
 //
-//	documentdb_api.unshard_collection(p_shard_key_spec documentdb_core.bson, OUT unshard_collection void).
-func UnshardCollection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, shardKeySpec wirebson.RawDocument) (outUnshardCollection struct{}, err error) {
+//	documentdb_api.unshard_collection(p_shard_key_spec documentdb_core.bson).
+func UnshardCollection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, shardKeySpec wirebson.RawDocument) (err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.unshard_collection", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT unshard_collection FROM documentdb_api.unshard_collection($1::bytea)", shardKeySpec)
-	if err = row.Scan(&outUnshardCollection); err != nil {
+	row := conn.QueryRow(ctx, "SELECT documentdb_api.unshard_collection($1::bytea)", shardKeySpec)
+	if err = row.Scan(); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.unshard_collection", l)
 	}
 	return
