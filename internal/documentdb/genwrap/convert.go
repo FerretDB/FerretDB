@@ -162,6 +162,7 @@ func (c *converter) camelCase(s string) string {
 func (c *converter) pascalCase(s string) string {
 	res := []rune(c.camelCase(s))
 	res[0] = unicode.ToUpper(res[0])
+
 	return string(res)
 }
 
@@ -220,6 +221,7 @@ func (c *converter) parameterType(typ string) string {
 	}
 
 	c.l.Debug("Unhandled type", slog.String("type", typ))
+
 	return "struct{}"
 }
 

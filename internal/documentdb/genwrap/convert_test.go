@@ -184,10 +184,10 @@ func TestConvert(t *testing.T) {
 				SQLReturns:  "retval::bytea",
 				Comment: `documentdb_api.drop_indexes(p_database_name text, p_arg documentdb_core.bson, ` +
 					`INOUT retval documentdb_core.bson DEFAULT NULL)`,
-				Params:       "databaseName string, arg wirebson.RawDocument, retValue wirebson.RawDocument",
-				Returns:      "outRetValue wirebson.RawDocument",
-				ScanArgs:     "&outRetValue",
-				QueryRowArgs: "databaseName, arg, retValue",
+				Params:       "databaseName string, arg wirebson.RawDocument, retVal wirebson.RawDocument",
+				Returns:      "outRetVal wirebson.RawDocument",
+				ScanArgs:     "&outRetVal",
+				QueryRowArgs: "databaseName, arg, retVal",
 			},
 		},
 	}
