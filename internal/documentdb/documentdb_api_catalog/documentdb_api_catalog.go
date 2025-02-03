@@ -77,7 +77,7 @@ func BsonArrayAgg(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (err erro
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_catalog.bson_array_agg", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT documentdb_api_catalog.bson_array_agg()")
+	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api_catalog.bson_array_agg()")
 	if err = row.Scan(); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_catalog.bson_array_agg", l)
 	}
@@ -91,7 +91,7 @@ func BsonArrayAgg1(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (err err
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_catalog.bson_array_agg", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT documentdb_api_catalog.bson_array_agg()")
+	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api_catalog.bson_array_agg()")
 	if err = row.Scan(); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_catalog.bson_array_agg", l)
 	}
@@ -175,7 +175,7 @@ func BsonDistinctAgg(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (err e
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_catalog.bson_distinct_agg", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT documentdb_api_catalog.bson_distinct_agg()")
+	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api_catalog.bson_distinct_agg()")
 	if err = row.Scan(); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_catalog.bson_distinct_agg", l)
 	}
@@ -959,7 +959,7 @@ func BsonGistGeographyOptions(ctx context.Context, conn *pgx.Conn, l *slog.Logge
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_catalog.bson_gist_geography_options", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT documentdb_api_catalog.bson_gist_geography_options()")
+	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api_catalog.bson_gist_geography_options()")
 	if err = row.Scan(); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_catalog.bson_gist_geography_options", l)
 	}
@@ -987,7 +987,7 @@ func BsonGistGeometry2dOptions(ctx context.Context, conn *pgx.Conn, l *slog.Logg
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_catalog.bson_gist_geometry_2d_options", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT documentdb_api_catalog.bson_gist_geometry_2d_options()")
+	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api_catalog.bson_gist_geometry_2d_options()")
 	if err = row.Scan(); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_catalog.bson_gist_geometry_2d_options", l)
 	}
@@ -1197,7 +1197,7 @@ func BsonObjectAgg(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (err err
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_catalog.bson_object_agg", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT documentdb_api_catalog.bson_object_agg()")
+	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api_catalog.bson_object_agg()")
 	if err = row.Scan(); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_catalog.bson_object_agg", l)
 	}
@@ -1253,7 +1253,7 @@ func BsonOut(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_catalog.bson_out", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT documentdb_api_catalog.bson_out()")
+	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api_catalog.bson_out()")
 	if err = row.Scan(); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_catalog.bson_out", l)
 	}
@@ -1393,7 +1393,7 @@ func Bsonaverage(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (err error
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_catalog.bsonaverage", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT documentdb_api_catalog.bsonaverage()")
+	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api_catalog.bsonaverage()")
 	if err = row.Scan(); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_catalog.bsonaverage", l)
 	}
@@ -1407,7 +1407,7 @@ func Bsonfirst(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (err error) 
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_catalog.bsonfirst", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT documentdb_api_catalog.bsonfirst()")
+	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api_catalog.bsonfirst()")
 	if err = row.Scan(); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_catalog.bsonfirst", l)
 	}
@@ -1421,7 +1421,7 @@ func Bsonfirstn(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (err error)
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_catalog.bsonfirstn", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT documentdb_api_catalog.bsonfirstn()")
+	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api_catalog.bsonfirstn()")
 	if err = row.Scan(); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_catalog.bsonfirstn", l)
 	}
@@ -1435,7 +1435,7 @@ func Bsonfirstnonsorted(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (er
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_catalog.bsonfirstnonsorted", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT documentdb_api_catalog.bsonfirstnonsorted()")
+	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api_catalog.bsonfirstnonsorted()")
 	if err = row.Scan(); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_catalog.bsonfirstnonsorted", l)
 	}
@@ -1449,7 +1449,7 @@ func Bsonfirstonsorted(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (err
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_catalog.bsonfirstonsorted", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT documentdb_api_catalog.bsonfirstonsorted()")
+	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api_catalog.bsonfirstonsorted()")
 	if err = row.Scan(); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_catalog.bsonfirstonsorted", l)
 	}
@@ -1463,7 +1463,7 @@ func Bsonlast(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_catalog.bsonlast", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT documentdb_api_catalog.bsonlast()")
+	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api_catalog.bsonlast()")
 	if err = row.Scan(); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_catalog.bsonlast", l)
 	}
@@ -1477,7 +1477,7 @@ func Bsonlastn(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (err error) 
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_catalog.bsonlastn", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT documentdb_api_catalog.bsonlastn()")
+	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api_catalog.bsonlastn()")
 	if err = row.Scan(); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_catalog.bsonlastn", l)
 	}
@@ -1491,7 +1491,7 @@ func Bsonlastnonsorted(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (err
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_catalog.bsonlastnonsorted", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT documentdb_api_catalog.bsonlastnonsorted()")
+	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api_catalog.bsonlastnonsorted()")
 	if err = row.Scan(); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_catalog.bsonlastnonsorted", l)
 	}
@@ -1505,7 +1505,7 @@ func Bsonlastonsorted(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (err 
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_catalog.bsonlastonsorted", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT documentdb_api_catalog.bsonlastonsorted()")
+	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api_catalog.bsonlastonsorted()")
 	if err = row.Scan(); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_catalog.bsonlastonsorted", l)
 	}
@@ -1519,7 +1519,7 @@ func Bsonmax(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_catalog.bsonmax", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT documentdb_api_catalog.bsonmax()")
+	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api_catalog.bsonmax()")
 	if err = row.Scan(); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_catalog.bsonmax", l)
 	}
@@ -1533,7 +1533,7 @@ func Bsonmin(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_catalog.bsonmin", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT documentdb_api_catalog.bsonmin()")
+	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api_catalog.bsonmin()")
 	if err = row.Scan(); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_catalog.bsonmin", l)
 	}
@@ -1547,7 +1547,7 @@ func Bsonsum(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_catalog.bsonsum", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT documentdb_api_catalog.bsonsum()")
+	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api_catalog.bsonsum()")
 	if err = row.Scan(); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_catalog.bsonsum", l)
 	}
@@ -1645,7 +1645,7 @@ func GinBsonExclusionPreConsistent(ctx context.Context, conn *pgx.Conn, l *slog.
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_catalog.gin_bson_exclusion_pre_consistent", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT documentdb_api_catalog.gin_bson_exclusion_pre_consistent()")
+	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api_catalog.gin_bson_exclusion_pre_consistent()")
 	if err = row.Scan(); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_catalog.gin_bson_exclusion_pre_consistent", l)
 	}
@@ -1673,7 +1673,7 @@ func GinBsonPreConsistent(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_catalog.gin_bson_pre_consistent", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT documentdb_api_catalog.gin_bson_pre_consistent()")
+	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api_catalog.gin_bson_pre_consistent()")
 	if err = row.Scan(); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_catalog.gin_bson_pre_consistent", l)
 	}
@@ -1701,7 +1701,7 @@ func GinBsonSinglePathOptions(ctx context.Context, conn *pgx.Conn, l *slog.Logge
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_catalog.gin_bson_single_path_options", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT documentdb_api_catalog.gin_bson_single_path_options()")
+	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api_catalog.gin_bson_single_path_options()")
 	if err = row.Scan(); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_catalog.gin_bson_single_path_options", l)
 	}
@@ -1729,7 +1729,7 @@ func GinBsonWildcardProjectOptions(ctx context.Context, conn *pgx.Conn, l *slog.
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_catalog.gin_bson_wildcard_project_options", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT documentdb_api_catalog.gin_bson_wildcard_project_options()")
+	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api_catalog.gin_bson_wildcard_project_options()")
 	if err = row.Scan(); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_catalog.gin_bson_wildcard_project_options", l)
 	}

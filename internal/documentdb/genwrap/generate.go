@@ -156,7 +156,7 @@ func generateSQL(f *templateData) string {
 	}
 
 	if f.SQLReturns == "" {
-		return fmt.Sprintf("SELECT %s(%s)", f.SQLFuncName, f.SQLArgs)
+		return fmt.Sprintf("SELECT FROM %s(%s)", f.SQLFuncName, f.SQLArgs)
 	}
 
 	return fmt.Sprintf(
