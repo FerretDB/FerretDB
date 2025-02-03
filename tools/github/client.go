@@ -23,9 +23,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"regexp"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/FerretDB/gh"
@@ -111,10 +108,6 @@ func CacheFilePath() (string, error) {
 }
 
 var (
-	// Checks correctly formatted FerretDB issue and microsoft/documentdb issue.
-	// It returns owner/repository name and the issue number as it's submatches.
-	urlRE = regexp.MustCompile(`^\Qhttps://github.com/\E(FerretDB/[-\w]+|microsoft/documentdb)/issues/(\d+)$`)
-
 	// ErrIncorrectURL indicates that FerretDB issue URL is formatted incorrectly.
 	ErrIncorrectURL = errors.New("invalid TODO: incorrect format")
 
@@ -122,45 +115,14 @@ var (
 	ErrIncorrectIssueNumber = errors.New("invalid TODO: incorrect issue number")
 )
 
-// parseIssueURL takes the properly formatted FerretDB issue URL and returns it's
-// owner name, repository name and issue number.
-// If the issue number or URL formatting is incorrect, the error is returned.
-func parseIssueURL(line string) (owner, repo string, num int, err error) {
-	match := urlRE.FindStringSubmatch(line)
-
-	if len(match) != 3 {
-		err = ErrIncorrectURL
-		return
-	}
-
-	owner, repo, _ = strings.Cut(match[1], "/")
-
-	num, err = strconv.Atoi(match[2])
-
-	switch {
-	case err != nil:
-		panic(err)
-	case num <= 0:
-		err = ErrIncorrectIssueNumber
-		return
-	default:
-		return
-	}
-}
-
 // IssueStatus returns issue status.
 // It uses cache.
 //
 // If URL formatting is incorrect it returns `ErrIncorrectURL`, or `ErrIncorrectIssueNumber` error.
 // Any other error means something fatal.
 // On rate limit, the error is logged once and (issueOpen, nil) is returned.
-func (c *Client) IssueStatus(ctx context.Context, url string) (IssueStatus, error) {
+func (c *Client) IssueStatus(ctx context.Context, url, owner, repo string, num int) (IssueStatus, error) {
 	start := time.Now()
-
-	owner, repo, num, err := parseIssueURL(url)
-	if err != nil {
-		return IssueNotFound, err
-	}
 
 	cache := &cacheFile{
 		Issues: make(map[string]issue),

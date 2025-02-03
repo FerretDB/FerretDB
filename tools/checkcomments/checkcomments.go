@@ -21,6 +21,7 @@ import (
 	"flag"
 	"log"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/FerretDB/gh"
@@ -32,7 +33,7 @@ import (
 
 // todoRE represents correct "// TODO" comment format.
 // It returns url as a submatch.
-var todoRE = regexp.MustCompile(`^// TODO (.+)$`)
+var todoRE = regexp.MustCompile(`^// TODO (\Qhttps://github.com/\E(FerretDB|microsoft)/([-\w]+)/issues/(\d+))$`)
 
 // analyzer represents the checkcomments analyzer.
 var analyzer = &analysis.Analyzer{
@@ -98,18 +99,23 @@ func run(pass *analysis.Pass) (any, error) {
 
 				match := todoRE.FindStringSubmatch(line)
 
-				if len(match) != 2 {
+				if len(match) != 5 {
 					pass.Reportf(c.Pos(), "invalid TODO: incorrect format")
 					continue
 				}
 
-				url := match[1]
+				url, owner, repo := match[1], match[2], match[3]
 
-				if skipPrivate && strings.HasPrefix(url, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/") {
+				num, err := strconv.Atoi(match[4])
+				if err != nil {
+					panic(err)
+				}
+
+				if skipPrivate && repo == "FerretDB-DocumentDB" {
 					continue
 				}
 
-				status, err := client.IssueStatus(context.TODO(), url)
+				status, err := client.IssueStatus(context.TODO(), url, owner, repo, num)
 
 				switch {
 				case err == nil:

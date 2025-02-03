@@ -26,6 +26,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/FerretDB/FerretDB/tools/github"
@@ -43,9 +44,9 @@ func main() {
 	}
 }
 
-// issueRE represents FerretDB issue and microsoft/documentdb issue url.
-// It returns owner/repo name as submatches.
-var issueRE = regexp.MustCompile(`\Qhttps://github.com/\E(FerretDB/[-\w]+|microsoft/documentdb)/issues/\d+`)
+// issueRE represents FerretDB and microsoft issue url.
+// It returns owner as a submatch.
+var issueRE = regexp.MustCompile(`\Qhttps://github.com/\E(FerretDB|microsoft)/([-\w]+)/issues/(\d+)`)
 
 // checkBlogFiles verifies that blog posts are correctly formatted.
 func checkBlogFiles(files []string) error {
@@ -254,17 +255,22 @@ func checkIssueURLs(client *github.Client, r io.Reader, l *log.Logger) (bool, er
 			continue
 		}
 
-		if len(match) != 2 {
+		if len(match) != 4 {
 			l.Printf("invalid URL format:\n %s", line)
 			failed = true
 
 			continue
 		}
 
-		url := match[0]
+		url, owner, repo := match[0], match[1], match[2]
+
+		num, err := strconv.Atoi(match[3])
+		if err != nil {
+			panic(err)
+		}
 
 		var status github.IssueStatus
-		status, err := client.IssueStatus(context.TODO(), url)
+		status, err = client.IssueStatus(context.TODO(), url, owner, repo, num)
 
 		switch {
 		case err == nil:
