@@ -121,7 +121,7 @@ func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
 	})
 
 	for _, goa := range slices.Backward(h.goas) {
-		if goa.group != "" {
+		if goa.group != "" && len(m) > 0 {
 			m = map[string]any{goa.group: m}
 			continue
 		}
