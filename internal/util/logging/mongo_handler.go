@@ -19,6 +19,7 @@ import (
 	"context"
 	"io"
 	"log/slog"
+	"maps"
 	"runtime"
 	"slices"
 	"strconv"
@@ -128,6 +129,10 @@ func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
 		for _, attr := range goa.attrs {
 			m[attr.Key] = resolve(attr.Value)
 		}
+	}
+
+	if h.testAttrs != nil {
+		maps.Copy(h.testAttrs, m)
 	}
 
 	logRecord.Attr = m
