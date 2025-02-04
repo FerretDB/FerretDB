@@ -20,6 +20,7 @@ import (
 	"io"
 	"log/slog"
 	"runtime"
+	"slices"
 	"strconv"
 	"sync"
 
@@ -31,8 +32,9 @@ import (
 type mongoHandler struct {
 	opts *NewHandlerOpts
 
-	m   *sync.Mutex
-	out io.Writer
+	goas []groupOrAttrs
+	m    *sync.Mutex
+	out  io.Writer
 }
 
 type mongoLog struct {
@@ -135,13 +137,29 @@ func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
 }
 
 func (h *mongoHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	// TODO
-	return h
+	if len(attrs) == 0 {
+		return h
+	}
+
+	return &mongoHandler{
+		opts: h.opts,
+		goas: append(slices.Clone(h.goas), groupOrAttrs{attrs: attrs}),
+		m:    h.m,
+		out:  h.out,
+	}
 }
 
 func (h *mongoHandler) WithGroup(name string) slog.Handler {
-	// TODO
-	return h
+	if name == "" {
+		return h
+	}
+
+	return &mongoHandler{
+		opts: h.opts,
+		goas: append(slices.Clone(h.goas), groupOrAttrs{group: name}),
+		m:    h.m,
+		out:  h.out,
+	}
 }
 
 func getSeverity(level slog.Level) string {
