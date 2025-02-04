@@ -32,9 +32,11 @@ import (
 type mongoHandler struct {
 	opts *NewHandlerOpts
 
-	goas []groupOrAttrs
-	m    *sync.Mutex
-	out  io.Writer
+	goas      []groupOrAttrs
+	testAttrs map[string]any
+
+	m   *sync.Mutex
+	out io.Writer
 }
 
 type mongoLog struct {
@@ -51,13 +53,14 @@ type mongoLog struct {
 	Size       bson.D             `bson:"size,omitempty"`
 }
 
-func newMongoHandler(out io.Writer, opts *NewHandlerOpts) *mongoHandler {
+func newMongoHandler(out io.Writer, opts *NewHandlerOpts, testAttrs map[string]any) *mongoHandler {
 	must.NotBeZero(opts)
 
 	h := mongoHandler{
-		opts: opts,
-		m:    new(sync.Mutex),
-		out:  out,
+		opts:      opts,
+		testAttrs: testAttrs,
+		m:         new(sync.Mutex),
+		out:       out,
 	}
 
 	if h.opts.Level == nil {
@@ -79,8 +82,16 @@ func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
 		Msg:      r.Message,
 	}
 
+	if h.testAttrs != nil {
+		h.testAttrs["level"] = logRecord.Severity
+	}
+
 	if !r.Time.IsZero() {
 		logRecord.Timestamp = primitive.NewDateTimeFromTime(r.Time)
+
+		if h.testAttrs != nil {
+			h.testAttrs["time"] = logRecord.Timestamp
+		}
 	}
 
 	if r.PC != 0 && !h.opts.RemoveSource {
