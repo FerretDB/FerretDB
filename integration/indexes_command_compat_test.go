@@ -495,6 +495,19 @@ func TestReIndexCompat(t *testing.T) {
 				{Keys: bson.D{{"v", -1}}},
 			},
 		},
+		"MultipleIndexes": {
+			models: []mongo.IndexModel{
+				{
+					Keys: bson.D{{"foo", 1}, {"bar", -1}},
+				},
+				{
+					Keys: bson.D{{"v", 1}},
+				},
+				{
+					Keys: bson.D{{"v", -1}},
+				},
+			},
+		},
 		"CustomName": {
 			models: []mongo.IndexModel{
 				{
