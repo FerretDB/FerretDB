@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/v2/integration/setup"
 	"github.com/FerretDB/FerretDB/v2/integration/shareddata"
@@ -477,6 +478,98 @@ func TestDropIndexesCommandCompat(t *testing.T) {
 				require.False(t, nonEmptyResults, "expected empty results (no indexes should be deleted)")
 			default:
 				t.Fatalf("unknown result type %v", tc.resultType)
+			}
+		})
+	}
+}
+
+func TestReIndexCompat(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct { //nolint:vet // for readability
+		models []mongo.IndexModel // optional indexes to create before reIndex
+	}{
+		"DefaultIndex": {},
+		"OneIndex": {
+			models: []mongo.IndexModel{
+				{Keys: bson.D{{"v", -1}}},
+			},
+		},
+		"CustomName": {
+			models: []mongo.IndexModel{
+				{
+					Keys:    bson.D{{"foo", 1}, {"bar", -1}},
+					Options: options.Index().SetName("custom-name"),
+				},
+			},
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
+				Providers:                []shareddata.Provider{shareddata.Composites},
+				AddNonExistentCollection: true,
+			})
+			ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
+
+			for i := range targetCollections {
+				targetCollection := targetCollections[i]
+				compatCollection := compatCollections[i]
+
+				require.Equal(t, compatCollection.Name(), targetCollection.Name())
+				collectionName := targetCollection.Name()
+
+				t.Run(collectionName, func(t *testing.T) {
+					if tc.models != nil {
+						targetRes, targetErr := targetCollection.Indexes().CreateMany(ctx, tc.models)
+						compatRes, compatErr := compatCollection.Indexes().CreateMany(ctx, tc.models)
+
+						if targetErr != nil {
+							t.Logf("Target error: %v", targetErr)
+							t.Logf("Compat error: %v", compatErr)
+
+							// error messages are intentionally not compared
+							AssertMatchesCommandError(t, compatErr, targetErr)
+
+							return
+						}
+
+						require.NoError(t, compatErr, "compat error; target returned no error")
+						assert.Equal(t, compatRes, targetRes)
+					}
+
+					command := bson.D{{"reIndex", collectionName}}
+
+					var targetRes bson.D
+					targetErr := targetCollection.Database().RunCommand(ctx, command).Decode(&targetRes)
+
+					var compatRes bson.D
+					compatErr := targetCollection.Database().RunCommand(ctx, command).Decode(&compatRes)
+
+					require.NoError(t, targetErr)
+					require.NoError(t, compatErr)
+
+					targetCursor, targetErr := targetCollection.Indexes().List(ctx)
+					compatCursor, compatErr := compatCollection.Indexes().List(ctx)
+
+					require.NoError(t, targetErr)
+					require.NoError(t, compatErr)
+
+					targetIndexes := FetchAll(t, ctx, targetCursor)
+					compatIndexes := FetchAll(t, ctx, compatCursor)
+
+					assert.ElementsMatch(t, compatIndexes, targetIndexes)
+
+					targetSpec, targetErr := targetCollection.Indexes().ListSpecifications(ctx)
+					compatSpec, compatErr := compatCollection.Indexes().ListSpecifications(ctx)
+
+					require.NoError(t, compatErr)
+					require.NoError(t, targetErr)
+
+					require.NotEmpty(t, compatSpec)
+					assert.ElementsMatch(t, compatSpec, targetSpec)
+				})
 			}
 		})
 	}

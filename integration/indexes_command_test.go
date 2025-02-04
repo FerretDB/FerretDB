@@ -598,3 +598,54 @@ func TestDropIndexesCommandInvalidCollection(t *testing.T) {
 		})
 	}
 }
+
+func TestReIndexErrors(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct {
+		collectionName any
+		err            *mongo.CommandError
+		altMessage     string
+	}{
+		"NonExistentCollection": {
+			collectionName: "non-existent",
+			err: &mongo.CommandError{
+				Code: 20,
+				Name: "IllegalOperation",
+				Message: "reIndex is only allowed on a standalone mongod instance. " +
+					"Cannot reIndex 'TestReIndexErrors-NonExistentCollection.non-existent' while replication is active",
+			},
+		},
+		"InvalidTypeCollection": {
+			collectionName: 42,
+			err: &mongo.CommandError{
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "collection name has invalid type int",
+			},
+			altMessage: "collection name has invalid type int32",
+		},
+		"EmptyCollection": {
+			collectionName: "",
+			err: &mongo.CommandError{
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "Invalid namespace specified 'TestReIndexErrors-EmptyCollection.'",
+			},
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			ctx, collection := setup.Setup(t)
+
+			command := bson.D{
+				{"reIndex", tc.collectionName},
+			}
+
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, command).Decode(&res)
+
+			require.Nil(t, res)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+		})
+	}
+}
