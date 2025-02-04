@@ -92,13 +92,6 @@ func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
 
 	m := make(map[string]any, r.NumAttrs())
 
-	// TODO:
-	//   - Attr's values should be resolved.
-	//   - If an Attr's key and value are both the zero value, ignore the Attr.
-	//     This can be tested with attr.Equal(Attr{}).
-	//   - If a group's key is empty, inline the group's Attrs.
-	//   - If a group has no Attrs (even if it has a non-empty key),
-	//     ignore it.
 	r.Attrs(func(attr slog.Attr) bool {
 		if attr.Key != "" {
 			m[attr.Key] = resolve(attr.Value)
