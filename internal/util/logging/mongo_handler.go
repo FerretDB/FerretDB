@@ -115,8 +115,14 @@ func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
 		return true
 	})
 
-	for _, goa := range h.goas {
+	for _, goa := range slices.Backward(h.goas) {
 		if goa.group != "" {
+			m = map[string]any{goa.group: m}
+			continue
+		}
+
+		for _, attr := range goa.attrs {
+			m[attr.Key] = resolve(attr.Value)
 		}
 	}
 
