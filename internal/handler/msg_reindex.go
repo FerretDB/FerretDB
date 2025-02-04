@@ -17,12 +17,17 @@ package handler
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
+	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
+	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api_internal"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // MsgReIndex implements `reIndex` command.
@@ -68,5 +73,102 @@ func (h *Handler) MsgReIndex(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 		)
 	}
 
-	return wire.MustOpMsg(wirebson.MustDocument("ok", float64(1))), nil
+	conn, err := h.Pool.Acquire()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+	defer conn.Release()
+
+	listIndexesSpec := must.NotFail(wirebson.MustDocument(
+		"listIndexes", collection,
+		// use large batchSize to get results in one batch
+		"cursor", wirebson.MustDocument("batchSize", int32(10000)),
+	).Encode())
+
+	page, cursorID, err := h.Pool.ListIndexes(connCtx, dbName, listIndexesSpec)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if cursorID != 0 {
+		h.L.ErrorContext(connCtx, "Number of indexes is large and some indexes are not re-indexed")
+	}
+
+	pageDoc, err := page.DecodeDeep()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	indexes := wirebson.MustArray()
+
+	batch := pageDoc.Get("cursor").(*wirebson.Document).Get("firstBatch").(*wirebson.Array)
+	for v := range batch.Values() {
+		index := v.(*wirebson.Document)
+		indexSpec := wirebson.MustDocument(
+			"key", index.Get("key"),
+			"name", index.Get("name"),
+		)
+
+		if err = indexes.Add(indexSpec); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+	}
+
+	dropIndexesSpec := must.NotFail(wirebson.MustDocument(
+		"dropIndexes", collection,
+		"index", "*",
+	).Encode())
+
+	res, err := documentdb_api.DropIndexes(connCtx, conn.Conn(), h.L, dbName, dropIndexesSpec, nil)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	createIndexesSpec := must.NotFail(wirebson.MustDocument(
+		"createIndexes", collection,
+		"indexes", indexes,
+	).Encode())
+
+	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/1147
+	// resRaw, _, _, err := documentdb_api.CreateIndexesBackground(connCtx, conn.Conn(), h.L, dbName, spec)
+	resRaw, err := documentdb_api_internal.CreateIndexesNonConcurrently(connCtx, conn.Conn(), h.L, dbName, createIndexesSpec, true) //nolint:lll // for readability
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/292
+
+	resDoc, err := resRaw.DecodeDeep()
+	if err != nil {
+		h.L.WarnContext(connCtx, "MsgCreateIndexes failed to decode response", logging.Error(err))
+		return wire.NewOpMsg(resRaw)
+	}
+
+	lazyRes := slog.Any("res", logging.LazyString(res.LogMessage))
+
+	h.L.DebugContext(connCtx, "MsgCreateIndexes raw response", lazyRes)
+
+	raw, _ := resDoc.Get("raw").(*wirebson.Document)
+	if raw == nil {
+		h.L.WarnContext(connCtx, "MsgCreateIndexes: unexpected response", lazyRes)
+		return wire.NewOpMsg(resRaw)
+	}
+
+	defaultShard, _ := raw.Get("defaultShard").(*wirebson.Document)
+	if defaultShard == nil {
+		h.L.WarnContext(connCtx, "MsgCreateIndexes: unexpected response", lazyRes)
+		return wire.NewOpMsg(resRaw)
+	}
+
+	c, _ := defaultShard.Get("code").(int32)
+	code := mongoerrors.MapWrappedCode(c)
+
+	if code != 0 {
+		errMsg, _ := defaultShard.Get("errmsg").(string)
+		return nil, mongoerrors.NewWithArgument(code, errMsg, doc.Command())
+	}
+
+	resOk := defaultShard.Get("ok").(int32)
+
+	return wire.MustOpMsg(wirebson.MustDocument("ok", resOk)), nil
 }
