@@ -567,7 +567,6 @@ func TestReIndexCompat(t *testing.T) {
 					require.NoError(t, compatErr)
 					require.NoError(t, targetErr)
 
-					require.NotEmpty(t, compatSpec)
 					assert.ElementsMatch(t, compatSpec, targetSpec)
 				})
 			}

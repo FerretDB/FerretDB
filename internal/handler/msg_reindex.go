@@ -16,6 +16,7 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 
@@ -87,6 +88,12 @@ func (h *Handler) MsgReIndex(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 
 	page, cursorID, err := h.Pool.ListIndexes(connCtx, dbName, listIndexesSpec)
 	if err != nil {
+		var e *mongoerrors.Error
+		if errors.As(err, &e) && e.Code == 26 {
+			// nothing to do re-index if collection does not exist
+			return wire.MustOpMsg("ok", float64(1)), nil
+		}
+
 		return nil, lazyerrors.Error(err)
 	}
 
@@ -108,7 +115,7 @@ func (h *Handler) MsgReIndex(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 
 		name := index.Get("name").(string)
 		if name == "_id_" {
-			// it does not drop nor recreate default _id_ index
+			// default _id_ index is not re-indexed
 			continue
 		}
 
