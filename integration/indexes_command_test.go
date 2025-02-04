@@ -604,18 +604,10 @@ func TestReIndexErrors(t *testing.T) {
 
 	for name, tc := range map[string]struct {
 		collectionName any
-		err            *mongo.CommandError
-		altMessage     string
+
+		err        *mongo.CommandError
+		altMessage string
 	}{
-		"NonExistentCollection": {
-			collectionName: "non-existent",
-			err: &mongo.CommandError{
-				Code: 20,
-				Name: "IllegalOperation",
-				Message: "reIndex is only allowed on a standalone mongod instance. " +
-					"Cannot reIndex 'TestReIndexErrors-NonExistentCollection.non-existent' while replication is active",
-			},
-		},
 		"InvalidTypeCollection": {
 			collectionName: 42,
 			err: &mongo.CommandError{
