@@ -102,16 +102,28 @@ func (h *Handler) MsgReIndex(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 	indexes := wirebson.MustArray()
 
 	batch := pageDoc.Get("cursor").(*wirebson.Document).Get("firstBatch").(*wirebson.Array)
+
 	for v := range batch.Values() {
 		index := v.(*wirebson.Document)
+
+		name := index.Get("name").(string)
+		if name == "_id_" {
+			// it does not drop nor recreate default _id_ index
+			continue
+		}
+
 		indexSpec := wirebson.MustDocument(
 			"key", index.Get("key"),
-			"name", index.Get("name"),
+			"name", name,
 		)
 
 		if err = indexes.Add(indexSpec); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
+	}
+
+	if indexes.Len() == 0 {
+		return wire.MustOpMsg("ok", float64(1)), nil
 	}
 
 	dropIndexesSpec := must.NotFail(wirebson.MustDocument(
@@ -170,5 +182,5 @@ func (h *Handler) MsgReIndex(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 
 	resOk := defaultShard.Get("ok").(int32)
 
-	return wire.MustOpMsg(wirebson.MustDocument("ok", resOk)), nil
+	return wire.MustOpMsg("ok", resOk), nil
 }
