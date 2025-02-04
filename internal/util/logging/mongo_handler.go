@@ -52,20 +52,21 @@ type mongoLog struct {
 func newMongoHandler(out io.Writer, opts *NewHandlerOpts) *mongoHandler {
 	must.NotBeZero(opts)
 
-	return &mongoHandler{
+	h := mongoHandler{
 		opts: opts,
 		m:    new(sync.Mutex),
 		out:  out,
 	}
+
+	if h.opts.Level == nil {
+		h.opts.Level = slog.LevelInfo
+	}
+
+	return &h
 }
 
 func (h *mongoHandler) Enabled(_ context.Context, l slog.Level) bool {
-	minLevel := slog.LevelInfo
-	if h.opts.Level != nil {
-		minLevel = h.opts.Level.Level()
-	}
-
-	return l >= minLevel
+	return l >= h.opts.Level.Level()
 }
 
 func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
