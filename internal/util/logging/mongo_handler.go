@@ -115,6 +115,11 @@ func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
 		return true
 	})
 
+	for _, goa := range h.goas {
+		if goa.group != "" {
+		}
+	}
+
 	logRecord.Attr = m
 
 	extJSON, err := bson.MarshalExtJSON(&logRecord, false, false)
