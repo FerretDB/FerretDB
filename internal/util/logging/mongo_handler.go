@@ -73,12 +73,15 @@ func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
 	var buf bytes.Buffer
 
 	logRecord := mongoLog{
-		Timestamp: primitive.NewDateTimeFromTime(r.Time),
-		Severity:  getSeverity(r.Level),
-		Msg:       r.Message,
+		Severity: getSeverity(r.Level),
+		Msg:      r.Message,
 	}
 
-	if !h.opts.RemoveSource {
+	if !r.Time.IsZero() {
+		logRecord.Timestamp = primitive.NewDateTimeFromTime(r.Time)
+	}
+
+	if r.PC != 0 && !h.opts.RemoveSource {
 		f, _ := runtime.CallersFrames([]uintptr{r.PC}).Next()
 		if f.File != "" {
 			logRecord.Ctx = shortPath(f.File) + ":" + strconv.Itoa(f.Line)
@@ -87,6 +90,13 @@ func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
 
 	m := make(map[string]any, r.NumAttrs())
 
+	// TODO:
+	//   - Attr's values should be resolved.
+	//   - If an Attr's key and value are both the zero value, ignore the Attr.
+	//     This can be tested with attr.Equal(Attr{}).
+	//   - If a group's key is empty, inline the group's Attrs.
+	//   - If a group has no Attrs (even if it has a non-empty key),
+	//     ignore it.
 	r.Attrs(func(attr slog.Attr) bool {
 		if attr.Key != "" {
 			m[attr.Key] = resolve(attr.Value)
