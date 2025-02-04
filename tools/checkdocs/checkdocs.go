@@ -19,7 +19,6 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -269,16 +268,15 @@ func checkIssueURLs(client *github.Client, r io.Reader, l *log.Logger) (bool, er
 			panic(err)
 		}
 
-		var status github.IssueStatus
-		status, err = client.IssueStatus(context.TODO(), url, owner, repo, num)
+		if num <= 0 {
+			l.Printf("incorrect issue number: %s\n", line)
+			failed = true
 
-		switch {
-		case err == nil:
-			// nothing
-		case errors.Is(err, github.ErrIncorrectURL),
-			errors.Is(err, github.ErrIncorrectIssueNumber):
-			l.Print(err.Error())
-		default:
+			continue
+		}
+
+		status, err := client.IssueStatus(context.TODO(), url, owner, repo, num)
+		if err != nil {
 			log.Panic(err)
 		}
 

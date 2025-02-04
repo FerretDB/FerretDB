@@ -17,7 +17,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"flag"
 	"log"
 	"regexp"
@@ -111,19 +110,17 @@ func run(pass *analysis.Pass) (any, error) {
 					panic(err)
 				}
 
+				if num <= 0 {
+					pass.Reportf(c.Pos(), "invalid TODO: incorrect issue number")
+					continue
+				}
+
 				if skipPrivate && repo == "FerretDB-DocumentDB" {
 					continue
 				}
 
 				status, err := client.IssueStatus(context.TODO(), url, owner, repo, num)
-
-				switch {
-				case err == nil:
-					// nothing
-				case errors.Is(err, github.ErrIncorrectURL),
-					errors.Is(err, github.ErrIncorrectIssueNumber):
-					log.Print(err.Error())
-				default:
+				if err != nil {
 					log.Panic(err)
 				}
 

@@ -107,19 +107,10 @@ func CacheFilePath() (string, error) {
 	return filepath.Join(dir, "tmp", "githubcache", "cache.json"), nil
 }
 
-var (
-	// ErrIncorrectURL indicates that FerretDB issue URL is formatted incorrectly.
-	ErrIncorrectURL = errors.New("invalid TODO: incorrect format")
-
-	// ErrIncorrectIssueNumber indicates that FerretDB issue number is formatted incorrectly.
-	ErrIncorrectIssueNumber = errors.New("invalid TODO: incorrect issue number")
-)
-
 // IssueStatus returns issue status.
 // It uses cache.
 //
-// If URL formatting is incorrect it returns `ErrIncorrectURL`, or `ErrIncorrectIssueNumber` error.
-// Any other error means something fatal.
+// Any error means something fatal.
 // On rate limit, the error is logged once and (issueOpen, nil) is returned.
 func (c *Client) IssueStatus(ctx context.Context, url, owner, repo string, num int) (IssueStatus, error) {
 	start := time.Now()
