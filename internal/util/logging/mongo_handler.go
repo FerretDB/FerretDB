@@ -54,6 +54,7 @@ type mongoLog struct {
 	Size       bson.D             `bson:"size,omitempty"`
 }
 
+// newMongoHandler creates a new mongo handler.
 func newMongoHandler(out io.Writer, opts *NewHandlerOpts, testAttrs map[string]any) *mongoHandler {
 	must.NotBeZero(opts)
 
@@ -71,10 +72,12 @@ func newMongoHandler(out io.Writer, opts *NewHandlerOpts, testAttrs map[string]a
 	return &h
 }
 
+// Enabled implements [slog.Handler].
 func (h *mongoHandler) Enabled(_ context.Context, l slog.Level) bool {
 	return l >= h.opts.Level.Level()
 }
 
+// Handle implements [slog.Handler].
 func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
 	var buf bytes.Buffer
 
@@ -161,6 +164,7 @@ func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
 	return err
 }
 
+// WithAttrs implements [slog.Handler].
 func (h *mongoHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	if len(attrs) == 0 {
 		return h
@@ -175,6 +179,7 @@ func (h *mongoHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	}
 }
 
+// WithGroup implements [slog.Handler].
 func (h *mongoHandler) WithGroup(name string) slog.Handler {
 	if name == "" {
 		return h
@@ -189,7 +194,9 @@ func (h *mongoHandler) WithGroup(name string) slog.Handler {
 	}
 }
 
-func getSeverity(level slog.Level) string {
+// getSeverity maps logging levels to their mongo format counterparts.
+// If provided level is not mapped, its standard format is returned.
+func (h *mongoHandler) getSeverity(level slog.Level) string {
 	switch level {
 	case slog.LevelDebug:
 		return "D"
