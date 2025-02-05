@@ -486,7 +486,7 @@ func TestDropIndexesCommandCompat(t *testing.T) {
 func TestReIndexCompat(t *testing.T) {
 	t.Parallel()
 
-	for name, tc := range map[string]struct { //nolint:vet // for readability
+	for name, tc := range map[string]struct {
 		models []mongo.IndexModel // optional indexes to create before reIndex
 	}{
 		"DefaultIndex": {},
@@ -555,17 +555,8 @@ func TestReIndexCompat(t *testing.T) {
 						targetRes, targetErr := targetCollection.Indexes().CreateMany(ctx, tc.models)
 						compatRes, compatErr := compatCollection.Indexes().CreateMany(ctx, tc.models)
 
-						if targetErr != nil {
-							t.Logf("Target error: %v", targetErr)
-							t.Logf("Compat error: %v", compatErr)
-
-							// error messages are intentionally not compared
-							AssertMatchesCommandError(t, compatErr, targetErr)
-
-							return
-						}
-
-						require.NoError(t, compatErr, "compat error; target returned no error")
+						require.NoError(t, targetErr)
+						require.NoError(t, compatErr)
 						assert.Equal(t, compatRes, targetRes)
 					}
 
@@ -579,6 +570,7 @@ func TestReIndexCompat(t *testing.T) {
 
 					require.NoError(t, targetErr)
 					require.NoError(t, compatErr)
+					assert.Equal(t, compatRes, targetRes)
 
 					targetSpec, targetErr := targetCollection.Indexes().ListSpecifications(ctx)
 					compatSpec, compatErr := compatCollection.Indexes().ListSpecifications(ctx)
