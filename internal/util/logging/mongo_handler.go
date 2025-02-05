@@ -113,6 +113,32 @@ func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
 		}
 	}
 
+	logRecord.Attr = h.attrs(r)
+
+	if h.testAttrs != nil && len(logRecord.Attr) > 0 {
+		maps.Copy(h.testAttrs, logRecord.Attr)
+	}
+
+	extJSON, err := bson.MarshalExtJSON(&logRecord, false, false)
+	if err != nil {
+		return err
+	}
+
+	_, err = buf.Write(extJSON)
+	if err != nil {
+		return err
+	}
+
+	buf.WriteRune('\n')
+
+	h.m.Lock()
+	defer h.m.Unlock()
+
+	_, err = buf.WriteTo(h.out)
+	return err
+}
+
+func (h *mongoHandler) attrs(r slog.Record) map[string]any {
 	m := make(map[string]any, r.NumAttrs())
 
 	r.Attrs(func(attr slog.Attr) bool {
@@ -142,29 +168,7 @@ func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
 		}
 	}
 
-	logRecord.Attr = m
-
-	if h.testAttrs != nil && len(logRecord.Attr) > 0 {
-		maps.Copy(h.testAttrs, logRecord.Attr)
-	}
-
-	extJSON, err := bson.MarshalExtJSON(&logRecord, false, false)
-	if err != nil {
-		return err
-	}
-
-	_, err = buf.Write(extJSON)
-	if err != nil {
-		return err
-	}
-
-	buf.WriteRune('\n')
-
-	h.m.Lock()
-	defer h.m.Unlock()
-
-	_, err = buf.WriteTo(h.out)
-	return err
+	return m
 }
 
 // WithAttrs implements [slog.Handler].
