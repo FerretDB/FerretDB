@@ -82,7 +82,7 @@ func (h *Handler) MsgReIndex(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 
 	listIndexesSpec := must.NotFail(wirebson.MustDocument(
 		"listIndexes", collection,
-		// use large batchSize to get results in one batch
+		// use large batchSize to get all results in one batch
 		"cursor", wirebson.MustDocument("batchSize", int32(10000)),
 	).Encode())
 
@@ -98,7 +98,7 @@ func (h *Handler) MsgReIndex(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 	}
 
 	if cursorID != 0 {
-		h.L.ErrorContext(connCtx, "Number of indexes is large and some indexes are not re-indexed")
+		h.L.ErrorContext(connCtx, "Number of indexes is too large and some indexes are not re-indexed")
 	}
 
 	pageDoc, err := page.DecodeDeep()
@@ -106,27 +106,7 @@ func (h *Handler) MsgReIndex(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 		return nil, lazyerrors.Error(err)
 	}
 
-	indexes := wirebson.MustArray()
-
-	batch := pageDoc.Get("cursor").(*wirebson.Document).Get("firstBatch").(*wirebson.Array)
-
-	for v := range batch.Values() {
-		index := v.(*wirebson.Document)
-
-		name := index.Get("name").(string)
-		if name == "_id_" {
-			// default _id_ index is not re-indexed as it cannot be dropped
-			continue
-		}
-
-		if err = indexes.Add(v); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-	}
-
-	if indexes.Len() == 0 {
-		return wire.MustOpMsg("ok", float64(1)), nil
-	}
+	indexes := pageDoc.Get("cursor").(*wirebson.Document).Get("firstBatch").(*wirebson.Array)
 
 	dropIndexesSpec := must.NotFail(wirebson.MustDocument(
 		"dropIndexes", collection,
