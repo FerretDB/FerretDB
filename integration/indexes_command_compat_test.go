@@ -492,7 +492,9 @@ func TestReIndexCompat(t *testing.T) {
 		"DefaultIndex": {},
 		"OneIndex": {
 			models: []mongo.IndexModel{
-				{Keys: bson.D{{"v", -1}}},
+				{
+					Keys: bson.D{{"v", -1}},
+				},
 			},
 		},
 		"MultipleIndexes": {
@@ -508,6 +510,14 @@ func TestReIndexCompat(t *testing.T) {
 				},
 			},
 		},
+		"UniqueIndex": {
+			models: []mongo.IndexModel{
+				{
+					Keys:    bson.D{{"v", 1}},
+					Options: options.Index().SetUnique(true),
+				},
+			},
+		},
 		"CustomName": {
 			models: []mongo.IndexModel{
 				{
@@ -516,12 +526,20 @@ func TestReIndexCompat(t *testing.T) {
 				},
 			},
 		},
+		"ExpireAfterOption": {
+			models: []mongo.IndexModel{
+				{
+					Keys:    bson.D{{"v", 1}},
+					Options: options.Index().SetExpireAfterSeconds(1),
+				},
+			},
+		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
 			s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
-				Providers:                []shareddata.Provider{shareddata.Composites},
+				Providers:                []shareddata.Provider{shareddata.Int32s},
 				AddNonExistentCollection: true,
 			})
 			ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
@@ -562,17 +580,6 @@ func TestReIndexCompat(t *testing.T) {
 
 					require.NoError(t, targetErr)
 					require.NoError(t, compatErr)
-
-					targetCursor, targetErr := targetCollection.Indexes().List(ctx)
-					compatCursor, compatErr := compatCollection.Indexes().List(ctx)
-
-					require.NoError(t, targetErr)
-					require.NoError(t, compatErr)
-
-					targetIndexes := FetchAll(t, ctx, targetCursor)
-					compatIndexes := FetchAll(t, ctx, compatCursor)
-
-					assert.ElementsMatch(t, compatIndexes, targetIndexes)
 
 					targetSpec, targetErr := targetCollection.Indexes().ListSpecifications(ctx)
 					compatSpec, compatErr := compatCollection.Indexes().ListSpecifications(ctx)

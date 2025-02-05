@@ -90,7 +90,7 @@ func (h *Handler) MsgReIndex(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 	if err != nil {
 		var e *mongoerrors.Error
 		if errors.As(err, &e) && e.Code == 26 {
-			// nothing to do re-index if collection does not exist
+			// nothing to re-index if collection does not exist
 			return wire.MustOpMsg("ok", float64(1)), nil
 		}
 
@@ -115,16 +115,11 @@ func (h *Handler) MsgReIndex(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 
 		name := index.Get("name").(string)
 		if name == "_id_" {
-			// default _id_ index is not re-indexed
+			// default _id_ index is not re-indexed as it cannot be dropped
 			continue
 		}
 
-		indexSpec := wirebson.MustDocument(
-			"key", index.Get("key"),
-			"name", name,
-		)
-
-		if err = indexes.Add(indexSpec); err != nil {
+		if err = indexes.Add(v); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 	}
