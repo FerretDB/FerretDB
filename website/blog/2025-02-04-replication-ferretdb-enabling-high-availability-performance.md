@@ -27,7 +27,7 @@ It works by maintaining one primary database where all writes happen and one or 
 Setting up your database this way ensures a reduction in the load on the primary instance, boosts query performance, and enhances fault tolerance.
 
 In FerretDB, replication is designed to enable users build fault-tolerant applications that can handle large volumes of queries efficiently and with minimal disruption in case of failures.
-Users can distribute traffic across different database replicas — and potentially speed up read operations — while preventing downtime or data loss by promoting a replica when the primary server is down.
+Users can distribute traffic across different database replicas – and potentially speed up read operations – while preventing downtime or data loss by promoting a replica when the primary server is down.
 
 Before we go into how this looks in practice, let's take a look at some of the benefits of replication and why it's critical for many businesses.
 
