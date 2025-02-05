@@ -21,6 +21,7 @@ import (
 	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
+	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api_internal"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
@@ -67,6 +68,11 @@ func (h *Handler) MsgCreateIndexes(connCtx context.Context, msg *wire.OpMsg) (*w
 	}
 	defer conn.Release()
 
+	return h.createIndexes(connCtx, conn, doc.Command(), dbName, spec)
+}
+
+// createIndexes calls DocumentDB API to create indexes, decodes and maps embedded error to command error if any.
+func (h *Handler) createIndexes(connCtx context.Context, conn *documentdb.Conn, command, dbName string, spec wirebson.RawDocument) (*wire.OpMsg, error) { //nolint:lll // for readability
 	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/1147
 	// resRaw, _, _, err := documentdb_api.CreateIndexesBackground(connCtx, conn.Conn(), h.L, dbName, spec)
 	resRaw, err := documentdb_api_internal.CreateIndexesNonConcurrently(connCtx, conn.Conn(), h.L, dbName, spec, true)
@@ -78,23 +84,23 @@ func (h *Handler) MsgCreateIndexes(connCtx context.Context, msg *wire.OpMsg) (*w
 
 	res, err := resRaw.DecodeDeep()
 	if err != nil {
-		h.L.WarnContext(connCtx, "MsgCreateIndexes failed to decode response", logging.Error(err))
+		h.L.WarnContext(connCtx, "CreateIndexes failed to decode response", logging.Error(err), slog.String("command", command))
 		return wire.NewOpMsg(resRaw)
 	}
 
 	lazyRes := slog.Any("res", logging.LazyString(res.LogMessage))
 
-	h.L.DebugContext(connCtx, "MsgCreateIndexes raw response", lazyRes)
+	h.L.DebugContext(connCtx, "CreateIndexes raw response", lazyRes, slog.String("command", command))
 
 	raw, _ := res.Get("raw").(*wirebson.Document)
 	if raw == nil {
-		h.L.WarnContext(connCtx, "MsgCreateIndexes: unexpected response", lazyRes)
+		h.L.WarnContext(connCtx, "CreateIndexes: unexpected response", lazyRes, slog.String("command", command))
 		return wire.NewOpMsg(resRaw)
 	}
 
 	defaultShard, _ := raw.Get("defaultShard").(*wirebson.Document)
 	if defaultShard == nil {
-		h.L.WarnContext(connCtx, "MsgCreateIndexes: unexpected response", lazyRes)
+		h.L.WarnContext(connCtx, "CreateIndexes: unexpected response", lazyRes, slog.String("command", command))
 		return wire.NewOpMsg(resRaw)
 	}
 
@@ -103,7 +109,7 @@ func (h *Handler) MsgCreateIndexes(connCtx context.Context, msg *wire.OpMsg) (*w
 
 	if code != 0 {
 		errMsg, _ := defaultShard.Get("errmsg").(string)
-		return nil, mongoerrors.NewWithArgument(code, errMsg, doc.Command())
+		return nil, mongoerrors.NewWithArgument(code, errMsg, command)
 	}
 
 	resOk := defaultShard.Get("ok").(int32)

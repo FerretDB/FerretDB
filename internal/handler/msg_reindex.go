@@ -23,7 +23,6 @@ import (
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
-	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api_internal"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
@@ -54,7 +53,9 @@ func (h *Handler) MsgReIndex(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 		return nil, err
 	}
 
-	v := doc.Get(doc.Command())
+	command := doc.Command()
+
+	v := doc.Get(command)
 
 	collection, ok := v.(string)
 	if !ok {
@@ -130,45 +131,5 @@ func (h *Handler) MsgReIndex(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 		"indexes", indexes,
 	).Encode())
 
-	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/1147
-	// resRaw, _, _, err := documentdb_api.CreateIndexesBackground(connCtx, conn.Conn(), h.L, dbName, createSpec)
-	resRaw, err := documentdb_api_internal.CreateIndexesNonConcurrently(connCtx, conn.Conn(), h.L, dbName, createSpec, true)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/292
-
-	resDoc, err = resRaw.DecodeDeep()
-	if err != nil {
-		h.L.WarnContext(connCtx, "MsgReIndex: failed to decode CreateIndexes response", logging.Error(err))
-		return wire.NewOpMsg(resRaw)
-	}
-
-	lazyRes = slog.Any("res", logging.LazyString(resDoc.LogMessage))
-	h.L.DebugContext(connCtx, "MsgReIndex: CreateIndexes response", lazyRes)
-
-	raw, _ := resDoc.Get("raw").(*wirebson.Document)
-	if raw == nil {
-		h.L.WarnContext(connCtx, "MsgReIndex: unexpected CreateIndexes response", lazyRes)
-		return wire.NewOpMsg(resRaw)
-	}
-
-	defaultShard, _ := raw.Get("defaultShard").(*wirebson.Document)
-	if defaultShard == nil {
-		h.L.WarnContext(connCtx, "MsgReIndex: unexpected CreateIndexes response", lazyRes)
-		return wire.NewOpMsg(resRaw)
-	}
-
-	c, _ := defaultShard.Get("code").(int32)
-	code := mongoerrors.MapWrappedCode(c)
-
-	if code != 0 {
-		errMsg, _ := defaultShard.Get("errmsg").(string)
-		return nil, mongoerrors.NewWithArgument(code, errMsg, doc.Command())
-	}
-
-	resOk := defaultShard.Get("ok").(int32)
-
-	return wire.MustOpMsg("ok", resOk), nil
+	return h.createIndexes(connCtx, conn, command, dbName, createSpec)
 }
