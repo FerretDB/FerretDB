@@ -138,6 +138,8 @@ func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
 	return err
 }
 
+// attrs returns record attributes, as well as handler attributes in map.
+// Attributes with duplicate keys are overwritten, and the order of keys is ignored.
 func (h *mongoHandler) attrs(r slog.Record) map[string]any {
 	m := make(map[string]any, r.NumAttrs())
 
