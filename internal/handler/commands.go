@@ -251,7 +251,7 @@ func (h *Handler) initCommands() {
 		},
 		"reIndex": {
 			Handler: h.MsgReIndex,
-			Help:    "Drops and creates all indexes of a collection.",
+			Help:    "Drops and recreates all indexes except default _id index of a collection.",
 		},
 		"renameCollection": {
 			Handler: h.MsgRenameCollection,

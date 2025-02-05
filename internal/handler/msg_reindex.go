@@ -106,17 +106,31 @@ func (h *Handler) MsgReIndex(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 		return nil, lazyerrors.Error(err)
 	}
 
+	lazyRes := slog.Any("res", logging.LazyString(pageDoc.LogMessage))
+	h.L.DebugContext(connCtx, "MsgReIndex ListIndexes response", lazyRes)
+
 	indexes := pageDoc.Get("cursor").(*wirebson.Document).Get("firstBatch").(*wirebson.Array)
 
 	dropSpec := must.NotFail(wirebson.MustDocument(
 		"dropIndexes", collection,
-		"index", "*",
+		"index", "*", // drops all but default _id index
 	).Encode())
 
 	res, err := documentdb_api.DropIndexes(connCtx, conn.Conn(), h.L, dbName, dropSpec, nil)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
+
+	// this currently fails due to
+	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/306
+	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/643
+	resDoc, err := res.DecodeDeep()
+	if err != nil {
+		h.L.WarnContext(connCtx, "MsgReIndex failed to decode DropIndexes response", logging.Error(err))
+	}
+
+	lazyRes = slog.Any("res", logging.LazyString(resDoc.LogMessage))
+	h.L.DebugContext(connCtx, "MsgReIndex DropIndexes response", lazyRes)
 
 	createSpec := must.NotFail(wirebson.MustDocument(
 		"createIndexes", collection,
@@ -132,15 +146,14 @@ func (h *Handler) MsgReIndex(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 
 	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/292
 
-	resDoc, err := resRaw.DecodeDeep()
+	resDoc, err = resRaw.DecodeDeep()
 	if err != nil {
 		h.L.WarnContext(connCtx, "MsgReIndex failed to decode CreateIndexes response", logging.Error(err))
 		return wire.NewOpMsg(resRaw)
 	}
 
-	lazyRes := slog.Any("res", logging.LazyString(res.LogMessage))
-
-	h.L.DebugContext(connCtx, "MsgReIndex raw CreateIndexes response", lazyRes)
+	lazyRes = slog.Any("res", logging.LazyString(resDoc.LogMessage))
+	h.L.DebugContext(connCtx, "MsgReIndex CreateIndexes response", lazyRes)
 
 	raw, _ := resDoc.Get("raw").(*wirebson.Document)
 	if raw == nil {
