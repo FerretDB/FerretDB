@@ -1,6 +1,6 @@
 ---
 slug: best-alternative-to-mongodb-data-api-and-http-endpoints
-title: 'MongoDB Data API Deprecated? FerretDB’s Open-Source Alternative Has You Covered'
+title: 'The Best Alternative for MongoDB Data API and HTTP Endpoints'
 authors: [alex]
 description: >
   MongoDB's deprecation of Atlas Data API left many developers without a suitable replacement. FerretDB v2 now provides a compatible alternative for the deprecated Atlas Data API.
