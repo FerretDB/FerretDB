@@ -16,7 +16,6 @@ package handler
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 
@@ -88,12 +87,6 @@ func (h *Handler) MsgReIndex(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 
 	page, cursorID, err := h.Pool.ListIndexes(connCtx, dbName, listIndexesSpec)
 	if err != nil {
-		var e *mongoerrors.Error
-		if errors.As(err, &e) && e.Code == 26 {
-			h.L.DebugContext(connCtx, "MsgReIndex: nothing to re-index as namespace does not exist")
-			return wire.MustOpMsg("ok", float64(1)), nil
-		}
-
 		return nil, lazyerrors.Error(err)
 	}
 

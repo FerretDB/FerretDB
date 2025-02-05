@@ -539,8 +539,7 @@ func TestReIndexCompat(t *testing.T) {
 			t.Parallel()
 
 			s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
-				Providers:                []shareddata.Provider{shareddata.Int32s},
-				AddNonExistentCollection: true,
+				Providers: []shareddata.Provider{shareddata.Int32s},
 			})
 			ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
 
@@ -576,7 +575,7 @@ func TestReIndexCompat(t *testing.T) {
 					targetErr := targetCollection.Database().RunCommand(ctx, command).Decode(&targetRes)
 
 					var compatRes bson.D
-					compatErr := targetCollection.Database().RunCommand(ctx, command).Decode(&compatRes)
+					compatErr := compatCollection.Database().RunCommand(ctx, command).Decode(&compatRes)
 
 					require.NoError(t, targetErr)
 					require.NoError(t, compatErr)

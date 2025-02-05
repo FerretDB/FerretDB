@@ -625,6 +625,15 @@ func TestReIndexErrors(t *testing.T) {
 				Message: "Invalid namespace specified 'TestReIndexErrors-EmptyCollection.'",
 			},
 		},
+		"NonExistentCollection": {
+			collectionName: "non-existent",
+			err: &mongo.CommandError{
+				Code:    26,
+				Name:    "NamespaceNotFound",
+				Message: "collection does not exist",
+			},
+			altMessage: "ns does not exist: TestReIndexErrors-NonExistentCollection.non-existent",
+		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			ctx, collection := setup.Setup(t)
