@@ -26,6 +26,7 @@ Some default values are overridden in [our Docker image](../installation/ferretd
 | `-h`, `--help` | Show context-sensitive help                                       |                      | false                          |
 | `--version`    | Print version to stdout and exit                                  |                      | false                          |
 | `--mode`       | [Operation mode](operation-modes.md)                              | `FERRETDB_MODE`      | `normal`                       |
+| `--[no-]auth`  | Enable authentication                                             | `FERRETDB_AUTH`      | enabled                        |
 | `--state-dir`  | Path to the FerretDB state directory<br />(set to `-` to disable) | `FERRETDB_STATE_DIR` | `.`<br />(`/state` for Docker) |
 
 ## Interfaces
@@ -38,6 +39,7 @@ Some default values are overridden in [our Docker image](../installation/ferretd
 | `--listen-tls-cert-file` | TLS cert file path                                                                    | `FERRETDB_LISTEN_TLS_CERT_FILE` |                                              |
 | `--listen-tls-key-file`  | TLS key file path                                                                     | `FERRETDB_LISTEN_TLS_KEY_FILE`  |                                              |
 | `--listen-tls-ca-file`   | TLS CA file path                                                                      | `FERRETDB_LISTEN_TLS_CA_FILE`   |                                              |
+| `--listen-data-api-addr` | Listen TCP address for HTTP Data API                                                  | `FERRETDB_LISTEN_DATA_API_ADDR` |                                              |
 | `--proxy-addr`           | Proxy address                                                                         | `FERRETDB_PROXY_ADDR`           |                                              |
 | `--proxy-tls-cert-file`  | Proxy TLS cert file path                                                              | `FERRETDB_PROXY_TLS_CERT_FILE`  |                                              |
 | `--proxy-tls-key-file`   | Proxy TLS key file path                                                               | `FERRETDB_PROXY_TLS_KEY_FILE`   |                                              |
