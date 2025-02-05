@@ -225,3 +225,8 @@ func (h *mongoHandler) getSeverity(level slog.Level) string {
 		return level.String()
 	}
 }
+
+// check interfaces
+var (
+	_ slog.Handler = (*mongoHandler)(nil)
+)
