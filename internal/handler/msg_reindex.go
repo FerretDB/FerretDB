@@ -90,7 +90,7 @@ func (h *Handler) MsgReIndex(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 	if err != nil {
 		var e *mongoerrors.Error
 		if errors.As(err, &e) && e.Code == 26 {
-			h.L.DebugContext(connCtx, "MsgReIndex nothing to re-index as namespace does not exist")
+			h.L.DebugContext(connCtx, "MsgReIndex: nothing to re-index as namespace does not exist")
 			return wire.MustOpMsg("ok", float64(1)), nil
 		}
 
@@ -98,7 +98,7 @@ func (h *Handler) MsgReIndex(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 	}
 
 	if cursorID != 0 {
-		h.L.ErrorContext(connCtx, "MsgReIndex too many indexes some indexes are not re-indexed")
+		h.L.ErrorContext(connCtx, "MsgReIndex: too many indexes some indexes are not re-indexed")
 	}
 
 	pageDoc, err := page.DecodeDeep()
@@ -107,7 +107,7 @@ func (h *Handler) MsgReIndex(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 	}
 
 	lazyRes := slog.Any("res", logging.LazyString(pageDoc.LogMessage))
-	h.L.DebugContext(connCtx, "MsgReIndex ListIndexes response", lazyRes)
+	h.L.DebugContext(connCtx, "MsgReIndex: ListIndexes response", lazyRes)
 
 	indexes := pageDoc.Get("cursor").(*wirebson.Document).Get("firstBatch").(*wirebson.Array)
 
@@ -126,11 +126,11 @@ func (h *Handler) MsgReIndex(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/643
 	resDoc, err := res.DecodeDeep()
 	if err != nil {
-		h.L.WarnContext(connCtx, "MsgReIndex failed to decode DropIndexes response", logging.Error(err))
+		h.L.DebugContext(connCtx, "MsgReIndex: failed to decode DropIndexes response", logging.Error(err))
 	}
 
 	lazyRes = slog.Any("res", logging.LazyString(resDoc.LogMessage))
-	h.L.DebugContext(connCtx, "MsgReIndex DropIndexes response", lazyRes)
+	h.L.DebugContext(connCtx, "MsgReIndex: DropIndexes response", lazyRes)
 
 	createSpec := must.NotFail(wirebson.MustDocument(
 		"createIndexes", collection,
@@ -148,12 +148,12 @@ func (h *Handler) MsgReIndex(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 
 	resDoc, err = resRaw.DecodeDeep()
 	if err != nil {
-		h.L.WarnContext(connCtx, "MsgReIndex failed to decode CreateIndexes response", logging.Error(err))
+		h.L.WarnContext(connCtx, "MsgReIndex: failed to decode CreateIndexes response", logging.Error(err))
 		return wire.NewOpMsg(resRaw)
 	}
 
 	lazyRes = slog.Any("res", logging.LazyString(resDoc.LogMessage))
-	h.L.DebugContext(connCtx, "MsgReIndex CreateIndexes response", lazyRes)
+	h.L.DebugContext(connCtx, "MsgReIndex: CreateIndexes response", lazyRes)
 
 	raw, _ := resDoc.Get("raw").(*wirebson.Document)
 	if raw == nil {
