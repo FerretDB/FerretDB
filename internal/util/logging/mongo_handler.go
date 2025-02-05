@@ -136,11 +136,11 @@ func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
 		}
 	}
 
-	if h.testAttrs != nil && len(m) > 0 {
-		maps.Copy(h.testAttrs, m)
-	}
-
 	logRecord.Attr = m
+
+	if h.testAttrs != nil && len(logRecord.Attr) > 0 {
+		maps.Copy(h.testAttrs, logRecord.Attr)
+	}
 
 	extJSON, err := bson.MarshalExtJSON(&logRecord, false, false)
 	if err != nil {
