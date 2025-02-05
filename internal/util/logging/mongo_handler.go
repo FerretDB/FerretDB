@@ -85,16 +85,22 @@ func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
 	var buf bytes.Buffer
 
 	logRecord := mongoLog{
-		Severity: h.getSeverity(r.Level),
-		Msg:      r.Message,
+		Msg: r.Message,
 	}
 
 	if h.testAttrs != nil {
-		h.testAttrs[slog.LevelKey] = logRecord.Severity
 		h.testAttrs[slog.MessageKey] = logRecord.Msg
 	}
 
-	if !r.Time.IsZero() {
+	if !h.opts.RemoveLevel {
+		logRecord.Severity = h.getSeverity(r.Level)
+
+		if h.testAttrs != nil {
+			h.testAttrs[slog.LevelKey] = logRecord.Severity
+		}
+	}
+
+	if !h.opts.RemoveTime && !r.Time.IsZero() {
 		logRecord.Timestamp = primitive.NewDateTimeFromTime(r.Time)
 
 		if h.testAttrs != nil {
@@ -102,7 +108,7 @@ func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
 		}
 	}
 
-	if r.PC != 0 && !h.opts.RemoveSource {
+	if !h.opts.RemoveSource && r.PC != 0 {
 		f, _ := runtime.CallersFrames([]uintptr{r.PC}).Next()
 		if f.File != "" {
 			logRecord.Ctx = shortPath(f.File) + ":" + strconv.Itoa(f.Line)
