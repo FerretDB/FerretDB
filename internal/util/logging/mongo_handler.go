@@ -85,6 +85,7 @@ func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
 
 	if h.testAttrs != nil {
 		h.testAttrs["level"] = logRecord.Severity
+		h.testAttrs["msg"] = logRecord.Msg
 	}
 
 	if !r.Time.IsZero() {
@@ -99,6 +100,10 @@ func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
 		f, _ := runtime.CallersFrames([]uintptr{r.PC}).Next()
 		if f.File != "" {
 			logRecord.Ctx = shortPath(f.File) + ":" + strconv.Itoa(f.Line)
+
+			if h.testAttrs != nil {
+				h.testAttrs["source"] = logRecord.Ctx
+			}
 		}
 	}
 
@@ -131,7 +136,7 @@ func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
 		}
 	}
 
-	if h.testAttrs != nil {
+	if h.testAttrs != nil && len(m) > 0 {
 		maps.Copy(h.testAttrs, m)
 	}
 
@@ -162,10 +167,11 @@ func (h *mongoHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	}
 
 	return &mongoHandler{
-		opts: h.opts,
-		goas: append(slices.Clone(h.goas), groupOrAttrs{attrs: attrs}),
-		m:    h.m,
-		out:  h.out,
+		opts:      h.opts,
+		goas:      append(slices.Clone(h.goas), groupOrAttrs{attrs: attrs}),
+		testAttrs: h.testAttrs,
+		m:         h.m,
+		out:       h.out,
 	}
 }
 
@@ -175,10 +181,11 @@ func (h *mongoHandler) WithGroup(name string) slog.Handler {
 	}
 
 	return &mongoHandler{
-		opts: h.opts,
-		goas: append(slices.Clone(h.goas), groupOrAttrs{group: name}),
-		m:    h.m,
-		out:  h.out,
+		opts:      h.opts,
+		goas:      append(slices.Clone(h.goas), groupOrAttrs{group: name}),
+		testAttrs: h.testAttrs,
+		m:         h.m,
+		out:       h.out,
 	}
 }
 
