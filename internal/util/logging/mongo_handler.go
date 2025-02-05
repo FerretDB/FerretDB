@@ -30,6 +30,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+// mongoHandler is a [slog.Handler] that writes logs by using mongo structured JSON format.
+// The format returns log entries with Relaxed Extended JSON specification.
 type mongoHandler struct {
 	opts *NewHandlerOpts
 
@@ -40,6 +42,7 @@ type mongoHandler struct {
 	out io.Writer
 }
 
+// mongoLog represents a single log message in mongo structured JSON format.
 type mongoLog struct {
 	Timestamp  primitive.DateTime `bson:"t"`
 	Severity   string             `bson:"s"`
