@@ -82,7 +82,7 @@ func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
 	var buf bytes.Buffer
 
 	logRecord := mongoLog{
-		Severity: getSeverity(r.Level),
+		Severity: h.getSeverity(r.Level),
 		Msg:      r.Message,
 	}
 
