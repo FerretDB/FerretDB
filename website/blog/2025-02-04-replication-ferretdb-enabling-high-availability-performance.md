@@ -27,7 +27,7 @@ It works by maintaining one primary database where all writes happen and one or 
 Setting up your database this way ensures a reduction in the load on the primary instance, boosts query performance, and enhances fault tolerance.
 
 In FerretDB, replication is designed to enable users build fault-tolerant applications that can handle large volumes of queries efficiently and with minimal disruption in case of failures.
-Users can distribute traffic across different database replicas – and potentially speed up read operations – while preventing downtime or data loss by promoting a replica when the primary server is down.
+Users can distribute traffic across different database replicas — and potentially speed up read operations — while preventing downtime or data loss by promoting a replica when the primary server is down.
 
 Before we go into how this looks in practice, let's take a look at some of the benefits of replication and why it's critical for many businesses.
 
@@ -40,7 +40,7 @@ Read-heavy workloads, such as analytics dashboards, recommendation engines, and 
 By having copies of your data on multiple databases, you can easily scale your FerretDB instance by offloading queries to multiple replicas.
 
 Applications can route queries to the nearest available replica; that way, you can reduce latency and improve response times.
-So, regardless of the kind of application you have, replication ensures fast and consistent access to your data.
+So, regardless of the kind of application you have, replication can help enable fast and consistent access to your data if you want.
 
 ### Improved fault tolerance
 
@@ -84,7 +84,7 @@ This ensures that all replicas have an up-to-date copy of the data without affec
 
 The application client connects to FerretDB, which has both a primary instance (handling writes and reads to the Primary PostgreSQL instance) and read-only instance (handling only reads to the replica).
 
-If you have multiple replicas in PostgreSQL, data reads can be distributed between replicas to ensure lower latency and faster operations.
+If you have multiple replicas in PostgreSQL, data reads may be distributed between replicas to enable lower latency.
 
 ## Caveats and considerations for replication in FerretDB
 
