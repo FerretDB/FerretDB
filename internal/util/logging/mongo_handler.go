@@ -84,15 +84,15 @@ func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
 	}
 
 	if h.testAttrs != nil {
-		h.testAttrs["level"] = logRecord.Severity
-		h.testAttrs["msg"] = logRecord.Msg
+		h.testAttrs[slog.LevelKey] = logRecord.Severity
+		h.testAttrs[slog.MessageKey] = logRecord.Msg
 	}
 
 	if !r.Time.IsZero() {
 		logRecord.Timestamp = primitive.NewDateTimeFromTime(r.Time)
 
 		if h.testAttrs != nil {
-			h.testAttrs["time"] = logRecord.Timestamp
+			h.testAttrs[slog.TimeKey] = logRecord.Timestamp
 		}
 	}
 
@@ -102,7 +102,7 @@ func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
 			logRecord.Ctx = shortPath(f.File) + ":" + strconv.Itoa(f.Line)
 
 			if h.testAttrs != nil {
-				h.testAttrs["source"] = logRecord.Ctx
+				h.testAttrs[slog.SourceKey] = logRecord.Ctx
 			}
 		}
 	}
