@@ -103,7 +103,7 @@ Since you've enabled FerretDB's Data API (`FERRETDB_LISTEN_DATA_API_ADDR=:8080`)
 Insert a document into a collection called users in a database called `test`.
 
 ```sh
-curl -X POST http://127.0.0.1:8081/action/insertOne \
+curl -X POST http://127.0.0.1:8080/action/insertOne \
   -H "Content-Type: application/json" \
   -u username:password \
   -d '{
@@ -117,12 +117,18 @@ curl -X POST http://127.0.0.1:8081/action/insertOne \
       }'
 ```
 
+Response:
+
+```json
+{ "n": 1.0 }
+```
+
 #### Query data
 
 Using a `POST` request, let's retrieve the document we just inserted.
 
 ```sh
-curl -X POST http://127.0.0.1:8081/action/find \
+curl -X POST http://127.0.0.1:8080/action/find \
   -H "Content-Type: application/json" \
   -u username:password \
   -d '{
@@ -132,12 +138,27 @@ curl -X POST http://127.0.0.1:8081/action/find \
       }'
 ```
 
+Response:
+
+```json
+{
+  "documents": [
+    {
+      "_id": { "$oid": "67a2e9b70a5e9467a00918b0" },
+      "name": "Andrew",
+      "email": "andrew@example.com",
+      "age": 25
+    }
+  ]
+}
+```
+
 #### Update a document
 
 Let's update Alice's email using a `POST` request:
 
 ```sh
-curl -X POST http://127.0.0.1:8081/action/updateOne \
+curl -X POST http://127.0.0.1:8080/action/updateOne \
   -H "Content-Type: application/json" \
   -u username:password \
   -d '{
@@ -148,12 +169,18 @@ curl -X POST http://127.0.0.1:8081/action/updateOne \
       }'
 ```
 
+Response:
+
+```json
+{ "matchedCount": 1, "modifiedCount": 1 }
+```
+
 #### Delete a document
 
 And to complete the CRUD operations, let's delete Alice's document using a `POST` request:
 
 ```sh
-curl -X POST http://127.0.0.1:8081/action/deleteOne \
+curl -X POST http://127.0.0.1:8080/action/deleteOne \
   -H "Content-Type: application/json" \
   -u username:password \
   -d '{
@@ -161,6 +188,12 @@ curl -X POST http://127.0.0.1:8081/action/deleteOne \
         "collection": "users",
         "filter": { "name": "Andrew" }
       }'
+```
+
+Response:
+
+```json
+{ "deletedCount": 1 }
 ```
 
 ## Easily replace MongoDB Data API with FerretDB
