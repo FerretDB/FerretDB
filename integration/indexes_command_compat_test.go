@@ -571,14 +571,6 @@ func TestReIndexCompat(t *testing.T) {
 					require.NoError(t, targetErr)
 					require.NoError(t, compatErr)
 					assert.Equal(t, compatRes, targetRes)
-
-					targetSpec, targetErr := targetCollection.Indexes().ListSpecifications(ctx)
-					compatSpec, compatErr := compatCollection.Indexes().ListSpecifications(ctx)
-
-					require.NoError(t, compatErr)
-					require.NoError(t, targetErr)
-
-					assert.ElementsMatch(t, compatSpec, targetSpec)
 				})
 			}
 		})

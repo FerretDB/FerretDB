@@ -68,11 +68,17 @@ func (h *Handler) MsgCreateIndexes(connCtx context.Context, msg *wire.OpMsg) (*w
 	}
 	defer conn.Release()
 
-	return h.createIndexes(connCtx, conn, doc.Command(), dbName, spec)
+	res, err := h.createIndexes(connCtx, conn, doc.Command(), dbName, spec)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return wire.NewOpMsg(res)
 }
 
 // createIndexes calls DocumentDB API to create indexes, decodes and maps embedded error to command error if any.
-func (h *Handler) createIndexes(connCtx context.Context, conn *documentdb.Conn, command, dbName string, spec wirebson.RawDocument) (*wire.OpMsg, error) { //nolint:lll // for readability
+// It returns a document for createIndexes response.
+func (h *Handler) createIndexes(connCtx context.Context, conn *documentdb.Conn, command, dbName string, spec wirebson.RawDocument) (wirebson.AnyDocument, error) { //nolint:lll // for readability
 	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/1147
 	// resRaw, _, _, err := documentdb_api.CreateIndexesBackground(connCtx, conn.Conn(), h.L, dbName, spec)
 	resRaw, err := documentdb_api_internal.CreateIndexesNonConcurrently(connCtx, conn.Conn(), h.L, dbName, spec, true)
@@ -85,7 +91,7 @@ func (h *Handler) createIndexes(connCtx context.Context, conn *documentdb.Conn, 
 	res, err := resRaw.DecodeDeep()
 	if err != nil {
 		h.L.WarnContext(connCtx, "CreateIndexes failed to decode response", logging.Error(err), slog.String("command", command))
-		return wire.NewOpMsg(resRaw)
+		return resRaw, nil
 	}
 
 	lazyRes := slog.Any("res", logging.LazyString(res.LogMessage))
@@ -95,13 +101,13 @@ func (h *Handler) createIndexes(connCtx context.Context, conn *documentdb.Conn, 
 	raw, _ := res.Get("raw").(*wirebson.Document)
 	if raw == nil {
 		h.L.WarnContext(connCtx, "CreateIndexes: unexpected response", lazyRes, slog.String("command", command))
-		return wire.NewOpMsg(resRaw)
+		return res, nil
 	}
 
 	defaultShard, _ := raw.Get("defaultShard").(*wirebson.Document)
 	if defaultShard == nil {
 		h.L.WarnContext(connCtx, "CreateIndexes: unexpected response", lazyRes, slog.String("command", command))
-		return wire.NewOpMsg(resRaw)
+		return res, nil
 	}
 
 	c, _ := defaultShard.Get("code").(int32)
@@ -115,5 +121,5 @@ func (h *Handler) createIndexes(connCtx context.Context, conn *documentdb.Conn, 
 	resOk := defaultShard.Get("ok").(int32)
 	must.NoError(defaultShard.Replace("ok", float64(resOk)))
 
-	return wire.NewOpMsg(defaultShard)
+	return defaultShard, nil
 }

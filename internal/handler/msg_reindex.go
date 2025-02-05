@@ -86,7 +86,7 @@ func (h *Handler) MsgReIndex(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 		"cursor", wirebson.MustDocument("batchSize", int32(10000)),
 	).Encode())
 
-	page, cursorID, err := h.Pool.ListIndexes(connCtx, dbName, listIndexesSpec)
+	listRes, cursorID, err := h.Pool.ListIndexes(connCtx, dbName, listIndexesSpec)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -95,22 +95,22 @@ func (h *Handler) MsgReIndex(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 		return nil, lazyerrors.New("too many indexes for re-indexing")
 	}
 
-	pageDoc, err := page.DecodeDeep()
+	listDoc, err := listRes.DecodeDeep()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	lazyRes := slog.Any("res", logging.LazyString(pageDoc.LogMessage))
+	lazyRes := slog.Any("res", logging.LazyString(listDoc.LogMessage))
 	h.L.DebugContext(connCtx, "MsgReIndex: ListIndexes response", lazyRes)
 
-	indexes := pageDoc.Get("cursor").(*wirebson.Document).Get("firstBatch").(*wirebson.Array)
+	indexesBefore := listDoc.Get("cursor").(*wirebson.Document).Get("firstBatch").(*wirebson.Array)
 
 	dropSpec := must.NotFail(wirebson.MustDocument(
 		"dropIndexes", collection,
 		"index", "*", // drops all but default _id index
 	).Encode())
 
-	res, err := documentdb_api.DropIndexes(connCtx, conn.Conn(), h.L, dbName, dropSpec, nil)
+	dropRes, err := documentdb_api.DropIndexes(connCtx, conn.Conn(), h.L, dbName, dropSpec, nil)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -118,18 +118,54 @@ func (h *Handler) MsgReIndex(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 	// this currently fails due to
 	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/306
 	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/643
-	resDoc, err := res.DecodeDeep()
+	dropDoc, err := dropRes.DecodeDeep()
 	if err != nil {
 		h.L.DebugContext(connCtx, "MsgReIndex: failed to decode DropIndexes response", logging.Error(err))
 	}
 
-	lazyRes = slog.Any("res", logging.LazyString(resDoc.LogMessage))
+	lazyRes = slog.Any("res", logging.LazyString(dropDoc.LogMessage))
 	h.L.DebugContext(connCtx, "MsgReIndex: DropIndexes response", lazyRes)
 
 	createSpec := must.NotFail(wirebson.MustDocument(
 		"createIndexes", collection,
-		"indexes", indexes,
+		"indexes", indexesBefore,
 	).Encode())
 
-	return h.createIndexes(connCtx, conn, command, dbName, createSpec)
+	createRes, err := h.createIndexes(connCtx, conn, command, dbName, createSpec)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	createDoc, err := createRes.Decode()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	listRes, cursorID, err = h.Pool.ListIndexes(connCtx, dbName, listIndexesSpec)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if cursorID != 0 {
+		return nil, lazyerrors.New("too many indexes after re-indexing")
+	}
+
+	listDoc, err = listRes.DecodeDeep()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	indexesAfter := listDoc.Get("cursor").(*wirebson.Document).Get("firstBatch").(*wirebson.Array)
+
+	res, err := wirebson.NewDocument(
+		"nIndexesWas", int32(indexesBefore.Len()),
+		"nIndexes", createDoc.Get("numIndexesAfter"),
+		"indexes", indexesAfter,
+		"ok", float64(1),
+	)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return wire.NewOpMsg(res)
 }
