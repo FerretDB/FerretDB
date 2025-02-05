@@ -98,7 +98,7 @@ func (h *Handler) MsgReIndex(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 	}
 
 	if cursorID != 0 {
-		h.L.ErrorContext(connCtx, "MsgReIndex: too many indexes some indexes are not re-indexed")
+		return nil, lazyerrors.New("too many indexes for re-indexing")
 	}
 
 	pageDoc, err := page.DecodeDeep()
