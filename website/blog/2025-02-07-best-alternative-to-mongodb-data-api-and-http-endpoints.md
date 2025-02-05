@@ -1,23 +1,23 @@
 ---
 slug: best-alternative-to-mongodb-data-api-and-http-endpoints
-title: "MongoDB Data API Deprecated? FerretDB’s Open-Source Alternative Has You Covered"
+title: 'MongoDB Data API Deprecated? FerretDB’s Open-Source Alternative Has You Covered'
 authors: [alex]
 description: >
   MongoDB's deprecation of Atlas Data API left many developers without a suitable replacement. FerretDB v2 now provides a compatible alternative for the deprecated Atlas Data API.
 image: /img/blog/mongodb-data-api.jpg
-tags: [open source, sspl, document databases, community]
+tags: [open source, sspl, product, document databases, community]
 ---
 
 ![The Best Alternative for MongoDB Data API and HTTP Endpoints](/img/blog/mongodb-data-api.jpg)
 
 In September 2024, MongoDB announced the deprecation of Atlas Data API – among other features – leaving many developers affected, and without a suitable replacement.
-We are happy to announce that FerretDB v2 now provides a compatible replacement for the deprecated Atlas Data API.
+We are happy to announce that [FerretDB v2](https://blog.ferretdb.io/ferretdb-releases-v2-faster-more-compatible-mongodb-alternative) now provides a compatible replacement for the deprecated Atlas Data API.
 
 <!--truncate-->
 
 The Data API deprecation affected many developments, especially as it came without alternative migration options.
-This is a common theme for many proprietary (or license-restrictive) projects, and not just MongoDB. [Read more on the uncertainties of proprietary solutions here](https://blog.ferretdb.io/why-open-source-important-proprietary-uncertainties).
-Open source solutions like FerretDB offer control, community support, and long-term stability – ensuring you're never left stranded.
+This is a common theme for many proprietary (or license-restrictive) projects, and not just MongoDB – [read more on the uncertainties of proprietary solutions here](https://blog.ferretdb.io/why-open-source-important-proprietary-uncertainties).
+Open source solutions like FerretDB offer control, community support, and long-term stability, so you're never left stranded.
 
 The good thing is: with the release of FerretDB v2, you can successfully replace MongoDB Data API and perform database operations on FerretDB using a direct HTTP-based method to access and interact with their databases.
 
@@ -34,7 +34,7 @@ A basic `curl` command can fetch or modify data.
 So instead of needing a full-fledged backend just to store something in a database, a workflow can send REST requests to a Data API and log information.
 
 For developers already familiar with REST, Data API is essential.
-There's no new learning curve – just familiar HTTP methods (GET, POST, PATCH, DELETE).
+There's no new learning curve – just familiar HTTP methods (`GET`, `POST`, `PATCH`, `DELETE`).
 With FerretDB's Data API stepping in as an alternative to MongoDB's deprecated service, we are ensuring developers can interact with their data without issues, no matter the stack they're working with.
 
 ## FerretDB Data API
@@ -117,7 +117,7 @@ Response:
 
 #### Query data
 
-Using a `POST` request, let's retrieve the document we just inserted.
+Next, let's retrieve the document we just inserted.
 
 ```sh
 curl -X POST http://127.0.0.1:8080/action/find \
@@ -147,7 +147,7 @@ Response:
 
 #### Update a document
 
-Let's update Alice's email using a `POST` request:
+Let's update Alice's email:
 
 ```sh
 curl -X POST http://127.0.0.1:8080/action/updateOne \
@@ -169,7 +169,7 @@ Response:
 
 #### Delete a document
 
-And to complete the CRUD operations, let's delete Alice's document using a `POST` request:
+And to complete the CRUD operations, let's delete Alice's document:
 
 ```sh
 curl -X POST http://127.0.0.1:8080/action/deleteOne \
