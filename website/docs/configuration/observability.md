@@ -21,9 +21,10 @@ FerretDB provides the following log formats:
 <!-- https://github.com/FerretDB/FerretDB/issues/4438 -->
 
 - `console` is a human-readable format with optional colors;
+- `mongo` is machine-readable structured JSON format;
 - `text` is machine-readable [logfmt](https://brandur.org/logfmt)-like format
   (powered by [Go's `slog.TextHandler`](https://pkg.go.dev/log/slog#TextHandler));
-- `json` if machine-readable JSON format
+- `json` is machine-readable JSON format
   (powered by [Go's `slog.JSONHandler`](https://pkg.go.dev/log/slog#JSONHandler)).
 
 There are four logging levels:
