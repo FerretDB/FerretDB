@@ -23,6 +23,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/FerretDB/wire/wirebson"
+
 	"github.com/FerretDB/FerretDB/v2/internal/util/devbuild"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
@@ -38,6 +40,7 @@ type Handler struct {
 	base          slog.Handler
 	out           io.Writer
 	checkMessages bool
+	recentEntries *circularBuffer
 }
 
 // NewHandlerOpts represents [NewHandler] options.
@@ -56,6 +59,9 @@ type NewHandlerOpts struct {
 	// But we can enable it in our tests and when [devbuild.Enabled] is true.
 	// TODO https://github.com/FerretDB/FerretDB/issues/4511
 	CheckMessages bool
+
+	// for testing only
+	recentEntriesSize int
 }
 
 // shortPath returns shorter path for the given path.
@@ -140,10 +146,15 @@ func NewHandler(out io.Writer, opts *NewHandlerOpts) *Handler {
 		panic(fmt.Sprintf("invalid base handler %q", opts.Base))
 	}
 
+	if opts.recentEntriesSize == 0 {
+		opts.recentEntriesSize = 1024
+	}
+
 	return &Handler{
 		base:          h,
 		out:           out,
 		checkMessages: opts.CheckMessages,
+		recentEntries: newCircularBuffer(opts.recentEntriesSize),
 	}
 }
 
@@ -170,7 +181,7 @@ func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
 		}
 	}
 
-	RecentEntries.add(&r)
+	h.recentEntries.add(&r)
 
 	if r.Level < LevelDPanic {
 		return err
@@ -206,6 +217,7 @@ func (h *Handler) WithAttrs(attrs []slog.Attr) slog.Handler {
 		base:          h.base.WithAttrs(attrs),
 		out:           h.out,
 		checkMessages: h.checkMessages,
+		recentEntries: h.recentEntries,
 	}
 }
 
@@ -215,7 +227,13 @@ func (h *Handler) WithGroup(name string) slog.Handler {
 		base:          h.base.WithGroup(name),
 		out:           h.out,
 		checkMessages: h.checkMessages,
+		recentEntries: h.recentEntries,
 	}
+}
+
+// RecentEntries returns recent log entries.
+func (h *Handler) RecentEntries() (*wirebson.Array, error) {
+	return h.recentEntries.getArray()
 }
 
 // check interfaces
