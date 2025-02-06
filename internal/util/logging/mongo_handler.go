@@ -34,6 +34,8 @@ import (
 // mongoHandler is a [slog.Handler] that writes logs by using mongo structured JSON format.
 // The format returns log entries with Relaxed Extended JSON specification.
 // The format is not stable.
+//
+//nolint:vet // for readability
 type mongoHandler struct {
 	opts *NewHandlerOpts
 
@@ -46,6 +48,8 @@ type mongoHandler struct {
 
 // mongoLog represents a single log message in mongo structured JSON format.
 // For now some fields are ignored and may be empty.
+//
+//nolint:vet // to preserve field ordering
 type mongoLog struct {
 	Timestamp  primitive.DateTime `bson:"t"`
 	Severity   string             `bson:"s"`
@@ -144,6 +148,7 @@ func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
 	defer h.m.Unlock()
 
 	_, err = buf.WriteTo(h.out)
+
 	return err
 }
 
