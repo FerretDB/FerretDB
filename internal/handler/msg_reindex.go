@@ -61,7 +61,7 @@ func (h *Handler) MsgReIndex(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 		return nil, mongoerrors.NewWithArgument(
 			mongoerrors.ErrInvalidNamespace,
 			fmt.Sprintf("collection name has invalid type %T", v),
-			"reIndex",
+			command,
 		)
 	}
 
@@ -69,7 +69,7 @@ func (h *Handler) MsgReIndex(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 		return nil, mongoerrors.NewWithArgument(
 			mongoerrors.ErrInvalidNamespace,
 			fmt.Sprintf("Invalid namespace specified '%s.'", dbName),
-			"reIndex",
+			command,
 		)
 	}
 
