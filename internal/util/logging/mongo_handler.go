@@ -43,12 +43,13 @@ type mongoHandler struct {
 }
 
 // mongoLog represents a single log message in mongo structured JSON format.
+// For now some fields are ignored and may be empty.
 type mongoLog struct {
 	Timestamp  primitive.DateTime `bson:"t"`
 	Severity   string             `bson:"s"`
-	Components string             `bson:"c"`   //TODO
-	ID         int                `bson:"id"`  //TODO
-	Ctx        string             `bson:"ctx"` // TODO
+	Components string             `bson:"c"`
+	ID         int                `bson:"id"`
+	Ctx        string             `bson:"ctx"`
 	Svc        string             `bson:"svc,omitempty"`
 	Msg        string             `bson:"msg"`
 	Attr       map[string]any     `bson:"attr,omitempty"`
