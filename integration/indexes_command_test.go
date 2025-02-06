@@ -600,61 +600,51 @@ func TestDropIndexesCommandInvalidCollection(t *testing.T) {
 	}
 }
 
-func TestListIndexesCommand(t *testing.T) {
+func TestListIndexesCommandIndexFieldOrder(t *testing.T) {
 	t.Parallel()
 
-	for name, tc := range map[string]struct {
-		models []mongo.IndexModel // optional indexes to create before reIndex
+	ctx, collection := setup.Setup(t, shareddata.Int32s)
 
-		expected bson.D
-	}{
-		"UniqueIndex": {
-			models: []mongo.IndexModel{
-				{
-					Keys:    bson.D{{"v", 1}},
-					Options: options.Index().SetUnique(true),
-				},
-			},
-			expected: bson.D{
-				{"cursor", bson.D{
-					{"id", int64(0)},
-					{"ns", "TestListIndexesCommand-UniqueIndex.TestListIndexesCommand-UniqueIndex"},
-					{"firstBatch", bson.A{
-						bson.D{
-							{"v", int32(2)},
-							{"key", bson.D{{"_id", int32(1)}}},
-							{"name", "_id_"},
-						},
-						bson.D{
-							{"v", int32(2)},
-							{"key", bson.D{{"v", int32(1)}}},
-							{"name", "v_1"},
-							{"unique", true},
-						},
-					}},
-				}},
-				{"ok", float64(1)},
-			},
+	models := []mongo.IndexModel{
+		{
+			Keys:    bson.D{{"v", 1}},
+			Options: options.Index().SetUnique(true),
 		},
-	} {
-		t.Run(name, func(t *testing.T) {
-			ctx, collection := setup.Setup(t, shareddata.Int32s)
-
-			if tc.models != nil {
-				_, err := collection.Indexes().CreateMany(ctx, tc.models)
-				require.NoError(t, err)
-			}
-
-			command := bson.D{
-				{"listIndexes", collection.Name()},
-			}
-
-			var res bson.D
-			err := collection.Database().RunCommand(ctx, command).Decode(&res)
-			require.NoError(t, err)
-			require.Equal(t, tc.expected, res)
-		})
 	}
+	_, err := collection.Indexes().CreateMany(ctx, models)
+	require.NoError(t, err)
+
+	command := bson.D{
+		{"listIndexes", collection.Name()},
+	}
+
+	var res bson.D
+	err = collection.Database().RunCommand(ctx, command).Decode(&res)
+	require.NoError(t, err)
+
+	expected := bson.D{
+		{"cursor", bson.D{
+			{"id", int64(0)},
+			{"ns", "TestListIndexesCommand-UniqueIndex.TestListIndexesCommand-UniqueIndex"},
+			{"firstBatch", bson.A{
+				bson.D{
+					{"v", int32(2)},
+					{"key", bson.D{{"_id", int32(1)}}},
+					{"name", "_id_"},
+				},
+				bson.D{
+					{"v", int32(2)},
+					{"key", bson.D{{"v", int32(1)}}},
+					{"name", "v_1"},
+					// For MongoDB, `unique` is the 4th field of `listIndexes` command, but it's the 2nd field of `reIndex` command.
+					{"unique", true},
+				},
+			}},
+		}},
+		{"ok", float64(1)},
+	}
+
+	require.Equal(t, expected, res)
 }
 
 func TestReIndexCommand(t *testing.T) {
@@ -762,6 +752,7 @@ func TestReIndexCommand(t *testing.T) {
 					},
 					bson.D{
 						{"v", int32(2)},
+						// For MongoDB, `unique` is the 4th field of `listIndexes` command, but it's the 2nd field of `reIndex` command.
 						{"unique", true},
 						{"key", bson.D{{"v", int32(1)}}},
 						{"name", "v_1"},
@@ -782,8 +773,7 @@ func TestReIndexCommand(t *testing.T) {
 						{"v", int32(2)},
 						{"key", bson.D{{"v", int32(1)}}},
 						{"name", "v_1"},
-						// For MongoDB, `unique` is the 2nd field of `reIndex` command, but it's the 4th field of `listIndexes` command.
-						// For FerretDB, `unique` is the 4th field in both `reIndex` and `listIndexes` commands.
+						// For FerretDB, `unique` is the 4th field in both `listIndexes` and `reIndex` commands.
 						{"unique", true},
 					},
 				}},
