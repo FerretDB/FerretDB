@@ -32,6 +32,7 @@ import (
 
 // mongoHandler is a [slog.Handler] that writes logs by using mongo structured JSON format.
 // The format returns log entries with Relaxed Extended JSON specification.
+// The format is not stable.
 type mongoHandler struct {
 	opts *NewHandlerOpts
 
