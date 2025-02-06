@@ -56,8 +56,8 @@ type mongoLog struct {
 	Msg        string             `bson:"msg"`
 	Attr       map[string]any     `bson:"attr,omitempty"`
 	Tags       []string           `bson:"tags,omitempty"`
-	Truncated  bson.D             `bson:"truncated,omitempty"`
-	Size       bson.D             `bson:"size,omitempty"`
+	Truncated  map[string]any     `bson:"truncated,omitempty"`
+	Size       map[string]any     `bson:"size,omitempty"`
 }
 
 // newMongoHandler creates a new mongo handler.
