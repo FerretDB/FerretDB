@@ -25,9 +25,10 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // mongoHandler is a [slog.Handler] that writes logs by using mongo structured JSON format.
