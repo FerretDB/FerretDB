@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/v2/integration/setup"
 	"github.com/FerretDB/FerretDB/v2/integration/shareddata"
@@ -595,6 +596,274 @@ func TestDropIndexesCommandInvalidCollection(t *testing.T) {
 
 			require.Nil(t, res)
 			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+		})
+	}
+}
+
+func TestListIndexesCommand(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct {
+		models []mongo.IndexModel // optional indexes to create before reIndex
+
+		expected bson.D
+	}{
+		"UniqueIndex": {
+			models: []mongo.IndexModel{
+				{
+					Keys:    bson.D{{"v", 1}},
+					Options: options.Index().SetUnique(true),
+				},
+			},
+			expected: bson.D{
+				{"cursor", bson.D{
+					{"id", int64(0)},
+					{"ns", "TestListIndexesCommand-UniqueIndex.TestListIndexesCommand-UniqueIndex"},
+					{"firstBatch", bson.A{
+						bson.D{
+							{"v", int32(2)},
+							{"key", bson.D{{"_id", int32(1)}}},
+							{"name", "_id_"},
+						},
+						bson.D{
+							{"v", int32(2)},
+							{"key", bson.D{{"v", int32(1)}}},
+							{"name", "v_1"},
+							{"unique", true},
+						},
+					}},
+				}},
+				{"ok", float64(1)},
+			},
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			ctx, collection := setup.Setup(t, shareddata.Int32s)
+
+			if tc.models != nil {
+				_, err := collection.Indexes().CreateMany(ctx, tc.models)
+				require.NoError(t, err)
+			}
+
+			command := bson.D{
+				{"listIndexes", collection.Name()},
+			}
+
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, command).Decode(&res)
+			require.NoError(t, err)
+			require.Equal(t, tc.expected, res)
+		})
+	}
+}
+
+func TestReIndexCommand(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct {
+		models []mongo.IndexModel // optional indexes to create before reIndex
+
+		expected    bson.D
+		altExpected bson.D // optional alternative expected result
+	}{
+		"DefaultIndex": {
+			expected: bson.D{
+				{"nIndexesWas", int32(1)},
+				{"nIndexes", int32(1)},
+				{"indexes", bson.A{
+					bson.D{
+						{"v", int32(2)},
+						{"key", bson.D{{"_id", int32(1)}}},
+						{"name", "_id_"},
+					},
+				}},
+				{"ok", float64(1)},
+			},
+		},
+		"OneIndex": {
+			models: []mongo.IndexModel{
+				{
+					Keys: bson.D{{"v", -1}},
+				},
+			},
+			expected: bson.D{
+				{"nIndexesWas", int32(2)},
+				{"nIndexes", int32(2)},
+				{"indexes", bson.A{
+					bson.D{
+						{"v", int32(2)},
+						{"key", bson.D{{"_id", int32(1)}}},
+						{"name", "_id_"},
+					},
+					bson.D{
+						{"v", int32(2)},
+						{"key", bson.D{{"v", int32(-1)}}},
+						{"name", "v_-1"},
+					},
+				}},
+				{"ok", float64(1)},
+			},
+		},
+		"MultipleIndexes": {
+			models: []mongo.IndexModel{
+				{
+					Keys: bson.D{{"foo", 1}, {"bar", 1}},
+				},
+				{
+					Keys: bson.D{{"v", 1}},
+				},
+				{
+					Keys: bson.D{{"v", -1}},
+				},
+			},
+			expected: bson.D{
+				{"nIndexesWas", int32(4)},
+				{"nIndexes", int32(4)},
+				{"indexes", bson.A{
+					bson.D{
+						{"v", int32(2)},
+						{"key", bson.D{{"_id", int32(1)}}},
+						{"name", "_id_"},
+					},
+					bson.D{
+						{"v", int32(2)},
+						{"key", bson.D{{"foo", int32(1)}, {"bar", int32(1)}}},
+						{"name", "foo_1_bar_1"},
+					},
+					bson.D{
+						{"v", int32(2)},
+						{"key", bson.D{{"v", int32(1)}}},
+						{"name", "v_1"},
+					},
+					bson.D{
+						{"v", int32(2)},
+						{"key", bson.D{{"v", int32(-1)}}},
+						{"name", "v_-1"},
+					},
+				}},
+				{"ok", float64(1)},
+			},
+		},
+		"UniqueIndex": {
+			models: []mongo.IndexModel{
+				{
+					Keys:    bson.D{{"v", 1}},
+					Options: options.Index().SetUnique(true),
+				},
+			},
+			expected: bson.D{
+				{"nIndexesWas", int32(2)},
+				{"nIndexes", int32(2)},
+				{"indexes", bson.A{
+					bson.D{
+						{"v", int32(2)},
+						{"key", bson.D{{"_id", int32(1)}}},
+						{"name", "_id_"},
+					},
+					bson.D{
+						{"v", int32(2)},
+						{"unique", true},
+						{"key", bson.D{{"v", int32(1)}}},
+						{"name", "v_1"},
+					},
+				}},
+				{"ok", float64(1)},
+			},
+			altExpected: bson.D{
+				{"nIndexesWas", int32(2)},
+				{"nIndexes", int32(2)},
+				{"indexes", bson.A{
+					bson.D{
+						{"v", int32(2)},
+						{"key", bson.D{{"_id", int32(1)}}},
+						{"name", "_id_"},
+					},
+					bson.D{
+						{"v", int32(2)},
+						{"key", bson.D{{"v", int32(1)}}},
+						{"name", "v_1"},
+						// For MongoDB, `unique` is the 2nd field of `reIndex` command, but it's the 4th field of `listIndexes` command.
+						// For FerretDB, `unique` is the 4th field in both `reIndex` and `listIndexes` commands.
+						{"unique", true},
+					},
+				}},
+				{"ok", float64(1)},
+			},
+		},
+		"CustomName": {
+			models: []mongo.IndexModel{
+				{
+					Keys:    bson.D{{"foo", 1}, {"bar", -1}},
+					Options: options.Index().SetName("custom-name"),
+				},
+			},
+			expected: bson.D{
+				{"nIndexesWas", int32(2)},
+				{"nIndexes", int32(2)},
+				{"indexes", bson.A{
+					bson.D{
+						{"v", int32(2)},
+						{"key", bson.D{{"_id", int32(1)}}},
+						{"name", "_id_"},
+					},
+					bson.D{
+						{"v", int32(2)},
+						{"key", bson.D{{"foo", int32(1)}, {"bar", int32(-1)}}},
+						{"name", "custom-name"},
+					},
+				}},
+				{"ok", float64(1)},
+			},
+		},
+		"ExpireAfterOption": {
+			models: []mongo.IndexModel{
+				{
+					Keys:    bson.D{{"v", 1}},
+					Options: options.Index().SetExpireAfterSeconds(1),
+				},
+			},
+			expected: bson.D{
+				{"nIndexesWas", int32(2)},
+				{"nIndexes", int32(2)},
+				{"indexes", bson.A{
+					bson.D{
+						{"v", int32(2)},
+						{"key", bson.D{{"_id", int32(1)}}},
+						{"name", "_id_"},
+					},
+					bson.D{
+						{"v", int32(2)},
+						{"key", bson.D{{"v", int32(1)}}},
+						{"name", "v_1"},
+						{"expireAfterSeconds", int32(1)},
+					},
+				}},
+				{"ok", float64(1)},
+			},
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			ctx, collection := setup.Setup(t, shareddata.Int32s)
+
+			if tc.models != nil {
+				_, err := collection.Indexes().CreateMany(ctx, tc.models)
+				require.NoError(t, err)
+			}
+
+			command := bson.D{
+				{"reIndex", collection.Name()},
+			}
+
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, command).Decode(&res)
+			require.NoError(t, err)
+
+			expected := tc.expected
+			if tc.altExpected != nil && !assert.ObjectsAreEqual(expected, res) {
+				expected = tc.altExpected
+			}
+
+			require.Equal(t, expected, res)
 		})
 	}
 }
