@@ -625,7 +625,7 @@ func TestListIndexesCommandIndexFieldOrder(t *testing.T) {
 	expected := bson.D{
 		{"cursor", bson.D{
 			{"id", int64(0)},
-			{"ns", "TestListIndexesCommand-UniqueIndex.TestListIndexesCommand-UniqueIndex"},
+			{"ns", "TestListIndexesCommandIndexFieldOrder.TestListIndexesCommandIndexFieldOrder"},
 			{"firstBatch", bson.A{
 				bson.D{
 					{"v", int32(2)},
