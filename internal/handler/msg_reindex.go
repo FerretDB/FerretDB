@@ -116,8 +116,7 @@ func (h *Handler) MsgReIndex(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 	}
 
 	// this currently fails due to
-	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/306
-	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/643
+	// TODO https://github.com/FerretDB/FerretDB/issues/4730
 	dropDoc, err := dropRes.DecodeDeep()
 	if err != nil {
 		h.L.DebugContext(connCtx, "MsgReIndex: failed to decode DropIndexes response", logging.Error(err))
