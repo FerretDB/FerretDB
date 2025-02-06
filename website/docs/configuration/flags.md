@@ -26,7 +26,7 @@ Some default values are overridden in [our Docker image](../installation/ferretd
 | `-h`, `--help` | Show context-sensitive help                                       |                      | false                          |
 | `--version`    | Print version to stdout and exit                                  |                      | false                          |
 | `--mode`       | [Operation mode](operation-modes.md)                              | `FERRETDB_MODE`      | `normal`                       |
-| `--[no-]auth`  | Enable authentication                                             | `FERRETDB_AUTH`      | enabled                        |
+| `--[no-]auth`  | [Enable authentication](../security/authentication.md)            | `FERRETDB_AUTH`      | enabled                        |
 | `--state-dir`  | Path to the FerretDB state directory<br />(set to `-` to disable) | `FERRETDB_STATE_DIR` | `.`<br />(`/state` for Docker) |
 
 ## Interfaces
