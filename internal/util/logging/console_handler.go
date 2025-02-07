@@ -64,22 +64,23 @@ type groupOrAttrs struct {
 func newConsoleHandler(out io.Writer, opts *NewHandlerOpts, testAttrs map[string]any) *consoleHandler {
 	must.NotBeZero(opts)
 
-	return &consoleHandler{
+	h := consoleHandler{
 		opts:      opts,
 		testAttrs: testAttrs,
 		m:         new(sync.Mutex),
 		out:       out,
 	}
+
+	if h.opts.Level == nil {
+		h.opts.Level = slog.LevelInfo
+	}
+
+	return &h
 }
 
 // Enabled implements [slog.Handler].
 func (ch *consoleHandler) Enabled(_ context.Context, l slog.Level) bool {
-	minLevel := slog.LevelInfo
-	if ch.opts.Level != nil {
-		minLevel = ch.opts.Level.Level()
-	}
-
-	return l >= minLevel
+	return l >= ch.opts.Level.Level()
 }
 
 // Handle implements [slog.Handler].
