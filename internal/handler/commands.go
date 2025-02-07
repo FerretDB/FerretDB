@@ -215,6 +215,10 @@ func (h *Handler) initCommands() {
 			Handler: h.MsgKillCursors,
 			Help:    "Closes server cursors.",
 		},
+		"killOp": {
+			Handler: h.MsgKillOp,
+			Help:    "Kills an operation.",
+		},
 		"killSessions": {
 			Handler: h.MsgKillSessions,
 			Help:    "Kills sessions.",

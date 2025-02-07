@@ -27,7 +27,7 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgFindAndModify(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	opID := h.operations.Start("command")
+	connCtx, opID := h.operations.Start(connCtx, "command")
 	defer h.operations.Stop(opID)
 
 	spec, err := msg.RawDocument()

@@ -16,6 +16,7 @@
 package operation
 
 import (
+	"context"
 	"time"
 
 	"github.com/FerretDB/wire/wirebson"
@@ -27,19 +28,22 @@ import (
 type Operation struct {
 	// the order of the fields is weird to reduce size
 	Command       *wirebson.Document
+	cancel        context.CancelCauseFunc
 	CurrentOpTime time.Time
 	token         *resource.Token
 	Op            string
 	DB            string
 	Collection    string
 	OpID          int32
+	PID           uint32
 	Active        bool
 }
 
 // newOperation creates a new operation.
-func newOperation(id int32, op string) *Operation {
+func newOperation(id int32, op string, cancel context.CancelCauseFunc) *Operation {
 	o := &Operation{
 		token:         resource.NewToken(),
+		cancel:        cancel,
 		Op:            op,
 		Active:        true,
 		CurrentOpTime: time.Now(),

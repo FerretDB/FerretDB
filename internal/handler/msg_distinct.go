@@ -29,7 +29,7 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgDistinct(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	opID := h.operations.Start("query")
+	connCtx, opID := h.operations.Start(connCtx, "query")
 	defer h.operations.Stop(opID)
 
 	spec, err := msg.RawDocument()

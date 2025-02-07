@@ -16,6 +16,9 @@ package operation
 
 import (
 	"cmp"
+	"context"
+	"errors"
+	"log/slog"
 	"slices"
 	"sync"
 	"sync/atomic"
@@ -34,13 +37,16 @@ type Registry struct {
 	nextOperationID atomic.Int32
 
 	token *resource.Token
+
+	l *slog.Logger
 }
 
 // NewRegistry creates a new operation registry.
-func NewRegistry() *Registry {
+func NewRegistry(l *slog.Logger) *Registry {
 	res := &Registry{
 		operations: map[int32]*Operation{},
 		token:      resource.NewToken(),
+		l:          l,
 	}
 
 	resource.Track(res, res.token)
@@ -49,16 +55,17 @@ func NewRegistry() *Registry {
 }
 
 // Start starts a new operation and returns the operation ID.
-func (r *Registry) Start(op string) int32 {
+func (r *Registry) Start(ctx context.Context, op string) (context.Context, int32) {
+	ctx, cancel := context.WithCancelCause(ctx)
 	id := r.nextOperationID.Add(1)
-	o := newOperation(id, op)
+	o := newOperation(id, op, cancel)
 
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
 	r.operations[id] = o
 
-	return id
+	return ctx, id
 }
 
 // Stop ends an operation.
@@ -71,6 +78,19 @@ func (r *Registry) Stop(id int32) {
 	delete(r.operations, id)
 
 	o.close()
+}
+
+// Kill kills an operation by canceling the context.
+// It does nothing if the operation does not exist.
+func (r *Registry) Kill(opid int32) {
+	r.rw.Lock()
+	defer r.rw.Unlock()
+
+	if op, ok := r.operations[opid]; ok {
+		op.cancel(errors.New("kill operation"))
+
+		r.l.Debug("Operation killed", slog.Int("opid", int(opid)))
+	}
 }
 
 // Update sets additional information of the given operation.

@@ -28,7 +28,7 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgGetMore(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	opID := h.operations.Start("getmore")
+	connCtx, opID := h.operations.Start(connCtx, "getmore")
 	defer h.operations.Stop(opID)
 
 	spec, err := msg.RawDocument()

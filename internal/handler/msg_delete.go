@@ -30,7 +30,7 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgDelete(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	opID := h.operations.Start("remove")
+	connCtx, opID := h.operations.Start(connCtx, "remove")
 	defer h.operations.Stop(opID)
 
 	spec, seq := msg.RawSections()

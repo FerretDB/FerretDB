@@ -30,7 +30,7 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgInsert(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	opID := h.operations.Start("insert")
+	connCtx, opID := h.operations.Start(connCtx, "insert")
 	defer h.operations.Stop(opID)
 
 	spec, seq := msg.RawSections()

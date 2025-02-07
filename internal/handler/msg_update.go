@@ -30,7 +30,7 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgUpdate(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	opID := h.operations.Start("update")
+	connCtx, opID := h.operations.Start(connCtx, "update")
 	defer h.operations.Stop(opID)
 
 	spec, seq := msg.RawSections()
