@@ -29,7 +29,7 @@ You can check out this MongoDB CRUD queries guide before diving into the other s
 If you're new to FerretDB, you might want to start with the basics – understanding how to set up an instance and how it handles standard MongoDB operations.
 You can check out this MongoDB CRUD queries guide before diving into the other sections in this post.
 
-### 1. Import Documents
+### 1. Insert document with `mongoimport`
 
 We will start with adding documents to our database instance – without data, there's nothing to query!
 
@@ -47,8 +47,6 @@ mongoimport --host localhost --port 27017 --db library --collection books --file
 
 Now that you have some documents in the collection, start running some queries and operations on them.
 
-**TBD**.
-
 ### 2. Update Documents
 
 Prices change all the time – whether due to promotions, inflation, or publisher adjustments.
@@ -64,19 +62,16 @@ db.books.updateOne(
 )
 ```
 
-### 3. Delete Documents
+### 3. Sort Documents
 
-Sometimes, books go out of print, and you no longer want them in your collection.
-Deleting a document is easy, but be careful – once gone, it's not coming back unless you have backups!
+Sorting is crucial for presenting data in a meaningful way.
+For instance, you might want to list books by publication date, price, or rating.
+
+Let's sort books by publication date in descending order:
 
 ```js
-db.books.deleteOne({ _id: 'new_book_2024' })
+db.books.find().sort({ 'publication.date': -1 })
 ```
-
-**TBD** Probably skip this
-
-This removes the book with `_id: "new_book_2024"` from the collection.
-If you need to delete multiple books, use `deleteMany()` instead.
 
 ### 4. Count Documents
 
@@ -194,7 +189,7 @@ Be careful with this command – once deleted, the user is gone, and you'll need
 
 ## Indexes
 
-### 10. Create, Delete, and List Indexes
+### 10. Create Indexes
 
 Speed is always a hot topic for databases – indexes speed up queries, and that's crucial for better database performance.
 
@@ -207,9 +202,17 @@ A basic example is indexing a book's title and price for faster retrievals:
 db.books.createIndex({ title: 1, 'price.value': -1 })
 ```
 
-Examples of other index operations to try include `getIndexes()`, dropIndexes(), among others.
+### 11. 12.Drop indexes
 
-### 11. Partial Indexes
+If you no longer need an index, you can drop it to free up space and resources.
+
+For instance, to drop the index on the `title` field:
+
+```js
+db.books.dropIndex({ title: 1 })
+```
+
+### Partial Indexes
 
 Unlike full indexes, partial indexes only index documents that match a specific condition, skipping the rest.
 This means smaller index sizes, faster writes, and optimized queries – perfect for filtering out irrelevant data without the overhead of a full index.
@@ -220,24 +223,6 @@ Suppose we only want to index books that cost more than $10:
 db.books.createIndex(
   { genres: 1 },
   { partialFilterExpression: { 'price.value': { $gt: 10 } } }
-)
-```
-
-### 12. TTL Index for Automatic Expiry
-
-**TDB** doesnt work for now
-
-A Time-To-Live (TTL) index auto-cleans expired data.
-That is, no manual deletions, no bloated storage.
-If a library tracks book reservations for instance, a TTL index can remove records after a year, ensuring outdated holds don't clutter queries or waste space.
-Set it, forget it, stay efficient.
-
-Let's say we store temporary book availability records and want them removed after a year:
-
-```js
-db.books.createIndex(
-  { 'publication.date': 1 },
-  { expireAfterSeconds: 60 * 60 * 24 * 365 }
 )
 ```
 
@@ -295,15 +280,29 @@ db.runCommand({
 You'll need to generate vector embeddings for a particular field (`summary`) using any embedding model you prefer.
 See the FerretDB vector search guide for more.
 
-### 15. Text Scoring
+### 15. Projection
 
-db.books.aggregate([
+When querying a database, sometimes you don't need everything – just specific fields.
+Projection lets you control what's returned, reducing network load and making queries more efficient.
+This is great when dealing with heavy fields like logs or analytics that aren't always needed.
 
-{ "$match": { "$text": { "$search": "classic" } } },
+Let's say you only need the `title` and `authors` of books – no need to pull in the entire document:
 
-{ "$sort": { "score": { "$meta": "textScore" } } }
+```js
+db.books.find({}, { title: 1, authors: 1, _id: 0 })
+```
 
-])
+Note that 1 means include, while 0 means exclude.
+Also, `_id` is included by default, so we explicitly set it to 0 to remove it.
+This makes queries faster and responses smaller – perfect when dealing with large datasets.
+
+You can also use projections in FerretDB to exclude fields.
+Need all book details except reviews?
+Use projection to exclude just that field:
+
+```js
+db.books.find({}, { reviews: 0 })
+```
 
 ## Aggregation Operations
 
@@ -336,31 +335,9 @@ db.books.aggregate([
 ])
 ```
 
-## Capped Collections
-
-### 18. Create Capped Collections
-
-Capped collections are fixed-sized, auto-expiring collections – perfect for logs, real-time analytics, or anything where recent data matters most.
-No manual cleanup, no growing storage concerns – just a fixed-size collection that auto-deletes old documents as new ones come in.
-
-Let's say you're tracking server logs or chat messages.
-Instead of endlessly piling up data, a capped collection ensures only the latest 1,000 entries (or whatever limit you set) stick around:
-
-Let's create a capped collection with a size limit of 10MB and a max of 1000 documents:
-
-```js
-db.createCollection('recent_activity', {
-  capped: true,
-  size: 10485760,
-  max: 1000
-})
-```
-
-**TBD**.
-
 ## Geospatial Queries
 
-### 19. Find Books Published in a Specific Location
+### 18. Find Books Published in a Specific Location
 
 Some books aren't just about different places – they're from them.
 If a publisher's location is stored as GeoJSON points, FerretDB lets you query by geography instead of just text.
@@ -380,8 +357,67 @@ db.books.find({
 })
 ```
 
+## Time Series collections
+
+### 19. Create Time Series Queries
+
+Time-series data is everywhere – think stock prices, weather data, sensor readings, or even tracking book sales over time.
+FerretDB supports time-series collections, making it easier to store and analyze time-based data efficiently.
+Let's create a time-series collection to track book sales over time:
+
+```js
+db.createCollection('book_sales', {
+  timeseries: {
+    timeField: 'sale_date',
+    metaField: 'book_id',
+    granularity: 'hours'
+  }
+})
+```
+
+Now, let's insert some sales data:
+
+```js
+db.book_sales.insertMany([
+  {
+    book_id: 'pride_prejudice_1813',
+    sale_date: new Date('2024-02-01T10:00:00Z'),
+    copies_sold: 5
+  },
+  {
+    book_id: 'moby_dick_1851',
+    sale_date: new Date('2024-02-01T11:00:00Z'),
+    copies_sold: 3
+  }
+])
+```
+
+Now let's find the book sales in a specific time range:
+
+```js
+db.book_sales.find({
+  sale_date: {
+    $gte: new Date('2024-02-01T00:00:00Z'),
+    $lt: new Date('2024-02-02T00:00:00Z')
+  }
+})
+```
+
+This fetches all sales within February 1st, 2024 – perfect for daily reports.
+
+If you're working with historical trends, forecasting, or real-time monitoring, time-series collections are quite handy!
+
 ### 20. Drop Database
 
-db.dropDatabase()
+Once you are done with everything, you can proceed to drop the database, completely deleting it from the instance.
 
-### Final Thoughts
+```js
+db.dropDatabase()
+```
+
+## Get Started with FerretDB
+
+As you can see so far, FerretDB lets you run your MongoDB workloads in open-source using familiar syntaxes and commands.
+You no longer need to worry about vendor lock-in or any limitations that come with proprietary solutions.
+
+Get started with FerretDB here and see how it can power your MongoDB workloads.
