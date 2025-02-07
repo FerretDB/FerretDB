@@ -127,7 +127,7 @@ func (ch *consoleHandler) Handle(ctx context.Context, r slog.Record) error {
 		}
 	}
 
-	if m := ch.toMap(r); len(m) > 0 {
+	if m := attrs(r, ch.ga); len(m) > 0 {
 		buf.WriteRune('\t')
 
 		var b bytes.Buffer

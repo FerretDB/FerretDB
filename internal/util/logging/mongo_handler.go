@@ -126,7 +126,7 @@ func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
 		}
 	}
 
-	logRecord.Attr = h.attrs(r)
+	logRecord.Attr = attrs(r, h.goas)
 
 	if h.testAttrs != nil && len(logRecord.Attr) > 0 {
 		maps.Copy(h.testAttrs, logRecord.Attr)
@@ -174,6 +174,39 @@ func (h *mongoHandler) attrs(r slog.Record) map[string]any {
 	})
 
 	for _, goa := range slices.Backward(h.goas) {
+		if goa.group != "" && len(m) > 0 {
+			m = map[string]any{goa.group: m}
+			continue
+		}
+
+		for _, attr := range goa.attrs {
+			m[attr.Key] = resolve(attr.Value)
+		}
+	}
+
+	return m
+}
+
+func attrs(r slog.Record, goas []groupOrAttrs) map[string]any {
+	m := make(map[string]any, r.NumAttrs())
+
+	r.Attrs(func(attr slog.Attr) bool {
+		if attr.Key != "" {
+			m[attr.Key] = resolve(attr.Value)
+
+			return true
+		}
+
+		if attr.Value.Kind() == slog.KindGroup {
+			for _, gAttr := range attr.Value.Group() {
+				m[gAttr.Key] = resolve(gAttr.Value)
+			}
+		}
+
+		return true
+	})
+
+	for _, goa := range slices.Backward(goas) {
 		if goa.group != "" && len(m) > 0 {
 			m = map[string]any{goa.group: m}
 			continue
