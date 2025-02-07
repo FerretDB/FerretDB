@@ -192,42 +192,6 @@ func (ch *consoleHandler) WithGroup(name string) slog.Handler {
 	}
 }
 
-// toMap converts attributes to a map.
-// Attributes with duplicate keys are overwritten, and the order of keys is ignored.
-func (ch *consoleHandler) toMap(r slog.Record) map[string]any {
-	m := make(map[string]any, r.NumAttrs())
-
-	r.Attrs(func(attr slog.Attr) bool {
-		if attr.Key != "" {
-			m[attr.Key] = resolve(attr.Value)
-
-			return true
-		}
-
-		if attr.Value.Kind() == slog.KindGroup {
-			for _, gAttr := range attr.Value.Group() {
-				m[gAttr.Key] = resolve(gAttr.Value)
-			}
-		}
-
-		return true
-	})
-
-	for i := len(ch.ga) - 1; i >= 0; i-- {
-		if ch.ga[i].group != "" && len(m) > 0 {
-			m = map[string]any{ch.ga[i].group: m}
-
-			continue
-		}
-
-		for _, attr := range ch.ga[i].attrs {
-			m[attr.Key] = resolve(attr.Value)
-		}
-	}
-
-	return m
-}
-
 // resolve returns underlying attribute value, or a map for [slog.KindGroup] type.
 func resolve(v slog.Value) any {
 	v = v.Resolve()
