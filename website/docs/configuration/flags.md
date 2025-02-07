@@ -19,15 +19,26 @@ Some default values are overridden in [our Docker image](../installation/ferretd
 <!-- markdownlint-capture -->
 <!-- markdownlint-disable MD033 -->
 
-## General
+## PostgreSQL with DocumentDB extension
 
-| Flag           | Description                                                       | Environment Variable | Default Value                  |
-| -------------- | ----------------------------------------------------------------- | -------------------- | ------------------------------ |
-| `-h`, `--help` | Show context-sensitive help                                       |                      | false                          |
-| `--version`    | Print version to stdout and exit                                  |                      | false                          |
-| `--mode`       | [Operation mode](operation-modes.md)                              | `FERRETDB_MODE`      | `normal`                       |
-| `--[no-]auth`  | [Enable authentication](../security/authentication.md)            | `FERRETDB_AUTH`      | enabled                        |
-| `--state-dir`  | Path to the FerretDB state directory<br />(set to `-` to disable) | `FERRETDB_STATE_DIR` | `.`<br />(`/state` for Docker) |
+<!-- Do not document alpha backends -->
+
+| Flag               | Description               | Environment Variable      | Default Value                        |
+| ------------------ | ------------------------- | ------------------------- | ------------------------------------ |
+| `--postgresql-url` | PostgreSQL connection URL | `FERRETDB_POSTGRESQL_URL` | `postgres://127.0.0.1:5432/postgres` |
+
+FerretDB uses [pgx v5](https://github.com/jackc/pgx) library for connecting to PostgreSQL.
+Supported URL parameters are documented there:
+
+- https://pkg.go.dev/github.com/jackc/pgx/v5/pgconn#ParseConfig
+- https://pkg.go.dev/github.com/jackc/pgx/v5#ParseConfig
+- https://pkg.go.dev/github.com/jackc/pgx/v5/pgxpool#ParseConfig
+
+Additionally:
+
+- `pool_max_conns` parameter is set to 50 if it is unset in the URL;
+- `application_name` is always set to "FerretDB";
+- `timezone` is always set to "UTC".
 
 ## Interfaces
 
@@ -46,36 +57,21 @@ Some default values are overridden in [our Docker image](../installation/ferretd
 | `--proxy-tls-ca-file`    | Proxy TLS CA file path                                                                | `FERRETDB_PROXY_TLS_CA_FILE`    |                                              |
 | `--debug-addr`           | Listen address for HTTP handlers for metrics, pprof, etc<br />(set to `-` to disable) | `FERRETDB_DEBUG_ADDR`           | `127.0.0.1:8088`<br />(`:8088` for Docker)   |
 
-## PostgreSQL
-
-<!-- Do not document alpha backends -->
-
-| Flag               | Description                     | Environment Variable      | Default Value                        |
-| ------------------ | ------------------------------- | ------------------------- | ------------------------------------ |
-| `--postgresql-url` | PostgreSQL URL for 'pg' handler | `FERRETDB_POSTGRESQL_URL` | `postgres://127.0.0.1:5432/postgres` |
-
-FerretDB uses [pgx v5](https://github.com/jackc/pgx) library for connecting to PostgreSQL.
-Supported URL parameters are documented there:
-
-- https://pkg.go.dev/github.com/jackc/pgx/v5/pgconn#ParseConfig
-- https://pkg.go.dev/github.com/jackc/pgx/v5#ParseConfig
-- https://pkg.go.dev/github.com/jackc/pgx/v5/pgxpool#ParseConfig
-
-Additionally:
-
-- `pool_max_conns` parameter is set to 50 if it is unset in the URL;
-- `application_name` is always set to "FerretDB";
-- `timezone` is always set to "UTC".
-
 ## Miscellaneous
 
-| Flag                  | Description                                                                     | Environment Variable       | Default Value    |
-| --------------------- | ------------------------------------------------------------------------------- | -------------------------- | ---------------- |
-| `--log-level`         | Log level: 'debug', 'info', 'warn', 'error'                                     | `FERRETDB_LOG_LEVEL`       | `info`           |
-| `--[no-]log-uuid`     | Add instance UUID to all log messages                                           | `FERRETDB_LOG_UUID`        |                  |
-| `--[no-]metrics-uuid` | Add instance UUID to all metrics                                                | `FERRETDB_METRICS_UUID`    |                  |
-| `--otel-traces-url`   | OpenTelemetry OTLP/HTTP traces endpoint URL (e.g. `http://host:4318/v1/traces`) | `FERRETDB_OTEL_TRACES_URL` | empty (disabled) |
-| `--telemetry`         | Enable or disable [basic telemetry](telemetry.md)                               | `FERRETDB_TELEMETRY`       | `undecided`      |
+| Flag                  | Description                                                                     | Environment Variable       | Default Value                  |
+| --------------------- | ------------------------------------------------------------------------------- | -------------------------- | ------------------------------ |
+| `-h`, `--help`        | Show context-sensitive help                                                     |                            | false                          |
+| `--version`           | Print version to stdout and exit                                                |                            | false                          |
+| `--mode`              | [Operation mode](operation-modes.md)                                            | `FERRETDB_MODE`            | `normal`                       |
+| `--state-dir`         | Path to the FerretDB state directory<br />(set to `-` to disable)               | `FERRETDB_STATE_DIR`       | `.`<br />(`/state` for Docker) |
+| `--[no-]auth`         | [Enable authentication](../security/authentication.md)                          | `FERRETDB_AUTH`            | enabled                        |
+| `--log-level`         | Log level: 'debug', 'info', 'warn', 'error'                                     | `FERRETDB_LOG_LEVEL`       | `info`                         |
+| `--[no-]log-uuid`     | Add instance UUID to all log messages                                           | `FERRETDB_LOG_UUID`        |                                |
+| `--[no-]metrics-uuid` | Add instance UUID to all metrics                                                | `FERRETDB_METRICS_UUID`    |                                |
+| `--otel-traces-url`   | OpenTelemetry OTLP/HTTP traces endpoint URL (e.g. `http://host:4318/v1/traces`) | `FERRETDB_OTEL_TRACES_URL` | empty (disabled)               |
+| `--telemetry`         | Enable or disable [basic telemetry](telemetry.md)                               | `FERRETDB_TELEMETRY`       | `undecided`                    |
+| `--repl-set-name`     | Replica set name                                                                | `FERRETDB_REPL_SET_NAME`   |                                |
 
 <!-- Do not document `--test-XXX` flags here -->
 
