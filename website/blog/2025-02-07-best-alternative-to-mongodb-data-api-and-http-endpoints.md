@@ -21,7 +21,7 @@ Open source solutions like FerretDB offer control, community support, and long-t
 
 The good thing is: with the release of FerretDB v2, you can successfully replace MongoDB Data API and perform database operations on FerretDB using a direct HTTP-based method to access and interact with their databases.
 
-In this post, we'll walk you through how to use FerretDB's Data API with Postman, demonstrating how you can query, insert, update, and delete documents – all without needing a MongoDB server.
+In this post, we'll walk you through how to use FerretDB's Data API, demonstrating how you can find, insert, update, and delete documents – all without needing a MongoDB server.
 
 ## Why Data API matters
 
@@ -31,7 +31,7 @@ That's extra work and dependencies.
 
 A Data API changes that – suddenly, your database is accessible through simple HTTP requests.
 A basic `curl` command can fetch or modify data.
-So instead of needing a full-fledged backend just to store something in a database, a workflow can send REST requests to a Data API and log information.
+So instead of needing a full-fledged backend just to store something in a database, a workflow can send REST requests to a Data API.
 
 For developers already familiar with REST, Data API is essential.
 There's no new learning curve – just familiar HTTP methods (`GET`, `POST`, `PATCH`, `DELETE`).
@@ -60,7 +60,7 @@ Here's an example:
 ```yaml
 services:
   postgres:
-    image: ghcr.io/ferretdb/postgres-documentdb:16.6-0.100-0
+    image: ghcr.io/ferretdb/postgres-documentdb:16
     restart: on-failure
     environment:
       - POSTGRES_USER=username
@@ -70,7 +70,7 @@ services:
       - ./data:/var/lib/postgresql/data
 
   ferretdb:
-    image: ghcr.io/ferretdb/ferretdb:2.0.0-rc.1
+    image: ghcr.io/ferretdb/ferretdb:2
     restart: on-failure
     ports:
       - 27017:27017
@@ -88,11 +88,11 @@ Once your FerretDB instance is running, the Data API endpoint will be available 
 
 ### Using FerretDB's Data API for CRUD operations
 
-Since you've enabled FerretDB's Data API (`FERRETDB_LISTEN_DATA_API_ADDR=:8080`), let's write, query, update, and delete a single document using `curl`.
+Since you've enabled FerretDB's Data API (`FERRETDB_LISTEN_DATA_API_ADDR=:8080`), let's find, insert, update, and delete a single document using `curl`.
 
 #### Insert a document
 
-Insert a document into a collection called users in a database called `test`.
+Insert a document into a collection called `users` in a `test` database.
 
 ```sh
 curl -X POST http://127.0.0.1:8080/action/insertOne \
@@ -115,7 +115,7 @@ Response:
 { "n": 1.0 }
 ```
 
-#### Query data
+#### Find a document
 
 Next, let's retrieve the document we just inserted.
 
@@ -147,7 +147,7 @@ Response:
 
 #### Update a document
 
-Let's update Alice's email:
+Let's update Andrew's email:
 
 ```sh
 curl -X POST http://127.0.0.1:8080/action/updateOne \
@@ -169,7 +169,7 @@ Response:
 
 #### Delete a document
 
-And to complete the CRUD operations, let's delete Alice's document:
+And to complete the CRUD operations, let's delete Andrew's document:
 
 ```sh
 curl -X POST http://127.0.0.1:8080/action/deleteOne \
