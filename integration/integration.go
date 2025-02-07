@@ -48,8 +48,8 @@ const (
 	emptyResult
 )
 
-// convert converts given driver value ([bson.D], [bson.A], etc) to FerretDB's bson package value.
-func convert(t testing.TB, v any) any {
+// Convert converts given driver value ([bson.D], [bson.A], etc) to FerretDB's bson package value.
+func Convert(t testing.TB, v any) any {
 	t.Helper()
 
 	switch v := v.(type) {
@@ -57,7 +57,7 @@ func convert(t testing.TB, v any) any {
 	case primitive.D:
 		doc := wirebson.MakeDocument(len(v))
 		for _, e := range v {
-			err := doc.Add(e.Key, convert(t, e.Value))
+			err := doc.Add(e.Key, Convert(t, e.Value))
 			require.NoError(t, err)
 		}
 
@@ -66,7 +66,7 @@ func convert(t testing.TB, v any) any {
 	case primitive.A:
 		arr := wirebson.MakeArray(len(v))
 		for _, e := range v {
-			err := arr.Add(convert(t, e))
+			err := arr.Add(Convert(t, e))
 			require.NoError(t, err)
 		}
 
@@ -211,7 +211,7 @@ func fixActual(t testing.TB, actual *wirebson.Document) {
 func convertDocument(t testing.TB, doc bson.D) *wirebson.Document {
 	t.Helper()
 
-	v := convert(t, doc)
+	v := Convert(t, doc)
 
 	var res *wirebson.Document
 	require.IsType(t, res, v)
