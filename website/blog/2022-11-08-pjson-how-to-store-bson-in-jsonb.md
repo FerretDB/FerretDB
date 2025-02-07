@@ -106,8 +106,8 @@ Let's look at an example of inserting BSON and storing it as PJSON using the fol
 
 ```js
 db.groceries.insert({
-  _id: ObjectId('635202c8f75e487c16adc141'),
-  name: 'milk',
+  _id: ObjectId("635202c8f75e487c16adc141"),
+  name: "milk",
   quantity: 3
 })
 ```

@@ -1,6 +1,6 @@
 ---
 slug: grafana-monitoring-ferretdb
-title: 'Grafana Monitoring and Visualization for FerretDB'
+title: "Grafana Monitoring and Visualization for FerretDB"
 authors: [alex]
 description: >
   FerretDB is well suited to leverage the MongoDB data source plugin for Grafana to monitor, analyze, and visualize your data.
@@ -123,12 +123,12 @@ To do this, we'll be using the following aggregation pipeline operation, and set
 db.issues.aggregate([
   {
     $match: {
-      milestone: { $ne: ['', 'Next'] }
+      milestone: { $ne: ["", "Next"] }
     }
   },
   {
     $group: {
-      _id: '$milestone',
+      _id: "$milestone",
       count: { $sum: 1 }
     }
   },
@@ -156,10 +156,10 @@ The query for this operation is:
 
 ```js
 db.issues.aggregate([
-  { $match: { state: 'OPEN' } },
-  { $unwind: '$labels' },
-  { $match: { labels: { $eq: 'not ready' } } },
-  { $group: { _id: '$labels', count: { $sum: 1 } } }
+  { $match: { state: "OPEN" } },
+  { $unwind: "$labels" },
+  { $match: { labels: { $eq: "not ready" } } },
+  { $group: { _id: "$labels", count: { $sum: 1 } } }
 ])
 ```
 
@@ -175,10 +175,10 @@ The aggregation operation for generating this visualization will group all `OPEN
 
 ```js
 db.issues.aggregate([
-  { $match: { state: 'OPEN' } },
-  { $unwind: '$labels' },
-  { $match: { labels: { $eq: 'good first issue' } } },
-  { $group: { _id: '$labels', count: { $sum: 1 } } }
+  { $match: { state: "OPEN" } },
+  { $unwind: "$labels" },
+  { $match: { labels: { $eq: "good first issue" } } },
+  { $group: { _id: "$labels", count: { $sum: 1 } } }
 ])
 ```
 
@@ -194,7 +194,7 @@ Here, we want group all the issues by their state and set the visualization as a
 db.issues.aggregate([
   {
     $group: {
-      _id: '$state',
+      _id: "$state",
       count: { $sum: 1 }
     }
   }
@@ -212,22 +212,22 @@ Since the labels are in array, we will need to unwind the array elements and gro
 
 ```js
 db.issues.aggregate([
-  { $unwind: '$labels' },
+  { $unwind: "$labels" },
   {
     $match: {
       labels: {
         $in: [
-          'code/feature',
-          'code/chore',
-          'code/bug',
-          'code/enhancement',
-          'code/bug-regression',
-          'documentation'
+          "code/feature",
+          "code/chore",
+          "code/bug",
+          "code/enhancement",
+          "code/bug-regression",
+          "documentation"
         ]
       }
     }
   },
-  { $group: { _id: '$labels', count: { $sum: 1 } } }
+  { $group: { _id: "$labels", count: { $sum: 1 } } }
 ])
 ```
 
@@ -244,7 +244,7 @@ The aggregation operation to use in the query:
 db.issues.aggregate([
   {
     $group: {
-      _id: '$author',
+      _id: "$author",
       count: { $sum: 1 }
     }
   },

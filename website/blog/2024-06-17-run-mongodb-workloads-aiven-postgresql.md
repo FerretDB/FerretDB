@@ -1,6 +1,6 @@
 ---
 slug: run-mongodb-workloads-aiven-postgresql
-title: 'Run MongoDB Workloads on Aiven for PostgreSQL'
+title: "Run MongoDB Workloads on Aiven for PostgreSQL"
 authors: [alex]
 description: >
   In this blog, we'll show you how to run MongoDB workloads on Aiven for PostgreSQL using FerretDB.
@@ -82,44 +82,44 @@ Start by inserting the following data into an `astronomy` collection.
 ```js
 db.astronomy.insertMany([
   {
-    name: 'Alpha Centauri A',
-    type: 'Star',
+    name: "Alpha Centauri A",
+    type: "Star",
     distance_from_earth: 4.37,
     mass: 2.187e30,
     diameter: 1214000,
-    constellation: 'Centaurus'
+    constellation: "Centaurus"
   },
   {
-    name: 'Alpha Centauri B',
-    type: 'Star',
+    name: "Alpha Centauri B",
+    type: "Star",
     distance_from_earth: 4.37,
     mass: 1.804e30,
     diameter: 865000,
-    constellation: 'Centaurus'
+    constellation: "Centaurus"
   },
   {
-    name: 'Proxima Centauri',
-    type: 'Star',
+    name: "Proxima Centauri",
+    type: "Star",
     distance_from_earth: 4.24,
     mass: 2.446e29,
     diameter: 200000,
-    constellation: 'Centaurus'
+    constellation: "Centaurus"
   },
   {
-    name: 'Betelgeuse',
-    type: 'Star',
+    name: "Betelgeuse",
+    type: "Star",
     distance_from_earth: 642.5,
     mass: 2.78e31,
     diameter: 1.2e9,
-    constellation: 'Orion'
+    constellation: "Orion"
   },
   {
-    name: 'Vega',
-    type: 'Star',
+    name: "Vega",
+    type: "Star",
     distance_from_earth: 25.04,
     mass: 4.074e30,
     diameter: 2440000,
-    constellation: 'Lyra'
+    constellation: "Lyra"
   }
 ])
 ```

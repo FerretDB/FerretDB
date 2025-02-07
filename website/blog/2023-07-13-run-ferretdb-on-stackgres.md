@@ -1,6 +1,6 @@
 ---
 slug: run-ferretdb-on-stackgres
-title: 'How to Run FerretDB on Top of StackGres'
+title: "How to Run FerretDB on Top of StackGres"
 authors:
   - alex
   - name: Álvaro Hernández
@@ -221,11 +221,11 @@ metadata:
   name: postgres
 spec:
   postgres:
-    version: '15'
+    version: "15"
   instances: 1
   pods:
     persistentVolume:
-      size: '5Gi'
+      size: "5Gi"
   configurations:
     sgPoolingConfig: sgpoolingconfig1
   managedSql:
@@ -415,29 +415,29 @@ Meteor.startup(async () => {
   // If the Links collection is empty, add some data.
   if ((await LinksCollection.find().countAsync()) === 0) {
     await insertLink({
-      title: 'Do the Tutorial',
-      url: 'https://www.meteor.com/tutorials/react/creating-an-app'
+      title: "Do the Tutorial",
+      url: "https://www.meteor.com/tutorials/react/creating-an-app"
     })
 
     await insertLink({
-      title: 'Follow the Guide',
-      url: 'https://guide.meteor.com'
+      title: "Follow the Guide",
+      url: "https://guide.meteor.com"
     })
 
     await insertLink({
-      title: 'Read the Docs',
-      url: 'https://docs.meteor.com'
+      title: "Read the Docs",
+      url: "https://docs.meteor.com"
     })
 
     await insertLink({
-      title: 'Discussions',
-      url: 'https://forums.meteor.com'
+      title: "Discussions",
+      url: "https://forums.meteor.com"
     })
   }
 
   // We publish the entire Links collection to all clients.
   // In order to be fetched in real-time to the clients
-  Meteor.publish('links', function () {
+  Meteor.publish("links", function () {
     return LinksCollection.find()
   })
 })

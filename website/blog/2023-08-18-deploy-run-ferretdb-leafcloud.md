@@ -1,6 +1,6 @@
 ---
 slug: deploy-run-ferretdb-leafcloud
-title: 'How to Deploy and Run FerretDB on Leafcloud'
+title: "How to Deploy and Run FerretDB on Leafcloud"
 authors: [alex]
 description: >
   In this how-to guide, we'll be showing you how to configure, deploy, and run FerretDB on [Leafcloud](https://www.leaf.cloud/), using the power of Kubernetes and the PostgreSQL Operator.
@@ -138,7 +138,7 @@ apiVersion: storage.k8s.io/v1
 metadata:
   name: cinder-csi
   annotations:
-    storageclass.kubernetes.io/is-default-class: 'true'
+    storageclass.kubernetes.io/is-default-class: "true"
 provisioner: cinder.csi.openstack.org
 ```
 
@@ -205,7 +205,7 @@ spec:
     - name: instance1
       dataVolumeClaimSpec:
         accessModes:
-          - 'ReadWriteOnce'
+          - "ReadWriteOnce"
         resources:
           requests:
             storage: 1Gi
@@ -218,7 +218,7 @@ spec:
           volume:
             volumeClaimSpec:
               accessModes:
-                - 'ReadWriteOnce'
+                - "ReadWriteOnce"
               resources:
                 requests:
                   storage: 1Gi
@@ -415,8 +415,8 @@ Insert documents into the database:
 
 ```js
 db.testing.insertMany([
-  { a: 23, b: 'b', c: [1, 5], d: { a: 1 } },
-  { a: 1, b: 34, c: '1', d: [3, 5] }
+  { a: 23, b: "b", c: [1, 5], d: { a: 1 } },
+  { a: 1, b: 34, c: "1", d: [3, 5] }
 ])
 ```
 
@@ -425,17 +425,17 @@ Now let's read all these documents and see what we get.
 ```js
 db.testing.find()[
   ({
-    _id: ObjectId('64ca02e119e6b74d10806107'),
+    _id: ObjectId("64ca02e119e6b74d10806107"),
     a: 23,
-    b: 'b',
+    b: "b",
     c: [1, 5],
     d: { a: 1 }
   },
   {
-    _id: ObjectId('64ca02e119e6b74d10806108'),
+    _id: ObjectId("64ca02e119e6b74d10806108"),
     a: 1,
     b: 34,
-    c: '1',
+    c: "1",
     d: [3, 5]
   })
 ]

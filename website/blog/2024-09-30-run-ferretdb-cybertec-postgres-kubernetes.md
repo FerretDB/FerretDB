@@ -1,6 +1,6 @@
 ---
 slug: run-ferretdb-cybertec-postgres-kubernetes
-title: 'Run FerretDB on Kubernetes with CyberTec Postgres'
+title: "Run FerretDB on Kubernetes with CyberTec Postgres"
 authors: [alex]
 description: >
   Learn how to run FerretDB on Kubernetes using CyberTec Postgres operator for a truly open source alternative to MongoDB.
@@ -254,19 +254,19 @@ Start by inserting some documents into a `weather` collection:
 ```js
 db.weather.insertOne([
   {
-    date: new Date('2024-04-22'),
+    date: new Date("2024-04-22"),
     location: {
-      city: 'New York',
-      country: 'USA',
+      city: "New York",
+      country: "USA",
       coordinates: { lat: 40.7128, lon: -74.006 }
     },
     weather: {
       temperature: 18,
-      conditions: 'Cloudy',
+      conditions: "Cloudy",
       wind_speed: 12,
       humidity: 80
     },
-    remarks: 'Possible light rain in the evening.'
+    remarks: "Possible light rain in the evening."
   }
 ])
 ```
@@ -281,8 +281,8 @@ Run an update operation to update the humidity of the document:
 
 ```js
 db.weather.updateMany(
-  { 'location.city': 'New York', 'weather.wind_speed': { $gt: 10 } },
-  { $set: { 'weather.humidity': 85 } }
+  { "location.city": "New York", "weather.wind_speed": { $gt: 10 } },
+  { $set: { "weather.humidity": 85 } }
 )
 ```
 

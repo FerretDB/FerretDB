@@ -72,7 +72,7 @@ To begin with, let's insert a single document into the collection:
 
 ```js
 db.league.insertOne({
-  club: 'PSG',
+  club: "PSG",
   points: 30,
   average_age: 30,
   discipline: { red: 5, yellow: 30 },
@@ -109,21 +109,21 @@ To see how this works, we are going to insert three new documents into the colle
 ```js
 db.league.insertMany([
   {
-    club: 'Arsenal',
+    club: "Arsenal",
     points: 80,
     average_age: 24,
     discipline: { red: 2, yellow: 15 },
     qualified: true
   },
   {
-    club: 'Barcelona',
+    club: "Barcelona",
     points: 60,
     average_age: 31,
     discipline: { red: 0, yellow: 7 },
     qualified: false
   },
   {
-    club: 'Bayern',
+    club: "Bayern",
     points: 84,
     average_age: 29,
     discipline: { red: 1, yellow: 20 },
@@ -159,7 +159,7 @@ This operation retrieves and displays all the documents present in the collectio
 Now, let's add a query parameter to the `find()` operation to filter for a specific item.
 
 ```js
-db.league.find({ club: 'PSG' })
+db.league.find({ club: "PSG" })
 ```
 
 <codapi-snippet sandbox="ferretdb" editor="basic" template="/blog/2022-11-14/insert-2.tpl" init-delay="500">
@@ -239,7 +239,7 @@ Using our database, let's update a document where the `club` field is `PSG` and 
 This update operation will only affect the first document that's retrieved in the collection.
 
 ```js
-db.league.updateOne({ club: 'PSG' }, { $set: { points: 35 } })
+db.league.updateOne({ club: "PSG" }, { $set: { points: 35 } })
 ```
 
 <codapi-snippet sandbox="ferretdb" editor="basic" template="/blog/2022-11-14/insert-2.tpl" init-delay="500">
@@ -263,9 +263,9 @@ The replaceOne() method is ideal if you intend to replace an entire document at 
 
 ```js
 db.league.replaceOne(
-  { club: 'Barcelona' },
+  { club: "Barcelona" },
   {
-    club: 'Inter',
+    club: "Inter",
     points: 83,
     average_age: 32,
     discipline: { red: 2, yellow: 10 },
@@ -288,7 +288,7 @@ The `deleteOne()` method takes in a query parameter that filters a collection fo
 Note that this operation only deletes the first document that matches the query in the collection.
 
 ```js
-db.league.deleteOne({ club: 'Arsenal' })
+db.league.deleteOne({ club: "Arsenal" })
 ```
 
 <codapi-snippet sandbox="ferretdb" editor="basic" template="/blog/2022-11-14/update-3.tpl" init-delay="500">

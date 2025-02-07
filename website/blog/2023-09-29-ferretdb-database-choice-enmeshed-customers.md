@@ -1,6 +1,6 @@
 ---
 slug: ferretdb-database-choice-enmeshed-customers
-title: 'Why is FerretDB a database of choice for enmeshed customers?'
+title: "Why is FerretDB a database of choice for enmeshed customers?"
 authors:
   - name: Marcin Gwóźdź
     title: Director of Strategic Alliances at FerretDB

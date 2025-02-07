@@ -1,6 +1,6 @@
 ---
 slug: build-restful-api-deno-oak-ferretdb
-title: 'How to Build a RESTful API with Deno, Oak, and FerretDB'
+title: "How to Build a RESTful API with Deno, Oak, and FerretDB"
 authors: [alex]
 description: >
   In this blog post, we'll guide you through setting up a RESTful API using Deno, Oak, and FerretDB.
@@ -75,8 +75,8 @@ We can start by creating a file to manage all the dependencies.
 Create a `deps.ts` file that exports the `Application` and `Router` classes from the Oak framework, and the `MongoClient` class from the MongoDB driver for use in other parts of our application.
 
 ```typescript
-export { Application, Router } from 'https://deno.land/x/oak@v10.5.1/mod.ts'
-export { MongoClient, ObjectId } from 'https://deno.land/x/mongo@v0.32.0/mod.ts'
+export { Application, Router } from "https://deno.land/x/oak@v10.5.1/mod.ts"
+export { MongoClient, ObjectId } from "https://deno.land/x/mongo@v0.32.0/mod.ts"
 ```
 
 #### Set up database connection
@@ -86,13 +86,13 @@ Since we are setting up Deno with FerretDB, we should create a database connecti
 Create a `db.ts` file for database connection:
 
 ```typescript
-import { MongoClient, ObjectId } from './deps.ts'
+import { MongoClient, ObjectId } from "./deps.ts"
 
 const client = new MongoClient()
-await client.connect('<FerretDB_connection_URI>')
+await client.connect("<FerretDB_connection_URI>")
 
-const db = client.database('library')
-export const books = db.collection<BookSchema>('books')
+const db = client.database("library")
+export const books = db.collection<BookSchema>("books")
 
 interface BookSchema {
   _id?: ObjectId
@@ -112,23 +112,23 @@ Ensure to replace `<FerretDB_connection_URI>` with the connection URI to your Fe
 Create an `server.ts` file for your server:
 
 ```typescript
-import { Application, Router } from './deps.ts'
-import { books } from './db.ts'
-import { ObjectId } from 'https://deno.land/x/mongo@v0.32.0/mod.ts'
+import { Application, Router } from "./deps.ts"
+import { books } from "./db.ts"
+import { ObjectId } from "https://deno.land/x/mongo@v0.32.0/mod.ts"
 
 const app = new Application()
 const router = new Router()
 const PORT = 3000
 
 router
-  .get('/', (context) => {
-    context.response.body = { message: 'Hello from a Deno API!' }
+  .get("/", (context) => {
+    context.response.body = { message: "Hello from a Deno API!" }
   })
-  .get('/api/books', async (context) => {
+  .get("/api/books", async (context) => {
     const allBooks = await books.find().toArray()
     context.response.body = allBooks
   })
-  .get('/api/books/:id', async (context) => {
+  .get("/api/books/:id", async (context) => {
     const id = context.params.id
     if (id) {
       const book = await books.findOne({ _id: new ObjectId(id) })
@@ -136,37 +136,37 @@ router
         context.response.body = book
       } else {
         context.response.status = 404
-        context.response.body = { message: 'Book not found' }
+        context.response.body = { message: "Book not found" }
       }
     } else {
       context.response.status = 400
-      context.response.body = { message: 'Invalid book ID' }
+      context.response.body = { message: "Invalid book ID" }
     }
   })
-  .post('/api/books', async (context) => {
+  .post("/api/books", async (context) => {
     const body = await context.request.body().value
     const insertId = await books.insertOne(body)
     context.response.body = { id: insertId }
   })
-  .patch('/api/books/:id', async (context) => {
+  .patch("/api/books/:id", async (context) => {
     const id = context.params.id
     if (id) {
       const body = await context.request.body().value
       await books.updateOne({ _id: new ObjectId(id) }, { $set: body })
-      context.response.body = { message: 'Book updated' }
+      context.response.body = { message: "Book updated" }
     } else {
       context.response.status = 400
-      context.response.body = { message: 'Invalid book ID' }
+      context.response.body = { message: "Invalid book ID" }
     }
   })
-  .delete('/api/books/:id', async (context) => {
+  .delete("/api/books/:id", async (context) => {
     const id = context.params.id
     if (id) {
       await books.deleteOne({ _id: new ObjectId(id) })
-      context.response.body = { message: 'Book deleted' }
+      context.response.body = { message: "Book deleted" }
     } else {
       context.response.status = 400
-      context.response.body = { message: 'Invalid book ID' }
+      context.response.body = { message: "Invalid book ID" }
     }
   })
 

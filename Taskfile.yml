@@ -729,7 +729,7 @@ tasks:
         docker compose run --rm textlint --fix --config build/.textlintrc --ignore-path .prettierignore
         "**/*.md" "**/*.mdx" ".github/**/*.md"
       - >
-        docker compose run --rm prettier --write --parser markdown --no-semi --single-quote --trailing-comma none
+        docker compose run --rm prettier --write --parser markdown --no-semi --trailing-comma none
         "**/*.md" "**/*.mdx"
       - >
         docker compose run --rm markdownlint --config "build/.markdownlint.yml"

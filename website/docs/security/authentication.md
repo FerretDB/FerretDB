@@ -84,8 +84,8 @@ If you are using the MongoDB Shell to connect to FerretDB, you can create a new 
 
 ```js
 db.createUser({
-  user: 'newuser',
-  pwd: 'newpassword',
+  user: "newuser",
+  pwd: "newpassword",
   roles: []
 })
 ```

@@ -1,6 +1,6 @@
 ---
 slug: deploy-ferretdb-in-kubernetes-using-kubedb-managed-postgres
-title: 'Deploy FerretDB in Kubernetes using KubeDB Managed Postgres'
+title: "Deploy FerretDB in Kubernetes using KubeDB Managed Postgres"
 authors: [alex]
 description: >
   KubeDB now provides support for FerretDB. Learn how to deploy a FerretDB instance in Kubernetes using KubeDB managed Postgres.
@@ -88,7 +88,7 @@ metadata:
   name: ferret
   namespace: ferretdemo
 spec:
-  version: '1.18.0'
+  version: "1.18.0"
   storageType: Durable
   storage:
     accessModes:

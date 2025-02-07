@@ -1,6 +1,6 @@
 ---
 slug: how-to-package-and-deploy-ferretdb-with-acorn
-title: 'How to Package and Deploy FerretDB with Acorn'
+title: "How to Package and Deploy FerretDB with Acorn"
 authors: [alex]
 description: >
   In this blog post, we will explore how to build, package, and deploy a Python application that uses FerretDB database with Acorn.

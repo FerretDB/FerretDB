@@ -27,7 +27,7 @@ To enable OpLog functionality, manually create a capped collection named `oplog.
 
 ```js
 // use local
-db.createCollection('oplog.rs', { capped: true, size: 536870912 })
+db.createCollection("oplog.rs", { capped: true, size: 536870912 })
 ```
 
 You may also need to set the replica set name using [`--repl-set-name` flag / `FERRETDB_REPL_SET_NAME` environment variable](flags.md#general).
@@ -51,7 +51,7 @@ db.oplog.rs.find()
 To query OpLog for all the operations in a particular namespace (`test.foo`), run:
 
 ```js
-db.oplog.rs.find({ ns: 'test.foo' })
+db.oplog.rs.find({ ns: "test.foo" })
 ```
 
 If something does not work correctly or you have any question on the OpLog functionality, [please inform us here](https://github.com/FerretDB/FerretDB/issues/new?assignees=ferretdb-bot&labels=code%2Fbug%2Cnot+ready&projects=&template=bug.yml).

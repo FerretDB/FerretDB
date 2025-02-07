@@ -1,6 +1,6 @@
 ---
 slug: run-mongodb-workloads-ferretdb-taikun-cloudworks
-title: 'Run MongoDB workloads with FerretDB on Taikun CloudWorks'
+title: "Run MongoDB workloads with FerretDB on Taikun CloudWorks"
 authors: [alex]
 description: >
   Learn to run MongoDB workloads with a FerretDB instance in production on any cloud environment using Taikun CloudWorks.
@@ -207,9 +207,9 @@ The following command inserts these documents into the `space_data` collection:
 
 ```js
 db.space_data.insertMany([
-  { planet: 'Earth', moons: 1, diameter_km: 12742 },
-  { planet: 'Mars', moons: 2, diameter_km: 6779 },
-  { planet: 'Jupiter', moons: 79, diameter_km: 139820 }
+  { planet: "Earth", moons: 1, diameter_km: 12742 },
+  { planet: "Mars", moons: 2, diameter_km: 6779 },
+  { planet: "Jupiter", moons: 79, diameter_km: 139820 }
 ])
 ```
 
@@ -225,7 +225,7 @@ db.space_data.aggregate([
   {
     $group: {
       _id: null,
-      total_moons: { $sum: '$moons' }
+      total_moons: { $sum: "$moons" }
     }
   }
 ])

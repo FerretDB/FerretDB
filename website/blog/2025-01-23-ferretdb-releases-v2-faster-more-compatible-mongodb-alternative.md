@@ -1,6 +1,6 @@
 ---
 slug: ferretdb-releases-v2-faster-more-compatible-mongodb-alternative
-title: 'FerretDB Releases 2.0: A Faster, More Compatible MongoDB Alternative'
+title: "FerretDB Releases 2.0: A Faster, More Compatible MongoDB Alternative"
 authors: [peter]
 description: >
   We are pleased to announce the first release candidate of FerretDB v2.0, a significant milestone in our objective to provide a high-performance, truly Open Source alternative to MongoDB.

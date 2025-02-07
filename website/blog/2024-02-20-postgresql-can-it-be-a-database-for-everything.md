@@ -1,6 +1,6 @@
 ---
 slug: postgresql-can-it-be-a-database-for-everything
-title: 'PostgreSQL - can it be a database for everything?'
+title: "PostgreSQL - can it be a database for everything?"
 authors:
   - name: Marcin Gwóźdź
     title: Director of Strategic Alliances at FerretDB

@@ -1,6 +1,6 @@
 ---
 slug: building-mongodb-like-developer-experience-vultr
-title: 'Building the MongoDB-like developer experience on Vultr'
+title: "Building the MongoDB-like developer experience on Vultr"
 authors:
   - name: Marcin Gwóźdź
     title: Director of Strategic Alliances at FerretDB

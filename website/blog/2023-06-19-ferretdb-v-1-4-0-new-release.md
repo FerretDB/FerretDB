@@ -41,13 +41,13 @@ Suppose you have the following document:
 [
   {
     _id: 1,
-    name: 'John',
+    name: "John",
     age: 35,
     salary: 5000
   },
   {
     _id: 2,
-    name: 'Robert',
+    name: "Robert",
     age: 42,
     salary: 7000
   }
@@ -62,7 +62,7 @@ db.employees.aggregate([
     $project: {
       name: 1,
       age: 1,
-      ageType: { $type: '$age' }
+      ageType: { $type: "$age" }
     }
   }
 ])
@@ -72,8 +72,8 @@ The output will be:
 
 ```json5
 [
-  { _id: 1, name: 'John', age: 35, ageType: 'int' },
-  { _id: 2, name: 'Robert', age: 42, ageType: 'int' }
+  { _id: 1, name: "John", age: 35, ageType: "int" },
+  { _id: 2, name: "Robert", age: 42, ageType: "int" }
 ]
 ```
 
@@ -90,8 +90,8 @@ Use the `$addFields` stage to add the `department` and `employmentType` fields t
 db.employees.aggregate([
   {
     $addFields: {
-      department: 'HR',
-      employmentType: 'Full-time'
+      department: "HR",
+      employmentType: "Full-time"
     }
   }
 ])
@@ -103,19 +103,19 @@ The output will be:
 [
   {
     _id: 1,
-    name: 'John',
+    name: "John",
     age: 35,
     salary: 5000,
-    department: 'HR',
-    employmentType: 'Full-time'
+    department: "HR",
+    employmentType: "Full-time"
   },
   {
     _id: 2,
-    name: 'Robert',
+    name: "Robert",
     age: 42,
     salary: 7000,
-    department: 'HR',
-    employmentType: 'Full-time'
+    department: "HR",
+    employmentType: "Full-time"
   }
 ]
 ```
@@ -126,7 +126,7 @@ Let's use the `$set` stage to update the `department` field:
 db.employees.aggregate([
   {
     $set: {
-      department: 'Sales'
+      department: "Sales"
     }
   }
 ])
@@ -138,17 +138,17 @@ The output:
 [
   {
     _id: 1,
-    name: 'John',
+    name: "John",
     age: 35,
     salary: 5000,
-    department: 'Sales'
+    department: "Sales"
   },
   {
     _id: 2,
-    name: 'Robert',
+    name: "Robert",
     age: 42,
     salary: 7000,
-    department: 'Sales'
+    department: "Sales"
   }
 ]
 ```
@@ -158,7 +158,7 @@ Use the `$unset` stage to remove the `salary` field from documents passed to the
 ```js
 db.employees.aggregate([
   {
-    $unset: 'salary'
+    $unset: "salary"
   }
 ])
 ```
@@ -167,8 +167,8 @@ Output:
 
 ```json5
 [
-  { _id: 1, name: 'John', age: 35 },
-  { _id: 2, name: 'Robert', age: 42 }
+  { _id: 1, name: "John", age: 35 },
+  { _id: 2, name: "Robert", age: 42 }
 ]
 ```
 

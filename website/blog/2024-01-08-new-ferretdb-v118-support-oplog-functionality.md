@@ -31,7 +31,7 @@ In this release, we've added **support for capped collection**, along with `max`
 For example, to create a capped collection `testcollection` with a maximum size of 512MB, run:
 
 ```js
-db.createCollection('testcollection', { capped: true, size: 536870912 })
+db.createCollection("testcollection", { capped: true, size: 536870912 })
 ```
 
 This release also includes **support for tailable cursors**; both `tailable` and `awaitData` parameters are included.
@@ -49,7 +49,7 @@ To enable it, manually create a capped collection named `oplog.rs` in the `local
 
 ```js
 // use local
-db.createCollection('oplog.rs', { capped: true, size: 536870912 })
+db.createCollection("oplog.rs", { capped: true, size: 536870912 })
 ```
 
 You may also need to set the replica set name using [`--repl-set-name` flag / `FERRETDB_REPL_SET_NAME` environment variable](https://docs.ferretdb.io/configuration/flags/#general):
@@ -67,7 +67,7 @@ db.oplog.rs.find()
 To query OpLog for all the operations in a particular namespace (`test.foo`), run:
 
 ```js
-db.oplog.rs.find({ ns: 'test.foo' })
+db.oplog.rs.find({ ns: "test.foo" })
 ```
 
 If something does not work correctly or you have any question on the OpLog functionality, [please inform us here](https://github.com/FerretDB/FerretDB/issues/new?assignees=ferretdb-bot&labels=code%2Fbug%2Cnot+ready&projects=&template=bug.yml).

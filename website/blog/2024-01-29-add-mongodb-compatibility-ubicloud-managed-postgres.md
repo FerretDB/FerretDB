@@ -1,6 +1,6 @@
 ---
 slug: add-mongodb-compatibility-ubicloud-managed-postgres
-title: 'Add MongoDB Compatibility to Ubicloud Managed Postgres'
+title: "Add MongoDB Compatibility to Ubicloud Managed Postgres"
 authors: [alex]
 description: >
   In this blog post, we’ll describe the steps needed to set up a FerretDB Postgres backend on Ubicloud.
@@ -160,8 +160,8 @@ In the index.html file, add this:
     />
     <script>
       function confirmDelete(contact_id) {
-        if (confirm('Are you sure you want to delete this contact?')) {
-          document.getElementById('delete-form-' + contact_id).submit()
+        if (confirm("Are you sure you want to delete this contact?")) {
+          document.getElementById("delete-form-" + contact_id).submit()
         }
       }
     </script>
