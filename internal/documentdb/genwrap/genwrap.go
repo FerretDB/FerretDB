@@ -61,7 +61,7 @@ func main() {
 		l.Log(ctx, logging.LevelFatal, err.Error())
 	}
 
-	schemaRoutines := Convert(rows, l)
+	schemaRoutines := Convert2(rows, l)
 
 	if err = Generate(schemaRoutines); err != nil {
 		l.Log(ctx, logging.LevelFatal, err.Error())

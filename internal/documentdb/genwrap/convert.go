@@ -23,6 +23,38 @@ import (
 	"unicode"
 )
 
+// Convert2 converts extracted routine data to template data by package and function name.
+func Convert2(routines map[string][]map[string]any, l *slog.Logger) map[string]map[string]templateData {
+	c := &converter{
+		l: l,
+	}
+
+	res := map[string]map[string]templateData{}
+
+	for _, fullName := range slices.Sorted(maps.Keys(routines)) {
+		td := c.routine(routines[fullName])
+
+		pack, name, _ := strings.Cut(fullName, ".")
+		if res[pack] == nil {
+			res[pack] = map[string]templateData{}
+		}
+
+		// use specific routine name as function name if default function name
+		// (derived from non-specific routine name) is already used by overloaded routine
+		if _, ok := res[pack][td.FuncName]; ok {
+			td.FuncName = c.funcName(name)
+		}
+		if _, ok := res[pack][td.FuncName]; ok {
+			panic(fmt.Sprintf("duplicate function name: %s", td.FuncName))
+		}
+
+		res[pack][td.FuncName] = td
+	}
+
+	return res
+}
+
+/*
 // Convert takes rows containing parameters of routines.
 // It returns a map of schemas and routines belonging to each schema by
 // converting rows to Go formatted names and types.
@@ -140,6 +172,7 @@ func Convert(routineParams map[string][]map[string]any, l *slog.Logger) map[stri
 
 	return schemas
 }
+*/
 
 // converter is used to group methods used by [Convert].
 type converter struct {
@@ -184,11 +217,6 @@ func (c *converter) parameterName(name string) string {
 	case "dbname":
 		return "database"
 
-	case "getmorespec":
-		return "getMoreSpec"
-	case "letvariablespec":
-		return "letVariableSpec"
-
 	case "cursorid":
 		return "cursorID"
 	case "cursorpage":
@@ -198,14 +226,20 @@ func (c *converter) parameterName(name string) string {
 	case "persistconnection":
 		return "persistConnection"
 	case "retval":
-		return "retValue"
-	}
+		return "retVal"
 
-	if name != "spec" && strings.HasSuffix(name, "spec") {
-		name = strings.TrimSuffix(name, "spec") + "_spec"
-	}
+	case "getmorespec":
+		return "getMoreSpec"
+	case "letvariablespec":
+		return "letVariableSpec"
 
-	return c.camelCase(name)
+	default:
+		if strings.HasSuffix(name, "spec") && name != "spec" {
+			name = strings.TrimSuffix(name, "spec") + "Spec"
+		}
+
+		return c.camelCase(name)
+	}
 }
 
 // parameterType converts PostgreSQL/DocumentDB routine parameter type
@@ -227,10 +261,10 @@ func (c *converter) parameterType(pgType string) string {
 		return "wirebson.RawDocument"
 	case "documentdb_core.bsonsequence":
 		return "[]byte"
-	}
 
-	c.l.Debug("Unhandled type", slog.String("type", pgType))
-	return "struct{}"
+	default:
+		return "struct{}"
+	}
 }
 
 // parameterCast adds a type cast (::type) to a parameter if needed.
@@ -250,21 +284,25 @@ func (c *converter) funcName(name string) string {
 }
 
 // pgParameterType gets PostgreSQL/DocumentDB routine parameter type.
+// It returns an empty string if there is no parameter
+// (the row represents a routine without parameters).
 func (c *converter) pgParameterType(row map[string]any) string {
-	if row["data_type"] == "USER-DEFINED" {
-		return row["udt_schema"].(string) + "." + row["udt_name"].(string)
+	res := row["parameter_data_type"].(string)
+	if res == "USER-DEFINED" {
+		res = row["parameter_udt_schema"].(string) + "." + row["parameter_udt_name"].(string)
 	}
 
-	return row["data_type"].(string)
+	return res
 }
 
-// pgParameterType gets PostgreSQL/DocumentDB routine result parameter type.
+// pgResultType gets PostgreSQL/DocumentDB routine result parameter type.
 func (c *converter) pgResultType(row map[string]any) string {
-	if row["routine_data_type"] == "USER-DEFINED" {
-		return row["routine_udt_schema"].(string) + "." + row["routine_udt_name"].(string)
+	res := row["routine_data_type"].(string)
+	if res == "USER-DEFINED" {
+		res = row["routine_udt_schema"].(string) + "." + row["routine_udt_name"].(string)
 	}
 
-	return row["routine_data_type"].(string)
+	return res
 }
 
 func (c *converter) routine(routine []map[string]any) templateData {
@@ -272,14 +310,38 @@ func (c *converter) routine(routine []map[string]any) templateData {
 	res := templateData{
 		FuncName:     c.funcName(f["routine_name"].(string)),
 		SQLFuncName:  fmt.Sprintf("%s.%s", f["specific_schema"], f["routine_name"]),
-		Comment:      "[Comment]",
-		Params:       "[Params]",
+		Comment:      f["specific_schema"].(string) + "." + f["specific_name"].(string),
 		Returns:      "[Returns]",
 		SQLArgs:      "[SQLArgs]",
 		SQLReturns:   "[SQLReturns]",
 		IsProcedure:  f["routine_type"] == "PROCEDURE",
 		QueryRowArgs: "[QueryRowArgs]",
 		ScanArgs:     "[ScanArgs]",
+	}
+
+	for i, row := range routine {
+		switch t := c.pgParameterType(row); t {
+		case "":
+			if len(row) != 1 {
+				c.l.Error("Unhandled row: expected no parameters, got some", slog.Any("row", row))
+			}
+
+			continue
+
+		default:
+			param := "_ "
+
+			if row["parameter_name"] != nil {
+				param = c.parameterName(row["parameter_name"].(string)) + " "
+			}
+
+			param += c.parameterType(t)
+
+			res.Params += param
+			if i != len(routine)-1 {
+				res.Params += ", "
+			}
+		}
 	}
 
 	return res

@@ -61,10 +61,50 @@ func TestRoutine(t *testing.T) {
 		l: testutil.Logger(t),
 	}
 
-	expected := templateData{
-		FuncName:    "AggregateCursorFirstPage",
-		SQLFuncName: "documentdb_api.aggregate_cursor_first_page",
+	for name, expected := range map[string]templateData{
+		"documentdb_api.aggregate_cursor_first_page_19111": {
+			FuncName:    "AggregateCursorFirstPage",
+			SQLFuncName: "documentdb_api.aggregate_cursor_first_page",
+			Comment:     "[Comment] documentdb_api.aggregate_cursor_first_page_19111",
+			Params: "database string, commandSpec wirebson.RawDocument, cursorID int64, " +
+				"cursorPage wirebson.RawDocument, continuation wirebson.RawDocument, " +
+				"persistConnection bool, cursorID int64",
+			Returns:      "[Returns]",
+			SQLArgs:      "[SQLArgs]",
+			SQLReturns:   "[SQLReturns]",
+			IsProcedure:  false,
+			QueryRowArgs: "[QueryRowArgs]",
+			ScanArgs:     "[ScanArgs]",
+		},
+		"documentdb_api.binary_extended_version_19132": {
+			FuncName:     "BinaryExtendedVersion",
+			SQLFuncName:  "documentdb_api.binary_extended_version",
+			Comment:      "documentdb_api.binary_extended_version_19132",
+			Params:       "",
+			Returns:      "[Returns]",
+			SQLArgs:      "[SQLArgs]",
+			SQLReturns:   "[SQLReturns]",
+			IsProcedure:  false,
+			QueryRowArgs: "[QueryRowArgs]",
+			ScanArgs:     "[ScanArgs]",
+		},
+		"documentdb_api.drop_indexes_19097": {
+			FuncName:     "DropIndexes",
+			SQLFuncName:  "documentdb_api.drop_indexes",
+			Comment:      "documentdb_api.drop_indexes_19097",
+			Params:       "databaseName string, arg wirebson.RawDocument, retVal wirebson.RawDocument",
+			Returns:      "[Returns]",
+			SQLArgs:      "[SQLArgs]",
+			SQLReturns:   "[SQLReturns]",
+			IsProcedure:  true,
+			QueryRowArgs: "[QueryRowArgs]",
+			ScanArgs:     "[ScanArgs]",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			r := rows[name]
+			require.NotEmpty(t, r)
+			assert.Equal(t, expected, c.routine(r))
+		})
 	}
-
-	assert.Equal(t, expected, c.routine(rows["documentdb_api.aggregate_cursor_first_page_19111"]))
 }

@@ -5,6 +5,7 @@ package documentdb_api
 import (
 	"context"
 	"log/slog"
+	"time"
 
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/jackc/pgx/v5"
@@ -16,13 +17,13 @@ import (
 
 // AggregateCursorFirstPage is a wrapper for
 //
-//	documentdb_api.aggregate_cursor_first_page(database text, commandspec documentdb_core.bson, cursorid bigint DEFAULT 0, OUT cursorpage documentdb_core.bson, OUT continuation documentdb_core.bson, OUT persistconnection boolean, OUT cursorid bigint).
-func AggregateCursorFirstPage(ctx context.Context, conn *pgx.Conn, l *slog.Logger, database string, commandSpec wirebson.RawDocument, cursorID int64) (outCursorPage wirebson.RawDocument, outContinuation wirebson.RawDocument, outPersistConnection bool, outCursorID int64, err error) {
+//	[Comment] documentdb_api.aggregate_cursor_first_page_19111.
+func AggregateCursorFirstPage(ctx context.Context, conn *pgx.Conn, l *slog.Logger, database string, commandSpec wirebson.RawDocument, cursorID int64, cursorPage wirebson.RawDocument, continuation wirebson.RawDocument, persistConnection bool, cursorID int64) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.aggregate_cursor_first_page", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT cursorpage::bytea, continuation::bytea, persistconnection, cursorid FROM documentdb_api.aggregate_cursor_first_page($1, $2::bytea, $3)", database, commandSpec, cursorID)
-	if err = row.Scan(&outCursorPage, &outContinuation, &outPersistConnection, &outCursorID); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_api.aggregate_cursor_first_page([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.aggregate_cursor_first_page", l)
 	}
 	return
@@ -30,13 +31,13 @@ func AggregateCursorFirstPage(ctx context.Context, conn *pgx.Conn, l *slog.Logge
 
 // BinaryExtendedVersion is a wrapper for
 //
-//	documentdb_api.binary_extended_version(OUT binary_extended_version text).
-func BinaryExtendedVersion(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBinaryExtendedVersion string, err error) {
+//	[Comment] documentdb_api.binary_extended_version_19132.
+func BinaryExtendedVersion(ctx context.Context, conn *pgx.Conn, l *slog.Logger) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.binary_extended_version", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT binary_extended_version FROM documentdb_api.binary_extended_version()")
-	if err = row.Scan(&outBinaryExtendedVersion); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_api.binary_extended_version([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.binary_extended_version", l)
 	}
 	return
@@ -44,13 +45,13 @@ func BinaryExtendedVersion(ctx context.Context, conn *pgx.Conn, l *slog.Logger) 
 
 // BinaryVersion is a wrapper for
 //
-//	documentdb_api.binary_version(OUT binary_version text).
-func BinaryVersion(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBinaryVersion string, err error) {
+//	[Comment] documentdb_api.binary_version_19131.
+func BinaryVersion(ctx context.Context, conn *pgx.Conn, l *slog.Logger) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.binary_version", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT binary_version FROM documentdb_api.binary_version()")
-	if err = row.Scan(&outBinaryVersion); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_api.binary_version([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.binary_version", l)
 	}
 	return
@@ -58,13 +59,13 @@ func BinaryVersion(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBina
 
 // CollMod is a wrapper for
 //
-//	documentdb_api.coll_mod(p_database_name text, p_collection_name text, p_spec documentdb_core.bson, OUT coll_mod documentdb_core.bson).
-func CollMod(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, collectionName string, spec wirebson.RawDocument) (outCollMod wirebson.RawDocument, err error) {
+//	[Comment] documentdb_api.coll_mod_19080.
+func CollMod(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, collectionName string, spec wirebson.RawDocument) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.coll_mod", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT coll_mod::bytea FROM documentdb_api.coll_mod($1, $2, $3::bytea)", databaseName, collectionName, spec)
-	if err = row.Scan(&outCollMod); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_api.coll_mod([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.coll_mod", l)
 	}
 	return
@@ -72,13 +73,13 @@ func CollMod(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName s
 
 // CollStats is a wrapper for
 //
-//	documentdb_api.coll_stats(p_database_name text, p_collection_name text, p_scale double precision DEFAULT 1, OUT coll_stats documentdb_core.bson).
-func CollStats(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, collectionName string, scale float64) (outCollStats wirebson.RawDocument, err error) {
+//	[Comment] documentdb_api.coll_stats_19133.
+func CollStats(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, collectionName string, scale float64) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.coll_stats", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT coll_stats::bytea FROM documentdb_api.coll_stats($1, $2, $3)", databaseName, collectionName, scale)
-	if err = row.Scan(&outCollStats); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_api.coll_stats([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.coll_stats", l)
 	}
 	return
@@ -86,13 +87,13 @@ func CollStats(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName
 
 // Collection is a wrapper for
 //
-//	documentdb_api.collection(p_database_name text, p_collection_name text, OUT shard_key_value bigint, OUT object_id documentdb_core.bson, OUT document documentdb_core.bson, OUT creation_time timestamp with time zone).
-func Collection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, collectionName string) (outShardKeyValue int64, outObjectID wirebson.RawDocument, outDocument wirebson.RawDocument, outCreationTime struct{}, err error) {
+//	[Comment] documentdb_api.collection_19032.
+func Collection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, collectionName string, shardKeyValue int64, objectID wirebson.RawDocument, document wirebson.RawDocument, creationTime struct{}) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.collection", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT shard_key_value, object_id::bytea, document::bytea, creation_time FROM documentdb_api.collection($1, $2)", databaseName, collectionName)
-	if err = row.Scan(&outShardKeyValue, &outObjectID, &outDocument, &outCreationTime); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_api.collection([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.collection", l)
 	}
 	return
@@ -100,13 +101,13 @@ func Collection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseNam
 
 // CountQuery is a wrapper for
 //
-//	documentdb_api.count_query(database text, countspec documentdb_core.bson, OUT document documentdb_core.bson).
-func CountQuery(ctx context.Context, conn *pgx.Conn, l *slog.Logger, database string, countSpec wirebson.RawDocument) (outDocument wirebson.RawDocument, err error) {
+//	[Comment] documentdb_api.count_query_19116.
+func CountQuery(ctx context.Context, conn *pgx.Conn, l *slog.Logger, database string, countSpec wirebson.RawDocument, document wirebson.RawDocument) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.count_query", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT document::bytea FROM documentdb_api.count_query($1, $2::bytea)", database, countSpec)
-	if err = row.Scan(&outDocument); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_api.count_query([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.count_query", l)
 	}
 	return
@@ -114,13 +115,13 @@ func CountQuery(ctx context.Context, conn *pgx.Conn, l *slog.Logger, database st
 
 // CreateCollection is a wrapper for
 //
-//	documentdb_api.create_collection(p_database_name text, p_collection_name text, OUT create_collection boolean).
-func CreateCollection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, collectionName string) (outCreateCollection bool, err error) {
+//	[Comment] documentdb_api.create_collection_19075.
+func CreateCollection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, collectionName string) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.create_collection", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT create_collection FROM documentdb_api.create_collection($1, $2)", databaseName, collectionName)
-	if err = row.Scan(&outCreateCollection); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_api.create_collection([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.create_collection", l)
 	}
 	return
@@ -128,13 +129,13 @@ func CreateCollection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, datab
 
 // CreateCollectionView is a wrapper for
 //
-//	documentdb_api.create_collection_view(dbname text, createspec documentdb_core.bson, OUT create_collection_view documentdb_core.bson).
-func CreateCollectionView(ctx context.Context, conn *pgx.Conn, l *slog.Logger, database string, createSpec wirebson.RawDocument) (outCreateCollectionView wirebson.RawDocument, err error) {
+//	[Comment] documentdb_api.create_collection_view_19081.
+func CreateCollectionView(ctx context.Context, conn *pgx.Conn, l *slog.Logger, database string, createSpec wirebson.RawDocument) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.create_collection_view", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT create_collection_view::bytea FROM documentdb_api.create_collection_view($1, $2::bytea)", database, createSpec)
-	if err = row.Scan(&outCreateCollectionView); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_api.create_collection_view([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.create_collection_view", l)
 	}
 	return
@@ -142,13 +143,13 @@ func CreateCollectionView(ctx context.Context, conn *pgx.Conn, l *slog.Logger, d
 
 // CreateIndexesBackground is a wrapper for
 //
-//	documentdb_api.create_indexes_background(p_database_name text, p_index_spec documentdb_core.bson, OUT retval documentdb_core.bson, OUT ok boolean, OUT requests documentdb_core.bson).
-func CreateIndexesBackground(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, indexSpec wirebson.RawDocument) (outRetValue wirebson.RawDocument, outOk bool, outRequests wirebson.RawDocument, err error) {
+//	[Comment] documentdb_api.create_indexes_background_19093.
+func CreateIndexesBackground(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, indexSpec wirebson.RawDocument, retValue wirebson.RawDocument, ok bool, requests wirebson.RawDocument) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.create_indexes_background", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT retval::bytea, ok, requests::bytea FROM documentdb_api.create_indexes_background($1, $2::bytea)", databaseName, indexSpec)
-	if err = row.Scan(&outRetValue, &outOk, &outRequests); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_api.create_indexes_background([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.create_indexes_background", l)
 	}
 	return
@@ -156,13 +157,13 @@ func CreateIndexesBackground(ctx context.Context, conn *pgx.Conn, l *slog.Logger
 
 // CreateUser is a wrapper for
 //
-//	documentdb_api.create_user(p_spec documentdb_core.bson, OUT create_user documentdb_core.bson).
-func CreateUser(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebson.RawDocument) (outCreateUser wirebson.RawDocument, err error) {
+//	[Comment] documentdb_api.create_user_19120.
+func CreateUser(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebson.RawDocument) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.create_user", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT create_user::bytea FROM documentdb_api.create_user($1::bytea)", spec)
-	if err = row.Scan(&outCreateUser); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_api.create_user([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.create_user", l)
 	}
 	return
@@ -170,13 +171,13 @@ func CreateUser(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebs
 
 // CursorGetMore is a wrapper for
 //
-//	documentdb_api.cursor_get_more(database text, getmorespec documentdb_core.bson, continuationspec documentdb_core.bson, OUT cursorpage documentdb_core.bson, OUT continuation documentdb_core.bson).
-func CursorGetMore(ctx context.Context, conn *pgx.Conn, l *slog.Logger, database string, getMoreSpec wirebson.RawDocument, continuationSpec wirebson.RawDocument) (outCursorPage wirebson.RawDocument, outContinuation wirebson.RawDocument, err error) {
+//	[Comment] documentdb_api.cursor_get_more_19115.
+func CursorGetMore(ctx context.Context, conn *pgx.Conn, l *slog.Logger, database string, getMoreSpec wirebson.RawDocument, continuationSpec wirebson.RawDocument, cursorPage wirebson.RawDocument, continuation wirebson.RawDocument) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.cursor_get_more", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT cursorpage::bytea, continuation::bytea FROM documentdb_api.cursor_get_more($1, $2::bytea, $3::bytea)", database, getMoreSpec, continuationSpec)
-	if err = row.Scan(&outCursorPage, &outContinuation); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_api.cursor_get_more([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.cursor_get_more", l)
 	}
 	return
@@ -184,13 +185,13 @@ func CursorGetMore(ctx context.Context, conn *pgx.Conn, l *slog.Logger, database
 
 // DbStats is a wrapper for
 //
-//	documentdb_api.db_stats(p_database_name text, p_scale double precision DEFAULT 1, p_freestorage boolean DEFAULT false, OUT db_stats documentdb_core.bson).
-func DbStats(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, scale float64, freestorage bool) (outDbStats wirebson.RawDocument, err error) {
+//	[Comment] documentdb_api.db_stats_19136.
+func DbStats(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, scale float64, freestorage bool) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.db_stats", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT db_stats::bytea FROM documentdb_api.db_stats($1, $2, $3)", databaseName, scale, freestorage)
-	if err = row.Scan(&outDbStats); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_api.db_stats([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.db_stats", l)
 	}
 	return
@@ -198,13 +199,13 @@ func DbStats(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName s
 
 // Delete is a wrapper for
 //
-//	documentdb_api.delete(p_database_name text, p_delete documentdb_core.bson, p_insert_documents documentdb_core.bsonsequence DEFAULT NULL, OUT p_result documentdb_core.bson, OUT p_success boolean).
-func Delete(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, delete wirebson.RawDocument, insertDocuments []byte) (outResult wirebson.RawDocument, outSuccess bool, err error) {
+//	[Comment] documentdb_api.delete_19107.
+func Delete(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, delete wirebson.RawDocument, insertDocuments []byte, transactionId string, result wirebson.RawDocument, success bool) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.delete", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT p_result::bytea, p_success FROM documentdb_api.delete($1, $2::bytea, $3::bytea)", databaseName, delete, insertDocuments)
-	if err = row.Scan(&outResult, &outSuccess); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_api.delete([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.delete", l)
 	}
 	return
@@ -212,13 +213,13 @@ func Delete(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName st
 
 // DistinctQuery is a wrapper for
 //
-//	documentdb_api.distinct_query(database text, distinctspec documentdb_core.bson, OUT document documentdb_core.bson).
-func DistinctQuery(ctx context.Context, conn *pgx.Conn, l *slog.Logger, database string, distinctSpec wirebson.RawDocument) (outDocument wirebson.RawDocument, err error) {
+//	[Comment] documentdb_api.distinct_query_19117.
+func DistinctQuery(ctx context.Context, conn *pgx.Conn, l *slog.Logger, database string, distinctSpec wirebson.RawDocument, document wirebson.RawDocument) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.distinct_query", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT document::bytea FROM documentdb_api.distinct_query($1, $2::bytea)", database, distinctSpec)
-	if err = row.Scan(&outDocument); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_api.distinct_query([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.distinct_query", l)
 	}
 	return
@@ -226,13 +227,13 @@ func DistinctQuery(ctx context.Context, conn *pgx.Conn, l *slog.Logger, database
 
 // DropCollection is a wrapper for
 //
-//	documentdb_api.drop_collection(p_database_name text, p_collection_name text, p_write_concern documentdb_core.bson DEFAULT NULL, p_collection_uuid uuid DEFAULT NULL, p_track_changes boolean DEFAULT true, OUT drop_collection boolean).
-func DropCollection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, collectionName string, writeConcern wirebson.RawDocument, collectionUuid []byte, trackChanges bool) (outDropCollection bool, err error) {
+//	[Comment] documentdb_api.drop_collection_19082.
+func DropCollection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, collectionName string, writeConcern wirebson.RawDocument, collectionUuid []byte, trackChanges bool) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.drop_collection", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT drop_collection FROM documentdb_api.drop_collection($1, $2, $3::bytea, $4, $5)", databaseName, collectionName, writeConcern, collectionUuid, trackChanges)
-	if err = row.Scan(&outDropCollection); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_api.drop_collection([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.drop_collection", l)
 	}
 	return
@@ -240,13 +241,13 @@ func DropCollection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databas
 
 // DropDatabase is a wrapper for
 //
-//	documentdb_api.drop_database(p_database_name text, p_write_concern documentdb_core.bson DEFAULT NULL, OUT drop_database void).
-func DropDatabase(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, writeConcern wirebson.RawDocument) (outDropDatabase struct{}, err error) {
+//	[Comment] documentdb_api.drop_database_19083.
+func DropDatabase(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, writeConcern wirebson.RawDocument) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.drop_database", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT drop_database FROM documentdb_api.drop_database($1, $2::bytea)", databaseName, writeConcern)
-	if err = row.Scan(&outDropDatabase); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_api.drop_database([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.drop_database", l)
 	}
 	return
@@ -254,13 +255,13 @@ func DropDatabase(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseN
 
 // DropIndexes is a wrapper for
 //
-//	documentdb_api.drop_indexes(p_database_name text, p_arg documentdb_core.bson, INOUT retval documentdb_core.bson DEFAULT NULL).
-func DropIndexes(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, arg wirebson.RawDocument, retValue wirebson.RawDocument) (outRetValue wirebson.RawDocument, err error) {
+//	[Comment] documentdb_api.drop_indexes_19097.
+func DropIndexes(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, arg wirebson.RawDocument, retValue wirebson.RawDocument) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.drop_indexes", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "CALL documentdb_api.drop_indexes($1, $2::bytea, $3::bytea)", databaseName, arg, retValue)
-	if err = row.Scan(&outRetValue); err != nil {
+	row := conn.QueryRow(ctx, "CALL documentdb_api.drop_indexes([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.drop_indexes", l)
 	}
 	return
@@ -268,13 +269,13 @@ func DropIndexes(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseNa
 
 // DropUser is a wrapper for
 //
-//	documentdb_api.drop_user(p_spec documentdb_core.bson, OUT drop_user documentdb_core.bson).
-func DropUser(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebson.RawDocument) (outDropUser wirebson.RawDocument, err error) {
+//	[Comment] documentdb_api.drop_user_19121.
+func DropUser(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebson.RawDocument) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.drop_user", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT drop_user::bytea FROM documentdb_api.drop_user($1::bytea)", spec)
-	if err = row.Scan(&outDropUser); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_api.drop_user([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.drop_user", l)
 	}
 	return
@@ -282,13 +283,13 @@ func DropUser(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebson
 
 // FindAndModify is a wrapper for
 //
-//	documentdb_api.find_and_modify(p_database_name text, p_message documentdb_core.bson, OUT p_result documentdb_core.bson, OUT p_success boolean).
-func FindAndModify(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, message wirebson.RawDocument) (outResult wirebson.RawDocument, outSuccess bool, err error) {
+//	[Comment] documentdb_api.find_and_modify_19110.
+func FindAndModify(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, message wirebson.RawDocument, transactionId string, result wirebson.RawDocument, success bool) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.find_and_modify", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT p_result::bytea, p_success FROM documentdb_api.find_and_modify($1, $2::bytea)", databaseName, message)
-	if err = row.Scan(&outResult, &outSuccess); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_api.find_and_modify([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.find_and_modify", l)
 	}
 	return
@@ -296,13 +297,13 @@ func FindAndModify(ctx context.Context, conn *pgx.Conn, l *slog.Logger, database
 
 // FindCursorFirstPage is a wrapper for
 //
-//	documentdb_api.find_cursor_first_page(database text, commandspec documentdb_core.bson, cursorid bigint DEFAULT 0, OUT cursorpage documentdb_core.bson, OUT continuation documentdb_core.bson, OUT persistconnection boolean, OUT cursorid bigint).
-func FindCursorFirstPage(ctx context.Context, conn *pgx.Conn, l *slog.Logger, database string, commandSpec wirebson.RawDocument, cursorID int64) (outCursorPage wirebson.RawDocument, outContinuation wirebson.RawDocument, outPersistConnection bool, outCursorID int64, err error) {
+//	[Comment] documentdb_api.find_cursor_first_page_19112.
+func FindCursorFirstPage(ctx context.Context, conn *pgx.Conn, l *slog.Logger, database string, commandSpec wirebson.RawDocument, cursorID int64, cursorPage wirebson.RawDocument, continuation wirebson.RawDocument, persistConnection bool, cursorID int64) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.find_cursor_first_page", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT cursorpage::bytea, continuation::bytea, persistconnection, cursorid FROM documentdb_api.find_cursor_first_page($1, $2::bytea, $3)", database, commandSpec, cursorID)
-	if err = row.Scan(&outCursorPage, &outContinuation, &outPersistConnection, &outCursorID); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_api.find_cursor_first_page([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.find_cursor_first_page", l)
 	}
 	return
@@ -310,13 +311,13 @@ func FindCursorFirstPage(ctx context.Context, conn *pgx.Conn, l *slog.Logger, da
 
 // Insert is a wrapper for
 //
-//	documentdb_api.insert(p_database_name text, p_insert documentdb_core.bson, p_insert_documents documentdb_core.bsonsequence DEFAULT NULL, OUT p_result documentdb_core.bson, OUT p_success boolean).
-func Insert(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, insert wirebson.RawDocument, insertDocuments []byte) (outResult wirebson.RawDocument, outSuccess bool, err error) {
+//	[Comment] documentdb_api.insert_19098.
+func Insert(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, insert wirebson.RawDocument, insertDocuments []byte, transactionId string, result wirebson.RawDocument, success bool) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.insert", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT p_result::bytea, p_success FROM documentdb_api.insert($1, $2::bytea, $3::bytea)", databaseName, insert, insertDocuments)
-	if err = row.Scan(&outResult, &outSuccess); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_api.insert([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.insert", l)
 	}
 	return
@@ -324,13 +325,13 @@ func Insert(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName st
 
 // InsertOne is a wrapper for
 //
-//	documentdb_api.insert_one(p_database_name text, p_collection_name text, p_document documentdb_core.bson, OUT insert_one documentdb_core.bson).
-func InsertOne(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, collectionName string, document wirebson.RawDocument) (outInsertOne wirebson.RawDocument, err error) {
+//	[Comment] documentdb_api.insert_one_19101.
+func InsertOne(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, collectionName string, document wirebson.RawDocument, transactionId string) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.insert_one", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT insert_one::bytea FROM documentdb_api.insert_one($1, $2, $3::bytea)", databaseName, collectionName, document)
-	if err = row.Scan(&outInsertOne); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_api.insert_one([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.insert_one", l)
 	}
 	return
@@ -338,13 +339,13 @@ func InsertOne(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName
 
 // ListCollectionsCursorFirstPage is a wrapper for
 //
-//	documentdb_api.list_collections_cursor_first_page(database text, commandspec documentdb_core.bson, cursorid bigint DEFAULT 0, OUT cursorpage documentdb_core.bson, OUT continuation documentdb_core.bson, OUT persistconnection boolean, OUT cursorid bigint).
-func ListCollectionsCursorFirstPage(ctx context.Context, conn *pgx.Conn, l *slog.Logger, database string, commandSpec wirebson.RawDocument, cursorID int64) (outCursorPage wirebson.RawDocument, outContinuation wirebson.RawDocument, outPersistConnection bool, outCursorID int64, err error) {
+//	[Comment] documentdb_api.list_collections_cursor_first_page_19113.
+func ListCollectionsCursorFirstPage(ctx context.Context, conn *pgx.Conn, l *slog.Logger, database string, commandSpec wirebson.RawDocument, cursorID int64, cursorPage wirebson.RawDocument, continuation wirebson.RawDocument, persistConnection bool, cursorID int64) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.list_collections_cursor_first_page", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT cursorpage::bytea, continuation::bytea, persistconnection, cursorid FROM documentdb_api.list_collections_cursor_first_page($1, $2::bytea, $3)", database, commandSpec, cursorID)
-	if err = row.Scan(&outCursorPage, &outContinuation, &outPersistConnection, &outCursorID); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_api.list_collections_cursor_first_page([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.list_collections_cursor_first_page", l)
 	}
 	return
@@ -352,13 +353,13 @@ func ListCollectionsCursorFirstPage(ctx context.Context, conn *pgx.Conn, l *slog
 
 // ListIndexesCursorFirstPage is a wrapper for
 //
-//	documentdb_api.list_indexes_cursor_first_page(database text, commandspec documentdb_core.bson, cursorid bigint DEFAULT 0, OUT cursorpage documentdb_core.bson, OUT continuation documentdb_core.bson, OUT persistconnection boolean, OUT cursorid bigint).
-func ListIndexesCursorFirstPage(ctx context.Context, conn *pgx.Conn, l *slog.Logger, database string, commandSpec wirebson.RawDocument, cursorID int64) (outCursorPage wirebson.RawDocument, outContinuation wirebson.RawDocument, outPersistConnection bool, outCursorID int64, err error) {
+//	[Comment] documentdb_api.list_indexes_cursor_first_page_19114.
+func ListIndexesCursorFirstPage(ctx context.Context, conn *pgx.Conn, l *slog.Logger, database string, commandSpec wirebson.RawDocument, cursorID int64, cursorPage wirebson.RawDocument, continuation wirebson.RawDocument, persistConnection bool, cursorID int64) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.list_indexes_cursor_first_page", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT cursorpage::bytea, continuation::bytea, persistconnection, cursorid FROM documentdb_api.list_indexes_cursor_first_page($1, $2::bytea, $3)", database, commandSpec, cursorID)
-	if err = row.Scan(&outCursorPage, &outContinuation, &outPersistConnection, &outCursorID); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_api.list_indexes_cursor_first_page([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.list_indexes_cursor_first_page", l)
 	}
 	return
@@ -366,13 +367,13 @@ func ListIndexesCursorFirstPage(ctx context.Context, conn *pgx.Conn, l *slog.Log
 
 // RenameCollection is a wrapper for
 //
-//	documentdb_api.rename_collection(p_database_name text, p_collection_name text, p_target_name text, p_drop_target boolean DEFAULT false, OUT rename_collection void).
-func RenameCollection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, collectionName string, targetName string, dropTarget bool) (outRenameCollection struct{}, err error) {
+//	[Comment] documentdb_api.rename_collection_19084.
+func RenameCollection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, collectionName string, targetName string, dropTarget bool) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.rename_collection", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT rename_collection FROM documentdb_api.rename_collection($1, $2, $3, $4)", databaseName, collectionName, targetName, dropTarget)
-	if err = row.Scan(&outRenameCollection); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_api.rename_collection([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.rename_collection", l)
 	}
 	return
@@ -380,13 +381,13 @@ func RenameCollection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, datab
 
 // ReshardCollection is a wrapper for
 //
-//	documentdb_api.reshard_collection(p_shard_key_spec documentdb_core.bson, OUT reshard_collection void).
-func ReshardCollection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, shardKeySpec wirebson.RawDocument) (outReshardCollection struct{}, err error) {
+//	[Comment] documentdb_api.reshard_collection_19078.
+func ReshardCollection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, shardKeySpec wirebson.RawDocument) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.reshard_collection", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT reshard_collection FROM documentdb_api.reshard_collection($1::bytea)", shardKeySpec)
-	if err = row.Scan(&outReshardCollection); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_api.reshard_collection([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.reshard_collection", l)
 	}
 	return
@@ -394,27 +395,27 @@ func ReshardCollection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, shar
 
 // ShardCollection is a wrapper for
 //
-//	documentdb_api.shard_collection(p_database_name text, p_collection_name text, p_shard_key documentdb_core.bson, p_is_reshard boolean DEFAULT true, OUT shard_collection void).
-func ShardCollection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, collectionName string, shardKey wirebson.RawDocument, isReshard bool) (outShardCollection struct{}, err error) {
+//	[Comment] documentdb_api.shard_collection_19076.
+func ShardCollection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, collectionName string, shardKey wirebson.RawDocument, isReshard bool) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.shard_collection", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT shard_collection FROM documentdb_api.shard_collection($1, $2, $3::bytea, $4)", databaseName, collectionName, shardKey, isReshard)
-	if err = row.Scan(&outShardCollection); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_api.shard_collection([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.shard_collection", l)
 	}
 	return
 }
 
-// ShardCollection1 is a wrapper for
+// ShardCollection19077 is a wrapper for
 //
-//	documentdb_api.shard_collection(p_shard_key_spec documentdb_core.bson, OUT shard_collection void).
-func ShardCollection1(ctx context.Context, conn *pgx.Conn, l *slog.Logger, shardKeySpec wirebson.RawDocument) (outShardCollection struct{}, err error) {
+//	[Comment] documentdb_api.shard_collection_19077.
+func ShardCollection19077(ctx context.Context, conn *pgx.Conn, l *slog.Logger, shardKeySpec wirebson.RawDocument) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.shard_collection", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT shard_collection FROM documentdb_api.shard_collection($1::bytea)", shardKeySpec)
-	if err = row.Scan(&outShardCollection); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_api.shard_collection([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.shard_collection", l)
 	}
 	return
@@ -422,13 +423,13 @@ func ShardCollection1(ctx context.Context, conn *pgx.Conn, l *slog.Logger, shard
 
 // UnshardCollection is a wrapper for
 //
-//	documentdb_api.unshard_collection(p_shard_key_spec documentdb_core.bson, OUT unshard_collection void).
-func UnshardCollection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, shardKeySpec wirebson.RawDocument) (outUnshardCollection struct{}, err error) {
+//	[Comment] documentdb_api.unshard_collection_19079.
+func UnshardCollection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, shardKeySpec wirebson.RawDocument) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.unshard_collection", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT unshard_collection FROM documentdb_api.unshard_collection($1::bytea)", shardKeySpec)
-	if err = row.Scan(&outUnshardCollection); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_api.unshard_collection([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.unshard_collection", l)
 	}
 	return
@@ -436,13 +437,13 @@ func UnshardCollection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, shar
 
 // Update is a wrapper for
 //
-//	documentdb_api.update(p_database_name text, p_update documentdb_core.bson, p_insert_documents documentdb_core.bsonsequence DEFAULT NULL, OUT p_result documentdb_core.bson, OUT p_success boolean).
-func Update(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, update wirebson.RawDocument, insertDocuments []byte) (outResult wirebson.RawDocument, outSuccess bool, err error) {
+//	[Comment] documentdb_api.update_19103.
+func Update(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, update wirebson.RawDocument, insertDocuments []byte, transactionId string, result wirebson.RawDocument, success bool) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.update", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT p_result::bytea, p_success FROM documentdb_api.update($1, $2::bytea, $3::bytea)", databaseName, update, insertDocuments)
-	if err = row.Scan(&outResult, &outSuccess); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_api.update([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.update", l)
 	}
 	return
@@ -450,13 +451,13 @@ func Update(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName st
 
 // UpdateUser is a wrapper for
 //
-//	documentdb_api.update_user(p_spec documentdb_core.bson, OUT update_user documentdb_core.bson).
-func UpdateUser(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebson.RawDocument) (outUpdateUser wirebson.RawDocument, err error) {
+//	[Comment] documentdb_api.update_user_19122.
+func UpdateUser(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebson.RawDocument) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.update_user", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT update_user::bytea FROM documentdb_api.update_user($1::bytea)", spec)
-	if err = row.Scan(&outUpdateUser); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_api.update_user([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.update_user", l)
 	}
 	return
@@ -464,13 +465,13 @@ func UpdateUser(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebs
 
 // UsersInfo is a wrapper for
 //
-//	documentdb_api.users_info(p_spec documentdb_core.bson, OUT users_info documentdb_core.bson).
-func UsersInfo(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebson.RawDocument) (outUsersInfo wirebson.RawDocument, err error) {
+//	[Comment] documentdb_api.users_info_19123.
+func UsersInfo(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebson.RawDocument) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.users_info", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT users_info::bytea FROM documentdb_api.users_info($1::bytea)", spec)
-	if err = row.Scan(&outUsersInfo); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_api.users_info([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.users_info", l)
 	}
 	return
@@ -478,13 +479,13 @@ func UsersInfo(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebso
 
 // Validate is a wrapper for
 //
-//	documentdb_api.validate(database text, validatespec documentdb_core.bson, OUT document documentdb_core.bson).
-func Validate(ctx context.Context, conn *pgx.Conn, l *slog.Logger, database string, validateSpec wirebson.RawDocument) (outDocument wirebson.RawDocument, err error) {
+//	[Comment] documentdb_api.validate_19140.
+func Validate(ctx context.Context, conn *pgx.Conn, l *slog.Logger, database string, validateSpec wirebson.RawDocument, document wirebson.RawDocument) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.validate", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT document::bytea FROM documentdb_api.validate($1, $2::bytea)", database, validateSpec)
-	if err = row.Scan(&outDocument); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_api.validate([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.validate", l)
 	}
 	return

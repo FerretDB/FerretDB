@@ -5,6 +5,7 @@ package documentdb_core
 import (
 	"context"
 	"log/slog"
+	"time"
 
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/jackc/pgx/v5"
@@ -16,13 +17,13 @@ import (
 
 // BsonCompare is a wrapper for
 //
-//	documentdb_core.bson_compare(OUT bson_compare integer).
-func BsonCompare(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonCompare struct{}, err error) {
+//	[Comment] documentdb_core.bson_compare_16428.
+func BsonCompare(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ wirebson.RawDocument, _ wirebson.RawDocument) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bson_compare", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bson_compare FROM documentdb_core.bson_compare()")
-	if err = row.Scan(&outBsonCompare); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bson_compare([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bson_compare", l)
 	}
 	return
@@ -30,13 +31,13 @@ func BsonCompare(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonCo
 
 // BsonEqual is a wrapper for
 //
-//	documentdb_core.bson_equal(OUT bson_equal boolean).
-func BsonEqual(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonEqual bool, err error) {
+//	[Comment] documentdb_core.bson_equal_16429.
+func BsonEqual(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ wirebson.RawDocument, _ wirebson.RawDocument) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bson_equal", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bson_equal FROM documentdb_core.bson_equal()")
-	if err = row.Scan(&outBsonEqual); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bson_equal([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bson_equal", l)
 	}
 	return
@@ -44,13 +45,13 @@ func BsonEqual(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonEqua
 
 // BsonFromBytea is a wrapper for
 //
-//	documentdb_core.bson_from_bytea(OUT bson_from_bytea documentdb_core.bson).
-func BsonFromBytea(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonFromBytea wirebson.RawDocument, err error) {
+//	[Comment] documentdb_core.bson_from_bytea_16401.
+func BsonFromBytea(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ struct{}) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bson_from_bytea", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bson_from_bytea::bytea FROM documentdb_core.bson_from_bytea()")
-	if err = row.Scan(&outBsonFromBytea); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bson_from_bytea([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bson_from_bytea", l)
 	}
 	return
@@ -58,13 +59,13 @@ func BsonFromBytea(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBson
 
 // BsonGetValue is a wrapper for
 //
-//	documentdb_core.bson_get_value(OUT bson_get_value documentdb_core.bson).
-func BsonGetValue(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonGetValue wirebson.RawDocument, err error) {
+//	[Comment] documentdb_core.bson_get_value_16399.
+func BsonGetValue(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ wirebson.RawDocument, _ string) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bson_get_value", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bson_get_value::bytea FROM documentdb_core.bson_get_value()")
-	if err = row.Scan(&outBsonGetValue); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bson_get_value([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bson_get_value", l)
 	}
 	return
@@ -72,13 +73,13 @@ func BsonGetValue(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonG
 
 // BsonGetValueText is a wrapper for
 //
-//	documentdb_core.bson_get_value_text(OUT bson_get_value_text text).
-func BsonGetValueText(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonGetValueText string, err error) {
+//	[Comment] documentdb_core.bson_get_value_text_16400.
+func BsonGetValueText(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ wirebson.RawDocument, _ string) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bson_get_value_text", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bson_get_value_text FROM documentdb_core.bson_get_value_text()")
-	if err = row.Scan(&outBsonGetValueText); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bson_get_value_text([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bson_get_value_text", l)
 	}
 	return
@@ -86,13 +87,13 @@ func BsonGetValueText(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outB
 
 // BsonGt is a wrapper for
 //
-//	documentdb_core.bson_gt(OUT bson_gt boolean).
-func BsonGt(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonGt bool, err error) {
+//	[Comment] documentdb_core.bson_gt_16433.
+func BsonGt(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ wirebson.RawDocument, _ wirebson.RawDocument) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bson_gt", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bson_gt FROM documentdb_core.bson_gt()")
-	if err = row.Scan(&outBsonGt); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bson_gt([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bson_gt", l)
 	}
 	return
@@ -100,13 +101,13 @@ func BsonGt(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonGt bool
 
 // BsonGte is a wrapper for
 //
-//	documentdb_core.bson_gte(OUT bson_gte boolean).
-func BsonGte(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonGte bool, err error) {
+//	[Comment] documentdb_core.bson_gte_16434.
+func BsonGte(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ wirebson.RawDocument, _ wirebson.RawDocument) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bson_gte", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bson_gte FROM documentdb_core.bson_gte()")
-	if err = row.Scan(&outBsonGte); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bson_gte([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bson_gte", l)
 	}
 	return
@@ -114,13 +115,13 @@ func BsonGte(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonGte bo
 
 // BsonHashInt4 is a wrapper for
 //
-//	documentdb_core.bson_hash_int4(OUT bson_hash_int4 integer).
-func BsonHashInt4(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonHashInt4 struct{}, err error) {
+//	[Comment] documentdb_core.bson_hash_int4_16468.
+func BsonHashInt4(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ wirebson.RawDocument) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bson_hash_int4", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bson_hash_int4 FROM documentdb_core.bson_hash_int4()")
-	if err = row.Scan(&outBsonHashInt4); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bson_hash_int4([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bson_hash_int4", l)
 	}
 	return
@@ -128,13 +129,13 @@ func BsonHashInt4(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonH
 
 // BsonHashInt8 is a wrapper for
 //
-//	documentdb_core.bson_hash_int8(OUT bson_hash_int8 bigint).
-func BsonHashInt8(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonHashInt8 int64, err error) {
+//	[Comment] documentdb_core.bson_hash_int8_16469.
+func BsonHashInt8(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ wirebson.RawDocument, _ int64) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bson_hash_int8", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bson_hash_int8 FROM documentdb_core.bson_hash_int8()")
-	if err = row.Scan(&outBsonHashInt8); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bson_hash_int8([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bson_hash_int8", l)
 	}
 	return
@@ -142,13 +143,13 @@ func BsonHashInt8(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonH
 
 // BsonHexToBson is a wrapper for
 //
-//	documentdb_core.bson_hex_to_bson(OUT bson_hex_to_bson documentdb_core.bson).
-func BsonHexToBson(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonHexToBson wirebson.RawDocument, err error) {
+//	[Comment] documentdb_core.bson_hex_to_bson_16404.
+func BsonHexToBson(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ struct{}) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bson_hex_to_bson", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bson_hex_to_bson::bytea FROM documentdb_core.bson_hex_to_bson()")
-	if err = row.Scan(&outBsonHexToBson); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bson_hex_to_bson([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bson_hex_to_bson", l)
 	}
 	return
@@ -156,13 +157,13 @@ func BsonHexToBson(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBson
 
 // BsonIn is a wrapper for
 //
-//	documentdb_core.bson_in(OUT bson_in documentdb_core.bson).
-func BsonIn(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonIn wirebson.RawDocument, err error) {
+//	[Comment] documentdb_core.bson_in_16387.
+func BsonIn(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ struct{}) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bson_in", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bson_in::bytea FROM documentdb_core.bson_in()")
-	if err = row.Scan(&outBsonIn); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bson_in([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bson_in", l)
 	}
 	return
@@ -170,13 +171,13 @@ func BsonIn(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonIn wire
 
 // BsonInRangeInterval is a wrapper for
 //
-//	documentdb_core.bson_in_range_interval(OUT bson_in_range_interval boolean).
-func BsonInRangeInterval(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonInRangeInterval bool, err error) {
+//	[Comment] documentdb_core.bson_in_range_interval_16437.
+func BsonInRangeInterval(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ wirebson.RawDocument, _ wirebson.RawDocument, _ struct{}, _ bool, _ bool) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bson_in_range_interval", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bson_in_range_interval FROM documentdb_core.bson_in_range_interval()")
-	if err = row.Scan(&outBsonInRangeInterval); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bson_in_range_interval([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bson_in_range_interval", l)
 	}
 	return
@@ -184,13 +185,13 @@ func BsonInRangeInterval(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (o
 
 // BsonInRangeNumeric is a wrapper for
 //
-//	documentdb_core.bson_in_range_numeric(OUT bson_in_range_numeric boolean).
-func BsonInRangeNumeric(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonInRangeNumeric bool, err error) {
+//	[Comment] documentdb_core.bson_in_range_numeric_16436.
+func BsonInRangeNumeric(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ wirebson.RawDocument, _ wirebson.RawDocument, _ wirebson.RawDocument, _ bool, _ bool) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bson_in_range_numeric", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bson_in_range_numeric FROM documentdb_core.bson_in_range_numeric()")
-	if err = row.Scan(&outBsonInRangeNumeric); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bson_in_range_numeric([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bson_in_range_numeric", l)
 	}
 	return
@@ -198,13 +199,13 @@ func BsonInRangeNumeric(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (ou
 
 // BsonJsonToBson is a wrapper for
 //
-//	documentdb_core.bson_json_to_bson(OUT bson_json_to_bson documentdb_core.bson).
-func BsonJsonToBson(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonJsonToBson wirebson.RawDocument, err error) {
+//	[Comment] documentdb_core.bson_json_to_bson_16405.
+func BsonJsonToBson(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ string) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bson_json_to_bson", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bson_json_to_bson::bytea FROM documentdb_core.bson_json_to_bson()")
-	if err = row.Scan(&outBsonJsonToBson); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bson_json_to_bson([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bson_json_to_bson", l)
 	}
 	return
@@ -212,13 +213,13 @@ func BsonJsonToBson(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBso
 
 // BsonLt is a wrapper for
 //
-//	documentdb_core.bson_lt(OUT bson_lt boolean).
-func BsonLt(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonLt bool, err error) {
+//	[Comment] documentdb_core.bson_lt_16431.
+func BsonLt(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ wirebson.RawDocument, _ wirebson.RawDocument) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bson_lt", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bson_lt FROM documentdb_core.bson_lt()")
-	if err = row.Scan(&outBsonLt); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bson_lt([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bson_lt", l)
 	}
 	return
@@ -226,13 +227,13 @@ func BsonLt(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonLt bool
 
 // BsonLte is a wrapper for
 //
-//	documentdb_core.bson_lte(OUT bson_lte boolean).
-func BsonLte(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonLte bool, err error) {
+//	[Comment] documentdb_core.bson_lte_16432.
+func BsonLte(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ wirebson.RawDocument, _ wirebson.RawDocument) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bson_lte", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bson_lte FROM documentdb_core.bson_lte()")
-	if err = row.Scan(&outBsonLte); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bson_lte([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bson_lte", l)
 	}
 	return
@@ -240,13 +241,13 @@ func BsonLte(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonLte bo
 
 // BsonNotEqual is a wrapper for
 //
-//	documentdb_core.bson_not_equal(OUT bson_not_equal boolean).
-func BsonNotEqual(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonNotEqual bool, err error) {
+//	[Comment] documentdb_core.bson_not_equal_16430.
+func BsonNotEqual(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ wirebson.RawDocument, _ wirebson.RawDocument) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bson_not_equal", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bson_not_equal FROM documentdb_core.bson_not_equal()")
-	if err = row.Scan(&outBsonNotEqual); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bson_not_equal([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bson_not_equal", l)
 	}
 	return
@@ -254,13 +255,13 @@ func BsonNotEqual(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonN
 
 // BsonObjectKeys is a wrapper for
 //
-//	documentdb_core.bson_object_keys(OUT bson_object_keys text).
-func BsonObjectKeys(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonObjectKeys string, err error) {
+//	[Comment] documentdb_core.bson_object_keys_16408.
+func BsonObjectKeys(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ wirebson.RawDocument) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bson_object_keys", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bson_object_keys FROM documentdb_core.bson_object_keys()")
-	if err = row.Scan(&outBsonObjectKeys); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bson_object_keys([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bson_object_keys", l)
 	}
 	return
@@ -268,13 +269,13 @@ func BsonObjectKeys(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBso
 
 // BsonOperatorSelectivity is a wrapper for
 //
-//	documentdb_core.bson_operator_selectivity(OUT bson_operator_selectivity double precision).
-func BsonOperatorSelectivity(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonOperatorSelectivity float64, err error) {
+//	[Comment] documentdb_core.bson_operator_selectivity_16425.
+func BsonOperatorSelectivity(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ struct{}, _ struct{}, _ struct{}, _ struct{}) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bson_operator_selectivity", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bson_operator_selectivity FROM documentdb_core.bson_operator_selectivity()")
-	if err = row.Scan(&outBsonOperatorSelectivity); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bson_operator_selectivity([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bson_operator_selectivity", l)
 	}
 	return
@@ -282,13 +283,13 @@ func BsonOperatorSelectivity(ctx context.Context, conn *pgx.Conn, l *slog.Logger
 
 // BsonOut is a wrapper for
 //
-//	documentdb_core.bson_out(OUT bson_out cstring).
-func BsonOut(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonOut struct{}, err error) {
+//	[Comment] documentdb_core.bson_out_16388.
+func BsonOut(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ wirebson.RawDocument) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bson_out", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bson_out FROM documentdb_core.bson_out()")
-	if err = row.Scan(&outBsonOut); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bson_out([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bson_out", l)
 	}
 	return
@@ -296,13 +297,13 @@ func BsonOut(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonOut st
 
 // BsonRecv is a wrapper for
 //
-//	documentdb_core.bson_recv(OUT bson_recv documentdb_core.bson).
-func BsonRecv(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonRecv wirebson.RawDocument, err error) {
+//	[Comment] documentdb_core.bson_recv_16390.
+func BsonRecv(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ struct{}) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bson_recv", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bson_recv::bytea FROM documentdb_core.bson_recv()")
-	if err = row.Scan(&outBsonRecv); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bson_recv([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bson_recv", l)
 	}
 	return
@@ -310,13 +311,13 @@ func BsonRecv(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonRecv 
 
 // BsonRepathAndBuild is a wrapper for
 //
-//	documentdb_core.bson_repath_and_build(OUT bson_repath_and_build documentdb_core.bson).
-func BsonRepathAndBuild(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonRepathAndBuild wirebson.RawDocument, err error) {
+//	[Comment] documentdb_core.bson_repath_and_build_16409.
+func BsonRepathAndBuild(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ struct{}) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bson_repath_and_build", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bson_repath_and_build::bytea FROM documentdb_core.bson_repath_and_build()")
-	if err = row.Scan(&outBsonRepathAndBuild); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bson_repath_and_build([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bson_repath_and_build", l)
 	}
 	return
@@ -324,13 +325,13 @@ func BsonRepathAndBuild(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (ou
 
 // BsonSend is a wrapper for
 //
-//	documentdb_core.bson_send(OUT bson_send bytea).
-func BsonSend(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonSend struct{}, err error) {
+//	[Comment] documentdb_core.bson_send_16389.
+func BsonSend(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ wirebson.RawDocument) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bson_send", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bson_send FROM documentdb_core.bson_send()")
-	if err = row.Scan(&outBsonSend); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bson_send([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bson_send", l)
 	}
 	return
@@ -338,13 +339,13 @@ func BsonSend(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonSend 
 
 // BsonToBsonHex is a wrapper for
 //
-//	documentdb_core.bson_to_bson_hex(OUT bson_to_bson_hex cstring).
-func BsonToBsonHex(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonToBsonHex struct{}, err error) {
+//	[Comment] documentdb_core.bson_to_bson_hex_16403.
+func BsonToBsonHex(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ wirebson.RawDocument) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bson_to_bson_hex", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bson_to_bson_hex FROM documentdb_core.bson_to_bson_hex()")
-	if err = row.Scan(&outBsonToBsonHex); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bson_to_bson_hex([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bson_to_bson_hex", l)
 	}
 	return
@@ -352,13 +353,13 @@ func BsonToBsonHex(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBson
 
 // BsonToBsonsequence is a wrapper for
 //
-//	documentdb_core.bson_to_bsonsequence(OUT bson_to_bsonsequence documentdb_core.bsonsequence).
-func BsonToBsonsequence(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonToBsonsequence []byte, err error) {
+//	[Comment] documentdb_core.bson_to_bsonsequence_16414.
+func BsonToBsonsequence(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ wirebson.RawDocument) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bson_to_bsonsequence", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bson_to_bsonsequence::bytea FROM documentdb_core.bson_to_bsonsequence()")
-	if err = row.Scan(&outBsonToBsonsequence); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bson_to_bsonsequence([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bson_to_bsonsequence", l)
 	}
 	return
@@ -366,13 +367,13 @@ func BsonToBsonsequence(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (ou
 
 // BsonToBytea is a wrapper for
 //
-//	documentdb_core.bson_to_bytea(OUT bson_to_bytea bytea).
-func BsonToBytea(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonToBytea struct{}, err error) {
+//	[Comment] documentdb_core.bson_to_bytea_16402.
+func BsonToBytea(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ wirebson.RawDocument) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bson_to_bytea", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bson_to_bytea FROM documentdb_core.bson_to_bytea()")
-	if err = row.Scan(&outBsonToBytea); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bson_to_bytea([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bson_to_bytea", l)
 	}
 	return
@@ -380,13 +381,13 @@ func BsonToBytea(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonTo
 
 // BsonToJsonString is a wrapper for
 //
-//	documentdb_core.bson_to_json_string(OUT bson_to_json_string cstring).
-func BsonToJsonString(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonToJsonString struct{}, err error) {
+//	[Comment] documentdb_core.bson_to_json_string_16406.
+func BsonToJsonString(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ wirebson.RawDocument) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bson_to_json_string", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bson_to_json_string FROM documentdb_core.bson_to_json_string()")
-	if err = row.Scan(&outBsonToJsonString); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bson_to_json_string([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bson_to_json_string", l)
 	}
 	return
@@ -394,13 +395,13 @@ func BsonToJsonString(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outB
 
 // BsonTypanalyze is a wrapper for
 //
-//	documentdb_core.bson_typanalyze(OUT bson_typanalyze boolean).
-func BsonTypanalyze(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonTypanalyze bool, err error) {
+//	[Comment] documentdb_core.bson_typanalyze_16392.
+func BsonTypanalyze(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ struct{}) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bson_typanalyze", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bson_typanalyze FROM documentdb_core.bson_typanalyze()")
-	if err = row.Scan(&outBsonTypanalyze); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bson_typanalyze([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bson_typanalyze", l)
 	}
 	return
@@ -408,13 +409,13 @@ func BsonTypanalyze(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBso
 
 // BsonUniqueIndexEqual is a wrapper for
 //
-//	documentdb_core.bson_unique_index_equal(OUT bson_unique_index_equal boolean).
-func BsonUniqueIndexEqual(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonUniqueIndexEqual bool, err error) {
+//	[Comment] documentdb_core.bson_unique_index_equal_16435.
+func BsonUniqueIndexEqual(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ wirebson.RawDocument, _ wirebson.RawDocument) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bson_unique_index_equal", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bson_unique_index_equal FROM documentdb_core.bson_unique_index_equal()")
-	if err = row.Scan(&outBsonUniqueIndexEqual); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bson_unique_index_equal([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bson_unique_index_equal", l)
 	}
 	return
@@ -422,27 +423,27 @@ func BsonUniqueIndexEqual(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (
 
 // BsonqueryCompare is a wrapper for
 //
-//	documentdb_core.bsonquery_compare(OUT bsonquery_compare integer).
-func BsonqueryCompare(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonqueryCompare struct{}, err error) {
+//	[Comment] documentdb_core.bsonquery_compare_16444.
+func BsonqueryCompare(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ struct{}, _ struct{}) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bsonquery_compare", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bsonquery_compare FROM documentdb_core.bsonquery_compare()")
-	if err = row.Scan(&outBsonqueryCompare); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bsonquery_compare([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bsonquery_compare", l)
 	}
 	return
 }
 
-// BsonqueryCompare1 is a wrapper for
+// BsonqueryCompare16445 is a wrapper for
 //
-//	documentdb_core.bsonquery_compare(OUT bsonquery_compare integer).
-func BsonqueryCompare1(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonqueryCompare struct{}, err error) {
+//	[Comment] documentdb_core.bsonquery_compare_16445.
+func BsonqueryCompare16445(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ wirebson.RawDocument, _ struct{}) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bsonquery_compare", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bsonquery_compare FROM documentdb_core.bsonquery_compare()")
-	if err = row.Scan(&outBsonqueryCompare); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bsonquery_compare([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bsonquery_compare", l)
 	}
 	return
@@ -450,13 +451,13 @@ func BsonqueryCompare1(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (out
 
 // BsonqueryEqual is a wrapper for
 //
-//	documentdb_core.bsonquery_equal(OUT bsonquery_equal boolean).
-func BsonqueryEqual(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonqueryEqual bool, err error) {
+//	[Comment] documentdb_core.bsonquery_equal_16446.
+func BsonqueryEqual(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ struct{}, _ struct{}) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bsonquery_equal", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bsonquery_equal FROM documentdb_core.bsonquery_equal()")
-	if err = row.Scan(&outBsonqueryEqual); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bsonquery_equal([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bsonquery_equal", l)
 	}
 	return
@@ -464,13 +465,13 @@ func BsonqueryEqual(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBso
 
 // BsonqueryGt is a wrapper for
 //
-//	documentdb_core.bsonquery_gt(OUT bsonquery_gt boolean).
-func BsonqueryGt(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonqueryGt bool, err error) {
+//	[Comment] documentdb_core.bsonquery_gt_16450.
+func BsonqueryGt(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ struct{}, _ struct{}) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bsonquery_gt", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bsonquery_gt FROM documentdb_core.bsonquery_gt()")
-	if err = row.Scan(&outBsonqueryGt); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bsonquery_gt([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bsonquery_gt", l)
 	}
 	return
@@ -478,13 +479,13 @@ func BsonqueryGt(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonqu
 
 // BsonqueryGte is a wrapper for
 //
-//	documentdb_core.bsonquery_gte(OUT bsonquery_gte boolean).
-func BsonqueryGte(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonqueryGte bool, err error) {
+//	[Comment] documentdb_core.bsonquery_gte_16451.
+func BsonqueryGte(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ struct{}, _ struct{}) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bsonquery_gte", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bsonquery_gte FROM documentdb_core.bsonquery_gte()")
-	if err = row.Scan(&outBsonqueryGte); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bsonquery_gte([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bsonquery_gte", l)
 	}
 	return
@@ -492,13 +493,13 @@ func BsonqueryGte(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonq
 
 // BsonqueryIn is a wrapper for
 //
-//	documentdb_core.bsonquery_in(OUT bsonquery_in documentdb_core.bsonquery).
-func BsonqueryIn(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonqueryIn struct{}, err error) {
+//	[Comment] documentdb_core.bsonquery_in_16420.
+func BsonqueryIn(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ struct{}) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bsonquery_in", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bsonquery_in FROM documentdb_core.bsonquery_in()")
-	if err = row.Scan(&outBsonqueryIn); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bsonquery_in([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bsonquery_in", l)
 	}
 	return
@@ -506,13 +507,13 @@ func BsonqueryIn(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonqu
 
 // BsonqueryLt is a wrapper for
 //
-//	documentdb_core.bsonquery_lt(OUT bsonquery_lt boolean).
-func BsonqueryLt(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonqueryLt bool, err error) {
+//	[Comment] documentdb_core.bsonquery_lt_16448.
+func BsonqueryLt(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ struct{}, _ struct{}) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bsonquery_lt", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bsonquery_lt FROM documentdb_core.bsonquery_lt()")
-	if err = row.Scan(&outBsonqueryLt); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bsonquery_lt([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bsonquery_lt", l)
 	}
 	return
@@ -520,13 +521,13 @@ func BsonqueryLt(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonqu
 
 // BsonqueryLte is a wrapper for
 //
-//	documentdb_core.bsonquery_lte(OUT bsonquery_lte boolean).
-func BsonqueryLte(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonqueryLte bool, err error) {
+//	[Comment] documentdb_core.bsonquery_lte_16449.
+func BsonqueryLte(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ struct{}, _ struct{}) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bsonquery_lte", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bsonquery_lte FROM documentdb_core.bsonquery_lte()")
-	if err = row.Scan(&outBsonqueryLte); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bsonquery_lte([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bsonquery_lte", l)
 	}
 	return
@@ -534,13 +535,13 @@ func BsonqueryLte(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonq
 
 // BsonqueryNotEqual is a wrapper for
 //
-//	documentdb_core.bsonquery_not_equal(OUT bsonquery_not_equal boolean).
-func BsonqueryNotEqual(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonqueryNotEqual bool, err error) {
+//	[Comment] documentdb_core.bsonquery_not_equal_16447.
+func BsonqueryNotEqual(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ struct{}, _ struct{}) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bsonquery_not_equal", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bsonquery_not_equal FROM documentdb_core.bsonquery_not_equal()")
-	if err = row.Scan(&outBsonqueryNotEqual); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bsonquery_not_equal([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bsonquery_not_equal", l)
 	}
 	return
@@ -548,13 +549,13 @@ func BsonqueryNotEqual(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (out
 
 // BsonqueryOut is a wrapper for
 //
-//	documentdb_core.bsonquery_out(OUT bsonquery_out cstring).
-func BsonqueryOut(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonqueryOut struct{}, err error) {
+//	[Comment] documentdb_core.bsonquery_out_16421.
+func BsonqueryOut(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ struct{}) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bsonquery_out", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bsonquery_out FROM documentdb_core.bsonquery_out()")
-	if err = row.Scan(&outBsonqueryOut); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bsonquery_out([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bsonquery_out", l)
 	}
 	return
@@ -562,13 +563,13 @@ func BsonqueryOut(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonq
 
 // BsonqueryRecv is a wrapper for
 //
-//	documentdb_core.bsonquery_recv(OUT bsonquery_recv documentdb_core.bsonquery).
-func BsonqueryRecv(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonqueryRecv struct{}, err error) {
+//	[Comment] documentdb_core.bsonquery_recv_16423.
+func BsonqueryRecv(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ struct{}) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bsonquery_recv", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bsonquery_recv FROM documentdb_core.bsonquery_recv()")
-	if err = row.Scan(&outBsonqueryRecv); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bsonquery_recv([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bsonquery_recv", l)
 	}
 	return
@@ -576,13 +577,13 @@ func BsonqueryRecv(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBson
 
 // BsonquerySend is a wrapper for
 //
-//	documentdb_core.bsonquery_send(OUT bsonquery_send bytea).
-func BsonquerySend(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonquerySend struct{}, err error) {
+//	[Comment] documentdb_core.bsonquery_send_16422.
+func BsonquerySend(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ struct{}) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bsonquery_send", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bsonquery_send FROM documentdb_core.bsonquery_send()")
-	if err = row.Scan(&outBsonquerySend); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bsonquery_send([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bsonquery_send", l)
 	}
 	return
@@ -590,13 +591,13 @@ func BsonquerySend(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBson
 
 // BsonsequenceFromBytea is a wrapper for
 //
-//	documentdb_core.bsonsequence_from_bytea(OUT bsonsequence_from_bytea documentdb_core.bsonsequence).
-func BsonsequenceFromBytea(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonsequenceFromBytea []byte, err error) {
+//	[Comment] documentdb_core.bsonsequence_from_bytea_16412.
+func BsonsequenceFromBytea(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ struct{}) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bsonsequence_from_bytea", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bsonsequence_from_bytea::bytea FROM documentdb_core.bsonsequence_from_bytea()")
-	if err = row.Scan(&outBsonsequenceFromBytea); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bsonsequence_from_bytea([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bsonsequence_from_bytea", l)
 	}
 	return
@@ -604,13 +605,13 @@ func BsonsequenceFromBytea(ctx context.Context, conn *pgx.Conn, l *slog.Logger) 
 
 // BsonsequenceGetBson is a wrapper for
 //
-//	documentdb_core.bsonsequence_get_bson(OUT bsonsequence_get_bson documentdb_core.bson).
-func BsonsequenceGetBson(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonsequenceGetBson wirebson.RawDocument, err error) {
+//	[Comment] documentdb_core.bsonsequence_get_bson_16415.
+func BsonsequenceGetBson(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ []byte) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bsonsequence_get_bson", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bsonsequence_get_bson::bytea FROM documentdb_core.bsonsequence_get_bson()")
-	if err = row.Scan(&outBsonsequenceGetBson); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bsonsequence_get_bson([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bsonsequence_get_bson", l)
 	}
 	return
@@ -618,13 +619,13 @@ func BsonsequenceGetBson(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (o
 
 // BsonsequenceIn is a wrapper for
 //
-//	documentdb_core.bsonsequence_in(OUT bsonsequence_in documentdb_core.bsonsequence).
-func BsonsequenceIn(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonsequenceIn []byte, err error) {
+//	[Comment] documentdb_core.bsonsequence_in_16394.
+func BsonsequenceIn(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ struct{}) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bsonsequence_in", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bsonsequence_in::bytea FROM documentdb_core.bsonsequence_in()")
-	if err = row.Scan(&outBsonsequenceIn); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bsonsequence_in([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bsonsequence_in", l)
 	}
 	return
@@ -632,13 +633,13 @@ func BsonsequenceIn(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBso
 
 // BsonsequenceOut is a wrapper for
 //
-//	documentdb_core.bsonsequence_out(OUT bsonsequence_out cstring).
-func BsonsequenceOut(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonsequenceOut struct{}, err error) {
+//	[Comment] documentdb_core.bsonsequence_out_16395.
+func BsonsequenceOut(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ []byte) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bsonsequence_out", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bsonsequence_out FROM documentdb_core.bsonsequence_out()")
-	if err = row.Scan(&outBsonsequenceOut); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bsonsequence_out([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bsonsequence_out", l)
 	}
 	return
@@ -646,13 +647,13 @@ func BsonsequenceOut(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBs
 
 // BsonsequenceRecv is a wrapper for
 //
-//	documentdb_core.bsonsequence_recv(OUT bsonsequence_recv documentdb_core.bsonsequence).
-func BsonsequenceRecv(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonsequenceRecv []byte, err error) {
+//	[Comment] documentdb_core.bsonsequence_recv_16397.
+func BsonsequenceRecv(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ struct{}) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bsonsequence_recv", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bsonsequence_recv::bytea FROM documentdb_core.bsonsequence_recv()")
-	if err = row.Scan(&outBsonsequenceRecv); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bsonsequence_recv([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bsonsequence_recv", l)
 	}
 	return
@@ -660,13 +661,13 @@ func BsonsequenceRecv(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outB
 
 // BsonsequenceSend is a wrapper for
 //
-//	documentdb_core.bsonsequence_send(OUT bsonsequence_send bytea).
-func BsonsequenceSend(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonsequenceSend struct{}, err error) {
+//	[Comment] documentdb_core.bsonsequence_send_16396.
+func BsonsequenceSend(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ []byte) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bsonsequence_send", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bsonsequence_send FROM documentdb_core.bsonsequence_send()")
-	if err = row.Scan(&outBsonsequenceSend); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bsonsequence_send([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bsonsequence_send", l)
 	}
 	return
@@ -674,13 +675,13 @@ func BsonsequenceSend(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outB
 
 // BsonsequenceToBytea is a wrapper for
 //
-//	documentdb_core.bsonsequence_to_bytea(OUT bsonsequence_to_bytea bytea).
-func BsonsequenceToBytea(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBsonsequenceToBytea struct{}, err error) {
+//	[Comment] documentdb_core.bsonsequence_to_bytea_16413.
+func BsonsequenceToBytea(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ []byte) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.bsonsequence_to_bytea", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bsonsequence_to_bytea FROM documentdb_core.bsonsequence_to_bytea()")
-	if err = row.Scan(&outBsonsequenceToBytea); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.bsonsequence_to_bytea([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.bsonsequence_to_bytea", l)
 	}
 	return
@@ -688,13 +689,13 @@ func BsonsequenceToBytea(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (o
 
 // RowGetBson is a wrapper for
 //
-//	documentdb_core.row_get_bson(OUT row_get_bson documentdb_core.bson).
-func RowGetBson(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outRowGetBson wirebson.RawDocument, err error) {
+//	[Comment] documentdb_core.row_get_bson_16407.
+func RowGetBson(ctx context.Context, conn *pgx.Conn, l *slog.Logger, _ struct{}) ([Returns], err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_core.row_get_bson", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT row_get_bson::bytea FROM documentdb_core.row_get_bson()")
-	if err = row.Scan(&outRowGetBson); err != nil {
+	row := conn.QueryRow(ctx, "SELECT [SQLReturns] FROM documentdb_core.row_get_bson([SQLArgs])", [QueryRowArgs])
+	if err = row.Scan([ScanArgs]); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_core.row_get_bson", l)
 	}
 	return
