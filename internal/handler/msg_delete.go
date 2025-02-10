@@ -16,6 +16,7 @@ package handler
 
 import (
 	"context"
+	"errors"
 
 	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
@@ -60,6 +61,10 @@ func (h *Handler) MsgDelete(connCtx context.Context, msg *wire.OpMsg) (*wire.OpM
 		return err
 	})
 	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return nil, mongoerrors.NewWithArgument(mongoerrors.ErrInterrupted, "operation was interrupted", "delete")
+		}
+
 		return nil, lazyerrors.Error(err)
 	}
 

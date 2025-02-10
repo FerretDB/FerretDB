@@ -16,6 +16,7 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/FerretDB/wire"
@@ -79,6 +80,10 @@ func (h *Handler) MsgDistinct(connCtx context.Context, msg *wire.OpMsg) (*wire.O
 
 	res, err := documentdb_api.DistinctQuery(connCtx, conn.Conn(), h.L, dbName, spec)
 	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return nil, mongoerrors.NewWithArgument(mongoerrors.ErrInterrupted, "operation was interrupted", "distinct")
+		}
+
 		return nil, lazyerrors.Error(err)
 	}
 

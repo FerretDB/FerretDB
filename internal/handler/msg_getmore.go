@@ -16,6 +16,7 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/FerretDB/wire"
@@ -69,6 +70,10 @@ func (h *Handler) MsgGetMore(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 
 	page, err := h.Pool.GetMore(connCtx, dbName, spec, cursorID)
 	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return nil, mongoerrors.NewWithArgument(mongoerrors.ErrInterrupted, "operation was interrupted", "getMore")
+		}
+
 		return nil, lazyerrors.Error(err)
 	}
 

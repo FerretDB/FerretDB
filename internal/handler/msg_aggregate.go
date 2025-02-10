@@ -16,9 +16,11 @@ package handler
 
 import (
 	"context"
+	"errors"
 
 	"github.com/FerretDB/wire"
 
+	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
@@ -55,6 +57,10 @@ func (h *Handler) MsgAggregate(connCtx context.Context, msg *wire.OpMsg) (*wire.
 
 	page, cursorID, err := h.Pool.Aggregate(connCtx, dbName, spec)
 	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return nil, mongoerrors.NewWithArgument(mongoerrors.ErrInterrupted, "operation was interrupted", "aggregate")
+		}
+
 		return nil, lazyerrors.Error(err)
 	}
 

@@ -58,6 +58,7 @@ var extraMongoErrors = map[string]int{
 	"NotImplemented":                238,
 	"MechanismUnavailable":          334,
 	"UnsupportedOpQueryCommand":     352,
+	"Interrupted":                   11601,
 	"Location16979":                 16979,
 	"Location26823":                 26823,
 	"Location40621":                 40621,

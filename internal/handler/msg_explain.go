@@ -121,6 +121,10 @@ func (h *Handler) MsgExplain(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 
 	var dest []byte
 	if err = conn.Conn().QueryRow(connCtx, q, dbName, explainSpec).Scan(&dest); err != nil {
+		if errors.Is(err, context.Canceled) {
+			return nil, mongoerrors.NewWithArgument(mongoerrors.ErrInterrupted, "operation was interrupted", "explain")
+		}
+
 		return nil, lazyerrors.Error(mongoerrors.Make(connCtx, err, "", h.L))
 	}
 
