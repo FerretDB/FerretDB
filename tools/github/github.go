@@ -30,6 +30,22 @@ import (
 	"github.com/rogpeppe/go-internal/lockedfile"
 )
 
+// IssueStatus represents a known issue status.
+type IssueStatus string
+
+// Known issue statuses.
+const (
+	IssueOpen     IssueStatus = "open"
+	IssueClosed   IssueStatus = "closed"
+	IssueNotFound IssueStatus = "not found"
+)
+
+// issue represents a single cached issue.
+type issue struct {
+	RefreshedAt time.Time   `json:"refreshedAt"`
+	Status      IssueStatus `json:"status"`
+}
+
 // cacheFile stores information regarding rate limiting and the status of issues.
 type cacheFile struct {
 	Issues           map[string]issue `json:"issues"`
