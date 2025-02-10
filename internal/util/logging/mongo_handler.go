@@ -70,6 +70,23 @@ func (log MongoLog) Marshal() ([]byte, error) {
 	return bson.MarshalExtJSON(&log, false, false)
 }
 
+// getSeverity maps logging levels to their mongo format counterparts.
+// If provided level is not mapped, its standard format is returned.
+func (h MongoLog) getSeverity(level slog.Level) string {
+	switch level {
+	case slog.LevelDebug:
+		return "D"
+	case slog.LevelInfo:
+		return "I"
+	case slog.LevelWarn:
+		return "W"
+	case slog.LevelError:
+		return "E"
+	default:
+		return level.String()
+	}
+}
+
 // mongoLogFromRecord constructs new MongoLog based on provided slog.Record.
 //
 // When called by slog handler, handler's ga, and opts can be provided.
@@ -216,23 +233,6 @@ func (h *mongoHandler) WithGroup(name string) slog.Handler {
 		testAttrs: h.testAttrs,
 		m:         h.m,
 		out:       h.out,
-	}
-}
-
-// getSeverity maps logging levels to their mongo format counterparts.
-// If provided level is not mapped, its standard format is returned.
-func (h *MongoLog) getSeverity(level slog.Level) string {
-	switch level {
-	case slog.LevelDebug:
-		return "D"
-	case slog.LevelInfo:
-		return "I"
-	case slog.LevelWarn:
-		return "W"
-	case slog.LevelError:
-		return "E"
-	default:
-		return level.String()
 	}
 }
 
