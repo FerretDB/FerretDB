@@ -151,18 +151,34 @@ func TestKillOpNonExistentOp(t *testing.T) {
 	ctx, collection := setup.Setup(t)
 	adminDB := collection.Database().Client().Database("admin")
 
-	var res bson.D
-	err := adminDB.RunCommand(ctx, bson.D{
-		{"killOp", int32(1)},
-		{"op", int64(112233)},
-	}).Decode(&res)
-	require.NoError(t, err)
+	for name, tc := range map[string]struct {
+		opid any
+	}{
+		"Double": {
+			opid: float64(1234),
+		},
+		"Int": {
+			opid: int32(1234),
+		},
+		"Long": {
+			opid: int64(1234),
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			var res bson.D
+			err := adminDB.RunCommand(ctx, bson.D{
+				{"killOp", int32(1)},
+				{"op", tc.opid},
+			}).Decode(&res)
+			require.NoError(t, err)
 
-	expected := bson.D{
-		{"info", "attempting to kill op"},
-		{"ok", float64(1)},
+			expected := bson.D{
+				{"info", "attempting to kill op"},
+				{"ok", float64(1)},
+			}
+			integration.AssertEqualDocuments(t, expected, res)
+		})
 	}
-	integration.AssertEqualDocuments(t, expected, res)
 }
 
 func TestKillOpErrors(t *testing.T) {
