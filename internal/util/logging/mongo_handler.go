@@ -28,6 +28,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
@@ -51,17 +52,17 @@ type mongoHandler struct {
 //
 //nolint:vet // to preserve field ordering
 type mongoLog struct {
-	Timestamp  primitive.DateTime `bson:"t"`
-	Severity   string             `bson:"s"`
-	Components string             `bson:"c"`
-	ID         int                `bson:"id"`
-	Ctx        string             `bson:"ctx"`
-	Svc        string             `bson:"svc,omitempty"`
-	Msg        string             `bson:"msg"`
-	Attr       map[string]any     `bson:"attr,omitempty"`
-	Tags       []string           `bson:"tags,omitempty"`
-	Truncated  map[string]any     `bson:"truncated,omitempty"`
-	Size       map[string]any     `bson:"size,omitempty"`
+	Timestamp primitive.DateTime `bson:"t"`
+	Severity  string             `bson:"s"`
+	Component string             `bson:"c"`
+	ID        int                `bson:"id"`
+	Ctx       string             `bson:"ctx"`
+	Svc       string             `bson:"svc,omitempty"`
+	Msg       string             `bson:"msg"`
+	Attr      map[string]any     `bson:"attr,omitempty"`
+	Tags      []string           `bson:"tags,omitempty"`
+	Truncated map[string]any     `bson:"truncated,omitempty"`
+	Size      map[string]any     `bson:"size,omitempty"`
 }
 
 // newMongoHandler creates a new mongo handler.
@@ -127,6 +128,16 @@ func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
 	}
 
 	logRecord.Attr = attrs(r, h.ga)
+
+	if v, ok := logRecord.Attr[nameKey]; ok {
+		name, ok := v.(string)
+		if !ok {
+			return lazyerrors.Errorf("attribute 'name' should be a string but was %T", v)
+		}
+
+		logRecord.Component = name
+		delete(logRecord.Attr, nameKey)
+	}
 
 	if h.testAttrs != nil && len(logRecord.Attr) > 0 {
 		maps.Copy(h.testAttrs, logRecord.Attr)
