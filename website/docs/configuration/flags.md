@@ -71,8 +71,7 @@ Additionally:
 | `--[no-]metrics-uuid` | Add instance UUID to all metrics                                                | `FERRETDB_METRICS_UUID`    |                                |
 | `--otel-traces-url`   | OpenTelemetry OTLP/HTTP traces endpoint URL (e.g. `http://host:4318/v1/traces`) | `FERRETDB_OTEL_TRACES_URL` | empty (disabled)               |
 | `--telemetry`         | Enable or disable [basic telemetry](telemetry.md)                               | `FERRETDB_TELEMETRY`       | `undecided`                    |
-| `--repl-set-name`     | Replica set name                                                                | `FERRETDB_REPL_SET_NAME`   |                                |
 
-<!-- Do not document `--test-XXX` flags here -->
+<!-- Do not document `--dev-XXX` flags -->
 
 <!-- markdownlint-restore -->
