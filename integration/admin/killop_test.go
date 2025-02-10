@@ -81,10 +81,19 @@ func TestKillOp(t *testing.T) {
 
 				<-startCh
 
-				// command may be killed by killOp command, if killed sometimes it returns
-				// FerretDB error `(InternalError) timeout: context already done: context canceled` or
-				// MongoDB error `(Interrupted) operation was interrupted`
-				_ = collection.Database().RunCommand(ctx, command).Err()
+				// If the command is killed by `killOp`, FerretDB returns an error
+				// only if an SQL query was canceled.
+				// Finding a running operation with `currentOp` then `killOp` on that
+				// operation is very hard in an integration test setup as query runs very fast.
+				// So the condition here is relaxed.
+				if err := collection.Database().RunCommand(ctx, command).Err(); err != nil {
+					expected := mongo.CommandError{
+						Code:    11601,
+						Name:    "Interrupted",
+						Message: "operation was interrupted",
+					}
+					integration.AssertEqualCommandError(t, expected, err)
+				}
 			}()
 		}
 
