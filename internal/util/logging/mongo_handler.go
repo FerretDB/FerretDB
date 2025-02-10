@@ -130,7 +130,9 @@ func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
 	logRecord.Attr = attrs(r, h.ga)
 
 	if v, ok := logRecord.Attr[nameKey]; ok {
-		name, ok := v.(string)
+		var name string
+
+		name, ok = v.(string)
 		if !ok {
 			return lazyerrors.Errorf("attribute 'name' should be a string but was %T", v)
 		}
