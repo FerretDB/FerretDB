@@ -63,7 +63,7 @@ func TestKillOp(t *testing.T) {
 		var wg sync.WaitGroup
 		readyCh := make(chan struct{}, nOps+nCurrentOp)
 		startCh := make(chan struct{})
-		opIDsCh := make(chan any, nOps+nCurrentOp)
+		opIDsCh := make(chan any, nCurrentOp)
 
 		for i := 0; i < nOps; i++ {
 			wg.Add(1)
