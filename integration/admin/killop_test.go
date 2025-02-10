@@ -15,8 +15,8 @@
 package admin
 
 import (
+	"fmt"
 	"math"
-	"strings"
 	"sync"
 	"testing"
 
@@ -36,27 +36,34 @@ func TestKillOp(t *testing.T) {
 	adminDB := collection.Database().Client().Database("admin")
 
 	searchF := func(op *wirebson.Document) bool {
-		return op.Get("op") == "insert" && op.Get("ns") == collection.Name()+"."+collection.Database().Name()
+		return op.Get("op") == "command" && op.Get("ns") == collection.Name()+"."+collection.Database().Name()
 	}
 
-	var docs []any
-	for range 3 {
-		docs = append(docs, bson.D{
-			{"strings", strings.Repeat("something for testing", 500)},
-		})
+	// use block to prevent shadowing err variable between goroutines
+	{
+		var docs []any
+		for x := range 200 {
+			docs = append(docs, bson.D{
+				{"_id", int64(x)},
+				{"entry", fmt.Sprintf("something%d", x)},
+			})
+		}
+
+		_, err := collection.InsertMany(ctx, docs)
+		require.NoError(t, err)
 	}
 
-	nOps := 10
+	nOps := 500
 	nCurrentOp := 250
-	attempts := 1
+	attempts := 10
 
-	var insertErr error
+	var killedOpID any
 
 	for range attempts {
 		var wg sync.WaitGroup
 		readyCh := make(chan struct{}, nOps+nCurrentOp)
 		startCh := make(chan struct{})
-		insertErrCh := make(chan error, nOps)
+		opIDsCh := make(chan any, nOps+nCurrentOp)
 
 		for i := 0; i < nOps; i++ {
 			wg.Add(1)
@@ -64,13 +71,20 @@ func TestKillOp(t *testing.T) {
 			go func() {
 				defer wg.Done()
 
+				command := bson.D{
+					{"explain", bson.D{
+						{"find", collection.Name()},
+					}},
+				}
+
 				readyCh <- struct{}{}
 
 				<-startCh
 
-				if _, err := collection.InsertMany(ctx, docs); err != nil {
-					insertErrCh <- err
-				}
+				// command may be killed by killOp command, if killed sometimes it returns
+				// FerretDB error `(InternalError) timeout: context already done: context canceled` or
+				// MongoDB error `(Interrupted) operation was interrupted`
+				_ = collection.Database().RunCommand(ctx, command).Err()
 			}()
 		}
 
@@ -104,10 +118,12 @@ func TestKillOp(t *testing.T) {
 					require.NoError(t, err)
 
 					if searchF(op) {
+						opID := op.Get("opid")
+
 						var res bson.D
 						err = adminDB.RunCommand(ctx, bson.D{
 							{"killOp", int32(1)},
-							{"op", op.Get("opid")},
+							{"op", opID},
 						}).Decode(&res)
 						require.NoError(t, err)
 
@@ -116,6 +132,8 @@ func TestKillOp(t *testing.T) {
 							{"ok", float64(1)},
 						}
 						integration.AssertEqualDocuments(t, expected, res)
+
+						opIDsCh <- opID
 					}
 				}
 			}()
@@ -131,18 +149,15 @@ func TestKillOp(t *testing.T) {
 
 		wg.Wait()
 
-		close(insertErrCh)
+		close(opIDsCh)
 
 		var ok bool
-		if insertErr, ok = <-insertErrCh; ok {
+		if killedOpID, ok = <-opIDsCh; ok {
 			break
 		}
 	}
 
-	// A successfully killed operation returns different error for MongoDB and FerretDB,
-	// MongoDB returns error "bulk write exception: write concern error: (Interrupted) operation was interrupted",
-	// FerretDB returns error "(InternalError) timeout: context already done: context canceled".
-	require.Error(t, insertErr)
+	require.NotNil(t, killedOpID)
 }
 
 func TestKillOpNonExistentOp(t *testing.T) {
