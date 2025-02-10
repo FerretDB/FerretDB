@@ -47,11 +47,11 @@ type mongoHandler struct {
 	out io.Writer
 }
 
-// mongoLog represents a single log message in mongo structured JSON format.
+// MongoLog represents a single log message in mongo structured JSON format.
 // For now some fields are ignored and may be empty.
 //
 //nolint:vet // to preserve field ordering
-type mongoLog struct {
+type MongoLog struct {
 	Timestamp primitive.DateTime `bson:"t"`
 	Severity  string             `bson:"s"`
 	Component string             `bson:"c"`
@@ -63,6 +63,10 @@ type mongoLog struct {
 	Tags      []string           `bson:"tags,omitempty"`
 	Truncated map[string]any     `bson:"truncated,omitempty"`
 	Size      map[string]any     `bson:"size,omitempty"`
+}
+
+func (log MongoLog) MarshalExtJSON() ([]byte, error) {
+	return bson.MarshalExtJSON(&log, false, false)
 }
 
 // newMongoHandler creates a new mongo handler.
@@ -92,7 +96,7 @@ func (h *mongoHandler) Enabled(_ context.Context, l slog.Level) bool {
 func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
 	var buf bytes.Buffer
 
-	logRecord := mongoLog{
+	logRecord := MongoLog{
 		Msg: r.Message,
 	}
 
@@ -145,7 +149,7 @@ func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
 		maps.Copy(h.testAttrs, logRecord.Attr)
 	}
 
-	extJSON, err := bson.MarshalExtJSON(&logRecord, false, false)
+	extJSON, err := logRecord.MarshalExtJSON()
 	if err != nil {
 		return err
 	}
