@@ -152,41 +152,6 @@ func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
 	return err
 }
 
-// attrs returns record attributes, as well as handler attributes from goas in map.
-// Attributes with duplicate keys are overwritten, and the order of keys is ignored.
-func attrs(r slog.Record, goas []groupOrAttrs) map[string]any {
-	m := make(map[string]any, r.NumAttrs())
-
-	r.Attrs(func(attr slog.Attr) bool {
-		if attr.Key != "" {
-			m[attr.Key] = resolve(attr.Value)
-
-			return true
-		}
-
-		if attr.Value.Kind() == slog.KindGroup {
-			for _, gAttr := range attr.Value.Group() {
-				m[gAttr.Key] = resolve(gAttr.Value)
-			}
-		}
-
-		return true
-	})
-
-	for _, goa := range slices.Backward(goas) {
-		if goa.group != "" && len(m) > 0 {
-			m = map[string]any{goa.group: m}
-			continue
-		}
-
-		for _, attr := range goa.attrs {
-			m[attr.Key] = resolve(attr.Value)
-		}
-	}
-
-	return m
-}
-
 // WithAttrs implements [slog.Handler].
 func (h *mongoHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	if len(attrs) == 0 {

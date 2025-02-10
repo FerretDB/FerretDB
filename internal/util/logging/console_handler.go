@@ -54,12 +54,6 @@ type consoleHandler struct {
 	out io.Writer
 }
 
-// groupOrAttrs contains group name or attributes.
-type groupOrAttrs struct {
-	group string
-	attrs []slog.Attr
-}
-
 // newConsoleHandler creates a new console handler.
 func newConsoleHandler(out io.Writer, opts *NewHandlerOpts, testAttrs map[string]any) *consoleHandler {
 	must.NotBeZero(opts)
@@ -190,24 +184,6 @@ func (ch *consoleHandler) WithGroup(name string) slog.Handler {
 		out:       ch.out,
 		testAttrs: ch.testAttrs,
 	}
-}
-
-// resolve returns underlying attribute value, or a map for [slog.KindGroup] type.
-func resolve(v slog.Value) any {
-	v = v.Resolve()
-
-	if v.Kind() != slog.KindGroup {
-		return v.Any()
-	}
-
-	g := v.Group()
-	m := make(map[string]any, len(g))
-
-	for _, attr := range g {
-		m[attr.Key] = resolve(attr.Value)
-	}
-
-	return m
 }
 
 // check interfaces
