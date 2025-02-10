@@ -23,7 +23,7 @@ You may also need to set `tlsCAFile` parameter if the system-wide certificate au
 See documentation for your client or driver for more details.
 Example: `mongodb://ferretdb:27018/?tls=true&tlsCAFile=companyRootCA.pem`.
 
-## Using TLS with FerretDB
+## Setting up TLS connections
 
 In the following examples, FerretDB uses TLS certificates to secure the connection.
 The `ferretdb` server uses TLS server certificate file, TLS private key file and root CA certificate file.
@@ -43,7 +43,7 @@ client-certs/
 └── rootCA-cert.pem
 ```
 
-### Setting up TLS on Docker
+### Setting up TLS via Docker
 
 When using Docker to run `ferretdb` server, the `docker-compose.yml` below shows how to set up TLS connections.
 The Docker host requires certificates `server-certs` directory,
