@@ -2,12 +2,12 @@ module github.com/FerretDB/FerretDB/tools
 
 go 1.23
 
-toolchain go1.23.5
+toolchain go1.23.6
 
 require (
 	github.com/AlekSi/pointer v1.2.0
 	github.com/FerretDB/gh v0.1.6
-	github.com/OpenDocDB/cts/opendocdb-cts v0.0.0-20250121090447-63e3cb37541f
+	github.com/OpenDocDB/cts/opendocdb-cts v0.0.0-20250130175644-5bb54314b11d
 	github.com/go-task/task/v3 v3.41.0
 	github.com/google/go-github/v66 v66.0.0
 	github.com/goreleaser/nfpm/v2 v2.41.2
@@ -18,7 +18,7 @@ require (
 	github.com/sethvargo/go-githubactions v1.3.0
 	github.com/stretchr/testify v1.10.0
 	golang.org/x/perf v0.0.0-20250106172127-400946f43c82
-	golang.org/x/pkgsite v0.0.0-20250117144944-0a57e246c7c1
+	golang.org/x/pkgsite v0.0.0-20250206172706-732383ae04b0
 	golang.org/x/tools v0.29.0
 	golang.org/x/vuln v1.1.4
 	gopkg.in/yaml.v3 v3.0.1
