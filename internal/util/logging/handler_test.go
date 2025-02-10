@@ -75,7 +75,7 @@ func TestHandler(t *testing.T) {
 			l := WithName(slog.New(h), "test.logger")
 			require.NoError(t, l.Handler().Handle(ctx, r))
 
-			// ignore key ordering for mongo handler
+			// mongo handler doesn't preserve the order of attributes
 			if base == "mongo" {
 				assert.JSONEq(t, expected, buf.String())
 				return
