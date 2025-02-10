@@ -128,7 +128,7 @@ func CacheFilePath() (string, error) {
 //
 // Any error means something fatal.
 // On rate limit, the error is logged once and (issueOpen, nil) is returned.
-func (c *Client) IssueStatus(ctx context.Context, url, owner, repo string, num int) (IssueStatus, error) {
+func (c *Client) IssueStatus(ctx context.Context, owner, repo string, num int) (IssueStatus, error) {
 	start := time.Now()
 
 	cache := &cacheFile{
@@ -137,6 +137,8 @@ func (c *Client) IssueStatus(ctx context.Context, url, owner, repo string, num i
 	cacheRes := "miss"
 
 	var res IssueStatus
+
+	url := fmt.Sprintf("https://github.com/%s/%s/issues/%d", owner, repo, num)
 
 	// fast path without any locks
 

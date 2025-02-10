@@ -275,7 +275,7 @@ func checkIssueURLs(client *github.Client, r io.Reader, l *log.Logger) (bool, er
 			continue
 		}
 
-		status, err := client.IssueStatus(context.TODO(), url, owner, repo, num)
+		status, err := client.IssueStatus(context.TODO(), owner, repo, num)
 		if err != nil {
 			log.Panic(err)
 		}
