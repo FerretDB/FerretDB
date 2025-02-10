@@ -203,7 +203,7 @@ func verifyTags(fm []byte) error {
 		return fmt.Errorf("tags field should be present in the front matter")
 	}
 
-	// keep in sync with writing-guide.md
+	// keep in sync with content-process.md
 	expectedTags := map[string]struct{}{
 		"cloud":                   {},
 		"community":               {},
