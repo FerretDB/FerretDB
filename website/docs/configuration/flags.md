@@ -21,8 +21,6 @@ Some default values are overridden in [our Docker image](../installation/ferretd
 
 ## PostgreSQL with DocumentDB extension
 
-<!-- Do not document alpha backends -->
-
 | Flag               | Description               | Environment Variable      | Default Value                        |
 | ------------------ | ------------------------- | ------------------------- | ------------------------------------ |
 | `--postgresql-url` | PostgreSQL connection URL | `FERRETDB_POSTGRESQL_URL` | `postgres://127.0.0.1:5432/postgres` |
