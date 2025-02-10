@@ -1,6 +1,6 @@
 ---
 slug: replication-ferretdb-enabling-high-availability-performance
-title: 'Replication in FerretDB: Enabling High Availability and Performance'
+title: "Replication in FerretDB: Enabling High Availability and Performance"
 authors: [alex]
 description: >
   Learn how replication in FerretDB can help you create a reliable and fault-tolerant environment for your applications.
