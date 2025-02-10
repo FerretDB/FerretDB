@@ -30,6 +30,8 @@ import (
 )
 
 func TestKillOp(t *testing.T) {
+	t.Parallel()
+
 	ctx, collection := setup.Setup(t)
 	adminDB := collection.Database().Client().Database("admin")
 
@@ -148,6 +150,8 @@ func TestKillOp(t *testing.T) {
 }
 
 func TestKillOpNonExistentOp(t *testing.T) {
+	t.Parallel()
+
 	ctx, collection := setup.Setup(t)
 	adminDB := collection.Database().Client().Database("admin")
 
@@ -155,13 +159,13 @@ func TestKillOpNonExistentOp(t *testing.T) {
 		opid any
 	}{
 		"Double": {
-			opid: float64(1234),
+			opid: float64(123456),
 		},
 		"Int": {
-			opid: int32(1234),
+			opid: int32(123456),
 		},
 		"Long": {
-			opid: int64(1234),
+			opid: int64(123456),
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
