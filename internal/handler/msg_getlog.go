@@ -172,7 +172,7 @@ func (h *Handler) MsgGetLog(connCtx context.Context, msg *wire.OpMsg) (*wire.OpM
 				Timestamp: primitive.NewDateTimeFromTime(time.Now()),
 			}
 
-			b, err := ml.MarshalExtJSON()
+			b, err := ml.Marshal()
 			if err != nil {
 				return nil, lazyerrors.Error(err)
 			}

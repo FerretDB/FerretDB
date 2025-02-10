@@ -65,14 +65,15 @@ type MongoLog struct {
 	Size      map[string]any     `bson:"size,omitempty"`
 }
 
-func (log MongoLog) MarshalExtJSON() ([]byte, error) {
+// Marshal returns the mongo structured JSON encoding of log.
+func (log MongoLog) Marshal() ([]byte, error) {
 	return bson.MarshalExtJSON(&log, false, false)
 }
 
-func MongoLogFromRecord(r slog.Record) (*MongoLog, error) {
-	return mongoLogFromRecord(r, nil, nil)
-}
-
+// mongoLogFromRecord constructs new MongoLog based on provided slog.Record.
+//
+// When called by slog handler, handler's ga, and opts can be provided.
+// If ga, or opts are nil, they're ignored.
 func mongoLogFromRecord(r slog.Record, ga []groupOrAttrs, opts *NewHandlerOpts) (*MongoLog, error) {
 	if opts == nil {
 		opts = new(NewHandlerOpts)
@@ -168,7 +169,7 @@ func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
 		}
 	}
 
-	extJSON, err := record.MarshalExtJSON()
+	extJSON, err := record.Marshal()
 	if err != nil {
 		return err
 	}

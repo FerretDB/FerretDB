@@ -76,12 +76,12 @@ func (cb *circularBuffer) getArray() (*wirebson.Array, error) {
 	res := wirebson.MakeArray(len(records))
 
 	for _, r := range records {
-		ml, err := MongoLogFromRecord(*r)
+		ml, err := mongoLogFromRecord(*r, nil, nil)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
-		b, err := ml.MarshalExtJSON()
+		b, err := ml.Marshal()
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
