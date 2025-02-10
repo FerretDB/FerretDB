@@ -162,7 +162,7 @@ func (h *Handler) MsgGetLog(connCtx context.Context, msg *wire.OpMsg) (*wire.OpM
 		log := wirebson.MakeArray(len(startupWarnings))
 
 		for _, line := range startupWarnings {
-			b, err := logging.MongoLog{
+			ml := logging.MongoLog{
 				Msg:       line,
 				Tags:      []string{"startupWarnings"},
 				Severity:  "I",
@@ -170,8 +170,9 @@ func (h *Handler) MsgGetLog(connCtx context.Context, msg *wire.OpMsg) (*wire.OpM
 				ID:        42000,
 				Ctx:       "initandListen",
 				Timestamp: primitive.NewDateTimeFromTime(time.Now()),
-			}.MarshalExtJSON()
+			}
 
+			b, err := ml.MarshalExtJSON()
 			if err != nil {
 				return nil, lazyerrors.Error(err)
 			}

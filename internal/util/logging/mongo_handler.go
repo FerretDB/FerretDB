@@ -69,6 +69,51 @@ func (log MongoLog) MarshalExtJSON() ([]byte, error) {
 	return bson.MarshalExtJSON(&log, false, false)
 }
 
+func MongoLogFromRecord(r slog.Record) (*MongoLog, error) {
+	return mongoLogFromRecord(r, nil, nil)
+}
+
+func mongoLogFromRecord(r slog.Record, ga []groupOrAttrs, opts *NewHandlerOpts) (*MongoLog, error) {
+	if opts == nil {
+		opts = new(NewHandlerOpts)
+	}
+
+	var log MongoLog
+
+	log.Msg = r.Message
+
+	if !opts.RemoveLevel {
+		log.Severity = log.getSeverity(r.Level)
+	}
+
+	if !opts.RemoveTime && !r.Time.IsZero() {
+		log.Timestamp = primitive.NewDateTimeFromTime(r.Time)
+	}
+
+	if !opts.RemoveSource && r.PC != 0 {
+		f, _ := runtime.CallersFrames([]uintptr{r.PC}).Next()
+		if f.File != "" {
+			log.Ctx = shortPath(f.File) + ":" + strconv.Itoa(f.Line)
+		}
+	}
+
+	log.Attr = attrs(r, ga)
+
+	if v, ok := log.Attr[nameKey]; ok {
+		var name string
+
+		name, ok = v.(string)
+		if !ok {
+			return nil, lazyerrors.Errorf("attribute 'name' should be a string but was %T", v)
+		}
+
+		log.Component = name
+		delete(log.Attr, nameKey)
+	}
+
+	return &log, nil
+}
+
 // newMongoHandler creates a new mongo handler.
 func newMongoHandler(out io.Writer, opts *NewHandlerOpts, testAttrs map[string]any) *mongoHandler {
 	must.NotBeZero(opts)
@@ -96,60 +141,34 @@ func (h *mongoHandler) Enabled(_ context.Context, l slog.Level) bool {
 func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
 	var buf bytes.Buffer
 
-	logRecord := MongoLog{
-		Msg: r.Message,
+	record, err := mongoLogFromRecord(r, h.ga, h.opts)
+	if err != nil {
+		return err
 	}
 
 	if h.testAttrs != nil {
-		h.testAttrs[slog.MessageKey] = logRecord.Msg
-	}
+		if record.Msg != "" {
+			h.testAttrs[slog.MessageKey] = record.Msg
+		}
 
-	if !h.opts.RemoveLevel {
-		logRecord.Severity = h.getSeverity(r.Level)
+		if record.Severity != "" {
+			h.testAttrs[slog.LevelKey] = record.Severity
+		}
 
-		if h.testAttrs != nil {
-			h.testAttrs[slog.LevelKey] = logRecord.Severity
+		if record.Timestamp != 0 {
+			h.testAttrs[slog.TimeKey] = record.Timestamp
+		}
+
+		if record.Ctx != "" {
+			h.testAttrs[slog.SourceKey] = record.Ctx
+		}
+
+		if len(record.Attr) > 0 {
+			maps.Copy(h.testAttrs, record.Attr)
 		}
 	}
 
-	if !h.opts.RemoveTime && !r.Time.IsZero() {
-		logRecord.Timestamp = primitive.NewDateTimeFromTime(r.Time)
-
-		if h.testAttrs != nil {
-			h.testAttrs[slog.TimeKey] = logRecord.Timestamp
-		}
-	}
-
-	if !h.opts.RemoveSource && r.PC != 0 {
-		f, _ := runtime.CallersFrames([]uintptr{r.PC}).Next()
-		if f.File != "" {
-			logRecord.Ctx = shortPath(f.File) + ":" + strconv.Itoa(f.Line)
-
-			if h.testAttrs != nil {
-				h.testAttrs[slog.SourceKey] = logRecord.Ctx
-			}
-		}
-	}
-
-	logRecord.Attr = attrs(r, h.ga)
-
-	if v, ok := logRecord.Attr[nameKey]; ok {
-		var name string
-
-		name, ok = v.(string)
-		if !ok {
-			return lazyerrors.Errorf("attribute 'name' should be a string but was %T", v)
-		}
-
-		logRecord.Component = name
-		delete(logRecord.Attr, nameKey)
-	}
-
-	if h.testAttrs != nil && len(logRecord.Attr) > 0 {
-		maps.Copy(h.testAttrs, logRecord.Attr)
-	}
-
-	extJSON, err := logRecord.MarshalExtJSON()
+	extJSON, err := record.MarshalExtJSON()
 	if err != nil {
 		return err
 	}
@@ -201,7 +220,7 @@ func (h *mongoHandler) WithGroup(name string) slog.Handler {
 
 // getSeverity maps logging levels to their mongo format counterparts.
 // If provided level is not mapped, its standard format is returned.
-func (h *mongoHandler) getSeverity(level slog.Level) string {
+func (h *MongoLog) getSeverity(level slog.Level) string {
 	switch level {
 	case slog.LevelDebug:
 		return "D"
