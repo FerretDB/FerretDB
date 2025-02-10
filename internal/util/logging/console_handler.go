@@ -122,6 +122,7 @@ func (ch *consoleHandler) Handle(ctx context.Context, r slog.Record) error {
 		}
 	}
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/4431
 	if m := attrs(r, ch.ga); len(m) > 0 {
 		buf.WriteRune('\t')
 
