@@ -21,7 +21,9 @@ FerretDB provides the following log formats:
 <!-- https://github.com/FerretDB/FerretDB/issues/4438 -->
 
 - `console` is a human-readable format with optional colors;
-- `mongo` is machine-readable structured JSON format;
+- `mongo` is machine-readable structured JSON format, similar to the one used in MongoDB.
+  It follows the Relaxed Extended JSON specification.
+  Fields required in the output format but not yet implemented, will be included empty, to maintain compatibility;
 - `text` is machine-readable [logfmt](https://brandur.org/logfmt)-like format
   (powered by [Go's `slog.TextHandler`](https://pkg.go.dev/log/slog#TextHandler));
 - `json` is machine-readable JSON format
