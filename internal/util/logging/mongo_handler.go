@@ -39,7 +39,7 @@ import (
 type mongoHandler struct {
 	opts *NewHandlerOpts
 
-	goas      []groupOrAttrs
+	ga        []groupOrAttrs
 	testAttrs map[string]any
 
 	m   *sync.Mutex
@@ -126,7 +126,7 @@ func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
 		}
 	}
 
-	logRecord.Attr = attrs(r, h.goas)
+	logRecord.Attr = attrs(r, h.ga)
 
 	if h.testAttrs != nil && len(logRecord.Attr) > 0 {
 		maps.Copy(h.testAttrs, logRecord.Attr)
@@ -195,7 +195,7 @@ func (h *mongoHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 
 	return &mongoHandler{
 		opts:      h.opts,
-		goas:      append(slices.Clone(h.goas), groupOrAttrs{attrs: attrs}),
+		ga:        append(slices.Clone(h.ga), groupOrAttrs{attrs: attrs}),
 		testAttrs: h.testAttrs,
 		m:         h.m,
 		out:       h.out,
@@ -210,7 +210,7 @@ func (h *mongoHandler) WithGroup(name string) slog.Handler {
 
 	return &mongoHandler{
 		opts:      h.opts,
-		goas:      append(slices.Clone(h.goas), groupOrAttrs{group: name}),
+		ga:        append(slices.Clone(h.ga), groupOrAttrs{group: name}),
 		testAttrs: h.testAttrs,
 		m:         h.m,
 		out:       h.out,
