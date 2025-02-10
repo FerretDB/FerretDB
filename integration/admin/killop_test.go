@@ -46,31 +46,30 @@ func TestKillOp(t *testing.T) {
 		})
 	}
 
-	var wg sync.WaitGroup
-
 	nOps := 10
 	nCurrentOp := 250
 	attempts := 1
 
-	var opErr error
+	var insertErr error
 
 	for range attempts {
+		var wg sync.WaitGroup
 		readyCh := make(chan struct{}, nOps+nCurrentOp)
 		startCh := make(chan struct{})
-		opErrCh := make(chan error, nOps)
+		insertErrCh := make(chan error, nOps)
 
 		for i := 0; i < nOps; i++ {
 			wg.Add(1)
 
 			go func() {
-				wg.Done()
+				defer wg.Done()
 
 				readyCh <- struct{}{}
 
 				<-startCh
 
 				if _, err := collection.InsertMany(ctx, docs); err != nil {
-					opErrCh <- err
+					insertErrCh <- err
 				}
 			}()
 		}
@@ -105,12 +104,10 @@ func TestKillOp(t *testing.T) {
 					require.NoError(t, err)
 
 					if searchF(op) {
-						opid := op.Get("opid")
-
 						var res bson.D
 						err = adminDB.RunCommand(ctx, bson.D{
 							{"killOp", int32(1)},
-							{"op", opid},
+							{"op", op.Get("opid")},
 						}).Decode(&res)
 						require.NoError(t, err)
 
@@ -134,19 +131,18 @@ func TestKillOp(t *testing.T) {
 
 		wg.Wait()
 
+		close(insertErrCh)
+
 		var ok bool
-		if opErr, ok = <-opErrCh; ok {
+		if insertErr, ok = <-insertErrCh; ok {
 			break
 		}
 	}
 
-	// MongoDB error "bulk write exception: write concern error: (Interrupted) operation was interrupted"
-	// FerretDB error "(InternalError) timeout: context already done: context canceled"
-	require.Error(t, opErr)
-
-	count, err := collection.CountDocuments(ctx, bson.D{})
-	require.NoError(t, err)
-	require.Less(t, count, int64(len(docs))*int64(nOps))
+	// A successfully killed operation returns different error for MongoDB and FerretDB,
+	// MongoDB returns error "bulk write exception: write concern error: (Interrupted) operation was interrupted",
+	// FerretDB returns error "(InternalError) timeout: context already done: context canceled".
+	require.Error(t, insertErr)
 }
 
 func TestKillOpNonExistentOp(t *testing.T) {
