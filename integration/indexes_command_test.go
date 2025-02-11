@@ -17,6 +17,7 @@ package integration
 import (
 	"testing"
 
+	"github.com/FerretDB/wire/wirebson"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -622,32 +623,39 @@ func TestListIndexesCommandIndexFieldOrder(t *testing.T) {
 	err = collection.Database().RunCommand(ctx, command).Decode(&res)
 	require.NoError(t, err)
 
-	expected := bson.D{
-		{"cursor", bson.D{
-			{"id", int64(0)},
-			{"ns", "TestListIndexesCommandIndexFieldOrder.TestListIndexesCommandIndexFieldOrder"},
-			{"firstBatch", bson.A{
-				bson.D{
-					{"v", int32(2)},
-					{"key", bson.D{{"_id", int32(1)}}},
-					{"name", "_id_"},
-				},
-				bson.D{
-					{"v", int32(2)},
-					{"key", bson.D{{"v", int32(1)}}},
-					{"name", "v_1"},
-					// For MongoDB, `unique` is the 4th field of `listIndexes` command, but it's the 2nd field of `reIndex` command.
-					{"unique", true},
-				},
-			}},
-		}},
-		{"ok", float64(1)},
-	}
+	doc, err := convert(t, res).(wirebson.AnyDocument).Decode()
+	require.NoError(t, err)
 
-	require.Equal(t, expected, res)
+	fixCluster(t, doc)
+
+	expected := wirebson.MustDocument(
+		"cursor", wirebson.MustDocument(
+			"id", int64(0),
+			"ns", collection.Name()+"."+collection.Database().Name(),
+			"firstBatch", wirebson.MustArray(
+				wirebson.MustDocument(
+					"v", int32(2),
+					"key", wirebson.MustDocument("_id", int32(1)),
+					"name", "_id_",
+				),
+				wirebson.MustDocument(
+					"v", int32(2),
+					"key", wirebson.MustDocument("v", int32(1)),
+					"name", "v_1",
+					// For MongoDB, `unique` is the 4th field of `listIndexes` command, but it's the 2nd field of `reIndex` command.
+					"unique", true,
+				),
+			),
+		),
+		"ok", float64(1),
+	)
+
+	require.Equal(t, expected, doc)
 }
 
 func TestReIndexCommand(t *testing.T) {
+	setup.SkipForMongoDB(t, "MongoDB cannot reIndex while replication is active")
+
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
@@ -833,6 +841,8 @@ func TestReIndexCommand(t *testing.T) {
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			ctx, collection := setup.Setup(t, shareddata.Int32s)
 
 			if tc.models != nil {
@@ -859,6 +869,8 @@ func TestReIndexCommand(t *testing.T) {
 }
 
 func TestReIndexErrors(t *testing.T) {
+	setup.SkipForMongoDB(t, "MongoDB cannot reIndex while replication is active")
+
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
@@ -895,6 +907,8 @@ func TestReIndexErrors(t *testing.T) {
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			ctx, collection := setup.Setup(t)
 
 			command := bson.D{
