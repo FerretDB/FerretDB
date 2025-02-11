@@ -244,10 +244,11 @@ func main() {
 	}
 
 	opts := &logging.NewHandlerOpts{
-		Base:         "console",
-		Level:        level,
-		RemoveTime:   true,
-		RemoveSource: true,
+		Base:          "console",
+		Level:         level,
+		RemoveTime:    true,
+		RemoveSource:  true,
+		CheckMessages: true,
 	}
 	logging.Setup(opts, "")
 	logger := slog.Default()
