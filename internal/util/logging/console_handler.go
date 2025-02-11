@@ -101,6 +101,17 @@ func (ch *consoleHandler) Handle(ctx context.Context, r slog.Record) error {
 		}
 	}
 
+	m, name, err := attrs(r, ch.ga)
+	if err != nil {
+		return err
+	}
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/4431
+	if name != "" {
+		buf.WriteString(name)
+		buf.WriteRune('\t')
+	}
+
 	if !ch.opts.RemoveSource {
 		f, _ := runtime.CallersFrames([]uintptr{r.PC}).Next()
 		if f.File != "" {
@@ -122,8 +133,7 @@ func (ch *consoleHandler) Handle(ctx context.Context, r slog.Record) error {
 		}
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/4431
-	if m := attrs(r, ch.ga); len(m) > 0 {
+	if len(m) > 0 {
 		buf.WriteRune('\t')
 
 		var b bytes.Buffer
@@ -152,7 +162,7 @@ func (ch *consoleHandler) Handle(ctx context.Context, r slog.Record) error {
 	ch.m.Lock()
 	defer ch.m.Unlock()
 
-	_, err := buf.WriteTo(ch.out)
+	_, err = buf.WriteTo(ch.out)
 
 	return err
 }

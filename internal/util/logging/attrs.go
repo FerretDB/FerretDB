@@ -17,6 +17,8 @@ package logging
 import (
 	"log/slog"
 	"slices"
+
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
 // groupOrAttrs contains group name or attributes.
@@ -27,7 +29,11 @@ type groupOrAttrs struct {
 
 // attrs returns record attributes, as well as handler attributes from goas in map.
 // Attributes with duplicate keys are overwritten, and the order of keys is ignored.
-func attrs(r slog.Record, goas []groupOrAttrs) map[string]any {
+//
+// If goas contains `name` attribute, the last one in the slice is validated to be string,
+// and returned to be used as logger name. The returned name is not present in returned map.
+// TODO https://github.com/FerretDB/FerretDB/issues/4431
+func attrs(r slog.Record, goas []groupOrAttrs) (map[string]any, string, error) {
 	m := make(map[string]any, r.NumAttrs())
 
 	r.Attrs(func(attr slog.Attr) bool {
@@ -46,6 +52,8 @@ func attrs(r slog.Record, goas []groupOrAttrs) map[string]any {
 		return true
 	})
 
+	var name string
+
 	for _, goa := range slices.Backward(goas) {
 		if goa.group != "" && len(m) > 0 {
 			m = map[string]any{goa.group: m}
@@ -53,11 +61,21 @@ func attrs(r slog.Record, goas []groupOrAttrs) map[string]any {
 		}
 
 		for _, attr := range goa.attrs {
-			m[attr.Key] = resolve(attr.Value)
+			if attr.Key != nameKey || name != "" {
+				m[attr.Key] = resolve(attr.Value)
+				continue
+			}
+
+			v, ok := attr.Value.Any().(string)
+			if !ok {
+				return nil, "", lazyerrors.Errorf("attribute %q should be a string but was %T", nameKey, v)
+			}
+
+			name = v
 		}
 	}
 
-	return m
+	return m, name, nil
 }
 
 // resolve returns underlying attribute value, or a map for [slog.KindGroup] type.

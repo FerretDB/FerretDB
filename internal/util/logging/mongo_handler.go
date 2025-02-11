@@ -28,7 +28,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
@@ -97,6 +96,7 @@ func mongoLogFromRecord(r slog.Record, ga []groupOrAttrs, opts *NewHandlerOpts) 
 	}
 
 	var log MongoLog
+	var err error
 
 	log.Msg = r.Message
 
@@ -115,18 +115,16 @@ func mongoLogFromRecord(r slog.Record, ga []groupOrAttrs, opts *NewHandlerOpts) 
 		}
 	}
 
-	log.Attr = attrs(r, ga)
+	var name string
 
-	if v, ok := log.Attr[nameKey]; ok {
-		var name string
+	log.Attr, name, err = attrs(r, ga)
+	if err != nil {
+		return nil, err
+	}
 
-		name, ok = v.(string)
-		if !ok {
-			return nil, lazyerrors.Errorf("attribute %q should be a string but was %T", nameKey, v)
-		}
-
+	// TODO https://github.com/FerretDB/FerretDB/issues/4431
+	if name != "" {
 		log.Component = name
-		delete(log.Attr, nameKey)
 	}
 
 	return &log, nil
