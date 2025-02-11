@@ -25,7 +25,7 @@ In this post, we'll walk you through how to use FerretDB's Data API, demonstrati
 
 ## Why Data API matters
 
-Some programming environments just don't have a direct way to connect to a database – no native MongoDB driver, no built-in support, nothing.
+Some programming environments don’t have a native MongoDB driver or simply can’t use one — whether due to platform limitations, security constraints, or architectural decisions.
 Without a driver, you'd normally have to wrap your logic inside another application or depend on a separate service just to send or retrieve data.
 That's extra work and dependencies.
 
@@ -34,13 +34,14 @@ A basic `curl` command can fetch or modify data.
 So instead of needing a full-fledged backend just to store something in a database, a workflow can send REST requests to a Data API.
 
 For developers already familiar with REST, Data API is essential.
-There's no new learning curve – just familiar HTTP methods (`GET`, `POST`, `PATCH`, `DELETE`).
+There's no new learning curve – you can interact with your database via POST requests.
 With FerretDB's Data API stepping in as an alternative to MongoDB's deprecated service, we are ensuring developers can interact with their data without issues, no matter the stack they're working with.
 
 ## FerretDB Data API
 
 FerretDB is an open-source MongoDB-compatible database that runs on PostgreSQL.
 With MongoDB's Data API deprecated, we saw the need for a new solution that offers similar functionality while remaining open and accessible.
+In our case, the FerretDB Data API is built directly into FerretDB — it’s not a standalone service but an integrated part of the database process.
 
 FerretDB's Data API provides:
 
