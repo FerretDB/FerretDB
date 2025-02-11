@@ -122,7 +122,7 @@ func mongoLogFromRecord(r slog.Record, ga []groupOrAttrs, opts *NewHandlerOpts) 
 
 		name, ok = v.(string)
 		if !ok {
-			return nil, lazyerrors.Errorf("attribute 'name' should be a string but was %T", v)
+			return nil, lazyerrors.Errorf("attribute %q should be a string but was %T", nameKey, v)
 		}
 
 		log.Component = name
