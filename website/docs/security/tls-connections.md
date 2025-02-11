@@ -72,10 +72,13 @@ For using Docker to run `ferretdb` server, `docker-compose.yml` example for TLS 
 The Docker host requires certificates `server-certs` directory,
 and volume is mounted from `./server-certs` of Docker host to `/etc/certs` of Docker container.
 
+<!-- TODO https://github.com/FerretDB/FerretDB/issues/4726 -->
+
 ```yaml
 services:
   postgres:
     image: ghcr.io/ferretdb/postgres-documentdb:16
+    platform: linux/amd64
     environment:
       - POSTGRES_USER=username
       - POSTGRES_PASSWORD=password
