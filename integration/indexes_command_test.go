@@ -661,8 +661,7 @@ func TestReIndexCommand(t *testing.T) {
 	for name, tc := range map[string]struct {
 		models []mongo.IndexModel // optional indexes to create before reIndex
 
-		expected    bson.D
-		altExpected bson.D // optional alternative expected result
+		expected bson.D
 	}{
 		"DefaultIndex": {
 			expected: bson.D{
@@ -760,27 +759,9 @@ func TestReIndexCommand(t *testing.T) {
 					},
 					bson.D{
 						{"v", int32(2)},
+						{"key", bson.D{{"v", int32(1)}}},
+						{"name", "v_1"},
 						// For MongoDB, `unique` is the 4th field of `listIndexes` command, but it's the 2nd field of `reIndex` command.
-						{"unique", true},
-						{"key", bson.D{{"v", int32(1)}}},
-						{"name", "v_1"},
-					},
-				}},
-				{"ok", float64(1)},
-			},
-			altExpected: bson.D{
-				{"nIndexesWas", int32(2)},
-				{"nIndexes", int32(2)},
-				{"indexes", bson.A{
-					bson.D{
-						{"v", int32(2)},
-						{"key", bson.D{{"_id", int32(1)}}},
-						{"name", "_id_"},
-					},
-					bson.D{
-						{"v", int32(2)},
-						{"key", bson.D{{"v", int32(1)}}},
-						{"name", "v_1"},
 						// For FerretDB, `unique` is the 4th field in both `listIndexes` and `reIndex` commands.
 						{"unique", true},
 					},
@@ -858,12 +839,7 @@ func TestReIndexCommand(t *testing.T) {
 			err := collection.Database().RunCommand(ctx, command).Decode(&res)
 			require.NoError(t, err)
 
-			expected := tc.expected
-			if tc.altExpected != nil && !assert.ObjectsAreEqual(expected, res) {
-				expected = tc.altExpected
-			}
-
-			require.Equal(t, expected, res)
+			require.Equal(t, tc.expected, res)
 		})
 	}
 }
