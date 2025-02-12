@@ -29,16 +29,15 @@ import (
 //
 // For an anonymous SQL parameter, it assigns a unique name.
 // It also produces SQL query placeholders and return parameters in strings.
-func Convert(rows []map[string]any, l *slog.Logger) map[string]map[string]templateData {
+func Convert(rows map[string][]map[string]any, l *slog.Logger) map[string]map[string]templateData {
 	c := &converter{
 		l: l,
 	}
 
-	routineParams := c.groupBySpecificName(rows)
 	schemas := map[string]map[string]templateData{}
 
-	for _, specificName := range slices.Sorted(maps.Keys(routineParams)) {
-		params := routineParams[specificName]
+	for _, specificName := range slices.Sorted(maps.Keys(rows)) {
+		params := rows[specificName]
 
 		var goParams, goReturns, sqlParams, sqlReturns, comment, queryRowArgs, scanArgs, paramNames []string
 		var placeholderCounter int
@@ -236,36 +235,14 @@ func (c *converter) parameterCast(name string, typ string) string {
 	}
 }
 
-// groupBySpecificName groups rows by specific_name.
-func (c *converter) groupBySpecificName(rows []map[string]any) map[string][]map[string]any {
-	var specificName any
-
-	routines := map[string][]map[string]any{}
-	var groupedParams []map[string]any
-
-	for _, row := range rows {
-		if specificName != row["specific_name"] && specificName != nil {
-			routines[specificName.(string)] = groupedParams
-			groupedParams = []map[string]any{}
-		}
-
-		groupedParams = append(groupedParams, row)
-		specificName = row["specific_name"]
-	}
-
-	routines[specificName.(string)] = groupedParams
-
-	return routines
-}
-
 // dataType returns SQL datatype of a parameter. If the data type is USER-DEFINED,
 // it returns schema and name concatenated by dot.
 func (c *converter) dataType(row map[string]any) string {
-	if row["data_type"] == "USER-DEFINED" {
-		return row["udt_schema"].(string) + "." + row["udt_name"].(string)
+	if row["parameter_data_type"] == "USER-DEFINED" {
+		return row["parameter_udt_schema"].(string) + "." + row["parameter_udt_name"].(string)
 	}
 
-	return row["data_type"].(string)
+	return row["parameter_data_type"].(string)
 }
 
 // routineDataType returns SQL datatype of a routine. If the data type is USER-DEFINED,
