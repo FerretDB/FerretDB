@@ -96,7 +96,7 @@ func Listen(opts *NewListenerOpts) (*Listener, error) {
 		}
 
 		close(l.tcpListenerReady)
-		ll.InfoContext(ctx, fmt.Sprintf("Listening on TCP %s...", l.TCPAddr()))
+		ll.InfoContext(ctx, fmt.Sprintf("Listening on TCP %s", l.TCPAddr()))
 	}
 
 	if l.Unix != "" {
