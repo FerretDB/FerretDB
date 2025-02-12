@@ -7,7 +7,7 @@ toolchain go1.23.6
 require (
 	github.com/AlekSi/pointer v1.2.0
 	github.com/FerretDB/wire v0.0.16
-	github.com/alecthomas/kong v1.7.0
+	github.com/alecthomas/kong v1.8.0
 	github.com/arl/statsviz v0.6.0
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgerrcode v0.0.0-20240316143900-6e2875d9b438
@@ -25,7 +25,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.34.0
 	go.opentelemetry.io/otel/trace v1.34.0
 	go.uber.org/automaxprocs v1.6.0
-	golang.org/x/crypto/x509roots/fallback v0.0.0-20250204190303-9290511cd23a
+	golang.org/x/crypto/x509roots/fallback v0.0.0-20250210163342-e47973b1c108
 	golang.org/x/sys v0.30.0
 )
 
@@ -60,7 +60,6 @@ require (
 	golang.org/x/net v0.34.0 // indirect
 	golang.org/x/sync v0.10.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
-	golang.org/x/tools v0.29.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250115164207-1a7da9e5054f // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250115164207-1a7da9e5054f // indirect
 	google.golang.org/grpc v1.69.4 // indirect
