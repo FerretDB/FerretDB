@@ -94,16 +94,16 @@ func (r *Registry) Operations() []Operation {
 	r.rw.RLock()
 	defer r.rw.RUnlock()
 
-	res := make([]Operation, len(r.operations))
+	res := make([]Operation, 0, len(r.operations))
 
-	for i, op := range r.operations {
+	for _, op := range r.operations {
 		v := *op
 
 		// lifetime is tracked via pointer in the registry;
 		// remove token to make things a bit less confusing
 		v.token = nil
 
-		res[i] = v
+		res = append(res, v)
 	}
 
 	slices.SortFunc(res, func(a, b Operation) int {
