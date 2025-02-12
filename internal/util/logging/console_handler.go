@@ -101,10 +101,7 @@ func (ch *consoleHandler) Handle(ctx context.Context, r slog.Record) error {
 		}
 	}
 
-	m, name, err := attrs(r, ch.ga)
-	if err != nil {
-		return err
-	}
+	m, name := attrs(r, ch.ga)
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/4431
 	if name != "" {
@@ -162,7 +159,7 @@ func (ch *consoleHandler) Handle(ctx context.Context, r slog.Record) error {
 	ch.m.Lock()
 	defer ch.m.Unlock()
 
-	_, err = buf.WriteTo(ch.out)
+	_, err := buf.WriteTo(ch.out)
 
 	return err
 }

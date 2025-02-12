@@ -90,13 +90,12 @@ func (h MongoLog) getSeverity(level slog.Level) string {
 //
 // When called by slog handler, handler's ga, and opts can be provided.
 // If ga, or opts are nil, they're ignored.
-func mongoLogFromRecord(r slog.Record, ga []groupOrAttrs, opts *NewHandlerOpts) (*MongoLog, error) {
+func mongoLogFromRecord(r slog.Record, ga []groupOrAttrs, opts *NewHandlerOpts) *MongoLog {
 	if opts == nil {
 		opts = new(NewHandlerOpts)
 	}
 
 	var log MongoLog
-	var err error
 
 	log.Msg = r.Message
 
@@ -115,19 +114,10 @@ func mongoLogFromRecord(r slog.Record, ga []groupOrAttrs, opts *NewHandlerOpts) 
 		}
 	}
 
-	var name string
-
-	log.Attr, name, err = attrs(r, ga)
-	if err != nil {
-		return nil, err
-	}
-
 	// TODO https://github.com/FerretDB/FerretDB/issues/4431
-	if name != "" {
-		log.Component = name
-	}
+	log.Attr, log.Component = attrs(r, ga)
 
-	return &log, nil
+	return &log
 }
 
 // newMongoHandler creates a new mongo handler.
@@ -157,10 +147,7 @@ func (h *mongoHandler) Enabled(_ context.Context, l slog.Level) bool {
 func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
 	var buf bytes.Buffer
 
-	record, err := mongoLogFromRecord(r, h.ga, h.opts)
-	if err != nil {
-		return err
-	}
+	record := mongoLogFromRecord(r, h.ga, h.opts)
 
 	if h.testAttrs != nil {
 		if record.Msg != "" {
