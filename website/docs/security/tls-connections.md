@@ -23,9 +23,7 @@ You may also need to set `tlsCAFile` parameter if the system-wide certificate au
 See documentation for your client or driver for more details.
 Example: `mongodb://ferretdb:27018/?tls=true&tlsCAFile=companyRootCA.pem`.
 
-## PostgreSQL with TLS
-
-Using TLS is recommended if username and password are transferred in plain text.
+## Setting up TLS connections
 
 In the following examples, FerretDB uses TLS certificates to secure the connection.
 The `ferretdb` server uses TLS server certificate file, TLS private key file and root CA certificate file.
@@ -45,30 +43,9 @@ client-certs/
 └── rootCA-cert.pem
 ```
 
-### Using TLS with `ferretdb` package
+### Setting up TLS via Docker
 
-The example below connects to localhost PostgreSQL instance with DocumentDB extension using TLS with certificates in `server-certs` directory.
-Be sure to check that `server-certs` directory and files are present.
-
-```sh
-ferretdb \
-  --postgresql-url=postgres://username:password@localhost:5432/postgres \
-  --listen-tls=:27018 \
-  --listen-tls-cert-file=./server-certs/server-cert.pem \
-  --listen-tls-key-file=./server-certs/server-key.pem \
-  --listen-tls-ca-file=./server-certs/rootCA-cert.pem
-```
-
-Using `mongosh`, a client connects to FerretDB as `username` using TLS certificates in `client-certs` directory.
-Be sure to check that `client-certs` directory and files are present.
-
-```sh
-mongosh 'mongodb://username:password@127.0.0.1:27018/postgres?tls=true&tlsCertificateKeyFile=./client-certs/client.pem&tlsCaFile=./client-certs/rootCA-cert.pem'
-```
-
-### Using TLS with Docker
-
-For using Docker to run `ferretdb` server, `docker-compose.yml` example for TLS is provided in below.
+When using Docker to run `ferretdb` server, the `docker-compose.yml` below shows how to set up TLS connections.
 The Docker host requires certificates `server-certs` directory,
 and volume is mounted from `./server-certs` of Docker host to `/etc/certs` of Docker container.
 
@@ -105,7 +82,7 @@ networks:
     name: ferretdb
 ```
 
-To start `ferretdb`, use docker compose.
+To start `ferretdb`, run the following command:
 
 ```sh
 docker compose up
@@ -114,10 +91,12 @@ docker compose up
 In the following example, a client connects to MongoDB URI using TLS certificates as `username`.
 It uses Docker volume to mount `./clients-certs` of Docker host to `/clients` Docker container.
 
+Connect to `ferretdb` server using `mongosh` client:
+
 ```sh
 docker run --rm -it \
   --network=ferretdb \
   --volume ./client-certs:/clients \
   --entrypoint=mongosh \
-  mongo 'mongodb://username:password@host.docker.internal:27018/postgres?tls=true&tlsCertificateKeyFile=/clients/client.pem&tlsCaFile=/clients/rootCA-cert.pem'
+  mongo 'mongodb://username:password@host.docker.internal:27018?tls=true&tlsCertificateKeyFile=/clients/client.pem&tlsCaFile=/clients/rootCA-cert.pem'
 ```
