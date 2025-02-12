@@ -34,7 +34,9 @@ A basic `curl` command can fetch or modify data.
 So instead of needing a full-fledged backend just to store something in a database, a workflow can send REST requests to a Data API.
 
 For developers already familiar with REST, Data API is essential.
-There's no new learning curve – you can interact with your database via POST requests.
+There's no new learning curve – you can interact with your database via HTTP requests.
+It follows the defined [Data API OpenAPI documentation here](https://github.com/FerretDB/FerretDB/blob/main/internal/dataapi/api/openapi-minimal.json)。
+
 With FerretDB's Data API stepping in as an alternative to MongoDB's deprecated service, we are ensuring developers can interact with their data without issues, no matter the stack they're working with.
 
 ## FerretDB Data API
@@ -199,5 +201,4 @@ Besides, FerretDB is an open source solution – you can host it on your infrast
 Ready to migrate?
 [Check out our migration guide on how you can get started](https://github.com/FerretDB/FerretDB) and start using the Data API today!
 
-We look forward to your feedback and comments on this new release.
-So if you have any questions, bugs, or features that are unsupported for your use case, [please feel free to reach out to us](https://docs.ferretdb.io/#community)!
+And if you have any questions, bugs, or features that are unsupported for your use case, [please feel free to reach out to us](https://docs.ferretdb.io/#community)!
