@@ -15,10 +15,7 @@
 package server
 
 import (
-	"fmt"
-	"log/slog"
 	"net/http"
-	"net/http/httputil"
 
 	"github.com/FerretDB/wire/wirebson"
 
@@ -30,11 +27,8 @@ import (
 // Aggregate implements [ServerInterface].
 func (s *Server) Aggregate(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	l := s.l
 
-	if l.Enabled(ctx, slog.LevelDebug) {
-		l.DebugContext(ctx, fmt.Sprintf("Request:\n%s\n", must.NotFail(httputil.DumpRequest(r, true))))
-	}
+	s.logRequest(ctx, r)
 
 	var req api.AggregateRequestBody
 	if err := decodeJsonRequest(r, &req); err != nil {
