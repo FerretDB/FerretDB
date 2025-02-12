@@ -225,8 +225,9 @@ func setupLogger(format string, uuid string) *slog.Logger {
 	}
 
 	opts := &logging.NewHandlerOpts{
-		Base:  format,
-		Level: level,
+		Base:          format,
+		Level:         level,
+		CheckMessages: devbuild.Enabled,
 	}
 	logging.Setup(opts, uuid)
 	logger := slog.Default()
