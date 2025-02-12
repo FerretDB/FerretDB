@@ -198,3 +198,6 @@ Besides, FerretDB is an open source solution – you can host it on your infrast
 
 Ready to migrate?
 [Check out our migration guide on how you can get started](https://github.com/FerretDB/FerretDB) and start using the Data API today!
+
+We look forward to your feedback and comments on this new release.
+So if you have any questions, bugs, or features that are unsupported for your use case, [please feel free to reach out to us](https://docs.ferretdb.io/#community)!
