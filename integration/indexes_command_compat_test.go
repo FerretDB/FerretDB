@@ -284,7 +284,7 @@ func TestDropIndexesCommandCompat(t *testing.T) {
 				{Keys: bson.D{{"v.foo", -1}}},
 			},
 			toDrop:           bson.A{"v_-1", "v_1_foo_1"},
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/306",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/4730",
 		},
 		"MultipleIndexesByKey": {
 			toCreate: []mongo.IndexModel{
@@ -314,7 +314,7 @@ func TestDropIndexesCommandCompat(t *testing.T) {
 				{Keys: bson.D{{"v", -1}}},
 			},
 			toDrop:           bson.D{{"v", -1}},
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/306",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/4730",
 		},
 		"SimilarIndexes": {
 			toCreate: []mongo.IndexModel{
@@ -322,7 +322,7 @@ func TestDropIndexesCommandCompat(t *testing.T) {
 				{Keys: bson.D{{"v", 1}, {"bar", 1}}},
 			},
 			toDrop:           bson.D{{"v", 1}, {"bar", 1}},
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/306",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/4730",
 		},
 		"DropAllExpression": {
 			toCreate: []mongo.IndexModel{
@@ -331,7 +331,7 @@ func TestDropIndexesCommandCompat(t *testing.T) {
 				{Keys: bson.D{{"foo", 1}, {"bar", 1}}},
 			},
 			toDrop:           "*",
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/306",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/4730",
 		},
 		"WrongExpression": {
 			toCreate: []mongo.IndexModel{
@@ -354,7 +354,7 @@ func TestDropIndexesCommandCompat(t *testing.T) {
 				{"_id", -1},
 				{"v", 1},
 			},
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/306",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/4730",
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
