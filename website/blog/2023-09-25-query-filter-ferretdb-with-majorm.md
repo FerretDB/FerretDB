@@ -1,6 +1,6 @@
 ---
 slug: query-filter-ferretdb-with-majorm
-title: "MongoDB GUI: Query and Filter FerretDB Instance with MajorM"
+title: 'MongoDB GUI: Query and Filter FerretDB Instance with MajorM'
 authors: [alex]
 description: >
   Explore and use FerretDB with MajorM, and explore ways to leverage FerretDB for MongoDB GUI applications.

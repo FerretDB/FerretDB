@@ -1,6 +1,6 @@
 ---
 slug: monitor-ferretdb-performance-using-coroot
-title: "Monitor FerretDB Performance using Coroot"
+title: 'Monitor FerretDB Performance using Coroot'
 authors: [alex]
 description: >
   Observability is vital in any infrastructure. Find out how Coroot can provide real-time monitoring and visibility into a FerretDB setup.

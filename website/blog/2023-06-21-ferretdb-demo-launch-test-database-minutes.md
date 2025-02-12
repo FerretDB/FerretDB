@@ -1,6 +1,6 @@
 ---
 slug: ferretdb-demo-launch-test-database-minutes
-title: "FerretDB Demo: Launch and Test a Database in Minutes"
+title: 'FerretDB Demo: Launch and Test a Database in Minutes'
 authors: [alex]
 description: >
   Want to find out how FerretDB really works? Let's guide you through our demo to learn more.
@@ -80,32 +80,32 @@ Now that you're connected to FerretDB, let's explore some basic database operati
 ```js
 db.demo.insertMany([
   {
-    name: "Chinedu Eze",
+    name: 'Chinedu Eze',
     age: 20,
-    email: "chinedu.eze@example.com",
-    major: "Computer Science",
-    sports: ["Basketball", "Running"]
+    email: 'chinedu.eze@example.com',
+    major: 'Computer Science',
+    sports: ['Basketball', 'Running']
   },
   {
-    name: "Maria Rodriguez",
+    name: 'Maria Rodriguez',
     age: 21,
-    email: "maria.rodriguez@example.com",
-    major: "Business Administration",
-    sports: ["Yoga", "Swimming"]
+    email: 'maria.rodriguez@example.com',
+    major: 'Business Administration',
+    sports: ['Yoga', 'Swimming']
   },
   {
-    name: "Kelly Li",
+    name: 'Kelly Li',
     age: 19,
-    email: "kelly.li@example.com",
-    major: "Engineering",
-    sports: ["Soccer", "Cycling"]
+    email: 'kelly.li@example.com',
+    major: 'Engineering',
+    sports: ['Soccer', 'Cycling']
   },
   {
-    name: "Sara Nguyen",
+    name: 'Sara Nguyen',
     age: 22,
-    email: "sara.nguyen@example.com",
-    major: "Biology",
-    sports: ["Tennis", "Dancing"]
+    email: 'sara.nguyen@example.com',
+    major: 'Biology',
+    sports: ['Tennis', 'Dancing']
   }
 ])
 ```
@@ -113,13 +113,13 @@ db.demo.insertMany([
 **Delete data:** Let's remove a document from the database using a `name` field as the specified query.
 
 ```js
-db.demo.deleteOne({ name: "Sara Nguyen" })
+db.demo.deleteOne({ name: 'Sara Nguyen' })
 ```
 
 **Update data:** Let's update the documents in the database with `age` less than or equal to `21`.
 
 ```js
-db.demo.updateMany({ age: { $lt: 20 } }, { $addToSet: { sports: "aerobics" } })
+db.demo.updateMany({ age: { $lt: 20 } }, { $addToSet: { sports: 'aerobics' } })
 ```
 
 To see the current state of your database, use the `find` command, which should give you a good view of all the prior changes made to the collection:

@@ -23,14 +23,14 @@ Insert the following document into a `store` collection:
 
 ```js
 db.store.insertMany([
-  { _id: 1, items: ["pens", "pencils", "paper", "erasers", "rulers"] }
+  { _id: 1, items: ['pens', 'pencils', 'paper', 'erasers', 'rulers'] }
 ])
 ```
 
 **Example:** Use the `$push` operator to add an element to an existing array.
 
 ```js
-db.store.updateOne({ _id: 1 }, { $push: { items: "markers" } })
+db.store.updateOne({ _id: 1 }, { $push: { items: 'markers' } })
 ```
 
 After the operation, the updated document looks like this:
@@ -39,7 +39,7 @@ After the operation, the updated document looks like this:
 [
   {
     _id: 1,
-    items: ["pens", "pencils", "paper", "erasers", "rulers", "markers"]
+    items: ['pens', 'pencils', 'paper', 'erasers', 'rulers', 'markers']
   }
 ]
 ```
@@ -52,31 +52,31 @@ If the specified element exists in the array, the `$addToSet` operator will not 
 Insert the following documents into a `store` collection:
 
 ```js
-db.store.insertMany([{ _id: 1, items: ["pens", "pencils"] }])
+db.store.insertMany([{ _id: 1, items: ['pens', 'pencils'] }])
 ```
 
 **Example:** Use the `$addToSet` operator to update the array with non-existing elements.
 
 ```js
-db.store.updateOne({ _id: 1 }, { $addToSet: { items: "paper" } })
+db.store.updateOne({ _id: 1 }, { $addToSet: { items: 'paper' } })
 ```
 
 The document is subsequently updated with the new element, as depicted below:
 
 ```json5
-[{ _id: 1, items: ["pens", "pencils", "paper"] }]
+[{ _id: 1, items: ['pens', 'pencils', 'paper'] }]
 ```
 
 **Example:** Use the `$addToSet` operator to update the array with already existing elements.
 
 ```js
-db.store.updateOne({ _id: 1 }, { $addToSet: { items: "pens" } })
+db.store.updateOne({ _id: 1 }, { $addToSet: { items: 'pens' } })
 ```
 
 Since the array already contains the element, there won't be any changes.
 
 ```json5
-[{ _id: 1, items: ["pens", "pencils", "paper"] }]
+[{ _id: 1, items: ['pens', 'pencils', 'paper'] }]
 ```
 
 :::note
@@ -88,13 +88,13 @@ The `$addToSet` is different from the `$push` operator which adds the element to
 If the array field does not exist in the document, the `$addToSet` operator will create the field and add the element to the array.
 
 ```js
-db.store.updateOne({ _id: 1 }, { $addToSet: { colors: "red" } })
+db.store.updateOne({ _id: 1 }, { $addToSet: { colors: 'red' } })
 ```
 
 The updated document looks like this:
 
 ```json5
-[{ _id: 1, items: ["pens", "pencils", "paper"], colors: ["red"] }]
+[{ _id: 1, items: ['pens', 'pencils', 'paper'], colors: ['red'] }]
 ```
 
 ## $pop
@@ -106,7 +106,7 @@ Insert this document into a `products` collection:
 
 ```js
 db.products.insertMany([
-  { _id: 1, items: ["pens", "pencils", "paper", "erasers", "rulers"] }
+  { _id: 1, items: ['pens', 'pencils', 'paper', 'erasers', 'rulers'] }
 ])
 ```
 
@@ -122,7 +122,7 @@ The document is subsequently updated with the first element `pens` removed, as d
 [
   {
     _id: 1,
-    items: ["pencils", "paper", "erasers", "rulers"]
+    items: ['pencils', 'paper', 'erasers', 'rulers']
   }
 ]
 ```
@@ -139,7 +139,7 @@ The updated now looks like this:
 [
   {
     _id: 1,
-    items: ["pencils", "paper", "erasers"]
+    items: ['pencils', 'paper', 'erasers']
   }
 ]
 ```
@@ -152,7 +152,7 @@ Insert the following document into a `store` collection:
 
 ```js
 db.store.insertMany([
-  { _id: 1, items: ["pens", "pencils", "paper", "erasers", "rulers"] }
+  { _id: 1, items: ['pens', 'pencils', 'paper', 'erasers', 'rulers'] }
 ])
 ```
 
@@ -161,7 +161,7 @@ db.store.insertMany([
 ```js
 db.store.updateOne(
   { _id: 1 },
-  { $pullAll: { items: ["pens", "pencils", "paper"] } }
+  { $pullAll: { items: ['pens', 'pencils', 'paper'] } }
 )
 ```
 
@@ -171,7 +171,7 @@ After removing all instances of the specified array elements, the document is up
 [
   {
     _id: 1,
-    items: ["erasers", "rulers"]
+    items: ['erasers', 'rulers']
   }
 ]
 ```
@@ -185,9 +185,9 @@ db.fruits.insertMany([
   {
     _id: 1,
     fruits: [
-      { type: "apple", color: "red" },
-      { type: "banana", color: "yellow" },
-      { type: "orange", color: "orange" }
+      { type: 'apple', color: 'red' },
+      { type: 'banana', color: 'yellow' },
+      { type: 'orange', color: 'orange' }
     ]
   }
 ])
@@ -201,8 +201,8 @@ db.fruits.update(
   {
     $pullAll: {
       fruits: [
-        { type: "apple", color: "red" },
-        { type: "banana", color: "yellow" }
+        { type: 'apple', color: 'red' },
+        { type: 'banana', color: 'yellow' }
       ]
     }
   }
@@ -212,5 +212,5 @@ db.fruits.update(
 The updated document now looks like this:
 
 ```json5
-[{ _id: 1, fruits: [{ type: "orange", color: "orange" }] }]
+[{ _id: 1, fruits: [{ type: 'orange', color: 'orange' }] }]
 ```

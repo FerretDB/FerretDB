@@ -1,6 +1,6 @@
 ---
 slug: fastnetmon-picked-ferretdb-saas-offering
-title: "Why FastNetMon picked FerretDB for their SaaS offering"
+title: 'Why FastNetMon picked FerretDB for their SaaS offering'
 author: Pavel Odintsov
 author_title: Co-founder and CTO at FastNetMon
 author_image_url: /img/blog/pavel-odintsov.jpeg

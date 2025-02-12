@@ -1,6 +1,6 @@
 ---
 slug: otel-context-propagation-in-ferretdb
-title: "OpenTelemetry context propagation in FerretDB"
+title: 'OpenTelemetry context propagation in FerretDB'
 authors: [elena]
 description: >
   In this blog post, we demonstrate how to pass tracing context to queries in FerretDB using OpenTelemetry.

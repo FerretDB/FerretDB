@@ -1,6 +1,6 @@
 ---
 slug: run-ferretdb-cloudnativepg-kubernetes
-title: "Run FerretDB and Postgres Cluster using CloudNativePG on Kubernetes"
+title: 'Run FerretDB and Postgres Cluster using CloudNativePG on Kubernetes'
 authors: [alex]
 description: >
   This guide will show you how to deploy FerretDB with a Postgres backend using CloudNativePG on Kubernetes.
@@ -183,7 +183,7 @@ spec:
             - containerPort: 27017
           env:
             - name: FERRETDB_POSTGRESQL_URL
-              value: "postgresql://ferretuser@postgres-cluster-rw.cnpg.svc.cluster.local:5432/ferretdb"
+              value: 'postgresql://ferretuser@postgres-cluster-rw.cnpg.svc.cluster.local:5432/ferretdb'
 
 ---
 apiVersion: v1
@@ -290,9 +290,9 @@ Start by creating a collection and inserting some documents:
 
 ```js
 db.testCollection.insertMany([
-  { name: "Alice", age: 25, city: "Wonderland" },
-  { name: "Bob", age: 30, city: "Builderland" },
-  { name: "Charlie", age: 35, city: "Chocolate Factory" }
+  { name: 'Alice', age: 25, city: 'Wonderland' },
+  { name: 'Bob', age: 30, city: 'Builderland' },
+  { name: 'Charlie', age: 35, city: 'Chocolate Factory' }
 ])
 ```
 
@@ -312,7 +312,7 @@ Output:
 Next let's update a document:
 
 ```js
-db.testCollection.updateOne({ name: "Alice" }, { $set: { age: 26 } })
+db.testCollection.updateOne({ name: 'Alice' }, { $set: { age: 26 } })
 ```
 
 Output:

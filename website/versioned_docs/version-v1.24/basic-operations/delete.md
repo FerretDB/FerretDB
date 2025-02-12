@@ -20,31 +20,31 @@ Insert the following list of documents:
 ```js
 db.scientists.insertMany([
   {
-    firstname: "Thomas",
-    lastname: "Edison",
+    firstname: 'Thomas',
+    lastname: 'Edison',
     born: 1847,
-    invention: "LightBulb",
+    invention: 'LightBulb',
     nobel: true
   },
   {
-    firstname: "Graham",
-    lastname: "Bell",
+    firstname: 'Graham',
+    lastname: 'Bell',
     born: 1847,
-    invention: "telephone",
+    invention: 'telephone',
     nobel: false
   },
   {
-    firstname: "Nikola",
-    lastname: "Tesla",
+    firstname: 'Nikola',
+    lastname: 'Tesla',
     born: 1856,
-    invention: "Tesla coil",
+    invention: 'Tesla coil',
     nobel: false
   },
   {
-    firstname: "Ada",
-    lastname: "Lovelace",
+    firstname: 'Ada',
+    lastname: 'Lovelace',
     born: 1815,
-    invention: "Computer programming",
+    invention: 'Computer programming',
     nobel: false
   }
 ])
@@ -52,7 +52,7 @@ db.scientists.insertMany([
 
 This operation returns a response showing `acknowledged` as `true` and the `ObjectId` of the four inserted documents:
 
-```js
+```json5
 {
   acknowledged: true,
   insertedIds: {
@@ -72,7 +72,7 @@ db.scientists.deleteOne({ nobel: false })
 
 This operation returns a response that shows that a single document was deleted from the collection.
 
-```js
+```json5
 { acknowledged: true, deletedCount: 1 }
 ```
 

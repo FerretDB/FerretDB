@@ -1,6 +1,6 @@
 ---
 slug: mongodb-gui-using-ferretdb-nosqlbooster
-title: "MongoDB GUI: Using FerretDB with NoSQLBooster"
+title: 'MongoDB GUI: Using FerretDB with NoSQLBooster'
 authors: [alex]
 description: >
   Explore how to use FerretDB with a MongoDB GUI tool like NoSQLBooster: setting it up, running queries, performing aggregation operations, and much more.
@@ -102,45 +102,45 @@ Click on the tab with the shell icon to open the MongoDB shell in NoSQLBooster.
 db.orders.insertMany([
   {
     order_id: 1001,
-    customer: "John Doe",
+    customer: 'John Doe',
     items: [
-      { name: "shirt", quantity: 2, price: 25.99 },
-      { name: "pants", quantity: 1, price: 34.99 }
+      { name: 'shirt', quantity: 2, price: 25.99 },
+      { name: 'pants', quantity: 1, price: 34.99 }
     ],
-    date: new Date("2023-04-25")
+    date: new Date('2023-04-25')
   },
   {
     order_id: 1002,
-    customer: "Jane Smith",
+    customer: 'Jane Smith',
     items: [
-      { name: "dress", quantity: 1, price: 89.99 },
-      { name: "shoes", quantity: 1, price: 49.99 }
+      { name: 'dress', quantity: 1, price: 89.99 },
+      { name: 'shoes', quantity: 1, price: 49.99 }
     ],
-    date: new Date("2023-04-26")
+    date: new Date('2023-04-26')
   },
   {
     order_id: 1003,
-    customer: "Bob Johnson",
-    items: [{ name: "jacket", quantity: 1, price: 69.99 }],
-    date: new Date("2023-04-27")
+    customer: 'Bob Johnson',
+    items: [{ name: 'jacket', quantity: 1, price: 69.99 }],
+    date: new Date('2023-04-27')
   },
   {
     order_id: 1004,
-    customer: "Alice Lee",
+    customer: 'Alice Lee',
     items: [
-      { name: "socks", quantity: 3, price: 9.99 },
-      { name: "hat", quantity: 1, price: 19.99 }
+      { name: 'socks', quantity: 3, price: 9.99 },
+      { name: 'hat', quantity: 1, price: 19.99 }
     ],
-    date: new Date("2023-04-28")
+    date: new Date('2023-04-28')
   },
   {
     order_id: 1005,
-    customer: "Tom Wilson",
+    customer: 'Tom Wilson',
     items: [
-      { name: "sweater", quantity: 1, price: 59.99 },
-      { name: "scarf", quantity: 2, price: 29.99 }
+      { name: 'sweater', quantity: 1, price: 59.99 },
+      { name: 'scarf', quantity: 2, price: 29.99 }
     ],
-    date: new Date("2023-04-29")
+    date: new Date('2023-04-29')
   }
 ])
 ```
@@ -180,7 +180,7 @@ You can leverage the MongoDB shell in NoSQLBooster to run any command you want.
 In the next example, we're going to execute a command that'll return a document with a field named `total_orders` containing the number of documents in the `orders` collection.
 
 ```js
-db.orders.aggregate([{ $count: "total_orders" }])
+db.orders.aggregate([{ $count: 'total_orders' }])
 ```
 
 ![Aggregation operation](/img/blog/ferretdb-nosqlbooster/aggregation-count.png)
@@ -190,8 +190,8 @@ Run the following command to do this:
 
 ```js
 db.orders.aggregate([
-  { $unwind: "$items" },
-  { $group: { _id: "$_id", total_value: { $sum: "$items.price" } } }
+  { $unwind: '$items' },
+  { $group: { _id: '$_id', total_value: { $sum: '$items.price' } } }
 ])
 ```
 

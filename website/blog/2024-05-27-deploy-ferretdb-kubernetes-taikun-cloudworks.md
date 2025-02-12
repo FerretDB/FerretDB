@@ -1,6 +1,6 @@
 ---
 slug: deploy-ferretdb-kubernetes-taikun-cloudworks
-title: "Learn to Deploy FerretDB on Kubernetes on Taikun CloudWorks"
+title: 'Learn to Deploy FerretDB on Kubernetes on Taikun CloudWorks'
 authors: [alex]
 description: >
   Learn how to deploy FerretDB with a Percona Distribution for PostgreSQL as the backend on a Kubernetes cluster on Taikun CloudWorks
@@ -149,7 +149,7 @@ spec:
       repos:
         - name: repo1
           schedules:
-            full: "0 0 * * 6"
+            full: '0 0 * * 6'
           volume:
             volumeClaimSpec:
               accessModes:

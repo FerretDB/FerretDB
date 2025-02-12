@@ -37,7 +37,7 @@ FerretDB v0.9.3 improves on this, adding more stages and pushing down more queri
 For instance, we've implemented `$sort` and `$group` aggregation pipeline stages.
 Suppose you have a collection named `order` that contains the following documents:
 
-```js
+```json5
 {
     _id: 1,
     customer_name: "John Smith",

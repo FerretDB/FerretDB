@@ -1,6 +1,6 @@
 ---
 slug: guide-disaster-recovery-ferretdb-elotl-nova-kubernetes
-title: "A Guide to Disaster Recovery for FerretDB with Elotl Nova on Kubernetes"
+title: 'A Guide to Disaster Recovery for FerretDB with Elotl Nova on Kubernetes'
 authors:
   - name: Maciek Urbanski
     title: Senior Platform Engineer at Elotl

@@ -1,6 +1,6 @@
 ---
 slug: pgmanage-postgresql-gui-admin-ferretdb
-title: "Using PgManage as PostgreSQL GUI Admin for FerretDB"
+title: 'Using PgManage as PostgreSQL GUI Admin for FerretDB'
 authors: [alex]
 description: >
   In this blog post, we’ll be exploring ways to manage your FerretDB data in Postgres using PgManage GUI admin tool.

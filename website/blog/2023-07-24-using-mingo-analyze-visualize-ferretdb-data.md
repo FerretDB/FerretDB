@@ -1,6 +1,6 @@
 ---
 slug: using-mingo-analyze-visualize-ferretdb-data
-title: "Using Mingo to Analyze and Visualize FerretDB Data"
+title: 'Using Mingo to Analyze and Visualize FerretDB Data'
 description: >
   Here, we'll be exploring ways to visualize and analyze FerretDB data with Mingo – a modern, sleek, and fast MongoDB GUI tool.
 image: /img/blog/ferretdb-mingo.jpg
@@ -106,7 +106,7 @@ Please find the data here:
 The data contains a set of documents based on different transactions and supplies across the globe.
 This is a sample document from the collection:
 
-```js
+```json5
 {"transaction_id": 10020, "customer_name": "María Pérez", "customer_location": "Buenos Aires, Argentina", "product_category": "Furniture", "transaction_time": new Date ("2023-07-16T02:00:00Z"), "product_name": "La-Z-Boy Recliner", "price": 450, "quantity": 1, "payment_method": "Credit Card"}
 ```
 
@@ -132,8 +132,8 @@ A typical syntax for this would look like this:
 
 ```js
 db.supply.aggregate([
-  { $match: { product_category: "Books" } },
-  { $group: { _id: "$customer_name", totalQuantity: { $sum: "$quantity" } } },
+  { $match: { product_category: 'Books' } },
+  { $group: { _id: '$customer_name', totalQuantity: { $sum: '$quantity' } } },
   { $sort: { totalQuantity: -1 } },
   { $limit: 5 }
 ])

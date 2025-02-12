@@ -1,6 +1,6 @@
 ---
 slug: run-ferretdb-securely-using-openziti
-title: "Run FerretDB Securely Using OpenZiti"
+title: 'Run FerretDB Securely Using OpenZiti'
 authors: [alex]
 description: >
   This guide will walk you through setting up FerretDB securely using OpenZiti.
