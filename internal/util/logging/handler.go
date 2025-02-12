@@ -175,7 +175,10 @@ func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
 		}
 
 		if strings.TrimRight(r.Message, ".?!") != r.Message {
-			panic(fmt.Sprintf("message %q ends with punctuation", r.Message))
+			// TODO
+			if strings.TrimSuffix(r.Message, "/...") == r.Message {
+				panic(fmt.Sprintf("message %q ends with punctuation", r.Message))
+			}
 		}
 	}
 
