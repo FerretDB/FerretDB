@@ -327,7 +327,7 @@ func TestDropIndexesCompat(t *testing.T) {
 				{Keys: bson.D{{"pam.pam", -1}}},
 			},
 			dropAll:          true,
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/306",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/4730",
 		},
 		"ID": {
 			dropIndexName: "_id_",
@@ -338,14 +338,14 @@ func TestDropIndexesCompat(t *testing.T) {
 				{Keys: bson.D{{"v", 1}}},
 			},
 			dropIndexName:    "v_1",
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/306",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/4730",
 		},
 		"DescendingValue": {
 			toCreate: []mongo.IndexModel{
 				{Keys: bson.D{{"v", -1}}},
 			},
 			dropIndexName:    "v_-1",
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/306",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/4730",
 		},
 		"NonExistent": {
 			dropIndexName: "nonexistent_1",
