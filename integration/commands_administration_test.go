@@ -82,6 +82,7 @@ func TestCreateCollectionDropListCollections(t *testing.T) {
 func TestDropDatabaseListDatabases(tt *testing.T) {
 	tt.Parallel()
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/4722
 	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/4722")
 
 	ctx, collection := setup.Setup(tt) // no providers there
@@ -250,6 +251,7 @@ func TestListDatabases(t *testing.T) {
 		t.Run(name, func(tt *testing.T) {
 			tt.Parallel()
 
+			// TODO https://github.com/FerretDB/FerretDB/issues/4722
 			t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/4722")
 
 			actual, err := db.Client().ListDatabases(ctx, tc.filter, tc.opts...)
