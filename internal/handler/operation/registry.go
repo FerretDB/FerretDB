@@ -16,7 +16,6 @@ package operation
 
 import (
 	"cmp"
-	"maps"
 	"slices"
 	"sync"
 	"sync/atomic"
@@ -88,18 +87,30 @@ func (r *Registry) Update(id int32, db, collection string, command *wirebson.Doc
 	o.DB = db
 	o.Collection = collection
 	o.Command = command
-
-	r.operations[id] = o
 }
 
 // Operations returns all operations.
-func (r *Registry) Operations() []*Operation {
+func (r *Registry) Operations() []Operation {
 	r.rw.RLock()
 	defer r.rw.RUnlock()
 
-	return slices.SortedFunc(maps.Values(r.operations), func(a, b *Operation) int {
+	res := make([]Operation, len(r.operations))
+
+	for i, op := range r.operations {
+		v := *op
+
+		// lifetime is tracked via pointer in the registry;
+		// remove token to make things a bit less confusing
+		v.token = nil
+
+		res[i] = v
+	}
+
+	slices.SortFunc(res, func(a, b Operation) int {
 		return cmp.Compare(a.OpID, b.OpID)
 	})
+
+	return res
 }
 
 // Close closes the operation registry.
