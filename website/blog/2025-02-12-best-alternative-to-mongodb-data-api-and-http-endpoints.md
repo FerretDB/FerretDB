@@ -35,7 +35,7 @@ So instead of needing a full-fledged backend just to store something in a databa
 
 For developers already familiar with REST, Data API is essential.
 There's no new learning curve – you can interact with your database via HTTP requests.
-It follows the defined [Data API OpenAPI documentation here](https://github.com/FerretDB/FerretDB/blob/main/internal/dataapi/api/openapi-minimal.json)。
+It follows the defined [Data API OpenAPI documentation here](https://github.com/FerretDB/FerretDB/blob/main/internal/dataapi/api/openapi-minimal.json).
 
 With FerretDB's Data API stepping in as an alternative to MongoDB's deprecated service, we are ensuring developers can interact with their data without issues, no matter the stack they're working with.
 
