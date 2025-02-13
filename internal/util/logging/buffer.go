@@ -15,11 +15,9 @@
 package logging
 
 import (
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"sync"
-	"time"
 
 	"github.com/FerretDB/wire/wirebson"
 
@@ -78,14 +76,7 @@ func (cb *circularBuffer) getArray() (*wirebson.Array, error) {
 	res := wirebson.MakeArray(len(records))
 
 	for _, r := range records {
-		// TODO https://github.com/FerretDB/FerretDB/issues/4347
-		b, err := json.Marshal(map[string]any{
-			"t": map[string]time.Time{
-				"$date": r.Time,
-			},
-			"l":   r.Level,
-			"msg": r.Message,
-		})
+		b, err := mongoLogFromRecord(*r, nil, nil).Marshal()
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
