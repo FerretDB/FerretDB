@@ -15,7 +15,10 @@
 // Package shareddata provides data for tests and benchmarks.
 package shareddata
 
-import "golang.org/x/exp/maps"
+import (
+	"maps"
+	"slices"
+)
 
 // unset represents a field that should not be set.
 var unset = struct{}{}
@@ -71,7 +74,7 @@ func AllProviders() Providers {
 		res[n] = p
 	}
 
-	return maps.Values(res)
+	return slices.Collect(maps.Values(res))
 }
 
 // Providers are array of providers.

@@ -15,8 +15,10 @@
 package shareddata
 
 import (
+	"maps"
+	"slices"
+
 	"go.mongodb.org/mongo-driver/bson"
-	"golang.org/x/exp/maps"
 )
 
 // Provider is implemented by shared data sets that provide documents.
@@ -42,7 +44,7 @@ func (values *Values[idType]) Name() string {
 
 // Docs implement Provider interface.
 func (values *Values[idType]) Docs() []bson.D {
-	ids := maps.Keys(values.data)
+	ids := slices.Collect(maps.Keys(values.data))
 
 	res := make([]bson.D, 0, len(values.data))
 
@@ -92,7 +94,7 @@ func (t *topLevelValues[id]) Name() string {
 
 // Docs implements [Provider].
 func (t *topLevelValues[id]) Docs() []bson.D {
-	ids := maps.Keys(t.data)
+	ids := slices.Collect(maps.Keys(t.data))
 
 	res := make([]bson.D, 0, len(t.data))
 
