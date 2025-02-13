@@ -16,6 +16,7 @@
 package setup
 
 import (
+	"log"
 	"strings"
 	"testing"
 )
@@ -40,11 +41,35 @@ panic: message "    xfail.go:62: \tError Trace:\t/home/user/FerretDB/integration
 
 func (x *xfailMiddleware) Errorf(format string, args ...any) {
 	format = strings.TrimSpace(format)
+	format = strings.TrimRight(format, ".?!")
+
+	i := len(args) - 1
+
+	if lastArg, ok := args[i].(string); ok {
+		lastArg = strings.TrimSpace(lastArg)
+		lastArg = strings.TrimRight(lastArg, ".?!")
+		args[i] = lastArg
+
+		// TODO
+		x.TB.Log(strings.ReplaceAll(lastArg, "\n", "\\n"))
+	}
+
 	x.TB.Errorf(format, args...)
 }
 
 func (x *xfailMiddleware) Logf(format string, args ...any) {
 	format = strings.TrimSpace(format)
+	format = strings.TrimRight(format, ".?!")
+
+	i := len(args) - 1
+
+	if lastArg, ok := args[i].(string); ok {
+		lastArg = strings.TrimRight(lastArg, ".?!")
+		args[i] = lastArg
+	}
+
+	log.Print(format, args)
+
 	x.TB.Logf(format, args...)
 }
 

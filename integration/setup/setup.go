@@ -266,7 +266,7 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 	// drop collection and (possibly) database unless test failed
 	tb.Cleanup(func() {
 		if tb.Failed() {
-			tb.Logf("Keeping %s.%s for debugging.", databaseName, collectionName)
+			tb.Logf("Keeping %s.%s for debugging", databaseName, collectionName)
 			return
 		}
 
@@ -293,7 +293,7 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 	}
 
 	if len(opts.Providers) == 0 && opts.BenchmarkProvider == nil {
-		tb.Logf("Collection %s.%s wasn't created because no providers were set.", databaseName, collectionName)
+		tb.Logf("Collection %s.%s wasn't created because no providers were set", databaseName, collectionName)
 	} else {
 		require.True(tb, inserted)
 	}
