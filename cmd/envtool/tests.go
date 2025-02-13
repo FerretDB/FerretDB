@@ -421,6 +421,7 @@ func runGoTest(runCtx context.Context, opts *runGoTestOpts) (resErr error) {
 			// do not add span event
 
 			// this fixes the issue mentioned in xfail_middleware.go
+			// although the console output is much worse
 			out := strings.TrimSpace(event.Output)
 
 			// initial setup output or early panic
