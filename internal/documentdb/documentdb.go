@@ -19,15 +19,17 @@ import "context"
 
 // The only schema we should be using is documentdb_api.
 // See also:
-// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/1221
-//
-// We use documentdb_api_catalog schema for `listDatabases` and `explain` commands.
-// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/26
 // TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/143
 //
+// We use documentdb_api_catalog schema for `listDatabases` and `explain` commands.
+// TODO https://github.com/FerretDB/FerretDB/issues/4722
+// TODO https://github.com/microsoft/documentdb/issues/45
+//
 // We use documentdb_api_internal schema for indexes and authentication:
-// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/1147
-// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/1221
+// TODO https://github.com/microsoft/documentdb/issues/25
+// TODO https://github.com/microsoft/documentdb/issues/46
+//
+// And we generate code for documentdb_core just to track changes.
 //
 //go:generate go run ./genwrap -debug -schemas=documentdb_api,documentdb_api_catalog,documentdb_api_internal,documentdb_core
 
