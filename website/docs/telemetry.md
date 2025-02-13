@@ -36,7 +36,7 @@ Argument values, data field names, successful responses, or error messages are n
 :::
 
 The same information is always saved in a `telemetry.json` file
-in the [state directory](configuration/flags.md#general), making it easy to inspect.
+in the [state directory](configuration/flags.md#miscellaneous), making it easy to inspect.
 
 ## Version notifications
 

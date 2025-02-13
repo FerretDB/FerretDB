@@ -18,7 +18,6 @@ require (
 	go.mongodb.org/mongo-driver v1.17.2
 	go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo v0.59.0
 	go.opentelemetry.io/otel v1.34.0
-	golang.org/x/exp v0.0.0-20250207012021-f9890c6ad9f3
 )
 
 require (
