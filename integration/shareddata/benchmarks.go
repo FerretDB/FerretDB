@@ -15,8 +15,10 @@
 package shareddata
 
 import (
+	"maps"
+	"slices"
+
 	"go.mongodb.org/mongo-driver/bson"
-	"golang.org/x/exp/maps"
 )
 
 // BenchmarkSmallDocuments provides documents that look like:
@@ -101,5 +103,5 @@ func AllBenchmarkProviders() []BenchmarkProvider {
 		res[n] = p
 	}
 
-	return maps.Values(res)
+	return slices.Collect(maps.Values(res))
 }
