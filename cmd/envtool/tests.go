@@ -420,7 +420,8 @@ func runGoTest(runCtx context.Context, opts *runGoTestOpts) (resErr error) {
 		case "output": // the test printed output
 			// do not add span event
 
-			out := strings.TrimSuffix(event.Output, "\n")
+			// this fixes the issue mentioned in xfail_middleware.go
+			out := strings.TrimSpace(event.Output)
 
 			// initial setup output or early panic
 			if event.Test == "" {
