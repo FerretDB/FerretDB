@@ -29,15 +29,15 @@ In this release, we've added `renameCollection` command, which would enable user
 
 Say you have an `inventory` collection below:
 
-```js
+```json5
 {
-  "_id": 1,
-  name: "ABC Electronics",
-  location: "123 Main Street",
-  category: "Electronics",
+  _id: 1,
+  name: 'ABC Electronics',
+  location: '123 Main Street',
+  category: 'Electronics',
   inventory: [
     {
-      product: "Laptop",
+      product: 'Laptop',
       price: 1200,
       quantity: 10
     }

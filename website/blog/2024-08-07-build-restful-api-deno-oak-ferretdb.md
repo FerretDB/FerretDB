@@ -202,8 +202,8 @@ Once the application is up and running, the endpoint `http://localhost:3000/` sh
 We will setup a connection in Postman to test if the Deno server is running and accessible.
 If it is, you should get this response from the API:
 
-```json
-{ "message": "Hello from a Deno API!" }
+```json5
+{ message: 'Hello from a Deno API!' }
 ```
 
 A screenshot of the endpoint's output in Postman can be seen below.
@@ -215,11 +215,11 @@ A screenshot of the endpoint's output in Postman can be seen below.
 Below is an example of a `POST` request made to the API endpoint `http://localhost:3000/api/books`.
 Here, we are inserting one database record into our FerretDB database.
 
-```json
+```json5
 {
-  "title": "The Great Gatsby",
-  "author": "F. Scott Fitzgerald",
-  "genre": "Classic"
+  title: 'The Great Gatsby',
+  author: 'F. Scott Fitzgerald',
+  genre: 'Classic'
 }
 ```
 
@@ -239,9 +239,9 @@ That way, we can have it cover more than a singular genre.
 
 We will use a `PATCH` request to update the `genre` field of the record.
 
-```json
+```json5
 {
-  "genre": ["tragedy", "classic"]
+  genre: ['tragedy', 'classic']
 }
 ```
 

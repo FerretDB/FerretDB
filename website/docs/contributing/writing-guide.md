@@ -102,7 +102,7 @@ Our tooling will not reformat those blocks.
 ```json5
 [
   {
-    _id: ObjectId("63109e9251bcc5e0155db0c2"),
+    _id: ObjectId('63109e9251bcc5e0155db0c2'),
     club: 'PSG',
     points: 30,
     average_age: 30,
@@ -110,6 +110,18 @@ Our tooling will not reformat those blocks.
     qualified: false
   }
 ]
+```
+
+For document-styled JSON (non-MongoDB shell commands or responses), use `json5` language.
+Our tooling will automatically reformat those blocks appropriately.
+
+```json5
+{
+  first: 'Thomas',
+  last: 'Edison',
+  invention: 'Lightbulb',
+  birth: 1847
+}
 ```
 
 Use `sql` for SQL queries.

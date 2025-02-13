@@ -15,12 +15,12 @@ Documents are self-describing records containing both data types and a descripti
 They are similar to rows in relational databases.
 Here is an example of a single document:
 
-```js
+```json5
 {
-    first: "Thomas",
-    last: "Edison",
-    invention: "Lightbulb",
-    birth: 1847
+  first: 'Thomas',
+  last: 'Edison',
+  invention: 'Lightbulb',
+  birth: 1847
 }
 ```
 
@@ -33,13 +33,13 @@ However, there are a few restrictions, which you can find [here](migration/diff.
 
 For complex documents, you can nest documents inside other documents:
 
-```js
+```json5
 {
   name: {
-    first: "Thomas",
-    last: "Edison"
+    first: 'Thomas',
+    last: 'Edison'
   },
-  invention: "Lightbulb",
+  invention: 'Lightbulb',
   birth: 1847
 }
 ```
@@ -85,19 +85,19 @@ To reference or query a field in an embedded document, concatenate the name of t
 
 Take the following document, for example:
 
-```js
+```json5
 {
-   name:{
-      first: "Tom",
-      last: "Barry"
-   },
-   contact:{
-      address:{
-         city: "Kent",
-         state: "Ohio"
-      },
-      phone: "432-124-1234"
-   }
+  name: {
+    first: 'Tom',
+    last: 'Barry'
+  },
+  contact: {
+    address: {
+      city: 'Kent',
+      state: 'Ohio'
+    },
+    phone: '432-124-1234'
+  }
 }
 ```
 
@@ -116,7 +116,7 @@ If a collection does not exist, FerretDB creates a new one when you insert docum
 A collection may contain one or more documents.
 For example, the following collection contains three documents.
 
-```js
+```json5
 {
   Scientists: [
     {

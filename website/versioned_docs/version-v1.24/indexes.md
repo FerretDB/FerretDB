@@ -92,7 +92,7 @@ db.products.getIndexes()
 
 The returned indexes should look like this, showing the default index, single field index, and compound index.
 
-```js
+```json5
 {
   cursor: {
     id: Long("0"),

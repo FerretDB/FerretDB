@@ -249,7 +249,7 @@ And since it's constantly improving, compatibility is always an ever-growing pro
 
 Say we want to perform operations on a new collection, `sales`, with the following document.
 
-```js
+```json5
 {
   _id: 1,
   customer_name: "Sarah Lee",

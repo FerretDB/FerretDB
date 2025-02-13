@@ -49,26 +49,26 @@ Instead of having empty columns, these two books can be stored as separate docum
 
 First document:
 
-```js
+```json5
 {
-    "_id": "uniqueId1",
-    "title": "Book Title 1",
-    "author": "Author 1",
-    "number_of_pages": 200
+  _id: 'uniqueId1',
+  title: 'Book Title 1',
+  author: 'Author 1',
+  number_of_pages: 200
 }
 ```
 
 Second document:
 
-```js
+```json5
 {
-    "_id": "uniqueId2",
-    "title": "Book Title 2",
-    "author": "Author 2",
-    "number_of_pages": 300,
-    "publisher": "Publisher 2",
-    "genre": "Genre 2",
-    "isbn": "ISBN-2"
+  _id: 'uniqueId2',
+  title: 'Book Title 2',
+  author: 'Author 2',
+  number_of_pages: 300,
+  publisher: 'Publisher 2',
+  genre: 'Genre 2',
+  isbn: 'ISBN-2'
 }
 ```
 
@@ -83,25 +83,25 @@ These documents can be stored in various formats, such as JSON, BSON, YAML, or X
 
 For instance, the following is a typical example of a document containing information on a book:
 
-```js
+```json5
 {
- title: "The Lord of the Rings",
- author: {
-   name: "J.R.R. Tolkien",
-   nationality: "British",
- },
- publication_date: "July 29, 1954",
- publisher: "George Allen & Unwin",
- genre: ["High Fantasy", "Adventure"],
- isbn: "978-0618640157",
- number_of_pages: 1178,
- has_movie_adaptation: true,
- movie_adaptation: {
-   director: "Peter Jackson",
-   release_date: "December 19, 2001",
-   awards: ["Best Picture", "Best Director", "Best Adapted Screenplay"],
-   box_office: "$1.19 billion"
- },
+  title: 'The Lord of the Rings',
+  author: {
+    name: 'J.R.R. Tolkien',
+    nationality: 'British'
+  },
+  publication_date: 'July 29, 1954',
+  publisher: 'George Allen & Unwin',
+  genre: ['High Fantasy', 'Adventure'],
+  isbn: '978-0618640157',
+  number_of_pages: 1178,
+  has_movie_adaptation: true,
+  movie_adaptation: {
+    director: 'Peter Jackson',
+    release_date: 'December 19, 2001',
+    awards: ['Best Picture', 'Best Director', 'Best Adapted Screenplay'],
+    box_office: '$1.19 billion'
+  }
 }
 ```
 
@@ -210,7 +210,7 @@ db.users.find({ 'address.state': 'NY' })
 
 OUTPUT:
 
-```js
+```json5
 {
   "_id": ObjectId("5f5b9e2e8b0c0f0001a2b2c3"),
   "name": "John Doe",

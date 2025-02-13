@@ -162,7 +162,7 @@ db.employees.updateMany(
 
 The response from the command:
 
-```js
+```json5
 {
   acknowledged: true,
   insertedId: null,
@@ -192,7 +192,7 @@ db.employees.updateMany(
 
 The following response from the command shows that a single document matching the query was updated:
 
-```js
+```json5
 {
   acknowledged: true,
   insertedId: null,

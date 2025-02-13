@@ -52,7 +52,7 @@ db.scientists.insertMany([
 
 This operation returns a response showing `acknowledged` as `true` and the `ObjectId` of the four inserted documents:
 
-```js
+```json5
 {
   acknowledged: true,
   insertedIds: {
@@ -72,7 +72,7 @@ db.scientists.deleteOne({ nobel: false })
 
 This operation returns a response that shows that a single document was deleted from the collection.
 
-```js
+```json5
 { acknowledged: true, deletedCount: 1 }
 ```
 
