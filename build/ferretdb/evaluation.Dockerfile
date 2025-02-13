@@ -65,9 +65,10 @@ set -ex
 
 git status
 
-# Do not raise it without providing a separate v1 build
-# because v2+ is problematic for some virtualization platforms and older hardware.
+# Do not raise without providing separate builds with those values
+# because higher versions are problematic for some virtualization platforms and older hardware.
 export GOAMD64=v1
+export GOARM64=v8.0
 
 export CGO_ENABLED=1
 
