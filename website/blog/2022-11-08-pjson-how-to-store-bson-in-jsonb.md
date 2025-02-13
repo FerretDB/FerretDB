@@ -32,8 +32,8 @@ Here the hexadecimal `\x00` notation represents `0000 0000` in bits and similarl
 In BSON, `\x00` is a byte used as a terminator to indicate the end of a document.
 In BSON, field names use `cstring` which are UTF-8 characters followed by `\x00`.
 
-```json
-{ "foo": "bar" }
+```json5
+{ foo: 'bar' }
 ```
 
 |                         |                                                                                                                       |
@@ -57,7 +57,7 @@ PJSON contains `$` followed by a character to embed information about types and 
 PJSON is designed to be serialized to JSONB.
 Let's look at a simple BSON with an `ObjectId` field and see how it is represented in PJSON.
 
-```js
+```json5
 {"_id": ObjectId("635202c8f75e487c16adc141")}
 ```
 
@@ -68,13 +68,11 @@ Let's look at a simple BSON with an `ObjectId` field and see how it is represent
 In PJSON, we store the order of fields in the `$k` field, and `ObjectId` in the `$o` field.
 The duplicate fields are not allowed in PJSON.
 
-```js
+```json5
 {
-  "$k": [
-    "_id"
-  ],
-  "_id": {
-    "$o": "635202c8f75e487c16adc141"
+  $k: ['_id'],
+  _id: {
+    $o: '635202c8f75e487c16adc141'
   }
 }
 ```
@@ -161,18 +159,14 @@ We use the array `$k` to preserve the order of the fields.
 In PJSON, the format and types, such as `string` and `int32`, are the same as JSON types.
 On the other hand, `ObjectId` is represented by the `$o` key which is specific to BSON.
 
-```js
+```json5
 {
-  "$k": [
-    "_id",
-    "name",
-    "quantity"
-  ],
-  "_id": {
-    "$o": "635202c8f75e487c16adc141"
+  $k: ['_id', 'name', 'quantity'],
+  _id: {
+    $o: '635202c8f75e487c16adc141'
   },
-  "name": "milk",
-  "quantity": 3
+  name: 'milk',
+  quantity: 3
 }
 ```
 

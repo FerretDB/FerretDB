@@ -50,11 +50,11 @@ If the tracing data is present, FerretDB sets the parent context for a span crea
 
 An example of a comment with tracing data could look like this:
 
-```json
+```json5
 {
-  "ferretDB": {
-    "traceID": "1234567890abcdef1234567890abcdef",
-    "spanID": "fedcba9876543210"
+  ferretDB: {
+    traceID: '1234567890abcdef1234567890abcdef',
+    spanID: 'fedcba9876543210'
   }
 }
 ```

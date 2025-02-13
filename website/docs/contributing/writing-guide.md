@@ -96,20 +96,32 @@ db.league.find({ club: 'PSG' })
 ```
 
 For MongoDB shell results, use `json5` language and copy&paste the output as-is,
-with unquoted field names, without trailing commas, etc.
-Our tooling will automatically reformat those blocks.
+with unquoted field names, single quotes for strings, without trailing commas, etc.
+Our tooling will not reformat those blocks.
 
 ```json5
 [
   {
-    _id: ObjectId("63109e9251bcc5e0155db0c2"),
-    club: "PSG",
+    _id: ObjectId('63109e9251bcc5e0155db0c2'),
+    club: 'PSG',
     points: 30,
     average_age: 30,
     discipline: { red: 5, yellow: 30 },
     qualified: false
   }
 ]
+```
+
+For document-styled JSON (non-MongoDB shell commands or responses), use `json5` language.
+Our tooling will automatically reformat those blocks appropriately.
+
+```json5
+{
+  first: 'Thomas',
+  last: 'Edison',
+  invention: 'Lightbulb',
+  birth: 1847
+}
 ```
 
 Use `sql` for SQL queries.

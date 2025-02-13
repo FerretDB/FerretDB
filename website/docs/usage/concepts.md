@@ -85,19 +85,19 @@ To reference or query a field in an embedded document, concatenate the name of t
 
 Take the following document, for example:
 
-```js
+```json5
 {
-   name:{
-      first: "Tom",
-      last: "Barry"
-   },
-   contact:{
-      address:{
-         city: "Kent",
-         state: "Ohio"
-      },
-      phone: "432-124-1234"
-   }
+  name: {
+    first: 'Tom',
+    last: 'Barry'
+  },
+  contact: {
+    address: {
+      city: 'Kent',
+      state: 'Ohio'
+    },
+    phone: '432-124-1234'
+  }
 }
 ```
 
