@@ -7,6 +7,7 @@ const (
 	ErrUnset                                       = Code(0)       // Unset
 	ErrInternalError                               = Code(1)       // InternalError
 	ErrBadValue                                    = Code(2)       // BadValue
+	ErrNoSuchKey                                   = Code(4)       // NoSuchKey
 	ErrGraphContainsCycle                          = Code(5)       // GraphContainsCycle
 	ErrFailedToParse                               = Code(9)       // FailedToParse
 	ErrUserNotFound                                = Code(11)      // UserNotFound
@@ -70,6 +71,7 @@ const (
 	ErrLocation10065                               = Code(10065)   // Location10065
 	ErrBsonObjectTooLarge                          = Code(10334)   // BsonObjectTooLarge
 	ErrDuplicateKey                                = Code(11000)   // DuplicateKey
+	ErrInterrupted                                 = Code(11601)   // Interrupted
 	ErrBackgroundOperationInProgressForNamespace   = Code(12587)   // BackgroundOperationInProgressForNamespace
 	ErrLocation13026                               = Code(13026)   // Location13026
 	ErrLocation13027                               = Code(13027)   // Location13027
@@ -152,6 +154,7 @@ const (
 	ErrLocation18537                               = Code(18537)   // Location18537
 	ErrLocation18628                               = Code(18628)   // Location18628
 	ErrLocation18629                               = Code(18629)   // Location18629
+	ErrLocation26823                               = Code(26823)   // Location26823
 	ErrLocation28625                               = Code(28625)   // Location28625
 	ErrLocation28646                               = Code(28646)   // Location28646
 	ErrLocation28647                               = Code(28647)   // Location28647

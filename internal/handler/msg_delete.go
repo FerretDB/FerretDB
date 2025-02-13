@@ -16,6 +16,7 @@ package handler
 
 import (
 	"context"
+	"errors"
 
 	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
@@ -30,7 +31,7 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgDelete(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	opID := h.operations.Start("remove")
+	connCtx, opID := h.operations.Start(connCtx, "remove")
 	defer h.operations.Stop(opID)
 
 	spec, seq := msg.RawSections()
@@ -60,6 +61,10 @@ func (h *Handler) MsgDelete(connCtx context.Context, msg *wire.OpMsg) (*wire.OpM
 		return err
 	})
 	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return nil, mongoerrors.NewWithArgument(mongoerrors.ErrInterrupted, "operation was interrupted", "delete")
+		}
+
 		return nil, lazyerrors.Error(err)
 	}
 

@@ -37,7 +37,7 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgExplain(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	opID := h.operations.Start("command")
+	connCtx, opID := h.operations.Start(connCtx, "command")
 	defer h.operations.Stop(opID)
 
 	spec, err := msg.RawDocument()
@@ -121,6 +121,10 @@ func (h *Handler) MsgExplain(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 
 	var dest []byte
 	if err = conn.Conn().QueryRow(connCtx, q, dbName, explainSpec).Scan(&dest); err != nil {
+		if errors.Is(err, context.Canceled) {
+			return nil, mongoerrors.NewWithArgument(mongoerrors.ErrInterrupted, "operation was interrupted", "explain")
+		}
+
 		return nil, lazyerrors.Error(mongoerrors.Make(connCtx, err, "", h.L))
 	}
 

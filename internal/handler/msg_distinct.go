@@ -16,6 +16,7 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/FerretDB/wire"
@@ -29,7 +30,7 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgDistinct(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	opID := h.operations.Start("query")
+	connCtx, opID := h.operations.Start(connCtx, "query")
 	defer h.operations.Stop(opID)
 
 	spec, err := msg.RawDocument()
@@ -79,6 +80,10 @@ func (h *Handler) MsgDistinct(connCtx context.Context, msg *wire.OpMsg) (*wire.O
 
 	res, err := documentdb_api.DistinctQuery(connCtx, conn.Conn(), h.L, dbName, spec)
 	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return nil, mongoerrors.NewWithArgument(mongoerrors.ErrInterrupted, "operation was interrupted", "distinct")
+		}
+
 		return nil, lazyerrors.Error(err)
 	}
 

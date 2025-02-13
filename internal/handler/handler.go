@@ -89,7 +89,7 @@ func New(opts *NewOpts) (*Handler, error) {
 	h := &Handler{
 		NewOpts: opts,
 
-		operations: operation.NewRegistry(),
+		operations: operation.NewRegistry(opts.L),
 		s:          session.NewRegistry(sessionTimeout, opts.L),
 	}
 
