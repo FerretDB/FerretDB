@@ -63,7 +63,9 @@ func FailsForFerretDB(tb testing.TB, url string) testing.TB {
 		return tb
 	}
 
-	return xfail.XFail(tb, url)
+	xf := xfail.XFail(tb, url)
+
+	return &xfailMiddleware{TB: xf}
 }
 
 // FailsForMongoDB return testing.TB that expects test to fail for MongoDB and pass for FerretDB.
