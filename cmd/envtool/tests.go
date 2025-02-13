@@ -80,7 +80,7 @@ func listTestFuncs(ctx context.Context, dir, re string, logger *slog.Logger) ([]
 	cmd.Stdout = &buf
 	cmd.Stderr = os.Stderr
 
-	logger.InfoContext(ctx, fmt.Sprintf("Running %s", strings.Join(cmd.Args, " ")))
+	logger.InfoContext(ctx, fmt.Sprintf("Running `%s`", strings.Join(cmd.Args, " ")))
 
 	if err := cmd.Run(); err != nil {
 		return nil, lazyerrors.Error(err)
@@ -420,7 +420,9 @@ func runGoTest(runCtx context.Context, opts *runGoTestOpts) (resErr error) {
 		case "output": // the test printed output
 			// do not add span event
 
-			out := strings.TrimSuffix(event.Output, "\n")
+			// this fixes the issue mentioned in xfail_middleware.go
+			// although the console output is much worse
+			out := strings.TrimSpace(event.Output)
 
 			// initial setup output or early panic
 			if event.Test == "" {
@@ -527,7 +529,7 @@ func runGoTest(runCtx context.Context, opts *runGoTestOpts) (resErr error) {
 	opts.logger.ErrorContext(runCtx, "Some tests did not finish:")
 
 	for _, t := range unfinished {
-		opts.logger.ErrorContext(runCtx, fmt.Sprintf("  %s", t))
+		opts.logger.ErrorContext(runCtx, fmt.Sprintf("\t%s", t))
 	}
 
 	opts.logger.ErrorContext(runCtx, "")

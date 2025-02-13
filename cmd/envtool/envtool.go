@@ -248,7 +248,7 @@ func main() {
 		Level:         level,
 		RemoveTime:    true,
 		RemoveSource:  true,
-		CheckMessages: false, // TODO https://github.com/FerretDB/FerretDB/issues/4511
+		CheckMessages: true,
 	}
 	logging.Setup(opts, "")
 	logger := slog.Default()

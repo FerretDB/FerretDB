@@ -307,7 +307,7 @@ func (h *Handler) Serve(ctx context.Context) {
 
 	root := fmt.Sprintf("http://%s", h.lis.Addr())
 
-	l.InfoContext(ctx, fmt.Sprintf("Starting debug server on %s/debug ...", root))
+	l.InfoContext(ctx, fmt.Sprintf("Starting debug server on %s/debug", root))
 
 	paths := slices.Sorted(maps.Keys(h.handlers))
 
