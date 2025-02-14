@@ -47,6 +47,8 @@
 6. Publish release on GitHub.
 7. Announce it on Slack.
 
+## Release FerretDB/documentdb
+
 ## Soon after
 
 1. Bump the latest version on https://beacon.ferretdb.com and https://beacon.ferretdb.io.
