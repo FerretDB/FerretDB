@@ -1,13 +1,14 @@
 ---
 slug: 20-must-try-mongodb-queries-operations-ferretdb
-title: '20 Must-Try Advanced MongoDB Queries on FerretDB'
+title: '20 must-try MongoDB operations and queries on FerretDB'
 authors: [alex]
 description: >
   FerretDB just got better with the release of v2, bringing deeper MongoDB compatibility, and enabling more advanced workloads to run complex queries for most use cases. Find out in this post.
+image: /img/blog/mongodb-operations-ferretdb.jpg
 tags: [observability, product, open source]
 ---
 
-![20 Must ](/img/blog/ferretdb-otel/opentelemetry.jpg)
+![20 Must-Try Advanced MongoDB Queries on FerretDB](/img/blog/mongodb-operations-ferretdb.jpg)
 
 FerretDB just got better with [the release of v2](https://blog.ferretdb.io/ferretdb-releases-v2-faster-more-compatible-mongodb-alternative/), bringing deeper MongoDB compatibility, and enabling more advanced workloads to run complex queries for most use cases.
 
@@ -46,7 +47,7 @@ Since we are using the FerretDB `books` collection, we will start by downloading
 curl -L -o books_fixture.json "https://raw.githubusercontent.com/FerretDB/FerretDB/main/website/docs/guides/requests/books.fixture.json"
 
 # Import the data into FerretDB
-mongoimport --host localhost --port 27017 --db library --collection books --file books_fixture.json --jsonArray
+mongoimport --uri "mongodb://username:password@localhost:27017/" --db library --collection books --file books_fixture.json --jsonArray
 ```
 
 Now that you have some documents in the collection, start running some queries and operations on them.
