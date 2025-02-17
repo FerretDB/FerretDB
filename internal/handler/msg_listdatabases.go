@@ -16,11 +16,11 @@ package handler
 
 import (
 	"context"
+	"maps"
 	"slices"
 
 	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
-	"golang.org/x/exp/maps"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
@@ -30,7 +30,8 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 //
-// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/26
+// TODO https://github.com/FerretDB/FerretDB/issues/4722
+// TODO https://github.com/microsoft/documentdb/issues/45
 func (h *Handler) MsgListDatabases(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	spec, err := msg.RawDocument()
 	if err != nil {
@@ -46,9 +47,7 @@ func (h *Handler) MsgListDatabases(connCtx context.Context, msg *wire.OpMsg) (*w
 		return nil, lazyerrors.Error(err)
 	}
 
-	names := maps.Keys(list)
-	slices.Sort(names)
-
+	names := slices.Sorted(maps.Keys(list))
 	databases := wirebson.MakeArray(len(names))
 
 	for _, name := range names {
