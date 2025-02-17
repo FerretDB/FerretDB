@@ -14,7 +14,7 @@
 
 // Package version provides information about FerretDB version and build configuration.
 //
-// # Required files
+// # Extra files
 //
 // The following generated text files may be present in this (`build/version`) directory during building:
 //   - version.txt (required) contains information about the FerretDB version in a format
