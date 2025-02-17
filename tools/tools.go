@@ -14,22 +14,6 @@
 
 package tools
 
-import (
-	_ "github.com/OpenDocDB/cts/opendocdb-cts"
-	_ "github.com/go-task/task/v3/cmd/task"
-	_ "github.com/goreleaser/nfpm/v2/cmd/nfpm"
-	_ "github.com/kisielk/godepgraph"
-	_ "github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen"
-	_ "github.com/quasilyte/go-consistent"
-	_ "golang.org/x/perf/cmd/benchstat"
-	_ "golang.org/x/pkgsite/cmd/pkgsite"
-	_ "golang.org/x/tools/cmd/deadcode"
-	_ "golang.org/x/tools/cmd/goimports"
-	_ "golang.org/x/tools/cmd/stringer"
-	_ "golang.org/x/vuln/cmd/govulncheck"
-	_ "mvdan.cc/gofumpt"
-)
-
 //go:generate go build -v -o ../bin/ ./checkcomments
 //go:generate go build -v -o ../bin/ ./checkdocs
 //go:generate go build -v -o ../bin/ ./checkswitch
