@@ -857,6 +857,8 @@ func TestBuildInfoCommand(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
+	info := version.Get()
+
 	var actual bson.D
 	command := bson.D{{"buildInfo", int32(1)}}
 	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
@@ -869,7 +871,7 @@ func TestBuildInfoCommand(t *testing.T) {
 		case "ferretdb":
 			value, ok := field.Value.(bson.D)
 			require.True(t, ok)
-			AssertEqualDocuments(t, bson.D{{"package", "unknown"}, {"version", "unknown"}}, value)
+			AssertEqualDocuments(t, bson.D{{"package", info.Package}, {"version", info.Version}}, value)
 
 		case "version":
 			assert.IsType(t, "", field.Value)
@@ -903,7 +905,7 @@ func TestBuildInfoCommand(t *testing.T) {
 			actualComparable = append(actualComparable, bson.E{Key: field.Key, Value: bson.D{}})
 
 		case "openssl", "storageEngines", "allocator", "javascriptEngine":
-		// exclusive to MongoDB
+			// exclusive to MongoDB
 
 		default:
 			actualComparable = append(actualComparable, field)
@@ -1865,6 +1867,8 @@ func TestDBStatsCommandFreeStorage(tt *testing.T) {
 func TestServerStatusCommand(t *testing.T) {
 	ctx, collection := setup.Setup(t)
 
+	info := version.Get()
+
 	var actual bson.D
 	command := bson.D{{"serverStatus", int32(1)}}
 	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
@@ -1876,18 +1880,18 @@ func TestServerStatusCommand(t *testing.T) {
 	for _, field := range actual {
 		switch field.Key {
 		case "ferretdb":
-			value, ok := field.Value.(bson.D)
-			require.True(t, ok)
+			ferretdb, buildEnvironment := RemoveKey(t, field.Value.(bson.D), "buildEnvironment")
+			assert.IsType(t, bson.D{}, buildEnvironment)
+
 			expected := bson.D{
-				{"version", "unknown"},
-				{"gitVersion", "unknown"},
-				{"buildEnvironment", bson.D{}},
+				{"version", info.Version},
+				{"gitVersion", info.Commit},
 				{"debug", true},
-				{"package", "unknown"},
+				{"package", info.Package},
 				{"postgresql", expectedPostgreSQLVersion},
 				{"documentdb", version.DocumentDB},
 			}
-			AssertEqualDocuments(t, expected, value)
+			AssertEqualDocuments(t, expected, ferretdb)
 
 		case "freeMonitoring":
 			freeMonitoring, ok := field.Value.(bson.D)
@@ -1998,6 +2002,8 @@ func TestServerStatusCommandMetrics(t *testing.T) {
 
 	t.Parallel()
 
+	info := version.Get()
+
 	for name, tc := range map[string]struct {
 		cmds            []bson.D
 		expectedNonZero []string
@@ -2042,6 +2048,11 @@ func TestServerStatusCommandMetrics(t *testing.T) {
 
 			for _, field := range actual {
 				switch field.Key {
+				case "ferretdb":
+					f, buildEnvironment := RemoveKey(t, field.Value.(bson.D), "buildEnvironment")
+					assert.IsType(t, bson.D{}, buildEnvironment)
+					actualComparable = append(actualComparable, bson.E{Key: field.Key, Value: f})
+
 				case "host":
 					host, ok := field.Value.(string)
 					require.True(t, ok)
@@ -2143,11 +2154,10 @@ func TestServerStatusCommandMetrics(t *testing.T) {
 					{"views", int32(0)},
 				}},
 				{"ferretdb", bson.D{
-					{"version", "unknown"},
-					{"gitVersion", "unknown"},
-					{"buildEnvironment", bson.D{}},
+					{"version", info.Version},
+					{"gitVersion", info.Commit},
 					{"debug", true},
-					{"package", "unknown"},
+					{"package", info.Package},
 					{"postgresql", expectedPostgreSQLVersion},
 					{"documentdb", version.DocumentDB},
 				}},
@@ -2177,6 +2187,8 @@ func TestServerStatusCommandFreeMonitoring(t *testing.T) {
 		DatabaseName: "admin",
 	})
 
+	info := version.Get()
+
 	for name, tc := range map[string]struct {
 		command        bson.D
 		expectedStatus string
@@ -2205,6 +2217,11 @@ func TestServerStatusCommandFreeMonitoring(t *testing.T) {
 
 			for _, field := range actual {
 				switch field.Key {
+				case "ferretdb":
+					f, buildEnvironment := RemoveKey(t, field.Value.(bson.D), "buildEnvironment")
+					assert.IsType(t, bson.D{}, buildEnvironment)
+					actualComparable = append(actualComparable, bson.E{Key: field.Key, Value: f})
+
 				case "host":
 					host, ok := field.Value.(string)
 					require.True(t, ok)
@@ -2319,11 +2336,10 @@ func TestServerStatusCommandFreeMonitoring(t *testing.T) {
 					{"views", int32(0)},
 				}},
 				{"ferretdb", bson.D{
-					{"version", "unknown"},
-					{"gitVersion", "unknown"},
-					{"buildEnvironment", bson.D{}},
+					{"version", info.Version},
+					{"gitVersion", info.Commit},
 					{"debug", true},
-					{"package", "unknown"},
+					{"package", info.Package},
 					{"postgresql", expectedPostgreSQLVersion},
 					{"documentdb", version.DocumentDB},
 				}},

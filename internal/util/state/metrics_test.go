@@ -56,9 +56,9 @@ func TestMetrics(t *testing.T) {
 			`
 				# HELP ferretdb_up FerretDB instance state.
 				# TYPE ferretdb_up gauge
-				ferretdb_up{branch=%q,commit=%q,dev="%t",dirty="%t",documentdb="documentdb",package="unknown",postgresql="postgres",telemetry="enabled",update_available="false",uuid=%q,version=%q} 1
+				ferretdb_up{branch=%q,commit=%q,dev="%t",dirty="%t",documentdb="documentdb",package=%q,postgresql="postgres",telemetry="enabled",update_available="false",uuid=%q,version=%q} 1
 			`,
-			info.Branch, info.Commit, info.DevBuild, info.Dirty, uuid, info.Version,
+			info.Branch, info.Commit, info.DevBuild, info.Dirty, info.Package, uuid, info.Version,
 		)
 		assert.NoError(t, testutil.CollectAndCompare(mc, strings.NewReader(expected)))
 	})
@@ -76,9 +76,9 @@ func TestMetrics(t *testing.T) {
 			`
 				# HELP ferretdb_up FerretDB instance state.
 				# TYPE ferretdb_up gauge
-				ferretdb_up{branch=%q,commit=%q,dev="%t",dirty="%t",documentdb="documentdb",package="unknown",postgresql="postgres",telemetry="enabled",update_available="false",version=%q} 1
+				ferretdb_up{branch=%q,commit=%q,dev="%t",dirty="%t",documentdb="documentdb",package=%q,postgresql="postgres",telemetry="enabled",update_available="false",version=%q} 1
 			`,
-			info.Branch, info.Commit, info.DevBuild, info.Dirty, info.Version,
+			info.Branch, info.Commit, info.DevBuild, info.Dirty, info.Package, info.Version,
 		)
 		assert.NoError(t, testutil.CollectAndCompare(mc, strings.NewReader(expected)))
 	})

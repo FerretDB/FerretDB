@@ -286,6 +286,7 @@ func run() {
 		_, _ = fmt.Fprintln(os.Stdout, "dirty:", info.Dirty)
 		_, _ = fmt.Fprintln(os.Stdout, "package:", info.Package)
 		_, _ = fmt.Fprintln(os.Stdout, "devBuild:", info.DevBuild)
+		_, _ = fmt.Fprintf(os.Stdout, "buildEnvironment: %+v\n", info.BuildEnvironment)
 
 		return
 	}

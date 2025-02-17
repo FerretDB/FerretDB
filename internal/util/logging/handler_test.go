@@ -87,7 +87,7 @@ func TestShortPath(t *testing.T) {
 	assert.Equal(t, "dir3/file.go", shortPath("/dir1/dir2/dir3/file.go"))
 
 	// with -trimpath
-	assert.Equal(t, "debug/debug.go", shortPath("github.com/FerretDB/FerretDB/internal/util/debug/debug.go"))
-	assert.Equal(t, "util/debug.go", shortPath("github.com/FerretDB/FerretDB/internal/util/debug.go"))
-	assert.Equal(t, "internal/debug.go", shortPath("github.com/FerretDB/FerretDB/internal/debug.go"))
+	assert.Equal(t, "debug/debug.go", shortPath("github.com/FerretDB/FerretDB/v2/internal/util/debug/debug.go"))
+	assert.Equal(t, "util/debug.go", shortPath("github.com/FerretDB/FerretDB/v2/internal/util/debug.go"))
+	assert.Equal(t, "internal/debug.go", shortPath("github.com/FerretDB/FerretDB/v2/internal/debug.go"))
 }
