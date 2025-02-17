@@ -49,6 +49,12 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/telemetry"
 )
 
+// DefaultStateDir is the default state directory.
+var DefaultStateDir = "."
+
+// DefaultLogFormat is the default log format.
+var DefaultLogFormat = "console"
+
 // RunOpts represents configurable options for running FerretDB.
 type RunOpts struct { //nolint:vet // used only for configuration
 	PostgreSQLURL string
@@ -57,7 +63,7 @@ type RunOpts struct { //nolint:vet // used only for configuration
 	DebugAddr     string
 	Mode          string
 	StateDir      string
-	Auth          bool
+	Auth          bool // should be true by default
 	Log           LogOpts
 	MetricsUUID   bool
 	OTel          OTelOpts
@@ -127,7 +133,11 @@ func DefaultLogLevel() slog.Level {
 
 // setupState setups state provider.
 func setupState(stateDir string) *state.Provider {
-	if stateDir == "" || stateDir == "-" {
+	if stateDir == "" {
+		stateDir = DefaultStateDir
+	}
+
+	if stateDir == "-" {
 		log.Fatal("State directory must be set.")
 	}
 
@@ -166,6 +176,14 @@ func setupMetrics(uuid bool, stateProvider *state.Provider) prometheus.Registere
 
 // setupLogger setups slog logger.
 func setupLogger(logLevel string, format string, uuid string) *slog.Logger {
+	if logLevel == "" {
+		logLevel = DefaultLogLevel().String()
+	}
+
+	if format == "" {
+		format = DefaultLogFormat
+	}
+
 	var level slog.Level
 	if err := level.UnmarshalText([]byte(logLevel)); err != nil {
 		log.Fatal(err)

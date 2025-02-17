@@ -62,14 +62,14 @@ var cli struct {
 
 	DebugAddr string `default:"127.0.0.1:8088" help:"Listen address for HTTP handlers for metrics, pprof, etc."`
 
-	Mode     string `default:"${default_mode}" help:"${help_mode}"                           enum:"${enum_mode}"`
-	StateDir string `default:"."               help:"Process state directory."`
-	Auth     bool   `default:"true"            help:"Enable authentication (on by default)." negatable:""`
+	Mode     string `default:"${default_mode}"      help:"${help_mode}"                           enum:"${enum_mode}"`
+	StateDir string `default:"${default_state_dir}" help:"Process state directory."`
+	Auth     bool   `default:"true"                 help:"Enable authentication (on by default)." negatable:""`
 
 	Log struct {
-		Level  string `default:"${default_log_level}" help:"${help_log_level}"`
-		Format string `default:"console"              help:"${help_log_format}"                     enum:"${enum_log_format}"`
-		UUID   bool   `default:"false"                help:"Add instance UUID to all log messages." negatable:""`
+		Level  string `default:"${default_log_level}"  help:"${help_log_level}"`
+		Format string `default:"${default_log_format}" help:"${help_log_format}"                     enum:"${enum_log_format}"`
+		UUID   bool   `default:"false"                 help:"Add instance UUID to all log messages." negatable:""`
 	} `embed:"" prefix:"log-"`
 
 	MetricsUUID bool `default:"false" help:"Add instance UUID to all metrics." negatable:""`
@@ -109,8 +109,10 @@ var (
 
 	kongOptions = []kong.Option{
 		kong.Vars{
-			"default_log_level": ferretdb.DefaultLogLevel().String(),
-			"default_mode":      clientconn.AllModes[0],
+			"default_log_format": ferretdb.DefaultLogFormat,
+			"default_log_level":  ferretdb.DefaultLogLevel().String(),
+			"default_mode":       clientconn.AllModes[0],
+			"default_state_dir":  ferretdb.DefaultStateDir,
 
 			"enum_log_format": strings.Join(logFormats, ","),
 			"enum_mode":       strings.Join(clientconn.AllModes, ","),
