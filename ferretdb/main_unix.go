@@ -14,7 +14,7 @@
 
 //go:build unix
 
-package main
+package ferretdb
 
 import (
 	"fmt"

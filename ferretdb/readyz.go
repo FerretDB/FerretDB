@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package ferretdb
 
 import (
 	"context"
@@ -32,15 +32,16 @@ import (
 //
 // It connects to FerretDB with Go driver and sends `ping` command.
 type ReadyZ struct {
-	l *slog.Logger
+	l    *slog.Logger
+	opts *RunOpts
 }
 
 // Probe implements [debug.Probe].
 func (r *ReadyZ) Probe(ctx context.Context) bool {
 	var urls []string
 
-	if cli.Listen.Addr != "" {
-		host, port, err := net.SplitHostPort(cli.Listen.Addr)
+	if r.opts.Listen.Addr != "" {
+		host, port, err := net.SplitHostPort(r.opts.Listen.Addr)
 		if err != nil {
 			r.l.ErrorContext(ctx, "Getting host and port failed", logging.Error(err))
 			return false
@@ -59,13 +60,13 @@ func (r *ReadyZ) Probe(ctx context.Context) bool {
 		urls = append(urls, u.String())
 	}
 
-	if cli.Listen.TLS != "" {
+	if r.opts.Listen.TLS != "" {
 		// TODO https://github.com/FerretDB/FerretDB/issues/4427
 		r.l.WarnContext(ctx, "TLS ping is not implemented yet")
 	}
 
-	if cli.Listen.Unix != "" {
-		urls = append(urls, "mongodb://"+url.PathEscape(cli.Listen.Unix))
+	if r.opts.Listen.Unix != "" {
+		urls = append(urls, "mongodb://"+url.PathEscape(r.opts.Listen.Unix))
 	}
 
 	if len(urls) == 0 {
