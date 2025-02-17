@@ -18,6 +18,7 @@ package ferretdb
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"log/slog"
 	"math"
@@ -50,29 +51,18 @@ import (
 
 // RunOpts represents configurable options for running FerretDB.
 type RunOpts struct { //nolint:vet // used only for configuration
-	Version bool
-
 	PostgreSQLURL string
-
-	Listen ListenOpts
-
-	Proxy ProxyOpts
-
-	DebugAddr string
-
-	Mode     string
-	StateDir string
-	Auth     bool
-
-	Log LogOpts
-
-	MetricsUUID bool
-
-	OTel OTelOpts
-
-	Telemetry telemetry.Flag
-
-	Dev DevOpts
+	Listen        ListenOpts
+	Proxy         ProxyOpts
+	DebugAddr     string
+	Mode          string
+	StateDir      string
+	Auth          bool
+	Log           LogOpts
+	MetricsUUID   bool
+	OTel          OTelOpts
+	Telemetry     telemetry.Flag
+	Dev           DevOpts
 }
 
 // ListenOpts represents configurable options for listening.
@@ -230,17 +220,6 @@ func Run(ctx context.Context, opts *RunOpts) {
 
 	if p := opts.Dev.Telemetry.Package; p != "" {
 		info.Package = p
-	}
-
-	if opts.Version {
-		_, _ = fmt.Fprintln(os.Stdout, "version:", info.Version)
-		_, _ = fmt.Fprintln(os.Stdout, "commit:", info.Commit)
-		_, _ = fmt.Fprintln(os.Stdout, "branch:", info.Branch)
-		_, _ = fmt.Fprintln(os.Stdout, "dirty:", info.Dirty)
-		_, _ = fmt.Fprintln(os.Stdout, "package:", info.Package)
-		_, _ = fmt.Fprintln(os.Stdout, "devBuild:", info.DevBuild)
-
-		return
 	}
 
 	// safe to always enable
@@ -476,7 +455,7 @@ func Run(ctx context.Context, opts *RunOpts) {
 	}
 }
 
-// Ping sets up environment based on provided RunOpts and runs FerretDB.
+// Ping checks readiness probe.
 func Ping(ctx context.Context, opts *RunOpts) bool {
 	l := setupLogger(opts.Log.Level, opts.Log.Format, "")
 	checkOptions(ctx, l, opts)
@@ -490,4 +469,20 @@ func Ping(ctx context.Context, opts *RunOpts) bool {
 	defer stop()
 
 	return ready.Probe(ctx)
+}
+
+// Version prints out FerretDB version to the given writer.
+func Version(opts *RunOpts, writer io.Writer) {
+	info := version.Get()
+
+	if p := opts.Dev.Telemetry.Package; p != "" {
+		info.Package = p
+	}
+
+	_, _ = fmt.Fprintln(writer, "version:", info.Version)
+	_, _ = fmt.Fprintln(writer, "commit:", info.Commit)
+	_, _ = fmt.Fprintln(writer, "branch:", info.Branch)
+	_, _ = fmt.Fprintln(writer, "dirty:", info.Dirty)
+	_, _ = fmt.Fprintln(writer, "package:", info.Package)
+	_, _ = fmt.Fprintln(writer, "devBuild:", info.DevBuild)
 }

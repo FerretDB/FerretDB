@@ -128,7 +128,6 @@ func main() {
 	ctx := kong.Parse(&cli, kongOptions...)
 
 	opts := &ferretdb.RunOpts{
-		Version:       cli.Version,
 		PostgreSQLURL: cli.PostgreSQLURL,
 		Listen: ferretdb.ListenOpts{
 			Addr:        cli.Listen.Addr,
@@ -175,6 +174,11 @@ func main() {
 
 	switch ctx.Command() {
 	case "run":
+		if cli.Version {
+			ferretdb.Version(opts, os.Stdout)
+			return
+		}
+
 		ferretdb.Run(context.Background(), opts)
 
 	case "ping":
