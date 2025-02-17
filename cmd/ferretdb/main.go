@@ -59,11 +59,9 @@ var cli struct {
 	Run  struct{} `cmd:"" default:"1"                             hidden:""`
 	Ping struct{} `cmd:"" help:"Ping existing FerretDB instance."`
 
-	Version     bool   `default:"false"           help:"Print version to stdout and exit."      env:"-"`
-	Mode        string `default:"${default_mode}" help:"${help_mode}"                           enum:"${enum_mode}"`
-	Auth        bool   `default:"true"            help:"Enable authentication (on by default)." negatable:""`
-	StateDir    string `default:"."               help:"Process state directory."`
-	ReplSetName string `default:""                help:"Replica set name."`
+	Version bool `default:"false" help:"Print version to stdout and exit." env:"-"`
+
+	PostgreSQLURL string `name:"postgresql-url" default:"postgres://127.0.0.1:5432/postgres" help:"PostgreSQL URL."`
 
 	Listen struct {
 		Addr        string `default:"127.0.0.1:27017" help:"Listen TCP address for MongoDB protocol."`
@@ -84,13 +82,15 @@ var cli struct {
 
 	DebugAddr string `default:"127.0.0.1:8088" help:"Listen address for HTTP handlers for metrics, pprof, etc."`
 
+	Mode     string `default:"${default_mode}" help:"${help_mode}"                           enum:"${enum_mode}"`
+	StateDir string `default:"."               help:"Process state directory."`
+	Auth     bool   `default:"true"            help:"Enable authentication (on by default)." negatable:""`
+
 	Log struct {
 		Level  string `default:"${default_log_level}" help:"${help_log_level}"`
 		Format string `default:"console"              help:"${help_log_format}"                     enum:"${enum_log_format}"`
 		UUID   bool   `default:"false"                help:"Add instance UUID to all log messages." negatable:""`
 	} `embed:"" prefix:"log-"`
-
-	PostgreSQLURL string `name:"postgresql-url" default:"postgres://127.0.0.1:5432/postgres" help:"PostgreSQL URL."`
 
 	MetricsUUID bool `default:"false" help:"Add instance UUID to all metrics." negatable:""`
 
@@ -103,6 +103,8 @@ var cli struct {
 	Telemetry telemetry.Flag `default:"undecided" help:"${help_telemetry}"`
 
 	Dev struct {
+		ReplSetName string `default:"" help:"Replica set name."`
+
 		RecordsDir string `hidden:""`
 
 		Telemetry struct {
@@ -225,8 +227,9 @@ func setupLogger(format string, uuid string) *slog.Logger {
 	}
 
 	opts := &logging.NewHandlerOpts{
-		Base:  format,
-		Level: level,
+		Base:          format,
+		Level:         level,
+		CheckMessages: false, // TODO https://github.com/FerretDB/FerretDB/issues/4511
 	}
 	logging.Setup(opts, uuid)
 	logger := slog.Default()
@@ -447,7 +450,7 @@ func run() {
 		Auth: cli.Auth,
 
 		TCPHost:     cli.Listen.Addr,
-		ReplSetName: cli.ReplSetName,
+		ReplSetName: cli.Dev.ReplSetName,
 
 		L:             logging.WithName(logger, "handler"),
 		ConnMetrics:   metrics.ConnMetrics,

@@ -21,7 +21,6 @@ import (
 	"sync/atomic"
 
 	"github.com/FerretDB/wire/wirebson"
-	"golang.org/x/exp/maps"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/resource"
 )
@@ -95,16 +94,21 @@ func (r *Registry) Operations() []Operation {
 	r.rw.RLock()
 	defer r.rw.RUnlock()
 
-	ops := maps.Values(r.operations)
+	res := make([]Operation, 0, len(r.operations))
 
-	slices.SortFunc(ops, func(a, b *Operation) int {
+	for _, op := range r.operations {
+		v := *op
+
+		// lifetime is tracked via pointer in the registry;
+		// remove token to make things a bit less confusing
+		v.token = nil
+
+		res = append(res, v)
+	}
+
+	slices.SortFunc(res, func(a, b Operation) int {
 		return cmp.Compare(a.OpID, b.OpID)
 	})
-
-	var res []Operation
-	for _, op := range ops {
-		res = append(res, *op)
-	}
 
 	return res
 }
