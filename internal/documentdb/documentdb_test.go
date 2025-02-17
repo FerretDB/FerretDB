@@ -84,7 +84,7 @@ func TestNewPool(t *testing.T) {
 	})
 }
 
-func TestError(t *testing.T) {
+func TestDocumentDB(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping in -short mode")
 	}
@@ -104,41 +104,69 @@ func TestError(t *testing.T) {
 	require.NoError(t, err)
 	defer pool.Close()
 
-	var res wirebson.RawDocument
+	t.Run("Error", func(t *testing.T) {
+		var res wirebson.RawDocument
 
-	err = pool.WithConn(func(conn *pgx.Conn) error {
-		b := must.NotFail(wirebson.MustDocument(
-			"delete", testutil.CollectionName(t),
-			"deletes", wirebson.MustArray(wirebson.MustDocument(
-				"q", wirebson.MustDocument(),
-				"limit", int32(-1),
-			)),
-		).Encode())
+		err = pool.WithConn(func(conn *pgx.Conn) error {
+			b := must.NotFail(wirebson.MustDocument(
+				"delete", testutil.CollectionName(t),
+				"deletes", wirebson.MustArray(wirebson.MustDocument(
+					"q", wirebson.MustDocument(),
+					"limit", int32(-1),
+				)),
+			).Encode())
 
-		res, _, err = documentdb_api.Delete(ctx, conn, l, testutil.DatabaseName(t), b, nil)
+			res, _, err = documentdb_api.Delete(ctx, conn, l, testutil.DatabaseName(t), b, nil)
 
-		return err
+			return err
+		})
+
+		require.Nil(t, res)
+		require.Error(t, err)
+
+		err = mongoerrors.Make(ctx, err, "", l)
+
+		expected := "FailedToParse (9): The limit field in delete objects must be 0 or 1. Got -1"
+		assert.Equal(t, expected, fmt.Sprintf("%s", err))
+		assert.Equal(t, expected, fmt.Sprintf("%v", err))
+		assert.Equal(t, expected, fmt.Sprintf("%+v", err))
+
+		expected = "&mongoerrors.Error{" +
+			"Code: 9, " +
+			"Name: `FailedToParse`, " +
+			"Message: `The limit field in delete objects must be 0 or 1. Got -1`, " +
+			"Argument: `documentdb_api.delete`, " +
+			"Wrapped: &pgconn.PgError{" +
+			`Severity:"ERROR", SeverityUnlocalized:"ERROR", Code:"M0003", ` +
+			`Message:"The limit field in delete objects must be 0 or 1. Got -1", Detail:"", Hint:"", ` +
+			`Position:0, InternalPosition:0, InternalQuery:"", Where:"", SchemaName:"", TableName:"", ColumnName:"", ` +
+			`DataTypeName:"", ConstraintName:"", File:"delete.c", Line:479, Routine:"BuildDeletionSpec"}}`
+		assert.Equal(t, expected, fmt.Sprintf("%#v", err))
 	})
 
-	require.Nil(t, res)
-	require.Error(t, err)
+	t.Run("DropIndexes", func(t *testing.T) {
+		var res []byte
 
-	err = mongoerrors.Make(ctx, err, "", l)
+		err = pool.WithConn(func(conn *pgx.Conn) error {
+			_, err = documentdb_api.CreateCollection(ctx, conn, l, testutil.DatabaseName(t), testutil.CollectionName(t))
+			require.NoError(t, err)
 
-	expected := "FailedToParse (9): The limit field in delete objects must be 0 or 1. Got -1"
-	assert.Equal(t, expected, fmt.Sprintf("%s", err))
-	assert.Equal(t, expected, fmt.Sprintf("%v", err))
-	assert.Equal(t, expected, fmt.Sprintf("%+v", err))
+			b := must.NotFail(wirebson.MustDocument(
+				"dropIndexes", testutil.CollectionName(t),
+				"index", "*",
+			).Encode())
 
-	expected = "&mongoerrors.Error{" +
-		"Code: 9, " +
-		"Name: `FailedToParse`, " +
-		"Message: `The limit field in delete objects must be 0 or 1. Got -1`, " +
-		"Argument: `documentdb_api.delete`, " +
-		"Wrapped: &pgconn.PgError{" +
-		`Severity:"ERROR", SeverityUnlocalized:"ERROR", Code:"M0003", ` +
-		`Message:"The limit field in delete objects must be 0 or 1. Got -1", Detail:"", Hint:"", ` +
-		`Position:0, InternalPosition:0, InternalQuery:"", Where:"", SchemaName:"", TableName:"", ColumnName:"", ` +
-		`DataTypeName:"", ConstraintName:"", File:"delete.c", Line:479, Routine:"BuildDeletionSpec"}}`
-	assert.Equal(t, expected, fmt.Sprintf("%#v", err))
+			res, err = documentdb_api.DropIndexes(ctx, conn, l, testutil.DatabaseName(t), b)
+
+			return err
+		})
+
+		require.NoError(t, err)
+
+		t.Logf("res: %s", res)
+
+		// d, err := res.DecodeDeep()
+		// require.NoError(t, err)
+		// t.Log(d.LogMessage())
+	})
 }
