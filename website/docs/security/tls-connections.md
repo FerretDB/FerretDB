@@ -98,5 +98,5 @@ docker run --rm -it \
   --network=ferretdb \
   --volume ./client-certs:/clients \
   --entrypoint=mongosh \
-  mongo 'mongodb://username:password@host.docker.internal:27018?tls=true&tlsCertificateKeyFile=/clients/client.pem&tlsCaFile=/clients/rootCA-cert.pem'
+  mongo 'mongodb://username:password@host.docker.internal:27018/?tls=true&tlsCertificateKeyFile=/clients/client.pem&tlsCaFile=/clients/rootCA-cert.pem'
 ```

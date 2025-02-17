@@ -99,7 +99,6 @@ linters:
     - errchkjson
     - errname
     - exhaustruct
-    - exportloopref
     - fatcontext
     - forcetypeassert
     - funlen
