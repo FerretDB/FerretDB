@@ -1,10 +1,15 @@
-module github.com/FerretDB/FerretDB/tools
+module github.com/FerretDB/FerretDB/v2/tools
 
 go 1.24
 
 toolchain go1.24.0
 
 tool (
+	github.com/FerretDB/FerretDB/v2/tools/checkcomments
+	github.com/FerretDB/FerretDB/v2/tools/checkdocs
+	github.com/FerretDB/FerretDB/v2/tools/checkswitch
+	github.com/FerretDB/FerretDB/v2/tools/definedockertag
+	github.com/FerretDB/FerretDB/v2/tools/generatechangelog
 	github.com/OpenDocDB/cts/opendocdb-cts
 	github.com/go-task/task/v3/cmd/task
 	github.com/goreleaser/nfpm/v2/cmd/nfpm

@@ -28,7 +28,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/FerretDB/FerretDB/tools/github"
+	"github.com/FerretDB/FerretDB/v2/tools/github"
 )
 
 func main() {

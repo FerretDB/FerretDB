@@ -27,7 +27,7 @@ import (
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/singlechecker"
 
-	"github.com/FerretDB/FerretDB/tools/github"
+	"github.com/FerretDB/FerretDB/v2/tools/github"
 )
 
 // todoRE represents correct "// TODO" comment format.

@@ -1,6 +1,6 @@
 // Use separate (sub-)module to prevent dependabot timeouts.
 
-module github.com/FerretDB/FerretDB/tools/golangci
+module github.com/FerretDB/FerretDB/v2/tools/golangci
 
 // TODO https://github.com/golangci/golangci-lint/pull/5396
 go 1.24
