@@ -182,7 +182,7 @@ func setupLogger(logLevel string, format string, uuid string) *slog.Logger {
 	return logger
 }
 
-// checkOptions checks and logs options set for run.
+// checkOptions checks and logs options set.
 func checkOptions(ctx context.Context, logger *slog.Logger, opts *RunOpts) {
 	if devbuild.Enabled {
 		logger.WarnContext(ctx, "This is a development build. The performance will be affected.")
