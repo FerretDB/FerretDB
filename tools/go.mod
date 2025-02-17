@@ -1,8 +1,8 @@
 module github.com/FerretDB/FerretDB/v2/tools
 
-go 1.24
+go 1.23
 
-toolchain go1.24.0
+toolchain go1.23.6
 
 tool (
 	github.com/FerretDB/FerretDB/v2/tools/checkcomments

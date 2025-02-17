@@ -3,9 +3,9 @@
 module github.com/FerretDB/FerretDB/v2/tools/golangci
 
 // TODO https://github.com/golangci/golangci-lint/pull/5396
-go 1.24
+go 1.23
 
-toolchain go1.24.0
+toolchain go1.23.6
 
 tool github.com/golangci/golangci-lint/cmd/golangci-lint
 
