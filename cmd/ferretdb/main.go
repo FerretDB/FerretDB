@@ -15,6 +15,7 @@
 package main
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"log"
@@ -53,7 +54,8 @@ import (
 // The cli struct represents all command-line commands, fields and flags.
 // It's used for parsing the user input.
 //
-// Keep order in sync with documentation.
+// Keep structure and order in sync with documentation and embeddable package.
+// TODO https://github.com/FerretDB/FerretDB/issues/4746
 var cli struct {
 	// We hide `run` command to show only `ping` in the help message.
 	Run  struct{} `cmd:"" default:"1"                             hidden:""`
@@ -64,13 +66,15 @@ var cli struct {
 	PostgreSQLURL string `name:"postgresql-url" default:"postgres://127.0.0.1:5432/postgres" help:"PostgreSQL URL."`
 
 	Listen struct {
-		Addr        string `default:"127.0.0.1:27017" help:"Listen TCP address for MongoDB protocol."`
-		Unix        string `default:""                help:"Listen Unix domain socket path for MongoDB protocol."`
-		TLS         string `default:""                help:"Listen TLS address for MongoDB protocol."`
-		TLSCertFile string `default:""                help:"TLS cert file path."`
-		TLSKeyFile  string `default:""                help:"TLS key file path."`
-		TLSCaFile   string `default:""                help:"TLS CA file path."`
-		DataAPIAddr string `default:""                help:"Listen TCP address for HTTP Data API."`
+		Addr string `default:"127.0.0.1:27017" help:"Listen TCP address for MongoDB protocol."`
+		Unix string `default:""                help:"Listen Unix domain socket path for MongoDB protocol."`
+
+		TLS         string `default:"" help:"Listen TLS address for MongoDB protocol."`
+		TLSCertFile string `default:"" help:"TLS cert file path."`
+		TLSKeyFile  string `default:"" help:"TLS key file path."`
+		TLSCaFile   string `default:"" help:"TLS CA file path."`
+
+		DataAPIAddr string `default:"" help:"Listen TCP address for HTTP Data API."`
 	} `embed:"" prefix:"listen-"`
 
 	Proxy struct {
@@ -182,7 +186,7 @@ func defaultLogLevel() slog.Level {
 
 // setupState setups state provider.
 func setupState() *state.Provider {
-	if cli.StateDir == "" || cli.StateDir == "-" {
+	if cmp.Or(cli.StateDir, "-") == "-" {
 		log.Fatal("State directory must be set.")
 	}
 
@@ -349,7 +353,7 @@ func run() {
 
 	var wg sync.WaitGroup
 
-	if addr := cli.DebugAddr; addr != "" && addr != "-" {
+	if addr := cmp.Or(cli.DebugAddr, "-"); addr != "-" {
 		wg.Add(1)
 
 		go func() {
@@ -382,7 +386,7 @@ func run() {
 		}()
 	}
 
-	if u := cli.OTel.Traces.URL; u != "" && u != "-" {
+	if u := cmp.Or(cli.OTel.Traces.URL, "-"); u != "-" {
 		wg.Add(1)
 
 		go func() {
@@ -446,11 +450,16 @@ func run() {
 
 	defer p.Close()
 
+	tcpHost := cli.Listen.Addr
+	if tcpHost == "-" {
+		tcpHost = ""
+	}
+
 	handlerOpts := &handler.NewOpts{
 		Pool: p,
 		Auth: cli.Auth,
 
-		TCPHost:     cli.Listen.Addr,
+		TCPHost:     tcpHost,
 		ReplSetName: cli.Dev.ReplSetName,
 
 		L:             logging.WithName(logger, "handler"),
@@ -487,7 +496,7 @@ func run() {
 		logger.LogAttrs(ctx, logging.LevelFatal, "Failed to construct listener", logging.Error(err))
 	}
 
-	if addr := cli.Listen.DataAPIAddr; addr != "" && addr != "-" {
+	if addr := cmp.Or(cli.Listen.DataAPIAddr, "-"); addr != "-" {
 		wg.Add(1)
 
 		go func() {

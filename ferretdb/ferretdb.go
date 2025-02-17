@@ -33,50 +33,19 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 )
 
+// Keep structure and order of Config in sync with the main package.
+// Avoid breaking changes.
+
 // Config represents FerretDB configuration.
 type Config struct {
-	Listener ListenerConfig
+	// PostgreSQL URL.
+	PostgreSQLURL string
 
-	// Logger to use; if nil, `slog.Default()` is used.
-	Logger *slog.Logger
-
-	// Handler to use; one of `postgresql` or `sqlite`.
-	Handler string
-
-	// PostgreSQL connection string for `postgresql` handler.
-	// See:
-	//   - https://pkg.go.dev/github.com/jackc/pgx/v5/pgxpool#ParseConfig
-	//   - https://pkg.go.dev/github.com/jackc/pgx/v5#ParseConfig
-	//   - https://pkg.go.dev/github.com/jackc/pgx/v5/pgconn#ParseConfig
-	PostgreSQLURL string // For example: `postgres://hostname:5432/ferretdb`.
-
-	// SQLite URI (directory) for `sqlite` handler.
-	// See https://www.sqlite.org/uri.html.
-	SQLiteURL string // For example: `file:data/`.
-}
-
-// ListenerConfig represents listener configuration.
-type ListenerConfig struct {
-	// Listen TCP address.
-	// If empty, TCP listener is disabled.
-	TCP string
-
-	// Listen Unix domain socket path.
-	// If empty, Unix listener is disabled.
-	Unix string
-
-	// Listen TLS address.
-	// If empty, TLS listener is disabled.
-	TLS string
-
-	// Server certificate path.
-	TLSCertFile string
-
-	// Server key path.
-	TLSKeyFile string
-
-	// Root CA certificate path.
-	TLSCAFile string
+	Listen struct {
+		// Listen TCP address for MongoDB protocol.
+		// If empty or "-", TCP listener is disabled.
+		Addr string
+	}
 }
 
 // FerretDB represents an instance of embeddable FerretDB implementation.

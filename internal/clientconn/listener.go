@@ -15,6 +15,7 @@
 package clientconn
 
 import (
+	"cmp"
 	"context"
 	"crypto/tls"
 	"errors"
@@ -90,7 +91,7 @@ func Listen(opts *NewListenerOpts) (*Listener, error) {
 	var err error
 	ctx := context.Background()
 
-	if l.TCP != "" {
+	if cmp.Or(l.TCP, "-") != "-" {
 		if l.tcpListener, err = net.Listen("tcp", l.TCP); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -99,7 +100,7 @@ func Listen(opts *NewListenerOpts) (*Listener, error) {
 		ll.InfoContext(ctx, fmt.Sprintf("Listening on TCP %s...", l.TCPAddr()))
 	}
 
-	if l.Unix != "" {
+	if cmp.Or(l.Unix, "-") != "-" {
 		if l.unixListener, err = net.Listen("unix", l.Unix); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -108,7 +109,7 @@ func Listen(opts *NewListenerOpts) (*Listener, error) {
 		ll.InfoContext(ctx, fmt.Sprintf("Listening on Unix %s...", l.UnixAddr()))
 	}
 
-	if l.TLS != "" {
+	if cmp.Or(l.TLS, "-") != "-" {
 		var config *tls.Config
 
 		if config, err = tlsutil.Config(l.TLSCertFile, l.TLSKeyFile, l.TLSCAFile); err != nil {
