@@ -15,7 +15,6 @@
 package telemetry
 
 import (
-	"path/filepath"
 	"testing"
 
 	"github.com/AlekSi/pointer"
@@ -71,7 +70,7 @@ func TestReporterLocked(t *testing.T) {
 
 			_, err = NewReporter(&NewReporterOpts{
 				URL:         "http://127.0.0.1:1/",
-				File:        filepath.Join(t.TempDir(), "telemetry.json"),
+				Dir:         t.TempDir(),
 				F:           tc.f,
 				DNT:         tc.dnt,
 				ExecName:    tc.execName,

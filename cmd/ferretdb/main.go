@@ -22,7 +22,6 @@ import (
 	"log/slog"
 	"math"
 	"os"
-	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
@@ -401,14 +400,9 @@ func run() {
 
 			l := logging.WithName(logger, "telemetry")
 
-			file, err := filepath.Abs(filepath.Join(cli.StateDir, "telemetry.json"))
-			if err != nil {
-				l.LogAttrs(ctx, logging.LevelFatal, "Failed to get path for local telemetry report file", logging.Error(err))
-			}
-
 			r, err := telemetry.NewReporter(&telemetry.NewReporterOpts{
 				URL:            cli.Dev.Telemetry.URL,
-				File:           file,
+				Dir:            cli.StateDir,
 				F:              &cli.Telemetry,
 				DNT:            os.Getenv("DO_NOT_TRACK"),
 				ExecName:       os.Args[0],
