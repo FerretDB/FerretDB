@@ -248,7 +248,7 @@ func main() {
 		Level:         level,
 		RemoveTime:    true,
 		RemoveSource:  true,
-		CheckMessages: true,
+		CheckMessages: false,
 	}
 	logging.Setup(opts, "")
 	logger := slog.Default()
