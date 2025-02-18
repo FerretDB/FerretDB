@@ -46,13 +46,13 @@ func main() {
 	ctx := context.Background()
 
 	if *schemasF == "" {
-		l.Log(ctx, logging.LevelFatal, "-schemas flag is empty.")
+		l.Log(ctx, logging.LevelFatal, "-schemas flag is empty")
 	}
 
 	// DOCUMENTDB_GEN_URL=postgres://username:password@127.0.0.1:5432/postgres
 	uri := os.Getenv("DOCUMENTDB_GEN_URL")
 	if uri == "" {
-		l.InfoContext(ctx, "DOCUMENTDB_GEN_URL not set, skipping code generation.")
+		l.InfoContext(ctx, "DOCUMENTDB_GEN_URL not set, skipping code generation")
 		os.Exit(0)
 	}
 
