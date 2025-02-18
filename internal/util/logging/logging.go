@@ -60,7 +60,7 @@ type LazyString func() string
 // LogValue implements [slog.LogValuer].
 func (ls LazyString) LogValue() slog.Value { return slog.StringValue(ls()) }
 
-// Logger create a new slog handler and logger with the given output, options and UUID.
+// Logger creates a new slog handler and logger with the given output, options and UUID.
 func Logger(out io.Writer, opts *NewHandlerOpts, uuid string) *slog.Logger {
 	must.NotBeZero(opts)
 

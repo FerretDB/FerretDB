@@ -225,15 +225,15 @@ func checkFlags(logger *slog.Logger) {
 	ctx := context.Background()
 
 	if devbuild.Enabled {
-		logger.WarnContext(ctx, "This is a development build. The performance will be affected.")
+		logger.WarnContext(ctx, "This is a development build; the performance will be affected")
 	}
 
 	if logger.Enabled(ctx, slog.LevelDebug) {
-		logger.WarnContext(ctx, "Debug logging enabled. The performance will be affected.")
+		logger.WarnContext(ctx, "Debug logging is enabled; the performance will be affected")
 	}
 
 	if !cli.Auth {
-		logger.WarnContext(ctx, "Authentication is disabled. The server will accept any connection.")
+		logger.WarnContext(ctx, "Authentication is disabled; the server will accept any connection")
 	}
 }
 
@@ -279,7 +279,7 @@ func run() {
 
 	stateProvider, err := state.NewProviderDir(cli.StateDir)
 	if err != nil {
-		log.Fatalf("Failed to setup state provider: %s.", err)
+		log.Fatalf("Failed to setup state provider: %s", err)
 	}
 
 	metricsRegisterer := setupMetrics(stateProvider)
@@ -303,7 +303,7 @@ func run() {
 
 	logger := setupDefaultLogger(cli.Log.Format, logUUID)
 
-	logger.LogAttrs(context.Background(), slog.LevelInfo, "Starting FerretDB "+info.Version+"...", startupFields...)
+	logger.LogAttrs(context.Background(), slog.LevelInfo, "Starting FerretDB "+info.Version, startupFields...)
 
 	checkFlags(logger)
 
