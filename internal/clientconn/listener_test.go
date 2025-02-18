@@ -12,31 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package clientconn
 
 import (
-	"os"
-	"path/filepath"
+	"net"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/tools/go/analysis/analysistest"
 
-	"github.com/FerretDB/FerretDB/v2/tools/github"
+	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
 )
 
-func TestCheckCommentIssue(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping in -short mode")
-	}
-
-	t.Parallel()
-
-	path, err := github.CacheFilePath()
+func TestListener(t *testing.T) {
+	l, err := Listen(&ListenerOpts{
+		Logger: testutil.Logger(t),
+		TCP:    "127.0.0.1:0",
+	})
 	require.NoError(t, err)
 
-	err = os.MkdirAll(filepath.Dir(path), 0o777)
+	host, port, err := net.SplitHostPort(l.TCPAddr().String())
 	require.NoError(t, err)
+	assert.Equal(t, "127.0.0.1", host)
+	assert.NotZero(t, port)
 
-	analysistest.Run(t, analysistest.TestData(), analyzer)
+	assert.Nil(t, l.UnixAddr())
 }

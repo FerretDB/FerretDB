@@ -1,28 +1,39 @@
-module github.com/FerretDB/FerretDB/tools
+module github.com/FerretDB/FerretDB/v2/tools
 
-go 1.23
+go 1.24
 
-toolchain go1.23.6
+toolchain go1.24.0
+
+tool (
+	github.com/FerretDB/FerretDB/v2/tools/checkcomments
+	github.com/FerretDB/FerretDB/v2/tools/checkdocs
+	github.com/FerretDB/FerretDB/v2/tools/checkswitch
+	github.com/FerretDB/FerretDB/v2/tools/definedockertag
+	github.com/FerretDB/FerretDB/v2/tools/generatechangelog
+	github.com/OpenDocDB/cts/opendocdb-cts
+	github.com/go-task/task/v3/cmd/task
+	github.com/goreleaser/nfpm/v2/cmd/nfpm
+	github.com/kisielk/godepgraph
+	github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen
+	github.com/quasilyte/go-consistent
+	golang.org/x/perf/cmd/benchstat
+	golang.org/x/pkgsite/cmd/pkgsite
+	golang.org/x/tools/cmd/deadcode
+	golang.org/x/tools/cmd/goimports
+	golang.org/x/tools/cmd/stringer
+	golang.org/x/vuln/cmd/govulncheck
+	mvdan.cc/gofumpt
+)
 
 require (
 	github.com/AlekSi/pointer v1.2.0
 	github.com/FerretDB/gh v0.1.6
-	github.com/OpenDocDB/cts/opendocdb-cts v0.0.0-20250130175644-5bb54314b11d
-	github.com/go-task/task/v3 v3.41.0
 	github.com/google/go-github/v66 v66.0.0
-	github.com/goreleaser/nfpm/v2 v2.41.2
-	github.com/kisielk/godepgraph v0.0.0-20240411160502-0f324ca7e282
-	github.com/oapi-codegen/oapi-codegen/v2 v2.4.1
-	github.com/quasilyte/go-consistent v0.6.1
 	github.com/rogpeppe/go-internal v1.13.1
 	github.com/sethvargo/go-githubactions v1.3.0
 	github.com/stretchr/testify v1.10.0
-	golang.org/x/perf v0.0.0-20250210164336-884df5810d28
-	golang.org/x/pkgsite v0.0.0-20250210190023-b866f8692660
 	golang.org/x/tools v0.30.0
-	golang.org/x/vuln v1.1.4
 	gopkg.in/yaml.v3 v3.0.1
-	mvdan.cc/gofumpt v0.7.0
 )
 
 require (
@@ -33,6 +44,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.3.1 // indirect
 	github.com/Masterminds/sprig/v3 v3.3.0 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
+	github.com/OpenDocDB/cts/opendocdb-cts v0.0.0-20250130175644-5bb54314b11d // indirect
 	github.com/ProtonMail/go-crypto v1.1.4 // indirect
 	github.com/aclements/go-moremath v0.0.0-20210112150236-f10218a38794 // indirect
 	github.com/alecthomas/chroma/v2 v2.14.0 // indirect
@@ -60,6 +72,7 @@ require (
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect
 	github.com/go-openapi/swag v0.23.0 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
+	github.com/go-task/task/v3 v3.41.0 // indirect
 	github.com/go-task/template v0.1.0 // indirect
 	github.com/go-toolsmith/astcast v1.0.0 // indirect
 	github.com/go-toolsmith/astequal v1.0.0 // indirect
@@ -76,6 +89,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/goreleaser/chglog v0.6.2 // indirect
 	github.com/goreleaser/fileglob v1.3.0 // indirect
+	github.com/goreleaser/nfpm/v2 v2.41.2 // indirect
 	github.com/huandu/xstrings v1.5.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/invopop/jsonschema v0.13.0 // indirect
@@ -84,6 +98,7 @@ require (
 	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
+	github.com/kisielk/godepgraph v0.0.0-20240411160502-0f324ca7e282 // indirect
 	github.com/kisielk/gotool v1.0.0 // indirect
 	github.com/klauspost/compress v1.17.11 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.7 // indirect
@@ -101,9 +116,11 @@ require (
 	github.com/muesli/mango-cobra v1.2.0 // indirect
 	github.com/muesli/mango-pflag v0.1.0 // indirect
 	github.com/muesli/roff v0.1.0 // indirect
+	github.com/oapi-codegen/oapi-codegen/v2 v2.4.1 // indirect
 	github.com/perimeterx/marshmallow v1.1.5 // indirect
 	github.com/pjbgf/sha1cd v0.3.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/quasilyte/go-consistent v0.6.1 // indirect
 	github.com/radovskyb/watcher v1.0.7 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/sajari/fuzzy v1.0.0 // indirect
@@ -129,13 +146,17 @@ require (
 	golang.org/x/mod v0.23.0 // indirect
 	golang.org/x/net v0.35.0 // indirect
 	golang.org/x/oauth2 v0.26.0 // indirect
+	golang.org/x/perf v0.0.0-20250214215153-c95ad7d5b636 // indirect
+	golang.org/x/pkgsite v0.0.0-20250214205047-dd488e5da97a // indirect
 	golang.org/x/sync v0.11.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect
 	golang.org/x/telemetry v0.0.0-20240522233618-39ace7a40ae7 // indirect
 	golang.org/x/term v0.29.0 // indirect
 	golang.org/x/text v0.22.0 // indirect
+	golang.org/x/vuln v1.1.4 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
+	mvdan.cc/gofumpt v0.7.0 // indirect
 	mvdan.cc/sh/v3 v3.10.0 // indirect
 	rsc.io/markdown v0.0.0-20231214224604-88bb533a6020 // indirect
 )

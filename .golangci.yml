@@ -103,7 +103,7 @@ linters-settings:
     sections:
       - standard
       - default
-      - prefix(github.com/FerretDB/FerretDB) # both /v2 and /tools
+      - prefix(github.com/FerretDB/FerretDB/v2/)
   goconst:
     min-occurrences: 5
     ignore-tests: true
