@@ -118,22 +118,50 @@ db.books.find({
 
 ### 7. Lookup (Join Queries)
 
-**TBD**.
+Sometimes, you need to combine data from multiple collections – just like SQL joins in relational databases.
+This is useful when you store related data in different collections but want to retrieve them together in a single query.
 
-Sometimes, you need to combine data from multiple collections.
+Suppose there's another collection `publishers` with more details on the publishers, as shown below:
+
+```json5
+[
+  {
+    _id: 1,
+    name: 'T. Egerton',
+    location: 'London, United Kingdom',
+    established: 1780
+  },
+  {
+    _id: 2,
+    name: 'Harper & Brothers',
+    location: 'New York, United States',
+    established: 1817
+  },
+  {
+    _id: 3,
+    name: 'Lackington, Hughes, Harding, Mavor & Jones',
+    location: 'London, United Kingdom',
+    established: 1790
+  }
+]
+```
+
+You can join the data from both collections (`books` and `publishers`) using `$lookup`.
 
 ```js
 db.books.aggregate([
   {
     $lookup: {
-      from: 'reviews',
-      localField: '_id',
-      foreignField: 'book_id',
-      as: 'book_reviews'
+      from: 'publishers',
+      localField: 'publication.publisher.name',
+      foreignField: 'name',
+      as: 'publisher_details'
     }
   }
 ])
 ```
+
+This should fetch the books and their corresponding publishers' details in a single query.
 
 ## Authentication
 
@@ -188,7 +216,7 @@ On FerretDB, you can create an index on a book's title and price to ensure faste
 db.books.createIndex({ title: 1, 'price.value': -1 })
 ```
 
-### 11. 12.Drop indexes
+### 11. Drop indexes
 
 If you no longer need an index, you can drop it to free up space and resources.
 
@@ -200,7 +228,7 @@ db.books.dropIndex({ title: 1 })
 
 Learn more about indexes in FerretDB [here](https://docs.ferretdb.io/usage/indexes/).
 
-### Partial indexes
+### 12. Partial indexes
 
 Unlike full indexes, partial indexes only index documents that match a specific condition, and skips the rest.
 This means smaller index sizes, faster writes, and optimized queries – perfect for filtering out irrelevant data without the overhead of a full index.
