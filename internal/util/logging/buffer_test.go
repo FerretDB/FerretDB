@@ -30,7 +30,7 @@ func TestCircularBufferHandler(t *testing.T) {
 		CheckMessages:     true,
 		recentEntriesSize: 2,
 	}
-	Setup(opts, "")
+	SetupDefault(opts, "")
 
 	for _, tc := range []struct { //nolint:vet // for readability
 		msg      string

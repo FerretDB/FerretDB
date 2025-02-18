@@ -53,7 +53,7 @@ func Startup() {
 		RemoveLevel:   true,
 		CheckMessages: false, // TODO https://github.com/FerretDB/FerretDB/issues/4511
 	}
-	logging.Setup(opts, "")
+	logging.SetupDefault(opts, "")
 	l := slog.Default()
 
 	ctx := context.Background()

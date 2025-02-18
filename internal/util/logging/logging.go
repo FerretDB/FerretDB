@@ -40,6 +40,7 @@ const nameKey = "name"
 //
 // How this name is used depends on the handler.
 func WithName(l *slog.Logger, name string) *slog.Logger {
+	must.NotBeZero(l)
 	return l.With(slog.String(nameKey, name))
 }
 
@@ -58,8 +59,8 @@ type LazyString func() string
 // LogValue implements [slog.LogValuer].
 func (ls LazyString) LogValue() slog.Value { return slog.StringValue(ls()) }
 
-// Setup initializes slog logging with given options and UUID.
-func Setup(opts *NewHandlerOpts, uuid string) {
+// SetupDefault initializes global slog logging with given options and UUID.
+func SetupDefault(opts *NewHandlerOpts, uuid string) {
 	must.NotBeZero(opts)
 
 	h := NewHandler(os.Stderr, opts)
