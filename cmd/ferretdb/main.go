@@ -242,15 +242,15 @@ func checkFlags(logger *slog.Logger) {
 	ctx := context.Background()
 
 	if devbuild.Enabled {
-		logger.WarnContext(ctx, "This is a development build. The performance will be affected.")
+		logger.WarnContext(ctx, "This is a development build. The performance will be affected")
 	}
 
 	if logger.Enabled(ctx, slog.LevelDebug) {
-		logger.WarnContext(ctx, "Debug logging enabled. The performance will be affected.")
+		logger.WarnContext(ctx, "Debug logging enabled. The performance will be affected")
 	}
 
 	if !cli.Auth {
-		logger.WarnContext(ctx, "Authentication is disabled. The server will accept any connection.")
+		logger.WarnContext(ctx, "Authentication is disabled. The server will accept any connection")
 	}
 }
 
@@ -316,7 +316,7 @@ func run() {
 
 	logger := setupLogger(cli.Log.Format, logUUID)
 
-	logger.LogAttrs(context.Background(), slog.LevelInfo, "Starting FerretDB "+info.Version+"...", startupFields...)
+	logger.LogAttrs(context.Background(), slog.LevelInfo, "Starting FerretDB "+info.Version, startupFields...)
 
 	checkFlags(logger)
 
