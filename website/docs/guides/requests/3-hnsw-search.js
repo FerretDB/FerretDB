@@ -1,5 +1,5 @@
 db.runCommand({
-  aggregate: "books",
+  aggregate: 'books',
   pipeline: [
     {
       $search: {
@@ -9,7 +9,7 @@ db.runCommand({
             -0.036311957985162735, 0.02430308423936367, -0.051550041884183884, -0.06737732142210007,
             0.011019553989171982, -0.013402754440903664, -0.004793450236320496,
           ],
-          path: "vector",
+          path: 'vector',
           k: 2,
           efSearch: 40,
         },
@@ -17,4 +17,4 @@ db.runCommand({
     },
   ],
   cursor: {},
-});
+})

@@ -1,6 +1,6 @@
 ---
 slug: run-mongodb-workloads-ferretdb-tembo
-title: "How to Run MongoDB Workloads with FerretDB on Tembo"
+title: 'How to Run MongoDB Workloads with FerretDB on Tembo'
 authors: [alex]
 description: >
   In this blog post, we’ll show you how to run FerretDB on Tembo for your production workloads.
@@ -125,8 +125,8 @@ This could be useful in understanding the impact of a particular promotional cam
 ```js
 db.supply.find({
   transaction_time: {
-    $gte: ISODate("2023-07-01T00:00:00.000Z"),
-    $lte: ISODate("2023-07-03T23:59:59.000Z")
+    $gte: ISODate('2023-07-01T00:00:00.000Z'),
+    $lte: ISODate('2023-07-03T23:59:59.000Z')
   }
 })
 ```
@@ -197,8 +197,8 @@ We can aggregate the data to sum the quantities sold by product name.
 db.supply.aggregate([
   {
     $group: {
-      _id: "$product_name",
-      totalQuantity: { $sum: "$quantity" }
+      _id: '$product_name',
+      totalQuantity: { $sum: '$quantity' }
     }
   },
   { $sort: { totalQuantity: -1 } },
@@ -209,7 +209,7 @@ db.supply.aggregate([
 Result:
 
 ```json5
-[{ _id: "The Alchemist", totalQuantity: 5 }]
+[{ _id: 'The Alchemist', totalQuantity: 5 }]
 ```
 
 This operation groups the records by `product_name`, sums up the quantities, and then sorts the results in descending order of quantity to highlight the most popular item.

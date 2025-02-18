@@ -104,7 +104,7 @@ services:
       - ./primary_data:/var/lib/postgresql/data
       - replica_backup:/tmp/replica_backup
     ports:
-      - "5432:5432"
+      - '5432:5432'
 
   postgres_replica:
     image: ghcr.io/ferretdb/postgres-documentdb:16
@@ -117,7 +117,7 @@ services:
     volumes:
       - replica_backup:/var/lib/postgresql/data
     ports:
-      - "5433:5432"
+      - '5433:5432'
 
   ferretdb:
     image: ghcr.io/ferretdb/ferretdb:2
@@ -125,7 +125,7 @@ services:
     environment:
       - FERRETDB_POSTGRESQL_URL=postgres://user:password@postgres_primary:5432/postgres
     ports:
-      - "27017:27017"
+      - '27017:27017'
 
   ferretdb_readonly:
     image: ghcr.io/ferretdb/ferretdb:2
@@ -133,7 +133,7 @@ services:
     environment:
       - FERRETDB_POSTGRESQL_URL=postgres://user:password@postgres_replica:5432/postgres
     ports:
-      - "27018:27017"
+      - '27018:27017'
     depends_on:
       - postgres_replica
 
@@ -294,8 +294,8 @@ Add the following document in FerretDB to test if data written to the primary al
 
 ```js
 db.record.insertOne({
-  username: "Ada Lovelace",
-  content: "Enjoying the beautiful weather today! 🌞 #sunnyday",
+  username: 'Ada Lovelace',
+  content: 'Enjoying the beautiful weather today! 🌞 #sunnyday',
   likes: 120,
   timestamp: new Date()
 })

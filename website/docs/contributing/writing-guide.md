@@ -92,7 +92,7 @@ For MongoDB shell commands, use `js` language.
 Our tooling will automatically reformat those blocks.
 
 ```js
-db.league.find({ club: "PSG" })
+db.league.find({ club: 'PSG' })
 ```
 
 For MongoDB shell results, use `json5` language and copy&paste the output as-is,

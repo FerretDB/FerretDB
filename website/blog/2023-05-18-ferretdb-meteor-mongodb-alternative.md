@@ -1,6 +1,6 @@
 ---
 slug: ferretdb-meteor-mongodb-alternative
-title: "Meteor.js and FerretDB: Using an Open Source MongoDB Alternative for Your Meteor.js Apps"
+title: 'Meteor.js and FerretDB: Using an Open Source MongoDB Alternative for Your Meteor.js Apps'
 authors: [alex]
 description: >
   Here we explore the possible synergy and compatibility of FerretDB in Meteor.js and how you can build your applications without any concern for vendor lock-in.

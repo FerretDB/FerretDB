@@ -1,6 +1,6 @@
 ---
 slug: run-mongodb-commands-ferretdb-scalegrid-for-postgresql
-title: "Run MongoDB Commands on FerretDB and ScaleGrid for PostgreSQL"
+title: 'Run MongoDB Commands on FerretDB and ScaleGrid for PostgreSQL'
 authors: [alex]
 description: >
   Learn how to run MongoDB workloads in FerretDB with a fully managed PostgreSQL service like ScaleGrid for PostgreSQL.
@@ -66,20 +66,20 @@ The following command will insert two documents into a "cities" collection:
 ```js
 db.cities.insertMany([
   {
-    name: "Kyoto",
-    country: "Japan",
+    name: 'Kyoto',
+    country: 'Japan',
     population: 1475000,
-    landmarks: ["Fushimi Inari-taisha", "Kinkaku-ji"],
+    landmarks: ['Fushimi Inari-taisha', 'Kinkaku-ji'],
     average_temperature: {
       winter: 5,
       summer: 28
     }
   },
   {
-    name: "Barcelona",
-    country: "Spain",
+    name: 'Barcelona',
+    country: 'Spain',
     population: 5500000,
-    landmarks: ["Sagrada Familia", "Park Güell"],
+    landmarks: ['Sagrada Familia', 'Park Güell'],
     average_temperature: {
       winter: 10,
       summer: 30
@@ -115,15 +115,15 @@ Here, you'll search for cities named "Kyoto" and push an element into the landma
 
 ```js
 db.cities.updateOne(
-  { name: "Kyoto" },
-  { $push: { landmarks: "Arashiyama Bamboo Grove" } }
+  { name: 'Kyoto' },
+  { $push: { landmarks: 'Arashiyama Bamboo Grove' } }
 )
 ```
 
 Say there is a population increase of 200,000 in Barcelona, you want to update that as well.
 
 ```js
-db.cities.updateOne({ name: "Barcelona" }, { $inc: { population: 200000 } })
+db.cities.updateOne({ name: 'Barcelona' }, { $inc: { population: 200000 } })
 ```
 
 Run `db.cities.find()` to see the newly updated collection – the population of "Barcelona" should have increased to "5700000" and "Kyoto" should now have three elements in its "landmarks" array.
@@ -152,7 +152,7 @@ Run `db.cities.find()` to see the newly updated collection – the population of
 Finally, let's delete a city with an average winter temperature less than or equal to 5 ℃.
 
 ```js
-db.cities.deleteMany({ "average_temperature.winter": { $lte: 5 } })
+db.cities.deleteMany({ 'average_temperature.winter': { $lte: 5 } })
 ```
 
 When you run `db.cities.find()`, it should leave you with a single document – "Barcelona".

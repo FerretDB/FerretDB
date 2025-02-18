@@ -66,7 +66,7 @@ To help you gather more information about your collections, databases, and serve
 To retrieve statistics about a collection, use the `collStats` command like this:
 
 ```js
-db.runCommand({ collStats: "users" })
+db.runCommand({ collStats: 'users' })
 ```
 
 If the statistics is about the database, run the command below:
@@ -78,7 +78,7 @@ db.runCommand({ dbStats: 1 })
 For the total data size of a collection, run the following command:
 
 ```js
-db.runCommand({ dataSize: "<database>.<collection>" })
+db.runCommand({ dataSize: '<database>.<collection>' })
 ```
 
 ## So where are we now?

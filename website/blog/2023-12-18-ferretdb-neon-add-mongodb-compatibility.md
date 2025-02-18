@@ -1,6 +1,6 @@
 ---
 slug: ferretdb-neon-add-mongodb-compatibility
-title: "FerretDB and Neon: Add MongoDB Compatibility to your Project"
+title: 'FerretDB and Neon: Add MongoDB Compatibility to your Project'
 authors: [alex]
 description: >
   In this blog post, you’ll learn about FerretDB and how you can add MongoDB compatibility to Neon as its Postgres backend.

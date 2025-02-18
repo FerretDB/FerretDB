@@ -1,6 +1,6 @@
 ---
 slug: document-databases-definition-features-use-cases
-title: "Document Database: Definition, Features, Use Cases"
+title: 'Document Database: Definition, Features, Use Cases'
 authors: [alex]
 image: /img/blog/document-databases.jpg
 description: >
@@ -193,19 +193,19 @@ Users are able to leverage similar syntax and query language as MongoDB, so a in
 
 ```js
 db.users.insert({
-  name: "John Doe",
+  name: 'John Doe',
   age: 25,
   address: {
-    street: "123 Main Street",
-    city: "New York",
-    state: "NY",
-    zip: "10001"
+    street: '123 Main Street',
+    city: 'New York',
+    state: 'NY',
+    zip: '10001'
   }
 })
 ```
 
 ```js
-db.users.find({ "address.state": "NY" })
+db.users.find({ 'address.state': 'NY' })
 ```
 
 OUTPUT:
@@ -322,16 +322,16 @@ For instance, a typical query in JavaScript looks like this:
 ```js
 const db = firebase.firestore()
 
-db.collection("users")
-  .where("address.state", "==", "NY")
+db.collection('users')
+  .where('address.state', '==', 'NY')
   .get()
   .then((querySnapshot) => {
     querySnapshot.forEach((doc) => {
-      console.log(doc.id, " => ", doc.data())
+      console.log(doc.id, ' => ', doc.data())
     })
   })
   .catch((error) => {
-    console.log("Error getting documents: ", error)
+    console.log('Error getting documents: ', error)
   })
 ```
 

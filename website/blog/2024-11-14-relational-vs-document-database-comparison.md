@@ -1,6 +1,6 @@
 ---
 slug: relational-vs-document-database-comparison
-title: "Document vs Relational Database: Choosing the right fit for your needs"
+title: 'Document vs Relational Database: Choosing the right fit for your needs'
 authors: [alex]
 description: >
   Document databases and relational databases offer distinct advantages tailored to different application needs — find out which is the best fit for your application.

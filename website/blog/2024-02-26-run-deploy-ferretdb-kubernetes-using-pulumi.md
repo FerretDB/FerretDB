@@ -1,6 +1,6 @@
 ---
 slug: run-deploy-ferretdb-kubernetes-using-pulumi
-title: "How to run and deploy FerretDB in Kubernetes using Pulumi"
+title: 'How to run and deploy FerretDB in Kubernetes using Pulumi'
 authors: [alex]
 description: >
   Here, you’ll learn to set up a fully managed, scalable FerretDB on top of StackGres using using Pulumi.
@@ -437,8 +437,8 @@ Let's insert documents showing single-day stock data for a fictional company.
 ```js
 db.stocks.insertMany([
   {
-    symbol: "ZTI",
-    date: new Date("2024-02-17"),
+    symbol: 'ZTI',
+    date: new Date('2024-02-17'),
     tradingData: {
       open: 250.75,
       high: 255.5,
@@ -447,13 +447,13 @@ db.stocks.insertMany([
       volume: 1200000
     },
     metadata: {
-      analystRating: "Buy",
-      sector: "Technology"
+      analystRating: 'Buy',
+      sector: 'Technology'
     }
   },
   {
-    symbol: "ZTI",
-    date: new Date("2024-02-18"),
+    symbol: 'ZTI',
+    date: new Date('2024-02-18'),
     tradingData: {
       open: 254.1,
       high: 260.0,
@@ -462,8 +462,8 @@ db.stocks.insertMany([
       volume: 1500000
     },
     metadata: {
-      analystRating: "Strong Buy",
-      sector: "Technology"
+      analystRating: 'Strong Buy',
+      sector: 'Technology'
     }
   }
 ])
@@ -476,7 +476,7 @@ Run `db.stocks.find()` to see the documents.
 Find stock data indicating where the volume was greater than 1,200,000.
 
 ```js
-db.stocks.find({ symbol: "ZTI", "tradingData.volume": { $gt: 1200000 } })
+db.stocks.find({ symbol: 'ZTI', 'tradingData.volume': { $gt: 1200000 } })
 ```
 
 Result:

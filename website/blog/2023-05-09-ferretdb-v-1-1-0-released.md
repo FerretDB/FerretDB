@@ -48,7 +48,7 @@ Say you have an `inventory` collection below:
 You can access the `renameCollection` command through the `db.collection.renameCollection()` method within the same database in mongosh, as shown below for a current `inventory` collection.
 
 ```js
-db.inventory.renameCollection("store")
+db.inventory.renameCollection('store')
 ```
 
 Note that `writeConcern`, `comment`, and `dropTarget` arguments are not currently implemented.
@@ -74,8 +74,8 @@ The output document looks like this:
 [
   {
     _id: 1,
-    category: "Electronics",
-    inventory: [{ product: "Laptop", price: 1200, quantity: 10 }]
+    category: 'Electronics',
+    inventory: [{ product: 'Laptop', price: 1200, quantity: 10 }]
   }
 ]
 ```
@@ -91,15 +91,15 @@ For instance, if we have a `users` collection as shown below:
 [
   {
     _id: 1,
-    name: "John",
+    name: 'John',
     age: 30,
-    email: "john@example.com"
+    email: 'john@example.com'
   },
   {
     _id: 2,
-    name: "Jane",
+    name: 'Jane',
     age: 25,
-    email: "jane@example.com"
+    email: 'jane@example.com'
   }
 ]
 ```
@@ -107,15 +107,15 @@ For instance, if we have a `users` collection as shown below:
 Suppose we want to retrieve the documents from the `users` collection but only include the name field while assigning a new value of 'Anonymous' to it.
 
 ```js
-db.users.find({}, { name: "Anonymous" })
+db.users.find({}, { name: 'Anonymous' })
 ```
 
 The query will return:
 
 ```json5
 [
-  { _id: 1, name: "Anonymous" },
-  { _id: 2, name: "Anonymous" }
+  { _id: 1, name: 'Anonymous' },
+  { _id: 2, name: 'Anonymous' }
 ]
 ```
 

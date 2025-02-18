@@ -1,6 +1,6 @@
 ---
 slug: run-mongodb-commands-ferretdb-pgedge-postgres-backend
-title: "Run MongoDB workloads on FerretDB with pgEdge Postgres Platform as backend"
+title: 'Run MongoDB workloads on FerretDB with pgEdge Postgres Platform as backend'
 authors: [alex]
 description: >
   Learn how to run MongoDB workloads in FerretDB with a fully distributed pgEdge PostgreSQL as the backend.
@@ -83,16 +83,16 @@ Let's start by inserting a couple of interesting database books into a `books` c
 ```js
 db.books.insertMany([
   {
-    title: "Introduction to Database Systems",
-    author: "C.J. Date",
-    genre: "Technical",
+    title: 'Introduction to Database Systems',
+    author: 'C.J. Date',
+    genre: 'Technical',
     publication_year: 1995,
     isAvailable: true
   },
   {
-    title: "Learning SQL",
-    author: "Alan Beaulieu",
-    genre: "Technical",
+    title: 'Learning SQL',
+    author: 'Alan Beaulieu',
+    genre: 'Technical',
     publication_year: 2005,
     isAvailable: false
   }
@@ -103,7 +103,7 @@ Then let's run some quick `find` commands to check out our data and see the inse
 For example, let find the book "Learning SQL" using its title:
 
 ```js
-db.books.find({ title: "Learning SQL" })
+db.books.find({ title: 'Learning SQL' })
 ```
 
 Output:
@@ -127,11 +127,11 @@ Let's upsert a document where the title is "Database Systems Concepts," setting 
 
 ```js
 db.books.updateOne(
-  { title: "Database Systems Concepts" },
+  { title: 'Database Systems Concepts' },
   {
     $set: {
-      author: "Silberschatz, Korth, and Sudarshan",
-      genre: "Technical",
+      author: 'Silberschatz, Korth, and Sudarshan',
+      genre: 'Technical',
       publication_year: 2002,
       isAvailable: true
     }

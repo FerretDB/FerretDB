@@ -1,6 +1,6 @@
 ---
 slug: community-matters-fireside-chat-cockroachdb
-title: "Community Matters: Fireside Chat with Artem Ervits, CockroachDB"
+title: 'Community Matters: Fireside Chat with Artem Ervits, CockroachDB'
 authors:
   - name: Marcin Gwóźdź
     title: Director of Strategic Alliances at FerretDB

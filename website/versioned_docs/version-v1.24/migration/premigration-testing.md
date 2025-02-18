@@ -56,28 +56,28 @@ You would do the following:
    // insert some documents
    db.posts.insertMany([
      {
-       title: "title A",
-       body: "some content",
-       author: "Bob",
-       date: ISODate("2023-08-29T10:33:23.134Z")
+       title: 'title A',
+       body: 'some content',
+       author: 'Bob',
+       date: ISODate('2023-08-29T10:33:23.134Z')
      },
      {
-       title: "another title",
-       body: "some content",
-       author: "Bob",
-       date: ISODate("2023-08-28T10:33:23.134Z")
+       title: 'another title',
+       body: 'some content',
+       author: 'Bob',
+       date: ISODate('2023-08-28T10:33:23.134Z')
      },
      {
-       title: "title B",
-       body: "some content",
-       author: "Alice",
-       date: ISODate("2023-08-20T10:33:23.134Z")
+       title: 'title B',
+       body: 'some content',
+       author: 'Alice',
+       date: ISODate('2023-08-20T10:33:23.134Z')
      },
      {
-       title: "some other title",
-       body: "some content",
-       author: "Alice",
-       date: ISODate("2023-08-21T10:33:23.134Z")
+       title: 'some other title',
+       body: 'some content',
+       author: 'Alice',
+       date: ISODate('2023-08-21T10:33:23.134Z')
      }
    ])
 
@@ -86,8 +86,8 @@ You would do the following:
      { $sort: { date: 1, author: 1 } },
      {
        $group: {
-         _id: "$author",
-         firstPost: { $first: "$date" }
+         _id: '$author',
+         firstPost: { $first: '$date' }
        }
      }
    ])
@@ -108,8 +108,8 @@ Continuing with the same example above, we can further examine the diff output w
      { $sort: { date: 1, author: 1 } },
      {
        $group: {
-         _id: "$author",
-         firstPost: { $first: "$date" }
+         _id: '$author',
+         firstPost: { $first: '$date' }
        }
      }
    ])
