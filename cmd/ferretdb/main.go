@@ -183,6 +183,7 @@ func defaultLogLevel() slog.Level {
 
 // setupState setups state provider.
 func setupState() *state.Provider {
+	// it wasn't required by v1
 	if cmp.Or(cli.StateDir, "-") == "-" {
 		log.Fatal("State directory must be set.")
 	}
