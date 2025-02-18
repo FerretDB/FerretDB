@@ -233,7 +233,7 @@ func setupLogger(format string, uuid string) *slog.Logger {
 		Level:         level,
 		CheckMessages: false, // TODO https://github.com/FerretDB/FerretDB/issues/4511
 	}
-	logging.Setup(opts, uuid)
+	logging.SetupDefault(opts, uuid)
 	logger := slog.Default()
 
 	return logger
