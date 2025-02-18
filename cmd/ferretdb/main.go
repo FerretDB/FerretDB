@@ -346,7 +346,7 @@ func run() {
 				l: l,
 			}
 
-			h, err := debug.Listen(&debug.ListenOpts{
+			h, e := debug.Listen(&debug.ListenOpts{
 				TCPAddr: cli.DebugAddr,
 				L:       l,
 				R:       metricsRegisterer,
@@ -360,8 +360,8 @@ func run() {
 
 				Readyz: ready.Probe,
 			})
-			if err != nil {
-				l.LogAttrs(ctx, logging.LevelFatal, "Failed to create debug handler", logging.Error(err))
+			if e != nil {
+				l.LogAttrs(ctx, logging.LevelFatal, "Failed to create debug handler", logging.Error(e))
 			}
 
 			h.Serve(ctx)
@@ -376,14 +376,14 @@ func run() {
 
 			l := logging.WithName(logger, "otel")
 
-			ot, err := observability.NewOTelTraceExporter(&observability.OTelTraceExporterOpts{
+			ot, e := observability.NewOTelTraceExporter(&observability.OTelTraceExporterOpts{
 				Logger:  l,
 				Service: "ferretdb",
 				Version: version.Get().Version,
 				URL:     cli.OTel.Traces.URL,
 			})
-			if err != nil {
-				l.LogAttrs(ctx, logging.LevelFatal, "Failed to create Otel tracer", logging.Error(err))
+			if e != nil {
+				l.LogAttrs(ctx, logging.LevelFatal, "Failed to create Otel tracer", logging.Error(e))
 			}
 
 			ot.Run(ctx)
@@ -400,7 +400,7 @@ func run() {
 
 			l := logging.WithName(logger, "telemetry")
 
-			r, err := telemetry.NewReporter(&telemetry.NewReporterOpts{
+			r, e := telemetry.NewReporter(&telemetry.NewReporterOpts{
 				URL:            cli.Dev.Telemetry.URL,
 				Dir:            cli.StateDir,
 				F:              &cli.Telemetry,
@@ -412,8 +412,8 @@ func run() {
 				UndecidedDelay: cli.Dev.Telemetry.UndecidedDelay,
 				ReportInterval: cli.Dev.Telemetry.ReportInterval,
 			})
-			if err != nil {
-				l.LogAttrs(ctx, logging.LevelFatal, "Failed to create telemetry reporter", logging.Error(err))
+			if e != nil {
+				l.LogAttrs(ctx, logging.LevelFatal, "Failed to create telemetry reporter", logging.Error(e))
 			}
 
 			r.Run(ctx)
@@ -492,13 +492,13 @@ func run() {
 
 			l := logging.WithName(logger, "dataapi")
 
-			lis, err := dataapi.Listen(&dataapi.ListenOpts{
+			lis, e := dataapi.Listen(&dataapi.ListenOpts{
 				TCPAddr: cli.Listen.DataAPIAddr,
 				L:       l,
 				Handler: h,
 			})
-			if err != nil {
-				l.LogAttrs(ctx, logging.LevelFatal, "Failed to construct DataAPI listener", logging.Error(err))
+			if e != nil {
+				l.LogAttrs(ctx, logging.LevelFatal, "Failed to construct DataAPI listener", logging.Error(e))
 			}
 
 			lis.Run(ctx)
