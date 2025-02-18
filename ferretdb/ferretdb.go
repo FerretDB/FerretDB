@@ -21,16 +21,7 @@
 package ferretdb
 
 import (
-	"context"
-	"errors"
-	"fmt"
-	"log/slog"
-	"net/url"
-
-	"github.com/FerretDB/FerretDB/v2/build/version"
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn"
-	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
-	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 )
 
 // Keep structure and order of Config in sync with the main package.
@@ -56,6 +47,8 @@ type FerretDB struct {
 
 	l *clientconn.Listener
 }
+
+/*
 
 // New creates a new instance of embeddable FerretDB implementation.
 func New(config *Config) (*FerretDB, error) {
@@ -187,3 +180,4 @@ func (f *FerretDB) MongoDBURI() string {
 
 	return u.String()
 }
+*/

@@ -15,22 +15,28 @@
 package ferretdb_test
 
 import (
-	"context"
-	"fmt"
-	"log"
-	"log/slog"
-	"path/filepath"
+	"encoding/json"
+	"os/exec"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/v2/bson"
-	"go.mongodb.org/mongo-driver/v2/mongo"
-	"go.mongodb.org/mongo-driver/v2/mongo/options"
-
-	"github.com/FerretDB/FerretDB/v2/ferretdb"
-	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
 )
 
+func TestDeps(t *testing.T) {
+	t.Parallel()
+
+	var res struct {
+		Deps []string `json:"Deps"`
+	}
+	b, err := exec.Command("go", "list", "-json").Output()
+	require.NoError(t, err)
+	require.NoError(t, json.Unmarshal(b, &res))
+
+	assert.NotContains(t, res.Deps, "testing", `package "testing" should not be imported by non-testing code`)
+}
+
+/*
 func Example_tcp() {
 	f, err := ferretdb.New(&ferretdb.Config{
 		Listener: ferretdb.ListenerConfig{
@@ -198,3 +204,4 @@ func TestEmbedded(t *testing.T) {
 	cancel()
 	<-done
 }
+*/
