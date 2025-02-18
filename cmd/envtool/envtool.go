@@ -244,12 +244,11 @@ func main() {
 	}
 
 	opts := &logging.NewHandlerOpts{
-		Base:         "console",
-		Level:        level,
-		RemoveTime:   true,
-		RemoveSource: true,
-		// TODO envtool logs merged output from both testing package and listener, so for example, it catches the punctuation at the end of assert package logs
-		CheckMessages: false,
+		Base:          "console",
+		Level:         level,
+		RemoveTime:    true,
+		RemoveSource:  true,
+		CheckMessages: false, // TODO https://github.com/FerretDB/FerretDB/issues/4511
 	}
 	logging.Setup(opts, "")
 	logger := slog.Default()

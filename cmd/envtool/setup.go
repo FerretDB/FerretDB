@@ -59,12 +59,7 @@ func setupMongoDB(ctx context.Context, logger *slog.Logger, uri, name string) er
 			break
 		}
 
-		var output string
-		if buf.Len() > 0 {
-			output = "\n" + buf.String()
-		}
-
-		logger.InfoContext(ctx, fmt.Sprintf("%s:%s", err, output))
+		logger.InfoContext(ctx, fmt.Sprintf("%s:\n%s", err, buf.String()))
 
 		attempt++
 		ctxutil.SleepWithJitter(ctx, time.Second, attempt)
@@ -90,6 +85,6 @@ func setup(ctx context.Context, logger *slog.Logger) error {
 		return lazyerrors.Error(err)
 	}
 
-	logger.InfoContext(ctx, "Done")
+	logger.InfoContext(ctx, "Done.")
 	return nil
 }
