@@ -47,21 +47,18 @@ type mongoHandler struct {
 }
 
 // MongoLog represents a single log message in mongo structured JSON format.
-// For now some fields are ignored and may be empty.
+// For now it lacks the fields that are not used by any caller.
 //
 //nolint:vet // to preserve field ordering
 type MongoLog struct {
 	Timestamp time.Time      `bson:"t"`
 	Severity  string         `bson:"s"`
 	Component string         `bson:"c"`
-	ID        int            `bson:"id"`
+	ID        int            `bson:"id,omitempty"`
 	Ctx       string         `bson:"ctx"`
-	Svc       string         `bson:"svc,omitempty"`
 	Msg       string         `bson:"msg"`
 	Attr      map[string]any `bson:"attr,omitempty"`
 	Tags      []string       `bson:"tags,omitempty"`
-	Truncated map[string]any `bson:"truncated,omitempty"`
-	Size      map[string]any `bson:"size,omitempty"`
 }
 
 // Marshal returns the mongo structured JSON encoding of log.

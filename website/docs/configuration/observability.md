@@ -27,7 +27,7 @@ FerretDB provides the following log formats:
   (powered by [Go's `slog.JSONHandler`](https://pkg.go.dev/log/slog#JSONHandler));
 - `mongo` is machine-readable structured JSON format, similar to the one used in MongoDB;
   It follows the Relaxed Extended JSON specification;
-  Fields required in the output format but not yet implemented, will be included empty, to maintain compatibility.
+  Fields required in the output format but not yet implemented, will not be included.
 
 There are four logging levels:
 
