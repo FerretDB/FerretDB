@@ -23,7 +23,6 @@ import (
 
 	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/FerretDB/FerretDB/v2/build/version"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
@@ -169,7 +168,7 @@ func (h *Handler) MsgGetLog(connCtx context.Context, msg *wire.OpMsg) (*wire.OpM
 				Component: "STORAGE",
 				ID:        42000,
 				Ctx:       "initandListen",
-				Timestamp: primitive.NewDateTimeFromTime(time.Now()),
+				Timestamp: time.Now(),
 			}
 
 			var b []byte

@@ -24,9 +24,9 @@ import (
 	"slices"
 	"strconv"
 	"sync"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
@@ -51,17 +51,17 @@ type mongoHandler struct {
 //
 //nolint:vet // to preserve field ordering
 type MongoLog struct {
-	Timestamp primitive.DateTime `bson:"t"`
-	Severity  string             `bson:"s"`
-	Component string             `bson:"c"`
-	ID        int                `bson:"id"`
-	Ctx       string             `bson:"ctx"`
-	Svc       string             `bson:"svc,omitempty"`
-	Msg       string             `bson:"msg"`
-	Attr      map[string]any     `bson:"attr,omitempty"`
-	Tags      []string           `bson:"tags,omitempty"`
-	Truncated map[string]any     `bson:"truncated,omitempty"`
-	Size      map[string]any     `bson:"size,omitempty"`
+	Timestamp time.Time      `bson:"t"`
+	Severity  string         `bson:"s"`
+	Component string         `bson:"c"`
+	ID        int            `bson:"id"`
+	Ctx       string         `bson:"ctx"`
+	Svc       string         `bson:"svc,omitempty"`
+	Msg       string         `bson:"msg"`
+	Attr      map[string]any `bson:"attr,omitempty"`
+	Tags      []string       `bson:"tags,omitempty"`
+	Truncated map[string]any `bson:"truncated,omitempty"`
+	Size      map[string]any `bson:"size,omitempty"`
 }
 
 // Marshal returns the mongo structured JSON encoding of log.
@@ -104,7 +104,7 @@ func mongoLogFromRecord(r slog.Record, ga []groupOrAttrs, opts *NewHandlerOpts) 
 	}
 
 	if !opts.RemoveTime && !r.Time.IsZero() {
-		log.Timestamp = primitive.NewDateTimeFromTime(r.Time)
+		log.Timestamp = r.Time
 	}
 
 	if !opts.RemoveSource && r.PC != 0 {
@@ -157,7 +157,7 @@ func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
 			h.testAttrs[slog.LevelKey] = record.Severity
 		}
 
-		if record.Timestamp != 0 {
+		if !record.Timestamp.IsZero() {
 			h.testAttrs[slog.TimeKey] = record.Timestamp
 		}
 
