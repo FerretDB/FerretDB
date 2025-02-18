@@ -21,20 +21,30 @@
 package ferretdb
 
 import (
+	"context"
+	"fmt"
+	"io"
+	"log/slog"
+	"net/url"
+
+	"github.com/FerretDB/FerretDB/v2/build/version"
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn"
+	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
+	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
+	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 )
 
-// Keep structure and order of Config in sync with the main package.
+// Keep structure and order of Config in sync with the main package and documentation.
 // Avoid breaking changes.
 
 // Config represents FerretDB configuration.
 type Config struct {
-	// PostgreSQL URL.
+	// PostgreSQL URL. Required.
 	PostgreSQLURL string
 
 	Listen struct {
 		// Listen TCP address for MongoDB protocol.
-		// If empty or "-", TCP listener is disabled.
+		// If empty, TCP listener is disabled.
 		Addr string
 	}
 }
@@ -43,22 +53,24 @@ type Config struct {
 type FerretDB struct {
 	config *Config
 
-	closeBackend func()
-
 	l *clientconn.Listener
 }
-
-/*
 
 // New creates a new instance of embeddable FerretDB implementation.
 func New(config *Config) (*FerretDB, error) {
 	version.Get().Package = "embedded"
 
-	if config.Listener.TCP == "" &&
-		config.Listener.Unix == "" &&
-		config.Listener.TLS == "" {
-		return nil, errors.New("Listener TCP, Unix and TLS are empty")
+	// Note that the current implementation requires `*logging.Handler` in the `getLog` command implementation.
+	// TODO https://github.com/FerretDB/FerretDB/issues/4750
+	lOpts := &logging.NewHandlerOpts{
+		Base:          "text",
+		Level:         slog.LevelError + 100500, // effectively disables logging
+		RemoveTime:    true,
+		RemoveLevel:   true,
+		RemoveSource:  true,
+		CheckMessages: false,
 	}
+	logger := logging.Logger(io.Discard, lOpts, "")
 
 	sp, err := state.NewProvider("")
 	if err != nil {
@@ -76,11 +88,6 @@ func New(config *Config) (*FerretDB, error) {
 	}
 
 	metrics := connmetrics.NewListenerMetrics()
-
-	logger := config.Logger
-	if logger == nil {
-		logger = slog.Default()
-	}
 
 	h, closeBackend, err := registry.NewHandler(config.Handler, &registry.NewHandlerOpts{
 		Logger:        logger,
@@ -180,4 +187,3 @@ func (f *FerretDB) MongoDBURI() string {
 
 	return u.String()
 }
-*/
