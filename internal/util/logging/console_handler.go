@@ -58,23 +58,22 @@ type consoleHandler struct {
 func newConsoleHandler(out io.Writer, opts *NewHandlerOpts, testAttrs map[string]any) *consoleHandler {
 	must.NotBeZero(opts)
 
-	h := consoleHandler{
+	return &consoleHandler{
 		opts:      opts,
 		testAttrs: testAttrs,
 		m:         new(sync.Mutex),
 		out:       out,
 	}
-
-	if h.opts.Level == nil {
-		h.opts.Level = slog.LevelInfo
-	}
-
-	return &h
 }
 
 // Enabled implements [slog.Handler].
 func (ch *consoleHandler) Enabled(_ context.Context, l slog.Level) bool {
-	return l >= ch.opts.Level.Level()
+	minLevel := slog.LevelInfo
+	if ch.opts.Level != nil {
+		minLevel = ch.opts.Level.Level()
+	}
+
+	return l >= minLevel
 }
 
 // Handle implements [slog.Handler].

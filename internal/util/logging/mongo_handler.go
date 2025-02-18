@@ -124,23 +124,22 @@ func mongoLogFromRecord(r slog.Record, ga []groupOrAttrs, opts *NewHandlerOpts) 
 func newMongoHandler(out io.Writer, opts *NewHandlerOpts, testAttrs map[string]any) *mongoHandler {
 	must.NotBeZero(opts)
 
-	h := mongoHandler{
+	return &mongoHandler{
 		opts:      opts,
 		testAttrs: testAttrs,
 		m:         new(sync.Mutex),
 		out:       out,
 	}
-
-	if h.opts.Level == nil {
-		h.opts.Level = slog.LevelInfo
-	}
-
-	return &h
 }
 
 // Enabled implements [slog.Handler].
 func (h *mongoHandler) Enabled(_ context.Context, l slog.Level) bool {
-	return l >= h.opts.Level.Level()
+	minLevel := slog.LevelInfo
+	if h.opts.Level != nil {
+		minLevel = h.opts.Level.Level()
+	}
+
+	return l >= minLevel
 }
 
 // Handle implements [slog.Handler].
