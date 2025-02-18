@@ -47,7 +47,7 @@ type Handler struct {
 //
 //nolint:vet // for readability
 type NewHandlerOpts struct {
-	Base         string // base handler to create: "console", "mongo", "text", or "json"
+	Base         string // base handler to create: "console", "text", "json" or "mongo"
 	Level        slog.Leveler
 	RemoveTime   bool
 	RemoveLevel  bool
