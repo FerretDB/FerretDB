@@ -481,6 +481,10 @@ func run() {
 	}
 
 	lis, err := clientconn.Listen(&clientconn.ListenerOpts{
+		Handler: h,
+		Metrics: metrics,
+		Logger:  logger,
+
 		TCP:  tcpAddr,
 		Unix: unixAddr,
 
@@ -489,15 +493,12 @@ func run() {
 		TLSKeyFile:  cli.Listen.TLSKeyFile,
 		TLSCAFile:   cli.Listen.TLSCaFile,
 
+		Mode:             clientconn.Mode(cli.Mode),
 		ProxyAddr:        cli.Proxy.Addr,
 		ProxyTLSCertFile: cli.Proxy.TLSCertFile,
 		ProxyTLSKeyFile:  cli.Proxy.TLSKeyFile,
 		ProxyTLSCAFile:   cli.Proxy.TLSCaFile,
 
-		Mode:           clientconn.Mode(cli.Mode),
-		Metrics:        metrics,
-		Handler:        h,
-		Logger:         logger,
 		TestRecordsDir: cli.Dev.RecordsDir,
 	})
 	if err != nil {
