@@ -47,6 +47,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 	"github.com/FerretDB/FerretDB/v2/internal/util/observability"
+	"github.com/FerretDB/FerretDB/v2/internal/util/startup"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 	"github.com/FerretDB/FerretDB/v2/internal/util/telemetry"
 )
@@ -184,26 +185,6 @@ func defaultLogLevel() slog.Level {
 	return slog.LevelInfo
 }
 
-// setupState setups state provider.
-func setupState() *state.Provider {
-	// it wasn't required by v1
-	if cmp.Or(cli.StateDir, "-") == "-" {
-		log.Fatal("State directory must be set.")
-	}
-
-	f, err := filepath.Abs(filepath.Join(cli.StateDir, "state.json"))
-	if err != nil {
-		log.Fatalf("Failed to get path for state file: %s.", err)
-	}
-
-	sp, err := state.NewProvider(f)
-	if err != nil {
-		log.Fatal(stateFileProblem(f, err))
-	}
-
-	return sp
-}
-
 // setupMetrics setups Prometheus metrics registerer with some metrics.
 func setupMetrics(stateProvider *state.Provider) prometheus.Registerer {
 	r := prometheus.DefaultRegisterer
@@ -299,7 +280,10 @@ func run() {
 	// safe to always enable
 	runtime.SetBlockProfileRate(10000)
 
-	stateProvider := setupState()
+	stateProvider, err := startup.State(cli.StateDir)
+	if err != nil {
+		log.Fatalf("Failed to setup state provider: %s.", err)
+	}
 
 	metricsRegisterer := setupMetrics(stateProvider)
 
