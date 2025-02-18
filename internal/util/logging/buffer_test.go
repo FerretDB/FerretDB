@@ -82,6 +82,7 @@ func TestCircularBufferHandler(t *testing.T) {
 		t.Run(tc.msg, func(t *testing.T) {
 			slog.Default().Log(context.Background(), tc.level, tc.msg)
 
+			// TODO https://github.com/FerretDB/FerretDB/issues/4750
 			records := slog.Default().Handler().(*Handler).recentEntries.get()
 			actual := make([]slog.Record, len(records))
 
