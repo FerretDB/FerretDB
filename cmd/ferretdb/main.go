@@ -492,9 +492,7 @@ func run() {
 
 			l := logging.WithName(logger, "dataapi")
 
-			var lis *dataapi.Listener
-
-			lis, err = dataapi.Listen(&dataapi.ListenOpts{
+			lis, err := dataapi.Listen(&dataapi.ListenOpts{
 				TCPAddr: cli.Listen.DataAPIAddr,
 				L:       l,
 				Handler: h,
