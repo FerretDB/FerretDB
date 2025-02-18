@@ -244,10 +244,11 @@ func main() {
 	}
 
 	opts := &logging.NewHandlerOpts{
-		Base:          "console",
-		Level:         level,
-		RemoveTime:    true,
-		RemoveSource:  true,
+		Base:         "console",
+		Level:        level,
+		RemoveTime:   true,
+		RemoveSource: true,
+		// TODO envtool logs merged output from both testing package and listener, so for example, it catches the punctuation at the end of assert package logs
 		CheckMessages: false,
 	}
 	logging.Setup(opts, "")

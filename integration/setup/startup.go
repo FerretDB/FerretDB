@@ -47,10 +47,11 @@ var startupWG sync.WaitGroup
 // Startup initializes things that should be initialized only once.
 func Startup() {
 	opts := &logging.NewHandlerOpts{
-		Base:          "console",
-		Level:         slog.LevelDebug,
-		RemoveTime:    true,
-		RemoveLevel:   true,
+		Base:        "console",
+		Level:       slog.LevelDebug,
+		RemoveTime:  true,
+		RemoveLevel: true,
+		// TODO this logger is set to be default, so it is used by testing package, therefore, we don't validate messages.
 		CheckMessages: false, // TODO https://github.com/FerretDB/FerretDB/issues/4511
 	}
 	logging.Setup(opts, "")

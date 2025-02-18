@@ -292,7 +292,6 @@ func TestUpdateUserCommand(t *testing.T) {
 				return
 			}
 
-			// TODO: another issue: it seems that assert package surrounds error messages with \n, which then are used by xfail
 			require.NoError(t, err)
 			integration.AssertEqualDocuments(t, bson.D{{"ok", float64(1)}}, res)
 
