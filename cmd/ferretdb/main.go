@@ -186,6 +186,7 @@ func defaultLogLevel() slog.Level {
 
 // setupState setups state provider.
 func setupState() *state.Provider {
+	// it wasn't required by v1
 	if cmp.Or(cli.StateDir, "-") == "-" {
 		log.Fatal("State directory must be set.")
 	}
@@ -235,7 +236,7 @@ func setupLogger(format string, uuid string) *slog.Logger {
 		Level:         level,
 		CheckMessages: false, // TODO https://github.com/FerretDB/FerretDB/issues/4511
 	}
-	logging.Setup(opts, uuid)
+	logging.SetupDefault(opts, uuid)
 	logger := slog.Default()
 
 	return logger
@@ -353,7 +354,7 @@ func run() {
 
 	var wg sync.WaitGroup
 
-	if addr := cmp.Or(cli.DebugAddr, "-"); addr != "-" {
+	if cmp.Or(cli.DebugAddr, "-") != "-" {
 		wg.Add(1)
 
 		go func() {
@@ -365,7 +366,7 @@ func run() {
 			}
 
 			h, err := debug.Listen(&debug.ListenOpts{
-				TCPAddr: addr,
+				TCPAddr: cli.DebugAddr,
 				L:       l,
 				R:       metricsRegisterer,
 				Livez: func(context.Context) bool {
@@ -386,7 +387,7 @@ func run() {
 		}()
 	}
 
-	if u := cmp.Or(cli.OTel.Traces.URL, "-"); u != "-" {
+	if cmp.Or(cli.OTel.Traces.URL, "-") != "-" {
 		wg.Add(1)
 
 		go func() {
@@ -398,7 +399,7 @@ func run() {
 				Logger:  l,
 				Service: "ferretdb",
 				Version: version.Get().Version,
-				URL:     u,
+				URL:     cli.OTel.Traces.URL,
 			})
 			if err != nil {
 				l.LogAttrs(ctx, logging.LevelFatal, "Failed to create Otel tracer", logging.Error(err))
@@ -450,16 +451,26 @@ func run() {
 
 	defer p.Close()
 
-	tcpHost := cli.Listen.Addr
-	if tcpHost == "-" {
-		tcpHost = ""
+	tcpAddr := cli.Listen.Addr
+	if cmp.Or(tcpAddr, "-") == "-" {
+		tcpAddr = ""
+	}
+
+	unixAddr := cli.Listen.Unix
+	if cmp.Or(unixAddr, "-") == "-" {
+		unixAddr = ""
+	}
+
+	tlsAddr := cli.Listen.TLS
+	if cmp.Or(tlsAddr, "-") == "-" {
+		tlsAddr = ""
 	}
 
 	handlerOpts := &handler.NewOpts{
 		Pool: p,
 		Auth: cli.Auth,
 
-		TCPHost:     tcpHost,
+		TCPHost:     tcpAddr,
 		ReplSetName: cli.Dev.ReplSetName,
 
 		L:             logging.WithName(logger, "handler"),
@@ -472,31 +483,32 @@ func run() {
 		handlerOpts.L.LogAttrs(ctx, logging.LevelFatal, "Failed to construct handler", logging.Error(err))
 	}
 
-	lis, err := clientconn.Listen(&clientconn.NewListenerOpts{
-		TCP:  cli.Listen.Addr,
-		Unix: cli.Listen.Unix,
+	lis, err := clientconn.Listen(&clientconn.ListenerOpts{
+		Handler: h,
+		Metrics: metrics,
+		Logger:  logger,
 
-		TLS:         cli.Listen.TLS,
+		TCP:  tcpAddr,
+		Unix: unixAddr,
+
+		TLS:         tlsAddr,
 		TLSCertFile: cli.Listen.TLSCertFile,
 		TLSKeyFile:  cli.Listen.TLSKeyFile,
 		TLSCAFile:   cli.Listen.TLSCaFile,
 
+		Mode:             clientconn.Mode(cli.Mode),
 		ProxyAddr:        cli.Proxy.Addr,
 		ProxyTLSCertFile: cli.Proxy.TLSCertFile,
 		ProxyTLSKeyFile:  cli.Proxy.TLSKeyFile,
 		ProxyTLSCAFile:   cli.Proxy.TLSCaFile,
 
-		Mode:           clientconn.Mode(cli.Mode),
-		Metrics:        metrics,
-		Handler:        h,
-		Logger:         logger,
 		TestRecordsDir: cli.Dev.RecordsDir,
 	})
 	if err != nil {
 		logger.LogAttrs(ctx, logging.LevelFatal, "Failed to construct listener", logging.Error(err))
 	}
 
-	if addr := cmp.Or(cli.Listen.DataAPIAddr, "-"); addr != "-" {
+	if cmp.Or(cli.Listen.DataAPIAddr, "-") != "-" {
 		wg.Add(1)
 
 		go func() {
@@ -507,7 +519,7 @@ func run() {
 			var lis *dataapi.Listener
 
 			lis, err = dataapi.Listen(&dataapi.ListenOpts{
-				TCPAddr: addr,
+				TCPAddr: cli.Listen.DataAPIAddr,
 				L:       l,
 				Handler: h,
 			})
