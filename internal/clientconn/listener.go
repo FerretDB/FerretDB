@@ -292,7 +292,7 @@ func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, 
 
 			conn, connErr := newConn(opts)
 			if connErr != nil {
-				l.ll.WarnContext(connCtx, "Failed to create connection", slog.String("conn", connID), logging.Error(err))
+				l.ll.WarnContext(connCtx, "Failed to create connection", slog.String("conn", connID), logging.Error(connErr))
 				return
 			}
 
@@ -304,7 +304,7 @@ func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, 
 
 				l.ll.InfoContext(ctx, "Connection stopped", slog.String("conn", connID))
 			} else {
-				l.ll.WarnContext(ctx, "Connection stopped", slog.String("conn", connID), logging.Error(err))
+				l.ll.WarnContext(ctx, "Connection stopped", slog.String("conn", connID), logging.Error(connErr))
 			}
 		}()
 	}
