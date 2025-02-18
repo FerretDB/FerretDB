@@ -40,6 +40,7 @@ const nameKey = "name"
 //
 // How this name is used depends on the handler.
 func WithName(l *slog.Logger, name string) *slog.Logger {
+	must.NotBeZero(l)
 	return l.With(slog.String(nameKey, name))
 }
 

@@ -15,6 +15,7 @@
 package main
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"log"
@@ -182,7 +183,7 @@ func defaultLogLevel() slog.Level {
 
 // setupState setups state provider.
 func setupState() *state.Provider {
-	if cli.StateDir == "" || cli.StateDir == "-" {
+	if cmp.Or(cli.StateDir, "-") == "-" {
 		log.Fatal("State directory must be set.")
 	}
 
@@ -349,7 +350,7 @@ func run() {
 
 	var wg sync.WaitGroup
 
-	if addr := cli.DebugAddr; addr != "" && addr != "-" {
+	if cmp.Or(cli.DebugAddr, "-") != "-" {
 		wg.Add(1)
 
 		go func() {
@@ -361,7 +362,7 @@ func run() {
 			}
 
 			h, err := debug.Listen(&debug.ListenOpts{
-				TCPAddr: addr,
+				TCPAddr: cli.DebugAddr,
 				L:       l,
 				R:       metricsRegisterer,
 				Livez: func(context.Context) bool {
@@ -382,7 +383,7 @@ func run() {
 		}()
 	}
 
-	if u := cli.OTel.Traces.URL; u != "" && u != "-" {
+	if cmp.Or(cli.OTel.Traces.URL, "-") != "-" {
 		wg.Add(1)
 
 		go func() {
@@ -394,7 +395,7 @@ func run() {
 				Logger:  l,
 				Service: "ferretdb",
 				Version: version.Get().Version,
-				URL:     u,
+				URL:     cli.OTel.Traces.URL,
 			})
 			if err != nil {
 				l.LogAttrs(ctx, logging.LevelFatal, "Failed to create Otel tracer", logging.Error(err))
@@ -446,11 +447,26 @@ func run() {
 
 	defer p.Close()
 
+	tcpAddr := cli.Listen.Addr
+	if cmp.Or(tcpAddr, "-") == "-" {
+		tcpAddr = ""
+	}
+
+	unixAddr := cli.Listen.Unix
+	if cmp.Or(unixAddr, "-") == "-" {
+		unixAddr = ""
+	}
+
+	tlsAddr := cli.Listen.TLS
+	if cmp.Or(tlsAddr, "-") == "-" {
+		tlsAddr = ""
+	}
+
 	handlerOpts := &handler.NewOpts{
 		Pool: p,
 		Auth: cli.Auth,
 
-		TCPHost:     cli.Listen.Addr,
+		TCPHost:     tcpAddr,
 		ReplSetName: cli.Dev.ReplSetName,
 
 		L:             logging.WithName(logger, "handler"),
@@ -463,11 +479,11 @@ func run() {
 		handlerOpts.L.LogAttrs(ctx, logging.LevelFatal, "Failed to construct handler", logging.Error(err))
 	}
 
-	lis, err := clientconn.Listen(&clientconn.NewListenerOpts{
-		TCP:  cli.Listen.Addr,
-		Unix: cli.Listen.Unix,
+	lis, err := clientconn.Listen(&clientconn.ListenerOpts{
+		TCP:  tcpAddr,
+		Unix: unixAddr,
 
-		TLS:         cli.Listen.TLS,
+		TLS:         tlsAddr,
 		TLSCertFile: cli.Listen.TLSCertFile,
 		TLSKeyFile:  cli.Listen.TLSKeyFile,
 		TLSCAFile:   cli.Listen.TLSCaFile,
@@ -487,7 +503,7 @@ func run() {
 		logger.LogAttrs(ctx, logging.LevelFatal, "Failed to construct listener", logging.Error(err))
 	}
 
-	if addr := cli.Listen.DataAPIAddr; addr != "" && addr != "-" {
+	if cmp.Or(cli.Listen.DataAPIAddr, "-") != "-" {
 		wg.Add(1)
 
 		go func() {
@@ -498,7 +514,7 @@ func run() {
 			var lis *dataapi.Listener
 
 			lis, err = dataapi.Listen(&dataapi.ListenOpts{
-				TCPAddr: addr,
+				TCPAddr: cli.Listen.DataAPIAddr,
 				L:       l,
 				Handler: h,
 			})
