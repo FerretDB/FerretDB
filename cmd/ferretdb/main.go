@@ -47,7 +47,6 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 	"github.com/FerretDB/FerretDB/v2/internal/util/observability"
-	"github.com/FerretDB/FerretDB/v2/internal/util/startup"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 	"github.com/FerretDB/FerretDB/v2/internal/util/telemetry"
 )
@@ -157,7 +156,7 @@ func main() {
 		run()
 
 	case "ping":
-		logger := setupLogger(cli.Log.Format, "")
+		logger := setupDefaultLogger(cli.Log.Format, "")
 		checkFlags(logger)
 
 		ready := ReadyZ{
@@ -205,8 +204,8 @@ func setupMetrics(stateProvider *state.Provider) prometheus.Registerer {
 	return r
 }
 
-// setupLogger setups slog logger.
-func setupLogger(format string, uuid string) *slog.Logger {
+// setupDefaultLogger setups slog logging.
+func setupDefaultLogger(format string, uuid string) *slog.Logger {
 	var level slog.Level
 	if err := level.UnmarshalText([]byte(cli.Log.Level)); err != nil {
 		log.Fatal(err)
@@ -218,9 +217,8 @@ func setupLogger(format string, uuid string) *slog.Logger {
 		CheckMessages: false, // TODO https://github.com/FerretDB/FerretDB/issues/4511
 	}
 	logging.SetupDefault(opts, uuid)
-	logger := slog.Default()
 
-	return logger
+	return slog.Default()
 }
 
 // checkFlags checks that CLI flags are not self-contradictory.
@@ -280,7 +278,7 @@ func run() {
 	// safe to always enable
 	runtime.SetBlockProfileRate(10000)
 
-	stateProvider, err := startup.State(cli.StateDir)
+	stateProvider, err := state.NewProviderDir(cli.StateDir)
 	if err != nil {
 		log.Fatalf("Failed to setup state provider: %s.", err)
 	}
@@ -304,7 +302,7 @@ func run() {
 		logUUID = ""
 	}
 
-	logger := setupLogger(cli.Log.Format, logUUID)
+	logger := setupDefaultLogger(cli.Log.Format, logUUID)
 
 	logger.LogAttrs(context.Background(), slog.LevelInfo, "Starting FerretDB "+info.Version+"...", startupFields...)
 
@@ -319,7 +317,7 @@ func run() {
 			logger.Info(fmt.Sprintf(format, a...))
 		}),
 	}
-	if _, err := maxprocs.Set(maxprocsOpts...); err != nil {
+	if _, err = maxprocs.Set(maxprocsOpts...); err != nil {
 		logger.Warn("Failed to set GOMAXPROCS", logging.Error(err))
 	}
 

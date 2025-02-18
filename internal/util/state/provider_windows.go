@@ -12,31 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package startup provides initialization code shared by main and ferretdb packages.
-package startup
+package state
 
-import (
-	"fmt"
-	"path/filepath"
-
-	"github.com/FerretDB/FerretDB/v2/internal/util/state"
-)
-
-// State setups state provider for the given directory.
-func State(dir string) (*state.Provider, error) {
-	if dir == "" {
-		return nil, fmt.Errorf("state directory is not set")
-	}
-
-	f, err := filepath.Abs(filepath.Join(dir, "state.json"))
-	if err != nil {
-		return nil, err
-	}
-
-	sp, err := state.NewProvider(f)
-	if err != nil {
-		return nil, stateFileErr(f, err)
-	}
-
-	return sp, nil
+// newProviderDirErr returns the state file access error as is.
+func newProviderDirErr(_ string, err error) error {
+	return err
 }

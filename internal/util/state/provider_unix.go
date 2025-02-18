@@ -14,7 +14,7 @@
 
 //go:build unix
 
-package startup
+package state
 
 import (
 	"fmt"
@@ -26,8 +26,8 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-// stateFileErr adds details to the state file access error.
-func stateFileErr(f string, err error) error {
+// newProviderDirErr adds details to the state file access error.
+func newProviderDirErr(f string, err error) error {
 	var extra []string
 
 	if u, _ := user.Current(); u != nil {
