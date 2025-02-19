@@ -460,6 +460,21 @@ func AssertEqualAltWriteError(t testing.TB, expected mongo.WriteError, altMessag
 	return assert.Equal(t, expected, a)
 }
 
+// IntType checks that v is int32 or int64, and returns it as int.
+func IntType(t testing.TB, v any) int {
+	t.Helper()
+
+	switch v := v.(type) {
+	case int32:
+		return int(v)
+	case int64:
+		return int(v)
+	default:
+		t.Fatalf("expected int32 or int64, got %[1]T %[1]v", v)
+		panic("not reached")
+	}
+}
+
 // RemoveKey returns a copy of the document with the given key removed,
 // and the value of that key (that could be nil if the key was not found).
 func RemoveKey(t testing.TB, doc bson.D, key string) (bson.D, any) {

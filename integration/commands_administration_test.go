@@ -1298,7 +1298,7 @@ func TestCollStatsCommandScaleSize(t *testing.T) {
 			switch field.Key {
 			case "totalIndexSize":
 				size, ok := field.Value.(int32)
-				require.True(t, ok)
+				require.True(t, ok, "%[1]v %[1]T", field.Value)
 
 				scaledSize := size / scale
 
@@ -1310,7 +1310,7 @@ func TestCollStatsCommandScaleSize(t *testing.T) {
 
 			case "size", "storageSize", "totalSize":
 				size, ok := field.Value.(int32)
-				require.True(t, ok)
+				require.True(t, ok, "%[1]v %[1]T", field.Value)
 
 				scaledSize := size / scale
 
@@ -1332,11 +1332,9 @@ func TestCollStatsCommandScaleSize(t *testing.T) {
 				var indexSizes bson.D
 
 				for _, fieldName := range v {
-					var size int32
-					size, ok = fieldName.Value.(int32)
-					require.True(t, ok)
+					size := IntType(t, fieldName.Value)
 
-					scaledSize := size / scale
+					scaledSize := int32(size) / scale
 					indexSizes = append(indexSizes, bson.E{Key: fieldName.Key, Value: scaledSize})
 				}
 
