@@ -345,11 +345,7 @@ Count the number of documents in the collection:
 db.testCollection.countDocuments();
 ```
 
-Output:
-
-```js
-1
-```
+Output: `1`.
 
 ### Connect to Postgres cluster via `psql`
 

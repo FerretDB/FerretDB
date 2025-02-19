@@ -96,8 +96,8 @@ db.league.find({ club: 'PSG' });
 ```
 
 For MongoDB shell results, use `js` language and copy&paste the output as-is,
-with unquoted field names, without trailing commas, etc.
-Our tooling will automatically reformat those blocks.
+with unquoted field names, single quotes for strings, without trailing commas, etc.
+Our tooling will not reformat those blocks.
 
 ```js
 [
@@ -109,7 +109,7 @@ Our tooling will automatically reformat those blocks.
     discipline: { red: 5, yellow: 30 },
     qualified: false
   }
-]
+];
 ```
 
 Use `sql` for SQL queries.
