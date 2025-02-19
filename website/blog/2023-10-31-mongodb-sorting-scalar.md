@@ -78,7 +78,7 @@ db.outfits.insertMany([
   { _id: 3, name: 'boots', size: 8, color: 'black' },
   { _id: 4, name: 'sneakers', size: 8.5, color: 'blue' },
   { _id: 5, name: 'slippers' }
-])
+]);
 ```
 
 The `outfits` collection includes a `size` field that represents various BSON types.
@@ -87,7 +87,7 @@ The `sneakers` document has the `size` field as a Double value, and the `slipper
 To sort these documents in ascending order based on the `size` field, you would use a sorting order of 1 and execute the following query.
 
 ```js
-db.outfits.find().sort({ size: 1 })
+db.outfits.find().sort({ size: 1 });
 ```
 
 ```json5
@@ -117,7 +117,7 @@ Strings have a higher BSON comparison order than Numbers, so this document comes
 To sort the documents in descending order by the `size` field, you would use a sorting order of -1 and execute the following query.
 
 ```js
-db.outfits.find().sort({ size: -1 })
+db.outfits.find().sort({ size: -1 });
 ```
 
 ```json5
@@ -146,7 +146,7 @@ In this setup, if multiple documents have the same or equivalent `color` values,
 The `_id` field value is unique within the collection which ensures that the sorted output remains consistent.
 
 ```js
-db.outfits.find().sort({ color: 1, _id: 1 })
+db.outfits.find().sort({ color: 1, _id: 1 });
 ```
 
 ```json5

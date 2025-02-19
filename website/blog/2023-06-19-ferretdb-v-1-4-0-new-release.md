@@ -27,7 +27,7 @@ One of the notable features in this release is the implementation of the `create
 You can create a unique index by setting the `unique` option in the `createIndexes` command as `true`.
 
 ```js
-db.collection.createIndexes({ indexedfield: 1 }, { unique: `true` })
+db.collection.createIndexes({ indexedfield: 1 }, { unique: `true` });
 ```
 
 Read more about [unique indexes in our documentation](https://docs.ferretdb.io/indexes/#unique-indexes).
@@ -65,7 +65,7 @@ db.employees.aggregate([
       ageType: { $type: '$age' }
     }
   }
-])
+]);
 ```
 
 The output will be:
@@ -94,7 +94,7 @@ db.employees.aggregate([
       employmentType: 'Full-time'
     }
   }
-])
+]);
 ```
 
 The output will be:
@@ -129,7 +129,7 @@ db.employees.aggregate([
       department: 'Sales'
     }
   }
-])
+]);
 ```
 
 The output:
@@ -160,7 +160,7 @@ db.employees.aggregate([
   {
     $unset: 'salary'
   }
-])
+]);
 ```
 
 Output:

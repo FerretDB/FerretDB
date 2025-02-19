@@ -89,7 +89,7 @@ db.record.insertOne({
   content: 'Enjoying the beautiful weather today! 🌞 #sunnyday',
   likes: 120,
   timestamp: new Date()
-})
+});
 ```
 
 Once it's inserted, view the documents by running `db.record.find()`:
@@ -111,7 +111,7 @@ The output:
 Next, update the `likes` of JD's post to 150.
 
 ```js
-db.record.updateOne({ username: 'JD' }, { $set: { likes: 150 } })
+db.record.updateOne({ username: 'JD' }, { $set: { likes: 150 } });
 ```
 
 The output:
@@ -131,7 +131,7 @@ You can run `db.record.find()` again just to be sure it's updated.
 Finally, delete the singular document from the collection.
 
 ```js
-db.record.deleteOne({ username: 'JD' })
+db.record.deleteOne({ username: 'JD' });
 ```
 
 ## Conclusion

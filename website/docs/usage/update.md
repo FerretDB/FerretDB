@@ -55,7 +55,7 @@ db.scientists.insertMany([
     invention: 'Computer programming',
     nobel: false
   }
-])
+]);
 ```
 
 Using the document record in the collection, update the document where `firstname` is "Graham", and set it as "Alexander Graham".
@@ -71,7 +71,7 @@ db.scientists.updateOne(
       firstname: 'Alexander Graham'
     }
   }
-)
+);
 ```
 
 ## Replace a document
@@ -90,7 +90,7 @@ db.scientists.replaceOne(
     invention: 'Photoelectric effect',
     nobel: true
   }
-)
+);
 ```
 
 ## Update many documents
@@ -99,7 +99,7 @@ Using the `updateMany()` command, you can modify many documents at once.
 In the example below, where `nobel` is set as false, update and set to true.
 
 ```js
-db.scientists.updateMany({ nobel: false }, { $set: { nobel: true } })
+db.scientists.updateMany({ nobel: false }, { $set: { nobel: true } });
 ```
 
 This operation updates all the documents where the field `nobel` was previously false.
@@ -141,7 +141,7 @@ db.employees.insertMany([
     role: 'salesperson',
     catalog: ['printer', 'pencils', 'crayons', 'toys']
   }
-])
+]);
 ```
 
 The following command will query and update the `catalog` array in the `employee` collection using dot notation.
@@ -157,7 +157,7 @@ db.employees.updateMany(
       'catalog.0': 'ruler'
     }
   }
-)
+);
 ```
 
 The response from the command:
@@ -187,7 +187,7 @@ db.employees.updateMany(
       'name.last': 'Elliot'
     }
   }
-)
+);
 ```
 
 The following response from the command shows that a single document matching the query was updated:

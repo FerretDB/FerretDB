@@ -60,7 +60,7 @@ db.team.insertMany([
     },
     active: true
   }
-])
+]);
 ```
 
 ## $all
@@ -80,7 +80,7 @@ db.team.find({
   skills: {
     $all: ['communication', 'content creation']
   }
-})
+});
 ```
 
 The output:
@@ -116,7 +116,7 @@ db.team.find({
       $nin: ['communication']
     }
   }
-})
+});
 ```
 
 The output:
@@ -148,7 +148,7 @@ db.team.find({
   skills: {
     $size: 3
   }
-})
+});
 ```
 
 The output:

@@ -142,7 +142,7 @@ db.orders.insertMany([
     ],
     date: new Date('2023-04-29')
   }
-])
+]);
 ```
 
 ![Insert documents](/img/blog/ferretdb-nosqlbooster/insert-documents.png)
@@ -180,7 +180,7 @@ You can leverage the MongoDB shell in NoSQLBooster to run any command you want.
 In the next example, we're going to execute a command that'll return a document with a field named `total_orders` containing the number of documents in the `orders` collection.
 
 ```js
-db.orders.aggregate([{ $count: 'total_orders' }])
+db.orders.aggregate([{ $count: 'total_orders' }]);
 ```
 
 ![Aggregation operation](/img/blog/ferretdb-nosqlbooster/aggregation-count.png)
@@ -192,7 +192,7 @@ Run the following command to do this:
 db.orders.aggregate([
   { $unwind: '$items' },
   { $group: { _id: '$_id', total_value: { $sum: '$items.price' } } }
-])
+]);
 ```
 
 ![Aggregation Operation](/img/blog/ferretdb-nosqlbooster/aggregation-operation.png)
@@ -209,7 +209,7 @@ You can also monitor and analyze your FerretDB environment right from the NoSQLB
 For example, you can collect statistics for 'orders' collection using the following command.
 
 ```js
-db.orders.stats()
+db.orders.stats();
 ```
 
 ![Collection stats](/img/blog/ferretdb-nosqlbooster/collection-stats.png)

@@ -59,10 +59,10 @@ You would do the following:
      { postId: '2', position: { type: 'Point', coordinates: [-74.0, 40.75] } },
      { postId: '3', position: { type: 'Point', coordinates: [-73.95, 40.78] } },
      { postId: '4', position: { type: 'Point', coordinates: [-73.93, 40.76] } }
-   ])
+   ]);
 
    // run the command
-   db.runCommand({ dataSize: '<DB-NAME>.locations' })
+   db.runCommand({ dataSize: '<DB-NAME>.locations' });
 
    // the below error is returned to the client:
    // MongoServerError[NotImplemented]: "dataSize" is not implemented for FerretDB yet
@@ -77,7 +77,7 @@ Continuing with the same example above, we can further examine the diff output w
 2. Follow the same instructions as the one for `diff-normal` above to run FerretDB in `diff-proxy` mode and re-run the command.
 
    ```js
-   db.runCommand({ dataSize: '<DB-NAME>.locations' })
+   db.runCommand({ dataSize: '<DB-NAME>.locations' });
    ```
 
    ```text

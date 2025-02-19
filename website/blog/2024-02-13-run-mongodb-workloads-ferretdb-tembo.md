@@ -94,7 +94,7 @@ To understand the structure and type of data in the supply collection, let's che
 This example illustrates the kind of information captured in each transaction.
 
 ```js
-db.supply.findOne()
+db.supply.findOne();
 ```
 
 Result:
@@ -128,7 +128,7 @@ db.supply.find({
     $gte: ISODate('2023-07-01T00:00:00.000Z'),
     $lte: ISODate('2023-07-03T23:59:59.000Z')
   }
-})
+});
 ```
 
 Result:
@@ -203,7 +203,7 @@ db.supply.aggregate([
   },
   { $sort: { totalQuantity: -1 } },
   { $limit: 1 }
-])
+]);
 ```
 
 Result:

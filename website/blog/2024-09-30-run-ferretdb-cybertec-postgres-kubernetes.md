@@ -268,13 +268,13 @@ db.weather.insertOne([
     },
     remarks: 'Possible light rain in the evening.'
   }
-])
+]);
 ```
 
 Query the collection to see the inserted document:
 
 ```js
-db.weather.find()
+db.weather.find();
 ```
 
 Run an update operation to update the humidity of the document:
@@ -283,7 +283,7 @@ Run an update operation to update the humidity of the document:
 db.weather.updateMany(
   { 'location.city': 'New York', 'weather.wind_speed': { $gt: 10 } },
   { $set: { 'weather.humidity': 85 } }
-)
+);
 ```
 
 Run `db.weather.find()` on the collection to see the updated document:

@@ -417,7 +417,7 @@ Insert documents into the database:
 db.testing.insertMany([
   { a: 23, b: 'b', c: [1, 5], d: { a: 1 } },
   { a: 1, b: 34, c: '1', d: [3, 5] }
-])
+]);
 ```
 
 Now let's read all these documents and see what we get.
@@ -438,7 +438,7 @@ db.testing.find()[
     c: '1',
     d: [3, 5]
   })
-]
+];
 ```
 
 ### How FerretDB stores data in PostgreSQL

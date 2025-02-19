@@ -73,7 +73,7 @@ db.catalog.insertMany([
       }
     ]
   }
-])
+]);
 ```
 
 ## $and
@@ -101,7 +101,7 @@ db.catalog.find({
       }
     }
   ]
-})
+});
 ```
 
 The output:
@@ -165,7 +165,7 @@ db.catalog.find({
       }
     }
   ]
-})
+});
 ```
 
 The output:
@@ -223,7 +223,7 @@ db.catalog.find({
       $lt: 5
     }
   }
-})
+});
 ```
 
 The output:
@@ -287,7 +287,7 @@ db.catalog.find({
       }
     }
   ]
-})
+});
 ```
 
 The output:

@@ -201,11 +201,11 @@ db.users.insert({
     state: 'NY',
     zip: '10001'
   }
-})
+});
 ```
 
 ```js
-db.users.find({ 'address.state': 'NY' })
+db.users.find({ 'address.state': 'NY' });
 ```
 
 OUTPUT:
@@ -320,19 +320,19 @@ However, while they support the same set of features, the syntax and usage vary 
 For instance, a typical query in JavaScript looks like this:
 
 ```js
-const db = firebase.firestore()
+const db = firebase.firestore();
 
 db.collection('users')
   .where('address.state', '==', 'NY')
   .get()
   .then((querySnapshot) => {
     querySnapshot.forEach((doc) => {
-      console.log(doc.id, ' => ', doc.data())
-    })
+      console.log(doc.id, ' => ', doc.data());
+    });
   })
   .catch((error) => {
-    console.log('Error getting documents: ', error)
-  })
+    console.log('Error getting documents: ', error);
+  });
 ```
 
 ## Getting Started with Document Databases

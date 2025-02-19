@@ -1,7 +1,7 @@
 // @ts-check
 // Note: type annotations allow type checking and IDEs autocompletion
 
-import { themes } from 'prism-react-renderer'
+import { themes } from 'prism-react-renderer';
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
@@ -69,18 +69,18 @@ const config = {
 
             // override to add images; see https://github.com/facebook/docusaurus/discussions/8321#discussioncomment-7016367
             createFeedItems: async (params) => {
-              const { blogPosts, defaultCreateFeedItems, siteConfig, outDir } = params
+              const { blogPosts, defaultCreateFeedItems, siteConfig, outDir } = params;
 
               const allFeedItems = await defaultCreateFeedItems({
                 blogPosts: blogPosts.slice(0, 10),
                 siteConfig: siteConfig,
                 outDir: outDir,
-              })
+              });
 
               return allFeedItems.map((item, index) => ({
                 ...item,
                 image: `${config.url}${blogPosts[index].metadata.frontMatter.image}`,
-              }))
+              }));
             },
           },
         },
@@ -186,6 +186,6 @@ const config = {
     mermaid: true,
   },
   themes: ['@docusaurus/theme-mermaid'],
-}
+};
 
-module.exports = config
+module.exports = config;

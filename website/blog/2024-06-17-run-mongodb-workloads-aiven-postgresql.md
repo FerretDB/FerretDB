@@ -121,7 +121,7 @@ db.astronomy.insertMany([
     diameter: 2440000,
     constellation: 'Lyra'
   }
-])
+]);
 ```
 
 So we have an `astronomy` collection containing 5 documents with different star data, including their mass, diameter, and distance from Earth.

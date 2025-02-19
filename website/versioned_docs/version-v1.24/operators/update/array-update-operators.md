@@ -23,13 +23,13 @@ Insert the following document into a `store` collection:
 ```js
 db.store.insertMany([
   { _id: 1, items: ['pens', 'pencils', 'paper', 'erasers', 'rulers'] }
-])
+]);
 ```
 
 **Example:** Use the `$push` operator to add an element to an existing array.
 
 ```js
-db.store.updateOne({ _id: 1 }, { $push: { items: 'markers' } })
+db.store.updateOne({ _id: 1 }, { $push: { items: 'markers' } });
 ```
 
 After the operation, the updated document looks like this:
@@ -51,13 +51,13 @@ If the specified element exists in the array, the `$addToSet` operator will not 
 Insert the following documents into a `store` collection:
 
 ```js
-db.store.insertMany([{ _id: 1, items: ['pens', 'pencils'] }])
+db.store.insertMany([{ _id: 1, items: ['pens', 'pencils'] }]);
 ```
 
 **Example:** Use the `$addToSet` operator to update the array with non-existing elements.
 
 ```js
-db.store.updateOne({ _id: 1 }, { $addToSet: { items: 'paper' } })
+db.store.updateOne({ _id: 1 }, { $addToSet: { items: 'paper' } });
 ```
 
 The document is subsequently updated with the new element, as depicted below:
@@ -69,7 +69,7 @@ The document is subsequently updated with the new element, as depicted below:
 **Example:** Use the `$addToSet` operator to update the array with already existing elements.
 
 ```js
-db.store.updateOne({ _id: 1 }, { $addToSet: { items: 'pens' } })
+db.store.updateOne({ _id: 1 }, { $addToSet: { items: 'pens' } });
 ```
 
 Since the array already contains the element, there won't be any changes.
@@ -87,7 +87,7 @@ The `$addToSet` is different from the `$push` operator which adds the element to
 If the array field does not exist in the document, the `$addToSet` operator will create the field and add the element to the array.
 
 ```js
-db.store.updateOne({ _id: 1 }, { $addToSet: { colors: 'red' } })
+db.store.updateOne({ _id: 1 }, { $addToSet: { colors: 'red' } });
 ```
 
 The updated document looks like this:
@@ -106,13 +106,13 @@ Insert this document into a `products` collection:
 ```js
 db.products.insertMany([
   { _id: 1, items: ['pens', 'pencils', 'paper', 'erasers', 'rulers'] }
-])
+]);
 ```
 
 **Example:** Use the `$pop` operator to remove the first element of an array.
 
 ```js
-db.products.updateOne({ _id: 1 }, { $pop: { items: -1 } })
+db.products.updateOne({ _id: 1 }, { $pop: { items: -1 } });
 ```
 
 The document is subsequently updated with the first element `pens` removed, as depicted below:
@@ -129,7 +129,7 @@ The document is subsequently updated with the first element `pens` removed, as d
 To remove the last element of the array, assign `1` as the value for the `$pop` operator.
 
 ```js
-db.products.updateOne({ _id: 1 }, { $pop: { items: 1 } })
+db.products.updateOne({ _id: 1 }, { $pop: { items: 1 } });
 ```
 
 The updated now looks like this:
@@ -152,7 +152,7 @@ Insert the following document into a `store` collection:
 ```js
 db.store.insertMany([
   { _id: 1, items: ['pens', 'pencils', 'paper', 'erasers', 'rulers'] }
-])
+]);
 ```
 
 **Example:** Use the `$pullAll` operator to remove multiple elements from an array.
@@ -161,7 +161,7 @@ db.store.insertMany([
 db.store.updateOne(
   { _id: 1 },
   { $pullAll: { items: ['pens', 'pencils', 'paper'] } }
-)
+);
 ```
 
 After removing all instances of the specified array elements, the document is updated as follows:
@@ -189,7 +189,7 @@ db.fruits.insertMany([
       { type: 'orange', color: 'orange' }
     ]
   }
-])
+]);
 ```
 
 The following query uses the `$pullAll` to remove all matching array objects from the specified document.
@@ -205,7 +205,7 @@ db.fruits.update(
       ]
     }
   }
-)
+);
 ```
 
 The updated document now looks like this:

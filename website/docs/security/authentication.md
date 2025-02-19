@@ -87,7 +87,7 @@ db.createUser({
   user: 'newuser',
   pwd: 'newpassword',
   roles: []
-})
+});
 ```
 
 :::info

@@ -707,7 +707,7 @@ tasks:
   fmt-js:
     desc: "Format JS files"
     cmds:
-      - docker compose run --rm prettier --write --single-quote --no-semi --print-width 120 "**/*.js"
+      - docker compose run --rm prettier --write --single-quote --semi --print-width 120 "**/*.js"
 
   fmt-json:
     desc: "Format JSON files"
@@ -729,7 +729,7 @@ tasks:
         docker compose run --rm textlint --fix --config build/.textlintrc --ignore-path .prettierignore
         "**/*.md" "**/*.mdx" ".github/**/*.md"
       - >
-        docker compose run --rm prettier --write --parser markdown --single-quote --no-semi --trailing-comma none
+        docker compose run --rm prettier --write --parser markdown --single-quote --semi --trailing-comma none
         "**/*.md" "**/*.mdx"
       - >
         docker compose run --rm markdownlint --config "build/.markdownlint.yml"

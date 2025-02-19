@@ -79,7 +79,7 @@ You would do the following:
        author: 'Alice',
        date: ISODate('2023-08-21T10:33:23.134Z')
      }
-   ])
+   ]);
 
    // run the query
    db.posts.aggregate([
@@ -90,7 +90,7 @@ You would do the following:
          firstPost: { $first: '$date' }
        }
      }
-   ])
+   ]);
    // the below error is returned to the client:
    // MongoServerError: $group accumulator "$first" is not implemented yet
    ```
@@ -112,7 +112,7 @@ Continuing with the same example above, we can further examine the diff output w
          firstPost: { $first: '$date' }
        }
      }
-   ])
+   ]);
    // the query was handled by MongoDB, so the following documents are returned:
    // { _id: 'Alice', firstPost: ISODate("2023-08-20T10:33:23.134Z") }
    // { _id: 'Bob', firstPost: ISODate("2023-08-28T10:33:23.134Z") }

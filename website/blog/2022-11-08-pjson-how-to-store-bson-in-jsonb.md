@@ -109,7 +109,7 @@ db.groceries.insert({
   _id: ObjectId('635202c8f75e487c16adc141'),
   name: 'milk',
   quantity: 3
-})
+});
 ```
 
 ### 1. Deserialize from BSON

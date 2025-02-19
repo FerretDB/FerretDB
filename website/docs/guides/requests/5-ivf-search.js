@@ -17,4 +17,4 @@ db.runCommand({
     },
   ],
   cursor: {},
-})
+});

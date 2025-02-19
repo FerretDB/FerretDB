@@ -24,7 +24,7 @@ db.sales.insertMany([
   { _id: 6, category: 'Home', price: 1200 },
   { _id: 7, category: 'Books', price: 20 },
   { _id: 8, category: 'Books', price: 40 }
-])
+]);
 ```
 
 A typical aggregation pipeline would look like this:
@@ -40,7 +40,7 @@ db.sales.aggregate([
     }
   },
   { $sort: { totalPrice: -1 } }
-])
+]);
 ```
 
 In the pipeline, the complex query is broken down into separate stages where the record goes through a series of transformations until it finally produces the desired result.
@@ -73,5 +73,5 @@ db.collection.aggregate([
   { $match: { field: value } },
   // Stage 2: Grouping documents by the "category" field and calculating the sum of the "quantity" field
   { $group: { _id: '$category', total: { $sum: '$quantity' } } }
-])
+]);
 ```

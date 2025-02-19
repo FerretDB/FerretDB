@@ -134,7 +134,7 @@ db.issues.aggregate([
   },
   { $sort: { _id: -1 } },
   { $limit: 10 }
-])
+]);
 ```
 
 To start, it will filter out the issues with an empty "milestone" value or not labeled as "Next".
@@ -160,7 +160,7 @@ db.issues.aggregate([
   { $unwind: '$labels' },
   { $match: { labels: { $eq: 'not ready' } } },
   { $group: { _id: '$labels', count: { $sum: 1 } } }
-])
+]);
 ```
 
 ![Issues marked as "not ready"](/img/blog/ferretdb-grafana/issues-not-ready.png)
@@ -179,7 +179,7 @@ db.issues.aggregate([
   { $unwind: '$labels' },
   { $match: { labels: { $eq: 'good first issue' } } },
   { $group: { _id: '$labels', count: { $sum: 1 } } }
-])
+]);
 ```
 
 Similar to the previous panel, we'll be using the gauge visualization to show the total number of "good first issues"
@@ -198,7 +198,7 @@ db.issues.aggregate([
       count: { $sum: 1 }
     }
   }
-])
+]);
 ```
 
 ![Group issues by state](/img/blog/ferretdb-grafana/issues-per-state.png)
@@ -228,7 +228,7 @@ db.issues.aggregate([
     }
   },
   { $group: { _id: '$labels', count: { $sum: 1 } } }
-])
+]);
 ```
 
 On Grafana, we will use the pie chart visualization to showcase the labels
@@ -254,7 +254,7 @@ db.issues.aggregate([
   {
     $limit: 8
   }
-])
+]);
 ```
 
 We can then set the visualization to be a table.

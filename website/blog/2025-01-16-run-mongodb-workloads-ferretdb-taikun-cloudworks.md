@@ -210,7 +210,7 @@ db.space_data.insertMany([
   { planet: 'Earth', moons: 1, diameter_km: 12742 },
   { planet: 'Mars', moons: 2, diameter_km: 6779 },
   { planet: 'Jupiter', moons: 79, diameter_km: 139820 }
-])
+]);
 ```
 
 Now that the data is in place, let's try out a few analytical queries.
@@ -228,7 +228,7 @@ db.space_data.aggregate([
       total_moons: { $sum: '$moons' }
     }
   }
-])
+]);
 ```
 
 The result shows that the total number of moons is `82`.
@@ -247,7 +247,7 @@ db.space_data.aggregate([
   {
     $match: { moons: { $gt: 1 } }
   }
-])
+]);
 ```
 
 The output lists Mars and Jupiter as the planets with more than one moon.
@@ -272,7 +272,7 @@ db.space_data.aggregate([
   {
     $limit: 1
   }
-])
+]);
 ```
 
 The result as shown below indicates that Jupiter, with a diameter of 139,820 km, is the largest planet in our dataset.

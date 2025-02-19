@@ -293,7 +293,7 @@ db.testCollection.insertMany([
   { name: 'Alice', age: 25, city: 'Wonderland' },
   { name: 'Bob', age: 30, city: 'Builderland' },
   { name: 'Charlie', age: 35, city: 'Chocolate Factory' }
-])
+]);
 ```
 
 Output:
@@ -312,7 +312,7 @@ Output:
 Next let's update a document:
 
 ```js
-db.testCollection.updateOne({ name: 'Alice' }, { $set: { age: 26 } })
+db.testCollection.updateOne({ name: 'Alice' }, { $set: { age: 26 } });
 ```
 
 Output:
@@ -330,7 +330,7 @@ Output:
 Delete documents where age is less than 35:
 
 ```js
-db.testCollection.deleteMany({ age: { $lt: 35 } })
+db.testCollection.deleteMany({ age: { $lt: 35 } });
 ```
 
 Output:
@@ -342,7 +342,7 @@ Output:
 Count the number of documents in the collection:
 
 ```js
-db.testCollection.countDocuments()
+db.testCollection.countDocuments();
 ```
 
 Output:

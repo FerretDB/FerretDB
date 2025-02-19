@@ -136,7 +136,7 @@ db.supply.aggregate([
   { $group: { _id: '$customer_name', totalQuantity: { $sum: '$quantity' } } },
   { $sort: { totalQuantity: -1 } },
   { $limit: 5 }
-])
+]);
 ```
 
 In Mingo, you can set this up by clicking on the "Aggregation" tab and setting up the pipeline as shown below:

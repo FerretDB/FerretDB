@@ -40,7 +40,7 @@ db.catalog.insertMany([
     price: 20,
     stock: 3
   }
-])
+]);
 ```
 
 ## $mod
@@ -57,7 +57,7 @@ db.catalog.find({
   stock: {
     $mod: [2, 0]
   }
-})
+});
 ```
 
 The output:
@@ -99,7 +99,7 @@ db.catalog.find({
   product: {
     $regex: /^b/
   }
-})
+});
 ```
 
 The output:
@@ -141,7 +141,7 @@ db.catalog.find({
   product: {
     $regex: /bottle/i
   }
-})
+});
 ```
 
 The output:

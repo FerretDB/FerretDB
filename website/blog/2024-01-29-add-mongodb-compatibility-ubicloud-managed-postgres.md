@@ -161,7 +161,7 @@ In the index.html file, add this:
     <script>
       function confirmDelete(contact_id) {
         if (confirm('Are you sure you want to delete this contact?')) {
-          document.getElementById('delete-form-' + contact_id).submit()
+          document.getElementById('delete-form-' + contact_id).submit();
         }
       }
     </script>

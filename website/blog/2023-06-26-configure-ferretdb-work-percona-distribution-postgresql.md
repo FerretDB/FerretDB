@@ -238,7 +238,7 @@ db.test.insertMany([
       zip: '34567'
     }
   }
-])
+]);
 ```
 
 ![Displaying data through Studio 3T](/img/blog/displaying-studio3t-data.png)

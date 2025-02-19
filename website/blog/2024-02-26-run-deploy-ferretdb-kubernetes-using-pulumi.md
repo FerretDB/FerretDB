@@ -466,7 +466,7 @@ db.stocks.insertMany([
       sector: 'Technology'
     }
   }
-])
+]);
 ```
 
 Run `db.stocks.find()` to see the documents.
@@ -476,7 +476,7 @@ Run `db.stocks.find()` to see the documents.
 Find stock data indicating where the volume was greater than 1,200,000.
 
 ```js
-db.stocks.find({ symbol: 'ZTI', 'tradingData.volume': { $gt: 1200000 } })
+db.stocks.find({ symbol: 'ZTI', 'tradingData.volume': { $gt: 1200000 } });
 ```
 
 Result:

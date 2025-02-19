@@ -53,7 +53,7 @@ db.employees.insertMany([
     role: 'salesperson',
     catalog: ['printer', 'pencils', 'crayons', 'toys']
   }
-])
+]);
 ```
 
 ## $eq
@@ -71,7 +71,7 @@ db.employees.find({
   age: {
     $eq: 21
   }
-})
+});
 ```
 
 The response returns a single document that matches the query:
@@ -97,7 +97,7 @@ db.employees.find({
   'name.first': {
     $eq: 'Earl'
   }
-})
+});
 ```
 
 The response returns a single document that matches the query:
@@ -128,7 +128,7 @@ db.employees.find({
   age: {
     $gt: 21
   }
-})
+});
 ```
 
 The output:
@@ -167,7 +167,7 @@ db.employees.find({
   age: {
     $gte: 21
   }
-})
+});
 ```
 
 The output:
@@ -214,7 +214,7 @@ db.employees.find({
   age: {
     $lt: 25
   }
-})
+});
 ```
 
 The output:
@@ -254,7 +254,7 @@ db.employees.find({
   age: {
     $lte: 21
   }
-})
+});
 ```
 
 The output:
@@ -285,7 +285,7 @@ db.employees.find({
   age: {
     $in: [21, 35]
   }
-})
+});
 ```
 
 The output:
@@ -324,7 +324,7 @@ db.employees.find({
   age: {
     $ne: 21
   }
-})
+});
 ```
 
 The output:
@@ -364,7 +364,7 @@ db.employees.find({
   age: {
     $nin: [21, 35]
   }
-})
+});
 ```
 
 The output:

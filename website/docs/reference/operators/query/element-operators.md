@@ -100,7 +100,7 @@ db.electronics.insertMany([
       }
     ]
   }
-])
+]);
 ```
 
 ## $exists
@@ -121,7 +121,7 @@ db.electronics.find({
   specifications: {
     $exists: true
   }
-})
+});
 ```
 
 The output:
@@ -191,7 +191,7 @@ db.electronics.find({
     $exists: true,
     $type: 'array'
   }
-})
+});
 ```
 
 The output:
@@ -291,7 +291,7 @@ db.electronics.find({
   discount: {
     $type: 8
   }
-})
+});
 ```
 
 This query can also be written using the alias of the specified data type.
@@ -301,7 +301,7 @@ db.electronics.find({
   discount: {
     $type: 'bool'
   }
-})
+});
 ```
 
 The output:

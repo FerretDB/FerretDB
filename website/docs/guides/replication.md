@@ -298,7 +298,7 @@ db.record.insertOne({
   content: 'Enjoying the beautiful weather today! 🌞 #sunnyday',
   likes: 120,
   timestamp: new Date()
-})
+});
 ```
 
 ### Step 8: Verify replication with read-only FerretDB

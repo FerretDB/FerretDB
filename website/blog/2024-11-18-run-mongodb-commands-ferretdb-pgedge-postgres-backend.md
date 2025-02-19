@@ -96,14 +96,14 @@ db.books.insertMany([
     publication_year: 2005,
     isAvailable: false
   }
-])
+]);
 ```
 
 Then let's run some quick `find` commands to check out our data and see the inserted book records.
 For example, let find the book "Learning SQL" using its title:
 
 ```js
-db.books.find({ title: 'Learning SQL' })
+db.books.find({ title: 'Learning SQL' });
 ```
 
 Output:
@@ -137,13 +137,13 @@ db.books.updateOne(
     }
   },
   { upsert: true }
-)
+);
 ```
 
 Next, let's run a `find` command with the `sort` option to list all books sorted by the publication_year in descending order.
 
 ```js
-db.books.find({}).sort({ publication_year: -1 })
+db.books.find({}).sort({ publication_year: -1 });
 ```
 
 The entire collection is returned, sorted by the `publication_year` in descending order:

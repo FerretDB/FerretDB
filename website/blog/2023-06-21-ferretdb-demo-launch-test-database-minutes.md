@@ -107,25 +107,25 @@ db.demo.insertMany([
     major: 'Biology',
     sports: ['Tennis', 'Dancing']
   }
-])
+]);
 ```
 
 **Delete data:** Let's remove a document from the database using a `name` field as the specified query.
 
 ```js
-db.demo.deleteOne({ name: 'Sara Nguyen' })
+db.demo.deleteOne({ name: 'Sara Nguyen' });
 ```
 
 **Update data:** Let's update the documents in the database with `age` less than or equal to `21`.
 
 ```js
-db.demo.updateMany({ age: { $lt: 20 } }, { $addToSet: { sports: 'aerobics' } })
+db.demo.updateMany({ age: { $lt: 20 } }, { $addToSet: { sports: 'aerobics' } });
 ```
 
 To see the current state of your database, use the `find` command, which should give you a good view of all the prior changes made to the collection:
 
 ```js
-db.demo.find()
+db.demo.find();
 ```
 
 Output:
@@ -162,7 +162,7 @@ Output:
 **Indexing:** In FerretDB, you can also create indexes; let's set an index on the `email` field the same way you would on MongoDB, like this:
 
 ```js
-db.demo.createIndex({ email: 1 })
+db.demo.createIndex({ email: 1 });
 ```
 
 You can try several combinations of commands; here is a list of the currently [supported commands on FerretDB](https://docs.ferretdb.io/reference/supported-commands/).

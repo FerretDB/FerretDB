@@ -48,7 +48,7 @@ Say you have an `inventory` collection below:
 You can access the `renameCollection` command through the `db.collection.renameCollection()` method within the same database in mongosh, as shown below for a current `inventory` collection.
 
 ```js
-db.inventory.renameCollection('store')
+db.inventory.renameCollection('store');
 ```
 
 Note that `writeConcern`, `comment`, and `dropTarget` arguments are not currently implemented.
@@ -65,7 +65,7 @@ db.store.aggregate([
       inventory: 1
     }
   }
-])
+]);
 ```
 
 The output document looks like this:
@@ -107,7 +107,7 @@ For instance, if we have a `users` collection as shown below:
 Suppose we want to retrieve the documents from the `users` collection but only include the name field while assigning a new value of 'Anonymous' to it.
 
 ```js
-db.users.find({}, { name: 'Anonymous' })
+db.users.find({}, { name: 'Anonymous' });
 ```
 
 The query will return:

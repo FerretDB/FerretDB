@@ -75,8 +75,11 @@ We can start by creating a file to manage all the dependencies.
 Create a `deps.ts` file that exports the `Application` and `Router` classes from the Oak framework, and the `MongoClient` class from the MongoDB driver for use in other parts of our application.
 
 ```typescript
-export { Application, Router } from 'https://deno.land/x/oak@v10.5.1/mod.ts'
-export { MongoClient, ObjectId } from 'https://deno.land/x/mongo@v0.32.0/mod.ts'
+export { Application, Router } from 'https://deno.land/x/oak@v10.5.1/mod.ts';
+export {
+  MongoClient,
+  ObjectId
+} from 'https://deno.land/x/mongo@v0.32.0/mod.ts';
 ```
 
 #### Set up database connection
@@ -86,19 +89,19 @@ Since we are setting up Deno with FerretDB, we should create a database connecti
 Create a `db.ts` file for database connection:
 
 ```typescript
-import { MongoClient, ObjectId } from './deps.ts'
+import { MongoClient, ObjectId } from './deps.ts';
 
-const client = new MongoClient()
-await client.connect('<FerretDB_connection_URI>')
+const client = new MongoClient();
+await client.connect('<FerretDB_connection_URI>');
 
-const db = client.database('library')
-export const books = db.collection<BookSchema>('books')
+const db = client.database('library');
+export const books = db.collection<BookSchema>('books');
 
 interface BookSchema {
-  _id?: ObjectId
-  title: string
-  author: string
-  genre: string
+  _id?: ObjectId;
+  title: string;
+  author: string;
+  genre: string;
 }
 ```
 
@@ -112,69 +115,69 @@ Ensure to replace `<FerretDB_connection_URI>` with the connection URI to your Fe
 Create an `server.ts` file for your server:
 
 ```typescript
-import { Application, Router } from './deps.ts'
-import { books } from './db.ts'
-import { ObjectId } from 'https://deno.land/x/mongo@v0.32.0/mod.ts'
+import { Application, Router } from './deps.ts';
+import { books } from './db.ts';
+import { ObjectId } from 'https://deno.land/x/mongo@v0.32.0/mod.ts';
 
-const app = new Application()
-const router = new Router()
-const PORT = 3000
+const app = new Application();
+const router = new Router();
+const PORT = 3000;
 
 router
   .get('/', (context) => {
-    context.response.body = { message: 'Hello from a Deno API!' }
+    context.response.body = { message: 'Hello from a Deno API!' };
   })
   .get('/api/books', async (context) => {
-    const allBooks = await books.find().toArray()
-    context.response.body = allBooks
+    const allBooks = await books.find().toArray();
+    context.response.body = allBooks;
   })
   .get('/api/books/:id', async (context) => {
-    const id = context.params.id
+    const id = context.params.id;
     if (id) {
-      const book = await books.findOne({ _id: new ObjectId(id) })
+      const book = await books.findOne({ _id: new ObjectId(id) });
       if (book) {
-        context.response.body = book
+        context.response.body = book;
       } else {
-        context.response.status = 404
-        context.response.body = { message: 'Book not found' }
+        context.response.status = 404;
+        context.response.body = { message: 'Book not found' };
       }
     } else {
-      context.response.status = 400
-      context.response.body = { message: 'Invalid book ID' }
+      context.response.status = 400;
+      context.response.body = { message: 'Invalid book ID' };
     }
   })
   .post('/api/books', async (context) => {
-    const body = await context.request.body().value
-    const insertId = await books.insertOne(body)
-    context.response.body = { id: insertId }
+    const body = await context.request.body().value;
+    const insertId = await books.insertOne(body);
+    context.response.body = { id: insertId };
   })
   .patch('/api/books/:id', async (context) => {
-    const id = context.params.id
+    const id = context.params.id;
     if (id) {
-      const body = await context.request.body().value
-      await books.updateOne({ _id: new ObjectId(id) }, { $set: body })
-      context.response.body = { message: 'Book updated' }
+      const body = await context.request.body().value;
+      await books.updateOne({ _id: new ObjectId(id) }, { $set: body });
+      context.response.body = { message: 'Book updated' };
     } else {
-      context.response.status = 400
-      context.response.body = { message: 'Invalid book ID' }
+      context.response.status = 400;
+      context.response.body = { message: 'Invalid book ID' };
     }
   })
   .delete('/api/books/:id', async (context) => {
-    const id = context.params.id
+    const id = context.params.id;
     if (id) {
-      await books.deleteOne({ _id: new ObjectId(id) })
-      context.response.body = { message: 'Book deleted' }
+      await books.deleteOne({ _id: new ObjectId(id) });
+      context.response.body = { message: 'Book deleted' };
     } else {
-      context.response.status = 400
-      context.response.body = { message: 'Invalid book ID' }
+      context.response.status = 400;
+      context.response.body = { message: 'Invalid book ID' };
     }
-  })
+  });
 
-app.use(router.routes())
-app.use(router.allowedMethods())
+app.use(router.routes());
+app.use(router.allowedMethods());
 
-console.log(`Server running at http://localhost:${PORT}`)
-await app.listen({ port: PORT })
+console.log(`Server running at http://localhost:${PORT}`);
+await app.listen({ port: PORT });
 ```
 
 Each route is set up with a path and a callback function to handle HTTP requests.

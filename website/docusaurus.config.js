@@ -1,7 +1,7 @@
 // @ts-check
 // Note: type annotations allow type checking and IDEs autocompletion
 
-import { themes } from 'prism-react-renderer'
+import { themes } from 'prism-react-renderer';
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
@@ -44,10 +44,10 @@ const config = {
               // for example: /quickstart-guide/docker/ -> /installation/ferretdb/docker/
               existingPath.replace('/installation/ferretdb', '/quickstart-guide'),
               existingPath.replace('/installation/ferretdb', '/quickstart_guide'),
-            ]
+            ];
           }
 
-          return undefined
+          return undefined;
         },
       },
     ],
@@ -197,6 +197,6 @@ const config = {
     mermaid: true,
   },
   themes: ['@docusaurus/theme-mermaid'],
-}
+};
 
-module.exports = config
+module.exports = config;

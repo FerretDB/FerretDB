@@ -85,13 +85,13 @@ db.cities.insertMany([
       summer: 30
     }
   }
-])
+]);
 ```
 
 With the documents inserted successfully, let's find the city with a population greater than 2 million.
 
 ```js
-db.cities.find({ population: { $gt: 2000000 } })
+db.cities.find({ population: { $gt: 2000000 } });
 ```
 
 That should retrieve only "Barcelona" as a city with more than the specified population.
@@ -117,13 +117,13 @@ Here, you'll search for cities named "Kyoto" and push an element into the landma
 db.cities.updateOne(
   { name: 'Kyoto' },
   { $push: { landmarks: 'Arashiyama Bamboo Grove' } }
-)
+);
 ```
 
 Say there is a population increase of 200,000 in Barcelona, you want to update that as well.
 
 ```js
-db.cities.updateOne({ name: 'Barcelona' }, { $inc: { population: 200000 } })
+db.cities.updateOne({ name: 'Barcelona' }, { $inc: { population: 200000 } });
 ```
 
 Run `db.cities.find()` to see the newly updated collection – the population of "Barcelona" should have increased to "5700000" and "Kyoto" should now have three elements in its "landmarks" array.
@@ -152,7 +152,7 @@ Run `db.cities.find()` to see the newly updated collection – the population of
 Finally, let's delete a city with an average winter temperature less than or equal to 5 ℃.
 
 ```js
-db.cities.deleteMany({ 'average_temperature.winter': { $lte: 5 } })
+db.cities.deleteMany({ 'average_temperature.winter': { $lte: 5 } });
 ```
 
 When you run `db.cities.find()`, it should leave you with a single document – "Barcelona".
