@@ -165,12 +165,11 @@ func (s *Server) writeJsonResponse(ctx context.Context, w http.ResponseWriter, r
 		resWriter = io.MultiWriter(w, buf)
 
 		defer func() {
-			// TODO
-			l.DebugContext(ctx, fmt.Sprintf("Results:\n%s", buf.String()))
+			// extended JSON value writer always finish with '\n' character
+			l.DebugContext(ctx, fmt.Sprintf("Results:\n%s", strings.TrimSpace(buf.String())))
 		}()
 	}
 
-	// TODO: extended JSON value writer always writes `\n` at the end, and there's no way to disable it with public exposed fields and methods.
 	if err = marshalJSON(resRaw, resWriter); err != nil {
 		l.ErrorContext(ctx, "marshalJSON failed", logging.Error(err))
 	}
