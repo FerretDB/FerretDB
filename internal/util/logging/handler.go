@@ -170,7 +170,6 @@ func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
 	}
 
 	if h.checkMessages {
-
 		switch {
 		case strings.TrimSpace(r.Message) != r.Message:
 			panic(fmt.Sprintf("message %q has leading/trailing spaces", r.Message))
