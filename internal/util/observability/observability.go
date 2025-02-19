@@ -103,7 +103,7 @@ func NewOTelTraceExporter(opts *OTelTraceExporterOpts) (*OTelTraceExporter, erro
 	}
 	otel.SetTracerProvider(tp)
 
-	opts.Logger.Info("Starting OTel trace exporter...", slog.String("url", opts.URL))
+	opts.Logger.Info("Starting OTel trace exporter", slog.String("url", opts.URL))
 
 	return &OTelTraceExporter{
 		l:  opts.Logger,

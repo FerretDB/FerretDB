@@ -12,11 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package state
 
-import "fmt"
-
-// stateFileProblem returns the state file access error.
-func stateFileProblem(_ string, err error) string {
-	return fmt.Sprintf("Failed to create state provider: %s.", err)
+// newProviderDirErr returns the state file access error as is.
+func newProviderDirErr(_ string, err error) error {
+	return err
 }
