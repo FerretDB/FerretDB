@@ -126,10 +126,10 @@ db.electronics.find({
 
 The output:
 
-```json5
+```js
 [
   {
-    _id: ObjectId("63a32fc7cf72d6203bb45b8e"),
+    _id: ObjectId('63a32fc7cf72d6203bb45b8e'),
     product: 'laptop',
     price: 1500,
     stock: 5,
@@ -137,7 +137,7 @@ The output:
     specifications: [{ processor: 'Intel Core i7' }, { memory: 16 }]
   },
   {
-    _id: ObjectId("63a32fc7cf72d6203bb45b8f"),
+    _id: ObjectId('63a32fc7cf72d6203bb45b8f'),
     product: 'phone',
     price: 800,
     stock: 10,
@@ -145,7 +145,7 @@ The output:
     specifications: [{ brand: 'Apple' }, { model: 'iPhone 12' }]
   },
   {
-    _id: ObjectId("63a32fc7cf72d6203bb45b90"),
+    _id: ObjectId('63a32fc7cf72d6203bb45b90'),
     product: 'tablet',
     price: 500,
     stock: 15,
@@ -153,7 +153,7 @@ The output:
     specifications: [{ brand: 'Samsung' }, { model: 'Galaxy Tab S7' }]
   },
   {
-    _id: ObjectId("63a32fc7cf72d6203bb45b92"),
+    _id: ObjectId('63a32fc7cf72d6203bb45b92'),
     product: 'mouse',
     price: 50,
     stock: 25,
@@ -161,7 +161,7 @@ The output:
     specifications: []
   },
   {
-    _id: ObjectId("63a32fc7cf72d6203bb45b93"),
+    _id: ObjectId('63a32fc7cf72d6203bb45b93'),
     product: 'monitor',
     price: 250,
     stock: 30,
@@ -169,14 +169,14 @@ The output:
     specifications: [{ size: 27 }, { resolution: '4K' }]
   },
   {
-    _id: ObjectId("63a32fc7cf72d6203bb45b95"),
+    _id: ObjectId('63a32fc7cf72d6203bb45b95'),
     product: 'scanner',
     price: 100,
     stock: 40,
     discount: true,
     specifications: [{ type: 'flatbed' }]
   }
-]
+];
 ```
 
 In the above output, the query returns all documents where the `specifications` field exists, even when the `field` has an empty value.
@@ -196,10 +196,10 @@ db.electronics.find({
 
 The output:
 
-```json5
+```js
 [
   {
-    _id: ObjectId("63a32fc7cf72d6203bb45b8e"),
+    _id: ObjectId('63a32fc7cf72d6203bb45b8e'),
     product: 'laptop',
     price: 1500,
     stock: 5,
@@ -207,7 +207,7 @@ The output:
     specifications: [{ processor: 'Intel Core i7' }, { memory: 16 }]
   },
   {
-    _id: ObjectId("63a32fc7cf72d6203bb45b8f"),
+    _id: ObjectId('63a32fc7cf72d6203bb45b8f'),
     product: 'phone',
     price: 800,
     stock: 10,
@@ -215,7 +215,7 @@ The output:
     specifications: [{ brand: 'Apple' }, { model: 'iPhone 12' }]
   },
   {
-    _id: ObjectId("63a32fc7cf72d6203bb45b90"),
+    _id: ObjectId('63a32fc7cf72d6203bb45b90'),
     product: 'tablet',
     price: 500,
     stock: 15,
@@ -223,7 +223,7 @@ The output:
     specifications: [{ brand: 'Samsung' }, { model: 'Galaxy Tab S7' }]
   },
   {
-    _id: ObjectId("63a32fc7cf72d6203bb45b92"),
+    _id: ObjectId('63a32fc7cf72d6203bb45b92'),
     product: 'mouse',
     price: 50,
     stock: 25,
@@ -231,7 +231,7 @@ The output:
     specifications: []
   },
   {
-    _id: ObjectId("63a32fc7cf72d6203bb45b93"),
+    _id: ObjectId('63a32fc7cf72d6203bb45b93'),
     product: 'monitor',
     price: 250,
     stock: 30,
@@ -239,14 +239,14 @@ The output:
     specifications: [{ size: 27 }, { resolution: '4K' }]
   },
   {
-    _id: ObjectId("63a32fc7cf72d6203bb45b95"),
+    _id: ObjectId('63a32fc7cf72d6203bb45b95'),
     product: 'scanner',
     price: 100,
     stock: 40,
     discount: true,
     specifications: [{ type: 'flatbed' }]
   }
-]
+];
 ```
 
 ## $type
@@ -306,10 +306,10 @@ db.electronics.find({
 
 The output:
 
-```json5
+```js
 [
   {
-    _id: ObjectId("63a32fc7cf72d6203bb45b8e"),
+    _id: ObjectId('63a32fc7cf72d6203bb45b8e'),
     product: 'laptop',
     price: 1500,
     stock: 5,
@@ -317,7 +317,7 @@ The output:
     specifications: [{ processor: 'Intel Core i7' }, { memory: 16 }]
   },
   {
-    _id: ObjectId("63a32fc7cf72d6203bb45b8f"),
+    _id: ObjectId('63a32fc7cf72d6203bb45b8f'),
     product: 'phone',
     price: 800,
     stock: 10,
@@ -325,7 +325,7 @@ The output:
     specifications: [{ brand: 'Apple' }, { model: 'iPhone 12' }]
   },
   {
-    _id: ObjectId("63a32fc7cf72d6203bb45b90"),
+    _id: ObjectId('63a32fc7cf72d6203bb45b90'),
     product: 'tablet',
     price: 500,
     stock: 15,
@@ -333,7 +333,7 @@ The output:
     specifications: [{ brand: 'Samsung' }, { model: 'Galaxy Tab S7' }]
   },
   {
-    _id: ObjectId("63a32fc7cf72d6203bb45b93"),
+    _id: ObjectId('63a32fc7cf72d6203bb45b93'),
     product: 'monitor',
     price: 250,
     stock: 30,
@@ -341,19 +341,19 @@ The output:
     specifications: [{ size: 27 }, { resolution: '4K' }]
   },
   {
-    _id: ObjectId("63a32fc7cf72d6203bb45b94"),
+    _id: ObjectId('63a32fc7cf72d6203bb45b94'),
     product: 'printer',
     price: 150,
     stock: 35,
     discount: false
   },
   {
-    _id: ObjectId("63a32fc7cf72d6203bb45b95"),
+    _id: ObjectId('63a32fc7cf72d6203bb45b95'),
     product: 'scanner',
     price: 100,
     stock: 40,
     discount: true,
     specifications: [{ type: 'flatbed' }]
   }
-]
+];
 ```

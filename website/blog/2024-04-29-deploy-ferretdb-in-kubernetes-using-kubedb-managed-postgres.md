@@ -215,29 +215,29 @@ ferretdb>
 Let's run some commands in the database.
 Start by inserting a document record into a `weather` collection as shown below.
 
-```json5
+```js
 db.weather.insertMany([
-    {
-        date: new Date("2024-04-22"),
-        location: {
-            city: "New York",
-            country: "USA",
-            coordinates: { lat: 40.7128, lon: -74.0060 }
-        },
-        weather: {
-            temperature: 18,
-            conditions: "Cloudy",
-            wind_speed: 12,
-            humidity: 80
-        },
-        remarks: "Possible light rain in the evening."
-    }
+  {
+    date: new Date('2024-04-22'),
+    location: {
+      city: 'New York',
+      country: 'USA',
+      coordinates: { lat: 40.7128, lon: -74.006 }
+    },
+    weather: {
+      temperature: 18,
+      conditions: 'Cloudy',
+      wind_speed: 12,
+      humidity: 80
+    },
+    remarks: 'Possible light rain in the evening.'
+  }
 ]);
 ```
 
 Suppose you want to update the humidity level in New York where the wind speed was more than 10 km/h:
 
-```json5
+```js
 ferretdb> db.weather.updateMany(
 ...     { "location.city": "New York", "weather.wind_speed": { $gt: 10 } },
 ...     { $set: { "weather.humidity": 85 } }

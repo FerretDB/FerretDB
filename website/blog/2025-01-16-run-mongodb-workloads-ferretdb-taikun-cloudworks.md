@@ -233,8 +233,8 @@ db.space_data.aggregate([
 
 The result shows that the total number of moons is `82`.
 
-```json5
-[{ _id: null, total_moons: 82 }]
+```js
+[{ _id: null, total_moons: 82 }];
 ```
 
 #### Query 2: Planets with more than 1 moon
@@ -252,11 +252,21 @@ db.space_data.aggregate([
 
 The output lists Mars and Jupiter as the planets with more than one moon.
 
-```json5
+```js
 [
-  { _id: ObjectId('67608c94aea003a29ee94971'), planet: 'Mars', moons: 2, diameter_km: 6779 },
-  { _id: ObjectId('67608c94aea003a29ee94972'), planet: 'Jupiter', moons: 79, diameter_km: 139820 }
-]
+  {
+    _id: ObjectId('67608c94aea003a29ee94971'),
+    planet: 'Mars',
+    moons: 2,
+    diameter_km: 6779
+  },
+  {
+    _id: ObjectId('67608c94aea003a29ee94972'),
+    planet: 'Jupiter',
+    moons: 79,
+    diameter_km: 139820
+  }
+];
 ```
 
 #### Query 3: Largest planet by diameter
@@ -277,10 +287,15 @@ db.space_data.aggregate([
 
 The result as shown below indicates that Jupiter, with a diameter of 139,820 km, is the largest planet in our dataset.
 
-```json5
+```js
 [
-  { _id: ObjectId('67608c94aea003a29ee94972'), planet: 'Jupiter', moons: 79, diameter_km: 139820 }
-]
+  {
+    _id: ObjectId('67608c94aea003a29ee94972'),
+    planet: 'Jupiter',
+    moons: 79,
+    diameter_km: 139820
+  }
+];
 ```
 
 You have successfully run some interesting analytical commands on the FerretDB instance.

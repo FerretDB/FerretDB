@@ -60,10 +60,10 @@ The above query updates the value of the `city` field in the `address` embedded 
 
 This is the updated document:
 
-```json5
+```js
 [
   {
-    _id: ObjectId("640a603558955e0e2b57c00d"),
+    _id: ObjectId('640a603558955e0e2b57c00d'),
     name: 'John Doe',
     age: 35,
     email: 'johndoe@example.com',
@@ -79,7 +79,7 @@ This is the updated document:
     startDate: ISODate('2021-01-01T00:00:00.000Z'),
     endDate: null
   }
-]
+];
 ```
 
 ## $unset
@@ -94,10 +94,10 @@ db.employee.updateOne({ name: 'John Doe' }, { $unset: { 'address.zip': '' } });
 
 Below is the updated document, without the `zip` field:
 
-```json5
+```js
 [
   {
-    _id: ObjectId("640a603558955e0e2b57c00d"),
+    _id: ObjectId('640a603558955e0e2b57c00d'),
     name: 'John Doe',
     age: 35,
     email: 'johndoe@example.com',
@@ -112,7 +112,7 @@ Below is the updated document, without the `zip` field:
     startDate: ISODate('2021-01-01T00:00:00.000Z'),
     endDate: null
   }
-]
+];
 ```
 
 ## $inc
@@ -128,10 +128,10 @@ db.employee.updateOne({ name: 'John Doe' }, { $inc: { age: 1 } });
 
 The updated document looks like this:
 
-```json5
+```js
 [
   {
-    _id: ObjectId("640a603558955e0e2b57c00d"),
+    _id: ObjectId('640a603558955e0e2b57c00d'),
     name: 'John Doe',
     age: 36,
     email: 'johndoe@example.com',
@@ -146,7 +146,7 @@ The updated document looks like this:
     startDate: ISODate('2021-01-01T00:00:00.000Z'),
     endDate: null
   }
-]
+];
 ```
 
 ## $mul
@@ -162,10 +162,10 @@ db.employee.updateOne({ name: 'John Doe' }, { $mul: { salary: 1.25 } });
 
 The updated record looks like this:
 
-```json5
+```js
 [
   {
-    _id: ObjectId("640a603558955e0e2b57c00d"),
+    _id: ObjectId('640a603558955e0e2b57c00d'),
     name: 'John Doe',
     age: 36,
     email: 'johndoe@example.com',
@@ -180,7 +180,7 @@ The updated record looks like this:
     startDate: ISODate('2021-01-01T00:00:00.000Z'),
     endDate: null
   }
-]
+];
 ```
 
 ## $rename
@@ -195,10 +195,10 @@ db.employee.updateOne({ name: 'John Doe' }, { $rename: { jobTitle: 'title' } });
 
 The updated document looks like this:
 
-```json5
+```js
 [
   {
-    _id: ObjectId("640a603558955e0e2b57c00d"),
+    _id: ObjectId('640a603558955e0e2b57c00d'),
     name: 'John Doe',
     age: 36,
     email: 'johndoe@example.com',
@@ -213,7 +213,7 @@ The updated document looks like this:
     endDate: null,
     title: 'Manager'
   }
-]
+];
 ```
 
 ## $min
@@ -229,10 +229,10 @@ db.employee.updateOne({ name: 'John Doe' }, { $min: { age: 30 } });
 Since `30` is less than `36`, the value of the `age` field is updated to `30`.
 The updated document now looks like this:
 
-```json5
+```js
 [
   {
-    _id: ObjectId("640a603558955e0e2b57c00d"),
+    _id: ObjectId('640a603558955e0e2b57c00d'),
     name: 'John Doe',
     age: 30,
     email: 'johndoe@example.com',
@@ -247,7 +247,7 @@ The updated document now looks like this:
     endDate: null,
     title: 'Manager'
   }
-]
+];
 ```
 
 ## $max
@@ -262,10 +262,10 @@ db.employee.updateOne({ name: 'John Doe' }, { $max: { age: 40 } });
 
 This is what the updated document looks like:
 
-```json5
+```js
 [
   {
-    _id: ObjectId("640a603558955e0e2b57c00d"),
+    _id: ObjectId('640a603558955e0e2b57c00d'),
     name: 'John Doe',
     age: 40,
     email: 'johndoe@example.com',
@@ -277,7 +277,7 @@ This is what the updated document looks like:
     height: 0,
     title: 'Manager'
   }
-]
+];
 ```
 
 ## $currentDate
@@ -296,10 +296,10 @@ db.employee.updateOne(
 
 This is the document after the update:
 
-```json5
+```js
 [
   {
-    _id: ObjectId("640a603558955e0e2b57c00d"),
+    _id: ObjectId('640a603558955e0e2b57c00d'),
     name: 'John Doe',
     age: 40,
     email: 'johndoe@example.com',
@@ -315,7 +315,7 @@ This is the document after the update:
     height: 0,
     title: 'Manager'
   }
-]
+];
 ```
 
 ## $setOnInsert

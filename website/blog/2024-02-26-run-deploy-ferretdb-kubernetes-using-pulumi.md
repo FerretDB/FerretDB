@@ -481,7 +481,7 @@ db.stocks.find({ symbol: 'ZTI', 'tradingData.volume': { $gt: 1200000 } });
 
 Result:
 
-```json5
+```js
 [
   {
     _id: ObjectId('65d030d38660cd7b3c7ad8a0'),
@@ -496,7 +496,7 @@ Result:
     },
     metadata: { analystRating: 'Strong Buy', sector: 'Technology' }
   }
-]
+];
 ```
 
 You can go ahead and try more MongoDB commands.

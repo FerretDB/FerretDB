@@ -37,7 +37,7 @@ You can use the `$type` operator in a `$project` stage to return the BSON data t
 
 Suppose you have the following document:
 
-```json5
+```js
 [
   {
     _id: 1,
@@ -51,7 +51,7 @@ Suppose you have the following document:
     age: 42,
     salary: 7000
   }
-]
+];
 ```
 
 To return the BSON type of the `age` field in the documents, you can use the following query:
@@ -70,11 +70,11 @@ db.employees.aggregate([
 
 The output will be:
 
-```json5
+```js
 [
   { _id: 1, name: 'John', age: 35, ageType: 'int' },
   { _id: 2, name: 'Robert', age: 42, ageType: 'int' }
-]
+];
 ```
 
 In addition to already supported aggregation pipeline stages, we have now added support for the `$unset`, `$set`, and `$addFields` stages.
@@ -99,7 +99,7 @@ db.employees.aggregate([
 
 The output will be:
 
-```json5
+```js
 [
   {
     _id: 1,
@@ -117,7 +117,7 @@ The output will be:
     department: 'HR',
     employmentType: 'Full-time'
   }
-]
+];
 ```
 
 Let's use the `$set` stage to update the `department` field:
@@ -134,7 +134,7 @@ db.employees.aggregate([
 
 The output:
 
-```json5
+```js
 [
   {
     _id: 1,
@@ -150,7 +150,7 @@ The output:
     salary: 7000,
     department: 'Sales'
   }
-]
+];
 ```
 
 Use the `$unset` stage to remove the `salary` field from documents passed to the next stage in a pipeline:
@@ -165,11 +165,11 @@ db.employees.aggregate([
 
 Output:
 
-```json5
+```js
 [
   { _id: 1, name: 'John', age: 35 },
   { _id: 2, name: 'Robert', age: 42 }
-]
+];
 ```
 
 ### Other Changes

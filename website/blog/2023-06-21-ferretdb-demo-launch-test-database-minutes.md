@@ -130,33 +130,33 @@ db.demo.find();
 
 Output:
 
-```json5
+```js
 [
   {
-    _id: ObjectId("648bc0619df6027209a65b40"),
+    _id: ObjectId('648bc0619df6027209a65b40'),
     name: 'Chinedu Eze',
     age: 20,
     email: 'chinedu.eze@example.com',
     major: 'Computer Science',
-    sports: [ 'Basketball', 'Running' ]
+    sports: ['Basketball', 'Running']
   },
   {
-    _id: ObjectId("648bc0619df6027209a65b41"),
+    _id: ObjectId('648bc0619df6027209a65b41'),
     name: 'Maria Rodriguez',
     age: 21,
     email: 'maria.rodriguez@example.com',
     major: 'Business Administration',
-    sports: [ 'Yoga', 'Swimming' ]
+    sports: ['Yoga', 'Swimming']
   },
   {
-    _id: ObjectId("648bc0619df6027209a65b42"),
+    _id: ObjectId('648bc0619df6027209a65b42'),
     name: 'Kelly Li',
     age: 19,
     email: 'kelly.li@example.com',
     major: 'Engineering',
-    sports: [ 'Soccer', 'Cycling' ]
+    sports: ['Soccer', 'Cycling']
   }
-]
+];
 ```
 
 **Indexing:** In FerretDB, you can also create indexes; let's set an index on the `email` field the same way you would on MongoDB, like this:

@@ -70,14 +70,14 @@ db.store.aggregate([
 
 The output document looks like this:
 
-```json5
+```js
 [
   {
     _id: 1,
     category: 'Electronics',
     inventory: [{ product: 'Laptop', price: 1200, quantity: 10 }]
   }
-]
+];
 ```
 
 This outputs the fields specified, together with the default `_id`.
@@ -87,7 +87,7 @@ In the new release, we have added support for field projections assignment.
 With this feature, users can now specify which fields to retrieve from the database and assign new values to them in a single query.
 For instance, if we have a `users` collection as shown below:
 
-```json5
+```js
 [
   {
     _id: 1,
@@ -101,7 +101,7 @@ For instance, if we have a `users` collection as shown below:
     age: 25,
     email: 'jane@example.com'
   }
-]
+];
 ```
 
 Suppose we want to retrieve the documents from the `users` collection but only include the name field while assigning a new value of 'Anonymous' to it.
@@ -112,11 +112,11 @@ db.users.find({}, { name: 'Anonymous' });
 
 The query will return:
 
-```json5
+```js
 [
   { _id: 1, name: 'Anonymous' },
   { _id: 2, name: 'Anonymous' }
-]
+];
 ```
 
 Also, thanks to one of our contributors, [@polyal](https://github.com/polyal), we now support `create` and `drop` commands in SAP HANA handler.

@@ -99,7 +99,7 @@ db.supply.findOne();
 
 Result:
 
-```json5
+```js
 {
   "_id": ObjectId("65c0d6d5cfba3092d3958fbf"),
   "transaction_id": 10004,
@@ -133,7 +133,7 @@ db.supply.find({
 
 Result:
 
-```json5
+```js
 [
   {
     _id: ObjectId('65c0d6d5cfba3092d3958fdb'),
@@ -183,7 +183,7 @@ Result:
     quantity: 1,
     payment_method: 'Debit Card'
   }
-]
+];
 ```
 
 This query filters the records to only include transactions that occurred between the 1st and 3rd of July 2023.
@@ -208,8 +208,8 @@ db.supply.aggregate([
 
 Result:
 
-```json5
-[{ _id: 'The Alchemist', totalQuantity: 5 }]
+```js
+[{ _id: 'The Alchemist', totalQuantity: 5 }];
 ```
 
 This operation groups the records by `product_name`, sums up the quantities, and then sorts the results in descending order of quantity to highlight the most popular item.

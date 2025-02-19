@@ -96,7 +96,7 @@ Once it's inserted, view the documents by running `db.record.find()`:
 
 The output:
 
-```json5
+```js
 [
   {
     _id: ObjectId('66d6a9346e70f5ffc91022c0'),
@@ -105,7 +105,7 @@ The output:
     likes: 120,
     timestamp: ISODate('2024-09-03T06:14:12.634Z')
   }
-]
+];
 ```
 
 Next, update the `likes` of JD's post to 150.
@@ -116,7 +116,7 @@ db.record.updateOne({ username: 'JD' }, { $set: { likes: 150 } });
 
 The output:
 
-```json5
+```js
 {
   acknowledged: true,
   insertedId: null,

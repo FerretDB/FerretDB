@@ -108,7 +108,7 @@ db.books.find({ title: 'Learning SQL' });
 
 Output:
 
-```json5
+```js
 [
   {
     _id: ObjectId('672ce25eee320eddb90952c3'),
@@ -118,7 +118,7 @@ Output:
     publication_year: 2005,
     isAvailable: false
   }
-]
+];
 ```
 
 You can update the collection using the `upsert` command which will update a document if it exists, or insert a new document if it does not.
@@ -148,7 +148,7 @@ db.books.find({}).sort({ publication_year: -1 });
 
 The entire collection is returned, sorted by the `publication_year` in descending order:
 
-```json5
+```js
 [
   {
     _id: ObjectId('672ce25eee320eddb90952c3'),
@@ -174,7 +174,7 @@ The entire collection is returned, sorted by the `publication_year` in descendin
     publication_year: 1995,
     isAvailable: true
   }
-]
+];
 ```
 
 As you can see, FerretDB lets you run many commands just as you would with MongoDB.

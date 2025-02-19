@@ -95,11 +95,11 @@ Our tooling will automatically reformat those blocks.
 db.league.find({ club: 'PSG' });
 ```
 
-For MongoDB shell results, use `json5` language and copy&paste the output as-is,
+For MongoDB shell results, use `js` language and copy&paste the output as-is,
 with unquoted field names, single quotes for strings, without trailing commas, etc.
 Our tooling will not reformat those blocks.
 
-```json5
+```js
 [
   {
     _id: ObjectId("63109e9251bcc5e0155db0c2"),

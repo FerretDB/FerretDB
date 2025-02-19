@@ -90,14 +90,14 @@ To sort these documents in ascending order based on the `size` field, you would 
 db.outfits.find().sort({ size: 1 });
 ```
 
-```json5
+```js
 [
   { _id: 5, name: 'slippers' },
   { _id: 3, name: 'boots', size: 8, color: 'black' },
   { _id: 4, name: 'sneakers', size: 8.5, color: 'blue' },
   { _id: 2, name: 'sandals', size: 9, color: null },
   { _id: 1, name: 'flip flops', size: 'M', color: 'blue' }
-]
+];
 ```
 
 The sorted output starts with the `slippers` document, which lacks a `size` field.
@@ -120,14 +120,14 @@ To sort the documents in descending order by the `size` field, you would use a s
 db.outfits.find().sort({ size: -1 });
 ```
 
-```json5
+```js
 [
   { _id: 1, name: 'flip flops', size: 'M', color: 'blue' },
   { _id: 2, name: 'sandals', size: 9, color: null },
   { _id: 4, name: 'sneakers', size: 8.5, color: 'blue' },
   { _id: 3, name: 'boots', size: 8, color: 'black' },
   { _id: 5, name: 'slippers' }
-]
+];
 ```
 
 This time, the output is sorted first by `flip flops` with String `size` field, then by `size` field with Numbers `sandals`, `sneakers` and `boots` and finally `slippers` with a non-existent `size` field.
@@ -149,14 +149,14 @@ The `_id` field value is unique within the collection which ensures that the sor
 db.outfits.find().sort({ color: 1, _id: 1 });
 ```
 
-```json5
+```js
 [
   { _id: 2, name: 'sandals', size: 9, color: null },
   { _id: 5, name: 'slippers' },
   { _id: 3, name: 'boots', size: 8, color: 'black' },
   { _id: 1, name: 'flip flops', size: 'M', color: 'blue' },
   { _id: 4, name: 'sneakers', size: 8.5, color: 'blue' }
-]
+];
 ```
 
 The output shows that the `sandals` document is sorted before `slippers`, despite both having equivalent values in the `color` field.

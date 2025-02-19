@@ -97,17 +97,17 @@ db.cities.find({ population: { $gt: 2000000 } });
 That should retrieve only "Barcelona" as a city with more than the specified population.
 The output will look like this:
 
-```json5
+```js
 [
   {
     _id: ObjectId('67460732d1f590718c455c6f'),
     name: 'Barcelona',
     country: 'Spain',
     population: 5500000,
-    landmarks: [ 'Sagrada Familia', 'Park Güell' ],
+    landmarks: ['Sagrada Familia', 'Park Güell'],
     average_temperature: { winter: 10, summer: 30 }
   }
-]
+];
 ```
 
 Next, update the collection to include an additional landmark for "Kyoto".
@@ -128,14 +128,18 @@ db.cities.updateOne({ name: 'Barcelona' }, { $inc: { population: 200000 } });
 
 Run `db.cities.find()` to see the newly updated collection – the population of "Barcelona" should have increased to "5700000" and "Kyoto" should now have three elements in its "landmarks" array.
 
-```json5
+```js
 [
   {
     _id: ObjectId('67460732d1f590718c455c6e'),
     name: 'Kyoto',
     country: 'Japan',
     population: 1475000,
-    landmarks: [ 'Fushimi Inari-taisha', 'Kinkaku-ji', 'Arashiyama Bamboo Grove' ],
+    landmarks: [
+      'Fushimi Inari-taisha',
+      'Kinkaku-ji',
+      'Arashiyama Bamboo Grove'
+    ],
     average_temperature: { winter: 5, summer: 28 }
   },
   {
@@ -143,10 +147,10 @@ Run `db.cities.find()` to see the newly updated collection – the population of
     name: 'Barcelona',
     country: 'Spain',
     population: 5700000,
-    landmarks: [ 'Sagrada Familia', 'Park Güell' ],
+    landmarks: ['Sagrada Familia', 'Park Güell'],
     average_temperature: { winter: 10, summer: 30 }
   }
-]
+];
 ```
 
 Finally, let's delete a city with an average winter temperature less than or equal to 5 ℃.
@@ -157,17 +161,17 @@ db.cities.deleteMany({ 'average_temperature.winter': { $lte: 5 } });
 
 When you run `db.cities.find()`, it should leave you with a single document – "Barcelona".
 
-```json5
+```js
 [
   {
     _id: ObjectId('67460732d1f590718c455c6f'),
     name: 'Barcelona',
     country: 'Spain',
     population: 5700000,
-    landmarks: [ 'Sagrada Familia', 'Park Güell' ],
+    landmarks: ['Sagrada Familia', 'Park Güell'],
     average_temperature: { winter: 10, summer: 30 }
   }
-]
+];
 ```
 
 If you're interested in seeing how the database looks like in PostgreSQL, ScaleGrid for PostgreSQL provides a `psql` command with the connection string.

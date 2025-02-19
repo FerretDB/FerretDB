@@ -288,7 +288,7 @@ db.weather.updateMany(
 
 Run `db.weather.find()` on the collection to see the updated document:
 
-```json5
+```js
 [
   {
     _id: ObjectId('66f008484f7a5c7f5a1681ed'),
@@ -306,7 +306,7 @@ Run `db.weather.find()` on the collection to see the updated document:
     },
     remarks: 'Possible light rain in the evening.'
   }
-]
+];
 ```
 
 ## View data in Postgres via `psql`

@@ -60,8 +60,8 @@ db.numbers.find({
 
 The output:
 
-```json5
-[{ _id: 2, value: 56, binaryValue: '111000' }]
+```js
+[{ _id: 2, value: 56, binaryValue: '111000' }];
 ```
 
 For the same query above, the bitmask can also be written as a BinData value:
@@ -92,11 +92,11 @@ db.numbers.find({
 
 The output:
 
-```json5
+```js
 [
   { _id: 1, value: 23, binaryValue: '10111' },
   { _id: 4, value: 102, binaryValue: '1100110' }
-]
+];
 ```
 
 See the [$bitsAllClear query operator](#bitsallclear) section for more usage examples.
@@ -119,12 +119,12 @@ db.numbers.find({
 
 The output:
 
-```json5
+```js
 [
   { _id: 2, value: 56, binaryValue: '111000' },
   { _id: 3, value: 67, binaryValue: '1000011' },
   { _id: 4, value: 102, binaryValue: '1100110' }
-]
+];
 ```
 
 See the [$bitsAllClear query operator](#bitsallclear) section for more usage examples.
@@ -147,13 +147,13 @@ db.numbers.find({
 
 The output:
 
-```json5
+```js
 [
   { _id: 1, value: 23, binaryValue: '10111' },
   { _id: 3, value: 67, binaryValue: '1000011' },
   { _id: 4, value: 102, binaryValue: '1100110' },
   { _id: 5, value: 5, binaryValue: '101' }
-]
+];
 ```
 
 See the [$bitsAllClear query operator](#bitsallclear) section for more usage examples.

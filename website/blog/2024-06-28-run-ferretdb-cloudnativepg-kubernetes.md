@@ -298,7 +298,7 @@ db.testCollection.insertMany([
 
 Output:
 
-```json5
+```js
 {
   acknowledged: true,
   insertedIds: {
@@ -317,7 +317,7 @@ db.testCollection.updateOne({ name: 'Alice' }, { $set: { age: 26 } });
 
 Output:
 
-```json5
+```js
 {
   acknowledged: true,
   insertedId: null,
@@ -335,7 +335,7 @@ db.testCollection.deleteMany({ age: { $lt: 35 } });
 
 Output:
 
-```json5
+```js
 { acknowledged: true, deletedCount: 2 }
 ```
 
@@ -347,7 +347,7 @@ db.testCollection.countDocuments();
 
 Output:
 
-```json5
+```js
 1
 ```
 
