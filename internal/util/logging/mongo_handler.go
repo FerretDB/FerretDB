@@ -46,11 +46,11 @@ type mongoHandler struct {
 	out io.Writer
 }
 
-// MongoLog represents a single log message in mongo structured JSON format.
+// MongoLogRecord represents a single log message in mongo structured JSON format.
 // For now it lacks the fields that are not used by any caller.
 //
 //nolint:vet // to preserve field ordering
-type MongoLog struct {
+type MongoLogRecord struct {
 	Timestamp time.Time      `bson:"t"`
 	Severity  string         `bson:"s"`
 	Component string         `bson:"c"`
@@ -62,13 +62,13 @@ type MongoLog struct {
 }
 
 // Marshal returns the mongo structured JSON encoding of log.
-func (log MongoLog) Marshal() ([]byte, error) {
+func (log *MongoLogRecord) Marshal() ([]byte, error) {
 	return bson.MarshalExtJSON(&log, false, false)
 }
 
 // getSeverity maps logging levels to their mongo format counterparts.
 // If provided level is not mapped, its standard format is returned.
-func (h MongoLog) getSeverity(level slog.Level) string {
+func (log *MongoLogRecord) getSeverity(level slog.Level) string {
 	switch level {
 	case slog.LevelDebug:
 		return "D"
@@ -83,16 +83,16 @@ func (h MongoLog) getSeverity(level slog.Level) string {
 	}
 }
 
-// mongoLogFromRecord constructs new MongoLog based on provided slog.Record.
+// mongoLogFromRecord constructs new MongoLogRecord based on provided slog.Record.
 //
 // When called by slog handler, handler's ga, and opts can be provided.
 // If ga, or opts are nil, they're ignored.
-func mongoLogFromRecord(r slog.Record, ga []groupOrAttrs, opts *NewHandlerOpts) *MongoLog {
+func mongoLogFromRecord(r slog.Record, ga []groupOrAttrs, opts *NewHandlerOpts) *MongoLogRecord {
 	if opts == nil {
 		opts = new(NewHandlerOpts)
 	}
 
-	var log MongoLog
+	var log MongoLogRecord
 
 	log.Msg = r.Message
 

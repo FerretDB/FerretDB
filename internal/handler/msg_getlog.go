@@ -161,7 +161,7 @@ func (h *Handler) MsgGetLog(connCtx context.Context, msg *wire.OpMsg) (*wire.OpM
 		log := wirebson.MakeArray(len(startupWarnings))
 
 		for _, line := range startupWarnings {
-			ml := logging.MongoLog{
+			ml := logging.MongoLogRecord{
 				Msg:       line,
 				Tags:      []string{"startupWarnings"},
 				Severity:  "I",
