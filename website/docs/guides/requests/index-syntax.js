@@ -1,23 +1,23 @@
 db.runCommand({
-  createIndexes: "<collectionName>",
+  createIndexes: '<collectionName>',
   indexes: [
     {
-      name: "<indexName>",
+      name: '<indexName>',
       key: {
-        "<path>": "cosmosSearch",
+        '<path>': 'cosmosSearch'
       },
       cosmosSearchOptions: {
-        kind: "<kind>",
-        similarity: "<similarity>",
-        dimensions: "<dimensions>",
+        kind: '<kind>',
+        similarity: '<similarity>',
+        dimensions: '<dimensions>',
 
         // HNSW only
-        m: "<m>",
-        efConstruction: "<efConstruction>",
+        m: '<m>',
+        efConstruction: '<efConstruction>',
 
         // IVF only
-        numLists: "<numLists>",
-      },
-    },
-  ],
-});
+        numLists: '<numLists>'
+      }
+    }
+  ]
+})
