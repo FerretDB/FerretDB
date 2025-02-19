@@ -28,6 +28,7 @@ import (
 	"net/netip"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -331,7 +332,12 @@ func (c *conn) run(ctx context.Context) (err error) {
 			}
 
 			if c.l.Enabled(ctx, diffLogLevel) {
-				c.l.Log(ctx, diffLogLevel, "Header diff:\n"+diffHeader+"\nBody diff:\n"+diffBody)
+				if len(diffBody) > 0 {
+					diffBody = strings.TrimSpace(diffBody)
+					diffBody = "\n" + diffBody
+				}
+
+				c.l.Log(ctx, diffLogLevel, "Header diff:\n"+diffHeader+"\nBody diff:"+diffBody)
 			}
 		}
 
