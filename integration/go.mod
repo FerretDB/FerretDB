@@ -65,5 +65,3 @@ require (
 	google.golang.org/protobuf v1.36.3 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/FerretDB/wire => github.com/FerretDB/wire v0.0.18-0.20250218133358-9d37698b29ab
