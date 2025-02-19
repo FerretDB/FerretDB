@@ -68,8 +68,7 @@ func (h *Handler) MsgDropIndexes(connCtx context.Context, msg *wire.OpMsg) (*wir
 	}
 
 	// this currently fails due to
-	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/306
-	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/643
+	// TODO https://github.com/FerretDB/FerretDB/issues/4730
 	if msg, err = wire.NewOpMsg(res); err != nil {
 		return nil, lazyerrors.Error(err)
 	}

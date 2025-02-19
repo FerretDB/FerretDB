@@ -263,8 +263,8 @@ tasks:
         --listen-data-api-addr=:8899
         --proxy-addr=127.0.0.1:37017
         --postgresql-url='postgres://username:password@127.0.0.1:5432/postgres'
-        --dev-records-dir=tmp/records
         --otel-traces-url=http://127.0.0.1:4318/v1/traces
+        --dev-records-dir=tmp/records
 
   run-secure:
     desc: "Run FerretDB with auth"
@@ -276,10 +276,10 @@ tasks:
         --listen-addr=:27017
         --listen-data-api-addr=:8899
         --proxy-addr=127.0.0.1:47017
-        --repl-set-name=rs0
         --postgresql-url='postgres://username:password@127.0.0.1:5432/postgres'
-        --dev-records-dir=tmp/records
         --otel-traces-url=http://127.0.0.1:4318/v1/traces
+        --dev-repl-set-name=rs0
+        --dev-records-dir=tmp/records
 
   # invoked by FerretDB/github-actions/linters action
   lint:

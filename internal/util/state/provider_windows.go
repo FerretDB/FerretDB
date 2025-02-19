@@ -12,31 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package state
 
-import (
-	"os"
-	"path/filepath"
-	"testing"
-
-	"github.com/stretchr/testify/require"
-	"golang.org/x/tools/go/analysis/analysistest"
-
-	"github.com/FerretDB/FerretDB/v2/tools/github"
-)
-
-func TestCheckCommentIssue(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping in -short mode")
-	}
-
-	t.Parallel()
-
-	path, err := github.CacheFilePath()
-	require.NoError(t, err)
-
-	err = os.MkdirAll(filepath.Dir(path), 0o777)
-	require.NoError(t, err)
-
-	analysistest.Run(t, analysistest.TestData(), analyzer)
+// newProviderDirErr returns the state file access error as is.
+func newProviderDirErr(_ string, err error) error {
+	return err
 }

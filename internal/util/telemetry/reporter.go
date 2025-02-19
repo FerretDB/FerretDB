@@ -22,6 +22,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"path/filepath"
 	"runtime"
 	"time"
 
@@ -83,7 +84,7 @@ type Reporter struct {
 // NewReporterOpts represents reporter options.
 type NewReporterOpts struct {
 	URL            string
-	File           string
+	Dir            string
 	F              *Flag
 	DNT            string
 	ExecName       string
@@ -100,8 +101,8 @@ func NewReporter(opts *NewReporterOpts) (*Reporter, error) {
 		return nil, fmt.Errorf("URL is required")
 	}
 
-	if opts.File == "" {
-		return nil, fmt.Errorf("File is required")
+	if opts.Dir == "" {
+		return nil, fmt.Errorf("dir is required")
 	}
 
 	t, locked, err := initialState(opts.F, opts.DNT, opts.ExecName, opts.P.Get().Telemetry, opts.L)
@@ -322,10 +323,12 @@ func (r *Reporter) writeReport(report *report) {
 		return
 	}
 
-	if err = os.WriteFile(r.File, b, 0o666); err != nil {
-		r.L.Error("Failed to write telemetry report to local file", slog.String("file", r.File), logging.Error(err))
+	file := filepath.Join(r.Dir, "telemetry.json")
+
+	if err = os.WriteFile(file, b, 0o666); err != nil {
+		r.L.Error("Failed to write telemetry report to local file", slog.String("file", file), logging.Error(err))
 		return
 	}
 
-	r.L.Info("Wrote telemetry report to local file", slog.String("file", r.File))
+	r.L.Info("Wrote telemetry report to local file", slog.String("file", file))
 }

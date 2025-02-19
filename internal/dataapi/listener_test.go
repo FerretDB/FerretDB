@@ -256,12 +256,12 @@ func setupDataAPI(tb testing.TB) (addr string, dbName string) {
 	h, err := handler.New(handlerOpts)
 	require.NoError(tb, err)
 
-	listenerOpts := clientconn.NewListenerOpts{
-		Mode:    clientconn.NormalMode,
-		Metrics: connmetrics.NewListenerMetrics(),
+	listenerOpts := clientconn.ListenerOpts{
 		Handler: h,
+		Metrics: connmetrics.NewListenerMetrics(),
 		Logger:  logging.WithName(l, "listener"),
 		TCP:     "127.0.0.1:0",
+		Mode:    clientconn.NormalMode,
 	}
 
 	lis, err := clientconn.Listen(&listenerOpts)

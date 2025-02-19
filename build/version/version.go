@@ -14,7 +14,7 @@
 
 // Package version provides information about FerretDB version and build configuration.
 //
-// # Required files
+// # Extra files
 //
 // The following generated text files may be present in this (`build/version`) directory during building:
 //   - version.txt (required) contains information about the FerretDB version in a format
@@ -147,6 +147,10 @@ func init() {
 	info.BuildEnvironment["go.version"] = buildInfo.GoVersion
 
 	for _, s := range buildInfo.Settings {
+		if v := s.Value; v != "" {
+			info.BuildEnvironment[s.Key] = v
+		}
+
 		switch s.Key {
 		case "vcs.revision":
 			if s.Value != info.Commit {
@@ -163,11 +167,6 @@ func init() {
 
 		case "vcs.modified":
 			info.Dirty = must.NotFail(strconv.ParseBool(s.Value))
-
-		default:
-			if v := s.Value; v != "" {
-				info.BuildEnvironment[s.Key] = v
-			}
 		}
 	}
 }

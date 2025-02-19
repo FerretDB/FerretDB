@@ -33,9 +33,9 @@ You would do the following:
 
    ```sh
    ferretdb --mode=diff-normal \
-         --proxy-addr=<mongodb-URI> \
-         --listen-addr=<ferretdb-listen-address> \
-         --postgresql-url=<postgres_connection>
+     --proxy-addr=<mongodb-URI> \
+     --listen-addr=<ferretdb-listen-address> \
+     --postgresql-url=<postgres-connection>
    ```
 
    The `--listen-addr` flag or the `FERRERDB_LISTEN_ADDR` environment variable is set to `127.0.0.1:27017` by default.
