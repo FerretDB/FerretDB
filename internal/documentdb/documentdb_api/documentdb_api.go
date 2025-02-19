@@ -255,11 +255,24 @@ func DropDatabase(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseN
 // DropIndexes is a wrapper for
 //
 //	documentdb_api.drop_indexes(p_database_name text, p_arg documentdb_core.bson, INOUT retval documentdb_core.bson DEFAULT NULL).
-func DropIndexes(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, arg wirebson.RawDocument, retVal wirebson.RawDocument) (outRetVal wirebson.RawDocument, err error) {
+func DropIndexes(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, arg wirebson.RawDocument) (outRetVal []byte, err error) {
+	// retVal wirebson.RawDocument
+
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.drop_indexes", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "CALL documentdb_api.drop_indexes($1, $2::bytea, $3::bytea)", databaseName, arg, retVal)
+	q := `
+	DO $$
+	DECLARE
+		a ALIAS FOR $1;
+		b ALIAS FOR $2;
+		result INTEGER;
+	BEGIN
+		CALL documentdb_api.drop_indexes(a, b::bytea);
+	END $$
+	`
+
+	row := conn.QueryRow(ctx, q,databaseName, arg)
 	if err = row.Scan(&outRetVal); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.drop_indexes", l)
 	}
