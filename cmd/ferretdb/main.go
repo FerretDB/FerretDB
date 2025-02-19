@@ -22,7 +22,6 @@ import (
 	"log/slog"
 	"math"
 	"os"
-	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
@@ -54,7 +53,8 @@ import (
 // The cli struct represents all command-line commands, fields and flags.
 // It's used for parsing the user input.
 //
-// Keep order in sync with documentation.
+// Keep structure and order in sync with documentation and embeddable package.
+// TODO https://github.com/FerretDB/FerretDB/issues/4746
 var cli struct {
 	// We hide `run` command to show only `ping` in the help message.
 	Run  struct{} `cmd:"" default:"1"                             hidden:""`
@@ -65,13 +65,15 @@ var cli struct {
 	PostgreSQLURL string `name:"postgresql-url" default:"postgres://127.0.0.1:5432/postgres" help:"PostgreSQL URL."`
 
 	Listen struct {
-		Addr        string `default:"127.0.0.1:27017" help:"Listen TCP address for MongoDB protocol."`
-		Unix        string `default:""                help:"Listen Unix domain socket path for MongoDB protocol."`
-		TLS         string `default:""                help:"Listen TLS address for MongoDB protocol."`
-		TLSCertFile string `default:""                help:"TLS cert file path."`
-		TLSKeyFile  string `default:""                help:"TLS key file path."`
-		TLSCaFile   string `default:""                help:"TLS CA file path."`
-		DataAPIAddr string `default:""                help:"Listen TCP address for HTTP Data API."`
+		Addr string `default:"127.0.0.1:27017" help:"Listen TCP address for MongoDB protocol."`
+		Unix string `default:""                help:"Listen Unix domain socket path for MongoDB protocol."`
+
+		TLS         string `default:"" help:"Listen TLS address for MongoDB protocol."`
+		TLSCertFile string `default:"" help:"TLS cert file path."`
+		TLSKeyFile  string `default:"" help:"TLS key file path."`
+		TLSCaFile   string `default:"" help:"TLS CA file path."`
+
+		DataAPIAddr string `default:"" help:"Listen TCP address for HTTP Data API."`
 	} `embed:"" prefix:"listen-"`
 
 	Proxy struct {
@@ -153,7 +155,7 @@ func main() {
 		run()
 
 	case "ping":
-		logger := setupLogger(cli.Log.Format, "")
+		logger := setupDefaultLogger(cli.Log.Format, "")
 		checkFlags(logger)
 
 		ready := ReadyZ{
@@ -181,26 +183,6 @@ func defaultLogLevel() slog.Level {
 	return slog.LevelInfo
 }
 
-// setupState setups state provider.
-func setupState() *state.Provider {
-	// it wasn't required by v1
-	if cmp.Or(cli.StateDir, "-") == "-" {
-		log.Fatal("State directory must be set.")
-	}
-
-	f, err := filepath.Abs(filepath.Join(cli.StateDir, "state.json"))
-	if err != nil {
-		log.Fatalf("Failed to get path for state file: %s.", err)
-	}
-
-	sp, err := state.NewProvider(f)
-	if err != nil {
-		log.Fatal(stateFileProblem(f, err))
-	}
-
-	return sp
-}
-
 // setupMetrics setups Prometheus metrics registerer with some metrics.
 func setupMetrics(stateProvider *state.Provider) prometheus.Registerer {
 	r := prometheus.DefaultRegisterer
@@ -221,8 +203,8 @@ func setupMetrics(stateProvider *state.Provider) prometheus.Registerer {
 	return r
 }
 
-// setupLogger setups slog logger.
-func setupLogger(format string, uuid string) *slog.Logger {
+// setupDefaultLogger setups slog logging.
+func setupDefaultLogger(format string, uuid string) *slog.Logger {
 	var level slog.Level
 	if err := level.UnmarshalText([]byte(cli.Log.Level)); err != nil {
 		log.Fatal(err)
@@ -234,9 +216,8 @@ func setupLogger(format string, uuid string) *slog.Logger {
 		CheckMessages: false, // TODO https://github.com/FerretDB/FerretDB/issues/4511
 	}
 	logging.SetupDefault(opts, uuid)
-	logger := slog.Default()
 
-	return logger
+	return slog.Default()
 }
 
 // checkFlags checks that CLI flags are not self-contradictory.
@@ -244,15 +225,15 @@ func checkFlags(logger *slog.Logger) {
 	ctx := context.Background()
 
 	if devbuild.Enabled {
-		logger.WarnContext(ctx, "This is a development build. The performance will be affected.")
+		logger.WarnContext(ctx, "This is a development build; the performance will be affected")
 	}
 
 	if logger.Enabled(ctx, slog.LevelDebug) {
-		logger.WarnContext(ctx, "Debug logging enabled. The performance will be affected.")
+		logger.WarnContext(ctx, "Debug logging is enabled; the performance will be affected")
 	}
 
 	if !cli.Auth {
-		logger.WarnContext(ctx, "Authentication is disabled. The server will accept any connection.")
+		logger.WarnContext(ctx, "Authentication is disabled; the server will accept any connection")
 	}
 }
 
@@ -296,7 +277,10 @@ func run() {
 	// safe to always enable
 	runtime.SetBlockProfileRate(10000)
 
-	stateProvider := setupState()
+	stateProvider, err := state.NewProviderDir(cli.StateDir)
+	if err != nil {
+		log.Fatalf("Failed to setup state provider: %s", err)
+	}
 
 	metricsRegisterer := setupMetrics(stateProvider)
 
@@ -317,9 +301,9 @@ func run() {
 		logUUID = ""
 	}
 
-	logger := setupLogger(cli.Log.Format, logUUID)
+	logger := setupDefaultLogger(cli.Log.Format, logUUID)
 
-	logger.LogAttrs(context.Background(), slog.LevelInfo, "Starting FerretDB "+info.Version+"...", startupFields...)
+	logger.LogAttrs(context.Background(), slog.LevelInfo, "Starting FerretDB "+info.Version, startupFields...)
 
 	checkFlags(logger)
 
@@ -332,7 +316,7 @@ func run() {
 			logger.Info(fmt.Sprintf(format, a...))
 		}),
 	}
-	if _, err := maxprocs.Set(maxprocsOpts...); err != nil {
+	if _, err = maxprocs.Set(maxprocsOpts...); err != nil {
 		logger.Warn("Failed to set GOMAXPROCS", logging.Error(err))
 	}
 
@@ -362,7 +346,7 @@ func run() {
 				l: l,
 			}
 
-			h, err := debug.Listen(&debug.ListenOpts{
+			h, e := debug.Listen(&debug.ListenOpts{
 				TCPAddr: cli.DebugAddr,
 				L:       l,
 				R:       metricsRegisterer,
@@ -376,8 +360,8 @@ func run() {
 
 				Readyz: ready.Probe,
 			})
-			if err != nil {
-				l.LogAttrs(ctx, logging.LevelFatal, "Failed to create debug handler", logging.Error(err))
+			if e != nil {
+				l.LogAttrs(ctx, logging.LevelFatal, "Failed to create debug handler", logging.Error(e))
 			}
 
 			h.Serve(ctx)
@@ -392,14 +376,14 @@ func run() {
 
 			l := logging.WithName(logger, "otel")
 
-			ot, err := observability.NewOTelTraceExporter(&observability.OTelTraceExporterOpts{
+			ot, e := observability.NewOTelTraceExporter(&observability.OTelTraceExporterOpts{
 				Logger:  l,
 				Service: "ferretdb",
 				Version: version.Get().Version,
 				URL:     cli.OTel.Traces.URL,
 			})
-			if err != nil {
-				l.LogAttrs(ctx, logging.LevelFatal, "Failed to create Otel tracer", logging.Error(err))
+			if e != nil {
+				l.LogAttrs(ctx, logging.LevelFatal, "Failed to create Otel tracer", logging.Error(e))
 			}
 
 			ot.Run(ctx)
@@ -416,14 +400,9 @@ func run() {
 
 			l := logging.WithName(logger, "telemetry")
 
-			file, err := filepath.Abs(filepath.Join(cli.StateDir, "telemetry.json"))
-			if err != nil {
-				l.LogAttrs(ctx, logging.LevelFatal, "Failed to get path for local telemetry report file", logging.Error(err))
-			}
-
-			r, err := telemetry.NewReporter(&telemetry.NewReporterOpts{
+			r, e := telemetry.NewReporter(&telemetry.NewReporterOpts{
 				URL:            cli.Dev.Telemetry.URL,
-				File:           file,
+				Dir:            cli.StateDir,
 				F:              &cli.Telemetry,
 				DNT:            os.Getenv("DO_NOT_TRACK"),
 				ExecName:       os.Args[0],
@@ -433,8 +412,8 @@ func run() {
 				UndecidedDelay: cli.Dev.Telemetry.UndecidedDelay,
 				ReportInterval: cli.Dev.Telemetry.ReportInterval,
 			})
-			if err != nil {
-				l.LogAttrs(ctx, logging.LevelFatal, "Failed to create telemetry reporter", logging.Error(err))
+			if e != nil {
+				l.LogAttrs(ctx, logging.LevelFatal, "Failed to create telemetry reporter", logging.Error(e))
 			}
 
 			r.Run(ctx)
@@ -513,15 +492,13 @@ func run() {
 
 			l := logging.WithName(logger, "dataapi")
 
-			var lis *dataapi.Listener
-
-			lis, err = dataapi.Listen(&dataapi.ListenOpts{
+			lis, e := dataapi.Listen(&dataapi.ListenOpts{
 				TCPAddr: cli.Listen.DataAPIAddr,
 				L:       l,
 				Handler: h,
 			})
-			if err != nil {
-				l.LogAttrs(ctx, logging.LevelFatal, "Failed to construct DataAPI listener", logging.Error(err))
+			if e != nil {
+				l.LogAttrs(ctx, logging.LevelFatal, "Failed to construct DataAPI listener", logging.Error(e))
 			}
 
 			lis.Run(ctx)

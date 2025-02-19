@@ -16,6 +16,7 @@
 package logging
 
 import (
+	"io"
 	"log/slog"
 	"os"
 
@@ -59,16 +60,23 @@ type LazyString func() string
 // LogValue implements [slog.LogValuer].
 func (ls LazyString) LogValue() slog.Value { return slog.StringValue(ls()) }
 
-// SetupDefault initializes global slog logging with given options and UUID.
-func SetupDefault(opts *NewHandlerOpts, uuid string) {
+// Logger creates a new slog handler and logger with the given output, options and UUID.
+func Logger(out io.Writer, opts *NewHandlerOpts, uuid string) *slog.Logger {
 	must.NotBeZero(opts)
 
-	h := NewHandler(os.Stderr, opts)
+	h := NewHandler(out, opts)
 
 	l := slog.New(h)
 	if uuid != "" {
 		l = l.With(slog.String("uuid", uuid))
 	}
+
+	return l
+}
+
+// SetupDefault initializes global slog logging with given options and UUID.
+func SetupDefault(opts *NewHandlerOpts, uuid string) {
+	l := Logger(os.Stderr, opts, uuid)
 
 	slog.SetDefault(l)
 	slog.SetLogLoggerLevel(slog.LevelInfo + 2)

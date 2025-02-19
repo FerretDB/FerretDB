@@ -98,7 +98,7 @@ func Listen(opts *ListenerOpts) (l *Listener, err error) {
 			return
 		}
 
-		ll.InfoContext(ctx, fmt.Sprintf("Listening on TCP %s...", l.TCPAddr()))
+		ll.InfoContext(ctx, fmt.Sprintf("Listening on TCP %s", l.TCPAddr()))
 	}
 
 	if l.Unix != "" {
@@ -107,7 +107,7 @@ func Listen(opts *ListenerOpts) (l *Listener, err error) {
 			return
 		}
 
-		ll.InfoContext(ctx, fmt.Sprintf("Listening on Unix %s...", l.UnixAddr()))
+		ll.InfoContext(ctx, fmt.Sprintf("Listening on Unix %s", l.UnixAddr()))
 	}
 
 	if l.TLS != "" {
@@ -123,7 +123,7 @@ func Listen(opts *ListenerOpts) (l *Listener, err error) {
 			return
 		}
 
-		ll.InfoContext(ctx, fmt.Sprintf("Listening on TLS %s...", l.TLSAddr()))
+		ll.InfoContext(ctx, fmt.Sprintf("Listening on TLS %s", l.TLSAddr()))
 	}
 
 	return
