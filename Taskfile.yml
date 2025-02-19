@@ -709,10 +709,10 @@ tasks:
     cmds:
       # .js files are also used for mongosh output snippets
       # (with added `response = ` to make them valid JavaScript).
-      # Their formatting (quotes, colons, semicolons) should not be modified, except whitespace.
+      # The formatting of quotes, commas and semicolons should not be modified.
       # Flags are set to ensure that.
       - >
-        docker compose run --rm prettier --write --no-semi --single-quote --trailing-comma none
+        docker compose run --rm prettier --write --single-quote --trailing-comma none --no-semi
         --print-width 120 "**/*.js"
 
       # Use different rules for that one file to avoid merge conflicts with old test script PRs.
@@ -744,10 +744,9 @@ tasks:
       # Ensure that the code is valid and can be parsed by changing formatting manually
       # and running this task again, checking that formatting changes.
       #
-      # --print-width 120
-      # TODO https://github.com/FerretDB/FerretDB/issues/4636
+      # TODO --print-width 120 (https://github.com/FerretDB/FerretDB/issues/4636)
       - >
-        docker compose run --rm prettier --write --no-semi --single-quote --trailing-comma none
+        docker compose run --rm prettier --write --single-quote --trailing-comma none --no-semi
         --parser markdown "**/*.md" "**/*.mdx"
 
       - >
