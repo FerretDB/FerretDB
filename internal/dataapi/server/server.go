@@ -165,7 +165,8 @@ func (s *Server) writeJsonResponse(ctx context.Context, w http.ResponseWriter, r
 		resWriter = io.MultiWriter(w, buf)
 
 		defer func() {
-			l.DebugContext(ctx, fmt.Sprintf("Results:\n`%s`", buf.String()))
+			// TODO
+			l.DebugContext(ctx, fmt.Sprintf("Results:\n%s", buf.String()))
 		}()
 	}
 

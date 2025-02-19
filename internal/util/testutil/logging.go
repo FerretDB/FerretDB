@@ -46,10 +46,9 @@ func Logger(tb testing.TB) *slog.Logger {
 // LevelLogger returns a slog test logger for the given level (which might be dynamic).
 func LevelLogger(tb testing.TB, level slog.Leveler) *slog.Logger {
 	h := logging.NewHandler(&logWriter{tb: tb}, &logging.NewHandlerOpts{
-		Base:       "console",
-		Level:      level,
-		RemoveTime: true,
-		// TODO both LevelLogger and Logger are used by our functions, provided to listeners or to places where we control the output
+		Base:          "console",
+		Level:         level,
+		RemoveTime:    true,
 		CheckMessages: true,
 	})
 

@@ -51,8 +51,8 @@ func Startup() {
 		Level:       slog.LevelDebug,
 		RemoveTime:  true,
 		RemoveLevel: true,
-		// TODO this logger is set to be default, so it is used by testing package, therefore, we don't validate messages.
-		CheckMessages: false, // TODO https://github.com/FerretDB/FerretDB/issues/4511
+		// we don't control the logs produced by imported packages
+		CheckMessages: false,
 	}
 	logging.SetupDefault(opts, "")
 	l := slog.Default()
