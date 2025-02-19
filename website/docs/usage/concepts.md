@@ -54,8 +54,8 @@ Dot notations `(.)` are used to reference a field in an embedded document or its
 
 Dot notations can be used to specify or query an array by concatenating a dot `(.)` with the index position of the field.
 
-```js
-'array_name.index';
+```text
+array_name.index
 ```
 
 :::note
@@ -64,11 +64,11 @@ When using dot notations, the field name of the array and the specified value mu
 
 For example, let's take the following array field in a document:
 
-```js
-animals: ['dog', 'cat', 'fish', 'fox'];
+```text
+animals: ['dog', 'cat', 'fish', 'fox']
 ```
 
-To reference the fourth field in the array, use the dot notation `"animals.3"`.
+To reference the fourth field in the array, use the dot notation `animals.3`.
 
 Here are more examples of dot notations on arrays:
 
@@ -79,8 +79,8 @@ Here are more examples of dot notations on arrays:
 
 To reference or query a field in an embedded document, concatenate the name of the embedded document and the field name using the dot notation.
 
-```js
-'embedded_document_name.field';
+```text
+embedded_document_name.field
 ```
 
 Take the following document, for example:
@@ -101,7 +101,7 @@ Take the following document, for example:
 }
 ```
 
-To reference the `city` field in the embedded document, use the dot notation `"contact.address.city"`.
+To reference the `city` field in the embedded document, use the dot notation `contact.address.city`.
 
 For dot notation examples on embedded documents, see here:
 

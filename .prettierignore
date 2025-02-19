@@ -6,3 +6,4 @@ internal/dataapi/api/openapi.json
 website/static/codapi/snippet.js
 website/src/components/HomepageFeatures/index.js
 website/babel.config.js
+website/versioned_docs/**
