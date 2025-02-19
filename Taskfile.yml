@@ -707,16 +707,15 @@ tasks:
   fmt-js:
     desc: "Format JS files"
     cmds:
+      - docker compose run --rm prettier --write --print-width 120 "**/*.js"
+
       # .js files are also used for mongosh output snippets
       # (with added `response = ` to make them valid JavaScript).
       # The formatting of quotes, commas and semicolons should not be modified.
       # Flags are set to ensure that.
       - >
         docker compose run --rm prettier --write --single-quote --trailing-comma none --no-semi
-        --print-width 120 "**/*.js"
-
-      # Use different rules for that one file to avoid merge conflicts with old test script PRs.
-      - docker compose run --rm prettier --write --print-width 120 build/legacy-mongo-shell/test.js
+        --print-width 120 "website/*docs/**/*.js"
 
   fmt-json:
     desc: "Format JSON files"
@@ -738,7 +737,7 @@ tasks:
         docker compose run --rm textlint --fix --config build/.textlintrc --ignore-path .prettierignore
         "**/*.md" "**/*.mdx" ".github/**/*.md"
 
-      # Use the same flags as in fmt-js above.
+      # Use the same flags as in fmt-js for mongosh snippets above.
       #
       # Note that embedded code snippets in ``` Markdown blocks are not reformatted if they can't be parsed.
       # Ensure that the code is valid and can be parsed by changing formatting manually
