@@ -721,9 +721,7 @@ tasks:
   fmt-json:
     desc: "Format JSON files"
     cmds:
-      - >
-        docker compose run --rm prettier --write
-        --print-width 120 "**/*.json"
+      - docker compose run --rm prettier --write --print-width 120 "**/*.json"
 
   fmt-yaml:
     desc: "Format YAML files"
@@ -731,7 +729,6 @@ tasks:
       - docker compose run --rm prettier --write --print-width 120 "**/*.yml"
 
   # See https://github.com/DavidAnson/markdownlint-cli2#command-line for the reason we use double quotes in command.
-  # Prettier flags are set like in fmt-js above.
   fmt-docs:
     desc: "Format and lint documentation"
     deps: [fmt-js, fmt-json, fmt-yaml]
@@ -741,6 +738,8 @@ tasks:
         docker compose run --rm textlint --fix --config build/.textlintrc --ignore-path .prettierignore
         "**/*.md" "**/*.mdx" ".github/**/*.md"
 
+      # Use the same flags as in fmt-js above.
+      #
       # Note that embedded code snippets in ``` Markdown blocks are not reformatted if they can't be parsed.
       # Ensure that the code is valid and can be parsed by changing formatting manually
       # and running this task again, checking that formatting changes.
