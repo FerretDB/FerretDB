@@ -704,15 +704,19 @@ tasks:
       PACKAGE_VERSION:
         sh: bin/envtool{{exeExt}} package-version
 
-  # .js files are also used for mongosh output snippets (with added `response = ` to make it valid JavaScript).
-  # Their formatting (quotes, colons, semicolons) should not be modified, except whitespace.
-  # Flags are set to ensure that.
   fmt-js:
     desc: "Format JS files"
     cmds:
+      # .js files are also used for mongosh output snippets
+      # (with added `response = ` to make them valid JavaScript).
+      # Their formatting (quotes, colons, semicolons) should not be modified, except whitespace.
+      # Flags are set to ensure that.
       - >
         docker compose run --rm prettier --write --no-semi --single-quote --trailing-comma none
         --print-width 120 "**/*.js"
+
+      # Use different rules for that one file to avoid merge conflicts with old test script PRs.
+      - docker compose run --rm prettier --write --print-width 120 build/legacy-mongo-shell/test.js
 
   fmt-json:
     desc: "Format JSON files"
@@ -737,11 +741,16 @@ tasks:
         docker compose run --rm textlint --fix --config build/.textlintrc --ignore-path .prettierignore
         "**/*.md" "**/*.mdx" ".github/**/*.md"
 
+      # Note that embedded code snippets in ``` Markdown blocks are not reformatted if they can't be parsed.
+      # Ensure that the code is valid and can be parsed by changing formatting manually
+      # and running this task again, checking that formatting changes.
+      #
       # --print-width 120
       # TODO https://github.com/FerretDB/FerretDB/issues/4636
       - >
         docker compose run --rm prettier --write --no-semi --single-quote --trailing-comma none
         --parser markdown "**/*.md" "**/*.mdx"
+
       - >
         docker compose run --rm markdownlint --config "build/.markdownlint.yml"
         "**/*.md" "**/*.mdx" "#build/postgres-documentdb/documentdb/"
