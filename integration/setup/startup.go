@@ -54,7 +54,7 @@ func Startup() {
 		// TODO this logger is set to be default, so it is used by testing package, therefore, we don't validate messages.
 		CheckMessages: false, // TODO https://github.com/FerretDB/FerretDB/issues/4511
 	}
-	logging.Setup(opts, "")
+	logging.SetupDefault(opts, "")
 	l := slog.Default()
 
 	ctx := context.Background()

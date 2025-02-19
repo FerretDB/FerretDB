@@ -40,7 +40,7 @@ func main() {
 		opts.Level = slog.LevelDebug
 	}
 
-	logging.Setup(opts, "")
+	logging.SetupDefault(opts, "")
 
 	l := slog.Default()
 	ctx := context.Background()

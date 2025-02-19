@@ -29,7 +29,7 @@ linters-settings:
     sections:
       - standard
       - default
-      - prefix(github.com/FerretDB/FerretDB/v2)
+      - prefix(github.com/FerretDB/FerretDB/v2/)
       - prefix(github.com/FerretDB/FerretDB/v2/integration)
   goconst:
     min-occurrences: 5
