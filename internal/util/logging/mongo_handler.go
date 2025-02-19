@@ -111,8 +111,7 @@ func mongoLogFromRecord(r slog.Record, ga []groupOrAttrs, opts *NewHandlerOpts) 
 		}
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/4431
-	log.Attr, log.Component = attrs(r, ga)
+	log.Attr = attrs(r, ga)
 
 	return &log
 }

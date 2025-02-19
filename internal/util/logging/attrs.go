@@ -28,11 +28,8 @@ type groupOrAttrs struct {
 // attrs returns record attributes, as well as handler attributes from goas in map.
 // Attributes with duplicate keys are overwritten, and the order of keys is ignored.
 //
-// If goas contains `name` attribute, the last one in the slice is validated to be string,
-// and returned to be used as logger name. The returned name is not present in returned map.
-// If `name` attribute is not a string, it's treated as any other attribute and placed in map.
-// TODO https://github.com/FerretDB/FerretDB/issues/4431
-func attrs(r slog.Record, goas []groupOrAttrs) (map[string]any, string) {
+// TODO https://github.com/FerretDB/FerretDB/issues/4347
+func attrs(r slog.Record, goas []groupOrAttrs) map[string]any {
 	m := make(map[string]any, r.NumAttrs())
 
 	r.Attrs(func(attr slog.Attr) bool {
@@ -51,8 +48,6 @@ func attrs(r slog.Record, goas []groupOrAttrs) (map[string]any, string) {
 		return true
 	})
 
-	var name string
-
 	for _, goa := range slices.Backward(goas) {
 		if goa.group != "" && len(m) > 0 {
 			m = map[string]any{goa.group: m}
@@ -60,18 +55,11 @@ func attrs(r slog.Record, goas []groupOrAttrs) (map[string]any, string) {
 		}
 
 		for _, attr := range goa.attrs {
-			if attr.Key == nameKey && name == "" {
-				if v, ok := attr.Value.Any().(string); ok {
-					name = v
-					continue
-				}
-			}
-
 			m[attr.Key] = resolve(attr.Value)
 		}
 	}
 
-	return m, name
+	return m
 }
 
 // resolve returns underlying attribute value, or a map for [slog.KindGroup] type.
