@@ -1237,10 +1237,12 @@ func TestCollStatsCommandCount(tt *testing.T) {
 	AssertEqualDocuments(t, expectedComparable, actualComparable)
 }
 
-func TestCollStatsCommandScaleSize(t *testing.T) {
-	t.Parallel()
+func TestCollStatsCommandScaleSize(tt *testing.T) {
+	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/4792")
 
-	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
+	tt.Parallel()
+
+	ctx, collection := setup.Setup(tt, shareddata.DocumentsStrings)
 
 	indexName := "custom-name"
 	resIndexName, err := collection.Indexes().CreateOne(ctx, mongo.IndexModel{
