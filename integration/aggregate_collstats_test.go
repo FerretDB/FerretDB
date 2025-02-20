@@ -223,7 +223,7 @@ func TestAggregateCommandCollStats(tt *testing.T) {
 							statsComparable = append(statsComparable, bson.E{Key: stat.Key, Value: int32(0)})
 
 						case "size":
-							// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/556
+							// TODO https://github.com/FerretDB/FerretDB/issues/4792
 							size, ok := stat.Value.(int32)
 							require.True(t, ok)
 
@@ -236,7 +236,7 @@ func TestAggregateCommandCollStats(tt *testing.T) {
 							statsComparable = append(statsComparable, bson.E{Key: stat.Key, Value: int32(0)})
 
 						case "count", "avgObjSize", "storageSize", "nindexes", "totalIndexSize", "totalSize":
-							// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/556
+							// TODO https://github.com/FerretDB/FerretDB/issues/4792
 							val, ok := stat.Value.(int32)
 							require.True(t, ok)
 
@@ -485,7 +485,7 @@ func TestAggregateCommandCollStatsIndexSizes(tt *testing.T) {
 			for _, stat := range storageStats {
 				switch stat.Key {
 				case "size", "storageSize", "freeStorageSize", "totalIndexSize", "totalSize":
-					// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/556
+					// TODO https://github.com/FerretDB/FerretDB/issues/4792
 					sizeNoScale, ok := stat.Value.(int32)
 					require.True(t, ok)
 
@@ -495,7 +495,7 @@ func TestAggregateCommandCollStatsIndexSizes(tt *testing.T) {
 					var indexSizesComparable bson.D
 
 					for _, indexSizeNoScale := range stat.Value.(bson.D) {
-						// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/556
+						// TODO https://github.com/FerretDB/FerretDB/issues/4792
 						sizeNoScale, ok := indexSizeNoScale.Value.(int32)
 						require.True(t, ok)
 

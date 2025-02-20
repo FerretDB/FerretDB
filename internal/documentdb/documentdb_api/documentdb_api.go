@@ -350,6 +350,20 @@ func ListCollectionsCursorFirstPage(ctx context.Context, conn *pgx.Conn, l *slog
 	return
 }
 
+// ListDatabases is a wrapper for
+//
+//	documentdb_api.list_databases(p_list_databases_spec documentdb_core.bson, OUT list_databases documentdb_core.bson).
+func ListDatabases(ctx context.Context, conn *pgx.Conn, l *slog.Logger, listDatabasesSpec wirebson.RawDocument) (outListDatabases wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.list_databases", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT list_databases::bytea FROM documentdb_api.list_databases($1::bytea)", listDatabasesSpec)
+	if err = row.Scan(&outListDatabases); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api.list_databases", l)
+	}
+	return
+}
+
 // ListIndexesCursorFirstPage is a wrapper for
 //
 //	documentdb_api.list_indexes_cursor_first_page(database text, commandspec documentdb_core.bson, cursorid bigint DEFAULT 0, OUT cursorpage documentdb_core.bson, OUT continuation documentdb_core.bson, OUT persistconnection boolean, OUT cursorid bigint).
