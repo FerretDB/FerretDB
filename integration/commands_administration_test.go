@@ -1335,8 +1335,8 @@ func TestCollStatsCommandScaleSize(tt *testing.T) {
 
 				for _, fieldName := range v {
 					var size int32
-					size, ok = field.Value.(int32)
-					require.True(t, ok, "%[1]v %[1]T", field.Value)
+					size, ok = fieldName.Value.(int32)
+					require.True(t, ok, "%[1]v %[1]T", fieldName.Value)
 
 					scaledSize := size / scale
 
