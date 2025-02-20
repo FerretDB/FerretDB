@@ -168,7 +168,7 @@ func (h *Handler) MsgGetLog(connCtx context.Context, msg *wire.OpMsg) (*wire.OpM
 				Severity:  "I",
 				Component: "STORAGE",
 				ID:        42000,
-				Ctx:       "initandListen",
+				Ctx:       "initandlisten",
 				Timestamp: time.Now(),
 			}
 
