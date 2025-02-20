@@ -709,6 +709,14 @@ tasks:
     cmds:
       - docker compose run --rm prettier --write --print-width 120 "**/*.js"
 
+      # .js files are also used for mongosh output snippets
+      # (with added `response = ` to make them valid JavaScript).
+      # The formatting of quotes, commas and semicolons should not be modified.
+      # Flags are set to ensure that.
+      - >
+        docker compose run --rm prettier --write --single-quote --trailing-comma none --no-semi
+        --print-width 120 "website/*docs/**/*.js"
+
   fmt-json:
     desc: "Format JSON files"
     cmds:
@@ -719,7 +727,7 @@ tasks:
     cmds:
       - docker compose run --rm prettier --write --print-width 120 "**/*.yml"
 
-  # see https://github.com/DavidAnson/markdownlint-cli2#command-line for the reason we use double-quotes
+  # See https://github.com/DavidAnson/markdownlint-cli2#command-line for the reason we use double quotes in command.
   fmt-docs:
     desc: "Format and lint documentation"
     deps: [fmt-js, fmt-json, fmt-yaml]
@@ -728,9 +736,18 @@ tasks:
       - >
         docker compose run --rm textlint --fix --config build/.textlintrc --ignore-path .prettierignore
         "**/*.md" "**/*.mdx" ".github/**/*.md"
+
+      # Use the same flags as in fmt-js for mongosh snippets above.
+      #
+      # Note that embedded code snippets in ``` Markdown blocks are not reformatted if they can't be parsed.
+      # Ensure that the code is valid and can be parsed by changing formatting manually
+      # and running this task again, checking that formatting changes.
+      #
+      # TODO --print-width 120 (https://github.com/FerretDB/FerretDB/issues/4636)
       - >
-        docker compose run --rm prettier --write --parser markdown --no-semi --single-quote --trailing-comma none
-        "**/*.md" "**/*.mdx"
+        docker compose run --rm prettier --write --single-quote --trailing-comma none --no-semi
+        --parser markdown "**/*.md" "**/*.mdx"
+
       - >
         docker compose run --rm markdownlint --config "build/.markdownlint.yml"
         "**/*.md" "**/*.mdx" "#build/postgres-documentdb/documentdb/"

@@ -142,10 +142,10 @@ db.employees.find({ catalog: 'printer' })
 
 The response displays all the retrieved documents:
 
-```json5
-[
+```js
+response = [
   {
-    _id: ObjectId("636b39f80466c61a229bbf9b"),
+    _id: ObjectId('67b599aa0fc3d0818d3b9274'),
     name: { first: 'Earl', last: 'Thomas' },
     employeeID: 1234,
     age: 23,
@@ -153,7 +153,7 @@ The response displays all the retrieved documents:
     catalog: ['printer', 'cardboard', 'crayons', 'books']
   },
   {
-    _id: ObjectId("636b3b0e0466c61a229bbf9d"),
+    _id: ObjectId('67b599aa0fc3d0818d3b9276'),
     name: { first: 'Clarke', last: 'Dane' },
     employeeID: 3234,
     age: 21,
