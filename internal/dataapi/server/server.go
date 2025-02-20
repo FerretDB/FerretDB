@@ -23,7 +23,6 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
-	"net/http/httputil"
 	"strings"
 
 	"github.com/FerretDB/wire"
@@ -172,13 +171,6 @@ func (s *Server) writeJsonResponse(ctx context.Context, w http.ResponseWriter, r
 
 	if err = marshalJSON(resRaw, resWriter); err != nil {
 		l.ErrorContext(ctx, "marshalJSON failed", logging.Error(err))
-	}
-}
-
-// logRequest logs a dump of provided *http.Request on debug level.
-func (s *Server) logRequest(ctx context.Context, r *http.Request) {
-	if s.l.Enabled(ctx, slog.LevelDebug) {
-		s.l.DebugContext(ctx, fmt.Sprintf("Request:\n%s", must.NotFail(httputil.DumpRequest(r, true))))
 	}
 }
 

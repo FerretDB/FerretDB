@@ -15,7 +15,10 @@
 package server
 
 import (
+	"fmt"
+	"log/slog"
 	"net/http"
+	"net/http/httputil"
 
 	"github.com/FerretDB/wire/wirebson"
 
@@ -28,7 +31,9 @@ import (
 func (s *Server) UpdateOne(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	s.logRequest(ctx, r)
+	if s.l.Enabled(ctx, slog.LevelDebug) {
+		s.l.DebugContext(ctx, fmt.Sprintf("Request:\n%s", must.NotFail(httputil.DumpRequest(r, true))))
+	}
 
 	var req api.UpdateRequestBody
 	if err := decodeJsonRequest(r, &req); err != nil {
