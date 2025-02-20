@@ -48,11 +48,9 @@ type Config struct {
 	// PostgreSQL URL. Required.
 	PostgreSQLURL string
 
-	Listen struct {
-		// Listen TCP address for MongoDB protocol.
-		// If empty, TCP listener is disabled.
-		Addr string
-	}
+	// Listen TCP address for MongoDB protocol.
+	// If empty, TCP listener is disabled.
+	ListenAddr string
 
 	// State directory. Required.
 	StateDir string
@@ -136,7 +134,7 @@ func New(config *Config) (*FerretDB, error) {
 		Metrics: metrics,
 		Logger:  logger,
 
-		TCP: config.Listen.Addr,
+		TCP: config.ListenAddr,
 
 		Mode: clientconn.NormalMode,
 	})
