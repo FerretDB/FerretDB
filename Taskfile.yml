@@ -730,7 +730,7 @@ tasks:
   # See https://github.com/DavidAnson/markdownlint-cli2#command-line for the reason we use double quotes in command.
   fmt-docs:
     desc: "Format and lint documentation"
-    deps: [fmt-js, fmt-json, fmt-yaml]
+    deps: [gen-version, fmt-js, fmt-json, fmt-yaml]
     run: once
     cmds:
       - >
