@@ -115,7 +115,7 @@ func newPgxPoolCheckConn(ctx context.Context, conn *pgx.Conn, l *slog.Logger, sp
 
 	row := conn.QueryRow(ctx, `SELECT version(), documentdb_api.binary_extended_version()`)
 	if err := row.Scan(&postgresqlVersion, &documentdbVersion); err != nil {
-		return lazyerrors.Error(err)
+		return lazyerrors.Errorf("%w (please check DocumentDB installation)", err)
 	}
 
 	if s := sp.Get(); s.PostgreSQLVersion != postgresqlVersion || s.DocumentDBVersion != documentdbVersion {
