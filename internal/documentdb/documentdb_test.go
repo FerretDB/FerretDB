@@ -49,10 +49,6 @@ func testPool(t testing.TB, ctx context.Context, uri string, sp *state.Provider)
 }
 
 func TestNewPool(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping in -short mode")
-	}
-
 	t.Parallel()
 
 	ctx := testutil.Ctx(t)
@@ -61,9 +57,9 @@ func TestNewPool(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("Normal", func(t *testing.T) {
-		t.Parallel()
+		uri := testutil.PostgreSQLURI(t)
 
-		const uri = "postgres://username:password@127.0.0.1:5432/postgres"
+		t.Parallel()
 
 		newErr, pingErr := testPool(t, ctx, uri, sp)
 		assert.NoError(t, newErr)
@@ -85,9 +81,7 @@ func TestNewPool(t *testing.T) {
 }
 
 func TestError(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping in -short mode")
-	}
+	uri := testutil.PostgreSQLURI(t)
 
 	t.Parallel()
 
@@ -95,8 +89,6 @@ func TestError(t *testing.T) {
 
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
-
-	const uri = "postgres://username:password@127.0.0.1:5432/postgres"
 
 	l := testutil.Logger(t)
 
