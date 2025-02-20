@@ -53,7 +53,7 @@ type mongoHandler struct {
 type MongoLogRecord struct {
 	Timestamp time.Time      `bson:"t"`
 	Severity  string         `bson:"s"`
-	Component string         `bson:"c"`
+	Component string         `bson:"c"` // TODO https://github.com/FerretDB/FerretDB/issues/4431
 	ID        int            `bson:"id,omitempty"`
 	Ctx       string         `bson:"ctx"`
 	Msg       string         `bson:"msg"`
