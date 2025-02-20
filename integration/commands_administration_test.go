@@ -930,7 +930,7 @@ func TestBuildInfoCommand(t *testing.T) {
 
 func TestCollStatsCommandEmpty(tt *testing.T) {
 	tt.Parallel()
-	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/556")
+	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/4792")
 	ctx, collection := setup.Setup(tt)
 
 	var actual bson.D
@@ -1046,17 +1046,17 @@ func TestCollStatsCommandScale(t *testing.T) {
 		"scaleOne": {
 			scale:            int32(1),
 			scaleFactor:      int32(1),
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/556",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/4792",
 		},
 		"scaleBig": {
 			scale:            int64(1000),
 			scaleFactor:      int32(1000),
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/556",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/4792",
 		},
 		"scaleMaxInt": {
 			scale:            math.MaxInt64,
 			scaleFactor:      int32(math.MaxInt32),
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/556",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/4792",
 		},
 		"scaleZero": {
 			scale: int32(0),
@@ -1077,7 +1077,7 @@ func TestCollStatsCommandScale(t *testing.T) {
 		"scaleFloat": {
 			scale:            2.8,
 			scaleFactor:      int32(2),
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/556",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/4792",
 		},
 		"scaleFloatNegative": {
 			scale: -2.8,
@@ -1098,7 +1098,7 @@ func TestCollStatsCommandScale(t *testing.T) {
 		"scaleMaxFloat": {
 			scale:            math.MaxFloat64,
 			scaleFactor:      int32(math.MaxInt32),
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/556",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/4792",
 		},
 		"scaleString": {
 			scale: "1",
@@ -1121,7 +1121,7 @@ func TestCollStatsCommandScale(t *testing.T) {
 		"scaleNull": {
 			scale:            nil,
 			scaleFactor:      int32(1),
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/556",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/4792",
 		},
 	} {
 		t.Run(name, func(tt *testing.T) {
