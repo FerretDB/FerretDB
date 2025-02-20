@@ -40,7 +40,7 @@ import (
 )
 
 // PostgreSQL version expected by tests.
-const expectedPostgreSQLVersion = "PostgreSQL 16.6 (Debian 16.6-1.pgdg120+1) on x86_64-pc-linux-gnu, " +
+const expectedPostgreSQLVersion = "PostgreSQL 16.7 (Debian 16.7-1.pgdg120+1) on x86_64-pc-linux-gnu, " +
 	"compiled by gcc (Debian 12.2.0-14) 12.2.0, 64-bit"
 
 func TestCreateCollectionDropListCollections(t *testing.T) {
@@ -930,7 +930,7 @@ func TestBuildInfoCommand(t *testing.T) {
 
 func TestCollStatsCommandEmpty(tt *testing.T) {
 	tt.Parallel()
-	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/556")
+	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/4792")
 	ctx, collection := setup.Setup(tt)
 
 	var actual bson.D
@@ -1046,17 +1046,17 @@ func TestCollStatsCommandScale(t *testing.T) {
 		"scaleOne": {
 			scale:            int32(1),
 			scaleFactor:      int32(1),
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/556",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/4792",
 		},
 		"scaleBig": {
 			scale:            int64(1000),
 			scaleFactor:      int32(1000),
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/556",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/4792",
 		},
 		"scaleMaxInt": {
 			scale:            math.MaxInt64,
 			scaleFactor:      int32(math.MaxInt32),
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/556",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/4792",
 		},
 		"scaleZero": {
 			scale: int32(0),
@@ -1077,7 +1077,7 @@ func TestCollStatsCommandScale(t *testing.T) {
 		"scaleFloat": {
 			scale:            2.8,
 			scaleFactor:      int32(2),
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/556",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/4792",
 		},
 		"scaleFloatNegative": {
 			scale: -2.8,
@@ -1098,7 +1098,7 @@ func TestCollStatsCommandScale(t *testing.T) {
 		"scaleMaxFloat": {
 			scale:            math.MaxFloat64,
 			scaleFactor:      int32(math.MaxInt32),
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/556",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/4792",
 		},
 		"scaleString": {
 			scale: "1",
@@ -1121,7 +1121,7 @@ func TestCollStatsCommandScale(t *testing.T) {
 		"scaleNull": {
 			scale:            nil,
 			scaleFactor:      int32(1),
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/556",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/4792",
 		},
 	} {
 		t.Run(name, func(tt *testing.T) {
@@ -1237,10 +1237,12 @@ func TestCollStatsCommandCount(tt *testing.T) {
 	AssertEqualDocuments(t, expectedComparable, actualComparable)
 }
 
-func TestCollStatsCommandScaleSize(t *testing.T) {
-	t.Parallel()
+func TestCollStatsCommandScaleSize(tt *testing.T) {
+	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/4792")
 
-	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
+	tt.Parallel()
+
+	ctx, collection := setup.Setup(tt, shareddata.DocumentsStrings)
 
 	indexName := "custom-name"
 	resIndexName, err := collection.Indexes().CreateOne(ctx, mongo.IndexModel{
@@ -1298,7 +1300,7 @@ func TestCollStatsCommandScaleSize(t *testing.T) {
 			switch field.Key {
 			case "totalIndexSize":
 				size, ok := field.Value.(int32)
-				require.True(t, ok)
+				require.True(t, ok, "%[1]v %[1]T", field.Value)
 
 				scaledSize := size / scale
 
@@ -1310,7 +1312,7 @@ func TestCollStatsCommandScaleSize(t *testing.T) {
 
 			case "size", "storageSize", "totalSize":
 				size, ok := field.Value.(int32)
-				require.True(t, ok)
+				require.True(t, ok, "%[1]v %[1]T", field.Value)
 
 				scaledSize := size / scale
 
@@ -1334,9 +1336,10 @@ func TestCollStatsCommandScaleSize(t *testing.T) {
 				for _, fieldName := range v {
 					var size int32
 					size, ok = fieldName.Value.(int32)
-					require.True(t, ok)
+					require.True(t, ok, "%[1]v %[1]T", fieldName.Value)
 
 					scaledSize := size / scale
+
 					indexSizes = append(indexSizes, bson.E{Key: fieldName.Key, Value: scaledSize})
 				}
 
