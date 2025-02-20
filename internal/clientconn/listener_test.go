@@ -12,11 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package clientconn
 
-import "fmt"
+import (
+	"net"
+	"testing"
 
-// stateFileProblem returns the state file access error.
-func stateFileProblem(_ string, err error) string {
-	return fmt.Sprintf("Failed to create state provider: %s.", err)
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
+)
+
+func TestListener(t *testing.T) {
+	l, err := Listen(&ListenerOpts{
+		Logger: testutil.Logger(t),
+		TCP:    "127.0.0.1:0",
+	})
+	require.NoError(t, err)
+
+	host, port, err := net.SplitHostPort(l.TCPAddr().String())
+	require.NoError(t, err)
+	assert.Equal(t, "127.0.0.1", host)
+	assert.NotZero(t, port)
+
+	assert.Nil(t, l.UnixAddr())
 }

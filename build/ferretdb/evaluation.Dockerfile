@@ -12,7 +12,7 @@ ARG LABEL_COMMIT
 
 # prepare stage
 
-FROM --platform=$BUILDPLATFORM golang:1.23.6 AS evaluation-prepare
+FROM --platform=$BUILDPLATFORM golang:1.24.0 AS evaluation-prepare
 
 # use a single directory for all Go caches to simplify RUN --mount commands below
 ENV GOPATH=/cache/gopath
@@ -36,7 +36,7 @@ EOF
 
 # build stage
 
-FROM golang:1.23.6 AS evaluation-build
+FROM golang:1.24.0 AS evaluation-build
 
 ARG TARGETARCH
 
@@ -96,7 +96,7 @@ EOF
 
 # final stage
 
-FROM ghcr.io/ferretdb/postgres-documentdb:16.6-0.100-0 AS evaluation
+FROM ghcr.io/ferretdb/postgres-documentdb-dev:16.7-0.102-0.ferretdb-1 AS evaluation
 
 RUN --mount=type=cache,sharing=locked,target=/var/cache/apt <<EOF
 mkdir /tmp/cover /tmp/state

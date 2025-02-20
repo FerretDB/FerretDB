@@ -175,7 +175,6 @@ func TestAggregateGroupErrors(t *testing.T) {
 				Name:    "Location16020",
 				Message: "Expression $type takes exactly 1 arguments. 2 were passed in.",
 			},
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/390",
 		},
 		"NonExistentOperator": {
 			pipeline: bson.A{
@@ -225,7 +224,6 @@ func TestAggregateGroupErrors(t *testing.T) {
 				Name:    "FailedToParse",
 				Message: "'$' starts with an invalid character for a user variable name",
 			},
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/390",
 		},
 		"RecursiveNonExistentOperator": {
 			pipeline: bson.A{
@@ -291,7 +289,6 @@ func TestAggregateGroupErrors(t *testing.T) {
 				Name:    "FailedToParse",
 				Message: "'$' starts with an invalid character for a user variable name",
 			},
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/390",
 		},
 		"IDExpressionInvalidVariable$s": {
 			pipeline: bson.A{
@@ -304,8 +301,7 @@ func TestAggregateGroupErrors(t *testing.T) {
 				Name:    "FailedToParse",
 				Message: "'$s' starts with an invalid character for a user variable name",
 			},
-			altMessage:       "'$' starts with an invalid character for a user variable name",
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/390",
+			altMessage: "'$' starts with an invalid character for a user variable name",
 		},
 		"IDExpressionNonExistingVariable": {
 			pipeline: bson.A{
