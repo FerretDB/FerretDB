@@ -111,7 +111,7 @@ See [there](https://pkg.go.dev/github.com/FerretDB/FerretDB/v2/build/version) fo
 - [Civo](https://www.civo.com/marketplace/FerretDB)
 - [Tembo](https://tembo.io/docs/tembo-stacks/mongo-alternative)
 - [Elestio](https://elest.io/open-source/ferretdb)
-- [Cozystack](https://cozystack.io/docs/components/#managed-ferretdb).
+- [Cozystack](https://cozystack.io/docs/components/#managed-ferretdb)
 
 ## Community
 

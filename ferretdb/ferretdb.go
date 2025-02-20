@@ -72,6 +72,7 @@ func New(config *Config) (*FerretDB, error) {
 			s.TelemetryLocked = true
 		})
 	}
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to setup state provider: %w", err)
 	}
@@ -159,12 +160,14 @@ func (f *FerretDB) Run(ctx context.Context) {
 	var wg sync.WaitGroup
 
 	wg.Add(1)
+
 	go func() {
 		defer wg.Done()
 		f.tl.Run(ctx)
 	}()
 
 	wg.Add(1)
+
 	go func() {
 		defer wg.Done()
 		f.lis.Run(ctx)
@@ -180,5 +183,6 @@ func (f *FerretDB) MongoDBURI() string {
 		Host:   f.lis.TCPAddr().String(),
 		Path:   "/",
 	}
+
 	return u.String()
 }

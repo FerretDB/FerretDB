@@ -77,7 +77,9 @@ func Example() {
 		log.Fatal(err)
 	}
 
-	client.Disconnect(ctx)
+	if err = client.Disconnect(ctx); err != nil {
+		log.Fatal(err)
+	}
 
 	cancel()
 	<-done
