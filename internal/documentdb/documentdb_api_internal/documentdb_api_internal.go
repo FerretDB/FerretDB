@@ -476,6 +476,20 @@ func BsonDollarMergeDocuments(ctx context.Context, conn *pgx.Conn, l *slog.Logge
 	return
 }
 
+// BsonDollarMergeDocuments1 is a wrapper for
+//
+//	documentdb_api_internal.bson_dollar_merge_documents(document documentdb_core.bson, pathspec documentdb_core.bson, overridearray boolean, OUT bson_dollar_merge_documents documentdb_core.bson).
+func BsonDollarMergeDocuments1(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, pathSpec wirebson.RawDocument, overridearray bool) (outBsonDollarMergeDocuments wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_dollar_merge_documents", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bson_dollar_merge_documents::bytea FROM documentdb_api_internal.bson_dollar_merge_documents($1::bytea, $2::bytea, $3)", document, pathSpec, overridearray)
+	if err = row.Scan(&outBsonDollarMergeDocuments); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_dollar_merge_documents", l)
+	}
+	return
+}
+
 // BsonDollarMergeDocumentsAtPath is a wrapper for
 //
 //	documentdb_api_internal.bson_dollar_merge_documents_at_path(leftdocument documentdb_core.bson, rightdocument documentdb_core.bson, fieldpath text, OUT bson_dollar_merge_documents_at_path documentdb_core.bson).
@@ -2072,6 +2086,34 @@ func CurrentCursorState(ctx context.Context, conn *pgx.Conn, l *slog.Logger, ano
 	return
 }
 
+// CurrentOpAggregation is a wrapper for
+//
+//	documentdb_api_internal.current_op_aggregation(p_spec documentdb_core.bson, OUT document documentdb_core.bson).
+func CurrentOpAggregation(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebson.RawDocument) (outDocument wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.current_op_aggregation", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT document::bytea FROM documentdb_api_internal.current_op_aggregation($1::bytea)", spec)
+	if err = row.Scan(&outDocument); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.current_op_aggregation", l)
+	}
+	return
+}
+
+// CurrentOpWorker is a wrapper for
+//
+//	documentdb_api_internal.current_op_worker(p_spec documentdb_core.bson, OUT document documentdb_core.bson).
+func CurrentOpWorker(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebson.RawDocument) (outDocument wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.current_op_worker", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT document::bytea FROM documentdb_api_internal.current_op_worker($1::bytea)", spec)
+	if err = row.Scan(&outDocument); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.current_op_worker", l)
+	}
+	return
+}
+
 // CursorState is a wrapper for
 //
 //	documentdb_api_internal.cursor_state(anonymous documentdb_core.bson, anonymous1 documentdb_core.bson, OUT cursor_state boolean).
@@ -2110,20 +2152,6 @@ func DeleteExpiredRows(ctx context.Context, conn *pgx.Conn, l *slog.Logger, batc
 	row := conn.QueryRow(ctx, "CALL documentdb_api_internal.delete_expired_rows($1)", batchSize)
 	if err = row.Scan(); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.delete_expired_rows", l)
-	}
-	return
-}
-
-// DeleteExpiredRowsForIndex is a wrapper for
-//
-//	documentdb_api_internal.delete_expired_rows_for_index(collection_id bigint, index_id bigint, index_key documentdb_core.bson, index_pfe documentdb_core.bson, current_datetime bigint, index_expiry integer, ttl_batch_size integer, shard_id bigint, OUT delete_expired_rows_for_index bigint).
-func DeleteExpiredRowsForIndex(ctx context.Context, conn *pgx.Conn, l *slog.Logger, collectionId int64, indexId int64, indexKey wirebson.RawDocument, indexPfe wirebson.RawDocument, currentDatetime int64, indexExpiry int32, ttlBatchSize int32, shardId int64) (outDeleteExpiredRowsForIndex int64, err error) {
-	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.delete_expired_rows_for_index", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
-	defer span.End()
-
-	row := conn.QueryRow(ctx, "SELECT delete_expired_rows_for_index FROM documentdb_api_internal.delete_expired_rows_for_index($1, $2, $3::bytea, $4::bytea, $5, $6, $7, $8)", collectionId, indexId, indexKey, indexPfe, currentDatetime, indexExpiry, ttlBatchSize, shardId)
-	if err = row.Scan(&outDeleteExpiredRowsForIndex); err != nil {
-		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.delete_expired_rows_for_index", l)
 	}
 	return
 }
