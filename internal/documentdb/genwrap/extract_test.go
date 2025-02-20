@@ -23,10 +23,11 @@ import (
 )
 
 func TestExtract(t *testing.T) {
+	uri := testutil.PostgreSQLURI(t)
+
 	t.Parallel()
 
 	ctx := testutil.Ctx(t)
-	uri := testutil.PostgreSQLURI(t)
 
 	rows, err := Extract(ctx, uri, []string{"documentdb_core", "documentdb_api"})
 	require.NoError(t, err)
