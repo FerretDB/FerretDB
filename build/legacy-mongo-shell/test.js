@@ -39,7 +39,7 @@
   try {
     assert.eq(typeof res.indexSizes._id_, "number");
   } catch (e) {
-    failedTests["indexSizesValuesNotDouble"] = e;
+    failedTests["indexSizesFields"] = e;
   }
 
   assert.eq(failedTests, {});
