@@ -1,17 +1,17 @@
 db.runCommand({
-  createIndexes: "books",
+  createIndexes: 'books',
   indexes: [
     {
-      name: "vector_ivf_index",
+      name: 'vector_ivf_index',
       key: {
-        vector: "cosmosSearch",
+        vector: 'cosmosSearch'
       },
       cosmosSearchOptions: {
-        kind: "vector-ivf",
-        similarity: "COS",
+        kind: 'vector-ivf',
+        similarity: 'COS',
         dimensions: 12,
-        numLists: 3,
-      },
-    },
-  ],
-});
+        numLists: 3
+      }
+    }
+  ]
+})

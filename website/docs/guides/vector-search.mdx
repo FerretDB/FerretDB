@@ -12,10 +12,10 @@ import SearchSyntax from '!!raw-loader!./requests/search-syntax.js';
 import MyDataSet from '!!raw-loader!./requests/1-insert-vector.js';
 import HNSWIndex from '!!raw-loader!./requests/2-hnsw-index.js';
 import HSNWSearch from '!!raw-loader!./requests/3-hnsw-search.js';
-import HNSWSearchResponse from '!!raw-loader!./responses/3-hnsw-search.json';
+import HNSWSearchResponse from '!!raw-loader!./responses/3-hnsw-search.js';
 import IVFIndex from '!!raw-loader!./requests/4-ivf-index.js';
 import IVFSearch from '!!raw-loader!./requests/5-ivf-search.js';
-import IVFSearchResponse from '!!raw-loader!./responses/5-ivf-search.json';
+import IVFSearchResponse from '!!raw-loader!./responses/5-ivf-search.js';
 
 Vector search is a technique for retrieving contextual and semantically related items based on the similarity of their vector representations.
 It operates on numerical vectors, which represent data such as text, images, or audio.
@@ -116,7 +116,7 @@ Next, a vector search is performed on the `vector` field in the `books` collecti
 
 The query returns the two nearest neighbors of the query vector.
 
-<CodeBlock language="json">{HNSWSearchResponse}</CodeBlock>
+<CodeBlock language="js">{HNSWSearchResponse}</CodeBlock>
 
 </TabItem>
 
@@ -132,7 +132,7 @@ Otherwise, only the similarity score is returned, and the actual document conten
 
 The query returns the two nearest neighbors of the query vector.
 
-<CodeBlock language="json">{IVFSearchResponse}</CodeBlock>
+<CodeBlock language="js">{IVFSearchResponse}</CodeBlock>
 
 </TabItem>
 
