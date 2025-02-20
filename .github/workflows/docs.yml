@@ -71,9 +71,6 @@ jobs:
       - name: Build tools
         run: bin/task env-pull
 
-      - name: Create directory
-        run: mkdir -p tmp/githubcache
-
       - name: Build docs
         run: bin/task docs
         env:
