@@ -9,41 +9,39 @@
 
   coll.drop();
 
-  const init = [
-      {_id: 'double', v: 42.13},
-  ];
+  const init = [{ _id: "double", v: 42.13 }];
 
   coll.insertMany(init);
 
-  const res = db.test.runCommand({collStats: 'test'});
+  const res = db.test.runCommand({ collStats: "test" });
   assert.commandWorked(res);
 
   var failedTests = {};
 
   try {
-      assert.eq(res.numOrphanDocs, NumberInt(0));
+    assert.eq(res.numOrphanDocs, NumberInt(0));
   } catch (e) {
-      failedTests['numOrphanDocs'] = e;
+    failedTests["numOrphanDocs"] = e;
   }
 
   try {
-      assert.eq(res.capped, false);
+    assert.eq(res.capped, false);
   } catch (e) {
-      failedTests['capped'] = e;
+    failedTests["capped"] = e;
   }
 
   try {
-      assert.eq(Object.keys(res.indexDetails), ['_id_']);
+    assert.eq(Object.keys(res.indexDetails), ["_id_"]);
   } catch (e) {
-      failedTests['indexDetails'] = e;
+    failedTests["indexDetails"] = e;
   }
 
   try {
-      assert.eq(typeof res.indexSizes._id_, 'number');
+    assert.eq(typeof res.indexSizes._id_, "number");
   } catch (e) {
-      failedTests['indexSizesValuesNotDouble'] = e;
+    failedTests["indexSizesValuesNotDouble"] = e;
   }
 
   assert.eq(failedTests, {});
-  print('test.js passed!');
+  print("test.js passed!");
 })();
