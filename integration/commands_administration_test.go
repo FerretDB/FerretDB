@@ -1334,9 +1334,12 @@ func TestCollStatsCommandScaleSize(tt *testing.T) {
 				var indexSizes bson.D
 
 				for _, fieldName := range v {
-					size := IntType(t, fieldName.Value)
+					var size int32
+					size, ok = field.Value.(int32)
+					require.True(t, ok, "%[1]v %[1]T", field.Value)
 
-					scaledSize := int32(size) / scale
+					scaledSize := size / scale
+
 					indexSizes = append(indexSizes, bson.E{Key: fieldName.Key, Value: scaledSize})
 				}
 
