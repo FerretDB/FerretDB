@@ -74,7 +74,8 @@ type ListenerOpts struct {
 }
 
 // Listen creates a new listener and starts listening on configured interfaces.
-// [Listener.Run] must be collect on the returned value.
+// It takes over the passed handler.
+// [Listener.Run] must be called on the returned value.
 func Listen(opts *ListenerOpts) (l *Listener, err error) {
 	ll := logging.WithName(opts.Logger, "listener")
 	l = &Listener{

@@ -1,18 +1,18 @@
 db.runCommand({
-  aggregate: "collectionName",
+  aggregate: 'collectionName',
   pipeline: [
     {
       $search: {
         cosmosSearch: {
-          vector: "<vector>",
-          path: "<path>",
-          k: "<k>",
+          vector: '<vector>',
+          path: '<path>',
+          k: '<k>',
 
           // HNSW only
-          efSearch: "<efSearch>",
-        },
-      },
-    },
+          efSearch: '<efSearch>'
+        }
+      }
+    }
   ],
-  cursor: {},
-});
+  cursor: {}
+})
