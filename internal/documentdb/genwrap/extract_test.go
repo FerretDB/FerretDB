@@ -23,14 +23,11 @@ import (
 )
 
 func TestExtract(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping in -short mode")
-	}
+	uri := testutil.PostgreSQLURI(t)
 
 	t.Parallel()
 
 	ctx := testutil.Ctx(t)
-	uri := "postgres://username:password@127.0.0.1:5432/postgres"
 
 	rows, err := Extract(ctx, uri, []string{"documentdb_core", "documentdb_api"})
 	require.NoError(t, err)
@@ -38,7 +35,7 @@ func TestExtract(t *testing.T) {
 
 	expected := map[string]any{
 		"specific_schema":    "documentdb_api",
-		"specific_name":      "aggregate_cursor_first_page_19111",
+		"specific_name":      "aggregate_cursor_first_page_19119",
 		"routine_name":       "aggregate_cursor_first_page",
 		"routine_type":       "FUNCTION",
 		"routine_data_type":  "record",
@@ -55,7 +52,7 @@ func TestExtract(t *testing.T) {
 
 	expected = map[string]any{
 		"specific_schema":    "documentdb_api",
-		"specific_name":      "aggregate_cursor_first_page_19111",
+		"specific_name":      "aggregate_cursor_first_page_19119",
 		"routine_name":       "aggregate_cursor_first_page",
 		"routine_type":       "FUNCTION",
 		"routine_data_type":  "record",

@@ -12,7 +12,36 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package version
+package logging
 
-// DocumentDB is a version of DocumentDB this version of FerretDB is compatible with.
-const DocumentDB = "0.102.0 gitref: HEAD sha:d6794c9 buildId:0"
+import (
+	"bytes"
+	"log/slog"
+	"testing"
+	"testing/slogtest"
+)
+
+func TestMongoHandler(t *testing.T) {
+	t.Parallel()
+
+	var buf bytes.Buffer
+	var testAttrs map[string]any
+
+	newHandler := func(t *testing.T) slog.Handler {
+		t.Helper()
+
+		buf.Reset()
+
+		testAttrs = map[string]any{}
+
+		return newMongoHandler(&buf, &NewHandlerOpts{Level: slog.LevelDebug}, testAttrs)
+	}
+
+	result := func(t *testing.T) map[string]any {
+		t.Helper()
+
+		return testAttrs
+	}
+
+	slogtest.Run(t, newHandler, result)
+}

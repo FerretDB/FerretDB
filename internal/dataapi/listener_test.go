@@ -39,14 +39,10 @@ import (
 )
 
 func TestSmokeDataAPI(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping in -short mode")
-	}
-
-	t.Parallel()
-
 	addr, db := setupDataAPI(t)
 	coll := testutil.CollectionName(t)
+
+	t.Parallel()
 
 	t.Run("FindEmpty", func(t *testing.T) {
 		jsonBody := `{
@@ -235,7 +231,8 @@ func postJSON(tb testing.TB, uri, jsonBody string) (*http.Response, error) {
 // It returns Data API address, and database name.
 func setupDataAPI(tb testing.TB) (addr string, dbName string) {
 	tb.Helper()
-	const uri = "postgres://username:password@127.0.0.1:5432/postgres"
+
+	uri := testutil.PostgreSQLURI(tb)
 
 	sp, err := state.NewProvider("")
 	require.NoError(tb, err)
