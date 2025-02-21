@@ -326,7 +326,7 @@ mongosh 'mongodb://ferretuser:<password>@10.233.22.188:27017/ferretdb?authMechan
 You should see a successful connection message.
 To verify, you can insert and query a document:
 
-```json5
+```text
 ferretdb> db.test.insert({a:34})
 {
   acknowledged: true,

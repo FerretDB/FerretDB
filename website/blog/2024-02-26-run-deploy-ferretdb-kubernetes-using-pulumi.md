@@ -481,8 +481,8 @@ db.stocks.find({ symbol: 'ZTI', 'tradingData.volume': { $gt: 1200000 } })
 
 Result:
 
-```json5
-[
+```js
+response = [
   {
     _id: ObjectId('65d030d38660cd7b3c7ad8a0'),
     symbol: 'ZTI',

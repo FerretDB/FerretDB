@@ -215,33 +215,38 @@ ferretdb>
 Let's run some commands in the database.
 Start by inserting a document record into a `weather` collection as shown below.
 
-```json5
+```js
 db.weather.insertMany([
-    {
-        date: new Date("2024-04-22"),
-        location: {
-            city: "New York",
-            country: "USA",
-            coordinates: { lat: 40.7128, lon: -74.0060 }
-        },
-        weather: {
-            temperature: 18,
-            conditions: "Cloudy",
-            wind_speed: 12,
-            humidity: 80
-        },
-        remarks: "Possible light rain in the evening."
-    }
-]);
+  {
+    date: new Date('2024-04-22'),
+    location: {
+      city: 'New York',
+      country: 'USA',
+      coordinates: { lat: 40.7128, lon: -74.006 }
+    },
+    weather: {
+      temperature: 18,
+      conditions: 'Cloudy',
+      wind_speed: 12,
+      humidity: 80
+    },
+    remarks: 'Possible light rain in the evening.'
+  }
+])
 ```
 
 Suppose you want to update the humidity level in New York where the wind speed was more than 10 km/h:
 
-```json5
-ferretdb> db.weather.updateMany(
-...     { "location.city": "New York", "weather.wind_speed": { $gt: 10 } },
-...     { $set: { "weather.humidity": 85 } }
-... );
+```js
+db.weather.updateMany(
+  { 'location.city': 'New York', 'weather.wind_speed': { $gt: 10 } },
+  { $set: { 'weather.humidity': 85 } }
+)
+```
+
+The output will be:
+
+```js
 {
   acknowledged: true,
   insertedId: null,
@@ -249,8 +254,12 @@ ferretdb> db.weather.updateMany(
   modifiedCount: 1,
   upsertedCount: 0
 }
-ferretdb> db.weather.find()
-[
+```
+
+The result of `db.weather.find()` will show the updated record:
+
+```js
+response = [
   {
     _id: ObjectId('66278976fba61a5fec8bad82'),
     date: ISODate('2024-04-22T00:00:00.000Z'),
