@@ -172,13 +172,4 @@ issues:
   # whole-files: true
 
   exclude-use-default: false
-  exclude-rules:
-    # that's a valid usage of bson.D / bson.E
-    - linters: [govet]
-      text: "composites: go.mongodb.org/mongo-driver/bson/primitive.E struct literal uses unkeyed fields"
-    - linters: [govet]
-      text: "composites: go.mongodb.org/mongo-driver/bson.E struct literal uses unkeyed fields"
-
-    # sometimes that's the best we can do
-    - linters: [staticcheck]
-      text: "SA1019: doc.Map is deprecated"
+  exclude-rules: []
