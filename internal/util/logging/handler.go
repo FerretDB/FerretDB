@@ -172,10 +172,6 @@ func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
 			panic(fmt.Sprintf("message %q has leading/trailing spaces", r.Message))
 
 		case strings.TrimRight(r.Message, ".?!") != r.Message:
-			if strings.TrimSuffix(r.Message, "/...") != r.Message {
-				break
-			}
-
 			panic(fmt.Sprintf("message %q ends with punctuation", r.Message))
 		}
 	}
