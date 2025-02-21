@@ -33,7 +33,7 @@ db.store.insertMany([
 db.store.updateOne({ _id: 1 }, { $push: { items: 'markers' } })
 ```
 
-After the operation, the updated document looks like this whenever you run `db.store.find()`:
+After the operation, the updated document looks like this when you run `db.store.find()`:
 
 ```js
 response = [
