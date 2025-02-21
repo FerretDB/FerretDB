@@ -32,6 +32,7 @@ func (h *Handler) MsgDBStats(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 		return nil, lazyerrors.Error(err)
 	}
 
+	// TODO
 	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
 		return nil, err
 	}
