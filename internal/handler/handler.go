@@ -80,6 +80,8 @@ type NewOpts struct {
 }
 
 // New returns a new handler.
+// It takes over the passed pool.
+// [Handler.Run] must be called on the returned value.
 func New(opts *NewOpts) (*Handler, error) {
 	sessionTimeout := time.Duration(session.LogicalSessionTimeoutMinutes) * time.Minute
 
@@ -100,10 +102,13 @@ func New(opts *NewOpts) (*Handler, error) {
 }
 
 // Run runs the handler until ctx is canceled.
+//
+// When this method returns, handler is stopped and pool is closed.
 func (h *Handler) Run(ctx context.Context) {
 	defer func() {
 		h.s.Stop()
 		h.operations.Close()
+		h.Pool.Close()
 		h.L.InfoContext(ctx, "Handler stopped")
 	}()
 
