@@ -23,14 +23,11 @@ import (
 )
 
 func TestExtract(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping in -short mode")
-	}
+	uri := testutil.PostgreSQLURI(t)
 
 	t.Parallel()
 
 	ctx := testutil.Ctx(t)
-	uri := "postgres://username:password@127.0.0.1:5432/postgres"
 
 	rows, err := Extract(ctx, uri, []string{"documentdb_core", "documentdb_api"})
 	require.NoError(t, err)
