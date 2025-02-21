@@ -244,12 +244,13 @@ func main() {
 	}
 
 	opts := &logging.NewHandlerOpts{
-		Base:         "console",
-		Level:        level,
-		RemoveTime:   true,
-		RemoveSource: true,
+		Base:          "console",
+		Level:         level,
+		RemoveTime:    true,
+		RemoveSource:  true,
+		CheckMessages: false, // TODO https://github.com/FerretDB/FerretDB/issues/4511
 	}
-	logging.Setup(opts, "")
+	logging.SetupDefault(opts, "")
 	logger := slog.Default()
 
 	cmd := kongCtx.Command()

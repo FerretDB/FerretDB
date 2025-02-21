@@ -47,12 +47,13 @@ var startupWG sync.WaitGroup
 // Startup initializes things that should be initialized only once.
 func Startup() {
 	opts := &logging.NewHandlerOpts{
-		Base:        "console",
-		Level:       slog.LevelDebug,
-		RemoveTime:  true,
-		RemoveLevel: true,
+		Base:          "console",
+		Level:         slog.LevelDebug,
+		RemoveTime:    true,
+		RemoveLevel:   true,
+		CheckMessages: false, // TODO https://github.com/FerretDB/FerretDB/issues/4511
 	}
-	logging.Setup(opts, "")
+	logging.SetupDefault(opts, "")
 	l := slog.Default()
 
 	ctx := context.Background()

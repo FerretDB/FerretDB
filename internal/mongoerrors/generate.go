@@ -71,7 +71,7 @@ func main() {
 		Level:         slog.LevelDebug,
 		CheckMessages: true,
 	}
-	logging.Setup(opts, "")
+	logging.SetupDefault(opts, "")
 
 	ctx := context.Background()
 	l := slog.Default()

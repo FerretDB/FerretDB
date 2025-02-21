@@ -31,11 +31,10 @@ body:
       description: What should be done to consider this issue done? List everything that applies.
       value: |
         - handler updated;
-        - all backends updated;
         - unit tests added/updated;
         - integration/compatibility tests added/updated;
         - spot refactorings done;
-        - user documentation updated or an issue to create documentation created;
+        - user documentation updated (or an issue to create documentation created);
         - something else?
     validations:
       required: true

@@ -12,24 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package github
+package state
 
-import (
-	"time"
-)
-
-// IssueStatus represents a known issue status.
-type IssueStatus string
-
-// Known issue statuses.
-const (
-	IssueOpen     IssueStatus = "open"
-	IssueClosed   IssueStatus = "closed"
-	IssueNotFound IssueStatus = "not found"
-)
-
-// issue represents a single cached issue.
-type issue struct {
-	RefreshedAt time.Time   `json:"refreshedAt"`
-	Status      IssueStatus `json:"status"`
+// newProviderDirErr returns the state file access error as is.
+func newProviderDirErr(_ string, err error) error {
+	return err
 }

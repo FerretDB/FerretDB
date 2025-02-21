@@ -12,7 +12,7 @@ ARG LABEL_COMMIT
 
 # prepare stage
 
-FROM --platform=$BUILDPLATFORM golang:1.23.5 AS development-prepare
+FROM --platform=$BUILDPLATFORM golang:1.24.0 AS development-prepare
 
 # use a single directory for all Go caches to simplify RUN --mount commands below
 ENV GOPATH=/cache/gopath
@@ -36,7 +36,7 @@ EOF
 
 # build stage
 
-FROM golang:1.23.5 AS development-build
+FROM golang:1.24.0 AS development-build
 
 ARG TARGETARCH
 
@@ -65,9 +65,10 @@ set -ex
 
 git status
 
-# Do not raise it without providing a separate v1 build
-# because v2+ is problematic for some virtualization platforms and older hardware.
+# Do not raise without providing separate builds with those values
+# because higher versions are problematic for some virtualization platforms and older hardware.
 export GOAMD64=v1
+export GOARM64=v8.0
 
 export CGO_ENABLED=1
 
@@ -102,7 +103,7 @@ COPY --from=development-build /src/bin/ferretdb /ferretdb
 
 # final stage
 
-FROM golang:1.23.5 AS development
+FROM golang:1.24.0 AS development
 
 ENV GOCOVERDIR=/tmp/cover
 ENV GORACE=halt_on_error=1,history_size=2
