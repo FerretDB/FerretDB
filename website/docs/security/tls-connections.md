@@ -51,14 +51,16 @@ and volume is mounted from `./server-certs` of Docker host to `/etc/certs` of Do
 
 <!-- TODO https://github.com/FerretDB/FerretDB/issues/4726 -->
 
+Ensure to replace `<username>` and `<password>` with your desired values.
+
 ```yaml
 services:
   postgres:
     image: ghcr.io/ferretdb/postgres-documentdb:16
     platform: linux/amd64
     environment:
-      - POSTGRES_USER=username
-      - POSTGRES_PASSWORD=password
+      - POSTGRES_USER=<username>
+      - POSTGRES_PASSWORD=<password>
       - POSTGRES_DB=postgres
     volumes:
       - ./data:/var/lib/postgresql/data
@@ -69,7 +71,7 @@ services:
     ports:
       - 27018:27018
     environment:
-      - FERRETDB_POSTGRESQL_URL=postgres://username:password@localhost:5432/postgres
+      - FERRETDB_POSTGRESQL_URL=postgres://<username>:<password>@localhost:5432/postgres
       - FERRETDB_LISTEN_TLS=:27018
       - FERRETDB_LISTEN_TLS_CERT_FILE=/etc/certs/server-cert.pem
       - FERRETDB_LISTEN_TLS_KEY_FILE=/etc/certs/server-key.pem
@@ -98,5 +100,5 @@ docker run --rm -it \
   --network=ferretdb \
   --volume ./client-certs:/clients \
   --entrypoint=mongosh \
-  mongo 'mongodb://username:password@host.docker.internal:27018/?tls=true&tlsCertificateKeyFile=/clients/client.pem&tlsCaFile=/clients/rootCA-cert.pem'
+  mongo 'mongodb://<username>:<password>@host.docker.internal:27018/?tls=true&tlsCertificateKeyFile=/clients/client.pem&tlsCaFile=/clients/rootCA-cert.pem'
 ```
