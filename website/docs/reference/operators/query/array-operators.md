@@ -6,11 +6,11 @@ sidebar_position: 3
 
 Array query operators allow you to search for specific elements within an array field in a document.
 
-| Operator                   | Description                                                                                                             |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| [`$all`](#all)             | Selects an array that contains all elements from a given query.                                                         |
-| [`$elemMatch`](#elemmatch) | Matches a document that contains an array field with at least one element that matches all the specified query criteria |
-| [`$size`](#size)           | Matches an array with a specified number of elements                                                                    |
+| Operator                   | Description                                                                           |
+| -------------------------- | ------------------------------------------------------------------------------------- |
+| [`$all`](#all)             | Selects an array that contains all elements from a given query.                       |
+| [`$elemMatch`](#elemmatch) | Filters documents with specific array elements that match all listed query conditions |
+| [`$size`](#size)           | Selects an array based on a given number of elements                                  |
 
 For the examples in this section, insert the following documents into the `team` collection:
 
