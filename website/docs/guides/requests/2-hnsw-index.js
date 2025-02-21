@@ -1,18 +1,18 @@
 db.runCommand({
-  createIndexes: "books",
+  createIndexes: 'books',
   indexes: [
     {
-      name: "vector_hnsw_index",
+      name: 'vector_hnsw_index',
       key: {
-        vector: "cosmosSearch",
+        vector: 'cosmosSearch'
       },
       cosmosSearchOptions: {
-        kind: "vector-hnsw",
-        similarity: "COS",
+        kind: 'vector-hnsw',
+        similarity: 'COS',
         dimensions: 12,
         m: 16,
-        efConstruction: 64,
-      },
-    },
-  ],
-});
+        efConstruction: 64
+      }
+    }
+  ]
+})

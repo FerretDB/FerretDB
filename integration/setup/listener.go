@@ -112,8 +112,6 @@ func setupListener(tb testing.TB, ctx context.Context, opts *ListenerOpts, logge
 	p, err := documentdb.NewPool(*postgreSQLURLF, logging.WithName(logger, "pool"), sp)
 	require.NoError(tb, err)
 
-	tb.Cleanup(p.Close)
-
 	handlerOpts := &handler.NewOpts{
 		Pool: p,
 		Auth: true,

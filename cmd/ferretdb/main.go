@@ -128,7 +128,7 @@ var (
 		slog.LevelError.String(),
 	}
 
-	logFormats = []string{"console", "text", "json"}
+	logFormats = []string{"console", "text", "json", "mongo"}
 
 	kongOptions = []kong.Option{
 		kong.Vars{
@@ -425,8 +425,6 @@ func run() {
 		logger.LogAttrs(ctx, logging.LevelFatal, "Failed to construct pool", logging.Error(err))
 	}
 
-	defer p.Close()
-
 	tcpAddr := cli.Listen.Addr
 	if cmp.Or(tcpAddr, "-") == "-" {
 		tcpAddr = ""
@@ -456,6 +454,7 @@ func run() {
 
 	h, err := handler.New(handlerOpts)
 	if err != nil {
+		p.Close()
 		handlerOpts.L.LogAttrs(ctx, logging.LevelFatal, "Failed to construct handler", logging.Error(err))
 	}
 
@@ -481,6 +480,7 @@ func run() {
 		TestRecordsDir: cli.Dev.RecordsDir,
 	})
 	if err != nil {
+		p.Close()
 		logger.LogAttrs(ctx, logging.LevelFatal, "Failed to construct listener", logging.Error(err))
 	}
 
@@ -498,6 +498,7 @@ func run() {
 				Handler: h,
 			})
 			if e != nil {
+				p.Close()
 				l.LogAttrs(ctx, logging.LevelFatal, "Failed to construct DataAPI listener", logging.Error(e))
 			}
 

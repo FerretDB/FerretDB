@@ -6,11 +6,11 @@ sidebar_position: 3
 
 Array query operators allow you to search for specific elements within an array field in a document.
 
-| Operator                   | Description                                                                                                             |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| [`$all`](#all)             | Selects an array that contains all elements from a given query.                                                         |
-| [`$elemMatch`](#elemmatch) | Matches a document that contains an array field with at least one element that matches all the specified query criteria |
-| [`$size`](#size)           | Matches an array with a specified number of elements                                                                    |
+| Operator                   | Description                                                                           |
+| -------------------------- | ------------------------------------------------------------------------------------- |
+| [`$all`](#all)             | Selects an array that contains all elements from a given query.                       |
+| [`$elemMatch`](#elemmatch) | Filters documents with specific array elements that match all listed query conditions |
+| [`$size`](#size)           | Selects an array based on a given number of elements                                  |
 
 For the examples in this section, insert the following documents into the `team` collection:
 
@@ -85,10 +85,10 @@ db.team.find({
 
 The output:
 
-```json5
-[
+```js
+response = [
   {
-    _id: ObjectId("63a5bb4acf72d6203bb45bb5"),
+    _id: ObjectId('63a5bb4acf72d6203bb45bb5'),
     id: 4,
     name: 'Alice Williams',
     position: 'Marketing Coordinator',
@@ -121,10 +121,10 @@ db.team.find({
 
 The output:
 
-```json5
-[
+```js
+response = [
   {
-    _id: ObjectId("63aa247e69c82de72bd40b93"),
+    _id: ObjectId('63aa247e69c82de72bd40b93'),
     id: 2,
     name: 'Jane Mark',
     position: 'Software Developer',
@@ -153,10 +153,10 @@ db.team.find({
 
 The output:
 
-```json5
-[
+```js
+response = [
   {
-    _id: ObjectId("63aa247e69c82de72bd40b92"),
+    _id: ObjectId('63aa247e69c82de72bd40b92'),
     id: 1,
     name: 'Jack Smith',
     position: 'Manager',
@@ -165,7 +165,7 @@ The output:
     active: true
   },
   {
-    _id: ObjectId("63aa247e69c82de72bd40b93"),
+    _id: ObjectId('63aa247e69c82de72bd40b93'),
     id: 2,
     name: 'Jane Mark',
     position: 'Software Developer',
@@ -174,7 +174,7 @@ The output:
     active: false
   },
   {
-    _id: ObjectId("63aa247e69c82de72bd40b94"),
+    _id: ObjectId('63aa247e69c82de72bd40b94'),
     id: 3,
     name: 'Bob Johnson',
     position: 'Graphic Designer',
@@ -183,7 +183,7 @@ The output:
     active: true
   },
   {
-    _id: ObjectId("63aa247e69c82de72bd40b95"),
+    _id: ObjectId('63aa247e69c82de72bd40b95'),
     id: 4,
     name: 'Alice Williams',
     position: 'Marketing Coordinator',

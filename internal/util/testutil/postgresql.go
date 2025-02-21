@@ -12,7 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package version
+package testutil
 
-// DocumentDB is a version of DocumentDB this version of FerretDB is compatible with.
-const DocumentDB = "0.102.0 gitref: HEAD sha:d6794c9 buildId:0"
+import "testing"
+
+// PostgreSQLURI returns PostgreSQL URI for testing.
+//
+// It skips the test if it is in short mode.
+func PostgreSQLURI(tb testing.TB) string {
+	tb.Helper()
+
+	if testing.Short() {
+		tb.Skip("skipping in -short mode")
+	}
+
+	return "postgres://username:password@127.0.0.1:5432/postgres"
+}
