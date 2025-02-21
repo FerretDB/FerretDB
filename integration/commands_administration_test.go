@@ -1500,7 +1500,7 @@ func TestDBStatsCommand(t *testing.T) {
 	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
 	require.NoError(t, err)
 
-	var actualComparalbe bson.D
+	var actualComparable bson.D
 
 	for _, field := range actual {
 		switch field.Key {
@@ -1509,17 +1509,17 @@ func TestDBStatsCommand(t *testing.T) {
 			require.True(t, ok)
 
 			assert.InDelta(t, 37_500, val, 37_460)
-			actualComparalbe = append(actualComparalbe, bson.E{Key: field.Key, Value: float64(0)})
+			actualComparable = append(actualComparable, bson.E{Key: field.Key, Value: float64(0)})
 
 		case "fsUsedSize", "fsTotalSize":
 			val, ok := field.Value.(float64)
 			require.True(t, ok)
 
 			assert.Greater(t, val, float64(0))
-			actualComparalbe = append(actualComparalbe, bson.E{Key: field.Key, Value: float64(0)})
+			actualComparable = append(actualComparable, bson.E{Key: field.Key, Value: float64(0)})
 
 		default:
-			actualComparalbe = append(actualComparalbe, field)
+			actualComparable = append(actualComparable, field)
 		}
 	}
 
@@ -1540,7 +1540,7 @@ func TestDBStatsCommand(t *testing.T) {
 		{"ok", float64(1)},
 	}
 
-	AssertEqualDocuments(t, expected, actualComparalbe)
+	AssertEqualDocuments(t, expected, actualComparable)
 }
 
 func TestDBStatsCommandEmpty(t *testing.T) {
@@ -1596,7 +1596,7 @@ func TestDBStatsCommandScale(t *testing.T) {
 			err := collection.Database().RunCommand(ctx, command).Decode(&actual)
 			require.NoError(t, err)
 
-			var actualComparalbe bson.D
+			var actualComparable bson.D
 
 			for _, field := range actual {
 				switch field.Key {
@@ -1605,17 +1605,17 @@ func TestDBStatsCommandScale(t *testing.T) {
 					require.True(t, ok)
 
 					assert.InDelta(t, 35_500, val, 35_500)
-					actualComparalbe = append(actualComparalbe, bson.E{Key: field.Key, Value: float64(0)})
+					actualComparable = append(actualComparable, bson.E{Key: field.Key, Value: float64(0)})
 
 				case "fsUsedSize", "fsTotalSize":
 					val, ok := field.Value.(float64)
 					require.True(t, ok)
 
 					assert.Greater(t, val, float64(0))
-					actualComparalbe = append(actualComparalbe, bson.E{Key: field.Key, Value: float64(0)})
+					actualComparable = append(actualComparable, bson.E{Key: field.Key, Value: float64(0)})
 
 				default:
-					actualComparalbe = append(actualComparalbe, field)
+					actualComparable = append(actualComparable, field)
 				}
 			}
 
@@ -1636,7 +1636,7 @@ func TestDBStatsCommandScale(t *testing.T) {
 				{"ok", float64(1)},
 			}
 
-			AssertEqualDocuments(t, expected, actualComparalbe)
+			AssertEqualDocuments(t, expected, actualComparable)
 		})
 	}
 }
@@ -1830,7 +1830,7 @@ func TestDBStatsCommandFreeStorage(tt *testing.T) {
 			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
 			require.NoError(t, err)
 
-			var actualComparalbe bson.D
+			var actualComparable bson.D
 
 			for _, field := range actual {
 				switch field.Key {
@@ -1840,21 +1840,21 @@ func TestDBStatsCommandFreeStorage(tt *testing.T) {
 					require.True(t, ok)
 
 					assert.InDelta(t, 35_500, val, 35_500)
-					actualComparalbe = append(actualComparalbe, bson.E{Key: field.Key, Value: float64(0)})
+					actualComparable = append(actualComparable, bson.E{Key: field.Key, Value: float64(0)})
 
 				case "fsUsedSize", "fsTotalSize":
 					val, ok := field.Value.(float64)
 					require.True(t, ok)
 
 					assert.Greater(t, val, float64(0))
-					actualComparalbe = append(actualComparalbe, bson.E{Key: field.Key, Value: float64(0)})
+					actualComparable = append(actualComparable, bson.E{Key: field.Key, Value: float64(0)})
 
 				default:
-					actualComparalbe = append(actualComparalbe, field)
+					actualComparable = append(actualComparable, field)
 				}
 			}
 
-			AssertEqualDocuments(t, tc.expected, actualComparalbe)
+			AssertEqualDocuments(t, tc.expected, actualComparable)
 		})
 	}
 }
