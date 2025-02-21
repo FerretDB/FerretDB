@@ -128,7 +128,7 @@ var (
 		slog.LevelError.String(),
 	}
 
-	logFormats = []string{"console", "text", "json"}
+	logFormats = []string{"console", "text", "json", "mongo"}
 
 	kongOptions = []kong.Option{
 		kong.Vars{
