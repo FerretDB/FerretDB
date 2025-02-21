@@ -107,3 +107,29 @@ func TestProvider(t *testing.T) {
 		<-got
 	})
 }
+
+func TestProviderDir(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Normal", func(t *testing.T) {
+		t.Parallel()
+
+		dir := t.TempDir()
+		require.NoError(t, os.RemoveAll(dir))
+		assert.NoDirExists(t, dir)
+
+		p, err := NewProviderDir(dir)
+		require.NoError(t, err)
+		assert.NotNil(t, p)
+		assert.DirExists(t, dir)
+		assert.FileExists(t, filepath.Join(dir, "state.json"))
+	})
+
+	t.Run("NoAccess", func(t *testing.T) {
+		t.Parallel()
+
+		p, err := NewProviderDir("/")
+		require.Error(t, err)
+		assert.Nil(t, p)
+	})
+}
