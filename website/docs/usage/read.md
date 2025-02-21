@@ -174,10 +174,10 @@ db.employees.find({ 'catalog.2': 'blender' })
 
 The document that matches the array query is displayed in the response:
 
-```json5
-[
+```js
+response = [
   {
-    _id: ObjectId("636b3b0e0466c61a229bbf9c"),
+    _id: ObjectId('636b3b0e0466c61a229bbf9c'),
     name: { first: 'Sam', last: 'Johnson' },
     employeeID: 2234,
     age: 35,
