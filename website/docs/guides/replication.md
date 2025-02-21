@@ -318,14 +318,14 @@ docker run --rm -it --network="host" mongo mongosh "mongodb://user:password@loca
 
 The output should show the document you inserted in the primary.
 
-```json5
-[
- {
-   _id: ObjectId('672159e5a6caf9a94afa26b9'),
-   username: 'Ada Lovelace',
-   content: 'Enjoying the beautiful weather today! 🌞 #sunnyday',
-   likes: 120,
-   timestamp: ISODate('2024-10-29T21:55:49.795Z')
- }
+```js
+response = [
+  {
+    _id: ObjectId('672159e5a6caf9a94afa26b9'),
+    username: 'Ada Lovelace',
+    content: 'Enjoying the beautiful weather today! 🌞 #sunnyday',
+    likes: 120,
+    timestamp: ISODate('2024-10-29T21:55:49.795Z')
+  }
 ]
 ```
