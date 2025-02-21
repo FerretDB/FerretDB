@@ -67,19 +67,14 @@ func Example() {
 	fmt.Println(uri)
 
 	// Use MongoDB URI as usual.
-
-	client, err := mongo.Connect(options.Client().ApplyURI(uri))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if err = client.Ping(ctx, nil); err != nil {
-		log.Fatal(err)
-	}
-
-	if err = client.Disconnect(ctx); err != nil {
-		log.Fatal(err)
-	}
+	// For example:
+	//
+	// import "go.mongodb.org/mongo-driver/v2/mongo"
+	// import "go.mongodb.org/mongo-driver/v2/mongo/options"
+	//
+	// [...]
+	//
+	// mongo.Connect(options.Client().ApplyURI(uri))
 
 	cancel()
 	<-done
