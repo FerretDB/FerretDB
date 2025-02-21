@@ -194,7 +194,7 @@ mongosh mongodb://<username>:<password>@<host>:27017/ferretdb?authMechanism=PLAI
 
 Connect via `mongosh`:
 
-```sh
+```text
 mongosh 'mongodb://postgres:p.i~glw7q9mdbpQ2@localhost:27017/ferretdb?authMechanism=PLAIN'
 Current Mongosh Log ID: 662699b8fa65a75337cb3ec7
 Connecting to:  mongodb://<credentials>@localhost:27017/ferretdb?authMechanism=PLAIN&directConnection=true&serverSelectionTimeoutMS=2000&appName=mongosh+2.2.2
