@@ -54,12 +54,6 @@ type consoleHandler struct {
 	out io.Writer
 }
 
-// groupOrAttrs contains group name or attributes.
-type groupOrAttrs struct {
-	group string
-	attrs []slog.Attr
-}
-
 // newConsoleHandler creates a new console handler.
 func newConsoleHandler(out io.Writer, opts *NewHandlerOpts, testAttrs map[string]any) *consoleHandler {
 	must.NotBeZero(opts)
@@ -92,7 +86,7 @@ func (ch *consoleHandler) Handle(ctx context.Context, r slog.Record) error {
 		buf.WriteRune('\t')
 
 		if ch.testAttrs != nil {
-			ch.testAttrs["time"] = t
+			ch.testAttrs[slog.TimeKey] = t
 		}
 	}
 
@@ -102,7 +96,7 @@ func (ch *consoleHandler) Handle(ctx context.Context, r slog.Record) error {
 		buf.WriteRune('\t')
 
 		if ch.testAttrs != nil {
-			ch.testAttrs["level"] = l
+			ch.testAttrs[slog.LevelKey] = l
 		}
 	}
 
@@ -114,7 +108,7 @@ func (ch *consoleHandler) Handle(ctx context.Context, r slog.Record) error {
 			buf.WriteRune('\t')
 
 			if ch.testAttrs != nil {
-				ch.testAttrs["source"] = s
+				ch.testAttrs[slog.SourceKey] = s
 			}
 		}
 	}
@@ -123,11 +117,11 @@ func (ch *consoleHandler) Handle(ctx context.Context, r slog.Record) error {
 		buf.WriteString(r.Message)
 
 		if ch.testAttrs != nil {
-			ch.testAttrs["msg"] = r.Message
+			ch.testAttrs[slog.MessageKey] = r.Message
 		}
 	}
 
-	if m := ch.toMap(r); len(m) > 0 {
+	if m := attrs(r, ch.ga); len(m) > 0 {
 		buf.WriteRune('\t')
 
 		var b bytes.Buffer
@@ -189,60 +183,6 @@ func (ch *consoleHandler) WithGroup(name string) slog.Handler {
 		out:       ch.out,
 		testAttrs: ch.testAttrs,
 	}
-}
-
-// toMap converts attributes to a map.
-// Attributes with duplicate keys are overwritten, and the order of keys is ignored.
-func (ch *consoleHandler) toMap(r slog.Record) map[string]any {
-	m := make(map[string]any, r.NumAttrs())
-
-	r.Attrs(func(attr slog.Attr) bool {
-		if attr.Key != "" {
-			m[attr.Key] = resolve(attr.Value)
-
-			return true
-		}
-
-		if attr.Value.Kind() == slog.KindGroup {
-			for _, gAttr := range attr.Value.Group() {
-				m[gAttr.Key] = resolve(gAttr.Value)
-			}
-		}
-
-		return true
-	})
-
-	for i := len(ch.ga) - 1; i >= 0; i-- {
-		if ch.ga[i].group != "" && len(m) > 0 {
-			m = map[string]any{ch.ga[i].group: m}
-
-			continue
-		}
-
-		for _, attr := range ch.ga[i].attrs {
-			m[attr.Key] = resolve(attr.Value)
-		}
-	}
-
-	return m
-}
-
-// resolve returns underlying attribute value, or a map for [slog.KindGroup] type.
-func resolve(v slog.Value) any {
-	v = v.Resolve()
-
-	if v.Kind() != slog.KindGroup {
-		return v.Any()
-	}
-
-	g := v.Group()
-	m := make(map[string]any, len(g))
-
-	for _, attr := range g {
-		m[attr.Key] = resolve(attr.Value)
-	}
-
-	return m
 }
 
 // check interfaces
