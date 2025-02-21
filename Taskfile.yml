@@ -730,7 +730,7 @@ tasks:
   # See https://github.com/DavidAnson/markdownlint-cli2#command-line for the reason we use double quotes in command.
   fmt-docs:
     desc: "Format and lint documentation"
-    deps: [fmt-js, fmt-json, fmt-yaml]
+    deps: [gen-version, fmt-js, fmt-json, fmt-yaml]
     run: once
     cmds:
       - >
@@ -751,6 +751,8 @@ tasks:
       - >
         docker compose run --rm markdownlint --config "build/.markdownlint.yml"
         "**/*.md" "**/*.mdx" "#build/postgres-documentdb/documentdb/"
+      - bin/envtool{{exeExt}} shell rmdir tmp/githubcache
+      - bin/envtool{{exeExt}} shell mkdir tmp/githubcache
       - bin/checkdocs
 
   docs-fmt:
