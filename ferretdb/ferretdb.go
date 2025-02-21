@@ -74,7 +74,7 @@ func New(config *Config) (*FerretDB, error) {
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to setup state provider: %w", err)
+		return nil, fmt.Errorf("failed to set up state provider: %w", err)
 	}
 
 	// Note that the current implementation requires `*logging.Handler` in the `getLog` command implementation.
