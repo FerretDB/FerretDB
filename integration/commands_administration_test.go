@@ -1508,7 +1508,7 @@ func TestDBStatsCommand(t *testing.T) {
 			val, ok := field.Value.(float64)
 			require.True(t, ok)
 
-			assert.InDelta(t, 37_500, val, 37_460)
+			assert.InDelta(t, 37_500, val, 37_460, "field %s", field.Key)
 			actualComparable = append(actualComparable, bson.E{Key: field.Key, Value: float64(0)})
 
 		case "fsUsedSize", "fsTotalSize":
