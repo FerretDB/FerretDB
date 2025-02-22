@@ -2,8 +2,6 @@ package main
 
 /*
 #include "postgres.h"
-
-extern void BackgroundWorkerMain(Datum args);
 */
 import "C"
 
@@ -17,10 +15,6 @@ import (
 	"github.com/FerretDB/FerretDB/v2/ferretdb"
 	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
 )
-
-func main() {
-	panic("not reached")
-}
 
 //export BackgroundWorkerMain
 func BackgroundWorkerMain(args C.Datum) {
@@ -56,4 +50,8 @@ func BackgroundWorkerMain(args C.Datum) {
 	<-done
 
 	return
+}
+
+func main() {
+	panic("not reached")
 }

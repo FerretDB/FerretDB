@@ -23,8 +23,6 @@ typedef struct { const char *p; ptrdiff_t n; } _GoString_;
 
 #include "postgres.h"
 
-extern void BackgroundWorkerMain(Datum args);
-
 #line 1 "cgo-generated-wrapper"
 
 

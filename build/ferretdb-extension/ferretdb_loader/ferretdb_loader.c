@@ -11,34 +11,30 @@
 
 PG_MODULE_MAGIC;
 
-static char *ferretdb_lib = "ferretdb.so";
+static char *ferretdb_so = "ferretdb.so";
 
 PGDLLEXPORT void background_main(Datum main_arg);
 
 void background_main(Datum main_arg)
 {
-    bgworker_main_type entrypt;
-    char *golib_path;
-    void *handle;
+    bgworker_main_type f;
+    char *path;
+    void *h;
 
     BackgroundWorkerUnblockSignals();
 
-    golib_path = (char *)palloc(strlen(pkglib_path) + 1 +
-                                strlen(ferretdb_lib) + 1);
+    path = (char *)palloc(strlen(pkglib_path) + 1 + strlen(ferretdb_so) + 1);
+    join_path_components(path, pkglib_path, ferretdb_so);
+    elog(LOG, "ferretdb_loader: loading '%s'", path);
 
-    join_path_components(golib_path, pkglib_path, ferretdb_lib);
-    elog(DEBUG1, "ferretdb_loader: loading go shared lib \"%s\"", golib_path);
+    h = dlopen(path, RTLD_NOW | RTLD_GLOBAL);
+    pfree(path);
 
-    handle = dlopen(golib_path, RTLD_NOW | RTLD_GLOBAL);
-    pfree(golib_path);
+    f = (bgworker_main_type)dlsym(h, "BackgroundWorkerMain");
+    f(main_arg);
 
-    entrypt = (bgworker_main_type)dlsym(handle, "BackgroundWorkerMain");
-
-    entrypt(main_arg);
-
-    dlclose(handle);
-
-    proc_exit(2);
+    dlclose(h);
+    proc_exit(0);
 }
 
 void _PG_init(void)
