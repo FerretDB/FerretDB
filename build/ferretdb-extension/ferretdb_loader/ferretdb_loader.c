@@ -32,15 +32,9 @@ void background_main(Datum main_arg)
     handle = dlopen(golib_path, RTLD_NOW | RTLD_GLOBAL);
     pfree(golib_path);
 
-    elog(DEBUG1, "ferretdb_loader: got handle");
-
     entrypt = (bgworker_main_type)dlsym(handle, "BackgroundWorkerMain");
 
-    elog(DEBUG1, "ferretdb_loader: got entrypt");
-
     entrypt(main_arg);
-
-    elog(DEBUG1, "ferretdb_loader: left entrypt");
 
     dlclose(handle);
 

@@ -2,6 +2,11 @@
 
 <!-- markdownlint-disable MD024 MD034 -->
 
+## [v2.0.0-rc.2](https://github.com/FerretDB/FerretDB/releases/tag/v2.0.0-rc.2) (TBD)
+
+* Embeddable package
+* .deb packages
+
 ## [v2.0.0-rc.1](https://github.com/FerretDB/FerretDB/releases/tag/v2.0.0-rc.1) (2025-01-23)
 
 The first release candidate of FerretDB v2, powered by [DocumentDB PostgreSQL extension](https://github.com/microsoft/documentdb)!
