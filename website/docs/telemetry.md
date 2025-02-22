@@ -63,6 +63,11 @@ The latter acts as if it is `enabled` with two differences:
 Explicit user action is required (see below) to change an `undecided` state to `enabled` or `disabled`.
 :::
 
+:::caution
+Telemetry reporting is `undecided` and can't be configured for [embeddable FerretDB](installation/ferretdb/go.md) yet.
+We intend to add [this feature](https://github.com/FerretDB/FerretDB/issues/4750) in the future.
+:::
+
 ### Disable telemetry
 
 We urge you not to disable the telemetry reporter, as its insights will help us enhance our software.
