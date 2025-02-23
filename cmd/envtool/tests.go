@@ -51,6 +51,7 @@ type testEvent struct {
 	Test           string    `json:"Test"`
 	Output         string    `json:"Output"`
 	ElapsedSeconds float64   `json:"Elapsed"`
+	FailedBuild    string    `json:"FailedBuild"`
 }
 
 // Elapsed returns an elapsed time.
