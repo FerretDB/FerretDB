@@ -176,7 +176,6 @@ func TestUpdateFieldCompatInc(t *testing.T) {
 		},
 		"EmptyUpdatePath": {
 			update: bson.D{{"$inc", bson.D{{}}}},
-			skip:   "https://github.com/FerretDB/FerretDB/issues/673",
 		},
 		"WrongIncTypeArray": {
 			update:     bson.D{{"$inc", bson.A{}}},
