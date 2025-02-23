@@ -1,7 +1,7 @@
 // Please do not merge changes in this file.
 
-(function() {
-  'use strict';
+(function () {
+  "use strict";
 
   const coll = db.illegal_path_in_match;
   assert.commandWorked(coll.insert({a: 1}));

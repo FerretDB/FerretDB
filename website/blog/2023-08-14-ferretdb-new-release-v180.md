@@ -8,7 +8,7 @@ image: /img/blog/ferretdb-v1.8.0.jpg
 tags: [release]
 ---
 
-![FerretDB v.1.8.0 - new release](/img/blog/ferretdb-v1.8.0.jpg)
+![FerretDB v1.8.0 - new release](/img/blog/ferretdb-v1.8.0.jpg)
 
 FerretDB v1.8.0 has just been released with new features, bug fixes, and improvements to the SQLite and PostgreSQL backends.
 

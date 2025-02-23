@@ -16,18 +16,32 @@ package main
 
 import (
 	"bytes"
+	"log"
 	"path/filepath"
+	"strings"
 	"testing"
 
+	"github.com/FerretDB/gh"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/FerretDB/FerretDB/v2/tools/github"
 )
 
 func TestReal(t *testing.T) {
-	files, err := filepath.Glob(filepath.Join("..", "..", "website", "blog", "*.md"))
-	require.NoError(t, err)
+	if testing.Short() {
+		t.Skip("skipping in -short mode")
+	}
 
-	checkFiles(files, t.Logf, t.Fatalf)
+	blogFiles, err := filepath.Glob(filepath.Join("..", "..", "website", "blog", "*.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = checkBlogFiles(blogFiles)
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
 var fm = bytes.TrimSpace([]byte(`
@@ -66,4 +80,65 @@ func TestVerifyTags(t *testing.T) {
 func TestVerifyTruncateString(t *testing.T) {
 	err := verifyTruncateString(fm)
 	assert.EqualError(t, err, "<!--truncate--> must be included to have \"Read more\" link on the homepage")
+}
+
+func TestCheckSupportedCommands(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in -short mode")
+	}
+
+	var buf bytes.Buffer
+	l := log.New(&buf, "", 0)
+
+	p, err := github.CacheFilePath()
+	require.NoError(t, err)
+
+	client, err := github.NewClient(p, log.Printf, gh.NoopPrintf, gh.NoopPrintf)
+	require.NoError(t, err)
+
+	for name, tc := range map[string]struct {
+		Payload        string
+		ExpectedOutput string
+	}{
+		"OpenIssueLink": {
+			Payload:        "|                 | `openIssueLink`          | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/178) |", //nolint:lll // for readability
+			ExpectedOutput: "",
+		},
+
+		"ClosedIssueLink": {
+			Payload:        "|                 | `closedIssueLink`          | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1) |", //nolint:lll // for readability
+			ExpectedOutput: "linked issue https://github.com/FerretDB/FerretDB/issues/1 is closed\n",
+		},
+
+		"AnyLabelClosedIssue": {
+			Payload:        "[IssueLabel](https://github.com/FerretDB/FerretDB/issues/1)",
+			ExpectedOutput: "linked issue https://github.com/FerretDB/FerretDB/issues/1 is closed\n",
+		},
+		"ClosedIssue": {
+			Payload:        "https://github.com/FerretDB/FerretDB/issues/1",
+			ExpectedOutput: "linked issue https://github.com/FerretDB/FerretDB/issues/1 is closed\n",
+		},
+		"IncorrectIssueNumber": {
+			Payload:        "https://github.com/FerretDB/FerretDB/issues/0",
+			ExpectedOutput: "incorrect issue number: https://github.com/FerretDB/FerretDB/issues/0\n",
+		},
+		"DocumentDBIssue": {
+			Payload:        "An example issue is https://github.com/microsoft/documentdb/issues/1.",
+			ExpectedOutput: "linked issue https://github.com/microsoft/documentdb/issues/1 is closed\n",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			buf.Reset()
+			r := strings.NewReader(tc.Payload)
+
+			var failed bool
+
+			failed, err = checkIssueURLs(client, r, l)
+			require.NoError(t, err)
+			assert.Equal(t, tc.ExpectedOutput != "", failed)
+
+			actualOutput := buf.String()
+			assert.Equal(t, tc.ExpectedOutput, actualOutput)
+		})
+	}
 }

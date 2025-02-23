@@ -14,236 +14,175 @@
 
 // Package ferretdb provides embeddable FerretDB implementation.
 //
-// See [github.com/FerretDB/FerretDB/build/version] package documentation
+// See [`build/version` package documentation]
 // for information about Go build tags that affect this package.
+//
+// [`build/version` package documentation]: https://pkg.go.dev/github.com/FerretDB/FerretDB/v2/build/version
 package ferretdb
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"io"
+	"log/slog"
 	"net/url"
+	"os"
 	"sync"
+	"time"
 
-	"go.uber.org/zap"
-
-	"github.com/FerretDB/FerretDB/build/version"
-	"github.com/FerretDB/FerretDB/internal/clientconn"
-	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
-	"github.com/FerretDB/FerretDB/internal/handler/registry"
-	"github.com/FerretDB/FerretDB/internal/util/logging"
-	"github.com/FerretDB/FerretDB/internal/util/state"
+	"github.com/FerretDB/FerretDB/v2/build/version"
+	"github.com/FerretDB/FerretDB/v2/internal/clientconn"
+	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
+	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
+	"github.com/FerretDB/FerretDB/v2/internal/handler"
+	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
+	"github.com/FerretDB/FerretDB/v2/internal/util/state"
+	"github.com/FerretDB/FerretDB/v2/internal/util/telemetry"
 )
+
+// Keep structure and order of Config in sync with the main package and documentation.
+// Avoid breaking changes.
 
 // Config represents FerretDB configuration.
 type Config struct {
-	Listener ListenerConfig
+	// PostgreSQL URL. Required.
+	PostgreSQLURL string
 
-	// Logger to use; if nil, it uses the default global logger.
-	Logger *zap.Logger
-
-	// Handler to use; one of `postgresql` or `sqlite`.
-	Handler string
-
-	// PostgreSQL connection string for `postgresql` handler.
-	// See:
-	//   - https://pkg.go.dev/github.com/jackc/pgx/v5/pgxpool#ParseConfig
-	//   - https://pkg.go.dev/github.com/jackc/pgx/v5#ParseConfig
-	//   - https://pkg.go.dev/github.com/jackc/pgx/v5/pgconn#ParseConfig
-	PostgreSQLURL string // For example: `postgres://hostname:5432/ferretdb`.
-
-	// SQLite URI (directory) for `sqlite` handler.
-	// See https://www.sqlite.org/uri.html.
-	SQLiteURL string // For example: `file:data/`.
-}
-
-// ListenerConfig represents listener configuration.
-type ListenerConfig struct {
-	// Listen TCP address.
+	// Listen TCP address for MongoDB protocol.
 	// If empty, TCP listener is disabled.
-	TCP string
+	ListenAddr string
 
-	// Listen Unix domain socket path.
-	// If empty, Unix listener is disabled.
-	Unix string
-
-	// Listen TLS address.
-	// If empty, TLS listener is disabled.
-	TLS string
-
-	// Server certificate path.
-	TLSCertFile string
-
-	// Server key path.
-	TLSKeyFile string
-
-	// Root CA certificate path.
-	TLSCAFile string
+	// State directory. Required.
+	StateDir string
 }
 
-// FerretDB represents an instance of embeddable FerretDB implementation.
+// FerretDB represents an instance of embedded FerretDB implementation.
 type FerretDB struct {
-	config *Config
-
-	closeBackend func()
-
-	l *clientconn.Listener
+	tl  *telemetry.Reporter
+	lis *clientconn.Listener
 }
 
-// New creates a new instance of embeddable FerretDB implementation.
+// New creates a new instance of embedded FerretDB implementation.
 func New(config *Config) (*FerretDB, error) {
 	version.Get().Package = "embedded"
 
-	if config.Listener.TCP == "" &&
-		config.Listener.Unix == "" &&
-		config.Listener.TLS == "" {
-		return nil, errors.New("Listener TCP, Unix and TLS are empty")
+	sp, err := state.NewProviderDir(config.StateDir)
+	if err == nil {
+		err = sp.Update(func(s *state.State) {
+			s.TelemetryLocked = true
+		})
 	}
 
-	sp, err := state.NewProvider("")
 	if err != nil {
-		return nil, fmt.Errorf("failed to construct handler: %s", err)
+		return nil, fmt.Errorf("failed to set up state provider: %w", err)
 	}
 
-	// Telemetry reporter is not created or running anyway,
-	// but disable telemetry explicitly to disable confusing startupWarnings.
-	err = sp.Update(func(s *state.State) {
-		s.DisableTelemetry()
-		s.TelemetryLocked = true
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to construct handler: %s", err)
+	// Note that the current implementation requires `*logging.Handler` in the `getLog` command implementation.
+	// TODO https://github.com/FerretDB/FerretDB/issues/4750
+	lOpts := &logging.NewHandlerOpts{
+		Base:          "text",
+		Level:         slog.LevelError + 100500, // effectively disables logging
+		RemoveTime:    true,
+		RemoveLevel:   true,
+		RemoveSource:  true,
+		CheckMessages: false,
 	}
+	logger := logging.Logger(io.Discard, lOpts, "")
 
 	metrics := connmetrics.NewListenerMetrics()
 
-	log := config.Logger
-	if log == nil {
-		log = getGlobalLogger()
-	} else {
-		log = logging.WithHooks(log)
-	}
-
-	h, closeBackend, err := registry.NewHandler(config.Handler, &registry.NewHandlerOpts{
-		Logger:        log,
-		ConnMetrics:   metrics.ConnMetrics,
-		StateProvider: sp,
-		TCPHost:       config.Listener.TCP,
-
-		PostgreSQLURL: config.PostgreSQLURL,
-
-		SQLiteURL: config.SQLiteURL,
-
-		//nolint:mnd // Command-line default flags
-		TestOpts: registry.TestOpts{
-			CappedCleanupPercentage: 10,
-			BatchSize:               100,
-		},
+	tl, err := telemetry.NewReporter(&telemetry.NewReporterOpts{
+		URL:            "https://beacon.ferretdb.com/",
+		Dir:            config.StateDir,
+		F:              &telemetry.Flag{},
+		DNT:            os.Getenv("DO_NOT_TRACK"),
+		ExecName:       os.Args[0],
+		P:              sp,
+		ConnMetrics:    metrics.ConnMetrics,
+		L:              logging.WithName(logger, "telemetry"),
+		UndecidedDelay: time.Hour,
+		ReportInterval: 24 * time.Hour,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to construct handler: %s", err)
+		return nil, fmt.Errorf("failed to create telemetry reporter: %w", err)
 	}
 
-	l := clientconn.NewListener(&clientconn.NewListenerOpts{
-		TCP:  config.Listener.TCP,
-		Unix: config.Listener.Unix,
+	p, err := documentdb.NewPool(config.PostgreSQLURL, logging.WithName(logger, "pool"), sp)
+	if err != nil {
+		return nil, fmt.Errorf("failed to construct pool: %w", err)
+	}
 
-		TLS:         config.Listener.TLS,
-		TLSCertFile: config.Listener.TLSCertFile,
-		TLSKeyFile:  config.Listener.TLSKeyFile,
-		TLSCAFile:   config.Listener.TLSCAFile,
+	handlerOpts := &handler.NewOpts{
+		Pool: p,
+		Auth: false,
 
-		Mode:    clientconn.NormalMode,
-		Metrics: metrics,
+		TCPHost:     "",
+		ReplSetName: "",
+
+		L:             logging.WithName(logger, "handler"),
+		ConnMetrics:   metrics.ConnMetrics,
+		StateProvider: sp,
+	}
+
+	h, err := handler.New(handlerOpts)
+	if err != nil {
+		p.Close()
+		return nil, fmt.Errorf("failed to construct handler: %w", err)
+	}
+
+	lis, err := clientconn.Listen(&clientconn.ListenerOpts{
 		Handler: h,
-		Logger:  log,
+		Metrics: metrics,
+		Logger:  logger,
+
+		TCP: config.ListenAddr,
+
+		Mode: clientconn.NormalMode,
 	})
+	if err != nil {
+		p.Close()
+		return nil, fmt.Errorf("failed to construct listener: %w", err)
+	}
 
 	return &FerretDB{
-		config:       config,
-		closeBackend: closeBackend,
-		l:            l,
+		tl:  tl,
+		lis: lis,
 	}, nil
 }
 
 // Run runs FerretDB until ctx is canceled.
 //
-// When this method returns, listener and all connections, as well as handler are closed.
+// When this method returns, all listeners, all client connections, and all PostgreSQL connections are closed.
 //
-// It is required to run this method in order to initialize the listeners with their respective
-// IP address and port. Calling methods which require the listener's address (eg: [*FerretDB.MongoDBURI]
-// requires it for configuring its Host URL) before calling this method might result in a deadlock.
-func (f *FerretDB) Run(ctx context.Context) error {
-	defer f.closeBackend()
+// It is required to run this method in order to initialize listeners with their respective IP addresses and ports.
+// Calling [*FerretDB.MongoDBURI] before calling this method will result in a deadlock.
+func (f *FerretDB) Run(ctx context.Context) {
+	var wg sync.WaitGroup
 
-	err := f.l.Run(ctx)
-	if errors.Is(err, context.Canceled) {
-		err = nil
-	}
+	wg.Add(1)
 
-	if err != nil {
-		// Do not expose internal error details.
-		// If you need stable error values and/or types for some cases, please create an issue.
-		err = errors.New(err.Error())
-	}
+	go func() {
+		defer wg.Done()
+		f.tl.Run(ctx)
+	}()
 
-	return err
+	wg.Add(1)
+
+	go func() {
+		defer wg.Done()
+		f.lis.Run(ctx)
+	}()
+
+	wg.Wait()
 }
 
 // MongoDBURI returns MongoDB URI for this FerretDB instance.
-//
-// TCP's connection string is returned if both TCP and Unix listeners are enabled.
-// TLS is preferred over both.
 func (f *FerretDB) MongoDBURI() string {
-	var u *url.URL
-
-	switch {
-	case f.config.Listener.TLS != "":
-		q := url.Values{
-			"tls": []string{"true"},
-		}
-
-		u = &url.URL{
-			Scheme:   "mongodb",
-			Host:     f.l.TLSAddr().String(),
-			Path:     "/",
-			RawQuery: q.Encode(),
-		}
-	case f.config.Listener.TCP != "":
-		u = &url.URL{
-			Scheme: "mongodb",
-			Host:   f.l.TCPAddr().String(),
-			Path:   "/",
-		}
-	case f.config.Listener.Unix != "":
-		// MongoDB really wants Unix domain socket path in the host part of the URI
-		u = &url.URL{
-			Scheme: "mongodb",
-			Host:   f.l.UnixAddr().String(),
-			Path:   "/",
-		}
+	u := &url.URL{
+		Scheme: "mongodb",
+		Host:   f.lis.TCPAddr().String(),
+		Path:   "/",
 	}
 
 	return u.String()
-}
-
-var (
-	loggerOnce sync.Once
-	logger     *zap.Logger
-)
-
-// getGlobalLogger retrieves or creates a global logger using
-// a loggerOnce to ensure it is created only once.
-func getGlobalLogger() *zap.Logger {
-	loggerOnce.Do(func() {
-		level := zap.ErrorLevel
-		if version.Get().DebugBuild {
-			level = zap.DebugLevel
-		}
-
-		logging.Setup(level, "console", "")
-		logger = zap.L()
-	})
-
-	return logger
 }

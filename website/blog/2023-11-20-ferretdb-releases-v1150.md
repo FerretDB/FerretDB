@@ -8,7 +8,7 @@ image: /img/blog/ferretdb-v1.15.0.jpg
 tags: [release]
 ---
 
-![FerretDB releases v.1.15.0](/img/blog/ferretdb-v1.15.0.jpg)
+![FerretDB releases v1.15.0](/img/blog/ferretdb-v1.15.0.jpg)
 
 FerretDB is delighted to announce the release of v1.15.0 with support for `showRecordId`in `find` and JSON format for logging.
 

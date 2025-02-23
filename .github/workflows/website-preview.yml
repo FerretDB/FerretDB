@@ -26,7 +26,7 @@ env:
 jobs:
   blog-preview:
     name: Preview blog
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
 
     if: >
@@ -70,6 +70,8 @@ jobs:
 
       - name: Build blog
         run: bin/task blog
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # for checkdocs
 
       - name: Check dirty
         run: |
@@ -88,7 +90,7 @@ jobs:
 
   docs-preview:
     name: Preview docs
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
 
     if: >
@@ -134,8 +136,13 @@ jobs:
       - name: Build tools
         run: bin/task env-pull
 
+      - name: Create directory
+        run: mkdir -p tmp/githubcache
+
       - name: Build docs
         run: bin/task docs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # for checkdocs
 
       - name: Check dirty
         run: |

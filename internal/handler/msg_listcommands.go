@@ -16,39 +16,46 @@ package handler
 
 import (
 	"context"
-	"sort"
+	"maps"
+	"slices"
 
-	"golang.org/x/exp/maps"
+	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
 
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // MsgListCommands implements `listCommands` command.
-func (h *Handler) MsgListCommands(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	cmdList := must.NotFail(types.NewDocument())
-	names := maps.Keys(h.Commands())
-	sort.Strings(names)
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgListCommands(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	spec, err := msg.RawDocument()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
-	for _, name := range names {
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+		return nil, err
+	}
+
+	cmdList := must.NotFail(wirebson.NewDocument())
+
+	for _, name := range slices.Sorted(maps.Keys(h.Commands())) {
 		cmd := h.Commands()[name]
 		if cmd.Help == "" {
 			continue
 		}
 
-		cmdList.Set(name, must.NotFail(types.NewDocument(
+		must.NoError(cmdList.Add(name, must.NotFail(wirebson.NewDocument(
 			"help", cmd.Help,
-		)))
+		))))
 	}
 
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
-		must.NotFail(types.NewDocument(
-			"commands", cmdList,
-			"ok", float64(1),
-		)),
-	)))
+	res := must.NotFail(wirebson.NewDocument(
+		"commands", cmdList,
+		"ok", float64(1),
+	))
 
-	return &reply, nil
+	return wire.NewOpMsg(must.NotFail(res.Encode()))
 }

@@ -16,21 +16,64 @@ package handler
 
 import (
 	"context"
+	"time"
 
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
+	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
+
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // MsgCurrentOp implements `currentOp` command.
-func (h *Handler) MsgCurrentOp(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
-		must.NotFail(types.NewDocument(
-			"inprog", must.NotFail(types.NewArray()),
-			"ok", float64(1),
-		)),
-	)))
+//
+// The passed context is canceled when the client connection is closed.
+//
+// TODO https://github.com/FerretDB/FerretDB/issues/3974
+// TODO https://github.com/microsoft/documentdb/issues/59
+func (h *Handler) MsgCurrentOp(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	spec, err := msg.RawDocument()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
-	return &reply, nil
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+		return nil, err
+	}
+
+	ops := h.operations.Operations()
+	inProgress := wirebson.MakeArray(len(ops))
+
+	for _, op := range ops {
+		since := time.Since(op.CurrentOpTime)
+
+		var ns string
+		if op.DB != "" && op.Collection != "" {
+			ns = op.DB + "." + op.Collection
+		}
+
+		opCommand := op.Command
+		if opCommand == nil {
+			opCommand = must.NotFail(wirebson.NewDocument())
+		}
+
+		doc := wirebson.MustDocument(
+			"type", "op",
+			"active", op.Active,
+			"currentOpTime", time.Now().Format(time.RFC3339),
+			"opid", op.OpID,
+			"secs_running", int64(since.Truncate(time.Second).Seconds()),
+			"microsecs_running", since.Microseconds(),
+			"op", op.Op,
+			"ns", ns,
+			"command", opCommand,
+		)
+
+		must.NoError(inProgress.Add(doc))
+	}
+
+	return wire.MustOpMsg(
+		"inprog", inProgress,
+		"ok", float64(1),
+	), nil
 }

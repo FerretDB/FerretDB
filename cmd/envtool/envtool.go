@@ -22,8 +22,7 @@ import (
 	"fmt"
 	"html/template"
 	"io"
-	"net"
-	"net/url"
+	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -33,19 +32,10 @@ import (
 	"time"
 
 	"github.com/alecthomas/kong"
-	"github.com/prometheus/client_golang/prometheus"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 
-	"github.com/FerretDB/FerretDB/build/version"
-	mysqlpool "github.com/FerretDB/FerretDB/internal/backends/mysql/metadata/pool"
-	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata/pool"
-	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
-	"github.com/FerretDB/FerretDB/internal/util/debug"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/logging"
-	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/util/state"
+	"github.com/FerretDB/FerretDB/v2/build/version"
+	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
+	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 )
 
 var (
@@ -59,224 +49,14 @@ var (
 // versionFile contains version information with leading v.
 const versionFile = "build/version/version.txt"
 
-// waitForPort waits for the given port to be available until ctx is canceled.
-func waitForPort(ctx context.Context, logger *zap.SugaredLogger, port uint16) error {
-	addr := fmt.Sprintf("127.0.0.1:%d", port)
-	logger.Infof("Waiting for %s to be up...", addr)
-
-	var retry int64
-	for ctx.Err() == nil {
-		conn, err := net.Dial("tcp", addr)
-		if err == nil {
-			conn.Close()
-			return nil
-		}
-
-		logger.Infof("%s: %s", addr, err)
-
-		retry++
-		ctxutil.SleepWithJitter(ctx, time.Second, retry)
-	}
-
-	return fmt.Errorf("failed to connect to %s", addr)
-}
-
-// setupAnyPostgres configures given PostgreSQL.
-func setupAnyPostgres(ctx context.Context, logger *zap.SugaredLogger, uri string) error {
-	u, err := url.Parse(uri)
-	if err != nil {
-		return err
-	}
-
-	port, err := strconv.ParseUint(u.Port(), 10, 16)
-	if err != nil {
-		return err
-	}
-
-	if u.User == nil {
-		return lazyerrors.New("No username specified")
-	}
-
-	if err = waitForPort(ctx, logger, uint16(port)); err != nil {
-		return err
-	}
-
-	sp, err := state.NewProvider("")
-	if err != nil {
-		return err
-	}
-
-	p, err := pool.New(uri, logger.Desugar(), sp)
-	if err != nil {
-		return err
-	}
-
-	defer p.Close()
-
-	username := u.User.Username()
-	password, _ := u.User.Password()
-
-	var retry int64
-	for ctx.Err() == nil {
-		if _, err = p.Get(username, password); err == nil {
-			break
-		}
-
-		logger.Infof("%s: %s", uri, err)
-
-		retry++
-		ctxutil.SleepWithJitter(ctx, time.Second, retry)
-	}
-
-	if ctx.Err() != nil {
-		return ctx.Err()
-	}
-
-	return nil
-}
-
-// setupPostgres configures `postgres` container.
-func setupPostgres(ctx context.Context, logger *zap.SugaredLogger) error {
-	// user `username` must exist, but password may be any, even empty
-	return setupAnyPostgres(ctx, logger.Named("postgres"), "postgres://username@127.0.0.1:5432/ferretdb")
-}
-
-// setupPostgresSecured configures `postgres_secured` container.
-func setupPostgresSecured(ctx context.Context, logger *zap.SugaredLogger) error {
-	return setupAnyPostgres(ctx, logger.Named("postgres_secured"), "postgres://username:password@127.0.0.1:5433/ferretdb")
-}
-
-// setupMySQL configures `mysql` container.
-func setupMySQL(ctx context.Context, logger *zap.SugaredLogger) error {
-	uri := "mysql://root:password@127.0.0.1:3306/ferretdb"
-
-	sp, err := state.NewProvider("")
-	if err != nil {
-		return err
-	}
-
-	if err := waitForPort(ctx, logger.Named("mysql"), 3306); err != nil {
-		return err
-	}
-
-	p, err := mysqlpool.New(uri, logger.Desugar(), sp)
-	if err != nil {
-		return err
-	}
-
-	defer p.Close()
-
-	var retry int64
-	for ctx.Err() == nil {
-		db, err := p.Get("root", "password")
-		if err == nil {
-			if _, err = db.ExecContext(ctx, "GRANT ALL PRIVILEGES ON *.* TO 'username'@'%';"); err != nil {
-				return lazyerrors.Error(err)
-			}
-
-			break
-		}
-
-		logger.Infof("%s: %s", uri, err)
-
-		retry++
-		ctxutil.SleepWithJitter(ctx, time.Second, retry)
-	}
-
-	if ctx.Err() != nil {
-		return ctx.Err()
-	}
-
-	return nil
-}
-
-// setupMongodb configures `mongodb` container.
-func setupMongodb(ctx context.Context, logger *zap.SugaredLogger) error {
-	if err := waitForPort(ctx, logger.Named("mongodb"), 47017); err != nil {
-		return err
-	}
-
-	eval := `'rs.initiate({_id: "rs0", members: [{_id: 0, host: "localhost:47017" }]})'`
-	args := []string{"compose", "exec", "-T", "mongodb", "mongosh", "--port=47017", "--eval", eval}
-
-	var buf bytes.Buffer
-	var retry int64
-
-	for ctx.Err() == nil {
-		buf.Reset()
-
-		err := runCommand("docker", args, &buf, logger)
-		if err == nil {
-			break
-		}
-
-		logger.Infof("%s:\n%s", err, buf.String())
-
-		retry++
-		ctxutil.SleepWithJitter(ctx, time.Second, retry)
-	}
-
-	return ctx.Err()
-}
-
-// setupMongodbSecured configures `mongodb_secured` container.
-func setupMongodbSecured(ctx context.Context, logger *zap.SugaredLogger) error {
-	if err := waitForPort(ctx, logger.Named("mongodb_secured"), 47018); err != nil {
-		return err
-	}
-
-	eval := `'rs.initiate({_id: "rs0", members: [{_id: 0, host: "localhost:47018" }]})'`
-	shell := `mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=/etc/certs/client.pem&tlsCaFile=/etc/certs/rootCA-cert.pem` //nolint:lll // for readability
-	args := []string{"compose", "exec", "-T", "mongodb_secured", "mongosh", "--eval", eval, "--shell", shell}
-
-	var buf bytes.Buffer
-	var retry int64
-
-	for ctx.Err() == nil {
-		buf.Reset()
-
-		err := runCommand("docker", args, &buf, logger)
-		if err == nil {
-			break
-		}
-
-		logger.Infof("%s:\n%s", err, buf.String())
-
-		retry++
-		ctxutil.SleepWithJitter(ctx, time.Second, retry)
-	}
-
-	return ctx.Err()
-}
-
-// setup runs all setup commands.
-func setup(ctx context.Context, logger *zap.SugaredLogger) error {
-	go debug.RunHandler(ctx, "127.0.0.1:8089", prometheus.DefaultRegisterer, logger.Named("debug").Desugar())
-
-	for _, f := range []func(context.Context, *zap.SugaredLogger) error{
-		setupPostgres,
-		setupPostgresSecured,
-		setupMySQL,
-		setupMongodb,
-		setupMongodbSecured,
-	} {
-		if err := f(ctx, logger); err != nil {
-			return err
-		}
-	}
-
-	logger.Info("Done.")
-	return nil
-}
-
 // runCommand runs command with given arguments.
-func runCommand(command string, args []string, stdout io.Writer, logger *zap.SugaredLogger) error {
+func runCommand(command string, args []string, stdout io.Writer, logger *slog.Logger) error {
 	bin, err := exec.LookPath(command)
 	if err != nil {
 		return err
 	}
 	cmd := exec.Command(bin, args...)
-	logger.Debugf("Running %s", strings.Join(cmd.Args, " "))
+	logger.Debug(fmt.Sprintf("Running %s", strings.Join(cmd.Args, " ")))
 
 	cmd.Stdout = stdout
 	cmd.Stderr = os.Stderr
@@ -289,7 +69,7 @@ func runCommand(command string, args []string, stdout io.Writer, logger *zap.Sug
 }
 
 // printDiagnosticData prints diagnostic data and error template on stdout.
-func printDiagnosticData(w io.Writer, setupError error, logger *zap.SugaredLogger) error {
+func printDiagnosticData(w io.Writer, setupError error, logger *slog.Logger) error {
 	_ = runCommand("docker", []string{"compose", "logs"}, w, logger)
 
 	_ = runCommand("docker", []string{"compose", "ps", "--all"}, w, logger)
@@ -331,12 +111,12 @@ func printDiagnosticData(w io.Writer, setupError error, logger *zap.SugaredLogge
 		"GOOS":   runtime.GOOS,
 		"GOARCH": runtime.GOARCH,
 
-		"Version":    info.Version,
-		"Commit":     info.Commit,
-		"Branch":     info.Branch,
-		"Dirty":      info.Dirty,
-		"Package":    info.Package,
-		"DebugBuild": info.DebugBuild,
+		"Version":  info.Version,
+		"Commit":   info.Commit,
+		"Branch":   info.Branch,
+		"Dirty":    info.Dirty,
+		"Package":  info.Package,
+		"DevBuild": info.DevBuild,
 
 		"GoVersion":      runtime.Version(),
 		"GitVersion":     strings.TrimSpace(gitVersion),
@@ -402,6 +182,19 @@ func packageVersion(w io.Writer, file string) error {
 	return err
 }
 
+// TestsRunParams represents `envtool tests run` parameters.
+//
+//nolint:vet // for readability
+type TestsRunParams struct {
+	ShardIndex uint   `help:"Shard index, starting from 1."`
+	ShardTotal uint   `help:"Total number of shards."`
+	Run        string `help:"Run only tests matching the regexp."`
+	Skip       string `help:"Skip tests matching the regexp."`
+	RawPrefix  string `help:"Prefix for raw output files."`
+
+	Args []string `arg:"" help:"Other arguments and flags for 'go test'." passthrough:""`
+}
+
 // cli struct represents all command-line commands, fields and flags.
 // It's used for parsing the user input.
 //
@@ -415,25 +208,18 @@ var cli struct {
 
 	Shell struct {
 		Mkdir struct {
-			Paths []string `arg:"" name:"path" help:"Paths to create." type:"path"`
+			Paths []string `name:"path" arg:"" help:"Paths to create." type:"path"`
 		} `cmd:"" help:"Create directories if they do not already exist."`
 		Rmdir struct {
-			Paths []string `arg:"" name:"path" help:"Paths to remove." type:"path"`
+			Paths []string `name:"path" arg:"" help:"Paths to remove." type:"path"`
 		} `cmd:"" help:"Remove directories."`
 		Read struct {
-			Paths []string `arg:"" name:"path" help:"Paths to read." type:"path"`
+			Paths []string `name:"path" arg:"" help:"Paths to read." type:"path"`
 		} `cmd:"" help:"Read files."`
 	} `cmd:""`
 
 	Tests struct {
-		Run struct {
-			ShardIndex uint   `help:"Shard index, starting from 1."`
-			ShardTotal uint   `help:"Total number of shards."`
-			Run        string `help:"Run only tests matching the regexp."`
-			Skip       string `help:"Skip tests matching the regexp."`
-
-			Args []string `arg:"" help:"Other arguments and flags for 'go test'." passthrough:""`
-		} `cmd:"" help:"Run tests."`
+		Run TestsRunParams `cmd:"" help:"Run tests."`
 	} `cmd:""`
 
 	Fuzz struct {
@@ -444,61 +230,31 @@ var cli struct {
 	} `cmd:""`
 }
 
-// makeLogger returns a human-friendly logger.
-func makeLogger(level zapcore.Level, output []string) (*zap.Logger, error) {
-	start := time.Now()
-
-	return zap.Config{
-		Level:             zap.NewAtomicLevelAt(level),
-		Development:       true,
-		DisableCaller:     true,
-		DisableStacktrace: false,
-		Sampling:          nil,
-		Encoding:          "console",
-		EncoderConfig: zapcore.EncoderConfig{
-			MessageKey:    "M",
-			LevelKey:      zapcore.OmitKey,
-			TimeKey:       "T",
-			NameKey:       "N",
-			CallerKey:     zapcore.OmitKey,
-			FunctionKey:   zapcore.OmitKey,
-			StacktraceKey: zapcore.OmitKey,
-			LineEnding:    zapcore.DefaultLineEnding,
-			EncodeLevel:   zapcore.CapitalLevelEncoder,
-			EncodeTime: func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
-				enc.AppendString(fmt.Sprintf("%7.2fs", t.Sub(start).Seconds()))
-			},
-			EncodeDuration:      zapcore.StringDurationEncoder,
-			EncodeCaller:        zapcore.ShortCallerEncoder,
-			EncodeName:          nil,
-			NewReflectedEncoder: nil,
-			ConsoleSeparator:    "  ",
-		},
-		OutputPaths:      output,
-		ErrorOutputPaths: []string{"stderr"},
-		InitialFields:    nil,
-	}.Build()
-}
-
 func main() {
-	kongCtx := kong.Parse(&cli)
+	kongCtx := kong.Parse(&cli, kong.DefaultEnvars("ENVTOOL"))
 
 	// https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables
-	if t, _ := strconv.ParseBool(os.Getenv("CI")); t {
+	if t, _ := strconv.ParseBool(os.Getenv("RUNNER_DEBUG")); t {
 		cli.Debug = true
 	}
 
-	level := zap.InfoLevel
+	level := slog.LevelInfo
 	if cli.Debug {
-		level = zap.DebugLevel
+		level = slog.LevelDebug
 	}
 
-	logging.SetupWithZapLogger(must.NotFail(makeLogger(level, []string{"stderr"})))
-
-	logger := zap.S()
+	opts := &logging.NewHandlerOpts{
+		Base:          "console",
+		Level:         level,
+		RemoveTime:    true,
+		RemoveSource:  true,
+		CheckMessages: false, // TODO https://github.com/FerretDB/FerretDB/issues/4511
+	}
+	logging.SetupDefault(opts, "")
+	logger := slog.Default()
 
 	cmd := kongCtx.Command()
-	logger.Debugf("Command: %q", cmd)
+	logger.Debug(fmt.Sprintf("Command: %q", cmd))
 
 	var err error
 
@@ -523,22 +279,17 @@ func main() {
 		ctx, stop := ctxutil.SigTerm(context.Background())
 		defer stop()
 
-		err = testsRun(
-			ctx,
-			cli.Tests.Run.ShardIndex, cli.Tests.Run.ShardTotal,
-			cli.Tests.Run.Run, cli.Tests.Run.Skip, cli.Tests.Run.Args,
-			logger,
-		)
+		err = testsRun(ctx, &cli.Tests.Run, logger)
 
 	case "fuzz corpus <src> <dst>":
 		var seedCorpus, generatedCorpus string
 
 		if seedCorpus, err = os.Getwd(); err != nil {
-			logger.Fatal(err)
+			logger.LogAttrs(context.Background(), logging.LevelFatal, "Failed to get current directory", logging.Error(err))
 		}
 
 		if generatedCorpus, err = fuzzGeneratedCorpus(); err != nil {
-			logger.Fatal(err)
+			logger.LogAttrs(context.Background(), logging.LevelFatal, "Failed to generate fuzz corpus", logging.Error(err))
 		}
 
 		var src, dst string
@@ -550,20 +301,25 @@ func main() {
 			src = generatedCorpus
 		default:
 			if src, err = filepath.Abs(cli.Fuzz.Corpus.Src); err != nil {
-				logger.Fatal(err)
+				logger.LogAttrs(context.Background(), logging.LevelFatal, "Unknown fuzz corpus source", logging.Error(err))
 			}
 		}
 
 		switch cli.Fuzz.Corpus.Dst {
 		case "seed":
 			// Because we would need to add `/testdata/fuzz` back, and that's not very easy.
-			logger.Fatal("Copying to seed corpus is not supported.")
+			logger.LogAttrs(
+				context.Background(),
+				logging.LevelFatal,
+				"Copying to seed corpus is not supported",
+				logging.Error(err),
+			)
 		case "generated":
 			dst = generatedCorpus
 		default:
 			dst, err = filepath.Abs(cli.Fuzz.Corpus.Dst)
 			if err != nil {
-				logger.Fatal(err)
+				logger.LogAttrs(context.Background(), logging.LevelFatal, "Unknown fuzz corpus destination", logging.Error(err))
 			}
 		}
 
@@ -580,10 +336,10 @@ func main() {
 
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {
-			logger.Error(exitErr)
+			logger.Error("Failed", logging.Error(exitErr))
 			os.Exit(exitErr.ExitCode())
 		}
 
-		logger.Fatal(err)
+		logger.LogAttrs(context.Background(), logging.LevelFatal, "Failed unexpectedly", logging.Error(err))
 	}
 }

@@ -16,7 +16,7 @@
 package testdata
 
 func testCorrect() {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3413
+	// TODO https://github.com/FerretDB/FerretDB/issues/178
 }
 
 func testIncorrectNoURL() {
@@ -24,7 +24,7 @@ func testIncorrectNoURL() {
 }
 
 func testIncorrectFormat() {
-	// TODO: https://github.com/FerretDB/FerretDB/issues/3413 // want "invalid TODO: incorrect format"
+	// TODO: https://github.com/FerretDB/FerretDB/issues/178 // want "invalid TODO: incorrect format"
 }
 
 // For https://github.com/github/codeql/issues/15894.
@@ -46,4 +46,16 @@ func testCorrectFormatNotExists() {
 
 func testIncorrectFormatNotExists() {
 	// TODO: https://github.com/FerretDB/FerretDB/issues/999999 // want "invalid TODO: incorrect format"
+}
+
+func testPrivateIssue() {
+	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/1
+}
+
+func testIncorrectIssueNumber() {
+	// TODO https://github.com/FerretDB/FerretDB/issues/0 // want "invalid TODO: incorrect issue number"
+}
+
+func testDocumentDB() {
+	// TODO https://github.com/microsoft/documentdb/issues/1 // want "invalid TODO: linked issue https://github.com/microsoft/documentdb/issues/1 is closed"
 }

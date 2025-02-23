@@ -21,15 +21,16 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/v2/integration/setup"
+	"github.com/FerretDB/FerretDB/v2/integration/shareddata"
 )
 
 // distinctCompatTestCase describes distinct compatibility test case.
 type distinctCompatTestCase struct {
-	field      string                   // required
-	filter     bson.D                   // required
-	resultType compatTestCaseResultType // defaults to nonEmptyResult
+	field            string                   // required
+	filter           bson.D                   // required
+	resultType       compatTestCaseResultType // defaults to nonEmptyResult
+	failsForFerretDB string
 }
 
 func testDistinctCompat(t *testing.T, testCases map[string]distinctCompatTestCase) {
@@ -40,13 +41,12 @@ func testDistinctCompat(t *testing.T, testCases map[string]distinctCompatTestCas
 	// Use read-only user.
 	// TODO https://github.com/FerretDB/FerretDB/issues/1025
 	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
-		Providers:                shareddata.AllProviders().Remove(shareddata.Scalars), // Remove provider with the same values with different types
+		Providers:                shareddata.AllProviders().Remove(shareddata.Scalars, shareddata.Decimal128s), // Remove providers with the same values with different types
 		AddNonExistentCollection: true,
 	})
 	ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
 
 	for name, tc := range testCases {
-		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
 
@@ -59,14 +59,31 @@ func testDistinctCompat(t *testing.T, testCases map[string]distinctCompatTestCas
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
-				t.Run(targetCollection.Name(), func(t *testing.T) {
-					t.Helper()
 
-					targetRes, targetErr := targetCollection.Distinct(ctx, tc.field, tc.filter)
-					compatRes, compatErr := compatCollection.Distinct(ctx, tc.field, tc.filter)
+				t.Run(targetCollection.Name(), func(tt *testing.T) {
+					tt.Helper()
+
+					var t testing.TB = tt
+					if tc.failsForFerretDB != "" {
+						t = setup.FailsForFerretDB(tt, tc.failsForFerretDB)
+					}
+
+					var targetRes, compatRes bson.D
+					targetErr := targetCollection.Database().RunCommand(ctx, bson.D{
+						{"distinct", targetCollection.Name()},
+						{"key", tc.field},
+						{"query", tc.filter},
+					}).Decode(&targetRes)
+					compatErr := compatCollection.Database().RunCommand(ctx, bson.D{
+						{"distinct", targetCollection.Name()},
+						{"key", tc.field},
+						{"query", tc.filter},
+					}).Decode(&compatRes)
 
 					if targetErr != nil {
 						t.Logf("Target error: %v", targetErr)
+						t.Logf("Compat error: %v", compatErr)
+
 						targetErr = UnsetRaw(t, targetErr)
 						compatErr = UnsetRaw(t, compatErr)
 						assert.Equal(t, compatErr, targetErr)
@@ -77,15 +94,7 @@ func testDistinctCompat(t *testing.T, testCases map[string]distinctCompatTestCas
 					t.Logf("Compat (expected) result: %v", compatRes)
 					t.Logf("Target (actual)   result: %v", targetRes)
 
-					require.Equal(t, len(compatRes), len(targetRes))
-
-					// If compat result is an empty array, the target results must be empty array too
-					// (not nil or something else).
-					if len(compatRes) == 0 {
-						assert.Equal(t, compatRes, targetRes)
-					}
-
-					assert.Equal(t, targetRes, compatRes)
+					AssertEqualDocuments(t, compatRes, targetRes)
 
 					if targetRes != nil || compatRes != nil {
 						nonEmptyResults = true
@@ -110,9 +119,10 @@ func TestDistinctCompat(t *testing.T) {
 
 	testCases := map[string]distinctCompatTestCase{
 		"EmptyField": {
-			field:      "",
-			filter:     bson.D{},
-			resultType: emptyResult,
+			field:            "",
+			filter:           bson.D{},
+			resultType:       emptyResult,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/309",
 		},
 		"IDAny": {
 			field:  "_id",
