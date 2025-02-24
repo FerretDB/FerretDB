@@ -28,7 +28,7 @@ import (
 	"time"
 
 	"github.com/FerretDB/gh"
-	"github.com/google/go-github/v66/github"
+	"github.com/google/go-github/v69/github"
 	"gopkg.in/yaml.v3"
 )
 
