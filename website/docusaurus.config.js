@@ -17,6 +17,7 @@ const config = {
   onBrokenAnchors: "throw",
   onBrokenLinks: "throw",
   onBrokenMarkdownLinks: "throw",
+  onDuplicateRoutes: "throw",
 
   i18n: {
     defaultLocale: "en",

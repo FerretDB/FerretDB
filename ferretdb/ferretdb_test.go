@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"log/slog"
 	"os/exec"
 	"testing"
 
@@ -87,6 +88,8 @@ func TestFerretDB(t *testing.T) {
 		PostgreSQLURL: testutil.PostgreSQLURI(t),
 		ListenAddr:    "127.0.0.1:0",
 		StateDir:      t.TempDir(),
+		LogLevel:      slog.LevelDebug,
+		LogOutput:     testutil.NewLogWriter(t),
 	})
 	require.NoError(t, err)
 
