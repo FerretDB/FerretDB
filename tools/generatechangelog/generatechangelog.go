@@ -32,21 +32,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// ReleaseTemplate represents GitHub release template.
-type ReleaseTemplate struct {
-	Changelog struct {
-		Categories []TemplateCategory `yaml:"categories"`
-	} `yaml:"changelog"`
-}
-
-// TemplateCategory represents a category in the template file.
-type TemplateCategory struct {
-	Title  string   `yaml:"title"`
-	Labels []string `yaml:"labels"`
-}
-
 // PRItem represents GitHub PR.
-type PRItem struct { //nolint:vet // for readability
+type PRItem struct {
 	URL    string
 	Title  string
 	Number int
