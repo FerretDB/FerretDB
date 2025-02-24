@@ -41,7 +41,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/observability"
 )
 
-// testEvent represents a single even emitted by `go test -json` or `go build -json`.
+// testEvent represents a single event emitted by `go test -json` or `go build -json`.
 //
 // See `go doc test2json` and `go help buildjson`.
 type testEvent struct {
