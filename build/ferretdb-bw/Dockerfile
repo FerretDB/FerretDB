@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 ghcr.io/ferretdb/postgres-documentdb-dev:16.7-0.102-0.ferretdb-1
+FROM --platform=linux/amd64 ghcr.io/ferretdb/postgres-documentdb-dev:16.8-0.102.0-ferretdb-2.0.0-rc.2
 
 RUN --mount=type=cache,target=/var/cache/apt <<EOF
 

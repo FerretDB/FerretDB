@@ -40,7 +40,7 @@ import (
 )
 
 // PostgreSQL version expected by tests.
-const expectedPostgreSQLVersion = "PostgreSQL 16.7 (Debian 16.7-1.pgdg120+1) on x86_64-pc-linux-gnu, " +
+const expectedPostgreSQLVersion = "PostgreSQL 16.8 (Debian 16.8-1.pgdg120+1) on x86_64-pc-linux-gnu, " +
 	"compiled by gcc (Debian 12.2.0-14) 12.2.0, 64-bit"
 
 func TestCreateCollectionDropListCollections(t *testing.T) {
