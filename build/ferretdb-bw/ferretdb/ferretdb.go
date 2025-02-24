@@ -41,6 +41,7 @@ func BackgroundWorkerMain(args C.Datum) {
 	defer stop()
 
 	f, err := ferretdb.New(&ferretdb.Config{
+		// TODO https://github.com/FerretDB/FerretDB/issues/4771
 		PostgreSQLURL: "postgres://username:password@127.0.0.1:5432/postgres",
 		ListenAddr:    "127.0.0.1:27017",
 		StateDir:      ".",
@@ -54,6 +55,9 @@ func BackgroundWorkerMain(args C.Datum) {
 	version.Get().Package = "extension"
 
 	done := make(chan struct{})
+
+	// Use WaitLatch, ResetLatch, and WL_POSTMASTER_DEATH to check if `postmaster` process died and call stop().
+	// TODO https://github.com/FerretDB/FerretDB/issues/4771
 
 	go func() {
 		f.Run(ctx)

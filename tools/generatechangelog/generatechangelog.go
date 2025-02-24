@@ -173,7 +173,7 @@ func groupPRsByCategories(prItems []PRItem, categories []TemplateCategory) map[s
 	return res
 }
 
-func run(w io.Writer, repoRoot, milestoneTitle, previousMilestoneTitle string) {
+func run(w io.Writer, repoRoot, milestoneTitle, prev string) {
 	releaseYamlFile := filepath.Join(repoRoot, ".github", "release.yml")
 
 	tpl, err := loadReleaseTemplate(releaseYamlFile)
@@ -236,8 +236,8 @@ func run(w io.Writer, repoRoot, milestoneTitle, previousMilestoneTitle string) {
 		PRs        map[string][]PRItem
 	}{
 		Date:       time.Now().Format("2006-01-02"),
-		Current:    *milestone.Title,       // e.g. v0.8.0 Beta
-		Previous:   previousMilestoneTitle, // e.g. v0.7.0
+		Current:    *milestone.Title,
+		Previous:   prev,
 		URL:        *milestone.HTMLURL,
 		Categories: categories,
 		PRs:        prs,
@@ -249,22 +249,18 @@ func run(w io.Writer, repoRoot, milestoneTitle, previousMilestoneTitle string) {
 }
 
 func main() {
-	milestoneF := flag.String("milestone", "", "Milestone to generate changelog for, e.g. v1.22.0")
-	previousF := flag.String("previous", "", "Previous milestone to compare against, e.g. v1.21.0")
+	prevF := flag.String("prev", "", "Previous milestone to compare against, e.g. v2.0.0-rc.1")
+	nextF := flag.String("next", "Next", "Milestone to generate changelog for, e.g. v2.0.0-rc.2")
 	flag.Parse()
 
-	if *milestoneF == "" {
-		log.Fatal("Milestone title is required")
+	if *prevF == "" || *nextF == "" {
+		log.Fatal("Both -prev and -next must be specified.")
 	}
 
-	if *previousF == "" {
-		log.Fatal("Previous milestone title is required")
-	}
-
-	repoRoot, err := os.Getwd()
+	wd, err := os.Getwd()
 	if err != nil {
-		log.Fatalf("Failed to get current working directory: %v", err)
+		log.Fatal(err)
 	}
 
-	run(os.Stdout, repoRoot, *milestoneF, *previousF)
+	run(os.Stdout, wd, *nextF, *prevF)
 }
