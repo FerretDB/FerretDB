@@ -1492,7 +1492,7 @@ func TestDataSizeCommandErrors(t *testing.T) {
 
 func TestDBStatsCommand(tt *testing.T) {
 	tt.Parallel()
-	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/9")
+	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/4773")
 
 	ctx, collection := setup.Setup(tt, shareddata.DocumentsStrings)
 
@@ -1501,7 +1501,7 @@ func TestDBStatsCommand(tt *testing.T) {
 	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
 	require.NoError(t, err)
 
-	var actualComparalbe bson.D
+	var actualComparable bson.D
 
 	for _, field := range actual {
 		switch field.Key {
@@ -1509,18 +1509,18 @@ func TestDBStatsCommand(tt *testing.T) {
 			val, ok := field.Value.(float64)
 			require.True(t, ok)
 
-			assert.InDelta(t, 37_500, val, 37_460)
-			actualComparalbe = append(actualComparalbe, bson.E{Key: field.Key, Value: float64(0)})
+			assert.InDelta(t, 37_500, val, 37_460, "field %s", field.Key)
+			actualComparable = append(actualComparable, bson.E{Key: field.Key, Value: float64(0)})
 
 		case "fsUsedSize", "fsTotalSize":
 			val, ok := field.Value.(float64)
 			require.True(t, ok)
 
 			assert.Greater(t, val, float64(0))
-			actualComparalbe = append(actualComparalbe, bson.E{Key: field.Key, Value: float64(0)})
+			actualComparable = append(actualComparable, bson.E{Key: field.Key, Value: float64(0)})
 
 		default:
-			actualComparalbe = append(actualComparalbe, field)
+			actualComparable = append(actualComparable, field)
 		}
 	}
 
@@ -1541,12 +1541,12 @@ func TestDBStatsCommand(tt *testing.T) {
 		{"ok", float64(1)},
 	}
 
-	AssertEqualDocuments(t, expected, actualComparalbe)
+	AssertEqualDocuments(t, expected, actualComparable)
 }
 
 func TestDBStatsCommandEmpty(tt *testing.T) {
 	tt.Parallel()
-	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/9")
+	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/4773")
 
 	ctx, collection := setup.Setup(tt)
 
@@ -1593,14 +1593,14 @@ func TestDBStatsCommandScale(tt *testing.T) {
 			tt.Helper()
 			tt.Parallel()
 
-			t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/9")
+			t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/4773")
 
 			var actual bson.D
 			command := bson.D{{"dbStats", int32(1)}, {"scale", tc.scale}}
 			err := collection.Database().RunCommand(ctx, command).Decode(&actual)
 			require.NoError(t, err)
 
-			var actualComparalbe bson.D
+			var actualComparable bson.D
 
 			for _, field := range actual {
 				switch field.Key {
@@ -1609,17 +1609,17 @@ func TestDBStatsCommandScale(tt *testing.T) {
 					require.True(t, ok)
 
 					assert.InDelta(t, 35_500, val, 35_500)
-					actualComparalbe = append(actualComparalbe, bson.E{Key: field.Key, Value: float64(0)})
+					actualComparable = append(actualComparable, bson.E{Key: field.Key, Value: float64(0)})
 
 				case "fsUsedSize", "fsTotalSize":
 					val, ok := field.Value.(float64)
 					require.True(t, ok)
 
 					assert.Greater(t, val, float64(0))
-					actualComparalbe = append(actualComparalbe, bson.E{Key: field.Key, Value: float64(0)})
+					actualComparable = append(actualComparable, bson.E{Key: field.Key, Value: float64(0)})
 
 				default:
-					actualComparalbe = append(actualComparalbe, field)
+					actualComparable = append(actualComparable, field)
 				}
 			}
 
@@ -1640,14 +1640,14 @@ func TestDBStatsCommandScale(tt *testing.T) {
 				{"ok", float64(1)},
 			}
 
-			AssertEqualDocuments(t, expected, actualComparalbe)
+			AssertEqualDocuments(t, expected, actualComparable)
 		})
 	}
 }
 
 func TestDBStatsCommandScaleEmptyDatabase(tt *testing.T) {
 	tt.Parallel()
-	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/9")
+	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/4773")
 
 	ctx, collection := setup.Setup(tt)
 
@@ -1831,13 +1831,13 @@ func TestDBStatsCommandFreeStorage(tt *testing.T) {
 		tt.Run(name, func(tt *testing.T) {
 			tt.Parallel()
 
-			t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/9")
+			t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/4773")
 
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
 			require.NoError(t, err)
 
-			var actualComparalbe bson.D
+			var actualComparable bson.D
 
 			for _, field := range actual {
 				switch field.Key {
@@ -1847,21 +1847,21 @@ func TestDBStatsCommandFreeStorage(tt *testing.T) {
 					require.True(t, ok)
 
 					assert.InDelta(t, 35_500, val, 35_500)
-					actualComparalbe = append(actualComparalbe, bson.E{Key: field.Key, Value: float64(0)})
+					actualComparable = append(actualComparable, bson.E{Key: field.Key, Value: float64(0)})
 
 				case "fsUsedSize", "fsTotalSize":
 					val, ok := field.Value.(float64)
 					require.True(t, ok)
 
 					assert.Greater(t, val, float64(0))
-					actualComparalbe = append(actualComparalbe, bson.E{Key: field.Key, Value: float64(0)})
+					actualComparable = append(actualComparable, bson.E{Key: field.Key, Value: float64(0)})
 
 				default:
-					actualComparalbe = append(actualComparalbe, field)
+					actualComparable = append(actualComparable, field)
 				}
 			}
 
-			AssertEqualDocuments(t, tc.expected, actualComparalbe)
+			AssertEqualDocuments(t, tc.expected, actualComparable)
 		})
 	}
 }
