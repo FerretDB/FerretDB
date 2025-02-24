@@ -28,6 +28,11 @@ type logWriter struct {
 	tb testing.TB
 }
 
+// NewLogWriter returns a new [io.Writer] for [testing.TB].
+func NewLogWriter(tb testing.TB) io.Writer {
+	return &logWriter{tb: tb}
+}
+
 // Write implements [io.Writer].
 func (lw *logWriter) Write(p []byte) (int, error) {
 	// "logging.go:xx" is added by testing.TB.Log itself; there is nothing we can do about it.
@@ -45,7 +50,7 @@ func Logger(tb testing.TB) *slog.Logger {
 
 // LevelLogger returns a slog test logger for the given level (which might be dynamic).
 func LevelLogger(tb testing.TB, level slog.Leveler) *slog.Logger {
-	h := logging.NewHandler(&logWriter{tb: tb}, &logging.NewHandlerOpts{
+	h := logging.NewHandler(NewLogWriter(tb), &logging.NewHandlerOpts{
 		Base:       "console",
 		Level:      level,
 		RemoveTime: true,
