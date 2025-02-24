@@ -1,3 +1,4 @@
 # FerretDB as a PostgreSQL background worker
 
-Not supported. Do not use yet.
+Not supported.
+Do not use yet.
