@@ -45,6 +45,7 @@ type line struct {
 // extraMongoErrors contains MongoDB error codes FerretDB uses and error_mappings.csv does not include
 var extraMongoErrors = map[string]int{
 	"Unset":                         0,
+	"NoSuchKey":                     4,
 	"UserNotFound":                  11,
 	"UnsupportedFormat":             12,
 	"Unauthorized":                  13,
@@ -57,7 +58,9 @@ var extraMongoErrors = map[string]int{
 	"NotImplemented":                238,
 	"MechanismUnavailable":          334,
 	"UnsupportedOpQueryCommand":     352,
+	"Interrupted":                   11601,
 	"Location16979":                 16979,
+	"Location26823":                 26823,
 	"Location40621":                 40621,
 	"Location50687":                 50687,
 	"Location50692":                 50692,

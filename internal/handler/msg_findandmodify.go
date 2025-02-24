@@ -16,10 +16,12 @@ package handler
 
 import (
 	"context"
+	"errors"
 
 	"github.com/FerretDB/wire"
 
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
+	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
@@ -27,7 +29,7 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgFindAndModify(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	opID := h.operations.Start("command")
+	connCtx, opID := h.operations.Start(connCtx, "command")
 	defer h.operations.Stop(opID)
 
 	spec, err := msg.RawDocument()
@@ -61,6 +63,10 @@ func (h *Handler) MsgFindAndModify(connCtx context.Context, msg *wire.OpMsg) (*w
 
 	res, _, err := documentdb_api.FindAndModify(connCtx, conn.Conn(), h.L, dbName, spec)
 	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return nil, mongoerrors.NewWithArgument(mongoerrors.ErrInterrupted, "operation was interrupted", "findAndModify")
+		}
+
 		return nil, lazyerrors.Error(err)
 	}
 

@@ -337,7 +337,7 @@ func inProgress(tb testing.TB, ctx context.Context, adminDB *mongo.Database, n i
 				err := adminDB.RunCommand(ctx, bson.D{{"currentOp", 1}}).Decode(&actual) //nolint:vet // redeclare err to avoid datarace
 				require.NoError(tb, err)
 
-				doc, err := convert(tb, actual).(wirebson.AnyDocument).Decode()
+				doc, err := Convert(tb, actual).(wirebson.AnyDocument).Decode()
 				require.NoError(tb, err)
 
 				v := doc.Get("inprog")

@@ -16,6 +16,7 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/FerretDB/wire"
@@ -28,7 +29,7 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgGetMore(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	opID := h.operations.Start("getmore")
+	connCtx, opID := h.operations.Start(connCtx, "getmore")
 	defer h.operations.Stop(opID)
 
 	spec, err := msg.RawDocument()
@@ -69,6 +70,10 @@ func (h *Handler) MsgGetMore(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 
 	page, err := h.Pool.GetMore(connCtx, dbName, spec, cursorID)
 	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return nil, mongoerrors.NewWithArgument(mongoerrors.ErrInterrupted, "operation was interrupted", "getMore")
+		}
+
 		return nil, lazyerrors.Error(err)
 	}
 
