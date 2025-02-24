@@ -6,13 +6,16 @@
 
 ### Upcoming changes
 
-Docker images tags will be updated.
+Docker image tags might be updated.
 
 ### What's Changed
 
 - Docker image tags
 - Embeddable package
-- .deb packages
+- .deb packages for DocumentDB
+- Indexes (including TTL indexes) are fixed, `reIndex` command
+- `dbStats` command
+- `mongo` logging format
 
 ## [v2.0.0-rc.1](https://github.com/FerretDB/FerretDB/releases/tag/v2.0.0-rc.1) (2025-01-23)
 
