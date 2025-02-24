@@ -15,12 +15,12 @@ install:
 	$(MAKE) -C ferretdb install
 
 docker:
-	docker buildx build --builder=ferretdb --tag=ferretdb-extension --load .
-	docker run --platform=linux/amd64 --name=ferretdb-extension --rm -it \
+	docker buildx build --builder=ferretdb --tag=ferretdb-bw --load .
+	docker run --platform=linux/amd64 --name=ferretdb-bw --rm -it \
 		-e POSTGRES_USER=username -e POSTGRES_PASSWORD=password -e POSTGRES_DB=postgres \
-		-v $(shell pwd)/../..:/ferretdb ferretdb-extension /bin/bash
+		-v $(shell pwd)/../..:/ferretdb ferretdb-bw /bin/bash
 
 docker-exec:
-	docker exec -it ferretdb-extension /bin/bash
+	docker exec -it ferretdb-bw /bin/bash
 
 .PHONY: all ferretdb_loader ferretdb

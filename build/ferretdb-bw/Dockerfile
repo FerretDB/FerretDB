@@ -20,4 +20,4 @@ go version
 
 EOF
 
-WORKDIR /ferretdb/build/ferretdb-extension
+WORKDIR /ferretdb/build/ferretdb-bw
