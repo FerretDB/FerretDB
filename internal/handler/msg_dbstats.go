@@ -18,14 +18,45 @@ import (
 	"context"
 
 	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
+	"github.com/jackc/pgx/v5"
 
-	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
 // MsgDBStats implements `dbStats` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgDBStats(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/9
-	return nil, mongoerrors.New(mongoerrors.ErrNotImplemented, `"dbStats" is not implemented in DocumentDB yet`)
+	spec, err := msg.RawDocument()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+		return nil, err
+	}
+
+	doc, err := spec.Decode()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	dbName, err := getRequiredParam[string](doc, "$db")
+	if err != nil {
+		return nil, err
+	}
+
+	var res wirebson.RawDocument
+
+	err = h.Pool.WithConn(func(conn *pgx.Conn) error {
+		res, err = documentdb_api.DbStats(connCtx, conn, h.L, dbName, 1, true)
+		return err
+	})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return wire.NewOpMsg(res)
 }

@@ -17,6 +17,7 @@
 7. Run `task docs-fmt`.
 8. Commit and push changes to the PR.
 9. Merge PR, pull and check `git status`.
+10. Create a release of [FerretDB/documentdb](https://github.com/FerretDB/documentdb) for this FerretDB version.
 
 ## Git tag
 
@@ -43,9 +44,11 @@
    - https://quay.io/repository/ferretdb/ferretdb?tab=tags
    - https://quay.io/repository/ferretdb/ferretdb-dev?tab=tags
    - https://quay.io/repository/ferretdb/ferretdb-eval?tab=tags
-5. Close milestone in issues.
-6. Publish release on GitHub.
-7. Announce it on Slack.
+5. Upload DocumentDB `.deb` packages for this FerretDB version from
+   [FerretDB/documentdb releases](https://github.com/FerretDB/documentdb/releases) to the draft release.
+6. Close milestone in issues.
+7. Publish release on GitHub.
+8. Announce it on Slack.
 
 ## Soon after
 

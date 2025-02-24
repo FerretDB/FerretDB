@@ -17,7 +17,14 @@
 // See [`build/version` package documentation]
 // for information about Go build tags that affect this package.
 //
+// # Telemetry
+//
+// Please note that the current version of the embeddable package does not allow [telemetry] configuration –
+// it is always set to the `undecided` state. That limitation will be removed [in the future].
+//
 // [`build/version` package documentation]: https://pkg.go.dev/github.com/FerretDB/FerretDB/v2/build/version
+// [telemetry]: https://docs.ferretdb.io/telemetry/
+// [in the future]: https://github.com/FerretDB/FerretDB/issues/4750
 package ferretdb
 
 import (
@@ -54,6 +61,12 @@ type Config struct {
 
 	// State directory. Required.
 	StateDir string
+
+	// Defaults to [slog.LevelError].
+	LogLevel slog.Leveler
+
+	// Defaults to [io.Discard], effectively disabling logging.
+	LogOutput io.Writer
 }
 
 // FerretDB represents an instance of embedded FerretDB implementation.
@@ -68,6 +81,7 @@ func New(config *Config) (*FerretDB, error) {
 
 	sp, err := state.NewProviderDir(config.StateDir)
 	if err == nil {
+		// TODO https://github.com/FerretDB/FerretDB/issues/4750
 		err = sp.Update(func(s *state.State) {
 			s.TelemetryLocked = true
 		})
@@ -79,15 +93,23 @@ func New(config *Config) (*FerretDB, error) {
 
 	// Note that the current implementation requires `*logging.Handler` in the `getLog` command implementation.
 	// TODO https://github.com/FerretDB/FerretDB/issues/4750
+
+	logLevel := config.LogLevel
+	if logLevel == nil {
+		logLevel = slog.LevelError
+	}
+
+	logOutput := config.LogOutput
+	if logOutput == nil {
+		logOutput = io.Discard
+	}
+
 	lOpts := &logging.NewHandlerOpts{
-		Base:          "text",
-		Level:         slog.LevelError + 100500, // effectively disables logging
-		RemoveTime:    true,
-		RemoveLevel:   true,
-		RemoveSource:  true,
+		Base:          "console",
+		Level:         logLevel,
 		CheckMessages: false,
 	}
-	logger := logging.Logger(io.Discard, lOpts, "")
+	logger := logging.WithName(logging.Logger(logOutput, lOpts, ""), "ferretdb")
 
 	metrics := connmetrics.NewListenerMetrics()
 

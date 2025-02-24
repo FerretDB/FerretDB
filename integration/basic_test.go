@@ -34,11 +34,10 @@ import (
 	"github.com/FerretDB/FerretDB/v2/integration/shareddata"
 )
 
-func TestCommandCaseSensitive(tt *testing.T) {
-	tt.Parallel()
+func TestCommandCaseSensitive(t *testing.T) {
+	t.Parallel()
 
-	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/9")
-	ctx, collection := setup.Setup(tt)
+	ctx, collection := setup.Setup(t)
 
 	db := collection.Database()
 
