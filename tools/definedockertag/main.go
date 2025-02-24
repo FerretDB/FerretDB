@@ -131,6 +131,9 @@ func define(getenv githubactions.GetenvFunc) (*result, error) {
 				// while v2 is not GA
 				if major == "2" {
 					tags = append(tags, major)
+					tags = append(tags, major+"."+minor)
+					tags = append(tags, major+"."+minor+"."+patch)
+					tags = append(tags, "latest")
 				}
 			}
 

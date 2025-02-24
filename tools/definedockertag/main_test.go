@@ -44,9 +44,6 @@ type testCase struct {
 }
 
 func TestDefine(t *testing.T) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/4694
-	t.Skip("https://github.com/FerretDB/FerretDB/issues/4694")
-
 	for name, tc := range map[string]testCase{
 		"pull_request": {
 			env: map[string]string{
@@ -170,14 +167,15 @@ func TestDefine(t *testing.T) {
 			},
 			expected: &result{
 				evaluationImages: []string{
-					"ferretdb/ferretdb-eval:main",
 					"ghcr.io/ferretdb/ferretdb-eval:main",
-					"quay.io/ferretdb/ferretdb-eval:main",
+					// TODO https://github.com/FerretDB/FerretDB/issues/4694
+					// "ferretdb/ferretdb-eval:main",
+					// "quay.io/ferretdb/ferretdb-eval:main",
 				},
 				developmentImages: []string{
-					"ferretdb/ferretdb-dev:main",
 					"ghcr.io/ferretdb/ferretdb-dev:main",
-					"quay.io/ferretdb/ferretdb-dev:main",
+					// "ferretdb/ferretdb-dev:main",
+					// "quay.io/ferretdb/ferretdb-dev:main",
 				},
 			},
 		},
@@ -211,14 +209,15 @@ func TestDefine(t *testing.T) {
 			},
 			expected: &result{
 				evaluationImages: []string{
-					"ferretdb/ferretdb-eval:main-v1",
 					"ghcr.io/ferretdb/ferretdb-eval:main-v1",
-					"quay.io/ferretdb/ferretdb-eval:main-v1",
+					// TODO https://github.com/FerretDB/FerretDB/issues/4694
+					// "ferretdb/ferretdb-eval:main-v1",
+					// "quay.io/ferretdb/ferretdb-eval:main-v1",
 				},
 				developmentImages: []string{
-					"ferretdb/ferretdb-dev:main-v1",
 					"ghcr.io/ferretdb/ferretdb-dev:main-v1",
-					"quay.io/ferretdb/ferretdb-dev:main-v1",
+					// "ferretdb/ferretdb-dev:main-v1",
+					// "quay.io/ferretdb/ferretdb-dev:main-v1",
 				},
 			},
 		},
@@ -252,14 +251,15 @@ func TestDefine(t *testing.T) {
 			},
 			expected: &result{
 				evaluationImages: []string{
-					"ferretdb/ferretdb-eval:releases-2.1",
 					"ghcr.io/ferretdb/ferretdb-eval:releases-2.1",
-					"quay.io/ferretdb/ferretdb-eval:releases-2.1",
+					// TODO https://github.com/FerretDB/FerretDB/issues/4694
+					// "ferretdb/ferretdb-eval:releases-2.1",
+					// "quay.io/ferretdb/ferretdb-eval:releases-2.1",
 				},
 				developmentImages: []string{
-					"ferretdb/ferretdb-dev:releases-2.1",
 					"ghcr.io/ferretdb/ferretdb-dev:releases-2.1",
-					"quay.io/ferretdb/ferretdb-dev:releases-2.1",
+					// "ferretdb/ferretdb-dev:releases-2.1",
+					// "quay.io/ferretdb/ferretdb-dev:releases-2.1",
 				},
 			},
 		},
@@ -293,19 +293,20 @@ func TestDefine(t *testing.T) {
 			},
 			expected: &result{
 				evaluationImages: []string{
-					"ferretdb/ferretdb-eval:1.26.0-beta",
 					"ghcr.io/ferretdb/ferretdb-eval:1.26.0-beta",
-					"quay.io/ferretdb/ferretdb-eval:1.26.0-beta",
+					// TODO https://github.com/FerretDB/FerretDB/issues/4694
+					// "ferretdb/ferretdb-eval:1.26.0-beta",
+					// "quay.io/ferretdb/ferretdb-eval:1.26.0-beta",
 				},
 				developmentImages: []string{
-					"ferretdb/ferretdb-dev:1.26.0-beta",
 					"ghcr.io/ferretdb/ferretdb-dev:1.26.0-beta",
-					"quay.io/ferretdb/ferretdb-dev:1.26.0-beta",
+					// "ferretdb/ferretdb-dev:1.26.0-beta",
+					// "quay.io/ferretdb/ferretdb-dev:1.26.0-beta",
 				},
 				productionImages: []string{
-					"ferretdb/ferretdb:1.26.0-beta",
 					"ghcr.io/ferretdb/ferretdb:1.26.0-beta",
-					"quay.io/ferretdb/ferretdb:1.26.0-beta",
+					// "ferretdb/ferretdb:1.26.0-beta",
+					// "quay.io/ferretdb/ferretdb:1.26.0-beta",
 				},
 			},
 		},
@@ -341,30 +342,39 @@ func TestDefine(t *testing.T) {
 				"GITHUB_REPOSITORY": "FerretDB/FerretDB",
 			},
 			expected: &result{
-				// use :major even for prereleases while v2 is not GA
 				evaluationImages: []string{
-					"ferretdb/ferretdb-eval:2",
-					"ferretdb/ferretdb-eval:2.0.0-rc.1",
 					"ghcr.io/ferretdb/ferretdb-eval:2",
+					"ghcr.io/ferretdb/ferretdb-eval:2.0",
+					"ghcr.io/ferretdb/ferretdb-eval:2.0.0",
 					"ghcr.io/ferretdb/ferretdb-eval:2.0.0-rc.1",
-					"quay.io/ferretdb/ferretdb-eval:2",
-					"quay.io/ferretdb/ferretdb-eval:2.0.0-rc.1",
+					"ghcr.io/ferretdb/ferretdb-eval:latest",
+					// TODO https://github.com/FerretDB/FerretDB/issues/4694
+					// "ferretdb/ferretdb-eval:2",
+					// "ferretdb/ferretdb-eval:2.0.0-rc.1",
+					// "quay.io/ferretdb/ferretdb-eval:2",
+					// "quay.io/ferretdb/ferretdb-eval:2.0.0-rc.1",
 				},
 				developmentImages: []string{
-					"ferretdb/ferretdb-dev:2",
-					"ferretdb/ferretdb-dev:2.0.0-rc.1",
 					"ghcr.io/ferretdb/ferretdb-dev:2",
+					"ghcr.io/ferretdb/ferretdb-dev:2.0",
+					"ghcr.io/ferretdb/ferretdb-dev:2.0.0",
 					"ghcr.io/ferretdb/ferretdb-dev:2.0.0-rc.1",
-					"quay.io/ferretdb/ferretdb-dev:2",
-					"quay.io/ferretdb/ferretdb-dev:2.0.0-rc.1",
+					"ghcr.io/ferretdb/ferretdb-dev:latest",
+					// "ferretdb/ferretdb-dev:2",
+					// "ferretdb/ferretdb-dev:2.0.0-rc.1",
+					// "quay.io/ferretdb/ferretdb-dev:2",
+					// "quay.io/ferretdb/ferretdb-dev:2.0.0-rc.1",
 				},
 				productionImages: []string{
-					"ferretdb/ferretdb:2",
-					"ferretdb/ferretdb:2.0.0-rc.1",
 					"ghcr.io/ferretdb/ferretdb:2",
+					"ghcr.io/ferretdb/ferretdb:2.0",
+					"ghcr.io/ferretdb/ferretdb:2.0.0",
 					"ghcr.io/ferretdb/ferretdb:2.0.0-rc.1",
-					"quay.io/ferretdb/ferretdb:2",
-					"quay.io/ferretdb/ferretdb:2.0.0-rc.1",
+					"ghcr.io/ferretdb/ferretdb:latest",
+					// "ferretdb/ferretdb:2",
+					// "ferretdb/ferretdb:2.0.0-rc.1",
+					// "quay.io/ferretdb/ferretdb:2",
+					// "quay.io/ferretdb/ferretdb:2.0.0-rc.1",
 				},
 			},
 		},
@@ -378,18 +388,26 @@ func TestDefine(t *testing.T) {
 				"GITHUB_REPOSITORY": "OtherOrg/OtherRepo",
 			},
 			expected: &result{
-				// use :major even for prereleases while v2 is not GA
 				evaluationImages: []string{
 					"ghcr.io/otherorg/otherrepo-eval:2",
+					"ghcr.io/otherorg/otherrepo-eval:2.0",
+					"ghcr.io/otherorg/otherrepo-eval:2.0.0",
 					"ghcr.io/otherorg/otherrepo-eval:2.0.0-rc.1",
+					"ghcr.io/otherorg/otherrepo-eval:latest",
 				},
 				developmentImages: []string{
 					"ghcr.io/otherorg/otherrepo-dev:2",
+					"ghcr.io/otherorg/otherrepo-dev:2.0",
+					"ghcr.io/otherorg/otherrepo-dev:2.0.0",
 					"ghcr.io/otherorg/otherrepo-dev:2.0.0-rc.1",
+					"ghcr.io/otherorg/otherrepo-dev:latest",
 				},
 				productionImages: []string{
 					"ghcr.io/otherorg/otherrepo:2",
+					"ghcr.io/otherorg/otherrepo:2.0",
+					"ghcr.io/otherorg/otherrepo:2.0.0",
 					"ghcr.io/otherorg/otherrepo:2.0.0-rc.1",
+					"ghcr.io/otherorg/otherrepo:latest",
 				},
 			},
 		},
@@ -404,39 +422,39 @@ func TestDefine(t *testing.T) {
 				"GITHUB_REPOSITORY": "FerretDB/FerretDB",
 			},
 			expected: &result{
-				// latest is v2
 				evaluationImages: []string{
-					"ferretdb/ferretdb-eval:1",
-					"ferretdb/ferretdb-eval:1.26",
-					"ferretdb/ferretdb-eval:1.26.0",
 					"ghcr.io/ferretdb/ferretdb-eval:1",
 					"ghcr.io/ferretdb/ferretdb-eval:1.26",
 					"ghcr.io/ferretdb/ferretdb-eval:1.26.0",
-					"quay.io/ferretdb/ferretdb-eval:1",
-					"quay.io/ferretdb/ferretdb-eval:1.26",
-					"quay.io/ferretdb/ferretdb-eval:1.26.0",
+					// TODO https://github.com/FerretDB/FerretDB/issues/4694
+					// "ferretdb/ferretdb-eval:1",
+					// "ferretdb/ferretdb-eval:1.26",
+					// "ferretdb/ferretdb-eval:1.26.0",
+					// "quay.io/ferretdb/ferretdb-eval:1",
+					// "quay.io/ferretdb/ferretdb-eval:1.26",
+					// "quay.io/ferretdb/ferretdb-eval:1.26.0",
 				},
 				developmentImages: []string{
-					"ferretdb/ferretdb-dev:1",
-					"ferretdb/ferretdb-dev:1.26",
-					"ferretdb/ferretdb-dev:1.26.0",
 					"ghcr.io/ferretdb/ferretdb-dev:1",
 					"ghcr.io/ferretdb/ferretdb-dev:1.26",
 					"ghcr.io/ferretdb/ferretdb-dev:1.26.0",
-					"quay.io/ferretdb/ferretdb-dev:1",
-					"quay.io/ferretdb/ferretdb-dev:1.26",
-					"quay.io/ferretdb/ferretdb-dev:1.26.0",
+					// "ferretdb/ferretdb-dev:1",
+					// "ferretdb/ferretdb-dev:1.26",
+					// "ferretdb/ferretdb-dev:1.26.0",
+					// "quay.io/ferretdb/ferretdb-dev:1",
+					// "quay.io/ferretdb/ferretdb-dev:1.26",
+					// "quay.io/ferretdb/ferretdb-dev:1.26.0",
 				},
 				productionImages: []string{
-					"ferretdb/ferretdb:1",
-					"ferretdb/ferretdb:1.26",
-					"ferretdb/ferretdb:1.26.0",
 					"ghcr.io/ferretdb/ferretdb:1",
 					"ghcr.io/ferretdb/ferretdb:1.26",
 					"ghcr.io/ferretdb/ferretdb:1.26.0",
-					"quay.io/ferretdb/ferretdb:1",
-					"quay.io/ferretdb/ferretdb:1.26",
-					"quay.io/ferretdb/ferretdb:1.26.0",
+					// "ferretdb/ferretdb:1",
+					// "ferretdb/ferretdb:1.26",
+					// "ferretdb/ferretdb:1.26.0",
+					// "quay.io/ferretdb/ferretdb:1",
+					// "quay.io/ferretdb/ferretdb:1.26",
+					// "quay.io/ferretdb/ferretdb:1.26.0",
 				},
 			},
 		},
@@ -450,7 +468,6 @@ func TestDefine(t *testing.T) {
 				"GITHUB_REPOSITORY": "OtherOrg/OtherRepo",
 			},
 			expected: &result{
-				// latest is v2
 				evaluationImages: []string{
 					"ghcr.io/otherorg/otherrepo-eval:1",
 					"ghcr.io/otherorg/otherrepo-eval:1.26",
@@ -480,46 +497,47 @@ func TestDefine(t *testing.T) {
 			},
 			expected: &result{
 				evaluationImages: []string{
-					"ferretdb/ferretdb-eval:2",
-					"ferretdb/ferretdb-eval:2.0",
-					"ferretdb/ferretdb-eval:2.0.0",
-					"ferretdb/ferretdb-eval:latest",
 					"ghcr.io/ferretdb/ferretdb-eval:2",
 					"ghcr.io/ferretdb/ferretdb-eval:2.0",
 					"ghcr.io/ferretdb/ferretdb-eval:2.0.0",
 					"ghcr.io/ferretdb/ferretdb-eval:latest",
-					"quay.io/ferretdb/ferretdb-eval:2",
-					"quay.io/ferretdb/ferretdb-eval:2.0",
-					"quay.io/ferretdb/ferretdb-eval:2.0.0",
-					"quay.io/ferretdb/ferretdb-eval:latest",
+					// TODO https://github.com/FerretDB/FerretDB/issues/4694
+					// "ferretdb/ferretdb-eval:2",
+					// "ferretdb/ferretdb-eval:2.0",
+					// "ferretdb/ferretdb-eval:2.0.0",
+					// "ferretdb/ferretdb-eval:latest",
+					// "quay.io/ferretdb/ferretdb-eval:2",
+					// "quay.io/ferretdb/ferretdb-eval:2.0",
+					// "quay.io/ferretdb/ferretdb-eval:2.0.0",
+					// "quay.io/ferretdb/ferretdb-eval:latest",
 				},
 				developmentImages: []string{
-					"ferretdb/ferretdb-dev:2",
-					"ferretdb/ferretdb-dev:2.0",
-					"ferretdb/ferretdb-dev:2.0.0",
-					"ferretdb/ferretdb-dev:latest",
 					"ghcr.io/ferretdb/ferretdb-dev:2",
 					"ghcr.io/ferretdb/ferretdb-dev:2.0",
 					"ghcr.io/ferretdb/ferretdb-dev:2.0.0",
 					"ghcr.io/ferretdb/ferretdb-dev:latest",
-					"quay.io/ferretdb/ferretdb-dev:2",
-					"quay.io/ferretdb/ferretdb-dev:2.0",
-					"quay.io/ferretdb/ferretdb-dev:2.0.0",
-					"quay.io/ferretdb/ferretdb-dev:latest",
+					// "ferretdb/ferretdb-dev:2",
+					// "ferretdb/ferretdb-dev:2.0",
+					// "ferretdb/ferretdb-dev:2.0.0",
+					// "ferretdb/ferretdb-dev:latest",
+					// "quay.io/ferretdb/ferretdb-dev:2",
+					// "quay.io/ferretdb/ferretdb-dev:2.0",
+					// "quay.io/ferretdb/ferretdb-dev:2.0.0",
+					// "quay.io/ferretdb/ferretdb-dev:latest",
 				},
 				productionImages: []string{
-					"ferretdb/ferretdb:2",
-					"ferretdb/ferretdb:2.0",
-					"ferretdb/ferretdb:2.0.0",
-					"ferretdb/ferretdb:latest",
 					"ghcr.io/ferretdb/ferretdb:2",
 					"ghcr.io/ferretdb/ferretdb:2.0",
 					"ghcr.io/ferretdb/ferretdb:2.0.0",
 					"ghcr.io/ferretdb/ferretdb:latest",
-					"quay.io/ferretdb/ferretdb:2",
-					"quay.io/ferretdb/ferretdb:2.0",
-					"quay.io/ferretdb/ferretdb:2.0.0",
-					"quay.io/ferretdb/ferretdb:latest",
+					// "ferretdb/ferretdb:2",
+					// "ferretdb/ferretdb:2.0",
+					// "ferretdb/ferretdb:2.0.0",
+					// "ferretdb/ferretdb:latest",
+					// "quay.io/ferretdb/ferretdb:2",
+					// "quay.io/ferretdb/ferretdb:2.0",
+					// "quay.io/ferretdb/ferretdb:2.0.0",
+					// "quay.io/ferretdb/ferretdb:latest",
 				},
 			},
 		},
@@ -586,14 +604,15 @@ func TestDefine(t *testing.T) {
 			},
 			expected: &result{
 				evaluationImages: []string{
-					"ferretdb/ferretdb-eval:main",
 					"ghcr.io/ferretdb/ferretdb-eval:main",
-					"quay.io/ferretdb/ferretdb-eval:main",
+					// TODO https://github.com/FerretDB/FerretDB/issues/4694
+					// "ferretdb/ferretdb-eval:main",
+					// "quay.io/ferretdb/ferretdb-eval:main",
 				},
 				developmentImages: []string{
-					"ferretdb/ferretdb-dev:main",
 					"ghcr.io/ferretdb/ferretdb-dev:main",
-					"quay.io/ferretdb/ferretdb-dev:main",
+					// "ferretdb/ferretdb-dev:main",
+					// "quay.io/ferretdb/ferretdb-dev:main",
 				},
 			},
 		},
@@ -627,14 +646,15 @@ func TestDefine(t *testing.T) {
 			},
 			expected: &result{
 				evaluationImages: []string{
-					"ferretdb/ferretdb-eval:main",
 					"ghcr.io/ferretdb/ferretdb-eval:main",
-					"quay.io/ferretdb/ferretdb-eval:main",
+					// TODO https://github.com/FerretDB/FerretDB/issues/4694
+					// "ferretdb/ferretdb-eval:main",
+					// "quay.io/ferretdb/ferretdb-eval:main",
 				},
 				developmentImages: []string{
-					"ferretdb/ferretdb-dev:main",
 					"ghcr.io/ferretdb/ferretdb-dev:main",
-					"quay.io/ferretdb/ferretdb-dev:main",
+					// "ferretdb/ferretdb-dev:main",
+					// "quay.io/ferretdb/ferretdb-dev:main",
 				},
 			},
 		},
