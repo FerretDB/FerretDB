@@ -18,6 +18,8 @@ import (
 	"context"
 
 	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
@@ -46,26 +48,15 @@ func (h *Handler) MsgDBStats(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 		return nil, err
 	}
 
-	// TODO
-	scale := float64(1)
+	var res wirebson.RawDocument
 
-	// TODO
-	freeStorage := false
-
-	conn, err := h.Pool.Acquire()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-	defer conn.Release()
-
-	page, err := documentdb_api.DbStats(connCtx, conn.Conn(), h.L, dbName, scale, freeStorage)
+	err = h.Pool.WithConn(func(conn *pgx.Conn) error {
+		res, err = documentdb_api.DbStats(connCtx, conn, h.L, dbName, 1, true)
+		return err
+	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	if msg, err = wire.NewOpMsg(page); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return msg, nil
+	return wire.NewOpMsg(res)
 }
