@@ -12,7 +12,7 @@ object = ferretdb.so
 all: $(object)
 
 $(object): ferretdb.go
-	CGO_CFLAGS=$(CGO_CFLAGS) CGO_LDFLAGS=$(CGO_LDFLAGS) $(GO) build -v -buildmode=c-shared -o $@ .
+	CGO_CFLAGS=$(CGO_CFLAGS) CGO_LDFLAGS=$(CGO_LDFLAGS) $(GO) build -v -tags=ferretdb_bw -buildmode=c-shared -o $@ .
 
 install: $(object)
 	$(INSTALL_BIN) -c -m 755 $(object) $(PG_PKGLIB)
