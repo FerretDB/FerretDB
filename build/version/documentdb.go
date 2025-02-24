@@ -15,4 +15,4 @@
 package version
 
 // DocumentDB is a version of DocumentDB this version of FerretDB is compatible with.
-const DocumentDB = "0.102.0 gitref: HEAD sha:d6794c9 buildId:0"
+const DocumentDB = "0.102.0 gitref: HEAD sha:39ec23d buildId:0"
