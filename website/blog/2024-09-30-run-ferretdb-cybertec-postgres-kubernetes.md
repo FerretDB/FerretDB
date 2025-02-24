@@ -288,8 +288,8 @@ db.weather.updateMany(
 
 Run `db.weather.find()` on the collection to see the updated document:
 
-```json5
-[
+```js
+response = [
   {
     _id: ObjectId('66f008484f7a5c7f5a1681ed'),
     date: ISODate('2024-04-22T00:00:00.000Z'),
