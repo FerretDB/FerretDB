@@ -11,7 +11,7 @@ tags: [release]
 ![FerretDB v2.0.0-rc.2](/img/blog/ferretdb-v2-rc2.jpg)
 
 [FerretDB](https://www.ferretdb.com/) v2 keeps getting better!
-Based on your feedback, we are making improvements to FerretDB v2 with an embeddable package, new Debian packages, improved logging, and more indexing support.
+Based on your feedback, we are making improvements with an embeddable Go package, new Debian packages, improved logging, and better indexing support.
 
 <!--truncate-->
 
