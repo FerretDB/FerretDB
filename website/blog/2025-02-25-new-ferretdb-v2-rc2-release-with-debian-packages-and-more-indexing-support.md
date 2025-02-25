@@ -42,8 +42,7 @@ You can now install it from our repository; you can also check out the installat
 Indexes are essential parts of any database, and based on your feedback, we now have full support for TTL indexes and the `reIndex` command.
 You can try it out as shown below:
 
-TTL indexes now function correctly; Expired documents will now automatically be removed as expected.
-
+TTL indexes now function correctly; expired documents will now automatically be removed as expected.
 ```sh
 db.collection.createIndex( { "createdAt": 1 }, { expireAfterSeconds: 3600 } )
 ```
