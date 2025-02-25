@@ -21,7 +21,8 @@ we received lots of amazing feedback and shoutouts from the community.
 So many of our users have been impressed with its overall performance improvements and range of compatible features,
 including vector search, full-text search, replication, and better aggregation pipeline support, among others.
 
-We've just released FerretDB v2.0.0-rc.2, with new features and improvements that make it even better,
+We've just released [FerretDB v2.0.0-rc.2](https://github.com/FerretDB/FerretDB/releases/tag/v2.0.0-rc.2),
+with new features and improvements that make it even better,
 and we're excited to share them with you!
 
 ## Docker image tags update
