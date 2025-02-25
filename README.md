@@ -17,16 +17,6 @@
 [![Packages](https://github.com/FerretDB/FerretDB/actions/workflows/packages.yml/badge.svg?branch=main)](https://github.com/FerretDB/FerretDB/actions/workflows/packages.yml)
 [![Docs](https://github.com/FerretDB/FerretDB/actions/workflows/docs.yml/badge.svg?branch=main)](https://github.com/FerretDB/FerretDB/actions/workflows/docs.yml)
 
-<!-- markdownlint-disable MD033 -->
-
-<img src="website/static/ferrets-are-working.svg" width="421" height="298" alt="Ferrets are working" title="Ferrets are working">
-
-<!-- markdownlint-enable MD033 -->
-
-_Please pardon the dust as we move FerretDB v2 to this repository._
-
----
-
 FerretDB is an open-source alternative to MongoDB.
 It is a proxy that converts MongoDB 5.0+ wire protocol queries to SQL
 and uses PostgreSQL with [DocumentDB extension](https://github.com/microsoft/documentdb) as a database engine.
