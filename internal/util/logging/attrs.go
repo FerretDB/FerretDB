@@ -15,14 +15,49 @@
 package logging
 
 import (
+	"encoding/json"
 	"log/slog"
 	"slices"
+
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 // groupOrAttrs contains group name or attributes.
 type groupOrAttrs struct {
 	group string
 	attrs []slog.Attr
+}
+
+type attributes []groupOrAttrs
+
+func (*attributes) MarshalJSON() ([]byte, error) {
+}
+
+func (*attributes) MarshalBSON() ([]byte, error) {
+}
+
+var (
+	_ json.Marshaler = (*attributes)(nil)
+	_ bson.Marshaler = (*attributes)(nil)
+)
+
+func newAttrs(r slog.Record, goas []groupOrAttrs) attributes {
+	a := goas[len(goas)-1]
+
+	r.Attrs(func(attr slog.Attr) bool {
+		if attr.Key != "" {
+			a.attrs = append(a.attrs, attr)
+			return true
+		}
+
+		if attr.Value.Kind() == slog.KindGroup {
+			for _, gAttr := range attr.Value.Group() {
+				m[gAttr.Key] = resolve(gAttr.Value)
+			}
+		}
+
+		return true
+	})
 }
 
 // attrs returns record attributes, as well as handler attributes from goas in map.
