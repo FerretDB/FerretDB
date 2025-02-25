@@ -37,25 +37,26 @@ We now provide `.deb` packages for users who want to install the DocumentDB Post
 This makes installation and upgrades simpler for Debian and Ubuntu users.
 You can now install it from the [DocumentDB repository](https://github.com/FerretDB/documentdb/releases).
 
-## TTL index and `reIndex` command
+## TTL indexes and `reIndex` command
 
-Indexes are essential parts of any database, and based on your feedback, we have fixed the TTL index and implemented the `reIndex` command.
+Indexes are essential parts of any database, and based on your feedback, we have fixed TTL indexes and implemented the `reIndex` command.
 
-In the previous release, there was an issue with the TTL index where expired documents were not removed.
+In the previous release, there was an issue with TTL indexes where expired documents were not removed.
 With the new release, TTL indexes now function correctly; expired documents will now automatically be removed as expected.
 
-```sh
-db.runCommand( { createIndexes: "collection", indexes: [ { key: { "createdAt": 1 }, expireAfterSeconds: 3600 } ] } )
+```js
+db.runCommand({
+  createIndexes: 'collection',
+  indexes: [{ key: { createdAt: 1 }, expireAfterSeconds: 3600 }]
+})
 ```
-
-The `reIndex` command has been implemented, so you can rebuild indexes without issues.
 
 Some users reported issues with indexes not working as expected, not only the TTL indexes.
 They've now been fixed, and we recommend rebuilding all indexes with the `reIndex` command to ensure they are in the best state.
 You can do that with the following command:
 
-```sh
-db.runCommand( { reIndex: "collection" } )
+```js
+db.runCommand({ reIndex: 'collection' })
 ```
 
 ## New `dbStats` command
@@ -64,8 +65,8 @@ db.runCommand( { reIndex: "collection" } )
 It provides important information about database size, storage efficiency, and more.
 With the new release, you can now get better insights into your database with the `dbStats` command.
 
-```sh
-db.runCommand( { dbStats: 1 } )
+```js
+db.runCommand({ dbStats: 1 })
 ```
 
 ## Mongo-compatible logging format
