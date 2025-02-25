@@ -1,9 +1,9 @@
 ---
-slug: new-ferretdb-v2-rc2-release-with-debian-packages-and-more-indexing-support
-title: FerretDB releases v2.0.0-rc.2 with new Debian packages and more indexing support
+slug: new-ferretdb-v2-rc2-release-with-debian-packages-and-better-indexing-support
+title: FerretDB releases v2.0.0-rc.2 with new Debian packages and better indexing support
 authors: [alex]
 description: >
-  We have released FerretDB v2.0.0-rc.2, with an embeddable Go package, new Debian packages, improved stats and logging, and more indexing support.
+  We have released FerretDB v2.0.0-rc.2, with an embeddable Go package, new Debian packages, improved stats and logging, and better indexing support.
 image: /img/blog/ferretdb-v2-rc2.jpg
 tags: [release]
 ---
