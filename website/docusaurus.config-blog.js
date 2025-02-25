@@ -17,6 +17,7 @@ const config = {
   onBrokenAnchors: "throw",
   onBrokenLinks: "throw",
   onBrokenMarkdownLinks: "throw",
+  onDuplicateRoutes: "throw",
 
   i18n: {
     defaultLocale: "en",
@@ -56,8 +57,11 @@ const config = {
           showReadingTime: true,
           authorsMapPath: "authors.yml",
           postsPerPage: 8,
+
           onInlineTags: "throw",
           onUntruncatedBlogPosts: "throw",
+          // TODO https://github.com/FerretDB/FerretDB/issues/4587
+          // onInlineAuthors: "throw",
 
           blogSidebarTitle: "All posts",
           blogSidebarCount: "ALL",

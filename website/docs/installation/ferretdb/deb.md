@@ -21,16 +21,11 @@ You can check that FerretDB was installed by running
 ferretdb --version
 ```
 
-FerretDB does not automatically install PostgreSQL.
-To install PostgreSQL, run the following commands:
-
-```sh
-sudo apt update
-sudo apt install -y postgresql
-```
-
 The `.deb` package ships with the systemd unit for starting FerretDB automatically.
 For more information about its configuration, please take a look at [systemd configuration guide](systemd.md).
+
+FerretDB does not automatically install PostgreSQL and DocumentDB extension,
+see DocumentDB extension DEB package [installation guide](../documentdb/deb.md).
 
 Find out more about:
 

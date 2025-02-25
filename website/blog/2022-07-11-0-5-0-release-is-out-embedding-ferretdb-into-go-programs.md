@@ -48,7 +48,7 @@ fmt.Println(f.MongoDBURI())
 
 For example, we can connect to it with Mongo Shell:
 
-```sh
+```text
 $ mongosh mongodb://127.0.0.1:27017/
 
     Current Mongosh Log ID: 62cb2d6a37f455b3cd5f0004

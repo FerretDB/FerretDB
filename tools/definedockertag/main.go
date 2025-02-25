@@ -131,6 +131,9 @@ func define(getenv githubactions.GetenvFunc) (*result, error) {
 				// while v2 is not GA
 				if major == "2" {
 					tags = append(tags, major)
+					tags = append(tags, major+"."+minor)
+					tags = append(tags, major+"."+minor+"."+patch)
+					tags = append(tags, "latest")
 				}
 			}
 
@@ -213,13 +216,11 @@ func defineForBranch(owner, repo, branch string) (*result, error) {
 		return res, nil
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/4694
+	res.evaluationImages = append(res.evaluationImages, fmt.Sprintf("quay.io/ferretdb/ferretdb-eval:%s", branch))
+	res.developmentImages = append(res.developmentImages, fmt.Sprintf("quay.io/ferretdb/ferretdb-dev:%s", branch))
 
-	// res.evaluationImages = append(res.evaluationImages, fmt.Sprintf("quay.io/ferretdb/ferretdb-eval:%s", branch))
-	// res.developmentImages = append(res.developmentImages, fmt.Sprintf("quay.io/ferretdb/ferretdb-dev:%s", branch))
-
-	// res.evaluationImages = append(res.evaluationImages, fmt.Sprintf("ferretdb/ferretdb-eval:%s", branch))
-	// res.developmentImages = append(res.developmentImages, fmt.Sprintf("ferretdb/ferretdb-dev:%s", branch))
+	res.evaluationImages = append(res.evaluationImages, fmt.Sprintf("ferretdb/ferretdb-eval:%s", branch))
+	res.developmentImages = append(res.developmentImages, fmt.Sprintf("ferretdb/ferretdb-dev:%s", branch))
 
 	return res, nil
 }
@@ -244,16 +245,15 @@ func defineForTag(owner, repo string, tags []string) *result {
 		return res
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/4694
-	// for _, t := range tags {
-	// 	res.evaluationImages = append(res.evaluationImages, fmt.Sprintf("quay.io/ferretdb/ferretdb-eval:%s", t))
-	// 	res.developmentImages = append(res.developmentImages, fmt.Sprintf("quay.io/ferretdb/ferretdb-dev:%s", t))
-	// 	res.productionImages = append(res.productionImages, fmt.Sprintf("quay.io/ferretdb/ferretdb:%s", t))
+	for _, t := range tags {
+		res.evaluationImages = append(res.evaluationImages, fmt.Sprintf("quay.io/ferretdb/ferretdb-eval:%s", t))
+		res.developmentImages = append(res.developmentImages, fmt.Sprintf("quay.io/ferretdb/ferretdb-dev:%s", t))
+		res.productionImages = append(res.productionImages, fmt.Sprintf("quay.io/ferretdb/ferretdb:%s", t))
 
-	// 	res.evaluationImages = append(res.evaluationImages, fmt.Sprintf("ferretdb/ferretdb-eval:%s", t))
-	// 	res.developmentImages = append(res.developmentImages, fmt.Sprintf("ferretdb/ferretdb-dev:%s", t))
-	// 	res.productionImages = append(res.productionImages, fmt.Sprintf("ferretdb/ferretdb:%s", t))
-	// }
+		res.evaluationImages = append(res.evaluationImages, fmt.Sprintf("ferretdb/ferretdb-eval:%s", t))
+		res.developmentImages = append(res.developmentImages, fmt.Sprintf("ferretdb/ferretdb-dev:%s", t))
+		res.productionImages = append(res.productionImages, fmt.Sprintf("ferretdb/ferretdb:%s", t))
+	}
 
 	return res
 }

@@ -131,15 +131,15 @@ Note that the mass is in kilograms, the diameter in kilometers, and the distance
 
 Let's query the data for the stars in the constellation `Centaurus`.
 
-```json5
-ferretdb> db.astronomy.find({ constellation: "Centaurus" });
+```text
+ferretdb > db.astronomy.find({ constellation: 'Centaurus' })
 [
   {
     _id: ObjectId('665f00fb2d149942b1b2b4b6'),
     name: 'Alpha Centauri A',
     type: 'Star',
     distance_from_earth: 4.37,
-    mass: 2.187e+30,
+    mass: 2.187e30,
     diameter: 1214000,
     constellation: 'Centaurus'
   },
@@ -148,7 +148,7 @@ ferretdb> db.astronomy.find({ constellation: "Centaurus" });
     name: 'Alpha Centauri B',
     type: 'Star',
     distance_from_earth: 4.37,
-    mass: 1.804e+30,
+    mass: 1.804e30,
     diameter: 865000,
     constellation: 'Centaurus'
   },
@@ -157,7 +157,7 @@ ferretdb> db.astronomy.find({ constellation: "Centaurus" });
     name: 'Proxima Centauri',
     type: 'Star',
     distance_from_earth: 4.24,
-    mass: 2.446e+29,
+    mass: 2.446e29,
     diameter: 200000,
     constellation: 'Centaurus'
   }
@@ -170,15 +170,15 @@ We got three results back: Alpha Centauri A, Alpha Centauri B, and Proxima Centa
 
 Next, let's find out the stars with less than `1e30` kg of mass.
 
-```json5
-ferretdb> db.astronomy.find({ mass: { $lt: 1e30 } });
+```text
+ferretdb > db.astronomy.find({ mass: { $lt: 1e30 } })
 [
   {
     _id: ObjectId('665f00fb2d149942b1b2b4b8'),
     name: 'Proxima Centauri',
     type: 'Star',
     distance_from_earth: 4.24,
-    mass: 2.446e+29,
+    mass: 2.446e29,
     diameter: 200000,
     constellation: 'Centaurus'
   }
@@ -191,15 +191,15 @@ We got only one result back with Promixa Centauri being the only star with less 
 
 You may also sort the documents by their distance from Earth.
 
-```json5
-ferretdb> db.astronomy.find({}).sort({ distance_from_earth: 1 });
+```text
+ferretdb > db.astronomy.find({}).sort({ distance_from_earth: 1 })
 [
   {
     _id: ObjectId('665f00fb2d149942b1b2b4b8'),
     name: 'Proxima Centauri',
     type: 'Star',
     distance_from_earth: 4.24,
-    mass: 2.446e+29,
+    mass: 2.446e29,
     diameter: 200000,
     constellation: 'Centaurus'
   },
@@ -208,7 +208,7 @@ ferretdb> db.astronomy.find({}).sort({ distance_from_earth: 1 });
     name: 'Alpha Centauri A',
     type: 'Star',
     distance_from_earth: 4.37,
-    mass: 2.187e+30,
+    mass: 2.187e30,
     diameter: 1214000,
     constellation: 'Centaurus'
   },
@@ -217,7 +217,7 @@ ferretdb> db.astronomy.find({}).sort({ distance_from_earth: 1 });
     name: 'Alpha Centauri B',
     type: 'Star',
     distance_from_earth: 4.37,
-    mass: 1.804e+30,
+    mass: 1.804e30,
     diameter: 865000,
     constellation: 'Centaurus'
   },
@@ -226,7 +226,7 @@ ferretdb> db.astronomy.find({}).sort({ distance_from_earth: 1 });
     name: 'Vega',
     type: 'Star',
     distance_from_earth: 25.04,
-    mass: 4.074e+30,
+    mass: 4.074e30,
     diameter: 2440000,
     constellation: 'Lyra'
   },
@@ -235,7 +235,7 @@ ferretdb> db.astronomy.find({}).sort({ distance_from_earth: 1 });
     name: 'Betelgeuse',
     type: 'Star',
     distance_from_earth: 642.5,
-    mass: 2.78e+31,
+    mass: 2.78e31,
     diameter: 1200000000,
     constellation: 'Orion'
   }

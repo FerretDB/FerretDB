@@ -74,10 +74,10 @@ db.employees.find({
 
 The response returns a single document that matches the query:
 
-```json5
-[
+```js
+response = [
   {
-    _id: ObjectId("639a3cce071b6bed396a8f0e"),
+    _id: ObjectId('639a3cce071b6bed396a8f0e'),
     name: { first: 'Clarke', last: 'Dane' },
     employeeID: 3234,
     age: 21,
@@ -100,10 +100,10 @@ db.employees.find({
 
 The response returns a single document that matches the query:
 
-```json5
-[
+```js
+response = [
   {
-    _id: ObjectId("639a3cce071b6bed396a8f0c"),
+    _id: ObjectId('639a3cce071b6bed396a8f0c'),
     name: { first: 'Earl', last: 'Thomas' },
     employeeID: 1234,
     age: 23,
@@ -131,10 +131,10 @@ db.employees.find({
 
 The output:
 
-```json5
-[
+```js
+response = [
   {
-    _id: ObjectId("639a3cce071b6bed396a8f0c"),
+    _id: ObjectId('639a3cce071b6bed396a8f0c'),
     name: { first: 'Earl', last: 'Thomas' },
     employeeID: 1234,
     age: 23,
@@ -142,7 +142,7 @@ The output:
     catalog: ['printer', 'cardboard', 'crayons', 'books']
   },
   {
-    _id: ObjectId("639a3cce071b6bed396a8f0d"),
+    _id: ObjectId('639a3cce071b6bed396a8f0d'),
     name: { first: 'Sam', last: 'Johnson' },
     employeeID: 2234,
     age: 35,
@@ -170,10 +170,10 @@ db.employees.find({
 
 The output:
 
-```json5
-[
+```js
+response = [
   {
-    _id: ObjectId("639a3cce071b6bed396a8f0c"),
+    _id: ObjectId('639a3cce071b6bed396a8f0c'),
     name: { first: 'Earl', last: 'Thomas' },
     employeeID: 1234,
     age: 23,
@@ -181,7 +181,7 @@ The output:
     catalog: ['printer', 'cardboard', 'crayons', 'books']
   },
   {
-    _id: ObjectId("639a3cce071b6bed396a8f0d"),
+    _id: ObjectId('639a3cce071b6bed396a8f0d'),
     name: { first: 'Sam', last: 'Johnson' },
     employeeID: 2234,
     age: 35,
@@ -189,7 +189,7 @@ The output:
     catalog: ['cabinet', 'fridge', 'blender', 'utensils']
   },
   {
-    _id: ObjectId("639a3cce071b6bed396a8f0e"),
+    _id: ObjectId('639a3cce071b6bed396a8f0e'),
     name: { first: 'Clarke', last: 'Dane' },
     employeeID: 3234,
     age: 21,
@@ -217,10 +217,10 @@ db.employees.find({
 
 The output:
 
-```json5
-[
+```js
+response = [
   {
-    _id: ObjectId("639a3cce071b6bed396a8f0c"),
+    _id: ObjectId('639a3cce071b6bed396a8f0c'),
     name: { first: 'Earl', last: 'Thomas' },
     employeeID: 1234,
     age: 23,
@@ -228,7 +228,7 @@ The output:
     catalog: ['printer', 'cardboard', 'crayons', 'books']
   },
   {
-    _id: ObjectId("639a3cce071b6bed396a8f0e"),
+    _id: ObjectId('639a3cce071b6bed396a8f0e'),
     name: { first: 'Clarke', last: 'Dane' },
     employeeID: 3234,
     age: 21,
@@ -257,10 +257,10 @@ db.employees.find({
 
 The output:
 
-```json5
-[
+```js
+response = [
   {
-    _id: ObjectId("639a3cce071b6bed396a8f0e"),
+    _id: ObjectId('639a3cce071b6bed396a8f0e'),
     name: { first: 'Clarke', last: 'Dane' },
     employeeID: 3234,
     age: 21,
@@ -288,10 +288,10 @@ db.employees.find({
 
 The output:
 
-```json5
-[
+```js
+response = [
   {
-    _id: ObjectId("639a3cce071b6bed396a8f0d"),
+    _id: ObjectId('639a3cce071b6bed396a8f0d'),
     name: { first: 'Sam', last: 'Johnson' },
     employeeID: 2234,
     age: 35,
@@ -299,7 +299,7 @@ The output:
     catalog: ['cabinet', 'fridge', 'blender', 'utensils']
   },
   {
-    _id: ObjectId("639a3cce071b6bed396a8f0e"),
+    _id: ObjectId('639a3cce071b6bed396a8f0e'),
     name: { first: 'Clarke', last: 'Dane' },
     employeeID: 3234,
     age: 21,
@@ -327,10 +327,10 @@ db.employees.find({
 
 The output:
 
-```json5
-[
+```js
+response = [
   {
-    _id: ObjectId("639a3cce071b6bed396a8f0c"),
+    _id: ObjectId('639a3cce071b6bed396a8f0c'),
     name: { first: 'Earl', last: 'Thomas' },
     employeeID: 1234,
     age: 23,
@@ -338,7 +338,7 @@ The output:
     catalog: ['printer', 'cardboard', 'crayons', 'books']
   },
   {
-    _id: ObjectId("639a3cce071b6bed396a8f0d"),
+    _id: ObjectId('639a3cce071b6bed396a8f0d'),
     name: { first: 'Sam', last: 'Johnson' },
     employeeID: 2234,
     age: 35,
@@ -367,10 +367,10 @@ db.employees.find({
 
 The output:
 
-```json5
-[
+```js
+response = [
   {
-    _id: ObjectId("639a3cce071b6bed396a8f0c"),
+    _id: ObjectId('639a3cce071b6bed396a8f0c'),
     name: { first: 'Earl', last: 'Thomas' },
     employeeID: 1234,
     age: 23,

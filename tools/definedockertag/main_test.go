@@ -44,9 +44,6 @@ type testCase struct {
 }
 
 func TestDefine(t *testing.T) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/4694
-	t.Skip("https://github.com/FerretDB/FerretDB/issues/4694")
-
 	for name, tc := range map[string]testCase{
 		"pull_request": {
 			env: map[string]string{
@@ -341,30 +338,56 @@ func TestDefine(t *testing.T) {
 				"GITHUB_REPOSITORY": "FerretDB/FerretDB",
 			},
 			expected: &result{
-				// use :major even for prereleases while v2 is not GA
 				evaluationImages: []string{
 					"ferretdb/ferretdb-eval:2",
+					"ferretdb/ferretdb-eval:2.0",
+					"ferretdb/ferretdb-eval:2.0.0",
 					"ferretdb/ferretdb-eval:2.0.0-rc.1",
+					"ferretdb/ferretdb-eval:latest",
 					"ghcr.io/ferretdb/ferretdb-eval:2",
+					"ghcr.io/ferretdb/ferretdb-eval:2.0",
+					"ghcr.io/ferretdb/ferretdb-eval:2.0.0",
 					"ghcr.io/ferretdb/ferretdb-eval:2.0.0-rc.1",
+					"ghcr.io/ferretdb/ferretdb-eval:latest",
 					"quay.io/ferretdb/ferretdb-eval:2",
+					"quay.io/ferretdb/ferretdb-eval:2.0",
+					"quay.io/ferretdb/ferretdb-eval:2.0.0",
 					"quay.io/ferretdb/ferretdb-eval:2.0.0-rc.1",
+					"quay.io/ferretdb/ferretdb-eval:latest",
 				},
 				developmentImages: []string{
 					"ferretdb/ferretdb-dev:2",
+					"ferretdb/ferretdb-dev:2.0",
+					"ferretdb/ferretdb-dev:2.0.0",
 					"ferretdb/ferretdb-dev:2.0.0-rc.1",
+					"ferretdb/ferretdb-dev:latest",
 					"ghcr.io/ferretdb/ferretdb-dev:2",
+					"ghcr.io/ferretdb/ferretdb-dev:2.0",
+					"ghcr.io/ferretdb/ferretdb-dev:2.0.0",
 					"ghcr.io/ferretdb/ferretdb-dev:2.0.0-rc.1",
+					"ghcr.io/ferretdb/ferretdb-dev:latest",
 					"quay.io/ferretdb/ferretdb-dev:2",
+					"quay.io/ferretdb/ferretdb-dev:2.0",
+					"quay.io/ferretdb/ferretdb-dev:2.0.0",
 					"quay.io/ferretdb/ferretdb-dev:2.0.0-rc.1",
+					"quay.io/ferretdb/ferretdb-dev:latest",
 				},
 				productionImages: []string{
 					"ferretdb/ferretdb:2",
+					"ferretdb/ferretdb:2.0",
+					"ferretdb/ferretdb:2.0.0",
 					"ferretdb/ferretdb:2.0.0-rc.1",
+					"ferretdb/ferretdb:latest",
 					"ghcr.io/ferretdb/ferretdb:2",
+					"ghcr.io/ferretdb/ferretdb:2.0",
+					"ghcr.io/ferretdb/ferretdb:2.0.0",
 					"ghcr.io/ferretdb/ferretdb:2.0.0-rc.1",
+					"ghcr.io/ferretdb/ferretdb:latest",
 					"quay.io/ferretdb/ferretdb:2",
+					"quay.io/ferretdb/ferretdb:2.0",
+					"quay.io/ferretdb/ferretdb:2.0.0",
 					"quay.io/ferretdb/ferretdb:2.0.0-rc.1",
+					"quay.io/ferretdb/ferretdb:latest",
 				},
 			},
 		},
@@ -378,18 +401,26 @@ func TestDefine(t *testing.T) {
 				"GITHUB_REPOSITORY": "OtherOrg/OtherRepo",
 			},
 			expected: &result{
-				// use :major even for prereleases while v2 is not GA
 				evaluationImages: []string{
 					"ghcr.io/otherorg/otherrepo-eval:2",
+					"ghcr.io/otherorg/otherrepo-eval:2.0",
+					"ghcr.io/otherorg/otherrepo-eval:2.0.0",
 					"ghcr.io/otherorg/otherrepo-eval:2.0.0-rc.1",
+					"ghcr.io/otherorg/otherrepo-eval:latest",
 				},
 				developmentImages: []string{
 					"ghcr.io/otherorg/otherrepo-dev:2",
+					"ghcr.io/otherorg/otherrepo-dev:2.0",
+					"ghcr.io/otherorg/otherrepo-dev:2.0.0",
 					"ghcr.io/otherorg/otherrepo-dev:2.0.0-rc.1",
+					"ghcr.io/otherorg/otherrepo-dev:latest",
 				},
 				productionImages: []string{
 					"ghcr.io/otherorg/otherrepo:2",
+					"ghcr.io/otherorg/otherrepo:2.0",
+					"ghcr.io/otherorg/otherrepo:2.0.0",
 					"ghcr.io/otherorg/otherrepo:2.0.0-rc.1",
+					"ghcr.io/otherorg/otherrepo:latest",
 				},
 			},
 		},
@@ -404,7 +435,6 @@ func TestDefine(t *testing.T) {
 				"GITHUB_REPOSITORY": "FerretDB/FerretDB",
 			},
 			expected: &result{
-				// latest is v2
 				evaluationImages: []string{
 					"ferretdb/ferretdb-eval:1",
 					"ferretdb/ferretdb-eval:1.26",
@@ -450,7 +480,6 @@ func TestDefine(t *testing.T) {
 				"GITHUB_REPOSITORY": "OtherOrg/OtherRepo",
 			},
 			expected: &result{
-				// latest is v2
 				evaluationImages: []string{
 					"ghcr.io/otherorg/otherrepo-eval:1",
 					"ghcr.io/otherorg/otherrepo-eval:1.26",
