@@ -26,9 +26,9 @@ We've made some changes to our Docker image tags.
 The `latest` tag now points to v2, which means if you're pulling directly without specifying a tag (e.g. `ghcr.io/ferretdb/ferretdb`), you're getting FerretDB v2 by default.
 If you're running FerretDB in production, we strongly recommend explicitly specifying the full version tag (e.g. `ghcr.io/ferretdb/ferretdb:2.0.0-rc.2`) to ensure consistency across deployments.
 
-## Embeddable package
+## Embeddable Go package
 
-FerretDB is now even easier to integrate into other applications with the new embeddable package.
+FerretDB is now even easier to integrate into other applications with the new embeddable Go package.
 This means you can run FerretDB within your own Go applications, giving you more flexibility in deployment and usage.
 
 ## Debian packages for DocumentDB
