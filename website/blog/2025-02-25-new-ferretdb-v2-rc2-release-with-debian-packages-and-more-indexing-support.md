@@ -37,7 +37,7 @@ We now provide `.deb` packages for users who want to install FerretDB with the D
 This makes installation and upgrades simpler for Debian and Ubuntu users.
 You can now install it from our repository; you can also check out the installation guide in our documentation.
 
-## Support for TTL index and `reIndex`
+## Support for TTL indexes and `reIndex` command
 
 Indexes are essential parts of any database, and based on your feedback, we now have full support for TTL indexes and the `reIndex` command.
 You can try it out as shown below:
