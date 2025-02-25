@@ -164,7 +164,8 @@ func (s *Server) writeJsonResponse(ctx context.Context, w http.ResponseWriter, r
 		resWriter = io.MultiWriter(w, buf)
 
 		defer func() {
-			l.DebugContext(ctx, fmt.Sprintf("Results:\n%s\n", buf.String()))
+			// extended JSON value writer always finish with '\n' character
+			l.DebugContext(ctx, fmt.Sprintf("Results:\n%s", strings.TrimSpace(buf.String())))
 		}()
 	}
 

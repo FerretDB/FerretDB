@@ -82,7 +82,7 @@ func listTestFuncs(ctx context.Context, dir, re string, logger *slog.Logger) ([]
 	cmd.Stdout = &buf
 	cmd.Stderr = os.Stderr
 
-	logger.InfoContext(ctx, fmt.Sprintf("Running %s", strings.Join(cmd.Args, " ")))
+	logger.InfoContext(ctx, "Running tests", slog.String("command", strings.Join(cmd.Args, " ")))
 
 	if err := cmd.Run(); err != nil {
 		return nil, lazyerrors.Error(err)

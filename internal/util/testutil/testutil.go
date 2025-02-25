@@ -95,11 +95,11 @@ func Exclusive(ctx context.Context, reason string) {
 	fl.tb.Helper()
 
 	require.NotEmpty(fl.tb, reason)
-	fl.tb.Logf("%s waits for exclusive flock: %s.", fl.tb.Name(), reason)
+	fl.tb.Logf("%s waits for exclusive flock: %s", fl.tb.Name(), reason)
 
 	start := time.Now()
 
 	fl.Lock()
 
-	fl.tb.Logf("%s got exclusive flock in %s.", fl.tb.Name(), time.Since(start))
+	fl.tb.Logf("%s got exclusive flock in %s", fl.tb.Name(), time.Since(start))
 }

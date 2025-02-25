@@ -161,7 +161,7 @@ func (r *Reporter) Run(ctx context.Context) {
 func (r *Reporter) firstReportDelay(ctx context.Context) {
 	msg := fmt.Sprintf(
 		"The telemetry state is undecided; the first report will be sent in %s. "+
-			"Read more about FerretDB telemetry and how to opt out at https://beacon.ferretdb.com.",
+			"Read more about FerretDB telemetry and how to opt out at https://beacon.ferretdb.com",
 		r.UndecidedDelay,
 	)
 	r.L.InfoContext(ctx, msg)
@@ -249,7 +249,7 @@ func (r *Reporter) makeReport() *report {
 func (r *Reporter) sendReport(ctx context.Context, report *report) {
 	r.L.InfoContext(ctx, "Sending telemetry report", slog.String("url", r.URL), slog.Any("data", report))
 	b, err := json.Marshal(report)
-	report.Comment = fmt.Sprintf("Failed to send to %s at %s.", r.URL, time.Now().Format(fileTimeFormat))
+	report.Comment = fmt.Sprintf("Failed to send to %s at %s", r.URL, time.Now().Format(fileTimeFormat))
 	if err != nil {
 		r.L.ErrorContext(ctx, "Failed to marshal telemetry report", logging.Error(err))
 		return
@@ -308,13 +308,13 @@ func (r *Reporter) sendReport(ctx context.Context, report *report) {
 		r.L.ErrorContext(ctx, "Failed to update state with latest version", logging.Error(err))
 	}
 
-	report.Comment = fmt.Sprintf("Sent to %s at %s.", r.URL, time.Now().Format(fileTimeFormat))
+	report.Comment = fmt.Sprintf("Sent to %s at %s", r.URL, time.Now().Format(fileTimeFormat))
 }
 
 // writeReport writes telemetry report to the local files.
 func (r *Reporter) writeReport(report *report) {
 	if report.Comment == "" {
-		report.Comment = fmt.Sprintf("Created at %s, not sent because reporting is disabled.", time.Now().Format(fileTimeFormat))
+		report.Comment = fmt.Sprintf("Created at %s, not sent because reporting is disabled", time.Now().Format(fileTimeFormat))
 	}
 
 	b, err := json.MarshalIndent(report, "", "  ")
