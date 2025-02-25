@@ -3,14 +3,14 @@ slug: new-ferretdb-v2-rc2-release-with-debian-packages-and-more-indexing-support
 title: FerretDB releases v2.0.0-rc.2 with new Debian packages and more indexing support
 authors: [alex]
 description: >
-  We have released FerretDB v2.0.0-rc.2, with an embeddable package, new Debian packages, improved stats and logging, and more indexing support.
+  We have released FerretDB v2.0.0-rc.2, with an embeddable Go package, new Debian packages, improved stats and logging, and more indexing support.
 image: /img/blog/ferretdb-v2-rc2.jpg
 tags: [release]
 ---
 
 ![FerretDB v2.0.0-rc.2](/img/blog/ferretdb-v2-rc2.jpg)
 
-[FerretDB](https://www.ferretdb.com/) v2 keeps getting better!
+FerretDB v2 keeps getting better!
 Based on your feedback, we are making improvements with an embeddable Go package, new Debian packages, improved logging, and better indexing support.
 
 <!--truncate-->
@@ -33,24 +33,29 @@ This means you can run FerretDB within your own Go applications, giving you more
 
 ## Debian packages for DocumentDB
 
-We now provide `.deb` packages for users who want to install FerretDB with the DocumentDB PostgreSQL extension on Debian-based systems.
+We now provide `.deb` packages for users who want to install the DocumentDB PostgreSQL extension on Debian-based systems.
 This makes installation and upgrades simpler for Debian and Ubuntu users.
-You can now install it from our repository; you can also check out the installation guide in our documentation.
+You can now install it from the [DocumentDB repository](https://github.com/FerretDB/documentdb/releases).
 
-## Support for TTL indexes and `reIndex` command
+## TTL index and `reIndex` command
 
-Indexes are essential parts of any database, and based on your feedback, we now have full support for TTL indexes and the `reIndex` command.
-You can try it out as shown below:
+Indexes are essential parts of any database, and based on your feedback, we have fixed the TTL index and implemented the `reIndex` command.
 
-TTL indexes now function correctly; expired documents will now automatically be removed as expected.
+In the previous release, there was an issue with the TTL index where expired documents were not removed.
+With the new release, TTL indexes now function correctly; expired documents will now automatically be removed as expected.
+
 ```sh
-db.collection.createIndex( { "createdAt": 1 }, { expireAfterSeconds: 3600 } )
+db.runCommand( { createIndexes: "collection", indexes: [ { key: { "createdAt": 1 }, expireAfterSeconds: 3600 } ] } )
 ```
 
-Similarly, the `reIndex` command has been fixed, so you can rebuild indexes without issues.
+The `reIndex` command has been implemented, so you can rebuild indexes without issues.
+
+Some users reported issues with indexes not working as expected, not only the TTL indexes.
+They've now been fixed, and we recommend rebuilding all indexes with the `reIndex` command to ensure they are in the best state.
+You can do that with the following command:
 
 ```sh
-db.collection.reIndex()
+db.runCommand( { reIndex: "collection" } )
 ```
 
 ## New `dbStats` command
@@ -60,19 +65,19 @@ It provides important information about database size, storage efficiency, and m
 With the new release, you can now get better insights into your database with the `dbStats` command.
 
 ```sh
-db.stats()
+db.runCommand( { dbStats: 1 } )
 ```
 
 ## Mongo-compatible logging format
 
-Logs now follow the MongoDB-style format, making it easier for users and tools to parse and analyze them.
+We have added a MongoDB-style log format, making it easier for users and tools to parse and analyze them.
 
 ## Thank you!
 
-With the release of FerretDB v2, we are enabling more applications to run their MongoDB workloads in open source, using all the familiar features and commands.
+With the FerretDB v2 release candidate, we are enabling more applications to run their MongoDB workloads on open source, using all the familiar features and commands.
 We are grateful for all the feedback, suggestions, and contributions from the community, and we look forward to hearing more from you as we continue to improve FerretDB.
 
 If you're still on v1, you're missing out on all these new features and improvements.
-FerretDB v2 is the most feature-complete open source alternative to MongoDB – [try it out here](https://github.com/FerretDB/FerretDB/releases)!
+FerretDB v2 is the most feature-complete open source alternative to MongoDB – [see our releases page to try it out](https://github.com/FerretDB/FerretDB/releases)!
 
-If you have any questions about FerretDB, please feel free to [reach out on any of our channels here](https://docs.ferretdb.io/#community).
+If you have any questions about FerretDB, please feel free to [reach out on any of our channels listed here](https://docs.ferretdb.io/#community).
