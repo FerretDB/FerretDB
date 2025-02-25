@@ -8,6 +8,8 @@
 
 <!-- textlint-enable one-sentence-per-line -->
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/FerretDB/FerretDB/v2/ferretdb.svg)](https://pkg.go.dev/github.com/FerretDB/FerretDB/v2/ferretdb)
+
 [![Go](https://github.com/FerretDB/FerretDB/actions/workflows/go.yml/badge.svg?branch=main)](https://github.com/FerretDB/FerretDB/actions/workflows/go.yml)
 [![codecov](https://codecov.io/gh/FerretDB/FerretDB/branch/main/graph/badge.svg?token=JZ56XFT3DM)](https://codecov.io/gh/FerretDB/FerretDB)
 
@@ -85,6 +87,8 @@ With that container running, you can:
 You can stop the container with `docker stop ferretdb`.
 
 We also provide binaries and packages for various Linux distributions.
+as well as [Go library package](https://pkg.go.dev/github.com/FerretDB/FerretDB/v2/ferretdb)
+that embeds FerretDB into your application.
 See [our documentation](https://docs.ferretdb.io/installation/) for more details.
 
 ## Building and packaging
@@ -103,10 +107,11 @@ See [there](https://pkg.go.dev/github.com/FerretDB/FerretDB/v2/build/version) fo
 
 ## Managed FerretDB at cloud providers
 
+- [FerretDB Cloud](https://cloud.ferretdb.com/)
 - [Civo](https://www.civo.com/marketplace/FerretDB)
 - [Tembo](https://tembo.io/docs/tembo-stacks/mongo-alternative)
 - [Elestio](https://elest.io/open-source/ferretdb)
-- [Cozystack](https://cozystack.io/docs/components/#managed-ferretdb).
+- [Cozystack](https://cozystack.io/docs/components/#managed-ferretdb)
 
 ## Community
 

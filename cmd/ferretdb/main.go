@@ -279,7 +279,7 @@ func run() {
 
 	stateProvider, err := state.NewProviderDir(cli.StateDir)
 	if err != nil {
-		log.Fatalf("Failed to setup state provider: %s", err)
+		log.Fatalf("Failed to set up state provider: %s", err)
 	}
 
 	metricsRegisterer := setupMetrics(stateProvider)
