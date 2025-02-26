@@ -18,6 +18,7 @@
 8. Commit and push changes to the PR.
 9. Merge PR, pull and check `git status`.
 10. Create a release of [FerretDB/documentdb](https://github.com/FerretDB/documentdb) for this FerretDB version.
+11. Update constants in [`documentdb.go`](../build/version/documentdb.go).
 
 ## Git tag
 
@@ -54,6 +55,7 @@
 
 1. Bump the latest version on https://beacon.ferretdb.com and https://beacon.ferretdb.io.
 2. Publish and announce blog post.
-3. Tweet, toot.
-4. Update NixOS package: https://github.com/NixOS/nixpkgs/tree/master/pkgs/servers/nosql/ferretdb.
-5. Update Civo package: https://github.com/civo/kubernetes-marketplace/tree/master/ferretdb.
+3. ??? Update changelog and release page to point to the blog post?
+4. ??? Update DocumentDB's changelog and release page?
+5. ??? Update NixOS package: https://github.com/NixOS/nixpkgs/tree/master/pkgs/servers/nosql/ferretdb.
+6. ??? Update Civo package: https://github.com/civo/kubernetes-marketplace/tree/master/ferretdb.
