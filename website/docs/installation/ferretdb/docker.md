@@ -23,6 +23,12 @@ Our [production image](https://ghcr.io/ferretdb/ferretdb:2) (`ghcr.io/ferretdb/f
 It does not include a PostgreSQL image with DocumentDB extension, so you must run this [pre-packaged PostgreSQL image with DocumentDB extension](https://ghcr.io/ferretdb/postgres-documentdb:16) (`ghcr.io/ferretdb/postgres-documentdb:16`) separately.
 You can do that with Docker Compose, Kubernetes, or any other means.
 
+:::tip
+The latest tag points to v2, which means if you're pulling directly without specifying a tag (e.g., `ghcr.io/ferretdb/ferretdb`), you're getting FerretDB v2 by default.
+We strongly recommend specifying the full version tag (e.g., `ghcr.io/ferretdb/ferretdb:2.0.0-rc.2`) to ensure consistency across deployments.
+Also, this image is best with [DocumentDB v0.102.0-ferretdb-2.0.0-rc.2](https://github.com/FerretDB/documentdb/releases/tag/v0.102.0-ferretdb-2.0.0-rc.2).
+:::
+
 ### PostgreSQL Setup with Docker Compose
 
 The following steps describe a quick local setup:
