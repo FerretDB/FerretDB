@@ -116,7 +116,7 @@ func New(config *Config) (*FerretDB, error) {
 	tl, err := telemetry.NewReporter(&telemetry.NewReporterOpts{
 		URL:            "https://beacon.ferretdb.com/",
 		Dir:            config.StateDir,
-		F:              &telemetry.Flag{},
+		F:              new(telemetry.Flag),
 		DNT:            os.Getenv("DO_NOT_TRACK"),
 		ExecName:       os.Args[0],
 		P:              sp,
