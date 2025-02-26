@@ -25,8 +25,8 @@
 2. Check `task gen-version; git status` output.
 3. Push it!
 4. Refresh
-   - `env GOPROXY=https://proxy.golang.org go mod download -x github.com/FerretDB/FerretDB@<vX.Y.Z>`
-   - `https://pkg.go.dev/github.com/FerretDB/FerretDB@<vX.Y.Z>` from https://pkg.go.dev/github.com/FerretDB/FerretDB?tab=versions.
+   - `env GOPROXY=https://proxy.golang.org go mod download -x github.com/FerretDB/FerretDB/v2@<vX.Y.Z>`
+   - `https://pkg.go.dev/github.com/FerretDB/FerretDB/v2@<vX.Y.Z>` from https://pkg.go.dev/github.com/FerretDB/FerretDB/v2?tab=versions.
 
 ## Release
 
