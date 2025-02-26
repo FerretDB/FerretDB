@@ -74,22 +74,22 @@ The advantages are endless!
 
 Here's a sample view of a document in the `issues` collection:
 
-```json5
-  {
-    _id: ObjectId("64b7e557921f991a8697d6fd"),
-    number: 179,
-    url: 'https://github.com/FerretDB/FerretDB/issues/179',
-    title: 'Support field types validation',
-    state: 'OPEN',
-    stateReason: '',
-    createdAt: ISODate("2021-12-14T18:13:01.000Z"),
-    closedAt: null,
-    labels: [ 'code/feature', 'not ready' ],
-    milestone: '',
-    author: 'AlekSi',
-    assignees: [],
-    typename: 'Issue'
-  }
+```json
+{
+  _id: ObjectId('64b7e557921f991a8697d6fd'),
+  number: 179,
+  url: 'https://github.com/FerretDB/FerretDB/issues/179',
+  title: 'Support field types validation',
+  state: 'OPEN',
+  stateReason: '',
+  createdAt: ISODate('2021-12-14T18:13:01.000Z'),
+  closedAt: null,
+  labels: ['code/feature', 'not ready'],
+  milestone: '',
+  author: 'AlekSi',
+  assignees: [],
+  typename: 'Issue'
+}
 ```
 
 ### How to connect Grafana with FerretDB

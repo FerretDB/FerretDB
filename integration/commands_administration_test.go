@@ -40,7 +40,7 @@ import (
 )
 
 // PostgreSQL version expected by tests.
-const expectedPostgreSQLVersion = "PostgreSQL 16.7 (Debian 16.7-1.pgdg120+1) on x86_64-pc-linux-gnu, " +
+const expectedPostgreSQLVersion = "PostgreSQL 16.8 (Debian 16.8-1.pgdg120+1) on x86_64-pc-linux-gnu, " +
 	"compiled by gcc (Debian 12.2.0-14) 12.2.0, 64-bit"
 
 func TestCreateCollectionDropListCollections(t *testing.T) {
@@ -1492,7 +1492,7 @@ func TestDataSizeCommandErrors(t *testing.T) {
 
 func TestDBStatsCommand(tt *testing.T) {
 	tt.Parallel()
-	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/4773")
+	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/4821")
 
 	ctx, collection := setup.Setup(tt, shareddata.DocumentsStrings)
 
@@ -1546,7 +1546,7 @@ func TestDBStatsCommand(tt *testing.T) {
 
 func TestDBStatsCommandEmpty(tt *testing.T) {
 	tt.Parallel()
-	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/4773")
+	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/4821")
 
 	ctx, collection := setup.Setup(tt)
 
@@ -1593,7 +1593,7 @@ func TestDBStatsCommandScale(tt *testing.T) {
 			tt.Helper()
 			tt.Parallel()
 
-			t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/4773")
+			t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/4821")
 
 			var actual bson.D
 			command := bson.D{{"dbStats", int32(1)}, {"scale", tc.scale}}
@@ -1647,7 +1647,7 @@ func TestDBStatsCommandScale(tt *testing.T) {
 
 func TestDBStatsCommandScaleEmptyDatabase(tt *testing.T) {
 	tt.Parallel()
-	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/4773")
+	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/4821")
 
 	ctx, collection := setup.Setup(tt)
 
@@ -1831,7 +1831,7 @@ func TestDBStatsCommandFreeStorage(tt *testing.T) {
 		tt.Run(name, func(tt *testing.T) {
 			tt.Parallel()
 
-			t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/4773")
+			t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/4821")
 
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
