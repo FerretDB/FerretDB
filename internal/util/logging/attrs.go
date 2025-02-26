@@ -63,16 +63,16 @@ func (a attrs) toMap(r slog.Record) map[string]any {
 	return m
 }
 
-func (a attrs) toDoc(r slog.Record) bson.D {
-	m := a.toMap(r)
-	var d bson.D
-
-	for _, k := range slices.Sorted(maps.Keys(m)) {
-		d = append(d, bson.E{k, resolveMapValue(m[k])})
-	}
-
-	return d
-}
+//func (a attrs) toDoc(r slog.Record) bson.D {
+//	m := a.toMap(r)
+//	var d bson.D
+//
+//	for _, k := range slices.Sorted(maps.Keys(m)) {
+//		d = append(d, bson.E{k, resolveMapValue(m[k])})
+//	}
+//
+//	return d
+//}
 
 func resolveMapValue(v any) any {
 	var m map[string]any
@@ -91,50 +91,50 @@ func resolveMapValue(v any) any {
 	return d
 }
 
-//func (a attrs) toDoc(r slog.Record) bson.D {
-//	elems := map[string]bson.E{}
-//
-//	r.Attrs(func(attr slog.Attr) bool {
-//		if attr.Key != "" {
-//			elems[attr.Key] = bson.E{attr.Key, resolveDoc(attr.Value)}
-//			return true
-//		}
-//
-//		if attr.Value.Kind() == slog.KindGroup {
-//			for _, gAttr := range attr.Value.Group() {
-//				elems[gAttr.Key] = bson.E{gAttr.Key, resolveDoc(gAttr.Value)}
-//			}
-//		}
-//
-//		return true
-//	})
-//
-//	for _, goa := range slices.Backward(a) {
-//		if goa.group != "" && len(elems) > 0 {
-//			d := bson.D{}
-//
-//			sortedKeys := slices.Sorted(maps.Keys(elems))
-//
-//			for _, k := range sortedKeys {
-//				d = append(d, elems[k])
-//			}
-//
-//			elems = map[string]bson.E{goa.group: bson.E{goa.group, d}}
-//			continue
-//		}
-//
-//		for _, attr := range goa.attrs {
-//			elems[attr.Key] = bson.E{attr.Key, resolveDoc(attr.Value)}
-//		}
-//	}
-//
-//	var d bson.D
-//	for _, k := range slices.Sorted(maps.Keys(elems)) {
-//		d = append(d, elems[k])
-//	}
-//
-//	return d
-//}
+func (a attrs) toDoc(r slog.Record) bson.D {
+	elems := map[string]bson.E{}
+
+	r.Attrs(func(attr slog.Attr) bool {
+		if attr.Key != "" {
+			elems[attr.Key] = bson.E{attr.Key, resolveDoc(attr.Value)}
+			return true
+		}
+
+		if attr.Value.Kind() == slog.KindGroup {
+			for _, gAttr := range attr.Value.Group() {
+				elems[gAttr.Key] = bson.E{gAttr.Key, resolveDoc(gAttr.Value)}
+			}
+		}
+
+		return true
+	})
+
+	for _, goa := range slices.Backward(a) {
+		if goa.group != "" && len(elems) > 0 {
+			d := bson.D{}
+
+			sortedKeys := slices.Sorted(maps.Keys(elems))
+
+			for _, k := range sortedKeys {
+				d = append(d, elems[k])
+			}
+
+			elems = map[string]bson.E{goa.group: bson.E{goa.group, d}}
+			continue
+		}
+
+		for _, attr := range goa.attrs {
+			elems[attr.Key] = bson.E{attr.Key, resolveDoc(attr.Value)}
+		}
+	}
+
+	var d bson.D
+	for _, k := range slices.Sorted(maps.Keys(elems)) {
+		d = append(d, elems[k])
+	}
+
+	return d
+}
 
 // attrs returns record attributes, as well as handler attributes from goas in map.
 // Attributes with duplicate keys are overwritten, and the order of keys is ignored.
@@ -200,7 +200,7 @@ func resolveDoc(v slog.Value) any {
 	}
 
 	g := v.Group()
-	d := make(bson.D, len(g))
+	d := bson.D{}
 	elems := map[string]bson.E{}
 
 	for _, attr := range g {
