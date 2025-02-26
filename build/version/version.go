@@ -154,15 +154,9 @@ func init() {
 		switch s.Key {
 		case "vcs.revision":
 			if s.Value != info.Commit {
-				// for non-official builds
 				if info.Commit == unknown {
 					info.Commit = s.Value
-					continue
 				}
-
-				panic(fmt.Sprintf("commit.txt value %q != vcs.revision value %q\n"+
-					"Please run `bin/task gen-version`", info.Commit, s.Value,
-				))
 			}
 
 		case "vcs.modified":
