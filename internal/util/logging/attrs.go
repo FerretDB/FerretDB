@@ -16,13 +16,82 @@ package logging
 
 import (
 	"log/slog"
+	"maps"
 	"slices"
+
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 // groupOrAttrs contains group name or attributes.
 type groupOrAttrs struct {
 	group string
 	attrs []slog.Attr
+}
+
+type attrsf []groupOrAttrs
+
+func (a attrsf) toMap(r slog.Record) map[string]any {
+	m := make(map[string]any, r.NumAttrs())
+
+	r.Attrs(func(attr slog.Attr) bool {
+		if attr.Key != "" {
+			m[attr.Key] = resolve(attr.Value)
+
+			return true
+		}
+
+		if attr.Value.Kind() == slog.KindGroup {
+			for _, gAttr := range attr.Value.Group() {
+				m[gAttr.Key] = resolve(gAttr.Value)
+			}
+		}
+
+		return true
+	})
+
+	for _, goa := range slices.Backward(a) {
+		if goa.group != "" && len(m) > 0 {
+			m = map[string]any{goa.group: m}
+			continue
+		}
+
+		for _, attr := range goa.attrs {
+			m[attr.Key] = resolve(attr.Value)
+		}
+	}
+
+	return m
+}
+
+func (a attrsf) toDoc(r slog.Record) bson.D {
+
+	elems := map[string]bson.E{}
+
+	for _, goa := range slices.Backward(a) {
+		if goa.group != "" && len(elems) > 0 {
+			d := bson.D{}
+
+			sortedKeys := slices.Sorted(maps.Keys(elems))
+
+			for _, k := range sortedKeys {
+				d = append(d, elems[k])
+			}
+
+			elems = map[string]bson.E{goa.group: bson.E{goa.group, d}}
+			continue
+		}
+
+		for _, attr := range goa.attrs {
+			elems[attr.Key] = bson.E{attr.Key, resolveDoc(attr.Value)}
+		}
+	}
+
+	var d bson.D
+	for _, k := range slices.Sorted(maps.Keys(elems)) {
+		d = append(d, elems[k])
+	}
+
+	return d
 }
 
 // attrs returns record attributes, as well as handler attributes from goas in map.
@@ -78,4 +147,28 @@ func resolve(v slog.Value) any {
 	}
 
 	return m
+}
+
+// resolve returns underlying attribute value, or a map for [slog.KindGroup] type.
+func resolveDoc(v slog.Value) any {
+	v = v.Resolve()
+
+	if v.Kind() != slog.KindGroup {
+		return v.Any()
+	}
+
+	g := v.Group()
+	d := make(bson.D, len(g))
+	elems := map[string]bson.E{}
+
+	for _, attr := range g {
+		elems[attr.Key] = bson.E{attr.Key, resolveDoc(attr.Value)}
+	}
+
+	sortedKeys := slices.Sorted(maps.Keys(elems))
+	for _, k := range sortedKeys {
+		d = append(d, elems[k])
+	}
+
+	return d
 }
