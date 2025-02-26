@@ -39,7 +39,7 @@ import (
 type mongoHandler struct {
 	opts *NewHandlerOpts
 
-	ga        []groupOrAttrs
+	ga        attrs
 	testAttrs map[string]any
 
 	m   *sync.Mutex
@@ -51,14 +51,14 @@ type mongoHandler struct {
 //
 //nolint:vet // to preserve field ordering
 type MongoLogRecord struct {
-	Timestamp time.Time      `bson:"t"`
-	Severity  string         `bson:"s"`
-	Component string         `bson:"c"` // TODO https://github.com/FerretDB/FerretDB/issues/4431
-	ID        int            `bson:"id,omitempty"`
-	Ctx       string         `bson:"ctx"`
-	Msg       string         `bson:"msg"`
-	Attr      map[string]any `bson:"attr,omitempty"`
-	Tags      []string       `bson:"tags,omitempty"`
+	Timestamp time.Time `bson:"t"`
+	Severity  string    `bson:"s"`
+	Component string    `bson:"c"` // TODO https://github.com/FerretDB/FerretDB/issues/4431
+	ID        int       `bson:"id,omitempty"`
+	Ctx       string    `bson:"ctx"`
+	Msg       string    `bson:"msg"`
+	Attr      bson.D    `bson:"attr,omitempty"`
+	Tags      []string  `bson:"tags,omitempty"`
 }
 
 // Marshal returns the mongo structured JSON encoding of log.
@@ -111,7 +111,7 @@ func mongoLogFromRecord(r slog.Record, ga []groupOrAttrs, opts *NewHandlerOpts) 
 		}
 	}
 
-	log.Attr = attrs(r, ga)
+	log.Attr = attrs(ga).toDoc(r)
 
 	return &log
 }
@@ -162,7 +162,7 @@ func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
 		}
 
 		if len(record.Attr) > 0 {
-			maps.Copy(h.testAttrs, record.Attr)
+			maps.Copy(h.testAttrs, record.Attr.Map())
 		}
 	}
 
