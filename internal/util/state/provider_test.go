@@ -36,6 +36,7 @@ func TestProvider(t *testing.T) {
 
 		var1 := p.Var()
 		var2 := p.Var()
+
 		assert.Contains(t, var1.String(), "undecided")
 		assert.Contains(t, var2.String(), "undecided")
 

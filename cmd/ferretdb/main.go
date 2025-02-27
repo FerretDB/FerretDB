@@ -17,6 +17,7 @@ package main
 import (
 	"cmp"
 	"context"
+	"encoding/json"
 	"expvar"
 	"fmt"
 	"log"
@@ -44,6 +45,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/v2/internal/util/debug"
 	"github.com/FerretDB/FerretDB/v2/internal/util/devbuild"
+	"github.com/FerretDB/FerretDB/v2/internal/util/iface"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 	"github.com/FerretDB/FerretDB/v2/internal/util/observability"
@@ -177,7 +179,7 @@ func main() {
 
 // defaultLogLevel returns the default log level.
 func defaultLogLevel() slog.Level {
-	if version.Get().DevBuild {
+	if devbuild.Enabled {
 		return slog.LevelDebug
 	}
 
@@ -268,6 +270,11 @@ func run() {
 	if p := cli.Dev.Telemetry.Package; p != "" {
 		info.Package = p
 	}
+
+	expvar.Publish("info", iface.Stringer(func() string {
+		b, _ := json.Marshal(version.Get())
+		return string(b)
+	}))
 
 	if cli.Version {
 		_, _ = fmt.Fprintln(os.Stdout, "version:", info.Version)
@@ -521,7 +528,7 @@ func run() {
 
 	wg.Wait()
 
-	if info.DevBuild {
+	if devbuild.Enabled {
 		dumpMetrics()
 	}
 }
