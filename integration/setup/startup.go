@@ -51,7 +51,7 @@ func Startup() {
 		Level:       slog.LevelDebug,
 		RemoveTime:  true,
 		RemoveLevel: true,
-		// we don't control the logs produced by imported packages
+		// testify produces incompatible log messages
 		CheckMessages: false,
 	}
 	logging.SetupDefault(opts, "")
