@@ -39,10 +39,6 @@ import (
 	"github.com/FerretDB/FerretDB/v2/integration/shareddata"
 )
 
-// PostgreSQL version expected by tests.
-const expectedPostgreSQLVersion = "PostgreSQL 16.8 (Debian 16.8-1.pgdg120+1) on x86_64-pc-linux-gnu, " +
-	"compiled by gcc (Debian 12.2.0-14) 12.2.0, 64-bit"
-
 func TestCreateCollectionDropListCollections(t *testing.T) {
 	ctx, collection := setup.Setup(t)
 
@@ -1891,7 +1887,7 @@ func TestServerStatusCommand(t *testing.T) {
 				{"gitVersion", info.Commit},
 				{"debug", true},
 				{"package", info.Package},
-				{"postgresql", expectedPostgreSQLVersion},
+				{"postgresql", version.PostgreSQL},
 				{"documentdb", version.DocumentDB},
 			}
 			AssertEqualDocuments(t, expected, ferretdb)
@@ -2161,7 +2157,7 @@ func TestServerStatusCommandMetrics(t *testing.T) {
 					{"gitVersion", info.Commit},
 					{"debug", true},
 					{"package", info.Package},
-					{"postgresql", expectedPostgreSQLVersion},
+					{"postgresql", version.PostgreSQL},
 					{"documentdb", version.DocumentDB},
 				}},
 				{"freeMonitoring", bson.D{{"state", "undecided"}}},
@@ -2343,7 +2339,7 @@ func TestServerStatusCommandFreeMonitoring(t *testing.T) {
 					{"gitVersion", info.Commit},
 					{"debug", true},
 					{"package", info.Package},
-					{"postgresql", expectedPostgreSQLVersion},
+					{"postgresql", version.PostgreSQL},
 					{"documentdb", version.DocumentDB},
 				}},
 				{"freeMonitoring", bson.D{{"state", tc.expectedStatus}}},
