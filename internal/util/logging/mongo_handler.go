@@ -57,7 +57,7 @@ type MongoLogRecord struct {
 	ID        int       `bson:"id,omitempty"`
 	Ctx       string    `bson:"ctx"`
 	Msg       string    `bson:"msg"`
-	Attr      bson.D    `bson:"attr,omitempty"`
+	Attr      bson.Raw  `bson:"attr,omitempty"`
 	Tags      []string  `bson:"tags,omitempty"`
 }
 
@@ -111,7 +111,7 @@ func mongoLogFromRecord(r slog.Record, ga []groupOrAttrs, opts *NewHandlerOpts) 
 		}
 	}
 
-	log.Attr = attrsList(ga).toBSON(r)
+	log.Attr = bson.Raw(must.NotFail(attrsList(ga).toBSON(r).Encode()))
 
 	return &log
 }
