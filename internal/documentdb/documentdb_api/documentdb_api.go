@@ -168,6 +168,20 @@ func CreateUser(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebs
 	return
 }
 
+// CurrentOpCommand is a wrapper for
+//
+//	documentdb_api.current_op_command(p_spec documentdb_core.bson, OUT document documentdb_core.bson).
+func CurrentOpCommand(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebson.RawDocument) (outDocument wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.current_op_command", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT document::bytea FROM documentdb_api.current_op_command($1::bytea)", spec)
+	if err = row.Scan(&outDocument); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api.current_op_command", l)
+	}
+	return
+}
+
 // CursorGetMore is a wrapper for
 //
 //	documentdb_api.cursor_get_more(database text, getmorespec documentdb_core.bson, continuationspec documentdb_core.bson, OUT cursorpage documentdb_core.bson, OUT continuation documentdb_core.bson).
