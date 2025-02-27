@@ -92,17 +92,17 @@ func resolveMapValue(v any) any {
 }
 
 func (a attrs) toDoc(r slog.Record) bson.D {
-	elems := map[string]bson.E{}
+	docFields := map[string]bson.E{}
 
 	r.Attrs(func(attr slog.Attr) bool {
 		if attr.Key != "" {
-			elems[attr.Key] = bson.E{attr.Key, resolveDoc(attr.Value)}
+			docFields[attr.Key] = bson.E{attr.Key, resolveDoc(attr.Value)}
 			return true
 		}
 
 		if attr.Value.Kind() == slog.KindGroup {
 			for _, gAttr := range attr.Value.Group() {
-				elems[gAttr.Key] = bson.E{gAttr.Key, resolveDoc(gAttr.Value)}
+				docFields[gAttr.Key] = bson.E{gAttr.Key, resolveDoc(gAttr.Value)}
 			}
 		}
 
@@ -110,30 +110,27 @@ func (a attrs) toDoc(r slog.Record) bson.D {
 	})
 
 	for _, goa := range slices.Backward(a) {
-		if goa.group != "" && len(elems) > 0 {
-			d := bson.D{}
-
-			sortedKeys := slices.Sorted(maps.Keys(elems))
-
-			for _, k := range sortedKeys {
-				d = append(d, elems[k])
+		if goa.group != "" && len(docFields) > 0 {
+			var groupDoc bson.D
+			for _, k := range slices.Sorted(maps.Keys(docFields)) {
+				groupDoc = append(groupDoc, docFields[k])
 			}
 
-			elems = map[string]bson.E{goa.group: bson.E{goa.group, d}}
+			docFields = map[string]bson.E{goa.group: {goa.group, groupDoc}}
 			continue
 		}
 
 		for _, attr := range goa.attrs {
-			elems[attr.Key] = bson.E{attr.Key, resolveDoc(attr.Value)}
+			docFields[attr.Key] = bson.E{attr.Key, resolveDoc(attr.Value)}
 		}
 	}
 
-	var d bson.D
-	for _, k := range slices.Sorted(maps.Keys(elems)) {
-		d = append(d, elems[k])
+	var outDoc bson.D
+	for _, k := range slices.Sorted(maps.Keys(docFields)) {
+		outDoc = append(outDoc, docFields[k])
 	}
 
-	return d
+	return outDoc
 }
 
 // attrs returns record attributes, as well as handler attributes from goas in map.
