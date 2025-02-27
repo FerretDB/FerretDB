@@ -113,6 +113,26 @@ response = [
 ]
 ```
 
+For document/collection styled JSON as shown below, use `json` language.
+Our tooling will automatically reformat those blocks.
+
+```json
+{ "_id": 1, "items": ["pens", "pencils", "paper", "erasers", "rulers"] }
+```
+
+In scenarios with multiple commands and response put together as shown below, use `text` language.
+
+```text
+ferretdb> db.test.insert({a:34})
+{
+  acknowledged: true,
+  insertedIds: { '0': ObjectId('664ff91b7207189218a26a13') }
+}
+
+ferretdb> db.test.find()
+[ { _id: ObjectId('664ff91b7207189218a26a13'), a: 34 } ]
+```
+
 Use `sql` for SQL queries.
 Use `text` for the `psql` output and in other cases.
 
