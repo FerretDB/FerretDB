@@ -1148,6 +1148,20 @@ func BsonOrderbyPartition(ctx context.Context, conn *pgx.Conn, l *slog.Logger, a
 	return
 }
 
+// BsonQueryMatch is a wrapper for
+//
+//	documentdb_api_internal.bson_query_match(document documentdb_core.bson, query documentdb_core.bson, collationstring text, variablespec documentdb_core.bson, OUT bson_query_match boolean).
+func BsonQueryMatch(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, query wirebson.RawDocument, collationstring string, variableSpec wirebson.RawDocument) (outBsonQueryMatch bool, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_query_match", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bson_query_match FROM documentdb_api_internal.bson_query_match($1::bytea, $2::bytea, $3, $4::bytea)", document, query, collationstring, variableSpec)
+	if err = row.Scan(&outBsonQueryMatch); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_query_match", l)
+	}
+	return
+}
+
 // BsonQueryToTsquery is a wrapper for
 //
 //	documentdb_api_internal.bson_query_to_tsquery(query documentdb_core.bson, textsearch text DEFAULT NULL, OUT bson_query_to_tsquery tsquery).
