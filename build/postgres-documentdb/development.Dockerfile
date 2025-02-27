@@ -24,7 +24,7 @@ apt install -y \
     postgresql-17-pgvector \
     postgresql-17-postgis-3 \
     postgresql-17-rum \
-    postgresql-server-dev-16
+    postgresql-server-dev-17
 EOF
 
 # extra packages for development
