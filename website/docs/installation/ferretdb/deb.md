@@ -28,7 +28,7 @@ FerretDB does not automatically install PostgreSQL and DocumentDB extension,
 see DocumentDB extension DEB package [installation guide](../documentdb/deb.md).
 
 :::tip
-The latest FerretDB package works best with [DocumentDB v0.102.0-ferretdb-2.0.0-rc.2](https://github.com/FerretDB/documentdb/releases/tag/v0.102.0-ferretdb-2.0.0-rc.2).
+This FerretDB package works best with the latest [DocumentDB release](https://github.com/FerretDB/documentdb/releases/).
 :::
 
 Find out more about:
