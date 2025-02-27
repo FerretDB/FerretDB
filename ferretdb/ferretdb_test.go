@@ -85,7 +85,7 @@ func Example() {
 
 func TestFerretDB(t *testing.T) {
 	f, err := ferretdb.New(&ferretdb.Config{
-		PostgreSQLURL: testutil.PostgreSQLURI(t),
+		PostgreSQLURL: testutil.PostgreSQLURL(t),
 		ListenAddr:    "127.0.0.1:0",
 		StateDir:      t.TempDir(),
 		LogLevel:      slog.LevelDebug,

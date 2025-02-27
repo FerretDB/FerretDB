@@ -16,10 +16,10 @@ package testutil
 
 import "testing"
 
-// PostgreSQLURI returns PostgreSQL URI for testing.
+// PostgreSQLURL returns PostgreSQL URL for testing.
 //
 // It skips the test if it is in short mode.
-func PostgreSQLURI(tb testing.TB) string {
+func PostgreSQLURL(tb testing.TB) string {
 	tb.Helper()
 
 	if testing.Short() {
