@@ -14,6 +14,14 @@ We provide three Docker images for various deployments:
 An evaluation image is documented [separately](../evaluation.md).
 The rest are covered below.
 
+:::tip
+The `:latest` Docker image tag now points to v2, which means if you're pulling directly without specifying a tag (e.g., `ghcr.io/ferretdb/ferretdb`), you're getting FerretDB v2 by default.
+We strongly recommend specifying the full version tag (e.g., `ghcr.io/ferretdb/ferretdb:2.0.0-rc.2`) to ensure consistency across deployments.
+Ensure to [enable telemetry](../../telemetry.md) to receive notifications on the latest versions.
+
+This image works best with this [DocumentDB version](https://github.com/FerretDB/FerretDB/pkgs/container/postgres-documentdb/361486913?tag=16.8-0.102.0-ferretdb-2.0.0-rc.2).
+:::
+
 All Docker images include a [`HEALTHCHECK` instruction](https://docs.docker.com/reference/dockerfile/#healthcheck)
 that behaves like a [readiness probe](../../configuration/observability.md#probes).
 
@@ -22,12 +30,6 @@ that behaves like a [readiness probe](../../configuration/observability.md#probe
 Our [production image](https://ghcr.io/ferretdb/ferretdb:2) (`ghcr.io/ferretdb/ferretdb:2`) is recommended for most deployments.
 It does not include a PostgreSQL image with DocumentDB extension, so you must run this [pre-packaged PostgreSQL image with DocumentDB extension](https://ghcr.io/ferretdb/postgres-documentdb:16) (`ghcr.io/ferretdb/postgres-documentdb:16`) separately.
 You can do that with Docker Compose, Kubernetes, or any other means.
-
-:::tip
-The latest tag points to v2, which means if you're pulling directly without specifying a tag (e.g., `ghcr.io/ferretdb/ferretdb`), you're getting FerretDB v2 by default.
-We strongly recommend specifying the full version tag (e.g., `ghcr.io/ferretdb/ferretdb:2`) to ensure consistency across deployments.
-Also, this image is best with the latest [DocumentDB version](https://github.com/FerretDB/documentdb/releases/).
-:::
 
 ### PostgreSQL Setup with Docker Compose
 
@@ -40,7 +42,7 @@ The following steps describe a quick local setup:
    ```yaml
    services:
      postgres:
-       image: ghcr.io/ferretdb/postgres-documentdb:16
+       image: ghcr.io/ferretdb/postgres-documentdb:16.8-0.102.0-ferretdb-2.0.0-rc.2
        platform: linux/amd64
        restart: on-failure
        environment:
@@ -51,7 +53,7 @@ The following steps describe a quick local setup:
          - ./data:/var/lib/postgresql/data
 
      ferretdb:
-       image: ghcr.io/ferretdb/ferretdb:2
+       image: ghcr.io/ferretdb/ferretdb:2.0.0-rc.2
        restart: on-failure
        ports:
          - 27017:27017

@@ -11,6 +11,10 @@ We provide two Docker images for setting up PostgreSQL with DocumentDB extension
 - **a development image**: for debugging problems
 - **a production image**: for all other cases
 
+:::tip
+The DocumentDB image works best with [FerretDB v2.0.0-rc.2](https://github.com/FerretDB/FerretDB/releases/tag/v2.0.0-rc.2).
+:::
+
 ## Production image for PostgreSQL with DocumentDB extension
 
 The [production image for PostgreSQL with DocumentDB extension](https://ghcr.io/ferretdb/postgres-documentdb:16) (`ghcr.io/ferretdb/postgres-documentdb:16`) is recommended for most deployments.
@@ -32,7 +36,7 @@ See [Set up PostgreSQL connection](../../security/authentication.md#set-up-postg
      -e POSTGRES_DB=postgres \
      -v ./data:/var/lib/postgresql/data \
      -p 5432:5432 \
-     ghcr.io/ferretdb/postgres-documentdb:16
+     ghcr.io/ferretdb/postgres-documentdb:16.8-0.102.0-ferretdb-2.0.0-rc.2
    ```
 
    Ensure to update `<username>` and `<password>` with your desired values.
@@ -46,7 +50,7 @@ See [Set up PostgreSQL connection](../../security/authentication.md#set-up-postg
    If you don't have `psql`, you can run the following command to run it inside the temporary PostgreSQL container:
 
    ```sh
-   docker run --rm -it ghcr.io/ferretdb/postgres-documentdb:16 psql 'postgres://<username>:<password>@localhost:5432/postgres'
+   docker run --rm -it ghcr.io/ferretdb/postgres-documentdb:16.8-0.102.0-ferretdb-2.0.0-rc.2 psql 'postgres://<username>:<password>@localhost:5432/postgres'
    ```
 
 3. See [FerretDB Docker installation](../ferretdb/docker.md) for more details on connecting to FerretDB.

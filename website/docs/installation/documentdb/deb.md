@@ -9,4 +9,8 @@ FerretDB uses PostgreSQL with [DocumentDB extension](https://github.com/microsof
 Download the DocumentDB `.deb` package from [our release page](https://github.com/FerretDB/documentdb/releases/latest),
 you can use `dpkg` tool to install it.
 
+:::tip
+The DocumentDB package works best with [FerretDB v2.0.0-rc.2](https://github.com/FerretDB/FerretDB/releases/tag/v2.0.0-rc.2).
+:::
+
 You need to install PostgreSQL and additional dependencies required by the DocumentDB extension.
