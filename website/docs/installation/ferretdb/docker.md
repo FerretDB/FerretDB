@@ -20,7 +20,7 @@ that behaves like a [readiness probe](../../configuration/observability.md#probe
 ## Production image
 
 Our [production image](https://ghcr.io/ferretdb/ferretdb:2) (`ghcr.io/ferretdb/ferretdb:2`) is recommended for most deployments.
-It does not include a PostgreSQL image with DocumentDB extension, so you must run this [pre-packaged PostgreSQL image with DocumentDB extension](https://ghcr.io/ferretdb/postgres-documentdb:16) (`ghcr.io/ferretdb/postgres-documentdb:16`) separately.
+It does not include a PostgreSQL image with DocumentDB extension, so you must run this [pre-packaged PostgreSQL image with DocumentDB extension](https://ghcr.io/ferretdb/postgres-documentdb:17) (`ghcr.io/ferretdb/postgres-documentdb:17`) separately.
 You can do that with Docker Compose, Kubernetes, or any other means.
 
 ### PostgreSQL Setup with Docker Compose
@@ -34,7 +34,7 @@ The following steps describe a quick local setup:
    ```yaml
    services:
      postgres:
-       image: ghcr.io/ferretdb/postgres-documentdb:16
+       image: ghcr.io/ferretdb/postgres-documentdb:17
        platform: linux/amd64
        restart: on-failure
        environment:

@@ -13,7 +13,7 @@ We provide two Docker images for setting up PostgreSQL with DocumentDB extension
 
 ## Production image for PostgreSQL with DocumentDB extension
 
-The [production image for PostgreSQL with DocumentDB extension](https://ghcr.io/ferretdb/postgres-documentdb:16) (`ghcr.io/ferretdb/postgres-documentdb:16`) is recommended for most deployments.
+The [production image for PostgreSQL with DocumentDB extension](https://ghcr.io/ferretdb/postgres-documentdb:17) (`ghcr.io/ferretdb/postgres-documentdb:17`) is recommended for most deployments.
 It does not include FerretDB, so you must run it separately.
 For a complete setup that includes FerretDB, see the [FerretDB installation](../ferretdb/docker.md).
 
@@ -32,7 +32,7 @@ See [Set up PostgreSQL connection](../../security/authentication.md#set-up-postg
      -e POSTGRES_DB=postgres \
      -v ./data:/var/lib/postgresql/data \
      -p 5432:5432 \
-     ghcr.io/ferretdb/postgres-documentdb:16
+     ghcr.io/ferretdb/postgres-documentdb:17
    ```
 
    Ensure to update `<username>` and `<password>` with your desired values.
@@ -46,12 +46,12 @@ See [Set up PostgreSQL connection](../../security/authentication.md#set-up-postg
    If you don't have `psql`, you can run the following command to run it inside the temporary PostgreSQL container:
 
    ```sh
-   docker run --rm -it ghcr.io/ferretdb/postgres-documentdb:16 psql 'postgres://<username>:<password>@localhost:5432/postgres'
+   docker run --rm -it ghcr.io/ferretdb/postgres-documentdb:17 psql 'postgres://<username>:<password>@localhost:5432/postgres'
    ```
 
 3. See [FerretDB Docker installation](../ferretdb/docker.md) for more details on connecting to FerretDB.
 
 ## Development image for PostgreSQL with DocumentDB extension
 
-The [development image for PostgreSQL with DocumentDB extension](https://ghcr.io/ferretdb/postgres-documentdb-dev:16) (`ghcr.io/ferretdb/postgres-documentdb-dev:16`) is recommended for debugging problems.
+The [development image for PostgreSQL with DocumentDB extension](https://ghcr.io/ferretdb/postgres-documentdb-dev:17) (`ghcr.io/ferretdb/postgres-documentdb-dev:17`) is recommended for debugging problems.
 It includes additional debugging features and is not recommended for production use.
