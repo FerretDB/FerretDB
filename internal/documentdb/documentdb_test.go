@@ -57,7 +57,7 @@ func TestNewPool(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("Normal", func(t *testing.T) {
-		uri := testutil.PostgreSQLURI(t)
+		uri := testutil.PostgreSQLURL(t)
 
 		t.Parallel()
 
@@ -81,7 +81,7 @@ func TestNewPool(t *testing.T) {
 }
 
 func TestError(t *testing.T) {
-	uri := testutil.PostgreSQLURI(t)
+	uri := testutil.PostgreSQLURL(t)
 
 	t.Parallel()
 

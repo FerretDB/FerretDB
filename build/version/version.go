@@ -86,6 +86,9 @@ var info *Info
 const unknown = "unknown"
 
 // Get returns current build's info.
+//
+// It returns a shared instance without any synchronization.
+// If caller needs to modify the instance, it should make sure there is no concurrent accesses.
 func Get() *Info {
 	return info
 }

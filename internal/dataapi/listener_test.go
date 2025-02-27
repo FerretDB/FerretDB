@@ -232,7 +232,7 @@ func postJSON(tb testing.TB, uri, jsonBody string) (*http.Response, error) {
 func setupDataAPI(tb testing.TB) (addr string, dbName string) {
 	tb.Helper()
 
-	uri := testutil.PostgreSQLURI(tb)
+	uri := testutil.PostgreSQLURL(tb)
 
 	sp, err := state.NewProvider("")
 	require.NoError(tb, err)
