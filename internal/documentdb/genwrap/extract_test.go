@@ -23,7 +23,7 @@ import (
 )
 
 func TestExtract(t *testing.T) {
-	uri := testutil.PostgreSQLURI(t)
+	uri := testutil.PostgreSQLURL(t)
 
 	t.Parallel()
 
