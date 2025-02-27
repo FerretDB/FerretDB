@@ -118,13 +118,13 @@ func archiveHandler(l *slog.Logger) http.HandlerFunc {
 			path  string
 			query string
 		}{
-			{file: "profile.pprof", path: "/debug/pprof/profile", query: "seconds=5"},
-			{file: "goroutine.pprof", path: "/debug/pprof/goroutine"},
-			{file: "heap.pprof", path: "/debug/pprof/heap", query: "gc=1"},
-			{file: "block.pprof", path: "debug/pprof/block"},
-			{file: "trace.pprof", path: "/debug/pprof/trace", query: "seconds=5"},
 			{file: "metrics.txt", path: "/debug/metrics"},
 			{file: "vars.json", path: "/debug/vars"},
+			{file: "profile.pprof", path: "/debug/pprof/profile", query: "seconds=5"},
+			{file: "goroutine.pprof", path: "/debug/pprof/goroutine"},
+			{file: "block.pprof", path: "/debug/pprof/block"},
+			{file: "heap.pprof", path: "/debug/pprof/heap", query: "gc=1"},
+			{file: "trace.pprof", path: "/debug/pprof/trace", query: "seconds=5"},
 		} {
 			getReq.URL.Path = f.path
 			getReq.URL.RawQuery = f.query
