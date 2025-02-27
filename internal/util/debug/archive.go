@@ -117,11 +117,11 @@ func archiveHandler(l *slog.Logger) http.HandlerFunc {
 		}{
 			{file: "metrics.txt", path: "/debug/metrics"},
 			{file: "vars.json", path: "/debug/vars"},
-			{file: "profile.pprof", path: "/debug/pprof/profile?seconds=5"},
+			{file: "profile.pprof", path: "/debug/pprof/profile?seconds=10"},
 			{file: "goroutine.pprof", path: "/debug/pprof/goroutine"},
 			{file: "block.pprof", path: "/debug/pprof/block"},
 			{file: "heap.pprof", path: "/debug/pprof/heap?gc=1"},
-			{file: "trace.pprof", path: "/debug/pprof/trace?seconds=5"},
+			{file: "trace.out", path: "/debug/pprof/trace?seconds=10"},
 		} {
 			fReq, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://"+host.String()+f.path, nil)
 			if err != nil {
