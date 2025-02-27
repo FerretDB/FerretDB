@@ -186,6 +186,29 @@ func defaultLogLevel() slog.Level {
 	return slog.LevelInfo
 }
 
+// setupExpvar setups expvar variables for debug handler.
+func setupExpvar(stateProvider *state.Provider) {
+	// do not include sensitive information like the full PostgreSQL URL
+	expvar.Publish("cli", iface.Stringer(func() string {
+		b := must.NotFail(json.Marshal(map[string]any{
+			"cli": map[string]any{
+				"log": map[string]any{
+					"level": cli.Log.Level,
+				},
+			},
+		}))
+
+		return string(b)
+	}))
+
+	expvar.Publish("state", stateProvider.Var())
+
+	expvar.Publish("info", iface.Stringer(func() string {
+		b := must.NotFail(json.Marshal(version.Get()))
+		return string(b)
+	}))
+}
+
 // setupMetrics setups Prometheus metrics registerer with some metrics.
 // It also publishes some metrics via expvar for debug handlers.
 func setupMetrics(stateProvider *state.Provider) prometheus.Registerer {
@@ -295,6 +318,8 @@ func run() {
 	if err != nil {
 		log.Fatalf("Failed to set up state provider: %s", err)
 	}
+
+	setupExpvar(stateProvider)
 
 	metricsRegisterer := setupMetrics(stateProvider)
 

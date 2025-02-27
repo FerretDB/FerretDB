@@ -32,7 +32,7 @@ func (s stringer) String() string {
 
 // Stringer converts a function to [fmt.Stringer].
 //
-// It may be used to avoid adding a String method to the type that might be problematic.
+// It may be used to avoid adding the String method to the type that might be problematic.
 func Stringer(f func() string) fmt.Stringer {
 	return stringer{f: f}
 }
