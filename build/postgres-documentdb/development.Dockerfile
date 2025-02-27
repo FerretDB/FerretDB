@@ -20,10 +20,10 @@ apt install -y \
     libicu-dev \
     libkrb5-dev \
     pkg-config \
-    postgresql-16-cron \
-    postgresql-16-pgvector \
-    postgresql-16-postgis-3 \
-    postgresql-16-rum \
+    postgresql-17-cron \
+    postgresql-17-pgvector \
+    postgresql-17-postgis-3 \
+    postgresql-17-rum \
     postgresql-server-dev-16
 EOF
 
@@ -34,7 +34,7 @@ set -ex
 apt install -y \
     bpftrace \
     gdb \
-    postgresql-16-pgtap
+    postgresql-17-pgtap
 EOF
 
 RUN --mount=target=/src,rw <<EOF
