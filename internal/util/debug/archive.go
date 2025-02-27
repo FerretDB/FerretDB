@@ -113,35 +113,38 @@ func archiveHandler(l *slog.Logger) http.HandlerFunc {
 		host := ctx.Value(http.LocalAddrContextKey).(net.Addr)
 		getReq := must.NotFail(http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("http://%s/", host), nil))
 
-		for file, u := range map[string]struct {
+		for _, f := range []struct {
+			file  string
 			path  string
 			query string
 		}{
-			"goroutine.pprof": {path: "/debug/pprof/goroutine"},
-			"heap.pprof":      {path: "/debug/pprof/heap", query: "gc=1"},
-			"profile.pprof":   {path: "/debug/pprof/profile", query: "seconds=5"},
-			"metrics.txt":     {path: "/debug/metrics"}, // includes version, UUID, etc
-			"vars.json":       {path: "/debug/vars"},
+			{file: "profile.pprof", path: "/debug/pprof/profile", query: "seconds=5"},
+			{file: "goroutine.pprof", path: "/debug/pprof/goroutine"},
+			{file: "heap.pprof", path: "/debug/pprof/heap", query: "gc=1"},
+			{file: "block.pprof", path: "debug/pprof/block"},
+			{file: "trace.pprof", path: "/debug/pprof/trace", query: "seconds=5"},
+			{file: "metrics.txt", path: "/debug/metrics"},
+			{file: "vars.json", path: "/debug/vars"},
 		} {
-			getReq.URL.Path = u.path
-			getReq.URL.RawQuery = u.query
+			getReq.URL.Path = f.path
+			getReq.URL.RawQuery = f.query
 
 			l.DebugContext(
 				ctx, "Fetching file for archive",
-				slog.String("file", file), slog.String("url", getReq.URL.String()),
+				slog.String("file", f.file), slog.String("url", getReq.URL.String()),
 			)
 
 			resp, err := http.DefaultClient.Do(getReq)
 			if err == nil {
 				r := resp.Body
-				if u.path == "/debug/vars" {
+				if f.path == "/debug/vars" {
 					r = filterExpvar(ctx, r, l)
 				}
 
-				err = addToZip(zipWriter, file, r)
+				err = addToZip(zipWriter, f.file, r)
 			}
 
-			errs[file] = err
+			errs[f.file] = err
 		}
 	}
 }
