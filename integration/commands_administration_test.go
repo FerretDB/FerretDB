@@ -145,6 +145,9 @@ func TestListDatabases(t *testing.T) {
 
 		expectedNameOnly bool
 		expected         mongo.ListDatabasesResult
+
+		// TODO https://github.com/FerretDB/FerretDB/issues/4722
+		failsForFerretDB string
 	}{
 		"Exists": {
 			filter: bson.D{{Key: "name", Value: name}},
@@ -198,6 +201,7 @@ func TestListDatabases(t *testing.T) {
 			expected: mongo.ListDatabasesResult{
 				Databases: []mongo.DatabaseSpecification{},
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/4722",
 		},
 		"RegexNotFound": {
 			filter: bson.D{
@@ -207,6 +211,7 @@ func TestListDatabases(t *testing.T) {
 			expected: mongo.ListDatabasesResult{
 				Databases: []mongo.DatabaseSpecification{},
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/4722",
 		},
 		"RegexNotFoundNameOnly": {
 			filter: bson.D{
@@ -241,8 +246,14 @@ func TestListDatabases(t *testing.T) {
 	}
 
 	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
+		t.Run(name, func(tt *testing.T) {
+			tt.Parallel()
+
+			var t testing.TB = tt
+
+			if tc.failsForFerretDB != "" {
+				t = setup.FailsForFerretDB(tt, tc.failsForFerretDB)
+			}
 
 			actual, err := db.Client().ListDatabases(ctx, tc.filter, tc.opts...)
 			assert.NoError(t, err)
