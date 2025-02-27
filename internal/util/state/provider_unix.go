@@ -14,20 +14,21 @@
 
 //go:build unix
 
-package main
+package state
 
 import (
 	"fmt"
 	"os"
 	"os/user"
 	"strconv"
+	"strings"
 
 	"golang.org/x/sys/unix"
 )
 
-// stateFileProblem adds details to the state file access error.
-func stateFileProblem(f string, err error) string {
-	res := fmt.Sprintf("Failed to create state provider: %s.\n", err)
+// newProviderDirErr adds details to the state file access error.
+func newProviderDirErr(f string, err error) error {
+	var extra []string
 
 	if u, _ := user.Current(); u != nil {
 		var group string
@@ -35,30 +36,29 @@ func stateFileProblem(f string, err error) string {
 			group = g.Name
 		}
 
-		res += fmt.Sprintf("FerretDB is running as %s:%s (%s:%s). ", u.Username, group, u.Uid, u.Gid)
+		extra = append(extra, fmt.Sprintf("running as %s:%s/%s:%s", u.Username, group, u.Uid, u.Gid))
 	}
 
 	if fi, _ := os.Stat(f); fi != nil {
-		var username, group string
-		var uid, gid uint64
+		extra = append(extra, fmt.Sprintf("%s permissions are %s", f, fi.Mode().String()))
 
+		var username, group string
 		if s, _ := fi.Sys().(*unix.Stat_t); s != nil {
-			uid = uint64(s.Uid)
-			if u, _ := user.LookupId(strconv.FormatUint(uid, 10)); u != nil {
+			if u, _ := user.LookupId(strconv.Itoa(int(s.Uid))); u != nil {
 				username = u.Username
 			}
 
-			gid = uint64(s.Gid)
-			if g, _ := user.LookupGroupId(strconv.FormatUint(gid, 10)); g != nil {
+			if g, _ := user.LookupGroupId(strconv.Itoa(int(s.Gid))); g != nil {
 				group = g.Name
 			}
-		}
 
-		res += fmt.Sprintf("%s permissions are %s.", f, fi.Mode().String())
-		if username != "" {
-			res += fmt.Sprintf(" Owned by %s:%s (%d:%d).", username, group, uid, gid)
+			extra = append(extra, fmt.Sprintf("owned by %s:%s/%d:%d", username, group, s.Uid, s.Gid))
 		}
 	}
 
-	return res
+	if extra == nil {
+		return err
+	}
+
+	return fmt.Errorf("%s (%s)", err, strings.Join(extra, ", "))
 }

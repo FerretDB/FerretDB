@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package main contains linter for blog posts.
+// Package main contains linter for documentation and blog posts.
 package main
 
 import (
@@ -28,10 +28,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/FerretDB/FerretDB/tools/github"
+	"github.com/FerretDB/FerretDB/v2/tools/github"
 )
 
 func main() {
+	// TODO https://github.com/FerretDB/FerretDB/issues/4715
 	blogFiles, err := filepath.Glob(filepath.Join("website", "blog", "*.md"))
 	if err != nil {
 		log.Fatal(err)

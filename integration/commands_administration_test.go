@@ -39,10 +39,6 @@ import (
 	"github.com/FerretDB/FerretDB/v2/integration/shareddata"
 )
 
-// PostgreSQL version expected by tests.
-const expectedPostgreSQLVersion = "PostgreSQL 16.6 (Debian 16.6-1.pgdg120+1) on x86_64-pc-linux-gnu, " +
-	"compiled by gcc (Debian 12.2.0-14) 12.2.0, 64-bit"
-
 func TestCreateCollectionDropListCollections(t *testing.T) {
 	ctx, collection := setup.Setup(t)
 
@@ -857,6 +853,8 @@ func TestBuildInfoCommand(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
+	info := version.Get()
+
 	var actual bson.D
 	command := bson.D{{"buildInfo", int32(1)}}
 	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
@@ -869,7 +867,7 @@ func TestBuildInfoCommand(t *testing.T) {
 		case "ferretdb":
 			value, ok := field.Value.(bson.D)
 			require.True(t, ok)
-			AssertEqualDocuments(t, bson.D{{"package", "unknown"}, {"version", "unknown"}}, value)
+			AssertEqualDocuments(t, bson.D{{"package", info.Package}, {"version", info.Version}}, value)
 
 		case "version":
 			assert.IsType(t, "", field.Value)
@@ -903,7 +901,7 @@ func TestBuildInfoCommand(t *testing.T) {
 			actualComparable = append(actualComparable, bson.E{Key: field.Key, Value: bson.D{}})
 
 		case "openssl", "storageEngines", "allocator", "javascriptEngine":
-		// exclusive to MongoDB
+			// exclusive to MongoDB
 
 		default:
 			actualComparable = append(actualComparable, field)
@@ -928,7 +926,7 @@ func TestBuildInfoCommand(t *testing.T) {
 
 func TestCollStatsCommandEmpty(tt *testing.T) {
 	tt.Parallel()
-	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/556")
+	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/4792")
 	ctx, collection := setup.Setup(tt)
 
 	var actual bson.D
@@ -1044,17 +1042,17 @@ func TestCollStatsCommandScale(t *testing.T) {
 		"scaleOne": {
 			scale:            int32(1),
 			scaleFactor:      int32(1),
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/556",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/4792",
 		},
 		"scaleBig": {
 			scale:            int64(1000),
 			scaleFactor:      int32(1000),
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/556",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/4792",
 		},
 		"scaleMaxInt": {
 			scale:            math.MaxInt64,
 			scaleFactor:      int32(math.MaxInt32),
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/556",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/4792",
 		},
 		"scaleZero": {
 			scale: int32(0),
@@ -1075,7 +1073,7 @@ func TestCollStatsCommandScale(t *testing.T) {
 		"scaleFloat": {
 			scale:            2.8,
 			scaleFactor:      int32(2),
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/556",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/4792",
 		},
 		"scaleFloatNegative": {
 			scale: -2.8,
@@ -1096,7 +1094,7 @@ func TestCollStatsCommandScale(t *testing.T) {
 		"scaleMaxFloat": {
 			scale:            math.MaxFloat64,
 			scaleFactor:      int32(math.MaxInt32),
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/556",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/4792",
 		},
 		"scaleString": {
 			scale: "1",
@@ -1119,7 +1117,7 @@ func TestCollStatsCommandScale(t *testing.T) {
 		"scaleNull": {
 			scale:            nil,
 			scaleFactor:      int32(1),
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/556",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/4792",
 		},
 	} {
 		t.Run(name, func(tt *testing.T) {
@@ -1235,10 +1233,12 @@ func TestCollStatsCommandCount(tt *testing.T) {
 	AssertEqualDocuments(t, expectedComparable, actualComparable)
 }
 
-func TestCollStatsCommandScaleSize(t *testing.T) {
-	t.Parallel()
+func TestCollStatsCommandScaleSize(tt *testing.T) {
+	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/4792")
 
-	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
+	tt.Parallel()
+
+	ctx, collection := setup.Setup(tt, shareddata.DocumentsStrings)
 
 	indexName := "custom-name"
 	resIndexName, err := collection.Indexes().CreateOne(ctx, mongo.IndexModel{
@@ -1296,7 +1296,7 @@ func TestCollStatsCommandScaleSize(t *testing.T) {
 			switch field.Key {
 			case "totalIndexSize":
 				size, ok := field.Value.(int32)
-				require.True(t, ok)
+				require.True(t, ok, "%[1]v %[1]T", field.Value)
 
 				scaledSize := size / scale
 
@@ -1308,7 +1308,7 @@ func TestCollStatsCommandScaleSize(t *testing.T) {
 
 			case "size", "storageSize", "totalSize":
 				size, ok := field.Value.(int32)
-				require.True(t, ok)
+				require.True(t, ok, "%[1]v %[1]T", field.Value)
 
 				scaledSize := size / scale
 
@@ -1332,9 +1332,10 @@ func TestCollStatsCommandScaleSize(t *testing.T) {
 				for _, fieldName := range v {
 					var size int32
 					size, ok = fieldName.Value.(int32)
-					require.True(t, ok)
+					require.True(t, ok, "%[1]v %[1]T", fieldName.Value)
 
 					scaledSize := size / scale
+
 					indexSizes = append(indexSizes, bson.E{Key: fieldName.Key, Value: scaledSize})
 				}
 
@@ -1487,7 +1488,7 @@ func TestDataSizeCommandErrors(t *testing.T) {
 
 func TestDBStatsCommand(tt *testing.T) {
 	tt.Parallel()
-	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/9")
+	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/4821")
 
 	ctx, collection := setup.Setup(tt, shareddata.DocumentsStrings)
 
@@ -1496,7 +1497,7 @@ func TestDBStatsCommand(tt *testing.T) {
 	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
 	require.NoError(t, err)
 
-	var actualComparalbe bson.D
+	var actualComparable bson.D
 
 	for _, field := range actual {
 		switch field.Key {
@@ -1504,18 +1505,18 @@ func TestDBStatsCommand(tt *testing.T) {
 			val, ok := field.Value.(float64)
 			require.True(t, ok)
 
-			assert.InDelta(t, 37_500, val, 37_460)
-			actualComparalbe = append(actualComparalbe, bson.E{Key: field.Key, Value: float64(0)})
+			assert.InDelta(t, 37_500, val, 37_460, "field %s", field.Key)
+			actualComparable = append(actualComparable, bson.E{Key: field.Key, Value: float64(0)})
 
 		case "fsUsedSize", "fsTotalSize":
 			val, ok := field.Value.(float64)
 			require.True(t, ok)
 
 			assert.Greater(t, val, float64(0))
-			actualComparalbe = append(actualComparalbe, bson.E{Key: field.Key, Value: float64(0)})
+			actualComparable = append(actualComparable, bson.E{Key: field.Key, Value: float64(0)})
 
 		default:
-			actualComparalbe = append(actualComparalbe, field)
+			actualComparable = append(actualComparable, field)
 		}
 	}
 
@@ -1536,12 +1537,12 @@ func TestDBStatsCommand(tt *testing.T) {
 		{"ok", float64(1)},
 	}
 
-	AssertEqualDocuments(t, expected, actualComparalbe)
+	AssertEqualDocuments(t, expected, actualComparable)
 }
 
 func TestDBStatsCommandEmpty(tt *testing.T) {
 	tt.Parallel()
-	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/9")
+	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/4821")
 
 	ctx, collection := setup.Setup(tt)
 
@@ -1588,14 +1589,14 @@ func TestDBStatsCommandScale(tt *testing.T) {
 			tt.Helper()
 			tt.Parallel()
 
-			t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/9")
+			t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/4821")
 
 			var actual bson.D
 			command := bson.D{{"dbStats", int32(1)}, {"scale", tc.scale}}
 			err := collection.Database().RunCommand(ctx, command).Decode(&actual)
 			require.NoError(t, err)
 
-			var actualComparalbe bson.D
+			var actualComparable bson.D
 
 			for _, field := range actual {
 				switch field.Key {
@@ -1604,17 +1605,17 @@ func TestDBStatsCommandScale(tt *testing.T) {
 					require.True(t, ok)
 
 					assert.InDelta(t, 35_500, val, 35_500)
-					actualComparalbe = append(actualComparalbe, bson.E{Key: field.Key, Value: float64(0)})
+					actualComparable = append(actualComparable, bson.E{Key: field.Key, Value: float64(0)})
 
 				case "fsUsedSize", "fsTotalSize":
 					val, ok := field.Value.(float64)
 					require.True(t, ok)
 
 					assert.Greater(t, val, float64(0))
-					actualComparalbe = append(actualComparalbe, bson.E{Key: field.Key, Value: float64(0)})
+					actualComparable = append(actualComparable, bson.E{Key: field.Key, Value: float64(0)})
 
 				default:
-					actualComparalbe = append(actualComparalbe, field)
+					actualComparable = append(actualComparable, field)
 				}
 			}
 
@@ -1635,14 +1636,14 @@ func TestDBStatsCommandScale(tt *testing.T) {
 				{"ok", float64(1)},
 			}
 
-			AssertEqualDocuments(t, expected, actualComparalbe)
+			AssertEqualDocuments(t, expected, actualComparable)
 		})
 	}
 }
 
 func TestDBStatsCommandScaleEmptyDatabase(tt *testing.T) {
 	tt.Parallel()
-	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/9")
+	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/4821")
 
 	ctx, collection := setup.Setup(tt)
 
@@ -1826,13 +1827,13 @@ func TestDBStatsCommandFreeStorage(tt *testing.T) {
 		tt.Run(name, func(tt *testing.T) {
 			tt.Parallel()
 
-			t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/9")
+			t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/4821")
 
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
 			require.NoError(t, err)
 
-			var actualComparalbe bson.D
+			var actualComparable bson.D
 
 			for _, field := range actual {
 				switch field.Key {
@@ -1842,21 +1843,21 @@ func TestDBStatsCommandFreeStorage(tt *testing.T) {
 					require.True(t, ok)
 
 					assert.InDelta(t, 35_500, val, 35_500)
-					actualComparalbe = append(actualComparalbe, bson.E{Key: field.Key, Value: float64(0)})
+					actualComparable = append(actualComparable, bson.E{Key: field.Key, Value: float64(0)})
 
 				case "fsUsedSize", "fsTotalSize":
 					val, ok := field.Value.(float64)
 					require.True(t, ok)
 
 					assert.Greater(t, val, float64(0))
-					actualComparalbe = append(actualComparalbe, bson.E{Key: field.Key, Value: float64(0)})
+					actualComparable = append(actualComparable, bson.E{Key: field.Key, Value: float64(0)})
 
 				default:
-					actualComparalbe = append(actualComparalbe, field)
+					actualComparable = append(actualComparable, field)
 				}
 			}
 
-			AssertEqualDocuments(t, tc.expected, actualComparalbe)
+			AssertEqualDocuments(t, tc.expected, actualComparable)
 		})
 	}
 }
@@ -1864,6 +1865,8 @@ func TestDBStatsCommandFreeStorage(tt *testing.T) {
 //nolint:paralleltest // we test a global server status
 func TestServerStatusCommand(t *testing.T) {
 	ctx, collection := setup.Setup(t)
+
+	info := version.Get()
 
 	var actual bson.D
 	command := bson.D{{"serverStatus", int32(1)}}
@@ -1876,18 +1879,18 @@ func TestServerStatusCommand(t *testing.T) {
 	for _, field := range actual {
 		switch field.Key {
 		case "ferretdb":
-			value, ok := field.Value.(bson.D)
-			require.True(t, ok)
+			ferretdb, buildEnvironment := RemoveKey(t, field.Value.(bson.D), "buildEnvironment")
+			assert.IsType(t, bson.D{}, buildEnvironment)
+
 			expected := bson.D{
-				{"version", "unknown"},
-				{"gitVersion", "unknown"},
-				{"buildEnvironment", bson.D{}},
+				{"version", info.Version},
+				{"gitVersion", info.Commit},
 				{"debug", true},
-				{"package", "unknown"},
-				{"postgresql", expectedPostgreSQLVersion},
+				{"package", info.Package},
+				{"postgresql", version.PostgreSQL},
 				{"documentdb", version.DocumentDB},
 			}
-			AssertEqualDocuments(t, expected, value)
+			AssertEqualDocuments(t, expected, ferretdb)
 
 		case "freeMonitoring":
 			freeMonitoring, ok := field.Value.(bson.D)
@@ -1998,6 +2001,8 @@ func TestServerStatusCommandMetrics(t *testing.T) {
 
 	t.Parallel()
 
+	info := version.Get()
+
 	for name, tc := range map[string]struct {
 		cmds            []bson.D
 		expectedNonZero []string
@@ -2042,6 +2047,11 @@ func TestServerStatusCommandMetrics(t *testing.T) {
 
 			for _, field := range actual {
 				switch field.Key {
+				case "ferretdb":
+					f, buildEnvironment := RemoveKey(t, field.Value.(bson.D), "buildEnvironment")
+					assert.IsType(t, bson.D{}, buildEnvironment)
+					actualComparable = append(actualComparable, bson.E{Key: field.Key, Value: f})
+
 				case "host":
 					host, ok := field.Value.(string)
 					require.True(t, ok)
@@ -2143,12 +2153,11 @@ func TestServerStatusCommandMetrics(t *testing.T) {
 					{"views", int32(0)},
 				}},
 				{"ferretdb", bson.D{
-					{"version", "unknown"},
-					{"gitVersion", "unknown"},
-					{"buildEnvironment", bson.D{}},
+					{"version", info.Version},
+					{"gitVersion", info.Commit},
 					{"debug", true},
-					{"package", "unknown"},
-					{"postgresql", expectedPostgreSQLVersion},
+					{"package", info.Package},
+					{"postgresql", version.PostgreSQL},
 					{"documentdb", version.DocumentDB},
 				}},
 				{"freeMonitoring", bson.D{{"state", "undecided"}}},
@@ -2176,6 +2185,8 @@ func TestServerStatusCommandFreeMonitoring(t *testing.T) {
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{
 		DatabaseName: "admin",
 	})
+
+	info := version.Get()
 
 	for name, tc := range map[string]struct {
 		command        bson.D
@@ -2205,6 +2216,11 @@ func TestServerStatusCommandFreeMonitoring(t *testing.T) {
 
 			for _, field := range actual {
 				switch field.Key {
+				case "ferretdb":
+					f, buildEnvironment := RemoveKey(t, field.Value.(bson.D), "buildEnvironment")
+					assert.IsType(t, bson.D{}, buildEnvironment)
+					actualComparable = append(actualComparable, bson.E{Key: field.Key, Value: f})
+
 				case "host":
 					host, ok := field.Value.(string)
 					require.True(t, ok)
@@ -2319,12 +2335,11 @@ func TestServerStatusCommandFreeMonitoring(t *testing.T) {
 					{"views", int32(0)},
 				}},
 				{"ferretdb", bson.D{
-					{"version", "unknown"},
-					{"gitVersion", "unknown"},
-					{"buildEnvironment", bson.D{}},
+					{"version", info.Version},
+					{"gitVersion", info.Commit},
 					{"debug", true},
-					{"package", "unknown"},
-					{"postgresql", expectedPostgreSQLVersion},
+					{"package", info.Package},
+					{"postgresql", version.PostgreSQL},
 					{"documentdb", version.DocumentDB},
 				}},
 				{"freeMonitoring", bson.D{{"state", tc.expectedStatus}}},

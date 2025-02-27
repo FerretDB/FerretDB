@@ -47,7 +47,7 @@ type Handler struct {
 //
 //nolint:vet // for readability
 type NewHandlerOpts struct {
-	Base         string // base handler to create: "console", "text", or "json"
+	Base         string // base handler to create: "console", "text", "json" or "mongo"
 	Level        slog.Leveler
 	RemoveTime   bool
 	RemoveLevel  bool
@@ -136,6 +136,8 @@ func NewHandler(out io.Writer, opts *NewHandlerOpts) *Handler {
 	switch opts.Base {
 	case "console":
 		h = newConsoleHandler(out, opts, nil)
+	case "mongo":
+		h = newMongoHandler(out, opts, nil)
 	case "text":
 		h = slog.NewTextHandler(out, stdOpts)
 	case "json":

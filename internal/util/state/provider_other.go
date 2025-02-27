@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+//go:build !unix
 
-import "fmt"
+package state
 
-// stateFileProblem returns the state file access error.
-func stateFileProblem(_ string, err error) string {
-	return fmt.Sprintf("Failed to create state provider: %s.", err)
+// newProviderDirErr returns the state file access error as is.
+func newProviderDirErr(_ string, err error) error {
+	return err
 }

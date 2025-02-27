@@ -65,7 +65,7 @@ services:
       - ./data:/var/lib/postgresql/data
 
   ferretdb:
-    image: ghcr.io/ferretdb/ferretdb
+    image: ghcr.io/ferretdb/ferretdb:1
     restart: on-failure
     ports:
       - 27017:27017
@@ -158,7 +158,7 @@ services:
       - ./data:/var/lib/postgresql/data
 
   ferretdb:
-    image: ghcr.io/ferretdb/ferretdb
+    image: ghcr.io/ferretdb/ferretdb:1
     restart: on-failure
     ports:
       - 27017:27017
@@ -190,7 +190,7 @@ A typical setup would look like this:
 ```yaml
 services:
   ferretdb:
-    image: ghcr.io/ferretdb/ferretdb
+    image: ghcr.io/ferretdb/ferretdb:1
     restart: on-failure
     ports:
       - 27017:27017

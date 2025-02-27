@@ -8,22 +8,14 @@
 
 <!-- textlint-enable one-sentence-per-line -->
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/FerretDB/FerretDB/v2/ferretdb.svg)](https://pkg.go.dev/github.com/FerretDB/FerretDB/v2/ferretdb)
+
 [![Go](https://github.com/FerretDB/FerretDB/actions/workflows/go.yml/badge.svg?branch=main)](https://github.com/FerretDB/FerretDB/actions/workflows/go.yml)
 [![codecov](https://codecov.io/gh/FerretDB/FerretDB/branch/main/graph/badge.svg?token=JZ56XFT3DM)](https://codecov.io/gh/FerretDB/FerretDB)
 
 [![Security](https://github.com/FerretDB/FerretDB/actions/workflows/security.yml/badge.svg?branch=main)](https://github.com/FerretDB/FerretDB/actions/workflows/security.yml)
 [![Packages](https://github.com/FerretDB/FerretDB/actions/workflows/packages.yml/badge.svg?branch=main)](https://github.com/FerretDB/FerretDB/actions/workflows/packages.yml)
 [![Docs](https://github.com/FerretDB/FerretDB/actions/workflows/docs.yml/badge.svg?branch=main)](https://github.com/FerretDB/FerretDB/actions/workflows/docs.yml)
-
-<!-- markdownlint-disable MD033 -->
-
-<img src="website/static/ferrets-are-working.svg" width="421" height="298" alt="Ferrets are working" title="Ferrets are working">
-
-<!-- markdownlint-enable MD033 -->
-
-_Please pardon the dust as we move FerretDB v2 to this repository._
-
----
 
 FerretDB is an open-source alternative to MongoDB.
 It is a proxy that converts MongoDB 5.0+ wire protocol queries to SQL
@@ -85,6 +77,8 @@ With that container running, you can:
 You can stop the container with `docker stop ferretdb`.
 
 We also provide binaries and packages for various Linux distributions.
+as well as [Go library package](https://pkg.go.dev/github.com/FerretDB/FerretDB/v2/ferretdb)
+that embeds FerretDB into your application.
 See [our documentation](https://docs.ferretdb.io/installation/) for more details.
 
 ## Building and packaging
@@ -103,10 +97,11 @@ See [there](https://pkg.go.dev/github.com/FerretDB/FerretDB/v2/build/version) fo
 
 ## Managed FerretDB at cloud providers
 
+- [FerretDB Cloud](https://cloud.ferretdb.com/)
 - [Civo](https://www.civo.com/marketplace/FerretDB)
 - [Tembo](https://tembo.io/docs/tembo-stacks/mongo-alternative)
 - [Elestio](https://elest.io/open-source/ferretdb)
-- [Cozystack](https://cozystack.io/docs/components/#managed-ferretdb).
+- [Cozystack](https://cozystack.io/docs/components/#managed-ferretdb)
 
 ## Community
 

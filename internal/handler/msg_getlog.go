@@ -16,7 +16,6 @@ package handler
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -83,6 +82,7 @@ func (h *Handler) MsgGetLog(connCtx context.Context, msg *wire.OpMsg) (*wire.OpM
 	case "global":
 		var log *wirebson.Array
 
+		// TODO https://github.com/FerretDB/FerretDB/issues/4750
 		if log, err = h.L.Handler().(*logging.Handler).RecentEntries(); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -162,18 +162,19 @@ func (h *Handler) MsgGetLog(connCtx context.Context, msg *wire.OpMsg) (*wire.OpM
 		log := wirebson.MakeArray(len(startupWarnings))
 
 		for _, line := range startupWarnings {
-			// TODO https://github.com/FerretDB/FerretDB/issues/4347
-			b, err := json.Marshal(map[string]any{
-				"msg":  line,
-				"tags": []string{"startupWarnings"},
-				"s":    "I",
-				"c":    "STORAGE",
-				"id":   42000,
-				"ctx":  "initandlisten",
-				"t": map[string]string{
-					"$date": time.Now().UTC().Format("2006-01-02T15:04:05.999Z07:00"),
-				},
-			})
+			ml := logging.MongoLogRecord{
+				Msg:       line,
+				Tags:      []string{"startupWarnings"},
+				Severity:  "I",
+				Component: "STORAGE",
+				ID:        42000,
+				Ctx:       "initandlisten",
+				Timestamp: time.Now(),
+			}
+
+			var b []byte
+
+			b, err = ml.Marshal()
 			if err != nil {
 				return nil, lazyerrors.Error(err)
 			}
