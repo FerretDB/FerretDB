@@ -16,13 +16,11 @@ package handler
 
 import (
 	"context"
-	"time"
 
 	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // MsgCurrentOp implements `currentOp` command.
@@ -41,39 +39,8 @@ func (h *Handler) MsgCurrentOp(connCtx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
-	ops := h.operations.Operations()
-	inProgress := wirebson.MakeArray(len(ops))
-
-	for _, op := range ops {
-		since := time.Since(op.CurrentOpTime)
-
-		var ns string
-		if op.DB != "" && op.Collection != "" {
-			ns = op.DB + "." + op.Collection
-		}
-
-		opCommand := op.Command
-		if opCommand == nil {
-			opCommand = must.NotFail(wirebson.NewDocument())
-		}
-
-		doc := wirebson.MustDocument(
-			"type", "op",
-			"active", op.Active,
-			"currentOpTime", time.Now().Format(time.RFC3339),
-			"opid", op.OpID,
-			"secs_running", int64(since.Truncate(time.Second).Seconds()),
-			"microsecs_running", since.Microseconds(),
-			"op", op.Op,
-			"ns", ns,
-			"command", opCommand,
-		)
-
-		must.NoError(inProgress.Add(doc))
-	}
-
 	return wire.MustOpMsg(
-		"inprog", inProgress,
+		"inprog", wirebson.MakeArray(0),
 		"ok", float64(1),
 	), nil
 }

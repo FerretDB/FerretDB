@@ -32,8 +32,11 @@ import (
 	"github.com/FerretDB/FerretDB/v2/integration/setup"
 )
 
-func TestCurrentOpGetMore(t *testing.T) {
-	t.Parallel()
+func TestCurrentOpGetMore(tt *testing.T) {
+	tt.Parallel()
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/4794
+	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/4794")
 
 	s := setup.SetupWithOpts(t, new(setup.SetupOpts))
 	ctx, collection, cName, dbName := s.Ctx, s.Collection, s.Collection.Name(), s.Collection.Database().Name()
@@ -163,8 +166,11 @@ func TestCurrentOpGetMore(t *testing.T) {
 	testutil.AssertEqual(t, expected, res)
 }
 
-func TestCurrentOpExplain(t *testing.T) {
-	t.Parallel()
+func TestCurrentOpExplain(tt *testing.T) {
+	tt.Parallel()
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/4794
+	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/4794")
 
 	s := setup.SetupWithOpts(t, new(setup.SetupOpts))
 	ctx, collection, cName, dbName := s.Ctx, s.Collection, s.Collection.Name(), s.Collection.Database().Name()

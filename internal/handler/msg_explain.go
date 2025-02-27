@@ -37,9 +37,6 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgExplain(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	opID := h.operations.Start("command")
-	defer h.operations.Stop(opID)
-
 	spec, err := msg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -82,15 +79,7 @@ func (h *Handler) MsgExplain(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 
 	cmd := explainDoc.Command()
 
-	collection, ok := explainDoc.Get(cmd).(string)
-	if !ok {
-		return nil, mongoerrors.NewWithArgument(mongoerrors.ErrInvalidNamespace, "Failed to parse namespace element", "explain")
-	}
-
-	h.operations.Update(opID, dbName, collection, doc)
-
 	var f string
-
 	switch cmd {
 	case "aggregate":
 		f = "documentdb_api_catalog.bson_aggregation_pipeline"
