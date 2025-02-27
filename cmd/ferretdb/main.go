@@ -17,6 +17,7 @@ package main
 import (
 	"cmp"
 	"context"
+	"expvar"
 	"fmt"
 	"log"
 	"log/slog"
@@ -184,6 +185,7 @@ func defaultLogLevel() slog.Level {
 }
 
 // setupMetrics setups Prometheus metrics registerer with some metrics.
+// It also publishes some metrics via expvar for debug handlers.
 func setupMetrics(stateProvider *state.Provider) prometheus.Registerer {
 	r := prometheus.DefaultRegisterer
 	m := stateProvider.MetricsCollector(true)
@@ -199,6 +201,8 @@ func setupMetrics(stateProvider *state.Provider) prometheus.Registerer {
 	}
 
 	r.MustRegister(m)
+
+	expvar.Publish("state", stateProvider.Var())
 
 	return r
 }
@@ -220,7 +224,8 @@ func setupDefaultLogger(format string, uuid string) *slog.Logger {
 	return slog.Default()
 }
 
-// checkFlags checks that CLI flags are not self-contradictory.
+// checkFlags checks that CLI flags are not self-contradictory and produces warnings if needed.
+// It also publishes some CLI flags via expvar for debug handlers.
 func checkFlags(logger *slog.Logger) {
 	ctx := context.Background()
 
@@ -235,6 +240,8 @@ func checkFlags(logger *slog.Logger) {
 	if !cli.Auth {
 		logger.WarnContext(ctx, "Authentication is disabled; the server will accept any connection")
 	}
+
+	expvar.NewString("cli.log.level").Set(cli.Log.Level)
 }
 
 // dumpMetrics dumps all Prometheus metrics to stderr.

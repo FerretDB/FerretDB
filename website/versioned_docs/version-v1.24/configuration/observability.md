@@ -97,7 +97,8 @@ FerretDB serves a zip archive with debugging information on the `/debug/archive`
 Information in the archive helps us debug performance and compatibility problems.
 
 :::caution
-Please do not publish the whole archive in our [public community places](/#community), as it contains sensitive information.
+Please do not publish the whole archive in our [public community places](/#community),
+as it contains sensitive information.
 :::
 
 ### Metrics

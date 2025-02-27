@@ -16,6 +16,7 @@ package state
 
 import (
 	"encoding/json"
+	"expvar"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -81,6 +82,22 @@ func NewProviderDir(dir string) (*Provider, error) {
 	}
 
 	return sp, nil
+}
+
+// expvarVar is a helper type to avoid adding [expvar.Var] / [fmt.Stringer] to the [Provider] itself.
+type expvarVar struct {
+	p *Provider
+}
+
+// String implements [expvar.Var].
+func (e expvarVar) String() string {
+	b, _ := json.Marshal(e.p.Get().asMap())
+	return string(b)
+}
+
+// Var returns an unpublished [expvar.Var] for the state.
+func (p *Provider) Var() expvar.Var {
+	return expvarVar{p: p}
 }
 
 // MetricsCollector returns Prometheus metrics collector for that provider.

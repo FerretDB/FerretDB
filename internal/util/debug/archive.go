@@ -1,0 +1,147 @@
+// Copyright 2021 FerretDB Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package debug
+
+import (
+	"archive/zip"
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"log/slog"
+	"maps"
+	"net"
+	"net/http"
+	"slices"
+	"time"
+
+	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
+)
+
+// addToZip adds a new file to the zip archive.
+//
+// Passed [io.ReadCloser] is always closed.
+func addToZip(w *zip.Writer, name string, r io.ReadCloser) (err error) {
+	defer func() {
+		if e := r.Close(); e != nil && err == nil {
+			err = e
+		}
+	}()
+
+	f, err := w.CreateHeader(&zip.FileHeader{
+		Name:   name,
+		Method: zip.Deflate,
+	})
+	if err != nil {
+		return
+	}
+
+	_, err = io.Copy(f, r)
+
+	return
+}
+
+// filterExpvar filters out sensitive information from /debug/vars output.
+func filterExpvar(ctx context.Context, r io.ReadCloser, l *slog.Logger) io.ReadCloser {
+	defer r.Close() //nolint:errcheck // we are only reading it
+
+	var res bytes.Buffer
+
+	var data map[string]any
+	if err := json.NewDecoder(r).Decode(&data); err != nil {
+		l.ErrorContext(ctx, "Failed to decode expvar", logging.Error(err))
+		return io.NopCloser(&res)
+	}
+
+	delete(data, "cmdline")
+
+	e := json.NewEncoder(&res)
+	e.SetIndent("", "  ")
+
+	if err := e.Encode(data); err != nil {
+		l.ErrorContext(ctx, "Failed to encode expvar", logging.Error(err))
+	}
+
+	return io.NopCloser(&res)
+}
+
+// archiveHandler returns a handler that creates a zip archive with various debug information.
+func archiveHandler(l *slog.Logger) http.HandlerFunc {
+	return func(rw http.ResponseWriter, req *http.Request) {
+		name := fmt.Sprintf("ferretdb-%s.zip", time.Now().Format("2006-01-02-15-04-05"))
+
+		rw.Header().Set("Content-Type", "application/zip")
+		rw.Header().Set("Content-Disposition", "attachment; filename="+name)
+
+		ctx := req.Context()
+		zipWriter := zip.NewWriter(rw)
+		errs := map[string]error{}
+
+		defer func() {
+			files := slices.Sorted(maps.Keys(errs))
+
+			var b bytes.Buffer
+			for _, f := range files {
+				b.WriteString(fmt.Sprintf("%s: %v\n", f, errs[f]))
+			}
+
+			if err := addToZip(zipWriter, "errors.txt", io.NopCloser(&b)); err != nil {
+				l.ErrorContext(ctx, "Failed to add errors.txt to archive", logging.Error(err))
+			}
+
+			if err := zipWriter.Close(); err != nil {
+				l.ErrorContext(ctx, "Failed to close archive", logging.Error(err))
+			}
+
+			l.InfoContext(ctx, "Debug archive created", slog.String("name", name))
+		}()
+
+		host := ctx.Value(http.LocalAddrContextKey).(net.Addr)
+		getReq := must.NotFail(http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("http://%s/", host), nil))
+
+		for file, u := range map[string]struct {
+			path  string
+			query string
+		}{
+			"goroutine.pprof": {path: "/debug/pprof/goroutine"},
+			"heap.pprof":      {path: "/debug/pprof/heap", query: "gc=1"},
+			"profile.pprof":   {path: "/debug/pprof/profile", query: "seconds=5"},
+			"metrics.txt":     {path: "/debug/metrics"}, // includes version, UUID, etc
+			"vars.json":       {path: "/debug/vars"},
+		} {
+			getReq.URL.Path = u.path
+			getReq.URL.RawQuery = u.query
+
+			l.DebugContext(
+				ctx, "Fetching file for archive",
+				slog.String("file", file), slog.String("url", getReq.URL.String()),
+			)
+
+			resp, err := http.DefaultClient.Do(getReq)
+			if err == nil {
+				r := resp.Body
+				if u.path == "/debug/vars" {
+					r = filterExpvar(ctx, r, l)
+				}
+
+				err = addToZip(zipWriter, file, r)
+			}
+
+			errs[file] = err
+		}
+	}
+}
