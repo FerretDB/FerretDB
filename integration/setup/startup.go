@@ -47,12 +47,11 @@ var startupWG sync.WaitGroup
 // Startup initializes things that should be initialized only once.
 func Startup() {
 	opts := &logging.NewHandlerOpts{
-		Base:        "console",
-		Level:       slog.LevelDebug,
-		RemoveTime:  true,
-		RemoveLevel: true,
-		// testify produces incompatible log messages
-		CheckMessages: false,
+		Base:          "console",
+		Level:         slog.LevelDebug,
+		RemoveTime:    true,
+		RemoveLevel:   true,
+		CheckMessages: true,
 	}
 	logging.SetupDefault(opts, "")
 	l := slog.Default()
