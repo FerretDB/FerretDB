@@ -190,13 +190,13 @@ func defaultLogLevel() slog.Level {
 func setupExpvar(stateProvider *state.Provider) {
 	// do not include sensitive information like the full PostgreSQL URL
 	expvar.Publish("cli", iface.Stringer(func() string {
-		b, _ := json.Marshal(map[string]any{
+		b := must.NotFail(json.Marshal(map[string]any{
 			"cli": map[string]any{
 				"log": map[string]any{
 					"level": cli.Log.Level,
 				},
 			},
-		})
+		}))
 
 		return string(b)
 	}))
@@ -204,7 +204,7 @@ func setupExpvar(stateProvider *state.Provider) {
 	expvar.Publish("state", stateProvider.Var())
 
 	expvar.Publish("info", iface.Stringer(func() string {
-		b, _ := json.Marshal(version.Get())
+		b := must.NotFail(json.Marshal(version.Get()))
 		return string(b)
 	}))
 }

@@ -25,6 +25,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/iface"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // Provider provides access to FerretDB process state.
@@ -89,7 +90,7 @@ func NewProviderDir(dir string) (*Provider, error) {
 // Var returns an unpublished [expvar.Var] for the state.
 func (p *Provider) Var() expvar.Var {
 	return iface.Stringer(func() string {
-		b, _ := json.Marshal(p.Get().asMap())
+		b := must.NotFail(json.Marshal(p.Get().asMap()))
 		return string(b)
 	})
 }
