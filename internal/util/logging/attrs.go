@@ -28,9 +28,11 @@ type groupOrAttrs struct {
 	attrs []slog.Attr
 }
 
-type attrs []groupOrAttrs
+// attrsList contains a list of groupOrAttrs,
+// ordered from the top level group to the latest one.
+type attrsList []groupOrAttrs
 
-func (a attrs) toMap(r slog.Record) map[string]any {
+func (a attrsList) toMap(r slog.Record) map[string]any {
 	m := make(map[string]any, r.NumAttrs())
 
 	r.Attrs(func(attr slog.Attr) bool {
@@ -63,46 +65,18 @@ func (a attrs) toMap(r slog.Record) map[string]any {
 	return m
 }
 
-//func (a attrs) toDoc(r slog.Record) bson.D {
-//	m := a.toMap(r)
-//	var d bson.D
-//
-//	for _, k := range slices.Sorted(maps.Keys(m)) {
-//		d = append(d, bson.E{k, resolveMapValue(m[k])})
-//	}
-//
-//	return d
-//}
-
-func resolveMapValue(v any) any {
-	var m map[string]any
-	var ok bool
-
-	if m, ok = v.(map[string]any); !ok {
-		return v
-	}
-
-	var d bson.D
-
-	for _, k := range slices.Sorted(maps.Keys(m)) {
-		d = append(d, bson.E{k, resolveMapValue(m[k])})
-	}
-
-	return d
-}
-
-func (a attrs) toDoc(r slog.Record) bson.D {
+func (a attrsList) toBSON(r slog.Record) bson.D {
 	docFields := map[string]bson.E{}
 
 	r.Attrs(func(attr slog.Attr) bool {
 		if attr.Key != "" {
-			docFields[attr.Key] = bson.E{attr.Key, resolveDoc(attr.Value)}
+			docFields[attr.Key] = bson.E{attr.Key, resolveBSON(attr.Value)}
 			return true
 		}
 
 		if attr.Value.Kind() == slog.KindGroup {
 			for _, gAttr := range attr.Value.Group() {
-				docFields[gAttr.Key] = bson.E{gAttr.Key, resolveDoc(gAttr.Value)}
+				docFields[gAttr.Key] = bson.E{gAttr.Key, resolveBSON(gAttr.Value)}
 			}
 		}
 
@@ -121,7 +95,7 @@ func (a attrs) toDoc(r slog.Record) bson.D {
 		}
 
 		for _, attr := range goa.attrs {
-			docFields[attr.Key] = bson.E{attr.Key, resolveDoc(attr.Value)}
+			docFields[attr.Key] = bson.E{attr.Key, resolveBSON(attr.Value)}
 		}
 	}
 
@@ -132,43 +106,6 @@ func (a attrs) toDoc(r slog.Record) bson.D {
 
 	return outDoc
 }
-
-// attrs returns record attributes, as well as handler attributes from goas in map.
-// Attributes with duplicate keys are overwritten, and the order of keys is ignored.
-//
-// TODO https://github.com/FerretDB/FerretDB/issues/4347
-//func attrs(r slog.Record, goas []groupOrAttrs) map[string]any {
-//	m := make(map[string]any, r.NumAttrs())
-//
-//	r.Attrs(func(attr slog.Attr) bool {
-//		if attr.Key != "" {
-//			m[attr.Key] = resolve(attr.Value)
-//
-//			return true
-//		}
-//
-//		if attr.Value.Kind() == slog.KindGroup {
-//			for _, gAttr := range attr.Value.Group() {
-//				m[gAttr.Key] = resolve(gAttr.Value)
-//			}
-//		}
-//
-//		return true
-//	})
-//
-//	for _, goa := range slices.Backward(goas) {
-//		if goa.group != "" && len(m) > 0 {
-//			m = map[string]any{goa.group: m}
-//			continue
-//		}
-//
-//		for _, attr := range goa.attrs {
-//			m[attr.Key] = resolve(attr.Value)
-//		}
-//	}
-//
-//	return m
-//}
 
 // resolve returns underlying attribute value, or a map for [slog.KindGroup] type.
 func resolve(v slog.Value) any {
@@ -188,8 +125,8 @@ func resolve(v slog.Value) any {
 	return m
 }
 
-// resolve returns underlying attribute value, or a map for [slog.KindGroup] type.
-func resolveDoc(v slog.Value) any {
+// resolveBSON returns underlying attribute value, or a sorted bson.D for [slog.KindGroup] type.
+func resolveBSON(v slog.Value) any {
 	v = v.Resolve()
 
 	if v.Kind() != slog.KindGroup {
@@ -197,15 +134,15 @@ func resolveDoc(v slog.Value) any {
 	}
 
 	g := v.Group()
-	d := bson.D{}
+
+	var d bson.D
 	elems := map[string]bson.E{}
 
 	for _, attr := range g {
-		elems[attr.Key] = bson.E{attr.Key, resolveDoc(attr.Value)}
+		elems[attr.Key] = bson.E{attr.Key, resolveBSON(attr.Value)}
 	}
 
-	sortedKeys := slices.Sorted(maps.Keys(elems))
-	for _, k := range sortedKeys {
+	for _, k := range slices.Sorted(maps.Keys(elems)) {
 		d = append(d, elems[k])
 	}
 

@@ -39,7 +39,7 @@ import (
 type mongoHandler struct {
 	opts *NewHandlerOpts
 
-	ga        attrs
+	ga        attrsList
 	testAttrs map[string]any
 
 	m   *sync.Mutex
@@ -111,7 +111,7 @@ func mongoLogFromRecord(r slog.Record, ga []groupOrAttrs, opts *NewHandlerOpts) 
 		}
 	}
 
-	log.Attr = attrs(ga).toDoc(r)
+	log.Attr = attrsList(ga).toBSON(r)
 
 	return &log
 }

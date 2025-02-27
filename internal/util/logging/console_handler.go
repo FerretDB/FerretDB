@@ -46,7 +46,7 @@ const timeLayout = "2006-01-02T15:04:05.000Z0700"
 type consoleHandler struct {
 	opts *NewHandlerOpts
 
-	ga attrs
+	ga attrsList
 
 	testAttrs map[string]any
 
