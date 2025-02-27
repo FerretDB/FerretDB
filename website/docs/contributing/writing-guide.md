@@ -120,7 +120,7 @@ Our tooling will automatically reformat those blocks.
 { "_id": 1, "items": ["pens", "pencils", "paper", "erasers", "rulers"] }
 ```
 
-In scenarios with multiple commands and response put together as shown below, use `text` language.
+In scenarios with multiple commands and responses put together as shown below, use `text` language.
 
 ```text
 ferretdb> db.test.insert({a:34})
