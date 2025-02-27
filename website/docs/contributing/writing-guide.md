@@ -1,5 +1,5 @@
 ---
-sidebar_position: 99
+sidebar_position: 2
 unlisted: true # linked from CONTRIBUTING.md
 ---
 
@@ -163,3 +163,8 @@ ferretdb=# SELECT settings FROM test._ferretdb_settings;
 
 To be sure that you're using the right descriptive term, please check our [glossary page](../reference/glossary.md) for relevant terms and terminologies about FerretDB.
 If the word is not present in the glossary page, please feel free to ask on Slack or in the blog post issue.
+
+## Blog creation
+
+Our [blog post creation process](content-process.md) covers all the necessary steps needed to create a blog post.
+Please follow the instructions to ensure that your blog post is reviewed and published succesfully.
