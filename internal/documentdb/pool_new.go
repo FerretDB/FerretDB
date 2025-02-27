@@ -80,7 +80,7 @@ func newPgxPool(uri string, l *slog.Logger, sp *state.Provider) (*pgxpool.Pool, 
 	return p, nil
 }
 
-// newPgxPoolSetDefaults sets default PostgreSQL URI parameters.
+// newPgxPoolSetDefaults sets default PostgreSQL URL parameters.
 //
 // Keep it in sync with docs.
 func newPgxPoolSetDefaults(values url.Values) {

@@ -57,7 +57,7 @@ func TestNewPool(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("Normal", func(t *testing.T) {
-		uri := testutil.PostgreSQLURI(t)
+		uri := testutil.PostgreSQLURL(t)
 
 		t.Parallel()
 
@@ -65,6 +65,7 @@ func TestNewPool(t *testing.T) {
 		assert.NoError(t, newErr)
 		assert.NoError(t, pingErr)
 
+		assert.Equal(t, version.PostgreSQL, sp.Get().PostgreSQLVersion, "version.PostgreSQL wasn't updated")
 		assert.Equal(t, version.DocumentDB, sp.Get().DocumentDBVersion, "version.DocumentDB wasn't updated")
 	})
 
@@ -81,7 +82,7 @@ func TestNewPool(t *testing.T) {
 }
 
 func TestError(t *testing.T) {
-	uri := testutil.PostgreSQLURI(t)
+	uri := testutil.PostgreSQLURL(t)
 
 	t.Parallel()
 

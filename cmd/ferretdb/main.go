@@ -17,6 +17,8 @@ package main
 import (
 	"cmp"
 	"context"
+	"encoding/json"
+	"expvar"
 	"fmt"
 	"log"
 	"log/slog"
@@ -43,6 +45,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/v2/internal/util/debug"
 	"github.com/FerretDB/FerretDB/v2/internal/util/devbuild"
+	"github.com/FerretDB/FerretDB/v2/internal/util/iface"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 	"github.com/FerretDB/FerretDB/v2/internal/util/observability"
@@ -176,11 +179,34 @@ func main() {
 
 // defaultLogLevel returns the default log level.
 func defaultLogLevel() slog.Level {
-	if version.Get().DevBuild {
+	if devbuild.Enabled {
 		return slog.LevelDebug
 	}
 
 	return slog.LevelInfo
+}
+
+// setupExpvar setups expvar variables for debug handler.
+func setupExpvar(stateProvider *state.Provider) {
+	// do not include sensitive information like the full PostgreSQL URL
+	expvar.Publish("cli", iface.Stringer(func() string {
+		b := must.NotFail(json.Marshal(map[string]any{
+			"cli": map[string]any{
+				"log": map[string]any{
+					"level": cli.Log.Level,
+				},
+			},
+		}))
+
+		return string(b)
+	}))
+
+	expvar.Publish("state", stateProvider.Var())
+
+	expvar.Publish("info", iface.Stringer(func() string {
+		b := must.NotFail(json.Marshal(version.Get()))
+		return string(b)
+	}))
 }
 
 // setupMetrics setups Prometheus metrics registerer with some metrics.
@@ -220,7 +246,7 @@ func setupDefaultLogger(format string, uuid string) *slog.Logger {
 	return slog.Default()
 }
 
-// checkFlags checks that CLI flags are not self-contradictory.
+// checkFlags checks that CLI flags are not self-contradictory and produces warnings if needed.
 func checkFlags(logger *slog.Logger) {
 	ctx := context.Background()
 
@@ -281,6 +307,8 @@ func run() {
 	if err != nil {
 		log.Fatalf("Failed to set up state provider: %s", err)
 	}
+
+	setupExpvar(stateProvider)
 
 	metricsRegisterer := setupMetrics(stateProvider)
 
@@ -514,7 +542,7 @@ func run() {
 
 	wg.Wait()
 
-	if info.DevBuild {
+	if devbuild.Enabled {
 		dumpMetrics()
 	}
 }

@@ -524,6 +524,7 @@ const (
 	ErrLocation6586400                             = Code(6586400) // Location6586400
 	ErrLocation7429703                             = Code(7429703) // Location7429703
 	ErrLocation7436100                             = Code(7436100) // Location7436100
+	ErrLocation7749501                             = Code(7749501) // Location7749501
 	ErrLocation7750301                             = Code(7750301) // Location7750301
 	ErrLocation7750302                             = Code(7750302) // Location7750302
 	ErrLocation7750303                             = Code(7750303) // Location7750303
@@ -1033,6 +1034,7 @@ var pgCodes = map[string]Code{
 	"M00DA": ErrLocation6586400,                             // 6586400
 	"M00DV": ErrLocation7429703,                             // 7429703
 	"M00DW": ErrLocation7436100,                             // 7436100
+	"M00E1": ErrLocation7749501,                             // 7749501
 	"M00DX": ErrLocation7750301,                             // 7750301
 	"M00DY": ErrLocation7750302,                             // 7750302
 	"M00DZ": ErrLocation7750303,                             // 7750303
