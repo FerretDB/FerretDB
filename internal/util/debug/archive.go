@@ -29,7 +29,6 @@ import (
 	"time"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
-	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // addToZip adds a new file to the zip archive.
@@ -111,30 +110,31 @@ func archiveHandler(l *slog.Logger) http.HandlerFunc {
 		}()
 
 		host := ctx.Value(http.LocalAddrContextKey).(net.Addr)
-		getReq := must.NotFail(http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("http://%s/", host), nil))
 
 		for _, f := range []struct {
-			file  string
-			path  string
-			query string
+			file string
+			path string
 		}{
 			{file: "metrics.txt", path: "/debug/metrics"},
 			{file: "vars.json", path: "/debug/vars"},
-			{file: "profile.pprof", path: "/debug/pprof/profile", query: "seconds=5"},
+			{file: "profile.pprof", path: "/debug/pprof/profile?seconds=5"},
 			{file: "goroutine.pprof", path: "/debug/pprof/goroutine"},
 			{file: "block.pprof", path: "/debug/pprof/block"},
-			{file: "heap.pprof", path: "/debug/pprof/heap", query: "gc=1"},
-			{file: "trace.pprof", path: "/debug/pprof/trace", query: "seconds=5"},
+			{file: "heap.pprof", path: "/debug/pprof/heap?gc=1"},
+			{file: "trace.pprof", path: "/debug/pprof/trace?seconds=5"},
 		} {
-			getReq.URL.Path = f.path
-			getReq.URL.RawQuery = f.query
+			fReq, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://"+host.String()+f.path, nil)
+			if err != nil {
+				errs[f.file] = err
+				continue
+			}
 
 			l.DebugContext(
 				ctx, "Fetching file for archive",
-				slog.String("file", f.file), slog.String("url", getReq.URL.String()),
+				slog.String("file", f.file), slog.String("url", fReq.URL.String()),
 			)
 
-			resp, err := http.DefaultClient.Do(getReq)
+			resp, err := http.DefaultClient.Do(fReq)
 			if err == nil {
 				r := resp.Body
 				if f.path == "/debug/vars" {
