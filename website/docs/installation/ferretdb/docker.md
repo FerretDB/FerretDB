@@ -19,8 +19,11 @@ that behaves like a [readiness probe](../../configuration/observability.md#probe
 
 ## Production image
 
-Our [production image](https://ghcr.io/ferretdb/ferretdb:2) (`ghcr.io/ferretdb/ferretdb:2`) is recommended for most deployments.
-It does not include a PostgreSQL image with DocumentDB extension, so you must run this [pre-packaged PostgreSQL image with DocumentDB extension](https://ghcr.io/ferretdb/postgres-documentdb:16) (`ghcr.io/ferretdb/postgres-documentdb:16`) separately.
+Our [production image](https://ghcr.io/ferretdb/ferretdb:2) (`ghcr.io/ferretdb/ferretdb:2`)
+is recommended for most deployments.
+It does not include a PostgreSQL image with DocumentDB extension, so you must run this
+[pre-packaged PostgreSQL image with DocumentDB extension](https://ghcr.io/ferretdb/postgres-documentdb:16)
+(`ghcr.io/ferretdb/postgres-documentdb:16`) separately.
 You can do that with Docker Compose, Kubernetes, or any other means.
 
 ### PostgreSQL Setup with Docker Compose
@@ -90,8 +93,9 @@ Find out more about:
 
 ## Development image
 
-The [development image](https://ghcr.io/ferretdb/ferretdb-dev:2) `ghcr.io/ferretdb/ferretdb-dev:2`
+The [development image](https://ghcr.io/ferretdb/ferretdb-dev:2) (`ghcr.io/ferretdb/ferretdb-dev:2`)
 contains the [development build](https://pkg.go.dev/github.com/FerretDB/FerretDB/v2/build/version#hdr-Development_builds)
 of FerretDB with test coverage instrumentation, race detector,
 and other changes that make it more suitable for debugging problems.
 It can be used exactly the same way as the production image, as described above.
+Keep in mind, however, that it is significantly slower.

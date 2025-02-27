@@ -32,6 +32,7 @@
 // # Development builds
 //
 // Development builds of FerretDB behave differently in a few aspects:
+//   - they are significantly slower;
 //   - some values that are normally randomized are fixed or less randomized to make debugging easier;
 //   - some internal errors cause crashes instead of being handled more gracefully;
 //   - stack traces are collected more liberally;

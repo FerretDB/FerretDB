@@ -13,7 +13,8 @@ We provide two Docker images for setting up PostgreSQL with DocumentDB extension
 
 ## Production image for PostgreSQL with DocumentDB extension
 
-The [production image for PostgreSQL with DocumentDB extension](https://ghcr.io/ferretdb/postgres-documentdb:16) (`ghcr.io/ferretdb/postgres-documentdb:16`) is recommended for most deployments.
+The [production image for PostgreSQL with DocumentDB extension](https://ghcr.io/ferretdb/postgres-documentdb:16)
+(`ghcr.io/ferretdb/postgres-documentdb:16`) is recommended for most deployments.
 It does not include FerretDB, so you must run it separately.
 For a complete setup that includes FerretDB, see the [FerretDB installation](../ferretdb/docker.md).
 
@@ -53,5 +54,7 @@ See [Set up PostgreSQL connection](../../security/authentication.md#set-up-postg
 
 ## Development image for PostgreSQL with DocumentDB extension
 
-The [development image for PostgreSQL with DocumentDB extension](https://ghcr.io/ferretdb/postgres-documentdb-dev:16) (`ghcr.io/ferretdb/postgres-documentdb-dev:16`) is recommended for debugging problems.
-It includes additional debugging features and is not recommended for production use.
+The [development image for PostgreSQL with DocumentDB extension](https://ghcr.io/ferretdb/postgres-documentdb-dev:16)
+(`ghcr.io/ferretdb/postgres-documentdb-dev:16`) is recommended for debugging problems.
+It includes additional debugging features and significantly slower.
+For those reasons, it is not recommended for production use.

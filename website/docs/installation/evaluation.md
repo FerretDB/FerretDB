@@ -5,7 +5,7 @@ sidebar_position: 1
 # Evaluation
 
 We provide an [**evaluation** image](https://ghcr.io/ferretdb/ferretdb-eval:2)
-for quick testing and experiments.
+(`https://ghcr.io/ferretdb/ferretdb-eval:2`) for quick testing and experiments.
 
 You'll need [Docker](https://docs.docker.com/get-docker/) installed to run it.
 
