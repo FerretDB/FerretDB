@@ -75,13 +75,10 @@ func TestCreateCollectionDropListCollections(t *testing.T) {
 	AssertEqualDocuments(t, bson.D{{"ok", float64(1)}}, actual)
 }
 
-func TestDropDatabaseListDatabases(tt *testing.T) {
-	tt.Parallel()
+func TestDropDatabaseListDatabases(t *testing.T) {
+	t.Parallel()
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/4722
-	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/4722")
-
-	ctx, collection := setup.Setup(tt) // no providers there
+	ctx, collection := setup.Setup(t) // no providers there
 
 	db := collection.Database()
 	name := db.Name()
@@ -244,11 +241,8 @@ func TestListDatabases(t *testing.T) {
 	}
 
 	for name, tc := range testCases {
-		t.Run(name, func(tt *testing.T) {
-			tt.Parallel()
-
-			// TODO https://github.com/FerretDB/FerretDB/issues/4722
-			t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/4722")
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 
 			actual, err := db.Client().ListDatabases(ctx, tc.filter, tc.opts...)
 			assert.NoError(t, err)

@@ -76,5 +76,5 @@ func (h *Handler) MsgCompact(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 		"ok", float64(1),
 	))
 
-	return wire.NewOpMsg(must.NotFail(res.Encode()))
+	return wire.NewOpMsg(res)
 }

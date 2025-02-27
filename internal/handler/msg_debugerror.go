@@ -63,7 +63,7 @@ func (h *Handler) MsgDebugError(connCtx context.Context, msg *wire.OpMsg) (*wire
 			"ok", float64(1),
 		))
 
-		return wire.NewOpMsg(must.NotFail(res.Encode()))
+		return wire.NewOpMsg(res)
 
 	case strings.HasPrefix(expected, "panic"):
 		panic("debugError " + expected)
