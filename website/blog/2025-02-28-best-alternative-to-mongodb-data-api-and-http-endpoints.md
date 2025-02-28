@@ -11,7 +11,7 @@ tags: [open source, sspl, product, document databases, community]
 ![The Best Alternative for MongoDB Data API and HTTP Endpoints](/img/blog/mongodb-data-api.jpg)
 
 In September 2024, MongoDB announced the deprecation of Atlas Data API – among other features – leaving many developers affected, and without a suitable replacement.
-We are happy to announce that [FerretDB v2](https://blog.ferretdb.io/ferretdb-releases-v2-faster-more-compatible-mongodb-alternative) now provides a compatible replacement for the deprecated Atlas Data API.
+We are happy to announce that [FerretDB v2](https://blog.ferretdb.io/ferretdb-releases-v2-faster-more-compatible-mongodb-alternative) now provides a compatible replacement for it.
 
 <!--truncate-->
 
@@ -35,7 +35,7 @@ So instead of needing a full-fledged backend just to store something in a databa
 
 For developers already familiar with REST, Data API is essential.
 There's no new learning curve – you can interact with your database via HTTP requests.
-It follows the defined [Data API OpenAPI documentation here](https://github.com/FerretDB/FerretDB/blob/main/internal/dataapi/api/openapi.json)。
+It follows the defined [Data API OpenAPI documentation here](https://github.com/FerretDB/FerretDB/blob/main/internal/dataapi/api/openapi.json).
 
 With FerretDB's Data API stepping in as an alternative to MongoDB's deprecated service, we are ensuring developers can interact with their data without issues, no matter the stack they're working with.
 
@@ -47,9 +47,9 @@ In our case, the FerretDB Data API is built directly into FerretDB – it's not 
 
 FerretDB's Data API provides:
 
-- Seamless HTTP-based database access – No need for drivers; interact via simple REST requests.
-- MongoDB-compatible queries – Use familiar JSON-based queries and commands.
-- PostgreSQL-backed storage – Leverage the reliability of PostgreSQL with a MongoDB-like API.
+- Seamless HTTP-based database access – no need for drivers; interact via simple REST requests.
+- MongoDB-compatible queries – use familiar JSON-based queries and commands.
+- PostgreSQL-backed storage – leverage the reliability of PostgreSQL with a MongoDB-like API.
 
 To access Data API on FerretDB, set the environment variable or flag (`FERRETDB_LISTEN_DATA_API_ADDR`/`--listen-data-api-addr`) to your desired port when starting FerretDB.
 
@@ -148,7 +148,7 @@ Response:
 }
 ```
 
-You can also try this via Postman or any other REST client.
+You can also try this via Postman or any other OpenAPI client.
 This is how it looks in Postman:
 
 ![FerretDB Data API find operation](/img/blog/data-api-find.png)
@@ -212,6 +212,6 @@ You can easily swap out your MongoDB instance for FerretDB and continue working 
 Besides, FerretDB is an open source solution – you can host it on your infrastructure, ensuring control, community support, and long-term stability.
 
 Ready to migrate?
-[Check out our migration guide on how you can get started](https://github.com/FerretDB/FerretDB) and start using the Data API today!
+[Check out our migration guide on how you can get started](https://docs.ferretdb.io/migration/) and start using the Data API today!
 
 And if you have any questions, bugs, or features that are unsupported for your use case, [please feel free to reach out to us](https://docs.ferretdb.io/#community)!
