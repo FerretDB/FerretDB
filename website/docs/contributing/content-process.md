@@ -19,15 +19,45 @@ Please note that the FerretDB blog represents the official voice of the company 
 
 Once the blog post pitch is approved, you can start creating the draft.
 
-### Article template
+### File name and URL
 
-We have provided a template for writing blog posts.
-Please find the [template](YYYY-MM-DD.blog-template.md) here and feel free to start writing the draft with the provided template.
-
-### Names and URLs
+All blog posts should be written in Markdown format.
+Start by creating a new file in the `website/blog` directory.
 
 The file name should be in the format `YYYY-MM-DD-shortened-article-url.md` or `YYYY-MM-DD-folder-name/article-url.md`,
 where `YYYY-MM-DD` is the date of the post, and `shortened-article-url` is a shortened descriptive title of the post.
+
+### Article template
+
+Please find the blog writing template below and feel free to start writing the draft with it.
+You may copy and paste the template into your new blog post file.
+
+```markdown
+---
+slug: url-slug-of-post # the URL slug of the blog post with dashes instead of spaces
+title: Blog post template
+authors: [name] # the author name should be stored in the `authors.yml` file and referenced here
+description: >
+  This is a short description of a FerretDB blog post.
+image: /img/blog/postgresql.png
+tags: [tag1, tag2]
+---
+
+![Image alt description](/img/blog/postgresql.png) <!--Please add the path for the image banner (i.e. /img/blog/banner-image.png).-->
+
+Leave a space before starting article.
+Please write a short summary of the article here.
+This can be the same as the `description` above.
+
+<!--truncate-->
+
+Start body of the article from here.
+This section should contain the rest of the article introduction.
+
+## The content writing process
+
+Each section of the article should be a heading, starting from Heading 2.
+```
 
 ### Tags
 
@@ -64,19 +94,10 @@ This is not an exhaustive list, and the direction of our blog posts can surely e
 If a blog post calls for a new tag or you would like to suggest more tags, please ensure to add it to this list.
 This helps to maintain consistency across all blog posts.
 
-### Writing guide
+### Formatting
 
 We have a writing guide that provides guidelines for creating clear, concise, and engaging content.
 Please see our [writing guide](writing-guide.md) for help formatting your blog post.
-
-## Setting front matter and publishing options
-
-Front matter is the metadata that appears at the top of the markdown file and provides information about the post, such as the title and author.
-
-In the front matter, `draft: true` keeps the page hidden from the visitors of the site.
-Use this option if you plan to merge the content into `main` branch while keeping the page hidden.
-Other cases, remove `draft: true` to enable CI to build and render the new content during the reviewing.
-Make sure to include all necessary information in the front matter, such as the title and author.
 
 ## Reviewing and editing content
 
