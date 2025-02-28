@@ -29,7 +29,6 @@ import (
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/xdg-go/scram"
 
-	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi/api"
 	"github.com/FerretDB/FerretDB/v2/internal/handler"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
@@ -55,7 +54,7 @@ type Server struct {
 // After successful handshake it calls the next handler with the proper connInfo in context.
 func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := conninfo.Ctx(r.Context(), conninfo.New())
+		ctx := r.Context()
 		username, password, ok := r.BasicAuth()
 
 		if !ok {

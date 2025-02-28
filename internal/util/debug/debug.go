@@ -217,10 +217,9 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 // It exits when handler is stopped and listener closed.
 func (h *Handler) Serve(ctx context.Context) {
 	s := http.Server{
-		Addr:     h.opts.TCPAddr,
 		Handler:  http.DefaultServeMux,
 		ErrorLog: h.stdL,
-		BaseContext: func(_ net.Listener) context.Context {
+		BaseContext: func(net.Listener) context.Context {
 			return ctx
 		},
 	}
