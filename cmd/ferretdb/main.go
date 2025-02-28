@@ -239,7 +239,7 @@ func setupDefaultLogger(format string, uuid string) *slog.Logger {
 	opts := &logging.NewHandlerOpts{
 		Base:          format,
 		Level:         level,
-		CheckMessages: false, // TODO https://github.com/FerretDB/FerretDB/issues/4511
+		CheckMessages: devbuild.Enabled,
 	}
 	logging.SetupDefault(opts, uuid)
 
