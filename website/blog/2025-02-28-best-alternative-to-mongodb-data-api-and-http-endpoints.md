@@ -35,7 +35,8 @@ So instead of needing a full-fledged backend just to store something in a databa
 
 For developers already familiar with REST, Data API is essential.
 There's no new learning curve – you can interact with your database via HTTP requests.
-It follows the defined [Data API OpenAPI documentation here](https://github.com/FerretDB/FerretDB/blob/main/internal/dataapi/api/openapi-minimal.json).
+It follows the defined [Data API OpenAPI documentation here](https://github.com/FerretDB/FerretDB/blob/main/internal/dataapi/api/openapi.json)。
+
 With FerretDB's Data API stepping in as an alternative to MongoDB's deprecated service, we are ensuring developers can interact with their data without issues, no matter the stack they're working with.
 
 ## FerretDB Data API
@@ -147,6 +148,11 @@ Response:
 }
 ```
 
+You can also try this via Postman or any other REST client.
+This is how it looks in Postman:
+
+![FerretDB Data API find operation](/img/blog/data-api-find.png)
+
 #### Update a document
 
 Let's update Andrew's email:
@@ -169,6 +175,10 @@ Response:
 { "matchedCount": 1, "modifiedCount": 1 }
 ```
 
+Let's also try this on Postman:
+
+![FerretDB Data AP update operation](/img/blog/data-api-updateone.png)/Users/alexanderfashakin/projects/ferret/FerretDB/website/static/img/blog/data-api-deleteone.png
+
 #### Delete a document
 
 And to complete the CRUD operations, let's delete Andrew's document:
@@ -189,6 +199,10 @@ Response:
 ```json
 { "deletedCount": 1 }
 ```
+
+And in Postman:
+
+![FerretDB Data API delete operation](/img/blog/data-api-deleteone.png)
 
 ## Easily replace MongoDB Data API with FerretDB
 
