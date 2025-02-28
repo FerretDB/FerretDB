@@ -29,6 +29,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
+	"github.com/FerretDB/wire/wirebson"
 )
 
 // mongoHandler is a [slog.Handler] that writes logs by using mongo structured JSON format.
@@ -51,14 +52,14 @@ type mongoHandler struct {
 //
 //nolint:vet // to preserve field ordering
 type MongoLogRecord struct {
-	Timestamp time.Time `bson:"t"`
-	Severity  string    `bson:"s"`
-	Component string    `bson:"c"` // TODO https://github.com/FerretDB/FerretDB/issues/4431
-	ID        int       `bson:"id,omitempty"`
-	Ctx       string    `bson:"ctx"`
-	Msg       string    `bson:"msg"`
-	Attr      bson.Raw  `bson:"attr,omitempty"`
-	Tags      []string  `bson:"tags,omitempty"`
+	Timestamp time.Time          `bson:"t"`
+	Severity  string             `bson:"s"`
+	Component string             `bson:"c"` // TODO https://github.com/FerretDB/FerretDB/issues/4431
+	ID        int                `bson:"id,omitempty"`
+	Ctx       string             `bson:"ctx"`
+	Msg       string             `bson:"msg"`
+	Attr      *wirebson.Document `bson:"attr,omitempty"`
+	Tags      []string           `bson:"tags,omitempty"`
 }
 
 // Marshal returns the mongo structured JSON encoding of log.
@@ -111,7 +112,7 @@ func mongoLogFromRecord(r slog.Record, ga []groupOrAttrs, opts *NewHandlerOpts) 
 		}
 	}
 
-	log.Attr = bson.Raw(must.NotFail(attrsList(ga).toBSON(r).Encode()))
+	log.Attr = attrsList(ga).toBSON(r)
 
 	return &log
 }
@@ -161,8 +162,8 @@ func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
 			h.testAttrs[slog.SourceKey] = record.Ctx
 		}
 
-		if len(record.Attr) > 0 {
-			maps.Copy(h.testAttrs, record.Attr.Map())
+		if record.Attr.Len() > 0 {
+			maps.Copy(h.testAttrs, maps.Collect(record.Attr.All()))
 		}
 	}
 
