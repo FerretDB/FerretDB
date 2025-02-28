@@ -417,6 +417,7 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		var doc *wirebson.Document
 		if doc, err = raw.Decode(); err == nil {
 			command = doc.Command()
+			doc.Freeze()
 		}
 
 		if err == nil {
