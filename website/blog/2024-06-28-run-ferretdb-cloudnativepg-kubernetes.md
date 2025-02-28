@@ -30,7 +30,7 @@ Ensure you have the following tools installed:
 - [`kubectl`](https://kubernetes.io/docs/reference/kubectl/)
 - [Helm](https://helm.sh/): If you don't have it installed, run the following command to install it:
 
-  ```sh
+  ```shell
   curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
   helm repo add stable https://charts.helm.sh/stable
   helm repo update
@@ -76,7 +76,7 @@ graph TD
 Start by installing the CloudNative-PG operator.
 The following command will install the CloudNative-PG operator using Helm and deploy all resources needed to the `cnpg` namespace.
 
-```sh
+```shell
 helm repo add cnpg https://cloudnative-pg.github.io/charts
 helm upgrade --install cnpg \
   --namespace cnpg \
@@ -105,7 +105,7 @@ To make the script file executable, run `chmod +x create-secret.sh` from the fil
 
 Then execute the script to create the `Secret` in the `cnpg` namespace:
 
-```sh
+```shell
 ./create-secret.sh
 ```
 
@@ -135,7 +135,7 @@ spec:
 
 Apply the `yaml` file:
 
-```sh
+```shell
 kubectl apply -f pg-cluster.yaml
 ```
 
@@ -203,13 +203,13 @@ spec:
 
 Apply the `yaml` config:
 
-```sh
+```shell
 kubectl apply -f ferretdeployment.yaml
 ```
 
 Confirm that all essentials resources have been created:
 
-```sh
+```shell
 kubectl get cluster,pod,svc,secret -n cnpg
 ```
 
@@ -247,19 +247,19 @@ secret/sh.helm.release.v1.cnpg.v1     helm.sh/release.v1         1      20m
 
 Create a temporary `mongosh` client to connect to the FerretDB instance.
 
-```sh
+```shell
 kubectl -n cnpg run mongosh-client --image=rtsp/mongosh --rm -it -- bash
 ```
 
 That will start up a `mongosh-client` within the namespace.
 
-```sh
+```shell
 mongosh 'mongodb://ferretuser:<password>@ferretdb-service:27017/ferretdb?authMechanism=PLAIN'
 ```
 
 Run the following command to get the `ferretuser` password:
 
-```sh
+```shell
 kubectl get secret ferretuser-secret -n cnpg -o jsonpath='{.data.password}' | base64 --decode
 ```
 
@@ -288,7 +288,7 @@ Now that you are connected to the FerretDB instance, let's run some CRUD command
 
 Start by creating a collection and inserting some documents:
 
-```js
+```javascript
 db.testCollection.insertMany([
   { name: 'Alice', age: 25, city: 'Wonderland' },
   { name: 'Bob', age: 30, city: 'Builderland' },
@@ -298,7 +298,7 @@ db.testCollection.insertMany([
 
 Output:
 
-```js
+```javascript
 response = {
   acknowledged: true,
   insertedIds: {
@@ -311,13 +311,13 @@ response = {
 
 Next let's update a document:
 
-```js
+```javascript
 db.testCollection.updateOne({ name: 'Alice' }, { $set: { age: 26 } })
 ```
 
 Output:
 
-```js
+```javascript
 response = {
   acknowledged: true,
   insertedId: null,
@@ -329,25 +329,25 @@ response = {
 
 Delete documents where age is less than 35:
 
-```js
+```javascript
 db.testCollection.deleteMany({ age: { $lt: 35 } })
 ```
 
 Output:
 
-```js
+```javascript
 response = { acknowledged: true, deletedCount: 2 }
 ```
 
 Count the number of documents in the collection:
 
-```js
+```javascript
 db.testCollection.countDocuments()
 ```
 
 Output:
 
-```js
+```javascript
 response = 1
 ```
 
@@ -357,13 +357,13 @@ Want to see what the data looks like in Postgres?
 
 From another terminal window, let's create a temporary `postgres-client` pod to connect to the `postgres-cluster-1` pod.
 
-```sh
+```shell
 kubectl exec -it postgres-cluster-1 -n cnpg -- /bin/bash
 ```
 
 Connect to the PostgreSQL database:
 
-```sh
+```shell
 psql postgresql://ferretuser:<password>@postgres-cluster-rw.cnpg.svc.cluster.local:5432/ferretdb
 ```
 
@@ -394,7 +394,7 @@ ferretdb=> select * from testcollection_c141f891;
 
 To clean up the resources created in the `cnpg` namespace, run the following command:
 
-```sh
+```shell
 kubectl delete namespace cnpg
 ```
 
@@ -402,7 +402,7 @@ When you are done with the FerretDB and PostgreSQL cluster resources, you can de
 This will depend on how your Kubernetes cluster is set up.
 For example, if you used minikube, you can delete the cluster with the following commands:
 
-```sh
+```shell
 minikube stop
 minikube delete
 ```

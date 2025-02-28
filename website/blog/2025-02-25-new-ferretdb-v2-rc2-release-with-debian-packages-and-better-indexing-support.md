@@ -54,7 +54,7 @@ implemented the `reIndex` command.
 In the previous release, there was an issue with TTL indexes where expired documents were not removed.
 With the new release, TTL indexes now function correctly; expired documents will now automatically be removed as expected.
 
-```js
+```javascript
 db.runCommand({
   createIndexes: 'collection',
   indexes: [{ key: { createdAt: 1 }, expireAfterSeconds: 3600 }]
@@ -65,7 +65,7 @@ Some users reported issues with indexes not working as expected, not only the TT
 They've now been fixed, and we recommend rebuilding all indexes with the `reIndex` command to ensure they are in the best state.
 You can do that with the following command:
 
-```js
+```javascript
 db.runCommand({ reIndex: 'collection' })
 ```
 
@@ -75,7 +75,7 @@ db.runCommand({ reIndex: 'collection' })
 It provides important information about database size, storage efficiency, and more.
 With the new release, you can now get better insights into your database with the `dbStats` command.
 
-```js
+```javascript
 db.runCommand({ dbStats: 1 })
 ```
 

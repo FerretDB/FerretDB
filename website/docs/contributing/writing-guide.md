@@ -88,18 +88,18 @@ Rather than use relative paths, we strongly suggest the following approach, sinc
 
 Always specify the language in Markdown code blocks.
 
-For MongoDB shell commands, use `js` language.
+For MongoDB shell commands, use `javascript` language.
 Our tooling will automatically reformat those blocks.
 
-```js
+```javascript
 db.league.find({ club: 'PSG' })
 ```
 
-For MongoDB shell results, use `js` language, assign the `mongosh` output to `response` and copy&paste it as-is,
+For MongoDB shell results, use `javascript` language, assign the `mongosh` output to `response` and copy&paste it as-is,
 with unquoted field names, single quotes for strings, without trailing commas, etc.
 Our tooling will not reformat those blocks.
 
-```js
+```javascript
 //Assign the output to response
 response = [
   {
@@ -138,6 +138,9 @@ ferretdb=# SELECT settings FROM test._ferretdb_settings;
  {"$k": ["collections"], "collections": {"$k": ["groceries"], "groceries": "groceries_6a5f9564"}}
 (1 row)
 ```
+
+If you use [some other language](https://prismjs.com/#supported-languages),
+make sure it is added to `additionalLanguages` in Docusaurus settings.
 
 ## Terminologies
 

@@ -40,7 +40,7 @@ Leafcloud manages and deploys container clusters using the OpenStack Magnum proj
 Start by installing the OpenStack CLI; we'll be following the [Leafcloud guide](https://docs.leaf.cloud/en/latest/Getting-Started/Using-Openstack-CLI/) to help us set this up.
 You can also follow the [OpenStack CLI installation guide](https://docs.openstack.org/mitaka/user-guide/common/cli_install_openstack_command_line_clients.html) to set up the CLI for your OS.
 
-```sh
+```shell
 sudo apt update -y
 sudo apt install -y python3-pip python3-dev -y
 sudo apt install virtualenv -y
@@ -61,7 +61,7 @@ After downloading the file, copy and paste the file's contents into a new docume
 
 To set up the configuration for your Leafcloud account, run the following command:
 
-```sh
+```shell
 source ~/leafcloudopenrc.sh
 ```
 
@@ -70,7 +70,7 @@ When you do, you will have access to the OpenStack CLI for your Leafcloud accoun
 
 To check, run the command below to see if you can access the server list using the OpenStack CLI:
 
-```sh
+```shell
 openstack server list
 ```
 
@@ -79,7 +79,7 @@ If you get an authentication error, try to run `source ~/leafcloudopenrc.sh` aga
 Leafcloud provides a set of cluster templates that you can take advantage of right away.
 See the templates by running:
 
-```sh
+```shell
 openstack coe cluster template list
 ```
 
@@ -93,14 +93,14 @@ The keypairs are essential for encrypting SSH traffic for your instances and ena
 
 To create your cluster, use this command:
 
-```sh
+```shell
 openstack coe cluster create my-k8s-cluster --cluster-template k8s-ha-v1.21.2-template-v2.0-rc3 --keypair <keypair>
 ```
 
 You may need to wait a few minutes for this process to be complete.
 To check up on the installation enter the following:
 
-```sh
+```shell
 openstack coe cluster list
 ```
 
@@ -109,7 +109,7 @@ The installation is complete once the status of the cluster changes from CREATE_
 Now we need to fetch the configuration file for the cluster.
 Do this by running the following:
 
-```sh
+```shell
 openstack coe cluster config my-k8s-cluster
 ```
 
@@ -117,7 +117,7 @@ A file named 'config' will be downloaded to your home directory.
 `kubectl` uses the config file to determine which configuration file to read so as to connect to the Kubernetes cluster.
 Besides, all subsequent `kubectl` commands in a terminal session will use this configuration until it is unset or changed.
 
-```sh
+```shell
 export KUBECONFIG=/home/<username>/config
 ```
 
@@ -125,7 +125,7 @@ Your cluster should now be reachable using `kubectl`.
 
 Enter the command to confirm:
 
-```sh
+```shell
 kubectl get nodes -o wide
 ```
 
@@ -144,7 +144,7 @@ provisioner: cinder.csi.openstack.org
 
 You can apply it by running:
 
-```sh
+```shell
 kubectl apply -f storageclass.yaml
 ```
 
@@ -168,7 +168,7 @@ cd postgres-operator-examples
 Using the same CLI, we can install the PostgreSQL Operator from Crunchy Data.
 Note that we are using the default setup for this tutorial so you can still go ahead to modify it as you please.
 
-```sh
+```shell
 kubectl apply -k kustomize/install/namespace
 kubectl apply --server-side -k kustomize/install/default
 ```
@@ -227,14 +227,14 @@ spec:
 
 Now let's create the PostgreSQL cluster by running the following command:
 
-```sh
+```shell
 kubectl apply -k kustomize/postgres
 ```
 
 That command will create the Postgres cluster with the name `hippo` in the `postgres-operator` namespace.
 The following command can help you track the cluster's progress:
 
-```sh
+```shell
 kubectl -n postgres-operator describe postgresclusters.postgres-operator.crunchydata.com hippo
 ```
 
@@ -270,7 +270,7 @@ chmod +x secret.sh
 To create the user and database, we need to execute the psql command inside the pod since we have it running in Kubernetes.
 Here's how to do it:
 
-```sh
+```shell
 PASSWORD=$(kubectl -n postgres-operator get secret ferretdb-secret -o=jsonpath='{.data.password}' | base64 -d)
 kubectl -n postgres-operator exec -it hippo-instance1-mrpt-0 -- psql -U postgres -c "CREATE USER ferretuser WITH PASSWORD '$PASSWORD';"
 ```
@@ -281,13 +281,13 @@ You should update this with your own postgres instance name which you can get by
 
 Next, we'll create a database named `ferretdb` and assign all privileges to the user (`ferretuser`) we created:
 
-```sh
+```shell
 kubectl -n postgres-operator exec -it hippo-instance1-mrpt-0 -- psql -U postgres -c "CREATE DATABASE ferretdb OWNER ferretuser;"
 ```
 
 Check if the user and database were created successfully:
 
-```sh
+```shell
 kubectl -n postgres-operator exec -it hippo-instance1-mrpt-0 -- psql -U postgres -l
 ```
 
@@ -354,7 +354,7 @@ spec:
 
 Apply the deployment YAML:
 
-```sh
+```shell
 kubectl apply -f deployment.yaml
 ```
 
@@ -388,19 +388,19 @@ hippo-replicas     ClusterIP   10.254.33.136    <none>        5432/TCP    4d8h
 Great!
 Let's use the following command to open up a mongosh shell:
 
-```sh
+```shell
 kubectl -n postgres-operator run mongosh --image=rtsp/mongosh --rm -it -- bash
 ```
 
 Once the mongosh is open, connect to your FerretDB instance using the command:
 
-```sh
+```shell
 mongosh "mongodb://ferretuser:<password>@{FERRETDB SVC}/ferretdb?authMechanism=PLAIN"
 ```
 
 Note that you can get the `ferretuser` password by running:
 
-```sh
+```shell
 kubectl get secret ferretdb-secret -n postgres-operator -o jsonpath='{.data.password}' | base64 --decode
 ```
 
@@ -413,7 +413,7 @@ Let's run a few basic examples using FerretDB:
 
 Insert documents into the database:
 
-```js
+```javascript
 db.testing.insertMany([
   { a: 23, b: 'b', c: [1, 5], d: { a: 1 } },
   { a: 1, b: 34, c: '1', d: [3, 5] }
@@ -422,7 +422,7 @@ db.testing.insertMany([
 
 Now let's read all these documents and see what we get.
 
-```js
+```javascript
 db.testing.find()[
   ({
     _id: ObjectId('64ca02e119e6b74d10806107'),
@@ -447,7 +447,7 @@ We can take a look our data in PostgreSQL to see how the FerretDB conversion wor
 
 In another terminal, let's establish a connection to your PostgreSQL cluster.
 
-```sh
+```shell
 kubectl exec -it hippo-instance1-mrpt-0 -n postgres-operator -- psql -U postgres
 ```
 

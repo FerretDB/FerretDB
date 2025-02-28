@@ -43,7 +43,7 @@ This combination of Deno, Oak, and FerretDB offers a powerful, secure, and moder
 We will start by installing Deno on our local machine.
 The following command installs Deno on Linux/MacOS:
 
-```sh
+```shell
 curl -fsSL https://deno.land/install.sh | sh
 ```
 
@@ -62,7 +62,7 @@ typescript 5.5.2
 Let's start by creating a directory for the application.
 From your terminal, run the following command:
 
-```sh
+```shell
 mkdir sample_app && cd sample_app
 ```
 
@@ -193,7 +193,7 @@ The `DELETE` route removes the specified book from the database and provides a s
 
 Run the server with the necessary permissions:
 
-```sh
+```shell
 deno run --allow-net --allow-read --allow-write index.ts
 ```
 
@@ -202,7 +202,7 @@ Once the application is up and running, the endpoint `http://localhost:3000/` sh
 We will setup a connection in Postman to test if the Deno server is running and accessible.
 If it is, you should get this response from the API:
 
-```json
+```javascripton
 { "message": "Hello from a Deno API!" }
 ```
 
@@ -215,7 +215,7 @@ A screenshot of the endpoint's output in Postman can be seen below.
 Below is an example of a `POST` request made to the API endpoint `http://localhost:3000/api/books`.
 Here, we are inserting one database record into our FerretDB database.
 
-```json
+```javascripton
 {
   "title": "The Great Gatsby",
   "author": "F. Scott Fitzgerald",
@@ -239,7 +239,7 @@ That way, we can have it cover more than a singular genre.
 
 We will use a `PATCH` request to update the `genre` field of the record.
 
-```json
+```javascripton
 {
   "genre": ["tragedy", "classic"]
 }

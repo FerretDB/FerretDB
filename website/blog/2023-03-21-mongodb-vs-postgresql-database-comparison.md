@@ -89,7 +89,7 @@ Instead, it has its own query language – MongoDB Query Language (MQL).
 MQL is built to interact specifically with MongoDB databases and match similar features and flexibility as in SQL databases.
 With MQL, you can query any field, embedded documents, or nested arrays in the MongoDB database.
 
-```js
+```javascript
 db.users.find({
   hobbies: { $all: ['reading', 'cooking'] }
 })

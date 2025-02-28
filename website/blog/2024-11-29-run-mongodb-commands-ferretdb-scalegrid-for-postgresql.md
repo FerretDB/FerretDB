@@ -46,7 +46,7 @@ You'll need the connection string for the PostgreSQL instance once it's ready �
 From your local terminal, start by running the FerretDB container via Docker.
 You'll need the connection string for your PostgreSQL instance – available on the PostgreSQL deployment dashboard.
 
-```sh
+```shell
 docker run -e FERRETDB_POSTGRESQL_URL='postgresql://<username>:<password>@<host>/<database>' -p 27017:27017 ghcr.io/ferretdb/ferretdb
 ```
 
@@ -54,7 +54,7 @@ Ensure to replace `username`, `password`, `host`, and `database` with your Scale
 
 With the FerretDB instance now running, connect to it via `mongosh` using the following connection string (replace the `username` and `password` with the user credentials for your PostgreSQL instance on ScaleGrid):
 
-```sh
+```shell
 mongosh "mongodb://<username>:<password>@localhost/ferretdb?authMechanism=PLAIN"
 ```
 
@@ -63,7 +63,7 @@ mongosh "mongodb://<username>:<password>@localhost/ferretdb?authMechanism=PLAIN"
 Let's start by inserting some documents into the database.
 The following command will insert two documents into a "cities" collection:
 
-```js
+```javascript
 db.cities.insertMany([
   {
     name: 'Kyoto',
@@ -90,14 +90,14 @@ db.cities.insertMany([
 
 With the documents inserted successfully, let's find the city with a population greater than 2 million.
 
-```js
+```javascript
 db.cities.find({ population: { $gt: 2000000 } })
 ```
 
 That should retrieve only "Barcelona" as a city with more than the specified population.
 The output will look like this:
 
-```js
+```javascript
 response = [
   {
     _id: ObjectId('67460732d1f590718c455c6f'),
@@ -113,7 +113,7 @@ response = [
 Next, update the collection to include an additional landmark for "Kyoto".
 Here, you'll search for cities named "Kyoto" and push an element into the landmark array.
 
-```js
+```javascript
 db.cities.updateOne(
   { name: 'Kyoto' },
   { $push: { landmarks: 'Arashiyama Bamboo Grove' } }
@@ -122,13 +122,13 @@ db.cities.updateOne(
 
 Say there is a population increase of 200,000 in Barcelona, you want to update that as well.
 
-```js
+```javascript
 db.cities.updateOne({ name: 'Barcelona' }, { $inc: { population: 200000 } })
 ```
 
 Run `db.cities.find()` to see the newly updated collection – the population of "Barcelona" should have increased to "5700000" and "Kyoto" should now have three elements in its "landmarks" array.
 
-```js
+```javascript
 response = [
   {
     _id: ObjectId('67460732d1f590718c455c6e'),
@@ -155,13 +155,13 @@ response = [
 
 Finally, let's delete a city with an average winter temperature less than or equal to 5 ℃.
 
-```js
+```javascript
 db.cities.deleteMany({ 'average_temperature.winter': { $lte: 5 } })
 ```
 
 When you run `db.cities.find()`, it should leave you with a single document – "Barcelona".
 
-```js
+```javascript
 response = [
   {
     _id: ObjectId('67460732d1f590718c455c6f'),
@@ -177,7 +177,7 @@ response = [
 If you're interested in seeing how the database looks like in PostgreSQL, ScaleGrid for PostgreSQL provides a `psql` command with the connection string.
 Or you can use the `FERRETDB_POSTGRESQL_URL` from earlier.
 
-```sh
+```shell
 psql 'postgresql://<username>:<password>@<host>/<database>'
 ```
 

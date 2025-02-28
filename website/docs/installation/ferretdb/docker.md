@@ -75,7 +75,7 @@ The following steps describe a quick local setup:
    If you don't have `mongosh`, run the following command to run it inside the temporary MongoDB container,
    attaching to the same Docker network:
 
-   ```sh
+   ```shell
    docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo "mongodb://username:password@ferretdb/"
    ```
 

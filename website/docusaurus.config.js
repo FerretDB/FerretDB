@@ -188,7 +188,25 @@ const config = {
       prism: {
         theme: themes.github,
         darkTheme: themes.dracula,
-        additionalLanguages: ["go", "sql", "json", "json5", "systemd"],
+
+        // Run to see the actual list of languages:
+        // docker compose run --rm --entrypoint='ls /workdir/docusaurus-docs/node_modules/prismjs/components/' docusaurus-docs
+        additionalLanguages: [
+          "diff",
+          "docker",
+          "go",
+          "javascript",
+          "json",
+          "markup", // HTML
+          "mermaid",
+          "python",
+          "sh",
+          "sql",
+          "systemd",
+          "text",
+          "typescript",
+          "yaml",
+        ],
       },
       mermaid: {
         theme: { light: "default", dark: "dark" },

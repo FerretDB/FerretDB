@@ -60,7 +60,7 @@ The format and level can be adjusted by [configuration flags](flags.md#miscellan
 If Docker was launched with [our quick local setup with Docker Compose](../installation/ferretdb/docker.md#postgresql-setup-with-docker-compose),
 the following command can be used to fetch the logs.
 
-```sh
+```shell
 docker compose logs ferretdb
 ```
 

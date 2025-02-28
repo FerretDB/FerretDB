@@ -106,7 +106,7 @@ Please find the data here:
 The data contains a set of documents based on different transactions and supplies across the globe.
 This is a sample document from the collection:
 
-```js
+```javascript
 {"transaction_id": 10020, "customer_name": "María Pérez", "customer_location": "Buenos Aires, Argentina", "product_category": "Furniture", "transaction_time": new Date ("2023-07-16T02:00:00Z"), "product_name": "La-Z-Boy Recliner", "price": 450, "quantity": 1, "payment_method": "Credit Card"}
 ```
 
@@ -130,7 +130,7 @@ The query expression will take this format `{product_category: "Books", payment_
 You can do this through aggregation operations and use Mingo's user-friendly interface to set it up.
 A typical syntax for this would look like this:
 
-```js
+```javascript
 db.supply.aggregate([
   { $match: { product_category: 'Books' } },
   { $group: { _id: '$customer_name', totalQuantity: { $sum: '$quantity' } } },

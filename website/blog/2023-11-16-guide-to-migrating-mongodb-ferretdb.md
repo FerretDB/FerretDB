@@ -111,7 +111,7 @@ You'll need your existing MongoDB connection URI for this operation.
 To backup your existing data, you can use `mongodump` to pull all data.
 Say you have a MongoDB instance with connection URI (`mongodb://127.0.0.1:27017`), you can dump the entire data by running:
 
-```sh
+```shell
 mongodump --uri="mongodb://127.0.0.1:27017"
 ```
 
@@ -121,20 +121,20 @@ And just in case you intend to only migrate a specific database or collection, s
 
 For example, to dump data from a collection "testcoll" in "maindb" database, run the following command:
 
-```sh
+```shell
 mongodump --uri="mongodb://127.0.0.1:27017/" --nsInclude=maindb.testcoll
 ```
 
 To restore all the data from `mongodump` to your FerretDB instance, use `mongorestore`.
 Specify the FerretDB connection string (e.g. `mongodb://127.0.0.1:27017/ferretdb?authMechanism=PLAIN`), including the authentication parameters.
 
-```sh
+```shell
 mongorestore --uri="mongodb://127.0.0.1:27017/ferretdb?authMechanism=PLAIN"
 ```
 
 To restore a specific database '"maindb" and collection "testcoll", run the following command:
 
-```sh
+```shell
 mongorestore --uri="mongodb://username:password@127.0.0.1:27018/?authMechanism=PLAIN" --nsInclude=maindb.testcoll
 ```
 
@@ -146,13 +146,13 @@ To export your data, specify the connection string, the database and collection 
 
 Suppose you have a collection "testcoll" and "maindb" that you want to export, run the following command:
 
-```sh
+```shell
 mongoexport --uri="mongodb://127.0.0.1:27017/" --db=maindb --collection=testcoll --out=testcoll.json
 ```
 
 To import the data using the `mongoimport`, run the following command:
 
-```sh
+```shell
 mongoimport --uri="mongodb://username:password@127.0.0.1:27018/?authMechanism=PLAIN" --db=maindb --collection=testcoll --file=testcoll.json
 ```
 

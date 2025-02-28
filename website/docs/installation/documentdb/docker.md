@@ -24,7 +24,7 @@ See [Set up PostgreSQL connection](../../security/authentication.md#set-up-postg
 
 1. You can run the image with the following command:
 
-   ```sh
+   ```shell
    docker run -d \
      --restart on-failure \
      -e POSTGRES_USER=<username> \
@@ -39,13 +39,13 @@ See [Set up PostgreSQL connection](../../security/authentication.md#set-up-postg
 
 2. If you have `psql` installed, you can connect to the PostgreSQL with DocumentDB extension with the following command:
 
-   ```sh
+   ```shell
    psql 'postgres://<username>:<password>@localhost:5432/postgres'
    ```
 
    If you don't have `psql`, you can run the following command to run it inside the temporary PostgreSQL container:
 
-   ```sh
+   ```shell
    docker run --rm -it ghcr.io/ferretdb/postgres-documentdb:16 psql 'postgres://<username>:<password>@localhost:5432/postgres'
    ```
 

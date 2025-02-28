@@ -45,13 +45,13 @@ Ensure you have Docker running.
 Run the FerretDB container using the following command to connect via the `FERRETDB_POSTGRESQL_URL`.
 Make sure to replace `<password>`, `<host>`, and `<port>` with your pgEdge connection details.
 
-```sh
+```shell
 docker run -e FERRETDB_POSTGRESQL_URL='postgresql://admin:<password>@<host>/ferretdb?sslmode=require' -p 27017:27017 ghcr.io/ferretdb/ferretdb
 ```
 
 Connect to FerretDB via `mongosh` using the following connection string:
 
-```sh
+```shell
 mongosh "mongodb://admin:<password>@localhost/ferretdb?authMechanism=PLAIN"
 ```
 
@@ -80,7 +80,7 @@ Run basic MongoDB CRUD commands on your Postgres database using FerretDB:
 
 Let's start by inserting a couple of interesting database books into a `books` collection.
 
-```js
+```javascript
 db.books.insertMany([
   {
     title: 'Introduction to Database Systems',
@@ -102,13 +102,13 @@ db.books.insertMany([
 Then let's run some quick `find` commands to check out our data and see the inserted book records.
 For example, let find the book "Learning SQL" using its title:
 
-```js
+```javascript
 db.books.find({ title: 'Learning SQL' })
 ```
 
 Output:
 
-```js
+```javascript
 response = [
   {
     _id: ObjectId('672ce25eee320eddb90952c3'),
@@ -125,7 +125,7 @@ You can update the collection using the `upsert` command which will update a doc
 
 Let's upsert a document where the title is "Database Systems Concepts," setting the isAvailable status to true:
 
-```js
+```javascript
 db.books.updateOne(
   { title: 'Database Systems Concepts' },
   {
@@ -142,13 +142,13 @@ db.books.updateOne(
 
 Next, let's run a `find` command with the `sort` option to list all books sorted by the publication_year in descending order.
 
-```js
+```javascript
 db.books.find({}).sort({ publication_year: -1 })
 ```
 
 The entire collection is returned, sorted by the `publication_year` in descending order:
 
-```js
+```javascript
 response = [
   {
     _id: ObjectId('672ce25eee320eddb90952c3'),

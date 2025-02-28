@@ -33,7 +33,7 @@ The [cheatsheet guide provided by OpenZiti](https://github.com/openziti/ziti-sdk
 
 Run the following commands in your terminal:
 
-```sh
+```shell
 curl -s https://get.openziti.io/dock/simplified-docker-compose.yml > docker-compose.yml
 curl -s https://get.openziti.io/dock/.env > .env
 ```
@@ -87,7 +87,7 @@ FerretDB connects to PostgreSQL and is configured to run within the same Ziti ne
 
 Start the Docker Compose environment:
 
-```sh
+```shell
 docker compose up
 ```
 
@@ -101,14 +101,14 @@ To verify the security and functionality of your setup, follow these steps to te
 
 To begin, access the running Ziti Controller container using the following command:
 
-```sh
+```shell
 docker compose exec ziti-controller bash
 ```
 
 This should take you into the Ziti CLI.
 Authenticate using the `zitiLogin` alias:
 
-```sh
+```shell
 zitiLogin
 ```
 
@@ -116,7 +116,7 @@ Test edge routers online:
 
 Verify that all edge routers are online and properly registered with the Ziti Controller:
 
-```sh
+```shell
 ziti edge list edge-routers
 ```
 
@@ -127,7 +127,7 @@ Test edge router identities:
 Each edge router should have an associated identity within the Ziti network.
 Check these identities:
 
-```sh
+```shell
 ziti edge list identities
 ```
 
@@ -139,7 +139,7 @@ Let's ensure the Ziti Controller and a Ziti Edge Router can communicate over the
 
 Use ping from within the controller container to verify connectivity to the `ziti-edge-router`:
 
-```sh
+```shell
 $ ping ziti-edge-router -c 1
 PING ziti-edge-router (172.26.0.6): 56 data bytes
 64 bytes from 172.26.0.6: icmp_seq=0 ttl=64 time=0.562 ms
@@ -154,7 +154,7 @@ These tests ensure that your Docker network settings allow for proper communicat
 
 Once your services are up and running, you can connect to FerretDB using the MongoDB shell (`mongosh`) over the secure network established by OpenZiti.
 
-```sh
+```shell
 docker compose run mongo mongosh "mongodb://postgres:postgres@ferretdb:27017/ferretdb?authMechanism=PLAIN"
 ```
 

@@ -68,7 +68,7 @@ CREATE USER newuser WITH PASSWORD 'newpassword';"
 
 Once the user is created, you may connect to FerretDB using the new user credentials:
 
-```sh
+```shell
 mongodb://newuser:newpassword@127.0.0.1:27017/
 ```
 
@@ -82,7 +82,7 @@ Other user management commands are also available.
 
 If you are using the MongoDB Shell to connect to FerretDB, you can create a new user with the following command:
 
-```js
+```javascript
 db.createUser({
   user: 'newuser',
   pwd: 'newpassword',
@@ -97,7 +97,7 @@ Set `role` as an empty array (`[]`) when creating a user.
 
 You may then connect to FerretDB using the new user credentials:
 
-```sh
+```shell
 mongodb://newuser:newpassword@127.0.0.1:27017/
 ```
 

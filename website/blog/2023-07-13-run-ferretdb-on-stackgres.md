@@ -61,7 +61,7 @@ Please refer to the respective installation pages if you don't have these tools.
 As for Kubernetes, if you don't have one you can try easily with [K3s](https://k3s.io/).
 It can be installed with a single command line as in:
 
-```sh
+```shell
 curl -sfL https://get.k3s.io | sh -
 ```
 
@@ -76,19 +76,19 @@ After installing Docker Desktop, go to preferences and navigate to the Kubernete
 Fortunately, K3D is a tool that makes it easy to run K3s inside Docker, which works on macOS.
 You can install K3D using Homebrew and if successful, create a Kubernetes cluster:
 
-```sh
+```shell
 brew install k3d && k3d cluster create <cluster-name> --image rancher/k3s:v1.25.9-k3s1
 ```
 
 Then you can get the configuration so that you can connect and operate with it via both `kubectl` and `Helm`:
 
-```sh
+```shell
 mkdir -p ~/.kube/; sudo k3s kubectl config view --raw >> ~/.kube/config
 ```
 
 For macOS users, using the command above might create some issues so it's better to use this one below:
 
-```sh
+```shell
 k3d kubeconfig get <cluster-name> > ~/.kube/config
 ```
 
@@ -102,14 +102,14 @@ Here's the installation guide in the official docs.
 
 For our particular setup, we use the following Helm commands:
 
-```sh
+```shell
 helm repo add stackgres-charts https://stackgres.io/downloads/stackgres-k8s/stackgres/helm/
 helm install --create-namespace --namespace stackgres stackgres-operator stackgres-charts/stackgres-operator
 ```
 
 To confirm that the operator is running while also waiting for setup to complete, run the following commands:
 
-```sh
+```shell
 kubectl wait -n stackgres deployment -l group=stackgres.io --for=condition=Available
 kubectl get pods -n stackgres -l group=stackgres.io
 ```
@@ -140,7 +140,7 @@ metadata:
 
 From the apps-on-stackgres GitHub repository on your local machine, navigate to the `examples/ferretdb` folder within your terminal and apply the configurations specified in the `01-namespace.yaml` file to your Kubernetes cluster using this command:
 
-```sh
+```shell
 kubectl apply -f 01-namespace.yaml
 ```
 
@@ -163,7 +163,7 @@ spec:
 
 Create with:
 
-```sh
+```shell
 kubectl apply -f 02-sgpoolingconfig.yaml
 ```
 
@@ -174,7 +174,7 @@ We plan to use the StackGres' [SGScript](https://stackgres.io/doc/latest/referen
 
 First, we'll start by creating a `Secret` containing the SQL command that will generate a random password for the user.
 
-```sh
+```shell
 #!/bin/sh
 
 PASSWORD="$(dd if=/dev/urandom bs=1 count=8 status=none | base64 | tr / 0)"
@@ -183,7 +183,7 @@ kubectl -n ferretdb create secret generic createuser \
   --from-literal=sql="create user ferretdb with password '"${PASSWORD}"'"
 ```
 
-```sh
+```shell
 ./03-createuser_secret.sh
 ```
 
@@ -207,7 +207,7 @@ spec:
         create database ferretdb owner ferretdb encoding 'UTF8' locale 'en_US.UTF-8' template template0;
 ```
 
-```sh
+```shell
 kubectl apply -f 04-sgscript.yaml
 ```
 
@@ -233,7 +233,7 @@ spec:
       - sgScript: createuserdb
 ```
 
-```sh
+```shell
 kubectl apply -f 05-sgcluster.yaml
 ```
 
@@ -303,7 +303,7 @@ spec:
       targetPort: 27017
 ```
 
-```sh
+```shell
 kubectl apply -f 06-ferretdb.yaml
 ```
 
@@ -313,7 +313,7 @@ If all goes well, you should see the pod up & running.
 To test it, we need to run a MongoDB client.
 For example, we can use `kubectl run` to run a `mongosh` image:
 
-```sh
+```shell
 kubectl -n ferretdb run mongosh --image=rtsp/mongosh --rm -it -- bash
 ```
 
@@ -322,13 +322,13 @@ In that case, we have access to the user, password, and database that were creat
 
 When the terminal prompt appears, type the command:
 
-```sh
+```shell
 mongosh mongodb://ferretdb:${PASSWORD}@${FERRETDB_SVC}/ferretdb?authMechanism=PLAIN
 ```
 
 where `${PASSWORD}` represents the randomly generated password for the `ferretdb` user in Postgres:
 
-```sh
+```shell
 kubectl -n ferretdb get secret createuser --template '{{ printf "%s\n" (.data.sql | base64decode) }}'
 ```
 
@@ -382,13 +382,13 @@ ferretdb=# table test_afd071e5;
 
 To test and run our entire setup locally, we can use port forwarding with `kubectl` command, which should forward all connections from our local machine port to the `ferretdb` service's port `27017` in the cluster.
 
-```sh
+```shell
 kubectl port-forward svc/ferretdb 27017:27017 -n ferretdb
 ```
 
 In a new terminal, run this command to be sure your connection is working (note that this requires that you have mongosh installed.)
 
-```sh
+```shell
 mongosh 'mongodb://ferretdb:${PASSWORD}@localhost:27017/ferretdb?authMechanism=PLAIN'
 ```
 
@@ -396,7 +396,7 @@ To test our database locally, we'll be executing commands from a Meteor applicat
 If you don't have Meteor installed, you can install it by following the steps in their documentation.
 Then create a project using:
 
-```sh
+```shell
 meteor create <app-name>
 cd <app-name>
 meteor npm install
@@ -406,7 +406,7 @@ Be sure to replace `<app-name>` with that of your project.
 
 Without making any changes, on startup, the function will insert documents with the fields `title`, `url`, `createdAt` as long as there are none present.
 
-```js
+```javascript
 async function insertLink({ title, url }) {
   await LinksCollection.insertAsync({ title, url, createdAt: new Date() })
 }
@@ -446,7 +446,7 @@ Meteor.startup(async () => {
 Once installed, you can run it locally by connecting our MongoDB URI with Meteor, which then sets the environment variable for the MongoDB connection string.
 This way, Meteor will use an external MongoDB database instead of starting its own.
 
-```sh
+```shell
 MONGO_URL='mongodb://username:password@localhost:27017/mydatabase' meteor
 ```
 

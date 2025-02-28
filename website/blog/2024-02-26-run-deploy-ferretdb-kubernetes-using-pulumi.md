@@ -58,21 +58,21 @@ Please also ensure that your cluster is set as the current context.
 
 To list all available contexts available to `kubectl`:
 
-```sh
+```shell
 kubectl config get-contexts
 ```
 
 The current context is marked with an asterisk (\*) in the output.
 Use the `kubectl config use-context` command with the name of your desired context to switch the current context to the specified cluster.
 
-```sh
+```shell
 kubectl config use-context <your-desired-context>
 ```
 
 Start the setup by creating a `ferretdb` namespace within the cluster.
 That way, you can isolate, group, and manage your resources, access controls, and other configurations.
 
-```sh
+```shell
 kubectl create namespace ferretdb
 ```
 
@@ -83,7 +83,7 @@ To do that,
 
 Install the operator with the following command:
 
-```sh
+```shell
 kubectl create -f https://stackgres.io/downloads/stackgres-k8s/stackgres/1.7.0/stackgres-operator-demo.yml
 ```
 
@@ -92,7 +92,7 @@ This will install all the necessary resources, and also add the operator to a ne
 It may take some time for the operator to be ready.
 If you want to wait until the operator is ready, run the following command:
 
-```sh
+```shell
 kubectl wait -n stackgres deployment -l group=stackgres.io --for=condition=Available
 ```
 
@@ -108,7 +108,7 @@ stackgres-restapi-77c978b5dc-2lzm6    2/2     Running   0               6m17s
 The next to do is to create a `Secret` in the `ferretdb` namespace.
 The `Secret` will contain a random password generated using the SQL command in the following script.
 
-```sh
+```shell
 #!/bin/bash
 
 NAMESPACE="ferretdb"
@@ -125,13 +125,13 @@ kubectl -n $NAMESPACE create secret generic $SECRET_NAME --from-literal=sql="CRE
 Save the script as `create_secret.sh` or whatever you prefer.
 Make this executable by running this in the directory terminal:
 
-```sh
+```shell
 chmod +x ./create_secret.sh
 ```
 
 Then execute the script and create a unique password.
 
-```sh
+```shell
 ./create_secret.sh
 ```
 
@@ -145,7 +145,7 @@ Create a directory for the project.
 This will hold the configuration and particular project details for Pulumi.
 Since you already have `kubectl` configured, Pulumi will use the same configuration settings.
 
-```sh
+```shell
 mkdir ferretdb-pulumi && cd ferretdb-pulumi
 pulumi new kubernetes-python
 ```
@@ -167,7 +167,7 @@ This will include setting up the connection pooling, creating the Postgres datab
 Start by deleting the existing content in the `__main__.py` file.
 Then add the following to the `__main__.py` file.
 
-```py
+```python
 import pulumi
 from pulumi_kubernetes.core.v1 import Namespace, Service
 from pulumi_kubernetes.apps.v1 import Deployment
@@ -377,7 +377,7 @@ postgres-0                             6/6     Running   0          2m5s
 
 Let's launch a temporary `mongosh` pod in the `ferretdb` namespace.
 
-```sh
+```shell
 kubectl -n ferretdb run mongosh --image=rtsp/mongosh --rm -it -- bash
 ```
 
@@ -387,7 +387,7 @@ FerretDB exposes the Postgres database created previously with SGScript and allo
 
 Connect using the following format:
 
-```sh
+```shell
 mongosh 'mongodb://ferretdb:<password>@<host-address>:27017/ferretdb?authMechanism=PLAIN'
 ```
 
@@ -403,7 +403,7 @@ ferretdb-service    ClusterIP      10.106.153.95    <none>                      
 
 You can also access the password by running:
 
-```sh
+```shell
 kubectl -n ferretdb get secret createuser --template '{{ printf "%s\n" (.data.sql | base64decode) }}'
 ```
 
@@ -434,7 +434,7 @@ So you can just go right ahead to run a couple of MongoDB operations.
 
 Let's insert documents showing single-day stock data for a fictional company.
 
-```js
+```javascript
 db.stocks.insertMany([
   {
     symbol: 'ZTI',
@@ -475,13 +475,13 @@ Run `db.stocks.find()` to see the documents.
 
 Find stock data indicating where the volume was greater than 1,200,000.
 
-```js
+```javascript
 db.stocks.find({ symbol: 'ZTI', 'tradingData.volume': { $gt: 1200000 } })
 ```
 
 Result:
 
-```js
+```javascript
 response = [
   {
     _id: ObjectId('65d030d38660cd7b3c7ad8a0'),
@@ -507,14 +507,14 @@ Since FerretDB adds MongoDB compatibility to your Postgres database, you can vie
 
 Connect to Postgres by running this command:
 
-```sh
+```shell
 kubectl -n ferretdb exec -it postgres-0 -c postgres-util -- psql ferretdb
 ```
 
 Once you're in, set the `search_path` to the `ferretdb` database and then check out the tables in the database.
 FerretDB stores the data as JSONB.
 
-```psql
+```text
 ferretdb=# SET SEARCH_PATH TO ferretdb;
 SET
 ferretdb=# \dt
@@ -538,7 +538,7 @@ ferretdb=# SELECT * from stocks_5fb3a312;
 Pulumi provides a way to clean up and de-provision all the resources created with Pulumi from your project's directory.
 Then delete the cluster along with other resources created and managed outside of Pulumi.
 
-```sh
+```shell
 pulumi destroy
 minikube delete
 ```

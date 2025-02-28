@@ -58,13 +58,13 @@ Now that you have your FerretDB connection URI, you can connect to your FerretDB
 
 Copy the FerretDB connection URI; it typically follows this format:
 
-```sh
+```shell
 mongodb://username:password@host:port/database?authMechanism=PLAIN
 ```
 
 Connect to FerretDB through `mongosh` with the connection URI:
 
-```sh
+```shell
 mongosh 'mongodb://username:password@host:port/database?authMechanism=PLAIN'
 ```
 
@@ -77,7 +77,7 @@ Now that you're connected to FerretDB, let's explore some basic database operati
 
 **Inserting data:** Let's try inserting 4 documents into a database collection `demo`:
 
-```js
+```javascript
 db.demo.insertMany([
   {
     name: 'Chinedu Eze',
@@ -112,25 +112,25 @@ db.demo.insertMany([
 
 **Delete data:** Let's remove a document from the database using a `name` field as the specified query.
 
-```js
+```javascript
 db.demo.deleteOne({ name: 'Sara Nguyen' })
 ```
 
 **Update data:** Let's update the documents in the database with `age` less than or equal to `21`.
 
-```js
+```javascript
 db.demo.updateMany({ age: { $lt: 20 } }, { $addToSet: { sports: 'aerobics' } })
 ```
 
 To see the current state of your database, use the `find` command, which should give you a good view of all the prior changes made to the collection:
 
-```js
+```javascript
 db.demo.find()
 ```
 
 Output:
 
-```js
+```javascript
 response = [
   {
     _id: ObjectId('648bc0619df6027209a65b40'),
@@ -161,7 +161,7 @@ response = [
 
 **Indexing:** In FerretDB, you can also create indexes; let's set an index on the `email` field the same way you would on MongoDB, like this:
 
-```js
+```javascript
 db.demo.createIndex({ email: 1 })
 ```
 

@@ -39,7 +39,7 @@ For our example, we will be using PostgreSQL 14, which is the stable version of 
 Ensure to specify the `POSTGRES_DB` env variable with the same database name for FerretDB.
 It will be used to store all MongoDB collections.
 
-```js
+```javascript
 services:
   postgres:
     image: postgres:14
@@ -63,7 +63,7 @@ And If something isn't working as expected, it's worth it to remove the flag to 
 Let's check the current status of our docker environment.
 Run the `docker-compose ps` command in the directory with `docker-compose.yml` file to easily check all running containers.
 
-```js
+```javascript
 > docker-compose ps
   Name                Command              State                    Ports
 -------------------------------------------------------------------------------------------
@@ -78,7 +78,7 @@ It is available under the 5432 port on our local machine.
 The next step is to serve the FerretDB container.
 It will connect to the PostgreSQL database and act as a proxy.
 
-```js
+```javascript
 ferretdb:
   image: ghcr.io/ferretdb/ferretdb:latest
   container_name: ferretdb
@@ -99,7 +99,7 @@ It's good practice to specify the PostgreSQL hostname by using the PostgreSQL co
 
 You can also specify other flags, but at the moment most of them are created for development and testing:
 
-```js
+```javascript
 Flags:
   -h, --help                                   Show context-sensitive help.
       --version                                Print version to stdout (full version, commit, branch, dirty flag) and exit.
@@ -123,7 +123,7 @@ Flags:
 Now we can rerun `docker-compose up -d` to apply new changes.
 Let's see if the FerretDB container has started properly.
 
-```js
+```javascript
 > docker-compose ps
   Name                Command               State                      Ports
 ------------------------------------------------------------------------------------------------
@@ -135,7 +135,7 @@ postgres   docker-entrypoint.sh postgres    Up      0.0.0.0:5432->5432/tcp,:::54
 The container is up and running, it also forwards local :27017 port to the same port on the container.
 To be sure, let's check FerretDB logs by using `docker logs` command with the container name or ID as an argument.
 
-```js
+```javascript
 > docker-compose logs ferretdb
 Attaching to ferretdb
 ferretdb    | 2022-10-05T23:45:35.989Z  INFO    ferretdb/main.go:111    Starting FerretDB v0.5.4...     {"version": "v0.5.4", "commit": "d2bdcb45ea319c657f44cc0a18783c145cb871c7", "branch": "main", "dirty": false, "-compiler": "gc", "-race": "true", "-tags": "ferretdb_testcover,ferretdb_tigris", "-trimpath": "true", "CGO_ENABLED": "1", "GOARCH": "amd64", "GOOS": "linux", "GOAMD64": "v1"}
@@ -148,7 +148,7 @@ As we can see, FerretDB is waiting for incoming connections.
 
 Let's add a network to make a container communication separated from your environment.
 
-```js
+```javascript
 networks:
   default:
     name: ferretdb
@@ -159,7 +159,7 @@ Now we can try to connect to the FerretDB container using mongosh.
 If you have mongosh on your machine you can just use it.
 If not, you can create a simple MongoDB container and run the mongosh from there:
 
-```js
+```javascript
 > docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo:5 mongodb://ferretdb/
 
 For mongosh info see: https://docs.mongodb.com/mongodb-shell/
@@ -184,7 +184,7 @@ test>
 We've managed to create a sustainable environment for MongoDB drivers to run in!
 Let's see what will happen if we try to insert something to the collection.
 
-```js
+```javascript
 test> db.ferrets.insertOne({name: "Zippy", age: 4})
 {
   acknowledged: true,
@@ -197,7 +197,7 @@ test>
 With the insertOne() comand, one document record is inserted into the collection.
 Let's attempt to retrieve the documents in this collection using the find() method:
 
-```js
+```javascript
 test> db.ferrets.find({})
 [
   { _id: ObjectId("633e211b9e6442c3da4e1d21"), name: 'Zippy', age: 4 }
@@ -213,7 +213,7 @@ We are able to run MongoDB queries and store them successfully in the database!
 For our curiosity, let's see if the data is stored in the PostgreSQL database and in what way.
 To do that, let's execute `psql` command on the PostgreSQL container:
 
-```js
+```javascript
 > docker exec -ti postgres psql --user=user --db=ferretdb
 psql (14.5 (Debian 14.5-1.pgdg110+1))
 Type "help" for help.
@@ -224,7 +224,7 @@ ferretdb=#
 Now, we are able to control and run queries on the postgres database.
 Let's check tables in `test` schema which was used by mongosh.
 
-```js
+```javascript
 List of relations
  Schema |        Name        | Type  | Owner
 --------+--------------------+-------+-------

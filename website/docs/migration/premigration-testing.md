@@ -31,7 +31,7 @@ You would do the following:
    Specify the address of your MongoDB instance for `--proxy-addr` flag or `FERRETDB_PROXY_ADDR` environment variable.
    [See docs for more details](../configuration/flags.md#interfaces). For example:
 
-   ```sh
+   ```shell
    ferretdb --mode=diff-normal \
      --proxy-addr=<mongodb-URI> \
      --listen-addr=<ferretdb-listen-address> \
@@ -47,12 +47,12 @@ You would do the following:
    In the majority of cases, this does not necessitate additional scrutiny of the diff output.
    Nevertheless, if FerretDB does not handle the error, additional inspection becomes necessary.
 
-   ```sh
+   ```shell
    # run mongosh
    $ mongosh
    ```
 
-   ```js
+   ```javascript
    // insert some documents
    db.locations.insertMany([
      { postId: '1', position: { type: 'Point', coordinates: [-73.97, 40.77] } },
@@ -76,7 +76,7 @@ Continuing with the same example above, we can further examine the diff output w
    This can again be achieved by using the `--mode` [flag](../configuration/flags.md) or by setting the `FERRETDB_MODE` environment variable to `diff-proxy`.
 2. Follow the same instructions as the one for `diff-normal` above to run FerretDB in `diff-proxy` mode and re-run the command.
 
-   ```js
+   ```javascript
    db.runCommand({ dataSize: '<DB-NAME>.locations' })
    ```
 
@@ -161,7 +161,7 @@ Note that we also mark operators as unsupported if they are not supported in _al
 
 Running the tool to check FerretDB compatibility:
 
-```sh
+```shell
 # clone the repository and run the compat-tool
 $ git clone https://github.com/FerretDB/amazon-documentdb-tools.git && cd amazon-documentdb-tools/compat-tool
 $ python3 compat.py --directory=/path/to/myapp --version=FerretDB

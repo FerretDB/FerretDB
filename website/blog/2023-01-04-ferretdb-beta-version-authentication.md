@@ -68,7 +68,7 @@ See more details [in our documentation](https://docs.ferretdb.io/security/authen
 
 But that's not all - in addition to the `$max` update operator, FerretDB beta now includes support for the `$min` update operator:
 
-```js
+```javascript
 db.collection.update(
     {},
     {
@@ -82,7 +82,7 @@ db.collection.update(
 
 We've also added support for `ordered` inserts, which allows you to insert data in the exact order it comes in.
 
-```js
+```javascript
 db.collection.insert({
         <field1>: <value1>,
         ...

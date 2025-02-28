@@ -25,7 +25,7 @@ FerretDB will not create the oplog automatically; you must do so manually.
 
 To enable OpLog functionality, manually create a capped collection named `oplog.rs` in the `local` database.
 
-```js
+```javascript
 // use local
 db.createCollection('oplog.rs', { capped: true, size: 536870912 })
 ```
@@ -38,19 +38,19 @@ We do not perform any replication but clients and drivers will assume that the r
 The purpose of this flag is to allow access to the OpLOg.
 :::
 
-```sh
+```shell
 docker run -e FERRETDB_REPL_SET_NAME=rs0 ...
 ```
 
 To query the OpLog:
 
-```js
+```javascript
 db.oplog.rs.find()
 ```
 
 To query OpLog for all the operations in a particular namespace (`test.foo`), run:
 
-```js
+```javascript
 db.oplog.rs.find({ ns: 'test.foo' })
 ```
 

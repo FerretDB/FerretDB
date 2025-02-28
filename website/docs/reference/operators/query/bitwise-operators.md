@@ -15,7 +15,7 @@ Bitwise query operators help to select documents by evaluating query conditions 
 
 For the examples in this section, insert the following documents into the `numbers` collection:
 
-```js
+```javascript
 db.numbers.insertMany([
   { _id: 1, value: 23, binaryValue: '10111' },
   { _id: 2, value: 56, binaryValue: '111000' },
@@ -39,7 +39,7 @@ The position of the bits is read from right to left with the rightmost position 
 
 **Example:** The following query returns documents in which the `value` field has the second and third bit (position `1` and position `2`) from the right as clear (0).
 
-```js
+```javascript
 db.numbers.find({
   value: {
     $bitsAllClear: 6
@@ -50,7 +50,7 @@ db.numbers.find({
 The binary representation for `6` in this query is `110`.
 The query can also be written to show the positions of the bits to be checked:
 
-```js
+```javascript
 db.numbers.find({
   value: {
     $bitsAllClear: [1, 2]
@@ -60,13 +60,13 @@ db.numbers.find({
 
 The output:
 
-```js
+```javascript
 response = [{ _id: 2, value: 56, binaryValue: '111000' }]
 ```
 
 For the same query above, the bitmask can also be written as a BinData value:
 
-```js
+```javascript
 db.numbers.find({
   value: {
     $bitsAllClear: BinData(0, 'Bg==')
@@ -82,7 +82,7 @@ To select documents where the bitmask locations in a query are set (1), use the 
 
 **Example:** The following query returns all the documents with positions `1` and positions `2` as set (1):
 
-```js
+```javascript
 db.numbers.find({
   value: {
     $bitsAllSet: [1, 2]
@@ -92,7 +92,7 @@ db.numbers.find({
 
 The output:
 
-```js
+```javascript
 response = [
   { _id: 1, value: 23, binaryValue: '10111' },
   { _id: 4, value: 102, binaryValue: '1100110' }
@@ -109,7 +109,7 @@ Use the `$bitsAnyClear` operator to select documents where at least one of the b
 
 **Example:** The following query returns all the documents with positions `0` and positions `2` as clear (0):
 
-```js
+```javascript
 db.numbers.find({
   value: {
     $bitsAnyClear: [0, 2]
@@ -119,7 +119,7 @@ db.numbers.find({
 
 The output:
 
-```js
+```javascript
 response = [
   { _id: 2, value: 56, binaryValue: '111000' },
   { _id: 3, value: 67, binaryValue: '1000011' },
@@ -137,7 +137,7 @@ The `$bitsAnySet` operator selects documents where at least one of the bitmask l
 
 **Example:** The following query returns all the documents with positions `0` and positions `2` as set (1):
 
-```js
+```javascript
 db.numbers.find({
   value: {
     $bitsAnySet: [0, 2]
@@ -147,7 +147,7 @@ db.numbers.find({
 
 The output:
 
-```js
+```javascript
 response = [
   { _id: 1, value: 23, binaryValue: '10111' },
   { _id: 3, value: 67, binaryValue: '1000011' },

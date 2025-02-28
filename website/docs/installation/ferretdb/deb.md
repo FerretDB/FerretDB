@@ -11,13 +11,13 @@ Download the latest FerretDB `.deb` package from [our release pages](https://git
 rename it to `ferretdb.deb`,
 then run the following command in your terminal:
 
-```sh
+```shell
 sudo dpkg -i ferretdb.deb
 ```
 
 You can check that FerretDB was installed by running
 
-```sh
+```shell
 ferretdb --version
 ```
 

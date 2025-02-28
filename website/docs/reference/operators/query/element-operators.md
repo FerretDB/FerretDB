@@ -13,7 +13,7 @@ Element query operators return data based on the existence of a specified field 
 
 For the examples in this section, insert the following documents into the `electronics` collection:
 
-```js
+```javascript
 db.electronics.insertMany([
   {
     product: 'laptop',
@@ -116,7 +116,7 @@ If the `<boolean>` value is `false`, the query returns documents where the speci
 
 **Example:** Find documents in the `electronics` collection where the `specifications` field exists using the `$exists` operator:
 
-```js
+```javascript
 db.electronics.find({
   specifications: {
     $exists: true
@@ -126,7 +126,7 @@ db.electronics.find({
 
 The output:
 
-```js
+```javascript
 response = [
   {
     _id: ObjectId('63a32fc7cf72d6203bb45b8e'),
@@ -185,7 +185,7 @@ If you want to find documents where the `specifications` field exists and has a 
 
 **Example:** The following query returns all documents where the `specifications` field exists and its value is an array:
 
-```js
+```javascript
 db.electronics.find({
   specifications: {
     $exists: true,
@@ -196,7 +196,7 @@ db.electronics.find({
 
 The output:
 
-```js
+```javascript
 response = [
   {
     _id: ObjectId('63a32fc7cf72d6203bb45b8e'),
@@ -286,7 +286,7 @@ FerretDB supports the alias `number` which matches the following BSON types: `Do
 
 **Example:** The following operation query returns all documents in the `electronics` collection where the `discount` field has a boolean data type, which can be represented with the data code `8`:
 
-```js
+```javascript
 db.electronics.find({
   discount: {
     $type: 8
@@ -296,7 +296,7 @@ db.electronics.find({
 
 This query can also be written using the alias of the specified data type.
 
-```js
+```javascript
 db.electronics.find({
   discount: {
     $type: 'bool'
@@ -306,7 +306,7 @@ db.electronics.find({
 
 The output:
 
-```js
+```javascript
 response = [
   {
     _id: ObjectId('63a32fc7cf72d6203bb45b8e'),

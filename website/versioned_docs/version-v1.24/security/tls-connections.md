@@ -50,7 +50,7 @@ client-certs/
 The example below connects to localhost PostgreSQL instance using TLS with certificates in `server-certs` directory.
 Be sure to check that `server-certs` directory and files are present.
 
-```sh
+```shell
 ferretdb \
   --postgresql-url=postgres://localhost:5432/ferretdb \
   --listen-tls=:27018 \
@@ -62,7 +62,7 @@ ferretdb \
 Using `mongosh`, a client connects to ferretdb as `user2` using TLS certificates in `client-certs` directory.
 Be sure to check that `client-certs` directory and files are present.
 
-```sh
+```shell
 mongosh 'mongodb://user2:pass2@127.0.0.1:27018/ferretdb?authMechanism=PLAIN&tls=true&tlsCertificateKeyFile=./client-certs/client.pem&tlsCaFile=./client-certs/rootCA-cert.pem'
 ```
 
@@ -105,14 +105,14 @@ networks:
 
 To start `ferretdb`, use docker compose.
 
-```sh
+```shell
 docker compose up
 ```
 
 In the following example, a client connects to MongoDB URI using TLS certificates as `user2`.
 It uses Docker volume to mount `./clients-certs` of Docker host to `/clients` Docker container.
 
-```sh
+```shell
 docker run --rm -it \
   --network=ferretdb \
   --volume ./client-certs:/clients \

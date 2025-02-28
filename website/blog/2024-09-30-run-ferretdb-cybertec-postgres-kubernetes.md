@@ -41,7 +41,7 @@ Start by forking the [CyberTec project](https://github.com/cybertec-postgresql/C
 
 Then clone the forked repository:
 
-```sh
+```shell
 GITHUB_USER='USERNAME'
 git clone https://github.com/$GITHUB_USER/CYBERTEC-operator-tutorials.git
 cd CYBERTEC-operator-tutorials
@@ -54,7 +54,7 @@ This folder is where the core Helm chart for installing the Postgres operator re
 Ensure you have a Kubernetes cluster running.
 Next, create a namespace `cpo` for the project.
 
-```sh
+```shell
 kubectl create namespace cpo
 ```
 
@@ -62,7 +62,7 @@ kubectl create namespace cpo
 
 Use Helm to install the CyberTec Postgres Operator.
 
-```sh
+```shell
 helm install cpo -n cpo setup/helm/operator/
 ```
 
@@ -75,7 +75,7 @@ Next, you need to set up a single Postgres cluster.
 The required `yaml` file is already present in the `cluster-tutorials/single-cluster` directory.
 kubectl apply -f cluster-tutorials/single-cluster/postgres.yaml -n cpo
 
-```sh
+```shell
 kubectl apply -f cluster-tutorials/single-cluster/postgres.yaml -n cpo
 ```
 
@@ -85,7 +85,7 @@ For further customization, you can edit the `postgres.yaml` file to adjust param
 
 Ensure to check to see that all the pods are running:
 
-```sh
+```shell
 kubectl get pods -n cpo
 ```
 
@@ -103,7 +103,7 @@ The Postgres cluster is running in a private network and you need to enable traf
 
 You can do that by patching `svc` to allow traffic via `NodePort`.
 
-```sh
+```shell
 kubectl patch svc cluster-1 -n cpo -p '{"spec": {"type": "NodePort"}}'
 ```
 
@@ -114,7 +114,7 @@ In a production setup, you might want to consider more scalable options like usi
 
 Check the service to see the port that is open:
 
-```sh
+```shell
 kubectl get svc -n cpo
 ```
 
@@ -131,13 +131,13 @@ cluster-1-repl          ClusterIP   10.101.77.119    <none>        5432/TCP     
 
 Now that the Postgres clusters are set up, you need the user credential stored in `Secret` to connect to the database instance:
 
-```sh
+```shell
 kubectl get secret -n cpo postgres.cluster-1.credentials.postgresql.cpo.opensource.cybertec.at -o jsonpath='{.data}' | jq '.|map_values(@base64d)'
 ```
 
 Output should look like this:
 
-```json
+```javascripton
 {
   "password": "naS0UMX4ajDUtFJZ2Zntwxscn5tnBnLsrDolSXqKOcxvaYkjAdjWRCRQhybbyORN",
   "username": "postgres"
@@ -196,7 +196,7 @@ spec:
 
 Apply the deployment by running:
 
-```sh
+```shell
 kubectl apply -f ferretdb-deployment.yaml
 ```
 
@@ -232,13 +232,13 @@ You can connect to the FerretDB instance using `mongosh`.
 
 Start by creating a temp `mongosh` pod:
 
-```sh
+```shell
 kubectl run -it --rm --image=mongo:latest mongo-client -- bash
 ```
 
 Connect to the FerretDB instance using the Postgres credentials generated earlier:
 
-```sh
+```shell
 mongosh "mongodb://postgres:<password>@<host>:27017/postgres?authMechanism=PLAIN"
 ```
 
@@ -251,7 +251,7 @@ Let's run some CRUD commands to see how FerretDB enables you to replace MongoDB 
 
 Start by inserting some documents into a `weather` collection:
 
-```js
+```javascript
 db.weather.insertOne([
   {
     date: new Date('2024-04-22'),
@@ -273,13 +273,13 @@ db.weather.insertOne([
 
 Query the collection to see the inserted document:
 
-```js
+```javascript
 db.weather.find()
 ```
 
 Run an update operation to update the humidity of the document:
 
-```js
+```javascript
 db.weather.updateMany(
   { 'location.city': 'New York', 'weather.wind_speed': { $gt: 10 } },
   { $set: { 'weather.humidity': 85 } }
@@ -288,7 +288,7 @@ db.weather.updateMany(
 
 Run `db.weather.find()` on the collection to see the updated document:
 
-```js
+```javascript
 response = [
   {
     _id: ObjectId('66f008484f7a5c7f5a1681ed'),
@@ -315,13 +315,13 @@ FerretDB stores the data in a JSONB format in the Postgres database.
 
 If you want to know how this looks, port-forward the Postgres service to your local machine:
 
-```sh
+```shell
 kubectl port-forward svc/cluster-1 5432:5432 -n cpo
 ```
 
 Connect to the database via `psql` using the database and user credentials:
 
-```sh
+```shell
 PGPASSWORD=<password> psql -h 127.0.0.1 -p 5432 -U postgres
 ```
 

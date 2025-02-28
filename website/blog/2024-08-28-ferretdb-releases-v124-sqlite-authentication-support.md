@@ -30,7 +30,7 @@ You can set this up by enabling the experimental authentication mode `--test-ena
 
 For example:
 
-```sh
+```shell
 ferretdb --test-enable-new-auth=true --setup-username=user --setup-password=pass --setup-database=ferretdb
 ```
 

@@ -26,7 +26,7 @@ What we are working on should result in significant performance improvement for 
 In FerretDB v1.19.0, we've enabled support for index creation on nested fields for SQLite.
 Say you have a collection `supply`, you can create an index on a nested field such as `item.name` for the SQLite backend:
 
-```js
+```javascript
 db.supply.createIndex({ 'item.name': 1 })
 ```
 

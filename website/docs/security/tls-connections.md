@@ -84,7 +84,7 @@ networks:
 
 To start `ferretdb`, run the following command:
 
-```sh
+```shell
 docker compose up
 ```
 
@@ -93,7 +93,7 @@ It uses Docker volume to mount `./clients-certs` of Docker host to `/clients` Do
 
 Connect to `ferretdb` server using `mongosh` client:
 
-```sh
+```shell
 docker run --rm -it \
   --network=ferretdb \
   --volume ./client-certs:/clients \

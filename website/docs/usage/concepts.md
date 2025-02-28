@@ -15,7 +15,7 @@ Documents are self-describing records containing both data types and a descripti
 They are similar to rows in relational databases.
 Here is an example of a single document:
 
-```js
+```javascript
 {
     first: "Thomas",
     last: "Edison",
@@ -33,7 +33,7 @@ However, there are a few restrictions, which you can find [here](migration/diff.
 
 For complex documents, you can nest documents inside other documents:
 
-```js
+```javascript
 {
   name: {
     first: "Thomas",
@@ -54,7 +54,7 @@ Dot notations `(.)` are used to reference a field in an embedded document or its
 
 Dot notations can be used to specify or query an array by concatenating a dot `(.)` with the index position of the field.
 
-```js
+```javascript
 'array_name.index'
 ```
 
@@ -64,7 +64,7 @@ When using dot notations, the field name of the array and the specified value mu
 
 For example, let's take the following array field in a document:
 
-```js
+```javascript
 animals: ['dog', 'cat', 'fish', 'fox']
 ```
 
@@ -79,13 +79,13 @@ Here are more examples of dot notations on arrays:
 
 To reference or query a field in an embedded document, concatenate the name of the embedded document and the field name using the dot notation.
 
-```js
+```javascript
 'embedded_document_name.field'
 ```
 
 Take the following document, for example:
 
-```js
+```javascript
 {
    name:{
       first: "Tom",
@@ -116,7 +116,7 @@ If a collection does not exist, FerretDB creates a new one when you insert docum
 A collection may contain one or more documents.
 For example, the following collection contains three documents.
 
-```js
+```javascript
 {
   Scientists: [
     {
