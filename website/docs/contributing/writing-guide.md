@@ -167,4 +167,4 @@ If the word is not present in the glossary page, please feel free to ask on Slac
 ## Blog creation
 
 Our [blog post creation process](content-process.md) covers all the necessary steps needed to create a blog post.
-Please follow the instructions to ensure that your blog post is reviewed and published succesfully.
+Please follow the instructions to ensure that your blog post is reviewed and published successfully.
