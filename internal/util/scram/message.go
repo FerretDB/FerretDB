@@ -227,7 +227,7 @@ func parseMessage(msg string, l *slog.Logger) (*message, error) {
 				// but most current drivers are fine.
 				// We still want users to use credentials created by DocumentDB.
 				l.Warn(
-					"SCRAM attribute 's' has unexpected length. It is recommended to use users created by `createUser` command.",
+					"SCRAM attribute 's' has unexpected length; it is recommended to use users created by `createUser` command",
 					slog.Int("l", sl),
 				)
 			}
