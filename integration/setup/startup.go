@@ -51,7 +51,7 @@ func Startup() {
 		Level:         slog.LevelDebug,
 		RemoveTime:    true,
 		RemoveLevel:   true,
-		CheckMessages: false, // TODO https://github.com/FerretDB/FerretDB/issues/4511
+		CheckMessages: true,
 	}
 	logging.SetupDefault(opts, "")
 	l := slog.Default()
