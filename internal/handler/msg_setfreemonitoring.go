@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/AlekSi/pointer"
 	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
@@ -79,9 +80,12 @@ func (h *Handler) MsgSetFreeMonitoring(connCtx context.Context, msg *wire.OpMsg)
 
 	if err := h.StateProvider.Update(func(s *state.State) {
 		if telemetryState {
-			s.EnableTelemetry()
+			s.Telemetry = pointer.ToBool(true)
 		} else {
-			s.DisableTelemetry()
+			s.Telemetry = pointer.ToBool(false)
+			s.LatestVersion = ""
+			s.UpdateInfo = ""
+			s.UpdateAvailable = false
 		}
 	}); err != nil {
 		return nil, err

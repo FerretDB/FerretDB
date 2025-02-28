@@ -16,6 +16,7 @@
 package state
 
 import (
+	"strconv"
 	"time"
 
 	"github.com/AlekSi/pointer"
@@ -42,42 +43,18 @@ type State struct {
 	UpdateAvailable bool   `json:"-"`
 }
 
-// TelemetryString returns "enabled", "disabled" or "undecided".
-func (s *State) TelemetryString() string {
-	if s.Telemetry == nil {
-		return "undecided"
-	}
-
-	if *s.Telemetry {
-		return "enabled"
-	}
-
-	return "disabled"
-}
-
-// DisableTelemetry disables telemetry.
-//
-// It also resets other telemetry fields to avoid stale values when telemetry is re-enabled.
-func (s *State) DisableTelemetry() {
-	s.Telemetry = pointer.ToBool(false)
-	s.LatestVersion = ""
-	s.UpdateInfo = ""
-	s.UpdateAvailable = false
-}
-
-// EnableTelemetry enables telemetry.
-func (s *State) EnableTelemetry() {
-	s.Telemetry = pointer.ToBool(true)
-}
-
-// fill replaces all unset or invalid values with default.
-func (s *State) fill() {
-	if _, err := uuid.Parse(s.UUID); err != nil {
-		s.UUID = uuid.NewString()
-	}
-
-	if s.Start.IsZero() {
-		s.Start = time.Now()
+// asMap return state as a map, including non-persisted fields.
+func (s *State) asMap() map[string]any {
+	return map[string]any{
+		"uuid":               s.UUID,
+		"telemetry":          s.TelemetryString(),
+		"telemetry_locked":   strconv.FormatBool(s.TelemetryLocked),
+		"start":              s.Start.Format(time.RFC3339),
+		"postgresql_version": s.PostgreSQLVersion,
+		"documentdb_version": s.DocumentDBVersion,
+		"latest_version":     s.LatestVersion,
+		"update_info":        s.UpdateInfo,
+		"update_available":   strconv.FormatBool(s.UpdateAvailable),
 	}
 }
 
@@ -98,5 +75,29 @@ func (s *State) deepCopy() *State {
 		LatestVersion:     s.LatestVersion,
 		UpdateInfo:        s.UpdateInfo,
 		UpdateAvailable:   s.UpdateAvailable,
+	}
+}
+
+// TelemetryString returns "enabled", "disabled" or "undecided".
+func (s *State) TelemetryString() string {
+	if s.Telemetry == nil {
+		return "undecided"
+	}
+
+	if *s.Telemetry {
+		return "enabled"
+	}
+
+	return "disabled"
+}
+
+// fill replaces all unset or invalid values with default.
+func (s *State) fill() {
+	if _, err := uuid.Parse(s.UUID); err != nil {
+		s.UUID = uuid.NewString()
+	}
+
+	if s.Start.IsZero() {
+		s.Start = time.Now()
 	}
 }

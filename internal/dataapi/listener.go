@@ -19,10 +19,12 @@ package dataapi
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net"
 	"net/http"
 
+	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi/api"
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi/server"
 	"github.com/FerretDB/FerretDB/v2/internal/handler"
@@ -69,17 +71,21 @@ func (lis *Listener) Run(ctx context.Context) {
 	}
 
 	srv := &http.Server{
-		Handler: srvHandler,
-		BaseContext: func(_ net.Listener) context.Context {
-			return ctx
+		Handler:  srvHandler,
+		ErrorLog: slog.NewLogLogger(lis.opts.L.Handler(), slog.LevelError),
+		BaseContext: func(net.Listener) context.Context {
+			return conninfo.Ctx(ctx, conninfo.New())
 		},
 	}
 
+	lis.opts.L.InfoContext(ctx, fmt.Sprintf("Starting DataAPI server on http://%s/", lis.lis.Addr()))
+
 	go func() {
 		if err := srv.Serve(lis.lis); !errors.Is(err, http.ErrServerClosed) {
-			lis.opts.L.LogAttrs(ctx, logging.LevelDPanic, "ListenAndServe exited with unexpected error", logging.Error(err))
+			lis.opts.L.LogAttrs(ctx, logging.LevelDPanic, "Serve exited with unexpected error", logging.Error(err))
 		}
 	}()
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/4848
 	<-ctx.Done()
 }
