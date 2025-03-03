@@ -270,7 +270,7 @@ func TestListDatabases(t *testing.T) {
 			}
 			actual.TotalSize = 0
 
-			assert.Equal(t, tc.expected, actual)
+			assert.EqualValues(t, tc.expected, actual)
 		})
 	}
 }
