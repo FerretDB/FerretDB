@@ -1,5 +1,0 @@
-[worker.oci]
-  gc = false
-
-[worker.containerd]
-  gc = false
