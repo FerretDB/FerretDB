@@ -7,7 +7,7 @@ sidebar_position: 2
 To install the `.deb` packages for FerretDB on your Debian, Ubuntu, and other `.deb`-based systems,
 you can use `dpkg` tool.
 
-Download the latest FerretDB `.deb` package from [our release pages](https://github.com/FerretDB/FerretDB/releases/latest),
+Download the FerretDB `.deb` package from [our release pages](https://github.com/FerretDB/FerretDB/releases/),
 rename it to `ferretdb.deb`,
 then run the following command in your terminal:
 
@@ -28,8 +28,8 @@ FerretDB does not automatically install PostgreSQL and DocumentDB extension,
 see DocumentDB extension DEB package [installation guide](../documentdb/deb.md).
 
 :::tip
-This FerretDB package works best with [DocumentDB v0.102.0-ferretdb-2.0.0-rc.2](https://github.com/FerretDB/documentdb/releases/tag/v0.102.0-ferretdb-2.0.0-rc.2).
 Ensure to [enable telemetry](../../telemetry.md) to receive notifications on the latest versions.
+For more information on the best DocumentDB version to use, see the [corresponding release notes for the FerretDB package](https://github.com/FerretDB/FerretDB/releases/).
 :::
 
 Find out more about:
