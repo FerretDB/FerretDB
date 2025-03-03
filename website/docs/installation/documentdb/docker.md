@@ -17,7 +17,7 @@ The DocumentDB image works best with [FerretDB v2.0.0-rc.2](https://github.com/F
 
 ## Production image for PostgreSQL with DocumentDB extension
 
-The [production image for PostgreSQL with DocumentDB extension](https://ghcr.io/ferretdb/postgres-documentdb:16) (`ghcr.io/ferretdb/postgres-documentdb:16`) is recommended for most deployments.
+The [production image for PostgreSQL with DocumentDB extension](https://ghcr.io/ferretdb/postgres-documentdb:16.8-0.102.0-ferretdb-2.0.0-rc.2) (`ghcr.io/ferretdb/postgres-documentdb:16.8-0.102.0-ferretdb-2.0.0-rc.2`) is recommended for most deployments.
 It does not include FerretDB, so you must run it separately.
 For a complete setup that includes FerretDB, see the [FerretDB installation](../ferretdb/docker.md).
 

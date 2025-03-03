@@ -19,7 +19,7 @@ The `:latest` Docker image tag now points to v2, which means if you're pulling d
 We strongly recommend specifying the full version tag (e.g., `ghcr.io/ferretdb/ferretdb:2.0.0-rc.2`) to ensure consistency across deployments.
 Ensure to [enable telemetry](../../telemetry.md) to receive notifications on the latest versions.
 
-This image works best with this [DocumentDB version](https://github.com/FerretDB/FerretDB/pkgs/container/postgres-documentdb/361486913?tag=16.8-0.102.0-ferretdb-2.0.0-rc.2).
+This image works best with this [DocumentDB version](https://ghcr.io/ferretdb/postgres-documentdb:16.8-0.102.0-ferretdb-2.0.0-rc.2).
 :::
 
 All Docker images include a [`HEALTHCHECK` instruction](https://docs.docker.com/reference/dockerfile/#healthcheck)
@@ -27,8 +27,8 @@ that behaves like a [readiness probe](../../configuration/observability.md#probe
 
 ## Production image
 
-Our [production image](https://ghcr.io/ferretdb/ferretdb:2) (`ghcr.io/ferretdb/ferretdb:2`) is recommended for most deployments.
-It does not include a PostgreSQL image with DocumentDB extension, so you must run this [pre-packaged PostgreSQL image with DocumentDB extension](https://ghcr.io/ferretdb/postgres-documentdb:16) (`ghcr.io/ferretdb/postgres-documentdb:16`) separately.
+Our [production image](https://ghcr.io/ferretdb/ferretdb:2.0.0-rc.2) (`ghcr.io/ferretdb/ferretdb:2.0.0-rc.2`) is recommended for most deployments.
+It does not include a PostgreSQL image with DocumentDB extension, so you must run this [pre-packaged PostgreSQL image with DocumentDB extension](https://ghcr.io/ferretdb/postgres-documentdb:16.8-0.102.0-ferretdb-2.0.0-rc.2) (`ghcr.io/ferretdb/postgres-documentdb:16.8-0.102.0-ferretdb-2.0.0-rc.2`) separately.
 You can do that with Docker Compose, Kubernetes, or any other means.
 
 ### PostgreSQL Setup with Docker Compose
