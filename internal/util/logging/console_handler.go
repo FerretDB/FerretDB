@@ -27,7 +27,6 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/FerretDB/FerretDB/v2/internal/util/devbuild"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
@@ -129,7 +128,7 @@ func (ch *consoleHandler) Handle(ctx context.Context, r slog.Record) error {
 		encoder.SetEscapeHTML(false)
 
 		err := encoder.Encode(m)
-		if devbuild.Enabled || ch.opts.CheckMessages {
+		if ch.opts.CheckMessages {
 			must.NoError(err)
 		}
 
