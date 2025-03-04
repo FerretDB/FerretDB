@@ -16,7 +16,10 @@ package logging
 
 import (
 	"log/slog"
+	"maps"
 	"slices"
+
+	"github.com/FerretDB/wire/wirebson"
 )
 
 // groupOrAttrs contains group name or attributes.
@@ -25,11 +28,11 @@ type groupOrAttrs struct {
 	attrs []slog.Attr
 }
 
-// attrs returns record attributes, as well as handler attributes from goas in map.
-// Attributes with duplicate keys are overwritten, and the order of keys is ignored.
-//
-// TODO https://github.com/FerretDB/FerretDB/issues/4347
-func attrs(r slog.Record, goas []groupOrAttrs) map[string]any {
+// attrsList contains a list of groupOrAttrs,
+// ordered from the top level group to the latest one.
+type attrsList []groupOrAttrs
+
+func (a attrsList) toMap(r slog.Record) map[string]any {
 	m := make(map[string]any, r.NumAttrs())
 
 	r.Attrs(func(attr slog.Attr) bool {
@@ -48,7 +51,7 @@ func attrs(r slog.Record, goas []groupOrAttrs) map[string]any {
 		return true
 	})
 
-	for _, goa := range slices.Backward(goas) {
+	for _, goa := range slices.Backward(a) {
 		if goa.group != "" && len(m) > 0 {
 			m = map[string]any{goa.group: m}
 			continue
@@ -60,6 +63,49 @@ func attrs(r slog.Record, goas []groupOrAttrs) map[string]any {
 	}
 
 	return m
+}
+
+func (a attrsList) toBSON(r slog.Record) *wirebson.Document {
+	docFields := map[string]any{}
+
+	r.Attrs(func(attr slog.Attr) bool {
+		if attr.Key != "" {
+			docFields[attr.Key] = resolveBSON(attr.Value)
+			return true
+		}
+
+		if attr.Value.Kind() == slog.KindGroup {
+			for _, gAttr := range attr.Value.Group() {
+				docFields[gAttr.Key] = resolveBSON(gAttr.Value)
+			}
+		}
+
+		return true
+	})
+
+	for _, goa := range slices.Backward(a) {
+		if goa.group != "" && len(docFields) > 0 {
+			groupDoc := wirebson.MustDocument()
+
+			for _, k := range slices.Sorted(maps.Keys(docFields)) {
+				groupDoc.Add(k, docFields[k])
+			}
+
+			docFields = map[string]any{goa.group: groupDoc}
+			continue
+		}
+
+		for _, attr := range goa.attrs {
+			docFields[attr.Key] = resolveBSON(attr.Value)
+		}
+	}
+
+	outDoc := wirebson.MustDocument()
+	for _, k := range slices.Sorted(maps.Keys(docFields)) {
+		outDoc.Add(k, docFields[k])
+	}
+
+	return outDoc
 }
 
 // resolve returns underlying attribute value, or a map for [slog.KindGroup] type.
@@ -78,4 +124,28 @@ func resolve(v slog.Value) any {
 	}
 
 	return m
+}
+
+// resolveBSON returns underlying attribute value, or a sorted bson.D for [slog.KindGroup] type.
+func resolveBSON(v slog.Value) any {
+	v = v.Resolve()
+
+	if v.Kind() != slog.KindGroup {
+		return v.Any()
+	}
+
+	g := v.Group()
+
+	d := wirebson.MustDocument()
+	elems := map[string]any{}
+
+	for _, attr := range g {
+		elems[attr.Key] = resolveBSON(attr.Value)
+	}
+
+	for _, k := range slices.Sorted(maps.Keys(elems)) {
+		d.Add(k, elems[k])
+	}
+
+	return d
 }

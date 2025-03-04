@@ -45,7 +45,7 @@ const timeLayout = "2006-01-02T15:04:05.000Z0700"
 type consoleHandler struct {
 	opts *NewHandlerOpts
 
-	ga []groupOrAttrs
+	ga attrsList
 
 	testAttrs map[string]any
 
@@ -120,7 +120,7 @@ func (ch *consoleHandler) Handle(ctx context.Context, r slog.Record) error {
 		}
 	}
 
-	if m := attrs(r, ch.ga); len(m) > 0 {
+	if m := ch.ga.toMap(r); len(m) > 0 {
 		buf.WriteRune('\t')
 
 		var b bytes.Buffer
