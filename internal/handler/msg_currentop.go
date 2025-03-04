@@ -16,11 +16,11 @@ package handler
 
 import (
 	"context"
-
 	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // MsgCurrentOp implements `currentOp` command.
@@ -28,7 +28,6 @@ import (
 // The passed context is canceled when the client connection is closed.
 //
 // TODO https://github.com/FerretDB/FerretDB/issues/3974
-// TODO https://github.com/FerretDB/FerretDB/issues/4794
 func (h *Handler) MsgCurrentOp(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	spec, err := msg.RawDocument()
 	if err != nil {
@@ -39,8 +38,44 @@ func (h *Handler) MsgCurrentOp(connCtx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
+	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
+	doc, err := spec.Decode()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	dbName, err := getRequiredParam[string](doc, "$db")
+	if err != nil {
+		return nil, err
+	}
+
+	currentOpSpec := must.NotFail(wirebson.MustDocument(
+		"aggregate", int32(1),
+		"pipeline", wirebson.MustArray(wirebson.MustDocument("$currentOp", wirebson.MustDocument())),
+		// use large batchSize to get all results in one batch
+		"cursor", wirebson.MustDocument("batchSize", int32(10000)),
+	).Encode())
+
+	page, cursorID, err := h.Pool.Aggregate(connCtx, dbName, currentOpSpec)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if cursorID != 0 {
+		h.L.WarnContext(connCtx, "MsgCurrentOp: too many in-progress operations; not all operations are shown")
+
+		_ = h.Pool.KillCursor(connCtx, cursorID)
+	}
+
+	res, err := page.DecodeDeep()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	ops := res.Get("cursor").(*wirebson.Document).Get("firstBatch").(*wirebson.Array)
+
 	return wire.MustOpMsg(
-		"inprog", wirebson.MakeArray(0),
+		"inprog", ops,
 		"ok", float64(1),
 	), nil
 }
