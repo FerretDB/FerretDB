@@ -37,6 +37,91 @@ Argument values, data field names, successful responses, or error messages are n
 
 The same information is always saved in a `telemetry.json` file
 in the [state directory](configuration/flags.md#miscellaneous), making it easy to inspect.
+For example, this is the content of this file at the time of writing on the Beacon service itself
+(it, of course, uses FerretDB to store data):
+
+```json
+{
+  "_comment": "Sent to https://beacon.ferretdb.com/ at 2025-03-04 11:47:21Z.",
+  "version": "v2.0.0-rc.2",
+  "commit": "eb1ef1ed2c2e972c420f0917431b385552e2353d",
+  "branch": "unknown",
+  "dirty": true,
+  "package": "docker",
+  "debug": false,
+  "build_environment": {
+    "-buildmode": "exe",
+    "-compiler": "gc",
+    "-trimpath": "true",
+    "CGO_ENABLED": "0",
+    "GOAMD64": "v1",
+    "GOARCH": "amd64",
+    "GOOS": "linux",
+    "go.version": "go1.24.0",
+    "vcs": "git",
+    "vcs.modified": "true",
+    "vcs.revision": "eb1ef1ed2c2e972c420f0917431b385552e2353d",
+    "vcs.time": "2025-02-25T17:43:26Z"
+  },
+  "os": "linux",
+  "arch": "amd64",
+  "postgresql_version": "PostgreSQL 16.8 (Debian 16.8-1.pgdg120+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 12.2.0-14) 12.2.0, 64-bit",
+  "documentdb_version": "0.102.0 gitref: HEAD sha:39ec23d buildId:0",
+  "uuid": "<redacted>",
+  "uptime": 86400152222965,
+  "command_metrics": {
+    "OP_MSG": {
+      "count": {
+        "unknown": {
+          "ok": 1440
+        }
+      },
+      "find": {
+        "unknown": {
+          "ok": 1440
+        }
+      },
+      "getMore": {
+        "unknown": {
+          "ok": 4320
+        }
+      },
+      "hello": {
+        "unknown": {
+          "ok": 8640
+        }
+      },
+      "listCollections": {
+        "unknown": {
+          "ok": 1
+        }
+      },
+      "listIndexes": {
+        "unknown": {
+          "ok": 1
+        }
+      },
+      "ping": {
+        "unknown": {
+          "ok": 1438
+        }
+      },
+      "update": {
+        "unknown": {
+          "ok": 1478
+        }
+      }
+    },
+    "OP_REPLY": {
+      "unknown": {
+        "unknown": {
+          "ok": 5
+        }
+      }
+    }
+  }
+}
+```
 
 ## Version notifications
 
