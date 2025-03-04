@@ -72,7 +72,7 @@ func bufLogger() (*slog.Logger, *bytes.Buffer) {
 		Level:         slog.LevelInfo,
 		RemoveTime:    true,
 		RemoveSource:  true,
-		CheckMessages: false, // TODO https://github.com/FerretDB/FerretDB/issues/4511
+		CheckMessages: true,
 	})
 
 	return slog.New(h), &buf
