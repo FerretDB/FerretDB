@@ -113,15 +113,18 @@ func (h *Handler) MsgGetLog(connCtx context.Context, msg *wire.OpMsg) (*wire.OpM
 
 		startupWarnings := []string{
 			poweredBy,
-			"Please star us on GitHub: https://github.com/FerretDB/FerretDB and https://github.com/microsoft/documentdb.",
+			"Please star 🌟 us on GitHub: https://github.com/FerretDB/FerretDB " +
+				"and https://github.com/microsoft/documentdb.",
 		}
 
 		if state.DocumentDBVersion != "" && state.DocumentDBVersion != version.DocumentDB {
 			startupWarnings = append(
 				startupWarnings,
-				"This version of FerretDB requires DocumentDB '"+version.DocumentDB+
-					"'. The currently installed version is '"+state.DocumentDBVersion+
-					"'. Some functions may not behave correctly.",
+				fmt.Sprintf(
+					"This version of FerretDB requires DocumentDB %q (%s). The currently installed version is %q. "+
+						"Some functions may not behave correctly.",
+					version.DocumentDB, version.DocumentDBURL, state.DocumentDBVersion,
+				),
 			)
 		}
 
@@ -137,7 +140,7 @@ func (h *Handler) MsgGetLog(connCtx context.Context, msg *wire.OpMsg) (*wire.OpM
 			msg := state.UpdateInfo
 			if msg == "" {
 				msg = fmt.Sprintf(
-					"A new version available! The latest version: %s. The current version: %s.",
+					"A new version is available! The latest version: %s. The current version: %s.",
 					state.LatestVersion, info.Version,
 				)
 			}

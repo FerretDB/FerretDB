@@ -266,44 +266,44 @@ func (r *Reporter) sendReport(ctx context.Context, report *report) {
 
 	req.Header.Set("Content-Type", "application/json; charset=utf-8")
 
-	res, err := r.c.Do(req)
+	resp, err := r.c.Do(req)
 	if err != nil {
 		r.L.DebugContext(ctx, "Failed to send telemetry report", logging.Error(err))
 		return
 	}
-	defer res.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck // safe to ignore
 
-	if res.StatusCode != http.StatusCreated {
-		r.L.DebugContext(ctx, "Failed to send telemetry report", slog.Int("status", res.StatusCode))
+	if resp.StatusCode != http.StatusCreated {
+		r.L.DebugContext(ctx, "Failed to send telemetry report", slog.Int("status", resp.StatusCode))
 		return
 	}
 
-	var response response
-	if err = json.NewDecoder(res.Body).Decode(&response); err != nil {
+	var res response
+	if err = json.NewDecoder(resp.Body).Decode(&res); err != nil {
 		r.L.DebugContext(ctx, "Failed to read telemetry response", logging.Error(err))
 		return
 	}
 
-	r.L.DebugContext(ctx, "Read telemetry response", slog.Any("response", response))
+	r.L.DebugContext(ctx, "Read telemetry response", slog.Any("response", res))
 
-	if response.UpdateInfo != "" || response.UpdateAvailable {
-		msg := response.UpdateInfo
+	if res.UpdateInfo != "" || res.UpdateAvailable {
+		msg := res.UpdateInfo
 		if msg == "" {
-			msg = "A new version available!"
+			msg = "A new version is available"
 		}
 
 		r.L.InfoContext(
 			ctx,
 			msg,
 			slog.String("current_version", report.Version),
-			slog.String("latest_version", response.LatestVersion),
+			slog.String("latest_version", res.LatestVersion),
 		)
 	}
 
 	if err = r.P.Update(func(s *state.State) {
-		s.LatestVersion = response.LatestVersion
-		s.UpdateInfo = response.UpdateInfo
-		s.UpdateAvailable = response.UpdateAvailable
+		s.LatestVersion = res.LatestVersion
+		s.UpdateInfo = res.UpdateInfo
+		s.UpdateAvailable = res.UpdateAvailable
 	}); err != nil {
 		r.L.ErrorContext(ctx, "Failed to update state with latest version", logging.Error(err))
 	}
