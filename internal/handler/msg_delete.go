@@ -30,9 +30,6 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgDelete(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	opID := h.operations.Start("remove")
-	defer h.operations.Stop(opID)
-
 	spec, seq := msg.RawSections()
 
 	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
@@ -49,9 +46,6 @@ func (h *Handler) MsgDelete(connCtx context.Context, msg *wire.OpMsg) (*wire.OpM
 	if err != nil {
 		return nil, err
 	}
-
-	collection, _ := doc.Get(doc.Command()).(string)
-	h.operations.Update(opID, dbName, collection, doc)
 
 	var res wirebson.RawDocument
 

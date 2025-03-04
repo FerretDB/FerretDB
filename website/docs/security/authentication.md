@@ -127,7 +127,7 @@ For example, the following Docker compose file initializes the PostgreSQL server
 ```yaml
 services:
   postgres:
-    image: ghcr.io/ferretdb/postgres-documentdb:16
+    image: ghcr.io/ferretdb/postgres-documentdb:17
     platform: linux/amd64
     environment:
       POSTGRES_USER: username

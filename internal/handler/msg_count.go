@@ -27,9 +27,6 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgCount(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	opID := h.operations.Start("query")
-	defer h.operations.Stop(opID)
-
 	spec, err := msg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -49,9 +46,6 @@ func (h *Handler) MsgCount(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	if err != nil {
 		return nil, err
 	}
-
-	collection, _ := doc.Get(doc.Command()).(string)
-	h.operations.Update(opID, dbName, collection, doc)
 
 	conn, err := h.Pool.Acquire()
 	if err != nil {

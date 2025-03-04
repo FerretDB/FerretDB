@@ -75,13 +75,10 @@ func TestCreateCollectionDropListCollections(t *testing.T) {
 	AssertEqualDocuments(t, bson.D{{"ok", float64(1)}}, actual)
 }
 
-func TestDropDatabaseListDatabases(tt *testing.T) {
-	tt.Parallel()
+func TestDropDatabaseListDatabases(t *testing.T) {
+	t.Parallel()
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/4722
-	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/4722")
-
-	ctx, collection := setup.Setup(tt) // no providers there
+	ctx, collection := setup.Setup(t) // no providers there
 
 	db := collection.Database()
 	name := db.Name()
@@ -148,6 +145,9 @@ func TestListDatabases(t *testing.T) {
 
 		expectedNameOnly bool
 		expected         mongo.ListDatabasesResult
+
+		// TODO https://github.com/FerretDB/FerretDB/issues/4722
+		failsForFerretDB string
 	}{
 		"Exists": {
 			filter: bson.D{{Key: "name", Value: name}},
@@ -201,6 +201,7 @@ func TestListDatabases(t *testing.T) {
 			expected: mongo.ListDatabasesResult{
 				Databases: []mongo.DatabaseSpecification{},
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/4722",
 		},
 		"RegexNotFound": {
 			filter: bson.D{
@@ -210,6 +211,7 @@ func TestListDatabases(t *testing.T) {
 			expected: mongo.ListDatabasesResult{
 				Databases: []mongo.DatabaseSpecification{},
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/4722",
 		},
 		"RegexNotFoundNameOnly": {
 			filter: bson.D{
@@ -247,8 +249,11 @@ func TestListDatabases(t *testing.T) {
 		t.Run(name, func(tt *testing.T) {
 			tt.Parallel()
 
-			// TODO https://github.com/FerretDB/FerretDB/issues/4722
-			t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/4722")
+			var t testing.TB = tt
+
+			if tc.failsForFerretDB != "" {
+				t = setup.FailsForFerretDB(tt, tc.failsForFerretDB)
+			}
 
 			actual, err := db.Client().ListDatabases(ctx, tc.filter, tc.opts...)
 			assert.NoError(t, err)
@@ -265,7 +270,7 @@ func TestListDatabases(t *testing.T) {
 			}
 			actual.TotalSize = 0
 
-			assert.Equal(t, tc.expected, actual)
+			assert.EqualValues(t, tc.expected, actual)
 		})
 	}
 }
