@@ -348,4 +348,4 @@ spec:
 
 This blog post shows you how to deploy a [FerretDB](https://www.ferretdb.com/) instance in Kubernetes using KubeDB.
 Ensure to experiment and try it out.
-If you have any questions or just want to contact us, please do so via the [FerretDB Slack channel here](https://join.slack.com/t/ferretdb/shared_invite/zt-zqe9hj8g-ZcMG3~5Cs5u9uuOPnZB8~A).
+If you have any questions or just want to contact us, please do so via the [FerretDB Slack channel here](https://slack.ferretdb.io/).
