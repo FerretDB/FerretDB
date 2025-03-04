@@ -59,7 +59,8 @@ and [contributing guidelines](CONTRIBUTING.md).
 Run this command to start FerretDB with PostgreSQL:
 
 ```sh
-docker run -d --rm --name ferretdb -p 27017:27017 --platform linux/amd64 ghcr.io/ferretdb/ferretdb-eval:2
+docker run -d --rm --name ferretdb -p 27017:27017 --platform linux/amd64 \
+  ghcr.io/ferretdb/ferretdb-eval:2
 ```
 
 This command will start a container with FerretDB, pre-packaged PostgreSQL with DocumentDB extension, and MongoDB Shell for quick testing and experiments.
