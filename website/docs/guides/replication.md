@@ -93,7 +93,7 @@ Here's the `docker-compose.yml` file:
 ```yaml
 services:
   postgres_primary:
-    image: ghcr.io/ferretdb/postgres-documentdb:16
+    image: ghcr.io/ferretdb/postgres-documentdb:17
     platform: linux/amd64
     container_name: postgres_primary
     environment:
@@ -107,7 +107,7 @@ services:
       - '5432:5432'
 
   postgres_replica:
-    image: ghcr.io/ferretdb/postgres-documentdb:16
+    image: ghcr.io/ferretdb/postgres-documentdb:17
     platform: linux/amd64
     container_name: postgres_replica
     environment:
