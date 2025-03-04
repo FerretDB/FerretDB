@@ -9,7 +9,7 @@ If you are running an older version of FerretDB (v1.24 or earlier versions), we 
 These are the major differences between FerretDB v1.x and v2.x:
 
 1. Unlike v1.x that provides options for PostgreSQL and SQLite as backend, FerretDB v2.x **requires a PostgreSQL with DocumentDB extension** as the backend.
-   Find the [installation guide for PostgreSQL with DocumentDB extension here](../installation/documentdb/).
+   Find the [installation guide for PostgreSQL with DocumentDB extension here](../installation/documentdb/docker.md).
 
 2. **`PLAIN` authentication is no longer supported** in FerretDB v2.x.
    FerrretDB v2.x uses `SCRAM-SHA-256` for authentication.
