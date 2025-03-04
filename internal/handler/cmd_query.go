@@ -61,7 +61,7 @@ func (h *Handler) CmdQuery(connCtx context.Context, query *wire.OpQuery) (*wire.
 			return nil, lazyerrors.Error(err)
 		}
 
-		return wire.NewOpReply(must.NotFail(reply.Encode()))
+		return wire.NewOpReply(reply)
 
 	case "saslStart":
 		if slices.Contains(q.FieldNames(), "$db") {
@@ -79,7 +79,7 @@ func (h *Handler) CmdQuery(connCtx context.Context, query *wire.OpQuery) (*wire.
 
 		must.NoError(reply.Add("ok", float64(1)))
 
-		return wire.NewOpReply(must.NotFail(reply.Encode()))
+		return wire.NewOpReply(reply)
 
 	case "saslContinue":
 		if slices.Contains(q.FieldNames(), "$db") {
@@ -95,7 +95,7 @@ func (h *Handler) CmdQuery(connCtx context.Context, query *wire.OpQuery) (*wire.
 			return nil, err
 		}
 
-		return wire.NewOpReply(must.NotFail(reply.Encode()))
+		return wire.NewOpReply(reply)
 	}
 
 	return nil, mongoerrors.NewWithArgument(

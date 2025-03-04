@@ -54,5 +54,5 @@ func (h *Handler) MsgConnectionStatus(connCtx context.Context, msg *wire.OpMsg) 
 		"ok", float64(1),
 	))
 
-	return wire.NewOpMsg(must.NotFail(res.Encode()))
+	return wire.NewOpMsg(res)
 }
