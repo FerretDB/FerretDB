@@ -11,5 +11,4 @@ Some issues may not be covered here, so if you can't find a solution, please [po
 
 ## Compatibility issues
 
-
 ## Performance issues
