@@ -2,9 +2,9 @@
 sidebar_position: 2
 ---
 
-# Migration
+# Migration from MongoDB
 
-Before you begin this section of the migration process, go through the pre-migration process so as to ensure a successful migration:
+Before reading this section, ensure to go through the pre-migration process so as to ensure a successful migration:
 
 - [Pre-migration testing](premigration-testing.md)
 
@@ -19,9 +19,9 @@ Before you go forward with the migration, you need to have the following:
 - FerretDB connection URI
 - MongoDB native tools
 
-## Backup your MongoDB data
+## Export your MongoDB data
 
-To backup your existing instance using `mongodump` or `mongoexport`, you'll need the connection string to your instance (e.g. `"mongodb://127.0.0.1:27017/"`) to run the following command:
+To export your existing instance using `mongodump` or `mongoexport`, you'll need the connection string to your instance (e.g. `"mongodb://127.0.0.1:27017/"`) to run the following command:
 
 ```sh
 mongodump --uri="mongodb://<yourusername>:<yourpassword>@<host>:<port>/"
@@ -42,7 +42,7 @@ On the other hand, `mongoexport` does not provide a direct way to export all the
 
 Instead, you need to set the connection string to connect with your preferred database and then run the command together with the parameters for the collection (`--collection=myCollection`) and the directory you want to export to (e.g. `--out=collection-name.json`).
 
-## Restore your data to FerretDB
+## Import your data to FerretDB
 
 To restore or import your backed-up data to FerretDB, set the connection string to your FerretDB instance and use `mongorestore` and `mongoimport`.
 

@@ -16,7 +16,7 @@ These are the major differences between FerretDB v1.x and v2.x:
    So if your connection string in v1.x looks like `mongodb://username:password@localhost:27017/ferretdb?authMechanism=PLAIN`, use`mongodb://username:password@localhost:27017/` with 2.x.
    [Find out more on FerretDB authentication here](../security/authentication.md).
 
-## Backup and restore data from FerretDB v1.x to v2.x
+## Migration process from FerretDB v1.x to v2.x
 
 The migration process follows the same steps as MongoDB to FerretDB.
-Follow [this guide to dump and restore your data](migrating-from-mongodb.md).
+Follow [this guide to export and import your data](migrating-from-mongodb.md).
