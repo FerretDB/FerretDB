@@ -85,5 +85,5 @@ func (h *Handler) MsgDrop(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 
 	must.NoError(res.Add("ok", float64(1)))
 
-	return wire.NewOpMsg(must.NotFail(res.Encode()))
+	return wire.NewOpMsg(res)
 }

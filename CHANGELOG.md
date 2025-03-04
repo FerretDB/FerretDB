@@ -2,6 +2,48 @@
 
 <!-- markdownlint-disable MD024 MD034 -->
 
+## [v2.0.0-rc.5](https://github.com/FerretDB/FerretDB/releases/tag/v2.0.0-rc.5) (2025-03-04)
+
+This is the final release candidate before the GA release tomorrow!
+Most users don't need to update.
+
+This version works best with
+[DocumentDB v0.102.0-ferretdb-2.0.0-rc.5](https://github.com/FerretDB/documentdb/releases/tag/v0.102.0-ferretdb-2.0.0-rc.5).
+
+### New Features 🎉
+
+- Use DocumentDB API for `listDatabases` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4841
+- Implement `currentOp` command by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4855
+
+### Fixed Bugs 🐛
+
+- Make Data API work without authentication if requested by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4849
+
+### Enhancements 🛠
+
+- Publish build info, state, and CLI flags in expvar by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4837
+- Enforce log messages format in development builds by @noisersup in https://github.com/FerretDB/FerretDB/pull/4754
+- Filter out sensitive information from debug archive by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4836
+- Improve messages about DocumentDB version by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4832
+
+### Documentation 📄
+
+- Move comment in docs to fix DocCard by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4845
+- Update URL to join Slack by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4851
+- Recommend using full tags/versions by @Fashander in https://github.com/FerretDB/FerretDB/pull/4834
+
+### Other Changes 🤖
+
+- Change `dbStats` tests TODO links by @noisersup in https://github.com/FerretDB/FerretDB/pull/4823
+- Update TODO comment by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4831
+- Bump DocumentDB for development by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4839
+- Update DocumentDB Docker image by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4853
+- Remove old code for tracking operations by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4842
+- Remove DocumentDB building from this repo by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4852
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/71?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v2.0.0-rc.2...v2.0.0-rc.5).
+
 ## [v2.0.0-rc.2](https://github.com/FerretDB/FerretDB/releases/tag/v2.0.0-rc.2) (2025-02-25)
 
 This version works best with
