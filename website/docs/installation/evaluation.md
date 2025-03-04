@@ -4,7 +4,8 @@ sidebar_position: 1
 
 # Evaluation
 
-We provide an [**evaluation** image](https://ghcr.io/ferretdb/ferretdb-eval:2)
+We provide an **evaluation** image
+[`ghcr.io/ferretdb/ferretdb-eval:2`](https://ghcr.io/ferretdb/ferretdb-eval:2)
 for quick testing and experiments.
 
 You'll need [Docker](https://docs.docker.com/get-docker/) installed to run it.
@@ -18,8 +19,8 @@ docker run -d --rm --name ferretdb -p 27017:27017 --platform linux/amd64 ghcr.io
 This command will start a container with FerretDB, pre-packaged PostgreSQL with DocumentDB extension, and MongoDB Shell for quick testing and experiments.
 
 However, it is unsuitable for production use cases because it keeps all data inside and loses it on shutdown.
-See other installation guides for instructions
-that don't have those problems.
+It is also significantly slower than our production image.
+See other [installation guides](..) for instructions that don't have those problems.
 
 With that container running, you can:
 

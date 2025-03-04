@@ -13,12 +13,15 @@ We provide two Docker images for setting up PostgreSQL with DocumentDB extension
 
 ## Production image for PostgreSQL with DocumentDB extension
 
-The [production image for PostgreSQL with DocumentDB extension](https://ghcr.io/ferretdb/postgres-documentdb:16.8-0.102.0-ferretdb-2.0.0-rc.2) (`ghcr.io/ferretdb/postgres-documentdb:16.8-0.102.0-ferretdb-2.0.0-rc.2`) is recommended for most deployments.
+The production image for PostgreSQL with DocumentDB extension
+[`ghcr.io/ferretdb/postgres-documentdb:17-0.102.0-ferretdb-2.0.0-rc.5`](https://ghcr.io/ferretdb/postgres-documentdb:17-0.102.0-ferretdb-2.0.0-rc.5)
+is recommended for most deployments.
 It does not include FerretDB, so you must run it separately.
 For a complete setup that includes FerretDB, see the [FerretDB installation](../ferretdb/docker.md).
 
 :::tip
-We strongly recommend specifying the full image tag (e.g., `postgres-documentdb:16.8-0.102.0-ferretdb-2.0.0-rc.2`) to ensure consistency across deployments.
+We strongly recommend specifying the full image tag (e.g., `17-0.102.0-ferretdb-2.0.0-rc.5`)
+to ensure consistency across deployments.
 For more information on the best FerretDB image to use, see the [DocumentDB release notes](https://github.com/FerretDB/documentdb/releases/).
 :::
 
@@ -37,7 +40,7 @@ See [Set up PostgreSQL connection](../../security/authentication.md#set-up-postg
      -e POSTGRES_DB=postgres \
      -v ./data:/var/lib/postgresql/data \
      -p 5432:5432 \
-     ghcr.io/ferretdb/postgres-documentdb:16.8-0.102.0-ferretdb-2.0.0-rc.2
+     ghcr.io/ferretdb/postgres-documentdb:17-0.102.0-ferretdb-2.0.0-rc.5
    ```
 
    Ensure to update `<username>` and `<password>` with your desired values.
@@ -58,5 +61,8 @@ See [Set up PostgreSQL connection](../../security/authentication.md#set-up-postg
 
 ## Development image for PostgreSQL with DocumentDB extension
 
-The [development image for PostgreSQL with DocumentDB extension](https://ghcr.io/ferretdb/postgres-documentdb-dev:16) (`ghcr.io/ferretdb/postgres-documentdb-dev:16`) is recommended for debugging problems.
-It includes additional debugging features and is not recommended for production use.
+The development image for PostgreSQL with DocumentDB extension
+[`ghcr.io/ferretdb/postgres-documentdb-dev`](https://ghcr.io/ferretdb/postgres-documentdb-dev)
+is recommended for debugging problems.
+It includes additional debugging features that make it significantly slower.
+For this reason, it is not recommended for production use.
