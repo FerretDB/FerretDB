@@ -54,7 +54,7 @@ and volume is mounted from `./server-certs` of Docker host to `/etc/certs` of Do
 ```yaml
 services:
   postgres:
-    image: ghcr.io/ferretdb/postgres-documentdb:16
+    image: ghcr.io/ferretdb/postgres-documentdb:17
     platform: linux/amd64
     environment:
       - POSTGRES_USER=username
