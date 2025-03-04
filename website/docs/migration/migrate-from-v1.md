@@ -11,7 +11,7 @@ If you are running an older version of FerretDB (v1.24 or earlier versions), we 
 1. PostgreSQL with DocumentDB extension backend
 
    Unlike v1.x that provides options for PostgreSQL and SQLite as backend, FerretDB v2.x **requires a PostgreSQL with DocumentDB extension** as the backend.
-   Find the [installation guide for PostgreSQL with DocumentDB extension here](../installation/postgresql-documentdb.md).
+   Find the [installation guide for PostgreSQL with DocumentDB extension here](../installation/documentdb/).
 
 2. Authentication
 
