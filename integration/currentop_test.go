@@ -38,7 +38,7 @@ func TestCurrentOpGetMore(tt *testing.T) {
 	// TODO https://github.com/FerretDB/FerretDB/issues/4794
 	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/4794")
 
-	s := setup.SetupWithOpts(t, new(setup.SetupOpts))
+	s := setup.SetupWithOpts(tt, new(setup.SetupOpts))
 	ctx, collection, cName, dbName := s.Ctx, s.Collection, s.Collection.Name(), s.Collection.Database().Name()
 	adminDB := collection.Database().Client().Database("admin")
 
@@ -172,7 +172,7 @@ func TestCurrentOpExplain(tt *testing.T) {
 	// TODO https://github.com/FerretDB/FerretDB/issues/4794
 	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/4794")
 
-	s := setup.SetupWithOpts(t, new(setup.SetupOpts))
+	s := setup.SetupWithOpts(tt, new(setup.SetupOpts))
 	ctx, collection, cName, dbName := s.Ctx, s.Collection, s.Collection.Name(), s.Collection.Database().Name()
 	adminDB := collection.Database().Client().Database("admin")
 

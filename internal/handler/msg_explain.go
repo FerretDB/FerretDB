@@ -79,7 +79,7 @@ func (h *Handler) MsgExplain(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 
 	cmd := explainDoc.Command()
 
-	if _, ok := explainDoc.Get(cmd).(string); !ok {
+	if _, ok = explainDoc.Get(cmd).(string); !ok {
 		return nil, mongoerrors.NewWithArgument(
 			mongoerrors.ErrInvalidNamespace,
 			"Failed to parse namespace element",
