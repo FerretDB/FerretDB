@@ -96,7 +96,7 @@ EOF
 
 # final stage
 
-FROM ghcr.io/ferretdb/postgres-documentdb-dev:16.8-0.102.0-ferretdb-2.0.0-rc.2 AS evaluation
+FROM ghcr.io/ferretdb/postgres-documentdb-dev:17-0.102.0-ferretdb-2.0.0-rc.5 AS evaluation
 
 RUN --mount=type=cache,sharing=locked,target=/var/cache/apt <<EOF
 mkdir /tmp/cover /tmp/state
