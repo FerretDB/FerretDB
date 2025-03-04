@@ -16,6 +16,7 @@ package handler
 
 import (
 	"context"
+
 	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 

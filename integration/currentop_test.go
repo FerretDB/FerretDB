@@ -35,9 +35,6 @@ import (
 func TestCurrentOpGetMore(tt *testing.T) {
 	tt.Parallel()
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/4794
-	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/4794")
-
 	s := setup.SetupWithOpts(tt, new(setup.SetupOpts))
 	ctx, collection, cName, dbName := s.Ctx, s.Collection, s.Collection.Name(), s.Collection.Database().Name()
 	adminDB := collection.Database().Client().Database("admin")
@@ -52,16 +49,16 @@ func TestCurrentOpGetMore(tt *testing.T) {
 	}
 
 	_, err := collection.InsertMany(ctx, docs)
-	require.NoError(t, err)
+	require.NoError(tt, err)
 
 	searchF := func(op *wirebson.Document) bool {
 		// find an in-progress operation started by this test
 		return op.Get("op") == "getmore" && op.Get("ns") == cName+"."+dbName
 	}
 
-	res := inProgress(t, ctx, adminDB, 5, searchF, func(ready chan<- struct{}, start <-chan struct{}) {
+	res := inProgress(tt, ctx, adminDB, 5, searchF, func(ready chan<- struct{}, start <-chan struct{}) {
 		cursor, err := collection.Find(ctx, bson.D{}) //nolint:vet // redeclare err to avoid datarace
-		require.NoError(t, err)
+		require.NoError(tt, err)
 
 		cursor.SetBatchSize(1)
 
@@ -70,25 +67,28 @@ func TestCurrentOpGetMore(tt *testing.T) {
 		<-start
 
 		var res []bson.D
-		assert.NoError(t, cursor.All(ctx, &res))
-		assert.NotEmpty(t, res)
+		assert.NoError(tt, cursor.All(ctx, &res))
+		assert.NotEmpty(tt, res)
 	})
 
 	inprog, err := res.Get("inprog").(wirebson.AnyArray).Decode()
-	require.NoError(t, err)
+	require.NoError(tt, err)
 
 	var getMoreOp *wirebson.Document
 
 	for v := range inprog.Values() {
 		getMoreOp, err = v.(wirebson.AnyDocument).Decode()
-		require.NoError(t, err)
+		require.NoError(tt, err)
 
 		if searchF(getMoreOp) {
 			break
 		}
 	}
 
-	require.NotNil(t, getMoreOp, "no in-progress getMore operation found")
+	require.NotNil(tt, getMoreOp, "no in-progress getMore operation found")
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/4857
+	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/4857")
 
 	currentOpTime, ok := getMoreOp.Get("currentOpTime").(string)
 	require.True(t, ok, wirebson.LogMessageIndent(getMoreOp))
@@ -169,9 +169,6 @@ func TestCurrentOpGetMore(tt *testing.T) {
 func TestCurrentOpExplain(tt *testing.T) {
 	tt.Parallel()
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/4794
-	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/4794")
-
 	s := setup.SetupWithOpts(tt, new(setup.SetupOpts))
 	ctx, collection, cName, dbName := s.Ctx, s.Collection, s.Collection.Name(), s.Collection.Database().Name()
 	adminDB := collection.Database().Client().Database("admin")
@@ -186,14 +183,14 @@ func TestCurrentOpExplain(tt *testing.T) {
 	}
 
 	_, err := collection.InsertMany(ctx, docs)
-	require.NoError(t, err)
+	require.NoError(tt, err)
 
 	searchF := func(op *wirebson.Document) bool {
 		// find an in-progress operation started by this test
 		return op.Get("op") == "command" && op.Get("ns") == cName+"."+dbName
 	}
 
-	res := inProgress(t, ctx, adminDB, 500, searchF, func(ready chan<- struct{}, start <-chan struct{}) {
+	res := inProgress(tt, ctx, adminDB, 500, searchF, func(ready chan<- struct{}, start <-chan struct{}) {
 		command := bson.D{
 			{"explain", bson.D{
 				{"find", collection.Name()},
@@ -205,24 +202,27 @@ func TestCurrentOpExplain(tt *testing.T) {
 		<-start
 
 		err := collection.Database().RunCommand(ctx, command).Err() //nolint:vet // redeclare err to avoid datarace
-		require.NoError(t, err)
+		require.NoError(tt, err)
 	})
 
 	inprog, err := res.Get("inprog").(wirebson.AnyArray).Decode()
-	require.NoError(t, err)
+	require.NoError(tt, err)
 
 	var op *wirebson.Document
 
 	for v := range inprog.Values() {
 		op, err = v.(wirebson.AnyDocument).Decode()
-		require.NoError(t, err)
+		require.NoError(tt, err)
 
 		if searchF(op) {
 			break
 		}
 	}
 
-	require.NotNil(t, op, "no in-progress explain operation found")
+	require.NotNil(tt, op, "no in-progress explain operation found")
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/4857
+	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/4857")
 
 	currentOpTime, ok := op.Get("currentOpTime").(string)
 	require.True(t, ok, wirebson.LogMessageIndent(op))
