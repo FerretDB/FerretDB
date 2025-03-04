@@ -68,11 +68,12 @@ func toLogLines(buf *bytes.Buffer) []string {
 func bufLogger() (*slog.Logger, *bytes.Buffer) {
 	var buf bytes.Buffer
 	h := logging.NewHandler(&buf, &logging.NewHandlerOpts{
-		Base:          "console",
-		Level:         slog.LevelInfo,
-		RemoveTime:    true,
-		RemoveSource:  true,
-		CheckMessages: true,
+		Base:         "console",
+		Level:        slog.LevelInfo,
+		RemoveTime:   true,
+		RemoveSource: true,
+		// the logger handles messages from the `go test` command output
+		CheckMessages: false,
 	})
 
 	return slog.New(h), &buf
