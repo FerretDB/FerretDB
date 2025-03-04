@@ -19,7 +19,9 @@ import (
 
 	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
+	"github.com/jackc/pgx/v5"
 
+	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
@@ -28,7 +30,6 @@ import (
 // The passed context is canceled when the client connection is closed.
 //
 // TODO https://github.com/FerretDB/FerretDB/issues/3974
-// TODO https://github.com/FerretDB/FerretDB/issues/4794
 func (h *Handler) MsgCurrentOp(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	spec, err := msg.RawDocument()
 	if err != nil {
@@ -39,8 +40,15 @@ func (h *Handler) MsgCurrentOp(connCtx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
-	return wire.MustOpMsg(
-		"inprog", wirebson.MakeArray(0),
-		"ok", float64(1),
-	), nil
+	var res wirebson.RawDocument
+
+	err = h.Pool.WithConn(func(conn *pgx.Conn) error {
+		res, err = documentdb_api.CurrentOpCommand(connCtx, conn, h.L, spec)
+		return err
+	})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return wire.NewOpMsg(res)
 }

@@ -91,6 +91,8 @@ func (h *Handler) MsgReIndex(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 	}
 
 	if cursorID != 0 {
+		_ = h.Pool.KillCursor(connCtx, cursorID)
+
 		return nil, lazyerrors.New("too many indexes for re-indexing")
 	}
 
@@ -145,6 +147,8 @@ func (h *Handler) MsgReIndex(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 	}
 
 	if cursorID != 0 {
+		_ = h.Pool.KillCursor(connCtx, cursorID)
+
 		return nil, lazyerrors.New("too many indexes after re-indexing")
 	}
 
