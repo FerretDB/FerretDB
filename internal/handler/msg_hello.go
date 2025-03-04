@@ -48,12 +48,12 @@ func (h *Handler) MsgHello(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
-	resp, err := h.hello(connCtx, doc, h.TCPHost, h.ReplSetName)
+	res, err := h.hello(connCtx, doc, h.TCPHost, h.ReplSetName)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	return wire.NewOpMsg(must.NotFail(resp.Encode()))
+	return wire.NewOpMsg(res)
 }
 
 // hello checks client metadata and returns hello's document fields.

@@ -94,7 +94,7 @@ func (h *Handler) MsgHostInfo(connCtx context.Context, msg *wire.OpMsg) (*wire.O
 		"ok", float64(1),
 	))
 
-	return wire.NewOpMsg(must.NotFail(res.Encode()))
+	return wire.NewOpMsg(res)
 }
 
 // parseOSRelease parses the /etc/os-release or /usr/lib/os-release file content,

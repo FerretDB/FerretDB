@@ -43,5 +43,5 @@ func (h *Handler) MsgWhatsMyURI(connCtx context.Context, msg *wire.OpMsg) (*wire
 		"ok", float64(1),
 	))
 
-	return wire.NewOpMsg(must.NotFail(res.Encode()))
+	return wire.NewOpMsg(res)
 }
