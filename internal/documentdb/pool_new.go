@@ -129,7 +129,7 @@ func newPgxPoolCheckConn(ctx context.Context, conn *pgx.Conn, l *slog.Logger, sp
 
 		if s.DocumentDBVersion != "" && s.DocumentDBVersion != version.DocumentDB {
 			l.WarnContext(
-				ctx, "newPgxPoolCheckConn: unexpected DocumentDB version",
+				ctx, "Unexpected DocumentDB version; see "+version.DocumentDBURL,
 				slog.String("expected", version.DocumentDB), slog.String("actual", s.DocumentDBVersion),
 			)
 		}

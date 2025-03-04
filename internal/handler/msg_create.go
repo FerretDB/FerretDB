@@ -26,7 +26,6 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // collectionNameRe validates collection names.
@@ -82,5 +81,5 @@ func (h *Handler) MsgCreate(connCtx context.Context, msg *wire.OpMsg) (*wire.OpM
 		"ok", float64(1),
 	)
 
-	return wire.NewOpMsg(must.NotFail(res.Encode()))
+	return wire.NewOpMsg(res)
 }

@@ -23,7 +23,6 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // MsgIsMaster implements `isMaster` command.
@@ -49,7 +48,7 @@ func (h *Handler) MsgIsMaster(connCtx context.Context, msg *wire.OpMsg) (*wire.O
 		return nil, lazyerrors.Error(err)
 	}
 
-	return wire.NewOpMsg(must.NotFail(res.Encode()))
+	return wire.NewOpMsg(res)
 }
 
 // checkClientMetadata checks if the message does not contain client metadata after it was received already.
