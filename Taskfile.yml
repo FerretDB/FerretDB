@@ -510,41 +510,6 @@ tasks:
     requires:
       vars: [DOCKER_IMAGES]
 
-  docker-documentdb:
-    desc: "Build `documentdb-local` Docker image"
-    cmds:
-      - task: docker-build
-        vars:
-          FILE: postgres-documentdb/{{.FILE}}
-          TARGET: "{{.FILE}}"
-          PLATFORM: linux/amd64
-          DOCKER_IMAGES: documentdb-local
-          OUTPUT: type=docker
-    requires:
-      vars: [FILE]
-
-  docker-documentdb-development-push:
-    cmds:
-      - task: docker-build
-        vars:
-          FILE: postgres-documentdb/development
-          TARGET: development
-          PLATFORM: linux/amd64
-          OUTPUT: type=image,push=true
-    requires:
-      vars: [DOCKER_IMAGES]
-
-  docker-documentdb-production-push:
-    cmds:
-      - task: docker-build
-        vars:
-          FILE: postgres-documentdb/production
-          TARGET: production
-          PLATFORM: linux/amd64
-          OUTPUT: type=image,push=true
-    requires:
-      vars: [DOCKER_IMAGES]
-
   packages:
     desc: "Build .deb and .rpm packages"
     cmds:
