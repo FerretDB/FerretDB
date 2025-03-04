@@ -58,14 +58,14 @@ The format and level can be adjusted by [configuration flags](flags.md#miscellan
 If Docker was launched with [our quick local setup with Docker Compose](../quickstart-guide/docker.md#postgresql-setup-with-docker-compose),
 the following command can be used to fetch the logs.
 
-```sh
+```shell
 docker compose logs ferretdb
 ```
 
 Otherwise, you can check a list of running Docker containers with `docker ps`
 and get logs with `docker logs`:
 
-```sh
+```shell
 $ docker ps
 CONTAINER ID   IMAGE                       COMMAND                  CREATED              STATUS          PORTS                                           NAMES
 13db4c8800d3   postgres                    "docker-entrypoint.s…"   About a minute ago   Up 59 seconds   5432/tcp                                        my-postgres

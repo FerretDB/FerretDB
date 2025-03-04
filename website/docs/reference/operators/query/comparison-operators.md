@@ -19,7 +19,7 @@ Comparison query operators allow you to compare the elements in a document to a 
 
 For the examples in this section, insert the following documents into the `employees` collection:
 
-```js
+```javascript
 db.employees.insertMany([
   {
     name: {
@@ -64,7 +64,7 @@ This operator can be used to match values of different types, including document
 
 **Example:** The following operation queries the `employees` collection for all documents where the field `age` equals `21`.
 
-```js
+```javascript
 db.employees.find({
   age: {
     $eq: 21
@@ -74,7 +74,7 @@ db.employees.find({
 
 The response returns a single document that matches the query:
 
-```js
+```javascript
 response = [
   {
     _id: ObjectId('639a3cce071b6bed396a8f0e'),
@@ -90,7 +90,7 @@ response = [
 **Example:** To query values in an embedded document, use [dot notation](../../../usage/concepts.md#dot-notation).
 The following operation queries the `employees` collection for documents that match the field `first` in the embedded document `name`.
 
-```js
+```javascript
 db.employees.find({
   'name.first': {
     $eq: 'Earl'
@@ -100,7 +100,7 @@ db.employees.find({
 
 The response returns a single document that matches the query:
 
-```js
+```javascript
 response = [
   {
     _id: ObjectId('639a3cce071b6bed396a8f0c'),
@@ -121,7 +121,7 @@ To identify documents containing elements that have a greater value than the spe
 
 **Example:** Use the following operation to query for all the documents in the `employees` collection where the field `age` is greater than `21`.
 
-```js
+```javascript
 db.employees.find({
   age: {
     $gt: 21
@@ -131,7 +131,7 @@ db.employees.find({
 
 The output:
 
-```js
+```javascript
 response = [
   {
     _id: ObjectId('639a3cce071b6bed396a8f0c'),
@@ -160,7 +160,7 @@ Use the `$gte` to select document with elements that are greater than or equal t
 
 **Example:** The following operation selects documents based on the specified query, where the field `age` is greater than or equal to `21`.
 
-```js
+```javascript
 db.employees.find({
   age: {
     $gte: 21
@@ -170,7 +170,7 @@ db.employees.find({
 
 The output:
 
-```js
+```javascript
 response = [
   {
     _id: ObjectId('639a3cce071b6bed396a8f0c'),
@@ -207,7 +207,7 @@ Contrary to the `$gt` operator, the `$lt` operator is ideal for selecting docume
 
 **Example:** The following operation queries for documents where the field `age` is less than `25`.
 
-```js
+```javascript
 db.employees.find({
   age: {
     $lt: 25
@@ -217,7 +217,7 @@ db.employees.find({
 
 The output:
 
-```js
+```javascript
 response = [
   {
     _id: ObjectId('639a3cce071b6bed396a8f0c'),
@@ -247,7 +247,7 @@ Use the `$lte` operator to select documents with elements that are less than or 
 
 **Example:** The following operation queries for documents where the field `age` is less than or equal to `21`.
 
-```js
+```javascript
 db.employees.find({
   age: {
     $lte: 21
@@ -257,7 +257,7 @@ db.employees.find({
 
 The output:
 
-```js
+```javascript
 response = [
   {
     _id: ObjectId('639a3cce071b6bed396a8f0e'),
@@ -278,7 +278,7 @@ To select documents containing any of the listed elements in a specified array f
 
 **Example:** The following operation queries the `employees` collection for documents where the value of the field `age` is either `21` or `35`.
 
-```js
+```javascript
 db.employees.find({
   age: {
     $in: [21, 35]
@@ -288,7 +288,7 @@ db.employees.find({
 
 The output:
 
-```js
+```javascript
 response = [
   {
     _id: ObjectId('639a3cce071b6bed396a8f0d'),
@@ -317,7 +317,7 @@ Use the `$ne` operator to select all the documents with elements that are not eq
 
 **Example:** The following operation queries the `employees` collection for documents where the field `age` is not equal to `21`.
 
-```js
+```javascript
 db.employees.find({
   age: {
     $ne: 21
@@ -327,7 +327,7 @@ db.employees.find({
 
 The output:
 
-```js
+```javascript
 response = [
   {
     _id: ObjectId('639a3cce071b6bed396a8f0c'),
@@ -357,7 +357,7 @@ Use the `$nin` operator when selecting documents that do match or contain any of
 
 **Example:** The following operation queries the `employees` collection for documents where the value of the field `age` is not `21` or `35`.
 
-```js
+```javascript
 db.employees.find({
   age: {
     $nin: [21, 35]
@@ -367,7 +367,7 @@ db.employees.find({
 
 The output:
 
-```js
+```javascript
 response = [
   {
     _id: ObjectId('639a3cce071b6bed396a8f0c'),

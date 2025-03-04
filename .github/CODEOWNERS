@@ -2,3 +2,9 @@
 # Order is important; the last matching pattern takes the most precedence.
 
 *                           @AlekSi
+
+/website/                   @AlekSi @Fashander
+
+# @AlekSi for engineering, @ptrfarkas for marketing, @Fashander for both.
+# See also Mergify configuration.
+/website/blog/              @AlekSi @ptrfarkas @Fashander

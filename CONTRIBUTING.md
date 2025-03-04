@@ -44,7 +44,7 @@ Finally, you will also need [git-lfs](https://git-lfs.github.com) installed and 
 Fork the [FerretDB repository on GitHub](https://github.com/FerretDB/FerretDB/fork).
 After that, you can clone the repository and add the upstream repository as a remote:
 
-```sh
+```shell
 git clone git@github.com:<YOUR_GITHUB_USERNAME>/FerretDB.git
 cd FerretDB
 git remote add upstream https://github.com/FerretDB/FerretDB.git
@@ -89,13 +89,13 @@ No scopes are needed for classic tokens, not even `public_repo`.
 For fine-grained tokens, only read-only access to public repositories is needed without any additional permissions.
 After generating a token, set the `GITHUB_TOKEN` environment variable:
 
-```sh
+```shell
 export GITHUB_TOKEN=ghp_XXX
 ```
 
 or
 
-```sh
+```shell
 export GITHUB_TOKEN=github_pat_XXX
 ```
 

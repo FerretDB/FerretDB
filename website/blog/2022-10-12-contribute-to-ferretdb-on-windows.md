@@ -63,13 +63,13 @@ You need to set up the "Automatically delete head branches" flag in the "General
 
 In your local terminal, clone the forked repository with the following command:
 
-```js
+```javascript
 git clone https://github.com/{username}/FerretDB.git
 ```
 
 Once the cloning is complete, navigate to the source code folder via
 
-```js
+```javascript
 cd FerretDB
 ```
 
@@ -77,19 +77,19 @@ While working on the project code locally, it's crucial to synchronize it with t
 To do so, we need to set up remotes.
 To check if the local repository is linked with the upstream one, enter this command:
 
-```js
+```javascript
 git remote -v
 ```
 
 If you don't see your remote repository called origin, you can easily add it with the following command:
 
-```js
+```javascript
  git remote add origin https://github.com/{username}/FerretDB.git
 ```
 
 After that, we need to add the upstream project repository by running this in your terminal:
 
-```js
+```javascript
 git remote add upstream https://github.com/FerretDB/FerretDB.git
 ```
 
@@ -97,7 +97,7 @@ Now that we are all set with git, we can start FerretDB locally.
 In FerretDB, we use the "task" tool to run every command.
 To install this tool, proceed with the following steps:
 
-```js
+```javascript
 cd tools
 go generate -x
 ```
@@ -108,13 +108,13 @@ Once the "task" tool is installed, we can set up the local environment.
 
 You can list all available commands with
 
-```js
+```javascript
 bin\task -l
 ```
 
 To run the local environment, we should simply execute
 
-```js
+```javascript
 bin\task env-up
 ```
 
@@ -128,7 +128,7 @@ After that, we will have a console with FerretDB containers logs output.
 
 In a separate console window, we need to run FerretDB with
 
-```js
+```javascript
 bin\task run
 ```
 

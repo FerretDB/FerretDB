@@ -73,7 +73,7 @@ If you are yet to setup FerretDB, see the [FerretDB Docker installation guide](h
 
 Deploy Coroot with the following command:
 
-```sh
+```shell
 curl -fsS https://raw.githubusercontent.com/coroot/coroot/main/deploy/docker-compose.yaml | docker compose -f - up -d
 ```
 

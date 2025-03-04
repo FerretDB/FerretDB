@@ -70,19 +70,19 @@ We can follow the [FerretDB Docker installation guide](https://docs.ferretdb.io/
 
 3. Run the following command to start the services:
 
-   ```sh
+   ```shell
    docker compose up -d
    ```
 
 4. For those with mongosh installed, you can run FerretDB with the following command:
 
-   ```sh
+   ```shell
    mongodb://username:password@127.0.0.1/ferretdb?authMechanism=PLAIN
    ```
 
    If you don't have mongosh installed on your system (like me), you can execute it inside a temporary MongoDB container by running the following command:
 
-   ```sh
+   ```shell
    docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo \
    "mongodb://username:password@ferretdb/ferretdb?authMechanism=PLAIN"
    ```
@@ -154,7 +154,7 @@ If the toolbar is not visible, right-click on the collection and select "Intelli
 
 In the IntelliShell window, type the following command to insert the first document:
 
-```js
+```javascript
 db.test.insertMany([
   {
     name: 'John Doe',
@@ -228,7 +228,7 @@ Here is a read example using the `$lte` operator:
 
 Let's also try updating some documents in the database by extending the above query.
 
-```js
+```javascript
 db.test.updateMany(
   { age: { $gte: 30 } },
   { $set: { interests: ['reading', 'hiking', 'photography', 'painting'] } }
@@ -249,7 +249,7 @@ And since it's constantly improving, compatibility is always an ever-growing pro
 
 Say we want to perform operations on a new collection, `sales`, with the following document.
 
-```js
+```javascript
 {
   _id: 1,
   customer_name: "Sarah Lee",
@@ -272,7 +272,7 @@ Say we want to perform operations on a new collection, `sales`, with the followi
 
 An aggregation pipeline operation like the one below would run without any error:
 
-```js
+```javascript
 db.sales.aggregate([{ $sort: { order_total: -1 } }])
 ```
 

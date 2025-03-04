@@ -11,20 +11,20 @@ Download the latest FerretDB `.deb` package from [our release pages](https://git
 rename it to `ferretdb.deb`,
 then run the following command in your terminal:
 
-```sh
+```shell
 sudo dpkg -i ferretdb.deb
 ```
 
 You can check that FerretDB was installed by running
 
-```sh
+```shell
 ferretdb --version
 ```
 
 FerretDB does not automatically install PostgreSQL or other backends.
 To install PostgreSQL, run the following commands:
 
-```sh
+```shell
 sudo apt update
 sudo apt install -y postgresql
 ```

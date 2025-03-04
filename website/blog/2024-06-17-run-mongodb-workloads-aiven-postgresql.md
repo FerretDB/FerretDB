@@ -55,7 +55,7 @@ To set up the FerretDB instance, specify the `FERRETDB_POSTGRESQL_URL` environme
 
 Using Docker, run the following command to set it up.
 
-```sh
+```shell
 docker run -e FERRETDB_POSTGRESQL_URL='postgres://<username>:<password>@<host>:<port>/ferretdb?sslmode=require' -p 27017:27017
  ghcr.io/ferretdb/ferretdb
 ```
@@ -64,7 +64,7 @@ Ensure to replace `<username>`, `<password>`, `<host>`, and `<port>` with the co
 
 After that, connect to FerretDB via `mongosh` using the below MongoDB URI format:
 
-```sh
+```shell
 mongosh 'mongodb://<username>:<password>@127.0.0.1:27017/ferretdb?authMechanism=PLAIN'
 ```
 
@@ -79,7 +79,7 @@ As a fan of astronomy, let's play around with some arbitrary astronomy data cont
 
 Start by inserting the following data into an `astronomy` collection.
 
-```js
+```javascript
 db.astronomy.insertMany([
   {
     name: 'Alpha Centauri A',

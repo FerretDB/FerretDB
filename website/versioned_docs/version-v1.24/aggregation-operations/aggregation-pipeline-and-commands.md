@@ -14,7 +14,7 @@ As shown above, the documents pass through the pipeline with the result of the p
 
 For example, insert the following documents in a `sales` collection:
 
-```js
+```javascript
 db.sales.insertMany([
   { _id: 1, category: 'Electronics', price: 1000 },
   { _id: 2, category: 'Electronics', price: 800 },
@@ -29,7 +29,7 @@ db.sales.insertMany([
 
 A typical aggregation pipeline would look like this:
 
-```js
+```javascript
 db.sales.aggregate([
   { $match: { category: { $ne: 'Electronics' } } },
   {
@@ -50,7 +50,7 @@ Finally, the `$sort` stage sorts the documents by the `totalPrice` field in desc
 
 So the above aggregation pipeline operation would return the following result:
 
-```json5
+```javascripton5
 [
   { _id: 'Home', totalPrice: 2700, productCount: 2 },
   { _id: 'Clothing', totalPrice: 80, productCount: 2 },
@@ -66,7 +66,7 @@ The aggregation command `aggregate` is a top-level command used for aggregating 
 
 The command is used for performing aggregation operations on a collection and lets you specify aggregation operations in a pipeline consisting of one or more stages and operators for transforming and analyzing data, such as grouping, filtering, sorting, projecting, and calculating aggregates.
 
-```js
+```javascript
 // Aggregation pipeline to perform aggregation operations on a collection
 db.collection.aggregate([
   // Stage 1: Matching documents based on a specific field and value

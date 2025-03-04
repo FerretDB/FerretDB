@@ -39,13 +39,13 @@ Read the following documentation to learn how to create a Kubernetes cluster in 
 
 Export your `kubeconfig` file to access the Kubernetes cluster:
 
-```sh
+```shell
 export KUBECONFIG=/Users/<path>/<to>/kubeconfig.yaml
 ```
 
 Next, create a namespace to isolate the workloads and resources in a custom namespace.
 
-```sh
+```shell
 kubectl create namespace ferretdb
 ```
 
@@ -59,13 +59,13 @@ So start by installing the Operator with `kubectl` on your Kubernetes environmen
 
 Apply the Percona PostgreSQL Operator within the `ferretdb` namepace:
 
-```sh
+```shell
 kubectl apply --server-side -f https://raw.githubusercontent.com/percona/percona-postgresql-operator/v2.3.1/deploy/bundle.yaml -n ferretdb
 ```
 
 You should see output indicating the resources have been server-side applied:
 
-```sh
+```shell
 customresourcedefinition.apiextensions.k8s.io/perconapgbackups.pgv2.percona.com serverside-applied
 customresourcedefinition.apiextensions.k8s.io/perconapgclusters.pgv2.percona.com serverside-applied
 customresourcedefinition.apiextensions.k8s.io/perconapgrestores.pgv2.percona.com serverside-applied
@@ -167,26 +167,26 @@ spec:
 
 Apply the custom resource `YAML` to create the PostgreSQL cluster:
 
-```sh
+```shell
 kubectl apply -f deploy/cr.yaml -n ferretdb
 ```
 
 Check the status of the cluster:
 
-```sh
+```shell
 kubectl get pg -n ferretdb
 ```
 
 Initially, the status will be `initializing`:
 
-```sh
+```shell
 NAME       ENDPOINT                          STATUS         POSTGRES   PGBOUNCER   AGE
 cluster1   cluster1-pgbouncer.ferretdb.svc   initializing                          13s
 ```
 
 After some time, the status should change to `ready`:
 
-```sh
+```shell
 kubectl get pg -n ferretdb
 NAME       ENDPOINT                          STATUS   POSTGRES   PGBOUNCER   AGE
 cluster1   cluster1-pgbouncer.ferretdb.svc   ready    3          3           5m10s
@@ -261,19 +261,19 @@ spec:
 
 Apply the yaml file:
 
-```sh
+```shell
 kubectl apply -f ferretdeploy.yaml -n ferretdb
 ```
 
 Check the status of the deployment:
 
-```sh
+```shell
 kubectl get pods -n ferretdb
 ```
 
 You should see the `ferretdb` pod in the `Running` state:
 
-```sh
+```shell
 NAME                                           READY   STATUS    RESTARTS   AGE
 ferretdb-5f6d9dfd59-szl78                      1/1     Running   0          9s
 ```
@@ -285,13 +285,13 @@ Before connecting to FerretDB, get the `MongoDB_URI` user credential needed to s
 Start by retrieving the password for the `ferretuser` stored in `Secret` and the `ferretdb-service` address and port.
 The `ferretuser` `Secret` object is named as `cluster1-pguser-ferretuser`.
 
-```sh
+```shell
 kubectl get secret cluster1-pguser-ferretuser -n ferretdb -o jsonpath="{.data.password}" | base64 --decode
 ```
 
 Check the services created in the namespace:
 
-```sh
+```shell
 kubectl get svc -n ferretdb
 ```
 
@@ -313,13 +313,13 @@ The `ferretdb-service` acts as the `ClusterIP` service, and allows you to connec
 
 Run a `mongosh` to connect to FerretDB:
 
-```sh
+```shell
 kubectl -n ferretdb run mongosh --image=rtsp/mongosh --rm -it -- bash
 ```
 
 Once inside the container, connect to FerretDB using the URI:
 
-```sh
+```shell
 mongosh 'mongodb://ferretuser:<password>@10.233.22.188:27017/ferretdb?authMechanism=PLAIN'
 ```
 
@@ -342,7 +342,7 @@ ferretdb> db.test.find()
 FerretDB stores all data on PostgreSQL.
 So if you find yourself wondering how that looks, you can check it out:
 
-```sh
+```shell
 FERRETUSER_URI=$(kubectl get secret cluster1-pguser-ferretuser --namespace ferretdb -o jsonpath='{.data.uri}' | base64 --decode)
 kubectl run -i --rm --tty pg-client --image=perconalab/percona-distribution-postgresql:16 --restart=Never -- psql $FERRETUSER_URI
 ```
@@ -369,7 +369,7 @@ ferretdb=> table test_afd071e5;
 
 You can clean up all used resources by just deleting the namespace:
 
-```sh
+```shell
 kubectl delete namespace ferretdb
 ```
 

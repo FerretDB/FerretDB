@@ -43,13 +43,13 @@ Read the following documentation guides to learn how to create a Kubernetes clus
 With the `kubeconfig` file, you can access the Kubernetes cluster from your local machine.
 After downloading the `kubeconfig` file, set the `KUBECONFIG` environment variable to point to the file:
 
-```sh
+```shell
 export KUBECONFIG=/<path>/<to>/<kubeconfig-file>.yaml
 ```
 
 Then create a namespace for the project:
 
-```sh
+```shell
 kubectl create namespace newferret
 ```
 
@@ -64,13 +64,13 @@ So before installing the chart, ensure the [Percona PostgreSQL Operator](https:/
 
 You can install the Percona PostgreSQL Operator by following their installation guide [here](https://github.com/percona/percona-postgresql-operator#installation) or by running the following command:
 
-```sh
+```shell
 kubectl apply --server-side -f https://raw.githubusercontent.com/percona/percona-postgresql-operator/v2.3.1/deploy/bundle.yaml -n newferret
 ```
 
 Check to see if the Percona PostgreSQL Operator is running (the status should be `Running`):
 
-```sh
+```shell
 kubectl get pods -n newferret
 ```
 
@@ -86,13 +86,13 @@ percona-postgresql-operator-59d79f547b-cgz9j   1/1     Running     0          25
 Now you can install the FerretDB Helm chart.
 To add the FerretDB Helm chart repository, run the following command:
 
-```sh
+```shell
 helm repo add ferretdb https://chnyda.github.io/ferretdb-helm
 ```
 
 Then install the FerretDB Helm chart in the `newferret` namespace:
 
-```sh
+```shell
 helm install mydb --namespace newferret ferretdb/ferretdb
 ```
 
@@ -143,7 +143,7 @@ mongodb://<username>:<password>@<host>:27017/<database>?authMechanism=PLAIN
 
 Run the following command to get the service address:
 
-```sh
+```shell
 kubectl get svc -n newferret
 ```
 
@@ -166,13 +166,13 @@ Now that you have the service address, you can connect to the FerretDB instance.
 
 Start a temporary `mongosh` pod to connect to the FerretDB instance:
 
-```sh
+```shell
 kubectl run -it --rm --image=mongo:latest mongo-client -- bash
 ```
 
 Then, connect to the instance using the following connection string:
 
-```sh
+```shell
 root@mongo-client:/# mongosh 'mongodb://ferretuser:<password>@<host>:27017/ferretdb?authMechanism=PLAIN'
 ```
 
@@ -205,7 +205,7 @@ We'll use solar system data to analyze planetary characteristics, such as the nu
 
 The following command inserts these documents into the `space_data` collection:
 
-```js
+```javascript
 db.space_data.insertMany([
   { planet: 'Earth', moons: 1, diameter_km: 12742 },
   { planet: 'Mars', moons: 2, diameter_km: 6779 },
@@ -220,7 +220,7 @@ Now that the data is in place, let's try out a few analytical queries.
 Let's start by answering this question: How many moons are there across the planets in the dataset?
 Using the `$group` stage in an aggregation pipeline, we can sum the moons field across all documents:
 
-```js
+```javascript
 db.space_data.aggregate([
   {
     $group: {
@@ -233,7 +233,7 @@ db.space_data.aggregate([
 
 The result shows that the total number of moons is `82`.
 
-```js
+```javascript
 response = [{ _id: null, total_moons: 82 }]
 ```
 
@@ -242,7 +242,7 @@ response = [{ _id: null, total_moons: 82 }]
 Next, let's find out which planets have more than one moon.
 We'll use the `$match` stage to filter documents based on the condition `moons > 1`:
 
-```js
+```javascript
 db.space_data.aggregate([
   {
     $match: { moons: { $gt: 1 } }
@@ -252,7 +252,7 @@ db.space_data.aggregate([
 
 The output lists Mars and Jupiter as the planets with more than one moon.
 
-```js
+```javascript
 response = [
   {
     _id: ObjectId('67608c94aea003a29ee94971'),
@@ -274,7 +274,7 @@ response = [
 Finally, let's determine which planet has the largest diameter.
 By sorting the documents in descending order of the `diameter_km` field and limiting the result to just one document, we can identify the largest planet:
 
-```js
+```javascript
 db.space_data.aggregate([
   {
     $sort: { diameter_km: -1 }
@@ -287,7 +287,7 @@ db.space_data.aggregate([
 
 The result as shown below indicates that Jupiter, with a diameter of 139,820 km, is the largest planet in our dataset.
 
-```js
+```javascript
 response = [
   {
     _id: ObjectId('67608c94aea003a29ee94972'),

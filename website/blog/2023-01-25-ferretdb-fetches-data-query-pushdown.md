@@ -40,7 +40,7 @@ Let's jump right into the FerretDB internals and go step by step to see how it h
 
 Let's say we have a collection with data on thousands of customers, and want to check if the one under `john.doe@example.com` email address has an active account:
 
-```js
+```javascript
 db.customers.find({ email: 'john.doe@example.com' }, { active: 1 })
 ```
 
@@ -98,7 +98,7 @@ This is needed for our internal representation of the documents called `pjson`, 
 With these documents, FerretDB can parse the data to internal `pjson` type, and iterate through all of them to apply the filters.
 After this process, as only one document matches the filter, the projection will be applied to it, so only the `active` (and `_id`) fields will be returned:
 
-```js
+```javascript
 response = [{ _id: ObjectId('63aa97626786637ef1c4b725'), active: false }]
 ```
 
@@ -118,7 +118,7 @@ It's unreasonable to fetch all of this data, just to apply this simple filter th
 Let's go back to our workflow and suppose that afterward the account was activated, so we want to ensure that.
 If we know the exact `_id` of the customer's document, we can use it to benefit from the query pushdown:
 
-```js
+```javascript
 db.customers.find({ _id: ObjectId('63aa97626786637ef1c4b725') }, { active: 1 })
 ```
 
@@ -155,7 +155,7 @@ You can find the code of the benchmark in the [FerretDB repository](https://gith
 
 Now we can run the test:
 
-```js
+```javascript
 $ go test -bench=. -run=^#
 goos: linux
 goarch: amd64

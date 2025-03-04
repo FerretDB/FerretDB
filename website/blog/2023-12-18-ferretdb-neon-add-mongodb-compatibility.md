@@ -72,7 +72,7 @@ This URI will serve as the Postgres URI for your FerretDB instance.
 
 Run the following command to run FerretDB in a Docker container and connect it to your Neon Postgres database (`NEON_DB`):
 
-```sh
+```shell
 docker run -e FERRETDB_POSTGRESQL_URL=<NEON_DB> ghcr.io/ferretdb/ferretdb
 ```
 
@@ -84,7 +84,7 @@ Use your Neon Postgres credentials to connect to the database.
 
 So in this case, the MongoDB URI will be:
 
-```sh
+```shell
 mongosh 'mongodb://<postgres-username>:<postgres-password>@127.0.0.1:27017/ferretdb?authMechanism=PLAIN'
 ```
 
@@ -118,7 +118,7 @@ This will connect you directly to the `ferretdb` database.
 With `mongosh` running, let's try to insert some documents into our FerretDB instance.
 You are going to insert two footballer data into a `players` collection.
 
-```js
+```javascript
 db.players.insertMany([
   {
     futbin_id: 3,
@@ -162,19 +162,19 @@ Now when you run `db.players.find()`, it should return all the documents stored 
 Next, you need to update "Giggs" record to reflect his current position as a `CM`.
 To do this, we can just run an `updateOne` command to target just that particular player:
 
-```js
+```javascript
 db.players.updateOne({ player_name: 'Giggs' }, { $set: { position: 'CM' } })
 ```
 
 Let's query the collection to see if the changes have been made:
 
-```js
+```javascript
 db.players.find({ player_name: 'Giggs' })
 ```
 
 The output should show the updated record:
 
-```js
+```javascript
 response = [
   {
     _id: ObjectId('657c2bddc1aa97bc73fd3e7c'),

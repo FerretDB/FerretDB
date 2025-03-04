@@ -78,13 +78,13 @@ For the purpose of this tutorial, we'll be adding sample data to the FerretDB da
 
 If you have `mongosh`, you can run FerretDB using this connection URI with the right authentucation credentials:
 
-```sh
+```shell
 mongodb://username:password@127.0.0.1/ferretdb?authMechanism=PLAIN
 ```
 
 But if you don't have `mongosh`, you can run it through a temporary MongoDB container:
 
-```sh
+```shell
 docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo \
   "mongodb://username:password@ferretdb/ferretdb?authMechanism=PLAIN"
 ```

@@ -20,7 +20,7 @@ Field update operators allow you to modify the value of a specified field in a d
 
 For the examples in this section, insert the following documents into the `employees` collection:
 
-```js
+```javascript
 db.employee.insertOne({
   name: 'John Doe',
   age: 35,
@@ -44,7 +44,7 @@ The `$set` operator updates the value of a specified field and if the field does
 
 **Example:** The below query is an example that updates the value of the `city` field in the `address` embedded document.
 
-```js
+```javascript
 db.employee.updateOne(
   { name: 'John Doe' },
   {
@@ -60,7 +60,7 @@ The above query updates the value of the `city` field in the `address` embedded 
 
 This is the updated document:
 
-```json5
+```javascripton5
 [
   {
     _id: ObjectId("640a603558955e0e2b57c00d"),
@@ -88,13 +88,13 @@ The `$unset` operator deletes the specified field from a document and if the fie
 
 **Example:** The below query deletes the `zip` field from the embedded document `address`.
 
-```js
+```javascript
 db.employee.updateOne({ name: 'John Doe' }, { $unset: { 'address.zip': '' } })
 ```
 
 Below is the updated document, without the `zip` field:
 
-```json5
+```javascripton5
 [
   {
     _id: ObjectId("640a603558955e0e2b57c00d"),
@@ -122,13 +122,13 @@ If the field is non-existent in the document, the `$inc` operator creates a new 
 
 **Example:** The below query increments the value of the `age` field by `1`.
 
-```js
+```javascript
 db.employee.updateOne({ name: 'John Doe' }, { $inc: { age: 1 } })
 ```
 
 The updated document looks like this:
 
-```json5
+```javascripton5
 [
   {
     _id: ObjectId("640a603558955e0e2b57c00d"),
@@ -156,13 +156,13 @@ Similar to all most of the other field update operators, if the field is non-exi
 
 **Example:** This example query multiplies the value of the `salary` field by `25%`, represented as `1.25`.
 
-```js
+```javascript
 db.employee.updateOne({ name: 'John Doe' }, { $mul: { salary: 1.25 } })
 ```
 
 The updated record looks like this:
 
-```json5
+```javascripton5
 [
   {
     _id: ObjectId("640a603558955e0e2b57c00d"),
@@ -189,13 +189,13 @@ The `$rename` operator renames a given field to another name.
 
 **Example:** The query below updates the `employee` collection and renames the `jobTitle` field to `title`.
 
-```js
+```javascript
 db.employee.updateOne({ name: 'John Doe' }, { $rename: { jobTitle: 'title' } })
 ```
 
 The updated document looks like this:
 
-```json5
+```javascripton5
 [
   {
     _id: ObjectId("640a603558955e0e2b57c00d"),
@@ -222,14 +222,14 @@ The `$min` operator compares a specified value with the value of the given field
 
 **Example:** The below query updates the value of the `age` field to `30` as long as the current value is less than `30`.
 
-```js
+```javascript
 db.employee.updateOne({ name: 'John Doe' }, { $min: { age: 30 } })
 ```
 
 Since `30` is less than `36`, the value of the `age` field is updated to `30`.
 The updated document now looks like this:
 
-```json5
+```javascripton5
 [
   {
     _id: ObjectId("640a603558955e0e2b57c00d"),
@@ -256,13 +256,13 @@ The `$max` operator compares a specified value with the value of the given field
 
 **Example:** The below query updates the value of the `age` field to `40` as long as the current value is greater than `40`.
 
-```js
+```javascript
 db.employee.updateOne({ name: 'John Doe' }, { $max: { age: 40 } })
 ```
 
 This is what the updated document looks like:
 
-```json5
+```javascripton5
 [
   {
     _id: ObjectId("640a603558955e0e2b57c00d"),
@@ -287,7 +287,7 @@ This can be as a date or timestamp.
 
 **Example:** To update the `startDate` field with the current date, use the following query:
 
-```js
+```javascript
 db.employee.updateOne(
   { name: 'John Doe' },
   { $currentDate: { startDate: true } }
@@ -296,7 +296,7 @@ db.employee.updateOne(
 
 This is the document after the update:
 
-```json5
+```javascripton5
 [
   {
     _id: ObjectId("640a603558955e0e2b57c00d"),
@@ -328,7 +328,7 @@ Here's an example of how `$SetOnInsert` works differently from `$set`.
 
 Using `$set`:
 
-```js
+```javascript
 db.stocks.update(
   { symbol: 'AAPL' },
   {
@@ -347,7 +347,7 @@ If it doesn't find the stock, it inserts a new document with the `symbol`, `pric
 
 Using `$setOnInsert`:
 
-```js
+```javascript
 db.stocks.update(
   { symbol: 'AAPL' },
   {

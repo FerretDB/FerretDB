@@ -28,7 +28,7 @@ Currently, only the `$match` and `$count` stages have been implemented.
 
 This `$match` stage is used to filter documents that match specified query conditions.
 
-```js
+```javascript
 db.collection.aggregate([
     {
         $match: {
@@ -41,7 +41,7 @@ db.collection.aggregate([
 On the other hand, the `$count` stage counts the number of documents input into the stage and passes the result as a document to the next stage.
 In the example below, the `field` represents the output field that contains the count of all documents that match the query conditions in the `$match` stage as its value.
 
-```js
+```javascript
 db.collection.aggregate([
     {
         $match: {
@@ -60,7 +60,7 @@ FerretDB v0.9.0 now includes support for the `$mul` field update operator.
 With this operator, you can perform multiplications on specific fields in your documents.
 It takes two arguments: the `field` to update and the `value` to multiply the `field` with.
 
-```js
+```javascript
 db.collection.update(
     {<query>},
     {
@@ -74,7 +74,7 @@ db.collection.update(
 Besides that, FerretDB v0.9.0 now supports `$push` array update operator so that you can add elements to the end of an array field.
 Here's how you can use it:
 
-```js
+```javascript
 db.collection.update(
     {<query>},
     {

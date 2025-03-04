@@ -43,19 +43,19 @@ This will enable us to run `acorn` commands directly from our CLI.
 
 For macOS & Linux, run this command.
 
-```sh
+```shell
 brew install acorn-io/cli/acorn
 ```
 
 For Windows, download the CLI from this URL:
 
-```sh
+```shell
 scoop install acorn
 ```
 
 Once Acorn is installed, log in via your GitHub account by running:
 
-```sh
+```shell
 acorn Login​
 ```
 
@@ -68,7 +68,7 @@ We will start by setting up a simple todo Python Flask Application that connects
 
 Let's create the directory for the project:
 
-```sh
+```shell
 mkdir -p my-ferret/templates
 cd my-todo
 touch app.py requirements.txt templates/template.html Dockerfile Acornfile
@@ -91,7 +91,7 @@ my-ferret/
 
 In the `app.py` folder, add the below code.
 
-```py
+```python
 import os
 from flask import Flask, render_template, request, redirect, url_for
 from pymongo import MongoClient
@@ -149,7 +149,7 @@ Our Acornfile abstracts the database URI and name in this Python file by specify
 
 Next, we'll, we'll create a functional UI for these actions using the `templates/templates.html` file.
 
-```html
+```markup
 <!doctype html>
 <html lang="en">
   <head>
@@ -214,7 +214,7 @@ pymongo
 To containerize our Python application, we'll use a Dockerfile containing all the commands needed to build a Docker image.
 The Dockerfile creates a container image that sets up the environment, installs dependencies, and configures the Flask application to run within an isolated Docker container.
 
-```dockerfile
+```docker
 FROM cgr.dev/chainguard/python:latest-dev
 
 WORKDIR /app
@@ -300,7 +300,7 @@ With our current setup, we can go ahead to deploy the application.
 
 Through your CLI, run the following command from the same directory as your Acornfile to build and run the app.
 
-```sh
+```shell
 acorn run -n my-ferret
 ```
 
@@ -326,13 +326,13 @@ Acorn makes this possible using commands that are simple and similar to traditio
 
 To create an Acorn container image for the `my-ferret` app, use the following convention with your desired registry, organization, application name, and version:
 
-```sh
+```shell
 acorn build -t <registry>/<organization>/<app-name>:<version> .
 ```
 
 In that case, if we want to tag an image for Docker Hub, run the build command within the same project directory:
 
-```sh
+```shell
 acorn build -t index.docker.io/<organization>/my-ferret:v1.0 .
 ```
 
@@ -342,26 +342,26 @@ Ensure to replace the registry if you're not using Docker Hub, and also specify 
 
 Before pushing the image to a registry, log in using the `acorn login` command:
 
-```sh
+```shell
 acorn login index.docker.io
 ```
 
 Once you're logged in successfully, use the `acorn push` command to upload the image to the desired registry:
 
-```sh
+```shell
 acorn push index.docker.io/<organization>/my-ferret:v1.0
 ```
 
 Once the image is available in a registry, it can be deployed to any environment with access to the registry.
 The `acorn run` command will retrieve and deploy the image:
 
-```sh
+```shell
 acorn run index.docker.io/<organization>/my-ferret:v1.0
 ```
 
 Alternatively, if you need to manually pull the image to your local machine, use:
 
-```sh
+```shell
 acorn pull index.docker.io/<organization>/my-ferret:v1.0
 ```
 
@@ -371,7 +371,7 @@ Following these steps ensures that our todo app, built using FerretDB, is correc
 
 Once we're done, clean up and delete the application by running:
 
-```sh
+```shell
 acorn rm my-ferret
 ```
 

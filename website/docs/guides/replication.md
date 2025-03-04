@@ -147,7 +147,7 @@ volumes:
 
 To initialize the setup, start the primary PostgreSQL instance (`postgres_primary`) first:
 
-```sh
+```shell
 docker compose up -d postgres_primary
 ```
 
@@ -155,7 +155,7 @@ docker compose up -d postgres_primary
 
 Connect to the `postgres_primary` to configure the replication role and permissions.
 
-```sh
+```shell
 docker exec -it postgres_primary psql -U user -d postgres -c "CREATE ROLE replicator WITH REPLICATION PASSWORD 'replicatorpassword' LOGIN;"
 ```
 
@@ -168,13 +168,13 @@ Next, update `postgresql.conf` and `pg_hba.conf` to allow replication.
 Inside the primary PostgreSQL container, configure the WAL settings necessary for replication.
 You can access the file by opening the container's shell:
 
-```sh
+```shell
 docker exec -it postgres_primary bash
 ```
 
 Then access `/var/lib/postgresql/data/postgresql.conf` to add the following settings:
 
-```sh
+```shell
 cat <<EOF >> /var/lib/postgresql/data/postgresql.conf
 wal_level = replica
 max_wal_senders = 10
@@ -190,7 +190,7 @@ EOF
 
 Run the following command to add the replication user to `pg_hba.conf`:
 
-```sh
+```shell
 echo 'host replication replicator 0.0.0.0/0 md5' >> /var/lib/postgresql/data/pg_hba.conf
 ```
 
@@ -198,7 +198,7 @@ This setting permits the `replicator` user to connect for replication purposes f
 
 In PostgreSQL, reload the configuration to apply changes without a full restart.
 
-```sh
+```shell
 docker exec -it postgres_primary psql -U user -d postgres -c "SELECT pg_reload_conf();"
 ```
 
@@ -206,19 +206,19 @@ docker exec -it postgres_primary psql -U user -d postgres -c "SELECT pg_reload_c
 
 Use `pg_basebackup` to initialize the replica with data from the primary.
 
-```sh
+```shell
 docker exec -it postgres_primary pg_basebackup -D /tmp/replica_backup -P -R -X stream -c fast -U replicator
 ```
 
 Launch the replica.
 
-```sh
+```shell
 docker compose up -d postgres_replica
 ```
 
 You may need to give the PostgreSQL user permission to the shared directory depending on your setup.
 
-```sh
+```shell
 docker exec -it postgres_replica chown -R postgres:postgres /var/lib/postgresql/data
 ```
 
@@ -226,20 +226,20 @@ docker exec -it postgres_replica chown -R postgres:postgres /var/lib/postgresql/
 
 Connect to the replica `postgres_replica` and configure it to follow `postgres_primary` so it knows where to receive the WAL data.
 
-```sh
+```shell
 docker exec -it postgres_replica psql -U user -d postgres -c "ALTER SYSTEM SET primary_conninfo TO 'host=postgres_primary port=5432 user=replicator password=replicatorpassword';"
 ```
 
 Create a `standby.signal` file to tell PostgreSQL this instance should act as a replica.
 [See the standby documentation for more](https://www.postgresql.org/docs/current/warm-standby.html).
 
-```sh
+```shell
 docker exec -it postgres_replica bash -c "touch /var/lib/postgresql/data/standby.signal"
 ```
 
 Restart the replica to apply the changes.
 
-```sh
+```shell
 docker restart postgres_replica
 ```
 
@@ -247,7 +247,7 @@ docker restart postgres_replica
 
 To confirm that the replica is receiving data, inspect the replication status on `postgres_primary`.
 
-```sh
+```shell
 docker exec -it postgres_primary psql -U user -d postgres -c "SELECT * FROM pg_stat_replication;"
 ```
 
@@ -262,7 +262,7 @@ The output should show the replica's connection details like below:
 
 On the replica, confirm that it's in recovery mode, which indicates it's in sync with the primary.
 
-```sh
+```shell
 docker exec -it postgres_replica psql -U user -d postgres -c "SELECT pg_is_in_recovery();"
 ```
 
@@ -279,20 +279,20 @@ The output should show `t` (true) to indicate that the replica is in recovery mo
 
 With the primary and replica configured, launch the FerretDB container to connect to the primary.
 
-```sh
+```shell
 docker compose up -d ferretdb
 ```
 
 If you have `mongosh` installed, connect to FerretDB using the MongoDB URI `mongodb://user:password@localhost:27017/`.
 Otherwise, run the following command to connect to FerretDB using `mongosh` inside a temporary MongoDB container:
 
-```sh
+```shell
 docker run --rm -it --network="host" mongo mongosh "mongodb://user:password@localhost:27017/"
 ```
 
 Add the following document in FerretDB to test if data written to the primary also appears in the replica.
 
-```js
+```javascript
 db.record.insertOne({
   username: 'Ada Lovelace',
   content: 'Enjoying the beautiful weather today! 🌞 #sunnyday',
@@ -306,19 +306,19 @@ db.record.insertOne({
 Let's set up another FerretDB instance to connect to the replica and verify that the data written to the `postgres_primary` is also available on the `postgres_replica`.
 The FerretDB read-only instance can only perform read operations and cannot write data.
 
-```sh
+```shell
 docker compose up -d ferretdb_readonly
 ```
 
 Connect to the container via `mongosh` and verify that the data written to the primary is also available in the replica.
 
-```sh
+```shell
 docker run --rm -it --network="host" mongo mongosh "mongodb://user:password@localhost:27018/" --eval "db.record.find()"
 ```
 
 The output should show the document you inserted in the primary.
 
-```js
+```javascript
 response = [
   {
     _id: ObjectId('672159e5a6caf9a94afa26b9'),

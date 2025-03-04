@@ -29,7 +29,7 @@ A standout feature in FerretDB v1.22 is the ability to set up an initial user fo
 This makes it easier for users to configure their FerretDB instance securely right from the start using dedicated flags or environment variables.
 Here's how you can do it:
 
-```sh
+```shell
 ferretdb --test-enable-new-auth=true --setup-username=user --setup-password=pass --setup-database=ferretdb
 ```
 

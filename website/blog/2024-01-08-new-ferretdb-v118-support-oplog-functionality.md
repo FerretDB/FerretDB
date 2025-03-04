@@ -30,7 +30,7 @@ In this release, we've added **support for capped collection**, along with `max`
 
 For example, to create a capped collection `testcollection` with a maximum size of 512MB, run:
 
-```js
+```javascript
 db.createCollection('testcollection', { capped: true, size: 536870912 })
 ```
 
@@ -47,26 +47,26 @@ Replication is not supported yet.
 The functionality is not available by default.
 To enable it, manually create a capped collection named `oplog.rs` in the `local` database.
 
-```js
+```javascript
 // use local
 db.createCollection('oplog.rs', { capped: true, size: 536870912 })
 ```
 
 You may also need to set the replica set name using [`--repl-set-name` flag / `FERRETDB_REPL_SET_NAME` environment variable](https://docs.ferretdb.io/configuration/flags/#general):
 
-```sh
+```shell
 docker run -e FERRETDB_REPL_SET_NAME=rs0 ...
 ```
 
 To query the OpLog:
 
-```js
+```javascript
 db.oplog.rs.find()
 ```
 
 To query OpLog for all the operations in a particular namespace (`test.foo`), run:
 
-```js
+```javascript
 db.oplog.rs.find({ ns: 'test.foo' })
 ```
 

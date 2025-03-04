@@ -37,7 +37,7 @@ FerretDB v0.9.3 improves on this, adding more stages and pushing down more queri
 For instance, we've implemented `$sort` and `$group` aggregation pipeline stages.
 Suppose you have a collection named `order` that contains the following documents:
 
-```js
+```javascript
 {
     _id: 1,
     customer_name: "John Smith",
@@ -61,7 +61,7 @@ Suppose you have a collection named `order` that contains the following document
 We can use the `$sort` aggregation pipeline stage to sort the documents in ascending or descending order based on a specific field.
 For example, to sort the documents in descending order based on the `order_total` field, set the value to `-1`:
 
-```js
+```javascript
 db.orders.aggregate([{ $sort: { order_total: -1 } }])
 ```
 
@@ -70,7 +70,7 @@ This will return the documents, sorted in descending order based on the `order_t
 You can use the `$group` aggregation stage to group documents together.
 For example, the following query groups and counts the total number of documents in the `orders` collection.
 
-```js
+```javascript
 db.orders.aggregate([
   {
     $group: {

@@ -15,7 +15,7 @@ Logical query operators return data based on specified query expressions that ar
 
 For the examples in this section, insert the following documents into the `catalog` collection:
 
-```js
+```javascript
 db.catalog.insertMany([
   {
     product: 'bottle',
@@ -87,7 +87,7 @@ To satisfy more than one query condition when selecting documents, use the `$and
 - `price` field is less than `100` **AND**
 - `stock` field is not `0`
 
-```js
+```javascript
 db.catalog.find({
   $and: [
     {
@@ -106,7 +106,7 @@ db.catalog.find({
 
 The output:
 
-```json5
+```javascripton5
 [
   {
     _id: ObjectId("639ba4a0071b6bed396a8f13"),
@@ -144,7 +144,7 @@ To satisfy either one or more conditions in a query, use the `$or` operator to j
 - `discount` field is `true` _and_ `stock` field is not `0` **OR**
 - `price` field is less than or equal to `60`
 
-```js
+```javascript
 db.catalog.find({
   $or: [
     {
@@ -170,7 +170,7 @@ db.catalog.find({
 
 The output:
 
-```json5
+```javascripton5
 [
   {
     _id: ObjectId("639ba4a0071b6bed396a8f13"),
@@ -216,7 +216,7 @@ To select documents that fail to match a particular query condition, use the `$n
 
 **Example:** The following operation selects documents that do not satisfy the specified expression, where the `stock` field is not less than `5`.
 
-```js
+```javascript
 db.catalog.find({
   stock: {
     $not: {
@@ -228,7 +228,7 @@ db.catalog.find({
 
 The output:
 
-```json5
+```javascripton5
 [
   {
     _id: ObjectId("639ba4a0071b6bed396a8f15"),
@@ -266,7 +266,7 @@ To select documents that fail to match any of the conditions in a specified quer
 - `discount` field is `true` _and_ `stock` field is not `0`
 - `price` field is less than or equal to `60`
 
-```js
+```javascript
 db.catalog.find({
   $nor: [
     {
@@ -292,7 +292,7 @@ db.catalog.find({
 
 The output:
 
-```json5
+```javascripton5
 [
   {
     _id: ObjectId("639ba4a0071b6bed396a8f14"),

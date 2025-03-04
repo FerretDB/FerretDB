@@ -72,7 +72,7 @@ This dataset provides a detailed look into a purchase record.
 
 [Here is the record for the imported JSON file](https://gist.github.com/Fashander/e57f553ea0f5157958b66ffa67c31dd1)
 
-```sh
+```shell
 mongoimport --uri="<mongodb-connection-string>" --db ferretdb --collection supply --file /path/to/exportedFile.json
 ```
 
@@ -82,7 +82,7 @@ Be sure to update with the correct connection string.
 
 Once the import is successful, let's connect to our instance via `mongosh` from the directory containing the SSL Certificate.
 
-```sh
+```shell
 mongosh "<mongodb-connection-string>"
 ```
 
@@ -93,13 +93,13 @@ We will run some practical examples to showcase FerretDB on Tembo and how you ca
 To understand the structure and type of data in the supply collection, let's check out a single "supply" purchase record.
 This example illustrates the kind of information captured in each transaction.
 
-```js
+```javascript
 db.supply.findOne()
 ```
 
 Result:
 
-```js
+```javascript
 response = {
   _id: ObjectId('65c0d6d5cfba3092d3958fbf'),
   transaction_id: 10004,
@@ -122,7 +122,7 @@ The record shows a purchase made by Jorge Lopez, who bought 2 pairs of Adidas Ru
 To analyze our supply data over specific periods, we can query the collection record within the desired date ranges.
 This could be useful in understanding the impact of a particular promotional campaign.
 
-```js
+```javascript
 db.supply.find({
   transaction_time: {
     $gte: ISODate('2023-07-01T00:00:00.000Z'),
@@ -133,7 +133,7 @@ db.supply.find({
 
 Result:
 
-```js
+```javascript
 response = [
   {
     _id: ObjectId('65c0d6d5cfba3092d3958fdb'),
@@ -193,7 +193,7 @@ This query filters the records to only include transactions that occurred betwee
 Say you want insight into the most in-demand item.
 We can aggregate the data to sum the quantities sold by product name.
 
-```js
+```javascript
 db.supply.aggregate([
   {
     $group: {
@@ -208,7 +208,7 @@ db.supply.aggregate([
 
 Result:
 
-```js
+```javascript
 response = [{ _id: 'The Alchemist', totalQuantity: 5 }]
 ```
 

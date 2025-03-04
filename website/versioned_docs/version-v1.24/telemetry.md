@@ -77,20 +77,20 @@ Telemetry can be disabled using any of the following options:
 1. Pass the command-line flag `--telemetry` to the FerretDB executable with value:
    `0`, `f`, `false`, `n`, `no`, `off`, `disable`, `disabled`, `optout`, `opt-out`, `disallow`, `forbid`.
 
-   ```sh
+   ```shell
    --telemetry=disable
    ```
 
 2. Set the environment variable `FERRETDB_TELEMETRY` with the same value as above:
 
-   ```sh
+   ```shell
    export FERRETDB_TELEMETRY=disable
    ```
 
 3. Set the `DO_NOT_TRACK` environment variable with any of the following values:
    `1`, `t`, `true`, `y`, `yes`, `on`, `enable`, `enabled`.
 
-   ```sh
+   ```shell
    export DO_NOT_TRACK=true
    ```
 
@@ -103,7 +103,7 @@ Telemetry can be disabled using any of the following options:
 
 5. Use the `db.disableFreeMonitoring()` command on runtime.
 
-   ```js
+   ```javascript
    db.disableFreeMonitoring()
    ```
 
@@ -118,18 +118,18 @@ Telemetry can be explicitly enabled (see [above](#configuration)) with the comma
 by setting one of the values:
 `1`, `t`, `true`, `y`, `yes`, `on`, `enable`, `enabled`, `optin`, `opt-in`, `allow`.
 
-```sh
+```shell
 --telemetry=enable
 ```
 
 You can also use `FERRETDB_TELEMETRY` environment variable with the same values as above
 or on runtime via `db.enableFreeMonitoring()` command.
 
-```sh
+```shell
 export FERRETDB_TELEMETRY=enable
 ```
 
-```js
+```javascript
 db.enableFreeMonitoring()
 ```
 

@@ -23,7 +23,7 @@ Before you go forward with the migration, you need to have the following:
 
 To backup your MongoDB instance using `mongodump` or `mongoexport`, you'll need to set the connection string to your MongoDB instance (e.g. `"mongodb://127.0.0.1:27017/"`) to run the following command:
 
-```sh
+```shell
 mongodump --uri="mongodb://<yourusername>:<yourpassword>@<host>:<port>/"
 ```
 
@@ -34,7 +34,7 @@ Also, you can migrate a specific database (e.g. `--db=test`) or collection (e.g.
 If you include the database in your connection string, there's no need to specify a database name for the backup or restore process.
 :::
 
-```sh
+```shell
 mongoexport --uri="mongodb://<yourusername>:<yourpassword>@<host>:<port>/" --db=<database-name> --collection=<collection-name> --out=<collection>.json
 ```
 
@@ -48,7 +48,7 @@ To restore or import your backed-up data to FerretDB, set the connection string 
 
 Run the following command in your terminal, from your `dump` folder:
 
-```sh
+```shell
 mongorestore --uri="mongodb://<yourusername>:<yourpassword>@<host>:<port>/"
 ```
 
@@ -57,7 +57,7 @@ You can also specify the database and collection (`dump/<database>/<collection>`
 
 To import your database using `mongoimport`, run the command from the terminal directory where you exported your data:
 
-```sh
+```shell
 mongoimport --uri="mongodb://<yourusername>:<yourpassword>@<host>:<port>/" --db=<database-name> --collection=<collection-name> --file=<collection>.json
 ```
 

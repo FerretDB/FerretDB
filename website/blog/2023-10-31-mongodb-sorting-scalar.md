@@ -71,7 +71,7 @@ This means that a field `v` with Null value `{v: null}` is considered the same a
 
 Let's create an `outfits` collection using the following query to insert documents.
 
-```js
+```javascript
 db.outfits.insertMany([
   { _id: 1, name: 'flip flops', size: 'M', color: 'blue' },
   { _id: 2, name: 'sandals', size: 9, color: null },
@@ -86,11 +86,11 @@ For instance, the document for `flip flops` contains a String value in this fiel
 The `sneakers` document has the `size` field as a Double value, and the `slippers` document lacks the `size` field altogether.
 To sort these documents in ascending order based on the `size` field, you would use a sorting order of 1 and execute the following query.
 
-```js
+```javascript
 db.outfits.find().sort({ size: 1 })
 ```
 
-```js
+```javascript
 response = [
   { _id: 5, name: 'slippers' },
   { _id: 3, name: 'boots', size: 8, color: 'black' },
@@ -116,11 +116,11 @@ Strings have a higher BSON comparison order than Numbers, so this document comes
 
 To sort the documents in descending order by the `size` field, you would use a sorting order of -1 and execute the following query.
 
-```js
+```javascript
 db.outfits.find().sort({ size: -1 })
 ```
 
-```js
+```javascript
 response = [
   { _id: 1, name: 'flip flops', size: 'M', color: 'blue' },
   { _id: 2, name: 'sandals', size: 9, color: null },
@@ -145,11 +145,11 @@ To maintain a consistent sort order, it's advised to use `_id` as a secondary so
 In this setup, if multiple documents have the same or equivalent `color` values, it will rely on the `_id` field for sorting.
 The `_id` field value is unique within the collection which ensures that the sorted output remains consistent.
 
-```js
+```javascript
 db.outfits.find().sort({ color: 1, _id: 1 })
 ```
 
-```js
+```javascript
 response = [
   { _id: 2, name: 'sandals', size: 9, color: null },
   { _id: 5, name: 'slippers' },

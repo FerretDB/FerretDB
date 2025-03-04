@@ -14,7 +14,7 @@ Array query operators allow you to search for specific elements within an array 
 
 For the examples in this section, insert the following documents into the `team` collection:
 
-```js
+```javascript
 db.team.insertMany([
   {
     id: 1,
@@ -75,7 +75,7 @@ When using an `$all` operator, the order of the elements and array size does not
 
 **Example:** Find all documents in the `team` collection where the `skills` field contains both `communication` and `content creation` as elements using the following query operation:
 
-```js
+```javascript
 db.team.find({
   skills: {
     $all: ['communication', 'content creation']
@@ -85,7 +85,7 @@ db.team.find({
 
 The output:
 
-```js
+```javascript
 response = [
   {
     _id: ObjectId('63a5bb4acf72d6203bb45bb5'),
@@ -108,7 +108,7 @@ To select documents in a specified array field where one or more elements match 
 **Example:** Find documents in the `team` collection where the `skills` field is an array that contains the element "Java", and array does not contain the element `communication`.
 Use the following query operation:
 
-```js
+```javascript
 db.team.find({
   skills: {
     $elemMatch: {
@@ -121,7 +121,7 @@ db.team.find({
 
 The output:
 
-```js
+```javascript
 response = [
   {
     _id: ObjectId('63aa247e69c82de72bd40b93'),
@@ -143,7 +143,7 @@ The `$size` operator is ideal for selecting array fields containing a specified 
 
 **Example:** Select the documents in the `team` collection where the `skills` array contains only three elements.
 
-```js
+```javascript
 db.team.find({
   skills: {
     $size: 3
@@ -153,7 +153,7 @@ db.team.find({
 
 The output:
 
-```js
+```javascript
 response = [
   {
     _id: ObjectId('63aa247e69c82de72bd40b92'),

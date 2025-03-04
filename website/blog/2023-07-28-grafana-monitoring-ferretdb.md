@@ -74,7 +74,7 @@ The advantages are endless!
 
 Here's a sample view of a document in the `issues` collection:
 
-```json
+```javascripton
 {
   _id: ObjectId('64b7e557921f991a8697d6fd'),
   number: 179,
@@ -119,7 +119,7 @@ Now that the data is visible in Grafana, let's further scrutinize the data and g
 First, we want to know the number of issues the team worked on leading to each of the milestones (release).
 To do this, we'll be using the following aggregation pipeline operation, and setting the visualization in Grafana as bar chart:
 
-```js
+```javascript
 db.issues.aggregate([
   {
     $match: {
@@ -154,7 +154,7 @@ The next thing we want to know is the total number of issues that are marked as 
 
 The query for this operation is:
 
-```js
+```javascript
 db.issues.aggregate([
   { $match: { state: 'OPEN' } },
   { $unwind: '$labels' },
@@ -173,7 +173,7 @@ To make it easier for first time contributors, having a decent number of "good f
 
 The aggregation operation for generating this visualization will group all `OPEN` issues, and then unwind the labels array so we can work directly with the elements in the array; then we match, group, and count all labels with "good first issue".
 
-```js
+```javascript
 db.issues.aggregate([
   { $match: { state: 'OPEN' } },
   { $unwind: '$labels' },
@@ -190,7 +190,7 @@ Similar to the previous panel, we'll be using the gauge visualization to show th
 
 Here, we want group all the issues by their state and set the visualization as a pie chart.
 
-```js
+```javascript
 db.issues.aggregate([
   {
     $group: {
@@ -210,7 +210,7 @@ In the pie chart, we can instantly see all the percentage of open issues vs clos
 We can also group all the issues by their different labels.
 Since the labels are in array, we will need to unwind the array elements and group them into their separate labels.
 
-```js
+```javascript
 db.issues.aggregate([
   { $unwind: '$labels' },
   {
@@ -240,7 +240,7 @@ On Grafana, we will use the pie chart visualization to showcase the labels
 In this panel, we want to group and count all issues by "author" and sort them from highest count to the lowest.
 The aggregation operation to use in the query:
 
-```js
+```javascript
 db.issues.aggregate([
   {
     $group: {

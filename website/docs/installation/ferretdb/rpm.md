@@ -11,20 +11,20 @@ Download the latest FerretDB `.rpm` package from [our release pages](https://git
 rename it to `ferretdb.rpm`,
 then run the following command in your terminal:
 
-```sh
+```shell
 sudo rpm -i ferretdb.rpm
 ```
 
 You can check that FerretDB was installed by running
 
-```sh
+```shell
 ferretdb --version
 ```
 
 FerretDB does not automatically install PostgreSQL.
 To install PostgreSQL, run the following commands:
 
-```sh
+```shell
 sudo yum install -y postgresql
 ```
 

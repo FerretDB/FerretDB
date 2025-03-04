@@ -13,7 +13,7 @@ The `findOne()` command retrieves a single document from a collection.
 
 First, populate the database with a new collection containing a list of documents.
 
-```js
+```javascript
 db.scientists.insertMany([
   {
     name: {
@@ -44,7 +44,7 @@ db.scientists.insertMany([
 
 Run the following `findOne()` operation to retrieve a single document from the collection:
 
-```js
+```javascript
 db.scientists.findOne({ invention: 'Turing Machine' })
 ```
 
@@ -52,7 +52,7 @@ db.scientists.findOne({ invention: 'Turing Machine' })
 
 The `find()` command is used for retrieving all the documents in a collection.
 
-```js
+```javascript
 db.collection.find()
 ```
 
@@ -63,7 +63,7 @@ Run `db.scientists.find()` to see the complete list of documents in the collecti
 Using the `find()` command, you can also filter a collection for only the documents that match the provided query.
 For example, find the document with the field `born` set as 1847.
 
-```js
+```javascript
 db.scientists.find({ born: 1847 })
 ```
 
@@ -73,7 +73,7 @@ The operator syntax allows users to query and retrieve a document.
 There are several operator methods that you can use, such as `$gt` or `$lt`.
 For example, to find the list of scientists born after the 1900s, we'll need the `$gt` operator:
 
-```js
+```javascript
 db.scientists.find({ born: { $gt: 1900 } })
 ```
 
@@ -99,7 +99,7 @@ Here is a list of the most commonly used operators.
 
 Insert the following documents into an `employees` collection using this command:
 
-```js
+```javascript
 db.employees.insertMany([
   {
     name: {
@@ -136,13 +136,13 @@ db.employees.insertMany([
 
 To retrieve all documents with a specific array field and value (`catalog: "printer"`), run the following command:
 
-```js
+```javascript
 db.employees.find({ catalog: 'printer' })
 ```
 
 The response displays all the retrieved documents:
 
-```json5
+```javascripton5
 [
   {
     _id: ObjectId("636b39f80466c61a229bbf9b"),
@@ -168,13 +168,13 @@ The response displays all the retrieved documents:
 To retrieve all documents containing a specific value in an array, use dot notation to reference its position in the `employees` collection.
 The following command retrieves all documents containing `"blender"` in the third field of an array:
 
-```js
+```javascript
 db.employees.find({ 'catalog.2': 'blender' })
 ```
 
 The document that matches the array query is displayed in the response:
 
-```json5
+```javascripton5
 [
   {
     _id: ObjectId("636b3b0e0466c61a229bbf9c"),
@@ -192,6 +192,6 @@ The document that matches the array query is displayed in the response:
 To query on an embedded document, use dot notation to specify the fields.
 The following command queries on the embedded document in the`employees` collection:
 
-```js
+```javascript
 db.employees.find({ 'name.first': 'Clarke' })
 ```

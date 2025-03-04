@@ -49,7 +49,7 @@ Instead of having empty columns, these two books can be stored as separate docum
 
 First document:
 
-```js
+```javascript
 {
     "_id": "uniqueId1",
     "title": "Book Title 1",
@@ -60,7 +60,7 @@ First document:
 
 Second document:
 
-```js
+```javascript
 {
     "_id": "uniqueId2",
     "title": "Book Title 2",
@@ -83,7 +83,7 @@ These documents can be stored in various formats, such as JSON, BSON, YAML, or X
 
 For instance, the following is a typical example of a document containing information on a book:
 
-```js
+```javascript
 {
  title: "The Lord of the Rings",
  author: {
@@ -191,7 +191,7 @@ Users are able to leverage similar syntax and query language as MongoDB, so a in
 
 <!-- write an insert statemnt for that document below -->
 
-```js
+```javascript
 db.users.insert({
   name: 'John Doe',
   age: 25,
@@ -204,13 +204,13 @@ db.users.insert({
 })
 ```
 
-```js
+```javascript
 db.users.find({ 'address.state': 'NY' })
 ```
 
 OUTPUT:
 
-```js
+```javascript
 {
   "_id": ObjectId("5f5b9e2e8b0c0f0001a2b2c3"),
   "name": "John Doe",
@@ -319,7 +319,7 @@ However, while they support the same set of features, the syntax and usage vary 
 
 For instance, a typical query in JavaScript looks like this:
 
-```js
+```javascript
 const db = firebase.firestore()
 
 db.collection('users')

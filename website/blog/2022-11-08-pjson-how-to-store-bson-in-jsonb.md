@@ -32,7 +32,7 @@ Here the hexadecimal `\x00` notation represents `0000 0000` in bits and similarl
 In BSON, `\x00` is a byte used as a terminator to indicate the end of a document.
 In BSON, field names use `cstring` which are UTF-8 characters followed by `\x00`.
 
-```json
+```javascripton
 { "foo": "bar" }
 ```
 
@@ -57,18 +57,18 @@ PJSON contains `$` followed by a character to embed information about types and 
 PJSON is designed to be serialized to JSONB.
 Let's look at a simple BSON with an `ObjectId` field and see how it is represented in PJSON.
 
-```js
+```javascript
 {"_id": ObjectId("635202c8f75e487c16adc141")}
 ```
 
-```js
+```javascript
 \x16\x00\x00\x00\x07_id\x00\x63\x52\x02\xc8\xf7\x5e\x48\x7c\x16\xad\xc1\x41\x00
 ```
 
 In PJSON, we store the order of fields in the `$k` field, and `ObjectId` in the `$o` field.
 The duplicate fields are not allowed in PJSON.
 
-```js
+```javascript
 {
   "$k": [
     "_id"
@@ -104,7 +104,7 @@ Also, regular expressions have an additional field `o` to specify options such a
 
 Let's look at an example of inserting BSON and storing it as PJSON using the following document.
 
-```js
+```javascript
 db.groceries.insert({
   _id: ObjectId('635202c8f75e487c16adc141'),
   name: 'milk',
@@ -116,7 +116,7 @@ db.groceries.insert({
 
 In our BSON deserializer implementation, we use the byte tag according to [BSON spec](https://bsonspec.org/spec.html)to extract field name value pairs.
 
-```js
+```javascript
 \x33\x00\x00\x00 Document length
 \x07 ObjectId field type
 _id\x00
@@ -161,7 +161,7 @@ We use the array `$k` to preserve the order of the fields.
 In PJSON, the format and types, such as `string` and `int32`, are the same as JSON types.
 On the other hand, `ObjectId` is represented by the `$o` key which is specific to BSON.
 
-```js
+```javascript
 {
   "$k": [
     "_id",

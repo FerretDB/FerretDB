@@ -14,7 +14,7 @@ Some of the evaluation query operators include:
 
 For the examples in this section, insert the following documents into the `catalog` collection:
 
-```js
+```javascript
 db.catalog.insertMany([
   {
     product: 'bottle',
@@ -53,7 +53,7 @@ The mathematical operation for this is `field-value % divisor-value = modulus`.
 
 **Example:** The following query returns all the documents where the value of the "stock" field is evenly divisible by 2:
 
-```js
+```javascript
 db.catalog.find({
   stock: {
     $mod: [2, 0]
@@ -63,7 +63,7 @@ db.catalog.find({
 
 The output:
 
-```js
+```javascript
 response = [
   {
     _id: ObjectId('63e3ac0184f488929a3f737a'),
@@ -95,7 +95,7 @@ To use regular expression for queries on particular fields, use the `$regex` ope
 
 **Example:** The following query returns all the documents where the value of the "product" field starts with the letter "b":
 
-```js
+```javascript
 db.catalog.find({
   product: {
     $regex: /^b/
@@ -105,7 +105,7 @@ db.catalog.find({
 
 The output:
 
-```js
+```javascript
 response = [
   {
     _id: ObjectId('63e4ce469695494b86bf2b2d'),
@@ -132,7 +132,7 @@ To perform case-insensitive matching, use the `i` flag in the `regex` expression
 
 **Example:** The following query returns all the documents where the value of the "product" field is equal to "bottle" (case-insensitive):
 
-```js
+```javascript
 db.catalog.find({
   product: {
     $regex: /bottle/i
@@ -142,7 +142,7 @@ db.catalog.find({
 
 The output:
 
-```js
+```javascript
 response = [
   {
     _id: ObjectId('63e3ac0184f488929a3f7379'),

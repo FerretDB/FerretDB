@@ -26,7 +26,7 @@ One of the notable features in this release is the implementation of the `create
 
 You can create a unique index by setting the `unique` option in the `createIndexes` command as `true`.
 
-```js
+```javascript
 db.collection.createIndexes({ indexedfield: 1 }, { unique: `true` })
 ```
 
@@ -37,7 +37,7 @@ You can use the `$type` operator in a `$project` stage to return the BSON data t
 
 Suppose you have the following document:
 
-```json
+```javascripton
 [
   {
     "_id": 1,
@@ -56,7 +56,7 @@ Suppose you have the following document:
 
 To return the BSON type of the `age` field in the documents, you can use the following query:
 
-```js
+```javascript
 db.employees.aggregate([
   {
     $project: {
@@ -70,7 +70,7 @@ db.employees.aggregate([
 
 The output will be:
 
-```js
+```javascript
 response = [
   { _id: 1, name: 'John', age: 35, ageType: 'int' },
   { _id: 2, name: 'Robert', age: 42, ageType: 'int' }
@@ -86,7 +86,7 @@ The `$set` stage can only update the values of existing fields, while the `$addF
 
 Use the `$addFields` stage to add the `department` and `employmentType` fields to all documents:
 
-```js
+```javascript
 db.employees.aggregate([
   {
     $addFields: {
@@ -99,7 +99,7 @@ db.employees.aggregate([
 
 The output will be:
 
-```js
+```javascript
 response = [
   {
     _id: 1,
@@ -122,7 +122,7 @@ response = [
 
 Let's use the `$set` stage to update the `department` field:
 
-```js
+```javascript
 db.employees.aggregate([
   {
     $set: {
@@ -134,7 +134,7 @@ db.employees.aggregate([
 
 The output:
 
-```js
+```javascript
 response = [
   {
     _id: 1,
@@ -155,7 +155,7 @@ response = [
 
 Use the `$unset` stage to remove the `salary` field from documents passed to the next stage in a pipeline:
 
-```js
+```javascript
 db.employees.aggregate([
   {
     $unset: 'salary'
@@ -165,7 +165,7 @@ db.employees.aggregate([
 
 Output:
 
-```js
+```javascript
 response = [
   { _id: 1, name: 'John', age: 35 },
   { _id: 2, name: 'Robert', age: 42 }

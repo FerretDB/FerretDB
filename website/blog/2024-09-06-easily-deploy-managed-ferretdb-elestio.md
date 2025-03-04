@@ -71,7 +71,7 @@ Select "Display DB Credentials" to get the connection string.
 
 Connect to your FerretDB instance via mongosh in the following format:
 
-```sh
+```shell
 mongosh 'mongodb://username:password@host-address/ferretdb?authMechanism=PLAIN'
 ```
 
@@ -83,7 +83,7 @@ You can now populate the FerretDB instance with data.
 
 Start by inserting the following document into a `record` collection.
 
-```js
+```javascript
 db.record.insertOne({
   username: 'JD',
   content: 'Enjoying the beautiful weather today! 🌞 #sunnyday',
@@ -96,7 +96,7 @@ Once it's inserted, view the documents by running `db.record.find()`:
 
 The output:
 
-```js
+```javascript
 response = [
   {
     _id: ObjectId('66d6a9346e70f5ffc91022c0'),
@@ -110,13 +110,13 @@ response = [
 
 Next, update the `likes` of JD's post to 150.
 
-```js
+```javascript
 db.record.updateOne({ username: 'JD' }, { $set: { likes: 150 } })
 ```
 
 The output:
 
-```js
+```javascript
 response = {
   acknowledged: true,
   insertedId: null,
@@ -130,7 +130,7 @@ You can run `db.record.find()` again just to be sure it's updated.
 
 Finally, delete the singular document from the collection.
 
-```js
+```javascript
 db.record.deleteOne({ username: 'JD' })
 ```
 

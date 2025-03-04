@@ -32,7 +32,7 @@ In this guide, we will focus specifically on running the PostgreSQL backend for 
 Before we start, please ensure that your system and packages are up-to-date.
 Do that by running:
 
-```sh
+```shell
 sudo apt update
 sudo apt upgrade
 ```
@@ -41,7 +41,7 @@ sudo apt upgrade
 
 Since we are setting up FerretDB to use the PostgreSQL backend, we'll need to [install PostgreSQL](https://www.postgresql.org/download/), if it's not already installed.
 
-```sh
+```shell
 sudo apt install postgresql
 ```
 
@@ -51,7 +51,7 @@ Before connecting to a PostgreSQL instance, do note that FerretDB requires that 
 
 To do this, we need to connect to the default PostgreSQL instance:
 
-```sh
+```shell
 sudo -u postgres psql
 ```
 
@@ -87,7 +87,7 @@ Our PostgreSQL backend is ready!
 
 Exit the PostgreSQL prompt with `\q`, and then connect back to the `ferretdb` database using the username and the password you created.
 
-```sh
+```shell
 psql -h localhost -U <username> -d ferretdb
 ```
 
@@ -107,19 +107,19 @@ FerretDB offers both `amd64` and `arm64` binaries.
 Choose the package suitable for your Ubuntu operating system.
 For this tutorial, we are using the `arm64` deb package for FerretDB v1.12.1.
 
-```sh
+```shell
 wget https://github.com/FerretDB/FerretDB/releases/download/v1.12.1/ferretdb-arm64.deb
 ```
 
 Or you can use `curl` to download the package:
 
-```sh
+```shell
 curl -LJO https://github.com/FerretDB/FerretDB/releases/download/v1.12.1/ferretdb-arm64.deb
 ```
 
 From the directory where `ferretdb-arm64.deb` is located, install FerretDB:
 
-```sh
+```shell
 sudo apt install ./ferretdb-arm64.deb
 ```
 
@@ -198,7 +198,7 @@ We will explore two ways to start FerretDB: via terminal and using a `systemd` f
 
 Before we create a `systemd` for FerretDB, let's try running it via terminal by providing the appropriate flags, including `--postgresql-url`:
 
-```sh
+```shell
 ferretdb --postgresql-url="postgres://username:password@localhost/ferretdb"
 ```
 
@@ -221,19 +221,19 @@ Creating a `systemd` service file for FerretDB will allow the database be manage
 Please ensure to have a non-root user configured with `sudo` privileges.
 Incase you don't, let's create a new user `ferret` with `sudo` privileges:
 
-```sh
+```shell
 sudo adduser ferret
 ```
 
 Once it's created, add the user to the `sudo` group:
 
-```sh
+```shell
 sudo usermod -aG sudo ferret
 ```
 
 You can switch to the new user:
 
-```sh
+```shell
 su - ferret
 ```
 
@@ -241,7 +241,7 @@ su - ferret
 
 To create a `systemd` service file, open a new file in the `/etc/systemd/system` directory.
 
-```sh
+```shell
 sudo nano /etc/systemd/system/ferretdb.service
 ```
 
@@ -265,31 +265,31 @@ WantedBy=multi-user.target
 Of course, this is just a basic setup, you might want to include additional details or security measures, including setting up TLS connections, or other config settings.
 After creating the service file, reload the `systemd` configurations:
 
-```sh
+```shell
 sudo systemctl daemon-reload
 ```
 
 Then, enable the service so that it starts on boot:
 
-```bash
+```shell
 sudo systemctl enable ferretdb
 ```
 
 Start the service:
 
-```sh
+```shell
 sudo systemctl start ferretdb
 ```
 
 Check the status of your service to be sure it's running:
 
-```sh
+```shell
 sudo systemctl status ferretdb
 ```
 
 To check the logs for the FerretDB service, run this command:
 
-```sh
+```shell
 sudo journalctl -u ferretdb -f
 ```
 
@@ -300,7 +300,7 @@ Now that FerretDB is running, let's connect to it via `mongosh`.
 With FerretDB running, open another terminal and connect to FerretDB via `mongosh` using your connection URI.
 Use the same username and password credentials for the connection.
 
-```sh
+```shell
 mongosh "mongodb://username:password@localhost:27017/ferretdb?authMechanism=PLAIN"
 ```
 
@@ -389,7 +389,7 @@ You can run FerretDB with the SQLite backend by providing the `--handler="sqlite
 With FerretDB installed, run this command in your terminal to start FerretDB.
 You may need to create a folder named "data" before running the command if it doesn't exist already.
 
-```sh
+```shell
 ferretdb --handler="sqlite"
 ```
 

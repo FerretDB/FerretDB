@@ -19,13 +19,13 @@ FerretDB supports update operators, such as `$set` and `$setOnInsert` to update 
 Use the `updateOne()` method to update a single document in a collection.
 This operation filters a collection using a query parameter, and updates given fields within that document.
 
-```js
+```javascript
 db.collection.updateOne({<query-params>}, {$set: {<update fields>}})
 ```
 
 First, populate the database with a collection containing a list of documents.
 
-```js
+```javascript
 db.scientists.insertMany([
   {
     firstname: 'Thomas',
@@ -61,7 +61,7 @@ db.scientists.insertMany([
 Using the document record in the collection, update the document where `firstname` is "Graham", and set it as "Alexander Graham".
 The `updateOne()` operation will only affect the first document that's retrieved in the collection.
 
-```js
+```javascript
 db.scientists.updateOne(
   {
     firstname: 'Graham'
@@ -78,7 +78,7 @@ db.scientists.updateOne(
 
 Besides updating a document, you can replace it completely using the `replaceOne()` method.
 
-```js
+```javascript
 db.scientists.replaceOne(
   {
     lastname: 'Bell'
@@ -98,7 +98,7 @@ db.scientists.replaceOne(
 Using the `updateMany()` command, you can modify many documents at once.
 In the example below, where `nobel` is set as false, update and set to true.
 
-```js
+```javascript
 db.scientists.updateMany({ nobel: false }, { $set: { nobel: true } })
 ```
 
@@ -109,7 +109,7 @@ This operation updates all the documents where the field `nobel` was previously 
 The following update example uses the `employees` collection.
 To populate the collection, run the following in your terminal:
 
-```js
+```javascript
 db.employees.insertMany([
   {
     name: {
@@ -147,7 +147,7 @@ db.employees.insertMany([
 The following command will query and update the `catalog` array in the `employee` collection using dot notation.
 The command will query the second field of the array in every document for `"pencil"`, and when there is a match, updates the first element of the array.
 
-```js
+```javascript
 db.employees.updateMany(
   {
     'catalog.1': 'pencils'
@@ -162,7 +162,7 @@ db.employees.updateMany(
 
 The response from the command:
 
-```js
+```javascript
 {
   acknowledged: true,
   insertedId: null,
@@ -177,7 +177,7 @@ The response from the command:
 To update an embedded document, use dot notation to specify the fields to modify.
 The following operation updates any embedded document that matches the specified query in the `employees` collection.
 
-```js
+```javascript
 db.employees.updateMany(
   {
     'name.first': 'Clarke'
@@ -192,7 +192,7 @@ db.employees.updateMany(
 
 The following response from the command shows that a single document matching the query was updated:
 
-```js
+```javascript
 {
   acknowledged: true,
   insertedId: null,

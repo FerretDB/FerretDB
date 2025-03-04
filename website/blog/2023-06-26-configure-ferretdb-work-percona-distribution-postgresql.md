@@ -61,7 +61,7 @@ We'll be using the Debian package for both FerretDB and Percona Distribution for
 You also need to remove any preexisting installation of PostgreSQL to avoid conflicts.
 To remove PostgreSQL, use the following command:
 
-```sh
+```shell
 sudo apt-get --purge remove postgresql
 ```
 
@@ -75,19 +75,19 @@ We need to install the Debian packages for both software.
 
 Start by downloading the Debian package for Percona release packages.
 
-```sh
+```shell
 wget https://repo.percona.com/apt/percona-release_latest.$(lsb_release -sc)_all.deb
 ```
 
 Then you can go ahead to install the package using `dpkg`:
 
-```sh
+```shell
 sudo dpkg -i percona-release_latest.$(lsb_release -sc)_all.deb
 ```
 
 Once that's done, you should refresh your local cache:
 
-```sh
+```shell
 sudo apt update
 ```
 
@@ -95,7 +95,7 @@ See [here](https://docs.percona.com/postgresql/15/installing.html) for the insta
 
 The next step is to install the latest version of Percona Distribution for PostgreSQL from the repositories provided by Percona.
 
-```sh
+```shell
 sudo percona-release setup ppg-15
 sudo apt install percona-ppg-server-15
 ```
@@ -103,7 +103,7 @@ sudo apt install percona-ppg-server-15
 At this point, you should have the Percona Distribution for PostgreSQL running on your system.
 Run this command just to be sure:
 
-```sh
+```shell
 sudo systemctl status postgresql.service
 ```
 
@@ -113,13 +113,13 @@ Now let's download the Debian package for FerretDB.
 We are going to download the latest version which is FerretDB v1.4.0.
 You can find the [latest version on the releases here](https://github.com/FerretDB/FerretDB/releases):
 
-```sh
+```shell
 wget https://github.com/FerretDB/FerretDB/releases/download/v1.4.0/ferretdb.deb
 ```
 
 Once downloaded, install FerretDB using this command:
 
-```sh
+```shell
 sudo dpkg -i ferretdb.deb
 ```
 
@@ -133,7 +133,7 @@ And since we're already running Percona Distribution for PostgreSQL, we can just
 
 To connect to the Percona Distribution for PostgreSQL using appropriate FerretDB flags, run the command:
 
-```sh
+```shell
 ferretdb --handler=pg --postgresql-url=postgres://127.0.0.1:5432/ferretdb --listen-addr=127.0.0.1:27017
 ```
 
@@ -144,7 +144,7 @@ Note that FerretDB provides a list of flags for configuring your database – se
 
 From a new terminal, let's access the PostgreSQL command line:
 
-```sh
+```shell
 sudo su - postgres -c psql
 ```
 
@@ -184,7 +184,7 @@ mongodb://username:password@127.0.0.1/ferretdb?authMechanism=PLAIN
 After setting up the connection, navigate and switch the context to the `ferretdb` database.
 Using the Intellishell, let's insert some documents through the shell on Studio 3T.
 
-```js
+```javascript
 db.test.insertMany([
   {
     name: 'John Doe',

@@ -33,7 +33,7 @@ With this command, you can easily find the unique values of specific fields in y
 The `distinct` command takes three arguments: `distinct`, `key`, and `query`.
 See usage below:
 
-```js
+```javascript
 db.collection.distinct(
     <key>,
     {
@@ -45,7 +45,7 @@ db.collection.distinct(
 Even better, FerretDB now supports the `$rename` field update operator, enabling you to rename fields in a document without changing its contents.
 You can use the operator this way:
 
-```js
+```javascript
 db.collection.update(
     { },
     {

@@ -66,12 +66,12 @@ Next, create a `ferretdb` database with user and password credentials with permi
 
 Using psql:
 
-```sh
+```shell
 psql <ubicloud-postgres-connection-string>
 ```
 
-```psql
-CREATE USER ferretuser WITH PASSWORD <password>;
+```sql
+CREATE USER ferretuser WITH PASSWORD '<password>';
 CREATE DATABASE ferretdb OWNER ferretuser;
 GRANT ALL PRIVILEGES ON DATABASE ferretdb TO ferretuser;
 ```
@@ -93,14 +93,14 @@ postgres://ferretuser:<password>@<postgres-server-hostname>/ferretdb
 
 Run this command in your terminal to pull and run the FerretDB image.
 
-```sh
+```shell
 docker run -e FERRETDB_POSTGRESQL_URL=<ferretuser-connection-string> ghcr.io/ferretdb/ferretdb
 ```
 
 Once that's successful, proceed to connect with your FerretDB instance via `mongosh`.
 FerretDB currently supports PLAIN authentication so you'll need to provide that along with your MongoDB URI.
 
-```sh
+```shell
 mongosh 'mongodb://<ferretuser>:<ferretuser-password>@127.0.0.1:27017/ferretdb?authMechanism=PLAIN'
 ```
 
@@ -131,7 +131,7 @@ I've set up a Flask Python contact app with basic CRUD operations connected to o
 
 Start by creating a Flask app folder for our project:
 
-```sh
+```shell
 mkdir ContactApp
 cd ContactApp
 touch app.py
@@ -141,14 +141,14 @@ After setting up the structure, start coding the Flask application in `app.py`, 
 
 In the same terminal, run:
 
-```sh
+```shell
 mkdir templates
 touch templates/index.html templates/update.html
 ```
 
 In the index.html file, add this:
 
-```html
+```markup
 <!doctype html>
 <html lang="en">
   <head>
@@ -231,7 +231,7 @@ In the index.html file, add this:
 
 Add this to the update.html:
 
-```html
+```markup
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -263,7 +263,7 @@ Add this to the update.html:
 
 Add the following code to your app.py code:
 
-```py
+```python
 import os
 from flask import Flask, render_template, request, redirect, url_for
 from pymongo import MongoClient
@@ -327,13 +327,13 @@ Before running the app, set up the MongoDB connection string as an environment v
 
 Do that by running:
 
-```sh
+```shell
 export MONGO_URI=mongodb://<mongodb-URI>
 ```
 
 In the root directory of the Flask app where you have `app.py`, start the app using:
 
-```sh
+```shell
 python app.py
 ```
 
@@ -358,7 +358,7 @@ You can also try deleting a record in the contact list.
 We can view the current data state in Postgres by connecting via psql, or any other Postgres GUI tool you prefer.
 Using the Postgres connection string from Ubicloud, run:
 
-```sh
+```shell
 psql <postgres-connection-string>
 ```
 
@@ -366,13 +366,13 @@ This will connect us to the `ferretdb` database.
 
 Set the search_path to ferretdb:
 
-```psql
+```sql
 set search_path to ferretdb;
 ```
 
 We can explore the current state of the contact list in Ubicloud; FerretDB stores the data as JSONB in Postgres.
 
-```psql
+```text
 ferretdb=> \dt
                        List of relations
    Schema    |            Name             | Type  |   Owner

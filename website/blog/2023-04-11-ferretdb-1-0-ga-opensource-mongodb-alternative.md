@@ -42,7 +42,7 @@ This will enable you to specify the fields you want to index, and also the type 
 For instance, suppose you have a `users` collection containing several fields, including "age", "name", and "email", and you want to create an index on the "age" field.
 You can now run the following command:
 
-```js
+```javascript
 db.users.createIndex({ age: 1 })
 ```
 
@@ -51,7 +51,7 @@ This will create an ascending index on the "age" field, which will speed up any 
 We've also added the `dropIndexes` command, which allows you to remove an index from a collection.
 Here's an example:
 
-```js
+```javascript
 db.users.dropIndex({ age: 1 })
 ```
 
@@ -65,19 +65,19 @@ To help you gather more information about your collections, databases, and serve
 
 To retrieve statistics about a collection, use the `collStats` command like this:
 
-```js
+```javascript
 db.runCommand({ collStats: 'users' })
 ```
 
 If the statistics is about the database, run the command below:
 
-```js
+```javascript
 db.runCommand({ dbStats: 1 })
 ```
 
 For the total data size of a collection, run the following command:
 
-```js
+```javascript
 db.runCommand({ dataSize: '<database>.<collection>' })
 ```
 

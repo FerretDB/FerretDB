@@ -29,7 +29,7 @@ In this release, we've added `renameCollection` command, which would enable user
 
 Say you have an `inventory` collection below:
 
-```js
+```javascript
 {
   "_id": 1,
   name: "ABC Electronics",
@@ -47,7 +47,7 @@ Say you have an `inventory` collection below:
 
 You can access the `renameCollection` command through the `db.collection.renameCollection()` method within the same database in mongosh, as shown below for a current `inventory` collection.
 
-```js
+```javascript
 db.inventory.renameCollection('store')
 ```
 
@@ -57,7 +57,7 @@ In addition to the currently available aggregation pipeline stages, we now suppo
 
 You can include only specific fields from the output documents, such as `category` and `inventory` in a `$project` stage, as shown below.
 
-```js
+```javascript
 db.store.aggregate([
   {
     $project: {
@@ -70,7 +70,7 @@ db.store.aggregate([
 
 The output document looks like this:
 
-```js
+```javascript
 response = [
   {
     _id: 1,
@@ -87,7 +87,7 @@ In the new release, we have added support for field projections assignment.
 With this feature, users can now specify which fields to retrieve from the database and assign new values to them in a single query.
 For instance, if we have a `users` collection as shown below:
 
-```json
+```javascripton
 [
   {
     "_id": 1,
@@ -106,13 +106,13 @@ For instance, if we have a `users` collection as shown below:
 
 Suppose we want to retrieve the documents from the `users` collection but only include the name field while assigning a new value of 'Anonymous' to it.
 
-```js
+```javascript
 db.users.find({}, { name: 'Anonymous' })
 ```
 
 The query will return:
 
-```js
+```javascript
 response = [
   { _id: 1, name: 'Anonymous' },
   { _id: 2, name: 'Anonymous' }

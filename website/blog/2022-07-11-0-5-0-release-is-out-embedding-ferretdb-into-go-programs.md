@@ -20,7 +20,7 @@ Even the program that embeds FerretDB could connect to it if there is a need to 
 Let's see how the [ferretdb package](https://pkg.go.dev/github.com/FerretDB/FerretDB/ferretdb) could be used.
 First, we need to add a Go module to dependencies as usual:
 
-```sh
+```shell
 go get github.com/FerretDB/FerretDB/ferretdb@latest
 ```
 

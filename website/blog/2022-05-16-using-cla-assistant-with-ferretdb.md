@@ -54,7 +54,7 @@ Now we need to start CLA Assistant itself.
 They do not provide a prebuilt Docker image, but it is easy to build ourselves.
 Run the following commands to do that:
 
-```sh
+```shell
 git clone https://github.com/cla-assistant/cla-assistant.git
 cd cla-assistant
 git checkout v2.13.0

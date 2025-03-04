@@ -37,7 +37,7 @@ Ensure to have the following set up.
 To get the AppsCode license, you need the cluster ID.
 Run this command to get the cluster ID.
 
-```sh
+```shell
 kubectl get ns kube-system -o jsonpath='{.metadata.uid}'
 ```
 
@@ -45,7 +45,7 @@ kubectl get ns kube-system -o jsonpath='{.metadata.uid}'
 
 Use Helm to install KubeDB:
 
-```sh
+```shell
 helm install kubedb oci://ghcr.io/appscode-charts/kubedb \
  --version v2024.2.14 \
  --namespace kubedb --create-namespace \
@@ -75,7 +75,7 @@ Run `kubectl get crd -l app.kubernetes.io/name=kubedb` command to list them.
 
 Create a namespace for all the FerretDB components.
 
-```sh
+```shell
 kubectl create namespace ferretdemo
 ```
 
@@ -107,7 +107,7 @@ At the moment, KubeDB only supports version FerretDB v1.18.0.
 
 Save the config as `ferret.yaml` and apply it.
 
-```sh
+```shell
 kubectl apply -f ferret.yaml
 ```
 
@@ -160,7 +160,7 @@ ferret-pg-backend-standby   ClusterIP   10.108.28.132   <none>        5432/TCP  
 
 Next, forward the `ferret` Service to port `27017` on your local machine.
 
-```sh
+```shell
 kubectl port-forward -n ferretdemo svc/ferret 27017
 ```
 
@@ -171,13 +171,13 @@ KubeDB creates and stores the `ferret` Service credentials as a `Secret`.
 
 To get the details, run this command:
 
-```sh
+```shell
 kubectl get secret -n ferretdemo | grep ferret
 ```
 
 Using `ferret-pg-backend-auth`, get the user credentials.
 
-```sh
+```shell
 echo $(kubectl get secret -n ferretdemo ferret-pg-backend-auth -o jsonpath='{.data.username}' | base64 -d)
 echo $(kubectl get secret -n ferretdemo ferret-pg-backend-auth -o jsonpath='{.data.password}' | base64 -d)
 ```
@@ -188,7 +188,7 @@ This will print out the `username` and `password` credentials for the instance.
 
 Using the credentials, connect to FerretDB via mongosh using this format:
 
-```sh
+```shell
 mongosh mongodb://<username>:<password>@<host>:27017/ferretdb?authMechanism=PLAIN'
 ```
 
@@ -215,7 +215,7 @@ ferretdb>
 Let's run some commands in the database.
 Start by inserting a document record into a `weather` collection as shown below.
 
-```js
+```javascript
 db.weather.insertMany([
   {
     date: new Date('2024-04-22'),
@@ -237,7 +237,7 @@ db.weather.insertMany([
 
 Suppose you want to update the humidity level in New York where the wind speed was more than 10 km/h:
 
-```js
+```javascript
 db.weather.updateMany(
   { 'location.city': 'New York', 'weather.wind_speed': { $gt: 10 } },
   { $set: { 'weather.humidity': 85 } }
@@ -246,7 +246,7 @@ db.weather.updateMany(
 
 The output will be:
 
-```js
+```javascript
 {
   acknowledged: true,
   insertedId: null,
@@ -258,7 +258,7 @@ The output will be:
 
 The result of `db.weather.find()` will show the updated record:
 
-```js
+```javascript
 response = [
   {
     _id: ObjectId('66278976fba61a5fec8bad82'),
@@ -282,7 +282,7 @@ response = [
 FerretDB stores the data in the `ferret-pg-backend` PostgreSQL using mongosh.
 Let's exec into the Postgres database to view the record.
 
-```sh
+```shell
 % kubectl exec -it -n ferretdemo ferret-pg-backend-0 -- bash -c "psql -d ferretdb"
 ```
 
@@ -313,7 +313,7 @@ However, if you prefer an external PostgreSQL server as your backend, this is en
 
 The YAML configuration provided below outlines how to integrate FerretDB with a PostgreSQL instance managed externally.
 
-```js
+```javascript
 apiVersion: kubedb.com/v1alpha2
 kind: FerretDB
 metadata:

@@ -32,19 +32,19 @@ and [PostgreSQL authentication methods](https://www.postgresql.org/docs/current/
 
 Start `ferretdb` by specifying `--postgresql-url` with default username and password.
 
-```sh
+```shell
 ferretdb --postgresql-url=postgres://user1:pass1@localhost:5432/ferretdb
 ```
 
 An anonymous client is authenticated with default `user1` from `--postgresql-url`.
 
-```sh
+```shell
 mongosh 'mongodb://127.0.0.1/ferretdb'
 ```
 
 A client that specify username and password in MongoDB URI as below is authenticated as `user2`.
 
-```sh
+```shell
 mongosh 'mongodb://user2:pass2@127.0.0.1/ferretdb?authMechanism=PLAIN'
 ```
 
@@ -79,7 +79,7 @@ networks:
 
 To start `ferretdb`, use docker compose.
 
-```sh
+```shell
 docker compose up
 ```
 
@@ -87,14 +87,14 @@ An anonymous client is authenticated with `user1` from `FERRETDB_POSTGRESQL_URL`
 Use following command to run `mongosh` inside the temporary MongoDB container,
 attached to the same Docker network.
 
-```sh
+```shell
 docker run --rm -it --network=ferretdb --entrypoint=mongosh \
   mongo 'mongodb://ferretdb/ferretdb'
 ```
 
 A client that specify username and password in MongoDB URI as below is authenticated as `user2`.
 
-```sh
+```shell
 docker run --rm -it --network=ferretdb --entrypoint=mongosh \
   mongo 'mongodb://user2:pass2@ferretdb/ferretdb?authMechanism=PLAIN'
 ```
@@ -120,7 +120,7 @@ See [flags](../configuration/flags.md) for more information.
 
 For example:
 
-```sh
+```shell
 ferretdb --test-enable-new-auth=true
 ```
 
@@ -177,7 +177,7 @@ networks:
 You can then start the services with `docker compose up -d`.
 Once the services are up and running, you can connect to the FerretDB instance using the authencation credentials created during the setup.
 
-```sh
+```shell
 mongosh "mongodb://user:pass@ferretdb/ferretdb"
 ```
 

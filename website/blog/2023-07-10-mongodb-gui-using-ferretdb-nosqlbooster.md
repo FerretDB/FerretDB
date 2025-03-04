@@ -98,7 +98,7 @@ Click on the tab with the shell icon to open the MongoDB shell in NoSQLBooster.
 
 ![MongoDB shell](/img/blog/ferretdb-nosqlbooster/mongo-shell.png)
 
-```js
+```javascript
 db.orders.insertMany([
   {
     order_id: 1001,
@@ -179,7 +179,7 @@ Click "OK and Run" to execute the query.
 You can leverage the MongoDB shell in NoSQLBooster to run any command you want.
 In the next example, we're going to execute a command that'll return a document with a field named `total_orders` containing the number of documents in the `orders` collection.
 
-```js
+```javascript
 db.orders.aggregate([{ $count: 'total_orders' }])
 ```
 
@@ -188,7 +188,7 @@ db.orders.aggregate([{ $count: 'total_orders' }])
 Let's also perform some aggregation operations to calculate the total value of all items purchased by each customer.
 Run the following command to do this:
 
-```js
+```javascript
 db.orders.aggregate([
   { $unwind: '$items' },
   { $group: { _id: '$_id', total_value: { $sum: '$items.price' } } }
@@ -208,7 +208,7 @@ You can also monitor and analyze your FerretDB environment right from the NoSQLB
 
 For example, you can collect statistics for 'orders' collection using the following command.
 
-```js
+```javascript
 db.orders.stats()
 ```
 
