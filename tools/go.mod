@@ -2,7 +2,7 @@ module github.com/FerretDB/FerretDB/v2/tools
 
 go 1.24
 
-toolchain go1.24.0
+toolchain go1.24.1
 
 tool (
 	github.com/FerretDB/FerretDB/v2/tools/checkcomments
@@ -27,9 +27,9 @@ tool (
 
 require (
 	github.com/AlekSi/pointer v1.2.0
-	github.com/FerretDB/gh v0.1.6
-	github.com/google/go-github/v66 v66.0.0
-	github.com/rogpeppe/go-internal v1.13.1
+	github.com/FerretDB/gh v0.1.7
+	github.com/google/go-github/v69 v69.2.0
+	github.com/rogpeppe/go-internal v1.14.1
 	github.com/sethvargo/go-githubactions v1.3.0
 	github.com/stretchr/testify v1.10.0
 	golang.org/x/tools v0.30.0
