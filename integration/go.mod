@@ -12,10 +12,10 @@ require (
 	github.com/FerretDB/wire v0.0.18
 	github.com/FerretDB/xfail v0.1.0
 	github.com/google/uuid v1.6.0
-	github.com/prometheus/client_golang v1.21.0
+	github.com/prometheus/client_golang v1.21.1
 	github.com/stretchr/testify v1.10.0
 	github.com/xdg-go/scram v1.1.2
-	go.mongodb.org/mongo-driver v1.17.2
+	go.mongodb.org/mongo-driver v1.17.3
 	go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo v0.59.0
 	go.opentelemetry.io/otel v1.34.0
 )
