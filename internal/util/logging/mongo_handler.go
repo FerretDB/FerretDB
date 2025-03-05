@@ -60,9 +60,8 @@ type MongoLogRecord struct {
 	ID        int       `bson:"id,omitempty"`
 	Ctx       string    `bson:"ctx"`
 	Msg       string    `bson:"msg"`
-
-	Attr bson.D   `bson:"attr,omitempty"`
-	Tags []string `bson:"tags,omitempty"`
+	Attr      bson.D    `bson:"attr,omitempty"`
+	Tags      []string  `bson:"tags,omitempty"`
 }
 
 // Marshal returns the mongo structured JSON encoding of log.
