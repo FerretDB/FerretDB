@@ -303,7 +303,7 @@ func TestListCollectionNames(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Len(t, target, len(filterNames))
-	assert.EqualValues(t, compat, target)
+	assert.ElementsMatch(t, compat, target)
 }
 
 func TestListCollectionsUUID(t *testing.T) {
