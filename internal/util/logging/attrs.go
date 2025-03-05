@@ -19,7 +19,7 @@ import (
 	"maps"
 	"slices"
 
-	"github.com/FerretDB/wire/wirebson"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 // groupOrAttrs contains group name or attributes.
@@ -65,18 +65,18 @@ func (a attrsList) toMap(r slog.Record) map[string]any {
 	return m
 }
 
-func (a attrsList) toBSON(r slog.Record) *wirebson.Document {
-	docFields := map[string]any{}
+func (a attrsList) toBSON(r slog.Record) bson.D {
+	docFields := map[string]bson.E{}
 
 	r.Attrs(func(attr slog.Attr) bool {
 		if attr.Key != "" {
-			docFields[attr.Key] = resolveBSON(attr.Value)
+			docFields[attr.Key] = bson.E{attr.Key, resolveBSON(attr.Value)}
 			return true
 		}
 
 		if attr.Value.Kind() == slog.KindGroup {
 			for _, gAttr := range attr.Value.Group() {
-				docFields[gAttr.Key] = resolveBSON(gAttr.Value)
+				docFields[gAttr.Key] = bson.E{gAttr.Key, resolveBSON(gAttr.Value)}
 			}
 		}
 
@@ -85,24 +85,23 @@ func (a attrsList) toBSON(r slog.Record) *wirebson.Document {
 
 	for _, goa := range slices.Backward(a) {
 		if goa.group != "" && len(docFields) > 0 {
-			groupDoc := wirebson.MustDocument()
-
+			var groupDoc bson.D
 			for _, k := range slices.Sorted(maps.Keys(docFields)) {
-				groupDoc.Add(k, docFields[k])
+				groupDoc = append(groupDoc, docFields[k])
 			}
 
-			docFields = map[string]any{goa.group: groupDoc}
+			docFields = map[string]bson.E{goa.group: {goa.group, groupDoc}}
 			continue
 		}
 
 		for _, attr := range goa.attrs {
-			docFields[attr.Key] = resolveBSON(attr.Value)
+			docFields[attr.Key] = bson.E{attr.Key, resolveBSON(attr.Value)}
 		}
 	}
 
-	outDoc := wirebson.MustDocument()
+	var outDoc bson.D
 	for _, k := range slices.Sorted(maps.Keys(docFields)) {
-		outDoc.Add(k, docFields[k])
+		outDoc = append(outDoc, docFields[k])
 	}
 
 	return outDoc
@@ -136,15 +135,15 @@ func resolveBSON(v slog.Value) any {
 
 	g := v.Group()
 
-	d := wirebson.MustDocument()
-	elems := map[string]any{}
+	var d bson.D
+	elems := map[string]bson.E{}
 
 	for _, attr := range g {
-		elems[attr.Key] = resolveBSON(attr.Value)
+		elems[attr.Key] = bson.E{attr.Key, resolveBSON(attr.Value)}
 	}
 
 	for _, k := range slices.Sorted(maps.Keys(elems)) {
-		d.Add(k, elems[k])
+		d = append(d, elems[k])
 	}
 
 	return d
