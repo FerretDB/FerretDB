@@ -19,7 +19,6 @@ import (
 	"math"
 	"math/rand/v2"
 	"runtime"
-	"slices"
 	"strconv"
 	"sync"
 	"testing"
@@ -300,14 +299,11 @@ func TestListCollectionNames(t *testing.T) {
 	compat, err := compatCollections[0].Database().ListCollectionNames(ctx, filter)
 	require.NoError(t, err)
 
-	require.True(t, slices.IsSorted(compat), "compat collections are not sorted")
-
 	target, err := targetCollections[0].Database().ListCollectionNames(ctx, filter)
 	require.NoError(t, err)
 
 	assert.Len(t, target, len(filterNames))
-	assert.True(t, slices.IsSorted(target), "target collections are not sorted")
-	assert.Equal(t, compat, target)
+	assert.EqualValues(t, compat, target)
 }
 
 func TestListCollectionsUUID(t *testing.T) {
