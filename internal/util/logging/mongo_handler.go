@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package logging provides logging helpers.
+//
+//nolint:forbidigo // bson.D needs to be used, as *wirebson.Document is not decodable by bson.Marshaler
 package logging
 
 import (
@@ -57,8 +60,9 @@ type MongoLogRecord struct {
 	ID        int       `bson:"id,omitempty"`
 	Ctx       string    `bson:"ctx"`
 	Msg       string    `bson:"msg"`
-	Attr      bson.D    `bson:"attr,omitempty"`
-	Tags      []string  `bson:"tags,omitempty"`
+
+	Attr bson.D   `bson:"attr,omitempty"`
+	Tags []string `bson:"tags,omitempty"`
 }
 
 // Marshal returns the mongo structured JSON encoding of log.

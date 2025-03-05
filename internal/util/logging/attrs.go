@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package logging provides logging helpers.
+//
+//nolint:forbidigo // bson.D needs to be used, as *wirebson.Document is not decodable by bson.Marshaler
 package logging
 
 import (
@@ -32,6 +35,8 @@ type groupOrAttrs struct {
 // ordered from the top level group to the latest one.
 type attrsList []groupOrAttrs
 
+// toMap returns record attributes, as well as handler attributes from attrList in map.
+// Attributes with duplicate keys are overwritten.
 func (a attrsList) toMap(r slog.Record) map[string]any {
 	m := make(map[string]any, r.NumAttrs())
 
@@ -65,18 +70,20 @@ func (a attrsList) toMap(r slog.Record) map[string]any {
 	return m
 }
 
+// toBSON returns record attributes, as well as handler attributes from attrList in bson.D.
+// Attributes with duplicate keys are overwritten, and the elements are sorted by keys.
 func (a attrsList) toBSON(r slog.Record) bson.D {
 	docFields := map[string]bson.E{}
 
 	r.Attrs(func(attr slog.Attr) bool {
 		if attr.Key != "" {
-			docFields[attr.Key] = bson.E{attr.Key, resolveBSON(attr.Value)}
+			docFields[attr.Key] = bson.E{Key: attr.Key, Value: resolveBSON(attr.Value)}
 			return true
 		}
 
 		if attr.Value.Kind() == slog.KindGroup {
 			for _, gAttr := range attr.Value.Group() {
-				docFields[gAttr.Key] = bson.E{gAttr.Key, resolveBSON(gAttr.Value)}
+				docFields[gAttr.Key] = bson.E{Key: gAttr.Key, Value: resolveBSON(gAttr.Value)}
 			}
 		}
 
@@ -90,12 +97,13 @@ func (a attrsList) toBSON(r slog.Record) bson.D {
 				groupDoc = append(groupDoc, docFields[k])
 			}
 
-			docFields = map[string]bson.E{goa.group: {goa.group, groupDoc}}
+			docFields = map[string]bson.E{goa.group: {Key: goa.group, Value: groupDoc}}
+
 			continue
 		}
 
 		for _, attr := range goa.attrs {
-			docFields[attr.Key] = bson.E{attr.Key, resolveBSON(attr.Value)}
+			docFields[attr.Key] = bson.E{Key: attr.Key, Value: (attr.Value)}
 		}
 	}
 
@@ -139,7 +147,7 @@ func resolveBSON(v slog.Value) any {
 	elems := map[string]bson.E{}
 
 	for _, attr := range g {
-		elems[attr.Key] = bson.E{attr.Key, resolveBSON(attr.Value)}
+		elems[attr.Key] = bson.E{Key: attr.Key, Value: resolveBSON(attr.Value)}
 	}
 
 	for _, k := range slices.Sorted(maps.Keys(elems)) {
