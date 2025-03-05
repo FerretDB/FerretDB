@@ -4,5 +4,4 @@ position: 5
 link:
   type: generated-index
   description: >
-    The complete list of operators, including query operators, update operators,
-    aggregation operators, etc.
+    Documentation for some of query operators, update operators, aggregation operators, etc.
