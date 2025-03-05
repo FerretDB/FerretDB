@@ -21,7 +21,7 @@ fully open-source alternative to MongoDB, ready for production workloads.
 
 This release is a result of a year-long collaboration with our friends at Microsoft.
 We worked together to combine the engine of
-[Azure CosmosDB for MongoDB (vCore)](https://learn.microsoft.com/en-us/azure/cosmos-db/mongodb/vcore/)
+[Azure Cosmos DB for MongoDB (vCore)](https://learn.microsoft.com/en-us/azure/cosmos-db/mongodb/vcore/)
 and FerretDB, releasing both under a fully open-source license.
 
 Version 2.0 introduces transformative improvements in performance, compatibility, scalability, and flexibility.
@@ -42,7 +42,7 @@ Unlike SSPL-licensed MongoDB, it can also be provided as a service without limit
 FerretDB 2.x utilizes Microsoft's newly released open-source DocumentDB PostgreSQL extension,
 which significantly increases database performance.
 Azure Cosmos DB for MongoDB (vCore) is built on the same extension,
-enabling FerretDB and CosmosDB users to move their workloads seamlessly between the two.
+enabling FerretDB and Cosmos DB users to move their workloads seamlessly between the two.
 
 Among other improvements, DocumentDB introduces the BSON data type and operations to PostgreSQL,
 giving us the tools to store and query data much more efficiently than before.
