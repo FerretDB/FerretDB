@@ -103,7 +103,7 @@ func (a attrsList) toBSON(r slog.Record) bson.D {
 		}
 
 		for _, attr := range goa.attrs {
-			docFields[attr.Key] = bson.E{Key: attr.Key, Value: (attr.Value)}
+			docFields[attr.Key] = bson.E{Key: attr.Key, Value: resolveBSON(attr.Value)}
 		}
 	}
 
