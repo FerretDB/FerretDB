@@ -287,7 +287,8 @@ If you have `mongosh` installed, connect to FerretDB using the MongoDB URI `mong
 Otherwise, run the following command to connect to FerretDB using `mongosh` inside a temporary MongoDB container:
 
 ```sh
-docker run --rm -it --network="host" mongo mongosh "mongodb://user:password@localhost:27017/"
+docker run --rm -it --network=host mongo \
+  mongosh mongodb://user:password@localhost:27017/
 ```
 
 Add the following document in FerretDB to test if data written to the primary also appears in the replica.
@@ -313,7 +314,8 @@ docker compose up -d ferretdb_readonly
 Connect to the container via `mongosh` and verify that the data written to the primary is also available in the replica.
 
 ```sh
-docker run --rm -it --network="host" mongo mongosh "mongodb://user:password@localhost:27018/" --eval "db.record.find()"
+docker run --rm -it --network=host mongo \
+  mongosh mongodb://user:password@localhost:27018/ --eval "db.record.find()"
 ```
 
 The output should show the document you inserted in the primary.

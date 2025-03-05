@@ -2,7 +2,7 @@ module github.com/FerretDB/FerretDB/v2
 
 go 1.24
 
-toolchain go1.24.0
+toolchain go1.24.1
 
 require (
 	github.com/AlekSi/pointer v1.2.0
@@ -14,19 +14,19 @@ require (
 	github.com/jackc/pgx/v5 v5.7.2
 	github.com/oapi-codegen/runtime v1.1.1
 	github.com/pmezard/go-difflib v1.0.0
-	github.com/prometheus/client_golang v1.21.0
+	github.com/prometheus/client_golang v1.21.1
 	github.com/prometheus/client_model v0.6.1
 	github.com/prometheus/common v0.62.0
 	github.com/stretchr/testify v1.10.0
 	github.com/xdg-go/scram v1.1.2
-	go.mongodb.org/mongo-driver v1.17.2
-	go.mongodb.org/mongo-driver/v2 v2.0.1
+	go.mongodb.org/mongo-driver v1.17.3
+	go.mongodb.org/mongo-driver/v2 v2.1.0
 	go.opentelemetry.io/otel v1.34.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.34.0
 	go.opentelemetry.io/otel/sdk v1.34.0
 	go.opentelemetry.io/otel/trace v1.34.0
 	go.uber.org/automaxprocs v1.6.0
-	golang.org/x/crypto/x509roots/fallback v0.0.0-20250214233241-911360c8a4f4
+	golang.org/x/crypto/x509roots/fallback v0.0.0-20250303191637-24852b6b3fe8
 	golang.org/x/sys v0.30.0
 )
 
