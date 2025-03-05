@@ -94,7 +94,7 @@ and leading database companies like Yugabyte and Percona.
 ## What's Next
 
 FerretDB 2.1 is scheduled to be released in the second half of March,
-bringing more performance improvements for queries and aggregation pipelines that use index.
+bringing more performance improvements for queries and aggregation pipelines that use indexes.
 We also plan to improve observability, making diagnosing and understanding compatibility
 and performance problems easier.
 Over the following several versions, we plan to work on better session support and transactions.
