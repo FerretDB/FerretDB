@@ -29,6 +29,7 @@ import (
 )
 
 // collectionNameRe validates collection names.
+// TODO https://github.com/FerretDB/FerretDB/issues/4879
 var collectionNameRe = regexp.MustCompile("^[^\\.$\x00][^$\x00]{0,234}$")
 
 // MsgCreate implements `create` command.
