@@ -2,7 +2,7 @@
 sidebar_position: 2
 ---
 
-# Migration from MongoDB
+# Migrating from MongoDB
 
 Before reading this section, go through the pre-migration process so as to ensure a successful migration:
 
