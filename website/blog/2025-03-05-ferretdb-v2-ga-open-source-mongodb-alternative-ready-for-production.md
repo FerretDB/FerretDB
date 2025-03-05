@@ -72,7 +72,7 @@ Run it on-premises, in any cloud, or across hybrid environments, all while avoid
 
 To support large-scale deployments, we now offer enterprise-grade subscriptions and consulting services,
 including dedicated support, performance tuning, and migration assistance.
-Whether modernizing legacy systems or optimizing new projects, our team ensures a seamless experience.
+If you are modernizing legacy systems or optimizing new projects, our team ensures a seamless experience.
 
 Additionally, we're excited to introduce [FerretDB Cloud](https://cloud.ferretdb.com/),
 a fully managed database-as-a-service offering.
@@ -89,7 +89,7 @@ in the document database field: two powerful MongoDB alternatives join forces to
 and feature set for developers.
 We believe that this is just the first step.
 Visit [OpenDocDB.org](https://opendocdb.org) for more info about the initiative backed by FerretDB
-and leading database companies like Yugabyte and Percona.
+and leading database companies like [Yugabyte](https://www.yugabyte.com) and [Percona](https://www.percona.com).
 
 ## What's Next
 
