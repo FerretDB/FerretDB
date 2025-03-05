@@ -4,10 +4,14 @@ sidebar_position: 11
 
 # Known differences
 
-1. FerretDB uses the same protocol error names and codes, but the exact error messages may be different in some cases.
-2. Collection name must be valid UTF-8.
+We don't plan to address those known differences in behavior:
 
-If you encounter some other difference in behavior, please [join our community](/#community) to report a problem.
+1. FerretDB uses the same protocol error names and codes as MongoDB,
+   but the exact error messages may sometimes be different.
+2. FerretDB collection names must be valid UTF-8; MongoDB allows invalid UTF-8 sequences.
+
+We consider all other differences in behavior to be problems and want to address them.
+Please [join our community](/#community) to report them.
 
 <!--
    Each numbered point should have a corresponding, numbered test file https://github.com/FerretDB/FerretDB/tree/main/integration/diff_*_test.go

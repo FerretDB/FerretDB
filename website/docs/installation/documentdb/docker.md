@@ -54,7 +54,8 @@ See [Set up PostgreSQL connection](../../security/authentication.md#set-up-postg
    If you don't have `psql`, you can run the following command to run it inside the temporary PostgreSQL container:
 
    ```sh
-   docker run --rm -it ghcr.io/ferretdb/postgres-documentdb:17-0.102.0-ferretdb-2.0.0-rc.5 psql 'postgres://<username>:<password>@localhost:5432/postgres'
+   docker run --rm -it ghcr.io/ferretdb/postgres-documentdb:17-0.102.0-ferretdb-2.0.0-rc.5 \
+     psql postgres://<username>:<password>@localhost:5432/postgres
    ```
 
 3. See [FerretDB Docker installation](../ferretdb/docker.md) for more details on connecting to FerretDB.
