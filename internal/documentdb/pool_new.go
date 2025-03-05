@@ -80,7 +80,7 @@ func newPgxPool(uri string, l *slog.Logger, sp *state.Provider) (*pgxpool.Pool, 
 	return p, nil
 }
 
-// newPgxPoolSetDefaults sets default PostgreSQL URI parameters.
+// newPgxPoolSetDefaults sets default PostgreSQL URL parameters.
 //
 // Keep it in sync with docs.
 func newPgxPoolSetDefaults(values url.Values) {
@@ -129,7 +129,7 @@ func newPgxPoolCheckConn(ctx context.Context, conn *pgx.Conn, l *slog.Logger, sp
 
 		if s.DocumentDBVersion != "" && s.DocumentDBVersion != version.DocumentDB {
 			l.WarnContext(
-				ctx, "newPgxPoolCheckConn: unexpected DocumentDB version",
+				ctx, "Unexpected DocumentDB version; see "+version.DocumentDBURL,
 				slog.String("expected", version.DocumentDB), slog.String("actual", s.DocumentDBVersion),
 			)
 		}

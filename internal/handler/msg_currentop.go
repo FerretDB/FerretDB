@@ -16,13 +16,13 @@ package handler
 
 import (
 	"context"
-	"time"
 
 	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
+	"github.com/jackc/pgx/v5"
 
+	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // MsgCurrentOp implements `currentOp` command.
@@ -30,7 +30,6 @@ import (
 // The passed context is canceled when the client connection is closed.
 //
 // TODO https://github.com/FerretDB/FerretDB/issues/3974
-// TODO https://github.com/microsoft/documentdb/issues/59
 func (h *Handler) MsgCurrentOp(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	spec, err := msg.RawDocument()
 	if err != nil {
@@ -41,39 +40,15 @@ func (h *Handler) MsgCurrentOp(connCtx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
-	ops := h.operations.Operations()
-	inProgress := wirebson.MakeArray(len(ops))
+	var res wirebson.RawDocument
 
-	for _, op := range ops {
-		since := time.Since(op.CurrentOpTime)
-
-		var ns string
-		if op.DB != "" && op.Collection != "" {
-			ns = op.DB + "." + op.Collection
-		}
-
-		opCommand := op.Command
-		if opCommand == nil {
-			opCommand = must.NotFail(wirebson.NewDocument())
-		}
-
-		doc := wirebson.MustDocument(
-			"type", "op",
-			"active", op.Active,
-			"currentOpTime", time.Now().Format(time.RFC3339),
-			"opid", op.OpID,
-			"secs_running", int64(since.Truncate(time.Second).Seconds()),
-			"microsecs_running", since.Microseconds(),
-			"op", op.Op,
-			"ns", ns,
-			"command", opCommand,
-		)
-
-		must.NoError(inProgress.Add(doc))
+	err = h.Pool.WithConn(func(conn *pgx.Conn) error {
+		res, err = documentdb_api.CurrentOpCommand(connCtx, conn, h.L, spec)
+		return err
+	})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
-	return wire.MustOpMsg(
-		"inprog", inProgress,
-		"ok", float64(1),
-	), nil
+	return wire.NewOpMsg(res)
 }

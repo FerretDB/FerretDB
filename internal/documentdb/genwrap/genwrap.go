@@ -46,7 +46,7 @@ func main() {
 	ctx := context.Background()
 
 	if *schemasF == "" {
-		l.Log(ctx, logging.LevelFatal, "-schemas flag is empty.")
+		l.Log(ctx, logging.LevelFatal, "-schemas flag is empty")
 	}
 
 	// DOCUMENTDB_GEN_URL=postgres://username:password@127.0.0.1:5432/postgres

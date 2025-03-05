@@ -149,7 +149,7 @@ func (h *Handler) MsgRenameCollection(connCtx context.Context, msg *wire.OpMsg) 
 		"ok", float64(1),
 	))
 
-	return wire.NewOpMsg(must.NotFail(res.Encode()))
+	return wire.NewOpMsg(res)
 }
 
 // splitNamespace returns the database and collection name from a given namespace in format "database.collection".

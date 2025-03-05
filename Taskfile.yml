@@ -260,7 +260,7 @@ tasks:
         --mode={{.MODE}}
         --no-auth
         --listen-addr=:27017
-        --listen-data-api-addr=:8899
+        --listen-data-api-addr=127.0.0.1:8899
         --proxy-addr=127.0.0.1:37017
         --postgresql-url='postgres://username:password@127.0.0.1:5432/postgres'
         --otel-traces-url=http://127.0.0.1:4318/v1/traces
@@ -274,7 +274,7 @@ tasks:
         bin/ferretdb{{exeExt}}
         --mode={{.MODE}}
         --listen-addr=:27017
-        --listen-data-api-addr=:8899
+        --listen-data-api-addr=127.0.0.1:8899
         --proxy-addr=127.0.0.1:47017
         --postgresql-url='postgres://username:password@127.0.0.1:5432/postgres'
         --otel-traces-url=http://127.0.0.1:4318/v1/traces
@@ -289,7 +289,7 @@ tasks:
       - bin/envtool{{exeExt}} shell mkdir tmp/githubcache
       - bin/golangci-lint{{exeExt}} run --config=.golangci.yml
       - bin/golangci-lint{{exeExt}} run --config=.golangci-new.yml
-      - bin/go-consistent{{exeExt}} -pedantic ./cmd/... ./internal/... ./build/...
+      - bin/go-consistent{{exeExt}} -pedantic ./cmd/... ./ferretdb/... ./internal/...
       - go vet -vettool=bin/checkswitch{{exeExt}} ./...
       - go vet -vettool=bin/checkcomments{{exeExt}} ./...
 
@@ -506,41 +506,6 @@ tasks:
           FILE: ferretdb/production
           TARGET: production
           PLATFORM: linux/amd64,linux/arm64
-          OUTPUT: type=image,push=true
-    requires:
-      vars: [DOCKER_IMAGES]
-
-  docker-documentdb:
-    desc: "Build `documentdb-local` Docker image"
-    cmds:
-      - task: docker-build
-        vars:
-          FILE: postgres-documentdb/{{.FILE}}
-          TARGET: "{{.FILE}}"
-          PLATFORM: linux/amd64
-          DOCKER_IMAGES: documentdb-local
-          OUTPUT: type=docker
-    requires:
-      vars: [FILE]
-
-  docker-documentdb-development-push:
-    cmds:
-      - task: docker-build
-        vars:
-          FILE: postgres-documentdb/development
-          TARGET: development
-          PLATFORM: linux/amd64
-          OUTPUT: type=image,push=true
-    requires:
-      vars: [DOCKER_IMAGES]
-
-  docker-documentdb-production-push:
-    cmds:
-      - task: docker-build
-        vars:
-          FILE: postgres-documentdb/production
-          TARGET: production
-          PLATFORM: linux/amd64
           OUTPUT: type=image,push=true
     requires:
       vars: [DOCKER_IMAGES]

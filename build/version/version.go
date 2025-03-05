@@ -32,6 +32,7 @@
 // # Development builds
 //
 // Development builds of FerretDB behave differently in a few aspects:
+//   - they are significantly slower;
 //   - some values that are normally randomized are fixed or less randomized to make debugging easier;
 //   - some internal errors cause crashes instead of being handled more gracefully;
 //   - stack traces are collected more liberally;
@@ -86,6 +87,9 @@ var info *Info
 const unknown = "unknown"
 
 // Get returns current build's info.
+//
+// It returns a shared instance without any synchronization.
+// If caller needs to modify the instance, it should make sure there is no concurrent accesses.
 func Get() *Info {
 	return info
 }
