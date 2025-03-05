@@ -4,24 +4,23 @@ sidebar_position: 2
 
 # Migrating from MongoDB
 
-Before you begin this section of the migration process, go through the pre-migration process so as to ensure a successful migration from MongoDB to FerretDB:
+Before reading this section, go through the [pre-migration process](premigration-testing.md)
+to ensure a successful migration.
 
-- [Pre-migration testing](premigration-testing.md)
-
-This guide will help you migrate your data from MongoDB – locally or online – to FerretDB.
+This guide will help you migrate your data from MongoDB or another compatible system to FerretDB.
 
 As an open-source MongoDB alternative, FerretDB is built to work with many MongoDB tools.
 In that case, you can migrate your data using MongoDB native tools such as `mongodump`/`mongorestore` and `mongoexport`/`mongoimport`.
 
 Before you go forward with the migration, you need to have the following:
 
-- MongoDB connection URI
+- Existing connection URI
 - FerretDB connection URI
 - MongoDB native tools
 
-## Backup your MongoDB data
+## Export your data
 
-To backup your MongoDB instance using `mongodump` or `mongoexport`, you'll need to set the connection string to your MongoDB instance (e.g. `"mongodb://127.0.0.1:27017/"`) to run the following command:
+To export your existing instance using `mongodump` or `mongoexport`, you'll need the connection string to your instance (e.g. `"mongodb://127.0.0.1:27017/"`) to run the following command:
 
 ```sh
 mongodump --uri="mongodb://<yourusername>:<yourpassword>@<host>:<port>/"
@@ -42,7 +41,7 @@ On the other hand, `mongoexport` does not provide a direct way to export all the
 
 Instead, you need to set the connection string to connect with your preferred database and then run the command together with the parameters for the collection (`--collection=myCollection`) and the directory you want to export to (e.g. `--out=collection-name.json`).
 
-## Restore your data to FerretDB
+## Import your data to FerretDB
 
 To restore or import your backed-up data to FerretDB, set the connection string to your FerretDB instance and use `mongorestore` and `mongoimport`.
 
@@ -61,4 +60,4 @@ To import your database using `mongoimport`, run the command from the terminal d
 mongoimport --uri="mongodb://<yourusername>:<yourpassword>@<host>:<port>/" --db=<database-name> --collection=<collection-name> --file=<collection>.json
 ```
 
-The command will import the specified collection you exported from your MongoDB instance to FerretDB.
+The command will import the specified collection you exported from your existing instance to FerretDB.
