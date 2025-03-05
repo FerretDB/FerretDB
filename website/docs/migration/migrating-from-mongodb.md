@@ -4,11 +4,10 @@ sidebar_position: 2
 
 # Migrating from MongoDB
 
-Before reading this section, go through the pre-migration process so as to ensure a successful migration:
+Before reading this section, go through the [pre-migration process](premigration-testing.md)
+to ensure a successful migration.
 
-- [Pre-migration testing](premigration-testing.md)
-
-This guide will help you migrate your data from MongoDB – locally or online – to FerretDB.
+This guide will help you migrate your data from MongoDB or another compatible system to FerretDB.
 
 As an open-source MongoDB alternative, FerretDB is built to work with many MongoDB tools.
 In that case, you can migrate your data using MongoDB native tools such as `mongodump`/`mongorestore` and `mongoexport`/`mongoimport`.
@@ -19,7 +18,7 @@ Before you go forward with the migration, you need to have the following:
 - FerretDB connection URI
 - MongoDB native tools
 
-## Export your MongoDB data
+## Export your data
 
 To export your existing instance using `mongodump` or `mongoexport`, you'll need the connection string to your instance (e.g. `"mongodb://127.0.0.1:27017/"`) to run the following command:
 

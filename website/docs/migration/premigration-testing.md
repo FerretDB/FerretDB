@@ -4,7 +4,8 @@ sidebar_position: 1
 
 # Pre-migration testing
 
-To ensure a smooth and successful migration from MongoDB, we offer several methods through which you can test your application with FerretDB.
+To ensure a smooth and successful migration from MongoDB,
+we offer several methods through which you can test your application with FerretDB.
 
 ## Operation modes
 
@@ -83,11 +84,11 @@ Continuing with the same example above, we can further examine the diff output w
    ```text
    // the operation was handled by MongoDB, so the following response was returned:
    {
-   size: Long('424'),
-   numObjects: Long('4'),
-   millis: Long('1'),
-   estimate: false,
-   ok: 1
+     size: Long('424'),
+     numObjects: Long('4'),
+     millis: Long('1'),
+     estimate: false,
+     ok: 1
    }
    ```
 
