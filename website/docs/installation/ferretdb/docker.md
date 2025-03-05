@@ -103,7 +103,8 @@ Find out more about:
 
 The development image
 [`ghcr.io/ferretdb/ferretdb-dev:2`](https://ghcr.io/ferretdb/ferretdb-dev:2)
-contains the [development build](https://pkg.go.dev/github.com/FerretDB/FerretDB/v2/build/version#hdr-Development_builds)
-is recommended for debugging problems.
+contains the
+[development build](https://pkg.go.dev/github.com/FerretDB/FerretDB/v2/build/version#hdr-Development_builds)
+of FerretDB, and is recommended for debugging problems.
 It includes additional debugging features that make it significantly slower.
 For this reason, it is not recommended for production use.
