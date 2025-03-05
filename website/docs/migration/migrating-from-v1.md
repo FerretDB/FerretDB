@@ -15,7 +15,7 @@ These are the major differences between FerretDB v1.x and v2.x:
    Find the [installation guide for PostgreSQL with DocumentDB extension here](../installation/documentdb/docker.md).
 
 2. **`PLAIN` authentication is no longer supported** in FerretDB v2.x.
-   FerrretDB v2.x uses `SCRAM-SHA-256` for authentication.
+   FerretDB v2.x uses `SCRAM-SHA-256` for authentication.
    So if your connection string in v1.x looks like
    `mongodb://username:password@localhost:27017/ferretdb?authMechanism=PLAIN`,
    use `mongodb://username:password@localhost:27017/` with 2.x.
