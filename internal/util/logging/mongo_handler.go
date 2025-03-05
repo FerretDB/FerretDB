@@ -162,7 +162,12 @@ func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
 		}
 
 		if len(record.Attr) > 0 {
-			maps.Copy(h.testAttrs, record.Attr.Map())
+			var attrs map[string]any
+
+			b := must.NotFail(bson.Marshal(record.Attr))
+			must.NoError(bson.Unmarshal(b, &attrs))
+
+			maps.Copy(h.testAttrs, attrs)
 		}
 	}
 
