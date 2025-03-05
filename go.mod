@@ -14,13 +14,13 @@ require (
 	github.com/jackc/pgx/v5 v5.7.2
 	github.com/oapi-codegen/runtime v1.1.1
 	github.com/pmezard/go-difflib v1.0.0
-	github.com/prometheus/client_golang v1.21.0
+	github.com/prometheus/client_golang v1.21.1
 	github.com/prometheus/client_model v0.6.1
 	github.com/prometheus/common v0.62.0
 	github.com/stretchr/testify v1.10.0
 	github.com/xdg-go/scram v1.1.2
-	go.mongodb.org/mongo-driver v1.17.2
-	go.mongodb.org/mongo-driver/v2 v2.0.1
+	go.mongodb.org/mongo-driver v1.17.3
+	go.mongodb.org/mongo-driver/v2 v2.1.0
 	go.opentelemetry.io/otel v1.34.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.34.0
 	go.opentelemetry.io/otel/sdk v1.34.0
