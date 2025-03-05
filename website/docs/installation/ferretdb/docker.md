@@ -20,14 +20,14 @@ that behaves like a [readiness probe](../../configuration/observability.md#probe
 ## Production image
 
 Our production image
-[`ghcr.io/ferretdb/ferretdb:2.0.0-rc.5`](https://ghcr.io/ferretdb/ferretdb:2.0.0-rc.5)
+[`ghcr.io/ferretdb/ferretdb:2.0.0`](https://ghcr.io/ferretdb/ferretdb:2.0.0)
 is recommended for most deployments.
 It does not include a PostgreSQL image with DocumentDB extension, so you must run this [pre-packaged PostgreSQL image with DocumentDB extension](../documentdb/docker.md) separately.
 
 You can do that with Docker Compose, Kubernetes, or any other means.
 
 :::tip
-We strongly recommend specifying the full image tag (e.g., `2.0.0-rc.5`)
+We strongly recommend specifying the full image tag (e.g., `2.0.0`)
 to ensure consistency across deployments.
 Ensure to [enable telemetry](../../telemetry.md) to receive notifications on the latest versions.
 
@@ -45,7 +45,7 @@ The following steps describe a quick local setup:
    ```yaml
    services:
      postgres:
-       image: ghcr.io/ferretdb/postgres-documentdb:17-0.102.0-ferretdb-2.0.0-rc.5
+       image: ghcr.io/ferretdb/postgres-documentdb:17-0.102.0-ferretdb-2.0.0
        platform: linux/amd64
        restart: on-failure
        environment:
@@ -56,7 +56,7 @@ The following steps describe a quick local setup:
          - ./data:/var/lib/postgresql/data
 
      ferretdb:
-       image: ghcr.io/ferretdb/ferretdb:2.0.0-rc.5
+       image: ghcr.io/ferretdb/ferretdb:2.0.0
        restart: on-failure
        ports:
          - 27017:27017

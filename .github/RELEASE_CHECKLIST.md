@@ -4,10 +4,10 @@
 
 1. [Release DocumentDB](https://github.com/FerretDB/documentdb/blob/ferretdb/.github/RELEASE_CHECKLIST.md).
 2. Update constants in [`documentdb.go`](../build/version/documentdb.go).
-3. Update DocumentDB image tags in:
+3. Update DocumentDB image tags to point to release in:
    - [evaluation image](../build/ferretdb/evaluation.Dockerfile);
    - [local image](../build/deps/postgres-documentdb.Dockerfile).
-4. Update DocumentDB images tags in documentation (where we specify full tags).
+4. Check DocumentDB images tags in documentation (where we specify full tags).
 5. Re-run tests, linters.
 6. Check issues and pull requests, update milestones and labels.
 7. Check if there are breaking changes or anything that should be reflected in the changelog and/or user documentation.
@@ -60,3 +60,6 @@
 1. Publish and announce blog post.
 2. Add link to blog post to `CHANGELOG.md` and release page.
 3. Bump the latest version on https://beacon.ferretdb.com and https://beacon.ferretdb.io.
+4. Update DocumentDB image tags to point back to development version.
+5. Update DocumentDB images tags in the current documentation (where we specify full tags)
+   to point to the next (non-existing) version.
