@@ -1,11 +1,11 @@
 ---
-sidebar_position: 3
+sidebar_position: 4
 ---
+
+# Full text search
 
 import CodeBlock from '@theme/CodeBlock';
 import MyDataSet from '!!raw-loader!./requests/1-insert-vector.js';
-
-# Full text search
 
 Full-text search is a technique for searching words or phrases across a large set of textual data.
 Unlike traditional queries that require exact matches, full-text search breaks down text into tokens,
@@ -33,12 +33,13 @@ FerretDB supports full-text index creation using the `text` operator.
 
 A full text search index creation takes the following parameters:
 
-| Field            | Description                                                                                | Required? |
-| ---------------- | ------------------------------------------------------------------------------------------ | --------- |
-| key              | Defines which field(s) to index and set to `'text'`.                                       | Yes       |
-| name             | A custom name for the index, useful for reference.                                         | No        |
-| weights          | Assigns weighting to fields (higher values mean more relevance in search). Default is `1`. | No        |
-| default_language | Specifies the language used for stemming (default: "english").                             | No        |
+| Field            | Description                                                                                |
+| ---------------- | ------------------------------------------------------------------------------------------ |
+| name             | A custom name for the index, useful for reference.                                         |
+| weights          | Assigns weighting to fields (higher values mean more relevance in search). Default is `1`. |
+| default_language | Specifies the language used for stemming (default: "english").                             |
+
+<!-- markdownlint-disable MD033 -->
 
 ## Single full text index
 
@@ -161,7 +162,7 @@ db.runCommand({
 
 Output:
 
-```
+```js
 {
   cursor: {
     id: Long('0'),
@@ -171,3 +172,5 @@ Output:
   ok: 1
 }
 ```
+
+<!-- markdownlint-enable MD033 -->
