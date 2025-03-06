@@ -100,12 +100,16 @@ func checkDocFiles(client *github.Client, files []string) error {
 	return nil
 }
 
-// getMarkdownFiles returns all markdown files in the given directory and 2 levels of subdirectories.
+// getMarkdownFiles returns markdown files in the given directory and 2 levels of subdirectories.
 func getMarkdownFiles(path string) ([]string, error) {
+	// https://github.com/golang/go/issues/11862
 	paths := []string{
 		filepath.Join(path, "*.md"),
+		filepath.Join(path, "*.mdx"),
 		filepath.Join(path, "*", "*.md"),
+		filepath.Join(path, "*", "*.mdx"),
 		filepath.Join(path, "*", "*", "*.md"),
+		filepath.Join(path, "*", "*", "*.mdx"),
 	}
 
 	var markdownFiles []string
