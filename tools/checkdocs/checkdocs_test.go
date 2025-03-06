@@ -148,7 +148,7 @@ func TestCheckSupportedCommands(t *testing.T) {
 
 			var failed bool
 
-			failed, err = checkIssueURLs(client, r, l)
+			failed, err = checkIssueURLs(client, r, "filename", l)
 			require.NoError(t, err)
 			assert.Equal(t, tc.ExpectedOutput != "", failed)
 
