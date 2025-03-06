@@ -16,6 +16,7 @@ package integration
 
 import (
 	"math/rand/v2"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -56,6 +57,13 @@ func TestListCollectionsCompat(t *testing.T) {
 	var compatRes []bson.D
 	err = compat.All(ctx, &compatRes)
 	require.NoError(t, err)
+
+	compatNames := make([]string, len(compatRes))
+	for i, doc := range compatRes {
+		compatNames[i] = doc.Map()["name"].(string)
+	}
+
+	require.True(t, slices.IsSorted(compatNames), "compat collections are not sorted")
 
 	target, err := targetCollections[0].Database().ListCollections(ctx, filter)
 	require.NoError(t, err)
@@ -107,5 +115,5 @@ func TestListCollectionsCompat(t *testing.T) {
 		return resComparable
 	}
 
-	assert.ElementsMatch(t, comparable(compatRes), comparable(targetRes))
+	AssertEqualDocumentsSlice(t, comparable(compatRes), comparable(targetRes))
 }
