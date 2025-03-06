@@ -116,12 +116,12 @@ func TestCheckSupportedCommands(t *testing.T) {
 		ExpectedOutput string
 	}{
 		"OpenIssueLink": {
-			Payload:        "|                 | `openIssueLink`          | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/178) |", //nolint:lll // for readability
+			Payload:        "<!-- TODO https://github.com/FerretDB/FerretDB/issues/178 -->",
 			ExpectedOutput: "",
 		},
 
 		"ClosedIssueLink": {
-			Payload:        "|                 | `closedIssueLink`          | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1) |", //nolint:lll // for readability
+			Payload:        "<!-- TODO https://github.com/FerretDB/FerretDB/issues/1 -->",
 			ExpectedOutput: "linked issue https://github.com/FerretDB/FerretDB/issues/1 is closed\n",
 		},
 
