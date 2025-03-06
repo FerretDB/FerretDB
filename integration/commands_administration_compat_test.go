@@ -17,6 +17,7 @@ package integration
 import (
 	"math/rand/v2"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -112,6 +113,39 @@ func TestListCollectionsCompat(t *testing.T) {
 			resComparable = append(resComparable, docComparable)
 		}
 
+		cmp := func(a bson.D, b bson.D) int {
+			var aName, bName string
+
+			for _, field := range a {
+				if aName != "" {
+					break
+				}
+
+				switch field.Key {
+				case "name":
+					if assert.IsType(t, "", field.Value) {
+						aName = field.Value.(string)
+					}
+				}
+			}
+
+			for _, field := range b {
+				if bName != "" {
+					break
+				}
+
+				switch field.Key {
+				case "name":
+					if assert.IsType(t, "", field.Value) {
+						bName = field.Value.(string)
+					}
+				}
+			}
+
+			return strings.Compare(aName, bName)
+		}
+
+		slices.SortFunc(resComparable, cmp)
 		return resComparable
 	}
 
