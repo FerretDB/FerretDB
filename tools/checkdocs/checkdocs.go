@@ -66,7 +66,7 @@ func main() {
 	}
 }
 
-// checkDocFiles verifies docs are correctly formatted.
+// checkDocFiles verifies docs contain valid issue URLs.
 func checkDocFiles(client *github.Client, files []string) error {
 	var failed bool
 
@@ -94,7 +94,7 @@ func checkDocFiles(client *github.Client, files []string) error {
 	}
 
 	if failed {
-		return fmt.Errorf("one or more docs are not correctly formatted")
+		return fmt.Errorf("one or more docs contain invalid issue URLs")
 	}
 
 	return nil
