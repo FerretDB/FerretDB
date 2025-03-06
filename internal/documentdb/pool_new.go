@@ -55,10 +55,14 @@ func newPgxPool(uri string, l *slog.Logger, sp *state.Provider) (*pgxpool.Pool, 
 	// versions and parameters could change without FerretDB restart
 	config.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
 		// see https://github.com/jackc/pgx/issues/1726#issuecomment-1711612138
-		ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+		ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 		defer cancel()
 
-		return newPgxPoolCheckConn(ctx, conn, l, sp)
+		if e := newPgxPoolCheckConn(ctx, conn, l, sp); e != nil {
+			return lazyerrors.Error(e)
+		}
+
+		return nil
 	}
 
 	// port tracing, tweak logging
