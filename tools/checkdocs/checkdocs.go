@@ -28,6 +28,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/FerretDB/gh"
+
 	"github.com/FerretDB/FerretDB/v2/tools/github"
 )
 
@@ -38,10 +40,64 @@ func main() {
 		log.Fatal(err)
 	}
 
+	docsFiles, err := filepath.Glob(filepath.Join("website", "docs", "**", "*.md"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	p, err := github.CacheFilePath()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	client, err := github.NewClient(p, log.Printf, gh.NoopPrintf, gh.NoopPrintf)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	err = checkBlogFiles(blogFiles)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	err = checkDocFiles(client, docsFiles)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+// checkDocFiles verifies docs are correctly formatted.
+func checkDocFiles(client *github.Client, files []string) error {
+	var failed bool
+
+	for _, file := range files {
+		f, err := os.Open(file)
+		if err != nil {
+			return fmt.Errorf("Couldn't read file %s: %s", file, err)
+		}
+
+		defer func() {
+			if err = f.Close(); err != nil {
+				log.Panic(err)
+			}
+		}()
+
+		issueURLFailed, err := checkIssueURLs(client, f, log.Default())
+		if err != nil {
+			log.Printf("%q: %s", file, err)
+			failed = true
+		}
+
+		if issueURLFailed {
+			failed = true
+		}
+	}
+
+	if failed {
+		return fmt.Errorf("One or more docs are not correctly formatted")
+	}
+
+	return nil
 }
 
 // issueRE represents FerretDB and microsoft issue url.

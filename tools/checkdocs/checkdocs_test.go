@@ -28,7 +28,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/tools/github"
 )
 
-func TestReal(t *testing.T) {
+func TestBlogs(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping in -short mode")
 	}
@@ -39,6 +39,28 @@ func TestReal(t *testing.T) {
 	}
 
 	err = checkBlogFiles(blogFiles)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestDocs(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in -short mode")
+	}
+
+	blogFiles, err := filepath.Glob(filepath.Join("..", "..", "website", "docs", "**", "*.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	p, err := github.CacheFilePath()
+	require.NoError(t, err)
+
+	client, err := github.NewClient(p, log.Printf, gh.NoopPrintf, gh.NoopPrintf)
+	require.NoError(t, err)
+
+	err = checkDocFiles(client, blogFiles)
 	if err != nil {
 		t.Fatal(err)
 	}
