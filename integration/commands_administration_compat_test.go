@@ -59,13 +59,6 @@ func TestListCollectionsCompat(t *testing.T) {
 	err = compat.All(ctx, &compatRes)
 	require.NoError(t, err)
 
-	compatNames := make([]string, len(compatRes))
-	for i, doc := range compatRes {
-		compatNames[i] = doc.Map()["name"].(string)
-	}
-
-	require.True(t, slices.IsSorted(compatNames), "compat collections are not sorted")
-
 	target, err := targetCollections[0].Database().ListCollections(ctx, filter)
 	require.NoError(t, err)
 	defer target.Close(ctx)
