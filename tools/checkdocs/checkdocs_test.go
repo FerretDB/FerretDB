@@ -34,14 +34,10 @@ func TestBlogs(t *testing.T) {
 	}
 
 	blogFiles, err := filepath.Glob(filepath.Join("..", "..", "website", "blog", "*.md"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	err = checkBlogFiles(blogFiles)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 }
 
 func TestDocs(t *testing.T) {
@@ -49,10 +45,8 @@ func TestDocs(t *testing.T) {
 		t.Skip("skipping in -short mode")
 	}
 
-	blogFiles, err := filepath.Glob(filepath.Join("..", "..", "website", "docs", "**", "*.md"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	docFiles, err := getMarkdownFiles(filepath.Join("..", "..", "website", "docs"))
+	require.NoError(t, err)
 
 	p, err := github.CacheFilePath()
 	require.NoError(t, err)
@@ -60,10 +54,8 @@ func TestDocs(t *testing.T) {
 	client, err := github.NewClient(p, log.Printf, gh.NoopPrintf, gh.NoopPrintf)
 	require.NoError(t, err)
 
-	err = checkDocFiles(client, blogFiles)
-	if err != nil {
-		t.Fatal(err)
-	}
+	err = checkDocFiles(client, docFiles)
+	require.NoError(t, err)
 }
 
 var fm = bytes.TrimSpace([]byte(`

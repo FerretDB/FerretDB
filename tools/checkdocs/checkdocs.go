@@ -40,7 +40,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	docsFiles, err := filepath.Glob(filepath.Join("website", "docs", "**", "*.md"))
+	docsFiles, err := getMarkdownFiles(filepath.Join("website", "docs"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -73,12 +73,12 @@ func checkDocFiles(client *github.Client, files []string) error {
 	for _, file := range files {
 		f, err := os.Open(file)
 		if err != nil {
-			return fmt.Errorf("Couldn't read file %s: %s", file, err)
+			return fmt.Errorf("could not read file %s: %s", file, err)
 		}
 
 		defer func() {
 			if err = f.Close(); err != nil {
-				log.Panic(err)
+				log.Fatal(err)
 			}
 		}()
 
@@ -94,10 +94,32 @@ func checkDocFiles(client *github.Client, files []string) error {
 	}
 
 	if failed {
-		return fmt.Errorf("One or more docs are not correctly formatted")
+		return fmt.Errorf("one or more docs are not correctly formatted")
 	}
 
 	return nil
+}
+
+// getMarkdownFiles returns all markdown files in the given directory and 2 levels of subdirectories.
+func getMarkdownFiles(path string) ([]string, error) {
+	paths := []string{
+		filepath.Join(path, "*.md"),
+		filepath.Join(path, "*", "*.md"),
+		filepath.Join(path, "*", "*", "*.md"),
+	}
+
+	var docsFiles []string
+
+	for _, p := range paths {
+		files, err := filepath.Glob(p)
+		if err != nil {
+			return nil, err
+		}
+
+		docsFiles = append(docsFiles, files...)
+	}
+
+	return docsFiles, nil
 }
 
 // issueRE represents FerretDB and microsoft issue url.
