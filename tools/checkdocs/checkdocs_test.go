@@ -47,6 +47,7 @@ func TestDocs(t *testing.T) {
 
 	docFiles, err := getMarkdownFiles(filepath.Join("..", "..", "website", "docs"))
 	require.NoError(t, err)
+	require.NotEmpty(t, docFiles)
 
 	p, err := github.CacheFilePath()
 	require.NoError(t, err)

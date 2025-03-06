@@ -108,7 +108,7 @@ func getMarkdownFiles(path string) ([]string, error) {
 		filepath.Join(path, "*", "*", "*.md"),
 	}
 
-	var docsFiles []string
+	var markdownFiles []string
 
 	for _, p := range paths {
 		files, err := filepath.Glob(p)
@@ -116,10 +116,10 @@ func getMarkdownFiles(path string) ([]string, error) {
 			return nil, err
 		}
 
-		docsFiles = append(docsFiles, files...)
+		markdownFiles = append(markdownFiles, files...)
 	}
 
-	return docsFiles, nil
+	return markdownFiles, nil
 }
 
 // issueRE represents FerretDB and microsoft issue url.
