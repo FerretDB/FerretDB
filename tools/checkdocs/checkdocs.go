@@ -82,7 +82,7 @@ func checkDocFiles(client *github.Client, files []string) error {
 			}
 		}()
 
-		issueURLFailed, err := checkIssueURLs(client, f, log.Default())
+		issueURLFailed, err := checkIssueURLs(client, f, file, log.Default())
 		if err != nil {
 			log.Printf("%q: %s", file, err)
 			failed = true
@@ -100,7 +100,7 @@ func checkDocFiles(client *github.Client, files []string) error {
 	return nil
 }
 
-// getMarkdownFiles returns markdown files in the given directory and 2 levels of subdirectories.
+// getMarkdownFiles returns markdown files in the given directory and 3 levels of subdirectories.
 func getMarkdownFiles(path string) ([]string, error) {
 	// https://github.com/golang/go/issues/11862
 	paths := []string{
@@ -110,6 +110,8 @@ func getMarkdownFiles(path string) ([]string, error) {
 		filepath.Join(path, "*", "*.mdx"),
 		filepath.Join(path, "*", "*", "*.md"),
 		filepath.Join(path, "*", "*", "*.mdx"),
+		filepath.Join(path, "*", "*", "*", "*.md"),
+		filepath.Join(path, "*", "*", "*", "*.mdx"),
 	}
 
 	var markdownFiles []string
@@ -324,7 +326,7 @@ func verifyTags(fm []byte) error {
 //
 // At the end of scan the true value is returned if any of above was detected.
 // An error is returned only if something fatal happened.
-func checkIssueURLs(client *github.Client, r io.Reader, l *log.Logger) (bool, error) {
+func checkIssueURLs(client *github.Client, r io.Reader, filename string, l *log.Logger) (bool, error) {
 	s := bufio.NewScanner(r)
 
 	var failed bool
@@ -352,7 +354,7 @@ func checkIssueURLs(client *github.Client, r io.Reader, l *log.Logger) (bool, er
 		}
 
 		if num <= 0 {
-			l.Printf("incorrect issue number: %s\n", line)
+			l.Printf("incorrect issue number: %s in %s\n", line, filename)
 			failed = true
 
 			continue
@@ -370,15 +372,15 @@ func checkIssueURLs(client *github.Client, r io.Reader, l *log.Logger) (bool, er
 		case github.IssueClosed:
 			failed = true
 
-			l.Printf("linked issue %s is closed", url)
+			l.Printf("linked issue %s is closed in %s", url, filename)
 
 		case github.IssueNotFound:
 			failed = true
 
-			l.Printf("linked issue %s is not found", url)
+			l.Printf("linked issue %s is not found in %s", url, filename)
 
 		default:
-			return false, fmt.Errorf("unknown issue status: %s", status)
+			return false, fmt.Errorf("unknown issue status: %s in %s", status, filename)
 		}
 	}
 
