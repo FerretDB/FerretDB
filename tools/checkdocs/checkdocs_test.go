@@ -122,24 +122,24 @@ func TestCheckSupportedCommands(t *testing.T) {
 
 		"ClosedIssueLink": {
 			Payload:        "<!-- TODO https://github.com/FerretDB/FerretDB/issues/1 -->",
-			ExpectedOutput: "linked issue https://github.com/FerretDB/FerretDB/issues/1 is closed\n",
+			ExpectedOutput: "linked issue https://github.com/FerretDB/FerretDB/issues/1 is closed in example.md\n",
 		},
 
 		"AnyLabelClosedIssue": {
 			Payload:        "[IssueLabel](https://github.com/FerretDB/FerretDB/issues/1)",
-			ExpectedOutput: "linked issue https://github.com/FerretDB/FerretDB/issues/1 is closed\n",
+			ExpectedOutput: "linked issue https://github.com/FerretDB/FerretDB/issues/1 is closed in example.md\n",
 		},
 		"ClosedIssue": {
 			Payload:        "https://github.com/FerretDB/FerretDB/issues/1",
-			ExpectedOutput: "linked issue https://github.com/FerretDB/FerretDB/issues/1 is closed\n",
+			ExpectedOutput: "linked issue https://github.com/FerretDB/FerretDB/issues/1 is closed in example.md\n",
 		},
 		"IncorrectIssueNumber": {
 			Payload:        "https://github.com/FerretDB/FerretDB/issues/0",
-			ExpectedOutput: "incorrect issue number: https://github.com/FerretDB/FerretDB/issues/0\n",
+			ExpectedOutput: "incorrect issue number: https://github.com/FerretDB/FerretDB/issues/0 in example.md\n",
 		},
 		"DocumentDBIssue": {
 			Payload:        "An example issue is https://github.com/microsoft/documentdb/issues/1.",
-			ExpectedOutput: "linked issue https://github.com/microsoft/documentdb/issues/1 is closed\n",
+			ExpectedOutput: "linked issue https://github.com/microsoft/documentdb/issues/1 is closed in example.md\n",
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -148,7 +148,7 @@ func TestCheckSupportedCommands(t *testing.T) {
 
 			var failed bool
 
-			failed, err = checkIssueURLs(client, r, "filename", l)
+			failed, err = checkIssueURLs(client, r, "example.md", l)
 			require.NoError(t, err)
 			assert.Equal(t, tc.ExpectedOutput != "", failed)
 
