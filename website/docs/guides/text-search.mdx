@@ -1,0 +1,173 @@
+---
+sidebar_position: 3
+---
+
+import CodeBlock from '@theme/CodeBlock';
+import MyDataSet from '!!raw-loader!./requests/1-insert-vector.js';
+
+# Full text search
+
+Full-text search is a technique for searching words or phrases across a large set of textual data.
+Unlike traditional queries that require exact matches, full-text search breaks down text into tokens,
+removes unnecessary words ("stop words"), and structures data in a way that allows for fast lookups, ranking, and partial matches.
+This means you can search for "database security" and get results that contain "secure database systems", even though the exact words are not in the same order.
+
+The process follows three main steps:
+
+- Creating a text index for fast searching.
+- Querying the database for the words or phrases.
+- Ranking results based on frequency, context, or additional rules.
+
+## Understanding text indexes
+
+A full-text index is fundamentally different from a regular database index.
+Instead of simply mapping fields to values, it:
+
+- Tokenizes text (splits into words or phrases).
+- Removes stop words (such as "is", "the", "and").
+- Applies stemming or lemmatization (so "running" and "run" are treated as the same).
+- Stores word positions (so phrase searches and proximity queries work).
+- Assigns weights based on frequency, importance, or custom ranking logic.
+
+FerretDB supports full-text index creation using the `text` operator.
+
+A full text search index creation takes the following parameters:
+
+| Field            | Description                                                                                | Required? |
+| ---------------- | ------------------------------------------------------------------------------------------ | --------- |
+| key              | Defines which field(s) to index and set to `'text'`.                                       | Yes       |
+| name             | A custom name for the index, useful for reference.                                         | No        |
+| weights          | Assigns weighting to fields (higher values mean more relevance in search). Default is `1`. | No        |
+| default_language | Specifies the language used for stemming (default: "english").                             | No        |
+
+## Single full text index
+
+Single full text index creates an index on a single field.
+
+### Creating a text index
+
+To create a text index, use the `createIndex` command with the field you want to index and the type set to `'text'`.
+
+```js
+db.runCommand({
+  createIndexes: 'books',
+  indexes: [
+    {
+      key: { summary: 'text' },
+      name: 'summary_text_index'
+    }
+  ]
+})
+```
+
+This command creates a full text index on the `summary` field in a `books` collection.
+
+Insert the following documents into the `books` collection:
+
+<CodeBlock language="js">{MyDataSet}</CodeBlock>
+
+### Performing a full text search
+
+Let's run a basic full text search query to find all documents that contain the word "adventure" in the `summary` field.
+
+```js
+db.runCommand({
+  find: 'books',
+  filter: {
+    $text: {
+      $search: 'drama'
+    }
+  }
+})
+```
+
+This query returns all documents where the `summary` field contains the word "drama".
+
+```js
+{
+  cursor: {
+    id: Long('0'),
+    ns: 'new.books',
+    firstBatch: [
+      {
+        _id: 'pride_prejudice_1813',
+        title: 'Pride and Prejudice',
+        author: 'Jane Austen',
+        summary: 'The novel follows the story of Elizabeth Bennet, a spirited young woman navigating love, societal expectations, and family drama in 19th-century England.',
+        vector: [
+          0.014391838572919369,
+          -0.07001544535160065,
+          0.03249300271272659,
+          0.017455201596021652,
+          -0.012363946065306664,
+          0.04970458894968033,
+          0.05334962531924248,
+          -0.04171367362141609,
+          -0.042840130627155304,
+          0.038735587149858475,
+          -0.036975011229515076,
+          0.02225673384964466
+        ]
+      }
+    ]
+  },
+  ok: 1
+}
+```
+
+## Compound text index
+
+Compound text index creates an index on multiple fields.
+Ensure to drop the existing index before creating a new one (`db.runCommand({ dropIndexes: 'books', index: 'summary_text_index' })`).
+FerretDB only supports one text index per collection.
+
+Let's create a compound text index on the `title` and `summary` fields.
+
+```js
+db.runCommand({
+  createIndexes: 'books',
+  indexes: [
+    {
+      key: { title: 'text', summary: 'text' },
+      name: 'title_summary_text_index'
+    }
+  ]
+})
+```
+
+## Relevance score
+
+When you perform a full-text search, a relevance score is assigned to each document based on how well it matches the search query.
+The score is calculated based on factors like word frequency, proximity, and custom weights.
+
+Let's search for books that contain the words "driven", "thirst", and "knowledge" in the `summary` field and return the relevance score.
+
+```js
+db.runCommand({
+  find: 'books',
+  filter: {
+    $text: {
+      $search: 'driven thirst knowledge'
+    }
+  },
+  projection: {
+    score: { $meta: 'textScore' }
+  },
+  sort: {
+    score: { $meta: 'textScore' }
+  }
+})
+```
+
+Output:
+
+```
+{
+  cursor: {
+    id: Long('0'),
+    ns: 'new.books',
+    firstBatch: [ { _id: 'frankenstein_1818', score: 3 } ]
+  },
+  ok: 1
+}
+```
