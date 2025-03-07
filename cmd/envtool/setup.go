@@ -85,6 +85,6 @@ func setup(ctx context.Context, logger *slog.Logger) error {
 		return lazyerrors.Error(err)
 	}
 
-	logger.InfoContext(ctx, "Done.")
+	logger.InfoContext(ctx, "Done")
 	return nil
 }

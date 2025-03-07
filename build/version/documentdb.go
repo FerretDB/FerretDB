@@ -20,7 +20,7 @@ const (
 		"compiled by gcc (Debian 12.2.0-14) 12.2.0, 64-bit"
 
 	// DocumentDB is a version of DocumentDB this version of FerretDB is compatible with.
-	DocumentDB = "0.102.0 gitref: ferretdb sha:8366073 buildId:0"
+	DocumentDB = "0.102.0 gitref: ferretdb sha:b5ed892 buildId:0"
 
 	// DocumentDBURL points to the release page of the DocumentDB version above.
 	DocumentDBURL = "https://github.com/FerretDB/documentdb/releases/tag/v0.102.0-ferretdb-2.0.0"
