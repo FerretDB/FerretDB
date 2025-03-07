@@ -19,7 +19,6 @@ import (
 	"math"
 	"math/rand/v2"
 	"runtime"
-	"slices"
 	"strconv"
 	"sync"
 	"testing"
@@ -146,7 +145,6 @@ func TestListDatabases(t *testing.T) {
 		expectedNameOnly bool
 		expected         mongo.ListDatabasesResult
 
-		// TODO https://github.com/FerretDB/FerretDB/issues/4722
 		failsForFerretDB string
 	}{
 		"Exists": {
@@ -201,7 +199,7 @@ func TestListDatabases(t *testing.T) {
 			expected: mongo.ListDatabasesResult{
 				Databases: []mongo.DatabaseSpecification{},
 			},
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/4722",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/4862",
 		},
 		"RegexNotFound": {
 			filter: bson.D{
@@ -211,7 +209,7 @@ func TestListDatabases(t *testing.T) {
 			expected: mongo.ListDatabasesResult{
 				Databases: []mongo.DatabaseSpecification{},
 			},
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/4722",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/4862",
 		},
 		"RegexNotFoundNameOnly": {
 			filter: bson.D{
@@ -270,7 +268,7 @@ func TestListDatabases(t *testing.T) {
 			}
 			actual.TotalSize = 0
 
-			assert.EqualValues(t, tc.expected, actual)
+			assert.ElementsMatch(t, tc.expected.Databases, actual.Databases)
 		})
 	}
 }
@@ -301,14 +299,11 @@ func TestListCollectionNames(t *testing.T) {
 	compat, err := compatCollections[0].Database().ListCollectionNames(ctx, filter)
 	require.NoError(t, err)
 
-	require.True(t, slices.IsSorted(compat), "compat collections are not sorted")
-
 	target, err := targetCollections[0].Database().ListCollectionNames(ctx, filter)
 	require.NoError(t, err)
 
 	assert.Len(t, target, len(filterNames))
-	assert.True(t, slices.IsSorted(target), "target collections are not sorted")
-	assert.Equal(t, compat, target)
+	assert.ElementsMatch(t, compat, target)
 }
 
 func TestListCollectionsUUID(t *testing.T) {

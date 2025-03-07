@@ -16,10 +16,8 @@ package handler
 
 import (
 	"context"
-	"sort"
 
 	"github.com/FerretDB/wire"
-	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
@@ -55,29 +53,6 @@ func (h *Handler) MsgListCollections(connCtx context.Context, msg *wire.OpMsg) (
 	}
 
 	h.s.AddCursor(connCtx, userID, sessionID, cursorID)
-
-	// Sort the first page as a partial workaround for
-	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/822
-
-	resp, err := page.DecodeDeep()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	cursor := resp.Get("cursor").(*wirebson.Document)
-	firstBatch := cursor.Get("firstBatch").(*wirebson.Array)
-
-	sort.Sort(firstBatch.SortInterface(func(a, b any) bool {
-		an := a.(*wirebson.Document).Get("name").(string)
-		bn := b.(*wirebson.Document).Get("name").(string)
-
-		return an < bn
-	}))
-
-	page, err = resp.Encode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
 
 	if msg, err = wire.NewOpMsg(page); err != nil {
 		return nil, lazyerrors.Error(err)
