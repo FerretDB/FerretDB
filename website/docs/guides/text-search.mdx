@@ -25,7 +25,6 @@ Instead of simply mapping fields to values, it:
 - Tokenizes text (splits them into words or phrases).
 - Removes stop words (such as "is", "the", "and").
 - Applies stemming (so "running" and "run" are treated as the same).
-- Stores word positions (so phrase searches and proximity queries work).
 - Assigns weights based on frequency, importance, or custom ranking logic.
 
 FerretDB supports full-text search capabilities.
@@ -37,6 +36,7 @@ A full text search index creation takes the following parameters:
 | name             | A custom name for the index, useful for reference.                                         |
 | weights          | Assigns weighting to fields (higher values mean more relevance in search). Default is `1`. |
 | default_language | Specifies the language used for stemming (default: "english").                             |
+| caseSensitive    | Enables case-sensitive search.                                                             |
 
 :::note
 FerretDB only supports one text index per collection.
@@ -62,7 +62,7 @@ Insert the following documents into the `books` collection:
 
 ### Performing a full text search
 
-Let's run a basic full text search query to find all documents that contain the word "adventure" in the `summary` field.
+Let's run a basic full text search query to find all documents that contain the word "drama" in the `summary` field.
 
 <CodeBlock language="js">{SearchQuery}</CodeBlock>
 
@@ -73,7 +73,7 @@ This query returns all documents where the `summary` field contains the word "dr
 ## Compound text index
 
 Compound text index creates an index on multiple fields.
-Ensure to drop the existing index before creating a new one (`db.runCommand({ dropIndexes: 'books', index: 'summary_text_index' })`).
+Ensure to drop the existing index before creating a new one.
 
 Let's create a compound text index on the `title` and `summary` fields.
 
@@ -83,6 +83,7 @@ Let's create a compound text index on the `title` and `summary` fields.
 
 When you perform a full-text search, a relevance score is assigned to each document based on how well it matches the search query.
 The score is calculated based on factors like word frequency, proximity, and custom weights.
+Higher scores indicate better relevance.
 
 Let's search for books that contain the words "hunt whales" in the `summary` field and return the relevance score.
 
