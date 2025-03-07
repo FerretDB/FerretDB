@@ -96,7 +96,11 @@ EOF
 
 # final stage
 
-FROM ghcr.io/ferretdb/postgres-documentdb-dev:17-0.102.0-ferretdb-2.0.0 AS evaluation
+# Use production image and full tag close to the release.
+# FROM ghcr.io/ferretdb/postgres-documentdb-dev:17-0.102.0-ferretdb-2.0.0 AS evaluation
+
+# Use moving development image during development.
+FROM ghcr.io/ferretdb/postgres-documentdb-dev:17-ferretdb AS evaluation
 
 RUN --mount=type=cache,sharing=locked,target=/var/cache/apt <<EOF
 mkdir /tmp/cover /tmp/state
