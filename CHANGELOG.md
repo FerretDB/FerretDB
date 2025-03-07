@@ -10,6 +10,8 @@ powered by [DocumentDB PostgreSQL extension](https://github.com/microsoft/docume
 This version works best with
 [DocumentDB v0.102.0-ferretdb-2.0.0](https://github.com/FerretDB/documentdb/releases/tag/v0.102.0-ferretdb-2.0.0).
 
+[Release blog post](https://blog.ferretdb.io/ferretdb-v2-ga-open-source-mongodb-alternative-ready-for-production/).
+
 ### Documentation 📄
 
 - Add migration guide from v1.x to v2.x by @Fashander in https://github.com/FerretDB/FerretDB/pull/4850
