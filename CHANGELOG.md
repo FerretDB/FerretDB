@@ -2,6 +2,32 @@
 
 <!-- markdownlint-disable MD024 MD034 -->
 
+## [v2.0.0](https://github.com/FerretDB/FerretDB/releases/tag/v2.0.0) (2025-03-05)
+
+The first generally available release of FerretDB v2,
+powered by [DocumentDB PostgreSQL extension](https://github.com/microsoft/documentdb)!
+
+This version works best with
+[DocumentDB v0.102.0-ferretdb-2.0.0](https://github.com/FerretDB/documentdb/releases/tag/v0.102.0-ferretdb-2.0.0).
+
+[Release blog post](https://blog.ferretdb.io/ferretdb-v2-ga-open-source-mongodb-alternative-ready-for-production/).
+
+### Documentation 📄
+
+- Add migration guide from v1.x to v2.x by @Fashander in https://github.com/FerretDB/FerretDB/pull/4850
+- Add basic troubleshooting guide by @Fashander in https://github.com/FerretDB/FerretDB/pull/4854
+- Final preparations by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4874
+
+### Other Changes 🤖
+
+- Unskip tests that refer to closed issue by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4865
+- Use GitHub-hosted CI runners by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4866
+- Skip flaky `currentOp` test and add TODO by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4872
+- Bump Go and safe deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4875
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/69?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v2.0.0-rc.5...v2.0.0).
+
 ## [v2.0.0-rc.5](https://github.com/FerretDB/FerretDB/releases/tag/v2.0.0-rc.5) (2025-03-04)
 
 This is the final release candidate before the GA release tomorrow!
