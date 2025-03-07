@@ -34,7 +34,11 @@ func TestMongoHandler(t *testing.T) {
 
 		testAttrs = map[string]any{}
 
-		return newMongoHandler(&buf, &NewHandlerOpts{Level: slog.LevelDebug}, testAttrs)
+		opts := &NewHandlerOpts{
+			Level:         slog.LevelDebug,
+			CheckMessages: true,
+		}
+		return newMongoHandler(&buf, opts, testAttrs)
 	}
 
 	result := func(t *testing.T) map[string]any {

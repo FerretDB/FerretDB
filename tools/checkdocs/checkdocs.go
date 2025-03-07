@@ -32,7 +32,6 @@ import (
 )
 
 func main() {
-	// TODO https://github.com/FerretDB/FerretDB/issues/4715
 	blogFiles, err := filepath.Glob(filepath.Join("website", "blog", "*.md"))
 	if err != nil {
 		log.Fatal(err)
