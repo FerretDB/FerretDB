@@ -83,6 +83,7 @@ Let's create a compound text index on the `title` and `summary` fields.
 
 When you perform a full-text search, a relevance score is assigned to each document based on how well it matches the search query.
 The score is calculated based on factors like word frequency, proximity, and custom weights.
+Relevance scores are calculated using the assigned weights and the frequency of the search terms in the document.
 Higher scores indicate better relevance.
 
 Let's search for books that contain the words "hunt whales" in the `summary` field and return the relevance score.
