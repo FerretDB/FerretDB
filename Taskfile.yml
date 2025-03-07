@@ -737,17 +737,17 @@ tasks:
 
   pngcrush:
     cmds:
-      - pngcrush -ow -brute {{.FILE}}
+      - pngcrush -ow -brute -rem text {{.FILE}}
     requires:
       vars: [FILE]
 
   pngcrush-new:
     cmds:
-      - git diff --name-only upstream/main '*.png' | parallel "pngcrush -ow -brute {} {.}.temp"
+      - git diff --name-only upstream/main '*.png' | parallel "pngcrush -ow -brute -rem text {} {.}.temp"
 
   pngcrush-all:
     cmds:
-      - find . -type f -name '*.png' | parallel "pngcrush -ow -brute {} {.}.temp"
+      - find . -type f -name '*.png' | parallel "pngcrush -ow -brute -rem text {} {.}.temp"
 
   docs-dev:
     desc: "Start documentation development server"
