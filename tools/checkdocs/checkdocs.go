@@ -124,7 +124,6 @@ func getMarkdownFiles(path string) ([]string, error) {
 
 		return nil
 	})
-
 	if err != nil {
 		return nil, err
 	}
