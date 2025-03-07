@@ -110,28 +110,16 @@ func TestListCollectionsCompat(t *testing.T) {
 			var aName, bName string
 
 			for _, field := range a {
-				if aName != "" {
+				if field.Key == "name" {
+					aName = field.Value.(string)
 					break
-				}
-
-				switch field.Key {
-				case "name":
-					if assert.IsType(t, "", field.Value) {
-						aName = field.Value.(string)
-					}
 				}
 			}
 
 			for _, field := range b {
-				if bName != "" {
+				if field.Key == "name" {
+					bName = field.Value.(string)
 					break
-				}
-
-				switch field.Key {
-				case "name":
-					if assert.IsType(t, "", field.Value) {
-						bName = field.Value.(string)
-					}
 				}
 			}
 
