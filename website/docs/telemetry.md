@@ -37,14 +37,14 @@ Argument values, data field names, successful responses, or error messages are n
 
 The same information is always saved in a `telemetry.json` file
 in the [state directory](configuration/flags.md#miscellaneous), making it easy to inspect.
-For example, this is the content of this file at the time of writing on the Beacon service itself
-(it, of course, uses FerretDB to store data):
+For example, this is the content of this file as recorded by the Beacon service
+(which, of course, uses FerretDB to store data):
 
 ```json
 {
-  "_comment": "Sent to https://beacon.ferretdb.com/ at 2025-03-04 11:47:21Z.",
-  "version": "v2.0.0-rc.2",
-  "commit": "eb1ef1ed2c2e972c420f0917431b385552e2353d",
+  "_comment": "Sent to https://beacon.ferretdb.com/ at 2025-03-06 13:28:57Z.",
+  "version": "v2.0.0",
+  "commit": "2214721e51d64be04ad016f401d0abf8a335993e",
   "branch": "unknown",
   "dirty": true,
   "package": "docker",
@@ -57,18 +57,18 @@ For example, this is the content of this file at the time of writing on the Beac
     "GOAMD64": "v1",
     "GOARCH": "amd64",
     "GOOS": "linux",
-    "go.version": "go1.24.0",
+    "go.version": "go1.24.1",
     "vcs": "git",
     "vcs.modified": "true",
-    "vcs.revision": "eb1ef1ed2c2e972c420f0917431b385552e2353d",
-    "vcs.time": "2025-02-25T17:43:26Z"
+    "vcs.revision": "2214721e51d64be04ad016f401d0abf8a335993e",
+    "vcs.time": "2025-03-05T12:26:16Z"
   },
   "os": "linux",
   "arch": "amd64",
   "postgresql_version": "PostgreSQL 16.8 (Debian 16.8-1.pgdg120+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 12.2.0-14) 12.2.0, 64-bit",
-  "documentdb_version": "0.102.0 gitref: HEAD sha:39ec23d buildId:0",
+  "documentdb_version": "0.102.0 gitref: HEAD sha:f7c318c buildId:0",
   "uuid": "<redacted>",
-  "uptime": 86400152222965,
+  "uptime": 86400099948209,
   "command_metrics": {
     "OP_MSG": {
       "count": {
@@ -88,34 +88,24 @@ For example, this is the content of this file at the time of writing on the Beac
       },
       "hello": {
         "unknown": {
-          "ok": 8640
-        }
-      },
-      "listCollections": {
-        "unknown": {
-          "ok": 1
-        }
-      },
-      "listIndexes": {
-        "unknown": {
-          "ok": 1
+          "ok": 8639
         }
       },
       "ping": {
         "unknown": {
-          "ok": 1438
+          "ok": 1437
         }
       },
       "update": {
         "unknown": {
-          "ok": 1478
+          "ok": 1520
         }
       }
     },
     "OP_REPLY": {
       "unknown": {
         "unknown": {
-          "ok": 5
+          "ok": 3
         }
       }
     }
