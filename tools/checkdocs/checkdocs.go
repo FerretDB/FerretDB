@@ -66,29 +66,17 @@ func main() {
 	}
 }
 
-// checkDocFiles verifies docs contain valid issue URLs.
+// checkDocFiles checks files are valid.
 func checkDocFiles(client *github.Client, files []string) error {
 	var failed bool
 
 	for _, file := range files {
-		f, err := os.Open(file)
+		docFailed, err := checkDocFile(client, file)
 		if err != nil {
-			return fmt.Errorf("could not read file %s: %s", file, err)
+			return err
 		}
 
-		defer func() {
-			if err = f.Close(); err != nil {
-				log.Fatal(err)
-			}
-		}()
-
-		issueURLFailed, err := checkIssueURLs(client, f, file, log.Default())
-		if err != nil {
-			log.Printf("%q: %s", file, err)
-			failed = true
-		}
-
-		if issueURLFailed {
+		if docFailed {
 			failed = true
 		}
 	}
@@ -100,29 +88,45 @@ func checkDocFiles(client *github.Client, files []string) error {
 	return nil
 }
 
-// getMarkdownFiles returns markdown files in the given directory and 3 levels of subdirectories.
-func getMarkdownFiles(path string) ([]string, error) {
-	// https://github.com/golang/go/issues/11862
-	paths := []string{
-		filepath.Join(path, "*.md"),
-		filepath.Join(path, "*.mdx"),
-		filepath.Join(path, "*", "*.md"),
-		filepath.Join(path, "*", "*.mdx"),
-		filepath.Join(path, "*", "*", "*.md"),
-		filepath.Join(path, "*", "*", "*.mdx"),
-		filepath.Join(path, "*", "*", "*", "*.md"),
-		filepath.Join(path, "*", "*", "*", "*.mdx"),
+// checkDocFile verifies the file contain valid issue URLs.
+func checkDocFile(client *github.Client, file string) (bool, error) {
+	f, err := os.Open(file)
+	if err != nil {
+		return true, fmt.Errorf("could not read file %s: %s", file, err)
 	}
 
+	defer func() {
+		if err = f.Close(); err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	issueURLFailed, err := checkIssueURLs(client, f, file, log.Default())
+	if err != nil {
+		log.Printf("%q: %s", file, err)
+	}
+
+	return issueURLFailed, nil
+}
+
+// getMarkdownFiles returns markdown files in the given directory.
+func getMarkdownFiles(path string) ([]string, error) {
 	var markdownFiles []string
 
-	for _, p := range paths {
-		files, err := filepath.Glob(p)
+	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			return nil, err
+			return err
 		}
 
-		markdownFiles = append(markdownFiles, files...)
+		if filepath.Ext(path) == ".md" || filepath.Ext(path) == ".mdx" {
+			markdownFiles = append(markdownFiles, path)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
 	}
 
 	return markdownFiles, nil
