@@ -13,7 +13,7 @@ vars:
   NO_XFAIL: false
   BENCH_TIME: 5s
   TESTJS_PORT: 27017
-  RACE_FLAG: -race={{and (ne OS "windows") (ne ARCH "arm") (ne ARCH "riscv64")}}
+  RACE_FLAG: -race={{and (ne OS "windows") (ne ARCH "arm")}}
   BUILD_TAGS: ferretdb_dev
   MODE: diff-normal
   SERVICES: postgres mongodb mongodb-secure jaeger
@@ -428,9 +428,9 @@ tasks:
         vars:
           FILE: ferretdb/development
           TARGET: development-binary
-          PLATFORM: linux/amd64,linux/arm64
+          PLATFORM: linux/amd64,linux/arm64,linux/riscv64
           OUTPUT: type=local,dest=tmp/build
-      - for: [amd64, arm64]
+      - for: [amd64, arm64, riscv64]
         task: build-move-check
         vars:
           DOCKER_ARCH: "{{.ITEM}}" # arm/v7
@@ -448,9 +448,9 @@ tasks:
         vars:
           FILE: ferretdb/production
           TARGET: production-binary
-          PLATFORM: linux/amd64,linux/arm64
+          PLATFORM: linux/amd64,linux/arm64,linux/riscv64
           OUTPUT: type=local,dest=tmp/build
-      - for: [amd64, arm64]
+      - for: [amd64, arm64, riscv64]
         task: build-move-check
         vars:
           DOCKER_ARCH: "{{.ITEM}}" # arm/v7
@@ -479,7 +479,7 @@ tasks:
         vars:
           FILE: ferretdb/evaluation
           TARGET: evaluation
-          PLATFORM: linux/amd64 # no DocumentDB for linux/arm64 yet
+          PLATFORM: linux/amd64,linux/riscv64 # no DocumentDB for linux/arm64 yet
           OUTPUT: type=image,push=true
     requires:
       vars: [DOCKER_IMAGES]
@@ -492,7 +492,7 @@ tasks:
         vars:
           FILE: ferretdb/development
           TARGET: development
-          PLATFORM: linux/amd64,linux/arm64
+          PLATFORM: linux/amd64,linux/arm64,linux/riscv64
           OUTPUT: type=image,push=true
     requires:
       vars: [DOCKER_IMAGES]
@@ -505,7 +505,7 @@ tasks:
         vars:
           FILE: ferretdb/production
           TARGET: production
-          PLATFORM: linux/amd64,linux/arm64
+          PLATFORM: linux/amd64,linux/arm64,linux/riscv64
           OUTPUT: type=image,push=true
     requires:
       vars: [DOCKER_IMAGES]
@@ -554,9 +554,9 @@ tasks:
         vars:
           FILE: ferretdb/development
           TARGET: development-binary
-          PLATFORM: linux/amd64,linux/arm64
+          PLATFORM: linux/amd64,linux/arm64,linux/riscv64
           OUTPUT: type=local,dest=tmp/build
-      - for: [amd64, arm64]
+      - for: [amd64, arm64, riscv64]
         task: packages-build
         vars:
           PACKAGER: deb
@@ -564,7 +564,7 @@ tasks:
           PACKAGE_ARCH: '{{replace "/" "" .ITEM | replace "v" ""}}' # arm/v7 -> arm7
           DIR_ARCH: '{{replace "/" "_" .ITEM}}' # arm/v7 -> arm_v7
           FILE_SUFFIX: 'dev-linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
-      - for: [amd64, arm64]
+      - for: [amd64, arm64, riscv64]
         task: packages-deb-check
         vars:
           DOCKER_ARCH: "{{.ITEM}}" # arm/v7
@@ -582,9 +582,9 @@ tasks:
         vars:
           FILE: ferretdb/production
           TARGET: production-binary
-          PLATFORM: linux/amd64,linux/arm64
+          PLATFORM: linux/amd64,linux/arm64,linux/riscv64
           OUTPUT: type=local,dest=tmp/build
-      - for: [amd64, arm64]
+      - for: [amd64, arm64, riscv64]
         task: packages-build
         vars:
           PACKAGER: deb
@@ -592,7 +592,7 @@ tasks:
           PACKAGE_ARCH: '{{replace "/" "" .ITEM | replace "v" ""}}' # arm/v7 -> arm7
           DIR_ARCH: '{{replace "/" "_" .ITEM}}' # arm/v7 -> arm_v7
           FILE_SUFFIX: 'linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
-      - for: [amd64, arm64]
+      - for: [amd64, arm64, riscv64]
         task: packages-deb-check
         vars:
           DOCKER_ARCH: "{{.ITEM}}" # arm/v7
@@ -622,9 +622,9 @@ tasks:
         vars:
           FILE: ferretdb/development
           TARGET: development-binary
-          PLATFORM: linux/amd64,linux/arm64
+          PLATFORM: linux/amd64,linux/arm64,linux/riscv64
           OUTPUT: type=local,dest=tmp/build
-      - for: [amd64, arm64]
+      - for: [amd64, arm64, riscv64]
         task: packages-build
         vars:
           PACKAGER: rpm
@@ -632,7 +632,7 @@ tasks:
           PACKAGE_ARCH: '{{replace "/" "" .ITEM | replace "v" ""}}' # arm/v7 -> arm7
           DIR_ARCH: '{{replace "/" "_" .ITEM}}' # arm/v7 -> arm_v7
           FILE_SUFFIX: 'dev-linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
-      - for: [amd64, arm64]
+      - for: [amd64, arm64, riscv64]
         task: packages-rpm-check
         vars:
           DOCKER_ARCH: "{{.ITEM}}" # arm/v7
@@ -650,9 +650,9 @@ tasks:
         vars:
           FILE: ferretdb/production
           TARGET: production-binary
-          PLATFORM: linux/amd64,linux/arm64
+          PLATFORM: linux/amd64,linux/arm64,linux/riscv64
           OUTPUT: type=local,dest=tmp/build
-      - for: [amd64, arm64]
+      - for: [amd64, arm64, riscv64]
         task: packages-build
         vars:
           PACKAGER: rpm
@@ -660,7 +660,7 @@ tasks:
           PACKAGE_ARCH: '{{replace "/" "" .ITEM | replace "v" ""}}' # arm/v7 -> arm7
           DIR_ARCH: '{{replace "/" "_" .ITEM}}' # arm/v7 -> arm_v7
           FILE_SUFFIX: 'linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
-      - for: [amd64, arm64]
+      - for: [amd64, arm64, riscv64]
         task: packages-rpm-check
         vars:
           DOCKER_ARCH: "{{.ITEM}}" # arm/v7
