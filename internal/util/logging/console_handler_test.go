@@ -34,7 +34,11 @@ func TestConsoleHandler(t *testing.T) {
 
 		testAttrs = map[string]any{}
 
-		return newConsoleHandler(&buf, &NewHandlerOpts{Level: slog.LevelDebug}, testAttrs)
+		opts := &NewHandlerOpts{
+			Level: slog.LevelDebug,
+		}
+
+		return newConsoleHandler(&buf, opts, testAttrs)
 	}
 
 	result := func(t *testing.T) map[string]any {

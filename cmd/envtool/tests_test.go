@@ -73,7 +73,7 @@ func bufLogger() (*slog.Logger, *bytes.Buffer) {
 		RemoveTime:   true,
 		RemoveSource: true,
 		// the logger handles messages from the `go test` command output
-		CheckMessages: false,
+		SkipChecks: true,
 	})
 
 	return slog.New(h), &buf
