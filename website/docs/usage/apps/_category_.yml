@@ -1,0 +1,7 @@
+---
+label: Apps
+position: 1
+link:
+  type: generated-index
+  description: >
+    A guide section on setting up and using FerretDB with other applications
