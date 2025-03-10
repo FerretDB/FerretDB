@@ -30,17 +30,17 @@ import (
 // MsgCreateUser implements `createUser` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgCreateUser(connCtx context.Context, msg *wire.OpMsg, topLevel *wirebson.Document) (*wire.OpMsg, error) {
+func (h *Handler) MsgCreateUser(connCtx context.Context, msg *wire.OpMsg, doc *wirebson.Document) (*wire.OpMsg, error) {
 	spec, err := msg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
 	}
 
-	doc, err := spec.DecodeDeep()
+	doc, err = spec.DecodeDeep()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

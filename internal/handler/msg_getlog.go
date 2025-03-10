@@ -35,19 +35,9 @@ import (
 // MsgGetLog implements `getLog` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgGetLog(connCtx context.Context, msg *wire.OpMsg, topLevel *wirebson.Document) (*wire.OpMsg, error) {
-	spec, err := msg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+func (h *Handler) MsgGetLog(connCtx context.Context, msg *wire.OpMsg, doc *wirebson.Document) (*wire.OpMsg, error) {
+	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
-	}
-
-	doc, err := spec.Decode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
 	}
 
 	command := doc.Command()
@@ -80,10 +70,10 @@ func (h *Handler) MsgGetLog(connCtx context.Context, msg *wire.OpMsg, topLevel *
 		))
 
 	case "global":
-		var log *wirebson.Array
 
 		// TODO https://github.com/FerretDB/FerretDB/issues/4750
-		if log, err = h.L.Handler().(*logging.Handler).RecentEntries(); err != nil {
+		log, err := h.L.Handler().(*logging.Handler).RecentEntries()
+		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
@@ -177,7 +167,7 @@ func (h *Handler) MsgGetLog(connCtx context.Context, msg *wire.OpMsg, topLevel *
 
 			var b []byte
 
-			b, err = ml.Marshal()
+			b, err := ml.Marshal()
 			if err != nil {
 				return nil, lazyerrors.Error(err)
 			}

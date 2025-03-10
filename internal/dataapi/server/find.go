@@ -20,6 +20,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 
+	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi/api"
@@ -41,7 +42,7 @@ func (s *Server) Find(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	msg, err := prepareOpMsg(
+	doc, err := prepareDocument(
 		"find", req.Collection,
 		"$db", req.Database,
 		"filter", req.Filter,
@@ -55,7 +56,13 @@ func (s *Server) Find(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resMsg, err := s.handler.Commands()["find"].Handler(ctx, msg)
+	msg, err := wire.NewOpMsg(doc)
+	if err != nil {
+		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+		return
+	}
+
+	resMsg, err := s.handler.Commands()["find"].Handler(ctx, msg, doc)
 	if err != nil {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return

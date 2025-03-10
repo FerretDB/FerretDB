@@ -158,17 +158,17 @@ func (r *Registry) EndSessions(ctx context.Context, sessionIDs []uuid.UUID) {
 	}
 }
 
-// CreateOrUpdateByLSID fetches `lsid` field from spec and
+// CreateOrUpdateByLSID fetches `lsid` field from document and
 // updates the last used time of that session.
 // If the `lsid` is not a valid UUID, it returns an error.
 // If a session does not exist, a new session is created implicitly.
 // If `lsid` field is not present, a session is created with an empty session ID.
 //
 // It returns the user ID and the session ID.
-func (r *Registry) CreateOrUpdateByLSID(ctx context.Context, spec wirebson.RawDocument) (UserID, uuid.UUID, error) {
+func (r *Registry) CreateOrUpdateByLSID(ctx context.Context, doc *wirebson.Document) (UserID, uuid.UUID, error) {
 	userID := getUserID(ctx)
 
-	sessionID, err := getSessionUUID(spec)
+	sessionID, err := getSessionUUID(doc)
 	if err != nil {
 		return UserID{}, uuid.Nil, err
 	}

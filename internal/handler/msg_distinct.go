@@ -29,33 +29,29 @@ import (
 // MsgDistinct implements `distinct` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgDistinct(connCtx context.Context, msg *wire.OpMsg, topLevel *wirebson.Document) (*wire.OpMsg, error) {
+func (h *Handler) MsgDistinct(connCtx context.Context, msg *wire.OpMsg, doc *wirebson.Document) (*wire.OpMsg, error) {
 	spec, err := msg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
-	doc, err := spec.Decode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	cmd := doc.Command()
 
 	dbName, err := getRequiredParam[string](doc, "$db")
 	if err != nil {
 		return nil, err
 	}
 
-	collection, ok := doc.Get(doc.Command()).(string)
+	collection, ok := doc.Get(cmd).(string)
 	if !ok {
 		return nil, mongoerrors.NewWithArgument(
 			mongoerrors.ErrInvalidNamespace,
 			"Failed to parse namespace element",
-			doc.Command(),
+			cmd,
 		)
 	}
 
@@ -63,7 +59,7 @@ func (h *Handler) MsgDistinct(connCtx context.Context, msg *wire.OpMsg, topLevel
 		return nil, mongoerrors.NewWithArgument(
 			mongoerrors.ErrInvalidNamespace,
 			fmt.Sprintf("Invalid namespace specified '%s.%s'", dbName, collection),
-			doc.Command(),
+			cmd,
 		)
 	}
 

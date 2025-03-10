@@ -20,6 +20,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 
+	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi/api"
@@ -50,7 +51,7 @@ func (s *Server) DeleteOne(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	msg, err := prepareOpMsg(
+	doc, err := prepareDocument(
 		"delete", req.Collection,
 		"$db", req.Database,
 		"deletes", wirebson.MustArray(deleteDoc),
@@ -60,7 +61,13 @@ func (s *Server) DeleteOne(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resMsg, err := s.handler.Commands()["delete"].Handler(ctx, msg)
+	msg, err := wire.NewOpMsg(doc)
+	if err != nil {
+		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+		return
+	}
+
+	resMsg, err := s.handler.Commands()["delete"].Handler(ctx, msg, doc)
 	if err != nil {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return

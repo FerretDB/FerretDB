@@ -81,16 +81,18 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		msg := must.NotFail(wire.NewOpMsg(must.NotFail(must.NotFail(wirebson.NewDocument(
+		doc := wirebson.MustDocument(
 			"saslStart", int32(1),
 			"mechanism", "SCRAM-SHA-256",
 			"payload", wirebson.Binary{B: []byte(payload)},
 			// use skipEmptyExchange to complete the handshake with one `saslStart` and one `saslContinue`
 			"options", wirebson.MustDocument("skipEmptyExchange", true),
 			"$db", "admin",
-		)).Encode())))
+		)
 
-		res, err := s.handler.Commands()["saslStart"].Handler(ctx, msg)
+		msg := must.NotFail(wire.NewOpMsg(must.NotFail(doc.Encode())))
+
+		res, err := s.handler.Commands()["saslStart"].Handler(ctx, msg, doc)
 		if err != nil {
 			http.Error(w, lazyerrors.Error(err).Error(), http.StatusUnauthorized)
 			return
@@ -107,14 +109,16 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		msg = must.NotFail(wire.NewOpMsg(must.NotFail(must.NotFail(wirebson.NewDocument(
+		doc = wirebson.MustDocument(
 			"saslContinue", int32(1),
 			"conversationId", convId,
 			"payload", wirebson.Binary{B: []byte(payload)},
 			"$db", "admin",
-		)).Encode())))
+		)
 
-		res, err = s.handler.Commands()["saslContinue"].Handler(ctx, msg)
+		msg = must.NotFail(wire.NewOpMsg(must.NotFail(doc.Encode())))
+
+		res, err = s.handler.Commands()["saslContinue"].Handler(ctx, msg, doc)
 		if err != nil {
 			http.Error(w, lazyerrors.Error(err).Error(), http.StatusUnauthorized)
 			return

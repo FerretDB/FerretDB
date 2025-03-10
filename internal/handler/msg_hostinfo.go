@@ -34,13 +34,8 @@ import (
 // MsgHostInfo implements `hostInfo` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgHostInfo(connCtx context.Context, msg *wire.OpMsg, topLevel *wirebson.Document) (*wire.OpMsg, error) {
-	spec, err := msg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+func (h *Handler) MsgHostInfo(connCtx context.Context, msg *wire.OpMsg, doc *wirebson.Document) (*wire.OpMsg, error) {
+	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
 	}
 

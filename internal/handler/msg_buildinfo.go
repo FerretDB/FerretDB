@@ -24,20 +24,14 @@ import (
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/build/version"
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // MsgBuildInfo implements `buildInfo` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgBuildInfo(connCtx context.Context, msg *wire.OpMsg, topLevel *wirebson.Document) (*wire.OpMsg, error) {
-	spec, err := msg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+func (h *Handler) MsgBuildInfo(connCtx context.Context, msg *wire.OpMsg, doc *wirebson.Document) (*wire.OpMsg, error) {
+	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
 	}
 

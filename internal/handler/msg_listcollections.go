@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
@@ -25,14 +26,8 @@ import (
 // MsgListCollections implements `listCollections` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgListCollections(connCtx context.Context, msg *wire.OpMsg, topLevel *wirebson.Document) (*wire.OpMsg, error) {
+func (h *Handler) MsgListCollections(connCtx context.Context, msg *wire.OpMsg, doc *wirebson.Document) (*wire.OpMsg, error) {
 	spec, err := msg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
-	doc, err := spec.Decode()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -42,7 +37,7 @@ func (h *Handler) MsgListCollections(connCtx context.Context, msg *wire.OpMsg, t
 		return nil, err
 	}
 
-	userID, sessionID, err := h.s.CreateOrUpdateByLSID(connCtx, spec)
+	userID, sessionID, err := h.s.CreateOrUpdateByLSID(connCtx, doc)
 	if err != nil {
 		return nil, err
 	}

@@ -21,24 +21,13 @@ import (
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/handler/session"
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
 // MsgKillSessions implements `killSessions` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgKillSessions(connCtx context.Context, msg *wire.OpMsg, topLevel *wirebson.Document) (*wire.OpMsg, error) {
-	spec, err := msg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	doc, err := spec.Decode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	userID, _, err := h.s.CreateOrUpdateByLSID(connCtx, spec)
+func (h *Handler) MsgKillSessions(connCtx context.Context, msg *wire.OpMsg, doc *wirebson.Document) (*wire.OpMsg, error) {
+	userID, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc)
 	if err != nil {
 		return nil, err
 	}

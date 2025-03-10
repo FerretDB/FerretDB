@@ -30,18 +30,8 @@ import (
 // MsgKillAllSessionsByPattern implements `killAllSessionsByPattern` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgKillAllSessionsByPattern(connCtx context.Context, msg *wire.OpMsg, topLevel *wirebson.Document) (*wire.OpMsg, error) {
-	spec, err := msg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	doc, err := spec.Decode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	_, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec)
+func (h *Handler) MsgKillAllSessionsByPattern(connCtx context.Context, msg *wire.OpMsg, doc *wirebson.Document) (*wire.OpMsg, error) { //nolint:lll // for readability
+	_, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc)
 	if err != nil {
 		return nil, err
 	}

@@ -23,7 +23,6 @@ import (
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 )
@@ -31,19 +30,9 @@ import (
 // MsgSetFreeMonitoring implements `setFreeMonitoring` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgSetFreeMonitoring(connCtx context.Context, msg *wire.OpMsg, topLevel *wirebson.Document) (*wire.OpMsg, error) {
-	spec, err := msg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+func (h *Handler) MsgSetFreeMonitoring(connCtx context.Context, msg *wire.OpMsg, doc *wirebson.Document) (*wire.OpMsg, error) {
+	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
-	}
-
-	doc, err := spec.Decode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
 	}
 
 	action, err := getRequiredParam[string](doc, "action")

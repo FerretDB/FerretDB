@@ -562,8 +562,8 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 // handleOpMsg processes OP_MSG requests.
 //
 // The passed context is canceled when the client disconnects.
-func (c *conn) handleOpMsg(connCtx context.Context, msg *wire.OpMsg, topLevel *wirebson.Document) *wire.OpMsg {
-	command := topLevel.Command()
+func (c *conn) handleOpMsg(connCtx context.Context, msg *wire.OpMsg, doc *wirebson.Document) *wire.OpMsg {
+	command := doc.Command()
 
 	cmd, ok := c.h.Commands()[command]
 	if !ok || cmd.Handler == nil {
@@ -575,7 +575,7 @@ func (c *conn) handleOpMsg(connCtx context.Context, msg *wire.OpMsg, topLevel *w
 		return mongoerrors.Make(connCtx, err, "", c.l).Msg()
 	}
 
-	res, err := cmd.Handler(connCtx, msg, topLevel)
+	res, err := cmd.Handler(connCtx, msg, doc)
 	if err != nil {
 		return mongoerrors.Make(connCtx, err, "", c.l).Msg()
 	}

@@ -28,14 +28,8 @@ import (
 // MsgGetMore implements `getMore` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgGetMore(connCtx context.Context, msg *wire.OpMsg, topLevel *wirebson.Document) (*wire.OpMsg, error) {
+func (h *Handler) MsgGetMore(connCtx context.Context, msg *wire.OpMsg, doc *wirebson.Document) (*wire.OpMsg, error) {
 	spec, err := msg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
-	doc, err := spec.Decode()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -53,7 +47,7 @@ func (h *Handler) MsgGetMore(connCtx context.Context, msg *wire.OpMsg, topLevel 
 		return nil, mongoerrors.NewWithArgument(mongoerrors.ErrTypeMismatch, m, "getMore")
 	}
 
-	userID, sessionID, err := h.s.CreateOrUpdateByLSID(connCtx, spec)
+	userID, sessionID, err := h.s.CreateOrUpdateByLSID(connCtx, doc)
 	if err != nil {
 		return nil, err
 	}

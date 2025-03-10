@@ -28,19 +28,9 @@ import (
 // MsgGetParameter implements `getParameter` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgGetParameter(connCtx context.Context, msg *wire.OpMsg, topLevel *wirebson.Document) (*wire.OpMsg, error) {
-	spec, err := msg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+func (h *Handler) MsgGetParameter(connCtx context.Context, msg *wire.OpMsg, doc *wirebson.Document) (*wire.OpMsg, error) {
+	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
-	}
-
-	doc, err := spec.Decode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
 	}
 
 	getParameter := doc.Get(doc.Command())
@@ -95,11 +85,12 @@ func (h *Handler) MsgGetParameter(connCtx context.Context, msg *wire.OpMsg, topL
 
 	must.NoError(res.Add("ok", float64(1)))
 
-	if msg, err = wire.NewOpMsg(res); err != nil {
+	resMsg, err := wire.NewOpMsg(res)
+	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	return msg, nil
+	return resMsg, nil
 }
 
 // selectParameters makes a selection of requested parameters.

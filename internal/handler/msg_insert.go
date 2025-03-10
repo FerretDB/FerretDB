@@ -29,17 +29,11 @@ import (
 // MsgInsert implements `insert` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgInsert(connCtx context.Context, msg *wire.OpMsg, topLevel *wirebson.Document) (*wire.OpMsg, error) {
+func (h *Handler) MsgInsert(connCtx context.Context, msg *wire.OpMsg, doc *wirebson.Document) (*wire.OpMsg, error) {
 	spec, seq := msg.RawSections()
 
-	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
-	}
-
-	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
-	doc, err := spec.Decode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
 	}
 
 	dbName, err := getRequiredParam[string](doc, "$db")

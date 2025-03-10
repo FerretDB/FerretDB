@@ -32,26 +32,16 @@ import (
 // MsgRenameCollection implements `renameCollection` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgRenameCollection(connCtx context.Context, msg *wire.OpMsg, topLevel *wirebson.Document) (*wire.OpMsg, error) {
-	spec, err := msg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+func (h *Handler) MsgRenameCollection(connCtx context.Context, msg *wire.OpMsg, doc *wirebson.Document) (*wire.OpMsg, error) {
+	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
-	}
-
-	document, err := spec.Decode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
 	}
 
 	command := "renameCollection"
 
-	oldName, err := getRequiredParam[string](document, command)
+	oldName, err := getRequiredParam[string](doc, command)
 	if err != nil {
-		from := document.Get(command)
+		from := doc.Get(command)
 		if from == nil || from == wirebson.Null {
 			return nil, mongoerrors.NewWithArgument(
 				mongoerrors.ErrLocation40414,
@@ -67,9 +57,9 @@ func (h *Handler) MsgRenameCollection(connCtx context.Context, msg *wire.OpMsg, 
 		)
 	}
 
-	newName, err := getRequiredParam[string](document, "to")
+	newName, err := getRequiredParam[string](doc, "to")
 	if err != nil {
-		if to := document.Get("to"); to == nil || to == wirebson.Null {
+		if to := doc.Get("to"); to == nil || to == wirebson.Null {
 			return nil, mongoerrors.NewWithArgument(
 				mongoerrors.ErrLocation40414,
 				"BSON field 'renameCollection.to' is missing but a required field",
@@ -84,7 +74,7 @@ func (h *Handler) MsgRenameCollection(connCtx context.Context, msg *wire.OpMsg, 
 		)
 	}
 
-	dropTarget, err := getOptionalParam[bool](document, "dropTarget", false)
+	dropTarget, err := getOptionalParam[bool](doc, "dropTarget", false)
 	if err != nil {
 		return nil, err
 	}

@@ -30,7 +30,7 @@ import (
 // MsgKillCursors implements `killCursors` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgKillCursors(connCtx context.Context, msg *wire.OpMsg, topLevel *wirebson.Document) (*wire.OpMsg, error) {
+func (h *Handler) MsgKillCursors(connCtx context.Context, msg *wire.OpMsg, doc *wirebson.Document) (*wire.OpMsg, error) {
 	spec, err := msg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -55,7 +55,7 @@ func (h *Handler) MsgKillCursors(connCtx context.Context, msg *wire.OpMsg, topLe
 
 	username := conninfo.Get(connCtx).Conv().Username()
 
-	userID, _, err := h.s.CreateOrUpdateByLSID(connCtx, spec)
+	userID, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc)
 	if err != nil {
 		return nil, err
 	}

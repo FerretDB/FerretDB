@@ -20,6 +20,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 
+	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi/api"
@@ -41,7 +42,7 @@ func (s *Server) Aggregate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	msg, err := prepareOpMsg(
+	doc, err := prepareDocument(
 		"aggregate", req.Collection,
 		"$db", req.Database,
 		"pipeline", req.Pipeline,
@@ -52,7 +53,13 @@ func (s *Server) Aggregate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resMsg, err := s.handler.Commands()["aggregate"].Handler(ctx, msg)
+	msg, err := wire.NewOpMsg(doc)
+	if err != nil {
+		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+		return
+	}
+
+	resMsg, err := s.handler.Commands()["aggregate"].Handler(ctx, msg, doc)
 	if err != nil {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
