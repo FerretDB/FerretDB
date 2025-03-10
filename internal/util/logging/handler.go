@@ -55,7 +55,7 @@ type NewHandlerOpts struct {
 
 	// When unset, causes handler to panic on messages with leading/trailing spaces or ending punctuation.
 	// We can't enable checks everywhere because we don't control messages from third-party packages.
-	// But we should check out own messages.
+	// But we should check our own messages.
 	SkipChecks bool
 
 	// for testing only
