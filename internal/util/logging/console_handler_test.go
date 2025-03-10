@@ -37,6 +37,7 @@ func TestConsoleHandler(t *testing.T) {
 		opts := &NewHandlerOpts{
 			Level: slog.LevelDebug,
 		}
+
 		return newConsoleHandler(&buf, opts, testAttrs)
 	}
 
