@@ -27,7 +27,6 @@ func TestCircularBufferHandler(t *testing.T) {
 	opts := &NewHandlerOpts{
 		Base:              "console",
 		Level:             slog.LevelInfo,
-		CheckMessages:     true,
 		recentEntriesSize: 2,
 	}
 	SetupDefault(opts, "")
