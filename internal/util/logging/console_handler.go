@@ -22,12 +22,14 @@ import (
 	"io"
 	"log/slog"
 	"maps"
+	"os"
 	"runtime"
 	"slices"
 	"strconv"
 	"sync"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
+	"golang.org/x/term"
 )
 
 // timeLayout is the format of date time used by the console handler.
@@ -38,8 +40,6 @@ const timeLayout = "2006-01-02T15:04:05.000Z0700"
 // The format is not stable.
 //
 // See https://golang.org/s/slog-handler-guide.
-//
-// TODO https://github.com/FerretDB/FerretDB/issues/4438
 //
 //nolint:vet // for readability
 type consoleHandler struct {
@@ -56,6 +56,12 @@ type consoleHandler struct {
 // newConsoleHandler creates a new console handler.
 func newConsoleHandler(out io.Writer, opts *NewHandlerOpts, testAttrs map[string]any) *consoleHandler {
 	must.NotBeZero(opts)
+
+	if !term.IsTerminal(int(os.Stdout.Fd())) {
+		panic(1)
+	}
+
+	term.NewTerminal(out, "")
 
 	return &consoleHandler{
 		opts:      opts,
@@ -78,6 +84,8 @@ func (ch *consoleHandler) Enabled(_ context.Context, l slog.Level) bool {
 // Handle implements [slog.Handler].
 func (ch *consoleHandler) Handle(ctx context.Context, r slog.Record) error {
 	var buf bytes.Buffer
+
+	buf.Write(term.EscapeCodes{}.Red)
 
 	if !ch.opts.RemoveTime && !r.Time.IsZero() {
 		t := r.Time.Format(timeLayout)
