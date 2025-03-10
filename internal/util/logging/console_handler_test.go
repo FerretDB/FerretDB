@@ -35,8 +35,7 @@ func TestConsoleHandler(t *testing.T) {
 		testAttrs = map[string]any{}
 
 		opts := &NewHandlerOpts{
-			Level:         slog.LevelDebug,
-			CheckMessages: true,
+			Level: slog.LevelDebug,
 		}
 		return newConsoleHandler(&buf, opts, testAttrs)
 	}

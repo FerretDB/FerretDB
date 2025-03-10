@@ -35,8 +35,7 @@ func TestMongoHandler(t *testing.T) {
 		testAttrs = map[string]any{}
 
 		opts := &NewHandlerOpts{
-			Level:         slog.LevelDebug,
-			CheckMessages: true,
+			Level: slog.LevelDebug,
 		}
 		return newMongoHandler(&buf, opts, testAttrs)
 	}
