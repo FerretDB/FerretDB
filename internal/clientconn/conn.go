@@ -421,11 +421,8 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		resHeader.OpCode = wire.OpCodeMsg
 
 		var doc *wirebson.Document
-		if doc, err = raw.Decode(); err == nil {
-			command = doc.Command()
-		}
 
-		if err == nil {
+		if doc, err = raw.Decode(); err == nil {
 			comment, _ := doc.Get("comment").(string)
 
 			spanCtx, e := observability.SpanContextFromComment(comment)
@@ -439,7 +436,7 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		connCtx, span = otel.Tracer("").Start(connCtx, "")
 
 		if err == nil {
-			resBody = c.handleOpMsg(connCtx, msg, command)
+			resBody = c.handleOpMsg(connCtx, msg, doc)
 		}
 
 	case wire.OpCodeQuery:
@@ -565,7 +562,9 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 // handleOpMsg processes OP_MSG requests.
 //
 // The passed context is canceled when the client disconnects.
-func (c *conn) handleOpMsg(connCtx context.Context, msg *wire.OpMsg, command string) *wire.OpMsg {
+func (c *conn) handleOpMsg(connCtx context.Context, msg *wire.OpMsg, topLevel *wirebson.Document) *wire.OpMsg {
+	command := topLevel.Command()
+
 	cmd, ok := c.h.Commands()[command]
 	if !ok || cmd.Handler == nil {
 		err := mongoerrors.New(
@@ -576,7 +575,7 @@ func (c *conn) handleOpMsg(connCtx context.Context, msg *wire.OpMsg, command str
 		return mongoerrors.Make(connCtx, err, "", c.l).Msg()
 	}
 
-	res, err := cmd.Handler(connCtx, msg)
+	res, err := cmd.Handler(connCtx, msg, topLevel)
 	if err != nil {
 		return mongoerrors.Make(connCtx, err, "", c.l).Msg()
 	}

@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
@@ -26,7 +27,7 @@ import (
 // MsgCount implements `count` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgCount(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+func (h *Handler) MsgCount(connCtx context.Context, msg *wire.OpMsg, topLevel *wirebson.Document) (*wire.OpMsg, error) {
 	spec, err := msg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)

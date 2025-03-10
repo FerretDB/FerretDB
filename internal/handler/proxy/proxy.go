@@ -85,6 +85,8 @@ func (r *Router) Route(ctx context.Context, header *wire.MsgHeader, body wire.Ms
 	deadline, _ := ctx.Deadline()
 	r.conn.SetDeadline(deadline)
 
+	// add metrics and traces
+	// TODO https://github.com/FerretDB/FerretDB/issues/1997
 	if err := wire.WriteMessage(r.bufw, header, body); err != nil {
 		panic(err)
 	}

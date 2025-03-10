@@ -20,6 +20,7 @@ import (
 	"log/slog"
 
 	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
@@ -33,7 +34,7 @@ type command struct {
 	// Handler processes this command.
 	//
 	// The passed context is canceled when the client disconnects.
-	Handler func(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
+	Handler func(ctx context.Context, msg *wire.OpMsg, topLevel *wirebson.Document) (*wire.OpMsg, error)
 
 	// Help is shown in the `listCommands` command output.
 	// If empty, that command is hidden, but still can be used.
@@ -314,12 +315,12 @@ func (h *Handler) initCommands() {
 
 		cmdHandler := h.commands[name].Handler
 
-		h.commands[name].Handler = func(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+		h.commands[name].Handler = func(ctx context.Context, msg *wire.OpMsg, topLevel *wirebson.Document) (*wire.OpMsg, error) {
 			if err := checkAuthentication(ctx, name, h.L); err != nil {
 				return nil, err
 			}
 
-			return cmdHandler(ctx, msg)
+			return cmdHandler(ctx, msg, topLevel)
 		}
 	}
 }

@@ -29,7 +29,7 @@ import (
 // MsgUpdate implements `update` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgUpdate(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+func (h *Handler) MsgUpdate(connCtx context.Context, msg *wire.OpMsg, topLevel *wirebson.Document) (*wire.OpMsg, error) {
 	spec, seq := msg.RawSections()
 
 	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
