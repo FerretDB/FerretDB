@@ -296,48 +296,8 @@ func (c *conn) run(ctx context.Context) (err error) {
 
 		// diff in diff mode
 		if c.l.Enabled(ctx, diffLogLevel) && (c.mode == DiffNormalMode || c.mode == DiffProxyMode) {
-			var diffHeader string
-			diffHeader, err = difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
-				A:        difflib.SplitLines(resHeader.String()),
-				FromFile: "res header",
-				B:        difflib.SplitLines(proxyHeader.String()),
-				ToFile:   "proxy header",
-				Context:  1,
-			})
-			if err != nil {
+			if err = c.logDiff(ctx, resHeader, proxyHeader, resBody, proxyBody, diffLogLevel); err != nil {
 				return
-			}
-
-			// resBody can be nil if we got a message we could not handle at all, like unsupported OpQuery.
-			var resBodyString, proxyBodyString string
-
-			if resBody != nil {
-				resBodyString = resBody.StringIndent()
-			}
-
-			if proxyBody != nil {
-				proxyBodyString = proxyBody.StringIndent()
-			}
-
-			var diffBody string
-			diffBody, err = difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
-				A:        difflib.SplitLines(resBodyString),
-				FromFile: "res body",
-				B:        difflib.SplitLines(proxyBodyString),
-				ToFile:   "proxy body",
-				Context:  1,
-			})
-			if err != nil {
-				return
-			}
-
-			if c.l.Enabled(ctx, diffLogLevel) {
-				if len(diffBody) > 0 {
-					diffBody = strings.TrimSpace(diffBody)
-					diffBody = "\n" + diffBody
-				}
-
-				c.l.Log(ctx, diffLogLevel, "Header diff:\n"+diffHeader+"\nBody diff:"+diffBody)
 			}
 		}
 
@@ -625,4 +585,49 @@ func (c *conn) logResponse(ctx context.Context, who string, resHeader *wire.MsgH
 	}
 
 	return level
+}
+
+// logDiff logs the diff between the response and the proxy response.
+func (c *conn) logDiff(ctx context.Context, resHeader, proxyHeader *wire.MsgHeader, resBody, proxyBody wire.MsgBody, logLevel slog.Level) error { //nolint:lll // for readability
+	diffHeader, err := difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
+		A:        difflib.SplitLines(resHeader.String()),
+		FromFile: "res header",
+		B:        difflib.SplitLines(proxyHeader.String()),
+		ToFile:   "proxy header",
+		Context:  1,
+	})
+	if err != nil {
+		return err
+	}
+
+	// resBody can be nil if we got a message we could not handle at all, like unsupported OpQuery.
+	var resBodyString, proxyBodyString string
+
+	if resBody != nil {
+		resBodyString = resBody.StringIndent()
+	}
+
+	if proxyBody != nil {
+		proxyBodyString = proxyBody.StringIndent()
+	}
+
+	diffBody, err := difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
+		A:        difflib.SplitLines(resBodyString),
+		FromFile: "res body",
+		B:        difflib.SplitLines(proxyBodyString),
+		ToFile:   "proxy body",
+		Context:  1,
+	})
+	if err != nil {
+		return err
+	}
+
+	if len(diffBody) > 0 {
+		diffBody = strings.TrimSpace(diffBody)
+		diffBody = "\n" + diffBody
+	}
+
+	c.l.Log(ctx, logLevel, "Header diff:\n"+diffHeader+"\nBody diff:"+diffBody)
+
+	return nil
 }
