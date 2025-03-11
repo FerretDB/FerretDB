@@ -74,6 +74,7 @@ func newConsoleHandler(out io.Writer, opts *NewHandlerOpts, testAttrs map[string
 	}
 
 	ch.out = out
+
 	return ch
 }
 
@@ -85,33 +86,6 @@ func (ch *consoleHandler) Enabled(_ context.Context, l slog.Level) bool {
 	}
 
 	return l >= minLevel
-}
-
-// isColorized returns true if the handler is able to print colorized messages.
-func (ch *consoleHandler) isColorized() bool {
-	return ch.term != nil
-}
-
-// colorizedLevel returns colorized string representation of l [slog.Level].
-// If ch is unable to print colorized messages, non-colorized string is returned.
-func (ch *consoleHandler) colorizedLevel(l slog.Level) string {
-	if !ch.isColorized() {
-		return l.String()
-	}
-
-	format := "%s%s%s"
-	switch l {
-	case slog.LevelDebug:
-		return fmt.Sprintf(format, ch.term.Escape.Magenta, l.String(), ch.term.Escape.Reset)
-	case slog.LevelInfo:
-		return fmt.Sprintf(format, ch.term.Escape.Green, l.String(), ch.term.Escape.Reset)
-	case slog.LevelWarn:
-		return fmt.Sprintf(format, ch.term.Escape.Yellow, l.String(), ch.term.Escape.Reset)
-	case slog.LevelError:
-		return fmt.Sprintf(format, ch.term.Escape.Red, l.String(), ch.term.Escape.Reset)
-	default:
-		return l.String()
-	}
 }
 
 // Handle implements [slog.Handler].
@@ -225,6 +199,34 @@ func (ch *consoleHandler) WithGroup(name string) slog.Handler {
 		out:       ch.out,
 		term:      ch.term,
 		testAttrs: ch.testAttrs,
+	}
+}
+
+// isColorized returns true if the handler is able to print colorized messages.
+func (ch *consoleHandler) isColorized() bool {
+	return ch.term != nil
+}
+
+// colorizedLevel returns colorized string representation of l [slog.Level].
+// If ch is unable to print colorized messages, non-colorized string is returned.
+func (ch *consoleHandler) colorizedLevel(l slog.Level) string {
+	if !ch.isColorized() {
+		return l.String()
+	}
+
+	format := "%s%s%s"
+
+	switch l {
+	case slog.LevelDebug:
+		return fmt.Sprintf(format, ch.term.Escape.Magenta, l.String(), ch.term.Escape.Reset)
+	case slog.LevelInfo:
+		return fmt.Sprintf(format, ch.term.Escape.Green, l.String(), ch.term.Escape.Reset)
+	case slog.LevelWarn:
+		return fmt.Sprintf(format, ch.term.Escape.Yellow, l.String(), ch.term.Escape.Reset)
+	case slog.LevelError:
+		return fmt.Sprintf(format, ch.term.Escape.Red, l.String(), ch.term.Escape.Reset)
+	default:
+		return l.String()
 	}
 }
 
