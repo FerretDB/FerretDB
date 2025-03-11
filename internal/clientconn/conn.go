@@ -623,8 +623,8 @@ func (c *conn) logDiff(ctx context.Context, resHeader, proxyHeader *wire.MsgHead
 	}
 
 	if len(diffBody) > 0 {
-		diffBody = strings.TrimSpace(diffBody)
-		diffBody = "\n" + diffBody
+		// the diff control lines (those with ---, +++, or @@) are created with a trailing newline
+		diffBody = "\n" + strings.TrimSpace(diffBody)
 	}
 
 	c.l.Log(ctx, logLevel, "Header diff:\n"+diffHeader+"\nBody diff:"+diffBody)
