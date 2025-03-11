@@ -50,12 +50,15 @@ type consoleHandler struct {
 
 	testAttrs map[string]any
 
-	m   *sync.Mutex
-	out io.Writer
-	t   *term.Terminal
+	m *sync.Mutex
+
+	// only out, or term must be set
+	out  io.Writer
+	term *term.Terminal
 }
 
 // newConsoleHandler creates a new console handler.
+// If out is a valid tty, the consoleHandler will send colorized messages.
 func newConsoleHandler(out io.Writer, opts *NewHandlerOpts, testAttrs map[string]any) *consoleHandler {
 	must.NotBeZero(opts)
 
@@ -71,7 +74,7 @@ func newConsoleHandler(out io.Writer, opts *NewHandlerOpts, testAttrs map[string
 	case !ok:
 		ch.out = out
 	case term.IsTerminal(int(f.Fd())):
-		ch.t = term.NewTerminal(f, "")
+		ch.term = term.NewTerminal(f, "")
 	default:
 		ch.out = out
 	}
@@ -89,23 +92,31 @@ func (ch *consoleHandler) Enabled(_ context.Context, l slog.Level) bool {
 	return l >= minLevel
 }
 
-func (ch *consoleHandler) coloredLevel(l slog.Level) string {
-	if ch.t == nil {
+// isColorized returns true if the handler is able to print colorized messages.
+func (ch *consoleHandler) isColorized() bool {
+	return ch.term != nil
+}
+
+// colorizedLevel returns colorized string representation of l [slog.Level].
+// If ch is unable to print colorized messages, non-colorized string is returned.
+func (ch *consoleHandler) colorizedLevel(l slog.Level) string {
+	if !ch.isColorized() {
 		return l.String()
 	}
 
+	format := "%s%s%s"
 	switch l {
 	case slog.LevelInfo:
-		return string(ch.t.Escape.Green) + l.String() + string(ch.t.Escape.Reset)
+		return fmt.Sprintf(format, ch.term.Escape.Green, l.String(), ch.term.Escape.Reset)
 	case slog.LevelWarn:
-		return string(ch.t.Escape.Yellow) + l.String() + string(ch.t.Escape.Reset)
+		return fmt.Sprintf(format, ch.term.Escape.Yellow, l.String(), ch.term.Escape.Reset)
 	case slog.LevelError:
-		return string(ch.t.Escape.Red) + l.String() + string(ch.t.Escape.Reset)
+		return fmt.Sprintf(format, ch.term.Escape.Red, l.String(), ch.term.Escape.Reset)
 	case slog.LevelDebug:
-		return string(ch.t.Escape.Magenta) + l.String() + string(ch.t.Escape.Reset)
+		return fmt.Sprintf(format, ch.term.Escape.Magenta, l.String(), ch.term.Escape.Reset)
+	default:
+		return l.String()
 	}
-
-	return l.String()
 }
 
 // Handle implements [slog.Handler].
@@ -123,8 +134,7 @@ func (ch *consoleHandler) Handle(ctx context.Context, r slog.Record) error {
 	}
 
 	if !ch.opts.RemoveLevel {
-		// l := r.Level.String()
-		buf.WriteString(ch.coloredLevel(r.Level))
+		buf.WriteString(ch.colorizedLevel(r.Level))
 		buf.WriteRune('\t')
 
 		if ch.testAttrs != nil {
@@ -182,8 +192,8 @@ func (ch *consoleHandler) Handle(ctx context.Context, r slog.Record) error {
 	ch.m.Lock()
 	defer ch.m.Unlock()
 
-	if ch.t != nil {
-		_, err := buf.WriteTo(ch.t)
+	if ch.term != nil {
+		_, err := buf.WriteTo(ch.term)
 		return err
 	}
 
@@ -202,7 +212,7 @@ func (ch *consoleHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 		ga:        append(slices.Clone(ch.ga), groupOrAttrs{attrs: attrs}),
 		m:         ch.m,
 		out:       ch.out,
-		t:         ch.t,
+		term:      ch.term,
 		testAttrs: ch.testAttrs,
 	}
 }
@@ -218,7 +228,7 @@ func (ch *consoleHandler) WithGroup(name string) slog.Handler {
 		ga:        append(slices.Clone(ch.ga), groupOrAttrs{group: name}),
 		m:         ch.m,
 		out:       ch.out,
-		t:         ch.t,
+		term:      ch.term,
 		testAttrs: ch.testAttrs,
 	}
 }
