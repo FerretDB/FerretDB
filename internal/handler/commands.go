@@ -18,11 +18,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/FerretDB/wire"
+
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware/auth"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware/metrics"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
-	"github.com/FerretDB/wire"
 )
 
 // command represents a handler for single command.

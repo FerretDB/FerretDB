@@ -19,10 +19,11 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/FerretDB/wire"
+
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
-	"github.com/FerretDB/wire"
 )
 
 func Handler(next middleware.HandlerFunc, l *slog.Logger, command string) middleware.HandlerFunc {
