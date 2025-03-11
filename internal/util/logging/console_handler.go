@@ -59,21 +59,25 @@ type consoleHandler struct {
 func newConsoleHandler(out io.Writer, opts *NewHandlerOpts, testAttrs map[string]any) *consoleHandler {
 	must.NotBeZero(opts)
 
-	f := out.(*os.File)
-
-	if !term.IsTerminal(int(f.Fd())) {
-		panic(1)
-	}
-
-	t := term.NewTerminal(f, "")
-
-	return &consoleHandler{
+	ch := &consoleHandler{
 		opts:      opts,
 		testAttrs: testAttrs,
 		m:         new(sync.Mutex),
-		out:       out,
-		t:         t,
 	}
+
+	f, ok := out.(*os.File)
+
+	switch {
+	case !ok:
+		ch.out = out
+	case term.IsTerminal(int(f.Fd())):
+		ch.t = term.NewTerminal(f, "")
+	default:
+		ch.out = out
+	}
+
+	return ch
+
 }
 
 // Enabled implements [slog.Handler].
@@ -179,8 +183,12 @@ func (ch *consoleHandler) Handle(ctx context.Context, r slog.Record) error {
 	ch.m.Lock()
 	defer ch.m.Unlock()
 
-	_, err := buf.WriteTo(ch.t)
+	if ch.t != nil {
+		_, err := buf.WriteTo(ch.t)
+		return err
+	}
 
+	_, err := buf.WriteTo(ch.out)
 	return err
 }
 
