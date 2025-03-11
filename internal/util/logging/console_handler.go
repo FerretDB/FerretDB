@@ -64,21 +64,26 @@ type consoleHandler struct {
 
 	m   *sync.Mutex
 	out io.Writer
+	t   *term.Terminal
 }
 
 // newConsoleHandler creates a new console handler.
 func newConsoleHandler(out io.Writer, opts *NewHandlerOpts, testAttrs map[string]any) *consoleHandler {
 	must.NotBeZero(opts)
 
-	if !term.IsTerminal(int(os.Stdout.Fd())) {
+	f := out.(*os.File)
+
+	if !term.IsTerminal(int(f.Fd())) {
 		panic(1)
 	}
+
+	t := term.NewTerminal(f, "")
 
 	return &consoleHandler{
 		opts:      opts,
 		testAttrs: testAttrs,
 		m:         new(sync.Mutex),
-		out:       out,
+		t:         t,
 	}
 }
 
@@ -92,12 +97,10 @@ func (ch *consoleHandler) Enabled(_ context.Context, l slog.Level) bool {
 	return l >= minLevel
 }
 
-func coloredLevel(l slog.Level) string {
-	t := term.NewTerminal(nil, "")
-
+func (ch *consoleHandler) coloredLevel(l slog.Level) string {
 	switch l {
 	case slog.LevelInfo:
-		return string(t.Escape.Green) + l.String() + string(t.Escape.Reset)
+		return string(ch.t.Escape.Green) + l.String() + string(ch.t.Escape.Reset)
 	case slog.LevelWarn:
 		return yellow + l.String() + reset
 	case slog.LevelError:
@@ -125,7 +128,7 @@ func (ch *consoleHandler) Handle(ctx context.Context, r slog.Record) error {
 
 	if !ch.opts.RemoveLevel {
 		// l := r.Level.String()
-		buf.WriteString(coloredLevel(r.Level))
+		buf.WriteString(ch.coloredLevel(r.Level))
 		buf.WriteRune('\t')
 
 		if ch.testAttrs != nil {
@@ -183,7 +186,7 @@ func (ch *consoleHandler) Handle(ctx context.Context, r slog.Record) error {
 	ch.m.Lock()
 	defer ch.m.Unlock()
 
-	_, err := buf.WriteTo(ch.out)
+	_, err := buf.WriteTo(ch.t)
 
 	return err
 }
@@ -199,6 +202,7 @@ func (ch *consoleHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 		ga:        append(slices.Clone(ch.ga), groupOrAttrs{attrs: attrs}),
 		m:         ch.m,
 		out:       ch.out,
+		t:         ch.t,
 		testAttrs: ch.testAttrs,
 	}
 }
@@ -214,6 +218,7 @@ func (ch *consoleHandler) WithGroup(name string) slog.Handler {
 		ga:        append(slices.Clone(ch.ga), groupOrAttrs{group: name}),
 		m:         ch.m,
 		out:       ch.out,
+		t:         ch.t,
 		testAttrs: ch.testAttrs,
 	}
 }
