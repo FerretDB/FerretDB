@@ -176,6 +176,11 @@ func TestDefine(t *testing.T) {
 					"ghcr.io/ferretdb/ferretdb-dev:main",
 					"quay.io/ferretdb/ferretdb-dev:main",
 				},
+				productionImages: []string{
+					"ferretdb/ferretdb-dev:main-prod",
+					"ghcr.io/ferretdb/ferretdb-dev:main-prod",
+					"quay.io/ferretdb/ferretdb-dev:main-prod",
+				},
 			},
 		},
 		"push/main-other": {
@@ -193,6 +198,9 @@ func TestDefine(t *testing.T) {
 				},
 				developmentImages: []string{
 					"ghcr.io/otherorg/otherrepo-dev:main",
+				},
+				productionImages: []string{
+					"ghcr.io/otherorg/otherrepo-dev:main-prod",
 				},
 			},
 		},
@@ -217,6 +225,11 @@ func TestDefine(t *testing.T) {
 					"ghcr.io/ferretdb/ferretdb-dev:main-v1",
 					"quay.io/ferretdb/ferretdb-dev:main-v1",
 				},
+				productionImages: []string{
+					"ferretdb/ferretdb-dev:main-v1-prod",
+					"ghcr.io/ferretdb/ferretdb-dev:main-v1-prod",
+					"quay.io/ferretdb/ferretdb-dev:main-v1-prod",
+				},
 			},
 		},
 		"push/main-v1-other": {
@@ -234,6 +247,9 @@ func TestDefine(t *testing.T) {
 				},
 				developmentImages: []string{
 					"ghcr.io/otherorg/otherrepo-dev:main-v1",
+				},
+				productionImages: []string{
+					"ghcr.io/otherorg/otherrepo-dev:main-v1-prod",
 				},
 			},
 		},
@@ -258,6 +274,11 @@ func TestDefine(t *testing.T) {
 					"ghcr.io/ferretdb/ferretdb-dev:releases-2.1",
 					"quay.io/ferretdb/ferretdb-dev:releases-2.1",
 				},
+				productionImages: []string{
+					"ferretdb/ferretdb-dev:releases-2.1-prod",
+					"ghcr.io/ferretdb/ferretdb-dev:releases-2.1-prod",
+					"quay.io/ferretdb/ferretdb-dev:releases-2.1-prod",
+				},
 			},
 		},
 		"push/release-other": {
@@ -275,6 +296,9 @@ func TestDefine(t *testing.T) {
 				},
 				developmentImages: []string{
 					"ghcr.io/otherorg/otherrepo-dev:releases-2.1",
+				},
+				productionImages: []string{
+					"ghcr.io/otherorg/otherrepo-dev:releases-2.1-prod",
 				},
 			},
 		},
@@ -624,6 +648,11 @@ func TestDefine(t *testing.T) {
 					"ghcr.io/ferretdb/ferretdb-dev:main",
 					"quay.io/ferretdb/ferretdb-dev:main",
 				},
+				productionImages: []string{
+					"ferretdb/ferretdb-dev:main-prod",
+					"ghcr.io/ferretdb/ferretdb-dev:main-prod",
+					"quay.io/ferretdb/ferretdb-dev:main-prod",
+				},
 			},
 		},
 		"schedule-other": {
@@ -641,6 +670,9 @@ func TestDefine(t *testing.T) {
 				},
 				developmentImages: []string{
 					"ghcr.io/otherorg/otherrepo-dev:main",
+				},
+				productionImages: []string{
+					"ghcr.io/otherorg/otherrepo-dev:main-prod",
 				},
 			},
 		},
@@ -665,6 +697,11 @@ func TestDefine(t *testing.T) {
 					"ghcr.io/ferretdb/ferretdb-dev:main",
 					"quay.io/ferretdb/ferretdb-dev:main",
 				},
+				productionImages: []string{
+					"ferretdb/ferretdb-dev:main-prod",
+					"ghcr.io/ferretdb/ferretdb-dev:main-prod",
+					"quay.io/ferretdb/ferretdb-dev:main-prod",
+				},
 			},
 		},
 		"workflow_run-other": {
@@ -682,6 +719,9 @@ func TestDefine(t *testing.T) {
 				},
 				developmentImages: []string{
 					"ghcr.io/otherorg/otherrepo-dev:main",
+				},
+				productionImages: []string{
+					"ghcr.io/otherorg/otherrepo-dev:main-prod",
 				},
 			},
 		},
