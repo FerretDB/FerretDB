@@ -22,6 +22,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"hash"
 	"io"
 	"log/slog"
 	"net"
@@ -197,34 +198,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 		h := sha256.New()
 
 		defer func() {
-			// do not store partial files
-			if !errors.Is(err, wire.ErrZeroRead) {
-				_ = f.Close()
-				_ = os.Remove(f.Name())
-
-				return
-			}
-
-			// surprisingly, Sync is required before Rename on many OS/FS combinations
-			if e := f.Sync(); e != nil {
-				c.l.WarnContext(ctx, "Failed to sync file", logging.Error(e))
-			}
-
-			if e := f.Close(); e != nil {
-				c.l.WarnContext(ctx, "Failed to close file", logging.Error(e))
-			}
-
-			fileName := hex.EncodeToString(h.Sum(nil))
-
-			hashPath := filepath.Join(c.testRecordsDir, fileName[:2])
-			if e := os.MkdirAll(hashPath, 0o777); e != nil {
-				c.l.WarnContext(ctx, "Failed to make directory", logging.Error(e))
-			}
-
-			path := filepath.Join(hashPath, fileName+".bin")
-			if e := os.Rename(f.Name(), path); e != nil {
-				c.l.WarnContext(ctx, "Failed to rename file", logging.Error(e))
-			}
+			c.renameFile(ctx, f, h, err)
 		}()
 
 		r := io.TeeReader(c.netConn, io.MultiWriter(f, h))
@@ -542,6 +516,38 @@ func (c *conn) handleOpMsg(connCtx context.Context, msg *wire.OpMsg, command str
 	}
 
 	return res
+}
+
+// renameFile renames the file. Renaming is used to prevent partial files from being stored.
+func (c *conn) renameFile(ctx context.Context, f *os.File, h hash.Hash, err error) {
+	// do not store partial files
+	if !errors.Is(err, wire.ErrZeroRead) {
+		_ = f.Close()
+		_ = os.Remove(f.Name())
+
+		return
+	}
+
+	// surprisingly, Sync is required before Rename on many OS/FS combinations
+	if e := f.Sync(); e != nil {
+		c.l.WarnContext(ctx, "Failed to sync file", logging.Error(e))
+	}
+
+	if e := f.Close(); e != nil {
+		c.l.WarnContext(ctx, "Failed to close file", logging.Error(e))
+	}
+
+	fileName := hex.EncodeToString(h.Sum(nil))
+
+	hashPath := filepath.Join(c.testRecordsDir, fileName[:2])
+	if e := os.MkdirAll(hashPath, 0o777); e != nil {
+		c.l.WarnContext(ctx, "Failed to make directory", logging.Error(e))
+	}
+
+	path := filepath.Join(hashPath, fileName+".bin")
+	if e := os.Rename(f.Name(), path); e != nil {
+		c.l.WarnContext(ctx, "Failed to rename file", logging.Error(e))
+	}
 }
 
 // logResponse logs response's header and body and returns the log level that was used.
