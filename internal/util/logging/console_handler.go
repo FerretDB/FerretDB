@@ -93,9 +93,11 @@ func (ch *consoleHandler) Enabled(_ context.Context, l slog.Level) bool {
 }
 
 func coloredLevel(l slog.Level) string {
+	t := term.NewTerminal(nil, "")
+
 	switch l {
 	case slog.LevelInfo:
-		return green + l.String() + reset
+		return string(t.Escape.Green) + l.String() + string(t.Escape.Reset)
 	case slog.LevelWarn:
 		return yellow + l.String() + reset
 	case slog.LevelError:
