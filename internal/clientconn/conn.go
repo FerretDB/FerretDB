@@ -520,7 +520,8 @@ func (c *conn) handleOpMsg(connCtx context.Context, msg *wire.OpMsg, command str
 	return res
 }
 
-// renameFile renames the file. Renaming is used to prevent partial files from being stored.
+// renameFile takes over an open file `f`, closes it and renames it to a generated name using hash.
+// Renaming is used to prevent partial files from being stored.
 func (c *conn) renameFile(ctx context.Context, f *os.File, h hash.Hash, err error) {
 	// do not store partial files
 	if !errors.Is(err, wire.ErrZeroRead) {
