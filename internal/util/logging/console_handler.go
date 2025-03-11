@@ -28,8 +28,9 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 	"golang.org/x/term"
+
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // timeLayout is the format of date time used by the console handler.
@@ -121,7 +122,7 @@ func (ch *consoleHandler) Handle(ctx context.Context, r slog.Record) error {
 	}
 
 	if !ch.opts.RemoveLevel {
-		//l := r.Level.String()
+		// l := r.Level.String()
 		buf.WriteString(coloredLevel(r.Level))
 		buf.WriteRune('\t')
 
