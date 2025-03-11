@@ -77,7 +77,6 @@ func newConsoleHandler(out io.Writer, opts *NewHandlerOpts, testAttrs map[string
 	}
 
 	return ch
-
 }
 
 // Enabled implements [slog.Handler].
