@@ -26,7 +26,8 @@ import (
 
 // Error represents MongoDB command error.
 type Error struct {
-	// Command's argument, operator, or aggregation pipeline stage that caused an error.
+	// Command's argument, operator, or aggregation pipeline stage that caused an error,
+	// but not the command name itself.
 	// Used for metrics and telemetry.
 	Argument string
 

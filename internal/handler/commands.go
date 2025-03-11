@@ -48,6 +48,11 @@ func (h *Handler) initCommands() {
 			Handler: h.MsgAggregate,
 			Help:    "Returns aggregated data.",
 		},
+		"authenticate": {
+			// TODO https://github.com/FerretDB/FerretDB/issues/1731
+			anonymous: true,
+			Help:      "", // hidden while not implemented
+		},
 		"buildInfo": {
 			Handler:   h.MsgBuildInfo,
 			anonymous: true,
@@ -57,6 +62,10 @@ func (h *Handler) initCommands() {
 			Handler:   h.MsgBuildInfo,
 			anonymous: true,
 			Help:      "", // hidden
+		},
+		"bulkWrite": {
+			// TODO https://github.com/FerretDB/FerretDB/issues/4910
+			Help: "", // hidden while not implemented
 		},
 		"collMod": {
 			Handler: h.MsgCollMod,
@@ -69,6 +78,11 @@ func (h *Handler) initCommands() {
 		"compact": {
 			Handler: h.MsgCompact,
 			Help:    "Reduces the disk space collection takes and refreshes its statistics.",
+		},
+		"connPoolStats": {
+			// TODO https://github.com/FerretDB/FerretDB/issues/4909
+			anonymous: true,
+			Help:      "", // hidden while not implemented
 		},
 		"connectionStatus": {
 			Handler:   h.MsgConnectionStatus,
@@ -303,24 +317,38 @@ func (h *Handler) initCommands() {
 		// please keep sorted alphabetically
 	}
 
-	if !h.Auth {
-		return
-	}
-
 	for name, cmd := range h.commands {
-		if cmd.anonymous {
-			continue
+		handler := h.commands[name].Handler
+
+		if handler == nil {
+			handler = notImplemented(name)
 		}
 
-		cmdHandler := h.commands[name].Handler
+		if h.Auth && !cmd.anonymous {
+			next := handler
+			handler = func(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+				if err := checkAuthentication(ctx, name, h.L); err != nil {
+					return nil, err
+				}
 
-		h.commands[name].Handler = func(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-			if err := checkAuthentication(ctx, name, h.L); err != nil {
-				return nil, err
+				return next(ctx, msg)
 			}
-
-			return cmdHandler(ctx, msg)
 		}
+
+		h.commands[name].Handler = handler
+	}
+}
+
+// Commands returns a map of enabled commands.
+func (h *Handler) Commands() map[string]*command {
+	return h.commands
+}
+
+// notImplemented returns a handler that returns an error indicating that the command is not implemented.
+func notImplemented(command string) func(context.Context, *wire.OpMsg) (*wire.OpMsg, error) {
+	return func(context.Context, *wire.OpMsg) (*wire.OpMsg, error) {
+		msg := fmt.Sprintf("Command %s is not implemented", command)
+		return nil, mongoerrors.New(mongoerrors.ErrNotImplemented, msg)
 	}
 }
 
@@ -348,9 +376,4 @@ func checkAuthentication(ctx context.Context, command string, l *slog.Logger) er
 		fmt.Sprintf("Command %s requires authentication", command),
 		"checkAuthentication",
 	)
-}
-
-// Commands returns a map of enabled commands.
-func (h *Handler) Commands() map[string]*command {
-	return h.commands
 }
