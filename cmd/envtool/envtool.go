@@ -249,7 +249,7 @@ func main() {
 		RemoveTime:   true,
 		RemoveSource: true,
 		// the logger handles messages from the `go test` command output
-		CheckMessages: false,
+		SkipChecks: true,
 	}
 	logging.SetupDefault(opts, "")
 	logger := slog.Default()

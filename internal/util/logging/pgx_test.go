@@ -33,9 +33,8 @@ func TestPgxLogger(t *testing.T) {
 
 	var buf bytes.Buffer
 	h := NewHandler(&buf, &NewHandlerOpts{
-		Base:          "console",
-		Level:         pgxLogLevels[level],
-		CheckMessages: true,
+		Base:  "console",
+		Level: pgxLogLevels[level],
 	})
 
 	tracer := &tracelog.TraceLog{

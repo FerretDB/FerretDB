@@ -159,7 +159,7 @@ func (ch *consoleHandler) Handle(ctx context.Context, r slog.Record) error {
 		encoder.SetEscapeHTML(false)
 
 		err := encoder.Encode(m)
-		if ch.opts.CheckMessages {
+		if !ch.opts.SkipChecks {
 			must.NoError(err)
 		}
 
