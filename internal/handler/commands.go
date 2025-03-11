@@ -15,9 +15,14 @@
 package handler
 
 import (
+	"context"
+	"fmt"
+
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware/auth"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware/metrics"
+	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
+	"github.com/FerretDB/wire"
 )
 
 // command represents a handler for single command.
@@ -43,6 +48,11 @@ func (h *Handler) initCommands() {
 			Handler: h.MsgAggregate,
 			Help:    "Returns aggregated data.",
 		},
+		"authenticate": {
+			// TODO https://github.com/FerretDB/FerretDB/issues/1731
+			anonymous: true,
+			Help:      "", // hidden while not implemented
+		},
 		"buildInfo": {
 			Handler:   h.MsgBuildInfo,
 			anonymous: true,
@@ -52,6 +62,10 @@ func (h *Handler) initCommands() {
 			Handler:   h.MsgBuildInfo,
 			anonymous: true,
 			Help:      "", // hidden
+		},
+		"bulkWrite": {
+			// TODO https://github.com/FerretDB/FerretDB/issues/4910
+			Help: "", // hidden while not implemented
 		},
 		"collMod": {
 			Handler: h.MsgCollMod,
@@ -64,6 +78,11 @@ func (h *Handler) initCommands() {
 		"compact": {
 			Handler: h.MsgCompact,
 			Help:    "Reduces the disk space collection takes and refreshes its statistics.",
+		},
+		"connPoolStats": {
+			// TODO https://github.com/FerretDB/FerretDB/issues/4909
+			anonymous: true,
+			Help:      "", // hidden while not implemented
 		},
 		"connectionStatus": {
 			Handler:   h.MsgConnectionStatus,
@@ -301,6 +320,10 @@ func (h *Handler) initCommands() {
 	for name, cmd := range h.commands {
 		handler := h.commands[name].Handler
 
+		if handler == nil {
+			handler = notImplemented(name)
+		}
+
 		handler = metrics.Handler(handler)
 
 		if h.Auth && !cmd.anonymous {
@@ -314,4 +337,12 @@ func (h *Handler) initCommands() {
 // Commands returns a map of enabled commands.
 func (h *Handler) Commands() map[string]*command {
 	return h.commands
+}
+
+// notImplemented returns a handler that returns an error indicating that the command is not implemented.
+func notImplemented(command string) middleware.HandlerFunc {
+	return func(context.Context, *wire.OpMsg) (*wire.OpMsg, error) {
+		msg := fmt.Sprintf("Command %s is not implemented", command)
+		return nil, mongoerrors.New(mongoerrors.ErrNotImplemented, msg)
+	}
 }
