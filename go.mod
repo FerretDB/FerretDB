@@ -29,6 +29,7 @@ require (
 	golang.org/x/crypto/x509roots/fallback v0.0.0-20250303191637-24852b6b3fe8
 	golang.org/x/net v0.36.0
 	golang.org/x/sys v0.30.0
+	golang.org/x/term v0.29.0
 )
 
 require (
