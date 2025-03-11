@@ -1,7 +1,7 @@
 ---
-label: Apps
+label: Integrations
 position: 1
 link:
-  type: generated-index
+  # type: generated-index
   description: >
-    A guide section on setting up and using FerretDB with other applications
+    A guide section on integrating and using FerretDB with other applications
