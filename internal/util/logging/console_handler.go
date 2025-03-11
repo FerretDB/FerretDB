@@ -68,17 +68,12 @@ func newConsoleHandler(out io.Writer, opts *NewHandlerOpts, testAttrs map[string
 		m:         new(sync.Mutex),
 	}
 
-	f, ok := out.(*os.File)
-
-	switch {
-	case !ok:
-		ch.out = out
-	case term.IsTerminal(int(f.Fd())):
+	if f, ok := out.(*os.File); ok && term.IsTerminal(int(f.Fd())) {
 		ch.term = term.NewTerminal(f, "")
-	default:
-		ch.out = out
+		return ch
 	}
 
+	ch.out = out
 	return ch
 }
 
@@ -106,14 +101,14 @@ func (ch *consoleHandler) colorizedLevel(l slog.Level) string {
 
 	format := "%s%s%s"
 	switch l {
+	case slog.LevelDebug:
+		return fmt.Sprintf(format, ch.term.Escape.Magenta, l.String(), ch.term.Escape.Reset)
 	case slog.LevelInfo:
 		return fmt.Sprintf(format, ch.term.Escape.Green, l.String(), ch.term.Escape.Reset)
 	case slog.LevelWarn:
 		return fmt.Sprintf(format, ch.term.Escape.Yellow, l.String(), ch.term.Escape.Reset)
 	case slog.LevelError:
 		return fmt.Sprintf(format, ch.term.Escape.Red, l.String(), ch.term.Escape.Reset)
-	case slog.LevelDebug:
-		return fmt.Sprintf(format, ch.term.Escape.Magenta, l.String(), ch.term.Escape.Reset)
 	default:
 		return l.String()
 	}
@@ -192,7 +187,7 @@ func (ch *consoleHandler) Handle(ctx context.Context, r slog.Record) error {
 	ch.m.Lock()
 	defer ch.m.Unlock()
 
-	if ch.term != nil {
+	if ch.isColorized() {
 		_, err := buf.WriteTo(ch.term)
 		return err
 	}
