@@ -35,6 +35,18 @@ import (
 // timeLayout is the format of date time used by the console handler.
 const timeLayout = "2006-01-02T15:04:05.000Z0700"
 
+var (
+	reset   = "\033[0m"
+	red     = "\033[31m"
+	green   = "\033[32m"
+	yellow  = "\033[33m"
+	blue    = "\033[34m"
+	magenta = "\033[35m"
+	cyan    = "\033[36m"
+	gray    = "\033[37m"
+	white   = "\033[97m"
+)
+
 // consoleHandler is a [slog.Handler] that writes logs to the console.
 // The format is intended to be more human-readable than [slog.TextHandler]'s logfmt.
 // The format is not stable.
@@ -61,8 +73,6 @@ func newConsoleHandler(out io.Writer, opts *NewHandlerOpts, testAttrs map[string
 		panic(1)
 	}
 
-	term.NewTerminal(out, "")
-
 	return &consoleHandler{
 		opts:      opts,
 		testAttrs: testAttrs,
@@ -81,11 +91,24 @@ func (ch *consoleHandler) Enabled(_ context.Context, l slog.Level) bool {
 	return l >= minLevel
 }
 
+func coloredLevel(l slog.Level) string {
+	switch l {
+	case slog.LevelInfo:
+		return green + l.String() + reset
+	case slog.LevelWarn:
+		return yellow + l.String() + reset
+	case slog.LevelError:
+		return red + l.String() + reset
+	case slog.LevelDebug:
+		return magenta + l.String() + reset
+	}
+
+	return l.String()
+}
+
 // Handle implements [slog.Handler].
 func (ch *consoleHandler) Handle(ctx context.Context, r slog.Record) error {
 	var buf bytes.Buffer
-
-	buf.Write(term.EscapeCodes{}.Red)
 
 	if !ch.opts.RemoveTime && !r.Time.IsZero() {
 		t := r.Time.Format(timeLayout)
@@ -98,12 +121,12 @@ func (ch *consoleHandler) Handle(ctx context.Context, r slog.Record) error {
 	}
 
 	if !ch.opts.RemoveLevel {
-		l := r.Level.String()
-		buf.WriteString(l)
+		//l := r.Level.String()
+		buf.WriteString(coloredLevel(r.Level))
 		buf.WriteRune('\t')
 
 		if ch.testAttrs != nil {
-			ch.testAttrs[slog.LevelKey] = l
+			ch.testAttrs[slog.LevelKey] = r.Level.String()
 		}
 	}
 
