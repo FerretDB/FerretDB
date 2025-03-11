@@ -15,14 +15,9 @@
 package handler
 
 import (
-	"context"
-	"fmt"
-	"log/slog"
-
-	"github.com/FerretDB/wire"
-
-	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
-	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware/auth"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware/metrics"
 )
 
 // command represents a handler for single command.
@@ -33,7 +28,7 @@ type command struct {
 	// Handler processes this command.
 	//
 	// The passed context is canceled when the client disconnects.
-	Handler func(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
+	Handler middleware.HandlerFunc
 
 	// Help is shown in the `listCommands` command output.
 	// If empty, that command is hidden, but still can be used.
@@ -303,51 +298,17 @@ func (h *Handler) initCommands() {
 		// please keep sorted alphabetically
 	}
 
-	if !h.Auth {
-		return
-	}
-
 	for name, cmd := range h.commands {
-		if cmd.anonymous {
-			continue
+		handler := h.commands[name].Handler
+
+		handler = metrics.Handler(handler)
+
+		if h.Auth && !cmd.anonymous {
+			handler = auth.Handler(handler, h.L, name)
 		}
 
-		cmdHandler := h.commands[name].Handler
-
-		h.commands[name].Handler = func(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-			if err := checkAuthentication(ctx, name, h.L); err != nil {
-				return nil, err
-			}
-
-			return cmdHandler(ctx, msg)
-		}
+		h.commands[name].Handler = handler
 	}
-}
-
-// checkAuthentication returns error if SCRAM conversation is absent or did not succeed.
-func checkAuthentication(ctx context.Context, command string, l *slog.Logger) error {
-	conv := conninfo.Get(ctx).Conv()
-	succeed := conv.Succeed()
-	username := conv.Username()
-
-	switch {
-	case conv == nil:
-		l.WarnContext(ctx, "checkAuthentication: no existing conversation")
-
-	case !succeed:
-		l.WarnContext(ctx, "checkAuthentication: conversation did not succeed", slog.String("username", username))
-
-	default:
-		l.DebugContext(ctx, "checkAuthentication: passed", slog.String("username", conv.Username()))
-
-		return nil
-	}
-
-	return mongoerrors.NewWithArgument(
-		mongoerrors.ErrUnauthorized,
-		fmt.Sprintf("Command %s requires authentication", command),
-		"checkAuthentication",
-	)
 }
 
 // Commands returns a map of enabled commands.
