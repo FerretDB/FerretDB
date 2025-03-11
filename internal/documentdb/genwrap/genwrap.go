@@ -31,9 +31,8 @@ func main() {
 	flag.Parse()
 
 	opts := &logging.NewHandlerOpts{
-		Base:          "console",
-		Level:         slog.LevelInfo,
-		CheckMessages: true,
+		Base:  "console",
+		Level: slog.LevelInfo,
 	}
 
 	if *debugF {

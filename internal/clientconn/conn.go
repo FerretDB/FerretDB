@@ -249,6 +249,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 				panic("proxy addr was nil")
 			}
 
+			// TODO https://github.com/FerretDB/FerretDB/issues/1997
 			proxyHeader, proxyBody = c.proxy.Route(ctx, reqHeader, reqBody)
 		}
 
@@ -354,6 +355,7 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 
 		resHeader.OpCode = wire.OpCodeMsg
 
+		// TODO https://github.com/FerretDB/FerretDB/issues/1997
 		var doc *wirebson.Document
 		if doc, err = raw.Decode(); err == nil {
 			command = doc.Command()
