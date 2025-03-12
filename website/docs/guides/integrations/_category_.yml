@@ -1,6 +1,6 @@
 ---
 label: Integrations
-position: 1
+position: 99 # Keeping this as the last on the sidebar list
 link:
   # type: generated-index
   description: >

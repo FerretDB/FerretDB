@@ -6,7 +6,6 @@ sidebar_position: 1
 
 This guide contains detailed information on how to integrate FerretDB with other third-party tools and services.
 
-## UI Visualizations
+## UI visualizations
 
-- [Compass](/docs/usage/apps/compass)
-
+- [Compass](./compass.md)
