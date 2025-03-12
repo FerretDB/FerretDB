@@ -212,15 +212,13 @@ func (ch *consoleHandler) colorizedLevel(l slog.Level) string {
 
 	switch {
 	case l < slog.LevelInfo:
-		// debug levels
 		return fmt.Sprintf(format, ch.esc.Blue, l, ch.esc.Reset)
 	case l == slog.LevelInfo:
 		return fmt.Sprintf(format, ch.esc.Green, l, ch.esc.Reset)
-	case l == slog.LevelWarn:
+	case l >= slog.LevelWarn && l < slog.LevelError:
 		return fmt.Sprintf(format, ch.esc.Yellow, l, ch.esc.Reset)
 	case l >= slog.LevelError:
 		return fmt.Sprintf(format, ch.esc.Red, l, ch.esc.Reset)
-
 	default:
 		return l.String()
 	}

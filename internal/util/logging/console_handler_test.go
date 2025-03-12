@@ -100,6 +100,18 @@ func TestConsoleHandlerEscapeCodes(t *testing.T) {
 			level:    slog.LevelWarn,
 			expected: "\033[33mWARN\033[0m\tfoobar\r\n",
 		},
+		"Warn+1": {
+			level:    slog.LevelWarn + 1,
+			expected: "\033[33mWARN+1\033[0m\tfoobar\r\n",
+		},
+		"Warn+2": {
+			level:    slog.LevelWarn + 2,
+			expected: "\033[33mWARN+2\033[0m\tfoobar\r\n",
+		},
+		"Warn+3": {
+			level:    slog.LevelWarn + 3,
+			expected: "\033[33mWARN+3\033[0m\tfoobar\r\n",
+		},
 		"Error": {
 			level:    slog.LevelError,
 			expected: "\033[31mERROR\033[0m\tfoobar\r\n",
