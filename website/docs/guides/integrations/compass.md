@@ -13,7 +13,7 @@ Compass is a graphical user interface (GUI) for MongoDB-compatible applications 
 
 ## Connect to FerretDB instance
 
-Connect Compass to your FerretDB instance by following these steps:'
+Connect Compass to your FerretDB instance by following these steps:
 
 1. Open Compass and click on "Add new connection".
 2. In the "New Connection" window, set the connection string for your FerretDB instance.

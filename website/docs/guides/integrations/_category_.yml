@@ -2,6 +2,6 @@
 label: Integrations
 position: 99 # Keeping this as the last on the sidebar list
 link:
-  # type: generated-index
+  type: generated-index
   description: >
-    A section on third party tools and applications compatible with FerretDB
+    A section on third-party tools and applications compatible with FerretDB
