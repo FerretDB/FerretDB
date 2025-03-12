@@ -16,9 +16,15 @@ package logging
 
 import (
 	"bytes"
+	"context"
 	"log/slog"
+	"sync"
 	"testing"
 	"testing/slogtest"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"golang.org/x/term"
 )
 
 func TestConsoleHandler(t *testing.T) {
@@ -48,4 +54,51 @@ func TestConsoleHandler(t *testing.T) {
 	}
 
 	slogtest.Run(t, newHandler, result)
+}
+
+func TestConsoleHandlerEscapeCodes(t *testing.T) {
+	t.Parallel()
+
+	var buf bytes.Buffer
+	mockTerm := term.NewTerminal(&buf, "")
+
+	ch := &consoleHandler{
+		opts: &NewHandlerOpts{Level: slog.LevelInfo},
+		m:    new(sync.Mutex),
+		out:  mockTerm,
+		esc:  mockTerm.Escape,
+	}
+
+	for level, tc := range map[slog.Level]struct {
+		expected string
+	}{
+		slog.LevelDebug: {
+			expected: "\033[34mDEBUG\033[0m\tfoobar\r\n",
+		},
+		slog.LevelInfo: {
+			expected: "\033[32mINFO\033[0m\tfoobar\r\n",
+		},
+		slog.LevelWarn: {
+			expected: "\033[33mWARN\033[0m\tfoobar\r\n",
+		},
+		slog.LevelError: {
+			expected: "\033[31mERROR\033[0m\tfoobar\r\n",
+		},
+	} {
+		t.Run(level.String(), func(t *testing.T) {
+			buf.Reset()
+
+			r := slog.Record{
+				Level:   level,
+				Message: "foobar",
+			}
+
+			require.NoError(t, ch.Handle(context.Background(), r))
+
+			assert.Equal(t, tc.expected, buf.String())
+
+			ch.Handle(context.Background(), r)
+		})
+	}
+
 }
