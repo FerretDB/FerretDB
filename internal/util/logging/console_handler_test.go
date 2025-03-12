@@ -59,13 +59,12 @@ func TestConsoleHandlerEscapeCodes(t *testing.T) {
 	t.Parallel()
 
 	var buf bytes.Buffer
-	mockTerm := term.NewTerminal(&buf, "")
 
 	ch := &consoleHandler{
 		opts: &NewHandlerOpts{Level: slog.LevelInfo},
 		m:    new(sync.Mutex),
-		out:  mockTerm,
-		esc:  mockTerm.Escape,
+		out:  &buf,
+		esc:  term.NewTerminal(&buf, "").Escape,
 	}
 
 	for name, tc := range map[string]struct {
@@ -74,71 +73,71 @@ func TestConsoleHandlerEscapeCodes(t *testing.T) {
 	}{
 		"Debug-2": {
 			level:    slog.LevelDebug - 2,
-			expected: "\033[34mDEBUG-2\033[0m\tfoobar\r\n",
+			expected: "\033[34mDEBUG-2\033[0m\tfoobar\n",
 		},
 		"Debug-1": {
 			level:    slog.LevelDebug - 1,
-			expected: "\033[34mDEBUG-1\033[0m\tfoobar\r\n",
+			expected: "\033[34mDEBUG-1\033[0m\tfoobar\n",
 		},
 		"Debug": {
 			level:    slog.LevelDebug,
-			expected: "\033[34mDEBUG\033[0m\tfoobar\r\n",
+			expected: "\033[34mDEBUG\033[0m\tfoobar\n",
 		},
 		"Debug+1": {
 			level:    slog.LevelDebug + 1,
-			expected: "\033[34mDEBUG+1\033[0m\tfoobar\r\n",
+			expected: "\033[34mDEBUG+1\033[0m\tfoobar\n",
 		},
 		"Debug+2": {
 			level:    slog.LevelDebug + 2,
-			expected: "\033[34mDEBUG+2\033[0m\tfoobar\r\n",
+			expected: "\033[34mDEBUG+2\033[0m\tfoobar\n",
 		},
 		"Info": {
 			level:    slog.LevelInfo,
-			expected: "\033[32mINFO\033[0m\tfoobar\r\n",
+			expected: "\033[32mINFO\033[0m\tfoobar\n",
 		},
 		"Info+1": {
 			level:    slog.LevelInfo + 1,
-			expected: "\033[32mINFO+1\033[0m\tfoobar\r\n",
+			expected: "\033[32mINFO+1\033[0m\tfoobar\n",
 		},
 		"Info+2": {
 			level:    slog.LevelInfo + 2,
-			expected: "\033[32mINFO+2\033[0m\tfoobar\r\n",
+			expected: "\033[32mINFO+2\033[0m\tfoobar\n",
 		},
 		"Info+3": {
 			level:    slog.LevelInfo + 3,
-			expected: "\033[32mINFO+3\033[0m\tfoobar\r\n",
+			expected: "\033[32mINFO+3\033[0m\tfoobar\n",
 		},
 		"Warn": {
 			level:    slog.LevelWarn,
-			expected: "\033[33mWARN\033[0m\tfoobar\r\n",
+			expected: "\033[33mWARN\033[0m\tfoobar\n",
 		},
 		"Warn+1": {
 			level:    slog.LevelWarn + 1,
-			expected: "\033[33mWARN+1\033[0m\tfoobar\r\n",
+			expected: "\033[33mWARN+1\033[0m\tfoobar\n",
 		},
 		"Warn+2": {
 			level:    slog.LevelWarn + 2,
-			expected: "\033[33mWARN+2\033[0m\tfoobar\r\n",
+			expected: "\033[33mWARN+2\033[0m\tfoobar\n",
 		},
 		"Warn+3": {
 			level:    slog.LevelWarn + 3,
-			expected: "\033[33mWARN+3\033[0m\tfoobar\r\n",
+			expected: "\033[33mWARN+3\033[0m\tfoobar\n",
 		},
 		"Error": {
 			level:    slog.LevelError,
-			expected: "\033[31mERROR\033[0m\tfoobar\r\n",
+			expected: "\033[31mERROR\033[0m\tfoobar\n",
 		},
 		"DPanic": {
 			level:    LevelDPanic,
-			expected: "\033[31mERROR+1\033[0m\tfoobar\r\n",
+			expected: "\033[31mERROR+1\033[0m\tfoobar\n",
 		},
 		"Panic": {
 			level:    LevelPanic,
-			expected: "\033[31mERROR+2\033[0m\tfoobar\r\n",
+			expected: "\033[31mERROR+2\033[0m\tfoobar\n",
 		},
 		"Fatal": {
 			level:    LevelFatal,
-			expected: "\033[31mERROR+3\033[0m\tfoobar\r\n",
+			expected: "\033[31mERROR+3\033[0m\tfoobar\n",
 		},
 	} {
 		t.Run(name, func(t *testing.T) {

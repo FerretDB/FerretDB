@@ -69,9 +69,7 @@ func newConsoleHandler(out io.Writer, opts *NewHandlerOpts, testAttrs map[string
 	}
 
 	if f, ok := out.(*os.File); ok && term.IsTerminal(int(f.Fd())) {
-		t := term.NewTerminal(f, "")
-		ch.out = t
-		ch.esc = t.Escape
+		ch.esc = term.NewTerminal(f, "").Escape
 	}
 
 	return ch
@@ -212,10 +210,8 @@ func (ch *consoleHandler) colorizedLevel(l slog.Level) string {
 		return fmt.Sprintf(format, ch.esc.Green, l, ch.esc.Reset)
 	case l < slog.LevelError:
 		return fmt.Sprintf(format, ch.esc.Yellow, l, ch.esc.Reset)
-	case l >= slog.LevelError:
-		return fmt.Sprintf(format, ch.esc.Red, l, ch.esc.Reset)
 	default:
-		return l.String()
+		return fmt.Sprintf(format, ch.esc.Red, l, ch.esc.Reset)
 	}
 }
 
