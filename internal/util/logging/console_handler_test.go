@@ -129,7 +129,6 @@ func TestConsoleHandlerEscapeCodes(t *testing.T) {
 			assert.Equal(t, tc.expected, buf.String())
 		})
 	}
-
 }
 
 func TestConsoleHandlerNoTTYMode(t *testing.T) {
