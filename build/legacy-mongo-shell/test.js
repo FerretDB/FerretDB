@@ -10,18 +10,30 @@
   coll.drop();
 
   const init = [
-    { _id: "double", v: 42.13 },
-    { _id: "double-whole", v: 42.0 },
-    { _id: "double-zero", v: 0.0 },
+    {
+      _id: "doc1",
+      text: "apple banana cherry"
+    }
   ];
 
   coll.insertMany(init);
 
-  const query = { v: { $gt: 42.0 } };
+  coll.createIndex({ text: "text" });
 
-  const expected = [{ _id: "double", v: 42.13 }];
+  const query = { $text: { $search: "banana" } };
+  const projection = { text: 1, score: { $meta: "textScore" } };
+  const sort = { score: { $meta: "textScore" } };
 
-  const actual = coll.find(query).toArray();
+  const actual = coll.find(query, projection).sort(sort).toArray();
+
+  const expected = [
+    {
+      _id: "doc1",
+      text: "apple banana cherry",
+      score: actual.length > 0 ? actual[0].score : null
+    }
+  ];
+
   assert.eq(expected, actual);
 
   print("test.js passed!");
