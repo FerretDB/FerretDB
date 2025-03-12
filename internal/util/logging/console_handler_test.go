@@ -69,27 +69,32 @@ func TestConsoleHandlerEscapeCodes(t *testing.T) {
 		esc:  mockTerm.Escape,
 	}
 
-	for level, tc := range map[slog.Level]struct {
+	for name, tc := range map[string]struct {
+		level    slog.Level
 		expected string
 	}{
-		slog.LevelDebug: {
+		"Debug": {
+			level:    slog.LevelDebug,
 			expected: "\033[34mDEBUG\033[0m\tfoobar\r\n",
 		},
-		slog.LevelInfo: {
+		"Info": {
+			level:    slog.LevelInfo,
 			expected: "\033[32mINFO\033[0m\tfoobar\r\n",
 		},
-		slog.LevelWarn: {
+		"Warn": {
+			level:    slog.LevelWarn,
 			expected: "\033[33mWARN\033[0m\tfoobar\r\n",
 		},
-		slog.LevelError: {
+		"Error": {
+			level:    slog.LevelError,
 			expected: "\033[31mERROR\033[0m\tfoobar\r\n",
 		},
 	} {
-		t.Run(level.String(), func(t *testing.T) {
+		t.Run(name, func(t *testing.T) {
 			buf.Reset()
 
 			r := slog.Record{
-				Level:   level,
+				Level:   tc.level,
 				Message: "foobar",
 			}
 
