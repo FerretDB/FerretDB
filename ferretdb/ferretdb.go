@@ -105,9 +105,9 @@ func New(config *Config) (*FerretDB, error) {
 	}
 
 	lOpts := &logging.NewHandlerOpts{
-		Base:          "console",
-		Level:         logLevel,
-		CheckMessages: false,
+		Base:       "console",
+		Level:      logLevel,
+		SkipChecks: true,
 	}
 	logger := logging.WithName(logging.Logger(logOutput, lOpts, ""), "ferretdb")
 

@@ -114,6 +114,9 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 
 	stats := p.p.Stat()
 
+	// check metrics and labels, set zero values
+	// TODO https://github.com/FerretDB/FerretDB/issues/3420
+
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "acquired_total"),
