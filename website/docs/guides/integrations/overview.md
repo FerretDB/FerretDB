@@ -2,7 +2,7 @@
 sidebar_position: 1
 ---
 
-# Integrations overview
+# Overview
 
 This section focuses on how to integrate FerretDB with other third-party tools and services.
 
