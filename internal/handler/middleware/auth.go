@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package auth
+package middleware
 
 import (
 	"context"
@@ -22,11 +22,13 @@ import (
 	"github.com/FerretDB/wire"
 
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
-	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 )
 
-func Handler(next middleware.HandlerFunc, l *slog.Logger, command string) middleware.HandlerFunc {
+// Auth is a middleware that wraps the command handler with authentication check.
+//
+// Context must contain [*conninfo.ConnInfo].
+func Auth(next HandlerFunc, l *slog.Logger, command string) HandlerFunc {
 	return func(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 		conv := conninfo.Get(ctx).Conv()
 		succeed := conv.Succeed()

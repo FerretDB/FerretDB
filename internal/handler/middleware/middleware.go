@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package middleware provides wrappers for command handlers.
 package middleware
 
 import (
@@ -20,5 +21,7 @@ import (
 	"github.com/FerretDB/wire"
 )
 
+// HandlerFunc represents a function/method that processes a single command.
+//
 // The passed context is canceled when the client disconnects.
 type HandlerFunc func(context.Context, *wire.OpMsg) (*wire.OpMsg, error)

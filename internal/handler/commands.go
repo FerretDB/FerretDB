@@ -21,9 +21,8 @@ import (
 	"github.com/FerretDB/wire"
 
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
-	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware/auth"
-	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware/metrics"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 )
 
 // command represents a handler for single command.
@@ -43,7 +42,7 @@ type command struct {
 
 // initCommands initializes the commands map for that handler instance.
 func (h *Handler) initCommands() {
-	h.commands = map[string]*command{
+	commands := map[string]*command{
 		// sorted alphabetically
 		"aggregate": {
 			Handler: h.MsgAggregate,
@@ -318,20 +317,20 @@ func (h *Handler) initCommands() {
 		// please keep sorted alphabetically
 	}
 
-	for name, cmd := range h.commands {
-		handler := h.commands[name].Handler
+	h.commands = make(map[string]*command, len(commands))
 
-		if handler == nil {
-			handler = notImplemented(name)
+	for name, cmd := range commands {
+		if cmd.Handler == nil {
+			cmd.Handler = notImplemented(name)
 		}
 
-		handler = metrics.Handler(handler)
+		cmd.Handler = middleware.Observability(cmd.Handler, logging.WithName(h.L, "observability"))
 
 		if h.Auth && !cmd.anonymous {
-			handler = auth.Handler(handler, h.L, name)
+			cmd.Handler = middleware.Auth(cmd.Handler, logging.WithName(h.L, "auth"), name)
 		}
 
-		h.commands[name].Handler = handler
+		h.commands[name] = cmd
 	}
 }
 

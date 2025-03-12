@@ -12,17 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package metrics
+package middleware
 
 import (
-	"time"
+	"context"
+	"log/slog"
 
-	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
+	"github.com/FerretDB/wire"
 )
 
-func Handler(next middleware.HandlerFunc) middleware.HandlerFunc {
-	// FIXME
-	time.Sleep(time.Second)
-
-	return next
+// Observability is a middleware that will wrap the command handler with logs, traces, and metrics.
+//
+// TODO https://github.com/FerretDB/FerretDB/issues/4439
+func Observability(next HandlerFunc, l *slog.Logger) HandlerFunc {
+	return func(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+		return next(ctx, msg)
+	}
 }
