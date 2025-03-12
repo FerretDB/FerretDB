@@ -57,7 +57,9 @@ type consoleHandler struct {
 }
 
 // newConsoleHandler creates a new console handler.
+//
 // If out is a valid tty, the consoleHandler will send colorized messages.
+// If NO_COLOR environment variable is set colorized messages are disabled.
 func newConsoleHandler(out io.Writer, opts *NewHandlerOpts, testAttrs map[string]any) *consoleHandler {
 	must.NotBeZero(opts)
 
@@ -66,6 +68,10 @@ func newConsoleHandler(out io.Writer, opts *NewHandlerOpts, testAttrs map[string
 		testAttrs: testAttrs,
 		m:         new(sync.Mutex),
 		out:       out,
+	}
+
+	if os.Getenv("NO_COLOR") != "" {
+		return ch
 	}
 
 	if f, ok := out.(*os.File); ok && term.IsTerminal(int(f.Fd())) {
