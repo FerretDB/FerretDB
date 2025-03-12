@@ -69,8 +69,8 @@ func TestConsoleHandlerEscapeCodes(t *testing.T) {
 	}
 
 	for name, tc := range map[string]struct {
-		level    slog.Level
 		expected string
+		level    slog.Level
 	}{
 		"Debug-2": {
 			level:    slog.LevelDebug - 2,
@@ -139,6 +139,11 @@ func TestConsoleHandlerNoTTYMode(t *testing.T) {
 
 	expected := "INFO\tfoobar\n"
 
-	ch.Handle(t.Context(), slog.Record{Level: slog.LevelInfo, Message: "foobar"})
+	r := slog.Record{
+		Level:   slog.LevelInfo,
+		Message: "foobar",
+	}
+
+	require.NoError(t, ch.Handle(t.Context(), r))
 	assert.Equal(t, expected, buf.String())
 }
