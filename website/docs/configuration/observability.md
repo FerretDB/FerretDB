@@ -20,6 +20,7 @@ FerretDB provides the following log formats:
 
 - `console` is a human-readable format with optional colors.
   It colorizes log levels if running terminal supports it.
+  To disable ANSI colors, `NO_COLOR` environment variable should be set.
 - `text` is machine-readable [logfmt](https://brandur.org/logfmt)-like format
   (powered by [Go's `slog.TextHandler`](https://pkg.go.dev/log/slog#TextHandler)).
 - `json` is machine-readable JSON format
