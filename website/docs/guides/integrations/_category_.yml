@@ -4,4 +4,4 @@ position: 99 # Keeping this as the last on the sidebar list
 link:
   # type: generated-index
   description: >
-    A guide section on integrating and using FerretDB with other applications
+    A section on third party tools and applications compatible with FerretDB

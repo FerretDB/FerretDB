@@ -4,8 +4,6 @@ sidebar_position: 2
 
 # Compass
 
-<!-- ![Compass](/img/compass.png) -->
-
 Compass is a graphical user interface (GUI) for MongoDB-compatible applications that allows you to visually explore and run queries with your data.
 
 ## Prerequisites
