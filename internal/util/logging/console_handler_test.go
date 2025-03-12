@@ -16,7 +16,6 @@ package logging
 
 import (
 	"bytes"
-	"context"
 	"log/slog"
 	"sync"
 	"testing"
@@ -126,12 +125,21 @@ func TestConsoleHandlerEscapeCodes(t *testing.T) {
 				Message: "foobar",
 			}
 
-			require.NoError(t, ch.Handle(context.Background(), r))
-
+			require.NoError(t, ch.Handle(t.Context(), r))
 			assert.Equal(t, tc.expected, buf.String())
-
-			ch.Handle(context.Background(), r)
 		})
 	}
 
+}
+
+func TestConsoleHandlerNoTTYMode(t *testing.T) {
+	t.Parallel()
+
+	var buf bytes.Buffer
+	ch := newConsoleHandler(&buf, &NewHandlerOpts{Level: slog.LevelInfo}, nil)
+
+	expected := "INFO\tfoobar\n"
+
+	ch.Handle(t.Context(), slog.Record{Level: slog.LevelInfo, Message: "foobar"})
+	assert.Equal(t, expected, buf.String())
 }
