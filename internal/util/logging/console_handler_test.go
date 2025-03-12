@@ -73,9 +73,25 @@ func TestConsoleHandlerEscapeCodes(t *testing.T) {
 		level    slog.Level
 		expected string
 	}{
+		"Debug-2": {
+			level:    slog.LevelDebug - 2,
+			expected: "\033[34mDEBUG-2\033[0m\tfoobar\r\n",
+		},
+		"Debug-1": {
+			level:    slog.LevelDebug - 1,
+			expected: "\033[34mDEBUG-1\033[0m\tfoobar\r\n",
+		},
 		"Debug": {
 			level:    slog.LevelDebug,
 			expected: "\033[34mDEBUG\033[0m\tfoobar\r\n",
+		},
+		"Debug+1": {
+			level:    slog.LevelDebug + 1,
+			expected: "\033[34mDEBUG+1\033[0m\tfoobar\r\n",
+		},
+		"Debug+2": {
+			level:    slog.LevelDebug + 2,
+			expected: "\033[34mDEBUG+2\033[0m\tfoobar\r\n",
 		},
 		"Info": {
 			level:    slog.LevelInfo,
@@ -88,6 +104,18 @@ func TestConsoleHandlerEscapeCodes(t *testing.T) {
 		"Error": {
 			level:    slog.LevelError,
 			expected: "\033[31mERROR\033[0m\tfoobar\r\n",
+		},
+		"DPanic": {
+			level:    LevelDPanic,
+			expected: "\033[31mERROR+1\033[0m\tfoobar\r\n",
+		},
+		"Panic": {
+			level:    LevelPanic,
+			expected: "\033[31mERROR+2\033[0m\tfoobar\r\n",
+		},
+		"Fatal": {
+			level:    LevelFatal,
+			expected: "\033[31mERROR+3\033[0m\tfoobar\r\n",
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
