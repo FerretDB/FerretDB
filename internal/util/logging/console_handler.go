@@ -196,15 +196,10 @@ func (ch *consoleHandler) WithGroup(name string) slog.Handler {
 	}
 }
 
-// isColorized returns true if the handler is able to print colorized messages.
-func (ch *consoleHandler) isColorized() bool {
-	return ch.esc != nil
-}
-
 // colorizedLevel returns colorized string representation of l [slog.Level].
 // If ch is unable to print colorized messages, non-colorized string is returned.
 func (ch *consoleHandler) colorizedLevel(l slog.Level) string {
-	if !ch.isColorized() {
+	if ch.esc == nil {
 		return l.String()
 	}
 
