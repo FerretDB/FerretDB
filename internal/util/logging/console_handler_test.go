@@ -58,14 +58,7 @@ func TestConsoleHandler(t *testing.T) {
 func TestConsoleHandlerEscapeCodes(t *testing.T) {
 	t.Parallel()
 
-	var buf bytes.Buffer
-
-	ch := &consoleHandler{
-		opts: &NewHandlerOpts{Level: slog.LevelInfo},
-		m:    new(sync.Mutex),
-		out:  &buf,
-		esc:  term.NewTerminal(&buf, "").Escape,
-	}
+	esc := term.NewTerminal(nil, "").Escape
 
 	for name, tc := range map[string]struct {
 		expected string
@@ -141,7 +134,16 @@ func TestConsoleHandlerEscapeCodes(t *testing.T) {
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
-			buf.Reset()
+			t.Parallel()
+
+			var buf bytes.Buffer
+
+			ch := &consoleHandler{
+				opts: &NewHandlerOpts{Level: slog.LevelInfo},
+				m:    new(sync.Mutex),
+				out:  &buf,
+				esc:  esc,
+			}
 
 			r := slog.Record{
 				Level:   tc.level,
