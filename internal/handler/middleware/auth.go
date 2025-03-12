@@ -36,21 +36,20 @@ func Auth(next HandlerFunc, l *slog.Logger, command string) HandlerFunc {
 
 		switch {
 		case conv == nil:
-			l.WarnContext(ctx, "checkAuthentication: no existing conversation")
+			l.WarnContext(ctx, "No existing conversation")
 
 		case !succeed:
-			l.WarnContext(ctx, "checkAuthentication: conversation did not succeed", slog.String("username", username))
+			l.WarnContext(ctx, "Conversation did not succeed", slog.String("username", username))
 
 		default:
-			l.DebugContext(ctx, "checkAuthentication: passed", slog.String("username", username))
+			l.DebugContext(ctx, "Authentication passed", slog.String("username", username))
 
 			return next(ctx, msg)
 		}
 
-		return nil, mongoerrors.NewWithArgument(
+		return nil, mongoerrors.New(
 			mongoerrors.ErrUnauthorized,
 			fmt.Sprintf("Command %s requires authentication", command),
-			"checkAuthentication",
 		)
 	}
 }
