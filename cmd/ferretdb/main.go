@@ -67,49 +67,41 @@ var cli struct {
 
 	PostgreSQLURL string `name:"postgresql-url" default:"postgres://127.0.0.1:5432/postgres" help:"PostgreSQL URL."`
 
-	Listen struct {
-		Addr string `default:"127.0.0.1:27017" help:"Listen TCP address for MongoDB protocol."`
-		Unix string `default:""                help:"Listen Unix domain socket path for MongoDB protocol."`
+	ListenAddr string `default:"127.0.0.1:27017" help:"Listen TCP address for MongoDB protocol." 				group:"Server"`
+	ListenUnix string `default:""                help:"Listen Unix domain socket path for MongoDB protocol." 	group:"Server"`
 
-		TLS         string `default:"" help:"Listen TLS address for MongoDB protocol."`
-		TLSCertFile string `default:"" help:"TLS cert file path."`
-		TLSKeyFile  string `default:"" help:"TLS key file path."`
-		TLSCaFile   string `default:"" help:"TLS CA file path."`
+	ListenTLS   string `default:"" help:"Listen TLS address for MongoDB protocol." group:"Server"`
+	TLSCertFile string `default:"" help:"TLS cert file path." 					   group:"Server"`
+	TLSKeyFile  string `default:"" help:"TLS key file path." 					   group:"Server"`
+	TLSCaFile   string `default:"" help:"TLS CA file path." 					   group:"Server"`
+	DataAPIAddr string `help:"Listen TCP address for HTTP Data API." default:""    group:"Server"`
 
-		DataAPIAddr string `default:"" help:"Listen TCP address for HTTP Data API."`
-	} `embed:"" prefix:"listen-"`
+	ProxyAddr    string `default:"" help:"Proxy address." 				group:"Proxy"`
+	ProxyTLSCert string `default:"" help:"Proxy TLS cert file path." 	group:"Proxy"`
+	ProxyTLSKey  string `default:"" help:"Proxy TLS key file path." 	group:"Proxy"`
+	ProxyTLSCA   string `default:"" help:"Proxy TLS CA file path." 		group:"Proxy"`
 
-	Proxy struct {
-		Addr        string `default:"" help:"Proxy address."`
-		TLSCertFile string `default:"" help:"Proxy TLS cert file path."`
-		TLSKeyFile  string `default:"" help:"Proxy TLS key file path."`
-		TLSCaFile   string `default:"" help:"Proxy TLS CA file path."`
-	} `embed:"" prefix:"proxy-"`
-
-	DebugAddr string `default:"127.0.0.1:8088" help:"Listen address for HTTP handlers for metrics, pprof, etc."`
+	DebugAddr string `default:"127.0.0.1:8088" help:"Listen address for HTTP handlers for metrics, pprof, etc." group:"Server"`
 
 	Mode     string `default:"${default_mode}" help:"${help_mode}"                           enum:"${enum_mode}"`
 	StateDir string `default:"."               help:"Process state directory."`
 	Auth     bool   `default:"true"            help:"Enable authentication (on by default)." negatable:""`
 
-	Log struct {
-		Level  string `default:"${default_log_level}" help:"${help_log_level}"`
-		Format string `default:"console"              help:"${help_log_format}"                     enum:"${enum_log_format}"`
-		UUID   bool   `default:"false"                help:"Add instance UUID to all log messages." negatable:""`
-	} `embed:"" prefix:"log-"`
-
-	MetricsUUID bool `default:"false" help:"Add instance UUID to all metrics." negatable:""`
+	LogLevel    string `default:"${default_log_level}" help:"${help_log_level}" group:"Logging"`
+	LogFormat   string `default:"console"              help:"${help_log_format}"                     enum:"${enum_log_format}" group:"Logging"`
+	LogUUID     bool   `default:"false"                help:"Add instance UUID to all log messages." negatable:"" group:"Logging"`
+	MetricsUUID bool   `default:"false" help:"Add instance UUID to all metrics." negatable:"" group:"Logging"`
 
 	OTel struct {
 		Traces struct {
 			URL string `default:"" help:"OpenTelemetry OTLP/HTTP traces endpoint URL (e.g. 'http://host:4318/v1/traces')."`
 		} `embed:"" prefix:"traces-"`
-	} `embed:"" prefix:"otel-"`
+	} `embed:"" prefix:"otel-" group:"Telemetry"`
 
-	Telemetry telemetry.Flag `default:"undecided" help:"${help_telemetry}"`
+	Telemetry telemetry.Flag `default:"undecided" help:"${help_telemetry}" group:"Telemetry"`
 
 	Dev struct {
-		ReplSetName string `default:"" help:"Replica set name."`
+		ReplSetName string `default:"" help:"Replica set name." group:"Development"`
 
 		RecordsDir string `hidden:""`
 
@@ -119,7 +111,7 @@ var cli struct {
 			ReportInterval time.Duration `default:"24h"                          hidden:""`
 			Package        string        `default:""                             hidden:""`
 		} `embed:"" prefix:"telemetry-"`
-	} `embed:"" prefix:"dev-"`
+	} `embed:"" prefix:"dev-" group:"Development"`
 }
 
 // Additional variables for [kong.Parse].
@@ -158,7 +150,7 @@ func main() {
 		run()
 
 	case "ping":
-		logger := setupDefaultLogger(cli.Log.Format, "")
+		logger := setupDefaultLogger(cli.LogFormat, "")
 		checkFlags(logger)
 
 		ready := ReadyZ{
@@ -193,7 +185,7 @@ func setupExpvar(stateProvider *state.Provider) {
 		b := must.NotFail(json.Marshal(map[string]any{
 			"cli": map[string]any{
 				"log": map[string]any{
-					"level": cli.Log.Level,
+					"level": cli.LogLevel,
 				},
 			},
 		}))
@@ -232,7 +224,7 @@ func setupMetrics(stateProvider *state.Provider) prometheus.Registerer {
 // setupDefaultLogger setups slog logging.
 func setupDefaultLogger(format string, uuid string) *slog.Logger {
 	var level slog.Level
-	if err := level.UnmarshalText([]byte(cli.Log.Level)); err != nil {
+	if err := level.UnmarshalText([]byte(cli.LogLevel)); err != nil {
 		log.Fatal(err)
 	}
 
@@ -324,12 +316,12 @@ func run() {
 	logUUID := stateProvider.Get().UUID
 
 	// Similarly to Prometheus, unless requested, don't add UUID to all messages, but log it once at startup.
-	if !cli.Log.UUID {
+	if !cli.LogUUID {
 		startupFields = append(startupFields, slog.String("uuid", logUUID))
 		logUUID = ""
 	}
 
-	logger := setupDefaultLogger(cli.Log.Format, logUUID)
+	logger := setupDefaultLogger(cli.LogFormat, logUUID)
 
 	logger.LogAttrs(context.Background(), slog.LevelInfo, "Starting FerretDB "+info.Version, startupFields...)
 
@@ -453,17 +445,17 @@ func run() {
 		logger.LogAttrs(ctx, logging.LevelFatal, "Failed to construct pool", logging.Error(err))
 	}
 
-	tcpAddr := cli.Listen.Addr
+	tcpAddr := cli.ListenAddr
 	if cmp.Or(tcpAddr, "-") == "-" {
 		tcpAddr = ""
 	}
 
-	unixAddr := cli.Listen.Unix
+	unixAddr := cli.ListenUnix
 	if cmp.Or(unixAddr, "-") == "-" {
 		unixAddr = ""
 	}
 
-	tlsAddr := cli.Listen.TLS
+	tlsAddr := cli.ListenTLS
 	if cmp.Or(tlsAddr, "-") == "-" {
 		tlsAddr = ""
 	}
@@ -495,15 +487,15 @@ func run() {
 		Unix: unixAddr,
 
 		TLS:         tlsAddr,
-		TLSCertFile: cli.Listen.TLSCertFile,
-		TLSKeyFile:  cli.Listen.TLSKeyFile,
-		TLSCAFile:   cli.Listen.TLSCaFile,
+		TLSCertFile: cli.TLSCertFile,
+		TLSKeyFile:  cli.TLSKeyFile,
+		TLSCAFile:   cli.TLSCaFile,
 
 		Mode:             clientconn.Mode(cli.Mode),
-		ProxyAddr:        cli.Proxy.Addr,
-		ProxyTLSCertFile: cli.Proxy.TLSCertFile,
-		ProxyTLSKeyFile:  cli.Proxy.TLSKeyFile,
-		ProxyTLSCAFile:   cli.Proxy.TLSCaFile,
+		ProxyAddr:        cli.ProxyAddr,
+		ProxyTLSCertFile: cli.ProxyTLSCert,
+		ProxyTLSKeyFile:  cli.ProxyTLSKey,
+		ProxyTLSCAFile:   cli.ProxyTLSCA,
 
 		TestRecordsDir: cli.Dev.RecordsDir,
 	})
@@ -512,7 +504,7 @@ func run() {
 		logger.LogAttrs(ctx, logging.LevelFatal, "Failed to construct listener", logging.Error(err))
 	}
 
-	if cmp.Or(cli.Listen.DataAPIAddr, "-") != "-" {
+	if cmp.Or(cli.DataAPIAddr, "-") != "-" {
 		wg.Add(1)
 
 		go func() {
@@ -521,7 +513,7 @@ func run() {
 			l := logging.WithName(logger, "dataapi")
 
 			lis, e := dataapi.Listen(&dataapi.ListenOpts{
-				TCPAddr: cli.Listen.DataAPIAddr,
+				TCPAddr: cli.DataAPIAddr,
 				L:       l,
 				Handler: h,
 			})
