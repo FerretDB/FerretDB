@@ -20,6 +20,6 @@ Once a connection is established, you can explore your data using the GUI applic
 
 For example, below we showcase a connection to FerretDB using Compass.
 
-![GUI connection to Compass showing serverStatus](/img/docs/gui-connection.png)
+![GUI connection to Compass showing serverStatus](/img/docs/gui-connection.jpg)
 
 The image shows the `serverStatus` command being run in Compass on a FerretDB instance.
