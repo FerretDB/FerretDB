@@ -202,7 +202,7 @@ db.dropUser('newuser')
 
 ## Indexes
 
-### 10. Create indexes
+### 10. Create indexes and drop indexes
 
 Speed is always a hot topic for databases.
 Indexes help speed up queries, and that's crucial for better database performance.
@@ -216,8 +216,6 @@ On FerretDB, you can create an index on a book's title and price:
 db.books.createIndex({ title: 1, 'price.value': -1 })
 ```
 
-### 11. Drop indexes
-
 If you no longer need an index, you can drop it to free up space and resources.
 
 For instance, to drop the index on the `title` field:
@@ -227,6 +225,38 @@ db.books.dropIndex({ title: 1 })
 ```
 
 Learn more about indexes in FerretDB [here](https://docs.ferretdb.io/usage/indexes/).
+
+### 11. TTL Index for Automatic Expiry
+
+A Time-To-Live (TTL) index auto-cleans expired data after a set time.
+That means no manual deletions and no bloated storage.
+
+If a library tracks book reservations for instance, a TTL index can remove records after a year, so outdated holds don't clutter queries or waste space.
+
+Let’s say we want books to be removed automatically one year after publication.
+It is recommended to create the TTL index before inserting documents.
+So if the document was added before the TTL index, it may not be affected until a new one is inserted.
+
+Start by creating a TTL index on the `publication.date` field:
+
+```js
+db.books.createIndex(
+  { 'publication.date': 1 },
+  { expireAfterSeconds: 10 }
+)
+```
+
+Next, let's insert a document with a publication date:
+
+```js
+db.books.insertOne({
+  "_id": "temporary_book",
+  "title": "Expiring Book",
+  "publication": { "date": new Date() }
+})
+```
+
+After 10 seconds, the document will be automatically removed by the TTL index.
 
 ### 12. Partial indexes
 
@@ -242,7 +272,7 @@ db.books.createIndex(
 )
 ```
 
-### 13. Full-text search with text indexing
+### 13. Full-text search with `text` index
 
 Regular indexes work great for exact matches or range queries but they struggle with searching inside text.
 For instance, if you're looking for books with "classic" somewhere in the summary (`db.books.find({ "summary": "romance novel" })`), a standard index on "summary" won't help.
