@@ -146,14 +146,24 @@ func TestPC(t *testing.T) {
 	assert.Equal(t, "[lazyerrors_test.go:142 lazyerrors.TestPC.func1] err", err.Error())
 }
 
+var drain any
+
 func BenchmarkNew(b *testing.B) {
-	for b.Loop() {
-		New("err")
+	for range b.N {
+		drain = New("err")
 	}
+
+	b.StopTimer()
+
+	assert.NotNil(b, drain)
 }
 
 func BenchmarkStatic(b *testing.B) {
-	for b.Loop() {
-		errors.New("[lazyerrors_test.go:144 lazyerrors.BenchmarkStatic] err")
+	for range b.N {
+		drain = errors.New("[lazyerrors_test.go:144 lazyerrors.BenchmarkStatic] err")
 	}
+
+	b.StopTimer()
+
+	assert.NotNil(b, drain)
 }
