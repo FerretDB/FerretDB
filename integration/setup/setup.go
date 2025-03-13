@@ -287,7 +287,7 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 	switch {
 	case len(opts.Providers) > 0:
 		require.Nil(tb, opts.BenchmarkProvider, "Both Providers and BenchmarkProvider were set")
-		inserted = InsertProviders(tb, ctx, collection, opts.Providers...)
+		inserted = insertProviders(tb, ctx, collection, opts.Providers...)
 	case opts.BenchmarkProvider != nil:
 		inserted = insertBenchmarkProvider(tb, ctx, collection, opts.BenchmarkProvider)
 	}
@@ -301,8 +301,8 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 	return collection
 }
 
-// InsertProviders inserts documents from specified Providers into collection. It returns true if any document was inserted.
-func InsertProviders(tb testing.TB, ctx context.Context, collection *mongo.Collection, providers ...shareddata.Provider) (inserted bool) {
+// insertProviders inserts documents from specified Providers into collection. It returns true if any document was inserted.
+func insertProviders(tb testing.TB, ctx context.Context, collection *mongo.Collection, providers ...shareddata.Provider) (inserted bool) {
 	tb.Helper()
 
 	ctx, span := otel.Tracer("").Start(ctx, "insertProviders")
@@ -328,13 +328,8 @@ func InsertProviders(tb testing.TB, ctx context.Context, collection *mongo.Colle
 func insertBenchmarkProvider(tb testing.TB, ctx context.Context, collection *mongo.Collection, provider shareddata.BenchmarkProvider) (inserted bool) {
 	tb.Helper()
 
-	for docs := range xiter.Chunk(provider.NewIter(), 100) {
-		insertDocs := make([]any, len(docs))
-		for i, doc := range docs {
-			insertDocs[i] = doc
-		}
-
-		res, err := collection.InsertMany(ctx, insertDocs)
+	for docs := range xiter.Chunk(provider.Docs(), 100) {
+		res, err := collection.InsertMany(ctx, docs)
 		require.NoError(tb, err)
 		require.Len(tb, res.InsertedIDs, len(docs))
 

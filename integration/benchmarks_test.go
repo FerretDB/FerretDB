@@ -29,58 +29,66 @@ import (
 )
 
 func BenchmarkFind(b *testing.B) {
-	provider := shareddata.BenchmarkSmallDocuments
-
-	b.Run(provider.Name(), func(b *testing.B) {
-		s := setup.SetupWithOpts(b, &setup.SetupOpts{
-			BenchmarkProvider: provider,
-		})
-
-		for name, bc := range map[string]struct {
-			filter bson.D
-		}{
-			"Int32ID": {
-				filter: bson.D{{"_id", int32(42)}},
-			},
-			"Int32One": {
-				filter: bson.D{{"id", int32(42)}},
-			},
-			"Int32Many": {
-				filter: bson.D{{"v", int32(42)}},
-			},
-			"Int32ManyDotNotation": {
-				filter: bson.D{{"v.foo", int32(42)}},
-			},
-		} {
-			b.Run(name, func(b *testing.B) {
-				var firstDocs, docs int
-
-				for range b.N {
-					cursor, err := s.Collection.Find(s.Ctx, bc.filter)
-					require.NoError(b, err)
-
-					docs = 0
-					for cursor.Next(s.Ctx) {
-						docs++
-					}
-
-					require.NoError(b, cursor.Close(s.Ctx))
-					require.NoError(b, cursor.Err())
-					require.Positive(b, docs)
-
-					if firstDocs == 0 {
-						firstDocs = docs
-					}
-				}
-
-				b.StopTimer()
-
-				require.Equal(b, firstDocs, docs)
-
-				b.ReportMetric(float64(docs), "docs-returned")
+	for _, provider := range shareddata.AllBenchmarkProviders() {
+		b.Run(provider.Name(), func(b *testing.B) {
+			s := setup.SetupWithOpts(b, &setup.SetupOpts{
+				BenchmarkProvider: provider,
 			})
-		}
-	})
+
+			for name, bc := range map[string]struct {
+				filter bson.D
+			}{
+				"Int32IDIndex": {
+					filter: bson.D{{"_id", int32(42)}},
+				},
+				"Int32One": {
+					filter: bson.D{{"id", int32(42)}},
+				},
+				"Int32Many": {
+					filter: bson.D{{"v", int32(42)}},
+				},
+				"Int32ManyDotNotation": {
+					filter: bson.D{{"v.foo", int32(42)}},
+				},
+			} {
+				b.Run(name, func(b *testing.B) {
+					var firstDocs, docs int
+
+					for b.Loop() {
+						cursor, err := s.Collection.Find(s.Ctx, bc.filter)
+						if err != nil {
+							b.Fatal(err)
+						}
+
+						docs = 0
+						for cursor.Next(s.Ctx) {
+							docs++
+						}
+
+						// FIXME
+						// b.StopTimer()
+
+						if err = cursor.Err(); err != nil {
+							b.Fatal(err)
+						}
+
+						if err = cursor.Close(s.Ctx); err != nil {
+							b.Fatal(err)
+						}
+
+						if firstDocs == 0 {
+							firstDocs = docs
+						}
+					}
+
+					require.Positive(b, firstDocs)
+					require.Equal(b, firstDocs, docs)
+
+					b.ReportMetric(float64(docs), "docs-returned")
+				})
+			}
+		})
+	}
 }
 
 func BenchmarkReplaceOne(b *testing.B) {
@@ -134,7 +142,7 @@ func BenchmarkInsertMany(b *testing.B) {
 
 	for _, provider := range shareddata.AllBenchmarkProviders() {
 		var total int
-		for range provider.NewIter() {
+		for range provider.Docs() {
 			total++
 		}
 
@@ -149,10 +157,10 @@ func BenchmarkInsertMany(b *testing.B) {
 			b.Run(fmt.Sprintf("%s/Batch%d", provider.Name(), batchSize), func(b *testing.B) {
 				b.StopTimer()
 
-				for range b.N {
+				for b.Loop() {
 					require.NoError(b, collection.Drop(ctx))
 
-					for docs := range xiter.Chunk(provider.NewIter(), batchSize) {
+					for docs := range xiter.Chunk(provider.Docs(), batchSize) {
 						insertDocs := make([]any, len(docs))
 						for i := range insertDocs {
 							insertDocs[i] = docs[i]
