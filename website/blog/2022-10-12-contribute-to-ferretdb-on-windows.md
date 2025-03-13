@@ -144,7 +144,7 @@ For Windows users, starting your contribution journey to FerretDB might feel a b
 We've covered all the known Windows-specific issues you might encounter in this article when contributing to FerretDB on Windows.
 
 An excellent place to start contributing is to select any issue labeled as the [good first issue](https://github.com/FerretDB/FerretDB/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22).
-Not to mention, we have an awesome community [Slack group where you can connect!](https://join.slack.com/t/ferretdb/shared_invite/zt-zqe9hj8g-ZcMG3~5Cs5u9uuOPnZB8~A) And if you experience any other issues that aren't covered in this article or have any questions, please feel free to reach out to us on Slack or GitHub Discussions.
+Not to mention, we have an awesome community [Slack group where you can connect!](https://slack.ferretdb.io/) And if you experience any other issues that aren't covered in this article or have any questions, please feel free to reach out to us on Slack or GitHub Discussions.
 
 With your Windows environment configured and set up, read our contributing guide to start contributing to FerretDB on Windows.
 

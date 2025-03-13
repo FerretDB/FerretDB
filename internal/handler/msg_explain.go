@@ -19,13 +19,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"net"
 	"os"
 	"strconv"
 
 	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
-	"golang.org/x/exp/maps"
 
 	"github.com/FerretDB/FerretDB/v2/build/version"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
@@ -37,9 +37,6 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgExplain(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	opID := h.operations.Start("command")
-	defer h.operations.Stop(opID)
-
 	spec, err := msg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -82,15 +79,15 @@ func (h *Handler) MsgExplain(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 
 	cmd := explainDoc.Command()
 
-	collection, ok := explainDoc.Get(cmd).(string)
-	if !ok {
-		return nil, mongoerrors.NewWithArgument(mongoerrors.ErrInvalidNamespace, "Failed to parse namespace element", "explain")
+	if _, ok = explainDoc.Get(cmd).(string); !ok {
+		return nil, mongoerrors.NewWithArgument(
+			mongoerrors.ErrInvalidNamespace,
+			"Failed to parse namespace element",
+			"explain",
+		)
 	}
 
-	h.operations.Update(opID, dbName, collection, doc)
-
 	var f string
-
 	switch cmd {
 	case "aggregate":
 		f = "documentdb_api_catalog.bson_aggregation_pipeline"
@@ -196,9 +193,8 @@ func convertJSON(value any) any {
 	switch value := value.(type) {
 	case map[string]any:
 		d := wirebson.MakeDocument(len(value))
-		keys := maps.Keys(value)
 
-		for _, k := range keys {
+		for k := range maps.Keys(value) {
 			v := value[k]
 			must.NoError(d.Add(k, convertJSON(v)))
 		}

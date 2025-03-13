@@ -52,7 +52,7 @@ func Startup() {
 		RemoveTime:  true,
 		RemoveLevel: true,
 	}
-	logging.Setup(opts, "")
+	logging.SetupDefault(opts, "")
 	l := slog.Default()
 
 	ctx := context.Background()

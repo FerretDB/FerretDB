@@ -14,7 +14,7 @@
 
 // Package version provides information about FerretDB version and build configuration.
 //
-// # Required files
+// # Extra files
 //
 // The following generated text files may be present in this (`build/version`) directory during building:
 //   - version.txt (required) contains information about the FerretDB version in a format
@@ -32,6 +32,7 @@
 // # Development builds
 //
 // Development builds of FerretDB behave differently in a few aspects:
+//   - they are significantly slower;
 //   - some values that are normally randomized are fixed or less randomized to make debugging easier;
 //   - some internal errors cause crashes instead of being handled more gracefully;
 //   - stack traces are collected more liberally;
@@ -86,6 +87,9 @@ var info *Info
 const unknown = "unknown"
 
 // Get returns current build's info.
+//
+// It returns a shared instance without any synchronization.
+// If caller needs to modify the instance, it should make sure there is no concurrent accesses.
 func Get() *Info {
 	return info
 }
@@ -147,27 +151,20 @@ func init() {
 	info.BuildEnvironment["go.version"] = buildInfo.GoVersion
 
 	for _, s := range buildInfo.Settings {
+		if v := s.Value; v != "" {
+			info.BuildEnvironment[s.Key] = v
+		}
+
 		switch s.Key {
 		case "vcs.revision":
 			if s.Value != info.Commit {
-				// for non-official builds
 				if info.Commit == unknown {
 					info.Commit = s.Value
-					continue
 				}
-
-				panic(fmt.Sprintf("commit.txt value %q != vcs.revision value %q\n"+
-					"Please run `bin/task gen-version`", info.Commit, s.Value,
-				))
 			}
 
 		case "vcs.modified":
 			info.Dirty = must.NotFail(strconv.ParseBool(s.Value))
-
-		default:
-			if v := s.Value; v != "" {
-				info.BuildEnvironment[s.Key] = v
-			}
 		}
 	}
 }

@@ -16,8 +16,9 @@ linters-settings:
             desc: use `context` package instead
           - pkg: golang.org/x/exp/slices
             desc: use `slices` package instead
-          # - pkg: golang.org/x/exp/maps
-          #   desc: use `maps` package instead
+          - pkg: golang.org/x/exp/maps
+            desc: use `maps` package instead
+
           - pkg: github.com/jackc/pgconn
             desc: use `github.com/jackc/pgx/v5/pgconn` package instead
           - pkg: github.com/jackc/pgproto3
@@ -28,10 +29,15 @@ linters-settings:
             desc: use `github.com/jackc/pgx/v5` package instead
           - pkg: github.com/jackc/pgx/v4
             desc: use `github.com/jackc/pgx/v5` package instead
-          - pkg: github.com/uber-go/zap
-            desc: use `log/slog` package instead
-            #- pkg: github.com/xdg-go/scram
-            #  desc: use `github.com/FerretDB/FerretDB/v2/internal/util/scram` package instead
+
+          # TODO https://github.com/FerretDB/FerretDB/issues/4798
+          # - pkg: go.mongodb.org/mongo-driver/bson
+          #   desc: use `go.mongodb.org/mongo-driver/v2/bson` package instead
+          # - pkg: go.mongodb.org/mongo-driver/mongo
+          #   desc: use `go.mongodb.org/mongo-driver/v2/mongo` package instead
+
+          # - pkg: github.com/xdg-go/scram
+          #   desc: use `github.com/FerretDB/FerretDB/v2/internal/util/scram` package instead
       ferretdb-in-tools:
         files:
           - "**/tools/**/*.go"
@@ -103,7 +109,7 @@ linters-settings:
     sections:
       - standard
       - default
-      - prefix(github.com/FerretDB/FerretDB) # both /v2 and /tools
+      - prefix(github.com/FerretDB/FerretDB/v2/)
   goconst:
     min-occurrences: 5
     ignore-tests: true

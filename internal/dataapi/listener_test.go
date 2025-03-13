@@ -39,14 +39,10 @@ import (
 )
 
 func TestSmokeDataAPI(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping in -short mode")
-	}
+	addr, db := setupDataAPI(t, true)
+	coll := testutil.CollectionName(t)
 
 	t.Parallel()
-
-	addr, db := setupDataAPI(t)
-	coll := testutil.CollectionName(t)
 
 	t.Run("FindEmpty", func(t *testing.T) {
 		jsonBody := `{
@@ -233,9 +229,10 @@ func postJSON(tb testing.TB, uri, jsonBody string) (*http.Response, error) {
 
 // setupDataAPI sets up clean database and the Data API handler.
 // It returns Data API address, and database name.
-func setupDataAPI(tb testing.TB) (addr string, dbName string) {
+func setupDataAPI(tb testing.TB, auth bool) (addr string, dbName string) {
 	tb.Helper()
-	const uri = "postgres://username:password@127.0.0.1:5432/postgres"
+
+	uri := testutil.PostgreSQLURL(tb)
 
 	sp, err := state.NewProvider("")
 	require.NoError(tb, err)
@@ -247,7 +244,7 @@ func setupDataAPI(tb testing.TB) (addr string, dbName string) {
 
 	handlerOpts := &handler.NewOpts{
 		Pool: p,
-		Auth: true,
+		Auth: auth,
 
 		L:             logging.WithName(l, "handler"),
 		StateProvider: sp,
@@ -256,12 +253,12 @@ func setupDataAPI(tb testing.TB) (addr string, dbName string) {
 	h, err := handler.New(handlerOpts)
 	require.NoError(tb, err)
 
-	listenerOpts := clientconn.NewListenerOpts{
-		Mode:    clientconn.NormalMode,
-		Metrics: connmetrics.NewListenerMetrics(),
+	listenerOpts := clientconn.ListenerOpts{
 		Handler: h,
+		Metrics: connmetrics.NewListenerMetrics(),
 		Logger:  logging.WithName(l, "listener"),
 		TCP:     "127.0.0.1:0",
+		Mode:    clientconn.NormalMode,
 	}
 
 	lis, err := clientconn.Listen(&listenerOpts)
@@ -302,7 +299,10 @@ func setupDataAPI(tb testing.TB) (addr string, dbName string) {
 		Scheme: "mongodb",
 		Host:   lis.TCPAddr().String(),
 		Path:   "/",
-		User:   url.UserPassword("username", "password"),
+	}
+
+	if auth {
+		u.User = url.UserPassword("username", "password")
 	}
 
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(u.String()))

@@ -260,7 +260,7 @@ tasks:
         --mode={{.MODE}}
         --no-auth
         --listen-addr=:27017
-        --listen-data-api-addr=:8899
+        --listen-data-api-addr=127.0.0.1:8899
         --proxy-addr=127.0.0.1:37017
         --postgresql-url='postgres://username:password@127.0.0.1:5432/postgres'
         --otel-traces-url=http://127.0.0.1:4318/v1/traces
@@ -274,7 +274,7 @@ tasks:
         bin/ferretdb{{exeExt}}
         --mode={{.MODE}}
         --listen-addr=:27017
-        --listen-data-api-addr=:8899
+        --listen-data-api-addr=127.0.0.1:8899
         --proxy-addr=127.0.0.1:47017
         --postgresql-url='postgres://username:password@127.0.0.1:5432/postgres'
         --otel-traces-url=http://127.0.0.1:4318/v1/traces
@@ -289,7 +289,7 @@ tasks:
       - bin/envtool{{exeExt}} shell mkdir tmp/githubcache
       - bin/golangci-lint{{exeExt}} run --config=.golangci.yml
       - bin/golangci-lint{{exeExt}} run --config=.golangci-new.yml
-      - bin/go-consistent{{exeExt}} -pedantic ./cmd/... ./internal/... ./build/...
+      - bin/go-consistent{{exeExt}} -pedantic ./cmd/... ./ferretdb/... ./internal/...
       - go vet -vettool=bin/checkswitch{{exeExt}} ./...
       - go vet -vettool=bin/checkcomments{{exeExt}} ./...
 
@@ -510,41 +510,6 @@ tasks:
     requires:
       vars: [DOCKER_IMAGES]
 
-  docker-documentdb:
-    desc: "Build `documentdb-local` Docker image"
-    cmds:
-      - task: docker-build
-        vars:
-          FILE: postgres-documentdb/{{.FILE}}
-          TARGET: "{{.FILE}}"
-          PLATFORM: linux/amd64
-          DOCKER_IMAGES: documentdb-local
-          OUTPUT: type=docker
-    requires:
-      vars: [FILE]
-
-  docker-documentdb-development-push:
-    cmds:
-      - task: docker-build
-        vars:
-          FILE: postgres-documentdb/development
-          TARGET: development
-          PLATFORM: linux/amd64
-          OUTPUT: type=image,push=true
-    requires:
-      vars: [DOCKER_IMAGES]
-
-  docker-documentdb-production-push:
-    cmds:
-      - task: docker-build
-        vars:
-          FILE: postgres-documentdb/production
-          TARGET: production
-          PLATFORM: linux/amd64
-          OUTPUT: type=image,push=true
-    requires:
-      vars: [DOCKER_IMAGES]
-
   packages:
     desc: "Build .deb and .rpm packages"
     cmds:
@@ -709,6 +674,14 @@ tasks:
     cmds:
       - docker compose run --rm prettier --write --print-width 120 "**/*.js"
 
+      # .js files are also used for mongosh output snippets
+      # (with added `response = ` to make them valid JavaScript).
+      # The formatting of quotes, commas and semicolons should not be modified.
+      # Flags are set to ensure that.
+      - >
+        docker compose run --rm prettier --write --single-quote --trailing-comma none --no-semi
+        --print-width 120 "website/*docs/**/*.js"
+
   fmt-json:
     desc: "Format JSON files"
     cmds:
@@ -719,21 +692,32 @@ tasks:
     cmds:
       - docker compose run --rm prettier --write --print-width 120 "**/*.yml"
 
-  # see https://github.com/DavidAnson/markdownlint-cli2#command-line for the reason we use double-quotes
+  # See https://github.com/DavidAnson/markdownlint-cli2#command-line for the reason we use double quotes in command.
   fmt-docs:
     desc: "Format and lint documentation"
-    deps: [fmt-js, fmt-json, fmt-yaml]
+    deps: [gen-version, fmt-js, fmt-json, fmt-yaml]
     run: once
     cmds:
       - >
         docker compose run --rm textlint --fix --config build/.textlintrc --ignore-path .prettierignore
         "**/*.md" "**/*.mdx" ".github/**/*.md"
+
+      # Use the same flags as in fmt-js for mongosh snippets above.
+      #
+      # Note that embedded code snippets in ``` Markdown blocks are not reformatted if they can't be parsed.
+      # Ensure that the code is valid and can be parsed by changing formatting manually
+      # and running this task again, checking that formatting changes.
+      #
+      # TODO --print-width 120 (https://github.com/FerretDB/FerretDB/issues/4636)
       - >
-        docker compose run --rm prettier --write --parser markdown --no-semi --single-quote --trailing-comma none
-        "**/*.md" "**/*.mdx"
+        docker compose run --rm prettier --write --single-quote --trailing-comma none --no-semi
+        --parser markdown "**/*.md" "**/*.mdx"
+
       - >
         docker compose run --rm markdownlint --config "build/.markdownlint.yml"
         "**/*.md" "**/*.mdx" "#build/postgres-documentdb/documentdb/"
+      - bin/envtool{{exeExt}} shell rmdir tmp/githubcache
+      - bin/envtool{{exeExt}} shell mkdir tmp/githubcache
       - bin/checkdocs
 
   docs-fmt:
@@ -753,17 +737,17 @@ tasks:
 
   pngcrush:
     cmds:
-      - pngcrush -ow -brute {{.FILE}}
+      - pngcrush -ow -brute -rem text {{.FILE}}
     requires:
       vars: [FILE]
 
   pngcrush-new:
     cmds:
-      - git diff --name-only upstream/main '*.png' | parallel "pngcrush -ow -brute {} {.}.temp"
+      - git diff --name-only upstream/main '*.png' | parallel "pngcrush -ow -brute -rem text {} {.}.temp"
 
   pngcrush-all:
     cmds:
-      - find . -type f -name '*.png' | parallel "pngcrush -ow -brute {} {.}.temp"
+      - find . -type f -name '*.png' | parallel "pngcrush -ow -brute -rem text {} {.}.temp"
 
   docs-dev:
     desc: "Start documentation development server"

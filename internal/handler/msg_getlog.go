@@ -16,7 +16,6 @@ package handler
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -83,6 +82,7 @@ func (h *Handler) MsgGetLog(connCtx context.Context, msg *wire.OpMsg) (*wire.OpM
 	case "global":
 		var log *wirebson.Array
 
+		// TODO https://github.com/FerretDB/FerretDB/issues/4750
 		if log, err = h.L.Handler().(*logging.Handler).RecentEntries(); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -113,15 +113,18 @@ func (h *Handler) MsgGetLog(connCtx context.Context, msg *wire.OpMsg) (*wire.OpM
 
 		startupWarnings := []string{
 			poweredBy,
-			"Please star us on GitHub: https://github.com/FerretDB/FerretDB and https://github.com/microsoft/documentdb.",
+			"Please star 🌟 us on GitHub: https://github.com/FerretDB/FerretDB " +
+				"and https://github.com/microsoft/documentdb.",
 		}
 
 		if state.DocumentDBVersion != "" && state.DocumentDBVersion != version.DocumentDB {
 			startupWarnings = append(
 				startupWarnings,
-				"This version of FerretDB requires DocumentDB '"+version.DocumentDB+
-					"'. The currently installed version is '"+state.DocumentDBVersion+
-					"'. Some functions may not behave correctly.",
+				fmt.Sprintf(
+					"This version of FerretDB requires DocumentDB %q (%s). The currently installed version is %q. "+
+						"Some functions may not behave correctly.",
+					version.DocumentDB, version.DocumentDBURL, state.DocumentDBVersion,
+				),
 			)
 		}
 
@@ -137,7 +140,7 @@ func (h *Handler) MsgGetLog(connCtx context.Context, msg *wire.OpMsg) (*wire.OpM
 			msg := state.UpdateInfo
 			if msg == "" {
 				msg = fmt.Sprintf(
-					"A new version available! The latest version: %s. The current version: %s.",
+					"A new version is available! The latest version: %s. The current version: %s.",
 					state.LatestVersion, info.Version,
 				)
 			}
@@ -162,18 +165,19 @@ func (h *Handler) MsgGetLog(connCtx context.Context, msg *wire.OpMsg) (*wire.OpM
 		log := wirebson.MakeArray(len(startupWarnings))
 
 		for _, line := range startupWarnings {
-			// TODO https://github.com/FerretDB/FerretDB/issues/4347
-			b, err := json.Marshal(map[string]any{
-				"msg":  line,
-				"tags": []string{"startupWarnings"},
-				"s":    "I",
-				"c":    "STORAGE",
-				"id":   42000,
-				"ctx":  "initandlisten",
-				"t": map[string]string{
-					"$date": time.Now().UTC().Format("2006-01-02T15:04:05.999Z07:00"),
-				},
-			})
+			ml := logging.MongoLogRecord{
+				Msg:       line,
+				Tags:      []string{"startupWarnings"},
+				Severity:  "I",
+				Component: "STORAGE",
+				ID:        42000,
+				Ctx:       "initandlisten",
+				Timestamp: time.Now(),
+			}
+
+			var b []byte
+
+			b, err = ml.Marshal()
 			if err != nil {
 				return nil, lazyerrors.Error(err)
 			}
@@ -195,5 +199,5 @@ func (h *Handler) MsgGetLog(connCtx context.Context, msg *wire.OpMsg) (*wire.OpM
 		)
 	}
 
-	return wire.NewOpMsg(must.NotFail(res.Encode()))
+	return wire.NewOpMsg(res)
 }

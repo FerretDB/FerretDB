@@ -168,6 +168,20 @@ func CreateUser(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebs
 	return
 }
 
+// CurrentOpCommand is a wrapper for
+//
+//	documentdb_api.current_op_command(p_spec documentdb_core.bson, OUT document documentdb_core.bson).
+func CurrentOpCommand(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebson.RawDocument) (outDocument wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.current_op_command", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT document::bytea FROM documentdb_api.current_op_command($1::bytea)", spec)
+	if err = row.Scan(&outDocument); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api.current_op_command", l)
+	}
+	return
+}
+
 // CursorGetMore is a wrapper for
 //
 //	documentdb_api.cursor_get_more(database text, getmorespec documentdb_core.bson, continuationspec documentdb_core.bson, OUT cursorpage documentdb_core.bson, OUT continuation documentdb_core.bson).
@@ -346,6 +360,20 @@ func ListCollectionsCursorFirstPage(ctx context.Context, conn *pgx.Conn, l *slog
 	row := conn.QueryRow(ctx, "SELECT cursorpage::bytea, continuation::bytea, persistconnection, cursorid FROM documentdb_api.list_collections_cursor_first_page($1, $2::bytea, $3)", database, commandSpec, cursorID)
 	if err = row.Scan(&outCursorPage, &outContinuation, &outPersistConnection, &outCursorID); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.list_collections_cursor_first_page", l)
+	}
+	return
+}
+
+// ListDatabases is a wrapper for
+//
+//	documentdb_api.list_databases(p_list_databases_spec documentdb_core.bson, OUT list_databases documentdb_core.bson).
+func ListDatabases(ctx context.Context, conn *pgx.Conn, l *slog.Logger, listDatabasesSpec wirebson.RawDocument) (outListDatabases wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.list_databases", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT list_databases::bytea FROM documentdb_api.list_databases($1::bytea)", listDatabasesSpec)
+	if err = row.Scan(&outListDatabases); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api.list_databases", l)
 	}
 	return
 }

@@ -16,12 +16,16 @@ package state
 
 import (
 	"encoding/json"
+	"expvar"
 	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
+
+	"github.com/FerretDB/FerretDB/v2/internal/util/iface"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // Provider provides access to FerretDB process state.
@@ -33,7 +37,8 @@ type Provider struct {
 	subs map[chan struct{}]struct{}
 }
 
-// NewProvider creates a new Provider that stores state in the given file.
+// NewProvider creates a new Provider that stores state in the given file
+// (that will be created automatically if needed).
 //
 // If filename is empty, then the state is not persisted.
 //
@@ -60,6 +65,34 @@ func NewProvider(filename string) (*Provider, error) {
 	}
 
 	return p, nil
+}
+
+// NewProviderDir creates a new Provider that stores state in the state.json file in the given directory
+// (that will be created automatically if needed).
+func NewProviderDir(dir string) (*Provider, error) {
+	if dir == "" {
+		return nil, fmt.Errorf("state directory is not set")
+	}
+
+	f, err := filepath.Abs(filepath.Join(dir, "state.json"))
+	if err != nil {
+		return nil, err
+	}
+
+	sp, err := NewProvider(f)
+	if err != nil {
+		return nil, newProviderDirErr(f, err)
+	}
+
+	return sp, nil
+}
+
+// Var returns an unpublished [expvar.Var] for the state.
+func (p *Provider) Var() expvar.Var {
+	return iface.Stringer(func() string {
+		b := must.NotFail(json.Marshal(p.Get().asMap()))
+		return string(b)
+	})
 }
 
 // MetricsCollector returns Prometheus metrics collector for that provider.

@@ -46,5 +46,5 @@ func (h *Handler) MsgLogout(connCtx context.Context, msg *wire.OpMsg) (*wire.OpM
 		"ok", float64(1),
 	))
 
-	return wire.NewOpMsg(must.NotFail(res.Encode()))
+	return wire.NewOpMsg(res)
 }

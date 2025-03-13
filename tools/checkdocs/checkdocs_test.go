@@ -25,23 +25,38 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/FerretDB/FerretDB/tools/github"
+	"github.com/FerretDB/FerretDB/v2/tools/github"
 )
 
-func TestReal(t *testing.T) {
+func TestBlogs(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping in -short mode")
 	}
 
 	blogFiles, err := filepath.Glob(filepath.Join("..", "..", "website", "blog", "*.md"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	err = checkBlogFiles(blogFiles)
-	if err != nil {
-		t.Fatal(err)
+	require.NoError(t, err)
+}
+
+func TestDocs(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in -short mode")
 	}
+
+	docFiles, err := getMarkdownFiles(filepath.Join("..", "..", "website", "docs"))
+	require.NoError(t, err)
+	require.NotEmpty(t, docFiles)
+
+	p, err := github.CacheFilePath()
+	require.NoError(t, err)
+
+	client, err := github.NewClient(p, log.Printf, gh.NoopPrintf, gh.NoopPrintf)
+	require.NoError(t, err)
+
+	err = checkDocFiles(client, docFiles)
+	require.NoError(t, err)
 }
 
 var fm = bytes.TrimSpace([]byte(`
@@ -101,30 +116,30 @@ func TestCheckSupportedCommands(t *testing.T) {
 		ExpectedOutput string
 	}{
 		"OpenIssueLink": {
-			Payload:        "|                 | `openIssueLink`          | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/178) |", //nolint:lll // for readability
+			Payload:        "<!-- TODO https://github.com/FerretDB/FerretDB/issues/178 -->",
 			ExpectedOutput: "",
 		},
 
 		"ClosedIssueLink": {
-			Payload:        "|                 | `closedIssueLink`          | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1) |", //nolint:lll // for readability
-			ExpectedOutput: "linked issue https://github.com/FerretDB/FerretDB/issues/1 is closed\n",
+			Payload:        "<!-- TODO https://github.com/FerretDB/FerretDB/issues/1 -->",
+			ExpectedOutput: "linked issue https://github.com/FerretDB/FerretDB/issues/1 is closed in example.md\n",
 		},
 
 		"AnyLabelClosedIssue": {
 			Payload:        "[IssueLabel](https://github.com/FerretDB/FerretDB/issues/1)",
-			ExpectedOutput: "linked issue https://github.com/FerretDB/FerretDB/issues/1 is closed\n",
+			ExpectedOutput: "linked issue https://github.com/FerretDB/FerretDB/issues/1 is closed in example.md\n",
 		},
 		"ClosedIssue": {
 			Payload:        "https://github.com/FerretDB/FerretDB/issues/1",
-			ExpectedOutput: "linked issue https://github.com/FerretDB/FerretDB/issues/1 is closed\n",
+			ExpectedOutput: "linked issue https://github.com/FerretDB/FerretDB/issues/1 is closed in example.md\n",
 		},
 		"IncorrectIssueNumber": {
 			Payload:        "https://github.com/FerretDB/FerretDB/issues/0",
-			ExpectedOutput: "incorrect issue number: https://github.com/FerretDB/FerretDB/issues/0\n",
+			ExpectedOutput: "incorrect issue number: https://github.com/FerretDB/FerretDB/issues/0 in example.md\n",
 		},
 		"DocumentDBIssue": {
 			Payload:        "An example issue is https://github.com/microsoft/documentdb/issues/1.",
-			ExpectedOutput: "linked issue https://github.com/microsoft/documentdb/issues/1 is closed\n",
+			ExpectedOutput: "linked issue https://github.com/microsoft/documentdb/issues/1 is closed in example.md\n",
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -133,7 +148,7 @@ func TestCheckSupportedCommands(t *testing.T) {
 
 			var failed bool
 
-			failed, err = checkIssueURLs(client, r, l)
+			failed, err = checkIssueURLs(client, r, "example.md", l)
 			require.NoError(t, err)
 			assert.Equal(t, tc.ExpectedOutput != "", failed)
 

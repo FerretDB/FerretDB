@@ -67,11 +67,10 @@ var extraMongoErrors = map[string]int{
 
 func main() {
 	opts := &logging.NewHandlerOpts{
-		Base:          "console",
-		Level:         slog.LevelDebug,
-		CheckMessages: true,
+		Base:  "console",
+		Level: slog.LevelDebug,
 	}
-	logging.Setup(opts, "")
+	logging.SetupDefault(opts, "")
 
 	ctx := context.Background()
 	l := slog.Default()

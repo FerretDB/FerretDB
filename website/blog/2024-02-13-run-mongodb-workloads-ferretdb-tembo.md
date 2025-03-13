@@ -99,18 +99,18 @@ db.supply.findOne()
 
 Result:
 
-```json5
-{
-  "_id": ObjectId("65c0d6d5cfba3092d3958fbf"),
-  "transaction_id": 10004,
-  "customer_name": "Jorge Lopez",
-  "customer_location": "Madrid, Spain",
-  "product_category": "Sports Equipment",
-  "transaction_time": ISODate("2023-07-10T10:00:00.000Z"),
-  "product_name": "Adidas Running Shoes",
-  "price": 75,
-  "quantity": 2,
-  "payment_method": "Bank Transfer"
+```js
+response = {
+  _id: ObjectId('65c0d6d5cfba3092d3958fbf'),
+  transaction_id: 10004,
+  customer_name: 'Jorge Lopez',
+  customer_location: 'Madrid, Spain',
+  product_category: 'Sports Equipment',
+  transaction_time: ISODate('2023-07-10T10:00:00.000Z'),
+  product_name: 'Adidas Running Shoes',
+  price: 75,
+  quantity: 2,
+  payment_method: 'Bank Transfer'
 }
 ```
 
@@ -133,8 +133,8 @@ db.supply.find({
 
 Result:
 
-```json5
-[
+```js
+response = [
   {
     _id: ObjectId('65c0d6d5cfba3092d3958fdb'),
     transaction_id: 10032,
@@ -208,8 +208,8 @@ db.supply.aggregate([
 
 Result:
 
-```json5
-[{ _id: 'The Alchemist', totalQuantity: 5 }]
+```js
+response = [{ _id: 'The Alchemist', totalQuantity: 5 }]
 ```
 
 This operation groups the records by `product_name`, sums up the quantities, and then sorts the results in descending order of quantity to highlight the most popular item.

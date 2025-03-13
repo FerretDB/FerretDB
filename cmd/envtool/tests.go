@@ -41,9 +41,9 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/observability"
 )
 
-// testEvent represents a single even emitted by `go test -json`.
+// testEvent represents a single event emitted by `go test -json` or `go build -json`.
 //
-// See https://pkg.go.dev/cmd/test2json#hdr-Output_Format.
+// See `go doc test2json` and `go help buildjson`.
 type testEvent struct {
 	Time           time.Time `json:"Time"`
 	Action         string    `json:"Action"`
@@ -51,6 +51,8 @@ type testEvent struct {
 	Test           string    `json:"Test"`
 	Output         string    `json:"Output"`
 	ElapsedSeconds float64   `json:"Elapsed"`
+
+	ImportPath string `json:"ImportPath"`
 }
 
 // Elapsed returns an elapsed time.
@@ -80,7 +82,7 @@ func listTestFuncs(ctx context.Context, dir, re string, logger *slog.Logger) ([]
 	cmd.Stdout = &buf
 	cmd.Stderr = os.Stderr
 
-	logger.InfoContext(ctx, fmt.Sprintf("Running %s", strings.Join(cmd.Args, " ")))
+	logger.InfoContext(ctx, "Running tests", slog.String("command", strings.Join(cmd.Args, " ")))
 
 	if err := cmd.Run(); err != nil {
 		return nil, lazyerrors.Error(err)
@@ -345,6 +347,11 @@ func runGoTest(runCtx context.Context, opts *runGoTestOpts) (resErr error) {
 			}
 
 			break
+		}
+
+		// skip build events for now
+		if event.ImportPath != "" {
+			continue
 		}
 
 		if !firstEvent {
