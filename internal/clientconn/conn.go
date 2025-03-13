@@ -229,7 +229,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 // processMessage reads the request, routes the request based on the operation mode
 // and writes the response.
 //
-// Any error returned is fatal and the connection should be closed.
+// Any error returned indicates the connection should be closed.
 func (c *conn) processMessage(ctx context.Context, bufr *bufio.Reader, bufw *bufio.Writer) error {
 	reqHeader, reqBody, err := wire.ReadMessage(bufr)
 	if err != nil {
