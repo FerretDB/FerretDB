@@ -27,8 +27,6 @@ FerretDB provides the following log formats:
 
 There are four logging levels:
 
-<!-- https://github.com/FerretDB/FerretDB/issues/4439 -->
-
 - `error` is used for errors that can't be handled gracefully
   and typically result in client connection being closed;
 - `warn` is used for errors that can be handled gracefully
