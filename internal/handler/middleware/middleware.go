@@ -21,7 +21,15 @@ import (
 	"github.com/FerretDB/wire"
 )
 
-// HandlerFunc represents a function/method that processes a single command.
+type MsgRequest struct {
+	*wire.OpMsg
+}
+
+type MsgResponse struct {
+	*wire.OpMsg
+}
+
+// MsgHandlerFunc represents a function/method that processes a single OP_MSG command.
 //
 // The passed context is canceled when the client disconnects.
-type HandlerFunc func(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
+type MsgHandlerFunc func(context.Context, *MsgRequest) (*wire.OpMsg, error)
