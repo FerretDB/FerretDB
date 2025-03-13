@@ -336,6 +336,7 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 
 		// TODO https://github.com/FerretDB/FerretDB/issues/1997
 		var doc *wirebson.Document
+
 		if doc, err = raw.Decode(); err != nil {
 			connCtx, span = otel.Tracer("").Start(connCtx, "")
 
@@ -466,7 +467,9 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 	return
 }
 
-// startSpan gets the span context from comment of the document and starts a new span with it.
+// startSpan gets the parent span from the comment field of the document,
+// and starts a new span with it.
+// If there is no span context, a new span without parent is started.
 func startSpan(ctx context.Context, doc *wirebson.Document, l *slog.Logger) (context.Context, oteltrace.Span) {
 	var span oteltrace.Span
 
@@ -486,7 +489,7 @@ func startSpan(ctx context.Context, doc *wirebson.Document, l *slog.Logger) (con
 	return ctx, span
 }
 
-// endSpan ends the span once it sets status, name and attributes to the span.
+// endSpan ends the span by setting status, name and attributes to the span.
 func endSpan(span oteltrace.Span, command, result, argument string, responseTo int) {
 	must.NotBeZero(span)
 
