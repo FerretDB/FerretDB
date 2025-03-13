@@ -321,29 +321,8 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 
 	var command, result, argument string
 	defer func() {
-		if result == "" {
-			result = "panic"
-		}
-
-		if argument == "" {
-			argument = "unknown"
-		}
-
+		endSpan(span, command, result, argument, int(resHeader.ResponseTo))
 		c.m.Responses.WithLabelValues(resHeader.OpCode.String(), command, argument, result).Inc()
-
-		must.NotBeZero(span)
-
-		if result != "ok" {
-			span.SetStatus(otelcodes.Error, result)
-		}
-
-		span.SetName(command)
-		span.SetAttributes(
-			otelattribute.String("db.ferretdb.opcode", resHeader.OpCode.String()),
-			otelattribute.Int("db.ferretdb.request_id", int(resHeader.ResponseTo)),
-			otelattribute.String("db.ferretdb.argument", argument),
-		)
-		span.End()
 	}()
 
 	resHeader = new(wire.MsgHeader)
@@ -357,26 +336,15 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 
 		// TODO https://github.com/FerretDB/FerretDB/issues/1997
 		var doc *wirebson.Document
-		if doc, err = raw.Decode(); err == nil {
-			command = doc.Command()
+		if doc, err = raw.Decode(); err != nil {
+			connCtx, span = otel.Tracer("").Start(connCtx, "")
+
+			break
 		}
 
-		if err == nil {
-			comment, _ := doc.Get("comment").(string)
-
-			spanCtx, e := observability.SpanContextFromComment(comment)
-			if e == nil {
-				connCtx = oteltrace.ContextWithRemoteSpanContext(connCtx, spanCtx)
-			} else {
-				c.l.DebugContext(connCtx, "Failed to extract span context from comment", logging.Error(e))
-			}
-		}
-
-		connCtx, span = otel.Tracer("").Start(connCtx, "")
-
-		if err == nil {
-			resBody = c.handleOpMsg(connCtx, msg, command)
-		}
+		command = doc.Command()
+		connCtx, span = startSpan(connCtx, doc, c.l)
+		resBody = c.handleOpMsg(connCtx, msg, command)
 
 	case wire.OpCodeQuery:
 		connCtx, span = otel.Tracer("").Start(connCtx, "")
@@ -496,6 +464,51 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 	}
 
 	return
+}
+
+// startSpan gets the span context from comment of the document and starts a new span with it.
+func startSpan(ctx context.Context, doc *wirebson.Document, l *slog.Logger) (context.Context, oteltrace.Span) {
+	var span oteltrace.Span
+
+	comment, _ := doc.Get("comment").(string)
+
+	spanCtx, err := observability.SpanContextFromComment(comment)
+	if err != nil {
+		l.DebugContext(ctx, "Failed to extract span context from comment", logging.Error(err))
+		ctx, span = otel.Tracer("").Start(ctx, "")
+
+		return ctx, span
+	}
+
+	ctx = oteltrace.ContextWithRemoteSpanContext(ctx, spanCtx)
+	ctx, span = otel.Tracer("").Start(ctx, "")
+
+	return ctx, span
+}
+
+// endSpan ends the span once it sets status, name and attributes to the span.
+func endSpan(span oteltrace.Span, command, result, argument string, responseTo int) {
+	must.NotBeZero(span)
+
+	if result == "" {
+		result = "panic"
+	}
+
+	if argument == "" {
+		argument = "unknown"
+	}
+
+	if result != "ok" {
+		span.SetStatus(otelcodes.Error, result)
+	}
+
+	span.SetName(command)
+	span.SetAttributes(
+		otelattribute.String("db.ferretdb.opcode", "OP_MSG"),
+		otelattribute.Int("db.ferretdb.request_id", responseTo),
+		otelattribute.String("db.ferretdb.argument", argument),
+	)
+	span.End()
 }
 
 // handleOpMsg processes OP_MSG requests.
