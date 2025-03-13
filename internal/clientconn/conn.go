@@ -34,7 +34,6 @@ import (
 	"time"
 
 	"github.com/FerretDB/wire"
-	"github.com/FerretDB/wire/wirebson"
 	"github.com/pmezard/go-difflib/difflib"
 	"go.opentelemetry.io/otel"
 	otelattribute "go.opentelemetry.io/otel/attribute"
@@ -103,6 +102,9 @@ type newConnOpts struct {
 
 	testRecordsDir string // if empty, no records are created
 }
+
+// requestFunc represents a function that handles a wire message and returns a wire message response.
+type requestFunc func(context.Context, *wire.MsgHeader, wire.MsgBody, string) (*wire.MsgHeader, wire.MsgBody, bool)
 
 // newConn creates a new client connection for given net.Conn.
 func newConn(opts *newConnOpts) (*conn, error) {
@@ -239,6 +241,12 @@ func (c *conn) run(ctx context.Context) (err error) {
 		// It is set to the highest level of logging used to log response.
 		diffLogLevel := slog.LevelDebug
 
+		command, comment := extractCommandAndComment(reqHeader, reqBody)
+
+		// TODO https://github.com/FerretDB/FerretDB/issues/1997
+		// send requests in diff mode in parallel to align traces
+		// by creating a copy of the request body
+		//
 		// send request to proxy first (unless we are in normal mode)
 		// because FerretDB's handling could modify reqBody's documents,
 		// creating a data race
@@ -249,14 +257,16 @@ func (c *conn) run(ctx context.Context) (err error) {
 				panic("proxy addr was nil")
 			}
 
-			// TODO https://github.com/FerretDB/FerretDB/issues/1997
-			proxyHeader, proxyBody = c.proxy.Route(ctx, reqHeader, reqBody)
+			routeWithTrace := c.traceRequest(c.proxy.Route, comment, c.l)
+			routeWithMetrics := c.correctMetrics(routeWithTrace)
+			resHeader, resBody, _ = routeWithMetrics(ctx, reqHeader, reqBody, command)
 		}
 
 		// handle request unless we are in proxy mode
 		var resCloseConn bool
 		if c.mode != ProxyMode {
-			resHeader, resBody, resCloseConn = c.route(ctx, reqHeader, reqBody)
+			routeWithTrace := c.traceRequest(c.route, comment, c.l)
+			resHeader, resBody, resCloseConn = routeWithTrace(ctx, reqHeader, reqBody, command)
 			if level := c.logResponse(ctx, "Response", resHeader, resBody, resCloseConn); level > diffLogLevel {
 				diffLogLevel = level
 			}
@@ -316,12 +326,12 @@ func (c *conn) run(ctx context.Context) (err error) {
 // They also should not use recover(). That allows us to use fuzzing.
 //
 // Returned resBody can be nil.
-func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody wire.MsgBody) (resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) { //nolint:lll // argument list is too long
-	var span oteltrace.Span
+func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody wire.MsgBody, command string) (resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) { //nolint:lll // argument list is too long
+	span := oteltrace.SpanFromContext(connCtx)
 
-	var command, result, argument string
+	var result, argument string
 	defer func() {
-		endSpan(span, command, result, argument, int(resHeader.ResponseTo))
+		setSpanAttribute(span, result, argument)
 		c.m.Responses.WithLabelValues(resHeader.OpCode.String(), command, argument, result).Inc()
 	}()
 
@@ -330,26 +340,12 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 	switch reqHeader.OpCode {
 	case wire.OpCodeMsg:
 		msg := reqBody.(*wire.OpMsg)
-		raw := msg.RawSection0()
 
 		resHeader.OpCode = wire.OpCodeMsg
 
-		// TODO https://github.com/FerretDB/FerretDB/issues/1997
-		var doc *wirebson.Document
-
-		if doc, err = raw.Decode(); err != nil {
-			connCtx, span = otel.Tracer("").Start(connCtx, "")
-
-			break
-		}
-
-		command = doc.Command()
-		connCtx, span = startSpan(connCtx, doc, c.l)
 		resBody = c.handleOpMsg(connCtx, msg, command)
 
 	case wire.OpCodeQuery:
-		connCtx, span = otel.Tracer("").Start(connCtx, "")
-
 		query := reqBody.(*wire.OpQuery)
 		resHeader.OpCode = wire.OpCodeReply
 
@@ -377,11 +373,9 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 	case wire.OpCodeKillCursors:
 		fallthrough
 	case wire.OpCodeCompressed:
-		connCtx, span = otel.Tracer("").Start(connCtx, "")
 		err = lazyerrors.Errorf("unhandled OpCode %s", reqHeader.OpCode)
 
 	default:
-		connCtx, span = otel.Tracer("").Start(connCtx, "")
 		err = lazyerrors.Errorf("unexpected OpCode %s", reqHeader.OpCode)
 	}
 
@@ -467,13 +461,73 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 	return
 }
 
+// traceRequest wraps the function `f` with OpenTelemetry tracer.
+func (c *conn) traceRequest(f requestFunc, comment string, l *slog.Logger) requestFunc {
+	return func(ctx context.Context, header *wire.MsgHeader, body wire.MsgBody, command string) (*wire.MsgHeader, wire.MsgBody, bool) { //nolint:lll // for readability
+		ctx, span := startSpan(ctx, comment, l)
+
+		defer endSpan(span, command, header.OpCode.String(), int(header.ResponseTo))
+
+		return f(ctx, header, body, command)
+	}
+}
+
+// correctMetrics wraps the function `f` with metrics collector.
+func (c *conn) correctMetrics(f requestFunc) requestFunc {
+	return func(ctx context.Context, header *wire.MsgHeader, body wire.MsgBody, command string) (*wire.MsgHeader, wire.MsgBody, bool) { //nolint:lll // for readability
+		c.m.Requests.WithLabelValues(header.OpCode.String(), command).Inc()
+
+		defer c.m.Responses.WithLabelValues(header.OpCode.String(), command).Inc()
+
+		return f(ctx, header, body, command)
+	}
+}
+
+// extractCommandAndComment extracts the command and comment by decoding OpMsg body.
+// If the request body is not an OpMsg, it returns empty strings.
+func extractCommandAndComment(reqHeader *wire.MsgHeader, reqBody wire.MsgBody) (string, string) {
+	switch reqHeader.OpCode {
+	case wire.OpCodeMsg:
+		msg := reqBody.(*wire.OpMsg)
+		raw := msg.RawSection0()
+
+		doc, err := raw.Decode()
+		if err != nil {
+			return "", ""
+		}
+
+		command := doc.Command()
+		comment, _ := doc.Get("comment").(string)
+
+		return command, comment
+	case wire.OpCodeQuery:
+		fallthrough
+	case wire.OpCodeReply:
+		fallthrough
+	case wire.OpCodeUpdate:
+		fallthrough
+	case wire.OpCodeInsert:
+		fallthrough
+	case wire.OpCodeGetByOID:
+		fallthrough
+	case wire.OpCodeGetMore:
+		fallthrough
+	case wire.OpCodeDelete:
+		fallthrough
+	case wire.OpCodeKillCursors:
+		fallthrough
+	case wire.OpCodeCompressed:
+		fallthrough
+	default:
+		return "", ""
+	}
+}
+
 // startSpan gets the parent span from the comment field of the document,
 // and starts a new span with it.
 // If there is no span context, a new span without parent is started.
-func startSpan(ctx context.Context, doc *wirebson.Document, l *slog.Logger) (context.Context, oteltrace.Span) {
+func startSpan(ctx context.Context, comment string, l *slog.Logger) (context.Context, oteltrace.Span) {
 	var span oteltrace.Span
-
-	comment, _ := doc.Get("comment").(string)
 
 	spanCtx, err := observability.SpanContextFromComment(comment)
 	if err != nil {
@@ -489,8 +543,8 @@ func startSpan(ctx context.Context, doc *wirebson.Document, l *slog.Logger) (con
 	return ctx, span
 }
 
-// endSpan ends the span by setting status, name and attributes to the span.
-func endSpan(span oteltrace.Span, command, result, argument string, responseTo int) {
+// setSpanAttribute sets the status and argument attributes.
+func setSpanAttribute(span oteltrace.Span, result, argument string) {
 	must.NotBeZero(span)
 
 	if result == "" {
@@ -505,11 +559,17 @@ func endSpan(span oteltrace.Span, command, result, argument string, responseTo i
 		span.SetStatus(otelcodes.Error, result)
 	}
 
+	span.SetAttributes(otelattribute.String("db.ferretdb.argument", argument))
+}
+
+// endSpan ends the span by setting name and attributes to the span.
+func endSpan(span oteltrace.Span, command, opCode string, responseTo int) {
+	must.NotBeZero(span)
+
 	span.SetName(command)
 	span.SetAttributes(
-		otelattribute.String("db.ferretdb.opcode", "OP_MSG"),
+		otelattribute.String("db.ferretdb.opcode", opCode),
 		otelattribute.Int("db.ferretdb.request_id", responseTo),
-		otelattribute.String("db.ferretdb.argument", argument),
 	)
 	span.End()
 }

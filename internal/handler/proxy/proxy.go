@@ -81,7 +81,7 @@ func (r *Router) Close() {
 }
 
 // Route routes the message by sending it to another wire protocol compatible service.
-func (r *Router) Route(ctx context.Context, header *wire.MsgHeader, body wire.MsgBody) (*wire.MsgHeader, wire.MsgBody) {
+func (r *Router) Route(ctx context.Context, header *wire.MsgHeader, body wire.MsgBody, command string) (*wire.MsgHeader, wire.MsgBody, bool) { //nolint:lll // for readability
 	deadline, _ := ctx.Deadline()
 	r.conn.SetDeadline(deadline)
 
@@ -98,5 +98,5 @@ func (r *Router) Route(ctx context.Context, header *wire.MsgHeader, body wire.Ms
 		panic(err)
 	}
 
-	return resHeader, resBody
+	return resHeader, resBody, false
 }
