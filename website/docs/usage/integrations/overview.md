@@ -12,7 +12,7 @@ Most GUI applications follow the same process.
 You can connect and explore your data using the connection string of your FerretDB instance.
 Your connection string should look like this:
 
-```sh
+```text
 mongodb://<username>:<password>@<host>:<port>/<database>
 ```
 
