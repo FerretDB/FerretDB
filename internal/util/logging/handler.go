@@ -39,7 +39,7 @@ import (
 type Handler struct {
 	base          slog.Handler
 	out           io.Writer
-	checkMessages bool
+	skipChecks    bool
 	recentEntries *circularBuffer
 }
 
@@ -53,12 +53,10 @@ type NewHandlerOpts struct {
 	RemoveLevel  bool
 	RemoveSource bool
 
-	// When set, causes handler to panic on messages with leading/trailing spaces or ending punctuation.
-	// It must not be set unconditionally because we don't control messages from third-party packages.
-	//
-	// But we can enable it in our tests and when [devbuild.Enabled] is true.
-	// TODO https://github.com/FerretDB/FerretDB/issues/4511
-	CheckMessages bool
+	// When unset, causes handler to panic on messages with leading/trailing spaces or ending punctuation.
+	// We can't enable checks everywhere because we don't control messages from third-party packages.
+	// But we should check our own messages.
+	SkipChecks bool
 
 	// for testing only
 	recentEntriesSize int
@@ -153,7 +151,7 @@ func NewHandler(out io.Writer, opts *NewHandlerOpts) *Handler {
 	return &Handler{
 		base:          h,
 		out:           out,
-		checkMessages: opts.CheckMessages,
+		skipChecks:    opts.SkipChecks,
 		recentEntries: newCircularBuffer(opts.recentEntriesSize),
 	}
 }
@@ -171,12 +169,12 @@ func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
 		must.NoError(err)
 	}
 
-	if h.checkMessages {
-		if strings.TrimSpace(r.Message) != r.Message {
+	if !h.skipChecks {
+		switch {
+		case strings.TrimSpace(r.Message) != r.Message:
 			panic(fmt.Sprintf("message %q has leading/trailing spaces", r.Message))
-		}
 
-		if strings.TrimRight(r.Message, ".?!") != r.Message {
+		case strings.TrimRight(r.Message, ".?!") != r.Message:
 			panic(fmt.Sprintf("message %q ends with punctuation", r.Message))
 		}
 	}
@@ -216,7 +214,7 @@ func (h *Handler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	return &Handler{
 		base:          h.base.WithAttrs(attrs),
 		out:           h.out,
-		checkMessages: h.checkMessages,
+		skipChecks:    h.skipChecks,
 		recentEntries: h.recentEntries,
 	}
 }
@@ -226,7 +224,7 @@ func (h *Handler) WithGroup(name string) slog.Handler {
 	return &Handler{
 		base:          h.base.WithGroup(name),
 		out:           h.out,
-		checkMessages: h.checkMessages,
+		skipChecks:    h.skipChecks,
 		recentEntries: h.recentEntries,
 	}
 }

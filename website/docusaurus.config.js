@@ -77,18 +77,7 @@ const config = {
 
           // https://docusaurus.io/docs/versioning#configuring-versioning-behavior
           // https://docusaurus.io/docs/api/plugins/@docusaurus/plugin-content-docs#configuration
-          lastVersion: "current",
-          versions: {
-            current: {
-              label: "v2.0 RC",
-              banner: "none",
-            },
-            "v1.24": {
-              label: "v1.24",
-              path: "v1.24",
-              banner: "none",
-            },
-          },
+          versions: {},
         },
         theme: {
           customCss: require.resolve("./src/css/custom.css"),
@@ -152,7 +141,7 @@ const config = {
               },
               {
                 label: "Slack",
-                href: "https://join.slack.com/t/ferretdb/shared_invite/zt-zqe9hj8g-ZcMG3~5Cs5u9uuOPnZB8~A",
+                href: "https://slack.ferretdb.io/",
               },
               {
                 label: "X (Twitter)",

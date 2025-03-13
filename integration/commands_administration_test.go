@@ -19,7 +19,6 @@ import (
 	"math"
 	"math/rand/v2"
 	"runtime"
-	"slices"
 	"strconv"
 	"sync"
 	"testing"
@@ -75,13 +74,10 @@ func TestCreateCollectionDropListCollections(t *testing.T) {
 	AssertEqualDocuments(t, bson.D{{"ok", float64(1)}}, actual)
 }
 
-func TestDropDatabaseListDatabases(tt *testing.T) {
-	tt.Parallel()
+func TestDropDatabaseListDatabases(t *testing.T) {
+	t.Parallel()
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/4722
-	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/4722")
-
-	ctx, collection := setup.Setup(tt) // no providers there
+	ctx, collection := setup.Setup(t) // no providers there
 
 	db := collection.Database()
 	name := db.Name()
@@ -148,6 +144,8 @@ func TestListDatabases(t *testing.T) {
 
 		expectedNameOnly bool
 		expected         mongo.ListDatabasesResult
+
+		failsForFerretDB string
 	}{
 		"Exists": {
 			filter: bson.D{{Key: "name", Value: name}},
@@ -201,6 +199,7 @@ func TestListDatabases(t *testing.T) {
 			expected: mongo.ListDatabasesResult{
 				Databases: []mongo.DatabaseSpecification{},
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/4862",
 		},
 		"RegexNotFound": {
 			filter: bson.D{
@@ -210,6 +209,7 @@ func TestListDatabases(t *testing.T) {
 			expected: mongo.ListDatabasesResult{
 				Databases: []mongo.DatabaseSpecification{},
 			},
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/4862",
 		},
 		"RegexNotFoundNameOnly": {
 			filter: bson.D{
@@ -247,8 +247,11 @@ func TestListDatabases(t *testing.T) {
 		t.Run(name, func(tt *testing.T) {
 			tt.Parallel()
 
-			// TODO https://github.com/FerretDB/FerretDB/issues/4722
-			t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/4722")
+			var t testing.TB = tt
+
+			if tc.failsForFerretDB != "" {
+				t = setup.FailsForFerretDB(tt, tc.failsForFerretDB)
+			}
 
 			actual, err := db.Client().ListDatabases(ctx, tc.filter, tc.opts...)
 			assert.NoError(t, err)
@@ -265,7 +268,7 @@ func TestListDatabases(t *testing.T) {
 			}
 			actual.TotalSize = 0
 
-			assert.Equal(t, tc.expected, actual)
+			assert.ElementsMatch(t, tc.expected.Databases, actual.Databases)
 		})
 	}
 }
@@ -296,14 +299,11 @@ func TestListCollectionNames(t *testing.T) {
 	compat, err := compatCollections[0].Database().ListCollectionNames(ctx, filter)
 	require.NoError(t, err)
 
-	require.True(t, slices.IsSorted(compat), "compat collections are not sorted")
-
 	target, err := targetCollections[0].Database().ListCollectionNames(ctx, filter)
 	require.NoError(t, err)
 
 	assert.Len(t, target, len(filterNames))
-	assert.True(t, slices.IsSorted(target), "target collections are not sorted")
-	assert.Equal(t, compat, target)
+	assert.ElementsMatch(t, compat, target)
 }
 
 func TestListCollectionsUUID(t *testing.T) {

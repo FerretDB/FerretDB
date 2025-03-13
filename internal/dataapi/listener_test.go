@@ -39,7 +39,7 @@ import (
 )
 
 func TestSmokeDataAPI(t *testing.T) {
-	addr, db := setupDataAPI(t)
+	addr, db := setupDataAPI(t, true)
 	coll := testutil.CollectionName(t)
 
 	t.Parallel()
@@ -229,7 +229,7 @@ func postJSON(tb testing.TB, uri, jsonBody string) (*http.Response, error) {
 
 // setupDataAPI sets up clean database and the Data API handler.
 // It returns Data API address, and database name.
-func setupDataAPI(tb testing.TB) (addr string, dbName string) {
+func setupDataAPI(tb testing.TB, auth bool) (addr string, dbName string) {
 	tb.Helper()
 
 	uri := testutil.PostgreSQLURL(tb)
@@ -244,7 +244,7 @@ func setupDataAPI(tb testing.TB) (addr string, dbName string) {
 
 	handlerOpts := &handler.NewOpts{
 		Pool: p,
-		Auth: true,
+		Auth: auth,
 
 		L:             logging.WithName(l, "handler"),
 		StateProvider: sp,
@@ -299,7 +299,10 @@ func setupDataAPI(tb testing.TB) (addr string, dbName string) {
 		Scheme: "mongodb",
 		Host:   lis.TCPAddr().String(),
 		Path:   "/",
-		User:   url.UserPassword("username", "password"),
+	}
+
+	if auth {
+		u.User = url.UserPassword("username", "password")
 	}
 
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(u.String()))

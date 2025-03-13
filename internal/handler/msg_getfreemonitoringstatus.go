@@ -46,5 +46,5 @@ func (h *Handler) MsgGetFreeMonitoringStatus(connCtx context.Context, msg *wire.
 		"ok", float64(1),
 	))
 
-	return wire.NewOpMsg(must.NotFail(res.Encode()))
+	return wire.NewOpMsg(res)
 }
