@@ -21,9 +21,9 @@ import (
 
 // Generator implements BenchmarkProvider by generating documents.
 type Generator struct {
+	newGen   func(n int) iter.Seq[any]
 	name     string
 	fullName string
-	newGen   func(n int) iter.Seq[any]
 	docs     int
 }
 
@@ -40,6 +40,7 @@ func (g *Generator) Name() string {
 
 	hash := hashBenchmarkProvider(g)
 	g.fullName = fmt.Sprintf("%s/Docs%d/%s", g.name, g.docs, hash)
+
 	return g.fullName
 }
 

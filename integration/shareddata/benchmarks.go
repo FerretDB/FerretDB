@@ -20,7 +20,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-// benchSmall provides documents that look like:
+// BenchSmall provides documents that look like:
 //
 //	{_id: int32(0), id: int32(0), v: "foo"}
 //	{_id: int32(1), id: int32(1), v: int32(42)}
@@ -31,7 +31,7 @@ import (
 // `_id` is an int32 primary key that starts from 0.
 // `id` has the same value as `_id`, but is not indexed by default.
 // `v` has one of the four values shown above.
-var benchSmall = &Generator{
+var BenchSmall = &Generator{
 	name: "Small",
 	newGen: func(n int) iter.Seq[any] {
 		values := []any{
@@ -55,20 +55,21 @@ var benchSmall = &Generator{
 	},
 }
 
-// benchSettings provides documents with 100 fields of various types.
+// BenchSettings provides documents with 100 fields of various types.
 //
 // It simulates a settings document like the one FastNetMon uses.
-var benchSettings = &Generator{
+// `_id` is an int32 primary key that starts from 0.
+var BenchSettings = &Generator{
 	name: "Settings",
 	newGen: func(n int) iter.Seq[any] {
 		f := newFaker()
 
 		return func(yield func(any) bool) {
-			for range n {
+			for i := range n {
 				doc := make(bson.D, 100)
-				doc[0] = bson.E{"_id", f.ObjectID()}
-				for i := 1; i < len(doc); i++ {
-					doc[i] = bson.E{
+				doc[0] = bson.E{"_id", int32(i)}
+				for e := 1; e < len(doc); e++ {
+					doc[e] = bson.E{
 						Key:   f.FieldName(),
 						Value: f.ScalarValue(),
 					}

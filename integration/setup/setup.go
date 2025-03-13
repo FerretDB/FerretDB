@@ -21,6 +21,7 @@ import (
 	"log/slog"
 	"net/url"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -92,8 +93,10 @@ type SetupOpts struct {
 	// Benchmark data provider. If empty, collection is not created.
 	BenchmarkProvider shareddata.BenchmarkProvider
 
-	// SingleConn ensures that MongoDB driver uses only a single connection.
-	SingleConn bool
+	// PoolSize ensures that MongoDB driver uses exactly this number of connections for operations
+	// (not counting extra connections for monitoring that are mostly idle).
+	// Zero value disabled explicit pool configuration.
+	PoolSize int
 
 	// DisableOtel disable OpenTelemetry monitoring for MongoDB driver.
 	DisableOtel bool
@@ -107,7 +110,7 @@ type SetupOpts struct {
 	// Note that wire client connection does not support many options
 	// and returns an error if it encounters an unknown one.
 	//
-	// This field is unexported because that general API wasn't actually used (see SingleConn).
+	// This field is unexported because that general API wasn't actually used (see PoolSize).
 	// It might be exported again if needed.
 	extraOptions url.Values
 }
@@ -153,11 +156,10 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 		opts.extraOptions = make(url.Values)
 	}
 
-	if opts.SingleConn {
-		opts.extraOptions.Set("maxConnecting", "1")
-		opts.extraOptions.Set("maxIdleTimeMS", "0")
-		opts.extraOptions.Set("maxPoolSize", "1")
-		opts.extraOptions.Set("minPoolSize", "1")
+	if opts.PoolSize > 0 {
+		opts.extraOptions.Set("maxConnecting", strconv.Itoa(opts.PoolSize))
+		opts.extraOptions.Set("maxPoolSize", strconv.Itoa(opts.PoolSize))
+		opts.extraOptions.Set("minPoolSize", strconv.Itoa(opts.PoolSize))
 	}
 
 	var levelVar slog.LevelVar

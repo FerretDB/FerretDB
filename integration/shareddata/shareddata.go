@@ -64,6 +64,7 @@ func AllProviders() Providers {
 
 	names := make(map[string]struct{}, len(providers))
 	res := make([]Provider, 0, len(providers))
+
 	for _, p := range providers {
 		n := p.Name()
 		if _, ok := names[n]; ok {
@@ -85,12 +86,13 @@ func AllProviders() Providers {
 // AllBenchmarkProviders returns all benchmark providers in random order.
 func AllBenchmarkProviders() []BenchmarkProvider {
 	providers := []BenchmarkProvider{
-		benchSmall,
-		benchSettings,
+		BenchSmall,
+		BenchSettings,
 	}
 
 	names := make(map[string]struct{}, len(providers))
 	res := make([]BenchmarkProvider, 0, len(providers))
+
 	for _, p := range providers {
 		n := p.baseName()
 		if _, ok := names[n]; ok {

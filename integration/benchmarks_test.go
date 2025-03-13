@@ -20,7 +20,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/xiter"
 
@@ -35,27 +34,21 @@ func BenchmarkFind(b *testing.B) {
 				BenchmarkProvider: provider,
 			})
 
-			for name, bc := range map[string]struct {
-				filter bson.D
-			}{
-				"Int32IDIndex": {
-					filter: bson.D{{"_id", int32(42)}},
-				},
-				"Int32One": {
-					filter: bson.D{{"id", int32(42)}},
-				},
-				"Int32Many": {
-					filter: bson.D{{"v", int32(42)}},
-				},
-				"Int32ManyDotNotation": {
-					filter: bson.D{{"v.foo", int32(42)}},
-				},
+			for name, filter := range map[string]bson.D{
+				"Int32IDIndex":         {{"_id", int32(42)}},
+				"Int32One":             {{"id", int32(42)}},
+				"Int32Many":            {{"v", int32(42)}},
+				"Int32ManyDotNotation": {{"v.foo", int32(42)}},
 			} {
+				if provider == shareddata.BenchSettings && name != "Int32IDIndex" {
+					continue
+				}
+
 				b.Run(name, func(b *testing.B) {
 					var firstDocs, docs int
 
 					for b.Loop() {
-						cursor, err := s.Collection.Find(s.Ctx, bc.filter)
+						cursor, err := s.Collection.Find(s.Ctx, filter)
 						if err != nil {
 							b.Fatal(err)
 						}
@@ -64,9 +57,6 @@ func BenchmarkFind(b *testing.B) {
 						for cursor.Next(s.Ctx) {
 							docs++
 						}
-
-						// FIXME
-						// b.StopTimer()
 
 						if err = cursor.Err(); err != nil {
 							b.Fatal(err)
@@ -91,57 +81,7 @@ func BenchmarkFind(b *testing.B) {
 	}
 }
 
-func BenchmarkReplaceOne(b *testing.B) {
-	for _, provider := range shareddata.AllBenchmarkProviders() {
-		b.Run(provider.Name(), func(b *testing.B) {
-			s := setup.SetupWithOpts(b, &setup.SetupOpts{
-				BenchmarkProvider: provider,
-			})
-			ctx, collection := s.Ctx, s.Collection
-
-			cursor, err := collection.Find(ctx, bson.D{})
-			require.NoError(b, err)
-
-			var lastRaw bson.Raw
-			for cursor.Next(ctx) {
-				lastRaw = cursor.Current
-			}
-			require.NoError(b, cursor.Err())
-			require.NoError(b, cursor.Close(ctx))
-
-			var doc bson.D
-			require.NoError(b, bson.Unmarshal(lastRaw, &doc))
-			require.Equal(b, "_id", doc[0].Key)
-			require.NotEmpty(b, doc[0].Value)
-			require.NotZero(b, doc[1].Value)
-
-			b.Run(provider.Name(), func(b *testing.B) {
-				filter := bson.D{{"_id", doc[0].Value}}
-				var res *mongo.UpdateResult
-
-				for i := range b.N {
-					doc[1].Value = int64(i + 1)
-
-					res, err = collection.ReplaceOne(ctx, filter, doc)
-					require.NoError(b, err)
-					require.Equal(b, int64(1), res.MatchedCount)
-					require.Equal(b, int64(1), res.ModifiedCount)
-				}
-
-				b.StopTimer()
-
-				var actual bson.D
-				err = collection.FindOne(ctx, filter).Decode(&actual)
-				require.NoError(b, err)
-				AssertEqualDocuments(b, doc, actual)
-			})
-		})
-	}
-}
-
-func BenchmarkInsertMany(b *testing.B) {
-	ctx, collection := setup.Setup(b)
-
+func BenchmarkInsert(b *testing.B) {
 	for _, provider := range shareddata.AllBenchmarkProviders() {
 		var total int
 		for range provider.Docs() {
@@ -157,23 +97,17 @@ func BenchmarkInsertMany(b *testing.B) {
 
 		for _, batchSize := range batchSizes {
 			b.Run(fmt.Sprintf("%s/Batch%d", provider.Name(), batchSize), func(b *testing.B) {
-				b.StopTimer()
+				ctx, collection := setup.Setup(b)
 
 				for b.Loop() {
-					require.NoError(b, collection.Drop(ctx))
+					if err := collection.Drop(ctx); err != nil {
+						b.Fatal(err)
+					}
 
 					for docs := range xiter.Chunk(provider.Docs(), batchSize) {
-						insertDocs := make([]any, len(docs))
-						for i := range insertDocs {
-							insertDocs[i] = docs[i]
+						if _, err := collection.InsertMany(ctx, docs); err != nil {
+							b.Fatal(err)
 						}
-
-						b.StartTimer()
-
-						_, err := collection.InsertMany(ctx, insertDocs)
-						require.NoError(b, err)
-
-						b.StopTimer()
 					}
 				}
 			})
