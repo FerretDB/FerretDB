@@ -233,26 +233,23 @@ That means no manual deletions and no bloated storage.
 
 If a library tracks book reservations for instance, a TTL index can remove records after a year, so outdated holds don't clutter queries or waste space.
 
-Let’s say we want books to be removed automatically one year after publication.
+Let's say we want books to be removed automatically one year after publication.
 It is recommended to create the TTL index before inserting documents.
 So if the document was added before the TTL index, it may not be affected until a new one is inserted.
 
 Start by creating a TTL index on the `publication.date` field:
 
 ```js
-db.books.createIndex(
-  { 'publication.date': 1 },
-  { expireAfterSeconds: 10 }
-)
+db.books.createIndex({ 'publication.date': 1 }, { expireAfterSeconds: 10 })
 ```
 
 Next, let's insert a document with a publication date:
 
 ```js
 db.books.insertOne({
-  "_id": "temporary_book",
-  "title": "Expiring Book",
-  "publication": { "date": new Date() }
+  _id: 'temporary_book',
+  title: 'Expiring Book',
+  publication: { date: new Date() }
 })
 ```
 
