@@ -21,21 +21,26 @@ import (
 
 // Generator implements BenchmarkProvider by generating documents.
 type Generator struct {
-	bName  string
-	newGen func(n int) iter.Seq[any]
-	docs   int
+	name     string
+	fullName string
+	newGen   func(n int) iter.Seq[any]
+	docs     int
 }
 
 // baseName implements [BenchmarkProvider].
 func (g *Generator) baseName() string {
-	return g.bName
+	return g.name
 }
 
 // Name implements [BenchmarkProvider].
 func (g *Generator) Name() string {
-	hash := hashBenchmarkProvider(g)
+	if g.fullName != "" {
+		return g.fullName
+	}
 
-	return fmt.Sprintf("%s/Docs%d/%s", g.bName, g.docs, hash)
+	hash := hashBenchmarkProvider(g)
+	g.fullName = fmt.Sprintf("%s/Docs%d/%s", g.name, g.docs, hash)
+	return g.fullName
 }
 
 // Docs implements [BenchmarkProvider].

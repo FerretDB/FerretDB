@@ -32,7 +32,7 @@ import (
 // `id` has the same value as `_id`, but is not indexed by default.
 // `v` has one of the four values shown above.
 var benchSmall = &Generator{
-	bName: "Small",
+	name: "Small",
 	newGen: func(n int) iter.Seq[any] {
 		values := []any{
 			"foo", int32(42), "42", bson.D{{"foo", int32(42)}},
@@ -59,7 +59,7 @@ var benchSmall = &Generator{
 //
 // It simulates a settings document like the one FastNetMon uses.
 var benchSettings = &Generator{
-	bName: "Settings",
+	name: "Settings",
 	newGen: func(n int) iter.Seq[any] {
 		f := newFaker()
 

@@ -92,49 +92,51 @@ func BenchmarkFind(b *testing.B) {
 }
 
 func BenchmarkReplaceOne(b *testing.B) {
-	provider := shareddata.BenchmarkSettingsDocuments
+	for _, provider := range shareddata.AllBenchmarkProviders() {
+		b.Run(provider.Name(), func(b *testing.B) {
+			s := setup.SetupWithOpts(b, &setup.SetupOpts{
+				BenchmarkProvider: provider,
+			})
+			ctx, collection := s.Ctx, s.Collection
 
-	s := setup.SetupWithOpts(b, &setup.SetupOpts{
-		BenchmarkProvider: provider,
-	})
-	ctx, collection := s.Ctx, s.Collection
-
-	cursor, err := collection.Find(ctx, bson.D{})
-	require.NoError(b, err)
-
-	var lastRaw bson.Raw
-	for cursor.Next(ctx) {
-		lastRaw = cursor.Current
-	}
-	require.NoError(b, cursor.Err())
-	require.NoError(b, cursor.Close(ctx))
-
-	var doc bson.D
-	require.NoError(b, bson.Unmarshal(lastRaw, &doc))
-	require.Equal(b, "_id", doc[0].Key)
-	require.NotEmpty(b, doc[0].Value)
-	require.NotZero(b, doc[1].Value)
-
-	b.Run(provider.Name(), func(b *testing.B) {
-		filter := bson.D{{"_id", doc[0].Value}}
-		var res *mongo.UpdateResult
-
-		for i := range b.N {
-			doc[1].Value = int64(i + 1)
-
-			res, err = collection.ReplaceOne(ctx, filter, doc)
+			cursor, err := collection.Find(ctx, bson.D{})
 			require.NoError(b, err)
-			require.Equal(b, int64(1), res.MatchedCount)
-			require.Equal(b, int64(1), res.ModifiedCount)
-		}
 
-		b.StopTimer()
+			var lastRaw bson.Raw
+			for cursor.Next(ctx) {
+				lastRaw = cursor.Current
+			}
+			require.NoError(b, cursor.Err())
+			require.NoError(b, cursor.Close(ctx))
 
-		var actual bson.D
-		err = collection.FindOne(ctx, filter).Decode(&actual)
-		require.NoError(b, err)
-		AssertEqualDocuments(b, doc, actual)
-	})
+			var doc bson.D
+			require.NoError(b, bson.Unmarshal(lastRaw, &doc))
+			require.Equal(b, "_id", doc[0].Key)
+			require.NotEmpty(b, doc[0].Value)
+			require.NotZero(b, doc[1].Value)
+
+			b.Run(provider.Name(), func(b *testing.B) {
+				filter := bson.D{{"_id", doc[0].Value}}
+				var res *mongo.UpdateResult
+
+				for i := range b.N {
+					doc[1].Value = int64(i + 1)
+
+					res, err = collection.ReplaceOne(ctx, filter, doc)
+					require.NoError(b, err)
+					require.Equal(b, int64(1), res.MatchedCount)
+					require.Equal(b, int64(1), res.ModifiedCount)
+				}
+
+				b.StopTimer()
+
+				var actual bson.D
+				err = collection.FindOne(ctx, filter).Decode(&actual)
+				require.NoError(b, err)
+				AssertEqualDocuments(b, doc, actual)
+			})
+		})
+	}
 }
 
 func BenchmarkInsertMany(b *testing.B) {
