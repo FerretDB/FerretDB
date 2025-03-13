@@ -226,7 +226,7 @@ db.books.dropIndex({ title: 1 })
 
 Learn more about indexes in FerretDB [here](https://docs.ferretdb.io/usage/indexes/).
 
-### 11. TTL Index for Automatic Expiry
+### 11. TTL indexes
 
 A Time-To-Live (TTL) index auto-cleans expired data after a set time.
 That means no manual deletions and no bloated storage.
