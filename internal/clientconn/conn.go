@@ -257,9 +257,8 @@ func (c *conn) run(ctx context.Context) (err error) {
 				panic("proxy addr was nil")
 			}
 
-			routeWithTrace := c.traceRequest(c.proxy.Route, comment, c.l)
-			routeWithMetrics := c.correctMetrics(routeWithTrace)
-			resHeader, resBody, _ = routeWithMetrics(ctx, reqHeader, reqBody, command)
+			// TODO https://github.com/FerretDB/FerretDB/issues/1997
+			proxyHeader, proxyBody = c.proxy.Route(ctx, reqHeader, reqBody)
 		}
 
 		// handle request unless we are in proxy mode
@@ -472,8 +471,8 @@ func (c *conn) traceRequest(f requestFunc, comment string, l *slog.Logger) reque
 	}
 }
 
-// correctMetrics wraps the function `f` with metrics collector.
-func (c *conn) correctMetrics(f requestFunc) requestFunc {
+// collectMetrics wraps the function `f` with metrics collector.
+func (c *conn) collectMetrics(f requestFunc) requestFunc {
 	return func(ctx context.Context, header *wire.MsgHeader, body wire.MsgBody, command string) (*wire.MsgHeader, wire.MsgBody, bool) { //nolint:lll // for readability
 		c.m.Requests.WithLabelValues(header.OpCode.String(), command).Inc()
 
@@ -543,7 +542,7 @@ func startSpan(ctx context.Context, comment string, l *slog.Logger) (context.Con
 	return ctx, span
 }
 
-// setSpanAttribute sets the status and argument attributes.
+// setSpanAttribute sets the span status and argument attribute.
 func setSpanAttribute(span oteltrace.Span, result, argument string) {
 	must.NotBeZero(span)
 
