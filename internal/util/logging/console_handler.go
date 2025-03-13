@@ -50,9 +50,9 @@ type consoleHandler struct {
 
 	testAttrs map[string]any
 
-	m *sync.Mutex
-
+	m   *sync.Mutex
 	out io.Writer
+
 	esc *term.EscapeCodes
 }
 
