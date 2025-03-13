@@ -210,7 +210,7 @@ Indexes help speed up queries, and that's crucial for better database performanc
 Indexes create optimized data structures (sort of like a table of contents) that store references to document locations.
 That way, queries can jump straight to the data via the document locations instead of scanning entire collections.
 
-On FerretDB, you can create an index on a book's title and price to ensure faster retrievals:
+On FerretDB, you can create an index on a book's title and price:
 
 ```js
 db.books.createIndex({ title: 1, 'price.value': -1 })
@@ -231,7 +231,7 @@ Learn more about indexes in FerretDB [here](https://docs.ferretdb.io/usage/index
 ### 12. Partial indexes
 
 Unlike full indexes, partial indexes only index documents that match a specific condition, and skips the rest.
-This means smaller index sizes, faster writes, and optimized queries – perfect for filtering out irrelevant data without the overhead of a full index.
+Typically, this leads to smaller index sizes, faster writes, and optimized queries, making it perfect for filtering out irrelevant data without the overhead of a full index.
 
 Suppose we only want to index books that cost more than $10:
 
