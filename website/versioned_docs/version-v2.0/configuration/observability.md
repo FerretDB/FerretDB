@@ -18,8 +18,6 @@ Structured log format is not stable yet; field names and formatting of values mi
 
 FerretDB provides the following log formats:
 
-<!-- https://github.com/FerretDB/FerretDB/issues/4438 -->
-
 - `console` is a human-readable format with optional colors.
 - `text` is machine-readable [logfmt](https://brandur.org/logfmt)-like format
   (powered by [Go's `slog.TextHandler`](https://pkg.go.dev/log/slog#TextHandler)).
