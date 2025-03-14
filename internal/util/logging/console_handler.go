@@ -22,10 +22,13 @@ import (
 	"io"
 	"log/slog"
 	"maps"
+	"os"
 	"runtime"
 	"slices"
 	"strconv"
 	"sync"
+
+	"golang.org/x/term"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
@@ -39,8 +42,6 @@ const timeLayout = "2006-01-02T15:04:05.000Z0700"
 //
 // See https://golang.org/s/slog-handler-guide.
 //
-// TODO https://github.com/FerretDB/FerretDB/issues/4438
-//
 //nolint:vet // for readability
 type consoleHandler struct {
 	opts *NewHandlerOpts
@@ -51,18 +52,33 @@ type consoleHandler struct {
 
 	m   *sync.Mutex
 	out io.Writer
+
+	esc *term.EscapeCodes
 }
 
 // newConsoleHandler creates a new console handler.
+//
+// If out is a valid tty, the consoleHandler will send colorized messages.
+// If NO_COLOR environment variable is set colorized messages are disabled.
 func newConsoleHandler(out io.Writer, opts *NewHandlerOpts, testAttrs map[string]any) *consoleHandler {
 	must.NotBeZero(opts)
 
-	return &consoleHandler{
+	ch := &consoleHandler{
 		opts:      opts,
 		testAttrs: testAttrs,
 		m:         new(sync.Mutex),
 		out:       out,
 	}
+
+	if os.Getenv("NO_COLOR") != "" {
+		return ch
+	}
+
+	if f, ok := out.(*os.File); ok && term.IsTerminal(int(f.Fd())) {
+		ch.esc = term.NewTerminal(f, "").Escape
+	}
+
+	return ch
 }
 
 // Enabled implements [slog.Handler].
@@ -90,12 +106,11 @@ func (ch *consoleHandler) Handle(ctx context.Context, r slog.Record) error {
 	}
 
 	if !ch.opts.RemoveLevel {
-		l := r.Level.String()
-		buf.WriteString(l)
+		buf.WriteString(ch.colorizedLevel(r.Level))
 		buf.WriteRune('\t')
 
 		if ch.testAttrs != nil {
-			ch.testAttrs[slog.LevelKey] = l
+			ch.testAttrs[slog.LevelKey] = r.Level.String()
 		}
 	}
 
@@ -150,7 +165,6 @@ func (ch *consoleHandler) Handle(ctx context.Context, r slog.Record) error {
 	defer ch.m.Unlock()
 
 	_, err := buf.WriteTo(ch.out)
-
 	return err
 }
 
@@ -165,6 +179,7 @@ func (ch *consoleHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 		ga:        append(slices.Clone(ch.ga), groupOrAttrs{attrs: attrs}),
 		m:         ch.m,
 		out:       ch.out,
+		esc:       ch.esc,
 		testAttrs: ch.testAttrs,
 	}
 }
@@ -180,7 +195,29 @@ func (ch *consoleHandler) WithGroup(name string) slog.Handler {
 		ga:        append(slices.Clone(ch.ga), groupOrAttrs{group: name}),
 		m:         ch.m,
 		out:       ch.out,
+		esc:       ch.esc,
 		testAttrs: ch.testAttrs,
+	}
+}
+
+// colorizedLevel returns colorized string representation of l [slog.Level].
+// If ch is unable to print colorized messages, non-colorized string is returned.
+func (ch *consoleHandler) colorizedLevel(l slog.Level) string {
+	if ch.esc == nil {
+		return l.String()
+	}
+
+	format := "%s%s%s"
+
+	switch {
+	case l < slog.LevelInfo:
+		return fmt.Sprintf(format, ch.esc.Blue, l, ch.esc.Reset)
+	case l < slog.LevelWarn:
+		return fmt.Sprintf(format, ch.esc.Green, l, ch.esc.Reset)
+	case l < slog.LevelError:
+		return fmt.Sprintf(format, ch.esc.Yellow, l, ch.esc.Reset)
+	default:
+		return fmt.Sprintf(format, ch.esc.Red, l, ch.esc.Reset)
 	}
 }
 
