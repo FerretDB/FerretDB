@@ -34,6 +34,7 @@ import (
 	"time"
 
 	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
 	"github.com/pmezard/go-difflib/difflib"
 	"go.opentelemetry.io/otel"
 	otelattribute "go.opentelemetry.io/otel/attribute"
@@ -247,7 +248,15 @@ func (c *conn) processMessage(ctx context.Context, bufr *bufio.Reader, bufw *buf
 	// It is set to the highest level of logging used to log response.
 	diffLogLevel := slog.LevelDebug
 
-	command, comment := extractCommandAndComment(reqHeader, reqBody)
+	routeFunc := c.route
+
+	var doc *wirebson.Document
+
+	if msg, ok := reqBody.(*wire.OpMsg); ok {
+		if doc, err = msg.RawSection0().Decode(); err != nil {
+			routeFunc = c.routeError(err)
+		}
+	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/1997
 	// send requests in diff mode in parallel to align traces
@@ -274,8 +283,9 @@ func (c *conn) processMessage(ctx context.Context, bufr *bufio.Reader, bufw *buf
 	var resBody wire.MsgBody
 
 	if c.mode != ProxyMode {
-		routeWithTrace := c.traceRequest(c.route, comment, c.l)
-		resHeader, resBody, resCloseConn = routeWithTrace(ctx, reqHeader, reqBody, command)
+		routeFunc = c.traceRequest(routeFunc, doc, c.l)
+		resHeader, resBody, resCloseConn = routeFunc(ctx, reqHeader, reqBody, doc.Command())
+
 		if level := c.logResponse(ctx, "Response", resHeader, resBody, resCloseConn); level > diffLogLevel {
 			diffLogLevel = level
 		}
@@ -350,9 +360,7 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 	switch reqHeader.OpCode {
 	case wire.OpCodeMsg:
 		msg := reqBody.(*wire.OpMsg)
-
 		resHeader.OpCode = wire.OpCodeMsg
-
 		resBody = c.handleOpMsg(connCtx, msg, command)
 
 	case wire.OpCodeQuery:
@@ -471,65 +479,64 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 	return
 }
 
+// routeError returns a function that creates a response header and body based for the given error.
+// It sets span attribute and increments the metrics.
+func (c *conn) routeError(rErr error) requestFunc {
+	return func(ctx context.Context, reqHeader *wire.MsgHeader, body wire.MsgBody, command string) (resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) { //nolint:lll // argument list is too long
+		span := oteltrace.SpanFromContext(ctx)
+		var result, argument string
+
+		defer func() {
+			setSpanAttribute(span, result, argument)
+			c.m.Responses.WithLabelValues(resHeader.OpCode.String(), command, argument, result).Inc()
+		}()
+
+		if command == "" {
+			command = "unknown"
+		}
+
+		protoErr := mongoerrors.Make(ctx, rErr, "", c.l)
+		resBody = protoErr.Msg()
+		result = protoErr.Name
+		argument = protoErr.Argument
+
+		c.m.Requests.WithLabelValues(reqHeader.OpCode.String(), command).Inc()
+
+		// Don't call MarshalBinary there. Fix header in the caller?
+		// TODO https://github.com/FerretDB/FerretDB/issues/273
+		b, err := resBody.MarshalBinary()
+		if err != nil {
+			result = ""
+
+			panic(err)
+		}
+
+		resHeader.MessageLength = int32(wire.MsgHeaderLen + len(b))
+		resHeader.RequestID = c.lastRequestID.Add(1)
+		resHeader.ResponseTo = reqHeader.RequestID
+
+		if result == "" {
+			result = "ok"
+		}
+
+		return
+	}
+}
+
 // traceRequest wraps the function `f` with OpenTelemetry tracer.
-func (c *conn) traceRequest(f requestFunc, comment string, l *slog.Logger) requestFunc {
+func (c *conn) traceRequest(f requestFunc, doc *wirebson.Document, l *slog.Logger) requestFunc {
 	return func(ctx context.Context, header *wire.MsgHeader, body wire.MsgBody, command string) (*wire.MsgHeader, wire.MsgBody, bool) { //nolint:lll // for readability
+		var comment string
+
+		if doc != nil {
+			comment, _ = doc.Get("comment").(string)
+		}
+
 		ctx, span := startSpan(ctx, comment, l)
 
 		defer endSpan(span, command, header.OpCode.String(), int(header.ResponseTo))
 
 		return f(ctx, header, body, command)
-	}
-}
-
-// collectMetrics wraps the function `f` with metrics collector.
-func (c *conn) collectMetrics(f requestFunc) requestFunc {
-	return func(ctx context.Context, header *wire.MsgHeader, body wire.MsgBody, command string) (*wire.MsgHeader, wire.MsgBody, bool) { //nolint:lll // for readability
-		c.m.Requests.WithLabelValues(header.OpCode.String(), command).Inc()
-
-		defer c.m.Responses.WithLabelValues(header.OpCode.String(), command).Inc()
-
-		return f(ctx, header, body, command)
-	}
-}
-
-// extractCommandAndComment extracts the command and comment by decoding OpMsg body.
-// If the request body is not an OpMsg, it returns empty strings.
-func extractCommandAndComment(reqHeader *wire.MsgHeader, reqBody wire.MsgBody) (string, string) {
-	switch reqHeader.OpCode {
-	case wire.OpCodeMsg:
-		msg := reqBody.(*wire.OpMsg)
-		raw := msg.RawSection0()
-
-		doc, err := raw.Decode()
-		if err != nil {
-			return "", ""
-		}
-
-		command := doc.Command()
-		comment, _ := doc.Get("comment").(string)
-
-		return command, comment
-	case wire.OpCodeQuery:
-		fallthrough
-	case wire.OpCodeReply:
-		fallthrough
-	case wire.OpCodeUpdate:
-		fallthrough
-	case wire.OpCodeInsert:
-		fallthrough
-	case wire.OpCodeGetByOID:
-		fallthrough
-	case wire.OpCodeGetMore:
-		fallthrough
-	case wire.OpCodeDelete:
-		fallthrough
-	case wire.OpCodeKillCursors:
-		fallthrough
-	case wire.OpCodeCompressed:
-		fallthrough
-	default:
-		return "", ""
 	}
 }
 
