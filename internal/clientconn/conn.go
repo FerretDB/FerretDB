@@ -373,7 +373,13 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		// do not store typed nil in interface, it makes it non-nil
 
 		var resReply *wire.OpReply
-		resReply, err = c.h.CmdQuery(connCtx, query)
+
+		if resReply, err = c.h.CmdQuery(connCtx, query); err != nil {
+			protoErr := mongoerrors.Make(connCtx, err, "", c.l)
+			resBody = protoErr.Reply()
+			result = protoErr.Name
+			argument = protoErr.Argument
+		}
 
 		if resReply != nil {
 			resBody = resReply
@@ -396,8 +402,33 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 	case wire.OpCodeCompressed:
 		err = lazyerrors.Errorf("unhandled OpCode %s", reqHeader.OpCode)
 
+		// do not panic to make fuzzing easier
+		closeConn = true
+		result = "unhandled"
+
+		c.l.ErrorContext(
+			connCtx,
+			"Handler error for unhandled response opcode",
+			logging.Error(err),
+			slog.Any("opcode", resHeader.OpCode),
+		)
+
+		return
 	default:
 		err = lazyerrors.Errorf("unexpected OpCode %s", reqHeader.OpCode)
+
+		// do not panic to make fuzzing easier
+		closeConn = true
+		result = "unexpected"
+
+		c.l.ErrorContext(
+			connCtx,
+			"Handler error for unexpected response opcode",
+			logging.Error(err),
+			slog.Any("opcode", resHeader.OpCode),
+		)
+
+		return
 	}
 
 	if command == "" {
@@ -406,66 +437,10 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 
 	c.m.Requests.WithLabelValues(reqHeader.OpCode.String(), command).Inc()
 
-	// set body for error
-	if err != nil {
-		switch resHeader.OpCode {
-		case wire.OpCodeMsg:
-			protoErr := mongoerrors.Make(connCtx, err, "", c.l)
-			resBody = protoErr.Msg()
-			result = protoErr.Name
-			argument = protoErr.Argument
-
-		case wire.OpCodeReply:
-			protoErr := mongoerrors.Make(connCtx, err, "", c.l)
-			resBody = protoErr.Reply()
-			result = protoErr.Name
-			argument = protoErr.Argument
-
-		case wire.OpCodeQuery:
-			fallthrough
-		case wire.OpCodeUpdate:
-			fallthrough
-		case wire.OpCodeInsert:
-			fallthrough
-		case wire.OpCodeGetByOID:
-			fallthrough
-		case wire.OpCodeGetMore:
-			fallthrough
-		case wire.OpCodeDelete:
-			fallthrough
-		case wire.OpCodeKillCursors:
-			fallthrough
-		case wire.OpCodeCompressed:
-			// do not panic to make fuzzing easier
-			closeConn = true
-			result = "unhandled"
-
-			c.l.ErrorContext(
-				connCtx,
-				"Handler error for unhandled response opcode",
-				logging.Error(err),
-				slog.Any("opcode", resHeader.OpCode),
-			)
-			return
-
-		default:
-			// do not panic to make fuzzing easier
-			closeConn = true
-			result = "unexpected"
-
-			c.l.ErrorContext(
-				connCtx,
-				"Handler error for unexpected response opcode",
-				logging.Error(err),
-				slog.Any("opcode", resHeader.OpCode),
-			)
-			return
-		}
-	}
-
 	resHeader, err = c.responseHeader(resHeader.OpCode, reqHeader.RequestID, resBody)
 	if err != nil {
 		result = ""
+
 		panic(err)
 	}
 
