@@ -168,8 +168,8 @@ This should fetch the books and their corresponding publishers' details in a sin
 ### 8. Create an authenticated user
 
 Authentication is important for securing your database and ensuring only authorized users can access it, especially for production-based environments.
-FerretDB relies entirely on PostgreSQL authentication mechanisms and does not store any user credentials.
-When you create a user in FerretDB, it's stored in PostgreSQL, and you can manage it using the same commands you would on MongoDB.
+FerretDB relies entirely on PostgreSQL authentication mechanisms.
+When you create a user in FerretDB, you can manage it using the same commands you would on MongoDB.
 
 You can create a user in FerretDB as you would on MongoDB by just running the `createUser` command.
 
