@@ -284,6 +284,8 @@ db.books.find({ $text: { $search: 'romance novel' } })
 
 Note that text indexes are case-insensitive and sorting by relevance can sometimes be unpredictable.
 
+[Learn more about full-text search here.](https://docs.ferretdb.io/guides/text-search/)
+
 ### 14. Vector indexing for vector search
 
 For more advanced similarity or context-based searches (like finding books with similar themes), vector indexing is useful.
