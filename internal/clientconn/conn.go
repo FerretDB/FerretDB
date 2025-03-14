@@ -523,7 +523,7 @@ func (c *conn) traceRequest(f requestFunc, doc *wirebson.Document, l *slog.Logge
 
 		ctx, span := startSpan(ctx, comment, l)
 
-		defer endSpan(span, command, header.OpCode.String(), int(header.ResponseTo))
+		defer endSpan(span, command, header.OpCode.String(), int(header.RequestID))
 
 		return f(ctx, header, body, command)
 	}
