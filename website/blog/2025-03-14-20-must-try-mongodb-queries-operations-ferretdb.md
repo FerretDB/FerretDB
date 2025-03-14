@@ -183,12 +183,6 @@ db.createUser({
 })
 ```
 
-In the same way, you could create users directly within PostgreSQL itself by creating a new user via SQL:
-
-```sql
-CREATE USER newuser WITH PASSWORD 'newpassword';
-```
-
 You can learn more about authentication in FerretDB [here](https://docs.ferretdb.io/security/authentication/).
 
 ### 9. Delete user
@@ -383,7 +377,9 @@ If a publisher's location is stored as GeoJSON points, FerretDB lets you query b
 What if you want to search for books published in a specific city.
 Instead of manually stating their locations, you can store and query precise geographic coordinates using `$geoWithin`:
 
-Using London's longitude and latitude (`[-0.1276, 51.5072]`), let's run some queries to find books published there.
+Using London's longitude and latitude (`[-0.1276, 51.5072]`), let's run some queries to find books published within a `1km` radius.
+Note that the distance is in radians, so we need to convert it to the Earth's radius.
+Since the Earth's radius is about 6378.1km, we divide `1km` by the Earth's radius to get the distance in radians.
 
 ```js
 db.books.find({
