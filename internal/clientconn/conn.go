@@ -379,6 +379,8 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 			resBody = protoErr.Reply()
 			result = protoErr.Name
 			argument = protoErr.Argument
+
+			break
 		}
 
 		if resReply != nil {
