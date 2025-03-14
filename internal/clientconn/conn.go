@@ -353,7 +353,7 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 	defer func() {
 		setSpanAttribute(span, result, argument)
 
-		// extract metrics from route which currently has labels based on error
+		// extract metrics out of this function, currently it requires labels based on error
 		// TODO https://github.com/FerretDB/FerretDB/issues/1997
 		c.m.Responses.WithLabelValues(resHeader.OpCode.String(), command, argument, result).Inc()
 	}()
