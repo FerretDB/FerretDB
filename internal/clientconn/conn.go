@@ -351,6 +351,10 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 
 	var result, argument string
 	defer func() {
+		if argument == "" {
+			argument = "unknown"
+		}
+
 		setSpanAttribute(span, result, argument)
 
 		// extract metrics out of this function, currently it requires labels based on error
@@ -551,10 +555,6 @@ func setSpanAttribute(span oteltrace.Span, result, argument string) {
 
 	if result == "" {
 		result = "panic"
-	}
-
-	if argument == "" {
-		argument = "unknown"
 	}
 
 	if result != "ok" {
