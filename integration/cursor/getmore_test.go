@@ -36,7 +36,7 @@ import (
 func TestGetMoreCommand(t *testing.T) {
 	// do not run tests in parallel to avoid using too many backend connections
 
-	s := setup.SetupWithOpts(t, &setup.SetupOpts{SingleConn: true})
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{PoolSize: 1})
 
 	ctx, collection := s.Ctx, s.Collection
 
@@ -549,7 +549,7 @@ func TestGetMoreCommandBatchSize(t *testing.T) {
 func TestGetMoreCommandConnection(t *testing.T) {
 	// do not run tests in parallel to avoid using too many backend connections
 
-	s := setup.SetupWithOpts(t, &setup.SetupOpts{SingleConn: true})
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{PoolSize: 1})
 
 	ctx := s.Ctx
 	collection1 := s.Collection
@@ -918,8 +918,8 @@ func TestGetMoreCommandMaxTimeMS(t *testing.T) {
 	// do not run tests in parallel to avoid using too many backend connections
 
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{
-		Providers:  []shareddata.Provider{shareddata.Composites},
-		SingleConn: true,
+		Providers: []shareddata.Provider{shareddata.Composites},
+		PoolSize:  1,
 	})
 
 	ctx, collection := s.Ctx, s.Collection
@@ -965,7 +965,7 @@ func TestGetMoreCommandMaxTimeMS(t *testing.T) {
 func TestFindGetMoreCommandRemoveDocument(t *testing.T) {
 	t.Parallel()
 
-	s := setup.SetupWithOpts(t, &setup.SetupOpts{SingleConn: true})
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{PoolSize: 1})
 
 	collection, ctx := s.Collection, s.Ctx
 

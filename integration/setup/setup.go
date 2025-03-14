@@ -21,6 +21,7 @@ import (
 	"log/slog"
 	"net/url"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -92,8 +93,10 @@ type SetupOpts struct {
 	// Benchmark data provider. If empty, collection is not created.
 	BenchmarkProvider shareddata.BenchmarkProvider
 
-	// SingleConn ensures that MongoDB driver uses only a single connection.
-	SingleConn bool
+	// PoolSize ensures that MongoDB driver uses exactly this number of connections for operations
+	// (not counting extra connections for monitoring that are mostly idle).
+	// Zero value disabled explicit pool configuration.
+	PoolSize int
 
 	// DisableOtel disable OpenTelemetry monitoring for MongoDB driver.
 	DisableOtel bool
@@ -107,7 +110,7 @@ type SetupOpts struct {
 	// Note that wire client connection does not support many options
 	// and returns an error if it encounters an unknown one.
 	//
-	// This field is unexported because that general API wasn't actually used (see SingleConn).
+	// This field is unexported because that general API wasn't actually used (see PoolSize).
 	// It might be exported again if needed.
 	extraOptions url.Values
 }
@@ -153,11 +156,10 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 		opts.extraOptions = make(url.Values)
 	}
 
-	if opts.SingleConn {
-		opts.extraOptions.Set("maxConnecting", "1")
-		opts.extraOptions.Set("maxIdleTimeMS", "0")
-		opts.extraOptions.Set("maxPoolSize", "1")
-		opts.extraOptions.Set("minPoolSize", "1")
+	if opts.PoolSize > 0 {
+		opts.extraOptions.Set("maxConnecting", strconv.Itoa(opts.PoolSize))
+		opts.extraOptions.Set("maxPoolSize", strconv.Itoa(opts.PoolSize))
+		opts.extraOptions.Set("minPoolSize", strconv.Itoa(opts.PoolSize))
 	}
 
 	var levelVar slog.LevelVar
@@ -287,7 +289,7 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 	switch {
 	case len(opts.Providers) > 0:
 		require.Nil(tb, opts.BenchmarkProvider, "Both Providers and BenchmarkProvider were set")
-		inserted = InsertProviders(tb, ctx, collection, opts.Providers...)
+		inserted = insertProviders(tb, ctx, collection, opts.Providers...)
 	case opts.BenchmarkProvider != nil:
 		inserted = insertBenchmarkProvider(tb, ctx, collection, opts.BenchmarkProvider)
 	}
@@ -301,8 +303,8 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 	return collection
 }
 
-// InsertProviders inserts documents from specified Providers into collection. It returns true if any document was inserted.
-func InsertProviders(tb testing.TB, ctx context.Context, collection *mongo.Collection, providers ...shareddata.Provider) (inserted bool) {
+// insertProviders inserts documents from specified Providers into collection. It returns true if any document was inserted.
+func insertProviders(tb testing.TB, ctx context.Context, collection *mongo.Collection, providers ...shareddata.Provider) (inserted bool) {
 	tb.Helper()
 
 	ctx, span := otel.Tracer("").Start(ctx, "insertProviders")
@@ -328,13 +330,8 @@ func InsertProviders(tb testing.TB, ctx context.Context, collection *mongo.Colle
 func insertBenchmarkProvider(tb testing.TB, ctx context.Context, collection *mongo.Collection, provider shareddata.BenchmarkProvider) (inserted bool) {
 	tb.Helper()
 
-	for docs := range xiter.Chunk(provider.NewIter(), 100) {
-		insertDocs := make([]any, len(docs))
-		for i, doc := range docs {
-			insertDocs[i] = doc
-		}
-
-		res, err := collection.InsertMany(ctx, insertDocs)
+	for docs := range xiter.Chunk(provider.Docs(), 100) {
+		res, err := collection.InsertMany(ctx, docs)
 		require.NoError(tb, err)
 		require.Len(tb, res.InsertedIDs, len(docs))
 
