@@ -254,13 +254,13 @@ func (c *conn) processMessage(ctx context.Context, bufr *bufio.Reader, bufw *buf
 
 	if msg, ok := reqBody.(*wire.OpMsg); ok {
 		if doc, err = msg.RawSection0().Decode(); err != nil {
-			routeFunc = c.routeError(err)
+			routeFunc = c.routeOpMsgError(err)
 		}
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/1997
-	// send requests in diff mode in parallel to align traces
-	// by creating a copy of the request body
+	// send requests in parallel for diff mode to align traces,
+	// may require creating a copy of reqBody as handler could modify it
 	//
 	// send request to proxy first (unless we are in normal mode)
 	// because FerretDB's handling could modify reqBody's documents,
@@ -352,6 +352,9 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 	var result, argument string
 	defer func() {
 		setSpanAttribute(span, result, argument)
+
+		// extract metrics from route which currently has labels based on error
+		// TODO https://github.com/FerretDB/FerretDB/issues/1997
 		c.m.Responses.WithLabelValues(resHeader.OpCode.String(), command, argument, result).Inc()
 	}()
 
@@ -460,17 +463,11 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		}
 	}
 
-	// Don't call MarshalBinary there. Fix header in the caller?
-	// TODO https://github.com/FerretDB/FerretDB/issues/273
-	b, err := resBody.MarshalBinary()
+	resHeader, err = c.responseHeader(resHeader.OpCode, reqHeader.RequestID, resBody)
 	if err != nil {
 		result = ""
 		panic(err)
 	}
-	resHeader.MessageLength = int32(wire.MsgHeaderLen + len(b))
-
-	resHeader.RequestID = c.lastRequestID.Add(1)
-	resHeader.ResponseTo = reqHeader.RequestID
 
 	if result == "" {
 		result = "ok"
@@ -479,9 +476,26 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 	return
 }
 
-// routeError returns a function that creates a response header and body based for the given error.
+// responseHeader returns the header based on the given OpCode, requestID and response body.
+func (c *conn) responseHeader(opCode wire.OpCode, requestID int32, resBody wire.MsgBody) (*wire.MsgHeader, error) {
+	// Don't call MarshalBinary there. Fix header in the caller?
+	// TODO https://github.com/FerretDB/FerretDB/issues/273
+	b, err := resBody.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+
+	return &wire.MsgHeader{
+		MessageLength: int32(wire.MsgHeaderLen + len(b)),
+		RequestID:     c.lastRequestID.Add(1),
+		ResponseTo:    requestID,
+		OpCode:        opCode,
+	}, nil
+}
+
+// routeOpMsgError returns a function that creates a response header and body based on the given error.
 // It sets span attribute and increments the metrics.
-func (c *conn) routeError(rErr error) requestFunc {
+func (c *conn) routeOpMsgError(rErr error) requestFunc {
 	return func(ctx context.Context, reqHeader *wire.MsgHeader, body wire.MsgBody, command string) (resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) { //nolint:lll // argument list is too long
 		span := oteltrace.SpanFromContext(ctx)
 		var result, argument string
@@ -502,18 +516,12 @@ func (c *conn) routeError(rErr error) requestFunc {
 
 		c.m.Requests.WithLabelValues(reqHeader.OpCode.String(), command).Inc()
 
-		// Don't call MarshalBinary there. Fix header in the caller?
-		// TODO https://github.com/FerretDB/FerretDB/issues/273
-		b, err := resBody.MarshalBinary()
-		if err != nil {
+		var err error
+		if resHeader, err = c.responseHeader(wire.OpCodeMsg, reqHeader.RequestID, resBody); err != nil {
 			result = ""
 
 			panic(err)
 		}
-
-		resHeader.MessageLength = int32(wire.MsgHeaderLen + len(b))
-		resHeader.RequestID = c.lastRequestID.Add(1)
-		resHeader.ResponseTo = reqHeader.RequestID
 
 		if result == "" {
 			result = "ok"
