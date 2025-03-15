@@ -238,9 +238,9 @@ func setupDefaultLogger(format string, uuid string) *slog.Logger {
 	}
 
 	opts := &logging.NewHandlerOpts{
-		Base:  format,
-		Level: level,
-		// SkipChecks: !devbuild.Enabled,
+		Base:       format,
+		Level:      level,
+		SkipChecks: !devbuild.Enabled,
 	}
 	logging.SetupDefault(opts, uuid)
 
