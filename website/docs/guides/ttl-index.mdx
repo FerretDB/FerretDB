@@ -5,7 +5,19 @@ description: Learn about TTL indexes in FerretDB.
 
 # Time-To-Live (TTL) indexes
 
+import CodeBlock from '@theme/CodeBlock';
+import CreateIndex from '!!raw-loader!./requests/1-create-ttl-index.js';
+import InsertTTLData from '!!raw-loader!./requests/2-insert-ttl-data.js';
+
 TTL (Time-To-Live) indexes are useful when you need documents to expire automatically after a certain time. It's ideal for temporary records, logs, or session data.
+TTL indexes are single-field indexes, meaning they can only be created on a single field.
+
+:::note
+
+- Documents inserted before the index was created may not be affected until an insert or update operation occurs. It is recommended to create the TTL index before inserting documents.
+- The cleanup of expired documents is a background operation that runs every 60 seconds, so deletion may not be immediate.
+
+:::
 
 ## Creating a TTL index
 
@@ -15,46 +27,14 @@ The `expireAfterSeconds` option indicates the number of seconds before a documen
 
 For example, to create a TTL index on a `publication.date` field in a `books` collection:
 
-```js
-db.runCommand({
-  createIndexes: 'books',
-  indexes: [
-    {
-      key: { 'publication.date': 1 },
-      name: 'publication_date_ttl',
-      expireAfterSeconds: 10
-    }
-  ]
-})
-```
+<!-- markdownlint-disable MD033 -->
+
+<CodeBlock language="js">{CreateIndex}</CodeBlock>
 
 Let's insert a document into the `books` collection:
 
-```js
-db.runCommand({
-  insert: 'books',
-  documents: [
-    {
-      title: 'The Great Gatsby',
-      publication: {
-        date: new Date()
-      }
-    }
-  ]
-})
-```
+<CodeBlock language="js">{InsertTTLData}</CodeBlock>
 
-After 10 seconds, the document will expire and be removed from the collection.
-Run the following command to check if the document has been removed:
+After 10 seconds, the document will expire and be queued for deletion during the next cleanup operation.
 
-```js
-db.runCommand({
-  find: 'books'
-})
-```
-
-## Limitations
-
-- The cleanup of expired documents is a background operation that runs every 60 seconds, so deletion may not be immediate.
-- Dateocuments inserted before the index was created may not be affected until an insert or update operation occurs. It is recommended to create the TTL index before inserting documents.
-- TTL indexes are single-field indexes, compound indexes do not support TTL.
+<!-- markdownlint-enable MD033 -->
