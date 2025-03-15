@@ -204,6 +204,9 @@ func defineForBranch(owner, repo, branch string) (*result, error) {
 		developmentImages: []string{
 			fmt.Sprintf("ghcr.io/%s/%s-dev:%s", owner, repo, branch),
 		},
+		productionImages: []string{
+			fmt.Sprintf("ghcr.io/%s/%s-dev:%s-prod", owner, repo, branch),
+		},
 	}
 
 	// forks don't have Quay.io and Docker Hub orgs
@@ -218,9 +221,11 @@ func defineForBranch(owner, repo, branch string) (*result, error) {
 
 	res.evaluationImages = append(res.evaluationImages, fmt.Sprintf("quay.io/ferretdb/ferretdb-eval:%s", branch))
 	res.developmentImages = append(res.developmentImages, fmt.Sprintf("quay.io/ferretdb/ferretdb-dev:%s", branch))
+	res.productionImages = append(res.productionImages, fmt.Sprintf("quay.io/ferretdb/ferretdb-dev:%s-prod", branch))
 
 	res.evaluationImages = append(res.evaluationImages, fmt.Sprintf("ferretdb/ferretdb-eval:%s", branch))
 	res.developmentImages = append(res.developmentImages, fmt.Sprintf("ferretdb/ferretdb-dev:%s", branch))
+	res.productionImages = append(res.productionImages, fmt.Sprintf("ferretdb/ferretdb-dev:%s-prod", branch))
 
 	return res, nil
 }

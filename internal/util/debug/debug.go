@@ -35,6 +35,7 @@ import (
 	"github.com/arl/statsviz"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	_ "golang.org/x/net/trace"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
@@ -174,8 +175,10 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 		"/debug/readyz":  "Readiness probe",
 
 		// stdlib handlers
-		"/debug/vars":  "Expvar package metrics",
-		"/debug/pprof": "Runtime profiling data for pprof",
+		"/debug/vars":     "Expvar package metrics",
+		"/debug/pprof":    "Runtime profiling data for pprof",
+		"/debug/requests": "/x/net/trace requests",
+		"/debug/events":   "/x/net/trace events",
 	}
 
 	var page bytes.Buffer
