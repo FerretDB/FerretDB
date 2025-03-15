@@ -10,7 +10,7 @@ import CreateIndex from '!!raw-loader!./requests/1-create-ttl-index.js';
 import InsertTTLData from '!!raw-loader!./requests/2-insert-ttl-data.js';
 
 TTL (Time-To-Live) indexes are useful when you need documents to expire automatically after a certain time. It's ideal for temporary records, logs, or session data.
-TTL indexes are single-field indexes, meaning they can only be created on a single field.
+They are single-field indexes and not allowed as multi-field/compound indexes.
 
 :::note
 
