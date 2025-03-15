@@ -142,11 +142,8 @@ var (
 
 			"help_log_format": fmt.Sprintf("Log format: '%s'.", strings.Join(logFormats, "', '")),
 			"help_log_level":  fmt.Sprintf("Log level: '%s'.", strings.Join(logLevels, "', '")),
-			"help_mode": fmt.Sprintf(
-				"Operation mode: '%s'.",
-				strings.Join(clientconn.AllModes, "', '"),
-			),
-			"help_telemetry": "Enable or disable basic telemetry reporting. See https://beacon.ferretdb.com.",
+			"help_mode":       fmt.Sprintf("Operation mode: '%s'.", strings.Join(clientconn.AllModes, "', '")),
+			"help_telemetry":  "Enable or disable basic telemetry reporting. See https://beacon.ferretdb.com.",
 		},
 		kong.DefaultEnvars("FERRETDB"),
 	}
@@ -333,11 +330,7 @@ func run() {
 
 	logger := setupDefaultLogger(cli.Log.Format, logUUID)
 
-	logger.LogAttrs(
-		context.Background(),
-		slog.LevelInfo,
-		"Starting FerretDB "+info.Version,
-		startupFields...)
+	logger.LogAttrs(context.Background(), slog.LevelInfo, "Starting FerretDB "+info.Version, startupFields...)
 
 	checkFlags(logger)
 
@@ -395,12 +388,7 @@ func run() {
 				Readyz: ready.Probe,
 			})
 			if e != nil {
-				l.LogAttrs(
-					ctx,
-					logging.LevelFatal,
-					"Failed to create debug handler",
-					logging.Error(e),
-				)
+				l.LogAttrs(ctx, logging.LevelFatal, "Failed to create debug handler", logging.Error(e))
 			}
 
 			h.Serve(ctx)
@@ -422,12 +410,7 @@ func run() {
 				URL:     cli.OTel.Traces.URL,
 			})
 			if e != nil {
-				l.LogAttrs(
-					ctx,
-					logging.LevelFatal,
-					"Failed to create Otel tracer",
-					logging.Error(e),
-				)
+				l.LogAttrs(ctx, logging.LevelFatal, "Failed to create Otel tracer", logging.Error(e))
 			}
 
 			ot.Run(ctx)
@@ -457,12 +440,7 @@ func run() {
 				ReportInterval: cli.Dev.Telemetry.ReportInterval,
 			})
 			if e != nil {
-				l.LogAttrs(
-					ctx,
-					logging.LevelFatal,
-					"Failed to create telemetry reporter",
-					logging.Error(e),
-				)
+				l.LogAttrs(ctx, logging.LevelFatal, "Failed to create telemetry reporter", logging.Error(e))
 			}
 
 			r.Run(ctx)
@@ -504,12 +482,7 @@ func run() {
 	h, err := handler.New(handlerOpts)
 	if err != nil {
 		p.Close()
-		handlerOpts.L.LogAttrs(
-			ctx,
-			logging.LevelFatal,
-			"Failed to construct handler",
-			logging.Error(err),
-		)
+		handlerOpts.L.LogAttrs(ctx, logging.LevelFatal, "Failed to construct handler", logging.Error(err))
 	}
 
 	lis, err := clientconn.Listen(&clientconn.ListenerOpts{
@@ -553,12 +526,7 @@ func run() {
 			})
 			if e != nil {
 				p.Close()
-				l.LogAttrs(
-					ctx,
-					logging.LevelFatal,
-					"Failed to construct DataAPI listener",
-					logging.Error(e),
-				)
+				l.LogAttrs(ctx, logging.LevelFatal, "Failed to construct DataAPI listener", logging.Error(e))
 			}
 
 			lis.Run(ctx)
