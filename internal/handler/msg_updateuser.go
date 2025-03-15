@@ -22,6 +22,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
@@ -29,7 +30,7 @@ import (
 // MsgUpdateUser implements `updateUser` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgUpdateUser(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+func (h *Handler) MsgUpdateUser(connCtx context.Context, msg *middleware.MsgRequest) (*wire.OpMsg, error) {
 	spec, err := msg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)

@@ -20,13 +20,14 @@ import (
 	"github.com/FerretDB/wire"
 
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
 // MsgValidate implements `validate` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgValidate(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+func (h *Handler) MsgValidate(connCtx context.Context, msg *middleware.MsgRequest) (*wire.OpMsg, error) {
 	spec, err := msg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -57,9 +58,5 @@ func (h *Handler) MsgValidate(connCtx context.Context, msg *wire.OpMsg) (*wire.O
 		return nil, lazyerrors.Error(err)
 	}
 
-	if msg, err = wire.NewOpMsg(page); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return msg, nil
+	return wire.NewOpMsg(page)
 }

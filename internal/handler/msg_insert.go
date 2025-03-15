@@ -22,6 +22,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
@@ -29,7 +30,7 @@ import (
 // MsgInsert implements `insert` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgInsert(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+func (h *Handler) MsgInsert(connCtx context.Context, msg *middleware.MsgRequest) (*wire.OpMsg, error) {
 	spec, seq := msg.RawSections()
 
 	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
