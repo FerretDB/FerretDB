@@ -220,92 +220,103 @@ func (c *conn) run(ctx context.Context) (err error) {
 	}()
 
 	for {
-		var reqHeader *wire.MsgHeader
-		var reqBody wire.MsgBody
-		var resHeader *wire.MsgHeader
-		var resBody wire.MsgBody
-
-		reqHeader, reqBody, err = wire.ReadMessage(bufr)
-		if err != nil {
-			return
-		}
-
-		if c.l.Enabled(ctx, slog.LevelDebug) {
-			c.l.DebugContext(ctx, "Request header: "+reqHeader.String())
-			c.l.DebugContext(ctx, "Request message:\n"+reqBody.StringIndent())
-		}
-
-		// diffLogLevel provides the level of logging for the diff between the "normal" and "proxy" responses.
-		// It is set to the highest level of logging used to log response.
-		diffLogLevel := slog.LevelDebug
-
-		// send request to proxy first (unless we are in normal mode)
-		// because FerretDB's handling could modify reqBody's documents,
-		// creating a data race
-		var proxyHeader *wire.MsgHeader
-		var proxyBody wire.MsgBody
-		if c.mode != NormalMode {
-			if c.proxy == nil {
-				panic("proxy addr was nil")
-			}
-
-			// TODO https://github.com/FerretDB/FerretDB/issues/1997
-			proxyHeader, proxyBody = c.proxy.Route(ctx, reqHeader, reqBody)
-		}
-
-		// handle request unless we are in proxy mode
-		var resCloseConn bool
-		if c.mode != ProxyMode {
-			resHeader, resBody, resCloseConn = c.route(ctx, reqHeader, reqBody)
-			if level := c.logResponse(ctx, "Response", resHeader, resBody, resCloseConn); level > diffLogLevel {
-				diffLogLevel = level
-			}
-		}
-
-		// log proxy response after the normal response to make it less confusing
-		if c.mode != NormalMode {
-			if level := c.logResponse(ctx, "Proxy response", proxyHeader, proxyBody, false); level > diffLogLevel {
-				diffLogLevel = level
-			}
-		}
-
-		// diff in diff mode
-		if c.l.Enabled(ctx, diffLogLevel) && (c.mode == DiffNormalMode || c.mode == DiffProxyMode) {
-			if err = c.logDiff(ctx, resHeader, proxyHeader, resBody, proxyBody, diffLogLevel); err != nil {
-				return
-			}
-		}
-
-		// replace response with one from proxy in proxy and diff-proxy modes
-		if c.mode == ProxyMode || c.mode == DiffProxyMode {
-			resHeader = proxyHeader
-			resBody = proxyBody
-		}
-
-		if resHeader == nil || resBody == nil {
-			panic("no response to send to client")
-		}
-
-		if err = wire.WriteMessage(bufw, resHeader, resBody); err != nil {
-			c.l.DebugContext(ctx, "Failed to write message", logging.Error(err))
-
-			return
-		}
-
-		if err = bufw.Flush(); err != nil {
-			c.l.DebugContext(ctx, "Failed to flush buffer", logging.Error(err))
-
-			return
-		}
-
-		if resCloseConn {
-			err = errors.New("fatal error")
-
-			c.l.DebugContext(ctx, "Connection closed unexpectedly", logging.Error(err))
-
+		if err = c.processMessage(ctx, bufr, bufw); err != nil {
 			return
 		}
 	}
+}
+
+// processMessage reads the request, routes the request based on the operation mode
+// and writes the response.
+//
+// Any error returned indicates the connection should be closed.
+func (c *conn) processMessage(ctx context.Context, bufr *bufio.Reader, bufw *bufio.Writer) error {
+	reqHeader, reqBody, err := wire.ReadMessage(bufr)
+	if err != nil {
+		return err
+	}
+
+	if c.l.Enabled(ctx, slog.LevelDebug) {
+		c.l.DebugContext(ctx, "Request header: "+reqHeader.String())
+		c.l.DebugContext(ctx, "Request message:\n"+reqBody.StringIndent())
+	}
+
+	// diffLogLevel provides the level of logging for the diff between the "normal" and "proxy" responses.
+	// It is set to the highest level of logging used to log response.
+	diffLogLevel := slog.LevelDebug
+
+	// send request to proxy first (unless we are in normal mode)
+	// because FerretDB's handling could modify reqBody's documents,
+	// creating a data race
+	var proxyHeader *wire.MsgHeader
+	var proxyBody wire.MsgBody
+
+	if c.mode != NormalMode {
+		if c.proxy == nil {
+			panic("proxy addr was nil")
+		}
+
+		// TODO https://github.com/FerretDB/FerretDB/issues/1997
+		proxyHeader, proxyBody = c.proxy.Route(ctx, reqHeader, reqBody)
+	}
+
+	// handle request unless we are in proxy mode
+	var resCloseConn bool
+	var resHeader *wire.MsgHeader
+	var resBody wire.MsgBody
+
+	if c.mode != ProxyMode {
+		resHeader, resBody, resCloseConn = c.route(ctx, reqHeader, reqBody)
+		if level := c.logResponse(ctx, "Response", resHeader, resBody, resCloseConn); level > diffLogLevel {
+			diffLogLevel = level
+		}
+	}
+
+	// log proxy response after the normal response to make it less confusing
+	if c.mode != NormalMode {
+		if level := c.logResponse(ctx, "Proxy response", proxyHeader, proxyBody, false); level > diffLogLevel {
+			diffLogLevel = level
+		}
+	}
+
+	// diff in diff mode
+	if c.l.Enabled(ctx, diffLogLevel) && (c.mode == DiffNormalMode || c.mode == DiffProxyMode) {
+		if err = c.logDiff(ctx, resHeader, proxyHeader, resBody, proxyBody, diffLogLevel); err != nil {
+			return err
+		}
+	}
+
+	// replace response with one from proxy in proxy and diff-proxy modes
+	if c.mode == ProxyMode || c.mode == DiffProxyMode {
+		resHeader = proxyHeader
+		resBody = proxyBody
+	}
+
+	if resHeader == nil || resBody == nil {
+		panic("no response to send to client")
+	}
+
+	if err = wire.WriteMessage(bufw, resHeader, resBody); err != nil {
+		c.l.DebugContext(ctx, "Failed to write message", logging.Error(err))
+
+		return err
+	}
+
+	if err = bufw.Flush(); err != nil {
+		c.l.DebugContext(ctx, "Failed to flush buffer", logging.Error(err))
+
+		return err
+	}
+
+	if resCloseConn {
+		err = errors.New("fatal error")
+
+		c.l.DebugContext(ctx, "Connection closed unexpectedly", logging.Error(err))
+
+		return err
+	}
+
+	return nil
 }
 
 // route sends request to a handler's command based on the op code provided in the request header.
