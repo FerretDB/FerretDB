@@ -105,7 +105,10 @@ type newConnOpts struct {
 }
 
 // requestFunc represents a function that handles a wire message and returns a wire message response.
-type requestFunc func(context.Context, *wire.MsgHeader, wire.MsgBody, string) (*wire.MsgHeader, wire.MsgBody, bool)
+//
+// The `command` is populated for a successfully decoded OP_MSG.
+// The `closeConn` is set to true if the connection should be closed after the response is sent.
+type requestFunc func(ctx context.Context, header *wire.MsgHeader, msg wire.MsgBody, command string) (resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) //nolint:lll // for readability
 
 // newConn creates a new client connection for given net.Conn.
 func newConn(opts *newConnOpts) (*conn, error) {
