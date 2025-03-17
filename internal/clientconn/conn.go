@@ -363,22 +363,6 @@ func (c *conn) processMessage(ctx context.Context, bufr *bufio.Reader, bufw *buf
 func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody wire.MsgBody, command string) (resHeader *wire.MsgHeader, resBody wire.MsgBody, res *resOption) { //nolint:lll // argument list is too long
 	res = new(resOption)
 
-	var metricsCommand string
-
-	defer func() {
-		if res.argument == "" {
-			res.argument = "unknown"
-		}
-	}()
-
-	metricsCommand = command
-	if metricsCommand == "" {
-		// for not OP_MSG requests
-		metricsCommand = "unknown"
-	}
-
-	c.m.Requests.WithLabelValues(reqHeader.OpCode.String(), metricsCommand).Inc()
-
 	resHeader = new(wire.MsgHeader)
 	var err error
 	switch reqHeader.OpCode {
@@ -519,6 +503,14 @@ func (c *conn) traceRequest(f requestFunc, doc *wirebson.Document, l *slog.Logge
 		ctx, span := startSpan(ctx, comment, l)
 
 		defer func() {
+			if command == "" {
+				command = "unknown"
+			}
+
+			if res.argument == "" {
+				res.argument = "unknown"
+			}
+
 			endSpan(span, command, res.result, res.argument, header.OpCode.String(), int(header.RequestID))
 		}()
 
@@ -532,6 +524,14 @@ func (c *conn) collectMetrics(f requestFunc) requestFunc {
 		c.m.Requests.WithLabelValues(header.OpCode.String(), command).Inc()
 
 		defer func() {
+			if command == "" {
+				command = "unknown"
+			}
+
+			if res.argument == "" {
+				res.argument = "unknown"
+			}
+
 			c.m.Responses.WithLabelValues(resHeader.OpCode.String(), command, res.argument, res.result).Inc()
 		}()
 
