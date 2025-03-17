@@ -4,15 +4,13 @@ sidebar_position: 3
 
 # RPM package
 
-We provide different `.rpm` packages for various deployments:
-
-- **a development package**: for debugging problems, and includes features that make it significantly slower.
-  For this reason, it is not recommended for production use.
-- **a production package**: for all other cases.
-
 :::note
-Development packages include a `-dev` suffix (e.g. `ferretdb-dev.rpm`) and are not recommended for production use.
-On the other hand, production packages do not include the `-dev` suffix (e.g. `ferretdb.rpm`).
+We provide different `.rpm` packages for various deployments.
+
+- The development package (contains a `-dev` suffix e.g., `ferretdb-dev.rpm`) is for debugging purposes.
+  It includes features that significantly slow performance and is not recommended for production use.
+- For other use cases, we recommend the production package (e.g., `ferretdb.rpm`).
+
 :::
 
 To install the `.rpm` packages for FerretDB on your RHEL, CentOS, and other `.rpm`-based systems,

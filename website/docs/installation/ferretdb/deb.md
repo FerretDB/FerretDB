@@ -4,15 +4,13 @@ sidebar_position: 2
 
 # DEB package
 
-We provide different `.deb` packages for various deployments:
-
-- **a development package**: for debugging problems, and includes features that make it significantly slower.
-  For this reason, it is not recommended for production use.
-- **a production package**: for all other cases.
-
 :::note
-Development packages include a `-dev` suffix (e.g. `ferretdb-dev.deb`) and are not recommended for production use.
-On the other hand, production packages do not include the `-dev` suffix (e.g. `ferretdb.deb`).
+We provide different `.deb` packages for various deployments.
+
+- The development package (contains a `-dev` suffix e.g., `ferretdb-dev.deb`) is for debugging purposes.
+  It includes features that significantly slow performance and is not recommended for production use.
+- For other use cases, we recommend the production package (e.g., `ferretdb.deb`).
+
 :::
 
 To install the `.deb` packages for FerretDB on your Debian, Ubuntu, and other `.deb`-based systems,
