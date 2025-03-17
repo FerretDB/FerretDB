@@ -365,6 +365,12 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		c.m.Responses.WithLabelValues(resHeader.OpCode.String(), command, argument, result).Inc()
 	}()
 
+	if command == "" {
+		command = "unknown"
+	}
+
+	c.m.Requests.WithLabelValues(reqHeader.OpCode.String(), command).Inc()
+
 	resHeader = new(wire.MsgHeader)
 	var err error
 	switch reqHeader.OpCode {
@@ -439,12 +445,6 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 
 		return
 	}
-
-	if command == "" {
-		command = "unknown"
-	}
-
-	c.m.Requests.WithLabelValues(reqHeader.OpCode.String(), command).Inc()
 
 	resHeader, err = c.responseHeader(resHeader.OpCode, reqHeader.RequestID, resBody)
 	if err != nil {
