@@ -19,7 +19,14 @@ Some default values are overridden in [our Docker image](../installation/ferretd
 <!-- markdownlint-capture -->
 <!-- markdownlint-disable MD033 -->
 
-## PostgreSQL with DocumentDB extension
+## General
+
+| Flag           | Description                      | Environment Variable | Default Value |
+| -------------- | -------------------------------- | -------------------- | ------------- |
+| `-h`, `--help` | Show context-sensitive help      |                      |               |
+| `--version`    | Print version to stdout and exit |                      |               |
+
+## PostgreSQL
 
 | Flag               | Description               | Environment Variable      | Default Value                        |
 | ------------------ | ------------------------- | ------------------------- | ------------------------------------ |
@@ -59,8 +66,6 @@ Additionally:
 
 | Flag                  | Description                                                                                                                 | Environment Variable       | Default Value                  |
 | --------------------- | --------------------------------------------------------------------------------------------------------------------------- | -------------------------- | ------------------------------ |
-| `-h`, `--help`        | Show context-sensitive help                                                                                                 |                            |                                |
-| `--version`           | Print version to stdout and exit                                                                                            |                            |                                |
 | `--mode`              | [Operation mode](operation-modes.md)                                                                                        | `FERRETDB_MODE`            | `normal`                       |
 | `--state-dir`         | Path to the FerretDB state directory                                                                                        | `FERRETDB_STATE_DIR`       | `.`<br />(`/state` for Docker) |
 | `--[no-]auth`         | [Enable authentication](../security/authentication.md)                                                                      | `FERRETDB_AUTH`            | enabled                        |
