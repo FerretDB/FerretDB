@@ -62,7 +62,7 @@ import (
 var cli struct {
 	// We hide `run` command to show only `ping` in the help message.
 	Run  struct{} `cmd:"" default:"1"                             hidden:""`
-	Ping struct{} `cmd:"" help:"Ping existing FerretDB instance." group:"general"`
+	Ping struct{} `cmd:"" help:"Ping existing FerretDB instance."`
 
 	Version bool `default:"false" help:"Print version to stdout and exit." env:"-" group:"Miscellaneous"`
 
