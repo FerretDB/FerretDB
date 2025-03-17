@@ -25,7 +25,7 @@ A TTL index is created using the `createIndex` command with the field you want t
 The field must be a `Date` type.
 The `expireAfterSeconds` option indicates the number of seconds before a document expires.
 
-For example, to create a TTL index on a `publication.date` field in a `books` collection:
+For example, let's create a TTL index for the `reservation.date` field in a `books` collection.
 
 <!-- markdownlint-disable MD033 -->
 
@@ -35,6 +35,6 @@ Let's insert a document into the `books` collection:
 
 <CodeBlock language="js">{InsertTTLData}</CodeBlock>
 
-After 10 seconds, the document will expire and be queued for deletion during the next cleanup operation.
+After 60 seconds, the document will expire and be queued for deletion during the next cleanup operation.
 
 <!-- markdownlint-enable MD033 -->

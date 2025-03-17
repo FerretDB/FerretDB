@@ -1,10 +1,10 @@
 db.runCommand({
-  createIndexes: 'books',
-  indexes: [
-    {
-      key: { 'publication.date': 1 },
-      name: 'publication_date_ttl',
-      expireAfterSeconds: 10
-    }
-  ]
+    createIndexes: 'books',
+    indexes: [
+      {
+        key: { 'reservation.date': 1 },
+        name: 'reservation_ttl',
+        expireAfterSeconds: 60
+      }
+    ]
 })
