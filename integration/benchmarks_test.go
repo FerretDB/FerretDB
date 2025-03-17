@@ -49,22 +49,18 @@ func BenchmarkFind(b *testing.B) {
 
 					for b.Loop() {
 						cursor, err := s.Collection.Find(s.Ctx, filter)
-						if err != nil {
-							b.Fatal(err)
-						}
+						require.NoError(b, err)
 
 						docs = 0
 						for cursor.Next(s.Ctx) {
 							docs++
 						}
 
-						if err = cursor.Err(); err != nil {
-							b.Fatal(err)
-						}
+						err = cursor.Err()
+						require.NoError(b, err)
 
-						if err = cursor.Close(s.Ctx); err != nil {
-							b.Fatal(err)
-						}
+						err = cursor.Close(s.Ctx)
+						require.NoError(b, err)
 
 						if firstDocs == 0 {
 							firstDocs = docs
@@ -100,14 +96,12 @@ func BenchmarkInsert(b *testing.B) {
 				ctx, collection := setup.Setup(b)
 
 				for b.Loop() {
-					if err := collection.Drop(ctx); err != nil {
-						b.Fatal(err)
-					}
+					err := collection.Drop(ctx)
+					require.NoError(b, err)
 
 					for docs := range xiter.Chunk(provider.Docs(), batchSize) {
-						if _, err := collection.InsertMany(ctx, docs); err != nil {
-							b.Fatal(err)
-						}
+						_, err = collection.InsertMany(ctx, docs)
+						require.NoError(b, err)
 					}
 				}
 			})
