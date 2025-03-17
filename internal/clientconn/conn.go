@@ -104,6 +104,21 @@ type newConnOpts struct {
 	testRecordsDir string // if empty, no records are created
 }
 
+// requestFunc represents a function that handles a wire message and returns a wire message response.
+//
+// The `command` is populated for a successfully decoded OP_MSG.
+type requestFunc func(ctx context.Context, header *wire.MsgHeader, msg wire.MsgBody, command string) (resHeader *wire.MsgHeader, resBody wire.MsgBody, opt *resOption) //nolint:lll // for readability
+
+// resOptions represents response options.
+type resOption struct {
+	// use by tracer and metrics
+	argument string
+	result   string
+
+	// if true, the connection should be closed after the response is sent.
+	closeConn bool
+}
+
 // newConn creates a new client connection for given net.Conn.
 func newConn(opts *newConnOpts) (*conn, error) {
 	if opts.mode == "" {
@@ -245,6 +260,20 @@ func (c *conn) processMessage(ctx context.Context, bufr *bufio.Reader, bufw *buf
 	// It is set to the highest level of logging used to log response.
 	diffLogLevel := slog.LevelDebug
 
+	routeFunc := c.route
+
+	var doc *wirebson.Document
+
+	if msg, ok := reqBody.(*wire.OpMsg); ok {
+		if doc, err = msg.RawSection0().Decode(); err != nil {
+			routeFunc = c.routeOpMsgError(err)
+		}
+	}
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/1997
+	// send requests in parallel for diff mode to align traces,
+	// may require creating a copy of reqBody as handler could modify it
+	//
 	// send request to proxy first (unless we are in normal mode)
 	// because FerretDB's handling could modify reqBody's documents,
 	// creating a data race
@@ -264,10 +293,14 @@ func (c *conn) processMessage(ctx context.Context, bufr *bufio.Reader, bufw *buf
 	var resCloseConn bool
 	var resHeader *wire.MsgHeader
 	var resBody wire.MsgBody
+	var resOpt *resOption
 
 	if c.mode != ProxyMode {
-		resHeader, resBody, resCloseConn = c.route(ctx, reqHeader, reqBody)
-		if level := c.logResponse(ctx, "Response", resHeader, resBody, resCloseConn); level > diffLogLevel {
+		routeFunc = c.traceRequest(routeFunc, doc, c.l)
+		routeFunc = c.collectMetrics(routeFunc)
+		resHeader, resBody, resOpt = routeFunc(ctx, reqHeader, reqBody, doc.Command())
+
+		if level := c.logResponse(ctx, "Response", resHeader, resBody, resOpt.closeConn); level > diffLogLevel {
 			diffLogLevel = level
 		}
 	}
@@ -327,78 +360,33 @@ func (c *conn) processMessage(ctx context.Context, bufr *bufio.Reader, bufw *buf
 // They also should not use recover(). That allows us to use fuzzing.
 //
 // Returned resBody can be nil.
-func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody wire.MsgBody) (resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) { //nolint:lll // argument list is too long
-	var span oteltrace.Span
-
-	var command, result, argument string
-	defer func() {
-		if result == "" {
-			result = "panic"
-		}
-
-		if argument == "" {
-			argument = "unknown"
-		}
-
-		c.m.Responses.WithLabelValues(resHeader.OpCode.String(), command, argument, result).Inc()
-
-		must.NotBeZero(span)
-
-		if result != "ok" {
-			span.SetStatus(otelcodes.Error, result)
-		}
-
-		span.SetName(command)
-		span.SetAttributes(
-			otelattribute.String("db.ferretdb.opcode", resHeader.OpCode.String()),
-			otelattribute.Int("db.ferretdb.request_id", int(resHeader.ResponseTo)),
-			otelattribute.String("db.ferretdb.argument", argument),
-		)
-		span.End()
-	}()
+func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody wire.MsgBody, command string) (resHeader *wire.MsgHeader, resBody wire.MsgBody, res *resOption) { //nolint:lll // argument list is too long
+	res = new(resOption)
 
 	resHeader = new(wire.MsgHeader)
 	var err error
 	switch reqHeader.OpCode {
 	case wire.OpCodeMsg:
 		msg := reqBody.(*wire.OpMsg)
-		raw := msg.RawSection0()
-
 		resHeader.OpCode = wire.OpCodeMsg
-
-		// TODO https://github.com/FerretDB/FerretDB/issues/1997
-		var doc *wirebson.Document
-		if doc, err = raw.Decode(); err == nil {
-			command = doc.Command()
-		}
-
-		if err == nil {
-			comment, _ := doc.Get("comment").(string)
-
-			spanCtx, e := observability.SpanContextFromComment(comment)
-			if e == nil {
-				connCtx = oteltrace.ContextWithRemoteSpanContext(connCtx, spanCtx)
-			} else {
-				c.l.DebugContext(connCtx, "Failed to extract span context from comment", logging.Error(e))
-			}
-		}
-
-		connCtx, span = otel.Tracer("").Start(connCtx, "")
-
-		if err == nil {
-			resBody = c.handleOpMsg(connCtx, msg, command)
-		}
+		resBody = c.handleOpMsg(connCtx, msg, command)
 
 	case wire.OpCodeQuery:
-		connCtx, span = otel.Tracer("").Start(connCtx, "")
-
 		query := reqBody.(*wire.OpQuery)
 		resHeader.OpCode = wire.OpCodeReply
 
 		// do not store typed nil in interface, it makes it non-nil
 
 		var resReply *wire.OpReply
-		resReply, err = c.h.CmdQuery(connCtx, query)
+
+		if resReply, err = c.h.CmdQuery(connCtx, query); err != nil {
+			protoErr := mongoerrors.Make(connCtx, err, "", c.l)
+			resBody = protoErr.Reply()
+			res.result = protoErr.Name
+			res.argument = protoErr.Argument
+
+			break
+		}
 
 		if resReply != nil {
 			resBody = resReply
@@ -419,94 +407,173 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 	case wire.OpCodeKillCursors:
 		fallthrough
 	case wire.OpCodeCompressed:
-		connCtx, span = otel.Tracer("").Start(connCtx, "")
 		err = lazyerrors.Errorf("unhandled OpCode %s", reqHeader.OpCode)
 
+		// do not panic to make fuzzing easier
+		res.closeConn = true
+		res.result = "unhandled"
+
+		c.l.ErrorContext(
+			connCtx,
+			"Handler error for unhandled response opcode",
+			logging.Error(err),
+			slog.Any("opcode", resHeader.OpCode),
+		)
+
+		return
 	default:
-		connCtx, span = otel.Tracer("").Start(connCtx, "")
 		err = lazyerrors.Errorf("unexpected OpCode %s", reqHeader.OpCode)
+
+		// do not panic to make fuzzing easier
+		res.closeConn = true
+		res.result = "unexpected"
+
+		c.l.ErrorContext(
+			connCtx,
+			"Handler error for unexpected response opcode",
+			logging.Error(err),
+			slog.Any("opcode", resHeader.OpCode),
+		)
+
+		return
 	}
 
-	if command == "" {
-		command = "unknown"
-	}
-
-	c.m.Requests.WithLabelValues(reqHeader.OpCode.String(), command).Inc()
-
-	// set body for error
+	resHeader, err = c.responseHeader(resHeader.OpCode, reqHeader.RequestID, resBody)
 	if err != nil {
-		switch resHeader.OpCode {
-		case wire.OpCodeMsg:
-			protoErr := mongoerrors.Make(connCtx, err, "", c.l)
-			resBody = protoErr.Msg()
-			result = protoErr.Name
-			argument = protoErr.Argument
+		res.result = ""
 
-		case wire.OpCodeReply:
-			protoErr := mongoerrors.Make(connCtx, err, "", c.l)
-			resBody = protoErr.Reply()
-			result = protoErr.Name
-			argument = protoErr.Argument
-
-		case wire.OpCodeQuery:
-			fallthrough
-		case wire.OpCodeUpdate:
-			fallthrough
-		case wire.OpCodeInsert:
-			fallthrough
-		case wire.OpCodeGetByOID:
-			fallthrough
-		case wire.OpCodeGetMore:
-			fallthrough
-		case wire.OpCodeDelete:
-			fallthrough
-		case wire.OpCodeKillCursors:
-			fallthrough
-		case wire.OpCodeCompressed:
-			// do not panic to make fuzzing easier
-			closeConn = true
-			result = "unhandled"
-
-			c.l.ErrorContext(
-				connCtx,
-				"Handler error for unhandled response opcode",
-				logging.Error(err),
-				slog.Any("opcode", resHeader.OpCode),
-			)
-			return
-
-		default:
-			// do not panic to make fuzzing easier
-			closeConn = true
-			result = "unexpected"
-
-			c.l.ErrorContext(
-				connCtx,
-				"Handler error for unexpected response opcode",
-				logging.Error(err),
-				slog.Any("opcode", resHeader.OpCode),
-			)
-			return
-		}
+		panic(err)
 	}
 
+	if res.result == "" {
+		res.result = "ok"
+	}
+
+	return
+}
+
+// responseHeader returns the header based on the given OpCode, requestID and response body.
+func (c *conn) responseHeader(opCode wire.OpCode, requestID int32, resBody wire.MsgBody) (*wire.MsgHeader, error) {
 	// Don't call MarshalBinary there. Fix header in the caller?
 	// TODO https://github.com/FerretDB/FerretDB/issues/273
 	b, err := resBody.MarshalBinary()
 	if err != nil {
-		result = ""
-		panic(err)
-	}
-	resHeader.MessageLength = int32(wire.MsgHeaderLen + len(b))
-
-	resHeader.RequestID = c.lastRequestID.Add(1)
-	resHeader.ResponseTo = reqHeader.RequestID
-
-	if result == "" {
-		result = "ok"
+		return nil, err
 	}
 
-	return
+	return &wire.MsgHeader{
+		MessageLength: int32(wire.MsgHeaderLen + len(b)),
+		RequestID:     c.lastRequestID.Add(1),
+		ResponseTo:    requestID,
+		OpCode:        opCode,
+	}, nil
+}
+
+// routeOpMsgError returns a function that creates a response header and body based on the given error.
+// It sets span attribute and increments the metrics.
+func (c *conn) routeOpMsgError(rErr error) requestFunc {
+	return func(ctx context.Context, reqHeader *wire.MsgHeader, body wire.MsgBody, _ string) (resHeader *wire.MsgHeader, resBody wire.MsgBody, res *resOption) { //nolint:lll // argument list is too long
+		res = new(resOption)
+
+		protoErr := mongoerrors.Make(ctx, rErr, "", c.l)
+		resBody = protoErr.Msg()
+		res.result = protoErr.Name
+		res.argument = protoErr.Argument
+
+		var err error
+		if resHeader, err = c.responseHeader(wire.OpCodeMsg, reqHeader.RequestID, resBody); err != nil {
+			res.result = "panic"
+
+			panic(err)
+		}
+
+		return
+	}
+}
+
+// traceRequest wraps the function `f` with OpenTelemetry tracer.
+func (c *conn) traceRequest(f requestFunc, doc *wirebson.Document, l *slog.Logger) requestFunc {
+	return func(ctx context.Context, header *wire.MsgHeader, body wire.MsgBody, command string) (resHeader *wire.MsgHeader, resBody wire.MsgBody, res *resOption) { //nolint:lll // for readability
+		var comment string
+
+		if doc != nil {
+			comment, _ = doc.Get("comment").(string)
+		}
+
+		ctx, span := startSpan(ctx, comment, l)
+
+		defer func() {
+			if command == "" {
+				command = "unknown"
+			}
+
+			if res.argument == "" {
+				res.argument = "unknown"
+			}
+
+			endSpan(span, command, res.result, res.argument, header.OpCode.String(), int(header.RequestID))
+		}()
+
+		return f(ctx, header, body, command)
+	}
+}
+
+// collectMetrics wraps the function `f` with metrics collector.
+func (c *conn) collectMetrics(f requestFunc) requestFunc {
+	return func(ctx context.Context, header *wire.MsgHeader, body wire.MsgBody, command string) (resHeader *wire.MsgHeader, resBody wire.MsgBody, res *resOption) { //nolint:lll // for readability
+		c.m.Requests.WithLabelValues(header.OpCode.String(), command).Inc()
+
+		defer func() {
+			if command == "" {
+				command = "unknown"
+			}
+
+			if res.argument == "" {
+				res.argument = "unknown"
+			}
+
+			c.m.Responses.WithLabelValues(resHeader.OpCode.String(), command, res.argument, res.result).Inc()
+		}()
+
+		return f(ctx, header, body, command)
+	}
+}
+
+// startSpan gets the parent span from the comment field of the document,
+// and starts a new span with it.
+// If there is no span context, a new span without parent is started.
+func startSpan(ctx context.Context, comment string, l *slog.Logger) (context.Context, oteltrace.Span) {
+	var span oteltrace.Span
+
+	spanCtx, err := observability.SpanContextFromComment(comment)
+	if err != nil {
+		l.DebugContext(ctx, "Failed to extract span context from comment", logging.Error(err))
+		ctx, span = otel.Tracer("").Start(ctx, "")
+
+		return ctx, span
+	}
+
+	ctx = oteltrace.ContextWithRemoteSpanContext(ctx, spanCtx)
+	ctx, span = otel.Tracer("").Start(ctx, "")
+
+	return ctx, span
+}
+
+// endSpan ends the span by setting name, status and attributes to the span.
+func endSpan(span oteltrace.Span, command, result, argument, opCode string, responseTo int) {
+	must.NotBeZero(span)
+
+	if result != "ok" {
+		span.SetStatus(otelcodes.Error, result)
+	}
+
+	span.SetName(command)
+	span.SetAttributes(
+		otelattribute.String("db.ferretdb.opcode", opCode),
+		otelattribute.Int("db.ferretdb.request_id", responseTo),
+		otelattribute.String("db.ferretdb.argument", argument),
+	)
+	span.End()
 }
 
 // handleOpMsg processes OP_MSG requests.
