@@ -113,6 +113,7 @@ jobs:
       - name: Show FerretDB log
         if: always()
         run: |
+          echo "::remove-matcher owner=go::"
           cat ferretdb.log
           rm ferretdb.log
 
