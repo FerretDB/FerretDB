@@ -363,18 +363,21 @@ func (c *conn) processMessage(ctx context.Context, bufr *bufio.Reader, bufw *buf
 func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody wire.MsgBody, command string) (resHeader *wire.MsgHeader, resBody wire.MsgBody, res *resOption) { //nolint:lll // argument list is too long
 	res = new(resOption)
 
+	var metricsCommand string
+
 	defer func() {
 		if res.argument == "" {
 			res.argument = "unknown"
 		}
 	}()
 
-	if command == "" {
-		// only OP_MSG requests have command set
-		command = "unknown"
+	metricsCommand = command
+	if metricsCommand == "" {
+		// for not OP_MSG requests
+		metricsCommand = "unknown"
 	}
 
-	c.m.Requests.WithLabelValues(reqHeader.OpCode.String(), command).Inc()
+	c.m.Requests.WithLabelValues(reqHeader.OpCode.String(), metricsCommand).Inc()
 
 	resHeader = new(wire.MsgHeader)
 	var err error
