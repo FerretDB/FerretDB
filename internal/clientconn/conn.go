@@ -107,8 +107,17 @@ type newConnOpts struct {
 // requestFunc represents a function that handles a wire message and returns a wire message response.
 //
 // The `command` is populated for a successfully decoded OP_MSG.
-// The `closeConn` is set to true if the connection should be closed after the response is sent.
-type requestFunc func(ctx context.Context, header *wire.MsgHeader, msg wire.MsgBody, command string) (resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) //nolint:lll // for readability
+type requestFunc func(ctx context.Context, header *wire.MsgHeader, msg wire.MsgBody, command string) (resHeader *wire.MsgHeader, resBody wire.MsgBody, opt *resOption) //nolint:lll // for readability
+
+// resOptions represents response options.
+type resOption struct {
+	// use by tracer and metrics
+	argument string
+	result   string
+
+	// if true, the connection should be closed after the response is sent.
+	closeConn bool
+}
 
 // newConn creates a new client connection for given net.Conn.
 func newConn(opts *newConnOpts) (*conn, error) {
@@ -284,12 +293,14 @@ func (c *conn) processMessage(ctx context.Context, bufr *bufio.Reader, bufw *buf
 	var resCloseConn bool
 	var resHeader *wire.MsgHeader
 	var resBody wire.MsgBody
+	var resOpt *resOption
 
 	if c.mode != ProxyMode {
 		routeFunc = c.traceRequest(routeFunc, doc, c.l)
-		resHeader, resBody, resCloseConn = routeFunc(ctx, reqHeader, reqBody, doc.Command())
+		routeFunc = c.collectMetrics(routeFunc)
+		resHeader, resBody, resOpt = routeFunc(ctx, reqHeader, reqBody, doc.Command())
 
-		if level := c.logResponse(ctx, "Response", resHeader, resBody, resCloseConn); level > diffLogLevel {
+		if level := c.logResponse(ctx, "Response", resHeader, resBody, resOpt.closeConn); level > diffLogLevel {
 			diffLogLevel = level
 		}
 	}
@@ -349,23 +360,17 @@ func (c *conn) processMessage(ctx context.Context, bufr *bufio.Reader, bufw *buf
 // They also should not use recover(). That allows us to use fuzzing.
 //
 // Returned resBody can be nil.
-func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody wire.MsgBody, command string) (resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) { //nolint:lll // argument list is too long
-	span := oteltrace.SpanFromContext(connCtx)
+func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody wire.MsgBody, command string) (resHeader *wire.MsgHeader, resBody wire.MsgBody, res *resOption) { //nolint:lll // argument list is too long
+	res = new(resOption)
 
-	var result, argument string
 	defer func() {
-		if argument == "" {
-			argument = "unknown"
+		if res.argument == "" {
+			res.argument = "unknown"
 		}
-
-		setSpanAttribute(span, result, argument)
-
-		// extract metrics out of this function, currently it requires labels based on error
-		// TODO https://github.com/FerretDB/FerretDB/issues/1997
-		c.m.Responses.WithLabelValues(resHeader.OpCode.String(), command, argument, result).Inc()
 	}()
 
 	if command == "" {
+		// only OP_MSG requests have command set
 		command = "unknown"
 	}
 
@@ -390,8 +395,8 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		if resReply, err = c.h.CmdQuery(connCtx, query); err != nil {
 			protoErr := mongoerrors.Make(connCtx, err, "", c.l)
 			resBody = protoErr.Reply()
-			result = protoErr.Name
-			argument = protoErr.Argument
+			res.result = protoErr.Name
+			res.argument = protoErr.Argument
 
 			break
 		}
@@ -418,8 +423,8 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		err = lazyerrors.Errorf("unhandled OpCode %s", reqHeader.OpCode)
 
 		// do not panic to make fuzzing easier
-		closeConn = true
-		result = "unhandled"
+		res.closeConn = true
+		res.result = "unhandled"
 
 		c.l.ErrorContext(
 			connCtx,
@@ -433,8 +438,8 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		err = lazyerrors.Errorf("unexpected OpCode %s", reqHeader.OpCode)
 
 		// do not panic to make fuzzing easier
-		closeConn = true
-		result = "unexpected"
+		res.closeConn = true
+		res.result = "unexpected"
 
 		c.l.ErrorContext(
 			connCtx,
@@ -448,13 +453,13 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 
 	resHeader, err = c.responseHeader(resHeader.OpCode, reqHeader.RequestID, resBody)
 	if err != nil {
-		result = ""
+		res.result = ""
 
 		panic(err)
 	}
 
-	if result == "" {
-		result = "ok"
+	if res.result == "" {
+		res.result = "ok"
 	}
 
 	return
@@ -480,35 +485,19 @@ func (c *conn) responseHeader(opCode wire.OpCode, requestID int32, resBody wire.
 // routeOpMsgError returns a function that creates a response header and body based on the given error.
 // It sets span attribute and increments the metrics.
 func (c *conn) routeOpMsgError(rErr error) requestFunc {
-	return func(ctx context.Context, reqHeader *wire.MsgHeader, body wire.MsgBody, command string) (resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) { //nolint:lll // argument list is too long
-		span := oteltrace.SpanFromContext(ctx)
-		var result, argument string
-
-		defer func() {
-			setSpanAttribute(span, result, argument)
-			c.m.Responses.WithLabelValues(resHeader.OpCode.String(), command, argument, result).Inc()
-		}()
-
-		if command == "" {
-			command = "unknown"
-		}
+	return func(ctx context.Context, reqHeader *wire.MsgHeader, body wire.MsgBody, _ string) (resHeader *wire.MsgHeader, resBody wire.MsgBody, res *resOption) { //nolint:lll // argument list is too long
+		res = new(resOption)
 
 		protoErr := mongoerrors.Make(ctx, rErr, "", c.l)
 		resBody = protoErr.Msg()
-		result = protoErr.Name
-		argument = protoErr.Argument
-
-		c.m.Requests.WithLabelValues(reqHeader.OpCode.String(), command).Inc()
+		res.result = protoErr.Name
+		res.argument = protoErr.Argument
 
 		var err error
 		if resHeader, err = c.responseHeader(wire.OpCodeMsg, reqHeader.RequestID, resBody); err != nil {
-			result = ""
+			res.result = "panic"
 
 			panic(err)
-		}
-
-		if result == "" {
-			result = "ok"
 		}
 
 		return
@@ -517,7 +506,7 @@ func (c *conn) routeOpMsgError(rErr error) requestFunc {
 
 // traceRequest wraps the function `f` with OpenTelemetry tracer.
 func (c *conn) traceRequest(f requestFunc, doc *wirebson.Document, l *slog.Logger) requestFunc {
-	return func(ctx context.Context, header *wire.MsgHeader, body wire.MsgBody, command string) (*wire.MsgHeader, wire.MsgBody, bool) { //nolint:lll // for readability
+	return func(ctx context.Context, header *wire.MsgHeader, body wire.MsgBody, command string) (resHeader *wire.MsgHeader, resBody wire.MsgBody, res *resOption) { //nolint:lll // for readability
 		var comment string
 
 		if doc != nil {
@@ -526,7 +515,22 @@ func (c *conn) traceRequest(f requestFunc, doc *wirebson.Document, l *slog.Logge
 
 		ctx, span := startSpan(ctx, comment, l)
 
-		defer endSpan(span, command, header.OpCode.String(), int(header.RequestID))
+		defer func() {
+			endSpan(span, command, res.result, res.argument, header.OpCode.String(), int(header.RequestID))
+		}()
+
+		return f(ctx, header, body, command)
+	}
+}
+
+// collectMetrics wraps the function `f` with metrics collector.
+func (c *conn) collectMetrics(f requestFunc) requestFunc {
+	return func(ctx context.Context, header *wire.MsgHeader, body wire.MsgBody, command string) (resHeader *wire.MsgHeader, resBody wire.MsgBody, res *resOption) { //nolint:lll // for readability
+		c.m.Requests.WithLabelValues(header.OpCode.String(), command).Inc()
+
+		defer func() {
+			c.m.Responses.WithLabelValues(resHeader.OpCode.String(), command, res.argument, res.result).Inc()
+		}()
 
 		return f(ctx, header, body, command)
 	}
@@ -552,29 +556,19 @@ func startSpan(ctx context.Context, comment string, l *slog.Logger) (context.Con
 	return ctx, span
 }
 
-// setSpanAttribute sets the span status and argument attribute.
-func setSpanAttribute(span oteltrace.Span, result, argument string) {
+// endSpan ends the span by setting name, status and attributes to the span.
+func endSpan(span oteltrace.Span, command, result, argument, opCode string, responseTo int) {
 	must.NotBeZero(span)
-
-	if result == "" {
-		result = "panic"
-	}
 
 	if result != "ok" {
 		span.SetStatus(otelcodes.Error, result)
 	}
 
-	span.SetAttributes(otelattribute.String("db.ferretdb.argument", argument))
-}
-
-// endSpan ends the span by setting name and attributes to the span.
-func endSpan(span oteltrace.Span, command, opCode string, responseTo int) {
-	must.NotBeZero(span)
-
 	span.SetName(command)
 	span.SetAttributes(
 		otelattribute.String("db.ferretdb.opcode", opCode),
 		otelattribute.Int("db.ferretdb.request_id", responseTo),
+		otelattribute.String("db.ferretdb.argument", argument),
 	)
 	span.End()
 }
