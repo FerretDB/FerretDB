@@ -37,6 +37,8 @@ const (
 	maxWireVersion = int32(21)
 
 	// Maximal supported BSON document size (enforced in DocumentDB by BSON_MAX_ALLOWED_SIZE constant).
+	// TODO https://github.com/microsoft/documentdb/issues/67
+	// TODO https://github.com/FerretDB/FerretDB/issues/4930
 	maxBsonObjectSize = int32(16777216)
 
 	// Maximum size of a batch for inserting data.
