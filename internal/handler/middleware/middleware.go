@@ -18,10 +18,31 @@ package middleware
 import (
 	"context"
 
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
 )
 
-// HandlerFunc represents a function/method that processes a single command.
+// FIXME
+type MsgRequest struct {
+	*wire.OpMsg
+}
+
+// FIXME
+type MsgResponse struct {
+	*wire.OpMsg
+}
+
+func Response(doc wirebson.AnyDocument) (*MsgResponse, error) {
+	msg, err := wire.NewOpMsg(doc)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &MsgResponse{OpMsg: msg}, nil
+}
+
+// MsgHandlerFunc represents a function/method that processes a single OP_MSG command.
 //
 // The passed context is canceled when the client disconnects.
-type HandlerFunc func(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
+type MsgHandlerFunc func(ctx context.Context, req *MsgRequest) (resp *MsgResponse, err error)

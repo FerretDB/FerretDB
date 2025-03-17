@@ -20,6 +20,7 @@ import (
 
 	"github.com/FerretDB/wire"
 
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
@@ -27,8 +28,8 @@ import (
 // MsgGetMore implements `getMore` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgGetMore(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	spec, err := msg.RawDocument()
+func (h *Handler) MsgGetMore(connCtx context.Context, req *middleware.MsgRequest) (*wire.OpMsg, error) {
+	spec, err := req.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -66,9 +67,5 @@ func (h *Handler) MsgGetMore(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 		return nil, lazyerrors.Error(err)
 	}
 
-	if msg, err = wire.NewOpMsg(page); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return msg, nil
+	return wire.NewOpMsg(page)
 }
