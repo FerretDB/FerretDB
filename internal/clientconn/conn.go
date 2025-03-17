@@ -352,7 +352,7 @@ func (c *conn) processMessage(ctx context.Context, bufr *bufio.Reader, bufw *buf
 func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody wire.MsgBody, command string) (resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) { //nolint:lll // argument list is too long
 	span := oteltrace.SpanFromContext(connCtx)
 
-	var result, argument string
+	var result, argument, metricsCommand string
 	defer func() {
 		if argument == "" {
 			argument = "unknown"
@@ -362,14 +362,16 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 
 		// extract metrics out of this function, currently it requires labels based on error
 		// TODO https://github.com/FerretDB/FerretDB/issues/1997
-		c.m.Responses.WithLabelValues(resHeader.OpCode.String(), command, argument, result).Inc()
+		c.m.Responses.WithLabelValues(resHeader.OpCode.String(), metricsCommand, argument, result).Inc()
 	}()
 
-	if command == "" {
-		command = "unknown"
+	metricsCommand = command
+	if metricsCommand == "" {
+		// for not OP_MSG requests
+		metricsCommand = "unknown"
 	}
 
-	c.m.Requests.WithLabelValues(reqHeader.OpCode.String(), command).Inc()
+	c.m.Requests.WithLabelValues(reqHeader.OpCode.String(), metricsCommand).Inc()
 
 	resHeader = new(wire.MsgHeader)
 	var err error
