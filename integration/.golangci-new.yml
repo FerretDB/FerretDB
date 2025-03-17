@@ -5,19 +5,20 @@
 run:
   timeout: 3m
 
+# ../bin/golangci-lint linters -c .golangci-new.yml
 linters-settings:
   asasalint:
     exclude:
       - ^lazyerrors\.Errorf$
     use-builtin-exclusions: true
     ignore-test: false
+  copyloopvar:
+    check-alias: true
   errcheck:
     check-type-assertions: false
     check-blank: false
     disable-default-exclusions: false
     exclude-functions:
-      - (*database/sql.Rows).Close
-      - (*github.com/FerretDB/FerretDB/internal/util/fsql.Rows).Close
       - (*go.mongodb.org/mongo-driver/mongo.Cursor).Close
   errorlint:
     # see caveats at https://github.com/polyfloyd/go-errorlint#fmterrorf-wrapping-verb
@@ -76,28 +77,33 @@ linters:
     - misspell
     - nolintlint
     - sloglint
+    - tagalign
+    - unparam
     - unused
     - whitespace
 
     # TODO https://github.com/FerretDB/FerretDB/issues/2748
     - bidichk
     - bodyclose
+    - canonicalheader
     - containedctx
     - contextcheck
     - cyclop
     - decorder
     - dogsled
     - dupl
+    - dupword
     - durationcheck
     - err113
     - errchkjson
     - errname
-    - execinquery
     - exhaustruct
-    - exportloopref
+    - fatcontext
     - forbidigo
     - forcetypeassert
     - funlen
+    - ginkgolinter
+    - gocheckcompilerdirectives
     - gochecknoglobals
     - gochecknoinits
     - gocognit
@@ -105,15 +111,22 @@ linters:
     - gocyclo
     - gofmt
     - gofumpt
-    - gomnd
     - gomoddirectives
     - goprintffuncname
     - gosec
+    - gosmopolitan
     - grouper
+    - iface
     - inamedparam
+    - interfacebloat
+    - intrange
     - ireturn
+    - loggercheck
     - maintidx
     - makezero
+    - mirror
+    - mnd
+    - musttag
     - nakedret
     - nestif
     - nilerr
@@ -127,18 +140,22 @@ linters:
     - predeclared
     - promlinter
     - protogetter
+    - reassign
+    - recvcheck
     - rowserrcheck
     - sloglint
+    - spancheck
     - sqlclosecheck
     - stylecheck
     - tagliatelle
     - tenv
+    - testableexamples
     - testifylint
     - thelper
     - tparallel
     - typecheck
     - unconvert
-    - unparam
+    - usestdlibvars
     - varnamelen
     - wastedassign
     - wrapcheck
@@ -156,6 +173,8 @@ issues:
 
   exclude-use-default: false
   exclude-rules:
-    # that's a valid usage of bson.D
+    # that's a valid usage of bson.D / bson.E
     - linters: [govet]
       text: "composites: go.mongodb.org/mongo-driver/bson/primitive.E struct literal uses unkeyed fields"
+    - linters: [govet]
+      text: "composites: go.mongodb.org/mongo-driver/bson.E struct literal uses unkeyed fields"

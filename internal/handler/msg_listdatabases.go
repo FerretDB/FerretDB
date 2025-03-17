@@ -17,107 +17,36 @@ package handler
 import (
 	"context"
 
-	"go.uber.org/zap"
+	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
+	"github.com/jackc/pgx/v5"
 
-	"github.com/FerretDB/FerretDB/internal/handler/common"
-	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
+	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
 // MsgListDatabases implements `listDatabases` command.
-func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := msg.Document()
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgListDatabases(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	spec, err := msg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	var filter *types.Document
-	if filter, err = common.GetOptionalParam(document, "filter", filter); err != nil {
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
 		return nil, err
 	}
 
-	common.Ignored(document, h.L, "comment")
+	var res wirebson.RawDocument
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3769
-	common.Ignored(document, h.L, "authorizedDatabases")
-
-	var nameOnly bool
-
-	if v, _ := document.Get("nameOnly"); v != nil {
-		if nameOnly, err = handlerparams.GetBoolOptionalParam("nameOnly", v); err != nil {
-			return nil, err
-		}
-	}
-
-	res, err := h.b.ListDatabases(ctx, nil)
+	err = h.Pool.WithConn(func(conn *pgx.Conn) error {
+		res, err = documentdb_api.ListDatabases(connCtx, conn, h.L, spec)
+		return err
+	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	var totalSize int64
-
-	databases := types.MakeArray(len(res.Databases))
-
-	for _, dbInfo := range res.Databases {
-		db, err := h.b.Database(dbInfo.Name)
-		if err != nil {
-			h.L.Warn("Failed to get database", zap.Error(err))
-			continue
-		}
-
-		stats, err := db.Stats(ctx, nil)
-		if err != nil {
-			h.L.Warn("Failed to get database stats", zap.Error(err))
-			continue
-		}
-
-		d := must.NotFail(types.NewDocument(
-			"name", dbInfo.Name,
-			"sizeOnDisk", stats.SizeTotal,
-			"empty", stats.SizeTotal == 0,
-		))
-
-		matches, err := common.FilterDocument(d, filter)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		if matches {
-			if nameOnly {
-				d = must.NotFail(types.NewDocument(
-					"name", dbInfo.Name,
-				))
-			} else {
-				totalSize += stats.SizeTotal
-			}
-
-			databases.Append(d)
-		}
-	}
-
-	var reply wire.OpMsg
-
-	switch {
-	case nameOnly:
-		must.NoError(reply.SetSections(wire.MakeOpMsgSection(
-			must.NotFail(types.NewDocument(
-				"databases", databases,
-				"ok", float64(1),
-			)),
-		)))
-	default:
-		must.NoError(reply.SetSections(wire.MakeOpMsgSection(
-			must.NotFail(types.NewDocument(
-				"databases", databases,
-				"totalSize", totalSize,
-				"totalSizeMb", totalSize/1024/1024,
-				"ok", float64(1),
-			)),
-		)))
-	}
-
-	return &reply, nil
+	return wire.NewOpMsg(res)
 }

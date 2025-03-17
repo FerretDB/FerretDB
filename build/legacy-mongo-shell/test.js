@@ -1,7 +1,7 @@
 // Please do not merge changes in this file.
 
-(function() {
-  'use strict';
+(function () {
+  "use strict";
 
   const maxBsonObjectSize = db.hello().maxBsonObjectSize;
   const docOverhead = Object.bsonsize({_id: new ObjectId(), x: ''});

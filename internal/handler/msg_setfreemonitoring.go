@@ -18,23 +18,35 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/FerretDB/FerretDB/internal/handler/common"
-	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/util/state"
-	"github.com/FerretDB/FerretDB/internal/wire"
+	"github.com/AlekSi/pointer"
+	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
+
+	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
+	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 )
 
 // MsgSetFreeMonitoring implements `setFreeMonitoring` command.
-func (h *Handler) MsgSetFreeMonitoring(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := msg.Document()
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgSetFreeMonitoring(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	spec, err := msg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	action, err := common.GetRequiredParam[string](document, "action")
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+		return nil, err
+	}
+
+	doc, err := spec.Decode()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	action, err := getRequiredParam[string](doc, "action")
 	if err != nil {
 		return nil, err
 	}
@@ -47,20 +59,20 @@ func (h *Handler) MsgSetFreeMonitoring(ctx context.Context, msg *wire.OpMsg) (*w
 	case "disable":
 		telemetryState = false
 	default:
-		return nil, handlererrors.NewCommandErrorMsgWithArgument(
-			handlererrors.ErrBadValue,
+		return nil, mongoerrors.NewWithArgument(
+			mongoerrors.ErrBadValue,
 			fmt.Sprintf(
 				"Enumeration value '%s' for field '%s' is not a valid value.",
 				action,
-				document.Command()+".action",
+				doc.Command()+".action",
 			),
 			"action",
 		)
 	}
 
 	if h.StateProvider.Get().TelemetryLocked {
-		return nil, handlererrors.NewCommandErrorMsgWithArgument(
-			handlererrors.ErrFreeMonitoringDisabled,
+		return nil, mongoerrors.NewWithArgument(
+			mongoerrors.ErrLocation50840,
 			"Free Monitoring has been disabled via the command-line and/or config file",
 			action,
 		)
@@ -68,20 +80,20 @@ func (h *Handler) MsgSetFreeMonitoring(ctx context.Context, msg *wire.OpMsg) (*w
 
 	if err := h.StateProvider.Update(func(s *state.State) {
 		if telemetryState {
-			s.EnableTelemetry()
+			s.Telemetry = pointer.ToBool(true)
 		} else {
-			s.DisableTelemetry()
+			s.Telemetry = pointer.ToBool(false)
+			s.LatestVersion = ""
+			s.UpdateInfo = ""
+			s.UpdateAvailable = false
 		}
 	}); err != nil {
 		return nil, err
 	}
 
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
-		must.NotFail(types.NewDocument(
-			"ok", float64(1),
-		)),
-	)))
+	res := must.NotFail(wirebson.NewDocument(
+		"ok", float64(1),
+	))
 
-	return &reply, nil
+	return wire.NewOpMsg(res)
 }

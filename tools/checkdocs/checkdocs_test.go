@@ -16,18 +16,47 @@ package main
 
 import (
 	"bytes"
+	"log"
 	"path/filepath"
+	"strings"
 	"testing"
 
+	"github.com/FerretDB/gh"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/FerretDB/FerretDB/v2/tools/github"
 )
 
-func TestReal(t *testing.T) {
-	files, err := filepath.Glob(filepath.Join("..", "..", "website", "blog", "*.md"))
+func TestBlogs(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in -short mode")
+	}
+
+	blogFiles, err := filepath.Glob(filepath.Join("..", "..", "website", "blog", "*.md"))
 	require.NoError(t, err)
 
-	checkFiles(files, t.Logf, t.Fatalf)
+	err = checkBlogFiles(blogFiles)
+	require.NoError(t, err)
+}
+
+func TestDocs(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in -short mode")
+	}
+
+	docFiles, err := getMarkdownFiles(filepath.Join("..", "..", "website", "docs"))
+	require.NoError(t, err)
+	require.NotEmpty(t, docFiles)
+
+	p, err := github.CacheFilePath()
+	require.NoError(t, err)
+
+	client, err := github.NewClient(p, log.Printf, gh.NoopPrintf, gh.NoopPrintf)
+	require.NoError(t, err)
+
+	err = checkDocFiles(client, docFiles)
+	require.NoError(t, err)
 }
 
 var fm = bytes.TrimSpace([]byte(`
@@ -66,4 +95,65 @@ func TestVerifyTags(t *testing.T) {
 func TestVerifyTruncateString(t *testing.T) {
 	err := verifyTruncateString(fm)
 	assert.EqualError(t, err, "<!--truncate--> must be included to have \"Read more\" link on the homepage")
+}
+
+func TestCheckSupportedCommands(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in -short mode")
+	}
+
+	var buf bytes.Buffer
+	l := log.New(&buf, "", 0)
+
+	p, err := github.CacheFilePath()
+	require.NoError(t, err)
+
+	client, err := github.NewClient(p, log.Printf, gh.NoopPrintf, gh.NoopPrintf)
+	require.NoError(t, err)
+
+	for name, tc := range map[string]struct {
+		Payload        string
+		ExpectedOutput string
+	}{
+		"OpenIssueLink": {
+			Payload:        "<!-- TODO https://github.com/FerretDB/FerretDB/issues/178 -->",
+			ExpectedOutput: "",
+		},
+
+		"ClosedIssueLink": {
+			Payload:        "<!-- TODO https://github.com/FerretDB/FerretDB/issues/1 -->",
+			ExpectedOutput: "linked issue https://github.com/FerretDB/FerretDB/issues/1 is closed in example.md\n",
+		},
+
+		"AnyLabelClosedIssue": {
+			Payload:        "[IssueLabel](https://github.com/FerretDB/FerretDB/issues/1)",
+			ExpectedOutput: "linked issue https://github.com/FerretDB/FerretDB/issues/1 is closed in example.md\n",
+		},
+		"ClosedIssue": {
+			Payload:        "https://github.com/FerretDB/FerretDB/issues/1",
+			ExpectedOutput: "linked issue https://github.com/FerretDB/FerretDB/issues/1 is closed in example.md\n",
+		},
+		"IncorrectIssueNumber": {
+			Payload:        "https://github.com/FerretDB/FerretDB/issues/0",
+			ExpectedOutput: "incorrect issue number: https://github.com/FerretDB/FerretDB/issues/0 in example.md\n",
+		},
+		"DocumentDBIssue": {
+			Payload:        "An example issue is https://github.com/microsoft/documentdb/issues/1.",
+			ExpectedOutput: "linked issue https://github.com/microsoft/documentdb/issues/1 is closed in example.md\n",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			buf.Reset()
+			r := strings.NewReader(tc.Payload)
+
+			var failed bool
+
+			failed, err = checkIssueURLs(client, r, "example.md", l)
+			require.NoError(t, err)
+			assert.Equal(t, tc.ExpectedOutput != "", failed)
+
+			actualOutput := buf.String()
+			assert.Equal(t, tc.ExpectedOutput, actualOutput)
+		})
+	}
 }

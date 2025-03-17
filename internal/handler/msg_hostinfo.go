@@ -24,14 +24,26 @@ import (
 	"strings"
 	"time"
 
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
+	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
+
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // MsgHostInfo implements `hostInfo` command.
-func (h *Handler) MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+//
+// The passed context is canceled when the client connection is closed.
+func (h *Handler) MsgHostInfo(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	spec, err := msg.RawDocument()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+		return nil, err
+	}
+
 	now := time.Now().UTC()
 
 	hostname, err := os.Hostname()
@@ -65,27 +77,24 @@ func (h *Handler) MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		os = "Windows"
 	}
 
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.MakeOpMsgSection(
-		must.NotFail(types.NewDocument(
-			"system", must.NotFail(types.NewDocument(
-				"currentTime", now,
-				"hostname", hostname,
-				"cpuAddrSize", int32(strconv.IntSize),
-				"numCores", int32(runtime.GOMAXPROCS(-1)),
-				"cpuArch", runtime.GOARCH,
-			)),
-			"os", must.NotFail(types.NewDocument(
-				"type", os,
-				"name", osName,
-				"version", osVersion,
-			)),
-			"extra", must.NotFail(types.NewDocument()),
-			"ok", float64(1),
+	res := must.NotFail(wirebson.NewDocument(
+		"system", must.NotFail(wirebson.NewDocument(
+			"currentTime", now,
+			"hostname", hostname,
+			"cpuAddrSize", int32(strconv.IntSize),
+			"numCores", int32(runtime.GOMAXPROCS(-1)),
+			"cpuArch", runtime.GOARCH,
 		)),
-	)))
+		"os", must.NotFail(wirebson.NewDocument(
+			"type", os,
+			"name", osName,
+			"version", osVersion,
+		)),
+		"extra", must.NotFail(wirebson.NewDocument()),
+		"ok", float64(1),
+	))
 
-	return &reply, nil
+	return wire.NewOpMsg(res)
 }
 
 // parseOSRelease parses the /etc/os-release or /usr/lib/os-release file content,

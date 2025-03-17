@@ -1,0 +1,129 @@
+---
+name: Test scripts
+on:
+  pull_request:
+    types:
+      - unlabeled # if GitHub Actions stuck, add and remove "not ready" label to force rebuild
+      - opened
+      - reopened
+      - synchronize
+    paths:
+      - build/legacy-mongo-shell/*.js
+      - build/testscripts/*.sql
+  push:
+    branches:
+      - main
+      - main-*
+      - releases/*
+  schedule:
+    - cron: "12 0 * * *"
+
+# Do not run this workflow in parallel for any PR change.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+env:
+  GOPATH: /home/runner/go
+  GOCACHE: /home/runner/go/cache
+  GOLANGCI_LINT_CACHE: /home/runner/go/cache/lint
+  GOMODCACHE: /home/runner/go/mod
+  GOPROXY: https://proxy.golang.org
+  GOTOOLCHAIN: local
+
+jobs:
+  run:
+    name: Run test scripts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
+
+    steps:
+      # TODO https://github.com/FerretDB/github-actions/issues/211
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # for `git describe` to work
+          lfs: false # LFS is used only by website
+
+      - name: Setup Go
+        uses: FerretDB/github-actions/setup-go@main
+        with:
+          cache-key: testscripts
+
+      - name: Install Task
+        run: go generate -x
+        working-directory: tools
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Start environment
+        run: bin/task env-up-detach
+
+      - name: Run init
+        run: bin/task init
+
+      - name: Build bin/ferretdb
+        run: bin/task build-host
+
+      - name: Wait for and setup environment
+        run: bin/task env-setup
+
+      - name: Start FerretDB (no auth) in the background
+        run: >
+          bin/ferretdb
+          --listen-addr=:27017
+          --proxy-addr=127.0.0.1:37017
+          --no-auth
+          --mode=diff-normal
+          --postgresql-url='postgres://username:password@127.0.0.1:5432/postgres'
+          2> ferretdb.log &
+
+      - name: Run testsql for PostgreSQL
+        if: always()
+        run: bin/task testsql
+
+      - name: Run testjs for MongoDB (no auth)
+        if: always()
+        run: bin/task testjs TESTJS_PORT=37017
+
+      - name: Run testjs for FerretDB (no auth)
+        if: always()
+        run: bin/task testjs
+
+      - name: Compress FerretDB log before upload
+        if: failure()
+        run: zip -q -9 ferretdb-log.zip ferretdb.log
+
+      - name: Upload FerretDB log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ferretdb-log
+          path: ferretdb-log.zip
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Show FerretDB log
+        if: always()
+        run: |
+          cat ferretdb.log
+          rm ferretdb.log
+
+      # we don't want them on CI
+      - name: Clean test and fuzz caches
+        if: always()
+        run: go clean -testcache -fuzzcache
+
+      - name: Check dirty
+        if: always()
+        run: |
+          git status --untracked-files --ignored
+          git status
+          git diff --exit-code

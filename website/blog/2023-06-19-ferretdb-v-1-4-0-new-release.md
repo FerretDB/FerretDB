@@ -8,7 +8,7 @@ image: /img/blog/ferretdb-v1.4.0.jpg
 tags: [release]
 ---
 
-![FerretDB v.1.4.0](/img/blog/ferretdb-v1.4.0.jpg)
+![FerretDB v1.4.0](/img/blog/ferretdb-v1.4.0.jpg)
 
 We're delighted to announce the latest [FerretDB](https://www.ferretdb.io/) release – v1.4.0, which now includes options for creating unique indexes, and support for more aggregation pipeline stages, among other interesting updates.
 
@@ -37,19 +37,19 @@ You can use the `$type` operator in a `$project` stage to return the BSON data t
 
 Suppose you have the following document:
 
-```json5
+```json
 [
   {
-    _id: 1,
-    name: 'John',
-    age: 35,
-    salary: 5000
+    "_id": 1,
+    "name": "John",
+    "age": 35,
+    "salary": 5000
   },
   {
-    _id: 2,
-    name: 'Robert',
-    age: 42,
-    salary: 7000
+    "_id": 2,
+    "name": "Robert",
+    "age": 42,
+    "salary": 7000
   }
 ]
 ```
@@ -70,8 +70,8 @@ db.employees.aggregate([
 
 The output will be:
 
-```json5
-[
+```js
+response = [
   { _id: 1, name: 'John', age: 35, ageType: 'int' },
   { _id: 2, name: 'Robert', age: 42, ageType: 'int' }
 ]
@@ -99,8 +99,8 @@ db.employees.aggregate([
 
 The output will be:
 
-```json5
-[
+```js
+response = [
   {
     _id: 1,
     name: 'John',
@@ -134,8 +134,8 @@ db.employees.aggregate([
 
 The output:
 
-```json5
-[
+```js
+response = [
   {
     _id: 1,
     name: 'John',
@@ -165,8 +165,8 @@ db.employees.aggregate([
 
 Output:
 
-```json5
-[
+```js
+response = [
   { _id: 1, name: 'John', age: 35 },
   { _id: 2, name: 'Robert', age: 42 }
 ]

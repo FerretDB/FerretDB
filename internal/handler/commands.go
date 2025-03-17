@@ -16,8 +16,13 @@ package handler
 
 import (
 	"context"
+	"fmt"
 
-	"github.com/FerretDB/FerretDB/internal/wire"
+	"github.com/FerretDB/wire"
+
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
+	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 )
 
 // command represents a handler for single command.
@@ -28,7 +33,7 @@ type command struct {
 	// Handler processes this command.
 	//
 	// The passed context is canceled when the client disconnects.
-	Handler func(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
+	Handler middleware.HandlerFunc
 
 	// Help is shown in the `listCommands` command output.
 	// If empty, that command is hidden, but still can be used.
@@ -37,11 +42,16 @@ type command struct {
 
 // initCommands initializes the commands map for that handler instance.
 func (h *Handler) initCommands() {
-	h.commands = map[string]command{
+	commands := map[string]*command{
 		// sorted alphabetically
 		"aggregate": {
 			Handler: h.MsgAggregate,
 			Help:    "Returns aggregated data.",
+		},
+		"authenticate": {
+			// TODO https://github.com/FerretDB/FerretDB/issues/1731
+			anonymous: true,
+			Help:      "", // hidden while not implemented
 		},
 		"buildInfo": {
 			Handler:   h.MsgBuildInfo,
@@ -52,6 +62,10 @@ func (h *Handler) initCommands() {
 			Handler:   h.MsgBuildInfo,
 			anonymous: true,
 			Help:      "", // hidden
+		},
+		"bulkWrite": {
+			// TODO https://github.com/FerretDB/FerretDB/issues/4910
+			Help: "", // hidden while not implemented
 		},
 		"collMod": {
 			Handler: h.MsgCollMod,
@@ -64,6 +78,11 @@ func (h *Handler) initCommands() {
 		"compact": {
 			Handler: h.MsgCompact,
 			Help:    "Reduces the disk space collection takes and refreshes its statistics.",
+		},
+		"connPoolStats": {
+			// TODO https://github.com/FerretDB/FerretDB/issues/4909
+			anonymous: true,
+			Help:      "", // hidden while not implemented
 		},
 		"connectionStatus": {
 			Handler:   h.MsgConnectionStatus,
@@ -82,6 +101,10 @@ func (h *Handler) initCommands() {
 		"createIndexes": {
 			Handler: h.MsgCreateIndexes,
 			Help:    "Creates indexes on a collection.",
+		},
+		"createUser": {
+			Handler: h.MsgCreateUser,
+			Help:    "Creates a new user.",
 		},
 		"currentOp": {
 			Handler: h.MsgCurrentOp,
@@ -115,6 +138,10 @@ func (h *Handler) initCommands() {
 			Handler: h.MsgDrop,
 			Help:    "Drops the collection.",
 		},
+		"dropAllUsersFromDatabase": {
+			Handler: h.MsgDropAllUsersFromDatabase,
+			Help:    "Drops all user from database.",
+		},
 		"dropDatabase": {
 			Handler: h.MsgDropDatabase,
 			Help:    "Drops production database.",
@@ -122,6 +149,14 @@ func (h *Handler) initCommands() {
 		"dropIndexes": {
 			Handler: h.MsgDropIndexes,
 			Help:    "Drops indexes on a collection.",
+		},
+		"dropUser": {
+			Handler: h.MsgDropUser,
+			Help:    "Drops user.",
+		},
+		"endSessions": {
+			Handler: h.MsgEndSessions,
+			Help:    "Marks sessions as expired.",
 		},
 		"explain": {
 			Handler: h.MsgExplain,
@@ -182,9 +217,21 @@ func (h *Handler) initCommands() {
 			anonymous: true,
 			Help:      "", // hidden
 		},
+		"killAllSessions": {
+			Handler: h.MsgKillAllSessions,
+			Help:    "Kills all sessions.",
+		},
+		"killAllSessionsByPattern": {
+			Handler: h.MsgKillAllSessionsByPattern,
+			Help:    "Kills all sessions that match the pattern.",
+		},
 		"killCursors": {
 			Handler: h.MsgKillCursors,
 			Help:    "Closes server cursors.",
+		},
+		"killSessions": {
+			Handler: h.MsgKillSessions,
+			Help:    "Kills sessions.",
 		},
 		"listCollections": {
 			Handler: h.MsgListCollections,
@@ -212,6 +259,14 @@ func (h *Handler) initCommands() {
 			anonymous: true,
 			Help:      "Returns a pong response.",
 		},
+		"refreshSessions": {
+			Handler: h.MsgRefreshSessions,
+			Help:    "Updates the last used time of sessions.",
+		},
+		"reIndex": {
+			Handler: h.MsgReIndex,
+			Help:    "Drops and recreates all indexes except default _id index of a collection.",
+		},
 		"renameCollection": {
 			Handler: h.MsgRenameCollection,
 			Help:    "Changes the name of an existing collection.",
@@ -234,9 +289,21 @@ func (h *Handler) initCommands() {
 			Handler: h.MsgSetFreeMonitoring,
 			Help:    "Toggles free monitoring.",
 		},
+		"startSession": {
+			Handler: h.MsgStartSession,
+			Help:    "Returns a session.",
+		},
 		"update": {
 			Handler: h.MsgUpdate,
 			Help:    "Updates documents that are matched by the query.",
+		},
+		"updateUser": {
+			Handler: h.MsgUpdateUser,
+			Help:    "Updates user.",
+		},
+		"usersInfo": {
+			Handler: h.MsgUsersInfo,
+			Help:    "Returns information about users.",
 		},
 		"validate": {
 			Handler: h.MsgValidate,
@@ -250,57 +317,32 @@ func (h *Handler) initCommands() {
 		// please keep sorted alphabetically
 	}
 
-	if h.EnableNewAuth {
-		// sorted alphabetically
-		h.commands["createUser"] = command{
-			Handler: h.MsgCreateUser,
-			Help:    "Creates a new user.",
-		}
-		h.commands["dropAllUsersFromDatabase"] = command{
-			Handler: h.MsgDropAllUsersFromDatabase,
-			Help:    "Drops all user from database.",
-		}
-		h.commands["dropUser"] = command{
-			Handler: h.MsgDropUser,
-			Help:    "Drops user.",
-		}
-		h.commands["updateUser"] = command{
-			Handler: h.MsgUpdateUser,
-			Help:    "Updates user.",
-		}
-		h.commands["usersInfo"] = command{
-			Handler: h.MsgUsersInfo,
-			Help:    "Returns information about users.",
-		}
-		// please keep sorted alphabetically
-	}
+	h.commands = make(map[string]*command, len(commands))
 
-	for name, cmd := range h.commands {
-		h.commands[name] = command{
-			Handler:   h.authenticateWrapper(cmd),
-			anonymous: cmd.anonymous,
-			Help:      cmd.Help,
+	for name, cmd := range commands {
+		if cmd.Handler == nil {
+			cmd.Handler = notImplemented(name)
 		}
+
+		cmd.Handler = middleware.Observability(cmd.Handler, logging.WithName(h.L, "observability"))
+
+		if h.Auth && !cmd.anonymous {
+			cmd.Handler = middleware.Auth(cmd.Handler, logging.WithName(h.L, "auth"), name)
+		}
+
+		h.commands[name] = cmd
 	}
 }
 
 // Commands returns a map of enabled commands.
-func (h *Handler) Commands() map[string]command {
+func (h *Handler) Commands() map[string]*command {
 	return h.commands
 }
 
-// authenticateWrapper wraps the command handler with the authentication check.
-// If anonymous is true, the command handler is executed without authentication.
-func (h *Handler) authenticateWrapper(cmd command) func(context.Context, *wire.OpMsg) (*wire.OpMsg, error) {
-	return func(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-		if cmd.anonymous {
-			return cmd.Handler(ctx, msg)
-		}
-
-		if err := h.authenticate(ctx); err != nil {
-			return nil, err
-		}
-
-		return cmd.Handler(ctx, msg)
+// notImplemented returns a handler that returns an error indicating that the command is not implemented.
+func notImplemented(command string) middleware.HandlerFunc {
+	return func(context.Context, *wire.OpMsg) (*wire.OpMsg, error) {
+		msg := fmt.Sprintf("Command %s is not implemented", command)
+		return nil, mongoerrors.New(mongoerrors.ErrNotImplemented, msg)
 	}
 }
