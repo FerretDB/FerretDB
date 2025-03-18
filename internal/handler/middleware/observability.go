@@ -17,15 +17,13 @@ package middleware
 import (
 	"context"
 	"log/slog"
-
-	"github.com/FerretDB/wire"
 )
 
 // Observability is a middleware that will wrap the command handler with logs, traces, and metrics.
 //
 // TODO https://github.com/FerretDB/FerretDB/issues/4439
-func Observability(next HandlerFunc, l *slog.Logger) HandlerFunc {
-	return func(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-		return next(ctx, msg)
+func Observability(next MsgHandlerFunc, l *slog.Logger) MsgHandlerFunc {
+	return func(ctx context.Context, req *MsgRequest) (*MsgResponse, error) {
+		return next(ctx, req)
 	}
 }

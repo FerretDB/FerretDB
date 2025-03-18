@@ -24,10 +24,10 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/build/version"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
@@ -36,8 +36,8 @@ import (
 // MsgExplain implements `explain` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgExplain(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	spec, err := msg.RawDocument()
+func (h *Handler) MsgExplain(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
+	spec, err := req.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -165,12 +165,7 @@ func (h *Handler) MsgExplain(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 		return nil, lazyerrors.Error(err)
 	}
 
-	reply, err := res.Encode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return wire.NewOpMsg(reply)
+	return middleware.Response(res)
 }
 
 // unmarshalExplain unmarshalls the plan from EXPLAIN postgreSQL command.

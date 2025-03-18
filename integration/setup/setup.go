@@ -307,7 +307,7 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 func InsertProviders(tb testing.TB, ctx context.Context, collection *mongo.Collection, providers ...shareddata.Provider) (inserted bool) {
 	tb.Helper()
 
-	ctx, span := otel.Tracer("").Start(ctx, "insertProviders")
+	ctx, span := otel.Tracer("").Start(ctx, "InsertProviders")
 	defer span.End()
 
 	for _, provider := range providers {
@@ -330,13 +330,8 @@ func InsertProviders(tb testing.TB, ctx context.Context, collection *mongo.Colle
 func insertBenchmarkProvider(tb testing.TB, ctx context.Context, collection *mongo.Collection, provider shareddata.BenchmarkProvider) (inserted bool) {
 	tb.Helper()
 
-	for docs := range xiter.Chunk(provider.NewIter(), 100) {
-		insertDocs := make([]any, len(docs))
-		for i, doc := range docs {
-			insertDocs[i] = doc
-		}
-
-		res, err := collection.InsertMany(ctx, insertDocs)
+	for docs := range xiter.Chunk(provider.Docs(), 100) {
+		res, err := collection.InsertMany(ctx, docs)
 		require.NoError(tb, err)
 		require.Len(tb, res.InsertedIDs, len(docs))
 
