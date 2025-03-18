@@ -24,16 +24,18 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
-// FIXME
+// MsgRequest represents incoming request from the client.
+// It may come from the wire protocol connection or from the Data API server.
 type MsgRequest struct {
 	*wire.OpMsg
 }
 
-// FIXME
+// MsgResponse represent outgoing response to the client.
 type MsgResponse struct {
 	*wire.OpMsg
 }
 
+// Response constructs a [*MsgResponse] from a single document.
 func Response(doc wirebson.AnyDocument) (*MsgResponse, error) {
 	msg, err := wire.NewOpMsg(doc)
 	if err != nil {

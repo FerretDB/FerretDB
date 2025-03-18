@@ -45,7 +45,9 @@ func Auth(next MsgHandlerFunc, l *slog.Logger, command string) MsgHandlerFunc {
 			return next(ctx, req)
 		}
 
-		msg := fmt.Sprintf("Command %s requires authentication", command)
-		return nil, mongoerrors.New(mongoerrors.ErrUnauthorized, msg)
+		return nil, mongoerrors.New(
+			mongoerrors.ErrUnauthorized,
+			fmt.Sprintf("Command %s requires authentication", command),
+		)
 	}
 }

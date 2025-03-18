@@ -340,7 +340,9 @@ func (h *Handler) Commands() map[string]*command {
 // notImplemented returns a handler that returns an error indicating that the command is not implemented.
 func notImplemented(command string) middleware.MsgHandlerFunc {
 	return func(context.Context, *middleware.MsgRequest) (*middleware.MsgResponse, error) {
-		msg := fmt.Sprintf("Command %s is not implemented", command)
-		return nil, mongoerrors.New(mongoerrors.ErrNotImplemented, msg)
+		return nil, mongoerrors.New(
+			mongoerrors.ErrNotImplemented,
+			fmt.Sprintf("Command %s is not implemented", command),
+		)
 	}
 }
