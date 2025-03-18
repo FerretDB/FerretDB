@@ -58,13 +58,13 @@ import (
 //
 // Keep structure and order in sync with documentation and embeddable package.
 //
-//nolint:lll // Long struct tags need to be formatted for readability.
+//nolint:lll // for readability
 var cli struct {
 	// We hide `run` command to show only `ping` in the help message.
 	Run  struct{} `cmd:"" default:"1"                             hidden:""`
 	Ping struct{} `cmd:"" help:"Ping existing FerretDB instance."`
 
-	Version bool `default:"false" help:"Print version to stdout and exit." env:"-" group:"Miscellaneous"`
+	Version bool `default:"false" help:"Print version to stdout and exit." env:"-"`
 
 	PostgreSQLURL     string `name:"postgresql-url"      default:"postgres://127.0.0.1:5432/postgres"   help:"PostgreSQL URL." group:"PostgreSQL"`
 	PostgreSQLURLFile string `name:"postgresql-url-file" help:"Path to file containing PostgreSQL URL." group:"PostgreSQL"     type:"filecontent"`
@@ -114,10 +114,10 @@ var cli struct {
 	Auth     bool   `default:"true"            help:"Enable authentication (on by default)." group:"Miscellaneous" negatable:""`
 
 	Log struct {
-		Level  string `default:"${default_log_level}" help:"${help_log_level}"                      group:"Miscellaneous"`
-		Format string `default:"console"              help:"${help_log_format}"                     enum:"${enum_log_format}" group:"Miscellaneous"`
-		UUID   bool   `default:"false"                help:"Add instance UUID to all log messages." group:"Miscellaneous"     negatable:""`
-	} `embed:"" prefix:"log-"`
+		Level  string `default:"${default_log_level}" help:"${help_log_level}"`
+		Format string `default:"console"              help:"${help_log_format}"                     enum:"${enum_log_format}"`
+		UUID   bool   `default:"false"                help:"Add instance UUID to all log messages." negatable:""`
+	} `embed:"" prefix:"log-" group:"Miscellaneous"`
 
 	MetricsUUID bool `default:"false" help:"Add instance UUID to all metrics." group:"Miscellaneous" negatable:""`
 
@@ -131,7 +131,7 @@ var cli struct {
 	Telemetry telemetry.Flag `default:"undecided" help:"${help_telemetry}" group:"Miscellaneous"`
 
 	Dev struct {
-		ReplSetName string `default:"" help:"Replica set name."`
+		ReplSetName string `default:"" help:"Replica set name." hidden:""`
 
 		RecordsDir string `hidden:""`
 
