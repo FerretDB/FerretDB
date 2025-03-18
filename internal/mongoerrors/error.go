@@ -88,22 +88,12 @@ func (e *Error) GoString() string {
 
 // Msg returns this error as a OP_MSG message.
 func (e *Error) Msg() *wire.OpMsg {
-	return wire.MustOpMsg(
-		"ok", float64(0),
-		"errmsg", e.Message,
-		"code", int32(e.Code),
-		"codeName", e.Name,
-	)
+	return must.NotFail(wire.NewOpMsg(e.Doc()))
 }
 
 // Reply returns this error as a OP_REPLY message.
 func (e *Error) Reply() *wire.OpReply {
-	return must.NotFail(wire.NewOpReply(wirebson.MustDocument(
-		"ok", float64(0),
-		"errmsg", e.Message,
-		"code", int32(e.Code),
-		"codeName", e.Name,
-	)))
+	return must.NotFail(wire.NewOpReply(e.Doc()))
 }
 
 // Doc returns this error as document.
