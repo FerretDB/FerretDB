@@ -7,9 +7,9 @@ sidebar_position: 3
 :::note
 We provide different `.rpm` packages for various deployments.
 
-- The development package (contains a `-dev` suffix e.g., `ferretdb-dev.rpm`) is for debugging purposes.
+- For most use cases, we recommend using the production package (e.g., `ferretdb.rpm`).
+- For debugging purposes, use the development package (contains a `-dev` suffix e.g., `ferretdb-dev.rpm`).
   It includes features that significantly slow performance and is not recommended for production use.
-- For other use cases, we recommend the production package (e.g., `ferretdb.rpm`).
 
 :::
 

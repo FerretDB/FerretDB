@@ -7,9 +7,9 @@ sidebar_position: 2
 :::note
 We provide different `.deb` packages for various deployments.
 
-- The development package (contains a `-dev` suffix e.g., `ferretdb-dev.deb`) is for debugging purposes.
+- For most use cases, we recommend using the production package (e.g., `ferretdb.deb`).
+- For debugging purposes, use the development package (contains a `-dev` suffix e.g., `ferretdb-dev.deb`).
   It includes features that significantly slow performance and is not recommended for production use.
-- For other use cases, we recommend the production package (e.g., `ferretdb.deb`).
 
 :::
 
