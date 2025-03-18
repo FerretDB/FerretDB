@@ -227,27 +227,29 @@ That means no manual deletions and no bloated storage.
 
 If a library tracks book reservations for instance, a TTL index can remove records after a year, so outdated holds don't clutter queries or waste space.
 
-Let's say we want books to be removed automatically one year after publication.
 It is recommended to create the TTL index before inserting documents.
 So if the document was added before the TTL index, it may not be affected until a new one is inserted.
 
-Start by creating a TTL index on the `publication.date` field:
+Start by creating a TTL index on book reservations that expire after 60 seconds:
 
 ```js
-db.books.createIndex({ 'publication.date': 1 }, { expireAfterSeconds: 10 })
+db.books.createIndex({ 'reservation.date': 1 }, { expireAfterSeconds: 60 })
 ```
 
-Next, let's insert a document with a publication date:
+Next, let's insert a document with a reservation date:
 
 ```js
 db.books.insertOne({
-  _id: 'temporary_book',
-  title: 'Expiring Book',
-  publication: { date: new Date() }
+  _id: 'temporary_reservation',
+  title: 'Reserved Book',
+  reservation: {
+    name: 'Noah Smith',
+    date: new Date()
+  }
 })
 ```
 
-After 10 seconds, the document will be automatically removed by the TTL index.
+After 60 seconds, the document will be automatically removed by the TTL index.
 
 ### 12. Partial indexes
 
@@ -393,58 +395,7 @@ db.books.find({
 })
 ```
 
-## Time series collections
-
-### 19. Create and query time series collection
-
-Time-series data is used in various applications, e.g stock prices, weather data, sensor readings, or even tracking book sales over time.
-Since time-series data is often queried based on time ranges, time-series collections are optimized for such queries.
-
-FerretDB supports time-series collections, making it easier to store and analyze time-based data efficiently.
-
-Let's create a time-series collection to track book sales over time:
-
-```js
-db.createCollection('book_sales', {
-  timeseries: {
-    timeField: 'sale_date',
-    metaField: 'book_id',
-    granularity: 'hours'
-  }
-})
-```
-
-With the collection created, let's insert some sales data:
-
-```js
-db.book_sales.insertMany([
-  {
-    book_id: 'pride_prejudice_1813',
-    sale_date: new Date('2024-02-01T10:00:00Z'),
-    copies_sold: 5
-  },
-  {
-    book_id: 'moby_dick_1851',
-    sale_date: new Date('2024-02-01T11:00:00Z'),
-    copies_sold: 3
-  }
-])
-```
-
-Now let's find the book sales in a specific time range:
-
-```js
-db.book_sales.find({
-  sale_date: {
-    $gte: new Date('2024-02-01T00:00:00Z'),
-    $lt: new Date('2024-02-02T00:00:00Z')
-  }
-})
-```
-
-This fetches all sales within `February 1st, 2024`.
-
-If you're working with historical trends, forecasting, or real-time monitoring, time-series collections are quite handy!
+## 19 Session and transactions
 
 ### 20. Drop Database
 
