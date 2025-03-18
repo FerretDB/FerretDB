@@ -86,6 +86,14 @@ var info *Info
 // unknown is a placeholder for unknown version, commit, and branch values.
 const unknown = "unknown"
 
+var versionRe = regexp.MustCompile(`^([0-9]+)\.([0-9]+)\.([0-9]+)$`)
+
+// semVerTag is a https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string,
+// but with a leading `v`.
+//
+//nolint:lll // for readibility
+var semVerTag = regexp.MustCompile(`^v(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$`)
+
 // Get returns current build's info.
 //
 // It returns a shared instance without any synchronization.
@@ -95,15 +103,15 @@ func Get() *Info {
 }
 
 func init() {
-	versionRe := regexp.MustCompile(`^([0-9]+)\.([0-9]+)\.([0-9]+)$`)
-
-	parts := versionRe.FindStringSubmatch(strings.TrimSpace(string(must.NotFail(gen.ReadFile("mongodb.txt")))))
-	if len(parts) != 4 {
+	mongodbTxt := strings.TrimSpace(string(must.NotFail(gen.ReadFile("mongodb.txt"))))
+	match := semVerTag.FindStringSubmatch(mongodbTxt)
+	if match == nil || len(match) != semVerTag.NumSubexp()+1 {
 		panic("invalid mongodb.txt")
 	}
-	major := must.NotFail(strconv.ParseInt(parts[1], 10, 32))
-	minor := must.NotFail(strconv.ParseInt(parts[2], 10, 32))
-	patch := must.NotFail(strconv.ParseInt(parts[3], 10, 32))
+
+	major := must.NotFail(strconv.ParseInt(match[semVerTag.SubexpIndex("major")], 10, 32))
+	minor := must.NotFail(strconv.ParseInt(match[semVerTag.SubexpIndex("minor")], 10, 32))
+	patch := must.NotFail(strconv.ParseInt(match[semVerTag.SubexpIndex("patch")], 10, 32))
 	mongoDBVersion := fmt.Sprintf("%d.%d.%d", major, minor, patch)
 	mongoDBVersionArray := [...]int32{int32(major), int32(minor), int32(patch), int32(0)}
 
@@ -114,7 +122,6 @@ func init() {
 		Dirty:               false,
 		Package:             unknown,
 		DevBuild:            devbuild.Enabled,
-		BuildEnvironment:    map[string]string{},
 		MongoDBVersion:      mongoDBVersion,
 		MongoDBVersionArray: mongoDBVersionArray,
 	}
@@ -148,7 +155,9 @@ func init() {
 		panic(msg)
 	}
 
-	info.BuildEnvironment["go.version"] = buildInfo.GoVersion
+	info.BuildEnvironment = map[string]string{
+		"go.version": buildInfo.GoVersion,
+	}
 
 	for _, s := range buildInfo.Settings {
 		if v := s.Value; v != "" {
