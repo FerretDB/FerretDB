@@ -251,7 +251,7 @@ func TestFindCommandExhausted(tt *testing.T) {
 
 	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/270")
 
-	s := setup.SetupWithOpts(tt, &setup.SetupOpts{SingleConn: true})
+	s := setup.SetupWithOpts(tt, &setup.SetupOpts{PoolSize: 1})
 
 	collection, ctx := s.Collection, s.Ctx
 
