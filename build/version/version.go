@@ -32,19 +32,21 @@
 // # Development builds
 //
 // Development builds of FerretDB behave differently in a few aspects:
-//   - they are significantly slower;
-//   - some values that are normally randomized are fixed or less randomized to make debugging easier;
+//   - some values that are normally randomized are fixed or less randomized;
 //   - some internal errors cause crashes instead of being handled more gracefully;
 //   - stack traces are collected more liberally;
 //   - metrics are written to stderr on exit;
 //   - the default logging level is set to debug.
+//
+// They are significantly slower.  to make debugging easier.
 package version
 
 import (
 	"embed"
 	"fmt"
 	"regexp"
-	"runtime/debug"
+	"runtime"
+	runtimedebug "runtime/debug"
 	"strconv"
 	"strings"
 
@@ -53,8 +55,8 @@ import (
 )
 
 // Each pattern in a //go:embed line must match at least one file or non-empty directory,
-// but most files are generated and may be absent.
-// As a workaround, mongodb.txt is always present.
+// but most files are generated and may be absent (for example, when embeddable package is being used).
+// As a workaround, mongodb.txt is always present and stored in the repository / Go module.
 
 //go:generate go run ./generate.go
 
@@ -86,7 +88,8 @@ var info *Info
 // unknown is a placeholder for unknown version, commit, and branch values.
 const unknown = "unknown"
 
-var versionRe = regexp.MustCompile(`^([0-9]+)\.([0-9]+)\.([0-9]+)$`)
+// FerretDB module path from go.mod.
+const ferretdbModule = "github.com/FerretDB/FerretDB/v2"
 
 // semVerTag is a https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string,
 // but with a leading `v`.
@@ -116,48 +119,67 @@ func init() {
 	mongoDBVersionArray := [...]int32{int32(major), int32(minor), int32(patch), int32(0)}
 
 	info = &Info{
-		Version:             unknown,
-		Commit:              unknown,
-		Branch:              unknown,
-		Dirty:               false,
-		Package:             unknown,
-		DevBuild:            devbuild.Enabled,
+		Version:  unknown,
+		Commit:   unknown,
+		Branch:   unknown,
+		Dirty:    false,
+		Package:  unknown,
+		DevBuild: devbuild.Enabled,
+		BuildEnvironment: map[string]string{
+			"go.runtime": runtime.Version(),
+		},
 		MongoDBVersion:      mongoDBVersion,
 		MongoDBVersionArray: mongoDBVersionArray,
 	}
 
-	buildInfo, ok := debug.ReadBuildInfo()
+	// in theory, someone could use embeddable package in a Go program that is built without modules
+	buildInfo, ok := runtimedebug.ReadBuildInfo()
 	if !ok {
 		return
 	}
 
-	// for tests
-	if buildInfo.Main.Path == "" {
+	info.BuildEnvironment["go.version"] = buildInfo.GoVersion
+
+	if buildInfo.Main.Path != ferretdbModule {
+		// FIXME
+		for _, dep := range buildInfo.Deps {
+			if dep.Path == ferretdbModule {
+				m := dep
+				if dep.Replace != nil {
+					m = dep.Replace
+				}
+
+				info.Version = m.Version
+			}
+		}
+
 		return
 	}
 
+	// panic("lala")
+
+	// those files may be present only when we build the FerretDB binary
 	for f, sp := range map[string]*string{
 		"version.txt": &info.Version,
 		"commit.txt":  &info.Commit,
 		"branch.txt":  &info.Branch,
 		"package.txt": &info.Package,
 	} {
-		if b, _ := gen.ReadFile(f); len(b) > 0 {
-			*sp = strings.TrimSpace(string(b))
+		b, _ := gen.ReadFile(f)
+		if s := strings.TrimSpace(string(b)); s != "" {
+			*sp = s
 		}
 	}
 
-	if !strings.HasPrefix(info.Version, "v") {
-		msg := "Invalid build/version/version.txt file content. Please run `bin/task gen-version`.\n"
-		msg += "Alternatively, create this file manually with a content similar to\n"
-		msg += "the output of `git describe`: `v<major>.<minor>.<patch>`.\n"
-		msg += "See https://pkg.go.dev/github.com/FerretDB/FerretDB/v2/build/version"
-		panic(msg)
-	}
+	// buildInfoVersion = buildInfo.Main.Version
 
-	info.BuildEnvironment = map[string]string{
-		"go.version": buildInfo.GoVersion,
-	}
+	// if !strings.HasPrefix(info.Version, "v") {
+	// 	msg := "Invalid build/version/version.txt file content. Please run `bin/task gen-version`.\n"
+	// 	msg += "Alternatively, create this file manually with a content similar to\n"
+	// 	msg += "the output of `git describe`: `v<major>.<minor>.<patch>`.\n"
+	// 	msg += "See https://pkg.go.dev/github.com/FerretDB/FerretDB/v2/build/version"
+	// 	panic(msg)
+	// }
 
 	for _, s := range buildInfo.Settings {
 		if v := s.Value; v != "" {
