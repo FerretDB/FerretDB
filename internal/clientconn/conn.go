@@ -531,7 +531,7 @@ func (c *conn) routeOpMsgError(rErr error) requestFunc {
 
 // traceRequest wraps the function `f` with OpenTelemetry tracer.
 func (c *conn) traceRequest(f requestFunc, doc *wirebson.Document, l *slog.Logger) requestFunc {
-	return func(ctx context.Context, header *wire.MsgHeader, body wire.MsgBody, command string) (resHeader *wire.MsgHeader, resBody wire.MsgBody, res *routeResponse) { //nolint:lll // for readability
+	return func(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wire.MsgBody, command string) (resHeader *wire.MsgHeader, resBody wire.MsgBody, res *routeResponse) { //nolint:lll // for readability
 		var comment string
 
 		if doc != nil {
@@ -541,10 +541,10 @@ func (c *conn) traceRequest(f requestFunc, doc *wirebson.Document, l *slog.Logge
 		ctx, span := startSpan(ctx, comment, l)
 
 		defer func() {
-			endSpan(span, res.observabilityCommand, header.OpCode.String(), res.result, res.argument, int(header.RequestID))
+			endSpan(span, res.observabilityCommand, resHeader.OpCode.String(), res.result, res.argument, int(reqHeader.RequestID))
 		}()
 
-		return f(ctx, header, body, command)
+		return f(ctx, reqHeader, reqBody, command)
 	}
 }
 
@@ -569,7 +569,7 @@ func startSpan(ctx context.Context, comment string, l *slog.Logger) (context.Con
 }
 
 // endSpan ends the span by setting status, name and attributes to the span.
-func endSpan(span oteltrace.Span, command, opCode, result, argument string, responseTo int) {
+func endSpan(span oteltrace.Span, command, resOpCode, result, argument string, responseTo int) {
 	must.NotBeZero(span)
 
 	if result != "ok" {
@@ -578,7 +578,7 @@ func endSpan(span oteltrace.Span, command, opCode, result, argument string, resp
 
 	span.SetName(command)
 	span.SetAttributes(
-		otelattribute.String("db.ferretdb.opcode", opCode),
+		otelattribute.String("db.ferretdb.opcode", resOpCode),
 		otelattribute.Int("db.ferretdb.request_id", responseTo),
 		otelattribute.String("db.ferretdb.argument", argument),
 	)
