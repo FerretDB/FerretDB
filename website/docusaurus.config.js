@@ -177,7 +177,7 @@ const config = {
       prism: {
         theme: themes.github,
         darkTheme: themes.dracula,
-        additionalLanguages: ["go", "sql", "json", "systemd"],
+        additionalLanguages: ["go", "sql", "json", "json5", "systemd"],
       },
       mermaid: {
         theme: { light: "default", dark: "dark" },
