@@ -105,3 +105,13 @@ func (e *Error) Reply() *wire.OpReply {
 		"codeName", e.Name,
 	)))
 }
+
+// Doc returns this error as document.
+func (e *Error) Doc() *wirebson.Document {
+	return wirebson.MustDocument(
+		"ok", float64(0),
+		"errmsg", e.Message,
+		"code", e.Code,
+		"codeName", e.Name,
+	)
+}

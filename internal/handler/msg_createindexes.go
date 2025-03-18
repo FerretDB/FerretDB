@@ -18,7 +18,6 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
@@ -33,7 +32,7 @@ import (
 // MsgCreateIndexes implements `createIndexes` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgCreateIndexes(connCtx context.Context, req *middleware.MsgRequest) (*wire.OpMsg, error) {
+func (h *Handler) MsgCreateIndexes(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
 	spec, err := req.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -74,7 +73,7 @@ func (h *Handler) MsgCreateIndexes(connCtx context.Context, req *middleware.MsgR
 		return nil, lazyerrors.Error(err)
 	}
 
-	return wire.NewOpMsg(res)
+	return middleware.Response(res)
 }
 
 // createIndexes calls DocumentDB API to create indexes, decodes and maps embedded error to command error if any.

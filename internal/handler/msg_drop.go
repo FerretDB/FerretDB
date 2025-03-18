@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"unicode/utf8"
 
-	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
@@ -32,7 +31,7 @@ import (
 // MsgDrop implements `drop` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgDrop(connCtx context.Context, req *middleware.MsgRequest) (*wire.OpMsg, error) {
+func (h *Handler) MsgDrop(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
 	spec, err := req.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -86,5 +85,5 @@ func (h *Handler) MsgDrop(connCtx context.Context, req *middleware.MsgRequest) (
 
 	must.NoError(res.Add("ok", float64(1)))
 
-	return wire.NewOpMsg(res)
+	return middleware.Response(res)
 }

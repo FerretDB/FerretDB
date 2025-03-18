@@ -17,7 +17,6 @@ package handler
 import (
 	"context"
 
-	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/jackc/pgx/v5"
 
@@ -30,7 +29,7 @@ import (
 // MsgDelete implements `delete` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgDelete(connCtx context.Context, req *middleware.MsgRequest) (*wire.OpMsg, error) {
+func (h *Handler) MsgDelete(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
 	spec, seq := req.RawSections()
 
 	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
@@ -58,5 +57,5 @@ func (h *Handler) MsgDelete(connCtx context.Context, req *middleware.MsgRequest)
 		return nil, lazyerrors.Error(err)
 	}
 
-	return wire.NewOpMsg(mongoerrors.MapWriteErrors(connCtx, res))
+	return middleware.Response(mongoerrors.MapWriteErrors(connCtx, res))
 }

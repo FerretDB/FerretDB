@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/google/uuid"
 
@@ -31,7 +30,7 @@ import (
 // MsgKillAllSessionsByPattern implements `killAllSessionsByPattern` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgKillAllSessionsByPattern(connCtx context.Context, req *middleware.MsgRequest) (*wire.OpMsg, error) {
+func (h *Handler) MsgKillAllSessionsByPattern(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) { //nolint:lll // for readability
 	spec, err := req.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -144,9 +143,9 @@ func (h *Handler) MsgKillAllSessionsByPattern(connCtx context.Context, req *midd
 		_ = h.Pool.KillCursor(connCtx, cursorID)
 	}
 
-	return wire.MustOpMsg(
+	return middleware.Response(wirebson.MustDocument(
 		"ok", float64(1),
-	), nil
+	))
 }
 
 // getLSIDParam returns user ID and session ID from the given `v`.

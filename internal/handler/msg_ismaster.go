@@ -17,7 +17,6 @@ package handler
 import (
 	"context"
 
-	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
@@ -29,7 +28,7 @@ import (
 // MsgIsMaster implements `isMaster` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgIsMaster(connCtx context.Context, req *middleware.MsgRequest) (*wire.OpMsg, error) {
+func (h *Handler) MsgIsMaster(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
 	spec, err := req.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -49,7 +48,7 @@ func (h *Handler) MsgIsMaster(connCtx context.Context, req *middleware.MsgReques
 		return nil, lazyerrors.Error(err)
 	}
 
-	return wire.NewOpMsg(res)
+	return middleware.Response(res)
 }
 
 // checkClientMetadata checks if the message does not contain client metadata after it was received already.

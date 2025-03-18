@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
@@ -31,7 +30,7 @@ import (
 // MsgKillCursors implements `killCursors` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgKillCursors(connCtx context.Context, req *middleware.MsgRequest) (*wire.OpMsg, error) {
+func (h *Handler) MsgKillCursors(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
 	spec, err := req.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -119,13 +118,11 @@ func (h *Handler) MsgKillCursors(connCtx context.Context, req *middleware.MsgReq
 		must.NoError(cursorsKilled.Add(id))
 	}
 
-	res := must.NotFail(wirebson.NewDocument(
+	return middleware.Response(wirebson.MustDocument(
 		"cursorsKilled", cursorsKilled,
 		"cursorsNotFound", cursorsNotFound,
 		"cursorsAlive", cursorsAlive,
 		"cursorsUnknown", cursorsUnknown,
 		"ok", float64(1),
 	))
-
-	return wire.NewOpMsg(res)
 }

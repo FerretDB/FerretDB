@@ -17,7 +17,6 @@ package handler
 import (
 	"context"
 
-	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
@@ -29,7 +28,7 @@ import (
 // MsgConnectionStatus implements `connectionStatus` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgConnectionStatus(connCtx context.Context, req *middleware.MsgRequest) (*wire.OpMsg, error) {
+func (h *Handler) MsgConnectionStatus(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
 	spec, err := req.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -47,13 +46,11 @@ func (h *Handler) MsgConnectionStatus(connCtx context.Context, req *middleware.M
 		))))
 	}
 
-	res := must.NotFail(wirebson.NewDocument(
+	return middleware.Response(wirebson.MustDocument(
 		"authInfo", must.NotFail(wirebson.NewDocument(
 			"authenticatedUsers", users,
 			"authenticatedUserRoles", must.NotFail(wirebson.NewArray()),
 		)),
 		"ok", float64(1),
 	))
-
-	return wire.NewOpMsg(res)
 }

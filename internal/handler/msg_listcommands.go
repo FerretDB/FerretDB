@@ -19,7 +19,6 @@ import (
 	"maps"
 	"slices"
 
-	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
@@ -30,7 +29,7 @@ import (
 // MsgListCommands implements `listCommands` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgListCommands(connCtx context.Context, req *middleware.MsgRequest) (*wire.OpMsg, error) {
+func (h *Handler) MsgListCommands(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
 	spec, err := req.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -53,10 +52,8 @@ func (h *Handler) MsgListCommands(connCtx context.Context, req *middleware.MsgRe
 		))))
 	}
 
-	res := must.NotFail(wirebson.NewDocument(
+	return middleware.Response(wirebson.MustDocument(
 		"commands", cmdList,
 		"ok", float64(1),
 	))
-
-	return wire.NewOpMsg(res)
 }

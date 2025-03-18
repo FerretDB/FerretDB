@@ -17,7 +17,6 @@ package handler
 import (
 	"context"
 
-	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
@@ -29,7 +28,7 @@ import (
 // MsgDropAllUsersFromDatabase implements `dropAllUsersFromDatabase` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgDropAllUsersFromDatabase(connCtx context.Context, req *middleware.MsgRequest) (*wire.OpMsg, error) {
+func (h *Handler) MsgDropAllUsersFromDatabase(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) { //nolint:lll // for readability
 	spec, err := req.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -73,7 +72,10 @@ func (h *Handler) MsgDropAllUsersFromDatabase(connCtx context.Context, req *midd
 
 	usersV, ok := usersInfoDoc.Get("users").(wirebson.AnyArray)
 	if !ok {
-		return wire.MustOpMsg("n", int32(0), "ok", float64(1)), nil
+		return middleware.Response(wirebson.MustDocument(
+			"n", int32(0),
+			"ok", float64(1),
+		))
 	}
 
 	users, err := usersV.Decode()
@@ -107,5 +109,8 @@ func (h *Handler) MsgDropAllUsersFromDatabase(connCtx context.Context, req *midd
 		n++
 	}
 
-	return wire.MustOpMsg("n", n, "ok", float64(1)), nil
+	return middleware.Response(wirebson.MustDocument(
+		"n", n,
+		"ok", float64(1),
+	))
 }

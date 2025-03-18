@@ -17,7 +17,6 @@ package handler
 import (
 	"context"
 
-	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
@@ -29,7 +28,7 @@ import (
 // MsgGetParameter implements `getParameter` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgGetParameter(connCtx context.Context, req *middleware.MsgRequest) (*wire.OpMsg, error) {
+func (h *Handler) MsgGetParameter(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
 	spec, err := req.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -96,7 +95,7 @@ func (h *Handler) MsgGetParameter(connCtx context.Context, req *middleware.MsgRe
 
 	must.NoError(res.Add("ok", float64(1)))
 
-	return wire.NewOpMsg(res)
+	return middleware.Response(res)
 }
 
 // selectParameters makes a selection of requested parameters.

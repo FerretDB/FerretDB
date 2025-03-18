@@ -17,8 +17,6 @@ package handler
 import (
 	"context"
 
-	"github.com/FerretDB/wire"
-
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
@@ -26,7 +24,7 @@ import (
 // MsgListIndexes implements `listIndexes` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgListIndexes(connCtx context.Context, req *middleware.MsgRequest) (*wire.OpMsg, error) {
+func (h *Handler) MsgListIndexes(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
 	spec, err := req.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -55,5 +53,5 @@ func (h *Handler) MsgListIndexes(connCtx context.Context, req *middleware.MsgReq
 
 	h.s.AddCursor(connCtx, userID, sessionID, cursorID)
 
-	return wire.NewOpMsg(page)
+	return middleware.Response(page)
 }

@@ -17,18 +17,16 @@ package handler
 import (
 	"context"
 
-	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // MsgGetFreeMonitoringStatus implements `getFreeMonitoringStatus` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgGetFreeMonitoringStatus(connCtx context.Context, req *middleware.MsgRequest) (*wire.OpMsg, error) {
+func (h *Handler) MsgGetFreeMonitoringStatus(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) { //nolint:lll // for readability
 	spec, err := req.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -41,11 +39,9 @@ func (h *Handler) MsgGetFreeMonitoringStatus(connCtx context.Context, req *middl
 	state := h.StateProvider.Get().TelemetryString()
 	message := "monitoring is " + state
 
-	res := must.NotFail(wirebson.NewDocument(
+	return middleware.Response(wirebson.MustDocument(
 		"state", state,
 		"message", message,
 		"ok", float64(1),
 	))
-
-	return wire.NewOpMsg(res)
 }

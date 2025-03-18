@@ -34,7 +34,7 @@ import (
 // MsgHello implements `hello` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgHello(connCtx context.Context, req *middleware.MsgRequest) (*wire.OpMsg, error) {
+func (h *Handler) MsgHello(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
 	spec, err := req.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -54,7 +54,7 @@ func (h *Handler) MsgHello(connCtx context.Context, req *middleware.MsgRequest) 
 		return nil, lazyerrors.Error(err)
 	}
 
-	return wire.NewOpMsg(res)
+	return middleware.Response(res)
 }
 
 // hello checks client metadata and returns hello's document fields.

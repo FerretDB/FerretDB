@@ -21,7 +21,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/build/version"
@@ -36,7 +35,7 @@ import (
 // MsgGetLog implements `getLog` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgGetLog(connCtx context.Context, req *middleware.MsgRequest) (*wire.OpMsg, error) {
+func (h *Handler) MsgGetLog(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
 	spec, err := req.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -200,5 +199,5 @@ func (h *Handler) MsgGetLog(connCtx context.Context, req *middleware.MsgRequest)
 		)
 	}
 
-	return wire.NewOpMsg(res)
+	return middleware.Response(res)
 }

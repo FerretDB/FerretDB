@@ -91,7 +91,7 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 			"$db", "admin",
 		)).Encode())))
 
-		res, err := s.handler.Commands()["saslStart"].Handler(ctx, &middleware.MsgRequest{msg})
+		res, err := s.handler.Commands()["saslStart"].Handler(ctx, &middleware.MsgRequest{OpMsg: msg})
 		if err != nil {
 			http.Error(w, lazyerrors.Error(err).Error(), http.StatusUnauthorized)
 			return
@@ -115,7 +115,7 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 			"$db", "admin",
 		)).Encode())))
 
-		res, err = s.handler.Commands()["saslContinue"].Handler(ctx, &middleware.MsgRequest{msg})
+		res, err = s.handler.Commands()["saslContinue"].Handler(ctx, &middleware.MsgRequest{OpMsg: msg})
 		if err != nil {
 			http.Error(w, lazyerrors.Error(err).Error(), http.StatusUnauthorized)
 			return
@@ -250,7 +250,7 @@ func prepareOpMsg(pairs ...any) (*middleware.MsgRequest, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
-	return &middleware.MsgRequest{req}, nil
+	return &middleware.MsgRequest{OpMsg: req}, nil
 }
 
 // decodeJsonRequest takes request with json body and decodes it into

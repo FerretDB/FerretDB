@@ -17,8 +17,6 @@ package handler
 import (
 	"context"
 
-	"github.com/FerretDB/wire"
-
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
@@ -27,7 +25,7 @@ import (
 // MsgFindAndModify implements `findAndModify` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgFindAndModify(connCtx context.Context, req *middleware.MsgRequest) (*wire.OpMsg, error) {
+func (h *Handler) MsgFindAndModify(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
 	spec, err := req.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -59,5 +57,5 @@ func (h *Handler) MsgFindAndModify(connCtx context.Context, req *middleware.MsgR
 		return nil, lazyerrors.Error(err)
 	}
 
-	return wire.NewOpMsg(res)
+	return middleware.Response(res)
 }
