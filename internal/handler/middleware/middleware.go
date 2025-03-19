@@ -17,10 +17,12 @@ package middleware
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
+	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
@@ -28,22 +30,26 @@ import (
 // It may come from the wire protocol connection or from the Data API server.
 type MsgRequest struct {
 	*wire.OpMsg
+	RequestID int32
 }
 
 // MsgResponse represent outgoing response to the client.
 type MsgResponse struct {
 	*wire.OpMsg
+	*mongoerrors.Error
 }
 
 // QueryRequest is a deprecated request message type.
 // It is still used by commands including `hello` and `isMaster`.
 type QueryRequest struct {
 	*wire.OpQuery
+	RequestID int32
 }
 
 // ReplyResponse is a deprecated response message type used for the response to [QueryRequest].
 type ReplyResponse struct {
 	*wire.OpReply
+	*mongoerrors.Error
 }
 
 // RequestType represents incoming request types.
@@ -66,6 +72,19 @@ func Response(doc wirebson.AnyDocument) (*MsgResponse, error) {
 	return &MsgResponse{OpMsg: msg}, nil
 }
 
+// MsgErrorResponse constructs a [*MsgResponse] from an error.
+func MsgErrorResponse(ctx context.Context, handlerError error, arg string, l *slog.Logger) (*MsgResponse, error) {
+	err := mongoerrors.Make(ctx, handlerError, arg, l)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &MsgResponse{
+		OpMsg: err.Msg(),
+		Error: err,
+	}, nil
+}
+
 // Reply constructs a [*ReplyResponse] from a single document.
 func Reply(doc wirebson.AnyDocument) (*ReplyResponse, error) {
 	reply, err := wire.NewOpReply(doc)
@@ -74,6 +93,19 @@ func Reply(doc wirebson.AnyDocument) (*ReplyResponse, error) {
 	}
 
 	return &ReplyResponse{OpReply: reply}, nil
+}
+
+// ReplyError constructs a [*ReplyResponse] from an error.
+func ReplyError(ctx context.Context, handlerError error, arg string, l *slog.Logger) (*ReplyResponse, error) {
+	err := mongoerrors.Make(ctx, handlerError, arg, l)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &ReplyResponse{
+		OpReply: err.Reply(),
+		Error:   err,
+	}, nil
 }
 
 // HandlerFunc represents a function/method that processes a request.

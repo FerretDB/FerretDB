@@ -322,7 +322,9 @@ func (h *Handler) initCommands() {
 			cmd.Handler = notImplemented(name)
 		}
 
-		cmd.Handler = middleware.Observability(cmd.Handler, logging.WithName(h.L, "observability"))
+		cmd.Handler = middleware.MsgError(cmd.Handler, logging.WithName(h.L, "error-handler"))
+
+		cmd.Handler = middleware.MsgObservability(cmd.Handler, logging.WithName(h.L, "observability"), name)
 
 		if h.Auth && !cmd.anonymous {
 			cmd.Handler = middleware.Auth(cmd.Handler, logging.WithName(h.L, "auth"), name)
