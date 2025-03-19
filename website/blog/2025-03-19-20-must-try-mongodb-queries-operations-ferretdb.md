@@ -38,16 +38,16 @@ Without data, there's nothing to query!
 So we will start by adding some documents to our database instance.
 
 We already prepared a sample dataset to use; it's a collection of books with details like title, authors, genres, publication date, and price.
-See the [books.fixture.json](https://raw.githubusercontent.com/FerretDB/FerretDB/main/website/docs/guides/requests/books.fixture.json) file for the sample data.
+See the [books.json](https://gist.github.com/Fashander/fb6e1904007159d444cdfd7a4680f892) file for the data.
 
 Since we are using the FerretDB `books` collection, we will start by downloading the data and then importing it.
 
 ```sh
 # Download the JSON data
-curl -L -o books_fixture.json "https://raw.githubusercontent.com/FerretDB/FerretDB/main/website/docs/guides/requests/books.fixture.json"
+curl -L -o books.json "https://gist.githubusercontent.com/Fashander/fb6e1904007159d444cdfd7a4680f892/raw/e6ce651d5b319de3a9d88af9c9c21fe6c3e8fde7/books.json"
 
 # Import the data into FerretDB
-mongoimport --uri "mongodb://username:password@localhost:27017/" --db library --collection books --file books_fixture.json --jsonArray
+mongoimport --uri "mongodb://username:password@localhost:27017/" --db library --collection books --file books.json --jsonArray
 ```
 
 Now that you have some documents in the collection, start running some queries and operations on them.
@@ -123,27 +123,29 @@ This is useful when you store related data in different collections but want to 
 
 Suppose there's another collection `publishers` with more details on the publishers, as shown below:
 
-```json
-[
-  {
-    "_id": 1,
-    "name": "T. Egerton",
-    "location": "London, United Kingdom",
-    "established": 1780
-  },
-  {
-    "_id": 2,
-    "name": "Harper & Brothers",
-    "location": "New York, United States",
-    "established": 1817
-  },
-  {
-    "_id": 3,
-    "name": "Lackington, Hughes, Harding, Mavor & Jones",
-    "location": "London, United Kingdom",
-    "established": 1790
-  }
-]
+```js
+db.publishers.insertMany(
+  [
+    {
+      "_id": 1,
+      "name": "T. Egerton",
+      "location": "London, United Kingdom",
+      "established": 1780
+    },
+    {
+      "_id": 2,
+      "name": "Harper & Brothers",
+      "location": "New York, United States",
+      "established": 1817
+    },
+    {
+      "_id": 3,
+      "name": "Lackington, Hughes, Harding, Mavor & Jones",
+      "location": "London, United Kingdom",
+      "established": 1790
+    }
+  ]
+)
 ```
 
 You can join the data from both collections (`books` and `publishers`) using `$lookup`.
