@@ -4,19 +4,16 @@ sidebar_position: 3
 
 # RPM package
 
-:::note
-We provide different `.rpm` packages for various deployments.
-
-- For most use cases, we recommend using the production package (e.g., `ferretdb.rpm`).
-- For debugging purposes, use the development package (contains a `-dev` suffix e.g., `ferretdb-dev.rpm`).
-  It includes features that significantly slow performance and is not recommended for production use.
-
-:::
-
 To install the `.rpm` packages for FerretDB on your RHEL, CentOS, and other `.rpm`-based systems,
 you can use `rpm` tool.
 
-Download the latest FerretDB `.rpm` package from [our release pages](https://github.com/FerretDB/FerretDB/releases/latest),
+We provide different `.rpm` packages for various deployments on [our release page](https://github.com/FerretDB/FerretDB/releases/latest)
+
+- For most use cases, we recommend using the production package (e.g., `ferretdb.rpm`).
+- For debugging purposes, use the development package (contains a `-dev` suffix e.g., `ferretdb-dev.rpm`).
+  It includes features that significantly slow down performance and is not recommended for production use.
+
+Download the appropriate FerretDB `.rpm` package from our release page,
 rename it to `ferretdb.rpm`,
 then run the following command in your terminal:
 

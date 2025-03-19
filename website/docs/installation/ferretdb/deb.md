@@ -4,19 +4,16 @@ sidebar_position: 2
 
 # DEB package
 
-:::note
-We provide different `.deb` packages for various deployments.
-
-- For most use cases, we recommend using the production package (e.g., `ferretdb.deb`).
-- For debugging purposes, use the development package (contains a `-dev` suffix e.g., `ferretdb-dev.deb`).
-  It includes features that significantly slow performance and is not recommended for production use.
-
-:::
-
 To install the `.deb` packages for FerretDB on your Debian, Ubuntu, and other `.deb`-based systems,
 you can use `dpkg` tool.
 
-Download the appropriate FerretDB `.deb` package from [our release pages](https://github.com/FerretDB/FerretDB/releases/),
+We provide different `.deb` packages for various deployments on [our release page](https://github.com/FerretDB/FerretDB/releases/)
+
+- For most use cases, we recommend using the production package (e.g., `ferretdb.deb`).
+- For debugging purposes, use the development package (contains a `-dev` suffix e.g., `ferretdb-dev.deb`).
+  It includes features that significantly slow down performance and is not recommended for production use.
+
+Download the appropriate FerretDB `.deb` package from our release page,
 rename it to `ferretdb.deb`,
 then run the following command in your terminal:
 
@@ -24,7 +21,7 @@ then run the following command in your terminal:
 sudo dpkg -i ferretdb.deb
 ```
 
-You can check that FerretDB was installed by running
+You can check that FerretDB was installed by running:
 
 ```sh
 ferretdb --version
