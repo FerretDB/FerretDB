@@ -27,6 +27,7 @@ const (
 	ErrConflictingUpdateOperators                  = Code(40)      // ConflictingUpdateOperators
 	ErrCursorNotFound                              = Code(43)      // CursorNotFound
 	ErrNamespaceExists                             = Code(48)      // NamespaceExists
+	ErrMaxTimeMSExpired                            = Code(50)      // MaxTimeMSExpired
 	ErrDollarPrefixedFieldName                     = Code(52)      // DollarPrefixedFieldName
 	ErrCanNotBeTypeArray                           = Code(53)      // CanNotBeTypeArray
 	ErrNotSingleValueField                         = Code(54)      // NotSingleValueField

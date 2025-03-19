@@ -915,9 +915,6 @@ func TestGetMoreCommandExhausted(tt *testing.T) {
 }
 
 func TestGetMoreCommandMaxTimeMS(t *testing.T) {
-	// FIXME
-	t.Skip("FIXME")
-
 	// do not run tests in parallel to avoid using too many backend connections
 
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{
@@ -934,8 +931,6 @@ func TestGetMoreCommandMaxTimeMS(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("FindExpire", func(tt *testing.T) {
-		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/344")
-
 		opts := options.Find().
 			// set batchSize big enough to hit maxTimeMS
 			SetBatchSize(2000).
@@ -950,8 +945,6 @@ func TestGetMoreCommandMaxTimeMS(t *testing.T) {
 	})
 
 	t.Run("AggregateExpire", func(tt *testing.T) {
-		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/344")
-
 		opts := options.Aggregate().
 			// set batchSize big enough to hit maxTimeMS
 			SetBatchSize(2000).
