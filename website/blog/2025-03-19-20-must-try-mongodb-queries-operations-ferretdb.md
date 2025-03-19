@@ -165,9 +165,9 @@ This should fetch the books and their corresponding publishers' details in a sin
 
 ## Authentication
 
-### 8. Create an authenticated user
+### 8. Create a user
 
-Authentication is important for securing your database and ensuring only authorized users can access it, especially for production-based environments.
+Authentication is important for securing your database and ensuring only authenticated users can access it, especially for production-based environments.
 FerretDB relies entirely on PostgreSQL authentication mechanisms.
 When you create a user in FerretDB, you can manage it using the same commands you would on MongoDB.
 
@@ -395,7 +395,29 @@ db.books.find({
 })
 ```
 
-## 19 Session and transactions
+## 19 Monitor operations with `currentOp`
+
+Sometimes, your database operations become slow, and you wonder what's causing the delay.
+`currentOp()` lets you inspect active operations, find long-running queries, and even terminate problematic commands before they overwhelm your instance.
+
+To actually see something in `currentOp()`, we need a long-running operation.
+Let's simulate a background insert that adds a document every 5 seconds.
+
+```js
+while (true) {
+  db.books.insertOne({
+    title: 'Live Insert Test',
+    price: { value: 9.99, currency: 'USD' }
+  })
+  sleep(5000) // Wait 5 seconds before inserting again
+}
+```
+
+To see all active operations, run the following query in another `mongosh` session:
+
+```js
+db.currentOp({ active: true })
+```
 
 ### 20. Drop Database
 
