@@ -70,44 +70,23 @@ var cli struct {
 	PostgreSQLURLFile string `name:"postgresql-url-file" help:"Path to file containing PostgreSQL URL." group:"PostgreSQL"     type:"filecontent"`
 
 	Listen struct {
-		Addr     string `default:"127.0.0.1:27017" help:"Listen TCP address for MongoDB protocol."        group:"Interfaces"`
-		AddrFile string `name:"listen-addr-file"   help:"Path to file containing MongoDB listen address." group:"Interfaces" type:"filecontent"`
-
-		Unix     string `default:""              help:"Listen Unix domain socket path for MongoDB protocol."     group:"Interfaces"`
-		UnixFile string `name:"listen-unix-file" help:"Path to file containing MongoDB Unix domain socket path." group:"Interfaces" type:"filecontent"`
-
-		TLS     string `default:""             help:"Listen TLS address for MongoDB protocol."     group:"Interfaces"`
-		TLSFile string `name:"listen-tls-file" help:"Path to file containing MongoDB TLS address." group:"Interfaces" type:"filecontent"`
-
-		TLSCertFile     string `default:""                help:"TLS cert file path."               group:"Interfaces"`
-		TLSCertFilePath string `name:"tls-cert-file-path" help:"Path to file containing TLS cert." group:"Interfaces" type:"filecontent"`
-
-		TLSKeyFile     string `default:""               help:"TLS key file path."               group:"Interfaces"`
-		TLSKeyFilePath string `name:"tls-key-file-path" help:"Path to file containing TLS key." group:"Interfaces" type:"filecontent"`
-
-		TLSCaFile     string `default:""              help:"TLS CA file path."               group:"Interfaces"`
-		TLSCaFilePath string `name:"tls-ca-file-path" help:"Path to file containing TLS CA." group:"Interfaces" type:"filecontent"`
-
-		DataAPIAddr     string `default:""                       help:"Listen TCP address for HTTP Data API."            group:"Interfaces"`
-		DataAPIAddrFile string `name:"listen-data-api-addr-file" help:"Path to file containing Data API listen address." group:"Interfaces" type:"filecontent"`
-	} `embed:"" prefix:"listen-"`
+		Addr        string `default:"127.0.0.1:27017" help:"Listen TCP address for MongoDB protocol."`
+		Unix        string `default:""                help:"Listen Unix domain socket path for MongoDB protocol."`
+		TLS         string `default:""                help:"Listen TLS address for MongoDB protocol."`
+		TLSCertFile string `default:""                help:"TLS cert file path."`
+		TLSKeyFile  string `default:""                help:"TLS key file path."`
+		TLSCaFile   string `default:""                help:"TLS CA file path."`
+		DataAPIAddr string `default:""                help:"Listen TCP address for HTTP Data API."`
+	} `embed:"" prefix:"listen-" group:"Interfaces"`
 
 	Proxy struct {
-		Addr     string `default:""             help:"Proxy address."                         group:"Interfaces"`
-		AddrFile string `name:"proxy-addr-file" help:"Path to file containing Proxy address." group:"Interfaces" type:"filecontent"`
+		Addr        string `default:"" help:"Proxy address."`
+		TLSCertFile string `default:"" help:"Proxy TLS cert file path."`
+		TLSKeyFile  string `default:"" help:"Proxy TLS key file path."`
+		TLSCaFile   string `default:"" help:"Proxy TLS CA file path."`
+	} `embed:"" prefix:"proxy-" group:"Interfaces"`
 
-		TLSCertFile     string `default:""                      help:"Proxy TLS cert file path."               group:"Interfaces"`
-		TLSCertFilePath string `name:"proxy-tls-cert-file-path" help:"Path to file containing Proxy TLS cert." group:"Interfaces" type:"filecontent"`
-
-		TLSKeyFile     string `default:""                     help:"Proxy TLS key file path."               group:"Interfaces"`
-		TLSKeyFilePath string `name:"proxy-tls-key-file-path" help:"Path to file containing Proxy TLS key." group:"Interfaces" type:"filecontent"`
-
-		TLSCaFile     string `default:""                    help:"Proxy TLS CA file path."               group:"Interfaces"`
-		TLSCaFilePath string `name:"proxy-tls-ca-file-path" help:"Path to file containing Proxy TLS CA." group:"Interfaces" type:"filecontent"`
-	} `embed:"" prefix:"proxy-"`
-
-	DebugAddr     string `default:"127.0.0.1:8088" help:"Listen address for HTTP handlers for metrics, pprof, etc." group:"Interfaces"`
-	DebugAddrFile string `name:"debug-addr-file"   help:"Path to file containing Debug API listen address."         group:"Interfaces" type:"filecontent"`
+	DebugAddr string `default:"127.0.0.1:8088" help:"Listen address for HTTP handlers for metrics, pprof, etc." group:"Interfaces"`
 
 	Mode     string `default:"${default_mode}" help:"${help_mode}"                           enum:"${enum_mode}"   group:"Miscellaneous"`
 	StateDir string `default:"."               help:"Process state directory."               group:"Miscellaneous"`
@@ -123,8 +102,7 @@ var cli struct {
 
 	OTel struct {
 		Traces struct {
-			URL     string `default:""                  help:"OpenTelemetry OTLP/HTTP traces endpoint URL (e.g. 'http://host:4318/v1/traces')."`
-			URLFile string `name:"otel-traces-url-file" help:"Path to file containing OpenTelemetry traces endpoint URL."                       type:"filecontent"`
+			URL string `default:"" help:"OpenTelemetry OTLP/HTTP traces endpoint URL (e.g. 'http://host:4318/v1/traces')."`
 		} `embed:"" prefix:"traces-"`
 	} `embed:"" prefix:"otel-" group:"Miscellaneous"`
 
@@ -137,7 +115,6 @@ var cli struct {
 
 		Telemetry struct {
 			URL            string        `default:"https://beacon.ferretdb.com/" hidden:""`
-			URLFile        string        `name:"telemetry-url-file"              help:"Path to file containing Telemetry URL." hidden:"" type:"filecontent"`
 			UndecidedDelay time.Duration `default:"1h"                           hidden:""`
 			ReportInterval time.Duration `default:"24h"                          hidden:""`
 			Package        string        `default:""                             hidden:""`
@@ -325,6 +302,14 @@ func run() {
 
 	// safe to always enable
 	runtime.SetBlockProfileRate(10000)
+
+	if cli.PostgreSQLURLFile != "" {
+		content, err := os.ReadFile(cli.PostgreSQLURLFile)
+		if err != nil {
+			log.Fatalf("Failed to read PostgreSQL URL file: %s", err)
+		}
+		cli.PostgreSQLURL = strings.TrimSpace(string(content))
+	}
 
 	stateProvider, err := state.NewProviderDir(cli.StateDir)
 	if err != nil {
