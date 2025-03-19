@@ -35,6 +35,26 @@ type MsgResponse struct {
 	*wire.OpMsg
 }
 
+// QueryRequest represents incoming request from the client.
+type QueryRequest struct {
+	*wire.OpQuery
+}
+
+// ReplyResponse represent outgoing response to the client.
+type ReplyResponse struct {
+	*wire.OpReply
+}
+
+// RequestType is an interface for handler request types.
+type RequestType interface {
+	*MsgRequest | *QueryRequest
+}
+
+// ResponseType is an interface for response types.
+type ResponseType interface {
+	*MsgResponse | *ReplyResponse
+}
+
 // Response constructs a [*MsgResponse] from a single document.
 func Response(doc wirebson.AnyDocument) (*MsgResponse, error) {
 	msg, err := wire.NewOpMsg(doc)
@@ -45,17 +65,17 @@ func Response(doc wirebson.AnyDocument) (*MsgResponse, error) {
 	return &MsgResponse{OpMsg: msg}, nil
 }
 
+// Reply constructs a [*ReplyResponse] from a single document.
+func Reply(doc wirebson.AnyDocument) (*ReplyResponse, error) {
+	reply, err := wire.NewOpReply(doc)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &ReplyResponse{OpReply: reply}, nil
+}
+
 // HandlerFunc represents a function/method that processes a request.
 //
 // The passed context is canceled when the client disconnects.
 type HandlerFunc[Req RequestType, Res ResponseType] func(ctx context.Context, req Req) (resp Res, err error)
-
-// RequestType is an interface for handler request types.
-type RequestType interface {
-	*MsgRequest | *CmdQuery
-}
-
-// ResponseType is an interface for handler response types.
-type ResponseType interface {
-	*MsgResponse | *CmdReply
-}

@@ -400,11 +400,11 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 
 		queryHandler := middleware.Observability(c.h.CmdQuery, c.l)
 
-		var cmdReply *middleware.CmdReply
-		cmdReply, err = queryHandler(connCtx, &middleware.CmdQuery{OpQuery: query})
+		var reply *middleware.ReplyResponse
+		reply, err = queryHandler(connCtx, &middleware.QueryRequest{OpQuery: query})
 
-		if cmdReply != nil && cmdReply.OpReply != nil {
-			resBody = cmdReply.OpReply
+		if reply != nil && reply.OpReply != nil {
+			resBody = reply.OpReply
 		}
 
 	case wire.OpCodeReply:
