@@ -15,8 +15,6 @@
 package middleware
 
 import (
-	"context"
-
 	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
@@ -42,8 +40,3 @@ func NewReply(doc wirebson.AnyDocument) (*CmdReply, error) {
 
 	return &CmdReply{OpReply: reply}, nil
 }
-
-// QueryHandlerFunc represents a function/method that processes a single OP_QUERY command.
-//
-// The passed context is canceled when the client disconnects.
-type QueryHandlerFunc func(ctx context.Context, req *CmdQuery) (resp *CmdReply, err error)

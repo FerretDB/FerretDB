@@ -45,7 +45,17 @@ func Response(doc wirebson.AnyDocument) (*MsgResponse, error) {
 	return &MsgResponse{OpMsg: msg}, nil
 }
 
-// MsgHandlerFunc represents a function/method that processes a single OP_MSG command.
+// HandlerFunc represents a function/method that processes a request.
 //
 // The passed context is canceled when the client disconnects.
-type MsgHandlerFunc func(ctx context.Context, req *MsgRequest) (resp *MsgResponse, err error)
+type HandlerFunc[Req RequestType, Res ResponseType] func(ctx context.Context, req Req) (resp Res, err error)
+
+// RequestType is an interface for handler request types.
+type RequestType interface {
+	*MsgRequest | *CmdQuery
+}
+
+// ResponseType is an interface for handler response types.
+type ResponseType interface {
+	*MsgResponse | *CmdReply
+}

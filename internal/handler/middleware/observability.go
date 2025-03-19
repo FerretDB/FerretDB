@@ -19,23 +19,11 @@ import (
 	"log/slog"
 )
 
-// OpMsgObservability is a middleware that will wrap the command handler with common observability logic.
-func OpMsgObservability(next MsgHandlerFunc, l *slog.Logger) MsgHandlerFunc {
-	return observability[*MsgRequest, *MsgResponse](next)
-}
-
-// OpQueryObservability is a middleware that will wrap the query handler with common observability logic.
-func OpQueryObservability(next QueryHandlerFunc, l *slog.Logger) QueryHandlerFunc {
-	return observability[*CmdQuery, *CmdReply](next)
-}
-
-// observability wraps the handler with logs, traces, and metrics.
+// Observability is a middleware that will wrap the handler with logs, traces, and metrics.
 //
 // TODO https://github.com/FerretDB/FerretDB/issues/4439
-func observability[ReqType any, RespType any](
-	next func(context.Context, ReqType) (RespType, error),
-) func(context.Context, ReqType) (RespType, error) {
-	return func(ctx context.Context, req ReqType) (RespType, error) {
+func Observability[Req RequestType, Res ResponseType](next func(context.Context, Req) (Res, error), l *slog.Logger) func(context.Context, Req) (Res, error) { //nolint:lll // for readability
+	return func(ctx context.Context, req Req) (Res, error) {
 		return next(ctx, req)
 	}
 }

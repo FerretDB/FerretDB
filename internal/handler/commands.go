@@ -31,7 +31,7 @@ type command struct {
 	// Handler processes this command.
 	//
 	// The passed context is canceled when the client disconnects.
-	Handler middleware.MsgHandlerFunc
+	Handler middleware.HandlerFunc[*middleware.MsgRequest, *middleware.MsgResponse]
 
 	// Help is shown in the `listCommands` command output.
 	// If empty, that command is hidden, but still can be used.
@@ -322,7 +322,7 @@ func (h *Handler) initCommands() {
 			cmd.Handler = notImplemented(name)
 		}
 
-		cmd.Handler = middleware.OpMsgObservability(cmd.Handler, logging.WithName(h.L, "observability"))
+		cmd.Handler = middleware.Observability(cmd.Handler, logging.WithName(h.L, "observability"))
 
 		if h.Auth && !cmd.anonymous {
 			cmd.Handler = middleware.Auth(cmd.Handler, logging.WithName(h.L, "auth"), name)
@@ -338,7 +338,7 @@ func (h *Handler) Commands() map[string]*command {
 }
 
 // notImplemented returns a handler that returns an error indicating that the command is not implemented.
-func notImplemented(command string) middleware.MsgHandlerFunc {
+func notImplemented(command string) middleware.HandlerFunc[*middleware.MsgRequest, *middleware.MsgResponse] {
 	return func(context.Context, *middleware.MsgRequest) (*middleware.MsgResponse, error) {
 		return nil, mongoerrors.New(
 			mongoerrors.ErrNotImplemented,
