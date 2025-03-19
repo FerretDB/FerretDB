@@ -486,7 +486,10 @@ func runGoTest(runCtx context.Context, opts *runGoTestOpts) (resErr error) {
 				msg += fmt.Sprintf(" %d/%s", done, totalTests)
 			}
 
-			logOutput := opts.logger.WarnContext
+			logOutput := opts.logger.ErrorContext
+			if event.Action == "skip" {
+				logOutput = opts.logger.WarnContext
+			}
 
 			if event.Action == "pass" {
 				if !opts.logger.Enabled(runCtx, slog.LevelDebug) {
