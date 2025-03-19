@@ -16,7 +16,3 @@ Download the appropriate DocumentDB `.deb` package from our release page.
 Then, you can use `dpkg` tool to install it.
 
 You need to install PostgreSQL and additional dependencies required by the DocumentDB extension.
-
-:::tip
-For more information on the best FerretDB version to use, see the [DocumentDB release notes](https://github.com/FerretDB/documentdb/releases/).
-:::

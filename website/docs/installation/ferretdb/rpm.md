@@ -7,7 +7,7 @@ sidebar_position: 3
 To install the `.rpm` packages for FerretDB on your RHEL, CentOS, and other `.rpm`-based systems,
 you can use `rpm` tool.
 
-We provide different `.rpm` packages for various deployments on [our release page](https://github.com/FerretDB/FerretDB/releases/latest)
+We provide different `.rpm` packages for various deployments on [our release page](https://github.com/FerretDB/FerretDB/releases/).
 
 - For most use cases, we recommend using the production package (e.g., `ferretdb.rpm`).
 - For debugging purposes, use the development package (contains a `-dev` suffix e.g., `ferretdb-dev.rpm`).
