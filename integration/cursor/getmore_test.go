@@ -627,9 +627,6 @@ func TestGetMoreCommandConnection(t *testing.T) {
 }
 
 func TestGetMoreCommandMaxTimeMSErrors(t *testing.T) {
-	// FIXME
-	t.Skip("FIXME")
-
 	// do not run tests in parallel to avoid using too many backend connections
 	ctx, collection := setup.Setup(t)
 
@@ -1084,9 +1081,6 @@ func TestFindGetMoreCommandRemoveDocument(t *testing.T) {
 }
 
 func TestFindCommandFirstBatchMaxTimeMS(t *testing.T) {
-	// FIXME
-	t.Skip("FIXME")
-
 	t.Parallel()
 
 	s := setup.SetupWithOpts(t, nil)
