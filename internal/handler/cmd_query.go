@@ -20,9 +20,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
@@ -31,7 +31,7 @@ import (
 // CmdQuery implements deprecated OP_QUERY message handling.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) CmdQuery(connCtx context.Context, query *wire.OpQuery) (*wire.OpReply, error) {
+func (h *Handler) CmdQuery(connCtx context.Context, query *middleware.CmdQuery) (*middleware.CmdReply, error) {
 	q := query.Query()
 	cmd := q.Command()
 	collection := query.FullCollectionName
@@ -39,11 +39,11 @@ func (h *Handler) CmdQuery(connCtx context.Context, query *wire.OpQuery) (*wire.
 	suffix := ".$cmd"
 	if !strings.HasSuffix(collection, suffix) {
 		// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/527
-		return wire.NewOpReply(must.NotFail(wirebson.NewDocument(
+		return middleware.NewReply(wirebson.MustDocument(
 			"$err", "OP_QUERY is no longer supported. The client driver may require an upgrade.",
 			"code", int32(mongoerrors.ErrLocation5739101),
 			"ok", float64(0),
-		)))
+		))
 	}
 
 	if query.NumberToReturn != 1 && query.NumberToReturn != -1 {
@@ -61,7 +61,7 @@ func (h *Handler) CmdQuery(connCtx context.Context, query *wire.OpQuery) (*wire.
 			return nil, lazyerrors.Error(err)
 		}
 
-		return wire.NewOpReply(reply)
+		return middleware.NewReply(reply)
 
 	case "saslStart":
 		if slices.Contains(q.FieldNames(), "$db") {
@@ -79,7 +79,7 @@ func (h *Handler) CmdQuery(connCtx context.Context, query *wire.OpQuery) (*wire.
 
 		must.NoError(reply.Add("ok", float64(1)))
 
-		return wire.NewOpReply(reply)
+		return middleware.NewReply(reply)
 
 	case "saslContinue":
 		if slices.Contains(q.FieldNames(), "$db") {
@@ -95,7 +95,7 @@ func (h *Handler) CmdQuery(connCtx context.Context, query *wire.OpQuery) (*wire.
 			return nil, err
 		}
 
-		return wire.NewOpReply(reply)
+		return middleware.NewReply(reply)
 	}
 
 	return nil, mongoerrors.NewWithArgument(

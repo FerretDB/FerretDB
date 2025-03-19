@@ -27,3 +27,12 @@ func Observability(next MsgHandlerFunc, l *slog.Logger) MsgHandlerFunc {
 		return next(ctx, req)
 	}
 }
+
+// OpQueryObservability is a middleware that will wrap the command query handler with logs, traces, and metrics.
+//
+// TODO https://github.com/FerretDB/FerretDB/issues/4439
+func OpQueryObservability(next QueryHandlerFunc, l *slog.Logger) QueryHandlerFunc {
+	return func(ctx context.Context, req *CmdQuery) (*CmdReply, error) {
+		return next(ctx, req)
+	}
+}
