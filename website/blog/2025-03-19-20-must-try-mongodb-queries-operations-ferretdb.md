@@ -124,28 +124,26 @@ This is useful when you store related data in different collections but want to 
 Suppose there's another collection `publishers` with more details on the publishers, as shown below:
 
 ```js
-db.publishers.insertMany(
-  [
-    {
-      "_id": 1,
-      "name": "T. Egerton",
-      "location": "London, United Kingdom",
-      "established": 1780
-    },
-    {
-      "_id": 2,
-      "name": "Harper & Brothers",
-      "location": "New York, United States",
-      "established": 1817
-    },
-    {
-      "_id": 3,
-      "name": "Lackington, Hughes, Harding, Mavor & Jones",
-      "location": "London, United Kingdom",
-      "established": 1790
-    }
-  ]
-)
+db.publishers.insertMany([
+  {
+    _id: 1,
+    name: 'T. Egerton',
+    location: 'London, United Kingdom',
+    established: 1780
+  },
+  {
+    _id: 2,
+    name: 'Harper & Brothers',
+    location: 'New York, United States',
+    established: 1817
+  },
+  {
+    _id: 3,
+    name: 'Lackington, Hughes, Harding, Mavor & Jones',
+    location: 'London, United Kingdom',
+    established: 1790
+  }
+])
 ```
 
 You can join the data from both collections (`books` and `publishers`) using `$lookup`.
