@@ -62,7 +62,7 @@ func TestPrepareOpMsg(t *testing.T) {
 
 			require.NoError(t, err)
 
-			assert.Equal(t, tc.expectedOpMsg, actualDoc)
+			assert.Equal(t, tc.expectedOpMsg, actualDoc.OpMsg)
 		})
 	}
 }

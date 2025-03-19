@@ -20,7 +20,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/xiter"
 
@@ -29,112 +28,59 @@ import (
 )
 
 func BenchmarkFind(b *testing.B) {
-	provider := shareddata.BenchmarkSmallDocuments
+	for _, provider := range shareddata.AllBenchmarkProviders() {
+		b.Run(provider.Name(), func(b *testing.B) {
+			s := setup.SetupWithOpts(b, &setup.SetupOpts{
+				BenchmarkProvider: provider,
+			})
 
-	b.Run(provider.Name(), func(b *testing.B) {
-		s := setup.SetupWithOpts(b, &setup.SetupOpts{
-			BenchmarkProvider: provider,
-		})
-
-		for name, bc := range map[string]struct {
-			filter bson.D
-		}{
-			"Int32ID": {
-				filter: bson.D{{"_id", int32(42)}},
-			},
-			"Int32One": {
-				filter: bson.D{{"id", int32(42)}},
-			},
-			"Int32Many": {
-				filter: bson.D{{"v", int32(42)}},
-			},
-			"Int32ManyDotNotation": {
-				filter: bson.D{{"v.foo", int32(42)}},
-			},
-		} {
-			b.Run(name, func(b *testing.B) {
-				var firstDocs, docs int
-
-				for range b.N {
-					cursor, err := s.Collection.Find(s.Ctx, bc.filter)
-					require.NoError(b, err)
-
-					docs = 0
-					for cursor.Next(s.Ctx) {
-						docs++
-					}
-
-					require.NoError(b, cursor.Close(s.Ctx))
-					require.NoError(b, cursor.Err())
-					require.Positive(b, docs)
-
-					if firstDocs == 0 {
-						firstDocs = docs
-					}
+			for name, filter := range map[string]bson.D{
+				"Int32IDIndex":         {{"_id", int32(42)}},
+				"Int32One":             {{"id", int32(42)}},
+				"Int32Many":            {{"v", int32(42)}},
+				"Int32ManyDotNotation": {{"v.foo", int32(42)}},
+			} {
+				if provider == shareddata.BenchSettings && name != "Int32IDIndex" {
+					continue
 				}
 
-				b.StopTimer()
+				b.Run(name, func(b *testing.B) {
+					var firstDocs, docs int
 
-				require.Equal(b, firstDocs, docs)
+					for b.Loop() {
+						cursor, err := s.Collection.Find(s.Ctx, filter)
+						require.NoError(b, err)
 
-				b.ReportMetric(float64(docs), "docs-returned")
-			})
-		}
-	})
-}
+						docs = 0
+						for cursor.Next(s.Ctx) {
+							docs++
+						}
 
-func BenchmarkReplaceOne(b *testing.B) {
-	provider := shareddata.BenchmarkSettingsDocuments
+						err = cursor.Err()
+						require.NoError(b, err)
 
-	s := setup.SetupWithOpts(b, &setup.SetupOpts{
-		BenchmarkProvider: provider,
-	})
-	ctx, collection := s.Ctx, s.Collection
+						err = cursor.Close(s.Ctx)
+						require.NoError(b, err)
 
-	cursor, err := collection.Find(ctx, bson.D{})
-	require.NoError(b, err)
+						if firstDocs == 0 {
+							firstDocs = docs
+						}
+					}
 
-	var lastRaw bson.Raw
-	for cursor.Next(ctx) {
-		lastRaw = cursor.Current
+					require.Positive(b, firstDocs)
+					require.Equal(b, firstDocs, docs)
+
+					b.ReportMetric(float64(docs), "docs-returned")
+				})
+			}
+		})
 	}
-	require.NoError(b, cursor.Err())
-	require.NoError(b, cursor.Close(ctx))
-
-	var doc bson.D
-	require.NoError(b, bson.Unmarshal(lastRaw, &doc))
-	require.Equal(b, "_id", doc[0].Key)
-	require.NotEmpty(b, doc[0].Value)
-	require.NotZero(b, doc[1].Value)
-
-	b.Run(provider.Name(), func(b *testing.B) {
-		filter := bson.D{{"_id", doc[0].Value}}
-		var res *mongo.UpdateResult
-
-		for i := range b.N {
-			doc[1].Value = int64(i + 1)
-
-			res, err = collection.ReplaceOne(ctx, filter, doc)
-			require.NoError(b, err)
-			require.Equal(b, int64(1), res.MatchedCount)
-			require.Equal(b, int64(1), res.ModifiedCount)
-		}
-
-		b.StopTimer()
-
-		var actual bson.D
-		err = collection.FindOne(ctx, filter).Decode(&actual)
-		require.NoError(b, err)
-		AssertEqualDocuments(b, doc, actual)
-	})
 }
 
-func BenchmarkInsertMany(b *testing.B) {
-	ctx, collection := setup.Setup(b)
-
+func BenchmarkInsert(b *testing.B) {
 	for _, provider := range shareddata.AllBenchmarkProviders() {
 		var total int
-		for range provider.NewIter() {
+		for range provider.Docs() {
 			total++
 		}
 
@@ -147,23 +93,15 @@ func BenchmarkInsertMany(b *testing.B) {
 
 		for _, batchSize := range batchSizes {
 			b.Run(fmt.Sprintf("%s/Batch%d", provider.Name(), batchSize), func(b *testing.B) {
-				b.StopTimer()
+				ctx, collection := setup.Setup(b)
 
-				for range b.N {
-					require.NoError(b, collection.Drop(ctx))
+				for b.Loop() {
+					err := collection.Drop(ctx)
+					require.NoError(b, err)
 
-					for docs := range xiter.Chunk(provider.NewIter(), batchSize) {
-						insertDocs := make([]any, len(docs))
-						for i := range insertDocs {
-							insertDocs[i] = docs[i]
-						}
-
-						b.StartTimer()
-
-						_, err := collection.InsertMany(ctx, insertDocs)
+					for docs := range xiter.Chunk(provider.Docs(), batchSize) {
+						_, err = collection.InsertMany(ctx, docs)
 						require.NoError(b, err)
-
-						b.StopTimer()
 					}
 				}
 			})
