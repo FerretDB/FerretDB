@@ -67,7 +67,7 @@ var cli struct {
 	Version bool `default:"false" help:"Print version to stdout and exit." env:"-"`
 
 	PostgreSQLURL     string `name:"postgresql-url"      default:"postgres://127.0.0.1:5432/postgres"   help:"PostgreSQL URL." group:"PostgreSQL"`
-	PostgreSQLURLFile string `name:"postgresql-url-file" help:"Path to file containing PostgreSQL URL." group:"PostgreSQL"     type:"filecontent"`
+	PostgreSQLURLFile []byte `name:"postgresql-url-file" help:"Path to file containing PostgreSQL URL." group:"PostgreSQL"     type:"filecontent"`
 
 	Listen struct {
 		Addr        string `default:"127.0.0.1:27017" help:"Listen TCP address for MongoDB protocol."`
@@ -303,12 +303,8 @@ func run() {
 	// safe to always enable
 	runtime.SetBlockProfileRate(10000)
 
-	if cli.PostgreSQLURLFile != "" {
-		content, err := os.ReadFile(cli.PostgreSQLURLFile)
-		if err != nil {
-			log.Fatalf("Failed to read PostgreSQL URL file: %s", err)
-		}
-		cli.PostgreSQLURL = strings.TrimSpace(string(content))
+	if len(cli.PostgreSQLURLFile) > 0 {
+		cli.PostgreSQLURL = strings.TrimSpace(string(cli.PostgreSQLURLFile))
 	}
 
 	stateProvider, err := state.NewProviderDir(cli.StateDir)
