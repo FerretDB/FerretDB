@@ -35,22 +35,23 @@ type MsgResponse struct {
 	*wire.OpMsg
 }
 
-// QueryRequest represents incoming request from the client.
+// QueryRequest is a deprecated request message type.
+// It is still used by commands including `hello` and `isMaster`.
 type QueryRequest struct {
 	*wire.OpQuery
 }
 
-// ReplyResponse represent outgoing response to the client.
+// ReplyResponse is a deprecated response message type used for the response to [QueryRequest].
 type ReplyResponse struct {
 	*wire.OpReply
 }
 
-// RequestType is an interface for handler request types.
+// RequestType represents incoming request types.
 type RequestType interface {
 	*MsgRequest | *QueryRequest
 }
 
-// ResponseType is an interface for response types.
+// ResponseType represents outgoing response types.
 type ResponseType interface {
 	*MsgResponse | *ReplyResponse
 }
