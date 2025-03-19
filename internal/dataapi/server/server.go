@@ -31,6 +31,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi/api"
 	"github.com/FerretDB/FerretDB/v2/internal/handler"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
@@ -90,7 +91,7 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 			"$db", "admin",
 		)).Encode())))
 
-		res, err := s.handler.Commands()["saslStart"].Handler(ctx, msg)
+		res, err := s.handler.Commands()["saslStart"].Handler(ctx, &middleware.MsgRequest{OpMsg: msg})
 		if err != nil {
 			http.Error(w, lazyerrors.Error(err).Error(), http.StatusUnauthorized)
 			return
@@ -114,7 +115,7 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 			"$db", "admin",
 		)).Encode())))
 
-		res, err = s.handler.Commands()["saslContinue"].Handler(ctx, msg)
+		res, err = s.handler.Commands()["saslContinue"].Handler(ctx, &middleware.MsgRequest{OpMsg: msg})
 		if err != nil {
 			http.Error(w, lazyerrors.Error(err).Error(), http.StatusUnauthorized)
 			return
@@ -238,13 +239,18 @@ func prepareDocument(pairs ...any) (*wirebson.Document, error) {
 // which can be used as handler command msg.
 //
 // If any of pair values is nil it's ignored.
-func prepareOpMsg(pairs ...any) (*wire.OpMsg, error) {
+func prepareOpMsg(pairs ...any) (*middleware.MsgRequest, error) {
 	doc, err := prepareDocument(pairs...)
 	if err != nil {
 		return nil, err
 	}
 
-	return wire.NewOpMsg(doc)
+	req, err := wire.NewOpMsg(doc)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &middleware.MsgRequest{OpMsg: req}, nil
 }
 
 // decodeJsonRequest takes request with json body and decodes it into

@@ -110,7 +110,7 @@ func Startup() {
 	}
 
 	for _, p := range shareddata.AllBenchmarkProviders() {
-		if g, ok := p.(shareddata.BenchmarkGenerator); ok {
+		if g, ok := p.(*shareddata.Generator); ok {
 			g.Init(*benchDocsF)
 		}
 	}

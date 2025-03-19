@@ -44,6 +44,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/v2/internal/handler"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/proxy"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
@@ -386,7 +387,7 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		connCtx, span = otel.Tracer("").Start(connCtx, "")
 
 		if err == nil {
-			resBody = c.handleOpMsg(connCtx, msg, command)
+			resBody = c.handleOpMsg(connCtx, &middleware.MsgRequest{OpMsg: msg}, command)
 		}
 
 	case wire.OpCodeQuery:
@@ -512,7 +513,7 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 // handleOpMsg processes OP_MSG requests.
 //
 // The passed context is canceled when the client disconnects.
-func (c *conn) handleOpMsg(connCtx context.Context, msg *wire.OpMsg, command string) *wire.OpMsg {
+func (c *conn) handleOpMsg(connCtx context.Context, msg *middleware.MsgRequest, command string) *middleware.MsgResponse {
 	cmd, ok := c.h.Commands()[command]
 	if !ok || cmd.Handler == nil {
 		err := mongoerrors.New(
@@ -520,12 +521,12 @@ func (c *conn) handleOpMsg(connCtx context.Context, msg *wire.OpMsg, command str
 			fmt.Sprintf("no such command: '%s'", command),
 		)
 
-		return mongoerrors.Make(connCtx, err, "", c.l).Msg()
+		return must.NotFail(middleware.Response(mongoerrors.Make(connCtx, err, "", c.l).Doc()))
 	}
 
 	res, err := cmd.Handler(connCtx, msg)
 	if err != nil {
-		return mongoerrors.Make(connCtx, err, "", c.l).Msg()
+		return must.NotFail(middleware.Response(mongoerrors.Make(connCtx, err, "", c.l).Doc()))
 	}
 
 	return res
@@ -574,12 +575,13 @@ func (c *conn) logResponse(ctx context.Context, who string, resHeader *wire.MsgH
 	level := slog.LevelDebug
 
 	if resHeader.OpCode == wire.OpCodeMsg {
-		msg := resBody.(*wire.OpMsg)
+		msg, ok := resBody.(*wire.OpMsg)
+		if !ok {
+			msg = resBody.(*middleware.MsgResponse).OpMsg
+		}
 
 		raw := msg.RawSection0()
 		doc, _ := raw.Decode()
-
-		var ok bool
 
 		if doc != nil {
 			switch v := doc.Get("ok").(type) {
