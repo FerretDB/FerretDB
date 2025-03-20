@@ -23,16 +23,12 @@ type Observability struct {
 	L *slog.Logger
 }
 
-// HandleOpMsg represents a function/method that processes a single OP_MSG command.
-//
-// The passed context is canceled when the client disconnects.
+// HandleOpMsg implements Middleware.
 func (o *Observability) HandleOpMsg(next MsgHandlerFunc) MsgHandlerFunc {
 	return next
 }
 
-// HandleOpReply represents a function/method that processes a single OP_QUERY command.
-//
-// The passed context is canceled when the client disconnects.
+// HandleOpReply implements Middleware.
 func (o *Observability) HandleOpReply(next QueryHandlerFunc) QueryHandlerFunc {
 	return next
 }
