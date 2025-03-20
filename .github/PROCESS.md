@@ -27,8 +27,10 @@ please follow these notes below when you working with pull request:
 1. Send pull requests from forks; do not make personal branches in the main repository.
    This way, we are similar to community members and could notice similar problems that we could fix for everyone,
    not just for us.
-2. Pull request title should be accurate and descriptive as it is used in the generated changelog.
+2. Pull request title should be accurate and descriptive
+   as it is used in the generated [changelog](../CHANGELOG.md) as is.
    It generally should start with imperative verb ("Fix …", not "Fixing …", "Fixed …" or other forms).
+   It should not have a prefix ("Fix …", not "Fix: …") (we use labels for categorization).
    It should not mention the issue number.
 3. It is fine to send several sequential pull requests for one issue to make them easier to review.
    In that case, please still use the `Closes` word as described in [CONTRIBUTING.md](../CONTRIBUTING.md)
