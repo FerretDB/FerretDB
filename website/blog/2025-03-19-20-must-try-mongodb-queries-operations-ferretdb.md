@@ -292,7 +292,7 @@ db.books.aggregate([
 ])
 ```
 
-### 15 Lookup (Join queries)
+### 15. Lookup (Join queries)
 
 Sometimes, you need to combine data from multiple collections – just like SQL joins in relational databases.
 This is useful when you store related data in different collections but want to retrieve them together in a single query.
