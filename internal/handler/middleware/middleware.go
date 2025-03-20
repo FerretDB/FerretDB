@@ -17,6 +17,7 @@ package middleware
 
 import (
 	"context"
+	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 
 	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
@@ -28,22 +29,27 @@ import (
 // It may come from the wire protocol connection or from the Data API server.
 type MsgRequest struct {
 	*wire.OpMsg
+	RequestID int32
+	Command   string
 }
 
 // MsgResponse represent outgoing response to the client.
 type MsgResponse struct {
 	*wire.OpMsg
+	*mongoerrors.Error
 }
 
 // QueryRequest is a deprecated request message type.
 // It is still used by commands including `hello` and `isMaster`.
 type QueryRequest struct {
 	*wire.OpQuery
+	RequestID int32
 }
 
 // ReplyResponse is a deprecated response message type used for the response to [QueryRequest].
 type ReplyResponse struct {
 	*wire.OpReply
+	*mongoerrors.Error
 }
 
 // Middleware represents functions for handling incoming requests.

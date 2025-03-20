@@ -387,7 +387,12 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		connCtx, span = otel.Tracer("").Start(connCtx, "")
 
 		if err == nil {
-			resBody = c.handleOpMsg(connCtx, &middleware.MsgRequest{OpMsg: msg}, command)
+			req := &middleware.MsgRequest{
+				OpMsg:     msg,
+				RequestID: reqHeader.RequestID,
+				Command:   command,
+			}
+			resBody = c.handleOpMsg(connCtx, req, command)
 		}
 
 	case wire.OpCodeQuery:
@@ -398,14 +403,20 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 
 		// do not store typed nil in interface, it makes it non-nil
 
-		o := &middleware.Observability{
+		observabilityHandler := middleware.Observability{
+			M: c.m,
 			L: logging.WithName(c.l, "observability"),
 		}
 
-		replyHandler := o.HandleOpReply(c.h.CmdQuery)
+		errHandler := middleware.Error{
+			L: logging.WithName(c.l, "error"),
+		}
+
+		replyHandler := errHandler.HandleOpReply(c.h.CmdQuery)
+		replyHandler = observabilityHandler.HandleOpReply(replyHandler)
 
 		var reply *middleware.ReplyResponse
-		reply, err = replyHandler(connCtx, &middleware.QueryRequest{OpQuery: query})
+		reply, err = replyHandler(connCtx, &middleware.QueryRequest{OpQuery: query, RequestID: reqHeader.RequestID})
 
 		if reply != nil && reply.OpReply != nil {
 			resBody = reply.OpReply
