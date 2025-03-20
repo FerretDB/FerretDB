@@ -366,7 +366,7 @@ db.books.find({
 
 ## Diagnostic operations
 
-### 17 Monitor operations with `currentOp`
+### 17. Monitor operations with `currentOp`
 
 Sometimes, your database operations become slow, and you wonder what's causing the delay.
 `currentOp()` lets you inspect active operations, and find long-running queries that may overwhelm your instance.
