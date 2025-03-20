@@ -206,7 +206,7 @@ db.books.createIndex(
 ### 11. Full-text search with `text` index
 
 Regular indexes work great for exact matches or range queries but they struggle with searching inside text.
-For instance, if you're looking for books with "classic" somewhere in the summary (`db.books.find({ "summary": "romance novel" })`), a standard index on "summary" won't help.
+For instance, if you're looking for books with "romance novel" somewhere in the summary (`db.books.find({ "summary": "romance novel" })`), a standard index on "summary" won't help.
 It expects an exact match and that's not good for full-text search.
 
 Text indexes tokenize words and allow efficient full-text searches.
