@@ -6,16 +6,16 @@ description: Learn about common issues and how to resolve them.
 
 # Troubleshooting
 
-If you experience any issues with FerretDB, this troubleshooting guide will help you resolve them.
+If you experience issues with FerretDB, this troubleshooting guide will help you resolve the most common ones.
 
-<!-- Do not change second-level headings as we reference them code in error messages -->
+## Connectivity
 
-## Connectivity issues
+<!-- Do not change header above as it is referenced in code in error messages -->
 
 Do you have trouble setting up or connecting to FerretDB?
 Find solutions to common connectivity issues below.
 
-### Error initializing PostgreSQL with the DocumentDB extension in Docker
+### Extension initialization
 
 If you get an error when initializing PostgreSQL with the DocumentDB extension in Docker,
 it may be due to an existing PostgreSQL data directory or volume.
@@ -37,7 +37,7 @@ Follow our [migration guide](../migration/migrating-from-mongodb.md) for more de
 For more details on setting up PostgreSQL with the DocumentDB extension in Docker,
 see the [Docker installation guide](../installation/documentdb/docker.md).
 
-### Authentication error when connecting to FerretDB
+### The authentication mechanism is not enabled
 
 If you get an error when connecting to FerretDB with the `PLAIN` authentication mechanism
 (e.g. `mongodb://username:password@127.0.0.1:27017/ferretdb?authMechanism=PLAIN`),
@@ -45,8 +45,8 @@ it is because `PLAIN` authentication is no longer supported in FerretDB v2.x.
 
 Log error may look like this:
 
-```sh
-Error: Received authentication for mechanism PLAIN which is not enabled.
+```text
+Received authentication for mechanism %s which is not enabled
 ```
 
 Note that FerretDB v2.x uses the `SCRAM-SHA-256` authentication mechanism,
@@ -56,13 +56,17 @@ To resolve this issue, connect to FerretDB without specifying the `PLAIN` mechan
 
 Learn more about [FerretDB authentication](../security/authentication.md).
 
-## Compatibility issues
+### Salt length
+
+<!-- Do not change header above as it is referenced in code in error messages -->
+
+## Compatibility
 
 For any compatibility issues or concerns,
 read our [pre-migration testing guide](../migration/premigration-testing.md).
 The guide will help you identify any potential compatibility issues before migrating your data to FerretDB.
 
-## Performance issues
+## Performance
 
 If you experience performance issues or have concerns about your FerretDB setup,
 debugging and observability tools can help.

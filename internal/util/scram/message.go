@@ -232,8 +232,8 @@ func parseMessage(msg string, l *slog.Logger) (*message, error) {
 				//nolint:lll // those URLs are long
 
 				l.Warn(
-					"SCRAM attribute 's' (salt) has unexpected length; "+
-						"it is recommended to use users created by `createUser` command",
+					"SCRAM attribute 's' (salt) has unexpected length "+
+						"(see https://docs.ferretdb.io/troubleshooting/#connectivity)",
 					slog.Int("l", sl),
 				)
 			}
