@@ -1,10 +1,14 @@
 ---
-sidebar_position: 1
+sidebar_position: 5
+slug: /troubleshooting/ # referenced in code in error messages
+description: Learn about common issues and how to resolve them.
 ---
 
-# Troubleshooting overview
+# Troubleshooting
 
 If you experience any issues with FerretDB, this troubleshooting guide will help you resolve them.
+
+<!-- Do not change second-level headings as we reference them code in error messages -->
 
 ## Connectivity issues
 
@@ -19,7 +23,7 @@ This error occurs because the previous PostgreSQL data directory was created wit
 
 Log error may look like this:
 
-```sh
+```text
 schema "documentdb_api" does not exist
 ```
 
