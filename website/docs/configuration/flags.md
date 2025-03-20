@@ -28,9 +28,10 @@ Some default values are overridden in [our Docker image](../installation/ferretd
 
 ## PostgreSQL
 
-| Flag               | Description               | Environment Variable      | Default Value                        |
-| ------------------ | ------------------------- | ------------------------- | ------------------------------------ |
-| `--postgresql-url` | PostgreSQL connection URL | `FERRETDB_POSTGRESQL_URL` | `postgres://127.0.0.1:5432/postgres` |
+| Flag                    | Description                                             | Environment Variable           | Default Value                        |
+| ----------------------- | ------------------------------------------------------- | ------------------------------ | ------------------------------------ |
+| `--postgresql-url`      | PostgreSQL connection URL                               | `FERRETDB_POSTGRESQL_URL`      | `postgres://127.0.0.1:5432/postgres` |
+| `--postgresql-url-file` | Path to a file containing the PostgreSQL connection URL | `FERRETDB_POSTGRESQL_URL_FILE` |                                      |
 
 FerretDB uses [pgx v5](https://github.com/jackc/pgx) library for connecting to PostgreSQL.
 Supported URL parameters are documented there:
