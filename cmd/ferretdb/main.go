@@ -66,8 +66,8 @@ var cli struct {
 
 	Version bool `default:"false" help:"Print version to stdout and exit." env:"-"`
 
-	PostgreSQLURL     string `name:"postgresql-url"      default:"postgres://127.0.0.1:5432/postgres"   help:"PostgreSQL URL." group:"PostgreSQL"`
-	PostgreSQLURLFile []byte `name:"postgresql-url-file" help:"Path to file containing PostgreSQL URL." group:"PostgreSQL"     type:"filecontent"`
+	PostgreSQLURL     string `name:"postgresql-url"      default:"postgres://127.0.0.1:5432/postgres"                                                                   help:"PostgreSQL URL." group:"PostgreSQL"`
+	PostgreSQLURLFile []byte `name:"postgresql-url-file" help:"Path to a file containing the PostgreSQL connection URL. If non-empty, this overrides --postgresql-url." group:"PostgreSQL"     type:"filecontent"`
 
 	Listen struct {
 		Addr        string `default:"127.0.0.1:27017" help:"Listen TCP address for MongoDB protocol."`
