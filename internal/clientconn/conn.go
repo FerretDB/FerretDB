@@ -398,11 +398,19 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 
 		// do not store typed nil in interface, it makes it non-nil
 
-		var resReply *wire.OpReply
-		resReply, err = c.h.CmdQuery(connCtx, query)
+		queryHandler := middleware.QueryError(c.h.CmdQuery, c.l)
+		queryHandler = middleware.QueryObservability(queryHandler, c.l)
 
-		if resReply != nil {
-			resBody = resReply
+		req := &middleware.QueryRequest{
+			OpQuery:   query,
+			RequestID: reqHeader.RequestID,
+		}
+
+		var reply *middleware.ReplyResponse
+		reply, err = queryHandler(connCtx, req)
+
+		if reply != nil && reply.OpReply != nil {
+			resBody = reply.OpReply
 		}
 
 	case wire.OpCodeReply:

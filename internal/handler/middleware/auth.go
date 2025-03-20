@@ -26,7 +26,7 @@ import (
 // Auth is a middleware that wraps the command handler with authentication check.
 //
 // Context must contain [*conninfo.ConnInfo].
-func Auth(next MsgHandlerFunc, l *slog.Logger, command string) MsgHandlerFunc {
+func Auth(next HandlerFunc[*MsgRequest, *MsgResponse], l *slog.Logger, command string) HandlerFunc[*MsgRequest, *MsgResponse] {
 	return func(ctx context.Context, req *MsgRequest) (*MsgResponse, error) {
 		conv := conninfo.Get(ctx).Conv()
 		succeed := conv.Succeed()
