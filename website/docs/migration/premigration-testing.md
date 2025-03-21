@@ -12,9 +12,18 @@ we offer several methods through which you can test your application with Ferret
 We offer multiple operation modes which help facilitate the testing of your application by enabling FerretDB to act as a proxy.
 For more details, refer to the [operation modes](../configuration/operation-modes.md).
 
-### Manual and automated testing with `diff-normal` mode
+:::note
 
-For details on how to install FerretDB, [refer to the installation guide](../installation/ferretdb/docker.md).
+This guide focuses on testing your application for compatibility with FerretDB before migrating your data.
+
+- For performance testing, we recommend using production images/packages.
+- For compatibility testing, we recommend using development images/packages.
+
+[Refer to the installation guide](../installation/ferretdb/docker.md) for details on how to set up FerretDB.
+
+:::
+
+### Manual and automated testing with `diff-normal` mode
 
 You can manually test your application or use integration tests, among other methods.
 Afterward, you can inspect the differential output for errors or inconsistencies between responses that require your attention.
