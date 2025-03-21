@@ -1,6 +1,5 @@
 ---
 sidebar_position: 1
-slug: /security/authentication/ # referenced in FerretDB code in error messages
 description: Learn to use authentication mechanisms
 ---
 

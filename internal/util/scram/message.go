@@ -156,7 +156,7 @@ func parseMessage(msg string, l *slog.Logger) (*message, error) {
 	var res message
 
 	// better check for gs2 header
-	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/901
+	// TODO https://github.com/FerretDB/FerretDB/issues/4945
 	if strings.HasPrefix(msg, "n,,") {
 		msg = strings.TrimPrefix(msg, "n,,")
 		res.gs2 = "n,"
@@ -167,7 +167,7 @@ func parseMessage(msg string, l *slog.Logger) (*message, error) {
 	// https://datatracker.ietf.org/doc/html/rfc5802#section-5.1 says:
 	// > Note that the order of attributes in client or server messages is fixed
 	// We should enforce that.
-	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/901
+	// TODO https://github.com/FerretDB/FerretDB/issues/4945
 
 	for _, field := range fields {
 		name, value, ok := strings.Cut(field, "=")
@@ -184,7 +184,7 @@ func parseMessage(msg string, l *slog.Logger) (*message, error) {
 
 		case "n":
 			// SASLprep, check if = is not followed by either 2C or 3D
-			// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/901
+			// TODO https://github.com/FerretDB/FerretDB/issues/4945
 			value = strings.ReplaceAll(value, "=2C", ",")
 			value = strings.ReplaceAll(value, "=3D", "=")
 
@@ -219,15 +219,21 @@ func parseMessage(msg string, l *slog.Logger) (*message, error) {
 
 			sl := len(s)
 			if sl < 12 {
-				return nil, lazyerrors.Errorf("SCRAM attribute 's' has incorrect length %d: %q", sl, field)
+				return nil, lazyerrors.Errorf("SCRAM attribute 's' (salt) has incorrect length %d: %q", sl, field)
 			}
 
 			if sl != 28 {
 				// Legacy mongo shell and some older drivers require exactly 28 bytes,
 				// but most current drivers are fine.
 				// We still want users to use credentials created by DocumentDB.
+				// https://github.com/postgres/postgres/blob/f8554dee417ffc4540c94cf357f7bf7d4b6e5d80/src/include/common/scram-common.h#L39-L44
+				// https://github.com/microsoft/documentdb/blob/d95c1e3717d9b2eb121979fd84fe60b32b4f7eac/pg_documentdb/src/configs/system_configs.c#L68-L69
+				//
+				//nolint:lll // those URLs are long
+
 				l.Warn(
-					"SCRAM attribute 's' has unexpected length; it is recommended to use users created by `createUser` command",
+					"SCRAM attribute 's' (salt) has unexpected length "+
+						"(see https://docs.ferretdb.io/troubleshooting/#connectivity)",
 					slog.Int("l", sl),
 				)
 			}
