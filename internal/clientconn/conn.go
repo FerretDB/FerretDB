@@ -406,9 +406,7 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		replyHandler = observabilityHandler.HandleOpReply(replyHandler)
 
 		var reply *middleware.ReplyResponse
-		reply, err = replyHandler(connCtx, &middleware.QueryRequest{OpQuery: query})
-
-		if err != nil {
+		if reply, err = replyHandler(connCtx, &middleware.QueryRequest{OpQuery: query}); err != nil {
 			// must not be reachable, error is handled by middleware.Error
 			panic(err)
 		}

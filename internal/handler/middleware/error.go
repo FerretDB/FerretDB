@@ -37,8 +37,8 @@ func NewError(arg string, l *slog.Logger) *Error {
 
 // HandleOpMsg implements Middleware.
 //
-// If any error was returned from `next` handler,
-// it converts the error to OP_MSG response.
+// If an error was returned from `next` handler, it converts the error to OP_MSG response.
+// It also sets the Error field in the response, for the later use by such as observability.
 // HandleOpMsg always returns nil error.
 func (e *Error) HandleOpMsg(next MsgHandlerFunc) MsgHandlerFunc {
 	return func(ctx context.Context, req *MsgRequest) (resp *MsgResponse, err error) {
@@ -61,9 +61,9 @@ func (e *Error) HandleOpMsg(next MsgHandlerFunc) MsgHandlerFunc {
 
 // HandleOpReply implements Middleware.
 //
-// If any error was returned from `next` handler,
-// it converts the error to OP_REPLY response.
-// HandleOpMsg always returns nil error.
+// If an error was returned from `next` handler, it converts the error to OP_REPLY response.
+// It also sets the Error field in the response, for the later use by such as observability.
+// HandleOpReply always returns nil error.
 func (e *Error) HandleOpReply(next QueryHandlerFunc) QueryHandlerFunc {
 	return func(ctx context.Context, req *QueryRequest) (resp *ReplyResponse, err error) {
 		defer func() {
