@@ -396,19 +396,28 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		query := reqBody.(*wire.OpQuery)
 		resHeader.OpCode = wire.OpCodeReply
 
-		// do not store typed nil in interface, it makes it non-nil
-
-		o := &middleware.Observability{
+		observabilityHandler := &middleware.Observability{
 			L: logging.WithName(c.l, "observability"),
 		}
 
-		replyHandler := o.HandleOpReply(c.h.CmdQuery)
+		errHandler := middleware.NewError("", logging.WithName(c.l, "error"))
+
+		replyHandler := errHandler.HandleOpReply(c.h.CmdQuery)
+		replyHandler = observabilityHandler.HandleOpReply(replyHandler)
 
 		var reply *middleware.ReplyResponse
 		reply, err = replyHandler(connCtx, &middleware.QueryRequest{OpQuery: query})
 
-		if reply != nil && reply.OpReply != nil {
-			resBody = reply.OpReply
+		if err != nil {
+			// must not be reachable, error is handled by middleware.Error
+			panic(err)
+		}
+
+		resBody = reply.OpReply
+
+		if reply.Error != nil {
+			result = reply.Name
+			argument = reply.Argument
 		}
 
 	case wire.OpCodeReply:
@@ -450,11 +459,6 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 			argument = protoErr.Argument
 
 		case wire.OpCodeReply:
-			protoErr := mongoerrors.Make(connCtx, err, "", c.l)
-			resBody = protoErr.Reply()
-			result = protoErr.Name
-			argument = protoErr.Argument
-
 		case wire.OpCodeQuery:
 			fallthrough
 		case wire.OpCodeUpdate:
@@ -520,22 +524,41 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 //
 // The passed context is canceled when the client disconnects.
 func (c *conn) handleOpMsg(connCtx context.Context, msg *middleware.MsgRequest, command string) *middleware.MsgResponse {
+	var cmdHandler middleware.MsgHandlerFunc
+
 	cmd, ok := c.h.Commands()[command]
 	if !ok || cmd.Handler == nil {
-		err := mongoerrors.New(
-			mongoerrors.ErrCommandNotFound,
-			fmt.Sprintf("no such command: '%s'", command),
-		)
-
-		return must.NotFail(middleware.Response(mongoerrors.Make(connCtx, err, "", c.l).Doc()))
+		cmdHandler = notFound(command)
+	} else {
+		cmdHandler = cmd.Handler
 	}
 
-	res, err := cmd.Handler(connCtx, msg)
+	observabilityHandler := &middleware.Observability{
+		L: logging.WithName(c.l, "observability"),
+	}
+
+	errHandler := middleware.NewError("", logging.WithName(c.l, "error"))
+
+	cmdHandler = errHandler.HandleOpMsg(cmdHandler)
+	cmdHandler = observabilityHandler.HandleOpMsg(cmdHandler)
+
+	res, err := cmdHandler(connCtx, msg)
 	if err != nil {
-		return must.NotFail(middleware.Response(mongoerrors.Make(connCtx, err, "", c.l).Doc()))
+		// must not be reachable, error is handled by middleware.Error
+		panic(err)
 	}
 
 	return res
+}
+
+// notFound returns a handler that returns an error indicating that the command is not found.
+func notFound(command string) middleware.MsgHandlerFunc {
+	return func(context.Context, *middleware.MsgRequest) (*middleware.MsgResponse, error) {
+		return nil, mongoerrors.New(
+			mongoerrors.ErrCommandNotFound,
+			fmt.Sprintf("no such command: '%s'", command),
+		)
+	}
 }
 
 // renamePartialFile takes over an open file `f` and closes it.
