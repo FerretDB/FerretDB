@@ -396,16 +396,18 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		query := reqBody.(*wire.OpQuery)
 		resHeader.OpCode = wire.OpCodeReply
 
-		observabilityHandler := &middleware.Observability{
+		obsMW := &middleware.Observability{
 			L: logging.WithName(c.l, "observability"),
 		}
 
-		errHandler := middleware.NewError("", logging.WithName(c.l, "error"))
+		errMW := middleware.NewError("", logging.WithName(c.l, "error"))
 
-		replyHandler := errHandler.HandleOpReply(c.h.CmdQuery)
-		replyHandler = observabilityHandler.HandleOpReply(replyHandler)
+		replyHandler := c.h.CmdQuery
+		replyHandler = errMW.HandleOpReply(replyHandler)
+		replyHandler = obsMW.HandleOpReply(replyHandler)
 
 		var reply *middleware.ReplyResponse
+
 		if reply, err = replyHandler(connCtx, &middleware.QueryRequest{OpQuery: query}); err != nil {
 			// must not be reachable, error is handled by middleware.Error
 			panic(err)
@@ -531,14 +533,14 @@ func (c *conn) handleOpMsg(connCtx context.Context, msg *middleware.MsgRequest, 
 		cmdHandler = cmd.Handler
 	}
 
-	observabilityHandler := &middleware.Observability{
+	obsMW := &middleware.Observability{
 		L: logging.WithName(c.l, "observability"),
 	}
 
-	errHandler := middleware.NewError("", logging.WithName(c.l, "error"))
+	errMW := middleware.NewError("", logging.WithName(c.l, "error"))
 
-	cmdHandler = errHandler.HandleOpMsg(cmdHandler)
-	cmdHandler = observabilityHandler.HandleOpMsg(cmdHandler)
+	cmdHandler = errMW.HandleOpMsg(cmdHandler)
+	cmdHandler = obsMW.HandleOpMsg(cmdHandler)
 
 	res, err := cmdHandler(connCtx, msg)
 	if err != nil {
