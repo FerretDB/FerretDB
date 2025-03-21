@@ -18,8 +18,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/FerretDB/wire"
-
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
@@ -33,7 +31,7 @@ type command struct {
 	// Handler processes this command.
 	//
 	// The passed context is canceled when the client disconnects.
-	Handler middleware.HandlerFunc
+	Handler middleware.MsgHandlerFunc
 
 	// Help is shown in the `listCommands` command output.
 	// If empty, that command is hidden, but still can be used.
@@ -319,12 +317,16 @@ func (h *Handler) initCommands() {
 
 	h.commands = make(map[string]*command, len(commands))
 
+	o := &middleware.Observability{
+		L: logging.WithName(h.L, "observability"),
+	}
+
 	for name, cmd := range commands {
 		if cmd.Handler == nil {
 			cmd.Handler = notImplemented(name)
 		}
 
-		cmd.Handler = middleware.Observability(cmd.Handler, logging.WithName(h.L, "observability"))
+		cmd.Handler = o.HandleOpMsg(cmd.Handler)
 
 		if h.Auth && !cmd.anonymous {
 			cmd.Handler = middleware.Auth(cmd.Handler, logging.WithName(h.L, "auth"), name)
@@ -340,9 +342,11 @@ func (h *Handler) Commands() map[string]*command {
 }
 
 // notImplemented returns a handler that returns an error indicating that the command is not implemented.
-func notImplemented(command string) middleware.HandlerFunc {
-	return func(context.Context, *wire.OpMsg) (*wire.OpMsg, error) {
-		msg := fmt.Sprintf("Command %s is not implemented", command)
-		return nil, mongoerrors.New(mongoerrors.ErrNotImplemented, msg)
+func notImplemented(command string) middleware.MsgHandlerFunc {
+	return func(context.Context, *middleware.MsgRequest) (*middleware.MsgResponse, error) {
+		return nil, mongoerrors.New(
+			mongoerrors.ErrNotImplemented,
+			fmt.Sprintf("Command %s is not implemented", command),
+		)
 	}
 }

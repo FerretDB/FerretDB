@@ -23,6 +23,7 @@ import (
 	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/session"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
@@ -33,8 +34,8 @@ import (
 // MsgHello implements `hello` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgHello(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	spec, err := msg.RawDocument()
+func (h *Handler) MsgHello(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
+	spec, err := req.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -53,7 +54,7 @@ func (h *Handler) MsgHello(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
-	return wire.NewOpMsg(res)
+	return middleware.Response(res)
 }
 
 // hello checks client metadata and returns hello's document fields.
