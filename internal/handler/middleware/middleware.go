@@ -21,6 +21,7 @@ import (
 	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
+	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
@@ -33,6 +34,7 @@ type MsgRequest struct {
 // MsgResponse represent outgoing response to the client.
 type MsgResponse struct {
 	*wire.OpMsg
+	*mongoerrors.Error
 }
 
 // QueryRequest is a deprecated request message type.
@@ -44,6 +46,7 @@ type QueryRequest struct {
 // ReplyResponse is a deprecated response message type used for the response to [QueryRequest].
 type ReplyResponse struct {
 	*wire.OpReply
+	*mongoerrors.Error
 }
 
 // Middleware represents functions for handling incoming requests.
