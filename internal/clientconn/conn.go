@@ -413,7 +413,7 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 			panic(err)
 		}
 
-		resBody = reply.OpReply
+		resBody = reply
 
 		if reply.Error != nil {
 			result = reply.Name
