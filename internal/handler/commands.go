@@ -317,12 +317,16 @@ func (h *Handler) initCommands() {
 
 	h.commands = make(map[string]*command, len(commands))
 
+	o := &middleware.Observability{
+		L: logging.WithName(h.L, "observability"),
+	}
+
 	for name, cmd := range commands {
 		if cmd.Handler == nil {
 			cmd.Handler = notImplemented(name)
 		}
 
-		cmd.Handler = middleware.Observability(cmd.Handler, logging.WithName(h.L, "observability"))
+		cmd.Handler = o.HandleOpMsg(cmd.Handler)
 
 		if h.Auth && !cmd.anonymous {
 			cmd.Handler = middleware.Auth(cmd.Handler, logging.WithName(h.L, "auth"), name)
