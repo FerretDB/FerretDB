@@ -931,8 +931,6 @@ func TestGetMoreCommandMaxTimeMS(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("FindExpire", func(tt *testing.T) {
-		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/344")
-
 		opts := options.Find().
 			// set batchSize big enough to hit maxTimeMS
 			SetBatchSize(2000).
@@ -947,8 +945,6 @@ func TestGetMoreCommandMaxTimeMS(t *testing.T) {
 	})
 
 	t.Run("AggregateExpire", func(tt *testing.T) {
-		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/344")
-
 		opts := options.Aggregate().
 			// set batchSize big enough to hit maxTimeMS
 			SetBatchSize(2000).

@@ -1246,48 +1246,6 @@ func BsonOrderby(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous 
 	return
 }
 
-// BsonOut is a wrapper for
-//
-//	documentdb_api_catalog.bson_out(anonymous documentdb_core.bson, anonymous1 text, anonymous12 text, anonymous123 text, anonymous1234 text).
-func BsonOut(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 string, anonymous12 string, anonymous123 string, anonymous1234 string) (err error) {
-	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_catalog.bson_out", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
-	defer span.End()
-
-	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api_catalog.bson_out($1::bytea, $2, $3, $4, $5)", anonymous, anonymous1, anonymous12, anonymous123, anonymous1234)
-	if err = row.Scan(); err != nil {
-		err = mongoerrors.Make(ctx, err, "documentdb_api_catalog.bson_out", l)
-	}
-	return
-}
-
-// BsonOutFinal is a wrapper for
-//
-//	documentdb_api_catalog.bson_out_final(anonymous bytea, OUT bson_out_final documentdb_core.bson).
-func BsonOutFinal(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}) (outBsonOutFinal wirebson.RawDocument, err error) {
-	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_catalog.bson_out_final", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
-	defer span.End()
-
-	row := conn.QueryRow(ctx, "SELECT bson_out_final::bytea FROM documentdb_api_catalog.bson_out_final($1)", anonymous)
-	if err = row.Scan(&outBsonOutFinal); err != nil {
-		err = mongoerrors.Make(ctx, err, "documentdb_api_catalog.bson_out_final", l)
-	}
-	return
-}
-
-// BsonOutTransition is a wrapper for
-//
-//	documentdb_api_catalog.bson_out_transition(anonymous bytea, anonymous1 documentdb_core.bson, anonymous12 text, anonymous123 text, anonymous1234 text, anonymous12345 text, OUT bson_out_transition bytea).
-func BsonOutTransition(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument, anonymous12 string, anonymous123 string, anonymous1234 string, anonymous12345 string) (outBsonOutTransition struct{}, err error) {
-	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_catalog.bson_out_transition", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
-	defer span.End()
-
-	row := conn.QueryRow(ctx, "SELECT bson_out_transition FROM documentdb_api_catalog.bson_out_transition($1, $2::bytea, $3, $4, $5, $6)", anonymous, anonymous1, anonymous12, anonymous123, anonymous1234, anonymous12345)
-	if err = row.Scan(&outBsonOutTransition); err != nil {
-		err = mongoerrors.Make(ctx, err, "documentdb_api_catalog.bson_out_transition", l)
-	}
-	return
-}
-
 // BsonQueryMatch is a wrapper for
 //
 //	documentdb_api_catalog.bson_query_match(anonymous documentdb_core.bson, anonymous1 documentdb_core.bson, OUT bson_query_match boolean).
