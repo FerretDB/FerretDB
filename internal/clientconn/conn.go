@@ -321,7 +321,8 @@ func (c *conn) processMessage(ctx context.Context, bufr *bufio.Reader, bufw *buf
 	return nil
 }
 
-// createRequest returns [*middleware.MsgRequest] for OP_MSG and [*middleware.QueryRequest] for OP_QUERY request.
+// createRequest returns [*middleware.MsgRequest] for OP_MSG and [*middleware.QueryRequest] for OP_QUERY request,
+// otherwise returns nil for both.
 //
 // For OP_MSG, it sets decoded document or an error if decoding failed.
 func createRequest(reqHeader *wire.MsgHeader, reqBody wire.MsgBody) (*middleware.MsgRequest, *middleware.QueryRequest) {
@@ -357,6 +358,9 @@ func createRequest(reqHeader *wire.MsgHeader, reqBody wire.MsgBody) (*middleware
 	case wire.OpCodeKillCursors:
 		fallthrough
 	case wire.OpCodeCompressed:
+		fallthrough
+	default:
+		return nil, nil
 	}
 
 	return msgReq, queryReq
