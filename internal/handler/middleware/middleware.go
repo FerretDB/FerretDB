@@ -27,8 +27,12 @@ import (
 
 // MsgRequest represents incoming request from the client.
 // It may come from the wire protocol connection or from the Data API server.
+//
+// Error is if OpMsg could not be decoded.
 type MsgRequest struct {
 	*wire.OpMsg
+	Document *wirebson.Document
+	Error    error
 }
 
 // MsgResponse represent outgoing response to the client.
