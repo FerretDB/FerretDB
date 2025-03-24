@@ -19,15 +19,17 @@ You need to install PostgreSQL and additional dependencies required by the Docum
 
 After installing the package, you need to create the extension in your database.
 
-Ensure to update the `postgresql.conf` file with the following settings:
+Ensure to update the `postgresql.conf` file with the following settings so it can load the extension on startup:
 
 ```conf
 shared_preload_libraries = 'pg_cron,pg_documentdb_core,pg_documentdb'
 cron.database_name       = 'postgres'
 ```
 
+You will need to restart the PostgreSQL service to apply the changes.
+
 Then create the extension by running the folllowing inside the PostgreSQL shell:
 
 ```sql
 CREATE EXTENSION documentdb CASCADE;
- ```
+```
