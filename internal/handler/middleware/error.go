@@ -55,7 +55,9 @@ func (e *Error) HandleOpMsg(next MsgHandlerFunc) MsgHandlerFunc {
 			}
 		}()
 
-		return next(ctx, req)
+		resp, err = next(ctx, req)
+
+		return
 	}
 }
 
@@ -79,7 +81,9 @@ func (e *Error) HandleOpReply(next QueryHandlerFunc) QueryHandlerFunc {
 			}
 		}()
 
-		return next(ctx, req)
+		resp, err = next(ctx, req)
+
+		return
 	}
 }
 

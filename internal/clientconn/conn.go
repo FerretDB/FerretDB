@@ -387,7 +387,8 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		connCtx, span = otel.Tracer("").Start(connCtx, "")
 
 		if err == nil {
-			resBody = c.handleOpMsg(connCtx, &middleware.MsgRequest{OpMsg: msg}, command)
+			resMsg := c.handleOpMsg(connCtx, &middleware.MsgRequest{OpMsg: msg}, command)
+			resBody = resMsg.OpMsg
 		}
 
 	case wire.OpCodeQuery:
@@ -406,18 +407,13 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		replyHandler = errMW.HandleOpReply(replyHandler)
 		replyHandler = obsMW.HandleOpReply(replyHandler)
 
-		var reply *middleware.ReplyResponse
-
-		if reply, err = replyHandler(connCtx, &middleware.QueryRequest{OpQuery: query}); err != nil {
-			// must not be reachable, error is handled by middleware.Error
-			panic(err)
-		}
-
-		resBody = reply
+		// error is handled by middleware.Error
+		reply := must.NotFail(replyHandler(connCtx, &middleware.QueryRequest{OpQuery: query}))
+		resBody = reply.OpReply
 
 		if reply.Error != nil {
-			result = reply.Name
-			argument = reply.Argument
+			result = reply.Error.Name
+			argument = reply.Error.Argument
 		}
 
 	case wire.OpCodeReply:
@@ -542,13 +538,8 @@ func (c *conn) handleOpMsg(connCtx context.Context, msg *middleware.MsgRequest, 
 	cmdHandler = errMW.HandleOpMsg(cmdHandler)
 	cmdHandler = obsMW.HandleOpMsg(cmdHandler)
 
-	res, err := cmdHandler(connCtx, msg)
-	if err != nil {
-		// must not be reachable, error is handled by middleware.Error
-		panic(err)
-	}
-
-	return res
+	// error is handled by middleware.Error
+	return must.NotFail(cmdHandler(connCtx, msg))
 }
 
 // notFound returns a handler that returns an error indicating that the command is not found.
@@ -604,13 +595,12 @@ func (c *conn) logResponse(ctx context.Context, who string, resHeader *wire.MsgH
 	level := slog.LevelDebug
 
 	if resHeader.OpCode == wire.OpCodeMsg {
-		msg, ok := resBody.(*wire.OpMsg)
-		if !ok {
-			msg = resBody.(*middleware.MsgResponse).OpMsg
-		}
+		msg := resBody.(*wire.OpMsg)
 
 		raw := msg.RawSection0()
 		doc, _ := raw.Decode()
+
+		var ok bool
 
 		if doc != nil {
 			switch v := doc.Get("ok").(type) {

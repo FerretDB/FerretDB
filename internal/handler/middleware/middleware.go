@@ -33,8 +33,8 @@ type MsgRequest struct {
 
 // MsgResponse represent outgoing response to the client.
 type MsgResponse struct {
-	*wire.OpMsg
-	*mongoerrors.Error
+	OpMsg *wire.OpMsg
+	Error *mongoerrors.Error
 }
 
 // QueryRequest is a deprecated request message type.
@@ -45,8 +45,8 @@ type QueryRequest struct {
 
 // ReplyResponse is a deprecated response message type used for the response to [QueryRequest].
 type ReplyResponse struct {
-	*wire.OpReply
-	*mongoerrors.Error
+	OpReply *wire.OpReply
+	Error   *mongoerrors.Error
 }
 
 // Middleware represents functions for handling incoming requests.
