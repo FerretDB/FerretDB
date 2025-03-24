@@ -33,7 +33,7 @@ type MsgRequest struct {
 
 // MsgResponse represent outgoing response to the client.
 type MsgResponse struct {
-	OpMsg *wire.OpMsg
+	*wire.OpMsg
 	Error *mongoerrors.Error
 }
 

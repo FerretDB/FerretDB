@@ -58,7 +58,7 @@ func (s *Server) Aggregate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resRaw := must.NotFail(resMsg.OpMsg.RawDocument())
+	resRaw := must.NotFail(resMsg.RawDocument())
 	cursor := must.NotFail(resRaw.Decode()).Get("cursor").(wirebson.AnyDocument)
 	firstBatch := must.NotFail(cursor.Decode()).Get("firstBatch").(wirebson.AnyArray)
 

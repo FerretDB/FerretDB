@@ -68,7 +68,7 @@ func (s *Server) UpdateMany(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resDoc := must.NotFail(must.NotFail(resMsg.OpMsg.RawDocument()).Decode())
+	resDoc := must.NotFail(must.NotFail(resMsg.RawDocument()).Decode())
 
 	res := must.NotFail(wirebson.NewDocument(
 		"matchedCount", resDoc.Get("n"),

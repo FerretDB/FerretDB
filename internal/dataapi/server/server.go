@@ -97,7 +97,7 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		resDoc := must.NotFail(must.NotFail(res.OpMsg.RawDocument()).Decode())
+		resDoc := must.NotFail(must.NotFail(res.RawDocument()).Decode())
 		convId := resDoc.Get("conversationId").(int32)
 
 		payloadBytes := resDoc.Get("payload").(wirebson.Binary).B
@@ -121,7 +121,7 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		resDoc = must.NotFail(must.NotFail(res.OpMsg.RawDocument()).Decode())
+		resDoc = must.NotFail(must.NotFail(res.RawDocument()).Decode())
 		if !resDoc.Get("done").(bool) {
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
