@@ -65,6 +65,11 @@ func Response(doc wirebson.AnyDocument) (*MsgResponse, error) {
 	return &MsgResponse{OpMsg: msg}, nil
 }
 
+// CommandError returns [*mongoerrors.Error] from the response.
+func (r *MsgResponse) CommandError() *mongoerrors.Error {
+	return r.err
+}
+
 // Reply constructs a [*ReplyResponse] from a single document.
 func Reply(doc wirebson.AnyDocument) (*ReplyResponse, error) {
 	reply, err := wire.NewOpReply(doc)
