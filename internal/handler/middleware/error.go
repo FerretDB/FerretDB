@@ -48,7 +48,7 @@ func (e *Error) HandleOpMsg(next MsgHandlerFunc) MsgHandlerFunc {
 
 				resp = &MsgResponse{
 					OpMsg: mErr.Msg(),
-					Error: mErr,
+					err:   mErr,
 				}
 
 				err = nil
@@ -74,7 +74,7 @@ func (e *Error) HandleOpReply(next QueryHandlerFunc) QueryHandlerFunc {
 
 				resp = &ReplyResponse{
 					OpReply: mErr.Reply(),
-					Error:   mErr,
+					err:     mErr,
 				}
 
 				err = nil

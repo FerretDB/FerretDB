@@ -411,9 +411,9 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		reply := must.NotFail(replyHandler(connCtx, &middleware.QueryRequest{OpQuery: query}))
 		resBody = reply.OpReply
 
-		if reply.Error != nil {
-			result = reply.Error.Name
-			argument = reply.Error.Argument
+		if replyErr := reply.CommandError(); replyErr != nil {
+			result = replyErr.Name
+			argument = replyErr.Argument
 		}
 
 	case wire.OpCodeReply:

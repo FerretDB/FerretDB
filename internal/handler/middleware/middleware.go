@@ -34,7 +34,7 @@ type MsgRequest struct {
 // MsgResponse represent outgoing response to the client.
 type MsgResponse struct {
 	*wire.OpMsg
-	Error *mongoerrors.Error
+	err *mongoerrors.Error
 }
 
 // QueryRequest is a deprecated request message type.
@@ -46,7 +46,7 @@ type QueryRequest struct {
 // ReplyResponse is a deprecated response message type used for the response to [QueryRequest].
 type ReplyResponse struct {
 	OpReply *wire.OpReply
-	Error   *mongoerrors.Error
+	err     *mongoerrors.Error
 }
 
 // Middleware represents functions for handling incoming requests.
@@ -73,6 +73,11 @@ func Reply(doc wirebson.AnyDocument) (*ReplyResponse, error) {
 	}
 
 	return &ReplyResponse{OpReply: reply}, nil
+}
+
+// CommandError returns [*mongoerrors.Error] from the response.
+func (r *ReplyResponse) CommandError() *mongoerrors.Error {
+	return r.err
 }
 
 // MsgHandlerFunc represents a function/method that processes a single OP_MSG command.
