@@ -34,7 +34,6 @@ import (
 	"time"
 
 	"github.com/FerretDB/wire"
-	"github.com/FerretDB/wire/wirebson"
 	"github.com/pmezard/go-difflib/difflib"
 	"go.opentelemetry.io/otel"
 	otelattribute "go.opentelemetry.io/otel/attribute"
@@ -246,6 +245,8 @@ func (c *conn) processMessage(ctx context.Context, bufr *bufio.Reader, bufw *buf
 	// It is set to the highest level of logging used to log response.
 	diffLogLevel := slog.LevelDebug
 
+	msgReq, queryReq, untypedReq := createRequest(reqHeader, reqBody)
+
 	// send request to proxy first (unless we are in normal mode)
 	// because FerretDB's handling could modify reqBody's documents,
 	// creating a data race
@@ -257,8 +258,7 @@ func (c *conn) processMessage(ctx context.Context, bufr *bufio.Reader, bufw *buf
 			panic("proxy addr was nil")
 		}
 
-		// TODO https://github.com/FerretDB/FerretDB/issues/1997
-		proxyHeader, proxyBody = c.proxy.Route(ctx, reqHeader, reqBody)
+		proxyHeader, proxyBody = c.routeProxy(ctx, reqHeader, msgReq, queryReq, untypedReq)
 	}
 
 	// handle request unless we are in proxy mode
@@ -267,7 +267,7 @@ func (c *conn) processMessage(ctx context.Context, bufr *bufio.Reader, bufw *buf
 	var resBody wire.MsgBody
 
 	if c.mode != ProxyMode {
-		resHeader, resBody, resCloseConn = c.route(ctx, reqHeader, reqBody)
+		resHeader, resBody, resCloseConn = c.route(ctx, reqHeader, msgReq, queryReq)
 		if level := c.logResponse(ctx, "Response", resHeader, resBody, resCloseConn); level > diffLogLevel {
 			diffLogLevel = level
 		}
@@ -320,6 +320,54 @@ func (c *conn) processMessage(ctx context.Context, bufr *bufio.Reader, bufw *buf
 	return nil
 }
 
+// createRequest returns [*middleware.MsgRequest] for OP_MSG and [*middleware.QueryRequest] for OP_QUERY request,
+// otherwise returns [*middleware.UntypedRequest].
+//
+// For OP_MSG, it sets decoded document or an error if decoding failed.
+func createRequest(reqHeader *wire.MsgHeader, reqBody wire.MsgBody) (*middleware.MsgRequest, *middleware.QueryRequest, *middleware.UntypedRequest) { //nolint:lll // for readability
+	var msgReq *middleware.MsgRequest
+	var queryReq *middleware.QueryRequest
+	var untypedReq *middleware.UntypedRequest
+
+	switch reqHeader.OpCode {
+	case wire.OpCodeMsg:
+		msg := reqBody.(*wire.OpMsg)
+		doc, dErr := msg.RawSection0().Decode()
+
+		msgReq = &middleware.MsgRequest{
+			OpMsg:    msg,
+			Document: doc,
+			Error:    dErr,
+		}
+	case wire.OpCodeQuery:
+		queryReq = &middleware.QueryRequest{
+			OpQuery: reqBody.(*wire.OpQuery),
+		}
+	case wire.OpCodeReply:
+		fallthrough
+	case wire.OpCodeUpdate:
+		fallthrough
+	case wire.OpCodeInsert:
+		fallthrough
+	case wire.OpCodeGetByOID:
+		fallthrough
+	case wire.OpCodeGetMore:
+		fallthrough
+	case wire.OpCodeDelete:
+		fallthrough
+	case wire.OpCodeKillCursors:
+		fallthrough
+	case wire.OpCodeCompressed:
+		fallthrough
+	default:
+		untypedReq = &middleware.UntypedRequest{
+			MsgBody: reqBody,
+		}
+	}
+
+	return msgReq, queryReq, untypedReq
+}
+
 // route sends request to a handler's command based on the op code provided in the request header.
 //
 // The passed context is canceled when the client disconnects.
@@ -328,7 +376,7 @@ func (c *conn) processMessage(ctx context.Context, bufr *bufio.Reader, bufw *buf
 // They also should not use recover(). That allows us to use fuzzing.
 //
 // Returned resBody can be nil.
-func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody wire.MsgBody) (resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) { //nolint:lll // argument list is too long
+func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, msgReq *middleware.MsgRequest, queryReq *middleware.QueryRequest) (resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) { //nolint:lll // argument list is too long
 	var span oteltrace.Span
 
 	var command, result, argument string
@@ -362,19 +410,12 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 	var err error
 	switch reqHeader.OpCode {
 	case wire.OpCodeMsg:
-		msg := reqBody.(*wire.OpMsg)
-		raw := msg.RawSection0()
-
 		resHeader.OpCode = wire.OpCodeMsg
 
-		// TODO https://github.com/FerretDB/FerretDB/issues/1997
-		var doc *wirebson.Document
-		if doc, err = raw.Decode(); err == nil {
-			command = doc.Command()
-		}
+		err = msgReq.Error
 
 		if err == nil {
-			comment, _ := doc.Get("comment").(string)
+			comment, _ := msgReq.Document.Get("comment").(string)
 
 			spanCtx, e := observability.SpanContextFromComment(comment)
 			if e == nil {
@@ -387,28 +428,32 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		connCtx, span = otel.Tracer("").Start(connCtx, "")
 
 		if err == nil {
-			resBody = c.handleOpMsg(connCtx, &middleware.MsgRequest{OpMsg: msg}, command)
+			resMsg := c.handleOpMsg(connCtx, msgReq)
+			resBody = resMsg.OpMsg
 		}
 
 	case wire.OpCodeQuery:
 		connCtx, span = otel.Tracer("").Start(connCtx, "")
 
-		query := reqBody.(*wire.OpQuery)
 		resHeader.OpCode = wire.OpCodeReply
 
-		// do not store typed nil in interface, it makes it non-nil
-
-		o := &middleware.Observability{
+		obsMW := &middleware.Observability{
 			L: logging.WithName(c.l, "observability"),
 		}
 
-		replyHandler := o.HandleOpReply(c.h.CmdQuery)
+		errMW := middleware.NewError("", logging.WithName(c.l, "error"))
 
-		var reply *middleware.ReplyResponse
-		reply, err = replyHandler(connCtx, &middleware.QueryRequest{OpQuery: query})
+		replyHandler := c.h.CmdQuery
+		replyHandler = errMW.HandleOpReply(replyHandler)
+		replyHandler = obsMW.HandleOpReply(replyHandler)
 
-		if reply != nil && reply.OpReply != nil {
-			resBody = reply.OpReply
+		// error is handled by middleware.Error
+		reply := must.NotFail(replyHandler(connCtx, queryReq))
+		resBody = reply.OpReply
+
+		if replyErr := reply.CommandError(); replyErr != nil {
+			result = replyErr.Name
+			argument = replyErr.Argument
 		}
 
 	case wire.OpCodeReply:
@@ -450,11 +495,6 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 			argument = protoErr.Argument
 
 		case wire.OpCodeReply:
-			protoErr := mongoerrors.Make(connCtx, err, "", c.l)
-			resBody = protoErr.Reply()
-			result = protoErr.Name
-			argument = protoErr.Argument
-
 		case wire.OpCodeQuery:
 			fallthrough
 		case wire.OpCodeUpdate:
@@ -519,23 +559,39 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 // handleOpMsg processes OP_MSG requests.
 //
 // The passed context is canceled when the client disconnects.
-func (c *conn) handleOpMsg(connCtx context.Context, msg *middleware.MsgRequest, command string) *middleware.MsgResponse {
+func (c *conn) handleOpMsg(connCtx context.Context, msg *middleware.MsgRequest) *middleware.MsgResponse {
+	var cmdHandler middleware.MsgHandlerFunc
+
+	command := msg.Document.Command()
+
 	cmd, ok := c.h.Commands()[command]
 	if !ok || cmd.Handler == nil {
-		err := mongoerrors.New(
+		cmdHandler = notFound(command)
+	} else {
+		cmdHandler = cmd.Handler
+	}
+
+	obsMW := &middleware.Observability{
+		L: logging.WithName(c.l, "observability"),
+	}
+
+	errMW := middleware.NewError("", logging.WithName(c.l, "error"))
+
+	cmdHandler = errMW.HandleOpMsg(cmdHandler)
+	cmdHandler = obsMW.HandleOpMsg(cmdHandler)
+
+	// error is handled by middleware.Error
+	return must.NotFail(cmdHandler(connCtx, msg))
+}
+
+// notFound returns a handler that returns an error indicating that the command is not found.
+func notFound(command string) middleware.MsgHandlerFunc {
+	return func(context.Context, *middleware.MsgRequest) (*middleware.MsgResponse, error) {
+		return nil, mongoerrors.New(
 			mongoerrors.ErrCommandNotFound,
 			fmt.Sprintf("no such command: '%s'", command),
 		)
-
-		return must.NotFail(middleware.Response(mongoerrors.Make(connCtx, err, "", c.l).Doc()))
 	}
-
-	res, err := cmd.Handler(connCtx, msg)
-	if err != nil {
-		return must.NotFail(middleware.Response(mongoerrors.Make(connCtx, err, "", c.l).Doc()))
-	}
-
-	return res
 }
 
 // renamePartialFile takes over an open file `f` and closes it.
@@ -573,6 +629,65 @@ func (c *conn) renamePartialFile(ctx context.Context, f *os.File, h hash.Hash, e
 	}
 }
 
+// routeProxy routes wraps the proxy route in observability middleware and sends the request to the proxy.
+func (c *conn) routeProxy(ctx context.Context, header *wire.MsgHeader, msgReq *middleware.MsgRequest, queryReq *middleware.QueryRequest, untypedReq *middleware.UntypedRequest) (*wire.MsgHeader, wire.MsgBody) { //nolint:lll // for readability
+	obsMW := new(middleware.Observability)
+
+	var resHeader *wire.MsgHeader
+	var resBody wire.MsgBody
+
+	switch header.OpCode {
+	case wire.OpCodeMsg:
+		h := func(ctx context.Context, req *middleware.MsgRequest) (resp *middleware.MsgResponse, err error) {
+			resHeader, resBody = c.proxy.Route(ctx, header, req.OpMsg)
+
+			return &middleware.MsgResponse{OpMsg: resBody.(*wire.OpMsg)}, nil
+		}
+
+		h = obsMW.HandleOpMsg(h)
+
+		_ = must.NotFail(h(ctx, msgReq))
+	case wire.OpCodeQuery:
+		h := func(ctx context.Context, req *middleware.QueryRequest) (resp *middleware.ReplyResponse, err error) {
+			resHeader, resBody = c.proxy.Route(ctx, header, req.OpQuery)
+
+			return &middleware.ReplyResponse{OpReply: resBody.(*wire.OpReply)}, nil
+		}
+
+		h = obsMW.HandleOpReply(h)
+
+		_ = must.NotFail(h(ctx, queryReq))
+	case wire.OpCodeReply:
+		fallthrough
+	case wire.OpCodeUpdate:
+		fallthrough
+	case wire.OpCodeInsert:
+		fallthrough
+	case wire.OpCodeGetByOID:
+		fallthrough
+	case wire.OpCodeGetMore:
+		fallthrough
+	case wire.OpCodeDelete:
+		fallthrough
+	case wire.OpCodeKillCursors:
+		fallthrough
+	case wire.OpCodeCompressed:
+		fallthrough
+	default:
+		h := func(ctx context.Context, req *middleware.UntypedRequest) (resp *middleware.UntypedResponse, err error) {
+			resHeader, resBody = c.proxy.Route(ctx, header, req.MsgBody)
+
+			return &middleware.UntypedResponse{MsgBody: resBody}, nil
+		}
+
+		h = obsMW.HandleUntyped(h)
+
+		_ = must.NotFail(h(ctx, untypedReq))
+	}
+
+	return resHeader, resBody
+}
+
 // logResponse logs response's header and body and returns the log level that was used.
 //
 // The param `who` will be used in logs and should represent the type of the response,
@@ -581,13 +696,12 @@ func (c *conn) logResponse(ctx context.Context, who string, resHeader *wire.MsgH
 	level := slog.LevelDebug
 
 	if resHeader.OpCode == wire.OpCodeMsg {
-		msg, ok := resBody.(*wire.OpMsg)
-		if !ok {
-			msg = resBody.(*middleware.MsgResponse).OpMsg
-		}
+		msg := resBody.(*wire.OpMsg)
 
 		raw := msg.RawSection0()
 		doc, _ := raw.Decode()
+
+		var ok bool
 
 		if doc != nil {
 			switch v := doc.Get("ok").(type) {

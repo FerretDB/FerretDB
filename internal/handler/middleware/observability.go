@@ -33,5 +33,10 @@ func (o *Observability) HandleOpReply(next QueryHandlerFunc) QueryHandlerFunc {
 	return next
 }
 
+// HandleUntyped implements Middleware.
+func (o *Observability) HandleUntyped(next UntypedHandlerFunc) UntypedHandlerFunc {
+	return next
+}
+
 // check interface.
 var _ Middleware = (*Observability)(nil)
