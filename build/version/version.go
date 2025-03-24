@@ -132,6 +132,10 @@ func init() {
 		MongoDBVersionArray: mongoDBVersionArray,
 	}
 
+	// https://github.com/golang/go/issues/51279
+	// https://github.com/golang/go/issues/71738
+	// https://github.com/golang/go/issues/72877
+
 	// in theory, someone could use embeddable package in a Go program that is built without modules
 	buildInfo, ok := runtimedebug.ReadBuildInfo()
 	if !ok {
