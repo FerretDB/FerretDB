@@ -27,10 +27,10 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
-// MsgDebugError implements `debugError` command.
+// MsgFerretDebugError implements `ferretDebugError` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgDebugError(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
+func (h *Handler) MsgFerretDebugError(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
 	spec, err := req.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
