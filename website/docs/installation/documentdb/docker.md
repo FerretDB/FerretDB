@@ -8,8 +8,8 @@ FerretDB uses PostgreSQL with [DocumentDB extension](https://github.com/microsof
 
 We provide two Docker images for setting up PostgreSQL with DocumentDB extension:
 
-- **a development image**: for debugging problems
-- **a production image**: for all other cases
+- Production image for stable and optimized deployments.
+- Development image for debugging problems.
 
 ## Production image for PostgreSQL with DocumentDB extension
 
