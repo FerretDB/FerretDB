@@ -53,6 +53,16 @@ type ReplyResponse struct {
 	err     *mongoerrors.Error
 }
 
+// UntypedRequest represents incoming request from the client.
+type UntypedRequest struct {
+	MsgBody wire.MsgBody
+}
+
+// UntypedResponse represents outgoing response to the client.
+type UntypedResponse struct {
+	MsgBody wire.MsgBody
+}
+
 // Middleware represents functions for handling incoming requests.
 type Middleware interface {
 	HandleOpMsg(next MsgHandlerFunc) MsgHandlerFunc
@@ -98,3 +108,8 @@ type MsgHandlerFunc func(ctx context.Context, req *MsgRequest) (resp *MsgRespons
 //
 // The passed context is canceled when the client disconnects.
 type QueryHandlerFunc func(ctx context.Context, req *QueryRequest) (resp *ReplyResponse, err error)
+
+// UntypedHandlerFunc represents a function/method that processes any command.
+//
+// The passed context is canceled when the client disconnects.
+type UntypedHandlerFunc func(ctx context.Context, req *UntypedRequest) (resp *UntypedResponse, err error)

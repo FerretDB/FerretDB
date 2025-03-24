@@ -245,7 +245,7 @@ func (c *conn) processMessage(ctx context.Context, bufr *bufio.Reader, bufw *buf
 	// It is set to the highest level of logging used to log response.
 	diffLogLevel := slog.LevelDebug
 
-	msgReq, queryReq := createRequest(reqHeader, reqBody)
+	msgReq, queryReq, untypedReq := createRequest(reqHeader, reqBody)
 
 	// send request to proxy first (unless we are in normal mode)
 	// because FerretDB's handling could modify reqBody's documents,
@@ -258,8 +258,7 @@ func (c *conn) processMessage(ctx context.Context, bufr *bufio.Reader, bufw *buf
 			panic("proxy addr was nil")
 		}
 
-		// TODO https://github.com/FerretDB/FerretDB/issues/1997
-		proxyHeader, proxyBody = c.proxy.Route(ctx, reqHeader, reqBody)
+		proxyHeader, proxyBody = c.routeProxy(ctx, reqHeader, msgReq, queryReq, untypedReq)
 	}
 
 	// handle request unless we are in proxy mode
@@ -322,12 +321,13 @@ func (c *conn) processMessage(ctx context.Context, bufr *bufio.Reader, bufw *buf
 }
 
 // createRequest returns [*middleware.MsgRequest] for OP_MSG and [*middleware.QueryRequest] for OP_QUERY request,
-// otherwise returns nil for both.
+// otherwise returns [*middleware.UntypedRequest].
 //
 // For OP_MSG, it sets decoded document or an error if decoding failed.
-func createRequest(reqHeader *wire.MsgHeader, reqBody wire.MsgBody) (*middleware.MsgRequest, *middleware.QueryRequest) {
+func createRequest(reqHeader *wire.MsgHeader, reqBody wire.MsgBody) (*middleware.MsgRequest, *middleware.QueryRequest, *middleware.UntypedRequest) { //nolint:lll // for readability
 	var msgReq *middleware.MsgRequest
 	var queryReq *middleware.QueryRequest
+	var untypedReq *middleware.UntypedRequest
 
 	switch reqHeader.OpCode {
 	case wire.OpCodeMsg:
@@ -360,10 +360,12 @@ func createRequest(reqHeader *wire.MsgHeader, reqBody wire.MsgBody) (*middleware
 	case wire.OpCodeCompressed:
 		fallthrough
 	default:
-		return nil, nil
+		untypedReq = &middleware.UntypedRequest{
+			MsgBody: reqBody,
+		}
 	}
 
-	return msgReq, queryReq
+	return msgReq, queryReq, untypedReq
 }
 
 // route sends request to a handler's command based on the op code provided in the request header.
@@ -625,6 +627,65 @@ func (c *conn) renamePartialFile(ctx context.Context, f *os.File, h hash.Hash, e
 	if e := os.Rename(f.Name(), path); e != nil {
 		c.l.WarnContext(ctx, "Failed to rename file", logging.Error(e))
 	}
+}
+
+// routeProxy routes wraps the proxy route in observability middleware and sends the request to the proxy.
+func (c *conn) routeProxy(ctx context.Context, header *wire.MsgHeader, msgReq *middleware.MsgRequest, queryReq *middleware.QueryRequest, untypedReq *middleware.UntypedRequest) (*wire.MsgHeader, wire.MsgBody) { //nolint:lll // for readability
+	obsMW := new(middleware.Observability)
+
+	var resHeader *wire.MsgHeader
+	var resBody wire.MsgBody
+
+	switch header.OpCode {
+	case wire.OpCodeMsg:
+		h := func(ctx context.Context, req *middleware.MsgRequest) (resp *middleware.MsgResponse, err error) {
+			resHeader, resBody = c.proxy.Route(ctx, header, req.OpMsg)
+
+			return &middleware.MsgResponse{OpMsg: resBody.(*wire.OpMsg)}, nil
+		}
+
+		h = obsMW.HandleOpMsg(h)
+
+		_ = must.NotFail(h(ctx, msgReq))
+	case wire.OpCodeQuery:
+		h := func(ctx context.Context, req *middleware.QueryRequest) (resp *middleware.ReplyResponse, err error) {
+			resHeader, resBody = c.proxy.Route(ctx, header, req.OpQuery)
+
+			return &middleware.ReplyResponse{OpReply: resBody.(*wire.OpReply)}, nil
+		}
+
+		h = obsMW.HandleOpReply(h)
+
+		_ = must.NotFail(h(ctx, queryReq))
+	case wire.OpCodeReply:
+		fallthrough
+	case wire.OpCodeUpdate:
+		fallthrough
+	case wire.OpCodeInsert:
+		fallthrough
+	case wire.OpCodeGetByOID:
+		fallthrough
+	case wire.OpCodeGetMore:
+		fallthrough
+	case wire.OpCodeDelete:
+		fallthrough
+	case wire.OpCodeKillCursors:
+		fallthrough
+	case wire.OpCodeCompressed:
+		fallthrough
+	default:
+		h := func(ctx context.Context, req *middleware.UntypedRequest) (resp *middleware.UntypedResponse, err error) {
+			resHeader, resBody = c.proxy.Route(ctx, header, req.MsgBody)
+
+			return &middleware.UntypedResponse{MsgBody: resBody}, nil
+		}
+
+		h = obsMW.HandleUntyped(h)
+
+		_ = must.NotFail(h(ctx, untypedReq))
+	}
+
+	return resHeader, resBody
 }
 
 // logResponse logs response's header and body and returns the log level that was used.
