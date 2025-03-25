@@ -34,6 +34,7 @@ import (
 	"time"
 
 	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
 	"github.com/pmezard/go-difflib/difflib"
 	"go.opentelemetry.io/otel"
 	otelattribute "go.opentelemetry.io/otel/attribute"
@@ -323,22 +324,13 @@ func (c *conn) processMessage(ctx context.Context, bufr *bufio.Reader, bufw *buf
 
 // createRequest returns [*middleware.MsgRequest] for OP_MSG and [*middleware.QueryRequest] for OP_QUERY request,
 // otherwise returns nil for both.
-//
-// For OP_MSG, it sets decoded document or an error if decoding failed.
 func createRequest(reqHeader *wire.MsgHeader, reqBody wire.MsgBody) (*middleware.MsgRequest, *middleware.QueryRequest) {
 	var msgReq *middleware.MsgRequest
 	var queryReq *middleware.QueryRequest
 
 	switch reqHeader.OpCode {
 	case wire.OpCodeMsg:
-		msg := reqBody.(*wire.OpMsg)
-		doc, dErr := msg.RawSection0().Decode()
-
-		msgReq = &middleware.MsgRequest{
-			OpMsg:    msg,
-			Document: doc,
-			Error:    dErr,
-		}
+		msgReq = middleware.Request(reqBody.(*wire.OpMsg))
 	case wire.OpCodeQuery:
 		queryReq = &middleware.QueryRequest{
 			OpQuery: reqBody.(*wire.OpQuery),
@@ -410,10 +402,12 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, msgReq 
 	case wire.OpCodeMsg:
 		resHeader.OpCode = wire.OpCodeMsg
 
-		err = msgReq.Error
+		var doc *wirebson.Document
+		doc, err = msgReq.Document()
 
 		if err == nil {
-			comment, _ := msgReq.Document.Get("comment").(string)
+			command = doc.Command()
+			comment, _ := doc.Get("comment").(string)
 
 			spanCtx, e := observability.SpanContextFromComment(comment)
 			if e == nil {
@@ -426,7 +420,7 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, msgReq 
 		connCtx, span = otel.Tracer("").Start(connCtx, "")
 
 		if err == nil {
-			resMsg := c.handleOpMsg(connCtx, msgReq)
+			resMsg := c.handleOpMsg(connCtx, msgReq, command)
 			resBody = resMsg.OpMsg
 		}
 
@@ -557,10 +551,8 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, msgReq 
 // handleOpMsg processes OP_MSG requests.
 //
 // The passed context is canceled when the client disconnects.
-func (c *conn) handleOpMsg(connCtx context.Context, msg *middleware.MsgRequest) *middleware.MsgResponse {
+func (c *conn) handleOpMsg(connCtx context.Context, msg *middleware.MsgRequest, command string) *middleware.MsgResponse {
 	var cmdHandler middleware.MsgHandlerFunc
-
-	command := msg.Document.Command()
 
 	cmd, ok := c.h.Commands()[command]
 	if !ok || cmd.Handler == nil {
