@@ -3,7 +3,7 @@
 (function () {
   "use strict";
 
-  const actual = db.runCommand({ find: "test", "maxTimeMS": 0});
+  const actual = db.runCommand({ find: "test", maxTimeMS: 0 });
   assert.commandWorked(actual);
 
   print("test.js passed!");
