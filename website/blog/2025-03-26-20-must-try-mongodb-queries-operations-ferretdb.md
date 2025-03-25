@@ -387,6 +387,41 @@ To see all active operations, run the following query in another `mongosh` sessi
 db.currentOp({ active: true })
 ```
 
+This will show you all active operations, including the long-running query we just ran:
+
+```js
+{
+  inprog: [
+    {
+      shard: 'defaultShard',
+      active: true,
+      type: 'op',
+      opid: '10000000054:1742936581040255',
+      op_prefix: Long('10000000054'),
+      currentOpTime: ISODate('2025-03-25T21:03:01.000Z'),
+      secs_running: Long('0'),
+      command: { aggregate: '' },
+      op: 'command',
+      waitingForLock: false
+    },
+    {
+      shard: 'defaultShard',
+      active: true,
+      type: 'op',
+      opid: '10000000058:1742936581067302',
+      op_prefix: Long('10000000058'),
+      ns: 'library.books',
+      currentOpTime: ISODate('2025-03-25T21:03:01.000Z'),
+      secs_running: Long('0'),
+      command: { getMor: Long('0') },
+      op: 'getmore',
+      waitingForLock: false
+    }
+  ],
+  ok: 1
+}
+```
+
 ## Authentication
 
 ### 18. Create a user
