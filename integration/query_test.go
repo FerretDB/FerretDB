@@ -399,7 +399,9 @@ func TestQueryMaxTimeMSErrors(t *testing.T) {
 		t.Run(name, func(tt *testing.T) {
 			tt.Parallel()
 
-			t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/243")
+			// FIXME
+			// t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/243")
+			t := tt
 
 			require.NotNil(t, tc.command, "command must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
@@ -418,8 +420,7 @@ func TestQueryMaxTimeMSAvailableValues(t *testing.T) {
 	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
-		command          any
-		failsForFerretDB string
+		command any
 	}{
 		"Double": {
 			command: bson.D{
@@ -432,7 +433,6 @@ func TestQueryMaxTimeMSAvailableValues(t *testing.T) {
 				{"find", collection.Name()},
 				{"maxTimeMS", float64(0)},
 			},
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/4973",
 		},
 		"Int32": {
 			command: bson.D{
@@ -445,7 +445,6 @@ func TestQueryMaxTimeMSAvailableValues(t *testing.T) {
 				{"find", collection.Name()},
 				{"maxTimeMS", int32(0)},
 			},
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/4973",
 		},
 		"Int64": {
 			command: bson.D{
@@ -458,17 +457,10 @@ func TestQueryMaxTimeMSAvailableValues(t *testing.T) {
 				{"find", collection.Name()},
 				{"maxTimeMS", int64(0)},
 			},
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/4973",
 		},
 	} {
-		t.Run(name, func(tt *testing.T) {
-			var t testing.TB = tt
-
-			if tc.failsForFerretDB != "" {
-				t = setup.FailsForFerretDB(tt, tc.failsForFerretDB)
-			}
-
-			tt.Parallel()
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
