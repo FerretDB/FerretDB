@@ -399,9 +399,7 @@ func TestQueryMaxTimeMSErrors(t *testing.T) {
 		t.Run(name, func(tt *testing.T) {
 			tt.Parallel()
 
-			// FIXME
-			// t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/243")
-			t := tt
+			t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/243")
 
 			require.NotNil(t, tc.command, "command must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")

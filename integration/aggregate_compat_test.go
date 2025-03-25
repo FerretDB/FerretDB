@@ -175,10 +175,8 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 
 // aggregateCommandCompatTestCase describes aggregate compatibility test case.
 type aggregateCommandCompatTestCase struct {
-	command    bson.D                   // required
-	resultType compatTestCaseResultType // defaults to nonEmptyResult
-
-	skip             string // TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/1086
+	command          bson.D                   // required
+	resultType       compatTestCaseResultType // defaults to nonEmptyResult
 	failsForFerretDB string
 }
 
@@ -198,11 +196,6 @@ func testAggregateCommandCompat(t *testing.T, testCases map[string]aggregateComm
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
-
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
-
 			t.Parallel()
 
 			command := tc.command
@@ -266,7 +259,6 @@ func TestAggregateCommandCompat(t *testing.T) {
 			command: bson.D{
 				{"aggregate", 1},
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/1890",
 		},
 		"FailedToParse": {
 			command: bson.D{
