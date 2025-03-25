@@ -627,7 +627,8 @@ func TestGetMoreCommandConnection(t *testing.T) {
 }
 
 func TestGetMoreCommandMaxTimeMSErrors(t *testing.T) {
-	// do not run tests in parallel to avoid using too many backend connections
+	t.Parallel()
+
 	ctx, collection := setup.Setup(t)
 
 	for name, tc := range map[string]struct { //nolint:vet // used for testing only
@@ -915,7 +916,7 @@ func TestGetMoreCommandExhausted(tt *testing.T) {
 }
 
 func TestGetMoreCommandMaxTimeMS(t *testing.T) {
-	// do not run tests in parallel to avoid using too many backend connections
+	t.Parallel()
 
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{
 		Providers: []shareddata.Provider{shareddata.Composites},
@@ -930,8 +931,8 @@ func TestGetMoreCommandMaxTimeMS(t *testing.T) {
 	_, err := collection.InsertMany(ctx, arr)
 	require.NoError(t, err)
 
-	t.Run("FindExpire", func(tt *testing.T) {
-		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/344")
+	t.Run("FindExpire", func(t *testing.T) {
+		t.Parallel()
 
 		opts := options.Find().
 			// set batchSize big enough to hit maxTimeMS
@@ -946,8 +947,8 @@ func TestGetMoreCommandMaxTimeMS(t *testing.T) {
 		integration.AssertMatchesCommandError(t, mongo.CommandError{Code: 50, Name: "MaxTimeMSExpired"}, err)
 	})
 
-	t.Run("AggregateExpire", func(tt *testing.T) {
-		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/344")
+	t.Run("AggregateExpire", func(t *testing.T) {
+		t.Parallel()
 
 		opts := options.Aggregate().
 			// set batchSize big enough to hit maxTimeMS
