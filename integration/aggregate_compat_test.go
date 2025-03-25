@@ -259,6 +259,8 @@ func TestAggregateCommandCompat(t *testing.T) {
 			command: bson.D{
 				{"aggregate", 1},
 			},
+			resultType:       emptyResult,
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/349",
 		},
 		"FailedToParse": {
 			command: bson.D{
