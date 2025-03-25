@@ -62,17 +62,12 @@ type Middleware interface {
 // Request constructs a [*MsgRequest] from the given OP_MSG request.
 // It decodes the top level of the OP_MSG request.
 func Request(msg *wire.OpMsg) *MsgRequest {
-	doc, dErr := msg.RawSection0().Decode()
-
-	msg, err := wire.NewOpMsg(doc)
-	if err != nil {
-		return nil
-	}
+	doc, err := msg.RawSection0().Decode()
 
 	return &MsgRequest{
 		OpMsg:    msg,
 		document: doc,
-		err:      dErr,
+		err:      err,
 	}
 }
 
