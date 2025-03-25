@@ -371,7 +371,7 @@ db.books.find({
 Sometimes, your database operations become slow, and you wonder what's causing the delay.
 `currentOp()` lets you inspect active operations, and find long-running queries that may overwhelm your instance.
 
-To actually see something in `currentOp()`, we need a long-running operation.
+To actually see something in `currentOp()`, we need some active operations that we can inspect.
 Let's simulate a background operation by inserting 10,000 documents and running a `find` query that runs 1,000 times:
 
 ```js
@@ -387,7 +387,7 @@ To see all active operations, run the following query in another `mongosh` sessi
 db.currentOp({ active: true })
 ```
 
-This will show you all active operations, including the long-running query we just ran:
+This will show you all active operations, including the ones we just inserted and queried.
 
 ```js
 {
