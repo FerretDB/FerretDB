@@ -516,7 +516,14 @@ func runGoTest(runCtx context.Context, opts *runGoTestOpts) (resErr error) {
 		}
 	}
 
-	var unfinished []string
+	logUnfinishedTests(runCtx, opts.logger, results)
+
+	return
+}
+
+// logUnfinishedTests logs tests that panicked or somehow unfinished, trying to provide the best possible output.
+func logUnfinishedTests(runCtx context.Context, logger *slog.Logger, results map[string]*testResult) {
+	var tests []string
 
 	for t, res := range results {
 		switch res.lastAction {
@@ -524,59 +531,51 @@ func runGoTest(runCtx context.Context, opts *runGoTestOpts) (resErr error) {
 			continue
 		}
 
-		unfinished = append(unfinished, t)
+		tests = append(tests, t)
 	}
 
-	if unfinished == nil {
+	if tests == nil {
 		return
 	}
 
-	slices.Sort(unfinished)
+	slices.Sort(tests)
 
-	opts.logger.ErrorContext(runCtx, "")
+	logger.ErrorContext(runCtx, "")
 
-	opts.logger.ErrorContext(runCtx, "Some tests did not finish:")
+	logger.ErrorContext(runCtx, "Some tests did not finish:")
 
-	for _, t := range unfinished {
-		opts.logger.ErrorContext(runCtx, fmt.Sprintf("  %s", t))
+	for _, t := range tests {
+		logger.ErrorContext(runCtx, fmt.Sprintf("  %s", t))
 	}
 
-	opts.logger.ErrorContext(runCtx, "")
-
-	// On panic, the last event will not be "fail"; see https://github.com/golang/go/issues/38382.
-	// Try to provide the best possible output in that case.
+	logger.ErrorContext(runCtx, "")
 
 	var panicked string
 
-	for _, t := range unfinished {
-		if !slices.ContainsFunc(results[t].outputs, func(s string) bool {
+	for _, t := range tests {
+		if slices.ContainsFunc(results[t].outputs, func(s string) bool {
 			return strings.Contains(s, "panic: ")
 		}) {
-			continue
-		}
-
-		if panicked != "" {
+			panicked = t
 			break
 		}
-
-		panicked = t
 	}
 
-	for _, t := range unfinished {
+	// We can't always associate the panic with test; see https://github.com/golang/go/issues/38382.
+	// If we located the test, log only it. Otherwise, log all unfinished tests.
+	for _, t := range tests {
 		if panicked != "" && t != panicked {
 			continue
 		}
 
-		opts.logger.ErrorContext(runCtx, fmt.Sprintf("%s:", t))
+		logger.ErrorContext(runCtx, fmt.Sprintf("%s:", t))
 
 		for _, l := range results[t].outputs {
-			opts.logger.ErrorContext(runCtx, l)
+			logger.ErrorContext(runCtx, l)
 		}
 
-		opts.logger.ErrorContext(runCtx, "")
+		logger.ErrorContext(runCtx, "")
 	}
-
-	return
 }
 
 // testsRun runs tests specified by the shard index and total or by the run regex
