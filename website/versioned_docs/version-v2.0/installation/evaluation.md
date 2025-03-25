@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Evaluation
 
-We provide an **evaluation** image
+We provide an evaluation image
 [`ghcr.io/ferretdb/ferretdb-eval:2`](https://ghcr.io/ferretdb/ferretdb-eval:2)
 for quick testing and experiments.
 
