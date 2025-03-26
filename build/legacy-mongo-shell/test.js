@@ -7,8 +7,8 @@
 
   coll.drop();
 
-  const docsTotal = 2048;
-  const docsPerBatch = 16;
+  const docsTotal = 1024;
+  const docsPerBatch = 8;
 
   const batches = docsTotal / docsPerBatch;
 
@@ -16,8 +16,10 @@
   const batch = Array.from({ length: docsPerBatch }, () => ({ v }));
 
   for (let i = 0; i < batches; i++) {
+    const start = new Date();
     coll.insertMany(batch);
-    print(`Inserted batch ${i + 1}/${batches} (${(i + 1) * docsPerBatch}/${docsTotal} documents)`);
+    const duration = new Date() - start;
+    print(`Inserted batch ${i + 1}/${batches} (${(i + 1) * docsPerBatch}/${docsTotal} documents) in ${duration}ms`);
   }
 
   shellPrint(db.adminCommand({ listDatabases: 1 }));
