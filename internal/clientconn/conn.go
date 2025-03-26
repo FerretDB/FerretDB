@@ -252,6 +252,7 @@ func (c *conn) processMessage(ctx context.Context, bufr *bufio.Reader, bufw *buf
 
 	msgReq, queryReq, err := createRequest(reqHeader, reqBody)
 	if err != nil {
+		// create response for failed decoding and record observability for error and metrics
 		decodeFailed = true
 
 		ctx = c.startObservability(ctx, reqHeader, "unknown")
@@ -286,9 +287,9 @@ func (c *conn) processMessage(ctx context.Context, bufr *bufio.Reader, bufw *buf
 		proxyHeader, proxyBody = c.proxy.Route(ctx, reqHeader, reqBody)
 	}
 
-	// handle request unless we are in proxy mode
 	var resCloseConn bool
 
+	// handle request unless we are in proxy mode and there is no decoding error
 	if c.mode != ProxyMode || !decodeFailed {
 		resHeader, resBody, resCloseConn = c.route(ctx, reqHeader, msgReq, queryReq)
 	}
