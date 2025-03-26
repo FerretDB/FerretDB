@@ -65,40 +65,44 @@ func Startup() {
 
 	prometheus.DefaultRegisterer.MustRegister(listenerMetrics)
 
-	// use any available port to allow running different configurations in parallel
-	h, err := debug.Listen(&debug.ListenOpts{
-		TCPAddr: "127.0.0.1:0",
-		L:       logging.WithName(l, "debug"),
-		R:       prometheus.DefaultRegisterer,
-	})
-	if err != nil {
-		l.LogAttrs(ctx, logging.LevelFatal, "Failed to create debug handler", logging.Error(err))
-	}
-
-	ot, err := observability.NewOTelTraceExporter(&observability.OTelTraceExporterOpts{
-		Logger:  logging.WithName(l, "otel"),
-		Service: "integration-tests",
-		URL:     "http://127.0.0.1:4318/v1/traces",
-	})
-	if err != nil {
-		l.LogAttrs(ctx, logging.LevelFatal, "Failed to create Otel tracer", logging.Error(err))
-	}
-
 	ctx, shutdown = context.WithCancel(ctx)
 
 	startupWG.Add(1)
 
 	go func() {
 		defer startupWG.Done()
+
+		// use any available port to allow running different configurations in parallel
+		h, err := debug.Listen(&debug.ListenOpts{
+			TCPAddr: "127.0.0.1:0",
+			L:       logging.WithName(l, "debug"),
+			R:       prometheus.DefaultRegisterer,
+		})
+		if err != nil {
+			l.LogAttrs(ctx, logging.LevelFatal, "Failed to create debug handler", logging.Error(err))
+		}
+
 		h.Serve(ctx)
 	}()
 
-	startupWG.Add(1)
+	if *otelTracesURLF != "" {
+		startupWG.Add(1)
 
-	go func() {
-		defer startupWG.Done()
-		ot.Run(ctx)
-	}()
+		go func() {
+			defer startupWG.Done()
+
+			ot, err := observability.NewOTelTraceExporter(&observability.OTelTraceExporterOpts{
+				Logger:  logging.WithName(l, "otel"),
+				Service: "integration-tests",
+				URL:     *otelTracesURLF,
+			})
+			if err != nil {
+				l.LogAttrs(ctx, logging.LevelFatal, "Failed to create Otel tracer", logging.Error(err))
+			}
+
+			ot.Run(ctx)
+		}()
+	}
 
 	clientCtx, clientCancel := context.WithTimeout(ctx, 5*time.Second)
 	defer clientCancel()
@@ -122,6 +126,8 @@ func Startup() {
 	if !slices.Contains(allBackends, *targetBackendF) {
 		l.LogAttrs(ctx, logging.LevelFatal, "Unknown target backend", slog.String("target_backend", *targetBackendF))
 	}
+
+	var err error
 
 	if *targetURLF != "" {
 		*targetURLF, err = setClientPaths(*targetURLF)

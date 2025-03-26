@@ -424,6 +424,7 @@ const (
 	ErrLocation3041701                             = Code(3041701) // Location3041701
 	ErrLocation3041702                             = Code(3041702) // Location3041702
 	ErrLocation3041703                             = Code(3041703) // Location3041703
+	ErrLocation3041704                             = Code(3041704) // Location3041704
 	ErrIntermediateResultTooLarge                  = Code(4031700) // IntermediateResultTooLarge
 	ErrDollarSetFieldRequiresObject                = Code(4161100) // DollarSetFieldRequiresObject
 	ErrDollarSetFieldUnknownArgument               = Code(4161101) // DollarSetFieldUnknownArgument
@@ -938,6 +939,7 @@ var pgCodes = map[string]Code{
 	"M00AR": ErrLocation3041701,                             // 3041701
 	"M00AS": ErrLocation3041702,                             // 3041702
 	"M00AT": ErrLocation3041703,                             // 3041703
+	"M00E5": ErrLocation3041704,                             // 3041704
 	"M00AH": ErrIntermediateResultTooLarge,                  // 4031700
 	"M00AI": ErrDollarSetFieldRequiresObject,                // 4161100
 	"M00AJ": ErrDollarSetFieldUnknownArgument,               // 4161101
