@@ -36,6 +36,7 @@ const config = {
           { to: "/migration/diff", from: "/diff" },
           { to: "/reference", from: ["/reference/supported_commands", "/reference/supported-commands"] },
           { to: "/installation", from: "/quickstart" },
+          { to: "/guides/full-text-search", from: "/guides/text-search" },
         ],
 
         createRedirects(existingPath) {

@@ -7,11 +7,11 @@ description: How to set up FerretDB using Docker
 
 We provide three Docker images for various deployments:
 
-- **an evaluation image**: for quick testing and experiments
-- **a development image**: for debugging problems
-- **a production image**: for all other cases
+- Evaluation image for quick testing and experiments.
+- Production image for stable and optimized deployments.
+- Development image for debugging problems.
 
-An evaluation image is documented [separately](../evaluation.md).
+The evaluation image is documented [separately](../evaluation.md).
 The rest are covered below.
 
 All Docker images include a [`HEALTHCHECK` instruction](https://docs.docker.com/reference/dockerfile/#healthcheck)

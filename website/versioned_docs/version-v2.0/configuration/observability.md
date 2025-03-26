@@ -18,7 +18,7 @@ Structured log format is not stable yet; field names and formatting of values mi
 
 FerretDB provides the following log formats:
 
-- `console` is a human-readable format with optional colors.
+- `console` is a human-readable format.
 - `text` is machine-readable [logfmt](https://brandur.org/logfmt)-like format
   (powered by [Go's `slog.TextHandler`](https://pkg.go.dev/log/slog#TextHandler)).
 - `json` is machine-readable JSON format
@@ -28,6 +28,8 @@ FerretDB provides the following log formats:
   Fields required in the output format but not yet implemented, will not be included.
 
 There are four logging levels:
+
+<!-- https://github.com/FerretDB/FerretDB/issues/4439 -->
 
 - `error` is used for errors that can't be handled gracefully
   and typically result in client connection being closed;
