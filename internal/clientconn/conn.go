@@ -390,33 +390,9 @@ func createRequest(reqHeader *wire.MsgHeader, reqBody wire.MsgBody) (*middleware
 //
 // Returned resBody can be nil.
 func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, msgReq *middleware.MsgRequest, queryReq *middleware.QueryRequest) (resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) { //nolint:lll // argument list is too long
-	var span oteltrace.Span
-
 	var command, result, argument string
 	defer func() {
-		if result == "" {
-			result = "panic"
-		}
-
-		if argument == "" {
-			argument = "unknown"
-		}
-
-		c.m.Responses.WithLabelValues(resHeader.OpCode.String(), command, argument, result).Inc()
-
-		must.NotBeZero(span)
-
-		if result != "ok" {
-			span.SetStatus(otelcodes.Error, result)
-		}
-
-		span.SetName(command)
-		span.SetAttributes(
-			otelattribute.String("db.ferretdb.opcode", resHeader.OpCode.String()),
-			otelattribute.Int("db.ferretdb.request_id", int(resHeader.ResponseTo)),
-			otelattribute.String("db.ferretdb.argument", argument),
-		)
-		span.End()
+		c.endObservability(connCtx, resHeader, command, result, argument)
 	}()
 
 	resHeader = new(wire.MsgHeader)
@@ -437,13 +413,13 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, msgReq 
 			c.l.DebugContext(connCtx, "Failed to extract span context from comment", logging.Error(e))
 		}
 
-		connCtx, span = otel.Tracer("").Start(connCtx, "")
+		connCtx = c.startObservability(connCtx, reqHeader, command)
 
 		resMsg := c.handleOpMsg(connCtx, msgReq, command)
 		resBody = resMsg.OpMsg
 
 	case wire.OpCodeQuery:
-		connCtx, span = otel.Tracer("").Start(connCtx, "")
+		connCtx = c.startObservability(connCtx, reqHeader, "unknown")
 
 		resHeader.OpCode = wire.OpCodeReply
 
@@ -481,19 +457,17 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, msgReq 
 	case wire.OpCodeKillCursors:
 		fallthrough
 	case wire.OpCodeCompressed:
-		connCtx, span = otel.Tracer("").Start(connCtx, "")
+		connCtx = c.startObservability(connCtx, reqHeader, "unknown")
 		err = lazyerrors.Errorf("unhandled OpCode %s", reqHeader.OpCode)
 
 	default:
-		connCtx, span = otel.Tracer("").Start(connCtx, "")
+		connCtx = c.startObservability(connCtx, reqHeader, "unknown")
 		err = lazyerrors.Errorf("unexpected OpCode %s", reqHeader.OpCode)
 	}
 
 	if command == "" {
 		command = "unknown"
 	}
-
-	c.m.Requests.WithLabelValues(reqHeader.OpCode.String(), command).Inc()
 
 	// set body for error
 	if err != nil {
@@ -555,7 +529,7 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, msgReq 
 	return
 }
 
-// startObservability starts observability for the given request.
+// startObservability starts observability by incrementing request metrics and starting a span.
 func (c *conn) startObservability(ctx context.Context, reqHeader *wire.MsgHeader, command string) context.Context {
 	ctx, _ = otel.Tracer("").Start(ctx, "")
 
@@ -564,7 +538,7 @@ func (c *conn) startObservability(ctx context.Context, reqHeader *wire.MsgHeader
 	return ctx
 }
 
-// endObservability ends observability for the given request.
+// endObservability ends observability by incrementing response metrics, setting span values and ending the span.
 func (c *conn) endObservability(ctx context.Context, resHeader *wire.MsgHeader, command, result, argument string) {
 	span := oteltrace.SpanFromContext(ctx)
 
