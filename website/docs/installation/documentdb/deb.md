@@ -25,19 +25,25 @@ sudo dpkg -i /path/to/documentdb.deb
 
 Ensure to replace `/path/to/documentdb.deb` with the actual path and filename of the downloaded `.deb` package.
 
-After that, update the `postgresql.conf` of your PostgreSQL instance with the following settings so it can load the extension on startup:
+Once installed, update your `postgresql.conf` to load the extension libraries on startup into the default `postgres` database.
+Add the following lines to `postgresql.conf`:
 
 ```text
 shared_preload_libraries = 'pg_cron,pg_documentdb_core,pg_documentdb'
 cron.database_name       = 'postgres'
 ```
 
-Note that if the database instance is already running before updating the config file, you may need to restart the PostgreSQL service to apply the changes.
-
-Then create the extension by running the following SQL command within the PostgreSQL instance:
+Then create the extension by running the following SQL command within the `postgres` database:
 
 ```sql
 CREATE EXTENSION documentdb CASCADE;
 ```
+
+:::caution
+We recommend using the default `postgres` database; some features may not work as expected if you use a different database.
+If you prefer to load the extension into a different database, make sure to create the database beforehand and update the `cron.database_name` setting accordingly.
+
+Ensure to restart the PostgreSQL service to apply the changes and run `CREATE EXTENSION documentdb CASCADE;` within the database to create the extension.
+:::
 
 You can now go ahead and set up FerretDB by following [this installation guide](../ferretdb/deb.md).
