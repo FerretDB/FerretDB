@@ -253,14 +253,19 @@ func (c *conn) processMessage(ctx context.Context, bufr *bufio.Reader, bufw *buf
 	msgReq, queryReq, err := createRequest(reqHeader, reqBody)
 	if err != nil {
 		decodeFailed = true
+
+		ctx = c.startObservability(ctx, reqHeader, "unknown")
+
 		protoErr := mongoerrors.Make(ctx, err, "", c.l)
 		resBody = protoErr.Msg()
+
+		defer func() {
+			c.endObservability(ctx, resHeader, "unknown", protoErr.Name, protoErr.Argument)
+		}()
 
 		if resHeader, err = c.responseHeader(reqHeader, resBody); err != nil {
 			panic(err)
 		}
-
-		// FIXME observability
 	}
 
 	// send request to proxy first (unless we are in normal mode)
@@ -548,6 +553,44 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, msgReq 
 	}
 
 	return
+}
+
+// startObservability starts observability for the given request.
+func (c *conn) startObservability(ctx context.Context, reqHeader *wire.MsgHeader, command string) context.Context {
+	ctx, _ = otel.Tracer("").Start(ctx, "")
+
+	c.m.Requests.WithLabelValues(reqHeader.OpCode.String(), command).Inc()
+
+	return ctx
+}
+
+// endObservability ends observability for the given request.
+func (c *conn) endObservability(ctx context.Context, resHeader *wire.MsgHeader, command, result, argument string) {
+	span := oteltrace.SpanFromContext(ctx)
+
+	if result == "" {
+		result = "panic"
+	}
+
+	if argument == "" {
+		argument = "unknown"
+	}
+
+	c.m.Responses.WithLabelValues(resHeader.OpCode.String(), command, argument, result).Inc()
+
+	must.NotBeZero(span)
+
+	if result != "ok" {
+		span.SetStatus(otelcodes.Error, result)
+	}
+
+	span.SetName(command)
+	span.SetAttributes(
+		otelattribute.String("db.ferretdb.opcode", resHeader.OpCode.String()),
+		otelattribute.Int("db.ferretdb.request_id", int(resHeader.ResponseTo)),
+		otelattribute.String("db.ferretdb.argument", argument),
+	)
+	span.End()
 }
 
 // responseHeader creates a header for the given request header and response body.
