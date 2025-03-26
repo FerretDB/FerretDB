@@ -258,12 +258,15 @@ func (c *conn) processMessage(ctx context.Context, bufr *bufio.Reader, bufw *buf
 
 		protoErr := mongoerrors.Make(ctx, err, "", c.l)
 		resBody = protoErr.Msg()
+		result := protoErr.Name
 
 		defer func() {
-			c.endObservability(ctx, resHeader, "unknown", protoErr.Name, protoErr.Argument)
+			c.endObservability(ctx, resHeader, "unknown", result, protoErr.Argument)
 		}()
 
 		if resHeader, err = c.responseHeader(reqHeader, resBody); err != nil {
+			result = ""
+
 			panic(err)
 		}
 	}
