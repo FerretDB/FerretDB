@@ -37,20 +37,21 @@ func (h *Handler) MsgRenameCollection(connCtx context.Context, req *middleware.M
 		return nil, lazyerrors.Error(err)
 	}
 
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
-		return nil, err
-	}
-
-	document, err := spec.Decode()
+	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
+	doc, err := spec.Decode()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
+		return nil, err
+	}
+
 	command := "renameCollection"
 
-	oldName, err := getRequiredParam[string](document, command)
+	oldName, err := getRequiredParam[string](doc, command)
 	if err != nil {
-		from := document.Get(command)
+		from := doc.Get(command)
 		if from == nil || from == wirebson.Null {
 			return nil, mongoerrors.NewWithArgument(
 				mongoerrors.ErrLocation40414,
@@ -66,9 +67,9 @@ func (h *Handler) MsgRenameCollection(connCtx context.Context, req *middleware.M
 		)
 	}
 
-	newName, err := getRequiredParam[string](document, "to")
+	newName, err := getRequiredParam[string](doc, "to")
 	if err != nil {
-		if to := document.Get("to"); to == nil || to == wirebson.Null {
+		if to := doc.Get("to"); to == nil || to == wirebson.Null {
 			return nil, mongoerrors.NewWithArgument(
 				mongoerrors.ErrLocation40414,
 				"BSON field 'renameCollection.to' is missing but a required field",
@@ -83,7 +84,7 @@ func (h *Handler) MsgRenameCollection(connCtx context.Context, req *middleware.M
 		)
 	}
 
-	dropTarget, err := getOptionalParam[bool](document, "dropTarget", false)
+	dropTarget, err := getOptionalParam[bool](doc, "dropTarget", false)
 	if err != nil {
 		return nil, err
 	}
