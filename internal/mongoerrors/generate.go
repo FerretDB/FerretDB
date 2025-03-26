@@ -50,6 +50,7 @@ var extraMongoErrors = map[string]int{
 	"Unauthorized":                  13,
 	"ProtocolError":                 17,
 	"AuthenticationFailed":          18,
+	"MaxTimeMSExpired":              50,
 	"CommandNotFound":               59,
 	"OperationFailed":               96,
 	"ClientMetadataCannotBeMutated": 186,
