@@ -38,7 +38,7 @@ func (h *Handler) MsgUpdate(connCtx context.Context, req *middleware.MsgRequest)
 		return nil, lazyerrors.Error(err)
 	}
 
-	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
 	}
 
