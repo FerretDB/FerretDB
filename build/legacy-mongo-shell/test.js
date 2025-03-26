@@ -3,26 +3,24 @@
 (function () {
   "use strict";
 
-  // Update the following example with your test.
-
   const coll = db.test;
 
   coll.drop();
 
-  const init = [
-    { _id: "double", v: 42.13 },
-    { _id: "double-whole", v: 42.0 },
-    { _id: "double-zero", v: 0.0 },
-  ];
+  const docsTotal = 2048;
+  const docsPerBatch = 16;
 
-  coll.insertMany(init);
+  const batches = docsTotal / docsPerBatch;
 
-  const query = { v: { $gt: 42.0 } };
+  const v = Array.from({ length: 1024 * 1024 }, (_, i) => i);
+  const batch = Array.from({ length: docsPerBatch }, () => ({ v }));
 
-  const expected = [{ _id: "double", v: 42.13 }];
+  for (let i = 0; i < batches; i++) {
+    coll.insertMany(batch);
+    print(`Inserted batch ${i + 1}/${batches} (${(i + 1) * docsPerBatch}/${docsTotal} documents)`);
+  }
 
-  const actual = coll.find(query).toArray();
-  assert.eq(expected, actual);
+  shellPrint(db.adminCommand({ listDatabases: 1 }));
 
   print("test.js passed!");
 })();

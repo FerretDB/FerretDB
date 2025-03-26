@@ -82,6 +82,7 @@ jobs:
           --proxy-addr=127.0.0.1:37017
           --no-auth
           --mode=diff-normal
+          --log-level=info
           --postgresql-url='postgres://username:password@127.0.0.1:5432/postgres'
           2> ferretdb.log &
 
