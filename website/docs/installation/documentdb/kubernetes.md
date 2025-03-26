@@ -39,7 +39,6 @@ spec:
           mountPath: /var/lib/postgresql/data
   volumes:
     - name: data
-      emptyDir: {}
 
 ---
 apiVersion: v1
