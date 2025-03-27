@@ -51,7 +51,7 @@ Features are constantly being added to further increase compatibility and perfor
 
 We welcome all contributors.
 See our [public roadmap](https://github.com/orgs/FerretDB/projects/2/views/1),
-a list of [known differences with MongoDB](https://docs.ferretdb.io/migration/diff/),
+a list of [known differences with MongoDB](https://docs.ferretdb.io/migration/known-differences/),
 and [contributing guidelines](CONTRIBUTING.md).
 
 ## Quickstart

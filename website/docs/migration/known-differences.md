@@ -1,6 +1,6 @@
 ---
-sidebar_position: 11
-slug: /migration/diff/ # referenced in README.md and redirects
+sidebar_position: 4
+slug: /migration/known-differences/ # referenced in README.md and redirects
 description: Supported commands
 ---
 
@@ -28,7 +28,9 @@ Use ✅️ otherwise.
 See also https://github.com/prettier/prettier/issues/15572
 -->
 
-## Administrative commands
+## Wire protocol
+
+### Administrative commands
 
 | Command                   | Status                                                                     |
 | ------------------------- | -------------------------------------------------------------------------- |
@@ -55,7 +57,7 @@ See also https://github.com/prettier/prettier/issues/15572
 | `setParameter`            | [❌ Not implemented yet](https://github.com/FerretDB/FerretDB/issues/1518) |
 | `shutdown`                | [❌ Not implemented yet](https://github.com/FerretDB/FerretDB/issues/1519) |
 
-## Aggregation commands
+### Aggregation commands
 
 | Command     | Status        |
 | ----------- | ------------- |
@@ -63,7 +65,7 @@ See also https://github.com/prettier/prettier/issues/15572
 | `count`     | ✅️ Supported |
 | `distinct`  | ✅️ Supported |
 
-## Authentication commands
+### Authentication commands
 
 | Command        | Status                                                                     |
 | -------------- | -------------------------------------------------------------------------- |
@@ -72,7 +74,7 @@ See also https://github.com/prettier/prettier/issues/15572
 | `saslContinue` | ✅️ Supported                                                              |
 | `saslStart`    | ✅️ Supported                                                              |
 
-## Diagnostic commands
+### Diagnostic commands
 
 | Command                 | Status                                                                     |
 | ----------------------- | -------------------------------------------------------------------------- |
@@ -95,7 +97,7 @@ See also https://github.com/prettier/prettier/issues/15572
 | `validate`              | ✅️ Supported                                                              |
 | `whatsmyuri`            | ✅️ Supported                                                              |
 
-## Query commands
+### Query commands
 
 | Command         | Status                                                                     |
 | --------------- | -------------------------------------------------------------------------- |
@@ -107,7 +109,7 @@ See also https://github.com/prettier/prettier/issues/15572
 | `insert`        | ✅️ Supported                                                              |
 | `update`        | ✅️ Supported                                                              |
 
-## Role management commands
+### Role management commands
 
 | Command                    | Status                                                                     |
 | -------------------------- | -------------------------------------------------------------------------- |
@@ -121,7 +123,7 @@ See also https://github.com/prettier/prettier/issues/15572
 | `rolesInfo`                | [❌ Not implemented yet](https://github.com/FerretDB/FerretDB/issues/1536) |
 | `updateRole`               | [❌ Not implemented yet](https://github.com/FerretDB/FerretDB/issues/1537) |
 
-## Session commands
+### Session commands
 
 | Command                    | Status                                                                           |
 | -------------------------- | -------------------------------------------------------------------------------- |
@@ -134,7 +136,7 @@ See also https://github.com/prettier/prettier/issues/15572
 | `refreshSessions`          | ✅️ Supported                                                                    |
 | `startSession`             | ✅️ Supported                                                                    |
 
-## User management commands
+### User management commands
 
 | Command                    | Status                                                                     |
 | -------------------------- | -------------------------------------------------------------------------- |

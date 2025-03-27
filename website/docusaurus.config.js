@@ -33,9 +33,18 @@ const config = {
       require.resolve("@docusaurus/plugin-client-redirects"),
       {
         redirects: [
-          { to: "/migration/diff", from: ["/diff", "/reference/supported_commands", "/reference/supported-commands"] },
-          { to: "/installation", from: "/quickstart" },
-          { to: "/guides/full-text-search", from: "/guides/text-search" },
+          {
+            to: "/migration/known-differences",
+            from: ["/diff", "/reference/supported_commands", "/reference/supported-commands"],
+          },
+          {
+            to: "/installation",
+            from: "/quickstart",
+          },
+          {
+            to: "/guides/full-text-search",
+            from: "/guides/text-search",
+          },
         ],
 
         createRedirects(existingPath) {
