@@ -529,13 +529,13 @@ func TestDebugCommandErrors(t *testing.T) {
 	t.Run("LazyError", func(t *testing.T) {
 		t.Parallel()
 
-		err := db.RunCommand(ctx, bson.D{{"debugError", "lazy error"}}).Err()
+		err := db.RunCommand(ctx, bson.D{{"ferretDebugError", "lazy error"}}).Err()
 		expected := mongo.CommandError{
 			Code: 1,
 			Name: "InternalError",
 		}
 		AssertMatchesCommandError(t, expected, err)
-		assert.Regexp(t, `msg_debugerror\.go.+MsgDebugError.+lazy error$`, err.Error())
+		assert.Regexp(t, `msg_ferretdebugerror\.go.+MsgFerretDebugError.+lazy error$`, err.Error())
 
 		require.NoError(t, db.Client().Ping(ctx, nil), "lazy errors should not close connection")
 	})
@@ -543,7 +543,7 @@ func TestDebugCommandErrors(t *testing.T) {
 	t.Run("OtherError", func(t *testing.T) {
 		t.Parallel()
 
-		err := db.RunCommand(ctx, bson.D{{"debugError", "other error"}}).Err()
+		err := db.RunCommand(ctx, bson.D{{"ferretDebugError", "other error"}}).Err()
 		expected := mongo.CommandError{
 			Code: 1,
 			Name: "InternalError",

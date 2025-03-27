@@ -307,7 +307,7 @@ In this guide, you learned how to deploy a managed FerretDB instance on Taikun C
 Now you can go ahead to test or migrate your MongoDB workloads on a production-ready cluster with ease on Taikun CloudWorks.
 
 We previously covered how to deploy FerretDB on Kubernetes using Taikun CloudWorks.
-You can check out the guide [here](https://blog.ferretdb.io/deploy-ferretdb-kubernetes-taikun-cloudworks/#set-up-a-kubernetes-cluster-in-taikun-cloud).
+You can check out the guide [here](2024-05-27-deploy-ferretdb-kubernetes-taikun-cloudworks.md#set-up-a-kubernetes-cluster-in-taikun-cloud).
 
 For a guide on how to migrate your MongoDB workloads to FerretDB, check out the [FerretDB documentation](https://docs.ferretdb.io/migration/).
 And should you have any questions or need help, feel free to reach out on any of our community channels on [GitHub](https://docs.ferretdb.io/#community).
