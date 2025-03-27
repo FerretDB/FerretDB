@@ -24,7 +24,7 @@ const config = {
     locales: ["en"],
   },
 
-  scripts: [{ src: "https://plausible.io/js/script.js", defer: true, "data-domain": "docs.ferretdb.io" }],
+  scripts: [{ src: "https://plausible.io/js/script.hash.js", defer: true, "data-domain": "docs.ferretdb.io" }],
 
   plugins: [
     [
@@ -34,7 +34,7 @@ const config = {
       {
         redirects: [
           {
-            to: "/migration/supported-commands",
+            to: "/migration/compatibility",
             from: ["/diff", "/reference/supported_commands", "/reference/supported-commands"],
           },
           {

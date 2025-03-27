@@ -51,7 +51,7 @@ Features are constantly being added to further increase compatibility and perfor
 
 We welcome all contributors.
 See our [public roadmap](https://github.com/orgs/FerretDB/projects/2/views/1),
-lists of [supported commands and known differences](https://docs.ferretdb.io/migration/supported-commands/),
+lists of [known differences and supported commands](https://docs.ferretdb.io/migration/compatibility/),
 and [contributing guidelines](CONTRIBUTING.md).
 
 ## Quickstart

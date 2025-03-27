@@ -27,7 +27,7 @@ const config = {
   stylesheets: [{ href: "/codapi/snippet.css" }],
 
   scripts: [
-    { src: "https://plausible.io/js/script.js", defer: true, "data-domain": "blog.ferretdb.io" },
+    { src: "https://plausible.io/js/script.hash.js", defer: true, "data-domain": "blog.ferretdb.io" },
     { src: "/codapi/snippet.js", defer: true },
   ],
 

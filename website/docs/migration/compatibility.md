@@ -1,10 +1,10 @@
 ---
-sidebar_position: 4
-slug: /migration/supported-commands/ # referenced in README.md and redirects
-description: Supported commands
+sidebar_position: 1
+slug: /migration/compatibility/ # referenced in README.md and redirects
+description: Known differences and supported commands
 ---
 
-# Supported commands
+# Compatibility
 
 ## Known differences
 
