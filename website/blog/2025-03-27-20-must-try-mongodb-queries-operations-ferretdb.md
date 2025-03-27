@@ -95,7 +95,7 @@ This should return `5` as the count for all the documents in the collection.
 Books often have multiple authors, genres, and availability formats.
 What if you only want books written by specific authors, e.g.
 British authors?
-`$elemMatch` helps filter specific values inside nested arrays:
+`$elemMatch` helps filter specific values inside nested arrays.
 
 ```js
 db.books.find({ authors: { $elemMatch: { nationality: 'British' } } })
@@ -266,7 +266,7 @@ For vector search, you need to generate embeddings for the field (e.g. `summary`
 Aggregation pipelines let you process and transform data in stages where each stage refines the result.
 This is essential for analytics, reporting, and summarizing large datasets.
 
-Let's say you need to find how many books belong to the "Classic" genre; `$match` filters books that have "Classic" in their `genres` array and `$count` gives the total number of matching documents:
+Let's say you need to find how many books belong to the "Classic" genre; `$match` filters books that have "Classic" in their `genres` array and `$count` gives the total number of matching documents.
 
 ```js
 db.books.aggregate([
@@ -387,7 +387,7 @@ To see all active operations, run the following query in another `mongosh` sessi
 db.currentOp({ active: true })
 ```
 
-This will show you all active operations, including the ones we just inserted and queried:
+This will show you all active operations, including the ones we just inserted and queried.
 
 ```js
 {
@@ -447,7 +447,7 @@ You can learn more about authentication in FerretDB [here](https://docs.ferretdb
 ### 19. Delete user
 
 What if you no longer need a particular user account?
-For example, you can remove the newly created `newuser` account on FerretDB simply by running the command:
+For example, you can remove the newly created `newuser` account on FerretDB simply by running the command.
 
 ```js
 db.dropUser('newuser')
