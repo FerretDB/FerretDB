@@ -3,18 +3,18 @@ slug: 20-must-try-mongodb-queries-operations-ferretdb
 title: '20 must-try MongoDB operations and queries on FerretDB'
 authors: [alex]
 description: >
-  FerretDB got better with the release of v2, bringing deeper MongoDB compatibility, and enabling more advanced workloads to run complex queries for most use cases. Find out in this post.
+  FerretDB got better with the release of v2, bringing deeper MongoDB compatibility and enabling more advanced workloads to run complex queries for most use cases. Find out in this post.
 image: /img/blog/mongodb-operations-ferretdb.jpg
 tags: [document databases, community, product, open source]
 ---
 
 ![20 must-try MongoDB queries on FerretDB](/img/blog/mongodb-operations-ferretdb.jpg)
 
-FerretDB just got better with [the release of v2.0 GA](2025-03-05-ferretdb-v2-ga-open-source-mongodb-alternative-ready-for-production.md), bringing deeper MongoDB compatibility, and enabling more advanced workloads to run complex queries for most use cases.
+FerretDB just got better with [the release of v2.0 GA](2025-03-05-ferretdb-v2-ga-open-source-mongodb-alternative-ready-for-production.md), bringing deeper MongoDB compatibility and enabling more advanced workloads to run complex queries for most use cases.
 
 <!--truncate-->
 
-Beyond basic CRUD operations, most developers and businesses work with large datasets with analytical queries, text and vector indexing, geospatial searches, replication, among other features.
+Beyond basic CRUD operations, most developers and businesses work with large datasets with analytical queries, text and vector indexing, geospatial searches, and replication, among other features.
 All of these operations are available on FerretDB – in open source and without any danger of vendor lock-in or proprietary limitations.
 
 In this post, we're diving into 20 must-try MongoDB features and operations you can run on FerretDB.
@@ -32,7 +32,7 @@ We will cover authentication, indexes, aggregation operations, geospatial querie
 If you're new to FerretDB, you might want to start with the basics – [understanding how to set up an instance](https://docs.ferretdb.io/installation/) and how to [run some basic CRUD operations](https://docs.ferretdb.io/usage/).
 You can also check out this [MongoDB CRUD queries guide](2022-11-14-mongodb-crud-operations-with-ferretdb.mdx) before diving into the other sections in this post.
 
-### 1. Insert document with `mongoimport`
+### 1. Insert documents with `mongoimport`
 
 Without data, there's nothing to query!
 So we will start by adding some documents to our database instance.
@@ -40,7 +40,7 @@ So we will start by adding some documents to our database instance.
 We already prepared a sample dataset to use; it's a collection of books with details like title, authors, genres, publication date, and price.
 See the [books.fixture.json](https://raw.githubusercontent.com/FerretDB/FerretDB/refs/tags/v2.0.0/website/docs/guides/requests/books.fixture.json) file for the data.
 
-Since we are using the FerretDB `books` collection, we will start by downloading the data and then importing it.
+Since we are using the FerretDB `books` collection, we will start by downloading the data and then importing it:
 
 ```sh
 # Download the JSON data
@@ -58,7 +58,7 @@ Prices change all the time – whether due to promotions, inflation, or publishe
 Updating an existing document helps keep your data relevant.
 
 Due to a price drop for "Pride and Prejudice" from the initial price of `$19.99` to `$17.99`, let's update the document to reflect the change.
-The `$set` operator is your command to use – it lets you modify specific fields without touching the rest of the document.
+The `$set` operator lets you modify specific fields without touching the rest of the document:
 
 ```js
 db.books.updateOne(
@@ -82,7 +82,7 @@ db.books.find().sort({ 'publication.date': -1 })
 
 Are you curious about the number of books you have in the database?
 
-`countDocuments()` gives you a quick total of all documents – quite handy when dealing with large datasets or checking if an import was successful.
+`countDocuments()` gives you a quick total of all documents – quite handy when dealing with large datasets or checking if an import was successful:
 
 ```js
 db.books.countDocuments()
@@ -95,7 +95,7 @@ This should return `5` as the count for all the documents in the collection.
 Books often have multiple authors, genres, and availability formats.
 What if you only want books written by specific authors, e.g.
 British authors?
-`$elemMatch` helps filter specific values inside nested arrays.
+`$elemMatch` helps filter specific values inside nested arrays:
 
 ```js
 db.books.find({ authors: { $elemMatch: { nationality: 'British' } } })
@@ -263,10 +263,10 @@ For vector search, you need to generate embeddings for the field (e.g. `summary`
 
 ### 13. Aggregation pipeline stages
 
-Aggregation pipelines let you process and transform data in stage where each stage refines the result.
+Aggregation pipelines let you process and transform data in stages where each stage refines the result.
 This is essential for analytics, reporting, and summarizing large datasets.
 
-Let's say you need to find how many books belong to the "Classic" genre; `$match` filters books that have "Classic" in their `genres` array and `$count` gives the total number of matching documents.
+Let's say you need to find how many books belong to the "Classic" genre; `$match` filters books that have "Classic" in their `genres` array and `$count` gives the total number of matching documents:
 
 ```js
 db.books.aggregate([
@@ -279,7 +279,7 @@ Find out more about aggregation pipelines in FerretDB [here](https://docs.ferret
 
 ### 14. Run analytical operations on FerretDB with `$group` and `$avg`
 
-Say you want to analyze the average book rating per genre, which is a common use case for dashboards, trend analysis, or user recommendations.
+Say you want to analyze the average book rating per genre, which is a common use case for dashboards, trend analysis, or user recommendations:
 
 ```js
 db.books.aggregate([
@@ -292,9 +292,9 @@ db.books.aggregate([
 ])
 ```
 
-### 15. Lookup (Join queries)
+### 15. Lookup (JOIN queries)
 
-Sometimes, you need to combine data from multiple collections – just like SQL joins in relational databases.
+Sometimes, you need to combine data from multiple collections – just like SQL JOINs in relational databases.
 This is useful when you store related data in different collections but want to retrieve them together in a single query.
 
 Suppose there's another collection `publishers` with more details on the publishers, as shown below:
@@ -322,7 +322,7 @@ db.publishers.insertMany([
 ])
 ```
 
-You can join the data from both collections (`books` and `publishers`) using `$lookup`.
+You can join the data from both collections (`books` and `publishers`) using `$lookup`:
 
 ```js
 db.books.aggregate([
@@ -347,8 +347,8 @@ Some books aren't just about different places – they're from them.
 Geospatial queries help you query location-based data, like books published in a specific city or country.
 If a publisher's location is stored as GeoJSON points, FerretDB lets you query by geography instead of just text.
 
-What if you want to search for books published in a specific city.
-Instead of manually stating their locations, you can store and query precise geographic coordinates using `$geoWithin`:
+What if you want to search for books published in a specific city?
+Instead of manually stating their locations, you can store and query precise geographic coordinates using `$geoWithin`.
 
 Using London's longitude and latitude (`[-0.1276, 51.5072]`), let's run some queries to find books published within a `1km` radius.
 Note that the distance is in radians, so we need to convert it to the Earth's radius.
@@ -387,7 +387,7 @@ To see all active operations, run the following query in another `mongosh` sessi
 db.currentOp({ active: true })
 ```
 
-This will show you all active operations, including the ones we just inserted and queried.
+This will show you all active operations, including the ones we just inserted and queried:
 
 ```js
 {
@@ -432,7 +432,7 @@ When you create a user in FerretDB, you can manage it using the same commands yo
 
 You can create a user in FerretDB as you would on MongoDB by just running the `createUser` command.
 
-For example, the following command creates a `newuser` with password `newpassword` with all the credentials stored on PostgreSQL.
+For example, the following command creates the user `newuser` with the password `newpassword` with all the credentials stored on PostgreSQL:
 
 ```js
 db.createUser({
@@ -457,7 +457,7 @@ db.dropUser('newuser')
 
 ### 20. Drop database
 
-Once you are done with everything, you can proceed to drop the database, completely deleting it from the instance.
+Once you are done with everything, you can proceed to drop the database, completely deleting it from the instance:
 
 ```js
 db.dropDatabase()
