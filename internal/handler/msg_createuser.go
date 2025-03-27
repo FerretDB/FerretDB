@@ -36,13 +36,13 @@ func (h *Handler) MsgCreateUser(connCtx context.Context, req *middleware.MsgRequ
 		return nil, lazyerrors.Error(err)
 	}
 
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
-		return nil, err
-	}
-
 	doc, err := spec.DecodeDeep()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
+	}
+
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
+		return nil, err
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/913
