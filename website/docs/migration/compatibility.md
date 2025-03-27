@@ -6,7 +6,7 @@ description: Known differences and supported commands
 
 # Compatibility
 
-## Known differences
+## Limitations
 
 We don't plan to address those known differences in behavior:
 
@@ -15,13 +15,15 @@ We don't plan to address those known differences in behavior:
    Bullet subpoints should be in the same file as the parent point.
 -->
 
-1. FerretDB uses the same protocol error names and codes as MongoDB,
+1. FerretDB uses the same error names and codes as MongoDB,
    but the exact error messages may sometimes be different.
 2. FerretDB collection names must be valid UTF-8; MongoDB allows invalid UTF-8 sequences.
    <!-- TODO https://github.com/FerretDB/FerretDB/issues/4879 -->
 
 We consider all other differences in behavior to be problems and want to address them.
-Please [join our community](/#community) to report them.
+Some of them are mentioned below.
+You can upvote linked issues to affect [our roadmap](https://github.com/orgs/FerretDB/projects/2/views/1).
+If you encounter any other problem, please [join our community](/#community) to report it.
 
 <!--
 Use ❌ for features that are not implemented at all.
@@ -32,6 +34,8 @@ See also https://github.com/prettier/prettier/issues/15572
 -->
 
 ## Wire protocol
+
+All drivers and applications compatible with MongoDB 5.0+ should be compatible with FerretDB.
 
 ### Administrative commands
 
@@ -152,6 +156,8 @@ See also https://github.com/prettier/prettier/issues/15572
 | `usersInfo`                | ✅️ Supported                                                              |
 
 ## Data API
+
+All drivers and applications compatible with Atlas Data API should be compatible with FerretDB.
 
 | Path                 | Status        |
 | -------------------- | ------------- |
