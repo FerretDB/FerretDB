@@ -161,6 +161,8 @@ linters-settings:
     no-unaliased: true
     no-extra-aliases: false
     alias:
+      - pkg: runtime/debug
+        alias: runtimedebug
       - pkg: github.com/prometheus/client_model/go
         alias: dto
       - pkg: go.opentelemetry.io/otel/attribute

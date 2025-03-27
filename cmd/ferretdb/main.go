@@ -25,6 +25,7 @@ import (
 	"math"
 	"os"
 	"runtime"
+	runtimedebug "runtime/debug"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -109,9 +110,9 @@ var cli struct {
 	Telemetry telemetry.Flag `default:"undecided" help:"${help_telemetry}" group:"Miscellaneous"`
 
 	Dev struct {
-		ReplSetName string `default:"" help:"Replica set name." hidden:""`
-
-		RecordsDir string `hidden:""`
+		Version     bool   `hidden:""`
+		ReplSetName string `hidden:""`
+		RecordsDir  string `hidden:""`
 
 		Telemetry struct {
 			URL            string        `default:"https://beacon.ferretdb.com/" hidden:""`
@@ -283,6 +284,18 @@ func run() {
 	}
 
 	info := version.Get()
+
+	if cli.Dev.Version {
+		e := json.NewEncoder(os.Stdout)
+		e.SetIndent("", "  ")
+		must.NoError(e.Encode(info))
+
+		buildInfo, ok := runtimedebug.ReadBuildInfo()
+		must.BeTrue(ok)
+		must.NoError(e.Encode(buildInfo))
+
+		return
+	}
 
 	if p := cli.Dev.Telemetry.Package; p != "" {
 		info.Package = p
