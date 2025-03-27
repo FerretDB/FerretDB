@@ -16,7 +16,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/prometheus/client_golang v1.21.1
 	github.com/prometheus/client_model v0.6.1
-	github.com/prometheus/common v0.62.0
+	github.com/prometheus/common v0.63.0
 	github.com/stretchr/testify v1.10.0
 	github.com/xdg-go/scram v1.1.2
 	go.mongodb.org/mongo-driver v1.17.3
@@ -26,7 +26,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.35.0
 	go.opentelemetry.io/otel/trace v1.35.0
 	go.uber.org/automaxprocs v1.6.0
-	golang.org/x/crypto/x509roots/fallback v0.0.0-20250312005926-b369b723c8ad
+	golang.org/x/crypto/x509roots/fallback v0.0.0-20250317152234-d0a798f77473
 	golang.org/x/net v0.37.0
 	golang.org/x/sys v0.31.0
 	golang.org/x/term v0.30.0
