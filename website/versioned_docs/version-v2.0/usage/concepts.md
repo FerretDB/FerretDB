@@ -28,7 +28,7 @@ The above data is stored in a single document.
 
 :::note
 FerretDB follows almost the same naming conventions as MongoDB.
-However, there are a few restrictions, which you can find [here](migration/diff.md).
+However, there are a few restrictions, which you can find [here](../migration/supported-commands.md#known-differences).
 :::
 
 For complex documents, you can nest documents inside other documents:

@@ -34,7 +34,7 @@ const config = {
       {
         redirects: [
           {
-            to: "/migration/known-differences",
+            to: "/migration/supported-commands",
             from: ["/diff", "/reference/supported_commands", "/reference/supported-commands"],
           },
           {

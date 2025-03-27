@@ -1,10 +1,12 @@
 ---
 sidebar_position: 4
-slug: /migration/known-differences/ # referenced in README.md and redirects
+slug: /migration/supported-commands/ # referenced in README.md and redirects
 description: Supported commands
 ---
 
-# Known differences
+# Supported commands
+
+## Known differences
 
 We don't plan to address those known differences in behavior:
 

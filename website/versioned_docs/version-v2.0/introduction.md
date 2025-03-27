@@ -35,7 +35,7 @@ We are constantly adding features to increase compatibility based on user feedba
 As with any database, before moving to production, please verify if it is suitable for your application.
 
 See our [public roadmap](https://github.com/orgs/FerretDB/projects/2/views/1),
-a list of [known differences with MongoDB](migration/diff.md),
+lists of [supported commands and known differences](migration/supported-commands.md),
 and [contributing guidelines](https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md).
 
 :::tip
