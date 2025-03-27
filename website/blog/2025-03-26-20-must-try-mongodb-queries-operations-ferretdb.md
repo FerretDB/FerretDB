@@ -194,7 +194,7 @@ After 60 seconds, the document will be automatically removed by the TTL index.
 Unlike full indexes, partial indexes only index documents that match a specific condition, and skips the rest.
 Typically, this leads to smaller index sizes, faster writes, and optimized queries, making it perfect for filtering out irrelevant data without the overhead of a full index.
 
-Suppose we only want to index books that cost more than $10:
+Suppose we only want to index books that cost more than $10, run the following command:
 
 ```js
 db.books.createIndex(
