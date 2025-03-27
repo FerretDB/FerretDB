@@ -42,7 +42,7 @@ spec:
             - containerPort: 27017
           env:
             - name: FERRETDB_POSTGRESQL_URL
-              value: postgres://postgres@postgres:5432/postgres
+              value: postgres://<username>:<password>@postgres:5432/postgres
 
 ---
 apiVersion: v1

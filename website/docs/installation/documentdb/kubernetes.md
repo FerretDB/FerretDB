@@ -34,6 +34,10 @@ spec:
       env:
         - name: POSTGRES_PASSWORD
           value: <password>
+        - name: POSTGRES_USER
+          value: <username>
+        - name: POSTGRES_DB
+          value: postgres
       volumeMounts:
         - name: data
           mountPath: /var/lib/postgresql/data
