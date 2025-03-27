@@ -2,7 +2,7 @@
 sidebar_position: 3
 ---
 
-# Deploy PostgreSQL with DocumentDB extension on Kubernetes
+# Kubernetes
 
 FerretDB uses PostgreSQL with [DocumentDB extension](https://github.com/microsoft/documentdb) as a database engine.
 You need to have a running Kubernetes cluster to set up PostgreSQL with DocumentDB extension on Kubernetes.

@@ -2,7 +2,7 @@
 sidebar_position: 4
 ---
 
-# Installing FerretDB on Kubernetes
+# Kubernetes
 
 To deploy FerretDB on Kubernetes, you need to have a running Kubernetes cluster and a PostgreSQL instance with the DocumentDB extension.
 Please see the [DocumentDB installation docs](../documentdb/kubernetes.md) for more information on how to deploy it on Kubernetes.
