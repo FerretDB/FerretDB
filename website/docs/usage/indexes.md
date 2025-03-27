@@ -22,12 +22,13 @@ You can create single field indexes or compound indexes.
 
 Suppose a `products` collection contains the following documents:
 
-```js
-response =
-{ _id: 1, name: "iPhone 12", category: "smartphone", price: 799 }
-{ _id: 2, name: "iPad Pro", category: "tablet", price: 999 }
-{ _id: 3, name: "Galaxy S21", category: "smartphone", price: 699 }
-{ _id: 4, name: "MacBook Pro", category: "laptop", price: 1299 }
+```json
+[
+  { "_id": 1, "name": "iPhone 12", "category": "smartphone", "price": 799 },
+  { "_id": 2, "name": "iPad Pro", "category": "tablet", "price": 999 },
+  { "_id": 3, "name": "Galaxy S21", "category": "smartphone", "price": 699 },
+  { "_id": 4, "name": "MacBook Pro", "category": "laptop", "price": 1299 }
+]
 ```
 
 Here's an example of the `createIndex` method to create an index on the `price` field of a `products` collection:
