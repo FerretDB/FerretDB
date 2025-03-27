@@ -57,7 +57,8 @@ import (
 // It's used for parsing the user input.
 //
 // Keep structure and order in sync with documentation and embeddable package.
-// TODO https://github.com/FerretDB/FerretDB/issues/4746
+//
+//nolint:lll // for readability
 var cli struct {
 	// We hide `run` command to show only `ping` in the help message.
 	Run  struct{} `cmd:"" default:"1"                             hidden:""`
@@ -65,51 +66,50 @@ var cli struct {
 
 	Version bool `default:"false" help:"Print version to stdout and exit." env:"-"`
 
-	PostgreSQLURL string `name:"postgresql-url" default:"postgres://127.0.0.1:5432/postgres" help:"PostgreSQL URL."`
+	PostgreSQLURL     string `name:"postgresql-url"      default:"postgres://127.0.0.1:5432/postgres"                                                                   help:"PostgreSQL URL." group:"PostgreSQL"`
+	PostgreSQLURLFile []byte `name:"postgresql-url-file" help:"Path to a file containing the PostgreSQL connection URL. If non-empty, this overrides --postgresql-url." group:"PostgreSQL"     type:"filecontent"`
 
 	Listen struct {
-		Addr string `default:"127.0.0.1:27017" help:"Listen TCP address for MongoDB protocol."`
-		Unix string `default:""                help:"Listen Unix domain socket path for MongoDB protocol."`
-
-		TLS         string `default:"" help:"Listen TLS address for MongoDB protocol."`
-		TLSCertFile string `default:"" help:"TLS cert file path."`
-		TLSKeyFile  string `default:"" help:"TLS key file path."`
-		TLSCaFile   string `default:"" help:"TLS CA file path."`
-
-		DataAPIAddr string `default:"" help:"Listen TCP address for HTTP Data API."`
-	} `embed:"" prefix:"listen-"`
+		Addr        string `default:"127.0.0.1:27017" help:"Listen TCP address for MongoDB protocol."`
+		Unix        string `default:""                help:"Listen Unix domain socket path for MongoDB protocol."`
+		TLS         string `default:""                help:"Listen TLS address for MongoDB protocol."`
+		TLSCertFile string `default:""                help:"TLS cert file path."`
+		TLSKeyFile  string `default:""                help:"TLS key file path."`
+		TLSCaFile   string `default:""                help:"TLS CA file path."`
+		DataAPIAddr string `default:""                help:"Listen TCP address for HTTP Data API."`
+	} `embed:"" prefix:"listen-" group:"Interfaces"`
 
 	Proxy struct {
 		Addr        string `default:"" help:"Proxy address."`
 		TLSCertFile string `default:"" help:"Proxy TLS cert file path."`
 		TLSKeyFile  string `default:"" help:"Proxy TLS key file path."`
 		TLSCaFile   string `default:"" help:"Proxy TLS CA file path."`
-	} `embed:"" prefix:"proxy-"`
+	} `embed:"" prefix:"proxy-" group:"Interfaces"`
 
-	DebugAddr string `default:"127.0.0.1:8088" help:"Listen address for HTTP handlers for metrics, pprof, etc."`
+	DebugAddr string `default:"127.0.0.1:8088" help:"Listen address for HTTP handlers for metrics, pprof, etc." group:"Interfaces"`
 
-	Mode     string `default:"${default_mode}" help:"${help_mode}"                           enum:"${enum_mode}"`
-	StateDir string `default:"."               help:"Process state directory."`
-	Auth     bool   `default:"true"            help:"Enable authentication (on by default)." negatable:""`
+	Mode     string `default:"${default_mode}" help:"${help_mode}"                           enum:"${enum_mode}"   group:"Miscellaneous"`
+	StateDir string `default:"."               help:"Process state directory."               group:"Miscellaneous"`
+	Auth     bool   `default:"true"            help:"Enable authentication (on by default)." group:"Miscellaneous" negatable:""`
 
 	Log struct {
 		Level  string `default:"${default_log_level}" help:"${help_log_level}"`
 		Format string `default:"console"              help:"${help_log_format}"                     enum:"${enum_log_format}"`
 		UUID   bool   `default:"false"                help:"Add instance UUID to all log messages." negatable:""`
-	} `embed:"" prefix:"log-"`
+	} `embed:"" prefix:"log-" group:"Miscellaneous"`
 
-	MetricsUUID bool `default:"false" help:"Add instance UUID to all metrics." negatable:""`
+	MetricsUUID bool `default:"false" help:"Add instance UUID to all metrics." group:"Miscellaneous" negatable:""`
 
 	OTel struct {
 		Traces struct {
 			URL string `default:"" help:"OpenTelemetry OTLP/HTTP traces endpoint URL (e.g. 'http://host:4318/v1/traces')."`
 		} `embed:"" prefix:"traces-"`
-	} `embed:"" prefix:"otel-"`
+	} `embed:"" prefix:"otel-" group:"Miscellaneous"`
 
-	Telemetry telemetry.Flag `default:"undecided" help:"${help_telemetry}"`
+	Telemetry telemetry.Flag `default:"undecided" help:"${help_telemetry}" group:"Miscellaneous"`
 
 	Dev struct {
-		ReplSetName string `default:"" help:"Replica set name."`
+		ReplSetName string `default:"" help:"Replica set name." hidden:""`
 
 		RecordsDir string `hidden:""`
 
@@ -302,6 +302,10 @@ func run() {
 
 	// safe to always enable
 	runtime.SetBlockProfileRate(10000)
+
+	if len(cli.PostgreSQLURLFile) > 0 {
+		cli.PostgreSQLURL = strings.TrimSpace(string(cli.PostgreSQLURLFile))
+	}
 
 	stateProvider, err := state.NewProviderDir(cli.StateDir)
 	if err != nil {

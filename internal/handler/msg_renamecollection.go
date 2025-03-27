@@ -20,38 +20,38 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // MsgRenameCollection implements `renameCollection` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgRenameCollection(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	spec, err := msg.RawDocument()
+func (h *Handler) MsgRenameCollection(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
+	spec, err := req.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
+	doc, err := spec.Decode()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
-	}
-
-	document, err := spec.Decode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
 	}
 
 	command := "renameCollection"
 
-	oldName, err := getRequiredParam[string](document, command)
+	oldName, err := getRequiredParam[string](doc, command)
 	if err != nil {
-		from := document.Get(command)
+		from := doc.Get(command)
 		if from == nil || from == wirebson.Null {
 			return nil, mongoerrors.NewWithArgument(
 				mongoerrors.ErrLocation40414,
@@ -67,9 +67,9 @@ func (h *Handler) MsgRenameCollection(connCtx context.Context, msg *wire.OpMsg) 
 		)
 	}
 
-	newName, err := getRequiredParam[string](document, "to")
+	newName, err := getRequiredParam[string](doc, "to")
 	if err != nil {
-		if to := document.Get("to"); to == nil || to == wirebson.Null {
+		if to := doc.Get("to"); to == nil || to == wirebson.Null {
 			return nil, mongoerrors.NewWithArgument(
 				mongoerrors.ErrLocation40414,
 				"BSON field 'renameCollection.to' is missing but a required field",
@@ -84,7 +84,7 @@ func (h *Handler) MsgRenameCollection(connCtx context.Context, msg *wire.OpMsg) 
 		)
 	}
 
-	dropTarget, err := getOptionalParam[bool](document, "dropTarget", false)
+	dropTarget, err := getOptionalParam[bool](doc, "dropTarget", false)
 	if err != nil {
 		return nil, err
 	}
@@ -145,11 +145,9 @@ func (h *Handler) MsgRenameCollection(connCtx context.Context, msg *wire.OpMsg) 
 		return nil, lazyerrors.Error(err)
 	}
 
-	res := must.NotFail(wirebson.NewDocument(
+	return middleware.Response(wirebson.MustDocument(
 		"ok", float64(1),
 	))
-
-	return wire.NewOpMsg(res)
 }
 
 // splitNamespace returns the database and collection name from a given namespace in format "database.collection".

@@ -44,6 +44,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/v2/internal/handler"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/proxy"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
@@ -386,7 +387,8 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		connCtx, span = otel.Tracer("").Start(connCtx, "")
 
 		if err == nil {
-			resBody = c.handleOpMsg(connCtx, msg, command)
+			resMsg := c.handleOpMsg(connCtx, &middleware.MsgRequest{OpMsg: msg}, command)
+			resBody = resMsg.OpMsg
 		}
 
 	case wire.OpCodeQuery:
@@ -395,13 +397,23 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		query := reqBody.(*wire.OpQuery)
 		resHeader.OpCode = wire.OpCodeReply
 
-		// do not store typed nil in interface, it makes it non-nil
+		obsMW := &middleware.Observability{
+			L: logging.WithName(c.l, "observability"),
+		}
 
-		var resReply *wire.OpReply
-		resReply, err = c.h.CmdQuery(connCtx, query)
+		errMW := middleware.NewError("", logging.WithName(c.l, "error"))
 
-		if resReply != nil {
-			resBody = resReply
+		replyHandler := c.h.CmdQuery
+		replyHandler = errMW.HandleOpReply(replyHandler)
+		replyHandler = obsMW.HandleOpReply(replyHandler)
+
+		// error is handled by middleware.Error
+		reply := must.NotFail(replyHandler(connCtx, &middleware.QueryRequest{OpQuery: query}))
+		resBody = reply.OpReply
+
+		if replyErr := reply.CommandError(); replyErr != nil {
+			result = replyErr.Name
+			argument = replyErr.Argument
 		}
 
 	case wire.OpCodeReply:
@@ -443,11 +455,6 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 			argument = protoErr.Argument
 
 		case wire.OpCodeReply:
-			protoErr := mongoerrors.Make(connCtx, err, "", c.l)
-			resBody = protoErr.Reply()
-			result = protoErr.Name
-			argument = protoErr.Argument
-
 		case wire.OpCodeQuery:
 			fallthrough
 		case wire.OpCodeUpdate:
@@ -512,23 +519,37 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 // handleOpMsg processes OP_MSG requests.
 //
 // The passed context is canceled when the client disconnects.
-func (c *conn) handleOpMsg(connCtx context.Context, msg *wire.OpMsg, command string) *wire.OpMsg {
+func (c *conn) handleOpMsg(connCtx context.Context, msg *middleware.MsgRequest, command string) *middleware.MsgResponse {
+	var cmdHandler middleware.MsgHandlerFunc
+
 	cmd, ok := c.h.Commands()[command]
 	if !ok || cmd.Handler == nil {
-		err := mongoerrors.New(
+		cmdHandler = notFound(command)
+	} else {
+		cmdHandler = cmd.Handler
+	}
+
+	obsMW := &middleware.Observability{
+		L: logging.WithName(c.l, "observability"),
+	}
+
+	errMW := middleware.NewError("", logging.WithName(c.l, "error"))
+
+	cmdHandler = errMW.HandleOpMsg(cmdHandler)
+	cmdHandler = obsMW.HandleOpMsg(cmdHandler)
+
+	// error is handled by middleware.Error
+	return must.NotFail(cmdHandler(connCtx, msg))
+}
+
+// notFound returns a handler that returns an error indicating that the command is not found.
+func notFound(command string) middleware.MsgHandlerFunc {
+	return func(context.Context, *middleware.MsgRequest) (*middleware.MsgResponse, error) {
+		return nil, mongoerrors.New(
 			mongoerrors.ErrCommandNotFound,
 			fmt.Sprintf("no such command: '%s'", command),
 		)
-
-		return mongoerrors.Make(connCtx, err, "", c.l).Msg()
 	}
-
-	res, err := cmd.Handler(connCtx, msg)
-	if err != nil {
-		return mongoerrors.Make(connCtx, err, "", c.l).Msg()
-	}
-
-	return res
 }
 
 // renamePartialFile takes over an open file `f` and closes it.

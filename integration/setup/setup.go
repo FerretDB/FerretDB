@@ -49,6 +49,8 @@ var (
 
 	compatURLF = flag.String("compat-url", "", "compat system's (MongoDB) URL for compatibility tests; if empty, they are skipped")
 
+	otelTracesURLF = flag.String("otel-traces-url", "http://127.0.0.1:4318/v1/traces", "OpenTelemetry OTLP/HTTP traces endpoint URL")
+
 	noXFailF = flag.Bool("no-xfail", false, "Disallow expected failures")
 
 	benchDocsF = flag.Int("bench-docs", 1000, "benchmarks: number of documents to generate per iteration")
@@ -307,7 +309,7 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 func InsertProviders(tb testing.TB, ctx context.Context, collection *mongo.Collection, providers ...shareddata.Provider) (inserted bool) {
 	tb.Helper()
 
-	ctx, span := otel.Tracer("").Start(ctx, "insertProviders")
+	ctx, span := otel.Tracer("").Start(ctx, "InsertProviders")
 	defer span.End()
 
 	for _, provider := range providers {
@@ -330,13 +332,8 @@ func InsertProviders(tb testing.TB, ctx context.Context, collection *mongo.Colle
 func insertBenchmarkProvider(tb testing.TB, ctx context.Context, collection *mongo.Collection, provider shareddata.BenchmarkProvider) (inserted bool) {
 	tb.Helper()
 
-	for docs := range xiter.Chunk(provider.NewIter(), 100) {
-		insertDocs := make([]any, len(docs))
-		for i, doc := range docs {
-			insertDocs[i] = doc
-		}
-
-		res, err := collection.InsertMany(ctx, insertDocs)
+	for docs := range xiter.Chunk(provider.Docs(), 100) {
+		res, err := collection.InsertMany(ctx, docs)
 		require.NoError(tb, err)
 		require.Len(tb, res.InsertedIDs, len(docs))
 

@@ -17,19 +17,19 @@ package handler
 import (
 	"context"
 
-	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
 // MsgListDatabases implements `listDatabases` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgListDatabases(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	spec, err := msg.RawDocument()
+func (h *Handler) MsgListDatabases(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
+	spec, err := req.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -41,6 +41,8 @@ func (h *Handler) MsgListDatabases(connCtx context.Context, msg *wire.OpMsg) (*w
 	var res wirebson.RawDocument
 
 	err = h.Pool.WithConn(func(conn *pgx.Conn) error {
+		// TODO https://github.com/FerretDB/FerretDB/issues/4862
+		// TODO https://github.com/microsoft/documentdb/issues/121
 		res, err = documentdb_api.ListDatabases(connCtx, conn, h.L, spec)
 		return err
 	})
@@ -48,5 +50,5 @@ func (h *Handler) MsgListDatabases(connCtx context.Context, msg *wire.OpMsg) (*w
 		return nil, lazyerrors.Error(err)
 	}
 
-	return wire.NewOpMsg(res)
+	return middleware.Response(res)
 }

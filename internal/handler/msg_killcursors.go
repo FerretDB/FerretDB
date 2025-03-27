@@ -18,10 +18,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
@@ -30,37 +30,38 @@ import (
 // MsgKillCursors implements `killCursors` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgKillCursors(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	spec, err := msg.RawDocument()
+func (h *Handler) MsgKillCursors(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
+	spec, err := req.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	document, err := spec.Decode()
+	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
+	doc, err := spec.Decode()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	command := document.Command()
+	command := doc.Command()
 
-	db, err := getRequiredParam[string](document, "$db")
+	db, err := getRequiredParam[string](doc, "$db")
 	if err != nil {
 		return nil, err
 	}
 
-	collection, err := getRequiredParam[string](document, command)
+	collection, err := getRequiredParam[string](doc, command)
 	if err != nil {
 		return nil, err
 	}
 
 	username := conninfo.Get(connCtx).Conv().Username()
 
-	userID, _, err := h.s.CreateOrUpdateByLSID(connCtx, spec)
+	userID, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc)
 	if err != nil {
 		return nil, err
 	}
 
-	cursorsV, err := getRequiredParamAny(document, "cursors")
+	cursorsV, err := getRequiredParamAny(doc, "cursors")
 	if err != nil {
 		return nil, err
 	}
@@ -118,13 +119,11 @@ func (h *Handler) MsgKillCursors(connCtx context.Context, msg *wire.OpMsg) (*wir
 		must.NoError(cursorsKilled.Add(id))
 	}
 
-	res := must.NotFail(wirebson.NewDocument(
+	return middleware.Response(wirebson.MustDocument(
 		"cursorsKilled", cursorsKilled,
 		"cursorsNotFound", cursorsNotFound,
 		"cursorsAlive", cursorsAlive,
 		"cursorsUnknown", cursorsUnknown,
 		"ok", float64(1),
 	))
-
-	return wire.NewOpMsg(res)
 }

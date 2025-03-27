@@ -18,10 +18,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/google/uuid"
 
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/session"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
@@ -30,18 +30,19 @@ import (
 // MsgKillAllSessionsByPattern implements `killAllSessionsByPattern` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgKillAllSessionsByPattern(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	spec, err := msg.RawDocument()
+func (h *Handler) MsgKillAllSessionsByPattern(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) { //nolint:lll // for readability
+	spec, err := req.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
+	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
 	doc, err := spec.Decode()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	_, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec)
+	_, _, err = h.s.CreateOrUpdateByLSID(connCtx, doc)
 	if err != nil {
 		return nil, err
 	}
@@ -143,9 +144,9 @@ func (h *Handler) MsgKillAllSessionsByPattern(connCtx context.Context, msg *wire
 		_ = h.Pool.KillCursor(connCtx, cursorID)
 	}
 
-	return wire.MustOpMsg(
+	return middleware.Response(wirebson.MustDocument(
 		"ok", float64(1),
-	), nil
+	))
 }
 
 // getLSIDParam returns user ID and session ID from the given `v`.

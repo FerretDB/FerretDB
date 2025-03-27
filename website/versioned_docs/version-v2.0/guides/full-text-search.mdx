@@ -3,7 +3,7 @@ sidebar_position: 3
 description: Learn about full-text search parameters and capabilities in FerretDB.
 ---
 
-# Full text search
+# Full-text search
 
 import CodeBlock from '@theme/CodeBlock';
 import MyDataSet from '!!raw-loader!./requests/1-insert-text-data.js';
@@ -30,7 +30,7 @@ Instead of simply mapping fields to values, it:
 
 FerretDB supports full-text search capabilities.
 
-A full text search index creation takes the following parameters:
+A full-text search index creation takes the following parameters:
 
 | Field            | Description                                                                                |
 | ---------------- | ------------------------------------------------------------------------------------------ |
@@ -43,9 +43,9 @@ A full text search index creation takes the following parameters:
 FerretDB only supports one text index per collection.
 :::
 
-## Single full text index
+## Single full-text index
 
-Single full text index is created on a single field in a collection.
+Single full-text index is created on a single field in a collection.
 
 ### Creating a text index
 
@@ -55,15 +55,15 @@ To create a text index, use the `createIndex` command with the field you want to
 
 <CodeBlock language="js">{CreateIndex}</CodeBlock>
 
-This command creates a full text index on the `summary` field in a `books` collection.
+This command creates a full-text index on the `summary` field in a `books` collection.
 
 Insert the following documents into the `books` collection:
 
 <CodeBlock language="js">{MyDataSet}</CodeBlock>
 
-### Performing a full text search
+### Performing a full-text search
 
-Let's run a basic full text search query to find all documents that contain the word "drama" in the `summary` field.
+Let's run a basic full-text search query to find all documents that contain the word "drama" in the `summary` field.
 
 <CodeBlock language="js">{SearchQuery}</CodeBlock>
 

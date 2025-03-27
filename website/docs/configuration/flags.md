@@ -19,11 +19,19 @@ Some default values are overridden in [our Docker image](../installation/ferretd
 <!-- markdownlint-capture -->
 <!-- markdownlint-disable MD033 -->
 
-## PostgreSQL with DocumentDB extension
+## General
 
-| Flag               | Description               | Environment Variable      | Default Value                        |
-| ------------------ | ------------------------- | ------------------------- | ------------------------------------ |
-| `--postgresql-url` | PostgreSQL connection URL | `FERRETDB_POSTGRESQL_URL` | `postgres://127.0.0.1:5432/postgres` |
+| Flag           | Description                      | Environment Variable | Default Value |
+| -------------- | -------------------------------- | -------------------- | ------------- |
+| `-h`, `--help` | Show context-sensitive help      |                      |               |
+| `--version`    | Print version to stdout and exit |                      |               |
+
+## PostgreSQL
+
+| Flag                    | Description                                                                                               | Environment Variable           | Default Value                        |
+| ----------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------ | ------------------------------------ |
+| `--postgresql-url`      | PostgreSQL connection URL                                                                                 | `FERRETDB_POSTGRESQL_URL`      | `postgres://127.0.0.1:5432/postgres` |
+| `--postgresql-url-file` | Path to a file containing the PostgreSQL connection URL. If non-empty, this overrides `--postgresql-url`. | `FERRETDB_POSTGRESQL_URL_FILE` |                                      |
 
 FerretDB uses [pgx v5](https://github.com/jackc/pgx) library for connecting to PostgreSQL.
 Supported URL parameters are documented there:
@@ -59,8 +67,6 @@ Additionally:
 
 | Flag                  | Description                                                                                                                 | Environment Variable       | Default Value                  |
 | --------------------- | --------------------------------------------------------------------------------------------------------------------------- | -------------------------- | ------------------------------ |
-| `-h`, `--help`        | Show context-sensitive help                                                                                                 |                            |                                |
-| `--version`           | Print version to stdout and exit                                                                                            |                            |                                |
 | `--mode`              | [Operation mode](operation-modes.md)                                                                                        | `FERRETDB_MODE`            | `normal`                       |
 | `--state-dir`         | Path to the FerretDB state directory                                                                                        | `FERRETDB_STATE_DIR`       | `.`<br />(`/state` for Docker) |
 | `--[no-]auth`         | [Enable authentication](../security/authentication.md)                                                                      | `FERRETDB_AUTH`            | enabled                        |

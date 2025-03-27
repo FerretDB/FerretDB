@@ -19,8 +19,6 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/FerretDB/wire"
-
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 )
@@ -28,8 +26,8 @@ import (
 // Auth is a middleware that wraps the command handler with authentication check.
 //
 // Context must contain [*conninfo.ConnInfo].
-func Auth(next HandlerFunc, l *slog.Logger, command string) HandlerFunc {
-	return func(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+func Auth(next MsgHandlerFunc, l *slog.Logger, command string) MsgHandlerFunc {
+	return func(ctx context.Context, req *MsgRequest) (*MsgResponse, error) {
 		conv := conninfo.Get(ctx).Conv()
 		succeed := conv.Succeed()
 		username := conv.Username()
@@ -44,7 +42,7 @@ func Auth(next HandlerFunc, l *slog.Logger, command string) HandlerFunc {
 		default:
 			l.DebugContext(ctx, "Authentication passed", slog.String("username", username))
 
-			return next(ctx, msg)
+			return next(ctx, req)
 		}
 
 		return nil, mongoerrors.New(
