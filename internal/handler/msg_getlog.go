@@ -114,8 +114,7 @@ func (h *Handler) MsgGetLog(connCtx context.Context, req *middleware.MsgRequest)
 
 		startupWarnings := []string{
 			poweredBy,
-			"Please star 🌟 us on GitHub: https://github.com/FerretDB/FerretDB " +
-				"and https://github.com/microsoft/documentdb.",
+			"Please star 🌟 us on GitHub: https://github.com/FerretDB/FerretDB.",
 		}
 
 		if state.DocumentDBVersion != "" && state.DocumentDBVersion != version.DocumentDB {
