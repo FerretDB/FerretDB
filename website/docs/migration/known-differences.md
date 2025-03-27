@@ -16,6 +16,7 @@ We don't plan to address those known differences in behavior:
 1. FerretDB uses the same protocol error names and codes as MongoDB,
    but the exact error messages may sometimes be different.
 2. FerretDB collection names must be valid UTF-8; MongoDB allows invalid UTF-8 sequences.
+   <!-- TODO https://github.com/FerretDB/FerretDB/issues/4879 -->
 
 We consider all other differences in behavior to be problems and want to address them.
 Please [join our community](/#community) to report them.
@@ -147,3 +148,17 @@ See also https://github.com/prettier/prettier/issues/15572
 | `revokeRolesFromUser`      | [❌ Not implemented yet](https://github.com/FerretDB/FerretDB/issues/1495) |
 | `updateUser`               | ✅️ Supported                                                              |
 | `usersInfo`                | ✅️ Supported                                                              |
+
+## Data API
+
+| Path                 | Status        |
+| -------------------- | ------------- |
+| `/action/aggregate`  | ✅️ Supported |
+| `/action/deleteMany` | ✅️ Supported |
+| `/action/deleteOne`  | ✅️ Supported |
+| `/action/find`       | ✅️ Supported |
+| `/action/findOne`    | ✅️ Supported |
+| `/action/insertMany` | ✅️ Supported |
+| `/action/insertOne`  | ✅️ Supported |
+| `/action/updateMany` | ✅️ Supported |
+| `/action/updateOne`  | ✅️ Supported |

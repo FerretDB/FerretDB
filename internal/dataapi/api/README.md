@@ -1,3 +1,5 @@
+# Data API
+
 [openapi.json](openapi.json) is the original file downloaded from
 https://www.mongodb.com/docs/atlas/app-services/data-api/openapi/.
 
