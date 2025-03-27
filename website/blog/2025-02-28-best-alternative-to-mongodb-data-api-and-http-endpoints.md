@@ -11,12 +11,12 @@ tags: [open source, sspl, product, document databases, community]
 ![The Best Alternative for MongoDB Data API and HTTP Endpoints](/img/blog/mongodb-data-api.jpg)
 
 In September 2024, MongoDB announced the deprecation of Atlas Data API – among other features – leaving many developers affected, and without a suitable replacement.
-We are happy to announce that [FerretDB v2](https://blog.ferretdb.io/ferretdb-releases-v2-faster-more-compatible-mongodb-alternative) now provides a compatible replacement for it.
+We are happy to announce that [FerretDB v2](2025-01-23-ferretdb-releases-v2-faster-more-compatible-mongodb-alternative.md) now provides a compatible replacement for it.
 
 <!--truncate-->
 
 The Data API deprecation affected many developments, especially as it came without alternative migration options.
-This is a common theme for many proprietary (or license-restrictive) projects, and not just MongoDB – [read more on the uncertainties of proprietary solutions here](https://blog.ferretdb.io/why-open-source-important-proprietary-uncertainties).
+This is a common theme for many proprietary (or license-restrictive) projects, and not just MongoDB – [read more on the uncertainties of proprietary solutions here](2024-09-16-why-open-source-important-proprietary-uncertainties.md).
 Open source solutions like FerretDB offer control, community support, and long-term stability, so you're never left stranded.
 
 The good thing is: with the release of FerretDB v2, you can successfully replace MongoDB Data API and perform database operations on FerretDB using a direct HTTP-based method to access and interact with their databases.

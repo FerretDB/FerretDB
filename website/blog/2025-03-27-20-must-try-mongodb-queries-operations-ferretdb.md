@@ -10,7 +10,7 @@ tags: [document databases, community, product, open source]
 
 ![20 must-try MongoDB queries on FerretDB](/img/blog/mongodb-operations-ferretdb.jpg)
 
-FerretDB just got better with [the release of v2](https://blog.ferretdb.io/ferretdb-releases-v2-faster-more-compatible-mongodb-alternative/), bringing deeper MongoDB compatibility, and enabling more advanced workloads to run complex queries for most use cases.
+FerretDB just got better with [the release of v2.0 GA](2025-03-05-ferretdb-v2-ga-open-source-mongodb-alternative-ready-for-production.md), bringing deeper MongoDB compatibility, and enabling more advanced workloads to run complex queries for most use cases.
 
 <!--truncate-->
 
@@ -30,7 +30,7 @@ We will cover authentication, indexes, aggregation operations, geospatial querie
 ## Basic queries
 
 If you're new to FerretDB, you might want to start with the basics – [understanding how to set up an instance](https://docs.ferretdb.io/installation/) and how to [run some basic CRUD operations](https://docs.ferretdb.io/usage/).
-You can also check out this [MongoDB CRUD queries guide](https://blog.ferretdb.io/mongodb-crud-operations-with-ferretdb/) before diving into the other sections in this post.
+You can also check out this [MongoDB CRUD queries guide](2022-11-14-mongodb-crud-operations-with-ferretdb.mdx) before diving into the other sections in this post.
 
 ### 1. Insert document with `mongoimport`
 
