@@ -41,7 +41,7 @@ func (h *Handler) MsgListIndexes(connCtx context.Context, req *middleware.MsgReq
 		return nil, err
 	}
 
-	userID, sessionID, err := h.s.CreateOrUpdateByLSID(connCtx, spec)
+	userID, sessionID, err := h.s.CreateOrUpdateByLSID(connCtx, doc)
 	if err != nil {
 		return nil, err
 	}

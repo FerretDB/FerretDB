@@ -488,7 +488,10 @@
                     }
                   ],
                   "example": {
-                    "insertedIds": ["61935189ec53247016a623c9", "61935189ec53247016a623ca"]
+                    "insertedIds": [
+                      "61935189ec53247016a623c9",
+                      "61935189ec53247016a623ca"
+                    ]
                   }
                 }
               },
@@ -1190,7 +1193,11 @@
     "schemas": {
       "Namespace": {
         "type": "object",
-        "required": ["dataSource", "database", "collection"],
+        "required": [
+          "dataSource",
+          "database",
+          "collection"
+        ],
         "properties": {
           "dataSource": {
             "type": "string",
@@ -1224,7 +1231,10 @@
             "x-go-type": "json.RawMessage",
             "additionalProperties": {
               "type": "number",
-              "enum": [0, 1]
+              "enum": [
+                0,
+                1
+              ]
             },
             "description": "A [MongoDB projection](https://www.mongodb.com/docs/manual/tutorial/project-fields-from-query-results/) for matched documents returned by the operation."
           }
@@ -1232,7 +1242,9 @@
       },
       "FindOneRequestBody": {
         "title": "FindOneRequestBody",
-        "required": ["filter"],
+        "required": [
+          "filter"
+        ],
         "allOf": [
           {
             "$ref": "#/components/schemas/Namespace"
@@ -1361,7 +1373,9 @@
       },
       "FindManyRequestBody": {
         "title": "FindManyRequestBody",
-        "required": ["filter"],
+        "required": [
+          "filter"
+        ],
         "allOf": [
           {
             "$ref": "#/components/schemas/Namespace"
@@ -1405,7 +1419,9 @@
           },
           {
             "type": "object",
-            "required": ["document"],
+            "required": [
+              "document"
+            ],
             "properties": {
               "document": {
                 "type": "object",
@@ -1434,7 +1450,9 @@
           },
           {
             "type": "object",
-            "required": ["documents"],
+            "required": [
+              "documents"
+            ],
             "properties": {
               "documents": {
                 "type": "array",
@@ -1474,7 +1492,10 @@
           },
           {
             "type": "object",
-            "required": ["filter", "update"],
+            "required": [
+              "filter",
+              "update"
+            ],
             "properties": {
               "update": {
                 "type": "object",
@@ -1493,7 +1514,10 @@
       "UpdateResponseBody": {
         "title": "UpdateResponseBody",
         "type": "object",
-        "required": ["matchedCount", "modifiedCount"],
+        "required": [
+          "matchedCount",
+          "modifiedCount"
+        ],
         "properties": {
           "matchedCount": {
             "description": "The number of documents matched by the query filter."
@@ -1521,7 +1545,9 @@
       "DeleteResponseBody": {
         "title": "DeleteResponseBody",
         "type": "object",
-        "required": ["deletedCount"],
+        "required": [
+          "deletedCount"
+        ],
         "properties": {
           "deletedCount": {
             "description": "The number of documents that were deleted."
@@ -1530,7 +1556,9 @@
       },
       "AggregateRequestBody": {
         "title": "AggregateRequestBody",
-        "required": ["pipeline"],
+        "required": [
+          "pipeline"
+        ],
         "allOf": [
           {
             "$ref": "#/components/schemas/Namespace"
@@ -1552,7 +1580,9 @@
       },
       "AggregateResponseBody": {
         "title": "AggregateResponseBody",
-        "required": ["documents"],
+        "required": [
+          "documents"
+        ],
         "properties": {
           "documents": {
             "description": "An array that contains the result set of the aggregation.",

@@ -41,7 +41,7 @@ func (h *Handler) MsgFind(connCtx context.Context, req *middleware.MsgRequest) (
 		return nil, err
 	}
 
-	userID, sessionID, err := h.s.CreateOrUpdateByLSID(connCtx, spec)
+	userID, sessionID, err := h.s.CreateOrUpdateByLSID(connCtx, doc)
 	if err != nil {
 		return nil, err
 	}
