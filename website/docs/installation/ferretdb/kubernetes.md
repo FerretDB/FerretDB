@@ -74,5 +74,5 @@ kubectl port-forward svc/ferretdb 27017:27017
 If you have `mongosh` installed, you can connect to FerretDB from another terminal with the following command:
 
 ```sh
-mongosh mongodb://postgres:<password>@127.0.0.1:27017
+mongosh mongodb://<username>:<password>@127.0.0.1:27017/
 ```
