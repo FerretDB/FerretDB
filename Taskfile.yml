@@ -727,6 +727,7 @@ tasks:
     desc: "Format, lint and build documentation"
     deps: [fmt-docs]
     cmds:
+      - ./bin/opendocdb-cts convert --dir=./website/docs/guides/cts ./website/docs/guides
       - docker compose run --rm docusaurus-docs build
 
   blog:
