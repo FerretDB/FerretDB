@@ -11,7 +11,7 @@
     "response": {
       "cursor": {
         "id": {
-          "$numberLong": 0
+          "$numberLong": "0"
         },
         "ns": "new.books",
         "firstBatch": [
