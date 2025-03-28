@@ -11,9 +11,15 @@
           "cosmosSearchOptions": {
             "kind": "vector-hnsw",
             "similarity": "COS",
-            "dimensions": 12,
-            "m": 16,
-            "efConstruction": 64
+            "dimensions": {
+              "$numberInt": "12"
+            },
+            "m": {
+              "$numberInt": "16"
+            },
+            "efConstruction": {
+              "$numberInt": "64"
+            }
           }
         }
       ]

@@ -11,8 +11,12 @@
           "cosmosSearchOptions": {
             "kind": "vector-ivf",
             "similarity": "COS",
-            "dimensions": 12,
-            "numLists": 3
+            "dimensions": {
+              "$numberInt": "12"
+            },
+            "numLists": {
+              "$numberInt": "3"
+            }
           }
         }
       ]

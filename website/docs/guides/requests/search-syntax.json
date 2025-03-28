@@ -6,10 +6,10 @@
         {
           "$search": {
             "cosmosSearch": {
-              "vector": "<vector>",
-              "path": "<path>",
-              "k": "<k>",
-              "efSearch": "<efSearch>"
+              "vector": "\u003cvector\u003e",
+              "path": "\u003cpath\u003e",
+              "k": "\u003ck\u003e",
+              "efSearch": "\u003cefSearch\u003e"
             }
           }
         }

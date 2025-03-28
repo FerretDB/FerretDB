@@ -4,7 +4,9 @@
       "createIndexes": "books",
       "indexes": [
         {
-          "key": { "summary": "text" },
+          "key": {
+            "summary": "text"
+          },
           "name": "summary_text_index"
         }
       ]

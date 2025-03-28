@@ -4,9 +4,17 @@
       "createIndexes": "books",
       "indexes": [
         {
-          "key": { "reservation": { "date": 1 } },
+          "key": {
+            "reservation": {
+              "date": {
+                "$numberInt": "1"
+              }
+            }
+          },
           "name": "reservation_ttl",
-          "expireAfterSeconds": 60
+          "expireAfterSeconds": {
+            "$numberInt": "60"
+          }
         }
       ]
     },
