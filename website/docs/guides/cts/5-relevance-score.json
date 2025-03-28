@@ -32,14 +32,14 @@
         "id": {
           "$numberLong": "0"
         },
-        "    ns": "new.books",
-        "    firstBatch": [
+        "ns": "new.books",
+        "firstBatch": [
           {
-            "        _id": "moby_dick_1851",
-            "        title": "Moby Dick",
-            "        author": "Herman Melville",
-            "        summary": "The narrative follows Ishmael and his voyage aboard the whaling ship Pequod, commanded by Captain Ahab, who is obsessed with hunting the elusive white whale, Moby Dick.",
-            "        score": {
+            "id": "moby_dick_1851",
+            "title": "Moby Dick",
+            "author": "Herman Melville",
+            "summary": "The narrative follows Ishmael and his voyage aboard the whaling ship Pequod, commanded by Captain Ahab, who is obsessed with hunting the elusive white whale, Moby Dick.",
+            "score": {
               "$numberInt": "3"
             }
           }
