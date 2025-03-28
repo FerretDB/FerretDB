@@ -1,19 +1,24 @@
 {
-  "createIndexes": "<collectionName>",
-  "indexes": [
-    {
-      "name": "<indexName>",
-      "key": {
-        "<path>": "cosmosSearch"
-      },
-      "cosmosSearchOptions": {
-        "kind": "<kind>",
-        "similarity": "<similarity>",
-        "dimensions": "<dimensions>",
-        "m": "<m>",
-        "efConstruction": "<efConstruction>",
-        "numLists": "<numLists>"
-      }
-    }
-  ]
+  "index-syntax": {
+    "request": {
+      "createIndexes": "<collectionName>",
+      "indexes": [
+        {
+          "name": "<indexName>",
+          "key": {
+            "<path>": "cosmosSearch"
+          },
+          "cosmosSearchOptions": {
+            "kind": "<kind>",
+            "similarity": "<similarity>",
+            "dimensions": "<dimensions>",
+            "m": "<m>",
+            "efConstruction": "<efConstruction>",
+            "numLists": "<numLists>"
+          }
+        }
+      ]
+    },
+    "response": {}
+  }
 }

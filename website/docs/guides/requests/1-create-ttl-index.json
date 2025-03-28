@@ -1,10 +1,15 @@
 {
-  "createIndexes": "books",
-  "indexes": [
-    {
-      "key": { "reservation": { "date": 1 } },
-      "name": "reservation_ttl",
-      "expireAfterSeconds": 60
-    }
-  ]
+  "create-ttl-index": {
+    "request": {
+      "createIndexes": "books",
+      "indexes": [
+        {
+          "key": { "reservation": { "date": 1 } },
+          "name": "reservation_ttl",
+          "expireAfterSeconds": 60
+        }
+      ]
+    },
+    "response": {}
+  }
 }

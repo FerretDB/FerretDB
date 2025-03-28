@@ -1,6 +1,6 @@
 {
   "insert-text-data": {
-    "request":{
+    "request": {
       "insert": "books",
       "documents": [
         {
@@ -23,6 +23,6 @@
         }
       ]
     },
-    "response":{}
+    "response": {}
   }
 }

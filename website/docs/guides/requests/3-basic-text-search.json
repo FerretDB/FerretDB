@@ -1,8 +1,13 @@
 {
-  "find": "books",
-  "filter": {
-    "$text": {
-      "$search": "drama"
+  "basic-text-search": {
+    "request": {
+      "find": "books",
+      "filter": {
+        "$text": {
+          "$search": "drama"
+        }
+      },
+      "response": {}
     }
   }
 }

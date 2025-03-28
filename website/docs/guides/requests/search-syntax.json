@@ -1,16 +1,21 @@
 {
-  "aggregate": "collectionName",
-  "pipeline": [
-    {
-      "$search": {
-        "cosmosSearch": {
-          "vector": "<vector>",
-          "path": "<path>",
-          "k": "<k>",
-          "efSearch": "<efSearch>"
+  "search-syntax": {
+    "request": {
+      "aggregate": "collectionName",
+      "pipeline": [
+        {
+          "$search": {
+            "cosmosSearch": {
+              "vector": "<vector>",
+              "path": "<path>",
+              "k": "<k>",
+              "efSearch": "<efSearch>"
+            }
+          }
         }
-      }
-    }
-  ],
-  "cursor": {}
+      ],
+      "cursor": {}
+    },
+    "response": {}
+  }
 }
