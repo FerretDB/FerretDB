@@ -160,3 +160,5 @@ require (
 	mvdan.cc/sh/v3 v3.10.0 // indirect
 	rsc.io/markdown v0.0.0-20231214224604-88bb533a6020 // indirect
 )
+
+replace github.com/OpenDocDB/cts/opendocdb-cts => /home/user/cts/opendocdb-cts
