@@ -120,10 +120,6 @@ func (h *Handler) initCommands() {
 			Handler: h.MsgDBStats,
 			Help:    "", // hidden
 		},
-		"debugError": {
-			Handler: h.MsgDebugError,
-			Help:    "Returns error for debugging.",
-		},
 		"delete": {
 			Handler: h.MsgDelete,
 			Help:    "Deletes documents matched by the query.",
@@ -159,6 +155,10 @@ func (h *Handler) initCommands() {
 		"explain": {
 			Handler: h.MsgExplain,
 			Help:    "Returns the execution plan.",
+		},
+		"ferretDebugError": {
+			Handler: h.MsgFerretDebugError,
+			Help:    "Returns error for debugging.",
 		},
 		"find": {
 			Handler: h.MsgFind,

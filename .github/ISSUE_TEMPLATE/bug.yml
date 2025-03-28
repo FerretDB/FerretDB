@@ -17,6 +17,11 @@ body:
       label: FerretDB, PostgreSQL, and DocumentDB versions
       description: >
         Please add the output of the `serverStatus` command.
+      value: |
+        ```json
+        {
+        }
+        ```
     validations:
       required: true
   - type: textarea
@@ -28,9 +33,9 @@ body:
           - **Deployment**: Docker using `ghcr.io/ferretdb/ferretdb:2` image
           - **Deployment details**: Docker version 27.3.1
       value: |
-        - OS:
-        - Deployment:
-        - Deployment details:
+        - **OS**:
+        - **Deployment**:
+        - **Deployment details**:
     validations:
       required: true
   - type: textarea

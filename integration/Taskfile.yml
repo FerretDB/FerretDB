@@ -46,6 +46,8 @@ tasks:
   bench-postgresql:
     desc: "Run benchmarks for `postgresql` backend"
     cmds:
+      # TODO https://github.com/FerretDB/FerretDB/issues/4934
+      # Remove -otel-traces-url='' to reproduce the issue.
       - >
         go test -timeout=0 -run=XXX
         -log-level=error
@@ -53,12 +55,15 @@ tasks:
         {{if .BENCH_FLAGS}}{{.BENCH_FLAGS}}{{end}}
         -target-backend=ferretdb
         -postgresql-url=postgres://username:password@127.0.0.1:5432/postgres
+        -otel-traces-url=''
         | tee new-postgresql.txt
       - ../bin/benchstat{{exeExt}} old-postgresql.txt new-postgresql.txt
 
   bench-mongodb:
     desc: "Run benchmarks for MongoDB"
     cmds:
+      # TODO https://github.com/FerretDB/FerretDB/issues/4934
+      # Remove -otel-traces-url='' to reproduce the issue.
       - >
         go test -timeout=0 -run=XXX
         -log-level=error
@@ -66,5 +71,6 @@ tasks:
         {{if .BENCH_FLAGS}}{{.BENCH_FLAGS}}{{end}}
         -target-backend=mongodb
         -target-url='mongodb://username:password@127.0.0.1:47017/'
+        -otel-traces-url=''
         | tee new-mongodb.txt
       - ../bin/benchstat{{exeExt}} old-mongodb.txt new-mongodb.txt

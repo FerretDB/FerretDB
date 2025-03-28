@@ -165,7 +165,7 @@ func (r *Registry) EndSessions(ctx context.Context, sessionIDs []uuid.UUID) {
 // If `lsid` field is not present, a session is created with an empty session ID.
 //
 // It returns the user ID and the session ID.
-func (r *Registry) CreateOrUpdateByLSID(ctx context.Context, spec wirebson.RawDocument) (UserID, uuid.UUID, error) {
+func (r *Registry) CreateOrUpdateByLSID(ctx context.Context, spec wirebson.AnyDocument) (UserID, uuid.UUID, error) {
 	userID := getUserID(ctx)
 
 	sessionID, err := getSessionUUID(spec)

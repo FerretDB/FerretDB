@@ -41,6 +41,8 @@ func (h *Handler) MsgListDatabases(connCtx context.Context, req *middleware.MsgR
 	var res wirebson.RawDocument
 
 	err = h.Pool.WithConn(func(conn *pgx.Conn) error {
+		// TODO https://github.com/FerretDB/FerretDB/issues/4862
+		// TODO https://github.com/microsoft/documentdb/issues/121
 		res, err = documentdb_api.ListDatabases(connCtx, conn, h.L, spec)
 		return err
 	})

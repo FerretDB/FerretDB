@@ -51,7 +51,7 @@ func (h *Handler) MsgGetMore(connCtx context.Context, req *middleware.MsgRequest
 		return nil, mongoerrors.NewWithArgument(mongoerrors.ErrTypeMismatch, m, "getMore")
 	}
 
-	userID, sessionID, err := h.s.CreateOrUpdateByLSID(connCtx, spec)
+	userID, sessionID, err := h.s.CreateOrUpdateByLSID(connCtx, doc)
 	if err != nil {
 		return nil, err
 	}

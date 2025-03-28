@@ -41,13 +41,14 @@ func (h *Handler) MsgGetLog(connCtx context.Context, req *middleware.MsgRequest)
 		return nil, lazyerrors.Error(err)
 	}
 
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
-		return nil, err
-	}
-
+	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
 	doc, err := spec.Decode()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
+	}
+
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
+		return nil, err
 	}
 
 	command := doc.Command()
@@ -113,8 +114,7 @@ func (h *Handler) MsgGetLog(connCtx context.Context, req *middleware.MsgRequest)
 
 		startupWarnings := []string{
 			poweredBy,
-			"Please star 🌟 us on GitHub: https://github.com/FerretDB/FerretDB " +
-				"and https://github.com/microsoft/documentdb.",
+			"Please star 🌟 us on GitHub: https://github.com/FerretDB/FerretDB.",
 		}
 
 		if state.DocumentDBVersion != "" && state.DocumentDBVersion != version.DocumentDB {

@@ -4,4 +4,5 @@ position: 5
 link:
   type: generated-index
   slug: /security
-  description: Authentication and TLS
+  description: >
+    Authentication and TLS

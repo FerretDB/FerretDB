@@ -24,7 +24,7 @@ const config = {
     locales: ["en"],
   },
 
-  scripts: [{ src: "https://plausible.io/js/script.js", defer: true, "data-domain": "docs.ferretdb.io" }],
+  scripts: [{ src: "https://plausible.io/js/script.hash.js", defer: true, "data-domain": "docs.ferretdb.io" }],
 
   plugins: [
     [
@@ -33,10 +33,18 @@ const config = {
       require.resolve("@docusaurus/plugin-client-redirects"),
       {
         redirects: [
-          { to: "/migration/diff", from: "/diff" },
-          { to: "/reference", from: ["/reference/supported_commands", "/reference/supported-commands"] },
-          { to: "/installation", from: "/quickstart" },
-          { to: "/guides/full-text-search", from: "/guides/text-search" },
+          {
+            to: "/migration/compatibility",
+            from: ["/diff", "/reference/supported_commands", "/reference/supported-commands"],
+          },
+          {
+            to: "/installation",
+            from: "/quickstart",
+          },
+          {
+            to: "/guides/full-text-search",
+            from: "/guides/text-search",
+          },
         ],
 
         createRedirects(existingPath) {
