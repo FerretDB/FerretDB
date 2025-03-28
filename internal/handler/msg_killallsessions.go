@@ -32,12 +32,13 @@ func (h *Handler) MsgKillAllSessions(connCtx context.Context, req *middleware.Ms
 		return nil, lazyerrors.Error(err)
 	}
 
+	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
 	doc, err := spec.Decode()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
 	}
 

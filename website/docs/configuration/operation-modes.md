@@ -1,5 +1,6 @@
 ---
 sidebar_position: 2
+slug: /configuration/operation-modes/ # referenced in CONTRIBUTING.md
 ---
 
 # Operation modes
