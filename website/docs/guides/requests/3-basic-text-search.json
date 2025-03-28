@@ -1,8 +1,8 @@
 {
   "find": "books",
   "filter": {
-    $"text": {
-      $"search": "drama"
+    "$text": {
+      "$search": "drama"
     }
   }
 }
