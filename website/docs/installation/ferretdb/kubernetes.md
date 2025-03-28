@@ -18,7 +18,7 @@ Ensure to [enable telemetry](../../telemetry.md) to receive notifications on the
 For more information on the best DocumentDB version to use, see the [corresponding release notes for the FerretDB version](https://github.com/FerretDB/FerretDB/releases/).
 :::
 
-With a running Kubernetes cluster and a PostgreSQL instance with the DocumentDB extension, create a `ferretdb-deployment.yaml` file with the following content:
+With a running Kubernetes cluster and a PostgreSQL instance with the DocumentDB extension, create a `ferretdb.yaml` file with the following content:
 
 ```yaml
 apiVersion: apps/v1
@@ -37,7 +37,7 @@ spec:
     spec:
       containers:
         - name: ferretdb
-          image: ghcr.io/ferretdb/ferretdb:2.1.0
+          image: ghcr.io/ferretdb/ferretdb:2.0.0
           ports:
             - containerPort: 27017
           env:
@@ -58,11 +58,18 @@ spec:
     app: ferretdb
 ```
 
-This manifest creates a Deployment and a Service for FerretDB.
+Ensure to update the `<username>` and `<password>`.
+
 Apply manifest:
 
 ```sh
-kubectl apply -f ferretdb-deployment.yaml
+kubectl apply -f ferretdb.yaml
+```
+
+Check the status of the FerretDB pod to ensure that it is running:
+
+```sh
+kubectl get pods
 ```
 
 Use `kubectl port-forward` to connect to FerretDB from your local machine:

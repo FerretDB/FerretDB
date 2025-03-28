@@ -28,7 +28,7 @@ metadata:
 spec:
   containers:
     - name: postgres
-      image: ghcr.io/ferretdb/postgres-documentdb:17-0.102.0-ferretdb-2.1.0
+      image: ghcr.io/ferretdb/postgres-documentdb:17-0.102.0-ferretdb-2.0.0
       ports:
         - containerPort: 5432
       env:
@@ -57,6 +57,7 @@ spec:
       targetPort: 5432
 ```
 
+Ensure to update the `<username>` and `<password>`.
 Apply the `postgres.yaml` file to create the PostgreSQL instance:
 
 ```sh
@@ -64,4 +65,10 @@ kubectl apply -f postgres.yaml
 ```
 
 This will create a service named `postgres` that FerretDB can use to connect to the Postgres instance.
+Check the status of the pods to ensure that the PostgreSQL instance is running:
+
+```sh
+kubectl get pods
+```
+
 See [FerretDB Kubernetes installation](../ferretdb/kubernetes.md) for more details on connecting to FerretDB.
