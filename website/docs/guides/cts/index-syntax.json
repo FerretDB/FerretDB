@@ -1,0 +1,24 @@
+{
+  "index-syntax": {
+    "request": {
+      "createIndexes": "\u003ccollectionName\u003e",
+      "indexes": [
+        {
+          "name": "\u003cindexName\u003e",
+          "key": {
+            "\u003cpath\u003e": "cosmosSearch"
+          },
+          "cosmosSearchOptions": {
+            "kind": "\u003ckind\u003e",
+            "similarity": "\u003csimilarity\u003e",
+            "dimensions": "\u003cdimensions\u003e",
+            "m": "\u003cm\u003e",
+            "efConstruction": "\u003cefConstruction\u003e",
+            "numLists": "\u003cnumLists\u003e"
+          }
+        }
+      ]
+    },
+    "response": {}
+  }
+}
