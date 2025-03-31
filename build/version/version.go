@@ -159,31 +159,32 @@ func init() {
 	// What buildInfo contains depends on what is being built and how.
 	// There are at least five cases:
 	//
-	// 1. Builds and unit tests in the FerretDB repo (task build-host, task test-unit, etc):
+	// 1. Builds and unit tests in the FerretDB repo (task build-host, task test-unit, etc).
+	//      Version is not set even for tagged commits due to https://github.com/golang/go/issues/72877.
 	//    Path: "github.com/FerretDB/FerretDB/v2/cmd/ferretdb"
 	//      (or "github.com/FerretDB/FerretDB/v2/build/version.test", etc)
 	//    Main.Path: "github.com/FerretDB/FerretDB/v2"
 	//    Main.Version: "(devel)"
 	//
-	// 2. Builds with known module version (go install github.com/FerretDB/FerretDB/v2/cmd/ferretdb@v2.0.0):
+	// 2. Builds with known module version (go install github.com/FerretDB/FerretDB/v2/cmd/ferretdb@v2.0.0).
 	//    Path: "github.com/FerretDB/FerretDB/v2/cmd/ferretdb"
 	//    Main.Path: "github.com/FerretDB/FerretDB/v2"
 	//    Main.Version: "v2.0.0"
 	//
-	// 3. Ad-hoc builds (go run main.go readyz.go --dev-version) due to https://github.com/golang/go/issues/51279:
+	// 3. Ad-hoc builds (go run main.go readyz.go --dev-version) due to https://github.com/golang/go/issues/51279.
 	//    Path: "command-line-arguments"
 	//    Main.Path: ""
 	//    Main.Version: ""
 	//    Deps.Path: "github.com/FerretDB/FerretDB/v2"
 	//    Deps.Version: "(devel)"
 	//
-	// 4. Integration tests (both in the test and in the command handler):
+	// 4. Integration tests (both in the test and in the command handler).
 	//    Path: "github.com/FerretDB/FerretDB/v2/integration.test"
 	//    Main.Path: "github.com/FerretDB/FerretDB/v2/integration"
 	//    Main.Version: "(devel)"
 	//    Deps: null
 	//
-	// 5. Embeddable package:
+	// 5. Embeddable package.
 	//    Path: ???
 	//    Main.Path: ???
 	//    Deps.Path: "github.com/FerretDB/FerretDB/v2"
@@ -194,12 +195,12 @@ func init() {
 	//
 	// In short, FerretDB version could be derived from the module version only when module version could be known,
 	// which is not often the case.
-	// Also note that version.txt and module version are never present at the same time.
 
 	var buildVersion, buildCommit string
 	switch buildInfo.Main.Path {
 	case ferretdbModule: // cases 1 and 2
-		buildVersion = buildInfo.Main.Version // "(devel)" in case 1
+		// "(devel)" in case 1 even for tags due to https://github.com/golang/go/issues/72877
+		buildVersion = buildInfo.Main.Version
 
 		for _, s := range buildInfo.Settings {
 			if v := s.Value; v != "" {
