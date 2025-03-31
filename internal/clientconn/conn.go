@@ -397,15 +397,10 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		query := reqBody.(*wire.OpQuery)
 		resHeader.OpCode = wire.OpCodeReply
 
-		obsMW := &middleware.Observability{
-			L: logging.WithName(c.l, "observability"),
-		}
-
 		errMW := middleware.NewError("", logging.WithName(c.l, "error"))
 
 		replyHandler := c.h.CmdQuery
 		replyHandler = errMW.HandleOpReply(replyHandler)
-		replyHandler = obsMW.HandleOpReply(replyHandler)
 
 		// error is handled by middleware.Error
 		reply := must.NotFail(replyHandler(connCtx, &middleware.QueryRequest{OpQuery: query}))
@@ -529,14 +524,9 @@ func (c *conn) handleOpMsg(connCtx context.Context, msg *middleware.MsgRequest, 
 		cmdHandler = cmd.Handler
 	}
 
-	obsMW := &middleware.Observability{
-		L: logging.WithName(c.l, "observability"),
-	}
-
 	errMW := middleware.NewError("", logging.WithName(c.l, "error"))
 
 	cmdHandler = errMW.HandleOpMsg(cmdHandler)
-	cmdHandler = obsMW.HandleOpMsg(cmdHandler)
 
 	// error is handled by middleware.Error
 	return must.NotFail(cmdHandler(connCtx, msg))
