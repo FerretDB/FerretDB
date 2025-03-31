@@ -22,7 +22,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"hash"
 	"io"
 	"log/slog"
 	"net"
@@ -44,7 +43,6 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/v2/internal/handler"
-	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/proxy"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
@@ -199,7 +197,34 @@ func (c *conn) run(ctx context.Context) (err error) {
 		h := sha256.New()
 
 		defer func() {
-			c.renamePartialFile(ctx, f, h, err)
+			// do not store partial files
+			if !errors.Is(err, wire.ErrZeroRead) {
+				_ = f.Close()
+				_ = os.Remove(f.Name())
+
+				return
+			}
+
+			// surprisingly, Sync is required before Rename on many OS/FS combinations
+			if e := f.Sync(); e != nil {
+				c.l.WarnContext(ctx, "Failed to sync file", logging.Error(e))
+			}
+
+			if e := f.Close(); e != nil {
+				c.l.WarnContext(ctx, "Failed to close file", logging.Error(e))
+			}
+
+			fileName := hex.EncodeToString(h.Sum(nil))
+
+			hashPath := filepath.Join(c.testRecordsDir, fileName[:2])
+			if e := os.MkdirAll(hashPath, 0o777); e != nil {
+				c.l.WarnContext(ctx, "Failed to make directory", logging.Error(e))
+			}
+
+			path := filepath.Join(hashPath, fileName+".bin")
+			if e := os.Rename(f.Name(), path); e != nil {
+				c.l.WarnContext(ctx, "Failed to rename file", logging.Error(e))
+			}
 		}()
 
 		r := io.TeeReader(c.netConn, io.MultiWriter(f, h))
@@ -221,103 +246,131 @@ func (c *conn) run(ctx context.Context) (err error) {
 	}()
 
 	for {
-		if err = c.processMessage(ctx, bufr, bufw); err != nil {
+		var reqHeader *wire.MsgHeader
+		var reqBody wire.MsgBody
+		var resHeader *wire.MsgHeader
+		var resBody wire.MsgBody
+
+		reqHeader, reqBody, err = wire.ReadMessage(bufr)
+		if err != nil {
+			return
+		}
+
+		if c.l.Enabled(ctx, slog.LevelDebug) {
+			c.l.DebugContext(ctx, "Request header: "+reqHeader.String())
+			c.l.DebugContext(ctx, "Request message:\n"+reqBody.StringIndent())
+		}
+
+		// diffLogLevel provides the level of logging for the diff between the "normal" and "proxy" responses.
+		// It is set to the highest level of logging used to log response.
+		diffLogLevel := slog.LevelDebug
+
+		// send request to proxy first (unless we are in normal mode)
+		// because FerretDB's handling could modify reqBody's documents,
+		// creating a data race
+		var proxyHeader *wire.MsgHeader
+		var proxyBody wire.MsgBody
+		if c.mode != NormalMode {
+			if c.proxy == nil {
+				panic("proxy addr was nil")
+			}
+
+			proxyHeader, proxyBody = c.proxy.Route(ctx, reqHeader, reqBody)
+		}
+
+		// handle request unless we are in proxy mode
+		var resCloseConn bool
+		if c.mode != ProxyMode {
+			resHeader, resBody, resCloseConn = c.route(ctx, reqHeader, reqBody)
+			if level := c.logResponse(ctx, "Response", resHeader, resBody, resCloseConn); level > diffLogLevel {
+				diffLogLevel = level
+			}
+		}
+
+		// log proxy response after the normal response to make it less confusing
+		if c.mode != NormalMode {
+			if level := c.logResponse(ctx, "Proxy response", proxyHeader, proxyBody, false); level > diffLogLevel {
+				diffLogLevel = level
+			}
+		}
+
+		// diff in diff mode
+		if c.l.Enabled(ctx, diffLogLevel) && (c.mode == DiffNormalMode || c.mode == DiffProxyMode) {
+			var diffHeader string
+			diffHeader, err = difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
+				A:        difflib.SplitLines(resHeader.String()),
+				FromFile: "res header",
+				B:        difflib.SplitLines(proxyHeader.String()),
+				ToFile:   "proxy header",
+				Context:  1,
+			})
+			if err != nil {
+				return
+			}
+
+			// resBody can be nil if we got a message we could not handle at all, like unsupported OpQuery.
+			var resBodyString, proxyBodyString string
+
+			if resBody != nil {
+				resBodyString = resBody.StringIndent()
+			}
+
+			if proxyBody != nil {
+				proxyBodyString = proxyBody.StringIndent()
+			}
+
+			var diffBody string
+			diffBody, err = difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
+				A:        difflib.SplitLines(resBodyString),
+				FromFile: "res body",
+				B:        difflib.SplitLines(proxyBodyString),
+				ToFile:   "proxy body",
+				Context:  1,
+			})
+			if err != nil {
+				return
+			}
+
+			if c.l.Enabled(ctx, diffLogLevel) {
+				if len(diffBody) > 0 {
+					diffBody = strings.TrimSpace(diffBody)
+					diffBody = "\n" + diffBody
+				}
+
+				c.l.Log(ctx, diffLogLevel, "Header diff:\n"+diffHeader+"\nBody diff:"+diffBody)
+			}
+		}
+
+		// replace response with one from proxy in proxy and diff-proxy modes
+		if c.mode == ProxyMode || c.mode == DiffProxyMode {
+			resHeader = proxyHeader
+			resBody = proxyBody
+		}
+
+		if resHeader == nil || resBody == nil {
+			panic("no response to send to client")
+		}
+
+		if err = wire.WriteMessage(bufw, resHeader, resBody); err != nil {
+			c.l.DebugContext(ctx, "Failed to write message", logging.Error(err))
+
+			return
+		}
+
+		if err = bufw.Flush(); err != nil {
+			c.l.DebugContext(ctx, "Failed to flush buffer", logging.Error(err))
+
+			return
+		}
+
+		if resCloseConn {
+			err = errors.New("fatal error")
+
+			c.l.DebugContext(ctx, "Connection closed unexpectedly", logging.Error(err))
+
 			return
 		}
 	}
-}
-
-// processMessage reads the request, routes the request based on the operation mode
-// and writes the response.
-//
-// Any error returned indicates the connection should be closed.
-func (c *conn) processMessage(ctx context.Context, bufr *bufio.Reader, bufw *bufio.Writer) error {
-	reqHeader, reqBody, err := wire.ReadMessage(bufr)
-	if err != nil {
-		return err
-	}
-
-	if c.l.Enabled(ctx, slog.LevelDebug) {
-		c.l.DebugContext(ctx, "Request header: "+reqHeader.String())
-		c.l.DebugContext(ctx, "Request message:\n"+reqBody.StringIndent())
-	}
-
-	// diffLogLevel provides the level of logging for the diff between the "normal" and "proxy" responses.
-	// It is set to the highest level of logging used to log response.
-	diffLogLevel := slog.LevelDebug
-
-	// send request to proxy first (unless we are in normal mode)
-	// because FerretDB's handling could modify reqBody's documents,
-	// creating a data race
-	var proxyHeader *wire.MsgHeader
-	var proxyBody wire.MsgBody
-
-	if c.mode != NormalMode {
-		if c.proxy == nil {
-			panic("proxy addr was nil")
-		}
-
-		// TODO https://github.com/FerretDB/FerretDB/issues/1997
-		proxyHeader, proxyBody = c.proxy.Route(ctx, reqHeader, reqBody)
-	}
-
-	// handle request unless we are in proxy mode
-	var resCloseConn bool
-	var resHeader *wire.MsgHeader
-	var resBody wire.MsgBody
-
-	if c.mode != ProxyMode {
-		resHeader, resBody, resCloseConn = c.route(ctx, reqHeader, reqBody)
-		if level := c.logResponse(ctx, "Response", resHeader, resBody, resCloseConn); level > diffLogLevel {
-			diffLogLevel = level
-		}
-	}
-
-	// log proxy response after the normal response to make it less confusing
-	if c.mode != NormalMode {
-		if level := c.logResponse(ctx, "Proxy response", proxyHeader, proxyBody, false); level > diffLogLevel {
-			diffLogLevel = level
-		}
-	}
-
-	// diff in diff mode
-	if c.l.Enabled(ctx, diffLogLevel) && (c.mode == DiffNormalMode || c.mode == DiffProxyMode) {
-		if err = c.logDiff(ctx, resHeader, proxyHeader, resBody, proxyBody, diffLogLevel); err != nil {
-			return err
-		}
-	}
-
-	// replace response with one from proxy in proxy and diff-proxy modes
-	if c.mode == ProxyMode || c.mode == DiffProxyMode {
-		resHeader = proxyHeader
-		resBody = proxyBody
-	}
-
-	if resHeader == nil || resBody == nil {
-		panic("no response to send to client")
-	}
-
-	if err = wire.WriteMessage(bufw, resHeader, resBody); err != nil {
-		c.l.DebugContext(ctx, "Failed to write message", logging.Error(err))
-
-		return err
-	}
-
-	if err = bufw.Flush(); err != nil {
-		c.l.DebugContext(ctx, "Failed to flush buffer", logging.Error(err))
-
-		return err
-	}
-
-	if resCloseConn {
-		err = errors.New("fatal error")
-
-		c.l.DebugContext(ctx, "Connection closed unexpectedly", logging.Error(err))
-
-		return err
-	}
-
-	return nil
 }
 
 // route sends request to a handler's command based on the op code provided in the request header.
@@ -367,7 +420,6 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 
 		resHeader.OpCode = wire.OpCodeMsg
 
-		// TODO https://github.com/FerretDB/FerretDB/issues/1997
 		var doc *wirebson.Document
 		if doc, err = raw.Decode(); err == nil {
 			command = doc.Command()
@@ -387,8 +439,7 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		connCtx, span = otel.Tracer("").Start(connCtx, "")
 
 		if err == nil {
-			resMsg := c.handleOpMsg(connCtx, &middleware.MsgRequest{OpMsg: msg}, command)
-			resBody = resMsg.OpMsg
+			resBody = c.handleOpMsg(connCtx, msg, command)
 		}
 
 	case wire.OpCodeQuery:
@@ -397,23 +448,13 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		query := reqBody.(*wire.OpQuery)
 		resHeader.OpCode = wire.OpCodeReply
 
-		obsMW := &middleware.Observability{
-			L: logging.WithName(c.l, "observability"),
-		}
+		// do not store typed nil in interface, it makes it non-nil
 
-		errMW := middleware.NewError("", logging.WithName(c.l, "error"))
+		var resReply *wire.OpReply
+		resReply, err = c.h.CmdQuery(connCtx, query)
 
-		replyHandler := c.h.CmdQuery
-		replyHandler = errMW.HandleOpReply(replyHandler)
-		replyHandler = obsMW.HandleOpReply(replyHandler)
-
-		// error is handled by middleware.Error
-		reply := must.NotFail(replyHandler(connCtx, &middleware.QueryRequest{OpQuery: query}))
-		resBody = reply.OpReply
-
-		if replyErr := reply.CommandError(); replyErr != nil {
-			result = replyErr.Name
-			argument = replyErr.Argument
+		if resReply != nil {
+			resBody = resReply
 		}
 
 	case wire.OpCodeReply:
@@ -455,6 +496,11 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 			argument = protoErr.Argument
 
 		case wire.OpCodeReply:
+			protoErr := mongoerrors.Make(connCtx, err, "", c.l)
+			resBody = protoErr.Reply()
+			result = protoErr.Name
+			argument = protoErr.Argument
+
 		case wire.OpCodeQuery:
 			fallthrough
 		case wire.OpCodeUpdate:
@@ -519,72 +565,23 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 // handleOpMsg processes OP_MSG requests.
 //
 // The passed context is canceled when the client disconnects.
-func (c *conn) handleOpMsg(connCtx context.Context, msg *middleware.MsgRequest, command string) *middleware.MsgResponse {
-	var cmdHandler middleware.MsgHandlerFunc
-
+func (c *conn) handleOpMsg(connCtx context.Context, msg *wire.OpMsg, command string) *wire.OpMsg {
 	cmd, ok := c.h.Commands()[command]
 	if !ok || cmd.Handler == nil {
-		cmdHandler = notFound(command)
-	} else {
-		cmdHandler = cmd.Handler
-	}
-
-	obsMW := &middleware.Observability{
-		L: logging.WithName(c.l, "observability"),
-	}
-
-	errMW := middleware.NewError("", logging.WithName(c.l, "error"))
-
-	cmdHandler = errMW.HandleOpMsg(cmdHandler)
-	cmdHandler = obsMW.HandleOpMsg(cmdHandler)
-
-	// error is handled by middleware.Error
-	return must.NotFail(cmdHandler(connCtx, msg))
-}
-
-// notFound returns a handler that returns an error indicating that the command is not found.
-func notFound(command string) middleware.MsgHandlerFunc {
-	return func(context.Context, *middleware.MsgRequest) (*middleware.MsgResponse, error) {
-		return nil, mongoerrors.New(
+		err := mongoerrors.New(
 			mongoerrors.ErrCommandNotFound,
 			fmt.Sprintf("no such command: '%s'", command),
 		)
-	}
-}
 
-// renamePartialFile takes over an open file `f` and closes it.
-// It uses the given error to check if the connection was closed by the client,
-// if so the given file is renamed to a name generated by hash,
-// otherwise, it deletes the given file.
-func (c *conn) renamePartialFile(ctx context.Context, f *os.File, h hash.Hash, err error) {
-	// do not store partial files
-	if !errors.Is(err, wire.ErrZeroRead) {
-		_ = f.Close()
-		_ = os.Remove(f.Name())
-
-		return
+		return mongoerrors.Make(connCtx, err, "", c.l).Msg()
 	}
 
-	// surprisingly, Sync is required before Rename on many OS/FS combinations
-	if e := f.Sync(); e != nil {
-		c.l.WarnContext(ctx, "Failed to sync file", logging.Error(e))
+	res, err := cmd.Handler(connCtx, msg)
+	if err != nil {
+		return mongoerrors.Make(connCtx, err, "", c.l).Msg()
 	}
 
-	if e := f.Close(); e != nil {
-		c.l.WarnContext(ctx, "Failed to close file", logging.Error(e))
-	}
-
-	fileName := hex.EncodeToString(h.Sum(nil))
-
-	hashPath := filepath.Join(c.testRecordsDir, fileName[:2])
-	if e := os.MkdirAll(hashPath, 0o777); e != nil {
-		c.l.WarnContext(ctx, "Failed to make directory", logging.Error(e))
-	}
-
-	path := filepath.Join(hashPath, fileName+".bin")
-	if e := os.Rename(f.Name(), path); e != nil {
-		c.l.WarnContext(ctx, "Failed to rename file", logging.Error(e))
-	}
+	return res
 }
 
 // logResponse logs response's header and body and returns the log level that was used.
@@ -628,49 +625,4 @@ func (c *conn) logResponse(ctx context.Context, who string, resHeader *wire.MsgH
 	}
 
 	return level
-}
-
-// logDiff logs the diff between the response and the proxy response.
-func (c *conn) logDiff(ctx context.Context, resHeader, proxyHeader *wire.MsgHeader, resBody, proxyBody wire.MsgBody, logLevel slog.Level) error { //nolint:lll // for readability
-	diffHeader, err := difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
-		A:        difflib.SplitLines(resHeader.String()),
-		FromFile: "res header",
-		B:        difflib.SplitLines(proxyHeader.String()),
-		ToFile:   "proxy header",
-		Context:  1,
-	})
-	if err != nil {
-		return err
-	}
-
-	// resBody can be nil if we got a message we could not handle at all, like unsupported OpQuery.
-	var resBodyString, proxyBodyString string
-
-	if resBody != nil {
-		resBodyString = resBody.StringIndent()
-	}
-
-	if proxyBody != nil {
-		proxyBodyString = proxyBody.StringIndent()
-	}
-
-	diffBody, err := difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
-		A:        difflib.SplitLines(resBodyString),
-		FromFile: "res body",
-		B:        difflib.SplitLines(proxyBodyString),
-		ToFile:   "proxy body",
-		Context:  1,
-	})
-	if err != nil {
-		return err
-	}
-
-	if len(diffBody) > 0 {
-		// the diff control lines (those with ---, +++, or @@) are created with a trailing newline
-		diffBody = "\n" + strings.TrimSpace(diffBody)
-	}
-
-	c.l.Log(ctx, logLevel, "Header diff:\n"+diffHeader+"\nBody diff:"+diffBody)
-
-	return nil
 }
