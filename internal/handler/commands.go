@@ -327,8 +327,14 @@ func (h *Handler) initCommands() {
 		if h.Auth && !cmd.anonymous {
 			cmd.Handler = auth(cmd.Handler, logging.WithName(h.L, "auth"), name)
 		}
+
 		h.commands[name] = cmd
 	}
+}
+
+// Commands returns a map of enabled commands.
+func (h *Handler) Commands() map[string]*command {
+	return h.commands
 }
 
 // auth is a middleware that wraps the command handler with authentication check.
@@ -358,11 +364,6 @@ func auth(next middleware.MsgHandlerFunc, l *slog.Logger, command string) middle
 			fmt.Sprintf("Command %s requires authentication", command),
 		)
 	}
-}
-
-// Commands returns a map of enabled commands.
-func (h *Handler) Commands() map[string]*command {
-	return h.commands
 }
 
 // notImplemented returns a handler that returns an error indicating that the command is not implemented.
