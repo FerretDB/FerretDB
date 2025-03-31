@@ -246,7 +246,7 @@ func init() {
 		info.Version = buildVersion
 	}
 
-	if !strings.HasPrefix(info.Version, "v") {
+	if match = semVerTag.FindStringSubmatch(info.Version); match == nil || len(match) != semVerTag.NumSubexp()+1 {
 		msg := "Invalid build/version/version.txt file content. Please run `bin/task gen-version`.\n"
 		msg += "Alternatively, create this file manually with a content similar to\n"
 		msg += "the output of `git describe`: `v<major>.<minor>.<patch>`.\n"
