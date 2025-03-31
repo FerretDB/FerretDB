@@ -17,7 +17,9 @@ package handler
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
+	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
@@ -323,10 +325,38 @@ func (h *Handler) initCommands() {
 		}
 
 		if h.Auth && !cmd.anonymous {
-			cmd.Handler = middleware.Auth(cmd.Handler, logging.WithName(h.L, "auth"), name)
+			cmd.Handler = auth(cmd.Handler, logging.WithName(h.L, "auth"), name)
+		}
+		h.commands[name] = cmd
+	}
+}
+
+// auth is a middleware that wraps the command handler with authentication check.
+//
+// Context must contain [*conninfo.ConnInfo].
+func auth(next middleware.MsgHandlerFunc, l *slog.Logger, command string) middleware.MsgHandlerFunc {
+	return func(ctx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
+		conv := conninfo.Get(ctx).Conv()
+		succeed := conv.Succeed()
+		username := conv.Username()
+
+		switch {
+		case conv == nil:
+			l.WarnContext(ctx, "No existing conversation")
+
+		case !succeed:
+			l.WarnContext(ctx, "Conversation did not succeed", slog.String("username", username))
+
+		default:
+			l.DebugContext(ctx, "Authentication passed", slog.String("username", username))
+
+			return next(ctx, req)
 		}
 
-		h.commands[name] = cmd
+		return nil, mongoerrors.New(
+			mongoerrors.ErrUnauthorized,
+			fmt.Sprintf("Command %s requires authentication", command),
+		)
 	}
 }
 
