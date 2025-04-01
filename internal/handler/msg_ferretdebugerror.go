@@ -46,30 +46,28 @@ func (h *Handler) MsgFerretDebugError(connCtx context.Context, req *middleware.M
 		return nil, err
 	}
 
-	expected, err := getRequiredParam[string](doc, doc.Command())
+	arg, err := getRequiredParam[string](doc, doc.Command())
 	if err != nil {
 		return nil, err
 	}
 
-	// check if parameter is an error code
-	if n, err := strconv.ParseInt(expected, 10, 32); err == nil {
-		errCode := mongoerrors.Code(n)
-		return nil, errors.New(errCode.String())
+	if code, _ := strconv.ParseInt(arg, 10, 32); code > 0 {
+		return nil, mongoerrors.New(mongoerrors.Code(code), "debug error message")
 	}
 
 	switch {
-	case expected == "ok":
+	case arg == "ok":
 		return middleware.Response(wirebson.MustDocument(
 			"ok", float64(1),
 		))
 
-	case strings.HasPrefix(expected, "panic"):
-		panic("debugError " + expected)
+	case strings.HasPrefix(arg, "panic"):
+		panic("debugError " + arg)
 
-	case strings.HasPrefix(expected, "lazy"):
-		return nil, lazyerrors.New(expected)
+	case strings.HasPrefix(arg, "lazy"):
+		return nil, lazyerrors.New(arg)
 
 	default:
-		return nil, errors.New(expected)
+		return nil, errors.New(arg)
 	}
 }
