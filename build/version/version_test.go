@@ -27,13 +27,12 @@ func TestCase1(t *testing.T) {
 	assert.NotEmpty(t, info.Branch)
 	assert.NotEqual(t, unknown, info.Branch)
 	assert.NotEmpty(t, info.Package)
-	assert.NotEqual(t, unknown, info.Package)
+	// package is unknown on CI for short tests where package.txt is not created
 
 	assert.Equal(t, "7.0.77", info.MongoDBVersion)
 	assert.Equal(t, [...]int32{int32(7), int32(0), int32(77), int32(0)}, info.MongoDBVersionArray)
 
 	assert.Equal(t, runtime.Version(), info.BuildEnvironment["go.version"])
-
-	assert.Equal(t, "7.0.77", info.MongoDBVersion)
-	assert.Equal(t, [4]int32{7, 0, 77, 0}, info.MongoDBVersionArray)
+	assert.Equal(t, runtime.Version(), info.BuildEnvironment["go.runtime"])
+	assert.Empty(t, info.BuildEnvironment["vcs.revision"]) // not set for unit tests
 }
