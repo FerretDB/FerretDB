@@ -108,6 +108,7 @@ func Get() *Info {
 // All info fields are set to non-empty values, but some of them may be unknown.
 func initFromFiles() {
 	mongodbTxt := strings.TrimSpace(string(must.NotFail(gen.ReadFile("mongodb.txt"))))
+
 	match := semVerTag.FindStringSubmatch(mongodbTxt)
 	if match == nil || len(match) != semVerTag.NumSubexp()+1 {
 		panic("invalid mongodb.txt")
@@ -150,6 +151,8 @@ func initFromFiles() {
 	}
 }
 
+// readBuildInfo returns FerretDB version and commit from the build info.
+// It also updates info.BuildEnvironment and info.Dirty.
 func readBuildInfo() (version, commit string) {
 	// in theory, someone could use embeddable package in a Go program that is built without modules
 	buildInfo, ok := runtimedebug.ReadBuildInfo()
@@ -233,12 +236,10 @@ func readBuildInfo() (version, commit string) {
 			continue
 		}
 
-		m := dep
+		version = dep.Version
 		if dep.Replace != nil {
-			m = dep.Replace
+			version = dep.Replace.Version
 		}
-
-		version = m.Version
 
 		// cases 3 and 4
 		if version == "(devel)" {
@@ -259,11 +260,15 @@ func init() {
 
 	version, commit := readBuildInfo()
 
-	if version != "" {
-		if info.Version == unknown {
-			info.Version = version
-		}
+	if info.Version == unknown && version != "" {
+		info.Version = version
+	}
 
+	if info.Commit == unknown && commit != "" {
+		info.Commit = commit
+	}
+
+	if info.Version != unknown {
 		if match := semVerTag.FindStringSubmatch(info.Version); match == nil || len(match) != semVerTag.NumSubexp()+1 {
 			msg := "Invalid build/version/version.txt file content. Please run `bin/task gen-version`.\n"
 			msg += "Alternatively, create this file manually with a content similar to\n"
@@ -273,8 +278,8 @@ func init() {
 		}
 	}
 
-	if info.Commit != unknown && commit != "" {
-		if info.Commit != commit {
+	if info.Commit != unknown {
+		if info.Commit != commit && commit != "" {
 			panic("Invalid build/version/commit.txt file content. Please run `bin/task gen-version`.")
 		}
 	}
