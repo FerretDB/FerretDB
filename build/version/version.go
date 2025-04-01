@@ -32,13 +32,12 @@
 // # Development builds
 //
 // Development builds of FerretDB behave differently in a few aspects:
-//   - some values that are normally randomized are fixed or less randomized;
+//   - they are significantly slower;
+//   - some values that are normally randomized are fixed or less randomized to make debugging easier;
 //   - some internal errors cause crashes instead of being handled more gracefully;
 //   - stack traces are collected more liberally;
 //   - metrics are written to stderr on exit;
 //   - the default logging level is set to debug.
-//
-// They are significantly slower.  to make debugging easier.
 package version
 
 import (
