@@ -97,7 +97,7 @@ type SetupOpts struct {
 
 	// PoolSize ensures that MongoDB driver uses exactly this number of connections for operations
 	// (not counting extra connections for monitoring that are mostly idle).
-	// Zero value disabled explicit pool configuration.
+	// Zero value disables explicit pool configuration.
 	PoolSize int
 
 	// DisableOtel disable OpenTelemetry monitoring for MongoDB driver.
