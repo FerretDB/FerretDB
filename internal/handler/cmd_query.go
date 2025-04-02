@@ -40,7 +40,7 @@ func (h *Handler) CmdQuery(connCtx context.Context, query *middleware.QueryReque
 	if !strings.HasSuffix(collection, suffix) {
 		// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/527
 		return middleware.Reply(wirebson.MustDocument(
-			"$err", "OP_QUERY is no longer supported. The client driver may require an upgrade.",
+			"$err", "OP_QUERY is no longer supported. The client driver may require an update.",
 			"code", int32(mongoerrors.ErrLocation5739101),
 			"ok", float64(0),
 		))
@@ -100,7 +100,7 @@ func (h *Handler) CmdQuery(connCtx context.Context, query *middleware.QueryReque
 
 	return nil, mongoerrors.NewWithArgument(
 		mongoerrors.ErrUnsupportedOpQueryCommand,
-		fmt.Sprintf("Unsupported OP_QUERY command: %s. The client driver may require an upgrade.", cmd),
+		fmt.Sprintf("Unsupported OP_QUERY command: %s. The client driver may require an update.", cmd),
 		"OpQuery: "+cmd,
 	)
 }

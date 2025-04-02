@@ -119,7 +119,7 @@ When a FerretDB update is available,
 the telemetry service responds with information about the latest FerretDB version.
 This information is logged in server logs and available via the `getLog` command with the `startupWarnings` argument, making it visible when connecting with various tools such as `mongosh`.
 
-While you may not upgrade to the latest release immediately,
+While you may not update to the latest release immediately,
 ensure you update early to take advantage of recent bug fixes, new features, and performance improvements.
 
 ## Configuration
