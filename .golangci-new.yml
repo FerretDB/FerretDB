@@ -62,6 +62,7 @@ linters:
     - asciicheck
     - depguard
     - exhaustive
+    - exhaustruct
     - forbidigo
     - gci
     - gochecksumtype
