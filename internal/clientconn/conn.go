@@ -455,9 +455,15 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 	// set body for error
 	if err != nil {
 		switch resHeader.OpCode {
-		case wire.OpCodeMsg, wire.OpCodeReply:
+		case wire.OpCodeMsg:
 			protoErr := mongoerrors.Make(connCtx, err, "", c.l)
 			resBody = protoErr.Msg()
+			result = protoErr.Name
+			argument = protoErr.Argument
+
+		case wire.OpCodeReply:
+			protoErr := mongoerrors.Make(connCtx, err, "", c.l)
+			resBody = protoErr.Reply()
 			result = protoErr.Name
 			argument = protoErr.Argument
 
