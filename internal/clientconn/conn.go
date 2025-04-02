@@ -399,7 +399,10 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 
 			var res *middleware.MsgResponse
 			res, err = cmdHandler(connCtx, &middleware.MsgRequest{OpMsg: msg})
-			resBody = res.OpMsg
+
+			if res != nil {
+				resBody = res.OpMsg
+			}
 		}
 
 	case wire.OpCodeQuery:
@@ -415,7 +418,10 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 
 		var res *middleware.ReplyResponse
 		res, err = cmdHandler(connCtx, &middleware.QueryRequest{OpQuery: query})
-		resBody = res.OpReply
+
+		if res != nil {
+			resBody = res.OpReply
+		}
 
 	case wire.OpCodeReply:
 		fallthrough
