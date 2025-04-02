@@ -1,15 +1,15 @@
 ---
 slug: ferretdb-v210-release-performance-observability-improvements
 title: 'FerretDB releases v2.1.0 with performance and observability improvements'
-authors: [peter, aleksi]
+authors: [alex]
 description: >
   We are happy to announce the release of FerretDB v2.1.0, which brings significant performance improvements
   and observability enhancements.
-image: /img/blog/ferretdb-v2-ga.png
+image: /img/blog/ferretdb-v2.1.0.jpg
 tags: [release]
 ---
 
-![FerretDB releases v2.1.0 with performance and observability improvements](/img/blog/ferretdb-v2-ga.png)
+![FerretDB releases v2.1.0 with performance and observability improvements](/img/blog/ferretdb-v2.1.0.jpg)
 
 We just released FerretDB v2.1.0, which comes on the back of the successful v2.0.0 GA release.
 
@@ -50,6 +50,7 @@ To update to FerretDB v2.1.0, please follow these steps:
 3. **Install FerretDB v2.1.0 and DocumentDB extension**
 
    - **Docker installation:**
+
      - Pull the latest FerretDB v2.1.0 image from the repository.
 
    - **Debian package installation:**
