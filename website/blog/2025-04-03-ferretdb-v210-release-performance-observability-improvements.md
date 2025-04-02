@@ -21,15 +21,15 @@ This version is a continuation of our commitment to providing a high-performance
 Other important changes changes include a fix for the embeddable package and a resolution to an indexing issue that affected the previous version.
 Let's dive into the details of what you can expect from FerretDB v2.1.0.
 
-## Important upgrade information
+## Important update information
 
-Due to the nature of the changes in this release, a direct upgrade is not supported.
+Due to the nature of the changes in this release, a direct update is not supported.
 Users must perform a backup of their current databases and conduct a clean installation of FerretDB v2.1.0, followed by a data restoration.
 
 Please note that this backup and restore procedure is a one-time requirement due to the significant changes introduced in this release.
-Future upgrades are expected to follow a more streamlined process without necessitating a full backup and restore.
+Future updates are expected to follow a more streamlined process without necessitating a full backup and restore.
 
-To upgrade to FerretDB v2.1.0, please follow these steps:
+To update to FerretDB v2.1.0, please follow these steps:
 
 1. **Backup your data**
 
@@ -64,7 +64,7 @@ To upgrade to FerretDB v2.1.0, please follow these steps:
 After restoring your data, verify that everything is functioning as expected.
 Check the logs for any errors or warnings that may need attention.
 
-If you encounter any performance issues or have questions during the upgrade process, please reach out to us through [our community channels](https://docs.ferretdb.io/#community).
+If you encounter any performance issues or have questions during the update process, please reach out to us through [our community channels](https://docs.ferretdb.io/#community).
 Your feedback is invaluable and helps us continually improve FerretDB.
 
 ## Other changes
