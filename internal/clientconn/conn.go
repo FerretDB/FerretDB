@@ -410,7 +410,7 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 
 		resHeader.OpCode = wire.OpCodeReply
 
-		command = "OpQuery:" + query.Query().Command()
+		command = query.Query().Command()
 
 		connCtx, span = otel.Tracer("").Start(connCtx, "")
 
