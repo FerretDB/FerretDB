@@ -38,7 +38,7 @@ type MsgResponse struct {
 // QueryRequest is a deprecated request message type.
 // It is still used by commands including `hello` and `isMaster`.
 type QueryRequest struct {
-	*wire.OpQuery
+	OpQuery *wire.OpQuery
 }
 
 // ReplyResponse is a deprecated response message type used for the response to [QueryRequest].

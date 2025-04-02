@@ -32,9 +32,9 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) CmdQuery(connCtx context.Context, query *middleware.QueryRequest) (*middleware.ReplyResponse, error) {
-	q := query.Query()
+	q := query.OpQuery.Query()
 	cmd := q.Command()
-	collection := query.FullCollectionName
+	collection := query.OpQuery.FullCollectionName
 
 	suffix := ".$cmd"
 	if !strings.HasSuffix(collection, suffix) {
@@ -46,10 +46,10 @@ func (h *Handler) CmdQuery(connCtx context.Context, query *middleware.QueryReque
 		))
 	}
 
-	if query.NumberToReturn != 1 && query.NumberToReturn != -1 {
+	if query.OpQuery.NumberToReturn != 1 && query.OpQuery.NumberToReturn != -1 {
 		return nil, mongoerrors.NewWithArgument(
 			mongoerrors.ErrLocation16979,
-			fmt.Sprintf("Bad numberToReturn (%d) for $cmd type ns - can only be 1 or -1", query.NumberToReturn),
+			fmt.Sprintf("Bad numberToReturn (%d) for $cmd type ns - can only be 1 or -1", query.OpQuery.NumberToReturn),
 			"OpQuery: "+cmd,
 		)
 	}
