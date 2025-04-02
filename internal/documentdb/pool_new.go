@@ -59,7 +59,7 @@ func newPgxPool(uri string, l *slog.Logger, sp *state.Provider) (*pgxpool.Pool, 
 		defer cancel()
 
 		if e := newPgxPoolCheckConn(ctx, conn, l, sp); e != nil {
-			return lazyerrors.Error(e)
+			return lazyerrors.Errorf("%w (see https://docs.ferretdb.io/troubleshooting/#connectivity)", e)
 		}
 
 		return nil
@@ -119,7 +119,7 @@ func newPgxPoolCheckConn(ctx context.Context, conn *pgx.Conn, l *slog.Logger, sp
 
 	row := conn.QueryRow(ctx, `SELECT version(), documentdb_api.binary_extended_version()`)
 	if err := row.Scan(&postgresqlVersion, &documentdbVersion); err != nil {
-		return lazyerrors.Errorf("%w (please check DocumentDB installation)", err)
+		return lazyerrors.Error(err)
 	}
 
 	if s := sp.Get(); s.PostgreSQLVersion != postgresqlVersion || s.DocumentDBVersion != documentdbVersion {
