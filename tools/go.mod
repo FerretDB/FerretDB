@@ -2,7 +2,7 @@ module github.com/FerretDB/FerretDB/v2/tools
 
 go 1.24
 
-toolchain go1.24.1
+toolchain go1.24.2
 
 tool (
 	github.com/FerretDB/FerretDB/v2/tools/checkcomments
