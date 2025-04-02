@@ -27,8 +27,11 @@ import (
 
 // MsgRequest represents incoming request from the client.
 // It may come from the wire protocol connection or from the Data API server.
+//
+// It contains a document that is decoded on top level.
 type MsgRequest struct {
 	*wire.OpMsg
+	document *wirebson.Document
 }
 
 // MsgResponse represent outgoing response to the client.
@@ -53,6 +56,25 @@ type ReplyResponse struct {
 type Middleware interface {
 	HandleOpMsg(next MsgHandlerFunc) MsgHandlerFunc
 	HandleOpReply(next QueryHandlerFunc) QueryHandlerFunc
+}
+
+// Request constructs a [*MsgRequest] from the given OP_MSG request.
+// It decodes the top level of the OP_MSG request.
+func Request(msg *wire.OpMsg) (*MsgRequest, error) {
+	doc, err := msg.RawSection0().Decode()
+	if err != nil {
+		return nil, err
+	}
+
+	return &MsgRequest{
+		OpMsg:    msg,
+		document: doc,
+	}, nil
+}
+
+// Document returns the top level decoded document of OP_MSG request.
+func (r *MsgRequest) Document() *wirebson.Document {
+	return r.document
 }
 
 // Response constructs a [*MsgResponse] from a single document.
