@@ -98,7 +98,6 @@ linters:
     - err113
     - errchkjson
     - errname
-    - exhaustruct
     - fatcontext
     - forcetypeassert
     - funlen
