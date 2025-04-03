@@ -1,10 +1,13 @@
 ## [{{.Version}}](https://github.com/FerretDB/FerretDB/releases/tag/{{.Version}}) ({{.Date}})
 
-XXX
+This version works best with
+[DocumentDB TODO](https://github.com/FerretDB/documentdb/releases/tag/TODO).
+
+TODO
 
 ### Breaking changes
 
-XXX
+TODO
 
 ### What's Changed
 
@@ -45,5 +48,7 @@ XXX
 
 ### New Contributors
 
-[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/{{.Version}}?closed=1).
+TODO
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/{{.Milestone}}?closed=1).
 [All commits](https://github.com/FerretDB/FerretDB/compare/{{.PrevVersion}}...{{.Version}}).

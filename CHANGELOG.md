@@ -53,7 +53,7 @@ This version works only with
 
 ### Other Changes 🤖
 
-- Update changelog generation by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4810
+- Update changelog generator by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4810
 - Update TODO URLs for `listDatabase` tests by @noisersup in https://github.com/FerretDB/FerretDB/pull/4863
 - Document non-enforced format of log messages in `envtool` package by @noisersup in https://github.com/FerretDB/FerretDB/pull/4867
 - Start working on a new release by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4885
@@ -82,9 +82,7 @@ This version works only with
 - Remove error middleware for now by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5008
 - Disable commit check for now by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5012
 
-### New Contributors
-
-[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/v2.1.0?closed=1).
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/72?closed=1).
 [All commits](https://github.com/FerretDB/FerretDB/compare/v2.0.0...v2.1.0).
 
 ## [v2.0.0](https://github.com/FerretDB/FerretDB/releases/tag/v2.0.0) (2025-03-05)
