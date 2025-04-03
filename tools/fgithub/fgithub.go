@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package github
+// Package fgithub provides a GitHub API client with a shared file cache.
+package fgithub
 
 import (
 	"context"

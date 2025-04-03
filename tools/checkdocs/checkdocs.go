@@ -30,7 +30,7 @@ import (
 
 	"github.com/FerretDB/gh"
 
-	"github.com/FerretDB/FerretDB/v2/tools/github"
+	"github.com/FerretDB/FerretDB/v2/tools/fgithub"
 )
 
 func main() {
@@ -44,12 +44,12 @@ func main() {
 		log.Fatal(err)
 	}
 
-	p, err := github.CacheFilePath()
+	p, err := fgithub.CacheFilePath()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	client, err := github.NewClient(p, log.Printf, gh.NoopPrintf, gh.NoopPrintf)
+	client, err := fgithub.NewClient(p, log.Printf, gh.NoopPrintf, gh.NoopPrintf)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -66,7 +66,7 @@ func main() {
 }
 
 // checkDocFiles checks files are valid.
-func checkDocFiles(client *github.Client, files []string) error {
+func checkDocFiles(client *fgithub.Client, files []string) error {
 	var failed bool
 
 	for _, file := range files {
@@ -88,7 +88,7 @@ func checkDocFiles(client *github.Client, files []string) error {
 }
 
 // checkDocFile verifies the file contain valid issue URLs.
-func checkDocFile(client *github.Client, file string) (bool, error) {
+func checkDocFile(client *fgithub.Client, file string) (bool, error) {
 	f, err := os.Open(file)
 	if err != nil {
 		return true, fmt.Errorf("could not read file %s: %s", file, err)
@@ -328,7 +328,7 @@ func verifyTags(fm []byte) error {
 //
 // At the end of scan the true value is returned if any of above was detected.
 // An error is returned only if something fatal happened.
-func checkIssueURLs(client *github.Client, r io.Reader, filename string, l *log.Logger) (bool, error) {
+func checkIssueURLs(client *fgithub.Client, r io.Reader, filename string, l *log.Logger) (bool, error) {
 	s := bufio.NewScanner(r)
 
 	var failed bool
@@ -368,15 +368,15 @@ func checkIssueURLs(client *github.Client, r io.Reader, filename string, l *log.
 		}
 
 		switch status {
-		case github.IssueOpen:
+		case fgithub.IssueOpen:
 			// nothing
 
-		case github.IssueClosed:
+		case fgithub.IssueClosed:
 			failed = true
 
 			l.Printf("linked issue %s is closed in %s", url, filename)
 
-		case github.IssueNotFound:
+		case fgithub.IssueNotFound:
 			failed = true
 
 			l.Printf("linked issue %s is not found in %s", url, filename)

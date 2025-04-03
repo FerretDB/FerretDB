@@ -6,6 +6,10 @@
 
 ### New Features 🎉
 
+{{ range .Categories.NewFeatures }}
+- {{ .Title }} by @{{ .User }} in {{ .URL }}
+{{ end }}
+
 ### Enhancements 🛠
 
 ### Documentation 📄

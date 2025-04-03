@@ -17,160 +17,142 @@ package main
 
 import (
 	"context"
+	_ "embed"
 	"flag"
 	"fmt"
 	"io"
 	"log"
+	"log/slog"
 	"os"
-	"path/filepath"
 	"strconv"
-	"text/template"
 	"time"
 
 	"github.com/FerretDB/gh"
 	"github.com/google/go-github/v70/github"
-	"gopkg.in/yaml.v3"
 )
 
-// PR represents GitHub PR.
-type PR struct {
-	URL    string
-	Title  string
-	Number int
-	User   string
+//go:embed template.md
+var template []byte
+
+var categories = []struct {
+	Name   string
 	Labels map[string]struct{}
+}{
+	{
+		Name: "NewFeatures",
+		Labels: map[string]struct{}{
+			"code/feature": {},
+		},
+	},
+	{
+		Name: "FixedBugs",
+		Labels: map[string]struct{}{
+			"code/bug":            {},
+			"code/bug-regression": {},
+		},
+	},
+	{
+		Name: "Enhancements",
+		Labels: map[string]struct{}{
+			"code/enhancement": {},
+		},
+	},
+	{
+		Name: "Documentation",
+		Labels: map[string]struct{}{
+			"blog/engineering": {},
+			"blog/marketing":   {},
+			"documentation":    {},
+		},
+	},
+	{
+		Name: "OtherChanges",
+		Labels: map[string]struct{}{
+			"code/chore": {},
+			"project":    {},
+			"deps":       {},
+		},
+	},
 }
 
-// getMilestone fetches the milestone with the given title (which matches FerretDB version and Git tag).
+type TemplateData struct {
+	Categories map[string][]struct {
+		Title  string
+		Author string
+		URL    string
+	}
+}
+
+// getMilestone returns milestone by title (which matches FerretDB version and Git tag).
 func getMilestone(ctx context.Context, client *github.Client, title string) (*github.Milestone, error) {
-	milestones, _, err := client.Issues.ListMilestones(ctx, "FerretDB", "FerretDB", &github.MilestoneListOptions{
+	opts := &github.MilestoneListOptions{
 		State:     "all",
 		Sort:      "due_on",
 		Direction: "desc",
 		ListOptions: github.ListOptions{
+			Page:    1,
 			PerPage: 100,
 		},
-	})
-	if err != nil {
-		return nil, err
 	}
 
-	for _, milestone := range milestones {
-		if *milestone.Title == title {
-			return milestone, nil
-		}
-	}
-
-	return nil, fmt.Errorf("no milestone found with the title %q", title)
-}
-
-// listMergedPRsOnMilestone returns the list of merged PRs on the given milestone.
-func listMergedPRsOnMilestone(ctx context.Context, client *github.Client, milestone *github.Milestone) ([]PR, error) {
-	issues, _, err := client.Issues.ListByRepo(
-		ctx,
-		"FerretDB",
-		"FerretDB",
-		&github.IssueListByRepoOptions{
-			State:     "closed",
-			Milestone: strconv.Itoa(*milestone.Number),
-			Sort:      "created",
-			Direction: "asc",
-			ListOptions: github.ListOptions{
-				PerPage: 500,
-			},
-		})
-	if err != nil {
-		return nil, err
-	}
-
-	var prItems []PR
-
-	for _, issue := range issues {
-		if !issue.IsPullRequest() {
-			continue
+	for {
+		milestones, resp, err := client.Issues.ListMilestones(ctx, "FerretDB", "FerretDB", opts)
+		if err != nil {
+			return nil, err
 		}
 
-		labels := make(map[string]struct{}, len(issue.Labels))
-
-		for _, label := range issue.Labels {
-			labels[*label.Name] = struct{}{}
-		}
-
-		prItem := PR{
-			URL:    *issue.PullRequestLinks.HTMLURL,
-			Number: *issue.Number,
-			Title:  *issue.Title,
-			User:   *issue.User.Login,
-			Labels: labels,
-		}
-
-		prItems = append(prItems, prItem)
-	}
-
-	return prItems, nil
-}
-
-// loadReleaseTemplate loads the given release template.
-func loadReleaseTemplate(filePath string) (*ReleaseTemplate, error) {
-	bytes, err := os.ReadFile(filePath)
-	if err != nil {
-		return nil, err
-	}
-
-	var tpl ReleaseTemplate
-
-	err = yaml.Unmarshal(bytes, &tpl)
-	if err != nil {
-		return nil, err
-	}
-
-	return &tpl, nil
-}
-
-// groupPRsByCategories iterates through the categories and generates Groups of PRs.
-func groupPRsByCategories(prItems []PR, categories []TemplateCategory) map[string][]PR {
-	res := make(map[string][]PR)
-
-	for _, prItem := range prItems {
-		var categoryFound bool
-
-		for _, category := range categories {
-			for _, label := range category.Labels {
-				if _, ok := prItem.Labels[label]; !ok {
-					continue
-				}
-
-				prs := res[category.Title]
-				prs = append(prs, prItem)
-				res[category.Title] = prs
-
-				categoryFound = true
-
-				break
-			}
-
-			if categoryFound {
-				break
+		for _, milestone := range milestones {
+			if *milestone.Title == title {
+				return milestone, nil
 			}
 		}
 
-		if !categoryFound {
-			log.Fatalf("No category found for %q, check the labels in the PR", prItem.URL)
+		if resp.NextPage == 0 {
+			return nil, fmt.Errorf("no milestone found with the title %q", title)
 		}
 	}
+}
 
-	return res
+// getPRs returns all pull requests for the given milestone.
+func getPRs(ctx context.Context, client *github.Client, milestone *github.Milestone) ([]*github.Issue, error) {
+	opts := &github.IssueListByRepoOptions{
+		Milestone: strconv.Itoa(*milestone.Number),
+		State:     "all",
+		Sort:      "created",
+		Direction: "asc",
+		ListOptions: github.ListOptions{
+			Page:    1,
+			PerPage: 100,
+		},
+	}
+
+	var prs []*github.Issue
+	for {
+		issues, resp, err := client.Issues.ListByRepo(ctx, "FerretDB", "FerretDB", opts)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, issue := range issues {
+			if issue.IsPullRequest() {
+				prs = append(prs, issue)
+			}
+		}
+
+		if resp.NextPage == 0 {
+			return prs, nil
+		}
+	}
+}
+
+func makeTemplateData(milestone *github.Milestone, prs []*github.Issue, l *slog.Logger) (*TemplateData, error) {
+	return &TemplateData{}, nil
 }
 
 func run(w io.Writer, repoRoot, milestoneTitle, prev string) {
-	releaseYamlFile := filepath.Join(repoRoot, ".github", "release.yml")
-
-	tpl, err := loadReleaseTemplate(releaseYamlFile)
-	if err != nil {
-		log.Fatalf("Failed to read from template yaml file: %v", err)
-	}
-
 	ctx := context.Background()
+
+	github.NewClient(p, log.Printf, gh.NoopPrintf, gh.NoopPrintf)
 
 	client, err := gh.NewRESTClient(os.Getenv("GITHUB_TOKEN"), nil)
 	if err != nil {

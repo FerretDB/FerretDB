@@ -25,7 +25,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/FerretDB/FerretDB/v2/tools/github"
+	"github.com/FerretDB/FerretDB/v2/tools/fgithub"
 )
 
 func TestBlogs(t *testing.T) {
@@ -49,10 +49,10 @@ func TestDocs(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, docFiles)
 
-	p, err := github.CacheFilePath()
+	p, err := fgithub.CacheFilePath()
 	require.NoError(t, err)
 
-	client, err := github.NewClient(p, log.Printf, gh.NoopPrintf, gh.NoopPrintf)
+	client, err := fgithub.NewClient(p, log.Printf, gh.NoopPrintf, gh.NoopPrintf)
 	require.NoError(t, err)
 
 	err = checkDocFiles(client, docFiles)
@@ -105,10 +105,10 @@ func TestCheckSupportedCommands(t *testing.T) {
 	var buf bytes.Buffer
 	l := log.New(&buf, "", 0)
 
-	p, err := github.CacheFilePath()
+	p, err := fgithub.CacheFilePath()
 	require.NoError(t, err)
 
-	client, err := github.NewClient(p, log.Printf, gh.NoopPrintf, gh.NoopPrintf)
+	client, err := fgithub.NewClient(p, log.Printf, gh.NoopPrintf, gh.NoopPrintf)
 	require.NoError(t, err)
 
 	for name, tc := range map[string]struct {
