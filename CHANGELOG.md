@@ -4,13 +4,23 @@
 
 ## [v2.1.0](https://github.com/FerretDB/FerretDB/releases/tag/v2.1.0) (2025-04-03)
 
-XXX
+This version works only with
+[DocumentDB v0.102.0-ferretdb-2.1.0](https://github.com/FerretDB/documentdb/releases/tag/v0.102.0-ferretdb-2.1.0).
 
 ### Breaking changes
 
-XXX
+<!-- textlint-disable one-sentence-per-line -->
 
-### What's Changed
+> [!CAUTION]
+> Please note that due to incompatibilities in our previous releases, DocumentDB can't be updated in place,
+> even with a manual `ALTER EXTENSION UPDATE` query or other means.
+> A new clean installation into an empty data directory/volume is required.
+> All data should be backed up with `mongodump`/`mongoexport` before and restored
+> with `mongorestore`/`mongoimport` after.
+>
+> We expect future updates to be much smoother.
+
+<!-- textlint-enable one-sentence-per-line -->
 
 ### Fixed Bugs 🐛
 
