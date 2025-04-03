@@ -21,8 +21,8 @@ Read on for what's new, how to upgrade, and what's coming next.
 
 ## Important update information
 
-Due to incompatibilities in our previous releases, DocumentDB can't be updated in place.
-Users must perform a backup of their current databases and conduct a clean installation of FerretDB v2.1.0 and the DocumentDB extension before restoring their data.
+Due to incompatibilities in our previous releases, DocumentDB can't be updated directly.
+Users must backup their current databases and conduct a clean installation of FerretDB v2.1.0 and the DocumentDB extension before restoring their data.
 
 To update to FerretDB v2.1.0, please follow the same instructions in our [migration guide](https://docs.ferretdb.io/migration/migrating-from-mongodb/) to:
 
@@ -31,7 +31,7 @@ To update to FerretDB v2.1.0, please follow the same instructions in our [migrat
 - Install [FerretDB v2.1.0](https://github.com/FerretDB/FerretDB/releases/tag/v2.1.0) and [DocumentDB extension](https://github.com/FerretDB/documentdb/releases/tag/v0.102.0-ferretdb-2.1.0)
 - Restore your data with `mongorestore` or `mongoimport`
 
-You can find detailed instructions on updating to FerretDB v2.1.0 in our [migration guide](https://docs.ferretdb.io/migration/migrating-from-mongodb/).
+Learn more about updating to FerretDB v2.1.0 [here](https://docs.ferretdb.io/migration/migrating-from-mongodb/).
 
 This is a one-time manual process.
 Future versions will be much smoother.
@@ -42,7 +42,7 @@ Future versions will be much smoother.
 In this release, we've made some improvements in performance and observability.
 Notably, the console logger now supports colorized log levels.
 
-We also made improvements to the `--help` output to align with our documentation which should offer clearer guidance for users setting up or troubleshooting FerretDB.
+We also made improvements to the `--help` output to align with our documentation, which should offer clearer guidance for users setting up or troubleshooting FerretDB.
 
 To better integrate with Docker Secrets, FerretDB now supports reading the PostgreSQL connection URL from a file using the `--postgresql-url-file` flag or the `FERRETDB_POSTGRESQL_URL_FILE` environment variable.
 
