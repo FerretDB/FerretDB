@@ -3,7 +3,7 @@ slug: ferretdb-v210-release-performance-observability-improvements
 title: 'FerretDB releases v2.1.0 with performance and observability improvements'
 authors: [alex]
 description: >
-  FerretDB v2.1.0 brings performance improvements, better observability, and key bug fixes — including restored support for the embeddable Go package.
+  FerretDB v2.1.0 brings performance improvements, better observability, and key bug fixes.
 image: /img/blog/ferretdb-v2.1.0.jpg
 tags: [release]
 ---
