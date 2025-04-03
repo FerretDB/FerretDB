@@ -35,12 +35,14 @@ import (
 //go:embed changelog.md.template
 var templateFile string
 
+// PRData represents template information about a single pull request.
 type PRData struct {
 	Title  string
 	Author string
 	URL    string
 }
 
+// Data represents template information about the release.
 type Data struct {
 	PrevVersion   string
 	Version       string
@@ -96,6 +98,7 @@ func getPRs(ctx context.Context, client *github.Client, milestone *github.Milest
 	}
 
 	var prs []*github.Issue
+
 	for {
 		issues, resp, err := client.Issues.ListByRepo(ctx, "FerretDB", "FerretDB", opts)
 		if err != nil {
@@ -114,6 +117,7 @@ func getPRs(ctx context.Context, client *github.Client, milestone *github.Milest
 	}
 }
 
+// makeData creates template data.
 func makeData(milestone *github.Milestone, prev string, prs []*github.Issue, l *slog.Logger) (*Data, error) {
 	if milestone.ClosedAt != nil {
 		l.Warn("milestone is closed")
@@ -142,6 +146,7 @@ func makeData(milestone *github.Milestone, prev string, prs []*github.Issue, l *
 		}
 
 		var found bool
+
 		for _, label := range pr.Labels {
 			switch *label.Name {
 			case "code/feature":
@@ -173,6 +178,7 @@ func makeData(milestone *github.Milestone, prev string, prs []*github.Issue, l *
 	return d, nil
 }
 
+// run generates the changelog.
 func run(w io.Writer, l *slog.Logger, prev, next string) error {
 	ctx := context.Background()
 
