@@ -18,11 +18,11 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
@@ -30,19 +30,19 @@ import (
 // MsgCreateUser implements `createUser` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgCreateUser(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	spec, err := msg.RawDocument()
+func (h *Handler) MsgCreateUser(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
+	spec, err := req.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
-	}
-
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
-		return nil, err
 	}
 
 	doc, err := spec.DecodeDeep()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
+	}
+
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
+		return nil, err
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/913
@@ -75,5 +75,5 @@ func (h *Handler) MsgCreateUser(connCtx context.Context, msg *wire.OpMsg) (*wire
 		return nil, lazyerrors.Error(err)
 	}
 
-	return wire.NewOpMsg(res)
+	return middleware.Response(res)
 }

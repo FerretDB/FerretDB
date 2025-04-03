@@ -19,10 +19,10 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
@@ -32,19 +32,20 @@ import (
 // MsgReIndex implements `reIndex` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgReIndex(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	spec, err := msg.RawDocument()
+func (h *Handler) MsgReIndex(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
+	spec, err := req.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
-		return nil, err
-	}
-
+	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
 	doc, err := spec.Decode()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
+	}
+
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
+		return nil, err
 	}
 
 	dbName, err := getRequiredParam[string](doc, "$db")
@@ -91,6 +92,8 @@ func (h *Handler) MsgReIndex(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 	}
 
 	if cursorID != 0 {
+		_ = h.Pool.KillCursor(connCtx, cursorID)
+
 		return nil, lazyerrors.New("too many indexes for re-indexing")
 	}
 
@@ -145,6 +148,8 @@ func (h *Handler) MsgReIndex(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 	}
 
 	if cursorID != 0 {
+		_ = h.Pool.KillCursor(connCtx, cursorID)
+
 		return nil, lazyerrors.New("too many indexes after re-indexing")
 	}
 
@@ -155,15 +160,10 @@ func (h *Handler) MsgReIndex(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 
 	indexesAfter := listDoc.Get("cursor").(*wirebson.Document).Get("firstBatch").(*wirebson.Array)
 
-	res, err := wirebson.NewDocument(
+	return middleware.Response(wirebson.MustDocument(
 		"nIndexesWas", int32(indexesBefore.Len()),
 		"nIndexes", createDoc.Get("numIndexesAfter"),
 		"indexes", indexesAfter,
 		"ok", float64(1),
-	)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return wire.NewOpMsg(res)
+	))
 }

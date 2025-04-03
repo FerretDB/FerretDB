@@ -260,7 +260,7 @@ tasks:
         --mode={{.MODE}}
         --no-auth
         --listen-addr=:27017
-        --listen-data-api-addr=:8899
+        --listen-data-api-addr=127.0.0.1:8899
         --proxy-addr=127.0.0.1:37017
         --postgresql-url='postgres://username:password@127.0.0.1:5432/postgres'
         --otel-traces-url=http://127.0.0.1:4318/v1/traces
@@ -274,7 +274,7 @@ tasks:
         bin/ferretdb{{exeExt}}
         --mode={{.MODE}}
         --listen-addr=:27017
-        --listen-data-api-addr=:8899
+        --listen-data-api-addr=127.0.0.1:8899
         --proxy-addr=127.0.0.1:47017
         --postgresql-url='postgres://username:password@127.0.0.1:5432/postgres'
         --otel-traces-url=http://127.0.0.1:4318/v1/traces
@@ -510,41 +510,6 @@ tasks:
     requires:
       vars: [DOCKER_IMAGES]
 
-  docker-documentdb:
-    desc: "Build `documentdb-local` Docker image"
-    cmds:
-      - task: docker-build
-        vars:
-          FILE: postgres-documentdb/{{.FILE}}
-          TARGET: "{{.FILE}}"
-          PLATFORM: linux/amd64
-          DOCKER_IMAGES: documentdb-local
-          OUTPUT: type=docker
-    requires:
-      vars: [FILE]
-
-  docker-documentdb-development-push:
-    cmds:
-      - task: docker-build
-        vars:
-          FILE: postgres-documentdb/development
-          TARGET: development
-          PLATFORM: linux/amd64
-          OUTPUT: type=image,push=true
-    requires:
-      vars: [DOCKER_IMAGES]
-
-  docker-documentdb-production-push:
-    cmds:
-      - task: docker-build
-        vars:
-          FILE: postgres-documentdb/production
-          TARGET: production
-          PLATFORM: linux/amd64
-          OUTPUT: type=image,push=true
-    requires:
-      vars: [DOCKER_IMAGES]
-
   packages:
     desc: "Build .deb and .rpm packages"
     cmds:
@@ -772,17 +737,17 @@ tasks:
 
   pngcrush:
     cmds:
-      - pngcrush -ow -brute {{.FILE}}
+      - pngcrush -ow -brute -rem text {{.FILE}}
     requires:
       vars: [FILE]
 
   pngcrush-new:
     cmds:
-      - git diff --name-only upstream/main '*.png' | parallel "pngcrush -ow -brute {} {.}.temp"
+      - git diff --name-only upstream/main '*.png' | parallel "pngcrush -ow -brute -rem text {} {.}.temp"
 
   pngcrush-all:
     cmds:
-      - find . -type f -name '*.png' | parallel "pngcrush -ow -brute {} {.}.temp"
+      - find . -type f -name '*.png' | parallel "pngcrush -ow -brute -rem text {} {.}.temp"
 
   docs-dev:
     desc: "Start documentation development server"

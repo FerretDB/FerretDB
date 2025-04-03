@@ -51,7 +51,7 @@ Features are constantly being added to further increase compatibility and perfor
 
 We welcome all contributors.
 See our [public roadmap](https://github.com/orgs/FerretDB/projects/2/views/1),
-a list of [known differences with MongoDB](https://docs.ferretdb.io/diff/),
+lists of [known differences and supported commands](https://docs.ferretdb.io/migration/compatibility/),
 and [contributing guidelines](CONTRIBUTING.md).
 
 ## Quickstart
@@ -59,7 +59,8 @@ and [contributing guidelines](CONTRIBUTING.md).
 Run this command to start FerretDB with PostgreSQL:
 
 ```sh
-docker run -d --rm --name ferretdb -p 27017:27017 --platform linux/amd64 ghcr.io/ferretdb/ferretdb-eval:2
+docker run -d --rm --name ferretdb -p 27017:27017 --platform linux/amd64 \
+  ghcr.io/ferretdb/ferretdb-eval:2
 ```
 
 This command will start a container with FerretDB, pre-packaged PostgreSQL with DocumentDB extension, and MongoDB Shell for quick testing and experiments.
@@ -110,7 +111,7 @@ See [there](https://pkg.go.dev/github.com/FerretDB/FerretDB/v2/build/version) fo
 - Documentation: https://docs.ferretdb.io/.
 - X (Twitter): [@ferret_db](https://x.com/ferret_db).
 - Mastodon: [@ferretdb@techhub.social](https://techhub.social/@ferretdb).
-- [Slack chat](https://join.slack.com/t/ferretdb/shared_invite/zt-zqe9hj8g-ZcMG3~5Cs5u9uuOPnZB8~A) for quick questions.
+- [Slack chat](https://slack.ferretdb.io/) for quick questions.
 - [GitHub Discussions](https://github.com/FerretDB/FerretDB/discussions) for longer topics.
 - [GitHub Issues](https://github.com/FerretDB/FerretDB/issues) for bugs and missing features.
 - [Open Office Hours meeting](https://calendar.google.com/calendar/event?action=TEMPLATE&tmeid=NGhrZTA5dXZ0MzQzN2gyaGVtZmx2aWxmN2pfMjAyNDA0MDhUMTcwMDAwWiBjX24zN3RxdW9yZWlsOWIwMm0wNzQwMDA3MjQ0QGc&tmsrc=c_n37tquoreil9b02m0740007244%40group.calendar.google.com&scp=ALL)

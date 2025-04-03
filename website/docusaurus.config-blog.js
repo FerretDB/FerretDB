@@ -27,7 +27,7 @@ const config = {
   stylesheets: [{ href: "/codapi/snippet.css" }],
 
   scripts: [
-    { src: "https://plausible.io/js/script.js", defer: true, "data-domain": "blog.ferretdb.io" },
+    { src: "https://plausible.io/js/script.hash.js", defer: true, "data-domain": "blog.ferretdb.io" },
     { src: "/codapi/snippet.js", defer: true },
   ],
 
@@ -144,7 +144,7 @@ const config = {
               },
               {
                 label: "Slack",
-                href: "https://join.slack.com/t/ferretdb/shared_invite/zt-zqe9hj8g-ZcMG3~5Cs5u9uuOPnZB8~A",
+                href: "https://slack.ferretdb.io/",
               },
               {
                 label: "X (Twitter)",

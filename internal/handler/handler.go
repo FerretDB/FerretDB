@@ -24,7 +24,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
-	"github.com/FerretDB/FerretDB/v2/internal/handler/operation"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/session"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
@@ -38,6 +37,8 @@ const (
 	maxWireVersion = int32(21)
 
 	// Maximal supported BSON document size (enforced in DocumentDB by BSON_MAX_ALLOWED_SIZE constant).
+	// TODO https://github.com/microsoft/documentdb/issues/67
+	// TODO https://github.com/FerretDB/FerretDB/issues/4930
 	maxBsonObjectSize = int32(16777216)
 
 	// Maximum size of a batch for inserting data.
@@ -55,11 +56,8 @@ const (
 // Handler instance is shared between all client connections.
 type Handler struct {
 	*NewOpts
-
 	commands map[string]*command
-
-	operations *operation.Registry
-	s          *session.Registry
+	s        *session.Registry
 }
 
 // NewOpts represents handler configuration.
@@ -91,9 +89,7 @@ func New(opts *NewOpts) (*Handler, error) {
 
 	h := &Handler{
 		NewOpts: opts,
-
-		operations: operation.NewRegistry(),
-		s:          session.NewRegistry(sessionTimeout, opts.L),
+		s:       session.NewRegistry(sessionTimeout, opts.L),
 	}
 
 	h.initCommands()
@@ -107,7 +103,6 @@ func New(opts *NewOpts) (*Handler, error) {
 func (h *Handler) Run(ctx context.Context) {
 	defer func() {
 		h.s.Stop()
-		h.operations.Close()
 		h.Pool.Close()
 		h.L.InfoContext(ctx, "Handler stopped")
 	}()

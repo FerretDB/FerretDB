@@ -26,7 +26,8 @@ import (
 
 // Error represents MongoDB command error.
 type Error struct {
-	// Command's argument, operator, or aggregation pipeline stage that caused an error.
+	// Command's argument, operator, or aggregation pipeline stage that caused an error,
+	// but not the command name itself.
 	// Used for metrics and telemetry.
 	Argument string
 
@@ -87,20 +88,20 @@ func (e *Error) GoString() string {
 
 // Msg returns this error as a OP_MSG message.
 func (e *Error) Msg() *wire.OpMsg {
-	return wire.MustOpMsg(
-		"ok", float64(0),
-		"errmsg", e.Message,
-		"code", int32(e.Code),
-		"codeName", e.Name,
-	)
+	return must.NotFail(wire.NewOpMsg(e.Doc()))
 }
 
 // Reply returns this error as a OP_REPLY message.
 func (e *Error) Reply() *wire.OpReply {
-	return must.NotFail(wire.NewOpReply(wirebson.MustDocument(
+	return must.NotFail(wire.NewOpReply(e.Doc()))
+}
+
+// Doc returns this error as document.
+func (e *Error) Doc() *wirebson.Document {
+	return wirebson.MustDocument(
 		"ok", float64(0),
 		"errmsg", e.Message,
-		"code", int32(e.Code),
+		"code", e.Code,
 		"codeName", e.Name,
-	)))
+	)
 }

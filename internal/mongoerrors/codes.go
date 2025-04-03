@@ -27,6 +27,7 @@ const (
 	ErrConflictingUpdateOperators                  = Code(40)      // ConflictingUpdateOperators
 	ErrCursorNotFound                              = Code(43)      // CursorNotFound
 	ErrNamespaceExists                             = Code(48)      // NamespaceExists
+	ErrMaxTimeMSExpired                            = Code(50)      // MaxTimeMSExpired
 	ErrDollarPrefixedFieldName                     = Code(52)      // DollarPrefixedFieldName
 	ErrCanNotBeTypeArray                           = Code(53)      // CanNotBeTypeArray
 	ErrNotSingleValueField                         = Code(54)      // NotSingleValueField
@@ -423,6 +424,7 @@ const (
 	ErrLocation3041701                             = Code(3041701) // Location3041701
 	ErrLocation3041702                             = Code(3041702) // Location3041702
 	ErrLocation3041703                             = Code(3041703) // Location3041703
+	ErrLocation3041704                             = Code(3041704) // Location3041704
 	ErrIntermediateResultTooLarge                  = Code(4031700) // IntermediateResultTooLarge
 	ErrDollarSetFieldRequiresObject                = Code(4161100) // DollarSetFieldRequiresObject
 	ErrDollarSetFieldUnknownArgument               = Code(4161101) // DollarSetFieldUnknownArgument
@@ -511,6 +513,7 @@ const (
 	ErrLocation5788200                             = Code(5788200) // Location5788200
 	ErrLocation5788604                             = Code(5788604) // Location5788604
 	ErrLocation5858203                             = Code(5858203) // Location5858203
+	ErrLocation5860402                             = Code(5860402) // Location5860402
 	ErrLocation5876900                             = Code(5876900) // Location5876900
 	ErrLocation5897900                             = Code(5897900) // Location5897900
 	ErrLocation5946802                             = Code(5946802) // Location5946802
@@ -524,6 +527,9 @@ const (
 	ErrLocation6586400                             = Code(6586400) // Location6586400
 	ErrLocation7429703                             = Code(7429703) // Location7429703
 	ErrLocation7436100                             = Code(7436100) // Location7436100
+	ErrLocation7555701                             = Code(7555701) // Location7555701
+	ErrLocation7555702                             = Code(7555702) // Location7555702
+	ErrLocation7749501                             = Code(7749501) // Location7749501
 	ErrLocation7750301                             = Code(7750301) // Location7750301
 	ErrLocation7750302                             = Code(7750302) // Location7750302
 	ErrLocation7750303                             = Code(7750303) // Location7750303
@@ -933,6 +939,7 @@ var pgCodes = map[string]Code{
 	"M00AR": ErrLocation3041701,                             // 3041701
 	"M00AS": ErrLocation3041702,                             // 3041702
 	"M00AT": ErrLocation3041703,                             // 3041703
+	"M00E5": ErrLocation3041704,                             // 3041704
 	"M00AH": ErrIntermediateResultTooLarge,                  // 4031700
 	"M00AI": ErrDollarSetFieldRequiresObject,                // 4161100
 	"M00AJ": ErrDollarSetFieldUnknownArgument,               // 4161101
@@ -1020,6 +1027,7 @@ var pgCodes = map[string]Code{
 	"M00CI": ErrLocation5788200,                             // 5788200
 	"M00DK": ErrLocation5788604,                             // 5788604
 	"M00CJ": ErrLocation5858203,                             // 5858203
+	"M00E2": ErrLocation5860402,                             // 5860402
 	"M00D5": ErrLocation5876900,                             // 5876900
 	"M00D6": ErrLocation5897900,                             // 5897900
 	"M00D7": ErrLocation5946802,                             // 5946802
@@ -1033,6 +1041,9 @@ var pgCodes = map[string]Code{
 	"M00DA": ErrLocation6586400,                             // 6586400
 	"M00DV": ErrLocation7429703,                             // 7429703
 	"M00DW": ErrLocation7436100,                             // 7436100
+	"M00E3": ErrLocation7555701,                             // 7555701
+	"M00E4": ErrLocation7555702,                             // 7555702
+	"M00E1": ErrLocation7749501,                             // 7749501
 	"M00DX": ErrLocation7750301,                             // 7750301
 	"M00DY": ErrLocation7750302,                             // 7750302
 	"M00DZ": ErrLocation7750303,                             // 7750303

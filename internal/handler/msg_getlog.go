@@ -21,10 +21,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/build/version"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/devbuild"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
@@ -35,19 +35,20 @@ import (
 // MsgGetLog implements `getLog` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgGetLog(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	spec, err := msg.RawDocument()
+func (h *Handler) MsgGetLog(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
+	spec, err := req.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
-		return nil, err
-	}
-
+	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
 	doc, err := spec.Decode()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
+	}
+
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
+		return nil, err
 	}
 
 	command := doc.Command()
@@ -113,15 +114,17 @@ func (h *Handler) MsgGetLog(connCtx context.Context, msg *wire.OpMsg) (*wire.OpM
 
 		startupWarnings := []string{
 			poweredBy,
-			"Please star us on GitHub: https://github.com/FerretDB/FerretDB and https://github.com/microsoft/documentdb.",
+			"Please star 🌟 us on GitHub: https://github.com/FerretDB/FerretDB.",
 		}
 
 		if state.DocumentDBVersion != "" && state.DocumentDBVersion != version.DocumentDB {
 			startupWarnings = append(
 				startupWarnings,
-				"This version of FerretDB requires DocumentDB '"+version.DocumentDB+
-					"'. The currently installed version is '"+state.DocumentDBVersion+
-					"'. Some functions may not behave correctly.",
+				fmt.Sprintf(
+					"This version of FerretDB requires DocumentDB %q (%s). The currently installed version is %q. "+
+						"Some functions may not behave correctly.",
+					version.DocumentDB, version.DocumentDBURL, state.DocumentDBVersion,
+				),
 			)
 		}
 
@@ -137,7 +140,7 @@ func (h *Handler) MsgGetLog(connCtx context.Context, msg *wire.OpMsg) (*wire.OpM
 			msg := state.UpdateInfo
 			if msg == "" {
 				msg = fmt.Sprintf(
-					"A new version available! The latest version: %s. The current version: %s.",
+					"A new version is available! The latest version: %s. The current version: %s.",
 					state.LatestVersion, info.Version,
 				)
 			}
@@ -196,5 +199,5 @@ func (h *Handler) MsgGetLog(connCtx context.Context, msg *wire.OpMsg) (*wire.OpM
 		)
 	}
 
-	return wire.NewOpMsg(must.NotFail(res.Encode()))
+	return middleware.Response(res)
 }

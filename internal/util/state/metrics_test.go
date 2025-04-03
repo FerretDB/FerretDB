@@ -35,7 +35,6 @@ func TestMetrics(t *testing.T) {
 	err = p.Update(func(s *State) {
 		s.PostgreSQLVersion = "postgres"
 		s.DocumentDBVersion = "documentdb"
-		s.EnableTelemetry()
 	})
 	require.NoError(t, err)
 
@@ -56,7 +55,7 @@ func TestMetrics(t *testing.T) {
 			`
 				# HELP ferretdb_up FerretDB instance state.
 				# TYPE ferretdb_up gauge
-				ferretdb_up{branch=%q,commit=%q,dev="%t",dirty="%t",documentdb="documentdb",package=%q,postgresql="postgres",telemetry="enabled",update_available="false",uuid=%q,version=%q} 1
+				ferretdb_up{branch=%q,commit=%q,dev="%t",dirty="%t",documentdb="documentdb",package=%q,postgresql="postgres",telemetry="undecided",update_available="false",uuid=%q,version=%q} 1
 			`,
 			info.Branch, info.Commit, info.DevBuild, info.Dirty, info.Package, uuid, info.Version,
 		)
@@ -76,7 +75,7 @@ func TestMetrics(t *testing.T) {
 			`
 				# HELP ferretdb_up FerretDB instance state.
 				# TYPE ferretdb_up gauge
-				ferretdb_up{branch=%q,commit=%q,dev="%t",dirty="%t",documentdb="documentdb",package=%q,postgresql="postgres",telemetry="enabled",update_available="false",version=%q} 1
+				ferretdb_up{branch=%q,commit=%q,dev="%t",dirty="%t",documentdb="documentdb",package=%q,postgresql="postgres",telemetry="undecided",update_available="false",version=%q} 1
 			`,
 			info.Branch, info.Commit, info.DevBuild, info.Dirty, info.Package, info.Version,
 		)

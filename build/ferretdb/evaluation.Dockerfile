@@ -12,7 +12,7 @@ ARG LABEL_COMMIT
 
 # prepare stage
 
-FROM --platform=$BUILDPLATFORM golang:1.24.0 AS evaluation-prepare
+FROM --platform=$BUILDPLATFORM golang:1.24.2 AS evaluation-prepare
 
 # use a single directory for all Go caches to simplify RUN --mount commands below
 ENV GOPATH=/cache/gopath
@@ -36,7 +36,7 @@ EOF
 
 # build stage
 
-FROM golang:1.24.0 AS evaluation-build
+FROM golang:1.24.2 AS evaluation-build
 
 ARG TARGETARCH
 
@@ -96,12 +96,17 @@ EOF
 
 # final stage
 
-FROM ghcr.io/ferretdb/postgres-documentdb-dev:16.8-0.102.0-ferretdb-2.0.0-rc.2 AS evaluation
+# Use production image and full tag close to the release.
+# FROM ghcr.io/ferretdb/postgres-documentdb-dev:17-0.102.0-ferretdb-2.0.0 AS evaluation
+
+# Use moving development image during development.
+FROM ghcr.io/ferretdb/postgres-documentdb-dev:17-ferretdb AS evaluation
 
 RUN --mount=type=cache,sharing=locked,target=/var/cache/apt <<EOF
 mkdir /tmp/cover /tmp/state
 chown postgres:postgres /tmp/cover /tmp/state
 
+apt install -y curl
 curl -L https://pgp.mongodb.com/server-7.0.asc | apt-key add -
 echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/debian bookworm/mongodb-org/7.0 main" | tee /etc/apt/sources.list.d/mongodb-org-7.0.list
 apt update

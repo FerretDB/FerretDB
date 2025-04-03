@@ -24,7 +24,7 @@ const config = {
     locales: ["en"],
   },
 
-  scripts: [{ src: "https://plausible.io/js/script.js", defer: true, "data-domain": "docs.ferretdb.io" }],
+  scripts: [{ src: "https://plausible.io/js/script.hash.js", defer: true, "data-domain": "docs.ferretdb.io" }],
 
   plugins: [
     [
@@ -33,9 +33,18 @@ const config = {
       require.resolve("@docusaurus/plugin-client-redirects"),
       {
         redirects: [
-          { to: "/migration/diff", from: "/diff" },
-          { to: "/reference", from: ["/reference/supported_commands", "/reference/supported-commands"] },
-          { to: "/installation", from: "/quickstart" },
+          {
+            to: "/migration/compatibility",
+            from: ["/diff", "/reference/supported_commands", "/reference/supported-commands"],
+          },
+          {
+            to: "/installation",
+            from: "/quickstart",
+          },
+          {
+            to: "/guides/full-text-search",
+            from: "/guides/text-search",
+          },
         ],
 
         createRedirects(existingPath) {
@@ -77,18 +86,7 @@ const config = {
 
           // https://docusaurus.io/docs/versioning#configuring-versioning-behavior
           // https://docusaurus.io/docs/api/plugins/@docusaurus/plugin-content-docs#configuration
-          lastVersion: "current",
-          versions: {
-            current: {
-              label: "v2.0 RC",
-              banner: "none",
-            },
-            "v1.24": {
-              label: "v1.24",
-              path: "v1.24",
-              banner: "none",
-            },
-          },
+          versions: {},
         },
         theme: {
           customCss: require.resolve("./src/css/custom.css"),
@@ -152,7 +150,7 @@ const config = {
               },
               {
                 label: "Slack",
-                href: "https://join.slack.com/t/ferretdb/shared_invite/zt-zqe9hj8g-ZcMG3~5Cs5u9uuOPnZB8~A",
+                href: "https://slack.ferretdb.io/",
               },
               {
                 label: "X (Twitter)",

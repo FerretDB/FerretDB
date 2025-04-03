@@ -72,6 +72,12 @@ linters-settings:
           - pkg: github.com/FerretDB/FerretDB/v2/internal/documentdb/cursor
   exhaustive:
     default-signifies-exhaustive: false
+  exhaustruct:
+    include:
+      - .*\Q/middleware.MsgRequest
+      - .*\Q/middleware.MsgResponse
+      - .*\Q/middleware.QueryRequest
+      - .*\Q/middleware.ReplyResponse
   forbidigo:
     forbid:
       - p: ^\Qpgxpool.Pool.AcquireFunc\E$
@@ -161,6 +167,8 @@ linters-settings:
     no-unaliased: true
     no-extra-aliases: false
     alias:
+      - pkg: runtime/debug
+        alias: runtimedebug
       - pkg: github.com/prometheus/client_model/go
         alias: dto
       - pkg: go.opentelemetry.io/otel/attribute
@@ -237,6 +245,7 @@ linters:
     - asciicheck
     - depguard
     - exhaustive
+    - exhaustruct
     - forbidigo
     - gci
     - gochecksumtype

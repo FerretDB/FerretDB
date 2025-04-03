@@ -244,11 +244,12 @@ func main() {
 	}
 
 	opts := &logging.NewHandlerOpts{
-		Base:          "console",
-		Level:         level,
-		RemoveTime:    true,
-		RemoveSource:  true,
-		CheckMessages: false, // TODO https://github.com/FerretDB/FerretDB/issues/4511
+		Base:         "console",
+		Level:        level,
+		RemoveTime:   true,
+		RemoveSource: true,
+		// the logger handles messages from the `go test` command output
+		SkipChecks: true,
 	}
 	logging.SetupDefault(opts, "")
 	logger := slog.Default()
