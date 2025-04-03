@@ -3,8 +3,7 @@ slug: ferretdb-v210-release-performance-observability-improvements
 title: 'FerretDB releases v2.1.0 with performance and observability improvements'
 authors: [alex]
 description: >
-  We are happy to announce the release of FerretDB v2.1.0, which brings significant performance improvements
-  and observability enhancements.
+  We are happy to announce the release of FerretDB v2.1.0 with significant performance and observability improvements.
 image: /img/blog/ferretdb-v2.1.0.jpg
 tags: [release]
 ---
@@ -16,13 +15,12 @@ We just released FerretDB v2.1.0, which comes on the back of the [successful v2.
 <!--truncate-->
 
 The latest release provides improvements in performance and observability, and addresses key issues that were present in the previous version.
-Other important changes changes include a fix for the embeddable Go package and a resolution to indexing issues that affected the previous version.
+Other important changes include a fix for the embeddable Go package and a resolution to indexing issues that affected the previous version.
 
-## Breaking changes
+## Important update information
 
-This release introduces breaking changes that may affect existing users.
 Due to the nature of the changes in this release, a direct update is not supported.
-Users must perform a backup of their current databases and conduct a clean installation of FerretDB v2.1.0, followed by a data restoration.
+Users must perform a backup of their current databases and conduct a clean installation of FerretDB v2.1.0 and the DocumentDB extension before restoring their data.
 
 Please note that is a one-time requirement due to the significant changes in this release.
 Future updates will not require such a process.
@@ -34,7 +32,7 @@ To update to FerretDB v2.1.0, please follow these steps:
 2. Remove any existing installations FerretDB and DocumentDB images, containers, and volumes to avoid conflicts.
    For Debian users, ensure to uninstall all packages and delete related data directories.
 
-3. Once that's done, install FerretDB v2.1.0 along with the appropriate DocumentDB extension – either by pulling the correct Docker images or downloading and installing the `.deb` packages.
+3. Once that's done, install FerretDB v2.1.0 along with the appropriate DocumentDB extension — either by pulling the correct Docker images or downloading and installing the `.deb` packages.
 
 4. Restore your data using `mongorestore` or `mongoimport`.
 
