@@ -1,0 +1,8 @@
+---
+label: FerretDB
+position: 2
+link:
+  type: generated-index
+  slug: /installation/ferretdb
+  description: >
+    Learn to install FerretDB on your local machine
