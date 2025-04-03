@@ -27,7 +27,7 @@ tool (
 
 require (
 	github.com/AlekSi/pointer v1.2.0
-	github.com/FerretDB/gh v0.1.7
+	github.com/FerretDB/gh v0.2.0
 	github.com/google/go-github/v69 v69.2.0
 	github.com/rogpeppe/go-internal v1.13.1
 	github.com/sethvargo/go-githubactions v1.3.0
@@ -81,7 +81,8 @@ require (
 	github.com/go-toolsmith/typep v1.0.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
-	github.com/google/go-cmp v0.6.0 // indirect
+	github.com/google/go-cmp v0.7.0 // indirect
+	github.com/google/go-github/v70 v70.0.1-0.20250402125210-3a3f51bc7c5d // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/licensecheck v0.3.1 // indirect
 	github.com/google/rpmpack v0.6.1-0.20240329070804-c2247cbb881a // indirect
@@ -145,7 +146,7 @@ require (
 	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56 // indirect
 	golang.org/x/mod v0.24.0 // indirect
 	golang.org/x/net v0.37.0 // indirect
-	golang.org/x/oauth2 v0.26.0 // indirect
+	golang.org/x/oauth2 v0.28.0 // indirect
 	golang.org/x/perf v0.0.0-20250214215153-c95ad7d5b636 // indirect
 	golang.org/x/pkgsite v0.0.0-20250214205047-dd488e5da97a // indirect
 	golang.org/x/sync v0.12.0 // indirect
