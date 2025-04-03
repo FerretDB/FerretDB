@@ -61,7 +61,7 @@ The [embeddable Go package](https://pkg.go.dev/github.com/FerretDB/FerretDB/v2/f
 
 ## Looking ahead
 
-Since the release of FerretDB v2.0.0, we have working to address the feedback and issues reported by our users.
+Since the release of FerretDB v2.0.0, we have been working to address the feedback and issues reported by our users.
 We are committed to providing a truly open-source alternative to MongoDB that's highly performant, compatible, and reliable for all your database needs.
 
 Visit [our GitHub](https://github.com/FerretDB) and [our website](https://www.ferretdb.com) to download,
