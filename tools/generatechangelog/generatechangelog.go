@@ -47,6 +47,7 @@ type Data struct {
 	PrevVersion   string
 	Version       string
 	Date          string
+	Milestone     int
 	NewFeatures   []PRData
 	FixedBugs     []PRData
 	Enhancements  []PRData
@@ -126,6 +127,7 @@ func makeData(milestone *github.Milestone, prev string, prs []*github.Issue, l *
 	d := &Data{
 		PrevVersion: prev,
 		Version:     *milestone.Title,
+		Milestone:   *milestone.Number,
 	}
 
 	if milestone.DueOn == nil {

@@ -1,0 +1,8 @@
+---
+label: Troubleshooting
+position: 9
+link:
+  type: generated-index
+  slug: /troubleshooting
+  description: >
+    This section provides solutions to common issues encountered when using FerretDB
