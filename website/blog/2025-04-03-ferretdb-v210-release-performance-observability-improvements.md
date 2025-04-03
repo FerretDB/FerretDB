@@ -35,6 +35,7 @@ Learn more about updating to FerretDB v2.1.0 [here](https://docs.ferretdb.io/mig
 
 This is a one-time manual process.
 Future versions will be much smoother.
+
 ## What's new in v2.1.0
 
 ### Performance and observability enhancements
