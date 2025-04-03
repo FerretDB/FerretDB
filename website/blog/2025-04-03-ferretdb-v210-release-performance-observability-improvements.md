@@ -34,8 +34,7 @@ To update to FerretDB v2.1.0, please follow the same instructions in our [migrat
 You can find detailed instructions on updating to FerretDB v2.1.0 in our [migration guide](https://docs.ferretdb.io/migration/migrating-from-mongodb/).
 
 This is a one-time manual process.
-Future versions will to be much smoother.
-
+Future versions will be much smoother.
 ## What's new in v2.1.0
 
 ### Performance and observability enhancements
