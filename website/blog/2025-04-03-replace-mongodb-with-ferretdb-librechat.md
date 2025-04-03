@@ -15,10 +15,10 @@ It allows users to connect with providers like [OpenAI](https://openai.com/), [A
 
 LibreChat users who want to stay within the open-source ecosystem will find FerretDB a fitting replacement for MongoDB.
 
-If you’re looking to avoid proprietary databases or vendor lock-in, FerretDB is a drop-in replacement for MongoDB that runs on top of PostgreSQL.
+If you're looking to avoid proprietary databases or vendor lock-in, FerretDB is a drop-in replacement for MongoDB that runs on top of PostgreSQL.
 It uses PostgreSQL with DocumentDB extension as the backend while enabling you to use familiar syntax and commands.
 
-This guide shows how to run LibreChat with FerretDB as the database — either by connecting to an existing FerretDB instance or running everything in Docker.
+This guide shows how to run LibreChat with FerretDB as the database – either by connecting to an existing FerretDB instance or running everything in Docker.
 
 <!--truncate-->
 
@@ -96,4 +96,5 @@ Learn more about FerretDB and LibreChat by checking out the following resources:
 - [Troubleshooting FerretDB](https://docs.ferretdb.io/troubleshooting/)
 - [LibreChat Docker setup](https://www.librechat.ai/docs/local/docker)
 
-Need help? Feel free to reach out to us on any of [our community channels](https://docs.ferretdb.io/#community).
+Need help?
+Feel free to reach out to us on any of [our community channels](https://docs.ferretdb.io/#community).
