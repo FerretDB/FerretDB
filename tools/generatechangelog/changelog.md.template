@@ -1,0 +1,49 @@
+## [{{.Version}}](https://github.com/FerretDB/FerretDB/releases/tag/{{.Version}}) ({{.Date}})
+
+XXX
+
+### Breaking changes
+
+XXX
+
+### What's Changed
+
+{{if .NewFeatures}}
+### New Features 🎉
+{{range .NewFeatures}}
+- {{.Title}} by @{{.Author}} in {{.URL}}
+{{- end}}
+{{end}}
+
+{{if .FixedBugs}}
+### Fixed Bugs 🐛
+{{range .FixedBugs}}
+- {{.Title}} by @{{.Author}} in {{.URL}}
+{{- end}}
+{{end}}
+
+{{if .Enhancements}}
+### Enhancements 🛠
+{{range .Enhancements}}
+- {{.Title}} by @{{.Author}} in {{.URL}}
+{{- end}}
+{{end}}
+
+{{if .Documentation}}
+### Documentation 📄
+{{range .Documentation}}
+- {{.Title}} by @{{.Author}} in {{.URL}}
+{{- end}}
+{{end}}
+
+{{if .OtherChanges}}
+### Other Changes 🤖
+{{range .OtherChanges}}
+- {{.Title}} by @{{.Author}} in {{.URL}}
+{{- end}}
+{{end}}
+
+### New Contributors
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/{{.Version}}?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/{{.PrevVersion}}...{{.Version}}).

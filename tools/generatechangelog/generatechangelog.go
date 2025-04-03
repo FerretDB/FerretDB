@@ -16,71 +16,40 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	_ "embed"
 	"flag"
 	"fmt"
+	"html/template"
 	"io"
 	"log"
 	"log/slog"
 	"os"
 	"strconv"
-	"time"
 
 	"github.com/FerretDB/gh"
 	"github.com/google/go-github/v70/github"
 )
 
-//go:embed template.md
-var template []byte
+//go:embed changelog.md.template
+var templateFile string
 
-var categories = []struct {
-	Name   string
-	Labels map[string]struct{}
-}{
-	{
-		Name: "NewFeatures",
-		Labels: map[string]struct{}{
-			"code/feature": {},
-		},
-	},
-	{
-		Name: "FixedBugs",
-		Labels: map[string]struct{}{
-			"code/bug":            {},
-			"code/bug-regression": {},
-		},
-	},
-	{
-		Name: "Enhancements",
-		Labels: map[string]struct{}{
-			"code/enhancement": {},
-		},
-	},
-	{
-		Name: "Documentation",
-		Labels: map[string]struct{}{
-			"blog/engineering": {},
-			"blog/marketing":   {},
-			"documentation":    {},
-		},
-	},
-	{
-		Name: "OtherChanges",
-		Labels: map[string]struct{}{
-			"code/chore": {},
-			"project":    {},
-			"deps":       {},
-		},
-	},
+type PRData struct {
+	Title  string
+	Author string
+	URL    string
 }
 
-type TemplateData struct {
-	Categories map[string][]struct {
-		Title  string
-		Author string
-		URL    string
-	}
+type Data struct {
+	PrevVersion   string
+	Version       string
+	Date          string
+	NewFeatures   []PRData
+	FixedBugs     []PRData
+	Enhancements  []PRData
+	Documentation []PRData
+	OtherChanges  []PRData
 }
 
 // getMilestone returns milestone by title (which matches FerretDB version and Git tag).
@@ -145,93 +114,120 @@ func getPRs(ctx context.Context, client *github.Client, milestone *github.Milest
 	}
 }
 
-func makeTemplateData(milestone *github.Milestone, prs []*github.Issue, l *slog.Logger) (*TemplateData, error) {
-	return &TemplateData{}, nil
+func makeData(milestone *github.Milestone, prev string, prs []*github.Issue, l *slog.Logger) (*Data, error) {
+	if milestone.ClosedAt != nil {
+		l.Warn("milestone is closed")
+	}
+
+	d := &Data{
+		PrevVersion: prev,
+		Version:     *milestone.Title,
+	}
+
+	if milestone.DueOn == nil {
+		return nil, fmt.Errorf("milestone %q does not have a due date", *milestone.Title)
+	}
+
+	d.Date = milestone.DueOn.Format("2006-01-02")
+
+	for _, pr := range prs {
+		if pr.ClosedAt == nil {
+			l.Warn(fmt.Sprintf("PR is not closed: %s", *pr.HTMLURL))
+		}
+
+		prData := PRData{
+			Title:  *pr.Title,
+			Author: *pr.User.Login,
+			URL:    *pr.HTMLURL,
+		}
+
+		var found bool
+		for _, label := range pr.Labels {
+			switch *label.Name {
+			case "code/feature":
+				d.NewFeatures = append(d.NewFeatures, prData)
+			case "code/bug", "code/bug-regression":
+				d.FixedBugs = append(d.FixedBugs, prData)
+			case "code/enhancement":
+				d.Enhancements = append(d.Enhancements, prData)
+			case "blog/engineering", "blog/marketing", "documentation":
+				d.Documentation = append(d.Documentation, prData)
+			case "code/chore", "project", "deps":
+				d.OtherChanges = append(d.OtherChanges, prData)
+			default:
+				continue
+			}
+
+			if found {
+				return nil, fmt.Errorf("multiple possible categories for %s", prData.URL)
+			}
+
+			found = true
+		}
+
+		if !found {
+			return nil, fmt.Errorf("no category found for %s", prData.URL)
+		}
+	}
+
+	return d, nil
 }
 
-func run(w io.Writer, repoRoot, milestoneTitle, prev string) {
+func run(w io.Writer, l *slog.Logger, prev, next string) error {
 	ctx := context.Background()
 
-	github.NewClient(p, log.Printf, gh.NoopPrintf, gh.NoopPrintf)
-
-	client, err := gh.NewRESTClient(os.Getenv("GITHUB_TOKEN"), nil)
+	client, err := gh.NewRESTClient(os.Getenv("GITHUB_TOKEN"), gh.SLogPrintf(l))
 	if err != nil {
-		log.Fatalf("Failed to create GitHub client: %v", err)
+		return err
 	}
 
-	milestone, err := getMilestone(ctx, client, milestoneTitle)
+	_, err = getMilestone(ctx, client, prev)
 	if err != nil {
-		log.Fatalf("Failed to fetch milestone: %v", err)
+		return err
 	}
 
-	mergedPRs, err := listMergedPRsOnMilestone(ctx, client, milestone)
+	milestone, err := getMilestone(ctx, client, next)
 	if err != nil {
-		log.Fatalf("Failed to fetch PRs: %v", err)
+		return err
 	}
 
-	prs := groupPRsByCategories(mergedPRs, tpl.Changelog.Categories)
-
-	tmpl, err := template.New("changelog").Parse(`
-## [{{ .Current }}](https://github.com/FerretDB/FerretDB/releases/tag/{{ .Current }}) ({{ .Date }})
-{{- $root := . }}
-{{- range .Categories }}
-{{ $prs := index $root.PRs . }}
-{{- if $prs }}
-### {{ . }}
-{{ range $prs }}
-- {{ .Title }} by @{{ .User }} in {{ .URL }}
-{{- end }}
-{{- end }}
-{{- end }}
-[All closed issues and pull requests]({{ .URL }}?closed=1).
-{{- if .Previous }}
-[All commits](https://github.com/FerretDB/FerretDB/compare/{{ .Previous }}...{{ .Current }}).
-{{- end }}
-`,
-	)
+	prs, err := getPRs(ctx, client, milestone)
 	if err != nil {
-		log.Fatalf("Failed to parse template: %v", err)
+		return err
 	}
 
-	categories := make([]string, len(tpl.Changelog.Categories))
-	for i, category := range tpl.Changelog.Categories {
-		categories[i] = category.Title
+	d, err := makeData(milestone, prev, prs, l)
+	if err != nil {
+		return err
 	}
 
-	data := struct { //nolint:vet // for readability
-		Date       string
-		Current    string
-		Previous   string
-		URL        string
-		Categories []string
-		PRs        map[string][]PR
-	}{
-		Date:       time.Now().Format("2006-01-02"),
-		Current:    *milestone.Title,
-		Previous:   prev,
-		URL:        *milestone.HTMLURL,
-		Categories: categories,
-		PRs:        prs,
+	t, err := template.New("").Option("missingkey=error").Parse(templateFile)
+	if err != nil {
+		return err
 	}
 
-	if err = tmpl.Execute(w, data); err != nil {
-		log.Fatalf("Failed to render markdown: %v", err)
+	if err = t.Execute(w, d); err != nil {
+		return err
 	}
+
+	return nil
 }
 
 func main() {
-	prevF := flag.String("prev", "", "Previous milestone to compare against, e.g. v2.0.0-rc.1")
-	nextF := flag.String("next", "Next", "Milestone to generate changelog for, e.g. v2.0.0-rc.2")
+	prevF := flag.String("prev", "", "Previous version")
+	nextF := flag.String("next", "", "Next version")
 	flag.Parse()
 
 	if *prevF == "" || *nextF == "" {
 		log.Fatal("Both -prev and -next must be specified.")
 	}
 
-	wd, err := os.Getwd()
-	if err != nil {
+	var buf bytes.Buffer
+	if err := run(&buf, slog.Default(), *prevF, *nextF); err != nil {
 		log.Fatal(err)
 	}
 
-	run(os.Stdout, wd, *nextF, *prevF)
+	if _, err := io.Copy(os.Stdout, &buf); err != nil {
+		log.Fatal(err)
+	}
 }
