@@ -4,24 +4,20 @@ title: 'How to deploy FerretDB with CloudNativePG on Kubernetes'
 authors: [alex]
 description: >
   Learn how to deploy FerretDB with PostgreSQL using CloudNativePG on Kubernetes.
-image: /img/blog/ferretdb-cybertec-postgres.jpg
+image: /img/blog/ferretdb-cnpg.jpg
 tags: [compatible applications, tutorial, cloud, postgresql tools, open source]
 ---
 
 ![Deploy FerretDB with CloudNativePG on Kubernetes](/img/blog/ferretdb-cnpg.jpg)
 
-Many users want to run FerretDB on Kubernetes, but don't want to manage PostgreSQL themselves.
-CloudNativePG (CNPG) is a great option for this.
+Running FerretDB on Kubernetes typically requires managing a PostgreSQL backend.
+With [CloudNativePG](https://cloudnative-pg.io/), a Kubernetes-native operator for PostgreSQL, you can automate provisioning, scaling, and failover while keeping your infrastructure declarative and production-ready.
 
 <!--truncate-->
 
-It's a Kubernetes operator that automates the deployment and management of PostgreSQL clusters.
-It simplifies tasks like scaling, backups, and failover, making it easier to run PostgreSQL in a cloud-native environment.
-
 We previously covered how to run FerretDB on Kubernetes using CloudNativePG (CNPG) as the PostgreSQL operator.
-While the previous guide worked for FerretDB v1.x, different setup is required for FerretDB v2.x.
-With the release of FerretDB v2.0, users have access to more features, significantly better performance, and more compatibility with MongoDB.
-All of this is now available using the PostgreSQL with DocumentDB extension.
+The setup process has changed since FerretDB v1.x.
+With v2.x, FerretDB introduces new features, improved performance, and better MongoDB compatibility – which now rely on the PostgreSQL with the DocumentDB extension.
 
 This guide will walk you through the steps to deploy FerretDB and PostgreSQL with DocumentDB extension using CloudNativePG on Kubernetes.
 
@@ -103,6 +99,12 @@ NAME                STATUS   REPLICAS   READY   AGE
 postgres-cluster   Running  3          3       1m
 ```
 
+To get the generated password for the `postgres` user:
+
+```sh
+kubectl get secret -n cnpg postgres-cluster-superuser -o jsonpath='{.data.password}' | base64 -d && echo
+```
+
 ## Deploy FerretDB
 
 Now that the PostgreSQL backend is ready, we deploy FerretDB itself.
@@ -134,6 +136,7 @@ spec:
           env:
             - name: FERRETDB_POSTGRESQL_URL
               value: 'postgresql://postgres:<paste-password-here>@postgres-cluster-rw.cnpg.svc.cluster.local:5432/postgres'
+
 ---
 apiVersion: v1
 kind: Service
@@ -148,12 +151,6 @@ spec:
       port: 27017
       targetPort: 27017
   type: NodePort
-```
-
-To get the generated password for the `postgres` user:
-
-```sh
-kubectl get secret -n cnpg postgres-cluster-superuser -o jsonpath='{.data.password}' | base64 -d && echo
 ```
 
 Then apply FerretDB:
@@ -183,14 +180,24 @@ Then in another terminal:
 mongosh "mongodb://postgres:<password>@localhost/postgres"
 ```
 
-You're now connected to FerretDB, which looks like MongoDB but is backed by PostgreSQL.
-
----
+You're now connected to FerretDB.
 
 ### Test CRUD operations
 
+Try a quick test:
+
+```js
+db.test.insertOne({ hello: 'world' })
+db.test.find()
+```
+
+This verifies that FerretDB is up and the entire setup is functioning as expected.
+
 ## Conclusion
 
-You now have FerretDB running on Kubernetes with PostgreSQL handled by CNPG.
-CNPG ensures your Postgres backend with DocumentDB extension is resilient and Kubernetes-native, while FerretDB gives you a Mongo-compatible experience on top.
-This setup is minimal, however, you can improve it by adding backups and monitoring, among other things.
+You now have FerretDB v2 running on Kubernetes, backed by a production-grade PostgreSQL cluster managed by CloudNativePG.
+This setup gives you MongoDB-compatible functionality with the reliability and tooling of PostgreSQL.
+For production environments, consider adding backups, monitoring, authentication, and horizontal scaling.
+
+Have any questions?
+Reach out to us on [our community channels](https://docs.ferretdb.io/#community).
