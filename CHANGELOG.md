@@ -2,6 +2,81 @@
 
 <!-- markdownlint-disable MD024 MD034 -->
 
+## [v2.1.0](https://github.com/FerretDB/FerretDB/releases/tag/v2.1.0) (2025-04-03)
+
+XXX
+
+### Breaking changes
+
+XXX
+
+### What's Changed
+
+### Fixed Bugs 🐛
+
+- Fix version detection for embeddable package by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4936
+
+### Enhancements 🛠
+
+- Add colorized levels to `console` logger by @noisersup in https://github.com/FerretDB/FerretDB/pull/4904
+- Improve `--help` output by @KrishnaSindhur in https://github.com/FerretDB/FerretDB/pull/4918
+- Add support for reading PostgreSQL URL from a file by @KrishnaSindhur in https://github.com/FerretDB/FerretDB/pull/4937
+- Do not decode incoming document twice by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4981
+
+### Documentation 📄
+
+- Add post on MongoDB queries and operations on FerretDB by @Fashander in https://github.com/FerretDB/FerretDB/pull/4732
+- Add example telemetry report to documentation by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4861
+- Add FerretDB v2 GA blog post by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4884
+- Add full text search guide by @Fashander in https://github.com/FerretDB/FerretDB/pull/4886
+- Add guide for GUI apps by @Fashander in https://github.com/FerretDB/FerretDB/pull/4906
+- Add TTL index guide by @Fashander in https://github.com/FerretDB/FerretDB/pull/4926
+- Update `deb` and `rpm` installation docs by @Fashander in https://github.com/FerretDB/FerretDB/pull/4927
+- Sync flags grouping with docs by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4933
+- Add a note to documentation about PR titles by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4944
+- Update/backport full-text and TTL indexes guides by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4948
+- Backport documentation changes to v2.0 by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4952
+- Add basic documentation for supported commands by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4970
+- Update feature blog post by @Fashander in https://github.com/FerretDB/FerretDB/pull/4991
+- Add blogpost on FerretDB v2.1.0 release by @Fashander in https://github.com/FerretDB/FerretDB/pull/5004
+- Create redirects for `/v2.0/` documentation URLs by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5011
+
+### Other Changes 🤖
+
+- Update changelog generation by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4810
+- Update TODO URLs for `listDatabase` tests by @noisersup in https://github.com/FerretDB/FerretDB/pull/4863
+- Document non-enforced format of log messages in `envtool` package by @noisersup in https://github.com/FerretDB/FerretDB/pull/4867
+- Start working on a new release by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4885
+- Adjust pool connection timeout by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4888
+- Check issue URLs in documentation by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4890
+- Add TODO comments for observability tasks by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4896
+- Refactor `clientconn` by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4907
+- Add basic structure for middlewares by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4908
+- Make production builds of the `main` branch by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4911
+- Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4916
+- Move message processing in `clientconn` to a function by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4919
+- Change the way OP_MSG handlers are invoked by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4923
+- Improve integration benchmarks by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4925
+- Configure connection pool size in tests by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4932
+- Update DocumentDB by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4941
+- Handle `OP_QUERY` in middleware using interface by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4947
+- Implement error middleware by @chilagrow in https://github.com/FerretDB/FerretDB/pull/4951
+- Use ERROR level logging for failed tests by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4974
+- Update DocumentDB by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4975
+- Disable tracing in benchmarks for now by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4980
+- Update DocumentDB by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4982
+- Add TODOs by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4986
+- Partially revert middleware changes by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4995
+- Add more tests for error handling by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4996
+- Use Go 1.24.2 by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5005
+- Remove error middleware for now by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5008
+- Disable commit check for now by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5012
+
+### New Contributors
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/v2.1.0?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v2.0.0...v2.1.0).
+
 ## [v2.0.0](https://github.com/FerretDB/FerretDB/releases/tag/v2.0.0) (2025-03-05)
 
 The first generally available release of FerretDB v2,

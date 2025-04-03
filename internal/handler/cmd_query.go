@@ -32,24 +32,24 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) CmdQuery(connCtx context.Context, query *middleware.QueryRequest) (*middleware.ReplyResponse, error) {
-	q := query.Query()
+	q := query.OpQuery.Query()
 	cmd := q.Command()
-	collection := query.FullCollectionName
+	collection := query.OpQuery.FullCollectionName
 
 	suffix := ".$cmd"
 	if !strings.HasSuffix(collection, suffix) {
 		// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/527
 		return middleware.Reply(wirebson.MustDocument(
-			"$err", "OP_QUERY is no longer supported. The client driver may require an upgrade.",
+			"$err", "OP_QUERY is no longer supported. The client driver may require an update.",
 			"code", int32(mongoerrors.ErrLocation5739101),
 			"ok", float64(0),
 		))
 	}
 
-	if query.NumberToReturn != 1 && query.NumberToReturn != -1 {
+	if query.OpQuery.NumberToReturn != 1 && query.OpQuery.NumberToReturn != -1 {
 		return nil, mongoerrors.NewWithArgument(
 			mongoerrors.ErrLocation16979,
-			fmt.Sprintf("Bad numberToReturn (%d) for $cmd type ns - can only be 1 or -1", query.NumberToReturn),
+			fmt.Sprintf("Bad numberToReturn (%d) for $cmd type ns - can only be 1 or -1", query.OpQuery.NumberToReturn),
 			"OpQuery: "+cmd,
 		)
 	}
@@ -100,7 +100,7 @@ func (h *Handler) CmdQuery(connCtx context.Context, query *middleware.QueryReque
 
 	return nil, mongoerrors.NewWithArgument(
 		mongoerrors.ErrUnsupportedOpQueryCommand,
-		fmt.Sprintf("Unsupported OP_QUERY command: %s. The client driver may require an upgrade.", cmd),
+		fmt.Sprintf("Unsupported OP_QUERY command: %s. The client driver may require an update.", cmd),
 		"OpQuery: "+cmd,
 	)
 }
