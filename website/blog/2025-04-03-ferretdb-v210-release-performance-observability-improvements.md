@@ -3,61 +3,61 @@ slug: ferretdb-v210-release-performance-observability-improvements
 title: 'FerretDB releases v2.1.0 with performance and observability improvements'
 authors: [alex]
 description: >
-  We are happy to announce the release of FerretDB v2.1.0 with significant performance and observability improvements.
+  FerretDB v2.1.0 brings performance improvements, better observability, and key bug fixes — including restored support for the embeddable Go package.
 image: /img/blog/ferretdb-v2.1.0.jpg
 tags: [release]
 ---
 
 ![FerretDB releases v2.1.0 with performance and observability improvements](/img/blog/ferretdb-v2.1.0.jpg)
 
-We just released FerretDB v2.1.0, which comes on the back of the [successful v2.0.0 GA release](https://blog.ferretdb.io/ferretdb-v2-ga-open-source-mongodb-alternative-ready-for-production/).
+FerretDB v2.1.0 is now available.
 
 <!--truncate-->
 
-The latest release provides improvements in performance and observability, and addresses key issues that were present in the previous version.
-Other important changes include a fix for the embeddable Go package and a resolution to indexing issues that affected the previous version.
+This release builds on the [FerretDB v2.0 GA milestone](https://blog.ferretdb.io/ferretdb-v2-ga-open-source-mongodb-alternative-ready-for-production/) with performance improvements, better observability, and critical fixes for developers embedding FerretDB into Go applications.
+
+FerretDB v2.1.0 includes a few changes that require manual upgrades.
+Read on for what's new, how to upgrade, and what's coming next.
 
 ## Important update information
 
-Due to the nature of the changes in this release, a direct update is not supported.
+Due to incompatibilities in our previous releases, DocumentDB can't be updated in place.
 Users must perform a backup of their current databases and conduct a clean installation of FerretDB v2.1.0 and the DocumentDB extension before restoring their data.
 
-Please note that is a one-time requirement due to the significant changes in this release.
-Future updates will not require such a process.
+To update to FerretDB v2.1.0, please follow the same instructions in our [migration guide](https://docs.ferretdb.io/migration/migrating-from-mongodb/) to:
 
-To update to FerretDB v2.1.0, please follow these steps:
+- Back up your data using `mongodump` or `mongoexport`
+- Remove existing FerretDB and DocumentDB images, containers, and volumes (or Debian packages and data directories)
+- Install [FerretDB v2.1.0](https://github.com/FerretDB/FerretDB/releases/tag/v2.1.0) and [DocumentDB extension](https://github.com/FerretDB/documentdb/releases/tag/v0.102.0-ferretdb-2.1.0)
+- Restore your data with `mongorestore` or `mongoimport`
 
-1. Backup your data with `mongodump` or `mongoexport`.
+You can find detailed instructions on updating to FerretDB v2.1.0 in our [migration guide](https://docs.ferretdb.io/migration/migrating-from-mongodb/).
 
-2. Remove any existing installations FerretDB and DocumentDB images, containers, and volumes to avoid conflicts.
-   For Debian users, ensure to uninstall all packages and delete related data directories.
+This is a one-time manual process.
+Future versions will to be much smoother.
 
-3. Once that's done, install FerretDB v2.1.0 along with the appropriate DocumentDB extension — either by pulling the correct Docker images or downloading and installing the `.deb` packages.
-
-4. Restore your data using `mongorestore` or `mongoimport`.
-
-5. After restoring your data, verify that everything is functioning as expected.
-   Check the logs for any errors or warnings that may need attention.
-
-If you encounter any performance issues or have questions during the update process, please reach out to us through [our community channels](https://docs.ferretdb.io/#community).
-Your feedback is invaluable and helps us continually improve FerretDB.
-
-## Other changes
+## What's new in v2.1.0
 
 ### Performance and observability enhancements
 
 In this release, we've made some improvements in performance and observability.
-Notably, our logging mechanisms now provide more actionable information which should help in enabling better troubleshooting.
+Notably, the console logger now supports colorized log levels.
+
+We also made improvements to the `--help` output to align with our documentation which should offer clearer guidance for users setting up or troubleshooting FerretDB.
+
+To better integrate with Docker Secrets, FerretDB now supports reading the PostgreSQL connection URL from a file using the `--postgresql-url-file` flag or the `FERRETDB_POSTGRESQL_URL_FILE` environment variable.
 
 ### Indexing issue resolved
 
 We fixed an issue related to indexing that was present in previous versions.
 With this fix, you can expect more reliable and efficient index operations.
 
+We recommend using the `reIndex` command to rebuild your indexes after upgrading to FerretDB v2.1.0.
+This will ensure that all indexes are up to date and functioning correctly.
+
 ### Fixed embeddable package
 
-FerretDB v2.1.0 resolves an issue with our embeddable package, which was previously broken in version v2.0.0.
-Developers can now seamlessly use FerretDB as a library within their Go programs, facilitating greater flexibility and integration capabilities.
+The [embeddable Go package](https://pkg.go.dev/github.com/FerretDB/FerretDB/v2/ferretdb), broken in v2.0.0, now works as expected, making it easier for FerretDB to be used as a library in Go applications.
 
 ## Looking ahead
 
@@ -66,3 +66,7 @@ We are committed to providing a truly open-source alternative to MongoDB that's 
 
 Visit [our GitHub](https://github.com/FerretDB) and [our website](https://www.ferretdb.com) to download,
 contribute, or explore enterprise solutions.
+
+See the [release notes for other changes in this release.](https://github.com/FerretDB/FerretDB/releases/tag/v2.1.0)
+
+If you have any issues or questions, reach out to us on [our community channels](https://docs.ferretdb.io/#community).
