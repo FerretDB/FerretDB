@@ -18,7 +18,7 @@ This release builds on the [FerretDB v2.0 GA milestone](https://blog.ferretdb.io
 
 ## Important update information
 
-Due to incompatibilities in our previous releases, DocumentDB can't be updated directly.
+Due to incompatibilities in our previous release, DocumentDB can't be updated directly.
 Users must backup their current databases and conduct a clean installation of FerretDB v2.1.0 and the DocumentDB extension before restoring their data.
 
 To update to FerretDB v2.1.0, please follow the same instructions as in our [migration guide](https://docs.ferretdb.io/migration/migrating-from-mongodb/) to:
