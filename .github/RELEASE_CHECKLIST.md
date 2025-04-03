@@ -3,10 +3,10 @@
 ## Preparation
 
 1. [Release DocumentDB](https://github.com/FerretDB/documentdb/blob/ferretdb/.github/RELEASE_CHECKLIST.md).
-2. Update constants in [`documentdb.go`](../build/version/documentdb.go).
-3. Update DocumentDB image tags to point to release in:
+2. Update DocumentDB image tags to point to release in:
    - [evaluation image](../build/ferretdb/evaluation.Dockerfile);
    - [local image](../build/deps/postgres-documentdb.Dockerfile).
+3. Update constants in [`documentdb.go`](../build/version/documentdb.go).
 4. Check DocumentDB images tags in documentation (where we specify full tags).
 5. Re-run tests, linters.
 6. Check issues and pull requests, update milestones and labels.
