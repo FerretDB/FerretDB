@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"golang.org/x/tools/go/analysis/analysistest"
 
-	"github.com/FerretDB/FerretDB/v2/tools/fgithub"
+	"github.com/FerretDB/FerretDB/v2/tools/github"
 )
 
 func TestCheckCommentIssue(t *testing.T) {
@@ -32,7 +32,7 @@ func TestCheckCommentIssue(t *testing.T) {
 
 	t.Parallel()
 
-	path, err := fgithub.CacheFilePath()
+	path, err := github.CacheFilePath()
 	require.NoError(t, err)
 
 	err = os.MkdirAll(filepath.Dir(path), 0o777)
