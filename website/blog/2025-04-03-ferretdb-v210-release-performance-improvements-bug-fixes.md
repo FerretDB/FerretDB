@@ -54,6 +54,8 @@ We also made improvements to the `--help` output to align with our documentation
 
 To better integrate with Docker Secrets, FerretDB now supports reading the PostgreSQL connection URL from a file using the `--postgresql-url-file` flag or the `FERRETDB_POSTGRESQL_URL_FILE` environment variable.
 
+See the [release notes for all changes in this release](https://github.com/FerretDB/FerretDB/releases/tag/v2.1.0).
+
 ## Looking ahead
 
 Since the release of FerretDB v2.0.0, we have been working to address the feedback and issues reported by our users.
@@ -61,7 +63,5 @@ We are committed to providing a truly open-source alternative to MongoDB that's 
 
 Visit [our GitHub](https://github.com/FerretDB) and [our website](https://www.ferretdb.com) to download,
 contribute, or explore enterprise solutions.
-
-See the [release notes for other changes in this release](https://github.com/FerretDB/FerretDB/releases/tag/v2.1.0).
 
 If you have any questions, reach out to us on [our community channels](https://docs.ferretdb.io/#community).
