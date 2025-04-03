@@ -32,8 +32,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// PRItem represents GitHub PR.
-type PRItem struct {
+// PR represents GitHub PR.
+type PR struct {
 	URL    string
 	Title  string
 	Number int
@@ -41,12 +41,14 @@ type PRItem struct {
 	Labels map[string]struct{}
 }
 
-// getMilestone fetches the milestone with the given title.
-func getMilestone(ctx context.Context, client *github.Client, milestoneTitle string) (*github.Milestone, error) {
+// getMilestone fetches the milestone with the given title (which matches FerretDB version and Git tag).
+func getMilestone(ctx context.Context, client *github.Client, title string) (*github.Milestone, error) {
 	milestones, _, err := client.Issues.ListMilestones(ctx, "FerretDB", "FerretDB", &github.MilestoneListOptions{
-		State: "all",
+		State:     "all",
+		Sort:      "due_on",
+		Direction: "desc",
 		ListOptions: github.ListOptions{
-			PerPage: 500,
+			PerPage: 100,
 		},
 	})
 	if err != nil {
@@ -54,16 +56,16 @@ func getMilestone(ctx context.Context, client *github.Client, milestoneTitle str
 	}
 
 	for _, milestone := range milestones {
-		if *milestone.Title == milestoneTitle {
+		if *milestone.Title == title {
 			return milestone, nil
 		}
 	}
 
-	return nil, fmt.Errorf("no milestone found with the name %s", milestoneTitle)
+	return nil, fmt.Errorf("no milestone found with the title %q", title)
 }
 
 // listMergedPRsOnMilestone returns the list of merged PRs on the given milestone.
-func listMergedPRsOnMilestone(ctx context.Context, client *github.Client, milestone *github.Milestone) ([]PRItem, error) {
+func listMergedPRsOnMilestone(ctx context.Context, client *github.Client, milestone *github.Milestone) ([]PR, error) {
 	issues, _, err := client.Issues.ListByRepo(
 		ctx,
 		"FerretDB",
@@ -81,7 +83,7 @@ func listMergedPRsOnMilestone(ctx context.Context, client *github.Client, milest
 		return nil, err
 	}
 
-	var prItems []PRItem
+	var prItems []PR
 
 	for _, issue := range issues {
 		if !issue.IsPullRequest() {
@@ -94,7 +96,7 @@ func listMergedPRsOnMilestone(ctx context.Context, client *github.Client, milest
 			labels[*label.Name] = struct{}{}
 		}
 
-		prItem := PRItem{
+		prItem := PR{
 			URL:    *issue.PullRequestLinks.HTMLURL,
 			Number: *issue.Number,
 			Title:  *issue.Title,
@@ -126,8 +128,8 @@ func loadReleaseTemplate(filePath string) (*ReleaseTemplate, error) {
 }
 
 // groupPRsByCategories iterates through the categories and generates Groups of PRs.
-func groupPRsByCategories(prItems []PRItem, categories []TemplateCategory) map[string][]PRItem {
-	res := make(map[string][]PRItem)
+func groupPRsByCategories(prItems []PR, categories []TemplateCategory) map[string][]PR {
+	res := make(map[string][]PR)
 
 	for _, prItem := range prItems {
 		var categoryFound bool
@@ -220,7 +222,7 @@ func run(w io.Writer, repoRoot, milestoneTitle, prev string) {
 		Previous   string
 		URL        string
 		Categories []string
-		PRs        map[string][]PRItem
+		PRs        map[string][]PR
 	}{
 		Date:       time.Now().Format("2006-01-02"),
 		Current:    *milestone.Title,

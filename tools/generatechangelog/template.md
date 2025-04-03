@@ -1,15 +1,18 @@
-## [{{ .Current }}](https://github.com/FerretDB/FerretDB/releases/tag/{{ .Current }}) ({{ .Date }})
-{{- $root := . }}
-{{- range .Categories }}
-{{ $prs := index $root.PRs . }}
-{{- if $prs }}
-### {{ . }}
-{{ range $prs }}
-- {{ .Title }} by @{{ .User }} in {{ .URL }}
-{{- end }}
-{{- end }}
-{{- end }}
-[All closed issues and pull requests]({{ .URL }}?closed=1).
-{{- if .Previous }}
-[All commits](https://github.com/FerretDB/FerretDB/compare/{{ .Previous }}...{{ .Current }}).
-{{- end }}
+## [{{.Version}}](https://github.com/FerretDB/FerretDB/releases/tag/{{.Version}}) ({{.Date}})
+
+### Breaking changes
+
+### What's Changed
+
+### New Features 🎉
+
+### Enhancements 🛠
+
+### Documentation 📄
+
+### Other Changes 🤖
+
+### New Contributors
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/{{.XXX}}?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/{{.PrevVersion}}...{{.Version}}).
