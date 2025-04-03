@@ -27,7 +27,7 @@ import (
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/singlechecker"
 
-	"github.com/FerretDB/FerretDB/v2/tools/fgithub"
+	"github.com/FerretDB/FerretDB/v2/tools/github"
 )
 
 // todoRE represents correct "// TODO" comment format.
@@ -57,10 +57,10 @@ func main() {
 
 // run analyses TODO comments.
 func run(pass *analysis.Pass) (any, error) {
-	var client *fgithub.Client
+	var client *github.Client
 
 	if !pass.Analyzer.Flags.Lookup("offline").Value.(flag.Getter).Get().(bool) {
-		p, err := fgithub.CacheFilePath()
+		p, err := github.CacheFilePath()
 		if err != nil {
 			log.Panic(err)
 		}
@@ -75,7 +75,7 @@ func run(pass *analysis.Pass) (any, error) {
 			clientDebugF = log.New(log.Writer(), "client-debug: ", log.Flags()).Printf
 		}
 
-		if client, err = fgithub.NewClient(p, log.Printf, cacheDebugF, clientDebugF); err != nil {
+		if client, err = github.NewClient(p, log.Printf, cacheDebugF, clientDebugF); err != nil {
 			log.Panic(err)
 		}
 	}
@@ -125,11 +125,11 @@ func run(pass *analysis.Pass) (any, error) {
 				}
 
 				switch status {
-				case fgithub.IssueOpen:
+				case github.IssueOpen:
 					// nothing
-				case fgithub.IssueClosed:
+				case github.IssueClosed:
 					pass.Reportf(c.Pos(), "invalid TODO: linked issue %s is closed", url)
-				case fgithub.IssueNotFound:
+				case github.IssueNotFound:
 					pass.Reportf(c.Pos(), "invalid TODO: linked issue %s is not found", url)
 				default:
 					log.Panicf("unknown issue status: %s", status)
