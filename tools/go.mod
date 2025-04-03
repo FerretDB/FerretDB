@@ -28,7 +28,7 @@ tool (
 require (
 	github.com/AlekSi/pointer v1.2.0
 	github.com/FerretDB/gh v0.2.0
-	github.com/google/go-github/v69 v69.2.0
+	github.com/google/go-github/v70 v70.0.1-0.20250402125210-3a3f51bc7c5d
 	github.com/rogpeppe/go-internal v1.13.1
 	github.com/sethvargo/go-githubactions v1.3.0
 	github.com/stretchr/testify v1.10.0
@@ -82,7 +82,6 @@ require (
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
-	github.com/google/go-github/v70 v70.0.1-0.20250402125210-3a3f51bc7c5d // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/licensecheck v0.3.1 // indirect
 	github.com/google/rpmpack v0.6.1-0.20240329070804-c2247cbb881a // indirect
