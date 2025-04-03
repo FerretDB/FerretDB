@@ -20,7 +20,7 @@
    - Add first-time contributor credits if any (copy this data from the release draft).
    - Add link to DocumentDB release page.
 10. Run `task docs-version VERSION=X.Y`.
-    Update `versions` in `docusaurus.config.js`.
+    Update `versions` and `createRedirects` in `docusaurus.config.js`.
     Remove the oldest version from `versioned_docs`, `versioned_sidebars`, `versions.json`.
 11. Run `task docs-fmt`.
 12. Commit and push changes to the PR.
