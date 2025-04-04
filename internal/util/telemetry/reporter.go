@@ -61,7 +61,7 @@ type report struct {
 	// opcode (e.g. "OP_MSG", "OP_QUERY") ->
 	// command (e.g. "find", "aggregate") ->
 	// argument that caused an error (e.g. "sort", "$count (stage)"; or "unknown") ->
-	// result (e.g. "NotImplemented", "InternalError"; or "ok") ->
+	// result (e.g. "NotImplemented", "panic", or "ok") ->
 	// count.
 	CommandMetrics map[string]map[string]map[string]map[string]int `json:"command_metrics"`
 }
@@ -212,7 +212,9 @@ func (r *Reporter) makeReport() *report {
 					failures += c
 				}
 
-				commandMetrics[opcode][command][argument]["ok"] = m.Total - failures
+				if ok := m.Total - failures; ok != 0 {
+					commandMetrics[opcode][command][argument]["ok"] = ok
+				}
 			}
 		}
 	}

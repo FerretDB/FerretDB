@@ -86,3 +86,53 @@ func TestReporterLocked(t *testing.T) {
 		})
 	}
 }
+
+func TestMakeReport(t *testing.T) {
+	t.Parallel()
+
+	cm := connmetrics.NewListenerMetrics().ConnMetrics
+
+	cm.Responses.WithLabelValues("OP_MSG", "update", "$set", "NotImplemented").Inc()
+	cm.Responses.WithLabelValues("OP_MSG", "update", "$set", "panic").Inc()
+	cm.Responses.WithLabelValues("OP_MSG", "update", "$set", "ok").Inc()
+
+	cm.Responses.WithLabelValues("OP_MSG", "find", "unknown", "ok").Inc()
+
+	cm.Responses.WithLabelValues("OP_MSG", "atlasVersion", "unknown", "CommandNotFound").Inc()
+
+	sp, err := state.NewProvider("")
+	require.NoError(t, err)
+
+	tr, err := NewReporter(&NewReporterOpts{
+		URL:         "http://127.0.0.1:1/",
+		Dir:         t.TempDir(),
+		F:           new(Flag),
+		ConnMetrics: cm,
+		P:           sp,
+		L:           testutil.Logger(t),
+	})
+	assert.NoError(t, err)
+
+	expected := map[string]map[string]map[string]map[string]int{
+		"OP_MSG": {
+			"update": {
+				"$set": map[string]int{
+					"NotImplemented": 1,
+					"panic":          1,
+					"ok":             1,
+				},
+			},
+			"find": {
+				"unknown": {
+					"ok": 1,
+				},
+			},
+			"atlasVersion": {
+				"unknown": {
+					"CommandNotFound": 1,
+				},
+			},
+		},
+	}
+	assert.Equal(t, expected, tr.makeReport().CommandMetrics)
+}

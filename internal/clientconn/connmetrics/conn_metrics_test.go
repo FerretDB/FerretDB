@@ -21,20 +21,22 @@ import (
 )
 
 func TestGetResponses(t *testing.T) {
-	m := newConnMetrics()
-	m.Responses.WithLabelValues("OP_MSG", "update", "$set", "ok").Inc()
-	m.Responses.WithLabelValues("OP_MSG", "update", "$set", "panic").Inc()
+	cm := newConnMetrics()
+	cm.Responses.WithLabelValues("OP_MSG", "update", "$set", "NotImplemented").Inc()
+	cm.Responses.WithLabelValues("OP_MSG", "update", "$set", "panic").Inc()
+	cm.Responses.WithLabelValues("OP_MSG", "update", "$set", "ok").Inc()
 	expected := map[string]map[string]map[string]commandMetrics{
 		"OP_MSG": {
 			"update": {
 				"$set": commandMetrics{
 					Failures: map[string]int{
-						"panic": 1,
+						"NotImplemented": 1,
+						"panic":          1,
 					},
-					Total: 2,
+					Total: 3,
 				},
 			},
 		},
 	}
-	assert.Equal(t, expected, m.GetResponses())
+	assert.Equal(t, expected, cm.GetResponses())
 }

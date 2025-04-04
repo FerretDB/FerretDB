@@ -32,13 +32,13 @@ type ConnMetrics struct {
 
 // commandMetrics represents command results metrics.
 type commandMetrics struct {
-	Failures map[string]int // count by error codes; no "ok" there
-	Total    int            // both ok and errors
+	Failures map[string]int // count by result, except "ok"
+	Total    int            // both "ok" and failures
 }
 
 // newConnMetrics creates connection metrics.
 func newConnMetrics() *ConnMetrics {
-	return &ConnMetrics{
+	cm := &ConnMetrics{
 		Requests: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
 				Namespace: namespace,
@@ -58,6 +58,11 @@ func newConnMetrics() *ConnMetrics {
 			[]string{"opcode", "command", "argument", "result"},
 		),
 	}
+
+	cm.Requests.WithLabelValues("OP_MSG", "find")
+	cm.Responses.WithLabelValues("OP_MSG", "find", "unknown", "ok")
+
+	return cm
 }
 
 // Describe implements [prometheus.Collector].
@@ -77,7 +82,7 @@ func (cm *ConnMetrics) Collect(ch chan<- prometheus.Metric) {
 // opcode (e.g. "OP_MSG", "OP_QUERY") ->
 // command (e.g. "find", "aggregate") ->
 // argument that caused an error (e.g. "sort", "$count (stage)"; or "unknown") ->
-// result (e.g. "NotImplemented", "InternalError"; or "ok") ->
+// result (e.g. "NotImplemented", "panic", or "ok") ->
 // count.
 func (cm *ConnMetrics) GetResponses() map[string]map[string]map[string]commandMetrics {
 	metrics := make(chan prometheus.Metric)
@@ -104,7 +109,10 @@ func (cm *ConnMetrics) GetResponses() map[string]map[string]map[string]commandMe
 			case "result":
 				result = label.GetValue()
 			default:
-				panic(fmt.Sprintf("%s is not a valid label. Allowed: [opcode, command, argument, result]", label.GetName()))
+				panic(fmt.Sprintf(
+					"%s is not a valid label. Allowed: [opcode, command, argument, result]",
+					label.GetName(),
+				))
 			}
 		}
 
