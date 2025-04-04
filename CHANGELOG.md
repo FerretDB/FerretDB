@@ -17,6 +17,7 @@ This version works only with
 > A new clean installation into an empty data directory/volume is required.
 > All data should be backed up with `mongodump`/`mongoexport` before and restored
 > with `mongorestore`/`mongoimport` after.
+> [See our blog post for more details](https://blog.ferretdb.io/ferretdb-v210-release-performance-improvements-bug-fixes/).
 >
 > We expect future updates to be much smoother.
 
