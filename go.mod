@@ -7,16 +7,16 @@ toolchain go1.24.2
 require (
 	github.com/AlekSi/pointer v1.2.0
 	github.com/FerretDB/wire v0.0.18
-	github.com/alecthomas/kong v1.9.0
+	github.com/alecthomas/kong v1.10.0
 	github.com/arl/statsviz v0.6.0
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgerrcode v0.0.0-20240316143900-6e2875d9b438
-	github.com/jackc/pgx/v5 v5.7.2
+	github.com/jackc/pgx/v5 v5.7.4
 	github.com/oapi-codegen/runtime v1.1.1
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/prometheus/client_golang v1.21.1
 	github.com/prometheus/client_model v0.6.1
-	github.com/prometheus/common v0.62.0
+	github.com/prometheus/common v0.63.0
 	github.com/stretchr/testify v1.10.0
 	github.com/xdg-go/scram v1.1.2
 	go.mongodb.org/mongo-driver v1.17.3
