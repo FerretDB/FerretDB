@@ -84,7 +84,7 @@ type conn struct {
 	l              *slog.Logger
 	h              *handler.Handler
 	m              *connmetrics.ConnMetrics
-	proxy          *proxy.Router
+	proxy          *proxy.Handler
 	lastRequestID  atomic.Int32
 	testRecordsDir string // if empty, no records are created
 }
@@ -114,7 +114,7 @@ func newConn(opts *newConnOpts) (*conn, error) {
 		panic("handler required")
 	}
 
-	var p *proxy.Router
+	var p *proxy.Handler
 	if opts.mode != NormalMode {
 		var err error
 		if p, err = proxy.New(opts.proxyAddr, opts.proxyTLSCertFile, opts.proxyTLSKeyFile, opts.proxyTLSCAFile); err != nil {
@@ -258,7 +258,7 @@ func (c *conn) processMessage(ctx context.Context, bufr *bufio.Reader, bufw *buf
 		}
 
 		// TODO https://github.com/FerretDB/FerretDB/issues/1997
-		proxyHeader, proxyBody = c.proxy.Route(ctx, reqHeader, reqBody)
+		proxyHeader, proxyBody = c.proxy.Handle(ctx, reqHeader, reqBody)
 	}
 
 	// handle request unless we are in proxy mode
