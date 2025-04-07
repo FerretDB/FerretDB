@@ -2604,6 +2604,76 @@ func GetShardKeyValue(ctx context.Context, conn *pgx.Conn, l *slog.Logger, shard
 	return
 }
 
+// GinBsonCompositePathComparePartial is a wrapper for
+//
+//	documentdb_api_internal.gin_bson_composite_path_compare_partial(anonymous bytea, anonymous1 bytea, anonymous12 smallint, anonymous123 internal, OUT gin_bson_composite_path_compare_partial integer).
+func GinBsonCompositePathComparePartial(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 struct{}, anonymous12 struct{}, anonymous123 struct{}) (outGinBsonCompositePathComparePartial int32, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.gin_bson_composite_path_compare_partial", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT gin_bson_composite_path_compare_partial FROM documentdb_api_internal.gin_bson_composite_path_compare_partial($1, $2, $3, $4)", anonymous, anonymous1, anonymous12, anonymous123)
+	if err = row.Scan(&outGinBsonCompositePathComparePartial); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.gin_bson_composite_path_compare_partial", l)
+	}
+	return
+}
+
+// GinBsonCompositePathConsistent is a wrapper for
+//
+//	documentdb_api_internal.gin_bson_composite_path_consistent(anonymous internal, anonymous1 smallint, anonymous12 anyelement, anonymous123 integer, anonymous1234 internal, anonymous12345 internal, OUT gin_bson_composite_path_consistent boolean).
+func GinBsonCompositePathConsistent(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 struct{}, anonymous12 struct{}, anonymous123 int32, anonymous1234 struct{}, anonymous12345 struct{}) (outGinBsonCompositePathConsistent bool, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.gin_bson_composite_path_consistent", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT gin_bson_composite_path_consistent FROM documentdb_api_internal.gin_bson_composite_path_consistent($1, $2, $3, $4, $5, $6)", anonymous, anonymous1, anonymous12, anonymous123, anonymous1234, anonymous12345)
+	if err = row.Scan(&outGinBsonCompositePathConsistent); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.gin_bson_composite_path_consistent", l)
+	}
+	return
+}
+
+// GinBsonCompositePathExtractQuery is a wrapper for
+//
+//	documentdb_api_internal.gin_bson_composite_path_extract_query(anonymous documentdb_core.bson, anonymous1 internal, anonymous12 smallint, anonymous123 internal, anonymous1234 internal, anonymous12345 internal, anonymous123456 internal, OUT gin_bson_composite_path_extract_query internal).
+func GinBsonCompositePathExtractQuery(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 struct{}, anonymous12 struct{}, anonymous123 struct{}, anonymous1234 struct{}, anonymous12345 struct{}, anonymous123456 struct{}) (outGinBsonCompositePathExtractQuery struct{}, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.gin_bson_composite_path_extract_query", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT gin_bson_composite_path_extract_query FROM documentdb_api_internal.gin_bson_composite_path_extract_query($1::bytea, $2, $3, $4, $5, $6, $7)", anonymous, anonymous1, anonymous12, anonymous123, anonymous1234, anonymous12345, anonymous123456)
+	if err = row.Scan(&outGinBsonCompositePathExtractQuery); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.gin_bson_composite_path_extract_query", l)
+	}
+	return
+}
+
+// GinBsonCompositePathExtractValue is a wrapper for
+//
+//	documentdb_api_internal.gin_bson_composite_path_extract_value(anonymous documentdb_core.bson, anonymous1 internal, OUT gin_bson_composite_path_extract_value internal).
+func GinBsonCompositePathExtractValue(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 struct{}) (outGinBsonCompositePathExtractValue struct{}, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.gin_bson_composite_path_extract_value", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT gin_bson_composite_path_extract_value FROM documentdb_api_internal.gin_bson_composite_path_extract_value($1::bytea, $2)", anonymous, anonymous1)
+	if err = row.Scan(&outGinBsonCompositePathExtractValue); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.gin_bson_composite_path_extract_value", l)
+	}
+	return
+}
+
+// GinBsonCompositePathOptions is a wrapper for
+//
+//	documentdb_api_internal.gin_bson_composite_path_options(anonymous internal).
+func GinBsonCompositePathOptions(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}) (err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.gin_bson_composite_path_options", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api_internal.gin_bson_composite_path_options($1)", anonymous)
+	if err = row.Scan(); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.gin_bson_composite_path_options", l)
+	}
+	return
+}
+
 // GinBsonExclusionConsistent is a wrapper for
 //
 //	documentdb_api_internal.gin_bson_exclusion_consistent(anonymous internal, anonymous1 smallint, anonymous12 anyelement, anonymous123 integer, anonymous1234 internal, anonymous12345 internal, OUT gin_bson_exclusion_consistent boolean).
