@@ -28,7 +28,7 @@ metadata:
 spec:
   containers:
     - name: postgres
-      image: ghcr.io/ferretdb/postgres-documentdb:17-0.102.0-ferretdb-2.0.0
+      image: ghcr.io/ferretdb/postgres-documentdb:17-0.102.0-ferretdb-2.1.0
       ports:
         - containerPort: 5432
       env:

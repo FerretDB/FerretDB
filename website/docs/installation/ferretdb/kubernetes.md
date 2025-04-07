@@ -37,7 +37,7 @@ spec:
     spec:
       containers:
         - name: ferretdb
-          image: ghcr.io/ferretdb/ferretdb:2.0.0
+          image: ghcr.io/ferretdb/ferretdb:2.1.0
           ports:
             - containerPort: 27017
           env:
