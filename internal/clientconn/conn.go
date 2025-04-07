@@ -359,6 +359,7 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 	}()
 
 	resHeader = new(wire.MsgHeader)
+
 	var err error
 	switch reqHeader.OpCode {
 	case wire.OpCodeMsg:
@@ -387,33 +388,39 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		connCtx, span = otel.Tracer("").Start(connCtx, "")
 
 		if err == nil {
-			resMsg := c.handleOpMsg(connCtx, &middleware.MsgRequest{OpMsg: msg}, command)
-			resBody = resMsg.OpMsg
+			var cmdHandler middleware.MsgHandlerFunc
+
+			cmd, ok := c.h.Commands()[command]
+			if ok && cmd.Handler != nil {
+				cmdHandler = cmd.Handler
+			} else {
+				cmdHandler = notFound(command)
+			}
+
+			var res *middleware.MsgResponse
+			res, err = cmdHandler(connCtx, &middleware.MsgRequest{OpMsg: msg})
+
+			if res != nil {
+				resBody = res.OpMsg
+			}
 		}
 
 	case wire.OpCodeQuery:
-		connCtx, span = otel.Tracer("").Start(connCtx, "")
-
 		query := reqBody.(*wire.OpQuery)
+
 		resHeader.OpCode = wire.OpCodeReply
 
-		obsMW := &middleware.Observability{
-			L: logging.WithName(c.l, "observability"),
-		}
+		command = query.Query().Command()
 
-		errMW := middleware.NewError("", logging.WithName(c.l, "error"))
+		connCtx, span = otel.Tracer("").Start(connCtx, "")
 
-		replyHandler := c.h.CmdQuery
-		replyHandler = errMW.HandleOpReply(replyHandler)
-		replyHandler = obsMW.HandleOpReply(replyHandler)
+		cmdHandler := c.h.CmdQuery
 
-		// error is handled by middleware.Error
-		reply := must.NotFail(replyHandler(connCtx, &middleware.QueryRequest{OpQuery: query}))
-		resBody = reply.OpReply
+		var res *middleware.ReplyResponse
+		res, err = cmdHandler(connCtx, &middleware.QueryRequest{OpQuery: query})
 
-		if replyErr := reply.CommandError(); replyErr != nil {
-			result = replyErr.Name
-			argument = replyErr.Argument
+		if res != nil {
+			resBody = res.OpReply
 		}
 
 	case wire.OpCodeReply:
@@ -455,6 +462,11 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 			argument = protoErr.Argument
 
 		case wire.OpCodeReply:
+			protoErr := mongoerrors.Make(connCtx, err, "", c.l)
+			resBody = protoErr.Reply()
+			result = protoErr.Name
+			argument = protoErr.Argument
+
 		case wire.OpCodeQuery:
 			fallthrough
 		case wire.OpCodeUpdate:
@@ -514,32 +526,6 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 	}
 
 	return
-}
-
-// handleOpMsg processes OP_MSG requests.
-//
-// The passed context is canceled when the client disconnects.
-func (c *conn) handleOpMsg(connCtx context.Context, msg *middleware.MsgRequest, command string) *middleware.MsgResponse {
-	var cmdHandler middleware.MsgHandlerFunc
-
-	cmd, ok := c.h.Commands()[command]
-	if !ok || cmd.Handler == nil {
-		cmdHandler = notFound(command)
-	} else {
-		cmdHandler = cmd.Handler
-	}
-
-	obsMW := &middleware.Observability{
-		L: logging.WithName(c.l, "observability"),
-	}
-
-	errMW := middleware.NewError("", logging.WithName(c.l, "error"))
-
-	cmdHandler = errMW.HandleOpMsg(cmdHandler)
-	cmdHandler = obsMW.HandleOpMsg(cmdHandler)
-
-	// error is handled by middleware.Error
-	return must.NotFail(cmdHandler(connCtx, msg))
 }
 
 // notFound returns a handler that returns an error indicating that the command is not found.

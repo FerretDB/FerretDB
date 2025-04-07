@@ -2,7 +2,7 @@ module github.com/FerretDB/FerretDB/v2
 
 go 1.24
 
-toolchain go1.24.1
+toolchain go1.24.2
 
 require (
 	github.com/AlekSi/pointer v1.2.0
@@ -26,8 +26,8 @@ require (
 	go.opentelemetry.io/otel/sdk v1.35.0
 	go.opentelemetry.io/otel/trace v1.35.0
 	go.uber.org/automaxprocs v1.6.0
-	golang.org/x/crypto/x509roots/fallback v0.0.0-20250312005926-b369b723c8ad
-	golang.org/x/net v0.37.0
+	golang.org/x/crypto/x509roots/fallback v0.0.0-20250317152234-d0a798f77473
+	golang.org/x/net v0.38.0
 	golang.org/x/sys v0.31.0
 	golang.org/x/term v0.30.0
 )

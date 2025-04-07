@@ -354,6 +354,7 @@ const (
 	ErrLocation40621                               = Code(40621)   // Location40621
 	ErrChangeStreamBadResumeToken                  = Code(40647)   // ChangeStreamBadResumeToken
 	ErrLocation40684                               = Code(40684)   // Location40684
+	ErrInsufficientPrivilege                       = Code(42501)   // InsufficientPrivilege
 	ErrLocation50687                               = Code(50687)   // Location50687
 	ErrLocation50692                               = Code(50692)   // Location50692
 	ErrLocation50694                               = Code(50694)   // Location50694
@@ -436,6 +437,7 @@ const (
 	ErrLocation4161107                             = Code(4161107) // Location4161107
 	ErrLocation4161108                             = Code(4161108) // Location4161108
 	ErrLocation4161109                             = Code(4161109) // Location4161109
+	ErrLocation4341107                             = Code(4341107) // Location4341107
 	ErrLocation4890500                             = Code(4890500) // Location4890500
 	ErrLocation4940400                             = Code(4940400) // Location4940400
 	ErrLocation4940401                             = Code(4940401) // Location4940401
@@ -872,6 +874,7 @@ var pgCodes = map[string]Code{
 	"M008W": ErrLocation40603,                               // 40603
 	"M008Z": ErrChangeStreamBadResumeToken,                  // 40647
 	"M0090": ErrLocation40684,                               // 40684
+	"M00E7": ErrInsufficientPrivilege,                       // 42501
 	"M0091": ErrLocation50694,                               // 50694
 	"M0092": ErrLocation50695,                               // 50695
 	"M0093": ErrLocation50696,                               // 50696
@@ -951,6 +954,7 @@ var pgCodes = map[string]Code{
 	"M00AZ": ErrLocation4161107,                             // 4161107
 	"M00B0": ErrLocation4161108,                             // 4161108
 	"M00B1": ErrLocation4161109,                             // 4161109
+	"M00E6": ErrLocation4341107,                             // 4341107
 	"M00B2": ErrLocation4890500,                             // 4890500
 	"M00B3": ErrLocation4940400,                             // 4940400
 	"M00B4": ErrLocation4940401,                             // 4940401
