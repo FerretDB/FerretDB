@@ -15,20 +15,14 @@
 package logging
 
 import (
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"sync"
-	"time"
 
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
-
-// RecentEntries implements log records interception
-// and stores the last 1024 entries in circular buffer in memory.
-var RecentEntries = NewCircularBuffer(1024)
 
 // circularBuffer is a storage of log records in memory.
 type circularBuffer struct {
@@ -37,8 +31,8 @@ type circularBuffer struct {
 	index   int
 }
 
-// NewCircularBuffer creates a circular buffer for log records in memory.
-func NewCircularBuffer(size int) *circularBuffer {
+// newCircularBuffer creates a circular buffer for log records in memory.
+func newCircularBuffer(size int) *circularBuffer {
 	if size < 1 {
 		panic(fmt.Sprintf("buffer size must be at least 1, but %d provided", size))
 	}
@@ -76,19 +70,13 @@ func (cb *circularBuffer) get() []*slog.Record {
 	return res
 }
 
-// GetArray is a version of Get that returns an array as expected by mongosh.
-func (cb *circularBuffer) GetArray() (*wirebson.Array, error) {
+// getArray is a version of [circularBuffer.get] that returns an array as expected by mongosh.
+func (cb *circularBuffer) getArray() (*wirebson.Array, error) {
 	records := cb.get()
 	res := wirebson.MakeArray(len(records))
 
 	for _, r := range records {
-		b, err := json.Marshal(map[string]any{
-			"t": map[string]time.Time{
-				"$date": r.Time,
-			},
-			"l":   r.Level,
-			"msg": r.Message,
-		})
+		b, err := mongoLogFromRecord(*r, nil, nil).Marshal()
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}

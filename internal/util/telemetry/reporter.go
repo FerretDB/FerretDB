@@ -22,6 +22,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"path/filepath"
 	"runtime"
 	"time"
 
@@ -60,7 +61,7 @@ type report struct {
 	// opcode (e.g. "OP_MSG", "OP_QUERY") ->
 	// command (e.g. "find", "aggregate") ->
 	// argument that caused an error (e.g. "sort", "$count (stage)"; or "unknown") ->
-	// result (e.g. "NotImplemented", "InternalError"; or "ok") ->
+	// result (e.g. "NotImplemented", "panic", or "ok") ->
 	// count.
 	CommandMetrics map[string]map[string]map[string]map[string]int `json:"command_metrics"`
 }
@@ -83,7 +84,7 @@ type Reporter struct {
 // NewReporterOpts represents reporter options.
 type NewReporterOpts struct {
 	URL            string
-	File           string
+	Dir            string
 	F              *Flag
 	DNT            string
 	ExecName       string
@@ -100,8 +101,8 @@ func NewReporter(opts *NewReporterOpts) (*Reporter, error) {
 		return nil, fmt.Errorf("URL is required")
 	}
 
-	if opts.File == "" {
-		return nil, fmt.Errorf("File is required")
+	if opts.Dir == "" {
+		return nil, fmt.Errorf("dir is required")
 	}
 
 	t, locked, err := initialState(opts.F, opts.DNT, opts.ExecName, opts.P.Get().Telemetry, opts.L)
@@ -160,7 +161,7 @@ func (r *Reporter) Run(ctx context.Context) {
 func (r *Reporter) firstReportDelay(ctx context.Context) {
 	msg := fmt.Sprintf(
 		"The telemetry state is undecided; the first report will be sent in %s. "+
-			"Read more about FerretDB telemetry and how to opt out at https://beacon.ferretdb.com.",
+			"Read more about FerretDB telemetry and how to opt out at https://beacon.ferretdb.com",
 		r.UndecidedDelay,
 	)
 	r.L.InfoContext(ctx, msg)
@@ -211,7 +212,9 @@ func (r *Reporter) makeReport() *report {
 					failures += c
 				}
 
-				commandMetrics[opcode][command][argument]["ok"] = m.Total - failures
+				if ok := m.Total - failures; ok != 0 {
+					commandMetrics[opcode][command][argument]["ok"] = ok
+				}
 			}
 		}
 	}
@@ -265,44 +268,44 @@ func (r *Reporter) sendReport(ctx context.Context, report *report) {
 
 	req.Header.Set("Content-Type", "application/json; charset=utf-8")
 
-	res, err := r.c.Do(req)
+	resp, err := r.c.Do(req)
 	if err != nil {
 		r.L.DebugContext(ctx, "Failed to send telemetry report", logging.Error(err))
 		return
 	}
-	defer res.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck // safe to ignore
 
-	if res.StatusCode != http.StatusCreated {
-		r.L.DebugContext(ctx, "Failed to send telemetry report", slog.Int("status", res.StatusCode))
+	if resp.StatusCode != http.StatusCreated {
+		r.L.DebugContext(ctx, "Failed to send telemetry report", slog.Int("status", resp.StatusCode))
 		return
 	}
 
-	var response response
-	if err = json.NewDecoder(res.Body).Decode(&response); err != nil {
+	var res response
+	if err = json.NewDecoder(resp.Body).Decode(&res); err != nil {
 		r.L.DebugContext(ctx, "Failed to read telemetry response", logging.Error(err))
 		return
 	}
 
-	r.L.DebugContext(ctx, "Read telemetry response", slog.Any("response", response))
+	r.L.DebugContext(ctx, "Read telemetry response", slog.Any("response", res))
 
-	if response.UpdateInfo != "" || response.UpdateAvailable {
-		msg := response.UpdateInfo
+	if res.UpdateInfo != "" || res.UpdateAvailable {
+		msg := res.UpdateInfo
 		if msg == "" {
-			msg = "A new version available!"
+			msg = "A new version is available"
 		}
 
 		r.L.InfoContext(
 			ctx,
 			msg,
 			slog.String("current_version", report.Version),
-			slog.String("latest_version", response.LatestVersion),
+			slog.String("latest_version", res.LatestVersion),
 		)
 	}
 
 	if err = r.P.Update(func(s *state.State) {
-		s.LatestVersion = response.LatestVersion
-		s.UpdateInfo = response.UpdateInfo
-		s.UpdateAvailable = response.UpdateAvailable
+		s.LatestVersion = res.LatestVersion
+		s.UpdateInfo = res.UpdateInfo
+		s.UpdateAvailable = res.UpdateAvailable
 	}); err != nil {
 		r.L.ErrorContext(ctx, "Failed to update state with latest version", logging.Error(err))
 	}
@@ -322,10 +325,12 @@ func (r *Reporter) writeReport(report *report) {
 		return
 	}
 
-	if err = os.WriteFile(r.File, b, 0o666); err != nil {
-		r.L.Error("Failed to write telemetry report to local file", slog.String("file", r.File), logging.Error(err))
+	file := filepath.Join(r.Dir, "telemetry.json")
+
+	if err = os.WriteFile(file, b, 0o666); err != nil {
+		r.L.Error("Failed to write telemetry report to local file", slog.String("file", file), logging.Error(err))
 		return
 	}
 
-	r.L.Info("Wrote telemetry report to local file", slog.String("file", r.File))
+	r.L.Info("Wrote telemetry report to local file", slog.String("file", file))
 }

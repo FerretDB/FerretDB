@@ -248,8 +248,10 @@ func main() {
 		Level:        level,
 		RemoveTime:   true,
 		RemoveSource: true,
+		// the logger handles messages from the `go test` command output
+		SkipChecks: true,
 	}
-	logging.Setup(opts, "")
+	logging.SetupDefault(opts, "")
 	logger := slog.Default()
 
 	cmd := kongCtx.Command()

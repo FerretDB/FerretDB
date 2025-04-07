@@ -68,9 +68,6 @@ jobs:
       - name: Build tools
         run: bin/task env-pull
 
-      - name: Create directory
-        run: mkdir -p tmp/githubcache
-
       - name: Build blog
         run: bin/task blog
         env:

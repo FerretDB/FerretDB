@@ -460,6 +460,26 @@ func AssertEqualAltWriteError(t testing.TB, expected mongo.WriteError, altMessag
 	return assert.Equal(t, expected, a)
 }
 
+// RemoveKey returns a copy of the document with the given key removed,
+// and the value of that key (that could be nil if the key was not found).
+func RemoveKey(t testing.TB, doc bson.D, key string) (bson.D, any) {
+	t.Helper()
+
+	res := make(bson.D, 0, len(doc))
+	var v any
+
+	for _, field := range doc {
+		if field.Key == key {
+			v = field.Value
+			continue
+		}
+
+		res = append(res, field)
+	}
+
+	return res, v
+}
+
 // UnsetRaw returns error with all Raw fields unset. It returns nil if err is nil.
 //
 // Error is checked using a regular type assertion; wrapped errors (errors.As) are not checked.

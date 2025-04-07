@@ -42,6 +42,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
+          fetch-depth: 0 # for `git describe` to work
           lfs: true
 
       # This step will fail with "Error: Resource not accessible by integration"
@@ -70,9 +71,6 @@ jobs:
 
       - name: Build tools
         run: bin/task env-pull
-
-      - name: Create directory
-        run: mkdir -p tmp/githubcache
 
       - name: Build docs
         run: bin/task docs

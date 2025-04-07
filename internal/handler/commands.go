@@ -19,10 +19,10 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/FerretDB/wire"
-
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 )
 
 // command represents a handler for single command.
@@ -33,7 +33,7 @@ type command struct {
 	// Handler processes this command.
 	//
 	// The passed context is canceled when the client disconnects.
-	Handler func(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
+	Handler middleware.MsgHandlerFunc
 
 	// Help is shown in the `listCommands` command output.
 	// If empty, that command is hidden, but still can be used.
@@ -42,11 +42,16 @@ type command struct {
 
 // initCommands initializes the commands map for that handler instance.
 func (h *Handler) initCommands() {
-	h.commands = map[string]*command{
+	commands := map[string]*command{
 		// sorted alphabetically
 		"aggregate": {
 			Handler: h.MsgAggregate,
 			Help:    "Returns aggregated data.",
+		},
+		"authenticate": {
+			// TODO https://github.com/FerretDB/FerretDB/issues/1731
+			anonymous: true,
+			Help:      "", // hidden while not implemented
 		},
 		"buildInfo": {
 			Handler:   h.MsgBuildInfo,
@@ -57,6 +62,10 @@ func (h *Handler) initCommands() {
 			Handler:   h.MsgBuildInfo,
 			anonymous: true,
 			Help:      "", // hidden
+		},
+		"bulkWrite": {
+			// TODO https://github.com/FerretDB/FerretDB/issues/4910
+			Help: "", // hidden while not implemented
 		},
 		"collMod": {
 			Handler: h.MsgCollMod,
@@ -69,6 +78,11 @@ func (h *Handler) initCommands() {
 		"compact": {
 			Handler: h.MsgCompact,
 			Help:    "Reduces the disk space collection takes and refreshes its statistics.",
+		},
+		"connPoolStats": {
+			// TODO https://github.com/FerretDB/FerretDB/issues/4909
+			anonymous: true,
+			Help:      "", // hidden while not implemented
 		},
 		"connectionStatus": {
 			Handler:   h.MsgConnectionStatus,
@@ -108,10 +122,6 @@ func (h *Handler) initCommands() {
 			Handler: h.MsgDBStats,
 			Help:    "", // hidden
 		},
-		"debugError": {
-			Handler: h.MsgDebugError,
-			Help:    "Returns error for debugging.",
-		},
 		"delete": {
 			Handler: h.MsgDelete,
 			Help:    "Deletes documents matched by the query.",
@@ -147,6 +157,10 @@ func (h *Handler) initCommands() {
 		"explain": {
 			Handler: h.MsgExplain,
 			Help:    "Returns the execution plan.",
+		},
+		"ferretDebugError": {
+			Handler: h.MsgFerretDebugError,
+			Help:    "Returns error for debugging.",
 		},
 		"find": {
 			Handler: h.MsgFind,
@@ -249,6 +263,10 @@ func (h *Handler) initCommands() {
 			Handler: h.MsgRefreshSessions,
 			Help:    "Updates the last used time of sessions.",
 		},
+		"reIndex": {
+			Handler: h.MsgReIndex,
+			Help:    "Drops and recreates all indexes except default _id index of a collection.",
+		},
 		"renameCollection": {
 			Handler: h.MsgRenameCollection,
 			Help:    "Changes the name of an existing collection.",
@@ -299,54 +317,61 @@ func (h *Handler) initCommands() {
 		// please keep sorted alphabetically
 	}
 
-	if !h.Auth {
-		return
-	}
+	h.commands = make(map[string]*command, len(commands))
 
-	for name, cmd := range h.commands {
-		if cmd.anonymous {
-			continue
+	for name, cmd := range commands {
+		if cmd.Handler == nil {
+			cmd.Handler = notImplemented(name)
 		}
 
-		cmdHandler := h.commands[name].Handler
-
-		h.commands[name].Handler = func(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-			if err := checkAuthentication(ctx, name, h.L); err != nil {
-				return nil, err
-			}
-
-			return cmdHandler(ctx, msg)
+		if h.Auth && !cmd.anonymous {
+			cmd.Handler = auth(cmd.Handler, logging.WithName(h.L, "auth"), name)
 		}
+
+		h.commands[name] = cmd
 	}
-}
-
-// checkAuthentication returns error if SCRAM conversation is absent or did not succeed.
-func checkAuthentication(ctx context.Context, command string, l *slog.Logger) error {
-	conv := conninfo.Get(ctx).Conv()
-	succeed := conv.Succeed()
-	username := conv.Username()
-
-	switch {
-	case conv == nil:
-		l.WarnContext(ctx, "checkAuthentication: no existing conversation")
-
-	case !succeed:
-		l.WarnContext(ctx, "checkAuthentication: conversation did not succeed", slog.String("username", username))
-
-	default:
-		l.DebugContext(ctx, "checkAuthentication: passed", slog.String("username", conv.Username()))
-
-		return nil
-	}
-
-	return mongoerrors.NewWithArgument(
-		mongoerrors.ErrUnauthorized,
-		fmt.Sprintf("Command %s requires authentication", command),
-		"checkAuthentication",
-	)
 }
 
 // Commands returns a map of enabled commands.
 func (h *Handler) Commands() map[string]*command {
 	return h.commands
+}
+
+// auth is a middleware that wraps the command handler with authentication check.
+//
+// Context must contain [*conninfo.ConnInfo].
+func auth(next middleware.MsgHandlerFunc, l *slog.Logger, command string) middleware.MsgHandlerFunc {
+	return func(ctx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
+		conv := conninfo.Get(ctx).Conv()
+		succeed := conv.Succeed()
+		username := conv.Username()
+
+		switch {
+		case conv == nil:
+			l.WarnContext(ctx, "No existing conversation")
+
+		case !succeed:
+			l.WarnContext(ctx, "Conversation did not succeed", slog.String("username", username))
+
+		default:
+			l.DebugContext(ctx, "Authentication passed", slog.String("username", username))
+
+			return next(ctx, req)
+		}
+
+		return nil, mongoerrors.New(
+			mongoerrors.ErrUnauthorized,
+			fmt.Sprintf("Command %s requires authentication", command),
+		)
+	}
+}
+
+// notImplemented returns a handler that returns an error indicating that the command is not implemented.
+func notImplemented(command string) middleware.MsgHandlerFunc {
+	return func(context.Context, *middleware.MsgRequest) (*middleware.MsgResponse, error) {
+		return nil, mongoerrors.New(
+			mongoerrors.ErrNotImplemented,
+			fmt.Sprintf("Command %s is not implemented", command),
+		)
+	}
 }

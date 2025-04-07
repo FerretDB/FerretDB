@@ -18,10 +18,11 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
+	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api_internal"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
@@ -31,20 +32,20 @@ import (
 // MsgCreateIndexes implements `createIndexes` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgCreateIndexes(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	spec, err := msg.RawDocument()
+func (h *Handler) MsgCreateIndexes(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
+	spec, err := req.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
-	}
-
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
-		return nil, err
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
 	doc, err := spec.Decode()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
+	}
+
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
+		return nil, err
 	}
 
 	dbName, err := getRequiredParam[string](doc, "$db")
@@ -67,6 +68,17 @@ func (h *Handler) MsgCreateIndexes(connCtx context.Context, msg *wire.OpMsg) (*w
 	}
 	defer conn.Release()
 
+	res, err := h.createIndexes(connCtx, conn, doc.Command(), dbName, spec)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return middleware.Response(res)
+}
+
+// createIndexes calls DocumentDB API to create indexes, decodes and maps embedded error to command error if any.
+// It returns a document for createIndexes response.
+func (h *Handler) createIndexes(connCtx context.Context, conn *documentdb.Conn, command, dbName string, spec wirebson.RawDocument) (wirebson.AnyDocument, error) { //nolint:lll // for readability
 	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/1147
 	// resRaw, _, _, err := documentdb_api.CreateIndexesBackground(connCtx, conn.Conn(), h.L, dbName, spec)
 	resRaw, err := documentdb_api_internal.CreateIndexesNonConcurrently(connCtx, conn.Conn(), h.L, dbName, spec, true)
@@ -78,24 +90,24 @@ func (h *Handler) MsgCreateIndexes(connCtx context.Context, msg *wire.OpMsg) (*w
 
 	res, err := resRaw.DecodeDeep()
 	if err != nil {
-		h.L.WarnContext(connCtx, "MsgCreateIndexes failed to decode response", logging.Error(err))
-		return wire.NewOpMsg(resRaw)
+		h.L.WarnContext(connCtx, "CreateIndexes failed to decode response", logging.Error(err), slog.String("command", command))
+		return resRaw, nil
 	}
 
 	lazyRes := slog.Any("res", logging.LazyString(res.LogMessage))
 
-	h.L.DebugContext(connCtx, "MsgCreateIndexes raw response", lazyRes)
+	h.L.DebugContext(connCtx, "CreateIndexes raw response", lazyRes, slog.String("command", command))
 
 	raw, _ := res.Get("raw").(*wirebson.Document)
 	if raw == nil {
-		h.L.WarnContext(connCtx, "MsgCreateIndexes: unexpected response", lazyRes)
-		return wire.NewOpMsg(resRaw)
+		h.L.WarnContext(connCtx, "CreateIndexes: unexpected response", lazyRes, slog.String("command", command))
+		return res, nil
 	}
 
 	defaultShard, _ := raw.Get("defaultShard").(*wirebson.Document)
 	if defaultShard == nil {
-		h.L.WarnContext(connCtx, "MsgCreateIndexes: unexpected response", lazyRes)
-		return wire.NewOpMsg(resRaw)
+		h.L.WarnContext(connCtx, "CreateIndexes: unexpected response", lazyRes, slog.String("command", command))
+		return res, nil
 	}
 
 	c, _ := defaultShard.Get("code").(int32)
@@ -103,11 +115,11 @@ func (h *Handler) MsgCreateIndexes(connCtx context.Context, msg *wire.OpMsg) (*w
 
 	if code != 0 {
 		errMsg, _ := defaultShard.Get("errmsg").(string)
-		return nil, mongoerrors.NewWithArgument(code, errMsg, doc.Command())
+		return nil, mongoerrors.NewWithArgument(code, errMsg, command)
 	}
 
 	resOk := defaultShard.Get("ok").(int32)
 	must.NoError(defaultShard.Replace("ok", float64(resOk)))
 
-	return wire.NewOpMsg(defaultShard)
+	return defaultShard, nil
 }

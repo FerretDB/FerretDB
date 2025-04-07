@@ -1,0 +1,8 @@
+---
+label: Query Operators
+position: 1
+link:
+  type: generated-index
+  description: >
+    The list of some of the different types of query operators available,
+    including comparison operators, logical operators, array operators, etc.

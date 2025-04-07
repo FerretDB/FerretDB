@@ -22,12 +22,14 @@ import (
 	"io"
 	"log/slog"
 	"maps"
+	"os"
 	"runtime"
 	"slices"
 	"strconv"
 	"sync"
 
-	"github.com/FerretDB/FerretDB/v2/internal/util/devbuild"
+	"golang.org/x/term"
+
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
@@ -40,8 +42,6 @@ const timeLayout = "2006-01-02T15:04:05.000Z0700"
 //
 // See https://golang.org/s/slog-handler-guide.
 //
-// TODO https://github.com/FerretDB/FerretDB/issues/4438
-//
 //nolint:vet // for readability
 type consoleHandler struct {
 	opts *NewHandlerOpts
@@ -52,24 +52,33 @@ type consoleHandler struct {
 
 	m   *sync.Mutex
 	out io.Writer
-}
 
-// groupOrAttrs contains group name or attributes.
-type groupOrAttrs struct {
-	group string
-	attrs []slog.Attr
+	esc *term.EscapeCodes
 }
 
 // newConsoleHandler creates a new console handler.
+//
+// If out is a valid tty, the consoleHandler will send colorized messages.
+// If NO_COLOR environment variable is set colorized messages are disabled.
 func newConsoleHandler(out io.Writer, opts *NewHandlerOpts, testAttrs map[string]any) *consoleHandler {
 	must.NotBeZero(opts)
 
-	return &consoleHandler{
+	ch := &consoleHandler{
 		opts:      opts,
 		testAttrs: testAttrs,
 		m:         new(sync.Mutex),
 		out:       out,
 	}
+
+	if os.Getenv("NO_COLOR") != "" {
+		return ch
+	}
+
+	if f, ok := out.(*os.File); ok && term.IsTerminal(int(f.Fd())) {
+		ch.esc = term.NewTerminal(f, "").Escape
+	}
+
+	return ch
 }
 
 // Enabled implements [slog.Handler].
@@ -92,17 +101,16 @@ func (ch *consoleHandler) Handle(ctx context.Context, r slog.Record) error {
 		buf.WriteRune('\t')
 
 		if ch.testAttrs != nil {
-			ch.testAttrs["time"] = t
+			ch.testAttrs[slog.TimeKey] = t
 		}
 	}
 
 	if !ch.opts.RemoveLevel {
-		l := r.Level.String()
-		buf.WriteString(l)
+		buf.WriteString(ch.colorizedLevel(r.Level))
 		buf.WriteRune('\t')
 
 		if ch.testAttrs != nil {
-			ch.testAttrs["level"] = l
+			ch.testAttrs[slog.LevelKey] = r.Level.String()
 		}
 	}
 
@@ -114,7 +122,7 @@ func (ch *consoleHandler) Handle(ctx context.Context, r slog.Record) error {
 			buf.WriteRune('\t')
 
 			if ch.testAttrs != nil {
-				ch.testAttrs["source"] = s
+				ch.testAttrs[slog.SourceKey] = s
 			}
 		}
 	}
@@ -123,11 +131,11 @@ func (ch *consoleHandler) Handle(ctx context.Context, r slog.Record) error {
 		buf.WriteString(r.Message)
 
 		if ch.testAttrs != nil {
-			ch.testAttrs["msg"] = r.Message
+			ch.testAttrs[slog.MessageKey] = r.Message
 		}
 	}
 
-	if m := ch.toMap(r); len(m) > 0 {
+	if m := attrs(r, ch.ga); len(m) > 0 {
 		buf.WriteRune('\t')
 
 		var b bytes.Buffer
@@ -135,7 +143,7 @@ func (ch *consoleHandler) Handle(ctx context.Context, r slog.Record) error {
 		encoder.SetEscapeHTML(false)
 
 		err := encoder.Encode(m)
-		if devbuild.Enabled || ch.opts.CheckMessages {
+		if !ch.opts.SkipChecks {
 			must.NoError(err)
 		}
 
@@ -157,7 +165,6 @@ func (ch *consoleHandler) Handle(ctx context.Context, r slog.Record) error {
 	defer ch.m.Unlock()
 
 	_, err := buf.WriteTo(ch.out)
-
 	return err
 }
 
@@ -172,6 +179,7 @@ func (ch *consoleHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 		ga:        append(slices.Clone(ch.ga), groupOrAttrs{attrs: attrs}),
 		m:         ch.m,
 		out:       ch.out,
+		esc:       ch.esc,
 		testAttrs: ch.testAttrs,
 	}
 }
@@ -187,62 +195,30 @@ func (ch *consoleHandler) WithGroup(name string) slog.Handler {
 		ga:        append(slices.Clone(ch.ga), groupOrAttrs{group: name}),
 		m:         ch.m,
 		out:       ch.out,
+		esc:       ch.esc,
 		testAttrs: ch.testAttrs,
 	}
 }
 
-// toMap converts attributes to a map.
-// Attributes with duplicate keys are overwritten, and the order of keys is ignored.
-func (ch *consoleHandler) toMap(r slog.Record) map[string]any {
-	m := make(map[string]any, r.NumAttrs())
-
-	r.Attrs(func(attr slog.Attr) bool {
-		if attr.Key != "" {
-			m[attr.Key] = resolve(attr.Value)
-
-			return true
-		}
-
-		if attr.Value.Kind() == slog.KindGroup {
-			for _, gAttr := range attr.Value.Group() {
-				m[gAttr.Key] = resolve(gAttr.Value)
-			}
-		}
-
-		return true
-	})
-
-	for i := len(ch.ga) - 1; i >= 0; i-- {
-		if ch.ga[i].group != "" && len(m) > 0 {
-			m = map[string]any{ch.ga[i].group: m}
-
-			continue
-		}
-
-		for _, attr := range ch.ga[i].attrs {
-			m[attr.Key] = resolve(attr.Value)
-		}
+// colorizedLevel returns colorized string representation of l [slog.Level].
+// If ch is unable to print colorized messages, non-colorized string is returned.
+func (ch *consoleHandler) colorizedLevel(l slog.Level) string {
+	if ch.esc == nil {
+		return l.String()
 	}
 
-	return m
-}
+	format := "%s%s%s"
 
-// resolve returns underlying attribute value, or a map for [slog.KindGroup] type.
-func resolve(v slog.Value) any {
-	v = v.Resolve()
-
-	if v.Kind() != slog.KindGroup {
-		return v.Any()
+	switch {
+	case l < slog.LevelInfo:
+		return fmt.Sprintf(format, ch.esc.Blue, l, ch.esc.Reset)
+	case l < slog.LevelWarn:
+		return fmt.Sprintf(format, ch.esc.Green, l, ch.esc.Reset)
+	case l < slog.LevelError:
+		return fmt.Sprintf(format, ch.esc.Yellow, l, ch.esc.Reset)
+	default:
+		return fmt.Sprintf(format, ch.esc.Red, l, ch.esc.Reset)
 	}
-
-	g := v.Group()
-	m := make(map[string]any, len(g))
-
-	for _, attr := range g {
-		m[attr.Key] = resolve(attr.Value)
-	}
-
-	return m
 }
 
 // check interfaces
