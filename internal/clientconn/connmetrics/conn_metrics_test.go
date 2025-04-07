@@ -36,6 +36,11 @@ func TestGetResponses(t *testing.T) {
 					Total: 3,
 				},
 			},
+			"find": {
+				"unknown": commandMetrics{
+					Total: 0,
+				},
+			},
 		},
 	}
 	assert.Equal(t, expected, cm.GetResponses())
