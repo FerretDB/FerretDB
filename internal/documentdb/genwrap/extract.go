@@ -15,138 +15,66 @@
 package main
 
 import (
-	"log"
-	"sort"
+	"context"
+	"fmt"
+	"slices"
 	"strings"
 
-	"golang.org/x/exp/maps"
+	"github.com/jackc/pgx/v5"
+
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
-// extractedRoutine is SQL function or procedure information fetched from the database.
-type extractedRoutine struct {
-	SpecificSchema string
-	SpecificName   string // unique identifier of function in case of overloading
-	RoutineName    string // name of the function
-	RoutineType    string
-	DataType       *string
-	UDTSchema      *string
-	UDTName        *string
-	Params         []extractedRoutineParam
-}
-
-// toDataType returns SQL datatype. If the data type is USER-DEFINED,
-// it returns schema and name concatenated by dot.
-func (r *extractedRoutine) toDataType() string {
-	dataType := *r.DataType
-	if *r.DataType == "USER-DEFINED" {
-		dataType = *r.UDTSchema + "." + *r.UDTName
+// Extract returns rows of routines and parameters for given schemas.
+// Returned routines are sorted by schema name, their name and its parameter position.
+func Extract(ctx context.Context, uri string, schemas []string) ([]map[string]any, error) {
+	conn, err := pgx.Connect(ctx, uri)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
-	return dataType
-}
+	defer conn.Close(ctx)
 
-// extractedRoutineParam is a parameter of a routine fetched from the database.
-type extractedRoutineParam struct {
-	ParameterName    *string
-	ParameterMode    *string
-	ParameterDefault *string
-	DataType         *string
-	UDTSchema        *string
-	UDTName          *string
-}
+	slices.Sort(schemas)
+	schemas = slices.Compact(schemas)
 
-// toDataType returns SQL datatype. If the data type is USER-DEFINED,
-// it returns schema and name concatenated by dot.
-func (p *extractedRoutineParam) toDataType() string {
-	dataType := *p.DataType
-	if *p.DataType == "USER-DEFINED" {
-		dataType = *p.UDTSchema + "." + *p.UDTName
+	placeholders := make([]string, len(schemas))
+	args := make([]any, len(schemas))
+
+	for i, schema := range schemas {
+		placeholders[i] = fmt.Sprintf("$%d", i+1)
+		args[i] = schema
 	}
 
-	return dataType
-}
+	// https://www.postgresql.org/docs/current/infoschema-routines.html
+	// https://www.postgresql.org/docs/current/infoschema-parameters.html
+	q := fmt.Sprintf(`
+	SELECT
+		specific_schema,
+		specific_name,
+		routine_name,
+		routine_type,
+		r.data_type AS routine_data_type,
+		r.type_udt_schema AS routine_udt_schema,
+		r.type_udt_name AS routine_udt_name,
+		parameter_name,
+		parameter_mode,
+		parameter_default,
+		p.data_type,
+		p.udt_schema,
+		p.udt_name
+	FROM information_schema.routines AS r
+		LEFT JOIN information_schema.parameters AS p USING (specific_schema, specific_name)
+	WHERE specific_schema IN (%s)
+	ORDER BY specific_schema, specific_name, ordinal_position
+	`,
+		strings.Join(placeholders, ", "),
+	)
 
-// toDefault returns default SQL value if any.
-func (p *extractedRoutineParam) toDefault() string {
-	var defaultValue string
-
-	if p.ParameterDefault != nil {
-		d, _, _ := strings.Cut(*p.ParameterDefault, "::")
-		defaultValue = " DEFAULT " + d
+	rows, err := conn.Query(ctx, q, args...)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
-	return defaultValue
-}
-
-// Extract takes rows and the schema and returns a list routines for the given schema.
-//
-// The routines that do not belong to the schema is ignored.
-func Extract(rows []map[string]any, schema string) []*extractedRoutine {
-	routines := map[string]*extractedRoutine{}
-	params := map[string][]extractedRoutineParam{}
-
-	for _, row := range rows {
-		specificSchema := row["specific_schema"].(string)
-		if schema != specificSchema {
-			continue
-		}
-
-		specificName := row["specific_name"].(string)
-
-		// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/1148
-		if strings.Contains(strings.ToLower(specificName), "shard") {
-			log.Printf("Skipping %q", specificName)
-			continue
-		}
-
-		if _, ok := routines[specificName]; !ok {
-			var routineType string
-			if typ := row["routine_type"]; typ != nil {
-				routineType = typ.(string)
-			}
-
-			routines[specificName] = &extractedRoutine{
-				SpecificSchema: specificSchema,
-				RoutineName:    row["routine_name"].(string),
-				SpecificName:   row["specific_name"].(string),
-				DataType:       getStringP(row["routine_data_type"]),
-				UDTSchema:      getStringP(row["routine_udt_schema"]),
-				UDTName:        getStringP(row["routine_udt_name"]),
-				RoutineType:    routineType,
-			}
-		}
-
-		params[specificName] = append(params[specificName], extractedRoutineParam{
-			ParameterName:    getStringP(row["parameter_name"]),
-			ParameterMode:    getStringP(row["parameter_mode"]),
-			ParameterDefault: getStringP(row["parameter_default"]),
-			DataType:         getStringP(row["data_type"]),
-			UDTSchema:        getStringP(row["udt_schema"]),
-			UDTName:          getStringP(row["udt_name"]),
-		})
-	}
-
-	for _, specificName := range maps.Keys(routines) {
-		r := routines[specificName]
-		r.Params = params[r.SpecificName]
-	}
-
-	values := maps.Values(routines)
-
-	sort.SliceStable(values, func(i, j int) bool {
-		return values[i].SpecificName > values[j].SpecificName
-	})
-
-	return values
-}
-
-// getStringP gets string pointer type from the given value.
-func getStringP(v any) *string {
-	if v == nil {
-		return nil
-	}
-
-	s := v.(string)
-
-	return &s
+	return pgx.CollectRows(rows, pgx.RowToMap)
 }

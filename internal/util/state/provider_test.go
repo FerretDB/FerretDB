@@ -20,12 +20,32 @@ import (
 	"testing"
 	"time"
 
+	"github.com/AlekSi/pointer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestProvider(t *testing.T) {
 	t.Parallel()
+
+	t.Run("Var", func(t *testing.T) {
+		t.Parallel()
+
+		p, err := NewProvider("")
+		require.NoError(t, err)
+
+		var1 := p.Var()
+		var2 := p.Var()
+
+		assert.Contains(t, var1.String(), "undecided")
+		assert.Contains(t, var2.String(), "undecided")
+
+		err = p.Update(func(s *State) { s.Telemetry = pointer.ToBool(true) })
+		require.NoError(t, err)
+
+		assert.Contains(t, var1.String(), "enabled")
+		assert.Contains(t, var2.String(), "enabled")
+	})
 
 	t.Run("Get", func(t *testing.T) {
 		t.Parallel()
@@ -105,5 +125,31 @@ func TestProvider(t *testing.T) {
 		require.NoError(t, err)
 
 		<-got
+	})
+}
+
+func TestProviderDir(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Normal", func(t *testing.T) {
+		t.Parallel()
+
+		dir := t.TempDir()
+		require.NoError(t, os.RemoveAll(dir))
+		assert.NoDirExists(t, dir)
+
+		p, err := NewProviderDir(dir)
+		require.NoError(t, err)
+		assert.NotNil(t, p)
+		assert.DirExists(t, dir)
+		assert.FileExists(t, filepath.Join(dir, "state.json"))
+	})
+
+	t.Run("NoAccess", func(t *testing.T) {
+		t.Parallel()
+
+		p, err := NewProviderDir("/")
+		require.Error(t, err)
+		assert.Nil(t, p)
 	})
 }

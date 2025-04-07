@@ -41,9 +41,9 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/observability"
 )
 
-// testEvent represents a single even emitted by `go test -json`.
+// testEvent represents a single event emitted by `go test -json` or `go build -json`.
 //
-// See https://pkg.go.dev/cmd/test2json#hdr-Output_Format.
+// See `go doc test2json` and `go help buildjson`.
 type testEvent struct {
 	Time           time.Time `json:"Time"`
 	Action         string    `json:"Action"`
@@ -51,6 +51,8 @@ type testEvent struct {
 	Test           string    `json:"Test"`
 	Output         string    `json:"Output"`
 	ElapsedSeconds float64   `json:"Elapsed"`
+
+	ImportPath string `json:"ImportPath"`
 }
 
 // Elapsed returns an elapsed time.
@@ -80,7 +82,7 @@ func listTestFuncs(ctx context.Context, dir, re string, logger *slog.Logger) ([]
 	cmd.Stdout = &buf
 	cmd.Stderr = os.Stderr
 
-	logger.InfoContext(ctx, fmt.Sprintf("Running %s", strings.Join(cmd.Args, " ")))
+	logger.InfoContext(ctx, "Running tests", slog.String("command", strings.Join(cmd.Args, " ")))
 
 	if err := cmd.Run(); err != nil {
 		return nil, lazyerrors.Error(err)
@@ -347,6 +349,11 @@ func runGoTest(runCtx context.Context, opts *runGoTestOpts) (resErr error) {
 			break
 		}
 
+		// skip build events for now
+		if event.ImportPath != "" {
+			continue
+		}
+
 		if !firstEvent {
 			runSpan.AddEvent("first event")
 			firstEvent = true
@@ -479,7 +486,11 @@ func runGoTest(runCtx context.Context, opts *runGoTestOpts) (resErr error) {
 				msg += fmt.Sprintf(" %d/%s", done, totalTests)
 			}
 
-			logOutput := opts.logger.WarnContext
+			logOutput := opts.logger.ErrorContext
+
+			if event.Action == "skip" {
+				logOutput = opts.logger.WarnContext
+			}
 
 			if event.Action == "pass" {
 				if !opts.logger.Enabled(runCtx, slog.LevelDebug) {
@@ -505,7 +516,14 @@ func runGoTest(runCtx context.Context, opts *runGoTestOpts) (resErr error) {
 		}
 	}
 
-	var unfinished []string
+	logUnfinishedTests(runCtx, opts.logger, results)
+
+	return
+}
+
+// logUnfinishedTests logs tests that panicked or somehow unfinished, trying to provide the best possible output.
+func logUnfinishedTests(runCtx context.Context, logger *slog.Logger, results map[string]*testResult) {
+	var tests []string
 
 	for t, res := range results {
 		switch res.lastAction {
@@ -513,59 +531,51 @@ func runGoTest(runCtx context.Context, opts *runGoTestOpts) (resErr error) {
 			continue
 		}
 
-		unfinished = append(unfinished, t)
+		tests = append(tests, t)
 	}
 
-	if unfinished == nil {
+	if tests == nil {
 		return
 	}
 
-	slices.Sort(unfinished)
+	slices.Sort(tests)
 
-	opts.logger.ErrorContext(runCtx, "")
+	logger.ErrorContext(runCtx, "")
 
-	opts.logger.ErrorContext(runCtx, "Some tests did not finish:")
+	logger.ErrorContext(runCtx, "Some tests did not finish:")
 
-	for _, t := range unfinished {
-		opts.logger.ErrorContext(runCtx, fmt.Sprintf("  %s", t))
+	for _, t := range tests {
+		logger.ErrorContext(runCtx, fmt.Sprintf("  %s", t))
 	}
 
-	opts.logger.ErrorContext(runCtx, "")
-
-	// On panic, the last event will not be "fail"; see https://github.com/golang/go/issues/38382.
-	// Try to provide the best possible output in that case.
+	logger.ErrorContext(runCtx, "")
 
 	var panicked string
 
-	for _, t := range unfinished {
-		if !slices.ContainsFunc(results[t].outputs, func(s string) bool {
+	for _, t := range tests {
+		if slices.ContainsFunc(results[t].outputs, func(s string) bool {
 			return strings.Contains(s, "panic: ")
 		}) {
-			continue
-		}
-
-		if panicked != "" {
+			panicked = t
 			break
 		}
-
-		panicked = t
 	}
 
-	for _, t := range unfinished {
+	// We can't always associate the panic with test; see https://github.com/golang/go/issues/38382.
+	// If we located the test, log only it. Otherwise, log all unfinished tests.
+	for _, t := range tests {
 		if panicked != "" && t != panicked {
 			continue
 		}
 
-		opts.logger.ErrorContext(runCtx, fmt.Sprintf("%s:", t))
+		logger.ErrorContext(runCtx, fmt.Sprintf("%s:", t))
 
 		for _, l := range results[t].outputs {
-			opts.logger.ErrorContext(runCtx, l)
+			logger.ErrorContext(runCtx, l)
 		}
 
-		opts.logger.ErrorContext(runCtx, "")
+		logger.ErrorContext(runCtx, "")
 	}
-
-	return
 }
 
 // testsRun runs tests specified by the shard index and total or by the run regex

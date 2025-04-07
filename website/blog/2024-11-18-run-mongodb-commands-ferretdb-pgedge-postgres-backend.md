@@ -108,8 +108,8 @@ db.books.find({ title: 'Learning SQL' })
 
 Output:
 
-```json5
-[
+```js
+response = [
   {
     _id: ObjectId('672ce25eee320eddb90952c3'),
     title: 'Learning SQL',
@@ -148,8 +148,8 @@ db.books.find({}).sort({ publication_year: -1 })
 
 The entire collection is returned, sorted by the `publication_year` in descending order:
 
-```json5
-[
+```js
+response = [
   {
     _id: ObjectId('672ce25eee320eddb90952c3'),
     title: 'Learning SQL',

@@ -616,11 +616,11 @@ func TestWhatsMyURICommand(t *testing.T) {
 	}
 }
 
-// TestWhatsMyURICommandSingleConn tests that SingleConn behaves like advertised.
-func TestWhatsMyURICommandSingleConn(t *testing.T) {
+// TestWhatsMyURICommandPoolSize tests that PoolSize behaves like advertised.
+func TestWhatsMyURICommandPoolSize(t *testing.T) {
 	t.Parallel()
 
-	s := setup.SetupWithOpts(t, &setup.SetupOpts{SingleConn: true})
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{PoolSize: 1})
 
 	collection1 := s.Collection
 	databaseName := s.Collection.Database().Name()

@@ -17,6 +17,7 @@ const config = {
   onBrokenAnchors: "throw",
   onBrokenLinks: "throw",
   onBrokenMarkdownLinks: "throw",
+  onDuplicateRoutes: "throw",
 
   i18n: {
     defaultLocale: "en",
@@ -26,7 +27,7 @@ const config = {
   stylesheets: [{ href: "/codapi/snippet.css" }],
 
   scripts: [
-    { src: "https://plausible.io/js/script.js", defer: true, "data-domain": "blog.ferretdb.io" },
+    { src: "https://plausible.io/js/script.hash.js", defer: true, "data-domain": "blog.ferretdb.io" },
     { src: "/codapi/snippet.js", defer: true },
   ],
 
@@ -56,8 +57,11 @@ const config = {
           showReadingTime: true,
           authorsMapPath: "authors.yml",
           postsPerPage: 8,
+
           onInlineTags: "throw",
           onUntruncatedBlogPosts: "throw",
+          // TODO https://github.com/FerretDB/FerretDB/issues/4587
+          // onInlineAuthors: "throw",
 
           blogSidebarTitle: "All posts",
           blogSidebarCount: "ALL",
@@ -140,7 +144,7 @@ const config = {
               },
               {
                 label: "Slack",
-                href: "https://join.slack.com/t/ferretdb/shared_invite/zt-zqe9hj8g-ZcMG3~5Cs5u9uuOPnZB8~A",
+                href: "https://slack.ferretdb.io/",
               },
               {
                 label: "X (Twitter)",

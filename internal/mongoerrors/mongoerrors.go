@@ -35,9 +35,8 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// skip for now
-// generate go run ./generate.go
-// generate ../../bin/stringer -linecomment -type Code
+//go:generate go run ./generate.go
+//go:generate ../../bin/stringer -linecomment -type Code
 
 // Code represents MongoDB error code.
 type Code int32
@@ -106,26 +105,30 @@ func Make(ctx context.Context, err error, arg string, l *slog.Logger) *Error {
 		}
 	}
 
-	if devbuild.Enabled && missingRE.MatchString(pg.Message) {
-		l.LogAttrs(ctx, logging.LevelDPanic, "Missing", slog.String("arg", arg), slog.String("error", goString(err)))
+	if devbuild.Enabled {
+		if pg.Code == pgerrcode.UndefinedFunction || missingRE.MatchString(pg.Message) {
+			l.LogAttrs(
+				ctx, logging.LevelDPanic, "Missing",
+				slog.String("arg", arg), slog.String("error", goString(err)),
+			)
+		}
 	}
 
 	var code Code
 
 	switch pg.Code {
-	case pgerrcode.UndefinedFunction:
-		// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/853
-		l.ErrorContext(ctx, "Missing function", slog.String("arg", arg), slog.String("error", goString(err)))
-		code = ErrInternalError
+	case pgerrcode.QueryCanceled:
+		code = ErrMaxTimeMSExpired
 
 	case pgerrcode.ConnectionFailure:
 		// mainly for tests
 		l.ErrorContext(ctx, "Connection failure", slog.String("arg", arg), slog.String("error", goString(err)))
 		code = ErrInternalError
-	}
 
-	if len(pg.Code) == 5 && pg.Code[0] == 'M' {
-		code = pgCodes[pg.Code]
+	default:
+		if len(pg.Code) == 5 && pg.Code[0] == 'M' {
+			code = pgCodes[pg.Code]
+		}
 	}
 
 	if code == 0 {
@@ -136,7 +139,7 @@ func Make(ctx context.Context, err error, arg string, l *slog.Logger) *Error {
 			level = slog.LevelError
 		}
 
-		// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/1147
+		// TODO https://github.com/microsoft/documentdb/issues/25
 		if arg == "documentdb_api_internal.create_indexes_non_concurrently" {
 			level = slog.LevelError
 		}

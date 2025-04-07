@@ -298,13 +298,13 @@ db.testCollection.insertMany([
 
 Output:
 
-```json5
-{
+```js
+response = {
   acknowledged: true,
   insertedIds: {
-    '0': ObjectId('66741445f0f21e98f96bade8'),
-    '1': ObjectId('66741445f0f21e98f96bade9'),
-    '2': ObjectId('66741445f0f21e98f96badea')
+    0: ObjectId('66741445f0f21e98f96bade8'),
+    1: ObjectId('66741445f0f21e98f96bade9'),
+    2: ObjectId('66741445f0f21e98f96badea')
   }
 }
 ```
@@ -317,8 +317,8 @@ db.testCollection.updateOne({ name: 'Alice' }, { $set: { age: 26 } })
 
 Output:
 
-```json5
-{
+```js
+response = {
   acknowledged: true,
   insertedId: null,
   matchedCount: 1,
@@ -335,8 +335,8 @@ db.testCollection.deleteMany({ age: { $lt: 35 } })
 
 Output:
 
-```json5
-{ acknowledged: true, deletedCount: 2 }
+```js
+response = { acknowledged: true, deletedCount: 2 }
 ```
 
 Count the number of documents in the collection:
@@ -347,8 +347,8 @@ db.testCollection.countDocuments()
 
 Output:
 
-```json5
-1
+```js
+response = 1
 ```
 
 ### Connect to Postgres cluster via `psql`

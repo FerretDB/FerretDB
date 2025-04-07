@@ -24,14 +24,12 @@ import (
 )
 
 func TestCircularBufferHandler(t *testing.T) {
-	RecentEntries = NewCircularBuffer(2)
-
 	opts := &NewHandlerOpts{
-		Base:          "console",
-		Level:         slog.LevelInfo,
-		CheckMessages: true,
+		Base:              "console",
+		Level:             slog.LevelInfo,
+		recentEntriesSize: 2,
 	}
-	Setup(opts, "")
+	SetupDefault(opts, "")
 
 	for _, tc := range []struct { //nolint:vet // for readability
 		msg      string
@@ -83,7 +81,8 @@ func TestCircularBufferHandler(t *testing.T) {
 		t.Run(tc.msg, func(t *testing.T) {
 			slog.Default().Log(context.Background(), tc.level, tc.msg)
 
-			records := RecentEntries.get()
+			// TODO https://github.com/FerretDB/FerretDB/issues/4750
+			records := slog.Default().Handler().(*Handler).recentEntries.get()
 			actual := make([]slog.Record, len(records))
 
 			for i, r := range records {

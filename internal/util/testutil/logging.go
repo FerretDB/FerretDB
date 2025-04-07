@@ -28,6 +28,11 @@ type logWriter struct {
 	tb testing.TB
 }
 
+// NewLogWriter returns a new [io.Writer] for [testing.TB].
+func NewLogWriter(tb testing.TB) io.Writer {
+	return &logWriter{tb: tb}
+}
+
 // Write implements [io.Writer].
 func (lw *logWriter) Write(p []byte) (int, error) {
 	// "logging.go:xx" is added by testing.TB.Log itself; there is nothing we can do about it.

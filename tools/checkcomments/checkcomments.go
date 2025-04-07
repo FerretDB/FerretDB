@@ -17,21 +17,22 @@ package main
 
 import (
 	"context"
-	"errors"
 	"flag"
 	"log"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/FerretDB/gh"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/singlechecker"
 
-	"github.com/FerretDB/FerretDB/tools/github"
+	"github.com/FerretDB/FerretDB/v2/tools/github"
 )
 
 // todoRE represents correct "// TODO" comment format.
-var todoRE = regexp.MustCompile(`^// TODO (\Qhttps://github.com/FerretDB/\E[-\w]+/issues/\d+)$`)
+// It returns url, owner, repo and issue number as submatches.
+var todoRE = regexp.MustCompile(`^// TODO (\Qhttps://github.com/\E(FerretDB|microsoft)/([-\w]+)/issues/(\d+))$`)
 
 // analyzer represents the checkcomments analyzer.
 var analyzer = &analysis.Analyzer{
@@ -46,6 +47,7 @@ func init() {
 	analyzer.Flags.Bool("offline", false, "do not check issues open/closed status")
 	analyzer.Flags.Bool("cache-debug", false, "log cache hits/misses")
 	analyzer.Flags.Bool("client-debug", false, "log GitHub API requests/responses")
+	analyzer.Flags.Bool("skip-private", true, "do not check https://github.com/FerretDB/FerretDB-DocumentDB/issues/XXX URLs")
 }
 
 // main runs the analyzer.
@@ -78,6 +80,8 @@ func run(pass *analysis.Pass) (any, error) {
 		}
 	}
 
+	skipPrivate := pass.Analyzer.Flags.Lookup("skip-private").Value.(flag.Getter).Get().(bool)
+
 	for _, f := range pass.Files {
 		for _, cg := range f.Comments {
 			for _, c := range cg.List {
@@ -94,22 +98,29 @@ func run(pass *analysis.Pass) (any, error) {
 
 				match := todoRE.FindStringSubmatch(line)
 
-				if len(match) != 2 {
+				if len(match) != 5 {
 					pass.Reportf(c.Pos(), "invalid TODO: incorrect format")
 					continue
 				}
 
-				url := match[1]
+				url, owner, repo := match[1], match[2], match[3]
 
-				status, err := client.IssueStatus(context.TODO(), url)
+				num, err := strconv.Atoi(match[4])
+				if err != nil {
+					panic(err)
+				}
 
-				switch {
-				case err == nil:
-					// nothing
-				case errors.Is(err, github.ErrIncorrectURL),
-					errors.Is(err, github.ErrIncorrectIssueNumber):
-					log.Print(err.Error())
-				default:
+				if num <= 0 {
+					pass.Reportf(c.Pos(), "invalid TODO: incorrect issue number")
+					continue
+				}
+
+				if skipPrivate && repo == "FerretDB-DocumentDB" {
+					continue
+				}
+
+				status, err := client.IssueStatus(context.TODO(), owner, repo, num)
+				if err != nil {
 					log.Panic(err)
 				}
 
