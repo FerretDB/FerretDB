@@ -80,7 +80,7 @@ metadata:
   namespace: cnpg
 spec:
   instances: 3
-  imageName: 'ghcr.io/ferretdb/postgres-documentdb:17-0.102.0-ferretdb-2.0.0'
+  imageName: 'ghcr.io/ferretdb/postgres-documentdb:17-0.102.0-ferretdb-2.1.0'
   postgresUID: 999
   postgresGID: 999
   enableSuperuserAccess: true
@@ -163,7 +163,7 @@ spec:
     spec:
       containers:
         - name: ferretdb
-          image: ghcr.io/ferretdb/ferretdb:2.0.0
+          image: ghcr.io/ferretdb/ferretdb:2.1.0
           ports:
             - containerPort: 27017
           env:
