@@ -433,6 +433,7 @@ tasks:
       - for: [amd64, arm64]
         task: build-move-check
         vars:
+          # TODO https://github.com/FerretDB/FerretDB/issues/5019
           DOCKER_ARCH: "{{.ITEM}}" # arm/v7
           DIR_ARCH: '{{replace "/" "_" .ITEM}}' # arm/v7 -> arm_v7
           BIN_FILE: 'ferretdb-dev-linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
@@ -453,6 +454,7 @@ tasks:
       - for: [amd64, arm64]
         task: build-move-check
         vars:
+          # TODO https://github.com/FerretDB/FerretDB/issues/5019
           DOCKER_ARCH: "{{.ITEM}}" # arm/v7
           DIR_ARCH: '{{replace "/" "_" .ITEM}}' # arm/v7 -> arm_v7
           BIN_FILE: 'ferretdb-linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
@@ -527,6 +529,7 @@ tasks:
         --packager={{.PACKAGER}}
         --target=tmp/{{.PACKAGER}}s/ferretdb-{{.FILE_SUFFIX}}.{{.PACKAGER}}
     env:
+      # TODO https://github.com/FerretDB/FerretDB/issues/5019
       PACKAGE_VERSION: "{{.PACKAGE_VERSION}}"
       PACKAGE_ARCH: "{{.PACKAGE_ARCH}}"
       DIR_ARCH: "{{.DIR_ARCH}}"
@@ -559,6 +562,7 @@ tasks:
       - for: [amd64, arm64]
         task: packages-build
         vars:
+          # TODO https://github.com/FerretDB/FerretDB/issues/5019
           PACKAGER: deb
           PACKAGE_VERSION: "{{.PACKAGE_VERSION}}"
           PACKAGE_ARCH: '{{replace "/" "" .ITEM | replace "v" ""}}' # arm/v7 -> arm7
@@ -587,6 +591,7 @@ tasks:
       - for: [amd64, arm64]
         task: packages-build
         vars:
+          # TODO https://github.com/FerretDB/FerretDB/issues/5019
           PACKAGER: deb
           PACKAGE_VERSION: "{{.PACKAGE_VERSION}}"
           PACKAGE_ARCH: '{{replace "/" "" .ITEM | replace "v" ""}}' # arm/v7 -> arm7
@@ -627,6 +632,7 @@ tasks:
       - for: [amd64, arm64]
         task: packages-build
         vars:
+          # TODO https://github.com/FerretDB/FerretDB/issues/5019
           PACKAGER: rpm
           PACKAGE_VERSION: "{{.PACKAGE_VERSION}}"
           PACKAGE_ARCH: '{{replace "/" "" .ITEM | replace "v" ""}}' # arm/v7 -> arm7
@@ -655,6 +661,7 @@ tasks:
       - for: [amd64, arm64]
         task: packages-build
         vars:
+          # TODO https://github.com/FerretDB/FerretDB/issues/5019
           PACKAGER: rpm
           PACKAGE_VERSION: "{{.PACKAGE_VERSION}}"
           PACKAGE_ARCH: '{{replace "/" "" .ITEM | replace "v" ""}}' # arm/v7 -> arm7

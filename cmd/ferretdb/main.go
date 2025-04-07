@@ -435,7 +435,7 @@ func run() {
 		}()
 	}
 
-	metrics := connmetrics.NewListenerMetrics()
+	lm := connmetrics.NewListenerMetrics()
 
 	{
 		wg.Add(1)
@@ -445,14 +445,14 @@ func run() {
 
 			l := logging.WithName(logger, "telemetry")
 
-			r, e := telemetry.NewReporter(&telemetry.NewReporterOpts{
+			tr, e := telemetry.NewReporter(&telemetry.NewReporterOpts{
 				URL:            cli.Dev.Telemetry.URL,
 				Dir:            cli.StateDir,
 				F:              &cli.Telemetry,
 				DNT:            os.Getenv("DO_NOT_TRACK"),
 				ExecName:       os.Args[0],
 				P:              stateProvider,
-				ConnMetrics:    metrics.ConnMetrics,
+				ConnMetrics:    lm.ConnMetrics,
 				L:              l,
 				UndecidedDelay: cli.Dev.Telemetry.UndecidedDelay,
 				ReportInterval: cli.Dev.Telemetry.ReportInterval,
@@ -461,7 +461,7 @@ func run() {
 				l.LogAttrs(ctx, logging.LevelFatal, "Failed to create telemetry reporter", logging.Error(e))
 			}
 
-			r.Run(ctx)
+			tr.Run(ctx)
 		}()
 	}
 
@@ -493,7 +493,7 @@ func run() {
 		ReplSetName: cli.Dev.ReplSetName,
 
 		L:             logging.WithName(logger, "handler"),
-		ConnMetrics:   metrics.ConnMetrics,
+		ConnMetrics:   lm.ConnMetrics,
 		StateProvider: stateProvider,
 	}
 
@@ -505,7 +505,7 @@ func run() {
 
 	lis, err := clientconn.Listen(&clientconn.ListenerOpts{
 		Handler: h,
-		Metrics: metrics,
+		Metrics: lm,
 		Logger:  logger,
 
 		TCP:  tcpAddr,
