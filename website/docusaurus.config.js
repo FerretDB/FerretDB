@@ -47,17 +47,23 @@ const config = {
           },
         ],
 
-        createRedirects(existingPath) {
-          if (existingPath.startsWith("/installation/ferretdb")) {
-            return [
-              // old blog posts
-              // for example: /quickstart-guide/docker/ -> /installation/ferretdb/docker/
-              existingPath.replace("/installation/ferretdb", "/quickstart-guide"),
-              existingPath.replace("/installation/ferretdb", "/quickstart_guide"),
-            ];
+        createRedirects(to) {
+          let res = [];
+
+          // TODO https://github.com/FerretDB/FerretDB/issues/4882
+          if (!(to.startsWith("/v1") || to.startsWith("/v2"))) {
+            // /v2.1/installation/ -> /installation/
+            res.push("/v2.1" + to);
           }
 
-          return undefined;
+          if (to.startsWith("/installation/ferretdb")) {
+            // old blog posts
+            // for example: /quickstart-guide/docker/ -> /installation/ferretdb/docker/
+            res.push(to.replace("/installation/ferretdb", "/quickstart-guide"));
+            res.push(to.replace("/installation/ferretdb", "/quickstart_guide"));
+          }
+
+          return res;
         },
       },
     ],
@@ -86,7 +92,12 @@ const config = {
 
           // https://docusaurus.io/docs/versioning#configuring-versioning-behavior
           // https://docusaurus.io/docs/api/plugins/@docusaurus/plugin-content-docs#configuration
-          versions: {},
+          versions: {
+            current: {
+              label: "v2.2",
+              path: "v2.2",
+            },
+          },
         },
         theme: {
           customCss: require.resolve("./src/css/custom.css"),
